@@ -1,0 +1,124 @@
+import Foundation
+import SwiftData
+
+@Model
+final class DailyRoutine {
+    @Attribute(.unique) var id: UUID
+    var title: String
+    var sortOrder: Int
+    var isEnabled: Bool
+    var createdDayKey: String
+
+    @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
+    var checks: [RoutineCheck]
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        sortOrder: Int,
+        isEnabled: Bool = true,
+        createdDayKey: String = DayKey.today()
+    ) {
+        self.id = id
+        self.title = title
+        self.sortOrder = sortOrder
+        self.isEnabled = isEnabled
+        self.createdDayKey = createdDayKey
+        self.checks = []
+    }
+
+    var snapshot: RoutineSnapshot {
+        RoutineSnapshot(
+            id: id,
+            title: title,
+            sortOrder: sortOrder,
+            isEnabled: isEnabled,
+            createdDayKey: createdDayKey
+        )
+    }
+}
+
+@Model
+final class RoutineCheck {
+    @Attribute(.unique) var id: UUID
+    var dayKey: String
+    var isDone: Bool
+    var routine: DailyRoutine?
+
+    init(
+        id: UUID = UUID(),
+        dayKey: String,
+        isDone: Bool = false,
+        routine: DailyRoutine? = nil
+    ) {
+        self.id = id
+        self.dayKey = dayKey
+        self.isDone = isDone
+        self.routine = routine
+    }
+
+    var snapshot: CheckSnapshot? {
+        guard let routineId = routine?.id else { return nil }
+        return CheckSnapshot(routineId: routineId, dayKey: dayKey, isDone: isDone)
+    }
+}
+
+@Model
+final class TodoItem {
+    @Attribute(.unique) var id: UUID
+    var title: String
+    var isDone: Bool
+    var dayKey: String
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        isDone: Bool = false,
+        dayKey: String,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.title = title
+        self.isDone = isDone
+        self.dayKey = dayKey
+        self.createdAt = createdAt
+    }
+
+    var snapshot: TodoSnapshot {
+        TodoSnapshot(id: id, title: title, isDone: isDone, dayKey: dayKey)
+    }
+}
+
+@Model
+final class DiaryEntry {
+    @Attribute(.unique) var id: UUID
+    var text: String
+    var dayKey: String
+    var createdAt: Date
+
+    init(
+        id: UUID = UUID(),
+        text: String,
+        dayKey: String,
+        createdAt: Date = .now
+    ) {
+        self.id = id
+        self.text = text
+        self.dayKey = dayKey
+        self.createdAt = createdAt
+    }
+
+    var snapshot: DiarySnapshot {
+        DiarySnapshot(id: id, text: text, dayKey: dayKey, createdAt: createdAt)
+    }
+}
+
+enum AreaChainSchema {
+    static let models: [any PersistentModel.Type] = [
+        DailyRoutine.self,
+        RoutineCheck.self,
+        TodoItem.self,
+        DiaryEntry.self
+    ]
+}
