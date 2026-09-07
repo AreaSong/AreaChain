@@ -13,7 +13,6 @@ struct TasksPage: View {
 
     @State var showYesterday = false
     @State var showUpcoming = false
-    @State var showCompleted = true
     @State var pendingTrash: PendingTrash?
 
     var body: some View {
@@ -21,9 +20,14 @@ struct TasksPage: View {
             leftoverChips
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    todayList
+                    DayBoardList(
+                        dayKey: todayKey,
+                        todayKey: todayKey,
+                        routines: routines,
+                        checks: checks,
+                        todos: todos
+                    )
                     upcomingSection
-                    completedSection
                     yesterdaySection
                 }
             }
@@ -34,26 +38,6 @@ struct TasksPage: View {
 
     var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
         (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
-    }
-
-    var openRoutineModels: [DailyRoutine] {
-        let ids = Set(DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).map(\.id))
-        return routines.filter { ids.contains($0.id) }.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    var doneRoutineModels: [DailyRoutine] {
-        let ids = Set(DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).map(\.id))
-        return routines.filter { ids.contains($0.id) }.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    var openTodoModels: [TodoItem] {
-        let ids = Set(DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey).map(\.id))
-        return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
-    }
-
-    var doneTodoModels: [TodoItem] {
-        let ids = Set(DayBoardLogic.completedTodos(todos: snapshots.2, dayKey: todayKey).map(\.id))
-        return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
     }
 
     var yesterdayItems: [UnfinishedItem] {
@@ -73,35 +57,6 @@ struct TasksPage: View {
                 if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
                 return $0.createdAt < $1.createdAt
             }
-    }
-
-    var completedCount: Int { doneRoutineModels.count + doneTodoModels.count }
-
-    var openDayItems: [BoardRow] {
-        sortedRows(
-            openRoutineModels.map(BoardRow.resident) + openTodoModels.map(BoardRow.todo)
-        )
-    }
-
-    var doneDayItems: [BoardRow] {
-        sortedRows(
-            doneRoutineModels.map(BoardRow.resident) + doneTodoModels.map(BoardRow.todo)
-        )
-    }
-
-    func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
-        rows.sorted { left, right in
-            switch (left.remindMinutes, right.remindMinutes) {
-            case let (a?, b?) where a != b:
-                return a < b
-            case (_?, nil):
-                return true
-            case (nil, _?):
-                return false
-            default:
-                return left.createdAt < right.createdAt
-            }
-        }
     }
 }
 

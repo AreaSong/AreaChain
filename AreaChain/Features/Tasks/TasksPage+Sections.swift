@@ -1,46 +1,12 @@
 import SwiftUI
 
 extension TasksPage {
-    var todayList: some View {
-        Group {
-            if openDayItems.isEmpty {
-                emptyLine("empty.todos")
-            } else {
-                ForEach(openDayItems) { row in
-                    dayRow(row, isDone: false)
-                }
-            }
-        }
-    }
-
-    var completedSection: some View {
-        Group {
-            if completedCount > 0 {
-                Button {
-                    showCompleted.toggle()
-                } label: {
-                    SectionStamp(
-                        title: showCompleted
-                            ? "stamp.completed.collapse \(completedCount)"
-                            : "stamp.completed \(completedCount)"
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-            if showCompleted {
-                ForEach(doneDayItems) { row in
-                    dayRow(row, isDone: true)
-                }
-            }
-        }
-    }
-
     var upcomingSection: some View {
         Group {
             if showUpcoming, !upcomingModels.isEmpty {
                 SectionStamp(title: "stamp.upcoming")
                 ForEach(upcomingModels, id: \.id) { todo in
-                    todoRow(todo, isDone: false, note: DayKey.shortStamp(todo.dayKey, locale: locale))
+                    leftoverTodoRow(todo, note: DayKey.shortStamp(todo.dayKey, locale: locale))
                 }
             }
         }
@@ -119,55 +85,26 @@ extension TasksPage {
         .accessibilityLabel(count == 0 ? emptyLabel : countLabel)
     }
 
-    func emptyLine(_ text: LocalizedStringKey) -> some View {
-        Text(text)
-            .font(.system(size: 12))
-            .foregroundStyle(DaybookTheme.muted)
-            .padding(.vertical, 4)
-    }
-
-    @ViewBuilder
-    func dayRow(_ row: BoardRow, isDone: Bool) -> some View {
-        switch row {
-        case .resident(let routine):
-            residentRow(routine, isDone: isDone)
-        case .todo(let todo):
-            todoRow(todo, isDone: isDone)
-        }
-    }
-
-    func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
-        TaskRow(
-            title: routine.title,
-            isDone: isDone,
-            isResident: true,
-            note: isDone ? doneRoutineNote(routine) : daysNote(routine, locale: locale),
-            remindMinutes: routine.remindMinutes,
-            onToggle: { toggleRoutine(routine) },
-            onSkip: isDone ? nil : { skipRoutine(routine) }
-        )
-    }
-
-    func todoRow(_ todo: TodoItem, isDone: Bool, note: String? = nil) -> some View {
+    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
         TaskRow(
             title: todo.title,
-            isDone: isDone,
+            isDone: false,
             note: note,
             remindMinutes: todo.remindMinutes,
             todayKey: todayKey,
             currentDayKey: todo.dayKey,
-            onToggle: { toggleTodo(todo) },
+            onToggle: { DayBoardMutations.toggleTodo(todo) },
             onDelete: { deleteTodo(todo) },
-            onEdit: { editTodo(todo, title: $0) },
-            onMoveToDay: { moveTodo(todo, to: $0) },
-            onRemindMinutes: { setRemind(todo, minutes: $0) }
+            onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
+            onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
+            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) }
         )
     }
 
     @ViewBuilder
     func leftoverRow(_ item: UnfinishedItem) -> some View {
         if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
-            todoRow(todo, isDone: false)
+            leftoverTodoRow(todo)
         } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
             TaskRow(
                 title: routine.title,

@@ -188,6 +188,12 @@ struct FooterBar: View {
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
+            Button("footer.calendar") {
+                AppWindows.openCalendar()
+            }
+            .font(.system(size: 11))
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
             Button("footer.trash") {
                 AppWindows.openTrash()
             }

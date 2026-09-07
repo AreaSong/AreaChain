@@ -241,4 +241,36 @@ struct DayBoardLogicTests {
             ).isEmpty
         )
     }
+
+    @Test func monthUnfinishedUsesWeekdaysAndTodoDayKey() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        let weekdayPages = RoutineSnapshot(
+            id: morningPages.id,
+            title: morningPages.title,
+            sortOrder: morningPages.sortOrder,
+            isEnabled: true,
+            createdDayKey: "2026-09-01",
+            weekdayMask: WeekdayMask.workdays
+        )
+        let later = TodoSnapshot(
+            id: UUID(),
+            title: "预约",
+            isDone: false,
+            dayKey: "2026-09-10"
+        )
+        let counts = DayBoardLogic.monthUnfinished(
+            routines: [weekdayPages],
+            checks: [],
+            todos: [later],
+            containing: "2026-09-07",
+            calendar: calendar
+        )
+        #expect(counts["2026-09-07"] == 1)
+        #expect(counts["2026-09-06"] == 0)
+        #expect(counts["2026-09-05"] == 0)
+        #expect(counts["2026-09-10"] == 2)
+        #expect(counts["2026-08-31"] == nil)
+        #expect(counts["2026-10-01"] == nil)
+    }
 }

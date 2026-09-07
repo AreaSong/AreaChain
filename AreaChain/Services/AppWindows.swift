@@ -15,6 +15,12 @@ enum AppWindows {
         PanelWindowController.diary.show()
     }
 
+    static func openCalendar() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.calendar.show()
+    }
+
     static func openTrash() {
         StatusItemController.shared.close()
         becomeActive()
@@ -48,7 +54,7 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow, PanelWindowController.trash.hostedWindow]
+        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow, PanelWindowController.calendar.hostedWindow, PanelWindowController.trash.hostedWindow]
             .compactMap { $0 }
     }
 }
@@ -72,6 +78,17 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         root: {
             AnyView(
                 DiaryStandaloneView()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let calendar = PanelWindowController(
+        titleKey: "window.calendar",
+        size: NSSize(width: 440, height: 640),
+        root: {
+            AnyView(
+                CalendarStandaloneView()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

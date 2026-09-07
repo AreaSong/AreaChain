@@ -79,6 +79,64 @@ enum DayKey {
         return formatter.string(from: date)
     }
 
+    static func dayNumber(_ key: String, calendar: Calendar = .current) -> String {
+        guard let date = date(from: key, calendar: calendar) else { return key }
+        return "\(calendar.component(.day, from: date))"
+    }
+
+    static func monthTitle(
+        _ key: String,
+        calendar: Calendar = .current,
+        locale: Locale = .current
+    ) -> String {
+        guard let date = date(from: key, calendar: calendar) else { return key }
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.locale = locale
+        formatter.dateFormat = usesChineseDate(locale) ? "yyyy年M月" : "MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
+    static func shiftedMonth(_ key: String, by months: Int, calendar: Calendar = .current) -> String {
+        guard let date = date(from: key, calendar: calendar),
+              let next = calendar.date(byAdding: .month, value: months, to: date)
+        else {
+            return key
+        }
+        return from(next, calendar: calendar)
+    }
+
+    static func daysInMonth(containing key: String, calendar: Calendar = .current) -> [String] {
+        guard let date = date(from: key, calendar: calendar),
+              let interval = calendar.dateInterval(of: .month, for: date)
+        else {
+            return []
+        }
+        var keys: [String] = []
+        var cursor = interval.start
+        while cursor < interval.end {
+            keys.append(from(cursor, calendar: calendar))
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        return keys
+    }
+
+    static func monthGrid(containing key: String, calendar: Calendar = .current) -> [String?] {
+        let days = daysInMonth(containing: key, calendar: calendar)
+        guard let first = days.first, let firstDate = date(from: first, calendar: calendar) else {
+            return []
+        }
+        let weekday = calendar.component(.weekday, from: firstDate)
+        let pad = (weekday - calendar.firstWeekday + 7) % 7
+        var cells = Array(repeating: String?.none, count: pad)
+        cells.append(contentsOf: days.map { Optional($0) })
+        while !cells.isEmpty, cells.count % 7 != 0 {
+            cells.append(nil)
+        }
+        return cells
+    }
+
     private static func usesChineseDate(_ locale: Locale) -> Bool {
         locale.language.languageCode?.identifier == "zh" || locale.identifier.hasPrefix("zh")
     }

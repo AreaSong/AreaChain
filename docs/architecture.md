@@ -17,7 +17,7 @@ README.md
 
 不要把 `build/`、`DerivedData/`、`xcuserdata` 提交进去。
 
-菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层不在 SwiftUI Scene 里，底栏「设置 / 日记窗 / 回收站」走 `AppWindows` 激活后再打开，不用 `SettingsLink`。
+菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层底栏点「设置 / 日记窗 / 日历窗 / 回收站」走 `AppWindows` 激活后再打开，不用 `SettingsLink`。
 
 ## 应用内分层
 
@@ -31,6 +31,7 @@ AreaChain/
     MenuBar/
     Tasks/
     Diary/
+    Calendar/
     Settings/
     Trash/
   Theme/          颜色与共用控件
@@ -57,7 +58,7 @@ SwiftData 四张表：
 
 对外 ID 都是 UUID，方便以后同步。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。
 
-列表「今天 / 昨天 / 即将 / 未完成」只通过 `DayBoardLogic` 计算。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
+列表「今天 / 昨天 / 即将 / 未完成 / 某月每天未完成」只通过 `DayBoardLogic` 计算。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
 
 本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` / `weekdayMask` 时按缺省读（旧的 `weekdaysOnly: true` 当作周一到周五）。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉。
 

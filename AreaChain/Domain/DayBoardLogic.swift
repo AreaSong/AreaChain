@@ -152,6 +152,23 @@ enum DayBoardLogic {
             + unfinishedTodos(todos: todos, dayKey: dayKey).count
     }
 
+    static func monthUnfinished(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        containing dayKey: String,
+        calendar: Calendar = .current
+    ) -> [String: Int] {
+        Dictionary(
+            uniqueKeysWithValues: DayKey.daysInMonth(containing: dayKey, calendar: calendar).map { key in
+                (
+                    key,
+                    todayBadgeCount(routines: routines, checks: checks, todos: todos, dayKey: key)
+                )
+            }
+        )
+    }
+
     static func yesterdayUnfinished(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],

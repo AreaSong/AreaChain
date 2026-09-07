@@ -59,4 +59,18 @@ struct DayKeyTests {
         #expect(DayKey.date(dayKey: "2026-09-07", minutes: 1440, calendar: utc) == nil)
         #expect(DayKey.date(dayKey: "bad", minutes: 0, calendar: utc) == nil)
     }
+
+    @Test func monthGridPadsFromFirstWeekday() {
+        var mondayFirst = utc
+        mondayFirst.firstWeekday = 2
+        let days = DayKey.daysInMonth(containing: "2026-09-07", calendar: mondayFirst)
+        #expect(days.first == "2026-09-01")
+        #expect(days.last == "2026-09-30")
+        let grid = DayKey.monthGrid(containing: "2026-09-07", calendar: mondayFirst)
+        #expect(grid.count % 7 == 0)
+        #expect(grid[0] == nil)
+        #expect(grid[1] == "2026-09-01")
+        #expect(DayKey.shiftedMonth("2026-09-07", by: 1, calendar: mondayFirst) == "2026-10-07")
+        #expect(DayKey.dayNumber("2026-09-07", calendar: mondayFirst) == "7")
+    }
 }
