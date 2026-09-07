@@ -27,6 +27,10 @@ enum SnapshotImporter {
                 found.isEnabled = item.isEnabled
                 found.createdDayKey = item.createdDayKey
                 found.weekdaysOnly = item.weekdaysOnly
+                if let createdAt = item.createdAt {
+                    found.createdAt = createdAt
+                }
+                found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
             } else {
                 context.insert(
                     DailyRoutine(
@@ -35,7 +39,9 @@ enum SnapshotImporter {
                         sortOrder: item.sortOrder,
                         isEnabled: item.isEnabled,
                         createdDayKey: item.createdDayKey,
-                        weekdaysOnly: item.weekdaysOnly
+                        weekdaysOnly: item.weekdaysOnly,
+                        createdAt: item.createdAt ?? .now,
+                        remindMinutes: item.remindMinutes
                     )
                 )
             }
@@ -50,6 +56,7 @@ enum SnapshotImporter {
                 found.isDone = item.isDone
                 found.dayKey = item.dayKey
                 found.createdAt = item.createdAt
+                found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
             } else {
                 context.insert(
                     TodoItem(
@@ -57,7 +64,8 @@ enum SnapshotImporter {
                         title: item.title,
                         isDone: item.isDone,
                         dayKey: item.dayKey,
-                        createdAt: item.createdAt
+                        createdAt: item.createdAt,
+                        remindMinutes: item.remindMinutes
                     )
                 )
             }

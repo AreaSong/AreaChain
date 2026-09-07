@@ -3,17 +3,18 @@ import SwiftUI
 extension TasksPage {
     var routineSection: some View {
         Group {
-            if !openRoutineModels.isEmpty {
-                SectionStamp(title: "stamp.routines")
-                ForEach(openRoutineModels, id: \.id) { routine in
-                    TaskRow(
-                        title: routine.title,
-                        isDone: false,
-                        note: routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil,
-                        onToggle: { toggleRoutine(routine) },
-                        onEdit: { routine.title = $0 },
-                        onSkip: { skipRoutine(routine) }
-                    )
+            SectionStamp(title: "stamp.routines")
+            ForEach(openRoutineModels, id: \.id) { routine in
+                residentRow(routine, isDone: false)
+            }
+            addResidentRow
+            if !disabledRoutineModels.isEmpty {
+                Text("stamp.disabled")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .padding(.top, 4)
+                ForEach(disabledRoutineModels, id: \.id) { routine in
+                    disabledRow(routine)
                 }
             }
         }
@@ -26,16 +27,7 @@ extension TasksPage {
                 emptyLine("empty.todos")
             } else {
                 ForEach(openTodoModels, id: \.id) { todo in
-                    TaskRow(
-                        title: todo.title,
-                        isDone: false,
-                        todayKey: todayKey,
-                        currentDayKey: todo.dayKey,
-                        onToggle: { todo.isDone.toggle() },
-                        onDelete: { modelContext.delete(todo) },
-                        onEdit: { todo.title = $0 },
-                        onMoveToDay: { moveTodo(todo, to: $0) }
-                    )
+                    todoRow(todo, isDone: false)
                 }
             }
         }
@@ -57,25 +49,10 @@ extension TasksPage {
             }
             if showCompleted {
                 ForEach(doneRoutineModels, id: \.id) { routine in
-                    TaskRow(
-                        title: routine.title,
-                        isDone: true,
-                        note: doneRoutineNote(routine),
-                        onToggle: { toggleRoutine(routine) },
-                        onEdit: { routine.title = $0 }
-                    )
+                    residentRow(routine, isDone: true)
                 }
                 ForEach(doneTodoModels, id: \.id) { todo in
-                    TaskRow(
-                        title: todo.title,
-                        isDone: true,
-                        todayKey: todayKey,
-                        currentDayKey: todo.dayKey,
-                        onToggle: { todo.isDone.toggle() },
-                        onDelete: { modelContext.delete(todo) },
-                        onEdit: { todo.title = $0 },
-                        onMoveToDay: { moveTodo(todo, to: $0) }
-                    )
+                    todoRow(todo, isDone: true)
                 }
             }
         }
@@ -86,17 +63,7 @@ extension TasksPage {
             if showUpcoming, !upcomingModels.isEmpty {
                 SectionStamp(title: "stamp.upcoming")
                 ForEach(upcomingModels, id: \.id) { todo in
-                    TaskRow(
-                        title: todo.title,
-                        isDone: false,
-                        note: DayKey.shortStamp(todo.dayKey, locale: locale),
-                        todayKey: todayKey,
-                        currentDayKey: todo.dayKey,
-                        onToggle: { todo.isDone.toggle() },
-                        onDelete: { modelContext.delete(todo) },
-                        onEdit: { todo.title = $0 },
-                        onMoveToDay: { moveTodo(todo, to: $0) }
-                    )
+                    todoRow(todo, isDone: false, note: DayKey.shortStamp(todo.dayKey, locale: locale))
                 }
             }
         }
@@ -107,14 +74,7 @@ extension TasksPage {
             if showYesterday {
                 SectionStamp(title: "stamp.yesterday")
                 ForEach(yesterdayItems) { item in
-                    TaskRow(
-                        title: item.title,
-                        isDone: false,
-                        todayKey: todayKey,
-                        currentDayKey: yesterdayKey,
-                        onToggle: { completeYesterday(item) },
-                        onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
-                    )
+                    leftoverRow(item)
                 }
             }
         }
@@ -187,5 +147,95 @@ extension TasksPage {
             .font(.system(size: 12))
             .foregroundStyle(DaybookTheme.muted)
             .padding(.vertical, 4)
+    }
+
+    func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
+        TaskRow(
+            title: routine.title,
+            isDone: isDone,
+            note: isDone ? doneRoutineNote(routine) : (routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil),
+            createdAt: routine.createdAt,
+            remindMinutes: routine.remindMinutes,
+            weekdaysOnly: routine.weekdaysOnly,
+            onToggle: { toggleRoutine(routine) },
+            onDelete: { deleteRoutine(routine) },
+            onEdit: { editRoutine(routine, title: $0) },
+            onSkip: isDone ? nil : { skipRoutine(routine) },
+            onRemindMinutes: { setRemind(routine, minutes: $0) },
+            onWeekdaysOnly: { setWeekdays(routine, $0) },
+            onDisable: { disableRoutine(routine) }
+        )
+    }
+
+    func todoRow(_ todo: TodoItem, isDone: Bool, note: String? = nil) -> some View {
+        TaskRow(
+            title: todo.title,
+            isDone: isDone,
+            note: note,
+            createdAt: todo.createdAt,
+            remindMinutes: todo.remindMinutes,
+            todayKey: todayKey,
+            currentDayKey: todo.dayKey,
+            onToggle: { toggleTodo(todo) },
+            onDelete: { deleteTodo(todo) },
+            onEdit: { editTodo(todo, title: $0) },
+            onMoveToDay: { moveTodo(todo, to: $0) },
+            onRemindMinutes: { setRemind(todo, minutes: $0) }
+        )
+    }
+
+    @ViewBuilder
+    func leftoverRow(_ item: UnfinishedItem) -> some View {
+        if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
+            todoRow(todo, isDone: false)
+        } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
+            TaskRow(
+                title: routine.title,
+                isDone: false,
+                createdAt: routine.createdAt,
+                remindMinutes: routine.remindMinutes,
+                todayKey: todayKey,
+                currentDayKey: yesterdayKey,
+                onToggle: { completeYesterday(item) }
+            )
+        } else {
+            TaskRow(
+                title: item.title,
+                isDone: false,
+                todayKey: todayKey,
+                currentDayKey: yesterdayKey,
+                onToggle: { completeYesterday(item) },
+                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
+            )
+        }
+    }
+
+    var addResidentRow: some View {
+        TextField("resident.add", text: $residentDraft)
+            .textFieldStyle(.plain)
+            .font(.system(size: 12))
+            .foregroundStyle(DaybookTheme.ink)
+            .onSubmit(addResident)
+            .padding(.vertical, 4)
+    }
+
+    func disabledRow(_ routine: DailyRoutine) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "pause.circle")
+                .font(.system(size: 12))
+            VStack(alignment: .leading, spacing: 1) {
+                Text(routine.title)
+                    .font(.system(size: 13))
+                Text(ClockLabel.created(routine.createdAt, locale: locale))
+                    .font(.system(size: 10))
+            }
+            Spacer(minLength: 0)
+        }
+        .foregroundStyle(DaybookTheme.muted)
+        .padding(.vertical, 2)
+        .contextMenu {
+            Button("row.enable") { enableRoutine(routine) }
+            Button("row.delete", role: .destructive) { deleteRoutine(routine) }
+        }
     }
 }

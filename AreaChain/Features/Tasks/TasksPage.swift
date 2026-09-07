@@ -14,6 +14,7 @@ struct TasksPage: View {
     @State var showYesterday = false
     @State var showUpcoming = false
     @State var showCompleted = true
+    @State var residentDraft = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -74,4 +75,8 @@ struct TasksPage: View {
     }
 
     var completedCount: Int { doneRoutineModels.count + doneTodoModels.count }
+
+    var disabledRoutineModels: [DailyRoutine] {
+        routines.filter { !$0.isEnabled }.sorted { $0.sortOrder < $1.sortOrder }
+    }
 }

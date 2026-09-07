@@ -51,7 +51,7 @@ enum AppWindows {
 final class PanelWindowController: NSObject, NSWindowDelegate {
     static let settings = PanelWindowController(
         titleKey: "window.settings",
-        size: NSSize(width: 420, height: 400),
+        size: NSSize(width: 420, height: 480),
         root: {
             AnyView(
                 SettingsView()

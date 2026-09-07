@@ -26,7 +26,7 @@ AreaChain/
   App/            入口、签名、Scene 组装
   Resources/      Assets.xcassets、Localizable.xcstrings
   Domain/         纯领域：日期键、模型、过滤规则
-  Services/       本机存储、时钟、导入导出、热键、首启
+  Services/       本机存储、时钟、导入导出、热键、通知、首启
   Features/       界面，按功能分包
     MenuBar/
     Tasks/
@@ -49,14 +49,16 @@ SwiftData 四张表：
 
 | 类型 | 作用 |
 |---|---|
-| `DailyRoutine` | 例行模板（标题、排序、启用、开始日、是否仅工作日） |
-| `RoutineCheck` | 某模板在某一天的完成 / 跳过 |
-| `TodoItem` | 某一天的临时待办 |
+| `DailyRoutine` | 常驻（标题、排序、启用、开始日、是否仅工作日、创建时间、可选时刻） |
+| `RoutineCheck` | 某常驻在某一天的完成 / 跳过 |
+| `TodoItem` | 某一天的临时任务（含创建时间、可选时刻） |
 | `DiaryEntry` | 某一天的一句日记 |
 
 对外 ID 都是 UUID，方便以后同步。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。
 
-列表「今天 / 昨天 / 即将 / 未完成」只通过 `DayBoardLogic` 计算，单测在 `AreaChainTests/Domain/DayBoardLogicTests.swift`。
+列表「今天 / 昨天 / 即将 / 未完成」只通过 `DayBoardLogic` 计算。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
+
+本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册。旧 JSON 缺 `createdAt` / `remindMinutes` 时按 `nil` 读。
 
 ## 签名路径
 

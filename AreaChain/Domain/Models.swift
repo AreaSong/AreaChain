@@ -9,6 +9,8 @@ final class DailyRoutine {
     var isEnabled: Bool
     var createdDayKey: String
     var weekdaysOnly: Bool = false
+    var createdAt: Date = Date()
+    var remindMinutes: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -19,7 +21,9 @@ final class DailyRoutine {
         sortOrder: Int,
         isEnabled: Bool = true,
         createdDayKey: String = DayKey.today(),
-        weekdaysOnly: Bool = false
+        weekdaysOnly: Bool = false,
+        createdAt: Date = .now,
+        remindMinutes: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -27,6 +31,8 @@ final class DailyRoutine {
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
         self.weekdaysOnly = weekdaysOnly
+        self.createdAt = createdAt
+        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.checks = []
     }
 
@@ -37,7 +43,9 @@ final class DailyRoutine {
             sortOrder: sortOrder,
             isEnabled: isEnabled,
             createdDayKey: createdDayKey,
-            weekdaysOnly: weekdaysOnly
+            weekdaysOnly: weekdaysOnly,
+            createdAt: createdAt,
+            remindMinutes: remindMinutes
         )
     }
 }
@@ -82,23 +90,33 @@ final class TodoItem {
     var isDone: Bool
     var dayKey: String
     var createdAt: Date
+    var remindMinutes: Int?
 
     init(
         id: UUID = UUID(),
         title: String,
         isDone: Bool = false,
         dayKey: String,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        remindMinutes: Int? = nil
     ) {
         self.id = id
         self.title = title
         self.isDone = isDone
         self.dayKey = dayKey
         self.createdAt = createdAt
+        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
     }
 
     var snapshot: TodoSnapshot {
-        TodoSnapshot(id: id, title: title, isDone: isDone, dayKey: dayKey)
+        TodoSnapshot(
+            id: id,
+            title: title,
+            isDone: isDone,
+            dayKey: dayKey,
+            createdAt: createdAt,
+            remindMinutes: remindMinutes
+        )
     }
 }
 

@@ -11,5 +11,8 @@ extension Notification.Name {
 enum BoardEvents {
     static func changed() {
         NotificationCenter.default.post(name: .boardDidChange, object: nil)
+        Task { @MainActor in
+            NotificationScheduler.shared.scheduleRefresh()
+        }
     }
 }

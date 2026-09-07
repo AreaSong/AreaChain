@@ -7,6 +7,8 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var isEnabled: Bool
     var createdDayKey: String
     var weekdaysOnly: Bool = false
+    var createdAt: Date = Date(timeIntervalSince1970: 0)
+    var remindMinutes: Int? = nil
 }
 
 struct CheckSnapshot: Equatable {
@@ -21,6 +23,8 @@ struct TodoSnapshot: Equatable, Identifiable {
     var title: String
     var isDone: Bool
     var dayKey: String
+    var createdAt: Date = Date(timeIntervalSince1970: 0)
+    var remindMinutes: Int? = nil
 }
 
 struct DiarySnapshot: Equatable, Identifiable {
@@ -101,7 +105,9 @@ enum DayBoardLogic {
     }
 
     static func moveTodo(_ todo: TodoSnapshot, to dayKey: String) -> TodoSnapshot {
-        TodoSnapshot(id: todo.id, title: todo.title, isDone: todo.isDone, dayKey: dayKey)
+        var next = todo
+        next.dayKey = dayKey
+        return next
     }
 
     static func routines(for dayKey: String, in routines: [RoutineSnapshot]) -> [RoutineSnapshot] {

@@ -75,5 +75,65 @@ struct SyncPortTests {
         let decoded = try SyncPort.decode(Data(json.utf8))
         #expect(decoded.routines.first?.weekdaysOnly == false)
         #expect(decoded.routines.first?.title == "复盘")
+        #expect(decoded.routines.first?.createdAt == nil)
+        #expect(decoded.routines.first?.remindMinutes == nil)
+    }
+
+    @Test func decodeMissingRemindMinutesAsNil() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [],
+          "checks": [],
+          "todos": [
+            {
+              "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              "title": "修角标",
+              "isDone": false,
+              "dayKey": "2026-09-07",
+              "createdAt": "2026-09-07T01:00:00Z"
+            }
+          ],
+          "diaries": []
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.todos.first?.remindMinutes == nil)
+        #expect(decoded.todos.first?.title == "修角标")
+    }
+
+    @Test func encodeKeepsRemindMinutesAndCreatedAt() throws {
+        let created = Date(timeIntervalSince1970: 1_788_800_000)
+        let snapshot = ExportSnapshot(
+            exportedAt: created,
+            routines: [
+                ExportedRoutine(
+                    id: UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!,
+                    title: "写日报",
+                    sortOrder: 0,
+                    isEnabled: true,
+                    createdDayKey: "2026-09-01",
+                    weekdaysOnly: true,
+                    createdAt: created,
+                    remindMinutes: 9 * 60
+                )
+            ],
+            checks: [],
+            todos: [
+                ExportedTodo(
+                    id: UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!,
+                    title: "修角标",
+                    isDone: false,
+                    dayKey: "2026-09-07",
+                    createdAt: created,
+                    remindMinutes: 18 * 60 + 30
+                )
+            ],
+            diaries: []
+        )
+        let decoded = try SyncPort.decode(try SyncPort.encode(snapshot))
+        #expect(decoded == snapshot)
+        #expect(decoded.routines.first?.remindMinutes == 540)
+        #expect(decoded.todos.first?.remindMinutes == 1110)
     }
 }

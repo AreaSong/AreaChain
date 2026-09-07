@@ -51,4 +51,12 @@ struct DayKeyTests {
         #expect(DayKey.isWeekday("2026-09-07", calendar: utc))
         #expect(DayKey.isWeekday("2026-09-11", calendar: utc))
     }
+
+    @Test func dateFromDayKeyAndMinutes() {
+        let morning = DayKey.date(dayKey: "2026-09-07", minutes: 9 * 60, calendar: utc)!
+        #expect(utc.component(.hour, from: morning) == 9)
+        #expect(utc.component(.minute, from: morning) == 0)
+        #expect(DayKey.date(dayKey: "2026-09-07", minutes: 1440, calendar: utc) == nil)
+        #expect(DayKey.date(dayKey: "bad", minutes: 0, calendar: utc) == nil)
+    }
 }

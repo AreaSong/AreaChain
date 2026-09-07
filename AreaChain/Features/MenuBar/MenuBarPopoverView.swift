@@ -5,7 +5,6 @@ import SwiftUI
 enum BoardTab: String, CaseIterable, Identifiable {
     case tasks
     case diary
-    case routines
 
     var id: String { rawValue }
 
@@ -13,7 +12,6 @@ enum BoardTab: String, CaseIterable, Identifiable {
         switch self {
         case .tasks: "tab.tasks"
         case .diary: "tab.diary"
-        case .routines: "tab.routines"
         }
     }
 }
@@ -62,8 +60,6 @@ struct MenuBarPopoverView: View {
                         todayKey: todayKey,
                         entries: diaries
                     )
-                case .routines:
-                    RoutinesPage(routines: routines)
                 }
             }
             FooterBar()

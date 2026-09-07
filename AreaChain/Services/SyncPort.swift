@@ -15,9 +15,11 @@ struct ExportedRoutine: Codable, Equatable {
     var isEnabled: Bool
     var createdDayKey: String
     var weekdaysOnly: Bool
+    var createdAt: Date?
+    var remindMinutes: Int?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly
+        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, createdAt, remindMinutes
     }
 
     init(
@@ -26,7 +28,9 @@ struct ExportedRoutine: Codable, Equatable {
         sortOrder: Int,
         isEnabled: Bool,
         createdDayKey: String,
-        weekdaysOnly: Bool = false
+        weekdaysOnly: Bool = false,
+        createdAt: Date? = nil,
+        remindMinutes: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -34,6 +38,8 @@ struct ExportedRoutine: Codable, Equatable {
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
         self.weekdaysOnly = weekdaysOnly
+        self.createdAt = createdAt
+        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
     }
 
     init(from decoder: Decoder) throws {
@@ -44,6 +50,8 @@ struct ExportedRoutine: Codable, Equatable {
         isEnabled = try box.decode(Bool.self, forKey: .isEnabled)
         createdDayKey = try box.decode(String.self, forKey: .createdDayKey)
         weekdaysOnly = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
+        createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
+        remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
     }
 }
 
@@ -88,6 +96,37 @@ struct ExportedTodo: Codable, Equatable {
     var isDone: Bool
     var dayKey: String
     var createdAt: Date
+    var remindMinutes: Int?
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, isDone, dayKey, createdAt, remindMinutes
+    }
+
+    init(
+        id: UUID,
+        title: String,
+        isDone: Bool,
+        dayKey: String,
+        createdAt: Date,
+        remindMinutes: Int? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.isDone = isDone
+        self.dayKey = dayKey
+        self.createdAt = createdAt
+        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+    }
+
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: CodingKeys.self)
+        id = try box.decode(UUID.self, forKey: .id)
+        title = try box.decode(String.self, forKey: .title)
+        isDone = try box.decode(Bool.self, forKey: .isDone)
+        dayKey = try box.decode(String.self, forKey: .dayKey)
+        createdAt = try box.decode(Date.self, forKey: .createdAt)
+        remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
+    }
 }
 
 struct ExportedDiary: Codable, Equatable {
@@ -114,7 +153,9 @@ enum SyncPort {
                     sortOrder: $0.sortOrder,
                     isEnabled: $0.isEnabled,
                     createdDayKey: $0.createdDayKey,
-                    weekdaysOnly: $0.weekdaysOnly
+                    weekdaysOnly: $0.weekdaysOnly,
+                    createdAt: $0.createdAt,
+                    remindMinutes: $0.remindMinutes
                 )
             },
             checks: checks.compactMap { check in
@@ -133,7 +174,8 @@ enum SyncPort {
                     title: $0.title,
                     isDone: $0.isDone,
                     dayKey: $0.dayKey,
-                    createdAt: $0.createdAt
+                    createdAt: $0.createdAt,
+                    remindMinutes: $0.remindMinutes
                 )
             },
             diaries: diaries.map {

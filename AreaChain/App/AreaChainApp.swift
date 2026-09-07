@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         StatusItemController.shared.attach(container: Persistence.session.container)
         HotKeyCenter.shared.start()
+        NotificationScheduler.shared.start()
         AppWindows.hideStrayWindows()
     }
 

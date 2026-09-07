@@ -3,6 +3,7 @@ import ServiceManagement
 import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
+import UserNotifications
 
 struct SettingsView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
@@ -17,6 +18,7 @@ struct SettingsView: View {
     @State private var pendingImport: ExportSnapshot?
     @State private var pendingPreview: ImportPreview?
     @State private var confirmReset = false
+    @State private var notifyStatus: UNAuthorizationStatus = .notDetermined
 
     @Environment(\.modelContext) private var modelContext
 
@@ -47,6 +49,18 @@ struct SettingsView: View {
                 HotKeyRecorder()
             }
 
+            Section("settings.notify") {
+                Text(notifyStatusText)
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.muted)
+                Button("settings.notify.request") {
+                    Task {
+                        await NotificationScheduler.shared.requestAuthorizationAndRefresh()
+                        notifyStatus = await NotificationScheduler.shared.currentStatus()
+                    }
+                }
+            }
+
             Section("settings.data") {
                 Button("settings.export") { exportJSON() }
                 Button("settings.import") { importJSON() }
@@ -65,7 +79,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 400)
+        .frame(width: 420, height: 480)
         .navigationTitle("AreaChain")
         .alert("alert.import", isPresented: Binding(
             get: { pendingPreview != nil },
@@ -83,11 +97,25 @@ struct SettingsView: View {
             Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
             Button("alert.cancel", role: .cancel) {}
         }
+        .onAppear {
+            Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
+        }
         .onDisappear {
             AppWindows.resignIfIdle()
             DispatchQueue.main.async {
                 AppWindows.resignIfIdle()
             }
+        }
+    }
+
+    private var notifyStatusText: String {
+        switch notifyStatus {
+        case .authorized, .provisional, .ephemeral:
+            return L10n.string("settings.notify.status.on", locale: locale)
+        case .denied:
+            return L10n.string("settings.notify.status.denied", locale: locale)
+        default:
+            return L10n.string("settings.notify.status.off", locale: locale)
         }
     }
 

@@ -96,7 +96,14 @@ struct DayBoardLogicTests {
 
     @Test func moveTodoLeavesYesterdayAndJoinsToday() {
         let id = UUID()
-        let original = TodoSnapshot(id: id, title: "昨天的", isDone: false, dayKey: yesterday)
+        let original = TodoSnapshot(
+            id: id,
+            title: "昨天的",
+            isDone: false,
+            dayKey: yesterday,
+            createdAt: Date(timeIntervalSince1970: 10),
+            remindMinutes: 8 * 60
+        )
         let moved = DayBoardLogic.moveTodo(original, to: today)
         let leftover = DayBoardLogic.yesterdayUnfinished(
             routines: [],
@@ -106,6 +113,8 @@ struct DayBoardLogicTests {
         )
         #expect(leftover.isEmpty)
         #expect(DayBoardLogic.todos(for: today, in: [moved]).map(\.id) == [id])
+        #expect(moved.remindMinutes == 8 * 60)
+        #expect(moved.createdAt == original.createdAt)
     }
 
     @Test func weekdaysOnlyRoutineSkipsWeekend() {

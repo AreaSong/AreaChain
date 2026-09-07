@@ -46,6 +46,13 @@ enum DayKey {
         return calendar.date(from: components)
     }
 
+    static func date(dayKey: String, minutes: Int, calendar: Calendar = .current) -> Date? {
+        guard let day = date(from: dayKey, calendar: calendar), (0..<1440).contains(minutes) else {
+            return nil
+        }
+        return calendar.date(byAdding: .minute, value: minutes, to: day)
+    }
+
     static func displayName(
         _ key: String,
         calendar: Calendar = .current,
