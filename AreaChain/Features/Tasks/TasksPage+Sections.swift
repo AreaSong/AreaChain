@@ -93,6 +93,27 @@ extension TasksPage {
         }
     }
 
+    var upcomingSection: some View {
+        Group {
+            if showUpcoming, !upcomingModels.isEmpty {
+                SectionStamp(title: "即将")
+                ForEach(upcomingModels, id: \.id) { todo in
+                    TaskRow(
+                        title: todo.title,
+                        isDone: false,
+                        note: DayKey.shortStamp(todo.dayKey),
+                        todayKey: todayKey,
+                        currentDayKey: todo.dayKey,
+                        onToggle: { todo.isDone.toggle() },
+                        onDelete: { modelContext.delete(todo) },
+                        onEdit: { todo.title = $0 },
+                        onMoveToDay: { moveTodo(todo, to: $0) }
+                    )
+                }
+            }
+        }
+    }
+
     var yesterdaySection: some View {
         Group {
             if showYesterday {
@@ -111,28 +132,53 @@ extension TasksPage {
         }
     }
 
-    var yesterdayChip: some View {
-        Button {
-            showYesterday.toggle()
-        } label: {
+    var leftoverChips: some View {
+        HStack(spacing: 12) {
+            leftoverChip(
+                title: "昨天",
+                count: yesterdayItems.count,
+                expanded: showYesterday,
+                emptyLabel: "昨天未完成 0 条"
+            ) {
+                showYesterday.toggle()
+            }
+            leftoverChip(
+                title: "即将",
+                count: upcomingModels.count,
+                expanded: showUpcoming,
+                emptyLabel: "即将 0 条"
+            ) {
+                showUpcoming.toggle()
+            }
+        }
+    }
+
+    func leftoverChip(
+        title: String,
+        count: Int,
+        expanded: Bool,
+        emptyLabel: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
             HStack(spacing: 6) {
-                Text("昨天")
-                Text("\(yesterdayItems.count)")
+                Text(title)
+                Text("\(count)")
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
-                    .background(DaybookTheme.stamp.opacity(yesterdayItems.isEmpty ? 0.15 : 0.25))
+                    .background(DaybookTheme.stamp.opacity(count == 0 ? 0.15 : 0.25))
                     .clipShape(Capsule())
-                Image(systemName: showYesterday ? "chevron.up" : "chevron.down")
+                Image(systemName: expanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
             }
             .font(.system(size: 11))
             .foregroundStyle(DaybookTheme.muted)
         }
         .buttonStyle(.plain)
-        .disabled(yesterdayItems.isEmpty)
-        .opacity(yesterdayItems.isEmpty ? 0.45 : 1)
-        .accessibilityLabel("昨天未完成 \(yesterdayItems.count) 条")
+        .disabled(count == 0)
+        .opacity(count == 0 ? 0.45 : 1)
+        .accessibilityLabel(count == 0 ? emptyLabel : "\(title) \(count) 条")
     }
 
     func emptyLine(_ text: String) -> some View {

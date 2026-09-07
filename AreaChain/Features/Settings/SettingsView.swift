@@ -39,9 +39,7 @@ struct SettingsView: View {
                         updateLoginItem(enabled)
                     }
                 ))
-                Text("全局热键 ⌘⇧A 打开菜单栏浮层")
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                HotKeyRecorder()
             }
 
             Section("数据") {
@@ -62,7 +60,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 480)
+        .frame(width: 460, height: 520)
         .navigationTitle("AreaChain")
         .alert("确认导入？", isPresented: Binding(
             get: { pendingPreview != nil },

@@ -11,17 +11,19 @@ struct TasksPage: View {
     var todos: [TodoItem]
 
     @State var showYesterday = false
+    @State var showUpcoming = false
     @State var showCompleted = false
     @State var addingRoutine = false
     @State var routineDraft = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            yesterdayChip
+            leftoverChips
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     routineSection
                     todaySection
+                    upcomingSection
                     completedSection
                     yesterdaySection
                 }
@@ -60,6 +62,16 @@ struct TasksPage: View {
             todos: snapshots.2,
             yesterdayKey: yesterdayKey
         )
+    }
+
+    var upcomingModels: [TodoItem] {
+        let ids = Set(DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey).map(\.id))
+        return todos
+            .filter { ids.contains($0.id) }
+            .sorted {
+                if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
+                return $0.createdAt < $1.createdAt
+            }
     }
 
     var completedCount: Int { doneRoutineModels.count + doneTodoModels.count }

@@ -140,6 +140,25 @@ struct DayBoardLogicTests {
         #expect(DayBoardLogic.todos(for: "2026-09-10", in: [moved]).map(\.title) == ["预约"])
     }
 
+    @Test func upcomingTodosSkipTodayAndDoneAndSortByDay() {
+        let todos = [
+            TodoSnapshot(id: UUID(), title: "今天的", isDone: false, dayKey: today),
+            TodoSnapshot(id: UUID(), title: "后天", isDone: false, dayKey: "2026-09-09"),
+            TodoSnapshot(id: UUID(), title: "明天", isDone: false, dayKey: "2026-09-08"),
+            TodoSnapshot(id: UUID(), title: "已勾的明天", isDone: true, dayKey: "2026-09-08"),
+            TodoSnapshot(id: UUID(), title: "昨天的", isDone: false, dayKey: yesterday)
+        ]
+        #expect(DayBoardLogic.upcomingTodos(todos: todos, todayKey: today).map(\.title) == ["明天", "后天"])
+        #expect(
+            DayBoardLogic.todayBadgeCount(
+                routines: [],
+                checks: [],
+                todos: todos,
+                dayKey: today
+            ) == 1
+        )
+    }
+
     @Test func diariesNewestFirstAndOnlyThatDay() {
         let older = DiarySnapshot(id: UUID(), text: "早", dayKey: today, createdAt: Date(timeIntervalSince1970: 1))
         let newer = DiarySnapshot(id: UUID(), text: "晚", dayKey: today, createdAt: Date(timeIntervalSince1970: 20))

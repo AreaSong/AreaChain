@@ -19,6 +19,7 @@ struct MenuBarPopoverView: View {
 
     @State private var tab: BoardTab = .tasks
     @State private var draft = ""
+    @State private var captureDayKey = DayClock.shared.todayKey
     @State private var dayTick = Date()
     @FocusState private var captureFocused: Bool
 
@@ -32,6 +33,8 @@ struct MenuBarPopoverView: View {
             header
             CaptureField(
                 text: $draft,
+                dayKey: $captureDayKey,
+                todayKey: todayKey,
                 focus: $captureFocused,
                 onTodo: addTodo,
                 onDiary: addDiary
@@ -61,6 +64,11 @@ struct MenuBarPopoverView: View {
         .background(DaybookTheme.paper.opacity(0.92))
         .overlay(RuledPaper().opacity(0.35))
         .onAppear(perform: prepare)
+        .onChange(of: todayKey) { _, key in
+            if captureDayKey.isEmpty || captureDayKey < key {
+                captureDayKey = key
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
             captureFocused = true
         }
@@ -121,13 +129,18 @@ struct MenuBarPopoverView: View {
             FirstLaunchSeeder.seedIfNeeded(context: modelContext, existingCount: routines.count)
         }
         captureFocused = true
+        if captureDayKey.isEmpty {
+            captureDayKey = todayKey
+        }
     }
 
     private func addTodo() {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
-        modelContext.insert(TodoItem(title: title, dayKey: todayKey))
+        let day = captureDayKey.isEmpty ? todayKey : captureDayKey
+        modelContext.insert(TodoItem(title: title, dayKey: day))
         draft = ""
+        captureDayKey = todayKey
         BoardEvents.changed()
     }
 
@@ -142,6 +155,8 @@ struct MenuBarPopoverView: View {
 }
 
 struct FooterBar: View {
+    @State private var hotKeyName = HotKeyCenter.shared.displayName
+
     var body: some View {
         HStack {
             Button("设置") {
@@ -157,7 +172,7 @@ struct FooterBar: View {
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
             Spacer()
-            Text("⌘⇧A 浮层")
+            Text("\(hotKeyName) 浮层")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
             Button("退出") {
@@ -166,6 +181,10 @@ struct FooterBar: View {
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
+        }
+        .onAppear { hotKeyName = HotKeyCenter.shared.displayName }
+        .onReceive(NotificationCenter.default.publisher(for: .hotKeyDidChange)) { _ in
+            hotKeyName = HotKeyCenter.shared.displayName
         }
     }
 }

@@ -55,7 +55,7 @@ SwiftData 四张表：
 
 对外 ID 都是 UUID，方便以后同步。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。
 
-列表「今天 / 昨天 / 未完成」只通过 `DayBoardLogic` 计算，单测在 `AreaChainTests/Domain/DayBoardLogicTests.swift`。
+列表「今天 / 昨天 / 即将 / 未完成」只通过 `DayBoardLogic` 计算，单测在 `AreaChainTests/Domain/DayBoardLogicTests.swift`。
 
 ## 签名路径
 

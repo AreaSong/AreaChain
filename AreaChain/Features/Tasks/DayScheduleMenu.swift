@@ -23,6 +23,7 @@ struct DayScheduleMenu: View {
 
 struct DaySchedulePicker: View {
     var initialKey: String
+    var confirmTitle: String = "改到这一天"
     var onPick: (String) -> Void
 
     @State private var pickedDate = Date()
@@ -39,7 +40,7 @@ struct DaySchedulePicker: View {
             )
             .datePickerStyle(.graphical)
             .labelsHidden()
-            Button("改到这一天") {
+            Button(confirmTitle) {
                 onPick(DayKey.from(pickedDate))
             }
         }

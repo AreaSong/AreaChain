@@ -127,6 +127,15 @@ enum DayBoardLogic {
         self.todos(for: dayKey, in: todos).filter { !$0.isDone }
     }
 
+    static func upcomingTodos(todos: [TodoSnapshot], todayKey: String) -> [TodoSnapshot] {
+        todos
+            .filter { !$0.isDone && $0.dayKey > todayKey }
+            .sorted {
+                if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
+                return $0.title.localizedStandardCompare($1.title) == .orderedAscending
+            }
+    }
+
     static func todayBadgeCount(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
