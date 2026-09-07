@@ -9,6 +9,9 @@ struct CalendarMonthGrid: View {
     var selectedKey: String
     var counts: [String: Int]
     var onSelect: (String) -> Void
+    var onDropTodo: ((UUID, String) -> Void)? = nil
+
+    @State private var dropKey: String?
 
     var body: some View {
         let cells = DayKey.monthGrid(containing: monthKey, calendar: calendar)
@@ -68,6 +71,19 @@ struct CalendarMonthGrid: View {
         .buttonStyle(.plain)
         .frame(maxWidth: .infinity, minHeight: 52)
         .contentShape(Rectangle())
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 2)
+        )
+        .dropDestination(for: String.self) { items, _ in
+            guard let onDropTodo, let id = items.compactMap(TodoDragToken.decode).first else {
+                return false
+            }
+            onDropTodo(id, key)
+            return true
+        } isTargeted: { hovering in
+            dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
+        }
         .accessibilityLabel(DayKey.displayName(key, calendar: calendar, locale: locale))
     }
 }

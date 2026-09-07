@@ -26,7 +26,13 @@ enum SyncPort {
                 )
             },
             projects: projects.map {
-                ExportedProject(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
+                ExportedProject(
+                    id: $0.id,
+                    name: $0.name,
+                    sortOrder: $0.sortOrder,
+                    parentID: $0.parentID,
+                    deletedAt: $0.deletedAt
+                )
             },
             tags: tags.map {
                 ExportedTag(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
@@ -102,7 +108,8 @@ enum SyncPort {
             tagIDs: item.tagIDs,
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
-            sourceBundleID: item.sourceBundleID
+            sourceBundleID: item.sourceBundleID,
+            calendarEventID: item.calendarEventID
         )
     }
 }

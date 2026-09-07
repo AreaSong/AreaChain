@@ -22,6 +22,8 @@ struct AppPreferencesTests {
     @Test func catalogFollowsExplicitLocale() {
         #expect(L10n.string("tab.tasks", locale: Locale(identifier: "zh-Hans")) == "任务")
         #expect(L10n.string("tab.tasks", locale: Locale(identifier: "en")) == "Tasks")
+        #expect(L10n.string("footer.more", locale: Locale(identifier: "zh-Hans")) == "更多")
+        #expect(L10n.string("row.attach.screen", locale: Locale(identifier: "en")) == "Capture current screen")
     }
 
     @Test func writesLanguageAndAppearanceToInjectedDefaults() {
@@ -39,9 +41,12 @@ struct AppPreferencesTests {
         #expect(prefs.resolvedColorScheme == .dark)
         #expect(prefs.stampCaptureApp == false)
         #expect(prefs.wantsICloudSync == false)
+        #expect(prefs.syncCalendarEvents == false)
         prefs.stampCaptureApp = true
         prefs.wantsICloudSync = true
+        prefs.syncCalendarEvents = true
         #expect(defaults.bool(forKey: AppPreferences.stampCaptureAppKey))
         #expect(defaults.bool(forKey: AppPreferences.iCloudDesiredKey))
+        #expect(defaults.bool(forKey: AppPreferences.syncCalendarEventsKey))
     }
 }

@@ -35,7 +35,8 @@ struct CalendarPage: View {
                 todayKey: todayKey,
                 selectedKey: selectedKey,
                 counts: monthCounts,
-                onSelect: { selectedKey = $0 }
+                onSelect: { selectedKey = $0 },
+                onDropTodo: dropTodo
             )
             selectedHeading
             composer
@@ -46,7 +47,8 @@ struct CalendarPage: View {
                         todayKey: todayKey,
                         routines: routines,
                         checks: checks,
-                        todos: todos
+                        todos: todos,
+                        allowsTodoDrag: true
                     )
                 }
             }
@@ -128,5 +130,11 @@ struct CalendarPage: View {
         if DayBoardMutations.addTodo(title: draft, dayKey: selectedKey, context: modelContext) {
             draft = ""
         }
+    }
+
+    private func dropTodo(_ id: UUID, onto key: String) {
+        guard let todo = todos.first(where: { $0.id == id }) else { return }
+        DayBoardMutations.moveTodo(todo, to: key)
+        selectedKey = key
     }
 }

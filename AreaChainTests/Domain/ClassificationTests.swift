@@ -52,6 +52,20 @@ struct ClassificationTests {
         #expect(!Classification.matches(bits, filter: BoardFilter(tagID: UUID())))
         #expect(Classification.matches(bits, filter: BoardFilter(bundleID: "com.apple.Safari")))
         #expect(!Classification.matches(bits, filter: BoardFilter(bundleID: "com.apple.mail")))
+        let child = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
+        #expect(Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [project, child]))
+        #expect(!Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [child]))
+    }
+
+    @Test func quadrantSlotMapsTwoSwitches() {
+        #expect(QuadrantSlot.of(important: true, urgent: true) == .importantUrgent)
+        #expect(QuadrantSlot.of(important: true, urgent: false) == .important)
+        #expect(QuadrantSlot.of(important: false, urgent: true) == .urgent)
+        #expect(QuadrantSlot.of(important: false, urgent: false) == .rest)
+        #expect(QuadrantSlot.important.isImportant && !QuadrantSlot.important.isUrgent)
+        #expect(CalendarEventPolicy.shouldPublish(isDone: false, deletedAt: nil))
+        #expect(!CalendarEventPolicy.shouldPublish(isDone: true, deletedAt: nil))
+        #expect(!CalendarEventPolicy.shouldPublish(isDone: false, deletedAt: Date(timeIntervalSince1970: 1)))
     }
 
     @Test func clipboardPrefersTextAndSkipsEmpty() {

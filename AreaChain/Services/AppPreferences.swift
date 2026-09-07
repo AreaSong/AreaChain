@@ -52,6 +52,7 @@ final class AppPreferences {
     static let appearanceKey = "areachain.prefs.appearance"
     static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let iCloudDesiredKey = "areachain.prefs.icloudDesired"
+    static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
 
     private let defaults: UserDefaults
     private var isLoading = true
@@ -89,6 +90,14 @@ final class AppPreferences {
         }
     }
 
+    var syncCalendarEvents: Bool {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(syncCalendarEvents, forKey: Self.syncCalendarEventsKey)
+            notifyChange()
+        }
+    }
+
     var resolvedLocale: Locale { language.resolvedLocale }
 
     var resolvedColorScheme: ColorScheme? { appearance.resolvedColorScheme }
@@ -101,6 +110,7 @@ final class AppPreferences {
         appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
         stampCaptureApp = defaults.bool(forKey: Self.stampCaptureAppKey)
         wantsICloudSync = defaults.bool(forKey: Self.iCloudDesiredKey)
+        syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isLoading = false
         applyAppAppearance()
     }

@@ -202,6 +202,9 @@ struct DiaryLine: View {
             Button("row.attach.paste") {
                 _ = AttachmentActions.pasteImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
             }
+            Button("row.attach.screen") {
+                AttachmentActions.captureScreen(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
             Button("diary.delete", role: .destructive, action: requestTrash)
         }
         .confirmMoveToTrash($pendingTrash)

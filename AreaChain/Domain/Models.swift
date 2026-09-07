@@ -145,6 +145,7 @@ final class TodoItem {
     var isImportant: Bool = false
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
+    var calendarEventID: String = ""
 
     init(
         id: UUID = UUID(),
@@ -158,7 +159,8 @@ final class TodoItem {
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
-        sourceBundleID: String = ""
+        sourceBundleID: String = "",
+        calendarEventID: String = ""
     ) {
         self.id = id
         self.title = title
@@ -172,6 +174,7 @@ final class TodoItem {
         self.isImportant = isImportant
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
+        self.calendarEventID = calendarEventID
     }
 
     var classifyBits: ClassifyBits {

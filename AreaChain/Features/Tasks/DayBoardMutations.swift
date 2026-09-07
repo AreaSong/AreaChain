@@ -62,6 +62,20 @@ enum DayBoardMutations {
         }
     }
 
+    static func applyQuadrant(_ slot: QuadrantSlot, to todo: TodoItem) {
+        persist {
+            todo.isImportant = slot.isImportant
+            todo.isUrgent = slot.isUrgent
+        }
+    }
+
+    static func applyQuadrant(_ slot: QuadrantSlot, to routine: DailyRoutine) {
+        persist {
+            routine.isImportant = slot.isImportant
+            routine.isUrgent = slot.isUrgent
+        }
+    }
+
     static func addTodo(title: String, dayKey: String, context: ModelContext) -> Bool {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }

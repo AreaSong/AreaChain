@@ -61,6 +61,9 @@ struct SettingsView: View {
                 Text("settings.capture.stamp.help")
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
+                Text("settings.capture.screen.help")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.notify") {
@@ -73,6 +76,13 @@ struct SettingsView: View {
                         notifyStatus = await NotificationScheduler.shared.currentStatus()
                     }
                 }
+            }
+
+            Section("settings.calendar.sync") {
+                Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
+                Text("settings.calendar.sync.help")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.icloud") {

@@ -206,6 +206,14 @@ struct FooterBar: View {
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
+            Menu("footer.more") {
+                Button("footer.attachments") { AppWindows.openAttachments() }
+                Button("footer.quadrant") { AppWindows.openQuadrant() }
+                Button("footer.gantt") { AppWindows.openGantt() }
+            }
+            .font(.system(size: 11))
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
             Spacer()
             Text("footer.hotkey \(hotKeyName)")
                 .font(.system(size: 10, design: .monospaced))

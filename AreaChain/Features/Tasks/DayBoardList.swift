@@ -11,6 +11,7 @@ struct DayBoardList: View {
     var checks: [RoutineCheck]
     var todos: [TodoItem]
     var filter: BoardFilter = BoardFilter()
+    var allowsTodoDrag: Bool = false
 
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
@@ -93,11 +94,15 @@ struct DayBoardList: View {
         return rows.filter { row in
             switch row {
             case .resident(let routine):
-                Classification.matches(routine.classifyBits, filter: filter)
+                Classification.matches(routine.classifyBits, filter: filter, projectIDs: allowedProjects)
             case .todo(let todo):
-                Classification.matches(todo.classifyBits, filter: filter)
+                Classification.matches(todo.classifyBits, filter: filter, projectIDs: allowedProjects)
             }
         }
+    }
+
+    private var allowedProjects: Set<UUID>? {
+        filter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
     }
 
     private func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
@@ -151,7 +156,8 @@ struct DayBoardList: View {
                 ownerID: todo.id,
                 items: attachments,
                 context: modelContext
-            )
+            ),
+            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
         )
     }
 }

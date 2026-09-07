@@ -16,7 +16,8 @@ struct TrashPage: View {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
-        return (standing + tasks + notes).sorted { $0.deletedAt > $1.deletedAt }
+        let files = attachments.compactMap(TrashRow.attachment)
+        return (standing + tasks + notes + files).sorted { $0.deletedAt > $1.deletedAt }
     }
 
     var body: some View {
@@ -170,6 +171,22 @@ private struct TrashRow: Identifiable {
             restore: { item.deletedAt = nil },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                context.delete(item)
+            }
+        )
+    }
+
+    static func attachment(_ item: AttachmentItem) -> TrashRow? {
+        guard let deletedAt = item.deletedAt else { return nil }
+        return TrashRow(
+            id: item.id,
+            title: item.filename,
+            kindLabel: "trash.kind.attachment",
+            isResident: false,
+            deletedAt: deletedAt,
+            restore: { item.deletedAt = nil },
+            removeFromStore: { context in
+                AttachmentStore.removeFile(id: item.id)
                 context.delete(item)
             }
         )

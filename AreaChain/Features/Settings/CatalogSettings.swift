@@ -10,15 +10,7 @@ struct CatalogSettings: View {
 
     var body: some View {
         Section {
-            catalogBlock(
-                title: "settings.catalog.projects",
-                items: Catalog.liveProjects(projects).map { ($0.id, $0.name) },
-                draft: $projectDraft,
-                placeholder: "settings.catalog.add.project",
-                onAdd: addProject,
-                onRename: renameProject,
-                onDelete: deleteProject
-            )
+            projectTree
             catalogBlock(
                 title: "settings.catalog.tags",
                 items: Catalog.liveTags(tags).map { ($0.id, $0.name) },
@@ -72,6 +64,57 @@ struct CatalogSettings: View {
         .padding(.vertical, 2)
     }
 
+    private var projectTree: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("settings.catalog.projects")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted)
+            if ProjectTree.outline(projects).isEmpty {
+                Text("settings.catalog.empty")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+            ForEach(ProjectTree.outline(projects)) { row in
+                HStack(spacing: 6) {
+                    CatalogNameRow(
+                        name: row.name,
+                        onRename: { renameProject(row.id, $0) },
+                        onDelete: { deleteProject(row.id) }
+                    )
+                    parentMenu(for: row)
+                }
+                .padding(.leading, CGFloat(row.depth) * 14)
+            }
+            HStack {
+                TextField("settings.catalog.add.project", text: $projectDraft)
+                    .onSubmit(addProject)
+                ComposerAddButton(
+                    enabled: !projectDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                    action: addProject
+                )
+            }
+        }
+        .padding(.vertical, 2)
+    }
+
+    private func parentMenu(for row: ProjectOutlineRow) -> some View {
+        Menu {
+            Button("settings.catalog.parent.none") { setParent(row.id, nil) }
+            ForEach(ProjectTree.allowedParents(for: row.id, in: projects)) { parent in
+                Button(ProjectTree.pathLabel(parent.id, in: projects)) {
+                    setParent(row.id, parent.id)
+                }
+            }
+        } label: {
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 10))
+                .foregroundStyle(DaybookTheme.muted)
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
+        .help("settings.catalog.parent")
+    }
+
     private func addProject() {
         let name = projectDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
@@ -109,6 +152,13 @@ struct CatalogSettings: View {
 
     private func deleteTag(_ id: UUID) {
         tags.first { $0.id == id }?.deletedAt = .now
+        BoardEvents.changed()
+    }
+
+    private func setParent(_ id: UUID, _ parentID: UUID?) {
+        guard let item = projects.first(where: { $0.id == id }) else { return }
+        guard !ProjectTree.wouldCycle(moving: id, to: parentID, in: projects) else { return }
+        item.parentID = parentID
         BoardEvents.changed()
     }
 }

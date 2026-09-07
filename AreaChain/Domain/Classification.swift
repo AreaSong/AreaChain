@@ -67,18 +67,46 @@ struct BoardSortKey: Equatable {
     var createdAt: Date = Date(timeIntervalSince1970: 0)
 }
 
-enum Classification {
-    static func priorityRank(important: Bool, urgent: Bool) -> Int {
-        switch (important, urgent) {
-        case (true, true): return 0
-        case (true, false): return 1
-        case (false, true): return 2
-        default: return 3
+enum QuadrantSlot: Int, CaseIterable, Identifiable {
+    case importantUrgent
+    case important
+    case urgent
+    case rest
+
+    var id: Int { rawValue }
+
+    var isImportant: Bool { self == .importantUrgent || self == .important }
+    var isUrgent: Bool { self == .importantUrgent || self == .urgent }
+
+    var titleKeyName: String {
+        switch self {
+        case .importantUrgent: "quadrant.iu"
+        case .important: "quadrant.i"
+        case .urgent: "quadrant.u"
+        case .rest: "quadrant.rest"
         }
     }
 
-    static func matches(_ bits: ClassifyBits, filter: BoardFilter) -> Bool {
-        if let projectID = filter.projectID, bits.projectID != projectID { return false }
+    static func of(important: Bool, urgent: Bool) -> QuadrantSlot {
+        switch (important, urgent) {
+        case (true, true): return .importantUrgent
+        case (true, false): return .important
+        case (false, true): return .urgent
+        default: return .rest
+        }
+    }
+}
+
+enum Classification {
+    static func priorityRank(important: Bool, urgent: Bool) -> Int {
+        QuadrantSlot.of(important: important, urgent: urgent).rawValue
+    }
+
+    static func matches(_ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil) -> Bool {
+        if let projectID = filter.projectID {
+            let allowed = projectIDs ?? [projectID]
+            guard let current = bits.projectID, allowed.contains(current) else { return false }
+        }
         if let tagID = filter.tagID, !TagIDList.contains(bits.tagIDs, tagID) { return false }
         if let bundleID = filter.bundleID, bits.sourceBundleID != bundleID { return false }
         return true

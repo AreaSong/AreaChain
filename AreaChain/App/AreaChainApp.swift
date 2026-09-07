@@ -10,6 +10,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         StatusItemController.shared.attach(container: Persistence.session.container)
         HotKeyCenter.shared.start()
         NotificationScheduler.shared.start()
+        CalendarSync.start()
         AppWindows.hideStrayWindows()
     }
 

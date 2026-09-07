@@ -6,17 +6,20 @@ final class ProjectItem {
     var id: UUID
     var name: String
     var sortOrder: Int
+    var parentID: UUID?
     var deletedAt: Date?
 
     init(
         id: UUID = UUID(),
         name: String,
         sortOrder: Int,
+        parentID: UUID? = nil,
         deletedAt: Date? = nil
     ) {
         self.id = id
         self.name = name
         self.sortOrder = sortOrder
+        self.parentID = parentID
         self.deletedAt = deletedAt
     }
 }

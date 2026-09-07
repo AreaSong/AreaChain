@@ -255,7 +255,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = AreaChain;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Syncs temporary tasks to a dedicated AreaChain calendar. Other calendars are left alone.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Syncs temporary tasks to a dedicated AreaChain calendar. Other calendars are left alone.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Takes a screenshot of the current display to attach to a task or diary entry. AreaChain does not record the screen.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Shows a reminder when a task’s time arrives.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -286,7 +289,10 @@
 				INFOPLIST_KEY_CFBundleDisplayName = AreaChain;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Syncs temporary tasks to a dedicated AreaChain calendar. Other calendars are left alone.";
+				INFOPLIST_KEY_NSCalendarsUsageDescription = "Syncs temporary tasks to a dedicated AreaChain calendar. Other calendars are left alone.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Takes a screenshot of the current display to attach to a task or diary entry. AreaChain does not record the screen.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Shows a reminder when a task’s time arrives.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

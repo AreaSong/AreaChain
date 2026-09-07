@@ -22,6 +22,7 @@ struct TaskRow: View {
     var isUrgent: Bool = false
     var classify: TaskClassifyContext? = nil
     var attachments: TaskAttachmentContext? = nil
+    var dragPayload: String? = nil
 
     @Environment(\.locale) private var locale
     @State private var editing = false
@@ -67,6 +68,7 @@ struct TaskRow: View {
         .onChange(of: title) { _, value in
             if !editing { draft = value }
         }
+        .modifier(TodoDragIfNeeded(payload: dragPayload))
     }
 
     private var residentMark: some View {
@@ -333,6 +335,21 @@ extension TaskRow {
         if let attachments {
             Button("row.attach", action: attachments.onPickFile)
             Button("row.attach.paste", action: attachments.onPaste)
+            if let onCapture = attachments.onCaptureScreen {
+                Button("row.attach.screen", action: onCapture)
+            }
+        }
+    }
+}
+
+struct TodoDragIfNeeded: ViewModifier {
+    var payload: String?
+
+    func body(content: Content) -> some View {
+        if let payload {
+            content.draggable(payload)
+        } else {
+            content
         }
     }
 }

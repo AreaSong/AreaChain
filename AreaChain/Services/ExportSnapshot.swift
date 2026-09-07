@@ -51,6 +51,7 @@ struct ExportedProject: Codable, Equatable {
     var id: UUID
     var name: String
     var sortOrder: Int
+    var parentID: UUID? = nil
     var deletedAt: Date? = nil
 }
 
@@ -199,10 +200,11 @@ struct ExportedTodo: Codable, Equatable {
     var isImportant: Bool
     var isUrgent: Bool
     var sourceBundleID: String
+    var calendarEventID: String
 
     enum CodingKeys: String, CodingKey {
         case id, title, isDone, dayKey, createdAt, remindMinutes, deletedAt
-        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID
+        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID, calendarEventID
     }
 
     init(
@@ -217,7 +219,8 @@ struct ExportedTodo: Codable, Equatable {
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
-        sourceBundleID: String = ""
+        sourceBundleID: String = "",
+        calendarEventID: String = ""
     ) {
         self.id = id
         self.title = title
@@ -231,6 +234,7 @@ struct ExportedTodo: Codable, Equatable {
         self.isImportant = isImportant
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
+        self.calendarEventID = calendarEventID
     }
 
     init(from decoder: Decoder) throws {
@@ -247,6 +251,7 @@ struct ExportedTodo: Codable, Equatable {
         isImportant = try box.decodeIfPresent(Bool.self, forKey: .isImportant) ?? false
         isUrgent = try box.decodeIfPresent(Bool.self, forKey: .isUrgent) ?? false
         sourceBundleID = try box.decodeIfPresent(String.self, forKey: .sourceBundleID) ?? ""
+        calendarEventID = try box.decodeIfPresent(String.self, forKey: .calendarEventID) ?? ""
     }
 }
 

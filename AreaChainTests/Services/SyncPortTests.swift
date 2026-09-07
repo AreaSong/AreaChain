@@ -254,6 +254,7 @@ struct SyncPortTests {
         #expect(decoded.routines.first?.isImportant == false)
         #expect(decoded.todos.first?.sourceBundleID == "")
         #expect(decoded.todos.first?.isUrgent == false)
+        #expect(decoded.todos.first?.calendarEventID == "")
     }
 
     @Test func encodeKeepsClassifyAndCatalog() throws {
@@ -294,6 +295,38 @@ struct SyncPortTests {
         #expect(decoded == snapshot)
         #expect(decoded.todos.first?.isImportant == true)
         #expect(decoded.projects.first?.name == "工作")
+        #expect(decoded.projects.first?.parentID == nil)
         #expect(decoded.attachments.first?.filename == "shot.png")
+        #expect(decoded.todos.first?.calendarEventID == "")
+    }
+
+    @Test func decodeMissingParentAndCalendarEventID() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [],
+          "checks": [],
+          "todos": [
+            {
+              "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              "title": "修角标",
+              "isDone": false,
+              "dayKey": "2026-09-07",
+              "createdAt": "2026-09-07T01:00:00Z"
+            }
+          ],
+          "diaries": [],
+          "projects": [
+            {
+              "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+              "name": "工作",
+              "sortOrder": 0
+            }
+          ]
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.projects.first?.parentID == nil)
+        #expect(decoded.todos.first?.calendarEventID == "")
     }
 }

@@ -11,9 +11,21 @@ extension Notification.Name {
 
 enum BoardEvents {
     static func changed() {
-        NotificationCenter.default.post(name: .boardDidChange, object: nil)
+        notifyUI()
+        Task { @MainActor in
+            NotificationScheduler.shared.scheduleRefresh()
+            CalendarSync.refreshIfEnabled()
+        }
+    }
+
+    static func changedLocally() {
+        notifyUI()
         Task { @MainActor in
             NotificationScheduler.shared.scheduleRefresh()
         }
+    }
+
+    private static func notifyUI() {
+        NotificationCenter.default.post(name: .boardDidChange, object: nil)
     }
 }

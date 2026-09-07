@@ -20,21 +20,19 @@ struct TaskClassifyContext {
     var onUrgent: (Bool) -> Void
 }
 
-struct AttachmentRef: Identifiable, Equatable, Hashable {
-    var id: UUID
-    var filename: String
-}
-
 struct TaskAttachmentContext {
     var items: [AttachmentRef]
     var onPickFile: () -> Void
     var onPaste: () -> Void
+    var onCaptureScreen: (() -> Void)? = nil
 }
 
 @MainActor
 enum CatalogChoices {
     static func projects(_ items: [ProjectItem]) -> [CatalogChoice] {
-        Catalog.liveProjects(items).map { CatalogChoice(id: $0.id, name: $0.name) }
+        ProjectTree.outline(items).map {
+            CatalogChoice(id: $0.id, name: ProjectTree.pathLabel($0.id, in: items))
+        }
     }
 
     static func tags(_ items: [TagItem]) -> [CatalogChoice] {
@@ -80,6 +78,9 @@ enum CatalogChoices {
             },
             onPaste: {
                 _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
+            },
+            onCaptureScreen: {
+                AttachmentActions.captureScreen(ownerKind: ownerKind, ownerID: ownerID, context: context)
             }
         )
     }

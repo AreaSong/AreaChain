@@ -91,6 +91,7 @@ enum SnapshotImporter {
                 found.isImportant = item.isImportant
                 found.isUrgent = item.isUrgent
                 found.sourceBundleID = item.sourceBundleID
+                found.calendarEventID = item.calendarEventID
             } else {
                 context.insert(
                     TodoItem(
@@ -105,7 +106,8 @@ enum SnapshotImporter {
                         tagIDs: item.tagIDs,
                         isImportant: item.isImportant,
                         isUrgent: item.isUrgent,
-                        sourceBundleID: item.sourceBundleID
+                        sourceBundleID: item.sourceBundleID,
+                        calendarEventID: item.calendarEventID
                     )
                 )
             }
@@ -140,10 +142,17 @@ enum SnapshotImporter {
             if let found = map[item.id] {
                 found.name = item.name
                 found.sortOrder = item.sortOrder
+                found.parentID = item.parentID
                 found.deletedAt = item.deletedAt
             } else {
                 context.insert(
-                    ProjectItem(id: item.id, name: item.name, sortOrder: item.sortOrder, deletedAt: item.deletedAt)
+                    ProjectItem(
+                        id: item.id,
+                        name: item.name,
+                        sortOrder: item.sortOrder,
+                        parentID: item.parentID,
+                        deletedAt: item.deletedAt
+                    )
                 )
             }
         }

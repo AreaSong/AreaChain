@@ -27,6 +27,24 @@ enum AppWindows {
         PanelWindowController.trash.show()
     }
 
+    static func openAttachments() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.attachments.show()
+    }
+
+    static func openQuadrant() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.quadrant.show()
+    }
+
+    static func openGantt() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.gantt.show()
+    }
+
     static func becomeActive() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -54,8 +72,16 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow, PanelWindowController.calendar.hostedWindow, PanelWindowController.trash.hostedWindow]
-            .compactMap { $0 }
+        [
+            PanelWindowController.settings.hostedWindow,
+            PanelWindowController.diary.hostedWindow,
+            PanelWindowController.calendar.hostedWindow,
+            PanelWindowController.trash.hostedWindow,
+            PanelWindowController.attachments.hostedWindow,
+            PanelWindowController.quadrant.hostedWindow,
+            PanelWindowController.gantt.hostedWindow
+        ]
+        .compactMap { $0 }
     }
 }
 
@@ -100,6 +126,39 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         root: {
             AnyView(
                 TrashPage()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let attachments = PanelWindowController(
+        titleKey: "window.attachments",
+        size: NSSize(width: 480, height: 560),
+        root: {
+            AnyView(
+                AttachmentBrowserPage()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let quadrant = PanelWindowController(
+        titleKey: "window.quadrant",
+        size: NSSize(width: 640, height: 560),
+        root: {
+            AnyView(
+                QuadrantStandaloneView()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let gantt = PanelWindowController(
+        titleKey: "window.gantt",
+        size: NSSize(width: 760, height: 520),
+        root: {
+            AnyView(
+                GanttStandaloneView()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

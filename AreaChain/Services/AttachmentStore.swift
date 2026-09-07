@@ -127,6 +127,29 @@ enum AttachmentActions {
         return true
     }
 
+    static func captureScreen(
+        ownerKind: AttachmentOwner,
+        ownerID: UUID,
+        context: ModelContext
+    ) {
+        Task { @MainActor in
+            guard let data = await ScreenCapture.pngData() else { return }
+            persist {
+                _ = try? AttachmentStore.save(
+                    data: data,
+                    filename: "screen.png",
+                    ownerKind: ownerKind,
+                    ownerID: ownerID,
+                    context: context
+                )
+            }
+        }
+    }
+
+    static func trash(_ item: AttachmentItem) {
+        persist { item.deletedAt = .now }
+    }
+
     private static func persist(_ work: () -> Void) {
         work()
         BoardEvents.changed()
