@@ -4,14 +4,17 @@ struct TaskRow: View {
     var title: String
     var isDone: Bool
     var note: String? = nil
+    var todayKey: String? = nil
+    var currentDayKey: String? = nil
     var onToggle: () -> Void
     var onDelete: (() -> Void)? = nil
     var onEdit: ((String) -> Void)? = nil
     var onSkip: (() -> Void)? = nil
-    var onMoveToToday: (() -> Void)? = nil
+    var onMoveToDay: ((String) -> Void)? = nil
 
     @State private var editing = false
     @State private var draft = ""
+    @State private var pickingDay = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -25,6 +28,14 @@ struct TaskRow: View {
         }
         .padding(.vertical, 2)
         .contextMenu { menus }
+        .popover(isPresented: $pickingDay) {
+            if let todayKey, let onMoveToDay {
+                DaySchedulePicker(initialKey: currentDayKey ?? todayKey) { key in
+                    onMoveToDay(key)
+                    pickingDay = false
+                }
+            }
+        }
         .onAppear { draft = title }
         .onChange(of: title) { _, value in
             if !editing { draft = value }
@@ -72,8 +83,13 @@ struct TaskRow: View {
                 editing = true
             }
         }
-        if let onMoveToToday {
-            Button("放到今天", action: onMoveToToday)
+        if let todayKey, onMoveToDay != nil {
+            DayScheduleMenu(
+                todayKey: todayKey,
+                currentDayKey: currentDayKey,
+                onMove: { onMoveToDay?($0) },
+                pickingDay: $pickingDay
+            )
         }
         if let onSkip {
             Button("今天跳过", action: onSkip)

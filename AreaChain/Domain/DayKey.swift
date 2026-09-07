@@ -14,10 +14,26 @@ enum DayKey {
     }
 
     static func yesterday(from date: Date = .now, calendar: Calendar = .current) -> String {
-        guard let previous = calendar.date(byAdding: .day, value: -1, to: date) else {
-            return from(date, calendar: calendar)
+        shifted(from(date, calendar: calendar), by: -1, calendar: calendar)
+    }
+
+    static func tomorrow(from date: Date = .now, calendar: Calendar = .current) -> String {
+        shifted(from(date, calendar: calendar), by: 1, calendar: calendar)
+    }
+
+    static func shifted(_ key: String, by days: Int, calendar: Calendar = .current) -> String {
+        guard let date = date(from: key, calendar: calendar),
+              let next = calendar.date(byAdding: .day, value: days, to: date)
+        else {
+            return key
         }
-        return from(previous, calendar: calendar)
+        return from(next, calendar: calendar)
+    }
+
+    static func isWeekday(_ key: String, calendar: Calendar = .current) -> Bool {
+        guard let date = date(from: key, calendar: calendar) else { return false }
+        let weekday = calendar.component(.weekday, from: date)
+        return weekday != 1 && weekday != 7
     }
 
     static func date(from key: String, calendar: Calendar = .current) -> Date? {

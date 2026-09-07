@@ -62,7 +62,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 440)
+        .frame(width: 460, height: 480)
         .navigationTitle("AreaChain")
         .alert("确认导入？", isPresented: Binding(
             get: { pendingPreview != nil },
@@ -90,9 +90,19 @@ struct SettingsView: View {
             ))
             Toggle("启用", isOn: Binding(
                 get: { routine.isEnabled },
-                set: { routine.isEnabled = $0 }
+                set: {
+                    routine.isEnabled = $0
+                    BoardEvents.changed()
+                }
             ))
             .labelsHidden()
+            Toggle("工作日", isOn: Binding(
+                get: { routine.weekdaysOnly },
+                set: {
+                    routine.weekdaysOnly = $0
+                    BoardEvents.changed()
+                }
+            ))
             Button("上") { moveRoutine(at: index, by: -1) }
                 .disabled(index == 0)
             Button("下") { moveRoutine(at: index, by: 1) }

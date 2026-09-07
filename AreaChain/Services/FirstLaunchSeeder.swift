@@ -17,7 +17,7 @@ enum FirstLaunchSeeder {
             }
             return
         }
-        context.insert(DailyRoutine(title: "写日报", sortOrder: 0))
+        context.insert(DailyRoutine(title: "写日报", sortOrder: 0, weekdaysOnly: true))
         context.insert(DailyRoutine(title: "复盘", sortOrder: 1))
         defaults.set(true, forKey: defaultsKey)
     }

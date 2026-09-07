@@ -8,7 +8,6 @@ struct DiaryStandaloneView: View {
     var body: some View {
         DiaryPage(
             todayKey: dayClock.todayKey,
-            yesterdayKey: dayClock.yesterdayKey,
             entries: diaries,
             showsComposer: true
         )

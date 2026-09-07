@@ -48,7 +48,7 @@ SwiftData 四张表：
 
 | 类型 | 作用 |
 |---|---|
-| `DailyRoutine` | 例行模板（标题、排序、启用、开始日） |
+| `DailyRoutine` | 例行模板（标题、排序、启用、开始日、是否仅工作日） |
 | `RoutineCheck` | 某模板在某一天的完成 / 跳过 |
 | `TodoItem` | 某一天的临时待办 |
 | `DiaryEntry` | 某一天的一句日记 |

@@ -5,20 +5,26 @@ struct DiaryPage: View {
     @Environment(\.modelContext) private var modelContext
 
     var todayKey: String
-    var yesterdayKey: String
     var entries: [DiaryEntry]
     var showsComposer: Bool = false
 
-    @State private var viewingYesterday = false
+    @State private var viewingKey: String
     @State private var draft = ""
     @FocusState private var composerFocused: Bool
 
-    private var visibleKey: String {
-        viewingYesterday ? yesterdayKey : todayKey
+    init(todayKey: String, entries: [DiaryEntry], showsComposer: Bool = false) {
+        self.todayKey = todayKey
+        self.entries = entries
+        self.showsComposer = showsComposer
+        _viewingKey = State(initialValue: todayKey)
+    }
+
+    private var isViewingToday: Bool {
+        viewingKey == todayKey
     }
 
     private var visibleEntries: [DiaryEntry] {
-        let ids = Set(DayBoardLogic.diaries(for: visibleKey, in: entries.map(\.snapshot)).map(\.id))
+        let ids = Set(DayBoardLogic.diaries(for: viewingKey, in: entries.map(\.snapshot)).map(\.id))
         return entries
             .filter { ids.contains($0.id) }
             .sorted { $0.createdAt > $1.createdAt }
@@ -26,8 +32,8 @@ struct DiaryPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            dayToggle
-            if viewingYesterday {
+            dayChrome
+            if !isViewingToday {
                 Text("写下仍会记到今天")
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
@@ -40,29 +46,54 @@ struct DiaryPage: View {
             }
             entryList
         }
+        .onChange(of: todayKey) { _, newValue in
+            if viewingKey > newValue {
+                viewingKey = newValue
+            }
+        }
     }
 
-    private var dayToggle: some View {
-        Button {
-            viewingYesterday.toggle()
-        } label: {
-            HStack(spacing: 6) {
-                Text(viewingYesterday ? "昨天的句子" : "今天的句子")
-                Text(DayKey.shortStamp(visibleKey))
-                Spacer()
-                Text(viewingYesterday ? "回今天" : "看昨天")
+    private var dayChrome: some View {
+        HStack(spacing: 8) {
+            Button {
+                viewingKey = DayKey.shifted(viewingKey, by: -1)
+            } label: {
+                Image(systemName: "chevron.left")
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("前一天")
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isViewingToday ? "今天的句子" : DayKey.displayName(viewingKey))
+                Text(DayKey.shortStamp(viewingKey))
             }
             .font(.system(size: 11))
             .foregroundStyle(DaybookTheme.muted)
+
+            Button {
+                viewingKey = DayKey.shifted(viewingKey, by: 1)
+            } label: {
+                Image(systemName: "chevron.right")
+            }
+            .buttonStyle(.plain)
+            .disabled(isViewingToday)
+            .accessibilityLabel("后一天")
+
+            Spacer()
+            if !isViewingToday {
+                Button("回今天") { viewingKey = todayKey }
+                    .font(.system(size: 11))
+                    .buttonStyle(.plain)
+                    .foregroundStyle(DaybookTheme.stamp)
+            }
         }
-        .buttonStyle(.plain)
     }
 
     private var entryList: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if visibleEntries.isEmpty {
-                    Text(viewingYesterday ? "昨天没有留下句子。" : "还没有今天的日记。⌘回车写下第一句。")
+                    Text(emptyCopy)
                         .font(.system(size: 12))
                         .foregroundStyle(DaybookTheme.muted)
                         .padding(.top, 8)
@@ -75,11 +106,16 @@ struct DiaryPage: View {
         }
     }
 
+    private var emptyCopy: String {
+        isViewingToday ? "还没有今天的日记。⌘回车写下第一句。" : "这一天没有留下句子。"
+    }
+
     private func addTodayDiary() {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
         draft = ""
+        viewingKey = todayKey
     }
 }
 

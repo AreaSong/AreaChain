@@ -108,6 +108,38 @@ struct DayBoardLogicTests {
         #expect(DayBoardLogic.todos(for: today, in: [moved]).map(\.id) == [id])
     }
 
+    @Test func weekdaysOnlyRoutineSkipsWeekend() {
+        let weekdayPages = RoutineSnapshot(
+            id: morningPages.id,
+            title: morningPages.title,
+            sortOrder: morningPages.sortOrder,
+            isEnabled: true,
+            createdDayKey: "2026-09-01",
+            weekdaysOnly: true
+        )
+        #expect(DayBoardLogic.routines(for: "2026-09-07", in: [weekdayPages]).map(\.title) == ["写日报"])
+        #expect(DayBoardLogic.routines(for: "2026-09-06", in: [weekdayPages]).isEmpty)
+        #expect(DayBoardLogic.todayBadgeCount(
+            routines: [weekdayPages],
+            checks: [],
+            todos: [],
+            dayKey: "2026-09-06"
+        ) == 0)
+        #expect(DayBoardLogic.yesterdayUnfinished(
+            routines: [weekdayPages],
+            checks: [],
+            todos: [],
+            yesterdayKey: "2026-09-06"
+        ).isEmpty)
+    }
+
+    @Test func moveTodoCanLandOnAnyDay() {
+        let original = TodoSnapshot(id: UUID(), title: "预约", isDone: false, dayKey: today)
+        let moved = DayBoardLogic.moveTodo(original, to: "2026-09-10")
+        #expect(DayBoardLogic.todos(for: today, in: [moved]).isEmpty)
+        #expect(DayBoardLogic.todos(for: "2026-09-10", in: [moved]).map(\.title) == ["预约"])
+    }
+
     @Test func diariesNewestFirstAndOnlyThatDay() {
         let older = DiarySnapshot(id: UUID(), text: "早", dayKey: today, createdAt: Date(timeIntervalSince1970: 1))
         let newer = DiarySnapshot(id: UUID(), text: "晚", dayKey: today, createdAt: Date(timeIntervalSince1970: 20))

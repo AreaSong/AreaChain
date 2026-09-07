@@ -30,4 +30,17 @@ struct DayKeyTests {
     @Test func displayNameUsesChineseDate() {
         #expect(DayKey.displayName("2026-09-07").contains("9月7日"))
     }
+
+    @Test func shiftedMovesByDays() {
+        #expect(DayKey.shifted("2026-09-07", by: -2, calendar: utc) == "2026-09-05")
+        #expect(DayKey.shifted("2026-09-07", by: 1, calendar: utc) == "2026-09-08")
+        #expect(DayKey.tomorrow(from: utc.date(from: DateComponents(year: 2026, month: 9, day: 7))!, calendar: utc) == "2026-09-08")
+    }
+
+    @Test func weekdaySkipsSaturdayAndSunday() {
+        #expect(!DayKey.isWeekday("2026-09-05", calendar: utc))
+        #expect(!DayKey.isWeekday("2026-09-06", calendar: utc))
+        #expect(DayKey.isWeekday("2026-09-07", calendar: utc))
+        #expect(DayKey.isWeekday("2026-09-11", calendar: utc))
+    }
 }

@@ -8,6 +8,7 @@ final class DailyRoutine {
     var sortOrder: Int
     var isEnabled: Bool
     var createdDayKey: String
+    var weekdaysOnly: Bool = false
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -17,13 +18,15 @@ final class DailyRoutine {
         title: String,
         sortOrder: Int,
         isEnabled: Bool = true,
-        createdDayKey: String = DayKey.today()
+        createdDayKey: String = DayKey.today(),
+        weekdaysOnly: Bool = false
     ) {
         self.id = id
         self.title = title
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
+        self.weekdaysOnly = weekdaysOnly
         self.checks = []
     }
 
@@ -33,7 +36,8 @@ final class DailyRoutine {
             title: title,
             sortOrder: sortOrder,
             isEnabled: isEnabled,
-            createdDayKey: createdDayKey
+            createdDayKey: createdDayKey,
+            weekdaysOnly: weekdaysOnly
         )
     }
 }

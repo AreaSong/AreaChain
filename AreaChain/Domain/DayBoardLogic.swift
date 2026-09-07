@@ -6,6 +6,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var sortOrder: Int
     var isEnabled: Bool
     var createdDayKey: String
+    var weekdaysOnly: Bool = false
 }
 
 struct CheckSnapshot: Equatable {
@@ -42,7 +43,11 @@ struct UnfinishedItem: Equatable, Identifiable {
 
 enum DayBoardLogic {
     static func isRoutineDue(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
-        routine.isEnabled && routine.createdDayKey <= dayKey
+        guard routine.isEnabled, routine.createdDayKey <= dayKey else { return false }
+        if routine.weekdaysOnly {
+            return DayKey.isWeekday(dayKey)
+        }
+        return true
     }
 
     static func check(

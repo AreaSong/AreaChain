@@ -50,7 +50,6 @@ struct MenuBarPopoverView: View {
                 case .diary:
                     DiaryPage(
                         todayKey: todayKey,
-                        yesterdayKey: dayClock.yesterdayKey,
                         entries: diaries
                     )
                 }

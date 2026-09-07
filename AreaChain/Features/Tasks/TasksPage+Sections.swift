@@ -15,6 +15,7 @@ extension TasksPage {
                     TaskRow(
                         title: routine.title,
                         isDone: false,
+                        note: routine.weekdaysOnly ? "仅工作日" : nil,
                         onToggle: { toggleRoutine(routine) },
                         onEdit: { routine.title = $0 },
                         onSkip: { skipRoutine(routine) }
@@ -44,9 +45,12 @@ extension TasksPage {
                     TaskRow(
                         title: todo.title,
                         isDone: false,
+                        todayKey: todayKey,
+                        currentDayKey: todo.dayKey,
                         onToggle: { todo.isDone.toggle() },
                         onDelete: { modelContext.delete(todo) },
-                        onEdit: { todo.title = $0 }
+                        onEdit: { todo.title = $0 },
+                        onMoveToDay: { moveTodo(todo, to: $0) }
                     )
                 }
             }
@@ -68,7 +72,7 @@ extension TasksPage {
                     TaskRow(
                         title: routine.title,
                         isDone: true,
-                        note: isSkipped(routine) ? "已跳过" : nil,
+                        note: doneRoutineNote(routine),
                         onToggle: { toggleRoutine(routine) },
                         onEdit: { routine.title = $0 }
                     )
@@ -77,9 +81,12 @@ extension TasksPage {
                     TaskRow(
                         title: todo.title,
                         isDone: true,
+                        todayKey: todayKey,
+                        currentDayKey: todo.dayKey,
                         onToggle: { todo.isDone.toggle() },
                         onDelete: { modelContext.delete(todo) },
-                        onEdit: { todo.title = $0 }
+                        onEdit: { todo.title = $0 },
+                        onMoveToDay: { moveTodo(todo, to: $0) }
                     )
                 }
             }
@@ -94,8 +101,10 @@ extension TasksPage {
                     TaskRow(
                         title: item.title,
                         isDone: false,
+                        todayKey: todayKey,
+                        currentDayKey: yesterdayKey,
                         onToggle: { completeYesterday(item) },
-                        onMoveToToday: item.kind == .todo ? { moveYesterdayTodo(item) } : nil
+                        onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
                     )
                 }
             }

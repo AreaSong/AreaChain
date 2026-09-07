@@ -14,6 +14,37 @@ struct ExportedRoutine: Codable, Equatable {
     var sortOrder: Int
     var isEnabled: Bool
     var createdDayKey: String
+    var weekdaysOnly: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly
+    }
+
+    init(
+        id: UUID,
+        title: String,
+        sortOrder: Int,
+        isEnabled: Bool,
+        createdDayKey: String,
+        weekdaysOnly: Bool = false
+    ) {
+        self.id = id
+        self.title = title
+        self.sortOrder = sortOrder
+        self.isEnabled = isEnabled
+        self.createdDayKey = createdDayKey
+        self.weekdaysOnly = weekdaysOnly
+    }
+
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: CodingKeys.self)
+        id = try box.decode(UUID.self, forKey: .id)
+        title = try box.decode(String.self, forKey: .title)
+        sortOrder = try box.decode(Int.self, forKey: .sortOrder)
+        isEnabled = try box.decode(Bool.self, forKey: .isEnabled)
+        createdDayKey = try box.decode(String.self, forKey: .createdDayKey)
+        weekdaysOnly = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
+    }
 }
 
 struct ExportedCheck: Codable, Equatable {
@@ -82,7 +113,8 @@ enum SyncPort {
                     title: $0.title,
                     sortOrder: $0.sortOrder,
                     isEnabled: $0.isEnabled,
-                    createdDayKey: $0.createdDayKey
+                    createdDayKey: $0.createdDayKey,
+                    weekdaysOnly: $0.weekdaysOnly
                 )
             },
             checks: checks.compactMap { check in

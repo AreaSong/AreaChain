@@ -26,6 +26,7 @@ enum SnapshotImporter {
                 found.sortOrder = item.sortOrder
                 found.isEnabled = item.isEnabled
                 found.createdDayKey = item.createdDayKey
+                found.weekdaysOnly = item.weekdaysOnly
             } else {
                 context.insert(
                     DailyRoutine(
@@ -33,7 +34,8 @@ enum SnapshotImporter {
                         title: item.title,
                         sortOrder: item.sortOrder,
                         isEnabled: item.isEnabled,
-                        createdDayKey: item.createdDayKey
+                        createdDayKey: item.createdDayKey,
+                        weekdaysOnly: item.weekdaysOnly
                     )
                 )
             }

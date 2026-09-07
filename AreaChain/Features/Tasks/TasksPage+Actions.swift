@@ -44,10 +44,23 @@ extension TasksPage {
         BoardEvents.changed()
     }
 
-    func moveYesterdayTodo(_ item: UnfinishedItem) {
-        guard item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) else { return }
-        todo.dayKey = todayKey
+    func doneRoutineNote(_ routine: DailyRoutine) -> String? {
+        let skipped = isSkipped(routine)
+        if skipped && routine.weekdaysOnly { return "已跳过 · 仅工作日" }
+        if skipped { return "已跳过" }
+        if routine.weekdaysOnly { return "仅工作日" }
+        return nil
+    }
+
+    func moveTodo(_ todo: TodoItem, to dayKey: String) {
+        guard dayKey != todo.dayKey else { return }
+        todo.dayKey = dayKey
         BoardEvents.changed()
+    }
+
+    func moveYesterdayTodo(_ item: UnfinishedItem, to dayKey: String) {
+        guard item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) else { return }
+        moveTodo(todo, to: dayKey)
     }
 
     func addRoutineFromPopover() {

@@ -53,4 +53,27 @@ struct SyncPortTests {
         #expect(decoded.checks.first?.isSkipped == false)
         #expect(decoded.checks.first?.isDone == true)
     }
+
+    @Test func decodeRoutineWithoutWeekdaysOnlyDefaultsFalse() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [
+            {
+              "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "title": "复盘",
+              "sortOrder": 1,
+              "isEnabled": true,
+              "createdDayKey": "2026-09-01"
+            }
+          ],
+          "checks": [],
+          "todos": [],
+          "diaries": []
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.routines.first?.weekdaysOnly == false)
+        #expect(decoded.routines.first?.title == "复盘")
+    }
 }
