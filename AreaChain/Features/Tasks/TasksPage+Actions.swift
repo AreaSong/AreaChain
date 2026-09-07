@@ -72,50 +72,11 @@ extension TasksPage {
         moveTodo(todo, to: dayKey)
     }
 
-    func addResident() {
-        let title = residentDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        let order = (routines.map(\.sortOrder).max() ?? -1) + 1
-        persist {
-            modelContext.insert(DailyRoutine(title: title, sortOrder: order))
-            residentDraft = ""
-        }
-    }
-
-    func deleteRoutine(_ routine: DailyRoutine) {
-        pendingTrash = PendingTrash(title: routine.title) {
-            persist { routine.deletedAt = .now }
-        }
-    }
-
-    func disableRoutine(_ routine: DailyRoutine) {
-        persist { routine.isEnabled = false }
-    }
-
-    func enableRoutine(_ routine: DailyRoutine) {
-        persist { routine.isEnabled = true }
-    }
-
-    func setWeekdays(_ routine: DailyRoutine, _ weekdaysOnly: Bool) {
-        persist { routine.weekdaysOnly = weekdaysOnly }
-    }
-
-    func setRemind(_ routine: DailyRoutine, minutes: Int?) {
-        persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
-        if minutes != nil {
-            NotificationScheduler.shared.ensureAuthorization()
-        }
-    }
-
     func setRemind(_ todo: TodoItem, minutes: Int?) {
         persist { todo.remindMinutes = RemindMinutes.clamped(minutes) }
         if minutes != nil {
             NotificationScheduler.shared.ensureAuthorization()
         }
-    }
-
-    func editRoutine(_ routine: DailyRoutine, title: String) {
-        persist { routine.title = title }
     }
 
     func editTodo(_ todo: TodoItem, title: String) {

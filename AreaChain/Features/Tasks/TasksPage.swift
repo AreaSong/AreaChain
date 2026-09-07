@@ -14,7 +14,6 @@ struct TasksPage: View {
     @State var showYesterday = false
     @State var showUpcoming = false
     @State var showCompleted = true
-    @State var residentDraft = ""
     @State var pendingTrash: PendingTrash?
 
     var body: some View {
@@ -77,10 +76,6 @@ struct TasksPage: View {
     }
 
     var completedCount: Int { doneRoutineModels.count + doneTodoModels.count }
-
-    var disabledRoutineModels: [DailyRoutine] {
-        routines.filter { $0.deletedAt == nil && !$0.isEnabled }.sorted { $0.sortOrder < $1.sortOrder }
-    }
 
     var openDayItems: [BoardRow] {
         sortedRows(
