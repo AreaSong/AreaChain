@@ -3,10 +3,8 @@ import SwiftUI
 extension TasksPage {
     var routineSection: some View {
         Group {
-            SectionStamp(title: "stamp.routines")
-            if openRoutineModels.isEmpty {
-                emptyLine("empty.routines.today")
-            } else {
+            if !openRoutineModels.isEmpty {
+                SectionStamp(title: "stamp.routines")
                 ForEach(openRoutineModels, id: \.id) { routine in
                     TaskRow(
                         title: routine.title,
@@ -123,24 +121,34 @@ extension TasksPage {
     }
 
     var leftoverChips: some View {
-        HStack(spacing: 12) {
-            leftoverChip(
-                title: "chip.yesterday",
-                count: yesterdayItems.count,
-                expanded: showYesterday,
-                emptyLabel: "a11y.yesterday.zero",
-                countLabel: "a11y.yesterday.count \(yesterdayItems.count)"
-            ) {
-                showYesterday.toggle()
-            }
-            leftoverChip(
-                title: "chip.upcoming",
-                count: upcomingModels.count,
-                expanded: showUpcoming,
-                emptyLabel: "a11y.upcoming.zero",
-                countLabel: "a11y.upcoming.count \(upcomingModels.count)"
-            ) {
-                showUpcoming.toggle()
+        let yesterdayCount = yesterdayItems.count
+        let upcomingCount = upcomingModels.count
+        return Group {
+            if yesterdayCount > 0 || upcomingCount > 0 {
+                HStack(spacing: 12) {
+                    if yesterdayCount > 0 {
+                        leftoverChip(
+                            title: "chip.yesterday",
+                            count: yesterdayCount,
+                            expanded: showYesterday,
+                            emptyLabel: "a11y.yesterday.zero",
+                            countLabel: "a11y.yesterday.count \(yesterdayCount)"
+                        ) {
+                            showYesterday.toggle()
+                        }
+                    }
+                    if upcomingCount > 0 {
+                        leftoverChip(
+                            title: "chip.upcoming",
+                            count: upcomingCount,
+                            expanded: showUpcoming,
+                            emptyLabel: "a11y.upcoming.zero",
+                            countLabel: "a11y.upcoming.count \(upcomingCount)"
+                        ) {
+                            showUpcoming.toggle()
+                        }
+                    }
+                }
             }
         }
     }

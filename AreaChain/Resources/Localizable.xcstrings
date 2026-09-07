@@ -154,6 +154,23 @@
         }
       }
     },
+    "header.progress %lld %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld left · %lld done"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "还剩 %lld · 已完成 %lld"
+          }
+        }
+      }
+    },
     "header.remaining %lld": {
       "extractionState": "manual",
       "localizations": {

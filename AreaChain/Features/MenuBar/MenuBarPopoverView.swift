@@ -28,8 +28,7 @@ struct MenuBarPopoverView: View {
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
 
     @State private var tab: BoardTab = .tasks
-    @State private var draft = ""
-    @State private var captureDayKey = DayClock.shared.todayKey
+    @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
     @FocusState private var captureFocused: Bool
 
@@ -42,9 +41,7 @@ struct MenuBarPopoverView: View {
         VStack(spacing: 12) {
             header
             CaptureField(
-                text: $draft,
-                dayKey: $captureDayKey,
-                todayKey: todayKey,
+                text: $capture.draft,
                 focus: $captureFocused,
                 onTodo: addTodo,
                 onDiary: addDiary
@@ -76,11 +73,6 @@ struct MenuBarPopoverView: View {
         .background(DaybookTheme.paper.opacity(0.92))
         .overlay(RuledPaper().opacity(0.35))
         .onAppear(perform: prepare)
-        .onChange(of: todayKey) { _, key in
-            if captureDayKey.isEmpty || captureDayKey < key {
-                captureDayKey = key
-            }
-        }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
             captureFocused = true
         }
@@ -99,13 +91,32 @@ struct MenuBarPopoverView: View {
         )
     }
 
+    private var todayCompleted: Int {
+        DayBoardLogic.completedRoutines(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            dayKey: todayKey
+        ).count
+            + DayBoardLogic.completedTodos(todos: todos.map(\.snapshot), dayKey: todayKey).count
+    }
+
+    private var headerStatus: LocalizedStringKey {
+        if todayRemaining == 0 {
+            return "header.done"
+        }
+        if todayCompleted > 0 {
+            return "header.progress \(todayRemaining) \(todayCompleted)"
+        }
+        return "header.remaining \(todayRemaining)"
+    }
+
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(DayKey.displayName(todayKey, locale: locale))
                     .font(.system(size: 20, weight: .regular, design: .serif).italic())
                     .foregroundStyle(DaybookTheme.ink)
-                Text(todayRemaining == 0 ? "header.done" : "header.remaining \(todayRemaining)")
+                Text(headerStatus)
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -141,27 +152,21 @@ struct MenuBarPopoverView: View {
             FirstLaunchSeeder.seedIfNeeded(context: modelContext, existingCount: routines.count)
         }
         captureFocused = true
-        if captureDayKey.isEmpty {
-            captureDayKey = todayKey
-        }
     }
 
     private func addTodo() {
-        let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let title = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
-        let day = captureDayKey.isEmpty ? todayKey : captureDayKey
-        modelContext.insert(TodoItem(title: title, dayKey: day))
-        draft = ""
-        captureDayKey = todayKey
+        modelContext.insert(TodoItem(title: title, dayKey: todayKey))
+        capture.draft = ""
         BoardEvents.changed()
     }
 
     private func addDiary() {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
-        draft = ""
-        tab = .diary
+        capture.draft = ""
         BoardEvents.changed()
     }
 }
