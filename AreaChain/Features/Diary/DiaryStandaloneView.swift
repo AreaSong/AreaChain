@@ -9,7 +9,8 @@ struct DiaryStandaloneView: View {
         DiaryPage(
             todayKey: dayClock.todayKey,
             entries: diaries,
-            showsComposer: true
+            showsComposer: true,
+            usesSharedDiaryDay: true
         )
         .padding(16)
         .frame(minWidth: 360, minHeight: 420)

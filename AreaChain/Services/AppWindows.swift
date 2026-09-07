@@ -45,6 +45,12 @@ enum AppWindows {
         PanelWindowController.gantt.show()
     }
 
+    static func openSearch() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.search.show()
+    }
+
     static func becomeActive() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -79,7 +85,8 @@ enum AppWindows {
             PanelWindowController.trash.hostedWindow,
             PanelWindowController.attachments.hostedWindow,
             PanelWindowController.quadrant.hostedWindow,
-            PanelWindowController.gantt.hostedWindow
+            PanelWindowController.gantt.hostedWindow,
+            PanelWindowController.search.hostedWindow
         ]
         .compactMap { $0 }
     }
@@ -159,6 +166,17 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         root: {
             AnyView(
                 GanttStandaloneView()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let search = PanelWindowController(
+        titleKey: "window.search",
+        size: NSSize(width: 440, height: 520),
+        root: {
+            AnyView(
+                SearchPage()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

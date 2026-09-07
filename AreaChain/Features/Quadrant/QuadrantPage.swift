@@ -9,12 +9,16 @@ struct QuadrantPage: View {
     @Query private var checks: [RoutineCheck]
 
     var todayKey: String
-    @State private var selectedKey: String
+    @Bindable private var selection = BoardSelection.shared
     @State private var dropSlot: QuadrantSlot?
 
     init(todayKey: String) {
         self.todayKey = todayKey
-        _selectedKey = State(initialValue: todayKey)
+    }
+
+    private var selectedKey: String {
+        get { selection.inspectingDayKey }
+        nonmutating set { selection.inspectingDayKey = newValue }
     }
 
     var body: some View {

@@ -17,7 +17,7 @@ README.md
 
 不要把 `build/`、`DerivedData/`、`xcuserdata` 提交进去。
 
-菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层底栏点「设置 / 日记窗 / 日历窗 / 回收站」走 `AppWindows` 激活后再打开；附件、四象限、安排放在「更多」里，不用 `SettingsLink`。
+菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层底栏点「设置 / 日记窗 / 日历窗 / 回收站」走 `AppWindows` 激活后再打开；附件、四象限、安排、搜索放在「更多」里，不用 `SettingsLink`。日历窗和四象限窗共用会话级 `BoardSelection.inspectingDayKey`；独立日记窗用 `diaryDayKey`。
 
 ## 应用内分层
 
@@ -35,6 +35,7 @@ AreaChain/
     Attachments/
     Quadrant/
     Gantt/
+    Search/
     Settings/
     Trash/
   Theme/          颜色与共用控件
@@ -64,7 +65,7 @@ SwiftData 七张表：
 
 没有 `@Attribute(.unique)`（CloudKit 不支持）；对外 ID 仍是 UUID。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。标签多值存成逗号分隔 UUID 字符串，避免 CloudKit 难消化的多对多。
 
-列表「今天 / 昨天 / 即将 / 未完成 / 某月每天未完成」只通过 `DayBoardLogic` 计算。项目/标签/App 过滤和四象限排序也在 Domain（`Classification`）。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
+列表「今天 / 昨天 / 即将 / 未完成 / 某月每天未完成」只通过 `DayBoardLogic` 计算。跨天搜索走 `BoardSearch`。项目/标签/App 过滤和四象限排序也在 Domain（`Classification`）。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
 
 本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册热键和通知。日历双向同步由 `CalendarSync` 在开关打开后才要权限、才监听 `EKEventStoreChanged`；测试进程不碰 EventKit。截当前屏走 `ScreenCapture` 一次静图，写入 `AttachmentStore`。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` / `weekdayMask` / 分类字段 / 项目标签附件数组 / `parentID` / `calendarEventID` 时按缺省读（旧的 `weekdaysOnly: true` 当作周一到周五）。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉并删附件文件。JSON 导出附件只出元数据。
 

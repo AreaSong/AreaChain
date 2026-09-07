@@ -207,6 +207,7 @@ struct FooterBar: View {
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
             Menu("footer.more") {
+                Button("footer.search") { AppWindows.openSearch() }
                 Button("footer.attachments") { AppWindows.openAttachments() }
                 Button("footer.quadrant") { AppWindows.openQuadrant() }
                 Button("footer.gantt") { AppWindows.openGantt() }

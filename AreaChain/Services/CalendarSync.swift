@@ -41,11 +41,19 @@ enum CalendarSync {
             }
         } else {
             disableEvents()
+            CalendarSyncStatus.shared.mark(.off)
         }
     }
 
     private static func enable() async {
-        guard wantsSync, await requestAccess() else { return }
+        guard wantsSync else {
+            CalendarSyncStatus.shared.mark(.off)
+            return
+        }
+        guard await requestAccess() else {
+            CalendarSyncStatus.shared.mark(.denied)
+            return
+        }
         await pushAll()
         listenToStore()
     }
@@ -84,7 +92,18 @@ enum CalendarSync {
 
 private extension CalendarSync {
     static func pushAll() async {
-        guard wantsSync, await requestAccess(), let calendar = ensureCalendar() else { return }
+        guard wantsSync else {
+            CalendarSyncStatus.shared.mark(.off)
+            return
+        }
+        guard await requestAccess() else {
+            CalendarSyncStatus.shared.mark(.denied)
+            return
+        }
+        guard let calendar = ensureCalendar() else {
+            CalendarSyncStatus.shared.mark(.unavailable)
+            return
+        }
         let context = Persistence.session.container.mainContext
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
         ignorePullUntil = Date().addingTimeInterval(1.5)
@@ -97,17 +116,38 @@ private extension CalendarSync {
             }
         }
         removeOrphans(todos: todos, existing: current)
-        try? store.commit()
-        try? context.save()
+        do {
+            try store.commit()
+            try context.save()
+            CalendarSyncStatus.shared.mark(.synced)
+        } catch {
+            CalendarSyncStatus.shared.mark(.failed)
+        }
     }
 
     static func pullAll() async {
-        guard wantsSync, await requestAccess(), let calendar = ensureCalendar() else { return }
+        guard wantsSync else {
+            CalendarSyncStatus.shared.mark(.off)
+            return
+        }
+        guard await requestAccess() else {
+            CalendarSyncStatus.shared.mark(.denied)
+            return
+        }
+        guard let calendar = ensureCalendar() else {
+            CalendarSyncStatus.shared.mark(.unavailable)
+            return
+        }
         let context = Persistence.session.container.mainContext
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
         applyRemote(events: events(in: calendar), todos: todos)
-        try? context.save()
-        BoardEvents.changedLocally()
+        do {
+            try context.save()
+            CalendarSyncStatus.shared.mark(.synced)
+            BoardEvents.changedLocally()
+        } catch {
+            CalendarSyncStatus.shared.mark(.failed)
+        }
     }
 
     static func ensureCalendar() -> EKCalendar? {

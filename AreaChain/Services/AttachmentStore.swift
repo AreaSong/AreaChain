@@ -133,17 +133,32 @@ enum AttachmentActions {
         context: ModelContext
     ) {
         Task { @MainActor in
-            guard let data = await ScreenCapture.pngData() else { return }
-            persist {
-                _ = try? AttachmentStore.save(
-                    data: data,
-                    filename: "screen.png",
-                    ownerKind: ownerKind,
-                    ownerID: ownerID,
-                    context: context
-                )
+            switch await ScreenCapture.pngData() {
+            case .success(let data):
+                persist {
+                    _ = try? AttachmentStore.save(
+                        data: data,
+                        filename: "screen.png",
+                        ownerKind: ownerKind,
+                        ownerID: ownerID,
+                        context: context
+                    )
+                }
+            case .failure(let failure):
+                NSSound.beep()
+                presentCaptureFailure(failure)
             }
         }
+    }
+
+    private static func presentCaptureFailure(_ failure: ScreenCaptureFailure) {
+        let alert = NSAlert()
+        alert.messageText = L10n.string(
+            String.LocalizationValue(stringLiteral: failure.messageKey),
+            locale: AppPreferences.shared.resolvedLocale
+        )
+        alert.alertStyle = .informational
+        alert.runModal()
     }
 
     static func trash(_ item: AttachmentItem) {

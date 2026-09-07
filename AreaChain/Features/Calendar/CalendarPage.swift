@@ -11,7 +11,7 @@ struct CalendarPage: View {
     var checks: [RoutineCheck]
     var todos: [TodoItem]
 
-    @State private var selectedKey: String
+    @Bindable private var selection = BoardSelection.shared
     @State private var draft = ""
 
     init(
@@ -24,7 +24,11 @@ struct CalendarPage: View {
         self.routines = routines
         self.checks = checks
         self.todos = todos
-        _selectedKey = State(initialValue: todayKey)
+    }
+
+    private var selectedKey: String {
+        get { selection.inspectingDayKey }
+        nonmutating set { selection.inspectingDayKey = newValue }
     }
 
     var body: some View {

@@ -22,6 +22,7 @@ struct SettingsView: View {
     @State private var pendingPreview: ImportPreview?
     @State private var confirmReset = false
     @State private var notifyStatus: UNAuthorizationStatus = .notDetermined
+    @Bindable private var syncStatus = CalendarSyncStatus.shared
 
     @Environment(\.modelContext) private var modelContext
 
@@ -80,6 +81,11 @@ struct SettingsView: View {
 
             Section("settings.calendar.sync") {
                 Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
+                if let calendarSyncStatusText {
+                    Text(calendarSyncStatusText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(DaybookTheme.muted)
+                }
                 Text("settings.calendar.sync.help")
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
@@ -147,6 +153,26 @@ struct SettingsView: View {
             return L10n.string("settings.notify.status.denied", locale: locale)
         default:
             return L10n.string("settings.notify.status.off", locale: locale)
+        }
+    }
+
+    private var calendarSyncStatusText: String? {
+        guard prefs.syncCalendarEvents else { return nil }
+        switch syncStatus.phase {
+        case .off:
+            return nil
+        case .synced:
+            let stamp = syncStatus.lastSyncedAt.map { ClockLabel.created($0, locale: locale) }
+            let head = L10n.string("settings.calendar.sync.status.ok", locale: locale)
+            if let stamp {
+                return head + " · " + stamp
+            }
+            return head
+        default:
+            return L10n.string(
+                String.LocalizationValue(stringLiteral: syncStatus.phase.messageKey),
+                locale: locale
+            )
         }
     }
 

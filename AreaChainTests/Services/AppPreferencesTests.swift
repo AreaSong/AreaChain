@@ -24,6 +24,7 @@ struct AppPreferencesTests {
         #expect(L10n.string("tab.tasks", locale: Locale(identifier: "en")) == "Tasks")
         #expect(L10n.string("footer.more", locale: Locale(identifier: "zh-Hans")) == "更多")
         #expect(L10n.string("row.attach.screen", locale: Locale(identifier: "en")) == "Capture current screen")
+        #expect(L10n.string("footer.search", locale: Locale(identifier: "zh-Hans")) == "搜索")
     }
 
     @Test func writesLanguageAndAppearanceToInjectedDefaults() {

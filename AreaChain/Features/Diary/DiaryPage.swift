@@ -8,18 +8,32 @@ struct DiaryPage: View {
     var todayKey: String
     var entries: [DiaryEntry]
     var showsComposer: Bool = false
+    var usesSharedDiaryDay: Bool = false
 
     @Query private var attachments: [AttachmentItem]
+    @Bindable private var selection = BoardSelection.shared
 
-    @State private var viewingKey: String
+    @State private var localViewingKey: String
     @State private var draft = ""
     @FocusState private var composerFocused: Bool
 
-    init(todayKey: String, entries: [DiaryEntry], showsComposer: Bool = false) {
+    init(todayKey: String, entries: [DiaryEntry], showsComposer: Bool = false, usesSharedDiaryDay: Bool = false) {
         self.todayKey = todayKey
         self.entries = entries
         self.showsComposer = showsComposer
-        _viewingKey = State(initialValue: todayKey)
+        self.usesSharedDiaryDay = usesSharedDiaryDay
+        _localViewingKey = State(initialValue: todayKey)
+    }
+
+    private var viewingKey: String {
+        get { usesSharedDiaryDay ? selection.diaryDayKey : localViewingKey }
+        nonmutating set {
+            if usesSharedDiaryDay {
+                selection.diaryDayKey = newValue
+            } else {
+                localViewingKey = newValue
+            }
+        }
     }
 
     private var isViewingToday: Bool {
