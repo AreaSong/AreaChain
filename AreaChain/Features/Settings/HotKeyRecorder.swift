@@ -3,23 +3,39 @@ import Carbon
 import SwiftUI
 
 struct HotKeyRecorder: View {
+    @Environment(\.locale) private var locale
     @State private var listening = false
-    @State private var label = HotKeyCenter.shared.displayName
+    @State private var label = HotKeyCenter.shared.displayName()
     @State private var monitor: Any?
 
     var body: some View {
         HStack {
-            Text("打开浮层")
+            Text("hotkey.open")
             Spacer()
-            Button(listening ? "按下新组合…" : label) {
+            Button {
                 startListening()
+            } label: {
+                if listening {
+                    Text("hotkey.listen")
+                } else {
+                    Text(label)
+                }
             }
-            .help("点一下，再按下新的全局热键。Esc 取消。")
+            .help("hotkey.help")
         }
+        .onAppear { refreshLabel() }
+        .onChange(of: locale.identifier) { _, _ in refreshLabel() }
         .onReceive(NotificationCenter.default.publisher(for: .hotKeyDidChange)) { _ in
-            label = HotKeyCenter.shared.displayName
+            refreshLabel()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .appPreferencesDidChange)) { _ in
+            refreshLabel()
         }
         .onDisappear(perform: stopListening)
+    }
+
+    private func refreshLabel() {
+        label = HotKeyCenter.shared.displayName(locale: locale)
     }
 
     private func startListening() {

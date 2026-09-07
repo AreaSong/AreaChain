@@ -64,7 +64,7 @@ struct TaskRow: View {
     }
 
     private var editor: some View {
-        TextField("改这一条", text: $draft)
+        TextField("row.edit.field", text: $draft)
             .textFieldStyle(.plain)
             .font(.system(size: 13))
             .foregroundStyle(DaybookTheme.ink)
@@ -78,7 +78,7 @@ struct TaskRow: View {
     @ViewBuilder
     private var menus: some View {
         if onEdit != nil {
-            Button("改字") {
+            Button("row.edit") {
                 draft = title
                 editing = true
             }
@@ -92,10 +92,10 @@ struct TaskRow: View {
             )
         }
         if let onSkip {
-            Button("今天跳过", action: onSkip)
+            Button("row.skip", action: onSkip)
         }
         if let onDelete {
-            Button("删除", role: .destructive, action: onDelete)
+            Button("row.delete", role: .destructive, action: onDelete)
         }
     }
 

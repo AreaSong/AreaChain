@@ -5,6 +5,7 @@ extension Notification.Name {
     static let focusCapture = Notification.Name("areachain.focusCapture")
     static let boardDidChange = Notification.Name("areachain.boardDidChange")
     static let hotKeyDidChange = Notification.Name("areachain.hotKeyDidChange")
+    static let appPreferencesDidChange = Notification.Name("areachain.appPreferencesDidChange")
 }
 
 enum BoardEvents {

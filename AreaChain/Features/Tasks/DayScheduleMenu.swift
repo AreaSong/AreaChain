@@ -12,29 +12,29 @@ struct DayScheduleMenu: View {
 
     var body: some View {
         if currentDayKey != todayKey {
-            Button("放到今天") { onMove(todayKey) }
+            Button("day.move.today") { onMove(todayKey) }
         }
         if currentDayKey != tomorrowKey {
-            Button("放到明天") { onMove(tomorrowKey) }
+            Button("day.move.tomorrow") { onMove(tomorrowKey) }
         }
-        Button("选一天…") { pickingDay = true }
+        Button("day.pick") { pickingDay = true }
     }
 }
 
 struct DaySchedulePicker: View {
     var initialKey: String
-    var confirmTitle: String = "改到这一天"
+    var confirmTitle: LocalizedStringKey = "day.confirm"
     var onPick: (String) -> Void
 
     @State private var pickedDate = Date()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("改到哪一天")
+            Text("day.pick.title")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
             DatePicker(
-                "日期",
+                "day.date",
                 selection: $pickedDate,
                 displayedComponents: .date
             )

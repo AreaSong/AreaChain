@@ -3,15 +3,15 @@ import SwiftUI
 extension TasksPage {
     var routineSection: some View {
         Group {
-            SectionStamp(title: "例行")
+            SectionStamp(title: "stamp.routines")
             if openRoutineModels.isEmpty {
-                emptyLine("今天没有例行。到「例行」页维护每天会出现的事。")
+                emptyLine("empty.routines.today")
             } else {
                 ForEach(openRoutineModels, id: \.id) { routine in
                     TaskRow(
                         title: routine.title,
                         isDone: false,
-                        note: routine.weekdaysOnly ? "仅工作日" : nil,
+                        note: routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil,
                         onToggle: { toggleRoutine(routine) },
                         onEdit: { routine.title = $0 },
                         onSkip: { skipRoutine(routine) }
@@ -23,9 +23,9 @@ extension TasksPage {
 
     var todaySection: some View {
         Group {
-            SectionStamp(title: "今天")
+            SectionStamp(title: "stamp.today")
             if openTodoModels.isEmpty {
-                emptyLine("突然想到的，打在上面回车。")
+                emptyLine("empty.todos")
             } else {
                 ForEach(openTodoModels, id: \.id) { todo in
                     TaskRow(
@@ -49,7 +49,11 @@ extension TasksPage {
                 Button {
                     showCompleted.toggle()
                 } label: {
-                    SectionStamp(title: showCompleted ? "已完成 \(completedCount) · 收起" : "已完成 \(completedCount)")
+                    SectionStamp(
+                        title: showCompleted
+                            ? "stamp.completed.collapse \(completedCount)"
+                            : "stamp.completed \(completedCount)"
+                    )
                 }
                 .buttonStyle(.plain)
             }
@@ -82,12 +86,12 @@ extension TasksPage {
     var upcomingSection: some View {
         Group {
             if showUpcoming, !upcomingModels.isEmpty {
-                SectionStamp(title: "即将")
+                SectionStamp(title: "stamp.upcoming")
                 ForEach(upcomingModels, id: \.id) { todo in
                     TaskRow(
                         title: todo.title,
                         isDone: false,
-                        note: DayKey.shortStamp(todo.dayKey),
+                        note: DayKey.shortStamp(todo.dayKey, locale: locale),
                         todayKey: todayKey,
                         currentDayKey: todo.dayKey,
                         onToggle: { todo.isDone.toggle() },
@@ -103,7 +107,7 @@ extension TasksPage {
     var yesterdaySection: some View {
         Group {
             if showYesterday {
-                SectionStamp(title: "昨天未完成")
+                SectionStamp(title: "stamp.yesterday")
                 ForEach(yesterdayItems) { item in
                     TaskRow(
                         title: item.title,
@@ -121,18 +125,20 @@ extension TasksPage {
     var leftoverChips: some View {
         HStack(spacing: 12) {
             leftoverChip(
-                title: "昨天",
+                title: "chip.yesterday",
                 count: yesterdayItems.count,
                 expanded: showYesterday,
-                emptyLabel: "昨天未完成 0 条"
+                emptyLabel: "a11y.yesterday.zero",
+                countLabel: "a11y.yesterday.count \(yesterdayItems.count)"
             ) {
                 showYesterday.toggle()
             }
             leftoverChip(
-                title: "即将",
+                title: "chip.upcoming",
                 count: upcomingModels.count,
                 expanded: showUpcoming,
-                emptyLabel: "即将 0 条"
+                emptyLabel: "a11y.upcoming.zero",
+                countLabel: "a11y.upcoming.count \(upcomingModels.count)"
             ) {
                 showUpcoming.toggle()
             }
@@ -140,10 +146,11 @@ extension TasksPage {
     }
 
     func leftoverChip(
-        title: String,
+        title: LocalizedStringKey,
         count: Int,
         expanded: Bool,
-        emptyLabel: String,
+        emptyLabel: LocalizedStringKey,
+        countLabel: LocalizedStringKey,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
@@ -164,10 +171,10 @@ extension TasksPage {
         .buttonStyle(.plain)
         .disabled(count == 0)
         .opacity(count == 0 ? 0.45 : 1)
-        .accessibilityLabel(count == 0 ? emptyLabel : "\(title) \(count) 条")
+        .accessibilityLabel(count == 0 ? emptyLabel : countLabel)
     }
 
-    func emptyLine(_ text: String) -> some View {
+    func emptyLine(_ text: LocalizedStringKey) -> some View {
         Text(text)
             .font(.system(size: 12))
             .foregroundStyle(DaybookTheme.muted)

@@ -53,6 +53,15 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             }
         }
         NotificationCenter.default.addObserver(
+            forName: .appPreferencesDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshCount()
+            }
+        }
+        NotificationCenter.default.addObserver(
             forName: .NSCalendarDayChanged,
             object: nil,
             queue: .main
@@ -75,7 +84,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             return
         }
         popover.contentViewController = NSHostingController(
-            rootView: MenuBarPopoverView().modelContainer(container)
+            rootView: MenuBarPopoverView()
+                .appChrome()
+                .modelContainer(container)
         )
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NotificationCenter.default.post(name: .focusCapture, object: nil)
@@ -98,6 +109,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             dayKey: DayClock.shared.todayKey
         )
         button.title = count > 0 ? "今\(count)" : "今"
-        button.toolTip = count > 0 ? "AreaChain，今天还剩 \(count) 条" : "AreaChain"
+        let locale = AppPreferences.shared.resolvedLocale
+        button.toolTip = count > 0
+            ? L10n.string("a11y.app.remaining \(count)", locale: locale)
+            : L10n.string("a11y.app", locale: locale)
     }
 }

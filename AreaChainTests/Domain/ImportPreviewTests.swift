@@ -42,5 +42,11 @@ struct ImportPreviewTests {
         #expect(preview.todosNew == 0)
         #expect(preview.todosUpdate == 1)
         #expect(preview.totalWrites == 2)
+        let chinese = preview.summary(locale: Locale(identifier: "zh-Hans"))
+        #expect(chinese.contains("例行"))
+        #expect(chinese.contains("新增 1"))
+        let english = preview.summary(locale: Locale(identifier: "en"))
+        #expect(english.contains("Routines"))
+        #expect(english.contains("new 1"))
     }
 }

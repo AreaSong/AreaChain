@@ -5,6 +5,7 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        AppPreferences.shared.applyAppAppearance()
         NSApp.setActivationPolicy(.accessory)
         StatusItemController.shared.attach(container: Persistence.session.container)
         HotKeyCenter.shared.start()
@@ -25,8 +26,9 @@ struct AreaChainApp: App {
     }
 
     var body: some Scene {
-        Window("日记", id: "diary") {
+        Window("window.diary", id: "diary") {
             DiaryStandaloneView()
+                .appChrome()
         }
         .windowResizability(.contentSize)
         .defaultSize(width: 420, height: 520)
@@ -34,6 +36,7 @@ struct AreaChainApp: App {
 
         Settings {
             SettingsView()
+                .appChrome()
         }
         .modelContainer(container)
     }

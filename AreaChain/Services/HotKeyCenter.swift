@@ -18,13 +18,15 @@ struct HotKeySpec: Equatable {
         keyCode != UInt32(kVK_Escape) && (modifiers & UInt32(cmdKey | optionKey | controlKey)) != 0
     }
 
-    var displayName: String {
+    var displayName: String { displayName(locale: .current) }
+
+    func displayName(locale: Locale = .current) -> String {
         var parts: [String] = []
         if modifiers & UInt32(controlKey) != 0 { parts.append("⌃") }
         if modifiers & UInt32(optionKey) != 0 { parts.append("⌥") }
         if modifiers & UInt32(cmdKey) != 0 { parts.append("⌘") }
         if modifiers & UInt32(shiftKey) != 0 { parts.append("⇧") }
-        parts.append(Self.glyph(for: keyCode))
+        parts.append(Self.glyph(for: keyCode, locale: locale))
         return parts.joined()
     }
 
@@ -53,7 +55,7 @@ struct HotKeySpec: Equatable {
         return spec.isUsable ? spec : nil
     }
 
-    static func glyph(for keyCode: UInt32) -> String {
+    static func glyph(for keyCode: UInt32, locale: Locale = .current) -> String {
         let letters: [UInt32: String] = [
             UInt32(kVK_ANSI_A): "A", UInt32(kVK_ANSI_B): "B", UInt32(kVK_ANSI_C): "C",
             UInt32(kVK_ANSI_D): "D", UInt32(kVK_ANSI_E): "E", UInt32(kVK_ANSI_F): "F",
@@ -68,11 +70,12 @@ struct HotKeySpec: Equatable {
             UInt32(kVK_ANSI_3): "3", UInt32(kVK_ANSI_4): "4", UInt32(kVK_ANSI_5): "5",
             UInt32(kVK_ANSI_6): "6", UInt32(kVK_ANSI_7): "7", UInt32(kVK_ANSI_8): "8",
             UInt32(kVK_ANSI_9): "9",
-            UInt32(kVK_Space): "空格",
-            UInt32(kVK_Return): "回车",
+            UInt32(kVK_Space): L10n.string("hotkey.space", locale: locale),
+            UInt32(kVK_Return): L10n.string("hotkey.return", locale: locale),
             UInt32(kVK_Tab): "Tab"
         ]
-        return letters[keyCode] ?? "键\(keyCode)"
+        if let glyph = letters[keyCode] { return glyph }
+        return L10n.string("hotkey.unknown \(Int(keyCode))", locale: locale)
     }
 }
 
@@ -83,7 +86,11 @@ final class HotKeyCenter {
     private var hotKeyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
 
-    var displayName: String { spec.displayName }
+    var displayName: String { spec.displayName() }
+
+    func displayName(locale: Locale = .current) -> String {
+        spec.displayName(locale: locale)
+    }
 
     func start() {
         guard hotKeyRef == nil else { return }

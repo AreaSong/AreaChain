@@ -3,6 +3,7 @@ import SwiftUI
 
 struct TasksPage: View {
     @Environment(\.modelContext) var modelContext
+    @Environment(\.locale) var locale
 
     var todayKey: String
     var yesterdayKey: String

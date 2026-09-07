@@ -15,26 +15,28 @@
 
 ## 运行
 
-需要 macOS 14+、Xcode 16+。
+需要 macOS 14+、Xcode 16+。编 Debug、装到「应用程序」并打开：
 
 ```bash
-open AreaChain.xcodeproj
+./scripts/build.sh
 ```
 
-或：
+只编译 / 只安装 / 跑测试：
 
 ```bash
-xcodebuild -project AreaChain.xcodeproj -scheme AreaChain -destination 'platform=macOS' test
-open build/DerivedData/Build/Products/Debug/AreaChain.app
+./scripts/build.sh build
+./scripts/build.sh install
+./scripts/build.sh test
 ```
 
-顶栏找不到图标时，点菜单栏左边的 `«`。
+也可以 `open AreaChain.xcodeproj` 用 Xcode。顶栏找不到图标时，点菜单栏左边的 `«`。
 
 ## 目录
 
 ```
 AreaChain/          应用源码（按层分目录，见 docs/architecture.md）
 AreaChainTests/     单测，镜像 Domain / Services
+scripts/            Debug 编译、安装
 docs/               产品、功能、架构、用法
 AreaChain.xcodeproj
 ```

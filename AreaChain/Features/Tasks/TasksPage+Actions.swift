@@ -1,3 +1,4 @@
+import Foundation
 import SwiftData
 
 extension TasksPage {
@@ -46,9 +47,12 @@ extension TasksPage {
 
     func doneRoutineNote(_ routine: DailyRoutine) -> String? {
         let skipped = isSkipped(routine)
-        if skipped && routine.weekdaysOnly { return "已跳过 · 仅工作日" }
-        if skipped { return "已跳过" }
-        if routine.weekdaysOnly { return "仅工作日" }
+        let locale = AppPreferences.shared.resolvedLocale
+        if skipped && routine.weekdaysOnly {
+            return L10n.string("note.skipped.weekdays", locale: locale)
+        }
+        if skipped { return L10n.string("note.skipped", locale: locale) }
+        if routine.weekdaysOnly { return L10n.string("note.weekdays", locale: locale) }
         return nil
     }
 

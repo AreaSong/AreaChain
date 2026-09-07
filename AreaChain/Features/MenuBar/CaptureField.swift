@@ -8,6 +8,7 @@ struct CaptureField: View {
     var onTodo: () -> Void
     var onDiary: () -> Void
 
+    @Environment(\.locale) private var locale
     @State private var pickingDay = false
 
     private var tomorrowKey: String {
@@ -42,7 +43,7 @@ struct CaptureField: View {
                 )
         )
         .popover(isPresented: $pickingDay) {
-            DaySchedulePicker(initialKey: dayKey, confirmTitle: "用这一天") { key in
+            DaySchedulePicker(initialKey: dayKey, confirmTitle: "capture.use.day") { key in
                 dayKey = key
                 pickingDay = false
             }
@@ -51,9 +52,9 @@ struct CaptureField: View {
 
     private var dayButton: some View {
         Menu {
-            Button("今天") { dayKey = todayKey }
-            Button("明天") { dayKey = tomorrowKey }
-            Button("选一天…") { pickingDay = true }
+            Button("capture.today") { dayKey = todayKey }
+            Button("capture.tomorrow") { dayKey = tomorrowKey }
+            Button("capture.pick") { pickingDay = true }
         } label: {
             Text(dayLabel)
                 .font(.system(size: 11, weight: .medium))
@@ -61,22 +62,27 @@ struct CaptureField: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-        .accessibilityLabel("待办写到 \(dayLabel)")
+        .accessibilityLabel("a11y.capture \(dayLabel)")
     }
 
     private var dayLabel: String {
-        if dayKey == todayKey { return "今天" }
-        if dayKey == tomorrowKey { return "明天" }
-        return DayKey.shortStamp(dayKey)
+        if dayKey == todayKey {
+            return L10n.string("capture.today", locale: locale)
+        }
+        if dayKey == tomorrowKey {
+            return L10n.string("capture.tomorrow", locale: locale)
+        }
+        return DayKey.shortStamp(dayKey, locale: locale)
     }
 
     private var placeholder: String {
         if dayKey == todayKey {
-            return "回车加待办，⌘回车写日记"
+            return L10n.string("capture.placeholder.today", locale: locale)
         }
         if dayKey == tomorrowKey {
-            return "回车加到明天，⌘回车仍写今天日记"
+            return L10n.string("capture.placeholder.tomorrow", locale: locale)
         }
-        return "回车加到\(DayKey.shortStamp(dayKey))，⌘回车仍写今天日记"
+        let stamp = DayKey.shortStamp(dayKey, locale: locale)
+        return L10n.string("capture.placeholder.other \(stamp)", locale: locale)
     }
 }

@@ -9,13 +9,13 @@ struct RoutinesPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("每天会出现什么。任务页只负责今天勾完。")
+            Text("routines.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 8) {
                     if routines.isEmpty {
-                        Text("还没有例行项。下面加上第一条。")
+                        Text("routines.empty")
                             .font(.system(size: 12))
                             .foregroundStyle(DaybookTheme.muted)
                             .padding(.vertical, 4)
@@ -31,10 +31,10 @@ struct RoutinesPage: View {
 
     private var addRow: some View {
         HStack {
-            TextField("新的例行项", text: $draft)
+            TextField("routines.new", text: $draft)
                 .textFieldStyle(.plain)
                 .onSubmit(addRoutine)
-            Button("加上", action: addRoutine)
+            Button("routines.add", action: addRoutine)
                 .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
         .font(.system(size: 12))
@@ -42,7 +42,7 @@ struct RoutinesPage: View {
 
     private func routineCard(_ routine: DailyRoutine, index: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            TextField("名称", text: Binding(
+            TextField("routines.name", text: Binding(
                 get: { routine.title },
                 set: { routine.title = $0 }
             ))
@@ -50,14 +50,14 @@ struct RoutinesPage: View {
             .font(.system(size: 13))
             .foregroundStyle(DaybookTheme.ink)
             HStack(spacing: 8) {
-                Toggle("启用", isOn: Binding(
+                Toggle("routines.enabled", isOn: Binding(
                     get: { routine.isEnabled },
                     set: {
                         routine.isEnabled = $0
                         BoardEvents.changed()
                     }
                 ))
-                Toggle("工作日", isOn: Binding(
+                Toggle("routines.weekdays", isOn: Binding(
                     get: { routine.weekdaysOnly },
                     set: {
                         routine.weekdaysOnly = $0
@@ -65,9 +65,9 @@ struct RoutinesPage: View {
                     }
                 ))
                 Spacer(minLength: 0)
-                Button("上") { move(at: index, by: -1) }
+                Button("routines.up") { move(at: index, by: -1) }
                     .disabled(index == 0)
-                Button("下") { move(at: index, by: 1) }
+                Button("routines.down") { move(at: index, by: 1) }
                     .disabled(index >= routines.count - 1)
             }
             .font(.system(size: 11))
@@ -75,7 +75,7 @@ struct RoutinesPage: View {
         }
         .padding(.vertical, 4)
         .contextMenu {
-            Button("删除", role: .destructive) {
+            Button("routines.delete", role: .destructive) {
                 modelContext.delete(routine)
                 BoardEvents.changed()
             }

@@ -9,6 +9,8 @@ struct SettingsView: View {
     @Query private var checks: [RoutineCheck]
     @Query private var todos: [TodoItem]
     @Query private var diaries: [DiaryEntry]
+    @Environment(AppPreferences.self) private var prefs
+    @Environment(\.locale) private var locale
 
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
     @State private var statusMessage: String?
@@ -19,9 +21,23 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
+        @Bindable var prefs = prefs
         Form {
-            Section("启动") {
-                Toggle("登录时打开", isOn: Binding(
+            Section("settings.chrome") {
+                Picker("settings.language", selection: $prefs.language) {
+                    Text("language.system").tag(AppLanguage.system)
+                    Text("language.chinese").tag(AppLanguage.chinese)
+                    Text("language.english").tag(AppLanguage.english)
+                }
+                Picker("settings.look", selection: $prefs.appearance) {
+                    Text("appearance.system").tag(AppAppearance.system)
+                    Text("appearance.light").tag(AppAppearance.light)
+                    Text("appearance.dark").tag(AppAppearance.dark)
+                }
+            }
+
+            Section("settings.launch") {
+                Toggle("settings.login", isOn: Binding(
                     get: { launchesAtLogin },
                     set: { enabled in
                         launchesAtLogin = enabled
@@ -31,14 +47,14 @@ struct SettingsView: View {
                 HotKeyRecorder()
             }
 
-            Section("数据") {
-                Button("导出 JSON") { exportJSON() }
-                Button("导入 JSON") { importJSON() }
+            Section("settings.data") {
+                Button("settings.export") { exportJSON() }
+                Button("settings.import") { importJSON() }
                 if StoreHealth.shared.isUsingMemoryFallback {
-                    Text("本机库打不开，当前只用内存，关掉就没了。原文件还在。")
+                    Text("settings.memory")
                         .font(.system(size: 11))
                         .foregroundStyle(.red)
-                    Button("清空本机库并退出", role: .destructive) {
+                    Button("settings.reset", role: .destructive) {
                         confirmReset = true
                     }
                 }
@@ -49,23 +65,23 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 280)
+        .frame(width: 420, height: 400)
         .navigationTitle("AreaChain")
-        .alert("确认导入？", isPresented: Binding(
+        .alert("alert.import", isPresented: Binding(
             get: { pendingPreview != nil },
             set: { if !$0 { pendingImport = nil; pendingPreview = nil } }
         )) {
-            Button("取消", role: .cancel) {
+            Button("alert.cancel", role: .cancel) {
                 pendingImport = nil
                 pendingPreview = nil
             }
-            Button("写入") { confirmImport() }
+            Button("alert.write") { confirmImport() }
         } message: {
-            Text(pendingPreview?.summary ?? "")
+            Text(pendingPreview?.summary(locale: locale) ?? "")
         }
-        .confirmationDialog("会删掉本机 areachain 库，然后退出。原文件打不开才用这一步。", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("清空并退出", role: .destructive) { resetStoreAndQuit() }
-            Button("取消", role: .cancel) {}
+        .confirmationDialog("alert.reset", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
+            Button("alert.cancel", role: .cancel) {}
         }
         .onDisappear {
             AppWindows.resignIfIdle()
@@ -124,7 +140,7 @@ struct SettingsView: View {
         guard let snapshot = pendingImport else { return }
         do {
             try SnapshotImporter.apply(snapshot, context: modelContext)
-            statusMessage = "已导入"
+            statusMessage = L10n.string("settings.imported", locale: locale)
             BoardEvents.changed()
         } catch {
             statusMessage = error.localizedDescription
@@ -146,7 +162,7 @@ struct SettingsView: View {
             guard response == .OK, let url = panel.url else { return }
             do {
                 try data.write(to: url)
-                statusMessage = "已导出"
+                statusMessage = L10n.string("settings.exported", locale: locale)
             } catch {
                 statusMessage = error.localizedDescription
             }

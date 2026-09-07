@@ -22,14 +22,21 @@ struct ImportPreview: Equatable {
             + diariesNew + diariesUpdate + checksNew + checksUpdate
     }
 
-    var summary: String {
-        """
-        例行 新增 \(routinesNew) / 覆盖 \(routinesUpdate)
-        待办 新增 \(todosNew) / 覆盖 \(todosUpdate)
-        日记 新增 \(diariesNew) / 覆盖 \(diariesUpdate)
-        勾选 新增 \(checksNew) / 覆盖 \(checksUpdate)
-        确定后才会写入本机。
-        """
+    var summary: String { summary(locale: .current) }
+
+    func summary(locale: Locale) -> String {
+        L10n.format(
+            "import.summary",
+            locale: locale,
+            routinesNew,
+            routinesUpdate,
+            todosNew,
+            todosUpdate,
+            diariesNew,
+            diariesUpdate,
+            checksNew,
+            checksUpdate
+        )
     }
 }
 

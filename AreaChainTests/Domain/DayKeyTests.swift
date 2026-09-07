@@ -28,7 +28,15 @@ struct DayKeyTests {
     }
 
     @Test func displayNameUsesChineseDate() {
-        #expect(DayKey.displayName("2026-09-07").contains("9月7日"))
+        let locale = Locale(identifier: "zh_CN")
+        #expect(DayKey.displayName("2026-09-07", locale: locale).contains("9月7日"))
+    }
+
+    @Test func displayNameUsesEnglishDate() {
+        let locale = Locale(identifier: "en_US")
+        let name = DayKey.displayName("2026-09-07", locale: locale)
+        #expect(name.contains("Sep"))
+        #expect(name.contains("7"))
     }
 
     @Test func shiftedMovesByDays() {

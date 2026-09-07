@@ -3,15 +3,24 @@ import SwiftData
 import SwiftUI
 
 enum BoardTab: String, CaseIterable, Identifiable {
-    case tasks = "任务"
-    case diary = "日记"
-    case routines = "例行"
+    case tasks
+    case diary
+    case routines
 
     var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .tasks: "tab.tasks"
+        case .diary: "tab.diary"
+        case .routines: "tab.routines"
+        }
+    }
 }
 
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
@@ -93,10 +102,10 @@ struct MenuBarPopoverView: View {
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(DayKey.displayName(todayKey))
+                Text(DayKey.displayName(todayKey, locale: locale))
                     .font(.system(size: 20, weight: .regular, design: .serif).italic())
                     .foregroundStyle(DaybookTheme.ink)
-                Text(todayRemaining == 0 ? "今天的都勾完了" : "今天还剩 \(todayRemaining) 条")
+                Text(todayRemaining == 0 ? "header.done" : "header.remaining \(todayRemaining)")
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -110,14 +119,14 @@ struct MenuBarPopoverView: View {
                     RoundedRectangle(cornerRadius: 2)
                         .stroke(DaybookTheme.stamp.opacity(0.7), lineWidth: 1.2)
                 )
-                .accessibilityLabel("今天未完成 \(todayRemaining) 条")
+                .accessibilityLabel("a11y.remaining \(todayRemaining)")
         }
     }
 
     private var tabPicker: some View {
-        Picker("页面", selection: $tab) {
+        Picker("tab.picker", selection: $tab) {
             ForEach(BoardTab.allCases) { item in
-                Text(item.rawValue).tag(item)
+                Text(item.title).tag(item)
             }
         }
         .pickerStyle(.segmented)
@@ -158,37 +167,46 @@ struct MenuBarPopoverView: View {
 }
 
 struct FooterBar: View {
-    @State private var hotKeyName = HotKeyCenter.shared.displayName
+    @Environment(\.locale) private var locale
+    @State private var hotKeyName = HotKeyCenter.shared.displayName()
 
     var body: some View {
         HStack {
-            Button("设置") {
+            Button("footer.settings") {
                 AppWindows.openSettings()
             }
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
-            Button("日记窗") {
+            Button("footer.diary") {
                 AppWindows.openDiary()
             }
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
             Spacer()
-            Text("\(hotKeyName) 浮层")
+            Text("footer.hotkey \(hotKeyName)")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
-            Button("退出") {
+            Button("footer.quit") {
                 NSApplication.shared.terminate(nil)
             }
             .font(.system(size: 11))
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
         }
-        .onAppear { hotKeyName = HotKeyCenter.shared.displayName }
+        .onAppear { refreshHotKey() }
+        .onChange(of: locale.identifier) { _, _ in refreshHotKey() }
         .onReceive(NotificationCenter.default.publisher(for: .hotKeyDidChange)) { _ in
-            hotKeyName = HotKeyCenter.shared.displayName
+            refreshHotKey()
         }
+        .onReceive(NotificationCenter.default.publisher(for: .appPreferencesDidChange)) { _ in
+            refreshHotKey()
+        }
+    }
+
+    private func refreshHotKey() {
+        hotKeyName = HotKeyCenter.shared.displayName(locale: locale)
     }
 }
 
@@ -219,11 +237,10 @@ struct MenuBarLabel: View {
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
             }
         }
-        .accessibilityLabel(count > 0 ? "AreaChain，今天还剩 \(count) 条" : "AreaChain")
+        .accessibilityLabel(count > 0 ? "a11y.app.remaining \(count)" : "a11y.app")
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()
         }
     }
 }
-

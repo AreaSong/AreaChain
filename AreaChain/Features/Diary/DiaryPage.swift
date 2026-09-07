@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DiaryPage: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
 
     var todayKey: String
     var entries: [DiaryEntry]
@@ -34,12 +35,12 @@ struct DiaryPage: View {
         VStack(alignment: .leading, spacing: 8) {
             dayChrome
             if !isViewingToday {
-                Text("写下仍会记到今天")
+                Text("diary.hint")
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
             }
             if showsComposer {
-                TextField("回车写一句今天的日记", text: $draft)
+                TextField("diary.composer", text: $draft)
                     .textFieldStyle(.plain)
                     .focused($composerFocused)
                     .onSubmit(addTodayDiary)
@@ -61,11 +62,11 @@ struct DiaryPage: View {
                 Image(systemName: "chevron.left")
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("前一天")
+            .accessibilityLabel("diary.prev")
 
             VStack(alignment: .leading, spacing: 1) {
-                Text(isViewingToday ? "今天的句子" : DayKey.displayName(viewingKey))
-                Text(DayKey.shortStamp(viewingKey))
+                Text(isViewingToday ? L10n.string("diary.today.title", locale: locale) : DayKey.displayName(viewingKey, locale: locale))
+                Text(DayKey.shortStamp(viewingKey, locale: locale))
             }
             .font(.system(size: 11))
             .foregroundStyle(DaybookTheme.muted)
@@ -77,11 +78,11 @@ struct DiaryPage: View {
             }
             .buttonStyle(.plain)
             .disabled(isViewingToday)
-            .accessibilityLabel("后一天")
+            .accessibilityLabel("diary.next")
 
             Spacer()
             if !isViewingToday {
-                Button("回今天") { viewingKey = todayKey }
+                Button("diary.back") { viewingKey = todayKey }
                     .font(.system(size: 11))
                     .buttonStyle(.plain)
                     .foregroundStyle(DaybookTheme.stamp)
@@ -106,8 +107,8 @@ struct DiaryPage: View {
         }
     }
 
-    private var emptyCopy: String {
-        isViewingToday ? "还没有今天的日记。⌘回车写下第一句。" : "这一天没有留下句子。"
+    private var emptyCopy: LocalizedStringKey {
+        isViewingToday ? "diary.empty.today" : "diary.empty.past"
     }
 
     private func addTodayDiary() {
@@ -121,6 +122,7 @@ struct DiaryPage: View {
 
 struct DiaryLine: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     var entry: DiaryEntry
     @State private var editing = false
     @State private var draft = ""
@@ -131,7 +133,7 @@ struct DiaryLine: View {
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(DaybookTheme.stamp.opacity(0.9))
             if editing {
-                TextField("改这句", text: $draft, axis: .vertical)
+                TextField("diary.rename", text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .onSubmit(save)
@@ -148,11 +150,11 @@ struct DiaryLine: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contextMenu {
-            Button("改字") {
+            Button("diary.edit") {
                 draft = entry.text
                 editing = true
             }
-            Button("删除", role: .destructive) {
+            Button("diary.delete", role: .destructive) {
                 modelContext.delete(entry)
             }
         }
@@ -169,7 +171,7 @@ struct DiaryLine: View {
 
     private func timeLabel(_ date: Date) -> String {
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.locale = locale
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
     }

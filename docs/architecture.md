@@ -8,6 +8,7 @@
 AreaChain.xcodeproj
 AreaChain/                 应用 target
 AreaChainTests/            测试 target，目录镜像应用层
+scripts/                   本机 Debug 编译与安装
 docs/                      人读文档
 README.md
 .gitignore
@@ -23,7 +24,7 @@ README.md
 ```
 AreaChain/
   App/            入口、签名、Scene 组装
-  Resources/      Assets.xcassets
+  Resources/      Assets.xcassets、Localizable.xcstrings
   Domain/         纯领域：日期键、模型、过滤规则
   Services/       本机存储、时钟、导入导出、热键、首启
   Features/       界面，按功能分包

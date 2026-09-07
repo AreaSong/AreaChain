@@ -46,19 +46,33 @@ enum DayKey {
         return calendar.date(from: components)
     }
 
-    static func displayName(_ key: String, calendar: Calendar = .current) -> String {
+    static func displayName(
+        _ key: String,
+        calendar: Calendar = .current,
+        locale: Locale = .current
+    ) -> String {
         guard let date = date(from: key, calendar: calendar) else { return key }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M月d日 EEE"
+        formatter.calendar = calendar
+        formatter.locale = locale
+        formatter.dateFormat = usesChineseDate(locale) ? "M月d日 EEE" : "MMM d EEE"
         return formatter.string(from: date)
     }
 
-    static func shortStamp(_ key: String, calendar: Calendar = .current) -> String {
+    static func shortStamp(
+        _ key: String,
+        calendar: Calendar = .current,
+        locale: Locale = .current
+    ) -> String {
         guard let date = date(from: key, calendar: calendar) else { return key }
         let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.calendar = calendar
+        formatter.locale = locale
         formatter.dateFormat = "M/d"
         return formatter.string(from: date)
+    }
+
+    private static func usesChineseDate(_ locale: Locale) -> Bool {
+        locale.language.languageCode?.identifier == "zh" || locale.identifier.hasPrefix("zh")
     }
 }
