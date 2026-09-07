@@ -142,16 +142,16 @@ struct MenuBarPopoverView: View {
 }
 
 struct FooterBar: View {
-    @Environment(\.openWindow) private var openWindow
-
     var body: some View {
         HStack {
-            SettingsLink {
-                Text("设置")
+            Button("设置") {
+                AppWindows.openSettings()
             }
             .font(.system(size: 11))
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
             Button("日记窗") {
-                openWindow(id: "diary")
+                AppWindows.openDiary()
             }
             .font(.system(size: 11))
             .buttonStyle(.plain)

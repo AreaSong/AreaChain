@@ -64,10 +64,14 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
+    func close() {
+        popover?.performClose(nil)
+    }
+
     @objc func toggle() {
         guard let button = statusItem?.button, let popover, let container else { return }
         if popover.isShown {
-            popover.performClose(nil)
+            close()
             return
         }
         popover.contentViewController = NSHostingController(

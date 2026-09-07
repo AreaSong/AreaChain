@@ -16,7 +16,7 @@ README.md
 
 不要把 `build/`、`DerivedData/`、`xcuserdata` 提交进去。
 
-菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。
+菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层不在 SwiftUI Scene 里，底栏「设置 / 日记窗」走 `AppWindows` 激活后再打开，不用 `SettingsLink`。
 
 ## 应用内分层
 

@@ -80,6 +80,9 @@ struct SettingsView: View {
             Button("清空并退出", role: .destructive) { resetStoreAndQuit() }
             Button("取消", role: .cancel) {}
         }
+        .onDisappear {
+            AppWindows.resignIfIdle()
+        }
     }
 
     private func routineRow(_ routine: DailyRoutine, index: Int) -> some View {
