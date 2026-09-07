@@ -19,7 +19,9 @@ struct CalendarMonthGrid: View {
                     if let key {
                         cell(key)
                     } else {
-                        Color.clear.frame(height: 44)
+                        Color.clear
+                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .allowsHitTesting(false)
                     }
                 }
             }
@@ -44,23 +46,28 @@ struct CalendarMonthGrid: View {
         return Button {
             onSelect(key)
         } label: {
-            VStack(spacing: 1) {
+            VStack(spacing: 2) {
                 Text(DayKey.dayNumber(key, calendar: calendar))
-                    .font(.system(size: 12, weight: selected ? .semibold : .regular))
+                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
                 Text(count > 0 ? "\(count)" : " ")
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
-                    .foregroundStyle(count > 0 ? DaybookTheme.stamp : Color.clear)
+                    .foregroundStyle(count > 0 ? DaybookTheme.stamp : .clear)
             }
             .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
-            .frame(maxWidth: .infinity, minHeight: 44)
-            .background(selected ? DaybookTheme.stamp.opacity(0.28) : Color.clear)
+            .frame(maxWidth: .infinity, minHeight: 52)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(selected ? DaybookTheme.stamp.opacity(0.28) : DaybookTheme.ink.opacity(0.001))
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(today ? DaybookTheme.stamp : Color.clear, lineWidth: 1.2)
             )
-            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
         .buttonStyle(.plain)
+        .frame(maxWidth: .infinity, minHeight: 52)
+        .contentShape(Rectangle())
         .accessibilityLabel(DayKey.displayName(key, calendar: calendar, locale: locale))
     }
 }
