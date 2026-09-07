@@ -13,29 +13,13 @@ struct SettingsView: View {
 
     @State private var newRoutine = ""
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
-    @State private var exportError: String?
+    @State private var statusMessage: String?
 
     var body: some View {
         Form {
             Section("例行项") {
-                ForEach(routines, id: \.id) { routine in
-                    HStack {
-                        TextField("名称", text: Binding(
-                            get: { routine.title },
-                            set: { routine.title = $0 }
-                        ))
-                        Toggle("启用", isOn: Binding(
-                            get: { routine.isEnabled },
-                            set: { routine.isEnabled = $0 }
-                        ))
-                        .labelsHidden()
-                        .help("启用后会出现在每天的例行清单里")
-                    }
-                    .contextMenu {
-                        Button("删除", role: .destructive) {
-                            modelContext.delete(routine)
-                        }
-                    }
+                ForEach(Array(routines.enumerated()), id: \.element.id) { index, routine in
+                    routineRow(routine, index: index)
                 }
                 HStack {
                     TextField("新的例行项", text: $newRoutine)
@@ -52,20 +36,46 @@ struct SettingsView: View {
                         updateLoginItem(enabled)
                     }
                 ))
+                Text("全局热键 ⌘⇧A 打开今日窗口")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
             }
 
             Section("数据") {
                 Button("导出 JSON") { exportJSON() }
-                if let exportError {
-                    Text(exportError)
-                        .foregroundStyle(.red)
+                Button("导入 JSON") { importJSON() }
+                if let statusMessage {
+                    Text(statusMessage)
                         .font(.system(size: 11))
                 }
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 360)
+        .frame(width: 420, height: 400)
         .navigationTitle("AreaChain")
+    }
+
+    private func routineRow(_ routine: DailyRoutine, index: Int) -> some View {
+        HStack {
+            TextField("名称", text: Binding(
+                get: { routine.title },
+                set: { routine.title = $0 }
+            ))
+            Toggle("启用", isOn: Binding(
+                get: { routine.isEnabled },
+                set: { routine.isEnabled = $0 }
+            ))
+            .labelsHidden()
+            Button("上") { moveRoutine(at: index, by: -1) }
+                .disabled(index == 0)
+            Button("下") { moveRoutine(at: index, by: 1) }
+                .disabled(index >= routines.count - 1)
+        }
+        .contextMenu {
+            Button("删除", role: .destructive) {
+                modelContext.delete(routine)
+            }
+        }
     }
 
     private func addRoutine() {
@@ -76,6 +86,14 @@ struct SettingsView: View {
         newRoutine = ""
     }
 
+    private func moveRoutine(at index: Int, by offset: Int) {
+        let target = index + offset
+        guard routines.indices.contains(target) else { return }
+        let current = routines[index].sortOrder
+        routines[index].sortOrder = routines[target].sortOrder
+        routines[target].sortOrder = current
+    }
+
     private func updateLoginItem(_ enabled: Bool) {
         do {
             if enabled {
@@ -84,23 +102,34 @@ struct SettingsView: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            exportError = error.localizedDescription
+            statusMessage = error.localizedDescription
             launchesAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
 
     private func exportJSON() {
         do {
-            let snapshot = SyncPort.makeSnapshot(
-                routines: routines,
-                checks: checks,
-                todos: todos,
-                diaries: diaries
+            let data = try SyncPort.encode(
+                SyncPort.makeSnapshot(routines: routines, checks: checks, todos: todos, diaries: diaries)
             )
-            let data = try SyncPort.encode(snapshot)
             presentSavePanel(data: data)
         } catch {
-            exportError = error.localizedDescription
+            statusMessage = error.localizedDescription
+        }
+    }
+
+    private func importJSON() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.json]
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            do {
+                let data = try Data(contentsOf: url)
+                try SnapshotImporter.apply(try SyncPort.decode(data), context: modelContext)
+                statusMessage = "已导入"
+            } catch {
+                statusMessage = error.localizedDescription
+            }
         }
     }
 
@@ -112,9 +141,9 @@ struct SettingsView: View {
             guard response == .OK, let url = panel.url else { return }
             do {
                 try data.write(to: url)
-                exportError = nil
+                statusMessage = "已导出"
             } catch {
-                exportError = error.localizedDescription
+                statusMessage = error.localizedDescription
             }
         }
     }

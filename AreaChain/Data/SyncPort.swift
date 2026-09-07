@@ -21,6 +21,34 @@ struct ExportedCheck: Codable, Equatable {
     var routineId: UUID
     var dayKey: String
     var isDone: Bool
+    var isSkipped: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, routineId, dayKey, isDone, isSkipped
+    }
+
+    init(
+        id: UUID,
+        routineId: UUID,
+        dayKey: String,
+        isDone: Bool,
+        isSkipped: Bool = false
+    ) {
+        self.id = id
+        self.routineId = routineId
+        self.dayKey = dayKey
+        self.isDone = isDone
+        self.isSkipped = isSkipped
+    }
+
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: CodingKeys.self)
+        id = try box.decode(UUID.self, forKey: .id)
+        routineId = try box.decode(UUID.self, forKey: .routineId)
+        dayKey = try box.decode(String.self, forKey: .dayKey)
+        isDone = try box.decode(Bool.self, forKey: .isDone)
+        isSkipped = try box.decodeIfPresent(Bool.self, forKey: .isSkipped) ?? false
+    }
 }
 
 struct ExportedTodo: Codable, Equatable {
@@ -63,7 +91,8 @@ enum SyncPort {
                     id: check.id,
                     routineId: routineId,
                     dayKey: check.dayKey,
-                    isDone: check.isDone
+                    isDone: check.isDone,
+                    isSkipped: check.isSkipped
                 )
             },
             todos: todos.map {

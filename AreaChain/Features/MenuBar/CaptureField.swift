@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CaptureField: View {
     @Binding var text: String
+    var focus: FocusState<Bool>.Binding
     var onTodo: () -> Void
     var onDiary: () -> Void
 
@@ -20,6 +21,7 @@ struct CaptureField: View {
                             .stroke(DaybookTheme.rule, lineWidth: 1)
                     )
             )
+            .focused(focus)
             .onSubmit(onTodo)
             .onKeyPress(.return, phases: .down) { press in
                 if press.modifiers.contains(.command) {

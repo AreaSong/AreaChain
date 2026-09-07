@@ -11,6 +11,7 @@ enum BoardTab: String, CaseIterable, Identifiable {
 
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
+    private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
@@ -18,25 +19,40 @@ struct MenuBarPopoverView: View {
 
     @State private var tab: BoardTab = .tasks
     @State private var draft = ""
-    @State private var now = Date()
+    @State private var dayTick = Date()
+    @FocusState private var captureFocused: Bool
+
+    private var todayKey: String {
+        _ = dayTick
+        return dayClock.todayKey
+    }
 
     var body: some View {
         VStack(spacing: 12) {
             header
-            CaptureField(text: $draft, onTodo: addTodo, onDiary: addDiary)
+            CaptureField(
+                text: $draft,
+                focus: $captureFocused,
+                onTodo: addTodo,
+                onDiary: addDiary
+            )
             tabPicker
             Group {
                 switch tab {
                 case .tasks:
                     TasksPage(
                         todayKey: todayKey,
-                        yesterdayKey: yesterdayKey,
+                        yesterdayKey: dayClock.yesterdayKey,
                         routines: routines,
                         checks: checks,
                         todos: todos
                     )
                 case .diary:
-                    DiaryPage(todayKey: todayKey, yesterdayKey: yesterdayKey, entries: diaries)
+                    DiaryPage(
+                        todayKey: todayKey,
+                        yesterdayKey: dayClock.yesterdayKey,
+                        entries: diaries
+                    )
                 }
             }
             FooterBar()
@@ -45,13 +61,15 @@ struct MenuBarPopoverView: View {
         .frame(width: DaybookTheme.popoverSize.width, height: DaybookTheme.popoverSize.height)
         .background(DaybookTheme.paper.opacity(0.92))
         .overlay(RuledPaper().opacity(0.35))
+        .onAppear(perform: prepare)
+        .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
+            captureFocused = true
+        }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
-            now = Date()
+            DayClock.shared.refresh()
+            dayTick = Date()
         }
     }
-
-    private var todayKey: String { DayKey.today(now) }
-    private var yesterdayKey: String { DayKey.yesterday(from: now) }
 
     private var todayRemaining: Int {
         DayBoardLogic.todayBadgeCount(
@@ -96,6 +114,16 @@ struct MenuBarPopoverView: View {
         .labelsHidden()
     }
 
+    private func prepare() {
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            HotKeyCenter.shared.start()
+        }
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
+            FirstLaunchSeeder.seedIfNeeded(context: modelContext, existingCount: routines.count)
+        }
+        captureFocused = true
+    }
+
     private func addTodo() {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
@@ -113,13 +141,24 @@ struct MenuBarPopoverView: View {
 }
 
 struct FooterBar: View {
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
         HStack {
             SettingsLink {
                 Text("设置")
             }
             .font(.system(size: 11))
+            Button("日记窗") {
+                openWindow(id: "diary")
+            }
+            .font(.system(size: 11))
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
             Spacer()
+            Text("⌘⇧A")
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(DaybookTheme.muted)
             Button("退出") {
                 NSApplication.shared.terminate(nil)
             }
@@ -131,24 +170,48 @@ struct FooterBar: View {
 }
 
 struct MenuBarLabel: View {
+    private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
+    @State private var dayTick = Date()
 
     var body: some View {
+        let todayKey: String = {
+            _ = dayTick
+            return dayClock.todayKey
+        }()
         let count = DayBoardLogic.todayBadgeCount(
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
             todos: todos.map(\.snapshot),
-            dayKey: DayKey.today()
+            dayKey: todayKey
         )
-        return HStack(spacing: 3) {
-            Image(systemName: "text.badge.checkmark")
+        return HStack(spacing: 2) {
+            Image(systemName: "book.closed.fill")
+            Text("今")
+                .font(.system(size: 11, weight: .bold, design: .serif))
             if count > 0 {
                 Text("\(count)")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
             }
         }
         .accessibilityLabel(count > 0 ? "AreaChain，今天还剩 \(count) 条" : "AreaChain")
+        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
+            DayClock.shared.refresh()
+            dayTick = Date()
+        }
+    }
+}
+
+struct WindowOpener: View {
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onReceive(NotificationCenter.default.publisher(for: .openBoardWindow)) { _ in
+                openWindow(id: "board")
+            }
     }
 }

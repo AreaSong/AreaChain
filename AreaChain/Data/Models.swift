@@ -43,23 +43,31 @@ final class RoutineCheck {
     @Attribute(.unique) var id: UUID
     var dayKey: String
     var isDone: Bool
+    var isSkipped: Bool = false
     var routine: DailyRoutine?
 
     init(
         id: UUID = UUID(),
         dayKey: String,
         isDone: Bool = false,
+        isSkipped: Bool = false,
         routine: DailyRoutine? = nil
     ) {
         self.id = id
         self.dayKey = dayKey
         self.isDone = isDone
+        self.isSkipped = isSkipped
         self.routine = routine
     }
 
     var snapshot: CheckSnapshot? {
         guard let routineId = routine?.id else { return nil }
-        return CheckSnapshot(routineId: routineId, dayKey: dayKey, isDone: isDone)
+        return CheckSnapshot(
+            routineId: routineId,
+            dayKey: dayKey,
+            isDone: isDone,
+            isSkipped: isSkipped
+        )
     }
 }
 

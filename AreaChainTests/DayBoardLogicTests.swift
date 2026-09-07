@@ -70,6 +70,44 @@ struct DayBoardLogicTests {
         #expect(due.map(\.title) == ["写日报"])
     }
 
+    @Test func openListsHideCompleted() {
+        let todos = [
+            TodoSnapshot(id: UUID(), title: "开", isDone: false, dayKey: today),
+            TodoSnapshot(id: UUID(), title: "完", isDone: true, dayKey: today)
+        ]
+        #expect(DayBoardLogic.openTodos(todos: todos, dayKey: today).map(\.title) == ["开"])
+        #expect(DayBoardLogic.completedTodos(todos: todos, dayKey: today).map(\.title) == ["完"])
+    }
+
+    @Test func skippedRoutineCountsAsClosed() {
+        let checks = [
+            CheckSnapshot(routineId: morningPages.id, dayKey: today, isDone: true, isSkipped: true)
+        ]
+        #expect(DayBoardLogic.isRoutineSkipped(morningPages, checks: checks, on: today))
+        #expect(
+            DayBoardLogic.todayBadgeCount(
+                routines: [morningPages],
+                checks: checks,
+                todos: [],
+                dayKey: today
+            ) == 0
+        )
+    }
+
+    @Test func moveTodoLeavesYesterdayAndJoinsToday() {
+        let id = UUID()
+        let original = TodoSnapshot(id: id, title: "昨天的", isDone: false, dayKey: yesterday)
+        let moved = DayBoardLogic.moveTodo(original, to: today)
+        let leftover = DayBoardLogic.yesterdayUnfinished(
+            routines: [],
+            checks: [],
+            todos: [moved],
+            yesterdayKey: yesterday
+        )
+        #expect(leftover.isEmpty)
+        #expect(DayBoardLogic.todos(for: today, in: [moved]).map(\.id) == [id])
+    }
+
     @Test func diariesNewestFirstAndOnlyThatDay() {
         let older = DiarySnapshot(id: UUID(), text: "早", dayKey: today, createdAt: Date(timeIntervalSince1970: 1))
         let newer = DiarySnapshot(id: UUID(), text: "晚", dayKey: today, createdAt: Date(timeIntervalSince1970: 20))

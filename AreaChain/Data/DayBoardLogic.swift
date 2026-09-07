@@ -12,6 +12,7 @@ struct CheckSnapshot: Equatable {
     var routineId: UUID
     var dayKey: String
     var isDone: Bool
+    var isSkipped: Bool = false
 }
 
 struct TodoSnapshot: Equatable, Identifiable {
@@ -44,12 +45,58 @@ enum DayBoardLogic {
         routine.isEnabled && routine.createdDayKey <= dayKey
     }
 
+    static func check(
+        for routine: RoutineSnapshot,
+        checks: [CheckSnapshot],
+        on dayKey: String
+    ) -> CheckSnapshot? {
+        checks.first { $0.routineId == routine.id && $0.dayKey == dayKey }
+    }
+
     static func isRoutineDone(
         _ routine: RoutineSnapshot,
         checks: [CheckSnapshot],
         on dayKey: String
     ) -> Bool {
-        checks.contains { $0.routineId == routine.id && $0.dayKey == dayKey && $0.isDone }
+        guard let mark = check(for: routine, checks: checks, on: dayKey) else { return false }
+        return mark.isDone || mark.isSkipped
+    }
+
+    static func isRoutineSkipped(
+        _ routine: RoutineSnapshot,
+        checks: [CheckSnapshot],
+        on dayKey: String
+    ) -> Bool {
+        check(for: routine, checks: checks, on: dayKey)?.isSkipped == true
+    }
+
+    static func openRoutines(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        dayKey: String
+    ) -> [RoutineSnapshot] {
+        unfinishedRoutines(routines: routines, checks: checks, dayKey: dayKey)
+    }
+
+    static func completedRoutines(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        dayKey: String
+    ) -> [RoutineSnapshot] {
+        self.routines(for: dayKey, in: routines)
+            .filter { isRoutineDone($0, checks: checks, on: dayKey) }
+    }
+
+    static func openTodos(todos: [TodoSnapshot], dayKey: String) -> [TodoSnapshot] {
+        unfinishedTodos(todos: todos, dayKey: dayKey)
+    }
+
+    static func completedTodos(todos: [TodoSnapshot], dayKey: String) -> [TodoSnapshot] {
+        self.todos(for: dayKey, in: todos).filter(\.isDone)
+    }
+
+    static func moveTodo(_ todo: TodoSnapshot, to dayKey: String) -> TodoSnapshot {
+        TodoSnapshot(id: todo.id, title: todo.title, isDone: todo.isDone, dayKey: dayKey)
     }
 
     static func routines(for dayKey: String, in routines: [RoutineSnapshot]) -> [RoutineSnapshot] {
