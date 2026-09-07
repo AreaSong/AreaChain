@@ -4,12 +4,8 @@ extension TasksPage {
     var routineSection: some View {
         Group {
             SectionStamp(title: "例行")
-            if openRoutineModels.isEmpty && !addingRoutine {
-                emptyLine("还没有例行项。")
-                Button("加上一条例行") { addingRoutine = true }
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .buttonStyle(.plain)
+            if openRoutineModels.isEmpty {
+                emptyLine("今天没有例行。到「例行」页维护每天会出现的事。")
             } else {
                 ForEach(openRoutineModels, id: \.id) { routine in
                     TaskRow(
@@ -21,16 +17,6 @@ extension TasksPage {
                         onSkip: { skipRoutine(routine) }
                     )
                 }
-            }
-            if addingRoutine {
-                HStack {
-                    TextField("例行名称", text: $routineDraft)
-                        .textFieldStyle(.plain)
-                        .onSubmit(addRoutineFromPopover)
-                    Button("加上", action: addRoutineFromPopover)
-                        .disabled(routineDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-                .font(.system(size: 12))
             }
         }
     }

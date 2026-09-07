@@ -5,6 +5,7 @@ import SwiftUI
 enum BoardTab: String, CaseIterable, Identifiable {
     case tasks = "任务"
     case diary = "日记"
+    case routines = "例行"
 
     var id: String { rawValue }
 }
@@ -55,6 +56,8 @@ struct MenuBarPopoverView: View {
                         todayKey: todayKey,
                         entries: diaries
                     )
+                case .routines:
+                    RoutinesPage(routines: routines)
                 }
             }
             FooterBar()

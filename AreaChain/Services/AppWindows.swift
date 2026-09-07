@@ -37,7 +37,7 @@ enum AppWindows {
 final class PanelWindowController: NSObject, NSWindowDelegate {
     static let settings = PanelWindowController(
         title: "设置",
-        size: NSSize(width: 460, height: 520),
+        size: NSSize(width: 420, height: 300),
         root: { AnyView(SettingsView().modelContainer(Persistence.session.container)) }
     )
     static let diary = PanelWindowController(

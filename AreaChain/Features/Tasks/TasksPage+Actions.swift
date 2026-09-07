@@ -62,14 +62,4 @@ extension TasksPage {
         guard item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) else { return }
         moveTodo(todo, to: dayKey)
     }
-
-    func addRoutineFromPopover() {
-        let title = routineDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        let order = (routines.map(\.sortOrder).max() ?? -1) + 1
-        modelContext.insert(DailyRoutine(title: title, sortOrder: order))
-        routineDraft = ""
-        addingRoutine = false
-        BoardEvents.changed()
-    }
 }

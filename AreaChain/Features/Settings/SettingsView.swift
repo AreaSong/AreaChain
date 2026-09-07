@@ -5,32 +5,21 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct SettingsView: View {
-    @Environment(\.modelContext) private var modelContext
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
     @Query private var todos: [TodoItem]
     @Query private var diaries: [DiaryEntry]
 
-    @State private var newRoutine = ""
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
     @State private var statusMessage: String?
     @State private var pendingImport: ExportSnapshot?
     @State private var pendingPreview: ImportPreview?
     @State private var confirmReset = false
 
+    @Environment(\.modelContext) private var modelContext
+
     var body: some View {
         Form {
-            Section("例行项") {
-                ForEach(Array(routines.enumerated()), id: \.element.id) { index, routine in
-                    routineRow(routine, index: index)
-                }
-                HStack {
-                    TextField("新的例行项", text: $newRoutine)
-                    Button("加上") { addRoutine() }
-                        .disabled(newRoutine.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-
             Section("启动") {
                 Toggle("登录时打开", isOn: Binding(
                     get: { launchesAtLogin },
@@ -60,7 +49,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 460, height: 520)
+        .frame(width: 420, height: 280)
         .navigationTitle("AreaChain")
         .alert("确认导入？", isPresented: Binding(
             get: { pendingPreview != nil },
@@ -81,55 +70,6 @@ struct SettingsView: View {
         .onDisappear {
             AppWindows.resignIfIdle()
         }
-    }
-
-    private func routineRow(_ routine: DailyRoutine, index: Int) -> some View {
-        HStack {
-            TextField("名称", text: Binding(
-                get: { routine.title },
-                set: { routine.title = $0 }
-            ))
-            Toggle("启用", isOn: Binding(
-                get: { routine.isEnabled },
-                set: {
-                    routine.isEnabled = $0
-                    BoardEvents.changed()
-                }
-            ))
-            .labelsHidden()
-            Toggle("工作日", isOn: Binding(
-                get: { routine.weekdaysOnly },
-                set: {
-                    routine.weekdaysOnly = $0
-                    BoardEvents.changed()
-                }
-            ))
-            Button("上") { moveRoutine(at: index, by: -1) }
-                .disabled(index == 0)
-            Button("下") { moveRoutine(at: index, by: 1) }
-                .disabled(index >= routines.count - 1)
-        }
-        .contextMenu {
-            Button("删除", role: .destructive) {
-                modelContext.delete(routine)
-            }
-        }
-    }
-
-    private func addRoutine() {
-        let title = newRoutine.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        let order = (routines.map(\.sortOrder).max() ?? -1) + 1
-        modelContext.insert(DailyRoutine(title: title, sortOrder: order))
-        newRoutine = ""
-    }
-
-    private func moveRoutine(at index: Int, by offset: Int) {
-        let target = index + offset
-        guard routines.indices.contains(target) else { return }
-        let current = routines[index].sortOrder
-        routines[index].sortOrder = routines[target].sortOrder
-        routines[target].sortOrder = current
     }
 
     private func updateLoginItem(_ enabled: Bool) {

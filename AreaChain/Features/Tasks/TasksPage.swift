@@ -13,8 +13,6 @@ struct TasksPage: View {
     @State var showYesterday = false
     @State var showUpcoming = false
     @State var showCompleted = false
-    @State var addingRoutine = false
-    @State var routineDraft = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
