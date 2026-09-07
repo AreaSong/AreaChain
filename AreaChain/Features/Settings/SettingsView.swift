@@ -85,6 +85,9 @@ struct SettingsView: View {
         }
         .onDisappear {
             AppWindows.resignIfIdle()
+            DispatchQueue.main.async {
+                AppWindows.resignIfIdle()
+            }
         }
     }
 

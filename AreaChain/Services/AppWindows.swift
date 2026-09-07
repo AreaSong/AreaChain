@@ -21,15 +21,29 @@ enum AppWindows {
     }
 
     static func resignIfIdle(closing: NSWindow? = nil) {
-        let leftover = NSApp.windows.contains { window in
-            window !== closing
-                && window.isVisible
-                && window.canBecomeKey
-                && window.level == .normal
+        hideStrayWindows(closing: closing)
+        let leftover = panelWindows.contains { window in
+            window !== closing && window.isVisible
         }
         if !leftover {
             NSApp.setActivationPolicy(.accessory)
         }
+    }
+
+    /// 关掉设置后，SwiftUI Scene 里多出来的窗不要当成「下一扇」打开。
+    static func hideStrayWindows(closing: NSWindow? = nil) {
+        let panels = Set(panelWindows.map { ObjectIdentifier($0) })
+        for window in NSApp.windows {
+            if window === closing { continue }
+            if panels.contains(ObjectIdentifier(window)) { continue }
+            guard window.canBecomeKey, window.level == .normal, window.isVisible else { continue }
+            window.orderOut(nil)
+        }
+    }
+
+    private static var panelWindows: [NSWindow] {
+        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow]
+            .compactMap { $0 }
     }
 }
 
@@ -63,6 +77,8 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     private let root: () -> AnyView
     private var window: NSWindow?
 
+    var hostedWindow: NSWindow? { window }
+
     init(titleKey: String, size: NSSize, root: @escaping () -> AnyView) {
         self.titleKey = titleKey
         self.size = size
@@ -85,6 +101,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.setContentSize(size)
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             next.isReleasedWhenClosed = false
+            next.isRestorable = false
             next.delegate = self
             window = next
         } else {
@@ -95,7 +112,11 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
-        AppWindows.resignIfIdle(closing: notification.object as? NSWindow)
+        let closing = notification.object as? NSWindow
+        AppWindows.resignIfIdle(closing: closing)
+        DispatchQueue.main.async {
+            AppWindows.resignIfIdle(closing: closing)
+        }
     }
 
     private func refreshChrome() {

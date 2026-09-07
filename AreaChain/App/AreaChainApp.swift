@@ -9,6 +9,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         StatusItemController.shared.attach(container: Persistence.session.container)
         HotKeyCenter.shared.start()
+        AppWindows.hideStrayWindows()
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -26,14 +27,7 @@ struct AreaChainApp: App {
     }
 
     var body: some Scene {
-        Window("window.diary", id: "diary") {
-            DiaryStandaloneView()
-                .appChrome()
-        }
-        .windowResizability(.contentSize)
-        .defaultSize(width: 420, height: 520)
-        .modelContainer(container)
-
+        // 日记只走 AppWindows。这里若再声明 Window，关设置时系统会把它当下一扇窗打开。
         Settings {
             SettingsView()
                 .appChrome()
