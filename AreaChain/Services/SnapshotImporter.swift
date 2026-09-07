@@ -31,6 +31,7 @@ enum SnapshotImporter {
                     found.createdAt = createdAt
                 }
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
+                found.deletedAt = item.deletedAt
             } else {
                 context.insert(
                     DailyRoutine(
@@ -41,7 +42,8 @@ enum SnapshotImporter {
                         createdDayKey: item.createdDayKey,
                         weekdaysOnly: item.weekdaysOnly,
                         createdAt: item.createdAt ?? .now,
-                        remindMinutes: item.remindMinutes
+                        remindMinutes: item.remindMinutes,
+                        deletedAt: item.deletedAt
                     )
                 )
             }
@@ -57,6 +59,7 @@ enum SnapshotImporter {
                 found.dayKey = item.dayKey
                 found.createdAt = item.createdAt
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
+                found.deletedAt = item.deletedAt
             } else {
                 context.insert(
                     TodoItem(
@@ -65,7 +68,8 @@ enum SnapshotImporter {
                         isDone: item.isDone,
                         dayKey: item.dayKey,
                         createdAt: item.createdAt,
-                        remindMinutes: item.remindMinutes
+                        remindMinutes: item.remindMinutes,
+                        deletedAt: item.deletedAt
                     )
                 )
             }
@@ -79,13 +83,15 @@ enum SnapshotImporter {
                 found.text = item.text
                 found.dayKey = item.dayKey
                 found.createdAt = item.createdAt
+                found.deletedAt = item.deletedAt
             } else {
                 context.insert(
                     DiaryEntry(
                         id: item.id,
                         text: item.text,
                         dayKey: item.dayKey,
-                        createdAt: item.createdAt
+                        createdAt: item.createdAt,
+                        deletedAt: item.deletedAt
                     )
                 )
             }

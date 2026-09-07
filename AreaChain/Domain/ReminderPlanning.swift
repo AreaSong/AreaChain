@@ -77,7 +77,7 @@ enum ReminderPlanning {
         todayKey: String
     ) -> [ReminderRequest] {
         let standing = routines.compactMap { routine -> ReminderRequest? in
-            guard routine.isEnabled, let minutes = RemindMinutes.clamped(routine.remindMinutes) else {
+            guard routine.deletedAt == nil, routine.isEnabled, let minutes = RemindMinutes.clamped(routine.remindMinutes) else {
                 return nil
             }
             return ReminderRequest(
@@ -91,7 +91,7 @@ enum ReminderPlanning {
             )
         }
         let once = todos.compactMap { todo -> ReminderRequest? in
-            guard let minutes = RemindMinutes.clamped(todo.remindMinutes) else { return nil }
+            guard todo.deletedAt == nil, let minutes = RemindMinutes.clamped(todo.remindMinutes) else { return nil }
             return ReminderRequest(
                 id: todo.id,
                 title: todo.title,

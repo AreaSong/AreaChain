@@ -175,4 +175,48 @@ struct DayBoardLogicTests {
         let result = DayBoardLogic.diaries(for: today, in: [older, newer, other])
         #expect(result.map(\.text) == ["晚", "早"])
     }
+
+    @Test func trashedItemsLeaveTheBoard() {
+        let trashedStanding = RoutineSnapshot(
+            id: UUID(),
+            title: "旧常驻",
+            sortOrder: 0,
+            isEnabled: true,
+            createdDayKey: "2026-09-01",
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        let trashedTodo = TodoSnapshot(
+            id: UUID(),
+            title: "旧临时",
+            isDone: false,
+            dayKey: today,
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        #expect(DayBoardLogic.routines(for: today, in: [trashedStanding, morningPages]).map(\.title) == ["写日报"])
+        #expect(DayBoardLogic.openTodos(todos: [trashedTodo], dayKey: today).isEmpty)
+        #expect(
+            DayBoardLogic.todayBadgeCount(
+                routines: [trashedStanding],
+                checks: [],
+                todos: [trashedTodo],
+                dayKey: today
+            ) == 0
+        )
+        let trashedDiary = DiarySnapshot(
+            id: UUID(),
+            text: "扔了",
+            dayKey: today,
+            createdAt: Date(timeIntervalSince1970: 4),
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        #expect(DayBoardLogic.diaries(for: today, in: [trashedDiary]).isEmpty)
+        #expect(
+            DayBoardLogic.yesterdayUnfinished(
+                routines: [trashedStanding],
+                checks: [],
+                todos: [trashedTodo],
+                yesterdayKey: today
+            ).isEmpty
+        )
+    }
 }

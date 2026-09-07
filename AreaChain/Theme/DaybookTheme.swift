@@ -88,3 +88,38 @@ struct SectionStamp: View {
             .padding(.bottom, 2)
     }
 }
+
+struct RowIconButton: View {
+    var systemName: String
+    var label: LocalizedStringKey
+    var role: ButtonRole? = nil
+    var action: () -> Void
+
+    var body: some View {
+        Button(role: role, action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 11, weight: .semibold))
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(role == .destructive ? Color.red.opacity(0.75) : DaybookTheme.muted)
+        .accessibilityLabel(label)
+        .help(label)
+    }
+}
+
+struct ComposerAddButton: View {
+    var title: LocalizedStringKey = "row.add"
+    var enabled: Bool
+    var emphasized: Bool = true
+    var action: () -> Void
+
+    var body: some View {
+        Button(title, action: action)
+            .font(.system(size: 11, weight: .semibold))
+            .buttonStyle(.plain)
+            .foregroundStyle(enabled && emphasized ? DaybookTheme.stamp : DaybookTheme.muted)
+            .disabled(!enabled)
+    }
+}

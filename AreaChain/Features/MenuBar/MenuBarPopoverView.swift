@@ -58,7 +58,8 @@ struct MenuBarPopoverView: View {
                 case .diary:
                     DiaryPage(
                         todayKey: todayKey,
-                        entries: diaries
+                        entries: diaries,
+                        showsComposer: true
                     )
                 }
             }
@@ -181,6 +182,12 @@ struct FooterBar: View {
             .foregroundStyle(DaybookTheme.muted)
             Button("footer.diary") {
                 AppWindows.openDiary()
+            }
+            .font(.system(size: 11))
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
+            Button("footer.trash") {
+                AppWindows.openTrash()
             }
             .font(.system(size: 11))
             .buttonStyle(.plain)

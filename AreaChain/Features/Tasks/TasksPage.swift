@@ -15,20 +15,21 @@ struct TasksPage: View {
     @State var showUpcoming = false
     @State var showCompleted = true
     @State var residentDraft = ""
+    @State var pendingTrash: PendingTrash?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             leftoverChips
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    routineSection
-                    todaySection
+                    todayList
                     upcomingSection
                     completedSection
                     yesterdaySection
                 }
             }
         }
+        .confirmMoveToTrash($pendingTrash)
     }
 
     var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -77,6 +78,59 @@ struct TasksPage: View {
     var completedCount: Int { doneRoutineModels.count + doneTodoModels.count }
 
     var disabledRoutineModels: [DailyRoutine] {
-        routines.filter { !$0.isEnabled }.sorted { $0.sortOrder < $1.sortOrder }
+        routines.filter { $0.deletedAt == nil && !$0.isEnabled }.sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    var openDayItems: [BoardRow] {
+        sortedRows(
+            openRoutineModels.map(BoardRow.resident) + openTodoModels.map(BoardRow.todo)
+        )
+    }
+
+    var doneDayItems: [BoardRow] {
+        sortedRows(
+            doneRoutineModels.map(BoardRow.resident) + doneTodoModels.map(BoardRow.todo)
+        )
+    }
+
+    func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
+        rows.sorted { left, right in
+            switch (left.remindMinutes, right.remindMinutes) {
+            case let (a?, b?) where a != b:
+                return a < b
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            default:
+                return left.createdAt < right.createdAt
+            }
+        }
+    }
+}
+
+enum BoardRow: Identifiable {
+    case resident(DailyRoutine)
+    case todo(TodoItem)
+
+    var id: UUID {
+        switch self {
+        case .resident(let item): item.id
+        case .todo(let item): item.id
+        }
+    }
+
+    var remindMinutes: Int? {
+        switch self {
+        case .resident(let item): item.remindMinutes
+        case .todo(let item): item.remindMinutes
+        }
+    }
+
+    var createdAt: Date {
+        switch self {
+        case .resident(let item): item.createdAt
+        case .todo(let item): item.createdAt
+        }
     }
 }

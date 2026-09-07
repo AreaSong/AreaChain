@@ -11,6 +11,7 @@ final class DailyRoutine {
     var weekdaysOnly: Bool = false
     var createdAt: Date = Date()
     var remindMinutes: Int?
+    var deletedAt: Date?
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -23,7 +24,8 @@ final class DailyRoutine {
         createdDayKey: String = DayKey.today(),
         weekdaysOnly: Bool = false,
         createdAt: Date = .now,
-        remindMinutes: Int? = nil
+        remindMinutes: Int? = nil,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -33,6 +35,7 @@ final class DailyRoutine {
         self.weekdaysOnly = weekdaysOnly
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+        self.deletedAt = deletedAt
         self.checks = []
     }
 
@@ -45,7 +48,8 @@ final class DailyRoutine {
             createdDayKey: createdDayKey,
             weekdaysOnly: weekdaysOnly,
             createdAt: createdAt,
-            remindMinutes: remindMinutes
+            remindMinutes: remindMinutes,
+            deletedAt: deletedAt
         )
     }
 }
@@ -91,6 +95,7 @@ final class TodoItem {
     var dayKey: String
     var createdAt: Date
     var remindMinutes: Int?
+    var deletedAt: Date?
 
     init(
         id: UUID = UUID(),
@@ -98,7 +103,8 @@ final class TodoItem {
         isDone: Bool = false,
         dayKey: String,
         createdAt: Date = .now,
-        remindMinutes: Int? = nil
+        remindMinutes: Int? = nil,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -106,6 +112,7 @@ final class TodoItem {
         self.dayKey = dayKey
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+        self.deletedAt = deletedAt
     }
 
     var snapshot: TodoSnapshot {
@@ -115,7 +122,8 @@ final class TodoItem {
             isDone: isDone,
             dayKey: dayKey,
             createdAt: createdAt,
-            remindMinutes: remindMinutes
+            remindMinutes: remindMinutes,
+            deletedAt: deletedAt
         )
     }
 }
@@ -126,21 +134,24 @@ final class DiaryEntry {
     var text: String
     var dayKey: String
     var createdAt: Date
+    var deletedAt: Date?
 
     init(
         id: UUID = UUID(),
         text: String,
         dayKey: String,
-        createdAt: Date = .now
+        createdAt: Date = .now,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.text = text
         self.dayKey = dayKey
         self.createdAt = createdAt
+        self.deletedAt = deletedAt
     }
 
     var snapshot: DiarySnapshot {
-        DiarySnapshot(id: id, text: text, dayKey: dayKey, createdAt: createdAt)
+        DiarySnapshot(id: id, text: text, dayKey: dayKey, createdAt: createdAt, deletedAt: deletedAt)
     }
 }
 

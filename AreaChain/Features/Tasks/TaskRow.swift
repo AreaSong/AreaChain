@@ -3,6 +3,7 @@ import SwiftUI
 struct TaskRow: View {
     var title: String
     var isDone: Bool
+    var isResident: Bool = false
     var note: String? = nil
     var createdAt: Date? = nil
     var remindMinutes: Int? = nil
@@ -26,14 +27,18 @@ struct TaskRow: View {
     @State private var pickingTime = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(alignment: .top, spacing: 8) {
             InkCheckbox(isDone: isDone, action: onToggle)
+            if isResident {
+                residentMark
+            }
             if editing {
                 editor
             } else {
                 titleLabel
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+            actionCluster
         }
         .padding(.vertical, 2)
         .contextMenu { menus }
@@ -54,6 +59,15 @@ struct TaskRow: View {
         }
     }
 
+    private var residentMark: some View {
+        Image(systemName: "repeat")
+            .font(.system(size: 10, weight: .bold))
+            .foregroundStyle(DaybookTheme.stamp)
+            .padding(.top, 3)
+            .accessibilityLabel("row.resident")
+            .help("row.resident")
+    }
+
     private var titleLabel: some View {
         VStack(alignment: .leading, spacing: 1) {
             Text(title)
@@ -71,8 +85,7 @@ struct TaskRow: View {
         .contentShape(Rectangle())
         .onTapGesture {
             guard onEdit != nil else { return }
-            draft = title
-            editing = true
+            beginEdit()
         }
     }
 
@@ -107,10 +120,7 @@ struct TaskRow: View {
             .font(.system(size: 13))
             .foregroundStyle(DaybookTheme.ink)
             .onSubmit(saveEdit)
-            .onExitCommand {
-                draft = title
-                editing = false
-            }
+            .onExitCommand(perform: cancelEdit)
     }
 
     private var timePicker: some View {
@@ -129,6 +139,16 @@ struct TaskRow: View {
         .frame(minWidth: 180)
     }
 
+    private func beginEdit() {
+        draft = title
+        editing = true
+    }
+
+    private func cancelEdit() {
+        draft = title
+        editing = false
+    }
+
     private func saveEdit() {
         let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !next.isEmpty {
@@ -142,13 +162,59 @@ struct TaskRow: View {
 
 extension TaskRow {
     @ViewBuilder
-    var menus: some View {
-        if onEdit != nil {
-            Button("row.edit") {
-                draft = title
-                editing = true
+    private var actionCluster: some View {
+        HStack(spacing: 2) {
+            if editing {
+                RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
+                RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
+            } else {
+                if onEdit != nil {
+                    RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
+                }
+                if hasOverflow {
+                    Menu {
+                        overflowMenus
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .font(.system(size: 11, weight: .semibold))
+                            .frame(width: 18, height: 18)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(DaybookTheme.muted)
+                    .menuIndicator(.hidden)
+                    .help("row.more")
+                    .accessibilityLabel("row.more")
+                }
+                if let onDelete {
+                    RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
+                }
             }
         }
+    }
+
+    private var hasOverflow: Bool {
+        onSkip != nil
+            || onMoveToDay != nil
+            || onRemindMinutes != nil
+            || onWeekdaysOnly != nil
+            || onDisable != nil
+            || onEnable != nil
+    }
+
+    @ViewBuilder
+    var menus: some View {
+        if onEdit != nil {
+            Button("row.edit", action: beginEdit)
+        }
+        overflowMenus
+        if let onDelete {
+            Button("row.delete", role: .destructive, action: onDelete)
+        }
+    }
+
+    @ViewBuilder
+    private var overflowMenus: some View {
         timeMenus
         if let todayKey, onMoveToDay != nil {
             DayScheduleMenu(
@@ -161,9 +227,6 @@ extension TaskRow {
         standingMenus
         if let onSkip {
             Button("row.skip", action: onSkip)
-        }
-        if let onDelete {
-            Button("row.delete", role: .destructive, action: onDelete)
         }
     }
 

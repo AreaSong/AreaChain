@@ -99,7 +99,38 @@ struct SyncPortTests {
         """
         let decoded = try SyncPort.decode(Data(json.utf8))
         #expect(decoded.todos.first?.remindMinutes == nil)
+        #expect(decoded.todos.first?.deletedAt == nil)
         #expect(decoded.todos.first?.title == "修角标")
+    }
+
+    @Test func decodeMissingDeletedAtAsNil() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [
+            {
+              "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "title": "复盘",
+              "sortOrder": 1,
+              "isEnabled": true,
+              "createdDayKey": "2026-09-01"
+            }
+          ],
+          "checks": [],
+          "todos": [],
+          "diaries": [
+            {
+              "id": "eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee",
+              "text": "一句",
+              "dayKey": "2026-09-07",
+              "createdAt": "2026-09-07T01:00:00Z"
+            }
+          ]
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.routines.first?.deletedAt == nil)
+        #expect(decoded.diaries.first?.deletedAt == nil)
     }
 
     @Test func encodeKeepsRemindMinutesAndCreatedAt() throws {

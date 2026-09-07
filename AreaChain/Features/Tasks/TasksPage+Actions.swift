@@ -83,7 +83,9 @@ extension TasksPage {
     }
 
     func deleteRoutine(_ routine: DailyRoutine) {
-        persist { modelContext.delete(routine) }
+        pendingTrash = PendingTrash(title: routine.title) {
+            persist { routine.deletedAt = .now }
+        }
     }
 
     func disableRoutine(_ routine: DailyRoutine) {
@@ -121,7 +123,9 @@ extension TasksPage {
     }
 
     func deleteTodo(_ todo: TodoItem) {
-        persist { modelContext.delete(todo) }
+        pendingTrash = PendingTrash(title: todo.title) {
+            persist { todo.deletedAt = .now }
+        }
     }
 
     func toggleTodo(_ todo: TodoItem) {

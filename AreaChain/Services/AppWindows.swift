@@ -15,6 +15,12 @@ enum AppWindows {
         PanelWindowController.diary.show()
     }
 
+    static func openTrash() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.trash.show()
+    }
+
     static func becomeActive() {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -42,7 +48,7 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow]
+        [PanelWindowController.settings.hostedWindow, PanelWindowController.diary.hostedWindow, PanelWindowController.trash.hostedWindow]
             .compactMap { $0 }
     }
 }
@@ -66,6 +72,17 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         root: {
             AnyView(
                 DiaryStandaloneView()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
+    static let trash = PanelWindowController(
+        titleKey: "window.trash",
+        size: NSSize(width: 420, height: 520),
+        root: {
+            AnyView(
+                TrashPage()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

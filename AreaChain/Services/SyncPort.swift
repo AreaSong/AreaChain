@@ -17,9 +17,10 @@ struct ExportedRoutine: Codable, Equatable {
     var weekdaysOnly: Bool
     var createdAt: Date?
     var remindMinutes: Int?
+    var deletedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, createdAt, remindMinutes
+        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, createdAt, remindMinutes, deletedAt
     }
 
     init(
@@ -30,7 +31,8 @@ struct ExportedRoutine: Codable, Equatable {
         createdDayKey: String,
         weekdaysOnly: Bool = false,
         createdAt: Date? = nil,
-        remindMinutes: Int? = nil
+        remindMinutes: Int? = nil,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -40,6 +42,7 @@ struct ExportedRoutine: Codable, Equatable {
         self.weekdaysOnly = weekdaysOnly
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+        self.deletedAt = deletedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -52,6 +55,7 @@ struct ExportedRoutine: Codable, Equatable {
         weekdaysOnly = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
         createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
         remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
+        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
     }
 }
 
@@ -97,9 +101,10 @@ struct ExportedTodo: Codable, Equatable {
     var dayKey: String
     var createdAt: Date
     var remindMinutes: Int?
+    var deletedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, isDone, dayKey, createdAt, remindMinutes
+        case id, title, isDone, dayKey, createdAt, remindMinutes, deletedAt
     }
 
     init(
@@ -108,7 +113,8 @@ struct ExportedTodo: Codable, Equatable {
         isDone: Bool,
         dayKey: String,
         createdAt: Date,
-        remindMinutes: Int? = nil
+        remindMinutes: Int? = nil,
+        deletedAt: Date? = nil
     ) {
         self.id = id
         self.title = title
@@ -116,6 +122,7 @@ struct ExportedTodo: Codable, Equatable {
         self.dayKey = dayKey
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+        self.deletedAt = deletedAt
     }
 
     init(from decoder: Decoder) throws {
@@ -126,6 +133,7 @@ struct ExportedTodo: Codable, Equatable {
         dayKey = try box.decode(String.self, forKey: .dayKey)
         createdAt = try box.decode(Date.self, forKey: .createdAt)
         remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
+        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
     }
 }
 
@@ -134,6 +142,7 @@ struct ExportedDiary: Codable, Equatable {
     var text: String
     var dayKey: String
     var createdAt: Date
+    var deletedAt: Date? = nil
 }
 
 enum SyncPort {
@@ -155,7 +164,8 @@ enum SyncPort {
                     createdDayKey: $0.createdDayKey,
                     weekdaysOnly: $0.weekdaysOnly,
                     createdAt: $0.createdAt,
-                    remindMinutes: $0.remindMinutes
+                    remindMinutes: $0.remindMinutes,
+                    deletedAt: $0.deletedAt
                 )
             },
             checks: checks.compactMap { check in
@@ -175,7 +185,8 @@ enum SyncPort {
                     isDone: $0.isDone,
                     dayKey: $0.dayKey,
                     createdAt: $0.createdAt,
-                    remindMinutes: $0.remindMinutes
+                    remindMinutes: $0.remindMinutes,
+                    deletedAt: $0.deletedAt
                 )
             },
             diaries: diaries.map {
@@ -183,7 +194,8 @@ enum SyncPort {
                     id: $0.id,
                     text: $0.text,
                     dayKey: $0.dayKey,
-                    createdAt: $0.createdAt
+                    createdAt: $0.createdAt,
+                    deletedAt: $0.deletedAt
                 )
             }
         )

@@ -27,8 +27,12 @@ struct DiaryPage: View {
     private var visibleEntries: [DiaryEntry] {
         let ids = Set(DayBoardLogic.diaries(for: viewingKey, in: entries.map(\.snapshot)).map(\.id))
         return entries
-            .filter { ids.contains($0.id) }
+            .filter { ids.contains($0.id) && $0.deletedAt == nil }
             .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    private var canSubmit: Bool {
+        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
@@ -40,10 +44,7 @@ struct DiaryPage: View {
                     .foregroundStyle(DaybookTheme.muted)
             }
             if showsComposer {
-                TextField("diary.composer", text: $draft)
-                    .textFieldStyle(.plain)
-                    .focused($composerFocused)
-                    .onSubmit(addTodayDiary)
+                composer
             }
             entryList
         }
@@ -52,6 +53,22 @@ struct DiaryPage: View {
                 viewingKey = newValue
             }
         }
+    }
+
+    private var composer: some View {
+        HStack(spacing: 8) {
+            TextField("diary.composer", text: $draft)
+                .textFieldStyle(.plain)
+                .focused($composerFocused)
+                .onSubmit(addTodayDiary)
+            ComposerAddButton(enabled: canSubmit, action: addTodayDiary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(DaybookTheme.rule, lineWidth: 1)
+        )
     }
 
     private var dayChrome: some View {
@@ -117,56 +134,79 @@ struct DiaryPage: View {
         modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
         draft = ""
         viewingKey = todayKey
+        BoardEvents.changed()
     }
 }
 
 struct DiaryLine: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     var entry: DiaryEntry
     @State private var editing = false
     @State private var draft = ""
+    @State private var pendingTrash: PendingTrash?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(timeLabel(entry.createdAt))
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
-                .foregroundStyle(DaybookTheme.stamp.opacity(0.9))
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(timeLabel(entry.createdAt))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(DaybookTheme.stamp.opacity(0.9))
+                if editing {
+                    TextField("diary.rename", text: $draft, axis: .vertical)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13))
+                        .onSubmit(save)
+                        .onExitCommand(perform: cancel)
+                } else {
+                    Text(entry.text)
+                        .font(.system(size: 13))
+                        .foregroundStyle(DaybookTheme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .onTapGesture(perform: beginEdit)
+                }
+            }
+            Spacer(minLength: 4)
             if editing {
-                TextField("diary.rename", text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .onSubmit(save)
+                RowIconButton(systemName: "checkmark", label: "row.save", action: save)
+                RowIconButton(systemName: "xmark", label: "row.cancel", action: cancel)
             } else {
-                Text(entry.text)
-                    .font(.system(size: 13))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .onTapGesture {
-                        draft = entry.text
-                        editing = true
-                    }
+                RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
+                RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contextMenu {
-            Button("diary.edit") {
-                draft = entry.text
-                editing = true
-            }
-            Button("diary.delete", role: .destructive) {
-                modelContext.delete(entry)
-            }
+            Button("diary.edit", action: beginEdit)
+            Button("diary.delete", role: .destructive, action: requestTrash)
         }
+        .confirmMoveToTrash($pendingTrash)
         .onAppear { draft = entry.text }
+    }
+
+    private func beginEdit() {
+        draft = entry.text
+        editing = true
+    }
+
+    private func cancel() {
+        draft = entry.text
+        editing = false
     }
 
     private func save() {
         let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !next.isEmpty {
             entry.text = next
+            BoardEvents.changed()
         }
         editing = false
+    }
+
+    private func requestTrash() {
+        pendingTrash = PendingTrash(title: entry.text) {
+            entry.deletedAt = .now
+            BoardEvents.changed()
+        }
     }
 
     private func timeLabel(_ date: Date) -> String {

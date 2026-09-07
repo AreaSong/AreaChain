@@ -1,11 +1,14 @@
 import SwiftUI
 
 extension TasksPage {
-    var routineSection: some View {
+    var todayList: some View {
         Group {
-            SectionStamp(title: "stamp.routines")
-            ForEach(openRoutineModels, id: \.id) { routine in
-                residentRow(routine, isDone: false)
+            if openDayItems.isEmpty {
+                emptyLine("empty.todos")
+            } else {
+                ForEach(openDayItems) { row in
+                    dayRow(row, isDone: false)
+                }
             }
             addResidentRow
             if !disabledRoutineModels.isEmpty {
@@ -15,19 +18,6 @@ extension TasksPage {
                     .padding(.top, 4)
                 ForEach(disabledRoutineModels, id: \.id) { routine in
                     disabledRow(routine)
-                }
-            }
-        }
-    }
-
-    var todaySection: some View {
-        Group {
-            SectionStamp(title: "stamp.today")
-            if openTodoModels.isEmpty {
-                emptyLine("empty.todos")
-            } else {
-                ForEach(openTodoModels, id: \.id) { todo in
-                    todoRow(todo, isDone: false)
                 }
             }
         }
@@ -48,11 +38,8 @@ extension TasksPage {
                 .buttonStyle(.plain)
             }
             if showCompleted {
-                ForEach(doneRoutineModels, id: \.id) { routine in
-                    residentRow(routine, isDone: true)
-                }
-                ForEach(doneTodoModels, id: \.id) { todo in
-                    todoRow(todo, isDone: true)
+                ForEach(doneDayItems) { row in
+                    dayRow(row, isDone: true)
                 }
             }
         }
@@ -149,10 +136,21 @@ extension TasksPage {
             .padding(.vertical, 4)
     }
 
+    @ViewBuilder
+    func dayRow(_ row: BoardRow, isDone: Bool) -> some View {
+        switch row {
+        case .resident(let routine):
+            residentRow(routine, isDone: isDone)
+        case .todo(let todo):
+            todoRow(todo, isDone: isDone)
+        }
+    }
+
     func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
         TaskRow(
             title: routine.title,
             isDone: isDone,
+            isResident: true,
             note: isDone ? doneRoutineNote(routine) : (routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil),
             createdAt: routine.createdAt,
             remindMinutes: routine.remindMinutes,
@@ -192,6 +190,7 @@ extension TasksPage {
             TaskRow(
                 title: routine.title,
                 isDone: false,
+                isResident: true,
                 createdAt: routine.createdAt,
                 remindMinutes: routine.remindMinutes,
                 todayKey: todayKey,
@@ -211,16 +210,24 @@ extension TasksPage {
     }
 
     var addResidentRow: some View {
-        TextField("resident.add", text: $residentDraft)
-            .textFieldStyle(.plain)
-            .font(.system(size: 12))
-            .foregroundStyle(DaybookTheme.ink)
-            .onSubmit(addResident)
-            .padding(.vertical, 4)
+        HStack(spacing: 8) {
+            TextField("resident.add", text: $residentDraft)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12))
+                .foregroundStyle(DaybookTheme.ink)
+                .onSubmit(addResident)
+            ComposerAddButton(
+                enabled: !residentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                action: addResident
+            )
+        }
+        .padding(.vertical, 4)
     }
 
     func disabledRow(_ routine: DailyRoutine) -> some View {
         HStack(spacing: 8) {
+            Image(systemName: "repeat")
+                .font(.system(size: 10, weight: .bold))
             Image(systemName: "pause.circle")
                 .font(.system(size: 12))
             VStack(alignment: .leading, spacing: 1) {
@@ -229,7 +236,13 @@ extension TasksPage {
                 Text(ClockLabel.created(routine.createdAt, locale: locale))
                     .font(.system(size: 10))
             }
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+            RowIconButton(systemName: "play.circle", label: "row.enable") {
+                enableRoutine(routine)
+            }
+            RowIconButton(systemName: "trash", label: "row.delete", role: .destructive) {
+                deleteRoutine(routine)
+            }
         }
         .foregroundStyle(DaybookTheme.muted)
         .padding(.vertical, 2)

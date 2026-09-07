@@ -9,6 +9,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var weekdaysOnly: Bool = false
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
+    var deletedAt: Date? = nil
 }
 
 struct CheckSnapshot: Equatable {
@@ -25,6 +26,7 @@ struct TodoSnapshot: Equatable, Identifiable {
     var dayKey: String
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
+    var deletedAt: Date? = nil
 }
 
 struct DiarySnapshot: Equatable, Identifiable {
@@ -32,6 +34,7 @@ struct DiarySnapshot: Equatable, Identifiable {
     var text: String
     var dayKey: String
     var createdAt: Date
+    var deletedAt: Date? = nil
 }
 
 enum UnfinishedKind: String, Equatable {
@@ -47,7 +50,7 @@ struct UnfinishedItem: Equatable, Identifiable {
 
 enum DayBoardLogic {
     static func isRoutineDue(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
-        guard routine.isEnabled, routine.createdDayKey <= dayKey else { return false }
+        guard routine.deletedAt == nil, routine.isEnabled, routine.createdDayKey <= dayKey else { return false }
         if routine.weekdaysOnly {
             return DayKey.isWeekday(dayKey)
         }
@@ -126,7 +129,7 @@ enum DayBoardLogic {
     }
 
     static func todos(for dayKey: String, in todos: [TodoSnapshot]) -> [TodoSnapshot] {
-        todos.filter { $0.dayKey == dayKey }
+        todos.filter { $0.deletedAt == nil && $0.dayKey == dayKey }
     }
 
     static func unfinishedTodos(todos: [TodoSnapshot], dayKey: String) -> [TodoSnapshot] {
@@ -135,7 +138,7 @@ enum DayBoardLogic {
 
     static func upcomingTodos(todos: [TodoSnapshot], todayKey: String) -> [TodoSnapshot] {
         todos
-            .filter { !$0.isDone && $0.dayKey > todayKey }
+            .filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey > todayKey }
             .sorted {
                 if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
                 return $0.title.localizedStandardCompare($1.title) == .orderedAscending
@@ -172,7 +175,7 @@ enum DayBoardLogic {
 
     static func diaries(for dayKey: String, in entries: [DiarySnapshot]) -> [DiarySnapshot] {
         entries
-            .filter { $0.dayKey == dayKey }
+            .filter { $0.deletedAt == nil && $0.dayKey == dayKey }
             .sorted { $0.createdAt > $1.createdAt }
     }
 }

@@ -152,6 +152,27 @@ struct ReminderPlanningTests {
         #expect(catalog[1].kind == .once(dayKey: "2026-09-07", isDone: false))
     }
 
+    @Test func catalogDropsTrashed() {
+        let standing = RoutineSnapshot(
+            id: UUID(),
+            title: "复盘",
+            sortOrder: 0,
+            isEnabled: true,
+            createdDayKey: "2026-09-01",
+            remindMinutes: 8 * 60,
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        let todo = TodoSnapshot(
+            id: UUID(),
+            title: "临时",
+            isDone: false,
+            dayKey: "2026-09-07",
+            remindMinutes: 18 * 60,
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        #expect(ReminderPlanning.catalog(routines: [standing], checks: [], todos: [todo], todayKey: "2026-09-07").isEmpty)
+    }
+
     @Test func clampedMinutesRejectOutOfRange() {
         #expect(RemindMinutes.clamped(-1) == nil)
         #expect(RemindMinutes.clamped(0) == 0)
