@@ -8,6 +8,7 @@ final class CaptureSession {
 }
 
 struct CaptureField: View {
+    @Environment(\.locale) private var locale
     @Binding var text: String
     var focus: FocusState<Bool>.Binding
     var onTodo: () -> Void
@@ -19,19 +20,13 @@ struct CaptureField: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            TextField("capture.placeholder.today", text: $text)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .foregroundStyle(DaybookTheme.ink)
-                .focused(focus)
-                .onSubmit(onTodo)
-                .onKeyPress(.return, phases: .down) { press in
-                    if press.modifiers.contains(.command) {
-                        onDiary()
-                        return .handled
-                    }
-                    return .ignored
-                }
+            DaybookTextField(
+                text: $text,
+                placeholder: L10n.string("capture.placeholder.today", locale: locale),
+                focus: focus,
+                onSubmit: onTodo,
+                onCommandReturn: onDiary
+            )
             ComposerAddButton(enabled: canSubmit, action: onTodo)
             ComposerAddButton(title: "capture.diary", enabled: canSubmit, emphasized: false, action: onDiary)
         }
@@ -45,5 +40,7 @@ struct CaptureField: View {
                         .stroke(DaybookTheme.rule, lineWidth: 1)
                 )
         )
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .daybookHideInputChrome()
     }
 }

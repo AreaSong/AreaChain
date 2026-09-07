@@ -64,6 +64,7 @@ struct TrashPage: View {
                 }
             }
         }
+        .daybookScroll()
     }
 
     private func trashCard(_ item: TrashRow) -> some View {

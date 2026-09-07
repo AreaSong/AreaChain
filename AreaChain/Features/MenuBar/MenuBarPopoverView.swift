@@ -69,6 +69,8 @@ struct MenuBarPopoverView: View {
         .frame(width: DaybookTheme.popoverSize.width, height: DaybookTheme.popoverSize.height)
         .background(DaybookTheme.paper.opacity(0.92))
         .overlay(RuledPaper().opacity(0.35))
+        .clipShape(Rectangle())
+        .daybookHideInputChrome()
         .onAppear(perform: prepare)
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
             captureFocused = true

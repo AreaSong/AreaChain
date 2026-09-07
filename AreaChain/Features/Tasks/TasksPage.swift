@@ -28,6 +28,7 @@ struct TasksPage: View {
                     yesterdaySection
                 }
             }
+            .daybookScroll()
         }
         .confirmMoveToTrash($pendingTrash)
     }

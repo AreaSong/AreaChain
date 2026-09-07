@@ -123,3 +123,120 @@ struct ComposerAddButton: View {
             .disabled(!enabled)
     }
 }
+
+extension View {
+    func daybookScroll() -> some View {
+        scrollIndicators(.hidden)
+    }
+
+    @ViewBuilder
+    func daybookHideInputChrome() -> some View {
+        if #available(macOS 15.4, *) {
+            self
+                .writingToolsBehavior(.disabled)
+                .writingToolsAffordanceVisibility(.hidden)
+        } else if #available(macOS 15.0, *) {
+            self.writingToolsBehavior(.disabled)
+        } else {
+            self
+        }
+    }
+}
+
+/// AppKit 单行输入，避开 SwiftUI TextField 在 NSPopover 里错位的系统附件按钮。
+struct DaybookTextField: NSViewRepresentable {
+    @Binding var text: String
+    var placeholder: String
+    var fontSize: CGFloat = 13
+    var focus: FocusState<Bool>.Binding
+    var onSubmit: () -> Void
+    var onCommandReturn: (() -> Void)? = nil
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    func makeNSView(context: Context) -> NSTextField {
+        let field = NSTextField(string: "")
+        field.placeholderString = placeholder
+        field.font = .systemFont(ofSize: fontSize)
+        field.textColor = NSColor(DaybookTheme.ink)
+        field.drawsBackground = false
+        field.backgroundColor = .clear
+        field.isBordered = false
+        field.isBezeled = false
+        field.focusRingType = .none
+        field.lineBreakMode = .byTruncatingTail
+        if let cell = field.cell as? NSTextFieldCell {
+            cell.wraps = false
+            cell.isScrollable = true
+            cell.usesSingleLineMode = true
+        }
+        field.setContentHuggingPriority(.defaultHigh, for: .vertical)
+        field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        field.delegate = context.coordinator
+        return field
+    }
+
+    func updateNSView(_ field: NSTextField, context: Context) {
+        context.coordinator.parent = self
+        if field.stringValue != text {
+            field.stringValue = text
+        }
+        if field.placeholderString != placeholder {
+            field.placeholderString = placeholder
+        }
+        field.font = .systemFont(ofSize: fontSize)
+        field.textColor = NSColor(DaybookTheme.ink)
+        if focus.wrappedValue, field.window != nil, field.currentEditor() == nil {
+            DispatchQueue.main.async {
+                guard focus.wrappedValue else { return }
+                field.window?.makeFirstResponder(field)
+            }
+        }
+    }
+
+    final class Coordinator: NSObject, NSTextFieldDelegate {
+        var parent: DaybookTextField
+
+        init(_ parent: DaybookTextField) {
+            self.parent = parent
+        }
+
+        @objc func submitted(_ sender: Any? = nil) {
+            if NSApp.currentEvent?.modifierFlags.contains(.command) == true, let extra = parent.onCommandReturn {
+                extra()
+            } else {
+                parent.onSubmit()
+            }
+        }
+
+        func controlTextDidChange(_ obj: Notification) {
+            parent.text = (obj.object as? NSTextField)?.stringValue ?? ""
+        }
+
+        func controlTextDidBeginEditing(_ obj: Notification) {
+            parent.focus.wrappedValue = true
+            guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
+            editor.isAutomaticQuoteSubstitutionEnabled = false
+            editor.isAutomaticDashSubstitutionEnabled = false
+            editor.isAutomaticTextReplacementEnabled = false
+            editor.isAutomaticSpellingCorrectionEnabled = false
+            if #available(macOS 15.1, *) {
+                editor.writingToolsBehavior = .none
+            }
+        }
+
+        func controlTextDidEndEditing(_ obj: Notification) {
+            parent.focus.wrappedValue = false
+        }
+
+        func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                submitted()
+                return true
+            }
+            return false
+        }
+    }
+}

@@ -83,11 +83,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             close()
             return
         }
-        popover.contentViewController = NSHostingController(
+        let hosting = NSHostingController(
             rootView: MenuBarPopoverView()
                 .appChrome()
                 .modelContainer(container)
         )
+        hosting.safeAreaRegions = []
+        popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NotificationCenter.default.post(name: .focusCapture, object: nil)
     }

@@ -61,6 +61,7 @@ struct DiaryPage: View {
                 .textFieldStyle(.plain)
                 .focused($composerFocused)
                 .onSubmit(addTodayDiary)
+                .daybookHideInputChrome()
             ComposerAddButton(enabled: canSubmit, action: addTodayDiary)
         }
         .padding(.horizontal, 8)
@@ -122,6 +123,7 @@ struct DiaryPage: View {
                 }
             }
         }
+        .daybookScroll()
     }
 
     private var emptyCopy: LocalizedStringKey {
