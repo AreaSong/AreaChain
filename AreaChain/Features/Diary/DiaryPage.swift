@@ -72,54 +72,41 @@ struct DiaryPage: View {
     }
 
     private var composer: some View {
-        HStack(spacing: 8) {
-            TextField("diary.composer", text: $draft)
-                .textFieldStyle(.plain)
-                .focused($composerFocused)
-                .onSubmit(addTodayDiary)
-                .daybookHideInputChrome()
-            ComposerAddButton(enabled: canSubmit, action: addTodayDiary)
+        DaybookField(focused: composerFocused) {
+            HStack(spacing: 8) {
+                TextField("diary.composer", text: $draft)
+                    .textFieldStyle(.plain)
+                    .focused($composerFocused)
+                    .onSubmit(addTodayDiary)
+                    .daybookHideInputChrome()
+                ComposerAddButton(enabled: canSubmit, action: addTodayDiary)
+            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(DaybookTheme.rule, lineWidth: 1)
-        )
     }
 
     private var dayChrome: some View {
-        HStack(spacing: 8) {
-            Button {
+        HStack(spacing: 4) {
+            DaybookNavButton(systemName: "chevron.left", label: "diary.prev") {
                 viewingKey = DayKey.shifted(viewingKey, by: -1)
-            } label: {
-                Image(systemName: "chevron.left")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("diary.prev")
-
             VStack(alignment: .leading, spacing: 1) {
                 Text(isViewingToday ? L10n.string("diary.today.title", locale: locale) : DayKey.displayName(viewingKey, locale: locale))
                 Text(DayKey.shortStamp(viewingKey, locale: locale))
             }
             .font(.system(size: 11))
             .foregroundStyle(DaybookTheme.muted)
-
-            Button {
+            DaybookNavButton(
+                systemName: "chevron.right",
+                label: "diary.next",
+                enabled: !isViewingToday
+            ) {
                 viewingKey = DayKey.shifted(viewingKey, by: 1)
-            } label: {
-                Image(systemName: "chevron.right")
             }
-            .buttonStyle(.plain)
-            .disabled(isViewingToday)
-            .accessibilityLabel("diary.next")
-
             Spacer()
             if !isViewingToday {
                 Button("diary.back") { viewingKey = todayKey }
-                    .font(.system(size: 11))
-                    .buttonStyle(.plain)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .font(.system(size: 11, weight: .semibold))
+                    .buttonStyle(DaybookQuietButtonStyle(prominent: true))
             }
         }
     }
@@ -128,10 +115,7 @@ struct DiaryPage: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 10) {
                 if visibleEntries.isEmpty {
-                    Text(emptyCopy)
-                        .font(.system(size: 12))
-                        .foregroundStyle(DaybookTheme.muted)
-                        .padding(.top, 8)
+                    DaybookEmptyState(title: emptyCopy)
                 } else {
                     ForEach(visibleEntries, id: \.id) { entry in
                         DiaryLine(entry: entry, attachments: attachments)
@@ -165,6 +149,7 @@ struct DiaryLine: View {
     @State private var hovering = false
     @State private var draft = ""
     @State private var pendingTrash: PendingTrash?
+    @FocusState private var rowFocused: Bool
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
@@ -193,20 +178,25 @@ struct DiaryLine: View {
             if editing {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: save)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancel)
-            } else if hovering {
-                RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
-                RowIconButton(
-                    systemName: "photo",
-                    label: "row.attach",
-                    action: {
-                        AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-                    }
-                )
-                RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
+            } else {
+                if showsHoverActions {
+                    RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
+                    RowIconButton(
+                        systemName: "photo",
+                        label: "row.attach",
+                        action: {
+                            AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+                        }
+                    )
+                    RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
+                }
+                diaryMoreMenu
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+        .focusable()
+        .focused($rowFocused)
         .onHover { hovering = $0 }
         .contextMenu {
             Button("diary.edit", action: beginEdit)
@@ -223,6 +213,35 @@ struct DiaryLine: View {
         }
         .confirmMoveToTrash($pendingTrash)
         .onAppear { draft = entry.text }
+    }
+
+    private var showsHoverActions: Bool {
+        hovering || rowFocused
+    }
+
+    private var diaryMoreMenu: some View {
+        Menu {
+            Button("diary.edit", action: beginEdit)
+            Button("row.attach") {
+                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
+            Button("row.attach.paste") {
+                _ = AttachmentActions.pasteImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
+            Button("row.attach.screen") {
+                AttachmentActions.captureScreen(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
+            Button("diary.delete", role: .destructive, action: requestTrash)
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(DaybookQuietButtonStyle())
+        .menuIndicator(.hidden)
+        .help("row.more")
+        .accessibilityLabel("row.more")
     }
 
     private var diaryAttachments: [AttachmentRef] {

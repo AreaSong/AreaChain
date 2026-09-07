@@ -18,6 +18,7 @@ struct BoardFilterBar: View {
                 if !projects.isEmpty {
                     filterMenu(
                         title: projectTitle,
+                        active: filter.projectID != nil,
                         reset: { onChange(filter.withProject(nil)) }
                     ) {
                         ForEach(projects) { project in
@@ -30,6 +31,7 @@ struct BoardFilterBar: View {
                 if !tags.isEmpty {
                     filterMenu(
                         title: tagTitle,
+                        active: filter.tagID != nil,
                         reset: { onChange(filter.withTag(nil)) }
                     ) {
                         ForEach(tags) { tag in
@@ -42,6 +44,7 @@ struct BoardFilterBar: View {
                 if !bundleIDs.isEmpty {
                     filterMenu(
                         title: appTitle,
+                        active: filter.bundleID != nil,
                         reset: { onChange(filter.withBundle(nil)) }
                     ) {
                         ForEach(bundleIDs, id: \.self) { bundleID in
@@ -53,6 +56,7 @@ struct BoardFilterBar: View {
                 }
             }
             .font(.system(size: 11))
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -79,6 +83,7 @@ struct BoardFilterBar: View {
 
     private func filterMenu<Content: View>(
         title: LocalizedStringKey,
+        active: Bool,
         reset: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -87,9 +92,13 @@ struct BoardFilterBar: View {
             content()
         } label: {
             Text(title)
-                .foregroundStyle(DaybookTheme.muted)
+                .fontWeight(active ? .semibold : .regular)
+                .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
+                .lineLimit(1)
+                .help(title)
         }
         .menuIndicator(.hidden)
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookQuietButtonStyle(prominent: active))
+        .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 }

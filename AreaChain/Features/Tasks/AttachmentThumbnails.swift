@@ -10,14 +10,14 @@ struct QuadrantDots: View {
                 if isImportant {
                     Circle()
                         .fill(DaybookTheme.stamp)
-                        .frame(width: 5, height: 5)
+                        .frame(width: 6, height: 6)
                         .accessibilityLabel("classify.important")
                         .help("classify.important")
                 }
                 if isUrgent {
                     Circle()
-                        .stroke(DaybookTheme.stamp, lineWidth: 1.2)
-                        .frame(width: 5, height: 5)
+                        .strokeBorder(DaybookTheme.stamp, lineWidth: 1.4)
+                        .frame(width: 6, height: 6)
                         .accessibilityLabel("classify.urgent")
                         .help("classify.urgent")
                 }
@@ -40,6 +40,7 @@ struct AttachmentThumbnails: View {
                 }
                 .buttonStyle(.plain)
                 .help(item.filename)
+                .accessibilityLabel("a11y.attachment \(item.filename)")
             }
         }
         .popover(item: $preview) { item in
@@ -64,13 +65,15 @@ struct AttachmentThumbnails: View {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFill()
-                .frame(width: 18, height: 18)
-                .clipShape(RoundedRectangle(cornerRadius: 2, style: .continuous))
+                    .frame(width: 22, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    .contentShape(Rectangle())
         } else {
             Image(systemName: "photo")
                 .font(.system(size: 10))
                 .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 18, height: 18)
+                .frame(width: 22, height: 22)
+                .contentShape(Rectangle())
         }
     }
 }

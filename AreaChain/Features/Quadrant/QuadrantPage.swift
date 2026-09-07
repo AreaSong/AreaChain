@@ -23,7 +23,12 @@ struct QuadrantPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            dayChrome
+            DaybookPeriodBar(
+                title: DayKey.displayName(selectedKey, calendar: calendar, locale: locale),
+                onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar) },
+                onNext: { selectedKey = DayKey.shifted(selectedKey, by: 1, calendar: calendar) },
+                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+            )
             Text("quadrant.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
@@ -33,38 +38,7 @@ struct QuadrantPage: View {
                 }
             }
         }
-        .padding(16)
-        .frame(minWidth: 560, minHeight: 480)
-        .background(DaybookTheme.paper.opacity(0.94))
-    }
-
-    private var dayChrome: some View {
-        HStack(spacing: 8) {
-            Button {
-                selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Text(DayKey.displayName(selectedKey, calendar: calendar, locale: locale))
-                .font(.system(size: 14, weight: .regular, design: .serif).italic())
-                .foregroundStyle(DaybookTheme.ink)
-                .frame(maxWidth: .infinity)
-            Button {
-                selectedKey = DayKey.shifted(selectedKey, by: 1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            if selectedKey != todayKey {
-                Button("calendar.today") { selectedKey = todayKey }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-        }
+        .daybookPanel(minWidth: 560, minHeight: 480)
     }
 
     private func cell(_ slot: QuadrantSlot) -> some View {
@@ -74,9 +48,7 @@ struct QuadrantPage: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(DaybookTheme.stamp)
             if rows.isEmpty {
-                Text("quadrant.empty")
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
+                DaybookEmptyState(title: "quadrant.empty", compact: true)
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
@@ -110,6 +82,7 @@ struct QuadrantPage: View {
                 Image(systemName: "repeat")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(DaybookTheme.stamp)
+                    .accessibilityLabel("row.resident")
             }
             Text(title(row))
                 .font(.system(size: 12))

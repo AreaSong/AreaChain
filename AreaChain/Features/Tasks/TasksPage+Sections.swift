@@ -75,14 +75,16 @@ extension TasksPage {
                     .clipShape(Capsule())
                 Image(systemName: expanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
+                    .accessibilityHidden(true)
             }
             .font(.system(size: 11))
-            .foregroundStyle(DaybookTheme.muted)
+            .foregroundStyle(expanded ? DaybookTheme.ink : DaybookTheme.muted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookQuietButtonStyle())
         .disabled(count == 0)
         .opacity(count == 0 ? 0.45 : 1)
         .accessibilityLabel(count == 0 ? emptyLabel : countLabel)
+        .accessibilityAddTraits(expanded ? [.isSelected] : [])
     }
 
     func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {

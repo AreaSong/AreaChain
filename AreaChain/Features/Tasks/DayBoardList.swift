@@ -23,10 +23,10 @@ struct DayBoardList: View {
     var body: some View {
         Group {
             if openDayItems.isEmpty {
-                Text("empty.todos")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .padding(.vertical, 4)
+                DaybookEmptyState(
+                    title: filter.isActive ? "empty.filter" : "empty.todos",
+                    systemImage: filter.isActive ? "line.3.horizontal.decrease" : "square.and.pencil"
+                )
             } else {
                 ForEach(openDayItems) { row in
                     dayRow(row, isDone: false)
@@ -42,7 +42,8 @@ struct DayBoardList: View {
                             : "stamp.completed \(completedCount)"
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookQuietButtonStyle())
+                .accessibilityAddTraits(showCompleted ? .isSelected : [])
             }
             if showCompleted {
                 ForEach(doneDayItems) { row in

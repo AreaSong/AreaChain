@@ -60,10 +60,10 @@ struct SettingsView: View {
             Section("settings.capture") {
                 Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
                 Text("settings.capture.stamp.help")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
                 Text("settings.capture.screen.help")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
 
@@ -87,14 +87,14 @@ struct SettingsView: View {
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 Text("settings.calendar.sync.help")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.icloud") {
                 Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
                 Text("settings.icloud.hint")
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
 
@@ -103,15 +103,17 @@ struct SettingsView: View {
                 Button("settings.import") { importJSON() }
                 if StoreHealth.shared.isUsingMemoryFallback {
                     Text("settings.memory")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.red)
+                        .font(.system(size: 12))
+                        .foregroundStyle(DaybookTheme.destructive)
                     Button("settings.reset", role: .destructive) {
                         confirmReset = true
                     }
                 }
                 if let statusMessage {
                     Text(statusMessage)
-                        .font(.system(size: 11))
+                        .font(.system(size: 12))
+                        .foregroundStyle(DaybookTheme.ink)
+                        .textSelection(.enabled)
                 }
             }
         }

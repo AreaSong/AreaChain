@@ -19,9 +19,7 @@ struct CalendarStandaloneView: View {
             checks: checks,
             todos: todos
         )
-        .padding(16)
-        .frame(minWidth: 420, minHeight: 560)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .daybookPanel(minWidth: 420, minHeight: 560)
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()

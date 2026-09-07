@@ -33,7 +33,12 @@ struct CalendarPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            monthChrome
+            DaybookPeriodBar(
+                title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
+                onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
+                onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
+                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+            )
             CalendarMonthGrid(
                 monthKey: selectedKey,
                 todayKey: todayKey,
@@ -70,40 +75,6 @@ struct CalendarPage: View {
         )
     }
 
-    private var monthChrome: some View {
-        HStack(spacing: 8) {
-            Button {
-                selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            .accessibilityLabel("calendar.prev")
-
-            Text(DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale))
-                .font(.system(size: 16, weight: .regular, design: .serif).italic())
-                .foregroundStyle(DaybookTheme.ink)
-                .frame(maxWidth: .infinity)
-
-            Button {
-                selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            .accessibilityLabel("calendar.next")
-
-            if selectedKey != todayKey {
-                Button("calendar.today") { selectedKey = todayKey }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-        }
-    }
-
     private var selectedHeading: some View {
         Text(DayKey.displayName(selectedKey, calendar: calendar, locale: locale))
             .font(.system(size: 12))
@@ -111,19 +82,15 @@ struct CalendarPage: View {
     }
 
     private var composer: some View {
-        HStack(spacing: 8) {
-            TextField("calendar.add", text: $draft)
-                .textFieldStyle(.plain)
-                .onSubmit(addTodo)
-                .daybookHideInputChrome()
-            ComposerAddButton(enabled: canSubmit, action: addTodo)
+        DaybookField {
+            HStack(spacing: 8) {
+                TextField("calendar.add", text: $draft)
+                    .textFieldStyle(.plain)
+                    .onSubmit(addTodo)
+                    .daybookHideInputChrome()
+                ComposerAddButton(enabled: canSubmit, action: addTodo)
+            }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(DaybookTheme.rule, lineWidth: 1)
-        )
     }
 
     private var canSubmit: Bool {

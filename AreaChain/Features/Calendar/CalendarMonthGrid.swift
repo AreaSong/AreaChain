@@ -68,7 +68,7 @@ struct CalendarMonthGrid: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookQuietButtonStyle())
         .frame(maxWidth: .infinity, minHeight: 52)
         .contentShape(Rectangle())
         .overlay(
@@ -84,6 +84,16 @@ struct CalendarMonthGrid: View {
         } isTargeted: { hovering in
             dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
         }
-        .accessibilityLabel(DayKey.displayName(key, calendar: calendar, locale: locale))
+        .accessibilityLabel(cellLabel(key: key, count: count, today: today))
+        .accessibilityAddTraits(selected ? [.isSelected] : [])
+        .accessibilityHint(count > 0 ? Text("a11y.calendar.remaining \(count)") : Text(""))
+    }
+
+    private func cellLabel(key: String, count: Int, today: Bool) -> String {
+        let day = DayKey.displayName(key, calendar: calendar, locale: locale)
+        if today {
+            return L10n.string("a11y.calendar.today \(day)", locale: locale)
+        }
+        return day
     }
 }

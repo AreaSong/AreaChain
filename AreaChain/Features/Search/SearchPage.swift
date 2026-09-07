@@ -11,32 +11,24 @@ struct SearchPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            TextField("search.placeholder", text: $query)
-                .textFieldStyle(.plain)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(DaybookTheme.rule, lineWidth: 1)
-                )
-                .daybookHideInputChrome()
+            Text("window.search")
+                .font(.system(size: 16, weight: .regular, design: .serif).italic())
+                .foregroundStyle(DaybookTheme.ink)
+            DaybookField {
+                TextField("search.placeholder", text: $query)
+                    .textFieldStyle(.plain)
+                    .accessibilityLabel("search.placeholder")
+                    .daybookHideInputChrome()
+            }
             if BoardSearch.normalized(query).isEmpty {
-                Text("search.hint")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                DaybookEmptyState(title: "search.hint", systemImage: "magnifyingglass")
             } else if groups.isEmpty {
-                Text("search.empty")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                DaybookEmptyState(title: "search.empty", systemImage: "magnifyingglass")
             } else {
                 results
             }
         }
-        .padding(16)
-        .frame(minWidth: 420, minHeight: 480)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .daybookPanel(minWidth: 420, minHeight: 480)
     }
 
     private var groups: [(dayKey: String, items: [BoardSearchHit])] {
@@ -86,7 +78,8 @@ struct SearchPage: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookQuietButtonStyle())
+        .help(hit.title)
     }
 
     private func kindLabel(_ kind: BoardSearchHit.Kind) -> LocalizedStringKey {

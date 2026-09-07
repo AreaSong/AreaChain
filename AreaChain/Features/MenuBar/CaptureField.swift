@@ -19,28 +19,20 @@ struct CaptureField: View {
     }
 
     var body: some View {
-        HStack(spacing: 8) {
-            DaybookTextField(
-                text: $text,
-                placeholder: L10n.string("capture.placeholder.today", locale: locale),
-                focus: focus,
-                onSubmit: onTodo,
-                onCommandReturn: onDiary
-            )
-            ComposerAddButton(enabled: canSubmit, action: onTodo)
-            ComposerAddButton(title: "capture.diary", enabled: canSubmit, emphasized: false, action: onDiary)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.paper.opacity(0.55))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(DaybookTheme.rule, lineWidth: 1)
+        DaybookField(focused: focus.wrappedValue) {
+            HStack(spacing: 8) {
+                DaybookTextField(
+                    text: $text,
+                    placeholder: L10n.string("capture.placeholder.today", locale: locale),
+                    focus: focus,
+                    onSubmit: onTodo,
+                    onCommandReturn: onDiary
                 )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .accessibilityLabel("capture.placeholder.today")
+                ComposerAddButton(enabled: canSubmit, action: onTodo)
+                ComposerAddButton(title: "capture.diary", enabled: canSubmit, emphasized: false, action: onDiary)
+            }
+        }
         .daybookHideInputChrome()
     }
 }

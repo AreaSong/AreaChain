@@ -17,7 +17,7 @@ README.md
 
 不要把 `build/`、`DerivedData/`、`xcuserdata` 提交进去。
 
-菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层底栏点「设置 / 日记窗 / 日历窗 / 回收站」走 `AppWindows` 激活后再打开；附件、四象限、安排、搜索放在「更多」里，不用 `SettingsLink`。日历窗和四象限窗共用会话级 `BoardSelection.inspectingDayKey`；独立日记窗用 `diaryDayKey`。
+菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。浮层底栏点「设置 / 日历窗」走 `AppWindows` 激活后再打开；日记窗、回收站、附件、四象限、安排、搜索放在「更多」里，不用 `SettingsLink`。日历窗和四象限窗共用会话级 `BoardSelection.inspectingDayKey`；独立日记窗用 `diaryDayKey`。
 
 ## 应用内分层
 

@@ -16,9 +16,7 @@ struct AttachmentBrowserPage: View {
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
             if clusters.isEmpty {
-                Text("attachments.empty")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
+                DaybookEmptyState(title: "attachments.empty", systemImage: "photo")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 ScrollView {
@@ -31,9 +29,7 @@ struct AttachmentBrowserPage: View {
                 .daybookScroll()
             }
         }
-        .padding(16)
-        .frame(minWidth: 440, minHeight: 480)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .daybookPanel(minWidth: 440, minHeight: 480)
         .confirmMoveToTrash($pendingTrash)
         .popover(item: $preview) { item in
             previewBody(item)
@@ -67,12 +63,14 @@ struct AttachmentBrowserPage: View {
             VStack(spacing: 4) {
                 thumbImage(item)
                 Text(item.filename)
-                    .font(.system(size: 9))
+                    .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
                     .lineLimit(1)
             }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookQuietButtonStyle())
+        .accessibilityLabel(item.filename)
+        .help(item.filename)
         .contextMenu {
             Button("attachments.delete", role: .destructive) {
                 pendingTrash = PendingTrash(title: item.filename) {

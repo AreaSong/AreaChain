@@ -116,7 +116,7 @@ struct MenuBarPopoverView: View {
                     .font(.system(size: 20, weight: .regular, design: .serif).italic())
                     .foregroundStyle(DaybookTheme.ink)
                 Text(headerStatus)
-                    .font(.system(size: 11))
+                    .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
             Spacer()
@@ -127,9 +127,11 @@ struct MenuBarPopoverView: View {
                 .padding(.vertical, 4)
                 .overlay(
                     RoundedRectangle(cornerRadius: 2)
-                        .stroke(DaybookTheme.stamp.opacity(0.7), lineWidth: 1.2)
+                        .stroke(DaybookTheme.stamp.opacity(0.85), lineWidth: 1.2)
                 )
+                .accessibilityElement()
                 .accessibilityLabel("a11y.remaining \(todayRemaining)")
+                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 
@@ -141,6 +143,7 @@ struct MenuBarPopoverView: View {
         }
         .pickerStyle(.segmented)
         .labelsHidden()
+        .accessibilityLabel("tab.picker")
     }
 
     private func prepare() {
@@ -181,50 +184,30 @@ struct FooterBar: View {
     @State private var hotKeyName = HotKeyCenter.shared.displayName()
 
     var body: some View {
-        HStack {
-            Button("footer.settings") {
-                AppWindows.openSettings()
-            }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Button("footer.diary") {
-                AppWindows.openDiary()
-            }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Button("footer.calendar") {
-                AppWindows.openCalendar()
-            }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Button("footer.trash") {
-                AppWindows.openTrash()
-            }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
+        HStack(spacing: 2) {
+            footerButton("footer.settings", action: AppWindows.openSettings)
+            footerButton("footer.calendar", action: AppWindows.openCalendar)
             Menu("footer.more") {
                 Button("footer.search") { AppWindows.openSearch() }
+                Button("footer.diary") { AppWindows.openDiary() }
                 Button("footer.attachments") { AppWindows.openAttachments() }
                 Button("footer.quadrant") { AppWindows.openQuadrant() }
                 Button("footer.gantt") { AppWindows.openGantt() }
+                Button("footer.trash") { AppWindows.openTrash() }
             }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Spacer()
+            .font(.system(size: 11, weight: .medium))
+            .buttonStyle(DaybookQuietButtonStyle())
+            .help("footer.more")
+            Spacer(minLength: 8)
             Text("footer.hotkey \(hotKeyName)")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
-            Button("footer.quit") {
-                NSApplication.shared.terminate(nil)
-            }
-            .font(.system(size: 11))
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
+                .lineLimit(1)
+                .layoutPriority(-1)
+            Button("footer.quit", action: { NSApplication.shared.terminate(nil) })
+                .font(.system(size: 11, weight: .medium))
+                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+                .help("footer.quit")
         }
         .onAppear { refreshHotKey() }
         .onChange(of: locale.identifier) { _, _ in refreshHotKey() }
@@ -238,6 +221,13 @@ struct FooterBar: View {
 
     private func refreshHotKey() {
         hotKeyName = HotKeyCenter.shared.displayName(locale: locale)
+    }
+
+    private func footerButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(title, action: action)
+            .font(.system(size: 11, weight: .medium))
+            .buttonStyle(DaybookQuietButtonStyle())
+            .help(title)
     }
 }
 
@@ -261,6 +251,7 @@ struct MenuBarLabel: View {
         )
         return HStack(spacing: 2) {
             Image(systemName: "book.closed.fill")
+                .accessibilityHidden(true)
             Text("今")
                 .font(.system(size: 11, weight: .bold, design: .serif))
             if count > 0 {

@@ -24,17 +24,13 @@ struct TrashPage: View {
         VStack(alignment: .leading, spacing: 12) {
             header
             if items.isEmpty {
-                Text("trash.empty")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
+                DaybookEmptyState(title: "trash.empty", systemImage: "trash")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 list
             }
         }
-        .padding(16)
-        .frame(minWidth: 360, minHeight: 420)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .daybookPanel(minWidth: 360, minHeight: 420)
         .confirmPurge($pendingPurge)
     }
 
@@ -45,9 +41,8 @@ struct TrashPage: View {
                 .foregroundStyle(DaybookTheme.muted)
             Spacer()
             Button("trash.empty.action") { confirmEmpty = true }
-                .font(.system(size: 11))
-                .buttonStyle(.plain)
-                .foregroundStyle(items.isEmpty ? DaybookTheme.muted : .red.opacity(0.8))
+                .font(.system(size: 11, weight: .semibold))
+                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
                 .disabled(items.isEmpty)
                 .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
                     Button("alert.purge.all", role: .destructive, action: emptyTrash)
@@ -91,12 +86,13 @@ struct TrashPage: View {
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
                 Button("trash.restore") { restore(item) }
+                    .buttonStyle(DaybookQuietButtonStyle(prominent: true))
                 Button("trash.purge", role: .destructive) {
                     pendingPurge = PendingTrash(title: item.title) { purge(item) }
                 }
+                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
             }
             .font(.system(size: 11))
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 4)
     }

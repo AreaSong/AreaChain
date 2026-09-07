@@ -25,11 +25,13 @@ struct TaskRow: View {
     var dragPayload: String? = nil
 
     @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var editing = false
     @State private var hovering = false
     @State private var draft = ""
     @State private var pickingDay = false
     @State private var pickingTime = false
+    @FocusState private var rowFocused: Bool
 
     var body: some View {
         HStack(alignment: note == nil && !editing ? .center : .top, spacing: 8) {
@@ -51,6 +53,8 @@ struct TaskRow: View {
         }
         .padding(.vertical, 3)
         .contentShape(Rectangle())
+        .focusable()
+        .focused($rowFocused)
         .onHover { hovering = $0 }
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
@@ -179,17 +183,18 @@ extension TaskRow {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
             } else {
-                if hovering, onEdit != nil {
+                if showsHoverActions, onEdit != nil {
                     RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
                 }
                 if showsMoreMenu {
                     moreMenu
                 }
-                if hovering, let onDelete {
+                if showsHoverActions, let onDelete {
                     RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
                 }
             }
         }
+        .animation(DaybookMotion.animation(reduceMotion), value: showsHoverActions)
     }
 
     private var hasOverflow: Bool {
@@ -215,15 +220,18 @@ extension TaskRow {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .semibold))
-                .frame(width: 18, height: 18)
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(DaybookTheme.muted)
+        .buttonStyle(DaybookQuietButtonStyle())
         .menuIndicator(.hidden)
         .help("row.more")
         .accessibilityLabel("row.more")
+    }
+
+    private var showsHoverActions: Bool {
+        hovering || rowFocused || editing
     }
 
     @ViewBuilder

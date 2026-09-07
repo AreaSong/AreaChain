@@ -21,14 +21,19 @@ struct GanttPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            monthChrome
+            DaybookPeriodBar(
+                title: DayKey.monthTitle(monthKey, calendar: calendar, locale: locale),
+                onPrev: { monthKey = DayKey.shiftedMonth(monthKey, by: -1, calendar: calendar) },
+                onNext: { monthKey = DayKey.shiftedMonth(monthKey, by: 1, calendar: calendar) },
+                onToday: String(monthKey.prefix(7)) == String(todayKey.prefix(7))
+                    ? nil
+                    : { monthKey = todayKey }
+            )
             Text("gantt.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
             if bars.isEmpty && marks.isEmpty {
-                Text("gantt.empty")
-                    .font(.system(size: 12))
-                    .foregroundStyle(DaybookTheme.muted)
+                DaybookEmptyState(title: "gantt.empty", systemImage: "calendar")
             } else {
                 ScrollView([.horizontal, .vertical]) {
                     VStack(alignment: .leading, spacing: 4) {
@@ -45,9 +50,7 @@ struct GanttPage: View {
                 .daybookScroll()
             }
         }
-        .padding(16)
-        .frame(minWidth: 640, minHeight: 420)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .daybookPanel(minWidth: 640, minHeight: 420)
     }
 
     private var days: [String] {
@@ -70,35 +73,6 @@ struct GanttPage: View {
         return seen
     }
 
-    private var monthChrome: some View {
-        HStack(spacing: 8) {
-            Button {
-                monthKey = DayKey.shiftedMonth(monthKey, by: -1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.left")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            Text(DayKey.monthTitle(monthKey, calendar: calendar, locale: locale))
-                .font(.system(size: 16, weight: .regular, design: .serif).italic())
-                .foregroundStyle(DaybookTheme.ink)
-                .frame(maxWidth: .infinity)
-            Button {
-                monthKey = DayKey.shiftedMonth(monthKey, by: 1, calendar: calendar)
-            } label: {
-                Image(systemName: "chevron.right")
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            if String(monthKey.prefix(7)) != String(todayKey.prefix(7)) {
-                Button("calendar.today") { monthKey = todayKey }
-                    .buttonStyle(.plain)
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-        }
-    }
-
     private var headerRow: some View {
         HStack(spacing: 0) {
             Color.clear.frame(width: titleWidth, height: 18)
@@ -107,6 +81,7 @@ struct GanttPage: View {
                     .font(.system(size: 9, weight: key == todayKey ? .semibold : .regular))
                     .foregroundStyle(key == todayKey ? DaybookTheme.ink : DaybookTheme.muted)
                     .frame(width: dayWidth)
+                    .accessibilityLabel(DayKey.displayName(key, calendar: calendar, locale: locale))
             }
         }
     }
@@ -117,7 +92,10 @@ struct GanttPage: View {
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.ink)
                 .lineLimit(1)
+                .help(bar.title)
                 .frame(width: titleWidth, alignment: .leading)
+                .accessibilityLabel(bar.title)
+                .accessibilityValue(DayKey.displayName(bar.dayKey, calendar: calendar, locale: locale))
             ForEach(days, id: \.self) { key in
                 dayCell(key, filled: key == bar.dayKey, payload: TodoDragToken.encode(bar.id))
             }
@@ -132,12 +110,17 @@ struct GanttPage: View {
                 Image(systemName: "repeat")
                     .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(DaybookTheme.stamp)
+                    .accessibilityHidden(true)
                 Text(title)
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
                     .lineLimit(1)
+                    .help(title)
             }
             .frame(width: titleWidth, alignment: .leading)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(title)
+            .accessibilityAddTraits(.isStaticText)
             ForEach(days, id: \.self) { key in
                 Circle()
                     .fill(dots.contains(key) ? DaybookTheme.stamp : Color.clear)
@@ -157,12 +140,19 @@ struct GanttPage: View {
                     .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 1.5)
             )
             .contentShape(Rectangle())
+            .help(filled ? barHelp(key) : "")
+            .accessibilityHidden(!filled)
+            .accessibilityLabel(filled ? barHelp(key) : "")
             .modifier(TodoDragIfNeeded(payload: filled ? payload : nil))
             .dropDestination(for: String.self) { items, _ in
                 dropTodo(items, onto: key)
             } isTargeted: { hovering in
                 dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
             }
+    }
+
+    private func barHelp(_ key: String) -> String {
+        DayKey.displayName(key, calendar: calendar, locale: locale)
     }
 
     private func dropTodo(_ items: [String], onto key: String) -> Bool {

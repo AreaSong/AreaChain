@@ -9,30 +9,76 @@ extension Color {
     }
 }
 
-enum DaybookTheme {
-    static let ink = Color.daybook(
-        light: NSColor(calibratedRed: 0.18, green: 0.16, blue: 0.12, alpha: 1),
-        dark: NSColor(calibratedRed: 0.91, green: 0.89, blue: 0.84, alpha: 1)
-    )
-    static let muted = Color.daybook(
-        light: NSColor(calibratedRed: 0.45, green: 0.42, blue: 0.38, alpha: 1),
-        dark: NSColor(calibratedRed: 0.55, green: 0.52, blue: 0.47, alpha: 1)
-    )
-    static let rule = Color.daybook(
-        light: NSColor(calibratedRed: 0.82, green: 0.78, blue: 0.70, alpha: 1),
-        dark: NSColor(calibratedRed: 0.27, green: 0.24, blue: 0.20, alpha: 1)
-    )
-    static let stamp = Color(red: 0.88, green: 0.63, blue: 0.29)
-    static let paper = Color.daybook(
-        light: NSColor(calibratedRed: 0.96, green: 0.94, blue: 0.88, alpha: 1),
-        dark: NSColor(calibratedRed: 0.10, green: 0.09, blue: 0.08, alpha: 1)
-    )
-    static let done = Color.daybook(
-        light: NSColor(calibratedRed: 0.55, green: 0.52, blue: 0.48, alpha: 1),
-        dark: NSColor(calibratedRed: 0.45, green: 0.43, blue: 0.39, alpha: 1)
-    )
+enum DaybookSwatch {
+    static let inkLight = (0.18, 0.16, 0.12)
+    static let inkDark = (0.91, 0.89, 0.84)
+    static let mutedLight = (0.45, 0.42, 0.38)
+    static let mutedDark = (0.72, 0.68, 0.62)
+    static let ruleLight = (0.82, 0.78, 0.70)
+    static let ruleDark = (0.38, 0.34, 0.28)
+    static let stampLight = (0.62, 0.34, 0.06)
+    static let stampDark = (0.90, 0.68, 0.32)
+    static let paperLight = (0.96, 0.94, 0.88)
+    static let paperDark = (0.10, 0.09, 0.08)
+    static let doneLight = (0.40, 0.38, 0.34)
+    static let doneDark = (0.68, 0.65, 0.60)
+    static let destructiveLight = (0.72, 0.18, 0.14)
+    static let destructiveDark = (0.95, 0.52, 0.46)
+}
 
+enum ContrastMath {
+    static func relativeLuminance(r: Double, g: Double, b: Double) -> Double {
+        func linear(_ channel: Double) -> Double {
+            channel <= 0.04045 ? channel / 12.92 : pow((channel + 0.055) / 1.055, 2.4)
+        }
+        return 0.2126 * linear(r) + 0.7152 * linear(g) + 0.0722 * linear(b)
+    }
+
+    static func ratio(
+        _ a: (Double, Double, Double),
+        _ b: (Double, Double, Double)
+    ) -> Double {
+        let first = relativeLuminance(r: a.0, g: a.1, b: a.2)
+        let second = relativeLuminance(r: b.0, g: b.1, b: b.2)
+        let high = max(first, second)
+        let low = min(first, second)
+        return (high + 0.05) / (low + 0.05)
+    }
+}
+
+enum DaybookTheme {
+    static let ink = Color.daybook(swatch: DaybookSwatch.inkLight, dark: DaybookSwatch.inkDark)
+    static let muted = Color.daybook(swatch: DaybookSwatch.mutedLight, dark: DaybookSwatch.mutedDark)
+    static let rule = Color.daybook(swatch: DaybookSwatch.ruleLight, dark: DaybookSwatch.ruleDark)
+    static let stamp = Color.daybook(swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark)
+    static let paper = Color.daybook(swatch: DaybookSwatch.paperLight, dark: DaybookSwatch.paperDark)
+    static let done = Color.daybook(swatch: DaybookSwatch.doneLight, dark: DaybookSwatch.doneDark)
+    static let destructive = Color.daybook(
+        swatch: DaybookSwatch.destructiveLight,
+        dark: DaybookSwatch.destructiveDark
+    )
+    static let hoverFill = ink.opacity(0.07)
+    static let pressFill = ink.opacity(0.12)
+    static let surface = paper.opacity(0.72)
+    static let focusRing = stamp
     static let popoverSize = CGSize(width: 320, height: 420)
+    static let hit: CGFloat = 28
+    static let space: CGFloat = 8
+}
+
+extension Color {
+    static func daybook(
+        swatch: (Double, Double, Double),
+        dark: (Double, Double, Double)
+    ) -> Color {
+        .daybook(light: NSColor.daybook(swatch), dark: NSColor.daybook(dark))
+    }
+}
+
+extension NSColor {
+    static func daybook(_ rgb: (Double, Double, Double)) -> NSColor {
+        NSColor(calibratedRed: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
+    }
 }
 
 struct RuledPaper: View {
@@ -49,6 +95,7 @@ struct RuledPaper: View {
             }
         }
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 
@@ -61,18 +108,20 @@ struct InkCheckbox: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .stroke(isDone ? DaybookTheme.done : DaybookTheme.ink.opacity(0.85), lineWidth: 1.4)
-                    .frame(width: 14, height: 14)
+                    .frame(width: 15, height: 15)
                 if isDone {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(DaybookTheme.stamp)
+                        .accessibilityHidden(true)
                 }
             }
-            .frame(width: 22, height: 22)
+            .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(isDone ? "checkbox.done" : "checkbox.open")
+        .buttonStyle(DaybookQuietButtonStyle())
+        .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
+        .accessibilityAddTraits(isDone ? [.isSelected] : [])
     }
 }
 
@@ -98,12 +147,11 @@ struct RowIconButton: View {
     var body: some View {
         Button(role: role, action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 11, weight: .semibold))
-                .frame(width: 18, height: 18)
+                .font(.system(size: 12, weight: .semibold))
+                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(role == .destructive ? Color.red.opacity(0.75) : DaybookTheme.muted)
+        .buttonStyle(DaybookQuietButtonStyle(destructive: role == .destructive))
         .accessibilityLabel(label)
         .help(label)
     }
@@ -117,10 +165,10 @@ struct ComposerAddButton: View {
 
     var body: some View {
         Button(title, action: action)
-            .font(.system(size: 11, weight: .semibold))
-            .buttonStyle(.plain)
-            .foregroundStyle(enabled && emphasized ? DaybookTheme.stamp : DaybookTheme.muted)
+            .font(.system(size: 12, weight: .semibold))
+            .buttonStyle(DaybookQuietButtonStyle(prominent: emphasized && enabled))
             .disabled(!enabled)
+            .opacity(enabled ? 1 : 0.45)
     }
 }
 
