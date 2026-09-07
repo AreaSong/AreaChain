@@ -56,6 +56,8 @@ struct ResidentSettings: View {
 
 private struct ResidentSettingsRow: View {
     @Environment(\.locale) private var locale
+    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     var routine: DailyRoutine
 
     @State private var titleDraft = ""
@@ -79,6 +81,15 @@ private struct ResidentSettingsRow: View {
                 timeControls
             }
             .font(.system(size: 12))
+            ClassifyBitsEditor(
+                bits: routine.classifyBits,
+                projects: CatalogChoices.projects(projects),
+                tags: CatalogChoices.tags(tags),
+                onProject: { id in persist { routine.projectID = id } },
+                onToggleTag: { id in persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
+                onImportant: { value in persist { routine.isImportant = value } },
+                onUrgent: { value in persist { routine.isUrgent = value } }
+            )
         }
         .padding(.vertical, 4)
         .onAppear { titleDraft = routine.title }

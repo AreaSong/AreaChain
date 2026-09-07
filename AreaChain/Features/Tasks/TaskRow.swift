@@ -18,6 +18,10 @@ struct TaskRow: View {
     var onWeekdaysOnly: ((Bool) -> Void)? = nil
     var onDisable: (() -> Void)? = nil
     var onEnable: (() -> Void)? = nil
+    var isImportant: Bool = false
+    var isUrgent: Bool = false
+    var classify: TaskClassifyContext? = nil
+    var attachments: TaskAttachmentContext? = nil
 
     @Environment(\.locale) private var locale
     @State private var editing = false
@@ -32,6 +36,10 @@ struct TaskRow: View {
             if isResident {
                 residentMark
             }
+            QuadrantDots(
+                isImportant: classify?.isImportant == true || isImportant,
+                isUrgent: classify?.isUrgent == true || isUrgent
+            )
             if editing {
                 editor
             } else {
@@ -80,11 +88,19 @@ struct TaskRow: View {
                 if let remindMinutes {
                     remindLabel(remindMinutes)
                 }
+                if let items = attachments?.items, !items.isEmpty {
+                    AttachmentThumbnails(items: items)
+                }
             }
             if let note {
                 Text(note)
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
+            }
+            if let source = classify?.sourceLabel, !source.isEmpty {
+                Text(source)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DaybookTheme.muted)
             }
         }
         .contentShape(Rectangle())
@@ -181,6 +197,8 @@ extension TaskRow {
             || onWeekdaysOnly != nil
             || onDisable != nil
             || onEnable != nil
+            || classify != nil
+            || attachments != nil
     }
 
     private var showsMoreMenu: Bool {
@@ -220,6 +238,8 @@ extension TaskRow {
     @ViewBuilder
     private var overflowMenus: some View {
         timeMenus
+        classifyMenus
+        attachmentMenus
         if let todayKey, onMoveToDay != nil {
             DayScheduleMenu(
                 todayKey: todayKey,
@@ -261,6 +281,58 @@ extension TaskRow {
         }
         if let onEnable {
             Button("row.enable", action: onEnable)
+        }
+    }
+
+    @ViewBuilder
+    private var classifyMenus: some View {
+        if let classify {
+            Button(classify.isImportant ? "classify.important.on" : "classify.important") {
+                classify.onImportant(!classify.isImportant)
+            }
+            Button(classify.isUrgent ? "classify.urgent.on" : "classify.urgent") {
+                classify.onUrgent(!classify.isUrgent)
+            }
+            if !classify.projects.isEmpty {
+                Menu("classify.project") {
+                    Button("classify.project.none") { classify.onProject(nil) }
+                    ForEach(classify.projects) { project in
+                        Button {
+                            classify.onProject(project.id)
+                        } label: {
+                            if classify.projectID == project.id {
+                                Label(project.name, systemImage: "checkmark")
+                            } else {
+                                Text(project.name)
+                            }
+                        }
+                    }
+                }
+            }
+            if !classify.tags.isEmpty {
+                Menu("classify.tags") {
+                    ForEach(classify.tags) { tag in
+                        let on = TagIDList.contains(classify.tagIDs, tag.id)
+                        Button {
+                            classify.onToggleTag(tag.id)
+                        } label: {
+                            if on {
+                                Label(tag.name, systemImage: "checkmark")
+                            } else {
+                                Text(tag.name)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var attachmentMenus: some View {
+        if let attachments {
+            Button("row.attach", action: attachments.onPickFile)
+            Button("row.attach.paste", action: attachments.onPaste)
         }
     }
 }

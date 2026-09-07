@@ -273,4 +273,51 @@ struct DayBoardLogicTests {
         #expect(counts["2026-08-31"] == nil)
         #expect(counts["2026-10-01"] == nil)
     }
+
+    @Test func matchingTodosFiltersProjectAndKeepsOthers() {
+        let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let tagged = TodoSnapshot(
+            id: UUID(),
+            title: "项目里的",
+            isDone: false,
+            dayKey: today,
+            projectID: project,
+            tagIDs: "",
+            sourceBundleID: "com.apple.Safari"
+        )
+        let other = TodoSnapshot(id: UUID(), title: "别的", isDone: false, dayKey: today)
+        let filtered = DayBoardLogic.matchingTodos(
+            [tagged, other],
+            filter: BoardFilter(projectID: project)
+        )
+        #expect(filtered.map(\.title) == ["项目里的"])
+        #expect(
+            DayBoardLogic.matchingTodos([tagged, other], filter: BoardFilter(bundleID: "com.apple.Safari"))
+                .map(\.title) == ["项目里的"]
+        )
+    }
+
+    @Test func sortedForBoardUsesQuadrantBeforeTime() {
+        let later = Date(timeIntervalSince1970: 20)
+        let earlier = Date(timeIntervalSince1970: 1)
+        let rest = TodoSnapshot(
+            id: UUID(),
+            title: "其余",
+            isDone: false,
+            dayKey: today,
+            createdAt: earlier,
+            remindMinutes: 60
+        )
+        let both = TodoSnapshot(
+            id: UUID(),
+            title: "又重要又紧急",
+            isDone: false,
+            dayKey: today,
+            createdAt: later,
+            remindMinutes: 600,
+            isImportant: true,
+            isUrgent: true
+        )
+        #expect(DayBoardLogic.sortedForBoard([rest, both]).map(\.title) == ["又重要又紧急", "其余"])
+    }
 }

@@ -10,6 +10,30 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
     var deletedAt: Date? = nil
+    var projectID: UUID? = nil
+    var tagIDs: String = ""
+    var isImportant: Bool = false
+    var isUrgent: Bool = false
+    var sourceBundleID: String = ""
+
+    var classifyBits: ClassifyBits {
+        ClassifyBits(
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
+        )
+    }
+
+    var boardSortKey: BoardSortKey {
+        BoardSortKey(
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            remindMinutes: remindMinutes,
+            createdAt: createdAt
+        )
+    }
 }
 
 struct CheckSnapshot: Equatable {
@@ -27,6 +51,30 @@ struct TodoSnapshot: Equatable, Identifiable {
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
     var deletedAt: Date? = nil
+    var projectID: UUID? = nil
+    var tagIDs: String = ""
+    var isImportant: Bool = false
+    var isUrgent: Bool = false
+    var sourceBundleID: String = ""
+
+    var classifyBits: ClassifyBits {
+        ClassifyBits(
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
+        )
+    }
+
+    var boardSortKey: BoardSortKey {
+        BoardSortKey(
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            remindMinutes: remindMinutes,
+            createdAt: createdAt
+        )
+    }
 }
 
 struct DiarySnapshot: Equatable, Identifiable {
@@ -191,5 +239,21 @@ enum DayBoardLogic {
         entries
             .filter { $0.deletedAt == nil && $0.dayKey == dayKey }
             .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    static func matchingRoutines(_ routines: [RoutineSnapshot], filter: BoardFilter) -> [RoutineSnapshot] {
+        routines.filter { Classification.matches($0.classifyBits, filter: filter) }
+    }
+
+    static func matchingTodos(_ todos: [TodoSnapshot], filter: BoardFilter) -> [TodoSnapshot] {
+        todos.filter { Classification.matches($0.classifyBits, filter: filter) }
+    }
+
+    static func sortedForBoard(_ routines: [RoutineSnapshot]) -> [RoutineSnapshot] {
+        routines.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+    }
+
+    static func sortedForBoard(_ todos: [TodoSnapshot]) -> [TodoSnapshot] {
+        todos.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
 }

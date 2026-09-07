@@ -3,7 +3,7 @@ import SwiftData
 
 @Model
 final class DailyRoutine {
-    @Attribute(.unique) var id: UUID
+    var id: UUID
     var title: String
     var sortOrder: Int
     var isEnabled: Bool
@@ -13,6 +13,11 @@ final class DailyRoutine {
     var createdAt: Date = Date()
     var remindMinutes: Int?
     var deletedAt: Date?
+    var projectID: UUID?
+    var tagIDs: String = ""
+    var isImportant: Bool = false
+    var isUrgent: Bool = false
+    var sourceBundleID: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -27,7 +32,12 @@ final class DailyRoutine {
         weekdayMask: Int? = nil,
         createdAt: Date = .now,
         remindMinutes: Int? = nil,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        projectID: UUID? = nil,
+        tagIDs: String = "",
+        isImportant: Bool = false,
+        isUrgent: Bool = false,
+        sourceBundleID: String = ""
     ) {
         self.id = id
         self.title = title
@@ -40,11 +50,26 @@ final class DailyRoutine {
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
+        self.projectID = projectID
+        self.tagIDs = tagIDs
+        self.isImportant = isImportant
+        self.isUrgent = isUrgent
+        self.sourceBundleID = sourceBundleID
         self.checks = []
     }
 
     var resolvedWeekdayMask: Int {
         WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
+    }
+
+    var classifyBits: ClassifyBits {
+        ClassifyBits(
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
+        )
     }
 
     func setWeekdayMask(_ mask: Int) {
@@ -63,14 +88,19 @@ final class DailyRoutine {
             weekdayMask: resolvedWeekdayMask,
             createdAt: createdAt,
             remindMinutes: remindMinutes,
-            deletedAt: deletedAt
+            deletedAt: deletedAt,
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
         )
     }
 }
 
 @Model
 final class RoutineCheck {
-    @Attribute(.unique) var id: UUID
+    var id: UUID
     var dayKey: String
     var isDone: Bool
     var isSkipped: Bool = false
@@ -103,13 +133,18 @@ final class RoutineCheck {
 
 @Model
 final class TodoItem {
-    @Attribute(.unique) var id: UUID
+    var id: UUID
     var title: String
     var isDone: Bool
     var dayKey: String
     var createdAt: Date
     var remindMinutes: Int?
     var deletedAt: Date?
+    var projectID: UUID?
+    var tagIDs: String = ""
+    var isImportant: Bool = false
+    var isUrgent: Bool = false
+    var sourceBundleID: String = ""
 
     init(
         id: UUID = UUID(),
@@ -118,7 +153,12 @@ final class TodoItem {
         dayKey: String,
         createdAt: Date = .now,
         remindMinutes: Int? = nil,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        projectID: UUID? = nil,
+        tagIDs: String = "",
+        isImportant: Bool = false,
+        isUrgent: Bool = false,
+        sourceBundleID: String = ""
     ) {
         self.id = id
         self.title = title
@@ -127,6 +167,21 @@ final class TodoItem {
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
+        self.projectID = projectID
+        self.tagIDs = tagIDs
+        self.isImportant = isImportant
+        self.isUrgent = isUrgent
+        self.sourceBundleID = sourceBundleID
+    }
+
+    var classifyBits: ClassifyBits {
+        ClassifyBits(
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
+        )
     }
 
     var snapshot: TodoSnapshot {
@@ -137,14 +192,19 @@ final class TodoItem {
             dayKey: dayKey,
             createdAt: createdAt,
             remindMinutes: remindMinutes,
-            deletedAt: deletedAt
+            deletedAt: deletedAt,
+            projectID: projectID,
+            tagIDs: tagIDs,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            sourceBundleID: sourceBundleID
         )
     }
 }
 
 @Model
 final class DiaryEntry {
-    @Attribute(.unique) var id: UUID
+    var id: UUID
     var text: String
     var dayKey: String
     var createdAt: Date
@@ -174,6 +234,9 @@ enum AreaChainSchema {
         DailyRoutine.self,
         RoutineCheck.self,
         TodoItem.self,
-        DiaryEntry.self
+        DiaryEntry.self,
+        ProjectItem.self,
+        TagItem.self,
+        AttachmentItem.self
     ]
 }

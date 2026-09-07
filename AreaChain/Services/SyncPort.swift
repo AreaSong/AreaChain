@@ -1,209 +1,42 @@
 import Foundation
 
-struct ExportSnapshot: Codable, Equatable {
-    var exportedAt: Date
-    var routines: [ExportedRoutine]
-    var checks: [ExportedCheck]
-    var todos: [ExportedTodo]
-    var diaries: [ExportedDiary]
-}
-
-struct ExportedRoutine: Codable, Equatable {
-    var id: UUID
-    var title: String
-    var sortOrder: Int
-    var isEnabled: Bool
-    var createdDayKey: String
-    var weekdaysOnly: Bool
-    var weekdayMask: Int
-    var createdAt: Date?
-    var remindMinutes: Int?
-    var deletedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, weekdayMask, createdAt, remindMinutes, deletedAt
-    }
-
-    init(
-        id: UUID,
-        title: String,
-        sortOrder: Int,
-        isEnabled: Bool,
-        createdDayKey: String,
-        weekdaysOnly: Bool = false,
-        weekdayMask: Int? = nil,
-        createdAt: Date? = nil,
-        remindMinutes: Int? = nil,
-        deletedAt: Date? = nil
-    ) {
-        self.id = id
-        self.title = title
-        self.sortOrder = sortOrder
-        self.isEnabled = isEnabled
-        self.createdDayKey = createdDayKey
-        let mask = WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
-        self.weekdayMask = mask
-        self.weekdaysOnly = WeekdayMask.isWorkdays(mask)
-        self.createdAt = createdAt
-        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
-        self.deletedAt = deletedAt
-    }
-
-    init(from decoder: Decoder) throws {
-        let box = try decoder.container(keyedBy: CodingKeys.self)
-        id = try box.decode(UUID.self, forKey: .id)
-        title = try box.decode(String.self, forKey: .title)
-        sortOrder = try box.decode(Int.self, forKey: .sortOrder)
-        isEnabled = try box.decode(Bool.self, forKey: .isEnabled)
-        createdDayKey = try box.decode(String.self, forKey: .createdDayKey)
-        let storedMask = try box.decodeIfPresent(Int.self, forKey: .weekdayMask)
-        let flag = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
-        let mask = WeekdayMask.resolved(stored: storedMask, weekdaysOnly: flag)
-        weekdayMask = mask
-        weekdaysOnly = WeekdayMask.isWorkdays(mask)
-        createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
-        remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
-        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
-    }
-}
-
-struct ExportedCheck: Codable, Equatable {
-    var id: UUID
-    var routineId: UUID
-    var dayKey: String
-    var isDone: Bool
-    var isSkipped: Bool
-
-    enum CodingKeys: String, CodingKey {
-        case id, routineId, dayKey, isDone, isSkipped
-    }
-
-    init(
-        id: UUID,
-        routineId: UUID,
-        dayKey: String,
-        isDone: Bool,
-        isSkipped: Bool = false
-    ) {
-        self.id = id
-        self.routineId = routineId
-        self.dayKey = dayKey
-        self.isDone = isDone
-        self.isSkipped = isSkipped
-    }
-
-    init(from decoder: Decoder) throws {
-        let box = try decoder.container(keyedBy: CodingKeys.self)
-        id = try box.decode(UUID.self, forKey: .id)
-        routineId = try box.decode(UUID.self, forKey: .routineId)
-        dayKey = try box.decode(String.self, forKey: .dayKey)
-        isDone = try box.decode(Bool.self, forKey: .isDone)
-        isSkipped = try box.decodeIfPresent(Bool.self, forKey: .isSkipped) ?? false
-    }
-}
-
-struct ExportedTodo: Codable, Equatable {
-    var id: UUID
-    var title: String
-    var isDone: Bool
-    var dayKey: String
-    var createdAt: Date
-    var remindMinutes: Int?
-    var deletedAt: Date?
-
-    enum CodingKeys: String, CodingKey {
-        case id, title, isDone, dayKey, createdAt, remindMinutes, deletedAt
-    }
-
-    init(
-        id: UUID,
-        title: String,
-        isDone: Bool,
-        dayKey: String,
-        createdAt: Date,
-        remindMinutes: Int? = nil,
-        deletedAt: Date? = nil
-    ) {
-        self.id = id
-        self.title = title
-        self.isDone = isDone
-        self.dayKey = dayKey
-        self.createdAt = createdAt
-        self.remindMinutes = RemindMinutes.clamped(remindMinutes)
-        self.deletedAt = deletedAt
-    }
-
-    init(from decoder: Decoder) throws {
-        let box = try decoder.container(keyedBy: CodingKeys.self)
-        id = try box.decode(UUID.self, forKey: .id)
-        title = try box.decode(String.self, forKey: .title)
-        isDone = try box.decode(Bool.self, forKey: .isDone)
-        dayKey = try box.decode(String.self, forKey: .dayKey)
-        createdAt = try box.decode(Date.self, forKey: .createdAt)
-        remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
-        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
-    }
-}
-
-struct ExportedDiary: Codable, Equatable {
-    var id: UUID
-    var text: String
-    var dayKey: String
-    var createdAt: Date
-    var deletedAt: Date? = nil
-}
-
 enum SyncPort {
     static func makeSnapshot(
         routines: [DailyRoutine],
         checks: [RoutineCheck],
         todos: [TodoItem],
         diaries: [DiaryEntry],
+        projects: [ProjectItem] = [],
+        tags: [TagItem] = [],
+        attachments: [AttachmentItem] = [],
         exportedAt: Date = .now
     ) -> ExportSnapshot {
         ExportSnapshot(
             exportedAt: exportedAt,
-            routines: routines.map {
-                let mask = $0.resolvedWeekdayMask
-                return ExportedRoutine(
-                    id: $0.id,
-                    title: $0.title,
-                    sortOrder: $0.sortOrder,
-                    isEnabled: $0.isEnabled,
-                    createdDayKey: $0.createdDayKey,
-                    weekdaysOnly: WeekdayMask.isWorkdays(mask),
-                    weekdayMask: mask,
-                    createdAt: $0.createdAt,
-                    remindMinutes: $0.remindMinutes,
-                    deletedAt: $0.deletedAt
-                )
-            },
-            checks: checks.compactMap { check in
-                guard let routineId = check.routine?.id else { return nil }
-                return ExportedCheck(
-                    id: check.id,
-                    routineId: routineId,
-                    dayKey: check.dayKey,
-                    isDone: check.isDone,
-                    isSkipped: check.isSkipped
-                )
-            },
-            todos: todos.map {
-                ExportedTodo(
-                    id: $0.id,
-                    title: $0.title,
-                    isDone: $0.isDone,
-                    dayKey: $0.dayKey,
-                    createdAt: $0.createdAt,
-                    remindMinutes: $0.remindMinutes,
-                    deletedAt: $0.deletedAt
-                )
-            },
+            routines: routines.map(exportedRoutine),
+            checks: checks.compactMap(exportedCheck),
+            todos: todos.map(exportedTodo),
             diaries: diaries.map {
                 ExportedDiary(
                     id: $0.id,
                     text: $0.text,
                     dayKey: $0.dayKey,
+                    createdAt: $0.createdAt,
+                    deletedAt: $0.deletedAt
+                )
+            },
+            projects: projects.map {
+                ExportedProject(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
+            },
+            tags: tags.map {
+                ExportedTag(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
+            },
+            attachments: attachments.map {
+                ExportedAttachment(
+                    id: $0.id,
+                    ownerKind: $0.ownerKind,
+                    ownerID: $0.ownerID,
+                    filename: $0.filename,
                     createdAt: $0.createdAt,
                     deletedAt: $0.deletedAt
                 )
@@ -222,5 +55,54 @@ enum SyncPort {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         return try decoder.decode(ExportSnapshot.self, from: data)
+    }
+
+    private static func exportedRoutine(_ item: DailyRoutine) -> ExportedRoutine {
+        let mask = item.resolvedWeekdayMask
+        return ExportedRoutine(
+            id: item.id,
+            title: item.title,
+            sortOrder: item.sortOrder,
+            isEnabled: item.isEnabled,
+            createdDayKey: item.createdDayKey,
+            weekdaysOnly: WeekdayMask.isWorkdays(mask),
+            weekdayMask: mask,
+            createdAt: item.createdAt,
+            remindMinutes: item.remindMinutes,
+            deletedAt: item.deletedAt,
+            projectID: item.projectID,
+            tagIDs: item.tagIDs,
+            isImportant: item.isImportant,
+            isUrgent: item.isUrgent,
+            sourceBundleID: item.sourceBundleID
+        )
+    }
+
+    private static func exportedCheck(_ check: RoutineCheck) -> ExportedCheck? {
+        guard let routineId = check.routine?.id else { return nil }
+        return ExportedCheck(
+            id: check.id,
+            routineId: routineId,
+            dayKey: check.dayKey,
+            isDone: check.isDone,
+            isSkipped: check.isSkipped
+        )
+    }
+
+    private static func exportedTodo(_ item: TodoItem) -> ExportedTodo {
+        ExportedTodo(
+            id: item.id,
+            title: item.title,
+            isDone: item.isDone,
+            dayKey: item.dayKey,
+            createdAt: item.createdAt,
+            remindMinutes: item.remindMinutes,
+            deletedAt: item.deletedAt,
+            projectID: item.projectID,
+            tagIDs: item.tagIDs,
+            isImportant: item.isImportant,
+            isUrgent: item.isUrgent,
+            sourceBundleID: item.sourceBundleID
+        )
     }
 }

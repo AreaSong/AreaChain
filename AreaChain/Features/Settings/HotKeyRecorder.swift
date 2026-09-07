@@ -2,15 +2,24 @@ import AppKit
 import Carbon
 import SwiftUI
 
+enum HotKeySlot {
+    case toggle
+    case paste
+}
+
 struct HotKeyRecorder: View {
+    var slot: HotKeySlot = .toggle
+    var title: LocalizedStringKey = "hotkey.open"
+    var help: LocalizedStringKey = "hotkey.help"
+
     @Environment(\.locale) private var locale
     @State private var listening = false
-    @State private var label = HotKeyCenter.shared.displayName()
+    @State private var label = ""
     @State private var monitor: Any?
 
     var body: some View {
         HStack {
-            Text("hotkey.open")
+            Text(title)
             Spacer()
             Button {
                 startListening()
@@ -21,7 +30,7 @@ struct HotKeyRecorder: View {
                     Text(label)
                 }
             }
-            .help("hotkey.help")
+            .help(help)
         }
         .onAppear { refreshLabel() }
         .onChange(of: locale.identifier) { _, _ in refreshLabel() }
@@ -35,7 +44,12 @@ struct HotKeyRecorder: View {
     }
 
     private func refreshLabel() {
-        label = HotKeyCenter.shared.displayName(locale: locale)
+        switch slot {
+        case .toggle:
+            label = HotKeyCenter.shared.displayName(locale: locale)
+        case .paste:
+            label = HotKeyCenter.shared.pasteDisplayName(locale: locale)
+        }
     }
 
     private func startListening() {
@@ -47,10 +61,19 @@ struct HotKeyRecorder: View {
                 return nil
             }
             if let spec = HotKeySpec.parse(event: event) {
-                HotKeyCenter.shared.apply(spec)
+                apply(spec)
                 stopListening()
             }
             return nil
+        }
+    }
+
+    private func apply(_ spec: HotKeySpec) {
+        switch slot {
+        case .toggle:
+            HotKeyCenter.shared.apply(spec)
+        case .paste:
+            HotKeyCenter.shared.applyPaste(spec)
         }
     }
 

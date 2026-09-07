@@ -11,13 +11,25 @@ struct TasksPage: View {
     var checks: [RoutineCheck]
     var todos: [TodoItem]
 
+    @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
+    @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
+    @Query var attachments: [AttachmentItem]
+
     @State var showYesterday = false
     @State var showUpcoming = false
     @State var pendingTrash: PendingTrash?
+    @State var boardFilter = BoardFilter()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             leftoverChips
+            BoardFilterBar(
+                filter: boardFilter,
+                projects: CatalogChoices.projects(projects),
+                tags: CatalogChoices.tags(tags),
+                bundleIDs: todayBundleIDs,
+                onChange: { boardFilter = $0 }
+            )
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
                     DayBoardList(
@@ -25,7 +37,8 @@ struct TasksPage: View {
                         todayKey: todayKey,
                         routines: routines,
                         checks: checks,
-                        todos: todos
+                        todos: todos,
+                        filter: boardFilter
                     )
                     upcomingSection
                     yesterdaySection
@@ -58,6 +71,12 @@ struct TasksPage: View {
                 return $0.createdAt < $1.createdAt
             }
     }
+
+    var todayBundleIDs: [String] {
+        let routineIDs = DayBoardLogic.routines(for: todayKey, in: snapshots.0).map(\.sourceBundleID)
+        let todoIDs = DayBoardLogic.todos(for: todayKey, in: snapshots.2).map(\.sourceBundleID)
+        return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
+    }
 }
 
 enum BoardRow: Identifiable {
@@ -71,17 +90,22 @@ enum BoardRow: Identifiable {
         }
     }
 
-    var remindMinutes: Int? {
+    var boardSortKey: BoardSortKey {
         switch self {
-        case .resident(let item): item.remindMinutes
-        case .todo(let item): item.remindMinutes
-        }
-    }
-
-    var createdAt: Date {
-        switch self {
-        case .resident(let item): item.createdAt
-        case .todo(let item): item.createdAt
+        case .resident(let item):
+            BoardSortKey(
+                isImportant: item.isImportant,
+                isUrgent: item.isUrgent,
+                remindMinutes: item.remindMinutes,
+                createdAt: item.createdAt
+            )
+        case .todo(let item):
+            BoardSortKey(
+                isImportant: item.isImportant,
+                isUrgent: item.isUrgent,
+                remindMinutes: item.remindMinutes,
+                createdAt: item.createdAt
+            )
         }
     }
 }

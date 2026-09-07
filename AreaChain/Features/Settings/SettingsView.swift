@@ -10,6 +10,9 @@ struct SettingsView: View {
     @Query private var checks: [RoutineCheck]
     @Query private var todos: [TodoItem]
     @Query private var diaries: [DiaryEntry]
+    @Query private var projects: [ProjectItem]
+    @Query private var tags: [TagItem]
+    @Query private var attachments: [AttachmentItem]
     @Environment(AppPreferences.self) private var prefs
     @Environment(\.locale) private var locale
 
@@ -26,6 +29,7 @@ struct SettingsView: View {
         @Bindable var prefs = prefs
         Form {
             ResidentSettings()
+            CatalogSettings()
 
             Section("settings.chrome") {
                 Picker("settings.language", selection: $prefs.language) {
@@ -49,6 +53,14 @@ struct SettingsView: View {
                     }
                 ))
                 HotKeyRecorder()
+                HotKeyRecorder(slot: .paste, title: "hotkey.paste", help: "hotkey.paste.help")
+            }
+
+            Section("settings.capture") {
+                Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
+                Text("settings.capture.stamp.help")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.notify") {
@@ -61,6 +73,13 @@ struct SettingsView: View {
                         notifyStatus = await NotificationScheduler.shared.currentStatus()
                     }
                 }
+            }
+
+            Section("settings.icloud") {
+                Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
+                Text("settings.icloud.hint")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.data") {
@@ -81,7 +100,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 560)
+        .frame(width: 420, height: 640)
         .navigationTitle("AreaChain")
         .alert("alert.import", isPresented: Binding(
             get: { pendingPreview != nil },
@@ -137,7 +156,15 @@ struct SettingsView: View {
     private func exportJSON() {
         do {
             let data = try SyncPort.encode(
-                SyncPort.makeSnapshot(routines: routines, checks: checks, todos: todos, diaries: diaries)
+                SyncPort.makeSnapshot(
+                    routines: routines,
+                    checks: checks,
+                    todos: todos,
+                    diaries: diaries,
+                    projects: projects,
+                    tags: tags,
+                    attachments: attachments
+                )
             )
             presentSavePanel(data: data)
         } catch {

@@ -7,14 +7,15 @@ struct TrashPage: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
+    @Query private var attachments: [AttachmentItem]
 
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
 
     private var items: [TrashRow] {
-        let standing = routines.compactMap(TrashRow.resident)
-        let tasks = todos.compactMap(TrashRow.todo)
-        let notes = diaries.compactMap(TrashRow.diary)
+        let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
+        let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
+        let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
         return (standing + tasks + notes).sorted { $0.deletedAt > $1.deletedAt }
     }
 
@@ -126,7 +127,7 @@ private struct TrashRow: Identifiable {
     var restore: () -> Void
     var removeFromStore: (ModelContext) -> Void
 
-    static func resident(_ item: DailyRoutine) -> TrashRow? {
+    static func resident(_ item: DailyRoutine, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -135,11 +136,14 @@ private struct TrashRow: Identifiable {
             isResident: true,
             deletedAt: deletedAt,
             restore: { item.deletedAt = nil },
-            removeFromStore: { $0.delete(item) }
+            removeFromStore: { context in
+                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                context.delete(item)
+            }
         )
     }
 
-    static func todo(_ item: TodoItem) -> TrashRow? {
+    static func todo(_ item: TodoItem, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -148,11 +152,14 @@ private struct TrashRow: Identifiable {
             isResident: false,
             deletedAt: deletedAt,
             restore: { item.deletedAt = nil },
-            removeFromStore: { $0.delete(item) }
+            removeFromStore: { context in
+                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                context.delete(item)
+            }
         )
     }
 
-    static func diary(_ item: DiaryEntry) -> TrashRow? {
+    static func diary(_ item: DiaryEntry, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -161,7 +168,10 @@ private struct TrashRow: Identifiable {
             isResident: false,
             deletedAt: deletedAt,
             restore: { item.deletedAt = nil },
-            removeFromStore: { $0.delete(item) }
+            removeFromStore: { context in
+                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                context.delete(item)
+            }
         )
     }
 }

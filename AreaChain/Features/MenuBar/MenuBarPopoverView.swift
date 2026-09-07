@@ -156,7 +156,13 @@ struct MenuBarPopoverView: View {
     private func addTodo() {
         let title = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
-        modelContext.insert(TodoItem(title: title, dayKey: todayKey))
+        modelContext.insert(
+            TodoItem(
+                title: title,
+                dayKey: todayKey,
+                sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
+            )
+        )
         capture.draft = ""
         BoardEvents.changed()
     }

@@ -37,5 +37,11 @@ struct AppPreferencesTests {
         #expect(defaults.string(forKey: AppPreferences.appearanceKey) == "dark")
         #expect(prefs.resolvedLocale.identifier == "en")
         #expect(prefs.resolvedColorScheme == .dark)
+        #expect(prefs.stampCaptureApp == false)
+        #expect(prefs.wantsICloudSync == false)
+        prefs.stampCaptureApp = true
+        prefs.wantsICloudSync = true
+        #expect(defaults.bool(forKey: AppPreferences.stampCaptureAppKey))
+        #expect(defaults.bool(forKey: AppPreferences.iCloudDesiredKey))
     }
 }

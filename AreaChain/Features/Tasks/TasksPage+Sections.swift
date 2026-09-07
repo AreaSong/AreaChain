@@ -97,7 +97,14 @@ extension TasksPage {
             onDelete: { deleteTodo(todo) },
             onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
             onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
-            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) }
+            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) },
+            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
+            attachments: CatalogChoices.attachments(
+                ownerKind: .todo,
+                ownerID: todo.id,
+                items: attachments,
+                context: modelContext
+            )
         )
     }
 
@@ -111,7 +118,9 @@ extension TasksPage {
                 isDone: false,
                 isResident: true,
                 remindMinutes: routine.remindMinutes,
-                onToggle: { completeYesterday(item) }
+                onToggle: { completeYesterday(item) },
+                isImportant: routine.isImportant,
+                isUrgent: routine.isUrgent
             )
         } else {
             TaskRow(

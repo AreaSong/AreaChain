@@ -7,6 +7,9 @@ struct HotKeySpecTests {
     @Test func fallbackDisplaysCommandShiftA() {
         #expect(HotKeySpec.fallback.displayName == "⌘⇧A")
         #expect(HotKeySpec.fallback.isUsable)
+        #expect(HotKeySpec.pasteFallback.displayName == "⌘⇧V")
+        #expect(HotKeySpec.pasteFallback.isUsable)
+        #expect(HotKeySpec.fallback != HotKeySpec.pasteFallback)
     }
 
     @Test func loadMissingDefaultsUsesFallback() {
@@ -32,5 +35,21 @@ struct HotKeySpecTests {
         spec.save(to: defaults)
         #expect(HotKeySpec.load(from: defaults) == spec)
         #expect(spec.displayName == "⌥⌘K")
+    }
+
+    @Test func loadPasteMissingDefaultsUsesPasteFallback() {
+        let name = "areachain.hotkey.tests.paste.missing"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        #expect(HotKeySpec.loadPaste(from: defaults) == .pasteFallback)
+    }
+
+    @Test func savePasteRoundTrip() {
+        let name = "areachain.hotkey.tests.paste.keep"
+        let defaults = UserDefaults(suiteName: name)!
+        defaults.removePersistentDomain(forName: name)
+        let spec = HotKeySpec(keyCode: UInt32(kVK_ANSI_B), modifiers: UInt32(cmdKey | optionKey))
+        spec.savePaste(to: defaults)
+        #expect(HotKeySpec.loadPaste(from: defaults) == spec)
     }
 }

@@ -50,6 +50,8 @@ final class AppPreferences {
 
     static let languageKey = "areachain.prefs.language"
     static let appearanceKey = "areachain.prefs.appearance"
+    static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
+    static let iCloudDesiredKey = "areachain.prefs.icloudDesired"
 
     private let defaults: UserDefaults
     private var isLoading = true
@@ -71,6 +73,22 @@ final class AppPreferences {
         }
     }
 
+    var stampCaptureApp: Bool {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(stampCaptureApp, forKey: Self.stampCaptureAppKey)
+            notifyChange()
+        }
+    }
+
+    var wantsICloudSync: Bool {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(wantsICloudSync, forKey: Self.iCloudDesiredKey)
+            notifyChange()
+        }
+    }
+
     var resolvedLocale: Locale { language.resolvedLocale }
 
     var resolvedColorScheme: ColorScheme? { appearance.resolvedColorScheme }
@@ -81,6 +99,8 @@ final class AppPreferences {
         language = AppLanguage(rawValue: languageRaw) ?? .system
         let appearanceRaw = defaults.string(forKey: Self.appearanceKey) ?? AppAppearance.system.rawValue
         appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
+        stampCaptureApp = defaults.bool(forKey: Self.stampCaptureAppKey)
+        wantsICloudSync = defaults.bool(forKey: Self.iCloudDesiredKey)
         isLoading = false
         applyAppAppearance()
     }

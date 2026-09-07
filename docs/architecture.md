@@ -26,7 +26,7 @@ AreaChain/
   App/            入口、签名、Scene 组装
   Resources/      Assets.xcassets、Localizable.xcstrings
   Domain/         纯领域：日期键、模型、过滤规则
-  Services/       本机存储、时钟、导入导出、热键、通知、首启
+  Services/       本机存储、时钟、导入导出、热键、通知、附件、首启
   Features/       界面，按功能分包
     MenuBar/
     Tasks/
@@ -47,20 +47,27 @@ AreaChain/
 
 ## 数据
 
-SwiftData 四张表：
+SwiftData 七张表：
 
 | 类型 | 作用 |
 |---|---|
-| `DailyRoutine` | 常驻（标题、排序、启用、开始日、星期掩码、创建时间、可选时刻、进回收站时间） |
+| `DailyRoutine` | 常驻（标题、排序、启用、开始日、星期掩码、创建时间、可选时刻、项目/标签/四象限、捕获 App、进回收站时间） |
 | `RoutineCheck` | 某常驻在某一天的完成 / 跳过 |
-| `TodoItem` | 某一天的临时任务（含创建时间、可选时刻、进回收站时间） |
+| `TodoItem` | 某一天的临时任务（含创建时间、可选时刻、同一组分类字段、进回收站时间） |
 | `DiaryEntry` | 某一天的一句日记（含进回收站时间） |
+| `ProjectItem` | 项目短名单（名字、排序、软删） |
+| `TagItem` | 标签短名单（名字、排序、软删） |
+| `AttachmentItem` | 附件元数据（归属 routine/todo/diary、文件名、时间）。**二进制不进库**，文件在 `Application Support/areachain-attachments/<id>` |
 
-对外 ID 都是 UUID，方便以后同步。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。
+没有 `@Attribute(.unique)`（CloudKit 不支持）；对外 ID 仍是 UUID。日期用 `DayKey` 字符串 `yyyy-MM-dd`，不用「当天 0 点」的 `Date` 去比较。标签多值存成逗号分隔 UUID 字符串，避免 CloudKit 难消化的多对多。
 
-列表「今天 / 昨天 / 即将 / 未完成 / 某月每天未完成」只通过 `DayBoardLogic` 计算。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
+列表「今天 / 昨天 / 即将 / 未完成 / 某月每天未完成」只通过 `DayBoardLogic` 计算。项目/标签/App 过滤和四象限排序也在 Domain（`Classification`）。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
 
-本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` / `weekdayMask` 时按缺省读（旧的 `weekdaysOnly: true` 当作周一到周五）。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉。
+本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册热键和通知。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` / `weekdayMask` / 分类字段 / 项目标签附件数组时按缺省读（旧的 `weekdaysOnly: true` 当作周一到周五）。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉并删附件文件。JSON 导出附件只出元数据。
+
+`Persistence` 默认仍是本地 `areachain` 库。设置里的 iCloud 开关在未配置容器时只作说明，不改 `ModelConfiguration`。真同步以后需要付费 Team、iCloud capability、`icloud-container-identifiers`，并把配置换成 `cloudKitDatabase: .automatic`。
+
+第二条热键（默认 ⌘⇧V）读一次剪贴板，不监听。测试进程不注册。
 
 ## 签名路径
 

@@ -11,8 +11,15 @@ struct HotKeySpec: Equatable {
         modifiers: UInt32(cmdKey | shiftKey)
     )
 
+    static let pasteFallback = HotKeySpec(
+        keyCode: UInt32(kVK_ANSI_V),
+        modifiers: UInt32(cmdKey | shiftKey)
+    )
+
     static let keyCodeDefaultsKey = "areachain.hotkey.keyCode"
     static let modifiersDefaultsKey = "areachain.hotkey.modifiers"
+    static let pasteKeyCodeDefaultsKey = "areachain.hotkey.paste.keyCode"
+    static let pasteModifiersDefaultsKey = "areachain.hotkey.paste.modifiers"
 
     var isUsable: Bool {
         keyCode != UInt32(kVK_Escape) && (modifiers & UInt32(cmdKey | optionKey | controlKey)) != 0
@@ -31,17 +38,48 @@ struct HotKeySpec: Equatable {
     }
 
     static func load(from defaults: UserDefaults = .standard) -> HotKeySpec {
-        guard defaults.object(forKey: keyCodeDefaultsKey) != nil else { return fallback }
+        load(
+            from: defaults,
+            keyCodeKey: keyCodeDefaultsKey,
+            modifiersKey: modifiersDefaultsKey,
+            fallback: .fallback
+        )
+    }
+
+    static func loadPaste(from defaults: UserDefaults = .standard) -> HotKeySpec {
+        load(
+            from: defaults,
+            keyCodeKey: pasteKeyCodeDefaultsKey,
+            modifiersKey: pasteModifiersDefaultsKey,
+            fallback: .pasteFallback
+        )
+    }
+
+    func save(to defaults: UserDefaults = .standard) {
+        save(to: defaults, keyCodeKey: Self.keyCodeDefaultsKey, modifiersKey: Self.modifiersDefaultsKey)
+    }
+
+    func savePaste(to defaults: UserDefaults = .standard) {
+        save(to: defaults, keyCodeKey: Self.pasteKeyCodeDefaultsKey, modifiersKey: Self.pasteModifiersDefaultsKey)
+    }
+
+    private static func load(
+        from defaults: UserDefaults,
+        keyCodeKey: String,
+        modifiersKey: String,
+        fallback: HotKeySpec
+    ) -> HotKeySpec {
+        guard defaults.object(forKey: keyCodeKey) != nil else { return fallback }
         let spec = HotKeySpec(
-            keyCode: UInt32(bitPattern: Int32(truncatingIfNeeded: defaults.integer(forKey: keyCodeDefaultsKey))),
-            modifiers: UInt32(bitPattern: Int32(truncatingIfNeeded: defaults.integer(forKey: modifiersDefaultsKey)))
+            keyCode: UInt32(bitPattern: Int32(truncatingIfNeeded: defaults.integer(forKey: keyCodeKey))),
+            modifiers: UInt32(bitPattern: Int32(truncatingIfNeeded: defaults.integer(forKey: modifiersKey)))
         )
         return spec.isUsable ? spec : fallback
     }
 
-    func save(to defaults: UserDefaults = .standard) {
-        defaults.set(Int(keyCode), forKey: Self.keyCodeDefaultsKey)
-        defaults.set(Int(modifiers), forKey: Self.modifiersDefaultsKey)
+    private func save(to defaults: UserDefaults, keyCodeKey: String, modifiersKey: String) {
+        defaults.set(Int(keyCode), forKey: keyCodeKey)
+        defaults.set(Int(modifiers), forKey: modifiersKey)
     }
 
     static func parse(event: NSEvent) -> HotKeySpec? {
@@ -81,9 +119,13 @@ struct HotKeySpec: Equatable {
 
 final class HotKeyCenter {
     static let shared = HotKeyCenter()
+    static let toggleID: UInt32 = 1
+    static let pasteID: UInt32 = 2
 
     private(set) var spec: HotKeySpec = .fallback
-    private var hotKeyRef: EventHotKeyRef?
+    private(set) var pasteSpec: HotKeySpec = .pasteFallback
+    private var toggleRef: EventHotKeyRef?
+    private var pasteRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
 
     var displayName: String { spec.displayName() }
@@ -92,19 +134,24 @@ final class HotKeyCenter {
         spec.displayName(locale: locale)
     }
 
+    func pasteDisplayName(locale: Locale = .current) -> String {
+        pasteSpec.displayName(locale: locale)
+    }
+
     func start() {
-        guard hotKeyRef == nil else { return }
+        guard handlerRef == nil else { return }
         apply(HotKeySpec.load(), persist: false)
+        applyPaste(HotKeySpec.loadPaste(), persist: false)
     }
 
     @discardableResult
     func apply(_ next: HotKeySpec, persist: Bool = true) -> HotKeySpec {
-        let resolved = next.isUsable ? next : .fallback
-        unregisterKey()
         installHandlerIfNeeded()
-        if register(resolved) {
+        let resolved = next.isUsable ? next : .fallback
+        unregister(ref: &toggleRef)
+        if register(resolved, id: Self.toggleID, ref: &toggleRef) {
             spec = resolved
-        } else if resolved != .fallback, register(.fallback) {
+        } else if resolved != .fallback, register(.fallback, id: Self.toggleID, ref: &toggleRef) {
             spec = .fallback
         } else {
             spec = resolved
@@ -112,27 +159,57 @@ final class HotKeyCenter {
         if persist {
             spec.save()
         }
+        if pasteSpec == spec {
+            unregister(ref: &pasteRef)
+        } else {
+            _ = register(pasteSpec, id: Self.pasteID, ref: &pasteRef)
+        }
         NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
         return spec
     }
 
-    private func register(_ spec: HotKeySpec) -> Bool {
-        var hotKeyID = EventHotKeyID(signature: fourChar("ACHK"), id: 1)
+    @discardableResult
+    func applyPaste(_ next: HotKeySpec, persist: Bool = true) -> HotKeySpec {
+        installHandlerIfNeeded()
+        let resolved = next.isUsable ? next : .pasteFallback
+        if resolved == spec {
+            NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
+            return pasteSpec
+        }
+        unregister(ref: &pasteRef)
+        if register(resolved, id: Self.pasteID, ref: &pasteRef) {
+            pasteSpec = resolved
+        } else if resolved != .pasteFallback, resolved != spec,
+                  register(.pasteFallback, id: Self.pasteID, ref: &pasteRef) {
+            pasteSpec = .pasteFallback
+        } else {
+            pasteSpec = resolved
+        }
+        if persist {
+            pasteSpec.savePaste()
+        }
+        NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
+        return pasteSpec
+    }
+
+    private func register(_ spec: HotKeySpec, id: UInt32, ref: inout EventHotKeyRef?) -> Bool {
+        unregister(ref: &ref)
+        let hotKeyID = EventHotKeyID(signature: fourChar("ACHK"), id: id)
         let status = RegisterEventHotKey(
             spec.keyCode,
             spec.modifiers,
             hotKeyID,
             GetApplicationEventTarget(),
             0,
-            &hotKeyRef
+            &ref
         )
         return status == noErr
     }
 
-    private func unregisterKey() {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
+    private func unregister(ref: inout EventHotKeyRef?) {
+        if let hotKey = ref {
+            UnregisterEventHotKey(hotKey)
+            ref = nil
         }
     }
 
@@ -144,9 +221,26 @@ final class HotKeyCenter {
         )
         InstallEventHandler(
             GetApplicationEventTarget(),
-            { _, _, _ in
+            { _, event, _ in
+                var hotKeyID = EventHotKeyID()
+                if let event {
+                    GetEventParameter(
+                        event,
+                        EventParamName(kEventParamDirectObject),
+                        EventParamType(typeEventHotKeyID),
+                        nil,
+                        MemoryLayout<EventHotKeyID>.size,
+                        nil,
+                        &hotKeyID
+                    )
+                }
+                let id = hotKeyID.id
                 DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: .toggleBoardPopover, object: nil)
+                    if id == HotKeyCenter.pasteID {
+                        NotificationCenter.default.post(name: .pasteClipboardCapture, object: nil)
+                    } else {
+                        NotificationCenter.default.post(name: .toggleBoardPopover, object: nil)
+                    }
                 }
                 return noErr
             },

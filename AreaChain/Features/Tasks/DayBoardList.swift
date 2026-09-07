@@ -10,6 +10,11 @@ struct DayBoardList: View {
     var routines: [DailyRoutine]
     var checks: [RoutineCheck]
     var todos: [TodoItem]
+    var filter: BoardFilter = BoardFilter()
+
+    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Query private var attachments: [AttachmentItem]
 
     @State private var showCompleted = true
     @State private var pendingTrash: PendingTrash?
@@ -54,11 +59,11 @@ struct DayBoardList: View {
     private var completedCount: Int { doneDayItems.count }
 
     private var openDayItems: [BoardRow] {
-        sortedRows(openRoutines.map(BoardRow.resident) + openTodos.map(BoardRow.todo))
+        sortedRows(filtered(openRoutines.map(BoardRow.resident) + openTodos.map(BoardRow.todo)))
     }
 
     private var doneDayItems: [BoardRow] {
-        sortedRows(doneRoutines.map(BoardRow.resident) + doneTodos.map(BoardRow.todo))
+        sortedRows(filtered(doneRoutines.map(BoardRow.resident) + doneTodos.map(BoardRow.todo)))
     }
 
     private var openRoutines: [DailyRoutine] {
@@ -83,19 +88,20 @@ struct DayBoardList: View {
         return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
     }
 
-    private func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
-        rows.sorted { left, right in
-            switch (left.remindMinutes, right.remindMinutes) {
-            case let (a?, b?) where a != b:
-                return a < b
-            case (_?, nil):
-                return true
-            case (nil, _?):
-                return false
-            default:
-                return left.createdAt < right.createdAt
+    private func filtered(_ rows: [BoardRow]) -> [BoardRow] {
+        guard filter.isActive else { return rows }
+        return rows.filter { row in
+            switch row {
+            case .resident(let routine):
+                Classification.matches(routine.classifyBits, filter: filter)
+            case .todo(let todo):
+                Classification.matches(todo.classifyBits, filter: filter)
             }
         }
+    }
+
+    private func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
+        rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
 
     @ViewBuilder
@@ -117,7 +123,9 @@ struct DayBoardList: View {
             note: isDone ? ResidentNote.done(routine, skipped: skipped, locale: locale) : ResidentNote.days(routine, locale: locale),
             remindMinutes: routine.remindMinutes,
             onToggle: { DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
-            onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) }
+            onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
+            isImportant: routine.isImportant,
+            isUrgent: routine.isUrgent
         )
     }
 
@@ -136,7 +144,14 @@ struct DayBoardList: View {
             },
             onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
             onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
-            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) }
+            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) },
+            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
+            attachments: CatalogChoices.attachments(
+                ownerKind: .todo,
+                ownerID: todo.id,
+                items: attachments,
+                context: modelContext
+            )
         )
     }
 }

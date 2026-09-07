@@ -71,6 +71,16 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 self?.refreshCount()
             }
         }
+        NotificationCenter.default.addObserver(
+            forName: .pasteClipboardCapture,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let container = self?.container else { return }
+                ClipboardCapture.ingest(container: container)
+            }
+        }
     }
 
     func close() {

@@ -9,6 +9,8 @@ struct DiaryPage: View {
     var entries: [DiaryEntry]
     var showsComposer: Bool = false
 
+    @Query private var attachments: [AttachmentItem]
+
     @State private var viewingKey: String
     @State private var draft = ""
     @FocusState private var composerFocused: Bool
@@ -118,7 +120,7 @@ struct DiaryPage: View {
                         .padding(.top, 8)
                 } else {
                     ForEach(visibleEntries, id: \.id) { entry in
-                        DiaryLine(entry: entry)
+                        DiaryLine(entry: entry, attachments: attachments)
                     }
                 }
             }
@@ -142,7 +144,9 @@ struct DiaryPage: View {
 
 struct DiaryLine: View {
     @Environment(\.locale) private var locale
+    @Environment(\.modelContext) private var modelContext
     var entry: DiaryEntry
+    var attachments: [AttachmentItem]
     @State private var editing = false
     @State private var hovering = false
     @State private var draft = ""
@@ -166,6 +170,9 @@ struct DiaryLine: View {
                         .foregroundStyle(DaybookTheme.ink)
                         .fixedSize(horizontal: false, vertical: true)
                         .onTapGesture(perform: beginEdit)
+                    if !diaryAttachments.isEmpty {
+                        AttachmentThumbnails(items: diaryAttachments)
+                    }
                 }
             }
             Spacer(minLength: 4)
@@ -174,6 +181,13 @@ struct DiaryLine: View {
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancel)
             } else if hovering {
                 RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
+                RowIconButton(
+                    systemName: "photo",
+                    label: "row.attach",
+                    action: {
+                        AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+                    }
+                )
                 RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
             }
         }
@@ -182,10 +196,20 @@ struct DiaryLine: View {
         .onHover { hovering = $0 }
         .contextMenu {
             Button("diary.edit", action: beginEdit)
+            Button("row.attach") {
+                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
+            Button("row.attach.paste") {
+                _ = AttachmentActions.pasteImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            }
             Button("diary.delete", role: .destructive, action: requestTrash)
         }
         .confirmMoveToTrash($pendingTrash)
         .onAppear { draft = entry.text }
+    }
+
+    private var diaryAttachments: [AttachmentRef] {
+        CatalogChoices.attachments(entry.id, in: attachments)
     }
 
     private func beginEdit() {

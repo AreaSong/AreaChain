@@ -37,5 +37,6 @@ enum Persistence {
             let url = base.appending(path: "areachain.store\(extra)")
             try? FileManager.default.removeItem(at: url)
         }
+        AttachmentStore.resetDirectory()
     }
 }

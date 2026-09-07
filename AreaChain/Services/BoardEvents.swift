@@ -6,6 +6,7 @@ extension Notification.Name {
     static let boardDidChange = Notification.Name("areachain.boardDidChange")
     static let hotKeyDidChange = Notification.Name("areachain.hotKeyDidChange")
     static let appPreferencesDidChange = Notification.Name("areachain.appPreferencesDidChange")
+    static let pasteClipboardCapture = Notification.Name("areachain.pasteClipboardCapture")
 }
 
 enum BoardEvents {
