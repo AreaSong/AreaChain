@@ -1,6 +1,13 @@
 import Foundation
 
 extension Notification.Name {
-    static let openBoardWindow = Notification.Name("areachain.openBoardWindow")
+    static let toggleBoardPopover = Notification.Name("areachain.toggleBoardPopover")
     static let focusCapture = Notification.Name("areachain.focusCapture")
+    static let boardDidChange = Notification.Name("areachain.boardDidChange")
+}
+
+enum BoardEvents {
+    static func changed() {
+        NotificationCenter.default.post(name: .boardDidChange, object: nil)
+    }
 }

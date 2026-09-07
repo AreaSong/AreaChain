@@ -26,8 +26,7 @@ final class HotKeyCenter {
             GetApplicationEventTarget(),
             { _, _, _ in
                 DispatchQueue.main.async {
-                    NotificationCenter.default.post(name: .openBoardWindow, object: nil)
-                    NotificationCenter.default.post(name: .focusCapture, object: nil)
+                    NotificationCenter.default.post(name: .toggleBoardPopover, object: nil)
                 }
                 return noErr
             },

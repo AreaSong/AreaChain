@@ -11,18 +11,22 @@ extension TasksPage {
             if !check.isDone {
                 check.isSkipped = false
             }
+            BoardEvents.changed()
             return
         }
         modelContext.insert(RoutineCheck(dayKey: todayKey, isDone: true, routine: routine))
+        BoardEvents.changed()
     }
 
     func skipRoutine(_ routine: DailyRoutine) {
         if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == todayKey }) {
             check.isDone = true
             check.isSkipped = true
+            BoardEvents.changed()
             return
         }
         modelContext.insert(RoutineCheck(dayKey: todayKey, isDone: true, isSkipped: true, routine: routine))
+        BoardEvents.changed()
     }
 
     func completeYesterday(_ item: UnfinishedItem) {
@@ -37,11 +41,13 @@ extension TasksPage {
                 modelContext.insert(RoutineCheck(dayKey: yesterdayKey, isDone: true, routine: routine))
             }
         }
+        BoardEvents.changed()
     }
 
     func moveYesterdayTodo(_ item: UnfinishedItem) {
         guard item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) else { return }
         todo.dayKey = todayKey
+        BoardEvents.changed()
     }
 
     func addRoutineFromPopover() {
@@ -51,5 +57,6 @@ extension TasksPage {
         modelContext.insert(DailyRoutine(title: title, sortOrder: order))
         routineDraft = ""
         addingRoutine = false
+        BoardEvents.changed()
     }
 }

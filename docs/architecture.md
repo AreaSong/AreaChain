@@ -16,6 +16,8 @@ README.md
 
 不要把 `build/`、`DerivedData/`、`xcuserdata` 提交进去。
 
+菜单栏入口是 `StatusItemController`（`NSStatusItem` + `NSPopover`），热键走同一套 `toggle`，不再另开「今日」窗口。
+
 ## 应用内分层
 
 ```

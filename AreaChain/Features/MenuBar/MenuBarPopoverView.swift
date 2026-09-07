@@ -129,6 +129,7 @@ struct MenuBarPopoverView: View {
         guard !title.isEmpty else { return }
         modelContext.insert(TodoItem(title: title, dayKey: todayKey))
         draft = ""
+        BoardEvents.changed()
     }
 
     private func addDiary() {
@@ -137,6 +138,7 @@ struct MenuBarPopoverView: View {
         modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
         draft = ""
         tab = .diary
+        BoardEvents.changed()
     }
 }
 
@@ -156,7 +158,7 @@ struct FooterBar: View {
             .buttonStyle(.plain)
             .foregroundStyle(DaybookTheme.muted)
             Spacer()
-            Text("⌘⇧A")
+            Text("⌘⇧A 浮层")
                 .font(.system(size: 10, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
             Button("退出") {
@@ -204,14 +206,3 @@ struct MenuBarLabel: View {
     }
 }
 
-struct WindowOpener: View {
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some View {
-        Color.clear
-            .frame(width: 0, height: 0)
-            .onReceive(NotificationCenter.default.publisher(for: .openBoardWindow)) { _ in
-                openWindow(id: "board")
-            }
-    }
-}

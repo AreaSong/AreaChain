@@ -1,27 +1,40 @@
 import Foundation
 import SwiftData
 
+struct PersistenceSession {
+    var container: ModelContainer
+    var isFallback: Bool
+    var openError: String?
+}
+
 enum Persistence {
-    static func makeContainer() -> ModelContainer {
+    static let session: PersistenceSession = makeSession()
+
+    static func makeSession() -> PersistenceSession {
         let schema = Schema(AreaChainSchema.models)
-        let configuration = ModelConfiguration("areachain", schema: schema)
+        let disk = ModelConfiguration("areachain", schema: schema)
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            let container = try ModelContainer(for: schema, configurations: [disk])
+            return PersistenceSession(container: container, isFallback: false, openError: nil)
         } catch {
-            resetStore(named: "areachain")
+            let memory = ModelConfiguration(isStoredInMemoryOnly: true)
             do {
-                return try ModelContainer(for: schema, configurations: [configuration])
+                let container = try ModelContainer(for: schema, configurations: [memory])
+                return PersistenceSession(
+                    container: container,
+                    isFallback: true,
+                    openError: error.localizedDescription
+                )
             } catch {
-                fatalError("无法打开本地数据：\(error)")
+                fatalError("无法打开内存库：\(error)")
             }
         }
     }
 
-    private static func resetStore(named name: String) {
+    static func resetStoreOnDisk() {
         let base = URL.applicationSupportDirectory
-        let extras = ["", "-shm", "-wal"]
-        for extra in extras {
-            let url = base.appending(path: "\(name).store\(extra)")
+        for extra in ["", "-shm", "-wal"] {
+            let url = base.appending(path: "areachain.store\(extra)")
             try? FileManager.default.removeItem(at: url)
         }
     }

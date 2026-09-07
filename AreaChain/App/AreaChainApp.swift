@@ -1,32 +1,25 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        StatusItemController.shared.attach(container: Persistence.session.container)
+        HotKeyCenter.shared.start()
+    }
+}
+
 @main
 struct AreaChainApp: App {
-    private let container: ModelContainer
-    @State private var dayClock = DayClock.shared
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    private let container = Persistence.session.container
 
     init() {
-        container = Persistence.makeContainer()
+        StoreHealth.shared.apply(Persistence.session)
     }
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuBarPopoverView()
-                .background(WindowOpener())
-        } label: {
-            MenuBarLabel()
-        }
-        .menuBarExtraStyle(.window)
-        .modelContainer(container)
-
-        Window("今日", id: "board") {
-            MenuBarPopoverView()
-        }
-        .windowResizability(.contentSize)
-        .defaultSize(width: DaybookTheme.popoverSize.width, height: DaybookTheme.popoverSize.height)
-        .modelContainer(container)
-
         Window("日记", id: "diary") {
             DiaryStandaloneView()
         }
