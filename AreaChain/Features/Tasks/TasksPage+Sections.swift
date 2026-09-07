@@ -152,7 +152,6 @@ extension TasksPage {
             isDone: isDone,
             isResident: true,
             note: isDone ? doneRoutineNote(routine) : (routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil),
-            createdAt: routine.createdAt,
             remindMinutes: routine.remindMinutes,
             weekdaysOnly: routine.weekdaysOnly,
             onToggle: { toggleRoutine(routine) },
@@ -170,7 +169,6 @@ extension TasksPage {
             title: todo.title,
             isDone: isDone,
             note: note,
-            createdAt: todo.createdAt,
             remindMinutes: todo.remindMinutes,
             todayKey: todayKey,
             currentDayKey: todo.dayKey,
@@ -191,7 +189,6 @@ extension TasksPage {
                 title: routine.title,
                 isDone: false,
                 isResident: true,
-                createdAt: routine.createdAt,
                 remindMinutes: routine.remindMinutes,
                 todayKey: todayKey,
                 currentDayKey: yesterdayKey,
@@ -210,7 +207,10 @@ extension TasksPage {
     }
 
     var addResidentRow: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
+            Image(systemName: "repeat")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(DaybookTheme.muted)
             TextField("resident.add", text: $residentDraft)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
@@ -218,37 +218,50 @@ extension TasksPage {
                 .onSubmit(addResident)
             ComposerAddButton(
                 enabled: !residentDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                emphasized: false,
                 action: addResident
             )
         }
-        .padding(.vertical, 4)
+        .padding(.top, 10)
+        .padding(.bottom, 2)
     }
 
     func disabledRow(_ routine: DailyRoutine) -> some View {
+        DisabledRoutineRow(
+            title: routine.title,
+            onEnable: { enableRoutine(routine) },
+            onDelete: { deleteRoutine(routine) }
+        )
+    }
+}
+
+private struct DisabledRoutineRow: View {
+    var title: String
+    var onEnable: () -> Void
+    var onDelete: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "repeat")
                 .font(.system(size: 10, weight: .bold))
             Image(systemName: "pause.circle")
                 .font(.system(size: 12))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(routine.title)
-                    .font(.system(size: 13))
-                Text(ClockLabel.created(routine.createdAt, locale: locale))
-                    .font(.system(size: 10))
-            }
+            Text(title)
+                .font(.system(size: 13))
             Spacer(minLength: 4)
-            RowIconButton(systemName: "play.circle", label: "row.enable") {
-                enableRoutine(routine)
-            }
-            RowIconButton(systemName: "trash", label: "row.delete", role: .destructive) {
-                deleteRoutine(routine)
+            RowIconButton(systemName: "play.circle", label: "row.enable", action: onEnable)
+            if hovering {
+                RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
             }
         }
         .foregroundStyle(DaybookTheme.muted)
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
         .contextMenu {
-            Button("row.enable") { enableRoutine(routine) }
-            Button("row.delete", role: .destructive) { deleteRoutine(routine) }
+            Button("row.enable", action: onEnable)
+            Button("row.delete", role: .destructive, action: onDelete)
         }
     }
 }

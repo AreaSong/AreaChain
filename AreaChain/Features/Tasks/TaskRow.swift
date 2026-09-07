@@ -5,7 +5,6 @@ struct TaskRow: View {
     var isDone: Bool
     var isResident: Bool = false
     var note: String? = nil
-    var createdAt: Date? = nil
     var remindMinutes: Int? = nil
     var todayKey: String? = nil
     var currentDayKey: String? = nil
@@ -22,12 +21,13 @@ struct TaskRow: View {
 
     @Environment(\.locale) private var locale
     @State private var editing = false
+    @State private var hovering = false
     @State private var draft = ""
     @State private var pickingDay = false
     @State private var pickingTime = false
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: note == nil && !editing ? .center : .top, spacing: 8) {
             InkCheckbox(isDone: isDone, action: onToggle)
             if isResident {
                 residentMark
@@ -40,7 +40,9 @@ struct TaskRow: View {
             Spacer(minLength: 4)
             actionCluster
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
             if let todayKey, let onMoveToDay {
@@ -63,24 +65,27 @@ struct TaskRow: View {
         Image(systemName: "repeat")
             .font(.system(size: 10, weight: .bold))
             .foregroundStyle(DaybookTheme.stamp)
-            .padding(.top, 3)
             .accessibilityLabel("row.resident")
             .help("row.resident")
     }
 
     private var titleLabel: some View {
         VStack(alignment: .leading, spacing: 1) {
-            Text(title)
-                .font(.system(size: 13))
-                .strikethrough(isDone, color: DaybookTheme.done)
-                .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
-                .lineLimit(2)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(title)
+                    .font(.system(size: 13))
+                    .strikethrough(isDone, color: DaybookTheme.done)
+                    .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
+                    .lineLimit(2)
+                if let remindMinutes {
+                    remindLabel(remindMinutes)
+                }
+            }
             if let note {
                 Text(note)
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
             }
-            metaLine
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -89,29 +94,17 @@ struct TaskRow: View {
         }
     }
 
-    @ViewBuilder
-    private var metaLine: some View {
-        if remindMinutes != nil || createdAt != nil {
-            HStack(spacing: 6) {
-                if let remindMinutes {
-                    Button {
-                        pickingTime = true
-                    } label: {
-                        Text(RemindMinutes.label(remindMinutes, locale: locale))
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(onRemindMinutes == nil)
-                }
-                if remindMinutes != nil, createdAt != nil {
-                    Text("·")
-                }
-                if let createdAt {
-                    Text(ClockLabel.created(createdAt, locale: locale))
-                }
-            }
-            .font(.system(size: 10))
-            .foregroundStyle(DaybookTheme.muted)
+    private func remindLabel(_ minutes: Int) -> some View {
+        Button {
+            pickingTime = true
+        } label: {
+            Text(RemindMinutes.label(minutes, locale: locale))
+                .font(.system(size: 10, design: .monospaced))
+                .foregroundStyle(DaybookTheme.muted)
         }
+        .buttonStyle(.plain)
+        .disabled(onRemindMinutes == nil)
+        .layoutPriority(1)
     }
 
     private var editor: some View {
@@ -168,25 +161,13 @@ extension TaskRow {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
             } else {
-                if onEdit != nil {
+                if hovering, onEdit != nil {
                     RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
                 }
-                if hasOverflow {
-                    Menu {
-                        overflowMenus
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 11, weight: .semibold))
-                            .frame(width: 18, height: 18)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(DaybookTheme.muted)
-                    .menuIndicator(.hidden)
-                    .help("row.more")
-                    .accessibilityLabel("row.more")
+                if showsMoreMenu {
+                    moreMenu
                 }
-                if let onDelete {
+                if hovering, let onDelete {
                     RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
                 }
             }
@@ -200,6 +181,29 @@ extension TaskRow {
             || onWeekdaysOnly != nil
             || onDisable != nil
             || onEnable != nil
+    }
+
+    private var showsMoreMenu: Bool {
+        hasOverflow || onDelete != nil
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            overflowMenus
+            if let onDelete {
+                Button("row.delete", role: .destructive, action: onDelete)
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 11, weight: .semibold))
+                .frame(width: 18, height: 18)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DaybookTheme.muted)
+        .menuIndicator(.hidden)
+        .help("row.more")
+        .accessibilityLabel("row.more")
     }
 
     @ViewBuilder

@@ -144,6 +144,7 @@ struct DiaryLine: View {
     @Environment(\.locale) private var locale
     var entry: DiaryEntry
     @State private var editing = false
+    @State private var hovering = false
     @State private var draft = ""
     @State private var pendingTrash: PendingTrash?
 
@@ -171,12 +172,14 @@ struct DiaryLine: View {
             if editing {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: save)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancel)
-            } else {
+            } else if hovering {
                 RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
                 RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onHover { hovering = $0 }
         .contextMenu {
             Button("diary.edit", action: beginEdit)
             Button("diary.delete", role: .destructive, action: requestTrash)
