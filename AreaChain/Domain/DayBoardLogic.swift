@@ -6,7 +6,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var sortOrder: Int
     var isEnabled: Bool
     var createdDayKey: String
-    var weekdaysOnly: Bool = false
+    var weekdayMask: Int = WeekdayMask.all
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
     var deletedAt: Date? = nil
@@ -51,10 +51,7 @@ struct UnfinishedItem: Equatable, Identifiable {
 enum DayBoardLogic {
     static func isRoutineDue(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
         guard routine.deletedAt == nil, routine.isEnabled, routine.createdDayKey <= dayKey else { return false }
-        if routine.weekdaysOnly {
-            return DayKey.isWeekday(dayKey)
-        }
-        return true
+        return WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey)
     }
 
     static func check(

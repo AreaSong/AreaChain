@@ -73,9 +73,9 @@ private struct ResidentSettingsRow: View {
                     .help("settings.residents.enabled")
                 RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
             }
-            HStack(spacing: 12) {
-                Toggle("row.weekdays", isOn: weekdaysBinding)
-                Spacer()
+            HStack(spacing: 8) {
+                WeekdayMaskChips(mask: routine.resolvedWeekdayMask, onToggle: toggleWeekday)
+                Spacer(minLength: 8)
                 timeControls
             }
             .font(.system(size: 12))
@@ -102,13 +102,6 @@ private struct ResidentSettingsRow: View {
         Binding(
             get: { routine.isEnabled },
             set: { next in persist { routine.isEnabled = next } }
-        )
-    }
-
-    private var weekdaysBinding: Binding<Bool> {
-        Binding(
-            get: { routine.weekdaysOnly },
-            set: { next in persist { routine.weekdaysOnly = next } }
         )
     }
 
@@ -166,8 +159,46 @@ private struct ResidentSettingsRow: View {
         }
     }
 
+    private func toggleWeekday(_ weekday: Int) {
+        persist {
+            routine.setWeekdayMask(WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday))
+        }
+    }
+
     private func persist(_ work: () -> Void) {
         work()
         BoardEvents.changed()
+    }
+}
+
+private struct WeekdayMaskChips: View {
+    @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
+    var mask: Int
+    var onToggle: (Int) -> Void
+
+    var body: some View {
+        HStack(spacing: 4) {
+            ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
+                let on = WeekdayMask.contains(mask, weekday: weekday)
+                Button {
+                    onToggle(weekday)
+                } label: {
+                    Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(width: 24, height: 24)
+                        .background(on ? DaybookTheme.stamp.opacity(0.38) : DaybookTheme.rule.opacity(0.45))
+                        .foregroundStyle(on ? DaybookTheme.ink : DaybookTheme.muted)
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
+                .accessibilityAddTraits(on ? [.isSelected] : [])
+                .help(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("settings.residents.days")
+        .help("settings.residents.days")
     }
 }

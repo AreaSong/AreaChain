@@ -15,12 +15,13 @@ struct ExportedRoutine: Codable, Equatable {
     var isEnabled: Bool
     var createdDayKey: String
     var weekdaysOnly: Bool
+    var weekdayMask: Int
     var createdAt: Date?
     var remindMinutes: Int?
     var deletedAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, createdAt, remindMinutes, deletedAt
+        case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, weekdayMask, createdAt, remindMinutes, deletedAt
     }
 
     init(
@@ -30,6 +31,7 @@ struct ExportedRoutine: Codable, Equatable {
         isEnabled: Bool,
         createdDayKey: String,
         weekdaysOnly: Bool = false,
+        weekdayMask: Int? = nil,
         createdAt: Date? = nil,
         remindMinutes: Int? = nil,
         deletedAt: Date? = nil
@@ -39,7 +41,9 @@ struct ExportedRoutine: Codable, Equatable {
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
-        self.weekdaysOnly = weekdaysOnly
+        let mask = WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
+        self.weekdayMask = mask
+        self.weekdaysOnly = WeekdayMask.isWorkdays(mask)
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
@@ -52,7 +56,11 @@ struct ExportedRoutine: Codable, Equatable {
         sortOrder = try box.decode(Int.self, forKey: .sortOrder)
         isEnabled = try box.decode(Bool.self, forKey: .isEnabled)
         createdDayKey = try box.decode(String.self, forKey: .createdDayKey)
-        weekdaysOnly = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
+        let storedMask = try box.decodeIfPresent(Int.self, forKey: .weekdayMask)
+        let flag = try box.decodeIfPresent(Bool.self, forKey: .weekdaysOnly) ?? false
+        let mask = WeekdayMask.resolved(stored: storedMask, weekdaysOnly: flag)
+        weekdayMask = mask
+        weekdaysOnly = WeekdayMask.isWorkdays(mask)
         createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
         remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
         deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
@@ -156,13 +164,15 @@ enum SyncPort {
         ExportSnapshot(
             exportedAt: exportedAt,
             routines: routines.map {
-                ExportedRoutine(
+                let mask = $0.resolvedWeekdayMask
+                return ExportedRoutine(
                     id: $0.id,
                     title: $0.title,
                     sortOrder: $0.sortOrder,
                     isEnabled: $0.isEnabled,
                     createdDayKey: $0.createdDayKey,
-                    weekdaysOnly: $0.weekdaysOnly,
+                    weekdaysOnly: WeekdayMask.isWorkdays(mask),
+                    weekdayMask: mask,
                     createdAt: $0.createdAt,
                     remindMinutes: $0.remindMinutes,
                     deletedAt: $0.deletedAt

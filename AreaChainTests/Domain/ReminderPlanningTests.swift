@@ -63,7 +63,7 @@ struct ReminderPlanningTests {
             id: UUID(),
             title: "写日报",
             remindMinutes: 9 * 60,
-            kind: .resident(weekdaysOnly: false, closedToday: false)
+            kind: .resident(days: WeekdayMask.all, closedToday: false)
         )
         #expect(
             ReminderPlanning.nextFireDate(open, now: date("2026-09-07", hour: 8), calendar: utc)
@@ -78,7 +78,7 @@ struct ReminderPlanningTests {
             id: UUID(),
             title: "写日报",
             remindMinutes: 9 * 60,
-            kind: .resident(weekdaysOnly: false, closedToday: true)
+            kind: .resident(days: WeekdayMask.all, closedToday: true)
         )
         #expect(
             ReminderPlanning.nextFireDate(closed, now: date("2026-09-07", hour: 8), calendar: utc)
@@ -91,7 +91,7 @@ struct ReminderPlanningTests {
             id: UUID(),
             title: "写日报",
             remindMinutes: 9 * 60,
-            kind: .resident(weekdaysOnly: true, closedToday: false)
+            kind: .resident(days: WeekdayMask.workdays, closedToday: false)
         )
         #expect(
             ReminderPlanning.nextFireDate(request, now: date("2026-09-05", hour: 8), calendar: utc)
@@ -102,11 +102,29 @@ struct ReminderPlanningTests {
             id: UUID(),
             title: "写日报",
             remindMinutes: 9 * 60,
-            kind: .resident(weekdaysOnly: true, closedToday: true)
+            kind: .resident(days: WeekdayMask.workdays, closedToday: true)
         )
         #expect(
             ReminderPlanning.nextFireDate(fridayClosed, now: date("2026-09-04", hour: 10), calendar: utc)
                 == date("2026-09-07", hour: 9)
+        )
+    }
+
+    @Test func residentCustomDaysSkipUnselected() {
+        let wednesday = 1 << (4 - 1)
+        let request = ReminderRequest(
+            id: UUID(),
+            title: "周会",
+            remindMinutes: 9 * 60,
+            kind: .resident(days: wednesday, closedToday: false)
+        )
+        #expect(
+            ReminderPlanning.nextFireDate(request, now: date("2026-09-07", hour: 8), calendar: utc)
+                == date("2026-09-09", hour: 9)
+        )
+        #expect(
+            ReminderPlanning.nextFireDate(request, now: date("2026-09-09", hour: 10), calendar: utc)
+                == date("2026-09-16", hour: 9)
         )
     }
 
@@ -148,7 +166,7 @@ struct ReminderPlanningTests {
             todayKey: "2026-09-07"
         )
         #expect(catalog.map(\.title) == ["复盘", "临时"])
-        #expect(catalog[0].kind == .resident(weekdaysOnly: false, closedToday: true))
+        #expect(catalog[0].kind == .resident(days: WeekdayMask.all, closedToday: true))
         #expect(catalog[1].kind == .once(dayKey: "2026-09-07", isDone: false))
     }
 

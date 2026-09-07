@@ -74,6 +74,40 @@ struct SnapshotImporterTests {
         #expect(routines.first?.remindMinutes == 480)
         #expect(routines.first?.createdAt == Date(timeIntervalSince1970: 9))
         #expect(routines.first?.deletedAt == nil)
+        #expect(routines.first?.resolvedWeekdayMask == WeekdayMask.all)
+    }
+
+    @Test func upsertRoutineWeekdayMask() throws {
+        let schema = Schema([DailyRoutine.self, RoutineCheck.self, TodoItem.self, DiaryEntry.self])
+        let container = try ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let id = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        context.insert(DailyRoutine(id: id, title: "旧", sortOrder: 0, createdDayKey: "2026-09-01"))
+        try context.save()
+
+        let snapshot = ExportSnapshot(
+            exportedAt: Date(timeIntervalSince1970: 1),
+            routines: [
+                ExportedRoutine(
+                    id: id,
+                    title: "周会",
+                    sortOrder: 0,
+                    isEnabled: true,
+                    createdDayKey: "2026-09-01",
+                    weekdayMask: 8
+                )
+            ],
+            checks: [],
+            todos: [],
+            diaries: []
+        )
+        try SnapshotImporter.apply(snapshot, context: context)
+        let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
+        #expect(routines.first?.resolvedWeekdayMask == 8)
+        #expect(routines.first?.weekdaysOnly == false)
     }
 
     @Test func upsertPreservesDeletedAt() throws {

@@ -9,6 +9,7 @@ final class DailyRoutine {
     var isEnabled: Bool
     var createdDayKey: String
     var weekdaysOnly: Bool = false
+    var weekdayMask: Int?
     var createdAt: Date = Date()
     var remindMinutes: Int?
     var deletedAt: Date?
@@ -23,6 +24,7 @@ final class DailyRoutine {
         isEnabled: Bool = true,
         createdDayKey: String = DayKey.today(),
         weekdaysOnly: Bool = false,
+        weekdayMask: Int? = nil,
         createdAt: Date = .now,
         remindMinutes: Int? = nil,
         deletedAt: Date? = nil
@@ -32,11 +34,23 @@ final class DailyRoutine {
         self.sortOrder = sortOrder
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
-        self.weekdaysOnly = weekdaysOnly
+        let mask = WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
+        self.weekdayMask = mask
+        self.weekdaysOnly = WeekdayMask.isWorkdays(mask)
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
         self.checks = []
+    }
+
+    var resolvedWeekdayMask: Int {
+        WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
+    }
+
+    func setWeekdayMask(_ mask: Int) {
+        let next = WeekdayMask.sanitized(mask)
+        weekdayMask = next
+        weekdaysOnly = WeekdayMask.isWorkdays(next)
     }
 
     var snapshot: RoutineSnapshot {
@@ -46,7 +60,7 @@ final class DailyRoutine {
             sortOrder: sortOrder,
             isEnabled: isEnabled,
             createdDayKey: createdDayKey,
-            weekdaysOnly: weekdaysOnly,
+            weekdayMask: resolvedWeekdayMask,
             createdAt: createdAt,
             remindMinutes: remindMinutes,
             deletedAt: deletedAt

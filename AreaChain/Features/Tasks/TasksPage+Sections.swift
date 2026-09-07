@@ -141,7 +141,7 @@ extension TasksPage {
             title: routine.title,
             isDone: isDone,
             isResident: true,
-            note: isDone ? doneRoutineNote(routine) : (routine.weekdaysOnly ? L10n.string("note.weekdays", locale: locale) : nil),
+            note: isDone ? doneRoutineNote(routine) : daysNote(routine, locale: locale),
             remindMinutes: routine.remindMinutes,
             onToggle: { toggleRoutine(routine) },
             onSkip: isDone ? nil : { skipRoutine(routine) }

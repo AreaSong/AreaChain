@@ -58,7 +58,7 @@ struct ReminderRequest: Equatable {
     var kind: Kind
 
     enum Kind: Equatable {
-        case resident(weekdaysOnly: Bool, closedToday: Bool)
+        case resident(days: Int, closedToday: Bool)
         case once(dayKey: String, isDone: Bool)
     }
 }
@@ -85,7 +85,7 @@ enum ReminderPlanning {
                 title: routine.title,
                 remindMinutes: minutes,
                 kind: .resident(
-                    weekdaysOnly: routine.weekdaysOnly,
+                    days: WeekdayMask.sanitized(routine.weekdayMask),
                     closedToday: DayBoardLogic.isRoutineDone(routine, checks: checks, on: todayKey)
                 )
             )
@@ -114,13 +114,13 @@ enum ReminderPlanning {
             guard let fire = DayKey.date(dayKey: dayKey, minutes: request.remindMinutes, calendar: calendar)
             else { return nil }
             return fire > now ? fire : nil
-        case .resident(let weekdaysOnly, let closedToday):
+        case .resident(let days, let closedToday):
             var cursor = DayKey.from(now, calendar: calendar)
             if closedToday {
                 cursor = DayKey.shifted(cursor, by: 1, calendar: calendar)
             }
             for _ in 0..<16 {
-                if weekdaysOnly && !DayKey.isWeekday(cursor, calendar: calendar) {
+                if !WeekdayMask.contains(days, dayKey: cursor, calendar: calendar) {
                     cursor = DayKey.shifted(cursor, by: 1, calendar: calendar)
                     continue
                 }

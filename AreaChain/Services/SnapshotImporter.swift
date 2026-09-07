@@ -26,7 +26,7 @@ enum SnapshotImporter {
                 found.sortOrder = item.sortOrder
                 found.isEnabled = item.isEnabled
                 found.createdDayKey = item.createdDayKey
-                found.weekdaysOnly = item.weekdaysOnly
+                found.setWeekdayMask(item.weekdayMask)
                 if let createdAt = item.createdAt {
                     found.createdAt = createdAt
                 }
@@ -41,6 +41,7 @@ enum SnapshotImporter {
                         isEnabled: item.isEnabled,
                         createdDayKey: item.createdDayKey,
                         weekdaysOnly: item.weekdaysOnly,
+                        weekdayMask: item.weekdayMask,
                         createdAt: item.createdAt ?? .now,
                         remindMinutes: item.remindMinutes,
                         deletedAt: item.deletedAt

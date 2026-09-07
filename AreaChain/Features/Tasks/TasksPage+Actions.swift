@@ -54,12 +54,21 @@ extension TasksPage {
     func doneRoutineNote(_ routine: DailyRoutine) -> String? {
         let skipped = isSkipped(routine)
         let locale = AppPreferences.shared.resolvedLocale
-        if skipped && routine.weekdaysOnly {
-            return L10n.string("note.skipped.weekdays", locale: locale)
+        let days = daysNote(routine, locale: locale)
+        if skipped {
+            if let days {
+                return L10n.string("note.skipped", locale: locale) + " · " + days
+            }
+            return L10n.string("note.skipped", locale: locale)
         }
-        if skipped { return L10n.string("note.skipped", locale: locale) }
-        if routine.weekdaysOnly { return L10n.string("note.weekdays", locale: locale) }
-        return nil
+        return days
+    }
+
+    func daysNote(_ routine: DailyRoutine, locale: Locale) -> String? {
+        let mask = routine.resolvedWeekdayMask
+        if WeekdayMask.isAll(mask) { return nil }
+        if WeekdayMask.isWorkdays(mask) { return L10n.string("note.weekdays", locale: locale) }
+        return WeekdayMask.selectedLabels(mask, locale: locale)
     }
 
     func moveTodo(_ todo: TodoItem, to dayKey: String) {

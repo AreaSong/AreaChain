@@ -50,7 +50,7 @@ SwiftData 四张表：
 
 | 类型 | 作用 |
 |---|---|
-| `DailyRoutine` | 常驻（标题、排序、启用、开始日、是否仅工作日、创建时间、可选时刻、进回收站时间） |
+| `DailyRoutine` | 常驻（标题、排序、启用、开始日、星期掩码、创建时间、可选时刻、进回收站时间） |
 | `RoutineCheck` | 某常驻在某一天的完成 / 跳过 |
 | `TodoItem` | 某一天的临时任务（含创建时间、可选时刻、进回收站时间） |
 | `DiaryEntry` | 某一天的一句日记（含进回收站时间） |
@@ -59,7 +59,7 @@ SwiftData 四张表：
 
 列表「今天 / 昨天 / 即将 / 未完成」只通过 `DayBoardLogic` 计算。到点通知的下一枪时刻只通过 `ReminderPlanning` 计算。对应单测在 `AreaChainTests/Domain/`。
 
-本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` 时按 `nil` 读。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉。
+本机通知由 `NotificationScheduler` 在启动和 `BoardEvents.changed` 时重排；测试进程不注册。旧 JSON 缺 `createdAt` / `remindMinutes` / `deletedAt` / `weekdayMask` 时按缺省读（旧的 `weekdaysOnly: true` 当作周一到周五）。删除先写 `deletedAt` 进回收站，彻底删除才从库里拿掉。
 
 ## 签名路径
 

@@ -124,7 +124,7 @@ struct DayBoardLogicTests {
             sortOrder: morningPages.sortOrder,
             isEnabled: true,
             createdDayKey: "2026-09-01",
-            weekdaysOnly: true
+            weekdayMask: WeekdayMask.workdays
         )
         #expect(DayBoardLogic.routines(for: "2026-09-07", in: [weekdayPages]).map(\.title) == ["写日报"])
         #expect(DayBoardLogic.routines(for: "2026-09-06", in: [weekdayPages]).isEmpty)
@@ -140,6 +140,28 @@ struct DayBoardLogicTests {
             todos: [],
             yesterdayKey: "2026-09-06"
         ).isEmpty)
+    }
+
+    @Test func customWeekdaysAppearOnlyOnSelectedDays() {
+        let wednesdayOnly = RoutineSnapshot(
+            id: morningPages.id,
+            title: morningPages.title,
+            sortOrder: morningPages.sortOrder,
+            isEnabled: true,
+            createdDayKey: "2026-09-01",
+            weekdayMask: 1 << (4 - 1)
+        )
+        #expect(DayBoardLogic.routines(for: "2026-09-09", in: [wednesdayOnly]).map(\.title) == ["写日报"])
+        #expect(DayBoardLogic.routines(for: "2026-09-07", in: [wednesdayOnly]).isEmpty)
+        #expect(DayBoardLogic.routines(for: "2026-09-06", in: [wednesdayOnly]).isEmpty)
+        #expect(
+            DayBoardLogic.todayBadgeCount(
+                routines: [wednesdayOnly],
+                checks: [],
+                todos: [],
+                dayKey: "2026-09-07"
+            ) == 0
+        )
     }
 
     @Test func moveTodoCanLandOnAnyDay() {

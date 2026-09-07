@@ -1248,13 +1248,30 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enabled items show up on today's list. Turn one off to hide it without deleting."
+            "value": "Enabled items show on today's list. Tap the days they should appear. Turn one off to hide it without deleting."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "打开的会出现在今天的清单里。关掉只是先不出现，不是删除。"
+            "value": "打开的会出现在今天的清单里。点星期决定哪几天出现；关掉只是先不出现，不是删除。"
+          }
+        }
+      }
+    },
+    "settings.residents.days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Which days"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "哪几天出现"
           }
         }
       }

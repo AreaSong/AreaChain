@@ -74,6 +74,7 @@ struct SyncPortTests {
         """
         let decoded = try SyncPort.decode(Data(json.utf8))
         #expect(decoded.routines.first?.weekdaysOnly == false)
+        #expect(decoded.routines.first?.weekdayMask == WeekdayMask.all)
         #expect(decoded.routines.first?.title == "复盘")
         #expect(decoded.routines.first?.createdAt == nil)
         #expect(decoded.routines.first?.remindMinutes == nil)
@@ -133,6 +134,55 @@ struct SyncPortTests {
         #expect(decoded.diaries.first?.deletedAt == nil)
     }
 
+    @Test func decodeOldWeekdaysOnlyAsWorkdaysMask() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [
+            {
+              "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "title": "写日报",
+              "sortOrder": 0,
+              "isEnabled": true,
+              "createdDayKey": "2026-09-01",
+              "weekdaysOnly": true
+            }
+          ],
+          "checks": [],
+          "todos": [],
+          "diaries": []
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.routines.first?.weekdayMask == WeekdayMask.workdays)
+        #expect(decoded.routines.first?.weekdaysOnly == true)
+    }
+
+    @Test func decodeWeekdayMaskWinsOverWeekdaysOnly() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [
+            {
+              "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "title": "周会",
+              "sortOrder": 0,
+              "isEnabled": true,
+              "createdDayKey": "2026-09-01",
+              "weekdaysOnly": true,
+              "weekdayMask": 8
+            }
+          ],
+          "checks": [],
+          "todos": [],
+          "diaries": []
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.routines.first?.weekdayMask == 8)
+        #expect(decoded.routines.first?.weekdaysOnly == false)
+    }
+
     @Test func encodeKeepsRemindMinutesAndCreatedAt() throws {
         let created = Date(timeIntervalSince1970: 1_788_800_000)
         let snapshot = ExportSnapshot(
@@ -165,6 +215,7 @@ struct SyncPortTests {
         let decoded = try SyncPort.decode(try SyncPort.encode(snapshot))
         #expect(decoded == snapshot)
         #expect(decoded.routines.first?.remindMinutes == 540)
+        #expect(decoded.routines.first?.weekdayMask == WeekdayMask.workdays)
         #expect(decoded.todos.first?.remindMinutes == 1110)
     }
 }
