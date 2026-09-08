@@ -22,7 +22,6 @@ struct DayBoardList: View {
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
     @State private var editingTaskID: UUID? = nil
-    @State private var eventMonitor: Any? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -96,114 +95,6 @@ struct DayBoardList: View {
             }
         }
         .confirmMoveToTrash($pendingTrash)
-        .onAppear {
-            setupEventMonitor()
-        }
-        .onDisappear {
-            teardownEventMonitor()
-        }
-    }
-
-    private func setupEventMonitor() {
-        teardownEventMonitor()
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            handleKeyEvent(event)
-        }
-    }
-
-    private func teardownEventMonitor() {
-        if let eventMonitor {
-            NSEvent.removeMonitor(eventMonitor)
-            self.eventMonitor = nil
-        }
-    }
-
-    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
-        let modifiers = event.modifierFlags.intersection([.command, .option, .control])
-        if !modifiers.isEmpty {
-            return event
-        }
-
-        if editingTaskID != nil {
-            if event.keyCode == 53 {
-                editingTaskID = nil
-                return nil
-            }
-            return event
-        }
-
-        if focusedTaskID?.wrappedValue == nil {
-            if event.keyCode == 125 || event.keyCode == 48 {
-                let ids = orderedVisibleIDs
-                if let first = ids.first {
-                    focusedTaskID?.wrappedValue = first
-                    event.window?.makeFirstResponder(nil)
-                    return nil
-                }
-            }
-            return event
-        }
-
-        let ids = orderedVisibleIDs
-        guard !ids.isEmpty else { return event }
-
-        switch event.keyCode {
-        case 125: // Down Arrow
-            if let cur = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: cur) {
-                if idx + 1 < ids.count {
-                    focusedTaskID?.wrappedValue = ids[idx + 1]
-                }
-            } else {
-                focusedTaskID?.wrappedValue = ids.first
-            }
-            return nil
-
-        case 126: // Up Arrow
-            if let cur = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: cur) {
-                if idx > 0 {
-                    focusedTaskID?.wrappedValue = ids[idx - 1]
-                } else {
-                    focusedTaskID?.wrappedValue = nil
-                    onReturnToInput?()
-                }
-            } else {
-                focusedTaskID?.wrappedValue = nil
-                onReturnToInput?()
-            }
-            return nil
-
-        case 49: // Space
-            if let id = focusedTaskID?.wrappedValue {
-                toggleSelected(id: id)
-            }
-            return nil
-
-        case 51, 117: // Delete / Backspace or Forward Delete
-            if let id = focusedTaskID?.wrappedValue {
-                deleteSelected(id: id)
-            }
-            return nil
-
-        case 36, 76: // Return / Enter
-            if let id = focusedTaskID?.wrappedValue {
-                editingTaskID = id
-            }
-            return nil
-
-        case 14: // 'e' or 'E' key
-            if let id = focusedTaskID?.wrappedValue {
-                editingTaskID = id
-            }
-            return nil
-
-        case 53: // Escape
-            focusedTaskID?.wrappedValue = nil
-            onReturnToInput?()
-            return nil
-
-        default:
-            return event
-        }
     }
 
     private var orderedVisibleIDs: [UUID] {

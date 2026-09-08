@@ -117,10 +117,7 @@ struct MenuBarPopoverView: View {
                 text: $capture.draft,
                 focus: $captureFocused,
                 onTodo: addTodo,
-                onDiary: addDiary,
-                onArrowDown: {
-                    focusFirstTask()
-                }
+                onDiary: addDiary
             )
             TasksPage(
                 todayKey: todayKey,
@@ -137,20 +134,6 @@ struct MenuBarPopoverView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private func focusFirstTask() {
-        captureFocused = false
-        let snapshots = (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
-        let openTodos = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
-        if let firstTodo = openTodos.first {
-            focusedTaskID = firstTodo.id
-            return
-        }
-        let openRoutines = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
-        if let firstRoutine = openRoutines.first {
-            focusedTaskID = firstRoutine.id
-        }
     }
 
     private var diaryView: some View {

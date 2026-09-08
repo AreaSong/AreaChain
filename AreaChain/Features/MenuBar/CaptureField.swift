@@ -13,7 +13,6 @@ struct CaptureField: View {
     var focus: FocusState<Bool>.Binding
     var onTodo: () -> Void
     var onDiary: () -> Void
-    var onArrowDown: (() -> Void)? = nil
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -28,8 +27,7 @@ struct CaptureField: View {
                         placeholder: L10n.string("capture.placeholder.today", locale: locale),
                         focus: focus,
                         onSubmit: onTodo,
-                        onCommandReturn: onDiary,
-                        onArrowDown: onArrowDown
+                        onCommandReturn: onDiary
                     )
                     .accessibilityLabel("capture.placeholder.today")
                     ComposerAddButton(enabled: canSubmit, action: onTodo)
