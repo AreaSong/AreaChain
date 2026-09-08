@@ -118,7 +118,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
-        .frame(width: 420, height: 640)
+        .frame(minWidth: 420, minHeight: 560)
         .navigationTitle("AreaChain")
         .alert("alert.import", isPresented: Binding(
             get: { pendingPreview != nil },

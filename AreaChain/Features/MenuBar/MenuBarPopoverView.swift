@@ -19,6 +19,7 @@ enum BoardTab: String, CaseIterable, Identifiable {
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
@@ -35,26 +36,55 @@ struct MenuBarPopoverView: View {
         return dayClock.todayKey
     }
 
+    private var todayDiariesCount: Int {
+        DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
+    }
+
+    private var headerSubtitle: LocalizedStringKey {
+        switch tab {
+        case .tasks:
+            if todayRemaining == 0 {
+                return "header.done"
+            }
+            if todayCompleted > 0 {
+                return "header.progress \(todayRemaining) \(todayCompleted)"
+            }
+            return "header.remaining \(todayRemaining)"
+        case .diary:
+            let count = todayDiariesCount
+            if count == 0 {
+                return "header.diary.empty"
+            }
+            return "header.diary.count \(count)"
+        }
+    }
+
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             header
-            CaptureField(
-                text: $capture.draft,
-                focus: $captureFocused,
-                onTodo: addTodo,
-                onDiary: addDiary
+            DaybookTabBar(
+                selection: $tab,
+                tasksCount: todayRemaining,
+                diariesCount: todayDiariesCount
             )
-            tabPicker
             Group {
                 switch tab {
                 case .tasks:
-                    TasksPage(
-                        todayKey: todayKey,
-                        yesterdayKey: dayClock.yesterdayKey,
-                        routines: routines,
-                        checks: checks,
-                        todos: todos
-                    )
+                    VStack(alignment: .leading, spacing: 8) {
+                        CaptureField(
+                            text: $capture.draft,
+                            focus: $captureFocused,
+                            onTodo: addTodo,
+                            onDiary: addDiary
+                        )
+                        TasksPage(
+                            todayKey: todayKey,
+                            yesterdayKey: dayClock.yesterdayKey,
+                            routines: routines,
+                            checks: checks,
+                            todos: todos
+                        )
+                    }
                 case .diary:
                     DiaryPage(
                         todayKey: todayKey,
@@ -63,17 +93,30 @@ struct MenuBarPopoverView: View {
                     )
                 }
             }
+            .animation(DaybookMotion.animation(reduceMotion), value: tab)
+            .frame(maxHeight: .infinity, alignment: .top)
+
+            Divider()
+                .overlay(DaybookTheme.rule.opacity(0.35))
+                .padding(.horizontal, -14)
+
             FooterBar()
         }
         .padding(14)
         .frame(width: DaybookTheme.popoverSize.width, height: DaybookTheme.popoverSize.height)
-        .background(DaybookTheme.paper.opacity(0.92))
-        .overlay(RuledPaper().opacity(0.35))
+        .background(DaybookTheme.paper.opacity(0.96))
         .clipShape(Rectangle())
         .daybookHideInputChrome()
         .onAppear(perform: prepare)
+        .onChange(of: tab) { _, newTab in
+            if newTab == .tasks {
+                captureFocused = true
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
-            captureFocused = true
+            if tab == .tasks {
+                captureFocused = true
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
@@ -99,51 +142,32 @@ struct MenuBarPopoverView: View {
             + DayBoardLogic.completedTodos(todos: todos.map(\.snapshot), dayKey: todayKey).count
     }
 
-    private var headerStatus: LocalizedStringKey {
-        if todayRemaining == 0 {
-            return "header.done"
-        }
-        if todayCompleted > 0 {
-            return "header.progress \(todayRemaining) \(todayCompleted)"
-        }
-        return "header.remaining \(todayRemaining)"
-    }
-
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(.system(size: 20, weight: .regular, design: .serif).italic())
+                    .font(.system(size: 19, weight: .regular, design: .serif).italic())
                     .foregroundStyle(DaybookTheme.ink)
-                Text(headerStatus)
+                Text(headerSubtitle)
                     .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
             Spacer()
-            Text("\(todayRemaining)")
-                .font(.system(size: 16, weight: .semibold, design: .serif))
-                .foregroundStyle(DaybookTheme.stamp)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 2)
-                        .stroke(DaybookTheme.stamp.opacity(0.85), lineWidth: 1.2)
-                )
-                .accessibilityElement()
-                .accessibilityLabel("a11y.remaining \(todayRemaining)")
-                .accessibilityAddTraits(.updatesFrequently)
-        }
-    }
-
-    private var tabPicker: some View {
-        Picker("tab.picker", selection: $tab) {
-            ForEach(BoardTab.allCases) { item in
-                Text(item.title).tag(item)
+            Button {
+                AppWindows.openWorkspace(tab: tab == .tasks ? .today : .diary)
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(DaybookTheme.hoverFill)
+                    )
             }
+            .buttonStyle(.plain)
+            .help("window.workspace")
         }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .accessibilityLabel("tab.picker")
     }
 
     private func prepare() {
@@ -153,7 +177,9 @@ struct MenuBarPopoverView: View {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
             FirstLaunchSeeder.seedIfNeeded(context: modelContext, existingCount: routines.count)
         }
-        captureFocused = true
+        if tab == .tasks {
+            captureFocused = true
+        }
     }
 
     private func addTodo() {
@@ -175,7 +201,74 @@ struct MenuBarPopoverView: View {
         guard !text.isEmpty else { return }
         modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
         capture.draft = ""
+        withAnimation(DaybookMotion.animation(reduceMotion)) {
+            tab = .diary
+        }
         BoardEvents.changed()
+    }
+}
+
+struct DaybookTabBar: View {
+    @Binding var selection: BoardTab
+    var tasksCount: Int = 0
+    var diariesCount: Int = 0
+    @Namespace private var tabNamespace
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(BoardTab.allCases) { item in
+                let isSelected = selection == item
+                Button {
+                    withAnimation(DaybookMotion.animation(reduceMotion)) {
+                        selection = item
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Text(item.title)
+                            .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+
+                        let count = item == .tasks ? tasksCount : diariesCount
+                        if count > 0 {
+                            Text("\(count)")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(
+                                    Capsule()
+                                        .fill(isSelected ? DaybookTheme.stamp.opacity(0.15) : DaybookTheme.ink.opacity(0.06))
+                                )
+                        }
+                    }
+                    .foregroundStyle(isSelected ? DaybookTheme.ink : DaybookTheme.muted)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 5)
+                    .background {
+                        if isSelected {
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(DaybookTheme.paper)
+                                .shadow(
+                                    color: Color.black.opacity(0.08),
+                                    radius: 2,
+                                    x: 0,
+                                    y: 1
+                                )
+                                .matchedGeometryEffect(id: "activeTabBackground", in: tabNamespace)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(item.title)
+                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+            }
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(DaybookTheme.ink.opacity(0.06))
+        )
     }
 }
 
@@ -184,26 +277,35 @@ struct FooterBar: View {
     @State private var hotKeyName = HotKeyCenter.shared.displayName()
 
     var body: some View {
-        HStack(spacing: 2) {
-            footerButton("footer.settings", action: AppWindows.openSettings)
-            footerButton("footer.calendar", action: AppWindows.openCalendar)
-            Menu("footer.more") {
-                Button("footer.search") { AppWindows.openSearch() }
-                Button("footer.diary") { AppWindows.openDiary() }
-                Button("footer.attachments") { AppWindows.openAttachments() }
-                Button("footer.quadrant") { AppWindows.openQuadrant() }
-                Button("footer.gantt") { AppWindows.openGantt() }
-                Button("footer.trash") { AppWindows.openTrash() }
+        HStack(spacing: 6) {
+            Button(action: { AppWindows.openWorkspace() }) {
+                HStack(spacing: 4) {
+                    Image(systemName: "sidebar.left")
+                        .font(.system(size: 11))
+                    Text("footer.workspace")
+                        .font(.system(size: 11, weight: .medium))
+                }
             }
-            .font(.system(size: 11, weight: .medium))
-            .buttonStyle(DaybookQuietButtonStyle())
-            .help("footer.more")
+            .buttonStyle(DaybookQuietButtonStyle(prominent: true))
+            .help("footer.workspace")
+
             Spacer(minLength: 8)
-            Text("footer.hotkey \(hotKeyName)")
-                .font(.system(size: 10, design: .monospaced))
+
+            Text(hotKeyName)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
-                .lineLimit(1)
-                .layoutPriority(-1)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(DaybookTheme.ink.opacity(0.05))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .stroke(DaybookTheme.rule.opacity(0.5), lineWidth: 0.8)
+                        )
+                )
+                .help("footer.hotkey \(hotKeyName)")
+
             Button("footer.quit", action: { NSApplication.shared.terminate(nil) })
                 .font(.system(size: 11, weight: .medium))
                 .buttonStyle(DaybookQuietButtonStyle(destructive: true))
@@ -221,13 +323,6 @@ struct FooterBar: View {
 
     private func refreshHotKey() {
         hotKeyName = HotKeyCenter.shared.displayName(locale: locale)
-    }
-
-    private func footerButton(_ title: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        Button(title, action: action)
-            .font(.system(size: 11, weight: .medium))
-            .buttonStyle(DaybookQuietButtonStyle())
-            .help(title)
     }
 }
 

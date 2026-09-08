@@ -51,7 +51,12 @@ struct TaskRow: View {
             Spacer(minLength: 4)
             actionCluster
         }
-        .padding(.vertical, 3)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(hovering || rowFocused ? DaybookTheme.hoverFill : Color.clear)
+        )
         .contentShape(Rectangle())
         .focusable()
         .focused($rowFocused)
@@ -84,8 +89,8 @@ struct TaskRow: View {
     }
 
     private var titleLabel: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
+        VStack(alignment: .leading, spacing: 2) {
+            HStack(alignment: .center, spacing: 6) {
                 Text(title)
                     .font(.system(size: 13))
                     .strikethrough(isDone, color: DaybookTheme.done)
@@ -120,9 +125,19 @@ struct TaskRow: View {
         Button {
             pickingTime = true
         } label: {
-            Text(RemindMinutes.label(minutes, locale: locale))
-                .font(.system(size: 10, design: .monospaced))
-                .foregroundStyle(DaybookTheme.muted)
+            HStack(spacing: 3) {
+                Image(systemName: "clock")
+                    .font(.system(size: 8, weight: .medium))
+                Text(RemindMinutes.label(minutes, locale: locale))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+            }
+            .foregroundStyle(DaybookTheme.stamp)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1.5)
+            .background(
+                Capsule()
+                    .fill(DaybookTheme.stamp.opacity(0.12))
+            )
         }
         .buttonStyle(.plain)
         .disabled(onRemindMinutes == nil)
@@ -183,14 +198,16 @@ extension TaskRow {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
             } else {
-                if showsHoverActions, onEdit != nil {
-                    RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
+                if showsHoverActions {
+                    if onEdit != nil {
+                        RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
+                    }
+                    if let onDelete {
+                        RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
+                    }
                 }
                 if showsMoreMenu {
                     moreMenu
-                }
-                if showsHoverActions, let onDelete {
-                    RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
                 }
             }
         }

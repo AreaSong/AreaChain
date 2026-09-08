@@ -61,7 +61,9 @@ enum DaybookTheme {
     static let pressFill = ink.opacity(0.12)
     static let surface = paper.opacity(0.72)
     static let focusRing = stamp
-    static let popoverSize = CGSize(width: 320, height: 420)
+    static let popoverSize = CGSize(width: 380, height: 500)
+    static let workspaceSize = CGSize(width: 960, height: 640)
+    static let workspaceMinSize = CGSize(width: 780, height: 500)
     static let hit: CGFloat = 28
     static let space: CGFloat = 8
 }

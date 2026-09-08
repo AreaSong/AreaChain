@@ -70,4 +70,16 @@ struct FeedbackCopyTests {
             NSLocalizedDescriptionKey: "device missing"
         ])) == .unknown)
     }
+
+    @Test func diaryLocalizationKeysResolve() {
+        let zh = Locale(identifier: "zh-Hans")
+        let en = Locale(identifier: "en")
+        #expect(L10n.string("header.diary.empty", locale: zh) == "记录即刻灵感与生活")
+        #expect(L10n.string("header.diary.empty", locale: en) == "Capture thoughts & moments")
+        #expect(L10n.string("header.diary.count \(3)", locale: zh) == "今日已记录 3 条随笔")
+        #expect(L10n.string("header.diary.count \(3)", locale: en) == "3 notes today")
+        #expect(L10n.format("diary.count_format", locale: zh, 5) == "共 5 条")
+        #expect(L10n.format("diary.count_format", locale: en, 5) == "5 notes")
+    }
 }
+

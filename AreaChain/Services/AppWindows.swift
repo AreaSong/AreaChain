@@ -3,52 +3,43 @@ import SwiftUI
 
 @MainActor
 enum AppWindows {
-    static func openSettings() {
+    static func openWorkspace(tab: WorkspaceTab = .today) {
         StatusItemController.shared.close()
         becomeActive()
-        PanelWindowController.settings.show()
+        WorkspaceNavigation.shared.selectedTab = tab
+        PanelWindowController.workspace.show()
+    }
+
+    static func openSettings() {
+        openWorkspace(tab: .settings)
     }
 
     static func openDiary() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.diary.show()
+        openWorkspace(tab: .diary)
     }
 
     static func openCalendar() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.calendar.show()
+        openWorkspace(tab: .calendar)
     }
 
     static func openTrash() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.trash.show()
+        openWorkspace(tab: .trash)
     }
 
     static func openAttachments() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.attachments.show()
+        openWorkspace(tab: .attachments)
     }
 
     static func openQuadrant() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.quadrant.show()
+        openWorkspace(tab: .quadrant)
     }
 
     static func openGantt() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.gantt.show()
+        openWorkspace(tab: .gantt)
     }
 
     static func openSearch() {
-        StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.search.show()
+        openWorkspace(tab: .search)
     }
 
     static func becomeActive() {
@@ -79,6 +70,7 @@ enum AppWindows {
 
     private static var panelWindows: [NSWindow] {
         [
+            PanelWindowController.workspace.hostedWindow,
             PanelWindowController.settings.hostedWindow,
             PanelWindowController.diary.hostedWindow,
             PanelWindowController.calendar.hostedWindow,
@@ -94,6 +86,18 @@ enum AppWindows {
 
 @MainActor
 final class PanelWindowController: NSObject, NSWindowDelegate {
+    static let workspace = PanelWindowController(
+        titleKey: "window.workspace",
+        size: DaybookTheme.workspaceSize,
+        minSize: DaybookTheme.workspaceMinSize,
+        root: {
+            AnyView(
+                MainSplitWorkspaceView()
+                    .appChrome()
+                    .modelContainer(Persistence.session.container)
+            )
+        }
+    )
     static let settings = PanelWindowController(
         titleKey: "window.settings",
         size: NSSize(width: 420, height: 560),
@@ -185,14 +189,16 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
 
     private let titleKey: String
     private let size: NSSize
+    private let minSize: NSSize?
     private let root: () -> AnyView
     private var window: NSWindow?
 
     var hostedWindow: NSWindow? { window }
 
-    init(titleKey: String, size: NSSize, root: @escaping () -> AnyView) {
+    init(titleKey: String, size: NSSize, minSize: NSSize? = nil, root: @escaping () -> AnyView) {
         self.titleKey = titleKey
         self.size = size
+        self.minSize = minSize
         self.root = root
         super.init()
         NotificationCenter.default.addObserver(
@@ -210,6 +216,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         if window == nil {
             let next = NSWindow(contentViewController: NSHostingController(rootView: root()))
             next.setContentSize(size)
+            next.minSize = minSize ?? size
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             next.isReleasedWhenClosed = false
             next.isRestorable = false

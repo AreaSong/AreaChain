@@ -32,6 +32,59 @@ struct CalendarPage: View {
     }
 
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            wideLayout
+            compactLayout
+        }
+    }
+
+    private var wideLayout: some View {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 10) {
+                DaybookPeriodBar(
+                    title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
+                    onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
+                    onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
+                    onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+                )
+                CalendarMonthGrid(
+                    monthKey: selectedKey,
+                    todayKey: todayKey,
+                    selectedKey: selectedKey,
+                    counts: monthCounts,
+                    onSelect: { selectedKey = $0 },
+                    onDropTodo: dropTodo
+                )
+                Spacer(minLength: 0)
+            }
+            .frame(width: 320)
+
+            Divider()
+                .overlay(DaybookTheme.rule.opacity(0.5))
+
+            VStack(alignment: .leading, spacing: 10) {
+                selectedHeading
+                composer
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 4) {
+                        DayBoardList(
+                            dayKey: selectedKey,
+                            todayKey: todayKey,
+                            routines: routines,
+                            checks: checks,
+                            todos: todos,
+                            allowsTodoDrag: true
+                        )
+                    }
+                }
+                .daybookScroll()
+            }
+            .frame(minWidth: 320, maxWidth: .infinity)
+        }
+        .frame(minWidth: 660)
+    }
+
+    private var compactLayout: some View {
         VStack(alignment: .leading, spacing: 10) {
             DaybookPeriodBar(
                 title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),

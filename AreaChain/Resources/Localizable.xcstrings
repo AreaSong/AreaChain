@@ -1044,13 +1044,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return writes a line"
+            "value": "Write a note... (Return to save)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回车写一句"
+            "value": "记录此刻的想法...（回车保存）"
           }
         }
       }
@@ -1118,7 +1118,75 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今天的句子"
+            "value": "今日随笔"
+          }
+        }
+      }
+    },
+    "diary.record": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录"
+          }
+        }
+      }
+    },
+    "diary.count_format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 条"
+          }
+        }
+      }
+    },
+    "header.diary.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture thoughts & moments"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "记录即刻灵感与生活"
+          }
+        }
+      }
+    },
+    "header.diary.count %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld notes today"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日已记录 %lld 条随笔"
           }
         }
       }
@@ -1146,13 +1214,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nothing was left on this day."
+            "value": "Nothing was recorded on this day."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这一天没有留下句子。"
+            "value": "这一天没有留下日记。"
           }
         }
       }
@@ -1782,6 +1850,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "点一下，再按下新的全局热键。Esc 取消。"
+          }
+        }
+      }
+    },
+    "window.workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Workspace"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主工作台"
+          }
+        }
+      }
+    },
+    "footer.workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作台"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "工作台"
           }
         }
       }

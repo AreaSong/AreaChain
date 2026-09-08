@@ -35,17 +35,25 @@ struct GanttPage: View {
             if bars.isEmpty && marks.isEmpty {
                 DaybookEmptyState(title: "gantt.empty", systemImage: "calendar")
             } else {
-                ScrollView([.horizontal, .vertical]) {
+                ScrollView(.horizontal) {
                     VStack(alignment: .leading, spacing: 4) {
                         headerRow
-                        ForEach(bars) { bar in
-                            todoRow(bar)
+                            .padding(.bottom, 2)
+                        Divider()
+                            .overlay(DaybookTheme.rule.opacity(0.5))
+                        ScrollView(.vertical) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(bars) { bar in
+                                    todoRow(bar)
+                                }
+                                ForEach(routineIDs, id: \.self) { id in
+                                    routineRow(id)
+                                }
+                            }
+                            .padding(.bottom, 8)
                         }
-                        ForEach(routineIDs, id: \.self) { id in
-                            routineRow(id)
-                        }
+                        .daybookScroll()
                     }
-                    .padding(.bottom, 8)
                 }
                 .daybookScroll()
             }
