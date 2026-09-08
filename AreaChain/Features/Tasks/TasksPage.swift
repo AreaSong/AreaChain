@@ -49,7 +49,6 @@ struct TasksPage: View {
                         )
                         upcomingSection
                         yesterdaySection
-                        progressCard
                     }
                     .padding(.vertical, 2)
                 }
@@ -95,23 +94,6 @@ struct TasksPage: View {
         let routineIDs = DayBoardLogic.routines(for: todayKey, in: snapshots.0).map(\.sourceBundleID)
         let todoIDs = DayBoardLogic.todos(for: todayKey, in: snapshots.2).map(\.sourceBundleID)
         return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
-    }
-
-    private var progressCard: some View {
-        let openTodosCount = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey).count
-        let openRoutinesCount = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).count
-        let doneTodosCount = DayBoardLogic.completedTodos(todos: snapshots.2, dayKey: todayKey).count
-        let doneRoutinesCount = DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).count
-        let total = openTodosCount + openRoutinesCount + doneTodosCount + doneRoutinesCount
-        let completed = doneTodosCount + doneRoutinesCount
-        let streak = DayBoardLogic.habitStreak(checks: snapshots.1, todayKey: todayKey)
-
-        return TodayProgressCard(
-            completedCount: completed,
-            totalCount: total,
-            streakDays: streak
-        )
-        .padding(.top, 4)
     }
 }
 
