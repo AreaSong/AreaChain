@@ -115,10 +115,16 @@ extension TasksPage {
         if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
             leftoverTodoRow(todo)
         } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
+            let streakResult = HabitStreakLogic.calculate(
+                routine: routine.snapshot,
+                checks: snapshots.1,
+                todayKey: todayKey
+            )
             TaskRow(
                 title: routine.title,
                 isDone: false,
                 isResident: true,
+                streak: streakResult.currentStreak,
                 remindMinutes: routine.remindMinutes,
                 onToggle: { completeYesterday(item) },
                 isImportant: routine.isImportant,

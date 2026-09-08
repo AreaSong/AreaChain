@@ -177,6 +177,10 @@ struct TaskDetailDrawer: View {
 
                 Divider().opacity(0.3)
 
+                streakSection(routine: routine)
+
+                Divider().opacity(0.3)
+
                 TaskDetailNotesView(notes: routine.notes) { newNotes in
                     DayBoardMutations.updateNotes(for: routine, notes: newNotes)
                 }
@@ -226,6 +230,143 @@ struct TaskDetailDrawer: View {
             .padding(16)
         }
         .daybookScroll()
+    }
+
+    // MARK: - Streak Statistics Section (Routine)
+
+    private func streakSection(routine: DailyRoutine) -> some View {
+        let streakResult = HabitStreakLogic.calculate(
+            routine: routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            todayKey: DayClock.shared.todayKey
+        )
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("drawer.streak.title")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.muted)
+                Spacer()
+            }
+
+            VStack(spacing: 8) {
+                HStack(spacing: 12) {
+                    // Current Streak
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("drawer.streak.current")
+                            .font(.system(size: 9))
+                            .foregroundStyle(DaybookTheme.muted)
+                        HStack(spacing: 4) {
+                            Image(systemName: "flame.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.orange)
+                            Text("\(streakResult.currentStreak)")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(DaybookTheme.ink)
+                            Text("drawer.streak.days")
+                                .font(.system(size: 10))
+                                .foregroundStyle(DaybookTheme.muted)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Divider()
+                        .frame(height: 28)
+                        .opacity(0.3)
+
+                    // Best Streak
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("drawer.streak.best")
+                            .font(.system(size: 9))
+                            .foregroundStyle(DaybookTheme.muted)
+                        HStack(spacing: 4) {
+                            Image(systemName: "trophy.fill")
+                                .font(.system(size: 13, weight: .bold))
+                                .foregroundStyle(.yellow)
+                            Text("\(streakResult.bestStreak)")
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
+                                .foregroundStyle(DaybookTheme.ink)
+                            Text("drawer.streak.days")
+                                .font(.system(size: 10))
+                                .foregroundStyle(DaybookTheme.muted)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                Divider()
+                    .opacity(0.2)
+
+                // Today's Status
+                HStack(spacing: 6) {
+                    streakStatusIcon(streakResult: streakResult, isEnabled: routine.isEnabled)
+                    Text(streakStatusText(streakResult: streakResult, isEnabled: routine.isEnabled))
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(streakStatusColor(streakResult: streakResult, isEnabled: routine.isEnabled))
+                    Spacer()
+                }
+            }
+            .padding(10)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(DaybookTheme.cardSurface)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .stroke(DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
+                    )
+            )
+        }
+    }
+
+    @ViewBuilder
+    private func streakStatusIcon(streakResult: StreakResult, isEnabled: Bool) -> some View {
+        if !isEnabled {
+            Image(systemName: "pause.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted)
+        } else if streakResult.isCompletedToday {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.done)
+        } else if streakResult.isSkippedToday {
+            Image(systemName: "forward.circle.fill")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted)
+        } else if !streakResult.isDueToday {
+            Image(systemName: "calendar.badge.clock")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted)
+        } else {
+            Image(systemName: "circle")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.stamp)
+        }
+    }
+
+    private func streakStatusText(streakResult: StreakResult, isEnabled: Bool) -> LocalizedStringKey {
+        if !isEnabled {
+            return "drawer.streak.status.paused"
+        } else if streakResult.isCompletedToday {
+            return "drawer.streak.status.completed"
+        } else if streakResult.isSkippedToday {
+            return "drawer.streak.status.skipped"
+        } else if !streakResult.isDueToday {
+            return "drawer.streak.status.offday"
+        } else {
+            return "drawer.streak.status.pending"
+        }
+    }
+
+    private func streakStatusColor(streakResult: StreakResult, isEnabled: Bool) -> Color {
+        if !isEnabled {
+            return DaybookTheme.muted
+        } else if streakResult.isCompletedToday {
+            return DaybookTheme.done
+        } else if streakResult.isSkippedToday || !streakResult.isDueToday {
+            return DaybookTheme.muted
+        } else {
+            return DaybookTheme.stamp
+        }
     }
 
     // MARK: - Header Bar

@@ -242,11 +242,17 @@ struct DayBoardList: View {
 
     private func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
         let skipped = DayBoardLogic.isRoutineSkipped(routine.snapshot, checks: snapshots.1, on: dayKey)
+        let streakResult = HabitStreakLogic.calculate(
+            routine: routine.snapshot,
+            checks: snapshots.1,
+            todayKey: todayKey
+        )
         return TaskRow(
             title: routine.title,
             isDone: isDone,
             isResident: true,
             note: isDone ? ResidentNote.done(routine, skipped: skipped, locale: locale) : ResidentNote.days(routine, locale: locale),
+            streak: streakResult.currentStreak,
             remindMinutes: routine.remindMinutes,
             onToggle: { DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },

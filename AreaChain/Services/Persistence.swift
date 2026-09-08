@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SQLite3
 
 struct PersistenceSession {
     var container: ModelContainer
@@ -11,6 +12,7 @@ enum Persistence {
     static let session: PersistenceSession = makeSession()
 
     static func makeSession() -> PersistenceSession {
+        sanitizeSqliteStoreIfNeeded()
         let schema = Schema(AreaChainSchema.models)
         let disk = ModelConfiguration("areachain", schema: schema)
         do {
@@ -38,5 +40,17 @@ enum Persistence {
             try? FileManager.default.removeItem(at: url)
         }
         AttachmentStore.resetDirectory()
+    }
+
+    private static func sanitizeSqliteStoreIfNeeded() {
+        let base = URL.applicationSupportDirectory
+        let dbURL = base.appending(path: "areachain.store")
+        guard FileManager.default.fileExists(atPath: dbURL.path) else { return }
+        var db: OpaquePointer?
+        if sqlite3_open(dbURL.path, &db) == SQLITE_OK {
+            sqlite3_exec(db, "UPDATE ZTODOITEM SET ZNOTES = '' WHERE ZNOTES IS NULL;", nil, nil, nil)
+            sqlite3_exec(db, "UPDATE ZDAILYROUTINE SET ZNOTES = '' WHERE ZNOTES IS NULL;", nil, nil, nil)
+            sqlite3_close(db)
+        }
     }
 }

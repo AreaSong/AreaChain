@@ -5,6 +5,7 @@ struct TaskRow: View {
     var isDone: Bool
     var isResident: Bool = false
     var note: String? = nil
+    var streak: Int? = nil
     var remindMinutes: Int? = nil
     var todayKey: String? = nil
     var currentDayKey: String? = nil
@@ -130,6 +131,26 @@ struct TaskRow: View {
             .help("row.resident")
     }
 
+    private func streakBadge(_ count: Int) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.orange)
+            Text("\(count)")
+                .font(.caption.bold())
+                .foregroundStyle(.orange)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 1)
+        .background(
+            Capsule()
+                .fill(Color.orange.opacity(0.12))
+        )
+        .help("streak.badge.help \(count)")
+        .accessibilityLabel("streak.badge.label \(count)")
+        .layoutPriority(1)
+    }
+
     private var titleLabel: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 6) {
@@ -138,6 +159,9 @@ struct TaskRow: View {
                     .strikethrough(isDone, color: DaybookTheme.done)
                     .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
                     .lineLimit(2)
+                if isResident, let streak, streak >= 1 {
+                    streakBadge(streak)
+                }
                 if let remindMinutes {
                     remindLabel(remindMinutes)
                 }

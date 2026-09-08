@@ -54,7 +54,12 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
 
     func requestAuthorizationAndRefresh() async {
         guard !Self.isRunningTests else { return }
-        _ = try? await center.requestAuthorization(options: [.alert, .sound])
+        do {
+            let granted = try await center.requestAuthorization(options: [.alert, .sound])
+            NSLog("[NotificationScheduler] requestAuthorization granted: %d", granted ? 1 : 0)
+        } catch {
+            NSLog("[NotificationScheduler] requestAuthorization FAILED: %@", error.localizedDescription)
+        }
         await refresh()
     }
 
@@ -72,7 +77,11 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
         center.removeDeliveredNotifications(withIdentifiers: ours)
 
         let status = await currentStatus()
-        guard status == .authorized || status == .provisional else { return }
+        NSLog("[NotificationScheduler] refresh() authorization status: %ld", status.rawValue)
+        guard status == .authorized || status == .provisional else {
+            NSLog("[NotificationScheduler] refresh() skipped: not authorized (status=%ld)", status.rawValue)
+            return
+        }
 
         let context = ModelContext(Persistence.session.container)
         let routines = (try? context.fetch(FetchDescriptor<DailyRoutine>())) ?? []
@@ -85,12 +94,18 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             todos: todos.map(\.snapshot),
             todayKey: todayKey
         )
+        NSLog("[NotificationScheduler] found %ld routines, %ld todos, %ld requests in catalog", routines.count, todos.count, catalog.count)
         let now = Date()
         for request in catalog {
-            guard let fire = ReminderPlanning.nextFireDate(request, now: now) else { continue }
+            guard let fire = ReminderPlanning.nextFireDate(request, now: now) else {
+                NSLog("[NotificationScheduler] request '%@' (remindMinutes=%ld) nextFireDate is nil (expired or already passed, now=%@)", request.title, request.remindMinutes, now.description)
+                continue
+            }
             do {
                 try await center.add(notificationRequest(request, fire: fire))
+                NSLog("[NotificationScheduler] SCHEDULED '%@' to fire at %@", request.title, fire.description)
             } catch {
+                NSLog("[NotificationScheduler] center.add FAILED for '%@': %@", request.title, error.localizedDescription)
                 continue
             }
         }

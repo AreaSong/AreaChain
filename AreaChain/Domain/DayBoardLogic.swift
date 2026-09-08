@@ -270,22 +270,40 @@ enum DayBoardLogic {
         todos.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
 
-    static func habitStreak(checks: [CheckSnapshot], todayKey: String) -> Int {
-        var streak = 0
-        var currentKey = todayKey
-        let todayDone = checks.contains { $0.dayKey == todayKey && $0.isDone }
-        if !todayDone {
-            currentKey = DayKey.shifted(todayKey, by: -1)
-        }
-        while streak < 365 {
-            let hasDone = checks.contains { $0.dayKey == currentKey && $0.isDone }
-            if hasDone {
-                streak += 1
-                currentKey = DayKey.shifted(currentKey, by: -1)
-            } else {
-                break
-            }
-        }
-        return streak
+    static func habitStreak(
+        checks: [CheckSnapshot],
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> Int {
+        guard let first = checks.first else { return 0 }
+        let earliest = checks.map(\.dayKey).min() ?? todayKey
+        let dummy = RoutineSnapshot(
+            id: first.routineId,
+            title: "",
+            sortOrder: 0,
+            isEnabled: true,
+            createdDayKey: min(earliest, todayKey),
+            weekdayMask: WeekdayMask.all
+        )
+        return HabitStreakLogic.calculate(
+            routine: dummy,
+            checks: checks,
+            todayKey: todayKey,
+            calendar: calendar
+        ).currentStreak
+    }
+
+    static func habitStreak(
+        for routine: RoutineSnapshot,
+        checks: [CheckSnapshot],
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> StreakResult {
+        HabitStreakLogic.calculate(
+            routine: routine,
+            checks: checks,
+            todayKey: todayKey,
+            calendar: calendar
+        )
     }
 }
