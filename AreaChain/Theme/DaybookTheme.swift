@@ -91,7 +91,8 @@ enum DaybookTheme {
     static let popoverWidth: CGFloat = 380
     static let popoverMinHeight: CGFloat = 280
     static let popoverMaxHeight: CGFloat = 490
-    static let popoverSize = CGSize(width: popoverWidth, height: popoverMaxHeight)
+    static let popoverHeight: CGFloat = 490
+    static let popoverSize = CGSize(width: popoverWidth, height: popoverHeight)
     static let workspaceSize = CGSize(width: 960, height: 640)
     static let workspaceMinSize = CGSize(width: 780, height: 500)
     static let hit: CGFloat = 28
@@ -237,7 +238,7 @@ struct ComposerAddButton: View {
 
 extension View {
     func daybookScroll() -> some View {
-        scrollIndicators(.hidden)
+        scrollIndicators(.automatic)
     }
 
     @ViewBuilder

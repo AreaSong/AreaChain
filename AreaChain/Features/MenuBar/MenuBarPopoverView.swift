@@ -29,7 +29,6 @@ struct MenuBarPopoverView: View {
     @State private var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
-    @State private var popoverHeight: CGFloat = StatusItemController.shared.lastKnownHeight
     @FocusState private var captureFocused: Bool
 
     private var todayKey: String {
@@ -75,9 +74,8 @@ struct MenuBarPopoverView: View {
                     diaryView
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: tab)
-
-            Spacer(minLength: 0)
 
             Divider()
                 .overlay(DaybookTheme.rule.opacity(0.35))
@@ -86,24 +84,7 @@ struct MenuBarPopoverView: View {
             FooterBar()
         }
         .padding(12)
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(
-                    key: PopoverContentHeightPreferenceKey.self,
-                    value: proxy.size.height
-                )
-            }
-        )
-        .onPreferenceChange(PopoverContentHeightPreferenceKey.self) { newHeight in
-            guard newHeight > 0 else { return }
-            let clamped = min(max(newHeight, DaybookTheme.popoverMinHeight), DaybookTheme.popoverMaxHeight)
-            if abs(popoverHeight - clamped) > 1 {
-                popoverHeight = clamped
-                StatusItemController.shared.updatePopoverHeight(clamped)
-            }
-        }
-        .frame(width: DaybookTheme.popoverWidth)
-        .frame(minHeight: DaybookTheme.popoverMinHeight, maxHeight: DaybookTheme.popoverMaxHeight, alignment: .top)
+        .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
         .background {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
@@ -142,19 +123,20 @@ struct MenuBarPopoverView: View {
                 yesterdayKey: dayClock.yesterdayKey,
                 routines: routines,
                 checks: checks,
-                todos: todos,
-                maxScrollHeight: 330
+                todos: todos
             )
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var diaryView: some View {
         DiaryPage(
             todayKey: todayKey,
             entries: diaries,
-            showsComposer: true,
-            maxScrollHeight: 330
+            showsComposer: true
         )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var todayRemaining: Int {
@@ -322,13 +304,6 @@ struct DaybookTabBar: View {
             tasksCount: tasksCount,
             diariesCount: diariesCount
         )
-    }
-}
-
-struct PopoverContentHeightPreferenceKey: PreferenceKey {
-    static var defaultValue: CGFloat = DaybookTheme.popoverMinHeight
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
     }
 }
 

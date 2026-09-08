@@ -45,11 +45,12 @@ struct TasksPage: View {
                     upcomingSection
                     yesterdaySection
                 }
+                .padding(.vertical, 2)
             }
             .daybookScroll()
-            .frame(maxHeight: maxScrollHeight)
-            .fixedSize(horizontal: false, vertical: maxScrollHeight != nil)
+            .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .confirmMoveToTrash($pendingTrash)
     }
 

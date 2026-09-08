@@ -26,10 +26,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             popover.behavior = .transient
             popover.animates = true
             popover.delegate = self
-            popover.contentSize = NSSize(
-                width: DaybookTheme.popoverWidth,
-                height: DaybookTheme.popoverMinHeight
-            )
+            popover.contentSize = DaybookTheme.popoverSize
             self.popover = popover
         }
         refreshCount()
@@ -84,17 +81,12 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
-    private(set) var lastKnownHeight: CGFloat = DaybookTheme.popoverMinHeight
+    private(set) var lastKnownHeight: CGFloat = DaybookTheme.popoverHeight
 
     func updatePopoverHeight(_ newHeight: CGFloat) {
-        let clamped = min(max(newHeight, DaybookTheme.popoverMinHeight), DaybookTheme.popoverMaxHeight)
-        lastKnownHeight = clamped
         guard let popover, popover.isShown else { return }
-        guard abs(popover.contentSize.height - clamped) > 1 else { return }
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.22
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            popover.contentSize = NSSize(width: DaybookTheme.popoverWidth, height: clamped)
+        if abs(popover.contentSize.height - DaybookTheme.popoverHeight) > 1 {
+            popover.contentSize = DaybookTheme.popoverSize
         }
     }
 

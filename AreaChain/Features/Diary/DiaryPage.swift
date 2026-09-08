@@ -80,7 +80,9 @@ struct DiaryPage: View {
                 .padding(.vertical, 4)
             }
             entryList
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             if isViewingToday && showsComposer {
                 composerFocused = true
@@ -186,8 +188,7 @@ struct DiaryPage: View {
             .padding(.vertical, 2)
         }
         .daybookScroll()
-        .frame(maxHeight: maxScrollHeight)
-        .fixedSize(horizontal: false, vertical: maxScrollHeight != nil)
+        .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
     }
 
     private var emptyCopy: LocalizedStringKey {
