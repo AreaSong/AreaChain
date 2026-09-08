@@ -407,7 +407,10 @@ struct WorkspaceTodayView: View {
                 text: $capture.draft,
                 focus: $captureFocused,
                 onTodo: addTodo,
-                onDiary: addDiary
+                onDiary: addDiary,
+                onArrowDown: {
+                    focusFirstTask()
+                }
             )
 
             TasksPage(
@@ -416,13 +419,33 @@ struct WorkspaceTodayView: View {
                 routines: routines,
                 checks: checks,
                 todos: todos,
-                focusedTaskID: $navigation.selectedTaskID
+                focusedTaskID: $navigation.selectedTaskID,
+                onReturnToInput: {
+                    navigation.selectedTaskID = nil
+                    captureFocused = true
+                }
             )
         }
         .daybookPanel(minWidth: 480, minHeight: 480)
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()
+        }
+    }
+
+    private func focusFirstTask() {
+        captureFocused = false
+        NSApp.keyWindow?.makeFirstResponder(nil)
+        let todayKey = dayClock.todayKey
+        let snapshots = (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
+        let openTodos = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
+        if let firstTodo = openTodos.first {
+            navigation.selectedTaskID = firstTodo.id
+            return
+        }
+        let openRoutines = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
+        if let firstRoutine = openRoutines.first {
+            navigation.selectedTaskID = firstRoutine.id
         }
     }
 

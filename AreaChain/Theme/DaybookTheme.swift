@@ -301,10 +301,16 @@ struct DaybookTextField: NSViewRepresentable {
         }
         field.font = .systemFont(ofSize: fontSize)
         field.textColor = NSColor(DaybookTheme.ink)
-        if focus.wrappedValue, field.window != nil, field.currentEditor() == nil {
-            DispatchQueue.main.async {
-                guard focus.wrappedValue else { return }
-                field.window?.makeFirstResponder(field)
+        if focus.wrappedValue {
+            if field.window != nil, field.currentEditor() == nil {
+                DispatchQueue.main.async {
+                    guard focus.wrappedValue else { return }
+                    field.window?.makeFirstResponder(field)
+                }
+            }
+        } else {
+            if field.currentEditor() != nil {
+                field.window?.makeFirstResponder(nil)
             }
         }
     }
@@ -352,6 +358,7 @@ struct DaybookTextField: NSViewRepresentable {
             if commandSelector == #selector(NSResponder.moveDown(_:)) || commandSelector == #selector(NSResponder.insertTab(_:)) {
                 if let onArrowDown = parent.onArrowDown {
                     parent.focus.wrappedValue = false
+                    textView.window?.makeFirstResponder(nil)
                     onArrowDown()
                     return true
                 }

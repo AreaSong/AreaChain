@@ -26,6 +26,7 @@ struct TaskRow: View {
     var isSelected: Bool = false
     var isExternalEditing: Bool = false
     var onSelect: (() -> Void)? = nil
+    var onEndEditing: (() -> Void)? = nil
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,7 +35,7 @@ struct TaskRow: View {
     @State private var draft = ""
     @State private var pickingDay = false
     @State private var pickingTime = false
-    @FocusState private var rowFocused: Bool
+    @FocusState private var editorFocused: Bool
 
     var body: some View {
         HStack(alignment: note == nil && !editing ? .center : .top, spacing: 8) {
@@ -68,12 +69,9 @@ struct TaskRow: View {
         .onTapGesture {
             onSelect?()
         }
-        .focusable()
-        .focusEffectDisabled()
-        .focused($rowFocused)
         .onHover { hovering = $0 }
         .animation(DaybookMotion.animation(reduceMotion), value: hovering)
-        .animation(DaybookMotion.animation(reduceMotion), value: isEffectivelyFocused)
+        .animation(DaybookMotion.animation(reduceMotion), value: isSelected)
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
             if let todayKey, let onMoveToDay {
@@ -97,7 +95,7 @@ struct TaskRow: View {
     }
 
     private var isEffectivelyFocused: Bool {
-        rowFocused || isSelected
+        isSelected
     }
 
     private var cardBackground: Color {
@@ -190,6 +188,7 @@ struct TaskRow: View {
             .textFieldStyle(.plain)
             .font(.system(size: 13))
             .foregroundStyle(DaybookTheme.ink)
+            .focused($editorFocused)
             .onSubmit(saveEdit)
             .onExitCommand(perform: cancelEdit)
     }
@@ -213,11 +212,16 @@ struct TaskRow: View {
     private func beginEdit() {
         draft = title
         editing = true
+        DispatchQueue.main.async {
+            editorFocused = true
+        }
     }
 
     private func cancelEdit() {
         draft = title
         editing = false
+        editorFocused = false
+        onEndEditing?()
     }
 
     private func saveEdit() {
@@ -228,6 +232,8 @@ struct TaskRow: View {
             draft = title
         }
         editing = false
+        editorFocused = false
+        onEndEditing?()
     }
 }
 

@@ -22,7 +22,7 @@ struct DayBoardList: View {
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
     @State private var editingTaskID: UUID? = nil
-    @FocusState private var isListFocused: Bool
+    @State private var eventMonitor: Any? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -96,79 +96,113 @@ struct DayBoardList: View {
             }
         }
         .confirmMoveToTrash($pendingTrash)
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isListFocused)
-        .onKeyPress(.downArrow) {
-            guard let focusedTaskID else { return .ignored }
-            let ids = orderedVisibleIDs
-            guard !ids.isEmpty else { return .ignored }
-            if let cur = focusedTaskID.wrappedValue, let idx = ids.firstIndex(of: cur) {
+        .onAppear {
+            setupEventMonitor()
+        }
+        .onDisappear {
+            teardownEventMonitor()
+        }
+    }
+
+    private func setupEventMonitor() {
+        teardownEventMonitor()
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            handleKeyEvent(event)
+        }
+    }
+
+    private func teardownEventMonitor() {
+        if let eventMonitor {
+            NSEvent.removeMonitor(eventMonitor)
+            self.eventMonitor = nil
+        }
+    }
+
+    private func handleKeyEvent(_ event: NSEvent) -> NSEvent? {
+        let modifiers = event.modifierFlags.intersection([.command, .option, .control])
+        if !modifiers.isEmpty {
+            return event
+        }
+
+        if editingTaskID != nil {
+            if event.keyCode == 53 {
+                editingTaskID = nil
+                return nil
+            }
+            return event
+        }
+
+        if focusedTaskID?.wrappedValue == nil {
+            if event.keyCode == 125 || event.keyCode == 48 {
+                let ids = orderedVisibleIDs
+                if let first = ids.first {
+                    focusedTaskID?.wrappedValue = first
+                    event.window?.makeFirstResponder(nil)
+                    return nil
+                }
+            }
+            return event
+        }
+
+        let ids = orderedVisibleIDs
+        guard !ids.isEmpty else { return event }
+
+        switch event.keyCode {
+        case 125: // Down Arrow
+            if let cur = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: cur) {
                 if idx + 1 < ids.count {
-                    focusedTaskID.wrappedValue = ids[idx + 1]
+                    focusedTaskID?.wrappedValue = ids[idx + 1]
                 }
             } else {
-                focusedTaskID.wrappedValue = ids.first
+                focusedTaskID?.wrappedValue = ids.first
             }
-            return .handled
-        }
-        .onKeyPress(.upArrow) {
-            guard let focusedTaskID else { return .ignored }
-            let ids = orderedVisibleIDs
-            guard !ids.isEmpty else { return .ignored }
-            if let cur = focusedTaskID.wrappedValue, let idx = ids.firstIndex(of: cur) {
+            return nil
+
+        case 126: // Up Arrow
+            if let cur = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: cur) {
                 if idx > 0 {
-                    focusedTaskID.wrappedValue = ids[idx - 1]
+                    focusedTaskID?.wrappedValue = ids[idx - 1]
                 } else {
-                    focusedTaskID.wrappedValue = nil
-                    isListFocused = false
+                    focusedTaskID?.wrappedValue = nil
                     onReturnToInput?()
                 }
+            } else {
+                focusedTaskID?.wrappedValue = nil
+                onReturnToInput?()
             }
-            return .handled
-        }
-        .onKeyPress(.space) {
+            return nil
+
+        case 49: // Space
             if let id = focusedTaskID?.wrappedValue {
                 toggleSelected(id: id)
-                return .handled
             }
-            return .ignored
-        }
-        .onKeyPress(.delete) {
+            return nil
+
+        case 51, 117: // Delete / Backspace or Forward Delete
             if let id = focusedTaskID?.wrappedValue {
                 deleteSelected(id: id)
-                return .handled
             }
-            return .ignored
-        }
-        .onKeyPress(.escape) {
-            if focusedTaskID?.wrappedValue != nil {
-                focusedTaskID?.wrappedValue = nil
-                editingTaskID = nil
-                isListFocused = false
-                onReturnToInput?()
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.return) {
+            return nil
+
+        case 36, 76: // Return / Enter
             if let id = focusedTaskID?.wrappedValue {
                 editingTaskID = id
-                return .handled
             }
-            return .ignored
-        }
-        .onKeyPress(characters: CharacterSet(charactersIn: "eE")) { _ in
+            return nil
+
+        case 14: // 'e' or 'E' key
             if let id = focusedTaskID?.wrappedValue {
                 editingTaskID = id
-                return .handled
             }
-            return .ignored
-        }
-        .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
-            if newValue != nil {
-                isListFocused = true
-            }
+            return nil
+
+        case 53: // Escape
+            focusedTaskID?.wrappedValue = nil
+            onReturnToInput?()
+            return nil
+
+        default:
+            return event
         }
     }
 
@@ -183,6 +217,16 @@ struct DayBoardList: View {
     }
 
     private func toggleSelected(id: UUID) {
+        let ids = orderedVisibleIDs
+        if let idx = ids.firstIndex(of: id) {
+            if !showCompleted {
+                if idx + 1 < ids.count {
+                    focusedTaskID?.wrappedValue = ids[idx + 1]
+                } else if idx > 0 {
+                    focusedTaskID?.wrappedValue = ids[idx - 1]
+                }
+            }
+        }
         if let todo = todos.first(where: { $0.id == id }) {
             DayBoardMutations.toggleTodo(todo)
             return
@@ -193,6 +237,17 @@ struct DayBoardList: View {
     }
 
     private func deleteSelected(id: UUID) {
+        let ids = orderedVisibleIDs
+        if let idx = ids.firstIndex(of: id) {
+            if idx + 1 < ids.count {
+                focusedTaskID?.wrappedValue = ids[idx + 1]
+            } else if idx > 0 {
+                focusedTaskID?.wrappedValue = ids[idx - 1]
+            } else {
+                focusedTaskID?.wrappedValue = nil
+                onReturnToInput?()
+            }
+        }
         if let todo = todos.first(where: { $0.id == id }) {
             pendingTrash = PendingTrash(title: todo.title) {
                 DayBoardMutations.persist { todo.deletedAt = .now }
@@ -308,7 +363,8 @@ struct DayBoardList: View {
             isUrgent: routine.isUrgent,
             isSelected: focusedTaskID?.wrappedValue == routine.id,
             isExternalEditing: editingTaskID == routine.id,
-            onSelect: { focusedTaskID?.wrappedValue = routine.id }
+            onSelect: { focusedTaskID?.wrappedValue = routine.id },
+            onEndEditing: { editingTaskID = nil }
         )
     }
 
@@ -338,7 +394,8 @@ struct DayBoardList: View {
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
             isSelected: focusedTaskID?.wrappedValue == todo.id,
             isExternalEditing: editingTaskID == todo.id,
-            onSelect: { focusedTaskID?.wrappedValue = todo.id }
+            onSelect: { focusedTaskID?.wrappedValue = todo.id },
+            onEndEditing: { editingTaskID = nil }
         )
     }
 }

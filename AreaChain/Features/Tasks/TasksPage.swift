@@ -34,26 +34,35 @@ struct TasksPage: View {
                 bundleIDs: todayBundleIDs,
                 onChange: { boardFilter = $0 }
             )
-            ScrollView {
-                VStack(alignment: .leading, spacing: 6) {
-                    DayBoardList(
-                        dayKey: todayKey,
-                        todayKey: todayKey,
-                        routines: routines,
-                        checks: checks,
-                        todos: todos,
-                        filter: boardFilter,
-                        focusedTaskID: focusedTaskID,
-                        onReturnToInput: onReturnToInput
-                    )
-                    upcomingSection
-                    yesterdaySection
-                    progressCard
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 6) {
+                        DayBoardList(
+                            dayKey: todayKey,
+                            todayKey: todayKey,
+                            routines: routines,
+                            checks: checks,
+                            todos: todos,
+                            filter: boardFilter,
+                            focusedTaskID: focusedTaskID,
+                            onReturnToInput: onReturnToInput
+                        )
+                        upcomingSection
+                        yesterdaySection
+                        progressCard
+                    }
+                    .padding(.vertical, 2)
                 }
-                .padding(.vertical, 2)
+                .daybookScroll()
+                .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
+                .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
+                    if let newValue {
+                        withAnimation {
+                            scrollProxy.scrollTo(newValue, anchor: .center)
+                        }
+                    }
+                }
             }
-            .daybookScroll()
-            .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .confirmMoveToTrash($pendingTrash)
