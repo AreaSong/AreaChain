@@ -7,6 +7,7 @@ struct ParsedCapture: Equatable {
     var tagName: String?
     var isImportant: Bool
     var isUrgent: Bool
+    var notes: String = ""
 
     var hasTokens: Bool {
         remindMinutes != nil || tagName != nil || isImportant || isUrgent
@@ -29,7 +30,11 @@ struct ParsedCapture: Equatable {
 
 enum NaturalLanguageParser {
     static func parse(_ input: String) -> ParsedCapture {
-        var text = input
+        let lines = input.components(separatedBy: .newlines)
+        let firstLine = lines.first ?? ""
+        let notesText = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+
+        var text = firstLine
         var remindMinutes: Int? = nil
         var tagName: String? = nil
         var isImportant = false
@@ -78,11 +83,12 @@ enum NaturalLanguageParser {
 
         return ParsedCapture(
             rawInput: input,
-            cleanTitle: cleanTitle.isEmpty ? input : cleanTitle,
+            cleanTitle: cleanTitle.isEmpty ? (firstLine.isEmpty ? input : firstLine) : cleanTitle,
             remindMinutes: remindMinutes,
             tagName: tagName,
             isImportant: isImportant,
-            isUrgent: isUrgent
+            isUrgent: isUrgent,
+            notes: notesText
         )
     }
 

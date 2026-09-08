@@ -252,6 +252,7 @@ struct DayBoardList: View {
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
             isImportant: routine.isImportant,
             isUrgent: routine.isUrgent,
+            notes: routine.notes,
             isSelected: focusedTaskID?.wrappedValue == routine.id,
             isExternalEditing: editingTaskID == routine.id,
             onSelect: { focusedTaskID?.wrappedValue = routine.id },
@@ -282,6 +283,16 @@ struct DayBoardList: View {
                 items: attachments,
                 context: modelContext
             ),
+            notes: todo.notes,
+            subtasks: todo.subtasks
+                .filter { $0.deletedAt == nil }
+                .sorted(by: { $0.sortOrder < $1.sortOrder })
+                .compactMap { $0.snapshot },
+            onToggleSubtask: { subID in
+                if let sub = todo.subtasks.first(where: { $0.id == subID }) {
+                    DayBoardMutations.toggleSubtask(sub)
+                }
+            },
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
             isSelected: focusedTaskID?.wrappedValue == todo.id,
             isExternalEditing: editingTaskID == todo.id,

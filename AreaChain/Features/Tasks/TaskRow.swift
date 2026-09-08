@@ -22,6 +22,9 @@ struct TaskRow: View {
     var isUrgent: Bool = false
     var classify: TaskClassifyContext? = nil
     var attachments: TaskAttachmentContext? = nil
+    var notes: String? = nil
+    var subtasks: [SubtaskSnapshot] = []
+    var onToggleSubtask: ((UUID) -> Void)? = nil
     var dragPayload: String? = nil
     var isSelected: Bool = false
     var isExternalEditing: Bool = false
@@ -35,10 +38,11 @@ struct TaskRow: View {
     @State private var draft = ""
     @State private var pickingDay = false
     @State private var pickingTime = false
+    @State private var isSubtasksExpanded = false
     @FocusState private var editorFocused: Bool
 
     var body: some View {
-        HStack(alignment: note == nil && !editing ? .center : .top, spacing: 8) {
+        HStack(alignment: note == nil && notes == nil && subtasks.isEmpty && !editing ? .center : .top, spacing: 8) {
             InkCheckbox(isDone: isDone, action: onToggle)
             if isResident {
                 residentMark
@@ -127,7 +131,7 @@ struct TaskRow: View {
     }
 
     private var titleLabel: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 6) {
                 Text(title)
                     .font(.system(size: 13))
@@ -137,9 +141,19 @@ struct TaskRow: View {
                 if let remindMinutes {
                     remindLabel(remindMinutes)
                 }
+                if !subtasks.isEmpty {
+                    TaskRowSubtaskChip(subtasks: subtasks, isExpanded: $isSubtasksExpanded, reduceMotion: reduceMotion)
+                }
                 if let items = attachments?.items, !items.isEmpty {
                     AttachmentThumbnails(items: items)
                 }
+            }
+            if let noteSnippet = formattedNoteSnippet {
+                Text(noteSnippet)
+                    .font(.system(size: 10))
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.85))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
             }
             if let note {
                 Text(note)
@@ -151,6 +165,9 @@ struct TaskRow: View {
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
             }
+            if isSubtasksExpanded && !subtasks.isEmpty {
+                TaskRowSubtaskInlineList(subtasks: subtasks, onToggle: onToggleSubtask)
+            }
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -160,6 +177,11 @@ struct TaskRow: View {
         }
     }
 
+    private var formattedNoteSnippet: String? {
+        guard let notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        let firstLine = notes.components(separatedBy: .newlines).first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
+        return firstLine?.trimmingCharacters(in: .whitespaces)
+    }
     private func remindLabel(_ minutes: Int) -> some View {
         Button {
             pickingTime = true
@@ -410,18 +432,6 @@ extension TaskRow {
             if let onCapture = attachments.onCaptureScreen {
                 Button("row.attach.screen", action: onCapture)
             }
-        }
-    }
-}
-
-struct TodoDragIfNeeded: ViewModifier {
-    var payload: String?
-
-    func body(content: Content) -> some View {
-        if let payload {
-            content.draggable(payload)
-        } else {
-            content
         }
     }
 }

@@ -80,7 +80,8 @@ enum SyncPort {
             tagIDs: item.tagIDs,
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
-            sourceBundleID: item.sourceBundleID
+            sourceBundleID: item.sourceBundleID,
+            notes: item.notes
         )
     }
 
@@ -109,7 +110,18 @@ enum SyncPort {
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
             sourceBundleID: item.sourceBundleID,
-            calendarEventID: item.calendarEventID
+            calendarEventID: item.calendarEventID,
+            notes: item.notes,
+            subtasks: item.subtasks.filter { $0.deletedAt == nil }.map {
+                ExportedSubtask(
+                    id: $0.id,
+                    title: $0.title,
+                    isDone: $0.isDone,
+                    sortOrder: $0.sortOrder,
+                    createdAt: $0.createdAt,
+                    deletedAt: $0.deletedAt
+                )
+            }
         )
     }
 }

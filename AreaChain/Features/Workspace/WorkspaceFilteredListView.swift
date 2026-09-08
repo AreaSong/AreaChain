@@ -55,6 +55,24 @@ struct WorkspaceFilteredListView: View {
             Text("\(count) 项待办")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
+
+            if !matchingTodos.isEmpty {
+                Button {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        if navigation.selectedTaskIDs.isEmpty {
+                            navigation.selectedTaskIDs = Set(matchingTodos.map(\.id))
+                        } else {
+                            navigation.clearSelection()
+                        }
+                    }
+                } label: {
+                    Image(systemName: navigation.selectedTaskIDs.isEmpty ? "checklist" : "checklist.checked")
+                        .font(.system(size: 12))
+                        .foregroundStyle(navigation.selectedTaskIDs.isEmpty ? DaybookTheme.muted : DaybookTheme.stamp)
+                }
+                .buttonStyle(.plain)
+                .help(navigation.selectedTaskIDs.isEmpty ? "全选/进入批量操作" : "退出批量操作")
+            }
         }
     }
 
@@ -164,7 +182,8 @@ struct WorkspaceFilteredListView: View {
     }
 
     private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
-        TaskRow(
+        let isBatchSelected = navigation.selectedTaskIDs.contains(todo.id)
+        return TaskRow(
             title: todo.title,
             isDone: isDone,
             remindMinutes: todo.remindMinutes,
@@ -186,10 +205,26 @@ struct WorkspaceFilteredListView: View {
                 items: attachments,
                 context: modelContext
             ),
-            isSelected: navigation.selectedTaskID == todo.id,
+            notes: todo.notes,
+            subtasks: todo.subtasks
+                .filter { $0.deletedAt == nil }
+                .sorted(by: { $0.sortOrder < $1.sortOrder })
+                .compactMap { $0.snapshot },
+            onToggleSubtask: { subID in
+                if let sub = todo.subtasks.first(where: { $0.id == subID }) {
+                    DayBoardMutations.toggleSubtask(sub)
+                }
+            },
+            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == todo.id),
             onSelect: {
-                navigation.selectedTaskID = todo.id
-                navigation.isInspectorPresented = true
+                if NSEvent.modifierFlags.contains(.command) || !navigation.selectedTaskIDs.isEmpty {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        navigation.toggleSelection(todo.id)
+                    }
+                } else {
+                    navigation.selectedTaskID = todo.id
+                    navigation.isInspectorPresented = true
+                }
             }
         )
     }

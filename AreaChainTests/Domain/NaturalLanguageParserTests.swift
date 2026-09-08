@@ -44,4 +44,13 @@ struct NaturalLanguageParserTests {
         #expect(parsed.isUrgent == false)
         #expect(parsed.hasTokens == false)
     }
+
+    @Test func parsesMultiLineInputIntoTitleAndNotes() {
+        let input = "周会准备 #工作 !重要\n需要统计本周各模块数据\nhttps://example.com/sheet"
+        let parsed = NaturalLanguageParser.parse(input)
+        #expect(parsed.cleanTitle == "周会准备")
+        #expect(parsed.tagName == "工作")
+        #expect(parsed.isImportant == true)
+        #expect(parsed.notes == "需要统计本周各模块数据\nhttps://example.com/sheet")
+    }
 }

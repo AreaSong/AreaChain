@@ -82,6 +82,16 @@ struct TaskDetailDrawer: View {
 
                 Divider().opacity(0.3)
 
+                TaskDetailNotesView(notes: todo.notes) { newNotes in
+                    DayBoardMutations.updateNotes(for: todo, notes: newNotes)
+                }
+
+                Divider().opacity(0.3)
+
+                TaskDetailSubtasksView(todo: todo)
+
+                Divider().opacity(0.3)
+
                 TaskDetailQuadrantGrid(
                     isImportant: todo.isImportant,
                     isUrgent: todo.isUrgent,
@@ -164,6 +174,12 @@ struct TaskDetailDrawer: View {
                         DayBoardMutations.persist { routine.title = newTitle }
                     }
                 )
+
+                Divider().opacity(0.3)
+
+                TaskDetailNotesView(notes: routine.notes) { newNotes in
+                    DayBoardMutations.updateNotes(for: routine, notes: newNotes)
+                }
 
                 Divider().opacity(0.3)
 

@@ -52,6 +52,7 @@ final class WorkspaceNavigation {
         didSet {
             selectedProjectID = nil
             selectedTagID = nil
+            clearSelection()
         }
     }
 
@@ -60,6 +61,7 @@ final class WorkspaceNavigation {
             if selectedProjectID != nil {
                 selectedTagID = nil
             }
+            clearSelection()
         }
     }
 
@@ -68,11 +70,25 @@ final class WorkspaceNavigation {
             if selectedTagID != nil {
                 selectedProjectID = nil
             }
+            clearSelection()
         }
     }
 
     var selectedTaskID: UUID? = nil
+    var selectedTaskIDs: Set<UUID> = []
     var isInspectorPresented: Bool = false
+
+    func toggleSelection(_ id: UUID) {
+        if selectedTaskIDs.contains(id) {
+            selectedTaskIDs.remove(id)
+        } else {
+            selectedTaskIDs.insert(id)
+        }
+    }
+
+    func clearSelection() {
+        selectedTaskIDs.removeAll()
+    }
 }
 
 struct MainSplitWorkspaceView: View {
@@ -95,6 +111,13 @@ struct MainSplitWorkspaceView: View {
         } detail: {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .overlay(alignment: .bottom) {
+                    if !navigation.selectedTaskIDs.isEmpty {
+                        batchActionBar
+                            .padding(.bottom, 16)
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                    }
+                }
         }
         .inspector(isPresented: $navigation.isInspectorPresented) {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
@@ -376,6 +399,45 @@ struct MainSplitWorkspaceView: View {
             }
         }
     }
+
+    private var batchActionBar: some View {
+        BatchActionBar(
+            selectedCount: navigation.selectedTaskIDs.count,
+            onMoveToday: {
+                let today = DayClock.shared.todayKey
+                DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: today, todos: todos)
+                navigation.clearSelection()
+            },
+            onMoveTomorrow: {
+                let tomorrow = DayKey.shifted(DayClock.shared.todayKey, by: 1)
+                DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: tomorrow, todos: todos)
+                navigation.clearSelection()
+            },
+            onToggleDone: { markDone in
+                DayBoardMutations.batchToggleDone(navigation.selectedTaskIDs, markDone: markDone, todos: todos)
+                navigation.clearSelection()
+            },
+            onSetProject: { pid in
+                DayBoardMutations.batchSetProject(navigation.selectedTaskIDs, projectID: pid, todos: todos, routines: [])
+                navigation.clearSelection()
+            },
+            onToggleTag: { tid in
+                DayBoardMutations.batchToggleTag(navigation.selectedTaskIDs, tagID: tid, todos: todos, routines: [])
+                navigation.clearSelection()
+            },
+            onTrash: {
+                DayBoardMutations.batchTrash(navigation.selectedTaskIDs, todos: todos, routines: [])
+                navigation.clearSelection()
+            },
+            onClear: {
+                withAnimation {
+                    navigation.clearSelection()
+                }
+            },
+            projects: projects,
+            tags: tags
+        )
+    }
 }
 
 struct WorkspaceTodayView: View {
@@ -442,7 +504,8 @@ struct WorkspaceTodayView: View {
             remindMinutes: parsed.remindMinutes,
             isImportant: parsed.isImportant,
             isUrgent: parsed.isUrgent,
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
+            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
+            notes: parsed.notes
         )
         if let tagName = parsed.tagName {
             let tagDescriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == tagName && $0.deletedAt == nil })

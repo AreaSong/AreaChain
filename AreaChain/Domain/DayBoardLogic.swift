@@ -15,6 +15,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var isImportant: Bool = false
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
+    var notes: String = ""
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
@@ -43,6 +44,16 @@ struct CheckSnapshot: Equatable {
     var isSkipped: Bool = false
 }
 
+struct SubtaskSnapshot: Equatable, Identifiable {
+    var id: UUID
+    var todoId: UUID
+    var title: String
+    var isDone: Bool
+    var sortOrder: Int = 0
+    var createdAt: Date = Date(timeIntervalSince1970: 0)
+    var deletedAt: Date? = nil
+}
+
 struct TodoSnapshot: Equatable, Identifiable {
     var id: UUID
     var title: String
@@ -56,6 +67,8 @@ struct TodoSnapshot: Equatable, Identifiable {
     var isImportant: Bool = false
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
+    var notes: String = ""
+    var subtasks: [SubtaskSnapshot] = []
 
     var classifyBits: ClassifyBits {
         ClassifyBits(

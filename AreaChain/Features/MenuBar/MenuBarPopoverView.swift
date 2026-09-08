@@ -217,7 +217,8 @@ struct MenuBarPopoverView: View {
             remindMinutes: parsed.remindMinutes,
             isImportant: parsed.isImportant,
             isUrgent: parsed.isUrgent,
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
+            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
+            notes: parsed.notes
         )
         if let tagName = parsed.tagName {
             let tagDescriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == tagName && $0.deletedAt == nil })

@@ -148,9 +148,17 @@ private struct TrashRow: Identifiable {
             kindLabel: "trash.kind.todo",
             isResident: false,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: {
+                item.deletedAt = nil
+                for sub in item.subtasks {
+                    sub.deletedAt = nil
+                }
+            },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                for sub in item.subtasks {
+                    context.delete(sub)
+                }
                 context.delete(item)
             }
         )

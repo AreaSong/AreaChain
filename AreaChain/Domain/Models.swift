@@ -18,6 +18,7 @@ final class DailyRoutine {
     var isImportant: Bool = false
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
+    var notes: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -37,7 +38,8 @@ final class DailyRoutine {
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
-        sourceBundleID: String = ""
+        sourceBundleID: String = "",
+        notes: String = ""
     ) {
         self.id = id
         self.title = title
@@ -55,6 +57,7 @@ final class DailyRoutine {
         self.isImportant = isImportant
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
+        self.notes = notes
         self.checks = []
     }
 
@@ -93,7 +96,8 @@ final class DailyRoutine {
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
-            sourceBundleID: sourceBundleID
+            sourceBundleID: sourceBundleID,
+            notes: notes
         )
     }
 }
@@ -132,6 +136,48 @@ final class RoutineCheck {
 }
 
 @Model
+final class SubtaskItem {
+    var id: UUID
+    var title: String
+    var isDone: Bool
+    var sortOrder: Int
+    var createdAt: Date
+    var deletedAt: Date?
+    var todo: TodoItem?
+
+    init(
+        id: UUID = UUID(),
+        title: String,
+        isDone: Bool = false,
+        sortOrder: Int = 0,
+        createdAt: Date = .now,
+        deletedAt: Date? = nil,
+        todo: TodoItem? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.isDone = isDone
+        self.sortOrder = sortOrder
+        self.createdAt = createdAt
+        self.deletedAt = deletedAt
+        self.todo = todo
+    }
+
+    var snapshot: SubtaskSnapshot? {
+        guard let todoId = todo?.id else { return nil }
+        return SubtaskSnapshot(
+            id: id,
+            todoId: todoId,
+            title: title,
+            isDone: isDone,
+            sortOrder: sortOrder,
+            createdAt: createdAt,
+            deletedAt: deletedAt
+        )
+    }
+}
+
+@Model
 final class TodoItem {
     var id: UUID
     var title: String
@@ -146,6 +192,10 @@ final class TodoItem {
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
     var calendarEventID: String = ""
+    var notes: String = ""
+
+    @Relationship(deleteRule: .cascade, inverse: \SubtaskItem.todo)
+    var subtasks: [SubtaskItem]
 
     init(
         id: UUID = UUID(),
@@ -160,7 +210,8 @@ final class TodoItem {
         isImportant: Bool = false,
         isUrgent: Bool = false,
         sourceBundleID: String = "",
-        calendarEventID: String = ""
+        calendarEventID: String = "",
+        notes: String = ""
     ) {
         self.id = id
         self.title = title
@@ -175,6 +226,8 @@ final class TodoItem {
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
         self.calendarEventID = calendarEventID
+        self.notes = notes
+        self.subtasks = []
     }
 
     var classifyBits: ClassifyBits {
@@ -200,7 +253,9 @@ final class TodoItem {
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
-            sourceBundleID: sourceBundleID
+            sourceBundleID: sourceBundleID,
+            notes: notes,
+            subtasks: subtasks.filter { $0.deletedAt == nil }.sorted(by: { $0.sortOrder < $1.sortOrder }).compactMap { $0.snapshot }
         )
     }
 }
@@ -237,6 +292,7 @@ enum AreaChainSchema {
         DailyRoutine.self,
         RoutineCheck.self,
         TodoItem.self,
+        SubtaskItem.self,
         DiaryEntry.self,
         ProjectItem.self,
         TagItem.self,

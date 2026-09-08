@@ -43,6 +43,7 @@ enum SnapshotImporter {
                 }
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
                 found.deletedAt = item.deletedAt
+                found.notes = item.notes
                 applyClassify(item, to: found)
             } else {
                 context.insert(
@@ -61,7 +62,8 @@ enum SnapshotImporter {
                         tagIDs: item.tagIDs,
                         isImportant: item.isImportant,
                         isUrgent: item.isUrgent,
-                        sourceBundleID: item.sourceBundleID
+                        sourceBundleID: item.sourceBundleID,
+                        notes: item.notes
                     )
                 )
             }
@@ -92,24 +94,54 @@ enum SnapshotImporter {
                 found.isUrgent = item.isUrgent
                 found.sourceBundleID = item.sourceBundleID
                 found.calendarEventID = item.calendarEventID
+                found.notes = item.notes
+                upsertSubtasks(item.subtasks, for: found, context: context)
             } else {
-                context.insert(
-                    TodoItem(
-                        id: item.id,
-                        title: item.title,
-                        isDone: item.isDone,
-                        dayKey: item.dayKey,
-                        createdAt: item.createdAt,
-                        remindMinutes: item.remindMinutes,
-                        deletedAt: item.deletedAt,
-                        projectID: item.projectID,
-                        tagIDs: item.tagIDs,
-                        isImportant: item.isImportant,
-                        isUrgent: item.isUrgent,
-                        sourceBundleID: item.sourceBundleID,
-                        calendarEventID: item.calendarEventID
-                    )
+                let newTodo = TodoItem(
+                    id: item.id,
+                    title: item.title,
+                    isDone: item.isDone,
+                    dayKey: item.dayKey,
+                    createdAt: item.createdAt,
+                    remindMinutes: item.remindMinutes,
+                    deletedAt: item.deletedAt,
+                    projectID: item.projectID,
+                    tagIDs: item.tagIDs,
+                    isImportant: item.isImportant,
+                    isUrgent: item.isUrgent,
+                    sourceBundleID: item.sourceBundleID,
+                    calendarEventID: item.calendarEventID,
+                    notes: item.notes
                 )
+                context.insert(newTodo)
+                upsertSubtasks(item.subtasks, for: newTodo, context: context)
+            }
+        }
+    }
+
+    private static func upsertSubtasks(_ subtasks: [ExportedSubtask], for todo: TodoItem, context: ModelContext) {
+        let map = Dictionary(uniqueKeysWithValues: todo.subtasks.map { ($0.id, $0) })
+        for item in subtasks {
+            if let found = map[item.id] {
+                found.title = item.title
+                found.isDone = item.isDone
+                found.sortOrder = item.sortOrder
+                found.deletedAt = item.deletedAt
+                if let createdAt = item.createdAt {
+                    found.createdAt = createdAt
+                }
+            } else {
+                let sub = SubtaskItem(
+                    id: item.id,
+                    title: item.title,
+                    isDone: item.isDone,
+                    sortOrder: item.sortOrder,
+                    createdAt: item.createdAt ?? .now,
+                    deletedAt: item.deletedAt,
+                    todo: todo
+                )
+                context.insert(sub)
+                todo.subtasks.append(sub)
             }
         }
     }

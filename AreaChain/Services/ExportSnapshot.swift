@@ -71,6 +71,45 @@ struct ExportedAttachment: Codable, Equatable {
     var deletedAt: Date? = nil
 }
 
+struct ExportedSubtask: Codable, Equatable {
+    var id: UUID
+    var title: String
+    var isDone: Bool
+    var sortOrder: Int
+    var createdAt: Date? = nil
+    var deletedAt: Date? = nil
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, isDone, sortOrder, createdAt, deletedAt
+    }
+
+    init(
+        id: UUID,
+        title: String,
+        isDone: Bool,
+        sortOrder: Int = 0,
+        createdAt: Date? = nil,
+        deletedAt: Date? = nil
+    ) {
+        self.id = id
+        self.title = title
+        self.isDone = isDone
+        self.sortOrder = sortOrder
+        self.createdAt = createdAt
+        self.deletedAt = deletedAt
+    }
+
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: CodingKeys.self)
+        id = try box.decode(UUID.self, forKey: .id)
+        title = try box.decode(String.self, forKey: .title)
+        isDone = try box.decode(Bool.self, forKey: .isDone)
+        sortOrder = try box.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
+        createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
+        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
+    }
+}
+
 struct ExportedRoutine: Codable, Equatable {
     var id: UUID
     var title: String
@@ -87,11 +126,12 @@ struct ExportedRoutine: Codable, Equatable {
     var isImportant: Bool
     var isUrgent: Bool
     var sourceBundleID: String
+    var notes: String = ""
 
     enum CodingKeys: String, CodingKey {
         case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, weekdayMask
         case createdAt, remindMinutes, deletedAt
-        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID
+        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID, notes
     }
 
     init(
@@ -109,7 +149,8 @@ struct ExportedRoutine: Codable, Equatable {
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
-        sourceBundleID: String = ""
+        sourceBundleID: String = "",
+        notes: String = ""
     ) {
         self.id = id
         self.title = title
@@ -127,6 +168,7 @@ struct ExportedRoutine: Codable, Equatable {
         self.isImportant = isImportant
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
+        self.notes = notes
     }
 
     init(from decoder: Decoder) throws {
@@ -149,6 +191,7 @@ struct ExportedRoutine: Codable, Equatable {
         isImportant = try box.decodeIfPresent(Bool.self, forKey: .isImportant) ?? false
         isUrgent = try box.decodeIfPresent(Bool.self, forKey: .isUrgent) ?? false
         sourceBundleID = try box.decodeIfPresent(String.self, forKey: .sourceBundleID) ?? ""
+        notes = try box.decodeIfPresent(String.self, forKey: .notes) ?? ""
     }
 }
 
@@ -201,10 +244,13 @@ struct ExportedTodo: Codable, Equatable {
     var isUrgent: Bool
     var sourceBundleID: String
     var calendarEventID: String
+    var notes: String = ""
+    var subtasks: [ExportedSubtask] = []
 
     enum CodingKeys: String, CodingKey {
         case id, title, isDone, dayKey, createdAt, remindMinutes, deletedAt
         case projectID, tagIDs, isImportant, isUrgent, sourceBundleID, calendarEventID
+        case notes, subtasks
     }
 
     init(
@@ -220,7 +266,9 @@ struct ExportedTodo: Codable, Equatable {
         isImportant: Bool = false,
         isUrgent: Bool = false,
         sourceBundleID: String = "",
-        calendarEventID: String = ""
+        calendarEventID: String = "",
+        notes: String = "",
+        subtasks: [ExportedSubtask] = []
     ) {
         self.id = id
         self.title = title
@@ -235,6 +283,8 @@ struct ExportedTodo: Codable, Equatable {
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
         self.calendarEventID = calendarEventID
+        self.notes = notes
+        self.subtasks = subtasks
     }
 
     init(from decoder: Decoder) throws {
@@ -252,6 +302,8 @@ struct ExportedTodo: Codable, Equatable {
         isUrgent = try box.decodeIfPresent(Bool.self, forKey: .isUrgent) ?? false
         sourceBundleID = try box.decodeIfPresent(String.self, forKey: .sourceBundleID) ?? ""
         calendarEventID = try box.decodeIfPresent(String.self, forKey: .calendarEventID) ?? ""
+        notes = try box.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        subtasks = try box.decodeIfPresent([ExportedSubtask].self, forKey: .subtasks) ?? []
     }
 }
 

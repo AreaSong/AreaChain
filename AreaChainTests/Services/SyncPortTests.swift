@@ -329,4 +329,77 @@ struct SyncPortTests {
         #expect(decoded.projects.first?.parentID == nil)
         #expect(decoded.todos.first?.calendarEventID == "")
     }
+
+    @Test func encodeAndDecodeWithNotesAndSubtasks() throws {
+        let todoID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
+        let subID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
+        let snapshot = ExportSnapshot(
+            exportedAt: Date(timeIntervalSince1970: 1_788_800_000),
+            routines: [
+                ExportedRoutine(
+                    id: UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!,
+                    title: "写日报",
+                    sortOrder: 0,
+                    isEnabled: true,
+                    createdDayKey: "2026-09-01",
+                    notes: "每日工作量总结"
+                )
+            ],
+            checks: [],
+            todos: [
+                ExportedTodo(
+                    id: todoID,
+                    title: "准备周报",
+                    isDone: false,
+                    dayKey: "2026-09-07",
+                    createdAt: Date(timeIntervalSince1970: 1_788_800_100),
+                    notes: "包含各部门产出",
+                    subtasks: [
+                        ExportedSubtask(id: subID, title: "收集前端数据", isDone: true, sortOrder: 0)
+                    ]
+                )
+            ],
+            diaries: []
+        )
+        let data = try SyncPort.encode(snapshot)
+        let decoded = try SyncPort.decode(data)
+        #expect(decoded == snapshot)
+        #expect(decoded.routines.first?.notes == "每日工作量总结")
+        #expect(decoded.todos.first?.notes == "包含各部门产出")
+        #expect(decoded.todos.first?.subtasks.count == 1)
+        #expect(decoded.todos.first?.subtasks.first?.title == "收集前端数据")
+        #expect(decoded.todos.first?.subtasks.first?.isDone == true)
+    }
+
+    @Test func decodeMissingNotesAndSubtasksDefaultsEmpty() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [
+            {
+              "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+              "title": "晨间复盘",
+              "sortOrder": 0,
+              "isEnabled": true,
+              "createdDayKey": "2026-09-01"
+            }
+          ],
+          "checks": [],
+          "todos": [
+            {
+              "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+              "title": "老数据待办",
+              "isDone": false,
+              "dayKey": "2026-09-07",
+              "createdAt": "2026-09-07T01:00:00Z"
+            }
+          ],
+          "diaries": []
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.routines.first?.notes == "")
+        #expect(decoded.todos.first?.notes == "")
+        #expect(decoded.todos.first?.subtasks.isEmpty == true)
+    }
 }

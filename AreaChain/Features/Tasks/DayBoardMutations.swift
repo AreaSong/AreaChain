@@ -43,7 +43,14 @@ enum DayBoardMutations {
     }
 
     static func toggleTodo(_ todo: TodoItem) {
-        persist { todo.isDone.toggle() }
+        persist {
+            todo.isDone.toggle()
+            if todo.isDone {
+                for sub in todo.subtasks where sub.deletedAt == nil && !sub.isDone {
+                    sub.isDone = true
+                }
+            }
+        }
     }
 
     static func editTodo(_ todo: TodoItem, title: String) {
@@ -76,13 +83,58 @@ enum DayBoardMutations {
         }
     }
 
-    static func addTodo(title: String, dayKey: String, context: ModelContext) -> Bool {
+    static func addTodo(title: String, notes: String = "", dayKey: String, context: ModelContext) -> Bool {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         persist {
-            context.insert(TodoItem(title: trimmed, dayKey: dayKey))
+            context.insert(TodoItem(title: trimmed, dayKey: dayKey, notes: notes))
         }
         return true
+    }
+
+    static func addSubtask(to todo: TodoItem, title: String, context: ModelContext) -> Bool {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        let currentActive = todo.subtasks.filter { $0.deletedAt == nil }
+        let nextOrder = (currentActive.map(\.sortOrder).max() ?? -1) + 1
+        let item = SubtaskItem(title: trimmed, sortOrder: nextOrder, todo: todo)
+        persist {
+            context.insert(item)
+            todo.subtasks.append(item)
+        }
+        return true
+    }
+
+    static func toggleSubtask(_ subtask: SubtaskItem) {
+        persist { subtask.isDone.toggle() }
+    }
+
+    static func editSubtask(_ subtask: SubtaskItem, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        persist { subtask.title = trimmed }
+    }
+
+    static func deleteSubtask(_ subtask: SubtaskItem) {
+        persist { subtask.deletedAt = .now }
+    }
+
+    static func reorderSubtasks(for todo: TodoItem, orderedIDs: [UUID]) {
+        persist {
+            for (idx, id) in orderedIDs.enumerated() {
+                if let item = todo.subtasks.first(where: { $0.id == id }) {
+                    item.sortOrder = idx
+                }
+            }
+        }
+    }
+
+    static func updateNotes(for todo: TodoItem, notes: String) {
+        persist { todo.notes = notes }
+    }
+
+    static func updateNotes(for routine: DailyRoutine, notes: String) {
+        persist { routine.notes = notes }
     }
 }
 

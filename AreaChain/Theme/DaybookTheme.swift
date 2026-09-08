@@ -282,7 +282,7 @@ struct DaybookTextField: NSViewRepresentable {
         if let cell = field.cell as? NSTextFieldCell {
             cell.wraps = false
             cell.isScrollable = true
-            cell.usesSingleLineMode = true
+            cell.usesSingleLineMode = false
         }
         field.setContentHuggingPriority(.defaultHigh, for: .vertical)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -293,7 +293,10 @@ struct DaybookTextField: NSViewRepresentable {
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
         if field.stringValue != text {
-            field.stringValue = text
+            if field.currentEditor() == nil || text.isEmpty {
+                field.stringValue = text
+                field.currentEditor()?.string = text
+            }
         }
         if field.placeholderString != placeholder {
             field.placeholderString = placeholder
@@ -303,13 +306,9 @@ struct DaybookTextField: NSViewRepresentable {
         if focus.wrappedValue {
             if field.window != nil, field.currentEditor() == nil {
                 DispatchQueue.main.async {
-                    guard focus.wrappedValue else { return }
+                    guard focus.wrappedValue, field.currentEditor() == nil else { return }
                     field.window?.makeFirstResponder(field)
                 }
-            }
-        } else {
-            if field.currentEditor() != nil {
-                field.window?.makeFirstResponder(nil)
             }
         }
     }
@@ -350,8 +349,21 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if commandSelector == #selector(NSResponder.insertLineBreak(_:)) ||
+               (commandSelector == #selector(NSResponder.insertNewline(_:)) && NSApp.currentEvent?.modifierFlags.contains(.shift) == true) {
+                textView.insertNewlineIgnoringFieldEditor(nil)
+                return true
+            }
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                if textView.hasMarkedText() {
+                    return false
+                }
                 submitted()
+                return true
+            }
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                textView.window?.makeFirstResponder(nil)
+                parent.focus.wrappedValue = false
                 return true
             }
             return false
