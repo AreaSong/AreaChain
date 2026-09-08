@@ -55,25 +55,19 @@ struct TaskRow: View {
         .padding(.vertical, 6)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(
-                    hovering || rowFocused
-                        ? DaybookTheme.hoverFill
-                        : (isDone ? Color.clear : DaybookTheme.surface.opacity(0.35))
-                )
+                .fill(cardBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(
-                            hovering || rowFocused
-                                ? DaybookTheme.rule.opacity(0.6)
-                                : (isDone ? Color.clear : DaybookTheme.rule.opacity(0.2)),
-                            lineWidth: 0.8
-                        )
+                        .stroke(cardStroke, lineWidth: 0.8)
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .focusable()
+        .focusEffectDisabled()
         .focused($rowFocused)
         .onHover { hovering = $0 }
+        .animation(DaybookMotion.animation(reduceMotion), value: hovering)
+        .animation(DaybookMotion.animation(reduceMotion), value: rowFocused)
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
             if let todayKey, let onMoveToDay {
@@ -91,6 +85,26 @@ struct TaskRow: View {
             if !editing { draft = value }
         }
         .modifier(TodoDragIfNeeded(payload: dragPayload))
+    }
+
+    private var cardBackground: Color {
+        if rowFocused {
+            return DaybookTheme.cardSelectionFill
+        }
+        if hovering {
+            return isDone ? DaybookTheme.cardSurface.opacity(0.5) : DaybookTheme.cardSurfaceHover
+        }
+        return isDone ? Color.clear : DaybookTheme.cardSurface
+    }
+
+    private var cardStroke: Color {
+        if rowFocused {
+            return DaybookTheme.cardSelectionStroke
+        }
+        if hovering {
+            return isDone ? DaybookTheme.rule.opacity(0.25) : DaybookTheme.rule.opacity(0.45)
+        }
+        return isDone ? Color.clear : DaybookTheme.rule.opacity(0.2)
     }
 
     private var residentMark: some View {

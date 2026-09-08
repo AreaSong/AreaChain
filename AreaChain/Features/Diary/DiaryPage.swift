@@ -286,19 +286,19 @@ struct DiaryLine: View {
         .padding(9)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(hovering || rowFocused ? DaybookTheme.hoverFill : DaybookTheme.surface)
+                .fill(cardBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(
-                            DaybookTheme.rule.opacity(hovering || rowFocused ? 0.65 : 0.25),
-                            lineWidth: 0.8
-                        )
+                        .stroke(cardStroke, lineWidth: 0.8)
                 )
         )
-        .contentShape(Rectangle())
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .focusable()
+        .focusEffectDisabled()
         .focused($rowFocused)
         .onHover { hovering = $0 }
+        .animation(DaybookMotion.animation(reduceMotion), value: hovering)
+        .animation(DaybookMotion.animation(reduceMotion), value: rowFocused)
         .contextMenu {
             Button("diary.edit", action: beginEdit)
             Button("row.attach") {
@@ -314,6 +314,26 @@ struct DiaryLine: View {
         }
         .confirmMoveToTrash($pendingTrash)
         .onAppear { draft = entry.text }
+    }
+
+    private var cardBackground: Color {
+        if rowFocused {
+            return DaybookTheme.cardSelectionFill
+        }
+        if hovering {
+            return DaybookTheme.cardSurfaceHover
+        }
+        return DaybookTheme.cardSurface
+    }
+
+    private var cardStroke: Color {
+        if rowFocused {
+            return DaybookTheme.cardSelectionStroke
+        }
+        if hovering {
+            return DaybookTheme.rule.opacity(0.45)
+        }
+        return DaybookTheme.rule.opacity(0.25)
     }
 
     private var showsHoverActions: Bool {

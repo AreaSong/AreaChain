@@ -71,6 +71,22 @@ enum DaybookTheme {
         light: NSColor.white.withAlphaComponent(0.65),
         dark: NSColor(white: 0.18, alpha: 0.55)
     )
+    static let cardSurface = Color.daybook(
+        light: NSColor.white.withAlphaComponent(0.55),
+        dark: NSColor(white: 0.18, alpha: 0.55)
+    )
+    static let cardSurfaceHover = Color.daybook(
+        light: NSColor.white.withAlphaComponent(0.85),
+        dark: NSColor(white: 0.24, alpha: 0.75)
+    )
+    static let cardSelectionFill = Color.daybook(
+        light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.08),
+        dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.14)
+    )
+    static let cardSelectionStroke = Color.daybook(
+        light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.35),
+        dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.40)
+    )
     static let focusRing = stamp
     static let popoverWidth: CGFloat = 380
     static let popoverMinHeight: CGFloat = 280
