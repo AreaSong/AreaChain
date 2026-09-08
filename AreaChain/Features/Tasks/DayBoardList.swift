@@ -17,37 +17,77 @@ struct DayBoardList: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
-    @State private var showCompleted = true
+    @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Group {
-            if openDayItems.isEmpty {
+            if openTodosList.isEmpty && openRoutinesList.isEmpty && doneItemsList.isEmpty {
                 DaybookEmptyState(
                     title: filter.isActive ? "empty.filter" : "empty.todos",
                     systemImage: filter.isActive ? "line.3.horizontal.decrease" : "square.and.pencil"
                 )
             } else {
-                ForEach(openDayItems) { row in
-                    dayRow(row, isDone: false)
+                if !openTodosList.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+                        ForEach(openTodosList) { todo in
+                            todoRow(todo, isDone: false)
+                        }
+                    }
+                }
+                if !openRoutinesList.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
+                        ForEach(openRoutinesList) { routine in
+                            residentRow(routine, isDone: false)
+                        }
+                    }
+                }
+                if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {
+                    HStack(spacing: 6) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(DaybookTheme.stamp)
+                        Text("header.done")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(DaybookTheme.muted)
+                    }
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            if completedCount > 0 {
-                Button {
-                    showCompleted.toggle()
-                } label: {
-                    SectionStamp(
-                        title: showCompleted
-                            ? "stamp.completed.collapse \(completedCount)"
-                            : "stamp.completed \(completedCount)"
-                    )
-                }
-                .buttonStyle(DaybookQuietButtonStyle())
-                .accessibilityAddTraits(showCompleted ? .isSelected : [])
-            }
-            if showCompleted {
-                ForEach(doneDayItems) { row in
-                    dayRow(row, isDone: true)
+
+            if !doneItemsList.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    Button {
+                        withAnimation(DaybookMotion.animation(reduceMotion)) {
+                            showCompleted.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(DaybookTheme.muted)
+                            SectionStamp(
+                                title: showCompleted
+                                    ? "stamp.completed.collapse \(doneItemsList.count)"
+                                    : "stamp.completed \(doneItemsList.count)",
+                                icon: "checkmark.circle"
+                            )
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
+
+                    if showCompleted {
+                        ForEach(doneItemsList) { row in
+                            dayRow(row, isDone: true)
+                        }
+                    }
                 }
             }
         }
@@ -58,19 +98,27 @@ struct DayBoardList: View {
         (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
     }
 
-    private var completedCount: Int { doneDayItems.count }
-
-    private var openDayItems: [BoardRow] {
-        sortedRows(filtered(openRoutines.map(BoardRow.resident) + openTodos.map(BoardRow.todo)))
+    private var openTodosList: [TodoItem] {
+        filteredTodos(openTodos)
     }
 
-    private var doneDayItems: [BoardRow] {
+    private var openRoutinesList: [DailyRoutine] {
+        filteredRoutines(openRoutines)
+    }
+
+    private var doneItemsList: [BoardRow] {
         sortedRows(filtered(doneRoutines.map(BoardRow.resident) + doneTodos.map(BoardRow.todo)))
     }
 
     private var openRoutines: [DailyRoutine] {
         let ids = Set(DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: dayKey).map(\.id))
-        return routines.filter { ids.contains($0.id) }.sorted { $0.sortOrder < $1.sortOrder }
+        let items = routines.filter { ids.contains($0.id) }
+        return items.sorted {
+            Classification.precedes(
+                BoardSortKey(isImportant: $0.isImportant, isUrgent: $0.isUrgent, remindMinutes: $0.remindMinutes, createdAt: $0.createdAt),
+                BoardSortKey(isImportant: $1.isImportant, isUrgent: $1.isUrgent, remindMinutes: $1.remindMinutes, createdAt: $1.createdAt)
+            )
+        }
     }
 
     private var doneRoutines: [DailyRoutine] {
@@ -82,12 +130,32 @@ struct DayBoardList: View {
 
     private var openTodos: [TodoItem] {
         let ids = Set(DayBoardLogic.openTodos(todos: snapshots.2, dayKey: dayKey).map(\.id))
-        return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
+        let items = todos.filter { ids.contains($0.id) }
+        return items.sorted {
+            Classification.precedes(
+                BoardSortKey(isImportant: $0.isImportant, isUrgent: $0.isUrgent, remindMinutes: $0.remindMinutes, createdAt: $0.createdAt),
+                BoardSortKey(isImportant: $1.isImportant, isUrgent: $1.isUrgent, remindMinutes: $1.remindMinutes, createdAt: $1.createdAt)
+            )
+        }
     }
 
     private var doneTodos: [TodoItem] {
         let ids = Set(DayBoardLogic.completedTodos(todos: snapshots.2, dayKey: dayKey).map(\.id))
         return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
+    }
+
+    private func filteredTodos(_ list: [TodoItem]) -> [TodoItem] {
+        guard filter.isActive else { return list }
+        return list.filter {
+            Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects)
+        }
+    }
+
+    private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
+        guard filter.isActive else { return list }
+        return list.filter {
+            Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects)
+        }
     }
 
     private func filtered(_ rows: [BoardRow]) -> [BoardRow] {

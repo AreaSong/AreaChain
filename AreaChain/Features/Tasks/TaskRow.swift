@@ -51,13 +51,26 @@ struct TaskRow: View {
             Spacer(minLength: 4)
             actionCluster
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(hovering || rowFocused ? DaybookTheme.hoverFill : Color.clear)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(
+                    hovering || rowFocused
+                        ? DaybookTheme.hoverFill
+                        : (isDone ? Color.clear : DaybookTheme.surface.opacity(0.35))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(
+                            hovering || rowFocused
+                                ? DaybookTheme.rule.opacity(0.6)
+                                : (isDone ? Color.clear : DaybookTheme.rule.opacity(0.2)),
+                            lineWidth: 0.8
+                        )
+                )
         )
-        .contentShape(Rectangle())
+        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .focusable()
         .focused($rowFocused)
         .onHover { hovering = $0 }

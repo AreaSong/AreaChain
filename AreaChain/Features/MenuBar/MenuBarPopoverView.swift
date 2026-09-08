@@ -29,6 +29,7 @@ struct MenuBarPopoverView: View {
     @State private var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
+    @State private var popoverHeight: CGFloat = StatusItemController.shared.lastKnownHeight
     @FocusState private var captureFocused: Bool
 
     private var todayKey: String {
@@ -43,13 +44,16 @@ struct MenuBarPopoverView: View {
     private var headerSubtitle: LocalizedStringKey {
         switch tab {
         case .tasks:
-            if todayRemaining == 0 {
+            if todayRemaining == 0 && todayCompleted > 0 {
                 return "header.done"
             }
             if todayCompleted > 0 {
                 return "header.progress \(todayRemaining) \(todayCompleted)"
             }
-            return "header.remaining \(todayRemaining)"
+            if todayRemaining > 0 {
+                return "header.remaining \(todayRemaining)"
+            }
+            return "empty.todos"
         case .diary:
             let count = todayDiariesCount
             if count == 0 {
@@ -60,51 +64,52 @@ struct MenuBarPopoverView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            header
-            DaybookTabBar(
-                selection: $tab,
-                tasksCount: todayRemaining,
-                diariesCount: todayDiariesCount
-            )
+        VStack(spacing: 8) {
+            integratedHeader
+
             Group {
                 switch tab {
                 case .tasks:
-                    VStack(alignment: .leading, spacing: 8) {
-                        CaptureField(
-                            text: $capture.draft,
-                            focus: $captureFocused,
-                            onTodo: addTodo,
-                            onDiary: addDiary
-                        )
-                        TasksPage(
-                            todayKey: todayKey,
-                            yesterdayKey: dayClock.yesterdayKey,
-                            routines: routines,
-                            checks: checks,
-                            todos: todos
-                        )
-                    }
+                    tasksView
                 case .diary:
-                    DiaryPage(
-                        todayKey: todayKey,
-                        entries: diaries,
-                        showsComposer: true
-                    )
+                    diaryView
                 }
             }
-            .animation(DaybookMotion.animation(reduceMotion), value: tab)
-            .frame(maxHeight: .infinity, alignment: .top)
+            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: tab)
+
+            Spacer(minLength: 0)
 
             Divider()
                 .overlay(DaybookTheme.rule.opacity(0.35))
-                .padding(.horizontal, -14)
+                .padding(.horizontal, -12)
 
             FooterBar()
         }
-        .padding(14)
-        .frame(width: DaybookTheme.popoverSize.width, height: DaybookTheme.popoverSize.height)
-        .background(DaybookTheme.paper.opacity(0.96))
+        .padding(12)
+        .background(
+            GeometryReader { proxy in
+                Color.clear.preference(
+                    key: PopoverContentHeightPreferenceKey.self,
+                    value: proxy.size.height
+                )
+            }
+        )
+        .onPreferenceChange(PopoverContentHeightPreferenceKey.self) { newHeight in
+            guard newHeight > 0 else { return }
+            let clamped = min(max(newHeight, DaybookTheme.popoverMinHeight), DaybookTheme.popoverMaxHeight)
+            if abs(popoverHeight - clamped) > 1 {
+                popoverHeight = clamped
+                StatusItemController.shared.updatePopoverHeight(clamped)
+            }
+        }
+        .frame(width: DaybookTheme.popoverWidth)
+        .frame(minHeight: DaybookTheme.popoverMinHeight, maxHeight: DaybookTheme.popoverMaxHeight, alignment: .top)
+        .background {
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                DaybookTheme.paper.opacity(0.25)
+            }
+        }
         .clipShape(Rectangle())
         .daybookHideInputChrome()
         .onAppear(perform: prepare)
@@ -122,6 +127,34 @@ struct MenuBarPopoverView: View {
             DayClock.shared.refresh()
             dayTick = Date()
         }
+    }
+
+    private var tasksView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            CaptureField(
+                text: $capture.draft,
+                focus: $captureFocused,
+                onTodo: addTodo,
+                onDiary: addDiary
+            )
+            TasksPage(
+                todayKey: todayKey,
+                yesterdayKey: dayClock.yesterdayKey,
+                routines: routines,
+                checks: checks,
+                todos: todos,
+                maxScrollHeight: 330
+            )
+        }
+    }
+
+    private var diaryView: some View {
+        DiaryPage(
+            todayKey: todayKey,
+            entries: diaries,
+            showsComposer: true,
+            maxScrollHeight: 330
+        )
     }
 
     private var todayRemaining: Int {
@@ -142,31 +175,35 @@ struct MenuBarPopoverView: View {
             + DayBoardLogic.completedTodos(todos: todos.map(\.snapshot), dayKey: todayKey).count
     }
 
-    private var header: some View {
-        HStack(alignment: .center) {
-            VStack(alignment: .leading, spacing: 2) {
+    private var integratedHeader: some View {
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(.system(size: 19, weight: .regular, design: .serif).italic())
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(DaybookTheme.ink)
                 Text(headerSubtitle)
-                    .font(.system(size: 12))
+                    .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
             }
-            Spacer()
+
+            Spacer(minLength: 4)
+
+            DaybookMicroPillTabBar(
+                selection: $tab,
+                tasksCount: todayRemaining,
+                diariesCount: todayDiariesCount
+            )
+
             Button {
                 AppWindows.openWorkspace(tab: tab == .tasks ? .today : .diary)
             } label: {
                 Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(DaybookTheme.muted)
                     .frame(width: 24, height: 24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(DaybookTheme.hoverFill)
-                    )
             }
-            .buttonStyle(.plain)
-            .help("window.workspace")
+            .buttonStyle(DaybookQuietButtonStyle())
+            .help(L10n.string("window.workspace", locale: locale))
         }
     }
 
@@ -208,7 +245,7 @@ struct MenuBarPopoverView: View {
     }
 }
 
-struct DaybookTabBar: View {
+struct DaybookMicroPillTabBar: View {
     @Binding var selection: BoardTab
     var tasksCount: Int = 0
     var diariesCount: Int = 0
@@ -216,45 +253,47 @@ struct DaybookTabBar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(spacing: 2) {
             ForEach(BoardTab.allCases) { item in
                 let isSelected = selection == item
                 Button {
-                    withAnimation(DaybookMotion.animation(reduceMotion)) {
+                    withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.76)) {
                         selection = item
                     }
                 } label: {
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
+                        Image(systemName: item == .tasks ? "checklist" : "note.text")
+                            .font(.system(size: 9, weight: isSelected ? .bold : .medium))
+
                         Text(item.title)
-                            .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
 
                         let count = item == .tasks ? tasksCount : diariesCount
                         if count > 0 {
                             Text("\(count)")
-                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
                                 .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
-                                .padding(.horizontal, 5)
+                                .padding(.horizontal, 4)
                                 .padding(.vertical, 1)
                                 .background(
                                     Capsule()
-                                        .fill(isSelected ? DaybookTheme.stamp.opacity(0.15) : DaybookTheme.ink.opacity(0.06))
+                                        .fill(
+                                            isSelected
+                                                ? DaybookTheme.stamp.opacity(0.14)
+                                                : DaybookTheme.ink.opacity(0.06)
+                                        )
                                 )
                         }
                     }
                     .foregroundStyle(isSelected ? DaybookTheme.ink : DaybookTheme.muted)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 3.5)
                     .background {
                         if isSelected {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(DaybookTheme.paper)
-                                .shadow(
-                                    color: Color.black.opacity(0.08),
-                                    radius: 2,
-                                    x: 0,
-                                    y: 1
-                                )
-                                .matchedGeometryEffect(id: "activeTabBackground", in: tabNamespace)
+                            Capsule()
+                                .fill(DaybookTheme.surface)
+                                .shadow(color: Color.black.opacity(0.06), radius: 2, y: 1)
+                                .matchedGeometryEffect(id: "activePillTab", in: tabNamespace)
                         }
                     }
                     .contentShape(Rectangle())
@@ -266,9 +305,30 @@ struct DaybookTabBar: View {
         }
         .padding(2)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.06))
+            Capsule()
+                .fill(DaybookTheme.hoverFill)
         )
+    }
+}
+
+struct DaybookTabBar: View {
+    @Binding var selection: BoardTab
+    var tasksCount: Int = 0
+    var diariesCount: Int = 0
+
+    var body: some View {
+        DaybookMicroPillTabBar(
+            selection: $selection,
+            tasksCount: tasksCount,
+            diariesCount: diariesCount
+        )
+    }
+}
+
+struct PopoverContentHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = DaybookTheme.popoverMinHeight
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
@@ -288,6 +348,14 @@ struct FooterBar: View {
             }
             .buttonStyle(DaybookQuietButtonStyle(prominent: true))
             .help("footer.workspace")
+
+            Button(action: { AppWindows.openSettings() }) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 11))
+            }
+            .buttonStyle(DaybookQuietButtonStyle())
+            .help("footer.settings")
+            .accessibilityLabel("footer.settings")
 
             Spacer(minLength: 8)
 

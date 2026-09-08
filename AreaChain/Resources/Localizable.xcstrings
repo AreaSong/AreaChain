@@ -562,19 +562,36 @@
         }
       }
     },
+    "stamp.todos": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Tasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日待办"
+          }
+        }
+      }
+    },
     "stamp.routines": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily"
+            "value": "Daily Routines"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "日常习惯"
           }
         }
       }

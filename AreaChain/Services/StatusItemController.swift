@@ -24,10 +24,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         if popover == nil {
             let popover = NSPopover()
             popover.behavior = .transient
+            popover.animates = true
             popover.delegate = self
             popover.contentSize = NSSize(
-                width: DaybookTheme.popoverSize.width,
-                height: DaybookTheme.popoverSize.height
+                width: DaybookTheme.popoverWidth,
+                height: DaybookTheme.popoverMinHeight
             )
             self.popover = popover
         }
@@ -83,6 +84,20 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
+    private(set) var lastKnownHeight: CGFloat = DaybookTheme.popoverMinHeight
+
+    func updatePopoverHeight(_ newHeight: CGFloat) {
+        let clamped = min(max(newHeight, DaybookTheme.popoverMinHeight), DaybookTheme.popoverMaxHeight)
+        lastKnownHeight = clamped
+        guard let popover, popover.isShown else { return }
+        guard abs(popover.contentSize.height - clamped) > 1 else { return }
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.22
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            popover.contentSize = NSSize(width: DaybookTheme.popoverWidth, height: clamped)
+        }
+    }
+
     func close() {
         popover?.performClose(nil)
     }
@@ -99,6 +114,16 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 .modelContainer(container)
         )
         hosting.safeAreaRegions = []
+        let fitting = hosting.view.fittingSize
+        let initialHeight = min(
+            max(fitting.height > 0 ? fitting.height : lastKnownHeight, DaybookTheme.popoverMinHeight),
+            DaybookTheme.popoverMaxHeight
+        )
+        lastKnownHeight = initialHeight
+        popover.contentSize = NSSize(
+            width: DaybookTheme.popoverWidth,
+            height: initialHeight
+        )
         popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NotificationCenter.default.post(name: .focusCapture, object: nil)

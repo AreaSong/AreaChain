@@ -10,20 +10,22 @@ extension Color {
 }
 
 enum DaybookSwatch {
-    static let inkLight = (0.18, 0.16, 0.12)
-    static let inkDark = (0.91, 0.89, 0.84)
-    static let mutedLight = (0.45, 0.42, 0.38)
-    static let mutedDark = (0.72, 0.68, 0.62)
-    static let ruleLight = (0.82, 0.78, 0.70)
-    static let ruleDark = (0.38, 0.34, 0.28)
-    static let stampLight = (0.62, 0.34, 0.06)
-    static let stampDark = (0.90, 0.68, 0.32)
-    static let paperLight = (0.96, 0.94, 0.88)
-    static let paperDark = (0.10, 0.09, 0.08)
-    static let doneLight = (0.40, 0.38, 0.34)
-    static let doneDark = (0.68, 0.65, 0.60)
-    static let destructiveLight = (0.72, 0.18, 0.14)
-    static let destructiveDark = (0.95, 0.52, 0.46)
+    static let inkLight = (0.12, 0.12, 0.14)
+    static let inkDark = (0.96, 0.96, 0.98)
+    static let mutedLight = (0.40, 0.41, 0.45)
+    static let mutedDark = (0.70, 0.71, 0.75)
+    static let ruleLight = (0.86, 0.88, 0.92)
+    static let ruleDark = (0.24, 0.25, 0.28)
+    static let stampLight = (0.08, 0.35, 0.76)
+    static let stampDark = (0.38, 0.68, 1.0)
+    static let paperLight = (0.98, 0.98, 0.99)
+    static let paperDark = (0.12, 0.12, 0.13)
+    static let doneLight = (0.40, 0.42, 0.45)
+    static let doneDark = (0.68, 0.70, 0.74)
+    static let destructiveLight = (0.78, 0.16, 0.14)
+    static let destructiveDark = (0.98, 0.52, 0.48)
+    static let checkmarkLight = (1.0, 1.0, 1.0)
+    static let checkmarkDark = (0.08, 0.08, 0.10)
 }
 
 enum ContrastMath {
@@ -57,11 +59,23 @@ enum DaybookTheme {
         swatch: DaybookSwatch.destructiveLight,
         dark: DaybookSwatch.destructiveDark
     )
-    static let hoverFill = ink.opacity(0.07)
-    static let pressFill = ink.opacity(0.12)
-    static let surface = paper.opacity(0.72)
+    static let hoverFill = Color.daybook(
+        light: NSColor.black.withAlphaComponent(0.04),
+        dark: NSColor.white.withAlphaComponent(0.08)
+    )
+    static let pressFill = Color.daybook(
+        light: NSColor.black.withAlphaComponent(0.08),
+        dark: NSColor.white.withAlphaComponent(0.14)
+    )
+    static let surface = Color.daybook(
+        light: NSColor.white.withAlphaComponent(0.65),
+        dark: NSColor(white: 0.18, alpha: 0.55)
+    )
     static let focusRing = stamp
-    static let popoverSize = CGSize(width: 380, height: 500)
+    static let popoverWidth: CGFloat = 380
+    static let popoverMinHeight: CGFloat = 280
+    static let popoverMaxHeight: CGFloat = 490
+    static let popoverSize = CGSize(width: popoverWidth, height: popoverMaxHeight)
     static let workspaceSize = CGSize(width: 960, height: 640)
     static let workspaceMinSize = CGSize(width: 780, height: 500)
     static let hit: CGFloat = 28
@@ -104,24 +118,41 @@ struct RuledPaper: View {
 struct InkCheckbox: View {
     var isDone: Bool
     var action: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
             ZStack {
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .stroke(isDone ? DaybookTheme.done : DaybookTheme.ink.opacity(0.85), lineWidth: 1.4)
-                    .frame(width: 15, height: 15)
+                Circle()
+                    .strokeBorder(
+                        isDone
+                            ? DaybookTheme.stamp
+                            : (hovering ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.ink.opacity(0.28)),
+                        lineWidth: 1.5
+                    )
+                    .background(
+                        Circle()
+                            .fill(isDone ? DaybookTheme.stamp : Color.clear)
+                    )
+                    .frame(width: 16, height: 16)
+
                 if isDone {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(
+                            Color.daybook(
+                                swatch: DaybookSwatch.checkmarkLight,
+                                dark: DaybookSwatch.checkmarkDark
+                            )
+                        )
                         .accessibilityHidden(true)
                 }
             }
             .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-            .contentShape(Rectangle())
+            .contentShape(Circle())
         }
-        .buttonStyle(DaybookQuietButtonStyle())
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
         .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
         .accessibilityAddTraits(isDone ? [.isSelected] : [])
     }
@@ -129,14 +160,28 @@ struct InkCheckbox: View {
 
 struct SectionStamp: View {
     var title: LocalizedStringKey
+    var icon: String? = nil
+    var count: Int? = nil
 
     var body: some View {
-        Text(title)
-            .font(.system(size: 10, weight: .semibold))
-            .tracking(2.4)
-            .foregroundStyle(DaybookTheme.muted)
-            .padding(.top, 8)
-            .padding(.bottom, 2)
+        HStack(spacing: 4) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.stamp)
+            }
+            Text(title)
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.5)
+                .foregroundStyle(DaybookTheme.muted)
+            if let count {
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+        }
+        .padding(.top, 6)
+        .padding(.bottom, 2)
     }
 }
 

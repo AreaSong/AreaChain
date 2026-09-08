@@ -9,6 +9,7 @@ struct DiaryPage: View {
     var entries: [DiaryEntry]
     var showsComposer: Bool = false
     var usesSharedDiaryDay: Bool = false
+    var maxScrollHeight: CGFloat? = nil
 
     @Query private var attachments: [AttachmentItem]
     @Bindable private var selection = BoardSelection.shared
@@ -17,11 +18,18 @@ struct DiaryPage: View {
     @State private var draft = ""
     @FocusState private var composerFocused: Bool
 
-    init(todayKey: String, entries: [DiaryEntry], showsComposer: Bool = false, usesSharedDiaryDay: Bool = false) {
+    init(
+        todayKey: String,
+        entries: [DiaryEntry],
+        showsComposer: Bool = false,
+        usesSharedDiaryDay: Bool = false,
+        maxScrollHeight: CGFloat? = nil
+    ) {
         self.todayKey = todayKey
         self.entries = entries
         self.showsComposer = showsComposer
         self.usesSharedDiaryDay = usesSharedDiaryDay
+        self.maxScrollHeight = maxScrollHeight
         _localViewingKey = State(initialValue: todayKey)
     }
 
@@ -37,7 +45,7 @@ struct DiaryPage: View {
     }
 
     private var isViewingToday: Bool {
-        viewingKey == todayKey
+        viewingKey >= todayKey
     }
 
     private var visibleEntries: [DiaryEntry] {
@@ -115,9 +123,11 @@ struct DiaryPage: View {
                 DaybookNavButton(
                     systemName: "chevron.right",
                     label: "diary.next",
-                    enabled: !isViewingToday
+                    enabled: viewingKey < todayKey
                 ) {
-                    viewingKey = DayKey.shifted(viewingKey, by: 1)
+                    if viewingKey < todayKey {
+                        viewingKey = DayKey.shifted(viewingKey, by: 1)
+                    }
                 }
             }
 
@@ -152,7 +162,7 @@ struct DiaryPage: View {
 
     private var entryList: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 10) {
                 if visibleEntries.isEmpty {
                     DaybookEmptyState(title: emptyCopy, systemImage: "square.and.pencil")
                         .padding(.vertical, 16)
@@ -160,17 +170,24 @@ struct DiaryPage: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .background(
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .strokeBorder(DaybookTheme.rule.opacity(0.4), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                                .strokeBorder(DaybookTheme.rule.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
                         )
                 } else {
-                    ForEach(visibleEntries, id: \.id) { entry in
-                        DiaryLine(entry: entry, attachments: attachments)
+                    ForEach(Array(visibleEntries.enumerated()), id: \.element.id) { index, entry in
+                        DiaryTimelineRow(
+                            entry: entry,
+                            attachments: attachments,
+                            isFirst: index == 0,
+                            isLast: index == visibleEntries.count - 1
+                        )
                     }
                 }
             }
             .padding(.vertical, 2)
         }
         .daybookScroll()
+        .frame(maxHeight: maxScrollHeight)
+        .fixedSize(horizontal: false, vertical: maxScrollHeight != nil)
     }
 
     private var emptyCopy: LocalizedStringKey {
@@ -266,13 +283,16 @@ struct DiaryLine: View {
                 }
             }
         }
-        .padding(10)
+        .padding(9)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.surface)
+                .fill(hovering || rowFocused ? DaybookTheme.hoverFill : DaybookTheme.surface)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(DaybookTheme.rule.opacity(hovering || rowFocused ? 0.7 : 0.35), lineWidth: 1)
+                        .stroke(
+                            DaybookTheme.rule.opacity(hovering || rowFocused ? 0.65 : 0.25),
+                            lineWidth: 0.8
+                        )
                 )
         )
         .contentShape(Rectangle())
@@ -360,5 +380,42 @@ struct DiaryLine: View {
         formatter.locale = locale
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
+    }
+}
+
+struct DiaryTimelineRow: View {
+    var entry: DiaryEntry
+    var attachments: [AttachmentItem]
+    var isFirst: Bool
+    var isLast: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            timelineBar
+            DiaryLine(entry: entry, attachments: attachments)
+        }
+    }
+
+    private var timelineBar: some View {
+        VStack(spacing: 0) {
+            Rectangle()
+                .fill(isFirst ? Color.clear : DaybookTheme.rule.opacity(0.45))
+                .frame(width: 1.5, height: 8)
+
+            Circle()
+                .fill(DaybookTheme.stamp)
+                .frame(width: 6, height: 6)
+                .overlay(
+                    Circle()
+                        .stroke(DaybookTheme.stamp.opacity(0.25), lineWidth: 2)
+                )
+
+            Rectangle()
+                .fill(isLast ? Color.clear : DaybookTheme.rule.opacity(0.45))
+                .frame(width: 1.5)
+                .frame(maxHeight: .infinity)
+        }
+        .frame(width: 8)
+        .padding(.top, 4)
     }
 }

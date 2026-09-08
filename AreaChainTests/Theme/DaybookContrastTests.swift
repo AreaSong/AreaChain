@@ -17,4 +17,18 @@ struct DaybookContrastTests {
         #expect(ContrastMath.ratio(DaybookSwatch.destructiveLight, DaybookSwatch.paperLight) >= 4.5)
         #expect(ContrastMath.ratio(DaybookSwatch.destructiveDark, DaybookSwatch.paperDark) >= 4.5)
     }
+
+    @Test func checkmarkMeetsAAOnStamp() {
+        #expect(ContrastMath.ratio(DaybookSwatch.checkmarkLight, DaybookSwatch.stampLight) >= 4.5)
+        #expect(ContrastMath.ratio(DaybookSwatch.checkmarkDark, DaybookSwatch.stampDark) >= 4.5)
+    }
+
+    @Test func popoverDimensionsMeetCompactAndExpandLimits() {
+        #expect(DaybookTheme.popoverWidth == 380)
+        #expect(DaybookTheme.popoverMinHeight == 280)
+        #expect(DaybookTheme.popoverMaxHeight == 490)
+        #expect(DaybookTheme.popoverMinHeight < DaybookTheme.popoverMaxHeight)
+        #expect(DaybookTheme.workspaceSize.width == 960)
+        #expect(DaybookTheme.workspaceSize.height == 640)
+    }
 }

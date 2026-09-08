@@ -15,6 +15,8 @@ struct TasksPage: View {
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query var attachments: [AttachmentItem]
 
+    var maxScrollHeight: CGFloat? = nil
+
     @State var showYesterday = false
     @State var showUpcoming = false
     @State var pendingTrash: PendingTrash?
@@ -31,7 +33,7 @@ struct TasksPage: View {
                 onChange: { boardFilter = $0 }
             )
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 4) {
                     DayBoardList(
                         dayKey: todayKey,
                         todayKey: todayKey,
@@ -45,6 +47,8 @@ struct TasksPage: View {
                 }
             }
             .daybookScroll()
+            .frame(maxHeight: maxScrollHeight)
+            .fixedSize(horizontal: false, vertical: maxScrollHeight != nil)
         }
         .confirmMoveToTrash($pendingTrash)
     }
