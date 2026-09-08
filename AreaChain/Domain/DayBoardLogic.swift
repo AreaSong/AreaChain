@@ -256,4 +256,23 @@ enum DayBoardLogic {
     static func sortedForBoard(_ todos: [TodoSnapshot]) -> [TodoSnapshot] {
         todos.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
+
+    static func habitStreak(checks: [CheckSnapshot], todayKey: String) -> Int {
+        var streak = 0
+        var currentKey = todayKey
+        let todayDone = checks.contains { $0.dayKey == todayKey && $0.isDone }
+        if !todayDone {
+            currentKey = DayKey.shifted(todayKey, by: -1)
+        }
+        while streak < 365 {
+            let hasDone = checks.contains { $0.dayKey == currentKey && $0.isDone }
+            if hasDone {
+                streak += 1
+                currentKey = DayKey.shifted(currentKey, by: -1)
+            } else {
+                break
+            }
+        }
+        return streak
+    }
 }

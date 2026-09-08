@@ -12,6 +12,8 @@ struct DayBoardList: View {
     var todos: [TodoItem]
     var filter: BoardFilter = BoardFilter()
     var allowsTodoDrag: Bool = false
+    var focusedTaskID: Binding<UUID?>? = nil
+    var onReturnToInput: (() -> Void)? = nil
 
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
@@ -19,6 +21,8 @@ struct DayBoardList: View {
 
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
+    @State private var editingTaskID: UUID? = nil
+    @FocusState private var isListFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -92,6 +96,108 @@ struct DayBoardList: View {
             }
         }
         .confirmMoveToTrash($pendingTrash)
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isListFocused)
+        .onKeyPress(.downArrow) {
+            guard let focusedTaskID else { return .ignored }
+            let ids = orderedVisibleIDs
+            guard !ids.isEmpty else { return .ignored }
+            if let cur = focusedTaskID.wrappedValue, let idx = ids.firstIndex(of: cur) {
+                if idx + 1 < ids.count {
+                    focusedTaskID.wrappedValue = ids[idx + 1]
+                }
+            } else {
+                focusedTaskID.wrappedValue = ids.first
+            }
+            return .handled
+        }
+        .onKeyPress(.upArrow) {
+            guard let focusedTaskID else { return .ignored }
+            let ids = orderedVisibleIDs
+            guard !ids.isEmpty else { return .ignored }
+            if let cur = focusedTaskID.wrappedValue, let idx = ids.firstIndex(of: cur) {
+                if idx > 0 {
+                    focusedTaskID.wrappedValue = ids[idx - 1]
+                } else {
+                    focusedTaskID.wrappedValue = nil
+                    isListFocused = false
+                    onReturnToInput?()
+                }
+            }
+            return .handled
+        }
+        .onKeyPress(.space) {
+            if let id = focusedTaskID?.wrappedValue {
+                toggleSelected(id: id)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.delete) {
+            if let id = focusedTaskID?.wrappedValue {
+                deleteSelected(id: id)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.escape) {
+            if focusedTaskID?.wrappedValue != nil {
+                focusedTaskID?.wrappedValue = nil
+                editingTaskID = nil
+                isListFocused = false
+                onReturnToInput?()
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            if let id = focusedTaskID?.wrappedValue {
+                editingTaskID = id
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(characters: CharacterSet(charactersIn: "eE")) { _ in
+            if let id = focusedTaskID?.wrappedValue {
+                editingTaskID = id
+                return .handled
+            }
+            return .ignored
+        }
+        .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
+            if newValue != nil {
+                isListFocused = true
+            }
+        }
+    }
+
+    private var orderedVisibleIDs: [UUID] {
+        var ids: [UUID] = []
+        ids.append(contentsOf: openTodosList.map(\.id))
+        ids.append(contentsOf: openRoutinesList.map(\.id))
+        if showCompleted {
+            ids.append(contentsOf: doneItemsList.map(\.id))
+        }
+        return ids
+    }
+
+    private func toggleSelected(id: UUID) {
+        if let todo = todos.first(where: { $0.id == id }) {
+            DayBoardMutations.toggleTodo(todo)
+            return
+        }
+        if let routine = routines.first(where: { $0.id == id }) {
+            DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext)
+        }
+    }
+
+    private func deleteSelected(id: UUID) {
+        if let todo = todos.first(where: { $0.id == id }) {
+            pendingTrash = PendingTrash(title: todo.title) {
+                DayBoardMutations.persist { todo.deletedAt = .now }
+            }
+        }
     }
 
     private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -199,7 +305,10 @@ struct DayBoardList: View {
             onToggle: { DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
             isImportant: routine.isImportant,
-            isUrgent: routine.isUrgent
+            isUrgent: routine.isUrgent,
+            isSelected: focusedTaskID?.wrappedValue == routine.id,
+            isExternalEditing: editingTaskID == routine.id,
+            onSelect: { focusedTaskID?.wrappedValue = routine.id }
         )
     }
 
@@ -226,7 +335,10 @@ struct DayBoardList: View {
                 items: attachments,
                 context: modelContext
             ),
-            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
+            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
+            isSelected: focusedTaskID?.wrappedValue == todo.id,
+            isExternalEditing: editingTaskID == todo.id,
+            onSelect: { focusedTaskID?.wrappedValue = todo.id }
         )
     }
 }

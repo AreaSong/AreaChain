@@ -23,6 +23,9 @@ struct TaskRow: View {
     var classify: TaskClassifyContext? = nil
     var attachments: TaskAttachmentContext? = nil
     var dragPayload: String? = nil
+    var isSelected: Bool = false
+    var isExternalEditing: Bool = false
+    var onSelect: (() -> Void)? = nil
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -62,12 +65,15 @@ struct TaskRow: View {
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .onTapGesture {
+            onSelect?()
+        }
         .focusable()
         .focusEffectDisabled()
         .focused($rowFocused)
         .onHover { hovering = $0 }
         .animation(DaybookMotion.animation(reduceMotion), value: hovering)
-        .animation(DaybookMotion.animation(reduceMotion), value: rowFocused)
+        .animation(DaybookMotion.animation(reduceMotion), value: isEffectivelyFocused)
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
             if let todayKey, let onMoveToDay {
@@ -84,11 +90,18 @@ struct TaskRow: View {
         .onChange(of: title) { _, value in
             if !editing { draft = value }
         }
+        .onChange(of: isExternalEditing) { _, value in
+            if value && !editing { beginEdit() }
+        }
         .modifier(TodoDragIfNeeded(payload: dragPayload))
     }
 
+    private var isEffectivelyFocused: Bool {
+        rowFocused || isSelected
+    }
+
     private var cardBackground: Color {
-        if rowFocused {
+        if isEffectivelyFocused {
             return DaybookTheme.cardSelectionFill
         }
         if hovering {
@@ -98,7 +111,7 @@ struct TaskRow: View {
     }
 
     private var cardStroke: Color {
-        if rowFocused {
+        if isEffectivelyFocused {
             return DaybookTheme.cardSelectionStroke
         }
         if hovering {
@@ -143,6 +156,7 @@ struct TaskRow: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
+            onSelect?()
             guard onEdit != nil else { return }
             beginEdit()
         }
@@ -275,7 +289,7 @@ extension TaskRow {
     }
 
     private var showsHoverActions: Bool {
-        hovering || rowFocused || editing
+        hovering || isEffectivelyFocused || editing
     }
 
     @ViewBuilder

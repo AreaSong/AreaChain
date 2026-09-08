@@ -16,6 +16,8 @@ struct TasksPage: View {
     @Query var attachments: [AttachmentItem]
 
     var maxScrollHeight: CGFloat? = nil
+    var focusedTaskID: Binding<UUID?>? = nil
+    var onReturnToInput: (() -> Void)? = nil
 
     @State var showYesterday = false
     @State var showUpcoming = false
@@ -33,17 +35,20 @@ struct TasksPage: View {
                 onChange: { boardFilter = $0 }
             )
             ScrollView {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
                     DayBoardList(
                         dayKey: todayKey,
                         todayKey: todayKey,
                         routines: routines,
                         checks: checks,
                         todos: todos,
-                        filter: boardFilter
+                        filter: boardFilter,
+                        focusedTaskID: focusedTaskID,
+                        onReturnToInput: onReturnToInput
                     )
                     upcomingSection
                     yesterdaySection
+                    progressCard
                 }
                 .padding(.vertical, 2)
             }
@@ -81,6 +86,23 @@ struct TasksPage: View {
         let routineIDs = DayBoardLogic.routines(for: todayKey, in: snapshots.0).map(\.sourceBundleID)
         let todoIDs = DayBoardLogic.todos(for: todayKey, in: snapshots.2).map(\.sourceBundleID)
         return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
+    }
+
+    private var progressCard: some View {
+        let openTodosCount = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey).count
+        let openRoutinesCount = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).count
+        let doneTodosCount = DayBoardLogic.completedTodos(todos: snapshots.2, dayKey: todayKey).count
+        let doneRoutinesCount = DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).count
+        let total = openTodosCount + openRoutinesCount + doneTodosCount + doneRoutinesCount
+        let completed = doneTodosCount + doneRoutinesCount
+        let streak = DayBoardLogic.habitStreak(checks: snapshots.1, todayKey: todayKey)
+
+        return TodayProgressCard(
+            completedCount: completed,
+            totalCount: total,
+            streakDays: streak
+        )
+        .padding(.top, 4)
     }
 }
 

@@ -263,6 +263,7 @@ struct DaybookTextField: NSViewRepresentable {
     var focus: FocusState<Bool>.Binding
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)? = nil
+    var onArrowDown: (() -> Void)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -347,6 +348,13 @@ struct DaybookTextField: NSViewRepresentable {
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
                 submitted()
                 return true
+            }
+            if commandSelector == #selector(NSResponder.moveDown(_:)) || commandSelector == #selector(NSResponder.insertTab(_:)) {
+                if let onArrowDown = parent.onArrowDown {
+                    parent.focus.wrappedValue = false
+                    onArrowDown()
+                    return true
+                }
             }
             return false
         }

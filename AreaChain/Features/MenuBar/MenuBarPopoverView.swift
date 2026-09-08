@@ -30,6 +30,7 @@ struct MenuBarPopoverView: View {
     @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
     @FocusState private var captureFocused: Bool
+    @State private var focusedTaskID: UUID? = nil
 
     private var todayKey: String {
         _ = dayTick
@@ -116,18 +117,40 @@ struct MenuBarPopoverView: View {
                 text: $capture.draft,
                 focus: $captureFocused,
                 onTodo: addTodo,
-                onDiary: addDiary
+                onDiary: addDiary,
+                onArrowDown: {
+                    focusFirstTask()
+                }
             )
             TasksPage(
                 todayKey: todayKey,
                 yesterdayKey: dayClock.yesterdayKey,
                 routines: routines,
                 checks: checks,
-                todos: todos
+                todos: todos,
+                focusedTaskID: $focusedTaskID,
+                onReturnToInput: {
+                    focusedTaskID = nil
+                    captureFocused = true
+                }
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func focusFirstTask() {
+        captureFocused = false
+        let snapshots = (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
+        let openTodos = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
+        if let firstTodo = openTodos.first {
+            focusedTaskID = firstTodo.id
+            return
+        }
+        let openRoutines = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
+        if let firstRoutine = openRoutines.first {
+            focusedTaskID = firstRoutine.id
+        }
     }
 
     private var diaryView: some View {
@@ -202,15 +225,28 @@ struct MenuBarPopoverView: View {
     }
 
     private func addTodo() {
-        let title = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !title.isEmpty else { return }
-        modelContext.insert(
-            TodoItem(
-                title: title,
-                dayKey: todayKey,
-                sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
-            )
+        let raw = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return }
+        let parsed = NaturalLanguageParser.parse(raw)
+        let item = TodoItem(
+            title: parsed.cleanTitle,
+            dayKey: todayKey,
+            remindMinutes: parsed.remindMinutes,
+            isImportant: parsed.isImportant,
+            isUrgent: parsed.isUrgent,
+            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
         )
+        if let tagName = parsed.tagName {
+            let tagDescriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == tagName && $0.deletedAt == nil })
+            if let existingTag = try? modelContext.fetch(tagDescriptor).first {
+                item.tagIDs = TagIDList.toggling(item.tagIDs, existingTag.id)
+            } else {
+                let newTag = TagItem(name: tagName, sortOrder: 0)
+                modelContext.insert(newTag)
+                item.tagIDs = TagIDList.toggling(item.tagIDs, newTag.id)
+            }
+        }
+        modelContext.insert(item)
         capture.draft = ""
         BoardEvents.changed()
     }
