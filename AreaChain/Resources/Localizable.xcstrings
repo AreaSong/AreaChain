@@ -3220,13 +3220,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Off by default. Overlay Return and the paste shortcut store the frontmost app’s bundle ID, not the window title. Calendar typing is not stamped."
+            "value": "Off by default. Overlay Return, the Today composer, the paste shortcut, Calendar typing, and project/tag lists store the frontmost app’s bundle ID. AreaChain itself is not stamped. Window titles are not read."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认关。浮层回车和剪贴板热键会记下前台 App 的标识，不读窗口标题。日历窗里手打的不加戳。"
+            "value": "默认关。打开后，浮层回车、工作台今日输入、剪贴板热键、日历页和项目/标签清单添加待办都会记下前台 App 的标识；前台是 AreaChain 自己则不写。不读窗口标题。"
           }
         }
       }
