@@ -63,7 +63,7 @@ struct TaskDetailTagSelector: View {
     @State private var newTagName = ""
 
     private var activeTags: [TagItem] {
-        tags.filter { $0.deletedAt == nil }
+        Catalog.taskPickerTags(tags, attachedIDs: tagIDs)
     }
 
     var body: some View {

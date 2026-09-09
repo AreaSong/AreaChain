@@ -30,9 +30,6 @@ struct SettingsView: View {
     var body: some View {
         @Bindable var prefs = prefs
         Form {
-            ResidentSettings()
-            CatalogSettings()
-
             Section("settings.chrome") {
                 Picker("settings.language", selection: $prefs.language) {
                     Text("language.system").tag(AppLanguage.system)

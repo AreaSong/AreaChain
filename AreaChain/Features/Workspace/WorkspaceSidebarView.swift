@@ -1,6 +1,18 @@
 import SwiftData
 import SwiftUI
 
+private enum CatalogRename: Identifiable {
+    case project(UUID)
+    case tag(UUID)
+
+    var id: UUID {
+        switch self {
+        case .project(let id), .tag(let id):
+            return id
+        }
+    }
+}
+
 /// 现代工作台侧边导航栏组件
 struct WorkspaceSidebarView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,11 +28,14 @@ struct WorkspaceSidebarView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
     @State private var pendingTrash: PendingTrash?
+    @State private var pendingRename: CatalogRename?
+    @State private var renameDraft = ""
 
     var body: some View {
         List {
             Section("sidebar.focus") {
                 tabRow(.today, badgeCount: todayUnfinishedCount)
+                tabRow(.residents)
                 tabRow(.search)
             }
 
@@ -36,9 +51,10 @@ struct WorkspaceSidebarView: View {
             }
 
             Section {
-                let activeProjects = projects.filter { $0.deletedAt == nil }
-                ForEach(activeProjects) { proj in
-                    projectRow(proj)
+                ForEach(ProjectTree.outline(projects)) { row in
+                    if let project = projects.first(where: { $0.id == row.id }) {
+                        projectRow(project, depth: row.depth)
+                    }
                 }
             } header: {
                 HStack {
@@ -54,8 +70,7 @@ struct WorkspaceSidebarView: View {
             }
 
             Section {
-                let activeTags = tags.filter { $0.deletedAt == nil }
-                ForEach(activeTags) { tag in
+                ForEach(Catalog.liveTaskTags(tags)) { tag in
                     tagRow(tag)
                 }
             } header: {
@@ -78,6 +93,9 @@ struct WorkspaceSidebarView: View {
         }
         .listStyle(.sidebar)
         .confirmMoveToTrash($pendingTrash)
+        .sheet(item: $pendingRename, onDismiss: { renameDraft = "" }) { _ in
+            renameSheet
+        }
     }
 
     private var todayUnfinishedCount: Int? {
@@ -91,7 +109,9 @@ struct WorkspaceSidebarView: View {
     }
 
     private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {
-        let isSelected = navigation.selectedProjectID == nil && navigation.selectedTagID == nil && navigation.selectedTab == tab
+        let isSelected = navigation.selectedProjectID == nil
+            && navigation.selectedTagID == nil
+            && navigation.selectedTab == tab
         return Button {
             navigation.revealTab(tab)
         } label: {
@@ -123,7 +143,7 @@ struct WorkspaceSidebarView: View {
         .font(.system(size: 12.5))
     }
 
-    private func projectRow(_ project: ProjectItem) -> some View {
+    private func projectRow(_ project: ProjectItem, depth: Int) -> some View {
         let isSelected = navigation.selectedProjectID == project.id
         let ids = ProjectTree.subtreeIDs(root: project.id, in: projects)
         let count = todos.filter {
@@ -149,19 +169,35 @@ struct WorkspaceSidebarView: View {
         }
         .buttonStyle(.plain)
         .padding(.vertical, 3)
-        .padding(.horizontal, 6)
+        .padding(.leading, 6 + CGFloat(depth) * 12)
+        .padding(.trailing, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
+            Button("sidebar.rename") { beginRename(.project(project.id), name: project.name) }
+            projectParentMenu(project)
             Button("alert.trash.move", role: .destructive) {
                 pendingTrash = PendingTrash(title: project.name) {
                     DayBoardMutations.persist { project.deletedAt = SoftDelete.stamp() }
                     if navigation.selectedProjectID == project.id {
                         navigation.selectedProjectID = nil
                     }
+                }
+            }
+        }
+    }
+
+    private func projectParentMenu(_ project: ProjectItem) -> some View {
+        Menu("settings.catalog.parent") {
+            Button("settings.catalog.parent.none") {
+                setParent(project.id, nil)
+            }
+            ForEach(ProjectTree.allowedParents(for: project.id, in: projects)) { parent in
+                Button(ProjectTree.pathLabel(parent.id, in: projects)) {
+                    setParent(project.id, parent.id)
                 }
             }
         }
@@ -196,6 +232,7 @@ struct WorkspaceSidebarView: View {
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
+            Button("sidebar.rename") { beginRename(.tag(tag.id), name: tag.name) }
             Button("alert.trash.move", role: .destructive) {
                 pendingTrash = PendingTrash(title: tag.name) {
                     DayBoardMutations.persist { tag.deletedAt = SoftDelete.stamp() }
@@ -205,5 +242,57 @@ struct WorkspaceSidebarView: View {
                 }
             }
         }
+    }
+
+    private var renameSheet: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("sidebar.rename")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(DaybookTheme.ink)
+            TextField("settings.catalog.rename", text: $renameDraft)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(commitRename)
+            HStack {
+                Spacer()
+                Button("alert.cancel") {
+                    pendingRename = nil
+                    renameDraft = ""
+                }
+                Button("sidebar.rename") { commitRename() }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(renameDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
+        .padding(16)
+        .frame(width: 260)
+    }
+
+    private func beginRename(_ target: CatalogRename, name: String) {
+        renameDraft = name
+        pendingRename = target
+    }
+
+    private func commitRename() {
+        let next = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !next.isEmpty, let target = pendingRename else {
+            pendingRename = nil
+            return
+        }
+        DayBoardMutations.persist {
+            switch target {
+            case .project(let id):
+                projects.first { $0.id == id }?.name = next
+            case .tag(let id):
+                tags.first { $0.id == id }?.name = next
+            }
+        }
+        pendingRename = nil
+        renameDraft = ""
+    }
+
+    private func setParent(_ id: UUID, _ parentID: UUID?) {
+        guard let item = projects.first(where: { $0.id == id }) else { return }
+        guard !ProjectTree.wouldCycle(moving: id, to: parentID, in: projects) else { return }
+        DayBoardMutations.persist { item.parentID = parentID }
     }
 }

@@ -4,6 +4,7 @@ import AppKit
 
 enum WorkspaceTab: String, CaseIterable, Identifiable {
     case today
+    case residents
     case calendar
     case quadrant
     case gantt
@@ -18,6 +19,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     var titleKey: LocalizedStringKey {
         switch self {
         case .today: return "tab.tasks"
+        case .residents: return "tab.residents"
         case .calendar: return "window.calendar"
         case .quadrant: return "window.quadrant"
         case .gantt: return "window.gantt"
@@ -32,6 +34,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     var iconName: String {
         switch self {
         case .today: return "checklist"
+        case .residents: return "repeat"
         case .calendar: return "calendar"
         case .quadrant: return "square.grid.2x2"
         case .gantt: return "chart.bar.xaxis"
@@ -214,6 +217,8 @@ struct MainSplitWorkspaceView: View {
             switch navigation.selectedTab {
             case .today:
                 WorkspaceTodayView()
+            case .residents:
+                ResidentsPage()
             case .calendar:
                 CalendarStandaloneView()
             case .quadrant:
@@ -284,11 +289,14 @@ struct MainSplitWorkspaceView: View {
                 Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !name.isEmpty {
-                        if let tag = DayBoardMutations.resolveTag(named: name, among: tags, context: modelContext) {
+                        if let tag = DayBoardMutations.resolveTaskTag(named: name, among: tags, context: modelContext) {
                             newTagName = ""
                             isAddingTag = false
                             navigation.selectedTagID = tag.id
                             BoardEvents.changed()
+                        } else {
+                            newTagName = ""
+                            isAddingTag = false
                         }
                     }
                 }
@@ -504,7 +512,7 @@ struct WorkspaceTodayView: View {
             notes: parsed.notes
         )
         if let tagName = parsed.tagName,
-           let tag = DayBoardMutations.resolveTag(named: tagName, among: tags, context: modelContext)
+           let tag = DayBoardMutations.resolveTaskTag(named: tagName, among: tags, context: modelContext)
         {
             todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
         }

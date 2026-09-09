@@ -9,6 +9,21 @@ enum Catalog {
         items.filter { $0.deletedAt == nil }.sorted { $0.sortOrder < $1.sortOrder }
     }
 
+    /// 待办侧使用的标签，不含手记三分类。
+    static func liveTaskTags(_ items: [TagItem]) -> [TagItem] {
+        liveTags(items).filter { !DiaryMemoTags.isPresetName($0.name) }
+    }
+
+    /// 抽屉选择器：预设分类仅在该项已打上时出现，方便去掉。
+    static func taskPickerTags(_ items: [TagItem], attachedIDs: String) -> [TagItem] {
+        liveTags(items).filter { tag in
+            if DiaryMemoTags.isPresetName(tag.name) {
+                return TagIDList.contains(attachedIDs, tag.id)
+            }
+            return true
+        }
+    }
+
     static func liveAttachments(for ownerID: UUID, in items: [AttachmentItem]) -> [AttachmentItem] {
         items
             .filter { $0.deletedAt == nil && $0.ownerID == ownerID }

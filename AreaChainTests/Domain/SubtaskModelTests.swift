@@ -207,6 +207,17 @@ struct SubtaskModelTests {
         #expect(!TagIDList.contains(todo.tagIDs, buried.id))
     }
 
+    @Test func addTagSkipsDiaryPresetNames() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08")
+        context.insert(todo)
+        DayBoardMutations.addTag(named: "密码", existing: [], context: context, ontoTodo: todo)
+        #expect(todo.tagIDs.isEmpty)
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        #expect(tags.isEmpty)
+        #expect(DayBoardMutations.resolveTaskTag(named: "小巧思", among: [], context: context) == nil)
+    }
+
     @Test func trashCascadesAttachmentsAndExportKeepsDeletedSubtasks() throws {
         let (_, context) = try makeContainer()
         let todo = TodoItem(title: "主任务", dayKey: "2026-09-08")

@@ -17,6 +17,10 @@ struct BatchActionBar: View {
     var projects: [ProjectItem] = []
     var tags: [TagItem] = []
 
+    private var taskTags: [TagItem] {
+        Catalog.liveTaskTags(tags)
+    }
+
     var body: some View {
         HStack(spacing: 10) {
             HStack(spacing: 6) {
@@ -72,9 +76,9 @@ struct BatchActionBar: View {
             }
 
             // 标签设置
-            if !tags.isEmpty {
+            if !taskTags.isEmpty {
                 Menu {
-                    ForEach(tags.filter { $0.deletedAt == nil }) { tag in
+                    ForEach(taskTags) { tag in
                         Button("#\(tag.name)") { onToggleTag(tag.id) }
                     }
                 } label: {

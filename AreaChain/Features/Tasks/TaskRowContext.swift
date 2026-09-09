@@ -35,8 +35,10 @@ enum CatalogChoices {
         }
     }
 
-    static func tags(_ items: [TagItem]) -> [CatalogChoice] {
-        Catalog.liveTags(items).map { CatalogChoice(id: $0.id, name: $0.name) }
+    static func tags(_ items: [TagItem], attachedIDs: String = "") -> [CatalogChoice] {
+        Catalog.taskPickerTags(items, attachedIDs: attachedIDs).map {
+            CatalogChoice(id: $0.id, name: $0.name)
+        }
     }
 
     static func attachments(_ ownerID: UUID, in items: [AttachmentItem]) -> [AttachmentRef] {
@@ -56,7 +58,7 @@ enum CatalogChoices {
             projectID: routine.projectID,
             tagIDs: routine.tagIDs,
             projects: Self.projects(projects),
-            tags: Self.tags(tags),
+            tags: Self.tags(tags, attachedIDs: routine.tagIDs),
             sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID),
             onProject: { id in DayBoardMutations.persist { routine.projectID = id } },
             onToggleTag: { id in DayBoardMutations.persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
@@ -76,7 +78,7 @@ enum CatalogChoices {
             projectID: todo.projectID,
             tagIDs: todo.tagIDs,
             projects: Self.projects(projects),
-            tags: Self.tags(tags),
+            tags: Self.tags(tags, attachedIDs: todo.tagIDs),
             sourceLabel: todo.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: todo.sourceBundleID),
             onProject: { id in DayBoardMutations.persist { todo.projectID = id } },
             onToggleTag: { id in DayBoardMutations.persist { todo.tagIDs = TagIDList.toggling(todo.tagIDs, id) } },

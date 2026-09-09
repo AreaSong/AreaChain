@@ -110,4 +110,31 @@ struct CatalogTests {
         #expect(!TagIDList.contains(routine.tagIDs, tagID))
         #expect(!TagIDList.contains(diary.tagIDs, tagID))
     }
+
+    @Test func liveTaskTagsSkipDiaryPresets() {
+        let password = TagItem(name: "密码", sortOrder: 0)
+        let idea = TagItem(name: "小巧思", sortOrder: 1)
+        let journal = TagItem(name: "日记", sortOrder: 2)
+        let work = TagItem(name: "工作", sortOrder: 3)
+        let buried = TagItem(name: "归档", sortOrder: 4, deletedAt: Date(timeIntervalSince1970: 1))
+        let tags = [password, idea, journal, work, buried]
+        #expect(Catalog.liveTags(tags).map(\.name) == ["密码", "小巧思", "日记", "工作"])
+        #expect(Catalog.liveTaskTags(tags).map(\.name) == ["工作"])
+    }
+
+    @Test func taskPickerTagsKeepAttachedPresets() {
+        let password = TagItem(name: "密码", sortOrder: 0)
+        let work = TagItem(name: "工作", sortOrder: 1)
+        let attached = TagIDList.encode([password.id])
+        #expect(Catalog.taskPickerTags([password, work], attachedIDs: "").map(\.name) == ["工作"])
+        #expect(Catalog.taskPickerTags([password, work], attachedIDs: attached).map(\.name) == ["密码", "工作"])
+    }
+
+    @Test @MainActor func catalogChoicesTagsSkipDiaryPresets() {
+        let password = TagItem(name: "密码", sortOrder: 0)
+        let work = TagItem(name: "工作", sortOrder: 1)
+        #expect(CatalogChoices.tags([password, work]).map(\.name) == ["工作"])
+        let attached = TagIDList.encode([password.id])
+        #expect(CatalogChoices.tags([password, work], attachedIDs: attached).map(\.name) == ["密码", "工作"])
+    }
 }

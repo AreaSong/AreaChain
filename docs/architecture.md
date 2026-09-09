@@ -25,7 +25,7 @@ AreaChain/
   Domain/         纯领域层：日期、模型、过滤、解析、连击
   Services/       系统服务：SwiftData、时钟、通知、快照、热键、附件、日历同步
   Features/       界面（按模块）：
-    Workspace/    三栏工作台、检查器抽屉、子任务、备注、2×2 四象限
+    Workspace/    三栏工作台、常驻页、检查器抽屉、子任务、备注、2×2 四象限
     Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏
     MenuBar/      菜单栏浮层与捕获框
     Calendar/     日历月网格（工作台 tab）
@@ -34,7 +34,7 @@ AreaChain/
     Diary/        灵感手记卡片流（多维标签、密码虚化、置顶）
     Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
     Search/       跨天搜索（工作台 tab）
-    Settings/     设置（习惯、项目树、标签、偏好）
+    Settings/     设置（外观、启动、捕获、通知、日历、iCloud、数据）
     Trash/        回收站（工作台 tab）
   Theme/          色板、印章质感、动效、确认组件
 ```

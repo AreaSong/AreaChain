@@ -222,7 +222,7 @@ struct MenuBarPopoverView: View {
             notes: parsed.notes
         )
         if let tagName = parsed.tagName,
-           let tag = DayBoardMutations.resolveTag(named: tagName, among: tags, context: modelContext)
+           let tag = DayBoardMutations.resolveTaskTag(named: tagName, among: tags, context: modelContext)
         {
             item.tagIDs = TagIDList.toggling(item.tagIDs, tag.id)
         }

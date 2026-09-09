@@ -1,7 +1,8 @@
 import SwiftData
 import SwiftUI
 
-struct ResidentSettings: View {
+/// 聚焦区常驻页：增改习惯、周期与分类，含停用项。
+struct ResidentsPage: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @State private var draft = ""
@@ -11,50 +12,61 @@ struct ResidentSettings: View {
     }
 
     var body: some View {
-        Section {
-            if items.isEmpty {
-                Text("settings.residents.empty")
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-            ForEach(items, id: \.id) { routine in
-                ResidentSettingsRow(routine: routine)
-            }
-            addRow
-        } header: {
-            Text("settings.residents")
-        } footer: {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("tab.residents")
+                .font(.system(size: 16, weight: .regular, design: .serif).italic())
+                .foregroundStyle(DaybookTheme.ink)
             Text("settings.residents.hint")
+                .font(.system(size: 12))
+                .foregroundStyle(DaybookTheme.muted)
+            addRow
+            if items.isEmpty {
+                DaybookEmptyState(title: "settings.residents.empty", systemImage: "repeat")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 10) {
+                        ForEach(items, id: \.id) { routine in
+                            ResidentEditorRow(routine: routine)
+                        }
+                    }
+                }
+                .daybookScroll()
+            }
         }
+        .daybookPanel(minWidth: 480, minHeight: 480)
     }
 
     private var addRow: some View {
         HStack {
             TextField("resident.add", text: $draft)
+                .textFieldStyle(.plain)
                 .onSubmit(add)
             ComposerAddButton(
                 enabled: !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                 action: add
             )
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookTheme.hoverFill.opacity(0.75))
+        )
     }
 
     private func add() {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         let order = (routines.map(\.sortOrder).max() ?? -1) + 1
-        persist {
+        DayBoardMutations.persist {
             modelContext.insert(DailyRoutine(title: title, sortOrder: order))
             draft = ""
         }
     }
-
-    private func persist(_ work: () -> Void) {
-        work()
-        BoardEvents.changed()
-    }
 }
 
-private struct ResidentSettingsRow: View {
+private struct ResidentEditorRow: View {
     @Environment(\.locale) private var locale
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
@@ -68,47 +80,53 @@ private struct ResidentSettingsRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                TextField("settings.residents.rename", text: $titleDraft)
-                    .onSubmit(saveTitle)
-                Toggle("settings.residents.enabled", isOn: enabledBinding)
-                    .toggleStyle(.switch)
-                    .labelsHidden()
-                    .help("settings.residents.enabled")
-                RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
-            }
-            HStack(spacing: 8) {
-                WeekdayMaskChips(mask: routine.resolvedWeekdayMask, onToggle: toggleWeekday)
-                Spacer(minLength: 8)
-                timeControls
-            }
-            .font(.system(size: 12))
+            titleRow
+            scheduleRow
             ClassifyBitsEditor(
                 bits: routine.classifyBits,
                 projects: CatalogChoices.projects(projects),
-                tags: CatalogChoices.tags(tags),
+                tags: CatalogChoices.tags(tags, attachedIDs: routine.tagIDs),
                 onProject: { id in persist { routine.projectID = id } },
                 onToggleTag: { id in persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
                 onImportant: { value in persist { routine.isImportant = value } },
                 onUrgent: { value in persist { routine.isUrgent = value } }
             )
         }
-        .padding(.vertical, 4)
+        .padding(10)
+        .modernCard(cornerRadius: DaybookRadius.small)
         .onAppear { titleDraft = routine.title }
         .onChange(of: routine.title) { _, value in
             if titleDraft != value { titleDraft = value }
         }
         .popover(isPresented: $pickingTime) {
-            DatePicker(
-                "row.time",
-                selection: timeBinding,
-                displayedComponents: .hourAndMinute
-            )
-            .labelsHidden()
-            .padding(12)
-            .frame(minWidth: 180)
+            DatePicker("row.time", selection: timeBinding, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+                .padding(12)
+                .frame(minWidth: 180)
         }
         .confirmMoveToTrash($pendingTrash)
+    }
+
+    private var titleRow: some View {
+        HStack(spacing: 8) {
+            TextField("settings.residents.rename", text: $titleDraft)
+                .textFieldStyle(.plain)
+                .onSubmit(saveTitle)
+            Toggle("settings.residents.enabled", isOn: enabledBinding)
+                .toggleStyle(.switch)
+                .labelsHidden()
+                .help("settings.residents.enabled")
+            RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
+        }
+    }
+
+    private var scheduleRow: some View {
+        HStack(spacing: 8) {
+            WeekdayMaskChips(mask: routine.resolvedWeekdayMask, onToggle: toggleWeekday)
+            Spacer(minLength: 8)
+            timeControls
+        }
+        .font(.system(size: 12))
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -175,9 +193,7 @@ private struct ResidentSettingsRow: View {
 
     private func setRemind(_ minutes: Int?) {
         persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
-        if minutes != nil {
-            NotificationScheduler.shared.ensureAuthorization()
-        }
+        DayBoardMutations.requestReminderAccessIfNeeded(minutes)
     }
 
     private func toggleWeekday(_ weekday: Int) {
@@ -187,8 +203,7 @@ private struct ResidentSettingsRow: View {
     }
 
     private func persist(_ work: () -> Void) {
-        work()
-        BoardEvents.changed()
+        DayBoardMutations.persist(work)
     }
 }
 
