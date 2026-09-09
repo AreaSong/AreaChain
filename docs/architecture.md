@@ -7,7 +7,7 @@
 ```text
 AreaChain.xcodeproj
 AreaChain/                 应用 target 主源码
-AreaChainTests/            测试 target，目录镜像应用层结构
+AreaChainTests/            测试 target；以 Domain / Services 为主，另有 Theme 与 E2E
 scripts/                   本机 Debug 编译、安装与测试脚本
 docs/                      产品、架构、功能与用法文档
 README.md                  项目快速入门
@@ -32,7 +32,7 @@ AreaChain/
     Quadrant/     四象限（工作台 tab）
     Gantt/        当月单日色块安排（工作台 tab）
     Diary/        灵感手记卡片流（多维标签、密码虚化、置顶）
-    Attachments/  附件中心（工作台 tab）
+    Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
     Search/       跨天搜索（工作台 tab）
     Settings/     设置（习惯、项目树、标签、偏好）
     Trash/        回收站（工作台 tab）
@@ -65,14 +65,14 @@ AreaChain/
 
 1. **CloudKit 预备**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置里 iCloud 开关写入 `wantsICloudSync`，`SettingsView` 不按 `CloudKitAvailability.isConfigured` 禁用，`Persistence` 也不读该偏好，打开不改本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。父项软删时，当时活着的子任务与附件共用同一戳。附件中心 `AttachmentClusters.grouped(..., liveOwnerIDs:)` 只显示活父项；父项未知或已删时回收站 `canRestore == false`。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签（种类文案「任务 / 常驻 / 日记 / 附件 / 项目 / 标签」）。父项软删时，当时活着的子任务与附件共用同一戳。附件页 `AttachmentClusters.grouped(..., liveOwnerIDs:)` 只显示活父项；父项未知或已删时回收站 `canRestore == false`。
 4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
 5. **快照日期**：JSON 使用带小数秒的 ISO8601，旧备份整秒日期仍能导入。
 
 ## 关键领域算法
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
-- **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
+- **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
 - **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
@@ -85,6 +85,6 @@ AreaChain/
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉任务选中；同一 tab 再调也会清掉项目/标签过滤（浮层 Return 才能回到今日清单），但 `revealTab` 在同 tab 时保留当前检查器选中。离开手记 tab 会清掉手记滚动高亮。底栏「工作台」走 `revealWorkspace()`：只前置当前 tab，不切回今日。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中。离开「灵感手记」tab 会清掉手记滚动高亮。底栏「工作台」走 `revealWorkspace()`：只前置当前 tab，不切回「任务」页。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
 3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍静态存在，公开路径不再 `show()`；未创建窗口时 `hostedWindow` 为 nil，不参与 accessory 判断。`AppWindows.panelWindows` 实际只会看到已 `show()` 的工作台窗。
