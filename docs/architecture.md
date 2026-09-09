@@ -77,7 +77,7 @@ AreaChain/
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
-- **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。
+- **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。习惯命中的 `dayKey` 是从今天起下一个排定日（今天该打则用今天）。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 
