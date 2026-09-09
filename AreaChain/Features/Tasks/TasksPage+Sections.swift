@@ -88,28 +88,19 @@ extension TasksPage {
     }
 
     func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
-        TaskRow(
-            title: todo.title,
+        TaskRowFactory.todo(
+            todo,
             isDone: false,
-            note: note,
-            remindMinutes: todo.remindMinutes,
             todayKey: todayKey,
-            currentDayKey: todo.dayKey,
-            onToggle: { DayBoardMutations.toggleTodo(todo) },
-            onDelete: { deleteTodo(todo) },
-            onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
-            onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
-            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) },
-            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .todo,
-                ownerID: todo.id,
-                items: attachments,
-                context: modelContext
-            ),
-            notes: todo.notes,
+            projects: projects,
+            tags: tags,
+            attachments: attachments,
+            context: modelContext,
             isSelected: highlightedTaskID == todo.id,
-            onSelect: { inspectLeftover(todo.id, dayKey: todo.dayKey) }
+            note: note,
+            includeSubtasks: false,
+            onSelect: { inspectLeftover(todo.id, dayKey: todo.dayKey) },
+            onDelete: { deleteTodo(todo) }
         )
     }
 
@@ -118,70 +109,39 @@ extension TasksPage {
         if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
             leftoverTodoRow(todo)
         } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
-            let streakResult = HabitStreakLogic.calculate(
-                routine: routine.snapshot,
-                checks: snapshots.1,
-                todayKey: todayKey
-            )
-            TaskRow(
-                title: routine.title,
+            TaskRowFactory.routine(
+                routine,
                 isDone: false,
-                isResident: true,
-                streak: streakResult.currentStreak,
-                remindMinutes: routine.remindMinutes,
+                todayKey: todayKey,
+                checkDayKey: yesterdayKey,
+                checks: checks,
+                context: modelContext,
+                locale: locale,
+                projects: projects,
+                tags: tags,
+                attachments: attachments,
+                isSelected: highlightedTaskID == routine.id,
+                usesDefaultNote: false,
                 onToggle: { completeYesterday(item) },
+                onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
                 onDelete: {
                     pendingTrash = PendingTrash(title: routine.title) {
                         DayBoardMutations.trashRoutine(routine)
                     }
                 },
-                onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
                 onSkip: {
                     DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
-                },
-                onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
-                onDisable: {
-                    DayBoardMutations.setRoutineEnabled(
-                        routine,
-                        enabled: false,
-                        todayKey: todayKey,
-                        checks: checks,
-                        context: modelContext
-                    )
-                },
-                onEnable: {
-                    DayBoardMutations.setRoutineEnabled(
-                        routine,
-                        enabled: true,
-                        todayKey: todayKey,
-                        checks: checks,
-                        context: modelContext
-                    )
-                },
-                isImportant: routine.isImportant,
-                isUrgent: routine.isUrgent,
-                classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
-                attachments: CatalogChoices.attachments(
-                    ownerKind: .routine,
-                    ownerID: routine.id,
-                    items: attachments,
-                    context: modelContext
-                ),
-                notes: routine.notes,
-                isSelected: highlightedTaskID == routine.id,
-                onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
-                isEnabled: routine.isEnabled
+                }
             )
         } else {
-            TaskRow(
-                title: item.title,
-                isDone: false,
+            TaskRowFactory.leftoverFallback(
+                item: item,
                 todayKey: todayKey,
-                currentDayKey: yesterdayKey,
-                onToggle: { completeYesterday(item) },
-                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil,
+                yesterdayKey: yesterdayKey,
                 isSelected: highlightedTaskID == item.id,
-                onSelect: { inspectLeftover(item.id, dayKey: yesterdayKey) }
+                onToggle: { completeYesterday(item) },
+                onSelect: { inspectLeftover(item.id, dayKey: yesterdayKey) },
+                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
             )
         }
     }

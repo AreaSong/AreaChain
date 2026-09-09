@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 现代 Pro 风格任务检查器抽屉容器：组织子组件，支持待办与习惯双形态
+/// 任务检查器抽屉：待办与习惯共用分区。
 struct TaskDetailDrawer: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -51,10 +51,10 @@ struct TaskDetailDrawer: View {
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.5))
             Text("drawer.empty.title")
-                .font(.system(size: 14, weight: .medium))
+                .font(DaybookType.body.weight(.medium))
                 .foregroundStyle(DaybookTheme.muted)
             Text("drawer.empty.hint")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.muted.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
@@ -289,7 +289,7 @@ struct TaskDetailDrawer: View {
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.attachments.title \(taskAttachments.count)")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Button {

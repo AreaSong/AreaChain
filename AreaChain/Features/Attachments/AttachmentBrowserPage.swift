@@ -11,10 +11,12 @@ struct AttachmentBrowserPage: View {
     @State private var pendingTrash: PendingTrash?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("attachments.hint")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted)
+        DaybookPage(
+            title: "window.attachments",
+            subtitle: "attachments.hint",
+            minWidth: 440,
+            minHeight: 480
+        ) {
             if clusters.isEmpty {
                 DaybookEmptyState(title: "attachments.empty", systemImage: "photo")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -29,7 +31,6 @@ struct AttachmentBrowserPage: View {
                 .daybookScroll()
             }
         }
-        .daybookPanel(minWidth: 440, minHeight: 480)
         .confirmMoveToTrash($pendingTrash)
         .popover(item: $preview) { item in
             previewBody(item)
@@ -46,7 +47,7 @@ struct AttachmentBrowserPage: View {
     private func clusterBlock(_ cluster: AttachmentCluster) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(ownerTitle(cluster))
-                .font(.system(size: 12, weight: .semibold))
+                .font(DaybookType.subtitle.weight(.semibold))
                 .foregroundStyle(DaybookTheme.ink)
             Text(kindLabel(cluster.kind))
                 .font(.system(size: 10))

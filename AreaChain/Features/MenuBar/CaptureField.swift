@@ -34,37 +34,9 @@ struct CaptureField: View {
                     ComposerAddButton(title: "capture.diary", enabled: canSubmit, emphasized: false, action: onDiary)
                 }
             }
-            parsedTokensBar
+            CaptureTokenBar(text: text)
         }
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: text)
+        .animation(DaybookMotion.interactive, value: text)
         .daybookHideInputChrome()
-    }
-
-    private var parsedTokensBar: some View {
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        return Group {
-            if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                HStack(spacing: 6) {
-                    if let time = parsed.timeLabel {
-                        PillBadge(title: L10n.format("workspace.remind.suffix", locale: locale, time), icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
-                    }
-                    if let tag = parsed.tagName {
-                        PillBadge(title: "#\(tag)", icon: "tag.fill", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo), isSelected: true)
-                    }
-                    if let priority = parsed.priorityLabel {
-                        PillBadge(
-                            title: L10n.string(String.LocalizationValue(stringLiteral: priority), locale: locale),
-                            icon: "exclamationmark.circle.fill",
-                            color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
-                            isSelected: true
-                        )
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 4)
-                .padding(.top, 1)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
     }
 }

@@ -66,7 +66,7 @@ struct DiaryNoteCard: View {
                 }
 
                 Text(formatDate(entry.createdAt))
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .font(DaybookType.caption.monospaced())
                     .foregroundStyle(DaybookTheme.muted)
 
                 if isPasswordType {
@@ -169,7 +169,7 @@ struct DiaryNoteCard: View {
         if isEditing {
             VStack(alignment: .trailing, spacing: 6) {
                 TextEditor(text: $editDraft)
-                    .font(.system(size: 13))
+                    .font(DaybookType.body)
                     .frame(minHeight: 50)
                     .scrollContentBackground(.hidden)
                     .padding(4)
@@ -226,8 +226,8 @@ struct DiaryNoteCard: View {
             }
             .padding(.vertical, 4)
         } else {
-            Text(entry.text)
-                .font(.system(size: 13))
+                Text(entry.text)
+                    .font(DaybookType.body)
                 .lineSpacing(3.5)
                 .foregroundStyle(DaybookTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)

@@ -99,11 +99,11 @@ struct DiaryPage: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Text("diary.page.title")
-                        .font(.system(size: 20, weight: .bold))
+                        .font(DaybookType.title)
                         .foregroundStyle(DaybookTheme.ink)
 
                     Text("diary.page.count \(filteredEntries.count)")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.muted)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
@@ -113,7 +113,7 @@ struct DiaryPage: View {
                 }
 
                 Text("diary.page.subtitle")
-                    .font(.system(size: 11.5))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
 
@@ -125,7 +125,7 @@ struct DiaryPage: View {
                     .foregroundStyle(DaybookTheme.muted)
                 TextField("diary.search.placeholder", text: $searchQuery)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 12))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.ink)
                 if !searchQuery.isEmpty {
                     Button {
@@ -216,14 +216,14 @@ struct DiaryPage: View {
             ZStack(alignment: .topLeading) {
                 if draftText.isEmpty {
                     Text("diary.composer.placeholder")
-                        .font(.system(size: 12.5))
+                        .font(DaybookType.subtitle)
                         .foregroundStyle(DaybookTheme.muted.opacity(0.7))
                         .padding(.top, 8)
                         .padding(.leading, 8)
                 }
 
                 TextEditor(text: $draftText)
-                    .font(.system(size: 13))
+                    .font(DaybookType.body)
                     .foregroundStyle(DaybookTheme.ink)
                     .frame(minHeight: 48, maxHeight: 100)
                     .scrollContentBackground(.hidden)

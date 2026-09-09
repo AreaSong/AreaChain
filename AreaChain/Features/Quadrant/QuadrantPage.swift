@@ -22,7 +22,7 @@ struct QuadrantPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        DaybookPage(minWidth: 560, minHeight: 480) {
             DaybookPeriodBar(
                 title: DayKey.displayName(selectedKey, calendar: calendar, locale: locale),
                 onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar) },
@@ -30,7 +30,7 @@ struct QuadrantPage: View {
                 onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
             )
             Text("quadrant.hint")
-                .font(.system(size: 11))
+                .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookTheme.muted)
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(QuadrantSlot.allCases) { slot in
@@ -38,7 +38,6 @@ struct QuadrantPage: View {
                 }
             }
         }
-        .daybookPanel(minWidth: 560, minHeight: 480)
     }
 
     private func cell(_ slot: QuadrantSlot) -> some View {
@@ -46,7 +45,7 @@ struct QuadrantPage: View {
         let isTargeted = dropSlot == slot
         return VStack(alignment: .leading, spacing: 6) {
             Text(LocalizedStringKey(slot.titleKeyName))
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.section)
                 .foregroundStyle(DaybookTheme.stamp)
             if rows.isEmpty {
                 DaybookEmptyState(title: "quadrant.empty", compact: true)
@@ -66,7 +65,7 @@ struct QuadrantPage: View {
         .dropDestination(for: String.self) { items, _ in
             apply(items, to: slot)
         } isTargeted: { hovering in
-            withAnimation(ModernMotion.snappy) {
+            withAnimation(DaybookMotion.snappy) {
                 dropSlot = hovering ? slot : (dropSlot == slot ? nil : dropSlot)
             }
         }
@@ -126,7 +125,7 @@ private struct QuadrantChip: View {
                         .accessibilityLabel("row.resident")
                 }
                 Text(title)
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.ink)
                     .lineLimit(2)
                 Spacer(minLength: 0)

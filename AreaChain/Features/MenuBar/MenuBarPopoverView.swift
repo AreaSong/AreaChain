@@ -168,10 +168,10 @@ struct MenuBarPopoverView: View {
         HStack(alignment: .center, spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
                 Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(.system(size: 14, weight: .bold))
+                    .font(DaybookType.body.weight(.semibold))
                     .foregroundStyle(DaybookTheme.ink)
                 Text(headerSubtitle)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.muted)
             }
 

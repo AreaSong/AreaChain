@@ -31,4 +31,9 @@ struct DaybookContrastTests {
         #expect(DaybookTheme.workspaceSize.width == 960)
         #expect(DaybookTheme.workspaceSize.height == 640)
     }
+
+    @Test func pagePaddingUsesSixteenPoints() {
+        #expect(DaybookSpacing.page == 16)
+        #expect(DaybookSpacing.lg == 16)
+    }
 }

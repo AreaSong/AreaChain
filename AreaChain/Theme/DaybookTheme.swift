@@ -107,7 +107,7 @@ enum DaybookTheme {
     static let space: CGFloat = 8
 }
 
-// MARK: - Modern Design Tokens
+// MARK: - Layout tokens
 
 enum DaybookRadius {
     static let xs: CGFloat = 4
@@ -125,6 +125,19 @@ enum DaybookSpacing {
     static let md: CGFloat = 12
     static let lg: CGFloat = 16
     static let xl: CGFloat = 24
+    static let page: CGFloat = 16
+}
+
+enum DaybookType {
+    static let title: Font = .system(size: 16, weight: .regular, design: .serif).italic()
+    static let subtitle: Font = .system(size: 12)
+    static let body: Font = .system(size: 13)
+    static let caption: Font = .system(size: 11, weight: .medium)
+    static let badge: Font = .system(size: 10, weight: .medium)
+    static let label: Font = .system(size: 10, weight: .semibold)
+    static let entity: Font = .system(size: 17, weight: .medium)
+    static let headline: Font = .system(size: 16, weight: .semibold)
+    static let section: Font = .system(size: 11, weight: .semibold)
 }
 
 enum DaybookShadow {
@@ -148,58 +161,6 @@ extension NSColor {
     }
 }
 
-/// 现代 Pro 纯净表面，安全替换旧有的繁琐横线笔记本纹理
-struct RuledPaper: View {
-    var body: some View {
-        Color.clear
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
-    }
-}
-
-struct InkCheckbox: View {
-    var isDone: Bool
-    var action: () -> Void
-    @State private var hovering = false
-
-    var body: some View {
-        Button(action: action) {
-            ZStack {
-                Circle()
-                    .strokeBorder(
-                        isDone
-                            ? DaybookTheme.stamp
-                            : (hovering ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.ink.opacity(0.28)),
-                        lineWidth: 1.5
-                    )
-                    .background(
-                        Circle()
-                            .fill(isDone ? DaybookTheme.stamp : Color.clear)
-                    )
-                    .frame(width: 16, height: 16)
-
-                if isDone {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(
-                            Color.daybook(
-                                swatch: DaybookSwatch.checkmarkLight,
-                                dark: DaybookSwatch.checkmarkDark
-                            )
-                        )
-                        .accessibilityHidden(true)
-                }
-            }
-            .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-            .contentShape(Circle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovering = $0 }
-        .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
-        .accessibilityAddTraits(isDone ? [.isSelected] : [])
-    }
-}
-
 struct SectionStamp: View {
     var title: LocalizedStringKey
     var icon: String? = nil
@@ -209,11 +170,11 @@ struct SectionStamp: View {
         HStack(spacing: 4) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.badge.weight(.semibold))
                     .foregroundStyle(DaybookTheme.stamp)
             }
             Text(title)
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.section)
                 .tracking(0.5)
                 .foregroundStyle(DaybookTheme.muted)
             if let count {
@@ -236,7 +197,7 @@ struct RowIconButton: View {
     var body: some View {
         Button(role: role, action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 12, weight: .semibold))
+                .font(DaybookType.subtitle.weight(.semibold))
                 .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                 .contentShape(Rectangle())
         }
@@ -254,7 +215,7 @@ struct ComposerAddButton: View {
 
     var body: some View {
         Button(title, action: action)
-            .font(.system(size: 12, weight: .semibold))
+            .font(DaybookType.subtitle.weight(.semibold))
             .buttonStyle(DaybookQuietButtonStyle(prominent: emphasized && enabled))
             .disabled(!enabled)
             .opacity(enabled ? 1 : 0.45)

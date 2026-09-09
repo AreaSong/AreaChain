@@ -61,7 +61,7 @@ struct TaskDetailTitleEditor: View {
             if isEditing {
                 TextField("drawer.title.placeholder", text: $draft)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DaybookType.headline)
                     .foregroundStyle(DaybookTheme.ink)
                     .focused($isFocused)
                     .onSubmit(save)
@@ -82,7 +82,7 @@ struct TaskDetailTitleEditor: View {
                     )
             } else {
                 Text(title.isEmpty ? L10n.string("drawer.untitled", locale: locale) : title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(DaybookType.headline)
                     .foregroundStyle(DaybookTheme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -120,7 +120,7 @@ struct TaskDetailMetadataSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("drawer.meta.title")
-                .font(.system(size: 10, weight: .semibold))
+                .font(DaybookType.label)
                 .foregroundStyle(DaybookTheme.muted)
 
             VStack(alignment: .leading, spacing: 4) {

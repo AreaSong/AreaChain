@@ -12,14 +12,8 @@ struct ResidentsPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("tab.residents")
-                .font(.system(size: 16, weight: .regular, design: .serif).italic())
-                .foregroundStyle(DaybookTheme.ink)
-            Text("residents.hint")
-                .font(.system(size: 12))
-                .foregroundStyle(DaybookTheme.muted)
-            addRow
+        DaybookPage(title: "tab.residents", subtitle: "residents.hint") {
+            DaybookComposer(text: $draft, placeholder: "resident.add", onSubmit: add)
             if items.isEmpty {
                 DaybookEmptyState(title: "residents.empty", systemImage: "repeat")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -37,25 +31,6 @@ struct ResidentsPage: View {
                 .scrollContentBackground(.hidden)
             }
         }
-        .daybookPanel(minWidth: 480, minHeight: 480)
-    }
-
-    private var addRow: some View {
-        HStack {
-            TextField("resident.add", text: $draft)
-                .textFieldStyle(.plain)
-                .onSubmit(add)
-            ComposerAddButton(
-                enabled: !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                action: add
-            )
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.hoverFill.opacity(0.75))
-        )
     }
 
     private func add() {
@@ -121,7 +96,7 @@ private struct ResidentEditorRow: View {
                 navigation.inspectTask(routine.id)
             } label: {
                 Image(systemName: "sidebar.trailing")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(DaybookType.subtitle.weight(.semibold))
                     .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
                     .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
             }
@@ -137,7 +112,7 @@ private struct ResidentEditorRow: View {
             Spacer(minLength: 8)
             timeControls
         }
-        .font(.system(size: 12))
+        .font(DaybookType.subtitle)
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -232,7 +207,7 @@ private struct WeekdayMaskChips: View {
                     onToggle(weekday)
                 } label: {
                     Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DaybookType.caption.weight(.semibold))
                         .frame(width: 24, height: 24)
                         .background(on ? DaybookTheme.stamp.opacity(0.38) : DaybookTheme.rule.opacity(0.45))
                         .foregroundStyle(on ? DaybookTheme.ink : DaybookTheme.muted)

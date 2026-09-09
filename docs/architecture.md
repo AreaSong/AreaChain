@@ -36,7 +36,7 @@ AreaChain/
     Search/       跨天搜索（工作台 tab）
     Settings/     设置（外观、启动、捕获、通知、日历、iCloud、数据）
     Trash/        回收站（工作台 tab）
-  Theme/          色板、印章质感、动效、确认组件
+  Theme/          色板、DaybookType 字号、DaybookPage 页壳、动效、确认组件
 ```
 
 独立 `*StandaloneView` 是工作台 tab 的包装，不是独立窗口。公开入口一律 `openWorkspace(tab:)`，只有 `PanelWindowController.workspace` 会 `show()`。
@@ -46,7 +46,7 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：色彩、圆角、阴影、无障碍动效。
+- **Theme**：色彩、圆角、阴影、无障碍动效、页壳 `DaybookPage` 与字号令牌 `DaybookType`。
 
 ## 数据模型设计 (SwiftData 8 张表)
 

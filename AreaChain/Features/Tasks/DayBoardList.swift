@@ -3,8 +3,8 @@ import SwiftData
 import SwiftUI
 
 struct DayBoardList: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.locale) private var locale
+    @Environment(\.modelContext) var modelContext
+    @Environment(\.locale) var locale
 
     var dayKey: String
     var todayKey: String
@@ -23,10 +23,11 @@ struct DayBoardList: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
-    @State private var showCompleted = false
-    @State private var pendingTrash: PendingTrash?
-    @State private var editingTaskID: UUID? = nil
-    @State private var hostWindow: NSWindow?
+    @State var showCompleted = false
+    @State var pendingTrash: PendingTrash?
+    @State var editingTaskID: UUID? = nil
+    @State var hostWindow: NSWindow?
+    @State var keyMonitor: Any? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -56,10 +57,10 @@ struct DayBoardList: View {
                 if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {
                     HStack(spacing: 6) {
                         Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12))
+                            .font(DaybookType.subtitle)
                             .foregroundStyle(DaybookTheme.stamp)
                         Text("header.done")
-                            .font(.system(size: 11, weight: .medium))
+                            .font(DaybookType.caption)
                             .foregroundStyle(DaybookTheme.muted)
                     }
                     .padding(.vertical, 6)
@@ -142,218 +143,18 @@ struct DayBoardList: View {
         }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
-        .animation(ModernMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
-        .animation(ModernMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
+        .animation(DaybookMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
+        .animation(DaybookMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
     }
 
-    @State private var keyMonitor: Any? = nil
-
-    private func setupKeyMonitor() {
-        guard focusedTaskID != nil else { return }
-        guard keyMonitor == nil else { return }
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            guard self.shouldHandle(event) else { return event }
-
-            let firstResponder = NSApp.keyWindow?.firstResponder
-            let isTextViewEditing = (firstResponder as? NSTextView)?.isEditable == true
-
-            if isTextViewEditing {
-                if event.keyCode == 53 {
-                    BoardSelection.shared.markEscapeCancelsEdits()
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                    return nil
-                }
-                if event.keyCode == 125,
-                   let tv = firstResponder as? NSTextView,
-                   tv.string.isEmpty,
-                   !WorkspaceNavigation.shared.isInspectorPresented
-                {
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                    navigateSelection(delta: 1)
-                    return nil
-                }
-                return event
-            }
-
-            switch event.keyCode {
-            case 125:
-                navigateSelection(delta: 1)
-                return nil
-            case 126:
-                navigateSelection(delta: -1)
-                return nil
-            case 49:
-                if let id = focusedTaskID?.wrappedValue {
-                    toggleSelected(id: id)
-                    return nil
-                }
-            case 36:
-                if let id = focusedTaskID?.wrappedValue {
-                    inspectSelected(id: id)
-                    return nil
-                }
-            case 51:
-                if let id = focusedTaskID?.wrappedValue {
-                    deleteSelected(id: id)
-                    return nil
-                }
-            case 14:
-                let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
-                guard mods.isEmpty else { break }
-                if let id = focusedTaskID?.wrappedValue {
-                    editingTaskID = id
-                    return nil
-                }
-            case 53:
-                if WorkspaceNavigation.shared.isInspectorPresented,
-                   hostWindow === PanelWindowController.workspace.hostedWindow
-                {
-                    WorkspaceNavigation.shared.isInspectorPresented = false
-                    return nil
-                }
-                if focusedTaskID?.wrappedValue != nil {
-                    focusedTaskID?.wrappedValue = nil
-                    onReturnToInput?()
-                    return nil
-                }
-            default:
-                break
-            }
-            return event
-        }
-    }
-
-    private func shouldHandle(_ event: NSEvent) -> Bool {
-        let mine = hostWindow
-        let eventWindow = event.window
-        if let mine, let eventWindow {
-            return eventWindow === mine
-        }
-        return mine != nil && NSApp.keyWindow === mine
-    }
-
-    private func tearDownKeyMonitor() {
-        if let monitor = keyMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyMonitor = nil
-        }
-    }
-
-    private func navigateSelection(delta: Int) {
-        let ids = orderedVisibleIDs
-        guard !ids.isEmpty else { return }
-        if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
-            let nextIdx = idx + delta
-            if nextIdx >= 0 && nextIdx < ids.count {
-                let nextID = ids[nextIdx]
-                focusedTaskID?.wrappedValue = nextID
-                BoardSelection.shared.inspectBoard(dayKey)
-            } else if nextIdx < 0 {
-                focusedTaskID?.wrappedValue = nil
-                onReturnToInput?()
-            }
-        } else {
-            let nextID = delta >= 0 ? ids.first : ids.last
-            focusedTaskID?.wrappedValue = nextID
-            if nextID != nil {
-                BoardSelection.shared.inspectBoard(dayKey)
-            }
-        }
-    }
-
-    private func mappedDayKey(for id: UUID) -> String {
-        dayKeyForID?(id) ?? dayKey
-    }
-
-    private func checkDay(for id: UUID) -> String {
-        BoardFocusDay.checkDay(
-            inspecting: BoardSelection.shared.inspectingDayKey,
-            mapped: mappedDayKey(for: id),
-            listDayKey: dayKey
-        )
-    }
-
-    private var orderedVisibleIDs: [UUID] {
-        var ids: [UUID] = []
-        ids.append(contentsOf: openTodosList.map(\.id))
-        ids.append(contentsOf: openRoutinesList.map(\.id))
-        if showCompleted {
-            ids.append(contentsOf: doneItemsList.map(\.id))
-        }
-        return ids
-    }
-
-    private func toggleSelected(id: UUID) {
-        let checkOn = checkDay(for: id)
-        if let todo = todos.first(where: { $0.id == id }) {
-            DayBoardMutations.toggleTodo(todo)
-        } else if let routine = routines.first(where: { $0.id == id }) {
-            DayBoardMutations.toggleRoutine(
-                routine,
-                on: checkOn,
-                checks: checks,
-                context: modelContext
-            )
-        }
-        let ids = orderedVisibleIDs
-        guard let idx = ids.firstIndex(of: id), !showCompleted else { return }
-        if idx + 1 < ids.count {
-            focusedTaskID?.wrappedValue = ids[idx + 1]
-            BoardSelection.shared.inspectBoard(dayKey)
-        } else if idx > 0 {
-            focusedTaskID?.wrappedValue = ids[idx - 1]
-            BoardSelection.shared.inspectBoard(dayKey)
-        }
-    }
-
-    private func deleteSelected(id: UUID) {
-        let ids = orderedVisibleIDs
-        if let idx = ids.firstIndex(of: id) {
-            if idx + 1 < ids.count {
-                focusedTaskID?.wrappedValue = ids[idx + 1]
-            } else if idx > 0 {
-                focusedTaskID?.wrappedValue = ids[idx - 1]
-            } else {
-                focusedTaskID?.wrappedValue = nil
-                onReturnToInput?()
-            }
-        }
-        if let todo = todos.first(where: { $0.id == id }) {
-            pendingTrash = PendingTrash(title: todo.title) {
-                DayBoardMutations.trashTodo(todo)
-            }
-            return
-        }
-        if let routine = routines.first(where: { $0.id == id }) {
-            pendingTrash = PendingTrash(title: routine.title) {
-                DayBoardMutations.trashRoutine(routine)
-            }
-        }
-    }
-
-    private func inspectSelected(id: UUID) {
-        revealCompletedIfNeeded(id)
-        BoardSelection.shared.inspectBoard(checkDay(for: id))
-        if let onInspect {
-            onInspect(id)
-            return
-        }
-        if dayKey == todayKey {
-            AppWindows.openWorkspace(tab: .today)
-        } else {
-            AppWindows.openWorkspace(tab: .calendar)
-        }
-        WorkspaceNavigation.shared.inspectTask(id)
-    }
-
-    private func selectTask(_ id: UUID) {
+    func selectTask(_ id: UUID) {
         focusedTaskID?.wrappedValue = id
         revealCompletedIfNeeded(id)
         BoardSelection.shared.inspectBoard(dayKey)
         onInspect?(id)
     }
 
-    private func expandIfHighlighted() {
+    func expandIfHighlighted() {
         if let highlightedTaskID {
             revealCompletedIfNeeded(highlightedTaskID)
         }
@@ -362,7 +163,7 @@ struct DayBoardList: View {
         }
     }
 
-    private func revealCompletedIfNeeded(_ id: UUID) {
+    func revealCompletedIfNeeded(_ id: UUID) {
         if doneItemsList.contains(where: { $0.id == id }) {
             showCompleted = true
         }
@@ -376,15 +177,15 @@ struct DayBoardList: View {
         (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
     }
 
-    private var openTodosList: [TodoItem] {
+    var openTodosList: [TodoItem] {
         filteredTodos(openTodos)
     }
 
-    private var openRoutinesList: [DailyRoutine] {
+    var openRoutinesList: [DailyRoutine] {
         filteredRoutines(openRoutines)
     }
 
-    private var doneItemsList: [BoardRow] {
+    var doneItemsList: [BoardRow] {
         sortedRows(filtered(doneRoutines.map(BoardRow.resident) + doneTodos.map(BoardRow.todo)))
     }
 
@@ -467,102 +268,51 @@ struct DayBoardList: View {
     }
 
     private func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
-        let skipped = DayBoardLogic.isRoutineSkipped(routine.snapshot, checks: snapshots.1, on: dayKey)
-        let streakResult = HabitStreakLogic.calculate(
-            routine: routine.snapshot,
-            checks: snapshots.1,
-            todayKey: todayKey
-        )
-        return TaskRow(
-            title: routine.title,
+        TaskRowFactory.routine(
+            routine,
             isDone: isDone,
-            isResident: true,
-            note: isDone ? ResidentNote.done(routine, skipped: skipped, locale: locale) : ResidentNote.days(routine, locale: locale),
-            streak: streakResult.currentStreak,
-            remindMinutes: routine.remindMinutes,
-            onToggle: { DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
+            todayKey: todayKey,
+            checkDayKey: dayKey,
+            checks: checks,
+            context: modelContext,
+            locale: locale,
+            projects: projects,
+            tags: tags,
+            attachments: attachments,
+            isSelected: isRowSelected(routine.id),
+            isExternalEditing: editingTaskID == routine.id,
+            onSelect: { selectTask(routine.id) },
+            onEndEditing: { editingTaskID = nil },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
-            onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
-            onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
-            onDisable: {
-                DayBoardMutations.setRoutineEnabled(
-                    routine,
-                    enabled: false,
-                    todayKey: todayKey,
-                    checks: checks,
-                    context: modelContext
-                )
-            },
-            onEnable: {
-                DayBoardMutations.setRoutineEnabled(
-                    routine,
-                    enabled: true,
-                    todayKey: todayKey,
-                    checks: checks,
-                    context: modelContext
-                )
-            },
-            isImportant: routine.isImportant,
-            isUrgent: routine.isUrgent,
-            classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .routine,
-                ownerID: routine.id,
-                items: attachments,
-                context: modelContext
-            ),
-            notes: routine.notes,
-            isSelected: isRowSelected(routine.id),
-            isExternalEditing: editingTaskID == routine.id,
-            onSelect: { selectTask(routine.id) },
-            onEndEditing: { editingTaskID = nil },
-            isEnabled: routine.isEnabled
+            onSkip: isDone ? nil : {
+                DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext)
+            }
         )
     }
 
     private func todoRow(_ todo: TodoItem, isDone: Bool) -> some View {
-        TaskRow(
-            title: todo.title,
+        TaskRowFactory.todo(
+            todo,
             isDone: isDone,
-            remindMinutes: todo.remindMinutes,
             todayKey: todayKey,
-            currentDayKey: todo.dayKey,
-            onToggle: { DayBoardMutations.toggleTodo(todo) },
+            projects: projects,
+            tags: tags,
+            attachments: attachments,
+            context: modelContext,
+            isSelected: isRowSelected(todo.id),
+            isExternalEditing: editingTaskID == todo.id,
+            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
+            onSelect: { selectTask(todo.id) },
+            onEndEditing: { editingTaskID = nil },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
                 }
-            },
-            onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
-            onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
-            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) },
-            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .todo,
-                ownerID: todo.id,
-                items: attachments,
-                context: modelContext
-            ),
-            notes: todo.notes,
-            subtasks: todo.subtasks
-                .filter { $0.deletedAt == nil }
-                .sorted(by: { $0.sortOrder < $1.sortOrder })
-                .compactMap { $0.snapshot },
-            onToggleSubtask: { subID in
-                if let sub = todo.subtasks.first(where: { $0.id == subID }) {
-                    DayBoardMutations.toggleSubtask(sub)
-                }
-            },
-            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
-            isSelected: isRowSelected(todo.id),
-            isExternalEditing: editingTaskID == todo.id,
-            onSelect: { selectTask(todo.id) },
-            onEndEditing: { editingTaskID = nil }
+            }
         )
     }
 }

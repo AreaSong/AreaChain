@@ -13,7 +13,7 @@ struct TaskDetailNotesView: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Label("drawer.notes.title", systemImage: "note.text")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(DaybookType.label)
                         .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 if !draft.isEmpty {
@@ -33,7 +33,7 @@ struct TaskDetailNotesView: View {
 
                 if draft.isEmpty && !isFocused {
                     Text("drawer.notes.placeholder")
-                        .font(.system(size: 11))
+                        .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.muted.opacity(0.5))
                         .padding(.horizontal, 8)
                         .padding(.vertical, 8)

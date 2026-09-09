@@ -69,7 +69,7 @@ struct WorkspaceBatchActionBar: View {
                 }
             },
             onClear: {
-                withAnimation(ModernMotion.interactive) {
+                withAnimation(DaybookMotion.interactive) {
                     navigation.clearSelection()
                 }
             },

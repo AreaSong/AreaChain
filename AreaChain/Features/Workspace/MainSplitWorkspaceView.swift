@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 import AppKit
 
-/// 现代 Pro 风格三栏大屏工作台
+/// 三栏工作台：侧栏、详情页与检查器抽屉。
 struct MainSplitWorkspaceView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable private var navigation = WorkspaceNavigation.shared
@@ -136,7 +136,7 @@ struct MainSplitWorkspaceView: View {
     private var addProjectSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(newProjectParentID == nil ? "sidebar.add.project" : "sidebar.add.child")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookTheme.ink)
             TextField("sidebar.sheet.project.name", text: $newProjectName)
                 .textFieldStyle(.roundedBorder)
@@ -154,7 +154,7 @@ struct MainSplitWorkspaceView: View {
                 .disabled(newProjectName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(16)
+        .padding(DaybookSpacing.page)
         .frame(width: 260)
     }
 
@@ -183,14 +183,14 @@ struct MainSplitWorkspaceView: View {
     private var addTagSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("sidebar.add.tag")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookTheme.ink)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: newTagName) { _, _ in tagCreateError = nil }
             if let tagCreateError {
                 Text(tagCreateError)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.destructive)
             }
             HStack {
@@ -217,232 +217,7 @@ struct MainSplitWorkspaceView: View {
                 .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        .padding(16)
+        .padding(DaybookSpacing.page)
         .frame(width: 260)
-    }
-}
-
-// MARK: - Workspace Today View
-
-struct WorkspaceTodayView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.locale) private var locale
-    private var dayClock: DayClock { DayClock.shared }
-
-    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
-    @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
-    @Query private var checks: [RoutineCheck]
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
-
-    @Bindable private var navigation = WorkspaceNavigation.shared
-    @State private var dayTick = Date()
-    @State private var draftText = ""
-    @FocusState private var composerFocused: Bool
-
-    private var todayKey: String {
-        _ = dayTick
-        return dayClock.todayKey
-    }
-
-    private var openTodosCount: Int {
-        todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && !$0.isDone }.count
-    }
-
-    private var completedTodosCount: Int {
-        todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && $0.isDone }.count
-    }
-
-    private var totalTodosCount: Int {
-        openTodosCount + completedTodosCount
-    }
-
-    private var progressRatio: Double {
-        guard totalTodosCount > 0 else { return completedTodosCount > 0 ? 1.0 : 0.0 }
-        return Double(completedTodosCount) / Double(totalTodosCount)
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            headerBar
-
-            workspaceComposer
-
-            TasksPage(
-                todayKey: todayKey,
-                yesterdayKey: dayClock.yesterdayKey,
-                routines: routines,
-                checks: checks,
-                todos: todos,
-                focusedTaskID: $navigation.selectedTaskID,
-                highlightedTaskID: navigation.selectedTaskID,
-                onInspect: { WorkspaceNavigation.shared.inspectTask($0) },
-                onReturnToInput: {
-                    navigation.selectedTaskID = nil
-                    composerFocused = true
-                }
-            )
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 20)
-        .padding(.bottom, 16)
-        .frame(minWidth: 480, minHeight: 480)
-        .background(DaybookTheme.paper.opacity(0.95))
-        .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
-            DayClock.shared.refresh()
-            dayTick = Date()
-        }
-    }
-
-    // MARK: - Header Bar
-
-    private var headerBar: some View {
-        HStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text("workspace.today.title")
-                    .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(DaybookTheme.ink)
-
-                Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-
-            Spacer()
-
-            Button {
-                navigation.revealTab(.residents)
-            } label: {
-                Label("tab.residents", systemImage: "repeat")
-                    .font(.system(size: 11, weight: .medium))
-                    .labelStyle(.titleAndIcon)
-            }
-            .buttonStyle(.plain)
-            .foregroundStyle(DaybookTheme.muted)
-            .help("workspace.residents.open")
-
-            if totalTodosCount > 0 {
-                HStack(spacing: 10) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(completedTodosCount >= totalTodosCount ? "workspace.progress.done" : "workspace.progress.label")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(DaybookTheme.muted)
-
-                        Text("\(completedTodosCount)/\(totalTodosCount)")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
-                            .foregroundStyle(completedTodosCount >= totalTodosCount ? DaybookTheme.stamp : DaybookTheme.ink)
-                    }
-
-                    DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)
-                }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .fill(DaybookTheme.hoverFill)
-                )
-            }
-        }
-    }
-
-    // MARK: - Workspace Composer
-
-    private var workspaceComposer: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 8) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(composerFocused ? DaybookTheme.stamp : DaybookTheme.muted)
-
-                DaybookTextField(
-                    text: $draftText,
-                    placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
-                    focus: $composerFocused,
-                    onSubmit: addTodo,
-                    onCommandReturn: {},
-                    allowsShiftNewline: false
-                )
-
-                if !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    Button(action: addTodo) {
-                        Image(systemName: "return")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(DaybookTheme.stamp)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                    .fill(DaybookTheme.stamp.opacity(0.12))
-                            )
-                    }
-                    .buttonStyle(.plain)
-                    .help("workspace.composer.help")
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(composerFocused ? DaybookTheme.surface : DaybookTheme.hoverFill.opacity(0.75))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(composerFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: composerFocused ? 1.4 : 0.8)
-            )
-
-            parsedTokensBar
-        }
-    }
-
-    private var parsedTokensBar: some View {
-        let parsed = NaturalLanguageParser.parseTaskCapture(draftText)
-        return Group {
-            if parsed.hasTokens && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                HStack(spacing: 6) {
-                    if let time = parsed.timeLabel {
-                        PillBadge(title: L10n.format("workspace.remind.suffix", locale: locale, time), icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
-                    }
-                    if let tag = parsed.tagName {
-                        PillBadge(title: "#\(tag)", icon: "tag.fill", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo), isSelected: true)
-                    }
-                    if let priority = parsed.priorityLabel {
-                        PillBadge(
-                            title: L10n.string(String.LocalizationValue(stringLiteral: priority), locale: locale),
-                            icon: "exclamationmark.circle.fill",
-                            color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
-                            isSelected: true
-                        )
-                    }
-                    Spacer(minLength: 0)
-                }
-                .padding(.horizontal, 4)
-                .padding(.top, 1)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
-    }
-
-    private func addTodo() {
-        let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let todo = TodoItem(
-            title: parsed.cleanTitle,
-            dayKey: todayKey,
-            remindMinutes: parsed.remindMinutes,
-            isImportant: parsed.isImportant,
-            isUrgent: parsed.isUrgent,
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
-            notes: parsed.notes
-        )
-        if let tagName = parsed.tagName,
-           let tag = DayBoardMutations.resolveTaskTag(named: tagName, among: tags, context: modelContext)
-        {
-            todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
-        }
-        modelContext.insert(todo)
-        draftText = ""
-        BoardEvents.changed()
-        DayBoardMutations.requestReminderAccessIfNeeded(parsed.remindMinutes)
     }
 }

@@ -19,7 +19,6 @@ struct CalendarStandaloneView: View {
             checks: checks,
             todos: todos
         )
-        .daybookPanel(minWidth: 420, minHeight: 560)
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()

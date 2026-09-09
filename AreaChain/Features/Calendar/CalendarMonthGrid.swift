@@ -82,7 +82,7 @@ struct CalendarMonthGrid: View {
             onDropTodo(id, key)
             return true
         } isTargeted: { hovering in
-            withAnimation(ModernMotion.snappy) {
+            withAnimation(DaybookMotion.snappy) {
                 dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
             }
         }

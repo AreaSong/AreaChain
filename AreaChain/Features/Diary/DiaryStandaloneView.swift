@@ -12,6 +12,8 @@ struct DiaryStandaloneView: View {
             showsComposer: true,
             usesSharedDiaryDay: true
         )
-        .daybookPanel(minWidth: 360, minHeight: 420)
+        .padding(DaybookSpacing.page)
+        .frame(minWidth: 360, maxWidth: .infinity, minHeight: 420, maxHeight: .infinity, alignment: .topLeading)
+        .background(DaybookTheme.paper.opacity(0.94))
     }
 }

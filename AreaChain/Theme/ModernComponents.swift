@@ -41,8 +41,8 @@ struct ModernCheckbox: View {
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
-        .animation(ModernMotion.snappy(reduceMotion), value: isDone)
-        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
+        .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
         .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
         .accessibilityAddTraits(isDone ? [.isSelected] : [])
     }
@@ -59,11 +59,11 @@ struct ModernCheckbox: View {
 
     private func handleTap() {
         if !reduceMotion {
-            withAnimation(ModernMotion.snappy) {
+            withAnimation(DaybookMotion.snappy) {
                 isAnimating = true
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                withAnimation(ModernMotion.snappy) {
+                withAnimation(DaybookMotion.snappy) {
                     isAnimating = false
                 }
             }
@@ -102,10 +102,10 @@ struct PillBadge: View {
         HStack(spacing: 3.5) {
             if let icon {
                 Image(systemName: icon)
-                    .font(.system(size: 9, weight: .medium))
+                    .font(DaybookType.badge)
             }
             Text(title)
-                .font(.system(size: 10.5, weight: .medium))
+                .font(DaybookType.badge)
                 .lineLimit(1)
         }
         .foregroundStyle(isSelected ? color : DaybookTheme.muted)
@@ -120,7 +120,7 @@ struct PillBadge: View {
                 .strokeBorder(borderStroke, lineWidth: 0.8)
         )
         .onHover { hovering = $0 }
-        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
     private var backgroundFill: Color {
@@ -281,7 +281,7 @@ struct ModernRowModifier: ViewModifier {
 struct ModernTaskTitle: View {
     var text: String
     var isDone: Bool
-    var font: Font = .system(size: 13, weight: .regular)
+    var font: Font = DaybookType.body
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -290,6 +290,6 @@ struct ModernTaskTitle: View {
             .font(font)
             .strikethrough(isDone, color: DaybookTheme.muted.opacity(0.8))
             .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
-            .animation(ModernMotion.interactive(reduceMotion), value: isDone)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
     }
 }

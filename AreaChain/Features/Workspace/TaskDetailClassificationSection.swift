@@ -14,7 +14,7 @@ struct TaskDetailProjectPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("drawer.project.title")
-                .font(.system(size: 10, weight: .semibold))
+                .font(DaybookType.label)
                 .foregroundStyle(DaybookTheme.muted)
 
             Menu {
@@ -71,7 +71,7 @@ struct TaskDetailTagSelector: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.tags.title")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Button {

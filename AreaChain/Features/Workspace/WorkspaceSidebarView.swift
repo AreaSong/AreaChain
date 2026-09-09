@@ -142,7 +142,7 @@ struct WorkspaceSidebarView: View {
                 .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .font(.system(size: 12.5))
+        .font(DaybookType.body)
     }
 
     private func projectRow(_ project: ProjectItem, depth: Int) -> some View {
@@ -262,7 +262,7 @@ struct WorkspaceSidebarView: View {
     private var renameSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("sidebar.rename")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookTheme.ink)
             TextField("sidebar.rename.name", text: $renameDraft)
                 .textFieldStyle(.roundedBorder)

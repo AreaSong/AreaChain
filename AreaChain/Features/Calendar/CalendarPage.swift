@@ -37,6 +37,9 @@ struct CalendarPage: View {
             wideLayout
             compactLayout
         }
+        .padding(DaybookSpacing.page)
+        .frame(minWidth: 420, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity, alignment: .topLeading)
+        .background(DaybookTheme.paper.opacity(0.94))
     }
 
     private var wideLayout: some View {
@@ -135,24 +138,12 @@ struct CalendarPage: View {
 
     private var selectedHeading: some View {
         Text(DayKey.displayName(selectedKey, calendar: calendar, locale: locale))
-            .font(.system(size: 12))
+            .font(DaybookType.subtitle)
             .foregroundStyle(DaybookTheme.muted)
     }
 
     private var composer: some View {
-        DaybookField {
-            HStack(spacing: 8) {
-                TextField("calendar.add", text: $draft)
-                    .textFieldStyle(.plain)
-                    .onSubmit(addTodo)
-                    .daybookHideInputChrome()
-                ComposerAddButton(enabled: canSubmit, action: addTodo)
-            }
-        }
-    }
-
-    private var canSubmit: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        DaybookComposer(text: $draft, placeholder: "calendar.add", onSubmit: addTodo)
     }
 
     private func addTodo() {

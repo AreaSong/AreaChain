@@ -44,7 +44,7 @@ struct TaskDetailSubtasksView: View {
     private var headerSection: some View {
         HStack {
             Label("drawer.subtasks.title", systemImage: "checklist")
-                .font(.system(size: 10, weight: .semibold))
+                .font(DaybookType.label)
                 .foregroundStyle(DaybookTheme.muted)
             Spacer()
             if totalCount > 0 {

@@ -10,10 +10,7 @@ struct SearchPage: View {
     @State private var query = ""
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("window.search")
-                .font(.system(size: 16, weight: .regular, design: .serif).italic())
-                .foregroundStyle(DaybookTheme.ink)
+        DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
             DaybookField {
                 TextField("search.placeholder", text: $query)
                     .textFieldStyle(.plain)
@@ -28,7 +25,6 @@ struct SearchPage: View {
                 results
             }
         }
-        .daybookPanel(minWidth: 420, minHeight: 480)
     }
 
     private var groups: [(dayKey: String, items: [BoardSearchHit])] {
@@ -49,7 +45,7 @@ struct SearchPage: View {
                 ForEach(groups, id: \.dayKey) { group in
                     VStack(alignment: .leading, spacing: 6) {
                         Text(DayKey.displayName(group.dayKey, locale: locale))
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(DaybookType.caption.weight(.semibold))
                             .foregroundStyle(DaybookTheme.muted)
                         ForEach(group.items) { hit in
                             hitRow(hit)
@@ -67,11 +63,11 @@ struct SearchPage: View {
         } label: {
             HStack(alignment: .top, spacing: 8) {
                 Text(kindLabel(hit.kind))
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.badge.weight(.semibold))
                     .foregroundStyle(DaybookTheme.stamp)
                     .frame(width: 36, alignment: .leading)
                 Text(hit.title)
-                    .font(.system(size: 13))
+                    .font(DaybookType.body)
                     .foregroundStyle(DaybookTheme.ink)
                     .multilineTextAlignment(.leading)
                     .lineLimit(3)

@@ -20,7 +20,7 @@ struct GanttPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        DaybookPage(minWidth: 640, minHeight: 420) {
             DaybookPeriodBar(
                 title: DayKey.monthTitle(monthKey, calendar: calendar, locale: locale),
                 onPrev: { monthKey = DayKey.shiftedMonth(monthKey, by: -1, calendar: calendar) },
@@ -30,7 +30,7 @@ struct GanttPage: View {
                     : { monthKey = todayKey }
             )
             Text("gantt.hint")
-                .font(.system(size: 11))
+                .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookTheme.muted)
             if bars.isEmpty && marks.isEmpty {
                 DaybookEmptyState(title: "gantt.empty", systemImage: "calendar")
@@ -58,7 +58,6 @@ struct GanttPage: View {
                 .daybookScroll()
             }
         }
-        .daybookPanel(minWidth: 640, minHeight: 420)
     }
 
     private var days: [String] {
@@ -97,7 +96,7 @@ struct GanttPage: View {
     private func todoRow(_ bar: GanttTodoBar) -> some View {
         HStack(spacing: 0) {
             Text(bar.title)
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.ink)
                 .lineLimit(1)
                 .help(bar.title)
@@ -126,7 +125,7 @@ struct GanttPage: View {
                     .foregroundStyle(DaybookTheme.stamp)
                     .accessibilityHidden(true)
                 Text(title)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.muted)
                     .lineLimit(1)
                     .help(title)

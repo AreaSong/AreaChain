@@ -37,27 +37,14 @@ struct TrashPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-            if items.isEmpty {
-                DaybookEmptyState(title: "trash.empty", systemImage: "trash")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            } else {
-                list
-            }
-        }
-        .daybookPanel(minWidth: 360, minHeight: 420)
-        .confirmPurge($pendingPurge)
-    }
-
-    private var header: some View {
-        HStack {
-            Text("trash.hint")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted)
-            Spacer()
+        DaybookPage(
+            title: "window.trash",
+            subtitle: "trash.hint",
+            minWidth: 360,
+            minHeight: 420
+        ) {
             Button("trash.empty.action") { confirmEmpty = true }
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
                 .buttonStyle(DaybookQuietButtonStyle(destructive: true))
                 .disabled(items.isEmpty)
                 .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
@@ -66,7 +53,15 @@ struct TrashPage: View {
                 } message: {
                     Text("alert.purge.all.message")
                 }
+        } content: {
+            if items.isEmpty {
+                DaybookEmptyState(title: "trash.empty", systemImage: "trash")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            } else {
+                list
+            }
         }
+        .confirmPurge($pendingPurge)
     }
 
     private var list: some View {
@@ -89,15 +84,15 @@ struct TrashPage: View {
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 Text(item.kindLabel)
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.badge.weight(.semibold))
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Text(ClockLabel.created(item.deletedAt, locale: locale))
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
             }
-            Text(item.title)
-                .font(.system(size: 13))
+                Text(item.title)
+                .font(DaybookType.body)
                 .foregroundStyle(DaybookTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 12) {
@@ -110,7 +105,7 @@ struct TrashPage: View {
                 }
                 .buttonStyle(DaybookQuietButtonStyle(destructive: true))
             }
-            .font(.system(size: 11))
+            .font(DaybookType.caption)
         }
         .padding(.vertical, 4)
     }

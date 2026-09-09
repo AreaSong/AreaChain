@@ -26,7 +26,7 @@ struct DaybookProgressRing: View {
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
-                .animation(ModernMotion.smooth(reduceMotion), value: progress)
+                .animation(DaybookMotion.smooth(reduceMotion), value: progress)
 
             Text("\(Int(round(progress * 100)))%")
                 .font(.system(size: 10, weight: .bold, design: .rounded))

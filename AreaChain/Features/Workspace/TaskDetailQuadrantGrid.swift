@@ -8,7 +8,7 @@ struct TaskDetailQuadrantGrid: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("drawer.quadrant.title")
-                .font(.system(size: 10, weight: .semibold))
+                .font(DaybookType.label)
                 .foregroundStyle(DaybookTheme.muted)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {

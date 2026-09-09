@@ -71,7 +71,7 @@ struct TasksPage: View {
                 .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
                 .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
                     if let newValue {
-                        withAnimation(ModernMotion.interactive) {
+                        withAnimation(DaybookMotion.interactive) {
                             scrollProxy.scrollTo(newValue, anchor: .center)
                         }
                     }
@@ -80,9 +80,9 @@ struct TasksPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .confirmMoveToTrash($pendingTrash)
-        .animation(ModernMotion.interactive, value: boardFilter)
-        .animation(ModernMotion.interactive, value: showUpcoming)
-        .animation(ModernMotion.interactive, value: showYesterday)
+        .animation(DaybookMotion.interactive, value: boardFilter)
+        .animation(DaybookMotion.interactive, value: showUpcoming)
+        .animation(DaybookMotion.interactive, value: showYesterday)
     }
 
     var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {

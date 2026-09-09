@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 现代 Pro 风格任务行组件：采用单向数据流架构，解耦状态快照与动作派发
+/// 任务行：只读状态快照加动作派发。
 struct TaskRow: View {
     let state: TaskRowState
     let dispatch: (TaskRowAction) -> Void
@@ -21,83 +21,6 @@ struct TaskRow: View {
     init(state: TaskRowState, dispatch: @escaping (TaskRowAction) -> Void) {
         self.state = state
         self.dispatch = dispatch
-    }
-
-    // MARK: - 向后兼容构造器 (保留现有外部调用的平滑迁移)
-
-    init(
-        title: String,
-        isDone: Bool,
-        isResident: Bool = false,
-        note: String? = nil,
-        streak: Int? = nil,
-        remindMinutes: Int? = nil,
-        todayKey: String? = nil,
-        currentDayKey: String? = nil,
-        weekdaysOnly: Bool? = nil,
-        onToggle: @escaping () -> Void,
-        onDelete: (() -> Void)? = nil,
-        onEdit: ((String) -> Void)? = nil,
-        onSkip: (() -> Void)? = nil,
-        onMoveToDay: ((String) -> Void)? = nil,
-        onRemindMinutes: ((Int?) -> Void)? = nil,
-        onWeekdaysOnly: ((Bool) -> Void)? = nil,
-        onDisable: (() -> Void)? = nil,
-        onEnable: (() -> Void)? = nil,
-        isImportant: Bool = false,
-        isUrgent: Bool = false,
-        classify: TaskClassifyContext? = nil,
-        attachments: TaskAttachmentContext? = nil,
-        notes: String? = nil,
-        subtasks: [SubtaskSnapshot] = [],
-        onToggleSubtask: ((UUID) -> Void)? = nil,
-        dragPayload: String? = nil,
-        isSelected: Bool = false,
-        isExternalEditing: Bool = false,
-        onSelect: (() -> Void)? = nil,
-        onEndEditing: (() -> Void)? = nil,
-        isEnabled: Bool? = nil
-    ) {
-        self.state = TaskRowState(
-            title: title,
-            isDone: isDone,
-            isResident: isResident,
-            note: note,
-            streak: streak,
-            remindMinutes: remindMinutes,
-            todayKey: todayKey,
-            currentDayKey: currentDayKey,
-            weekdaysOnly: weekdaysOnly,
-            isImportant: isImportant,
-            isUrgent: isUrgent,
-            classify: classify,
-            attachments: attachments,
-            notes: notes,
-            subtasks: subtasks,
-            dragPayload: dragPayload,
-            isSelected: isSelected,
-            isExternalEditing: isExternalEditing,
-            canSetRemind: onRemindMinutes != nil,
-            canSkip: onSkip != nil,
-            isEnabled: isEnabled
-        )
-        self.dispatch = { action in
-            switch action {
-            case .toggleDone: onToggle()
-            case .select: onSelect?()
-            case .editTitle(let newTitle): onEdit?(newTitle)
-            case .endEditing: onEndEditing?()
-            case .delete: onDelete?()
-            case .skip: onSkip?()
-            case .moveToDay(let day): onMoveToDay?(day)
-            case .setRemindMinutes(let min): onRemindMinutes?(min)
-            case .setWeekdaysOnly(let flag): onWeekdaysOnly?(flag)
-            case .setEnabled(let flag):
-                if flag { onEnable?() } else { onDisable?() }
-            case .toggleSubtask(let subtaskID):
-                onToggleSubtask?(subtaskID)
-            }
-        }
     }
 
     var body: some View {
@@ -142,8 +65,8 @@ struct TaskRow: View {
             dispatch(.select)
         }
         .onHover { hovering = $0 }
-        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
-        .animation(ModernMotion.interactive(reduceMotion), value: state.isSelected)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+        .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
             if let todayKey = state.todayKey {
@@ -174,7 +97,7 @@ struct TaskRow: View {
 
     private var residentMark: some View {
         Image(systemName: "repeat")
-            .font(.system(size: 10, weight: .bold))
+            .font(DaybookType.badge.weight(.bold))
             .foregroundStyle(DaybookTheme.stamp)
             .accessibilityLabel("row.resident")
             .help("row.resident")
@@ -187,7 +110,7 @@ struct TaskRow: View {
 
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.muted.opacity(0.85))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -195,13 +118,13 @@ struct TaskRow: View {
 
             if let note = state.note {
                 Text(note)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
             }
 
             if let source = state.classify?.sourceLabel, !source.isEmpty {
                 Text(source)
-                    .font(.system(size: 10))
+                    .font(DaybookType.badge)
                     .foregroundStyle(DaybookTheme.muted.opacity(0.75))
             }
 
@@ -274,7 +197,7 @@ struct TaskRow: View {
     private var editor: some View {
         TextField("row.edit.field", text: $draft)
             .textFieldStyle(.plain)
-            .font(.system(size: 13))
+            .font(DaybookType.body)
             .foregroundStyle(DaybookTheme.ink)
             .focused($editorFocused)
             .onSubmit(saveEdit)
@@ -342,7 +265,7 @@ extension TaskRow {
                 moreMenu
             }
         }
-        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
     private var moreMenu: some View {
@@ -353,7 +276,7 @@ extension TaskRow {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DaybookType.subtitle.weight(.semibold))
                 .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                 .contentShape(Rectangle())
         }

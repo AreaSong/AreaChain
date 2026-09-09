@@ -23,46 +23,29 @@ struct WorkspaceFilteredListView: View {
     @State private var pendingTrash: PendingTrash?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            headerBar
-            quickInput
+        DaybookPage(
+            titleText: project?.name ?? tag?.name,
+            titleStyle: .entity,
+            systemImage: project != nil ? "folder.fill" : "number",
+            minWidth: 480,
+            minHeight: 480
+        ) {
+            headerTrailing
+        } content: {
+            DaybookComposer(
+                text: $draftTitle,
+                placeholder: project != nil ? "filtered.add.project" : "filtered.add.tag",
+                onSubmit: addTask
+            )
             taskList
         }
-        .daybookPanel(minWidth: 480, minHeight: 480)
         .confirmMoveToTrash($pendingTrash)
     }
 
-    // MARK: - Header Bar
-
-    private var headerBar: some View {
+    private var headerTrailing: some View {
         HStack(spacing: 8) {
-            if let project {
-                Image(systemName: "folder.fill")
-                    .font(.system(size: 20))
-                    .foregroundStyle(DaybookTheme.stamp)
-                Text(project.name)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(DaybookTheme.ink)
-            } else if let tag {
-                Image(systemName: "number")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                Text(tag.name)
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(DaybookTheme.ink)
-            }
-            Spacer()
-            let openCount = Catalog.openCount(
-                todos: todos,
-                routines: routines,
-                checks: checks,
-                project: project,
-                tag: tag,
-                projects: projects,
-                dayKey: DayClock.shared.todayKey
-            )
             Text("filter.open.count \(openCount)")
-                .font(.system(size: 11, weight: .medium))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.muted)
 
             if canBatchSelect {
@@ -76,7 +59,7 @@ struct WorkspaceFilteredListView: View {
                     }
                 } label: {
                     Image(systemName: navigation.selectedTaskIDs.isEmpty ? "checklist" : "checklist.checked")
-                        .font(.system(size: 12))
+                        .font(DaybookType.subtitle)
                         .foregroundStyle(navigation.selectedTaskIDs.isEmpty ? DaybookTheme.muted : DaybookTheme.stamp)
                 }
                 .buttonStyle(.plain)
@@ -85,42 +68,16 @@ struct WorkspaceFilteredListView: View {
         }
     }
 
-    // MARK: - Quick Input
-
-    private var quickInput: some View {
-        HStack(spacing: 8) {
-            TextField(project != nil ? "filtered.add.project" : "filtered.add.tag", text: $draftTitle)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13))
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(DaybookTheme.cardSurface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
-                        )
-                )
-                .onSubmit(addTask)
-
-            Button(action: addTask) {
-                Image(systemName: "plus")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .frame(width: 28, height: 28)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(DaybookTheme.cardSurface)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                    .stroke(DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
-                            )
-                    )
-            }
-            .buttonStyle(.plain)
-            .disabled(draftTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        }
+    private var openCount: Int {
+        Catalog.openCount(
+            todos: todos,
+            routines: routines,
+            checks: checks,
+            project: project,
+            tag: tag,
+            projects: projects,
+            dayKey: DayClock.shared.todayKey
+        )
     }
 
     private func addTask() {
@@ -205,41 +162,20 @@ struct WorkspaceFilteredListView: View {
 
     private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
         let isBatchSelected = navigation.selectedTaskIDs.contains(todo.id)
-        return TaskRow(
-            title: todo.title,
+        return TaskRowFactory.todo(
+            todo,
             isDone: isDone,
-            remindMinutes: todo.remindMinutes,
             todayKey: DayClock.shared.todayKey,
-            currentDayKey: todo.dayKey,
-            onToggle: { DayBoardMutations.toggleTodo(todo) },
+            projects: projects,
+            tags: tags,
+            attachments: attachments,
+            context: modelContext,
+            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == todo.id),
+            onSelect: { selectRow(todo.id) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
                 }
-            },
-            onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
-            onMoveToDay: { DayBoardMutations.moveTodo(todo, to: $0) },
-            onRemindMinutes: { DayBoardMutations.setRemind(todo, minutes: $0) },
-            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .todo,
-                ownerID: todo.id,
-                items: attachments,
-                context: modelContext
-            ),
-            notes: todo.notes,
-            subtasks: todo.subtasks
-                .filter { $0.deletedAt == nil }
-                .sorted(by: { $0.sortOrder < $1.sortOrder })
-                .compactMap { $0.snapshot },
-            onToggleSubtask: { subID in
-                if let sub = todo.subtasks.first(where: { $0.id == subID }) {
-                    DayBoardMutations.toggleSubtask(sub)
-                }
-            },
-            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == todo.id),
-            onSelect: {
-                selectRow(todo.id)
             }
         )
     }
@@ -251,70 +187,28 @@ struct WorkspaceFilteredListView: View {
             checks: checks.compactMap(\.snapshot),
             on: todayKey
         )
-        let skipped = DayBoardLogic.isRoutineSkipped(
-            routine.snapshot,
-            checks: checks.compactMap(\.snapshot),
-            on: todayKey
-        )
-        let streak = HabitStreakLogic.calculate(
-            routine: routine.snapshot,
-            checks: checks.compactMap(\.snapshot),
-            todayKey: todayKey
-        )
         let isBatchSelected = navigation.selectedTaskIDs.contains(routine.id)
-        return TaskRow(
-            title: routine.title,
+        return TaskRowFactory.routine(
+            routine,
             isDone: isDone,
-            isResident: true,
-            note: isDone
-                ? ResidentNote.done(routine, skipped: skipped, locale: locale)
-                : ResidentNote.days(routine, locale: locale),
-            streak: streak.currentStreak,
-            remindMinutes: routine.remindMinutes,
-            onToggle: {
-                DayBoardMutations.toggleRoutine(routine, on: todayKey, checks: checks, context: modelContext)
-            },
+            todayKey: todayKey,
+            checkDayKey: todayKey,
+            checks: checks,
+            context: modelContext,
+            locale: locale,
+            projects: projects,
+            tags: tags,
+            attachments: attachments,
+            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == routine.id),
+            onSelect: { selectRow(routine.id) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
             onSkip: isDone ? nil : {
                 DayBoardMutations.skipRoutine(routine, on: todayKey, checks: checks, context: modelContext)
-            },
-            onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
-            onDisable: {
-                DayBoardMutations.setRoutineEnabled(
-                    routine,
-                    enabled: false,
-                    todayKey: todayKey,
-                    checks: checks,
-                    context: modelContext
-                )
-            },
-            onEnable: {
-                DayBoardMutations.setRoutineEnabled(
-                    routine,
-                    enabled: true,
-                    todayKey: todayKey,
-                    checks: checks,
-                    context: modelContext
-                )
-            },
-            isImportant: routine.isImportant,
-            isUrgent: routine.isUrgent,
-            classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .routine,
-                ownerID: routine.id,
-                items: attachments,
-                context: modelContext
-            ),
-            notes: routine.notes,
-            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == routine.id),
-            onSelect: { selectRow(routine.id) },
-            isEnabled: routine.isEnabled
+            }
         )
     }
 

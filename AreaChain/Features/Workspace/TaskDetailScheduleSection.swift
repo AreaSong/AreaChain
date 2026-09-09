@@ -13,7 +13,7 @@ struct TaskDetailDateChips: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.date.title")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Text(DayKey.displayName(dayKey, locale: locale))
@@ -73,7 +73,7 @@ struct TaskDetailRemindChips: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.remind.title")
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 if let remindMinutes {

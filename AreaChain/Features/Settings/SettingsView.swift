@@ -29,7 +29,8 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var prefs = prefs
-        Form {
+        DaybookPage(title: "window.settings", minWidth: 420, minHeight: 560) {
+            Form {
             Section("settings.chrome") {
                 Picker("settings.language", selection: $prefs.language) {
                     Text("language.system").tag(AppLanguage.system)
@@ -58,16 +59,16 @@ struct SettingsView: View {
             Section("settings.capture") {
                 Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
                 Text("settings.capture.stamp.help")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
                 Text("settings.capture.screen.help")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.notify") {
                 Text(notifyStatusText)
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
                 Button("settings.notify.request") {
                     Task {
@@ -81,18 +82,18 @@ struct SettingsView: View {
                 Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
                 if let calendarSyncStatusText {
                     Text(calendarSyncStatusText)
-                        .font(.system(size: 12))
+                        .font(DaybookType.subtitle)
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 Text("settings.calendar.sync.help")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
 
             Section("settings.icloud") {
                 Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
                 Text("settings.icloud.hint")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
 
@@ -101,7 +102,7 @@ struct SettingsView: View {
                 Button("settings.import") { importJSON() }
                 if StoreHealth.shared.isUsingMemoryFallback {
                     Text("settings.memory")
-                        .font(.system(size: 12))
+                        .font(DaybookType.subtitle)
                         .foregroundStyle(DaybookTheme.destructive)
                     Button("settings.reset", role: .destructive) {
                         confirmReset = true
@@ -109,14 +110,15 @@ struct SettingsView: View {
                 }
                 if let statusMessage {
                     Text(statusMessage)
-                        .font(.system(size: 12))
+                        .font(DaybookType.subtitle)
                         .foregroundStyle(DaybookTheme.ink)
                         .textSelection(.enabled)
                 }
             }
+            }
+            .formStyle(.grouped)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .formStyle(.grouped)
-        .frame(minWidth: 420, minHeight: 560)
         .navigationTitle("AreaChain")
         .alert("alert.import", isPresented: Binding(
             get: { pendingPreview != nil },
