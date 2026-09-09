@@ -61,6 +61,6 @@ struct NaturalLanguageParserTests {
         #expect(parsed.isUrgent == false)
         #expect(parsed.hasPriorityToken == true)
         #expect(parsed.hasTokens == true)
-        #expect(parsed.priorityLabel == "不重要不紧急")
+        #expect(parsed.priorityLabel == "quadrant.rest")
     }
 }

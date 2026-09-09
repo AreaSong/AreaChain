@@ -17,6 +17,8 @@ struct TasksPage: View {
 
     var maxScrollHeight: CGFloat? = nil
     var focusedTaskID: Binding<UUID?>? = nil
+    var highlightedTaskID: UUID? = nil
+    var onInspect: ((UUID) -> Void)? = nil
     var onReturnToInput: (() -> Void)? = nil
 
     @State var showYesterday = false
@@ -45,6 +47,8 @@ struct TasksPage: View {
                             todos: todos,
                             filter: boardFilter,
                             focusedTaskID: focusedTaskID,
+                            highlightedTaskID: highlightedTaskID,
+                            onInspect: onInspect,
                             onReturnToInput: onReturnToInput
                         )
                         upcomingSection

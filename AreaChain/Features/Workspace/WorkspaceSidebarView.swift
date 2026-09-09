@@ -87,7 +87,7 @@ struct WorkspaceSidebarView: View {
     private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {
         let isSelected = navigation.selectedProjectID == nil && navigation.selectedTagID == nil && navigation.selectedTab == tab
         return Button {
-            navigation.selectedTab = tab
+            navigation.revealTab(tab)
         } label: {
             HStack {
                 Label(tab.titleKey, systemImage: tab.iconName)

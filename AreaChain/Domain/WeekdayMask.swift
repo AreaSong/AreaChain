@@ -44,6 +44,20 @@ enum WeekdayMask {
         return (0..<7).map { ((first - 1 + $0) % 7) + 1 }
     }
 
+    static func nextScheduledDayKey(
+        mask: Int,
+        from todayKey: String,
+        calendar: Calendar = .current
+    ) -> String {
+        for offset in 0..<7 {
+            let key = DayKey.shifted(todayKey, by: offset, calendar: calendar)
+            if contains(mask, dayKey: key, calendar: calendar) {
+                return key
+            }
+        }
+        return todayKey
+    }
+
     static func veryShortSymbol(_ weekday: Int, locale: Locale, calendar: Calendar = .current) -> String {
         symbol(weekday, in: weekdaySymbols(calendar, locale: locale).veryShort)
     }

@@ -1,5 +1,6 @@
 import SwiftData
 import SwiftUI
+import AppKit
 
 enum WorkspaceTab: String, CaseIterable, Identifiable {
     case today
@@ -53,6 +54,9 @@ final class WorkspaceNavigation {
             selectedProjectID = nil
             selectedTagID = nil
             clearSelection()
+            if selectedTab != .diary {
+                BoardSelection.shared.clearInspectedDiary()
+            }
         }
     }
 
@@ -60,6 +64,7 @@ final class WorkspaceNavigation {
         didSet {
             if selectedProjectID != nil {
                 selectedTagID = nil
+                BoardSelection.shared.clearInspectedDiary()
             }
             clearSelection()
         }
@@ -69,6 +74,7 @@ final class WorkspaceNavigation {
         didSet {
             if selectedTagID != nil {
                 selectedProjectID = nil
+                BoardSelection.shared.clearInspectedDiary()
             }
             clearSelection()
         }
@@ -77,6 +83,27 @@ final class WorkspaceNavigation {
     var selectedTaskID: UUID? = nil
     var selectedTaskIDs: Set<UUID> = []
     var isInspectorPresented: Bool = false
+
+    func revealTab(_ tab: WorkspaceTab) {
+        if tab != .diary {
+            BoardSelection.shared.clearInspectedDiary()
+        }
+        if selectedTab != tab {
+            selectedTab = tab
+        } else {
+            selectedProjectID = nil
+            selectedTagID = nil
+        }
+    }
+
+    func inspectTask(_ id: UUID) {
+        selectedTaskID = id
+        isInspectorPresented = true
+    }
+
+    func closeInspector() {
+        isInspectorPresented = false
+    }
 
     func toggleSelection(_ id: UUID) {
         if selectedTaskIDs.contains(id) {
@@ -132,9 +159,16 @@ struct MainSplitWorkspaceView: View {
                     }
                 }
                 .onKeyPress(.escape) {
+                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
+                        NSApp.keyWindow?.makeFirstResponder(nil)
+                        return .handled
+                    }
+                    if navigation.isInspectorPresented {
+                        navigation.closeInspector()
+                        return .handled
+                    }
                     if navigation.selectedTaskID != nil {
                         navigation.selectedTaskID = nil
-                        navigation.isInspectorPresented = false
                         return .handled
                     }
                     if !navigation.selectedTaskIDs.isEmpty {
@@ -227,6 +261,7 @@ struct MainSplitWorkspaceView: View {
                         newProjectName = ""
                         isAddingProject = false
                         navigation.selectedProjectID = project.id
+                        BoardEvents.changed()
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -257,6 +292,7 @@ struct MainSplitWorkspaceView: View {
                             newTagName = ""
                             isAddingTag = false
                             navigation.selectedTagID = tag.id
+                            BoardEvents.changed()
                         }
                     }
                 }
@@ -321,6 +357,8 @@ struct WorkspaceTodayView: View {
                 checks: checks,
                 todos: todos,
                 focusedTaskID: $navigation.selectedTaskID,
+                highlightedTaskID: navigation.selectedTaskID,
+                onInspect: { WorkspaceNavigation.shared.inspectTask($0) },
                 onReturnToInput: {
                     navigation.selectedTaskID = nil
                     composerFocused = true
@@ -438,7 +476,7 @@ struct WorkspaceTodayView: View {
                     }
                     if let priority = parsed.priorityLabel {
                         PillBadge(
-                            title: priority,
+                            title: L10n.string(String.LocalizationValue(stringLiteral: priority), locale: locale),
                             icon: "exclamationmark.circle.fill",
                             color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
                             isSelected: true

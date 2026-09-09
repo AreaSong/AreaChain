@@ -73,10 +73,11 @@ struct TaskDetailDrawer: View {
                         pendingTrash = PendingTrash(title: todo.title) {
                             DayBoardMutations.trashTodo(todo)
                             taskID = nil
+                            WorkspaceNavigation.shared.closeInspector()
                         }
                     },
                     onClose: {
-                        taskID = nil
+                        WorkspaceNavigation.shared.closeInspector()
                     }
                 )
 
@@ -171,10 +172,11 @@ struct TaskDetailDrawer: View {
                         pendingTrash = PendingTrash(title: routine.title) {
                             DayBoardMutations.trashRoutine(routine)
                             taskID = nil
+                            WorkspaceNavigation.shared.closeInspector()
                         }
                     },
                     onClose: {
-                        taskID = nil
+                        WorkspaceNavigation.shared.closeInspector()
                     }
                 )
 

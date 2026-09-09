@@ -12,6 +12,7 @@ struct CalendarPage: View {
     var todos: [TodoItem]
 
     @Bindable private var selection = BoardSelection.shared
+    @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var draft = ""
 
     init(
@@ -73,7 +74,9 @@ struct CalendarPage: View {
                             routines: routines,
                             checks: checks,
                             todos: todos,
-                            allowsTodoDrag: true
+                            allowsTodoDrag: true,
+                            highlightedTaskID: navigation.selectedTaskID,
+                            onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
                         )
                     }
                 }
@@ -110,7 +113,9 @@ struct CalendarPage: View {
                         routines: routines,
                         checks: checks,
                         todos: todos,
-                        allowsTodoDrag: true
+                        allowsTodoDrag: true,
+                        highlightedTaskID: navigation.selectedTaskID,
+                        onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
                     )
                 }
             }

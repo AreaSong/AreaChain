@@ -107,7 +107,7 @@ private extension CalendarSync {
         let context = Persistence.session.container.mainContext
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
         ignorePullUntil = Date().addingTimeInterval(1.5)
-        let current = events(in: calendar)
+        let current = events(in: calendar, covering: todos)
         for todo in todos {
             if CalendarEventPolicy.shouldPublish(isDone: todo.isDone, deletedAt: todo.deletedAt) {
                 upsert(todo, calendar: calendar, existing: current)
@@ -140,7 +140,7 @@ private extension CalendarSync {
         }
         let context = Persistence.session.container.mainContext
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
-        applyRemote(events: events(in: calendar), todos: todos)
+        applyRemote(events: events(in: calendar, covering: todos), todos: todos)
         do {
             try context.save()
             CalendarSyncStatus.shared.mark(.synced)
@@ -168,10 +168,11 @@ private extension CalendarSync {
         }
     }
 
-    static func events(in calendar: EKCalendar) -> [EKEvent] {
-        let start = Calendar.current.date(byAdding: .year, value: -2, to: .now) ?? .now
-        let end = Calendar.current.date(byAdding: .year, value: 2, to: .now) ?? .now
-        return store.events(matching: store.predicateForEvents(withStart: start, end: end, calendars: [calendar]))
+    static func events(in calendar: EKCalendar, covering todos: [TodoItem]) -> [EKEvent] {
+        let bounds = CalendarEventPolicy.eventQueryBounds(dayKeys: todos.map(\.dayKey))
+        return store.events(
+            matching: store.predicateForEvents(withStart: bounds.start, end: bounds.end, calendars: [calendar])
+        )
     }
 
     static func upsert(_ todo: TodoItem, calendar: EKCalendar, existing: [EKEvent]) {
@@ -195,10 +196,10 @@ private extension CalendarSync {
             event.isAllDay = false
             event.startDate = start
             event.endDate = start.addingTimeInterval(30 * 60)
-        } else if let day = DayKey.date(from: todo.dayKey) {
+        } else if let bounds = CalendarEventPolicy.allDayBounds(dayKey: todo.dayKey) {
             event.isAllDay = true
-            event.startDate = day
-            event.endDate = day
+            event.startDate = bounds.start
+            event.endDate = bounds.end
         }
     }
 
@@ -232,11 +233,15 @@ private extension CalendarSync {
                 .map(\.calendarEventID)
                 .filter { !$0.isEmpty }
         )
+        let knownEventIDs = Set(todos.map(\.calendarEventID).filter { !$0.isEmpty })
         for event in existing {
-            let token = event.notes ?? ""
-            let tokenUnpublished = TodoDragToken.decode(token) != nil && !liveTokens.contains(token)
-            let idUnpublished = unpublishedEventIDs.contains(event.eventIdentifier ?? "")
-            if tokenUnpublished || idUnpublished {
+            if CalendarEventPolicy.shouldRemoveOrphanEvent(
+                notes: event.notes,
+                eventIdentifier: event.eventIdentifier,
+                liveTokens: liveTokens,
+                knownEventIDs: knownEventIDs,
+                unpublishedEventIDs: unpublishedEventIDs
+            ) {
                 try? store.remove(event, span: .thisEvent, commit: false)
             }
         }
@@ -252,7 +257,7 @@ private extension CalendarSync {
             if let title = event.title, !title.isEmpty, todo.title != title {
                 todo.title = title
             }
-            let key = DayKey.from(event.startDate)
+            let key = CalendarEventPolicy.remoteDayKey(isAllDay: event.isAllDay, startDate: event.startDate)
             if todo.dayKey != key { todo.dayKey = key }
             todo.remindMinutes = CalendarEventPolicy.remoteRemindMinutes(
                 isAllDay: event.isAllDay,
@@ -262,11 +267,15 @@ private extension CalendarSync {
                 todo.calendarEventID = ident
             }
         }
+        let bounds = CalendarEventPolicy.eventQueryBounds(dayKeys: todos.map(\.dayKey))
         for todo in todos {
             if CalendarEventPolicy.shouldUnlinkMissingRemote(
                 deletedAt: todo.deletedAt,
                 calendarEventID: todo.calendarEventID,
-                seenRemote: seen.contains(todo.id)
+                seenRemote: seen.contains(todo.id),
+                dayKey: todo.dayKey,
+                windowStart: bounds.start,
+                windowEnd: bounds.end
             ) {
                 todo.calendarEventID = ""
             }

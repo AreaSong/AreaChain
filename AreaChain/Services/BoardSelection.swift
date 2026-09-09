@@ -37,10 +37,15 @@ final class BoardSelection {
 
     func inspectBoard(_ key: String) {
         inspectingDayKey = key
+        inspectingDiaryID = nil
     }
 
     func inspectDiary(id: UUID, dayKey: String) {
         diaryDayKey = dayKey
         inspectingDiaryID = id
+    }
+
+    func clearInspectedDiary() {
+        inspectingDiaryID = nil
     }
 }

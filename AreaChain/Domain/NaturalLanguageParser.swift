@@ -15,10 +15,10 @@ struct ParsedCapture: Equatable {
     }
 
     var priorityLabel: String? {
-        if isImportant && isUrgent { return "重要且紧急" }
-        if isImportant { return "重要" }
-        if isUrgent { return "紧急" }
-        if hasPriorityToken { return "不重要不紧急" }
+        if isImportant && isUrgent { return "quadrant.iu" }
+        if isImportant { return "quadrant.i" }
+        if isUrgent { return "quadrant.u" }
+        if hasPriorityToken { return "quadrant.rest" }
         return nil
     }
 

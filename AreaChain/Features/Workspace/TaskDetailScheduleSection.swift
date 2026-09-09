@@ -120,6 +120,7 @@ struct TaskDetailWeekdayPicker: View {
     var resolvedMask: Int
     var onUpdateMask: (Int) -> Void
     @Environment(\.locale) private var locale
+    @Environment(\.calendar) private var calendar
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -128,12 +129,12 @@ struct TaskDetailWeekdayPicker: View {
                 .foregroundStyle(DaybookTheme.muted)
 
             HStack(spacing: 4) {
-                ForEach(1...7, id: \.self) { weekday in
+                ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
                     let isSelected = WeekdayMask.contains(resolvedMask, weekday: weekday)
                     Button {
                         onUpdateMask(WeekdayMask.toggling(resolvedMask, weekday: weekday))
                     } label: {
-                        Text(WeekdayMask.veryShortSymbol(weekday, locale: locale))
+                        Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
                             .font(.system(size: 10.5, weight: .medium))
                             .frame(width: 25, height: 25)
                             .background(
@@ -143,7 +144,7 @@ struct TaskDetailWeekdayPicker: View {
                             .foregroundStyle(isSelected ? Color.white : DaybookTheme.ink)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale))
+                    .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
                 }
             }
         }

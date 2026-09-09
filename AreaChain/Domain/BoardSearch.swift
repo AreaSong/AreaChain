@@ -19,11 +19,12 @@ enum BoardSearch {
         query: String,
         todos: [TodoSnapshot],
         diaries: [DiarySnapshot],
-        routines: [RoutineSnapshot]
+        routines: [RoutineSnapshot],
+        todayKey: String = DayKey.today()
     ) -> [BoardSearchHit] {
         let needle = normalized(query)
         guard !needle.isEmpty else { return [] }
-        let found = todoHits(needle, todos) + diaryHits(needle, diaries) + routineHits(needle, routines)
+        let found = todoHits(needle, todos) + diaryHits(needle, diaries) + routineHits(needle, routines, todayKey: todayKey)
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
             return $0.createdAt > $1.createdAt
@@ -76,14 +77,14 @@ enum BoardSearch {
         }
     }
 
-    private static func routineHits(_ needle: String, _ routines: [RoutineSnapshot]) -> [BoardSearchHit] {
+    private static func routineHits(_ needle: String, _ routines: [RoutineSnapshot], todayKey: String) -> [BoardSearchHit] {
         routines.compactMap { item in
             guard item.deletedAt == nil, matches(item.title, needle: needle) else { return nil }
             return BoardSearchHit(
                 id: item.id,
                 kind: .routine,
                 title: item.title,
-                dayKey: item.createdDayKey,
+                dayKey: WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: todayKey),
                 createdAt: item.createdAt
             )
         }

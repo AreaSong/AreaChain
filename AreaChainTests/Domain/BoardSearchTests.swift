@@ -42,10 +42,45 @@ struct BoardSearchTests {
             isEnabled: true,
             createdDayKey: "2026-09-01"
         )
-        let hits = BoardSearch.hits(query: "日报", todos: [], diaries: [], routines: [routine])
+        let hits = BoardSearch.hits(
+            query: "日报",
+            todos: [],
+            diaries: [],
+            routines: [routine],
+            todayKey: "2026-09-09"
+        )
         #expect(hits.map(\.id) == [id])
         #expect(hits.first?.kind == .routine)
-        #expect(BoardSearch.hits(query: "xyz", todos: [], diaries: [], routines: [routine]).isEmpty)
+        #expect(hits.first?.dayKey == "2026-09-09")
+        #expect(
+            BoardSearch.hits(
+                query: "xyz",
+                todos: [],
+                diaries: [],
+                routines: [routine],
+                todayKey: "2026-09-09"
+            ).isEmpty
+        )
+    }
+
+    @Test func routineHitsLandOnNextScheduledDay() {
+        let id = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+        let routine = RoutineSnapshot(
+            id: id,
+            title: "写日报",
+            sortOrder: 0,
+            isEnabled: true,
+            createdDayKey: "2026-01-01",
+            weekdayMask: WeekdayMask.workdays
+        )
+        let hits = BoardSearch.hits(
+            query: "日报",
+            todos: [],
+            diaries: [],
+            routines: [routine],
+            todayKey: "2026-09-05"
+        )
+        #expect(hits.first?.dayKey == "2026-09-07")
     }
 }
 

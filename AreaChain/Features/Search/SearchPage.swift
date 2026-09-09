@@ -37,7 +37,8 @@ struct SearchPage: View {
                 query: query,
                 todos: todos.map(\.snapshot),
                 diaries: diaries.map(\.snapshot),
-                routines: routines.map(\.snapshot)
+                routines: routines.map(\.snapshot),
+                todayKey: DayClock.shared.todayKey
             )
         )
     }
@@ -92,11 +93,9 @@ struct SearchPage: View {
 
     private func open(_ hit: BoardSearchHit) {
         switch hit.kind {
-        case .todo:
+        case .todo, .routine:
             selection.inspectBoard(hit.dayKey)
-            AppWindows.openCalendar()
-        case .routine:
-            selection.inspectBoard(DayClock.shared.todayKey)
+            WorkspaceNavigation.shared.inspectTask(hit.id)
             AppWindows.openCalendar()
         case .diary:
             selection.inspectDiary(id: hit.id, dayKey: hit.dayKey)

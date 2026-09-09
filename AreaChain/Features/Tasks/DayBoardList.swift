@@ -14,6 +14,8 @@ struct DayBoardList: View {
     var filter: BoardFilter = BoardFilter()
     var allowsTodoDrag: Bool = false
     var focusedTaskID: Binding<UUID?>? = nil
+    var highlightedTaskID: UUID? = nil
+    var onInspect: ((UUID) -> Void)? = nil
     var onReturnToInput: (() -> Void)? = nil
 
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
@@ -130,7 +132,13 @@ struct DayBoardList: View {
             }
             return .ignored
         }
-        .onAppear(perform: setupKeyMonitor)
+        .onAppear {
+            setupKeyMonitor()
+            expandIfHighlighted()
+        }
+        .onChange(of: highlightedTaskID) { _, _ in
+            expandIfHighlighted()
+        }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
         .animation(ModernMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
@@ -149,6 +157,10 @@ struct DayBoardList: View {
             let isTextViewEditing = (firstResponder as? NSTextView)?.isEditable == true
 
             if isTextViewEditing {
+                if event.keyCode == 53 {
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                    return nil
+                }
                 if event.keyCode == 125, let tv = firstResponder as? NSTextView, tv.string.isEmpty {
                     NSApp.keyWindow?.makeFirstResponder(nil)
                     navigateSelection(delta: 1)
@@ -180,7 +192,8 @@ struct DayBoardList: View {
                     return nil
                 }
             case 14:
-                guard event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty else { break }
+                let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
+                guard mods.isEmpty else { break }
                 if let id = focusedTaskID?.wrappedValue {
                     editingTaskID = id
                     return nil
@@ -292,14 +305,39 @@ struct DayBoardList: View {
     }
 
     private func inspectSelected(id: UUID) {
+        revealCompletedIfNeeded(id)
         if dayKey == todayKey {
             AppWindows.openWorkspace(tab: .today)
         } else {
             BoardSelection.shared.inspectBoard(dayKey)
             AppWindows.openWorkspace(tab: .calendar)
         }
-        WorkspaceNavigation.shared.selectedTaskID = id
-        WorkspaceNavigation.shared.isInspectorPresented = true
+        WorkspaceNavigation.shared.inspectTask(id)
+    }
+
+    private func selectTask(_ id: UUID) {
+        focusedTaskID?.wrappedValue = id
+        revealCompletedIfNeeded(id)
+        onInspect?(id)
+    }
+
+    private func expandIfHighlighted() {
+        if let highlightedTaskID {
+            revealCompletedIfNeeded(highlightedTaskID)
+        }
+        if let focused = focusedTaskID?.wrappedValue {
+            revealCompletedIfNeeded(focused)
+        }
+    }
+
+    private func revealCompletedIfNeeded(_ id: UUID) {
+        if doneItemsList.contains(where: { $0.id == id }) {
+            showCompleted = true
+        }
+    }
+
+    private func isRowSelected(_ id: UUID) -> Bool {
+        focusedTaskID?.wrappedValue == id || highlightedTaskID == id
     }
 
     private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -431,9 +469,9 @@ struct DayBoardList: View {
                 context: modelContext
             ),
             notes: routine.notes,
-            isSelected: focusedTaskID?.wrappedValue == routine.id,
+            isSelected: isRowSelected(routine.id),
             isExternalEditing: editingTaskID == routine.id,
-            onSelect: { focusedTaskID?.wrappedValue = routine.id },
+            onSelect: { selectTask(routine.id) },
             onEndEditing: { editingTaskID = nil },
             isEnabled: routine.isEnabled
         )
@@ -473,9 +511,9 @@ struct DayBoardList: View {
                 }
             },
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
-            isSelected: focusedTaskID?.wrappedValue == todo.id,
+            isSelected: isRowSelected(todo.id),
             isExternalEditing: editingTaskID == todo.id,
-            onSelect: { focusedTaskID?.wrappedValue = todo.id },
+            onSelect: { selectTask(todo.id) },
             onEndEditing: { editingTaskID = nil }
         )
     }

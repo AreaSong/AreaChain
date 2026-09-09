@@ -90,6 +90,50 @@ struct ClassificationTests {
         #expect(CalendarEventPolicy.remoteRemindMinutes(isAllDay: true, startDate: Date(timeIntervalSince1970: 8 * 3600)) == nil)
         let start = try #require(DayKey.date(dayKey: "2026-09-09", minutes: 15 * 60 + 30))
         #expect(CalendarEventPolicy.remoteRemindMinutes(isAllDay: false, startDate: start) == 15 * 60 + 30)
+        let allDayStart = Date(timeIntervalSince1970: 0)
+        #expect(CalendarEventPolicy.remoteDayKey(isAllDay: true, startDate: allDayStart) == "1970-01-01")
+        let end = CalendarEventPolicy.allDayEnd(from: allDayStart, calendar: utc)
+        #expect(DayKey.from(end, calendar: utc) == "1970-01-02")
+        var pacific = Calendar(identifier: .gregorian)
+        pacific.timeZone = TimeZone(identifier: "America/Los_Angeles")!
+        let bounds = try #require(CalendarEventPolicy.allDayBounds(dayKey: "2026-09-09", calendar: pacific))
+        #expect(CalendarEventPolicy.remoteDayKey(isAllDay: true, startDate: bounds.start) == "2026-09-09")
+        #expect(DayKey.from(bounds.end, calendar: CalendarEventPolicy.gmtGregorian) == "2026-09-10")
+        let far = CalendarEventPolicy.eventQueryBounds(
+            now: Date(timeIntervalSince1970: 1_788_800_000),
+            dayKeys: ["2030-01-01"],
+            calendar: utc
+        )
+        #expect(far.end > DayKey.date(from: "2030-01-01", calendar: utc)!)
+        #expect(
+            !CalendarEventPolicy.shouldUnlinkMissingRemote(
+                deletedAt: nil,
+                calendarEventID: "ek-far",
+                seenRemote: false,
+                dayKey: "2030-01-01",
+                windowStart: Date(timeIntervalSince1970: 0),
+                windowEnd: Date(timeIntervalSince1970: 10)
+            )
+        )
+        #expect(
+            CalendarEventPolicy.shouldRemoveOrphanEvent(
+                notes: nil,
+                eventIdentifier: "old",
+                liveTokens: [],
+                knownEventIDs: [],
+                unpublishedEventIDs: []
+            )
+        )
+        let token = TodoDragToken.encode(UUID())
+        #expect(
+            !CalendarEventPolicy.shouldRemoveOrphanEvent(
+                notes: token,
+                eventIdentifier: "live",
+                liveTokens: [token],
+                knownEventIDs: ["live"],
+                unpublishedEventIDs: []
+            )
+        )
     }
 
     @Test func clipboardPrefersTextAndSkipsEmpty() {
@@ -97,5 +141,11 @@ struct ClassificationTests {
         #expect(ClipboardPayload.make(text: " 修角标 ", hasImage: true, imageTitle: "图片")?.attachImage == false)
         #expect(ClipboardPayload.make(text: "  ", hasImage: true, imageTitle: "图片") == .init(title: "图片", attachImage: true))
         #expect(ClipboardPayload.make(text: nil, hasImage: false, imageTitle: "图片") == nil)
+    }
+
+    private var utc: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
     }
 }

@@ -53,7 +53,7 @@ struct CaptureField: View {
                     }
                     if let priority = parsed.priorityLabel {
                         PillBadge(
-                            title: priority,
+                            title: L10n.string(String.LocalizationValue(stringLiteral: priority), locale: locale),
                             icon: "exclamationmark.circle.fill",
                             color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
                             isSelected: true

@@ -293,14 +293,21 @@ enum DayBoardMutations {
     ) -> TagItem? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
-        if let found = existing.first(where: { $0.name == trimmed }) {
-            found.deletedAt = nil
-            return found
+        if let live = existing.first(where: { $0.name == trimmed && $0.deletedAt == nil }) {
+            return live
+        }
+        if let buried = existing.first(where: { $0.name == trimmed }) {
+            buried.deletedAt = nil
+            return buried
         }
         let descriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == trimmed })
-        if let found = try? context.fetch(descriptor).first {
-            found.deletedAt = nil
-            return found
+        let fetched = (try? context.fetch(descriptor)) ?? []
+        if let live = fetched.first(where: { $0.deletedAt == nil }) {
+            return live
+        }
+        if let buried = fetched.first {
+            buried.deletedAt = nil
+            return buried
         }
         let created = TagItem(name: trimmed, sortOrder: existing.count)
         context.insert(created)

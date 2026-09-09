@@ -34,4 +34,15 @@ struct WeekdayMaskTests {
         mondayFirst.firstWeekday = 2
         #expect(WeekdayMask.orderedWeekdays(calendar: mondayFirst) == [2, 3, 4, 5, 6, 7, 1])
     }
+
+    @Test func nextScheduledDayKeySkipsOffDays() {
+        #expect(
+            WeekdayMask.nextScheduledDayKey(mask: WeekdayMask.workdays, from: "2026-09-05", calendar: utc)
+                == "2026-09-07"
+        )
+        #expect(
+            WeekdayMask.nextScheduledDayKey(mask: WeekdayMask.workdays, from: "2026-09-08", calendar: utc)
+                == "2026-09-08"
+        )
+    }
 }

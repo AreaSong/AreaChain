@@ -84,6 +84,6 @@ AreaChain/
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.shared` 切 tab。切到不同 tab 才复位侧栏选择；同一 tab 再调不会清掉当前检查器。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab`。切到不同 tab 会复位侧栏项目/标签；同一 tab 再调也会清掉项目/标签过滤（浮层 Return 才能回到今日清单），但保留当前检查器选中。离开手记 tab 会清掉搜索高亮。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
 3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍实例化在 `panelWindows` 列表里，用于关窗时判断是否退回 accessory；公开路径不再 `show()` 它们。

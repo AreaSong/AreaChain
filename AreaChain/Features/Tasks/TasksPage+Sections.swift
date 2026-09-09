@@ -106,7 +106,8 @@ extension TasksPage {
                 ownerID: todo.id,
                 items: attachments,
                 context: modelContext
-            )
+            ),
+            notes: todo.notes
         )
     }
 
@@ -127,8 +128,29 @@ extension TasksPage {
                 streak: streakResult.currentStreak,
                 remindMinutes: routine.remindMinutes,
                 onToggle: { completeYesterday(item) },
+                onDelete: {
+                    pendingTrash = PendingTrash(title: routine.title) {
+                        DayBoardMutations.trashRoutine(routine)
+                    }
+                },
+                onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
+                onSkip: {
+                    DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
+                },
+                onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
+                onDisable: { DayBoardMutations.persist { routine.isEnabled = false } },
+                onEnable: { DayBoardMutations.persist { routine.isEnabled = true } },
                 isImportant: routine.isImportant,
-                isUrgent: routine.isUrgent
+                isUrgent: routine.isUrgent,
+                classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
+                attachments: CatalogChoices.attachments(
+                    ownerKind: .routine,
+                    ownerID: routine.id,
+                    items: attachments,
+                    context: modelContext
+                ),
+                notes: routine.notes,
+                isEnabled: routine.isEnabled
             )
         } else {
             TaskRow(

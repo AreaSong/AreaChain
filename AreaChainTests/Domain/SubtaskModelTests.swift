@@ -190,6 +190,23 @@ struct SubtaskModelTests {
         #expect(tags.count == 1)
     }
 
+    @Test func addTagPrefersLiveWhenDuplicateNamesExist() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08")
+        context.insert(todo)
+        let live = TagItem(name: "跟进", sortOrder: 0)
+        let buried = TagItem(name: "跟进", sortOrder: 1, deletedAt: Date(timeIntervalSince1970: 1))
+        context.insert(live)
+        context.insert(buried)
+        try context.save()
+
+        DayBoardMutations.addTag(named: "跟进", existing: [buried, live], context: context, ontoTodo: todo)
+        #expect(live.deletedAt == nil)
+        #expect(buried.deletedAt != nil)
+        #expect(TagIDList.contains(todo.tagIDs, live.id))
+        #expect(!TagIDList.contains(todo.tagIDs, buried.id))
+    }
+
     @Test func trashCascadesAttachmentsAndExportKeepsDeletedSubtasks() throws {
         let (_, context) = try makeContainer()
         let todo = TodoItem(title: "主任务", dayKey: "2026-09-08")
