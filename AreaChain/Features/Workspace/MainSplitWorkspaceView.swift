@@ -129,9 +129,12 @@ struct MainSplitWorkspaceView: View {
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var todos: [TodoItem]
+    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query private var checks: [RoutineCheck]
 
     @State private var isAddingProject = false
     @State private var newProjectName = ""
+    @State private var newProjectParentID: UUID?
     @State private var isAddingTag = false
     @State private var newTagName = ""
 
@@ -142,7 +145,8 @@ struct MainSplitWorkspaceView: View {
                 projects: projects,
                 tags: tags,
                 todos: todos,
-                onAddProject: { isAddingProject = true },
+                onAddProject: { beginAddProject(parentID: nil) },
+                onAddChildProject: { beginAddProject(parentID: $0) },
                 onAddTag: { isAddingTag = true }
             )
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
@@ -154,6 +158,8 @@ struct MainSplitWorkspaceView: View {
                         WorkspaceBatchActionBar(
                             navigation: navigation,
                             todos: todos,
+                            routines: routines,
+                            checks: checks,
                             projects: projects,
                             tags: tags
                         )
@@ -243,7 +249,7 @@ struct MainSplitWorkspaceView: View {
 
     private var addProjectSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("sidebar.add.project")
+            Text(newProjectParentID == nil ? "sidebar.add.project" : "sidebar.add.child")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.ink)
             TextField("sidebar.sheet.project.name", text: $newProjectName)
@@ -252,18 +258,11 @@ struct MainSplitWorkspaceView: View {
                 Spacer()
                 Button("alert.cancel") {
                     newProjectName = ""
+                    newProjectParentID = nil
                     isAddingProject = false
                 }
                 Button("drawer.tag.create") {
-                    let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty {
-                        let project = ProjectItem(name: name, sortOrder: projects.count)
-                        modelContext.insert(project)
-                        newProjectName = ""
-                        isAddingProject = false
-                        navigation.selectedProjectID = project.id
-                        BoardEvents.changed()
-                    }
+                    commitNewProject()
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(newProjectName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -271,6 +270,28 @@ struct MainSplitWorkspaceView: View {
         }
         .padding(16)
         .frame(width: 260)
+    }
+
+    private func beginAddProject(parentID: UUID?) {
+        newProjectParentID = parentID
+        newProjectName = ""
+        isAddingProject = true
+    }
+
+    private func commitNewProject() {
+        let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let project = ProjectItem(
+            name: name,
+            sortOrder: Catalog.nextSortOrder(projects.map(\.sortOrder)),
+            parentID: newProjectParentID
+        )
+        modelContext.insert(project)
+        newProjectName = ""
+        newProjectParentID = nil
+        isAddingProject = false
+        navigation.selectedProjectID = project.id
+        BoardEvents.changed()
     }
 
     private var addTagSheet: some View {
@@ -395,6 +416,17 @@ struct WorkspaceTodayView: View {
             }
 
             Spacer()
+
+            Button {
+                navigation.revealTab(.residents)
+            } label: {
+                Label("tab.residents", systemImage: "repeat")
+                    .font(.system(size: 11, weight: .medium))
+                    .labelStyle(.titleAndIcon)
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(DaybookTheme.muted)
+            .help("workspace.residents.open")
 
             if totalTodosCount > 0 {
                 HStack(spacing: 10) {

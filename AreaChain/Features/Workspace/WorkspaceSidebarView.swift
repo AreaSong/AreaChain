@@ -23,6 +23,7 @@ struct WorkspaceSidebarView: View {
     var todos: [TodoItem]
 
     var onAddProject: () -> Void
+    var onAddChildProject: (UUID) -> Void
     var onAddTag: () -> Void
 
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
@@ -145,11 +146,15 @@ struct WorkspaceSidebarView: View {
 
     private func projectRow(_ project: ProjectItem, depth: Int) -> some View {
         let isSelected = navigation.selectedProjectID == project.id
-        let ids = ProjectTree.subtreeIDs(root: project.id, in: projects)
-        let count = todos.filter {
-            guard let projectID = $0.projectID else { return false }
-            return ids.contains(projectID) && $0.deletedAt == nil && !$0.isDone
-        }.count
+        let count = Catalog.openCount(
+            todos: todos,
+            routines: routines,
+            checks: checks,
+            project: project,
+            tag: nil,
+            projects: projects,
+            dayKey: DayClock.shared.todayKey
+        )
         return Button {
             navigation.selectedProjectID = project.id
         } label: {
@@ -178,6 +183,7 @@ struct WorkspaceSidebarView: View {
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
             Button("sidebar.rename") { beginRename(.project(project.id), name: project.name) }
+            Button("sidebar.add.child") { onAddChildProject(project.id) }
             projectParentMenu(project)
             Button("alert.trash.move", role: .destructive) {
                 pendingTrash = PendingTrash(title: project.name) {
@@ -205,7 +211,15 @@ struct WorkspaceSidebarView: View {
 
     private func tagRow(_ tag: TagItem) -> some View {
         let isSelected = navigation.selectedTagID == tag.id
-        let count = todos.filter { TagIDList.contains($0.tagIDs, tag.id) && $0.deletedAt == nil && !$0.isDone }.count
+        let count = Catalog.openCount(
+            todos: todos,
+            routines: routines,
+            checks: checks,
+            project: nil,
+            tag: tag,
+            projects: projects,
+            dayKey: DayClock.shared.todayKey
+        )
         return Button {
             navigation.selectedTagID = tag.id
         } label: {

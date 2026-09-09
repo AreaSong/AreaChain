@@ -25,6 +25,37 @@ extension DayBoardMutations {
         }
     }
 
+    static func batchSetRoutineChecks(
+        _ ids: Set<UUID>,
+        markDone: Bool,
+        on dayKey: String,
+        routines: [DailyRoutine],
+        checks: [RoutineCheck],
+        context: ModelContext
+    ) {
+        guard !ids.isEmpty else { return }
+        persist {
+            for routine in routines where ids.contains(routine.id) && routine.deletedAt == nil {
+                if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == dayKey }) {
+                    if markDone {
+                        check.isDone = true
+                    } else {
+                        check.isDone = false
+                        check.isSkipped = false
+                    }
+                } else if markDone {
+                    context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
+                }
+            }
+        }
+    }
+
+    static func reorderRoutines(_ items: [DailyRoutine], from source: IndexSet, to destination: Int) {
+        persist {
+            Catalog.reindexRoutines(items, from: source, to: destination)
+        }
+    }
+
     static func batchSetProject(_ ids: Set<UUID>, projectID: UUID?, todos: [TodoItem], routines: [DailyRoutine]) {
         guard !ids.isEmpty else { return }
         persist {

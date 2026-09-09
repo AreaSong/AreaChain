@@ -34,6 +34,78 @@ enum Catalog {
         (orders.max() ?? -1) + 1
     }
 
+    static func matches(
+        projectID: UUID?,
+        tagIDs: String,
+        project: ProjectItem?,
+        tag: TagItem?,
+        projects: [ProjectItem]
+    ) -> Bool {
+        if let project {
+            guard let projectID else { return false }
+            return ProjectTree.subtreeIDs(root: project.id, in: projects).contains(projectID)
+        }
+        if let tag {
+            return TagIDList.contains(tagIDs, tag.id)
+        }
+        return false
+    }
+
+    static func matchingTodos(
+        _ items: [TodoItem],
+        project: ProjectItem?,
+        tag: TagItem?,
+        projects: [ProjectItem]
+    ) -> [TodoItem] {
+        items.filter {
+            $0.deletedAt == nil
+                && matches(projectID: $0.projectID, tagIDs: $0.tagIDs, project: project, tag: tag, projects: projects)
+        }
+    }
+
+    static func matchingRoutines(
+        _ items: [DailyRoutine],
+        project: ProjectItem?,
+        tag: TagItem?,
+        projects: [ProjectItem]
+    ) -> [DailyRoutine] {
+        items.filter {
+            $0.deletedAt == nil
+                && matches(projectID: $0.projectID, tagIDs: $0.tagIDs, project: project, tag: tag, projects: projects)
+        }
+        .sorted { $0.sortOrder < $1.sortOrder }
+    }
+
+    static func openCount(
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        checks: [RoutineCheck],
+        project: ProjectItem?,
+        tag: TagItem?,
+        projects: [ProjectItem],
+        dayKey: String
+    ) -> Int {
+        let openTodos = matchingTodos(todos, project: project, tag: tag, projects: projects)
+            .filter { !$0.isDone }
+            .count
+        let snaps = checks.compactMap(\.snapshot)
+        let openRoutines = matchingRoutines(routines, project: project, tag: tag, projects: projects)
+            .filter {
+                DayBoardLogic.isRoutineDue($0.snapshot, on: dayKey)
+                    && !DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
+            }
+            .count
+        return openTodos + openRoutines
+    }
+
+    static func reindexRoutines(_ items: [DailyRoutine], from source: IndexSet, to destination: Int) {
+        var ordered = items
+        ordered.move(fromOffsets: source, toOffset: destination)
+        for (index, item) in ordered.enumerated() {
+            item.sortOrder = index
+        }
+    }
+
     static func unlinkProject(
         _ id: UUID,
         todos: [TodoItem],

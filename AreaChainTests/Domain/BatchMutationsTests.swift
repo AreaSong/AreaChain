@@ -116,6 +116,36 @@ struct BatchMutationsTests {
         #expect(r1.deletedAt != nil)
     }
 
+    @Test func batchSetRoutineChecksMarksToday() throws {
+        let (_, context) = try makeContainer()
+        let routine = DailyRoutine(title: "习惯", sortOrder: 0, createdDayKey: "2026-09-01")
+        context.insert(routine)
+        try context.save()
+
+        DayBoardMutations.batchSetRoutineChecks(
+            [routine.id],
+            markDone: true,
+            on: "2026-09-09",
+            routines: [routine],
+            checks: [],
+            context: context
+        )
+        let inserted = try #require(routine.checks.first { $0.dayKey == "2026-09-09" })
+        #expect(inserted.isDone)
+        #expect(!inserted.isSkipped)
+
+        DayBoardMutations.batchSetRoutineChecks(
+            [routine.id],
+            markDone: false,
+            on: "2026-09-09",
+            routines: [routine],
+            checks: [inserted],
+            context: context
+        )
+        #expect(!inserted.isDone)
+        #expect(!inserted.isSkipped)
+    }
+
     @Test func enablingLegacyPausedHabitFillsSkippedDays() throws {
         let (_, context) = try makeContainer()
         let routine = DailyRoutine(

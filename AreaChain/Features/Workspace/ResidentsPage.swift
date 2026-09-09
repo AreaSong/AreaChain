@@ -1,14 +1,14 @@
 import SwiftData
 import SwiftUI
 
-/// 聚焦区常驻页：增改习惯、周期与分类，含停用项。
+/// 聚焦区常驻页：增改习惯、周期与排序；详情走检查器。
 struct ResidentsPage: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @State private var draft = ""
 
     private var items: [DailyRoutine] {
-        routines.filter { $0.deletedAt == nil }
+        routines.filter { $0.deletedAt == nil }.sorted { $0.sortOrder < $1.sortOrder }
     }
 
     var body: some View {
@@ -24,14 +24,17 @@ struct ResidentsPage: View {
                 DaybookEmptyState(title: "settings.residents.empty", systemImage: "repeat")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 10) {
-                        ForEach(items, id: \.id) { routine in
-                            ResidentEditorRow(routine: routine)
-                        }
+                List {
+                    ForEach(items, id: \.id) { routine in
+                        ResidentEditorRow(routine: routine)
+                            .listRowSeparator(.hidden)
+                            .listRowInsets(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
+                            .listRowBackground(Color.clear)
                     }
+                    .onMove(perform: move)
                 }
-                .daybookScroll()
+                .listStyle(.plain)
+                .scrollContentBackground(.hidden)
             }
         }
         .daybookPanel(minWidth: 480, minHeight: 480)
@@ -58,19 +61,22 @@ struct ResidentsPage: View {
     private func add() {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
-        let order = (routines.map(\.sortOrder).max() ?? -1) + 1
+        let order = Catalog.nextSortOrder(routines.map(\.sortOrder))
         DayBoardMutations.persist {
             modelContext.insert(DailyRoutine(title: title, sortOrder: order))
             draft = ""
         }
+    }
+
+    private func move(from source: IndexSet, to destination: Int) {
+        DayBoardMutations.reorderRoutines(items, from: source, to: destination)
     }
 }
 
 private struct ResidentEditorRow: View {
     @Environment(\.locale) private var locale
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Bindable private var navigation = WorkspaceNavigation.shared
     @Query private var checks: [RoutineCheck]
     var routine: DailyRoutine
 
@@ -78,22 +84,17 @@ private struct ResidentEditorRow: View {
     @State private var pickingTime = false
     @State private var pendingTrash: PendingTrash?
 
+    private var isSelected: Bool {
+        navigation.selectedTaskID == routine.id
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             titleRow
             scheduleRow
-            ClassifyBitsEditor(
-                bits: routine.classifyBits,
-                projects: CatalogChoices.projects(projects),
-                tags: CatalogChoices.tags(tags, attachedIDs: routine.tagIDs),
-                onProject: { id in persist { routine.projectID = id } },
-                onToggleTag: { id in persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
-                onImportant: { value in persist { routine.isImportant = value } },
-                onUrgent: { value in persist { routine.isUrgent = value } }
-            )
         }
         .padding(10)
-        .modernCard(cornerRadius: DaybookRadius.small)
+        .modernCard(cornerRadius: DaybookRadius.small, isSelected: isSelected)
         .onAppear { titleDraft = routine.title }
         .onChange(of: routine.title) { _, value in
             if titleDraft != value { titleDraft = value }
@@ -116,6 +117,16 @@ private struct ResidentEditorRow: View {
                 .toggleStyle(.switch)
                 .labelsHidden()
                 .help("settings.residents.enabled")
+            Button {
+                navigation.inspectTask(routine.id)
+            } label: {
+                Image(systemName: "sidebar.trailing")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                    .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+            }
+            .buttonStyle(.plain)
+            .help("drawer.inspector.toggle")
             RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
         }
     }
@@ -179,7 +190,7 @@ private struct ResidentEditorRow: View {
             titleDraft = routine.title
             return
         }
-        persist {
+        DayBoardMutations.persist {
             routine.title = next
             titleDraft = next
         }
@@ -188,22 +199,22 @@ private struct ResidentEditorRow: View {
     private func requestTrash() {
         pendingTrash = PendingTrash(title: routine.title) {
             DayBoardMutations.trashRoutine(routine)
+            if navigation.selectedTaskID == routine.id {
+                navigation.selectedTaskID = nil
+                navigation.closeInspector()
+            }
         }
     }
 
     private func setRemind(_ minutes: Int?) {
-        persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
+        DayBoardMutations.persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
         DayBoardMutations.requestReminderAccessIfNeeded(minutes)
     }
 
     private func toggleWeekday(_ weekday: Int) {
-        persist {
+        DayBoardMutations.persist {
             routine.setWeekdayMask(WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday))
         }
-    }
-
-    private func persist(_ work: () -> Void) {
-        DayBoardMutations.persist(work)
     }
 }
 

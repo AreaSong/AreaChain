@@ -6290,6 +6290,40 @@
           }
         }
       }
+    },
+    "sidebar.add.child": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New subproject"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建子项目"
+          }
+        }
+      }
+    },
+    "workspace.residents.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage daily habits"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "管理常驻"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

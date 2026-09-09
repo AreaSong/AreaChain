@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -51,16 +52,24 @@ struct WorkspaceFilteredListView: View {
                     .foregroundStyle(DaybookTheme.ink)
             }
             Spacer()
-            let openCount = matchingTodos.filter { !$0.isDone }.count
+            let openCount = Catalog.openCount(
+                todos: todos,
+                routines: routines,
+                checks: checks,
+                project: project,
+                tag: tag,
+                projects: projects,
+                dayKey: DayClock.shared.todayKey
+            )
             Text("filter.open.count \(openCount)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
 
-            if openCount > 0 {
+            if canBatchSelect {
                 Button {
                     withAnimation(.snappy(duration: 0.2)) {
                         if navigation.selectedTaskIDs.isEmpty {
-                            navigation.selectedTaskIDs = Set(matchingTodos.filter { !$0.isDone }.map(\.id))
+                            navigation.selectedTaskIDs = selectableIDs
                         } else {
                             navigation.clearSelection()
                         }
@@ -135,51 +144,63 @@ struct WorkspaceFilteredListView: View {
     private var taskList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                let openItems = matchingTodos.filter { !$0.isDone }
-                let doneItems = matchingTodos.filter { $0.isDone }
+                let openTodos = matchingTodos.filter { !$0.isDone }
+                let doneTodos = matchingTodos.filter { $0.isDone }
+                let listedRoutines = matchingRoutines
 
-                if openItems.isEmpty && doneItems.isEmpty {
+                if openTodos.isEmpty && doneTodos.isEmpty && listedRoutines.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
                         systemImage: project != nil ? "folder" : "tag"
                     )
                     .padding(.top, 40)
                 } else {
-                    ForEach(openItems) { todo in
+                    ForEach(openTodos) { todo in
                         todoRowView(todo, isDone: false)
                     }
-
-                    if !doneItems.isEmpty {
-                        Button {
-                            withAnimation(DaybookMotion.animation(reduceMotion)) {
-                                showCompleted.toggle()
-                            }
-                        } label: {
-                            HStack(spacing: 5) {
-                                Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
-                                    .font(.system(size: 9, weight: .bold))
-                                    .foregroundStyle(DaybookTheme.muted)
-                                Text("stamp.completed \(doneItems.count)")
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(DaybookTheme.muted)
-                                Spacer()
-                            }
-                            .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.top, 8)
-
-                        if showCompleted {
-                            ForEach(doneItems) { todo in
-                                todoRowView(todo, isDone: true)
-                            }
+                    if !listedRoutines.isEmpty {
+                        SectionStamp(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
+                            .padding(.top, openTodos.isEmpty ? 0 : 8)
+                        ForEach(listedRoutines) { routine in
+                            routineRowView(routine)
                         }
                     }
+                    completedSection(doneTodos)
                 }
             }
             .padding(.vertical, 2)
         }
         .daybookScroll()
+    }
+
+    @ViewBuilder
+    private func completedSection(_ doneTodos: [TodoItem]) -> some View {
+        if !doneTodos.isEmpty {
+            Button {
+                withAnimation(DaybookMotion.animation(reduceMotion)) {
+                    showCompleted.toggle()
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted)
+                    Text("stamp.completed \(doneTodos.count)")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DaybookTheme.muted)
+                    Spacer()
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 8)
+
+            if showCompleted {
+                ForEach(doneTodos) { todo in
+                    todoRowView(todo, isDone: true)
+                }
+            }
+        }
     }
 
     private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
@@ -218,34 +239,108 @@ struct WorkspaceFilteredListView: View {
             },
             isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == todo.id),
             onSelect: {
-                if NSEvent.modifierFlags.contains(.command) || !navigation.selectedTaskIDs.isEmpty {
-                    withAnimation(.snappy(duration: 0.2)) {
-                        navigation.toggleSelection(todo.id)
-                    }
-                } else {
-                    navigation.selectedTaskID = todo.id
-                    navigation.isInspectorPresented = true
-                }
+                selectRow(todo.id)
             }
         )
     }
 
-    // MARK: - Matching Logic
+    private func routineRowView(_ routine: DailyRoutine) -> some View {
+        let todayKey = DayClock.shared.todayKey
+        let isDone = DayBoardLogic.isRoutineDone(
+            routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            on: todayKey
+        )
+        let skipped = DayBoardLogic.isRoutineSkipped(
+            routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            on: todayKey
+        )
+        let streak = HabitStreakLogic.calculate(
+            routine: routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            todayKey: todayKey
+        )
+        let isBatchSelected = navigation.selectedTaskIDs.contains(routine.id)
+        return TaskRow(
+            title: routine.title,
+            isDone: isDone,
+            isResident: true,
+            note: isDone
+                ? ResidentNote.done(routine, skipped: skipped, locale: locale)
+                : ResidentNote.days(routine, locale: locale),
+            streak: streak.currentStreak,
+            remindMinutes: routine.remindMinutes,
+            onToggle: {
+                DayBoardMutations.toggleRoutine(routine, on: todayKey, checks: checks, context: modelContext)
+            },
+            onDelete: {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                }
+            },
+            onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
+            onSkip: isDone ? nil : {
+                DayBoardMutations.skipRoutine(routine, on: todayKey, checks: checks, context: modelContext)
+            },
+            onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
+            onDisable: {
+                DayBoardMutations.setRoutineEnabled(
+                    routine,
+                    enabled: false,
+                    todayKey: todayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            },
+            onEnable: {
+                DayBoardMutations.setRoutineEnabled(
+                    routine,
+                    enabled: true,
+                    todayKey: todayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            },
+            isImportant: routine.isImportant,
+            isUrgent: routine.isUrgent,
+            classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
+            attachments: CatalogChoices.attachments(
+                ownerKind: .routine,
+                ownerID: routine.id,
+                items: attachments,
+                context: modelContext
+            ),
+            notes: routine.notes,
+            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == routine.id),
+            onSelect: { selectRow(routine.id) },
+            isEnabled: routine.isEnabled
+        )
+    }
+
+    private func selectRow(_ id: UUID) {
+        if NSEvent.modifierFlags.contains(.command) || !navigation.selectedTaskIDs.isEmpty {
+            withAnimation(.snappy(duration: 0.2)) {
+                navigation.toggleSelection(id)
+            }
+        } else {
+            navigation.inspectTask(id)
+        }
+    }
 
     private var matchingTodos: [TodoItem] {
-        todos.filter { todo in
-            guard todo.deletedAt == nil else { return false }
-            if let project {
-                let subtree = ProjectTree.subtreeIDs(root: project.id, in: projects)
-                if let pid = todo.projectID {
-                    return subtree.contains(pid)
-                }
-                return false
-            }
-            if let tag {
-                return TagIDList.contains(todo.tagIDs, tag.id)
-            }
-            return true
-        }
+        Catalog.matchingTodos(todos, project: project, tag: tag, projects: projects)
+    }
+
+    private var matchingRoutines: [DailyRoutine] {
+        Catalog.matchingRoutines(routines, project: project, tag: tag, projects: projects)
+    }
+
+    private var selectableIDs: Set<UUID> {
+        Set(matchingTodos.filter { !$0.isDone }.map(\.id) + matchingRoutines.map(\.id))
+    }
+
+    private var canBatchSelect: Bool {
+        !selectableIDs.isEmpty
     }
 }
