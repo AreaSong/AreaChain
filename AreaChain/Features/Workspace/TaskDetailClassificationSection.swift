@@ -57,10 +57,11 @@ struct TaskDetailTagSelector: View {
     var tagIDs: String
     var tags: [TagItem]
     var onToggleTag: (UUID) -> Void
-    var onCreateTag: (String) -> Void
+    var onCreateTag: (String) -> Bool
 
     @State private var isCreatingTag = false
     @State private var newTagName = ""
+    @State private var createError: LocalizedStringKey?
 
     private var activeTags: [TagItem] {
         Catalog.taskPickerTags(tags, attachedIDs: tagIDs)
@@ -74,6 +75,8 @@ struct TaskDetailTagSelector: View {
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Button {
+                    createError = nil
+                    newTagName = ""
                     isCreatingTag = true
                 } label: {
                     Image(systemName: "plus.circle")
@@ -114,19 +117,29 @@ struct TaskDetailTagSelector: View {
                 .foregroundStyle(DaybookTheme.ink)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: newTagName) { _, _ in createError = nil }
+            if let createError {
+                Text(createError)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.destructive)
+            }
             HStack {
                 Spacer()
                 Button("alert.cancel") {
                     newTagName = ""
+                    createError = nil
                     isCreatingTag = false
                 }
                 Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty {
-                        onCreateTag(name)
-                        newTagName = ""
-                        isCreatingTag = false
+                    guard !name.isEmpty else { return }
+                    if DiaryMemoTags.isPresetName(name) || !onCreateTag(name) {
+                        createError = "tag.preset.reserved"
+                        return
                     }
+                    newTagName = ""
+                    createError = nil
+                    isCreatingTag = false
                 }
                 .buttonStyle(.borderedProminent)
                 .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)

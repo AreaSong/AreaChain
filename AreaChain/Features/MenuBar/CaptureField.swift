@@ -41,7 +41,7 @@ struct CaptureField: View {
     }
 
     private var parsedTokensBar: some View {
-        let parsed = NaturalLanguageParser.parse(text)
+        let parsed = NaturalLanguageParser.parseTaskCapture(text)
         return Group {
             if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 HStack(spacing: 6) {

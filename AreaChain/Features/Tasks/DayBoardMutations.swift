@@ -167,15 +167,18 @@ enum DayBoardMutations {
         }
     }
 
+    @discardableResult
     static func addTag(
         named name: String,
         existing: [TagItem],
         context: ModelContext,
         ontoTodo todo: TodoItem? = nil,
         ontoRoutine routine: DailyRoutine? = nil
-    ) {
+    ) -> Bool {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else { return false }
         persist {
-            guard let tag = resolveTaskTag(named: name, among: existing, context: context) else { return }
+            guard let tag = resolveTaskTag(named: trimmed, among: existing, context: context) else { return }
             if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
                 todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
             }
@@ -183,6 +186,7 @@ enum DayBoardMutations {
                 routine.tagIDs = TagIDList.toggling(routine.tagIDs, tag.id)
             }
         }
+        return true
     }
 
     static func moveTodo(_ todo: TodoItem, to dayKey: String) {

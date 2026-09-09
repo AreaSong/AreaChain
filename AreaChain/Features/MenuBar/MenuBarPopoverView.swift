@@ -211,7 +211,7 @@ struct MenuBarPopoverView: View {
     private func addTodo() {
         let raw = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !raw.isEmpty else { return }
-        let parsed = NaturalLanguageParser.parse(raw)
+        let parsed = NaturalLanguageParser.parseTaskCapture(raw)
         let item = TodoItem(
             title: parsed.cleanTitle,
             dayKey: todayKey,

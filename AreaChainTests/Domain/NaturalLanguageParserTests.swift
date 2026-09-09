@@ -90,4 +90,24 @@ struct NaturalLanguageParserTests {
         #expect(parsed.remindMinutes == nil)
         #expect(parsed.cleanTitle == "下午3点问题")
     }
+
+    @Test func diaryParseConsumesPresetHashtag() {
+        let parsed = NaturalLanguageParser.parse("wifi #密码")
+        #expect(parsed.tagName == "密码")
+        #expect(parsed.cleanTitle == "wifi")
+    }
+
+    @Test func taskCaptureKeepsPresetHashtagInTitle() {
+        let parsed = NaturalLanguageParser.parseTaskCapture("买菜 #密码")
+        #expect(parsed.tagName == nil)
+        #expect(parsed.cleanTitle == "买菜 #密码")
+        #expect(parsed.hasTokens == false)
+    }
+
+    @Test func taskCaptureSkipsPresetThenTakesNextTag() {
+        let parsed = NaturalLanguageParser.parseTaskCapture("买菜 #密码 #工作")
+        #expect(parsed.tagName == "工作")
+        #expect(parsed.cleanTitle == "买菜 #密码")
+        #expect(parsed.hasTokens == true)
+    }
 }

@@ -27,8 +27,8 @@ struct AppPreferencesTests {
         #expect(L10n.string("footer.more", locale: Locale(identifier: "zh-Hans")) == "更多")
         #expect(L10n.string("row.attach.screen", locale: Locale(identifier: "en")) == "Capture current screen")
         #expect(L10n.string("footer.search", locale: Locale(identifier: "zh-Hans")) == "搜索")
-        #expect(L10n.string("empty.filter", locale: Locale(identifier: "zh-Hans")) == "这个筛选下没有任务。")
-        #expect(L10n.string("empty.filter", locale: Locale(identifier: "en")) == "Nothing matches this filter.")
+        #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "zh-Hans")) == "「密码」「小巧思」「日记」是手记分类，不能当作待办标签。")
+        #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are diary categories, not task tags.")
     }
 
     @Test func writesLanguageAndAppearanceToInjectedDefaults() {

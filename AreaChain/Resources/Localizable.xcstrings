@@ -3543,13 +3543,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pictures attached to temporary tasks and diary entries. Soft-delete keeps the file until you empty Trash."
+            "value": "Pictures attached to temporary tasks, diary entries, and daily habits. Soft-delete keeps the file until you empty Trash."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "临时任务和日记上的图。软删会留着文件，清空回收站才真正删掉。"
+            "value": "临时任务、日记和常驻习惯上的图。软删会留着文件，清空回收站才真正删掉。"
           }
         }
       }
@@ -4808,6 +4808,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "创建"
+          }
+        }
+      }
+    },
+    "tag.preset.reserved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「密码」「小巧思」「日记」 are diary categories, not task tags."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "「密码」「小巧思」「日记」是手记分类，不能当作待办标签。"
           }
         }
       }

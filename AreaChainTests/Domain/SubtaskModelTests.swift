@@ -215,6 +215,7 @@ struct SubtaskModelTests {
         #expect(todo.tagIDs.isEmpty)
         let tags = try context.fetch(FetchDescriptor<TagItem>())
         #expect(tags.isEmpty)
+        #expect(DayBoardMutations.addTag(named: "日记", existing: [], context: context, ontoTodo: todo) == false)
         #expect(DayBoardMutations.resolveTaskTag(named: "小巧思", among: [], context: context) == nil)
     }
 

@@ -31,6 +31,7 @@ struct WorkspaceSidebarView: View {
     @State private var pendingTrash: PendingTrash?
     @State private var pendingRename: CatalogRename?
     @State private var renameDraft = ""
+    @State private var renameError: LocalizedStringKey?
 
     var body: some View {
         List {
@@ -266,11 +267,18 @@ struct WorkspaceSidebarView: View {
             TextField("settings.catalog.rename", text: $renameDraft)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(commitRename)
+                .onChange(of: renameDraft) { _, _ in renameError = nil }
+            if let renameError {
+                Text(renameError)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.destructive)
+            }
             HStack {
                 Spacer()
                 Button("alert.cancel") {
                     pendingRename = nil
                     renameDraft = ""
+                    renameError = nil
                 }
                 Button("sidebar.rename") { commitRename() }
                     .buttonStyle(.borderedProminent)
@@ -283,6 +291,7 @@ struct WorkspaceSidebarView: View {
 
     private func beginRename(_ target: CatalogRename, name: String) {
         renameDraft = name
+        renameError = nil
         pendingRename = target
     }
 
@@ -290,6 +299,10 @@ struct WorkspaceSidebarView: View {
         let next = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !next.isEmpty, let target = pendingRename else {
             pendingRename = nil
+            return
+        }
+        if case .tag = target, DiaryMemoTags.isPresetName(next) {
+            renameError = "tag.preset.reserved"
             return
         }
         DayBoardMutations.persist {
@@ -302,6 +315,7 @@ struct WorkspaceSidebarView: View {
         }
         pendingRename = nil
         renameDraft = ""
+        renameError = nil
     }
 
     private func setParent(_ id: UUID, _ parentID: UUID?) {

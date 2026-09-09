@@ -2,125 +2,6 @@ import SwiftData
 import SwiftUI
 import AppKit
 
-enum WorkspaceTab: String, CaseIterable, Identifiable {
-    case today
-    case residents
-    case calendar
-    case quadrant
-    case gantt
-    case diary
-    case attachments
-    case search
-    case trash
-    case settings
-
-    var id: String { rawValue }
-
-    var titleKey: LocalizedStringKey {
-        switch self {
-        case .today: return "tab.tasks"
-        case .residents: return "tab.residents"
-        case .calendar: return "window.calendar"
-        case .quadrant: return "window.quadrant"
-        case .gantt: return "window.gantt"
-        case .diary: return "window.diary"
-        case .attachments: return "window.attachments"
-        case .search: return "window.search"
-        case .trash: return "window.trash"
-        case .settings: return "window.settings"
-        }
-    }
-
-    var iconName: String {
-        switch self {
-        case .today: return "checklist"
-        case .residents: return "repeat"
-        case .calendar: return "calendar"
-        case .quadrant: return "square.grid.2x2"
-        case .gantt: return "chart.bar.xaxis"
-        case .diary: return "note.text"
-        case .attachments: return "paperclip"
-        case .search: return "magnifyingglass"
-        case .trash: return "trash"
-        case .settings: return "gearshape"
-        }
-    }
-}
-
-@Observable
-@MainActor
-final class WorkspaceNavigation {
-    static let shared = WorkspaceNavigation()
-
-    var selectedTab: WorkspaceTab = .today {
-        didSet {
-            selectedProjectID = nil
-            selectedTagID = nil
-            clearSelection()
-            if selectedTab != .diary {
-                BoardSelection.shared.clearInspectedDiary()
-            }
-        }
-    }
-
-    var selectedProjectID: UUID? = nil {
-        didSet {
-            if selectedProjectID != nil {
-                selectedTagID = nil
-                BoardSelection.shared.clearInspectedDiary()
-            }
-            clearSelection()
-        }
-    }
-
-    var selectedTagID: UUID? = nil {
-        didSet {
-            if selectedTagID != nil {
-                selectedProjectID = nil
-                BoardSelection.shared.clearInspectedDiary()
-            }
-            clearSelection()
-        }
-    }
-
-    var selectedTaskID: UUID? = nil
-    var selectedTaskIDs: Set<UUID> = []
-    var isInspectorPresented: Bool = false
-
-    func revealTab(_ tab: WorkspaceTab) {
-        if tab != .diary {
-            BoardSelection.shared.clearInspectedDiary()
-        }
-        if selectedTab != tab {
-            selectedTab = tab
-        } else {
-            selectedProjectID = nil
-            selectedTagID = nil
-        }
-    }
-
-    func inspectTask(_ id: UUID) {
-        selectedTaskID = id
-        isInspectorPresented = true
-    }
-
-    func closeInspector() {
-        isInspectorPresented = false
-    }
-
-    func toggleSelection(_ id: UUID) {
-        if selectedTaskIDs.contains(id) {
-            selectedTaskIDs.remove(id)
-        } else {
-            selectedTaskIDs.insert(id)
-        }
-    }
-
-    func clearSelection() {
-        selectedTaskIDs.removeAll()
-    }
-}
-
 /// 现代 Pro 风格三栏大屏工作台
 struct MainSplitWorkspaceView: View {
     @Environment(\.modelContext) private var modelContext
@@ -137,6 +18,7 @@ struct MainSplitWorkspaceView: View {
     @State private var newProjectParentID: UUID?
     @State private var isAddingTag = false
     @State private var newTagName = ""
+    @State private var tagCreateError: LocalizedStringKey?
 
     var body: some View {
         NavigationSplitView {
@@ -147,7 +29,11 @@ struct MainSplitWorkspaceView: View {
                 todos: todos,
                 onAddProject: { beginAddProject(parentID: nil) },
                 onAddChildProject: { beginAddProject(parentID: $0) },
-                onAddTag: { isAddingTag = true }
+                onAddTag: {
+                    newTagName = ""
+                    tagCreateError = nil
+                    isAddingTag = true
+                }
             )
             .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
@@ -301,24 +187,30 @@ struct MainSplitWorkspaceView: View {
                 .foregroundStyle(DaybookTheme.ink)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
+                .onChange(of: newTagName) { _, _ in tagCreateError = nil }
+            if let tagCreateError {
+                Text(tagCreateError)
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.destructive)
+            }
             HStack {
                 Spacer()
                 Button("alert.cancel") {
                     newTagName = ""
+                    tagCreateError = nil
                     isAddingTag = false
                 }
                 Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !name.isEmpty {
-                        if let tag = DayBoardMutations.resolveTaskTag(named: name, among: tags, context: modelContext) {
-                            newTagName = ""
-                            isAddingTag = false
-                            navigation.selectedTagID = tag.id
-                            BoardEvents.changed()
-                        } else {
-                            newTagName = ""
-                            isAddingTag = false
-                        }
+                    guard !name.isEmpty else { return }
+                    if let tag = DayBoardMutations.resolveTaskTag(named: name, among: tags, context: modelContext) {
+                        newTagName = ""
+                        tagCreateError = nil
+                        isAddingTag = false
+                        navigation.selectedTagID = tag.id
+                        BoardEvents.changed()
+                    } else {
+                        tagCreateError = "tag.preset.reserved"
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -502,7 +394,7 @@ struct WorkspaceTodayView: View {
     }
 
     private var parsedTokensBar: some View {
-        let parsed = NaturalLanguageParser.parse(draftText)
+        let parsed = NaturalLanguageParser.parseTaskCapture(draftText)
         return Group {
             if parsed.hasTokens && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 HStack(spacing: 6) {
@@ -533,7 +425,7 @@ struct WorkspaceTodayView: View {
         let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
 
-        let parsed = NaturalLanguageParser.parse(text)
+        let parsed = NaturalLanguageParser.parseTaskCapture(text)
         let todo = TodoItem(
             title: parsed.cleanTitle,
             dayKey: todayKey,

@@ -31,7 +31,11 @@ struct ParsedCapture: Equatable {
 }
 
 enum NaturalLanguageParser {
-    static func parse(_ input: String) -> ParsedCapture {
+    static func parseTaskCapture(_ input: String) -> ParsedCapture {
+        parse(input, consumeDiaryPresetTags: false)
+    }
+
+    static func parse(_ input: String, consumeDiaryPresetTags: Bool = true) -> ParsedCapture {
         let lines = input.components(separatedBy: .newlines)
         let firstLine = lines.first ?? ""
         let notesText = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -65,13 +69,7 @@ enum NaturalLanguageParser {
         }
 
         // 2. Parse tag (#工作, #读书, #project1)
-        let tagPattern = #"#([a-zA-Z0-9_\u4e00-\u9fa5\-]+)"#
-        if let match = firstMatchGroup(pattern: tagPattern, in: text) {
-            tagName = match
-            if let full = firstMatch(pattern: tagPattern, in: text) {
-                text = text.replacingOccurrences(of: full, with: "")
-            }
-        }
+        tagName = consumeTag(from: &text, consumeDiaryPresetTags: consumeDiaryPresetTags)
 
         // 3. Parse Chinese time: (下午3点半, 下午3点, 晚上8:30, 早上9点15, 中午12点, 15:30, @15:30)
         let timeResult = extractTime(from: text)
@@ -183,21 +181,30 @@ enum NaturalLanguageParser {
         return ExtractedTime(minutes: hour * 60 + minute, matchedString: full)
     }
 
+    private static let tagPattern = #"#([a-zA-Z0-9_\u4e00-\u9fa5\-]+)"#
+
+    private static func consumeTag(from text: inout String, consumeDiaryPresetTags: Bool) -> String? {
+        guard let regex = try? NSRegularExpression(pattern: tagPattern) else { return nil }
+        let nsString = text as NSString
+        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
+        for match in matches {
+            guard match.numberOfRanges > 1, match.range(at: 1).location != NSNotFound else { continue }
+            let name = nsString.substring(with: match.range(at: 1))
+            if consumeDiaryPresetTags || !DiaryMemoTags.isPresetName(name) {
+                guard let range = Range(match.range, in: text) else { return name }
+                text.removeSubrange(range)
+                return name
+            }
+        }
+        return nil
+    }
+
     private static func firstMatch(pattern: String, in text: String) -> String? {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
         guard let match = regex.firstMatch(in: text, options: [], range: range) else { return nil }
         return nsString.substring(with: match.range)
-    }
-
-    private static func firstMatchGroup(pattern: String, in text: String) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
-        let nsString = text as NSString
-        let range = NSRange(location: 0, length: nsString.length)
-        guard let match = regex.firstMatch(in: text, options: [], range: range),
-              match.numberOfRanges > 1, match.range(at: 1).location != NSNotFound else { return nil }
-        return nsString.substring(with: match.range(at: 1))
     }
 
     private struct MatchResult {
