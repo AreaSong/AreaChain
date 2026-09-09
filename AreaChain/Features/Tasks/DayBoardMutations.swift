@@ -8,6 +8,58 @@ enum DayBoardMutations {
         BoardEvents.changed()
     }
 
+    static func requestReminderAccessIfNeeded(_ minutes: Int?) {
+        if minutes != nil {
+            NotificationScheduler.shared.ensureAuthorization()
+        }
+    }
+
+    static func setRoutineEnabled(
+        _ routine: DailyRoutine,
+        enabled: Bool,
+        todayKey: String,
+        checks: [RoutineCheck],
+        context: ModelContext
+    ) {
+        persist {
+            if enabled {
+                if let start = routine.pausedOnDayKey {
+                    bridgeSkippedDays(
+                        routine,
+                        from: start,
+                        before: todayKey,
+                        checks: checks,
+                        context: context
+                    )
+                }
+                routine.pausedOnDayKey = nil
+                routine.isEnabled = true
+            } else {
+                if routine.pausedOnDayKey == nil {
+                    routine.pausedOnDayKey = todayKey
+                }
+                routine.isEnabled = false
+            }
+        }
+    }
+
+    private static func bridgeSkippedDays(
+        _ routine: DailyRoutine,
+        from start: String,
+        before end: String,
+        checks: [RoutineCheck],
+        context: ModelContext
+    ) {
+        let mask = routine.resolvedWeekdayMask
+        for key in DayKey.keys(from: start, before: end) {
+            guard WeekdayMask.contains(mask, dayKey: key) else { continue }
+            if checks.contains(where: { $0.routine?.id == routine.id && $0.dayKey == key }) {
+                continue
+            }
+            context.insert(RoutineCheck(dayKey: key, isDone: true, isSkipped: true, routine: routine))
+        }
+    }
+
     static func toggleRoutine(
         _ routine: DailyRoutine,
         on dayKey: String,
@@ -133,16 +185,12 @@ enum DayBoardMutations {
 
     static func setRemind(_ todo: TodoItem, minutes: Int?) {
         persist { todo.remindMinutes = RemindMinutes.clamped(minutes) }
-        if minutes != nil {
-            NotificationScheduler.shared.ensureAuthorization()
-        }
+        requestReminderAccessIfNeeded(minutes)
     }
 
     static func setRemind(_ routine: DailyRoutine, minutes: Int?) {
         persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
-        if minutes != nil {
-            NotificationScheduler.shared.ensureAuthorization()
-        }
+        requestReminderAccessIfNeeded(minutes)
     }
 
     static func applyQuadrant(_ slot: QuadrantSlot, to todo: TodoItem) {
@@ -163,7 +211,14 @@ enum DayBoardMutations {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         persist {
-            context.insert(TodoItem(title: trimmed, dayKey: dayKey, notes: notes))
+            context.insert(
+                TodoItem(
+                    title: trimmed,
+                    dayKey: dayKey,
+                    sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
+                    notes: notes
+                )
+            )
         }
         return true
     }

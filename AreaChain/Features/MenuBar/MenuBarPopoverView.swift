@@ -229,6 +229,7 @@ struct MenuBarPopoverView: View {
         modelContext.insert(item)
         capture.draft = ""
         BoardEvents.changed()
+        DayBoardMutations.requestReminderAccessIfNeeded(parsed.remindMinutes)
     }
 
     private func addDiary() {
@@ -410,7 +411,7 @@ struct MenuBarLabel: View {
         return HStack(spacing: 2) {
             Image(systemName: "book.closed.fill")
                 .accessibilityHidden(true)
-            Text("今")
+            Text("menubar.today.mark")
                 .font(.system(size: 11, weight: .bold, design: .serif))
             if count > 0 {
                 Text("\(count)")

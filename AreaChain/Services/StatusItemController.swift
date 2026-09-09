@@ -137,8 +137,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             todos: todos.map(\.snapshot),
             dayKey: DayClock.shared.todayKey
         )
-        button.title = count > 0 ? "今\(count)" : "今"
         let locale = AppPreferences.shared.resolvedLocale
+        let mark = L10n.string("menubar.today.mark", locale: locale)
+        button.title = count > 0 ? "\(mark)\(count)" : mark
         button.toolTip = count > 0
             ? L10n.string("a11y.app.remaining \(count)", locale: locale)
             : L10n.string("a11y.app", locale: locale)

@@ -83,7 +83,8 @@ enum SyncPort {
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
             sourceBundleID: item.sourceBundleID,
-            notes: item.notes
+            notes: item.notes,
+            pausedOnDayKey: item.pausedOnDayKey
         )
     }
 

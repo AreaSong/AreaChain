@@ -6,6 +6,7 @@ import UniformTypeIdentifiers
 import UserNotifications
 
 struct SettingsView: View {
+    var resignsChromeOnDisappear: Bool = true
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
     @Query private var todos: [TodoItem]
@@ -140,6 +141,7 @@ struct SettingsView: View {
             Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
         }
         .onDisappear {
+            guard resignsChromeOnDisappear else { return }
             AppWindows.resignIfIdle()
             DispatchQueue.main.async {
                 AppWindows.resignIfIdle()

@@ -30,6 +30,20 @@ enum DayKey {
         return from(next, calendar: calendar)
     }
 
+    static func keys(from start: String, before end: String, calendar: Calendar = .current) -> [String] {
+        var keys: [String] = []
+        var cursor = start
+        var steps = 0
+        while cursor < end, steps < 4000 {
+            keys.append(cursor)
+            let next = shifted(cursor, by: 1, calendar: calendar)
+            guard next > cursor else { break }
+            cursor = next
+            steps += 1
+        }
+        return keys
+    }
+
     static func isWeekday(_ key: String, calendar: Calendar = .current) -> Bool {
         guard let date = date(from: key, calendar: calendar) else { return false }
         let weekday = calendar.component(.weekday, from: date)

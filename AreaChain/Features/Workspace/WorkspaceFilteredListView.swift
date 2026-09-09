@@ -51,16 +51,16 @@ struct WorkspaceFilteredListView: View {
                     .foregroundStyle(DaybookTheme.ink)
             }
             Spacer()
-            let count = matchingTodos.filter { !$0.isDone }.count
-            Text("filter.open.count \(count)")
+            let openCount = matchingTodos.filter { !$0.isDone }.count
+            Text("filter.open.count \(openCount)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
 
-            if !matchingTodos.isEmpty {
+            if openCount > 0 {
                 Button {
                     withAnimation(.snappy(duration: 0.2)) {
                         if navigation.selectedTaskIDs.isEmpty {
-                            navigation.selectedTaskIDs = Set(matchingTodos.map(\.id))
+                            navigation.selectedTaskIDs = Set(matchingTodos.filter { !$0.isDone }.map(\.id))
                         } else {
                             navigation.clearSelection()
                         }
@@ -122,7 +122,8 @@ struct WorkspaceFilteredListView: View {
             title: title,
             dayKey: todayKey,
             projectID: project?.id,
-            tagIDs: tag.map { $0.id.uuidString } ?? ""
+            tagIDs: tag.map { $0.id.uuidString } ?? "",
+            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
         )
         modelContext.insert(todo)
         draftTitle = ""

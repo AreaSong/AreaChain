@@ -63,4 +63,10 @@ struct NaturalLanguageParserTests {
         #expect(parsed.hasTokens == true)
         #expect(parsed.priorityLabel == "quadrant.rest")
     }
+
+    @Test func chineseHourDoesNotEatTitleDigits() {
+        let parsed = NaturalLanguageParser.parse("修复3点问题")
+        #expect(parsed.cleanTitle == "修复3点问题")
+        #expect(parsed.remindMinutes == nil)
+    }
 }

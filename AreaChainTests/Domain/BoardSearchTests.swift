@@ -82,6 +82,25 @@ struct BoardSearchTests {
         )
         #expect(hits.first?.dayKey == "2026-09-07")
     }
+
+    @Test func disabledRoutinesDoNotAppear() {
+        let routine = RoutineSnapshot(
+            id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
+            title: "写日报",
+            sortOrder: 0,
+            isEnabled: false,
+            createdDayKey: "2026-01-01"
+        )
+        #expect(
+            BoardSearch.hits(
+                query: "日报",
+                todos: [],
+                diaries: [],
+                routines: [routine],
+                todayKey: "2026-09-09"
+            ).isEmpty
+        )
+    }
 }
 
 struct FeedbackCopyTests {

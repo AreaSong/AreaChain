@@ -16,6 +16,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
     var notes: String = ""
+    var pausedOnDayKey: String? = nil
 
     var classifyBits: ClassifyBits {
         ClassifyBits(

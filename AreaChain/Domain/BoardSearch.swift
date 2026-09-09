@@ -79,12 +79,13 @@ enum BoardSearch {
 
     private static func routineHits(_ needle: String, _ routines: [RoutineSnapshot], todayKey: String) -> [BoardSearchHit] {
         routines.compactMap { item in
-            guard item.deletedAt == nil, matches(item.title, needle: needle) else { return nil }
+            guard item.deletedAt == nil, item.isEnabled, matches(item.title, needle: needle) else { return nil }
+            let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
             return BoardSearchHit(
                 id: item.id,
                 kind: .routine,
                 title: item.title,
-                dayKey: WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: todayKey),
+                dayKey: WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: fromKey),
                 createdAt: item.createdAt
             )
         }

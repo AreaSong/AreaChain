@@ -102,7 +102,12 @@ struct GanttPage: View {
                 .lineLimit(1)
                 .help(bar.title)
                 .frame(width: titleWidth, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    WorkspaceNavigation.shared.inspectTask(bar.id)
+                }
                 .accessibilityLabel(bar.title)
+                .accessibilityAddTraits(.isButton)
                 .accessibilityValue(DayKey.displayName(bar.dayKey, calendar: calendar, locale: locale))
             ForEach(days, id: \.self) { key in
                 dayCell(key, filled: key == bar.dayKey, payload: TodoDragToken.encode(bar.id))
@@ -126,9 +131,13 @@ struct GanttPage: View {
                     .help(title)
             }
             .frame(width: titleWidth, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                WorkspaceNavigation.shared.inspectTask(id)
+            }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(title)
-            .accessibilityAddTraits(.isStaticText)
+            .accessibilityAddTraits(.isButton)
             ForEach(days, id: \.self) { key in
                 Circle()
                     .fill(dots.contains(key) ? DaybookTheme.stamp : Color.clear)

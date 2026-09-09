@@ -125,7 +125,7 @@ struct TaskDetailMetadataSection: View {
                     HStack(spacing: 4) {
                         Image(systemName: "app.badge")
                             .font(.system(size: 9))
-                        Text("drawer.meta.source \(sourceBundleID)")
+                        Text("drawer.meta.source \(BundleDisplay.name(for: sourceBundleID))")
                             .font(.system(size: 10))
                     }
                     .foregroundStyle(DaybookTheme.muted)

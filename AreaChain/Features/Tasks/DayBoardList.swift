@@ -161,7 +161,11 @@ struct DayBoardList: View {
                     NSApp.keyWindow?.makeFirstResponder(nil)
                     return nil
                 }
-                if event.keyCode == 125, let tv = firstResponder as? NSTextView, tv.string.isEmpty {
+                if event.keyCode == 125,
+                   let tv = firstResponder as? NSTextView,
+                   tv.string.isEmpty,
+                   !WorkspaceNavigation.shared.isInspectorPresented
+                {
                     NSApp.keyWindow?.makeFirstResponder(nil)
                     navigateSelection(delta: 1)
                     return nil
@@ -457,8 +461,24 @@ struct DayBoardList: View {
             onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
             onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
-            onDisable: { DayBoardMutations.persist { routine.isEnabled = false } },
-            onEnable: { DayBoardMutations.persist { routine.isEnabled = true } },
+            onDisable: {
+                DayBoardMutations.setRoutineEnabled(
+                    routine,
+                    enabled: false,
+                    todayKey: todayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            },
+            onEnable: {
+                DayBoardMutations.setRoutineEnabled(
+                    routine,
+                    enabled: true,
+                    todayKey: todayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            },
             isImportant: routine.isImportant,
             isUrgent: routine.isUrgent,
             classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),

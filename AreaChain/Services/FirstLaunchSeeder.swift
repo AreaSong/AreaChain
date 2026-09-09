@@ -17,8 +17,20 @@ enum FirstLaunchSeeder {
             }
             return
         }
-        context.insert(DailyRoutine(title: "写日报", sortOrder: 0, weekdaysOnly: true))
-        context.insert(DailyRoutine(title: "复盘", sortOrder: 1))
+        let locale = AppPreferences.shared.resolvedLocale
+        context.insert(
+            DailyRoutine(
+                title: L10n.string("seed.routine.daily", locale: locale),
+                sortOrder: 0,
+                weekdaysOnly: true
+            )
+        )
+        context.insert(
+            DailyRoutine(
+                title: L10n.string("seed.routine.review", locale: locale),
+                sortOrder: 1
+            )
+        )
         defaults.set(true, forKey: defaultsKey)
     }
 }

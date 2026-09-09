@@ -127,11 +127,12 @@ struct ExportedRoutine: Codable, Equatable {
     var isUrgent: Bool
     var sourceBundleID: String
     var notes: String = ""
+    var pausedOnDayKey: String? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, title, sortOrder, isEnabled, createdDayKey, weekdaysOnly, weekdayMask
         case createdAt, remindMinutes, deletedAt
-        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID, notes
+        case projectID, tagIDs, isImportant, isUrgent, sourceBundleID, notes, pausedOnDayKey
     }
 
     init(
@@ -150,7 +151,8 @@ struct ExportedRoutine: Codable, Equatable {
         isImportant: Bool = false,
         isUrgent: Bool = false,
         sourceBundleID: String = "",
-        notes: String = ""
+        notes: String = "",
+        pausedOnDayKey: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -169,6 +171,7 @@ struct ExportedRoutine: Codable, Equatable {
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
         self.notes = notes
+        self.pausedOnDayKey = pausedOnDayKey
     }
 
     init(from decoder: Decoder) throws {
@@ -192,6 +195,7 @@ struct ExportedRoutine: Codable, Equatable {
         isUrgent = try box.decodeIfPresent(Bool.self, forKey: .isUrgent) ?? false
         sourceBundleID = try box.decodeIfPresent(String.self, forKey: .sourceBundleID) ?? ""
         notes = try box.decodeIfPresent(String.self, forKey: .notes) ?? ""
+        pausedOnDayKey = try box.decodeIfPresent(String.self, forKey: .pausedOnDayKey)
     }
 }
 

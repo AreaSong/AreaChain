@@ -107,7 +107,9 @@ extension TasksPage {
                 items: attachments,
                 context: modelContext
             ),
-            notes: todo.notes
+            notes: todo.notes,
+            isSelected: highlightedTaskID == todo.id,
+            onSelect: { inspectLeftover(todo.id) }
         )
     }
 
@@ -138,8 +140,24 @@ extension TasksPage {
                     DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
                 },
                 onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
-                onDisable: { DayBoardMutations.persist { routine.isEnabled = false } },
-                onEnable: { DayBoardMutations.persist { routine.isEnabled = true } },
+                onDisable: {
+                    DayBoardMutations.setRoutineEnabled(
+                        routine,
+                        enabled: false,
+                        todayKey: todayKey,
+                        checks: checks,
+                        context: modelContext
+                    )
+                },
+                onEnable: {
+                    DayBoardMutations.setRoutineEnabled(
+                        routine,
+                        enabled: true,
+                        todayKey: todayKey,
+                        checks: checks,
+                        context: modelContext
+                    )
+                },
                 isImportant: routine.isImportant,
                 isUrgent: routine.isUrgent,
                 classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
@@ -150,6 +168,8 @@ extension TasksPage {
                     context: modelContext
                 ),
                 notes: routine.notes,
+                isSelected: highlightedTaskID == routine.id,
+                onSelect: { inspectLeftover(routine.id) },
                 isEnabled: routine.isEnabled
             )
         } else {
@@ -159,8 +179,19 @@ extension TasksPage {
                 todayKey: todayKey,
                 currentDayKey: yesterdayKey,
                 onToggle: { completeYesterday(item) },
-                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
+                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil,
+                isSelected: highlightedTaskID == item.id,
+                onSelect: { inspectLeftover(item.id) }
             )
         }
+    }
+
+    func inspectLeftover(_ id: UUID) {
+        if let onInspect {
+            onInspect(id)
+            return
+        }
+        AppWindows.openWorkspace(tab: .today)
+        WorkspaceNavigation.shared.inspectTask(id)
     }
 }

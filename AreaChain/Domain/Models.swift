@@ -19,6 +19,7 @@ final class DailyRoutine {
     var isUrgent: Bool = false
     var sourceBundleID: String = ""
     var notes: String = ""
+    var pausedOnDayKey: String?
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -39,7 +40,8 @@ final class DailyRoutine {
         isImportant: Bool = false,
         isUrgent: Bool = false,
         sourceBundleID: String = "",
-        notes: String = ""
+        notes: String = "",
+        pausedOnDayKey: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -58,6 +60,7 @@ final class DailyRoutine {
         self.isUrgent = isUrgent
         self.sourceBundleID = sourceBundleID
         self.notes = notes
+        self.pausedOnDayKey = pausedOnDayKey
         self.checks = []
     }
 
@@ -97,7 +100,8 @@ final class DailyRoutine {
             isImportant: isImportant,
             isUrgent: isUrgent,
             sourceBundleID: sourceBundleID,
-            notes: notes
+            notes: notes,
+            pausedOnDayKey: pausedOnDayKey
         )
     }
 }

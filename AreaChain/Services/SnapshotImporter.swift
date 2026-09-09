@@ -44,6 +44,7 @@ enum SnapshotImporter {
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
                 found.deletedAt = item.deletedAt
                 found.notes = item.notes
+                found.pausedOnDayKey = item.pausedOnDayKey
                 applyClassify(item, to: found)
             } else {
                 context.insert(
@@ -63,7 +64,8 @@ enum SnapshotImporter {
                         isImportant: item.isImportant,
                         isUrgent: item.isUrgent,
                         sourceBundleID: item.sourceBundleID,
-                        notes: item.notes
+                        notes: item.notes,
+                        pausedOnDayKey: item.pausedOnDayKey
                     )
                 )
             }

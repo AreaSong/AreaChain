@@ -109,7 +109,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         size: NSSize(width: 420, height: 560),
         root: {
             AnyView(
-                SettingsView()
+                SettingsView(resignsChromeOnDisappear: false)
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )

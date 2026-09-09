@@ -90,6 +90,9 @@ struct QuadrantPage: View {
         .padding(.vertical, 4)
         .modernCard(cornerRadius: DaybookRadius.small)
         .contentShape(Rectangle())
+        .onTapGesture {
+            WorkspaceNavigation.shared.inspectTask(row.id)
+        }
         .draggable(payload(row))
     }
 

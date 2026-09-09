@@ -199,11 +199,6 @@ struct MainSplitWorkspaceView: View {
         .sheet(isPresented: $isAddingTag) {
             addTagSheet
         }
-        .onChange(of: navigation.selectedTaskID) { _, newValue in
-            if newValue != nil {
-                navigation.isInspectorPresented = true
-            }
-        }
     }
 
     // MARK: - Detail Router
@@ -233,7 +228,7 @@ struct MainSplitWorkspaceView: View {
             case .trash:
                 TrashPage()
             case .settings:
-                SettingsView()
+                SettingsView(resignsChromeOnDisappear: false)
             }
         }
     }
@@ -425,12 +420,13 @@ struct WorkspaceTodayView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(composerFocused ? DaybookTheme.stamp : DaybookTheme.muted)
 
-                TextField("workspace.composer.placeholder", text: $draftText)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .focused($composerFocused)
-                    .onSubmit(addTodo)
+                DaybookTextField(
+                    text: $draftText,
+                    placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
+                    focus: $composerFocused,
+                    onSubmit: addTodo,
+                    onCommandReturn: {}
+                )
 
                 if !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                     Button(action: addTodo) {
@@ -513,5 +509,6 @@ struct WorkspaceTodayView: View {
         modelContext.insert(todo)
         draftText = ""
         BoardEvents.changed()
+        DayBoardMutations.requestReminderAccessIfNeeded(parsed.remindMinutes)
     }
 }

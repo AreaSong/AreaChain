@@ -103,6 +103,8 @@ enum HabitStreakLogic {
             } else if isScheduled {
                 if cursorKey == todayKey {
                     // Today in progress: preserves streak through yesterday
+                } else if isPaused(routine, on: cursorKey) {
+                    // 停用区间当桥接，不把没打开的日子当成漏打
                 } else {
                     // Missed scheduled day prior to today: breaks streak
                     runningStreak = 0
@@ -127,5 +129,14 @@ enum HabitStreakLogic {
             isCompletedToday: isCompletedToday,
             isSkippedToday: isSkippedToday
         )
+    }
+
+    /// 停用后的排定日不当漏打。无暂停起点的旧数据，停用期间全部桥接。
+    private static func isPaused(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
+        guard !routine.isEnabled else { return false }
+        if let start = routine.pausedOnDayKey {
+            return dayKey >= start
+        }
+        return true
     }
 }

@@ -45,4 +45,9 @@ struct WeekdayMaskTests {
                 == "2026-09-08"
         )
     }
+
+    @Test func dayKeysStopBeforeEnd() {
+        #expect(DayKey.keys(from: "2026-09-07", before: "2026-09-09", calendar: utc) == ["2026-09-07", "2026-09-08"])
+        #expect(DayKey.keys(from: "2026-09-09", before: "2026-09-09", calendar: utc).isEmpty)
+    }
 }

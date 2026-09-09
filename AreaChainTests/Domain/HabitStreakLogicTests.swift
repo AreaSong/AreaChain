@@ -691,4 +691,28 @@ struct HabitStreakLogicTests {
         let streak = DayBoardLogic.habitStreak(checks: checks, todayKey: "2026-09-03")
         #expect(streak == 3)
     }
+
+    @Test func pausingBridgesMissedScheduledDays() {
+        let id = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let routine = RoutineSnapshot(
+            id: id,
+            title: "晨间冥想",
+            sortOrder: 0,
+            isEnabled: false,
+            createdDayKey: "2026-09-05",
+            pausedOnDayKey: "2026-09-07"
+        )
+        let checks = [
+            makeCheck(routineId: id, dayKey: "2026-09-05"),
+            makeCheck(routineId: id, dayKey: "2026-09-06")
+        ]
+        let result = HabitStreakLogic.calculate(
+            routine: routine,
+            checks: checks,
+            todayKey: "2026-09-09",
+            calendar: utcCalendar
+        )
+        #expect(result.currentStreak == 2)
+        #expect(result.isDueToday == false)
+    }
 }

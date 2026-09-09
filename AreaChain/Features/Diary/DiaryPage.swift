@@ -346,7 +346,11 @@ struct DiaryPage: View {
             .daybookScroll()
             .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
             .onAppear { scrollToInspected(proxy) }
-            .onChange(of: boardSelection.inspectingDiaryID) { _, _ in
+            .onChange(of: boardSelection.inspectingDiaryID) { _, id in
+                if id != nil {
+                    selectedTagID = nil
+                    searchQuery = ""
+                }
                 scrollToInspected(proxy)
             }
         }

@@ -13,6 +13,8 @@ struct WorkspaceSidebarView: View {
     var onAddProject: () -> Void
     var onAddTag: () -> Void
 
+    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query private var checks: [RoutineCheck]
     @State private var pendingTrash: PendingTrash?
 
     var body: some View {
@@ -79,8 +81,12 @@ struct WorkspaceSidebarView: View {
     }
 
     private var todayUnfinishedCount: Int? {
-        let todayKey = DayClock.shared.todayKey
-        let count = todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && !$0.isDone }.count
+        let count = DayBoardLogic.todayBadgeCount(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            todos: todos.map(\.snapshot),
+            dayKey: DayClock.shared.todayKey
+        )
         return count > 0 ? count : nil
     }
 

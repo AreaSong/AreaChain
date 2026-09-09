@@ -56,8 +56,10 @@ struct ResidentSettings: View {
 
 private struct ResidentSettingsRow: View {
     @Environment(\.locale) private var locale
+    @Environment(\.modelContext) private var modelContext
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Query private var checks: [RoutineCheck]
     var routine: DailyRoutine
 
     @State private var titleDraft = ""
@@ -112,7 +114,15 @@ private struct ResidentSettingsRow: View {
     private var enabledBinding: Binding<Bool> {
         Binding(
             get: { routine.isEnabled },
-            set: { next in persist { routine.isEnabled = next } }
+            set: { next in
+                DayBoardMutations.setRoutineEnabled(
+                    routine,
+                    enabled: next,
+                    todayKey: DayClock.shared.todayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            }
         )
     }
 
