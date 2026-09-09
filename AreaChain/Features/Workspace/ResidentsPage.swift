@@ -16,12 +16,12 @@ struct ResidentsPage: View {
             Text("tab.residents")
                 .font(.system(size: 16, weight: .regular, design: .serif).italic())
                 .foregroundStyle(DaybookTheme.ink)
-            Text("settings.residents.hint")
+            Text("residents.hint")
                 .font(.system(size: 12))
                 .foregroundStyle(DaybookTheme.muted)
             addRow
             if items.isEmpty {
-                DaybookEmptyState(title: "settings.residents.empty", systemImage: "repeat")
+                DaybookEmptyState(title: "residents.empty", systemImage: "repeat")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             } else {
                 List {
@@ -110,13 +110,13 @@ private struct ResidentEditorRow: View {
 
     private var titleRow: some View {
         HStack(spacing: 8) {
-            TextField("settings.residents.rename", text: $titleDraft)
+            TextField("residents.rename", text: $titleDraft)
                 .textFieldStyle(.plain)
                 .onSubmit(saveTitle)
-            Toggle("settings.residents.enabled", isOn: enabledBinding)
+            Toggle("residents.enabled", isOn: enabledBinding)
                 .toggleStyle(.switch)
                 .labelsHidden()
-                .help("settings.residents.enabled")
+                .help("residents.enabled")
             Button {
                 navigation.inspectTask(routine.id)
             } label: {
@@ -245,7 +245,7 @@ private struct WeekdayMaskChips: View {
             }
         }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("settings.residents.days")
-        .help("settings.residents.days")
+        .accessibilityLabel("residents.days")
+        .help("residents.days")
     }
 }

@@ -198,8 +198,8 @@ struct WorkspaceSidebarView: View {
     }
 
     private func projectParentMenu(_ project: ProjectItem) -> some View {
-        Menu("settings.catalog.parent") {
-            Button("settings.catalog.parent.none") {
+        Menu("sidebar.parent") {
+            Button("sidebar.parent.none") {
                 setParent(project.id, nil)
             }
             ForEach(ProjectTree.allowedParents(for: project.id, in: projects)) { parent in
@@ -264,7 +264,7 @@ struct WorkspaceSidebarView: View {
             Text("sidebar.rename")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.ink)
-            TextField("settings.catalog.rename", text: $renameDraft)
+            TextField("sidebar.rename.name", text: $renameDraft)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(commitRename)
                 .onChange(of: renameDraft) { _, _ in renameError = nil }

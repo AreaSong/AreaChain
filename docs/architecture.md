@@ -39,7 +39,7 @@ AreaChain/
   Theme/          色板、印章质感、动效、确认组件
 ```
 
-独立 `*StandaloneView` 与 `PanelWindowController` 的日历/手记等控制器仍在源码中，公开入口一律 `openWorkspace(tab:)`，不再单独 `show()`。
+独立 `*StandaloneView` 是工作台 tab 的包装，不是独立窗口。公开入口一律 `openWorkspace(tab:)`，只有 `PanelWindowController.workspace` 会 `show()`。
 
 ### 分层设计原则
 
@@ -85,6 +85,6 @@ AreaChain/
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中。离开「灵感手记」tab 会清掉手记滚动高亮。底栏「工作台」走 `revealWorkspace()`：只前置当前 tab，不切回「任务」页。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中。离开「灵感手记」tab 会清掉手记滚动高亮。底栏「工作台」走 `revealWorkspace()`：只前置当前 tab，不切回「任务」页。搜索点习惯/待办走 `openCalendar()`，点手记走 `openDiary()`，都转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
-3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍静态存在，公开路径不再 `show()`；未创建窗口时 `hostedWindow` 为 nil，不参与 accessory 判断。`AppWindows.panelWindows` 实际只会看到已 `show()` 的工作台窗。
+3. **面板窗**：只有工作台这一扇 `PanelWindowController`。关设置时 `hideStrayWindows` 会藏起 SwiftUI Settings 场景多出来的窗，避免被当成「下一扇」打开。

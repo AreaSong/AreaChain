@@ -16,36 +16,12 @@ enum AppWindows {
         PanelWindowController.workspace.show()
     }
 
-    static func openSettings() {
-        openWorkspace(tab: .settings)
-    }
-
     static func openDiary() {
         openWorkspace(tab: .diary)
     }
 
     static func openCalendar() {
         openWorkspace(tab: .calendar)
-    }
-
-    static func openTrash() {
-        openWorkspace(tab: .trash)
-    }
-
-    static func openAttachments() {
-        openWorkspace(tab: .attachments)
-    }
-
-    static func openQuadrant() {
-        openWorkspace(tab: .quadrant)
-    }
-
-    static func openGantt() {
-        openWorkspace(tab: .gantt)
-    }
-
-    static func openSearch() {
-        openWorkspace(tab: .search)
     }
 
     static func becomeActive() {
@@ -75,18 +51,7 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [
-            PanelWindowController.workspace.hostedWindow,
-            PanelWindowController.settings.hostedWindow,
-            PanelWindowController.diary.hostedWindow,
-            PanelWindowController.calendar.hostedWindow,
-            PanelWindowController.trash.hostedWindow,
-            PanelWindowController.attachments.hostedWindow,
-            PanelWindowController.quadrant.hostedWindow,
-            PanelWindowController.gantt.hostedWindow,
-            PanelWindowController.search.hostedWindow
-        ]
-        .compactMap { $0 }
+        [PanelWindowController.workspace.hostedWindow].compactMap { $0 }
     }
 }
 
@@ -99,94 +64,6 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         root: {
             AnyView(
                 MainSplitWorkspaceView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let settings = PanelWindowController(
-        titleKey: "window.settings",
-        size: NSSize(width: 420, height: 560),
-        root: {
-            AnyView(
-                SettingsView(resignsChromeOnDisappear: false)
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let diary = PanelWindowController(
-        titleKey: "window.diary",
-        size: NSSize(width: 420, height: 520),
-        root: {
-            AnyView(
-                DiaryStandaloneView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let calendar = PanelWindowController(
-        titleKey: "window.calendar",
-        size: NSSize(width: 440, height: 640),
-        root: {
-            AnyView(
-                CalendarStandaloneView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let trash = PanelWindowController(
-        titleKey: "window.trash",
-        size: NSSize(width: 420, height: 520),
-        root: {
-            AnyView(
-                TrashPage()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let attachments = PanelWindowController(
-        titleKey: "window.attachments",
-        size: NSSize(width: 480, height: 560),
-        root: {
-            AnyView(
-                AttachmentBrowserPage()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let quadrant = PanelWindowController(
-        titleKey: "window.quadrant",
-        size: NSSize(width: 640, height: 560),
-        root: {
-            AnyView(
-                QuadrantStandaloneView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let gantt = PanelWindowController(
-        titleKey: "window.gantt",
-        size: NSSize(width: 760, height: 520),
-        root: {
-            AnyView(
-                GanttStandaloneView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
-        }
-    )
-    static let search = PanelWindowController(
-        titleKey: "window.search",
-        size: NSSize(width: 440, height: 520),
-        root: {
-            AnyView(
-                SearchPage()
                     .appChrome()
                     .modelContainer(Persistence.session.container)
             )
