@@ -53,4 +53,14 @@ struct NaturalLanguageParserTests {
         #expect(parsed.isImportant == true)
         #expect(parsed.notes == "需要统计本周各模块数据\nhttps://example.com/sheet")
     }
+
+    @Test func parsesP4AndShowsPriorityToken() {
+        let parsed = NaturalLanguageParser.parse("整理桌面 !p4")
+        #expect(parsed.cleanTitle == "整理桌面")
+        #expect(parsed.isImportant == false)
+        #expect(parsed.isUrgent == false)
+        #expect(parsed.hasPriorityToken == true)
+        #expect(parsed.hasTokens == true)
+        #expect(parsed.priorityLabel == "不重要不紧急")
+    }
 }

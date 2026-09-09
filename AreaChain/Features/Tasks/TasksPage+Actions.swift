@@ -25,7 +25,7 @@ extension TasksPage {
 
     func deleteTodo(_ todo: TodoItem) {
         pendingTrash = PendingTrash(title: todo.title) {
-            DayBoardMutations.persist { todo.deletedAt = .now }
+            DayBoardMutations.trashTodo(todo)
         }
     }
 }

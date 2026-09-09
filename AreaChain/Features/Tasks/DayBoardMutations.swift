@@ -57,6 +57,56 @@ enum DayBoardMutations {
         persist { todo.title = title }
     }
 
+    static func editRoutine(_ routine: DailyRoutine, title: String) {
+        persist { routine.title = title }
+    }
+
+    static func trashTodo(_ todo: TodoItem) {
+        persist {
+            let now = SoftDelete.stamp()
+            todo.deletedAt = now
+            for sub in todo.subtasks where sub.deletedAt == nil {
+                sub.deletedAt = now
+            }
+        }
+    }
+
+    static func restoreTodo(_ todo: TodoItem) {
+        persist {
+            let stamp = todo.deletedAt
+            todo.deletedAt = nil
+            SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: todo.subtasks)
+        }
+    }
+
+    static func trashRoutine(_ routine: DailyRoutine) {
+        persist { routine.deletedAt = SoftDelete.stamp() }
+    }
+
+    static func addTag(
+        named name: String,
+        existing: [TagItem],
+        context: ModelContext,
+        ontoTodo todo: TodoItem? = nil,
+        ontoRoutine routine: DailyRoutine? = nil
+    ) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        persist {
+            let tag = existing.first { $0.name == trimmed && $0.deletedAt == nil } ?? {
+                let created = TagItem(name: trimmed, sortOrder: existing.count)
+                context.insert(created)
+                return created
+            }()
+            if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
+                todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
+            }
+            if let routine, !TagIDList.contains(routine.tagIDs, tag.id) {
+                routine.tagIDs = TagIDList.toggling(routine.tagIDs, tag.id)
+            }
+        }
+    }
+
     static func moveTodo(_ todo: TodoItem, to dayKey: String) {
         guard dayKey != todo.dayKey else { return }
         persist { todo.dayKey = dayKey }

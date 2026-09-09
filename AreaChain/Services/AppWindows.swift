@@ -10,6 +10,12 @@ enum AppWindows {
         PanelWindowController.workspace.show()
     }
 
+    static func revealWorkspace() {
+        StatusItemController.shared.close()
+        becomeActive()
+        PanelWindowController.workspace.show()
+    }
+
     static func openSettings() {
         openWorkspace(tab: .settings)
     }

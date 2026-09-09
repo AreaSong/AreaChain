@@ -192,7 +192,7 @@ struct WorkspaceFilteredListView: View {
             onToggle: { DayBoardMutations.toggleTodo(todo) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
-                    DayBoardMutations.persist { todo.deletedAt = .now }
+                    DayBoardMutations.trashTodo(todo)
                 }
             },
             onEdit: { DayBoardMutations.editTodo(todo, title: $0) },

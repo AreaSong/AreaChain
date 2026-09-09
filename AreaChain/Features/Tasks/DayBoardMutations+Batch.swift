@@ -51,7 +51,7 @@ extension DayBoardMutations {
 
     static func batchTrash(_ ids: Set<UUID>, todos: [TodoItem], routines: [DailyRoutine]) {
         guard !ids.isEmpty else { return }
-        let now = Date()
+        let now = SoftDelete.stamp()
         persist {
             for todo in todos where ids.contains(todo.id) && todo.deletedAt == nil {
                 todo.deletedAt = now

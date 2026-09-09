@@ -6,6 +6,7 @@ struct TaskDetailNotesView: View {
     let onUpdate: (String) -> Void
 
     @State private var draft: String = ""
+    @State private var saveTask: Task<Void, Never>?
     @FocusState private var isFocused: Bool
 
     var body: some View {
@@ -48,7 +49,12 @@ struct TaskDetailNotesView: View {
                     .padding(4)
                     .frame(minHeight: 56, maxHeight: 150)
                     .onChange(of: draft) { _, newValue in
-                        onUpdate(newValue)
+                        scheduleSave(newValue)
+                    }
+                    .onChange(of: isFocused) { _, focused in
+                        if !focused {
+                            flushSave()
+                        }
                     }
             }
 
@@ -93,6 +99,28 @@ struct TaskDetailNotesView: View {
             if newValue != draft {
                 draft = newValue
             }
+        }
+        .onDisappear {
+            flushSave()
+        }
+    }
+
+    private func scheduleSave(_ text: String) {
+        saveTask?.cancel()
+        saveTask = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(450))
+            guard !Task.isCancelled else { return }
+            if text != notes {
+                onUpdate(text)
+            }
+        }
+    }
+
+    private func flushSave() {
+        saveTask?.cancel()
+        saveTask = nil
+        if draft != notes {
+            onUpdate(draft)
         }
     }
 

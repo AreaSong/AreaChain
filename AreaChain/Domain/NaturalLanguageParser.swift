@@ -7,16 +7,18 @@ struct ParsedCapture: Equatable {
     var tagName: String?
     var isImportant: Bool
     var isUrgent: Bool
+    var hasPriorityToken: Bool = false
     var notes: String = ""
 
     var hasTokens: Bool {
-        remindMinutes != nil || tagName != nil || isImportant || isUrgent
+        remindMinutes != nil || tagName != nil || hasPriorityToken
     }
 
     var priorityLabel: String? {
         if isImportant && isUrgent { return "重要且紧急" }
         if isImportant { return "重要" }
         if isUrgent { return "紧急" }
+        if hasPriorityToken { return "不重要不紧急" }
         return nil
     }
 
@@ -39,10 +41,12 @@ enum NaturalLanguageParser {
         var tagName: String? = nil
         var isImportant = false
         var isUrgent = false
+        var hasPriorityToken = false
 
         // 1. Parse priority (!重要紧急, !重要, !紧急, !p1, !p2, !p3, !p4)
         let priorityPattern = #"!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要紧急|重要|紧急|p[1-4]|P[1-4])"#
         if let match = firstMatch(pattern: priorityPattern, in: text) {
+            hasPriorityToken = true
             let token = match.lowercased()
             if token.contains("重要紧急") || token.contains("紧急重要") || token.contains("重要且紧急") || token == "!p1" {
                 isImportant = true
@@ -88,6 +92,7 @@ enum NaturalLanguageParser {
             tagName: tagName,
             isImportant: isImportant,
             isUrgent: isUrgent,
+            hasPriorityToken: hasPriorityToken,
             notes: notesText
         )
     }

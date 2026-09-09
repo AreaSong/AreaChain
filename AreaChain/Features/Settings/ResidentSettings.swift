@@ -159,7 +159,7 @@ private struct ResidentSettingsRow: View {
 
     private func requestTrash() {
         pendingTrash = PendingTrash(title: routine.title) {
-            persist { routine.deletedAt = .now }
+            DayBoardMutations.trashRoutine(routine)
         }
     }
 

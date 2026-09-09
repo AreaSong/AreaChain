@@ -125,4 +125,37 @@ struct SubtaskModelTests {
         #expect(todo.notes == "更新后的待办备注\nhttps://example.com")
         #expect(routine.notes == "更新后的习惯备注")
     }
+
+    @Test func trashTodoCascadesLiveSubtasksAndRestoreKeepsIndependentDeletes() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "主任务", dayKey: "2026-09-08")
+        context.insert(todo)
+        _ = DayBoardMutations.addSubtask(to: todo, title: "活着", context: context)
+        _ = DayBoardMutations.addSubtask(to: todo, title: "先删", context: context)
+        let live = try #require(todo.subtasks.first { $0.title == "活着" })
+        let prior = try #require(todo.subtasks.first { $0.title == "先删" })
+        DayBoardMutations.deleteSubtask(prior)
+        let independentlyDeletedAt = try #require(prior.deletedAt)
+
+        DayBoardMutations.trashTodo(todo)
+        #expect(todo.deletedAt != nil)
+        #expect(live.deletedAt == todo.deletedAt)
+        #expect(prior.deletedAt == independentlyDeletedAt)
+
+        DayBoardMutations.restoreTodo(todo)
+        #expect(todo.deletedAt == nil)
+        #expect(live.deletedAt == nil)
+        #expect(prior.deletedAt == independentlyDeletedAt)
+    }
+
+    @Test func addTagAttachesToTodo() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08")
+        context.insert(todo)
+        DayBoardMutations.addTag(named: "跟进", existing: [], context: context, ontoTodo: todo)
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        let tag = try #require(tags.first)
+        #expect(tag.name == "跟进")
+        #expect(TagIDList.contains(todo.tagIDs, tag.id))
+    }
 }

@@ -253,9 +253,12 @@ private extension CalendarSync {
                 todo.calendarEventID = ident
             }
         }
-        for todo in todos where todo.deletedAt == nil && !todo.calendarEventID.isEmpty {
-            if !seen.contains(todo.id) {
-                todo.deletedAt = .now
+        for todo in todos {
+            if CalendarEventPolicy.shouldUnlinkMissingRemote(
+                deletedAt: todo.deletedAt,
+                calendarEventID: todo.calendarEventID,
+                seenRemote: seen.contains(todo.id)
+            ) {
                 todo.calendarEventID = ""
             }
         }

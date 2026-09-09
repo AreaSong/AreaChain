@@ -65,14 +65,15 @@ AreaChain/
 
 1. **CloudKit 预备**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置里 iCloud 开关是占位（`CloudKitAvailability.isConfigured == false`），打开不改本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 只列习惯、待办、手记、附件。
-4. **级联**：父待办勾完成时，应用层把未完成子任务标完成。SwiftData `.cascade` 只管硬删除。应用层仅 `batchTrash` 会给子任务写 `deletedAt`；清单/抽屉单项删除只标父待办。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。
+4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务打上同一 `deletedAt`；恢复时只还原时间戳相同的子任务。SwiftData `.cascade` 只管硬删除。
 
 ## 关键领域算法
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`）、优先级、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
 - **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。
+- **`SoftDelete`**：软删时间戳；父待办进回收站时子任务共用同一戳，恢复只还原戳相同的子任务。
 - **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 

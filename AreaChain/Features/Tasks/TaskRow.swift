@@ -377,8 +377,10 @@ extension TaskRow {
             )
         }
         standingMenus
-        Button("row.skip") {
-            dispatch(.skip)
+        if state.isResident {
+            Button("row.skip") {
+                dispatch(.skip)
+            }
         }
     }
 
@@ -399,16 +401,18 @@ extension TaskRow {
 
     @ViewBuilder
     private var standingMenus: some View {
-        if let weekdaysOnly = state.weekdaysOnly {
-            Button(weekdaysOnly ? "row.everyday" : "row.weekdays") {
-                dispatch(.setWeekdaysOnly(!weekdaysOnly))
+        if state.isResident {
+            if let weekdaysOnly = state.weekdaysOnly {
+                Button(weekdaysOnly ? "row.everyday" : "row.weekdays") {
+                    dispatch(.setWeekdaysOnly(!weekdaysOnly))
+                }
             }
-        }
-        Button("row.disable") {
-            dispatch(.setEnabled(false))
-        }
-        Button("row.enable") {
-            dispatch(.setEnabled(true))
+            Button("row.disable") {
+                dispatch(.setEnabled(false))
+            }
+            Button("row.enable") {
+                dispatch(.setEnabled(true))
+            }
         }
     }
 

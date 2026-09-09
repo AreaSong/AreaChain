@@ -7,6 +7,8 @@ struct TrashPage: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
+    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
     @State private var pendingPurge: PendingTrash?
@@ -17,7 +19,8 @@ struct TrashPage: View {
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
         let files = attachments.compactMap(TrashRow.attachment)
-        return (standing + tasks + notes + files).sorted { $0.deletedAt > $1.deletedAt }
+        let catalog = projects.compactMap(TrashRow.project) + tags.compactMap(TrashRow.tag)
+        return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
     }
 
     var body: some View {
@@ -149,10 +152,9 @@ private struct TrashRow: Identifiable {
             isResident: false,
             deletedAt: deletedAt,
             restore: {
+                let stamp = item.deletedAt
                 item.deletedAt = nil
-                for sub in item.subtasks {
-                    sub.deletedAt = nil
-                }
+                SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: item.subtasks)
             },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
@@ -175,6 +177,36 @@ private struct TrashRow: Identifiable {
             restore: { item.deletedAt = nil },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                context.delete(item)
+            }
+        )
+    }
+
+    static func project(_ item: ProjectItem) -> TrashRow? {
+        guard let deletedAt = item.deletedAt else { return nil }
+        return TrashRow(
+            id: item.id,
+            title: item.name,
+            kindLabel: "trash.kind.project",
+            isResident: false,
+            deletedAt: deletedAt,
+            restore: { item.deletedAt = nil },
+            removeFromStore: { context in
+                context.delete(item)
+            }
+        )
+    }
+
+    static func tag(_ item: TagItem) -> TrashRow? {
+        guard let deletedAt = item.deletedAt else { return nil }
+        return TrashRow(
+            id: item.id,
+            title: item.name,
+            kindLabel: "trash.kind.tag",
+            isResident: false,
+            deletedAt: deletedAt,
+            restore: { item.deletedAt = nil },
+            removeFromStore: { context in
                 context.delete(item)
             }
         )

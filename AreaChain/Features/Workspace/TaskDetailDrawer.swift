@@ -71,7 +71,7 @@ struct TaskDetailDrawer: View {
                     onToggle: { DayBoardMutations.toggleTodo(todo) },
                     onTrash: {
                         pendingTrash = PendingTrash(title: todo.title) {
-                            DayBoardMutations.persist { todo.deletedAt = .now }
+                            DayBoardMutations.trashTodo(todo)
                             taskID = nil
                         }
                     },
@@ -127,8 +127,12 @@ struct TaskDetailDrawer: View {
                             }
                         },
                         onCreateTag: { name in
-                            let newTag = TagItem(name: name, sortOrder: tags.count)
-                            modelContext.insert(newTag)
+                            DayBoardMutations.addTag(
+                                named: name,
+                                existing: tags,
+                                context: modelContext,
+                                ontoTodo: todo
+                            )
                         }
                     )
                 }
@@ -164,7 +168,7 @@ struct TaskDetailDrawer: View {
                     onToggle: {},
                     onTrash: {
                         pendingTrash = PendingTrash(title: routine.title) {
-                            DayBoardMutations.persist { routine.deletedAt = .now }
+                            DayBoardMutations.trashRoutine(routine)
                             taskID = nil
                         }
                     },
@@ -222,9 +226,22 @@ struct TaskDetailDrawer: View {
                             }
                         },
                         onCreateTag: { name in
-                            let newTag = TagItem(name: name, sortOrder: tags.count)
-                            modelContext.insert(newTag)
+                            DayBoardMutations.addTag(
+                                named: name,
+                                existing: tags,
+                                context: modelContext,
+                                ontoRoutine: routine
+                            )
                         }
+                    )
+                }
+
+                DrawerSectionGroup(title: "记录与资产") {
+                    attachmentSection(ownerID: routine.id, ownerKind: .routine)
+
+                    TaskDetailMetadataSection(
+                        createdAt: routine.createdAt,
+                        sourceBundleID: routine.sourceBundleID
                     )
                 }
             }
@@ -232,8 +249,6 @@ struct TaskDetailDrawer: View {
         }
         .daybookScroll()
     }
-
-    // MARK: - Attachments
 
     private func attachmentSection(ownerID: UUID, ownerKind: AttachmentOwner) -> some View {
         let taskAttachments = attachments.filter { $0.ownerID == ownerID && $0.deletedAt == nil }

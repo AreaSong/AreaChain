@@ -66,6 +66,27 @@ struct ClassificationTests {
         #expect(CalendarEventPolicy.shouldPublish(isDone: false, deletedAt: nil))
         #expect(!CalendarEventPolicy.shouldPublish(isDone: true, deletedAt: nil))
         #expect(!CalendarEventPolicy.shouldPublish(isDone: false, deletedAt: Date(timeIntervalSince1970: 1)))
+        #expect(
+            CalendarEventPolicy.shouldUnlinkMissingRemote(
+                deletedAt: nil,
+                calendarEventID: "ek-1",
+                seenRemote: false
+            )
+        )
+        #expect(
+            !CalendarEventPolicy.shouldUnlinkMissingRemote(
+                deletedAt: nil,
+                calendarEventID: "ek-1",
+                seenRemote: true
+            )
+        )
+        #expect(
+            !CalendarEventPolicy.shouldUnlinkMissingRemote(
+                deletedAt: Date(),
+                calendarEventID: "ek-1",
+                seenRemote: false
+            )
+        )
     }
 
     @Test func clipboardPrefersTextAndSkipsEmpty() {

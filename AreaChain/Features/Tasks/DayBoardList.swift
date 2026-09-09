@@ -120,8 +120,7 @@ struct DayBoardList: View {
         }
         .onKeyPress(.return) {
             if let id = focusedTaskID?.wrappedValue {
-                WorkspaceNavigation.shared.selectedTaskID = id
-                WorkspaceNavigation.shared.isInspectorPresented = true
+                inspectSelected(id: id)
                 return .handled
             }
             return .ignored
@@ -164,8 +163,7 @@ struct DayBoardList: View {
                 }
             case 36: // Enter / Return
                 if let id = focusedTaskID?.wrappedValue {
-                    WorkspaceNavigation.shared.selectedTaskID = id
-                    WorkspaceNavigation.shared.isInspectorPresented = true
+                    inspectSelected(id: id)
                     return nil
                 }
             case 51: // Backspace / Delete
@@ -258,9 +256,21 @@ struct DayBoardList: View {
         }
         if let todo = todos.first(where: { $0.id == id }) {
             pendingTrash = PendingTrash(title: todo.title) {
-                DayBoardMutations.persist { todo.deletedAt = .now }
+                DayBoardMutations.trashTodo(todo)
+            }
+            return
+        }
+        if let routine = routines.first(where: { $0.id == id }) {
+            pendingTrash = PendingTrash(title: routine.title) {
+                DayBoardMutations.trashRoutine(routine)
             }
         }
+    }
+
+    private func inspectSelected(id: UUID) {
+        WorkspaceNavigation.shared.selectedTaskID = id
+        WorkspaceNavigation.shared.isInspectorPresented = true
+        AppWindows.revealWorkspace()
     }
 
     private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -372,7 +382,15 @@ struct DayBoardList: View {
             streak: streakResult.currentStreak,
             remindMinutes: routine.remindMinutes,
             onToggle: { DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
+            onDelete: {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                }
+            },
+            onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
+            onDisable: { DayBoardMutations.persist { routine.isEnabled = false } },
+            onEnable: { DayBoardMutations.persist { routine.isEnabled = true } },
             isImportant: routine.isImportant,
             isUrgent: routine.isUrgent,
             notes: routine.notes,
@@ -393,7 +411,7 @@ struct DayBoardList: View {
             onToggle: { DayBoardMutations.toggleTodo(todo) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
-                    DayBoardMutations.persist { todo.deletedAt = .now }
+                    DayBoardMutations.trashTodo(todo)
                 }
             },
             onEdit: { DayBoardMutations.editTodo(todo, title: $0) },
