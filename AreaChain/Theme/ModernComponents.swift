@@ -159,14 +159,24 @@ struct ModernCardModifier: ViewModifier {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.2 : 0.8)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.5 : 0.8)
             )
             .shadow(
-                color: isHovered ? DaybookShadow.cardHover : DaybookShadow.cardSubtle,
-                radius: isHovered ? 4 : 2,
+                color: shadowColor,
+                radius: isSelected ? 4 : (isHovered ? 4 : 2),
                 x: 0,
-                y: isHovered ? 2 : 1
+                y: isSelected ? 1 : (isHovered ? 2 : 1)
             )
+    }
+
+    private var shadowColor: Color {
+        if isSelected {
+            return DaybookTheme.stamp.opacity(0.18)
+        }
+        if isHovered {
+            return DaybookShadow.cardHover
+        }
+        return DaybookShadow.cardSubtle
     }
 
     private var backgroundFill: Color {
@@ -181,7 +191,7 @@ struct ModernCardModifier: ViewModifier {
 
     private var borderStroke: Color {
         if isSelected {
-            return DaybookTheme.cardSelectionStroke
+            return DaybookTheme.stamp.opacity(0.85)
         }
         if isHovered {
             return DaybookTheme.cardBorderHover

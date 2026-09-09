@@ -391,6 +391,13 @@ struct DaybookTextField: NSViewRepresentable {
                 parent.focus.wrappedValue = false
                 return true
             }
+            if commandSelector == #selector(NSResponder.moveDown(_:)) {
+                if textView.string.isEmpty {
+                    textView.window?.makeFirstResponder(nil)
+                    parent.focus.wrappedValue = false
+                    return true
+                }
+            }
             return false
         }
     }

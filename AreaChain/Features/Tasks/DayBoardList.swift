@@ -126,17 +126,89 @@ struct DayBoardList: View {
             }
             return .ignored
         }
+        .onAppear(perform: setupKeyMonitor)
+        .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
         .animation(ModernMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
         .animation(ModernMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
+    }
+
+    @State private var keyMonitor: Any? = nil
+
+    private func setupKeyMonitor() {
+        guard keyMonitor == nil else { return }
+        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            let firstResponder = NSApp.keyWindow?.firstResponder
+            let isTextViewEditing = (firstResponder as? NSTextView)?.isEditable == true
+
+            if isTextViewEditing {
+                if event.keyCode == 125, let tv = firstResponder as? NSTextView, tv.string.isEmpty {
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                    navigateSelection(delta: 1)
+                    return nil
+                }
+                return event
+            }
+
+            switch event.keyCode {
+            case 125: // Down Arrow
+                navigateSelection(delta: 1)
+                return nil
+            case 126: // Up Arrow
+                navigateSelection(delta: -1)
+                return nil
+            case 49: // Space
+                if let id = focusedTaskID?.wrappedValue {
+                    toggleSelected(id: id)
+                    return nil
+                }
+            case 36: // Enter / Return
+                if let id = focusedTaskID?.wrappedValue {
+                    WorkspaceNavigation.shared.selectedTaskID = id
+                    WorkspaceNavigation.shared.isInspectorPresented = true
+                    return nil
+                }
+            case 51: // Backspace / Delete
+                if let id = focusedTaskID?.wrappedValue {
+                    deleteSelected(id: id)
+                    return nil
+                }
+            case 14: // 'e' or 'E'
+                if let id = focusedTaskID?.wrappedValue {
+                    editingTaskID = id
+                    return nil
+                }
+            case 53: // Escape
+                if focusedTaskID?.wrappedValue != nil {
+                    focusedTaskID?.wrappedValue = nil
+                    onReturnToInput?()
+                    return nil
+                }
+            default:
+                break
+            }
+            return event
+        }
+    }
+
+    private func tearDownKeyMonitor() {
+        if let monitor = keyMonitor {
+            NSEvent.removeMonitor(monitor)
+            keyMonitor = nil
+        }
     }
 
     private func navigateSelection(delta: Int) {
         let ids = orderedVisibleIDs
         guard !ids.isEmpty else { return }
         if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
-            let nextIdx = min(max(idx + delta, 0), ids.count - 1)
-            focusedTaskID?.wrappedValue = ids[nextIdx]
+            let nextIdx = idx + delta
+            if nextIdx >= 0 && nextIdx < ids.count {
+                focusedTaskID?.wrappedValue = ids[nextIdx]
+            } else if nextIdx < 0 {
+                focusedTaskID?.wrappedValue = nil
+                onReturnToInput?()
+            }
         } else {
             focusedTaskID?.wrappedValue = delta >= 0 ? ids.first : ids.last
         }

@@ -230,9 +230,11 @@ struct TaskRow: View {
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture {
-            dispatch(.select)
+        .onTapGesture(count: 2) {
             beginEdit()
+        }
+        .onTapGesture(count: 1) {
+            dispatch(.select)
         }
     }
 
