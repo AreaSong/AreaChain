@@ -267,23 +267,37 @@ final class DiaryEntry {
     var dayKey: String
     var createdAt: Date
     var deletedAt: Date?
+    var tagIDs: String = ""
+    var isPinned: Bool = false
 
     init(
         id: UUID = UUID(),
         text: String,
         dayKey: String,
         createdAt: Date = .now,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        tagIDs: String = "",
+        isPinned: Bool = false
     ) {
         self.id = id
         self.text = text
         self.dayKey = dayKey
         self.createdAt = createdAt
         self.deletedAt = deletedAt
+        self.tagIDs = tagIDs
+        self.isPinned = isPinned
     }
 
     var snapshot: DiarySnapshot {
-        DiarySnapshot(id: id, text: text, dayKey: dayKey, createdAt: createdAt, deletedAt: deletedAt)
+        DiarySnapshot(
+            id: id,
+            text: text,
+            dayKey: dayKey,
+            createdAt: createdAt,
+            deletedAt: deletedAt,
+            tagIDs: tagIDs,
+            isPinned: isPinned
+        )
     }
 }
 

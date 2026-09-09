@@ -31,7 +31,7 @@ AreaChain/
     Calendar/     日历月网格与独立日历窗
     Quadrant/     四象限矩阵独立窗
     Gantt/        当月轻量甘特安排独立窗
-    Diary/        一句话日记独立窗与时间轴
+    Diary/        灵感手记独立窗与卡片流（多维标签过滤、密码隐私虚化、置顶与就地编辑）
     Attachments/  附件管理中心独立窗
     Search/       跨天全局搜索独立窗
     Settings/     设置中心独立窗（习惯管理、项目树、标签、系统偏好）
@@ -56,7 +56,7 @@ AreaChain 使用 SwiftData 统一管理 8 张核心持久化表结构：
 | `RoutineCheck` | 习惯打卡记录 | 单日打卡日志：`id`, `dayKey`（日期键）, `isDone`（已打卡）, `isSkipped`（已跳过），反向关联 `DailyRoutine`。 |
 | `TodoItem` | 临时待办 | 待办事务：`id`, `title`, `isDone`, `dayKey`（排定日期）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`（同步到系统日历的事件标识）, `notes`（多行长备注），对 `SubtaskItem` 建立级联删除关系。 |
 | `SubtaskItem` | 待办子任务 | 任务拆解项：`id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，反向级联归属于 `TodoItem`。 |
-| `DiaryEntry` | 随手日记 | 日记条目：`id`, `text`, `dayKey`, `createdAt`, `deletedAt`。 |
+| `DiaryEntry` | 灵感手记 | 手记便签条目：`id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`（多维标签 UUID 逗号分隔列表）, `isPinned`（图钉置顶状态）。 |
 | `ProjectItem` | 项目分类树 | 结构化项目：`id`, `name`, `sortOrder`, `parentID`（支持树形嵌套）, `deletedAt`。 |
 | `TagItem` | 标签分类 | 扁平标签：`id`, `name`, `sortOrder`, `deletedAt`。 |
 | `AttachmentItem` | 附件元数据 | 图片附件索引：`id`, `ownerKind`（归属 todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`。**二进制图像不存入数据库**，存储于 `Application Support/areachain-attachments/<id>`。 |

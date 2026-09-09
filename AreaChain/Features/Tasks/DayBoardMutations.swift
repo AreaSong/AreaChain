@@ -136,6 +136,24 @@ enum DayBoardMutations {
     static func updateNotes(for routine: DailyRoutine, notes: String) {
         persist { routine.notes = notes }
     }
+
+    static func editDiary(_ entry: DiaryEntry, text: String) {
+        persist { entry.text = text }
+    }
+
+    static func togglePinDiary(_ entry: DiaryEntry) {
+        persist { entry.isPinned.toggle() }
+    }
+
+    static func toggleDiaryTag(_ entry: DiaryEntry, tagID: UUID) {
+        persist {
+            entry.tagIDs = TagIDList.toggling(entry.tagIDs, tagID)
+        }
+    }
+
+    static func deleteDiary(_ entry: DiaryEntry) {
+        persist { entry.deletedAt = .now }
+    }
 }
 
 enum ResidentNote {

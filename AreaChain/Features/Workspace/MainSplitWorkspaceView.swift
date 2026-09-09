@@ -34,7 +34,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .calendar: return "calendar"
         case .quadrant: return "square.grid.2x2"
         case .gantt: return "chart.bar.xaxis"
-        case .diary: return "book.closed"
+        case .diary: return "note.text"
         case .attachments: return "paperclip"
         case .search: return "magnifyingglass"
         case .trash: return "trash"

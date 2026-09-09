@@ -1,27 +1,32 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
+/// 现代灵感手记（Notes & Memos）主视图：支持多维标签分类（小巧思/密码/日记等）、隐私遮罩、瀑布流展示与极速记录
 struct DiaryPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
 
     var todayKey: String
     var entries: [DiaryEntry]
-    var showsComposer: Bool = false
+    var showsComposer: Bool = true
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
 
+    @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
-    @Bindable private var selection = BoardSelection.shared
 
-    @State private var localViewingKey: String
-    @State private var draft = ""
+    @State private var selectedTagID: UUID? = nil
+    @State private var searchQuery: String = ""
+    @State private var draftText: String = ""
+    @State private var composerSelectedTagIDs: Set<UUID> = []
+    @State private var pendingTrash: PendingTrash?
     @FocusState private var composerFocused: Bool
 
     init(
         todayKey: String,
         entries: [DiaryEntry],
-        showsComposer: Bool = false,
+        showsComposer: Bool = true,
         usesSharedDiaryDay: Bool = false,
         maxScrollHeight: CGFloat? = nil
     ) {
@@ -30,406 +35,714 @@ struct DiaryPage: View {
         self.showsComposer = showsComposer
         self.usesSharedDiaryDay = usesSharedDiaryDay
         self.maxScrollHeight = maxScrollHeight
-        _localViewingKey = State(initialValue: todayKey)
     }
 
-    private var viewingKey: String {
-        get { usesSharedDiaryDay ? selection.diaryDayKey : localViewingKey }
-        nonmutating set {
-            if usesSharedDiaryDay {
-                selection.diaryDayKey = newValue
-            } else {
-                localViewingKey = newValue
+    private var activeTags: [TagItem] {
+        allTags.filter { $0.deletedAt == nil }
+    }
+
+    private var nonDeletedEntries: [DiaryEntry] {
+        entries.filter { $0.deletedAt == nil }
+    }
+
+    /// 过滤后的手记列表：按置顶优先、创建时间倒序
+    private var filteredEntries: [DiaryEntry] {
+        nonDeletedEntries
+            .filter { entry in
+                if let selectedTagID {
+                    guard TagIDList.contains(entry.tagIDs, selectedTagID) else { return false }
+                }
+                let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !query.isEmpty {
+                    let matchesText = entry.text.localizedCaseInsensitiveContains(query)
+                    let matchesTag = activeTags.contains { tag in
+                        TagIDList.contains(entry.tagIDs, tag.id) && tag.name.localizedCaseInsensitiveContains(query)
+                    }
+                    if !matchesText && !matchesTag {
+                        return false
+                    }
+                }
+                return true
             }
-        }
-    }
-
-    private var isViewingToday: Bool {
-        viewingKey >= todayKey
-    }
-
-    private var visibleEntries: [DiaryEntry] {
-        let ids = Set(DayBoardLogic.diaries(for: viewingKey, in: entries.map(\.snapshot)).map(\.id))
-        return entries
-            .filter { ids.contains($0.id) && $0.deletedAt == nil }
-            .sorted { $0.createdAt > $1.createdAt }
-    }
-
-    private var canSubmit: Bool {
-        !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            .sorted { a, b in
+                if a.isPinned != b.isPinned {
+                    return a.isPinned && !b.isPinned
+                }
+                return a.createdAt > b.createdAt
+            }
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            dayChrome
-            if isViewingToday {
-                if showsComposer {
-                    composer
-                }
-            } else {
-                HStack(spacing: 6) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DaybookTheme.stamp)
-                    Text("diary.hint")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DaybookTheme.muted)
-                    Spacer()
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+        VStack(alignment: .leading, spacing: 12) {
+            topHeader
+
+            tagFilterBar
+
+            if showsComposer {
+                quickComposer
             }
-            entryList
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            entryListSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            if isViewingToday && showsComposer {
-                composerFocused = true
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
-            if isViewingToday && showsComposer {
-                composerFocused = true
-            }
-        }
-        .onChange(of: todayKey) { _, newValue in
-            if viewingKey > newValue {
-                viewingKey = newValue
-            }
-        }
+        .confirmMoveToTrash($pendingTrash)
     }
 
-    private var composer: some View {
-        DaybookField(focused: composerFocused) {
-            HStack(spacing: 8) {
-                DaybookTextField(
-                    text: $draft,
-                    placeholder: L10n.string("diary.composer", locale: locale),
-                    focus: $composerFocused,
-                    onSubmit: addTodayDiary
-                )
-                .accessibilityLabel("diary.composer")
-                ComposerAddButton(title: "diary.record", enabled: canSubmit, action: addTodayDiary)
-            }
-        }
-        .daybookHideInputChrome()
-    }
+    // MARK: - Top Header
 
-    private var dayChrome: some View {
-        HStack(spacing: 6) {
-            HStack(spacing: 2) {
-                DaybookNavButton(systemName: "chevron.left", label: "diary.prev") {
-                    viewingKey = DayKey.shifted(viewingKey, by: -1)
-                }
-                DaybookNavButton(
-                    systemName: "chevron.right",
-                    label: "diary.next",
-                    enabled: viewingKey < todayKey
-                ) {
-                    if viewingKey < todayKey {
-                        viewingKey = DayKey.shifted(viewingKey, by: 1)
-                    }
-                }
-            }
+    private var topHeader: some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Text("灵感手记")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(DaybookTheme.ink)
 
-            HStack(spacing: 6) {
-                Text(isViewingToday ? L10n.string("diary.today.title", locale: locale) : DayKey.displayName(viewingKey, locale: locale))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.ink)
-                Text(DayKey.shortStamp(viewingKey, locale: locale))
-                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    Text("\(filteredEntries.count) 条记录")
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule().fill(DaybookTheme.hoverFill)
+                        )
+                }
+
+                Text("记录小巧思、密码备忘与日常随笔")
+                    .font(.system(size: 11.5))
                     .foregroundStyle(DaybookTheme.muted)
             }
 
             Spacer()
 
-            if !isViewingToday {
-                Button("diary.back") { viewingKey = todayKey }
-                    .font(.system(size: 11, weight: .semibold))
-                    .buttonStyle(DaybookQuietButtonStyle(prominent: true))
-            } else if !visibleEntries.isEmpty {
-                Text(L10n.format("diary.count_format", locale: locale, visibleEntries.count))
-                    .font(.system(size: 11, weight: .medium))
+            HStack(spacing: 6) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
+                TextField("搜索巧思、密码或标签...", text: $searchQuery)
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.ink)
+                if !searchQuery.isEmpty {
+                    Button {
+                        searchQuery = ""
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(DaybookTheme.muted)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .frame(width: 200)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .fill(DaybookTheme.hoverFill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+            )
         }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.04))
-        )
     }
 
-    private var entryList: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                if visibleEntries.isEmpty {
-                    DaybookEmptyState(title: emptyCopy, systemImage: "square.and.pencil")
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 12)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .strokeBorder(DaybookTheme.rule.opacity(0.35), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
-                        )
-                } else {
-                    ForEach(Array(visibleEntries.enumerated()), id: \.element.id) { index, entry in
-                        DiaryTimelineRow(
-                            entry: entry,
-                            attachments: attachments,
-                            isFirst: index == 0,
-                            isLast: index == visibleEntries.count - 1
-                        )
+    // MARK: - Tag Filter Bar
+
+    private var tagFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                filterPill(title: "全部", count: nonDeletedEntries.count, isSelected: selectedTagID == nil) {
+                    selectedTagID = nil
+                }
+
+                ForEach(activeTags) { tag in
+                    let count = nonDeletedEntries.filter { TagIDList.contains($0.tagIDs, tag.id) }.count
+                    filterPill(
+                        title: "#\(tag.name)",
+                        count: count,
+                        isSelected: selectedTagID == tag.id,
+                        color: tagColor(tag.name)
+                    ) {
+                        if selectedTagID == tag.id {
+                            selectedTagID = nil
+                        } else {
+                            selectedTagID = tag.id
+                        }
                     }
                 }
             }
             .padding(.vertical, 2)
         }
+    }
+
+    private func filterPill(
+        title: String,
+        count: Int,
+        isSelected: Bool,
+        color: Color = DaybookTheme.stamp,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 4) {
+                Text(title)
+                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .opacity(0.8)
+                }
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 4.5)
+            .background(
+                Capsule()
+                    .fill(isSelected ? color.opacity(0.16) : DaybookTheme.hoverFill.opacity(0.8))
+            )
+            .overlay(
+                Capsule()
+                    .strokeBorder(isSelected ? color.opacity(0.4) : DaybookTheme.cardBorder, lineWidth: 0.8)
+            )
+            .foregroundStyle(isSelected ? color : DaybookTheme.ink)
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Quick Note Composer
+
+    private var quickComposer: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            ZStack(alignment: .topLeading) {
+                if draftText.isEmpty {
+                    Text("随时记下小巧思、备忘或密码（可在正文中输入 #标签 快速归类，按 ⌘Return 提交）...")
+                        .font(.system(size: 12.5))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.7))
+                        .padding(.top, 8)
+                        .padding(.leading, 8)
+                }
+
+                TextEditor(text: $draftText)
+                    .font(.system(size: 13))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .frame(minHeight: 48, maxHeight: 100)
+                    .scrollContentBackground(.hidden)
+                    .focused($composerFocused)
+                    .padding(4)
+            }
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .fill(DaybookTheme.surface)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .stroke(composerFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: composerFocused ? 1.4 : 0.8)
+            )
+
+            HStack(alignment: .center, spacing: 6) {
+                Image(systemName: "tag")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
+
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 5) {
+                        ForEach(presetOrActiveTags) { tag in
+                            let isSelected = composerSelectedTagIDs.contains(tag.id)
+                            Button {
+                                if isSelected {
+                                    composerSelectedTagIDs.remove(tag.id)
+                                } else {
+                                    composerSelectedTagIDs.insert(tag.id)
+                                }
+                            } label: {
+                                HStack(spacing: 3) {
+                                    if isSelected {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 8, weight: .bold))
+                                    }
+                                    Text("#\(tag.name)")
+                                        .font(.system(size: 11))
+                                }
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(
+                                    Capsule()
+                                        .fill(isSelected ? tagColor(tag.name).opacity(0.18) : Color.clear)
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(isSelected ? tagColor(tag.name).opacity(0.5) : DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
+                                )
+                                .foregroundStyle(isSelected ? tagColor(tag.name) : DaybookTheme.muted)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Button(action: submitNote) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "square.and.pencil")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("存入手记")
+                            .font(.system(size: 11.5, weight: .semibold))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(
+                        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                            .fill(canSubmit ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.2))
+                    )
+                    .foregroundStyle(canSubmit ? Color.white : DaybookTheme.muted)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canSubmit)
+                .keyboardShortcut(.return, modifiers: .command)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .fill(DaybookTheme.hoverFill.opacity(0.5))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+        )
+    }
+
+    private var canSubmit: Bool {
+        !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var presetOrActiveTags: [TagItem] {
+        activeTags
+    }
+
+    // MARK: - Entry List Section
+
+    private var entryListSection: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 10) {
+                if filteredEntries.isEmpty {
+                    emptyState
+                } else {
+                    ForEach(filteredEntries) { entry in
+                        DiaryNoteCard(
+                            entry: entry,
+                            activeTags: activeTags,
+                            attachments: attachments,
+                            onTagTap: { tagID in
+                                selectedTagID = tagID
+                            },
+                            onDelete: {
+                                pendingTrash = PendingTrash(title: entry.text) {
+                                    DayBoardMutations.deleteDiary(entry)
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+            .padding(.vertical, 4)
+        }
         .daybookScroll()
         .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
     }
 
-    private var emptyCopy: LocalizedStringKey {
-        isViewingToday ? "diary.empty.today" : "diary.empty.past"
+    private var emptyState: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "note.text")
+                .font(.system(size: 32, weight: .light))
+                .foregroundStyle(DaybookTheme.muted.opacity(0.5))
+            Text(selectedTagID != nil || !searchQuery.isEmpty ? "未找到匹配的记录" : "还没有记录任何灵感或备忘")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(DaybookTheme.muted)
+            Text("在上方输入框中写下你的第一条小巧思、备忘或密码吧")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted.opacity(0.8))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
     }
 
-    private func addTodayDiary() {
-        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+    // MARK: - Actions
+
+    private func submitNote() {
+        let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
-        draft = ""
-        viewingKey = todayKey
+
+        var finalTagIDs = composerSelectedTagIDs
+        let parsed = NaturalLanguageParser.parse(text)
+        if let tagName = parsed.tagName {
+            if let existing = activeTags.first(where: { $0.name == tagName }) {
+                finalTagIDs.insert(existing.id)
+            } else {
+                let newTag = TagItem(name: tagName, sortOrder: activeTags.count)
+                modelContext.insert(newTag)
+                finalTagIDs.insert(newTag.id)
+            }
+        }
+
+        autoTagIfKeywordsMatch(text: text, targetSet: &finalTagIDs)
+
+        let tagIDsString = finalTagIDs.map(\.uuidString).joined(separator: ",")
+
+        let newEntry = DiaryEntry(
+            text: text,
+            dayKey: todayKey,
+            tagIDs: tagIDsString
+        )
+        modelContext.insert(newEntry)
+        draftText = ""
+        composerSelectedTagIDs.removeAll()
         BoardEvents.changed()
+    }
+
+    private func autoTagIfKeywordsMatch(text: String, targetSet: inout Set<UUID>) {
+        let lower = text.lowercased()
+        if lower.contains("密码") || lower.contains("password") || lower.contains("pwd") {
+            ensureTag(named: "密码", into: &targetSet)
+        }
+        if lower.contains("巧思") || lower.contains("灵感") || lower.contains("idea") {
+            ensureTag(named: "小巧思", into: &targetSet)
+        }
+    }
+
+    private func ensureTag(named name: String, into targetSet: inout Set<UUID>) {
+        if let found = activeTags.first(where: { $0.name == name }) {
+            targetSet.insert(found.id)
+        } else {
+            let tag = TagItem(name: name, sortOrder: activeTags.count)
+            modelContext.insert(tag)
+            targetSet.insert(tag.id)
+        }
+    }
+
+    private func tagColor(_ name: String) -> Color {
+        if name == "密码" { return Color.red }
+        if name == "小巧思" { return Color.orange }
+        if name == "日记" { return Color.blue }
+        return DaybookTheme.stamp
     }
 }
 
-struct DiaryLine: View {
-    @Environment(\.locale) private var locale
+// MARK: - Diary Note Card
+
+/// 现代灵感手记独立卡片：支持隐私遮罩、快捷复制、置顶、就地编辑与标签导航
+struct DiaryNoteCard: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var entry: DiaryEntry
+    var activeTags: [TagItem]
     var attachments: [AttachmentItem]
-    @State private var editing = false
-    @State private var hovering = false
-    @State private var draft = ""
-    @State private var pendingTrash: PendingTrash?
-    @FocusState private var rowFocused: Bool
+    var onTagTap: (UUID) -> Void
+    var onDelete: () -> Void
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(alignment: .center, spacing: 6) {
-                HStack(spacing: 3) {
-                    Image(systemName: "clock")
-                        .font(.system(size: 9, weight: .medium))
-                    Text(timeLabel(entry.createdAt))
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                }
-                .foregroundStyle(DaybookTheme.stamp)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule()
-                        .fill(DaybookTheme.stamp.opacity(0.12))
-                )
+    @State private var isHovered = false
+    @State private var isEditing = false
+    @State private var editDraft = ""
+    @State private var isMasked = true
+    @State private var hasCopied = false
 
-                Spacer()
-
-                if editing {
-                    RowIconButton(systemName: "checkmark", label: "row.save", action: save)
-                    RowIconButton(systemName: "xmark", label: "row.cancel", action: cancel)
-                } else {
-                    HStack(spacing: 2) {
-                        RowIconButton(systemName: "pencil", label: "diary.edit", action: beginEdit)
-                        RowIconButton(
-                            systemName: "photo",
-                            label: "row.attach",
-                            action: {
-                                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-                            }
-                        )
-                        RowIconButton(systemName: "trash", label: "diary.delete", role: .destructive, action: requestTrash)
-                        diaryMoreMenu
-                    }
-                    .opacity(showsHoverActions ? 1 : 0)
-                    .animation(DaybookMotion.animation(reduceMotion), value: showsHoverActions)
-                }
-            }
-
-            if editing {
-                TextField("diary.rename", text: $draft, axis: .vertical)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 13))
-                    .padding(6)
-                    .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .fill(DaybookTheme.paper)
-                            .stroke(DaybookTheme.focusRing, lineWidth: 1.2)
-                    )
-                    .onSubmit(save)
-                    .onExitCommand(perform: cancel)
-            } else {
-                Text(entry.text)
-                    .font(.system(size: 13))
-                    .lineSpacing(3)
-                    .foregroundStyle(DaybookTheme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .contentShape(Rectangle())
-                    .onTapGesture(perform: beginEdit)
-
-                if !diaryAttachments.isEmpty {
-                    AttachmentThumbnails(items: diaryAttachments)
-                        .padding(.top, 2)
-                }
-            }
+    /// 是否属于密码类型的记录
+    private var isPasswordType: Bool {
+        let hasPasswordTag = activeTags.contains { tag in
+            (tag.name == "密码" || tag.name.localizedCaseInsensitiveContains("password"))
+                && TagIDList.contains(entry.tagIDs, tag.id)
         }
-        .padding(10)
-        .modernCard(cornerRadius: DaybookRadius.medium, isHovered: hovering, isSelected: rowFocused)
-        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
-        .focusable()
-        .focusEffectDisabled()
-        .focused($rowFocused)
-        .onHover { hovering = $0 }
-        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
-        .animation(ModernMotion.interactive(reduceMotion), value: rowFocused)
-        .contextMenu {
-            Button("diary.edit", action: beginEdit)
-            Button("row.attach") {
-                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("row.attach.paste") {
-                _ = AttachmentActions.pasteImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("row.attach.screen") {
-                AttachmentActions.captureScreen(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("diary.delete", role: .destructive, action: requestTrash)
-        }
-        .confirmMoveToTrash($pendingTrash)
-        .onAppear { draft = entry.text }
+        let textContainsPassword = entry.text.contains("#密码")
+        return hasPasswordTag || textContainsPassword
     }
 
-    private var cardBackground: Color {
-        if rowFocused {
-            return DaybookTheme.cardSelectionFill
-        }
-        if hovering {
-            return DaybookTheme.cardSurfaceHover
-        }
-        return DaybookTheme.cardSurface
+    private var entryTags: [TagItem] {
+        activeTags.filter { TagIDList.contains(entry.tagIDs, $0.id) }
     }
 
-    private var cardStroke: Color {
-        if rowFocused {
-            return DaybookTheme.cardSelectionStroke
-        }
-        if hovering {
-            return DaybookTheme.rule.opacity(0.45)
-        }
-        return DaybookTheme.rule.opacity(0.25)
-    }
-
-    private var showsHoverActions: Bool {
-        hovering || rowFocused
-    }
-
-    private var diaryMoreMenu: some View {
-        Menu {
-            Button("diary.edit", action: beginEdit)
-            Button("row.attach") {
-                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("row.attach.paste") {
-                _ = AttachmentActions.pasteImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("row.attach.screen") {
-                AttachmentActions.captureScreen(ownerKind: .diary, ownerID: entry.id, context: modelContext)
-            }
-            Button("diary.delete", role: .destructive, action: requestTrash)
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: 12, weight: .semibold))
-                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(DaybookQuietButtonStyle())
-        .menuIndicator(.hidden)
-        .help("row.more")
-        .accessibilityLabel("row.more")
-    }
-
-    private var diaryAttachments: [AttachmentRef] {
+    private var noteAttachments: [AttachmentRef] {
         CatalogChoices.attachments(entry.id, in: attachments)
     }
 
-    private func beginEdit() {
-        draft = entry.text
-        editing = true
-    }
-
-    private func cancel() {
-        draft = entry.text
-        editing = false
-    }
-
-    private func save() {
-        let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !next.isEmpty {
-            entry.text = next
-            BoardEvents.changed()
-        }
-        editing = false
-    }
-
-    private func requestTrash() {
-        pendingTrash = PendingTrash(title: entry.text) {
-            entry.deletedAt = .now
-            BoardEvents.changed()
-        }
-    }
-
-    private func timeLabel(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: date)
-    }
-}
-
-struct DiaryTimelineRow: View {
-    var entry: DiaryEntry
-    var attachments: [AttachmentItem]
-    var isFirst: Bool
-    var isLast: Bool
-
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            timelineBar
-            DiaryLine(entry: entry, attachments: attachments)
+        VStack(alignment: .leading, spacing: 8) {
+            // 卡片顶栏：时间戳、置顶徽章、操作按钮
+            HStack(alignment: .center, spacing: 6) {
+                if entry.isPinned {
+                    Image(systemName: "pin.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(DaybookTheme.stamp)
+                }
+
+                Text(formatDate(entry.createdAt))
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(DaybookTheme.muted)
+
+                if isPasswordType {
+                    HStack(spacing: 3) {
+                        Image(systemName: "lock.shield.fill")
+                            .font(.system(size: 9))
+                        Text("隐私备忘")
+                            .font(.system(size: 10, weight: .medium))
+                    }
+                    .foregroundStyle(Color.red.opacity(0.85))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(
+                        Capsule().fill(Color.red.opacity(0.10))
+                    )
+                }
+
+                Spacer()
+
+                actionButtons
+            }
+
+            // 正文内容（支持密码隐私遮罩）
+            contentView
+
+            // 附件缩略图
+            if !noteAttachments.isEmpty {
+                AttachmentThumbnails(items: noteAttachments)
+                    .padding(.top, 2)
+            }
+
+            // 底部标签栏
+            if !entryTags.isEmpty {
+                HStack(spacing: 5) {
+                    ForEach(entryTags) { tag in
+                        Button {
+                            onTagTap(tag.id)
+                        } label: {
+                            Text("#\(tag.name)")
+                                .font(.system(size: 10.5, weight: .medium))
+                                .foregroundStyle(tag.name == "密码" ? Color.red : DaybookTheme.stamp)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule()
+                                        .fill((tag.name == "密码" ? Color.red : DaybookTheme.stamp).opacity(0.10))
+                                )
+                        }
+                        .buttonStyle(.plain)
+                        .help("筛选此标签")
+                    }
+                }
+                .padding(.top, 2)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .fill(isHovered ? DaybookTheme.cardSurfaceHover : DaybookTheme.cardSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .strokeBorder(entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.cardBorder), lineWidth: entry.isPinned ? 1.2 : 0.8)
+        )
+        .onHover { isHovered = $0 }
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+    }
+
+    // MARK: - Content View
+
+    @ViewBuilder
+    private var contentView: some View {
+        if isEditing {
+            VStack(alignment: .trailing, spacing: 6) {
+                TextEditor(text: $editDraft)
+                    .font(.system(size: 13))
+                    .frame(minHeight: 50)
+                    .scrollContentBackground(.hidden)
+                    .padding(4)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(DaybookTheme.surface)
+                            .stroke(DaybookTheme.focusRing, lineWidth: 1.2)
+                    )
+
+                HStack {
+                    Button("取消") {
+                        isEditing = false
+                    }
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+
+                    Button("保存") {
+                        let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !next.isEmpty {
+                            DayBoardMutations.editDiary(entry, text: next)
+                        }
+                        isEditing = false
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .font(.system(size: 11))
+                }
+            }
+        } else {
+            if isPasswordType && isMasked {
+                HStack(spacing: 8) {
+                    Text("••••••••••••••••")
+                        .font(.system(size: 14, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .blur(radius: 1.5)
+
+                    Spacer()
+
+                    Button {
+                        withAnimation(.snappy(duration: 0.2)) {
+                            isMasked = false
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "eye")
+                                .font(.system(size: 10))
+                            Text("显示内容")
+                                .font(.system(size: 11))
+                        }
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule().fill(DaybookTheme.stamp.opacity(0.12))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.vertical, 4)
+            } else {
+                Text(entry.text)
+                    .font(.system(size: 13))
+                    .lineSpacing(3.5)
+                    .foregroundStyle(DaybookTheme.ink)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .contentShape(Rectangle())
+                    .onTapGesture(count: 2) {
+                        editDraft = entry.text
+                        isEditing = true
+                    }
+            }
         }
     }
 
-    private var timelineBar: some View {
-        VStack(spacing: 0) {
-            Rectangle()
-                .fill(isFirst ? Color.clear : DaybookTheme.rule.opacity(0.45))
-                .frame(width: 1.5, height: 8)
+    // MARK: - Action Buttons
 
-            Circle()
-                .fill(DaybookTheme.stamp)
-                .frame(width: 6, height: 6)
-                .overlay(
-                    Circle()
-                        .stroke(DaybookTheme.stamp.opacity(0.25), lineWidth: 2)
-                )
+    private var actionButtons: some View {
+        HStack(spacing: 3) {
+            if isPasswordType {
+                Button(action: copyContent) {
+                    HStack(spacing: 2) {
+                        Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                            .font(.system(size: 10, weight: .bold))
+                        Text(hasCopied ? "已复制" : "复制密码")
+                            .font(.system(size: 10.5, weight: .medium))
+                    }
+                    .foregroundStyle(hasCopied ? Color.green : DaybookTheme.stamp)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
+                    .background(
+                        Capsule().fill((hasCopied ? Color.green : DaybookTheme.stamp).opacity(0.14))
+                    )
+                }
+                .buttonStyle(.plain)
+                .help("复制密码内容到剪贴板")
 
-            Rectangle()
-                .fill(isLast ? Color.clear : DaybookTheme.rule.opacity(0.45))
-                .frame(width: 1.5)
-                .frame(maxHeight: .infinity)
+                Button {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        isMasked.toggle()
+                    }
+                } label: {
+                    Image(systemName: isMasked ? "eye" : "eye.slash")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .help(isMasked ? "显示明文" : "隐藏遮罩")
+            } else {
+                Button(action: copyContent) {
+                    Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                        .font(.system(size: 11))
+                        .foregroundStyle(hasCopied ? Color.green : DaybookTheme.muted)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+                .help("复制内容")
+            }
+
+            Button {
+                DayBoardMutations.togglePinDiary(entry)
+            } label: {
+                Image(systemName: entry.isPinned ? "pin.fill" : "pin")
+                    .font(.system(size: 11))
+                    .foregroundStyle(entry.isPinned ? DaybookTheme.stamp : DaybookTheme.muted)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help(entry.isPinned ? "取消置顶" : "置顶到顶部")
+
+            Button {
+                editDraft = entry.text
+                isEditing = true
+            } label: {
+                Image(systemName: "pencil")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("编辑记录 (可双击文字)")
+
+            Button {
+                AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            } label: {
+                Image(systemName: "photo")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("添加图片附件")
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 11))
+                    .foregroundStyle(DaybookTheme.destructive.opacity(0.8))
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .help("移入废纸篓")
         }
-        .frame(width: 8)
-        .padding(.top, 4)
+        .opacity(isHovered || isPasswordType || entry.isPinned ? 1.0 : 0.0)
+    }
+
+    private func copyContent() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(entry.text, forType: .string)
+        withAnimation(.snappy) {
+            hasCopied = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+            withAnimation(.snappy) {
+                hasCopied = false
+            }
+        }
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "今天 HH:mm"
+            return formatter.string(from: date)
+        }
+        if calendar.isDateInYesterday(date) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "昨天 HH:mm"
+            return formatter.string(from: date)
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd HH:mm"
+        return formatter.string(from: date)
     }
 }

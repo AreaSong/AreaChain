@@ -1928,13 +1928,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diary"
+            "value": "Notes & Memos"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "灵感手记"
           }
         }
       }

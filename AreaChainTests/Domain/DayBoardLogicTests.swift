@@ -320,4 +320,24 @@ struct DayBoardLogicTests {
         )
         #expect(DayBoardLogic.sortedForBoard([rest, both]).map(\.title) == ["又重要又紧急", "其余"])
     }
+
+    @Test func diarySnapshotPreservesTagsAndPinnedState() {
+        let tagId1 = UUID()
+        let tagId2 = UUID()
+        let tagsString = "\(tagId1.uuidString),\(tagId2.uuidString)"
+        let diary = DiarySnapshot(
+            id: UUID(),
+            text: "测试 #灵感 #密码",
+            dayKey: today,
+            createdAt: Date(),
+            tagIDs: tagsString,
+            isPinned: true
+        )
+        #expect(diary.isPinned == true)
+        #expect(TagIDList.contains(diary.tagIDs, tagId1))
+        #expect(TagIDList.contains(diary.tagIDs, tagId2))
+        let toggled = TagIDList.toggling(diary.tagIDs, tagId1)
+        #expect(!TagIDList.contains(toggled, tagId1))
+    }
 }
+
