@@ -1,17 +1,17 @@
 # 架构与目录
 
-工程采用现代 Xcode 文件系统同步组规范：往对应文件夹添加 `.swift` 源代码文件即可自动纳入编译，无需手动频繁修改 `project.pbxproj`。
+工程采用 Xcode 文件系统同步组：往对应文件夹添加 `.swift` 即可纳入编译，无需频繁改 `project.pbxproj`。
 
 ## 仓库根目录
 
 ```text
 AreaChain.xcodeproj
 AreaChain/                 应用 target 主源码
-AreaChainTests/            测试 target，目录严格镜像应用层结构
+AreaChainTests/            测试 target，目录镜像应用层结构
 scripts/                   本机 Debug 编译、安装与测试脚本
-docs/                      产品、架构、功能与用法设计文档
-README.md                  项目快速入门说明
-.gitignore                 Git 忽略项配置
+docs/                      产品、架构、功能与用法文档
+README.md                  项目快速入门
+.gitignore
 ```
 
 > **注意**：禁止将 `build/`、`DerivedData/`、`xcuserdata` 提交到仓库。
@@ -20,68 +20,66 @@ README.md                  项目快速入门说明
 
 ```text
 AreaChain/
-  App/            入口生命周期、签名、主应用 App 定义
-  Resources/      Assets.xcassets、Localizable.xcstrings 多语言资源
-  Domain/         纯领域层：日期计算、数据模型、过滤逻辑、解析规则、连击算法
-  Services/       系统服务层：SwiftData 存储、时钟、通知中心、快照导入导出、热键中心、附件系统、日历同步
-  Features/       界面展示层（按业务模块封装）：
-    Workspace/    三栏大屏工作台（主分栏视图、任务检查器抽屉、子任务管理、长备注编辑、四象限九宫格）
-    Tasks/        核心待办清单（待办行、子任务微视图、进度卡片、浮动批量操作条、过滤条、变更动作集）
-    MenuBar/      菜单栏浮层入口与捕获框
-    Calendar/     日历月网格与独立日历窗
-    Quadrant/     四象限矩阵独立窗
-    Gantt/        当月轻量甘特安排独立窗
-    Diary/        灵感手记独立窗与卡片流（多维标签过滤、密码隐私虚化、置顶与就地编辑）
-    Attachments/  附件管理中心独立窗
-    Search/       跨天全局搜索独立窗
-    Settings/     设置中心独立窗（习惯管理、项目树、标签、系统偏好）
-    Trash/        回收站管理独立窗
-  Theme/          设计系统：色彩色板、印章复古质感、动效规范、模态确认组件
+  App/            入口生命周期、主应用 App 定义
+  Resources/      Assets.xcassets、Localizable.xcstrings
+  Domain/         纯领域层：日期、模型、过滤、解析、连击
+  Services/       系统服务：SwiftData、时钟、通知、快照、热键、附件、日历同步
+  Features/       界面（按模块）：
+    Workspace/    三栏工作台、检查器抽屉、子任务、备注、2×2 四象限
+    Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏
+    MenuBar/      菜单栏浮层与捕获框
+    Calendar/     日历月网格（工作台 tab）
+    Quadrant/     四象限（工作台 tab）
+    Gantt/        当月单日色块安排（工作台 tab）
+    Diary/        灵感手记卡片流（多维标签、密码虚化、置顶）
+    Attachments/  附件中心（工作台 tab）
+    Search/       跨天搜索（工作台 tab）
+    Settings/     设置（习惯、项目树、标签、偏好）
+    Trash/        回收站（工作台 tab）
+  Theme/          色板、印章质感、动效、确认组件
 ```
+
+独立 `*StandaloneView` 与 `PanelWindowController` 的日历/手记等控制器仍在源码中，公开入口一律 `openWorkspace(tab:)`，不再单独 `show()`。
 
 ### 分层设计原则
 
-- **Domain（纯领域层）**：禁止 `import SwiftUI` 或 `import AppKit`（模型层允许使用 `SwiftData` 的 `@Model` 宏）。该层承载纯函数业务逻辑（如自然语言解析、习惯连击推算、四象限排序规则、日历日期换算），保证 100% 可独立进行高覆盖率单元测试。
-- **Services（系统服务层）**：封装对 macOS 系统 API 的调用（如 `UNUserNotificationCenter`, `EventKit`, `Carbon HotKey`, `SMAppService`）以及磁盘文件 I/O、数据库持久化。业务逻辑决策必须遵循 Domain 函数规范。
-- **Features（界面展示层）**：组合 Domain 与 Services，只负责状态绑定与交互呈现，严禁重复编写领域过滤规则。
-- **Theme（设计系统）**：统管全应用的色彩、圆角、阴影、微质感与无障碍动效。
+- **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
+- **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
+- **Features**：组合 Domain 与 Services，不重复领域过滤规则。
+- **Theme**：色彩、圆角、阴影、无障碍动效。
 
 ## 数据模型设计 (SwiftData 8 张表)
 
-AreaChain 使用 SwiftData 统一管理 8 张核心持久化表结构：
-
-| 模型类名 | 所属领域 | 职责与字段定义 |
+| 模型类名 | 所属领域 | 职责与字段 |
 |---|---|---|
-| `DailyRoutine` | 常驻习惯 | 习惯定义：`id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（按位掩码存储执行星期）, `createdAt`, `remindMinutes`（提醒分钟偏移）, `deletedAt`（软删除时间戳）, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`（多行长备注），对 `RoutineCheck` 建立级联删除关系。 |
-| `RoutineCheck` | 习惯打卡记录 | 单日打卡日志：`id`, `dayKey`（日期键）, `isDone`（已打卡）, `isSkipped`（已跳过），反向关联 `DailyRoutine`。 |
-| `TodoItem` | 临时待办 | 待办事务：`id`, `title`, `isDone`, `dayKey`（排定日期）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`（同步到系统日历的事件标识）, `notes`（多行长备注），对 `SubtaskItem` 建立级联删除关系。 |
-| `SubtaskItem` | 待办子任务 | 任务拆解项：`id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，反向级联归属于 `TodoItem`。 |
-| `DiaryEntry` | 灵感手记 | 手记便签条目：`id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`（多维标签 UUID 逗号分隔列表）, `isPinned`（图钉置顶状态）。 |
-| `ProjectItem` | 项目分类树 | 结构化项目：`id`, `name`, `sortOrder`, `parentID`（支持树形嵌套）, `deletedAt`。 |
-| `TagItem` | 标签分类 | 扁平标签：`id`, `name`, `sortOrder`, `deletedAt`。 |
-| `AttachmentItem` | 附件元数据 | 图片附件索引：`id`, `ownerKind`（归属 todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`。**二进制图像不存入数据库**，存储于 `Application Support/areachain-attachments/<id>`。 |
+| `DailyRoutine` | 常驻习惯 | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`；对 `RoutineCheck` cascade。 |
+| `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
+| `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
+| `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，一层，归属 `TodoItem`。 |
+| `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`。运行时模型有标签与置顶；**JSON 导出结构 `ExportedDiary` 目前不含这两项**。 |
+| `ProjectItem` | 项目分类树 | `id`, `name`, `sortOrder`, `parentID`, `deletedAt`。 |
+| `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`。 |
+| `AttachmentItem` | 附件元数据 | `id`, `ownerKind`（todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`。图像文件在 `Application Support/areachain-attachments/<id>`，不进数据库，导出也不含二进制。 |
 
 ### 数据约束与设计考量
 
-1. **CloudKit 兼容性预备**：不使用 `@Attribute(.unique)` 约束（CloudKit 不支持）；全部对外暴露稳定 UUID。
-2. **确定性日期键 (`DayKey`)**：日期统一使用 `yyyy-MM-dd` 格式字符串作为键值，杜绝因时区与「当天零点 Date」精度偏差导致的跨日错位问题。
-3. **软删除体系 (`deletedAt`)**：所有对象删除时优先标记 `deletedAt = .now` 进入回收站，仅在用户在回收站点击彻底删除时才会从数据库与磁盘中物理移除。
-4. **级联联动保证**：父待办完成时自动完成下属子任务；父待办移入回收站时下属子任务同步软删除。
+1. **CloudKit 预备**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置里 iCloud 开关是占位（`CloudKitAvailability.isConfigured == false`），打开不改本地库。
+2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 只列习惯、待办、手记、附件。
+4. **级联**：父待办勾完成时，应用层把未完成子任务标完成。SwiftData `.cascade` 只管硬删除。应用层仅 `batchTrash` 会给子任务写 `deletedAt`；清单/抽屉单项删除只标父待办。
 
-## 关键领域算法与逻辑模块
+## 关键领域算法
 
-- **`HabitStreakLogic`（习惯连续天数与连击推导）**：
-  采用日期游标递进算法，精准推导 `currentStreak` 与 `bestStreak`。通过 `WeekdayMask` 判断每日本应排定的状态，对未安排打卡的工作日/休息日及主动「今天跳过」实行透明桥接，保证习惯养成动量不被假期间断误伤。
-- **`NaturalLanguageParser`（自然语言快速解析器）**：
-  基于纯函数正则表达式组合，高效提取中文自然时间（如「下午3点半」「15:30」）、四象限与优先级标签（`!p1`~`!p4`, `!重要且紧急` 等）、主题标签（`#tag`）以及自动将多行输入的第一行与后续长文本备注（`notes`）干净分离。
-- **`DayBoardLogic`（看板数据流引擎）**：
-  汇总计算「今天 / 昨天 / 即将 / 某月每日未完成」等聚合状态，与 `BoardSearch` 配合驱动轻量高效的响应式界面刷新。
-- **`ReminderPlanning`（通知时间推算）**：
-  结合系统时钟、习惯生效掩码与待办指定日期，动态计算下一次需要发送通知的精确绝对时刻。
+- **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。
+- **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`）、优先级、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。
+- **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。
+- **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 
 ## 窗口路由与生命周期 (`AppWindows`)
 
-菜单栏主入口采用 `StatusItemController`（`NSStatusItem` + `NSPopover`）。
-三栏大屏工作台及各类独立弹窗统一由 `PanelWindowController` 统一接管生命周期：
-1. **工作台模式 (`openWorkspace`)**：通过 `WorkspaceNavigation.shared` 统一调度路由，可在三栏工作台内直接切换今天清单、日历、四象限、甘特、日记、附件、搜索、回收站及设置。
-2. **应用激活策略 (`ActivationPolicy`)**：平时应用以 `.accessory` 模式隐蔽运行于菜单栏（无 Dock 图标）；当唤起大屏工作台或独立配置窗口时，自动无缝升级为 `.regular` 前台模式；当所有独立窗口关闭后，自动平滑退回 `.accessory` 模式。
+菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
+
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.shared` 切 tab（今日、搜索、四象限、甘特、日历、手记、附件、回收站、设置）。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。
+2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
+3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍实例化在 `panelWindows` 列表里，用于关窗时判断是否退回 accessory；公开路径不再 `show()` 它们。
