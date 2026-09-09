@@ -53,6 +53,7 @@ struct TaskDetailNotesView: View {
                     }
                     .onChange(of: isFocused) { _, focused in
                         if !focused {
+                            _ = BoardSelection.shared.consumeEscapeCancelsEdits()
                             flushSave()
                         }
                     }

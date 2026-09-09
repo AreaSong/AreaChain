@@ -310,3 +310,32 @@ enum DayBoardLogic {
         )
     }
 }
+
+enum BoardFocusDay {
+    static func key(
+        for id: UUID,
+        listDayKey: String,
+        yesterdayKey: String,
+        yesterdayIDs: Set<UUID>,
+        upcomingDayKeys: [UUID: String]
+    ) -> String {
+        if yesterdayIDs.contains(id) {
+            return yesterdayKey
+        }
+        if let upcoming = upcomingDayKeys[id] {
+            return upcoming
+        }
+        return listDayKey
+    }
+
+    /// 空格勾选跟点选检查日走同一天。同一习惯既在昨天芯片又在今日清单时，不能只凭 leftover 集合覆盖今日点选。
+    static func checkDay(inspecting: String, mapped: String, listDayKey: String) -> String {
+        if inspecting == listDayKey {
+            return listDayKey
+        }
+        if mapped == inspecting {
+            return inspecting
+        }
+        return listDayKey
+    }
+}

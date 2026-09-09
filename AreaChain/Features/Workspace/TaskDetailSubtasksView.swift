@@ -171,7 +171,11 @@ private struct SubtaskRowView: View {
                     .onExitCommand(perform: cancelEdit)
                     .onChange(of: editFocused) { _, focused in
                         if !focused, isEditing {
-                            cancelEdit()
+                            if BoardSelection.shared.consumeEscapeCancelsEdits() {
+                                cancelEdit()
+                            } else {
+                                commitEdit()
+                            }
                         }
                     }
             } else {
@@ -235,6 +239,7 @@ private struct SubtaskRowView: View {
     }
 
     private func cancelEdit() {
+        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
         draftTitle = subtask.title
         isEditing = false
         editFocused = false

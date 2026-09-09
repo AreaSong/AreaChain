@@ -160,6 +160,7 @@ struct MainSplitWorkspaceView: View {
                 }
                 .onKeyPress(.escape) {
                     if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
+                        BoardSelection.shared.markEscapeCancelsEdits()
                         NSApp.keyWindow?.makeFirstResponder(nil)
                         return .handled
                     }

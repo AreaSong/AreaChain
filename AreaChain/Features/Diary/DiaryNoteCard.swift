@@ -309,6 +309,7 @@ struct DiaryNoteCard: View {
             .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.edit.help")
 
             Button {
+                guard !(isPasswordType && isMasked) else { return }
                 AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
             } label: {
                 Image(systemName: "photo")
@@ -317,7 +318,9 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help("diary.attach")
+            .disabled(isPasswordType && isMasked)
+            .opacity(isPasswordType && isMasked ? 0.35 : 1)
+            .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.attach")
 
             Button(action: onDelete) {
                 Image(systemName: "trash")

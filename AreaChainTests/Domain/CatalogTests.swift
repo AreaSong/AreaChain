@@ -80,9 +80,10 @@ struct CatalogTests {
             filename: "c.png",
             createdAt: Date(timeIntervalSince1970: 1)
         )
-        let groups = AttachmentClusters.grouped([keep, note], hiddenOwnerIDs: [todoID])
+        let groups = AttachmentClusters.grouped([keep, note], liveOwnerIDs: [diaryID])
         #expect(groups.map(\.kind) == [.diary])
         #expect(groups.first?.items.map(\.filename) == ["c.png"])
+        #expect(AttachmentClusters.grouped([keep, note], liveOwnerIDs: []).isEmpty)
     }
 
     @Test func unlinkProjectClearsRefsAndChildParent() {

@@ -339,5 +339,51 @@ struct DayBoardLogicTests {
         let toggled = TagIDList.toggling(diary.tagIDs, tagId1)
         #expect(!TagIDList.contains(toggled, tagId1))
     }
+
+    @Test func boardFocusDayPrefersYesterdayAndUpcoming() {
+        let leftover = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let upcoming = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
+        let todayItem = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
+        #expect(
+            BoardFocusDay.key(
+                for: leftover,
+                listDayKey: today,
+                yesterdayKey: yesterday,
+                yesterdayIDs: [leftover],
+                upcomingDayKeys: [upcoming: "2026-09-10"]
+            ) == yesterday
+        )
+        #expect(
+            BoardFocusDay.key(
+                for: upcoming,
+                listDayKey: today,
+                yesterdayKey: yesterday,
+                yesterdayIDs: [leftover],
+                upcomingDayKeys: [upcoming: "2026-09-10"]
+            ) == "2026-09-10"
+        )
+        #expect(
+            BoardFocusDay.key(
+                for: todayItem,
+                listDayKey: today,
+                yesterdayKey: yesterday,
+                yesterdayIDs: [leftover],
+                upcomingDayKeys: [upcoming: "2026-09-10"]
+            ) == today
+        )
+        #expect(
+            BoardFocusDay.checkDay(inspecting: yesterday, mapped: yesterday, listDayKey: today) == yesterday
+        )
+        #expect(
+            BoardFocusDay.checkDay(inspecting: today, mapped: yesterday, listDayKey: today) == today
+        )
+        #expect(
+            BoardFocusDay.checkDay(inspecting: "2026-08-01", mapped: yesterday, listDayKey: today) == today
+        )
+        #expect(
+            BoardFocusDay.checkDay(inspecting: "2026-09-10", mapped: "2026-09-10", listDayKey: today)
+                == "2026-09-10"
+        )
+    }
 }
 

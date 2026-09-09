@@ -86,15 +86,15 @@ struct TaskDetailDrawer: View {
                     TaskDetailTitleEditor(title: todo.title) { newTitle in
                         DayBoardMutations.editTodo(todo, title: newTitle)
                     }
-                    .id(todo.id)
+                    .id("title-\(todo.id)")
 
                     TaskDetailNotesView(notes: todo.notes) { newNotes in
                         DayBoardMutations.updateNotes(for: todo, notes: newNotes)
                     }
-                    .id(todo.id)
+                    .id("notes-\(todo.id)")
 
                     TaskDetailSubtasksView(todo: todo)
-                        .id(todo.id)
+                        .id("subtasks-\(todo.id)")
                 }
 
                 DrawerSectionGroup(title: "drawer.section.schedule") {
@@ -202,14 +202,25 @@ struct TaskDetailDrawer: View {
                     TaskDetailTitleEditor(title: routine.title) { newTitle in
                         DayBoardMutations.persist { routine.title = newTitle }
                     }
-                    .id(routine.id)
+                    .id("title-\(routine.id)")
 
-                    TaskDetailStreakCard(streakResult: streakResult, isEnabled: routine.isEnabled)
+                    TaskDetailStreakCard(
+                        streakResult: streakResult,
+                        isEnabled: routine.isEnabled,
+                        inspectDayKey: boardDayKey,
+                        inspectCompleted: isDoneOnBoard,
+                        inspectSkipped: checks.contains {
+                            $0.routine?.id == routine.id && $0.dayKey == boardDayKey && $0.isSkipped
+                        },
+                        inspectDue: routine.isEnabled
+                            && routine.createdDayKey <= boardDayKey
+                            && WeekdayMask.contains(routine.resolvedWeekdayMask, dayKey: boardDayKey)
+                    )
 
                     TaskDetailNotesView(notes: routine.notes) { newNotes in
                         DayBoardMutations.updateNotes(for: routine, notes: newNotes)
                     }
-                    .id(routine.id)
+                    .id("notes-\(routine.id)")
                 }
 
                 DrawerSectionGroup(title: "drawer.section.schedule") {

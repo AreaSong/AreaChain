@@ -155,8 +155,14 @@ struct TaskDetailWeekdayPicker: View {
 
 /// 习惯连击与历史记录统计卡片
 struct TaskDetailStreakCard: View {
+    @Environment(\.locale) private var locale
+
     var streakResult: StreakResult
     var isEnabled: Bool
+    var inspectDayKey: String
+    var inspectCompleted: Bool
+    var inspectSkipped: Bool
+    var inspectDue: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -211,12 +217,19 @@ struct TaskDetailStreakCard: View {
 
                 Divider().opacity(0.2)
 
-                // 今日打卡状态
+                // 检查日打卡状态
                 HStack(spacing: 6) {
                     statusIcon
-                    Text(statusText)
-                        .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(statusColor)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(statusText)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(statusColor)
+                        if inspectDayKey != DayClock.shared.todayKey {
+                            Text(DayKey.displayName(inspectDayKey, locale: locale))
+                                .font(.system(size: 9))
+                                .foregroundStyle(DaybookTheme.muted)
+                        }
+                    }
                     Spacer()
                 }
             }
@@ -231,15 +244,15 @@ struct TaskDetailStreakCard: View {
             Image(systemName: "pause.circle.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
-        } else if streakResult.isCompletedToday {
+        } else if inspectCompleted {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.done)
-        } else if streakResult.isSkippedToday {
+        } else if inspectSkipped {
             Image(systemName: "forward.circle.fill")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
-        } else if !streakResult.isDueToday {
+        } else if !inspectDue {
             Image(systemName: "calendar.badge.clock")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted)
@@ -253,11 +266,11 @@ struct TaskDetailStreakCard: View {
     private var statusText: LocalizedStringKey {
         if !isEnabled {
             return "drawer.streak.status.paused"
-        } else if streakResult.isCompletedToday {
+        } else if inspectCompleted {
             return "drawer.streak.status.completed"
-        } else if streakResult.isSkippedToday {
+        } else if inspectSkipped {
             return "drawer.streak.status.skipped"
-        } else if !streakResult.isDueToday {
+        } else if !inspectDue {
             return "drawer.streak.status.offday"
         } else {
             return "drawer.streak.status.pending"
@@ -267,9 +280,9 @@ struct TaskDetailStreakCard: View {
     private var statusColor: Color {
         if !isEnabled {
             return DaybookTheme.muted
-        } else if streakResult.isCompletedToday {
+        } else if inspectCompleted {
             return DaybookTheme.done
-        } else if streakResult.isSkippedToday || !streakResult.isDueToday {
+        } else if inspectSkipped || !inspectDue {
             return DaybookTheme.muted
         } else {
             return DaybookTheme.stamp

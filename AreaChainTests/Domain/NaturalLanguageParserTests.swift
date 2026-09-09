@@ -78,4 +78,16 @@ struct NaturalLanguageParserTests {
         #expect(parsed.isUrgent == false)
         #expect(parsed.cleanTitle == "和产品经理吃午饭")
     }
+
+    @Test func afternoonHourGluedToVerbStillParses() {
+        let parsed = NaturalLanguageParser.parse("下午3点开会")
+        #expect(parsed.remindMinutes == 15 * 60)
+        #expect(parsed.cleanTitle == "开会")
+    }
+
+    @Test func afternoonHourGluedToWentiDoesNotParse() {
+        let parsed = NaturalLanguageParser.parse("下午3点问题")
+        #expect(parsed.remindMinutes == nil)
+        #expect(parsed.cleanTitle == "下午3点问题")
+    }
 }

@@ -113,40 +113,30 @@ private struct QuadrantChip: View {
     var row: BoardRow
     var inspectDayKey: String
 
-    @State private var suppressTap = false
-
     var body: some View {
-        HStack(spacing: 6) {
-            if isResident {
-                Image(systemName: "repeat")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .accessibilityLabel("row.resident")
-            }
-            Text(title)
-                .font(.system(size: 12))
-                .foregroundStyle(DaybookTheme.ink)
-                .lineLimit(2)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .modernCard(cornerRadius: DaybookRadius.small)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard !suppressTap else { return }
+        Button {
             BoardSelection.shared.inspectBoard(inspectDayKey)
             WorkspaceNavigation.shared.inspectTask(row.id)
-        }
-        .simultaneousGesture(
-            DragGesture(minimumDistance: 8)
-                .onChanged { _ in suppressTap = true }
-                .onEnded { _ in
-                    DispatchQueue.main.async {
-                        suppressTap = false
-                    }
+        } label: {
+            HStack(spacing: 6) {
+                if isResident {
+                    Image(systemName: "repeat")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .accessibilityLabel("row.resident")
                 }
-        )
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineLimit(2)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .modernCard(cornerRadius: DaybookRadius.small)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
         .draggable(payload)
     }
 

@@ -111,9 +111,15 @@ enum NaturalLanguageParser {
             }
         }
 
-        // Pattern B: Chinese period with hour (e.g. 下午3点半, 晚上8点, 上午9点15分, 中午12点30)
-        let chinesePattern = #"(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!]|[和跟与在去到给把从向])"#
-        if let match = matchChineseTime(pattern: chinesePattern, in: text) {
+        // Pattern B: 带时段（下午3点开会）；点后直接跟「问题」仍不当时刻
+        let withPeriod = #"(早上|上午|中午|下午|晚上)\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?!问题)"#
+        if let match = matchChineseTime(pattern: withPeriod, in: text) {
+            return match
+        }
+
+        // Pattern C: 无时段，必须是边界，避免「修复3点问题」
+        let withoutPeriod = #"(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!]|[和跟与在去到给把从向])"#
+        if let match = matchBareChineseHour(pattern: withoutPeriod, in: text) {
             return match
         }
 
@@ -148,6 +154,29 @@ enum NaturalLanguageParser {
             hour += 12
         } else if period == "早上" || period == "上午" {
             if hour == 12 { hour = 0 }
+        }
+
+        guard hour >= 0 && hour < 24 && minute >= 0 && minute < 60 else { return nil }
+        return ExtractedTime(minutes: hour * 60 + minute, matchedString: full)
+    }
+
+    private static func matchBareChineseHour(pattern: String, in text: String) -> ExtractedTime? {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let nsString = text as NSString
+        let range = NSRange(location: 0, length: nsString.length)
+        guard let result = regex.firstMatch(in: text, options: [], range: range) else { return nil }
+
+        let full = nsString.substring(with: result.range)
+        guard result.range(at: 1).location != NSNotFound,
+              var hour = Int(nsString.substring(with: result.range(at: 1))) else {
+            return nil
+        }
+
+        var minute = 0
+        if full.contains("半") {
+            minute = 30
+        } else if result.numberOfRanges > 2 && result.range(at: 2).location != NSNotFound {
+            minute = Int(nsString.substring(with: result.range(at: 2))) ?? 0
         }
 
         guard hour >= 0 && hour < 24 && minute >= 0 && minute < 60 else { return nil }

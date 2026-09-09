@@ -49,7 +49,18 @@ struct TasksPage: View {
                             focusedTaskID: focusedTaskID,
                             highlightedTaskID: highlightedTaskID,
                             onInspect: onInspect,
-                            onReturnToInput: onReturnToInput
+                            onReturnToInput: onReturnToInput,
+                            dayKeyForID: { [yesterdayKey] id in
+                                BoardFocusDay.key(
+                                    for: id,
+                                    listDayKey: todayKey,
+                                    yesterdayKey: yesterdayKey,
+                                    yesterdayIDs: Set(yesterdayItems.map(\.id)),
+                                    upcomingDayKeys: Dictionary(
+                                        uniqueKeysWithValues: upcomingModels.map { ($0.id, $0.dayKey) }
+                                    )
+                                )
+                            }
                         )
                         upcomingSection
                         yesterdaySection

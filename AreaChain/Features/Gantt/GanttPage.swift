@@ -134,7 +134,10 @@ struct GanttPage: View {
             .frame(width: titleWidth, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture {
-                BoardSelection.shared.inspectBoard(todayKey)
+                let inspectKey = dots.contains(todayKey)
+                    ? todayKey
+                    : (days.first { dots.contains($0) } ?? todayKey)
+                BoardSelection.shared.inspectBoard(inspectKey)
                 WorkspaceNavigation.shared.inspectTask(id)
             }
             .accessibilityElement(children: .combine)

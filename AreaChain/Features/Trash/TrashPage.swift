@@ -25,7 +25,11 @@ struct TrashPage: View {
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
         let files = attachments.compactMap { item in
-            TrashRow.attachment(item, ownerDeleted: deletedOwnerIDs.contains(item.ownerID))
+            let ownerKnown = todos.contains { $0.id == item.ownerID }
+                || routines.contains { $0.id == item.ownerID }
+                || diaries.contains { $0.id == item.ownerID }
+            let blocked = !ownerKnown || deletedOwnerIDs.contains(item.ownerID)
+            return TrashRow.attachment(item, ownerDeleted: blocked)
         }
         let catalog = projects.compactMap { TrashRow.project($0, todos: todos, routines: routines, projects: projects) }
             + tags.compactMap { TrashRow.tag($0, todos: todos, routines: routines, diaries: diaries) }

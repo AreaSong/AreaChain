@@ -28,6 +28,7 @@ final class BoardSelection {
     var inspectingDayKey: String
     var diaryDayKey: String
     var inspectingDiaryID: UUID?
+    var discardEditsOnBlur = false
 
     init(now: Date = .now) {
         let today = DayKey.today(now)
@@ -47,5 +48,15 @@ final class BoardSelection {
 
     func clearInspectedDiary() {
         inspectingDiaryID = nil
+    }
+
+    func markEscapeCancelsEdits() {
+        discardEditsOnBlur = true
+    }
+
+    func consumeEscapeCancelsEdits() -> Bool {
+        let flagged = discardEditsOnBlur
+        discardEditsOnBlur = false
+        return flagged
     }
 }

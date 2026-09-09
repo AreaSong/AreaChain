@@ -68,7 +68,11 @@ struct TaskDetailTitleEditor: View {
                     .onExitCommand(perform: cancel)
                     .onChange(of: isFocused) { _, focused in
                         if !focused, isEditing {
-                            cancel()
+                            if BoardSelection.shared.consumeEscapeCancelsEdits() {
+                                cancel()
+                            } else {
+                                save()
+                            }
                         }
                     }
                     .padding(6)
@@ -101,6 +105,7 @@ struct TaskDetailTitleEditor: View {
     }
 
     private func cancel() {
+        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
         draft = title
         isEditing = false
         isFocused = false

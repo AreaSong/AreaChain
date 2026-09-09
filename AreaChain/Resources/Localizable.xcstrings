@@ -4410,13 +4410,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Completed today"
+            "value": "Completed"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日已打卡"
+            "value": "已打卡"
           }
         }
       }
@@ -4427,13 +4427,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pending today"
+            "value": "Pending"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日待打卡"
+            "value": "待打卡"
           }
         }
       }
@@ -4444,13 +4444,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Skipped today"
+            "value": "Skipped"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日已跳过"
+            "value": "已跳过"
           }
         }
       }
@@ -4461,13 +4461,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Rest day (not scheduled)"
+            "value": "Not scheduled"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日非计划打卡日"
+            "value": "非计划打卡日"
           }
         }
       }

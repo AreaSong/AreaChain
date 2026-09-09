@@ -17,6 +17,7 @@ struct DayBoardList: View {
     var highlightedTaskID: UUID? = nil
     var onInspect: ((UUID) -> Void)? = nil
     var onReturnToInput: (() -> Void)? = nil
+    var dayKeyForID: ((UUID) -> String)? = nil
 
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
@@ -158,6 +159,7 @@ struct DayBoardList: View {
 
             if isTextViewEditing {
                 if event.keyCode == 53 {
+                    BoardSelection.shared.markEscapeCancelsEdits()
                     NSApp.keyWindow?.makeFirstResponder(nil)
                     return nil
                 }
@@ -243,14 +245,32 @@ struct DayBoardList: View {
         if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
             let nextIdx = idx + delta
             if nextIdx >= 0 && nextIdx < ids.count {
-                focusedTaskID?.wrappedValue = ids[nextIdx]
+                let nextID = ids[nextIdx]
+                focusedTaskID?.wrappedValue = nextID
+                BoardSelection.shared.inspectBoard(dayKey)
             } else if nextIdx < 0 {
                 focusedTaskID?.wrappedValue = nil
                 onReturnToInput?()
             }
         } else {
-            focusedTaskID?.wrappedValue = delta >= 0 ? ids.first : ids.last
+            let nextID = delta >= 0 ? ids.first : ids.last
+            focusedTaskID?.wrappedValue = nextID
+            if nextID != nil {
+                BoardSelection.shared.inspectBoard(dayKey)
+            }
         }
+    }
+
+    private func mappedDayKey(for id: UUID) -> String {
+        dayKeyForID?(id) ?? dayKey
+    }
+
+    private func checkDay(for id: UUID) -> String {
+        BoardFocusDay.checkDay(
+            inspecting: BoardSelection.shared.inspectingDayKey,
+            mapped: mappedDayKey(for: id),
+            listDayKey: dayKey
+        )
     }
 
     private var orderedVisibleIDs: [UUID] {
@@ -264,22 +284,25 @@ struct DayBoardList: View {
     }
 
     private func toggleSelected(id: UUID) {
-        let ids = orderedVisibleIDs
-        if let idx = ids.firstIndex(of: id) {
-            if !showCompleted {
-                if idx + 1 < ids.count {
-                    focusedTaskID?.wrappedValue = ids[idx + 1]
-                } else if idx > 0 {
-                    focusedTaskID?.wrappedValue = ids[idx - 1]
-                }
-            }
-        }
+        let checkOn = checkDay(for: id)
         if let todo = todos.first(where: { $0.id == id }) {
             DayBoardMutations.toggleTodo(todo)
-            return
+        } else if let routine = routines.first(where: { $0.id == id }) {
+            DayBoardMutations.toggleRoutine(
+                routine,
+                on: checkOn,
+                checks: checks,
+                context: modelContext
+            )
         }
-        if let routine = routines.first(where: { $0.id == id }) {
-            DayBoardMutations.toggleRoutine(routine, on: dayKey, checks: checks, context: modelContext)
+        let ids = orderedVisibleIDs
+        guard let idx = ids.firstIndex(of: id), !showCompleted else { return }
+        if idx + 1 < ids.count {
+            focusedTaskID?.wrappedValue = ids[idx + 1]
+            BoardSelection.shared.inspectBoard(dayKey)
+        } else if idx > 0 {
+            focusedTaskID?.wrappedValue = ids[idx - 1]
+            BoardSelection.shared.inspectBoard(dayKey)
         }
     }
 
@@ -310,7 +333,7 @@ struct DayBoardList: View {
 
     private func inspectSelected(id: UUID) {
         revealCompletedIfNeeded(id)
-        BoardSelection.shared.inspectBoard(dayKey)
+        BoardSelection.shared.inspectBoard(checkDay(for: id))
         if let onInspect {
             onInspect(id)
             return
