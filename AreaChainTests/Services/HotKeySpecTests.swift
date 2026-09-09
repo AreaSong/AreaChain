@@ -37,6 +37,10 @@ struct HotKeySpecTests {
         #expect(spec.displayName == "⌥⌘K")
     }
 
+    @Test func tabGlyphIsLocalizedKey() {
+        #expect(HotKeySpec.glyph(for: UInt32(kVK_Tab), locale: Locale(identifier: "en")) == "Tab")
+    }
+
     @Test func loadPasteMissingDefaultsUsesPasteFallback() {
         let name = "areachain.hotkey.tests.paste.missing"
         let defaults = UserDefaults(suiteName: name)!

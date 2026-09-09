@@ -52,7 +52,7 @@ AreaChain/
 
 | 模型类名 | 所属领域 | 职责与字段 |
 |---|---|---|
-| `DailyRoutine` | 常驻习惯 | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`；对 `RoutineCheck` cascade。 |
+| `DailyRoutine` | 常驻习惯 | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
 | `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
 | `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，一层，归属 `TodoItem`。 |
@@ -71,7 +71,7 @@ AreaChain/
 
 ## 关键领域算法
 
-- **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。
+- **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`）、优先级、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
 - **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
@@ -84,6 +84,6 @@ AreaChain/
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab`。切到不同 tab 会复位侧栏项目/标签；同一 tab 再调也会清掉项目/标签过滤（浮层 Return 才能回到今日清单），但保留当前检查器选中。离开手记 tab 会清掉搜索高亮。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签；同一 tab 再调也会清掉项目/标签过滤（浮层 Return 才能回到今日清单），但保留当前检查器选中。离开手记 tab 会清掉搜索高亮。底栏「工作台」走 `revealWorkspace()`：只前置当前 tab，不切回今日。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
 3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍实例化在 `panelWindows` 列表里，用于关窗时判断是否退回 accessory；公开路径不再 `show()` 它们。

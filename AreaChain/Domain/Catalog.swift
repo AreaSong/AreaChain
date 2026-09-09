@@ -146,8 +146,8 @@ struct AttachmentCluster: Equatable, Identifiable {
 }
 
 enum AttachmentClusters {
-    static func grouped(_ items: [AttachmentItem]) -> [AttachmentCluster] {
-        let live = items.filter { $0.deletedAt == nil }.sorted { $0.createdAt > $1.createdAt }
+    static func grouped(_ items: [AttachmentItem], hiddenOwnerIDs: Set<UUID> = []) -> [AttachmentCluster] {
+        let live = items.filter { $0.deletedAt == nil && !hiddenOwnerIDs.contains($0.ownerID) }.sorted { $0.createdAt > $1.createdAt }
         var order: [(AttachmentOwner, UUID)] = []
         var buckets: [String: [AttachmentRef]] = [:]
         for item in live {

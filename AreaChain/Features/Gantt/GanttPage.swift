@@ -104,6 +104,7 @@ struct GanttPage: View {
                 .frame(width: titleWidth, alignment: .leading)
                 .contentShape(Rectangle())
                 .onTapGesture {
+                    BoardSelection.shared.inspectBoard(bar.dayKey)
                     WorkspaceNavigation.shared.inspectTask(bar.id)
                 }
                 .accessibilityLabel(bar.title)
@@ -133,6 +134,7 @@ struct GanttPage: View {
             .frame(width: titleWidth, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture {
+                BoardSelection.shared.inspectBoard(todayKey)
                 WorkspaceNavigation.shared.inspectTask(id)
             }
             .accessibilityElement(children: .combine)

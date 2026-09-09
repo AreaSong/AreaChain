@@ -110,7 +110,7 @@ struct HotKeySpec: Equatable {
             UInt32(kVK_ANSI_9): "9",
             UInt32(kVK_Space): L10n.string("hotkey.space", locale: locale),
             UInt32(kVK_Return): L10n.string("hotkey.return", locale: locale),
-            UInt32(kVK_Tab): "Tab"
+            UInt32(kVK_Tab): L10n.string("hotkey.tab", locale: locale)
         ]
         if let glyph = letters[keyCode] { return glyph }
         return L10n.string("hotkey.unknown \(Int(keyCode))", locale: locale)
@@ -124,6 +124,7 @@ final class HotKeyCenter {
 
     private(set) var spec: HotKeySpec = .fallback
     private(set) var pasteSpec: HotKeySpec = .pasteFallback
+    private(set) var pasteIsArmed: Bool = true
     private var toggleRef: EventHotKeyRef?
     private var pasteRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
@@ -159,11 +160,7 @@ final class HotKeyCenter {
         if persist {
             spec.save()
         }
-        if pasteSpec == spec {
-            unregister(ref: &pasteRef)
-        } else {
-            _ = register(pasteSpec, id: Self.pasteID, ref: &pasteRef)
-        }
+        armPasteIfCompatible()
         NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
         return spec
     }
@@ -173,6 +170,7 @@ final class HotKeyCenter {
         installHandlerIfNeeded()
         let resolved = next.isUsable ? next : .pasteFallback
         if resolved == spec {
+            pasteIsArmed = false
             NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
             return pasteSpec
         }
@@ -188,8 +186,18 @@ final class HotKeyCenter {
         if persist {
             pasteSpec.savePaste()
         }
+        pasteIsArmed = pasteRef != nil
         NotificationCenter.default.post(name: .hotKeyDidChange, object: nil)
         return pasteSpec
+    }
+
+    private func armPasteIfCompatible() {
+        if pasteSpec == spec {
+            unregister(ref: &pasteRef)
+            pasteIsArmed = false
+            return
+        }
+        pasteIsArmed = register(pasteSpec, id: Self.pasteID, ref: &pasteRef)
     }
 
     private func register(_ spec: HotKeySpec, id: UInt32, ref: inout EventHotKeyRef?) -> Bool {

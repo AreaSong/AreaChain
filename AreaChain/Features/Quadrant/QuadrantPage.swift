@@ -54,7 +54,7 @@ struct QuadrantPage: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(rows) { row in
-                            chip(row)
+                            QuadrantChip(row: row, inspectDayKey: selectedKey)
                         }
                     }
                 }
@@ -70,30 +70,6 @@ struct QuadrantPage: View {
                 dropSlot = hovering ? slot : (dropSlot == slot ? nil : dropSlot)
             }
         }
-    }
-
-    private func chip(_ row: BoardRow) -> some View {
-        HStack(spacing: 6) {
-            if isResident(row) {
-                Image(systemName: "repeat")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .accessibilityLabel("row.resident")
-            }
-            Text(title(row))
-                .font(.system(size: 12))
-                .foregroundStyle(DaybookTheme.ink)
-                .lineLimit(2)
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .modernCard(cornerRadius: DaybookRadius.small)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            WorkspaceNavigation.shared.inspectTask(row.id)
-        }
-        .draggable(payload(row))
     }
 
     private func rows(in slot: QuadrantSlot) -> [BoardRow] {
@@ -119,25 +95,6 @@ struct QuadrantPage: View {
         }
     }
 
-    private func title(_ row: BoardRow) -> String {
-        switch row {
-        case .resident(let item): item.title
-        case .todo(let item): item.title
-        }
-    }
-
-    private func isResident(_ row: BoardRow) -> Bool {
-        if case .resident = row { return true }
-        return false
-    }
-
-    private func payload(_ row: BoardRow) -> String {
-        switch row {
-        case .resident(let item): TodoDragToken.encodeRoutine(item.id)
-        case .todo(let item): TodoDragToken.encode(item.id)
-        }
-    }
-
     private func apply(_ items: [String], to slot: QuadrantSlot) -> Bool {
         guard let raw = items.first else { return false }
         if let id = TodoDragToken.decode(raw), let todo = todos.first(where: { $0.id == id }) {
@@ -149,6 +106,67 @@ struct QuadrantPage: View {
             return true
         }
         return false
+    }
+}
+
+private struct QuadrantChip: View {
+    var row: BoardRow
+    var inspectDayKey: String
+
+    @State private var suppressTap = false
+
+    var body: some View {
+        HStack(spacing: 6) {
+            if isResident {
+                Image(systemName: "repeat")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .accessibilityLabel("row.resident")
+            }
+            Text(title)
+                .font(.system(size: 12))
+                .foregroundStyle(DaybookTheme.ink)
+                .lineLimit(2)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .modernCard(cornerRadius: DaybookRadius.small)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            guard !suppressTap else { return }
+            BoardSelection.shared.inspectBoard(inspectDayKey)
+            WorkspaceNavigation.shared.inspectTask(row.id)
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 8)
+                .onChanged { _ in suppressTap = true }
+                .onEnded { _ in
+                    DispatchQueue.main.async {
+                        suppressTap = false
+                    }
+                }
+        )
+        .draggable(payload)
+    }
+
+    private var title: String {
+        switch row {
+        case .resident(let item): item.title
+        case .todo(let item): item.title
+        }
+    }
+
+    private var isResident: Bool {
+        if case .resident = row { return true }
+        return false
+    }
+
+    private var payload: String {
+        switch row {
+        case .resident(let item): TodoDragToken.encodeRoutine(item.id)
+        case .todo(let item): TodoDragToken.encode(item.id)
+        }
     }
 }
 

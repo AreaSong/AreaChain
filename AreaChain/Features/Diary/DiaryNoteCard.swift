@@ -89,7 +89,7 @@ struct DiaryNoteCard: View {
 
             contentView
 
-            if !noteAttachments.isEmpty {
+            if !noteAttachments.isEmpty, !(isPasswordType && isMasked && !isEditing) {
                 AttachmentThumbnails(items: noteAttachments)
                     .padding(.top, 2)
             }
@@ -294,6 +294,7 @@ struct DiaryNoteCard: View {
             .help(entry.isPinned ? "diary.unpin" : "diary.pin")
 
             Button {
+                guard !(isPasswordType && isMasked) else { return }
                 editDraft = entry.text
                 isEditing = true
             } label: {
@@ -303,7 +304,9 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help("diary.edit.help")
+            .disabled(isPasswordType && isMasked)
+            .opacity(isPasswordType && isMasked ? 0.35 : 1)
+            .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.edit.help")
 
             Button {
                 AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)

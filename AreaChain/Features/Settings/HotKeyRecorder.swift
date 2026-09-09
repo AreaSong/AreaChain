@@ -15,22 +15,30 @@ struct HotKeyRecorder: View {
     @Environment(\.locale) private var locale
     @State private var listening = false
     @State private var label = ""
+    @State private var pasteArmed = true
     @State private var monitor: Any?
 
     var body: some View {
-        HStack {
-            Text(title)
-            Spacer()
-            Button {
-                startListening()
-            } label: {
-                if listening {
-                    Text("hotkey.listen")
-                } else {
-                    Text(label)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(title)
+                Spacer()
+                Button {
+                    startListening()
+                } label: {
+                    if listening {
+                        Text("hotkey.listen")
+                    } else {
+                        Text(label)
+                    }
                 }
+                .help(help)
             }
-            .help(help)
+            if slot == .paste, !pasteArmed {
+                Text("hotkey.paste.conflict")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
         }
         .onAppear { refreshLabel() }
         .onChange(of: locale.identifier) { _, _ in refreshLabel() }
@@ -48,7 +56,9 @@ struct HotKeyRecorder: View {
         case .toggle:
             label = HotKeyCenter.shared.displayName(locale: locale)
         case .paste:
-            label = HotKeyCenter.shared.pasteDisplayName(locale: locale)
+            pasteArmed = HotKeyCenter.shared.pasteIsArmed
+            let name = HotKeyCenter.shared.pasteDisplayName(locale: locale)
+            label = pasteArmed ? name : L10n.format("hotkey.paste.disabled", locale: locale, name)
         }
     }
 

@@ -69,4 +69,13 @@ struct NaturalLanguageParserTests {
         #expect(parsed.cleanTitle == "修复3点问题")
         #expect(parsed.remindMinutes == nil)
     }
+
+    @Test func chineseNoonFollowedByHeStillParsesHour() {
+        let parsed = NaturalLanguageParser.parse("中午12点和产品经理吃午饭 !p2 #工作")
+        #expect(parsed.remindMinutes == 12 * 60)
+        #expect(parsed.tagName == "工作")
+        #expect(parsed.isImportant == true)
+        #expect(parsed.isUrgent == false)
+        #expect(parsed.cleanTitle == "和产品经理吃午饭")
+    }
 }

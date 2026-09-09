@@ -131,6 +131,18 @@ enum HabitStreakLogic {
         )
     }
 
+    /// 启用时补跳过的起点：有暂停日用暂停日；旧数据从最后一次打卡（否则创建日）起算。
+    static func skipFillStart(
+        pausedOnDayKey: String?,
+        createdDayKey: String,
+        checkDayKeys: [String]
+    ) -> String {
+        if let paused = pausedOnDayKey, !paused.isEmpty {
+            return paused
+        }
+        return checkDayKeys.max() ?? createdDayKey
+    }
+
     /// 停用后的排定日不当漏打。无暂停起点的旧数据，停用期间全部桥接。
     private static func isPaused(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
         guard !routine.isEnabled else { return false }

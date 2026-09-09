@@ -23,7 +23,14 @@ enum DayBoardMutations {
     ) {
         persist {
             if enabled {
-                if let start = routine.pausedOnDayKey {
+                if !routine.isEnabled {
+                    let start = HabitStreakLogic.skipFillStart(
+                        pausedOnDayKey: routine.pausedOnDayKey,
+                        createdDayKey: routine.createdDayKey,
+                        checkDayKeys: checks.compactMap { check in
+                            check.routine?.id == routine.id ? check.dayKey : nil
+                        }
+                    )
                     bridgeSkippedDays(
                         routine,
                         from: start,

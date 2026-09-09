@@ -232,7 +232,10 @@ struct SettingsView: View {
             routines: Set(routines.map(\.id)),
             todos: Set(todos.map(\.id)),
             diaries: Set(diaries.map(\.id)),
-            checks: Set(checks.map(\.id))
+            checks: Set(checks.map(\.id)),
+            projects: Set(projects.map(\.id)),
+            tags: Set(tags.map(\.id)),
+            attachments: Set(attachments.map(\.id))
         )
     }
 

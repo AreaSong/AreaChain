@@ -112,7 +112,7 @@ enum NaturalLanguageParser {
         }
 
         // Pattern B: Chinese period with hour (e.g. 下午3点半, 晚上8点, 上午9点15分, 中午12点30)
-        let chinesePattern = #"(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!])"#
+        let chinesePattern = #"(早上|上午|中午|下午|晚上)?\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!]|[和跟与在去到给把从向])"#
         if let match = matchChineseTime(pattern: chinesePattern, in: text) {
             return match
         }

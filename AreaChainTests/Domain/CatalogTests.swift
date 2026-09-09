@@ -63,6 +63,28 @@ struct CatalogTests {
         #expect(groups.last?.items.map(\.filename) == ["c.png"])
     }
 
+    @Test func attachmentClustersHideOwnersInTrash() {
+        let todoID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        let diaryID = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+        let keep = AttachmentItem(
+            id: UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!,
+            ownerKind: AttachmentOwner.todo.rawValue,
+            ownerID: todoID,
+            filename: "a.png",
+            createdAt: Date(timeIntervalSince1970: 2)
+        )
+        let note = AttachmentItem(
+            id: UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!,
+            ownerKind: AttachmentOwner.diary.rawValue,
+            ownerID: diaryID,
+            filename: "c.png",
+            createdAt: Date(timeIntervalSince1970: 1)
+        )
+        let groups = AttachmentClusters.grouped([keep, note], hiddenOwnerIDs: [todoID])
+        #expect(groups.map(\.kind) == [.diary])
+        #expect(groups.first?.items.map(\.filename) == ["c.png"])
+    }
+
     @Test func unlinkProjectClearsRefsAndChildParent() {
         let parentID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let childID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!

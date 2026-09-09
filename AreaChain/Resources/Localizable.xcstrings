@@ -2081,13 +2081,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routines  new %lld / update %lld\nTasks  new %lld / update %lld\nDiary  new %lld / update %lld\nChecks  new %lld / update %lld\nNothing is written until you confirm."
+            "value": "Routines  new %lld / update %lld\nTasks  new %lld / update %lld\nDiary  new %lld / update %lld\nChecks  new %lld / update %lld\nProjects  new %lld / update %lld\nTags  new %lld / update %lld\nAttachments  new %lld / update %lld\nNothing is written until you confirm."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "例行 新增 %lld / 覆盖 %lld\n待办 新增 %lld / 覆盖 %lld\n日记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
+            "value": "例行 新增 %lld / 覆盖 %lld\n待办 新增 %lld / 覆盖 %lld\n日记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n项目 新增 %lld / 覆盖 %lld\n标签 新增 %lld / 覆盖 %lld\n附件 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
           }
         }
       }
@@ -2122,6 +2122,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "回车"
+          }
+        }
+      }
+    },
+    "hotkey.tab": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tab"
           }
         }
       }
@@ -2755,6 +2772,23 @@
         }
       }
     },
+    "trash.restore.blocked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore the parent item first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先恢复所属待办、习惯或手记"
+          }
+        }
+      }
+    },
     "trash.purge": {
       "extractionState": "manual",
       "localizations": {
@@ -3227,6 +3261,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "默认 ⌘⇧V，不能和打开浮层撞车。按一下读剪贴板，空则不加。"
+          }
+        }
+      }
+    },
+    "hotkey.paste.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Same as the overlay shortcut, so paste-to-today is off until you pick another combo."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "与唤起浮层热键相同，剪贴板捕获已停用，请另选组合。"
+          }
+        }
+      }
+    },
+    "hotkey.paste.disabled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ (off)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@（已停用）"
           }
         }
       }
@@ -6117,6 +6185,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "编辑记录（可双击文字）"
+          }
+        }
+      }
+    },
+    "diary.unmask.first": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reveal the note before editing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先显示明文再编辑"
           }
         }
       }

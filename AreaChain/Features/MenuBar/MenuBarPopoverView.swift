@@ -334,7 +334,7 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Button(action: { AppWindows.openWorkspace() }) {
+            Button(action: { AppWindows.revealWorkspace() }) {
                 HStack(spacing: 4) {
                     Image(systemName: "sidebar.left")
                         .font(.system(size: 11))

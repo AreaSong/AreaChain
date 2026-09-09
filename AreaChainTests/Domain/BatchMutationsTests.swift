@@ -115,4 +115,55 @@ struct BatchMutationsTests {
         #expect(sub1.deletedAt != nil)
         #expect(r1.deletedAt != nil)
     }
+
+    @Test func enablingLegacyPausedHabitFillsSkippedDays() throws {
+        let (_, context) = try makeContainer()
+        let routine = DailyRoutine(
+            title: "旧停用",
+            sortOrder: 0,
+            isEnabled: false,
+            createdDayKey: "2026-09-01"
+        )
+        context.insert(routine)
+        let last = RoutineCheck(dayKey: "2026-09-05", isDone: true, routine: routine)
+        context.insert(last)
+
+        DayBoardMutations.setRoutineEnabled(
+            routine,
+            enabled: true,
+            todayKey: "2026-09-09",
+            checks: [last],
+            context: context
+        )
+
+        #expect(routine.isEnabled)
+        #expect(routine.pausedOnDayKey == nil)
+        let skipped = Set(routine.checks.filter(\.isSkipped).map(\.dayKey))
+        #expect(skipped.isSuperset(of: ["2026-09-06", "2026-09-07", "2026-09-08"]))
+        #expect(!skipped.contains("2026-09-09"))
+        #expect(!skipped.contains("2026-09-05"))
+    }
+
+    @Test func enablingAlreadyEnabledHabitDoesNotBackfillSkips() throws {
+        let (_, context) = try makeContainer()
+        let routine = DailyRoutine(
+            title: "在用",
+            sortOrder: 0,
+            isEnabled: true,
+            createdDayKey: "2026-09-01"
+        )
+        context.insert(routine)
+        let last = RoutineCheck(dayKey: "2026-09-05", isDone: true, routine: routine)
+        context.insert(last)
+
+        DayBoardMutations.setRoutineEnabled(
+            routine,
+            enabled: true,
+            todayKey: "2026-09-09",
+            checks: [last],
+            context: context
+        )
+
+        #expect(routine.checks.filter(\.isSkipped).isEmpty)
+    }
 }

@@ -16,6 +16,7 @@ struct TaskDetailDrawer: View {
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
 
+    @Bindable private var boardSelection = BoardSelection.shared
     @State private var previewAttachment: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
 
@@ -85,6 +86,7 @@ struct TaskDetailDrawer: View {
                     TaskDetailTitleEditor(title: todo.title) { newTitle in
                         DayBoardMutations.editTodo(todo, title: newTitle)
                     }
+                    .id(todo.id)
 
                     TaskDetailNotesView(notes: todo.notes) { newNotes in
                         DayBoardMutations.updateNotes(for: todo, notes: newNotes)
@@ -92,6 +94,7 @@ struct TaskDetailDrawer: View {
                     .id(todo.id)
 
                     TaskDetailSubtasksView(todo: todo)
+                        .id(todo.id)
                 }
 
                 DrawerSectionGroup(title: "drawer.section.schedule") {
@@ -156,18 +159,33 @@ struct TaskDetailDrawer: View {
     // MARK: - Routine Detail View
 
     private func routineDetailView(_ routine: DailyRoutine) -> some View {
+        let boardDayKey = boardSelection.inspectingDayKey
+        let todayKey = DayClock.shared.todayKey
         let streakResult = HabitStreakLogic.calculate(
             routine: routine.snapshot,
             checks: checks.compactMap(\.snapshot),
-            todayKey: DayClock.shared.todayKey
+            todayKey: todayKey
         )
+        let isDoneOnBoard = checks.contains {
+            $0.routine?.id == routine.id
+                && $0.dayKey == boardDayKey
+                && $0.isDone
+                && $0.isSkipped != true
+        }
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 TaskDetailHeaderBar(
-                    isDone: false,
+                    isDone: isDoneOnBoard,
                     isRoutine: true,
-                    onToggle: {},
+                    onToggle: {
+                        DayBoardMutations.toggleRoutine(
+                            routine,
+                            on: boardDayKey,
+                            checks: checks,
+                            context: modelContext
+                        )
+                    },
                     onTrash: {
                         pendingTrash = PendingTrash(title: routine.title) {
                             DayBoardMutations.trashRoutine(routine)
@@ -184,6 +202,7 @@ struct TaskDetailDrawer: View {
                     TaskDetailTitleEditor(title: routine.title) { newTitle in
                         DayBoardMutations.persist { routine.title = newTitle }
                     }
+                    .id(routine.id)
 
                     TaskDetailStreakCard(streakResult: streakResult, isEnabled: routine.isEnabled)
 

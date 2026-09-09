@@ -10,14 +10,14 @@ struct TaskDetailHeaderBar: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            if !isRoutine {
-                ModernCheckbox(isDone: isDone, action: onToggle)
-            } else {
+            if isRoutine {
                 Image(systemName: "repeat")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(DaybookTheme.stamp)
                     .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
             }
+
+            ModernCheckbox(isDone: isDone, action: onToggle)
 
             Spacer()
 
@@ -51,6 +51,7 @@ struct TaskDetailTitleEditor: View {
     var title: String
     var onUpdate: (String) -> Void
 
+    @Environment(\.locale) private var locale
     @State private var isEditing = false
     @State private var draft = ""
     @FocusState private var isFocused: Bool
@@ -65,13 +66,18 @@ struct TaskDetailTitleEditor: View {
                     .focused($isFocused)
                     .onSubmit(save)
                     .onExitCommand(perform: cancel)
+                    .onChange(of: isFocused) { _, focused in
+                        if !focused, isEditing {
+                            cancel()
+                        }
+                    }
                     .padding(6)
                     .background(
                         RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                             .fill(DaybookTheme.surface)
                     )
             } else {
-                Text(title.isEmpty ? String(localized: "drawer.untitled") : title)
+                Text(title.isEmpty ? L10n.string("drawer.untitled", locale: locale) : title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DaybookTheme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)

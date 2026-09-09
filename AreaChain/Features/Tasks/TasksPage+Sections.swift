@@ -109,7 +109,7 @@ extension TasksPage {
             ),
             notes: todo.notes,
             isSelected: highlightedTaskID == todo.id,
-            onSelect: { inspectLeftover(todo.id) }
+            onSelect: { inspectLeftover(todo.id, dayKey: todo.dayKey) }
         )
     }
 
@@ -169,7 +169,7 @@ extension TasksPage {
                 ),
                 notes: routine.notes,
                 isSelected: highlightedTaskID == routine.id,
-                onSelect: { inspectLeftover(routine.id) },
+                onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
                 isEnabled: routine.isEnabled
             )
         } else {
@@ -181,12 +181,13 @@ extension TasksPage {
                 onToggle: { completeYesterday(item) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil,
                 isSelected: highlightedTaskID == item.id,
-                onSelect: { inspectLeftover(item.id) }
+                onSelect: { inspectLeftover(item.id, dayKey: yesterdayKey) }
             )
         }
     }
 
-    func inspectLeftover(_ id: UUID) {
+    func inspectLeftover(_ id: UUID, dayKey: String) {
+        BoardSelection.shared.inspectBoard(dayKey)
         if let onInspect {
             onInspect(id)
             return

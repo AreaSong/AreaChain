@@ -288,6 +288,7 @@ struct DaybookTextField: NSViewRepresentable {
     var focus: FocusState<Bool>.Binding
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)? = nil
+    var allowsShiftNewline: Bool = true
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -354,7 +355,16 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         func controlTextDidChange(_ obj: Notification) {
-            parent.text = (obj.object as? NSTextField)?.stringValue ?? ""
+            guard let field = obj.object as? NSTextField else {
+                parent.text = ""
+                return
+            }
+            var value = field.stringValue
+            if !parent.allowsShiftNewline, value.contains("\n") {
+                value = value.replacingOccurrences(of: "\n", with: " ")
+                field.stringValue = value
+            }
+            parent.text = value
         }
 
         func controlTextDidBeginEditing(_ obj: Notification) {
@@ -376,7 +386,9 @@ struct DaybookTextField: NSViewRepresentable {
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             if commandSelector == #selector(NSResponder.insertLineBreak(_:)) ||
                (commandSelector == #selector(NSResponder.insertNewline(_:)) && NSApp.currentEvent?.modifierFlags.contains(.shift) == true) {
-                textView.insertNewlineIgnoringFieldEditor(nil)
+                if parent.allowsShiftNewline {
+                    textView.insertNewlineIgnoringFieldEditor(nil)
+                }
                 return true
             }
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {

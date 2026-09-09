@@ -310,10 +310,14 @@ struct DayBoardList: View {
 
     private func inspectSelected(id: UUID) {
         revealCompletedIfNeeded(id)
+        BoardSelection.shared.inspectBoard(dayKey)
+        if let onInspect {
+            onInspect(id)
+            return
+        }
         if dayKey == todayKey {
             AppWindows.openWorkspace(tab: .today)
         } else {
-            BoardSelection.shared.inspectBoard(dayKey)
             AppWindows.openWorkspace(tab: .calendar)
         }
         WorkspaceNavigation.shared.inspectTask(id)
@@ -322,6 +326,7 @@ struct DayBoardList: View {
     private func selectTask(_ id: UUID) {
         focusedTaskID?.wrappedValue = id
         revealCompletedIfNeeded(id)
+        BoardSelection.shared.inspectBoard(dayKey)
         onInspect?(id)
     }
 

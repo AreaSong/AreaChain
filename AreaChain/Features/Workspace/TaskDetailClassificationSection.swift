@@ -9,6 +9,8 @@ struct TaskDetailProjectPicker: View {
     var projects: [ProjectItem]
     var onSelect: (UUID?) -> Void
 
+    @Environment(\.locale) private var locale
+
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text("drawer.project.title")
@@ -30,7 +32,7 @@ struct TaskDetailProjectPicker: View {
                         .font(.system(size: 11))
                         .foregroundStyle(DaybookTheme.stamp)
                     let name = projects.first(where: { $0.id == selectedID && $0.deletedAt == nil })?.name
-                        ?? String(localized: "classify.project.none")
+                        ?? L10n.string("classify.project.none", locale: locale)
                     Text(name)
                         .font(.system(size: 11.5))
                         .foregroundStyle(DaybookTheme.ink)

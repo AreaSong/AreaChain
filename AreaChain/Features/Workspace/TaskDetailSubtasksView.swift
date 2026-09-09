@@ -168,6 +168,12 @@ private struct SubtaskRowView: View {
                     .onSubmit {
                         commitEdit()
                     }
+                    .onExitCommand(perform: cancelEdit)
+                    .onChange(of: editFocused) { _, focused in
+                        if !focused, isEditing {
+                            cancelEdit()
+                        }
+                    }
             } else {
                 Text(subtask.title)
                     .font(.system(size: 11))
@@ -225,5 +231,12 @@ private struct SubtaskRowView: View {
             draftTitle = subtask.title
         }
         isEditing = false
+        editFocused = false
+    }
+
+    private func cancelEdit() {
+        draftTitle = subtask.title
+        isEditing = false
+        editFocused = false
     }
 }

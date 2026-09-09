@@ -425,7 +425,8 @@ struct WorkspaceTodayView: View {
                     placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
                     focus: $composerFocused,
                     onSubmit: addTodo,
-                    onCommandReturn: {}
+                    onCommandReturn: {},
+                    allowsShiftNewline: false
                 )
 
                 if !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

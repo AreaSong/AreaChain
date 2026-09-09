@@ -14,11 +14,19 @@ struct TrashPage: View {
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
 
+    private var deletedOwnerIDs: Set<UUID> {
+        Set(routines.compactMap { $0.deletedAt == nil ? nil : $0.id })
+            .union(todos.compactMap { $0.deletedAt == nil ? nil : $0.id })
+            .union(diaries.compactMap { $0.deletedAt == nil ? nil : $0.id })
+    }
+
     private var items: [TrashRow] {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
-        let files = attachments.compactMap(TrashRow.attachment)
+        let files = attachments.compactMap { item in
+            TrashRow.attachment(item, ownerDeleted: deletedOwnerIDs.contains(item.ownerID))
+        }
         let catalog = projects.compactMap { TrashRow.project($0, todos: todos, routines: routines, projects: projects) }
             + tags.compactMap { TrashRow.tag($0, todos: todos, routines: routines, diaries: diaries) }
         return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
@@ -91,6 +99,8 @@ struct TrashPage: View {
             HStack(spacing: 12) {
                 Button("trash.restore") { restore(item) }
                     .buttonStyle(DaybookQuietButtonStyle(prominent: true))
+                    .disabled(!item.canRestore)
+                    .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
                 Button("trash.purge", role: .destructive) {
                     pendingPurge = PendingTrash(title: item.title) { purge(item) }
                 }
@@ -133,6 +143,7 @@ private struct TrashRow: Identifiable {
     var removeFromStore: (ModelContext) -> Void
     var purgesOwnerID: UUID? = nil
     var skipIfOwnerPurged: UUID? = nil
+    var canRestore: Bool = true
 
     static func resident(_ item: DailyRoutine, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
@@ -255,7 +266,7 @@ private struct TrashRow: Identifiable {
         )
     }
 
-    static func attachment(_ item: AttachmentItem) -> TrashRow? {
+    static func attachment(_ item: AttachmentItem, ownerDeleted: Bool) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -263,12 +274,16 @@ private struct TrashRow: Identifiable {
             kindLabel: "trash.kind.attachment",
             isResident: false,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: {
+                guard !ownerDeleted else { return }
+                item.deletedAt = nil
+            },
             removeFromStore: { context in
                 AttachmentStore.removeFile(id: item.id)
                 context.delete(item)
             },
-            skipIfOwnerPurged: item.ownerID
+            skipIfOwnerPurged: item.ownerID,
+            canRestore: !ownerDeleted
         )
     }
 }

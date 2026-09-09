@@ -37,7 +37,10 @@ struct AttachmentBrowserPage: View {
     }
 
     private var clusters: [AttachmentCluster] {
-        AttachmentClusters.grouped(attachments)
+        let hiddenOwners = Set(todos.compactMap { $0.deletedAt == nil ? nil : $0.id })
+            .union(routines.compactMap { $0.deletedAt == nil ? nil : $0.id })
+            .union(diaries.compactMap { $0.deletedAt == nil ? nil : $0.id })
+        return AttachmentClusters.grouped(attachments, hiddenOwnerIDs: hiddenOwners)
     }
 
     private func clusterBlock(_ cluster: AttachmentCluster) -> some View {

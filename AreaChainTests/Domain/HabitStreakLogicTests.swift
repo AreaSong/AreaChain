@@ -715,4 +715,28 @@ struct HabitStreakLogicTests {
         #expect(result.currentStreak == 2)
         #expect(result.isDueToday == false)
     }
+
+    @Test func skipFillStartPrefersPauseDayThenLastCheck() {
+        #expect(
+            HabitStreakLogic.skipFillStart(
+                pausedOnDayKey: "2026-09-07",
+                createdDayKey: "2026-09-01",
+                checkDayKeys: ["2026-09-05"]
+            ) == "2026-09-07"
+        )
+        #expect(
+            HabitStreakLogic.skipFillStart(
+                pausedOnDayKey: nil,
+                createdDayKey: "2026-09-01",
+                checkDayKeys: ["2026-09-03", "2026-09-05"]
+            ) == "2026-09-05"
+        )
+        #expect(
+            HabitStreakLogic.skipFillStart(
+                pausedOnDayKey: nil,
+                createdDayKey: "2026-09-01",
+                checkDayKeys: []
+            ) == "2026-09-01"
+        )
+    }
 }

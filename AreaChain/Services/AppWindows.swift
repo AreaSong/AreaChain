@@ -228,8 +228,6 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.isRestorable = false
             next.delegate = self
             window = next
-        } else {
-            window?.contentViewController = NSHostingController(rootView: root())
         }
         refreshChrome()
         window?.makeKeyAndOrderFront(nil)

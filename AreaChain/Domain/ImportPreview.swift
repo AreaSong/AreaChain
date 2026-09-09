@@ -5,6 +5,9 @@ struct ExistingIDs: Equatable {
     var todos: Set<UUID>
     var diaries: Set<UUID>
     var checks: Set<UUID>
+    var projects: Set<UUID> = []
+    var tags: Set<UUID> = []
+    var attachments: Set<UUID> = []
 }
 
 struct ImportPreview: Equatable {
@@ -16,10 +19,18 @@ struct ImportPreview: Equatable {
     var diariesUpdate: Int
     var checksNew: Int
     var checksUpdate: Int
+    var projectsNew: Int = 0
+    var projectsUpdate: Int = 0
+    var tagsNew: Int = 0
+    var tagsUpdate: Int = 0
+    var attachmentsNew: Int = 0
+    var attachmentsUpdate: Int = 0
 
     var totalWrites: Int {
         routinesNew + routinesUpdate + todosNew + todosUpdate
             + diariesNew + diariesUpdate + checksNew + checksUpdate
+            + projectsNew + projectsUpdate + tagsNew + tagsUpdate
+            + attachmentsNew + attachmentsUpdate
     }
 
     var summary: String { summary(locale: .current) }
@@ -35,7 +46,13 @@ struct ImportPreview: Equatable {
             diariesNew,
             diariesUpdate,
             checksNew,
-            checksUpdate
+            checksUpdate,
+            projectsNew,
+            projectsUpdate,
+            tagsNew,
+            tagsUpdate,
+            attachmentsNew,
+            attachmentsUpdate
         )
     }
 }
@@ -46,6 +63,9 @@ enum ImportPreviewing {
         let todos = split(snapshot.todos.map(\.id), existing: existing.todos)
         let diaries = split(snapshot.diaries.map(\.id), existing: existing.diaries)
         let checks = split(snapshot.checks.map(\.id), existing: existing.checks)
+        let projects = split(snapshot.projects.map(\.id), existing: existing.projects)
+        let tags = split(snapshot.tags.map(\.id), existing: existing.tags)
+        let attachments = split(snapshot.attachments.map(\.id), existing: existing.attachments)
         return ImportPreview(
             routinesNew: routines.new,
             routinesUpdate: routines.update,
@@ -54,7 +74,13 @@ enum ImportPreviewing {
             diariesNew: diaries.new,
             diariesUpdate: diaries.update,
             checksNew: checks.new,
-            checksUpdate: checks.update
+            checksUpdate: checks.update,
+            projectsNew: projects.new,
+            projectsUpdate: projects.update,
+            tagsNew: tags.new,
+            tagsUpdate: tags.update,
+            attachmentsNew: attachments.new,
+            attachmentsUpdate: attachments.update
         )
     }
 
