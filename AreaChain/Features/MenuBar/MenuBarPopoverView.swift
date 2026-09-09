@@ -345,14 +345,6 @@ struct FooterBar: View {
             .buttonStyle(DaybookQuietButtonStyle(prominent: true))
             .help("footer.workspace")
 
-            Button(action: { AppWindows.openSettings() }) {
-                Image(systemName: "gearshape")
-                    .font(.system(size: 11))
-            }
-            .buttonStyle(DaybookQuietButtonStyle())
-            .help("footer.settings")
-            .accessibilityLabel("footer.settings")
-
             Spacer(minLength: 8)
 
             Text(hotKeyName)
