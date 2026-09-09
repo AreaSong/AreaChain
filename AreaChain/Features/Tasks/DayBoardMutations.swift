@@ -137,6 +137,49 @@ enum DayBoardMutations {
         persist { routine.notes = notes }
     }
 
+    static func addDiary(
+        text: String,
+        dayKey: String,
+        selectedTagIDs: Set<UUID> = [],
+        tags: [TagItem],
+        context: ModelContext
+    ) {
+        persist {
+            var available = tags
+            var ids = selectedTagIDs
+            let parsed = NaturalLanguageParser.parse(text)
+            if let tagName = parsed.tagName {
+                ids.insert(ensureTag(named: tagName, among: &available, context: context).id)
+            }
+            for name in DiaryMemoTags.autoTagNames(in: text) {
+                ids.insert(ensureTag(named: name, among: &available, context: context).id)
+            }
+            context.insert(
+                DiaryEntry(
+                    text: text,
+                    dayKey: dayKey,
+                    tagIDs: TagIDList.encode(Array(ids))
+                )
+            )
+        }
+    }
+
+    static func ensureDiaryPresetTags(among tags: [TagItem], context: ModelContext) {
+        let needsInsert = DiaryMemoTags.presets.contains { name in
+            !tags.contains { $0.name == name }
+        }
+        let needsRestore = tags.contains {
+            DiaryMemoTags.isPresetName($0.name) && $0.deletedAt != nil
+        }
+        guard needsInsert || needsRestore else { return }
+        persist {
+            var available = tags
+            for name in DiaryMemoTags.presets {
+                _ = ensureTag(named: name, among: &available, context: context)
+            }
+        }
+    }
+
     static func editDiary(_ entry: DiaryEntry, text: String) {
         persist { entry.text = text }
     }
@@ -153,6 +196,21 @@ enum DayBoardMutations {
 
     static func deleteDiary(_ entry: DiaryEntry) {
         persist { entry.deletedAt = .now }
+    }
+
+    private static func ensureTag(
+        named name: String,
+        among tags: inout [TagItem],
+        context: ModelContext
+    ) -> TagItem {
+        if let found = tags.first(where: { $0.name == name }) {
+            found.deletedAt = nil
+            return found
+        }
+        let tag = TagItem(name: name, sortOrder: tags.count)
+        context.insert(tag)
+        tags.append(tag)
+        return tag
     }
 }
 

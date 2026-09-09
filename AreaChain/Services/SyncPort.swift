@@ -22,7 +22,9 @@ enum SyncPort {
                     text: $0.text,
                     dayKey: $0.dayKey,
                     createdAt: $0.createdAt,
-                    deletedAt: $0.deletedAt
+                    deletedAt: $0.deletedAt,
+                    tagIDs: $0.tagIDs,
+                    isPinned: $0.isPinned
                 )
             },
             projects: projects.map {

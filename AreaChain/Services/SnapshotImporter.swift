@@ -154,6 +154,8 @@ enum SnapshotImporter {
                 found.dayKey = item.dayKey
                 found.createdAt = item.createdAt
                 found.deletedAt = item.deletedAt
+                found.tagIDs = item.tagIDs
+                found.isPinned = item.isPinned
             } else {
                 context.insert(
                     DiaryEntry(
@@ -161,7 +163,9 @@ enum SnapshotImporter {
                         text: item.text,
                         dayKey: item.dayKey,
                         createdAt: item.createdAt,
-                        deletedAt: item.deletedAt
+                        deletedAt: item.deletedAt,
+                        tagIDs: item.tagIDs,
+                        isPinned: item.isPinned
                     )
                 )
             }

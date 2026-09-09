@@ -313,4 +313,39 @@ struct ExportedDiary: Codable, Equatable {
     var dayKey: String
     var createdAt: Date
     var deletedAt: Date? = nil
+    var tagIDs: String = ""
+    var isPinned: Bool = false
+
+    enum CodingKeys: String, CodingKey {
+        case id, text, dayKey, createdAt, deletedAt, tagIDs, isPinned
+    }
+
+    init(
+        id: UUID,
+        text: String,
+        dayKey: String,
+        createdAt: Date,
+        deletedAt: Date? = nil,
+        tagIDs: String = "",
+        isPinned: Bool = false
+    ) {
+        self.id = id
+        self.text = text
+        self.dayKey = dayKey
+        self.createdAt = createdAt
+        self.deletedAt = deletedAt
+        self.tagIDs = tagIDs
+        self.isPinned = isPinned
+    }
+
+    init(from decoder: Decoder) throws {
+        let box = try decoder.container(keyedBy: CodingKeys.self)
+        id = try box.decode(UUID.self, forKey: .id)
+        text = try box.decode(String.self, forKey: .text)
+        dayKey = try box.decode(String.self, forKey: .dayKey)
+        createdAt = try box.decode(Date.self, forKey: .createdAt)
+        deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
+        tagIDs = try box.decodeIfPresent(String.self, forKey: .tagIDs) ?? ""
+        isPinned = try box.decodeIfPresent(Bool.self, forKey: .isPinned) ?? false
+    }
 }

@@ -402,4 +402,50 @@ struct SyncPortTests {
         #expect(decoded.todos.first?.notes == "")
         #expect(decoded.todos.first?.subtasks.isEmpty == true)
     }
+
+    @Test func decodeDiaryWithoutTagsDefaultsEmptyAndUnpinned() throws {
+        let json = """
+        {
+          "exportedAt": "2026-09-07T00:00:00Z",
+          "routines": [],
+          "checks": [],
+          "todos": [],
+          "diaries": [
+            {
+              "id": "ffffffff-ffff-ffff-ffff-ffffffffffff",
+              "text": "一条旧手记",
+              "dayKey": "2026-09-07",
+              "createdAt": "2026-09-07T01:00:00Z"
+            }
+          ]
+        }
+        """
+        let decoded = try SyncPort.decode(Data(json.utf8))
+        #expect(decoded.diaries.first?.text == "一条旧手记")
+        #expect(decoded.diaries.first?.tagIDs == "")
+        #expect(decoded.diaries.first?.isPinned == false)
+    }
+
+    @Test func encodeKeepsDiaryTagsAndPinned() throws {
+        let tagID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
+        let snapshot = ExportSnapshot(
+            exportedAt: Date(timeIntervalSince1970: 1_788_800_000),
+            routines: [],
+            checks: [],
+            todos: [],
+            diaries: [
+                ExportedDiary(
+                    id: UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff")!,
+                    text: "保险箱密码",
+                    dayKey: "2026-09-07",
+                    createdAt: Date(timeIntervalSince1970: 1_788_800_100),
+                    tagIDs: tagID.uuidString,
+                    isPinned: true
+                )
+            ]
+        )
+        let decoded = try SyncPort.decode(try SyncPort.encode(snapshot))
+        #expect(decoded.diaries.first?.tagIDs == tagID.uuidString)
+        #expect(decoded.diaries.first?.isPinned == true)
+    }
 }

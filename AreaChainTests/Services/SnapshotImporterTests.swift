@@ -193,4 +193,40 @@ struct SnapshotImporterTests {
         #expect(projects.first?.name == "工作")
         #expect(tags.first?.name == "跟进")
     }
+
+    @Test func upsertDiaryTagsAndPinned() throws {
+        let schema = Schema(AreaChainSchema.models)
+        let container = try ModelContainer(
+            for: schema,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let diaryID = UUID(uuidString: "ffffffff-ffff-ffff-ffff-ffffffffffff")!
+        let tagID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
+        context.insert(DiaryEntry(id: diaryID, text: "旧", dayKey: "2026-09-07"))
+        try context.save()
+
+        let snapshot = ExportSnapshot(
+            exportedAt: Date(timeIntervalSince1970: 1),
+            routines: [],
+            checks: [],
+            todos: [],
+            diaries: [
+                ExportedDiary(
+                    id: diaryID,
+                    text: "新密码",
+                    dayKey: "2026-09-08",
+                    createdAt: Date(timeIntervalSince1970: 2),
+                    tagIDs: tagID.uuidString,
+                    isPinned: true
+                )
+            ]
+        )
+        try SnapshotImporter.apply(snapshot, context: context)
+        let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
+        #expect(diaries.count == 1)
+        #expect(diaries.first?.text == "新密码")
+        #expect(diaries.first?.tagIDs == tagID.uuidString)
+        #expect(diaries.first?.isPinned == true)
+    }
 }

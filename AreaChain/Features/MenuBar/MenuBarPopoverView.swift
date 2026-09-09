@@ -25,6 +25,7 @@ struct MenuBarPopoverView: View {
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @State private var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
@@ -238,12 +239,16 @@ struct MenuBarPopoverView: View {
     private func addDiary() {
         let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        modelContext.insert(DiaryEntry(text: text, dayKey: todayKey))
+        DayBoardMutations.addDiary(
+            text: text,
+            dayKey: todayKey,
+            tags: Array(tags),
+            context: modelContext
+        )
         capture.draft = ""
         withAnimation(DaybookMotion.animation(reduceMotion)) {
             tab = .diary
         }
-        BoardEvents.changed()
     }
 }
 

@@ -56,7 +56,7 @@ AreaChain/
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
 | `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
 | `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，一层，归属 `TodoItem`。 |
-| `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`。运行时模型有标签与置顶；**JSON 导出结构 `ExportedDiary` 目前不含这两项**。 |
+| `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`。JSON 导出含标签与置顶；旧备份缺字段时按空标签、未置顶导入。 |
 | `ProjectItem` | 项目分类树 | `id`, `name`, `sortOrder`, `parentID`, `deletedAt`。 |
 | `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`。 |
 | `AttachmentItem` | 附件元数据 | `id`, `ownerKind`（todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`。图像文件在 `Application Support/areachain-attachments/<id>`，不进数据库，导出也不含二进制。 |
