@@ -6,6 +6,7 @@ struct TaskDetailHeaderBar: View {
     var isRoutine: Bool = false
     var onToggle: () -> Void
     var onTrash: () -> Void
+    var onClose: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 8) {
@@ -29,6 +30,18 @@ struct TaskDetailHeaderBar: View {
             }
             .buttonStyle(DaybookQuietButtonStyle(destructive: true))
             .help("drawer.delete")
+
+            if let onClose {
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(DaybookQuietButtonStyle())
+                .help("关闭检查器 (ESC)")
+            }
         }
     }
 }

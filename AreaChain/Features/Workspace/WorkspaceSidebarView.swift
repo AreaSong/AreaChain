@@ -15,16 +15,20 @@ struct WorkspaceSidebarView: View {
 
     var body: some View {
         List {
-            Section("视图") {
-                tabRow(.today)
+            Section("聚焦") {
+                tabRow(.today, badgeCount: todayUnfinishedCount)
                 tabRow(.search)
-                tabRow(.calendar)
+            }
+
+            Section("看板") {
                 tabRow(.quadrant)
                 tabRow(.gantt)
+                tabRow(.calendar)
+            }
+
+            Section("记录") {
                 tabRow(.diary)
                 tabRow(.attachments)
-                tabRow(.trash)
-                tabRow(.settings)
             }
 
             Section {
@@ -62,11 +66,22 @@ struct WorkspaceSidebarView: View {
                     .help("新建标签")
                 }
             }
+
+            Section("系统") {
+                tabRow(.trash)
+                tabRow(.settings)
+            }
         }
         .listStyle(.sidebar)
     }
 
-    private func tabRow(_ tab: WorkspaceTab) -> some View {
+    private var todayUnfinishedCount: Int? {
+        let todayKey = DayClock.shared.todayKey
+        let count = todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && !$0.isDone }.count
+        return count > 0 ? count : nil
+    }
+
+    private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {
         let isSelected = navigation.selectedProjectID == nil && navigation.selectedTagID == nil && navigation.selectedTab == tab
         return Button {
             navigation.selectedTab = tab
@@ -74,6 +89,17 @@ struct WorkspaceSidebarView: View {
             HStack {
                 Label(tab.titleKey, systemImage: tab.iconName)
                 Spacer()
+                if let badgeCount {
+                    Text("\(badgeCount)")
+                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1.5)
+                        .background(
+                            Capsule()
+                                .fill(isSelected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.hoverFill)
+                        )
+                }
             }
             .contentShape(Rectangle())
         }

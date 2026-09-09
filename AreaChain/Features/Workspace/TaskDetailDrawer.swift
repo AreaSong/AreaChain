@@ -74,76 +74,73 @@ struct TaskDetailDrawer: View {
                             DayBoardMutations.persist { todo.deletedAt = .now }
                             taskID = nil
                         }
-                    }
-                )
-
-                TaskDetailTitleEditor(title: todo.title) { newTitle in
-                    DayBoardMutations.editTodo(todo, title: newTitle)
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailNotesView(notes: todo.notes) { newNotes in
-                    DayBoardMutations.updateNotes(for: todo, notes: newNotes)
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailSubtasksView(todo: todo)
-
-                Divider().opacity(0.25)
-
-                TaskDetailQuadrantGrid(
-                    isImportant: todo.isImportant,
-                    isUrgent: todo.isUrgent,
-                    onSelect: { imp, urg in
-                        DayBoardMutations.persist {
-                            todo.isImportant = imp
-                            todo.isUrgent = urg
-                        }
-                    }
-                )
-
-                Divider().opacity(0.25)
-
-                TaskDetailRemindChips(remindMinutes: todo.remindMinutes) { minutes in
-                    DayBoardMutations.setRemind(todo, minutes: minutes)
-                }
-
-                TaskDetailDateChips(dayKey: todo.dayKey) { newDay in
-                    DayBoardMutations.moveTodo(todo, to: newDay)
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
-                    DayBoardMutations.persist { todo.projectID = id }
-                }
-
-                TaskDetailTagSelector(
-                    tagIDs: todo.tagIDs,
-                    tags: tags,
-                    onToggleTag: { tagID in
-                        DayBoardMutations.persist {
-                            todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
-                        }
                     },
-                    onCreateTag: { name in
-                        let newTag = TagItem(name: name, sortOrder: tags.count)
-                        modelContext.insert(newTag)
+                    onClose: {
+                        taskID = nil
                     }
                 )
 
-                Divider().opacity(0.25)
+                DrawerSectionGroup(title: "基本信息") {
+                    TaskDetailTitleEditor(title: todo.title) { newTitle in
+                        DayBoardMutations.editTodo(todo, title: newTitle)
+                    }
 
-                attachmentSection(ownerID: todo.id, ownerKind: .todo)
+                    TaskDetailNotesView(notes: todo.notes) { newNotes in
+                        DayBoardMutations.updateNotes(for: todo, notes: newNotes)
+                    }
 
-                Divider().opacity(0.25)
+                    TaskDetailSubtasksView(todo: todo)
+                }
 
-                TaskDetailMetadataSection(
-                    createdAt: todo.createdAt,
-                    sourceBundleID: todo.sourceBundleID
-                )
+                DrawerSectionGroup(title: "安排与优先级") {
+                    TaskDetailQuadrantGrid(
+                        isImportant: todo.isImportant,
+                        isUrgent: todo.isUrgent,
+                        onSelect: { imp, urg in
+                            DayBoardMutations.persist {
+                                todo.isImportant = imp
+                                todo.isUrgent = urg
+                            }
+                        }
+                    )
+
+                    TaskDetailRemindChips(remindMinutes: todo.remindMinutes) { minutes in
+                        DayBoardMutations.setRemind(todo, minutes: minutes)
+                    }
+
+                    TaskDetailDateChips(dayKey: todo.dayKey) { newDay in
+                        DayBoardMutations.moveTodo(todo, to: newDay)
+                    }
+                }
+
+                DrawerSectionGroup(title: "分类与组织") {
+                    TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
+                        DayBoardMutations.persist { todo.projectID = id }
+                    }
+
+                    TaskDetailTagSelector(
+                        tagIDs: todo.tagIDs,
+                        tags: tags,
+                        onToggleTag: { tagID in
+                            DayBoardMutations.persist {
+                                todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
+                            }
+                        },
+                        onCreateTag: { name in
+                            let newTag = TagItem(name: name, sortOrder: tags.count)
+                            modelContext.insert(newTag)
+                        }
+                    )
+                }
+
+                DrawerSectionGroup(title: "记录与资产") {
+                    attachmentSection(ownerID: todo.id, ownerKind: .todo)
+
+                    TaskDetailMetadataSection(
+                        createdAt: todo.createdAt,
+                        sourceBundleID: todo.sourceBundleID
+                    )
+                }
             }
             .padding(16)
         }
@@ -170,67 +167,66 @@ struct TaskDetailDrawer: View {
                             DayBoardMutations.persist { routine.deletedAt = .now }
                             taskID = nil
                         }
-                    }
-                )
-
-                TaskDetailTitleEditor(title: routine.title) { newTitle in
-                    DayBoardMutations.persist { routine.title = newTitle }
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailStreakCard(streakResult: streakResult, isEnabled: routine.isEnabled)
-
-                Divider().opacity(0.25)
-
-                TaskDetailNotesView(notes: routine.notes) { newNotes in
-                    DayBoardMutations.updateNotes(for: routine, notes: newNotes)
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailQuadrantGrid(
-                    isImportant: routine.isImportant,
-                    isUrgent: routine.isUrgent,
-                    onSelect: { imp, urg in
-                        DayBoardMutations.persist {
-                            routine.isImportant = imp
-                            routine.isUrgent = urg
-                        }
-                    }
-                )
-
-                Divider().opacity(0.25)
-
-                TaskDetailRemindChips(remindMinutes: routine.remindMinutes) { minutes in
-                    DayBoardMutations.persist { routine.remindMinutes = minutes }
-                }
-
-                TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
-                    DayBoardMutations.persist {
-                        routine.weekdayMask = newMask
-                    }
-                }
-
-                Divider().opacity(0.25)
-
-                TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
-                    DayBoardMutations.persist { routine.projectID = id }
-                }
-
-                TaskDetailTagSelector(
-                    tagIDs: routine.tagIDs,
-                    tags: tags,
-                    onToggleTag: { tagID in
-                        DayBoardMutations.persist {
-                            routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
-                        }
                     },
-                    onCreateTag: { name in
-                        let newTag = TagItem(name: name, sortOrder: tags.count)
-                        modelContext.insert(newTag)
+                    onClose: {
+                        taskID = nil
                     }
                 )
+
+                DrawerSectionGroup(title: "习惯打卡") {
+                    TaskDetailTitleEditor(title: routine.title) { newTitle in
+                        DayBoardMutations.persist { routine.title = newTitle }
+                    }
+
+                    TaskDetailStreakCard(streakResult: streakResult, isEnabled: routine.isEnabled)
+
+                    TaskDetailNotesView(notes: routine.notes) { newNotes in
+                        DayBoardMutations.updateNotes(for: routine, notes: newNotes)
+                    }
+                }
+
+                DrawerSectionGroup(title: "安排与优先级") {
+                    TaskDetailQuadrantGrid(
+                        isImportant: routine.isImportant,
+                        isUrgent: routine.isUrgent,
+                        onSelect: { imp, urg in
+                            DayBoardMutations.persist {
+                                routine.isImportant = imp
+                                routine.isUrgent = urg
+                            }
+                        }
+                    )
+
+                    TaskDetailRemindChips(remindMinutes: routine.remindMinutes) { minutes in
+                        DayBoardMutations.persist { routine.remindMinutes = minutes }
+                    }
+
+                    TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
+                        DayBoardMutations.persist {
+                            routine.weekdayMask = newMask
+                        }
+                    }
+                }
+
+                DrawerSectionGroup(title: "分类与组织") {
+                    TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
+                        DayBoardMutations.persist { routine.projectID = id }
+                    }
+
+                    TaskDetailTagSelector(
+                        tagIDs: routine.tagIDs,
+                        tags: tags,
+                        onToggleTag: { tagID in
+                            DayBoardMutations.persist {
+                                routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
+                            }
+                        },
+                        onCreateTag: { name in
+                            let newTag = TagItem(name: name, sortOrder: tags.count)
+                            modelContext.insert(newTag)
+                        }
+                    )
+                }
             }
             .padding(16)
         }
@@ -337,3 +333,42 @@ struct TaskDetailDrawer: View {
         .frame(minWidth: 280, minHeight: 200)
     }
 }
+
+// MARK: - Drawer Section Group
+
+struct DrawerSectionGroup<Content: View>: View {
+    var title: String? = nil
+    var content: Content
+
+    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let title {
+                Text(title)
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+                    .padding(.leading, 2)
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                content
+            }
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .fill(DaybookTheme.cardSurface.opacity(0.65))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+            )
+        }
+    }
+}
+

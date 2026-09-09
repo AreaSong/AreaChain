@@ -117,19 +117,24 @@ struct TaskRow: View {
                 titleContent
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 8)
+
+            metadataCluster
 
             actionCluster
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .modernCard(
-            cornerRadius: DaybookRadius.medium,
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .modernRow(
+            cornerRadius: DaybookRadius.small,
             isHovered: hovering,
             isSelected: state.isSelected
         )
-        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
-        .onTapGesture {
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .onTapGesture(count: 2) {
+            beginEdit()
+        }
+        .onTapGesture(count: 1) {
             dispatch(.select)
         }
         .onHover { hovering = $0 }
@@ -173,39 +178,12 @@ struct TaskRow: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .center, spacing: 6) {
-                ModernTaskTitle(text: state.title, isDone: state.isDone)
-                    .lineLimit(2)
-
-                if state.isResident, let streak = state.streak, streak >= 1 {
-                    PillBadge(
-                        title: "\(streak)",
-                        icon: "flame.fill",
-                        color: .orange,
-                        isSelected: true
-                    )
-                }
-
-                if let remindMinutes = state.remindMinutes {
-                    remindBadge(remindMinutes)
-                }
-
-                if !state.subtasks.isEmpty {
-                    TaskRowSubtaskChip(
-                        subtasks: state.subtasks,
-                        isExpanded: $isSubtasksExpanded,
-                        reduceMotion: reduceMotion
-                    )
-                }
-
-                if let items = state.attachments?.items, !items.isEmpty {
-                    AttachmentThumbnails(items: items)
-                }
-            }
+            ModernTaskTitle(text: state.title, isDone: state.isDone)
+                .lineLimit(2)
 
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted.opacity(0.85))
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -213,28 +191,53 @@ struct TaskRow: View {
 
             if let note = state.note {
                 Text(note)
-                    .font(.system(size: 10.5))
+                    .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
             }
 
             if let source = state.classify?.sourceLabel, !source.isEmpty {
                 Text(source)
                     .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.75))
             }
 
             if isSubtasksExpanded && !state.subtasks.isEmpty {
                 TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
                     dispatch(.toggleSubtask(subtaskID))
                 }
+                .padding(.top, 2)
             }
         }
         .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            beginEdit()
-        }
-        .onTapGesture(count: 1) {
-            dispatch(.select)
+    }
+
+    @ViewBuilder
+    private var metadataCluster: some View {
+        HStack(spacing: 6) {
+            if state.isResident, let streak = state.streak, streak >= 1 {
+                PillBadge(
+                    title: "\(streak)",
+                    icon: "flame.fill",
+                    color: .orange,
+                    isSelected: true
+                )
+            }
+
+            if let remindMinutes = state.remindMinutes {
+                remindBadge(remindMinutes)
+            }
+
+            if !state.subtasks.isEmpty {
+                TaskRowSubtaskChip(
+                    subtasks: state.subtasks,
+                    isExpanded: $isSubtasksExpanded,
+                    reduceMotion: reduceMotion
+                )
+            }
+
+            if let items = state.attachments?.items, !items.isEmpty {
+                AttachmentThumbnails(items: items)
+            }
         }
     }
 

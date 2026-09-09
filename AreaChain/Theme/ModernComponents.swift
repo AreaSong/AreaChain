@@ -213,6 +213,19 @@ extension View {
         ))
     }
 
+    /// 现代极简通透行修饰符：无硬阴影与厚边框，仅保留悬停/选中柔和底色高亮
+    func modernRow(
+        cornerRadius: CGFloat = DaybookRadius.small,
+        isHovered: Bool = false,
+        isSelected: Bool = false
+    ) -> some View {
+        modifier(ModernRowModifier(
+            cornerRadius: cornerRadius,
+            isHovered: isHovered,
+            isSelected: isSelected
+        ))
+    }
+
     /// 现代柔光焦点环
     func modernFocusRing(isFocused: Bool) -> some View {
         overlay(
@@ -222,6 +235,43 @@ extension View {
                 .opacity(isFocused ? 0.9 : 0)
         )
         .animation(.easeOut(duration: 0.15), value: isFocused)
+    }
+}
+
+// MARK: - Modern Row Modifier
+
+struct ModernRowModifier: ViewModifier {
+    var cornerRadius: CGFloat = DaybookRadius.small
+    var isHovered: Bool = false
+    var isSelected: Bool = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .fill(backgroundFill)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0)
+            )
+    }
+
+    private var backgroundFill: Color {
+        if isSelected {
+            return DaybookTheme.cardSelectionFill
+        }
+        if isHovered {
+            return DaybookTheme.hoverFill
+        }
+        return Color.clear
+    }
+
+    private var borderStroke: Color {
+        if isSelected {
+            return DaybookTheme.cardSelectionStroke
+        }
+        return Color.clear
     }
 }
 
