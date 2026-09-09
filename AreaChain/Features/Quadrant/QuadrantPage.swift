@@ -43,6 +43,7 @@ struct QuadrantPage: View {
 
     private func cell(_ slot: QuadrantSlot) -> some View {
         let rows = rows(in: slot)
+        let isTargeted = dropSlot == slot
         return VStack(alignment: .leading, spacing: 6) {
             Text(LocalizedStringKey(slot.titleKeyName))
                 .font(.system(size: 11, weight: .semibold))
@@ -59,20 +60,15 @@ struct QuadrantPage: View {
                 }
             }
         }
-        .padding(8)
+        .padding(10)
         .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.03))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(dropSlot == slot ? DaybookTheme.stamp : DaybookTheme.rule, lineWidth: dropSlot == slot ? 2 : 1)
-        )
+        .modernCard(cornerRadius: DaybookRadius.medium, isHovered: isTargeted, isSelected: isTargeted)
         .dropDestination(for: String.self) { items, _ in
             apply(items, to: slot)
         } isTargeted: { hovering in
-            dropSlot = hovering ? slot : (dropSlot == slot ? nil : dropSlot)
+            withAnimation(ModernMotion.snappy) {
+                dropSlot = hovering ? slot : (dropSlot == slot ? nil : dropSlot)
+            }
         }
     }
 
@@ -90,7 +86,9 @@ struct QuadrantPage: View {
                 .lineLimit(2)
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 2)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .modernCard(cornerRadius: DaybookRadius.small)
         .contentShape(Rectangle())
         .draggable(payload(row))
     }

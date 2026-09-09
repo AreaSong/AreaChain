@@ -46,16 +46,17 @@ struct CaptureField: View {
             if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 HStack(spacing: 6) {
                     if let time = parsed.timeLabel {
-                        tokenBadge(icon: "clock.fill", text: "\(time) 提醒", color: DaybookTheme.stamp)
+                        PillBadge(title: "\(time) 提醒", icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
                     }
                     if let tag = parsed.tagName {
-                        tokenBadge(icon: "tag.fill", text: "#\(tag)", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo))
+                        PillBadge(title: "#\(tag)", icon: "tag.fill", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo), isSelected: true)
                     }
                     if let priority = parsed.priorityLabel {
-                        tokenBadge(
+                        PillBadge(
+                            title: priority,
                             icon: "exclamationmark.circle.fill",
-                            text: priority,
-                            color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp
+                            color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
+                            isSelected: true
                         )
                     }
                     Spacer(minLength: 0)
@@ -65,21 +66,5 @@ struct CaptureField: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-    }
-
-    private func tokenBadge(icon: String, text: String, color: Color) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: icon)
-                .font(.system(size: 8, weight: .bold))
-            Text(text)
-                .font(.system(size: 10, weight: .medium))
-        }
-        .foregroundStyle(color)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2)
-        .background(
-            Capsule()
-                .fill(color.opacity(0.12))
-        )
     }
 }

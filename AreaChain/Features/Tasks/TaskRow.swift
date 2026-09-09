@@ -1,39 +1,13 @@
 import SwiftUI
 
+/// 现代 Pro 风格任务行组件：采用单向数据流架构，解耦状态快照与动作派发
 struct TaskRow: View {
-    var title: String
-    var isDone: Bool
-    var isResident: Bool = false
-    var note: String? = nil
-    var streak: Int? = nil
-    var remindMinutes: Int? = nil
-    var todayKey: String? = nil
-    var currentDayKey: String? = nil
-    var weekdaysOnly: Bool? = nil
-    var onToggle: () -> Void
-    var onDelete: (() -> Void)? = nil
-    var onEdit: ((String) -> Void)? = nil
-    var onSkip: (() -> Void)? = nil
-    var onMoveToDay: ((String) -> Void)? = nil
-    var onRemindMinutes: ((Int?) -> Void)? = nil
-    var onWeekdaysOnly: ((Bool) -> Void)? = nil
-    var onDisable: (() -> Void)? = nil
-    var onEnable: (() -> Void)? = nil
-    var isImportant: Bool = false
-    var isUrgent: Bool = false
-    var classify: TaskClassifyContext? = nil
-    var attachments: TaskAttachmentContext? = nil
-    var notes: String? = nil
-    var subtasks: [SubtaskSnapshot] = []
-    var onToggleSubtask: ((UUID) -> Void)? = nil
-    var dragPayload: String? = nil
-    var isSelected: Bool = false
-    var isExternalEditing: Bool = false
-    var onSelect: (() -> Void)? = nil
-    var onEndEditing: (() -> Void)? = nil
+    let state: TaskRowState
+    let dispatch: (TaskRowAction) -> Void
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     @State private var editing = false
     @State private var hovering = false
     @State private var draft = ""
@@ -42,46 +16,130 @@ struct TaskRow: View {
     @State private var isSubtasksExpanded = false
     @FocusState private var editorFocused: Bool
 
+    // MARK: - 现代标准构造器 (State + Action)
+
+    init(state: TaskRowState, dispatch: @escaping (TaskRowAction) -> Void) {
+        self.state = state
+        self.dispatch = dispatch
+    }
+
+    // MARK: - 向后兼容构造器 (保留现有外部调用的平滑迁移)
+
+    init(
+        title: String,
+        isDone: Bool,
+        isResident: Bool = false,
+        note: String? = nil,
+        streak: Int? = nil,
+        remindMinutes: Int? = nil,
+        todayKey: String? = nil,
+        currentDayKey: String? = nil,
+        weekdaysOnly: Bool? = nil,
+        onToggle: @escaping () -> Void,
+        onDelete: (() -> Void)? = nil,
+        onEdit: ((String) -> Void)? = nil,
+        onSkip: (() -> Void)? = nil,
+        onMoveToDay: ((String) -> Void)? = nil,
+        onRemindMinutes: ((Int?) -> Void)? = nil,
+        onWeekdaysOnly: ((Bool) -> Void)? = nil,
+        onDisable: (() -> Void)? = nil,
+        onEnable: (() -> Void)? = nil,
+        isImportant: Bool = false,
+        isUrgent: Bool = false,
+        classify: TaskClassifyContext? = nil,
+        attachments: TaskAttachmentContext? = nil,
+        notes: String? = nil,
+        subtasks: [SubtaskSnapshot] = [],
+        onToggleSubtask: ((UUID) -> Void)? = nil,
+        dragPayload: String? = nil,
+        isSelected: Bool = false,
+        isExternalEditing: Bool = false,
+        onSelect: (() -> Void)? = nil,
+        onEndEditing: (() -> Void)? = nil
+    ) {
+        self.state = TaskRowState(
+            title: title,
+            isDone: isDone,
+            isResident: isResident,
+            note: note,
+            streak: streak,
+            remindMinutes: remindMinutes,
+            todayKey: todayKey,
+            currentDayKey: currentDayKey,
+            weekdaysOnly: weekdaysOnly,
+            isImportant: isImportant,
+            isUrgent: isUrgent,
+            classify: classify,
+            attachments: attachments,
+            notes: notes,
+            subtasks: subtasks,
+            dragPayload: dragPayload,
+            isSelected: isSelected,
+            isExternalEditing: isExternalEditing
+        )
+        self.dispatch = { action in
+            switch action {
+            case .toggleDone: onToggle()
+            case .select: onSelect?()
+            case .editTitle(let newTitle): onEdit?(newTitle)
+            case .endEditing: onEndEditing?()
+            case .delete: onDelete?()
+            case .skip: onSkip?()
+            case .moveToDay(let day): onMoveToDay?(day)
+            case .setRemindMinutes(let min): onRemindMinutes?(min)
+            case .setWeekdaysOnly(let flag): onWeekdaysOnly?(flag)
+            case .setEnabled(let flag):
+                if flag { onEnable?() } else { onDisable?() }
+            case .toggleSubtask(let subtaskID):
+                onToggleSubtask?(subtaskID)
+            }
+        }
+    }
+
     var body: some View {
-        HStack(alignment: note == nil && notes == nil && subtasks.isEmpty && !editing ? .center : .top, spacing: 8) {
-            InkCheckbox(isDone: isDone, action: onToggle)
-            if isResident {
+        HStack(alignment: shouldAlignTop ? .top : .center, spacing: 8) {
+            ModernCheckbox(isDone: state.isDone) {
+                dispatch(.toggleDone)
+            }
+
+            if state.isResident {
                 residentMark
             }
+
             QuadrantDots(
-                isImportant: classify?.isImportant == true || isImportant,
-                isUrgent: classify?.isUrgent == true || isUrgent
+                isImportant: state.classify?.isImportant == true || state.isImportant,
+                isUrgent: state.classify?.isUrgent == true || state.isUrgent
             )
+
             if editing {
                 editor
             } else {
-                titleLabel
+                titleContent
             }
+
             Spacer(minLength: 4)
+
             actionCluster
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(cardStroke, lineWidth: 0.8)
-                )
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .modernCard(
+            cornerRadius: DaybookRadius.medium,
+            isHovered: hovering,
+            isSelected: state.isSelected
         )
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .onTapGesture {
-            onSelect?()
+            dispatch(.select)
         }
         .onHover { hovering = $0 }
-        .animation(DaybookMotion.animation(reduceMotion), value: hovering)
-        .animation(DaybookMotion.animation(reduceMotion), value: isSelected)
+        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
+        .animation(ModernMotion.interactive(reduceMotion), value: state.isSelected)
         .contextMenu { menus }
         .popover(isPresented: $pickingDay) {
-            if let todayKey, let onMoveToDay {
-                DaySchedulePicker(initialKey: currentDayKey ?? todayKey) { key in
-                    onMoveToDay(key)
+            if let todayKey = state.todayKey {
+                DaySchedulePicker(initialKey: state.currentDayKey ?? todayKey) { key in
+                    dispatch(.moveToDay(key))
                     pickingDay = false
                 }
             }
@@ -89,39 +147,21 @@ struct TaskRow: View {
         .popover(isPresented: $pickingTime) {
             timePicker
         }
-        .onAppear { draft = title }
-        .onChange(of: title) { _, value in
+        .onAppear { draft = state.title }
+        .onChange(of: state.title) { _, value in
             if !editing { draft = value }
         }
-        .onChange(of: isExternalEditing) { _, value in
+        .onChange(of: state.isExternalEditing) { _, value in
             if value && !editing { beginEdit() }
         }
-        .modifier(TodoDragIfNeeded(payload: dragPayload))
+        .modifier(TodoDragIfNeeded(payload: state.dragPayload))
     }
 
-    private var isEffectivelyFocused: Bool {
-        isSelected
+    private var shouldAlignTop: Bool {
+        state.note != nil || state.notes != nil || !state.subtasks.isEmpty || editing
     }
 
-    private var cardBackground: Color {
-        if isEffectivelyFocused {
-            return DaybookTheme.cardSelectionFill
-        }
-        if hovering {
-            return isDone ? DaybookTheme.cardSurface.opacity(0.5) : DaybookTheme.cardSurfaceHover
-        }
-        return isDone ? Color.clear : DaybookTheme.cardSurface
-    }
-
-    private var cardStroke: Color {
-        if isEffectivelyFocused {
-            return DaybookTheme.cardSelectionStroke
-        }
-        if hovering {
-            return isDone ? DaybookTheme.rule.opacity(0.25) : DaybookTheme.rule.opacity(0.45)
-        }
-        return isDone ? Color.clear : DaybookTheme.rule.opacity(0.2)
-    }
+    // MARK: - Subviews
 
     private var residentMark: some View {
         Image(systemName: "repeat")
@@ -131,101 +171,89 @@ struct TaskRow: View {
             .help("row.resident")
     }
 
-    private func streakBadge(_ count: Int) -> some View {
-        HStack(spacing: 2) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(.orange)
-            Text("\(count)")
-                .font(.caption.bold())
-                .foregroundStyle(.orange)
-        }
-        .padding(.horizontal, 4)
-        .padding(.vertical, 1)
-        .background(
-            Capsule()
-                .fill(Color.orange.opacity(0.12))
-        )
-        .help("streak.badge.help \(count)")
-        .accessibilityLabel("streak.badge.label \(count)")
-        .layoutPriority(1)
-    }
-
-    private var titleLabel: some View {
+    private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .center, spacing: 6) {
-                Text(title)
-                    .font(.system(size: 13))
-                    .strikethrough(isDone, color: DaybookTheme.done)
-                    .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
+                ModernTaskTitle(text: state.title, isDone: state.isDone)
                     .lineLimit(2)
-                if isResident, let streak, streak >= 1 {
-                    streakBadge(streak)
+
+                if state.isResident, let streak = state.streak, streak >= 1 {
+                    PillBadge(
+                        title: "\(streak)",
+                        icon: "flame.fill",
+                        color: .orange,
+                        isSelected: true
+                    )
                 }
-                if let remindMinutes {
-                    remindLabel(remindMinutes)
+
+                if let remindMinutes = state.remindMinutes {
+                    remindBadge(remindMinutes)
                 }
-                if !subtasks.isEmpty {
-                    TaskRowSubtaskChip(subtasks: subtasks, isExpanded: $isSubtasksExpanded, reduceMotion: reduceMotion)
+
+                if !state.subtasks.isEmpty {
+                    TaskRowSubtaskChip(
+                        subtasks: state.subtasks,
+                        isExpanded: $isSubtasksExpanded,
+                        reduceMotion: reduceMotion
+                    )
                 }
-                if let items = attachments?.items, !items.isEmpty {
+
+                if let items = state.attachments?.items, !items.isEmpty {
                     AttachmentThumbnails(items: items)
                 }
             }
+
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)
-                    .font(.system(size: 10))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(DaybookTheme.muted.opacity(0.85))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            if let note {
+
+            if let note = state.note {
                 Text(note)
-                    .font(.system(size: 10))
+                    .font(.system(size: 10.5))
                     .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
             }
-            if let source = classify?.sourceLabel, !source.isEmpty {
+
+            if let source = state.classify?.sourceLabel, !source.isEmpty {
                 Text(source)
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
             }
-            if isSubtasksExpanded && !subtasks.isEmpty {
-                TaskRowSubtaskInlineList(subtasks: subtasks, onToggle: onToggleSubtask)
+
+            if isSubtasksExpanded && !state.subtasks.isEmpty {
+                TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
+                    dispatch(.toggleSubtask(subtaskID))
+                }
             }
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            onSelect?()
-            guard onEdit != nil else { return }
+            dispatch(.select)
             beginEdit()
         }
     }
 
     private var formattedNoteSnippet: String? {
-        guard let notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        guard let notes = state.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
         let firstLine = notes.components(separatedBy: .newlines).first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
         return firstLine?.trimmingCharacters(in: .whitespaces)
     }
-    private func remindLabel(_ minutes: Int) -> some View {
+
+    private func remindBadge(_ minutes: Int) -> some View {
         Button {
             pickingTime = true
         } label: {
-            HStack(spacing: 3) {
-                Image(systemName: "clock")
-                    .font(.system(size: 8, weight: .medium))
-                Text(RemindMinutes.label(minutes, locale: locale))
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-            }
-            .foregroundStyle(DaybookTheme.stamp)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 1.5)
-            .background(
-                Capsule()
-                    .fill(DaybookTheme.stamp.opacity(0.12))
+            PillBadge(
+                title: RemindMinutes.label(minutes, locale: locale),
+                icon: "clock",
+                color: DaybookTheme.stamp,
+                isSelected: false
             )
         }
         .buttonStyle(.plain)
-        .disabled(onRemindMinutes == nil)
         .layoutPriority(1)
     }
 
@@ -244,9 +272,9 @@ struct TaskRow: View {
             "row.time",
             selection: Binding(
                 get: {
-                    RemindMinutes.date(minutes: remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now
+                    RemindMinutes.date(minutes: state.remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now
                 },
-                set: { onRemindMinutes?(RemindMinutes.from(date: $0)) }
+                set: { dispatch(.setRemindMinutes(RemindMinutes.from(date: $0))) }
             ),
             displayedComponents: .hourAndMinute
         )
@@ -256,7 +284,7 @@ struct TaskRow: View {
     }
 
     private func beginEdit() {
-        draft = title
+        draft = state.title
         editing = true
         DispatchQueue.main.async {
             editorFocused = true
@@ -264,24 +292,26 @@ struct TaskRow: View {
     }
 
     private func cancelEdit() {
-        draft = title
+        draft = state.title
         editing = false
         editorFocused = false
-        onEndEditing?()
+        dispatch(.endEditing)
     }
 
     private func saveEdit() {
         let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !next.isEmpty {
-            onEdit?(next)
+            dispatch(.editTitle(next))
         } else {
-            draft = title
+            draft = state.title
         }
         editing = false
         editorFocused = false
-        onEndEditing?()
+        dispatch(.endEditing)
     }
 }
+
+// MARK: - Menus & Actions
 
 extension TaskRow {
     @ViewBuilder
@@ -290,43 +320,22 @@ extension TaskRow {
             if editing {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
-            } else {
-                if showsHoverActions {
-                    if onEdit != nil {
-                        RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
-                    }
-                    if let onDelete {
-                        RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: onDelete)
-                    }
+            } else if hovering || state.isSelected {
+                RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
+                RowIconButton(systemName: "trash", label: "row.delete", role: .destructive) {
+                    dispatch(.delete)
                 }
-                if showsMoreMenu {
-                    moreMenu
-                }
+                moreMenu
             }
         }
-        .animation(DaybookMotion.animation(reduceMotion), value: showsHoverActions)
-    }
-
-    private var hasOverflow: Bool {
-        onSkip != nil
-            || onMoveToDay != nil
-            || onRemindMinutes != nil
-            || onWeekdaysOnly != nil
-            || onDisable != nil
-            || onEnable != nil
-            || classify != nil
-            || attachments != nil
-    }
-
-    private var showsMoreMenu: Bool {
-        hasOverflow || onDelete != nil
+        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
     }
 
     private var moreMenu: some View {
         Menu {
             overflowMenus
-            if let onDelete {
-                Button("row.delete", role: .destructive, action: onDelete)
+            Button("row.delete", role: .destructive) {
+                dispatch(.delete)
             }
         } label: {
             Image(systemName: "ellipsis")
@@ -340,18 +349,12 @@ extension TaskRow {
         .accessibilityLabel("row.more")
     }
 
-    private var showsHoverActions: Bool {
-        hovering || isEffectivelyFocused || editing
-    }
-
     @ViewBuilder
     var menus: some View {
-        if onEdit != nil {
-            Button("row.edit", action: beginEdit)
-        }
+        Button("row.edit", action: beginEdit)
         overflowMenus
-        if let onDelete {
-            Button("row.delete", role: .destructive, action: onDelete)
+        Button("row.delete", role: .destructive) {
+            dispatch(.delete)
         }
     }
 
@@ -360,53 +363,53 @@ extension TaskRow {
         timeMenus
         classifyMenus
         attachmentMenus
-        if let todayKey, onMoveToDay != nil {
+        if state.todayKey != nil {
             DayScheduleMenu(
-                todayKey: todayKey,
-                currentDayKey: currentDayKey,
-                onMove: { onMoveToDay?($0) },
+                todayKey: state.todayKey ?? "",
+                currentDayKey: state.currentDayKey,
+                onMove: { dispatch(.moveToDay($0)) },
                 pickingDay: $pickingDay
             )
         }
         standingMenus
-        if let onSkip {
-            Button("row.skip", action: onSkip)
+        Button("row.skip") {
+            dispatch(.skip)
         }
     }
 
     @ViewBuilder
     private var timeMenus: some View {
-        if onRemindMinutes != nil {
-            Button("row.time.set") {
-                if remindMinutes == nil {
-                    onRemindMinutes?(RemindMinutes.from(date: .now))
-                }
-                pickingTime = true
+        Button("row.time.set") {
+            if state.remindMinutes == nil {
+                dispatch(.setRemindMinutes(RemindMinutes.from(date: .now)))
             }
-            if remindMinutes != nil {
-                Button("row.time.clear") { onRemindMinutes?(nil) }
+            pickingTime = true
+        }
+        if state.remindMinutes != nil {
+            Button("row.time.clear") {
+                dispatch(.setRemindMinutes(nil))
             }
         }
     }
 
     @ViewBuilder
     private var standingMenus: some View {
-        if let weekdaysOnly, let onWeekdaysOnly {
+        if let weekdaysOnly = state.weekdaysOnly {
             Button(weekdaysOnly ? "row.everyday" : "row.weekdays") {
-                onWeekdaysOnly(!weekdaysOnly)
+                dispatch(.setWeekdaysOnly(!weekdaysOnly))
             }
         }
-        if let onDisable {
-            Button("row.disable", action: onDisable)
+        Button("row.disable") {
+            dispatch(.setEnabled(false))
         }
-        if let onEnable {
-            Button("row.enable", action: onEnable)
+        Button("row.enable") {
+            dispatch(.setEnabled(true))
         }
     }
 
     @ViewBuilder
     private var classifyMenus: some View {
-        if let classify {
+        if let classify = state.classify {
             Button(classify.isImportant ? "classify.important.on" : "classify.important") {
                 classify.onImportant(!classify.isImportant)
             }
@@ -450,7 +453,7 @@ extension TaskRow {
 
     @ViewBuilder
     private var attachmentMenus: some View {
-        if let attachments {
+        if let attachments = state.attachments {
             Button("row.attach", action: attachments.onPickFile)
             Button("row.attach.paste", action: attachments.onPaste)
             if let onCapture = attachments.onCaptureScreen {

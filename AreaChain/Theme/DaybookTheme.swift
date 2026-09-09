@@ -87,6 +87,14 @@ enum DaybookTheme {
         light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.35),
         dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.40)
     )
+    static let cardBorder = Color.daybook(
+        light: NSColor.black.withAlphaComponent(0.06),
+        dark: NSColor.white.withAlphaComponent(0.08)
+    )
+    static let cardBorderHover = Color.daybook(
+        light: NSColor.black.withAlphaComponent(0.12),
+        dark: NSColor.white.withAlphaComponent(0.16)
+    )
     static let focusRing = stamp
     static let popoverWidth: CGFloat = 380
     static let popoverMinHeight: CGFloat = 280
@@ -97,6 +105,32 @@ enum DaybookTheme {
     static let workspaceMinSize = CGSize(width: 780, height: 500)
     static let hit: CGFloat = 28
     static let space: CGFloat = 8
+}
+
+// MARK: - Modern Design Tokens
+
+enum DaybookRadius {
+    static let xs: CGFloat = 4
+    static let small: CGFloat = 6
+    static let medium: CGFloat = 10
+    static let card: CGFloat = 12
+    static let large: CGFloat = 16
+    static let full: CGFloat = 999
+}
+
+enum DaybookSpacing {
+    static let xxs: CGFloat = 2
+    static let xs: CGFloat = 4
+    static let sm: CGFloat = 8
+    static let md: CGFloat = 12
+    static let lg: CGFloat = 16
+    static let xl: CGFloat = 24
+}
+
+enum DaybookShadow {
+    static let cardSubtle = Color.black.opacity(0.04)
+    static let cardHover = Color.black.opacity(0.08)
+    static let popover = Color.black.opacity(0.15)
 }
 
 extension Color {
@@ -114,21 +148,12 @@ extension NSColor {
     }
 }
 
+/// 现代 Pro 纯净表面，安全替换旧有的繁琐横线笔记本纹理
 struct RuledPaper: View {
     var body: some View {
-        Canvas { context, size in
-            let step: CGFloat = 28
-            var y: CGFloat = 36
-            while y < size.height {
-                var path = Path()
-                path.move(to: CGPoint(x: 16, y: y))
-                path.addLine(to: CGPoint(x: size.width - 16, y: y))
-                context.stroke(path, with: .color(DaybookTheme.rule.opacity(0.45)), lineWidth: 0.6)
-                y += step
-            }
-        }
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
+        Color.clear
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }
 

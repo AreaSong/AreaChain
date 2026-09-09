@@ -91,6 +91,7 @@ final class WorkspaceNavigation {
     }
 }
 
+/// 现代 Pro 风格三栏大屏工作台
 struct MainSplitWorkspaceView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable private var navigation = WorkspaceNavigation.shared
@@ -106,16 +107,28 @@ struct MainSplitWorkspaceView: View {
 
     var body: some View {
         NavigationSplitView {
-            sidebar
-                .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
+            WorkspaceSidebarView(
+                navigation: navigation,
+                projects: projects,
+                tags: tags,
+                todos: todos,
+                onAddProject: { isAddingProject = true },
+                onAddTag: { isAddingTag = true }
+            )
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
         } detail: {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .overlay(alignment: .bottom) {
                     if !navigation.selectedTaskIDs.isEmpty {
-                        batchActionBar
-                            .padding(.bottom, 16)
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        WorkspaceBatchActionBar(
+                            navigation: navigation,
+                            todos: todos,
+                            projects: projects,
+                            tags: tags
+                        )
+                        .padding(.bottom, 16)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
         }
@@ -147,159 +160,34 @@ struct MainSplitWorkspaceView: View {
         }
     }
 
-    // MARK: - Sidebar
+    // MARK: - Detail Router
 
-    private var sidebar: some View {
-        List {
-            Section("视图") {
-                tabRow(.today)
-                tabRow(.search)
-                tabRow(.calendar)
-                tabRow(.quadrant)
-                tabRow(.gantt)
-                tabRow(.diary)
-                tabRow(.attachments)
-                tabRow(.trash)
-                tabRow(.settings)
-            }
-
-            Section {
-                let activeProjects = projects.filter { $0.deletedAt == nil }
-                ForEach(activeProjects) { proj in
-                    projectRow(proj)
-                }
-            } header: {
-                HStack {
-                    Text("项目")
-                    Spacer()
-                    Button {
-                        isAddingProject = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .buttonStyle(.plain)
-                    .help("新建项目")
-                }
-            }
-
-            Section {
-                let activeTags = tags.filter { $0.deletedAt == nil }
-                ForEach(activeTags) { tag in
-                    tagRow(tag)
-                }
-            } header: {
-                HStack {
-                    Text("标签")
-                    Spacer()
-                    Button {
-                        isAddingTag = true
-                    } label: {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .buttonStyle(.plain)
-                    .help("新建标签")
-                }
-            }
-        }
-        .listStyle(.sidebar)
-    }
-
-    private func tabRow(_ tab: WorkspaceTab) -> some View {
-        let isSelected = navigation.selectedProjectID == nil && navigation.selectedTagID == nil && navigation.selectedTab == tab
-        return Button {
-            navigation.selectedTab = tab
-        } label: {
-            HStack {
-                Label(tab.titleKey, systemImage: tab.iconName)
-                Spacer()
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .font(.system(size: 12))
-    }
-
-    private func projectRow(_ project: ProjectItem) -> some View {
-        let isSelected = navigation.selectedProjectID == project.id
-        let count = todos.filter { $0.projectID == project.id && $0.deletedAt == nil && !$0.isDone }.count
-        return Button {
-            navigation.selectedProjectID = project.id
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "folder")
-                    .font(.system(size: 11))
-                Text(project.name)
-                    .font(.system(size: 12))
-                Spacer()
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .contextMenu {
-            Button("移入废纸篓", role: .destructive) {
-                DayBoardMutations.persist { project.deletedAt = .now }
-                if navigation.selectedProjectID == project.id {
-                    navigation.selectedTab = .today
-                }
-            }
-        }
-    }
-
-    private func tagRow(_ tag: TagItem) -> some View {
-        let isSelected = navigation.selectedTagID == tag.id
-        let count = todos.filter { TagIDList.contains($0.tagIDs, tag.id) && $0.deletedAt == nil && !$0.isDone }.count
-        return Button {
-            navigation.selectedTagID = tag.id
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "number")
-                    .font(.system(size: 11))
-                Text(tag.name)
-                    .font(.system(size: 12))
-                Spacer()
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.horizontal, 4)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .contextMenu {
-            Button("移入废纸篓", role: .destructive) {
-                DayBoardMutations.persist { tag.deletedAt = .now }
-                if navigation.selectedTagID == tag.id {
-                    navigation.selectedTab = .today
-                }
+    @ViewBuilder
+    private var detailView: some View {
+        if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
+            WorkspaceFilteredListView(project: project)
+        } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
+            WorkspaceFilteredListView(tag: tag)
+        } else {
+            switch navigation.selectedTab {
+            case .today:
+                WorkspaceTodayView()
+            case .calendar:
+                CalendarStandaloneView()
+            case .quadrant:
+                QuadrantStandaloneView()
+            case .gantt:
+                GanttStandaloneView()
+            case .diary:
+                DiaryStandaloneView()
+            case .attachments:
+                AttachmentBrowserPage()
+            case .search:
+                SearchPage()
+            case .trash:
+                TrashPage()
+            case .settings:
+                SettingsView()
             }
         }
     }
@@ -367,78 +255,9 @@ struct MainSplitWorkspaceView: View {
         .padding(16)
         .frame(width: 260)
     }
-
-    // MARK: - Detail View
-
-    @ViewBuilder
-    private var detailView: some View {
-        if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
-            WorkspaceFilteredListView(project: project)
-        } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
-            WorkspaceFilteredListView(tag: tag)
-        } else {
-            switch navigation.selectedTab {
-            case .today:
-                WorkspaceTodayView()
-            case .calendar:
-                CalendarStandaloneView()
-            case .quadrant:
-                QuadrantStandaloneView()
-            case .gantt:
-                GanttStandaloneView()
-            case .diary:
-                DiaryStandaloneView()
-            case .attachments:
-                AttachmentBrowserPage()
-            case .search:
-                SearchPage()
-            case .trash:
-                TrashPage()
-            case .settings:
-                SettingsView()
-            }
-        }
-    }
-
-    private var batchActionBar: some View {
-        BatchActionBar(
-            selectedCount: navigation.selectedTaskIDs.count,
-            onMoveToday: {
-                let today = DayClock.shared.todayKey
-                DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: today, todos: todos)
-                navigation.clearSelection()
-            },
-            onMoveTomorrow: {
-                let tomorrow = DayKey.shifted(DayClock.shared.todayKey, by: 1)
-                DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: tomorrow, todos: todos)
-                navigation.clearSelection()
-            },
-            onToggleDone: { markDone in
-                DayBoardMutations.batchToggleDone(navigation.selectedTaskIDs, markDone: markDone, todos: todos)
-                navigation.clearSelection()
-            },
-            onSetProject: { pid in
-                DayBoardMutations.batchSetProject(navigation.selectedTaskIDs, projectID: pid, todos: todos, routines: [])
-                navigation.clearSelection()
-            },
-            onToggleTag: { tid in
-                DayBoardMutations.batchToggleTag(navigation.selectedTaskIDs, tagID: tid, todos: todos, routines: [])
-                navigation.clearSelection()
-            },
-            onTrash: {
-                DayBoardMutations.batchTrash(navigation.selectedTaskIDs, todos: todos, routines: [])
-                navigation.clearSelection()
-            },
-            onClear: {
-                withAnimation {
-                    navigation.clearSelection()
-                }
-            },
-            projects: projects,
-            tags: tags
-        )
-    }
 }
+
+// MARK: - Workspace Today View
 
 struct WorkspaceTodayView: View {
     @Environment(\.modelContext) private var modelContext
@@ -462,7 +281,7 @@ struct WorkspaceTodayView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             Text(DayKey.displayName(todayKey, locale: locale))
-                .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                .font(.system(size: 22, weight: .bold))
                 .foregroundStyle(DaybookTheme.ink)
 
             CaptureField(

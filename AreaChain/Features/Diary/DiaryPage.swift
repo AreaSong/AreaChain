@@ -284,22 +284,15 @@ struct DiaryLine: View {
                 }
             }
         }
-        .padding(9)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(cardBackground)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(cardStroke, lineWidth: 0.8)
-                )
-        )
-        .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(10)
+        .modernCard(cornerRadius: DaybookRadius.medium, isHovered: hovering, isSelected: rowFocused)
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .focusable()
         .focusEffectDisabled()
         .focused($rowFocused)
         .onHover { hovering = $0 }
-        .animation(DaybookMotion.animation(reduceMotion), value: hovering)
-        .animation(DaybookMotion.animation(reduceMotion), value: rowFocused)
+        .animation(ModernMotion.interactive(reduceMotion), value: hovering)
+        .animation(ModernMotion.interactive(reduceMotion), value: rowFocused)
         .contextMenu {
             Button("diary.edit", action: beginEdit)
             Button("row.attach") {

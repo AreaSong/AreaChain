@@ -59,20 +59,20 @@ struct CalendarMonthGrid: View {
             .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
             .frame(maxWidth: .infinity, minHeight: 52)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(selected ? DaybookTheme.stamp.opacity(0.28) : DaybookTheme.ink.opacity(0.001))
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(today ? DaybookTheme.stamp : Color.clear, lineWidth: 1.2)
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .stroke(today ? DaybookTheme.stamp : (selected ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3)), lineWidth: today ? 1.4 : 0.8)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }
         .buttonStyle(DaybookQuietButtonStyle())
         .frame(maxWidth: .infinity, minHeight: 52)
         .contentShape(Rectangle())
         .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 2)
         )
         .dropDestination(for: String.self) { items, _ in
@@ -82,7 +82,9 @@ struct CalendarMonthGrid: View {
             onDropTodo(id, key)
             return true
         } isTargeted: { hovering in
-            dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
+            withAnimation(ModernMotion.snappy) {
+                dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
+            }
         }
         .accessibilityLabel(cellLabel(key: key, count: count, today: today))
         .accessibilityAddTraits(selected ? [.isSelected] : [])

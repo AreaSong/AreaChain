@@ -94,7 +94,52 @@ struct DayBoardList: View {
                 }
             }
         }
+        .focusable()
+        .focusEffectDisabled()
+        .onKeyPress(.downArrow) {
+            navigateSelection(delta: 1)
+            return .handled
+        }
+        .onKeyPress(.upArrow) {
+            navigateSelection(delta: -1)
+            return .handled
+        }
+        .onKeyPress(.space) {
+            if let id = focusedTaskID?.wrappedValue {
+                toggleSelected(id: id)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.delete) {
+            if let id = focusedTaskID?.wrappedValue {
+                deleteSelected(id: id)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.return) {
+            if let id = focusedTaskID?.wrappedValue {
+                WorkspaceNavigation.shared.selectedTaskID = id
+                WorkspaceNavigation.shared.isInspectorPresented = true
+                return .handled
+            }
+            return .ignored
+        }
         .confirmMoveToTrash($pendingTrash)
+        .animation(ModernMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
+        .animation(ModernMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
+    }
+
+    private func navigateSelection(delta: Int) {
+        let ids = orderedVisibleIDs
+        guard !ids.isEmpty else { return }
+        if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
+            let nextIdx = min(max(idx + delta, 0), ids.count - 1)
+            focusedTaskID?.wrappedValue = ids[nextIdx]
+        } else {
+            focusedTaskID?.wrappedValue = delta >= 0 ? ids.first : ids.last
+        }
     }
 
     private var orderedVisibleIDs: [UUID] {
