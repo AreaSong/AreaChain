@@ -62,4 +62,29 @@ struct CatalogTests {
         #expect(groups.first?.items.map(\.filename) == ["b.png", "a.png"])
         #expect(groups.last?.items.map(\.filename) == ["c.png"])
     }
+
+    @Test func unlinkProjectClearsRefsAndChildParent() {
+        let parentID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let childID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
+        let parent = ProjectItem(id: parentID, name: "父", sortOrder: 0)
+        let child = ProjectItem(id: childID, name: "子", sortOrder: 1, parentID: parentID)
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08", projectID: parentID)
+        let routine = DailyRoutine(title: "习惯", sortOrder: 0, projectID: parentID)
+        Catalog.unlinkProject(parentID, todos: [todo], routines: [routine], projects: [parent, child])
+        #expect(todo.projectID == nil)
+        #expect(routine.projectID == nil)
+        #expect(child.parentID == nil)
+    }
+
+    @Test func unlinkTagClearsTodosRoutinesAndDiaries() {
+        let tagID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
+        let encoded = tagID.uuidString
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08", tagIDs: encoded)
+        let routine = DailyRoutine(title: "习惯", sortOrder: 0, tagIDs: encoded)
+        let diary = DiaryEntry(text: "手记", dayKey: "2026-09-08", tagIDs: encoded)
+        Catalog.unlinkTag(tagID, todos: [todo], routines: [routine], diaries: [diary])
+        #expect(!TagIDList.contains(todo.tagIDs, tagID))
+        #expect(!TagIDList.contains(routine.tagIDs, tagID))
+        #expect(!TagIDList.contains(diary.tagIDs, tagID))
+    }
 }

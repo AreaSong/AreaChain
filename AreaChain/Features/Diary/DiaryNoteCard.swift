@@ -14,10 +14,12 @@ enum DiaryTagChrome {
 /// 灵感手记卡片：隐私遮罩、复制、置顶、就地编辑，以及「密码 / 小巧思 / 日记」打标。
 struct DiaryNoteCard: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     var entry: DiaryEntry
     var activeTags: [TagItem]
     var attachments: [AttachmentItem]
     var onDelete: () -> Void
+    var isHighlighted: Bool = false
 
     @State private var isHovered = false
     @State private var isEditing = false
@@ -71,7 +73,7 @@ struct DiaryNoteCard: View {
                     HStack(spacing: 3) {
                         Image(systemName: "lock.shield.fill")
                             .font(.system(size: 9))
-                        Text("隐私备忘")
+                        Text("diary.privacy")
                             .font(.system(size: 10, weight: .medium))
                     }
                     .foregroundStyle(Color.red.opacity(0.85))
@@ -102,8 +104,10 @@ struct DiaryNoteCard: View {
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .strokeBorder(
-                    entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.cardBorder),
-                    lineWidth: entry.isPinned ? 1.2 : 0.8
+                    isHighlighted
+                        ? DaybookTheme.stamp
+                        : (entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.cardBorder)),
+                    lineWidth: isHighlighted || entry.isPinned ? 1.2 : 0.8
                 )
         )
         .onHover { isHovered = $0 }
@@ -133,7 +137,7 @@ struct DiaryNoteCard: View {
                         .background(Circle().fill(DaybookTheme.hoverFill))
                 }
                 .menuStyle(.borderlessButton)
-                .help("添加其它标签")
+                .help("diary.tag.add")
             }
         }
         .padding(.top, 2)
@@ -157,7 +161,7 @@ struct DiaryNoteCard: View {
                 )
         }
         .buttonStyle(.plain)
-        .help(assigned ? "取消标签" : "打上标签")
+        .help(assigned ? "diary.tag.off" : "diary.tag.on")
     }
 
     @ViewBuilder
@@ -176,13 +180,13 @@ struct DiaryNoteCard: View {
                     )
 
                 HStack {
-                    Button("取消") {
+                    Button("alert.cancel") {
                         isEditing = false
                     }
                     .buttonStyle(.plain)
                     .font(.system(size: 11))
 
-                    Button("保存") {
+                    Button("common.save") {
                         let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                         if !next.isEmpty {
                             DayBoardMutations.editDiary(entry, text: next)
@@ -210,7 +214,7 @@ struct DiaryNoteCard: View {
                     HStack(spacing: 3) {
                         Image(systemName: "eye")
                             .font(.system(size: 10))
-                        Text("显示内容")
+                        Text("diary.reveal")
                             .font(.system(size: 11))
                     }
                     .foregroundStyle(DaybookTheme.stamp)
@@ -242,7 +246,7 @@ struct DiaryNoteCard: View {
                     HStack(spacing: 2) {
                         Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                             .font(.system(size: 10, weight: .bold))
-                        Text(hasCopied ? "已复制" : "复制密码")
+                        Text(hasCopied ? "diary.copied" : "diary.copy.password")
                             .font(.system(size: 10.5, weight: .medium))
                     }
                     .foregroundStyle(hasCopied ? Color.green : DaybookTheme.stamp)
@@ -253,7 +257,7 @@ struct DiaryNoteCard: View {
                     )
                 }
                 .buttonStyle(.plain)
-                .help("复制密码内容到剪贴板")
+                .help("diary.copy.password.help")
 
                 Button {
                     withAnimation(.snappy(duration: 0.2)) {
@@ -266,7 +270,7 @@ struct DiaryNoteCard: View {
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
-                .help(isMasked ? "显示明文" : "隐藏遮罩")
+                .help(isMasked ? "diary.unmask" : "diary.mask")
             } else {
                 Button(action: copyContent) {
                     Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
@@ -275,7 +279,7 @@ struct DiaryNoteCard: View {
                         .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
-                .help("复制内容")
+                .help("diary.copy")
             }
 
             Button {
@@ -287,7 +291,7 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help(entry.isPinned ? "取消置顶" : "置顶到顶部")
+            .help(entry.isPinned ? "diary.unpin" : "diary.pin")
 
             Button {
                 editDraft = entry.text
@@ -299,7 +303,7 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help("编辑记录 (可双击文字)")
+            .help("diary.edit.help")
 
             Button {
                 AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
@@ -310,7 +314,7 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help("添加图片附件")
+            .help("diary.attach")
 
             Button(action: onDelete) {
                 Image(systemName: "trash")
@@ -319,7 +323,7 @@ struct DiaryNoteCard: View {
                     .frame(width: 24, height: 24)
             }
             .buttonStyle(.plain)
-            .help("移入废纸篓")
+            .help("alert.trash.move")
         }
         .opacity(isHovered || isPasswordType || entry.isPinned ? 1.0 : 0.0)
     }
@@ -339,15 +343,18 @@ struct DiaryNoteCard: View {
 
     private func formatDate(_ date: Date) -> String {
         let formatter = DateFormatter()
+        formatter.locale = locale
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        let time = formatter.string(from: date)
         if Calendar.current.isDateInToday(date) {
-            formatter.dateFormat = "今天 HH:mm"
-            return formatter.string(from: date)
+            return L10n.format("diary.date.today", locale: locale, time)
         }
         if Calendar.current.isDateInYesterday(date) {
-            formatter.dateFormat = "昨天 HH:mm"
-            return formatter.string(from: date)
+            return L10n.format("diary.date.yesterday", locale: locale, time)
         }
-        formatter.dateFormat = "yyyy/MM/dd HH:mm"
+        formatter.dateStyle = .short
+        formatter.timeStyle = .short
         return formatter.string(from: date)
     }
 }

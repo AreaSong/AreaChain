@@ -155,7 +155,7 @@ struct MainSplitWorkspaceView: View {
                 } label: {
                     Image(systemName: "sidebar.trailing")
                 }
-                .help("显示/隐藏检查器")
+                .help("drawer.inspector.toggle")
             }
         }
         .navigationTitle("AreaChain")
@@ -208,18 +208,18 @@ struct MainSplitWorkspaceView: View {
 
     private var addProjectSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("新建项目")
+            Text("sidebar.add.project")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.ink)
-            TextField("项目名称", text: $newProjectName)
+            TextField("sidebar.sheet.project.name", text: $newProjectName)
                 .textFieldStyle(.roundedBorder)
             HStack {
                 Spacer()
-                Button("取消") {
+                Button("alert.cancel") {
                     newProjectName = ""
                     isAddingProject = false
                 }
-                Button("创建") {
+                Button("drawer.tag.create") {
                     let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !name.isEmpty {
                         let project = ProjectItem(name: name, sortOrder: projects.count)
@@ -239,25 +239,25 @@ struct MainSplitWorkspaceView: View {
 
     private var addTagSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("新建标签")
+            Text("sidebar.add.tag")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.ink)
-            TextField("标签名称", text: $newTagName)
+            TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
             HStack {
                 Spacer()
-                Button("取消") {
+                Button("alert.cancel") {
                     newTagName = ""
                     isAddingTag = false
                 }
-                Button("创建") {
+                Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !name.isEmpty {
-                        let tag = TagItem(name: name, sortOrder: tags.count)
-                        modelContext.insert(tag)
-                        newTagName = ""
-                        isAddingTag = false
-                        navigation.selectedTagID = tag.id
+                        if let tag = DayBoardMutations.resolveTag(named: name, among: tags, context: modelContext) {
+                            newTagName = ""
+                            isAddingTag = false
+                            navigation.selectedTagID = tag.id
+                        }
                     }
                 }
                 .buttonStyle(.borderedProminent)
@@ -279,6 +279,7 @@ struct WorkspaceTodayView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var dayTick = Date()
@@ -342,7 +343,7 @@ struct WorkspaceTodayView: View {
     private var headerBar: some View {
         HStack(alignment: .bottom) {
             VStack(alignment: .leading, spacing: 3) {
-                Text("今日待办")
+                Text("workspace.today.title")
                     .font(.system(size: 24, weight: .bold))
                     .foregroundStyle(DaybookTheme.ink)
 
@@ -356,7 +357,7 @@ struct WorkspaceTodayView: View {
             if totalTodosCount > 0 {
                 HStack(spacing: 10) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(completedTodosCount >= totalTodosCount ? "今日全达成" : "达成进度")
+                        Text(completedTodosCount >= totalTodosCount ? "workspace.progress.done" : "workspace.progress.label")
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(DaybookTheme.muted)
 
@@ -386,7 +387,7 @@ struct WorkspaceTodayView: View {
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(composerFocused ? DaybookTheme.stamp : DaybookTheme.muted)
 
-                TextField("添加新待办，回车快速录入（支持自然语言如：下午3点开会 #工作 !p1）", text: $draftText)
+                TextField("workspace.composer.placeholder", text: $draftText)
                     .textFieldStyle(.plain)
                     .font(.system(size: 13))
                     .foregroundStyle(DaybookTheme.ink)
@@ -406,7 +407,7 @@ struct WorkspaceTodayView: View {
                             )
                     }
                     .buttonStyle(.plain)
-                    .help("回车添加待办")
+                    .help("workspace.composer.help")
                 }
             }
             .padding(.horizontal, 12)
@@ -430,7 +431,7 @@ struct WorkspaceTodayView: View {
             if parsed.hasTokens && !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 HStack(spacing: 6) {
                     if let time = parsed.timeLabel {
-                        PillBadge(title: "\(time) 提醒", icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
+                        PillBadge(title: L10n.format("workspace.remind.suffix", locale: locale, time), icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
                     }
                     if let tag = parsed.tagName {
                         PillBadge(title: "#\(tag)", icon: "tag.fill", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo), isSelected: true)
@@ -466,15 +467,10 @@ struct WorkspaceTodayView: View {
             sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
             notes: parsed.notes
         )
-        if let tagName = parsed.tagName {
-            let tagDescriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == tagName && $0.deletedAt == nil })
-            if let existingTag = try? modelContext.fetch(tagDescriptor).first {
-                todo.tagIDs = TagIDList.toggling(todo.tagIDs, existingTag.id)
-            } else {
-                let newTag = TagItem(name: tagName, sortOrder: 0)
-                modelContext.insert(newTag)
-                todo.tagIDs = TagIDList.toggling(todo.tagIDs, newTag.id)
-            }
+        if let tagName = parsed.tagName,
+           let tag = DayBoardMutations.resolveTag(named: tagName, among: tags, context: modelContext)
+        {
+            todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
         }
         modelContext.insert(todo)
         draftText = ""

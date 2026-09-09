@@ -7,6 +7,7 @@ struct TaskDetailDateChips: View {
     var dayKey: String
     var onSelectDate: (String) -> Void
     @Environment(\.locale) private var locale
+    @State private var pickingDay = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -26,23 +27,35 @@ struct TaskDetailDateChips: View {
                 let afterTomorrowKey = DayKey.shifted(todayKey, by: 2)
 
                 PillBadge(
-                    title: "今天",
+                    title: L10n.string("capture.today", locale: locale),
                     color: DaybookTheme.stamp,
                     isSelected: dayKey == todayKey,
                     action: { onSelectDate(todayKey) }
                 )
                 PillBadge(
-                    title: "明天",
+                    title: L10n.string("capture.tomorrow", locale: locale),
                     color: DaybookTheme.stamp,
                     isSelected: dayKey == tomorrowKey,
                     action: { onSelectDate(tomorrowKey) }
                 )
                 PillBadge(
-                    title: "后天",
+                    title: L10n.string("capture.afterTomorrow", locale: locale),
                     color: DaybookTheme.stamp,
                     isSelected: dayKey == afterTomorrowKey,
                     action: { onSelectDate(afterTomorrowKey) }
                 )
+                PillBadge(
+                    title: L10n.string("day.pick", locale: locale),
+                    color: DaybookTheme.stamp,
+                    isSelected: dayKey != todayKey && dayKey != tomorrowKey && dayKey != afterTomorrowKey,
+                    action: { pickingDay = true }
+                )
+            }
+            .popover(isPresented: $pickingDay) {
+                DaySchedulePicker(initialKey: dayKey) { key in
+                    onSelectDate(key)
+                    pickingDay = false
+                }
             }
         }
     }
@@ -106,6 +119,7 @@ struct TaskDetailRemindChips: View {
 struct TaskDetailWeekdayPicker: View {
     var resolvedMask: Int
     var onUpdateMask: (Int) -> Void
+    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -115,12 +129,11 @@ struct TaskDetailWeekdayPicker: View {
 
             HStack(spacing: 4) {
                 ForEach(1...7, id: \.self) { weekday in
-                    let isSelected = (resolvedMask & (1 << (weekday - 1))) != 0
+                    let isSelected = WeekdayMask.contains(resolvedMask, weekday: weekday)
                     Button {
-                        let newMask = resolvedMask ^ (1 << (weekday - 1))
-                        onUpdateMask(newMask == 0 ? 0b0111110 : newMask)
+                        onUpdateMask(WeekdayMask.toggling(resolvedMask, weekday: weekday))
                     } label: {
-                        Text(weekdayShortName(weekday))
+                        Text(WeekdayMask.veryShortSymbol(weekday, locale: locale))
                             .font(.system(size: 10.5, weight: .medium))
                             .frame(width: 25, height: 25)
                             .background(
@@ -130,21 +143,9 @@ struct TaskDetailWeekdayPicker: View {
                             .foregroundStyle(isSelected ? Color.white : DaybookTheme.ink)
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale))
                 }
             }
-        }
-    }
-
-    private func weekdayShortName(_ weekday: Int) -> String {
-        switch weekday {
-        case 1: return "日"
-        case 2: return "一"
-        case 3: return "二"
-        case 4: return "三"
-        case 5: return "四"
-        case 6: return "五"
-        case 7: return "六"
-        default: return ""
         }
     }
 }

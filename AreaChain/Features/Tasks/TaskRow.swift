@@ -55,7 +55,8 @@ struct TaskRow: View {
         isSelected: Bool = false,
         isExternalEditing: Bool = false,
         onSelect: (() -> Void)? = nil,
-        onEndEditing: (() -> Void)? = nil
+        onEndEditing: (() -> Void)? = nil,
+        isEnabled: Bool? = nil
     ) {
         self.state = TaskRowState(
             title: title,
@@ -75,7 +76,10 @@ struct TaskRow: View {
             subtasks: subtasks,
             dragPayload: dragPayload,
             isSelected: isSelected,
-            isExternalEditing: isExternalEditing
+            isExternalEditing: isExternalEditing,
+            canSetRemind: onRemindMinutes != nil,
+            canSkip: onSkip != nil,
+            isEnabled: isEnabled
         )
         self.dispatch = { action in
             switch action {
@@ -247,19 +251,24 @@ struct TaskRow: View {
         return firstLine?.trimmingCharacters(in: .whitespaces)
     }
 
+    @ViewBuilder
     private func remindBadge(_ minutes: Int) -> some View {
-        Button {
-            pickingTime = true
-        } label: {
-            PillBadge(
-                title: RemindMinutes.label(minutes, locale: locale),
-                icon: "clock",
-                color: DaybookTheme.stamp,
-                isSelected: false
-            )
+        let badge = PillBadge(
+            title: RemindMinutes.label(minutes, locale: locale),
+            icon: "clock.fill",
+            color: DaybookTheme.stamp,
+            isSelected: true
+        )
+        if state.canSetRemind {
+            Button {
+                pickingTime = true
+            } label: {
+                badge
+            }
+            .buttonStyle(.plain)
+        } else {
+            badge
         }
-        .buttonStyle(.plain)
-        .layoutPriority(1)
     }
 
     private var editor: some View {
@@ -377,7 +386,7 @@ extension TaskRow {
             )
         }
         standingMenus
-        if state.isResident {
+        if state.canSkip {
             Button("row.skip") {
                 dispatch(.skip)
             }
@@ -386,15 +395,17 @@ extension TaskRow {
 
     @ViewBuilder
     private var timeMenus: some View {
-        Button("row.time.set") {
-            if state.remindMinutes == nil {
-                dispatch(.setRemindMinutes(RemindMinutes.from(date: .now)))
+        if state.canSetRemind {
+            Button("row.time.set") {
+                if state.remindMinutes == nil {
+                    dispatch(.setRemindMinutes(RemindMinutes.from(date: .now)))
+                }
+                pickingTime = true
             }
-            pickingTime = true
-        }
-        if state.remindMinutes != nil {
-            Button("row.time.clear") {
-                dispatch(.setRemindMinutes(nil))
+            if state.remindMinutes != nil {
+                Button("row.time.clear") {
+                    dispatch(.setRemindMinutes(nil))
+                }
             }
         }
     }
@@ -407,11 +418,16 @@ extension TaskRow {
                     dispatch(.setWeekdaysOnly(!weekdaysOnly))
                 }
             }
-            Button("row.disable") {
-                dispatch(.setEnabled(false))
-            }
-            Button("row.enable") {
-                dispatch(.setEnabled(true))
+            if let isEnabled = state.isEnabled {
+                if isEnabled {
+                    Button("row.disable") {
+                        dispatch(.setEnabled(false))
+                    }
+                } else {
+                    Button("row.enable") {
+                        dispatch(.setEnabled(true))
+                    }
+                }
             }
         }
     }

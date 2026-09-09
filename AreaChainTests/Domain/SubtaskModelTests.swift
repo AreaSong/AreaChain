@@ -148,6 +148,22 @@ struct SubtaskModelTests {
         #expect(prior.deletedAt == independentlyDeletedAt)
     }
 
+    @Test func completeTodoCascadesLiveSubtasks() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "昨天", dayKey: "2026-09-08")
+        context.insert(todo)
+        _ = DayBoardMutations.addSubtask(to: todo, title: "未完成", context: context)
+        _ = DayBoardMutations.addSubtask(to: todo, title: "已删", context: context)
+        let live = try #require(todo.subtasks.first { $0.title == "未完成" })
+        let deleted = try #require(todo.subtasks.first { $0.title == "已删" })
+        DayBoardMutations.deleteSubtask(deleted)
+
+        DayBoardMutations.completeTodo(todo)
+        #expect(todo.isDone)
+        #expect(live.isDone)
+        #expect(!deleted.isDone)
+    }
+
     @Test func addTagAttachesToTodo() throws {
         let (_, context) = try makeContainer()
         let todo = TodoItem(title: "任务", dayKey: "2026-09-08")
@@ -157,5 +173,51 @@ struct SubtaskModelTests {
         let tag = try #require(tags.first)
         #expect(tag.name == "跟进")
         #expect(TagIDList.contains(todo.tagIDs, tag.id))
+    }
+
+    @Test func addTagRestoresDeletedAndAttachesToRoutine() throws {
+        let (_, context) = try makeContainer()
+        let routine = DailyRoutine(title: "习惯", sortOrder: 0, createdDayKey: "2026-09-08")
+        context.insert(routine)
+        let buried = TagItem(name: "跟进", sortOrder: 0, deletedAt: Date(timeIntervalSince1970: 1))
+        context.insert(buried)
+        try context.save()
+
+        DayBoardMutations.addTag(named: "跟进", existing: [buried], context: context, ontoRoutine: routine)
+        #expect(buried.deletedAt == nil)
+        #expect(TagIDList.contains(routine.tagIDs, buried.id))
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        #expect(tags.count == 1)
+    }
+
+    @Test func trashCascadesAttachmentsAndExportKeepsDeletedSubtasks() throws {
+        let (_, context) = try makeContainer()
+        let todo = TodoItem(title: "主任务", dayKey: "2026-09-08")
+        context.insert(todo)
+        _ = DayBoardMutations.addSubtask(to: todo, title: "活着", context: context)
+        let live = try #require(todo.subtasks.first { $0.title == "活着" })
+        let attachment = AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "shot.png")
+        context.insert(attachment)
+        try context.save()
+
+        DayBoardMutations.trashTodo(todo)
+        #expect(live.deletedAt == todo.deletedAt)
+        #expect(attachment.deletedAt == todo.deletedAt)
+
+        let snapshot = SyncPort.makeSnapshot(
+            routines: [],
+            checks: [],
+            todos: [todo],
+            diaries: [],
+            attachments: [attachment]
+        )
+        #expect(snapshot.todos.first?.subtasks.count == 1)
+        #expect(snapshot.todos.first?.subtasks.first?.deletedAt == todo.deletedAt)
+        #expect(snapshot.attachments.first?.deletedAt == todo.deletedAt)
+
+        DayBoardMutations.restoreTodo(todo)
+        #expect(todo.deletedAt == nil)
+        #expect(live.deletedAt == nil)
+        #expect(attachment.deletedAt == nil)
     }
 }

@@ -21,6 +21,9 @@ struct TaskRowState: Identifiable, Equatable {
     var dragPayload: String?
     var isSelected: Bool
     var isExternalEditing: Bool
+    var canSetRemind: Bool
+    var canSkip: Bool
+    var isEnabled: Bool?
 
     init(
         id: UUID = UUID(),
@@ -41,7 +44,10 @@ struct TaskRowState: Identifiable, Equatable {
         subtasks: [SubtaskSnapshot] = [],
         dragPayload: String? = nil,
         isSelected: Bool = false,
-        isExternalEditing: Bool = false
+        isExternalEditing: Bool = false,
+        canSetRemind: Bool = false,
+        canSkip: Bool = false,
+        isEnabled: Bool? = nil
     ) {
         self.id = id
         self.title = title
@@ -62,6 +68,9 @@ struct TaskRowState: Identifiable, Equatable {
         self.dragPayload = dragPayload
         self.isSelected = isSelected
         self.isExternalEditing = isExternalEditing
+        self.canSetRemind = canSetRemind
+        self.canSkip = canSkip
+        self.isEnabled = isEnabled
     }
 
     static func == (lhs: TaskRowState, rhs: TaskRowState) -> Bool {
@@ -81,7 +90,10 @@ struct TaskRowState: Identifiable, Equatable {
         lhs.subtasks == rhs.subtasks &&
         lhs.dragPayload == rhs.dragPayload &&
         lhs.isSelected == rhs.isSelected &&
-        lhs.isExternalEditing == rhs.isExternalEditing
+        lhs.isExternalEditing == rhs.isExternalEditing &&
+        lhs.canSetRemind == rhs.canSetRemind &&
+        lhs.canSkip == rhs.canSkip &&
+        lhs.isEnabled == rhs.isEnabled
     }
 }
 

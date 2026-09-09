@@ -23,7 +23,7 @@ struct BatchActionBar: View {
                 Image(systemName: "checkmark.circle.badge.questionmark.fill")
                     .font(.system(size: 13))
                     .foregroundStyle(DaybookTheme.stamp)
-                Text("已选 \(selectedCount) 项")
+                Text("batch.selected \(selectedCount)")
                     .font(.system(size: 12, weight: .semibold, design: .monospaced))
                     .foregroundStyle(DaybookTheme.ink)
             }
@@ -35,10 +35,10 @@ struct BatchActionBar: View {
 
             // 日期调整
             Menu {
-                Button("今天", action: onMoveToday)
-                Button("明天", action: onMoveTomorrow)
+                Button("capture.today", action: onMoveToday)
+                Button("capture.tomorrow", action: onMoveTomorrow)
             } label: {
-                Label("移动日期", systemImage: "calendar")
+                Label("batch.move.date", systemImage: "calendar")
                     .font(.system(size: 11))
             }
             .menuStyle(.borderlessButton)
@@ -46,10 +46,10 @@ struct BatchActionBar: View {
 
             // 状态调整
             Menu {
-                Button("标记为已完成") { onToggleDone(true) }
-                Button("标记为未完成") { onToggleDone(false) }
+                Button("batch.done") { onToggleDone(true) }
+                Button("batch.undone") { onToggleDone(false) }
             } label: {
-                Label("状态", systemImage: "checkmark.circle")
+                Label("batch.status", systemImage: "checkmark.circle")
                     .font(.system(size: 11))
             }
             .menuStyle(.borderlessButton)
@@ -58,13 +58,13 @@ struct BatchActionBar: View {
             // 项目设置
             if !projects.isEmpty {
                 Menu {
-                    Button("移除项目") { onSetProject(nil) }
+                    Button("classify.project.none") { onSetProject(nil) }
                     Divider()
                     ForEach(projects.filter { $0.deletedAt == nil }) { proj in
                         Button(proj.name) { onSetProject(proj.id) }
                     }
                 } label: {
-                    Label("设置项目", systemImage: "folder")
+                    Label("batch.project", systemImage: "folder")
                         .font(.system(size: 11))
                 }
                 .menuStyle(.borderlessButton)
@@ -78,7 +78,7 @@ struct BatchActionBar: View {
                         Button("#\(tag.name)") { onToggleTag(tag.id) }
                     }
                 } label: {
-                    Label("打标签", systemImage: "tag")
+                    Label("batch.tag", systemImage: "tag")
                         .font(.system(size: 11))
                 }
                 .menuStyle(.borderlessButton)
@@ -87,7 +87,7 @@ struct BatchActionBar: View {
 
             // 删除
             Button(role: .destructive, action: onTrash) {
-                Label("移入回收站", systemImage: "trash")
+                Label("alert.trash.move", systemImage: "trash")
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.destructive)
             }
@@ -101,7 +101,7 @@ struct BatchActionBar: View {
                     .foregroundStyle(DaybookTheme.muted)
             }
             .buttonStyle(.plain)
-            .help("取消选择")
+            .help("batch.clear")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 8)

@@ -221,15 +221,10 @@ struct MenuBarPopoverView: View {
             sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
             notes: parsed.notes
         )
-        if let tagName = parsed.tagName {
-            let tagDescriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == tagName && $0.deletedAt == nil })
-            if let existingTag = try? modelContext.fetch(tagDescriptor).first {
-                item.tagIDs = TagIDList.toggling(item.tagIDs, existingTag.id)
-            } else {
-                let newTag = TagItem(name: tagName, sortOrder: 0)
-                modelContext.insert(newTag)
-                item.tagIDs = TagIDList.toggling(item.tagIDs, newTag.id)
-            }
+        if let tagName = parsed.tagName,
+           let tag = DayBoardMutations.resolveTag(named: tagName, among: tags, context: modelContext)
+        {
+            item.tagIDs = TagIDList.toggling(item.tagIDs, tag.id)
         }
         modelContext.insert(item)
         capture.draft = ""

@@ -42,6 +42,15 @@ enum DayBoardMutations {
         }
     }
 
+    static func completeTodo(_ todo: TodoItem) {
+        persist {
+            todo.isDone = true
+            for sub in todo.subtasks where sub.deletedAt == nil && !sub.isDone {
+                sub.isDone = true
+            }
+        }
+    }
+
     static func toggleTodo(_ todo: TodoItem) {
         persist {
             todo.isDone.toggle()
@@ -65,9 +74,12 @@ enum DayBoardMutations {
         persist {
             let now = SoftDelete.stamp()
             todo.deletedAt = now
-            for sub in todo.subtasks where sub.deletedAt == nil {
-                sub.deletedAt = now
-            }
+            SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
+            SoftDelete.stampAttachments(
+                ownerID: todo.id,
+                at: now,
+                attachments: ownedAttachments(todo.modelContext)
+            )
         }
     }
 
@@ -76,11 +88,24 @@ enum DayBoardMutations {
             let stamp = todo.deletedAt
             todo.deletedAt = nil
             SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: todo.subtasks)
+            SoftDelete.restoreCascadedAttachments(
+                ownerID: todo.id,
+                parentDeletedAt: stamp,
+                attachments: ownedAttachments(todo.modelContext)
+            )
         }
     }
 
     static func trashRoutine(_ routine: DailyRoutine) {
-        persist { routine.deletedAt = SoftDelete.stamp() }
+        persist {
+            let now = SoftDelete.stamp()
+            routine.deletedAt = now
+            SoftDelete.stampAttachments(
+                ownerID: routine.id,
+                at: now,
+                attachments: ownedAttachments(routine.modelContext)
+            )
+        }
     }
 
     static func addTag(
@@ -90,14 +115,8 @@ enum DayBoardMutations {
         ontoTodo todo: TodoItem? = nil,
         ontoRoutine routine: DailyRoutine? = nil
     ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
         persist {
-            let tag = existing.first { $0.name == trimmed && $0.deletedAt == nil } ?? {
-                let created = TagItem(name: trimmed, sortOrder: existing.count)
-                context.insert(created)
-                return created
-            }()
+            guard let tag = resolveTag(named: name, among: existing, context: context) else { return }
             if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
                 todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
             }
@@ -114,6 +133,13 @@ enum DayBoardMutations {
 
     static func setRemind(_ todo: TodoItem, minutes: Int?) {
         persist { todo.remindMinutes = RemindMinutes.clamped(minutes) }
+        if minutes != nil {
+            NotificationScheduler.shared.ensureAuthorization()
+        }
+    }
+
+    static func setRemind(_ routine: DailyRoutine, minutes: Int?) {
+        persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
         if minutes != nil {
             NotificationScheduler.shared.ensureAuthorization()
         }
@@ -225,7 +251,11 @@ enum DayBoardMutations {
         persist {
             var available = tags
             for name in DiaryMemoTags.presets {
-                _ = ensureTag(named: name, among: &available, context: context)
+                if let tag = resolveTag(named: name, among: available, context: context),
+                   !available.contains(where: { $0.id == tag.id })
+                {
+                    available.append(tag)
+                }
             }
         }
     }
@@ -245,7 +275,41 @@ enum DayBoardMutations {
     }
 
     static func deleteDiary(_ entry: DiaryEntry) {
-        persist { entry.deletedAt = .now }
+        persist {
+            let now = SoftDelete.stamp()
+            entry.deletedAt = now
+            SoftDelete.stampAttachments(
+                ownerID: entry.id,
+                at: now,
+                attachments: ownedAttachments(entry.modelContext)
+            )
+        }
+    }
+
+    static func resolveTag(
+        named name: String,
+        among existing: [TagItem] = [],
+        context: ModelContext
+    ) -> TagItem? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        if let found = existing.first(where: { $0.name == trimmed }) {
+            found.deletedAt = nil
+            return found
+        }
+        let descriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == trimmed })
+        if let found = try? context.fetch(descriptor).first {
+            found.deletedAt = nil
+            return found
+        }
+        let created = TagItem(name: trimmed, sortOrder: existing.count)
+        context.insert(created)
+        return created
+    }
+
+    static func ownedAttachments(_ context: ModelContext?) -> [AttachmentItem] {
+        guard let context else { return [] }
+        return (try? context.fetch(FetchDescriptor<AttachmentItem>())) ?? []
     }
 
     private static func ensureTag(
@@ -253,13 +317,10 @@ enum DayBoardMutations {
         among tags: inout [TagItem],
         context: ModelContext
     ) -> TagItem {
-        if let found = tags.first(where: { $0.name == name }) {
-            found.deletedAt = nil
-            return found
+        let tag = resolveTag(named: name, among: tags, context: context) ?? TagItem(name: name, sortOrder: tags.count)
+        if !tags.contains(where: { $0.id == tag.id }) {
+            tags.append(tag)
         }
-        let tag = TagItem(name: name, sortOrder: tags.count)
-        context.insert(tag)
-        tags.append(tag)
         return tag
     }
 }

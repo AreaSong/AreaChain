@@ -36,7 +36,7 @@ struct TaskRowSubtaskChip: View {
             .foregroundStyle(allDone ? DaybookTheme.stamp : DaybookTheme.muted)
         }
         .buttonStyle(.plain)
-        .help(isExpanded ? "收起子任务" : "展开子任务")
+        .help(isExpanded ? "row.subtasks.collapse" : "row.subtasks.expand")
     }
 }
 

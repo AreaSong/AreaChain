@@ -19,7 +19,8 @@ struct TrashPage: View {
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
         let files = attachments.compactMap(TrashRow.attachment)
-        let catalog = projects.compactMap(TrashRow.project) + tags.compactMap(TrashRow.tag)
+        let catalog = projects.compactMap { TrashRow.project($0, todos: todos, routines: routines, projects: projects) }
+            + tags.compactMap { TrashRow.tag($0, todos: todos, routines: routines, diaries: diaries) }
         return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
     }
 
@@ -111,7 +112,11 @@ struct TrashPage: View {
     }
 
     private func emptyTrash() {
+        let purgedOwners = Set(items.compactMap(\.purgesOwnerID))
         for item in items {
+            if let owner = item.skipIfOwnerPurged, purgedOwners.contains(owner) {
+                continue
+            }
             item.removeFromStore(modelContext)
         }
         BoardEvents.changed()
@@ -126,6 +131,8 @@ private struct TrashRow: Identifiable {
     var deletedAt: Date
     var restore: () -> Void
     var removeFromStore: (ModelContext) -> Void
+    var purgesOwnerID: UUID? = nil
+    var skipIfOwnerPurged: UUID? = nil
 
     static func resident(_ item: DailyRoutine, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
@@ -135,11 +142,20 @@ private struct TrashRow: Identifiable {
             kindLabel: "trash.kind.resident",
             isResident: true,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: {
+                let stamp = item.deletedAt
+                item.deletedAt = nil
+                SoftDelete.restoreCascadedAttachments(
+                    ownerID: item.id,
+                    parentDeletedAt: stamp,
+                    attachments: attachments
+                )
+            },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
                 context.delete(item)
-            }
+            },
+            purgesOwnerID: item.id
         )
     }
 
@@ -155,6 +171,11 @@ private struct TrashRow: Identifiable {
                 let stamp = item.deletedAt
                 item.deletedAt = nil
                 SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: item.subtasks)
+                SoftDelete.restoreCascadedAttachments(
+                    ownerID: item.id,
+                    parentDeletedAt: stamp,
+                    attachments: attachments
+                )
             },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
@@ -162,7 +183,8 @@ private struct TrashRow: Identifiable {
                     context.delete(sub)
                 }
                 context.delete(item)
-            }
+            },
+            purgesOwnerID: item.id
         )
     }
 
@@ -174,15 +196,29 @@ private struct TrashRow: Identifiable {
             kindLabel: "trash.kind.diary",
             isResident: false,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: {
+                let stamp = item.deletedAt
+                item.deletedAt = nil
+                SoftDelete.restoreCascadedAttachments(
+                    ownerID: item.id,
+                    parentDeletedAt: stamp,
+                    attachments: attachments
+                )
+            },
             removeFromStore: { context in
                 AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
                 context.delete(item)
-            }
+            },
+            purgesOwnerID: item.id
         )
     }
 
-    static func project(_ item: ProjectItem) -> TrashRow? {
+    static func project(
+        _ item: ProjectItem,
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        projects: [ProjectItem]
+    ) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -192,12 +228,18 @@ private struct TrashRow: Identifiable {
             deletedAt: deletedAt,
             restore: { item.deletedAt = nil },
             removeFromStore: { context in
+                Catalog.unlinkProject(item.id, todos: todos, routines: routines, projects: projects)
                 context.delete(item)
             }
         )
     }
 
-    static func tag(_ item: TagItem) -> TrashRow? {
+    static func tag(
+        _ item: TagItem,
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        diaries: [DiaryEntry]
+    ) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -207,6 +249,7 @@ private struct TrashRow: Identifiable {
             deletedAt: deletedAt,
             restore: { item.deletedAt = nil },
             removeFromStore: { context in
+                Catalog.unlinkTag(item.id, todos: todos, routines: routines, diaries: diaries)
                 context.delete(item)
             }
         )
@@ -224,7 +267,8 @@ private struct TrashRow: Identifiable {
             removeFromStore: { context in
                 AttachmentStore.removeFile(id: item.id)
                 context.delete(item)
-            }
+            },
+            skipIfOwnerPurged: item.ownerID
         )
     }
 }

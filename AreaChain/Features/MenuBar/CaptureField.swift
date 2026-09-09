@@ -46,7 +46,7 @@ struct CaptureField: View {
             if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 HStack(spacing: 6) {
                     if let time = parsed.timeLabel {
-                        PillBadge(title: "\(time) 提醒", icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
+                        PillBadge(title: L10n.format("workspace.remind.suffix", locale: locale, time), icon: "clock.fill", color: DaybookTheme.stamp, isSelected: true)
                     }
                     if let tag = parsed.tagName {
                         PillBadge(title: "#\(tag)", icon: "tag.fill", color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo), isSelected: true)

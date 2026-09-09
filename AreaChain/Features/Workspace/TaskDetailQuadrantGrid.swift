@@ -7,38 +7,38 @@ struct TaskDetailQuadrantGrid: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("四象限优先级")
+            Text("drawer.quadrant.title")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(DaybookTheme.muted)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
                 card(
-                    title: "重要且紧急",
-                    subtitle: "立即处理",
+                    title: "quadrant.iu",
+                    subtitle: "quadrant.iu.hint",
                     icon: "exclamationmark.3",
                     color: Color.red,
                     isActive: isImportant && isUrgent,
                     action: { onSelect(true, true) }
                 )
                 card(
-                    title: "重要不紧急",
-                    subtitle: "制定规划",
+                    title: "quadrant.i",
+                    subtitle: "quadrant.i.hint",
                     icon: "calendar.badge.clock",
                     color: Color.blue,
                     isActive: isImportant && !isUrgent,
                     action: { onSelect(true, false) }
                 )
                 card(
-                    title: "紧急不重要",
-                    subtitle: "授权委托",
+                    title: "quadrant.u",
+                    subtitle: "quadrant.u.hint",
                     icon: "arrow.triangle.branch",
                     color: Color.orange,
                     isActive: !isImportant && isUrgent,
                     action: { onSelect(false, true) }
                 )
                 card(
-                    title: "不重要不紧急",
-                    subtitle: "顺延简化",
+                    title: "quadrant.rest",
+                    subtitle: "quadrant.rest.hint",
                     icon: "archivebox",
                     color: DaybookTheme.muted,
                     isActive: !isImportant && !isUrgent,
@@ -49,8 +49,8 @@ struct TaskDetailQuadrantGrid: View {
     }
 
     private func card(
-        title: String,
-        subtitle: String,
+        title: LocalizedStringKey,
+        subtitle: LocalizedStringKey,
         icon: String,
         color: Color,
         isActive: Bool,

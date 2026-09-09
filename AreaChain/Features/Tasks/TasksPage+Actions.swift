@@ -3,11 +3,13 @@ import SwiftData
 
 extension TasksPage {
     func completeYesterday(_ item: UnfinishedItem) {
-        DayBoardMutations.persist {
-            switch item.kind {
-            case .todo:
-                todos.first { $0.id == item.id }?.isDone = true
-            case .routine:
+        switch item.kind {
+        case .todo:
+            if let todo = todos.first(where: { $0.id == item.id }) {
+                DayBoardMutations.completeTodo(todo)
+            }
+        case .routine:
+            DayBoardMutations.persist {
                 guard let routine = routines.first(where: { $0.id == item.id }) else { return }
                 if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == yesterdayKey }) {
                     check.isDone = true

@@ -4,6 +4,7 @@ import SwiftUI
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
 struct DiaryPage: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
 
     var todayKey: String
     var entries: [DiaryEntry]
@@ -20,6 +21,7 @@ struct DiaryPage: View {
     @State private var composerSelectedTagIDs: Set<UUID> = []
     @State private var pendingTrash: PendingTrash?
     @FocusState private var composerFocused: Bool
+    @Bindable private var boardSelection = BoardSelection.shared
 
     init(
         todayKey: String,
@@ -96,11 +98,11 @@ struct DiaryPage: View {
         HStack(alignment: .center, spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
-                    Text("灵感手记")
+                    Text("diary.page.title")
                         .font(.system(size: 20, weight: .bold))
                         .foregroundStyle(DaybookTheme.ink)
 
-                    Text("\(filteredEntries.count) 条记录")
+                    Text("diary.page.count \(filteredEntries.count)")
                         .font(.system(size: 11, weight: .medium))
                         .foregroundStyle(DaybookTheme.muted)
                         .padding(.horizontal, 6)
@@ -110,7 +112,7 @@ struct DiaryPage: View {
                         )
                 }
 
-                Text("记录小巧思、密码备忘与日常随笔，每条都可打上分类标签")
+                Text("diary.page.subtitle")
                     .font(.system(size: 11.5))
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -121,7 +123,7 @@ struct DiaryPage: View {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 11))
                     .foregroundStyle(DaybookTheme.muted)
-                TextField("搜索巧思、密码或标签...", text: $searchQuery)
+                TextField("diary.search.placeholder", text: $searchQuery)
                     .textFieldStyle(.plain)
                     .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.ink)
@@ -153,7 +155,7 @@ struct DiaryPage: View {
     private var tagFilterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                filterPill(title: "全部", count: nonDeletedEntries.count, isSelected: selectedTagID == nil) {
+                filterPill(title: L10n.string("filter.all", locale: locale), count: nonDeletedEntries.count, isSelected: selectedTagID == nil) {
                     selectedTagID = nil
                 }
 
@@ -213,7 +215,7 @@ struct DiaryPage: View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack(alignment: .topLeading) {
                 if draftText.isEmpty {
-                    Text("写下一条记录，点选 #密码 / #小巧思 / #日记，或在正文里写 #标签，⌘Return 保存")
+                    Text("diary.composer.placeholder")
                         .font(.system(size: 12.5))
                         .foregroundStyle(DaybookTheme.muted.opacity(0.7))
                         .padding(.top, 8)
@@ -285,7 +287,7 @@ struct DiaryPage: View {
                     HStack(spacing: 4) {
                         Image(systemName: "square.and.pencil")
                             .font(.system(size: 10, weight: .semibold))
-                        Text("存入手记")
+                        Text("diary.composer.save")
                             .font(.system(size: 11.5, weight: .semibold))
                     }
                     .padding(.horizontal, 10)
@@ -317,29 +319,46 @@ struct DiaryPage: View {
     }
 
     private var entryListSection: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10) {
-                if filteredEntries.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(filteredEntries) { entry in
-                        DiaryNoteCard(
-                            entry: entry,
-                            activeTags: activeTags,
-                            attachments: attachments,
-                            onDelete: {
-                                pendingTrash = PendingTrash(title: entry.text) {
-                                    DayBoardMutations.deleteDiary(entry)
-                                }
-                            }
-                        )
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 10) {
+                    if filteredEntries.isEmpty {
+                        emptyState
+                    } else {
+                        ForEach(filteredEntries) { entry in
+                            DiaryNoteCard(
+                                entry: entry,
+                                activeTags: activeTags,
+                                attachments: attachments,
+                                onDelete: {
+                                    pendingTrash = PendingTrash(title: entry.text) {
+                                        DayBoardMutations.deleteDiary(entry)
+                                    }
+                                },
+                                isHighlighted: boardSelection.inspectingDiaryID == entry.id
+                            )
+                            .id(entry.id)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
             }
-            .padding(.vertical, 4)
+            .daybookScroll()
+            .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
+            .onAppear { scrollToInspected(proxy) }
+            .onChange(of: boardSelection.inspectingDiaryID) { _, _ in
+                scrollToInspected(proxy)
+            }
         }
-        .daybookScroll()
-        .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
+    }
+
+    private func scrollToInspected(_ proxy: ScrollViewProxy) {
+        guard let id = boardSelection.inspectingDiaryID else { return }
+        DispatchQueue.main.async {
+            withAnimation {
+                proxy.scrollTo(id, anchor: .top)
+            }
+        }
     }
 
     private var emptyState: some View {
@@ -347,10 +366,10 @@ struct DiaryPage: View {
             Image(systemName: "note.text")
                 .font(.system(size: 32, weight: .light))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.5))
-            Text(selectedTagID != nil || !searchQuery.isEmpty ? "未找到匹配的记录" : "还没有记录任何灵感或备忘")
+            Text(selectedTagID != nil || !searchQuery.isEmpty ? "diary.empty.filtered" : "diary.empty.title")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
-            Text("在上方输入框写下内容，并点选密码、小巧思或日记")
+            Text("diary.empty.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.8))
         }

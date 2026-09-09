@@ -13,20 +13,22 @@ struct WorkspaceSidebarView: View {
     var onAddProject: () -> Void
     var onAddTag: () -> Void
 
+    @State private var pendingTrash: PendingTrash?
+
     var body: some View {
         List {
-            Section("聚焦") {
+            Section("sidebar.focus") {
                 tabRow(.today, badgeCount: todayUnfinishedCount)
                 tabRow(.search)
             }
 
-            Section("看板") {
+            Section("sidebar.boards") {
                 tabRow(.quadrant)
                 tabRow(.gantt)
                 tabRow(.calendar)
             }
 
-            Section("记录") {
+            Section("sidebar.records") {
                 tabRow(.diary)
                 tabRow(.attachments)
             }
@@ -38,14 +40,14 @@ struct WorkspaceSidebarView: View {
                 }
             } header: {
                 HStack {
-                    Text("项目")
+                    Text("sidebar.projects")
                     Spacer()
                     Button(action: onAddProject) {
                         Image(systemName: "plus")
                             .font(.system(size: 10, weight: .bold))
                     }
                     .buttonStyle(.plain)
-                    .help("新建项目")
+                    .help("sidebar.add.project")
                 }
             }
 
@@ -56,23 +58,24 @@ struct WorkspaceSidebarView: View {
                 }
             } header: {
                 HStack {
-                    Text("标签")
+                    Text("sidebar.tags")
                     Spacer()
                     Button(action: onAddTag) {
                         Image(systemName: "plus")
                             .font(.system(size: 10, weight: .bold))
                     }
                     .buttonStyle(.plain)
-                    .help("新建标签")
+                    .help("sidebar.add.tag")
                 }
             }
 
-            Section("系统") {
+            Section("sidebar.system") {
                 tabRow(.trash)
                 tabRow(.settings)
             }
         }
         .listStyle(.sidebar)
+        .confirmMoveToTrash($pendingTrash)
     }
 
     private var todayUnfinishedCount: Int? {
@@ -116,7 +119,11 @@ struct WorkspaceSidebarView: View {
 
     private func projectRow(_ project: ProjectItem) -> some View {
         let isSelected = navigation.selectedProjectID == project.id
-        let count = todos.filter { $0.projectID == project.id && $0.deletedAt == nil && !$0.isDone }.count
+        let ids = ProjectTree.subtreeIDs(root: project.id, in: projects)
+        let count = todos.filter {
+            guard let projectID = $0.projectID else { return false }
+            return ids.contains(projectID) && $0.deletedAt == nil && !$0.isDone
+        }.count
         return Button {
             navigation.selectedProjectID = project.id
         } label: {
@@ -143,10 +150,12 @@ struct WorkspaceSidebarView: View {
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
-            Button("移入废纸篓", role: .destructive) {
-                DayBoardMutations.persist { project.deletedAt = .now }
-                if navigation.selectedProjectID == project.id {
-                    navigation.selectedProjectID = nil
+            Button("alert.trash.move", role: .destructive) {
+                pendingTrash = PendingTrash(title: project.name) {
+                    DayBoardMutations.persist { project.deletedAt = SoftDelete.stamp() }
+                    if navigation.selectedProjectID == project.id {
+                        navigation.selectedProjectID = nil
+                    }
                 }
             }
         }
@@ -181,10 +190,12 @@ struct WorkspaceSidebarView: View {
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
-            Button("移入废纸篓", role: .destructive) {
-                DayBoardMutations.persist { tag.deletedAt = .now }
-                if navigation.selectedTagID == tag.id {
-                    navigation.selectedTagID = nil
+            Button("alert.trash.move", role: .destructive) {
+                pendingTrash = PendingTrash(title: tag.name) {
+                    DayBoardMutations.persist { tag.deletedAt = SoftDelete.stamp() }
+                    if navigation.selectedTagID == tag.id {
+                        navigation.selectedTagID = nil
+                    }
                 }
             }
         }

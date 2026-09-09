@@ -49,10 +49,10 @@ struct TaskDetailDrawer: View {
             Image(systemName: "sidebar.trailing")
                 .font(.system(size: 36, weight: .light))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.5))
-            Text("未选中任务")
+            Text("drawer.empty.title")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
-            Text("在左侧列表中点击任意任务以查看和编辑详情")
+            Text("drawer.empty.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.8))
                 .multilineTextAlignment(.center)
@@ -80,7 +80,7 @@ struct TaskDetailDrawer: View {
                     }
                 )
 
-                DrawerSectionGroup(title: "基本信息") {
+                DrawerSectionGroup(title: "drawer.section.basics") {
                     TaskDetailTitleEditor(title: todo.title) { newTitle in
                         DayBoardMutations.editTodo(todo, title: newTitle)
                     }
@@ -88,11 +88,12 @@ struct TaskDetailDrawer: View {
                     TaskDetailNotesView(notes: todo.notes) { newNotes in
                         DayBoardMutations.updateNotes(for: todo, notes: newNotes)
                     }
+                    .id(todo.id)
 
                     TaskDetailSubtasksView(todo: todo)
                 }
 
-                DrawerSectionGroup(title: "安排与优先级") {
+                DrawerSectionGroup(title: "drawer.section.schedule") {
                     TaskDetailQuadrantGrid(
                         isImportant: todo.isImportant,
                         isUrgent: todo.isUrgent,
@@ -113,7 +114,7 @@ struct TaskDetailDrawer: View {
                     }
                 }
 
-                DrawerSectionGroup(title: "分类与组织") {
+                DrawerSectionGroup(title: "drawer.section.classify") {
                     TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
                         DayBoardMutations.persist { todo.projectID = id }
                     }
@@ -137,7 +138,7 @@ struct TaskDetailDrawer: View {
                     )
                 }
 
-                DrawerSectionGroup(title: "记录与资产") {
+                DrawerSectionGroup(title: "drawer.section.assets") {
                     attachmentSection(ownerID: todo.id, ownerKind: .todo)
 
                     TaskDetailMetadataSection(
@@ -177,7 +178,7 @@ struct TaskDetailDrawer: View {
                     }
                 )
 
-                DrawerSectionGroup(title: "习惯打卡") {
+                DrawerSectionGroup(title: "drawer.section.habit") {
                     TaskDetailTitleEditor(title: routine.title) { newTitle in
                         DayBoardMutations.persist { routine.title = newTitle }
                     }
@@ -187,9 +188,10 @@ struct TaskDetailDrawer: View {
                     TaskDetailNotesView(notes: routine.notes) { newNotes in
                         DayBoardMutations.updateNotes(for: routine, notes: newNotes)
                     }
+                    .id(routine.id)
                 }
 
-                DrawerSectionGroup(title: "安排与优先级") {
+                DrawerSectionGroup(title: "drawer.section.schedule") {
                     TaskDetailQuadrantGrid(
                         isImportant: routine.isImportant,
                         isUrgent: routine.isUrgent,
@@ -202,17 +204,17 @@ struct TaskDetailDrawer: View {
                     )
 
                     TaskDetailRemindChips(remindMinutes: routine.remindMinutes) { minutes in
-                        DayBoardMutations.persist { routine.remindMinutes = minutes }
+                        DayBoardMutations.setRemind(routine, minutes: minutes)
                     }
 
                     TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
                         DayBoardMutations.persist {
-                            routine.weekdayMask = newMask
+                            routine.setWeekdayMask(newMask)
                         }
                     }
                 }
 
-                DrawerSectionGroup(title: "分类与组织") {
+                DrawerSectionGroup(title: "drawer.section.classify") {
                     TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
                         DayBoardMutations.persist { routine.projectID = id }
                     }
@@ -236,7 +238,7 @@ struct TaskDetailDrawer: View {
                     )
                 }
 
-                DrawerSectionGroup(title: "记录与资产") {
+                DrawerSectionGroup(title: "drawer.section.assets") {
                     attachmentSection(ownerID: routine.id, ownerKind: .routine)
 
                     TaskDetailMetadataSection(
@@ -254,7 +256,7 @@ struct TaskDetailDrawer: View {
         let taskAttachments = attachments.filter { $0.ownerID == ownerID && $0.deletedAt == nil }
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("drawer.attachments.title (\(taskAttachments.count))")
+                Text("drawer.attachments.title \(taskAttachments.count)")
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
@@ -266,7 +268,7 @@ struct TaskDetailDrawer: View {
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 .buttonStyle(.plain)
-                .help("选择图片")
+                .help("drawer.attachments.pick")
 
                 Button {
                     _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: modelContext)
@@ -276,7 +278,7 @@ struct TaskDetailDrawer: View {
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 .buttonStyle(.plain)
-                .help("从剪贴板粘贴图片")
+                .help("drawer.attachments.paste")
             }
 
             if !taskAttachments.isEmpty {
@@ -331,7 +333,7 @@ struct TaskDetailDrawer: View {
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(DaybookTheme.ink)
                 Spacer()
-                Button("关闭") {
+                Button("common.close") {
                     previewAttachment = nil
                 }
                 .buttonStyle(.plain)
@@ -352,10 +354,10 @@ struct TaskDetailDrawer: View {
 // MARK: - Drawer Section Group
 
 struct DrawerSectionGroup<Content: View>: View {
-    var title: String? = nil
+    var title: LocalizedStringKey? = nil
     var content: Content
 
-    init(title: String? = nil, @ViewBuilder content: () -> Content) {
+    init(title: LocalizedStringKey? = nil, @ViewBuilder content: () -> Content) {
         self.title = title
         self.content = content()
     }

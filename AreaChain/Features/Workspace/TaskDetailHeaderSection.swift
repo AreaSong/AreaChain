@@ -40,7 +40,7 @@ struct TaskDetailHeaderBar: View {
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(DaybookQuietButtonStyle())
-                .help("关闭检查器 (ESC)")
+                .help("drawer.close.help")
             }
         }
     }
@@ -71,7 +71,7 @@ struct TaskDetailTitleEditor: View {
                             .fill(DaybookTheme.surface)
                     )
             } else {
-                Text(title.isEmpty ? "无标题" : title)
+                Text(title.isEmpty ? String(localized: "drawer.untitled") : title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DaybookTheme.ink)
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -116,7 +116,7 @@ struct TaskDetailMetadataSection: View {
                 HStack(spacing: 4) {
                     Image(systemName: "calendar.badge.clock")
                         .font(.system(size: 9))
-                    Text("创建于 \(createdAt.formatted(date: .abbreviated, time: .shortened))")
+                    Text("drawer.meta.created \(createdAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(.system(size: 10))
                 }
                 .foregroundStyle(DaybookTheme.muted)
@@ -125,7 +125,7 @@ struct TaskDetailMetadataSection: View {
                     HStack(spacing: 4) {
                         Image(systemName: "app.badge")
                             .font(.system(size: 9))
-                        Text("来源：\(sourceBundleID)")
+                        Text("drawer.meta.source \(sourceBundleID)")
                             .font(.system(size: 10))
                     }
                     .foregroundStyle(DaybookTheme.muted)

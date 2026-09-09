@@ -29,7 +29,8 @@ struct TaskDetailProjectPicker: View {
                     Image(systemName: "folder")
                         .font(.system(size: 11))
                         .foregroundStyle(DaybookTheme.stamp)
-                    let name = projects.first(where: { $0.id == selectedID })?.name ?? "无项目"
+                    let name = projects.first(where: { $0.id == selectedID && $0.deletedAt == nil })?.name
+                        ?? String(localized: "classify.project.none")
                     Text(name)
                         .font(.system(size: 11.5))
                         .foregroundStyle(DaybookTheme.ink)
@@ -78,11 +79,11 @@ struct TaskDetailTagSelector: View {
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 .buttonStyle(.plain)
-                .help("添加新标签")
+                .help("drawer.tag.add")
             }
 
             if activeTags.isEmpty {
-                Text("暂无标签，点击右上角「+」创建")
+                Text("drawer.tag.empty")
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted.opacity(0.7))
             } else {
@@ -106,18 +107,18 @@ struct TaskDetailTagSelector: View {
 
     private var newTagSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("创建新标签")
+            Text("drawer.tag.create.title")
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.ink)
-            TextField("标签名称", text: $newTagName)
+            TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
             HStack {
                 Spacer()
-                Button("取消") {
+                Button("alert.cancel") {
                     newTagName = ""
                     isCreatingTag = false
                 }
-                Button("创建") {
+                Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !name.isEmpty {
                         onCreateTag(name)

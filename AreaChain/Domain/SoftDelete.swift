@@ -14,4 +14,28 @@ enum SoftDelete {
             sub.deletedAt = nil
         }
     }
+
+    static func stampLiveSubtasks(_ subtasks: [SubtaskItem], at date: Date) {
+        for sub in subtasks where sub.deletedAt == nil {
+            sub.deletedAt = date
+        }
+    }
+
+    static func stampAttachments(ownerID: UUID, at date: Date, attachments: [AttachmentItem]) {
+        for item in attachments where item.ownerID == ownerID && item.deletedAt == nil {
+            item.deletedAt = date
+        }
+    }
+
+    static func restoreCascadedAttachments(
+        ownerID: UUID,
+        parentDeletedAt: Date?,
+        attachments: [AttachmentItem]
+    ) {
+        for item in attachments where item.ownerID == ownerID
+            && shouldRestoreChild(parentDeletedAt: parentDeletedAt, childDeletedAt: item.deletedAt)
+        {
+            item.deletedAt = nil
+        }
+    }
 }

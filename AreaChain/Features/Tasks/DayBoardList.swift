@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -22,6 +23,7 @@ struct DayBoardList: View {
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
     @State private var editingTaskID: UUID? = nil
+    @State private var hostWindow: NSWindow?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -96,11 +98,14 @@ struct DayBoardList: View {
         }
         .focusable()
         .focusEffectDisabled()
+        .background(KeyWindowHost { hostWindow = $0 })
         .onKeyPress(.downArrow) {
+            guard focusedTaskID != nil else { return .ignored }
             navigateSelection(delta: 1)
             return .handled
         }
         .onKeyPress(.upArrow) {
+            guard focusedTaskID != nil else { return .ignored }
             navigateSelection(delta: -1)
             return .handled
         }
@@ -135,8 +140,11 @@ struct DayBoardList: View {
     @State private var keyMonitor: Any? = nil
 
     private func setupKeyMonitor() {
+        guard focusedTaskID != nil else { return }
         guard keyMonitor == nil else { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+            guard self.shouldHandle(event) else { return event }
+
             let firstResponder = NSApp.keyWindow?.firstResponder
             let isTextViewEditing = (firstResponder as? NSTextView)?.isEditable == true
 
@@ -150,33 +158,40 @@ struct DayBoardList: View {
             }
 
             switch event.keyCode {
-            case 125: // Down Arrow
+            case 125:
                 navigateSelection(delta: 1)
                 return nil
-            case 126: // Up Arrow
+            case 126:
                 navigateSelection(delta: -1)
                 return nil
-            case 49: // Space
+            case 49:
                 if let id = focusedTaskID?.wrappedValue {
                     toggleSelected(id: id)
                     return nil
                 }
-            case 36: // Enter / Return
+            case 36:
                 if let id = focusedTaskID?.wrappedValue {
                     inspectSelected(id: id)
                     return nil
                 }
-            case 51: // Backspace / Delete
+            case 51:
                 if let id = focusedTaskID?.wrappedValue {
                     deleteSelected(id: id)
                     return nil
                 }
-            case 14: // 'e' or 'E'
+            case 14:
+                guard event.modifierFlags.intersection(.deviceIndependentFlagsMask).isEmpty else { break }
                 if let id = focusedTaskID?.wrappedValue {
                     editingTaskID = id
                     return nil
                 }
-            case 53: // Escape
+            case 53:
+                if WorkspaceNavigation.shared.isInspectorPresented,
+                   hostWindow === PanelWindowController.workspace.hostedWindow
+                {
+                    WorkspaceNavigation.shared.isInspectorPresented = false
+                    return nil
+                }
                 if focusedTaskID?.wrappedValue != nil {
                     focusedTaskID?.wrappedValue = nil
                     onReturnToInput?()
@@ -187,6 +202,15 @@ struct DayBoardList: View {
             }
             return event
         }
+    }
+
+    private func shouldHandle(_ event: NSEvent) -> Bool {
+        let mine = hostWindow
+        let eventWindow = event.window
+        if let mine, let eventWindow {
+            return eventWindow === mine
+        }
+        return mine != nil && NSApp.keyWindow === mine
     }
 
     private func tearDownKeyMonitor() {
@@ -268,9 +292,14 @@ struct DayBoardList: View {
     }
 
     private func inspectSelected(id: UUID) {
+        if dayKey == todayKey {
+            AppWindows.openWorkspace(tab: .today)
+        } else {
+            BoardSelection.shared.inspectBoard(dayKey)
+            AppWindows.openWorkspace(tab: .calendar)
+        }
         WorkspaceNavigation.shared.selectedTaskID = id
         WorkspaceNavigation.shared.isInspectorPresented = true
-        AppWindows.revealWorkspace()
     }
 
     private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -389,15 +418,24 @@ struct DayBoardList: View {
             },
             onEdit: { DayBoardMutations.editRoutine(routine, title: $0) },
             onSkip: isDone ? nil : { DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext) },
+            onRemindMinutes: { DayBoardMutations.setRemind(routine, minutes: $0) },
             onDisable: { DayBoardMutations.persist { routine.isEnabled = false } },
             onEnable: { DayBoardMutations.persist { routine.isEnabled = true } },
             isImportant: routine.isImportant,
             isUrgent: routine.isUrgent,
+            classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
+            attachments: CatalogChoices.attachments(
+                ownerKind: .routine,
+                ownerID: routine.id,
+                items: attachments,
+                context: modelContext
+            ),
             notes: routine.notes,
             isSelected: focusedTaskID?.wrappedValue == routine.id,
             isExternalEditing: editingTaskID == routine.id,
             onSelect: { focusedTaskID?.wrappedValue = routine.id },
-            onEndEditing: { editingTaskID = nil }
+            onEndEditing: { editingTaskID = nil },
+            isEnabled: routine.isEnabled
         )
     }
 

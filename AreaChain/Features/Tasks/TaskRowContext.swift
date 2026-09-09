@@ -46,6 +46,26 @@ enum CatalogChoices {
     }
 
     static func classify(
+        for routine: DailyRoutine,
+        projects: [ProjectItem],
+        tags: [TagItem]
+    ) -> TaskClassifyContext {
+        TaskClassifyContext(
+            isImportant: routine.isImportant,
+            isUrgent: routine.isUrgent,
+            projectID: routine.projectID,
+            tagIDs: routine.tagIDs,
+            projects: Self.projects(projects),
+            tags: Self.tags(tags),
+            sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID),
+            onProject: { id in DayBoardMutations.persist { routine.projectID = id } },
+            onToggleTag: { id in DayBoardMutations.persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
+            onImportant: { value in DayBoardMutations.persist { routine.isImportant = value } },
+            onUrgent: { value in DayBoardMutations.persist { routine.isUrgent = value } }
+        )
+    }
+
+    static func classify(
         for todo: TodoItem,
         projects: [ProjectItem],
         tags: [TagItem]

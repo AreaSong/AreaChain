@@ -99,7 +99,7 @@ struct SearchPage: View {
             selection.inspectBoard(DayClock.shared.todayKey)
             AppWindows.openCalendar()
         case .diary:
-            selection.inspectDiary(hit.dayKey)
+            selection.inspectDiary(id: hit.id, dayKey: hit.dayKey)
             AppWindows.openDiary()
         }
     }

@@ -8,6 +8,8 @@ struct CatalogSettings: View {
     @State private var projectDraft = ""
     @State private var tagDraft = ""
 
+    @State private var pendingTrash: PendingTrash?
+
     var body: some View {
         Section {
             projectTree
@@ -25,6 +27,7 @@ struct CatalogSettings: View {
         } footer: {
             Text("settings.catalog.hint")
         }
+        .confirmMoveToTrash($pendingTrash)
     }
 
     private func catalogBlock(
@@ -49,7 +52,9 @@ struct CatalogSettings: View {
                 CatalogNameRow(
                     name: item.name,
                     onRename: { onRename(item.id, $0) },
-                    onDelete: { onDelete(item.id) }
+                    onDelete: {
+                        pendingTrash = PendingTrash(title: item.name) { onDelete(item.id) }
+                    }
                 )
             }
             HStack {
@@ -79,7 +84,9 @@ struct CatalogSettings: View {
                     CatalogNameRow(
                         name: row.name,
                         onRename: { renameProject(row.id, $0) },
-                        onDelete: { deleteProject(row.id) }
+                        onDelete: {
+                            pendingTrash = PendingTrash(title: row.name) { deleteProject(row.id) }
+                        }
                     )
                     parentMenu(for: row)
                 }
@@ -128,9 +135,7 @@ struct CatalogSettings: View {
     private func addTag() {
         let name = tagDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-        modelContext.insert(
-            TagItem(name: name, sortOrder: Catalog.nextSortOrder(tags.map(\.sortOrder)))
-        )
+        _ = DayBoardMutations.resolveTag(named: name, among: tags, context: modelContext)
         tagDraft = ""
         BoardEvents.changed()
     }
@@ -146,12 +151,12 @@ struct CatalogSettings: View {
     }
 
     private func deleteProject(_ id: UUID) {
-        projects.first { $0.id == id }?.deletedAt = .now
+        projects.first { $0.id == id }?.deletedAt = SoftDelete.stamp()
         BoardEvents.changed()
     }
 
     private func deleteTag(_ id: UUID) {
-        tags.first { $0.id == id }?.deletedAt = .now
+        tags.first { $0.id == id }?.deletedAt = SoftDelete.stamp()
         BoardEvents.changed()
     }
 

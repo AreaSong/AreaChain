@@ -27,6 +27,7 @@ final class BoardSelection {
 
     var inspectingDayKey: String
     var diaryDayKey: String
+    var inspectingDiaryID: UUID?
 
     init(now: Date = .now) {
         let today = DayKey.today(now)
@@ -38,7 +39,8 @@ final class BoardSelection {
         inspectingDayKey = key
     }
 
-    func inspectDiary(_ key: String) {
-        diaryDayKey = key
+    func inspectDiary(id: UUID, dayKey: String) {
+        diaryDayKey = dayKey
+        inspectingDiaryID = id
     }
 }

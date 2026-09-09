@@ -83,7 +83,7 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             return
         }
 
-        let context = ModelContext(Persistence.session.container)
+        let context = Persistence.session.container.mainContext
         let routines = (try? context.fetch(FetchDescriptor<DailyRoutine>())) ?? []
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
         let checks = (try? context.fetch(FetchDescriptor<RoutineCheck>())) ?? []

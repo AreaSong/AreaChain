@@ -17,7 +17,14 @@ struct DayScheduleMenu: View {
         if currentDayKey != tomorrowKey {
             Button("day.move.tomorrow") { onMove(tomorrowKey) }
         }
+        if currentDayKey != afterTomorrowKey {
+            Button("day.move.afterTomorrow") { onMove(afterTomorrowKey) }
+        }
         Button("day.pick") { pickingDay = true }
+    }
+
+    private var afterTomorrowKey: String {
+        DayKey.shifted(todayKey, by: 2)
     }
 }
 

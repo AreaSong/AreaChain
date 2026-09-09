@@ -52,15 +52,16 @@ extension DayBoardMutations {
     static func batchTrash(_ ids: Set<UUID>, todos: [TodoItem], routines: [DailyRoutine]) {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
+        let attachments = ownedAttachments(todos.first?.modelContext ?? routines.first?.modelContext)
         persist {
             for todo in todos where ids.contains(todo.id) && todo.deletedAt == nil {
                 todo.deletedAt = now
-                for sub in todo.subtasks where sub.deletedAt == nil {
-                    sub.deletedAt = now
-                }
+                SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
+                SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: attachments)
             }
             for routine in routines where ids.contains(routine.id) && routine.deletedAt == nil {
                 routine.deletedAt = now
+                SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: attachments)
             }
         }
     }

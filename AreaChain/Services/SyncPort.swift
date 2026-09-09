@@ -55,13 +55,13 @@ enum SyncPort {
     static func encode(_ snapshot: ExportSnapshot) throws -> Data {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
-        encoder.dateEncodingStrategy = .iso8601
+        encoder.dateEncodingStrategy = ExportDates.encodeStrategy()
         return try encoder.encode(snapshot)
     }
 
     static func decode(_ data: Data) throws -> ExportSnapshot {
         let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        decoder.dateDecodingStrategy = ExportDates.decodeStrategy()
         return try decoder.decode(ExportSnapshot.self, from: data)
     }
 
@@ -114,7 +114,7 @@ enum SyncPort {
             sourceBundleID: item.sourceBundleID,
             calendarEventID: item.calendarEventID,
             notes: item.notes,
-            subtasks: item.subtasks.filter { $0.deletedAt == nil }.map {
+            subtasks: item.subtasks.map {
                 ExportedSubtask(
                     id: $0.id,
                     title: $0.title,

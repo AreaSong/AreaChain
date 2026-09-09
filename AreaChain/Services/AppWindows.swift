@@ -6,7 +6,9 @@ enum AppWindows {
     static func openWorkspace(tab: WorkspaceTab = .today) {
         StatusItemController.shared.close()
         becomeActive()
-        WorkspaceNavigation.shared.selectedTab = tab
+        if WorkspaceNavigation.shared.selectedTab != tab {
+            WorkspaceNavigation.shared.selectedTab = tab
+        }
         PanelWindowController.workspace.show()
     }
 

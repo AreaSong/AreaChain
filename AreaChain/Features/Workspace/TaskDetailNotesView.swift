@@ -12,12 +12,12 @@ struct TaskDetailNotesView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Label("备注", systemImage: "note.text")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.muted)
+                Label("drawer.notes.title", systemImage: "note.text")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 if !draft.isEmpty {
-                    Text("\(draft.count) 字")
+                    Text("drawer.notes.count \(draft.count)")
                         .font(.system(size: 9))
                         .foregroundStyle(DaybookTheme.muted.opacity(0.6))
                 }
@@ -32,7 +32,7 @@ struct TaskDetailNotesView: View {
                     )
 
                 if draft.isEmpty && !isFocused {
-                    Text("添加详细备注、相关说明或链接...")
+                    Text("drawer.notes.placeholder")
                         .font(.system(size: 11))
                         .foregroundStyle(DaybookTheme.muted.opacity(0.5))
                         .padding(.horizontal, 8)
@@ -61,7 +61,7 @@ struct TaskDetailNotesView: View {
             let links = extractURLs(from: draft)
             if !links.isEmpty {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("快捷链接")
+                    Text("drawer.notes.links")
                         .font(.system(size: 9, weight: .medium))
                         .foregroundStyle(DaybookTheme.muted.opacity(0.7))
                     ForEach(links, id: \.self) { url in
@@ -96,7 +96,7 @@ struct TaskDetailNotesView: View {
             draft = notes
         }
         .onChange(of: notes) { _, newValue in
-            if newValue != draft {
+            if !isFocused && newValue != draft {
                 draft = newValue
             }
         }

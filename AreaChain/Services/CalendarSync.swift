@@ -221,14 +221,22 @@ private extension CalendarSync {
     }
 
     static func removeOrphans(todos: [TodoItem], existing: [EKEvent]) {
-        let live = Set(
+        let liveTokens = Set(
             todos
                 .filter { CalendarEventPolicy.shouldPublish(isDone: $0.isDone, deletedAt: $0.deletedAt) }
                 .map { TodoDragToken.encode($0.id) }
         )
+        let unpublishedEventIDs = Set(
+            todos
+                .filter { !CalendarEventPolicy.shouldPublish(isDone: $0.isDone, deletedAt: $0.deletedAt) }
+                .map(\.calendarEventID)
+                .filter { !$0.isEmpty }
+        )
         for event in existing {
-            guard let token = event.notes, TodoDragToken.decode(token) != nil else { continue }
-            if !live.contains(token) {
+            let token = event.notes ?? ""
+            let tokenUnpublished = TodoDragToken.decode(token) != nil && !liveTokens.contains(token)
+            let idUnpublished = unpublishedEventIDs.contains(event.eventIdentifier ?? "")
+            if tokenUnpublished || idUnpublished {
                 try? store.remove(event, span: .thisEvent, commit: false)
             }
         }
@@ -246,9 +254,10 @@ private extension CalendarSync {
             }
             let key = DayKey.from(event.startDate)
             if todo.dayKey != key { todo.dayKey = key }
-            if !event.isAllDay {
-                todo.remindMinutes = RemindMinutes.from(date: event.startDate)
-            }
+            todo.remindMinutes = CalendarEventPolicy.remoteRemindMinutes(
+                isAllDay: event.isAllDay,
+                startDate: event.startDate
+            )
             if let ident = event.eventIdentifier {
                 todo.calendarEventID = ident
             }

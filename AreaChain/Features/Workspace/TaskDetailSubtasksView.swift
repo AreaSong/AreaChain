@@ -43,7 +43,7 @@ struct TaskDetailSubtasksView: View {
 
     private var headerSection: some View {
         HStack {
-            Label("子任务清单", systemImage: "checklist")
+            Label("drawer.subtasks.title", systemImage: "checklist")
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(DaybookTheme.muted)
             Spacer()
@@ -99,7 +99,7 @@ struct TaskDetailSubtasksView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.stamp)
 
-            TextField("添加检查步骤...", text: $newSubtaskTitle)
+            TextField("drawer.subtasks.placeholder", text: $newSubtaskTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 11))
                 .focused($isInputFocused)
@@ -111,7 +111,7 @@ struct TaskDetailSubtasksView: View {
                 Button {
                     submitNewSubtask()
                 } label: {
-                    Text("添加")
+                    Text("drawer.subtasks.add")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(DaybookTheme.stamp)
                 }
@@ -189,7 +189,7 @@ private struct SubtaskRowView: View {
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 .buttonStyle(.plain)
-                .help("修改文字")
+                .help("drawer.subtasks.edit")
 
                 Button(action: onDelete) {
                     Image(systemName: "trash")
@@ -197,7 +197,7 @@ private struct SubtaskRowView: View {
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 .buttonStyle(.plain)
-                .help("删除此项")
+                .help("drawer.subtasks.delete")
             }
         }
         .padding(.horizontal, 6)

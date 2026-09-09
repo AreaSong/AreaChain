@@ -52,7 +52,7 @@ struct WorkspaceFilteredListView: View {
             }
             Spacer()
             let count = matchingTodos.filter { !$0.isDone }.count
-            Text("\(count) 项待办")
+            Text("filter.open.count \(count)")
                 .font(.system(size: 11, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
 
@@ -71,7 +71,7 @@ struct WorkspaceFilteredListView: View {
                         .foregroundStyle(navigation.selectedTaskIDs.isEmpty ? DaybookTheme.muted : DaybookTheme.stamp)
                 }
                 .buttonStyle(.plain)
-                .help(navigation.selectedTaskIDs.isEmpty ? "全选/进入批量操作" : "退出批量操作")
+                .help(navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit")
             }
         }
     }
@@ -80,7 +80,7 @@ struct WorkspaceFilteredListView: View {
 
     private var quickInput: some View {
         HStack(spacing: 8) {
-            TextField(project != nil ? "添加任务到此项目..." : "添加带此标签的任务...", text: $draftTitle)
+            TextField(project != nil ? "filtered.add.project" : "filtered.add.tag", text: $draftTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 13))
                 .padding(.horizontal, 10)
@@ -139,7 +139,7 @@ struct WorkspaceFilteredListView: View {
 
                 if openItems.isEmpty && doneItems.isEmpty {
                     DaybookEmptyState(
-                        title: "暂无相关任务",
+                        title: "empty.filtered.todos",
                         systemImage: project != nil ? "folder" : "tag"
                     )
                     .padding(.top, 40)
@@ -158,7 +158,7 @@ struct WorkspaceFilteredListView: View {
                                 Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundStyle(DaybookTheme.muted)
-                                Text("已完成 (\(doneItems.count))")
+                                Text("stamp.completed \(doneItems.count)")
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(DaybookTheme.muted)
                                 Spacer()

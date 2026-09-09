@@ -65,22 +65,25 @@ AreaChain/
 
 1. **CloudKit 预备**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置里 iCloud 开关是占位（`CloudKitAvailability.isConfigured == false`），打开不改本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。
-4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务打上同一 `deletedAt`；恢复时只还原时间戳相同的子任务。SwiftData `.cascade` 只管硬删除。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。父项软删时，当时活着的子任务与附件共用同一戳。
+4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
+5. **快照日期**：JSON 使用带小数秒的 ISO8601，旧备份整秒日期仍能导入。
 
 ## 关键领域算法
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`）、优先级、**第一个** `#tag`、多行备注。不提取日期词、不提取项目。
 - **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。
-- **`SoftDelete`**：软删时间戳；父待办进回收站时子任务共用同一戳，恢复只还原戳相同的子任务。
+- **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
+- **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
 - **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
+- **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 
 ## 窗口路由与生命周期 (`AppWindows`)
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.shared` 切 tab（今日、搜索、四象限、甘特、日历、手记、附件、回收站、设置）。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.shared` 切 tab。切到不同 tab 才复位侧栏选择；同一 tab 再调不会清掉当前检查器。`openDiary` / `openCalendar` / `openSettings` 等全部转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
 3. **遗留独立窗**：`PanelWindowController.settings/diary/calendar/...` 仍实例化在 `panelWindows` 列表里，用于关窗时判断是否退回 accessory；公开路径不再 `show()` 它们。

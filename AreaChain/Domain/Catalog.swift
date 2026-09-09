@@ -18,6 +18,40 @@ enum Catalog {
     static func nextSortOrder(_ orders: [Int]) -> Int {
         (orders.max() ?? -1) + 1
     }
+
+    static func unlinkProject(
+        _ id: UUID,
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        projects: [ProjectItem]
+    ) {
+        for todo in todos where todo.projectID == id {
+            todo.projectID = nil
+        }
+        for routine in routines where routine.projectID == id {
+            routine.projectID = nil
+        }
+        for child in projects where child.parentID == id {
+            child.parentID = nil
+        }
+    }
+
+    static func unlinkTag(
+        _ id: UUID,
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        diaries: [DiaryEntry]
+    ) {
+        for todo in todos where TagIDList.contains(todo.tagIDs, id) {
+            todo.tagIDs = TagIDList.toggling(todo.tagIDs, id)
+        }
+        for routine in routines where TagIDList.contains(routine.tagIDs, id) {
+            routine.tagIDs = TagIDList.toggling(routine.tagIDs, id)
+        }
+        for diary in diaries where TagIDList.contains(diary.tagIDs, id) {
+            diary.tagIDs = TagIDList.toggling(diary.tagIDs, id)
+        }
+    }
 }
 
 struct ProjectOutlineRow: Equatable, Identifiable {

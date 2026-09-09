@@ -6,6 +6,7 @@ struct WorkspaceBatchActionBar: View {
     var todos: [TodoItem]
     var projects: [ProjectItem]
     var tags: [TagItem]
+    @State private var pendingTrash: PendingTrash?
 
     var body: some View {
         BatchActionBar(
@@ -33,8 +34,11 @@ struct WorkspaceBatchActionBar: View {
                 navigation.clearSelection()
             },
             onTrash: {
-                DayBoardMutations.batchTrash(navigation.selectedTaskIDs, todos: todos, routines: [])
-                navigation.clearSelection()
+                let count = navigation.selectedTaskIDs.count
+                pendingTrash = PendingTrash(title: "\(count)") {
+                    DayBoardMutations.batchTrash(navigation.selectedTaskIDs, todos: todos, routines: [])
+                    navigation.clearSelection()
+                }
             },
             onClear: {
                 withAnimation(ModernMotion.interactive) {
@@ -44,5 +48,6 @@ struct WorkspaceBatchActionBar: View {
             projects: projects,
             tags: tags
         )
+        .confirmMoveToTrash($pendingTrash)
     }
 }

@@ -57,7 +57,7 @@ struct ClassificationTests {
         #expect(!Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [child]))
     }
 
-    @Test func quadrantSlotMapsTwoSwitches() {
+    @Test func quadrantSlotMapsTwoSwitches() throws {
         #expect(QuadrantSlot.of(important: true, urgent: true) == .importantUrgent)
         #expect(QuadrantSlot.of(important: true, urgent: false) == .important)
         #expect(QuadrantSlot.of(important: false, urgent: true) == .urgent)
@@ -87,6 +87,9 @@ struct ClassificationTests {
                 seenRemote: false
             )
         )
+        #expect(CalendarEventPolicy.remoteRemindMinutes(isAllDay: true, startDate: Date(timeIntervalSince1970: 8 * 3600)) == nil)
+        let start = try #require(DayKey.date(dayKey: "2026-09-09", minutes: 15 * 60 + 30))
+        #expect(CalendarEventPolicy.remoteRemindMinutes(isAllDay: false, startDate: start) == 15 * 60 + 30)
     }
 
     @Test func clipboardPrefersTextAndSkipsEmpty() {
