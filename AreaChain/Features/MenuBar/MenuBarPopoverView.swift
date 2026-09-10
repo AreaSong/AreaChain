@@ -220,7 +220,42 @@ struct MenuBarPopoverView: View {
         .help("快捷语法指南")
         .accessibilityLabel("快捷语法指南")
         .popover(isPresented: $showingSyntaxHelp, arrowEdge: .bottom) {
-            SyntaxCheatSheetPopover()
+            SyntaxCheatSheetPopover { token in
+                handleSyntaxTokenSelection(token)
+            }
+        }
+    }
+
+    private func handleSyntaxTokenSelection(_ token: String) {
+        showingSyntaxHelp = false
+
+        if token == "#" && tab == .diary {
+            NotificationCenter.default.post(name: .diaryAppendToken, object: "#")
+            return
+        }
+
+        if tab != .tasks {
+            withAnimation(DaybookMotion.animation(reduceMotion)) {
+                tab = .tasks
+            }
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            let draft = capture.draft
+            let prefix = (draft.isEmpty || draft.hasSuffix(" ") || draft.hasSuffix("\n")) ? "" : " "
+            if token == "⌘↩" {
+                if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    addDiary()
+                } else {
+                    captureFocused = true
+                }
+            } else if token == "⇧↩" {
+                capture.draft = draft + "\n"
+                captureFocused = true
+            } else {
+                capture.draft = draft + prefix + token
+                captureFocused = true
+            }
         }
     }
 

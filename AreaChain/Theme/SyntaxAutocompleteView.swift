@@ -201,75 +201,117 @@ struct SyntaxAutocompletePopup: View {
     }
 }
 
-/// 快捷语法速查指南弹窗组件
+/// 快捷语法速查指南弹窗组件（交互式卡片）
 struct SyntaxCheatSheetPopover: View {
+    var onSelectToken: ((String) -> Void)? = nil
+    @State private var hoveredToken: String? = nil
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
             header
             Divider().background(DaybookTheme.rule.opacity(0.4))
             syntaxList
             Divider().background(DaybookTheme.rule.opacity(0.4))
             footer
         }
-        .padding(12)
-        .frame(width: 270)
+        .padding(14)
+        .frame(width: 320)
         .background(DaybookTheme.paper)
     }
 
     private var header: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 7) {
             Image(systemName: "sparkles")
-                .font(.system(size: 12, weight: .semibold))
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.stamp)
             Text("快捷语法指南")
-                .font(.system(size: 12, weight: .bold))
+                .font(.system(size: 13, weight: .bold))
                 .foregroundStyle(DaybookTheme.ink)
             Spacer(minLength: 0)
+            Text("点击任意项直接填入")
+                .font(.system(size: 10))
+                .foregroundStyle(DaybookTheme.muted)
         }
     }
 
     private var syntaxList: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            cheatRow(token: "#", title: "标签分类", desc: "键入 # 选标签，回车新建", color: Color(nsColor: .systemIndigo))
-            cheatRow(token: "!", title: "四象限优先级", desc: "!p1~p4 快速设重要与紧急", color: DaybookTheme.destructive)
-            cheatRow(token: "@", title: "时刻提醒", desc: "@15:30 或预设常用时刻", color: DaybookTheme.stamp)
-            cheatRow(token: "⌘↩", title: "保存至日记", desc: "跳过待办直接存入随笔", color: DaybookTheme.stamp)
-            cheatRow(token: "⇧↩", title: "换行备注", desc: "输入多行任务详情说明", color: DaybookTheme.muted)
+        VStack(alignment: .leading, spacing: 5) {
+            cheatRow(token: "#", title: "标签分类", desc: "键入 # 选已有标签，回车新建", color: Color(nsColor: .systemIndigo))
+            cheatRow(token: "!", title: "四象限优先级", desc: "!p1~p4 快速设定重要与紧急", color: DaybookTheme.destructive)
+            cheatRow(token: "@", title: "时刻提醒", desc: "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
+            cheatRow(token: "⌘↩", title: "直接存入日记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
+            cheatRow(token: "⇧↩", title: "换行输入备注", desc: "回车换行输入多行正文详情说明", color: DaybookTheme.muted)
         }
     }
 
     private func cheatRow(token: String, title: String, desc: String, color: Color) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            Text(token)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .foregroundStyle(color)
-                .padding(.horizontal, 4)
-                .padding(.vertical, 1.5)
-                .background(
-                    RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                        .fill(color.opacity(0.12))
-                )
-                .frame(width: 32, alignment: .center)
+        let isHovered = hoveredToken == token
 
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.ink)
-                Text(desc)
-                    .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.muted)
+        return Button {
+            onSelectToken?(token)
+        } label: {
+            HStack(alignment: .center, spacing: 10) {
+                Text(token)
+                    .font(.system(size: 11.5, weight: .bold, design: .monospaced))
+                    .foregroundStyle(color)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(color.opacity(0.14))
+                    )
+                    .frame(width: 36, alignment: .center)
+
+                VStack(alignment: .leading, spacing: 1.5) {
+                    Text(title)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.ink)
+                    Text(desc)
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(DaybookTheme.muted)
+                }
+
+                Spacer(minLength: 4)
+
+                if isHovered {
+                    HStack(spacing: 2) {
+                        Text("点击填入")
+                            .font(.system(size: 10, weight: .medium))
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 9, weight: .bold))
+                    }
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.08) : Color.clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered in
+            withAnimation(DaybookMotion.interactive) {
+                hoveredToken = hovered ? token : nil
             }
         }
     }
 
     private var footer: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Image(systemName: "keyboard")
-                .font(.system(size: 9.5))
+                .font(.system(size: 10))
                 .foregroundStyle(DaybookTheme.muted)
             Text("适用于随手记、行内编辑与全局搜索")
-                .font(.system(size: 9.5))
+                .font(.system(size: 10))
                 .foregroundStyle(DaybookTheme.muted)
         }
     }
+}
+
+extension Notification.Name {
+    static let diaryAppendToken = Notification.Name("AreaChain.diaryAppendToken")
 }

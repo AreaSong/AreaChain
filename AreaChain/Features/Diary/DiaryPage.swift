@@ -121,6 +121,15 @@ struct DiaryPage: View {
         .onAppear {
             DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .diaryAppendToken)) { notif in
+            if let token = notif.object as? String {
+                let prefix = (draftText.isEmpty || draftText.hasSuffix(" ") || draftText.hasSuffix("\n")) ? "" : " "
+                draftText += prefix + token
+                DispatchQueue.main.async {
+                    composerFocused = true
+                }
+            }
+        }
     }
 
     private var topHeader: some View {
