@@ -319,6 +319,10 @@ struct FooterBar: View {
             Spacer(minLength: 8)
 
             Menu {
+                Button("window.settings") {
+                    AppWindows.openWorkspace(tab: .settings)
+                }
+                Divider()
                 Button("footer.quit", role: .destructive) {
                     NSApplication.shared.terminate(nil)
                 }
