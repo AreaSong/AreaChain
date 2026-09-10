@@ -179,22 +179,38 @@ struct LeftoverChipsBar: View {
 
     private func chip(_ config: LeftoverChipConfig) -> some View {
         Button(action: config.action) {
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 Text(config.title)
+                    .font(.system(size: 11, weight: config.expanded ? .semibold : .medium))
                 Text("\(config.count)")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(DaybookTheme.stamp.opacity(config.count == 0 ? 0.15 : 0.25))
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 4.5)
+                    .padding(.vertical, 0.5)
+                    .background(DaybookTheme.stamp.opacity(config.count == 0 ? 0.12 : 0.20))
+                    .foregroundStyle(DaybookTheme.stamp)
                     .clipShape(Capsule())
                 Image(systemName: config.expanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 7, weight: .bold))
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.75))
                     .accessibilityHidden(true)
             }
-            .font(.system(size: 11))
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3.5)
+            .background(
+                Capsule()
+                    .fill(config.expanded ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(
+                        config.expanded ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.4),
+                        lineWidth: 0.7
+                    )
+            )
             .foregroundStyle(config.expanded ? DaybookTheme.ink : DaybookTheme.muted)
+            .contentShape(Capsule())
         }
-        .buttonStyle(DaybookQuietButtonStyle())
+        .buttonStyle(.plain)
         .disabled(config.count == 0)
         .opacity(config.count == 0 ? 0.45 : 1)
         .accessibilityLabel(config.count == 0 ? config.emptyLabel : config.countLabel)

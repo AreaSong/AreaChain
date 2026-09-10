@@ -153,7 +153,7 @@ enum DaybookSpacing {
 }
 
 enum DaybookType {
-    static let title: Font = .system(size: 16, weight: .regular, design: .serif).italic()
+    static let title: Font = .system(size: 16, weight: .semibold)
     static let subtitle: Font = .system(size: 12)
     static let body: Font = .system(size: 13)
     static let caption: Font = .system(size: 11, weight: .medium)

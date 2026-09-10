@@ -14,9 +14,10 @@ struct BoardFilterBar: View {
 
     var body: some View {
         if isVisible {
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 if !projects.isEmpty {
                     filterMenu(
+                        icon: "folder",
                         title: projectTitle,
                         active: filter.projectID != nil,
                         reset: { onChange(filter.withProject(nil)) }
@@ -30,6 +31,7 @@ struct BoardFilterBar: View {
                 }
                 if !tags.isEmpty {
                     filterMenu(
+                        icon: "tag",
                         title: tagTitle,
                         active: filter.tagID != nil,
                         reset: { onChange(filter.withTag(nil)) }
@@ -43,6 +45,7 @@ struct BoardFilterBar: View {
                 }
                 if !bundleIDs.isEmpty {
                     filterMenu(
+                        icon: "app",
                         title: appTitle,
                         active: filter.bundleID != nil,
                         reset: { onChange(filter.withBundle(nil)) }
@@ -82,23 +85,53 @@ struct BoardFilterBar: View {
     }
 
     private func filterMenu<Content: View>(
+        icon: String,
         title: LocalizedStringKey,
         active: Bool,
         reset: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        return Menu {
-            Button("filter.all", action: reset)
-            content()
-        } label: {
-            Text(title)
-                .fontWeight(active ? .semibold : .regular)
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
+
+            Text(title)
+                .font(.system(size: 11, weight: active ? .semibold : .regular))
+                .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
                 .lineLimit(1)
-                .help(title)
+
+            Image(systemName: "chevron.down")
+                .font(.system(size: 7.5, weight: .bold))
+                .foregroundStyle(active ? DaybookTheme.stamp.opacity(0.8) : DaybookTheme.muted.opacity(0.6))
         }
-        .menuIndicator(.hidden)
-        .buttonStyle(DaybookQuietButtonStyle(prominent: active))
+        .padding(.horizontal, 7)
+        .padding(.vertical, 3)
+        .background(
+            Capsule()
+                .fill(active ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.05))
+        )
+        .overlay(
+            Capsule()
+                .stroke(
+                    active ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.5),
+                    lineWidth: 0.8
+                )
+        )
+        .overlay {
+            Menu {
+                Button("filter.all", action: reset)
+                content()
+            } label: {
+                Color.clear
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+        }
+        .contentShape(Capsule())
+        .accessibilityLabel(title)
         .accessibilityAddTraits(active ? [.isSelected] : [])
     }
 }

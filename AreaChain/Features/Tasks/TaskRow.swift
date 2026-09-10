@@ -57,10 +57,6 @@ struct TaskRow: View {
                 dispatch(.toggleDone)
             }
 
-            if state.isResident {
-                residentMark
-            }
-
             QuadrantDots(
                 isImportant: state.classify?.isImportant == true || state.isImportant,
                 isUrgent: state.classify?.isUrgent == true || state.isUrgent
@@ -99,7 +95,17 @@ struct TaskRow: View {
     }
 
     private var shouldAlignTop: Bool {
-        state.note != nil || state.notes != nil || !state.subtasks.isEmpty || editing
+        hasVisibleNote || (isSubtasksExpanded && !state.subtasks.isEmpty) || editing
+    }
+
+    private var hasVisibleNote: Bool {
+        if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        if let source = state.classify?.sourceLabel, !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        return formattedNoteSnippet != nil
     }
 
     // MARK: - Subviews
@@ -149,14 +155,9 @@ struct TaskRow: View {
 
     @ViewBuilder
     private var metadataCluster: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 5) {
             if state.isResident, let streak = state.streak, streak >= 1 {
-                PillBadge(
-                    title: "\(streak)",
-                    icon: "flame.fill",
-                    color: .orange,
-                    isSelected: true
-                )
+                streakBadge(streak)
             }
 
             if let remindMinutes = state.remindMinutes {
@@ -175,6 +176,9 @@ struct TaskRow: View {
                 AttachmentThumbnails(items: items)
             }
         }
+        .fixedSize(horizontal: true, vertical: false)
+        .opacity(hovering || state.isSelected ? 1.0 : 0.65)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
     private var formattedNoteSnippet: String? {
@@ -183,23 +187,57 @@ struct TaskRow: View {
         return firstLine?.trimmingCharacters(in: .whitespaces)
     }
 
+    private func streakBadge(_ streak: Int) -> some View {
+        let isHighlighted = hovering || state.isSelected
+        return HStack(spacing: 2.5) {
+            Image(systemName: "flame.fill")
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(0.75))
+            Text("\(streak)")
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
+                .lineLimit(1)
+                .offset(y: -0.6)
+        }
+        .fixedSize()
+        .padding(.horizontal, 4.5)
+        .frame(height: 18)
+        .background(
+            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                .fill(isHighlighted ? Color.orange.opacity(0.12) : Color.clear)
+        )
+    }
+
     @ViewBuilder
     private func remindBadge(_ minutes: Int) -> some View {
-        let badge = PillBadge(
-            title: RemindMinutes.label(minutes, locale: locale),
-            icon: "clock.fill",
-            color: DaybookTheme.stamp,
-            isSelected: true
+        let isHighlighted = hovering || state.isSelected
+        let content = HStack(spacing: 2.5) {
+            Image(systemName: "clock")
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
+            Text(RemindMinutes.label(minutes, locale: locale))
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
+                .lineLimit(1)
+                .offset(y: -0.6)
+        }
+        .fixedSize()
+        .padding(.horizontal, 4.5)
+        .frame(height: 18)
+        .background(
+            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                .fill(isHighlighted ? DaybookTheme.stamp.opacity(0.10) : Color.clear)
         )
+
         if state.canSetRemind {
             Button {
                 pickingTime = true
             } label: {
-                badge
+                content
             }
             .buttonStyle(.plain)
         } else {
-            badge
+            content
         }
     }
 
@@ -267,10 +305,6 @@ extension TaskRow {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
             } else if hovering || state.isSelected {
-                RowIconButton(systemName: "pencil", label: "row.edit", action: beginEdit)
-                RowIconButton(systemName: "trash", label: "row.delete", role: .destructive) {
-                    dispatch(.delete)
-                }
                 moreMenu
             }
         }
@@ -279,18 +313,27 @@ extension TaskRow {
 
     private var moreMenu: some View {
         Menu {
+            Button("row.edit", action: beginEdit)
+            Divider()
             overflowMenus
+            Divider()
             Button("row.delete", role: .destructive) {
                 dispatch(.delete)
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(DaybookType.subtitle.weight(.semibold))
-                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(DaybookTheme.ink.opacity(0.06))
+                )
                 .contentShape(Rectangle())
         }
-        .buttonStyle(DaybookQuietButtonStyle())
+        .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
+        .buttonStyle(.plain)
         .help("row.more")
         .accessibilityLabel("row.more")
     }

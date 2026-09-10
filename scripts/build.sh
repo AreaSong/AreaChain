@@ -40,6 +40,7 @@ cmd_install() {
         exit 1
     fi
     pkill -x AreaChain 2>/dev/null || true
+    sleep 0.3
     ditto "$app" "$dest"
     open "$dest"
     echo "已装到 $dest"

@@ -26,6 +26,7 @@ struct MenuBarPopoverView: View {
     @Query private var checks: [RoutineCheck]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
 
     @State private var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
@@ -80,7 +81,7 @@ struct MenuBarPopoverView: View {
             .animation(DaybookMotion.interactive(reduceMotion), value: tab)
 
             Divider()
-                .overlay(DaybookTheme.rule.opacity(0.45))
+                .overlay(DaybookTheme.rule.opacity(0.25))
                 .padding(.horizontal, -12)
 
             FooterBar()
@@ -90,7 +91,9 @@ struct MenuBarPopoverView: View {
         .background(DaybookTheme.paper)
         .clipShape(Rectangle())
         .daybookHideInputChrome()
-        .onAppear(perform: prepare)
+        .onAppear {
+            prepare()
+        }
         .onChange(of: tab) { _, newTab in
             if newTab == .tasks {
                 captureFocused = true
@@ -165,38 +168,29 @@ struct MenuBarPopoverView: View {
     }
 
     private var integratedHeader: some View {
-        HStack(alignment: .top, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(DayKey.displayName(todayKey, locale: locale))
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookTheme.ink)
-                Text(headerSubtitle)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(todayRemaining > 0 ? Color.orange : DaybookTheme.stamp)
+                        .frame(width: 5, height: 5)
+                    Text(headerSubtitle)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted)
+                }
             }
 
             Spacer(minLength: 8)
 
-            HStack(alignment: .center, spacing: 4) {
-                DaybookQuietTabBar(
-                    selection: $tab,
-                    tasksCount: todayRemaining,
-                    diariesCount: todayDiariesCount
-                )
-
-                Button {
-                    AppWindows.openWorkspace(tab: tab == .tasks ? .today : .diary)
-                } label: {
-                    Image(systemName: "arrow.up.left.and.arrow.down.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.muted)
-                        .frame(width: 24, height: 24)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(DaybookQuietButtonStyle())
-                .help(L10n.string("window.workspace", locale: locale))
-            }
-            .padding(.top, 2)
+            DaybookQuietTabBar(
+                selection: $tab,
+                tasksCount: todayRemaining,
+                diariesCount: todayDiariesCount
+            )
+            .padding(.top, 1)
         }
     }
 
@@ -253,38 +247,54 @@ struct DaybookQuietTabBar: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 2) {
             ForEach(BoardTab.allCases) { item in
                 tabButton(item)
             }
         }
+        .padding(2.5)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(DaybookTheme.ink.opacity(0.05))
+        )
     }
 
     private func tabButton(_ item: BoardTab) -> some View {
         let isSelected = selection == item
         let count = item == .tasks ? tasksCount : diariesCount
-        let ink = isSelected ? DaybookTheme.stamp : DaybookTheme.muted
-        let underline = isSelected ? DaybookTheme.stamp : Color.clear
+        let ink = isSelected ? DaybookTheme.ink : DaybookTheme.muted
         return Button {
             withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 selection = item
             }
         } label: {
-            VStack(spacing: 3) {
-                HStack(spacing: 4) {
-                    Text(item.title)
-                        .font(DaybookType.caption.weight(isSelected ? .semibold : .medium))
-                    if count > 0 {
-                        Text("\(count)")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+            HStack(spacing: 3.5) {
+                Text(item.title)
+                    .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 0.5)
+                        .background(
+                            isSelected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.ink.opacity(0.08)
+                        )
+                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 3.5)
+            .background(
+                Group {
+                    if isSelected {
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(DaybookTheme.paper)
+                            .shadow(color: Color.black.opacity(0.07), radius: 1.5, x: 0, y: 0.5)
                     }
                 }
-                .foregroundStyle(ink)
-
-                Rectangle()
-                    .fill(underline)
-                    .frame(height: 1.2)
-            }
+            )
+            .foregroundStyle(ink)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -298,18 +308,18 @@ struct FooterBar: View {
     @State private var hotKeyName = HotKeyCenter.shared.displayName()
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Text(hotKeyName)
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2.5)
                 .background(
                     RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(DaybookTheme.ink.opacity(0.05))
+                        .fill(DaybookTheme.ink.opacity(0.04))
                         .overlay(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .stroke(DaybookTheme.rule.opacity(0.5), lineWidth: 0.8)
+                                .stroke(DaybookTheme.rule.opacity(0.4), lineWidth: 0.7)
                         )
                 )
                 .help("footer.hotkey \(hotKeyName)")
@@ -317,25 +327,39 @@ struct FooterBar: View {
             Spacer(minLength: 8)
 
             Menu {
-                Button("window.settings") {
+                Button {
                     AppWindows.openWorkspace(tab: .settings)
+                } label: {
+                    Label("window.settings", systemImage: "gearshape")
                 }
                 Divider()
-                Button("footer.quit", role: .destructive) {
+                Button(role: .destructive) {
                     NSApplication.shared.terminate(nil)
+                } label: {
+                    Label("footer.quit", systemImage: "power")
                 }
             } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 11, weight: .semibold))
+                Image(systemName: "macwindow")
+                    .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(DaybookTheme.muted)
                     .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .fill(DaybookTheme.ink.opacity(0.04))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                            .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: 0.6)
+                    )
                     .contentShape(Rectangle())
+            } primaryAction: {
+                AppWindows.openWorkspace(tab: .today)
             }
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
-            .buttonStyle(.plain)
-            .help("footer.more")
-            .accessibilityLabel("footer.more")
+            .buttonStyle(DaybookQuietButtonStyle())
+            .help("window.workspace")
+            .accessibilityLabel("window.workspace")
         }
         .onAppear { refreshHotKey() }
         .onChange(of: locale.identifier) { _, _ in refreshHotKey() }

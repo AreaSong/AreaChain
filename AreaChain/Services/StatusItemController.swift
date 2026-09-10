@@ -82,15 +82,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
     }
 
-    private(set) var lastKnownHeight: CGFloat = DaybookTheme.popoverHeight
-
-    func updatePopoverHeight(_ newHeight: CGFloat) {
-        guard let popover, popover.isShown else { return }
-        if abs(popover.contentSize.height - DaybookTheme.popoverHeight) > 1 {
-            popover.contentSize = DaybookTheme.popoverSize
-        }
-    }
-
     func close() {
         popover?.performClose(nil)
     }
@@ -108,7 +99,6 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         let hosting = NSHostingController(rootView: provider())
         hosting.safeAreaRegions = []
         hosting.view.frame = NSRect(origin: .zero, size: DaybookTheme.popoverSize)
-        lastKnownHeight = DaybookTheme.popoverHeight
         popover.contentSize = DaybookTheme.popoverSize
         popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)

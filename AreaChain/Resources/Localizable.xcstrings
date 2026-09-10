@@ -347,13 +347,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return adds a task, ⌘Return writes today’s diary"
+            "value": "Add a quick task..."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回车加待办，⌘回车写日记"
+            "value": "随手记一条待办..."
           }
         }
       }

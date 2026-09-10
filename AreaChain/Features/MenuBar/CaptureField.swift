@@ -31,13 +31,14 @@ struct CaptureField: View {
     private var inputRow: some View {
         let focused = focus.wrappedValue
         let plusColor = focused ? DaybookTheme.stamp : DaybookTheme.muted
-        let lineColor = focused ? DaybookTheme.stamp : DaybookTheme.rule
-        let lineHeight: CGFloat = focused ? 1.4 : 0.8
-        return HStack(alignment: .center, spacing: 8) {
+        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.4)
+        let ringColor = focused ? DaybookTheme.stamp.opacity(0.18) : Color.clear
+
+        return HStack(alignment: .center, spacing: 7) {
             Image(systemName: "plus")
-                .font(DaybookType.subtitle.weight(.semibold))
+                .font(.system(size: 11, weight: .bold))
                 .foregroundStyle(plusColor)
-                .frame(width: 12)
+                .frame(width: 14)
 
             DaybookTextField(
                 text: $text,
@@ -48,33 +49,60 @@ struct CaptureField: View {
             )
             .accessibilityLabel("capture.placeholder.today")
 
-            ComposerAddButton(enabled: canSubmit, action: onTodo)
+            if canSubmit {
+                ComposerAddButton(enabled: canSubmit, action: onTodo)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
 
             diaryShortcutButton
         }
-        .padding(.bottom, 7)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(lineColor)
-                .frame(height: lineHeight)
-        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(DaybookTheme.ink.opacity(focused ? 0.05 : 0.035))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(strokeColor, lineWidth: focused ? 1.0 : 0.6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(ringColor, lineWidth: 2.0)
+                .padding(-2)
+        )
     }
 
     private var diaryShortcutButton: some View {
-        let diaryInk = canSubmit ? DaybookTheme.ink : DaybookTheme.muted
+        let diaryInk = canSubmit ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.7)
         return Button(action: onDiary) {
-            HStack(spacing: 3) {
+            HStack(spacing: 3.5) {
                 Text("capture.diary")
-                    .font(DaybookType.caption.weight(.medium))
+                    .font(.system(size: 10.5, weight: .medium))
                 Text("⌘↩")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                    .padding(.horizontal, 3.5)
+                    .padding(.vertical, 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .fill(DaybookTheme.ink.opacity(canSubmit ? 0.12 : 0.05))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .stroke(DaybookTheme.rule.opacity(canSubmit ? 0.45 : 0.25), lineWidth: 0.5)
+                    )
             }
             .foregroundStyle(diaryInk)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2.5)
+            .background(
+                canSubmit ? DaybookTheme.stamp.opacity(0.12) : Color.clear
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!canSubmit)
-        .opacity(canSubmit ? 1 : 0.45)
+        .opacity(canSubmit ? 1 : 0.5)
         .help("capture.diary")
     }
 }

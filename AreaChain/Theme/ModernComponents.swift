@@ -12,34 +12,37 @@ struct ModernCheckbox: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Button(action: handleTap) {
-            ZStack {
-                Circle()
-                    .strokeBorder(strokeColor, lineWidth: 1.5)
-                    .background(
-                        Circle()
-                            .fill(isDone ? DaybookTheme.stamp : Color.clear)
-                    )
-                    .frame(width: 17, height: 17)
+        ZStack {
+            Circle()
+                .strokeBorder(strokeColor, lineWidth: 1.5)
+                .background(
+                    Circle()
+                        .fill(isDone ? DaybookTheme.stamp : Color.clear)
+                )
+                .frame(width: 17, height: 17)
 
-                if isDone {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(DaybookTheme.checkmark)
-                        .transition(.scale.combined(with: .opacity))
-                        .accessibilityHidden(true)
-                }
+            if isDone {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(DaybookTheme.checkmark)
+                    .transition(.scale.combined(with: .opacity))
+                    .accessibilityHidden(true)
             }
-            .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-            .scaleEffect(isAnimating ? 0.85 : (hovering ? 1.05 : 1.0))
-            .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .frame(width: 20, height: 20)
+        .offset(y: 0.5)
+        .scaleEffect(isAnimating ? 0.85 : (hovering ? 1.05 : 1.0))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            handleTap()
+        }
         .onHover { hovering = $0 }
         .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+        .accessibilityElement(children: .ignore)
         .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
-        .accessibilityAddTraits(isDone ? [.isSelected] : [])
+        .accessibilityAddTraits(isDone ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { handleTap() }
     }
 
     private var strokeColor: Color {
@@ -248,7 +251,7 @@ struct ModernRowModifier: ViewModifier {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0.7)
             )
     }
 
@@ -259,14 +262,17 @@ struct ModernRowModifier: ViewModifier {
         if isHovered {
             return DaybookTheme.hoverFill
         }
-        return Color.clear
+        return DaybookTheme.ink.opacity(0.035)
     }
 
     private var borderStroke: Color {
         if isSelected {
             return DaybookTheme.cardSelectionStroke
         }
-        return Color.clear
+        if isHovered {
+            return DaybookTheme.rule.opacity(0.4)
+        }
+        return DaybookTheme.rule.opacity(0.20)
     }
 }
 

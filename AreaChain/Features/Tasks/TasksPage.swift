@@ -97,28 +97,42 @@ struct TasksPage: View {
     }
 
     private var headerBar: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            LeftoverChipsBar(
-                config: LeftoverChipsBarConfig(
-                    yesterday: LeftoverChipState(
-                        count: yesterdayItems.count,
-                        isExpanded: showYesterday,
-                        onToggle: { showYesterday.toggle() }
-                    ),
-                    upcoming: LeftoverChipState(
-                        count: upcomingModels.count,
-                        isExpanded: showUpcoming,
-                        onToggle: { showUpcoming.toggle() }
-                    )
-                )
-            )
-            BoardFilterBar(
-                filter: boardFilter,
-                projects: CatalogChoices.projects(projects),
-                tags: CatalogChoices.tags(tags),
-                bundleIDs: todayBundleIDs,
-                onChange: { boardFilter = $0 }
-            )
+        let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
+        let hasFilters = !projects.isEmpty || !tags.isEmpty || !todayBundleIDs.isEmpty
+        return Group {
+            if hasChips || hasFilters {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        if hasChips {
+                            LeftoverChipsBar(
+                                config: LeftoverChipsBarConfig(
+                                    yesterday: LeftoverChipState(
+                                        count: yesterdayItems.count,
+                                        isExpanded: showYesterday,
+                                        onToggle: { showYesterday.toggle() }
+                                    ),
+                                    upcoming: LeftoverChipState(
+                                        count: upcomingModels.count,
+                                        isExpanded: showUpcoming,
+                                        onToggle: { showUpcoming.toggle() }
+                                    )
+                                )
+                            )
+                        }
+                        if hasFilters {
+                            BoardFilterBar(
+                                filter: boardFilter,
+                                projects: CatalogChoices.projects(projects),
+                                tags: CatalogChoices.tags(tags),
+                                bundleIDs: todayBundleIDs,
+                                onChange: { boardFilter = $0 }
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 1)
+                    .padding(.vertical, 2)
+                }
+            }
         }
     }
 
