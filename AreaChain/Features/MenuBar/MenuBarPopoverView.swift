@@ -46,11 +46,11 @@ struct MenuBarPopoverView: View {
         DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
     }
 
-    private var headerSubtitle: LocalizedStringKey {
+    private var headerSubtitle: LocalizedStringKey? {
         switch tab {
         case .tasks:
             if todayRemaining == 0 && todayCompleted > 0 {
-                return "header.done"
+                return nil
             }
             if todayCompleted > 0 {
                 return "header.progress \(todayRemaining) \(todayCompleted)"
@@ -58,11 +58,11 @@ struct MenuBarPopoverView: View {
             if todayRemaining > 0 {
                 return "header.remaining \(todayRemaining)"
             }
-            return "empty.todos"
+            return nil
         case .diary:
             let count = todayDiariesCount
             if count == 0 {
-                return "header.diary.empty"
+                return nil
             }
             return "header.diary.count \(count)"
         }
@@ -218,9 +218,11 @@ struct MenuBarPopoverView: View {
                     Circle()
                         .fill(todayRemaining > 0 ? Color.orange : DaybookTheme.stamp)
                         .frame(width: 5, height: 5)
-                    Text(headerSubtitle)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
+                    if let subtitle = headerSubtitle {
+                        Text(subtitle)
+                            .font(DaybookType.caption)
+                            .foregroundStyle(DaybookTheme.muted)
+                    }
                 }
             }
 

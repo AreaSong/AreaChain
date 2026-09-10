@@ -195,7 +195,7 @@ struct LeftoverChipsBar: View {
                     .accessibilityHidden(true)
             }
             .padding(.horizontal, 8)
-            .padding(.vertical, 3.5)
+            .padding(.vertical, 5)
             .background(
                 Capsule()
                     .fill(config.expanded ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))

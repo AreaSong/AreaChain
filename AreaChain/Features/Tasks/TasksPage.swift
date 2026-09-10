@@ -130,7 +130,8 @@ struct TasksPage: View {
                         }
                     }
                     .padding(.horizontal, 1)
-                    .padding(.vertical, 2)
+                    .padding(.top, 2)
+                    .padding(.bottom, 6)
                 }
             }
         }

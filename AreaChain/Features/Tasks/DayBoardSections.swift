@@ -25,20 +25,35 @@ extension DayBoardList {
     }
 
     var allDoneBanner: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .font(DaybookType.subtitle)
+                .font(DaybookType.title)
                 .foregroundStyle(DaybookTheme.stamp)
-            Text("header.done")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+            Text("太棒了，今日任务全清！")
+                .font(DaybookType.body.weight(.medium))
+                .foregroundStyle(DaybookTheme.ink)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 16)
+        .padding(.horizontal, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .fill(DaybookTheme.stamp.opacity(0.06))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .stroke(DaybookTheme.stamp.opacity(0.15), lineWidth: 1)
+        )
+        .padding(.top, 4)
     }
 
     var completedSection: some View {
         VStack(alignment: .leading, spacing: 4) {
+            Divider()
+                .opacity(0.15)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+
             Button {
                 withAnimation(DaybookMotion.animation(reduceMotion)) {
                     showCompleted.toggle()
@@ -59,6 +74,7 @@ extension DayBoardList {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .opacity(showCompleted ? 1.0 : 0.6)
             .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
             if showCompleted {

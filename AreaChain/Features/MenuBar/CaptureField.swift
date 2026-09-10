@@ -77,8 +77,13 @@ struct CaptureField: View {
             .accessibilityLabel("capture.placeholder.today")
 
             if canSubmit {
-                ComposerAddButton(enabled: canSubmit, action: onTodo)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                Button(action: onTodo) {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(DaybookTheme.stamp)
+                }
+                .buttonStyle(.plain)
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
 
             diaryShortcutButton
@@ -101,35 +106,20 @@ struct CaptureField: View {
     }
 
     private var diaryShortcutButton: some View {
-        let diaryInk = canSubmit ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.7)
+        let diaryInk = DaybookTheme.muted.opacity(canSubmit ? 0.8 : 0.4)
         return Button(action: onDiary) {
-            HStack(spacing: 3.5) {
+            HStack(spacing: 2) {
                 Text("capture.diary")
-                    .font(.system(size: 10.5, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                 Text("⌘↩")
-                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
-                    .padding(.horizontal, 3.5)
-                    .padding(.vertical, 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                            .fill(DaybookTheme.ink.opacity(canSubmit ? 0.12 : 0.05))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                            .stroke(DaybookTheme.rule.opacity(canSubmit ? 0.45 : 0.25), lineWidth: 0.5)
-                    )
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
             }
             .foregroundStyle(diaryInk)
-            .padding(.horizontal, 5)
+            .padding(.horizontal, 4)
             .padding(.vertical, 2.5)
-            .background(
-                canSubmit ? DaybookTheme.stamp.opacity(0.12) : Color.clear
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
         }
         .buttonStyle(.plain)
         .disabled(!canSubmit)
-        .opacity(canSubmit ? 1 : 0.5)
         .help("capture.diary")
     }
 }
