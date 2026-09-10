@@ -89,7 +89,7 @@ enum TaskRowFactory {
         switch action {
         case .toggleDone: DayBoardMutations.toggleTodo(todo)
         case .select: context.actions.onSelect()
-        case .editTitle(let title): DayBoardMutations.editTodo(todo, title: title)
+        case .editTitle(let title): DayBoardMutations.editTodoWithSyntax(todo, rawInput: title)
         case .endEditing: context.actions.onEndEditing?()
         case .delete: context.actions.onDelete()
         case .skip: break
@@ -173,7 +173,7 @@ enum TaskRowFactory {
                 )
             }
         case .select: context.actions.onSelect()
-        case .editTitle(let title): DayBoardMutations.editRoutine(routine, title: title)
+        case .editTitle(let title): DayBoardMutations.editRoutineWithSyntax(routine, rawInput: title)
         case .endEditing: context.actions.onEndEditing?()
         case .delete: context.actions.onDelete()
         case .skip: context.actions.onSkip?()

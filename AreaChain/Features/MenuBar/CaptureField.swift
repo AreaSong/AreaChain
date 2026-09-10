@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 @Observable
@@ -9,10 +10,17 @@ final class CaptureSession {
 
 struct CaptureField: View {
     @Environment(\.locale) private var locale
+    @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Binding var text: String
     var focus: FocusState<Bool>.Binding
     var onTodo: () -> Void
     var onDiary: () -> Void
+
+    @State private var autocomplete = SyntaxAutocompleteState()
+
+    private var availableTags: [String] {
+        allTags.filter { $0.deletedAt == nil }.map(\.name)
+    }
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -21,7 +29,24 @@ struct CaptureField: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             inputRow
-            CaptureTokenBar(text: text)
+            ZStack(alignment: .topLeading) {
+                CaptureTokenBar(text: text)
+                if autocomplete.isActive {
+                    SyntaxAutocompletePopup(state: autocomplete) { candidate in
+                        if let trigger = autocomplete.trigger {
+                            let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
+                                candidate,
+                                to: text,
+                                range: trigger.range
+                            )
+                            text = newText
+                            autocomplete.dismiss()
+                        }
+                    }
+                    .padding(.top, 4)
+                    .zIndex(100)
+                }
+            }
         }
         .animation(DaybookMotion.interactive, value: text)
         .animation(DaybookMotion.interactive, value: focus.wrappedValue)
@@ -44,6 +69,8 @@ struct CaptureField: View {
                 text: $text,
                 placeholder: L10n.string("capture.placeholder.today", locale: locale),
                 focus: focus,
+                autocomplete: autocomplete,
+                availableTags: availableTags,
                 onSubmit: onTodo,
                 onCommandReturn: onDiary
             )

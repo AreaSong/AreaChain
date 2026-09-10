@@ -14,17 +14,85 @@ struct BoardSearchHit: Equatable, Identifiable {
     var createdAt: Date
 }
 
+struct BoardSearchPriority: Equatable {
+    var isImportant: Bool
+    var isUrgent: Bool
+}
+
+struct BoardSearchQuery: Equatable {
+    var raw: String
+    var textKeywords: [String] = []
+    var tagNames: [String] = []
+    var priority: BoardSearchPriority? = nil
+    var hasPriority: Bool = false
+
+    var isEmpty: Bool {
+        textKeywords.isEmpty && tagNames.isEmpty && !hasPriority
+    }
+}
+
 enum BoardSearch {
+    static func parseQuery(_ raw: String) -> BoardSearchQuery {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return BoardSearchQuery(raw: raw) }
+
+        let tokens = trimmed.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        var keywords: [String] = []
+        var tags: [String] = []
+        var prioritySlot: BoardSearchPriority? = nil
+        var hasPriority = false
+
+        for token in tokens {
+            if token.hasPrefix("#"), token.count > 1 {
+                tags.append(String(token.dropFirst()))
+            } else if token.hasPrefix("!"), let p = parsePriorityToken(token) {
+                prioritySlot = p
+                hasPriority = true
+            } else {
+                keywords.append(token)
+            }
+        }
+
+        return BoardSearchQuery(
+            raw: raw,
+            textKeywords: keywords,
+            tagNames: tags,
+            priority: prioritySlot,
+            hasPriority: hasPriority
+        )
+    }
+
+    private static func parsePriorityToken(_ token: String) -> BoardSearchPriority? {
+        let lower = token.lowercased()
+        switch lower {
+        case "!p1", "!重要紧急", "!紧急重要", "!重要且紧急":
+            return BoardSearchPriority(isImportant: true, isUrgent: true)
+        case "!p2", "!重要", "!重要不紧急":
+            return BoardSearchPriority(isImportant: true, isUrgent: false)
+        case "!p3", "!紧急", "!不重要紧急", "!紧急不重要":
+            return BoardSearchPriority(isImportant: false, isUrgent: true)
+        case "!p4", "!不重要不紧急":
+            return BoardSearchPriority(isImportant: false, isUrgent: false)
+        default:
+            return nil
+        }
+    }
+
     static func hits(
         query: String,
         todos: [TodoSnapshot],
         diaries: [DiarySnapshot],
         routines: [RoutineSnapshot],
-        todayKey: String = DayKey.today()
+        todayKey: String = DayKey.today(),
+        tagMap: [UUID: String] = [:]
     ) -> [BoardSearchHit] {
-        let needle = normalized(query)
-        guard !needle.isEmpty else { return [] }
-        let found = todoHits(needle, todos) + diaryHits(needle, diaries) + routineHits(needle, routines, todayKey: todayKey)
+        let parsed = parseQuery(query)
+        guard !parsed.isEmpty else { return [] }
+
+        let found = todoHits(parsed, todos, tagMap: tagMap)
+            + diaryHits(parsed, diaries, tagMap: tagMap)
+            + routineHits(parsed, routines, todayKey: todayKey, tagMap: tagMap)
+
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
             return $0.createdAt > $1.createdAt
@@ -51,9 +119,39 @@ enum BoardSearch {
         raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private static func todoHits(_ needle: String, _ todos: [TodoSnapshot]) -> [BoardSearchHit] {
+    private static func matchTags(tagNames: [String], attachedIDs: String, text: String, tagMap: [UUID: String]) -> Bool {
+        guard !tagNames.isEmpty else { return true }
+        for name in tagNames {
+            let directInText = text.localizedCaseInsensitiveContains("#\(name)")
+            let inAttached = tagMap.contains { id, tagName in
+                TagIDList.contains(attachedIDs, id) && tagName.caseInsensitiveCompare(name) == .orderedSame
+            }
+            if !directInText && !inAttached {
+                return false
+            }
+        }
+        return true
+    }
+
+    private static func todoHits(_ query: BoardSearchQuery, _ todos: [TodoSnapshot], tagMap: [UUID: String]) -> [BoardSearchHit] {
         todos.compactMap { item in
-            guard item.deletedAt == nil, matches(item.title, needle: needle) else { return nil }
+            guard item.deletedAt == nil else { return nil }
+
+            if !query.textKeywords.isEmpty {
+                let matchesAll = query.textKeywords.allSatisfy { kw in
+                    matches(item.title, needle: kw) || matches(item.notes, needle: kw)
+                }
+                guard matchesAll else { return nil }
+            }
+
+            if query.hasPriority, let p = query.priority {
+                guard item.isImportant == p.isImportant && item.isUrgent == p.isUrgent else { return nil }
+            }
+
+            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: "\(item.title) \(item.notes)", tagMap: tagMap) else {
+                return nil
+            }
+
             return BoardSearchHit(
                 id: item.id,
                 kind: .todo,
@@ -64,9 +162,23 @@ enum BoardSearch {
         }
     }
 
-    private static func diaryHits(_ needle: String, _ diaries: [DiarySnapshot]) -> [BoardSearchHit] {
-        diaries.compactMap { item in
-            guard item.deletedAt == nil, matches(item.text, needle: needle) else { return nil }
+    private static func diaryHits(_ query: BoardSearchQuery, _ diaries: [DiarySnapshot], tagMap: [UUID: String]) -> [BoardSearchHit] {
+        guard !query.hasPriority else { return [] }
+
+        return diaries.compactMap { item in
+            guard item.deletedAt == nil else { return nil }
+
+            if !query.textKeywords.isEmpty {
+                let matchesAll = query.textKeywords.allSatisfy { kw in
+                    matches(item.text, needle: kw)
+                }
+                guard matchesAll else { return nil }
+            }
+
+            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: item.text, tagMap: tagMap) else {
+                return nil
+            }
+
             return BoardSearchHit(
                 id: item.id,
                 kind: .diary,
@@ -77,9 +189,28 @@ enum BoardSearch {
         }
     }
 
-    private static func routineHits(_ needle: String, _ routines: [RoutineSnapshot], todayKey: String) -> [BoardSearchHit] {
-        routines.compactMap { item in
-            guard item.deletedAt == nil, item.isEnabled, matches(item.title, needle: needle) else { return nil }
+    private static func routineHits(
+        _ query: BoardSearchQuery,
+        _ routines: [RoutineSnapshot],
+        todayKey: String,
+        tagMap: [UUID: String]
+    ) -> [BoardSearchHit] {
+        guard !query.hasPriority else { return [] }
+
+        return routines.compactMap { item in
+            guard item.deletedAt == nil, item.isEnabled else { return nil }
+
+            if !query.textKeywords.isEmpty {
+                let matchesAll = query.textKeywords.allSatisfy { kw in
+                    matches(item.title, needle: kw) || matches(item.notes, needle: kw)
+                }
+                guard matchesAll else { return nil }
+            }
+
+            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: "\(item.title) \(item.notes)", tagMap: tagMap) else {
+                return nil
+            }
+
             let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
             return BoardSearchHit(
                 id: item.id,

@@ -144,17 +144,20 @@ struct DaybookComposer<Accessory: View>: View {
     @Binding var text: String
     var placeholder: String
     var focus: FocusState<Bool>.Binding?
+    var availableTags: [String] = []
     var allowsShiftNewline: Bool
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)?
     var accessory: Accessory
 
     @FocusState private var fallbackFocus: Bool
+    @State private var autocomplete = SyntaxAutocompleteState()
 
     init(
         text: Binding<String>,
         placeholder: String,
         focus: FocusState<Bool>.Binding? = nil,
+        availableTags: [String] = [],
         allowsShiftNewline: Bool = false,
         onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil,
@@ -163,6 +166,7 @@ struct DaybookComposer<Accessory: View>: View {
         self._text = text
         self.placeholder = placeholder
         self.focus = focus
+        self.availableTags = availableTags
         self.allowsShiftNewline = allowsShiftNewline
         self.onSubmit = onSubmit
         self.onCommandReturn = onCommandReturn
@@ -202,29 +206,40 @@ struct DaybookComposer<Accessory: View>: View {
                     )
             )
 
-            accessory
+            ZStack(alignment: .topLeading) {
+                accessory
+                if autocomplete.isActive {
+                    SyntaxAutocompletePopup(state: autocomplete) { candidate in
+                        if let trigger = autocomplete.trigger {
+                            let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
+                                candidate,
+                                to: text,
+                                range: trigger.range
+                            )
+                            text = newText
+                            autocomplete.dismiss()
+                        }
+                    }
+                    .padding(.top, 4)
+                    .zIndex(100)
+                }
+            }
         }
         .daybookHideInputChrome()
     }
 
     @ViewBuilder
     private var field: some View {
-        if let focus {
-            DaybookTextField(
-                text: $text,
-                placeholder: placeholder,
-                focus: focus,
-                onSubmit: onSubmit,
-                onCommandReturn: onCommandReturn,
-                allowsShiftNewline: allowsShiftNewline
-            )
-        } else {
-            TextField(LocalizedStringKey(stringLiteral: placeholder), text: $text)
-                .textFieldStyle(.plain)
-                .font(DaybookType.body)
-                .focused($fallbackFocus)
-                .onSubmit(onSubmit)
-        }
+        DaybookTextField(
+            text: $text,
+            placeholder: placeholder,
+            focus: focus ?? $fallbackFocus,
+            autocomplete: autocomplete,
+            availableTags: availableTags,
+            onSubmit: onSubmit,
+            onCommandReturn: onCommandReturn,
+            allowsShiftNewline: allowsShiftNewline
+        )
     }
 }
 
@@ -276,6 +291,7 @@ extension DaybookComposer where Accessory == EmptyView {
         text: Binding<String>,
         placeholder: String,
         focus: FocusState<Bool>.Binding? = nil,
+        availableTags: [String] = [],
         allowsShiftNewline: Bool = false,
         onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil
@@ -284,6 +300,7 @@ extension DaybookComposer where Accessory == EmptyView {
             text: text,
             placeholder: placeholder,
             focus: focus,
+            availableTags: availableTags,
             allowsShiftNewline: allowsShiftNewline,
             onSubmit: onSubmit,
             onCommandReturn: onCommandReturn,

@@ -262,8 +262,11 @@ struct DaybookTextField: NSViewRepresentable {
     var placeholder: String
     var fontSize: CGFloat = 13
     var focus: FocusState<Bool>.Binding
+    var autocomplete: SyntaxAutocompleteState? = nil
+    var availableTags: [String] = []
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)? = nil
+    var onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil
     var allowsShiftNewline: Bool = true
 
     func makeCoordinator() -> Coordinator {
@@ -315,7 +318,7 @@ struct DaybookTextField: NSViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, NSTextFieldDelegate {
+    final class Coordinator: NSObject, NSTextFieldDelegate, NSTextViewDelegate {
         var parent: DaybookTextField
 
         init(_ parent: DaybookTextField) {
@@ -341,11 +344,24 @@ struct DaybookTextField: NSViewRepresentable {
                 field.stringValue = value
             }
             parent.text = value
+
+            if let autocomplete = parent.autocomplete {
+                let cursor = (field.currentEditor() as? NSTextView)?.selectedRange().location ?? value.count
+                autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
+            }
+        }
+
+        func textViewDidChangeSelection(_ notification: Notification) {
+            guard let autocomplete = parent.autocomplete,
+                  let textView = notification.object as? NSTextView else { return }
+            let cursor = textView.selectedRange().location
+            autocomplete.update(text: textView.string, cursorLocation: cursor, availableTags: parent.availableTags)
         }
 
         func controlTextDidBeginEditing(_ obj: Notification) {
             parent.focus.wrappedValue = true
             guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
+            editor.delegate = self
             editor.isAutomaticQuoteSubstitutionEnabled = false
             editor.isAutomaticDashSubstitutionEnabled = false
             editor.isAutomaticTextReplacementEnabled = false
@@ -357,9 +373,41 @@ struct DaybookTextField: NSViewRepresentable {
 
         func controlTextDidEndEditing(_ obj: Notification) {
             parent.focus.wrappedValue = false
+            parent.autocomplete?.dismiss()
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if let autocomplete = parent.autocomplete, autocomplete.isActive {
+                if commandSelector == #selector(NSResponder.moveUp(_:)) {
+                    autocomplete.selectPrevious()
+                    return true
+                }
+                if commandSelector == #selector(NSResponder.moveDown(_:)) {
+                    autocomplete.selectNext()
+                    return true
+                }
+                if commandSelector == #selector(NSResponder.insertTab(_:)) ||
+                   commandSelector == #selector(NSResponder.insertNewline(_:)) {
+                    if let candidate = autocomplete.selectedCandidate(), let trigger = autocomplete.trigger {
+                        let (newText, newCursor) = SyntaxAutocompleteEngine.applyCandidate(
+                            candidate,
+                            to: textView.string,
+                            range: trigger.range
+                        )
+                        textView.string = newText
+                        parent.text = newText
+                        textView.setSelectedRange(NSRange(location: newCursor, length: 0))
+                        autocomplete.dismiss()
+                        parent.onCommitAutocomplete?(candidate)
+                        return true
+                    }
+                }
+                if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+                    autocomplete.dismiss()
+                    return true
+                }
+            }
+
             if commandSelector == #selector(NSResponder.insertLineBreak(_:)) ||
                (commandSelector == #selector(NSResponder.insertNewline(_:)) && NSApp.currentEvent?.modifierFlags.contains(.shift) == true) {
                 if parent.allowsShiftNewline {

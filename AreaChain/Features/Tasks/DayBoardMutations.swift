@@ -74,6 +74,33 @@ enum DayBoardMutations {
         try? taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: title, notes: nil)
     }
 
+    static func editTodoWithSyntax(_ todo: TodoItem, rawInput: String) {
+        let trimmed = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let parsed = NaturalLanguageParser.parseTaskCapture(trimmed)
+        let finalTitle = parsed.cleanTitle.isEmpty ? todo.title : parsed.cleanTitle
+        let finalNotes = parsed.notes.isEmpty ? nil : parsed.notes
+        try? taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: finalTitle, notes: finalNotes)
+
+        if parsed.hasPriorityToken {
+            try? taskRepo(for: todo.modelContext).setPriority(
+                id: todo.id,
+                isImportant: parsed.isImportant,
+                isUrgent: parsed.isUrgent
+            )
+        }
+
+        if let minutes = parsed.remindMinutes {
+            try? taskRepo(for: todo.modelContext).setRemind(id: todo.id, minutes: minutes)
+            requestReminderAccessIfNeeded(minutes)
+        }
+
+        if let tagName = parsed.tagName, let context = todo.modelContext {
+            _ = addTag(named: tagName, context: context, ontoTodo: todo)
+        }
+        BoardEvents.changed()
+    }
+
     static func updateNotes(for todo: TodoItem, notes: String) {
         try? taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: nil, notes: notes)
     }
@@ -180,6 +207,33 @@ enum DayBoardMutations {
 
     static func editRoutine(_ routine: DailyRoutine, title: String) {
         try? routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: title, notes: nil)
+    }
+
+    static func editRoutineWithSyntax(_ routine: DailyRoutine, rawInput: String) {
+        let trimmed = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let parsed = NaturalLanguageParser.parseTaskCapture(trimmed)
+        let finalTitle = parsed.cleanTitle.isEmpty ? routine.title : parsed.cleanTitle
+        let finalNotes = parsed.notes.isEmpty ? nil : parsed.notes
+        try? routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: finalTitle, notes: finalNotes)
+
+        if parsed.hasPriorityToken {
+            try? routineRepo(for: routine.modelContext).setPriority(
+                id: routine.id,
+                isImportant: parsed.isImportant,
+                isUrgent: parsed.isUrgent
+            )
+        }
+
+        if let minutes = parsed.remindMinutes {
+            try? routineRepo(for: routine.modelContext).setRemind(id: routine.id, minutes: minutes)
+            requestReminderAccessIfNeeded(minutes)
+        }
+
+        if let tagName = parsed.tagName, let context = routine.modelContext {
+            _ = addTag(named: tagName, context: context, ontoRoutine: routine)
+        }
+        BoardEvents.changed()
     }
 
     static func updateNotes(for routine: DailyRoutine, notes: String) {

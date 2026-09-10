@@ -51,6 +51,7 @@ struct WorkspaceTodayView: View {
                 text: $draftText,
                 placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
                 focus: $composerFocused,
+                availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
                 onSubmit: addTodo,
                 onCommandReturn: {}
             ) {

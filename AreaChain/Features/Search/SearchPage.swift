@@ -6,16 +6,47 @@ struct SearchPage: View {
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Bindable private var selection = BoardSelection.shared
     @State private var query = ""
+    @State private var autocomplete = SyntaxAutocompleteState()
+    @FocusState private var searchFocus: Bool
+
+    private var tagMap: [UUID: String] {
+        Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
+    }
 
     var body: some View {
         DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
             DaybookField {
-                TextField("search.placeholder", text: $query)
-                    .textFieldStyle(.plain)
+                ZStack(alignment: .topLeading) {
+                    DaybookTextField(
+                        text: $query,
+                        placeholder: L10n.string("search.placeholder", locale: locale),
+                        focus: $searchFocus,
+                        autocomplete: autocomplete,
+                        availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
+                        onSubmit: {}
+                    )
                     .accessibilityLabel("search.placeholder")
                     .daybookHideInputChrome()
+
+                    if autocomplete.isActive {
+                        SyntaxAutocompletePopup(state: autocomplete) { candidate in
+                            if let trigger = autocomplete.trigger {
+                                let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
+                                    candidate,
+                                    to: query,
+                                    range: trigger.range
+                                )
+                                query = newText
+                                autocomplete.dismiss()
+                            }
+                        }
+                        .padding(.top, 24)
+                        .zIndex(100)
+                    }
+                }
             }
             if BoardSearch.normalized(query).isEmpty {
                 DaybookEmptyState(title: "search.hint", systemImage: "magnifyingglass")
@@ -34,7 +65,8 @@ struct SearchPage: View {
                 todos: todos.map(\.snapshot),
                 diaries: diaries.map(\.snapshot),
                 routines: routines.map(\.snapshot),
-                todayKey: DayClock.shared.todayKey
+                todayKey: DayClock.shared.todayKey,
+                tagMap: tagMap
             )
         )
     }

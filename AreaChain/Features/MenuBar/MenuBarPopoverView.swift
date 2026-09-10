@@ -33,6 +33,7 @@ struct MenuBarPopoverView: View {
     @State private var dayTick = Date()
     @FocusState private var captureFocused: Bool
     @State private var focusedTaskID: UUID? = nil
+    @State private var showingSyntaxHelp = false
 
     private var todayKey: String {
         _ = dayTick
@@ -168,7 +169,7 @@ struct MenuBarPopoverView: View {
     }
 
     private var integratedHeader: some View {
-        HStack(alignment: .center, spacing: 8) {
+        HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 3) {
                 Text(DayKey.displayName(todayKey, locale: locale))
                     .font(DaybookType.title)
@@ -191,6 +192,35 @@ struct MenuBarPopoverView: View {
                 diariesCount: todayDiariesCount
             )
             .padding(.top, 1)
+
+            syntaxHelpButton
+                .padding(.top, 1)
+        }
+    }
+
+    private var syntaxHelpButton: some View {
+        Button {
+            showingSyntaxHelp.toggle()
+        } label: {
+            Image(systemName: "exclamationmark.circle")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(showingSyntaxHelp ? DaybookTheme.stamp : DaybookTheme.muted)
+                .frame(width: 24, height: 24)
+                .background(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .fill(DaybookTheme.ink.opacity(showingSyntaxHelp ? 0.08 : 0.04))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        .stroke(DaybookTheme.rule.opacity(showingSyntaxHelp ? 0.6 : 0.35), lineWidth: 0.6)
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(DaybookQuietButtonStyle())
+        .help("快捷语法指南")
+        .accessibilityLabel("快捷语法指南")
+        .popover(isPresented: $showingSyntaxHelp, arrowEdge: .bottom) {
+            SyntaxCheatSheetPopover()
         }
     }
 
