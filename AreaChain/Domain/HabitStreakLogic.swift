@@ -29,54 +29,26 @@ enum HabitStreakLogic {
         todayKey: String,
         calendar: Calendar = .current
     ) -> StreakResult {
-        guard routine.deletedAt == nil else {
-            return StreakResult(
-                currentStreak: 0,
-                bestStreak: 0,
-                isDueToday: false,
-                isCompletedToday: false,
-                isSkippedToday: false
-            )
+        guard routine.deletedAt == nil,
+              DayKey.date(from: todayKey, calendar: calendar) != nil else {
+            return StreakResult(currentStreak: 0, bestStreak: 0)
         }
 
-        guard DayKey.date(from: todayKey, calendar: calendar) != nil else {
-            return StreakResult(
-                currentStreak: 0,
-                bestStreak: 0,
-                isDueToday: false,
-                isCompletedToday: false,
-                isSkippedToday: false
-            )
-        }
-
-        var checkMap: [String: CheckSnapshot] = [:]
-        for check in checks where check.routineId == routine.id {
-            if let existing = checkMap[check.dayKey] {
-                checkMap[check.dayKey] = CheckSnapshot(
-                    routineId: routine.id,
-                    dayKey: check.dayKey,
-                    isDone: existing.isDone || check.isDone,
-                    isSkipped: existing.isSkipped || check.isSkipped
-                )
-            } else {
-                checkMap[check.dayKey] = check
-            }
-        }
-
-        let todayCheck = checkMap[todayKey]
-        let isDueToday = routine.isEnabled
-            && routine.createdDayKey <= todayKey
-            && WeekdayMask.contains(routine.weekdayMask, dayKey: todayKey, calendar: calendar)
-        let isCompletedToday = (todayCheck?.isDone == true && todayCheck?.isSkipped != true)
-        let isSkippedToday = (todayCheck?.isSkipped == true)
+        let checkMap = buildCheckMap(for: routine.id, from: checks)
+        let todayStatus = evaluateTodayStatus(
+            routine: routine,
+            todayCheck: checkMap[todayKey],
+            todayKey: todayKey,
+            calendar: calendar
+        )
 
         guard routine.createdDayKey <= todayKey else {
             return StreakResult(
                 currentStreak: 0,
                 bestStreak: 0,
-                isDueToday: isDueToday,
-                isCompletedToday: isCompletedToday,
-                isSkippedToday: isSkippedToday
+                isDueToday: todayStatus.isDueToday,
+                isCompletedToday: todayStatus.isCompletedToday,
+                isSkippedToday: todayStatus.isSkippedToday
             )
         }
 
@@ -84,6 +56,75 @@ enum HabitStreakLogic {
             ? routine.createdDayKey
             : todayKey
 
+        let streaks = evaluateRunningStreakLoop(
+            routine: routine,
+            checkMap: checkMap,
+            startKey: startKey,
+            todayKey: todayKey,
+            calendar: calendar
+        )
+
+        return StreakResult(
+            currentStreak: streaks.currentStreak,
+            bestStreak: streaks.bestStreak,
+            isDueToday: todayStatus.isDueToday,
+            isCompletedToday: todayStatus.isCompletedToday,
+            isSkippedToday: todayStatus.isSkippedToday
+        )
+    }
+
+    private static func buildCheckMap(
+        for routineId: UUID,
+        from checks: [CheckSnapshot]
+    ) -> [String: CheckSnapshot] {
+        var map: [String: CheckSnapshot] = [:]
+        for check in checks where check.routineId == routineId {
+            if let existing = map[check.dayKey] {
+                map[check.dayKey] = CheckSnapshot(
+                    routineId: routineId,
+                    dayKey: check.dayKey,
+                    isDone: existing.isDone || check.isDone,
+                    isSkipped: existing.isSkipped || check.isSkipped
+                )
+            } else {
+                map[check.dayKey] = check
+            }
+        }
+        return map
+    }
+
+    private struct TodayStatus {
+        let isDueToday: Bool
+        let isCompletedToday: Bool
+        let isSkippedToday: Bool
+    }
+
+    private static func evaluateTodayStatus(
+        routine: RoutineSnapshot,
+        todayCheck: CheckSnapshot?,
+        todayKey: String,
+        calendar: Calendar
+    ) -> TodayStatus {
+        let isDue = routine.isEnabled
+            && routine.createdDayKey <= todayKey
+            && WeekdayMask.contains(routine.weekdayMask, dayKey: todayKey, calendar: calendar)
+        let isCompleted = (todayCheck?.isDone == true && todayCheck?.isSkipped != true)
+        let isSkipped = (todayCheck?.isSkipped == true)
+
+        return TodayStatus(
+            isDueToday: isDue,
+            isCompletedToday: isCompleted,
+            isSkippedToday: isSkipped
+        )
+    }
+
+    private static func evaluateRunningStreakLoop(
+        routine: RoutineSnapshot,
+        checkMap: [String: CheckSnapshot],
+        startKey: String,
+        todayKey: String,
+        calendar: Calendar
+    ) -> (currentStreak: Int, bestStreak: Int) {
         var runningStreak = 0
         var bestStreak = 0
         var cursorKey = startKey
@@ -109,8 +150,6 @@ enum HabitStreakLogic {
                     // Missed scheduled day prior to today: breaks streak
                     runningStreak = 0
                 }
-            } else {
-                // Off-day bridge: runningStreak unchanged
             }
 
             guard let date = DayKey.date(from: cursorKey, calendar: calendar),
@@ -122,13 +161,7 @@ enum HabitStreakLogic {
             cursorKey = nextKey
         }
 
-        return StreakResult(
-            currentStreak: runningStreak,
-            bestStreak: max(bestStreak, runningStreak),
-            isDueToday: isDueToday,
-            isCompletedToday: isCompletedToday,
-            isSkippedToday: isSkippedToday
-        )
+        return (runningStreak, max(bestStreak, runningStreak))
     }
 
     /// 启用时补跳过的起点：有暂停日用暂停日；旧数据从最后一次打卡（否则创建日）起算。

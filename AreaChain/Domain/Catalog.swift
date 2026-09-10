@@ -264,8 +264,3 @@ enum AttachmentClusters {
             }
     }
 }
-
-enum CloudKitAvailability {
-    /// 当前 ad-hoc 签名没有 iCloud 容器；真同步以后再改 Persistence。
-    static var isConfigured: Bool { false }
-}

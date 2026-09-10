@@ -64,96 +64,42 @@ struct TaskDetailDrawer: View {
 
     // MARK: - Todo Detail View
 
+    // MARK: - Todo Detail View
+
     private func todoDetailView(_ todo: TodoItem) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                TaskDetailHeaderBar(
-                    isDone: todo.isDone,
-                    onToggle: { DayBoardMutations.toggleTodo(todo) },
-                    onTrash: {
-                        pendingTrash = PendingTrash(title: todo.title) {
-                            DayBoardMutations.trashTodo(todo)
-                            taskID = nil
-                            WorkspaceNavigation.shared.closeInspector()
-                        }
-                    },
-                    onClose: {
-                        WorkspaceNavigation.shared.closeInspector()
-                    }
+                todoHeader(todo)
+                TodoBasicsSectionView(todo: todo)
+                TodoScheduleSectionView(todo: todo)
+                TodoClassificationSectionView(todo: todo, projects: projects, tags: tags, modelContext: modelContext)
+                TaskDetailAssetsSectionView(
+                    props: TaskDetailAssetsProps(ownerID: todo.id, ownerKind: .todo, createdAt: todo.createdAt, sourceBundleID: todo.sourceBundleID),
+                    attachments: attachments,
+                    modelContext: modelContext,
+                    onPreview: { previewAttachment = $0 }
                 )
-
-                DrawerSectionGroup(title: "drawer.section.basics") {
-                    TaskDetailTitleEditor(title: todo.title) { newTitle in
-                        DayBoardMutations.editTodo(todo, title: newTitle)
-                    }
-                    .id("title-\(todo.id)")
-
-                    TaskDetailNotesView(notes: todo.notes) { newNotes in
-                        DayBoardMutations.updateNotes(for: todo, notes: newNotes)
-                    }
-                    .id("notes-\(todo.id)")
-
-                    TaskDetailSubtasksView(todo: todo)
-                        .id("subtasks-\(todo.id)")
-                }
-
-                DrawerSectionGroup(title: "drawer.section.schedule") {
-                    TaskDetailQuadrantGrid(
-                        isImportant: todo.isImportant,
-                        isUrgent: todo.isUrgent,
-                        onSelect: { imp, urg in
-                            DayBoardMutations.persist {
-                                todo.isImportant = imp
-                                todo.isUrgent = urg
-                            }
-                        }
-                    )
-
-                    TaskDetailRemindChips(remindMinutes: todo.remindMinutes) { minutes in
-                        DayBoardMutations.setRemind(todo, minutes: minutes)
-                    }
-
-                    TaskDetailDateChips(dayKey: todo.dayKey) { newDay in
-                        DayBoardMutations.moveTodo(todo, to: newDay)
-                    }
-                }
-
-                DrawerSectionGroup(title: "drawer.section.classify") {
-                    TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
-                        DayBoardMutations.persist { todo.projectID = id }
-                    }
-
-                    TaskDetailTagSelector(
-                        tagIDs: todo.tagIDs,
-                        tags: tags,
-                        onToggleTag: { tagID in
-                            DayBoardMutations.persist {
-                                todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
-                            }
-                        },
-                        onCreateTag: { name in
-                            DayBoardMutations.addTag(
-                                named: name,
-                                existing: tags,
-                                context: modelContext,
-                                ontoTodo: todo
-                            )
-                        }
-                    )
-                }
-
-                DrawerSectionGroup(title: "drawer.section.assets") {
-                    attachmentSection(ownerID: todo.id, ownerKind: .todo)
-
-                    TaskDetailMetadataSection(
-                        createdAt: todo.createdAt,
-                        sourceBundleID: todo.sourceBundleID
-                    )
-                }
             }
             .padding(16)
         }
         .daybookScroll()
+    }
+
+    private func todoHeader(_ todo: TodoItem) -> some View {
+        TaskDetailHeaderBar(
+            isDone: todo.isDone,
+            onToggle: { DayBoardMutations.toggleTodo(todo) },
+            onTrash: {
+                pendingTrash = PendingTrash(title: todo.title) {
+                    DayBoardMutations.trashTodo(todo)
+                    taskID = nil
+                    WorkspaceNavigation.shared.closeInspector()
+                }
+            },
+            onClose: {
+                WorkspaceNavigation.shared.closeInspector()
+            }
+        )
     }
 
     // MARK: - Routine Detail View
@@ -175,187 +121,53 @@ struct TaskDetailDrawer: View {
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                TaskDetailHeaderBar(
-                    isDone: isDoneOnBoard,
-                    isRoutine: true,
-                    onToggle: {
-                        DayBoardMutations.toggleRoutine(
-                            routine,
-                            on: boardDayKey,
-                            checks: checks,
-                            context: modelContext
-                        )
-                    },
-                    onTrash: {
-                        pendingTrash = PendingTrash(title: routine.title) {
-                            DayBoardMutations.trashRoutine(routine)
-                            taskID = nil
-                            WorkspaceNavigation.shared.closeInspector()
-                        }
-                    },
-                    onClose: {
-                        WorkspaceNavigation.shared.closeInspector()
+                routineHeader(routine, isDoneOnBoard: isDoneOnBoard, boardDayKey: boardDayKey)
+                RoutineHabitSectionView(
+                    routine: routine,
+                    streakResult: streakResult,
+                    boardDayKey: boardDayKey,
+                    isDoneOnBoard: isDoneOnBoard,
+                    isSkipped: checks.contains {
+                        $0.routine?.id == routine.id && $0.dayKey == boardDayKey && $0.isSkipped
                     }
                 )
-
-                DrawerSectionGroup(title: "drawer.section.habit") {
-                    TaskDetailTitleEditor(title: routine.title) { newTitle in
-                        DayBoardMutations.persist { routine.title = newTitle }
-                    }
-                    .id("title-\(routine.id)")
-
-                    TaskDetailStreakCard(
-                        streakResult: streakResult,
-                        isEnabled: routine.isEnabled,
-                        inspectDayKey: boardDayKey,
-                        inspectCompleted: isDoneOnBoard,
-                        inspectSkipped: checks.contains {
-                            $0.routine?.id == routine.id && $0.dayKey == boardDayKey && $0.isSkipped
-                        },
-                        inspectDue: routine.isEnabled
-                            && routine.createdDayKey <= boardDayKey
-                            && WeekdayMask.contains(routine.resolvedWeekdayMask, dayKey: boardDayKey)
-                    )
-
-                    TaskDetailNotesView(notes: routine.notes) { newNotes in
-                        DayBoardMutations.updateNotes(for: routine, notes: newNotes)
-                    }
-                    .id("notes-\(routine.id)")
-                }
-
-                DrawerSectionGroup(title: "drawer.section.schedule") {
-                    TaskDetailQuadrantGrid(
-                        isImportant: routine.isImportant,
-                        isUrgent: routine.isUrgent,
-                        onSelect: { imp, urg in
-                            DayBoardMutations.persist {
-                                routine.isImportant = imp
-                                routine.isUrgent = urg
-                            }
-                        }
-                    )
-
-                    TaskDetailRemindChips(remindMinutes: routine.remindMinutes) { minutes in
-                        DayBoardMutations.setRemind(routine, minutes: minutes)
-                    }
-
-                    TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
-                        DayBoardMutations.persist {
-                            routine.setWeekdayMask(newMask)
-                        }
-                    }
-                }
-
-                DrawerSectionGroup(title: "drawer.section.classify") {
-                    TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
-                        DayBoardMutations.persist { routine.projectID = id }
-                    }
-
-                    TaskDetailTagSelector(
-                        tagIDs: routine.tagIDs,
-                        tags: tags,
-                        onToggleTag: { tagID in
-                            DayBoardMutations.persist {
-                                routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
-                            }
-                        },
-                        onCreateTag: { name in
-                            DayBoardMutations.addTag(
-                                named: name,
-                                existing: tags,
-                                context: modelContext,
-                                ontoRoutine: routine
-                            )
-                        }
-                    )
-                }
-
-                DrawerSectionGroup(title: "drawer.section.assets") {
-                    attachmentSection(ownerID: routine.id, ownerKind: .routine)
-
-                    TaskDetailMetadataSection(
-                        createdAt: routine.createdAt,
-                        sourceBundleID: routine.sourceBundleID
-                    )
-                }
+                RoutineScheduleSectionView(routine: routine)
+                RoutineClassificationSectionView(routine: routine, projects: projects, tags: tags, modelContext: modelContext)
+                TaskDetailAssetsSectionView(
+                    props: TaskDetailAssetsProps(ownerID: routine.id, ownerKind: .routine, createdAt: routine.createdAt, sourceBundleID: routine.sourceBundleID),
+                    attachments: attachments,
+                    modelContext: modelContext,
+                    onPreview: { previewAttachment = $0 }
+                )
             }
             .padding(16)
         }
         .daybookScroll()
     }
 
-    private func attachmentSection(ownerID: UUID, ownerKind: AttachmentOwner) -> some View {
-        let taskAttachments = attachments.filter { $0.ownerID == ownerID && $0.deletedAt == nil }
-        return VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("drawer.attachments.title \(taskAttachments.count)")
-                    .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
-                Spacer()
-                Button {
-                    AttachmentActions.pickImage(ownerKind: ownerKind, ownerID: ownerID, context: modelContext)
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(DaybookTheme.stamp)
+    private func routineHeader(_ routine: DailyRoutine, isDoneOnBoard: Bool, boardDayKey: String) -> some View {
+        TaskDetailHeaderBar(
+            isDone: isDoneOnBoard,
+            isRoutine: true,
+            onToggle: {
+                DayBoardMutations.toggleRoutine(
+                    routine,
+                    on: boardDayKey,
+                    checks: checks,
+                    context: modelContext
+                )
+            },
+            onTrash: {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                    taskID = nil
+                    WorkspaceNavigation.shared.closeInspector()
                 }
-                .buttonStyle(.plain)
-                .help("drawer.attachments.pick")
-
-                Button {
-                    _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: modelContext)
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
-                        .font(.system(size: 10))
-                        .foregroundStyle(DaybookTheme.stamp)
-                }
-                .buttonStyle(.plain)
-                .help("drawer.attachments.paste")
+            },
+            onClose: {
+                WorkspaceNavigation.shared.closeInspector()
             }
-
-            if !taskAttachments.isEmpty {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 56), spacing: 6)], spacing: 6) {
-                    ForEach(taskAttachments) { att in
-                        attachmentThumbnail(att)
-                    }
-                }
-            }
-        }
-    }
-
-    private func attachmentThumbnail(_ att: AttachmentItem) -> some View {
-        ZStack(alignment: .topTrailing) {
-            if let image = AttachmentStore.image(id: att.id) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 56, height: 56)
-                    .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-                    .onTapGesture {
-                        previewAttachment = AttachmentRef(id: att.id, filename: att.filename)
-                    }
-            } else {
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookTheme.surface)
-                    .frame(width: 56, height: 56)
-                    .overlay(
-                        Image(systemName: "photo")
-                            .font(.system(size: 16))
-                            .foregroundStyle(DaybookTheme.muted)
-                    )
-            }
-
-            Button {
-                DayBoardMutations.persist { att.deletedAt = .now }
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.destructive)
-                    .background(Circle().fill(Color.white))
-            }
-            .buttonStyle(.plain)
-            .offset(x: 3, y: -3)
-        }
+        )
     }
 
     private func attachmentPreviewSheet(_ item: AttachmentRef) -> some View {

@@ -1,15 +1,42 @@
 import SwiftUI
 
+/// 月历网格日期坐标配置
+struct CalendarMonthGridDates {
+    var monthKey: String
+    var todayKey: String
+    var selectedKey: String
+
+    init(monthKey: String, todayKey: String, selectedKey: String) {
+        self.monthKey = monthKey
+        self.todayKey = todayKey
+        self.selectedKey = selectedKey
+    }
+}
+
 struct CalendarMonthGrid: View {
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
 
-    var monthKey: String
-    var todayKey: String
-    var selectedKey: String
+    var dates: CalendarMonthGridDates
     var counts: [String: Int]
     var onSelect: (String) -> Void
     var onDropTodo: ((UUID, String) -> Void)? = nil
+
+    var monthKey: String { dates.monthKey }
+    var todayKey: String { dates.todayKey }
+    var selectedKey: String { dates.selectedKey }
+
+    init(
+        dates: CalendarMonthGridDates,
+        counts: [String: Int],
+        onSelect: @escaping (String) -> Void,
+        onDropTodo: ((UUID, String) -> Void)? = nil
+    ) {
+        self.dates = dates
+        self.counts = counts
+        self.onSelect = onSelect
+        self.onDropTodo = onDropTodo
+    }
 
     @State private var dropKey: String?
 

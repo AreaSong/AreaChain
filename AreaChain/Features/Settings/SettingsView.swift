@@ -28,96 +28,8 @@ struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
 
     var body: some View {
-        @Bindable var prefs = prefs
         DaybookPage(title: "window.settings", minWidth: 420, minHeight: 560) {
-            Form {
-            Section("settings.chrome") {
-                Picker("settings.language", selection: $prefs.language) {
-                    Text("language.system").tag(AppLanguage.system)
-                    Text("language.chinese").tag(AppLanguage.chinese)
-                    Text("language.english").tag(AppLanguage.english)
-                }
-                Picker("settings.look", selection: $prefs.appearance) {
-                    Text("appearance.system").tag(AppAppearance.system)
-                    Text("appearance.light").tag(AppAppearance.light)
-                    Text("appearance.dark").tag(AppAppearance.dark)
-                }
-            }
-
-            Section("settings.launch") {
-                Toggle("settings.login", isOn: Binding(
-                    get: { launchesAtLogin },
-                    set: { enabled in
-                        launchesAtLogin = enabled
-                        updateLoginItem(enabled)
-                    }
-                ))
-                HotKeyRecorder()
-                HotKeyRecorder(slot: .paste, title: "hotkey.paste", help: "hotkey.paste.help")
-            }
-
-            Section("settings.capture") {
-                Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
-                Text("settings.capture.stamp.help")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-                Text("settings.capture.screen.help")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-
-            Section("settings.notify") {
-                Text(notifyStatusText)
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-                Button("settings.notify.request") {
-                    Task {
-                        await NotificationScheduler.shared.requestAuthorizationAndRefresh()
-                        notifyStatus = await NotificationScheduler.shared.currentStatus()
-                    }
-                }
-            }
-
-            Section("settings.calendar.sync") {
-                Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
-                if let calendarSyncStatusText {
-                    Text(calendarSyncStatusText)
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-                Text("settings.calendar.sync.help")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-
-            Section("settings.icloud") {
-                Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
-                Text("settings.icloud.hint")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-
-            Section("settings.data") {
-                Button("settings.export") { exportJSON() }
-                Button("settings.import") { importJSON() }
-                if StoreHealth.shared.isUsingMemoryFallback {
-                    Text("settings.memory")
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookTheme.destructive)
-                    Button("settings.reset", role: .destructive) {
-                        confirmReset = true
-                    }
-                }
-                if let statusMessage {
-                    Text(statusMessage)
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookTheme.ink)
-                        .textSelection(.enabled)
-                }
-            }
-            }
-            .formStyle(.grouped)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            settingsForm
         }
         .navigationTitle("AreaChain")
         .alert("alert.import", isPresented: Binding(
@@ -145,6 +57,36 @@ struct SettingsView: View {
             DispatchQueue.main.async {
                 AppWindows.resignIfIdle()
             }
+        }
+    }
+
+    private var settingsForm: some View {
+        Form {
+            GeneralSettingsSection(
+                launchesAtLogin: $launchesAtLogin,
+                onUpdateLoginItem: updateLoginItem
+            )
+            SyncSettingsSection(
+                notifyStatus: $notifyStatus,
+                notifyStatusText: notifyStatusText,
+                calendarSyncStatusText: calendarSyncStatusText,
+                onRequestNotifyAuth: requestNotificationAuth
+            )
+            AdvancedSettingsSection(
+                confirmReset: $confirmReset,
+                statusMessage: statusMessage,
+                onExport: exportJSON,
+                onImport: importJSON
+            )
+        }
+        .formStyle(.grouped)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func requestNotificationAuth() {
+        Task {
+            await NotificationScheduler.shared.requestAuthorizationAndRefresh()
+            notifyStatus = await NotificationScheduler.shared.currentStatus()
         }
     }
 

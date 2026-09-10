@@ -3,6 +3,39 @@ import SwiftData
 
 @MainActor
 enum DayBoardMutations {
+    // MARK: - 仓储依赖解析与注入 (Repository Resolvers & DI)
+
+    static var taskRepositoryProvider: ((ModelContext?) -> any TaskRepositoryProtocol)?
+    static var routineRepositoryProvider: ((ModelContext?) -> any RoutineRepositoryProtocol)?
+    static var catalogRepositoryProvider: ((ModelContext?) -> any CatalogRepositoryProtocol)?
+    static var diaryRepositoryProvider: ((ModelContext?) -> any DiaryRepositoryProtocol)?
+
+    static func taskRepo(for context: ModelContext? = nil) -> any TaskRepositoryProtocol {
+        if let provider = taskRepositoryProvider { return provider(context) }
+        let ctx = context ?? Persistence.session.container.mainContext
+        return SwiftDataTaskRepository(context: ctx)
+    }
+
+    static func routineRepo(for context: ModelContext? = nil) -> any RoutineRepositoryProtocol {
+        if let provider = routineRepositoryProvider { return provider(context) }
+        let ctx = context ?? Persistence.session.container.mainContext
+        return SwiftDataRoutineRepository(context: ctx)
+    }
+
+    static func catalogRepo(for context: ModelContext? = nil) -> any CatalogRepositoryProtocol {
+        if let provider = catalogRepositoryProvider { return provider(context) }
+        let ctx = context ?? Persistence.session.container.mainContext
+        return SwiftDataCatalogRepository(context: ctx)
+    }
+
+    static func diaryRepo(for context: ModelContext? = nil) -> any DiaryRepositoryProtocol {
+        if let provider = diaryRepositoryProvider { return provider(context) }
+        let ctx = context ?? Persistence.session.container.mainContext
+        return SwiftDataDiaryRepository(context: ctx)
+    }
+
+    // MARK: - 基础持久化与通知协调 (Coordination)
+
     static func persist(_ work: () -> Void) {
         work()
         BoardEvents.changed()
@@ -14,342 +47,190 @@ enum DayBoardMutations {
         }
     }
 
+    // MARK: - 待办操作委托 (Todo Operations)
+
+    @discardableResult
+    static func addTodo(title: String, notes: String = "", dayKey: String, context: ModelContext) -> Bool {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        let params = CreateTodoParams(
+            title: trimmed,
+            dayKey: dayKey,
+            notes: notes,
+            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
+        )
+        return (try? taskRepo(for: context).addTodo(params)) != nil
+    }
+
+    static func completeTodo(_ todo: TodoItem) {
+        try? taskRepo(for: todo.modelContext).completeTodo(id: todo.id)
+    }
+
+    static func toggleTodo(_ todo: TodoItem) {
+        try? taskRepo(for: todo.modelContext).toggleTodo(id: todo.id)
+    }
+
+    static func editTodo(_ todo: TodoItem, title: String) {
+        try? taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: title, notes: nil)
+    }
+
+    static func updateNotes(for todo: TodoItem, notes: String) {
+        try? taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: nil, notes: notes)
+    }
+
+    static func moveTodo(_ todo: TodoItem, to dayKey: String) {
+        guard dayKey != todo.dayKey else { return }
+        try? taskRepo(for: todo.modelContext).moveTodo(id: todo.id, to: dayKey)
+    }
+
+    static func setRemind(_ todo: TodoItem, minutes: Int?) {
+        try? taskRepo(for: todo.modelContext).setRemind(id: todo.id, minutes: minutes)
+        requestReminderAccessIfNeeded(minutes)
+    }
+
+    static func applyQuadrant(_ slot: QuadrantSlot, to todo: TodoItem) {
+        try? taskRepo(for: todo.modelContext).setPriority(
+            id: todo.id,
+            isImportant: slot.isImportant,
+            isUrgent: slot.isUrgent
+        )
+    }
+
+    static func trashTodo(_ todo: TodoItem) {
+        try? taskRepo(for: todo.modelContext).deleteTodo(id: todo.id, soft: true)
+    }
+
+    static func restoreTodo(_ todo: TodoItem) {
+        try? taskRepo(for: todo.modelContext).restoreTodo(id: todo.id)
+    }
+
+    static func setProject(for todo: TodoItem, projectID: UUID?) {
+        try? taskRepo(for: todo.modelContext).setProject(id: todo.id, projectID: projectID)
+    }
+
+    static func toggleTag(for todo: TodoItem, tagID: UUID) {
+        try? taskRepo(for: todo.modelContext).toggleTag(id: todo.id, tagID: tagID)
+    }
+
+    // MARK: - 子任务操作委托 (Subtask Operations)
+
+    @discardableResult
+    static func addSubtask(to todo: TodoItem, title: String, context: ModelContext) -> Bool {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        guard let sub = try? taskRepo(for: context).addSubtask(to: todo.id, title: trimmed) else {
+            return false
+        }
+        if !todo.subtasks.contains(where: { $0.id == sub.id }) {
+            todo.subtasks.append(sub)
+        }
+        return true
+    }
+
+    static func toggleSubtask(_ subtask: SubtaskItem) {
+        try? taskRepo(for: subtask.modelContext).toggleSubtask(id: subtask.id)
+    }
+
+    static func editSubtask(_ subtask: SubtaskItem, title: String) {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        try? taskRepo(for: subtask.modelContext).editSubtask(id: subtask.id, title: trimmed)
+    }
+
+    static func deleteSubtask(_ subtask: SubtaskItem) {
+        try? taskRepo(for: subtask.modelContext).deleteSubtask(id: subtask.id, soft: true)
+    }
+
+    static func reorderSubtasks(for todo: TodoItem, orderedIDs: [UUID]) {
+        try? taskRepo(for: todo.modelContext).reorderSubtasks(for: todo.id, orderedIDs: orderedIDs)
+    }
+
+    // MARK: - 习惯操作委托 (Routine Operations)
+
     static func setRoutineEnabled(
         _ routine: DailyRoutine,
         enabled: Bool,
         todayKey: String,
-        checks: [RoutineCheck],
-        context: ModelContext
+        checks: [RoutineCheck] = [],
+        context: ModelContext? = nil
     ) {
-        persist {
-            if enabled {
-                if !routine.isEnabled {
-                    let start = HabitStreakLogic.skipFillStart(
-                        pausedOnDayKey: routine.pausedOnDayKey,
-                        createdDayKey: routine.createdDayKey,
-                        checkDayKeys: checks.compactMap { check in
-                            check.routine?.id == routine.id ? check.dayKey : nil
-                        }
-                    )
-                    bridgeSkippedDays(
-                        routine,
-                        from: start,
-                        before: todayKey,
-                        checks: checks,
-                        context: context
-                    )
-                }
-                routine.pausedOnDayKey = nil
-                routine.isEnabled = true
-            } else {
-                if routine.pausedOnDayKey == nil {
-                    routine.pausedOnDayKey = todayKey
-                }
-                routine.isEnabled = false
-            }
-        }
-    }
-
-    private static func bridgeSkippedDays(
-        _ routine: DailyRoutine,
-        from start: String,
-        before end: String,
-        checks: [RoutineCheck],
-        context: ModelContext
-    ) {
-        let mask = routine.resolvedWeekdayMask
-        for key in DayKey.keys(from: start, before: end) {
-            guard WeekdayMask.contains(mask, dayKey: key) else { continue }
-            if checks.contains(where: { $0.routine?.id == routine.id && $0.dayKey == key }) {
-                continue
-            }
-            context.insert(RoutineCheck(dayKey: key, isDone: true, isSkipped: true, routine: routine))
-        }
+        let repo = routineRepo(for: context ?? routine.modelContext)
+        try? repo.setRoutineEnabled(id: routine.id, enabled: enabled, todayKey: todayKey)
     }
 
     static func toggleRoutine(
         _ routine: DailyRoutine,
         on dayKey: String,
-        checks: [RoutineCheck],
-        context: ModelContext
+        checks: [RoutineCheck] = [],
+        context: ModelContext? = nil
     ) {
-        persist {
-            if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == dayKey }) {
-                check.isDone.toggle()
-                if !check.isDone {
-                    check.isSkipped = false
-                }
-                return
-            }
-            context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
-        }
+        let repo = routineRepo(for: context ?? routine.modelContext)
+        try? repo.toggleRoutine(id: routine.id, dayKey: dayKey)
     }
 
     static func skipRoutine(
         _ routine: DailyRoutine,
         on dayKey: String,
-        checks: [RoutineCheck],
-        context: ModelContext
+        checks: [RoutineCheck] = [],
+        context: ModelContext? = nil
     ) {
-        persist {
-            if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == dayKey }) {
-                check.isDone = true
-                check.isSkipped = true
-                return
-            }
-            context.insert(RoutineCheck(dayKey: dayKey, isDone: true, isSkipped: true, routine: routine))
-        }
-    }
-
-    static func completeTodo(_ todo: TodoItem) {
-        persist {
-            todo.isDone = true
-            for sub in todo.subtasks where sub.deletedAt == nil && !sub.isDone {
-                sub.isDone = true
-            }
-        }
-    }
-
-    static func toggleTodo(_ todo: TodoItem) {
-        persist {
-            todo.isDone.toggle()
-            if todo.isDone {
-                for sub in todo.subtasks where sub.deletedAt == nil && !sub.isDone {
-                    sub.isDone = true
-                }
-            }
-        }
-    }
-
-    static func editTodo(_ todo: TodoItem, title: String) {
-        persist { todo.title = title }
+        let repo = routineRepo(for: context ?? routine.modelContext)
+        try? repo.skipRoutine(id: routine.id, dayKey: dayKey)
     }
 
     static func editRoutine(_ routine: DailyRoutine, title: String) {
-        persist { routine.title = title }
+        try? routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: title, notes: nil)
     }
 
-    static func trashTodo(_ todo: TodoItem) {
-        persist {
-            let now = SoftDelete.stamp()
-            todo.deletedAt = now
-            SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
-            SoftDelete.stampAttachments(
-                ownerID: todo.id,
-                at: now,
-                attachments: ownedAttachments(todo.modelContext)
-            )
-        }
+    static func updateNotes(for routine: DailyRoutine, notes: String) {
+        try? routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: nil, notes: notes)
     }
 
-    static func restoreTodo(_ todo: TodoItem) {
-        persist {
-            let stamp = todo.deletedAt
-            todo.deletedAt = nil
-            SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: todo.subtasks)
-            SoftDelete.restoreCascadedAttachments(
-                ownerID: todo.id,
-                parentDeletedAt: stamp,
-                attachments: ownedAttachments(todo.modelContext)
-            )
-        }
+    static func setRemind(_ routine: DailyRoutine, minutes: Int?) {
+        try? routineRepo(for: routine.modelContext).setRemind(id: routine.id, minutes: minutes)
+        requestReminderAccessIfNeeded(minutes)
+    }
+
+    static func applyQuadrant(_ slot: QuadrantSlot, to routine: DailyRoutine) {
+        try? routineRepo(for: routine.modelContext).setPriority(
+            id: routine.id,
+            isImportant: slot.isImportant,
+            isUrgent: slot.isUrgent
+        )
     }
 
     static func trashRoutine(_ routine: DailyRoutine) {
-        persist {
-            let now = SoftDelete.stamp()
-            routine.deletedAt = now
-            SoftDelete.stampAttachments(
-                ownerID: routine.id,
-                at: now,
-                attachments: ownedAttachments(routine.modelContext)
-            )
-        }
+        try? routineRepo(for: routine.modelContext).deleteRoutine(id: routine.id, soft: true)
     }
+
+    static func setProject(for routine: DailyRoutine, projectID: UUID?) {
+        try? routineRepo(for: routine.modelContext).setProject(id: routine.id, projectID: projectID)
+    }
+
+    static func toggleTag(for routine: DailyRoutine, tagID: UUID) {
+        try? routineRepo(for: routine.modelContext).toggleTag(id: routine.id, tagID: tagID)
+    }
+
+    // MARK: - 标签与目录操作委托 (Catalog Operations)
 
     @discardableResult
     static func addTag(
         named name: String,
-        existing: [TagItem],
+        existing: [TagItem] = [],
         context: ModelContext,
         ontoTodo todo: TodoItem? = nil,
         ontoRoutine routine: DailyRoutine? = nil
     ) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else { return false }
-        persist {
-            guard let tag = resolveTaskTag(named: trimmed, among: existing, context: context) else { return }
-            if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
-                todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
-            }
-            if let routine, !TagIDList.contains(routine.tagIDs, tag.id) {
-                routine.tagIDs = TagIDList.toggling(routine.tagIDs, tag.id)
-            }
+        guard let tag = try? catalogRepo(for: context).resolveTaskTag(name: trimmed) else { return false }
+        if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {
+            try? taskRepo(for: context).toggleTag(id: todo.id, tagID: tag.id)
+        }
+        if let routine, !TagIDList.contains(routine.tagIDs, tag.id) {
+            try? routineRepo(for: context).toggleTag(id: routine.id, tagID: tag.id)
         }
         return true
-    }
-
-    static func moveTodo(_ todo: TodoItem, to dayKey: String) {
-        guard dayKey != todo.dayKey else { return }
-        persist { todo.dayKey = dayKey }
-    }
-
-    static func setRemind(_ todo: TodoItem, minutes: Int?) {
-        persist { todo.remindMinutes = RemindMinutes.clamped(minutes) }
-        requestReminderAccessIfNeeded(minutes)
-    }
-
-    static func setRemind(_ routine: DailyRoutine, minutes: Int?) {
-        persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
-        requestReminderAccessIfNeeded(minutes)
-    }
-
-    static func applyQuadrant(_ slot: QuadrantSlot, to todo: TodoItem) {
-        persist {
-            todo.isImportant = slot.isImportant
-            todo.isUrgent = slot.isUrgent
-        }
-    }
-
-    static func applyQuadrant(_ slot: QuadrantSlot, to routine: DailyRoutine) {
-        persist {
-            routine.isImportant = slot.isImportant
-            routine.isUrgent = slot.isUrgent
-        }
-    }
-
-    static func addTodo(title: String, notes: String = "", dayKey: String, context: ModelContext) -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        persist {
-            context.insert(
-                TodoItem(
-                    title: trimmed,
-                    dayKey: dayKey,
-                    sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
-                    notes: notes
-                )
-            )
-        }
-        return true
-    }
-
-    static func addSubtask(to todo: TodoItem, title: String, context: ModelContext) -> Bool {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return false }
-        let currentActive = todo.subtasks.filter { $0.deletedAt == nil }
-        let nextOrder = (currentActive.map(\.sortOrder).max() ?? -1) + 1
-        let item = SubtaskItem(title: trimmed, sortOrder: nextOrder, todo: todo)
-        persist {
-            context.insert(item)
-            todo.subtasks.append(item)
-        }
-        return true
-    }
-
-    static func toggleSubtask(_ subtask: SubtaskItem) {
-        persist { subtask.isDone.toggle() }
-    }
-
-    static func editSubtask(_ subtask: SubtaskItem, title: String) {
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        persist { subtask.title = trimmed }
-    }
-
-    static func deleteSubtask(_ subtask: SubtaskItem) {
-        persist { subtask.deletedAt = .now }
-    }
-
-    static func reorderSubtasks(for todo: TodoItem, orderedIDs: [UUID]) {
-        persist {
-            for (idx, id) in orderedIDs.enumerated() {
-                if let item = todo.subtasks.first(where: { $0.id == id }) {
-                    item.sortOrder = idx
-                }
-            }
-        }
-    }
-
-    static func updateNotes(for todo: TodoItem, notes: String) {
-        persist { todo.notes = notes }
-    }
-
-    static func updateNotes(for routine: DailyRoutine, notes: String) {
-        persist { routine.notes = notes }
-    }
-
-    static func addDiary(
-        text: String,
-        dayKey: String,
-        selectedTagIDs: Set<UUID> = [],
-        tags: [TagItem],
-        context: ModelContext
-    ) {
-        persist {
-            var available = tags
-            var ids = selectedTagIDs
-            let parsed = NaturalLanguageParser.parse(text)
-            if let tagName = parsed.tagName {
-                ids.insert(ensureTag(named: tagName, among: &available, context: context).id)
-            }
-            for name in DiaryMemoTags.autoTagNames(in: text) {
-                ids.insert(ensureTag(named: name, among: &available, context: context).id)
-            }
-            context.insert(
-                DiaryEntry(
-                    text: text,
-                    dayKey: dayKey,
-                    tagIDs: TagIDList.encode(Array(ids))
-                )
-            )
-        }
-    }
-
-    static func ensureDiaryPresetTags(among tags: [TagItem], context: ModelContext) {
-        let needsInsert = DiaryMemoTags.presets.contains { name in
-            !tags.contains { $0.name == name }
-        }
-        let needsRestore = tags.contains {
-            DiaryMemoTags.isPresetName($0.name) && $0.deletedAt != nil
-        }
-        guard needsInsert || needsRestore else { return }
-        persist {
-            var available = tags
-            for name in DiaryMemoTags.presets {
-                if let tag = resolveTag(named: name, among: available, context: context),
-                   !available.contains(where: { $0.id == tag.id })
-                {
-                    available.append(tag)
-                }
-            }
-        }
-    }
-
-    static func editDiary(_ entry: DiaryEntry, text: String) {
-        persist { entry.text = text }
-    }
-
-    static func togglePinDiary(_ entry: DiaryEntry) {
-        persist { entry.isPinned.toggle() }
-    }
-
-    static func toggleDiaryTag(_ entry: DiaryEntry, tagID: UUID) {
-        persist {
-            entry.tagIDs = TagIDList.toggling(entry.tagIDs, tagID)
-        }
-    }
-
-    static func deleteDiary(_ entry: DiaryEntry) {
-        persist {
-            let now = SoftDelete.stamp()
-            entry.deletedAt = now
-            SoftDelete.stampAttachments(
-                ownerID: entry.id,
-                at: now,
-                attachments: ownedAttachments(entry.modelContext)
-            )
-        }
     }
 
     static func resolveTaskTag(
@@ -357,9 +238,7 @@ enum DayBoardMutations {
         among existing: [TagItem] = [],
         context: ModelContext
     ) -> TagItem? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else { return nil }
-        return resolveTag(named: trimmed, among: existing, context: context)
+        try? catalogRepo(for: context).resolveTaskTag(name: name)
     }
 
     static func resolveTag(
@@ -367,44 +246,44 @@ enum DayBoardMutations {
         among existing: [TagItem] = [],
         context: ModelContext
     ) -> TagItem? {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        if let live = existing.first(where: { $0.name == trimmed && $0.deletedAt == nil }) {
-            return live
-        }
-        if let buried = existing.first(where: { $0.name == trimmed }) {
-            buried.deletedAt = nil
-            return buried
-        }
-        let descriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.name == trimmed })
-        let fetched = (try? context.fetch(descriptor)) ?? []
-        if let live = fetched.first(where: { $0.deletedAt == nil }) {
-            return live
-        }
-        if let buried = fetched.first {
-            buried.deletedAt = nil
-            return buried
-        }
-        let created = TagItem(name: trimmed, sortOrder: existing.count)
-        context.insert(created)
-        return created
+        try? catalogRepo(for: context).resolveOrCreateTag(name: name)
+    }
+
+    static func ensureDiaryPresetTags(among tags: [TagItem] = [], context: ModelContext) {
+        try? catalogRepo(for: context).ensurePresetTags()
+    }
+
+    // MARK: - 灵感手记操作委托 (Diary Operations)
+
+    static func addDiary(
+        text: String,
+        dayKey: String,
+        selectedTagIDs: Set<UUID> = [],
+        tags: [TagItem] = [],
+        context: ModelContext
+    ) {
+        _ = try? diaryRepo(for: context).addDiary(text: text, dayKey: dayKey, tagIDs: selectedTagIDs)
+    }
+
+    static func editDiary(_ entry: DiaryEntry, text: String) {
+        try? diaryRepo(for: entry.modelContext).editDiary(id: entry.id, text: text)
+    }
+
+    static func togglePinDiary(_ entry: DiaryEntry) {
+        try? diaryRepo(for: entry.modelContext).togglePin(id: entry.id)
+    }
+
+    static func toggleDiaryTag(_ entry: DiaryEntry, tagID: UUID) {
+        try? diaryRepo(for: entry.modelContext).toggleTag(id: entry.id, tagID: tagID)
+    }
+
+    static func deleteDiary(_ entry: DiaryEntry) {
+        try? diaryRepo(for: entry.modelContext).deleteDiary(id: entry.id, soft: true)
     }
 
     static func ownedAttachments(_ context: ModelContext?) -> [AttachmentItem] {
         guard let context else { return [] }
         return (try? context.fetch(FetchDescriptor<AttachmentItem>())) ?? []
-    }
-
-    private static func ensureTag(
-        named name: String,
-        among tags: inout [TagItem],
-        context: ModelContext
-    ) -> TagItem {
-        let tag = resolveTag(named: name, among: tags, context: context) ?? TagItem(name: name, sortOrder: tags.count)
-        if !tags.contains(where: { $0.id == tag.id }) {
-            tags.append(tag)
-        }
-        return tag
     }
 }
 

@@ -60,13 +60,45 @@ enum InspectDayPolicy {
 final class WorkspaceNavigation {
     static let shared = WorkspaceNavigation()
 
+    let boardSelection: BoardSelection
+
+    init(boardSelection: BoardSelection) {
+        self.boardSelection = boardSelection
+    }
+
+    convenience init() {
+        self.init(boardSelection: .shared)
+    }
+
+    // MARK: - Forwarding Board Inspection Properties
+    var inspectingDayKey: String {
+        get { boardSelection.inspectingDayKey }
+        set { boardSelection.inspectingDayKey = newValue }
+    }
+
+    var diaryDayKey: String {
+        get { boardSelection.diaryDayKey }
+        set { boardSelection.diaryDayKey = newValue }
+    }
+
+    var inspectingDiaryID: UUID? {
+        get { boardSelection.inspectingDiaryID }
+        set { boardSelection.inspectingDiaryID = newValue }
+    }
+
+    var discardEditsOnBlur: Bool {
+        get { boardSelection.discardEditsOnBlur }
+        set { boardSelection.discardEditsOnBlur = newValue }
+    }
+
+    // MARK: - Tab & Filter Navigation
     var selectedTab: WorkspaceTab = .today {
         didSet {
             selectedProjectID = nil
             selectedTagID = nil
             clearSelection()
             if selectedTab != .diary {
-                BoardSelection.shared.clearInspectedDiary()
+                boardSelection.clearInspectedDiary()
             }
             pinTodayInspectDayIfEnteringTab()
         }
@@ -76,7 +108,7 @@ final class WorkspaceNavigation {
         didSet {
             if selectedProjectID != nil {
                 selectedTagID = nil
-                BoardSelection.shared.clearInspectedDiary()
+                boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
             }
             clearSelection()
@@ -87,20 +119,42 @@ final class WorkspaceNavigation {
         didSet {
             if selectedTagID != nil {
                 selectedProjectID = nil
-                BoardSelection.shared.clearInspectedDiary()
+                boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
             }
             clearSelection()
         }
     }
 
+    // MARK: - Task Inspector & Multi-Selection
     var selectedTaskID: UUID? = nil
     var selectedTaskIDs: Set<UUID> = []
     var isInspectorPresented: Bool = false
 
+    // MARK: - Navigation & Inspection Actions
+    func inspectBoard(_ key: String) {
+        boardSelection.inspectBoard(key)
+    }
+
+    func inspectDiary(id: UUID, dayKey: String) {
+        boardSelection.inspectDiary(id: id, dayKey: dayKey)
+    }
+
+    func clearInspectedDiary() {
+        boardSelection.clearInspectedDiary()
+    }
+
+    func markEscapeCancelsEdits() {
+        boardSelection.markEscapeCancelsEdits()
+    }
+
+    func consumeEscapeCancelsEdits() -> Bool {
+        boardSelection.consumeEscapeCancelsEdits()
+    }
+
     func revealTab(_ tab: WorkspaceTab) {
         if tab != .diary {
-            BoardSelection.shared.clearInspectedDiary()
+            boardSelection.clearInspectedDiary()
         }
         if selectedTab != tab {
             selectedTab = tab
@@ -113,8 +167,11 @@ final class WorkspaceNavigation {
         }
     }
 
-    func inspectTask(_ id: UUID) {
-        if InspectDayPolicy.pinsTodayWhenInspecting(
+    /// Inspects a task, optionally synchronizing the inspecting board day in a single call.
+    func inspectTask(_ id: UUID, dayKey: String? = nil) {
+        if let dayKey {
+            boardSelection.inspectBoard(dayKey)
+        } else if InspectDayPolicy.pinsTodayWhenInspecting(
             tab: selectedTab,
             projectID: selectedProjectID,
             tagID: selectedTagID
@@ -147,6 +204,6 @@ final class WorkspaceNavigation {
     }
 
     private func pinTodayInspectDay() {
-        BoardSelection.shared.inspectBoard(DayClock.shared.todayKey)
+        boardSelection.inspectBoard(DayClock.shared.todayKey)
     }
 }

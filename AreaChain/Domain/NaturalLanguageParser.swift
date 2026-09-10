@@ -41,58 +41,67 @@ enum NaturalLanguageParser {
         let notesText = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
 
         var text = firstLine
-        var remindMinutes: Int? = nil
-        var tagName: String? = nil
-        var isImportant = false
-        var isUrgent = false
-        var hasPriorityToken = false
+        let priority = consumePriority(from: &text)
+        let tagName = consumeTag(from: &text, consumeDiaryPresetTags: consumeDiaryPresetTags)
+        let remindMinutes = consumeTime(from: &text)
 
-        // 1. Parse priority (!重要紧急, !重要, !紧急, !p1, !p2, !p3, !p4)
-        let priorityPattern = #"!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要紧急|重要|紧急|p[1-4]|P[1-4])"#
-        if let match = firstMatch(pattern: priorityPattern, in: text) {
-            hasPriorityToken = true
-            let token = match.lowercased()
-            if token.contains("重要紧急") || token.contains("紧急重要") || token.contains("重要且紧急") || token == "!p1" {
-                isImportant = true
-                isUrgent = true
-            } else if token == "!重要" || token.contains("重要不紧急") || token == "!p2" {
-                isImportant = true
-                isUrgent = false
-            } else if token == "!紧急" || token.contains("不重要紧急") || token == "!p3" {
-                isImportant = false
-                isUrgent = true
-            } else if token == "!p4" {
-                isImportant = false
-                isUrgent = false
-            }
-            text = text.replacingOccurrences(of: match, with: "")
-        }
-
-        // 2. Parse tag (#工作, #读书, #project1)
-        tagName = consumeTag(from: &text, consumeDiaryPresetTags: consumeDiaryPresetTags)
-
-        // 3. Parse Chinese time: (下午3点半, 下午3点, 晚上8:30, 早上9点15, 中午12点, 15:30, @15:30)
-        let timeResult = extractTime(from: text)
-        if let extracted = timeResult {
-            remindMinutes = extracted.minutes
-            text = text.replacingOccurrences(of: extracted.matchedString, with: "")
-        }
-
-        let cleanTitle = text
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
+        let fallbackTitle = firstLine.isEmpty ? input : firstLine
+        let cleanTitle = cleanTitle(from: text, fallback: fallbackTitle)
 
         return ParsedCapture(
             rawInput: input,
-            cleanTitle: cleanTitle.isEmpty ? (firstLine.isEmpty ? input : firstLine) : cleanTitle,
+            cleanTitle: cleanTitle,
             remindMinutes: remindMinutes,
             tagName: tagName,
-            isImportant: isImportant,
-            isUrgent: isUrgent,
-            hasPriorityToken: hasPriorityToken,
+            isImportant: priority.isImportant,
+            isUrgent: priority.isUrgent,
+            hasPriorityToken: priority.hasPriorityToken,
             notes: notesText
         )
+    }
+
+    private struct PriorityResult {
+        let isImportant: Bool
+        let isUrgent: Bool
+        let hasPriorityToken: Bool
+
+        static let none = PriorityResult(isImportant: false, isUrgent: false, hasPriorityToken: false)
+    }
+
+    private static func consumePriority(from text: inout String) -> PriorityResult {
+        let priorityPattern = #"!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要紧急|重要|紧急|p[1-4]|P[1-4])"#
+        guard let match = firstMatch(pattern: priorityPattern, in: text) else {
+            return .none
+        }
+        text = text.replacingOccurrences(of: match, with: "")
+        let token = match.lowercased()
+
+        switch token {
+        case "!重要紧急", "!紧急重要", "!重要且紧急", "!p1":
+            return PriorityResult(isImportant: true, isUrgent: true, hasPriorityToken: true)
+        case "!重要", "!重要不紧急", "!p2":
+            return PriorityResult(isImportant: true, isUrgent: false, hasPriorityToken: true)
+        case "!紧急", "!不重要紧急", "!p3":
+            return PriorityResult(isImportant: false, isUrgent: true, hasPriorityToken: true)
+        case "!p4":
+            return PriorityResult(isImportant: false, isUrgent: false, hasPriorityToken: true)
+        default:
+            return .none
+        }
+    }
+
+    private static func consumeTime(from text: inout String) -> Int? {
+        guard let extracted = extractTime(from: text) else { return nil }
+        text = text.replacingOccurrences(of: extracted.matchedString, with: "")
+        return extracted.minutes
+    }
+
+    private static func cleanTitle(from text: String, fallback: String) -> String {
+        let cleaned = text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return cleaned.isEmpty ? fallback : cleaned
     }
 
     private struct ExtractedTime {

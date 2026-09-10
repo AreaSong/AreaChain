@@ -11,87 +11,9 @@ struct TaskDetailNotesView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Label("drawer.notes.title", systemImage: "note.text")
-                        .font(DaybookType.label)
-                        .foregroundStyle(DaybookTheme.muted)
-                Spacer()
-                if !draft.isEmpty {
-                    Text("drawer.notes.count \(draft.count)")
-                        .font(.system(size: 9))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
-                }
-            }
-
-            ZStack(alignment: .topLeading) {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(DaybookTheme.cardSurface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .stroke(isFocused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
-                    )
-
-                if draft.isEmpty && !isFocused {
-                    Text("drawer.notes.placeholder")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.5))
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 8)
-                        .allowsHitTesting(false)
-                }
-
-                TextEditor(text: $draft)
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .scrollContentBackground(.hidden)
-                    .background(Color.clear)
-                    .focused($isFocused)
-                    .padding(4)
-                    .frame(minHeight: 56, maxHeight: 150)
-                    .onChange(of: draft) { _, newValue in
-                        scheduleSave(newValue)
-                    }
-                    .onChange(of: isFocused) { _, focused in
-                        if !focused {
-                            _ = BoardSelection.shared.consumeEscapeCancelsEdits()
-                            flushSave()
-                        }
-                    }
-            }
-
-            let links = extractURLs(from: draft)
-            if !links.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("drawer.notes.links")
-                        .font(.system(size: 9, weight: .medium))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.7))
-                    ForEach(links, id: \.self) { url in
-                        Button {
-                            NSWorkspace.shared.open(url)
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "link")
-                                    .font(.system(size: 9))
-                                Text(url.absoluteString)
-                                    .font(.system(size: 10))
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                Image(systemName: "arrow.up.right")
-                                    .font(.system(size: 8))
-                            }
-                            .foregroundStyle(DaybookTheme.stamp)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                    .fill(DaybookTheme.stamp.opacity(0.08))
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.top, 2)
-            }
+            notesHeaderView
+            notesEditorBox
+            notesLinksView
         }
         .onAppear {
             draft = notes
@@ -104,6 +26,99 @@ struct TaskDetailNotesView: View {
         .onDisappear {
             flushSave()
         }
+    }
+
+    private var notesHeaderView: some View {
+        HStack {
+            Label("drawer.notes.title", systemImage: "note.text")
+                .font(DaybookType.label)
+                .foregroundStyle(DaybookTheme.muted)
+            Spacer()
+            if !draft.isEmpty {
+                Text("drawer.notes.count \(draft.count)")
+                    .font(.system(size: 9))
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+            }
+        }
+    }
+
+    private var notesEditorBox: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(DaybookTheme.cardSurface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .stroke(isFocused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
+                )
+
+            if draft.isEmpty && !isFocused {
+                Text("drawer.notes.placeholder")
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.5))
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 8)
+                    .allowsHitTesting(false)
+            }
+
+            TextEditor(text: $draft)
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.ink)
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
+                .focused($isFocused)
+                .padding(4)
+                .frame(minHeight: 56, maxHeight: 150)
+                .onChange(of: draft) { _, newValue in
+                    scheduleSave(newValue)
+                }
+                .onChange(of: isFocused) { _, focused in
+                    if !focused {
+                        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
+                        flushSave()
+                    }
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var notesLinksView: some View {
+        let links = extractURLs(from: draft)
+        if !links.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("drawer.notes.links")
+                    .font(.system(size: 9, weight: .medium))
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.7))
+                ForEach(links, id: \.self) { url in
+                    linkButton(for: url)
+                }
+            }
+            .padding(.top, 2)
+        }
+    }
+
+    private func linkButton(for url: URL) -> some View {
+        Button {
+            NSWorkspace.shared.open(url)
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "link")
+                    .font(.system(size: 9))
+                Text(url.absoluteString)
+                    .font(.system(size: 10))
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 8))
+            }
+            .foregroundStyle(DaybookTheme.stamp)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .fill(DaybookTheme.stamp.opacity(0.08))
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private func scheduleSave(_ text: String) {

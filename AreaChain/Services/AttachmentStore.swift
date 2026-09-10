@@ -3,18 +3,23 @@ import Foundation
 import SwiftData
 import UniformTypeIdentifiers
 
-enum AttachmentStore {
-    static func directory(fileManager: FileManager = .default) -> URL {
+/// 纯物理文件 I/O 与 SwiftData 元数据管理服务
+final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
+    static let shared = AttachmentStore()
+
+    init() {}
+
+    func directory(fileManager: FileManager = .default) -> URL {
         fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appending(path: "areachain-attachments", directoryHint: .isDirectory)
     }
 
-    static func fileURL(id: UUID, root: URL? = nil) -> URL {
+    func fileURL(id: UUID, root: URL? = nil) -> URL {
         (root ?? directory()).appending(path: id.uuidString)
     }
 
     @discardableResult
-    static func save(
+    func save(
         data: Data,
         filename: String,
         ownerKind: AttachmentOwner,
@@ -38,20 +43,20 @@ enum AttachmentStore {
         return item
     }
 
-    static func loadData(id: UUID, root: URL? = nil) -> Data? {
+    func loadData(id: UUID, root: URL? = nil) -> Data? {
         try? Data(contentsOf: fileURL(id: id, root: root))
     }
 
-    static func image(id: UUID, root: URL? = nil) -> NSImage? {
+    func image(id: UUID, root: URL? = nil) -> NSImage? {
         guard let data = loadData(id: id, root: root) else { return nil }
         return NSImage(data: data)
     }
 
-    static func removeFile(id: UUID, root: URL? = nil) {
+    func removeFile(id: UUID, root: URL? = nil) {
         try? FileManager.default.removeItem(at: fileURL(id: id, root: root))
     }
 
-    static func purge(
+    func purge(
         ownerID: UUID,
         attachments: [AttachmentItem],
         context: ModelContext,
@@ -63,8 +68,65 @@ enum AttachmentStore {
         }
     }
 
+    func resetDirectory(fileManager: FileManager = .default) throws {
+        try fileManager.removeItem(at: directory(fileManager: fileManager))
+    }
+
+    // MARK: - Backward-Compatible Static Proxies
+    static func directory(fileManager: FileManager = .default) -> URL {
+        shared.directory(fileManager: fileManager)
+    }
+
+    static func fileURL(id: UUID, root: URL? = nil) -> URL {
+        shared.fileURL(id: id, root: root)
+    }
+
+    @discardableResult
+    static func save(
+        data: Data,
+        filename: String,
+        ownerKind: AttachmentOwner,
+        ownerID: UUID,
+        context: ModelContext,
+        root: URL? = nil,
+        id: UUID = UUID(),
+        createdAt: Date = .now
+    ) throws -> AttachmentItem {
+        try shared.save(
+            data: data,
+            filename: filename,
+            ownerKind: ownerKind,
+            ownerID: ownerID,
+            context: context,
+            root: root,
+            id: id,
+            createdAt: createdAt
+        )
+    }
+
+    static func loadData(id: UUID, root: URL? = nil) -> Data? {
+        shared.loadData(id: id, root: root)
+    }
+
+    static func image(id: UUID, root: URL? = nil) -> NSImage? {
+        shared.image(id: id, root: root)
+    }
+
+    static func removeFile(id: UUID, root: URL? = nil) {
+        shared.removeFile(id: id, root: root)
+    }
+
+    static func purge(
+        ownerID: UUID,
+        attachments: [AttachmentItem],
+        context: ModelContext,
+        root: URL? = nil
+    ) {
+        shared.purge(ownerID: ownerID, attachments: attachments, context: context, root: root)
+    }
+
     static func resetDirectory(fileManager: FileManager = .default) {
-        try? fileManager.removeItem(at: directory(fileManager: fileManager))
+        try? shared.resetDirectory(fileManager: fileManager)
     }
 }
 
@@ -77,96 +139,5 @@ enum ImageBytes {
 
     static func pasteboardImage(_ board: NSPasteboard = .general) -> NSImage? {
         NSImage(pasteboard: board)
-    }
-}
-
-@MainActor
-enum AttachmentActions {
-    static func pickImage(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext
-    ) {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .tiff, .webP]
-        panel.allowsMultipleSelection = false
-        panel.canChooseDirectories = false
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            guard let data = try? Data(contentsOf: url) else { return }
-            persist {
-                _ = try? AttachmentStore.save(
-                    data: data,
-                    filename: url.lastPathComponent,
-                    ownerKind: ownerKind,
-                    ownerID: ownerID,
-                    context: context
-                )
-            }
-        }
-    }
-
-    static func pasteImage(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext
-    ) -> Bool {
-        guard let image = ImageBytes.pasteboardImage(), let data = ImageBytes.png(from: image) else {
-            NSSound.beep()
-            return false
-        }
-        persist {
-            _ = try? AttachmentStore.save(
-                data: data,
-                filename: "paste.png",
-                ownerKind: ownerKind,
-                ownerID: ownerID,
-                context: context
-            )
-        }
-        return true
-    }
-
-    static func captureScreen(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext
-    ) {
-        Task { @MainActor in
-            switch await ScreenCapture.pngData() {
-            case .success(let data):
-                persist {
-                    _ = try? AttachmentStore.save(
-                        data: data,
-                        filename: "screen.png",
-                        ownerKind: ownerKind,
-                        ownerID: ownerID,
-                        context: context
-                    )
-                }
-            case .failure(let failure):
-                NSSound.beep()
-                presentCaptureFailure(failure)
-            }
-        }
-    }
-
-    private static func presentCaptureFailure(_ failure: ScreenCaptureFailure) {
-        let alert = NSAlert()
-        alert.messageText = L10n.string(
-            String.LocalizationValue(stringLiteral: failure.messageKey),
-            locale: AppPreferences.shared.resolvedLocale
-        )
-        alert.alertStyle = .informational
-        alert.runModal()
-    }
-
-    static func trash(_ item: AttachmentItem) {
-        persist { item.deletedAt = .now }
-    }
-
-    private static func persist(_ work: () -> Void) {
-        work()
-        BoardEvents.changed()
     }
 }

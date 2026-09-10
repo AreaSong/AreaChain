@@ -42,26 +42,45 @@ struct CalendarPage: View {
         .background(DaybookTheme.paper.opacity(0.94))
     }
 
+    private var calendarSidebar: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            DaybookPeriodBar(
+                title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
+                onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
+                onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
+                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+            )
+            CalendarMonthGrid(
+                dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
+                counts: monthCounts,
+                onSelect: { selectedKey = $0 },
+                onDropTodo: dropTodo
+            )
+            Spacer(minLength: 0)
+        }
+        .frame(width: 320)
+    }
+
+    private var calendarDayBoard: some View {
+        DayBoardList(
+            dayKey: selectedKey,
+            routines: routines,
+            checks: checks,
+            todos: todos,
+            config: DayBoardListConfig(
+                todayKey: todayKey,
+                allowsTodoDrag: true,
+                interaction: DayBoardInteraction(
+                    highlightedTaskID: navigation.selectedTaskID,
+                    onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
+                )
+            )
+        )
+    }
+
     private var wideLayout: some View {
         HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 10) {
-                DaybookPeriodBar(
-                    title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
-                    onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
-                    onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
-                    onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
-                )
-                CalendarMonthGrid(
-                    monthKey: selectedKey,
-                    todayKey: todayKey,
-                    selectedKey: selectedKey,
-                    counts: monthCounts,
-                    onSelect: { selectedKey = $0 },
-                    onDropTodo: dropTodo
-                )
-                Spacer(minLength: 0)
-            }
-            .frame(width: 320)
+            calendarSidebar
 
             Divider()
                 .overlay(DaybookTheme.rule.opacity(0.5))
@@ -71,16 +90,7 @@ struct CalendarPage: View {
                 composer
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 4) {
-                        DayBoardList(
-                            dayKey: selectedKey,
-                            todayKey: todayKey,
-                            routines: routines,
-                            checks: checks,
-                            todos: todos,
-                            allowsTodoDrag: true,
-                            highlightedTaskID: navigation.selectedTaskID,
-                            onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
-                        )
+                        calendarDayBoard
                     }
                 }
                 .daybookScroll()
@@ -99,9 +109,7 @@ struct CalendarPage: View {
                 onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
             )
             CalendarMonthGrid(
-                monthKey: selectedKey,
-                todayKey: todayKey,
-                selectedKey: selectedKey,
+                dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,
                 onSelect: { selectedKey = $0 },
                 onDropTodo: dropTodo
@@ -110,16 +118,7 @@ struct CalendarPage: View {
             composer
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 4) {
-                    DayBoardList(
-                        dayKey: selectedKey,
-                        todayKey: todayKey,
-                        routines: routines,
-                        checks: checks,
-                        todos: todos,
-                        allowsTodoDrag: true,
-                        highlightedTaskID: navigation.selectedTaskID,
-                        onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
-                    )
+                    calendarDayBoard
                 }
             }
             .daybookScroll()

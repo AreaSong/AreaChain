@@ -160,17 +160,26 @@ struct WorkspaceFilteredListView: View {
         }
     }
 
-    private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
-        let isBatchSelected = navigation.selectedTaskIDs.contains(todo.id)
-        return TaskRowFactory.todo(
-            todo,
-            isDone: isDone,
-            todayKey: DayClock.shared.todayKey,
+    private var catalogContext: TaskCatalogContext {
+        TaskCatalogContext(
             projects: projects,
             tags: tags,
             attachments: attachments,
-            context: modelContext,
-            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == todo.id),
+            context: modelContext
+        )
+    }
+
+    private func isRowSelected(_ id: UUID) -> Bool {
+        navigation.selectedTaskIDs.contains(id) ||
+            (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == id)
+    }
+
+    private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
+        let display = TodoRowDisplayOptions(
+            isDone: isDone,
+            isSelected: isRowSelected(todo.id)
+        )
+        let actions = TodoRowActions(
             onSelect: { selectRow(todo.id) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
@@ -178,6 +187,13 @@ struct WorkspaceFilteredListView: View {
                 }
             }
         )
+        return TaskRowFactory.todo(TodoRowContext(
+            todo: todo,
+            todayKey: DayClock.shared.todayKey,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 
     private func routineRowView(_ routine: DailyRoutine) -> some View {
@@ -187,19 +203,17 @@ struct WorkspaceFilteredListView: View {
             checks: checks.compactMap(\.snapshot),
             on: todayKey
         )
-        let isBatchSelected = navigation.selectedTaskIDs.contains(routine.id)
-        return TaskRowFactory.routine(
-            routine,
-            isDone: isDone,
+        let schedule = RoutineScheduleContext(
             todayKey: todayKey,
             checkDayKey: todayKey,
             checks: checks,
-            context: modelContext,
-            locale: locale,
-            projects: projects,
-            tags: tags,
-            attachments: attachments,
-            isSelected: isBatchSelected || (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == routine.id),
+            locale: locale
+        )
+        let display = RoutineRowDisplayOptions(
+            isDone: isDone,
+            isSelected: isRowSelected(routine.id)
+        )
+        let actions = RoutineRowActions(
             onSelect: { selectRow(routine.id) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
@@ -210,6 +224,13 @@ struct WorkspaceFilteredListView: View {
                 DayBoardMutations.skipRoutine(routine, on: todayKey, checks: checks, context: modelContext)
             }
         )
+        return TaskRowFactory.routine(RoutineRowContext(
+            routine: routine,
+            schedule: schedule,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 
     private func selectRow(_ id: UUID) {

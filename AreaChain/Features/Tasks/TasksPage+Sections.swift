@@ -23,21 +23,33 @@ extension TasksPage {
         }
     }
 
-    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
-        TaskRowFactory.todo(
-            todo,
-            isDone: false,
-            todayKey: todayKey,
+    private var catalogContext: TaskCatalogContext {
+        TaskCatalogContext(
             projects: projects,
             tags: tags,
             attachments: attachments,
-            context: modelContext,
+            context: modelContext
+        )
+    }
+
+    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
+        let display = TodoRowDisplayOptions(
+            isDone: false,
             isSelected: highlightedTaskID == todo.id,
             note: note,
-            includeSubtasks: false,
+            includeSubtasks: false
+        )
+        let actions = TodoRowActions(
             onSelect: { inspectLeftover(todo.id, dayKey: todo.dayKey) },
             onDelete: { deleteTodo(todo) }
         )
+        return TaskRowFactory.todo(TodoRowContext(
+            todo: todo,
+            todayKey: todayKey,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 
     @ViewBuilder
@@ -45,41 +57,54 @@ extension TasksPage {
         if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
             leftoverTodoRow(todo)
         } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
-            TaskRowFactory.routine(
-                routine,
-                isDone: false,
-                todayKey: todayKey,
-                checkDayKey: yesterdayKey,
-                checks: checks,
-                context: modelContext,
-                locale: locale,
-                projects: projects,
-                tags: tags,
-                attachments: attachments,
-                isSelected: highlightedTaskID == routine.id,
-                usesDefaultNote: false,
-                onToggle: { completeYesterday(item) },
-                onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
-                onDelete: {
-                    pendingTrash = PendingTrash(title: routine.title) {
-                        DayBoardMutations.trashRoutine(routine)
-                    }
-                },
-                onSkip: {
-                    DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
-                }
-            )
+            leftoverRoutineRow(routine, item: item)
         } else {
-            TaskRowFactory.leftoverFallback(
-                item: item,
-                todayKey: todayKey,
-                yesterdayKey: yesterdayKey,
-                isSelected: highlightedTaskID == item.id,
+            let actions = LeftoverRowActions(
                 onToggle: { completeYesterday(item) },
                 onSelect: { inspectLeftover(item.id, dayKey: yesterdayKey) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
             )
+            TaskRowFactory.leftoverFallback(LeftoverRowContext(
+                item: item,
+                todayKey: todayKey,
+                yesterdayKey: yesterdayKey,
+                isSelected: highlightedTaskID == item.id,
+                actions: actions
+            ))
         }
+    }
+
+    private func leftoverRoutineRow(_ routine: DailyRoutine, item: UnfinishedItem) -> some View {
+        let schedule = RoutineScheduleContext(
+            todayKey: todayKey,
+            checkDayKey: yesterdayKey,
+            checks: checks,
+            locale: locale
+        )
+        let display = RoutineRowDisplayOptions(
+            isDone: false,
+            isSelected: highlightedTaskID == routine.id,
+            usesDefaultNote: false
+        )
+        let actions = RoutineRowActions(
+            onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
+            onDelete: {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                }
+            },
+            onToggle: { completeYesterday(item) },
+            onSkip: {
+                DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
+            }
+        )
+        return TaskRowFactory.routine(RoutineRowContext(
+            routine: routine,
+            schedule: schedule,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 
     func inspectLeftover(_ id: UUID, dayKey: String) {
@@ -93,69 +118,86 @@ extension TasksPage {
     }
 }
 
+/// 单个遗留任务芯片的状态与交互
+struct LeftoverChipState {
+    var count: Int
+    var isExpanded: Bool
+    var onToggle: () -> Void
+}
+
+/// 遗留任务栏整体配置
+struct LeftoverChipsBarConfig {
+    var yesterday: LeftoverChipState
+    var upcoming: LeftoverChipState
+}
+
 struct LeftoverChipsBar: View {
-    var yesterdayCount: Int
-    var upcomingCount: Int
-    var showYesterday: Bool
-    var showUpcoming: Bool
-    var onToggleYesterday: () -> Void
-    var onToggleUpcoming: () -> Void
+    var config: LeftoverChipsBarConfig
+
+    private var yesterday: LeftoverChipState { config.yesterday }
+    private var upcoming: LeftoverChipState { config.upcoming }
 
     var body: some View {
-        if yesterdayCount > 0 || upcomingCount > 0 {
+        if yesterday.count > 0 || upcoming.count > 0 {
             HStack(spacing: 12) {
-                if yesterdayCount > 0 {
-                    chip(
+                if yesterday.count > 0 {
+                    chip(LeftoverChipConfig(
                         title: "chip.yesterday",
-                        count: yesterdayCount,
-                        expanded: showYesterday,
-                        emptyLabel: "a11y.yesterday.zero",
-                        countLabel: "a11y.yesterday.count \(yesterdayCount)",
-                        action: onToggleYesterday
-                    )
+                        count: yesterday.count,
+                        expanded: yesterday.isExpanded,
+                        keyPrefix: "yesterday",
+                        action: yesterday.onToggle
+                    ))
                 }
-                if upcomingCount > 0 {
-                    chip(
+                if upcoming.count > 0 {
+                    chip(LeftoverChipConfig(
                         title: "chip.upcoming",
-                        count: upcomingCount,
-                        expanded: showUpcoming,
-                        emptyLabel: "a11y.upcoming.zero",
-                        countLabel: "a11y.upcoming.count \(upcomingCount)",
-                        action: onToggleUpcoming
-                    )
+                        count: upcoming.count,
+                        expanded: upcoming.isExpanded,
+                        keyPrefix: "upcoming",
+                        action: upcoming.onToggle
+                    ))
                 }
             }
         }
     }
 
-    private func chip(
-        title: LocalizedStringKey,
-        count: Int,
-        expanded: Bool,
-        emptyLabel: LocalizedStringKey,
-        countLabel: LocalizedStringKey,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
+    private struct LeftoverChipConfig {
+        var title: LocalizedStringKey
+        var count: Int
+        var expanded: Bool
+        var keyPrefix: String
+        var action: () -> Void
+
+        var emptyLabel: LocalizedStringKey {
+            LocalizedStringKey("a11y.\(keyPrefix).zero")
+        }
+        var countLabel: LocalizedStringKey {
+            LocalizedStringKey("a11y.\(keyPrefix).count \(count)")
+        }
+    }
+
+    private func chip(_ config: LeftoverChipConfig) -> some View {
+        Button(action: config.action) {
             HStack(spacing: 6) {
-                Text(title)
-                Text("\(count)")
+                Text(config.title)
+                Text("\(config.count)")
                     .font(.system(size: 11, weight: .semibold, design: .rounded))
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
-                    .background(DaybookTheme.stamp.opacity(count == 0 ? 0.15 : 0.25))
+                    .background(DaybookTheme.stamp.opacity(config.count == 0 ? 0.15 : 0.25))
                     .clipShape(Capsule())
-                Image(systemName: expanded ? "chevron.up" : "chevron.down")
+                Image(systemName: config.expanded ? "chevron.up" : "chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .accessibilityHidden(true)
             }
             .font(.system(size: 11))
-            .foregroundStyle(expanded ? DaybookTheme.ink : DaybookTheme.muted)
+            .foregroundStyle(config.expanded ? DaybookTheme.ink : DaybookTheme.muted)
         }
         .buttonStyle(DaybookQuietButtonStyle())
-        .disabled(count == 0)
-        .opacity(count == 0 ? 0.45 : 1)
-        .accessibilityLabel(count == 0 ? emptyLabel : countLabel)
-        .accessibilityAddTraits(expanded ? [.isSelected] : [])
+        .disabled(config.count == 0)
+        .opacity(config.count == 0 ? 0.45 : 1)
+        .accessibilityLabel(config.count == 0 ? config.emptyLabel : config.countLabel)
+        .accessibilityAddTraits(config.expanded ? [.isSelected] : [])
     }
 }

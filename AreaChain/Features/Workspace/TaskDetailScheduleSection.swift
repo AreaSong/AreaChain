@@ -153,16 +153,55 @@ struct TaskDetailWeekdayPicker: View {
 
 // MARK: - Streak Statistics Card
 
+/// 习惯连击状态标志集合
+struct StreakInspectionFlags {
+    var isCompleted: Bool
+    var isSkipped: Bool
+    var isDue: Bool
+
+    init(
+        isCompleted: Bool = false,
+        isSkipped: Bool = false,
+        isDue: Bool = true
+    ) {
+        self.isCompleted = isCompleted
+        self.isSkipped = isSkipped
+        self.isDue = isDue
+    }
+}
+
+/// 习惯连击与历史记录统计卡片配置
+struct StreakCardConfig {
+    var streakResult: StreakResult
+    var isEnabled: Bool
+    var inspectDayKey: String
+    var flags: StreakInspectionFlags
+
+    init(
+        streakResult: StreakResult,
+        isEnabled: Bool,
+        inspectDayKey: String,
+        flags: StreakInspectionFlags
+    ) {
+        self.streakResult = streakResult
+        self.isEnabled = isEnabled
+        self.inspectDayKey = inspectDayKey
+        self.flags = flags
+    }
+}
+
 /// 习惯连击与历史记录统计卡片
 struct TaskDetailStreakCard: View {
     @Environment(\.locale) private var locale
 
-    var streakResult: StreakResult
-    var isEnabled: Bool
-    var inspectDayKey: String
-    var inspectCompleted: Bool
-    var inspectSkipped: Bool
-    var inspectDue: Bool
+    var config: StreakCardConfig
+
+    private var streakResult: StreakResult { config.streakResult }
+    private var isEnabled: Bool { config.isEnabled }
+    private var inspectDayKey: String { config.inspectDayKey }
+    private var inspectCompleted: Bool { config.flags.isCompleted }
+    private var inspectSkipped: Bool { config.flags.isSkipped }
+    private var inspectDue: Bool { config.flags.isDue }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -171,70 +210,79 @@ struct TaskDetailStreakCard: View {
                 .foregroundStyle(DaybookTheme.muted)
 
             VStack(spacing: 8) {
-                HStack(spacing: 12) {
-                    // 当前连击
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("drawer.streak.current")
-                            .font(.system(size: 9))
-                            .foregroundStyle(DaybookTheme.muted)
-                        HStack(spacing: 4) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(.orange)
-                            Text("\(streakResult.currentStreak)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundStyle(DaybookTheme.ink)
-                            Text("drawer.streak.days")
-                                .font(.system(size: 10))
-                                .foregroundStyle(DaybookTheme.muted)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Divider()
-                        .frame(height: 28)
-                        .opacity(0.3)
-
-                    // 历史最佳连击
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("drawer.streak.best")
-                            .font(.system(size: 9))
-                            .foregroundStyle(DaybookTheme.muted)
-                        HStack(spacing: 4) {
-                            Image(systemName: "trophy.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundStyle(.yellow)
-                            Text("\(streakResult.bestStreak)")
-                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                .foregroundStyle(DaybookTheme.ink)
-                            Text("drawer.streak.days")
-                                .font(.system(size: 10))
-                                .foregroundStyle(DaybookTheme.muted)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-
+                streakMetricsRow
                 Divider().opacity(0.2)
-
-                // 检查日打卡状态
-                HStack(spacing: 6) {
-                    statusIcon
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(statusText)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(statusColor)
-                        if inspectDayKey != DayClock.shared.todayKey {
-                            Text(DayKey.displayName(inspectDayKey, locale: locale))
-                                .font(.system(size: 9))
-                                .foregroundStyle(DaybookTheme.muted)
-                        }
-                    }
-                    Spacer()
-                }
+                streakStatusRow
             }
             .padding(10)
             .modernCard(cornerRadius: DaybookRadius.small)
+        }
+    }
+
+    private var streakMetricsRow: some View {
+        HStack(spacing: 12) {
+            currentStreakColumn
+            Divider()
+                .frame(height: 28)
+                .opacity(0.3)
+            bestStreakColumn
+        }
+    }
+
+    private var currentStreakColumn: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("drawer.streak.current")
+                .font(.system(size: 9))
+                .foregroundStyle(DaybookTheme.muted)
+            HStack(spacing: 4) {
+                Image(systemName: "flame.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.orange)
+                Text("\(streakResult.currentStreak)")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(DaybookTheme.ink)
+                Text("drawer.streak.days")
+                    .font(.system(size: 10))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var bestStreakColumn: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("drawer.streak.best")
+                .font(.system(size: 9))
+                .foregroundStyle(DaybookTheme.muted)
+            HStack(spacing: 4) {
+                Image(systemName: "trophy.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.yellow)
+                Text("\(streakResult.bestStreak)")
+                    .font(.system(size: 16, weight: .bold, design: .rounded))
+                    .foregroundStyle(DaybookTheme.ink)
+                Text("drawer.streak.days")
+                    .font(.system(size: 10))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var streakStatusRow: some View {
+        HStack(spacing: 6) {
+            statusIcon
+            VStack(alignment: .leading, spacing: 1) {
+                Text(statusText)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(statusColor)
+                if inspectDayKey != DayClock.shared.todayKey {
+                    Text(DayKey.displayName(inspectDayKey, locale: locale))
+                        .font(.system(size: 9))
+                        .foregroundStyle(DaybookTheme.muted)
+                }
+            }
+            Spacer()
         }
     }
 

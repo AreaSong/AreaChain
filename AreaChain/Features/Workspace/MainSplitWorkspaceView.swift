@@ -22,57 +22,9 @@ struct MainSplitWorkspaceView: View {
 
     var body: some View {
         NavigationSplitView {
-            WorkspaceSidebarView(
-                navigation: navigation,
-                projects: projects,
-                tags: tags,
-                todos: todos,
-                onAddProject: { beginAddProject(parentID: nil) },
-                onAddChildProject: { beginAddProject(parentID: $0) },
-                onAddTag: {
-                    newTagName = ""
-                    tagCreateError = nil
-                    isAddingTag = true
-                }
-            )
-            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
+            sidebarColumn
         } detail: {
-            detailView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .overlay(alignment: .bottom) {
-                    if !navigation.selectedTaskIDs.isEmpty {
-                        WorkspaceBatchActionBar(
-                            navigation: navigation,
-                            todos: todos,
-                            routines: routines,
-                            checks: checks,
-                            projects: projects,
-                            tags: tags
-                        )
-                        .padding(.bottom, 16)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
-                }
-                .onKeyPress(.escape) {
-                    if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
-                        BoardSelection.shared.markEscapeCancelsEdits()
-                        NSApp.keyWindow?.makeFirstResponder(nil)
-                        return .handled
-                    }
-                    if navigation.isInspectorPresented {
-                        navigation.closeInspector()
-                        return .handled
-                    }
-                    if navigation.selectedTaskID != nil {
-                        navigation.selectedTaskID = nil
-                        return .handled
-                    }
-                    if !navigation.selectedTaskIDs.isEmpty {
-                        navigation.clearSelection()
-                        return .handled
-                    }
-                    return .ignored
-                }
+            detailColumn
         }
         .inspector(isPresented: $navigation.isInspectorPresented) {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
@@ -95,6 +47,70 @@ struct MainSplitWorkspaceView: View {
         .sheet(isPresented: $isAddingTag) {
             addTagSheet
         }
+    }
+
+    private var sidebarColumn: some View {
+        WorkspaceSidebarView(
+            navigation: navigation,
+            projects: projects,
+            tags: tags,
+            todos: todos,
+            actions: WorkspaceSidebarActions(
+                onAddProject: { beginAddProject(parentID: nil) },
+                onAddChildProject: { beginAddProject(parentID: $0) },
+                onAddTag: {
+                    newTagName = ""
+                    tagCreateError = nil
+                    isAddingTag = true
+                }
+            )
+        )
+        .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
+    }
+
+    private var detailColumn: some View {
+        detailView
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay(alignment: .bottom) {
+                if !navigation.selectedTaskIDs.isEmpty {
+                    WorkspaceBatchActionBar(
+                        navigation: navigation,
+                        data: WorkspaceBatchData(
+                            todos: todos,
+                            routines: routines,
+                            checks: checks,
+                            projects: projects,
+                            tags: tags
+                        )
+                    )
+                    .padding(.bottom, 16)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .onKeyPress(.escape) {
+                handleEscapeKey()
+            }
+    }
+
+    private func handleEscapeKey() -> KeyPress.Result {
+        if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
+            BoardSelection.shared.markEscapeCancelsEdits()
+            NSApp.keyWindow?.makeFirstResponder(nil)
+            return .handled
+        }
+        if navigation.isInspectorPresented {
+            navigation.closeInspector()
+            return .handled
+        }
+        if navigation.selectedTaskID != nil {
+            navigation.selectedTaskID = nil
+            return .handled
+        }
+        if !navigation.selectedTaskIDs.isEmpty {
+            navigation.clearSelection()
+            return .handled
+        }
+        return .ignored
     }
 
     // MARK: - Detail Router

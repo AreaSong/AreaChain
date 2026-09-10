@@ -24,6 +24,34 @@ struct TaskRow: View {
     }
 
     var body: some View {
+        rowContent
+            .onTapGesture(count: 2) {
+                beginEdit()
+            }
+            .onTapGesture(count: 1) {
+                dispatch(.select)
+            }
+            .onHover { hovering = $0 }
+            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+            .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
+            .contextMenu { menus }
+            .popover(isPresented: $pickingDay) {
+                daySchedulePopover
+            }
+            .popover(isPresented: $pickingTime) {
+                timePicker
+            }
+            .onAppear { draft = state.title }
+            .onChange(of: state.title) { _, value in
+                if !editing { draft = value }
+            }
+            .onChange(of: state.isExternalEditing) { _, value in
+                if value && !editing { beginEdit() }
+            }
+            .modifier(TodoDragIfNeeded(payload: state.dragPayload))
+    }
+
+    private var rowContent: some View {
         HStack(alignment: shouldAlignTop ? .top : .center, spacing: 8) {
             ModernCheckbox(isDone: state.isDone) {
                 dispatch(.toggleDone)
@@ -58,35 +86,16 @@ struct TaskRow: View {
             isSelected: state.isSelected
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .onTapGesture(count: 2) {
-            beginEdit()
-        }
-        .onTapGesture(count: 1) {
-            dispatch(.select)
-        }
-        .onHover { hovering = $0 }
-        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-        .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
-        .contextMenu { menus }
-        .popover(isPresented: $pickingDay) {
-            if let todayKey = state.todayKey {
-                DaySchedulePicker(initialKey: state.currentDayKey ?? todayKey) { key in
-                    dispatch(.moveToDay(key))
-                    pickingDay = false
-                }
+    }
+
+    @ViewBuilder
+    private var daySchedulePopover: some View {
+        if let todayKey = state.todayKey {
+            DaySchedulePicker(initialKey: state.currentDayKey ?? todayKey) { key in
+                dispatch(.moveToDay(key))
+                pickingDay = false
             }
         }
-        .popover(isPresented: $pickingTime) {
-            timePicker
-        }
-        .onAppear { draft = state.title }
-        .onChange(of: state.title) { _, value in
-            if !editing { draft = value }
-        }
-        .onChange(of: state.isExternalEditing) { _, value in
-            if value && !editing { beginEdit() }
-        }
-        .modifier(TodoDragIfNeeded(payload: state.dragPayload))
     }
 
     private var shouldAlignTop: Bool {

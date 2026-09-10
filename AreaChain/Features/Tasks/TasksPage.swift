@@ -1,25 +1,65 @@
 import SwiftData
 import SwiftUI
 
+/// 待办页面配置选项（<= 5 属性）
+struct TasksPageConfig {
+    var yesterdayKey: String? = nil
+    var maxScrollHeight: CGFloat? = nil
+    var interaction: DayBoardInteraction = DayBoardInteraction()
+
+    init(
+        yesterdayKey: String? = nil,
+        maxScrollHeight: CGFloat? = nil,
+        interaction: DayBoardInteraction = DayBoardInteraction()
+    ) {
+        self.yesterdayKey = yesterdayKey
+        self.maxScrollHeight = maxScrollHeight
+        self.interaction = interaction
+    }
+
+    var focusedTaskID: Binding<UUID?>? { interaction.focusedTaskID }
+    var highlightedTaskID: UUID? { interaction.highlightedTaskID }
+    var onInspect: ((UUID) -> Void)? { interaction.onInspect }
+    var onReturnToInput: (() -> Void)? { interaction.onReturnToInput }
+}
+
 struct TasksPage: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
 
     var todayKey: String
-    var yesterdayKey: String
     var routines: [DailyRoutine]
     var checks: [RoutineCheck]
     var todos: [TodoItem]
+    var config: TasksPageConfig
 
     @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query var attachments: [AttachmentItem]
 
-    var maxScrollHeight: CGFloat? = nil
-    var focusedTaskID: Binding<UUID?>? = nil
-    var highlightedTaskID: UUID? = nil
-    var onInspect: ((UUID) -> Void)? = nil
-    var onReturnToInput: (() -> Void)? = nil
+    // 兼容现有内部属性与扩展访问
+    var yesterdayKey: String {
+        config.yesterdayKey ?? DayKey.shifted(todayKey, by: -1)
+    }
+    var maxScrollHeight: CGFloat? { config.maxScrollHeight }
+    var focusedTaskID: Binding<UUID?>? { config.interaction.focusedTaskID }
+    var highlightedTaskID: UUID? { config.interaction.highlightedTaskID }
+    var onInspect: ((UUID) -> Void)? { config.interaction.onInspect }
+    var onReturnToInput: (() -> Void)? { config.interaction.onReturnToInput }
+
+    init(
+        todayKey: String,
+        routines: [DailyRoutine],
+        checks: [RoutineCheck],
+        todos: [TodoItem],
+        config: TasksPageConfig = TasksPageConfig()
+    ) {
+        self.todayKey = todayKey
+        self.routines = routines
+        self.checks = checks
+        self.todos = todos
+        self.config = config
+    }
 
     @State var showYesterday = false
     @State var showUpcoming = false
@@ -28,47 +68,11 @@ struct TasksPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            LeftoverChipsBar(
-                yesterdayCount: yesterdayItems.count,
-                upcomingCount: upcomingModels.count,
-                showYesterday: showYesterday,
-                showUpcoming: showUpcoming,
-                onToggleYesterday: { showYesterday.toggle() },
-                onToggleUpcoming: { showUpcoming.toggle() }
-            )
-            BoardFilterBar(
-                filter: boardFilter,
-                projects: CatalogChoices.projects(projects),
-                tags: CatalogChoices.tags(tags),
-                bundleIDs: todayBundleIDs,
-                onChange: { boardFilter = $0 }
-            )
+            headerBar
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
-                        DayBoardList(
-                            dayKey: todayKey,
-                            todayKey: todayKey,
-                            routines: routines,
-                            checks: checks,
-                            todos: todos,
-                            filter: boardFilter,
-                            focusedTaskID: focusedTaskID,
-                            highlightedTaskID: highlightedTaskID,
-                            onInspect: onInspect,
-                            onReturnToInput: onReturnToInput,
-                            dayKeyForID: { [yesterdayKey] id in
-                                BoardFocusDay.key(
-                                    for: id,
-                                    listDayKey: todayKey,
-                                    yesterdayKey: yesterdayKey,
-                                    yesterdayIDs: Set(yesterdayItems.map(\.id)),
-                                    upcomingDayKeys: Dictionary(
-                                        uniqueKeysWithValues: upcomingModels.map { ($0.id, $0.dayKey) }
-                                    )
-                                )
-                            }
-                        )
+                        dayBoardView
                         upcomingSection
                         yesterdaySection
                     }
@@ -90,6 +94,61 @@ struct TasksPage: View {
         .animation(DaybookMotion.interactive, value: boardFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)
         .animation(DaybookMotion.interactive, value: showYesterday)
+    }
+
+    private var headerBar: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LeftoverChipsBar(
+                config: LeftoverChipsBarConfig(
+                    yesterday: LeftoverChipState(
+                        count: yesterdayItems.count,
+                        isExpanded: showYesterday,
+                        onToggle: { showYesterday.toggle() }
+                    ),
+                    upcoming: LeftoverChipState(
+                        count: upcomingModels.count,
+                        isExpanded: showUpcoming,
+                        onToggle: { showUpcoming.toggle() }
+                    )
+                )
+            )
+            BoardFilterBar(
+                filter: boardFilter,
+                projects: CatalogChoices.projects(projects),
+                tags: CatalogChoices.tags(tags),
+                bundleIDs: todayBundleIDs,
+                onChange: { boardFilter = $0 }
+            )
+        }
+    }
+
+    private var dayBoardView: some View {
+        DayBoardList(
+            dayKey: todayKey,
+            routines: routines,
+            checks: checks,
+            todos: todos,
+            config: DayBoardListConfig(
+                todayKey: todayKey,
+                filter: boardFilter,
+                dayKeyForID: { [yesterdayKey] id in
+                    resolveDayKey(for: id, yesterdayKey: yesterdayKey)
+                },
+                interaction: config.interaction
+            )
+        )
+    }
+
+    private func resolveDayKey(for id: UUID, yesterdayKey: String) -> String {
+        BoardFocusDay.key(
+            for: id,
+            listDayKey: todayKey,
+            yesterdayKey: yesterdayKey,
+            yesterdayIDs: Set(yesterdayItems.map(\.id)),
+            upcomingDayKeys: Dictionary(
+                uniqueKeysWithValues: upcomingModels.map { ($0.id, $0.dayKey) }
+            )
+        )
     }
 
     var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {

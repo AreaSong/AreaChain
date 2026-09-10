@@ -153,62 +153,10 @@ private struct SubtaskRowView: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Button(action: onToggle) {
-                Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 12))
-                    .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
-            }
-            .buttonStyle(.plain)
-
-            if isEditing {
-                TextField("", text: $draftTitle)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 11))
-                    .focused($editFocused)
-                    .onSubmit {
-                        commitEdit()
-                    }
-                    .onExitCommand(perform: cancelEdit)
-                    .onChange(of: editFocused) { _, focused in
-                        if !focused, isEditing {
-                            if BoardSelection.shared.consumeEscapeCancelsEdits() {
-                                cancelEdit()
-                            } else {
-                                commitEdit()
-                            }
-                        }
-                    }
-            } else {
-                Text(subtask.title)
-                    .font(.system(size: 11))
-                    .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink)
-                    .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture(count: 2) {
-                        startEdit()
-                    }
-            }
-
+            toggleCheckboxButton
+            subtaskTitleView
             Spacer(minLength: 4)
-
-            if isHovering && !isEditing {
-                Button(action: startEdit) {
-                    Image(systemName: "pencil")
-                        .font(.system(size: 9))
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-                .buttonStyle(.plain)
-                .help("drawer.subtasks.edit")
-
-                Button(action: onDelete) {
-                    Image(systemName: "trash")
-                        .font(.system(size: 9))
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-                .buttonStyle(.plain)
-                .help("drawer.subtasks.delete")
-            }
+            hoverActionButtons
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
@@ -219,6 +167,69 @@ private struct SubtaskRowView: View {
         .onHover { isHovering = $0 }
         .onAppear { draftTitle = subtask.title }
         .onChange(of: subtask.title) { _, val in draftTitle = val }
+    }
+
+    private var toggleCheckboxButton: some View {
+        Button(action: onToggle) {
+            Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 12))
+                .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var subtaskTitleView: some View {
+        if isEditing {
+            TextField("", text: $draftTitle)
+                .textFieldStyle(.plain)
+                .font(.system(size: 11))
+                .focused($editFocused)
+                .onSubmit {
+                    commitEdit()
+                }
+                .onExitCommand(perform: cancelEdit)
+                .onChange(of: editFocused) { _, focused in
+                    if !focused, isEditing {
+                        if BoardSelection.shared.consumeEscapeCancelsEdits() {
+                            cancelEdit()
+                        } else {
+                            commitEdit()
+                        }
+                    }
+                }
+        } else {
+            Text(subtask.title)
+                .font(.system(size: 11))
+                .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink)
+                .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture(count: 2) {
+                    startEdit()
+                }
+        }
+    }
+
+    @ViewBuilder
+    private var hoverActionButtons: some View {
+        if isHovering && !isEditing {
+            Button(action: startEdit) {
+                Image(systemName: "pencil")
+                    .font(.system(size: 9))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+            .buttonStyle(.plain)
+            .help("drawer.subtasks.edit")
+
+            Button(action: onDelete) {
+                Image(systemName: "trash")
+                    .font(.system(size: 9))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+            .buttonStyle(.plain)
+            .help("drawer.subtasks.delete")
+        }
     }
 
     private func startEdit() {

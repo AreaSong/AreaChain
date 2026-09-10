@@ -1,25 +1,7 @@
 import Foundation
 import Observation
 
-@Observable
-@MainActor
-final class CalendarSyncStatus {
-    static let shared = CalendarSyncStatus()
-
-    var phase: CalendarSyncPhase = .off
-    var lastSyncedAt: Date?
-
-    func mark(_ phase: CalendarSyncPhase) {
-        self.phase = phase
-        if phase == .synced {
-            lastSyncedAt = .now
-        }
-        if phase == .off {
-            lastSyncedAt = nil
-        }
-    }
-}
-
+/// 维护看板与手记的日期选择与详情查看状态
 @Observable
 @MainActor
 final class BoardSelection {

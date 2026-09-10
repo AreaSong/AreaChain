@@ -117,15 +117,19 @@ struct MenuBarPopoverView: View {
             )
             TasksPage(
                 todayKey: todayKey,
-                yesterdayKey: dayClock.yesterdayKey,
                 routines: routines,
                 checks: checks,
                 todos: todos,
-                focusedTaskID: $focusedTaskID,
-                onReturnToInput: {
-                    focusedTaskID = nil
-                    captureFocused = true
-                }
+                config: TasksPageConfig(
+                    yesterdayKey: dayClock.yesterdayKey,
+                    interaction: DayBoardInteraction(
+                        focusedTaskID: $focusedTaskID,
+                        onReturnToInput: {
+                            focusedTaskID = nil
+                            captureFocused = true
+                        }
+                    )
+                )
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -197,12 +201,6 @@ struct MenuBarPopoverView: View {
     }
 
     private func prepare() {
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
-            HotKeyCenter.shared.start()
-        }
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil {
-            FirstLaunchSeeder.seedIfNeeded(context: modelContext, existingCount: routines.count)
-        }
         if tab == .tasks {
             captureFocused = true
         }

@@ -2,22 +2,87 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+/// 任务面板焦点与检查器交互配置（<= 5 属性）
+struct DayBoardInteraction {
+    var focusedTaskID: Binding<UUID?>? = nil
+    var highlightedTaskID: UUID? = nil
+    var onInspect: ((UUID) -> Void)? = nil
+    var onReturnToInput: (() -> Void)? = nil
+
+    init(
+        focusedTaskID: Binding<UUID?>? = nil,
+        highlightedTaskID: UUID? = nil,
+        onInspect: ((UUID) -> Void)? = nil,
+        onReturnToInput: (() -> Void)? = nil
+    ) {
+        self.focusedTaskID = focusedTaskID
+        self.highlightedTaskID = highlightedTaskID
+        self.onInspect = onInspect
+        self.onReturnToInput = onReturnToInput
+    }
+}
+
+/// 日看板配置选项（<= 5 属性）
+struct DayBoardListConfig {
+    var todayKey: String? = nil
+    var filter: BoardFilter = BoardFilter()
+    var allowsTodoDrag: Bool = false
+    var dayKeyForID: ((UUID) -> String)? = nil
+    var interaction: DayBoardInteraction = DayBoardInteraction()
+
+    init(
+        todayKey: String? = nil,
+        filter: BoardFilter = BoardFilter(),
+        allowsTodoDrag: Bool = false,
+        dayKeyForID: ((UUID) -> String)? = nil,
+        interaction: DayBoardInteraction = DayBoardInteraction()
+    ) {
+        self.todayKey = todayKey
+        self.filter = filter
+        self.allowsTodoDrag = allowsTodoDrag
+        self.dayKeyForID = dayKeyForID
+        self.interaction = interaction
+    }
+
+    var focusedTaskID: Binding<UUID?>? { interaction.focusedTaskID }
+    var highlightedTaskID: UUID? { interaction.highlightedTaskID }
+    var onInspect: ((UUID) -> Void)? { interaction.onInspect }
+    var onReturnToInput: (() -> Void)? { interaction.onReturnToInput }
+}
+
 struct DayBoardList: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
 
     var dayKey: String
-    var todayKey: String
     var routines: [DailyRoutine]
     var checks: [RoutineCheck]
     var todos: [TodoItem]
-    var filter: BoardFilter = BoardFilter()
-    var allowsTodoDrag: Bool = false
-    var focusedTaskID: Binding<UUID?>? = nil
-    var highlightedTaskID: UUID? = nil
-    var onInspect: ((UUID) -> Void)? = nil
-    var onReturnToInput: (() -> Void)? = nil
-    var dayKeyForID: ((UUID) -> String)? = nil
+    var config: DayBoardListConfig
+
+    // 兼容现有内部属性与扩展访问
+    var todayKey: String { config.todayKey ?? dayKey }
+    var filter: BoardFilter { config.filter }
+    var allowsTodoDrag: Bool { config.allowsTodoDrag }
+    var focusedTaskID: Binding<UUID?>? { config.interaction.focusedTaskID }
+    var highlightedTaskID: UUID? { config.interaction.highlightedTaskID }
+    var onInspect: ((UUID) -> Void)? { config.interaction.onInspect }
+    var onReturnToInput: (() -> Void)? { config.interaction.onReturnToInput }
+    var dayKeyForID: ((UUID) -> String)? { config.dayKeyForID }
+
+    init(
+        dayKey: String,
+        routines: [DailyRoutine],
+        checks: [RoutineCheck],
+        todos: [TodoItem],
+        config: DayBoardListConfig = DayBoardListConfig()
+    ) {
+        self.dayKey = dayKey
+        self.routines = routines
+        self.checks = checks
+        self.todos = todos
+        self.config = config
+    }
 
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
@@ -28,7 +93,7 @@ struct DayBoardList: View {
     @State var editingTaskID: UUID? = nil
     @State var hostWindow: NSWindow?
     @State var keyMonitor: Any? = nil
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
         Group {
@@ -38,102 +103,23 @@ struct DayBoardList: View {
                     systemImage: filter.isActive ? "line.3.horizontal.decrease" : "square.and.pencil"
                 )
             } else {
-                if !openTodosList.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
-                        ForEach(openTodosList) { todo in
-                            todoRow(todo, isDone: false)
-                        }
-                    }
-                }
-                if !openRoutinesList.isEmpty {
-                    VStack(alignment: .leading, spacing: 4) {
-                        SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
-                        ForEach(openRoutinesList) { routine in
-                            residentRow(routine, isDone: false)
-                        }
-                    }
-                }
-                if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {
-                    HStack(spacing: 6) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(DaybookType.subtitle)
-                            .foregroundStyle(DaybookTheme.stamp)
-                        Text("header.done")
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted)
-                    }
-                    .padding(.vertical, 6)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                openItemsSection
             }
 
             if !doneItemsList.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
-                    Button {
-                        withAnimation(DaybookMotion.animation(reduceMotion)) {
-                            showCompleted.toggle()
-                        }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(DaybookTheme.muted)
-                            SectionStamp(
-                                title: showCompleted
-                                    ? "stamp.completed.collapse \(doneItemsList.count)"
-                                    : "stamp.completed \(doneItemsList.count)",
-                                icon: "checkmark.circle"
-                            )
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
-
-                    if showCompleted {
-                        ForEach(doneItemsList) { row in
-                            dayRow(row, isDone: true)
-                        }
-                    }
-                }
+                completedSection
             }
         }
         .focusable()
         .focusEffectDisabled()
         .background(KeyWindowHost { hostWindow = $0 })
-        .onKeyPress(.downArrow) {
-            guard focusedTaskID != nil else { return .ignored }
-            navigateSelection(delta: 1)
-            return .handled
-        }
-        .onKeyPress(.upArrow) {
-            guard focusedTaskID != nil else { return .ignored }
-            navigateSelection(delta: -1)
-            return .handled
-        }
-        .onKeyPress(.space) {
-            if let id = focusedTaskID?.wrappedValue {
-                toggleSelected(id: id)
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.delete) {
-            if let id = focusedTaskID?.wrappedValue {
-                deleteSelected(id: id)
-                return .handled
-            }
-            return .ignored
-        }
-        .onKeyPress(.return) {
-            if let id = focusedTaskID?.wrappedValue {
-                inspectSelected(id: id)
-                return .handled
-            }
-            return .ignored
-        }
+        .modifier(DayBoardKeyNavigationModifier(
+            focusedTaskID: focusedTaskID,
+            onNavigate: { navigateSelection(delta: $0) },
+            onToggle: { toggleSelected(id: $0) },
+            onDelete: { deleteSelected(id: $0) },
+            onInspect: { inspectSelected(id: $0) }
+        ))
         .onAppear {
             setupKeyMonitor()
             expandIfHighlighted()
@@ -258,7 +244,7 @@ struct DayBoardList: View {
     }
 
     @ViewBuilder
-    private func dayRow(_ row: BoardRow, isDone: Bool) -> some View {
+    func dayRow(_ row: BoardRow, isDone: Bool) -> some View {
         switch row {
         case .resident(let routine):
             residentRow(routine, isDone: isDone)
@@ -267,52 +253,76 @@ struct DayBoardList: View {
         }
     }
 
-    private func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
-        TaskRowFactory.routine(
-            routine,
-            isDone: isDone,
-            todayKey: todayKey,
-            checkDayKey: dayKey,
-            checks: checks,
-            context: modelContext,
-            locale: locale,
+    private var catalogContext: TaskCatalogContext {
+        TaskCatalogContext(
             projects: projects,
             tags: tags,
             attachments: attachments,
-            isSelected: isRowSelected(routine.id),
-            isExternalEditing: editingTaskID == routine.id,
+            context: modelContext
+        )
+    }
+
+    private func rowSelection(for id: UUID) -> TaskRowSelectionState {
+        TaskRowSelectionState(
+            isSelected: isRowSelected(id),
+            isExternalEditing: editingTaskID == id
+        )
+    }
+
+    func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
+        let schedule = RoutineScheduleContext(
+            todayKey: todayKey,
+            checkDayKey: dayKey,
+            checks: checks,
+            locale: locale
+        )
+        let display = RoutineRowDisplayOptions(
+            isDone: isDone,
+            selection: rowSelection(for: routine.id)
+        )
+        let actions = RoutineRowActions(
             onSelect: { selectTask(routine.id) },
-            onEndEditing: { editingTaskID = nil },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
+            onToggle: nil,
             onSkip: isDone ? nil : {
                 DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext)
-            }
+            },
+            onEndEditing: { editingTaskID = nil }
         )
+        return TaskRowFactory.routine(RoutineRowContext(
+            routine: routine,
+            schedule: schedule,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 
-    private func todoRow(_ todo: TodoItem, isDone: Bool) -> some View {
-        TaskRowFactory.todo(
-            todo,
+    func todoRow(_ todo: TodoItem, isDone: Bool) -> some View {
+        let display = TodoRowDisplayOptions(
             isDone: isDone,
-            todayKey: todayKey,
-            projects: projects,
-            tags: tags,
-            attachments: attachments,
-            context: modelContext,
-            isSelected: isRowSelected(todo.id),
-            isExternalEditing: editingTaskID == todo.id,
-            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil,
+            selection: rowSelection(for: todo.id),
+            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
+        )
+        let actions = TodoRowActions(
             onSelect: { selectTask(todo.id) },
-            onEndEditing: { editingTaskID = nil },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
                 }
-            }
+            },
+            onEndEditing: { editingTaskID = nil }
         )
+        return TaskRowFactory.todo(TodoRowContext(
+            todo: todo,
+            todayKey: todayKey,
+            catalogs: catalogContext,
+            display: display,
+            actions: actions
+        ))
     }
 }

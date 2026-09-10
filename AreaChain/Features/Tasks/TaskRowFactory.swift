@@ -3,196 +3,192 @@ import SwiftUI
 
 @MainActor
 enum TaskRowFactory {
-    static func todo(
-        _ todo: TodoItem,
-        isDone: Bool,
-        todayKey: String,
-        projects: [ProjectItem],
-        tags: [TagItem],
-        attachments: [AttachmentItem],
-        context: ModelContext,
-        isSelected: Bool,
-        isExternalEditing: Bool = false,
-        dragPayload: String? = nil,
-        note: String? = nil,
-        includeSubtasks: Bool = true,
-        onSelect: @escaping () -> Void,
-        onEndEditing: (() -> Void)? = nil,
-        onDelete: @escaping () -> Void
-    ) -> TaskRow {
-        let liveSubtasks = includeSubtasks
-            ? todo.subtasks
+    static func todo(_ context: TodoRowContext) -> TaskRow {
+        let state = makeTodoState(context)
+        return TaskRow(state: state) { action in
+            handleTodoAction(action, context: context)
+        }
+    }
+
+    static func routine(_ context: RoutineRowContext) -> TaskRow {
+        let state = makeRoutineState(context: context)
+        return TaskRow(state: state) { action in
+            handleRoutineAction(action, context: context)
+        }
+    }
+
+    static func leftoverFallback(_ context: LeftoverRowContext) -> TaskRow {
+        let state = TaskRowState(
+            identity: TaskRowIdentityState(
+                id: context.item.id,
+                title: context.item.title
+            ),
+            schedule: TaskRowScheduleState(
+                todayKey: context.todayKey,
+                currentDayKey: context.yesterdayKey
+            ),
+            interaction: TaskRowInteractionState(
+                selection: TaskRowSelectionState(isSelected: context.isSelected)
+            )
+        )
+        return TaskRow(state: state) { action in
+            switch action {
+            case .toggleDone: context.actions.onToggle()
+            case .select: context.actions.onSelect()
+            case .moveToDay(let day): context.actions.onMoveToDay?(day)
+            default: break
+            }
+        }
+    }
+
+    // MARK: - Private Helpers
+
+    private static func makeTodoState(_ context: TodoRowContext) -> TaskRowState {
+        let liveSubtasks = context.display.includeSubtasks
+            ? context.todo.subtasks
                 .filter { $0.deletedAt == nil }
                 .sorted(by: { $0.sortOrder < $1.sortOrder })
                 .compactMap(\.snapshot)
             : []
-        let state = TaskRowState(
-            id: todo.id,
-            title: todo.title,
-            isDone: isDone,
-            note: note,
-            remindMinutes: todo.remindMinutes,
-            todayKey: todayKey,
-            currentDayKey: todo.dayKey,
-            isImportant: todo.isImportant,
-            isUrgent: todo.isUrgent,
-            classify: CatalogChoices.classify(for: todo, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .todo,
-                ownerID: todo.id,
-                items: attachments,
-                context: context
-            ),
-            notes: todo.notes,
+        let identity = TaskRowIdentityState(
+            id: context.todo.id,
+            title: context.todo.title,
+            isDone: context.display.isDone,
+            priority: TaskPriorityFlags(
+                isImportant: context.todo.isImportant,
+                isUrgent: context.todo.isUrgent
+            )
+        )
+        let schedule = TaskRowScheduleState(
+            todayKey: context.todayKey,
+            currentDayKey: context.todo.dayKey,
+            remindMinutes: context.todo.remindMinutes
+        )
+        let content = TaskRowContentState(
+            note: context.display.note,
+            notes: context.todo.notes,
             subtasks: liveSubtasks,
-            dragPayload: dragPayload,
-            isSelected: isSelected,
-            isExternalEditing: isExternalEditing,
+            attachments: context.catalogs.attachments(ownerKind: .todo, ownerID: context.todo.id),
+            classify: context.catalogs.classify(for: context.todo)
+        )
+        let interaction = TaskRowInteractionState(
+            selection: context.display.selection,
+            dragPayload: context.display.dragPayload,
             canSetRemind: true
         )
-        return TaskRow(state: state) { action in
-            switch action {
-            case .toggleDone: DayBoardMutations.toggleTodo(todo)
-            case .select: onSelect()
-            case .editTitle(let title): DayBoardMutations.editTodo(todo, title: title)
-            case .endEditing: onEndEditing?()
-            case .delete: onDelete()
-            case .skip: break
-            case .moveToDay(let day): DayBoardMutations.moveTodo(todo, to: day)
-            case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(todo, minutes: minutes)
-            case .setWeekdaysOnly, .setEnabled: break
-            case .toggleSubtask(let subID):
-                if let sub = todo.subtasks.first(where: { $0.id == subID }) {
-                    DayBoardMutations.toggleSubtask(sub)
-                }
+        return TaskRowState(
+            identity: identity,
+            schedule: schedule,
+            content: content,
+            interaction: interaction
+        )
+    }
+
+    private static func handleTodoAction(_ action: TaskRowAction, context: TodoRowContext) {
+        let todo = context.todo
+        switch action {
+        case .toggleDone: DayBoardMutations.toggleTodo(todo)
+        case .select: context.actions.onSelect()
+        case .editTitle(let title): DayBoardMutations.editTodo(todo, title: title)
+        case .endEditing: context.actions.onEndEditing?()
+        case .delete: context.actions.onDelete()
+        case .skip: break
+        case .moveToDay(let day): DayBoardMutations.moveTodo(todo, to: day)
+        case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(todo, minutes: minutes)
+        case .setWeekdaysOnly, .setEnabled: break
+        case .toggleSubtask(let subID):
+            if let sub = todo.subtasks.first(where: { $0.id == subID }) {
+                DayBoardMutations.toggleSubtask(sub)
             }
         }
     }
 
-    static func routine(
-        _ routine: DailyRoutine,
-        isDone: Bool,
-        todayKey: String,
-        checkDayKey: String,
-        checks: [RoutineCheck],
-        context: ModelContext,
-        locale: Locale,
-        projects: [ProjectItem],
-        tags: [TagItem],
-        attachments: [AttachmentItem],
-        isSelected: Bool,
-        isExternalEditing: Bool = false,
-        note: String? = nil,
-        usesDefaultNote: Bool = true,
-        onToggle: (() -> Void)? = nil,
-        onSelect: @escaping () -> Void,
-        onEndEditing: (() -> Void)? = nil,
-        onDelete: @escaping () -> Void,
-        onSkip: (() -> Void)? = nil
-    ) -> TaskRow {
-        let resolvedNote: String?
-        if let note {
-            resolvedNote = note
-        } else if usesDefaultNote {
-            let skipped = DayBoardLogic.isRoutineSkipped(
-                routine.snapshot,
-                checks: checks.compactMap(\.snapshot),
-                on: checkDayKey
-            )
-            resolvedNote = isDone
-                ? ResidentNote.done(routine, skipped: skipped, locale: locale)
-                : ResidentNote.days(routine, locale: locale)
-        } else {
-            resolvedNote = nil
+    private static func resolveResidentNote(context: RoutineRowContext) -> String? {
+        if let note = context.display.note {
+            return note
         }
+        guard context.display.usesDefaultNote else { return nil }
+        let skipped = DayBoardLogic.isRoutineSkipped(
+            context.routine.snapshot,
+            checks: context.schedule.checks.compactMap(\.snapshot),
+            on: context.schedule.checkDayKey
+        )
+        return context.display.isDone
+            ? ResidentNote.done(context.routine, skipped: skipped, locale: context.schedule.locale)
+            : ResidentNote.days(context.routine, locale: context.schedule.locale)
+    }
+
+    private static func makeRoutineState(context: RoutineRowContext) -> TaskRowState {
         let streak = HabitStreakLogic.calculate(
-            routine: routine.snapshot,
-            checks: checks.compactMap(\.snapshot),
-            todayKey: todayKey
+            routine: context.routine.snapshot,
+            checks: context.schedule.checks.compactMap(\.snapshot),
+            todayKey: context.schedule.todayKey
         )
-        let canSkip = onSkip != nil
-        let state = TaskRowState(
-            id: routine.id,
-            title: routine.title,
-            isDone: isDone,
+        let identity = TaskRowIdentityState(
+            id: context.routine.id,
+            title: context.routine.title,
+            isDone: context.display.isDone,
             isResident: true,
-            note: resolvedNote,
-            streak: streak.currentStreak,
-            remindMinutes: routine.remindMinutes,
-            isImportant: routine.isImportant,
-            isUrgent: routine.isUrgent,
-            classify: CatalogChoices.classify(for: routine, projects: projects, tags: tags),
-            attachments: CatalogChoices.attachments(
-                ownerKind: .routine,
-                ownerID: routine.id,
-                items: attachments,
-                context: context
-            ),
-            notes: routine.notes,
-            isSelected: isSelected,
-            isExternalEditing: isExternalEditing,
-            canSetRemind: true,
-            canSkip: canSkip,
-            isEnabled: routine.isEnabled
+            priority: TaskPriorityFlags(
+                isImportant: context.routine.isImportant,
+                isUrgent: context.routine.isUrgent
+            )
         )
-        return TaskRow(state: state) { action in
-            switch action {
-            case .toggleDone:
-                if let onToggle {
-                    onToggle()
-                } else {
-                    DayBoardMutations.toggleRoutine(
-                        routine,
-                        on: checkDayKey,
-                        checks: checks,
-                        context: context
-                    )
-                }
-            case .select: onSelect()
-            case .editTitle(let title): DayBoardMutations.editRoutine(routine, title: title)
-            case .endEditing: onEndEditing?()
-            case .delete: onDelete()
-            case .skip: onSkip?()
-            case .moveToDay: break
-            case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(routine, minutes: minutes)
-            case .setWeekdaysOnly: break
-            case .setEnabled(let enabled):
-                DayBoardMutations.setRoutineEnabled(
-                    routine,
-                    enabled: enabled,
-                    todayKey: todayKey,
-                    checks: checks,
-                    context: context
-                )
-            case .toggleSubtask: break
-            }
-        }
+        let schedule = TaskRowScheduleState(
+            remindMinutes: context.routine.remindMinutes,
+            streak: streak.currentStreak
+        )
+        let content = TaskRowContentState(
+            note: resolveResidentNote(context: context),
+            notes: context.routine.notes,
+            attachments: context.catalogs.attachments(ownerKind: .routine, ownerID: context.routine.id),
+            classify: context.catalogs.classify(for: context.routine)
+        )
+        let interaction = TaskRowInteractionState(
+            selection: context.display.selection,
+            canSetRemind: true,
+            canSkip: context.actions.onSkip != nil,
+            isEnabled: context.routine.isEnabled
+        )
+        return TaskRowState(
+            identity: identity,
+            schedule: schedule,
+            content: content,
+            interaction: interaction
+        )
     }
 
-    static func leftoverFallback(
-        item: UnfinishedItem,
-        todayKey: String,
-        yesterdayKey: String,
-        isSelected: Bool,
-        onToggle: @escaping () -> Void,
-        onSelect: @escaping () -> Void,
-        onMoveToDay: ((String) -> Void)?
-    ) -> TaskRow {
-        let state = TaskRowState(
-            id: item.id,
-            title: item.title,
-            isDone: false,
-            todayKey: todayKey,
-            currentDayKey: yesterdayKey,
-            isSelected: isSelected
-        )
-        return TaskRow(state: state) { action in
-            switch action {
-            case .toggleDone: onToggle()
-            case .select: onSelect()
-            case .moveToDay(let day): onMoveToDay?(day)
-            default: break
+    private static func handleRoutineAction(_ action: TaskRowAction, context: RoutineRowContext) {
+        let routine = context.routine
+        switch action {
+        case .toggleDone:
+            if let onToggle = context.actions.onToggle {
+                onToggle()
+            } else {
+                DayBoardMutations.toggleRoutine(
+                    routine,
+                    on: context.schedule.checkDayKey,
+                    checks: context.schedule.checks,
+                    context: context.catalogs.context
+                )
             }
+        case .select: context.actions.onSelect()
+        case .editTitle(let title): DayBoardMutations.editRoutine(routine, title: title)
+        case .endEditing: context.actions.onEndEditing?()
+        case .delete: context.actions.onDelete()
+        case .skip: context.actions.onSkip?()
+        case .moveToDay: break
+        case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(routine, minutes: minutes)
+        case .setWeekdaysOnly: break
+        case .setEnabled(let enabled):
+            DayBoardMutations.setRoutineEnabled(
+                routine,
+                enabled: enabled,
+                todayKey: context.schedule.todayKey,
+                checks: context.schedule.checks,
+                context: context.catalogs.context
+            )
+        case .toggleSubtask: break
         }
     }
 }

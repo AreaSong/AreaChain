@@ -127,7 +127,6 @@ struct BatchMutationsTests {
             markDone: true,
             on: "2026-09-09",
             routines: [routine],
-            checks: [],
             context: context
         )
         let inserted = try #require(routine.checks.first { $0.dayKey == "2026-09-09" })
@@ -139,7 +138,6 @@ struct BatchMutationsTests {
             markDone: false,
             on: "2026-09-09",
             routines: [routine],
-            checks: [inserted],
             context: context
         )
         #expect(!inserted.isDone)

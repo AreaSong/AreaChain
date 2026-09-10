@@ -13,6 +13,23 @@ private enum CatalogRename: Identifiable {
     }
 }
 
+/// 工作台侧边导航栏交互操作
+struct WorkspaceSidebarActions {
+    var onAddProject: () -> Void
+    var onAddChildProject: (UUID) -> Void
+    var onAddTag: () -> Void
+
+    init(
+        onAddProject: @escaping () -> Void,
+        onAddChildProject: @escaping (UUID) -> Void,
+        onAddTag: @escaping () -> Void
+    ) {
+        self.onAddProject = onAddProject
+        self.onAddChildProject = onAddChildProject
+        self.onAddTag = onAddTag
+    }
+}
+
 /// 现代工作台侧边导航栏组件
 struct WorkspaceSidebarView: View {
     @Environment(\.modelContext) private var modelContext
@@ -21,10 +38,11 @@ struct WorkspaceSidebarView: View {
     var projects: [ProjectItem]
     var tags: [TagItem]
     var todos: [TodoItem]
+    var actions: WorkspaceSidebarActions
 
-    var onAddProject: () -> Void
-    var onAddChildProject: (UUID) -> Void
-    var onAddTag: () -> Void
+    private var onAddProject: () -> Void { actions.onAddProject }
+    private var onAddChildProject: (UUID) -> Void { actions.onAddChildProject }
+    private var onAddTag: () -> Void { actions.onAddTag }
 
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
@@ -35,68 +53,87 @@ struct WorkspaceSidebarView: View {
 
     var body: some View {
         List {
-            Section("sidebar.focus") {
-                tabRow(.today, badgeCount: todayUnfinishedCount)
-                tabRow(.residents)
-                tabRow(.search)
-            }
-
-            Section("sidebar.boards") {
-                tabRow(.quadrant)
-                tabRow(.gantt)
-                tabRow(.calendar)
-            }
-
-            Section("sidebar.records") {
-                tabRow(.diary)
-                tabRow(.attachments)
-            }
-
-            Section {
-                ForEach(ProjectTree.outline(projects)) { row in
-                    if let project = projects.first(where: { $0.id == row.id }) {
-                        projectRow(project, depth: row.depth)
-                    }
-                }
-            } header: {
-                HStack {
-                    Text("sidebar.projects")
-                    Spacer()
-                    Button(action: onAddProject) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .buttonStyle(.plain)
-                    .help("sidebar.add.project")
-                }
-            }
-
-            Section {
-                ForEach(Catalog.liveTaskTags(tags)) { tag in
-                    tagRow(tag)
-                }
-            } header: {
-                HStack {
-                    Text("sidebar.tags")
-                    Spacer()
-                    Button(action: onAddTag) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 10, weight: .bold))
-                    }
-                    .buttonStyle(.plain)
-                    .help("sidebar.add.tag")
-                }
-            }
-
-            Section("sidebar.system") {
-                tabRow(.trash)
-                tabRow(.settings)
-            }
+            focusSection
+            boardsSection
+            recordsSection
+            projectsSection
+            tagsSection
+            systemSection
         }
         .listStyle(.sidebar)
         .confirmMoveToTrash($pendingTrash)
         .sheet(item: $pendingRename, onDismiss: { renameDraft = "" }) { _ in
             renameSheet
+        }
+    }
+
+    private var focusSection: some View {
+        Section("sidebar.focus") {
+            tabRow(.today, badgeCount: todayUnfinishedCount)
+            tabRow(.residents)
+            tabRow(.search)
+        }
+    }
+
+    private var boardsSection: some View {
+        Section("sidebar.boards") {
+            tabRow(.quadrant)
+            tabRow(.gantt)
+            tabRow(.calendar)
+        }
+    }
+
+    private var recordsSection: some View {
+        Section("sidebar.records") {
+            tabRow(.diary)
+            tabRow(.attachments)
+        }
+    }
+
+    private var projectsSection: some View {
+        Section {
+            ForEach(ProjectTree.outline(projects)) { row in
+                if let project = projects.first(where: { $0.id == row.id }) {
+                    projectRow(project, depth: row.depth)
+                }
+            }
+        } header: {
+            HStack {
+                Text("sidebar.projects")
+                Spacer()
+                Button(action: onAddProject) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .buttonStyle(.plain)
+                .help("sidebar.add.project")
+            }
+        }
+    }
+
+    private var tagsSection: some View {
+        Section {
+            ForEach(Catalog.liveTaskTags(tags)) { tag in
+                tagRow(tag)
+            }
+        } header: {
+            HStack {
+                Text("sidebar.tags")
+                Spacer()
+                Button(action: onAddTag) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 10, weight: .bold))
+                }
+                .buttonStyle(.plain)
+                .help("sidebar.add.tag")
+            }
+        }
+    }
+
+    private var systemSection: some View {
+        Section("sidebar.system") {
+            tabRow(.trash)
+            tabRow(.settings)
         }
     }
 
@@ -183,15 +220,20 @@ struct WorkspaceSidebarView: View {
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
-            Button("sidebar.rename") { beginRename(.project(project.id), name: project.name) }
-            Button("sidebar.add.child") { onAddChildProject(project.id) }
-            projectParentMenu(project)
-            Button("alert.trash.move", role: .destructive) {
-                pendingTrash = PendingTrash(title: project.name) {
-                    DayBoardMutations.persist { project.deletedAt = SoftDelete.stamp() }
-                    if navigation.selectedProjectID == project.id {
-                        navigation.selectedProjectID = nil
-                    }
+            projectContextMenu(project)
+        }
+    }
+
+    @ViewBuilder
+    private func projectContextMenu(_ project: ProjectItem) -> some View {
+        Button("sidebar.rename") { beginRename(.project(project.id), name: project.name) }
+        Button("sidebar.add.child") { onAddChildProject(project.id) }
+        projectParentMenu(project)
+        Button("alert.trash.move", role: .destructive) {
+            pendingTrash = PendingTrash(title: project.name) {
+                DayBoardMutations.persist { project.deletedAt = SoftDelete.stamp() }
+                if navigation.selectedProjectID == project.id {
+                    navigation.selectedProjectID = nil
                 }
             }
         }

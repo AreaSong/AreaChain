@@ -59,17 +59,21 @@ struct WorkspaceTodayView: View {
 
             TasksPage(
                 todayKey: todayKey,
-                yesterdayKey: dayClock.yesterdayKey,
                 routines: routines,
                 checks: checks,
                 todos: todos,
-                focusedTaskID: $navigation.selectedTaskID,
-                highlightedTaskID: navigation.selectedTaskID,
-                onInspect: { WorkspaceNavigation.shared.inspectTask($0) },
-                onReturnToInput: {
-                    navigation.selectedTaskID = nil
-                    composerFocused = true
-                }
+                config: TasksPageConfig(
+                    yesterdayKey: dayClock.yesterdayKey,
+                    interaction: DayBoardInteraction(
+                        focusedTaskID: $navigation.selectedTaskID,
+                        highlightedTaskID: navigation.selectedTaskID,
+                        onInspect: { WorkspaceNavigation.shared.inspectTask($0) },
+                        onReturnToInput: {
+                            navigation.selectedTaskID = nil
+                            composerFocused = true
+                        }
+                    )
+                )
             )
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in

@@ -2,128 +2,6 @@ import Foundation
 import Testing
 @testable import AreaChain
 
-// MARK: - Independent Reference Oracle
-
-private enum HabitStreakOracle {
-    static func calculate(
-        routine: RoutineSnapshot,
-        checks: [CheckSnapshot],
-        todayKey: String,
-        calendar: Calendar
-    ) -> StreakResult {
-        guard routine.deletedAt == nil else {
-            return StreakResult(currentStreak: 0, bestStreak: 0, isDueToday: false, isCompletedToday: false, isSkippedToday: false)
-        }
-        guard let todayDate = DayKey.date(from: todayKey, calendar: calendar) else {
-            return StreakResult(currentStreak: 0, bestStreak: 0, isDueToday: false, isCompletedToday: false, isSkippedToday: false)
-        }
-
-        var checkMap: [String: (done: Bool, skipped: Bool)] = [:]
-        for c in checks where c.routineId == routine.id {
-            let existing = checkMap[c.dayKey] ?? (false, false)
-            checkMap[c.dayKey] = (existing.done || c.isDone, existing.skipped || c.isSkipped)
-        }
-
-        let isDueToday = routine.isEnabled
-            && routine.createdDayKey <= todayKey
-            && WeekdayMask.contains(routine.weekdayMask, dayKey: todayKey, calendar: calendar)
-        let todayStatus = checkMap[todayKey]
-        let isCompletedToday = (todayStatus?.done == true && todayStatus?.skipped != true)
-        let isSkippedToday = (todayStatus?.skipped == true)
-
-        guard routine.createdDayKey <= todayKey else {
-            return StreakResult(
-                currentStreak: 0,
-                bestStreak: 0,
-                isDueToday: isDueToday,
-                isCompletedToday: isCompletedToday,
-                isSkippedToday: isSkippedToday
-            )
-        }
-
-        guard let startDate = DayKey.date(from: routine.createdDayKey, calendar: calendar) else {
-            let streak = isCompletedToday ? 1 : 0
-            return StreakResult(
-                currentStreak: streak,
-                bestStreak: streak,
-                isDueToday: isDueToday,
-                isCompletedToday: isCompletedToday,
-                isSkippedToday: isSkippedToday
-            )
-        }
-
-        var dayKeys: [String] = []
-        var cur = startDate
-        while cur <= todayDate {
-            dayKeys.append(DayKey.from(cur, calendar: calendar))
-            guard let next = calendar.date(byAdding: .day, value: 1, to: cur) else { break }
-            if next <= cur { break }
-            cur = next
-        }
-
-        var running = 0
-        var best = 0
-
-        for key in dayKeys {
-            let isScheduled = WeekdayMask.contains(routine.weekdayMask, dayKey: key, calendar: calendar)
-            let status = checkMap[key]
-
-            if status?.skipped == true {
-                // Skipped day bridges without altering running streak
-            } else if status?.done == true {
-                // Done increments streak
-                running += 1
-                if running > best { best = running }
-            } else if isScheduled {
-                if key == todayKey {
-                    // Today in progress preserves streak through yesterday
-                } else {
-                    // Missed past scheduled day resets
-                    running = 0
-                }
-            } else {
-                // Off-day without check preserves streak
-            }
-        }
-
-        return StreakResult(
-            currentStreak: running,
-            bestStreak: max(best, running),
-            isDueToday: isDueToday,
-            isCompletedToday: isCompletedToday,
-            isSkippedToday: isSkippedToday
-        )
-    }
-}
-
-// MARK: - Deterministic PRNG for Reproducible Empirical Tests
-
-private struct EmpiricalPRNG {
-    private var state: UInt64
-
-    init(seed: UInt64) {
-        self.state = seed != 0 ? seed : 0x8a5cd789635d2dff
-    }
-
-    mutating func next() -> UInt64 {
-        state = state &* 6364136223846793005 &+ 1442695040888963407
-        return state
-    }
-
-    mutating func nextInt(in range: Range<Int>) -> Int {
-        let span = UInt64(range.upperBound - range.lowerBound)
-        return range.lowerBound + Int(next() % span)
-    }
-
-    mutating func nextDouble() -> Double {
-        Double(next() & 0xFFFFFFFFFFFF) / Double(0x1000000000000)
-    }
-
-    mutating func nextBool(probability: Double = 0.5) -> Bool {
-        nextDouble() < probability
-    }
-}
-
 // MARK: - Empirical Challenger Test Suite
 
 struct HabitStreakEmpiricalTests {
@@ -135,10 +13,72 @@ struct HabitStreakEmpiricalTests {
 
     // MARK: - 1. Complex Random Histories (30 to 365 days)
 
+    private func makeRandomTrialFixture(
+        trial: Int,
+        routineId: UUID,
+        baseDate: Date,
+        masks: [Int],
+        rng: inout EmpiricalPRNG
+    ) -> (routine: RoutineSnapshot, checks: [CheckSnapshot], todayKey: String, daySpan: Int, mask: Int)? {
+        let daySpan = rng.nextInt(in: 30..<365)
+        let mask = masks[rng.nextInt(in: 0..<masks.count)]
+        let startOffset = rng.nextInt(in: 0..<100)
+        guard let startDate = utcCalendar.date(byAdding: .day, value: startOffset, to: baseDate),
+              let endDate = utcCalendar.date(byAdding: .day, value: daySpan, to: startDate) else {
+            return nil
+        }
+
+        let routine = RoutineSnapshot(
+            id: routineId,
+            title: "Empirical Routine \(trial)",
+            sortOrder: trial,
+            isEnabled: true,
+            createdDayKey: DayKey.from(startDate, calendar: utcCalendar),
+            weekdayMask: mask
+        )
+        let checks = HabitStreakOracle.generateRandomChecks(
+            startDate: startDate,
+            endDate: endDate,
+            routineId: routineId,
+            rng: &rng,
+            calendar: utcCalendar
+        )
+        return (routine, checks, DayKey.from(endDate, calendar: utcCalendar), daySpan, mask)
+    }
+
+    private func runRandomHistoryTrial(
+        trial: Int,
+        routineId: UUID,
+        baseDate: Date,
+        masks: [Int],
+        rng: inout EmpiricalPRNG
+    ) {
+        guard let fixture = makeRandomTrialFixture(
+            trial: trial, routineId: routineId, baseDate: baseDate, masks: masks, rng: &rng
+        ) else { return }
+
+        let actual = HabitStreakLogic.calculate(
+            routine: fixture.routine,
+            checks: fixture.checks,
+            todayKey: fixture.todayKey,
+            calendar: utcCalendar
+        )
+        let oracle = HabitStreakOracle.calculate(
+            routine: fixture.routine,
+            checks: fixture.checks,
+            todayKey: fixture.todayKey,
+            calendar: utcCalendar
+        )
+
+        #expect(actual == oracle, "Mismatch on trial \(trial) with span \(fixture.daySpan) and mask \(fixture.mask)")
+        #expect(actual.bestStreak >= actual.currentStreak, "Best streak must be >= current streak")
+        #expect(actual.currentStreak >= 0)
+        #expect(actual.bestStreak >= 0)
+    }
+
     @Test func fuzzStreakWithRandomHistories30To365Days() {
         var rng = EmpiricalPRNG(seed: 20260908)
         let routineId = UUID()
-
         let masks = [
             WeekdayMask.all,
             WeekdayMask.workdays,
@@ -147,70 +87,16 @@ struct HabitStreakEmpiricalTests {
             0b0101010, // Mon, Wed, Fri
             0b0010100  // Tue, Thu
         ]
-
         let baseDate = DayKey.date(from: "2025-01-01", calendar: utcCalendar)!
 
         for trial in 1...50 {
-            let daySpan = rng.nextInt(in: 30..<365)
-            let mask = masks[rng.nextInt(in: 0..<masks.count)]
-
-            let startOffset = rng.nextInt(in: 0..<100)
-            guard let startDate = utcCalendar.date(byAdding: .day, value: startOffset, to: baseDate),
-                  let endDate = utcCalendar.date(byAdding: .day, value: daySpan, to: startDate) else {
-                continue
-            }
-
-            let createdDayKey = DayKey.from(startDate, calendar: utcCalendar)
-            let todayKey = DayKey.from(endDate, calendar: utcCalendar)
-
-            let routine = RoutineSnapshot(
-                id: routineId,
-                title: "Empirical Routine \(trial)",
-                sortOrder: trial,
-                isEnabled: true,
-                createdDayKey: createdDayKey,
-                weekdayMask: mask
+            runRandomHistoryTrial(
+                trial: trial,
+                routineId: routineId,
+                baseDate: baseDate,
+                masks: masks,
+                rng: &rng
             )
-
-            // Generate random check sequence
-            var checks: [CheckSnapshot] = []
-            var cur = startDate
-            while cur <= endDate {
-                let key = DayKey.from(cur, calendar: utcCalendar)
-                let roll = rng.nextDouble()
-
-                if roll < 0.45 {
-                    // 45% Completed
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: false))
-                } else if roll < 0.65 {
-                    // 20% Skipped
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: true))
-                } else {
-                    // 35% No check
-                }
-
-                guard let next = utcCalendar.date(byAdding: .day, value: 1, to: cur) else { break }
-                cur = next
-            }
-
-            let actual = HabitStreakLogic.calculate(
-                routine: routine,
-                checks: checks,
-                todayKey: todayKey,
-                calendar: utcCalendar
-            )
-
-            let oracle = HabitStreakOracle.calculate(
-                routine: routine,
-                checks: checks,
-                todayKey: todayKey,
-                calendar: utcCalendar
-            )
-
-            #expect(actual == oracle, "Mismatch on trial \(trial) with span \(daySpan) and mask \(mask)")
-            #expect(actual.bestStreak >= actual.currentStreak, "Best streak must be >= current streak")
-            #expect(actual.currentStreak >= 0)
-            #expect(actual.bestStreak >= 0)
         }
     }
 
@@ -257,6 +143,35 @@ struct HabitStreakEmpiricalTests {
 
     // MARK: - 3. Invariant: Non-Scheduled Days NEVER Decrease Streak
 
+    private func stepOffDay(
+        routineId: UUID,
+        key: String,
+        checks: inout [CheckSnapshot],
+        rng: inout EmpiricalPRNG
+    ) {
+        let roll = rng.nextDouble()
+        if roll < 0.33 {
+            // No check
+        } else if roll < 0.66 {
+            checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: false, isSkipped: true))
+        } else {
+            checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: false))
+        }
+    }
+
+    private func stepScheduledDay(
+        routineId: UUID,
+        key: String,
+        checks: inout [CheckSnapshot],
+        rng: inout EmpiricalPRNG
+    ) {
+        if rng.nextBool(probability: 0.8) {
+            checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: false))
+        } else {
+            checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: true))
+        }
+    }
+
     @Test func invariantNonScheduledDaysNeverDecreaseStreak() {
         var rng = EmpiricalPRNG(seed: 424242)
         let routineId = UUID()
@@ -280,34 +195,17 @@ struct HabitStreakEmpiricalTests {
             let isScheduled = WeekdayMask.contains(WeekdayMask.workdays, dayKey: key, calendar: utcCalendar)
 
             if !isScheduled {
-                // Off-day: test with (1) no check, (2) skipped, (3) bonus done
-                let roll = rng.nextDouble()
-                if roll < 0.33 {
-                    // No check
-                } else if roll < 0.66 {
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: false, isSkipped: true))
-                } else {
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: false))
-                }
-
+                stepOffDay(routineId: routineId, key: key, checks: &checks, rng: &rng)
                 let result = HabitStreakLogic.calculate(
                     routine: routine,
                     checks: checks,
                     todayKey: key,
                     calendar: utcCalendar
                 )
-
-                // Off day must NEVER decrease the streak
                 #expect(result.currentStreak >= previousStreak, "Streak dropped on off-day \(key): was \(previousStreak), got \(result.currentStreak)")
                 previousStreak = result.currentStreak
             } else {
-                // Scheduled day: randomly check or skip to keep streak alive or reset
-                if rng.nextBool(probability: 0.8) {
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: false))
-                } else {
-                    checks.append(CheckSnapshot(routineId: routineId, dayKey: key, isDone: true, isSkipped: true))
-                }
-
+                stepScheduledDay(routineId: routineId, key: key, checks: &checks, rng: &rng)
                 let result = HabitStreakLogic.calculate(
                     routine: routine,
                     checks: checks,

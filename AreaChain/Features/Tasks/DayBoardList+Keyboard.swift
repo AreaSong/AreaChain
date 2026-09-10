@@ -12,69 +12,76 @@ extension DayBoardList {
             let isTextViewEditing = (firstResponder as? NSTextView)?.isEditable == true
 
             if isTextViewEditing {
-                if event.keyCode == 53 {
-                    BoardSelection.shared.markEscapeCancelsEdits()
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                    return nil
-                }
-                if event.keyCode == 125,
-                   let tv = firstResponder as? NSTextView,
-                   tv.string.isEmpty,
-                   !WorkspaceNavigation.shared.isInspectorPresented
-                {
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                    navigateSelection(delta: 1)
-                    return nil
-                }
-                return event
+                return self.handleTextViewEditingKey(event: event, firstResponder: firstResponder)
             }
-
-            switch event.keyCode {
-            case 125:
-                navigateSelection(delta: 1)
-                return nil
-            case 126:
-                navigateSelection(delta: -1)
-                return nil
-            case 49:
-                if let id = focusedTaskID?.wrappedValue {
-                    toggleSelected(id: id)
-                    return nil
-                }
-            case 36:
-                if let id = focusedTaskID?.wrappedValue {
-                    inspectSelected(id: id)
-                    return nil
-                }
-            case 51:
-                if let id = focusedTaskID?.wrappedValue {
-                    deleteSelected(id: id)
-                    return nil
-                }
-            case 14:
-                let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
-                guard mods.isEmpty else { break }
-                if let id = focusedTaskID?.wrappedValue {
-                    editingTaskID = id
-                    return nil
-                }
-            case 53:
-                if WorkspaceNavigation.shared.isInspectorPresented,
-                   hostWindow === PanelWindowController.workspace.hostedWindow
-                {
-                    WorkspaceNavigation.shared.isInspectorPresented = false
-                    return nil
-                }
-                if focusedTaskID?.wrappedValue != nil {
-                    focusedTaskID?.wrappedValue = nil
-                    onReturnToInput?()
-                    return nil
-                }
-            default:
-                break
-            }
-            return event
+            return self.handleNavigationKey(event: event)
         }
+    }
+
+    private func handleTextViewEditingKey(event: NSEvent, firstResponder: NSResponder?) -> NSEvent? {
+        if event.keyCode == 53 {
+            BoardSelection.shared.markEscapeCancelsEdits()
+            NSApp.keyWindow?.makeFirstResponder(nil)
+            return nil
+        }
+        if event.keyCode == 125,
+           let tv = firstResponder as? NSTextView,
+           tv.string.isEmpty,
+           !WorkspaceNavigation.shared.isInspectorPresented
+        {
+            NSApp.keyWindow?.makeFirstResponder(nil)
+            navigateSelection(delta: 1)
+            return nil
+        }
+        return event
+    }
+
+    private func handleNavigationKey(event: NSEvent) -> NSEvent? {
+        switch event.keyCode {
+        case 125:
+            navigateSelection(delta: 1)
+            return nil
+        case 126:
+            navigateSelection(delta: -1)
+            return nil
+        case 49:
+            if let id = focusedTaskID?.wrappedValue {
+                toggleSelected(id: id)
+                return nil
+            }
+        case 36:
+            if let id = focusedTaskID?.wrappedValue {
+                inspectSelected(id: id)
+                return nil
+            }
+        case 51:
+            if let id = focusedTaskID?.wrappedValue {
+                deleteSelected(id: id)
+                return nil
+            }
+        case 14:
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
+            guard mods.isEmpty else { break }
+            if let id = focusedTaskID?.wrappedValue {
+                editingTaskID = id
+                return nil
+            }
+        case 53:
+            if WorkspaceNavigation.shared.isInspectorPresented,
+               hostWindow === PanelWindowController.workspace.hostedWindow
+            {
+                WorkspaceNavigation.shared.isInspectorPresented = false
+                return nil
+            }
+            if focusedTaskID?.wrappedValue != nil {
+                focusedTaskID?.wrappedValue = nil
+                onReturnToInput?()
+                return nil
+            }
+        default:
+            break
+        }
+        return event
     }
 
     func shouldHandle(_ event: NSEvent) -> Bool {

@@ -1,6 +1,13 @@
 import SwiftData
 import SwiftUI
 
+struct DiaryPageOptions {
+    var showsComposer: Bool = true
+    var usesSharedDiaryDay: Bool = false
+    var maxScrollHeight: CGFloat? = nil
+    var showsPageHeader: Bool = true
+}
+
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
 struct DiaryPage: View {
     @Environment(\.modelContext) private var modelContext
@@ -27,17 +34,32 @@ struct DiaryPage: View {
     init(
         todayKey: String,
         entries: [DiaryEntry],
-        showsComposer: Bool = true,
-        usesSharedDiaryDay: Bool = false,
-        maxScrollHeight: CGFloat? = nil,
-        showsPageHeader: Bool = true
+        options: DiaryPageOptions = DiaryPageOptions()
     ) {
         self.todayKey = todayKey
         self.entries = entries
-        self.showsComposer = showsComposer
-        self.usesSharedDiaryDay = usesSharedDiaryDay
-        self.maxScrollHeight = maxScrollHeight
-        self.showsPageHeader = showsPageHeader
+        self.showsComposer = options.showsComposer
+        self.usesSharedDiaryDay = options.usesSharedDiaryDay
+        self.maxScrollHeight = options.maxScrollHeight
+        self.showsPageHeader = options.showsPageHeader
+    }
+
+    init(
+        todayKey: String,
+        entries: [DiaryEntry],
+        showsComposer: Bool = true,
+        usesSharedDiaryDay: Bool = false,
+        showsPageHeader: Bool = true
+    ) {
+        self.init(
+            todayKey: todayKey,
+            entries: entries,
+            options: DiaryPageOptions(
+                showsComposer: showsComposer,
+                usesSharedDiaryDay: usesSharedDiaryDay,
+                showsPageHeader: showsPageHeader
+            )
+        )
     }
 
     private var activeTags: [TagItem] {
@@ -223,110 +245,13 @@ struct DiaryPage: View {
     }
 
     private var quickComposer: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ZStack(alignment: .topLeading) {
-                if draftText.isEmpty {
-                    Text("diary.composer.placeholder")
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.7))
-                        .padding(.top, 8)
-                        .padding(.leading, 8)
-                }
-
-                TextEditor(text: $draftText)
-                    .font(DaybookType.body)
-                    .foregroundStyle(DaybookTheme.ink)
-                    .frame(minHeight: 48, maxHeight: 100)
-                    .scrollContentBackground(.hidden)
-                    .focused($composerFocused)
-                    .padding(4)
-            }
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookTheme.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(composerFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: composerFocused ? 1.4 : 0.8)
-            )
-
-            HStack(alignment: .center, spacing: 6) {
-                Image(systemName: "tag")
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 5) {
-                        ForEach(orderedTags) { tag in
-                            let isSelected = composerSelectedTagIDs.contains(tag.id)
-                            let color = DiaryTagChrome.color(for: tag.name)
-                            Button {
-                                if isSelected {
-                                    composerSelectedTagIDs.remove(tag.id)
-                                } else {
-                                    composerSelectedTagIDs.insert(tag.id)
-                                }
-                            } label: {
-                                HStack(spacing: 3) {
-                                    if isSelected {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 8, weight: .bold))
-                                    }
-                                    Text("#\(tag.name)")
-                                        .font(.system(size: 11))
-                                }
-                                .padding(.horizontal, 7)
-                                .padding(.vertical, 3)
-                                .background(
-                                    Capsule()
-                                        .fill(isSelected ? color.opacity(0.18) : Color.clear)
-                                )
-                                .overlay(
-                                    Capsule()
-                                        .strokeBorder(isSelected ? color.opacity(0.5) : DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
-                                )
-                                .foregroundStyle(isSelected ? color : DaybookTheme.muted)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                Button(action: submitNote) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "square.and.pencil")
-                            .font(.system(size: 10, weight: .semibold))
-                        Text("diary.composer.save")
-                            .font(.system(size: 11.5, weight: .semibold))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(
-                        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                            .fill(canSubmit ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.2))
-                    )
-                    .foregroundStyle(canSubmit ? Color.white : DaybookTheme.muted)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canSubmit)
-                .keyboardShortcut(.return, modifiers: .command)
-            }
-        }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookTheme.hoverFill.opacity(0.5))
+        DiaryQuickComposerView(
+            text: $draftText,
+            focused: $composerFocused,
+            orderedTags: orderedTags,
+            selectedTagIDs: $composerSelectedTagIDs,
+            onSubmit: submitNote
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
-        )
-    }
-
-    private var canSubmit: Bool {
-        !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var entryListSection: some View {

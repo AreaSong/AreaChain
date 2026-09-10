@@ -3,6 +3,9 @@ import SwiftUI
 
 @MainActor
 enum AppWindows {
+    /// 注入的工作台主视图构造器，由 App 启动时或 Features 协调层注册
+    static var workspaceViewProvider: (@MainActor () -> AnyView)?
+
     static func openWorkspace(tab: WorkspaceTab = .today) {
         StatusItemController.shared.close()
         becomeActive()
@@ -62,23 +65,24 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         size: DaybookTheme.workspaceSize,
         minSize: DaybookTheme.workspaceMinSize,
         root: {
-            AnyView(
-                MainSplitWorkspaceView()
-                    .appChrome()
-                    .modelContainer(Persistence.session.container)
-            )
+            AppWindows.workspaceViewProvider?() ?? AnyView(EmptyView())
         }
     )
 
     private let titleKey: String
     private let size: NSSize
     private let minSize: NSSize?
-    private let root: () -> AnyView
+    private let root: @MainActor () -> AnyView
     private var window: NSWindow?
 
     var hostedWindow: NSWindow? { window }
 
-    init(titleKey: String, size: NSSize, minSize: NSSize? = nil, root: @escaping () -> AnyView) {
+    init(
+        titleKey: String,
+        size: NSSize,
+        minSize: NSSize? = nil,
+        root: @escaping @MainActor () -> AnyView
+    ) {
         self.titleKey = titleKey
         self.size = size
         self.minSize = minSize
@@ -97,7 +101,11 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
 
     func show() {
         if window == nil {
-            let next = NSWindow(contentViewController: NSHostingController(rootView: root()))
+            guard let provider = AppWindows.workspaceViewProvider else {
+                assertionFailure("AppWindows.workspaceViewProvider must be registered before showing workspace")
+                return
+            }
+            let next = NSWindow(contentViewController: NSHostingController(rootView: provider()))
             next.setContentSize(size)
             next.minSize = minSize ?? size
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable]
