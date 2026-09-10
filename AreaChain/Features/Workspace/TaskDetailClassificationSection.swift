@@ -97,7 +97,7 @@ struct TaskDetailTagSelector: View {
                         let isContained = TagIDList.contains(tagIDs, tag.id)
                         PillBadge(
                             title: "#\(tag.name)",
-                            color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo),
+                            color: Color(nsColor: .systemIndigo),
                             isSelected: isContained,
                             action: { onToggleTag(tag.id) }
                         )

@@ -46,7 +46,8 @@ private struct DaybookQuietButton: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        configuration.label
+        let ringOpacity: CGFloat = hovering && isEnabled ? 0.35 : 0
+        return configuration.label
             .foregroundStyle(ink)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
@@ -56,7 +57,7 @@ private struct DaybookQuietButton: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(DaybookTheme.focusRing.opacity(hovering && isEnabled ? 0.35 : 0), lineWidth: 1)
+                    .stroke(DaybookTheme.focusRing.opacity(ringOpacity), lineWidth: 1)
             )
             .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .onHover { hovering = $0 }

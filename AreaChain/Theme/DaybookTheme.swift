@@ -2,10 +2,19 @@ import AppKit
 import SwiftUI
 
 extension Color {
-    static func daybook(light: NSColor, dark: NSColor) -> Color {
-        Color(nsColor: NSColor(name: nil, dynamicProvider: { appearance in
+    /// 必须具名：`NSColor(name: nil)` 的动态色在 SwiftUI Button 拷贝时会 SIGSEGV。
+    static func daybook(name: String, light: NSColor, dark: NSColor) -> Color {
+        Color(nsColor: NSColor(name: NSColor.Name(name), dynamicProvider: { appearance in
             appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
         }))
+    }
+
+    static func daybook(
+        name: String,
+        swatch: (Double, Double, Double),
+        dark: (Double, Double, Double)
+    ) -> Color {
+        .daybook(name: name, light: NSColor.daybook(swatch), dark: NSColor.daybook(dark))
     }
 }
 
@@ -49,49 +58,64 @@ enum ContrastMath {
 }
 
 enum DaybookTheme {
-    static let ink = Color.daybook(swatch: DaybookSwatch.inkLight, dark: DaybookSwatch.inkDark)
-    static let muted = Color.daybook(swatch: DaybookSwatch.mutedLight, dark: DaybookSwatch.mutedDark)
-    static let rule = Color.daybook(swatch: DaybookSwatch.ruleLight, dark: DaybookSwatch.ruleDark)
-    static let stamp = Color.daybook(swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark)
-    static let paper = Color.daybook(swatch: DaybookSwatch.paperLight, dark: DaybookSwatch.paperDark)
-    static let done = Color.daybook(swatch: DaybookSwatch.doneLight, dark: DaybookSwatch.doneDark)
+    static let ink = Color.daybook(name: "daybook.ink", swatch: DaybookSwatch.inkLight, dark: DaybookSwatch.inkDark)
+    static let muted = Color.daybook(name: "daybook.muted", swatch: DaybookSwatch.mutedLight, dark: DaybookSwatch.mutedDark)
+    static let rule = Color.daybook(name: "daybook.rule", swatch: DaybookSwatch.ruleLight, dark: DaybookSwatch.ruleDark)
+    static let stamp = Color.daybook(name: "daybook.stamp", swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark)
+    static let paper = Color.daybook(name: "daybook.paper", swatch: DaybookSwatch.paperLight, dark: DaybookSwatch.paperDark)
+    static let done = Color.daybook(name: "daybook.done", swatch: DaybookSwatch.doneLight, dark: DaybookSwatch.doneDark)
     static let destructive = Color.daybook(
+        name: "daybook.destructive",
         swatch: DaybookSwatch.destructiveLight,
         dark: DaybookSwatch.destructiveDark
     )
+    static let checkmark = Color.daybook(
+        name: "daybook.checkmark",
+        swatch: DaybookSwatch.checkmarkLight,
+        dark: DaybookSwatch.checkmarkDark
+    )
     static let hoverFill = Color.daybook(
+        name: "daybook.hoverFill",
         light: NSColor.black.withAlphaComponent(0.04),
         dark: NSColor.white.withAlphaComponent(0.08)
     )
     static let pressFill = Color.daybook(
+        name: "daybook.pressFill",
         light: NSColor.black.withAlphaComponent(0.08),
         dark: NSColor.white.withAlphaComponent(0.14)
     )
     static let surface = Color.daybook(
+        name: "daybook.surface",
         light: NSColor.white.withAlphaComponent(0.65),
         dark: NSColor(white: 0.18, alpha: 0.55)
     )
     static let cardSurface = Color.daybook(
+        name: "daybook.cardSurface",
         light: NSColor.white.withAlphaComponent(0.55),
         dark: NSColor(white: 0.18, alpha: 0.55)
     )
     static let cardSurfaceHover = Color.daybook(
+        name: "daybook.cardSurfaceHover",
         light: NSColor.white.withAlphaComponent(0.85),
         dark: NSColor(white: 0.24, alpha: 0.75)
     )
     static let cardSelectionFill = Color.daybook(
+        name: "daybook.cardSelectionFill",
         light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.08),
         dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.14)
     )
     static let cardSelectionStroke = Color.daybook(
+        name: "daybook.cardSelectionStroke",
         light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.35),
         dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.40)
     )
     static let cardBorder = Color.daybook(
+        name: "daybook.cardBorder",
         light: NSColor.black.withAlphaComponent(0.06),
         dark: NSColor.white.withAlphaComponent(0.08)
     )
     static let cardBorderHover = Color.daybook(
+        name: "daybook.cardBorderHover",
         light: NSColor.black.withAlphaComponent(0.12),
         dark: NSColor.white.withAlphaComponent(0.16)
     )
@@ -144,15 +168,6 @@ enum DaybookShadow {
     static let cardSubtle = Color.black.opacity(0.04)
     static let cardHover = Color.black.opacity(0.08)
     static let popover = Color.black.opacity(0.15)
-}
-
-extension Color {
-    static func daybook(
-        swatch: (Double, Double, Double),
-        dark: (Double, Double, Double)
-    ) -> Color {
-        .daybook(light: NSColor.daybook(swatch), dark: NSColor.daybook(dark))
-    }
 }
 
 extension NSColor {

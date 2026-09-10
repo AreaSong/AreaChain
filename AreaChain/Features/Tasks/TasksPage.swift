@@ -28,7 +28,14 @@ struct TasksPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            leftoverChips
+            LeftoverChipsBar(
+                yesterdayCount: yesterdayItems.count,
+                upcomingCount: upcomingModels.count,
+                showYesterday: showYesterday,
+                showUpcoming: showUpcoming,
+                onToggleYesterday: { showYesterday.toggle() },
+                onToggleUpcoming: { showUpcoming.toggle() }
+            )
             BoardFilterBar(
                 filter: boardFilter,
                 projects: CatalogChoices.projects(projects),

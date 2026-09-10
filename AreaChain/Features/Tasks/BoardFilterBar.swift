@@ -87,7 +87,7 @@ struct BoardFilterBar: View {
         reset: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        Menu {
+        return Menu {
             Button("filter.all", action: reset)
             content()
         } label: {

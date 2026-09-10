@@ -249,7 +249,7 @@ struct CaptureTokenBar: View {
                         PillBadge(
                             title: "#\(tag)",
                             icon: "tag.fill",
-                            color: Color.daybook(light: NSColor.systemIndigo, dark: NSColor.systemIndigo),
+                            color: Color(nsColor: .systemIndigo),
                             isSelected: true
                         )
                     }

@@ -11,6 +11,7 @@ struct DiaryPage: View {
     var showsComposer: Bool = true
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
+    var showsPageHeader: Bool = true
 
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
@@ -28,13 +29,15 @@ struct DiaryPage: View {
         entries: [DiaryEntry],
         showsComposer: Bool = true,
         usesSharedDiaryDay: Bool = false,
-        maxScrollHeight: CGFloat? = nil
+        maxScrollHeight: CGFloat? = nil,
+        showsPageHeader: Bool = true
     ) {
         self.todayKey = todayKey
         self.entries = entries
         self.showsComposer = showsComposer
         self.usesSharedDiaryDay = usesSharedDiaryDay
         self.maxScrollHeight = maxScrollHeight
+        self.showsPageHeader = showsPageHeader
     }
 
     private var activeTags: [TagItem] {
@@ -76,8 +79,12 @@ struct DiaryPage: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            topHeader
+        VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
+            if showsPageHeader {
+                topHeader
+            } else {
+                searchChrome
+            }
 
             tagFilterBar
 
@@ -119,37 +126,41 @@ struct DiaryPage: View {
 
             Spacer()
 
-            HStack(spacing: 6) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-                TextField("diary.search.placeholder", text: $searchQuery)
-                    .textFieldStyle(.plain)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.ink)
-                if !searchQuery.isEmpty {
-                    Button {
-                        searchQuery = ""
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(DaybookTheme.muted)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .frame(width: 200)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookTheme.hoverFill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
-            )
+            searchChrome
+                .frame(width: 200)
         }
+    }
+
+    private var searchChrome: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 11))
+                .foregroundStyle(DaybookTheme.muted)
+            TextField("diary.search.placeholder", text: $searchQuery)
+                .textFieldStyle(.plain)
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookTheme.ink)
+            if !searchQuery.isEmpty {
+                Button {
+                    searchQuery = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 11))
+                        .foregroundStyle(DaybookTheme.muted)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, showsPageHeader ? 5 : 4)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookTheme.hoverFill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+        )
     }
 
     private var tagFilterBar: some View {

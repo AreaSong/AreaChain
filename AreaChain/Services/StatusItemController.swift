@@ -106,16 +106,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 .modelContainer(container)
         )
         hosting.safeAreaRegions = []
-        let fitting = hosting.view.fittingSize
-        let initialHeight = min(
-            max(fitting.height > 0 ? fitting.height : lastKnownHeight, DaybookTheme.popoverMinHeight),
-            DaybookTheme.popoverMaxHeight
-        )
-        lastKnownHeight = initialHeight
-        popover.contentSize = NSSize(
-            width: DaybookTheme.popoverWidth,
-            height: initialHeight
-        )
+        hosting.view.frame = NSRect(origin: .zero, size: DaybookTheme.popoverSize)
+        lastKnownHeight = DaybookTheme.popoverHeight
+        popover.contentSize = DaybookTheme.popoverSize
         popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         NotificationCenter.default.post(name: .focusCapture, object: nil)

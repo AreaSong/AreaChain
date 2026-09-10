@@ -65,7 +65,7 @@ struct MenuBarPopoverView: View {
     }
 
     var body: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             integratedHeader
 
             Group {
@@ -77,22 +77,17 @@ struct MenuBarPopoverView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: tab)
+            .animation(DaybookMotion.interactive(reduceMotion), value: tab)
 
             Divider()
-                .overlay(DaybookTheme.rule.opacity(0.35))
+                .overlay(DaybookTheme.rule.opacity(0.45))
                 .padding(.horizontal, -12)
 
             FooterBar()
         }
         .padding(12)
         .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
-        .background {
-            ZStack {
-                Rectangle().fill(.ultraThinMaterial)
-                DaybookTheme.paper.opacity(0.25)
-            }
-        }
+        .background(DaybookTheme.paper)
         .clipShape(Rectangle())
         .daybookHideInputChrome()
         .onAppear(perform: prepare)
@@ -141,7 +136,8 @@ struct MenuBarPopoverView: View {
         DiaryPage(
             todayKey: todayKey,
             entries: diaries,
-            showsComposer: true
+            showsComposer: true,
+            showsPageHeader: false
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -165,34 +161,38 @@ struct MenuBarPopoverView: View {
     }
 
     private var integratedHeader: some View {
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .leading, spacing: 1) {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(DaybookType.body.weight(.semibold))
+                    .font(DaybookType.title)
                     .foregroundStyle(DaybookTheme.ink)
                 Text(headerSubtitle)
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.muted)
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 8)
 
-            DaybookMicroPillTabBar(
-                selection: $tab,
-                tasksCount: todayRemaining,
-                diariesCount: todayDiariesCount
-            )
+            HStack(alignment: .center, spacing: 4) {
+                DaybookQuietTabBar(
+                    selection: $tab,
+                    tasksCount: todayRemaining,
+                    diariesCount: todayDiariesCount
+                )
 
-            Button {
-                AppWindows.openWorkspace(tab: tab == .tasks ? .today : .diary)
-            } label: {
-                Image(systemName: "arrow.up.left.and.arrow.down.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(width: 24, height: 24)
+                Button {
+                    AppWindows.openWorkspace(tab: tab == .tasks ? .today : .diary)
+                } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .frame(width: 24, height: 24)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(DaybookQuietButtonStyle())
+                .help(L10n.string("window.workspace", locale: locale))
             }
-            .buttonStyle(DaybookQuietButtonStyle())
-            .help(L10n.string("window.workspace", locale: locale))
+            .padding(.top, 2)
         }
     }
 
@@ -248,83 +248,50 @@ struct MenuBarPopoverView: View {
     }
 }
 
-struct DaybookMicroPillTabBar: View {
+struct DaybookQuietTabBar: View {
     @Binding var selection: BoardTab
     var tasksCount: Int = 0
     var diariesCount: Int = 0
-    @Namespace private var tabNamespace
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        HStack(spacing: 2) {
+        HStack(spacing: 10) {
             ForEach(BoardTab.allCases) { item in
-                let isSelected = selection == item
-                Button {
-                    withAnimation(reduceMotion ? nil : .spring(response: 0.32, dampingFraction: 0.76)) {
-                        selection = item
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: item == .tasks ? "checklist" : "note.text")
-                            .font(.system(size: 9, weight: isSelected ? .bold : .medium))
-
-                        Text(item.title)
-                            .font(.system(size: 11, weight: isSelected ? .semibold : .medium))
-
-                        let count = item == .tasks ? tasksCount : diariesCount
-                        if count > 0 {
-                            Text("\(count)")
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
-                                .padding(.horizontal, 4)
-                                .padding(.vertical, 1)
-                                .background(
-                                    Capsule()
-                                        .fill(
-                                            isSelected
-                                                ? DaybookTheme.stamp.opacity(0.14)
-                                                : DaybookTheme.ink.opacity(0.06)
-                                        )
-                                )
-                        }
-                    }
-                    .foregroundStyle(isSelected ? DaybookTheme.ink : DaybookTheme.muted)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 3.5)
-                    .background {
-                        if isSelected {
-                            Capsule()
-                                .fill(DaybookTheme.surface)
-                                .shadow(color: Color.black.opacity(0.06), radius: 2, y: 1)
-                                .matchedGeometryEffect(id: "activePillTab", in: tabNamespace)
-                        }
-                    }
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(item.title)
-                .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+                tabButton(item)
             }
         }
-        .padding(2)
-        .background(
-            Capsule()
-                .fill(DaybookTheme.hoverFill)
-        )
     }
-}
 
-struct DaybookTabBar: View {
-    @Binding var selection: BoardTab
-    var tasksCount: Int = 0
-    var diariesCount: Int = 0
+    private func tabButton(_ item: BoardTab) -> some View {
+        let isSelected = selection == item
+        let count = item == .tasks ? tasksCount : diariesCount
+        let ink = isSelected ? DaybookTheme.stamp : DaybookTheme.muted
+        let underline = isSelected ? DaybookTheme.stamp : Color.clear
+        return Button {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                selection = item
+            }
+        } label: {
+            VStack(spacing: 3) {
+                HStack(spacing: 4) {
+                    Text(item.title)
+                        .font(DaybookType.caption.weight(isSelected ? .semibold : .medium))
+                    if count > 0 {
+                        Text("\(count)")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    }
+                }
+                .foregroundStyle(ink)
 
-    var body: some View {
-        DaybookMicroPillTabBar(
-            selection: $selection,
-            tasksCount: tasksCount,
-            diariesCount: diariesCount
-        )
+                Rectangle()
+                    .fill(underline)
+                    .frame(height: 1.2)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(item.title)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
@@ -334,19 +301,6 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Button(action: { AppWindows.revealWorkspace() }) {
-                HStack(spacing: 4) {
-                    Image(systemName: "sidebar.left")
-                        .font(.system(size: 11))
-                    Text("footer.workspace")
-                        .font(.system(size: 11, weight: .medium))
-                }
-            }
-            .buttonStyle(DaybookQuietButtonStyle(prominent: true))
-            .help("footer.workspace")
-
-            Spacer(minLength: 8)
-
             Text(hotKeyName)
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(DaybookTheme.muted)
@@ -362,10 +316,24 @@ struct FooterBar: View {
                 )
                 .help("footer.hotkey \(hotKeyName)")
 
-            Button("footer.quit", action: { NSApplication.shared.terminate(nil) })
-                .font(.system(size: 11, weight: .medium))
-                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
-                .help("footer.quit")
+            Spacer(minLength: 8)
+
+            Menu {
+                Button("footer.quit", role: .destructive) {
+                    NSApplication.shared.terminate(nil)
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
+            .help("footer.more")
+            .accessibilityLabel("footer.more")
         }
         .onAppear { refreshHotKey() }
         .onChange(of: locale.identifier) { _, _ in refreshHotKey() }

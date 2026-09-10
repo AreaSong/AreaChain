@@ -25,12 +25,7 @@ struct ModernCheckbox: View {
                 if isDone {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8.5, weight: .bold))
-                        .foregroundStyle(
-                            Color.daybook(
-                                swatch: DaybookSwatch.checkmarkLight,
-                                dark: DaybookSwatch.checkmarkDark
-                            )
-                        )
+                        .foregroundStyle(DaybookTheme.checkmark)
                         .transition(.scale.combined(with: .opacity))
                         .accessibilityHidden(true)
                 }
