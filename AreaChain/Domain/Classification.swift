@@ -4,9 +4,10 @@ struct BoardFilter: Equatable {
     var projectID: UUID? = nil
     var tagID: UUID? = nil
     var bundleID: String? = nil
+    var isHighPriorityOnly: Bool = false
 
     var isActive: Bool {
-        projectID != nil || tagID != nil || bundleID != nil
+        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly
     }
 
     func withProject(_ id: UUID?) -> BoardFilter {
@@ -24,6 +25,12 @@ struct BoardFilter: Equatable {
     func withBundle(_ id: String?) -> BoardFilter {
         var next = self
         next.bundleID = id
+        return next
+    }
+
+    func withHighPriority(_ flag: Bool) -> BoardFilter {
+        var next = self
+        next.isHighPriorityOnly = flag
         return next
     }
 }
@@ -103,6 +110,7 @@ enum Classification {
     }
 
     static func matches(_ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil) -> Bool {
+        if filter.isHighPriorityOnly, !(bits.isImportant || bits.isUrgent) { return false }
         if let projectID = filter.projectID {
             let allowed = projectIDs ?? [projectID]
             guard let current = bits.projectID, allowed.contains(current) else { return false }

@@ -70,13 +70,13 @@ struct CaptureField: View {
 
     private var inputRow: some View {
         let focused = focus.wrappedValue
-        let plusColor = focused ? DaybookTheme.stamp : DaybookTheme.muted
-        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.4)
-        let ringColor = focused ? DaybookTheme.stamp.opacity(0.18) : Color.clear
+        let plusColor = focused ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.8)
+        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.4)
+        let ringColor = focused ? DaybookTheme.stamp.opacity(0.16) : Color.clear
 
-        return HStack(alignment: .center, spacing: 7) {
+        return HStack(alignment: .center, spacing: 8) {
             Image(systemName: "plus")
-                .font(.system(size: 11, weight: .bold))
+                .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(plusColor)
                 .frame(width: 14)
 
@@ -93,15 +93,15 @@ struct CaptureField: View {
 
             diaryShortcutButton
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(focused ? 0.05 : 0.035))
+                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(strokeColor, lineWidth: focused ? 1.0 : 0.6)
+                .stroke(strokeColor, lineWidth: focused ? 1.1 : 0.6)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -112,19 +112,19 @@ struct CaptureField: View {
 
     private var diaryShortcutButton: some View {
         let isActive = (canSubmit && isCommandPressed) || (canSubmit && isHoveringDiary)
-        let iconColor = isActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(canSubmit ? 0.5 : 0.25)
+        let iconColor = isActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(canSubmit ? 0.6 : 0.25)
         let bgColor = isActive ? DaybookTheme.stamp.opacity(0.12) : Color.clear
         
         return Button(action: onDiary) {
-            HStack(spacing: 2) {
+            HStack(spacing: 2.5) {
                 Image(systemName: "command")
-                    .font(.system(size: 11, weight: isActive ? .bold : .semibold))
-                Image(systemName: "return")
                     .font(.system(size: 10.5, weight: isActive ? .bold : .semibold))
+                Image(systemName: "return")
+                    .font(.system(size: 10, weight: isActive ? .bold : .semibold))
             }
             .foregroundStyle(iconColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 3.5)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(bgColor)

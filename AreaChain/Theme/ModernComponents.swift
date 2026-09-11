@@ -262,7 +262,7 @@ struct ModernRowModifier: ViewModifier {
         if isHovered {
             return DaybookTheme.hoverFill
         }
-        return DaybookTheme.ink.opacity(0.035)
+        return Color.clear
     }
 
     private var borderStroke: Color {
@@ -270,9 +270,9 @@ struct ModernRowModifier: ViewModifier {
             return DaybookTheme.cardSelectionStroke
         }
         if isHovered {
-            return DaybookTheme.rule.opacity(0.4)
+            return DaybookTheme.rule.opacity(0.35)
         }
-        return DaybookTheme.rule.opacity(0.20)
+        return Color.clear
     }
 }
 

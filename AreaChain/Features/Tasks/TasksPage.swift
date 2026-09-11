@@ -6,15 +6,18 @@ struct TasksPageConfig {
     var yesterdayKey: String? = nil
     var maxScrollHeight: CGFloat? = nil
     var interaction: DayBoardInteraction = DayBoardInteraction()
+    var externalFilter: Binding<BoardFilter>? = nil
 
     init(
         yesterdayKey: String? = nil,
         maxScrollHeight: CGFloat? = nil,
-        interaction: DayBoardInteraction = DayBoardInteraction()
+        interaction: DayBoardInteraction = DayBoardInteraction(),
+        externalFilter: Binding<BoardFilter>? = nil
     ) {
         self.yesterdayKey = yesterdayKey
         self.maxScrollHeight = maxScrollHeight
         self.interaction = interaction
+        self.externalFilter = externalFilter
     }
 
     var focusedTaskID: Binding<UUID?>? { interaction.focusedTaskID }
@@ -66,6 +69,10 @@ struct TasksPage: View {
     @State var pendingTrash: PendingTrash?
     @State var boardFilter = BoardFilter()
 
+    private var effectiveFilter: BoardFilter {
+        config.externalFilter?.wrappedValue ?? boardFilter
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             headerBar
@@ -91,14 +98,14 @@ struct TasksPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .confirmMoveToTrash($pendingTrash)
-        .animation(DaybookMotion.interactive, value: boardFilter)
+        .animation(DaybookMotion.interactive, value: effectiveFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)
         .animation(DaybookMotion.interactive, value: showYesterday)
     }
 
     private var headerBar: some View {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
-        let hasFilters = !projects.isEmpty || !tags.isEmpty || !todayBundleIDs.isEmpty
+        let hasFilters = config.externalFilter == nil && boardFilter.isActive
         return Group {
             if hasChips || hasFilters {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -145,7 +152,7 @@ struct TasksPage: View {
             todos: todos,
             config: DayBoardListConfig(
                 todayKey: todayKey,
-                filter: boardFilter,
+                filter: effectiveFilter,
                 dayKeyForID: { [yesterdayKey] id in
                     resolveDayKey(for: id, yesterdayKey: yesterdayKey)
                 },

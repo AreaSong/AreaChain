@@ -57,6 +57,24 @@ struct ClassificationTests {
         #expect(!Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [child]))
     }
 
+    @Test func filterMatchesHighPriorityOnly() {
+        let normal = ClassifyBits(isImportant: false, isUrgent: false)
+        let important = ClassifyBits(isImportant: true, isUrgent: false)
+        let urgent = ClassifyBits(isImportant: false, isUrgent: true)
+        let both = ClassifyBits(isImportant: true, isUrgent: true)
+
+        let filter = BoardFilter().withHighPriority(true)
+        #expect(filter.isActive)
+        #expect(!Classification.matches(normal, filter: filter))
+        #expect(Classification.matches(important, filter: filter))
+        #expect(Classification.matches(urgent, filter: filter))
+        #expect(Classification.matches(both, filter: filter))
+
+        let inactiveFilter = filter.withHighPriority(false)
+        #expect(!inactiveFilter.isActive)
+        #expect(Classification.matches(normal, filter: inactiveFilter))
+    }
+
     @Test func quadrantSlotMapsTwoSwitches() throws {
         #expect(QuadrantSlot.of(important: true, urgent: true) == .importantUrgent)
         #expect(QuadrantSlot.of(important: true, urgent: false) == .important)

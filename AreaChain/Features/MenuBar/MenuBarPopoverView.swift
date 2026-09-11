@@ -37,6 +37,7 @@ struct MenuBarPopoverView: View {
     @State private var isHoveringSyntaxButton = false
     @State private var hoverDismissWorkItem: DispatchWorkItem? = nil
     @State private var tabKeyMonitor: Any? = nil
+    @State private var boardFilter = BoardFilter()
 
     private var todayKey: String {
         _ = dayTick
@@ -89,7 +90,14 @@ struct MenuBarPopoverView: View {
                     .overlay(DaybookTheme.rule.opacity(0.25))
                     .padding(.horizontal, -12)
 
-                FooterBar()
+                FooterBar(
+                    tab: tab,
+                    filter: $boardFilter,
+                    tags: Array(tags),
+                    diaryCount: todayDiariesCount,
+                    completedCount: todayCompleted,
+                    totalCount: todayRemaining + todayCompleted
+                )
             }
             .padding(12)
             .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
@@ -176,7 +184,8 @@ struct MenuBarPopoverView: View {
                             focusedTaskID = nil
                             captureFocused = true
                         }
-                    )
+                    ),
+                    externalFilter: $boardFilter
                 )
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
