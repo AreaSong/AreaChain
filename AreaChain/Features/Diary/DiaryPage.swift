@@ -6,6 +6,7 @@ struct DiaryPageOptions {
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
+    var externalSelectedTagID: Binding<UUID?>? = nil
 }
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
@@ -19,6 +20,7 @@ struct DiaryPage: View {
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
+    var externalSelectedTagID: Binding<UUID?>? = nil
 
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
@@ -42,6 +44,7 @@ struct DiaryPage: View {
         self.usesSharedDiaryDay = options.usesSharedDiaryDay
         self.maxScrollHeight = options.maxScrollHeight
         self.showsPageHeader = options.showsPageHeader
+        self.externalSelectedTagID = options.externalSelectedTagID
     }
 
     init(
@@ -49,7 +52,8 @@ struct DiaryPage: View {
         entries: [DiaryEntry],
         showsComposer: Bool = true,
         usesSharedDiaryDay: Bool = false,
-        showsPageHeader: Bool = true
+        showsPageHeader: Bool = true,
+        externalSelectedTagID: Binding<UUID?>? = nil
     ) {
         self.init(
             todayKey: todayKey,
@@ -57,7 +61,8 @@ struct DiaryPage: View {
             options: DiaryPageOptions(
                 showsComposer: showsComposer,
                 usesSharedDiaryDay: usesSharedDiaryDay,
-                showsPageHeader: showsPageHeader
+                showsPageHeader: showsPageHeader,
+                externalSelectedTagID: externalSelectedTagID
             )
         )
     }
@@ -128,6 +133,21 @@ struct DiaryPage: View {
                 DispatchQueue.main.async {
                     composerFocused = true
                 }
+            }
+        }
+        .onAppear {
+            if let ext = externalSelectedTagID?.wrappedValue {
+                selectedTagID = ext
+            }
+        }
+        .onChange(of: externalSelectedTagID?.wrappedValue) { _, newID in
+            if selectedTagID != newID {
+                selectedTagID = newID
+            }
+        }
+        .onChange(of: selectedTagID) { _, newID in
+            if let ext = externalSelectedTagID, ext.wrappedValue != newID {
+                ext.wrappedValue = newID
             }
         }
     }

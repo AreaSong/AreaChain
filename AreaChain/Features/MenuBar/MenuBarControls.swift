@@ -66,232 +66,312 @@ struct DaybookQuietTabBar: View {
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     var filter: Binding<BoardFilter>? = nil
+    var diaryFilterTagID: Binding<UUID?>? = nil
     var tags: [TagItem] = []
     var diaryCount: Int = 0
     var completedCount: Int = 0
     var totalCount: Int = 0
 
     @Environment(\.locale) private var locale
-    @State private var hotKeyName = HotKeyCenter.shared.displayName()
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var isFilterExpanded = false
+    @State private var hoverWorkItem: DispatchWorkItem? = nil
+
+    private var activeTags: [TagItem] {
+        tags.filter { $0.deletedAt == nil }
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
-            hotKeyBadge
+        ZStack(alignment: .leading) {
+            // 常态底栏
+            HStack(spacing: 8) {
+                filterTriggerCapsule
+                    .onHover { hovering in
+                        handleFilterHover(hovering)
+                    }
 
-            Spacer(minLength: 4)
+                Spacer(minLength: 4)
 
-            centerContent
-
-            Spacer(minLength: 4)
-
-            HStack(spacing: 6) {
-                if tab == .tasks && totalCount > 0 {
-                    todayProgressBadge
+                HStack(spacing: 6) {
+                    rightMetricBadge
+                    workspaceMenuButton
                 }
-                workspaceMenuButton
+            }
+
+            // Hover 展开横向抽屉（覆盖右侧内容）
+            if isFilterExpanded {
+                horizontalFilterDrawer
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .move(edge: .leading)),
+                        removal: .opacity.combined(with: .move(edge: .leading))
+                    ))
+                    .zIndex(10)
             }
         }
-        .onAppear { refreshHotKey() }
-        .onChange(of: locale.identifier) { _, _ in refreshHotKey() }
-        .onReceive(NotificationCenter.default.publisher(for: .hotKeyDidChange)) { _ in
-            refreshHotKey()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .appPreferencesDidChange)) { _ in
-            refreshHotKey()
+        .frame(height: 24)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isFilterExpanded)
+        .onDisappear {
+            hoverWorkItem?.cancel()
+            hoverWorkItem = nil
         }
     }
 
-    private var hotKeyBadge: some View {
-        Text(hotKeyName)
-            .font(.system(size: 10, weight: .medium, design: .monospaced))
+    // MARK: - 触发入口胶囊
+
+    @ViewBuilder
+    private var filterTriggerCapsule: some View {
+        let isTaskHighPriority = (tab == .tasks && filter?.wrappedValue.isHighPriorityOnly == true)
+        let activeTagID = (tab == .tasks ? filter?.wrappedValue.tagID : diaryFilterTagID?.wrappedValue)
+        let selectedTag = activeTags.first(where: { $0.id == activeTagID })
+
+        if isTaskHighPriority {
+            HStack(spacing: 3.5) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                Text("高优")
+                    .font(.system(size: 10.5, weight: .semibold))
+                Button {
+                    clearFilter()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .padding(2)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("filter.all")
+            }
+            .foregroundStyle(Color.orange)
+            .padding(.leading, 7)
+            .padding(.trailing, 5)
+            .padding(.vertical, 2.5)
+            .background(Capsule().fill(Color.orange.opacity(0.12)))
+            .overlay(Capsule().strokeBorder(Color.orange.opacity(0.4), lineWidth: 0.6))
+        } else if let tag = selectedTag {
+            HStack(spacing: 4) {
+                Image(systemName: "tag.fill")
+                    .font(.system(size: 9, weight: .semibold))
+                Text("#\(tag.name)")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .lineLimit(1)
+                Button {
+                    clearFilter()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .padding(2)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("filter.all")
+            }
+            .foregroundStyle(Color.white)
+            .padding(.leading, 7)
+            .padding(.trailing, 5)
+            .padding(.vertical, 2.5)
+            .background(Capsule().fill(DaybookTheme.stamp))
+            .shadow(color: DaybookTheme.stamp.opacity(0.25), radius: 2, y: 1)
+        } else {
+            HStack(spacing: 3.5) {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(.system(size: 9, weight: .medium))
+                Text("筛选")
+                    .font(.system(size: 10.5, weight: .medium))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 7, weight: .bold))
+                    .opacity(0.5)
+            }
             .foregroundStyle(DaybookTheme.muted)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(Capsule().fill(DaybookTheme.ink.opacity(0.04)))
+            .overlay(Capsule().strokeBorder(DaybookTheme.rule.opacity(0.4), lineWidth: 0.6))
+            .contentShape(Capsule())
+            .help("鼠标悬停展开筛选标签")
+        }
+    }
+
+    // MARK: - 横向滑动抽屉
+
+    private var horizontalFilterDrawer: some View {
+        HStack(spacing: 5) {
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundStyle(DaybookTheme.stamp)
+                .padding(.leading, 6)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    allFilterChip
+                    if tab == .tasks {
+                        highPriorityChip
+                    }
+                    ForEach(activeTags) { tag in
+                        tagChip(tag)
+                    }
+                }
+                .padding(.vertical, 1)
+                .padding(.trailing, 4)
+            }
+
+            Button {
+                collapseDrawer()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 8.5, weight: .bold))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 18, height: 18)
+                    .background(Circle().fill(DaybookTheme.ink.opacity(0.05)))
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .padding(.trailing, 4)
+            .help("收起")
+        }
+        .frame(maxWidth: .infinity, maxHeight: 25, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: Color.black.opacity(0.08), radius: 3, x: 0, y: 1)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.65), lineWidth: 0.7)
+        )
+        .onHover { hovering in
+            handleFilterHover(hovering)
+        }
+    }
+
+    // MARK: - Filter Chips
+
+    private var allFilterChip: some View {
+        let isAllSelected: Bool = {
+            if tab == .tasks {
+                return filter?.wrappedValue.isActive != true
+            } else {
+                return diaryFilterTagID?.wrappedValue == nil
+            }
+        }()
+
+        return Button {
+            clearFilter()
+            collapseDrawer()
+        } label: {
+            Text(L10n.string("filter.all", locale: locale))
+                .font(.system(size: 10, weight: isAllSelected ? .semibold : .regular))
+                .foregroundStyle(isAllSelected ? DaybookTheme.ink : DaybookTheme.muted)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2.5)
+                .background(
+                    Capsule().fill(isAllSelected ? DaybookTheme.ink.opacity(0.10) : DaybookTheme.ink.opacity(0.03))
+                )
+                .overlay(
+                    Capsule().strokeBorder(isAllSelected ? DaybookTheme.rule.opacity(0.8) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.5)
+                )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var highPriorityChip: some View {
+        let isSelected = (filter?.wrappedValue.isHighPriorityOnly == true)
+
+        return Button {
+            if let f = filter {
+                f.wrappedValue = f.wrappedValue.withHighPriority(!isSelected)
+            }
+            collapseDrawer()
+        } label: {
+            HStack(spacing: 2.5) {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 8.5))
+                Text("高优")
+                    .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+            }
+            .foregroundStyle(isSelected ? Color.orange : DaybookTheme.muted)
             .padding(.horizontal, 6)
             .padding(.vertical, 2.5)
             .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(DaybookTheme.ink.opacity(0.04))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .stroke(DaybookTheme.rule.opacity(0.4), lineWidth: 0.7)
-                    )
+                Capsule().fill(isSelected ? Color.orange.opacity(0.12) : DaybookTheme.ink.opacity(0.03))
             )
-            .help("footer.hotkey \(hotKeyName)")
-    }
-
-    @ViewBuilder
-    private var centerContent: some View {
-        switch tab {
-        case .tasks:
-            unifiedFilterControl
-        case .diary:
-            diaryCounterBadge
+            .overlay(
+                Capsule().strokeBorder(isSelected ? Color.orange.opacity(0.5) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.5)
+            )
         }
+        .buttonStyle(.plain)
     }
 
-    private var diaryCounterBadge: some View {
-        Group {
-            if diaryCount > 0 {
-                Text(L10n.format("header.diary.count", locale: locale, diaryCount))
-                    .font(.system(size: 10.5, weight: .medium))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2.5)
+    private func tagChip(_ tag: TagItem) -> some View {
+        let isSelected: Bool = {
+            if tab == .tasks {
+                return filter?.wrappedValue.tagID == tag.id
+            } else {
+                return diaryFilterTagID?.wrappedValue == tag.id
             }
-        }
-    }
+        }()
 
-    @ViewBuilder
-    private var unifiedFilterControl: some View {
-        if let filterBinding = filter {
-            let activeTags = tags.filter { $0.deletedAt == nil }
-            let currentTagID = filterBinding.wrappedValue.tagID
-            let isHighPriority = filterBinding.wrappedValue.isHighPriorityOnly
-            let selectedTag = activeTags.first(where: { $0.id == currentTagID })
-
-            if isHighPriority {
-                HStack(spacing: 3.5) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 9.5, weight: .semibold))
-                    Text("高优")
-                        .font(.system(size: 10.5, weight: .semibold))
-                    Button {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                            filterBinding.wrappedValue = filterBinding.wrappedValue.withHighPriority(false)
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
-                            .padding(2)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("filter.all")
+        return Button {
+            if tab == .tasks {
+                if let f = filter {
+                    let next = (f.wrappedValue.tagID == tag.id) ? nil : tag.id
+                    f.wrappedValue = f.wrappedValue.withTag(next)
                 }
-                .foregroundStyle(Color.orange)
-                .padding(.leading, 7)
-                .padding(.trailing, 5)
+            } else {
+                if let df = diaryFilterTagID {
+                    df.wrappedValue = (df.wrappedValue == tag.id) ? nil : tag.id
+                }
+            }
+            collapseDrawer()
+        } label: {
+            Text("#\(tag.name)")
+                .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? Color.white : DaybookTheme.muted)
+                .padding(.horizontal, 6)
                 .padding(.vertical, 2.5)
                 .background(
-                    Capsule().fill(Color.orange.opacity(0.12))
+                    Capsule().fill(isSelected ? DaybookTheme.stamp : DaybookTheme.ink.opacity(0.03))
                 )
                 .overlay(
-                    Capsule().strokeBorder(Color.orange.opacity(0.4), lineWidth: 0.6)
+                    Capsule().strokeBorder(isSelected ? DaybookTheme.stamp : DaybookTheme.rule.opacity(0.3), lineWidth: 0.5)
                 )
-            } else if let tag = selectedTag {
-                HStack(spacing: 4) {
-                    Image(systemName: "tag.fill")
-                        .font(.system(size: 9.5, weight: .semibold))
-                    Text("#\(tag.name)")
-                        .font(.system(size: 10.5, weight: .semibold))
-                        .lineLimit(1)
-                    Button {
-                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                            filterBinding.wrappedValue = filterBinding.wrappedValue.withTag(nil)
-                        }
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 8, weight: .bold))
-                            .padding(2)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .help("filter.all")
-                }
-                .foregroundStyle(Color.white)
-                .padding(.leading, 7)
-                .padding(.trailing, 5)
-                .padding(.vertical, 2.5)
-                .background(
-                    Capsule().fill(DaybookTheme.stamp)
-                )
-                .shadow(color: DaybookTheme.stamp.opacity(0.25), radius: 2, y: 1)
-            } else {
-                Menu {
-                    filterMenuContent(filterBinding: filterBinding, activeTags: activeTags)
-                } label: {
-                    filterCapsuleLabel
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-                .buttonStyle(DaybookQuietButtonStyle())
-                .help("filter.tag")
-            }
         }
+        .buttonStyle(.plain)
     }
+
+    // MARK: - 右侧度量徽标
 
     @ViewBuilder
-    private func filterMenuContent(filterBinding: Binding<BoardFilter>, activeTags: [TagItem]) -> some View {
-        let currentTagID = filterBinding.wrappedValue.tagID
-        let isHighPriority = filterBinding.wrappedValue.isHighPriorityOnly
-
-        Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                filterBinding.wrappedValue = BoardFilter()
+    private var rightMetricBadge: some View {
+        switch tab {
+        case .tasks:
+            if totalCount > 0 {
+                todayProgressBadge
             }
-        } label: {
-            HStack {
-                Text(L10n.string("filter.all", locale: locale))
-                if !filterBinding.wrappedValue.isActive {
-                    Image(systemName: "checkmark")
-                }
-            }
-        }
-
-        Divider()
-
-        Button {
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                filterBinding.wrappedValue = filterBinding.wrappedValue.withHighPriority(!isHighPriority)
-            }
-        } label: {
-            HStack {
-                Text("★ 仅看高优")
-                if isHighPriority {
-                    Image(systemName: "checkmark")
-                }
-            }
-        }
-
-        if !activeTags.isEmpty {
-            Divider()
-            ForEach(activeTags) { tag in
-                Button {
-                    withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                        let nextTag = currentTagID == tag.id ? nil : tag.id
-                        filterBinding.wrappedValue = filterBinding.wrappedValue.withTag(nextTag)
-                    }
-                } label: {
-                    HStack {
-                        Text("#\(tag.name)")
-                        if currentTagID == tag.id {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
+        case .diary:
+            diaryMetricBadge
         }
     }
 
-    private var filterCapsuleLabel: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "line.3.horizontal.decrease")
-                .font(.system(size: 9, weight: .medium))
-            Text("筛选")
-                .font(.system(size: 10.5, weight: .medium))
-            Image(systemName: "chevron.down")
-                .font(.system(size: 7, weight: .bold))
-                .opacity(0.6)
+    private var diaryMetricBadge: some View {
+        HStack(spacing: 3.5) {
+            Image(systemName: "book.pages")
+                .font(.system(size: 9.5, weight: .medium))
+            Text("\(diaryCount) 篇")
+                .font(.system(size: 10, weight: .medium, design: .rounded))
         }
         .foregroundStyle(DaybookTheme.muted)
-        .padding(.horizontal, 7)
-        .padding(.vertical, 3)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2.5)
         .background(
-            Capsule().fill(DaybookTheme.ink.opacity(0.04))
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(DaybookTheme.ink.opacity(0.03))
         )
         .overlay(
-            Capsule().strokeBorder(DaybookTheme.rule.opacity(0.4), lineWidth: 0.6)
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.3), lineWidth: 0.6)
         )
-        .contentShape(Capsule())
+        .help("今日日记：共 \(diaryCount) 篇")
     }
 
     private var todayProgressBadge: some View {
@@ -318,7 +398,7 @@ struct FooterBar: View {
                 .foregroundStyle(DaybookTheme.muted)
         }
         .padding(.horizontal, 6)
-        .padding(.vertical, 3)
+        .padding(.vertical, 2.5)
         .background(
             RoundedRectangle(cornerRadius: 4, style: .continuous)
                 .fill(DaybookTheme.ink.opacity(0.03))
@@ -347,7 +427,7 @@ struct FooterBar: View {
             Image(systemName: "macwindow")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 24, height: 24)
+                .frame(width: 22, height: 22)
                 .background(
                     RoundedRectangle(cornerRadius: 5, style: .continuous)
                         .fill(DaybookTheme.ink.opacity(0.04))
@@ -358,7 +438,7 @@ struct FooterBar: View {
                 )
                 .contentShape(Rectangle())
         } primaryAction: {
-            AppWindows.openWorkspace(tab: .today)
+            AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -367,8 +447,42 @@ struct FooterBar: View {
         .accessibilityLabel("window.workspace")
     }
 
-    private func refreshHotKey() {
-        hotKeyName = HotKeyCenter.shared.displayName(locale: locale)
+    // MARK: - Actions & Helpers
+
+    private func handleFilterHover(_ hovering: Bool) {
+        if hovering {
+            hoverWorkItem?.cancel()
+            hoverWorkItem = nil
+            if !isFilterExpanded {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isFilterExpanded = true
+                }
+            }
+        } else {
+            let task = DispatchWorkItem {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isFilterExpanded = false
+                }
+            }
+            hoverWorkItem = task
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22, execute: task)
+        }
+    }
+
+    private func collapseDrawer() {
+        hoverWorkItem?.cancel()
+        hoverWorkItem = nil
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            isFilterExpanded = false
+        }
+    }
+
+    private func clearFilter() {
+        if tab == .tasks {
+            filter?.wrappedValue = BoardFilter()
+        } else {
+            diaryFilterTagID?.wrappedValue = nil
+        }
     }
 }
 

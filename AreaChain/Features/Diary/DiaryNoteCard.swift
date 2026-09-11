@@ -34,22 +34,20 @@ struct DiaryNoteCard: View {
         return hasPasswordTag || entry.text.contains("#\(DiaryMemoTags.password)")
     }
 
-    private var presetTags: [TagItem] {
-        DiaryMemoTags.presets.compactMap { name in
-            activeTags.first { $0.name == name }
-        }
-    }
-
-    private var extraAssignedTags: [TagItem] {
-        activeTags.filter { tag in
-            !DiaryMemoTags.isPresetName(tag.name) && TagIDList.contains(entry.tagIDs, tag.id)
-        }
+    private var assignedTags: [TagItem] {
+        DiaryMemoTags.ordered(
+            activeTags.filter { TagIDList.contains(entry.tagIDs, $0.id) },
+            name: { $0.name },
+            isActive: { _ in true }
+        )
     }
 
     private var addableTags: [TagItem] {
-        activeTags.filter { tag in
-            !DiaryMemoTags.isPresetName(tag.name) && !TagIDList.contains(entry.tagIDs, tag.id)
-        }
+        DiaryMemoTags.ordered(
+            activeTags.filter { !TagIDList.contains(entry.tagIDs, $0.id) },
+            name: { $0.name },
+            isActive: { _ in true }
+        )
     }
 
     private var noteAttachments: [AttachmentRef] {
@@ -87,54 +85,73 @@ struct DiaryNoteCard: View {
         .animation(.easeInOut(duration: 0.15), value: isHovered)
     }
 
+    @ViewBuilder
     private var tagRow: some View {
-        HStack(spacing: 5) {
-            ForEach(presetTags) { tag in
-                tagToggleChip(tag, assigned: TagIDList.contains(entry.tagIDs, tag.id))
-            }
-            ForEach(extraAssignedTags) { tag in
-                tagToggleChip(tag, assigned: true)
-            }
-            if !addableTags.isEmpty {
-                Menu {
-                    ForEach(addableTags) { tag in
-                        Button("#\(tag.name)") {
-                            DayBoardMutations.toggleDiaryTag(entry, tagID: tag.id)
-                        }
-                    }
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                        .frame(width: 20, height: 20)
-                        .background(Circle().fill(DaybookTheme.hoverFill))
+        if !assignedTags.isEmpty || isHovered {
+            HStack(spacing: 5) {
+                ForEach(assignedTags) { tag in
+                    assignedTagChip(tag)
                 }
-                .menuStyle(.borderlessButton)
-                .help("diary.tag.add")
+
+                if !addableTags.isEmpty {
+                    addTagMenu
+                }
             }
+            .padding(.top, 2)
+            .transition(.opacity)
         }
-        .padding(.top, 2)
     }
 
-    private func tagToggleChip(_ tag: TagItem, assigned: Bool) -> some View {
+    private func assignedTagChip(_ tag: TagItem) -> some View {
         let color = DiaryTagChrome.color(for: tag.name)
         return Button {
             DayBoardMutations.toggleDiaryTag(entry, tagID: tag.id)
         } label: {
-            Text("#\(tag.name)")
-                .font(.system(size: 10.5, weight: assigned ? .semibold : .medium))
-                .foregroundStyle(assigned ? color : DaybookTheme.muted)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2)
-                .background(
-                    Capsule().fill(assigned ? color.opacity(0.12) : DaybookTheme.hoverFill)
-                )
-                .overlay(
-                    Capsule().strokeBorder(assigned ? color.opacity(0.4) : DaybookTheme.cardBorder, lineWidth: 0.8)
-                )
+            HStack(spacing: 3) {
+                Text("#\(tag.name)")
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .foregroundStyle(color)
+            }
+            .padding(.horizontal, 7)
+            .padding(.vertical, 2.5)
+            .background(
+                Capsule().fill(color.opacity(0.12))
+            )
+            .overlay(
+                Capsule().strokeBorder(color.opacity(0.35), lineWidth: 0.8)
+            )
         }
         .buttonStyle(.plain)
-        .help(assigned ? "diary.tag.off" : "diary.tag.on")
+        .help("diary.tag.off")
+    }
+
+    @ViewBuilder
+    private var addTagMenu: some View {
+        Menu {
+            ForEach(addableTags) { tag in
+                Button("#\(tag.name)") {
+                    DayBoardMutations.toggleDiaryTag(entry, tagID: tag.id)
+                }
+            }
+        } label: {
+            HStack(spacing: 3) {
+                Image(systemName: "plus")
+                    .font(.system(size: 8.5, weight: .bold))
+                if assignedTags.isEmpty {
+                    Text("diary.tag.add")
+                        .font(.system(size: 10, weight: .medium))
+                }
+            }
+            .foregroundStyle(DaybookTheme.muted)
+            .padding(.horizontal, assignedTags.isEmpty ? 6 : 4)
+            .frame(height: 18)
+            .background(Capsule().fill(DaybookTheme.hoverFill))
+            .overlay(
+                Capsule().strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.7)
+            )
+        }
+        .menuStyle(.borderlessButton)
+        .help("diary.tag.add")
     }
 
     @ViewBuilder

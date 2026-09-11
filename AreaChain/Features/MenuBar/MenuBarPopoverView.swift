@@ -38,6 +38,7 @@ struct MenuBarPopoverView: View {
     @State private var hoverDismissWorkItem: DispatchWorkItem? = nil
     @State private var tabKeyMonitor: Any? = nil
     @State private var boardFilter = BoardFilter()
+    @State private var diaryFilterTagID: UUID? = nil
 
     private var todayKey: String {
         _ = dayTick
@@ -93,6 +94,7 @@ struct MenuBarPopoverView: View {
                 FooterBar(
                     tab: tab,
                     filter: $boardFilter,
+                    diaryFilterTagID: $diaryFilterTagID,
                     tags: Array(tags),
                     diaryCount: todayDiariesCount,
                     completedCount: todayCompleted,
@@ -198,7 +200,8 @@ struct MenuBarPopoverView: View {
             todayKey: todayKey,
             entries: diaries,
             showsComposer: true,
-            showsPageHeader: false
+            showsPageHeader: false,
+            externalSelectedTagID: $diaryFilterTagID
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
