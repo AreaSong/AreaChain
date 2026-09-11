@@ -46,11 +46,11 @@ struct MenuBarPopoverView: View {
         DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
     }
 
-    private var headerSubtitle: LocalizedStringKey? {
+    private var headerSubtitle: LocalizedStringKey {
         switch tab {
         case .tasks:
             if todayRemaining == 0 && todayCompleted > 0 {
-                return nil
+                return " "
             }
             if todayCompleted > 0 {
                 return "header.progress \(todayRemaining) \(todayCompleted)"
@@ -58,11 +58,11 @@ struct MenuBarPopoverView: View {
             if todayRemaining > 0 {
                 return "header.remaining \(todayRemaining)"
             }
-            return nil
+            return " "
         case .diary:
             let count = todayDiariesCount
             if count == 0 {
-                return nil
+                return " "
             }
             return "header.diary.count \(count)"
         }
@@ -218,11 +218,9 @@ struct MenuBarPopoverView: View {
                     Circle()
                         .fill(todayRemaining > 0 ? Color.orange : DaybookTheme.stamp)
                         .frame(width: 5, height: 5)
-                    if let subtitle = headerSubtitle {
-                        Text(subtitle)
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted)
-                    }
+                    Text(headerSubtitle)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted)
                 }
             }
 
@@ -247,11 +245,11 @@ struct MenuBarPopoverView: View {
                     .foregroundStyle((showingSyntaxHelp || isHoveringSyntaxButton) ? DaybookTheme.stamp : DaybookTheme.muted)
                     .frame(width: 24, height: 24)
                     .background(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(DaybookTheme.ink.opacity((showingSyntaxHelp || isHoveringSyntaxButton) ? 0.10 : 0.04))
                     )
                     .overlay(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .stroke(DaybookTheme.rule.opacity((showingSyntaxHelp || isHoveringSyntaxButton) ? 0.7 : 0.35), lineWidth: 0.6)
                     )
                     .contentShape(Rectangle())

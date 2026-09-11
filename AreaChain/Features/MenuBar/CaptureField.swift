@@ -17,6 +17,9 @@ struct CaptureField: View {
     var onDiary: () -> Void
 
     @State private var autocomplete = SyntaxAutocompleteState()
+    @State private var isCommandPressed: Bool = false
+    @State private var eventMonitor: Any?
+    @State private var isHoveringDiary: Bool = false
 
     private var availableTags: [String] {
         allTags.filter { $0.deletedAt == nil }.map(\.name)
@@ -51,6 +54,18 @@ struct CaptureField: View {
         .animation(DaybookMotion.interactive, value: text)
         .animation(DaybookMotion.interactive, value: focus.wrappedValue)
         .daybookHideInputChrome()
+        .onAppear {
+            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+                isCommandPressed = event.modifierFlags.contains(.command)
+                return event
+            }
+            isCommandPressed = NSEvent.modifierFlags.contains(.command)
+        }
+        .onDisappear {
+            if let monitor = eventMonitor {
+                NSEvent.removeMonitor(monitor)
+            }
+        }
     }
 
     private var inputRow: some View {
@@ -76,16 +91,6 @@ struct CaptureField: View {
             )
             .accessibilityLabel("capture.placeholder.today")
 
-            if canSubmit {
-                Button(action: onTodo) {
-                    Image(systemName: "arrow.up.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(DaybookTheme.stamp)
-                }
-                .buttonStyle(.plain)
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
-            }
-
             diaryShortcutButton
         }
         .padding(.horizontal, 9)
@@ -106,20 +111,35 @@ struct CaptureField: View {
     }
 
     private var diaryShortcutButton: some View {
-        let diaryInk = DaybookTheme.muted.opacity(canSubmit ? 0.8 : 0.4)
+        let isActive = (canSubmit && isCommandPressed) || (canSubmit && isHoveringDiary)
+        let iconColor = isActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(canSubmit ? 0.5 : 0.25)
+        let bgColor = isActive ? DaybookTheme.stamp.opacity(0.12) : Color.clear
+        
         return Button(action: onDiary) {
             HStack(spacing: 2) {
-                Text("capture.diary")
-                    .font(.system(size: 10, weight: .medium))
-                Text("⌘↩")
-                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                Image(systemName: "command")
+                    .font(.system(size: 11, weight: isActive ? .bold : .semibold))
+                Image(systemName: "return")
+                    .font(.system(size: 10.5, weight: isActive ? .bold : .semibold))
             }
-            .foregroundStyle(diaryInk)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 2.5)
+            .foregroundStyle(iconColor)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(bgColor)
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .focusable(false)
         .disabled(!canSubmit)
+        .keyboardShortcut(.return, modifiers: [.command])
         .help("capture.diary")
+        .onHover { hovering in
+            isHoveringDiary = hovering
+        }
+        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isActive)
+        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: canSubmit)
     }
 }

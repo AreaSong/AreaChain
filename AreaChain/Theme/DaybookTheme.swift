@@ -64,41 +64,13 @@ enum DaybookTheme {
     static let stamp = Color.daybook(name: "daybook.stamp", swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark)
     static let paper = Color.daybook(name: "daybook.paper", swatch: DaybookSwatch.paperLight, dark: DaybookSwatch.paperDark)
     static let done = Color.daybook(name: "daybook.done", swatch: DaybookSwatch.doneLight, dark: DaybookSwatch.doneDark)
-    static let destructive = Color.daybook(
-        name: "daybook.destructive",
-        swatch: DaybookSwatch.destructiveLight,
-        dark: DaybookSwatch.destructiveDark
-    )
-    static let checkmark = Color.daybook(
-        name: "daybook.checkmark",
-        swatch: DaybookSwatch.checkmarkLight,
-        dark: DaybookSwatch.checkmarkDark
-    )
-    static let hoverFill = Color.daybook(
-        name: "daybook.hoverFill",
-        light: NSColor.black.withAlphaComponent(0.04),
-        dark: NSColor.white.withAlphaComponent(0.08)
-    )
-    static let pressFill = Color.daybook(
-        name: "daybook.pressFill",
-        light: NSColor.black.withAlphaComponent(0.08),
-        dark: NSColor.white.withAlphaComponent(0.14)
-    )
-    static let surface = Color.daybook(
-        name: "daybook.surface",
-        light: NSColor.white.withAlphaComponent(0.65),
-        dark: NSColor(white: 0.18, alpha: 0.55)
-    )
-    static let cardSurface = Color.daybook(
-        name: "daybook.cardSurface",
-        light: NSColor.white.withAlphaComponent(0.55),
-        dark: NSColor(white: 0.18, alpha: 0.55)
-    )
-    static let cardSurfaceHover = Color.daybook(
-        name: "daybook.cardSurfaceHover",
-        light: NSColor.white.withAlphaComponent(0.85),
-        dark: NSColor(white: 0.24, alpha: 0.75)
-    )
+    static let destructive = Color.daybook(name: "daybook.destructive", swatch: DaybookSwatch.destructiveLight, dark: DaybookSwatch.destructiveDark)
+    static let checkmark = Color.daybook(name: "daybook.checkmark", swatch: DaybookSwatch.checkmarkLight, dark: DaybookSwatch.checkmarkDark)
+    static let hoverFill = Color.daybook(name: "daybook.hoverFill", light: NSColor.black.withAlphaComponent(0.04), dark: NSColor.white.withAlphaComponent(0.08))
+    static let pressFill = Color.daybook(name: "daybook.pressFill", light: NSColor.black.withAlphaComponent(0.08), dark: NSColor.white.withAlphaComponent(0.14))
+    static let surface = Color.daybook(name: "daybook.surface", light: NSColor.white.withAlphaComponent(0.65), dark: NSColor(white: 0.18, alpha: 0.55))
+    static let cardSurface = Color.daybook(name: "daybook.cardSurface", light: NSColor.white.withAlphaComponent(0.55), dark: NSColor(white: 0.18, alpha: 0.55))
+    static let cardSurfaceHover = Color.daybook(name: "daybook.cardSurfaceHover", light: NSColor.white.withAlphaComponent(0.85), dark: NSColor(white: 0.24, alpha: 0.75))
     static let cardSelectionFill = Color.daybook(
         name: "daybook.cardSelectionFill",
         light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.08),
@@ -256,6 +228,26 @@ extension View {
     }
 }
 
+/// 支持按键等效拦截（如 ⌘↩）的 AppKit 文本框
+final class DaybookAppKitTextField: NSTextField {
+    var onCommandReturn: (() -> Void)?
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        if flags == .command,
+           (event.keyCode == 36 || event.charactersIgnoringModifiers == "\r" || event.charactersIgnoringModifiers == "\n") {
+            if let onCommandReturn {
+                if let editor = currentEditor() as? NSTextView {
+                    stringValue = editor.string
+                }
+                onCommandReturn()
+                return true
+            }
+        }
+        return super.performKeyEquivalent(with: event)
+    }
+}
+
 /// AppKit 单行输入，避开 SwiftUI TextField 在 NSPopover 里错位的系统附件按钮。
 struct DaybookTextField: NSViewRepresentable {
     @Binding var text: String
@@ -274,7 +266,7 @@ struct DaybookTextField: NSViewRepresentable {
     }
 
     func makeNSView(context: Context) -> NSTextField {
-        let field = NSTextField(string: "")
+        let field = DaybookAppKitTextField(string: "")
         field.placeholderString = placeholder
         field.font = .systemFont(ofSize: fontSize)
         field.textColor = NSColor(DaybookTheme.ink)
@@ -297,10 +289,22 @@ struct DaybookTextField: NSViewRepresentable {
 
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
-        if field.stringValue != text {
+        (field as? DaybookAppKitTextField)?.onCommandReturn = {
+            guard let extra = context.coordinator.parent.onCommandReturn else { return }
+            let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
+            var value = editorString
+            if !context.coordinator.parent.allowsShiftNewline, value.contains("\n") {
+                value = value.replacingOccurrences(of: "\n", with: " ")
+            }
+            context.coordinator.parent.text = value
+            context.coordinator.parent.autocomplete?.dismiss()
+            extra()
+        }
+        let currentString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
+        if currentString != text {
             if field.currentEditor() == nil || text.isEmpty {
                 field.stringValue = text
-                field.currentEditor()?.string = text
+                (field.currentEditor() as? NSTextView)?.string = text
             }
         }
         if field.placeholderString != placeholder {
@@ -318,11 +322,17 @@ struct DaybookTextField: NSViewRepresentable {
         }
     }
 
-    final class Coordinator: NSObject, NSTextFieldDelegate, NSTextViewDelegate {
+    @MainActor
+    final class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: DaybookTextField
+        private weak var observedEditor: NSTextView?
 
         init(_ parent: DaybookTextField) {
             self.parent = parent
+        }
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
         }
 
         @objc func submitted(_ sender: Any? = nil) {
@@ -351,7 +361,7 @@ struct DaybookTextField: NSViewRepresentable {
             }
         }
 
-        func textViewDidChangeSelection(_ notification: Notification) {
+        @objc private func editorDidChangeSelection(_ notification: Notification) {
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
             let cursor = textView.selectedRange().location
@@ -361,7 +371,23 @@ struct DaybookTextField: NSViewRepresentable {
         func controlTextDidBeginEditing(_ obj: Notification) {
             parent.focus.wrappedValue = true
             guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
-            editor.delegate = self
+
+            // 注意：不能将 editor.delegate 设为 self！
+            // NSTextField 内部强依赖自身作为 fieldEditor 的 delegate 来同步状态与派发通知。
+            // 若覆盖 delegate，NSTextField 将不会向此 Coordinator 转发 controlTextDidChange 与 doCommandBy。
+            if observedEditor !== editor {
+                if let old = observedEditor {
+                    NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: old)
+                }
+                observedEditor = editor
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(editorDidChangeSelection(_:)),
+                    name: NSTextView.didChangeSelectionNotification,
+                    object: editor
+                )
+            }
+
             editor.isAutomaticQuoteSubstitutionEnabled = false
             editor.isAutomaticDashSubstitutionEnabled = false
             editor.isAutomaticTextReplacementEnabled = false
@@ -374,6 +400,10 @@ struct DaybookTextField: NSViewRepresentable {
         func controlTextDidEndEditing(_ obj: Notification) {
             parent.focus.wrappedValue = false
             parent.autocomplete?.dismiss()
+            if let editor = observedEditor {
+                NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: editor)
+                observedEditor = nil
+            }
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
@@ -415,10 +445,28 @@ struct DaybookTextField: NSViewRepresentable {
                 }
                 return true
             }
+            if commandSelector == Selector(("noop:")) {
+                let flags = (NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags).intersection(.deviceIndependentFlagsMask)
+                if flags == .command, let extra = parent.onCommandReturn {
+                    var value = textView.string
+                    if !parent.allowsShiftNewline, value.contains("\n") {
+                        value = value.replacingOccurrences(of: "\n", with: " ")
+                    }
+                    parent.text = value
+                    parent.autocomplete?.dismiss()
+                    extra()
+                    return true
+                }
+            }
             if commandSelector == #selector(NSResponder.insertNewline(_:)) {
                 if textView.hasMarkedText() {
                     return false
                 }
+                var value = textView.string
+                if !parent.allowsShiftNewline, value.contains("\n") {
+                    value = value.replacingOccurrences(of: "\n", with: " ")
+                }
+                parent.text = value
                 submitted()
                 return true
             }
@@ -427,12 +475,10 @@ struct DaybookTextField: NSViewRepresentable {
                 parent.focus.wrappedValue = false
                 return true
             }
-            if commandSelector == #selector(NSResponder.moveDown(_:)) {
-                if textView.string.isEmpty {
-                    textView.window?.makeFirstResponder(nil)
-                    parent.focus.wrappedValue = false
-                    return true
-                }
+            if commandSelector == #selector(NSResponder.moveDown(_:)), textView.string.isEmpty {
+                textView.window?.makeFirstResponder(nil)
+                parent.focus.wrappedValue = false
+                return true
             }
             return false
         }

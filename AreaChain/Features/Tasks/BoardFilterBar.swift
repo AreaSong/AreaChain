@@ -126,7 +126,6 @@ struct BoardFilterBar: View {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .fixedSize()
         .accessibilityLabel(title)
         .accessibilityAddTraits(active ? [.isSelected] : [])
     }

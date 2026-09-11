@@ -51,7 +51,7 @@ extension DayBoardList {
         VStack(alignment: .leading, spacing: 4) {
             Divider()
                 .opacity(0.15)
-                .padding(.top, 12)
+                .padding(.top, 4)
                 .padding(.bottom, 4)
 
             Button {

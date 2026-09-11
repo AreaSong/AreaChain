@@ -67,14 +67,14 @@ struct TasksPage: View {
     @State var boardFilter = BoardFilter()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
             headerBar
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
-                        dayBoardView
-                        upcomingSection
                         yesterdaySection
+                        upcomingSection
+                        dayBoardView
                     }
                     .padding(.vertical, 2)
                 }
