@@ -111,10 +111,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     private func refreshCount() {
         guard let container, let button = statusItem?.button else { return }
-        let context = ModelContext(container)
-        let routines = (try? context.fetch(FetchDescriptor<DailyRoutine>())) ?? []
-        let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
-        let checks = (try? context.fetch(FetchDescriptor<RoutineCheck>())) ?? []
+        let context = container.mainContext
+        guard let routines = try? context.fetch(FetchDescriptor<DailyRoutine>()),
+              let todos = try? context.fetch(FetchDescriptor<TodoItem>()),
+              let checks = try? context.fetch(FetchDescriptor<RoutineCheck>()) else {
+            MutationFeedback.shared.reportFailure()
+            return
+        }
         let count = DayBoardLogic.todayBadgeCount(
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),

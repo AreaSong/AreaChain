@@ -2,8 +2,9 @@ import AppKit
 import SwiftUI
 
 struct TaskDetailNotesView: View {
+    let draftKey: String
     let notes: String
-    let onUpdate: (String) -> Void
+    let onUpdate: (String) -> Bool
 
     @State private var draft: String = ""
     @State private var saveTask: Task<Void, Never>?
@@ -16,10 +17,10 @@ struct TaskDetailNotesView: View {
             notesLinksView
         }
         .onAppear {
-            draft = notes
+            draft = EditDrafts.shared.notes[draftKey] ?? notes
         }
         .onChange(of: notes) { _, newValue in
-            if !isFocused && newValue != draft {
+            if !isFocused && EditDrafts.shared.notes[draftKey] == nil && newValue != draft {
                 draft = newValue
             }
         }
@@ -34,6 +35,11 @@ struct TaskDetailNotesView: View {
                 .font(DaybookType.label)
                 .foregroundStyle(DaybookTheme.muted)
             Spacer()
+            if EditDrafts.shared.notes[draftKey] != nil {
+                Text("editor.unsaved")
+                    .font(DaybookType.badge)
+                    .foregroundStyle(DaybookTheme.destructive)
+            }
             if !draft.isEmpty {
                 Text("drawer.notes.count \(draft.count)")
                     .font(.system(size: 9))
@@ -69,6 +75,7 @@ struct TaskDetailNotesView: View {
                 .padding(4)
                 .frame(minHeight: 56, maxHeight: 150)
                 .onChange(of: draft) { _, newValue in
+                    if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
                     scheduleSave(newValue)
                 }
                 .onChange(of: isFocused) { _, focused in
@@ -127,7 +134,9 @@ struct TaskDetailNotesView: View {
             try? await Task.sleep(for: .milliseconds(450))
             guard !Task.isCancelled else { return }
             if text != notes {
-                onUpdate(text)
+                if onUpdate(text) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }
+            } else {
+                EditDrafts.shared.notes.removeValue(forKey: draftKey)
             }
         }
     }
@@ -136,7 +145,10 @@ struct TaskDetailNotesView: View {
         saveTask?.cancel()
         saveTask = nil
         if draft != notes {
-            onUpdate(draft)
+            EditDrafts.shared.notes[draftKey] = draft
+            if onUpdate(draft) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }
+        } else {
+            EditDrafts.shared.notes.removeValue(forKey: draftKey)
         }
     }
 

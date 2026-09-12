@@ -9,7 +9,7 @@ extension TasksPage {
                 DayBoardMutations.completeTodo(todo)
             }
         case .routine:
-            DayBoardMutations.persist {
+            DayBoardMutations.persist(context: modelContext) {
                 guard let routine = routines.first(where: { $0.id == item.id }) else { return }
                 if let check = checks.first(where: { $0.routine?.id == routine.id && $0.dayKey == yesterdayKey }) {
                     check.isDone = true

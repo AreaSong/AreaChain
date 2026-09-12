@@ -91,6 +91,7 @@ struct CaptureField: View {
             )
             .accessibilityLabel("capture.placeholder.today")
 
+            ComposerAddButton(enabled: canSubmit, action: onTodo)
             diaryShortcutButton
         }
         .padding(.horizontal, 10)

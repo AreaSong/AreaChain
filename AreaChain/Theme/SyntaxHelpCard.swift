@@ -87,7 +87,7 @@ struct SyntaxExpandableCard: View {
                 Spacer(minLength: 0)
 
                 HStack(spacing: 4) {
-                    Text(isExpanded ? "收起" : "展开")
+                    Text(LocalizedStringKey(isExpanded ? "收起" : "展开"))
                         .font(.system(size: 11, weight: .medium))
                     Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
                         .font(.system(size: 9.5, weight: .bold))
@@ -150,11 +150,11 @@ struct SyntaxExpandableCard: View {
                     .frame(width: 38, alignment: .center)
 
                 VStack(alignment: .leading, spacing: 1.5) {
-                    Text(title)
+                    Text(LocalizedStringKey(title))
                         .font(.system(size: 12.5, weight: .semibold))
                         .foregroundStyle(DaybookTheme.ink)
                         .lineLimit(1)
-                    Text(desc)
+                    Text(LocalizedStringKey(desc))
                         .font(.system(size: 10.5))
                         .foregroundStyle(DaybookTheme.muted)
                         .lineLimit(1)

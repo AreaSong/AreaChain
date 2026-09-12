@@ -133,8 +133,12 @@ struct TaskDetailTagSelector: View {
                 Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
-                    if DiaryMemoTags.isPresetName(name) || !onCreateTag(name) {
+                    if DiaryMemoTags.isPresetName(name) {
                         createError = "tag.preset.reserved"
+                        return
+                    }
+                    guard onCreateTag(name) else {
+                        createError = "save.failure.title"
                         return
                     }
                     newTagName = ""

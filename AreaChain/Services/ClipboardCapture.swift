@@ -36,30 +36,36 @@ enum BundleDisplay {
 
 enum ClipboardCapture {
     @MainActor
-    static func ingest(container: ModelContainer, pasteboard: NSPasteboard = .general) {
+    @discardableResult
+    static func ingest(
+        container: ModelContainer,
+        pasteboard: NSPasteboard = .general,
+        storage: any AttachmentStorageProtocol = AttachmentStore.shared
+    ) -> Bool {
         let text = pasteboard.string(forType: .string)
         let image = ImageBytes.pasteboardImage(pasteboard)
         let imageTitle = L10n.string("capture.image", locale: AppPreferences.shared.resolvedLocale)
         guard let payload = ClipboardPayload.make(text: text, hasImage: image != nil, imageTitle: imageTitle) else {
-            return
+            return false
         }
-        let context = ModelContext(container)
+        let context = container.mainContext
         let todo = TodoItem(
             title: payload.title,
             dayKey: DayClock.shared.todayKey,
             sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
         )
-        context.insert(todo)
-        if payload.attachImage, let image, let data = ImageBytes.png(from: image) {
-            _ = try? AttachmentStore.save(
-                data: data,
-                filename: "paste.png",
-                ownerKind: .todo,
-                ownerID: todo.id,
-                context: context
-            )
+        let attachmentID = UUID()
+        let saved = ModelChanges.perform(in: context) {
+            context.insert(todo)
+            if payload.attachImage {
+                guard let image, let data = ImageBytes.png(from: image) else { throw ScreenCaptureFailure.encode }
+                _ = try storage.save(
+                    data: data, filename: "paste.png", ownerKind: .todo,
+                    ownerID: todo.id, context: context, id: attachmentID
+                )
+            }
         }
-        try? context.save()
-        BoardEvents.changed()
+        if !saved, payload.attachImage { storage.removeFile(id: attachmentID) }
+        return saved
     }
 }

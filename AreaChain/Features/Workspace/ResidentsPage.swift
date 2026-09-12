@@ -37,8 +37,9 @@ struct ResidentsPage: View {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         let order = Catalog.nextSortOrder(routines.map(\.sortOrder))
-        DayBoardMutations.persist {
+        if DayBoardMutations.persist(context: modelContext, {
             modelContext.insert(DailyRoutine(title: title, sortOrder: order))
+        }) {
             draft = ""
         }
     }
@@ -165,7 +166,7 @@ private struct ResidentEditorRow: View {
             titleDraft = routine.title
             return
         }
-        DayBoardMutations.persist {
+        DayBoardMutations.persist(context: modelContext) {
             routine.title = next
             titleDraft = next
         }
@@ -182,12 +183,11 @@ private struct ResidentEditorRow: View {
     }
 
     private func setRemind(_ minutes: Int?) {
-        DayBoardMutations.persist { routine.remindMinutes = RemindMinutes.clamped(minutes) }
-        DayBoardMutations.requestReminderAccessIfNeeded(minutes)
+        DayBoardMutations.setRemind(routine, minutes: minutes)
     }
 
     private func toggleWeekday(_ weekday: Int) {
-        DayBoardMutations.persist {
+        DayBoardMutations.persist(context: modelContext) {
             routine.setWeekdayMask(WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday))
         }
     }

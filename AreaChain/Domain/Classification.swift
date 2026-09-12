@@ -155,8 +155,13 @@ enum ClipboardPayload {
     }
 }
 
-enum AttachmentOwner: String, Equatable {
+enum AttachmentOwner: String, Equatable, Hashable, Sendable {
     case routine
     case todo
     case diary
+}
+
+struct AttachmentOwnerKey: Hashable, Sendable {
+    var kind: AttachmentOwner
+    var id: UUID
 }

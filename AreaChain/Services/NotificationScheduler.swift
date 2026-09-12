@@ -10,7 +10,7 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
     private var generation = 0
     private let center = UNUserNotificationCenter.current()
 
-    static var isRunningTests: Bool {
+    nonisolated static var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 

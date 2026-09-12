@@ -23,13 +23,17 @@ struct TrashPage: View {
     private var items: [TrashRow] {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
-        let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments) }
+        let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale) }
         let files = attachments.compactMap { item in
-            let ownerKnown = todos.contains { $0.id == item.ownerID }
-                || routines.contains { $0.id == item.ownerID }
-                || diaries.contains { $0.id == item.ownerID }
-            let blocked = !ownerKnown || deletedOwnerIDs.contains(item.ownerID)
-            return TrashRow.attachment(item, ownerDeleted: blocked)
+            let live = item.ownerKey.map { AttachmentAccess.ownerIsLive($0, todos: todos, routines: routines, diaries: diaries) } ?? false
+            return TrashRow.attachment(item, ownerDeleted: !live, titleProvider: {
+                guard item.ownerKind == AttachmentOwner.diary.rawValue else { return item.filename }
+                guard let entry = diaries.first(where: { $0.id == item.ownerID }),
+                      !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags) else {
+                    return L10n.string("diary.private.attachment", locale: locale)
+                }
+                return item.filename
+            })
         }
         let catalog = projects.compactMap { TrashRow.project($0, todos: todos, routines: routines, projects: projects) }
             + tags.compactMap { TrashRow.tag($0, todos: todos, routines: routines, diaries: diaries) }
@@ -91,7 +95,7 @@ struct TrashPage: View {
                     .font(.system(size: 10))
                     .foregroundStyle(DaybookTheme.muted)
             }
-                Text(item.title)
+                Text(item.displayTitle)
                 .font(DaybookType.body)
                 .foregroundStyle(DaybookTheme.ink)
                 .fixedSize(horizontal: false, vertical: true)
@@ -101,7 +105,7 @@ struct TrashPage: View {
                     .disabled(!item.canRestore)
                     .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
                 Button("trash.purge", role: .destructive) {
-                    pendingPurge = PendingTrash(title: item.title) { purge(item) }
+                    pendingPurge = PendingTrash(title: "", titleProvider: { item.displayTitle }) { purge(item) }
                 }
                 .buttonStyle(DaybookQuietButtonStyle(destructive: true))
             }
@@ -111,28 +115,30 @@ struct TrashPage: View {
     }
 
     private func restore(_ item: TrashRow) {
-        item.restore()
-        BoardEvents.changed()
+        ModelChanges.perform(in: modelContext) { item.restore() }
     }
 
     private func purge(_ item: TrashRow) {
-        item.removeFromStore(modelContext)
-        BoardEvents.changed()
+        guard ModelChanges.perform(in: modelContext, { item.removeFromStore(modelContext) }) else { return }
+        if let owner = item.purgesOwner { EditDrafts.shared.discard(owner: owner) }
+        ModelChanges.attempt { try AttachmentStore.removeFiles(item.filesToRemove) }
     }
 
     private func emptyTrash() {
-        let purgedOwners = Set(items.compactMap(\.purgesOwnerID))
-        for item in items {
-            if let owner = item.skipIfOwnerPurged, purgedOwners.contains(owner) {
-                continue
+        let rows = items
+        let purgedOwners = Set(rows.compactMap(\.purgesOwner))
+        guard ModelChanges.perform(in: modelContext, {
+            for item in rows {
+                if let owner = item.skipIfOwnerPurged, purgedOwners.contains(owner) { continue }
+                item.removeFromStore(modelContext)
             }
-            item.removeFromStore(modelContext)
-        }
-        BoardEvents.changed()
+        }) else { return }
+        for owner in purgedOwners { EditDrafts.shared.discard(owner: owner) }
+        ModelChanges.attempt { try AttachmentStore.removeFiles(Array(Set(rows.flatMap(\.filesToRemove)))) }
     }
 }
 
-private struct TrashRow: Identifiable {
+struct TrashRow: Identifiable {
     var id: UUID
     var title: String
     var kindLabel: LocalizedStringKey
@@ -140,9 +146,13 @@ private struct TrashRow: Identifiable {
     var deletedAt: Date
     var restore: () -> Void
     var removeFromStore: (ModelContext) -> Void
-    var purgesOwnerID: UUID? = nil
-    var skipIfOwnerPurged: UUID? = nil
+    var purgesOwner: AttachmentOwnerKey? = nil
+    var skipIfOwnerPurged: AttachmentOwnerKey? = nil
     var canRestore: Bool = true
+    var titleProvider: (() -> String)? = nil
+    var filesToRemove: [UUID] = []
+
+    var displayTitle: String { titleProvider?() ?? title }
 
     static func resident(_ item: DailyRoutine, attachments: [AttachmentItem]) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
@@ -162,10 +172,13 @@ private struct TrashRow: Identifiable {
                 )
             },
             removeFromStore: { context in
-                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .routine, id: item.id) {
+                    context.delete(attachment)
+                }
                 context.delete(item)
             },
-            purgesOwnerID: item.id
+            purgesOwner: AttachmentOwnerKey(kind: .routine, id: item.id),
+            filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .routine, id: item.id) }.map(\.id)
         )
     }
 
@@ -188,21 +201,24 @@ private struct TrashRow: Identifiable {
                 )
             },
             removeFromStore: { context in
-                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .todo, id: item.id) {
+                    context.delete(attachment)
+                }
                 for sub in item.subtasks {
                     context.delete(sub)
                 }
                 context.delete(item)
             },
-            purgesOwnerID: item.id
+            purgesOwner: AttachmentOwnerKey(kind: .todo, id: item.id),
+            filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .todo, id: item.id) }.map(\.id)
         )
     }
 
-    static func diary(_ item: DiaryEntry, attachments: [AttachmentItem]) -> TrashRow? {
+    static func diary(_ item: DiaryEntry, attachments: [AttachmentItem], tags: @escaping () -> [TagItem], locale: Locale) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
-            title: item.text,
+            title: "",
             kindLabel: "trash.kind.diary",
             isResident: false,
             deletedAt: deletedAt,
@@ -216,10 +232,14 @@ private struct TrashRow: Identifiable {
                 )
             },
             removeFromStore: { context in
-                AttachmentStore.purge(ownerID: item.id, attachments: attachments, context: context)
+                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .diary, id: item.id) {
+                    context.delete(attachment)
+                }
                 context.delete(item)
             },
-            purgesOwnerID: item.id
+            purgesOwner: AttachmentOwnerKey(kind: .diary, id: item.id),
+            titleProvider: { DiaryPrivacy.displayText(item.snapshot, tags: tags(), locale: locale) },
+            filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .diary, id: item.id) }.map(\.id)
         )
     }
 
@@ -265,7 +285,7 @@ private struct TrashRow: Identifiable {
         )
     }
 
-    static func attachment(_ item: AttachmentItem, ownerDeleted: Bool) -> TrashRow? {
+    static func attachment(_ item: AttachmentItem, ownerDeleted: Bool, titleProvider: (() -> String)? = nil) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -278,11 +298,12 @@ private struct TrashRow: Identifiable {
                 item.deletedAt = nil
             },
             removeFromStore: { context in
-                AttachmentStore.removeFile(id: item.id)
                 context.delete(item)
             },
-            skipIfOwnerPurged: item.ownerID,
-            canRestore: !ownerDeleted
+            skipIfOwnerPurged: item.ownerKey,
+            canRestore: !ownerDeleted,
+            titleProvider: titleProvider,
+            filesToRemove: [item.id]
         )
     }
 }

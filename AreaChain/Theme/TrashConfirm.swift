@@ -2,7 +2,18 @@ import SwiftUI
 
 struct PendingTrash {
     var title: String
+    var titleProvider: (() -> String)? = nil
     var confirm: () -> Void
+
+    var displayTitle: String { titleProvider?() ?? title }
+
+    static func diary(
+        _ entry: DiaryEntry, tags: @escaping () -> [TagItem], locale: Locale, confirm: @escaping () -> Void
+    ) -> PendingTrash {
+        PendingTrash(title: "", titleProvider: {
+            DiaryPrivacy.displayText(entry.snapshot, tags: tags(), locale: locale)
+        }, confirm: confirm)
+    }
 }
 
 extension View {
@@ -23,7 +34,7 @@ extension View {
                 pending.wrappedValue = nil
             }
         } message: {
-            if let title = pending.wrappedValue?.title {
+            if let title = pending.wrappedValue?.displayTitle {
                 Text("alert.trash.message \(title)")
             }
         }
@@ -46,7 +57,7 @@ extension View {
                 pending.wrappedValue = nil
             }
         } message: {
-            if let title = pending.wrappedValue?.title {
+            if let title = pending.wrappedValue?.displayTitle {
                 Text("alert.purge.message \(title)")
             }
         }

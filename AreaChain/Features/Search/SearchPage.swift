@@ -66,7 +66,11 @@ struct SearchPage: View {
                 diaries: diaries.map(\.snapshot),
                 routines: routines.map(\.snapshot),
                 todayKey: DayClock.shared.todayKey,
-                tagMap: tagMap
+                tagMap: tagMap,
+                privacy: BoardSearchPrivacy(
+                    sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
+                    placeholder: L10n.string("diary.private.title", locale: locale)
+                )
             )
         )
     }
@@ -122,9 +126,7 @@ struct SearchPage: View {
     private func open(_ hit: BoardSearchHit) {
         switch hit.kind {
         case .todo, .routine:
-            selection.inspectBoard(hit.dayKey)
-            WorkspaceNavigation.shared.inspectTask(hit.id)
-            AppWindows.openCalendar()
+            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.id, dayKey: hit.dayKey)
         case .diary:
             selection.inspectDiary(id: hit.id, dayKey: hit.dayKey)
             AppWindows.openDiary()

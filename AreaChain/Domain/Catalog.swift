@@ -24,9 +24,12 @@ enum Catalog {
         }
     }
 
-    static func liveAttachments(for ownerID: UUID, in items: [AttachmentItem]) -> [AttachmentItem] {
+    static func liveAttachments(for ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentItem] {
         items
-            .filter { $0.deletedAt == nil && $0.ownerID == ownerID }
+            .filter {
+                $0.deletedAt == nil && $0.ownerID == ownerID
+                    && (ownerKind == nil || $0.ownerKind == ownerKind?.rawValue)
+            }
             .sorted { $0.createdAt < $1.createdAt }
     }
 

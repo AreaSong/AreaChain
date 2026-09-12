@@ -121,27 +121,7 @@ struct WorkspaceTodayView: View {
     }
 
     private func addTodo() {
-        let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let todo = TodoItem(
-            title: parsed.cleanTitle,
-            dayKey: todayKey,
-            remindMinutes: parsed.remindMinutes,
-            isImportant: parsed.isImportant,
-            isUrgent: parsed.isUrgent,
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
-            notes: parsed.notes
-        )
-        if let tagName = parsed.tagName,
-           let tag = DayBoardMutations.resolveTaskTag(named: tagName, among: tags, context: modelContext)
-        {
-            todo.tagIDs = TagIDList.toggling(todo.tagIDs, tag.id)
-        }
-        modelContext.insert(todo)
+        guard DayBoardMutations.addCapturedTodo(text: draftText, dayKey: todayKey, context: modelContext) else { return }
         draftText = ""
-        BoardEvents.changed()
-        DayBoardMutations.requestReminderAccessIfNeeded(parsed.remindMinutes)
     }
 }

@@ -5,14 +5,14 @@ import SwiftUI
 enum TaskRowFactory {
     static func todo(_ context: TodoRowContext) -> TaskRow {
         let state = makeTodoState(context)
-        return TaskRow(state: state) { action in
+        return TaskRow(state: state, onSaveTitle: { DayBoardMutations.editTodoWithSyntax(context.todo, rawInput: $0) }) { action in
             handleTodoAction(action, context: context)
         }
     }
 
     static func routine(_ context: RoutineRowContext) -> TaskRow {
         let state = makeRoutineState(context: context)
-        return TaskRow(state: state) { action in
+        return TaskRow(state: state, onSaveTitle: { DayBoardMutations.editRoutineWithSyntax(context.routine, rawInput: $0) }) { action in
             handleRoutineAction(action, context: context)
         }
     }

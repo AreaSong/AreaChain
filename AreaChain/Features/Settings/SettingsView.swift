@@ -160,10 +160,11 @@ struct SettingsView: View {
             guard response == .OK, let url = panel.url else { return }
             do {
                 let snapshot = try SyncPort.decode(try Data(contentsOf: url))
+                try SnapshotImporter.validate(snapshot, context: modelContext)
                 pendingPreview = ImportPreviewing.preview(snapshot, existing: currentIDs())
                 pendingImport = snapshot
             } catch {
-                statusMessage = error.localizedDescription
+                statusMessage = importErrorMessage(error)
             }
         }
     }
@@ -187,10 +188,14 @@ struct SettingsView: View {
             statusMessage = L10n.string("settings.imported", locale: locale)
             BoardEvents.changed()
         } catch {
-            statusMessage = error.localizedDescription
+            statusMessage = importErrorMessage(error)
         }
         pendingImport = nil
         pendingPreview = nil
+    }
+
+    private func importErrorMessage(_ error: Error) -> String {
+        (error as? SnapshotImportError)?.message(locale: locale) ?? error.localizedDescription
     }
 
     private func resetStoreAndQuit() {

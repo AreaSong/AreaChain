@@ -105,7 +105,10 @@ struct TasksPage: View {
 
     private var headerBar: some View {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
-        let hasFilters = config.externalFilter == nil && boardFilter.isActive
+        let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
+        let hasFilters = !CatalogChoices.projects(projects).isEmpty || !tagChoices.isEmpty || !todayBundleIDs.isEmpty
+            || effectiveFilter.projectID != nil || effectiveFilter.bundleID != nil
+            || (config.externalFilter == nil && effectiveFilter.isActive)
         return Group {
             if hasChips || hasFilters {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -128,11 +131,14 @@ struct TasksPage: View {
                         }
                         if hasFilters {
                             BoardFilterBar(
-                                filter: boardFilter,
+                                filter: effectiveFilter,
                                 projects: CatalogChoices.projects(projects),
-                                tags: CatalogChoices.tags(tags),
+                                tags: tagChoices,
                                 bundleIDs: todayBundleIDs,
-                                onChange: { boardFilter = $0 }
+                                onChange: { next in
+                                    if let external = config.externalFilter { external.wrappedValue = next }
+                                    else { boardFilter = next }
+                                }
                             )
                         }
                     }
@@ -183,13 +189,18 @@ struct TasksPage: View {
             checks: snapshots.1,
             todos: snapshots.2,
             yesterdayKey: yesterdayKey
-        )
+        ).filter { item in
+            if let todo = todos.first(where: { $0.id == item.id }), item.kind == .todo {
+                return matchesFilter(todo.classifyBits)
+            }
+            return routines.first(where: { $0.id == item.id }).map { matchesFilter($0.classifyBits) } ?? false
+        }
     }
 
     var upcomingModels: [TodoItem] {
         let ids = Set(DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey).map(\.id))
         return todos
-            .filter { ids.contains($0.id) }
+            .filter { ids.contains($0.id) && matchesFilter($0.classifyBits) }
             .sorted {
                 if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
                 return $0.createdAt < $1.createdAt
@@ -200,6 +211,11 @@ struct TasksPage: View {
         let routineIDs = DayBoardLogic.routines(for: todayKey, in: snapshots.0).map(\.sourceBundleID)
         let todoIDs = DayBoardLogic.todos(for: todayKey, in: snapshots.2).map(\.sourceBundleID)
         return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
+    }
+
+    private func matchesFilter(_ bits: ClassifyBits) -> Bool {
+        let allowed = effectiveFilter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
+        return Classification.matches(bits, filter: effectiveFilter, projectIDs: allowed)
     }
 }
 

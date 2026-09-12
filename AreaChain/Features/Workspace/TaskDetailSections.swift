@@ -13,7 +13,7 @@ struct TodoBasicsSectionView: View {
             }
             .id("title-\(todo.id)")
 
-            TaskDetailNotesView(notes: todo.notes) { newNotes in
+            TaskDetailNotesView(draftKey: "todo-\(todo.id)", notes: todo.notes) { newNotes in
                 DayBoardMutations.updateNotes(for: todo, notes: newNotes)
             }
             .id("notes-\(todo.id)")
@@ -35,7 +35,7 @@ struct TodoScheduleSectionView: View {
                 isImportant: todo.isImportant,
                 isUrgent: todo.isUrgent,
                 onSelect: { imp, urg in
-                    DayBoardMutations.persist {
+                    DayBoardMutations.persist(context: todo.modelContext) {
                         todo.isImportant = imp
                         todo.isUrgent = urg
                     }
@@ -65,7 +65,7 @@ struct RoutineHabitSectionView: View {
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.habit") {
             TaskDetailTitleEditor(title: routine.title) { newTitle in
-                DayBoardMutations.persist { routine.title = newTitle }
+                DayBoardMutations.editRoutine(routine, title: newTitle)
             }
             .id("title-\(routine.id)")
 
@@ -84,7 +84,7 @@ struct RoutineHabitSectionView: View {
                 )
             )
 
-            TaskDetailNotesView(notes: routine.notes) { newNotes in
+            TaskDetailNotesView(draftKey: "routine-\(routine.id)", notes: routine.notes) { newNotes in
                 DayBoardMutations.updateNotes(for: routine, notes: newNotes)
             }
             .id("notes-\(routine.id)")
@@ -103,7 +103,7 @@ struct RoutineScheduleSectionView: View {
                 isImportant: routine.isImportant,
                 isUrgent: routine.isUrgent,
                 onSelect: { imp, urg in
-                    DayBoardMutations.persist {
+                    DayBoardMutations.persist(context: routine.modelContext) {
                         routine.isImportant = imp
                         routine.isUrgent = urg
                     }
@@ -115,7 +115,7 @@ struct RoutineScheduleSectionView: View {
             }
 
             TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
-                DayBoardMutations.persist {
+                DayBoardMutations.persist(context: routine.modelContext) {
                     routine.setWeekdayMask(newMask)
                 }
             }
@@ -134,14 +134,14 @@ struct TodoClassificationSectionView: View {
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.classify") {
             TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
-                DayBoardMutations.persist { todo.projectID = id }
+                DayBoardMutations.setProject(for: todo, projectID: id)
             }
 
             TaskDetailTagSelector(
                 tagIDs: todo.tagIDs,
                 tags: tags,
                 onToggleTag: { tagID in
-                    DayBoardMutations.persist {
+                    DayBoardMutations.persist(context: todo.modelContext) {
                         todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
                     }
                 },
@@ -167,14 +167,14 @@ struct RoutineClassificationSectionView: View {
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.classify") {
             TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
-                DayBoardMutations.persist { routine.projectID = id }
+                DayBoardMutations.setProject(for: routine, projectID: id)
             }
 
             TaskDetailTagSelector(
                 tagIDs: routine.tagIDs,
                 tags: tags,
                 onToggleTag: { tagID in
-                    DayBoardMutations.persist {
+                    DayBoardMutations.persist(context: routine.modelContext) {
                         routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
                     }
                 },
@@ -229,7 +229,9 @@ struct TaskDetailAssetsSectionView: View {
     }
 
     private var attachmentList: some View {
-        let taskAttachments = attachments.filter { $0.ownerID == props.ownerID && $0.deletedAt == nil }
+        let taskAttachments = attachments.filter {
+            $0.ownerID == props.ownerID && $0.ownerKind == props.ownerKind.rawValue && $0.deletedAt == nil
+        }
         return VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("drawer.attachments.title \(taskAttachments.count)")
@@ -290,7 +292,7 @@ struct TaskDetailAssetsSectionView: View {
             }
 
             Button {
-                DayBoardMutations.persist { att.deletedAt = .now }
+                DayBoardMutations.persist(context: att.modelContext) { att.deletedAt = .now }
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 14))

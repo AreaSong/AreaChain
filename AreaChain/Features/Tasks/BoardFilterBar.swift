@@ -9,12 +9,16 @@ struct BoardFilterBar: View {
     var onChange: (BoardFilter) -> Void
 
     var isVisible: Bool {
-        !projects.isEmpty || !tags.isEmpty || !bundleIDs.isEmpty
+        filter.isActive || !projects.isEmpty || !tags.isEmpty || !bundleIDs.isEmpty
     }
 
     var body: some View {
         if isVisible {
             HStack(spacing: 6) {
+                if filter.isActive {
+                    Button("filter.all") { onChange(BoardFilter()) }
+                        .buttonStyle(DaybookQuietButtonStyle())
+                }
                 if !projects.isEmpty {
                     filterMenu(
                         icon: "folder",

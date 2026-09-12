@@ -64,7 +64,15 @@ enum DayKey {
         guard let day = date(from: dayKey, calendar: calendar), (0..<1440).contains(minutes) else {
             return nil
         }
-        return calendar.date(byAdding: .minute, value: minutes, to: day)
+        // 提醒保存的是墙上时钟时间，不是从午夜起经过的秒数；夏令时不能按时长相加。
+        return calendar.date(
+            bySettingHour: minutes / 60,
+            minute: minutes % 60,
+            second: 0,
+            of: day,
+            matchingPolicy: .nextTime,
+            repeatedTimePolicy: .first
+        )
     }
 
     static func displayName(

@@ -113,8 +113,8 @@ enum CatalogChoices {
         }
     }
 
-    static func attachments(_ ownerID: UUID, in items: [AttachmentItem]) -> [AttachmentRef] {
-        Catalog.liveAttachments(for: ownerID, in: items).map {
+    static func attachments(_ ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentRef] {
+        Catalog.liveAttachments(for: ownerID, in: items, ownerKind: ownerKind).map {
             AttachmentRef(id: $0.id, filename: $0.filename)
         }
     }
@@ -136,10 +136,10 @@ enum CatalogChoices {
             sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { id in DayBoardMutations.persist { routine.projectID = id } },
-            onToggleTag: { id in DayBoardMutations.persist { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
-            onImportant: { value in DayBoardMutations.persist { routine.isImportant = value } },
-            onUrgent: { value in DayBoardMutations.persist { routine.isUrgent = value } }
+            onProject: { id in DayBoardMutations.persist(context: routine.modelContext) { routine.projectID = id } },
+            onToggleTag: { id in DayBoardMutations.persist(context: routine.modelContext) { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
+            onImportant: { value in DayBoardMutations.persist(context: routine.modelContext) { routine.isImportant = value } },
+            onUrgent: { value in DayBoardMutations.persist(context: routine.modelContext) { routine.isUrgent = value } }
         )
         return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
     }
@@ -161,10 +161,10 @@ enum CatalogChoices {
             sourceLabel: todo.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: todo.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { id in DayBoardMutations.persist { todo.projectID = id } },
-            onToggleTag: { id in DayBoardMutations.persist { todo.tagIDs = TagIDList.toggling(todo.tagIDs, id) } },
-            onImportant: { value in DayBoardMutations.persist { todo.isImportant = value } },
-            onUrgent: { value in DayBoardMutations.persist { todo.isUrgent = value } }
+            onProject: { id in DayBoardMutations.persist(context: todo.modelContext) { todo.projectID = id } },
+            onToggleTag: { id in DayBoardMutations.persist(context: todo.modelContext) { todo.tagIDs = TagIDList.toggling(todo.tagIDs, id) } },
+            onImportant: { value in DayBoardMutations.persist(context: todo.modelContext) { todo.isImportant = value } },
+            onUrgent: { value in DayBoardMutations.persist(context: todo.modelContext) { todo.isUrgent = value } }
         )
         return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
     }
@@ -176,7 +176,7 @@ enum CatalogChoices {
         context: ModelContext
     ) -> TaskAttachmentContext {
         TaskAttachmentContext(
-            items: attachments(ownerID, in: items),
+            items: attachments(ownerID, in: items, ownerKind: ownerKind),
             onPickFile: {
                 AttachmentActions.pickImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
             },

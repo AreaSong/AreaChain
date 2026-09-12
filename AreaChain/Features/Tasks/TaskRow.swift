@@ -4,6 +4,7 @@ import SwiftUI
 struct TaskRow: View {
     let state: TaskRowState
     let dispatch: (TaskRowAction) -> Void
+    var onSaveTitle: ((String) -> Bool)? = nil
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
@@ -19,8 +20,9 @@ struct TaskRow: View {
 
     // MARK: - 现代标准构造器 (State + Action)
 
-    init(state: TaskRowState, dispatch: @escaping (TaskRowAction) -> Void) {
+    init(state: TaskRowState, onSaveTitle: ((String) -> Bool)? = nil, dispatch: @escaping (TaskRowAction) -> Void) {
         self.state = state
+        self.onSaveTitle = onSaveTitle
         self.dispatch = dispatch
     }
 
@@ -308,7 +310,11 @@ struct TaskRow: View {
     func saveEdit() {
         let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !next.isEmpty {
-            dispatch(.editTitle(next))
+            if let onSaveTitle {
+                guard onSaveTitle(next) else { return }
+            } else {
+                dispatch(.editTitle(next))
+            }
         } else {
             draft = state.title
         }

@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import UserNotifications
 
 // MARK: - General Settings Section
@@ -54,6 +55,8 @@ struct SyncSettingsSection: View {
     var notifyStatusText: String
     var calendarSyncStatusText: String?
     var onRequestNotifyAuth: () -> Void
+    @Query private var todos: [TodoItem]
+    @Bindable private var calendarStatus = CalendarSyncStatus.shared
 
     var body: some View {
         Section("settings.notify") {
@@ -69,6 +72,14 @@ struct SyncSettingsSection: View {
                 Text(calendarSyncStatusText)
                     .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
+            }
+            if prefs.syncCalendarEvents {
+                Button("settings.calendar.sync.retry") { CalendarSync.refreshIfEnabled() }
+                ForEach(todos.filter { calendarStatus.conflictTaskIDs.contains($0.id) }) { todo in
+                    Button(todo.title) {
+                        AppWindows.openWorkspace(tab: .calendar, inspecting: todo.id, dayKey: todo.dayKey)
+                    }
+                }
             }
             Text("settings.calendar.sync.help")
                 .font(DaybookType.subtitle)

@@ -2,27 +2,36 @@ import Foundation
 import SwiftData
 
 enum SnapshotImporter {
-    static func apply(_ snapshot: ExportSnapshot, context: ModelContext) throws {
-        let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
-        let checks = try context.fetch(FetchDescriptor<RoutineCheck>())
-        let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
-        let projects = try context.fetch(FetchDescriptor<ProjectItem>())
-        let tags = try context.fetch(FetchDescriptor<TagItem>())
-        let attachments = try context.fetch(FetchDescriptor<AttachmentItem>())
-        upsert(routines: snapshot.routines, existing: routines, context: context)
-        upsert(todos: snapshot.todos, existing: todos, context: context)
-        upsert(diaries: snapshot.diaries, existing: diaries, context: context)
-        upsert(projects: snapshot.projects, existing: projects, context: context)
-        upsert(tags: snapshot.tags, existing: tags, context: context)
-        upsert(attachments: snapshot.attachments, existing: attachments, context: context)
-        upsert(
-            checks: snapshot.checks,
-            existing: checks,
-            routines: try context.fetch(FetchDescriptor<DailyRoutine>()),
-            context: context
-        )
-        try context.save()
+    static func validate(_ snapshot: ExportSnapshot, context: ModelContext) throws {
+        try SnapshotImportState(context: context).validate(snapshot)
+    }
+
+    static func apply(
+        _ snapshot: ExportSnapshot,
+        context: ModelContext,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        let existing = try SnapshotImportState(context: context)
+        try existing.validate(snapshot)
+        // 先落盘调用前已有的编辑；失败回滚只能撤销导入，不能丢掉用户此前的修改。
+        if context.hasChanges { try context.save() }
+        do {
+            upsert(routines: snapshot.routines, existing: existing.routines, context: context)
+            upsert(todos: snapshot.todos, existing: existing.todos, context: context)
+            upsert(diaries: snapshot.diaries, existing: existing.diaries, context: context)
+            upsert(projects: snapshot.projects, existing: existing.projects, context: context)
+            upsert(tags: snapshot.tags, existing: existing.tags, context: context)
+            upsert(attachments: snapshot.attachments, existing: existing.attachments, context: context)
+            upsert(
+                checks: snapshot.checks,
+                existing: existing.checks,
+                routines: try context.fetch(FetchDescriptor<DailyRoutine>()),
+                context: context
+            )
+            try save(context)
+        } catch {
+            throw ModelRollback.failure(error, in: context)
+        }
     }
 
     private static func upsert(

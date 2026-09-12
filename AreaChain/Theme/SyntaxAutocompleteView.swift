@@ -114,7 +114,7 @@ struct SyntaxAutocompletePopup: View {
             Spacer(minLength: 4)
 
             if let subtitle = item.subtitle {
-                Text(subtitle)
+                Text(LocalizedStringKey(subtitle))
                     .font(.system(size: 10, weight: .regular))
                     .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
             }

@@ -188,12 +188,11 @@ struct MainSplitWorkspaceView: View {
             sortOrder: Catalog.nextSortOrder(projects.map(\.sortOrder)),
             parentID: newProjectParentID
         )
-        modelContext.insert(project)
+        guard ModelChanges.perform(in: modelContext, { modelContext.insert(project) }) else { return }
         newProjectName = ""
         newProjectParentID = nil
         isAddingProject = false
         navigation.selectedProjectID = project.id
-        BoardEvents.changed()
     }
 
     private var addTagSheet: some View {
@@ -219,6 +218,10 @@ struct MainSplitWorkspaceView: View {
                 Button("drawer.tag.create") {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
+                    if DiaryMemoTags.isPresetName(name) {
+                        tagCreateError = "tag.preset.reserved"
+                        return
+                    }
                     if let tag = DayBoardMutations.resolveTaskTag(named: name, among: tags, context: modelContext) {
                         newTagName = ""
                         tagCreateError = nil
@@ -226,7 +229,7 @@ struct MainSplitWorkspaceView: View {
                         navigation.selectedTagID = tag.id
                         BoardEvents.changed()
                     } else {
-                        tagCreateError = "tag.preset.reserved"
+                        tagCreateError = "save.failure.title"
                     }
                 }
                 .buttonStyle(.borderedProminent)

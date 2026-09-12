@@ -90,6 +90,22 @@ enum CalendarEventPolicy {
         return (start, end)
     }
 
+    /// EventKit 会将超过四年的查询截断；每年分片，边界重叠的事件由客户端按 ID 去重。
+    static func eventQueryWindows(
+        now: Date = .now, dayKeys: [String], calendar: Calendar = .current
+    ) -> [DateInterval] {
+        let bounds = eventQueryBounds(now: now, dayKeys: dayKeys, calendar: calendar)
+        var windows: [DateInterval] = []
+        var cursor = bounds.start
+        while cursor < bounds.end {
+            let next = min(calendar.date(byAdding: .year, value: 1, to: cursor) ?? bounds.end, bounds.end)
+            guard next > cursor else { break }
+            windows.append(DateInterval(start: cursor, end: next))
+            cursor = next
+        }
+        return windows
+    }
+
     /// 专属日历里：无活 token、未绑定任何待办的事件（含清掉 notes 的旧事件）应删掉。
     static func shouldRemoveOrphanEvent(
         notes: String?,
@@ -102,8 +118,7 @@ enum CalendarEventPolicy {
         if liveTokens.contains(token) { return false }
         let ident = eventIdentifier ?? ""
         if unpublishedEventIDs.contains(ident) { return true }
-        if TodoDragToken.decode(token) != nil { return true }
-        if !ident.isEmpty && knownEventIDs.contains(ident) { return false }
-        return true
+        // 没有明确绑定和删除意图的事件不能因本地缺失而被清除。
+        return false
     }
 }

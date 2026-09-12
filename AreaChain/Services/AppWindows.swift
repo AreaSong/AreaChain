@@ -6,10 +6,10 @@ enum AppWindows {
     /// 注入的工作台主视图构造器，由 App 启动时或 Features 协调层注册
     static var workspaceViewProvider: (@MainActor () -> AnyView)?
 
-    static func openWorkspace(tab: WorkspaceTab = .today) {
+    static func openWorkspace(tab: WorkspaceTab = .today, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
         StatusItemController.shared.close()
         becomeActive()
-        WorkspaceNavigation.shared.revealTab(tab)
+        WorkspaceNavigation.shared.revealTab(tab, inspecting: taskID, dayKey: dayKey)
         PanelWindowController.workspace.show()
     }
 

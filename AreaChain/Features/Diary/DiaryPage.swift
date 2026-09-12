@@ -296,11 +296,12 @@ struct DiaryPage: View {
                                 activeTags: activeTags,
                                 attachments: attachments,
                                 onDelete: {
-                                    pendingTrash = PendingTrash(title: entry.text) {
+                                    pendingTrash = .diary(entry, tags: { Array(allTags) }, locale: locale) {
                                         DayBoardMutations.deleteDiary(entry)
                                     }
                                 },
-                                isHighlighted: boardSelection.inspectingDiaryID == entry.id
+                                isHighlighted: boardSelection.inspectingDiaryID == entry.id,
+                                privacyTags: Array(allTags)
                             )
                             .id(entry.id)
                         }
@@ -349,13 +350,13 @@ struct DiaryPage: View {
     private func submitNote() {
         let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        DayBoardMutations.addDiary(
+        guard DayBoardMutations.addDiary(
             text: text,
             dayKey: todayKey,
             selectedTagIDs: composerSelectedTagIDs,
             tags: Array(allTags),
             context: modelContext
-        )
+        ) else { return }
         draftText = ""
         composerSelectedTagIDs.removeAll()
     }

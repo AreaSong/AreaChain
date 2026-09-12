@@ -16,6 +16,7 @@ struct HotKeyRecorder: View {
     @State private var listening = false
     @State private var label = ""
     @State private var pasteArmed = true
+    @State private var toggleArmed = true
     @State private var monitor: Any?
 
     var body: some View {
@@ -35,7 +36,12 @@ struct HotKeyRecorder: View {
                 .help(help)
             }
             if slot == .paste, !pasteArmed {
-                Text("hotkey.paste.conflict")
+                Text("hotkey.registration.failed")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+            if slot == .toggle, !toggleArmed {
+                Text("hotkey.registration.failed")
                     .font(.system(size: 12))
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -54,7 +60,9 @@ struct HotKeyRecorder: View {
     private func refreshLabel() {
         switch slot {
         case .toggle:
-            label = HotKeyCenter.shared.displayName(locale: locale)
+            toggleArmed = HotKeyCenter.shared.toggleIsArmed
+            let name = HotKeyCenter.shared.displayName(locale: locale)
+            label = toggleArmed ? name : L10n.format("hotkey.paste.disabled", locale: locale, name)
         case .paste:
             pasteArmed = HotKeyCenter.shared.pasteIsArmed
             let name = HotKeyCenter.shared.pasteDisplayName(locale: locale)

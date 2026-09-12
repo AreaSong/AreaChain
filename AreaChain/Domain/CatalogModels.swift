@@ -53,6 +53,10 @@ final class AttachmentItem {
     var createdAt: Date
     var deletedAt: Date?
 
+    var ownerKey: AttachmentOwnerKey? {
+        AttachmentOwner(rawValue: ownerKind).map { AttachmentOwnerKey(kind: $0, id: ownerID) }
+    }
+
     init(
         id: UUID = UUID(),
         ownerKind: String,

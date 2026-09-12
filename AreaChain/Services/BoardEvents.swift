@@ -13,6 +13,7 @@ extension Notification.Name {
 enum BoardEvents {
     static func changed() {
         notifyUI()
+        guard !NotificationScheduler.isRunningTests else { return }
         Task { @MainActor in
             NotificationScheduler.shared.scheduleRefresh()
             CalendarSync.refreshIfEnabled()
@@ -21,6 +22,7 @@ enum BoardEvents {
 
     static func changedLocally() {
         notifyUI()
+        guard !NotificationScheduler.isRunningTests else { return }
         Task { @MainActor in
             NotificationScheduler.shared.scheduleRefresh()
         }

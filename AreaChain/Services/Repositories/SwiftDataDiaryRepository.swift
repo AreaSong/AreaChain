@@ -17,8 +17,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     }
 
     private func saveAndNotify() throws {
-        try context.save()
-        BoardEvents.changed()
+        try ModelChanges.commit(context)
     }
 
     // MARK: - 查询与搜索 (Query & Search)
@@ -48,7 +47,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     func searchDiaries(query: String, tagID: UUID?, includeDeleted: Bool) throws -> [DiaryEntry] {
         let entries = try fetchDiaries(for: nil, includeDeleted: includeDeleted)
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        let tags = (try? context.fetch(FetchDescriptor<TagItem>())) ?? []
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
         let activeTags = tags.filter { $0.deletedAt == nil }
 
         return entries.filter { entry in
@@ -73,7 +72,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             throw RepositoryError.invalidArgument("手记内容不能为空")
         }
         var ids = tagIDs
-        let tags = (try? context.fetch(FetchDescriptor<TagItem>())) ?? []
+        let tags = try context.fetch(FetchDescriptor<TagItem>())
         var availableTags = tags
         let parsed = NaturalLanguageParser.parse(trimmed)
         if let tagName = parsed.tagName {

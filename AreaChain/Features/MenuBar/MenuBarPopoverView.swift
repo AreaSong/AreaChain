@@ -381,38 +381,19 @@ struct MenuBarPopoverView: View {
     }
 
     private func addTodo() {
-        let raw = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else { return }
-        let parsed = NaturalLanguageParser.parseTaskCapture(raw)
-        let item = TodoItem(
-            title: parsed.cleanTitle,
-            dayKey: todayKey,
-            remindMinutes: parsed.remindMinutes,
-            isImportant: parsed.isImportant,
-            isUrgent: parsed.isUrgent,
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp),
-            notes: parsed.notes
-        )
-        if let tagName = parsed.tagName,
-           let tag = DayBoardMutations.resolveTaskTag(named: tagName, among: tags, context: modelContext)
-        {
-            item.tagIDs = TagIDList.toggling(item.tagIDs, tag.id)
-        }
-        modelContext.insert(item)
+        guard DayBoardMutations.addCapturedTodo(text: capture.draft, dayKey: todayKey, context: modelContext) else { return }
         capture.draft = ""
-        BoardEvents.changed()
-        DayBoardMutations.requestReminderAccessIfNeeded(parsed.remindMinutes)
     }
 
     private func addDiary() {
         let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        DayBoardMutations.addDiary(
+        guard DayBoardMutations.addDiary(
             text: text,
             dayKey: todayKey,
             tags: Array(tags),
             context: modelContext
-        )
+        ) else { return }
         capture.draft = ""
         withAnimation(DaybookMotion.animation(reduceMotion)) {
             tab = .diary

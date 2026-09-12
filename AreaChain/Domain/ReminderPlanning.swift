@@ -56,6 +56,8 @@ struct ReminderRequest: Equatable {
     var title: String
     var remindMinutes: Int
     var kind: Kind
+    var closedDayKeys: Set<String> = []
+    var createdDayKey: String? = nil
 
     enum Kind: Equatable {
         case resident(days: Int, closedToday: Bool)
@@ -87,7 +89,11 @@ enum ReminderPlanning {
                 kind: .resident(
                     days: WeekdayMask.sanitized(routine.weekdayMask),
                     closedToday: DayBoardLogic.isRoutineDone(routine, checks: checks, on: todayKey)
-                )
+                ),
+                closedDayKeys: Set(checks.filter {
+                    $0.routineId == routine.id && ($0.isDone || $0.isSkipped) && $0.dayKey >= todayKey
+                }.map(\.dayKey)),
+                createdDayKey: routine.createdDayKey
             )
         }
         let once = todos.compactMap { todo -> ReminderRequest? in
@@ -119,8 +125,13 @@ enum ReminderPlanning {
             if closedToday {
                 cursor = DayKey.shifted(cursor, by: 1, calendar: calendar)
             }
-            for _ in 0..<16 {
-                if !WeekdayMask.contains(days, dayKey: cursor, calendar: calendar) {
+            if let createdDayKey = request.createdDayKey, createdDayKey > cursor {
+                cursor = createdDayKey
+            }
+            // 每个已闭合日最多排除一周的候选；不能把长期提前打卡误当成没有下一次提醒。
+            for _ in 0..<(request.closedDayKeys.count * 7 + 8) {
+                if request.closedDayKeys.contains(cursor)
+                    || !WeekdayMask.contains(days, dayKey: cursor, calendar: calendar) {
                     cursor = DayKey.shifted(cursor, by: 1, calendar: calendar)
                     continue
                 }

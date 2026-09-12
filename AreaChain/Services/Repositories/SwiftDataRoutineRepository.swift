@@ -17,8 +17,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     }
 
     private func saveAndNotify() throws {
-        try context.save()
-        BoardEvents.changed()
+        try ModelChanges.commit(context)
     }
 
     // MARK: - 查询 (Query)
@@ -135,11 +134,19 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         checks: [RoutineCheck]
     ) {
         let mask = routine.resolvedWeekdayMask
-        let existingDays = Set(checks.filter { $0.routine?.id == routine.id }.map(\.dayKey))
+        let checksByDay = Dictionary(grouping: checks, by: \.dayKey)
         for key in DayKey.keys(from: start, before: end) {
             guard WeekdayMask.contains(mask, dayKey: key) else { continue }
-            guard !existingDays.contains(key) else { continue }
-            context.insert(RoutineCheck(dayKey: key, isDone: true, isSkipped: true, routine: routine))
+            if let existing = checksByDay[key] {
+                // 取消打卡会留下 false 记录；暂停期间它也应桥接，而非恢复后变成漏打。
+                guard !existing.contains(where: { $0.isDone || $0.isSkipped }) else { continue }
+                for check in existing {
+                    check.isDone = true
+                    check.isSkipped = true
+                }
+            } else {
+                context.insert(RoutineCheck(dayKey: key, isDone: true, isSkipped: true, routine: routine))
+            }
         }
     }
 
@@ -234,9 +241,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     ) {
         if let check = existing.first(where: { $0.routine?.id == routine.id && $0.dayKey == dayKey }) {
             check.isDone = markDone
-            if !markDone {
-                check.isSkipped = false
-            }
+            check.isSkipped = false
         } else if markDone {
             context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
         }

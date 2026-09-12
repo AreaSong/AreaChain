@@ -41,6 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NotificationScheduler.shared.start()
         CalendarSync.start()
         AppWindows.hideStrayWindows()
+        if Persistence.session.isFallback {
+            MutationFeedback.shared.reportMemoryFallback()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {

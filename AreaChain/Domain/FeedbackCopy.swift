@@ -6,6 +6,8 @@ enum CalendarSyncPhase: Equatable {
     case unavailable
     case synced
     case failed
+    case conflict
+    case localUnavailable
 
     var messageKey: String {
         switch self {
@@ -14,6 +16,8 @@ enum CalendarSyncPhase: Equatable {
         case .unavailable: "settings.calendar.sync.status.unavailable"
         case .synced: "settings.calendar.sync.status.ok"
         case .failed: "settings.calendar.sync.status.failed"
+        case .conflict: "settings.calendar.sync.status.conflict"
+        case .localUnavailable: "settings.calendar.sync.status.localUnavailable"
         }
     }
 }

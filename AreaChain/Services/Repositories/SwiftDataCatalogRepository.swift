@@ -17,8 +17,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     private func saveAndNotify() throws {
-        try context.save()
-        BoardEvents.changed()
+        try ModelChanges.commit(context)
     }
 
     // MARK: - 项目操作 (Projects)

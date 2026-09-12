@@ -47,6 +47,7 @@ extension DiaryNoteCard {
 
             HStack {
                 Button("alert.cancel") {
+                    editDraft = ""
                     isEditing = false
                 }
                 .buttonStyle(.plain)
@@ -55,8 +56,9 @@ extension DiaryNoteCard {
                 Button("common.save") {
                     let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !next.isEmpty {
-                        DayBoardMutations.editDiary(entry, text: next)
+                        guard DayBoardMutations.editDiary(entry, text: next) else { return }
                     }
+                    editDraft = ""
                     isEditing = false
                 }
                 .buttonStyle(.borderedProminent)
@@ -185,7 +187,10 @@ extension DiaryNoteCard {
     private var attachActionButton: some View {
         Button {
             guard !(isPasswordType && isMasked) else { return }
-            AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: modelContext)
+            AttachmentActions.pickImage(
+                ownerKind: .diary, ownerID: entry.id, context: modelContext,
+                canAttach: { canRevealContent && entry.deletedAt == nil }
+            )
         } label: {
             Image(systemName: "photo")
                 .font(.system(size: 11))

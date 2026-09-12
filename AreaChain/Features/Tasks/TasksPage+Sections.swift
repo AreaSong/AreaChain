@@ -14,7 +14,7 @@ extension TasksPage {
 
     var yesterdaySection: some View {
         Group {
-            if showYesterday {
+            if showYesterday, !yesterdayItems.isEmpty {
                 SectionStamp(title: "stamp.yesterday")
                 ForEach(yesterdayItems) { item in
                     leftoverRow(item)
@@ -113,8 +113,7 @@ extension TasksPage {
             onInspect(id)
             return
         }
-        AppWindows.openWorkspace(tab: .today)
-        WorkspaceNavigation.shared.inspectTask(id)
+        AppWindows.openWorkspace(tab: .today, inspecting: id, dayKey: dayKey)
     }
 }
 

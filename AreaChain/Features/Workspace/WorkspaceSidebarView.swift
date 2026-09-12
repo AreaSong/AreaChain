@@ -231,7 +231,7 @@ struct WorkspaceSidebarView: View {
         projectParentMenu(project)
         Button("alert.trash.move", role: .destructive) {
             pendingTrash = PendingTrash(title: project.name) {
-                DayBoardMutations.persist { project.deletedAt = SoftDelete.stamp() }
+                DayBoardMutations.persist(context: modelContext) { project.deletedAt = SoftDelete.stamp() }
                 if navigation.selectedProjectID == project.id {
                     navigation.selectedProjectID = nil
                 }
@@ -292,7 +292,7 @@ struct WorkspaceSidebarView: View {
             Button("sidebar.rename") { beginRename(.tag(tag.id), name: tag.name) }
             Button("alert.trash.move", role: .destructive) {
                 pendingTrash = PendingTrash(title: tag.name) {
-                    DayBoardMutations.persist { tag.deletedAt = SoftDelete.stamp() }
+                    DayBoardMutations.persist(context: modelContext) { tag.deletedAt = SoftDelete.stamp() }
                     if navigation.selectedTagID == tag.id {
                         navigation.selectedTagID = nil
                     }
@@ -347,14 +347,14 @@ struct WorkspaceSidebarView: View {
             renameError = "tag.preset.reserved"
             return
         }
-        DayBoardMutations.persist {
+        guard DayBoardMutations.persist(context: modelContext, {
             switch target {
             case .project(let id):
                 projects.first { $0.id == id }?.name = next
             case .tag(let id):
                 tags.first { $0.id == id }?.name = next
             }
-        }
+        }) else { return }
         pendingRename = nil
         renameDraft = ""
         renameError = nil
@@ -363,6 +363,6 @@ struct WorkspaceSidebarView: View {
     private func setParent(_ id: UUID, _ parentID: UUID?) {
         guard let item = projects.first(where: { $0.id == id }) else { return }
         guard !ProjectTree.wouldCycle(moving: id, to: parentID, in: projects) else { return }
-        DayBoardMutations.persist { item.parentID = parentID }
+        DayBoardMutations.persist(context: modelContext) { item.parentID = parentID }
     }
 }

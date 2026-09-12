@@ -152,7 +152,7 @@ final class WorkspaceNavigation {
         boardSelection.consumeEscapeCancelsEdits()
     }
 
-    func revealTab(_ tab: WorkspaceTab) {
+    func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
         if tab != .diary {
             boardSelection.clearInspectedDiary()
         }
@@ -164,6 +164,10 @@ final class WorkspaceNavigation {
             if InspectDayPolicy.pinsTodayWhenEntering(tab) {
                 pinTodayInspectDay()
             }
+        }
+        // 普通导航可以归位今天；带检查目标的导航必须在归位后恢复调用方的日期。
+        if let taskID {
+            inspectTask(taskID, dayKey: dayKey)
         }
     }
 

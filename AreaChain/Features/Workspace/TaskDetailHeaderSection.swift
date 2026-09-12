@@ -49,7 +49,7 @@ struct TaskDetailHeaderBar: View {
 /// 抽屉任务大标题可编辑组件
 struct TaskDetailTitleEditor: View {
     var title: String
-    var onUpdate: (String) -> Void
+    var onUpdate: (String) -> Bool
 
     @Environment(\.locale) private var locale
     @State private var isEditing = false
@@ -98,7 +98,7 @@ struct TaskDetailTitleEditor: View {
     private func save() {
         let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            onUpdate(trimmed)
+            guard onUpdate(trimmed) else { return }
         }
         isEditing = false
         isFocused = false

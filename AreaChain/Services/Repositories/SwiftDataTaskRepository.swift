@@ -17,8 +17,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     }
 
     private func saveAndNotify() throws {
-        try context.save()
-        BoardEvents.changed()
+        try ModelChanges.commit(context)
     }
 
     // MARK: - 查询 (Query)

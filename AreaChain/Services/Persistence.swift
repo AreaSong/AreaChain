@@ -12,24 +12,27 @@ enum Persistence {
     static let session: PersistenceSession = makeSession()
 
     static func makeSession() -> PersistenceSession {
-        sanitizeSqliteStoreIfNeeded()
         let schema = Schema(AreaChainSchema.models)
+        // App.init 早于 AppDelegate 的测试保护；测试宿主不得先触碰真实磁盘库。
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            return memorySession(schema: schema, openError: nil)
+        }
+        sanitizeSqliteStoreIfNeeded()
         let disk = ModelConfiguration("areachain", schema: schema)
         do {
             let container = try ModelContainer(for: schema, configurations: [disk])
             return PersistenceSession(container: container, isFallback: false, openError: nil)
         } catch {
-            let memory = ModelConfiguration(isStoredInMemoryOnly: true)
-            do {
-                let container = try ModelContainer(for: schema, configurations: [memory])
-                return PersistenceSession(
-                    container: container,
-                    isFallback: true,
-                    openError: error.localizedDescription
-                )
-            } catch {
-                fatalError("无法打开内存库：\(error)")
-            }
+            return memorySession(schema: schema, openError: error.localizedDescription)
+        }
+    }
+
+    private static func memorySession(schema: Schema, openError: String?) -> PersistenceSession {
+        do {
+            let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(isStoredInMemoryOnly: true)])
+            return PersistenceSession(container: container, isFallback: openError != nil, openError: openError)
+        } catch {
+            fatalError("无法打开内存库：\(error)")
         }
     }
 

@@ -14,6 +14,8 @@ extension DayBoardList {
             if isTextViewEditing {
                 return self.handleTextViewEditingKey(event: event, firstResponder: firstResponder)
             }
+            // 焦点在筛选菜单、按钮或日期控件时，由控件处理 Space/Return，不能误勾清单。
+            if firstResponder is NSControl { return event }
             return self.handleNavigationKey(event: event)
         }
     }
@@ -145,25 +147,26 @@ extension DayBoardList {
     }
 
     func toggleSelected(id: UUID) {
+        let previousIDs = orderedVisibleIDs
         let checkOn = checkDay(for: id)
         if let todo = todos.first(where: { $0.id == id }) {
-            DayBoardMutations.toggleTodo(todo)
+            guard DayBoardMutations.toggleTodo(todo) else { return }
         } else if let routine = routines.first(where: { $0.id == id }) {
-            DayBoardMutations.toggleRoutine(
+            guard DayBoardMutations.toggleRoutine(
                 routine,
                 on: checkOn,
                 checks: checks,
                 context: modelContext
-            )
+            ) else { return }
         }
-        let ids = orderedVisibleIDs
-        guard let idx = ids.firstIndex(of: id), !showCompleted else { return }
-        if idx + 1 < ids.count {
-            focusedTaskID?.wrappedValue = ids[idx + 1]
+        guard !showCompleted, let index = previousIDs.firstIndex(of: id) else { return }
+        let remaining = Set(orderedVisibleIDs)
+        let candidates = Array(previousIDs.dropFirst(index + 1)) + Array(previousIDs.prefix(index).reversed())
+        focusedTaskID?.wrappedValue = candidates.first { remaining.contains($0) }
+        if focusedTaskID?.wrappedValue != nil {
             BoardSelection.shared.inspectBoard(dayKey)
-        } else if idx > 0 {
-            focusedTaskID?.wrappedValue = ids[idx - 1]
-            BoardSelection.shared.inspectBoard(dayKey)
+        } else {
+            onReturnToInput?()
         }
     }
 
@@ -194,16 +197,16 @@ extension DayBoardList {
 
     func inspectSelected(id: UUID) {
         revealCompletedIfNeeded(id)
-        BoardSelection.shared.inspectBoard(checkDay(for: id))
+        let inspectDay = checkDay(for: id)
+        BoardSelection.shared.inspectBoard(inspectDay)
         if let onInspect {
             onInspect(id)
             return
         }
-        if dayKey == todayKey {
-            AppWindows.openWorkspace(tab: .today)
-        } else {
-            AppWindows.openWorkspace(tab: .calendar)
-        }
-        WorkspaceNavigation.shared.inspectTask(id)
+        AppWindows.openWorkspace(
+            tab: dayKey == todayKey ? .today : .calendar,
+            inspecting: id,
+            dayKey: inspectDay
+        )
     }
 }

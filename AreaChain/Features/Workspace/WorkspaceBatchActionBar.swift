@@ -61,58 +61,51 @@ struct WorkspaceBatchActionBar: View {
 
     private func handleMoveToday() {
         let today = DayClock.shared.todayKey
-        DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: today, todos: todos)
+        guard DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: today, todos: todos) else { return }
         navigation.clearSelection()
     }
 
     private func handleMoveTomorrow() {
         let tomorrow = DayKey.shifted(DayClock.shared.todayKey, by: 1)
-        DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: tomorrow, todos: todos)
+        guard DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: tomorrow, todos: todos) else { return }
         navigation.clearSelection()
     }
 
     private func handleToggleDone(_ markDone: Bool) {
         let ids = navigation.selectedTaskIDs
         let today = DayClock.shared.todayKey
-        DayBoardMutations.batchToggleDone(ids, markDone: markDone, todos: todos)
-        DayBoardMutations.batchSetRoutineChecks(
-            ids,
-            markDone: markDone,
-            on: today,
-            routines: routines,
-            context: modelContext
-        )
+        guard DayBoardMutations.batchSetCompletion(ids, markDone: markDone, on: today, context: modelContext) else { return }
         navigation.clearSelection()
     }
 
     private func handleSetProject(_ pid: UUID?) {
-        DayBoardMutations.batchSetProject(
+        guard DayBoardMutations.batchSetProject(
             navigation.selectedTaskIDs,
             projectID: pid,
             todos: todos,
             routines: routines
-        )
+        ) else { return }
         navigation.clearSelection()
     }
 
     private func handleToggleTag(_ tid: UUID) {
-        DayBoardMutations.batchToggleTag(
+        guard DayBoardMutations.batchToggleTag(
             navigation.selectedTaskIDs,
             tagID: tid,
             todos: todos,
             routines: routines
-        )
+        ) else { return }
         navigation.clearSelection()
     }
 
     private func handleTrash() {
         let count = navigation.selectedTaskIDs.count
         pendingTrash = PendingTrash(title: "\(count)") {
-            DayBoardMutations.batchTrash(
+            guard DayBoardMutations.batchTrash(
                 navigation.selectedTaskIDs,
                 todos: todos,
                 routines: routines
-            )
+            ) else { return }
             navigation.clearSelection()
         }
     }

@@ -9,9 +9,16 @@ final class CalendarSyncStatus {
 
     var phase: CalendarSyncPhase = .off
     var lastSyncedAt: Date?
+    var conflictTaskIDs: Set<UUID> = []
+
+    func apply(_ outcome: CalendarSyncOutcome) {
+        mark(outcome.phase)
+        conflictTaskIDs = outcome.conflicts
+    }
 
     func mark(_ phase: CalendarSyncPhase) {
         self.phase = phase
+        if phase != .conflict { conflictTaskIDs = [] }
         if phase == .synced {
             lastSyncedAt = .now
         }

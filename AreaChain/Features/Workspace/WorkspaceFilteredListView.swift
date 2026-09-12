@@ -91,9 +91,8 @@ struct WorkspaceFilteredListView: View {
             tagIDs: tag.map { $0.id.uuidString } ?? "",
             sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
         )
-        modelContext.insert(todo)
+        guard ModelChanges.perform(in: modelContext, { modelContext.insert(todo) }) else { return }
         draftTitle = ""
-        BoardEvents.changed()
     }
 
     // MARK: - Task List

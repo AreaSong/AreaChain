@@ -3,9 +3,11 @@ import SwiftUI
 
 struct AttachmentBrowserPage: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     @Query private var attachments: [AttachmentItem]
     @Query private var todos: [TodoItem]
     @Query private var diaries: [DiaryEntry]
+    @Query private var tags: [TagItem]
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @State private var preview: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
@@ -35,13 +37,17 @@ struct AttachmentBrowserPage: View {
         .popover(item: $preview) { item in
             previewBody(item)
         }
+        .onChange(of: visibleAttachments.map(\.id)) { _, ids in
+            if let preview, !ids.contains(preview.id) { self.preview = nil }
+        }
     }
 
     private var clusters: [AttachmentCluster] {
-        let liveOwners = Set(todos.compactMap { $0.deletedAt == nil ? $0.id : nil })
-            .union(routines.compactMap { $0.deletedAt == nil ? $0.id : nil })
-            .union(diaries.compactMap { $0.deletedAt == nil ? $0.id : nil })
-        return AttachmentClusters.grouped(attachments, liveOwnerIDs: liveOwners)
+        AttachmentClusters.grouped(visibleAttachments)
+    }
+
+    private var visibleAttachments: [AttachmentItem] {
+        attachments.filter { AttachmentAccess.canBrowse($0, todos: todos, routines: routines, diaries: diaries, tags: tags) }
     }
 
     private func clusterBlock(_ cluster: AttachmentCluster) -> some View {
@@ -60,7 +66,9 @@ struct AttachmentBrowserPage: View {
         }
     }
 
+    @ViewBuilder
     private func thumb(_ item: AttachmentRef) -> some View {
+        if visibleAttachments.contains(where: { $0.id == item.id }) {
         Button {
             preview = item
         } label: {
@@ -82,6 +90,7 @@ struct AttachmentBrowserPage: View {
                 }
             }
         }
+        }
     }
 
     @ViewBuilder
@@ -102,7 +111,9 @@ struct AttachmentBrowserPage: View {
 
     @ViewBuilder
     private func previewBody(_ item: AttachmentRef) -> some View {
-        if let image = AttachmentStore.image(id: item.id) {
+        if !visibleAttachments.contains(where: { $0.id == item.id }) {
+            Text("diary.private.title")
+        } else if let image = AttachmentStore.image(id: item.id) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFit()
@@ -121,7 +132,10 @@ struct AttachmentBrowserPage: View {
         case .todo:
             return todos.first { $0.id == cluster.ownerID }?.title ?? cluster.items.first?.filename ?? ""
         case .diary:
-            return diaries.first { $0.id == cluster.ownerID }?.text ?? cluster.items.first?.filename ?? ""
+            guard let entry = diaries.first(where: { $0.id == cluster.ownerID }) else {
+                return L10n.string("diary.private.title", locale: locale)
+            }
+            return DiaryPrivacy.displayText(entry.snapshot, tags: tags, locale: locale)
         case .routine:
             return routines.first { $0.id == cluster.ownerID }?.title ?? cluster.items.first?.filename ?? ""
         }

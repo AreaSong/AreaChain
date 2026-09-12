@@ -3,114 +3,98 @@ import Foundation
 import SwiftData
 import UniformTypeIdentifiers
 
-/// 视图层附件交互控制器：负责文件选取器、剪贴板粘贴、截屏以及相关系统弹窗提示
 @MainActor
 enum AttachmentPicker {
-    /// 打开系统文件选取对话框并导入附件
     static func pickImage(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext,
-        store: any AttachmentStorageProtocol = AttachmentStore.shared
+        ownerKind: AttachmentOwner, ownerID: UUID, context: ModelContext,
+        store: any AttachmentStorageProtocol = AttachmentStore.shared,
+        canAttach: @escaping () -> Bool = { true }
     ) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .tiff, .webP]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            guard let data = try? Data(contentsOf: url) else { return }
-            persist {
-                _ = try? store.save(
-                    data: data,
-                    filename: url.lastPathComponent,
-                    ownerKind: ownerKind,
-                    ownerID: ownerID,
-                    context: context,
-                    root: nil,
-                    id: UUID(),
-                    createdAt: .now
-                )
+            guard response == .OK, let url = panel.url, canAttach() else { return }
+            do {
+                let data = try Data(contentsOf: url)
+                _ = saveImage(data: data, filename: url.lastPathComponent,
+                              owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
+            } catch {
+                MutationFeedback.shared.reportFailure(error)
             }
         }
     }
 
-    /// 从系统剪贴板读取图片并导入附件
     @discardableResult
     static func pasteImage(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext,
-        store: any AttachmentStorageProtocol = AttachmentStore.shared
+        ownerKind: AttachmentOwner, ownerID: UUID, context: ModelContext,
+        store: any AttachmentStorageProtocol = AttachmentStore.shared,
+        pasteboard: NSPasteboard = .general
     ) -> Bool {
-        guard let image = ImageBytes.pasteboardImage(), let data = ImageBytes.png(from: image) else {
+        guard let image = ImageBytes.pasteboardImage(pasteboard), let data = ImageBytes.png(from: image) else {
             NSSound.beep()
             return false
         }
-        persist {
-            _ = try? store.save(
-                data: data,
-                filename: "paste.png",
-                ownerKind: ownerKind,
-                ownerID: ownerID,
-                context: context,
-                root: nil,
-                id: UUID(),
-                createdAt: .now
-            )
-        }
-        return true
+        return saveImage(data: data, filename: "paste.png",
+                         owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
     }
 
-    /// 截取屏幕并导入附件，如发生权限或编码错误展示告警弹窗
+    /// 文件和元数据属于同一次捕获；写入失败时清理仅属于本次操作的新文件。
+    @discardableResult
+    static func saveImage(
+        data: Data, filename: String, owner: AttachmentOwnerKey, context: ModelContext,
+        store: any AttachmentStorageProtocol = AttachmentStore.shared
+    ) -> Bool {
+        let id = UUID()
+        let saved = ModelChanges.perform(in: context) {
+            guard NSImage(data: data) != nil, try ownerIsLive(owner, context: context) else {
+                throw RepositoryError.invalidArgument("附件拥有者不可用，或图像无法解码")
+            }
+            _ = try store.save(data: data, filename: filename, ownerKind: owner.kind,
+                               ownerID: owner.id, context: context, id: id)
+        }
+        if !saved { store.removeFile(id: id) }
+        return saved
+    }
+
     static func captureScreen(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        context: ModelContext,
+        ownerKind: AttachmentOwner, ownerID: UUID, context: ModelContext,
         store: any AttachmentStorageProtocol = AttachmentStore.shared
     ) {
         Task { @MainActor in
             switch await ScreenCapture.pngData() {
             case .success(let data):
-                persist {
-                    _ = try? store.save(
-                        data: data,
-                        filename: "screen.png",
-                        ownerKind: ownerKind,
-                        ownerID: ownerID,
-                        context: context,
-                        root: nil,
-                        id: UUID(),
-                        createdAt: .now
-                    )
-                }
+                _ = saveImage(data: data, filename: "screen.png",
+                              owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
             case .failure(let failure):
                 NSSound.beep()
-                presentCaptureFailure(failure)
+                let alert = NSAlert()
+                alert.messageText = L10n.string(
+                    String.LocalizationValue(stringLiteral: failure.messageKey),
+                    locale: AppPreferences.shared.resolvedLocale
+                )
+                alert.alertStyle = .informational
+                alert.runModal()
             }
         }
     }
 
-    /// 移至废纸篓（软删除）
-    static func trash(_ item: AttachmentItem) {
-        persist { item.deletedAt = .now }
+    @discardableResult
+    static func trash(_ item: AttachmentItem) -> Bool {
+        DayBoardMutations.persist(context: item.modelContext) { item.deletedAt = .now }
     }
 
-    private static func presentCaptureFailure(_ failure: ScreenCaptureFailure) {
-        let alert = NSAlert()
-        alert.messageText = L10n.string(
-            String.LocalizationValue(stringLiteral: failure.messageKey),
-            locale: AppPreferences.shared.resolvedLocale
-        )
-        alert.alertStyle = .informational
-        alert.runModal()
-    }
-
-    private static func persist(_ work: () -> Void) {
-        work()
-        BoardEvents.changed()
+    private static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
+        switch owner.kind {
+        case .todo:
+            return try context.fetch(FetchDescriptor<TodoItem>()).contains { $0.id == owner.id && $0.deletedAt == nil }
+        case .routine:
+            return try context.fetch(FetchDescriptor<DailyRoutine>()).contains { $0.id == owner.id && $0.deletedAt == nil }
+        case .diary:
+            return try context.fetch(FetchDescriptor<DiaryEntry>()).contains { $0.id == owner.id && $0.deletedAt == nil }
+        }
     }
 }
 
-/// 向后兼容别名，确保现有 TaskDetailDrawer / DiaryNoteCard / TaskRowContext / AttachmentBrowserPage 调用完全无需修改
 typealias AttachmentActions = AttachmentPicker

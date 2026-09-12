@@ -19,6 +19,11 @@ struct BoardSearchPriority: Equatable {
     var isUrgent: Bool
 }
 
+struct BoardSearchPrivacy {
+    var sensitiveDiaryIDs: Set<UUID> = []
+    var placeholder: String = "••••••••"
+}
+
 struct BoardSearchQuery: Equatable {
     var raw: String
     var textKeywords: [String] = []
@@ -84,13 +89,14 @@ enum BoardSearch {
         diaries: [DiarySnapshot],
         routines: [RoutineSnapshot],
         todayKey: String = DayKey.today(),
-        tagMap: [UUID: String] = [:]
+        tagMap: [UUID: String] = [:],
+        privacy: BoardSearchPrivacy = BoardSearchPrivacy()
     ) -> [BoardSearchHit] {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
         let found = todoHits(parsed, todos, tagMap: tagMap)
-            + diaryHits(parsed, diaries, tagMap: tagMap)
+            + diaryHits(parsed, diaries, tagMap: tagMap, privacy: privacy)
             + routineHits(parsed, routines, todayKey: todayKey, tagMap: tagMap)
 
         return found.sorted {
@@ -162,7 +168,9 @@ enum BoardSearch {
         }
     }
 
-    private static func diaryHits(_ query: BoardSearchQuery, _ diaries: [DiarySnapshot], tagMap: [UUID: String]) -> [BoardSearchHit] {
+    private static func diaryHits(
+        _ query: BoardSearchQuery, _ diaries: [DiarySnapshot], tagMap: [UUID: String], privacy: BoardSearchPrivacy
+    ) -> [BoardSearchHit] {
         guard !query.hasPriority else { return [] }
 
         return diaries.compactMap { item in
@@ -182,7 +190,8 @@ enum BoardSearch {
             return BoardSearchHit(
                 id: item.id,
                 kind: .diary,
-                title: item.text,
+                title: privacy.sensitiveDiaryIDs.contains(item.id) || DiaryPrivacy.isSensitive(item, tagNames: tagMap)
+                    ? privacy.placeholder : item.text,
                 dayKey: item.dayKey,
                 createdAt: item.createdAt
             )

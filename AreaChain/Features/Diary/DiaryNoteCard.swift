@@ -20,6 +20,7 @@ struct DiaryNoteCard: View {
     var attachments: [AttachmentItem]
     var onDelete: () -> Void
     var isHighlighted: Bool = false
+    var privacyTags: [TagItem]? = nil
 
     @State var isHovered = false
     @State var isEditing = false
@@ -28,10 +29,11 @@ struct DiaryNoteCard: View {
     @State var hasCopied = false
 
     var isPasswordType: Bool {
-        let hasPasswordTag = activeTags.contains { tag in
-            DiaryMemoTags.isPasswordName(tag.name) && TagIDList.contains(entry.tagIDs, tag.id)
-        }
-        return hasPasswordTag || entry.text.contains("#\(DiaryMemoTags.password)")
+        DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags)
+    }
+
+    var canRevealContent: Bool {
+        DiaryPrivacy.canReveal(isSensitive: isPasswordType, isMasked: isMasked)
     }
 
     private var assignedTags: [TagItem] {
@@ -51,7 +53,7 @@ struct DiaryNoteCard: View {
     }
 
     private var noteAttachments: [AttachmentRef] {
-        CatalogChoices.attachments(entry.id, in: attachments)
+        CatalogChoices.attachments(entry.id, in: attachments, ownerKind: .diary)
     }
 
     var body: some View {
@@ -60,7 +62,7 @@ struct DiaryNoteCard: View {
 
             contentView
 
-            if !noteAttachments.isEmpty, !(isPasswordType && isMasked && !isEditing) {
+            if !noteAttachments.isEmpty, canRevealContent {
                 AttachmentThumbnails(items: noteAttachments)
                     .padding(.top, 2)
             }
@@ -83,6 +85,13 @@ struct DiaryNoteCard: View {
         )
         .onHover { isHovered = $0 }
         .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .onDisappear { isMasked = true }
+        .onChange(of: entry.text) { _, _ in isMasked = true }
+        .onChange(of: entry.tagIDs) { _, _ in isMasked = true }
+        .onChange(of: isPasswordType) { _, _ in isMasked = true }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            isMasked = true
+        }
     }
 
     @ViewBuilder
@@ -156,11 +165,12 @@ struct DiaryNoteCard: View {
 
     @ViewBuilder
     var contentView: some View {
-        if isEditing {
-            editingContentView
-        } else if isPasswordType && isMasked {
+        switch DiaryPrivacy.contentMode(isSensitive: isPasswordType, isMasked: isMasked, isEditing: isEditing) {
+        case .masked:
             maskedPasswordContentView
-        } else {
+        case .editing:
+            editingContentView
+        case .text:
             readOnlyTextView
         }
     }
@@ -174,8 +184,15 @@ struct DiaryNoteCard: View {
     }
 
     func copyContent() {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(entry.text, forType: .string)
+        copyContent(to: .general)
+    }
+
+    func copyContent(to pasteboard: NSPasteboard) {
+        pasteboard.clearContents()
+        guard pasteboard.setString(entry.text, forType: .string) else {
+            MutationFeedback.shared.reportFailure()
+            return
+        }
         withAnimation(.snappy) {
             hasCopied = true
         }

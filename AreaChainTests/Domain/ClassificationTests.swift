@@ -134,7 +134,7 @@ struct ClassificationTests {
             )
         )
         #expect(
-            CalendarEventPolicy.shouldRemoveOrphanEvent(
+            !CalendarEventPolicy.shouldRemoveOrphanEvent(
                 notes: nil,
                 eventIdentifier: "old",
                 liveTokens: [],
