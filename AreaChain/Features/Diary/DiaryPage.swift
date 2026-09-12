@@ -1,12 +1,18 @@
 import SwiftData
 import SwiftUI
 
+struct DiaryComposerDraft {
+    var text = ""
+    var selectedTagIDs: Set<UUID> = []
+}
+
 struct DiaryPageOptions {
     var showsComposer: Bool = true
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
     var externalSelectedTagID: Binding<UUID?>? = nil
+    var composerDraft: Binding<DiaryComposerDraft>? = nil
 }
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
@@ -21,14 +27,14 @@ struct DiaryPage: View {
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
     var externalSelectedTagID: Binding<UUID?>? = nil
+    var composerDraft: Binding<DiaryComposerDraft>? = nil
 
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
     @State private var selectedTagID: UUID? = nil
     @State private var searchQuery: String = ""
-    @State private var draftText: String = ""
-    @State private var composerSelectedTagIDs: Set<UUID> = []
+    @State private var localComposerDraft = DiaryComposerDraft()
     @State private var pendingTrash: PendingTrash?
     @FocusState private var composerFocused: Bool
     @Bindable private var boardSelection = BoardSelection.shared
@@ -45,6 +51,7 @@ struct DiaryPage: View {
         self.maxScrollHeight = options.maxScrollHeight
         self.showsPageHeader = options.showsPageHeader
         self.externalSelectedTagID = options.externalSelectedTagID
+        self.composerDraft = options.composerDraft
     }
 
     init(
@@ -69,6 +76,18 @@ struct DiaryPage: View {
 
     private var activeTags: [TagItem] {
         allTags.filter { $0.deletedAt == nil }
+    }
+
+    private var draftBinding: Binding<DiaryComposerDraft> { composerDraft ?? $localComposerDraft }
+
+    private var draftText: String {
+        get { draftBinding.wrappedValue.text }
+        nonmutating set { draftBinding.wrappedValue.text = newValue }
+    }
+
+    private var composerSelectedTagIDs: Set<UUID> {
+        get { draftBinding.wrappedValue.selectedTagIDs }
+        nonmutating set { draftBinding.wrappedValue.selectedTagIDs = newValue }
     }
 
     private var orderedTags: [TagItem] {
@@ -275,10 +294,10 @@ struct DiaryPage: View {
 
     private var quickComposer: some View {
         DiaryQuickComposerView(
-            text: $draftText,
+            text: draftBinding.text,
             focused: $composerFocused,
             orderedTags: orderedTags,
-            selectedTagIDs: $composerSelectedTagIDs,
+            selectedTagIDs: draftBinding.selectedTagIDs,
             onSubmit: submitNote
         )
     }

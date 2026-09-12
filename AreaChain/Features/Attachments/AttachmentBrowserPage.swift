@@ -69,27 +69,27 @@ struct AttachmentBrowserPage: View {
     @ViewBuilder
     private func thumb(_ item: AttachmentRef) -> some View {
         if visibleAttachments.contains(where: { $0.id == item.id }) {
-        Button {
-            preview = item
-        } label: {
-            VStack(spacing: 4) {
-                thumbImage(item)
-                Text(item.filename)
-                    .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .lineLimit(1)
-            }
-        }
-        .buttonStyle(DaybookQuietButtonStyle())
-        .accessibilityLabel(item.filename)
-        .help(item.filename)
-        .contextMenu {
-            Button("attachments.delete", role: .destructive) {
-                pendingTrash = PendingTrash(title: item.filename) {
-                    trash(item.id)
+            Button {
+                preview = item
+            } label: {
+                VStack(spacing: 4) {
+                    thumbImage(item)
+                    Text(item.filename)
+                        .font(.system(size: 10))
+                        .foregroundStyle(DaybookTheme.muted)
+                        .lineLimit(1)
                 }
             }
-        }
+            .buttonStyle(DaybookQuietButtonStyle())
+            .accessibilityLabel(item.filename)
+            .help(item.filename)
+            .contextMenu {
+                Button("attachments.delete", role: .destructive) {
+                    pendingTrash = PendingTrash(title: item.filename) {
+                        trash(item.id)
+                    }
+                }
+            }
         }
     }
 

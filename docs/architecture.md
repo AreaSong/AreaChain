@@ -27,13 +27,13 @@ AreaChain/
   Features/       界面（按模块）：
     Workspace/    三栏工作台、常驻页、检查器抽屉、子任务、备注、2×2 四象限
     Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏
-    MenuBar/      菜单栏浮层与捕获框
+    MenuBar/      菜单栏浮层、捕获框、可切换底栏与语法搜索
     Calendar/     日历月网格（工作台 tab）
     Quadrant/     四象限（工作台 tab）
     Gantt/        当月单日色块安排（工作台 tab）
     Diary/        灵感手记卡片流（多维标签、密码虚化、置顶）
     Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
-    Search/       跨天搜索（工作台 tab）
+    Search/       跨天搜索与工作台/浮层共用的结果列表
     Settings/     设置（外观、启动、捕获、通知、日历、iCloud、数据）
     Trash/        回收站（工作台 tab）
   Theme/          色板、DaybookType 字号、DaybookPage 页壳、动效、确认组件
@@ -78,6 +78,8 @@ AreaChain/
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
 - **`BoardSearch`**：搜索待办/习惯标题和备注、手记正文，支持 `#标签` 与待办优先级条件，不搜子任务。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
+- **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。
+- **语法输入**：`SyntaxInputContext` 区分捕获与搜索；搜索补全仅提供标签与优先级，不提示新建标签或未实现的时间条件。`Theme/DaybookTextField.swift` 封装原生编辑器，保护输入法组合文本和双输入框的快捷键归属。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 

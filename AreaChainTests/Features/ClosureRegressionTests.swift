@@ -13,6 +13,31 @@ struct ClosureRegressionTests {
         )
     }
 
+    @Test func leftoverChipAccessibilityLabelsIncludeLocalizedContextAndCount() {
+        let chinese = Locale(identifier: "zh-Hans")
+        let english = Locale(identifier: "en")
+        #expect(LeftoverChipKind.yesterday.accessibilityLabel(count: 2, locale: chinese) == "昨天 2 条")
+        #expect(LeftoverChipKind.upcoming.accessibilityLabel(count: 3, locale: chinese) == "即将 3 条")
+        #expect(LeftoverChipKind.yesterday.accessibilityLabel(count: 2, locale: english) == "Yesterday 2")
+        #expect(LeftoverChipKind.upcoming.accessibilityLabel(count: 3, locale: english) == "Upcoming 3")
+        #expect(LeftoverChipKind.yesterday.accessibilityLabel(count: 0, locale: chinese) == "昨天未完成 0 条")
+        #expect(LeftoverChipKind.upcoming.accessibilityLabel(count: 0, locale: chinese) == "即将 0 条")
+        #expect(LeftoverChipKind.yesterday.accessibilityLabel(count: 0, locale: english) == "Yesterday leftover 0")
+        #expect(LeftoverChipKind.upcoming.accessibilityLabel(count: 0, locale: english) == "Upcoming 0")
+    }
+
+    @Test func resettingStoreIncludesCalendarLedgerAndOnlyOwnedFiles() {
+        var attempted: [URL] = []
+        // 只记录路径，不触碰真实数据库、同步记录或附件。
+        Persistence.resetStoreOnDisk { attempted.append($0) }
+        let root = URL.applicationSupportDirectory
+        let expected = ["areachain.store", "areachain.store-shm", "areachain.store-wal", CalendarSyncStorage.ledgerFilename]
+            .map { root.appending(path: $0) } + [AttachmentStore.directory()]
+        #expect(attempted == expected)
+        #expect(attempted.count == Set(attempted).count)
+        #expect(!attempted.contains(root))
+    }
+
     @Test func workspaceRoutePreservesExplicitInspectionDayAfterResettingFilters() {
         let board = BoardSelection()
         let navigation = WorkspaceNavigation(boardSelection: board)

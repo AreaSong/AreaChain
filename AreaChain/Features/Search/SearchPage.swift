@@ -7,9 +7,8 @@ struct SearchPage: View {
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
-    @Bindable private var selection = BoardSelection.shared
     @State private var query = ""
-    @State private var autocomplete = SyntaxAutocompleteState()
+    @State private var autocomplete = SyntaxAutocompleteState(context: .search)
     @FocusState private var searchFocus: Bool
 
     private var tagMap: [UUID: String] {
@@ -26,7 +25,9 @@ struct SearchPage: View {
                         focus: $searchFocus,
                         autocomplete: autocomplete,
                         availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-                        onSubmit: {}
+                        onSubmit: {},
+                        onCommandReturn: {},
+                        allowsShiftNewline: false
                     )
                     .accessibilityLabel("search.placeholder")
                     .daybookHideInputChrome()
@@ -50,86 +51,26 @@ struct SearchPage: View {
             }
             if BoardSearch.normalized(query).isEmpty {
                 DaybookEmptyState(title: "search.hint", systemImage: "magnifyingglass")
-            } else if groups.isEmpty {
+            } else if hits.isEmpty {
                 DaybookEmptyState(title: "search.empty", systemImage: "magnifyingglass")
             } else {
-                results
+                SearchResultsView(hits: hits)
             }
         }
     }
 
-    private var groups: [(dayKey: String, items: [BoardSearchHit])] {
-        BoardSearch.grouped(
-            BoardSearch.hits(
-                query: query,
-                todos: todos.map(\.snapshot),
-                diaries: diaries.map(\.snapshot),
-                routines: routines.map(\.snapshot),
-                todayKey: DayClock.shared.todayKey,
-                tagMap: tagMap,
-                privacy: BoardSearchPrivacy(
-                    sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
-                    placeholder: L10n.string("diary.private.title", locale: locale)
-                )
+    private var hits: [BoardSearchHit] {
+        BoardSearch.hits(
+            query: query,
+            todos: todos.map(\.snapshot),
+            diaries: diaries.map(\.snapshot),
+            routines: routines.map(\.snapshot),
+            todayKey: DayClock.shared.todayKey,
+            tagMap: tagMap,
+            privacy: BoardSearchPrivacy(
+                sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
+                placeholder: L10n.string("diary.private.title", locale: locale)
             )
         )
-    }
-
-    private var results: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                ForEach(groups, id: \.dayKey) { group in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(DayKey.displayName(group.dayKey, locale: locale))
-                            .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookTheme.muted)
-                        ForEach(group.items) { hit in
-                            hitRow(hit)
-                        }
-                    }
-                }
-            }
-        }
-        .daybookScroll()
-    }
-
-    private func hitRow(_ hit: BoardSearchHit) -> some View {
-        Button {
-            open(hit)
-        } label: {
-            HStack(alignment: .top, spacing: 8) {
-                Text(kindLabel(hit.kind))
-                    .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .frame(width: 36, alignment: .leading)
-                Text(hit.title)
-                    .font(DaybookType.body)
-                    .foregroundStyle(DaybookTheme.ink)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(3)
-                Spacer(minLength: 0)
-            }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(DaybookQuietButtonStyle())
-        .help(hit.title)
-    }
-
-    private func kindLabel(_ kind: BoardSearchHit.Kind) -> LocalizedStringKey {
-        switch kind {
-        case .todo: "search.kind.todo"
-        case .diary: "search.kind.diary"
-        case .routine: "search.kind.routine"
-        }
-    }
-
-    private func open(_ hit: BoardSearchHit) {
-        switch hit.kind {
-        case .todo, .routine:
-            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.id, dayKey: hit.dayKey)
-        case .diary:
-            selection.inspectDiary(id: hit.id, dayKey: hit.dayKey)
-            AppWindows.openDiary()
-        }
     }
 }

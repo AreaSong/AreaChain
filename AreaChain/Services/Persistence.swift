@@ -36,13 +36,16 @@ enum Persistence {
         }
     }
 
-    static func resetStoreOnDisk() {
+    static func resetStoreOnDisk(
+        removeItem: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }
+    ) {
         let base = URL.applicationSupportDirectory
-        for extra in ["", "-shm", "-wal"] {
-            let url = base.appending(path: "areachain.store\(extra)")
-            try? FileManager.default.removeItem(at: url)
+        // 同步基线属于被重置的数据集，不能随旧任务绑定遗留到新库。
+        let filenames = ["areachain.store", "areachain.store-shm", "areachain.store-wal", CalendarSyncStorage.ledgerFilename]
+        for filename in filenames {
+            try? removeItem(base.appending(path: filename))
         }
-        AttachmentStore.resetDirectory()
+        try? removeItem(AttachmentStore.directory())
     }
 
     private static func sanitizeSqliteStoreIfNeeded() {

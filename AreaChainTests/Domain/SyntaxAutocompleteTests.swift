@@ -3,6 +3,21 @@ import Testing
 @testable import AreaChain
 
 struct SyntaxAutocompleteTests {
+    @Test func searchCandidatesNeverOfferCreationOrUnsupportedTime() {
+        let tag = SyntaxTrigger(kind: .tag, query: "工", range: NSRange(location: 0, length: 2))
+        let candidates = SyntaxAutocompleteEngine.candidates(for: tag, availableTags: ["工作"], context: .search)
+        #expect(candidates.map(\.insertText) == ["#工 ", "#工作 "])
+        #expect(candidates.allSatisfy { !$0.isCreation && $0.subtitle == "syntax.search.tag" })
+
+        let time = SyntaxTrigger(kind: .time, query: "", range: NSRange(location: 0, length: 1))
+        #expect(SyntaxAutocompleteEngine.candidates(for: time, context: .search).isEmpty)
+        #expect(!SyntaxAutocompleteEngine.candidates(for: time).isEmpty)
+
+        let priority = SyntaxTrigger(kind: .priority, query: "", range: NSRange(location: 0, length: 1))
+        #expect(SyntaxAutocompleteEngine.candidates(for: priority, context: .search).map(\.insertText)
+            == ["!p1 ", "!p2 ", "!p3 ", "!p4 "])
+    }
+
     @Test func detectTriggerBasicSymbols() {
         // Tag trigger
         let triggerTag = SyntaxAutocompleteEngine.detectTrigger(in: "准备报告 #", cursorLocation: 6)

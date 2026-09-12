@@ -87,7 +87,7 @@ extension DayBoardList {
 }
 
 struct DayBoardKeyNavigationModifier: ViewModifier {
-    var focusedTaskID: Binding<UUID?>?
+    var interaction: DayBoardInteraction
     var onNavigate: (Int) -> Void
     var onToggle: (UUID) -> Void
     var onDelete: (UUID) -> Void
@@ -95,36 +95,29 @@ struct DayBoardKeyNavigationModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onKeyPress(.downArrow) {
-                guard focusedTaskID != nil else { return .ignored }
-                onNavigate(1)
-                return .handled
-            }
-            .onKeyPress(.upArrow) {
-                guard focusedTaskID != nil else { return .ignored }
-                onNavigate(-1)
-                return .handled
-            }
-            .onKeyPress(.space) {
-                if let id = focusedTaskID?.wrappedValue {
-                    onToggle(id)
-                    return .handled
-                }
-                return .ignored
-            }
-            .onKeyPress(.delete) {
-                if let id = focusedTaskID?.wrappedValue {
-                    onDelete(id)
-                    return .handled
-                }
-                return .ignored
-            }
-            .onKeyPress(.return) {
-                if let id = focusedTaskID?.wrappedValue {
-                    onInspect(id)
-                    return .handled
-                }
-                return .ignored
-            }
+            .onKeyPress(.downArrow) { handle(.downArrow) }
+            .onKeyPress(.upArrow) { handle(.upArrow) }
+            .onKeyPress(.space) { handle(.space) }
+            .onKeyPress(.delete) { handle(.delete) }
+            .onKeyPress(.return) { handle(.return) }
+    }
+
+    func handle(_ key: KeyEquivalent) -> KeyPress.Result {
+        guard interaction.isKeyboardEnabled(), let focus = interaction.focusedTaskID else { return .ignored }
+        switch key {
+        case .downArrow: onNavigate(1)
+        case .upArrow: onNavigate(-1)
+        case .space:
+            guard let id = focus.wrappedValue else { return .ignored }
+            onToggle(id)
+        case .delete:
+            guard let id = focus.wrappedValue else { return .ignored }
+            onDelete(id)
+        case .return:
+            guard let id = focus.wrappedValue else { return .ignored }
+            onInspect(id)
+        default: return .ignored
+        }
+        return .handled
     }
 }

@@ -1,6 +1,139 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "footer.syntax.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Shortcuts & syntax" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "快捷键与语法" } }
+      }
+    },
+    "footer.search.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search all dates" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索所有日期" } }
+      }
+    },
+    "footer.search.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search · #tag !priority" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索 · #标签 !优先级" } }
+      }
+    },
+    "footer.search.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear search" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清空搜索" } }
+      }
+    },
+    "footer.search.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search tasks, habits and notes across all dates. Supports #tags and !p1–!p4. ⌘F to focus." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跨日期搜索待办、习惯和手记，支持 #标签 与 !p1～!p4。⌘F 聚焦搜索。" } }
+      }
+    },
+    "footer.filter.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear filters" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清除筛选" } }
+      }
+    },
+    "footer.filter.count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Filter · %lld" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "筛选·%lld" } }
+      }
+    },
+    "footer.filter.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Active filters: %lld" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已启用 %lld 项筛选条件" } }
+      }
+    },
+    "syntax.search.tag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Filter by tag" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "按标签搜索" } }
+      }
+    },
+    "syntax.search.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search syntax" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索语法" } }
+      }
+    },
+    "syntax.search.tag.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Combine #tags with keywords" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "输入 # 选标签，可与关键词组合" } }
+      }
+    },
+    "syntax.search.priority.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Find tasks by priority with !p1–!p4" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "!p1～!p4 按优先级查找待办" } }
+      }
+    },
+    "syntax.search.scope.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search only; no records are created or changed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "只查找内容，不新增或修改记录" } }
+      }
+    },
+    "syntax.capture.scope.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "For quick capture and inline title editing" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "适用于随手记和清单行内编辑" } }
+      }
+    },
+    "search.scope.all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Searching all dates" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正在搜索所有日期" } }
+      }
+    },
+    "search.results.count %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Results: %lld" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "找到 %lld 项" } }
+      }
+    },
+    "header.today.remaining %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lld left today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今天还剩 %lld 项" } }
+      }
+    },
+    "header.today.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "All done for today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今天已全部完成" } }
+      }
+    },
+    "header.today.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Capture something for today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记下今天要做的事" } }
+      }
+    },
     "attachment.cleanup.pending": {
       "extractionState": "manual",
       "localizations": {
@@ -2863,7 +2996,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "工作台"
+            "value": "Workspace"
           }
         },
         "zh-Hans": {

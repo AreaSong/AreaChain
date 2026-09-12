@@ -10,9 +10,11 @@ import SwiftUI
 /// 快捷语法自展开卡片（聚焦时为轻量小条，点击后原地平铺展开为大卡片）
 struct SyntaxExpandableCard: View {
     @Binding var isExpanded: Bool
+    var context: SyntaxInputContext = .capture
     var onSelectToken: (String) -> Void
 
     @State private var hoveredToken: String? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,10 +50,10 @@ struct SyntaxExpandableCard: View {
                 .stroke(DaybookTheme.rule.opacity(0.68), lineWidth: 0.8)
         )
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .animation(DaybookMotion.interactive, value: isExpanded)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isExpanded)
         .onExitCommand {
             if isExpanded {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     isExpanded = false
                 }
             }
@@ -62,7 +64,7 @@ struct SyntaxExpandableCard: View {
 
     private var headerBar: some View {
         Button {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 isExpanded.toggle()
             }
         } label: {
@@ -71,7 +73,7 @@ struct SyntaxExpandableCard: View {
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(DaybookTheme.stamp)
                 
-                Text("快捷语法指南")
+                Text(context == .search ? "syntax.search.title" : "快捷语法指南")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(DaybookTheme.ink)
                     
@@ -80,7 +82,7 @@ struct SyntaxExpandableCard: View {
                     HStack(spacing: 4) {
                         miniBadge("#", color: Color(nsColor: .systemIndigo))
                         miniBadge("!", color: DaybookTheme.destructive)
-                        miniBadge("@", color: DaybookTheme.stamp)
+                        if context == .capture { miniBadge("@", color: DaybookTheme.stamp) }
                     }
                 }
 
@@ -123,11 +125,15 @@ struct SyntaxExpandableCard: View {
 
     private var syntaxList: some View {
         VStack(alignment: .leading, spacing: 4) {
-            syntaxRow(token: "#", title: "标签分类", desc: "键入 # 选已有标签，回车新建", color: Color(nsColor: .systemIndigo))
-            syntaxRow(token: "!", title: "四象限优先级", desc: "!p1 ~ !p4 快速设定重要与紧急", color: DaybookTheme.destructive)
-            syntaxRow(token: "@", title: "时刻提醒", desc: "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
-            syntaxRow(token: "⌘↩", title: "直接存入日记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
-            syntaxRow(token: "⇧↩", title: "换行输入备注", desc: "Shift + 回车换行，输入详情说明", color: DaybookTheme.muted)
+            syntaxRow(token: "#", title: "标签分类", desc: context == .search
+                ? "syntax.search.tag.help" : "键入 # 选已有标签，回车新建", color: Color(nsColor: .systemIndigo))
+            syntaxRow(token: "!", title: "四象限优先级", desc: context == .search
+                ? "syntax.search.priority.help" : "!p1 ~ !p4 快速设定重要与紧急", color: DaybookTheme.destructive)
+            if context == .capture {
+                syntaxRow(token: "@", title: "时刻提醒", desc: "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
+                syntaxRow(token: "⌘↩", title: "直接存入日记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
+                syntaxRow(token: "⇧↩", title: "换行输入备注", desc: "Shift + 回车换行，输入详情说明", color: DaybookTheme.muted)
+            }
         }
     }
 
@@ -183,7 +189,7 @@ struct SyntaxExpandableCard: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered in
-            withAnimation(DaybookMotion.interactive) {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 hoveredToken = hovered ? token : nil
             }
         }
@@ -194,7 +200,7 @@ struct SyntaxExpandableCard: View {
             Image(systemName: "keyboard")
                 .font(.system(size: 10))
                 .foregroundStyle(DaybookTheme.muted)
-            Text("适用于随手记、行内编辑与全局搜索")
+            Text(context == .search ? "syntax.search.scope.help" : "syntax.capture.scope.help")
                 .font(.system(size: 10))
                 .foregroundStyle(DaybookTheme.muted)
             Spacer(minLength: 0)

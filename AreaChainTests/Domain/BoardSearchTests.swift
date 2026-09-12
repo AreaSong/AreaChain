@@ -3,6 +3,35 @@ import Testing
 @testable import AreaChain
 
 struct BoardSearchTests {
+    @Test func toolbarFiltersNarrowDiariesWithoutInventingTaskProperties() {
+        let tagID = UUID()
+        let tagged = DiarySnapshot(id: UUID(), text: "会议想法", dayKey: "2026-09-01", createdAt: .now, tagIDs: tagID.uuidString)
+        let other = DiarySnapshot(id: UUID(), text: "会议记录", dayKey: "2026-09-10", createdAt: .now)
+        let entries = [tagged, other]
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter()) == entries)
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(tagID: tagID)) == [tagged])
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(isHighPriorityOnly: true)).isEmpty)
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(projectID: UUID())).isEmpty)
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(bundleID: "sample.app")).isEmpty)
+    }
+
+    @Test func toolbarFilterAndSyntaxQueryAreIntersectedAcrossDates() {
+        let tagID = UUID()
+        let old = TodoSnapshot(
+            id: UUID(), title: "会议记录", isDone: true, dayKey: "2026-08-01",
+            tagIDs: tagID.uuidString, isImportant: true, isUrgent: true
+        )
+        let other = TodoSnapshot(id: UUID(), title: "会议安排", isDone: false, dayKey: "2026-09-12")
+        let filtered = [old, other].filter {
+            Classification.matches($0.classifyBits, filter: BoardFilter(tagID: tagID, isHighPriorityOnly: true))
+        }
+        let hits = BoardSearch.hits(
+            query: "会议 #工作 !p1", todos: filtered, diaries: [], routines: [], tagMap: [tagID: "工作"]
+        )
+        #expect(hits.map(\.id) == [old.id])
+        #expect(old.isDone)
+    }
+
     @Test func emptyOrBlankQueryReturnsNothing() {
         let todo = TodoSnapshot(id: UUID(), title: "修角标", isDone: false, dayKey: "2026-09-07")
         #expect(BoardSearch.hits(query: "", todos: [todo], diaries: [], routines: []).isEmpty)
@@ -136,4 +165,3 @@ struct FeedbackCopyTests {
         #expect(L10n.format("diary.count_format", locale: en, 5) == "5 notes")
     }
 }
-

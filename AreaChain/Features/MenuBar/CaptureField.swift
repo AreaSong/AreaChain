@@ -15,6 +15,7 @@ struct CaptureField: View {
     var focus: FocusState<Bool>.Binding
     var onTodo: () -> Void
     var onDiary: () -> Void
+    var allowsDiaryShortcut = true
 
     @State private var autocomplete = SyntaxAutocompleteState()
     @State private var isCommandPressed: Bool = false
@@ -87,7 +88,7 @@ struct CaptureField: View {
                 autocomplete: autocomplete,
                 availableTags: availableTags,
                 onSubmit: onTodo,
-                onCommandReturn: onDiary
+                onCommandReturn: { if allowsDiaryShortcut { onDiary() } }
             )
             .accessibilityLabel("capture.placeholder.today")
 
@@ -135,7 +136,7 @@ struct CaptureField: View {
         .buttonStyle(.plain)
         .focusable(false)
         .disabled(!canSubmit)
-        .keyboardShortcut(.return, modifiers: [.command])
+        .keyboardShortcut(allowsDiaryShortcut ? KeyboardShortcut(.return, modifiers: [.command]) : nil)
         .help("capture.diary")
         .onHover { hovering in
             isHoveringDiary = hovering

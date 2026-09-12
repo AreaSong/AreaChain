@@ -34,11 +34,17 @@ struct MenuBarPopoverView: View {
     @FocusState private var captureFocused: Bool
     @State private var focusedTaskID: UUID? = nil
     @State private var showingSyntaxHelp = false
-    @State private var isHoveringSyntaxButton = false
-    @State private var hoverDismissWorkItem: DispatchWorkItem? = nil
+    @State private var helpContext: SyntaxInputContext = .capture
+    @State private var toolbar: MenuBarToolbarState
+    @State private var hostWindow: NSWindow?
     @State private var tabKeyMonitor: Any? = nil
     @State private var boardFilter = BoardFilter()
     @State private var diaryFilterTagID: UUID? = nil
+    @State private var diaryComposerDraft = DiaryComposerDraft()
+
+    init(toolbar: MenuBarToolbarState? = nil) {
+        _toolbar = State(initialValue: toolbar ?? MenuBarToolbarState())
+    }
 
     private var todayKey: String {
         _ = dayTick
@@ -50,18 +56,11 @@ struct MenuBarPopoverView: View {
     }
 
     private var headerSubtitle: LocalizedStringKey {
+        if toolbar.isSearching { return "search.scope.all" }
         switch tab {
         case .tasks:
-            if todayRemaining == 0 && todayCompleted > 0 {
-                return " "
-            }
-            if todayCompleted > 0 {
-                return "header.progress \(todayRemaining) \(todayCompleted)"
-            }
-            if todayRemaining > 0 {
-                return "header.remaining \(todayRemaining)"
-            }
-            return " "
+            if todayRemaining > 0 { return "header.today.remaining \(todayRemaining)" }
+            return todayCompleted > 0 ? "header.today.done" : "header.today.empty"
         case .diary:
             let count = todayDiariesCount
             if count == 0 {
@@ -77,11 +76,18 @@ struct MenuBarPopoverView: View {
                 integratedHeader
 
                 Group {
-                    switch tab {
-                    case .tasks:
-                        tasksView
-                    case .diary:
-                        diaryView
+                    if toolbar.isSearching {
+                        MenuBarSearchResults(
+                            query: toolbar.searchText,
+                            filter: tab == .tasks ? boardFilter : BoardFilter(tagID: diaryFilterTagID),
+                            onClearSearch: { toolbar.clearSearch() },
+                            onClearFilter: clearCurrentFilter
+                        )
+                    } else {
+                        switch tab {
+                        case .tasks: tasksView
+                        case .diary: diaryView
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,13 +99,13 @@ struct MenuBarPopoverView: View {
 
                 FooterBar(
                     tab: tab,
+                    toolbar: toolbar,
                     filter: $boardFilter,
                     diaryFilterTagID: $diaryFilterTagID,
                     tags: Array(tags),
-                    diaryCount: todayDiariesCount,
-                    completedCount: todayCompleted,
-                    totalCount: todayRemaining + todayCompleted
+                    onShowSyntaxHelp: showSyntaxHelp
                 )
+                .zIndex(10)
             }
             .padding(12)
             .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
@@ -107,7 +113,7 @@ struct MenuBarPopoverView: View {
             .clipShape(Rectangle())
             .daybookHideInputChrome()
 
-            if isHoveringSyntaxButton || showingSyntaxHelp {
+            if showingSyntaxHelp {
                 if showingSyntaxHelp {
                     Color.black.opacity(0.30)
                         .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
@@ -123,6 +129,7 @@ struct MenuBarPopoverView: View {
 
                 SyntaxExpandableCard(
                     isExpanded: $showingSyntaxHelp,
+                    context: helpContext,
                     onSelectToken: { token in
                         withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
                             showingSyntaxHelp = false
@@ -136,12 +143,23 @@ struct MenuBarPopoverView: View {
                     insertion: .scale(scale: 0.88, anchor: .topTrailing).combined(with: .opacity),
                     removal: .opacity
                 ))
-                .onHover { hovering in
-                    handleSyntaxButtonHover(hovering)
-                }
                 .zIndex(21)
             }
         }
+        .overlayPreferenceValue(MenuBarSearchAnchorKey.self) { anchor in
+            GeometryReader { proxy in
+                if let anchor, toolbar.searchIsFocused, toolbar.autocomplete.isActive,
+                   !toolbar.isFiltering, !showingSyntaxHelp {
+                    let bounds = proxy[anchor]
+                    // 候选挂在浮层根部，避免底栏的窄命中区域挡住上方候选的鼠标事件。
+                    MenuBarSearchSuggestions(toolbar: toolbar)
+                        .frame(width: 240)
+                        .frame(width: 240, height: max(0, bounds.minY - 6), alignment: .bottomLeading)
+                        .offset(x: max(12, min(bounds.minX, proxy.size.width - 252)))
+                }
+            }
+        }
+        .background(KeyWindowHost { hostWindow = $0 })
         .animation(DaybookMotion.interactive(reduceMotion), value: showingSyntaxHelp)
         .onAppear {
             prepare()
@@ -150,13 +168,14 @@ struct MenuBarPopoverView: View {
             tearDownTabKeyMonitor()
         }
         .onChange(of: tab) { _, newTab in
-            if newTab == .tasks {
-                captureFocused = true
-            }
+            if newTab == .tasks && !toolbar.isSearching { captureFocused = true }
         }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
-            if tab == .tasks {
-                captureFocused = true
+            focusCurrentInput()
+        }
+        .onChange(of: toolbar.isSearching) { _, searching in
+            if searching {
+                focusedTaskID = nil
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
@@ -171,7 +190,8 @@ struct MenuBarPopoverView: View {
                 text: $capture.draft,
                 focus: $captureFocused,
                 onTodo: addTodo,
-                onDiary: addDiary
+                onDiary: addDiary,
+                allowsDiaryShortcut: !toolbar.searchIsFocused && !toolbar.isSearching && !toolbar.isFiltering
             )
             TasksPage(
                 todayKey: todayKey,
@@ -185,7 +205,8 @@ struct MenuBarPopoverView: View {
                         onReturnToInput: {
                             focusedTaskID = nil
                             captureFocused = true
-                        }
+                        },
+                        isKeyboardEnabled: { !toolbar.searchIsFocused && !toolbar.isSearching && !toolbar.isFiltering }
                     ),
                     externalFilter: $boardFilter
                 )
@@ -199,9 +220,12 @@ struct MenuBarPopoverView: View {
         DiaryPage(
             todayKey: todayKey,
             entries: diaries,
-            showsComposer: true,
-            showsPageHeader: false,
-            externalSelectedTagID: $diaryFilterTagID
+            options: DiaryPageOptions(
+                showsComposer: true,
+                showsPageHeader: false,
+                externalSelectedTagID: $diaryFilterTagID,
+                composerDraft: $diaryComposerDraft
+            )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -249,58 +273,29 @@ struct MenuBarPopoverView: View {
             )
             .padding(.top, 1)
 
-            Button {
-                hoverDismissWorkItem?.cancel()
-                isHoveringSyntaxButton = true
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                    showingSyntaxHelp.toggle()
-                }
-            } label: {
-                Image(systemName: "exclamationmark.circle")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle((showingSyntaxHelp || isHoveringSyntaxButton) ? DaybookTheme.stamp : DaybookTheme.muted)
-                    .frame(width: 24, height: 24)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .fill(DaybookTheme.ink.opacity((showingSyntaxHelp || isHoveringSyntaxButton) ? 0.10 : 0.04))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
-                            .stroke(DaybookTheme.rule.opacity((showingSyntaxHelp || isHoveringSyntaxButton) ? 0.7 : 0.35), lineWidth: 0.6)
-                    )
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(DaybookQuietButtonStyle())
-            .help("快捷语法指南")
-            .accessibilityLabel("快捷语法指南")
-            .onHover { hovering in
-                handleSyntaxButtonHover(hovering)
-            }
-            .padding(.top, 1)
         }
     }
 
-    private func handleSyntaxButtonHover(_ hovering: Bool) {
-        if hovering {
-            hoverDismissWorkItem?.cancel()
-            hoverDismissWorkItem = nil
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
-                isHoveringSyntaxButton = true
-            }
-        } else {
-            if showingSyntaxHelp { return }
-            let task = DispatchWorkItem {
-                withAnimation(.easeOut(duration: 0.15)) {
-                    isHoveringSyntaxButton = false
-                }
-            }
-            hoverDismissWorkItem = task
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.22, execute: task)
-        }
+    private func showSyntaxHelp() {
+        helpContext = toolbar.isSearching || toolbar.searchIsFocused ? .search : .capture
+        toolbar.autocomplete.dismiss()
+        showingSyntaxHelp = true
+    }
+
+    private func clearCurrentFilter() {
+        if tab == .tasks { boardFilter = BoardFilter() }
+        else { diaryFilterTagID = nil }
     }
 
     private func handleSyntaxTokenSelection(_ token: String) {
         showingSyntaxHelp = false
+        if helpContext == .search {
+            guard token == "#" || token == "!" else { return }
+            let prefix = toolbar.searchText.isEmpty || toolbar.searchText.hasSuffix(" ") ? "" : " "
+            toolbar.searchText += prefix + token
+            toolbar.focusSearch()
+            return
+        }
 
         if token == "#" && tab == .diary {
             NotificationCenter.default.post(name: .diaryAppendToken, object: "#")
@@ -334,9 +329,12 @@ struct MenuBarPopoverView: View {
 
     private func prepare() {
         setupTabKeyMonitor()
-        if tab == .tasks {
-            captureFocused = true
-        }
+        focusCurrentInput()
+    }
+
+    private func focusCurrentInput() {
+        if toolbar.isSearching { toolbar.focusSearch() }
+        else if tab == .tasks { captureFocused = true }
     }
 
     private func setupTabKeyMonitor() {
@@ -354,9 +352,15 @@ struct MenuBarPopoverView: View {
     }
 
     private func handleTabKeyDown(_ event: NSEvent) -> NSEvent? {
+        guard event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
         // macOS 方向键会自动附加 .numericPad 与 .function 标记，仅提取核心修饰键进行 Command 判定
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard modifiers == .command else { return event }
+        if event.charactersIgnoringModifiers?.lowercased() == "f" {
+            toolbar.focusSearch()
+            return nil
+        }
+        guard !toolbar.searchIsFocused else { return event }
 
         // keyCode 123: Left Arrow (← 任务), 124: Right Arrow (→ 日记)
         if event.keyCode == 123 {

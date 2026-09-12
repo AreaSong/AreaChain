@@ -8,17 +8,20 @@ struct DayBoardInteraction {
     var highlightedTaskID: UUID? = nil
     var onInspect: ((UUID) -> Void)? = nil
     var onReturnToInput: (() -> Void)? = nil
+    var isKeyboardEnabled: () -> Bool = { true }
 
     init(
         focusedTaskID: Binding<UUID?>? = nil,
         highlightedTaskID: UUID? = nil,
         onInspect: ((UUID) -> Void)? = nil,
-        onReturnToInput: (() -> Void)? = nil
+        onReturnToInput: (() -> Void)? = nil,
+        isKeyboardEnabled: @escaping () -> Bool = { true }
     ) {
         self.focusedTaskID = focusedTaskID
         self.highlightedTaskID = highlightedTaskID
         self.onInspect = onInspect
         self.onReturnToInput = onReturnToInput
+        self.isKeyboardEnabled = isKeyboardEnabled
     }
 }
 
@@ -114,7 +117,7 @@ struct DayBoardList: View {
         .focusEffectDisabled()
         .background(KeyWindowHost { hostWindow = $0 })
         .modifier(DayBoardKeyNavigationModifier(
-            focusedTaskID: focusedTaskID,
+            interaction: config.interaction,
             onNavigate: { navigateSelection(delta: $0) },
             onToggle: { toggleSelected(id: $0) },
             onDelete: { deleteSelected(id: $0) },

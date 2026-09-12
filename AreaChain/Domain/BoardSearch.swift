@@ -125,6 +125,13 @@ enum BoardSearch {
         raw.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    static func filteredDiaries(_ entries: [DiarySnapshot], filter: BoardFilter) -> [DiarySnapshot] {
+        // 手记没有项目、捕获来源和优先级，不能混进要求这些属性的结果。
+        guard filter.projectID == nil, filter.bundleID == nil, !filter.isHighPriorityOnly else { return [] }
+        guard let tagID = filter.tagID else { return entries }
+        return entries.filter { TagIDList.contains($0.tagIDs, tagID) }
+    }
+
     private static func matchTags(tagNames: [String], attachedIDs: String, text: String, tagMap: [UUID: String]) -> Bool {
         guard !tagNames.isEmpty else { return true }
         for name in tagNames {

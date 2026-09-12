@@ -9,6 +9,11 @@ enum SyntaxTriggerKind: String, CaseIterable, Equatable, Sendable {
     var symbol: String { rawValue }
 }
 
+enum SyntaxInputContext: Equatable, Sendable {
+    case capture
+    case search
+}
+
 /// 语法触发信息
 struct SyntaxTrigger: Equatable, Sendable {
     let kind: SyntaxTriggerKind
@@ -95,18 +100,21 @@ enum SyntaxAutocompleteEngine {
 
     // MARK: - 候选构建 (Candidates)
 
-    static func candidates(for trigger: SyntaxTrigger, availableTags: [String] = []) -> [SyntaxCandidate] {
+    static func candidates(
+        for trigger: SyntaxTrigger, availableTags: [String] = [], context: SyntaxInputContext = .capture
+    ) -> [SyntaxCandidate] {
         switch trigger.kind {
         case .tag:
-            return tagCandidates(query: trigger.query, tags: availableTags)
+            return tagCandidates(query: trigger.query, tags: availableTags, context: context)
         case .priority:
             return priorityCandidates(query: trigger.query)
         case .time:
-            return timeCandidates(query: trigger.query)
+            // 搜索解析尚不支持时刻条件，不能用补全暗示它已经生效。
+            return context == .search ? [] : timeCandidates(query: trigger.query)
         }
     }
 
-    private static func tagCandidates(query: String, tags: [String]) -> [SyntaxCandidate] {
+    private static func tagCandidates(query: String, tags: [String], context: SyntaxInputContext) -> [SyntaxCandidate] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         var result: [SyntaxCandidate] = []
 
@@ -123,10 +131,10 @@ enum SyntaxAutocompleteEngine {
                 SyntaxCandidate(
                     id: "new_tag_\(trimmed)",
                     title: "#\(trimmed)",
-                    subtitle: "新建标签",
+                    subtitle: context == .search ? "syntax.search.tag" : "新建标签",
                     insertText: "#\(trimmed) ",
                     kind: .tag,
-                    isCreation: true
+                    isCreation: context == .capture
                 )
             )
         }
@@ -136,7 +144,7 @@ enum SyntaxAutocompleteEngine {
                 SyntaxCandidate(
                     id: "tag_\(tag)",
                     title: "#\(tag)",
-                    subtitle: "标签",
+                    subtitle: context == .search ? "syntax.search.tag" : "标签",
                     insertText: "#\(tag) ",
                     kind: .tag
                 )

@@ -87,6 +87,7 @@ extension DayBoardList {
     }
 
     func shouldHandle(_ event: NSEvent) -> Bool {
+        guard config.interaction.isKeyboardEnabled() else { return false }
         let mine = hostWindow
         let eventWindow = event.window
         if let mine, let eventWindow {

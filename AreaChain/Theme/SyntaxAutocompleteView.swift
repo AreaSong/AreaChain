@@ -3,10 +3,15 @@ import SwiftUI
 @Observable
 @MainActor
 final class SyntaxAutocompleteState {
+    let context: SyntaxInputContext
     var isActive: Bool = false
     var trigger: SyntaxTrigger? = nil
     var candidates: [SyntaxCandidate] = []
     var selectedIndex: Int = 0
+
+    init(context: SyntaxInputContext = .capture) {
+        self.context = context
+    }
 
     func update(text: String, cursorLocation: Int, availableTags: [String] = []) {
         guard let detected = SyntaxAutocompleteEngine.detectTrigger(in: text, cursorLocation: cursorLocation) else {
@@ -14,7 +19,7 @@ final class SyntaxAutocompleteState {
             return
         }
 
-        let items = SyntaxAutocompleteEngine.candidates(for: detected, availableTags: availableTags)
+        let items = SyntaxAutocompleteEngine.candidates(for: detected, availableTags: availableTags, context: context)
         guard !items.isEmpty else {
             dismiss()
             return
@@ -53,7 +58,9 @@ final class SyntaxAutocompleteState {
 
 struct SyntaxAutocompletePopup: View {
     @Bindable var state: SyntaxAutocompleteState
+    var growsUpward = false
     var onCommit: (SyntaxCandidate) -> Void
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         if state.isActive && !state.candidates.isEmpty {
@@ -73,7 +80,9 @@ struct SyntaxAutocompletePopup: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
             )
-            .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)))
+            .transition(reduceMotion ? .identity : .opacity.combined(with: .scale(
+                scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading
+            )))
         }
     }
 
@@ -82,19 +91,22 @@ struct SyntaxAutocompletePopup: View {
             ScrollView {
                 LazyVStack(spacing: 2) {
                     ForEach(Array(state.candidates.enumerated()), id: \.element.id) { index, item in
-                        candidateRow(item, isSelected: index == state.selectedIndex)
-                            .id(item.id)
-                            .onTapGesture {
-                                onCommit(item)
-                            }
+                        Button { onCommit(item) } label: {
+                            candidateRow(item, isSelected: index == state.selectedIndex)
+                        }
+                        .buttonStyle(.plain)
+                        .focusable(false)
+                        .accessibilityIdentifier("syntax.candidate." + item.id)
+                        .accessibilityAddTraits(index == state.selectedIndex ? [.isSelected] : [])
+                        .id(item.id)
                     }
                 }
                 .padding(4)
             }
-            .frame(maxHeight: 180)
+            .frame(height: min(180, CGFloat(state.candidates.count) * 29 + 8))
             .onChange(of: state.selectedIndex) { _, newIndex in
                 if newIndex >= 0 && newIndex < state.candidates.count {
-                    withAnimation(DaybookMotion.interactive) {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
                         proxy.scrollTo(state.candidates[newIndex].id, anchor: .center)
                     }
                 }

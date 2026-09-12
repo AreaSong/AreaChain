@@ -130,8 +130,27 @@ struct LeftoverChipsBarConfig {
     var upcoming: LeftoverChipState
 }
 
+enum LeftoverChipKind {
+    case yesterday, upcoming
+
+    func accessibilityLabel(count: Int, locale: Locale) -> String {
+        // 使用完整字面量保留本地化占位符；动态拼接资源键会让朗读器读出键名。
+        switch self {
+        case .yesterday:
+            return count == 0
+                ? L10n.string("a11y.yesterday.zero", locale: locale)
+                : L10n.string("a11y.yesterday.count \(count)", locale: locale)
+        case .upcoming:
+            return count == 0
+                ? L10n.string("a11y.upcoming.zero", locale: locale)
+                : L10n.string("a11y.upcoming.count \(count)", locale: locale)
+        }
+    }
+}
+
 struct LeftoverChipsBar: View {
     var config: LeftoverChipsBarConfig
+    @Environment(\.locale) private var locale
 
     private var yesterday: LeftoverChipState { config.yesterday }
     private var upcoming: LeftoverChipState { config.upcoming }
@@ -144,7 +163,7 @@ struct LeftoverChipsBar: View {
                         title: "chip.yesterday",
                         count: yesterday.count,
                         expanded: yesterday.isExpanded,
-                        keyPrefix: "yesterday",
+                        kind: .yesterday,
                         action: yesterday.onToggle
                     ))
                 }
@@ -153,7 +172,7 @@ struct LeftoverChipsBar: View {
                         title: "chip.upcoming",
                         count: upcoming.count,
                         expanded: upcoming.isExpanded,
-                        keyPrefix: "upcoming",
+                        kind: .upcoming,
                         action: upcoming.onToggle
                     ))
                 }
@@ -165,15 +184,8 @@ struct LeftoverChipsBar: View {
         var title: LocalizedStringKey
         var count: Int
         var expanded: Bool
-        var keyPrefix: String
+        var kind: LeftoverChipKind
         var action: () -> Void
-
-        var emptyLabel: LocalizedStringKey {
-            LocalizedStringKey("a11y.\(keyPrefix).zero")
-        }
-        var countLabel: LocalizedStringKey {
-            LocalizedStringKey("a11y.\(keyPrefix).count \(count)")
-        }
     }
 
     private func chip(_ config: LeftoverChipConfig) -> some View {
@@ -212,7 +224,7 @@ struct LeftoverChipsBar: View {
         .buttonStyle(.plain)
         .disabled(config.count == 0)
         .opacity(config.count == 0 ? 0.45 : 1)
-        .accessibilityLabel(config.count == 0 ? config.emptyLabel : config.countLabel)
+        .accessibilityLabel(config.kind.accessibilityLabel(count: config.count, locale: locale))
         .accessibilityAddTraits(config.expanded ? [.isSelected] : [])
     }
 }
