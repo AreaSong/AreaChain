@@ -1,6 +1,27 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "menubar.status.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AreaChain, nothing scheduled for today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "AreaChain，今天暂无安排" } }
+      }
+    },
+    "menubar.status.completed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AreaChain, everything for today is handled" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "AreaChain，今日事项已全部处理" } }
+      }
+    },
+    "menubar.status.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AreaChain, today's status is not available yet" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "AreaChain，今日状态暂不可用" } }
+      }
+    },
     "footer.syntax.help": {
       "extractionState": "manual",
       "localizations": {

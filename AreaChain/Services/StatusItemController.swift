@@ -28,9 +28,10 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     private func setupStatusItemButton() {
         guard statusItem == nil else { return }
-        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        item.button?.image = NSImage(systemSymbolName: "book.closed.fill", accessibilityDescription: "AreaChain")
-        item.button?.imagePosition = .imageLeading
+        let item = NSStatusBar.system.statusItem(withLength: MenuBarStatusImage.itemWidth)
+        if let button = item.button {
+            MenuBarStatusImage.apply(to: button, status: nil, locale: AppPreferences.shared.resolvedLocale)
+        }
         item.button?.target = self
         item.button?.action = #selector(toggle)
         statusItem = item
@@ -118,17 +119,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             MutationFeedback.shared.reportFailure()
             return
         }
-        let count = DayBoardLogic.todayBadgeCount(
+        let status = MenuBarStatus.forDay(
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
             todos: todos.map(\.snapshot),
             dayKey: DayClock.shared.todayKey
         )
         let locale = AppPreferences.shared.resolvedLocale
-        let mark = L10n.string("menubar.today.mark", locale: locale)
-        button.title = count > 0 ? "\(mark)\(count)" : mark
-        button.toolTip = count > 0
-            ? L10n.string("a11y.app.remaining \(count)", locale: locale)
-            : L10n.string("a11y.app", locale: locale)
+        MenuBarStatusImage.apply(to: button, status: status, locale: locale)
     }
 }
