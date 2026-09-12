@@ -12,6 +12,17 @@ struct ModernCheckbox: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        Button(action: handleTap) { checkboxContent }
+            .buttonStyle(.plain)
+            .onHover { hovering = $0 }
+            .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
+            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
+            .accessibilityAddTraits(isDone ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private var checkboxContent: some View {
         ZStack {
             Circle()
                 .strokeBorder(strokeColor, lineWidth: 1.5)
@@ -33,16 +44,6 @@ struct ModernCheckbox: View {
         .offset(y: 0.5)
         .scaleEffect(isAnimating ? 0.85 : (hovering ? 1.05 : 1.0))
         .contentShape(Rectangle())
-        .onTapGesture {
-            handleTap()
-        }
-        .onHover { hovering = $0 }
-        .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
-        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
-        .accessibilityAddTraits(isDone ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction { handleTap() }
     }
 
     private var strokeColor: Color {

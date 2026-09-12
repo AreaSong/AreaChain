@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import SwiftUI
 import Testing
@@ -34,7 +35,9 @@ struct AppPreferencesTests {
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are diary categories, not task tags.")
     }
 
-    @Test func writesLanguageAndAppearanceToInjectedDefaults() {
+    @Test @MainActor func writesLanguageAndAppearanceToInjectedDefaults() {
+        let previousAppearance = NSApp.appearance
+        defer { NSApp.appearance = previousAppearance }
         let name = "areachain.prefs.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
@@ -43,6 +46,7 @@ struct AppPreferencesTests {
         let prefs = AppPreferences(defaults: defaults)
         prefs.language = .english
         prefs.appearance = .dark
+        #expect(NSApp.appearance?.name == .darkAqua)
         #expect(defaults.string(forKey: AppPreferences.languageKey) == "english")
         #expect(defaults.string(forKey: AppPreferences.appearanceKey) == "dark")
         #expect(prefs.resolvedLocale.identifier == "en")

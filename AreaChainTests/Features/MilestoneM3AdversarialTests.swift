@@ -27,7 +27,7 @@ struct MilestoneM3AdversarialTests {
         let display = TodoRowDisplayOptions(isDone: false, isSelected: false, note: nil)
         var selectCalled = false
         var deleteCalled = false
-        let actions = TodoRowActions(onSelect: { selectCalled = true }, onDelete: { deleteCalled = true })
+        let actions = TodoRowActions(onSelect: { _ in selectCalled = true }, onDelete: { deleteCalled = true })
 
         let row = TaskRowFactory.todo(TodoRowContext(
             todo: todo,
@@ -45,7 +45,7 @@ struct MilestoneM3AdversarialTests {
         #expect(row.state.isSelected == false)
         #expect(row.state.isExternalEditing == false)
 
-        row.dispatch(.select)
+        row.dispatch(.select())
         #expect(selectCalled)
         row.dispatch(.delete)
         #expect(deleteCalled)
@@ -68,7 +68,7 @@ struct MilestoneM3AdversarialTests {
             note: "Explicit Custom Note",
             includeSubtasks: false
         )
-        let actions = TodoRowActions(onSelect: {}, onDelete: {})
+        let actions = TodoRowActions(onSelect: { _ in }, onDelete: {})
 
         let row = TaskRowFactory.todo(TodoRowContext(
             todo: todo,
@@ -108,7 +108,7 @@ struct MilestoneM3AdversarialTests {
 
         // Case A1: Everyday routine completed (not skipped) -> default note is nil
         let displayA1 = RoutineRowDisplayOptions(isDone: true, usesDefaultNote: true)
-        let actionsA1 = RoutineRowActions(onSelect: {}, onDelete: {}, onSkip: nil)
+        let actionsA1 = RoutineRowActions(onSelect: { _ in }, onDelete: {}, onSkip: nil)
         let rowA1 = TaskRowFactory.routine(RoutineRowContext(
             routine: routine, schedule: schedule, catalogs: catalogContext, display: displayA1, actions: actionsA1
         ))
@@ -134,7 +134,7 @@ struct MilestoneM3AdversarialTests {
         // Case B: Default note disabled, onSkip provided
         var skipFired = false
         let displayB = RoutineRowDisplayOptions(isDone: false, usesDefaultNote: false)
-        let actionsB = RoutineRowActions(onSelect: {}, onDelete: {}, onSkip: { skipFired = true })
+        let actionsB = RoutineRowActions(onSelect: { _ in }, onDelete: {}, onSkip: { skipFired = true })
         let rowB = TaskRowFactory.routine(RoutineRowContext(
             routine: routine, schedule: schedule, catalogs: catalogContext, display: displayB, actions: actionsB
         ))
@@ -152,7 +152,7 @@ struct MilestoneM3AdversarialTests {
 
         let actions = LeftoverRowActions(
             onToggle: { toggleCalled = true },
-            onSelect: { selectCalled = true },
+            onSelect: { _ in selectCalled = true },
             onMoveToDay: { movedDay = $0 }
         )
         let row = TaskRowFactory.leftoverFallback(LeftoverRowContext(
@@ -171,7 +171,7 @@ struct MilestoneM3AdversarialTests {
 
         row.dispatch(.toggleDone)
         #expect(toggleCalled)
-        row.dispatch(.select)
+        row.dispatch(.select())
         #expect(selectCalled)
         row.dispatch(.moveToDay("2026-09-11"))
         #expect(movedDay == "2026-09-11")
@@ -297,7 +297,7 @@ struct MilestoneM3AdversarialTests {
         let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
         var endEditingFired = false
         let actions = TodoRowActions(
-            onSelect: {},
+            onSelect: { _ in },
             onDelete: {},
             onEndEditing: { endEditingFired = true }
         )
@@ -350,7 +350,7 @@ struct MilestoneM3AdversarialTests {
             checkDayKey: "2026-09-10",
             checks: []
         )
-        let actions = RoutineRowActions(onSelect: {}, onDelete: {})
+        let actions = RoutineRowActions(onSelect: { _ in }, onDelete: {})
         let row = TaskRowFactory.routine(RoutineRowContext(
             routine: routine,
             schedule: schedule,

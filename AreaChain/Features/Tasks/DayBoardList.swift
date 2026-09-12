@@ -92,6 +92,7 @@ struct DayBoardList: View {
     @Query private var attachments: [AttachmentItem]
 
     @State var showCompleted = false
+    @State var taskSelection = TaskSelection()
     @State var pendingTrash: PendingTrash?
     @State var editingTaskID: UUID? = nil
     @State var hostWindow: NSWindow?
@@ -130,17 +131,37 @@ struct DayBoardList: View {
         .onChange(of: highlightedTaskID) { _, _ in
             expandIfHighlighted()
         }
+        .onChange(of: focusedTaskID?.wrappedValue) { _, id in
+            if let id, taskSelection.ids.contains(id) { return }
+            taskSelection.focus(id)
+        }
+        .onChange(of: orderedVisibleIDs) { _, ids in
+            taskSelection.reconcile(with: ids)
+        }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
         .animation(DaybookMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
         .animation(DaybookMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
     }
 
-    func selectTask(_ id: UUID) {
-        focusedTaskID?.wrappedValue = id
+    func selectTask(_ id: UUID, modifiers: TaskSelectionModifiers = []) {
         revealCompletedIfNeeded(id)
+        var selection = taskSelection
+        if selection.anchorID == nil && selection.ids.isEmpty {
+            selection.focus(focusedTaskID?.wrappedValue ?? highlightedTaskID)
+        }
+        let visibleIDs = orderedVisibleIDs
+        selection.select(id, in: visibleIDs, modifiers: modifiers)
+        taskSelection = selection
+        focusedTaskID?.wrappedValue = selection.ids.contains(id)
+            ? id : visibleIDs.first { selection.ids.contains($0) }
         BoardSelection.shared.inspectBoard(dayKey)
-        onInspect?(id)
+        if modifiers.isEmpty { onInspect?(id) }
+    }
+
+    func focusTask(_ id: UUID?) {
+        taskSelection.focus(id)
+        focusedTaskID?.wrappedValue = id
     }
 
     func expandIfHighlighted() {
@@ -159,7 +180,10 @@ struct DayBoardList: View {
     }
 
     private func isRowSelected(_ id: UUID) -> Bool {
-        focusedTaskID?.wrappedValue == id || highlightedTaskID == id
+        if taskSelection.anchorID != nil || !taskSelection.ids.isEmpty {
+            return taskSelection.ids.contains(id)
+        }
+        return focusedTaskID?.wrappedValue == id || highlightedTaskID == id
     }
 
     private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
@@ -284,7 +308,7 @@ struct DayBoardList: View {
             selection: rowSelection(for: routine.id)
         )
         let actions = RoutineRowActions(
-            onSelect: { selectTask(routine.id) },
+            onSelect: { selectTask(routine.id, modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
@@ -312,7 +336,7 @@ struct DayBoardList: View {
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
         )
         let actions = TodoRowActions(
-            onSelect: { selectTask(todo.id) },
+            onSelect: { selectTask(todo.id, modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)

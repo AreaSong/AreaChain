@@ -20,8 +20,15 @@ extension DayBoardList {
         }
     }
 
-    private func handleTextViewEditingKey(event: NSEvent, firstResponder: NSResponder?) -> NSEvent? {
+    func handleTextViewEditingKey(event: NSEvent, firstResponder: NSResponder?) -> NSEvent? {
         if event.keyCode == 53 {
+            // 行内编辑器自己处理补全与取消，列表不能提前吞掉 Escape。
+            if let editor = firstResponder as? NSTextView,
+               let field = (editor.delegate as AnyObject?) as? DaybookAppKitTextField,
+               let coordinator = field.delegate as? DaybookTextField.Coordinator,
+               coordinator.parent.onEscape != nil {
+                return event
+            }
             BoardSelection.shared.markEscapeCancelsEdits()
             NSApp.keyWindow?.makeFirstResponder(nil)
             return nil
@@ -76,7 +83,7 @@ extension DayBoardList {
                 return nil
             }
             if focusedTaskID?.wrappedValue != nil {
-                focusedTaskID?.wrappedValue = nil
+                focusTask(nil)
                 onReturnToInput?()
                 return nil
             }
@@ -110,15 +117,15 @@ extension DayBoardList {
             let nextIdx = idx + delta
             if nextIdx >= 0 && nextIdx < ids.count {
                 let nextID = ids[nextIdx]
-                focusedTaskID?.wrappedValue = nextID
+                focusTask(nextID)
                 BoardSelection.shared.inspectBoard(dayKey)
             } else if nextIdx < 0 {
-                focusedTaskID?.wrappedValue = nil
+                focusTask(nil)
                 onReturnToInput?()
             }
         } else {
             let nextID = delta >= 0 ? ids.first : ids.last
-            focusedTaskID?.wrappedValue = nextID
+            focusTask(nextID)
             if nextID != nil {
                 BoardSelection.shared.inspectBoard(dayKey)
             }
@@ -163,7 +170,7 @@ extension DayBoardList {
         guard !showCompleted, let index = previousIDs.firstIndex(of: id) else { return }
         let remaining = Set(orderedVisibleIDs)
         let candidates = Array(previousIDs.dropFirst(index + 1)) + Array(previousIDs.prefix(index).reversed())
-        focusedTaskID?.wrappedValue = candidates.first { remaining.contains($0) }
+        focusTask(candidates.first { remaining.contains($0) })
         if focusedTaskID?.wrappedValue != nil {
             BoardSelection.shared.inspectBoard(dayKey)
         } else {
@@ -175,11 +182,11 @@ extension DayBoardList {
         let ids = orderedVisibleIDs
         if let idx = ids.firstIndex(of: id) {
             if idx + 1 < ids.count {
-                focusedTaskID?.wrappedValue = ids[idx + 1]
+                focusTask(ids[idx + 1])
             } else if idx > 0 {
-                focusedTaskID?.wrappedValue = ids[idx - 1]
+                focusTask(ids[idx - 1])
             } else {
-                focusedTaskID?.wrappedValue = nil
+                focusTask(nil)
                 onReturnToInput?()
             }
         }

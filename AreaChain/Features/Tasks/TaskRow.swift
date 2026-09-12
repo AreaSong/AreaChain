@@ -16,7 +16,8 @@ struct TaskRow: View {
     @State var pickingTime = false
     @State private var isSubtasksExpanded = false
     @State private var autocomplete = SyntaxAutocompleteState()
-    @FocusState var editorFocused: Bool
+    // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
+    @State var editorFocused = false
 
     // MARK: - 现代标准构造器 (State + Action)
 
@@ -28,12 +29,6 @@ struct TaskRow: View {
 
     var body: some View {
         rowContent
-            .onTapGesture(count: 2) {
-                beginEdit()
-            }
-            .onTapGesture(count: 1) {
-                dispatch(.select)
-            }
             .onHover { hovering = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
             .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
@@ -51,7 +46,6 @@ struct TaskRow: View {
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
             }
-            .modifier(TodoDragIfNeeded(payload: state.dragPayload))
     }
 
     private var rowContent: some View {
@@ -67,11 +61,18 @@ struct TaskRow: View {
 
             if editing {
                 editor
+                    .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                titleContent
+                VStack(alignment: .leading, spacing: 3) {
+                    selectableContent
+                    if isSubtasksExpanded && !state.subtasks.isEmpty {
+                        TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
+                            dispatch(.toggleSubtask(subtaskID))
+                        }
+                        .padding(.top, 2)
+                    }
+                }
             }
-
-            Spacer(minLength: 8)
 
             metadataCluster
 
@@ -113,6 +114,24 @@ struct TaskRow: View {
 
     // MARK: - Subviews
 
+    private var selectableContent: some View {
+        titleContent
+            .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+            .overlay(TaskRowPointerRegion(
+                id: state.id,
+                onSelect: { dispatch(.select($0)) },
+                onEdit: beginEdit
+            )
+            .padding(.top, -6)
+            .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
+            .accessibilityHidden(true))
+            .modifier(TodoDragIfNeeded(payload: state.dragPayload))
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { dispatch(.select()) }
+            .accessibilityAction(named: Text("row.edit"), beginEdit)
+    }
+
     private var residentMark: some View {
         Image(systemName: "repeat")
             .font(DaybookType.badge.weight(.bold))
@@ -146,12 +165,6 @@ struct TaskRow: View {
                     .foregroundStyle(DaybookTheme.muted.opacity(0.75))
             }
 
-            if isSubtasksExpanded && !state.subtasks.isEmpty {
-                TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
-                    dispatch(.toggleSubtask(subtaskID))
-                }
-                .padding(.top, 2)
-            }
         }
         .contentShape(Rectangle())
     }
@@ -253,9 +266,13 @@ struct TaskRow: View {
                 focus: $editorFocused,
                 autocomplete: autocomplete,
                 availableTags: state.classify?.tags.map(\.name) ?? [],
-                onSubmit: saveEdit
+                onSubmit: saveEdit,
+                onEscape: cancelEdit
             )
             .onExitCommand(perform: cancelEdit)
+            .onAppear {
+                DispatchQueue.main.async { editorFocused = true }
+            }
 
             if autocomplete.isActive {
                 SyntaxAutocompletePopup(state: autocomplete) { candidate in
@@ -293,10 +310,8 @@ struct TaskRow: View {
 
     func beginEdit() {
         draft = state.title
+        editorFocused = false
         editing = true
-        DispatchQueue.main.async {
-            editorFocused = true
-        }
     }
 
     func cancelEdit() {

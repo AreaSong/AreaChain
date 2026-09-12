@@ -40,6 +40,9 @@ struct WorkspaceFilteredListView: View {
             taskList
         }
         .confirmMoveToTrash($pendingTrash)
+        .onChange(of: orderedVisibleIDs) { _, ids in
+            navigation.reconcileTaskSelection(with: ids)
+        }
     }
 
     private var headerTrailing: some View {
@@ -52,7 +55,7 @@ struct WorkspaceFilteredListView: View {
                 Button {
                     withAnimation(.snappy(duration: 0.2)) {
                         if navigation.selectedTaskIDs.isEmpty {
-                            navigation.selectedTaskIDs = selectableIDs
+                            navigation.selectAllTasks(in: orderedVisibleIDs)
                         } else {
                             navigation.clearSelection()
                         }
@@ -179,7 +182,7 @@ struct WorkspaceFilteredListView: View {
             isSelected: isRowSelected(todo.id)
         )
         let actions = TodoRowActions(
-            onSelect: { selectRow(todo.id) },
+            onSelect: { selectRow(todo.id, modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
@@ -213,7 +216,7 @@ struct WorkspaceFilteredListView: View {
             isSelected: isRowSelected(routine.id)
         )
         let actions = RoutineRowActions(
-            onSelect: { selectRow(routine.id) },
+            onSelect: { selectRow(routine.id, modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
@@ -232,14 +235,8 @@ struct WorkspaceFilteredListView: View {
         ))
     }
 
-    private func selectRow(_ id: UUID) {
-        if NSEvent.modifierFlags.contains(.command) || !navigation.selectedTaskIDs.isEmpty {
-            withAnimation(.snappy(duration: 0.2)) {
-                navigation.toggleSelection(id)
-            }
-        } else {
-            navigation.inspectTask(id)
-        }
+    private func selectRow(_ id: UUID, modifiers: TaskSelectionModifiers) {
+        navigation.selectTask(id, in: orderedVisibleIDs, modifiers: modifiers)
     }
 
     private var matchingTodos: [TodoItem] {
@@ -250,11 +247,14 @@ struct WorkspaceFilteredListView: View {
         Catalog.matchingRoutines(routines, project: project, tag: tag, projects: projects)
     }
 
-    private var selectableIDs: Set<UUID> {
-        Set(matchingTodos.filter { !$0.isDone }.map(\.id) + matchingRoutines.map(\.id))
+    private var orderedVisibleIDs: [UUID] {
+        let listedTodos = matchingTodos
+        return listedTodos.filter { !$0.isDone }.map(\.id)
+            + matchingRoutines.map(\.id)
+            + (showCompleted ? listedTodos.filter(\.isDone).map(\.id) : [])
     }
 
     private var canBatchSelect: Bool {
-        !selectableIDs.isEmpty
+        !orderedVisibleIDs.isEmpty
     }
 }

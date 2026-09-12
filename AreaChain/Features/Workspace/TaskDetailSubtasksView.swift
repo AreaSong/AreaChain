@@ -140,10 +140,10 @@ struct TaskDetailSubtasksView: View {
     }
 }
 
-private struct SubtaskRowView: View {
+struct SubtaskRowView: View {
     let subtask: SubtaskItem
     let onToggle: () -> Void
-    let onUpdateTitle: (String) -> Void
+    let onUpdateTitle: (String) -> Bool
     let onDelete: () -> Void
 
     @State private var isHovering = false
@@ -166,7 +166,10 @@ private struct SubtaskRowView: View {
         )
         .onHover { isHovering = $0 }
         .onAppear { draftTitle = subtask.title }
-        .onChange(of: subtask.title) { _, val in draftTitle = val }
+        .onChange(of: subtask.title) { _, val in
+            // 回滚或外部刷新不能覆盖仍在编辑的失败草稿。
+            if !isEditing { draftTitle = val }
+        }
     }
 
     private var toggleCheckboxButton: some View {
@@ -241,7 +244,7 @@ private struct SubtaskRowView: View {
     private func commitEdit() {
         let trimmed = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
-            onUpdateTitle(trimmed)
+            guard onUpdateTitle(trimmed) else { return }
         } else {
             draftTitle = subtask.title
         }

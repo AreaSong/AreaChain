@@ -247,12 +247,12 @@ struct TaskRowSelectionState: Equatable {
 
 /// 待办任务行动作闭包
 struct TodoRowActions {
-    var onSelect: () -> Void
+    var onSelect: (TaskSelectionModifiers) -> Void
     var onDelete: () -> Void
     var onEndEditing: (() -> Void)?
 
     init(
-        onSelect: @escaping () -> Void,
+        onSelect: @escaping (TaskSelectionModifiers) -> Void,
         onDelete: @escaping () -> Void,
         onEndEditing: (() -> Void)? = nil
     ) {
@@ -345,14 +345,14 @@ struct RoutineScheduleContext {
 
 /// 常驻习惯行动作闭包
 struct RoutineRowActions {
-    var onSelect: () -> Void
+    var onSelect: (TaskSelectionModifiers) -> Void
     var onDelete: () -> Void
     var onToggle: (() -> Void)?
     var onSkip: (() -> Void)?
     var onEndEditing: (() -> Void)?
 
     init(
-        onSelect: @escaping () -> Void,
+        onSelect: @escaping (TaskSelectionModifiers) -> Void,
         onDelete: @escaping () -> Void,
         onToggle: (() -> Void)? = nil,
         onSkip: (() -> Void)? = nil,
@@ -426,12 +426,12 @@ struct RoutineRowContext {
 /// 昨日未完成兜底行动作闭包
 struct LeftoverRowActions {
     var onToggle: () -> Void
-    var onSelect: () -> Void
+    var onSelect: (TaskSelectionModifiers) -> Void
     var onMoveToDay: ((String) -> Void)?
 
     init(
         onToggle: @escaping () -> Void,
-        onSelect: @escaping () -> Void,
+        onSelect: @escaping (TaskSelectionModifiers) -> Void,
         onMoveToDay: ((String) -> Void)? = nil
     ) {
         self.onToggle = onToggle

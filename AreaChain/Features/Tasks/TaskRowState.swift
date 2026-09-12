@@ -253,7 +253,7 @@ struct TaskRowState: Identifiable, Equatable {
 /// 任务行统一交互动作枚举
 enum TaskRowAction {
     case toggleDone
-    case select
+    case select(TaskSelectionModifiers = [])
     case editTitle(String)
     case endEditing
     case delete

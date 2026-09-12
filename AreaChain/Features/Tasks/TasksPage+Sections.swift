@@ -40,7 +40,7 @@ extension TasksPage {
             includeSubtasks: false
         )
         let actions = TodoRowActions(
-            onSelect: { inspectLeftover(todo.id, dayKey: todo.dayKey) },
+            onSelect: { _ in inspectLeftover(todo.id, dayKey: todo.dayKey) },
             onDelete: { deleteTodo(todo) }
         )
         return TaskRowFactory.todo(TodoRowContext(
@@ -61,7 +61,7 @@ extension TasksPage {
         } else {
             let actions = LeftoverRowActions(
                 onToggle: { completeYesterday(item) },
-                onSelect: { inspectLeftover(item.id, dayKey: yesterdayKey) },
+                onSelect: { _ in inspectLeftover(item.id, dayKey: yesterdayKey) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
             )
             TaskRowFactory.leftoverFallback(LeftoverRowContext(
@@ -87,7 +87,7 @@ extension TasksPage {
             usesDefaultNote: false
         )
         let actions = RoutineRowActions(
-            onSelect: { inspectLeftover(routine.id, dayKey: yesterdayKey) },
+            onSelect: { _ in inspectLeftover(routine.id, dayKey: yesterdayKey) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)

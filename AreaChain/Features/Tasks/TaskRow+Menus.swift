@@ -13,6 +13,7 @@ extension TaskRow {
                 moreMenu
             }
         }
+        .frame(minWidth: 22)
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 

@@ -129,6 +129,7 @@ final class WorkspaceNavigation {
     // MARK: - Task Inspector & Multi-Selection
     var selectedTaskID: UUID? = nil
     var selectedTaskIDs: Set<UUID> = []
+    private(set) var selectionAnchorID: UUID?
     var isInspectorPresented: Bool = false
 
     // MARK: - Navigation & Inspection Actions
@@ -196,10 +197,38 @@ final class WorkspaceNavigation {
         } else {
             selectedTaskIDs.insert(id)
         }
+        selectionAnchorID = id
+    }
+
+    func selectTask(_ id: UUID, in visibleIDs: [UUID], modifiers: TaskSelectionModifiers = []) {
+        guard visibleIDs.contains(id) else { return }
+        let current = selectedTaskIDs.isEmpty ? Set(selectedTaskID.map { [$0] } ?? []) : selectedTaskIDs
+        let anchor = selectionAnchorID ?? (selectedTaskIDs.isEmpty ? selectedTaskID : nil)
+        var selection = TaskSelection(ids: current, anchorID: anchor)
+        selection.select(id, in: visibleIDs, modifiers: modifiers)
+        if modifiers.isEmpty {
+            clearSelection()
+            inspectTask(id)
+        } else {
+            selectedTaskIDs = selection.ids
+            selectedTaskID = selection.ids.contains(id) ? id : visibleIDs.first { selection.ids.contains($0) }
+        }
+        selectionAnchorID = selection.anchorID
+    }
+
+    func selectAllTasks(in visibleIDs: [UUID]) {
+        selectedTaskIDs = Set(visibleIDs)
+        selectionAnchorID = visibleIDs.first
+    }
+
+    func reconcileTaskSelection(with visibleIDs: [UUID]) {
+        selectedTaskIDs.formIntersection(visibleIDs)
+        if let selectionAnchorID, !visibleIDs.contains(selectionAnchorID) { self.selectionAnchorID = nil }
     }
 
     func clearSelection() {
         selectedTaskIDs.removeAll()
+        selectionAnchorID = nil
     }
 
     private func pinTodayInspectDayIfEnteringTab() {

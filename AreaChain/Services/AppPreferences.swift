@@ -45,6 +45,7 @@ enum AppAppearance: String, CaseIterable, Identifiable {
 }
 
 @Observable
+@MainActor
 final class AppPreferences {
     static let shared = AppPreferences()
 
@@ -131,11 +132,12 @@ final class AppPreferences {
     }
 }
 
+@MainActor
 struct AppChrome: ViewModifier {
     @Bindable var prefs: AppPreferences
 
-    init(prefs: AppPreferences = .shared) {
-        self.prefs = prefs
+    init(prefs: AppPreferences? = nil) {
+        self.prefs = prefs ?? .shared
     }
 
     func body(content: Content) -> some View {
@@ -147,6 +149,7 @@ struct AppChrome: ViewModifier {
 }
 
 extension View {
+    @MainActor
     func appChrome() -> some View {
         modifier(AppChrome())
     }
