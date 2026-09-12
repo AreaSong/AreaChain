@@ -9,8 +9,6 @@ struct MenuBarStatusTests {
         #expect(MenuBarStatus.forDay(routines: [], checks: [], todos: [], dayKey: today) == .empty)
         let done = TodoSnapshot(id: UUID(), title: "已处理", isDone: true, dayKey: today)
         #expect(MenuBarStatus.forDay(routines: [], checks: [], todos: [done], dayKey: today) == .completed)
-        #expect(MenuBarStatus.empty.text == "0")
-        #expect(MenuBarStatus.completed.text == "✓")
     }
 
     @Test func remainingCountUsesTheSameTodoAndHabitScopeAsTheBoard() {
@@ -48,13 +46,7 @@ struct MenuBarStatusTests {
         #expect(MenuBarStatus.forDay(routines: [routine], checks: [], todos: todos, dayKey: today) == .empty)
     }
 
-    @Test func overflowOnlyCapsTheDisplayNotTheActualCount() {
-        #expect(MenuBarStatus.remaining(1).text == "1")
-        #expect(MenuBarStatus.remaining(9).text == "9")
-        #expect(MenuBarStatus.remaining(10).text == "10")
-        #expect(MenuBarStatus.remaining(99).text == "99")
-        #expect(MenuBarStatus.remaining(100).text == "99+")
-        #expect(MenuBarStatus.remaining(Int.max).text == "99+")
+    @Test func largeCountsRemainExactInTheStateAndDescriptions() {
         let todos = (0..<125).map { _ in TodoSnapshot(id: UUID(), title: "待办", isDone: false, dayKey: today) }
         #expect(MenuBarStatus.forDay(routines: [], checks: [], todos: todos, dayKey: today) == .remaining(125))
         #expect(MenuBarStatus.remaining(125).accessibilityLabel(locale: Locale(identifier: "zh-Hans")) == "AreaChain，今天还剩 125 条")

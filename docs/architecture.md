@@ -97,7 +97,7 @@ AreaChain/
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-`MenuBarStatus` 复用今日看板规则区分未安排、未完成与已处理完。`MenuBarStatusImage` 把书本与状态绘制在固定 45×18pt 的模板图像中，系统负责着色；状态项固定 53pt 宽，按钮标题始终为空，避免系统按数字长度重新居中图标。13pt 等宽数字使用固定 26pt 状态区，`99+` 只限制显示，不改变实际计数；读失败不覆盖上次有效状态。
+`MenuBarStatus` 复用今日看板规则区分未安排、未完成与已处理完，并保留准确数量。`MenuBarStatusImage` 使用固定 18×18pt 模板图像，在书本内部镂空小点或勾号表达状态，由系统统一着色。状态项固定 24pt 宽，按钮标题始终为空，不再绘制任何数量文字；所有正数共用同一个小点图标，完整计数只用于悬停提示与无障碍标签。读失败不覆盖上次有效状态。
 
 1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「任务」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，点手记走 `openDiary()`，都转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。

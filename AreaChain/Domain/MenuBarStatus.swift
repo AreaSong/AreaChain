@@ -5,14 +5,6 @@ enum MenuBarStatus: Equatable {
     case remaining(Int)
     case completed
 
-    var text: String {
-        switch self {
-        case .empty: "0"
-        case .remaining(let count): count > 99 ? "99+" : String(max(0, count))
-        case .completed: "✓"
-        }
-    }
-
     static func forDay(
         routines: [RoutineSnapshot], checks: [CheckSnapshot], todos: [TodoSnapshot], dayKey: String
     ) -> MenuBarStatus {

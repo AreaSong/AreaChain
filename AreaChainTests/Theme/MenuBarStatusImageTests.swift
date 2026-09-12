@@ -20,13 +20,13 @@ struct MenuBarStatusImageTests {
         for state in states + [.remaining(Int.max)] {
             MenuBarStatusImage.apply(to: button, status: state, locale: Locale(identifier: "zh-Hans"))
             button.layoutSubtreeIfNeeded()
-            #expect(item.length == 53)
+            #expect(item.length == 24)
             #expect(button.frame == initialFrame)
             #expect(button.title.isEmpty)
             #expect(button.imageScaling == .scaleNone)
             let image = try #require(button.image)
             #expect(image.isTemplate)
-            #expect(image.size == NSSize(width: 45, height: 18))
+            #expect(image.size == NSSize(width: 18, height: 18))
             let frame = try #require(button.cell).imageRect(forBounds: button.bounds)
             #expect(frame.size == MenuBarStatusImage.imageSize)
             #expect(button.bounds.contains(frame))
@@ -37,34 +37,48 @@ struct MenuBarStatusImageTests {
         #expect(button.accessibilityLabel() == button.toolTip)
     }
 
-    @Test func everyGlyphFitsTheFixedSlotWithoutFontScaling() {
-        #expect(MenuBarStatusImage.font.pointSize == 13)
-        for text in states.map({ $0?.text ?? "—" }) {
-            let bounds = MenuBarStatusImage.textBounds(for: text)
-            #expect(MenuBarStatusImage.statusBounds.contains(bounds))
-            #expect(abs(bounds.midX - MenuBarStatusImage.statusBounds.midX) < 0.001)
-            #expect(abs(bounds.midY - MenuBarStatusImage.statusBounds.midY) < 0.001)
+    @Test func statusMarksStayInsideTheIconAndEmptyStatesHaveNoMark() throws {
+        #expect(MenuBarStatusImage.markerPath(for: nil) == nil)
+        #expect(MenuBarStatusImage.markerPath(for: .empty) == nil)
+        #expect(MenuBarStatusImage.markerPath(for: .remaining(0)) == nil)
+        for state in [MenuBarStatus.remaining(1), .remaining(Int.max), .completed] {
+            let path = try #require(MenuBarStatusImage.markerPath(for: state))
+            #expect(MenuBarStatusImage.markerBounds.contains(path.boundingBoxOfPath))
+            #expect(MenuBarStatusImage.iconBounds.contains(path.boundingBoxOfPath))
         }
-        #expect(MenuBarStatusImage.textBounds(for: "1").width == MenuBarStatusImage.textBounds(for: "9").width)
     }
 
-    @Test func iconPixelsAreIdenticalForAllCountsAtOneAndTwoTimesScale() throws {
+    @Test func allPositiveCountsUseTheSameIconAtOneAndTwoTimesScale() throws {
         for scale in [1, 2] {
-            var reference: [CGFloat]?
-            for state in states {
-                let bitmap = try raster(MenuBarStatusImage.make(status: state), scale: scale)
-                let iconPixels = (0..<bitmap.pixelsHigh).flatMap { y in
-                    (0..<(17 * scale)).map { x in bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0 }
+            let reference = try alphaPixels(status: .remaining(1), scale: scale)
+            #expect(reference.contains { $0 > 0 })
+            for count in [9, 10, 99, 100, 1_000_000, Int.max] {
+                #expect(try alphaPixels(status: .remaining(count), scale: scale) == reference)
+            }
+            let empty = try alphaPixels(status: .empty, scale: scale)
+            let completed = try alphaPixels(status: .completed, scale: scale)
+            #expect(reference != empty)
+            #expect(completed != empty && completed != reference)
+            #expect(try alphaPixels(status: nil, scale: scale) == empty)
+        }
+    }
+
+    @Test func stateChangesPreserveTheOuterBookShape() throws {
+        for scale in [1, 2] {
+            let base = try raster(MenuBarStatusImage.make(status: .empty), scale: scale)
+            for state in [MenuBarStatus.remaining(1), .completed] {
+                let marked = try raster(MenuBarStatusImage.make(status: state), scale: scale)
+                for y in 0..<base.pixelsHigh {
+                    for x in 0..<base.pixelsWide where x < 6 * scale || x >= 15 * scale || y < 3 * scale || y >= 15 * scale {
+                        #expect(marked.colorAt(x: x, y: y)?.alphaComponent == base.colorAt(x: x, y: y)?.alphaComponent)
+                    }
                 }
-                #expect(iconPixels.contains { $0 > 0 })
-                if let reference { #expect(iconPixels == reference) }
-                else { reference = iconPixels }
             }
         }
     }
 
     @Test func renderLightAndDarkStatusStrip() throws {
-        let width: CGFloat = 600
+        let width: CGFloat = 440
         let canvas = NSView(frame: NSRect(x: 0, y: 0, width: width, height: 104))
         canvas.wantsLayer = true
         canvas.layer?.backgroundColor = NSColor(white: 0.94, alpha: 1).cgColor
@@ -79,14 +93,14 @@ struct MenuBarStatusImageTests {
         }
         let labels = ["未读取", "未安排", "1", "9", "10", "99", "100+", "已处理"]
         for (index, state) in states.enumerated() {
-            let x = 12 + CGFloat(index) * 72
+            let x = 12 + CGFloat(index) * 52
             let label = NSTextField(labelWithString: labels[index])
             label.font = NSFont.systemFont(ofSize: 10)
             label.alignment = .center
-            label.frame = NSRect(x: x, y: 86, width: 53, height: 14)
+            label.frame = NSRect(x: x, y: 86, width: 52, height: 14)
             canvas.addSubview(label)
             for row in rows {
-                let button = NSButton(frame: NSRect(x: x, y: 6, width: 53, height: 24))
+                let button = NSButton(frame: NSRect(x: x + 14, y: 6, width: MenuBarStatusImage.itemWidth, height: 24))
                 button.isBordered = false
                 button.contentTintColor = .labelColor
                 MenuBarStatusImage.apply(to: button, status: state, locale: Locale(identifier: "zh-Hans"))
@@ -100,7 +114,14 @@ struct MenuBarStatusImageTests {
         let png = try #require(bitmap.representation(using: .png, properties: [:]))
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-UI-QA")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        try png.write(to: directory.appendingPathComponent("menubar-fixed-status.png"), options: .atomic)
+        try png.write(to: directory.appendingPathComponent("menubar-single-icon.png"), options: .atomic)
+    }
+
+    private func alphaPixels(status: MenuBarStatus?, scale: Int) throws -> [CGFloat] {
+        let bitmap = try raster(MenuBarStatusImage.make(status: status), scale: scale)
+        return (0..<bitmap.pixelsHigh).flatMap { y in
+            (0..<bitmap.pixelsWide).map { x in bitmap.colorAt(x: x, y: y)?.alphaComponent ?? 0 }
+        }
     }
 
     private func raster(_ image: NSImage, scale: Int) throws -> NSBitmapImageRep {
