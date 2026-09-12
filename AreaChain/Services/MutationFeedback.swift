@@ -10,7 +10,11 @@ final class MutationFeedback {
 
     func reportFailure(_ error: Error? = nil) {
         failureCount += 1
-        present(title: "save.failure.title", message: error is ModelRecoveryError ? "save.rollback.failure" : "save.failure.message")
+        let message: String
+        if error is ModelRecoveryError { message = "save.rollback.failure" }
+        else if error is AttachmentCleanupError { message = "attachment.cleanup.pending" }
+        else { message = "save.failure.message" }
+        present(title: "save.failure.title", message: message)
     }
 
     func reportMemoryFallback() {

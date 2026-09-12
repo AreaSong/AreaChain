@@ -16,6 +16,7 @@ final class FakeCalendarClient: CalendarEventClient {
     var createCount = 0
     var lookupCount = 0
     var lastWindows: [DateInterval] = []
+    var normalize: (CalendarContent) -> CalendarContent = { $0 }
 
     func authorize() async -> Bool {
         authorizationCount += 1
@@ -59,7 +60,7 @@ final class FakeCalendarClient: CalendarEventClient {
                     createCount += 1
                 }
                 let event = CalendarRemoteItem(
-                    id: expected?.id ?? "created-\(createCount)", calendarID: calendarID, todoID: id, content: content
+                    id: expected?.id ?? "created-\(createCount)", calendarID: calendarID, todoID: id, content: normalize(content)
                 )
                 pending[event.id] = event
                 result[id] = event
@@ -87,6 +88,7 @@ final class CalendarSyncFixture {
     var ledgerSaveCount = 0
     var localSaveCount = 0
     var didSaveCount = 0
+    var calendar = Calendar.current
 
     var engine: CalendarSyncEngine {
         CalendarSyncEngine(client: client, local: CalendarLocalAccess(load: {
@@ -108,7 +110,7 @@ final class CalendarSyncFixture {
             if self.failLedgerSave { throw CalendarSyncError.invalidLedger }
             self.ledgerSaveCount += 1
             self.checkpoint = $0
-        }), isHealthy: { self.healthy }, now: { DayKey.date(from: "2026-09-11")! })
+        }), isHealthy: { self.healthy }, clock: CalendarSyncClock(now: { DayKey.date(from: "2026-09-11")! }, calendar: calendar))
     }
 
     @discardableResult

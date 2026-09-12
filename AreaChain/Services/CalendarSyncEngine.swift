@@ -36,23 +36,28 @@ struct CalendarSyncOutcome {
     var conflicts: Set<UUID> = []
 }
 
+struct CalendarSyncClock {
+    var now: () -> Date = { .now }
+    var calendar: Calendar = .autoupdatingCurrent
+}
+
 @MainActor
 final class CalendarSyncEngine {
     private let client: any CalendarEventClient
     private let local: CalendarLocalAccess
     private let ledger: CalendarLedgerAccess
     private let isHealthy: () -> Bool
-    private let now: () -> Date
+    private let clock: CalendarSyncClock
 
     init(
         client: any CalendarEventClient, local: CalendarLocalAccess, ledger: CalendarLedgerAccess,
-        isHealthy: @escaping () -> Bool, now: @escaping () -> Date = { .now }
+        isHealthy: @escaping () -> Bool, clock: CalendarSyncClock = CalendarSyncClock()
     ) {
         self.client = client
         self.local = local
         self.ledger = ledger
         self.isHealthy = isHealthy
-        self.now = now
+        self.clock = clock
     }
 
     func synchronize(isCurrent: () -> Bool) async -> CalendarSyncOutcome {
@@ -69,7 +74,9 @@ final class CalendarSyncEngine {
             guard Set(tasks.map(\.id)).count == tasks.count else { throw CalendarSyncError.invalidData }
             let calendarID = try client.calendarID(preferred: previous.calendarID)
             let events = try loadEvents(tasks: tasks, previous: previous, calendarID: calendarID)
-            let steps = try CalendarReconciliation.plan(tasks: tasks, events: events, ledger: previous, calendarID: calendarID)
+            let steps = try CalendarReconciliation.plan(
+                tasks: tasks, events: events, ledger: previous, calendarID: calendarID, calendar: clock.calendar
+            )
             guard isCurrent(), isHealthy(), !Task.isCancelled else { return CalendarSyncOutcome(phase: .off) }
             return try execute(steps, previous: previous, calendarID: calendarID)
         } catch CalendarSyncError.unavailable {
@@ -85,7 +92,7 @@ final class CalendarSyncEngine {
         tasks: [CalendarLocalItem], previous: CalendarSyncLedger, calendarID: String
     ) throws -> [CalendarRemoteItem] {
         let keys = tasks.map { $0.state.content.dayKey } + previous.records.values.compactMap { $0.remote?.dayKey }
-        let windows = CalendarEventPolicy.eventQueryWindows(now: now(), dayKeys: keys)
+        let windows = CalendarEventPolicy.eventQueryWindows(now: clock.now(), dayKeys: keys, calendar: clock.calendar)
         var events = try client.events(in: calendarID, windows: windows)
         let known = Set(tasks.map(\.eventID) + previous.records.values.compactMap(\.eventID)).subtracting([""])
         let fetchedIDs = Set(events.map(\.id))
@@ -105,6 +112,9 @@ final class CalendarSyncEngine {
         _ steps: [CalendarSyncStep], previous: CalendarSyncLedger, calendarID: String
     ) throws -> CalendarSyncOutcome {
         let mutations = steps.compactMap(mutation)
+        guard steps.filter({ $0.action == .create || $0.action == .update }).allSatisfy({
+            $0.local.state.content.normalizedForScheduling(calendar: clock.calendar) != nil
+        }) else { throw CalendarSyncError.invalidData }
         let written = mutations.isEmpty ? [:] : try client.apply(mutations, in: calendarID)
         var next = previous
         next.calendarID = calendarID
@@ -140,16 +150,25 @@ final class CalendarSyncEngine {
         switch step.action {
         case .create, .update:
             guard let remote = written[task.id], remote.calendarID == calendarID,
-                  remote.todoID == task.id, remote.content == task.state.content else { throw CalendarSyncError.invalidData }
+                  remote.todoID == task.id,
+                  remote.content == task.state.content.normalizedForScheduling(calendar: clock.calendar) else {
+                throw CalendarSyncError.invalidData
+            }
             return adopted(task, remote: remote)
         case .adopt:
             guard let remote = step.remote else { throw CalendarSyncError.invalidData }
             return adopted(task, remote: remote)
         case .pull:
             guard let remote = step.remote else { throw CalendarSyncError.invalidData }
-            let state = CalendarLocalState(content: remote.content, isPublished: true)
+            var incoming = remote.content
+            // 远端只改标题时保留用户输入的名义时刻，例如不存在的 02:30 实际按 03:00 执行。
+            if incoming.dayKey == prior?.remote?.dayKey,
+               incoming.remindMinutes == prior?.remote?.remindMinutes {
+                incoming.remindMinutes = task.state.content.remindMinutes
+            }
+            let state = CalendarLocalState(content: incoming, isPublished: true)
             return (CalendarSyncRecord(local: state, remote: remote.content, eventID: remote.id),
-                    CalendarLocalUpdate(id: task.id, content: remote.content, eventID: remote.id))
+                    CalendarLocalUpdate(id: task.id, content: incoming, eventID: remote.id))
         case .remove:
             return (CalendarSyncRecord(local: task.state, eventID: nil), bindingUpdate(task, eventID: ""))
         case .detach:

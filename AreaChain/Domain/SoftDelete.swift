@@ -21,8 +21,8 @@ enum SoftDelete {
         }
     }
 
-    static func stampAttachments(ownerID: UUID, at date: Date, attachments: [AttachmentItem]) {
-        for item in attachments where item.ownerID == ownerID && item.deletedAt == nil {
+    static func stampAttachments(ownerID: UUID, at date: Date, attachments: [AttachmentItem], ownerKind: AttachmentOwner) {
+        for item in attachments where item.ownerID == ownerID && item.ownerKind == ownerKind.rawValue && item.deletedAt == nil {
             item.deletedAt = date
         }
     }
@@ -30,9 +30,11 @@ enum SoftDelete {
     static func restoreCascadedAttachments(
         ownerID: UUID,
         parentDeletedAt: Date?,
-        attachments: [AttachmentItem]
+        attachments: [AttachmentItem],
+        ownerKind: AttachmentOwner
     ) {
         for item in attachments where item.ownerID == ownerID
+            && item.ownerKind == ownerKind.rawValue
             && shouldRestoreChild(parentDeletedAt: parentDeletedAt, childDeletedAt: item.deletedAt)
         {
             item.deletedAt = nil

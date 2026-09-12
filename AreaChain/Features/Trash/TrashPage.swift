@@ -121,7 +121,7 @@ struct TrashPage: View {
     private func purge(_ item: TrashRow) {
         guard ModelChanges.perform(in: modelContext, { item.removeFromStore(modelContext) }) else { return }
         if let owner = item.purgesOwner { EditDrafts.shared.discard(owner: owner) }
-        ModelChanges.attempt { try AttachmentStore.removeFiles(item.filesToRemove) }
+        ModelChanges.attempt { try AttachmentCleanup.purge(ids: Set(item.filesToRemove), context: modelContext) }
     }
 
     private func emptyTrash() {
@@ -134,7 +134,7 @@ struct TrashPage: View {
             }
         }) else { return }
         for owner in purgedOwners { EditDrafts.shared.discard(owner: owner) }
-        ModelChanges.attempt { try AttachmentStore.removeFiles(Array(Set(rows.flatMap(\.filesToRemove)))) }
+        ModelChanges.attempt { try AttachmentCleanup.purge(ids: Set(rows.flatMap(\.filesToRemove)), context: modelContext) }
     }
 }
 
@@ -168,12 +168,13 @@ struct TrashRow: Identifiable {
                 SoftDelete.restoreCascadedAttachments(
                     ownerID: item.id,
                     parentDeletedAt: stamp,
-                    attachments: attachments
+                    attachments: attachments,
+                    ownerKind: .routine
                 )
             },
             removeFromStore: { context in
                 for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .routine, id: item.id) {
-                    context.delete(attachment)
+                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
                 }
                 context.delete(item)
             },
@@ -197,12 +198,13 @@ struct TrashRow: Identifiable {
                 SoftDelete.restoreCascadedAttachments(
                     ownerID: item.id,
                     parentDeletedAt: stamp,
-                    attachments: attachments
+                    attachments: attachments,
+                    ownerKind: .todo
                 )
             },
             removeFromStore: { context in
                 for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .todo, id: item.id) {
-                    context.delete(attachment)
+                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
                 }
                 for sub in item.subtasks {
                     context.delete(sub)
@@ -228,12 +230,13 @@ struct TrashRow: Identifiable {
                 SoftDelete.restoreCascadedAttachments(
                     ownerID: item.id,
                     parentDeletedAt: stamp,
-                    attachments: attachments
+                    attachments: attachments,
+                    ownerKind: .diary
                 )
             },
             removeFromStore: { context in
                 for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .diary, id: item.id) {
-                    context.delete(attachment)
+                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
                 }
                 context.delete(item)
             },
@@ -297,8 +300,8 @@ struct TrashRow: Identifiable {
                 guard !ownerDeleted else { return }
                 item.deletedAt = nil
             },
-            removeFromStore: { context in
-                context.delete(item)
+            removeFromStore: { _ in
+                // 文件成功删除后由 AttachmentCleanup 移除元数据，失败则留在回收站供重试。
             },
             skipIfOwnerPurged: item.ownerKey,
             canRestore: !ownerDeleted,

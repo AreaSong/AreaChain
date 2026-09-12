@@ -63,9 +63,9 @@ AreaChain/
 
 ### 数据约束与设计考量
 
-1. **CloudKit 预备**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置里 iCloud 开关写入 `wantsICloudSync`，`SettingsView` 不按 `CloudKitAvailability.isConfigured` 禁用，`Persistence` 也不读该偏好，打开不改本地库。
+1. **CloudKit 边界**：不用 `@Attribute(.unique)`；对外稳定 UUID。iCloud 开关只写入 `wantsICloudSync`，此版本尚未接入 CloudKit，打开不改变本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签（种类文案「任务 / 常驻 / 日记 / 附件 / 项目 / 标签」）。父项软删时，当时活着的子任务与附件共用同一戳。附件页 `AttachmentClusters.grouped(..., liveOwnerIDs:)` 只显示活父项；父项未知或已删时回收站 `canRestore == false`。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私；父项未知或已删时附件不能单独恢复。
 4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
 5. **快照日期**：JSON 使用带小数秒的 ISO8601，旧备份整秒日期仍能导入。
 
@@ -77,14 +77,24 @@ AreaChain/
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
-- **`BoardSearch`**：待办标题、习惯名、手记正文；不搜 notes / 子任务 / 标签。习惯命中的 `dayKey` 是从今天起下一个排定日（今天该打则用今天）。
+- **`BoardSearch`**：搜索待办/习惯标题和备注、手记正文，支持 `#标签` 与待办优先级条件，不搜子任务。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
+
+## 保存、恢复与同步边界
+
+- `ModelChanges` 在保存成功后才通知 UI/系统服务，组合操作延后仓储提交；失败时 `ModelRollback` 回滚并在同一 context 重新 fetch 八类模型，刷新已持有的对象缓存。
+- `SnapshotImportState` 在预览及写入前校验重复标识、嵌套子任务、附件归属及最终打卡业务键；不自动清洗现存数据。导入失败只撤销导入，调用前已有编辑先保存。
+- `DiaryPrivacy` 统一卡片、搜索及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。遮罩不改变存储正文，也不是加密；显式复制及 JSON 导出仍包含原文。
+- 附件级联按 `ownerKind + ownerID` 执行。永久删除后，`AttachmentCleanup` 仅在文件清理成功后移除附件元数据；失败的附件记录留在回收站，下一次操作可以重试。
+- `CalendarSyncCoordinator` 串行合并本地/远端事件；`CalendarSyncEngine` 对比上次本地与远端基线，不盲目先拉后推。基线保存在本机 `areachain-calendar-sync.json`，不改八张表 schema，也不导出到快照。读失败或内存降级时禁写；未知事件保留，冲突需核对一致后重试。跨系统部分提交失败不宣称已同步，旧基线用于幂等恢复。
+- `EventKitCalendarClient` 按年分片查询，补查绑定 ID，并在写入前验证事件版本和所属日历。夏令时归一化保存原始本地时刻和实际远端时刻，避免把正常顺延误判为冲突。
+- 测试宿主在 `Persistence.makeSession` 的磁盘访问之前切换内存库；端到端系统权限/真实日历验证与单元测试证据分开报告。
 
 ## 窗口路由与生命周期 (`AppWindows`)
 
 菜单栏入口：`StatusItemController`（`NSStatusItem` + `NSPopover`）。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中。离开「灵感手记」tab 会清掉手记滚动高亮。浮层头部展开走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「任务」页。搜索点习惯/待办走 `openCalendar()`，点手记走 `openDiary()`，都转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「任务」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，点手记走 `openDiary()`，都转调 `openWorkspace(tab:)`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；打开工作台升为 `.regular`；工作台关掉后回到 `.accessory`。
 3. **面板窗**：只有工作台这一扇 `PanelWindowController`。关设置时 `hideStrayWindows` 会藏起 SwiftUI Settings 场景多出来的窗，避免被当成「下一扇」打开。

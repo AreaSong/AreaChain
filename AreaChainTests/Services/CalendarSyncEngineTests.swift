@@ -4,6 +4,37 @@ import Testing
 
 @MainActor
 struct CalendarSyncEngineTests {
+    @Test(arguments: [false, true])
+    func normalizedMissingClockTimeConvergesAndRetriesWithoutConflict(partialFailure: Bool) async throws {
+        let fixture = CalendarSyncFixture()
+        fixture.seedBound()
+        fixture.calendar = Calendar(identifier: .gregorian)
+        fixture.calendar.timeZone = try #require(TimeZone(identifier: "America/Los_Angeles"))
+        fixture.tasks[0].state.content.dayKey = "2026-03-08"
+        fixture.tasks[0].state.content.remindMinutes = 150
+        fixture.tasks[0].eventID = ""
+        fixture.client.remote = [:]
+        fixture.checkpoint = CalendarSyncLedger()
+        fixture.client.normalize = { content in
+            var value = content
+            if value.dayKey == "2026-03-08", value.remindMinutes == 150 { value.remindMinutes = 180 }
+            return value
+        }
+        fixture.failLocalSave = partialFailure
+        let first = await fixture.engine.synchronize(isCurrent: { true })
+        #expect(first.phase == (partialFailure ? .failed : .synced))
+        fixture.failLocalSave = false
+        #expect(await fixture.engine.synchronize(isCurrent: { true }).phase == .synced)
+        #expect(fixture.client.createCount == 1)
+        #expect(fixture.tasks[0].state.content.remindMinutes == 150)
+        let eventID = try #require(fixture.client.remote.keys.first)
+        #expect(fixture.client.remote[eventID]?.content.remindMinutes == 180)
+        fixture.client.remote[eventID]?.content.title = "只改标题"
+        #expect(await fixture.engine.synchronize(isCurrent: { true }).phase == .synced)
+        #expect(fixture.tasks[0].state.content.title == "只改标题")
+        #expect(fixture.tasks[0].state.content.remindMinutes == 150)
+    }
+
     @Test func fallbackAndReadFailuresNeverCreateCalendarsOrWriteRemoteEvents() async {
         let fixture = CalendarSyncFixture()
         fixture.seedBound()
@@ -188,5 +219,30 @@ struct CalendarSyncEngineTests {
         #expect(fixture.client.batchCount == 1)
         #expect(outcomes.last?.phase == .synced)
         #expect(fixture.client.authorizationCount <= 2)
+    }
+
+    @Test func cancelledOldAuthorizationCannotOverwriteAReenabledSync() async throws {
+        let fixture = CalendarSyncFixture()
+        fixture.seedBound()
+        fixture.tasks[0].state.content.title = "等待期间的本地修改"
+        fixture.client.holdAuthorization = true
+        var enabled = true
+        var outcomes: [CalendarSyncOutcome] = []
+        let coordinator = CalendarSyncCoordinator(engine: fixture.engine, enabled: { enabled }, publish: { outcomes.append($0) })
+        let oldTask = try #require(coordinator.request())
+        for _ in 0..<50 where fixture.client.pendingAuthorization == nil { await Task.yield() }
+        let continuation = try #require(fixture.client.pendingAuthorization)
+        fixture.client.pendingAuthorization = nil
+        enabled = false
+        coordinator.stop()
+        enabled = true
+        fixture.client.holdAuthorization = false
+        let newTask = try #require(coordinator.request())
+        await newTask.value
+        continuation.resume(returning: true)
+        await oldTask.value
+        #expect(fixture.client.batchCount == 1)
+        #expect(fixture.client.remote["event"]?.content.title == "等待期间的本地修改")
+        #expect(outcomes.last?.phase == .synced)
     }
 }

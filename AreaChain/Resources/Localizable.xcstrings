@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "attachment.cleanup.pending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some attachment files could not be removed. Their records remain in Trash. Check disk access, then delete them again or empty Trash to retry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "部分附件文件未能删除，记录仍保留在回收站。请检查磁盘权限后，再次彻底删除或清空回收站以重试。"
+          }
+        }
+      }
+    },
     "save.failure.title": {
       "extractionState": "manual",
       "localizations": {

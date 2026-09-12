@@ -142,9 +142,9 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         if soft {
             let now = SoftDelete.stamp()
             entry.deletedAt = now
-            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: fetchOwnedAttachments())
+            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: try fetchOwnedAttachments(), ownerKind: .diary)
         } else {
-            purgeAttachments(ownerID: entry.id)
+            try purgeAttachments(ownerID: entry.id)
             context.delete(entry)
         }
         try saveAndNotify()
@@ -159,7 +159,8 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: entry.id,
             parentDeletedAt: stamp,
-            attachments: fetchOwnedAttachments()
+            attachments: try fetchOwnedAttachments(),
+            ownerKind: .diary
         )
         try saveAndNotify()
     }
@@ -182,13 +183,13 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         return created
     }
 
-    private func fetchOwnedAttachments() -> [AttachmentItem] {
-        (try? context.fetch(FetchDescriptor<AttachmentItem>())) ?? []
+    private func fetchOwnedAttachments() throws -> [AttachmentItem] {
+        try context.fetch(FetchDescriptor<AttachmentItem>())
     }
 
-    private func purgeAttachments(ownerID: UUID) {
-        let attachments = fetchOwnedAttachments()
-        for item in attachments where item.ownerID == ownerID {
+    private func purgeAttachments(ownerID: UUID) throws {
+        let attachments = try fetchOwnedAttachments()
+        for item in attachments where item.ownerID == ownerID && item.ownerKind == AttachmentOwner.diary.rawValue {
             context.delete(item)
         }
     }

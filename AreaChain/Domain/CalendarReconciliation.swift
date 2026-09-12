@@ -4,6 +4,15 @@ struct CalendarContent: Codable, Equatable, Sendable {
     var title: String
     var dayKey: String
     var remindMinutes: Int?
+
+    func normalizedForScheduling(calendar: Calendar = .current) -> CalendarContent? {
+        guard let day = DayKey.date(from: dayKey, calendar: calendar),
+              DayKey.from(day, calendar: calendar) == dayKey else { return nil }
+        guard let remindMinutes else { return self }
+        guard let fire = DayKey.date(dayKey: dayKey, minutes: remindMinutes, calendar: calendar),
+              DayKey.from(fire, calendar: calendar) == dayKey else { return nil }
+        return CalendarContent(title: title, dayKey: dayKey, remindMinutes: RemindMinutes.from(date: fire, calendar: calendar))
+    }
 }
 
 struct CalendarLocalState: Codable, Equatable, Sendable {
@@ -54,11 +63,12 @@ struct CalendarSyncStep: Equatable {
 
 enum CalendarReconciliation {
     static func plan(
-        tasks: [CalendarLocalItem], events: [CalendarRemoteItem], ledger: CalendarSyncLedger, calendarID: String
+        tasks: [CalendarLocalItem], events: [CalendarRemoteItem], ledger: CalendarSyncLedger,
+        calendarID: String, calendar: Calendar = .current
     ) throws -> [CalendarSyncStep] {
         guard Set(tasks.map(\.id)).count == tasks.count else { throw CalendarSyncError.invalidData }
         var steps = tasks.map { task in
-            step(task: task, events: events, record: ledger.records[task.id.uuidString], calendarID: calendarID)
+            step(task: task, events: events, record: ledger.records[task.id.uuidString], calendarID: calendarID, calendar: calendar)
         }
         let claims = Dictionary(grouping: steps.compactMap { step -> (String, UUID)? in
             step.remote.map { ($0.id, step.local.id) }
@@ -72,7 +82,7 @@ enum CalendarReconciliation {
     }
 
     private static func step(
-        task: CalendarLocalItem, events: [CalendarRemoteItem], record: CalendarSyncRecord?, calendarID: String
+        task: CalendarLocalItem, events: [CalendarRemoteItem], record: CalendarSyncRecord?, calendarID: String, calendar: Calendar
     ) -> CalendarSyncStep {
         let ids = Set([task.eventID, record?.eventID ?? ""].filter { !$0.isEmpty })
         let matches = events.filter { $0.todoID == task.id || ids.contains($0.id) }
@@ -85,18 +95,20 @@ enum CalendarReconciliation {
         if let otherID = remote?.todoID, otherID != task.id {
             return CalendarSyncStep(local: task, remote: remote, action: .conflict)
         }
-        return CalendarSyncStep(local: task, remote: remote, action: decide(task: task, remote: remote, record: record))
+        return CalendarSyncStep(local: task, remote: remote, action: decide(task: task, remote: remote, record: record, calendar: calendar))
     }
 
     private static func decide(
-        task: CalendarLocalItem, remote: CalendarRemoteItem?, record: CalendarSyncRecord?
+        task: CalendarLocalItem, remote: CalendarRemoteItem?, record: CalendarSyncRecord?, calendar: Calendar
     ) -> CalendarSyncStep.Action {
         if record?.detached == true {
             if remote == nil {
                 // 明确完成后重新打开，才重新发布已解绑的待办；普通编辑不能复活远端删除。
                 return record?.local.isPublished == false && task.state.isPublished ? .create : .detach
             }
-            return task.state.isPublished && task.state.content == remote?.content ? .adopt : .conflict
+            let equivalent = task.state.content == remote?.content
+                || task.state.content.normalizedForScheduling(calendar: calendar) == remote?.content
+            return task.state.isPublished && equivalent ? .adopt : .conflict
         }
         guard let remote else {
             if record?.remote != nil || !task.eventID.isEmpty { return .detach }
@@ -106,10 +118,13 @@ enum CalendarReconciliation {
             guard let record, record.remote == remote.content else { return .conflict }
             return .remove
         }
-        if task.state.content == remote.content { return .adopt }
+        if task.state.content == remote.content || task.state.content.normalizedForScheduling(calendar: calendar) == remote.content {
+            return .adopt
+        }
         guard let record, let lastRemote = record.remote else { return .conflict }
         let localChanged = task.state != record.local
         let remoteChanged = remote.content != lastRemote
+        if !localChanged && !remoteChanged { return .adopt }
         if localChanged && !remoteChanged { return .update }
         if remoteChanged && !localChanged { return .pull }
         return .conflict
