@@ -3113,6 +3113,20 @@
         }
       }
     },
+    "alert.quit.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Quit AreaChain?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "确定要退出 AreaChain？" } }
+      }
+    },
+    "alert.quit.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The menu bar item and global shortcuts will be unavailable after quitting. Unsaved input may be lost." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "退出后菜单栏入口和全局快捷键将不可用。未保存的输入可能丢失。" } }
+      }
+    },
     "alert.cancel": {
       "extractionState": "manual",
       "localizations": {
