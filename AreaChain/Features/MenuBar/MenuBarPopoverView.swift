@@ -40,10 +40,11 @@ struct MenuBarPopoverView: View {
     @State private var tabKeyMonitor: Any? = nil
     @State private var boardFilter = BoardFilter()
     @State private var diaryFilterTagID: UUID? = nil
-    @State private var diaryComposerDraft = DiaryComposerDraft()
+    @Bindable private var diaryCapture: DiaryCaptureSession
 
-    init(toolbar: MenuBarToolbarState? = nil) {
+    init(toolbar: MenuBarToolbarState? = nil, diaryCapture: DiaryCaptureSession? = nil) {
         _toolbar = State(initialValue: toolbar ?? MenuBarToolbarState())
+        self.diaryCapture = diaryCapture ?? .shared
     }
 
     private var todayKey: String {
@@ -219,7 +220,7 @@ struct MenuBarPopoverView: View {
                 showsComposer: true,
                 showsPageHeader: false,
                 externalSelectedTagID: $diaryFilterTagID,
-                composerDraft: $diaryComposerDraft
+                composerDraft: $diaryCapture.draft
             )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)

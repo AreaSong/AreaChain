@@ -1,6 +1,139 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "diary.quick.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Write something…" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记点什么…" } }
+      }
+    },
+    "diary.quick.empty.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Capture a note above, or continue in a separate window." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在上方随手记下，长内容可在小窗继续写。" } }
+      }
+    },
+    "diary.window.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open in note window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在小窗打开" } }
+      }
+    },
+    "diary.window.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Continue in note window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在小窗继续写" } }
+      }
+    },
+    "diary.window.workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open in workspace" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在工作台打开" } }
+      }
+    },
+    "diary.window.new": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "New note" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "新手记" } }
+      }
+    },
+    "diary.window.pin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep on top" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "窗口置顶" } }
+      }
+    },
+    "diary.window.unpin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unpin window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "取消窗口置顶" } }
+      }
+    },
+    "diary.window.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Saved" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已保存" } }
+      }
+    },
+    "diary.window.unsaved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unsaved changes" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未保存" } }
+      }
+    },
+    "diary.window.save.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn't save. Your draft is kept. Try again." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存失败，草稿已保留，请重试。" } }
+      }
+    },
+    "diary.window.save.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This note changed elsewhere. Your draft is kept. Review before reloading." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "原记录已在其他位置修改。草稿已保留，请核对后重新载入。" } }
+      }
+    },
+    "diary.window.save.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The note was deleted or is unavailable. Your draft is kept; the original won't be overwritten or recreated." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "原记录已删除或暂不可用。草稿仍保留，不会覆盖或重建原记录。" } }
+      }
+    },
+    "diary.window.save.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save note (⌘S / ⌘Return)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存手记（⌘S / ⌘Return）" } }
+      }
+    },
+    "diary.window.close.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save your note before closing?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存手记后再关闭？" } }
+      }
+    },
+    "diary.window.close.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "There are unsaved changes. If saving fails, the window stays open. Choose Don't Save only to discard the draft." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "有尚未保存的内容。保存失败时窗口会保留，选择“不保存”才会丢弃草稿。" } }
+      }
+    },
+    "diary.window.discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Don't Save" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "不保存" } }
+      }
+    },
+    "diary.window.reload.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Discard this draft and reload?" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "舍弃当前草稿并重新载入？" } }
+      }
+    },
+    "diary.window.reload": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Discard draft and reload" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "舍弃草稿并重新载入" } }
+      }
+    },
     "syntax.attributes.count": {
       "extractionState": "manual",
       "localizations": {
@@ -2512,7 +2645,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日已记录 %lld 条随笔"
+            "value": "今日已记录 %lld 条手记"
           }
         }
       }

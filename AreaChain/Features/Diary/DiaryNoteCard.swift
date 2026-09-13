@@ -25,6 +25,8 @@ struct DiaryNoteCard: View {
     @State var isHovered = false
     @State var isEditing = false
     @State var editDraft = ""
+    @State var editBaseText = ""
+    @State var showsEditConflict = false
     @State var editFocused = false
     @State var isMasked = true
     @State var hasCopied = false
@@ -85,6 +87,10 @@ struct DiaryNoteCard: View {
                 )
         )
         .onHover { isHovered = $0 }
+        .alert("diary.window.reload.title", isPresented: $showsEditConflict) {
+            Button("diary.window.reload") { beginEditing() }
+            Button("alert.cancel", role: .cancel) {}
+        } message: { Text("diary.window.save.conflict") }
         .zIndex(isEditing ? 20 : 0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onDisappear { isMasked = true }

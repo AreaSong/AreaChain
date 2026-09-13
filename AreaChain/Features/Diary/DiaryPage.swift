@@ -1,11 +1,6 @@
 import SwiftData
 import SwiftUI
 
-struct DiaryComposerDraft {
-    var text = ""
-    var selectedTagIDs: Set<UUID> = []
-}
-
 struct DiaryPageOptions {
     var showsComposer: Bool = true
     var usesSharedDiaryDay: Bool = false
@@ -38,6 +33,7 @@ struct DiaryPage: View {
     @State private var pendingTrash: PendingTrash?
     @State private var composerFocused = false
     @State private var searchFocused = false
+    @State private var composerStatus: LocalizedStringKey?
     @Bindable private var boardSelection = BoardSelection.shared
 
     init(
@@ -140,6 +136,9 @@ struct DiaryPage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .confirmMoveToTrash($pendingTrash)
+        .onChange(of: draftText) { _, text in
+            if !text.isEmpty { composerStatus = nil }
+        }
         .onAppear {
             DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext)
         }
@@ -289,31 +288,22 @@ struct DiaryPage: View {
             focused: $composerFocused,
             orderedTags: orderedTags,
             selectedTagIDs: draftBinding.selectedTagIDs,
-            onSubmit: submitNote
+            onSubmit: submitNote,
+            isCompact: !showsPageHeader,
+            status: composerStatus,
+            onOpenWindow: detachDraft
         )
     }
 
     private var entryListSection: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 10) {
+                LazyVStack(alignment: .leading, spacing: showsPageHeader ? 10 : 0) {
                     if filteredEntries.isEmpty {
                         emptyState
                     } else {
                         ForEach(filteredEntries) { entry in
-                            DiaryNoteCard(
-                                entry: entry,
-                                activeTags: activeTags,
-                                attachments: attachments,
-                                onDelete: {
-                                    pendingTrash = .diary(entry, tags: { Array(allTags) }, locale: locale) {
-                                        DayBoardMutations.deleteDiary(entry)
-                                    }
-                                },
-                                isHighlighted: boardSelection.inspectingDiaryID == entry.id,
-                                privacyTags: Array(allTags)
-                            )
-                            .id(entry.id)
+                            entryRow(entry).id(entry.id)
                         }
                     }
                 }
@@ -329,6 +319,19 @@ struct DiaryPage: View {
                 }
                 scrollToInspected(proxy)
             }
+        }
+    }
+
+    @ViewBuilder private func entryRow(_ entry: DiaryEntry) -> some View {
+        if showsPageHeader {
+            DiaryNoteCard(entry: entry, activeTags: activeTags, attachments: attachments,
+                          onDelete: { requestTrash(entry) },
+                          isHighlighted: boardSelection.inspectingDiaryID == entry.id,
+                          privacyTags: Array(allTags))
+        } else {
+            DiarySummaryRow(entry: entry, privacyTags: Array(allTags),
+                            isHighlighted: boardSelection.inspectingDiaryID == entry.id,
+                            onDelete: { requestTrash(entry) })
         }
     }
 
@@ -349,7 +352,7 @@ struct DiaryPage: View {
             Text(selectedTagID != nil || !searchQuery.isEmpty ? "diary.empty.filtered" : "diary.empty.title")
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(DaybookTheme.muted)
-            Text("diary.empty.hint")
+            Text(showsPageHeader ? "diary.empty.hint" : "diary.quick.empty.hint")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.muted.opacity(0.8))
         }
@@ -366,8 +369,24 @@ struct DiaryPage: View {
             selectedTagIDs: composerSelectedTagIDs,
             tags: Array(allTags),
             context: modelContext
-        ) else { return }
-        draftText = ""
-        composerSelectedTagIDs.removeAll()
+        ) else { composerStatus = "diary.window.save.failed"; return }
+        draftBinding.wrappedValue = DiaryComposerDraft()
+        composerStatus = "diary.window.saved"
+        composerFocused = true
+    }
+
+    private func requestTrash(_ entry: DiaryEntry) {
+        pendingTrash = .diary(entry, tags: { Array(allTags) }, locale: locale) {
+            DayBoardMutations.deleteDiary(entry)
+        }
+    }
+
+    private func detachDraft() {
+        guard !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        composerFocused = false
+        DiaryWindows.shared.openDraft(draftBinding.wrappedValue, dayKey: todayKey, context: modelContext) {
+            draftBinding.wrappedValue = DiaryComposerDraft()
+            composerStatus = nil
+        }
     }
 }

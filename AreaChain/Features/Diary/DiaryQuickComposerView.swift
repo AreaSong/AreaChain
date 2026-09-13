@@ -8,21 +8,25 @@ struct DiaryQuickComposerView: View {
     var orderedTags: [TagItem]
     @Binding var selectedTagIDs: Set<UUID>
     var onSubmit: () -> Void
+    var isCompact = false
+    var status: LocalizedStringKey? = nil
+    var onOpenWindow: (() -> Void)? = nil
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
             editorInputView.zIndex(20)
-            tagAndActionRow
+            if isCompact { compactActions } else { tagAndActionRow }
         }
-        .padding(10)
+        .padding(isCompact ? 8 : 10)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .fill(DaybookTheme.hoverFill.opacity(0.5))
         )
+        .fixedSize(horizontal: false, vertical: true)
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
@@ -31,10 +35,11 @@ struct DiaryQuickComposerView: View {
 
     private var editorInputView: some View {
         SyntaxTextEditor(
-            text: $text, focused: focused, placeholder: L10n.string("diary.composer.placeholder", locale: locale),
+            text: $text, focused: focused,
+            placeholder: L10n.string(isCompact ? "diary.quick.placeholder" : "diary.composer.placeholder", locale: locale),
             onSubmit: onSubmit
         )
-        .frame(minHeight: 64, maxHeight: 100)
+        .frame(minHeight: isCompact ? 44 : 64, maxHeight: isCompact ? 44 : 100)
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -44,6 +49,27 @@ struct DiaryQuickComposerView: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .stroke(focused.wrappedValue ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: focused.wrappedValue ? 1.4 : 0.8)
         )
+    }
+
+    private var compactActions: some View {
+        HStack(spacing: 8) {
+            if let status {
+                Text(status).font(DaybookType.caption).lineLimit(1)
+            } else {
+                Text("⌘↩").font(DaybookType.caption).accessibilityHidden(true)
+            }
+            Spacer(minLength: 0)
+            if let onOpenWindow {
+                Button(action: onOpenWindow) {
+                    Image(systemName: "arrow.up.forward.square").frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain).disabled(!canSubmit)
+                .help("diary.window.continue").accessibilityLabel("diary.window.continue")
+            }
+            submitButton
+        }
+        .frame(height: 26)
+        .foregroundStyle(DaybookTheme.muted)
     }
 
     private var tagAndActionRow: some View {
@@ -106,7 +132,7 @@ struct DiaryQuickComposerView: View {
             HStack(spacing: 4) {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 10, weight: .semibold))
-                Text("diary.composer.save")
+                Text(isCompact ? "common.save" : "diary.composer.save")
                     .font(.system(size: 11.5, weight: .semibold))
             }
             .padding(.horizontal, 10)

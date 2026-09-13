@@ -147,6 +147,98 @@ struct MenuBarPopoverRenderingTests {
         try snapshot(view, name: "workspace-notes-zh")
     }
 
+    @Test func longDraftKeepsFixedInputAndPopoverSizeAndSavesOnlyOnce() async throws {
+        let container = try fixture()
+        for index in 0..<5 {
+            container.mainContext.insert(DiaryEntry(text: "简短手记 \(index + 1)：记录箱里的一个想法", dayKey: DayClock.shared.todayKey))
+        }
+        try container.mainContext.save()
+        let window = host(toolbar: MenuBarToolbarState(), container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        try await selectTab(.diary, in: window)
+        let editor = try #require(diaryEditor(in: view))
+        let scroll = try #require(editor.enclosingScrollView)
+        let initialSize = view.bounds.size
+        let inputHeight = scroll.bounds.height
+        #expect(inputHeight <= 48)
+        try snapshot(view, name: "menubar-notes-dense-zh")
+        window.makeFirstResponder(editor)
+        editor.insertText(String(repeating: "固定输入区中的长段内容\n", count: 80), replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        #expect(view.bounds.size == initialSize)
+        #expect(abs(scroll.bounds.height - inputHeight) < 1)
+        #expect(editor.bounds.height > scroll.contentView.bounds.height)
+        try snapshot(view, name: "menubar-notes-long-draft-zh")
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+            windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
+            isARepeat: false, keyCode: 36))
+        #expect(window.performKeyEquivalent(with: event))
+        try await settle(view)
+        #expect(diaryEditor(in: view)?.string == "")
+        #expect(window.firstResponder === diaryEditor(in: view))
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 8)
+        try snapshot(view, name: "menubar-notes-saved-zh")
+    }
+
+    @Test func popoutButtonTransfersDraftAndWindowPinIsOperable() async throws {
+        let container = try fixture()
+        let parent = host(toolbar: MenuBarToolbarState(), container: container)
+        defer { parent.contentView = nil; parent.orderOut(nil) }
+        let view = try #require(parent.contentView)
+        try await settle(view)
+        try await selectTab(.diary, in: parent)
+        let editor = try #require(diaryEditor(in: view))
+        parent.makeFirstResponder(editor)
+        editor.insertText("把这条记录放在旁边，边工作边参照。", replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        let scroll = try #require(editor.enclosingScrollView)
+        let frame = scroll.convert(scroll.bounds, to: nil)
+        let before = Set(DiaryWindows.shared.hostedWindows.map(ObjectIdentifier.init))
+        try await clickAndSettle(at: NSPoint(x: view.bounds.width - 100, y: frame.minY - 23), in: parent)
+        let child = try #require(DiaryWindows.shared.hostedWindows.first { !before.contains(ObjectIdentifier($0)) })
+        defer { child.close() }
+        let controller = try #require(child.delegate as? DiaryWindowController)
+        let childView = try #require(child.contentView)
+        try await settle(childView)
+        #expect(controller.session.text == "把这条记录放在旁边，边工作边参照。")
+        #expect(diaryEditor(in: view)?.string == "")
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
+        try await clickAndSettle(at: NSPoint(x: childView.bounds.width - 60, y: childView.bounds.height - 28), in: child)
+        #expect(child.level == .floating && controller.session.isWindowPinned)
+        #expect(controller.session.save())
+        #expect(controller.session.record?.isPinned == false)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 3)
+        try snapshot(childView, name: "note-window-pinned-zh")
+    }
+
+    @Test(arguments: ["zh-Hans", "en"], [ColorScheme.light, .dark])
+    func noteWindowRendersLongTextAndMasksPrivateEditor(locale: String, scheme: ColorScheme) async throws {
+        let container = try fixture()
+        let entry = DiaryEntry(text: "手记窗口 / Note window\n\n" + String(repeating: "一段需要完整阅读的记录。A longer note for focused reading.\n", count: 30),
+                               dayKey: DayClock.shared.todayKey)
+        container.mainContext.insert(entry)
+        try container.mainContext.save()
+        let session = DiaryEditorSession(source: .entry(entry), context: container.mainContext)
+        let root = DiaryWindowView(session: session, onPin: { session.isWindowPinned.toggle() })
+        let window = host(root, container: container, locale: locale, scheme: scheme, size: NSSize(width: 480, height: 440))
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        #expect(diaryEditor(in: view)?.string == entry.text)
+        try snapshot(view, name: "note-window-\(locale)-\(scheme == .dark ? "dark" : "light")")
+        window.setContentSize(NSSize(width: 360, height: 300))
+        try await settle(view)
+        try snapshot(view, name: "note-window-small-\(locale)-\(scheme == .dark ? "dark" : "light")")
+        try SwiftDataDiaryRepository(context: container.mainContext).editDiary(id: entry.id, text: "#密码 QA_PRIVATE_WINDOW_SENTINEL")
+        session.refresh()
+        try await settle(view)
+        #expect(diaryEditor(in: view) == nil)
+        #expect(!session.canRevealContent)
+        try snapshot(view, name: "note-window-masked-\(locale)-\(scheme == .dark ? "dark" : "light")")
+    }
+
     @Test func nativeToolbarReplacementPreservesSearchAndRendersBothAppearances() async throws {
         let container = try fixture()
         let toolbar = MenuBarToolbarState()
@@ -246,7 +338,7 @@ struct MenuBarPopoverRenderingTests {
         toolbar: MenuBarToolbarState, container: ModelContainer,
         locale: String = "zh-Hans", scheme: ColorScheme = .light
     ) -> NSWindow {
-        host(MenuBarPopoverView(toolbar: toolbar), container: container, locale: locale, scheme: scheme)
+        host(MenuBarPopoverView(toolbar: toolbar, diaryCapture: DiaryCaptureSession()), container: container, locale: locale, scheme: scheme)
     }
 
     private func host<Content: View>(
@@ -302,6 +394,9 @@ struct MenuBarPopoverRenderingTests {
         // 单测宿主没有 SwiftUI 虚拟无障碍树；沿用固定尺寸浮层的真实鼠标事件。
         let point = NSPoint(x: view.bounds.width - (tab == .diary ? 48 : 108), y: view.bounds.height - 29)
         try await clickAndSettle(at: point, in: window)
+        // 让旧页的退出动画完成后再抓图，避免把过渡帧当成稳定布局。
+        try await Task.sleep(for: .milliseconds(350))
+        view.layoutSubtreeIfNeeded()
     }
 
     private func selectFilter(at x: CGFloat, in window: NSWindow) async throws {

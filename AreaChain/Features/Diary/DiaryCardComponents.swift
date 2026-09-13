@@ -65,10 +65,18 @@ extension DiaryNoteCard {
 
     private func saveTextEdit() {
         let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard entry.text == editBaseText else { showsEditConflict = true; return }
         guard !next.isEmpty, DayBoardMutations.editDiary(entry, text: next) else { return }
         editDraft = ""
         editFocused = false
         isEditing = false
+    }
+
+    func beginEditing() {
+        editBaseText = entry.text
+        editDraft = entry.text
+        showsEditConflict = false
+        isEditing = true
     }
 
     var maskedPasswordContentView: some View {
@@ -109,8 +117,7 @@ extension DiaryNoteCard {
             .fixedSize(horizontal: false, vertical: true)
             .contentShape(Rectangle())
             .onTapGesture(count: 2) {
-                editDraft = entry.text
-                isEditing = true
+                beginEditing()
             }
     }
 
@@ -174,8 +181,7 @@ extension DiaryNoteCard {
     private var editActionButton: some View {
         Button {
             guard !(isPasswordType && isMasked) else { return }
-            editDraft = entry.text
-            isEditing = true
+            beginEditing()
         } label: {
             Image(systemName: "pencil")
                 .font(.system(size: 11))

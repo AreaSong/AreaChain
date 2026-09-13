@@ -155,6 +155,30 @@ struct CaptureOverlayLayoutTests {
         #expect(try host.viewportFrame() == viewport)
         #expect(scroll.contentView.bounds.origin == origin)
     }
+
+    @Test func captureKeepsKeyboardSubmissionAndFocus() async throws {
+        let host = try CaptureOverlayHost(workspace: false)
+        defer { host.close() }
+        try await host.settle()
+        let viewport = try host.viewportFrame()
+        try await host.enter("键盘添加待办")
+        let editor = try host.editor()
+        try host.snapshot("capture-keyboard-draft")
+        try host.pressReturn()
+        try await host.settle()
+        #expect(host.draft.text.isEmpty)
+        #expect(host.draft.submissions == 1 && host.draft.diarySubmissions == 0)
+        #expect(host.window.firstResponder === editor)
+        #expect(try host.viewportFrame() == viewport)
+
+        try await host.enter("键盘记录手记")
+        try host.pressReturn(modifiers: .command)
+        try await host.settle()
+        #expect(host.draft.text.isEmpty)
+        #expect(host.draft.submissions == 1 && host.draft.diarySubmissions == 1)
+        #expect(host.window.firstResponder === editor)
+        #expect(try host.viewportFrame() == viewport)
+    }
 }
 
 @Observable
@@ -163,11 +187,17 @@ private final class CaptureOverlayDraft {
     var text = ""
     var focused = true
     var submissions = 0
+    var diarySubmissions = 0
     var rowActions = 0
     let rowIDs = (0..<30).map { _ in UUID() }
 
     func submit() {
         submissions += 1
+        text = ""
+    }
+
+    func submitDiary() {
+        diarySubmissions += 1
         text = ""
     }
 }
@@ -185,7 +215,7 @@ private struct CaptureOverlayFixture: View {
                 )
             } else {
                 CaptureField(
-                    text: $draft.text, focus: $draft.focused, onTodo: draft.submit, onDiary: {}
+                    text: $draft.text, focus: $draft.focused, onTodo: draft.submit, onDiary: draft.submitDiary
                 )
             }
             ScrollView {
@@ -318,11 +348,13 @@ private final class CaptureOverlayHost {
         try press("\u{1b}", code: 53)
     }
 
-    func pressReturn() throws { try press("\r", code: 36) }
+    func pressReturn(modifiers: NSEvent.ModifierFlags = []) throws {
+        try press("\r", code: 36, modifiers: modifiers)
+    }
 
-    private func press(_ character: String, code: UInt16) throws {
+    private func press(_ character: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) throws {
         let event = try #require(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
+            with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, characters: character,
             charactersIgnoringModifiers: character, isARepeat: false, keyCode: code
         ))

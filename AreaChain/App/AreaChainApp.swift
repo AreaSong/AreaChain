@@ -26,6 +26,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     .modelContainer(Persistence.session.container)
             )
         }
+        AppWindows.diaryWindowsProvider = { DiaryWindows.shared.hostedWindows }
 
         StatusItemController.shared.popoverViewProvider = {
             AnyView(
@@ -49,6 +50,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         false
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        DiaryWindows.shared.confirmTermination(capture: .shared, context: Persistence.session.container.mainContext)
+            ? .terminateNow : .terminateCancel
+    }
 }
 
 @main
@@ -61,7 +67,7 @@ struct AreaChainApp: App {
     }
 
     var body: some Scene {
-        // 日记只走 AppWindows。这里若再声明 Window，关设置时系统会把它当下一扇窗打开。
+        // 手记小窗由 DiaryWindows 持有，避免 SwiftUI Scene 自动恢复出重复窗口。
         Settings {
             SettingsView()
                 .appChrome()
