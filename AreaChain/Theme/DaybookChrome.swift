@@ -173,7 +173,6 @@ struct DaybookField<Content: View>: View {
                             )
                     )
             )
-            .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
     }
 }
 

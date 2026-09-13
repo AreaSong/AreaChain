@@ -9,12 +9,11 @@ final class DaybookAppKitTextField: NSTextField {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
         if flags == .command,
            (event.keyCode == 36 || event.charactersIgnoringModifiers == "\r" || event.charactersIgnoringModifiers == "\n") {
-            if let onCommandReturn,
-               let editor = currentEditor() as? NSTextView,
-               window?.firstResponder === editor,
-               !editor.hasMarkedText() {
+            if let editor = currentEditor() as? NSTextView,
+               window?.firstResponder === editor {
+                guard !editor.hasMarkedText() else { return true }
                 stringValue = editor.string
-                onCommandReturn()
+                onCommandReturn?()
                 return true
             }
         }

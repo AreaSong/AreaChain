@@ -46,20 +46,18 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
 
     func searchDiaries(query: String, tagID: UUID?, includeDeleted: Bool) throws -> [DiaryEntry] {
         let entries = try fetchDiaries(for: nil, includeDeleted: includeDeleted)
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let parsed = BoardSearch.parseQuery(query)
         let tags = try context.fetch(FetchDescriptor<TagItem>())
         let activeTags = tags.filter { $0.deletedAt == nil }
+        let tagMap = Dictionary(uniqueKeysWithValues: activeTags.map { ($0.id, $0.name) })
 
         return entries.filter { entry in
             if let tagID, !TagIDList.contains(entry.tagIDs, tagID) {
                 return false
             }
-            guard !needle.isEmpty else { return true }
-            let matchesText = entry.text.localizedCaseInsensitiveContains(needle)
-            let matchesTag = activeTags.contains { tag in
-                TagIDList.contains(entry.tagIDs, tag.id) && tag.name.localizedCaseInsensitiveContains(needle)
-            }
-            return matchesText || matchesTag
+            var snapshot = entry.snapshot
+            if includeDeleted { snapshot.deletedAt = nil }
+            return BoardSearch.matchesDiary(snapshot, query: parsed, tagMap: tagMap)
         }
     }
 
@@ -71,32 +69,26 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("手记内容不能为空")
         }
-        var ids = tagIDs
-        let tags = try context.fetch(FetchDescriptor<TagItem>())
-        var availableTags = tags
-        let parsed = NaturalLanguageParser.parse(trimmed)
-        if let tagName = parsed.tagName {
-            ids.insert(ensureTag(named: tagName, among: &availableTags).id)
+        return try ModelChanges.transaction(in: context) {
+            let names = TagSyntax.names(in: trimmed) + DiaryMemoTags.autoTagNames(in: trimmed)
+            let ids = try InputTagResolver.merging(names, into: TagIDList.encode(Array(tagIDs)), in: context)
+            let entry = DiaryEntry(text: trimmed, dayKey: dayKey, tagIDs: ids)
+            context.insert(entry)
+            return entry
         }
-        for name in DiaryMemoTags.autoTagNames(in: trimmed) {
-            ids.insert(ensureTag(named: name, among: &availableTags).id)
-        }
-        let entry = DiaryEntry(
-            text: trimmed,
-            dayKey: dayKey,
-            tagIDs: TagIDList.encode(Array(ids))
-        )
-        context.insert(entry)
-        try saveAndNotify()
-        return entry
     }
 
     func editDiary(id: UUID, text: String) throws {
         guard let entry = try fetchDiary(id: id) else {
             throw RepositoryError.notFound("DiaryEntry(id: \(id))")
         }
-        entry.text = text
-        try saveAndNotify()
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RepositoryError.invalidArgument("手记内容不能为空")
+        }
+        try ModelChanges.transaction(in: context) {
+            entry.tagIDs = try InputTagResolver.merging(TagSyntax.names(in: text), into: entry.tagIDs, in: context)
+            entry.text = text
+        }
     }
 
     // MARK: - 置顶与标签操作 (Pin & Tags)
@@ -170,18 +162,6 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     }
 
     // MARK: - 内部辅助 (Internal Helpers)
-
-    private func ensureTag(named name: String, among tags: inout [TagItem]) -> TagItem {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if let existing = tags.first(where: { $0.name == trimmed }) {
-            if existing.deletedAt != nil { existing.deletedAt = nil }
-            return existing
-        }
-        let created = TagItem(name: trimmed, sortOrder: tags.count)
-        context.insert(created)
-        tags.append(created)
-        return created
-    }
 
     private func fetchOwnedAttachments() throws -> [AttachmentItem] {
         try context.fetch(FetchDescriptor<AttachmentItem>())

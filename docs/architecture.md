@@ -55,7 +55,7 @@ AreaChain/
 | `DailyRoutine` | 常驻习惯 | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
 | `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
-| `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`，一层，归属 `TodoItem`。 |
+| `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`, `tagIDs`（默认空），一层，归属 `TodoItem`。 |
 | `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`。JSON 导出含标签与置顶；旧备份缺字段时按空标签、未置顶导入。 |
 | `ProjectItem` | 项目分类树 | `id`, `name`, `sortOrder`, `parentID`, `deletedAt`。 |
 | `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`。 |
@@ -72,16 +72,18 @@ AreaChain/
 ## 关键领域算法
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
-- **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并继续找下一个普通标签。手记默认仍消费第一个 `#tag`。不提取日期词、不提取项目。
+- **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词、不提取项目。
 - **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让常驻页 / 专属清单打开检查器时把检查日钉到今天，切到「任务」「常驻」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
-- **`BoardSearch`**：搜索待办/习惯标题和备注、手记正文，支持 `#标签` 与待办优先级条件，不搜子任务。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
+- **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
 - **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。
-- **语法输入**：`SyntaxInputContext` 区分捕获与搜索；搜索补全仅提供标签与优先级，不提示新建标签或未实现的时间条件。`Theme/DaybookTextField.swift` 封装原生编辑器，保护输入法组合文本和双输入框的快捷键归属。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
+- **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力；只提示当前对象支持的语法。`SyntaxTextField` / `SyntaxTextEditor` 封装单行和多行原生输入，保护组合文本、光标和快捷键归属。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
+
+- **`TagSyntax` / `InputTagResolver`**：共享多标签、引号名称、代码/转义边界及名称归一化。解析和补全没有存储副作用；`ModelChanges.transaction` 将标签创建/恢复与内容保存组成单个本地事务。子任务新增默认空 `tagIDs`，旧库轻量升级和旧 JSON 缺字段都保持兼容；永久删除标签会解除子任务关联。
 
 ## 保存、恢复与同步边界
 

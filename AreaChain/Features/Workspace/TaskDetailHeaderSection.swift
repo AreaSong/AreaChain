@@ -54,18 +54,15 @@ struct TaskDetailTitleEditor: View {
     @Environment(\.locale) private var locale
     @State private var isEditing = false
     @State private var draft = ""
-    @FocusState private var isFocused: Bool
+    @State private var isFocused = false
 
     var body: some View {
         Group {
             if isEditing {
-                TextField("drawer.title.placeholder", text: $draft)
-                    .textFieldStyle(.plain)
-                    .font(DaybookType.headline)
-                    .foregroundStyle(DaybookTheme.ink)
-                    .focused($isFocused)
-                    .onSubmit(save)
-                    .onExitCommand(perform: cancel)
+                SyntaxTextField(
+                    text: $draft, placeholder: L10n.string("drawer.title.placeholder", locale: locale),
+                    focused: $isFocused, fontSize: 16, onSubmit: save, onEscape: cancel
+                )
                     .onChange(of: isFocused) { _, focused in
                         if !focused, isEditing {
                             if BoardSelection.shared.consumeEscapeCancelsEdits() {

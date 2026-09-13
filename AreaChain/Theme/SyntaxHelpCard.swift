@@ -82,7 +82,7 @@ struct SyntaxExpandableCard: View {
                     HStack(spacing: 4) {
                         miniBadge("#", color: Color(nsColor: .systemIndigo))
                         miniBadge("!", color: DaybookTheme.destructive)
-                        if context == .capture { miniBadge("@", color: DaybookTheme.stamp) }
+                        if context.supportsTaskAttributes { miniBadge("@", color: DaybookTheme.stamp) }
                     }
                 }
 
@@ -126,11 +126,14 @@ struct SyntaxExpandableCard: View {
     private var syntaxList: some View {
         VStack(alignment: .leading, spacing: 4) {
             syntaxRow(token: "#", title: "标签分类", desc: context == .search
-                ? "syntax.search.tag.help" : "键入 # 选已有标签，回车新建", color: Color(nsColor: .systemIndigo))
+                ? "syntax.search.tag.help" : "syntax.capture.tag.help", color: Color(nsColor: .systemIndigo))
             syntaxRow(token: "!", title: "四象限优先级", desc: context == .search
                 ? "syntax.search.priority.help" : "!p1 ~ !p4 快速设定重要与紧急", color: DaybookTheme.destructive)
+            if context.supportsTaskAttributes {
+                syntaxRow(token: "@", title: "时刻提醒", desc: context.isSearch
+                    ? "syntax.search.time.help" : "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
+            }
             if context == .capture {
-                syntaxRow(token: "@", title: "时刻提醒", desc: "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
                 syntaxRow(token: "⌘↩", title: "直接存入日记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
                 syntaxRow(token: "⇧↩", title: "换行输入备注", desc: "Shift + 回车换行，输入详情说明", color: DaybookTheme.muted)
             }

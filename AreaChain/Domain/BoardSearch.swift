@@ -5,6 +5,7 @@ struct BoardSearchHit: Equatable, Identifiable {
         case todo
         case diary
         case routine
+        case subtask
     }
 
     var id: UUID
@@ -12,6 +13,12 @@ struct BoardSearchHit: Equatable, Identifiable {
     var title: String
     var dayKey: String
     var createdAt: Date
+    var parentID: UUID? = nil
+}
+
+struct BoardSearchScope {
+    var filter = BoardFilter()
+    var projectIDs: Set<UUID>? = nil
 }
 
 struct BoardSearchPriority: Equatable {
@@ -30,9 +37,10 @@ struct BoardSearchQuery: Equatable {
     var tagNames: [String] = []
     var priority: BoardSearchPriority? = nil
     var hasPriority: Bool = false
+    var remindMinutes: Int? = nil
 
     var isEmpty: Bool {
-        textKeywords.isEmpty && tagNames.isEmpty && !hasPriority
+        textKeywords.isEmpty && tagNames.isEmpty && !hasPriority && remindMinutes == nil
     }
 }
 
@@ -41,18 +49,20 @@ enum BoardSearch {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return BoardSearchQuery(raw: raw) }
 
-        let tokens = trimmed.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        let remaining = TagSyntax.removingTags(from: trimmed)
+        let tokens = remaining.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
         var keywords: [String] = []
-        var tags: [String] = []
+        let tags = TagSyntax.names(in: trimmed)
         var prioritySlot: BoardSearchPriority? = nil
         var hasPriority = false
+        var remindMinutes: Int?
 
         for token in tokens {
-            if token.hasPrefix("#"), token.count > 1 {
-                tags.append(String(token.dropFirst()))
-            } else if token.hasPrefix("!"), let p = parsePriorityToken(token) {
+            if token.hasPrefix("!"), let p = parsePriorityToken(token) {
                 prioritySlot = p
                 hasPriority = true
+            } else if let minutes = NaturalLanguageParser.timeMinutes(token) {
+                remindMinutes = minutes
             } else {
                 keywords.append(token)
             }
@@ -63,7 +73,8 @@ enum BoardSearch {
             textKeywords: keywords,
             tagNames: tags,
             priority: prioritySlot,
-            hasPriority: hasPriority
+            hasPriority: hasPriority,
+            remindMinutes: remindMinutes
         )
     }
 
@@ -90,14 +101,18 @@ enum BoardSearch {
         routines: [RoutineSnapshot],
         todayKey: String = DayKey.today(),
         tagMap: [UUID: String] = [:],
-        privacy: BoardSearchPrivacy = BoardSearchPrivacy()
+        privacy: BoardSearchPrivacy = BoardSearchPrivacy(),
+        scope: BoardSearchScope = BoardSearchScope()
     ) -> [BoardSearchHit] {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
-        let found = todoHits(parsed, todos, tagMap: tagMap)
-            + diaryHits(parsed, diaries, tagMap: tagMap, privacy: privacy)
-            + routineHits(parsed, routines, todayKey: todayKey, tagMap: tagMap)
+        let filteredTodos = todos.filter { Classification.matches($0.classifyBits, filter: scope.filter, projectIDs: scope.projectIDs) }
+        let filteredRoutines = routines.filter { Classification.matches($0.classifyBits, filter: scope.filter, projectIDs: scope.projectIDs) }
+        let found = todoHits(parsed, filteredTodos, tagMap: tagMap)
+            + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
+            + routineHits(parsed, filteredRoutines, todayKey: todayKey, tagMap: tagMap)
+            + subtaskHits(parsed, todos, tagMap: tagMap, scope: scope)
 
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
@@ -132,17 +147,26 @@ enum BoardSearch {
         return entries.filter { TagIDList.contains($0.tagIDs, tagID) }
     }
 
-    private static func matchTags(tagNames: [String], attachedIDs: String, text: String, tagMap: [UUID: String]) -> Bool {
+    private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
         guard !tagNames.isEmpty else { return true }
-        for name in tagNames {
-            let directInText = text.localizedCaseInsensitiveContains("#\(name)")
-            let inAttached = tagMap.contains { id, tagName in
-                TagIDList.contains(attachedIDs, id) && tagName.caseInsensitiveCompare(name) == .orderedSame
-            }
-            if !directInText && !inAttached {
-                return false
-            }
+        let attached = Set(TagIDList.parse(attachedIDs).compactMap { tagMap[$0] }.map(TagSyntax.normalizedName))
+        return tagNames.allSatisfy { attached.contains(TagSyntax.normalizedName($0)) }
+    }
+
+    static func matchesDiary(_ item: DiarySnapshot, query: BoardSearchQuery, tagMap: [UUID: String]) -> Bool {
+        guard item.deletedAt == nil, !query.hasPriority, query.remindMinutes == nil else { return false }
+        let names = TagIDList.parse(item.tagIDs).compactMap { tagMap[$0] }
+        guard query.textKeywords.allSatisfy({ keyword in
+            matches(item.text, needle: keyword) || names.contains { matches($0, needle: keyword) }
+        }) else { return false }
+        return matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap)
+    }
+
+    private static func matchesAttributes(_ query: BoardSearchQuery, bits: ClassifyBits, remindMinutes: Int?) -> Bool {
+        if let priority = query.priority {
+            guard bits.isImportant == priority.isImportant, bits.isUrgent == priority.isUrgent else { return false }
         }
+        if let minutes = query.remindMinutes, remindMinutes != minutes { return false }
         return true
     }
 
@@ -157,11 +181,9 @@ enum BoardSearch {
                 guard matchesAll else { return nil }
             }
 
-            if query.hasPriority, let p = query.priority {
-                guard item.isImportant == p.isImportant && item.isUrgent == p.isUrgent else { return nil }
-            }
+            guard matchesAttributes(query, bits: item.classifyBits, remindMinutes: item.remindMinutes) else { return nil }
 
-            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: "\(item.title) \(item.notes)", tagMap: tagMap) else {
+            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap) else {
                 return nil
             }
 
@@ -178,21 +200,8 @@ enum BoardSearch {
     private static func diaryHits(
         _ query: BoardSearchQuery, _ diaries: [DiarySnapshot], tagMap: [UUID: String], privacy: BoardSearchPrivacy
     ) -> [BoardSearchHit] {
-        guard !query.hasPriority else { return [] }
-
         return diaries.compactMap { item in
-            guard item.deletedAt == nil else { return nil }
-
-            if !query.textKeywords.isEmpty {
-                let matchesAll = query.textKeywords.allSatisfy { kw in
-                    matches(item.text, needle: kw)
-                }
-                guard matchesAll else { return nil }
-            }
-
-            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: item.text, tagMap: tagMap) else {
-                return nil
-            }
+            guard matchesDiary(item, query: query, tagMap: tagMap) else { return nil }
 
             return BoardSearchHit(
                 id: item.id,
@@ -211,8 +220,6 @@ enum BoardSearch {
         todayKey: String,
         tagMap: [UUID: String]
     ) -> [BoardSearchHit] {
-        guard !query.hasPriority else { return [] }
-
         return routines.compactMap { item in
             guard item.deletedAt == nil, item.isEnabled else { return nil }
 
@@ -223,7 +230,8 @@ enum BoardSearch {
                 guard matchesAll else { return nil }
             }
 
-            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, text: "\(item.title) \(item.notes)", tagMap: tagMap) else {
+            guard matchesAttributes(query, bits: item.classifyBits, remindMinutes: item.remindMinutes) else { return nil }
+            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap) else {
                 return nil
             }
 
@@ -235,6 +243,28 @@ enum BoardSearch {
                 dayKey: WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: fromKey),
                 createdAt: item.createdAt
             )
+        }
+    }
+
+    private static func subtaskHits(
+        _ query: BoardSearchQuery, _ todos: [TodoSnapshot], tagMap: [UUID: String], scope: BoardSearchScope
+    ) -> [BoardSearchHit] {
+        guard !query.hasPriority, query.remindMinutes == nil, !scope.filter.isHighPriorityOnly else { return [] }
+        var parentFilter = scope.filter
+        parentFilter.tagID = nil
+        return todos.flatMap { todo -> [BoardSearchHit] in
+            guard todo.deletedAt == nil,
+                  Classification.matches(todo.classifyBits, filter: parentFilter, projectIDs: scope.projectIDs) else { return [] }
+            return todo.subtasks.compactMap { subtask in
+                guard subtask.deletedAt == nil else { return nil }
+                if let id = scope.filter.tagID, !TagIDList.contains(subtask.tagIDs, id) { return nil }
+                guard query.textKeywords.allSatisfy({ matches(subtask.title, needle: $0) }),
+                      matchTags(tagNames: query.tagNames, attachedIDs: subtask.tagIDs, tagMap: tagMap) else { return nil }
+                return BoardSearchHit(
+                    id: subtask.id, kind: .subtask, title: "\(todo.title) › \(subtask.title)",
+                    dayKey: todo.dayKey, createdAt: subtask.createdAt, parentID: todo.id
+                )
+            }
         }
     }
 }

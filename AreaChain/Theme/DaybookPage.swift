@@ -1,3 +1,4 @@
+import SwiftData
 import SwiftUI
 
 enum DaybookTitleStyle {
@@ -143,22 +144,24 @@ extension DaybookPage where Trailing == EmptyView {
 struct DaybookComposer<Accessory: View>: View {
     @Binding var text: String
     var placeholder: String
-    var focus: FocusState<Bool>.Binding?
+    var focus: Binding<Bool>?
     var availableTags: [String] = []
     var allowsShiftNewline: Bool
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)?
     var accessory: Accessory
 
-    @FocusState private var fallbackFocus: Bool
+    @Environment(\.locale) private var locale
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @State private var fallbackFocus = false
     @State private var autocomplete = SyntaxAutocompleteState()
 
     init(
         text: Binding<String>,
         placeholder: String,
-        focus: FocusState<Bool>.Binding? = nil,
+        focus: Binding<Bool>? = nil,
         availableTags: [String] = [],
-        allowsShiftNewline: Bool = false,
+        allowsShiftNewline: Bool = true,
         onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil,
         @ViewBuilder accessory: () -> Accessory
@@ -207,7 +210,10 @@ struct DaybookComposer<Accessory: View>: View {
             )
 
             ZStack(alignment: .topLeading) {
-                accessory
+                VStack(alignment: .leading, spacing: 3) {
+                    CaptureTokenBar(text: text)
+                    accessory
+                }
                 if autocomplete.isActive {
                     SyntaxAutocompletePopup(state: autocomplete) { candidate in
                         if let trigger = autocomplete.trigger {
@@ -232,10 +238,10 @@ struct DaybookComposer<Accessory: View>: View {
     private var field: some View {
         DaybookTextField(
             text: $text,
-            placeholder: placeholder,
+            placeholder: L10n.string(String.LocalizationValue(stringLiteral: placeholder), locale: locale),
             focus: focus ?? $fallbackFocus,
             autocomplete: autocomplete,
-            availableTags: availableTags,
+            availableTags: availableTags.isEmpty ? Catalog.liveTaskTags(tags).map(\.name) : availableTags,
             onSubmit: onSubmit,
             onCommandReturn: onCommandReturn,
             allowsShiftNewline: allowsShiftNewline
@@ -251,6 +257,7 @@ struct CaptureTokenBar: View {
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
         Group {
             if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     if let time = parsed.timeLabel {
                         PillBadge(
@@ -260,7 +267,7 @@ struct CaptureTokenBar: View {
                             isSelected: true
                         )
                     }
-                    if let tag = parsed.tagName {
+                    ForEach(parsed.tagNames, id: \.self) { tag in
                         PillBadge(
                             title: "#\(tag)",
                             icon: "tag.fill",
@@ -278,6 +285,8 @@ struct CaptureTokenBar: View {
                     }
                     Spacer(minLength: 0)
                 }
+                }
+                .frame(height: 24)
                 .padding(.horizontal, 4)
                 .padding(.top, 1)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -290,9 +299,9 @@ extension DaybookComposer where Accessory == EmptyView {
     init(
         text: Binding<String>,
         placeholder: String,
-        focus: FocusState<Bool>.Binding? = nil,
+        focus: Binding<Bool>? = nil,
         availableTags: [String] = [],
-        allowsShiftNewline: Bool = false,
+        allowsShiftNewline: Bool = true,
         onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil
     ) {

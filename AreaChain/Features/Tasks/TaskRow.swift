@@ -15,7 +15,6 @@ struct TaskRow: View {
     @State var pickingDay = false
     @State var pickingTime = false
     @State private var isSubtasksExpanded = false
-    @State private var autocomplete = SyntaxAutocompleteState()
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
 
@@ -258,38 +257,11 @@ struct TaskRow: View {
     }
 
     private var editor: some View {
-        ZStack(alignment: .topLeading) {
-            DaybookTextField(
-                text: $draft,
-                placeholder: L10n.string("row.edit.field", locale: locale),
-                fontSize: 13,
-                focus: $editorFocused,
-                autocomplete: autocomplete,
-                availableTags: state.classify?.tags.map(\.name) ?? [],
-                onSubmit: saveEdit,
-                onEscape: cancelEdit
-            )
-            .onExitCommand(perform: cancelEdit)
-            .onAppear {
-                DispatchQueue.main.async { editorFocused = true }
-            }
-
-            if autocomplete.isActive {
-                SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                    if let trigger = autocomplete.trigger {
-                        let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
-                            candidate,
-                            to: draft,
-                            range: trigger.range
-                        )
-                        draft = newText
-                        autocomplete.dismiss()
-                    }
-                }
-                .padding(.top, 24)
-                .zIndex(100)
-            }
-        }
+        SyntaxTextField(
+            text: $draft, placeholder: L10n.string("row.edit.field", locale: locale),
+            focused: $editorFocused, allowsShiftNewline: true, onSubmit: saveEdit, onEscape: cancelEdit
+        )
+        .onAppear { DispatchQueue.main.async { editorFocused = true } }
     }
 
     private var timePicker: some View {
@@ -318,7 +290,6 @@ struct TaskRow: View {
         draft = state.title
         editing = false
         editorFocused = false
-        autocomplete.dismiss()
         dispatch(.endEditing)
     }
 
@@ -335,7 +306,6 @@ struct TaskRow: View {
         }
         editing = false
         editorFocused = false
-        autocomplete.dismiss()
         dispatch(.endEditing)
     }
 }

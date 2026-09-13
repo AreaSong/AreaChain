@@ -36,7 +36,8 @@ struct DiaryPage: View {
     @State private var searchQuery: String = ""
     @State private var localComposerDraft = DiaryComposerDraft()
     @State private var pendingTrash: PendingTrash?
-    @FocusState private var composerFocused: Bool
+    @State private var composerFocused = false
+    @State private var searchFocused = false
     @Bindable private var boardSelection = BoardSelection.shared
 
     init(
@@ -99,22 +100,14 @@ struct DiaryPage: View {
     }
 
     private var filteredEntries: [DiaryEntry] {
-        nonDeletedEntries
+        let query = BoardSearch.parseQuery(searchQuery)
+        let tagMap = Dictionary(uniqueKeysWithValues: activeTags.map { ($0.id, $0.name) })
+        return nonDeletedEntries
             .filter { entry in
                 if let selectedTagID {
                     guard TagIDList.contains(entry.tagIDs, selectedTagID) else { return false }
                 }
-                let query = searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !query.isEmpty {
-                    let matchesText = entry.text.localizedCaseInsensitiveContains(query)
-                    let matchesTag = activeTags.contains { tag in
-                        TagIDList.contains(entry.tagIDs, tag.id) && tag.name.localizedCaseInsensitiveContains(query)
-                    }
-                    if !matchesText && !matchesTag {
-                        return false
-                    }
-                }
-                return true
+                return BoardSearch.matchesDiary(entry.snapshot, query: query, tagMap: tagMap)
             }
             .sorted { a, b in
                 if a.isPinned != b.isPinned {
@@ -127,15 +120,15 @@ struct DiaryPage: View {
     var body: some View {
         VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
             if showsPageHeader {
-                topHeader
+                topHeader.zIndex(50)
             } else {
-                searchChrome
+                searchChrome.zIndex(50)
             }
 
             tagFilterBar
 
             if showsComposer {
-                quickComposer
+                quickComposer.zIndex(20)
             }
 
             entryListSection
@@ -203,13 +196,20 @@ struct DiaryPage: View {
 
     private var searchChrome: some View {
         HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted)
-            TextField("diary.search.placeholder", text: $searchQuery)
-                .textFieldStyle(.plain)
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.ink)
+            Button { searchFocused = true } label: {
+                Image(systemName: "magnifyingglass").font(.system(size: 11))
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(showsPageHeader ? KeyboardShortcut("f", modifiers: .command) : nil)
+            .accessibilityLabel("diary.search.placeholder")
+            SyntaxTextField(
+                text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),
+                focused: $searchFocused, context: .tagSearch, fontSize: 11,
+                onEscape: {
+                    if !searchQuery.isEmpty { searchQuery = "" }
+                    else { NSApp.keyWindow?.makeFirstResponder(nil) }
+                }
+            )
             if !searchQuery.isEmpty {
                 Button {
                     searchQuery = ""
@@ -219,6 +219,7 @@ struct DiaryPage: View {
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("footer.search.clear")
             }
         }
         .padding(.horizontal, 8)
@@ -229,7 +230,7 @@ struct DiaryPage: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+                .strokeBorder(searchFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: searchFocused ? 1.4 : 0.8)
         )
     }
 

@@ -34,11 +34,14 @@ extension DiaryNoteCard {
 
     var editingContentView: some View {
         VStack(alignment: .trailing, spacing: 6) {
-            TextEditor(text: $editDraft)
-                .font(DaybookType.body)
-                .frame(minHeight: 50)
-                .scrollContentBackground(.hidden)
+            SyntaxTextEditor(
+                text: $editDraft, focused: $editFocused,
+                placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
+            )
+                .frame(minHeight: 64, maxHeight: 160)
                 .padding(4)
+                .onAppear { editFocused = true }
+                .zIndex(20)
                 .background(
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
                         .fill(DaybookTheme.surface)
@@ -53,18 +56,19 @@ extension DiaryNoteCard {
                 .buttonStyle(.plain)
                 .font(.system(size: 11))
 
-                Button("common.save") {
-                    let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !next.isEmpty {
-                        guard DayBoardMutations.editDiary(entry, text: next) else { return }
-                    }
-                    editDraft = ""
-                    isEditing = false
-                }
+                Button("common.save", action: saveTextEdit)
                 .buttonStyle(.borderedProminent)
                 .font(.system(size: 11))
             }
         }
+    }
+
+    private func saveTextEdit() {
+        let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !next.isEmpty, DayBoardMutations.editDiary(entry, text: next) else { return }
+        editDraft = ""
+        editFocused = false
+        isEditing = false
     }
 
     var maskedPasswordContentView: some View {

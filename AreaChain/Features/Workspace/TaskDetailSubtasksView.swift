@@ -3,10 +3,11 @@ import SwiftUI
 
 struct TaskDetailSubtasksView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     let todo: TodoItem
 
     @State private var newSubtaskTitle: String = ""
-    @FocusState private var isInputFocused: Bool
+    @State private var isInputFocused = false
 
     private var activeSubtasks: [SubtaskItem] {
         todo.subtasks
@@ -99,13 +100,10 @@ struct TaskDetailSubtasksView: View {
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.stamp)
 
-            TextField("drawer.subtasks.placeholder", text: $newSubtaskTitle)
-                .textFieldStyle(.plain)
-                .font(.system(size: 11))
-                .focused($isInputFocused)
-                .onSubmit {
-                    submitNewSubtask()
-                }
+            SyntaxTextField(
+                text: $newSubtaskTitle, placeholder: L10n.string("drawer.subtasks.placeholder", locale: locale),
+                focused: $isInputFocused, context: .taskTags, fontSize: 11, onSubmit: submitNewSubtask
+            )
 
             if !newSubtaskTitle.isEmpty {
                 Button {
@@ -141,6 +139,9 @@ struct TaskDetailSubtasksView: View {
 }
 
 struct SubtaskRowView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     let subtask: SubtaskItem
     let onToggle: () -> Void
     let onUpdateTitle: (String) -> Bool
@@ -149,7 +150,7 @@ struct SubtaskRowView: View {
     @State private var isHovering = false
     @State private var isEditing = false
     @State private var draftTitle = ""
-    @FocusState private var editFocused: Bool
+    @State private var editFocused = false
 
     var body: some View {
         HStack(spacing: 6) {
@@ -165,6 +166,7 @@ struct SubtaskRowView: View {
                 .fill(isHovering ? DaybookTheme.cardSurfaceHover : Color.clear)
         )
         .onHover { isHovering = $0 }
+        .zIndex(isEditing ? 20 : 0)
         .onAppear { draftTitle = subtask.title }
         .onChange(of: subtask.title) { _, val in
             // 回滚或外部刷新不能覆盖仍在编辑的失败草稿。
@@ -184,14 +186,10 @@ struct SubtaskRowView: View {
     @ViewBuilder
     private var subtaskTitleView: some View {
         if isEditing {
-            TextField("", text: $draftTitle)
-                .textFieldStyle(.plain)
-                .font(.system(size: 11))
-                .focused($editFocused)
-                .onSubmit {
-                    commitEdit()
-                }
-                .onExitCommand(perform: cancelEdit)
+            SyntaxTextField(
+                text: $draftTitle, placeholder: L10n.string("drawer.subtasks.placeholder", locale: locale),
+                focused: $editFocused, context: .taskTags, fontSize: 11, onSubmit: commitEdit, onEscape: cancelEdit
+            )
                 .onChange(of: editFocused) { _, focused in
                     if !focused, isEditing {
                         if BoardSelection.shared.consumeEscapeCancelsEdits() {
@@ -202,15 +200,43 @@ struct SubtaskRowView: View {
                     }
                 }
         } else {
-            Text(subtask.title)
-                .font(.system(size: 11))
-                .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink)
-                .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture(count: 2) {
-                    startEdit()
+            VStack(alignment: .leading, spacing: 3) {
+                Text(subtask.title)
+                    .font(.system(size: 11))
+                    .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink)
+                    .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
+                assignedTagChips
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture(count: 2, perform: startEdit)
+            .accessibilityAction(named: Text("drawer.subtasks.edit"), startEdit)
+        }
+    }
+
+    @ViewBuilder
+    private var assignedTagChips: some View {
+        let assigned = tags.filter { $0.deletedAt == nil && TagIDList.contains(subtask.tagIDs, $0.id) }
+        if !assigned.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 4) {
+                    ForEach(assigned) { tag in
+                        Button {
+                            ModelChanges.perform(in: modelContext) {
+                                subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, tag.id)
+                            }
+                        } label: {
+                            Label("#" + tag.name, systemImage: "xmark")
+                                .font(DaybookType.badge)
+                                .padding(.horizontal, 5).padding(.vertical, 2)
+                                .background(Capsule().fill(DaybookTheme.hoverFill))
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .help("syntax.tag.remove")
+                    }
                 }
+            }
         }
     }
 

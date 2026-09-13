@@ -122,7 +122,8 @@ enum SyncPort {
                     isDone: $0.isDone,
                     sortOrder: $0.sortOrder,
                     createdAt: $0.createdAt,
-                    deletedAt: $0.deletedAt
+                    deletedAt: $0.deletedAt,
+                    tagIDs: $0.tagIDs
                 )
             }
         )

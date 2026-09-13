@@ -2,8 +2,9 @@ import SwiftUI
 
 /// 灵感手记快捷编辑器
 struct DiaryQuickComposerView: View {
+    @Environment(\.locale) private var locale
     @Binding var text: String
-    var focused: FocusState<Bool>.Binding
+    var focused: Binding<Bool>
     var orderedTags: [TagItem]
     @Binding var selectedTagIDs: Set<UUID>
     var onSubmit: () -> Void
@@ -14,7 +15,7 @@ struct DiaryQuickComposerView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            editorInputView
+            editorInputView.zIndex(20)
             tagAndActionRow
         }
         .padding(10)
@@ -29,23 +30,12 @@ struct DiaryQuickComposerView: View {
     }
 
     private var editorInputView: some View {
-        ZStack(alignment: .topLeading) {
-            if text.isEmpty {
-                Text("diary.composer.placeholder")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.7))
-                    .padding(.top, 8)
-                    .padding(.leading, 8)
-            }
-
-            TextEditor(text: $text)
-                .font(DaybookType.body)
-                .foregroundStyle(DaybookTheme.ink)
-                .frame(minHeight: 48, maxHeight: 100)
-                .scrollContentBackground(.hidden)
-                .focused(focused)
-                .padding(4)
-        }
+        SyntaxTextEditor(
+            text: $text, focused: focused, placeholder: L10n.string("diary.composer.placeholder", locale: locale),
+            onSubmit: onSubmit
+        )
+        .frame(minHeight: 64, maxHeight: 100)
+        .padding(4)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .fill(DaybookTheme.surface)

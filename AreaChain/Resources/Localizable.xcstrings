@@ -1,6 +1,55 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "syntax.tag.create.on.save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Create on save" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存时创建" } }
+      }
+    },
+    "syntax.tag.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Remove this tag" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "移除此标签" } }
+      }
+    },
+    "search.kind.subtask": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Subtask" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "子任务" } }
+      }
+    },
+    "syntax.search.time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search reminder time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "按提醒时刻查找" } }
+      }
+    },
+    "syntax.search.time.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "@15:30 finds tasks and habits by reminder time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "@15:30 按提醒时刻查找待办和习惯" } }
+      }
+    },
+    "syntax.capture.tag.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Use multiple #tags; missing tags are created when saving" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "支持多个 #标签，不存在的标签在保存时创建" } }
+      }
+    },
+    "syntax.notes.save.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "⌘Return to save. Also saves when editing ends." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "⌘Return 保存；结束编辑时也会保存。" } }
+      }
+    },
     "menubar.status.empty": {
       "extractionState": "manual",
       "localizations": {
@@ -39,8 +88,8 @@
     "footer.search.placeholder": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Search · #tag !priority" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索 · #标签 !优先级" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Search · #tag !p1 @time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索 · #标签 !p1 @时间" } }
       }
     },
     "footer.search.clear": {
@@ -53,8 +102,8 @@
     "footer.search.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Search tasks, habits and notes across all dates. Supports #tags and !p1–!p4. ⌘F to focus." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跨日期搜索待办、习惯和手记，支持 #标签 与 !p1～!p4。⌘F 聚焦搜索。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Search tasks, subtasks, habits and notes across all dates. Supports #tags, !p1–!p4 and @time. ⌘F to focus." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跨日期搜索待办、子任务、习惯和手记，支持 #标签、!p1～!p4 与 @时间。⌘F 聚焦搜索。" } }
       }
     },
     "footer.filter.clear": {
@@ -102,8 +151,8 @@
     "syntax.search.priority.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Find tasks by priority with !p1–!p4" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "!p1～!p4 按优先级查找待办" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Find tasks and habits by priority with !p1–!p4" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "!p1～!p4 按优先级查找待办和习惯" } }
       }
     },
     "syntax.search.scope.help": {
@@ -116,8 +165,8 @@
     "syntax.capture.scope.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "For quick capture and inline title editing" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "适用于随手记和清单行内编辑" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Tags work across content inputs. Tasks and habits also support priorities and reminders." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "内容输入统一支持标签；待办和习惯还支持优先级、提醒。" } }
       }
     },
     "search.scope.all": {
@@ -4853,13 +4902,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search tasks and diary"
+            "value": "Search · #tag !p1 @time"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "搜任务和日记"
+            "value": "搜索内容 · #标签 !p1 @时间"
           }
         }
       }
@@ -6043,13 +6092,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Search notes or tags…"
+            "value": "Search notes or #tags…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "搜索巧思、密码或标签..."
+            "value": "搜索手记或 #标签…"
           }
         }
       }

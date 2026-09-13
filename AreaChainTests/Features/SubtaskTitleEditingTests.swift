@@ -114,6 +114,15 @@ private final class SubtaskEditorHarness {
             }
         }
         try await settle()
+        if self.field(in: window.contentView) == nil, let view = window.contentView,
+           let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds) {
+            view.cacheDisplay(in: view.bounds, to: bitmap)
+            let directory = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-Input-QA")
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            try bitmap.representation(using: .png, properties: [:])?.write(
+                to: directory.appendingPathComponent("subtask-title-edit-failure.png"), options: .atomic
+            )
+        }
         let textField = try #require(self.field(in: window.contentView))
         window.makeFirstResponder(textField)
         let editor = try #require(textField.currentEditor() as? NSTextView)

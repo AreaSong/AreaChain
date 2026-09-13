@@ -79,6 +79,13 @@ enum Catalog {
         .sorted { $0.sortOrder < $1.sortOrder }
     }
 
+    static func matchingSubtasks(_ todos: [TodoItem], tag: TagItem?) -> [SubtaskItem] {
+        guard let tag, tag.deletedAt == nil else { return [] }
+        return todos.filter { $0.deletedAt == nil }.flatMap(\.subtasks)
+            .filter { $0.deletedAt == nil && TagIDList.contains($0.tagIDs, tag.id) }
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
     static func openCount(
         todos: [TodoItem],
         routines: [DailyRoutine],
@@ -98,7 +105,8 @@ enum Catalog {
                     && !DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
             }
             .count
-        return openTodos + openRoutines
+        let openSubtasks = project == nil ? matchingSubtasks(todos, tag: tag).filter { !$0.isDone }.count : 0
+        return openTodos + openRoutines + openSubtasks
     }
 
     static func reindexRoutines(_ items: [DailyRoutine], from source: IndexSet, to destination: Int) {
@@ -130,7 +138,8 @@ enum Catalog {
         _ id: UUID,
         todos: [TodoItem],
         routines: [DailyRoutine],
-        diaries: [DiaryEntry]
+        diaries: [DiaryEntry],
+        subtasks: [SubtaskItem] = []
     ) {
         for todo in todos where TagIDList.contains(todo.tagIDs, id) {
             todo.tagIDs = TagIDList.toggling(todo.tagIDs, id)
@@ -140,6 +149,9 @@ enum Catalog {
         }
         for diary in diaries where TagIDList.contains(diary.tagIDs, id) {
             diary.tagIDs = TagIDList.toggling(diary.tagIDs, id)
+        }
+        for subtask in (subtasks.isEmpty ? todos.flatMap(\.subtasks) : subtasks) where TagIDList.contains(subtask.tagIDs, id) {
+            subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, id)
         }
     }
 }

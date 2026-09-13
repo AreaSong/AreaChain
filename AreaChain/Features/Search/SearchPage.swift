@@ -8,8 +8,7 @@ struct SearchPage: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var query = ""
-    @State private var autocomplete = SyntaxAutocompleteState(context: .search)
-    @FocusState private var searchFocus: Bool
+    @State private var searchFocus = false
 
     private var tagMap: [UUID: String] {
         Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
@@ -17,38 +16,37 @@ struct SearchPage: View {
 
     var body: some View {
         DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
-            DaybookField {
-                ZStack(alignment: .topLeading) {
-                    DaybookTextField(
+            DaybookField(focused: searchFocus) {
+                HStack(spacing: 8) {
+                    Button { searchFocus = true } label: {
+                        Image(systemName: "magnifyingglass").foregroundStyle(DaybookTheme.muted)
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut("f", modifiers: .command)
+                    .accessibilityLabel("search.placeholder")
+                    SyntaxTextField(
                         text: $query,
                         placeholder: L10n.string("search.placeholder", locale: locale),
-                        focus: $searchFocus,
-                        autocomplete: autocomplete,
-                        availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-                        onSubmit: {},
-                        onCommandReturn: {},
-                        allowsShiftNewline: false
-                    )
-                    .accessibilityLabel("search.placeholder")
-                    .daybookHideInputChrome()
-
-                    if autocomplete.isActive {
-                        SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                            if let trigger = autocomplete.trigger {
-                                let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
-                                    candidate,
-                                    to: query,
-                                    range: trigger.range
-                                )
-                                query = newText
-                                autocomplete.dismiss()
-                            }
+                        focused: $searchFocus,
+                        context: .search,
+                        onEscape: {
+                            if !query.isEmpty { query = "" }
+                            else { NSApp.keyWindow?.makeFirstResponder(nil) }
                         }
-                        .padding(.top, 24)
-                        .zIndex(100)
+                    )
+                    if !query.isEmpty {
+                        Button {
+                            query = ""
+                            searchFocus = true
+                        } label: {
+                            Image(systemName: "xmark.circle.fill").foregroundStyle(DaybookTheme.muted)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("footer.search.clear")
                     }
                 }
             }
+            .zIndex(50)
             if BoardSearch.normalized(query).isEmpty {
                 DaybookEmptyState(title: "search.hint", systemImage: "magnifyingglass")
             } else if hits.isEmpty {
@@ -57,6 +55,7 @@ struct SearchPage: View {
                 SearchResultsView(hits: hits)
             }
         }
+        .onAppear { searchFocus = true }
     }
 
     private var hits: [BoardSearchHit] {

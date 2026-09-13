@@ -214,12 +214,17 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
-        let active = todo.subtasks.filter { $0.deletedAt == nil }
-        let nextOrder = (active.map(\.sortOrder).max() ?? -1) + 1
-        let subtask = SubtaskItem(title: trimmed, sortOrder: nextOrder, todo: todo)
-        context.insert(subtask)
-        try saveAndNotify()
-        return subtask
+        return try ModelChanges.transaction(in: context) {
+            let names = TagSyntax.names(in: trimmed, includesDiaryTags: false)
+            let tagIDs = try InputTagResolver.merging(names, into: "", in: context)
+            let nextOrder = (todo.subtasks.filter { $0.deletedAt == nil }.map(\.sortOrder).max() ?? -1) + 1
+            let subtask = SubtaskItem(
+                title: TagSyntax.title(from: trimmed, includesDiaryTags: false),
+                sortOrder: nextOrder, tagIDs: tagIDs, todo: todo
+            )
+            context.insert(subtask)
+            return subtask
+        }
     }
 
     func toggleSubtask(id: UUID) throws {
@@ -238,8 +243,11 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
-        subtask.title = trimmed
-        try saveAndNotify()
+        try ModelChanges.transaction(in: context) {
+            let names = TagSyntax.names(in: trimmed, includesDiaryTags: false)
+            subtask.tagIDs = try InputTagResolver.merging(names, into: subtask.tagIDs, in: context)
+            subtask.title = TagSyntax.title(from: trimmed, includesDiaryTags: false)
+        }
     }
 
     func deleteSubtask(id: UUID, soft: Bool) throws {

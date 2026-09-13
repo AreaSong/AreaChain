@@ -78,9 +78,10 @@ struct ExportedSubtask: Codable, Equatable {
     var sortOrder: Int
     var createdAt: Date? = nil
     var deletedAt: Date? = nil
+    var tagIDs: String = ""
 
     enum CodingKeys: String, CodingKey {
-        case id, title, isDone, sortOrder, createdAt, deletedAt
+        case id, title, isDone, sortOrder, createdAt, deletedAt, tagIDs
     }
 
     init(
@@ -89,7 +90,8 @@ struct ExportedSubtask: Codable, Equatable {
         isDone: Bool,
         sortOrder: Int = 0,
         createdAt: Date? = nil,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        tagIDs: String = ""
     ) {
         self.id = id
         self.title = title
@@ -97,6 +99,7 @@ struct ExportedSubtask: Codable, Equatable {
         self.sortOrder = sortOrder
         self.createdAt = createdAt
         self.deletedAt = deletedAt
+        self.tagIDs = tagIDs
     }
 
     init(from decoder: Decoder) throws {
@@ -107,6 +110,7 @@ struct ExportedSubtask: Codable, Equatable {
         sortOrder = try box.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
         createdAt = try box.decodeIfPresent(Date.self, forKey: .createdAt)
         deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
+        tagIDs = try box.decodeIfPresent(String.self, forKey: .tagIDs) ?? ""
     }
 }
 

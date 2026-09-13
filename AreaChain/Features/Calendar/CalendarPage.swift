@@ -146,7 +146,7 @@ struct CalendarPage: View {
     }
 
     private func addTodo() {
-        if DayBoardMutations.addTodo(title: draft, dayKey: selectedKey, context: modelContext) {
+        if DayBoardMutations.addCapturedTodo(text: draft, dayKey: selectedKey, context: modelContext) {
             draft = ""
         }
     }

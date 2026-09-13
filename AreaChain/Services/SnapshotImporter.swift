@@ -138,6 +138,7 @@ enum SnapshotImporter {
                 found.isDone = item.isDone
                 found.sortOrder = item.sortOrder
                 found.deletedAt = item.deletedAt
+                found.tagIDs = item.tagIDs
                 if let createdAt = item.createdAt {
                     found.createdAt = createdAt
                 }
@@ -149,6 +150,7 @@ enum SnapshotImporter {
                     sortOrder: item.sortOrder,
                     createdAt: item.createdAt ?? .now,
                     deletedAt: item.deletedAt,
+                    tagIDs: item.tagIDs,
                     todo: todo
                 )
                 context.insert(sub)

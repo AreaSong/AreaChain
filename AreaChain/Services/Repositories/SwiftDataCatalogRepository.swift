@@ -154,20 +154,13 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("标签名称不能为空")
         }
-        let allTags = try fetchTags(includeDeleted: true)
-        if let live = allTags.first(where: { $0.name == trimmed && $0.deletedAt == nil }) {
-            return live
+        return try ModelChanges.transaction(in: context) {
+            let ids = try InputTagResolver.resolve([trimmed], in: context)
+            guard let id = ids.first, let tag = try fetchTag(id: id) else {
+                throw RepositoryError.invalidArgument("无法创建标签")
+            }
+            return tag
         }
-        if let deleted = allTags.first(where: { $0.name == trimmed }) {
-            deleted.deletedAt = nil
-            try saveAndNotify()
-            return deleted
-        }
-        let order = (allTags.map(\.sortOrder).max() ?? -1) + 1
-        let created = TagItem(name: trimmed, sortOrder: order)
-        context.insert(created)
-        try saveAndNotify()
-        return created
     }
 
     func resolveTaskTag(name: String) throws -> TagItem? {
@@ -230,7 +223,8 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         let todos = try context.fetch(FetchDescriptor<TodoItem>())
         let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
         let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
-        Catalog.unlinkTag(id, todos: todos, routines: routines, diaries: diaries)
+        let subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
+        Catalog.unlinkTag(id, todos: todos, routines: routines, diaries: diaries, subtasks: subtasks)
         try saveAndNotify()
     }
 

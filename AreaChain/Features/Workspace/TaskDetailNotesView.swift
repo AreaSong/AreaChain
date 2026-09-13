@@ -2,18 +2,18 @@ import AppKit
 import SwiftUI
 
 struct TaskDetailNotesView: View {
+    @Environment(\.locale) private var locale
     let draftKey: String
     let notes: String
     let onUpdate: (String) -> Bool
 
     @State private var draft: String = ""
-    @State private var saveTask: Task<Void, Never>?
-    @FocusState private var isFocused: Bool
+    @State private var isFocused = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             notesHeaderView
-            notesEditorBox
+            notesEditorBox.zIndex(20)
             notesLinksView
         }
         .onAppear {
@@ -39,6 +39,11 @@ struct TaskDetailNotesView: View {
                 Text("editor.unsaved")
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookTheme.destructive)
+                Button("common.save", action: flushSave)
+                    .buttonStyle(.plain)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .help("syntax.notes.save.help")
             }
             if !draft.isEmpty {
                 Text("drawer.notes.count \(draft.count)")
@@ -57,26 +62,14 @@ struct TaskDetailNotesView: View {
                         .stroke(isFocused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
                 )
 
-            if draft.isEmpty && !isFocused {
-                Text("drawer.notes.placeholder")
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.5))
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 8)
-                    .allowsHitTesting(false)
-            }
-
-            TextEditor(text: $draft)
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.ink)
-                .scrollContentBackground(.hidden)
-                .background(Color.clear)
-                .focused($isFocused)
+            SyntaxTextEditor(
+                text: $draft, focused: $isFocused, placeholder: L10n.string("drawer.notes.placeholder", locale: locale),
+                fontSize: 11, context: .capture, onSubmit: flushSave
+            )
                 .padding(4)
                 .frame(minHeight: 56, maxHeight: 150)
                 .onChange(of: draft) { _, newValue in
                     if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
-                    scheduleSave(newValue)
                 }
                 .onChange(of: isFocused) { _, focused in
                     if !focused {
@@ -128,22 +121,7 @@ struct TaskDetailNotesView: View {
         .buttonStyle(.plain)
     }
 
-    private func scheduleSave(_ text: String) {
-        saveTask?.cancel()
-        saveTask = Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(450))
-            guard !Task.isCancelled else { return }
-            if text != notes {
-                if onUpdate(text) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }
-            } else {
-                EditDrafts.shared.notes.removeValue(forKey: draftKey)
-            }
-        }
-    }
-
     private func flushSave() {
-        saveTask?.cancel()
-        saveTask = nil
         if draft != notes {
             EditDrafts.shared.notes[draftKey] = draft
             if onUpdate(draft) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }

@@ -50,23 +50,18 @@ struct MenuBarSearchResults: View {
 
     private var hits: [BoardSearchHit] {
         let projectIDs = filter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
-        let filteredTodos = todos.map(\.snapshot).filter {
-            Classification.matches($0.classifyBits, filter: filter, projectIDs: projectIDs)
-        }
-        let filteredRoutines = routines.map(\.snapshot).filter {
-            Classification.matches($0.classifyBits, filter: filter, projectIDs: projectIDs)
-        }
         return BoardSearch.hits(
             query: query,
-            todos: filteredTodos,
-            diaries: BoardSearch.filteredDiaries(diaries.map(\.snapshot), filter: filter),
-            routines: filteredRoutines,
+            todos: todos.map(\.snapshot),
+            diaries: diaries.map(\.snapshot),
+            routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),
             privacy: BoardSearchPrivacy(
                 sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
                 placeholder: L10n.string("diary.private.title", locale: locale)
-            )
+            ),
+            scope: BoardSearchScope(filter: filter, projectIDs: projectIDs)
         )
     }
 }

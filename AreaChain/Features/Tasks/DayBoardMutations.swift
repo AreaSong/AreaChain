@@ -70,16 +70,12 @@ enum DayBoardMutations {
 
     @discardableResult
     static func editTodo(_ todo: TodoItem, title: String) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) {
-            try taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: title, notes: nil)
-        }
+        editTodoWithSyntax(todo, rawInput: title)
     }
 
     @discardableResult
     static func updateNotes(for todo: TodoItem, notes: String) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) {
-            try taskRepo(for: todo.modelContext).updateTodo(id: todo.id, title: nil, notes: notes)
-        }
+        saveNotes(notes, for: todo)
     }
 
     @discardableResult
@@ -196,16 +192,12 @@ enum DayBoardMutations {
 
     @discardableResult
     static func editRoutine(_ routine: DailyRoutine, title: String) -> Bool {
-        ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: title, notes: nil)
-        }
+        editRoutineWithSyntax(routine, rawInput: title)
     }
 
     @discardableResult
     static func updateNotes(for routine: DailyRoutine, notes: String) -> Bool {
-        ModelChanges.attempt(in: routine.modelContext) {
-            try routineRepo(for: routine.modelContext).updateRoutine(id: routine.id, title: nil, notes: notes)
-        }
+        saveNotes(notes, for: routine)
     }
 
     @discardableResult

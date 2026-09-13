@@ -25,6 +25,7 @@ struct DiaryNoteCard: View {
     @State var isHovered = false
     @State var isEditing = false
     @State var editDraft = ""
+    @State var editFocused = false
     @State var isMasked = true
     @State var hasCopied = false
 
@@ -84,6 +85,7 @@ struct DiaryNoteCard: View {
                 )
         )
         .onHover { isHovered = $0 }
+        .zIndex(isEditing ? 20 : 0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
         .onDisappear { isMasked = true }
         .onChange(of: entry.text) { _, _ in isMasked = true }

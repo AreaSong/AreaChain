@@ -9,6 +9,7 @@ struct ParsedCapture: Equatable {
     var isUrgent: Bool
     var hasPriorityToken: Bool = false
     var notes: String = ""
+    var tagNames: [String] = []
 
     var hasTokens: Bool {
         remindMinutes != nil || tagName != nil || hasPriorityToken
@@ -40,9 +41,9 @@ enum NaturalLanguageParser {
         let firstLine = lines.first ?? ""
         let notesText = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
 
-        var text = firstLine
+        let tagNames = TagSyntax.names(in: input, includesDiaryTags: consumeDiaryPresetTags)
+        var text = TagSyntax.removingTags(from: firstLine, includesDiaryTags: consumeDiaryPresetTags)
         let priority = consumePriority(from: &text)
-        let tagName = consumeTag(from: &text, consumeDiaryPresetTags: consumeDiaryPresetTags)
         let remindMinutes = consumeTime(from: &text)
 
         let fallbackTitle = firstLine.isEmpty ? input : firstLine
@@ -52,12 +53,36 @@ enum NaturalLanguageParser {
             rawInput: input,
             cleanTitle: cleanTitle,
             remindMinutes: remindMinutes,
-            tagName: tagName,
+            tagName: tagNames.first,
             isImportant: priority.isImportant,
             isUrgent: priority.isUrgent,
             hasPriorityToken: priority.hasPriorityToken,
-            notes: notesText
+            notes: notesText,
+            tagNames: tagNames
         )
+    }
+
+    /// 长正文只接受显式属性语法，不把句子里的自然时间当成修改提醒的指令。
+    static func parseTaskNotes(_ input: String) -> ParsedCapture {
+        var text = TagSyntax.removingTags(from: input, includesDiaryTags: false)
+        let priority = consumePriority(from: &text)
+        let time = firstMatch(
+            pattern: #"(?<![^\s(\[（【])@\d{1,2}[:：]\d{2}(?=$|[\s,，.。;；!！?？)）\]】])"#, in: text
+        ).flatMap(timeMinutes)
+        let tags = TagSyntax.names(in: input, includesDiaryTags: false)
+        return ParsedCapture(
+            rawInput: input, cleanTitle: input, remindMinutes: time, tagName: tags.first,
+            isImportant: priority.isImportant, isUrgent: priority.isUrgent,
+            hasPriorityToken: priority.hasPriorityToken, notes: input, tagNames: tags
+        )
+    }
+
+    static func timeMinutes(_ token: String) -> Int? {
+        guard token.range(of: #"^@\d{1,2}[:：]\d{2}$"#, options: .regularExpression) != nil else { return nil }
+        let parts = token.dropFirst().replacingOccurrences(of: "：", with: ":").split(separator: ":")
+        guard parts.count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]),
+              (0..<24).contains(hour), (0..<60).contains(minute) else { return nil }
+        return hour * 60 + minute
     }
 
     private struct PriorityResult {
@@ -69,11 +94,12 @@ enum NaturalLanguageParser {
     }
 
     private static func consumePriority(from text: inout String) -> PriorityResult {
-        let priorityPattern = #"!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要紧急|重要|紧急|p[1-4]|P[1-4])"#
-        guard let match = firstMatch(pattern: priorityPattern, in: text) else {
+        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+        guard let range = firstMatchRange(pattern: priorityPattern, in: text) else {
             return .none
         }
-        text = text.replacingOccurrences(of: match, with: "")
+        let match = (text as NSString).substring(with: range)
+        text = (text as NSString).replacingCharacters(in: range, with: "")
         let token = match.lowercased()
 
         switch token {
@@ -81,9 +107,9 @@ enum NaturalLanguageParser {
             return PriorityResult(isImportant: true, isUrgent: true, hasPriorityToken: true)
         case "!重要", "!重要不紧急", "!p2":
             return PriorityResult(isImportant: true, isUrgent: false, hasPriorityToken: true)
-        case "!紧急", "!不重要紧急", "!p3":
+        case "!紧急", "!不重要紧急", "!紧急不重要", "!p3":
             return PriorityResult(isImportant: false, isUrgent: true, hasPriorityToken: true)
-        case "!p4":
+        case "!p4", "!不重要不紧急":
             return PriorityResult(isImportant: false, isUrgent: false, hasPriorityToken: true)
         default:
             return .none
@@ -92,7 +118,7 @@ enum NaturalLanguageParser {
 
     private static func consumeTime(from text: inout String) -> Int? {
         guard let extracted = extractTime(from: text) else { return nil }
-        text = text.replacingOccurrences(of: extracted.matchedString, with: "")
+        text = (text as NSString).replacingCharacters(in: extracted.range, with: "")
         return extracted.minutes
     }
 
@@ -106,15 +132,15 @@ enum NaturalLanguageParser {
 
     private struct ExtractedTime {
         let minutes: Int
-        let matchedString: String
+        let range: NSRange
     }
 
     private static func extractTime(from text: String) -> ExtractedTime? {
         // Pattern A: @15:30 or @9:00 or 15:30 or 09:30
-        let standardPattern = #"(?:@|\b)(\d{1,2})[:：](\d{2})\b"#
+        let standardPattern = #"(?<![^\s(\[（【])@?(\d{1,2})[:：](\d{2})(?=$|[\s,，.。;；!！?？)）\]】])"#
         if let match = matchRegex(pattern: standardPattern, in: text) {
             if let h = Int(match.group1), let m = Int(match.group2), h >= 0 && h < 24 && m >= 0 && m < 60 {
-                return ExtractedTime(minutes: h * 60 + m, matchedString: match.full)
+                return ExtractedTime(minutes: h * 60 + m, range: match.range)
             }
         }
 
@@ -137,7 +163,7 @@ enum NaturalLanguageParser {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
-        guard let result = regex.firstMatch(in: text, options: [], range: range) else { return nil }
+        guard let result = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
 
         let full = nsString.substring(with: result.range)
         var period = ""
@@ -164,18 +190,18 @@ enum NaturalLanguageParser {
         }
 
         guard hour >= 0 && hour < 24 && minute >= 0 && minute < 60 else { return nil }
-        return ExtractedTime(minutes: hour * 60 + minute, matchedString: full)
+        return ExtractedTime(minutes: hour * 60 + minute, range: result.range)
     }
 
     private static func matchBareChineseHour(pattern: String, in text: String) -> ExtractedTime? {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
-        guard let result = regex.firstMatch(in: text, options: [], range: range) else { return nil }
+        guard let result = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
 
         let full = nsString.substring(with: result.range)
         guard result.range(at: 1).location != NSNotFound,
-              var hour = Int(nsString.substring(with: result.range(at: 1))) else {
+              let hour = Int(nsString.substring(with: result.range(at: 1))) else {
             return nil
         }
 
@@ -187,37 +213,24 @@ enum NaturalLanguageParser {
         }
 
         guard hour >= 0 && hour < 24 && minute >= 0 && minute < 60 else { return nil }
-        return ExtractedTime(minutes: hour * 60 + minute, matchedString: full)
-    }
-
-    private static let tagPattern = #"#([a-zA-Z0-9_\u4e00-\u9fa5\-]+)"#
-
-    private static func consumeTag(from text: inout String, consumeDiaryPresetTags: Bool) -> String? {
-        guard let regex = try? NSRegularExpression(pattern: tagPattern) else { return nil }
-        let nsString = text as NSString
-        let matches = regex.matches(in: text, options: [], range: NSRange(location: 0, length: nsString.length))
-        for match in matches {
-            guard match.numberOfRanges > 1, match.range(at: 1).location != NSNotFound else { continue }
-            let name = nsString.substring(with: match.range(at: 1))
-            if consumeDiaryPresetTags || !DiaryMemoTags.isPresetName(name) {
-                guard let range = Range(match.range, in: text) else { return name }
-                text.removeSubrange(range)
-                return name
-            }
-        }
-        return nil
+        return ExtractedTime(minutes: hour * 60 + minute, range: result.range)
     }
 
     private static func firstMatch(pattern: String, in text: String) -> String? {
+        guard let range = firstMatchRange(pattern: pattern, in: text) else { return nil }
+        return (text as NSString).substring(with: range)
+    }
+
+    private static func firstMatchRange(pattern: String, in text: String) -> NSRange? {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
-        guard let match = regex.firstMatch(in: text, options: [], range: range) else { return nil }
-        return nsString.substring(with: match.range)
+        guard let match = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
+        return match.range
     }
 
     private struct MatchResult {
-        let full: String
+        let range: NSRange
         let group1: String
         let group2: String
     }
@@ -226,12 +239,12 @@ enum NaturalLanguageParser {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
-        guard let match = regex.firstMatch(in: text, options: [], range: range),
+        guard let match = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range),
               match.numberOfRanges > 2,
               match.range(at: 1).location != NSNotFound,
               match.range(at: 2).location != NSNotFound else { return nil }
         return MatchResult(
-            full: nsString.substring(with: match.range),
+            range: match.range,
             group1: nsString.substring(with: match.range(at: 1)),
             group2: nsString.substring(with: match.range(at: 2))
         )

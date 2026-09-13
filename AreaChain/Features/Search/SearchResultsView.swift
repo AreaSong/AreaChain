@@ -49,6 +49,7 @@ struct SearchResultsView: View {
         case .todo: "search.kind.todo"
         case .routine: "search.kind.routine"
         case .diary: "search.kind.diary"
+        case .subtask: "search.kind.subtask"
         }
     }
 
@@ -59,6 +60,8 @@ struct SearchResultsView: View {
         case .diary:
             BoardSelection.shared.inspectDiary(id: hit.id, dayKey: hit.dayKey)
             AppWindows.openDiary()
+        case .subtask:
+            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.parentID, dayKey: hit.dayKey)
         }
     }
 }

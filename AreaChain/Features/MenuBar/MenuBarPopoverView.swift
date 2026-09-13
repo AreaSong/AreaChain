@@ -31,7 +31,7 @@ struct MenuBarPopoverView: View {
     @State private var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
-    @FocusState private var captureFocused: Bool
+    @State private var captureFocused = false
     @State private var focusedTaskID: UUID? = nil
     @State private var showingSyntaxHelp = false
     @State private var helpContext: SyntaxInputContext = .capture
@@ -290,7 +290,7 @@ struct MenuBarPopoverView: View {
     private func handleSyntaxTokenSelection(_ token: String) {
         showingSyntaxHelp = false
         if helpContext == .search {
-            guard token == "#" || token == "!" else { return }
+            guard token == "#" || token == "!" || token == "@" else { return }
             let prefix = toolbar.searchText.isEmpty || toolbar.searchText.hasSuffix(" ") ? "" : " "
             toolbar.searchText += prefix + token
             toolbar.focusSearch()

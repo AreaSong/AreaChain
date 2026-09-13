@@ -87,14 +87,10 @@ struct WorkspaceFilteredListView: View {
         let title = draftTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         let todayKey = DayClock.shared.todayKey
-        let todo = TodoItem(
-            title: title,
-            dayKey: todayKey,
-            projectID: project?.id,
-            tagIDs: tag.map { $0.id.uuidString } ?? "",
-            sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
-        )
-        guard ModelChanges.perform(in: modelContext, { modelContext.insert(todo) }) else { return }
+        guard DayBoardMutations.addCapturedTodo(
+            text: title, dayKey: todayKey, context: modelContext,
+            projectID: project?.id, tagIDs: tag.map { [$0.id] } ?? []
+        ) else { return }
         draftTitle = ""
     }
 
@@ -107,7 +103,7 @@ struct WorkspaceFilteredListView: View {
                 let doneTodos = matchingTodos.filter { $0.isDone }
                 let listedRoutines = matchingRoutines
 
-                if openTodos.isEmpty && doneTodos.isEmpty && listedRoutines.isEmpty {
+                if openTodos.isEmpty && doneTodos.isEmpty && listedRoutines.isEmpty && matchingSubtasks.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
                         systemImage: project != nil ? "folder" : "tag"
@@ -125,11 +121,36 @@ struct WorkspaceFilteredListView: View {
                         }
                     }
                     completedSection(doneTodos)
+                    subtaskSection
                 }
             }
             .padding(.vertical, 2)
         }
         .daybookScroll()
+    }
+
+    @ViewBuilder
+    private var subtaskSection: some View {
+        if !matchingSubtasks.isEmpty {
+            SectionStamp(title: "drawer.subtasks.title", icon: "checklist", count: matchingSubtasks.count)
+                .padding(.top, 8)
+            ForEach(matchingSubtasks) { subtask in
+                VStack(alignment: .leading, spacing: 3) {
+                    if let parent = subtask.todo {
+                        Button(parent.title) { navigation.inspectTask(parent.id) }
+                            .buttonStyle(.plain)
+                            .font(DaybookType.caption)
+                            .foregroundStyle(DaybookTheme.muted)
+                    }
+                    SubtaskRowView(
+                        subtask: subtask, onToggle: { DayBoardMutations.toggleSubtask(subtask) },
+                        onUpdateTitle: { DayBoardMutations.editSubtask(subtask, title: $0) },
+                        onDelete: { DayBoardMutations.deleteSubtask(subtask) }
+                    )
+                }
+                .padding(6)
+            }
+        }
     }
 
     @ViewBuilder
@@ -245,6 +266,10 @@ struct WorkspaceFilteredListView: View {
 
     private var matchingRoutines: [DailyRoutine] {
         Catalog.matchingRoutines(routines, project: project, tag: tag, projects: projects)
+    }
+
+    private var matchingSubtasks: [SubtaskItem] {
+        project == nil ? Catalog.matchingSubtasks(todos, tag: tag) : []
     }
 
     private var orderedVisibleIDs: [UUID] {

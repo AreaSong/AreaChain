@@ -56,6 +56,8 @@ enum ClipboardCapture {
         )
         let attachmentID = UUID()
         let saved = ModelChanges.perform(in: context) {
+            let names = TagSyntax.names(in: payload.title, includesDiaryTags: false)
+            todo.tagIDs = try InputTagResolver.merging(names, into: "", in: context)
             context.insert(todo)
             if payload.attachImage {
                 guard let image, let data = ImageBytes.png(from: image) else { throw ScreenCaptureFailure.encode }

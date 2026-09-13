@@ -53,6 +53,7 @@ struct SubtaskSnapshot: Equatable, Identifiable {
     var sortOrder: Int = 0
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var deletedAt: Date? = nil
+    var tagIDs: String = ""
 }
 
 struct TodoSnapshot: Equatable, Identifiable {

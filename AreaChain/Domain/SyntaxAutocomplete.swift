@@ -12,6 +12,13 @@ enum SyntaxTriggerKind: String, CaseIterable, Equatable, Sendable {
 enum SyntaxInputContext: Equatable, Sendable {
     case capture
     case search
+    case tags
+    case taskTags
+    case tagSearch
+
+    var isSearch: Bool { self == .search || self == .tagSearch }
+    var includesDiaryTags: Bool { self != .capture && self != .taskTags }
+    var supportsTaskAttributes: Bool { self == .capture || self == .search }
 }
 
 /// 语法触发信息
@@ -55,47 +62,21 @@ enum SyntaxAutocompleteEngine {
         let nsString = text as NSString
         let cursor = max(0, min(cursorLocation, nsString.length))
         guard cursor > 0 else { return nil }
-
-        var tokenStart = cursor - 1
-        while tokenStart >= 0 {
-            let char = nsString.character(at: tokenStart)
-            guard let scalar = UnicodeScalar(char) else { break }
-            if CharacterSet.whitespacesAndNewlines.contains(scalar) {
-                tokenStart += 1
-                break
-            }
-            if tokenStart == 0 {
-                break
-            }
-            tokenStart -= 1
-        }
-        tokenStart = max(0, tokenStart)
-        guard tokenStart < cursor else { return nil }
-
-        let tokenLength = cursor - tokenStart
-        let tokenRange = NSRange(location: tokenStart, length: tokenLength)
-        let token = nsString.substring(with: tokenRange)
-        guard let firstChar = token.first else { return nil }
-
-        let kind: SyntaxTriggerKind
-        switch firstChar {
-        case "#": kind = .tag
-        case "!": kind = .priority
-        case "@": kind = .time
-        default: return nil
-        }
-
-        if tokenStart > 0 {
-            let prevChar = nsString.character(at: tokenStart - 1)
-            if let prevScalar = UnicodeScalar(prevChar),
-               !CharacterSet.whitespacesAndNewlines.contains(prevScalar),
-               !CharacterSet.punctuationCharacters.contains(prevScalar) {
-                return nil
-            }
-        }
-
-        let query = String(token.dropFirst())
-        return SyntaxTrigger(kind: kind, query: query, range: tokenRange)
+        guard !TagSyntax.protectedRanges(in: text).contains(where: { NSLocationInRange(cursor - 1, $0) }) else { return nil }
+        let prefix = nsString.substring(to: cursor)
+        let pattern = ##"(?<![^\s(\[（【])([#!@])("(?:\\.|[^"\\\r\n])*"?|[\p{L}\p{M}\p{N}_:：.\-]*)$"##
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: prefix, range: NSRange(location: 0, length: cursor)),
+              let kind = SyntaxTriggerKind(rawValue: nsString.substring(with: match.range(at: 1))) else { return nil }
+        let rawQuery = nsString.substring(with: match.range(at: 2))
+        let query = rawQuery.hasPrefix("\"")
+            ? String(rawQuery.dropFirst()).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
+            : rawQuery
+        var range = match.range
+        if kind == .tag, let whole = TagSyntax.tokens(in: text).first(where: {
+            $0.range.location == range.location && NSMaxRange($0.range) >= cursor
+        }) { range = whole.range }
+        return SyntaxTrigger(kind: kind, query: query, range: range)
     }
 
     // MARK: - 候选构建 (Candidates)
@@ -107,15 +88,23 @@ enum SyntaxAutocompleteEngine {
         case .tag:
             return tagCandidates(query: trigger.query, tags: availableTags, context: context)
         case .priority:
-            return priorityCandidates(query: trigger.query)
+            return context.supportsTaskAttributes ? priorityCandidates(query: trigger.query) : []
         case .time:
-            // 搜索解析尚不支持时刻条件，不能用补全暗示它已经生效。
-            return context == .search ? [] : timeCandidates(query: trigger.query)
+            guard context.supportsTaskAttributes else { return [] }
+            return timeCandidates(query: trigger.query).map { candidate in
+                guard context.isSearch else { return candidate }
+                return SyntaxCandidate(
+                    id: candidate.id, title: candidate.title, subtitle: "syntax.search.time",
+                    insertText: candidate.insertText, kind: .time
+                )
+            }
         }
     }
 
     private static func tagCandidates(query: String, tags: [String], context: SyntaxInputContext) -> [SyntaxCandidate] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard context.includesDiaryTags || !DiaryMemoTags.isPresetName(trimmed) else { return [] }
+        let tags = TagSyntax.uniqueNames(tags.filter { context.includesDiaryTags || !DiaryMemoTags.isPresetName($0) })
         var result: [SyntaxCandidate] = []
 
         let filteredTags: [String]
@@ -125,16 +114,16 @@ enum SyntaxAutocompleteEngine {
             filteredTags = tags.filter { $0.localizedCaseInsensitiveContains(trimmed) }
         }
 
-        let hasExactMatch = tags.contains { $0.caseInsensitiveCompare(trimmed) == .orderedSame }
+        let hasExactMatch = tags.contains { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(trimmed) }
         if !trimmed.isEmpty && !hasExactMatch {
             result.append(
                 SyntaxCandidate(
                     id: "new_tag_\(trimmed)",
                     title: "#\(trimmed)",
-                    subtitle: context == .search ? "syntax.search.tag" : "新建标签",
-                    insertText: "#\(trimmed) ",
+                    subtitle: context.isSearch ? "syntax.search.tag" : "syntax.tag.create.on.save",
+                    insertText: TagSyntax.spelling(for: trimmed) + " ",
                     kind: .tag,
-                    isCreation: context == .capture
+                    isCreation: !context.isSearch
                 )
             )
         }
@@ -144,8 +133,8 @@ enum SyntaxAutocompleteEngine {
                 SyntaxCandidate(
                     id: "tag_\(tag)",
                     title: "#\(tag)",
-                    subtitle: context == .search ? "syntax.search.tag" : "标签",
-                    insertText: "#\(tag) ",
+                    subtitle: context.isSearch ? "syntax.search.tag" : "标签",
+                    insertText: TagSyntax.spelling(for: tag) + " ",
                     kind: .tag
                 )
             )

@@ -147,6 +147,7 @@ final class SubtaskItem {
     var sortOrder: Int
     var createdAt: Date
     var deletedAt: Date?
+    var tagIDs: String = ""
     var todo: TodoItem?
 
     init(
@@ -156,6 +157,7 @@ final class SubtaskItem {
         sortOrder: Int = 0,
         createdAt: Date = .now,
         deletedAt: Date? = nil,
+        tagIDs: String = "",
         todo: TodoItem? = nil
     ) {
         self.id = id
@@ -164,6 +166,7 @@ final class SubtaskItem {
         self.sortOrder = sortOrder
         self.createdAt = createdAt
         self.deletedAt = deletedAt
+        self.tagIDs = tagIDs
         self.todo = todo
     }
 
@@ -176,7 +179,8 @@ final class SubtaskItem {
             isDone: isDone,
             sortOrder: sortOrder,
             createdAt: createdAt,
-            deletedAt: deletedAt
+            deletedAt: deletedAt,
+            tagIDs: tagIDs
         )
     }
 }

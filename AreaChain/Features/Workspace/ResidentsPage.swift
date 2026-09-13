@@ -37,9 +37,7 @@ struct ResidentsPage: View {
         let title = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !title.isEmpty else { return }
         let order = Catalog.nextSortOrder(routines.map(\.sortOrder))
-        if DayBoardMutations.persist(context: modelContext, {
-            modelContext.insert(DailyRoutine(title: title, sortOrder: order))
-        }) {
+        if DayBoardMutations.addCapturedRoutine(text: title, sortOrder: order, context: modelContext) {
             draft = ""
         }
     }
@@ -57,6 +55,7 @@ private struct ResidentEditorRow: View {
     var routine: DailyRoutine
 
     @State private var titleDraft = ""
+    @State private var titleFocused = false
     @State private var pickingTime = false
     @State private var pendingTrash: PendingTrash?
 
@@ -86,9 +85,17 @@ private struct ResidentEditorRow: View {
 
     private var titleRow: some View {
         HStack(spacing: 8) {
-            TextField("residents.rename", text: $titleDraft)
-                .textFieldStyle(.plain)
-                .onSubmit(saveTitle)
+            SyntaxTextField(
+                text: $titleDraft, placeholder: L10n.string("residents.rename", locale: locale),
+                focused: $titleFocused, onSubmit: saveTitle,
+                onEscape: {
+                    titleDraft = routine.title
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                }
+            )
+            .onChange(of: titleFocused) { _, focused in
+                if !focused { saveTitle() }
+            }
             Toggle("residents.enabled", isOn: enabledBinding)
                 .toggleStyle(.switch)
                 .labelsHidden()
@@ -166,10 +173,7 @@ private struct ResidentEditorRow: View {
             titleDraft = routine.title
             return
         }
-        DayBoardMutations.persist(context: modelContext) {
-            routine.title = next
-            titleDraft = next
-        }
+        if DayBoardMutations.editRoutineWithSyntax(routine, rawInput: next) { titleDraft = routine.title }
     }
 
     private func requestTrash() {

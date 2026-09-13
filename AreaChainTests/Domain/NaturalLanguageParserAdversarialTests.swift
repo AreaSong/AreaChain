@@ -120,7 +120,7 @@ struct NaturalLanguageParserAdversarialTests {
         #expect(parsed.notes == "- 补充架构图\n- 确认测试边界\nhttps://example.com/doc")
     }
 
-    @Test func multilinePreservesTokensInNotesWithoutParsingThem() {
+    @Test func multilinePreservesNotesAndCollectsTheirTags() {
         let input = """
         第一行标题
         第二行备注包含 #忽略标签 !p2 @16:00
@@ -128,7 +128,7 @@ struct NaturalLanguageParserAdversarialTests {
         """
         let parsed = NaturalLanguageParser.parse(input)
         #expect(parsed.cleanTitle == "第一行标题")
-        #expect(parsed.tagName == nil)
+        #expect(parsed.tagNames == ["忽略标签"])
         #expect(parsed.isImportant == false)
         #expect(parsed.isUrgent == false)
         #expect(parsed.remindMinutes == nil)

@@ -14,7 +14,7 @@ struct WorkspaceTodayView: View {
     @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var dayTick = Date()
     @State private var draftText = ""
-    @FocusState private var composerFocused: Bool
+    @State private var composerFocused = false
 
     private var todayKey: String {
         _ = dayTick
@@ -54,9 +54,7 @@ struct WorkspaceTodayView: View {
                 availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
                 onSubmit: addTodo,
                 onCommandReturn: {}
-            ) {
-                CaptureTokenBar(text: draftText)
-            }
+            )
 
             TasksPage(
                 todayKey: todayKey,

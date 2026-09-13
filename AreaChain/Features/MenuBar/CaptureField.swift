@@ -12,7 +12,7 @@ struct CaptureField: View {
     @Environment(\.locale) private var locale
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Binding var text: String
-    var focus: FocusState<Bool>.Binding
+    var focus: Binding<Bool>
     var onTodo: () -> Void
     var onDiary: () -> Void
     var allowsDiaryShortcut = true

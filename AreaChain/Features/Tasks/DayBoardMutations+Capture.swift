@@ -3,19 +3,37 @@ import SwiftData
 
 extension DayBoardMutations {
     @discardableResult
-    static func addCapturedTodo(text: String, dayKey: String, context: ModelContext) -> Bool {
+    static func addCapturedTodo(
+        text: String, dayKey: String, context: ModelContext, projectID: UUID? = nil, tagIDs: [UUID] = []
+    ) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
         let saved = ModelChanges.perform(in: context) {
-            let tag = try parsed.tagName.flatMap { try catalogRepo(for: context).resolveTaskTag(name: $0) }
+            let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(tagIDs), in: context)
             let params = CreateTodoParams(
                 title: parsed.cleanTitle, dayKey: dayKey, notes: parsed.notes,
                 remindMinutes: parsed.remindMinutes, isImportant: parsed.isImportant,
-                isUrgent: parsed.isUrgent, tagIDs: tag.map { [$0.id] } ?? [],
+                isUrgent: parsed.isUrgent, projectID: projectID, tagIDs: TagIDList.parse(ids),
                 sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
             )
             _ = try taskRepo(for: context).addTodo(params)
+        }
+        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
+        return saved
+    }
+
+    @discardableResult
+    static func addCapturedRoutine(text: String, sortOrder: Int, context: ModelContext) -> Bool {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return false }
+        let parsed = NaturalLanguageParser.parseTaskCapture(text)
+        let saved = ModelChanges.perform(in: context) {
+            let ids = try InputTagResolver.resolve(parsed.tagNames, in: context)
+            _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(
+                title: parsed.cleanTitle, sortOrder: sortOrder, remindMinutes: parsed.remindMinutes,
+                tagIDs: ids, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent, notes: parsed.notes
+            ))
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -33,12 +51,8 @@ extension DayBoardMutations {
                 try repo.setPriority(id: todo.id, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent)
             }
             if let minutes = parsed.remindMinutes { try repo.setRemind(id: todo.id, minutes: minutes) }
-            if let name = parsed.tagName {
-                guard let tag = try catalogRepo(for: todo.modelContext).resolveTaskTag(name: name) else {
-                    throw RepositoryError.invalidArgument("无效标签")
-                }
-                if !TagIDList.contains(todo.tagIDs, tag.id) { try repo.toggleTag(id: todo.id, tagID: tag.id) }
-            }
+            let context = todo.modelContext ?? Persistence.session.container.mainContext
+            todo.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -56,11 +70,39 @@ extension DayBoardMutations {
                 try repo.setPriority(id: routine.id, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent)
             }
             if let minutes = parsed.remindMinutes { try repo.setRemind(id: routine.id, minutes: minutes) }
-            if let name = parsed.tagName {
-                guard let tag = try catalogRepo(for: routine.modelContext).resolveTaskTag(name: name) else {
-                    throw RepositoryError.invalidArgument("无效标签")
-                }
-                if !TagIDList.contains(routine.tagIDs, tag.id) { try repo.toggleTag(id: routine.id, tagID: tag.id) }
+            let context = routine.modelContext ?? Persistence.session.container.mainContext
+            routine.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+        }
+        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
+        return saved
+    }
+
+    static func saveNotes(_ notes: String, for todo: TodoItem) -> Bool {
+        let context = todo.modelContext ?? Persistence.session.container.mainContext
+        let parsed = NaturalLanguageParser.parseTaskNotes(notes)
+        let saved = ModelChanges.perform(in: context) {
+            todo.notes = notes
+            todo.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
+            if let time = parsed.remindMinutes { todo.remindMinutes = time }
+            if parsed.hasPriorityToken {
+                todo.isImportant = parsed.isImportant
+                todo.isUrgent = parsed.isUrgent
+            }
+        }
+        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
+        return saved
+    }
+
+    static func saveNotes(_ notes: String, for routine: DailyRoutine) -> Bool {
+        let context = routine.modelContext ?? Persistence.session.container.mainContext
+        let parsed = NaturalLanguageParser.parseTaskNotes(notes)
+        let saved = ModelChanges.perform(in: context) {
+            routine.notes = notes
+            routine.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+            if let time = parsed.remindMinutes { routine.remindMinutes = time }
+            if parsed.hasPriorityToken {
+                routine.isImportant = parsed.isImportant
+                routine.isUrgent = parsed.isUrgent
             }
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
