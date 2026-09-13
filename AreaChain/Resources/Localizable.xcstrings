@@ -1,6 +1,27 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "diary.quick.input": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Note content" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "手记内容" } }
+      }
+    },
+    "diary.quick.save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save note" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存手记" } }
+      }
+    },
+    "diary.quick.save.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save note (⌘Return); Return inserts a new line" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存手记（⌘Return）；回车换行" } }
+      }
+    },
     "diary.quick.placeholder": {
       "extractionState": "manual",
       "localizations": {

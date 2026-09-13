@@ -33,7 +33,7 @@ struct DiaryPage: View {
     @State private var pendingTrash: PendingTrash?
     @State private var composerFocused = false
     @State private var searchFocused = false
-    @State private var composerStatus: LocalizedStringKey?
+    @State private var composerStatus: String?
     @Bindable private var boardSelection = BoardSelection.shared
 
     init(

@@ -5,7 +5,8 @@ final class DaybookAppKitTextView: NSTextView {
     var onCommandReturn: (() -> Void)?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        // 大写锁定等状态不改变快捷键含义，单行和多行输入保持一致。
+        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
         if flags == .command, event.keyCode == 36, window?.firstResponder === self {
             if !hasMarkedText() { onCommandReturn?() }
             return true

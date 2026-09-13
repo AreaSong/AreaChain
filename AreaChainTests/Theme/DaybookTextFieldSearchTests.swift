@@ -5,7 +5,8 @@ import Testing
 
 @MainActor
 struct DaybookTextFieldSearchTests {
-    @Test func commandReturnOnlyReachesTheFocusedInput() throws {
+    @Test(arguments: [false, true])
+    func commandReturnOnlyReachesTheFocusedInput(capsLock: Bool) throws {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 300, height: 120), styleMask: [.titled], backing: .buffered, defer: false)
         defer { window.orderOut(nil) }
         var captureCalled = false
@@ -21,7 +22,7 @@ struct DaybookTextFieldSearchTests {
         window.makeKeyAndOrderFront(nil)
         window.makeFirstResponder(search)
         let event = try #require(NSEvent.keyEvent(
-            with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+            with: .keyDown, location: .zero, modifierFlags: capsLock ? [.command, .capsLock] : .command, timestamp: 0,
             windowNumber: window.windowNumber, context: nil, characters: "\r",
             charactersIgnoringModifiers: "\r", isARepeat: false, keyCode: 36
         ))

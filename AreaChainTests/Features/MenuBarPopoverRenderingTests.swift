@@ -65,6 +65,27 @@ struct MenuBarPopoverRenderingTests {
         #expect(diaryEditor(in: view)?.string == "查资料前留下的手记草稿")
     }
 
+    @Test func emptyFooterSearchCannotSubmitTheNoteDraft() async throws {
+        let container = try fixture()
+        let toolbar = MenuBarToolbarState()
+        let window = host(toolbar: toolbar, container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        try await selectTab(.diary, in: window)
+        let editor = try #require(diaryEditor(in: view))
+        window.makeFirstResponder(editor)
+        editor.insertText("搜索框不能提交这条手记", replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        _ = try await focusSearch(toolbar, in: view)
+        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
+            windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
+            isARepeat: false, keyCode: 36))
+        #expect(window.performKeyEquivalent(with: event))
+        #expect(diaryEditor(in: view)?.string == "搜索框不能提交这条手记")
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
+    }
+
     @Test(arguments: ["zh-Hans", "en"], [ColorScheme.light, .dark])
     func diaryUsesOnlyFooterSearchAndFilters(locale: String, scheme: ColorScheme) async throws {
         let container = try fixture()
@@ -193,10 +214,8 @@ struct MenuBarPopoverRenderingTests {
         parent.makeFirstResponder(editor)
         editor.insertText("把这条记录放在旁边，边工作边参照。", replacementRange: NSRange(location: 0, length: 0))
         try await settle(view)
-        let scroll = try #require(editor.enclosingScrollView)
-        let frame = scroll.convert(scroll.bounds, to: nil)
         let before = Set(DiaryWindows.shared.hostedWindows.map(ObjectIdentifier.init))
-        try await clickAndSettle(at: NSPoint(x: view.bounds.width - 100, y: frame.minY - 23), in: parent)
+        try await clickAndSettle(at: NativeSyntaxUI.center("syntax.diary.popout", in: parent), in: parent)
         let child = try #require(DiaryWindows.shared.hostedWindows.first { !before.contains(ObjectIdentifier($0)) })
         defer { child.close() }
         let controller = try #require(child.delegate as? DiaryWindowController)

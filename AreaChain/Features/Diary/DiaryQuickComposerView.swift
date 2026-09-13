@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// 灵感手记快捷编辑器
@@ -9,19 +10,24 @@ struct DiaryQuickComposerView: View {
     @Binding var selectedTagIDs: Set<UUID>
     var onSubmit: () -> Void
     var isCompact = false
-    var status: LocalizedStringKey? = nil
+    var status: String? = nil
     var onOpenWindow: (() -> Void)? = nil
+    @State private var hostWindow: NSWindow?
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: isCompact ? 6 : 8) {
+        if isCompact { compactInputRow } else { workspaceComposer }
+    }
+
+    private var workspaceComposer: some View {
+        VStack(alignment: .leading, spacing: 8) {
             editorInputView.zIndex(20)
-            if isCompact { compactActions } else { tagAndActionRow }
+            tagAndActionRow
         }
-        .padding(isCompact ? 8 : 10)
+        .padding(10)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .fill(DaybookTheme.hoverFill.opacity(0.5))
@@ -33,13 +39,70 @@ struct DiaryQuickComposerView: View {
         )
     }
 
+    private var compactInputRow: some View {
+        let focused = focused.wrappedValue
+        return HStack(alignment: .center, spacing: 8) {
+            statusIcon
+            SyntaxTextEditor(text: $text, focused: self.focused,
+                             placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: submitCompact)
+                .frame(height: 44)
+                .accessibilityLabel("diary.quick.input")
+            if let onOpenWindow {
+                Button {
+                    guard canSubmit, !hasMarkedText else { return }
+                    onOpenWindow()
+                } label: {
+                    Image(systemName: "arrow.up.forward.square").frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain).disabled(!canSubmit)
+                .foregroundStyle(DaybookTheme.muted.opacity(canSubmit ? 0.6 : 0.25))
+                .help("diary.window.continue").accessibilityLabel("diary.window.continue")
+                .background(SyntaxViewAnchor("syntax.diary.popout"))
+            }
+            CommandReturnButton(enabled: canSubmit, label: "diary.quick.save",
+                                help: "diary.quick.save.help", action: submitCompact)
+            // ⌘Return 由焦点原生编辑器处理，避免全局按钮快捷键抢走搜索或输入法的按键。
+        }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03)))
+        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
+            .stroke(focused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.4), lineWidth: focused ? 1.1 : 0.6))
+        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
+            .stroke(focused ? DaybookTheme.stamp.opacity(0.16) : Color.clear, lineWidth: 2).padding(-2))
+        .fixedSize(horizontal: false, vertical: true)
+        .background(KeyWindowHost { hostWindow = $0 })
+        .background(SyntaxViewAnchor("syntax.diary.composer"))
+    }
+
+    private var statusIcon: some View {
+        let saved = status == "diary.window.saved"
+        let failed = status != nil && !saved
+        return Image(systemName: status == nil ? "plus" : (saved ? "checkmark" : "exclamationmark.circle"))
+            .font(.system(size: 11.5, weight: .semibold))
+            .foregroundStyle(failed ? DaybookTheme.destructive : (focused.wrappedValue || saved ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.8)))
+            .frame(width: 14)
+            .help(LocalizedStringKey(status ?? "diary.quick.input"))
+            .accessibilityLabel(LocalizedStringKey(status ?? "diary.quick.input"))
+            .accessibilityHidden(status == nil)
+    }
+
+    private var hasMarkedText: Bool {
+        (hostWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
+    }
+
+    private func submitCompact() {
+        guard canSubmit, !hasMarkedText else { return }
+        onSubmit()
+    }
+
     private var editorInputView: some View {
         SyntaxTextEditor(
             text: $text, focused: focused,
-            placeholder: L10n.string(isCompact ? "diary.quick.placeholder" : "diary.composer.placeholder", locale: locale),
+            placeholder: L10n.string("diary.composer.placeholder", locale: locale),
             onSubmit: onSubmit
         )
-        .frame(minHeight: isCompact ? 44 : 64, maxHeight: isCompact ? 44 : 100)
+        .frame(minHeight: 64, maxHeight: 100)
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -49,27 +112,6 @@ struct DiaryQuickComposerView: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .stroke(focused.wrappedValue ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: focused.wrappedValue ? 1.4 : 0.8)
         )
-    }
-
-    private var compactActions: some View {
-        HStack(spacing: 8) {
-            if let status {
-                Text(status).font(DaybookType.caption).lineLimit(1)
-            } else {
-                Text("⌘↩").font(DaybookType.caption).accessibilityHidden(true)
-            }
-            Spacer(minLength: 0)
-            if let onOpenWindow {
-                Button(action: onOpenWindow) {
-                    Image(systemName: "arrow.up.forward.square").frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain).disabled(!canSubmit)
-                .help("diary.window.continue").accessibilityLabel("diary.window.continue")
-            }
-            submitButton
-        }
-        .frame(height: 26)
-        .foregroundStyle(DaybookTheme.muted)
     }
 
     private var tagAndActionRow: some View {
@@ -132,7 +174,7 @@ struct DiaryQuickComposerView: View {
             HStack(spacing: 4) {
                 Image(systemName: "square.and.pencil")
                     .font(.system(size: 10, weight: .semibold))
-                Text(isCompact ? "common.save" : "diary.composer.save")
+                Text("diary.composer.save")
                     .font(.system(size: 11.5, weight: .semibold))
             }
             .padding(.horizontal, 10)

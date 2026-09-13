@@ -18,9 +18,6 @@ struct CaptureField: View {
     var allowsDiaryShortcut = true
 
     @State private var autocomplete = SyntaxAutocompleteState()
-    @State private var isCommandPressed: Bool = false
-    @State private var eventMonitor: Any?
-    @State private var isHoveringDiary: Bool = false
 
     private var availableTags: [String] {
         allTags.filter { $0.deletedAt == nil }.map(\.name)
@@ -35,18 +32,6 @@ struct CaptureField: View {
         .syntaxSuggestions(autocomplete)
         .animation(DaybookMotion.interactive, value: focus.wrappedValue)
         .daybookHideInputChrome()
-        .onAppear {
-            eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
-                isCommandPressed = event.modifierFlags.contains(.command)
-                return event
-            }
-            isCommandPressed = NSEvent.modifierFlags.contains(.command)
-        }
-        .onDisappear {
-            if let monitor = eventMonitor {
-                NSEvent.removeMonitor(monitor)
-            }
-        }
     }
 
     private var inputRow: some View {
@@ -93,35 +78,7 @@ struct CaptureField: View {
     }
 
     private var diaryShortcutButton: some View {
-        let isActive = (canSubmit && isCommandPressed) || (canSubmit && isHoveringDiary)
-        let iconColor = isActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(canSubmit ? 0.6 : 0.25)
-        let bgColor = isActive ? DaybookTheme.stamp.opacity(0.12) : Color.clear
-        
-        return Button(action: onDiary) {
-            HStack(spacing: 2.5) {
-                Image(systemName: "command")
-                    .font(.system(size: 10.5, weight: isActive ? .bold : .semibold))
-                Image(systemName: "return")
-                    .font(.system(size: 10, weight: isActive ? .bold : .semibold))
-            }
-            .foregroundStyle(iconColor)
-            .padding(.horizontal, 5)
-            .padding(.vertical, 3.5)
-            .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(bgColor)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .focusable(false)
-        .disabled(!canSubmit)
-        .keyboardShortcut(allowsDiaryShortcut ? KeyboardShortcut(.return, modifiers: [.command]) : nil)
-        .help("capture.diary")
-        .onHover { hovering in
-            isHoveringDiary = hovering
-        }
-        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: isActive)
-        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: canSubmit)
+        CommandReturnButton(enabled: canSubmit, label: "capture.diary", action: onDiary)
+            .keyboardShortcut(allowsDiaryShortcut ? KeyboardShortcut(.return, modifiers: [.command]) : nil)
     }
 }
