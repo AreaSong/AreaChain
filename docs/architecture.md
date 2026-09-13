@@ -78,8 +78,8 @@ AreaChain/
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
 - **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
-- **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。
-- **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力；只提示当前对象支持的语法。`SyntaxTextField` / `SyntaxTextEditor` 封装单行和多行原生输入，保护组合文本、光标和快捷键归属。`SyntaxAutocompleteState` 弱引用当前原生编辑器，鼠标与键盘补全共用原生文本替换，保留撤销记录；列表快捷键不抢占语法编辑器的 Esc 或输入法组合文本。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
+- **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。浮层「任务 / 手记」共用底栏入口；`DiaryPage` 通过 `Binding` 直接使用底栏的标签选择，不再镜像本地筛选状态，只有工作台保留页内搜索与分类栏。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。
+- **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力。`SyntaxTextField` / `SyntaxTextEditor` 保留原生组合文本、光标及撤销。`SyntaxOverlay` 在菜单栏、工作台和检查器根部消费输入锚点，统一候选和只读属性详情，自动上下避让，不参与正文排版；就近消费避免嵌套宿主重复呈现。`CaptureAttributesButton` 在新增输入栏内预留固定宽度，由原文解析「属性 N」，不新增第二套可编辑状态。浮层保留来源语言和配色，Esc 先关闭浮层，不提前触发失焦保存。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 

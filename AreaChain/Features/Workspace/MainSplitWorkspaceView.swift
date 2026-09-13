@@ -47,6 +47,7 @@ struct MainSplitWorkspaceView: View {
         .sheet(isPresented: $isAddingTag) {
             addTagSheet
         }
+        .syntaxOverlayHost()
     }
 
     private var sidebarColumn: some View {
@@ -93,6 +94,13 @@ struct MainSplitWorkspaceView: View {
     }
 
     private func handleEscapeKey() -> KeyPress.Result {
+        if let editor = NSApp.keyWindow?.firstResponder as? NSTextView {
+            if editor.hasMarkedText() { return .ignored }
+            if let state = SyntaxAutocompleteState.forResponder(editor), state.hasPresentation {
+                state.dismiss()
+                return .handled
+            }
+        }
         if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
             BoardSelection.shared.markEscapeCancelsEdits()
             NSApp.keyWindow?.makeFirstResponder(nil)

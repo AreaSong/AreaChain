@@ -32,7 +32,24 @@ struct AppPreferencesTests {
         #expect(L10n.string("empty.filter", locale: Locale(identifier: "zh-Hans")) == "这个筛选下没有任务。")
         #expect(L10n.string("empty.filter", locale: Locale(identifier: "en")) == "Nothing matches this filter.")
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "zh-Hans")) == "「密码」「小巧思」「日记」是手记分类，不能当作待办标签。")
-        #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are diary categories, not task tags.")
+        #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are note categories, not task tags.")
+    }
+
+    @Test func noteEntryPointsUseConsistentNamesWithoutRenamingJournalCategory() {
+        let zh = Locale(identifier: "zh-Hans")
+        let en = Locale(identifier: "en")
+        let keys: [String.LocalizationValue] = ["tab.diary", "capture.diary", "trash.kind.diary", "attachments.owner.diary"]
+        for key in keys {
+            #expect(L10n.string(key, locale: zh) == "手记")
+            #expect(L10n.string(key, locale: en) == "Notes")
+        }
+        #expect(L10n.string("search.kind.diary", locale: zh) == "手记")
+        #expect(L10n.string("search.kind.diary", locale: en) == "Note")
+        #expect(L10n.string("手记 (⌘→)", locale: zh) == "手记 (⌘→)")
+        #expect(L10n.string("手记 (⌘→)", locale: en) == "Notes (⌘→)")
+        #expect(L10n.string("直接存入手记", locale: zh) == "直接存入手记")
+        #expect(L10n.string("直接存入手记", locale: en) == "Save to notes")
+        #expect(DiaryMemoTags.journal == "日记")
     }
 
     @Test @MainActor func writesLanguageAndAppearanceToInjectedDefaults() {

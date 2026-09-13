@@ -193,6 +193,7 @@ struct DaybookComposer<Accessory: View>: View {
 
                 field
 
+                CaptureAttributesButton(text: text, knownTags: completionTags, state: autocomplete)
                 ComposerAddButton(enabled: canSubmit, action: onSubmit)
             }
             .padding(.horizontal, 12)
@@ -208,20 +209,8 @@ struct DaybookComposer<Accessory: View>: View {
                         lineWidth: isFocused ? 1.4 : 0.8
                     )
             )
-
-            ZStack(alignment: .topLeading) {
-                VStack(alignment: .leading, spacing: 3) {
-                    CaptureTokenBar(text: text)
-                    accessory
-                }
-                if autocomplete.isActive {
-                    SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                        autocomplete.commit(candidate)
-                    }
-                    .padding(.top, 4)
-                    .zIndex(100)
-                }
-            }
+            .syntaxSuggestions(autocomplete)
+            accessory
         }
         .daybookHideInputChrome()
     }
@@ -233,57 +222,15 @@ struct DaybookComposer<Accessory: View>: View {
             placeholder: L10n.string(String.LocalizationValue(stringLiteral: placeholder), locale: locale),
             focus: focus ?? $fallbackFocus,
             autocomplete: autocomplete,
-            availableTags: availableTags.isEmpty ? Catalog.liveTaskTags(tags).map(\.name) : availableTags,
+            availableTags: completionTags,
             onSubmit: onSubmit,
             onCommandReturn: onCommandReturn,
             allowsShiftNewline: allowsShiftNewline
         )
     }
-}
 
-struct CaptureTokenBar: View {
-    var text: String
-    @Environment(\.locale) private var locale
-
-    var body: some View {
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        Group {
-            if parsed.hasTokens && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    if let time = parsed.timeLabel {
-                        PillBadge(
-                            title: L10n.format("workspace.remind.suffix", locale: locale, time),
-                            icon: "clock.fill",
-                            color: DaybookTheme.stamp,
-                            isSelected: true
-                        )
-                    }
-                    ForEach(parsed.tagNames, id: \.self) { tag in
-                        PillBadge(
-                            title: "#\(tag)",
-                            icon: "tag.fill",
-                            color: Color(nsColor: .systemIndigo),
-                            isSelected: true
-                        )
-                    }
-                    if let priority = parsed.priorityLabel {
-                        PillBadge(
-                            title: L10n.string(String.LocalizationValue(stringLiteral: priority), locale: locale),
-                            icon: "exclamationmark.circle.fill",
-                            color: parsed.isImportant && parsed.isUrgent ? DaybookTheme.destructive : DaybookTheme.stamp,
-                            isSelected: true
-                        )
-                    }
-                    Spacer(minLength: 0)
-                }
-                }
-                .frame(height: 24)
-                .padding(.horizontal, 4)
-                .padding(.top, 1)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
+    private var completionTags: [String] {
+        availableTags.isEmpty ? Catalog.liveTaskTags(tags).map(\.name) : availableTags
     }
 }
 

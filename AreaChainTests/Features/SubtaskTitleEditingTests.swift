@@ -88,6 +88,7 @@ private final class SubtaskEditorHarness {
         .frame(width: 320, height: 70)
         .modelContainer(container)
         .transaction { $0.disablesAnimations = true }
+        .syntaxOverlayHost()
         window.isReleasedWhenClosed = false
         window.contentView = NSHostingView(rootView: content)
         NSApp.activate(ignoringOtherApps: true)
@@ -110,7 +111,7 @@ private final class SubtaskEditorHarness {
                     timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
                     context: nil, eventNumber: 0, clickCount: count, pressure: 1
                 ))
-                window.sendEvent(event)
+                NSApp.sendEvent(event)
             }
         }
         try await settle()
@@ -123,7 +124,8 @@ private final class SubtaskEditorHarness {
                 to: directory.appendingPathComponent("subtask-title-edit-failure.png"), options: .atomic
             )
         }
-        let textField = try #require(self.field(in: window.contentView))
+        let textField = try #require(self.field(in: window.contentView),
+                                     "key=\(window.isKeyWindow), active=\(NSApp.isActive), attempted=\(attemptedTitles)")
         window.makeFirstResponder(textField)
         let editor = try #require(textField.currentEditor() as? NSTextView)
         editor.selectAll(nil)
@@ -142,7 +144,7 @@ private final class SubtaskEditorHarness {
             context: nil, characters: character, charactersIgnoringModifiers: character,
             isARepeat: false, keyCode: key == .return ? 36 : 53
         ))
-        window.sendEvent(event)
+        NSApp.sendEvent(event)
         try await settle()
     }
 

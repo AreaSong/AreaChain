@@ -134,7 +134,7 @@ struct SyntaxExpandableCard: View {
                     ? "syntax.search.time.help" : "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
             }
             if context == .capture {
-                syntaxRow(token: "⌘↩", title: "直接存入日记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
+                syntaxRow(token: "⌘↩", title: "直接存入手记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
                 syntaxRow(token: "⇧↩", title: "换行输入备注", desc: "Shift + 回车换行，输入详情说明", color: DaybookTheme.muted)
             }
         }

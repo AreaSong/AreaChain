@@ -39,18 +39,6 @@ struct SyntaxTextField: View {
         )
         .frame(minHeight: fontSize + 6)
         .accessibilityLabel(placeholder)
-        .overlay(alignment: .topLeading) {
-            if autocomplete.isActive {
-                SyntaxAutocompletePopup(state: autocomplete, onCommit: complete)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .offset(y: fontSize + 12)
-            }
-        }
-        .zIndex(autocomplete.isActive ? 100 : 0)
-    }
-
-    private func complete(_ candidate: SyntaxCandidate) {
-        guard autocomplete.commit(candidate) else { return }
-        focused = true
+        .syntaxSuggestions(autocomplete)
     }
 }

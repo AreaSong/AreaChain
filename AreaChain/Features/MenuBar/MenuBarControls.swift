@@ -58,7 +58,7 @@ struct DaybookQuietTabBar: View {
         .buttonStyle(.plain)
         .accessibilityLabel(item.title)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .help(item == .tasks ? Text("任务 (⌘←)") : Text("日记 (⌘→)"))
+        .help(item == .tasks ? Text("任务 (⌘←)") : Text("手记 (⌘→)"))
     }
 }
 

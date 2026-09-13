@@ -243,7 +243,8 @@ struct TaskRowInteractionTests {
             .frame(width: size.width, height: size.height)
             .background(DaybookTheme.paper)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
-            .preferredColorScheme(scheme))
+            .preferredColorScheme(scheme)
+            .syntaxOverlayHost())
         hosting.safeAreaRegions = []
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered, defer: false)
         window.title = "AreaChain 任务交互测试"

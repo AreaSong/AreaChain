@@ -31,20 +31,8 @@ struct CaptureField: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            inputRow
-            ZStack(alignment: .topLeading) {
-                CaptureTokenBar(text: text)
-                if autocomplete.isActive {
-                    SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                        autocomplete.commit(candidate)
-                    }
-                    .padding(.top, 4)
-                    .zIndex(100)
-                }
-            }
-        }
-        .animation(DaybookMotion.interactive, value: text)
+        inputRow
+        .syntaxSuggestions(autocomplete)
         .animation(DaybookMotion.interactive, value: focus.wrappedValue)
         .daybookHideInputChrome()
         .onAppear {
@@ -84,6 +72,7 @@ struct CaptureField: View {
             )
             .accessibilityLabel("capture.placeholder.today")
 
+            CaptureAttributesButton(text: text, knownTags: availableTags, state: autocomplete)
             ComposerAddButton(enabled: canSubmit, action: onTodo)
             diaryShortcutButton
         }

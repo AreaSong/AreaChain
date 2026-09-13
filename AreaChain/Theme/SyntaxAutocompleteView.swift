@@ -4,12 +4,18 @@ import SwiftUI
 @Observable
 @MainActor
 final class SyntaxAutocompleteState {
+    let id = UUID()
     let context: SyntaxInputContext
     var isActive: Bool = false
     var trigger: SyntaxTrigger? = nil
     var candidates: [SyntaxCandidate] = []
     var selectedIndex: Int = 0
+    var showsAttributes = false
+    var presentedAt: TimeInterval = 0
     @ObservationIgnored weak var editor: NSTextView?
+    @ObservationIgnored var restoreEditing: (() -> Void)?
+
+    var hasPresentation: Bool { isActive || showsAttributes }
 
     init(context: SyntaxInputContext = .capture) {
         self.context = context
@@ -30,6 +36,8 @@ final class SyntaxAutocompleteState {
         trigger = detected
         candidates = items
         selectedIndex = max(0, min(selectedIndex, items.count - 1))
+        if !isActive { presentedAt = ProcessInfo.processInfo.systemUptime }
+        showsAttributes = false
         isActive = true
     }
 
@@ -67,15 +75,35 @@ final class SyntaxAutocompleteState {
 
     func dismiss() {
         isActive = false
+        showsAttributes = false
         trigger = nil
         candidates = []
         selectedIndex = 0
+    }
+
+    func showAttributes() {
+        guard editor?.hasMarkedText() != true else { return }
+        restoreEditing?()
+        dismiss()
+        showsAttributes = true
+        presentedAt = ProcessInfo.processInfo.systemUptime
+    }
+
+    static func forResponder(_ responder: NSResponder?) -> SyntaxAutocompleteState? {
+        guard let editor = responder as? NSTextView else { return nil }
+        if let coordinator = editor.delegate as? DaybookTextEditor.Coordinator { return coordinator.parent.autocomplete }
+        guard let field = (editor.delegate as AnyObject?) as? DaybookAppKitTextField,
+              let coordinator = field.delegate as? DaybookTextField.Coordinator else { return nil }
+        return coordinator.parent.autocomplete
     }
 }
 
 struct SyntaxAutocompletePopup: View {
     @Bindable var state: SyntaxAutocompleteState
     var growsUpward = false
+    var width: CGFloat = 240
+    var maxHeight: CGFloat = 205
+    var motionDisabled = false
     var onCommit: (SyntaxCandidate) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -87,7 +115,7 @@ struct SyntaxAutocompletePopup: View {
                     .background(DaybookTheme.rule.opacity(0.5))
                 footerGuide
             }
-            .frame(width: 240)
+            .frame(width: width)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .fill(DaybookTheme.paper)
@@ -97,9 +125,10 @@ struct SyntaxAutocompletePopup: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
             )
-            .transition(reduceMotion ? .identity : .opacity.combined(with: .scale(
+            .transition((reduceMotion || motionDisabled) ? .identity : .opacity.combined(with: .scale(
                 scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading
             )))
+            .accessibilityElement(children: .contain)
         }
     }
 
@@ -113,6 +142,7 @@ struct SyntaxAutocompletePopup: View {
                         }
                         .buttonStyle(.plain)
                         .focusable(false)
+                        .background(SyntaxViewAnchor("syntax.candidate." + item.id))
                         .accessibilityIdentifier("syntax.candidate." + item.id)
                         .accessibilityAddTraits(index == state.selectedIndex ? [.isSelected] : [])
                         .id(item.id)
@@ -120,10 +150,10 @@ struct SyntaxAutocompletePopup: View {
                 }
                 .padding(4)
             }
-            .frame(height: min(180, CGFloat(state.candidates.count) * 29 + 8))
+            .frame(height: max(0, min(180, CGFloat(state.candidates.count) * 29 + 8, maxHeight - 25)))
             .onChange(of: state.selectedIndex) { _, newIndex in
                 if newIndex >= 0 && newIndex < state.candidates.count {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
                         proxy.scrollTo(state.candidates[newIndex].id, anchor: .center)
                     }
                 }

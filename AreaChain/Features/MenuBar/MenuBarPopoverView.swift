@@ -146,19 +146,7 @@ struct MenuBarPopoverView: View {
                 .zIndex(21)
             }
         }
-        .overlayPreferenceValue(MenuBarSearchAnchorKey.self) { anchor in
-            GeometryReader { proxy in
-                if let anchor, toolbar.searchIsFocused, toolbar.autocomplete.isActive,
-                   !toolbar.isFiltering, !showingSyntaxHelp {
-                    let bounds = proxy[anchor]
-                    // 候选挂在浮层根部，避免底栏的窄命中区域挡住上方候选的鼠标事件。
-                    MenuBarSearchSuggestions(toolbar: toolbar)
-                        .frame(width: 240)
-                        .frame(width: 240, height: max(0, bounds.minY - 6), alignment: .bottomLeading)
-                        .offset(x: max(12, min(bounds.minX, proxy.size.width - 252)))
-                }
-            }
-        }
+        .syntaxOverlayHost(enabled: !showingSyntaxHelp)
         .background(KeyWindowHost { hostWindow = $0 })
         .animation(DaybookMotion.interactive(reduceMotion), value: showingSyntaxHelp)
         .onAppear {
@@ -372,7 +360,7 @@ struct MenuBarPopoverView: View {
         }
         guard !toolbar.searchIsFocused else { return event }
 
-        // keyCode 123: Left Arrow (← 任务), 124: Right Arrow (→ 日记)
+        // keyCode 123: Left Arrow (← 任务), 124: Right Arrow (→ 手记)
         if event.keyCode == 123 {
             if tab != .tasks {
                 withAnimation(DaybookMotion.animation(reduceMotion)) {

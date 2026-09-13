@@ -37,6 +37,7 @@ struct TaskDetailDrawer: View {
                 DaybookTheme.paper.opacity(0.4)
             }
         }
+        .syntaxOverlayHost()
         .confirmMoveToTrash($pendingTrash)
         .popover(item: $previewAttachment) { item in
             attachmentPreviewSheet(item)
@@ -232,4 +233,3 @@ struct DrawerSectionGroup<Content: View>: View {
         }
     }
 }
-

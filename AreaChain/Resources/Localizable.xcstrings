@@ -1,6 +1,41 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "syntax.attributes.count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Attrs %@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "属性 %@" } }
+      }
+    },
+    "syntax.attributes.accessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preview %lld recognized attributes" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预览 %lld 项已识别属性" } }
+      }
+    },
+    "syntax.attributes.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preview tags, priority and reminder without saving" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "预览标签、优先级和提醒，不会保存内容" } }
+      }
+    },
+    "syntax.attributes.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recognized attributes" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已识别属性" } }
+      }
+    },
+    "syntax.attributes.readonly": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Preview only. Edit the input to make changes." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "仅预览；修改输入原文即可调整属性。" } }
+      }
+    },
     "syntax.tag.create.on.save": {
       "extractionState": "manual",
       "localizations": {
@@ -641,7 +676,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日日记：共 %lld 篇"
+            "value": "今日手记：共 %lld 条"
           }
         }
       }
@@ -680,7 +715,7 @@
         }
       }
     },
-    "日记 (⌘→)": {
+    "手记 (⌘→)": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -692,7 +727,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记 (⌘→)"
+            "value": "手记 (⌘→)"
           }
         }
       }
@@ -850,7 +885,7 @@
         }
       }
     },
-    "直接存入日记": {
+    "直接存入手记": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -862,7 +897,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "直接存入日记"
+            "value": "直接存入手记"
           }
         }
       }
@@ -1332,13 +1367,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diary"
+            "value": "Notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "手记"
           }
         }
       }
@@ -1621,13 +1656,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return adds to tomorrow, ⌘Return still writes today’s diary"
+            "value": "Return adds to tomorrow, ⌘Return still writes today’s notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回车加到明天，⌘回车仍写今天日记"
+            "value": "回车加到明天，⌘回车仍写今天手记"
           }
         }
       }
@@ -1638,13 +1673,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Return adds to %@, ⌘Return still writes today’s diary"
+            "value": "Return adds to %@, ⌘Return still writes today’s notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "回车加到%@，⌘回车仍写今天日记"
+            "value": "回车加到%@，⌘回车仍写今天手记"
           }
         }
       }
@@ -2488,13 +2523,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No diary yet today. Write a line above."
+            "value": "No notes yet today. Write a line above."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "还没有今天的日记。在上面写下第一句。"
+            "value": "还没有今天的手记。在上面写下第一句。"
           }
         }
       }
@@ -2511,7 +2546,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这一天没有留下日记。"
+            "value": "这一天没有留下手记。"
           }
         }
       }
@@ -3202,13 +3237,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routines  new %lld / update %lld\nTasks  new %lld / update %lld\nDiary  new %lld / update %lld\nChecks  new %lld / update %lld\nProjects  new %lld / update %lld\nTags  new %lld / update %lld\nAttachments  new %lld / update %lld\nNothing is written until you confirm."
+            "value": "Routines  new %lld / update %lld\nTasks  new %lld / update %lld\nNotes  new %lld / update %lld\nChecks  new %lld / update %lld\nProjects  new %lld / update %lld\nTags  new %lld / update %lld\nAttachments  new %lld / update %lld\nNothing is written until you confirm."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "例行 新增 %lld / 覆盖 %lld\n待办 新增 %lld / 覆盖 %lld\n日记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n项目 新增 %lld / 覆盖 %lld\n标签 新增 %lld / 覆盖 %lld\n附件 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
+            "value": "例行 新增 %lld / 覆盖 %lld\n待办 新增 %lld / 覆盖 %lld\n手记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n项目 新增 %lld / 覆盖 %lld\n标签 新增 %lld / 覆盖 %lld\n附件 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
           }
         }
       }
@@ -3610,13 +3645,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diary"
+            "value": "Notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "手记"
           }
         }
       }
@@ -3967,13 +4002,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diary"
+            "value": "Notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "手记"
           }
         }
       }
@@ -4562,13 +4597,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Diary"
+            "value": "Notes"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "手记"
           }
         }
       }
@@ -4976,7 +5011,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日记"
+            "value": "手记"
           }
         }
       }
@@ -5735,7 +5770,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "「密码」「小巧思」「日记」 are diary categories, not task tags."
+            "value": "「密码」「小巧思」「日记」 are note categories, not task tags."
           }
         },
         "zh-Hans": {

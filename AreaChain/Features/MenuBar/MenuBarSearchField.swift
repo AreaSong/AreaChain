@@ -53,7 +53,7 @@ struct MenuBarSearchField: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small)
                 .strokeBorder(toolbar.searchIsFocused ? DaybookTheme.stamp : DaybookTheme.rule.opacity(0.55), lineWidth: 1)
         }
-        .anchorPreference(key: MenuBarSearchAnchorKey.self, value: .bounds) { $0 }
+        .syntaxSuggestions(toolbar.autocomplete, prefersAbove: true, enabled: toolbar.searchIsFocused && !toolbar.isFiltering)
         .background(KeyWindowHost { hostWindow = $0 })
         .onDisappear(perform: resignSearch)
         .help("footer.search.help")
@@ -73,25 +73,5 @@ struct MenuBarSearchField: View {
         }
         toolbar.searchIsFocused = false
         toolbar.autocomplete.dismiss()
-    }
-}
-
-struct MenuBarSearchAnchorKey: PreferenceKey {
-    static let defaultValue: Anchor<CGRect>? = nil
-
-    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
-        value = nextValue() ?? value
-    }
-}
-
-struct MenuBarSearchSuggestions: View {
-    @Bindable var toolbar: MenuBarToolbarState
-
-    var body: some View {
-        if toolbar.autocomplete.isActive {
-            SyntaxAutocompletePopup(state: toolbar.autocomplete, growsUpward: true) { candidate in
-                toolbar.autocomplete.commit(candidate)
-            }
-        }
     }
 }

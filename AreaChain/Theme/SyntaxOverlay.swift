@@ -1,0 +1,216 @@
+import AppKit
+import SwiftUI
+
+struct SyntaxOverlayPlacement: Equatable {
+    var frame: CGRect
+    var growsUpward: Bool
+
+    static func resolve(anchor: CGRect, container: CGSize, preferred: CGSize, prefersAbove: Bool) -> Self {
+        guard CGRect(origin: .zero, size: container).intersects(anchor) else {
+            return Self(frame: .zero, growsUpward: false)
+        }
+        let margin: CGFloat = 8
+        let gap: CGFloat = 5
+        let width = max(0, min(preferred.width, container.width - margin * 2))
+        let below = max(0, container.height - margin - anchor.maxY - gap)
+        let above = max(0, anchor.minY - gap - margin)
+        let upward = prefersAbove ? (above >= preferred.height || above > below)
+            : (below < preferred.height && above > below)
+        let height = min(preferred.height, upward ? above : below)
+        let x = min(max(margin, anchor.minX), max(margin, container.width - margin - width))
+        let y = upward ? anchor.minY - gap - height : anchor.maxY + gap
+        return Self(frame: CGRect(x: x, y: y, width: width, height: height), growsUpward: upward)
+    }
+}
+
+struct SyntaxOverlayAnchor {
+    let bounds: Anchor<CGRect>
+    let state: SyntaxAutocompleteState
+    var attributes: CaptureAttributes? = nil
+    var prefersAbove = false
+    var appearance: SyntaxOverlayAppearance
+
+    @MainActor var preferredSize: CGSize {
+        if let attributes { return CGSize(width: 280, height: min(280, 80 + CGFloat(attributes.count) * 42)) }
+        return CGSize(width: 240, height: min(180, CGFloat(state.candidates.count) * 29 + 8) + 25)
+    }
+}
+
+struct SyntaxOverlayAppearance {
+    let locale: Locale
+    let colorScheme: ColorScheme
+    let reduceMotion: Bool
+}
+
+struct SyntaxOverlayAnchorKey: PreferenceKey {
+    static let defaultValue: [SyntaxOverlayAnchor] = []
+    static func reduce(value: inout [SyntaxOverlayAnchor], nextValue: () -> [SyntaxOverlayAnchor]) {
+        value.append(contentsOf: nextValue())
+    }
+}
+
+private struct SyntaxOverlaySource: ViewModifier {
+    @Bindable var state: SyntaxAutocompleteState
+    var attributes: CaptureAttributes?
+    var prefersAbove: Bool
+    var enabled: Bool
+    @Environment(\.locale) private var locale
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func body(content: Content) -> some View {
+        let presented = enabled && (attributes == nil ? state.isActive : state.showsAttributes)
+        content
+            .transformAnchorPreference(key: SyntaxOverlayAnchorKey.self, value: .bounds) { anchors, bounds in
+                if presented {
+                    anchors.append(SyntaxOverlayAnchor(
+                        bounds: bounds, state: state, attributes: attributes, prefersAbove: prefersAbove,
+                        appearance: SyntaxOverlayAppearance(locale: locale, colorScheme: colorScheme, reduceMotion: reduceMotion)
+                    ))
+                }
+            }
+            .onDisappear { state.dismiss() }
+    }
+}
+
+private struct SyntaxOverlayHostModifier: ViewModifier {
+    var enabled: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .overlayPreferenceValue(SyntaxOverlayAnchorKey.self) { anchors in
+                if enabled, let source = anchors.max(by: { $0.state.presentedAt < $1.state.presentedAt }) {
+                    GeometryReader { proxy in
+                        SyntaxOverlayLayer(source: source, anchors: anchors, proxy: proxy)
+                            .id(source.state.id)
+                    }
+                }
+            }
+            // 最近的宿主负责呈现，检查器内的浮层不会在外层工作台重复出现。
+            .transformPreference(SyntaxOverlayAnchorKey.self) { $0 = [] }
+    }
+}
+
+private struct SyntaxOverlayLayer: View {
+    var source: SyntaxOverlayAnchor
+    var anchors: [SyntaxOverlayAnchor]
+    var proxy: GeometryProxy
+
+    var body: some View {
+        let sourceAnchor = proxy[source.bounds]
+        let anchor = source.attributes == nil ? sourceAnchor : sourceAnchor.insetBy(dx: 0, dy: -8)
+        let placement = SyntaxOverlayPlacement.resolve(
+            anchor: anchor, container: proxy.size, preferred: source.preferredSize, prefersAbove: source.prefersAbove
+        )
+        ZStack(alignment: .topLeading) {
+            SyntaxOverlayEventMonitor(state: source.state, panelFrame: placement.frame, sourceFrame: sourceAnchor)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .allowsHitTesting(false)
+            if placement.frame.height > 0 {
+                panel(placement)
+                    .environment(\.locale, source.appearance.locale)
+                    .environment(\.colorScheme, source.appearance.colorScheme)
+                    .frame(width: placement.frame.width, height: placement.frame.height, alignment: .top)
+                    .background(SyntaxViewAnchor(source.attributes == nil ? "syntax.overlay.candidates" : "syntax.overlay.attributes"))
+                    .offset(x: placement.frame.minX, y: placement.frame.minY)
+            }
+        }
+        .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+        .onAppear {
+            for item in anchors where item.state.id != source.state.id { item.state.dismiss() }
+        }
+        .onDisappear { source.state.dismiss() }
+    }
+
+    @ViewBuilder
+    private func panel(_ placement: SyntaxOverlayPlacement) -> some View {
+        if let attributes = source.attributes {
+            CaptureAttributesPopup(attributes: attributes, maxHeight: placement.frame.height, state: source.state)
+        } else {
+            SyntaxAutocompletePopup(
+                state: source.state, growsUpward: placement.growsUpward,
+                width: placement.frame.width, maxHeight: placement.frame.height, motionDisabled: source.appearance.reduceMotion
+            ) { source.state.commit($0) }
+            .accessibilityIdentifier("syntax.overlay.candidates")
+        }
+    }
+}
+
+extension View {
+    func syntaxSuggestions(_ state: SyntaxAutocompleteState, prefersAbove: Bool = false, enabled: Bool = true) -> some View {
+        modifier(SyntaxOverlaySource(state: state, attributes: nil, prefersAbove: prefersAbove, enabled: enabled))
+    }
+
+    func syntaxAttributes(_ state: SyntaxAutocompleteState, attributes: CaptureAttributes) -> some View {
+        modifier(SyntaxOverlaySource(state: state, attributes: attributes, prefersAbove: false, enabled: true))
+    }
+
+    func syntaxOverlayHost(enabled: Bool = true) -> some View {
+        modifier(SyntaxOverlayHostModifier(enabled: enabled))
+    }
+}
+
+private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
+    let state: SyntaxAutocompleteState
+    let panelFrame: CGRect
+    let sourceFrame: CGRect
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+    func makeNSView(context: Context) -> NSView {
+        let view = SyntaxOverlayEventView()
+        view.identifier = NSUserInterfaceItemIdentifier("syntax.overlay.event-monitor")
+        context.coordinator.observe(view)
+        return view
+    }
+    func updateNSView(_ view: NSView, context: Context) { context.coordinator.parent = self }
+    static func dismantleNSView(_ view: NSView, coordinator: Coordinator) { coordinator.stop() }
+
+    @MainActor
+    final class Coordinator {
+        var parent: SyntaxOverlayEventMonitor
+        private var monitor: Any?
+        private var resignObserver: NSObjectProtocol?
+        init(_ parent: SyntaxOverlayEventMonitor) { self.parent = parent }
+
+        func observe(_ view: NSView) {
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown, .scrollWheel]) {
+                [weak self, weak view] event in
+                let consumed = MainActor.assumeIsolated {
+                    guard let self, let view, let window = view.window, event.window === window,
+                          self.parent.state.hasPresentation else { return false }
+                    if event.type == .keyDown {
+                        guard event.keyCode == 53,
+                              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                              (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
+                        self.parent.state.dismiss()
+                        return true
+                    }
+                    let point = view.convert(event.locationInWindow, from: nil)
+                    if !self.parent.panelFrame.contains(point), !self.parent.sourceFrame.contains(point) {
+                        self.parent.state.dismiss()
+                    }
+                    return false
+                }
+                return consumed ? nil : event
+            }
+            resignObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: .main) {
+                [weak self, weak view] notification in
+                MainActor.assumeIsolated {
+                    if let window = notification.object as? NSWindow, window === view?.window { self?.parent.state.dismiss() }
+                }
+            }
+        }
+
+        func stop() {
+            if let monitor { NSEvent.removeMonitor(monitor) }
+            monitor = nil
+            if let resignObserver { NotificationCenter.default.removeObserver(resignObserver) }
+            resignObserver = nil
+        }
+    }
+}
+
+private final class SyntaxOverlayEventView: NSView {
+    override var isFlipped: Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+}

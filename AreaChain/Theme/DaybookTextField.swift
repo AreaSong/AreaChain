@@ -73,6 +73,7 @@ struct DaybookTextField: NSViewRepresentable {
 
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
+        context.coordinator.configureRestoration(in: field)
         (field as? DaybookAppKitTextField)?.onCommandReturn = onCommandReturn == nil ? nil : { [weak field] in
             guard let field, let extra = context.coordinator.parent.onCommandReturn else { return }
             let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
@@ -110,6 +111,7 @@ struct DaybookTextField: NSViewRepresentable {
     final class Coordinator: NSObject, NSTextFieldDelegate {
         var parent: DaybookTextField
         private weak var observedEditor: NSTextView?
+        private var lastSelection = NSRange(location: 0, length: 0)
 
         init(_ parent: DaybookTextField) {
             self.parent = parent
@@ -122,6 +124,21 @@ struct DaybookTextField: NSViewRepresentable {
                 guard let self, let field, self.parent.focus.wrappedValue,
                       field.currentEditor() == nil, let window = field.window else { return }
                 window.makeFirstResponder(field)
+            }
+        }
+
+        func configureRestoration(in field: NSTextField) {
+            parent.autocomplete?.restoreEditing = { [weak self, weak field] in
+                guard let self, let field, let window = field.window else { return }
+                self.parent.focus.wrappedValue = true
+                guard field.currentEditor() == nil else { return }
+                let selection = self.lastSelection
+                window.makeFirstResponder(field)
+                if let editor = field.currentEditor() as? NSTextView {
+                    let length = (editor.string as NSString).length
+                    let start = min(selection.location, length)
+                    editor.setSelectedRange(NSRange(location: start, length: min(selection.length, length - start)))
+                }
             }
         }
 
@@ -160,6 +177,7 @@ struct DaybookTextField: NSViewRepresentable {
         @objc private func editorDidChangeSelection(_ notification: Notification) {
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
+            if textView.window?.firstResponder === textView { lastSelection = textView.selectedRange() }
             guard !textView.hasMarkedText() else { autocomplete.dismiss(); return }
             let cursor = textView.selectedRange().location
             autocomplete.update(text: textView.string, cursorLocation: cursor, availableTags: parent.availableTags)
@@ -208,6 +226,11 @@ struct DaybookTextField: NSViewRepresentable {
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             guard !textView.hasMarkedText() else { return false }
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)),
+               let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
+                autocomplete.dismiss()
+                return true
+            }
             if let autocomplete = parent.autocomplete, autocomplete.isActive {
                 if commandSelector == #selector(NSResponder.moveUp(_:)) {
                     autocomplete.selectPrevious()

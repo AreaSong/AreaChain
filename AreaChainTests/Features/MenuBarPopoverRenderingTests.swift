@@ -51,8 +51,7 @@ struct MenuBarPopoverRenderingTests {
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
-        try click(at: NSPoint(x: 332, y: 459), in: window)
-        try await settle(view)
+        try await selectTab(.diary, in: window)
         let editor = try #require(diaryEditor(in: view))
         window.makeFirstResponder(editor)
         editor.insertText("查资料前留下的手记草稿", replacementRange: NSRange(location: 0, length: 0))
@@ -64,6 +63,88 @@ struct MenuBarPopoverRenderingTests {
         toolbar.clearSearch()
         try await settle(view)
         #expect(diaryEditor(in: view)?.string == "查资料前留下的手记草稿")
+    }
+
+    @Test(arguments: ["zh-Hans", "en"], [ColorScheme.light, .dark])
+    func diaryUsesOnlyFooterSearchAndFilters(locale: String, scheme: ColorScheme) async throws {
+        let container = try fixture()
+        let toolbar = MenuBarToolbarState()
+        let window = host(toolbar: toolbar, container: container, locale: locale, scheme: scheme)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        try await selectTab(.diary, in: window)
+        let field = try #require(searchField(in: view))
+        let fieldFrame = field.convert(field.bounds, to: view)
+        #expect(searchInputCount(in: view) == 1)
+        #expect(diaryEditor(in: view) != nil)
+        let appearance = scheme == .dark ? "dark" : "light"
+        try snapshot(view, name: "menubar-notes-\(locale)-\(appearance)")
+
+        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        #expect(toolbar.isFiltering)
+        #expect(searchInputCount(in: view) == 0)
+        #expect(diaryEditor(in: view) != nil)
+        try snapshot(view, name: "menubar-notes-filters-\(locale)-\(appearance)")
+
+        try await clickAndSettle(at: NSPoint(x: view.bounds.width - 26, y: 27), in: window)
+        #expect(!toolbar.isFiltering)
+        let restoredField = try #require(searchField(in: view))
+        #expect(searchInputCount(in: view) == 1)
+        #expect(abs(restoredField.convert(restoredField.bounds, to: view).midY - fieldFrame.midY) < 1)
+    }
+
+    @Test func diaryFooterFilteringAndSearchingPreserveDraft() async throws {
+        let container = try fixture()
+        let toolbar = MenuBarToolbarState()
+        let window = host(toolbar: toolbar, container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        try await selectTab(.diary, in: window)
+        let composer = try #require(diaryEditor(in: view))
+        window.makeFirstResponder(composer)
+        composer.insertText("筛选和搜索期间保留的草稿", replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        try await selectFilter(at: 94, in: window)
+        #expect(!toolbar.isFiltering)
+        #expect(diaryEditor(in: view)?.string == "筛选和搜索期间保留的草稿")
+        try snapshot(view, name: "menubar-notes-filtered-zh")
+
+        try await selectTab(.tasks, in: window)
+        try await selectFilter(at: 188, in: window)
+        try await selectTab(.diary, in: window)
+        #expect(diaryEditor(in: view)?.string == "筛选和搜索期间保留的草稿")
+        try snapshot(view, name: "menubar-notes-filter-after-tabs-zh")
+
+        let field = try await focusSearch(toolbar, in: view)
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        editor.insertText("会议", replacementRange: NSRange(location: 0, length: 0))
+        try await settle(view)
+        #expect(toolbar.searchText == "会议")
+        #expect(diaryEditor(in: view) == nil)
+        try snapshot(view, name: "menubar-notes-search-zh")
+        toolbar.clearSearch()
+        try await settle(view)
+        #expect(diaryEditor(in: view)?.string == "筛选和搜索期间保留的草稿")
+        try snapshot(view, name: "menubar-notes-filter-after-search-zh")
+
+        try await selectFilter(at: 94, in: window)
+        #expect(!toolbar.isFiltering)
+        try snapshot(view, name: "menubar-notes-filter-cleared-zh")
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
+    }
+
+    @Test func workspaceNotesKeepTheirOwnSearchAndFilters() async throws {
+        let container = try fixture()
+        let window = host(DiaryStandaloneView(), container: container, size: NSSize(width: 760, height: 620))
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        #expect(searchInputCount(in: view) == 1)
+        #expect(searchField(in: view) == nil)
+        #expect(diaryEditor(in: view) != nil)
+        try snapshot(view, name: "workspace-notes-zh")
     }
 
     @Test func nativeToolbarReplacementPreservesSearchAndRendersBothAppearances() async throws {
@@ -123,8 +204,7 @@ struct MenuBarPopoverRenderingTests {
         #expect(toolbar.searchIsFocused, "key=\(window.isKeyWindow), active=\(NSApp.isActive), editing=\(field.currentEditor() != nil)")
         try snapshot(view, name: "menubar-search-completion-zh")
         let fieldFrame = field.convert(field.bounds, to: nil)
-        // 固定浮层布局中上方第二个候选的行中心；发送真实鼠标事件，不直接调用补全回调。
-        let candidatePoint = NSPoint(x: fieldFrame.minX + 30, y: fieldFrame.midY + 64)
+        let candidatePoint = try NativeSyntaxUI.center("syntax.candidate.tag_工作", in: window)
         #expect(candidatePoint.y > fieldFrame.maxY)
         try click(at: candidatePoint, in: window)
         try await settle(view)
@@ -166,7 +246,15 @@ struct MenuBarPopoverRenderingTests {
         toolbar: MenuBarToolbarState, container: ModelContainer,
         locale: String = "zh-Hans", scheme: ColorScheme = .light
     ) -> NSWindow {
-        let content = MenuBarPopoverView(toolbar: toolbar)
+        host(MenuBarPopoverView(toolbar: toolbar), container: container, locale: locale, scheme: scheme)
+    }
+
+    private func host<Content: View>(
+        _ root: Content, container: ModelContainer,
+        locale: String = "zh-Hans", scheme: ColorScheme = .light,
+        size: NSSize = DaybookTheme.popoverSize
+    ) -> NSWindow {
+        let content = root
             .modelContainer(container)
             .environment(AppPreferences.shared)
             .environment(\.locale, Locale(identifier: locale))
@@ -174,11 +262,11 @@ struct MenuBarPopoverRenderingTests {
             .preferredColorScheme(scheme)
         let hosting = NSHostingView(rootView: content)
         hosting.safeAreaRegions = []
-        let window = NSWindow(contentRect: NSRect(origin: .zero, size: DaybookTheme.popoverSize), styleMask: [.titled], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
         window.contentView = hosting
-        window.setContentSize(DaybookTheme.popoverSize)
+        window.setContentSize(size)
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         return window
@@ -195,6 +283,30 @@ struct MenuBarPopoverRenderingTests {
            let coordinator = field.delegate as? DaybookTextField.Coordinator,
            coordinator.parent.autocomplete?.context == .search { return field }
         return view.subviews.lazy.compactMap { searchField(in: $0) }.first
+    }
+
+    private func searchInputCount(in view: NSView) -> Int {
+        let coordinator = (view as? DaybookAppKitTextField)?.delegate as? DaybookTextField.Coordinator
+        // 页签过渡中可能暂留旧捕获框；只统计具备搜索语义的原生输入框。
+        let current = coordinator?.parent.autocomplete?.context.isSearch == true ? 1 : 0
+        return current + view.subviews.reduce(0) { $0 + searchInputCount(in: $1) }
+    }
+
+    private func clickAndSettle(at point: NSPoint, in window: NSWindow) async throws {
+        try click(at: point, in: window)
+        try await settle(#require(window.contentView))
+    }
+
+    private func selectTab(_ tab: BoardTab, in window: NSWindow) async throws {
+        let view = try #require(window.contentView)
+        // 单测宿主没有 SwiftUI 虚拟无障碍树；沿用固定尺寸浮层的真实鼠标事件。
+        let point = NSPoint(x: view.bounds.width - (tab == .diary ? 48 : 108), y: view.bounds.height - 29)
+        try await clickAndSettle(at: point, in: window)
+    }
+
+    private func selectFilter(at x: CGFloat, in window: NSWindow) async throws {
+        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: NSPoint(x: x, y: 27), in: window)
     }
 
     private func focusSearch(

@@ -124,6 +124,10 @@ struct DaybookTextEditor: NSViewRepresentable {
         func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             guard !textView.hasMarkedText() else { return false }
             let completion = parent.autocomplete
+            if commandSelector == #selector(NSResponder.cancelOperation(_:)), completion.hasPresentation {
+                completion.dismiss()
+                return true
+            }
             if completion.isActive {
                 switch commandSelector {
                 case #selector(NSResponder.moveUp(_:)): completion.selectPrevious(); return true

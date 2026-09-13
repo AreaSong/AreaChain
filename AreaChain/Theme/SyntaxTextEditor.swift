@@ -41,18 +41,6 @@ struct SyntaxTextEditor: View {
                     .allowsHitTesting(false)
             }
         }
-        .overlay(alignment: .topLeading) {
-            GeometryReader { proxy in
-                if autocomplete.isActive {
-                    SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                        guard autocomplete.commit(candidate) else { return }
-                        focused = true
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                    .offset(y: proxy.size.height + 4)
-                }
-            }
-        }
-        .zIndex(autocomplete.isActive ? 100 : 0)
+        .syntaxSuggestions(autocomplete)
     }
 }

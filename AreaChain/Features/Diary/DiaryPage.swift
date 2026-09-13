@@ -32,7 +32,7 @@ struct DiaryPage: View {
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
-    @State private var selectedTagID: UUID? = nil
+    @State private var localSelectedTagID: UUID? = nil
     @State private var searchQuery: String = ""
     @State private var localComposerDraft = DiaryComposerDraft()
     @State private var pendingTrash: PendingTrash?
@@ -79,6 +79,13 @@ struct DiaryPage: View {
         allTags.filter { $0.deletedAt == nil }
     }
 
+    private var selectedTagBinding: Binding<UUID?> { externalSelectedTagID ?? $localSelectedTagID }
+
+    private var selectedTagID: UUID? {
+        get { selectedTagBinding.wrappedValue }
+        nonmutating set { selectedTagBinding.wrappedValue = newValue }
+    }
+
     private var draftBinding: Binding<DiaryComposerDraft> { composerDraft ?? $localComposerDraft }
 
     private var draftText: String {
@@ -119,13 +126,11 @@ struct DiaryPage: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
+            // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
             if showsPageHeader {
                 topHeader.zIndex(50)
-            } else {
-                searchChrome.zIndex(50)
+                tagFilterBar
             }
-
-            tagFilterBar
 
             if showsComposer {
                 quickComposer.zIndex(20)
@@ -145,21 +150,6 @@ struct DiaryPage: View {
                 DispatchQueue.main.async {
                     composerFocused = true
                 }
-            }
-        }
-        .onAppear {
-            if let ext = externalSelectedTagID?.wrappedValue {
-                selectedTagID = ext
-            }
-        }
-        .onChange(of: externalSelectedTagID?.wrappedValue) { _, newID in
-            if selectedTagID != newID {
-                selectedTagID = newID
-            }
-        }
-        .onChange(of: selectedTagID) { _, newID in
-            if let ext = externalSelectedTagID, ext.wrappedValue != newID {
-                ext.wrappedValue = newID
             }
         }
     }
