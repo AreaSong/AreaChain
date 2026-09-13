@@ -50,9 +50,7 @@ struct SyntaxTextField: View {
     }
 
     private func complete(_ candidate: SyntaxCandidate) {
-        guard let trigger = autocomplete.trigger else { return }
-        text = SyntaxAutocompleteEngine.applyCandidate(candidate, to: text, range: trigger.range).newText
-        autocomplete.dismiss()
+        guard autocomplete.commit(candidate) else { return }
         focused = true
     }
 }

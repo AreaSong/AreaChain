@@ -11,7 +11,11 @@ enum TagSyntax {
         pattern: ##"(?<![^\s(\[（【])#(?:"((?:\\.|[^"\\\r\n])+)"|([\p{L}\p{M}\p{N}_-]+))(?=$|[\s,，.。;；:：!！?？)）\]】])"##
     )
     private static let codeExpression = try! NSRegularExpression(
-        pattern: #"\x60{3}[\s\S]*?(?:\x60{3}|\z)|~~~[\s\S]*?(?:~~~|\z)|\x60[^\x60\r\n]*(?:\x60|\r?\n|\z)"#
+        // 成对匹配整个定界符，双反引号内的单反引号不能提前结束保护。
+        pattern: #"(?<!\x60)(\x60{3,})(?!\x60)[\s\S]*?(?:(?<!\x60)\1(?!\x60)|\z)|(?<!~)(~{3,})(?!~)[\s\S]*?(?:(?<!~)\2(?!~)|\z)|(?<!\x60)(\x60{1,2})(?!\x60)[^\r\n]*?(?:(?<!\x60)\3(?!\x60)|\r?\n|\z)"#
+    )
+    private static let linkExpression = try! NSRegularExpression(
+        pattern: #"\[[^\]\r\n]*\]\((?:\\.|[^\\)\r\n])*(?:\)|$)"#
     )
 
     static func normalizedName(_ name: String) -> String {
@@ -26,7 +30,7 @@ enum TagSyntax {
         return expression.matches(in: text, range: NSRange(location: 0, length: source.length)).compactMap { match in
             guard !protected.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) else { return nil }
             let raw = source.substring(with: match.range)
-            let name = decodedName(String(raw.dropFirst()))
+            let name = decodedName(String(raw.dropFirst())).trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty, includesDiaryTags || !DiaryMemoTags.isPresetName(name) else { return nil }
             return TagSyntaxToken(name: name, range: match.range)
         }
@@ -38,9 +42,11 @@ enum TagSyntax {
 
     static func uniqueNames(_ names: [String]) -> [String] {
         var seen: Set<String> = []
-        return names.filter { name in
-            let key = normalizedName(name)
-            return !key.isEmpty && seen.insert(key).inserted
+        return names.compactMap { name in
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = normalizedName(trimmed)
+            guard !key.isEmpty, seen.insert(key).inserted else { return nil }
+            return trimmed
         }
     }
 
@@ -72,7 +78,9 @@ enum TagSyntax {
     }
 
     static func protectedRanges(in text: String) -> [NSRange] {
-        codeExpression.matches(in: text, range: NSRange(location: 0, length: (text as NSString).length)).map(\.range)
+        let range = NSRange(location: 0, length: (text as NSString).length)
+        return (codeExpression.matches(in: text, range: range) + linkExpression.matches(in: text, range: range))
+            .map(\.range).sorted { $0.location < $1.location }
     }
 
     static func isBoundary(before location: Int, in text: NSString) -> Bool {

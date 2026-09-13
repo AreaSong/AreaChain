@@ -21,12 +21,13 @@ extension DayBoardList {
     }
 
     func handleTextViewEditingKey(event: NSEvent, firstResponder: NSResponder?) -> NSEvent? {
+        if let editor = firstResponder as? NSTextView, editor.hasMarkedText() { return event }
         if event.keyCode == 53 {
-            // 行内编辑器自己处理补全与取消，列表不能提前吞掉 Escape。
+            // 单行和多行语法编辑器先处理候选与取消，列表不能提前触发失焦保存。
+            if firstResponder is DaybookAppKitTextView { return event }
             if let editor = firstResponder as? NSTextView,
                let field = (editor.delegate as AnyObject?) as? DaybookAppKitTextField,
-               let coordinator = field.delegate as? DaybookTextField.Coordinator,
-               coordinator.parent.onEscape != nil {
+               field.delegate is DaybookTextField.Coordinator {
                 return event
             }
             BoardSelection.shared.markEscapeCancelsEdits()

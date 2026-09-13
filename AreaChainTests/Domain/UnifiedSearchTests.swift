@@ -3,6 +3,19 @@ import Testing
 @testable import AreaChain
 
 struct UnifiedSearchTests {
+    @Test func protectedSearchSyntaxStaysLiteralAndStillFindsDiaryText() {
+        let input = "讨论 \u{0060}代码 !p1 @18:00 片段\u{0060} [说明](#章节)"
+        let query = BoardSearch.parseQuery(input)
+        #expect(!query.hasPriority && query.remindMinutes == nil && query.tagNames.isEmpty)
+        #expect(query.textKeywords == ["讨论", "\u{0060}代码", "!p1", "@18:00", "片段\u{0060}", "[说明](#章节)"])
+        let entry = DiarySnapshot(id: UUID(), text: input, dayKey: "2026-09-13", createdAt: .now)
+        #expect(BoardSearch.matchesDiary(entry, query: query, tagMap: [:]))
+        let compound = BoardSearch.parseQuery(input + " !p2 @09:00 #真实")
+        #expect(compound.priority == BoardSearchPriority(isImportant: true, isUrgent: false))
+        #expect(compound.remindMinutes == 540 && compound.tagNames == ["真实"])
+        #expect(compound.textKeywords == query.textKeywords)
+    }
+
     @Test func subtasksAreIndependentlySearchableAndKeepTheParentRoute() {
         let tagID = UUID()
         let todoID = UUID()

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @Observable
@@ -8,6 +9,7 @@ final class SyntaxAutocompleteState {
     var trigger: SyntaxTrigger? = nil
     var candidates: [SyntaxCandidate] = []
     var selectedIndex: Int = 0
+    @ObservationIgnored weak var editor: NSTextView?
 
     init(context: SyntaxInputContext = .capture) {
         self.context = context
@@ -46,6 +48,21 @@ final class SyntaxAutocompleteState {
             return nil
         }
         return candidates[selectedIndex]
+    }
+
+    /// 鼠标和键盘都走原生编辑，避免绑定整段覆盖破坏撤销范围与光标。
+    @discardableResult
+    func commit(_ candidate: SyntaxCandidate, in textView: NSTextView? = nil) -> Bool {
+        guard isActive, let trigger, let editor = textView ?? self.editor,
+              !editor.hasMarkedText(), trigger.range.location != NSNotFound,
+              NSMaxRange(trigger.range) <= (editor.string as NSString).length else { return false }
+        let cursor = trigger.range.location + (candidate.insertText as NSString).length
+        editor.breakUndoCoalescing()
+        editor.insertText(candidate.insertText, replacementRange: trigger.range)
+        editor.setSelectedRange(NSRange(location: cursor, length: 0))
+        editor.breakUndoCoalescing()
+        dismiss()
+        return true
     }
 
     func dismiss() {

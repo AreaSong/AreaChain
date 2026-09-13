@@ -88,13 +88,9 @@ struct MenuBarSearchSuggestions: View {
     @Bindable var toolbar: MenuBarToolbarState
 
     var body: some View {
-        if let trigger = toolbar.autocomplete.trigger {
+        if toolbar.autocomplete.isActive {
             SyntaxAutocompletePopup(state: toolbar.autocomplete, growsUpward: true) { candidate in
-                let (text, _) = SyntaxAutocompleteEngine.applyCandidate(
-                    candidate, to: toolbar.searchText, range: trigger.range
-                )
-                toolbar.searchText = text
-                toolbar.autocomplete.dismiss()
+                toolbar.autocomplete.commit(candidate)
             }
         }
     }

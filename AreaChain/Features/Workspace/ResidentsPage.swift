@@ -168,6 +168,8 @@ private struct ResidentEditorRow: View {
     }
 
     private func saveTitle() {
+        // 聚焦后取消或未修改就失焦，不得重新解释旧标题中的字面语法。
+        guard titleDraft != routine.title else { return }
         let next = titleDraft.trimmingCharacters(in: .whitespacesAndNewlines)
         if next.isEmpty {
             titleDraft = routine.title

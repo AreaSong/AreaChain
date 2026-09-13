@@ -45,20 +45,27 @@ struct BoardSearchQuery: Equatable {
 }
 
 enum BoardSearch {
+    private static let wordExpression = try! NSRegularExpression(pattern: #"\S+"#)
+
     static func parseQuery(_ raw: String) -> BoardSearchQuery {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return BoardSearchQuery(raw: raw) }
 
         let remaining = TagSyntax.removingTags(from: trimmed)
-        let tokens = remaining.components(separatedBy: .whitespacesAndNewlines).filter { !$0.isEmpty }
+        let source = remaining as NSString
+        let tokens = wordExpression.matches(in: remaining, range: NSRange(location: 0, length: source.length))
+        let protected = TagSyntax.protectedRanges(in: remaining)
         var keywords: [String] = []
         let tags = TagSyntax.names(in: trimmed)
         var prioritySlot: BoardSearchPriority? = nil
         var hasPriority = false
         var remindMinutes: Int?
 
-        for token in tokens {
-            if token.hasPrefix("!"), let p = parsePriorityToken(token) {
+        for match in tokens {
+            let token = source.substring(with: match.range)
+            if protected.contains(where: { NSIntersectionRange($0, match.range).length > 0 }) {
+                keywords.append(token)
+            } else if token.hasPrefix("!"), let p = parsePriorityToken(token) {
                 prioritySlot = p
                 hasPriority = true
             } else if let minutes = NaturalLanguageParser.timeMinutes(token) {

@@ -89,10 +89,14 @@ struct DaybookTextEditor: NSViewRepresentable {
         var parent: DaybookTextEditor
         init(_ parent: DaybookTextEditor) { self.parent = parent }
 
-        func textDidBeginEditing(_ notification: Notification) { parent.focused = true }
+        func textDidBeginEditing(_ notification: Notification) {
+            parent.autocomplete.editor = notification.object as? NSTextView
+            parent.focused = true
+        }
 
         func textDidEndEditing(_ notification: Notification) {
             parent.autocomplete.dismiss()
+            parent.autocomplete.editor = nil
             parent.focused = false
         }
 
@@ -126,10 +130,8 @@ struct DaybookTextEditor: NSViewRepresentable {
                 case #selector(NSResponder.moveDown(_:)): completion.selectNext(); return true
                 case #selector(NSResponder.insertTab(_:)), #selector(NSResponder.insertNewline(_:)):
                     if NSApp.currentEvent?.modifierFlags.contains(.shift) != true,
-                       let candidate = completion.selectedCandidate(), let trigger = completion.trigger {
-                        textView.insertText(candidate.insertText, replacementRange: trigger.range)
+                       let candidate = completion.selectedCandidate(), completion.commit(candidate, in: textView) {
                         parent.text = textView.string
-                        completion.dismiss()
                         return true
                     }
                 case #selector(NSResponder.cancelOperation(_:)): completion.dismiss(); return true

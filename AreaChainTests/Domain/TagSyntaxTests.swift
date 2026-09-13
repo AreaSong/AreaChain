@@ -34,6 +34,38 @@ struct TagSyntaxTests {
         #expect(TagSyntax.names(in: "#密码 #今日") == ["密码", "今日"])
     }
 
+    @Test func quotedNamesAreTrimmedBeforeDeduplicationAndClassification() {
+        let text = "#\" 今日 \" #今日 #\" 密码 \" #\" 小巧思 \" #\" 日记 \" #\"   \""
+        #expect(TagSyntax.names(in: text) == ["今日", "密码", "小巧思", "日记"])
+        #expect(TagSyntax.names(in: text, includesDiaryTags: false) == ["今日"])
+        #expect(TagSyntax.uniqueNames([" 今日 ", "今日", " Work ", "work", " "]) == ["今日", "Work"])
+    }
+
+    @Test(arguments: [1, 2, 3, 4])
+    func codeDelimitersProtectTagsPriorityAndTime(width: Int) {
+        let delimiter = String(repeating: "\u{0060}", count: width)
+        let literal = "\(delimiter) #代码 !p1 @18:00 \(delimiter)"
+        let parsed = NaturalLanguageParser.parseTaskCapture("说明 \(literal) #真实")
+        #expect(parsed.tagNames == ["真实"])
+        #expect(!parsed.hasPriorityToken && parsed.remindMinutes == nil)
+        #expect(parsed.cleanTitle == "说明 \(literal)")
+        let cursor = ("说明 \(delimiter) #代码" as NSString).length
+        #expect(SyntaxAutocompleteEngine.detectTrigger(in: parsed.rawInput, cursorLocation: cursor) == nil)
+    }
+
+    @Test func innerBackticksAndMarkdownLinksRemainLiteral() {
+        let literal = "说明 \u{0060}\u{0060} 单个 \u{0060} #代码 !p1 @18:00 \u{0060}\u{0060}"
+        let links = "[说明](#章节) [手册](docs/#页码)"
+        for input in [literal, links] {
+            let parsed = NaturalLanguageParser.parseTaskCapture(input + " #真实")
+            #expect(parsed.tagNames == ["真实"])
+            #expect(!parsed.hasPriorityToken && parsed.remindMinutes == nil)
+            #expect(parsed.cleanTitle == input)
+        }
+        let incomplete = "[说明](#章"
+        #expect(SyntaxAutocompleteEngine.detectTrigger(in: incomplete, cursorLocation: (incomplete as NSString).length) == nil)
+    }
+
     @Test func syntaxOnlyTitlesKeepTheirInputRatherThanBecomingEmpty() {
         #expect(TagSyntax.title(from: "#今日") == "#今日")
         #expect(NaturalLanguageParser.parseTaskCapture("#今日 #生活").cleanTitle == "#今日 #生活")

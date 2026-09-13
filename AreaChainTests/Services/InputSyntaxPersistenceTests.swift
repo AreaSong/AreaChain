@@ -10,6 +10,23 @@ struct InputSyntaxPersistenceTests {
         try ModelContainer(for: Schema(AreaChainSchema.models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     }
 
+    @Test(arguments: [false, true])
+    func quotedWhitespaceNamesKeepExistingDiaryClassification(reusePreset: Bool) throws {
+        let store = try container()
+        if reusePreset {
+            store.mainContext.insert(TagItem(name: "密码", sortOrder: 0))
+            try store.mainContext.save()
+        }
+        let text = "#\" 密码 \" 测试正文"
+        let entry = try SwiftDataDiaryRepository(container: store).addDiary(text: text, dayKey: "2026-09-13", tagIDs: [])
+        let tags = try store.mainContext.fetch(FetchDescriptor<TagItem>())
+        #expect(tags.map(\.name) == ["密码"])
+        #expect(entry.text == text)
+        let tagMap = Dictionary(uniqueKeysWithValues: tags.map { ($0.id, $0.name) })
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tagNames: tagMap))
+        #expect(TagIDList.contains(entry.tagIDs, try #require(tags.first).id))
+    }
+
     @Test func confirmedExampleCreatesReusesAndSearchesARealTag() throws {
         let store = try container()
         let repo = SwiftDataDiaryRepository(container: store)

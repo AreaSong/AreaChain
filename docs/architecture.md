@@ -79,7 +79,7 @@ AreaChain/
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
 - **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
 - **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。
-- **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力；只提示当前对象支持的语法。`SyntaxTextField` / `SyntaxTextEditor` 封装单行和多行原生输入，保护组合文本、光标和快捷键归属。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
+- **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力；只提示当前对象支持的语法。`SyntaxTextField` / `SyntaxTextEditor` 封装单行和多行原生输入，保护组合文本、光标和快捷键归属。`SyntaxAutocompleteState` 弱引用当前原生编辑器，鼠标与键盘补全共用原生文本替换，保留撤销记录；列表快捷键不抢占语法编辑器的 Esc 或输入法组合文本。底栏搜索通过输入框锚点在浮层根部向上展示候选，避免底栏命中区域挡住候选点击。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 

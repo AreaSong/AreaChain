@@ -37,15 +37,7 @@ struct CaptureField: View {
                 CaptureTokenBar(text: text)
                 if autocomplete.isActive {
                     SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                        if let trigger = autocomplete.trigger {
-                            let (newText, _) = SyntaxAutocompleteEngine.applyCandidate(
-                                candidate,
-                                to: text,
-                                range: trigger.range
-                            )
-                            text = newText
-                            autocomplete.dismiss()
-                        }
+                        autocomplete.commit(candidate)
                     }
                     .padding(.top, 4)
                     .zIndex(100)

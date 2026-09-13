@@ -45,9 +45,7 @@ struct SyntaxTextEditor: View {
             GeometryReader { proxy in
                 if autocomplete.isActive {
                     SyntaxAutocompletePopup(state: autocomplete) { candidate in
-                        guard let trigger = autocomplete.trigger else { return }
-                        text = SyntaxAutocompleteEngine.applyCandidate(candidate, to: text, range: trigger.range).newText
-                        autocomplete.dismiss()
+                        guard autocomplete.commit(candidate) else { return }
                         focused = true
                     }
                     .fixedSize(horizontal: true, vertical: false)

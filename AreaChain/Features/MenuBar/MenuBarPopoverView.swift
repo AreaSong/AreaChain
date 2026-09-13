@@ -178,6 +178,13 @@ struct MenuBarPopoverView: View {
                 focusedTaskID = nil
             }
         }
+        .onChange(of: toolbar.searchIsFocused) { _, focused in
+            if focused {
+                // 搜索请求优先于尚未完成的捕获框自动聚焦，避免两个输入框反复抢焦点。
+                captureFocused = false
+                focusedTaskID = nil
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()
@@ -333,7 +340,10 @@ struct MenuBarPopoverView: View {
     }
 
     private func focusCurrentInput() {
-        if toolbar.isSearching { toolbar.focusSearch() }
+        if toolbar.isSearching || toolbar.searchIsFocused {
+            captureFocused = false
+            toolbar.focusSearch()
+        }
         else if tab == .tasks { captureFocused = true }
     }
 

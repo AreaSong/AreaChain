@@ -4,6 +4,12 @@ import SwiftUI
 /// 支持按键等效拦截（如 ⌘↩）的 AppKit 文本框
 final class DaybookAppKitTextField: NSTextField {
     var onCommandReturn: (() -> Void)?
+    var onWindowAttached: (() -> Void)?
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window != nil { onWindowAttached?() }
+    }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
@@ -58,6 +64,10 @@ struct DaybookTextField: NSViewRepresentable {
         field.setContentHuggingPriority(.defaultHigh, for: .vertical)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         field.delegate = context.coordinator
+        field.onWindowAttached = { [weak field, weak coordinator = context.coordinator] in
+            guard let field else { return }
+            coordinator?.requestFocus(in: field)
+        }
         return field
     }
 
@@ -80,17 +90,10 @@ struct DaybookTextField: NSViewRepresentable {
         }
         field.font = .systemFont(ofSize: fontSize)
         field.textColor = NSColor(DaybookTheme.ink)
-        if focus.wrappedValue {
-            if field.window != nil, field.currentEditor() == nil {
-                DispatchQueue.main.async {
-                    guard focus.wrappedValue, field.currentEditor() == nil else { return }
-                    field.window?.makeFirstResponder(field)
-                }
-            }
-        }
+        context.coordinator.requestFocus(in: field)
     }
 
-    /// 鼠标选择补全也会从绑定写回；同步正在编辑的字段，但不打断中文输入法的组合文本。
+    /// 同步外部草稿更新，但不打断中文输入法的组合文本。
     static func synchronizeText(_ text: String, in field: NSTextField) {
         let editor = field.currentEditor() as? NSTextView
         let current = editor?.string ?? field.stringValue
@@ -110,6 +113,16 @@ struct DaybookTextField: NSViewRepresentable {
 
         init(_ parent: DaybookTextField) {
             self.parent = parent
+        }
+
+        func requestFocus(in field: NSTextField) {
+            guard parent.focus.wrappedValue, field.window != nil, field.currentEditor() == nil else { return }
+            // 首次更新可能早于挂载；窗口就绪后重试，并尊重最新的焦点请求。
+            DispatchQueue.main.async { [weak self, weak field] in
+                guard let self, let field, self.parent.focus.wrappedValue,
+                      field.currentEditor() == nil, let window = field.window else { return }
+                window.makeFirstResponder(field)
+            }
         }
 
         deinit {
@@ -155,6 +168,7 @@ struct DaybookTextField: NSViewRepresentable {
         func controlTextDidBeginEditing(_ obj: Notification) {
             parent.focus.wrappedValue = true
             guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
+            parent.autocomplete?.editor = editor
 
             // 注意：不能将 editor.delegate 设为 self！
             // NSTextField 内部强依赖自身作为 fieldEditor 的 delegate 来同步状态与派发通知。
@@ -172,6 +186,7 @@ struct DaybookTextField: NSViewRepresentable {
                 )
             }
 
+            editor.allowsUndo = true
             editor.isAutomaticQuoteSubstitutionEnabled = false
             editor.isAutomaticDashSubstitutionEnabled = false
             editor.isAutomaticTextReplacementEnabled = false
@@ -184,6 +199,7 @@ struct DaybookTextField: NSViewRepresentable {
         func controlTextDidEndEditing(_ obj: Notification) {
             parent.focus.wrappedValue = false
             parent.autocomplete?.dismiss()
+            parent.autocomplete?.editor = nil
             if let editor = observedEditor {
                 NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: editor)
                 observedEditor = nil
@@ -203,16 +219,8 @@ struct DaybookTextField: NSViewRepresentable {
                 }
                 if commandSelector == #selector(NSResponder.insertTab(_:)) ||
                    commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                    if let candidate = autocomplete.selectedCandidate(), let trigger = autocomplete.trigger {
-                        let (newText, newCursor) = SyntaxAutocompleteEngine.applyCandidate(
-                            candidate,
-                            to: textView.string,
-                            range: trigger.range
-                        )
-                        textView.string = newText
-                        parent.text = newText
-                        textView.setSelectedRange(NSRange(location: newCursor, length: 0))
-                        autocomplete.dismiss()
+                    if let candidate = autocomplete.selectedCandidate(), autocomplete.commit(candidate, in: textView) {
+                        parent.text = textView.string
                         parent.onCommitAutocomplete?(candidate)
                         return true
                     }

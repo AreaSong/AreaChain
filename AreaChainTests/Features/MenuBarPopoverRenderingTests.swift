@@ -10,6 +10,18 @@ struct MenuBarPopoverRenderingTests {
     // SwiftUI 的查询/销毁回调可能晚于测试方法返回；与真实应用一样，让容器覆盖整个宿主生命周期。
     private static var retainedContainers: [ModelContainer] = []
 
+    @Test func searchRequestedBeforeMountWinsOverCaptureAutofocus() async throws {
+        let container = try fixture()
+        let toolbar = MenuBarToolbarState()
+        toolbar.focusSearch()
+        let window = host(toolbar: toolbar, container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        let field = try await focusSearch(toolbar, in: view, requestFocus: false)
+        #expect(toolbar.searchIsFocused)
+        #expect(field.currentEditor() != nil)
+    }
+
     @Test func emptySearchDoesNotSubmitTheCaptureDraftOnCommandReturn() async throws {
         let previousDraft = CaptureSession.shared.draft
         CaptureSession.shared.draft = "这条草稿不应被搜索快捷键提交"
@@ -20,9 +32,7 @@ struct MenuBarPopoverRenderingTests {
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
-        toolbar.focusSearch()
-        try await settle(view)
-        #expect(searchField(in: view)?.currentEditor() != nil)
+        _ = try await focusSearch(toolbar, in: view)
         let event = try #require(NSEvent.keyEvent(
             with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
             windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
@@ -103,11 +113,7 @@ struct MenuBarPopoverRenderingTests {
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
-        toolbar.focusSearch()
-        try await settle(view)
-        let field = try #require(searchField(in: view))
-        #expect(field.currentEditor() != nil, "聚焦搜索应进入原生编辑器")
-        window.makeFirstResponder(field)
+        let field = try await focusSearch(toolbar, in: view)
         let editor = try #require(field.currentEditor() as? NSTextView)
         editor.insertText("#工", replacementRange: NSRange(location: 0, length: 0))
         try await settle(view)
@@ -186,8 +192,26 @@ struct MenuBarPopoverRenderingTests {
 
     private func searchField(in view: NSView) -> NSTextField? {
         if let field = view as? DaybookAppKitTextField,
-           field.placeholderString?.contains("#") == true { return field }
+           let coordinator = field.delegate as? DaybookTextField.Coordinator,
+           coordinator.parent.autocomplete?.context == .search { return field }
         return view.subviews.lazy.compactMap { searchField(in: $0) }.first
+    }
+
+    private func focusSearch(
+        _ toolbar: MenuBarToolbarState, in view: NSView, requestFocus: Bool = true
+    ) async throws -> NSTextField {
+        if requestFocus { toolbar.focusSearch() }
+        // SwiftUI 到 AppKit 的焦点交接是异步的；等待状态，不依赖固定帧耗时。
+        for _ in 0..<20 {
+            view.layoutSubtreeIfNeeded()
+            if let field = searchField(in: view), field.currentEditor() != nil { return field }
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        let field = try #require(searchField(in: view))
+        let activeField = (field.window?.firstResponder as? NSTextView)?.delegate as? NSTextField
+        try #require(field.currentEditor() != nil,
+                     "搜索请求=\(toolbar.searchIsFocused)，当前输入=\(activeField?.placeholderString ?? "none")")
+        return field
     }
 
     private func diaryEditor(in view: NSView) -> NSTextView? {
