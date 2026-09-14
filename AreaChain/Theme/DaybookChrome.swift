@@ -44,6 +44,7 @@ private struct DaybookQuietButton: View {
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         let ringOpacity: CGFloat = hovering && isEnabled ? 0.35 : 0
@@ -59,7 +60,7 @@ private struct DaybookQuietButton: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(DaybookTheme.focusRing.opacity(ringOpacity), lineWidth: 1)
             )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .scaleEffect(configuration.isPressed && !style.isWorkspace ? 0.97 : 1.0)
             .onHover { hovering = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
             .animation(DaybookMotion.snappy(reduceMotion), value: configuration.isPressed)
@@ -75,7 +76,7 @@ private struct DaybookQuietButton: View {
 
     private var fill: Color {
         if configuration.isPressed { return DaybookTheme.pressFill }
-        if hovering && isEnabled { return DaybookTheme.hoverFill }
+        if hovering && isEnabled { return style.hoverFill }
         return .clear
     }
 }
@@ -160,19 +161,7 @@ struct DaybookField<Content: View>: View {
 
     var body: some View {
         content
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .fill(DaybookTheme.surface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                            .stroke(
-                                focused ? DaybookTheme.focusRing : DaybookTheme.rule,
-                                lineWidth: focused ? 1.6 : 1
-                            )
-                    )
-            )
+            .daybookInputChrome(focused: focused, kind: .search)
     }
 }
 

@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct BoardFilterBar: View {
+    @Environment(\.daybookViewStyle) private var style
     var filter: BoardFilter
     var projects: [CatalogChoice]
     var tags: [CatalogChoice]
@@ -88,6 +89,7 @@ struct BoardFilterBar: View {
         return "filter.app"
     }
 
+    @ViewBuilder
     private func filterMenu<Content: View>(
         icon: String,
         title: LocalizedStringKey,
@@ -95,42 +97,49 @@ struct BoardFilterBar: View {
         reset: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        Menu {
+        let menu = Menu {
             Button("filter.all", action: reset)
             content()
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 9.5, weight: .medium))
-                    .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
-
-                Text(title)
-                    .font(.system(size: 11, weight: active ? .semibold : .regular))
-                    .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
-                    .lineLimit(1)
-
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 7.5, weight: .bold))
-                    .foregroundStyle(active ? DaybookTheme.stamp.opacity(0.8) : DaybookTheme.muted.opacity(0.6))
+            if style.isWorkspace {
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                    Text(title).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.system(size: 8, weight: .medium))
+                }
+            } else {
+                standardFilterLabel(icon: icon, title: title, active: active)
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(active ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.05))
-            )
-            .overlay(
-                Capsule()
-                    .stroke(
-                        active ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.5),
-                        lineWidth: 0.8
-                    )
-            )
-            .contentShape(Capsule())
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .accessibilityLabel(title)
         .accessibilityAddTraits(active ? [.isSelected] : [])
+        if style.isWorkspace {
+            // macOS 会原生化 Menu 的 label，外框需放在 Menu 外才能与普通筛选按钮一致。
+            menu.workspaceFilterChrome(isSelected: active)
+        } else {
+            menu
+        }
+    }
+
+    private func standardFilterLabel(icon: String, title: LocalizedStringKey, active: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: icon)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
+            Text(title)
+                .font(.system(size: 11, weight: active ? .semibold : .regular))
+                .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
+                .lineLimit(1)
+            Image(systemName: "chevron.down")
+                .font(.system(size: 7.5, weight: .bold))
+                .foregroundStyle(active ? DaybookTheme.stamp.opacity(0.8) : DaybookTheme.muted.opacity(0.6))
+        }
+        .padding(.horizontal, 7)
+        .padding(.vertical, 5)
+        .background(Capsule().fill(active ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
+        .overlay(Capsule().stroke(active ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.5), lineWidth: 0.8))
+        .contentShape(Capsule())
     }
 }

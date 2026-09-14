@@ -4,6 +4,7 @@ import SwiftUI
 /// 灵感手记快捷编辑器
 struct DiaryQuickComposerView: View {
     @Environment(\.locale) private var locale
+    @Environment(\.daybookViewStyle) private var style
     @Binding var text: String
     var focused: Binding<Bool>
     var orderedTags: [TagItem]
@@ -22,21 +23,28 @@ struct DiaryQuickComposerView: View {
         if isCompact { compactInputRow } else { workspaceComposer }
     }
 
+    @ViewBuilder
     private var workspaceComposer: some View {
+        if style.isWorkspace {
+            composerContent
+                .daybookInputChrome(focused: focused.wrappedValue, kind: .composer)
+                .fixedSize(horizontal: false, vertical: true)
+        } else {
+            composerContent
+                .padding(10)
+                .background(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .fill(DaybookTheme.hoverFill.opacity(0.5)))
+                .overlay(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var composerContent: some View {
         VStack(alignment: .leading, spacing: 8) {
             editorInputView.zIndex(20)
             tagAndActionRow
         }
-        .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookTheme.hoverFill.opacity(0.5))
-        )
-        .fixedSize(horizontal: false, vertical: true)
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
-        )
     }
 
     private var compactInputRow: some View {
@@ -96,22 +104,19 @@ struct DiaryQuickComposerView: View {
         onSubmit()
     }
 
+    @ViewBuilder
     private var editorInputView: some View {
-        SyntaxTextEditor(
+        let editor = SyntaxTextEditor(
             text: $text, focused: focused,
             placeholder: L10n.string("diary.composer.placeholder", locale: locale),
             onSubmit: onSubmit
         )
         .frame(minHeight: 64, maxHeight: 100)
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .stroke(focused.wrappedValue ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: focused.wrappedValue ? 1.4 : 0.8)
-        )
+        if style.isWorkspace {
+            editor
+        } else {
+            editor.daybookInputChrome(focused: focused.wrappedValue, kind: .editor)
+        }
     }
 
     private var tagAndActionRow: some View {
@@ -169,7 +174,17 @@ struct DiaryQuickComposerView: View {
         .buttonStyle(.plain)
     }
 
+    @ViewBuilder
     private var submitButton: some View {
+        if style.isWorkspace {
+            ComposerAddButton(title: "diary.composer.save", enabled: canSubmit, action: onSubmit)
+                .keyboardShortcut(.return, modifiers: .command)
+        } else {
+            standardSubmitButton
+        }
+    }
+
+    private var standardSubmitButton: some View {
         Button(action: onSubmit) {
             HStack(spacing: 4) {
                 Image(systemName: "square.and.pencil")

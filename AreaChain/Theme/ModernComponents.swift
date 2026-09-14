@@ -10,6 +10,7 @@ struct ModernCheckbox: View {
     @State private var hovering = false
     @State private var isAnimating = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Button(action: handleTap) { checkboxContent }
@@ -53,7 +54,7 @@ struct ModernCheckbox: View {
         if hovering {
             return DaybookTheme.stamp.opacity(0.8)
         }
-        return DaybookTheme.ink.opacity(0.24)
+        return style.isWorkspace ? WorkspaceStyle.control : DaybookTheme.ink.opacity(0.24)
     }
 
     private func handleTap() {
@@ -83,6 +84,7 @@ struct PillBadge: View {
 
     @State private var hovering = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Group {
@@ -101,10 +103,10 @@ struct PillBadge: View {
         HStack(spacing: 3.5) {
             if let icon {
                 Image(systemName: icon)
-                    .font(DaybookType.badge)
+                    .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
             }
             Text(title)
-                .font(DaybookType.badge)
+                .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
                 .lineLimit(1)
         }
         .foregroundStyle(isSelected ? color : DaybookTheme.muted)
@@ -146,6 +148,7 @@ struct PillBadge: View {
 // MARK: - Modern Card Modifier
 
 struct ModernCardModifier: ViewModifier {
+    @Environment(\.daybookViewStyle) private var style
     var cornerRadius: CGFloat = DaybookRadius.card
     var isHovered: Bool = false
     var isSelected: Bool = false
@@ -169,6 +172,7 @@ struct ModernCardModifier: ViewModifier {
     }
 
     private var shadowColor: Color {
+        if style.isWorkspace { return .clear }
         if isSelected {
             return DaybookTheme.stamp.opacity(0.18)
         }
@@ -180,12 +184,12 @@ struct ModernCardModifier: ViewModifier {
 
     private var backgroundFill: Color {
         if isSelected {
-            return DaybookTheme.cardSelectionFill
+            return style.selectionFill
         }
         if isHovered {
-            return DaybookTheme.cardSurfaceHover
+            return style.isWorkspace ? WorkspaceStyle.hover : DaybookTheme.cardSurfaceHover
         }
-        return DaybookTheme.cardSurface
+        return style.cardSurface
     }
 
     private var borderStroke: Color {
@@ -195,7 +199,7 @@ struct ModernCardModifier: ViewModifier {
         if isHovered {
             return DaybookTheme.cardBorderHover
         }
-        return DaybookTheme.cardBorder
+        return style.cardBorder
     }
 }
 
@@ -240,6 +244,7 @@ extension View {
 // MARK: - Modern Row Modifier
 
 struct ModernRowModifier: ViewModifier {
+    @Environment(\.daybookViewStyle) private var style
     var cornerRadius: CGFloat = DaybookRadius.small
     var isHovered: Bool = false
     var isSelected: Bool = false
@@ -258,10 +263,10 @@ struct ModernRowModifier: ViewModifier {
 
     private var backgroundFill: Color {
         if isSelected {
-            return DaybookTheme.cardSelectionFill
+            return style.selectionFill
         }
         if isHovered {
-            return DaybookTheme.hoverFill
+            return style.hoverFill
         }
         return Color.clear
     }
@@ -286,12 +291,13 @@ struct ModernTaskTitle: View {
     var font: Font = DaybookType.body
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Text(text)
             .font(font)
             .strikethrough(isDone, color: DaybookTheme.muted.opacity(0.8))
-            .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
+            .foregroundStyle(isDone ? style.doneText : DaybookTheme.ink)
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
     }
 }

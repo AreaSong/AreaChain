@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct DiaryStandaloneView: View {
+    @Environment(\.daybookViewStyle) private var style
     private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
 
@@ -13,7 +14,7 @@ struct DiaryStandaloneView: View {
             usesSharedDiaryDay: true
         )
         .padding(DaybookSpacing.page)
-        .frame(minWidth: 360, maxWidth: .infinity, minHeight: 420, maxHeight: .infinity, alignment: .topLeading)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .frame(minWidth: style.isWorkspace ? 0 : 360, maxWidth: .infinity, minHeight: style.isWorkspace ? 0 : 420, maxHeight: .infinity, alignment: .topLeading)
+        .background(style.pageBackground)
     }
 }

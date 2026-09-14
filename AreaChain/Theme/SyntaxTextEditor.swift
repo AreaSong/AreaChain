@@ -5,7 +5,7 @@ struct SyntaxTextEditor: View {
     @Binding var text: String
     @Binding var focused: Bool
     var placeholder: String
-    var fontSize: CGFloat = 13
+    var fontSize: CGFloat = DaybookType.bodySize
     var context: SyntaxInputContext
     var onSubmit: (() -> Void)?
 
@@ -14,7 +14,7 @@ struct SyntaxTextEditor: View {
 
     init(
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
-        fontSize: CGFloat = 13, context: SyntaxInputContext = .tags, onSubmit: (() -> Void)? = nil
+        fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags, onSubmit: (() -> Void)? = nil
     ) {
         _text = text
         _focused = focused

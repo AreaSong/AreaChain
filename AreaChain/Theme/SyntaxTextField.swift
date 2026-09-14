@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -7,7 +8,8 @@ struct SyntaxTextField: View {
     var placeholder: String
     @Binding var focused: Bool
     var context: SyntaxInputContext = .capture
-    var fontSize: CGFloat = 13
+    var fontSize: CGFloat = DaybookType.bodySize
+    var fontWeight: NSFont.Weight = .regular
     var allowsShiftNewline: Bool = false
     var onSubmit: () -> Void = {}
     var onEscape: (() -> Void)? = nil
@@ -17,7 +19,8 @@ struct SyntaxTextField: View {
 
     init(
         text: Binding<String>, placeholder: String, focused: Binding<Bool>,
-        context: SyntaxInputContext = .capture, fontSize: CGFloat = 13,
+        context: SyntaxInputContext = .capture, fontSize: CGFloat = DaybookType.bodySize,
+        fontWeight: NSFont.Weight = .regular,
         allowsShiftNewline: Bool = false, onSubmit: @escaping () -> Void = {}, onEscape: (() -> Void)? = nil
     ) {
         _text = text
@@ -25,6 +28,7 @@ struct SyntaxTextField: View {
         _focused = focused
         self.context = context
         self.fontSize = fontSize
+        self.fontWeight = fontWeight
         self.allowsShiftNewline = allowsShiftNewline
         self.onSubmit = onSubmit
         self.onEscape = onEscape
@@ -33,7 +37,7 @@ struct SyntaxTextField: View {
 
     var body: some View {
         DaybookTextField(
-            text: $text, placeholder: placeholder, fontSize: fontSize, focus: $focused,
+            text: $text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight, focus: $focused,
             autocomplete: autocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
             onSubmit: onSubmit, allowsShiftNewline: allowsShiftNewline, onEscape: onEscape
         )

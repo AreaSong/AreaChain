@@ -159,14 +159,8 @@ struct WorkspaceSidebarView: View {
                 Spacer()
                 if let badgeCount {
                     Text("\(badgeCount)")
-                        .font(.system(size: 10, weight: .semibold, design: .rounded))
+                        .font(WorkspaceStyle.countFont)
                         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1.5)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.hoverFill)
-                        )
                 }
             }
             .contentShape(Rectangle())
@@ -176,10 +170,10 @@ struct WorkspaceSidebarView: View {
         .padding(.horizontal, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .font(DaybookType.body)
+        .font(DaybookType.body.weight(isSelected ? .medium : .regular))
     }
 
     private func projectRow(_ project: ProjectItem, depth: Int) -> some View {
@@ -198,13 +192,13 @@ struct WorkspaceSidebarView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "folder")
-                    .font(.system(size: 11))
+                    .font(DaybookType.body)
                 Text(project.name)
-                    .font(.system(size: 12))
+                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
                 Spacer()
                 if count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(WorkspaceStyle.countFont)
                         .foregroundStyle(DaybookTheme.muted)
                 }
             }
@@ -216,7 +210,7 @@ struct WorkspaceSidebarView: View {
         .padding(.trailing, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
@@ -268,13 +262,13 @@ struct WorkspaceSidebarView: View {
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: "tag")
-                    .font(.system(size: 11))
+                    .font(DaybookType.body)
                 Text(tag.name)
-                    .font(.system(size: 12))
+                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
                 Spacer()
                 if count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .font(WorkspaceStyle.countFont)
                         .foregroundStyle(DaybookTheme.muted)
                 }
             }
@@ -285,7 +279,7 @@ struct WorkspaceSidebarView: View {
         .padding(.horizontal, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
         )
         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {

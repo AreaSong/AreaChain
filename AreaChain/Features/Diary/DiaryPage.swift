@@ -12,6 +12,7 @@ struct DiaryPageOptions {
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
 struct DiaryPage: View {
+    @Environment(\.daybookViewStyle) private var style
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
 
@@ -125,12 +126,14 @@ struct DiaryPage: View {
             // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
             if showsPageHeader {
                 topHeader.zIndex(50)
-                tagFilterBar
+                if !style.isWorkspace { tagFilterBar }
             }
 
             if showsComposer {
                 quickComposer.zIndex(20)
             }
+
+            if showsPageHeader && style.isWorkspace { tagFilterBar }
 
             entryListSection
         }
@@ -154,30 +157,20 @@ struct DiaryPage: View {
     }
 
     private var topHeader: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 8) {
-                    Text("diary.page.title")
-                        .font(DaybookType.title)
-                        .foregroundStyle(DaybookTheme.ink)
-
-                    Text("diary.page.count \(filteredEntries.count)")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule().fill(DaybookTheme.hoverFill)
-                        )
-                }
-
-                Text("diary.page.subtitle")
-                    .font(DaybookType.subtitle)
+        DaybookPageHeader {
+            HStack(spacing: 8) {
+                Text("diary.page.title")
+                    .font(DaybookType.title)
+                    .foregroundStyle(DaybookTheme.ink)
+                Text("diary.page.count \(filteredEntries.count)")
+                    .font(WorkspaceStyle.countFont)
                     .foregroundStyle(DaybookTheme.muted)
             }
-
-            Spacer()
-
+        } subtitle: {
+            Text("diary.page.subtitle")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookTheme.muted)
+        } trailing: {
             searchChrome
                 .frame(width: 200)
         }
@@ -193,7 +186,7 @@ struct DiaryPage: View {
             .accessibilityLabel("diary.search.placeholder")
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),
-                focused: $searchFocused, context: .tagSearch, fontSize: 11,
+                focused: $searchFocused, context: .tagSearch, fontSize: DaybookType.subtitleSize,
                 onEscape: {
                     if !searchQuery.isEmpty { searchQuery = "" }
                     else { NSApp.keyWindow?.makeFirstResponder(nil) }
@@ -211,16 +204,7 @@ struct DiaryPage: View {
                 .accessibilityLabel("footer.search.clear")
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, showsPageHeader ? 5 : 4)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.hoverFill)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .strokeBorder(searchFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder, lineWidth: searchFocused ? 1.4 : 0.8)
-        )
+        .daybookInputChrome(focused: searchFocused, kind: .search)
     }
 
     private var tagFilterBar: some View {
@@ -258,28 +242,36 @@ struct DiaryPage: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                Text(title)
-                    .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                        .opacity(0.8)
+            if style.isWorkspace {
+                WorkspaceFilterLabel(isSelected: isSelected, tint: color) {
+                    HStack(spacing: 4) {
+                        Text(title)
+                        if count > 0 { Text("\(count)").font(WorkspaceStyle.countFont) }
+                    }
                 }
+            } else {
+                standardFilterLabel(title: title, count: count, isSelected: isSelected, color: color)
             }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 4.5)
-            .background(
-                Capsule()
-                    .fill(isSelected ? color.opacity(0.16) : DaybookTheme.hoverFill.opacity(0.8))
-            )
-            .overlay(
-                Capsule()
-                    .strokeBorder(isSelected ? color.opacity(0.4) : DaybookTheme.cardBorder, lineWidth: 0.8)
-            )
-            .foregroundStyle(isSelected ? color : DaybookTheme.ink)
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    private func standardFilterLabel(title: String, count: Int, isSelected: Bool, color: Color) -> some View {
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
+            if count > 0 {
+                Text("\(count)")
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    .opacity(0.8)
+            }
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4.5)
+        .background(Capsule().fill(isSelected ? color.opacity(0.16) : DaybookTheme.hoverFill.opacity(0.8)))
+        .overlay(Capsule().strokeBorder(isSelected ? color.opacity(0.4) : DaybookTheme.cardBorder, lineWidth: 0.8))
+        .foregroundStyle(isSelected ? color : DaybookTheme.ink)
     }
 
     private var quickComposer: some View {

@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct QuadrantPage: View {
+    @Environment(\.daybookViewStyle) private var style
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
@@ -32,15 +33,25 @@ struct QuadrantPage: View {
             Text("quadrant.hint")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookTheme.muted)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(QuadrantSlot.allCases) { slot in
-                    cell(slot)
+            if style.isWorkspace {
+                GeometryReader { geometry in
+                    quadrantGrid(cellHeight: max(120, min(180, (geometry.size.height - 8) / 2)))
                 }
+            } else {
+                quadrantGrid(cellHeight: 180)
             }
         }
     }
 
-    private func cell(_ slot: QuadrantSlot) -> some View {
+    private func quadrantGrid(cellHeight: CGFloat) -> some View {
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+            ForEach(QuadrantSlot.allCases) { slot in
+                cell(slot, minHeight: cellHeight)
+            }
+        }
+    }
+
+    private func cell(_ slot: QuadrantSlot, minHeight: CGFloat) -> some View {
         let rows = rows(in: slot)
         let isTargeted = dropSlot == slot
         return VStack(alignment: .leading, spacing: 6) {
@@ -60,7 +71,7 @@ struct QuadrantPage: View {
             }
         }
         .padding(10)
-        .frame(maxWidth: .infinity, minHeight: 180, alignment: .topLeading)
+        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
         .modernCard(cornerRadius: DaybookRadius.medium, isHovered: isTargeted, isSelected: isTargeted)
         .dropDestination(for: String.self) { items, _ in
             apply(items, to: slot)

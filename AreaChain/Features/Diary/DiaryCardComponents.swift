@@ -10,7 +10,7 @@ extension DiaryNoteCard {
             }
 
             Text(formatDate(entry.createdAt))
-                .font(DaybookType.caption.monospaced())
+                .font(viewStyle.isWorkspace ? WorkspaceStyle.countFont : DaybookType.caption.monospaced())
                 .foregroundStyle(DaybookTheme.muted)
 
             if isPasswordType {
@@ -39,14 +39,9 @@ extension DiaryNoteCard {
                 placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
             )
                 .frame(minHeight: 64, maxHeight: 160)
-                .padding(4)
                 .onAppear { editFocused = true }
                 .zIndex(20)
-                .background(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(DaybookTheme.surface)
-                        .stroke(DaybookTheme.focusRing, lineWidth: 1.2)
-                )
+                .daybookInputChrome(focused: editFocused, kind: .editor)
 
             HStack {
                 Button("alert.cancel") {

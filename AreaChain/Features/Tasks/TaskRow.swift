@@ -8,6 +8,7 @@ struct TaskRow: View {
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
+    @Environment(\.daybookViewStyle) private var style
 
     @State var editing = false
     @State var hovering = false
@@ -79,6 +80,7 @@ struct TaskRow: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
+        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : nil)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: hovering,
@@ -147,7 +149,7 @@ struct TaskRow: View {
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.85))
+                    .foregroundStyle(DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.85))
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
@@ -160,8 +162,8 @@ struct TaskRow: View {
 
             if let source = state.classify?.sourceLabel, !source.isEmpty {
                 Text(source)
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.75))
+                    .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
+                    .foregroundStyle(DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
             }
 
         }
@@ -192,7 +194,7 @@ struct TaskRow: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
-        .opacity(hovering || state.isSelected ? 1.0 : 0.65)
+        .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
@@ -207,10 +209,10 @@ struct TaskRow: View {
         return HStack(spacing: 2.5) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(0.75))
+                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
             Text("\(streak)")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
+                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
                 .lineLimit(1)
                 .offset(y: -0.6)
         }
@@ -229,10 +231,10 @@ struct TaskRow: View {
         let content = HStack(spacing: 2.5) {
             Image(systemName: "clock")
                 .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
+                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
             Text(RemindMinutes.label(minutes, locale: locale))
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
+                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
                 .lineLimit(1)
                 .offset(y: -0.6)
         }

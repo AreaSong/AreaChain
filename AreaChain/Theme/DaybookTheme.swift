@@ -125,14 +125,18 @@ enum DaybookSpacing {
 }
 
 enum DaybookType {
-    static let title: Font = .system(size: 16, weight: .semibold)
-    static let subtitle: Font = .system(size: 12)
-    static let body: Font = .system(size: 13)
-    static let caption: Font = .system(size: 11, weight: .medium)
+    static let titleSize: CGFloat = 16
+    static let subtitleSize: CGFloat = 12
+    static let bodySize: CGFloat = 13
+    static let captionSize: CGFloat = 11
+    static let title: Font = .system(size: titleSize, weight: .semibold)
+    static let subtitle: Font = .system(size: subtitleSize)
+    static let body: Font = .system(size: bodySize)
+    static let caption: Font = .system(size: captionSize, weight: .medium)
     static let badge: Font = .system(size: 10, weight: .medium)
     static let label: Font = .system(size: 10, weight: .semibold)
     static let entity: Font = .system(size: 17, weight: .medium)
-    static let headline: Font = .system(size: 16, weight: .semibold)
+    static let headline: Font = title
     static let section: Font = .system(size: 11, weight: .semibold)
 }
 
@@ -149,6 +153,7 @@ extension NSColor {
 }
 
 struct SectionStamp: View {
+    @Environment(\.daybookViewStyle) private var style
     var title: LocalizedStringKey
     var icon: String? = nil
     var count: Int? = nil
@@ -161,12 +166,12 @@ struct SectionStamp: View {
                     .foregroundStyle(DaybookTheme.stamp)
             }
             Text(title)
-                .font(DaybookType.section)
-                .tracking(0.5)
+                .font(style.isWorkspace ? WorkspaceStyle.sectionFont : DaybookType.section)
+                .tracking(style.isWorkspace ? 0 : 0.5)
                 .foregroundStyle(DaybookTheme.muted)
             if let count {
                 Text("\(count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(DaybookTheme.muted)
             }
         }

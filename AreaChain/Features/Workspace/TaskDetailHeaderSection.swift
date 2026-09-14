@@ -61,7 +61,8 @@ struct TaskDetailTitleEditor: View {
             if isEditing {
                 SyntaxTextField(
                     text: $draft, placeholder: L10n.string("drawer.title.placeholder", locale: locale),
-                    focused: $isFocused, fontSize: 16, onSubmit: save, onEscape: cancel
+                    focused: $isFocused, fontSize: DaybookType.titleSize, fontWeight: .semibold,
+                    onSubmit: save, onEscape: cancel
                 )
                     .onChange(of: isFocused) { _, focused in
                         if !focused, isEditing {

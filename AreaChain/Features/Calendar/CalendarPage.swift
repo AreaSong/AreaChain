@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct CalendarPage: View {
+    @Environment(\.daybookViewStyle) private var style
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
@@ -33,13 +34,16 @@ struct CalendarPage: View {
     }
 
     var body: some View {
-        ViewThatFits(in: .horizontal) {
-            wideLayout
-            compactLayout
+        GeometryReader { geometry in
+            ViewThatFits(in: .horizontal) {
+                wideLayout
+                compactLayout(compactDates: style.isWorkspace && geometry.size.height < 560)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(DaybookSpacing.page)
-        .frame(minWidth: 420, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity, alignment: .topLeading)
-        .background(DaybookTheme.paper.opacity(0.94))
+        .frame(minWidth: style.isWorkspace ? 0 : 420, maxWidth: .infinity, minHeight: style.isWorkspace ? 0 : 560, maxHeight: .infinity, alignment: .topLeading)
+        .background(style.pageBackground)
     }
 
     private var calendarSidebar: some View {
@@ -100,7 +104,7 @@ struct CalendarPage: View {
         .frame(minWidth: 660)
     }
 
-    private var compactLayout: some View {
+    private func compactLayout(compactDates: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             DaybookPeriodBar(
                 title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
@@ -111,6 +115,7 @@ struct CalendarPage: View {
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,
+                isCompact: compactDates,
                 onSelect: { selectedKey = $0 },
                 onDropTodo: dropTodo
             )

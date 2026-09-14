@@ -32,7 +32,8 @@ final class DaybookAppKitTextField: NSTextField {
 struct DaybookTextField: NSViewRepresentable {
     @Binding var text: String
     var placeholder: String
-    var fontSize: CGFloat = 13
+    var fontSize: CGFloat = DaybookType.bodySize
+    var fontWeight: NSFont.Weight = .regular
     var focus: Binding<Bool>
     var autocomplete: SyntaxAutocompleteState? = nil
     var availableTags: [String] = []
@@ -46,10 +47,17 @@ struct DaybookTextField: NSViewRepresentable {
         Coordinator(self)
     }
 
+    private var nativeFont: NSFont {
+        // 常规字体沿用既有入口；只在显式指定其他字重时切换字体构造方式。
+        fontWeight == .regular
+            ? .systemFont(ofSize: fontSize)
+            : .systemFont(ofSize: fontSize, weight: fontWeight)
+    }
+
     func makeNSView(context: Context) -> NSTextField {
         let field = DaybookAppKitTextField(string: "")
         field.placeholderString = placeholder
-        field.font = .systemFont(ofSize: fontSize)
+        field.font = nativeFont
         field.textColor = NSColor(DaybookTheme.ink)
         field.drawsBackground = false
         field.backgroundColor = .clear
@@ -90,7 +98,7 @@ struct DaybookTextField: NSViewRepresentable {
         if field.placeholderString != placeholder {
             field.placeholderString = placeholder
         }
-        field.font = .systemFont(ofSize: fontSize)
+        field.font = nativeFont
         field.textColor = NSColor(DaybookTheme.ink)
         context.coordinator.requestFocus(in: field)
     }
@@ -309,14 +317,15 @@ struct DaybookTextField: NSViewRepresentable {
 extension DaybookTextField {
     /// 兼容现有 SwiftUI 焦点调用；原生搜索可直接绑定自己的焦点状态，避免结果区切换重置输入。
     init(
-        text: Binding<String>, placeholder: String, fontSize: CGFloat = 13,
+        text: Binding<String>, placeholder: String, fontSize: CGFloat = DaybookType.bodySize,
+        fontWeight: NSFont.Weight = .regular,
         focus: FocusState<Bool>.Binding, autocomplete: SyntaxAutocompleteState? = nil,
         availableTags: [String] = [], onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil, onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
         allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil
     ) {
         self.init(
-            text: text, placeholder: placeholder, fontSize: fontSize,
+            text: text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight,
             focus: Binding(get: { focus.wrappedValue }, set: { focus.wrappedValue = $0 }),
             autocomplete: autocomplete, availableTags: availableTags, onSubmit: onSubmit,
             onCommandReturn: onCommandReturn, onCommitAutocomplete: onCommitAutocomplete,

@@ -7,6 +7,7 @@ enum DaybookTitleStyle {
 }
 
 struct DaybookPage<Trailing: View, Content: View>: View {
+    @Environment(\.daybookViewStyle) private var style
     var title: LocalizedStringKey?
     var titleText: String?
     var titleStyle: DaybookTitleStyle
@@ -49,26 +50,26 @@ struct DaybookPage<Trailing: View, Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
             if showsHeader {
-                HStack(alignment: .bottom, spacing: DaybookSpacing.sm) {
-                    VStack(alignment: .leading, spacing: 3) {
-                        titleLabel
-                        subtitleLabel
-                    }
-                    Spacer(minLength: 0)
+                DaybookPageHeader {
+                    titleLabel
+                } subtitle: {
+                    subtitleLabel
+                } trailing: {
                     trailing
                 }
             }
             content
         }
         .padding(DaybookSpacing.page)
+        // 独立页面的最小尺寸不能反向撑大工作台；嵌入时由三栏布局分配空间。
         .frame(
-            minWidth: minWidth,
+            minWidth: style.isWorkspace ? 0 : minWidth,
             maxWidth: .infinity,
-            minHeight: minHeight,
+            minHeight: style.isWorkspace ? 0 : minHeight,
             maxHeight: .infinity,
             alignment: .topLeading
         )
-        .background(DaybookTheme.paper.opacity(0.94))
+        .background(style.pageBackground)
     }
 
     @ViewBuilder
@@ -109,7 +110,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
     private var titleFont: Font {
         switch titleStyle {
         case .page: DaybookType.title
-        case .entity: DaybookType.entity
+        case .entity: style.isWorkspace ? DaybookType.title : DaybookType.entity
         }
     }
 }
@@ -196,19 +197,7 @@ struct DaybookComposer<Accessory: View>: View {
                 CaptureAttributesButton(text: text, knownTags: completionTags, state: autocomplete)
                 ComposerAddButton(enabled: canSubmit, action: onSubmit)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(isFocused ? DaybookTheme.surface : DaybookTheme.hoverFill.opacity(0.75))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(
-                        isFocused ? DaybookTheme.focusRing : DaybookTheme.cardBorder,
-                        lineWidth: isFocused ? 1.4 : 0.8
-                    )
-            )
+            .daybookInputChrome(focused: isFocused, kind: .composer)
             .syntaxSuggestions(autocomplete)
             accessory
         }

@@ -63,10 +63,12 @@ struct SettingsView: View {
     private var settingsForm: some View {
         Form {
             GeneralSettingsSection(
+                prefs: prefs,
                 launchesAtLogin: $launchesAtLogin,
                 onUpdateLoginItem: updateLoginItem
             )
             SyncSettingsSection(
+                prefs: prefs,
                 notifyStatus: $notifyStatus,
                 notifyStatusText: notifyStatusText,
                 calendarSyncStatusText: calendarSyncStatusText,

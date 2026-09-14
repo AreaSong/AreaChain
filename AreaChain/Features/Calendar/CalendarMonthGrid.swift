@@ -19,6 +19,7 @@ struct CalendarMonthGrid: View {
 
     var dates: CalendarMonthGridDates
     var counts: [String: Int]
+    var isCompact: Bool = false
     var onSelect: (String) -> Void
     var onDropTodo: ((UUID, String) -> Void)? = nil
 
@@ -29,16 +30,20 @@ struct CalendarMonthGrid: View {
     init(
         dates: CalendarMonthGridDates,
         counts: [String: Int],
+        isCompact: Bool = false,
         onSelect: @escaping (String) -> Void,
         onDropTodo: ((UUID, String) -> Void)? = nil
     ) {
         self.dates = dates
         self.counts = counts
+        self.isCompact = isCompact
         self.onSelect = onSelect
         self.onDropTodo = onDropTodo
     }
 
     @State private var dropKey: String?
+
+    private var cellHeight: CGFloat { isCompact ? 28 : 52 }
 
     var body: some View {
         let cells = DayKey.monthGrid(containing: monthKey, calendar: calendar)
@@ -50,7 +55,7 @@ struct CalendarMonthGrid: View {
                         cell(key)
                     } else {
                         Color.clear
-                            .frame(maxWidth: .infinity, minHeight: 52)
+                            .frame(maxWidth: .infinity, minHeight: cellHeight)
                             .allowsHitTesting(false)
                     }
                 }
@@ -84,7 +89,7 @@ struct CalendarMonthGrid: View {
                     .foregroundStyle(count > 0 ? DaybookTheme.stamp : .clear)
             }
             .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
-            .frame(maxWidth: .infinity, minHeight: 52)
+            .frame(maxWidth: .infinity, minHeight: cellHeight)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface)
@@ -96,7 +101,7 @@ struct CalendarMonthGrid: View {
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }
         .buttonStyle(DaybookQuietButtonStyle())
-        .frame(maxWidth: .infinity, minHeight: 52)
+        .frame(maxWidth: .infinity, minHeight: cellHeight)
         .contentShape(Rectangle())
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)

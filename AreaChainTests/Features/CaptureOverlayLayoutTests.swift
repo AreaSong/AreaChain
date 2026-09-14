@@ -17,10 +17,11 @@ struct CaptureOverlayLayoutTests {
             + [9, 10].map { count in (1...count).map { "#标签\($0)" }.joined(separator: " ") }
         for text in texts {
             try await host.enter(text)
+            try await host.waitForOverlay("syntax.overlay.candidates")
             _ = try NativeSyntaxUI.frame("syntax.overlay.candidates", in: host.window)
             #expect(try host.viewportFrame() == baseline)
             try host.pressEscape()
-            try await host.settle()
+            try await host.waitForOverlay("syntax.overlay.candidates", visible: false)
             #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.candidates"))
             #expect(try host.viewportFrame() == baseline)
         }
@@ -43,7 +44,7 @@ struct CaptureOverlayLayoutTests {
         #expect(try NativeSyntaxUI.frame("syntax.attributes.button", in: host.window) == button)
         #expect(try host.inputFrame() == input)
         try host.click("syntax.attributes.button")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes")
         _ = try NativeSyntaxUI.frame("syntax.overlay.attributes", in: host.window)
         #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.candidates"))
         #expect(host.draft.text == text && editor.selectedRange() == selection)
@@ -53,19 +54,19 @@ struct CaptureOverlayLayoutTests {
         #expect(!host.container.mainContext.hasChanges)
         try host.snapshot(workspace ? "workspace-attributes-dark" : "capture-attributes-light")
         try host.pressEscape()
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes", visible: false)
         #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
         #expect(host.draft.text == text && editor.selectedRange() == selection)
         try host.click("syntax.attributes.button")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes")
         try host.click("syntax.attributes.close")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes", visible: false)
         #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
         #expect(host.draft.text == text && editor.selectedRange() == selection)
         try host.click("syntax.attributes.button")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes")
         try host.click("syntax.attributes.button")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes", visible: false)
         #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
     }
 
@@ -76,6 +77,7 @@ struct CaptureOverlayLayoutTests {
         try await host.settle()
         let viewport = try host.viewportFrame()
         try await host.enter("#工")
+        try await host.waitForOverlay("syntax.overlay.candidates")
         let candidate = try NativeSyntaxUI.frame("syntax.candidate.tag_工作", in: host.window)
         let overlap = try #require(host.rowFrames().map { $0.intersection(candidate) }.first { !$0.isEmpty && !$0.isNull })
         let point = NSPoint(x: overlap.midX, y: overlap.midY)
@@ -87,10 +89,11 @@ struct CaptureOverlayLayoutTests {
         #expect(try host.viewportFrame() == viewport)
         try await host.enter("#新标签")
         try host.click("syntax.attributes.button")
-        try await host.settle()
+        try await host.waitForOverlay("syntax.overlay.attributes")
         let ids = NativeSyntaxUI.identifiers(in: host.window)
         #expect(ids.contains("syntax.overlay.attributes") && !ids.contains("syntax.overlay.candidates"))
         try await host.enter("#工")
+        try await host.waitForOverlay("syntax.overlay.candidates")
         #expect(NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.candidates"))
         #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
         try host.snapshot(workspace ? "workspace-candidates-dark" : "capture-candidates-light")
@@ -102,6 +105,7 @@ struct CaptureOverlayLayoutTests {
         defer { host.close() }
         try await host.settle()
         try await host.enter("#工")
+        try await host.waitForOverlay("syntax.overlay.candidates")
         let panel = try NativeSyntaxUI.frame("syntax.overlay.candidates", in: host.window)
         let footer = CGRect(x: panel.minX, y: panel.minY, width: panel.width, height: 22)
         let overlap = try #require(host.rowFrames().map { $0.intersection(footer) }.first { !$0.isEmpty && !$0.isNull })
@@ -118,12 +122,20 @@ struct CaptureOverlayLayoutTests {
         let todo = TodoItem(title: "检查器测试", dayKey: DayKey.today())
         host.container.mainContext.insert(todo)
         try host.container.mainContext.save()
-        host.show(TaskDetailDrawer(taskID: .constant(todo.id)), size: NSSize(width: 380, height: 640))
+        host.show(
+            TaskDetailDrawer(taskID: .constant(todo.id)).environment(\.daybookViewStyle, .workspace),
+            size: NSSize(width: 380, height: 640)
+        )
         try await host.settle()
         let editor = try #require(host.nativeViews().compactMap { $0 as? DaybookAppKitTextView }.first)
-        host.window.makeFirstResponder(editor)
+        #expect(host.window.makeFirstResponder(editor))
+        // 聚焦会异步更新 SwiftUI 绑定，等待交接结束再模拟下一次用户输入。
+        try await host.settle()
+        #expect(host.window.firstResponder === editor)
         editor.insertText("#工", replacementRange: NSRange(location: 0, length: 0))
         try await host.settle()
+        #expect(editor.string == "#工")
+        try await host.waitForOverlay("syntax.overlay.candidates")
         let panel = try NativeSyntaxUI.frame("syntax.overlay.candidates", in: host.window)
         let content = try #require(host.window.contentView)
         #expect(content.convert(content.bounds, to: nil).contains(panel))
@@ -272,6 +284,7 @@ private final class CaptureOverlayHost {
         window.appearance = NSAppearance(named: workspace ? .darkAqua : .aqua)
         window.contentView = NSHostingView(rootView: CaptureOverlayFixture(draft: draft, workspace: workspace)
             .modelContainer(container).environment(\.locale, Locale(identifier: "zh-Hans"))
+            .environment(\.daybookViewStyle, workspace ? .workspace : .standard)
             .preferredColorScheme(workspace ? .dark : .light)
             .transaction { $0.disablesAnimations = true })
         NSApp.activate(ignoringOtherApps: true)
@@ -297,6 +310,18 @@ private final class CaptureOverlayHost {
         window.contentView?.layoutSubtreeIfNeeded()
     }
 
+    func waitForOverlay(_ identifier: String, visible: Bool = true) async throws {
+        // 冷启动的 SwiftUI/无障碍树可能晚于绑定更新；等待实际呈现条件，不重发输入或点击。
+        let deadline = ContinuousClock.now + .seconds(1)
+        while NativeSyntaxUI.identifiers(in: window).contains(identifier) != visible && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+            window.contentView?.layoutSubtreeIfNeeded()
+        }
+        let state = SyntaxAutocompleteState.forResponder(window.firstResponder)
+        try #require(NativeSyntaxUI.identifiers(in: window).contains(identifier) == visible,
+                 "浮层呈现未就绪：\(identifier)，key=\(window.isKeyWindow)，active=\(state?.isActive == true)，attributes=\(state?.showsAttributes == true)")
+    }
+
     func viewportFrame() throws -> CGRect {
         let view = try #require(descendants(window.contentView).first { $0.identifier?.rawValue == "capture.test.viewport" })
         return view.convert(view.bounds, to: nil)
@@ -304,11 +329,15 @@ private final class CaptureOverlayHost {
 
     func enter(_ text: String) async throws {
         let field = try #require(descendants(window.contentView).compactMap { $0 as? DaybookAppKitTextField }.first)
-        window.makeFirstResponder(field)
+        #expect(window.makeFirstResponder(field))
+        // 原生焦点通知会回写绑定，输入前先让 SwiftUI 完成这一轮更新。
+        try await settle()
         let editor = try #require(field.currentEditor() as? NSTextView)
+        #expect(window.firstResponder === editor)
         editor.selectAll(nil)
         editor.insertText(text, replacementRange: editor.selectedRange())
         try await settle()
+        #expect(editor.string == text && draft.text == text)
     }
 
     func editor() throws -> NSTextView {
@@ -335,12 +364,13 @@ private final class CaptureOverlayHost {
     }
 
     func click(at point: NSPoint) throws {
+        try requireKeyWindow()
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             let event = try #require(NSEvent.mouseEvent(
                 with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
                 windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1
             ))
-            NSApp.sendEvent(event)
+            NSApp.postEvent(event, atStart: false)
         }
     }
 
@@ -353,12 +383,20 @@ private final class CaptureOverlayHost {
     }
 
     private func press(_ character: String, code: UInt16, modifiers: NSEvent.ModifierFlags = []) throws {
+        try requireKeyWindow()
         let event = try #require(NSEvent.keyEvent(
             with: .keyDown, location: .zero, modifierFlags: modifiers, timestamp: ProcessInfo.processInfo.systemUptime,
             windowNumber: window.windowNumber, context: nil, characters: character,
             charactersIgnoringModifiers: character, isARepeat: false, keyCode: code
         ))
-        NSApp.sendEvent(event)
+        // 经原生事件队列派发，使 currentEvent、快捷键和本地事件监视器处于同一事件事务。
+        NSApp.postEvent(event, atStart: false)
+    }
+
+    private func requireKeyWindow() throws {
+        let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "none"
+        try #require(window.isKeyWindow,
+                     "测试窗口未激活：appActive=\(NSApp.isActive)，foreground=\(foreground)")
     }
 
     func snapshot(_ name: String) throws {

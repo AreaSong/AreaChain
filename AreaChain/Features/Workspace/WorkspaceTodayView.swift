@@ -90,7 +90,7 @@ struct WorkspaceTodayView: View {
                     .font(DaybookType.caption)
                     .labelStyle(.titleAndIcon)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookQuietButtonStyle())
             .foregroundStyle(DaybookTheme.muted)
             .help("workspace.residents.open")
 
@@ -102,20 +102,15 @@ struct WorkspaceTodayView: View {
                             .foregroundStyle(DaybookTheme.muted)
 
                         Text("\(completedTodosCount)/\(totalTodosCount)")
-                            .font(.system(size: 13, weight: .bold, design: .rounded))
+                            .font(DaybookType.body.weight(.medium).monospacedDigit())
                             .foregroundStyle(completedTodosCount >= totalTodosCount ? DaybookTheme.stamp : DaybookTheme.ink)
                     }
 
                     DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 5)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .fill(DaybookTheme.hoverFill)
-                )
             }
         }
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     private func addTodo() {

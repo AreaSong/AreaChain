@@ -20,7 +20,7 @@ struct DaybookTextEditor: NSViewRepresentable {
     @Binding var text: String
     @Binding var focused: Bool
     var placeholder: String
-    var fontSize: CGFloat = 13
+    var fontSize: CGFloat = DaybookType.bodySize
     var autocomplete: SyntaxAutocompleteState
     var availableTags: [String]
     var onSubmit: (() -> Void)? = nil

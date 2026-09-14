@@ -48,6 +48,7 @@ struct MainSplitWorkspaceView: View {
             addTagSheet
         }
         .syntaxOverlayHost()
+        .environment(\.daybookViewStyle, .workspace)
     }
 
     private var sidebarColumn: some View {
