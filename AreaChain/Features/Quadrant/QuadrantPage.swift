@@ -33,9 +33,10 @@ struct QuadrantPage: View {
             Text("quadrant.hint")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookTheme.muted)
+                .accessibilityIdentifier("quadrant.hint")
             if style.isWorkspace {
                 GeometryReader { geometry in
-                    quadrantGrid(cellHeight: max(120, min(180, (geometry.size.height - 8) / 2)))
+                    quadrantGrid(cellHeight: max(0, (geometry.size.height - DaybookSpacing.sm) / 2))
                 }
             } else {
                 quadrantGrid(cellHeight: 180)
@@ -44,35 +45,43 @@ struct QuadrantPage: View {
     }
 
     private func quadrantGrid(cellHeight: CGFloat) -> some View {
-        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
+        let columns = Array(repeating: GridItem(.flexible(), spacing: DaybookSpacing.sm), count: 2)
+        return LazyVGrid(columns: columns, spacing: DaybookSpacing.sm) {
             ForEach(QuadrantSlot.allCases) { slot in
-                cell(slot, minHeight: cellHeight)
+                cell(slot, height: cellHeight)
             }
         }
     }
 
-    private func cell(_ slot: QuadrantSlot, minHeight: CGFloat) -> some View {
+    private func cell(_ slot: QuadrantSlot, height: CGFloat) -> some View {
         let rows = rows(in: slot)
         let isTargeted = dropSlot == slot
         return VStack(alignment: .leading, spacing: 6) {
             Text(LocalizedStringKey(slot.titleKeyName))
                 .font(DaybookType.section)
                 .foregroundStyle(DaybookTheme.stamp)
+                .accessibilityAddTraits(.isHeader)
+                .accessibilityIdentifier("quadrant.header.\(slot.rawValue)")
             if rows.isEmpty {
                 DaybookEmptyState(title: "quadrant.empty", compact: true)
             } else {
-                ScrollView {
+                ScrollView(.vertical) {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(rows) { row in
                             QuadrantChip(row: row, inspectDayKey: selectedKey)
                         }
                     }
                 }
+                .scrollIndicators(.visible, axes: .vertical)
             }
         }
         .padding(10)
-        .frame(maxWidth: .infinity, minHeight: minHeight, alignment: .topLeading)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        // 固定视口让长清单只在宫格内部滚动，空宫格也占据同样的空间。
+        .frame(height: height, alignment: .topLeading)
         .modernCard(cornerRadius: DaybookRadius.medium, isHovered: isTargeted, isSelected: isTargeted)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("quadrant.cell.\(slot.rawValue)")
         .dropDestination(for: String.self) { items, _ in
             apply(items, to: slot)
         } isTargeted: { hovering in
@@ -147,6 +156,7 @@ private struct QuadrantChip: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
     }
 
