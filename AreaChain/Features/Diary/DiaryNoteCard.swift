@@ -22,23 +22,33 @@ struct DiaryNoteCard: View {
     var onDelete: () -> Void
     var isHighlighted: Bool = false
     var privacyTags: [TagItem]? = nil
+    var draftStore: DiaryCardDrafts? = nil
+    var vault: PrivacyVault? = nil
 
     @State var isHovered = false
-    @State var isEditing = false
-    @State var editDraft = ""
-    @State var editBaseText = ""
+    @State private var localDrafts = DiaryCardDrafts()
+    @State private var hostWindow: NSWindow?
     @State var showsEditConflict = false
     @State var editFocused = false
     @State var isMasked = true
     @State var hasCopied = false
+    @State var confirmsUnprotect = false
+
+    var privacyVault: PrivacyVault { vault ?? .shared }
+    var drafts: DiaryCardDrafts { draftStore ?? localDrafts }
+    var editingSession: DiaryEditorSession? { drafts.editor(for: entry.id) }
+    var isEditing: Bool { editingSession != nil }
 
     var isPasswordType: Bool {
-        DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags)
+        editingSession?.isSensitive == true || DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags)
     }
 
     var canRevealContent: Bool {
-        DiaryPrivacy.canReveal(isSensitive: isPasswordType, isMasked: isMasked)
+        (editingSession?.canRevealContent ?? (!entry.hasProtectedContent || privacyVault.isUnlocked))
+            && DiaryPrivacy.canReveal(isSensitive: isPasswordType, isMasked: isMasked)
     }
+
+    var displayedText: String { (try? DiaryContent.read(entry, vault: privacyVault)) ?? "" }
 
     private var assignedTags: [TagItem] {
         DiaryMemoTags.ordered(
@@ -88,18 +98,39 @@ struct DiaryNoteCard: View {
                 )
         )
         .onHover { isHovered = $0 }
+        .background(KeyWindowHost { hostWindow = $0 })
         .alert("diary.window.reload.title", isPresented: $showsEditConflict) {
-            Button("diary.window.reload") { beginEditing() }
+            Button("diary.window.reload") { reloadEditingDraft() }
             Button("alert.cancel", role: .cancel) {}
         } message: { Text("diary.window.save.conflict") }
         .zIndex(isEditing ? 20 : 0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .onDisappear { isMasked = true }
+        .onDisappear { maskContent() }
         .onChange(of: entry.text) { _, _ in isMasked = true }
+        .onChange(of: entry.encryptedText) { _, _ in isMasked = true }
         .onChange(of: entry.tagIDs) { _, _ in isMasked = true }
         .onChange(of: isPasswordType) { _, _ in isMasked = true }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
-            isMasked = true
+            maskContent()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
+            if let window = notification.object as? NSWindow, window === hostWindow { maskContent() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock, object: privacyVault)) { _ in maskContent() }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyMask, object: privacyVault)) { _ in maskContent() }
+        .contextMenu {
+            if entry.hasProtectedContent {
+                Button("privacy.unprotect", role: .destructive) { confirmsUnprotect = true }
+            }
+        }
+        .confirmationDialog("privacy.unprotect.confirm", isPresented: $confirmsUnprotect) {
+            Button("privacy.unprotect", role: .destructive) {
+                PrivacyAccess.withDiary(entry, force: true, vault: privacyVault) { current in
+                    guard let context = current.modelContext else { throw PrivacyError.staleOperation }
+                    try DiaryProtection.unprotect(current, in: PrivacyPersistence(context: context, vault: privacyVault))
+                }
+            }
+            Button("alert.cancel", role: .cancel) {}
         }
     }
 
@@ -123,7 +154,9 @@ struct DiaryNoteCard: View {
     private func assignedTagChip(_ tag: TagItem) -> some View {
         let color = DiaryTagChrome.color(for: tag.name)
         return Button {
-            DayBoardMutations.toggleDiaryTag(entry, tagID: tag.id)
+            PrivacyAccess.withDiary(entry, requiresUnlock: tag.isPrivateDiary, vault: privacyVault) { current in
+                DayBoardMutations.toggleDiaryTag(current, tagID: tag.id)
+            }
         } label: {
             HStack(spacing: 3) {
                 Text("#\(tag.name)")
@@ -148,7 +181,9 @@ struct DiaryNoteCard: View {
         Menu {
             ForEach(addableTags) { tag in
                 Button("#\(tag.name)") {
-                    DayBoardMutations.toggleDiaryTag(entry, tagID: tag.id)
+                    PrivacyAccess.withDiary(entry, requiresUnlock: tag.isPrivateDiary, vault: privacyVault) { current in
+                        DayBoardMutations.toggleDiaryTag(current, tagID: tag.id)
+                    }
                 }
             }
         } label: {
@@ -174,12 +209,11 @@ struct DiaryNoteCard: View {
 
     @ViewBuilder
     var contentView: some View {
-        switch DiaryPrivacy.contentMode(isSensitive: isPasswordType, isMasked: isMasked, isEditing: isEditing) {
-        case .masked:
+        if !canRevealContent {
             maskedPasswordContentView
-        case .editing:
+        } else if isEditing {
             editingContentView
-        case .text:
+        } else {
             readOnlyTextView
         }
     }
@@ -197,19 +231,43 @@ struct DiaryNoteCard: View {
     }
 
     func copyContent(to pasteboard: NSPasteboard) {
-        pasteboard.clearContents()
-        guard pasteboard.setString(entry.text, forType: .string) else {
-            MutationFeedback.shared.reportFailure()
-            return
-        }
-        withAnimation(.snappy) {
-            hasCopied = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            withAnimation(.snappy) {
-                hasCopied = false
+        PrivacyAccess.withDiary(entry, vault: privacyVault) { current in
+            let text = try DiaryContent.read(current, vault: privacyVault)
+            guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isPasswordType, to: pasteboard) else {
+                throw PrivacyError.storageFailure
+            }
+            withAnimation(.snappy) { hasCopied = true }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                withAnimation(.snappy) { hasCopied = false }
             }
         }
+    }
+
+    func revealContent() {
+        PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
+            _ = try DiaryContent.read(current, vault: privacyVault)
+            editingSession?.reveal()
+            isMasked = false
+        }
+    }
+
+    func maskContent() {
+        isMasked = true
+        editingSession?.mask()
+    }
+
+    func reloadEditingDraft() {
+        PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { _ in
+            editingSession?.reloadLatest()
+            editingSession?.reveal()
+            isMasked = false
+        }
+    }
+
+    func discardEditingDraft() {
+        drafts.discard(entry.id)
+        editFocused = false
+        isMasked = true
     }
 
     func formatDate(_ date: Date) -> String {

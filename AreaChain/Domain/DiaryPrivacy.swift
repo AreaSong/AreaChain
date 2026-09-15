@@ -8,13 +8,13 @@ enum DiaryPrivacy {
         return isEditing ? .editing : .text
     }
     static func isSensitive(_ entry: DiarySnapshot, tags: [TagItem]) -> Bool {
-        hasPrivateMarker(entry.text) || tags.contains {
-            DiaryMemoTags.isPasswordName($0.name) && TagIDList.contains(entry.tagIDs, $0.id)
+        entry.isPrivate || hasPrivateMarker(entry.text) || tags.contains {
+            ($0.isPrivateDiary || DiaryMemoTags.isPasswordName($0.name)) && TagIDList.contains(entry.tagIDs, $0.id)
         }
     }
 
     static func isSensitive(_ entry: DiarySnapshot, tagNames: [UUID: String]) -> Bool {
-        hasPrivateMarker(entry.text) || tagNames.contains {
+        entry.isPrivate || hasPrivateMarker(entry.text) || tagNames.contains {
             DiaryMemoTags.isPasswordName($0.value) && TagIDList.contains(entry.tagIDs, $0.key)
         }
     }
@@ -38,7 +38,7 @@ enum AttachmentAccess {
         _ attachment: AttachmentItem, todos: [TodoItem], routines: [DailyRoutine],
         diaries: [DiaryEntry], tags: [TagItem]
     ) -> Bool {
-        guard attachment.deletedAt == nil, let owner = attachment.ownerKey,
+        guard attachment.deletedAt == nil, attachment.privacyVaultID == nil, let owner = attachment.ownerKey,
               ownerIsLive(owner, todos: todos, routines: routines, diaries: diaries) else { return false }
         if owner.kind == .diary, let entry = diaries.first(where: { $0.id == owner.id }) {
             return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)

@@ -34,7 +34,7 @@ AreaChain/
     Diary/        手记摘要、工作台卡片、编辑会话与可置顶小窗
     Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
     Search/       跨天搜索与工作台/浮层共用的结果列表
-    Settings/     设置（外观、启动、捕获、通知、日历、iCloud、数据）
+    Settings/     设置（外观、启动、捕获、通知、日历、iCloud、隐私与解锁、数据）
     Trash/        回收站（工作台 tab）
   Theme/          色板、DaybookType 字号、动效系统 (DaybookMotion / CheckmarkShape / DaybookHaptics)、确认组件
 ```
@@ -74,10 +74,10 @@ AreaChain/
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
 | `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
 | `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`, `tagIDs`（默认空），一层，归属 `TodoItem`。 |
-| `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`。JSON 导出含标签与置顶；旧备份缺字段时按空标签、未置顶导入。 |
+| `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`；新增 `isPrivate`, `encryptedText`, `privacyVaultID`。受保护正文的 `text` 为空，普通 JSON 排除私密记录；旧库新增字段默认未保护，不自动迁移真实内容。 |
 | `ProjectItem` | 项目分类树 | `id`, `name`, `sortOrder`, `parentID`, `deletedAt`。 |
-| `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`。 |
-| `AttachmentItem` | 附件元数据 | `id`, `ownerKind`（todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`。图像文件在 `Application Support/areachain-attachments/<id>`，不进数据库，导出也不含二进制。 |
+| `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`, `isPrivateDiary`（默认 false）；隐私规则按稳定 UUID 关联。 |
+| `AttachmentItem` | 附件元数据 | `id`, `ownerKind`（todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`, `storageID`, `privacyVaultID`, `retiredStorageID`。图像在 `Application Support/areachain-attachments/<storageID 或 id>`；私密图为密文，普通 JSON 不含二进制，加密备份包含。退休指针保留待清理原文件，清理完成前禁止再次转换覆盖它。 |
 
 ### 数据约束与设计考量
 
@@ -107,13 +107,38 @@ AreaChain/
 ## 保存、恢复与同步边界
 
 - `ModelChanges` 在保存成功后才通知 UI/系统服务，组合操作延后仓储提交；失败时 `ModelRollback` 回滚并在同一 context 重新 fetch 八类模型，刷新已持有的对象缓存。
-- `DiaryEditorSession` 在内存持有正文草稿及编辑基线；显式保存仍走 `SwiftDataDiaryRepository` 与 `ModelChanges.transaction`。外部正文改变时，干净会话跟随更新，脏会话阻止覆盖；工作台原有卡片编辑也校验基线。失败保留草稿，已删除记录不可被旧窗口保存重建。不新增表、快照字段或隐私权限。
+- `DiaryEditorSession` 在内存持有正文草稿及编辑基线；显式保存仍走 `SwiftDataDiaryRepository` 与 `ModelChanges.transaction`。外部正文改变时，干净会话跟随更新，脏会话阻止覆盖。卡片通过列表持有的 `DiaryCardDrafts` 复用同一编辑会话，搜索过滤移除卡片不会销毁唯一草稿；锁定前加密封存，解锁后仍需显式显示。失败保留草稿，已删除记录不可被旧窗口保存重建。
 - `SnapshotImportState` 在预览及写入前校验重复标识、嵌套子任务、附件归属及最终打卡业务键；不自动清洗现存数据。导入失败只撤销导入，调用前已有编辑先保存。
-- `DiaryPrivacy` 统一卡片、搜索及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。遮罩不改变存储正文，也不是加密；显式复制及 JSON 导出仍包含原文。 小窗复用同一判定；读取失败保守遮罩，遮罩期间不挂载正文编辑器或附件。
+- `DiaryPrivacy` 统一卡片、搜索及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。`DiaryContent` 统一正文加解密，失败不回退明文；锁定时搜索投影没有私密正文。普通 JSON 排除受保护及旧密码遮罩手记和其附件。小窗、卡片和快速输入失焦后遮罩，锁定时不挂载私密编辑器；文件面板回调通过 `PrivacyAccess.withDiary` 重新鉴权并核对记录存活。
 - 附件级联按 `ownerKind + ownerID` 执行。永久删除后，`AttachmentCleanup` 仅在文件清理成功后移除附件元数据；失败的附件记录留在回收站，下一次操作可以重试。
 - `CalendarSyncCoordinator` 串行合并本地/远端事件；`CalendarSyncEngine` 对比上次本地与远端基线，不盲目先拉后推。基线保存在本机 `areachain-calendar-sync.json`，不改八张表 schema，也不导出到快照。读失败或内存降级时禁写；未知事件保留，冲突需核对一致后重试。跨系统部分提交失败不宣称已同步，旧基线用于幂等恢复。
 - `EventKitCalendarClient` 按年分片查询，补查绑定 ID，并在写入前验证事件版本和所属日历。夏令时归一化保存原始本地时刻和实际远端时刻，避免把正常顺延误判为冲突。
 - 测试宿主在 `Persistence.makeSession` 的磁盘访问之前切换内存库；端到端系统权限/真实日历验证与单元测试证据分开报告。
+
+## 私密锁、加密与恢复
+
+- `PrivacyVault` 管理单个私密锁、共享会话与认证代次。系统认证和主密码是两条可选解锁路径，不是双重验证。随机 256 位数据密钥只在解锁会话中使用；`VaultKeyAccess` 提供受锁保护的访问，锁定时先通知编辑会话封存草稿，再清除可用密钥。迟到认证必须同时满足代次和当前配置一致，不能重新写回旧配置。
+- `VaultCrypto` 使用 CryptoKit AES-GCM，并将记录／附件身份绑定到认证附加数据。主密码路径使用 PBKDF2-HMAC-SHA256（独立 32 字节随机盐，当前 600,000 次）包装同一数据密钥；配置不保存明文密码或数据密钥。
+- `SystemVaultKeyStore` 使用本机 Data Protection Keychain 与 `userPresence` 访问控制，系统界面接受 Touch ID 或系统密码，应用不采集系统密码。`PrivacySystemKeyCleanup` 在创建系统条目前持久化待清理 UUID；只有配置提交后才清日志。清理依据成功读取、校验的落盘配置，不删除当前有效条目；删除失败或清日志失败保留可重试状态，不能显示为完全撤销。
+- `FileVaultConfigurationStore` 原子保存 `areachain-privacy.json`，以及只含待清理 UUID 的 `.pending-system-keys` 日志，权限为 0600。旧配置 JSON 仍兼容；日志读取失败阻止凭据变更，不把错误当成空列表。已有可用配置仍能正常验证，设置显示待清理状态。
+- `DiaryProtection` 将标签规则与记录级保护分开：移除标签不会解除已保存的保护。显式解除保护必须重新验证，且不再命中私密标签。转换需要已验证、未过期的备份；`PrivacyAttachmentBatch` 先写独立文件，再随模型事务切换指针，提交失败删除暂存文件而保留原文件。
+- `PrivateBackupFile` 使用独立口令对清单与附件分帧加密，回读核对内容和完整性。`PrivateBackupService` 恢复前完整验证，采用目标私密锁重新加密；备份外仍保留的本地图片若属于将受保护的手记，也纳入同一次暂存与提交。普通 JSON 不能替代加密备份，不能覆盖既有私密记录或解除保护。
+- `PrivacyStoreMaintenance` 在加密转换前记录待清理标记，在冷启动打开 SwiftData 容器前执行 SQLite 历史明文重建。重建成功才删除标记；设置显示未完成状态。不能承诺清除系统快照、外部备份、原始图片或第三方剪贴板历史。
+- `PrivateClipboard` 在内存构造正文和全部敏感标记后一次发布，30 秒后仅清理仍属于本次复制的剪贴板内容。闲置锁定默认 5 分钟，可选 1／15 分钟；定时器加入公共运行循环模式，菜单和面板期间仍可检查闲置。锁屏、休眠、退出清除共享解锁状态，应用与窗口失焦仅遮罩。
+
+### 隔离验收与真实启用门禁
+
+隐私自动化测试使用独立测试 Bundle ID、内存或临时目录数据库、合成内容与 `FakeSystemVaultKeys`。`PrivacyMigrationTests` 冻结升级前实体并检验升级、冷启动清理和重开读取；`PrivacyRenderingTests` 检查浅深色布局及锁定后的原生编辑器层级。`PrivacyInteractionTests` 覆盖搜索过滤草稿、选图回调与已删除对象。测试图片可由注入根目录的 `AttachmentStore` 隔离，默认生产目录不变。
+
+```bash
+xcodebuild -quiet -project AreaChain.xcodeproj -scheme AreaChain \
+  -configuration Debug -destination 'platform=macOS,arch=arm64' \
+  -derivedDataPath build/PrivacyQA \
+  PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa INFOPLIST_KEY_LSUIElement=NO \
+  -parallel-testing-enabled NO test
+```
+
+自动化探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。真实启用前应另行确认隔离系统密钥测试，验证 Touch ID／系统密码、取消、重启与重编译／升级后的签名兼容，再确认真实数据迁移。不得为了通过验收去掉钥匙串访问控制或默默改签名／权限。上述命令不安装应用；`scripts/build.sh` 无参数会安装并启动，不应用作隔离验收命令。
 
 ## 窗口路由与生命周期 (`AppWindows`)
 

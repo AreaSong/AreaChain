@@ -8,6 +8,7 @@ struct DiaryPageOptions {
     var showsPageHeader: Bool = true
     var externalSelectedTagID: Binding<UUID?>? = nil
     var composerDraft: Binding<DiaryComposerDraft>? = nil
+    var vault: PrivacyVault? = nil
 }
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
@@ -23,7 +24,9 @@ struct DiaryPage: View {
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
     var externalSelectedTagID: Binding<UUID?>? = nil
-    var composerDraft: Binding<DiaryComposerDraft>? = nil
+    @Binding private var externalComposerDraft: DiaryComposerDraft
+    private let usesExternalComposerDraft: Bool
+    private let vault: PrivacyVault
 
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
@@ -35,6 +38,9 @@ struct DiaryPage: View {
     @State private var composerFocused = false
     @State private var searchFocused = false
     @State private var composerStatus: String?
+    @State private var confirmsDiscardDraft = false
+    @State private var cardDrafts = DiaryCardDrafts()
+    @State private var hostWindow: NSWindow?
     @Bindable private var boardSelection = BoardSelection.shared
 
     init(
@@ -49,7 +55,9 @@ struct DiaryPage: View {
         self.maxScrollHeight = options.maxScrollHeight
         self.showsPageHeader = options.showsPageHeader
         self.externalSelectedTagID = options.externalSelectedTagID
-        self.composerDraft = options.composerDraft
+        self._externalComposerDraft = options.composerDraft ?? .constant(DiaryComposerDraft())
+        self.usesExternalComposerDraft = options.composerDraft != nil
+        self.vault = options.vault ?? .shared
     }
 
     init(
@@ -83,7 +91,18 @@ struct DiaryPage: View {
         nonmutating set { selectedTagBinding.wrappedValue = newValue }
     }
 
-    private var draftBinding: Binding<DiaryComposerDraft> { composerDraft ?? $localComposerDraft }
+    // 外部草稿必须是动态属性，否则子编辑器会更新，父级的锁定分支却可能没有刷新。
+    private var draftBinding: Binding<DiaryComposerDraft> {
+        usesExternalComposerDraft ? $externalComposerDraft : $localComposerDraft
+    }
+
+    private var composerNeedsProtection: Bool {
+        if draftBinding.wrappedValue.sealed != nil { return true }
+        let names = Set((TagSyntax.names(in: draftText) + DiaryMemoTags.autoTagNames(in: draftText)).map(TagSyntax.normalizedName))
+        return allTags.contains {
+            $0.isPrivateDiary && (composerSelectedTagIDs.contains($0.id) || names.contains(TagSyntax.normalizedName($0.name)))
+        }
+    }
 
     private var draftText: String {
         get { draftBinding.wrappedValue.text }
@@ -111,7 +130,7 @@ struct DiaryPage: View {
                 if let selectedTagID {
                     guard TagIDList.contains(entry.tagIDs, selectedTagID) else { return false }
                 }
-                return BoardSearch.matchesDiary(entry.snapshot, query: query, tagMap: tagMap)
+                return BoardSearch.matchesDiary(DiaryContent.snapshot(entry, vault: vault), query: query, tagMap: tagMap)
             }
             .sorted { a, b in
                 if a.isPinned != b.isPinned {
@@ -138,9 +157,24 @@ struct DiaryPage: View {
             entryListSection
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(KeyWindowHost { hostWindow = $0 })
         .confirmMoveToTrash($pendingTrash)
         .onChange(of: draftText) { _, text in
             if !text.isEmpty { composerStatus = nil }
+            draftBinding.wrappedValue.needsProtection = composerNeedsProtection
+            if composerNeedsProtection { vault.touch() }
+        }
+        .onChange(of: composerSelectedTagIDs) { _, _ in draftBinding.wrappedValue.needsProtection = composerNeedsProtection }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock, object: vault)) { _ in sealComposer() }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyMask, object: vault)) { _ in sealComposer() }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in sealComposer() }
+        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
+            if let window = notification.object as? NSWindow, window === hostWindow { sealComposer() }
+        }
+        .onDisappear { sealComposer() }
+        .confirmationDialog("privacy.draft.discard.confirm", isPresented: $confirmsDiscardDraft) {
+            Button("privacy.draft.discard", role: .destructive) { draftBinding.wrappedValue = DiaryComposerDraft() }
+            Button("alert.cancel", role: .cancel) {}
         }
         .onAppear {
             DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext)
@@ -274,17 +308,27 @@ struct DiaryPage: View {
         .foregroundStyle(isSelected ? color : DaybookTheme.ink)
     }
 
-    private var quickComposer: some View {
-        DiaryQuickComposerView(
-            text: draftBinding.text,
-            focused: $composerFocused,
-            orderedTags: orderedTags,
-            selectedTagIDs: draftBinding.selectedTagIDs,
-            onSubmit: submitNote,
-            isCompact: !showsPageHeader,
-            status: composerStatus,
-            onOpenWindow: detachDraft
-        )
+    @ViewBuilder private var quickComposer: some View {
+        if draftBinding.wrappedValue.sealed != nil || (composerNeedsProtection && !vault.isUnlocked) {
+            HStack {
+                Label("privacy.draft.locked", systemImage: "lock")
+                Spacer()
+                Button("privacy.unlock.title") {
+                    PrivacyAccess.perform(requiresUnlock: true, vault: vault) {
+                        try draftBinding.wrappedValue.restore(vault: vault)
+                        composerFocused = true
+                    }
+                }
+                Button("privacy.draft.discard") { confirmsDiscardDraft = true }
+            }
+            .font(DaybookType.caption).padding(10).daybookInputChrome(focused: false, kind: .composer)
+        } else {
+            DiaryQuickComposerView(
+                text: draftBinding.text, focused: $composerFocused, orderedTags: orderedTags,
+                selectedTagIDs: draftBinding.selectedTagIDs, onSubmit: submitNote,
+                isCompact: !showsPageHeader, status: composerStatus, onOpenWindow: detachDraft
+            )
+        }
     }
 
     private var entryListSection: some View {
@@ -319,7 +363,7 @@ struct DiaryPage: View {
             DiaryNoteCard(entry: entry, activeTags: activeTags, attachments: attachments,
                           onDelete: { requestTrash(entry) },
                           isHighlighted: boardSelection.inspectingDiaryID == entry.id,
-                          privacyTags: Array(allTags))
+                          privacyTags: Array(allTags), draftStore: cardDrafts, vault: vault)
         } else {
             DiarySummaryRow(entry: entry, privacyTags: Array(allTags),
                             isHighlighted: boardSelection.inspectingDiaryID == entry.id,
@@ -353,18 +397,27 @@ struct DiaryPage: View {
     }
 
     private func submitNote() {
-        let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-        guard DayBoardMutations.addDiary(
-            text: text,
-            dayKey: todayKey,
-            selectedTagIDs: composerSelectedTagIDs,
-            tags: Array(allTags),
-            context: modelContext
-        ) else { composerStatus = "diary.window.save.failed"; return }
-        draftBinding.wrappedValue = DiaryComposerDraft()
-        composerStatus = "diary.window.saved"
-        composerFocused = true
+        guard draftBinding.wrappedValue.hasContent else { return }
+        let draftID = draftBinding.wrappedValue.id
+        PrivacyAccess.perform(requiresUnlock: composerNeedsProtection, vault: vault) {
+            guard draftBinding.wrappedValue.id == draftID else { throw PrivacyError.staleOperation }
+            try draftBinding.wrappedValue.restore(vault: vault)
+            let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return }
+            guard DayBoardMutations.addDiary(
+                text: text, dayKey: todayKey, selectedTagIDs: composerSelectedTagIDs,
+                tags: Array(allTags), context: modelContext
+            ) else { composerStatus = "diary.window.save.failed"; return }
+            draftBinding.wrappedValue = DiaryComposerDraft()
+            composerStatus = "diary.window.saved"
+            composerFocused = true
+        }
+    }
+
+    private func sealComposer() {
+        draftBinding.wrappedValue.needsProtection = composerNeedsProtection
+        do { try draftBinding.wrappedValue.seal(vault: vault) }
+        catch { composerStatus = "privacy.error.corruptData" }
     }
 
     private func requestTrash(_ entry: DiaryEntry) {

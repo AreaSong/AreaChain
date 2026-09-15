@@ -11,12 +11,13 @@ enum SyncPort {
         attachments: [AttachmentItem] = [],
         exportedAt: Date = .now
     ) -> ExportSnapshot {
-        ExportSnapshot(
+        let privateIDs = Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id))
+        return ExportSnapshot(
             exportedAt: exportedAt,
             routines: routines.map(exportedRoutine),
             checks: checks.compactMap(exportedCheck),
             todos: todos.map(exportedTodo),
-            diaries: diaries.map {
+            diaries: diaries.filter { !privateIDs.contains($0.id) }.map {
                 ExportedDiary(
                     id: $0.id,
                     text: $0.text,
@@ -39,7 +40,9 @@ enum SyncPort {
             tags: tags.map {
                 ExportedTag(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
             },
-            attachments: attachments.map {
+            attachments: attachments.filter {
+                $0.privacyVaultID == nil && !($0.ownerKind == AttachmentOwner.diary.rawValue && privateIDs.contains($0.ownerID))
+            }.map {
                 ExportedAttachment(
                     id: $0.id,
                     ownerKind: $0.ownerKind,

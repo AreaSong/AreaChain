@@ -80,6 +80,7 @@ struct SettingsView: View {
                 onExport: exportJSON,
                 onImport: importJSON
             )
+            PrivacySettingsSection()
         }
         .formStyle(.grouped)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

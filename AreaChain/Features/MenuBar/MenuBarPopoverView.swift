@@ -405,15 +405,21 @@ struct MenuBarPopoverView: View {
     private func addDiary() {
         let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        guard DayBoardMutations.addDiary(
-            text: text,
-            dayKey: todayKey,
-            tags: Array(tags),
-            context: modelContext
-        ) else { return }
-        capture.draft = ""
-        withAnimation(DaybookMotion.animation(reduceMotion)) {
-            tab = .diary
+        let context = modelContext
+        let dayKey = todayKey
+        do {
+            let requiresUnlock = try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context)
+            PrivacyAccess.perform(requiresUnlock: requiresUnlock) {
+                guard capture.draft.trimmingCharacters(in: .whitespacesAndNewlines) == text,
+                      try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context) == requiresUnlock else {
+                    throw PrivacyError.staleOperation
+                }
+                guard DayBoardMutations.addDiary(text: text, dayKey: dayKey, context: context) else { return }
+                capture.draft = ""
+                withAnimation(DaybookMotion.animation(reduceMotion)) { tab = .diary }
+            }
+        } catch {
+            MutationFeedback.shared.reportFailure(error)
         }
     }
 }

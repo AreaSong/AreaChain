@@ -277,6 +277,11 @@ final class DiaryEntry {
     var deletedAt: Date?
     var tagIDs: String = ""
     var isPinned: Bool = false
+    var isPrivate: Bool = false
+    var encryptedText: Data? = nil
+    var privacyVaultID: UUID? = nil
+
+    var hasProtectedContent: Bool { isPrivate || encryptedText != nil || privacyVaultID != nil }
 
     init(
         id: UUID = UUID(),
@@ -304,7 +309,9 @@ final class DiaryEntry {
             createdAt: createdAt,
             deletedAt: deletedAt,
             tagIDs: tagIDs,
-            isPinned: isPinned
+            isPinned: isPinned,
+            isPrivate: hasProtectedContent,
+            isContentAvailable: !hasProtectedContent
         )
     }
 }

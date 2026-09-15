@@ -62,6 +62,7 @@ private final class SubtaskEditorHarness {
     let container: ModelContainer
     let subtask: SubtaskItem
     let window: NSWindow
+    private let previousActivationPolicy = NSApp.activationPolicy()
     var rejectWrites = true
     private(set) var attemptedTitles: [String] = []
 
@@ -98,11 +99,14 @@ private final class SubtaskEditorHarness {
     var editorText: String? { field(in: window.contentView)?.stringValue }
 
     func close() {
+        window.makeFirstResponder(nil)
         window.contentView = nil
         window.orderOut(nil)
+        NSApp.setActivationPolicy(previousActivationPolicy)
     }
 
     func beginEditing(_ title: String) async throws {
+        try await NativeSyntaxUI.prepareFocus(in: window)
         try await settle()
         for count in 1...2 {
             for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {

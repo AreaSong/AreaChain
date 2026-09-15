@@ -4,6 +4,20 @@ import SwiftData
 @MainActor
 enum ModelChanges {
     private static var deferredContexts: Set<ObjectIdentifier> = []
+    private struct Effects {
+        var committed: [() throws -> Void] = []
+        var rolledBack: [() -> Void] = []
+    }
+    private static var effects: [ObjectIdentifier: Effects] = [:]
+
+    /// 文件只在最外层事务成功后清理；不能把已提交的数据当成仍可 rollback。
+    static func afterTransaction(in context: ModelContext, commit: @escaping () throws -> Void,
+                                 rollback: @escaping () -> Void) {
+        let key = ObjectIdentifier(context)
+        precondition(deferredContexts.contains(key))
+        effects[key, default: Effects()].committed.append(commit)
+        effects[key, default: Effects()].rolledBack.append(rollback)
+    }
     /// 只有保存成功才能向角标、通知和日历发布变更；失败后撤销未落盘的模型变化。
     static func commit(_ context: ModelContext) throws {
         guard !deferredContexts.contains(ObjectIdentifier(context)) else { return }
@@ -60,15 +74,21 @@ enum ModelChanges {
         if deferredContexts.contains(key) { return try work() }
         if context.hasChanges { try context.save() }
         deferredContexts.insert(key)
-        defer { deferredContexts.remove(key) }
+        defer { deferredContexts.remove(key); effects[key] = nil }
+        let result: T
         do {
-            let result = try work()
+            result = try work()
             try save(context)
-            BoardEvents.changed()
-            return result
         } catch {
+            effects[key]?.rolledBack.reversed().forEach { $0() }
             throw ModelRollback.failure(error, in: context)
         }
+        for effect in effects[key]?.committed ?? [] {
+            do { try effect() }
+            catch { MutationFeedback.shared.reportFailure(error) }
+        }
+        BoardEvents.changed()
+        return result
     }
 }
 

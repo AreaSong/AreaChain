@@ -17,8 +17,10 @@ enum Persistence {
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
             return memorySession(schema: schema, openError: nil)
         }
-        sanitizeSqliteStoreIfNeeded()
         let disk = ModelConfiguration("areachain", schema: schema)
+        // 标记仅由用户确认过的加密转换创建；失败保留标记，由设置页提示重试。
+        try? PrivacyStoreMaintenance.finish(at: disk.url)
+        sanitizeSqliteStoreIfNeeded()
         do {
             let container = try ModelContainer(for: schema, configurations: [disk])
             return PersistenceSession(container: container, isFallback: false, openError: nil)

@@ -4,6 +4,23 @@ import Testing
 /// 从实际无障碍树取得控件位置，避免测试把浮层方向或行高写死。
 @MainActor
 enum NativeSyntaxUI {
+    /// 只在场景开始前建立焦点；后续动作丢焦仍由原断言报告，不能自动抢回掩盖问题。
+    static func prepareFocus(in window: NSWindow) async throws {
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            DispatchQueue.main.async { continuation.resume() }
+        }
+        if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        let deadline = ContinuousClock.now + .seconds(2)
+        while (!NSApp.isActive || !window.isVisible || !window.isKeyWindow) && ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "none"
+        try #require(NSApp.activationPolicy() == .regular && NSApp.isActive && window.isVisible && window.isKeyWindow,
+                     "场景焦点未就绪：policy=\(NSApp.activationPolicy().rawValue)，visible=\(window.isVisible)，key=\(window.isKeyWindow)，active=\(NSApp.isActive)，foreground=\(foreground)")
+    }
+
     static func center(_ identifier: String, in window: NSWindow) throws -> NSPoint {
         let rect = try frame(identifier, in: window)
         return NSPoint(x: rect.midX, y: rect.midY)

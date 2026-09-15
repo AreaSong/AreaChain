@@ -62,7 +62,7 @@ struct SearchPage: View {
         BoardSearch.hits(
             query: query,
             todos: todos.map(\.snapshot),
-            diaries: diaries.map(\.snapshot),
+            diaries: diaries.map { DiaryContent.snapshot($0) },
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: tagMap,

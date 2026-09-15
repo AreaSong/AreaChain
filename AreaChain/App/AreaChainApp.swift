@@ -27,6 +27,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
         AppPreferences.shared.applyAppAppearance()
+        PrivacyVault.shared.startLifecycle()
         NSApp.setActivationPolicy(.accessory)
 
         AppWindows.workspaceViewProvider = {

@@ -102,12 +102,11 @@ struct DiarySummaryRow: View {
     private func openWindow() { DiaryWindows.shared.open(entry: entry, context: context) }
 
     private func copy() {
-        NSPasteboard.general.clearContents()
-        guard NSPasteboard.general.setString(entry.text, forType: .string) else {
-            MutationFeedback.shared.reportFailure()
-            return
+        PrivacyAccess.withDiary(entry) { current in
+            let text = try DiaryContent.read(current)
+            guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
+            hasCopied = true
         }
-        hasCopied = true
     }
 
     private func attach() {

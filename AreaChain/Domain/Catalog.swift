@@ -235,9 +235,13 @@ enum ProjectTree {
     }
 }
 
-struct AttachmentRef: Identifiable, Equatable, Hashable {
+struct AttachmentRef: Identifiable, Equatable, Hashable, Sendable {
     var id: UUID
     var filename: String
+    var storageID: UUID? = nil
+    var privacyVaultID: UUID? = nil
+    var ownerID: UUID? = nil
+    var ownerKind: String? = nil
 }
 
 struct AttachmentCluster: Equatable, Identifiable {
@@ -264,7 +268,7 @@ enum AttachmentClusters {
             if buckets[key] == nil {
                 order.append((kind, item.ownerID))
             }
-            buckets[key, default: []].append(AttachmentRef(id: item.id, filename: item.filename))
+            buckets[key, default: []].append(item.reference)
         }
         let kindRank: [AttachmentOwner: Int] = [.todo: 0, .diary: 1, .routine: 2]
         return order

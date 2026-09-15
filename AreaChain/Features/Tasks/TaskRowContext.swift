@@ -115,7 +115,7 @@ enum CatalogChoices {
 
     static func attachments(_ ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentRef] {
         Catalog.liveAttachments(for: ownerID, in: items, ownerKind: ownerKind).map {
-            AttachmentRef(id: $0.id, filename: $0.filename)
+            $0.reference
         }
     }
 

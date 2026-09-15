@@ -64,7 +64,9 @@ struct DiaryWindowView: View {
             VStack(spacing: 12) {
                 Image(systemName: "lock.shield").font(.system(size: 26))
                 Text("diary.private.title").font(DaybookType.body)
-                Button("diary.reveal") { session.reveal() }
+                Button("diary.reveal") {
+                    PrivacyAccess.perform(requiresUnlock: session.needsUnlock, vault: session.vault) { session.reveal() }
+                }
                     .buttonStyle(.bordered)
                     .foregroundStyle(DaybookTheme.stamp)
             }
@@ -111,15 +113,13 @@ struct DiaryWindowView: View {
     }
 
     private func save() {
-        guard session.canRevealContent else { return }
-        _ = session.save()
-        onStateChange()
+        PrivacyAccess.perform(requiresUnlock: session.needsUnlock, vault: session.vault) {
+            _ = session.save()
+            onStateChange()
+        }
     }
 
     private func attach(to entry: DiaryEntry) {
-        AttachmentActions.pickImage(ownerKind: .diary, ownerID: entry.id, context: session.context, canAttach: {
-            session.refresh()
-            return session.canRevealContent && entry.deletedAt == nil
-        })
+        AttachmentActions.pickDiaryImage(entry, context: session.context, vault: session.vault)
     }
 }

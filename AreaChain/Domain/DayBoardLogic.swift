@@ -100,6 +100,8 @@ struct DiarySnapshot: Equatable, Identifiable {
     var deletedAt: Date? = nil
     var tagIDs: String = ""
     var isPinned: Bool = false
+    var isPrivate: Bool = false
+    var isContentAvailable: Bool = true
 }
 
 enum UnfinishedKind: String, Equatable {

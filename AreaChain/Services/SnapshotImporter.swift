@@ -11,8 +11,21 @@ enum SnapshotImporter {
         context: ModelContext,
         save: (ModelContext) throws -> Void = { try $0.save() }
     ) throws {
+        try applyValidated(snapshot, context: context, save: save, privateRestore: false, prepare: { _ in })
+    }
+
+    /// 只供已经校验并解密的备份调用；调用方必须在保存之前把私密正文重新加密。
+    static func applyDecryptedBackup(_ snapshot: ExportSnapshot, context: ModelContext,
+                                     prepare: (ModelContext) throws -> Void,
+                                     save: (ModelContext) throws -> Void = { try $0.save() }) throws {
+        try applyValidated(snapshot, context: context, save: save, privateRestore: true, prepare: prepare)
+    }
+
+    private static func applyValidated(_ snapshot: ExportSnapshot, context: ModelContext,
+                                        save: (ModelContext) throws -> Void, privateRestore: Bool,
+                                        prepare: (ModelContext) throws -> Void) throws {
         let existing = try SnapshotImportState(context: context)
-        try existing.validate(snapshot)
+        try existing.validate(snapshot, privateRestore: privateRestore)
         // 先落盘调用前已有的编辑；失败回滚只能撤销导入，不能丢掉用户此前的修改。
         if context.hasChanges { try context.save() }
         do {
@@ -28,6 +41,7 @@ enum SnapshotImporter {
                 routines: try context.fetch(FetchDescriptor<DailyRoutine>()),
                 context: context
             )
+            try prepare(context)
             try save(context)
         } catch {
             throw ModelRollback.failure(error, in: context)

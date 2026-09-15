@@ -53,7 +53,7 @@ struct MenuBarSearchResults: View {
         return BoardSearch.hits(
             query: query,
             todos: todos.map(\.snapshot),
-            diaries: diaries.map(\.snapshot),
+            diaries: diaries.map { DiaryContent.snapshot($0) },
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),

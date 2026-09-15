@@ -7,6 +7,19 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct CaptureOverlayLayoutTests {
+    @Test func initialFocusRecoversFromAnAccessoryActivationPolicy() async throws {
+        let previousPolicy = NSApp.activationPolicy()
+        defer { NSApp.setActivationPolicy(previousPolicy) }
+        NSApp.setActivationPolicy(.accessory)
+        let host = try CaptureOverlayHost(workspace: false)
+        defer { host.close() }
+        try await host.settle()
+        #expect(NSApp.activationPolicy() == .regular)
+        #expect(NSApp.isActive && host.window.isVisible && host.window.isKeyWindow)
+        try await host.enter("前台准备之后输入")
+        #expect(host.draft.text == "前台准备之后输入")
+    }
+
     @Test(arguments: [false, true])
     func syntaxAndAttributesNeverResizeTheList(workspace: Bool) async throws {
         let host = try CaptureOverlayHost(workspace: workspace)
@@ -268,6 +281,8 @@ private final class CaptureOverlayHost {
     let container: ModelContainer
     let draft = CaptureOverlayDraft()
     let window: NSWindow
+    private let previousActivationPolicy = NSApp.activationPolicy()
+    private var hasPreparedFocus = false
 
     init(workspace: Bool) throws {
         container = try ModelContainer(
@@ -291,7 +306,12 @@ private final class CaptureOverlayHost {
         window.makeKeyAndOrderFront(nil)
     }
 
-    func close() { window.contentView = nil; window.orderOut(nil) }
+    func close() {
+        window.makeFirstResponder(nil)
+        window.contentView = nil
+        window.orderOut(nil)
+        NSApp.setActivationPolicy(previousActivationPolicy)
+    }
 
     func show<V: View>(_ view: V, size: NSSize) {
         window.contentView = NSHostingView(rootView: view
@@ -305,6 +325,10 @@ private final class CaptureOverlayHost {
     func nativeViews() -> [NSView] { descendants(window.contentView) }
 
     func settle() async throws {
+        if !hasPreparedFocus {
+            try await NativeSyntaxUI.prepareFocus(in: window)
+            hasPreparedFocus = true
+        }
         window.contentView?.layoutSubtreeIfNeeded()
         try await Task.sleep(for: .milliseconds(180))
         window.contentView?.layoutSubtreeIfNeeded()

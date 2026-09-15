@@ -164,7 +164,7 @@ enum BoardSearch {
         guard item.deletedAt == nil, !query.hasPriority, query.remindMinutes == nil else { return false }
         let names = TagIDList.parse(item.tagIDs).compactMap { tagMap[$0] }
         guard query.textKeywords.allSatisfy({ keyword in
-            matches(item.text, needle: keyword) || names.contains { matches($0, needle: keyword) }
+            (item.isContentAvailable && matches(item.text, needle: keyword)) || names.contains { matches($0, needle: keyword) }
         }) else { return false }
         return matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap)
     }

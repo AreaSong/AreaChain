@@ -48,7 +48,7 @@ struct SnapshotImportState {
         attachments = try context.fetch(FetchDescriptor<AttachmentItem>())
     }
 
-    func validate(_ snapshot: ExportSnapshot) throws {
+    func validate(_ snapshot: ExportSnapshot, privateRestore: Bool = false) throws {
         let groups: [(String, [UUID], [UUID])] = [
             ("DailyRoutine", routines.map(\.id), snapshot.routines.map(\.id)),
             ("RoutineCheck", checks.map(\.id), snapshot.checks.map(\.id)),
@@ -66,6 +66,27 @@ struct SnapshotImportState {
         try validateSubtasks(snapshot.todos)
         try validateAttachments(snapshot.attachments)
         try validateChecks(snapshot)
+        if !privateRestore { try validatePrivacy(snapshot) }
+    }
+
+    private func validatePrivacy(_ snapshot: ExportSnapshot) throws {
+        let privateTagIDs = Set(tags.filter(\.isPrivateDiary).map(\.id))
+        let privateIDs = Set(diaries.filter {
+            $0.hasProtectedContent || !privateTagIDs.isDisjoint(with: TagIDList.parse($0.tagIDs))
+        }.map(\.id))
+        for item in snapshot.diaries {
+            guard !privateIDs.contains(item.id),
+                  privateTagIDs.isDisjoint(with: TagIDList.parse(item.tagIDs)) else {
+                throw PrivacyError.privateImport
+            }
+        }
+        let protectedAttachments = Set(attachments.filter { $0.privacyVaultID != nil }.map(\.id))
+        for item in snapshot.attachments {
+            if protectedAttachments.contains(item.id)
+                || (item.ownerKind == AttachmentOwner.diary.rawValue && privateIDs.contains(item.ownerID)) {
+                throw PrivacyError.privateImport
+            }
+        }
     }
 
     private static func requireUnique(_ ids: [UUID], kind: String) throws {

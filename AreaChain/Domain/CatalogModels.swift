@@ -30,6 +30,7 @@ final class TagItem {
     var name: String
     var sortOrder: Int
     var deletedAt: Date?
+    var isPrivateDiary: Bool = false
 
     init(
         id: UUID = UUID(),
@@ -52,6 +53,15 @@ final class AttachmentItem {
     var filename: String
     var createdAt: Date
     var deletedAt: Date?
+    var storageID: UUID? = nil
+    var privacyVaultID: UUID? = nil
+    var retiredStorageID: UUID? = nil
+
+    var reference: AttachmentRef {
+        AttachmentRef(id: id, filename: filename, storageID: storageID,
+                      privacyVaultID: privacyVaultID, ownerID: privacyVaultID == nil ? nil : ownerID,
+                      ownerKind: privacyVaultID == nil ? nil : ownerKind)
+    }
 
     var ownerKey: AttachmentOwnerKey? {
         AttachmentOwner(rawValue: ownerKind).map { AttachmentOwnerKey(kind: $0, id: ownerID) }

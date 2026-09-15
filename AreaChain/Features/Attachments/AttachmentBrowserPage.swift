@@ -95,7 +95,7 @@ struct AttachmentBrowserPage: View {
 
     @ViewBuilder
     private func thumbImage(_ item: AttachmentRef) -> some View {
-        if let image = AttachmentStore.image(id: item.id) {
+        if let image = AttachmentStore.image(reference: item) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFill()
@@ -113,7 +113,7 @@ struct AttachmentBrowserPage: View {
     private func previewBody(_ item: AttachmentRef) -> some View {
         if !visibleAttachments.contains(where: { $0.id == item.id }) {
             Text("diary.private.title")
-        } else if let image = AttachmentStore.image(id: item.id) {
+        } else if let image = AttachmentStore.image(reference: item) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFit()

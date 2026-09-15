@@ -1,6 +1,6 @@
 import Foundation
 
-struct ExportSnapshot: Codable, Equatable {
+struct ExportSnapshot: Codable, Equatable, Sendable {
     var exportedAt: Date
     var routines: [ExportedRoutine]
     var checks: [ExportedCheck]
@@ -47,7 +47,7 @@ struct ExportSnapshot: Codable, Equatable {
     }
 }
 
-struct ExportedProject: Codable, Equatable {
+struct ExportedProject: Codable, Equatable, Sendable {
     var id: UUID
     var name: String
     var sortOrder: Int
@@ -55,14 +55,14 @@ struct ExportedProject: Codable, Equatable {
     var deletedAt: Date? = nil
 }
 
-struct ExportedTag: Codable, Equatable {
+struct ExportedTag: Codable, Equatable, Sendable {
     var id: UUID
     var name: String
     var sortOrder: Int
     var deletedAt: Date? = nil
 }
 
-struct ExportedAttachment: Codable, Equatable {
+struct ExportedAttachment: Codable, Equatable, Sendable {
     var id: UUID
     var ownerKind: String
     var ownerID: UUID
@@ -71,7 +71,7 @@ struct ExportedAttachment: Codable, Equatable {
     var deletedAt: Date? = nil
 }
 
-struct ExportedSubtask: Codable, Equatable {
+struct ExportedSubtask: Codable, Equatable, Sendable {
     var id: UUID
     var title: String
     var isDone: Bool
@@ -114,7 +114,7 @@ struct ExportedSubtask: Codable, Equatable {
     }
 }
 
-struct ExportedRoutine: Codable, Equatable {
+struct ExportedRoutine: Codable, Equatable, Sendable {
     var id: UUID
     var title: String
     var sortOrder: Int
@@ -203,7 +203,7 @@ struct ExportedRoutine: Codable, Equatable {
     }
 }
 
-struct ExportedCheck: Codable, Equatable {
+struct ExportedCheck: Codable, Equatable, Sendable {
     var id: UUID
     var routineId: UUID
     var dayKey: String
@@ -238,7 +238,7 @@ struct ExportedCheck: Codable, Equatable {
     }
 }
 
-struct ExportedTodo: Codable, Equatable {
+struct ExportedTodo: Codable, Equatable, Sendable {
     var id: UUID
     var title: String
     var isDone: Bool
@@ -315,7 +315,7 @@ struct ExportedTodo: Codable, Equatable {
     }
 }
 
-struct ExportedDiary: Codable, Equatable {
+struct ExportedDiary: Codable, Equatable, Sendable {
     var id: UUID
     var text: String
     var dayKey: String

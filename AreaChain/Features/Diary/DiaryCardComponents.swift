@@ -32,10 +32,17 @@ extension DiaryNoteCard {
         }
     }
 
-    var editingContentView: some View {
-        VStack(alignment: .trailing, spacing: 6) {
+    @ViewBuilder var editingContentView: some View {
+        if let session = editingSession {
+            editingContent(session)
+        }
+    }
+
+    private func editingContent(_ session: DiaryEditorSession) -> some View {
+        @Bindable var session = session
+        return VStack(alignment: .trailing, spacing: 6) {
             SyntaxTextEditor(
-                text: $editDraft, focused: $editFocused,
+                text: $session.text, focused: $editFocused,
                 placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
             )
                 .frame(minHeight: 64, maxHeight: 160)
@@ -44,10 +51,7 @@ extension DiaryNoteCard {
                 .daybookInputChrome(focused: editFocused, kind: .editor)
 
             HStack {
-                Button("alert.cancel") {
-                    editDraft = ""
-                    isEditing = false
-                }
+                Button("alert.cancel", action: discardEditingDraft)
                 .buttonStyle(.plain)
                 .font(.system(size: 11))
 
@@ -59,19 +63,19 @@ extension DiaryNoteCard {
     }
 
     private func saveTextEdit() {
-        let next = editDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard entry.text == editBaseText else { showsEditConflict = true; return }
-        guard !next.isEmpty, DayBoardMutations.editDiary(entry, text: next) else { return }
-        editDraft = ""
-        editFocused = false
-        isEditing = false
+        guard let session = editingSession else { return }
+        PrivacyAccess.withDiary(entry, requiresUnlock: session.needsUnlock, vault: privacyVault) { _ in
+            if session.save() { discardEditingDraft() }
+            else if session.issue == .conflict { showsEditConflict = true }
+        }
     }
 
     func beginEditing() {
-        editBaseText = entry.text
-        editDraft = entry.text
-        showsEditConflict = false
-        isEditing = true
+        PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
+            _ = drafts.begin(current, context: modelContext, vault: privacyVault)
+            showsEditConflict = false
+            isMasked = false
+        }
     }
 
     var maskedPasswordContentView: some View {
@@ -84,9 +88,7 @@ extension DiaryNoteCard {
             Spacer()
 
             Button {
-                withAnimation(.snappy(duration: 0.2)) {
-                    isMasked = false
-                }
+                revealContent()
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "eye")
@@ -105,7 +107,7 @@ extension DiaryNoteCard {
     }
 
     var readOnlyTextView: some View {
-        Text(entry.text)
+        Text(displayedText)
             .font(DaybookType.body)
             .lineSpacing(3.5)
             .foregroundStyle(DaybookTheme.ink)
@@ -137,9 +139,8 @@ extension DiaryNoteCard {
             .help("diary.copy.password.help")
 
             Button {
-                withAnimation(.snappy(duration: 0.2)) {
-                    isMasked.toggle()
-                }
+                if canRevealContent { maskContent() }
+                else { revealContent() }
             } label: {
                 Image(systemName: isMasked ? "eye" : "eye.slash")
                     .font(.system(size: 11))
@@ -192,10 +193,7 @@ extension DiaryNoteCard {
     private var attachActionButton: some View {
         Button {
             guard !(isPasswordType && isMasked) else { return }
-            AttachmentActions.pickImage(
-                ownerKind: .diary, ownerID: entry.id, context: modelContext,
-                canAttach: { canRevealContent && entry.deletedAt == nil }
-            )
+            AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
         } label: {
             Image(systemName: "photo")
                 .font(.system(size: 11))

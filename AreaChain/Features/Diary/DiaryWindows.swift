@@ -48,7 +48,7 @@ final class DiaryWindows {
             let response = DiaryWindowController.closeAlert().runModal()
             guard DiaryWindowController.canClose(controller.session, choice: DiaryWindowController.choice(response)) else { return false }
         }
-        guard !capture.draft.text.isEmpty else { return true }
+        guard capture.draft.hasContent else { return true }
         let session = DiaryEditorSession(source: .draft(capture.draft, dayKey: DayClock.shared.todayKey), context: context)
         let response = DiaryWindowController.closeAlert().runModal()
         guard DiaryWindowController.canClose(session, choice: DiaryWindowController.choice(response)) else { return false }

@@ -10,19 +10,40 @@ enum AttachmentPicker {
         store: any AttachmentStorageProtocol = AttachmentStore.shared,
         canAttach: @escaping () -> Bool = { true }
     ) {
+        presentImagePanel { url in
+            guard canAttach() else { return }
+            do {
+                let data = try Data(contentsOf: url)
+                _ = saveImage(data: data, filename: url.lastPathComponent,
+                              owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
+            } catch { MutationFeedback.shared.reportFailure(error) }
+        }
+    }
+
+    static func pickDiaryImage(
+        _ entry: DiaryEntry, context: ModelContext, vault: PrivacyVault? = nil,
+        store: any AttachmentStorageProtocol = AttachmentStore.shared,
+        selectURL: @MainActor (@escaping @MainActor (URL) -> Void) -> Void = presentImagePanel
+    ) {
+        selectURL { url in
+            // 系统选图面板会让原窗口失焦；回调检查实时权限与存活状态，不依赖旧遮罩值。
+            PrivacyAccess.withDiary(entry, vault: vault) { current in
+                guard current.modelContext === context else { throw PrivacyError.staleOperation }
+                let data = try Data(contentsOf: url)
+                _ = saveImage(data: data, filename: url.lastPathComponent,
+                              owner: AttachmentOwnerKey(kind: .diary, id: current.id), context: context, store: store)
+            }
+        }
+    }
+
+    private static func presentImagePanel(_ select: @escaping @MainActor (URL) -> Void) {
         let panel = NSOpenPanel()
         panel.allowedContentTypes = [.png, .jpeg, .heic, .gif, .tiff, .webP]
         panel.allowsMultipleSelection = false
         panel.canChooseDirectories = false
         panel.begin { response in
-            guard response == .OK, let url = panel.url, canAttach() else { return }
-            do {
-                let data = try Data(contentsOf: url)
-                _ = saveImage(data: data, filename: url.lastPathComponent,
-                              owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
-            } catch {
-                MutationFeedback.shared.reportFailure(error)
-            }
+            guard response == .OK, let url = panel.url else { return }
+            select(url)
         }
     }
 

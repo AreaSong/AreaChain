@@ -17,7 +17,8 @@ enum AttachmentCleanup {
         var remaining: Set<UUID> = []
         for item in items {
             do {
-                try removeFile(item.id)
+                try removeFile(item.storageID ?? item.id)
+                if let retired = item.retiredStorageID, retired != item.storageID { try removeFile(retired) }
                 context.delete(item)
             } catch {
                 remaining.insert(item.id)

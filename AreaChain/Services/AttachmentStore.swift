@@ -6,11 +6,16 @@ import UniformTypeIdentifiers
 /// 纯物理文件 I/O 与 SwiftData 元数据管理服务
 final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
     static let shared = AttachmentStore()
+    let keys: VaultKeyAccess
+    private let root: URL?
 
-    init() {}
+    init(keys: VaultKeyAccess = .shared, root: URL? = nil) {
+        self.keys = keys
+        self.root = root
+    }
 
     func directory(fileManager: FileManager = .default) -> URL {
-        fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        root ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             .appending(path: "areachain-attachments", directoryHint: .isDirectory)
     }
 
@@ -31,7 +36,22 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
     ) throws -> AttachmentItem {
         let folder = root ?? directory()
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        try data.write(to: fileURL(id: id, root: folder), options: .atomic)
+        var stored = data
+        var vaultID: UUID?
+        if ownerKind == .diary {
+            let matches = try context.fetch(FetchDescriptor<DiaryEntry>()).filter { $0.id == ownerID }
+            guard matches.count == 1, let owner = matches.first, owner.deletedAt == nil else {
+                throw RepositoryError.invalidArgument("附件拥有者不可用")
+            }
+            if owner.hasProtectedContent {
+                guard let ownerVaultID = owner.privacyVaultID else { throw PrivacyError.corruptData }
+                vaultID = ownerVaultID
+            }
+        }
+        if let vaultID {
+            stored = try PrivateAttachments.encode(data, attachmentID: id, ownerID: ownerID, vaultID: vaultID, keys: keys)
+        }
+        try stored.write(to: fileURL(id: id, root: folder), options: .atomic)
         let item = AttachmentItem(
             id: id,
             ownerKind: ownerKind.rawValue,
@@ -39,12 +59,32 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
             filename: filename,
             createdAt: createdAt
         )
+        item.privacyVaultID = vaultID
         context.insert(item)
         return item
     }
 
     func loadData(id: UUID, root: URL? = nil) -> Data? {
-        try? Data(contentsOf: fileURL(id: id, root: root))
+        try? read(reference: AttachmentRef(id: id, filename: ""), root: root)
+    }
+
+    func read(reference: AttachmentRef, root: URL? = nil, maximumBytes: Int? = nil) throws -> Data {
+        let url = fileURL(id: reference.storageID ?? reference.id, root: root)
+        let limit = maximumBytes ?? (reference.privacyVaultID != nil ? VaultCrypto.maximumAttachmentBytes : nil)
+        if let limit {
+            let size = (try FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber)?.intValue ?? 0
+            let diskLimit = reference.privacyVaultID == nil ? limit : limit * 2
+            guard size <= diskLimit else { throw PrivacyError.tooLarge }
+        }
+        let data = try Data(contentsOf: url)
+        let decoded = try PrivateAttachments.decode(data, reference: reference, keys: keys)
+        if let limit, decoded.count > limit { throw PrivacyError.tooLarge }
+        return decoded
+    }
+
+    func image(reference: AttachmentRef, root: URL? = nil) -> NSImage? {
+        guard let data = try? read(reference: reference, root: root) else { return nil }
+        return NSImage(data: data)
     }
 
     func image(id: UUID, root: URL? = nil) -> NSImage? {
@@ -110,6 +150,10 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
 
     static func image(id: UUID, root: URL? = nil) -> NSImage? {
         shared.image(id: id, root: root)
+    }
+
+    static func image(reference: AttachmentRef, root: URL? = nil) -> NSImage? {
+        shared.image(reference: reference, root: root)
     }
 
     static func removeFile(id: UUID, root: URL? = nil) {
