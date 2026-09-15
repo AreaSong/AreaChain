@@ -2,7 +2,21 @@ import SwiftUI
 
 // MARK: - Modern Checkbox
 
-/// 现代物理微弹性复选框：支持弹性回弹、微缩放触感与无障碍特性
+/// 精确归一化的对勾矢量形状，支持从 0 到 1 的 Path 描边动画
+struct CheckmarkShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let w = rect.width
+        let h = rect.height
+        // 依据标准对勾比例绘制关键节点
+        path.move(to: CGPoint(x: w * 0.26, y: h * 0.52))
+        path.addLine(to: CGPoint(x: w * 0.44, y: h * 0.72))
+        path.addLine(to: CGPoint(x: w * 0.74, y: h * 0.32))
+        return path
+    }
+}
+
+/// 现代物理微弹性复选框：支持弹性回弹、Path 对勾描边动画、微触感与无障碍特性
 struct ModernCheckbox: View {
     var isDone: Bool
     var action: () -> Void
@@ -33,17 +47,19 @@ struct ModernCheckbox: View {
                 )
                 .frame(width: 17, height: 17)
 
-            if isDone {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 8.5, weight: .bold))
-                    .foregroundStyle(DaybookTheme.checkmark)
-                    .transition(.scale.combined(with: .opacity))
-                    .accessibilityHidden(true)
-            }
+            CheckmarkShape()
+                .trim(from: 0, to: isDone ? 1 : 0)
+                .stroke(
+                    DaybookTheme.checkmark,
+                    style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
+                )
+                .frame(width: 17, height: 17)
+                .animation(DaybookMotion.checkmark(reduceMotion), value: isDone)
+                .accessibilityHidden(true)
         }
         .frame(width: 20, height: 20)
         .offset(y: 0.5)
-        .scaleEffect(isAnimating ? 0.85 : (hovering ? 1.05 : 1.0))
+        .scaleEffect(isAnimating ? 0.88 : (hovering ? 1.06 : 1.0))
         .contentShape(Rectangle())
     }
 
@@ -58,11 +74,12 @@ struct ModernCheckbox: View {
     }
 
     private func handleTap() {
+        DaybookHaptics.tap()
         if !reduceMotion {
             withAnimation(DaybookMotion.snappy) {
                 isAnimating = true
             }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
                 withAnimation(DaybookMotion.snappy) {
                     isAnimating = false
                 }
@@ -296,8 +313,18 @@ struct ModernTaskTitle: View {
     var body: some View {
         Text(text)
             .font(font)
-            .strikethrough(isDone, color: DaybookTheme.muted.opacity(0.8))
             .foregroundStyle(isDone ? style.doneText : DaybookTheme.ink)
+            .overlay(alignment: .leading) {
+                GeometryReader { proxy in
+                    Rectangle()
+                        .fill(style.doneText.opacity(0.85))
+                        .frame(width: isDone ? proxy.size.width : 0, height: 1.2)
+                        .frame(maxHeight: .infinity, alignment: .center)
+                }
+                .allowsHitTesting(false)
+            }
+            .strikethrough(reduceMotion && isDone, color: style.doneText.opacity(0.85))
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
+            .animation(DaybookMotion.strikethrough(reduceMotion), value: isDone)
     }
 }

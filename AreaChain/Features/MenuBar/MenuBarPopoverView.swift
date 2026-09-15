@@ -251,12 +251,26 @@ struct MenuBarPopoverView: View {
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookTheme.ink)
                 HStack(spacing: 4) {
-                    Circle()
-                        .fill(todayRemaining > 0 ? Color.orange : DaybookTheme.stamp)
-                        .frame(width: 5, height: 5)
+                    Group {
+                        if todayRemaining > 0 {
+                            Circle()
+                                .fill(Color.orange)
+                                .frame(width: 5, height: 5)
+                                .transition(.scale.combined(with: .opacity))
+                        } else {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 7, weight: .bold))
+                                .foregroundStyle(DaybookTheme.stamp)
+                                .transition(.scale.combined(with: .opacity))
+                        }
+                    }
+                    .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining > 0)
+
                     Text(headerSubtitle)
                         .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.muted)
+                        .contentTransition(.numericText())
+                        .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
                 }
             }
 

@@ -51,7 +51,13 @@ struct TaskRow: View {
     private var rowContent: some View {
         HStack(alignment: shouldAlignTop ? .top : .center, spacing: 8) {
             ModernCheckbox(isDone: state.isDone) {
-                dispatch(.toggleDone)
+                PendingCompletionManager.shared.toggle(
+                    id: state.id,
+                    currentlyDone: state.isDone,
+                    reduceMotion: reduceMotion
+                ) {
+                    dispatch(.toggleDone)
+                }
             }
 
             QuadrantDots(
@@ -214,6 +220,8 @@ struct TaskRow: View {
                 .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
                 .lineLimit(1)
+                .contentTransition(.numericText())
+                .animation(DaybookMotion.interactive(reduceMotion), value: streak)
                 .offset(y: -0.6)
         }
         .fixedSize()

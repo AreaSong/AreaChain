@@ -159,15 +159,37 @@ extension DayBoardList {
         let previousIDs = orderedVisibleIDs
         let checkOn = checkDay(for: id)
         if let todo = todos.first(where: { $0.id == id }) {
-            guard DayBoardMutations.toggleTodo(todo) else { return }
+            PendingCompletionManager.shared.toggle(
+                id: todo.id,
+                currentlyDone: todo.isDone,
+                reduceMotion: reduceMotion
+            ) {
+                guard DayBoardMutations.toggleTodo(todo) else { return }
+                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+            }
         } else if let routine = routines.first(where: { $0.id == id }) {
-            guard DayBoardMutations.toggleRoutine(
-                routine,
-                on: checkOn,
-                checks: checks,
-                context: modelContext
-            ) else { return }
+            let isDone = DayBoardLogic.isRoutineDone(
+                routine.snapshot,
+                checks: checks.compactMap(\.snapshot),
+                on: checkOn
+            )
+            PendingCompletionManager.shared.toggle(
+                id: routine.id,
+                currentlyDone: isDone,
+                reduceMotion: reduceMotion
+            ) {
+                guard DayBoardMutations.toggleRoutine(
+                    routine,
+                    on: checkOn,
+                    checks: checks,
+                    context: modelContext
+                ) else { return }
+                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+            }
         }
+    }
+
+    private func shiftFocusAfterCompletion(id: UUID, previousIDs: [UUID]) {
         guard !showCompleted, let index = previousIDs.firstIndex(of: id) else { return }
         let remaining = Set(orderedVisibleIDs)
         let candidates = Array(previousIDs.dropFirst(index + 1)) + Array(previousIDs.prefix(index).reversed())

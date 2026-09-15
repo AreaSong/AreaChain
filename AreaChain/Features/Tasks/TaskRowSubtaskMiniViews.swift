@@ -43,25 +43,44 @@ struct TaskRowSubtaskChip: View {
 struct TaskRowSubtaskInlineList: View {
     let subtasks: [SubtaskSnapshot]
     var onToggle: ((UUID) -> Void)?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             ForEach(subtasks) { subtask in
                 HStack(spacing: 5) {
                     Button {
+                        DaybookHaptics.tap()
                         onToggle?(subtask.id)
                     } label: {
-                        Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 10))
-                            .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
+                        ZStack {
+                            Circle()
+                                .strokeBorder(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.4), lineWidth: 1.2)
+                                .background(
+                                    Circle().fill(subtask.isDone ? DaybookTheme.stamp : Color.clear)
+                                )
+                                .frame(width: 12, height: 12)
+
+                            CheckmarkShape()
+                                .trim(from: 0, to: subtask.isDone ? 1 : 0)
+                                .stroke(
+                                    DaybookTheme.checkmark,
+                                    style: StrokeStyle(lineWidth: 1.4, lineCap: .round, lineJoin: .round)
+                                )
+                                .frame(width: 12, height: 12)
+                                .animation(DaybookMotion.checkmark(reduceMotion), value: subtask.isDone)
+                                .accessibilityHidden(true)
+                        }
+                        .frame(width: 14, height: 14)
                     }
                     .buttonStyle(.plain)
 
-                    Text(subtask.title)
-                        .font(.system(size: 11))
-                        .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.6) : DaybookTheme.ink)
-                        .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
-                        .lineLimit(1)
+                    ModernTaskTitle(
+                        text: subtask.title,
+                        isDone: subtask.isDone,
+                        font: .system(size: 11)
+                    )
+                    .lineLimit(1)
                 }
                 .padding(.vertical, 0.5)
             }

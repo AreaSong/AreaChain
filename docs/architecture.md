@@ -26,7 +26,7 @@ AreaChain/
   Services/       系统服务：SwiftData、时钟、通知、快照、热键、附件、日历同步
   Features/       界面（按模块）：
     Workspace/    三栏工作台、常驻页、检查器抽屉、子任务、备注、2×2 四象限
-    Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏
+    Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏、待沉底协调器 (PendingCompletionManager)
     MenuBar/      菜单栏浮层、捕获框、可切换底栏与语法搜索
     Calendar/     日历月网格（工作台 tab）
     Quadrant/     四象限（工作台 tab）
@@ -36,7 +36,7 @@ AreaChain/
     Search/       跨天搜索与工作台/浮层共用的结果列表
     Settings/     设置（外观、启动、捕获、通知、日历、iCloud、数据）
     Trash/        回收站（工作台 tab）
-  Theme/          色板、DaybookType 字号、DaybookPage 页壳、动效、确认组件
+  Theme/          色板、DaybookType 字号、动效系统 (DaybookMotion / CheckmarkShape / DaybookHaptics)、确认组件
 ```
 
 各 `*StandaloneView` 仍是工作台 tab 的包装。`AppWindows.openWorkspace(tab:)` 负责工作台；新增的单条手记小窗由 Features/Diary 中的 `DiaryWindows` 注册和持有，不声明额外 SwiftUI Window Scene，不复制数据模型。
@@ -46,7 +46,15 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：色彩、圆角、阴影、无障碍动效、页壳 `DaybookPage` 与字号令牌 `DaybookType`。
+- **Theme**：色彩、圆角、阴影、无障碍动效（`DaybookMotion`）、触控板触感（`DaybookHaptics`）、页壳 `DaybookPage` 与字号令牌 `DaybookType`。
+
+### 交互微动效与待沉底状态协调 (`PendingCompletionManager`)
+
+为了实现 macOS 原生品质的物理反馈与防反悔机制，应用采用 UI 待沉底队列与持久化解耦的架构：
+1. **视觉完成态与数据隔离**：用户在 UI 点击复选框或按 `Space` 时，`PendingCompletionManager` 立即在 UI 层标记该项为临时完成态，驱动贝塞尔路径生长（`CheckmarkShape` Trim 动画）、删除线平滑横向拉伸（`ModernTaskTitle`）与触控板触感（`NSHapticFeedbackManager`），但暂不向 SwiftData 发起写入。
+2. **0.4 秒防反悔窗口**：任务在原列表中原位停留 400ms，期间再次触发会取消后台计时器并立即还原，完全不引发数据库重排与列表闪动。
+3. **平滑折叠沉底**：计时到期后，以 `DaybookMotion.collapse` 弹簧曲线折叠列表行并提交真实持久化，任务顺畅流入「已完成」折叠区域。
+4. **测试与无障碍自适应**：在 XCTest 运行环境下或系统开启 `accessibilityReduceMotion` 时，协调器自动直调底层提交，跳过任何时间等待，既保证了单元测试的确定性与执行速度，又完全遵守 HIG 无障碍规范。
 
 ### 工作台公共外观
 

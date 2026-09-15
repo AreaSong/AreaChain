@@ -297,6 +297,7 @@ struct DayBoardList: View {
     }
 
     func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
+        let visuallyDone = PendingCompletionManager.shared.isVisuallyDone(id: routine.id, actualDone: isDone)
         let schedule = RoutineScheduleContext(
             todayKey: todayKey,
             checkDayKey: dayKey,
@@ -304,7 +305,7 @@ struct DayBoardList: View {
             locale: locale
         )
         let display = RoutineRowDisplayOptions(
-            isDone: isDone,
+            isDone: visuallyDone,
             selection: rowSelection(for: routine.id)
         )
         let actions = RoutineRowActions(
@@ -315,7 +316,7 @@ struct DayBoardList: View {
                 }
             },
             onToggle: nil,
-            onSkip: isDone ? nil : {
+            onSkip: visuallyDone ? nil : {
                 DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext)
             },
             onEndEditing: { editingTaskID = nil }
@@ -330,8 +331,9 @@ struct DayBoardList: View {
     }
 
     func todoRow(_ todo: TodoItem, isDone: Bool) -> some View {
+        let visuallyDone = PendingCompletionManager.shared.isVisuallyDone(id: todo.id, actualDone: isDone)
         let display = TodoRowDisplayOptions(
-            isDone: isDone,
+            isDone: visuallyDone,
             selection: rowSelection(for: todo.id),
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
         )

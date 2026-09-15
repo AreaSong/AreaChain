@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 enum DaybookMotion {
@@ -6,6 +7,9 @@ enum DaybookMotion {
     static let smooth: Animation = .spring(response: 0.34, dampingFraction: 0.85)
     static let strike: Animation = .easeInOut(duration: 0.20)
     static let quick: Animation = snappy
+    static let checkmark: Animation = .spring(response: 0.24, dampingFraction: 0.68)
+    static let strikethrough: Animation = .easeInOut(duration: 0.24)
+    static let collapse: Animation = .spring(response: 0.34, dampingFraction: 0.82)
 
     static func snappy(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : snappy
@@ -21,6 +25,31 @@ enum DaybookMotion {
 
     static func animation(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : quick
+    }
+
+    static func checkmark(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : checkmark
+    }
+
+    static func strikethrough(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : strikethrough
+    }
+
+    static func collapse(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : collapse
+    }
+}
+
+/// macOS 触控板微触感反馈
+enum DaybookHaptics {
+    @MainActor
+    static func tap() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.alignment, performanceTime: .default)
+    }
+
+    @MainActor
+    static func celebrate() {
+        NSHapticFeedbackManager.defaultPerformer.perform(.levelChange, performanceTime: .default)
     }
 }
 
