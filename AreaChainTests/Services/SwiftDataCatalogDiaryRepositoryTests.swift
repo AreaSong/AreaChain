@@ -186,6 +186,149 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(allTags.contains(where: { $0.name == "小巧思" }))
     }
 
+    @Test(arguments: [("Work", " \tｗＯＲＫ\n"), ("Café", "CAFE\u{301}")])
+    func resolvingLiveNormalizedTagDoesNotSaveOrNotify(name: String, equivalentName: String) throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let tag = try repository.createTag(name: name, sortOrder: 0)
+        let counts = try mutationCounts(in: context) {
+            let resolved = try repository.resolveOrCreateTag(name: equivalentName)
+            #expect(resolved.id == tag.id)
+        }
+        #expect(counts.saves == 0)
+        #expect(counts.notifications == 0)
+        #expect(!context.hasChanges)
+        #expect(try context.fetchCount(FetchDescriptor<TagItem>()) == 1)
+    }
+
+    @Test func inputTagResolutionDoesNotDirtyAnExistingLiveTag() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let tag = try repository.createTag(name: "Work", sortOrder: 0)
+        let ids = try InputTagResolver.resolve(["work", "ＷＯＲＫ"], in: context)
+        #expect(ids == [tag.id])
+        #expect(!context.hasChanges)
+    }
+
+    @Test func presetInitializationCommitsOnceAndRepeatedChecksStayReadOnly() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let initial = try mutationCounts(in: context) { try repository.ensurePresetTags() }
+        #expect(initial.saves == 1)
+        #expect(initial.notifications == 1)
+
+        let repeated = mutationCounts(in: context) {
+            for _ in 0..<10 {
+                #expect(DayBoardMutations.ensureDiaryPresetTags(context: context))
+            }
+        }
+        #expect(repeated.saves == 0)
+        #expect(repeated.notifications == 0)
+        #expect(!context.hasChanges)
+        let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
+        #expect(tags.count == 3)
+        #expect(Set(tags.map(\.name)) == Set(DiaryMemoTags.presets))
+    }
+
+    @Test func presetRepairRestoresAndCreatesTogetherWithoutRevivingLiveDuplicates() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let stamp = Date(timeIntervalSince1970: 123)
+        let password = TagItem(name: DiaryMemoTags.password, sortOrder: 0)
+        let duplicate = TagItem(name: DiaryMemoTags.password, sortOrder: 1, deletedAt: stamp)
+        let journal = TagItem(name: " 日记 ", sortOrder: 2, deletedAt: stamp)
+        for tag in [password, duplicate, journal] { context.insert(tag) }
+        try context.save()
+
+        let counts = try mutationCounts(in: context) { try repository.ensurePresetTags() }
+        #expect(counts.saves == 1)
+        #expect(counts.notifications == 1)
+        #expect(duplicate.deletedAt == stamp)
+        #expect(journal.deletedAt == nil)
+        let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
+        #expect(tags.count == 4)
+        let savedJournal = try #require(tags.first { $0.id == journal.id })
+        #expect(savedJournal.deletedAt == nil)
+        let liveNames = tags.filter { $0.deletedAt == nil }.map { TagSyntax.normalizedName($0.name) }
+        #expect(Set(liveNames) == Set(DiaryMemoTags.presets))
+        let repeated = try mutationCounts(in: context) { try repository.ensurePresetTags() }
+        #expect(repeated.saves == 0 && repeated.notifications == 0)
+    }
+
+    @Test func unchangedPresetChecksDoNotCommitUnrelatedPendingEdits() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        try repository.ensurePresetTags()
+        let todo = TodoItem(title: "已保存", dayKey: "2026-09-14")
+        context.insert(todo)
+        try context.save()
+        todo.title = "尚未保存的编辑"
+
+        let counts = try mutationCounts(in: context) {
+            #expect(DayBoardMutations.ensureDiaryPresetTags(context: context))
+            _ = try repository.resolveOrCreateTag(name: DiaryMemoTags.journal)
+        }
+        #expect(counts.saves == 0 && counts.notifications == 0)
+        #expect(context.hasChanges)
+        #expect(todo.title == "尚未保存的编辑")
+        #expect(try ModelContext(container).fetch(FetchDescriptor<TodoItem>()).first?.title == "已保存")
+    }
+
+    @Test func failedPresetRepairRollsBackCreationAndRestorationTogether() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let stamp = Date(timeIntervalSince1970: 123)
+        let journal = TagItem(name: DiaryMemoTags.journal, sortOrder: 0, deletedAt: stamp)
+        context.insert(journal)
+        try context.save()
+
+        let counts = mutationCounts(in: context) {
+            #expect(throws: CocoaError.self) {
+                try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
+                    try repository.ensurePresetTags()
+                }
+            }
+        }
+        #expect(counts.saves == 0 && counts.notifications == 0)
+        #expect(journal.deletedAt == stamp)
+        let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
+        #expect(tags.count == 1)
+        #expect(tags.first?.id == journal.id && tags.first?.deletedAt == stamp)
+    }
+
+    @Test func creatingAndRestoringTagsStillCommitOnce() throws {
+        let (container, _, repository) = try makeRepos()
+        let context = container.mainContext
+        let created = try mutationCounts(in: context) { _ = try repository.resolveOrCreateTag(name: "Work") }
+        #expect(created.saves == 1 && created.notifications == 1)
+        let tag = try #require(repository.fetchTags().first)
+        try repository.deleteTag(id: tag.id, soft: true)
+
+        let restored = try mutationCounts(in: context) {
+            let resolved = try repository.resolveOrCreateTag(name: "ｗｏｒｋ")
+            #expect(resolved.id == tag.id)
+        }
+        #expect(restored.saves == 1 && restored.notifications == 1)
+        let saved = try #require(ModelContext(container).fetch(FetchDescriptor<TagItem>()).first)
+        #expect(saved.id == tag.id && saved.deletedAt == nil)
+    }
+
+    private func mutationCounts(
+        in context: ModelContext, _ work: () throws -> Void
+    ) rethrows -> (saves: Int, notifications: Int) {
+        var saves = 0
+        var notifications = 0
+        let center = NotificationCenter.default
+        let saveObserver = center.addObserver(forName: ModelContext.willSave, object: context, queue: .main) { _ in saves += 1 }
+        let changeObserver = center.addObserver(forName: .boardDidChange, object: nil, queue: .main) { _ in notifications += 1 }
+        defer {
+            center.removeObserver(saveObserver)
+            center.removeObserver(changeObserver)
+        }
+        try work()
+        return (saves, notifications)
+    }
+
     @Test func projectAndTagUnlinkingOnPurge() throws {
         let (container, _, catalogRepo) = try makeRepos()
         let proj = try catalogRepo.createProject(name: "DeleteMe", parentID: nil, sortOrder: 0)

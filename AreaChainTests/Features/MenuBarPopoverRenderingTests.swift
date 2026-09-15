@@ -327,6 +327,34 @@ struct MenuBarPopoverRenderingTests {
         #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)
     }
 
+    @Test func commandArrowTabChangesDoNotRepublishUnchangedPresetTags() async throws {
+        let container = try fixture()
+        try SwiftDataCatalogRepository(container: container).ensurePresetTags()
+        let window = host(toolbar: MenuBarToolbarState(), container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+        var notifications = 0
+        let observer = NotificationCenter.default.addObserver(forName: .boardDidChange, object: nil, queue: .main) { _ in notifications += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        let keyCodes: [UInt16] = [124, 124, 123, 123, 124, 123]
+        for (index, keyCode) in keyCodes.enumerated() {
+            let characters = keyCode == 124 ? "\u{F703}" : "\u{F702}"
+            let event = try #require(NSEvent.keyEvent(
+                with: .keyDown, location: .zero, modifierFlags: [.command, .numericPad, .function],
+                timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber, context: nil,
+                characters: characters, charactersIgnoringModifiers: characters,
+                isARepeat: index > 0 && keyCodes[index - 1] == keyCode, keyCode: keyCode
+            ))
+            NSApp.postEvent(event, atStart: false)
+            try await Task.sleep(for: .milliseconds(350))
+            try await settle(view)
+            #expect((diaryEditor(in: view) != nil) == (keyCode == 124))
+        }
+        #expect(notifications == 0)
+    }
+
     private func fixture() throws -> ModelContainer {
         let container = try ModelContainer(for: Schema(AreaChainSchema.models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = container.mainContext

@@ -10,7 +10,7 @@ enum InputTagResolver {
             let key = TagSyntax.normalizedName(name)
             let matches = tags.filter { TagSyntax.normalizedName($0.name) == key }
             if let existing = matches.first(where: { $0.deletedAt == nil }) ?? matches.first {
-                existing.deletedAt = nil
+                if existing.deletedAt != nil { existing.deletedAt = nil }
                 return existing.id
             }
             let tag = TagItem(name: name, sortOrder: (tags.map(\.sortOrder).max() ?? -1) + 1)

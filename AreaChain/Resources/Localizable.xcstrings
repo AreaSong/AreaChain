@@ -4918,13 +4918,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Temporary tasks are a one-day bar you can drag. Resident tasks only mark weekdays in this month."
+            "value": "⌘-click task names or bars to select multiple tasks; Shift-click selects a range. Drag to reschedule together, or use ←/→ to move one day. Esc cancels a drag. Resident dots mark scheduled weekdays."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "临时任务是当天一格的横条，可拖到另一天。常驻只在符合星期的日子打点。"
+            "value": "⌘ 点选任务名或色块可多选，Shift 连选；拖动一起改期，←/→ 平移一天，Esc 取消拖动。常驻圆点表示排定日。"
           }
         }
       }

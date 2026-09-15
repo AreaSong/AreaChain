@@ -154,6 +154,10 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("标签名称不能为空")
         }
+        let key = TagSyntax.normalizedName(trimmed)
+        if let existing = try fetchTags(includeDeleted: false).first(where: { TagSyntax.normalizedName($0.name) == key }) {
+            return existing
+        }
         return try ModelChanges.transaction(in: context) {
             let ids = try InputTagResolver.resolve([trimmed], in: context)
             guard let id = ids.first, let tag = try fetchTag(id: id) else {
@@ -172,8 +176,12 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     func ensurePresetTags() throws {
-        for preset in DiaryMemoTags.presets {
-            _ = try resolveOrCreateTag(name: preset)
+        let liveNames = Set(try fetchTags(includeDeleted: false).map { TagSyntax.normalizedName($0.name) })
+        let missing = DiaryMemoTags.presets.filter { !liveNames.contains(TagSyntax.normalizedName($0)) }
+        // 页面反复出现时只读；确有缺失或软删除时，合并为一次保存和变更通知。
+        guard !missing.isEmpty else { return }
+        try ModelChanges.transaction(in: context) {
+            _ = try InputTagResolver.resolve(missing, in: context)
         }
     }
 

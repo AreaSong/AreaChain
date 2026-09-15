@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct GanttPage: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
@@ -9,10 +10,12 @@ struct GanttPage: View {
 
     var todayKey: String
     @State private var monthKey: String
-    @State private var dropKey: String?
+    @State private var dropTarget: GanttDropTarget?
+    @State private var selection = TaskSelection()
+    @State private var drag: GanttDragState?
 
-    private let dayWidth: CGFloat = 22
-    private let titleWidth: CGFloat = 108
+    private let dayWidth = GanttRowMetrics.dayWidth
+    private let titleWidth = GanttRowMetrics.titleWidth
 
     init(todayKey: String) {
         self.todayKey = todayKey
@@ -35,29 +38,33 @@ struct GanttPage: View {
             if bars.isEmpty && marks.isEmpty {
                 DaybookEmptyState(title: "gantt.empty", systemImage: "calendar")
             } else {
-                ScrollView(.horizontal) {
+                timeline
+            }
+        }
+        .onChange(of: monthKey) { _, _ in resetInteraction() }
+        .onChange(of: bars) { _, current in
+            selection.reconcile(with: current.map(\.id))
+            if let drag, !drag.matches(current) { self.drag = nil }
+        }
+        .onDisappear { resetInteraction() }
+    }
+
+    private var timeline: some View {
+        ScrollView(.horizontal) {
+            VStack(alignment: .leading, spacing: 4) {
+                headerRow.padding(.bottom, 2)
+                Divider().overlay(DaybookTheme.rule.opacity(0.5))
+                ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 4) {
-                        headerRow
-                            .padding(.bottom, 2)
-                        Divider()
-                            .overlay(DaybookTheme.rule.opacity(0.5))
-                        ScrollView(.vertical) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                ForEach(bars) { bar in
-                                    todoRow(bar)
-                                }
-                                ForEach(routineIDs, id: \.self) { id in
-                                    routineRow(id)
-                                }
-                            }
-                            .padding(.bottom, 8)
-                        }
-                        .daybookScroll()
+                        ForEach(bars) { bar in todoRow(bar) }
+                        ForEach(routineIDs, id: \.self) { id in routineRow(id) }
                     }
+                    .padding(.bottom, 8)
                 }
                 .daybookScroll()
             }
         }
+        .daybookScroll()
     }
 
     private var days: [String] {
@@ -94,23 +101,25 @@ struct GanttPage: View {
     }
 
     private func todoRow(_ bar: GanttTodoBar) -> some View {
-        HStack(spacing: 0) {
+        let displayedDay = drag?.previewDay(for: bar.id) ?? bar.dayKey
+        let isSelected = selection.ids.contains(bar.id)
+        return HStack(spacing: 0) {
             Text(bar.title)
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.ink)
                 .lineLimit(1)
                 .help(bar.title)
                 .frame(width: titleWidth, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    BoardSelection.shared.inspectBoard(bar.dayKey)
-                    WorkspaceNavigation.shared.inspectTask(bar.id)
-                }
-                .accessibilityLabel(bar.title)
-                .accessibilityAddTraits(.isButton)
-                .accessibilityValue(DayKey.displayName(bar.dayKey, calendar: calendar, locale: locale))
+                .accessibilityHidden(true)
             ForEach(days, id: \.self) { key in
-                dayCell(key, filled: key == bar.dayKey, payload: TodoDragToken.encode(bar.id))
+                dayCell(key, rowID: bar.id, filled: key == displayedDay, selected: isSelected)
+            }
+        }
+        .frame(height: GanttRowMetrics.height)
+        .background(isSelected ? DaybookTheme.cardSelectionFill : Color.clear, in: RoundedRectangle(cornerRadius: 4))
+        .overlay {
+            GanttRowPointerRegion(bar: bar, displayedDay: displayedDay, days: days, isSelected: isSelected) {
+                handle($0, for: bar)
             }
         }
     }
@@ -133,6 +142,7 @@ struct GanttPage: View {
             .frame(width: titleWidth, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture {
+                resetInteraction()
                 let inspectKey = dots.contains(todayKey)
                     ? todayKey
                     : (days.first { dots.contains($0) } ?? todayKey)
@@ -151,38 +161,81 @@ struct GanttPage: View {
         }
     }
 
-    private func dayCell(_ key: String, filled: Bool, payload: String) -> some View {
-        RoundedRectangle(cornerRadius: 3, style: .continuous)
+    private func dayCell(_ key: String, rowID: UUID, filled: Bool, selected: Bool) -> some View {
+        let target = GanttDropTarget(rowID: rowID, dayKey: key)
+        return RoundedRectangle(cornerRadius: 3, style: .continuous)
             .fill(filled ? DaybookTheme.stamp.opacity(0.85) : Color.clear)
             .frame(width: dayWidth - 2, height: 14)
             .frame(width: dayWidth, height: 22)
-            .overlay(
-                Rectangle()
-                    .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 1.5)
-            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke((filled && selected) || dropTarget == target ? DaybookTheme.stamp : Color.clear, lineWidth: 1.5)
+            }
             .contentShape(Rectangle())
-            .help(filled ? barHelp(key) : "")
-            .accessibilityHidden(!filled)
-            .accessibilityLabel(filled ? barHelp(key) : "")
-            .modifier(TodoDragIfNeeded(payload: filled ? payload : nil))
+            .accessibilityHidden(true)
             .dropDestination(for: String.self) { items, _ in
                 dropTodo(items, onto: key)
             } isTargeted: { hovering in
-                dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
+                dropTarget = hovering ? target : (dropTarget == target ? nil : dropTarget)
             }
     }
 
-    private func barHelp(_ key: String) -> String {
-        DayKey.displayName(key, calendar: calendar, locale: locale)
+    private func handle(_ action: GanttPointerAction, for bar: GanttTodoBar) {
+        switch action {
+        case .select(let modifiers):
+            selection.select(bar.id, in: bars.map(\.id), modifiers: modifiers)
+        case .inspect:
+            BoardSelection.shared.inspectBoard(bar.dayKey)
+            WorkspaceNavigation.shared.inspectTask(bar.id)
+        case .dragBegan:
+            beginDrag(bar)
+        case .dragChanged(let translation):
+            drag?.update(dayOffset: Int((translation / dayWidth).rounded()))
+        case .dragEnded:
+            commitDrag()
+        case .cancel:
+            if drag != nil { drag = nil } else { selection.focus(nil) }
+            dropTarget = nil
+        case .moveByDays(let offset):
+            beginDrag(bar)
+            drag?.update(dayOffset: offset)
+            commitDrag()
+        }
+    }
+
+    private func beginDrag(_ bar: GanttTodoBar) {
+        if !selection.ids.contains(bar.id) { selection.focus(bar.id) }
+        dropTarget = nil
+        drag = GanttDragState(sourceID: bar.id, selectedIDs: selection.ids, bars: bars, days: days)
+    }
+
+    private func commitDrag() {
+        guard let drag else { return }
+        self.drag = nil
+        guard GanttRescheduling.commit(drag.moves, todos: todos, context: modelContext) else { return }
+        if let id = WorkspaceNavigation.shared.selectedTaskID, let day = drag.previewDay(for: id) {
+            BoardSelection.shared.inspectBoard(day)
+        }
+    }
+
+    private func resetInteraction() {
+        drag = nil
+        dropTarget = nil
+        selection.focus(nil)
     }
 
     private func dropTodo(_ items: [String], onto key: String) -> Bool {
+        dropTarget = nil
         guard let id = items.compactMap(TodoDragToken.decode).first,
-              let todo = todos.first(where: { $0.id == id })
+              let todo = todos.first(where: { $0.id == id && !$0.isDone && $0.deletedAt == nil })
         else { return false }
-        DayBoardMutations.moveTodo(todo, to: key)
-        return true
+        return DayBoardMutations.moveTodo(todo, to: key)
     }
+}
+
+private struct GanttDropTarget: Equatable {
+    let rowID: UUID
+    let dayKey: String
 }
 
 struct GanttStandaloneView: View {

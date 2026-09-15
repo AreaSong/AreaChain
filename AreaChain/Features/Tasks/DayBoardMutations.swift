@@ -261,7 +261,8 @@ enum DayBoardMutations {
 
     @discardableResult
     static func ensureDiaryPresetTags(among tags: [TagItem] = [], context: ModelContext) -> Bool {
-        ModelChanges.attempt(in: context) { try catalogRepo(for: context).ensurePresetTags() }
+        // 仓储负责实际变更的事务；只读检查不应顺带提交上下文中的其他编辑。
+        ModelChanges.attempt { try catalogRepo(for: context).ensurePresetTags() }
     }
 
     @discardableResult
