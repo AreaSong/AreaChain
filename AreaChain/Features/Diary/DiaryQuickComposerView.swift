@@ -12,6 +12,7 @@ struct DiaryQuickComposerView: View {
     var onSubmit: () -> Void
     var isCompact = false
     var status: String? = nil
+    var isSensitive: Bool = false
     var onOpenWindow: (() -> Void)? = nil
     @State private var hostWindow: NSWindow?
 
@@ -49,36 +50,62 @@ struct DiaryQuickComposerView: View {
 
     private var compactInputRow: some View {
         let focused = focused.wrappedValue
+        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.4)
+        let ringColor = focused ? DaybookTheme.stamp.opacity(0.16) : Color.clear
+
         return HStack(alignment: .center, spacing: 8) {
             statusIcon
-            SyntaxTextEditor(text: $text, focused: self.focused,
-                             placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: submitCompact)
-                .frame(height: 44)
-                .accessibilityLabel("diary.quick.input")
+
+            DaybookTextField(
+                text: $text,
+                placeholder: L10n.string("diary.quick.placeholder", locale: locale),
+                focus: self.focused,
+                availableTags: orderedTags.map(\.name),
+                onSubmit: submitCompact,
+                onCommandReturn: submitCompact,
+                allowsShiftNewline: false
+            )
+            .accessibilityLabel("diary.quick.input")
+
             if let onOpenWindow {
                 Button {
-                    guard canSubmit, !hasMarkedText else { return }
+                    guard !hasMarkedText else { return }
                     onOpenWindow()
                 } label: {
-                    Image(systemName: "arrow.up.forward.square").frame(width: 24, height: 24)
+                    Image(systemName: "arrow.up.forward.square")
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .frame(width: 20, height: 20)
                 }
-                .buttonStyle(.plain).disabled(!canSubmit)
-                .foregroundStyle(DaybookTheme.muted.opacity(canSubmit ? 0.6 : 0.25))
-                .help("diary.window.continue").accessibilityLabel("diary.window.continue")
+                .buttonStyle(.plain)
+                .foregroundStyle(DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
+                .help(canSubmit ? "diary.window.continue" : "diary.window.new")
+                .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
                 .background(SyntaxViewAnchor("syntax.diary.popout"))
             }
-            CommandReturnButton(enabled: canSubmit, label: "diary.quick.save",
-                                help: "diary.quick.save.help", action: submitCompact)
-            // ⌘Return 由焦点原生编辑器处理，避免全局按钮快捷键抢走搜索或输入法的按键。
+
+            CommandReturnButton(
+                enabled: canSubmit,
+                label: "diary.quick.save",
+                help: "diary.quick.save.help",
+                action: submitCompact
+            )
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03)))
-        .overlay(RoundedRectangle(cornerRadius: 8, style: .continuous)
-            .stroke(focused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.4), lineWidth: focused ? 1.1 : 0.6))
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous)
-            .stroke(focused ? DaybookTheme.stamp.opacity(0.16) : Color.clear, lineWidth: 2).padding(-2))
-        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 7)
+        .frame(height: 34)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(strokeColor, lineWidth: focused ? 1.1 : 0.6)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(ringColor, lineWidth: 2.0)
+                .padding(-2)
+        )
         .background(KeyWindowHost { hostWindow = $0 })
         .background(SyntaxViewAnchor("syntax.diary.composer"))
     }
@@ -86,13 +113,25 @@ struct DiaryQuickComposerView: View {
     private var statusIcon: some View {
         let saved = status == "diary.window.saved"
         let failed = status != nil && !saved
-        return Image(systemName: status == nil ? "plus" : (saved ? "checkmark" : "exclamationmark.circle"))
+        let systemName: String = {
+            if failed { return "exclamationmark.circle" }
+            if saved { return "checkmark" }
+            if isSensitive { return "lock.shield" }
+            return "plus"
+        }()
+        let iconColor: Color = {
+            if failed { return DaybookTheme.destructive }
+            if focused.wrappedValue || saved || isSensitive { return DaybookTheme.stamp }
+            return DaybookTheme.muted.opacity(0.8)
+        }()
+
+        return Image(systemName: systemName)
             .font(.system(size: 11.5, weight: .semibold))
-            .foregroundStyle(failed ? DaybookTheme.destructive : (focused.wrappedValue || saved ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.8)))
+            .foregroundStyle(iconColor)
             .frame(width: 14)
-            .help(LocalizedStringKey(status ?? "diary.quick.input"))
-            .accessibilityLabel(LocalizedStringKey(status ?? "diary.quick.input"))
-            .accessibilityHidden(status == nil)
+            .help(LocalizedStringKey(status ?? (isSensitive ? "diary.privacy" : "diary.quick.input")))
+            .accessibilityLabel(LocalizedStringKey(status ?? (isSensitive ? "diary.privacy" : "diary.quick.input")))
+            .accessibilityHidden(status == nil && !isSensitive)
     }
 
     private var hasMarkedText: Bool {

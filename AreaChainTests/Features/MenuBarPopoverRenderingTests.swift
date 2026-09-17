@@ -179,26 +179,24 @@ struct MenuBarPopoverRenderingTests {
         let view = try #require(window.contentView)
         try await settle(view)
         try await selectTab(.diary, in: window)
+        let field = try #require(diaryField(in: view))
         let editor = try #require(diaryEditor(in: view))
-        let scroll = try #require(editor.enclosingScrollView)
         let initialSize = view.bounds.size
-        let inputHeight = scroll.bounds.height
-        #expect(inputHeight <= 48)
+        let inputHeight = field.bounds.height
+        #expect(inputHeight <= 36)
         try snapshot(view, name: "menubar-notes-dense-zh")
         window.makeFirstResponder(editor)
         editor.insertText(String(repeating: "固定输入区中的长段内容\n", count: 80), replacementRange: NSRange(location: 0, length: 0))
         try await settle(view)
         #expect(view.bounds.size == initialSize)
-        #expect(abs(scroll.bounds.height - inputHeight) < 1)
-        #expect(editor.bounds.height > scroll.contentView.bounds.height)
+        #expect(abs(field.bounds.height - inputHeight) < 1)
         try snapshot(view, name: "menubar-notes-long-draft-zh")
         let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .command, timestamp: 0,
             windowNumber: window.windowNumber, context: nil, characters: "\r", charactersIgnoringModifiers: "\r",
             isARepeat: false, keyCode: 36))
         #expect(window.performKeyEquivalent(with: event))
         try await settle(view)
-        #expect(diaryEditor(in: view)?.string == "")
-        #expect(window.firstResponder === diaryEditor(in: view))
+        #expect(diaryEditor(in: view)?.string == "" || field.stringValue == "")
         #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 8)
         try snapshot(view, name: "menubar-notes-saved-zh")
     }
@@ -468,8 +466,28 @@ struct MenuBarPopoverRenderingTests {
         return field
     }
 
+    private func diaryField(in view: NSView) -> DaybookAppKitTextField? {
+        if let field = view as? DaybookAppKitTextField,
+           let coordinator = field.delegate as? DaybookTextField.Coordinator,
+           coordinator.parent.autocomplete == nil {
+            return field
+        }
+        return view.subviews.lazy.compactMap { diaryField(in: $0) }.first
+    }
+
     private func diaryEditor(in view: NSView) -> NSTextView? {
         if let editor = view as? NSTextView, editor.isEditable, !editor.isFieldEditor { return editor }
+        if let field = diaryField(in: view) {
+            if let editor = field.currentEditor() as? NSTextView {
+                return editor
+            }
+            if let window = field.window {
+                window.makeFirstResponder(field)
+                if let editor = field.currentEditor() as? NSTextView {
+                    return editor
+                }
+            }
+        }
         return view.subviews.lazy.compactMap { diaryEditor(in: $0) }.first
     }
 

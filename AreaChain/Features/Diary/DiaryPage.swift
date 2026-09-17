@@ -14,7 +14,7 @@ struct DiaryPageOptions {
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
 struct DiaryPage: View {
     @Environment(\.daybookViewStyle) private var style
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.modelContext) var modelContext
     @Environment(\.locale) private var locale
 
     var todayKey: String
@@ -28,7 +28,7 @@ struct DiaryPage: View {
     private let usesExternalComposerDraft: Bool
     private let vault: PrivacyVault
 
-    @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
+    @Query(sort: \TagItem.sortOrder) var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
     @State private var localSelectedTagID: UUID? = nil
@@ -40,8 +40,10 @@ struct DiaryPage: View {
     @State private var composerStatus: String?
     @State private var confirmsDiscardDraft = false
     @State private var cardDrafts = DiaryCardDrafts()
-    @State private var hostWindow: NSWindow?
+    @State var hostWindow: NSWindow?
     @Bindable private var boardSelection = BoardSelection.shared
+    @State var selectedEntryID: UUID? = nil
+    @State var keyMonitor: Any? = nil
 
     init(
         todayKey: String,
@@ -122,7 +124,7 @@ struct DiaryPage: View {
         entries.filter { $0.deletedAt == nil }
     }
 
-    private var filteredEntries: [DiaryEntry] {
+    var filteredEntries: [DiaryEntry] {
         let query = BoardSearch.parseQuery(searchQuery)
         let tagMap = Dictionary(uniqueKeysWithValues: activeTags.map { ($0.id, $0.name) })
         return nonDeletedEntries
@@ -171,13 +173,17 @@ struct DiaryPage: View {
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
             if let window = notification.object as? NSWindow, window === hostWindow { sealComposer() }
         }
-        .onDisappear { sealComposer() }
+        .onDisappear {
+            sealComposer()
+            tearDownKeyMonitor()
+        }
         .confirmationDialog("privacy.draft.discard.confirm", isPresented: $confirmsDiscardDraft) {
             Button("privacy.draft.discard", role: .destructive) { draftBinding.wrappedValue = DiaryComposerDraft() }
             Button("alert.cancel", role: .cancel) {}
         }
         .onAppear {
             DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext)
+            setupKeyMonitor()
         }
         .onReceive(NotificationCenter.default.publisher(for: .diaryAppendToken)) { notif in
             if let token = notif.object as? String {
@@ -326,7 +332,8 @@ struct DiaryPage: View {
             DiaryQuickComposerView(
                 text: draftBinding.text, focused: $composerFocused, orderedTags: orderedTags,
                 selectedTagIDs: draftBinding.selectedTagIDs, onSubmit: submitNote,
-                isCompact: !showsPageHeader, status: composerStatus, onOpenWindow: detachDraft
+                isCompact: !showsPageHeader, status: composerStatus,
+                isSensitive: composerNeedsProtection, onOpenWindow: detachDraft
             )
         }
     }
@@ -366,7 +373,9 @@ struct DiaryPage: View {
                           privacyTags: Array(allTags), draftStore: cardDrafts, vault: vault)
         } else {
             DiarySummaryRow(entry: entry, privacyTags: Array(allTags),
+                            isSelected: selectedEntryID == entry.id,
                             isHighlighted: boardSelection.inspectingDiaryID == entry.id,
+                            onSelect: { selectedEntryID = entry.id },
                             onDelete: { requestTrash(entry) })
         }
     }
@@ -420,18 +429,21 @@ struct DiaryPage: View {
         catch { composerStatus = "privacy.error.corruptData" }
     }
 
-    private func requestTrash(_ entry: DiaryEntry) {
+    func requestTrash(_ entry: DiaryEntry) {
         pendingTrash = .diary(entry, tags: { Array(allTags) }, locale: locale) {
             DayBoardMutations.deleteDiary(entry)
         }
     }
 
     private func detachDraft() {
-        guard !draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         composerFocused = false
-        DiaryWindows.shared.openDraft(draftBinding.wrappedValue, dayKey: todayKey, context: modelContext) {
-            draftBinding.wrappedValue = DiaryComposerDraft()
-            composerStatus = nil
+        if draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            DiaryWindows.shared.openDraft(DiaryComposerDraft(), dayKey: todayKey, context: modelContext)
+        } else {
+            DiaryWindows.shared.openDraft(draftBinding.wrappedValue, dayKey: todayKey, context: modelContext) {
+                draftBinding.wrappedValue = DiaryComposerDraft()
+                composerStatus = nil
+            }
         }
     }
 }

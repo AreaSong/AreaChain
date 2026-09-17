@@ -65,7 +65,7 @@ struct MenuBarPopoverView: View {
         case .diary:
             let count = todayDiariesCount
             if count == 0 {
-                return " "
+                return "header.diary.empty"
             }
             return "header.diary.count \(count)"
         }
@@ -251,26 +251,18 @@ struct MenuBarPopoverView: View {
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookTheme.ink)
                 HStack(spacing: 4) {
-                    Group {
-                        if todayRemaining > 0 {
-                            Circle()
-                                .fill(Color.orange)
-                                .frame(width: 5, height: 5)
-                                .transition(.scale.combined(with: .opacity))
-                        } else {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 7, weight: .bold))
-                                .foregroundStyle(DaybookTheme.stamp)
-                                .transition(.scale.combined(with: .opacity))
-                        }
-                    }
-                    .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining > 0)
+                    headerIndicator
+                        .animation(DaybookMotion.interactive(reduceMotion), value: tab)
+                        .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
+                        .animation(DaybookMotion.interactive(reduceMotion), value: todayDiariesCount)
 
                     Text(headerSubtitle)
                         .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.muted)
                         .contentTransition(.numericText())
+                        .animation(DaybookMotion.interactive(reduceMotion), value: tab)
                         .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
+                        .animation(DaybookMotion.interactive(reduceMotion), value: todayDiariesCount)
                 }
             }
 
@@ -283,6 +275,48 @@ struct MenuBarPopoverView: View {
             )
             .padding(.top, 1)
 
+        }
+    }
+
+    @ViewBuilder
+    private var headerIndicator: some View {
+        if toolbar.isSearching {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 7, weight: .bold))
+                .foregroundStyle(DaybookTheme.muted)
+                .transition(.scale.combined(with: .opacity))
+        } else {
+            switch tab {
+            case .tasks:
+                if todayRemaining > 0 {
+                    Circle()
+                        .fill(Color.orange)
+                        .frame(width: 5, height: 5)
+                        .transition(.scale.combined(with: .opacity))
+                } else if todayCompleted > 0 {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .transition(.scale.combined(with: .opacity))
+                } else {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 7, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                        .transition(.scale.combined(with: .opacity))
+                }
+            case .diary:
+                if todayDiariesCount > 0 {
+                    Circle()
+                        .fill(DaybookTheme.stamp)
+                        .frame(width: 5, height: 5)
+                        .transition(.scale.combined(with: .opacity))
+                } else {
+                    Image(systemName: "feather")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
         }
     }
 

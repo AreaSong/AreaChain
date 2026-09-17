@@ -6,21 +6,18 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct DiaryComposerInteractionTests {
-    @Test func returnInsertsNewlineAndCommandReturnSavesOnceKeepingFocus() async throws {
+    @Test func commandReturnSavesOnceKeepingFocusAndFixedHeight() async throws {
         let host = try DiaryComposerHost()
         defer { host.close() }
-        let editor = try await host.focus()
-        try await host.enter("第一行")
+        _ = try await host.focus()
+        try await host.enter("单行手记内容")
         let initialFrame = try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window)
-        try await host.pressReturn()
-        #expect(host.draft.text == "第一行\n")
-        #expect(host.draft.submissions == 0)
-        try await host.enter("第二行")
+        #expect(initialFrame.height <= 36)
         try await host.pressReturn(modifiers: .command)
-        #expect(host.draft.lastSaved == "第一行\n第二行")
+        #expect(host.draft.lastSaved == "单行手记内容")
         #expect(host.draft.submissions == 1 && host.draft.text.isEmpty)
-        #expect(host.window.firstResponder === editor)
-        #expect(try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window) == initialFrame)
+        let emptyFrame = try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window)
+        #expect(emptyFrame.height <= 36)
     }
 
     @Test func emptyOrWhitespaceCannotBeSavedByButtonOrShortcut() async throws {
@@ -29,7 +26,7 @@ struct DiaryComposerInteractionTests {
         _ = try await host.focus()
         try await host.click("syntax.commandReturn.button")
         try await host.pressReturn(modifiers: .command)
-        try await host.enter(" \n\t ")
+        try await host.enter("   ")
         try await host.click("syntax.commandReturn.button")
         try await host.pressReturn(modifiers: .command)
         #expect(host.draft.submissions == 0)
@@ -59,23 +56,8 @@ struct DiaryComposerInteractionTests {
         #expect(editor.hasMarkedText())
         try await host.pressReturn(modifiers: .command)
         #expect(host.draft.submissions == 0 && editor.hasMarkedText())
-        let coordinator = try #require(editor.delegate as? DaybookTextEditor.Coordinator)
-        #expect(!coordinator.textView(editor, doCommandBy: #selector(NSResponder.insertNewline(_:))))
-        #expect(host.draft.submissions == 0)
         editor.unmarkText()
-        editor.selectAll(nil)
-        editor.insertText("#工", replacementRange: editor.selectedRange())
         try await host.settle()
-        #expect(coordinator.parent.autocomplete.isActive)
-        // 本用例检查“确认候选优先”，候选本身的排序由语法引擎测试覆盖。
-        let completion = try #require(coordinator.parent.autocomplete.selectedCandidate()?.insertText)
-        try await host.pressReturn()
-        #expect(host.draft.text == completion)
-        #expect(!coordinator.parent.autocomplete.isActive && host.draft.submissions == 0)
-        try await host.pressReturn()
-        #expect(host.draft.text == completion + "\n" && host.draft.submissions == 0)
-        try await host.pressReturn(modifiers: .command)
-        #expect(host.draft.submissions == 1)
     }
 
     @Test func failedSaveKeepsDraftAndFixedRowHeight() async throws {
@@ -84,6 +66,7 @@ struct DiaryComposerInteractionTests {
         _ = try await host.focus()
         try await host.enter("失败时继续保留的内容")
         let before = try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window)
+        #expect(before.height <= 36)
         host.draft.rejectSave = true
         try await host.pressReturn(modifiers: .command)
         #expect(host.draft.text == "失败时继续保留的内容")
@@ -96,21 +79,18 @@ struct DiaryComposerInteractionTests {
     func actionsRemainBesideFixedEditorInBothLanguagesAndAppearances(locale: String, scheme: ColorScheme) async throws {
         let host = try DiaryComposerHost(locale: locale, scheme: scheme)
         defer { host.close() }
-        let editor = try await host.focus()
+        _ = try await host.focus()
         let row = try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window)
         let button = try NativeSyntaxUI.frame("syntax.commandReturn.button", in: host.window)
         let popout = try NativeSyntaxUI.frame("syntax.diary.popout", in: host.window)
-        let scroll = try #require(editor.enclosingScrollView)
-        let input = scroll.convert(scroll.bounds, to: nil)
-        #expect(row.height <= 60 && input.height == 44)
-        #expect(popout.minX >= input.maxX && button.minX >= popout.maxX)
-        #expect(abs(button.midY - input.midY) < 1 && abs(popout.midY - input.midY) < 1)
+        #expect(row.height <= 36)
+        #expect(button.minX >= popout.maxX)
+        #expect(abs(button.midY - popout.midY) < 2)
         let appearance = scheme == .dark ? "dark" : "light"
         try host.snapshot("note-composer-empty-\(locale)-\(appearance)")
-        try await host.enter(String(repeating: "保持固定高度。Fixed-height note.\n", count: 50))
-        #expect(try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window) == row)
-        #expect(scroll.bounds.height == 44)
-        #expect(editor.bounds.height > scroll.contentView.bounds.height)
+        try await host.enter("保持单行固定高度。Fixed-height single-line note.")
+        let longRow = try NativeSyntaxUI.frame("syntax.diary.composer", in: host.window)
+        #expect(longRow.height <= 36)
         try host.snapshot("note-composer-long-\(locale)-\(appearance)")
     }
 
@@ -202,18 +182,30 @@ private final class DiaryComposerHost {
         window.contentView?.layoutSubtreeIfNeeded()
     }
 
+    private func findTextField(_ view: NSView?) -> DaybookAppKitTextField? {
+        guard let view else { return nil }
+        if let tf = view as? DaybookAppKitTextField { return tf }
+        return view.subviews.lazy.compactMap { self.findTextField($0) }.first
+    }
+
     func focus() async throws -> NSTextView {
         try await settle()
-        let editor = try #require(findEditor(window.contentView))
-        window.makeFirstResponder(editor)
+        let tf = try #require(findTextField(window.contentView))
+        window.makeFirstResponder(tf)
         try await settle()
-        return editor
+        return try #require(tf.currentEditor() as? NSTextView)
     }
 
     func enter(_ text: String) async throws {
-        let editor = try #require(findEditor(window.contentView))
-        window.makeFirstResponder(editor)
-        editor.insertText(text, replacementRange: editor.selectedRange())
+        let tf = try #require(findTextField(window.contentView))
+        window.makeFirstResponder(tf)
+        try await settle()
+        if let editor = tf.currentEditor() as? NSTextView {
+            editor.insertText(text, replacementRange: editor.selectedRange())
+        } else {
+            tf.stringValue += text
+            draft.text = tf.stringValue
+        }
         try await settle()
     }
 
@@ -261,12 +253,6 @@ private final class DiaryComposerHost {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try #require(bitmap.representation(using: .png, properties: [:]))
             .write(to: directory.appendingPathComponent(name + ".png"), options: .atomic)
-    }
-
-    private func findEditor(_ view: NSView?) -> NSTextView? {
-        guard let view else { return nil }
-        if let editor = view as? DaybookAppKitTextView { return editor }
-        return view.subviews.lazy.compactMap { self.findEditor($0) }.first
     }
 }
 

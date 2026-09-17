@@ -8,7 +8,9 @@ struct DiarySummaryRow: View {
     @Environment(\.locale) private var locale
     var entry: DiaryEntry
     var privacyTags: [TagItem]
+    var isSelected = false
     var isHighlighted = false
+    var onSelect: (() -> Void)? = nil
     var onDelete: () -> Void
     @State private var isHovered = false
     @State private var hasCopied = false
@@ -26,37 +28,15 @@ struct DiarySummaryRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 6) {
-            Button(action: openWindow) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(previewText)
-                        .font(DaybookType.body)
-                        .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                        .lineLimit(2).truncationMode(.tail)
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    HStack(spacing: 5) {
-                        if entry.isPinned { Image(systemName: "pin.fill").accessibilityLabel("diary.pin") }
-                        if isSensitive { Image(systemName: "lock.shield").accessibilityLabel("diary.privacy") }
-                        Text(dateLabel).lineLimit(1)
-                        if hasCopied {
-                            Label("diary.copied", systemImage: "checkmark").foregroundStyle(DaybookTheme.stamp)
-                        }
-                    }
-                    .font(DaybookType.badge).foregroundStyle(DaybookTheme.muted)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("diary.window.open")
-
-            Button(action: openWindow) { Image(systemName: "arrow.up.forward.square").frame(width: 22, height: 24) }
-                .buttonStyle(.plain).accessibilityLabel("diary.window.open").help("diary.window.open")
-            moreMenu
+            selectableContent
+            actionCluster
         }
         .padding(.horizontal, 9).padding(.vertical, 8)
         .foregroundStyle(DaybookTheme.muted)
-        .background(isHighlighted ? DaybookTheme.cardSelectionFill : (isHovered ? DaybookTheme.hoverFill : .clear),
-                    in: RoundedRectangle(cornerRadius: DaybookRadius.small))
+        .background(
+            (isSelected || isHighlighted) ? DaybookTheme.cardSelectionFill : (isHovered ? DaybookTheme.hoverFill : .clear),
+            in: RoundedRectangle(cornerRadius: DaybookRadius.small)
+        )
         .overlay(alignment: .bottom) { Divider().overlay(DaybookTheme.rule.opacity(0.5)).padding(.horizontal, 9) }
         .onHover { isHovered = $0 }
         .task(id: hasCopied) {
@@ -66,6 +46,53 @@ struct DiarySummaryRow: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
+    }
+
+    private var selectableContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(previewText)
+                .font(DaybookType.body)
+                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .lineLimit(2).truncationMode(.tail)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 5) {
+                if entry.isPinned { Image(systemName: "pin.fill").accessibilityLabel("diary.pin") }
+                if isSensitive { Image(systemName: "lock.shield").accessibilityLabel("diary.privacy") }
+                Text(dateLabel).lineLimit(1)
+                if hasCopied {
+                    Label("diary.copied", systemImage: "checkmark").foregroundStyle(DaybookTheme.stamp)
+                }
+            }
+            .font(DaybookType.badge).foregroundStyle(DaybookTheme.muted)
+        }
+        .contentShape(Rectangle())
+        .overlay(
+            DiaryRowPointerRegion(
+                id: entry.id,
+                onSelect: { onSelect?() },
+                onOpen: openWindow
+            )
+            .accessibilityHidden(true)
+        )
+    }
+
+    private var actionCluster: some View {
+        HStack(spacing: 2) {
+            Button(action: openWindow) {
+                Image(systemName: "arrow.up.forward.square")
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .frame(width: 22, height: 24)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("diary.window.open")
+            .help("diary.window.open")
+
+            moreMenu
+        }
+        .opacity((isHovered || isSelected || isHighlighted) ? 1.0 : 0.0)
+        .animation(.easeInOut(duration: 0.15), value: isHovered)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 
     private var moreMenu: some View {
@@ -114,5 +141,56 @@ struct DiarySummaryRow: View {
             guard entry.deletedAt == nil, let tags = try? context.fetch(FetchDescriptor<TagItem>()) else { return false }
             return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
         })
+    }
+}
+
+/// 原生 clickCount 让第一次点击立即选中，双击直接打开独立编辑小窗
+struct DiaryRowPointerRegion: NSViewRepresentable {
+    var id: UUID
+    var onSelect: () -> Void
+    var onOpen: () -> Void
+
+    func makeNSView(context: Context) -> DiaryRowPointerView {
+        let view = DiaryRowPointerView()
+        updateNSView(view, context: context)
+        return view
+    }
+
+    func updateNSView(_ view: DiaryRowPointerView, context: Context) {
+        view.identifier = NSUserInterfaceItemIdentifier(id.uuidString)
+        view.onSelect = onSelect
+        view.onOpen = onOpen
+    }
+}
+
+final class DiaryRowPointerView: NSView {
+    var onSelect: (() -> Void)?
+    var onOpen: (() -> Void)?
+    private var mouseDownLocation: NSPoint?
+
+    override var acceptsFirstResponder: Bool { true }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        guard !event.modifierFlags.contains(.control) else {
+            super.mouseDown(with: event)
+            return
+        }
+        mouseDownLocation = event.locationInWindow
+        window?.makeFirstResponder(self)
+        onSelect?()
+        super.mouseDown(with: event)
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        defer { mouseDownLocation = nil }
+        let stayedNearStart = mouseDownLocation.map {
+            hypot(event.locationInWindow.x - $0.x, event.locationInWindow.y - $0.y) < 4
+        } ?? false
+        let shouldOpen = event.clickCount == 2
+            && !event.modifierFlags.contains(.control)
+            && stayedNearStart && bounds.contains(convert(event.locationInWindow, from: nil))
+        super.mouseUp(with: event)
+        if shouldOpen { onOpen?() }
     }
 }

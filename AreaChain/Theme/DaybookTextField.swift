@@ -68,7 +68,7 @@ struct DaybookTextField: NSViewRepresentable {
         if let cell = field.cell as? NSTextFieldCell {
             cell.wraps = false
             cell.isScrollable = true
-            cell.usesSingleLineMode = false
+            cell.usesSingleLineMode = !allowsShiftNewline
         }
         field.setContentHuggingPriority(.defaultHigh, for: .vertical)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -95,6 +95,9 @@ struct DaybookTextField: NSViewRepresentable {
             extra()
         }
         Self.synchronizeText(text, in: field)
+        if let cell = field.cell as? NSTextFieldCell {
+            cell.usesSingleLineMode = !allowsShiftNewline
+        }
         if field.placeholderString != placeholder {
             field.placeholderString = placeholder
         }
