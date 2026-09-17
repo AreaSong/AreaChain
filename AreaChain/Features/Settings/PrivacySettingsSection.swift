@@ -60,15 +60,19 @@ struct PrivacySettingsSection: View {
         }
         .disabled(busy || StoreHealth.shared.isUsingMemoryFallback)
         .sheet(item: $dialog) { item in
-            switch item {
-            case .setup, .tags:
-                PrivacySetupSheet(vault: vault, tags: tags, creating: item == .setup) {
-                    dialog = nil
-                    statusKey = "privacy.settings.saved"
+            Group {
+                switch item {
+                case .setup, .tags:
+                    PrivacySetupSheet(vault: vault, tags: tags, creating: item == .setup) {
+                        dialog = nil
+                        statusKey = "privacy.settings.saved"
+                    }
+                default:
+                    passwordSheet(item)
                 }
-            default:
-                passwordSheet(item)
             }
+            // macOS 的独立 sheet 宿主可能回落到系统语言，须显式沿用设置页的语言。
+            .environment(\.locale, locale)
         }
     }
 

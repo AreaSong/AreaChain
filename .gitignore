@@ -9,4 +9,10 @@ build/
 *.dSYM.zip
 *.dSYM
 .swiftpm/
-.agents/
+.agents/*
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/areachain-ui/
+!.agents/skills/areachain-verify/
+Config/Signing.local.xcconfig
+__pycache__/

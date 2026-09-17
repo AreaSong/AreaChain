@@ -1,0 +1,16 @@
+// 仓库默认不绑定个人账号；开发签名只由未入库的本地配置显式开启。
+AREACHAIN_SIGNING_MODE = local
+AREACHAIN_DEVELOPMENT_TEAM =
+AREACHAIN_BUNDLE_IDENTIFIER = com.areachain.app
+
+AREACHAIN_IDENTITY_local = -
+AREACHAIN_IDENTITY_development = Apple Development
+AREACHAIN_TEAM_local =
+AREACHAIN_TEAM_development = $(AREACHAIN_DEVELOPMENT_TEAM)
+AREACHAIN_ENTITLEMENTS_local = AreaChain/App/AreaChain.entitlements
+AREACHAIN_ENTITLEMENTS_development = AreaChain/App/AreaChain.SystemUnlock.entitlements
+
+#include? "Signing.local.xcconfig"
+
+CODE_SIGN_IDENTITY = $(AREACHAIN_IDENTITY_$(AREACHAIN_SIGNING_MODE))
+DEVELOPMENT_TEAM = $(AREACHAIN_TEAM_$(AREACHAIN_SIGNING_MODE))

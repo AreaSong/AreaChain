@@ -34,6 +34,8 @@ final class SystemVaultIntegrationTests: XCTestCase {
             try await probe.create(using: keys)
         case .read, .rebuildRead:
             try await probe.verify(using: keys, afterRebuild: phase == .rebuildRead)
+        case .cancelRead:
+            try await probe.verifyCancellation(using: keys)
         case .cleanup:
             try await probe.cleanup(using: keys)
         }
@@ -41,7 +43,7 @@ final class SystemVaultIntegrationTests: XCTestCase {
 }
 
 private struct KeychainQAProbe {
-    enum Phase: String { case create, read, rebuildRead = "rebuild-read", cleanup }
+    enum Phase: String { case create, read, cancelRead = "cancel-read", rebuildRead = "rebuild-read", cleanup }
     enum Failure: Error { case invalidAuthorization, existingRun, invalidState, unchangedBuild, cleanupUnconfirmed }
     struct State: Codable {
         let runID: UUID
@@ -75,10 +77,7 @@ private struct KeychainQAProbe {
     }
 
     func verify(using keys: SystemVaultKeyStore, afterRebuild: Bool) async throws {
-        let bytes = try Data(contentsOf: stateURL)
-        guard bytes.count < 4_096 else { throw Failure.invalidState }
-        let state = try JSONDecoder().decode(State.self, from: bytes)
-        guard state.runID == runID, state.expectedDigest.count == 32 else { throw Failure.invalidState }
+        let state = try loadState()
         if afterRebuild, state.creationVersion == bundleVersion { throw Failure.unchangedBuild }
         let timeout = Task {
             do { try await Task.sleep(for: .seconds(120)); keys.cancel() }
@@ -90,10 +89,40 @@ private struct KeychainQAProbe {
         XCTAssertEqual(Data(SHA256.hash(data: key)), state.expectedDigest)
     }
 
+    @MainActor
+    func verifyCancellation(using keys: SystemVaultKeyStore) async throws {
+        _ = try loadState()
+        var timedOut = false
+        let timeout = Task {
+            do {
+                try await Task.sleep(for: .seconds(120))
+                timedOut = true
+                keys.cancel()
+            } catch { /* 正常结束会取消计时，不取消后续认证。 */ }
+        }
+        defer { timeout.cancel() }
+        let reason = "AreaChain 隔离验收：本次请点击取消，验证取消认证不会读取测试密钥。"
+        do {
+            _ = try await keys.read(id: runID, reason: reason)
+            XCTFail("取消认证验收不应返回测试密钥。")
+        } catch PrivacyError.cancelled {
+            // 程序超时触发的取消不能冒充用户主动取消。
+            XCTAssertFalse(timedOut, "未收到用户主动取消，认证已超时。")
+        }
+    }
+
     func cleanup(using keys: SystemVaultKeyStore) async throws {
         try await keys.remove(id: runID)
         guard presenceStatus() == errSecItemNotFound else { throw Failure.cleanupUnconfirmed }
         if FileManager.default.fileExists(atPath: stateURL.path) { try FileManager.default.removeItem(at: stateURL) }
+    }
+
+    private func loadState() throws -> State {
+        let bytes = try Data(contentsOf: stateURL)
+        guard bytes.count < 4_096 else { throw Failure.invalidState }
+        let state = try JSONDecoder().decode(State.self, from: bytes)
+        guard state.runID == runID, state.expectedDigest.count == 32 else { throw Failure.invalidState }
+        return state
     }
 
     private func presenceStatus() -> OSStatus {

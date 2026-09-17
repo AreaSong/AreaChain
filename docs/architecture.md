@@ -48,6 +48,16 @@ AreaChain/
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
 - **Theme**：色彩、圆角、阴影、无障碍动效（`DaybookMotion`）、触控板触感（`DaybookHaptics`）、页壳 `DaybookPage` 与字号令牌 `DaybookType`。
 
+### 开发时的边界与状态核对
+
+目录层次不是编译隔离保证。修改边界时沿入口、调用方及实际状态确认责任，不把理想依赖图当成全部现有代码的证明。`python3 -B scripts/check_workflow.py` 只守住 Domain 禁止显式导入 SwiftUI/AppKit 这一条可判定约束，不检查完整符号依赖或运行语义。
+
+- 无 UI 的解析/过滤/日期规则沿 Domain 复用；持久化与系统 IO 沿 Services 及已有仓储入口，界面沿 Features，公共展示沿 Theme。窗口装配等现有平台协调按实际调用链理解，不借治理任务重排全仓库。
+- `ModelChanges` 拥有事务提交和保存后通知；编辑会话拥有草稿与冲突基线，展示筛选不成为第二份持久化真相。变更需说明权威状态、写入者、生命周期、线程/actor 与失效责任。
+- 先在所属功能内复用；多个真实消费者共享同一语义时再提取到已有公共层。剪贴板捕获、普通任务输入和搜索的解析/写入差异必须保留，不能为了“统一”合并业务契约。
+- 公共接口变化列出真实消费者、旧默认值和错误/副作用；重构先固定不变量，再比较输出、保存/通知次数与失败恢复。文件变短或构建成功不单独证明等价。
+- 只为公共边界、数据/安全、重要依赖或难以撤销的取舍在原有文档记录理由、后果与重访条件；普通局部提取不另建决策报告。验证选择与维护责任见 [工程手册](engineering.md)。
+
 ### 交互微动效与待沉底状态协调 (`PendingCompletionManager`)
 
 为了实现 macOS 原生品质的物理反馈与防反悔机制，应用采用 UI 待沉底队列与持久化解耦的架构：
@@ -131,14 +141,27 @@ AreaChain/
 隐私自动化测试使用独立测试 Bundle ID、内存或临时目录数据库、合成内容与 `FakeSystemVaultKeys`。`PrivacyMigrationTests` 冻结升级前实体并检验升级、冷启动清理和重开读取；`PrivacyRenderingTests` 检查浅深色布局及锁定后的原生编辑器层级。`PrivacyInteractionTests` 覆盖搜索过滤草稿、选图回调与已删除对象。测试图片可由注入根目录的 `AttachmentStore` 隔离，默认生产目录不变。
 
 ```bash
-xcodebuild -quiet -project AreaChain.xcodeproj -scheme AreaChain \
+env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
+  -u AREACHAIN_SYSTEM_KEYCHAIN_PHASE -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_QA \
+  -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_PHASE \
+  xcodebuild -quiet -project AreaChain.xcodeproj -scheme AreaChain \
   -configuration Debug -destination 'platform=macOS,arch=arm64' \
   -derivedDataPath build/PrivacyQA \
+  AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- \
+  CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements \
   PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa INFOPLIST_KEY_LSUIElement=NO \
   -parallel-testing-enabled NO test
 ```
 
-自动化探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。真实启用前应另行确认隔离系统密钥测试，验证 Touch ID／系统密码、取消、重启与重编译／升级后的签名兼容，再确认真实数据迁移。不得为了通过验收去掉钥匙串访问控制或默默改签名／权限。上述命令不安装应用；`scripts/build.sh` 无参数会安装并启动，不应用作隔离验收命令。
+该命令显式隔离应用标识、使用不绑定账号的临时签名，并移除可能继承的真实钥匙串授权；不会修改个人签名配置。自动化探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。真实启用前应另行确认隔离系统密钥测试，验证 Touch ID／系统密码、取消、重启与重编译／升级后的签名兼容，再确认真实数据迁移。不得为了通过验收去掉钥匙串访问控制或默默改签名／权限。上述命令不安装应用；`scripts/build.sh` 无参数只构建并验签 Debug，安装已分离至需明确确认的 `scripts/install.sh`。
+
+`SystemVaultIntegrationTests` 是默认跳过的真实钥匙串入口，须同时提供 QA Bundle ID、显式授权标志、随机 UUID 和测试阶段。它使用独立服务名，按创建、读取、主动取消、重编译后读取、清理分阶段运行；取消阶段必须收到用户取消，不能把程序超时计为通过。只持久化测试标识、密钥摘要和初始构建版本，不保存明文测试密钥。普通测试不得开启该入口；临时验收配置运行后关闭授权标志。
+
+工程通过 `Config/Signing.xcconfig` 区分 `local` 和 `development` 模式；默认仍为不绑定账号的 ad-hoc 签名，无受限钥匙串访问组。开发签名由未入库的 `Signing.local.xcconfig` 显式开启，应用标识、Team ID 与访问组必须保持一致。最初的 ad-hoc 真机创建曾返回 `errSecMissingEntitlement (-34018)`；受保护钥匙串需要有效签名及合法授权，不能仅根据不存在条目的只读查询判定可写。
+
+构建工具只生成和静态核验产物，不再自动安装、关闭或启动现用应用。Release 核验拒绝调试权限、临时测试权限及测试插件；通过核验仍不等于通过真机运行或 Developer ID 公证发行。正式安装、签名身份切换及真实数据迁移必须单独确认，先在 QA 中验收。配置方法与门禁见[本机构建与系统解锁签名](signing.md)。
+
+原生界面测试共享进程焦点，Scheme 默认串行。`NativeSyntaxUI.prepareFocus` 仅在场景开始时等待实际可见、激活和 key window 状态，操作后的焦点断言仍原样执行；测试日志中的前台应用只表明失焦时的状态，不单独证明触发原因。
 
 ## 窗口路由与生命周期 (`AppWindows`)
 

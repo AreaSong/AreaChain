@@ -1,0 +1,8 @@
+// 复制为同目录的 Signing.local.xcconfig，填写你自己的开发团队。
+// 此文件只放构建参数，不放 Apple 密码、证书私钥或公证凭据。
+AREACHAIN_SIGNING_MODE = development
+AREACHAIN_DEVELOPMENT_TEAM = YOURTEAMID
+AREACHAIN_BUNDLE_IDENTIFIER = com.example.yourname.areachain
+
+// 首次使用前确定应用标识；已有私密数据后更换团队或标识须先验证备份恢复。
+// Apple Development 仅供开发/本机使用，不等于 Developer ID 公证发行。

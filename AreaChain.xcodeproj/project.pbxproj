@@ -19,6 +19,7 @@
 /* Begin PBXFileReference section */
 		A1APPF0000000000000001 /* AreaChain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaChain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1TESTF000000000000001 /* AreaChainTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaChainTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F41D12BC30A0123400000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -57,6 +58,7 @@
 			children = (
 				A1APPSYNC0000000000001 /* AreaChain */,
 				A1TESTSYNC000000000001 /* AreaChainTests */,
+				F41D12BC30A0123400000002 /* Config */,
 				A1PROD0000000000000001 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -68,6 +70,14 @@
 				A1TESTF000000000000001 /* AreaChainTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		F41D12BC30A0123400000002 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				F41D12BC30A0123400000001 /* Signing.xcconfig */,
+			);
+			path = Config;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -203,6 +213,7 @@
 /* Begin XCBuildConfiguration section */
 		A1DBG0000000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ENABLE_MODULES = YES;
@@ -224,8 +235,10 @@
 		};
 		A1REL0000000000000001 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				COPY_PHASE_STRIP = NO;
@@ -243,8 +256,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = AreaChain/App/AreaChain.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_ENTITLEMENTS = "$(AREACHAIN_ENTITLEMENTS_$(AREACHAIN_SIGNING_MODE))";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -265,7 +277,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.areachain.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -277,8 +289,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_ENTITLEMENTS = AreaChain/App/AreaChain.entitlements;
-				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_ENTITLEMENTS = "$(AREACHAIN_ENTITLEMENTS_$(AREACHAIN_SIGNING_MODE))";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
@@ -299,7 +310,7 @@
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.areachain.app;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -311,13 +322,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.areachain.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaChain.app/Contents/MacOS/AreaChain";
@@ -328,13 +338,12 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_IDENTITY = "-";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 0.1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.areachain.app.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).tests";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
 				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/AreaChain.app/Contents/MacOS/AreaChain";

@@ -36,26 +36,42 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 完整功能清单与产品边界见 [docs/features.md](docs/features.md)。
 使用说明与快捷键见 [docs/usage.md](docs/usage.md)。
 架构与数据模型见 [docs/architecture.md](docs/architecture.md)。
+开发协作、工程质量门禁、生命周期覆盖与发行/维护缺口见 [docs/engineering.md](docs/engineering.md)。
 
 隐私保护需要主动启用。旧密码遮罩本身不加密；首次转换已有内容前必须保存并验证加密备份。设置显示待清理时，按提示完成附件清理并重启，才能确认转换完成。系统解锁依赖受保护钥匙串和稳定的应用签名；未验证真实系统认证前，不应仅凭自动化测试启用真实密码库。详见 [隐私保护使用说明](docs/usage.md#9-隐私保护备份与恢复)。
 
 ## 构建与运行
 
-需要 macOS 14.0+ 与 Xcode 16.0+。
+需要 macOS 14.0+ 与 Xcode 16.0+；构建检查脚本另需 Python 3.9+（仅使用标准库）。
+
+仓库默认是不绑定个人账号的本机临时签名。指纹／系统密码解锁须使用自己的开发签名配置，见 [本机构建与系统解锁签名](docs/signing.md)。开发签名的 Release 包不等于已公证的正式发行包。
 
 ```bash
-# 编译 Debug 版、安装到 /Applications 并启动
+# 仅编译并检查 Debug，不安装、不启动
 ./scripts/build.sh
 
-# 仅编译
-./scripts/build.sh build
+# 检查当前签名配置
+./scripts/build.sh check-signing
 
-# 仅安装已有构建产物
-./scripts/build.sh install
+# 生成并验签 Release 候选包，不覆盖现用应用
+./scripts/build.sh release
+
+# 查看已安装版本和签名状态
+./scripts/app.sh status
+
+# 只预览已有 Release 的安装检查，不安装、不启动
+./scripts/install.sh --dry-run
 
 # 执行全量单元测试
 ./scripts/build.sh test
+
+# 只读检查工作流引用、Domain 导入与项目技能共享边界；不构建/启动应用
+python3 -B scripts/check_workflow.py
 ```
+
+构建与安装是独立入口。完成数据备份并正常退出应用后，运行 `./scripts/install.sh` 会构建 Release、验签、请求确认，再安装并启动；`--no-build` 使用已有 Release，`--no-open` 安装后不启动。
+
+`./scripts/uninstall.sh`（或 `./scripts/app.sh delete`）确认后只将应用移到可恢复目录，保留全部数据、私密锁、钥匙串和证书；可先加 `--dry-run` 预览。脚本不会强制结束应用，不自动切换签名身份，也不提供清空数据命令。完整命令、回退与限制见 [安装与回退门禁](docs/signing.md#安装与回退门禁)。
 
 也可以：`open AreaChain.xcodeproj`。
 
@@ -64,7 +80,8 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 ```text
 AreaChain/          macOS 应用主源码（分层见 docs/architecture.md）
 AreaChainTests/     单元测试，镜像 Domain 与 Services
-scripts/            编译、安装与测试脚本
+scripts/            构建、签名核验、应用管理与测试脚本
+Config/             通用签名配置与个人配置示例
 docs/               产品、功能、架构、用法
 AreaChain.xcodeproj
 ```

@@ -1,0 +1,3 @@
+interface:
+  display_name: "AreaChain 变更验收"
+  short_description: "按 AreaChain 改动范围选择测试、构建和隔离界面验收并报告证据"
