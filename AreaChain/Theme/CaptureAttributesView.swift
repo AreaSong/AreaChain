@@ -39,13 +39,34 @@ struct CaptureAttributesButton: View {
             if state.showsAttributes { state.dismiss() }
             else { state.showAttributes() }
         } label: {
-            Text(L10n.format("syntax.attributes.count", locale: locale, displayCount))
-                .font(DaybookType.caption)
-                .monospacedDigit()
-                .frame(width: 58, height: 22)
-                .foregroundStyle(attributes.count == 0 ? DaybookTheme.muted : DaybookTheme.stamp)
-                .background(Capsule().fill(state.showsAttributes ? DaybookTheme.stamp.opacity(0.12) : .clear))
-                .contentShape(Rectangle())
+            Group {
+                if attributes.count > 0 {
+                    HStack(spacing: 3) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 9))
+                        Text(displayCount)
+                            .font(DaybookType.caption.weight(.semibold))
+                            .monospacedDigit()
+                    }
+                    .padding(.horizontal, 6)
+                    .frame(height: 20)
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .background(
+                        Capsule()
+                            .fill(DaybookTheme.stamp.opacity(state.showsAttributes ? 0.20 : 0.12))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(DaybookTheme.stamp.opacity(0.35), lineWidth: 0.8)
+                    )
+                } else {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 10.5))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.40))
+                }
+            }
+            .frame(width: 58, height: 22)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .background(SyntaxViewAnchor("syntax.attributes.button"))

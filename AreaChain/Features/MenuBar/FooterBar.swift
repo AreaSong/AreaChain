@@ -200,10 +200,9 @@ struct FooterBar: View {
         Button {
             AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
         } label: {
-            Label("footer.workspace", systemImage: "macwindow")
+            Image(systemName: "macwindow")
                 .font(DaybookType.caption)
-                .fixedSize()
-                .frame(height: 28)
+                .frame(width: 24, height: 28)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

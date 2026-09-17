@@ -25,6 +25,12 @@ extension TasksPage {
         DayBoardMutations.moveTodo(todo, to: dayKey)
     }
 
+    func moveAllYesterdayTodosToToday() {
+        for item in yesterdayItems where item.kind == .todo {
+            moveYesterdayTodo(item, to: todayKey)
+        }
+    }
+
     func deleteTodo(_ todo: TodoItem) {
         pendingTrash = PendingTrash(title: todo.title) {
             DayBoardMutations.trashTodo(todo)

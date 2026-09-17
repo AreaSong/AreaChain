@@ -60,11 +60,6 @@ struct TaskRow: View {
                 }
             }
 
-            QuadrantDots(
-                isImportant: state.classify?.isImportant == true || state.isImportant,
-                isUrgent: state.classify?.isUrgent == true || state.isUrgent
-            )
-
             if editing {
                 editor
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -149,8 +144,14 @@ struct TaskRow: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            ModernTaskTitle(text: state.title, isDone: state.isDone)
-                .lineLimit(2)
+            HStack(alignment: .center, spacing: 5) {
+                ModernTaskTitle(text: state.title, isDone: state.isDone)
+                    .lineLimit(2)
+                QuadrantDots(
+                    isImportant: state.classify?.isImportant == true || state.isImportant,
+                    isUrgent: state.classify?.isUrgent == true || state.isUrgent
+                )
+            }
 
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)

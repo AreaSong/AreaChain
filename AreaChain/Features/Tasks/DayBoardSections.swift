@@ -25,26 +25,26 @@ extension DayBoardList {
     }
 
     var allDoneBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "checkmark.circle.fill")
-                .font(DaybookType.title)
+        HStack(spacing: 6) {
+            Image(systemName: "checkmark.circle")
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(DaybookTheme.stamp)
             Text("太棒了，今日任务全清！")
-                .font(DaybookType.body.weight(.medium))
-                .foregroundStyle(DaybookTheme.ink)
+                .font(DaybookType.caption.weight(.medium))
+                .foregroundStyle(DaybookTheme.ink.opacity(0.85))
+            Spacer()
         }
-        .padding(.vertical, 16)
-        .padding(.horizontal, 12)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
         .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                .fill(DaybookTheme.stamp.opacity(0.06))
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookTheme.stamp.opacity(0.05))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                .stroke(DaybookTheme.stamp.opacity(0.15), lineWidth: 1)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .strokeBorder(DaybookTheme.stamp.opacity(0.12), lineWidth: 0.8)
         )
-        .padding(.top, 4)
+        .padding(.top, 2)
     }
 
     var completedSection: some View {

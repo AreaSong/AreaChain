@@ -3934,13 +3934,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Search · #tag !p1 @time"
+            "value" : "Search tasks & syntax..."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "搜索 · #标签 !p1 @时间"
+            "value" : "搜索待办与语法..."
           }
         }
       }
@@ -8008,6 +8008,40 @@
         }
       }
     },
+    "stamp.yesterday.moveAll" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move to today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部延至今日"
+          }
+        }
+      }
+    },
+    "stamp.yesterday.moveAll.help" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Move all yesterday's unfinished tasks to today"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将昨天所有未完成的待办顺延至今天"
+          }
+        }
+      }
+    },
     "store.fallback.message" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9085,13 +9119,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "All tasks for this day are done."
+            "value" : "Today's tasks are all completed"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这一天的任务已全部完成。"
+            "value" : "今日任务已全部完成"
           }
         }
       }

@@ -15,7 +15,36 @@ extension TasksPage {
     var yesterdaySection: some View {
         Group {
             if showYesterday, !yesterdayItems.isEmpty {
-                SectionStamp(title: "stamp.yesterday")
+                HStack(alignment: .center) {
+                    SectionStamp(title: "stamp.yesterday", count: yesterdayItems.count)
+                    Spacer()
+                    if yesterdayItems.contains(where: { $0.kind == .todo }) {
+                        Button {
+                            withAnimation(DaybookMotion.interactive) {
+                                moveAllYesterdayTodosToToday()
+                            }
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "arrow.right.to.line")
+                                    .font(.system(size: 8.5, weight: .semibold))
+                                Text("stamp.yesterday.moveAll")
+                                    .font(DaybookType.badge)
+                            }
+                            .foregroundStyle(DaybookTheme.stamp)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2.5)
+                            .background(
+                                Capsule()
+                                    .fill(DaybookTheme.stamp.opacity(0.10))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .help("stamp.yesterday.moveAll.help")
+                        .accessibilityLabel("stamp.yesterday.moveAll")
+                    }
+                }
+                .padding(.horizontal, 2)
+
                 ForEach(yesterdayItems) { item in
                     leftoverRow(item)
                 }
