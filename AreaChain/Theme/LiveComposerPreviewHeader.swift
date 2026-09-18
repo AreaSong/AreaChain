@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 实时卡片预览头部：所见即所得展示清洗后的待办内容、提取的属性，并支持联动试戴当前候选词。
+/// 实时卡片预览头部：所见即所得展示清洗后的待办内容、提取的属性，并支持多标签溢出折叠与右侧浮层展开。
 struct LiveComposerPreviewHeader: View {
     var text: String
     var knownTags: [String] = []
@@ -8,6 +8,7 @@ struct LiveComposerPreviewHeader: View {
     var onClose: () -> Void
 
     @Environment(\.locale) private var locale
+    @State private var showingOverflowBubble = false
 
     private var parsed: ParsedCapture {
         NaturalLanguageParser.parseTaskCapture(text)
@@ -22,6 +23,14 @@ struct LiveComposerPreviewHeader: View {
     private func isSyntaxPrefixOnly(_ str: String) -> Bool {
         let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed == "#" || trimmed == "＃" || trimmed == "@" || trimmed == "＠" || trimmed == "!" || trimmed == "！"
+    }
+
+    private var formattedTitle: String {
+        let title = displayTitle
+        guard title.count > 18 else { return title }
+        let head = title.prefix(8)
+        let tail = title.suffix(7)
+        return "\(head)...\(tail)"
     }
 
     private var previewTags: [String] {
@@ -62,6 +71,17 @@ struct LiveComposerPreviewHeader: View {
     }
 
     var body: some View {
+        VStack(alignment: .trailing, spacing: 4) {
+            mainRow
+            if previewTags.count > 1 {
+                overflowBubbleView
+                    .padding(.trailing, 4)
+            }
+        }
+    }
+
+    /// 常驻单行主卡片（固定 32pt 高度）
+    private var mainRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Circle()
                 .strokeBorder(DaybookTheme.rule.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2]))
@@ -69,23 +89,40 @@ struct LiveComposerPreviewHeader: View {
                 .foregroundStyle(DaybookTheme.muted)
 
             if !displayTitle.isEmpty {
-                Text(displayTitle)
+                Text(formattedTitle)
                     .font(.system(size: 11.5, weight: .medium))
                     .foregroundStyle(DaybookTheme.ink)
                     .lineLimit(1)
-                    .truncationMode(.tail)
+                    .help(displayTitle)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                Spacer(minLength: 4)
             }
 
-            Spacer(minLength: 4)
-
+            // 右侧唯一性属性集群（时间、优先级、标签数量）
             HStack(spacing: 4) {
-                ForEach(previewTags, id: \.self) { tag in
-                    Text("#\(tag)")
+                if previewTags.count == 1, let singleTag = previewTags.first {
+                    Text("#\(singleTag)")
                         .font(.system(size: 9.5, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 90, alignment: .leading)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 1.5)
                         .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
                         .foregroundStyle(DaybookTheme.stamp)
+                } else if previewTags.count > 1 {
+                    HStack(spacing: 2.5) {
+                        Image(systemName: "number")
+                            .font(.system(size: 7.5, weight: .bold))
+                        Text("\(previewTags.count)")
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 1.5)
+                    .background(Capsule().fill(DaybookTheme.stamp.opacity(0.16)))
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .help("共包含 \(previewTags.count) 个标签")
                 }
 
                 if let time = displayTime {
@@ -130,7 +167,73 @@ struct LiveComposerPreviewHeader: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(height: 32)
-        .background(DaybookTheme.ink.opacity(0.03))
-        .contentShape(Rectangle())
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: DaybookTheme.ink.opacity(0.10), radius: 6, x: 0, y: 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+        )
+    }
+
+    /// 右侧从上往下默认浮动展示的全部标签列表
+    private var overflowBubbleView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("全部标签")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.muted)
+                Spacer()
+                Text("\(previewTags.count)")
+                    .font(.system(size: 8.5, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 0.5)
+                    .background(Capsule().fill(DaybookTheme.rule.opacity(0.4)))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
+            .padding(.horizontal, 2)
+            .padding(.top, 1)
+
+            Divider()
+                .overlay(DaybookTheme.rule.opacity(0.3))
+
+            ScrollView(.vertical, showsIndicators: previewTags.count > 5) {
+                VStack(alignment: .leading, spacing: 3) {
+                    ForEach(previewTags, id: \.self) { tag in
+                        HStack(spacing: 3) {
+                            Text("#\(tag)")
+                                .font(.system(size: 9.5, weight: .medium))
+                                .foregroundStyle(DaybookTheme.stamp)
+                                .lineLimit(1)
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(DaybookTheme.stamp.opacity(0.08))
+                        )
+                    }
+                }
+            }
+            .frame(maxHeight: 96)
+        }
+        .padding(6)
+        .frame(width: 132)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: Color.black.opacity(0.18), radius: 6, x: 0, y: 3)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
+        )
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
+            removal: .opacity
+        ))
     }
 }

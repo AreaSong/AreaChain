@@ -153,6 +153,7 @@ struct SyntaxAutocompletePopup: View {
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
 
         if showsPreview || showsSuggestions {
+            let isStandalonePreview = showsPreview && !showsSuggestions
             VStack(alignment: .leading, spacing: 0) {
                 if showsPreview {
                     LiveComposerPreviewHeader(
@@ -181,13 +182,21 @@ struct SyntaxAutocompletePopup: View {
             }
             .frame(width: width)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(DaybookTheme.paper)
-                    .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
+                Group {
+                    if !isStandalonePreview {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(DaybookTheme.paper)
+                            .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
+                    }
+                }
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+                Group {
+                    if !isStandalonePreview {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+                    }
+                }
             )
             .transition((reduceMotion || motionDisabled) ? .identity : .opacity.combined(with: .scale(
                 scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading

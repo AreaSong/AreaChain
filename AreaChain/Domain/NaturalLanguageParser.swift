@@ -178,18 +178,22 @@ enum NaturalLanguageParser {
 
     private static func consumePriority(from text: inout String) -> PriorityResult {
         let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
-        guard let range = firstMatchRange(pattern: priorityPattern, in: text) else {
-            return .none
+        var lastResult: PriorityResult = .none
+        while let range = firstMatchRange(pattern: priorityPattern, in: text) {
+            let match = (text as NSString).substring(with: range)
+            text = (text as NSString).replacingCharacters(in: range, with: "")
+            lastResult = priorityResult(for: match)
         }
-        let match = (text as NSString).substring(with: range)
-        text = (text as NSString).replacingCharacters(in: range, with: "")
-        return priorityResult(for: match)
+        return lastResult
     }
 
     private static func consumeTime(from text: inout String) -> Int? {
-        guard let extracted = extractTime(from: text) else { return nil }
-        text = (text as NSString).replacingCharacters(in: extracted.range, with: "")
-        return extracted.minutes
+        var lastMinutes: Int? = nil
+        while let extracted = extractTime(from: text) {
+            text = (text as NSString).replacingCharacters(in: extracted.range, with: "")
+            lastMinutes = extracted.minutes
+        }
+        return lastMinutes
     }
 
     private struct ExtractedTime {

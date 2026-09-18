@@ -43,7 +43,14 @@ struct SyntaxOverlayAnchor {
     @MainActor var preferredSize: CGSize {
         if let attributes { return CGSize(width: 280, height: min(280, 80 + CGFloat(attributes.count) * 42)) }
         var h: CGFloat = 0
-        if state.showsPreview { h += 32 }
+        let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)
+        let hasMultiTags = parsed.tagNames.count > 1
+        if state.showsPreview {
+            h += 32
+            if hasMultiTags && (!state.isActive || state.candidates.isEmpty) {
+                h += min(130, CGFloat(parsed.tagNames.count) * 22 + 35)
+            }
+        }
         if state.isActive && !state.candidates.isEmpty {
             if state.showsPreview { h += 1 }
             h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
