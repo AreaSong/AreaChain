@@ -33,9 +33,20 @@ struct TaskDetailQuadrantGrid: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    Image(systemName: slot.iconName)
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(slot.themeColor)
+                    HStack(spacing: 2) {
+                        Image(systemName: "exclamationmark.circle")
+                            .font(.system(size: 8.5, weight: .bold))
+                        Text(slot.badgeText)
+                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    }
+                    .foregroundStyle(slot.themeColor)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .fill(slot.themeFill)
+                    )
+
                     Text(LocalizedStringKey(slot.titleKeyName))
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(DaybookTheme.ink)
@@ -54,7 +65,7 @@ struct TaskDetailQuadrantGrid: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(isActive ? slot.themeColor.opacity(0.12) : DaybookTheme.cardSurface)
+                    .fill(isActive ? slot.themeFill : DaybookTheme.cardSurface)
                     .overlay(
                         RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookTheme.rule.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6)

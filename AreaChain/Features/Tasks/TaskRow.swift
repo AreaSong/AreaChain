@@ -176,6 +176,8 @@ struct TaskRow: View {
         HStack(spacing: 5) {
             quadrantBadge
 
+            tagChips
+
             if state.isResident, let streak = state.streak, streak >= 1 {
                 streakBadge(streak)
             }
@@ -199,6 +201,51 @@ struct TaskRow: View {
         .fixedSize(horizontal: true, vertical: false)
         .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+    }
+
+    private var attachedTagNames: [String] {
+        guard let classify = state.classify else { return [] }
+        let selectedIDs = Set(TagIDList.parse(classify.tagIDs))
+        guard !selectedIDs.isEmpty else { return [] }
+        return classify.tags.filter { selectedIDs.contains($0.id) }.map(\.name)
+    }
+
+    @ViewBuilder
+    private var tagChips: some View {
+        let tags = attachedTagNames
+        if !tags.isEmpty {
+            let displayTags = Array(tags.prefix(2))
+            let overflow = tags.count - displayTags.count
+
+            HStack(spacing: 3) {
+                ForEach(displayTags, id: \.self) { tagName in
+                    Text("#\(tagName)")
+                        .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.Syntax.tag)
+                        .lineLimit(1)
+                        .padding(.horizontal, 4.5)
+                        .frame(height: 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                .fill(DaybookTheme.Syntax.tagFill)
+                        )
+                        .help("#\(tagName)")
+                }
+
+                if overflow > 0 {
+                    Text("+\(overflow)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(DaybookTheme.Syntax.tag)
+                        .padding(.horizontal, 3.5)
+                        .frame(height: 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                .fill(DaybookTheme.Syntax.tagBadgeFill)
+                        )
+                        .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
+                }
+            }
+        }
     }
 
     private var quadrantBadge: some View {

@@ -85,6 +85,15 @@ enum QuadrantSlot: Int, CaseIterable, Identifiable {
     var isImportant: Bool { self == .importantUrgent || self == .important }
     var isUrgent: Bool { self == .importantUrgent || self == .urgent }
 
+    var badgeText: String {
+        switch self {
+        case .importantUrgent: "P1"
+        case .important: "P2"
+        case .urgent: "P3"
+        case .rest: "P4"
+        }
+    }
+
     var titleKeyName: String {
         switch self {
         case .importantUrgent: "quadrant.iu"

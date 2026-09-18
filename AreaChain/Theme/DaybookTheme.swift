@@ -101,6 +101,70 @@ enum DaybookTheme {
     static let workspaceMinSize = CGSize(width: 780, height: 500)
     static let hit: CGFloat = 28
     static let space: CGFloat = 8
+
+    // MARK: - 语法色彩体系（输入框、预览胶囊、补全弹窗统一）
+    enum Syntax {
+        // Tag 标签（竹青 / 鼠尾草绿）
+        static let tag = Color(nsColor: .systemTeal)
+        static let tagNS = NSColor.systemTeal
+        static let tagFill = Color(nsColor: .systemTeal).opacity(0.12)
+        static let tagSubtleFill = Color(nsColor: .systemTeal).opacity(0.08)
+        static let tagBadgeFill = Color(nsColor: .systemTeal).opacity(0.16)
+
+        // Time 时间（Daybook 印章蓝）
+        static let time = DaybookTheme.stamp
+        static let timeNS = NSColor(DaybookTheme.stamp)
+        static let timeFill = DaybookTheme.stamp.opacity(0.12)
+
+        // Priority 优先级
+        static let p1 = Color(nsColor: .systemRed)
+        static let p1NS = NSColor.systemRed
+        static let p1Fill = Color(nsColor: .systemRed).opacity(0.12)
+
+        static let p2 = Color(nsColor: .systemOrange)
+        static let p2NS = NSColor.systemOrange
+        static let p2Fill = Color(nsColor: .systemOrange).opacity(0.12)
+
+        static let p3 = Color(nsColor: .systemBlue)
+        static let p3NS = NSColor.systemBlue
+        static let p3Fill = Color(nsColor: .systemBlue).opacity(0.12)
+
+        static let p4 = DaybookTheme.muted
+        static let p4NS = NSColor(DaybookTheme.muted)
+        static let p4Fill = DaybookTheme.muted.opacity(0.10)
+
+        static func priorityColor(isImportant: Bool, isUrgent: Bool) -> Color {
+            if isImportant && isUrgent { return p1 }
+            if isImportant { return p2 }
+            if isUrgent { return p3 }
+            return p4
+        }
+
+        static func priorityColorNS(isImportant: Bool, isUrgent: Bool) -> NSColor {
+            if isImportant && isUrgent { return p1NS }
+            if isImportant { return p2NS }
+            if isUrgent { return p3NS }
+            return p4NS
+        }
+
+        static func priorityColor(for titleOrLabel: String) -> Color {
+            switch titleOrLabel.lowercased() {
+            case "!p1", "quadrant.iu", "p1": return p1
+            case "!p2", "quadrant.i", "p2": return p2
+            case "!p3", "quadrant.u", "p3": return p3
+            default: return p4
+            }
+        }
+
+        static func priorityFill(for titleOrLabel: String) -> Color {
+            switch titleOrLabel.lowercased() {
+            case "!p1", "quadrant.iu", "p1": return p1Fill
+            case "!p2", "quadrant.i", "p2": return p2Fill
+            case "!p3", "quadrant.u", "p3": return p3Fill
+            default: return p4Fill
+            }
+        }
+    }
 }
 
 // MARK: - Layout tokens

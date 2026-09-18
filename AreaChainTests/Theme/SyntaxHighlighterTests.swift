@@ -22,13 +22,13 @@ struct SyntaxHighlighterTests {
         let tagRange = nsText.range(of: "#工作")
         let tagColor = attr.attribute(.foregroundColor, at: tagRange.location, effectiveRange: nil) as? NSColor
         #expect(tagColor != nil)
-        #expect(tagColor == NSColor.systemIndigo)
+        #expect(tagColor == NSColor.systemTeal)
 
         // 验证 !p1 范围的颜色
         let priorityRange = nsText.range(of: "!p1")
         let priorityColor = attr.attribute(.foregroundColor, at: priorityRange.location, effectiveRange: nil) as? NSColor
         #expect(priorityColor != nil)
-        #expect(priorityColor == NSColor(DaybookTheme.destructive))
+        #expect(priorityColor == NSColor.systemRed)
 
         // 验证普通文本 团队开会 为默认墨水色
         let titleRange = nsText.range(of: "团队开会")
@@ -46,5 +46,23 @@ struct SyntaxHighlighterTests {
         let timeRange = nsText.range(of: "@15:30")
         let timeColor = storage.attribute(.foregroundColor, at: timeRange.location, effectiveRange: nil) as? NSColor
         #expect(timeColor == NSColor(DaybookTheme.stamp))
+    }
+
+    @Test func syntaxColorPaletteMatches() {
+        #expect(DaybookTheme.Syntax.tagNS == NSColor.systemTeal)
+        #expect(DaybookTheme.Syntax.timeNS == NSColor(DaybookTheme.stamp))
+        #expect(DaybookTheme.Syntax.p1NS == NSColor.systemRed)
+        #expect(DaybookTheme.Syntax.p2NS == NSColor.systemOrange)
+        #expect(DaybookTheme.Syntax.p3NS == NSColor.systemBlue)
+        #expect(DaybookTheme.Syntax.p4NS == NSColor(DaybookTheme.muted))
+
+        #expect(DaybookTheme.Syntax.priorityColor(for: "!p1") == DaybookTheme.Syntax.p1)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "quadrant.iu") == DaybookTheme.Syntax.p1)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "!p2") == DaybookTheme.Syntax.p2)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "quadrant.i") == DaybookTheme.Syntax.p2)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "!p3") == DaybookTheme.Syntax.p3)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "quadrant.u") == DaybookTheme.Syntax.p3)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "!p4") == DaybookTheme.Syntax.p4)
+        #expect(DaybookTheme.Syntax.priorityColor(for: "quadrant.rest") == DaybookTheme.Syntax.p4)
     }
 }

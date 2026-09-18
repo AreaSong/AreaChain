@@ -268,29 +268,20 @@ struct SyntaxAutocompletePopup: View {
             if item.isCreation {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 10.5))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookTheme.Syntax.tag)
             } else {
                 Image(systemName: "tag.fill")
                     .font(.system(size: 10))
-                    .foregroundStyle(Color(nsColor: .systemIndigo))
+                    .foregroundStyle(DaybookTheme.Syntax.tag)
             }
         case .priority:
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.system(size: 10))
-                .foregroundStyle(priorityColor(for: item.title))
+                .foregroundStyle(DaybookTheme.Syntax.priorityColor(for: item.title))
         case .time:
             Image(systemName: "clock.fill")
                 .font(.system(size: 10))
-                .foregroundStyle(DaybookTheme.stamp)
-        }
-    }
-
-    private func priorityColor(for title: String) -> Color {
-        switch title {
-        case "!p1": return DaybookTheme.destructive
-        case "!p2": return Color.orange
-        case "!p3": return Color.blue
-        default: return DaybookTheme.muted
+                .foregroundStyle(DaybookTheme.Syntax.time)
         }
     }
 

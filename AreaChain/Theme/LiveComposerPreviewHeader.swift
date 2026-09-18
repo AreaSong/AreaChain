@@ -48,40 +48,29 @@ struct LiveComposerPreviewHeader: View {
     }
 
     private var previewTags: [String] {
-        var list = parsed.tagNames
-        if let candidate = activeCandidate, candidate.kind == .tag {
-            let candidateTag = candidate.title.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-            if !candidateTag.isEmpty && candidateTag != "..." && !list.contains(where: { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(candidateTag) }) {
-                list.append(candidateTag)
-            }
-        }
-        return list
+        parsed.tagNames
     }
 
     private var displayTime: String? {
-        if let candidate = activeCandidate, candidate.kind == .time {
-            return candidate.title.trimmingCharacters(in: CharacterSet(charactersIn: "@"))
-        }
-        return parsed.timeLabel
+        parsed.timeLabel
     }
 
-    private var displayPriority: (label: String, color: Color)? {
-        if let candidate = activeCandidate, candidate.kind == .priority {
-            return (candidate.title, priorityColor(candidate.title))
+    private var displayPriority: (badge: String, tooltip: String, color: Color, fill: Color)? {
+        guard let label = parsed.priorityLabel else { return nil }
+        let badge: String
+        switch label {
+        case "quadrant.iu": badge = "P1"
+        case "quadrant.i": badge = "P2"
+        case "quadrant.u": badge = "P3"
+        case "quadrant.rest": badge = "P4"
+        default: badge = label
         }
-        if let label = parsed.priorityLabel {
-            return (label, priorityColor(label))
-        }
-        return nil
-    }
-
-    private func priorityColor(_ title: String) -> Color {
-        switch title {
-        case "!p1", "quadrant.iu": return DaybookTheme.destructive
-        case "!p2", "quadrant.i": return Color.orange
-        case "!p3", "quadrant.u": return Color.blue
-        default: return DaybookTheme.muted
-        }
+        return (
+            badge: badge,
+            tooltip: label,
+            color: DaybookTheme.Syntax.priorityColor(for: label),
+            fill: DaybookTheme.Syntax.priorityFill(for: label)
+        )
     }
 
     var body: some View {
@@ -127,8 +116,8 @@ struct LiveComposerPreviewHeader: View {
                         .frame(maxWidth: 96, alignment: .leading)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2.5)
-                        .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
+                        .foregroundStyle(DaybookTheme.Syntax.tag)
                         .help("#\(singleTag)")
                 } else if previewTags.count > 1, let firstTag = previewTags.first {
                     // 展示首个标签，一眼看清当前输入的标签内容
@@ -139,8 +128,8 @@ struct LiveComposerPreviewHeader: View {
                         .frame(maxWidth: 86, alignment: .leading)
                         .padding(.horizontal, 5.5)
                         .padding(.vertical, 2.5)
-                        .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
+                        .foregroundStyle(DaybookTheme.Syntax.tag)
                         .help("#\(firstTag)")
 
                     // 标签数量徽标（免点击，直观提示）
@@ -152,8 +141,8 @@ struct LiveComposerPreviewHeader: View {
                     }
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
-                    .background(Capsule().fill(DaybookTheme.stamp.opacity(0.16)))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .background(Capsule().fill(DaybookTheme.Syntax.tagBadgeFill))
+                    .foregroundStyle(DaybookTheme.Syntax.tag)
                     .help("共 \(previewTags.count) 个标签")
                 }
 
@@ -166,8 +155,8 @@ struct LiveComposerPreviewHeader: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookTheme.ink.opacity(0.06)))
-                    .foregroundStyle(DaybookTheme.ink)
+                    .background(Capsule().fill(DaybookTheme.Syntax.timeFill))
+                    .foregroundStyle(DaybookTheme.Syntax.time)
                     .help(time)
                 }
 
@@ -175,14 +164,14 @@ struct LiveComposerPreviewHeader: View {
                     HStack(spacing: 2.5) {
                         Image(systemName: "exclamationmark.circle")
                             .font(.system(size: 9.5, weight: .bold))
-                        Text(LocalizedStringKey(priority.label))
-                            .font(.system(size: 10.5, weight: .semibold))
+                        Text(priority.badge)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Capsule().fill(priority.color.opacity(0.15)))
+                    .background(Capsule().fill(priority.fill))
                     .foregroundStyle(priority.color)
-                    .help(priority.label)
+                    .help(LocalizedStringKey(priority.tooltip))
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
@@ -238,7 +227,7 @@ struct LiveComposerPreviewHeader: View {
                         HStack(spacing: 3) {
                             Text("#\(tag)")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(DaybookTheme.stamp)
+                                .foregroundStyle(DaybookTheme.Syntax.tag)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
@@ -246,7 +235,7 @@ struct LiveComposerPreviewHeader: View {
                         .padding(.vertical, 3)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(DaybookTheme.stamp.opacity(0.08))
+                                .fill(DaybookTheme.Syntax.tagSubtleFill)
                         )
                     }
                 }

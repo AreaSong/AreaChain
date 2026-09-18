@@ -33,6 +33,13 @@ struct ClassificationTests {
         #expect(QuadrantSlot.rest.subtitleKeyName == "quadrant.rest.hint")
     }
 
+    @Test func quadrantSlotBadgeText() {
+        #expect(QuadrantSlot.importantUrgent.badgeText == "P1")
+        #expect(QuadrantSlot.important.badgeText == "P2")
+        #expect(QuadrantSlot.urgent.badgeText == "P3")
+        #expect(QuadrantSlot.rest.badgeText == "P4")
+    }
+
     @Test func boardOrderPutsQuadrantThenTimeThenCreated() {
         let early = Date(timeIntervalSince1970: 1)
         let late = Date(timeIntervalSince1970: 9)
