@@ -5,10 +5,24 @@ struct LiveComposerPreviewHeader: View {
     var text: String
     var knownTags: [String] = []
     var activeCandidate: SyntaxCandidate? = nil
+    var showsSuggestions: Bool = false
     var onClose: () -> Void
 
     @Environment(\.locale) private var locale
-    @State private var showingOverflowBubble = false
+
+    init(
+        text: String,
+        knownTags: [String] = [],
+        activeCandidate: SyntaxCandidate? = nil,
+        showsSuggestions: Bool = false,
+        onClose: @escaping () -> Void
+    ) {
+        self.text = text
+        self.knownTags = knownTags
+        self.activeCandidate = activeCandidate
+        self.showsSuggestions = showsSuggestions
+        self.onClose = onClose
+    }
 
     private var parsed: ParsedCapture {
         NaturalLanguageParser.parseTaskCapture(text)
@@ -27,9 +41,9 @@ struct LiveComposerPreviewHeader: View {
 
     private var formattedTitle: String {
         let title = displayTitle
-        guard title.count > 18 else { return title }
-        let head = title.prefix(8)
-        let tail = title.suffix(7)
+        guard title.count > 16 else { return title }
+        let head = title.prefix(9)
+        let tail = title.suffix(6)
         return "\(head)...\(tail)"
     }
 
@@ -73,24 +87,28 @@ struct LiveComposerPreviewHeader: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             mainRow
-            if previewTags.count > 1 {
-                overflowBubbleView
+            if previewTags.count > 1 && !showsSuggestions {
+                tagDetailBubble
                     .padding(.trailing, 4)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)),
+                        removal: .opacity
+                    ))
             }
         }
     }
 
-    /// 常驻单行主卡片（固定 32pt 高度）
+    /// 单行主卡片（固定 36pt 高度，大字号 13pt/11pt）
     private var mainRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Circle()
                 .strokeBorder(DaybookTheme.rule.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2]))
-                .frame(width: 13, height: 13)
+                .frame(width: 14, height: 14)
                 .foregroundStyle(DaybookTheme.muted)
 
             if !displayTitle.isEmpty {
                 Text(formattedTitle)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(DaybookTheme.ink)
                     .lineLimit(1)
                     .help(displayTitle)
@@ -99,65 +117,81 @@ struct LiveComposerPreviewHeader: View {
                 Spacer(minLength: 4)
             }
 
-            // 右侧唯一性属性集群（时间、优先级、标签数量）
-            HStack(spacing: 4) {
+            // 右侧属性集群（首个标签 + 标签数量徽标、时间、优先级）
+            HStack(spacing: 5) {
                 if previewTags.count == 1, let singleTag = previewTags.first {
                     Text("#\(singleTag)")
-                        .font(.system(size: 9.5, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
-                        .frame(maxWidth: 90, alignment: .leading)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 1.5)
+                        .frame(maxWidth: 96, alignment: .leading)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2.5)
                         .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
                         .foregroundStyle(DaybookTheme.stamp)
-                } else if previewTags.count > 1 {
-                    HStack(spacing: 2.5) {
+                        .help("#\(singleTag)")
+                } else if previewTags.count > 1, let firstTag = previewTags.first {
+                    // 展示首个标签，一眼看清当前输入的标签内容
+                    Text("#\(firstTag)")
+                        .font(.system(size: 11, weight: .semibold))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .frame(maxWidth: 86, alignment: .leading)
+                        .padding(.horizontal, 5.5)
+                        .padding(.vertical, 2.5)
+                        .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .help("#\(firstTag)")
+
+                    // 标签数量徽标（免点击，直观提示）
+                    HStack(spacing: 2) {
                         Image(systemName: "number")
-                            .font(.system(size: 7.5, weight: .bold))
+                            .font(.system(size: 8, weight: .bold))
                         Text("\(previewTags.count)")
-                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
                     }
                     .padding(.horizontal, 5)
-                    .padding(.vertical, 1.5)
+                    .padding(.vertical, 2)
                     .background(Capsule().fill(DaybookTheme.stamp.opacity(0.16)))
                     .foregroundStyle(DaybookTheme.stamp)
-                    .help("共包含 \(previewTags.count) 个标签")
+                    .help("共 \(previewTags.count) 个标签")
                 }
 
                 if let time = displayTime {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 2.5) {
                         Image(systemName: "clock")
-                            .font(.system(size: 8))
+                            .font(.system(size: 9.5))
                         Text(time)
-                            .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
                     }
-                    .padding(.horizontal, 4.5)
-                    .padding(.vertical, 1.5)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
                     .background(Capsule().fill(DaybookTheme.ink.opacity(0.06)))
                     .foregroundStyle(DaybookTheme.ink)
+                    .help(time)
                 }
 
                 if let priority = displayPriority {
-                    HStack(spacing: 2) {
+                    HStack(spacing: 2.5) {
                         Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 9.5, weight: .bold))
                         Text(LocalizedStringKey(priority.label))
-                            .font(.system(size: 9, weight: .semibold))
+                            .font(.system(size: 10.5, weight: .semibold))
                     }
-                    .padding(.horizontal, 4.5)
-                    .padding(.vertical, 1.5)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
                     .background(Capsule().fill(priority.color.opacity(0.15)))
                     .foregroundStyle(priority.color)
+                    .help(priority.label)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
 
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(DaybookTheme.muted.opacity(0.8))
-                    .frame(width: 16, height: 16)
+                    .frame(width: 18, height: 18)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -165,8 +199,7 @@ struct LiveComposerPreviewHeader: View {
             .accessibilityLabel("common.close")
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 6)
-        .frame(height: 32)
+        .frame(height: 36)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(DaybookTheme.paper)
@@ -178,18 +211,18 @@ struct LiveComposerPreviewHeader: View {
         )
     }
 
-    /// 右侧从上往下默认浮动展示的全部标签列表
-    private var overflowBubbleView: some View {
+    /// 浮动详细标签面板（大字号 11pt，查详细专用，输入时自动避让）
+    private var tagDetailBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("全部标签")
-                    .font(.system(size: 9, weight: .semibold))
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Text("\(previewTags.count)")
-                    .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 0.5)
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .padding(.horizontal, 4.5)
+                    .padding(.vertical, 1)
                     .background(Capsule().fill(DaybookTheme.rule.opacity(0.4)))
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -204,13 +237,13 @@ struct LiveComposerPreviewHeader: View {
                     ForEach(previewTags, id: \.self) { tag in
                         HStack(spacing: 3) {
                             Text("#\(tag)")
-                                .font(.system(size: 9.5, weight: .medium))
+                                .font(.system(size: 11, weight: .medium))
                                 .foregroundStyle(DaybookTheme.stamp)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2.5)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
                                 .fill(DaybookTheme.stamp.opacity(0.08))
@@ -218,17 +251,17 @@ struct LiveComposerPreviewHeader: View {
                     }
                 }
             }
-            .frame(maxHeight: 96)
+            .frame(maxHeight: min(120, CGFloat(previewTags.count) * 26 + 6))
         }
-        .padding(6)
-        .frame(width: 132)
+        .padding(7)
+        .frame(width: 140)
         .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(DaybookTheme.paper)
                 .shadow(color: Color.black.opacity(0.18), radius: 6, x: 0, y: 3)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
         )
         .transition(.asymmetric(

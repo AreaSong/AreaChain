@@ -151,15 +151,16 @@ struct SyntaxAutocompletePopup: View {
     var body: some View {
         let showsPreview = state.showsPreview
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
+        let isStandalonePreview = showsPreview && !showsSuggestions
 
         if showsPreview || showsSuggestions {
-            let isStandalonePreview = showsPreview && !showsSuggestions
             VStack(alignment: .leading, spacing: 0) {
                 if showsPreview {
                     LiveComposerPreviewHeader(
                         text: state.inputText,
                         knownTags: state.availableTags,
                         activeCandidate: showsSuggestions ? state.selectedCandidate() : nil,
+                        showsSuggestions: showsSuggestions,
                         onClose: {
                             withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
                                 state.dismissPreview()
