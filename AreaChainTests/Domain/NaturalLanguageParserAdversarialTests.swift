@@ -152,8 +152,9 @@ struct NaturalLanguageParserAdversarialTests {
         #expect(tokenOnly.isImportant == true)
         #expect(tokenOnly.isUrgent == true)
         #expect(tokenOnly.remindMinutes == 10 * 60)
-        // When all tokens consumed, fallback keeps original title
-        #expect(tokenOnly.cleanTitle == "#工作 !p1 @10:00")
+        // 识别到语法后不应出现在正文中，纯语法输入正文为空
+        #expect(tokenOnly.cleanTitle == "")
+        #expect(tokenOnly.hasContentTitle == false)
     }
 
     // MARK: - 3. Priority Parsing Matrix

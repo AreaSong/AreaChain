@@ -68,7 +68,9 @@ struct TagSyntaxTests {
 
     @Test func syntaxOnlyTitlesKeepTheirInputRatherThanBecomingEmpty() {
         #expect(TagSyntax.title(from: "#今日") == "#今日")
-        #expect(NaturalLanguageParser.parseTaskCapture("#今日 #生活").cleanTitle == "#今日 #生活")
+        let parsed = NaturalLanguageParser.parseTaskCapture("#今日 #生活")
+        #expect(parsed.cleanTitle == "")
+        #expect(parsed.tagNames == ["今日", "生活"])
     }
 
     @Test func attributesDoNotConsumeLiteralCopiesInCodeOrWords() {

@@ -439,8 +439,6 @@ struct MenuBarPopoverView: View {
     private func addDiary() {
         let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        guard parsed.hasContentTitle else { return }
         let context = modelContext
         let dayKey = todayKey
         do {

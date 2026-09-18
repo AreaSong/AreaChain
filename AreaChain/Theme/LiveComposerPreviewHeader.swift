@@ -14,7 +14,6 @@ struct LiveComposerPreviewHeader: View {
     }
 
     private var displayTitle: String {
-        guard parsed.hasContentTitle else { return "" }
         let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if !title.isEmpty, !isSyntaxPrefixOnly(title) { return title }
         return ""
@@ -69,11 +68,13 @@ struct LiveComposerPreviewHeader: View {
                 .frame(width: 13, height: 13)
                 .foregroundStyle(DaybookTheme.muted)
 
-            Text(displayTitle.isEmpty ? L10n.string("capture.preview.untitled", locale: locale) : displayTitle)
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(displayTitle.isEmpty ? DaybookTheme.muted.opacity(0.6) : DaybookTheme.ink)
-                .lineLimit(1)
-                .truncationMode(.tail)
+            if !displayTitle.isEmpty {
+                Text(displayTitle)
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
 
             Spacer(minLength: 4)
 

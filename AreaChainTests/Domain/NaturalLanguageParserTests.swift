@@ -117,11 +117,20 @@ struct NaturalLanguageParserTests {
         #expect(onlyTime.hasContentTitle == false)
         #expect(onlyTime.isTokenOnly == true)
         #expect(onlyTime.remindMinutes == 60)
+        #expect(onlyTime.cleanTitle == "")
+
+        let onlyTag = NaturalLanguageParser.parseTaskCapture("#123")
+        #expect(onlyTag.hasTokens == true)
+        #expect(onlyTag.hasContentTitle == false)
+        #expect(onlyTag.isTokenOnly == true)
+        #expect(onlyTag.tagName == "123")
+        #expect(onlyTag.cleanTitle == "")
 
         let timeAndTag = NaturalLanguageParser.parseTaskCapture("@01:00 #工作 !p1")
         #expect(timeAndTag.hasTokens == true)
         #expect(timeAndTag.hasContentTitle == false)
         #expect(timeAndTag.isTokenOnly == true)
+        #expect(timeAndTag.cleanTitle == "")
 
         let timeWithContent = NaturalLanguageParser.parseTaskCapture("@01:00 团队开会")
         #expect(timeWithContent.hasTokens == true)

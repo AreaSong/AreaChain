@@ -62,10 +62,13 @@ enum NaturalLanguageParser {
         let priority = consumePriority(from: &text)
         let remindMinutes = consumeTime(from: &text)
 
-        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let hasContentTitle = !trimmedText.isEmpty
-        let fallbackTitle = firstLine.isEmpty ? input : firstLine
-        let cleanTitle = cleanTitle(from: text, fallback: fallbackTitle)
+        let cleaned = text
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        let hasTokens = !tagNames.isEmpty || priority.hasPriorityToken || remindMinutes != nil
+        let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (firstLine.isEmpty ? input : firstLine) : cleaned)
+        let hasContentTitle = !cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         return ParsedCapture(
             rawInput: input,
@@ -187,14 +190,6 @@ enum NaturalLanguageParser {
         guard let extracted = extractTime(from: text) else { return nil }
         text = (text as NSString).replacingCharacters(in: extracted.range, with: "")
         return extracted.minutes
-    }
-
-    private static func cleanTitle(from text: String, fallback: String) -> String {
-        let cleaned = text
-            .components(separatedBy: .whitespacesAndNewlines)
-            .filter { !$0.isEmpty }
-            .joined(separator: " ")
-        return cleaned.isEmpty ? fallback : cleaned
     }
 
     private struct ExtractedTime {

@@ -53,7 +53,8 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     @discardableResult
     func addRoutine(_ params: CreateRoutineParams) throws -> DailyRoutine {
         let trimmed = params.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
+        let hasMetadata = !params.tagIDs.isEmpty || params.remindMinutes != nil || params.isImportant || params.isUrgent || !params.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard !trimmed.isEmpty || hasMetadata else {
             throw RepositoryError.invalidArgument("习惯标题不能为空")
         }
         let routine = DailyRoutine(

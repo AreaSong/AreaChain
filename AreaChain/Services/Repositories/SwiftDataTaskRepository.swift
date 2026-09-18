@@ -58,7 +58,8 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     @discardableResult
     func addTodo(_ params: CreateTodoParams) throws -> TodoItem {
         let trimmed = params.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
+        let hasMetadata = !params.tagIDs.isEmpty || params.remindMinutes != nil || params.isImportant || params.isUrgent || !params.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        guard !trimmed.isEmpty || hasMetadata else {
             throw RepositoryError.invalidArgument("待办标题不能为空")
         }
         let todo = TodoItem(
