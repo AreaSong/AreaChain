@@ -23,8 +23,12 @@ struct CaptureField: View {
         allTags.filter { $0.deletedAt == nil }.map(\.name)
     }
 
+    private var parsed: ParsedCapture {
+        NaturalLanguageParser.parseTaskCapture(text)
+    }
+
     private var canSubmit: Bool {
-        !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        parsed.hasContentTitle
     }
 
     var body: some View {
@@ -46,16 +50,23 @@ struct CaptureField: View {
                 .foregroundStyle(plusColor)
                 .frame(width: 14)
 
-            DaybookTextField(
-                text: $text,
-                placeholder: L10n.string("capture.placeholder.today", locale: locale),
-                focus: focus,
-                autocomplete: autocomplete,
-                availableTags: availableTags,
-                onSubmit: onTodo,
-                onCommandReturn: { if allowsDiaryShortcut { onDiary() } }
-            )
-            .accessibilityLabel("capture.placeholder.today")
+            ZStack(alignment: .leading) {
+                DaybookTextField(
+                    text: $text,
+                    placeholder: L10n.string("capture.placeholder.today", locale: locale),
+                    focus: focus,
+                    autocomplete: autocomplete,
+                    availableTags: availableTags,
+                    highlightsSyntax: true,
+                    onSubmit: { if canSubmit { onTodo() } },
+                    onCommandReturn: { if allowsDiaryShortcut && canSubmit { onDiary() } }
+                )
+                .accessibilityLabel("capture.placeholder.today")
+
+                if parsed.isTokenOnly {
+                    ghostPlaceholder
+                }
+            }
 
             diaryShortcutButton
         }
@@ -79,5 +90,19 @@ struct CaptureField: View {
     private var diaryShortcutButton: some View {
         CommandReturnButton(enabled: canSubmit, label: "capture.diary", action: onDiary)
             .keyboardShortcut(allowsDiaryShortcut ? KeyboardShortcut(.return, modifiers: [.command]) : nil)
+    }
+
+    private var ghostPlaceholder: some View {
+        let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
+        let textWidth = (text as NSString).size(withAttributes: [.font: font]).width
+        let offset = textWidth + (text.hasSuffix(" ") ? 2 : 4)
+        return Text(L10n.string("capture.placeholder.content", locale: locale))
+            .font(.system(size: DaybookType.bodySize))
+            .foregroundStyle(DaybookTheme.muted.opacity(0.55))
+            .padding(.leading, offset)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
     }
 }

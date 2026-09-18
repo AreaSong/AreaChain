@@ -110,4 +110,47 @@ struct NaturalLanguageParserTests {
         #expect(parsed.cleanTitle == "买菜 #密码")
         #expect(parsed.hasTokens == true)
     }
+
+    @Test func tokenOnlyDetection() {
+        let onlyTime = NaturalLanguageParser.parseTaskCapture("@01:00")
+        #expect(onlyTime.hasTokens == true)
+        #expect(onlyTime.hasContentTitle == false)
+        #expect(onlyTime.isTokenOnly == true)
+        #expect(onlyTime.remindMinutes == 60)
+
+        let timeAndTag = NaturalLanguageParser.parseTaskCapture("@01:00 #工作 !p1")
+        #expect(timeAndTag.hasTokens == true)
+        #expect(timeAndTag.hasContentTitle == false)
+        #expect(timeAndTag.isTokenOnly == true)
+
+        let timeWithContent = NaturalLanguageParser.parseTaskCapture("@01:00 团队开会")
+        #expect(timeWithContent.hasTokens == true)
+        #expect(timeWithContent.hasContentTitle == true)
+        #expect(timeWithContent.isTokenOnly == false)
+        #expect(timeWithContent.cleanTitle == "团队开会")
+    }
+
+    @Test func extractHighlightTokensDetection() {
+        let text = "@01:00 团队开会 #工作 !p1"
+        let tokens = NaturalLanguageParser.extractHighlightTokens(in: text)
+        #expect(tokens.count == 3)
+
+        // 验证各 token 类型
+        let hasTime = tokens.contains { token in
+            if case .time(let m) = token.kind { return m == 60 }
+            return false
+        }
+        let hasTag = tokens.contains { token in
+            if case .tag(let name) = token.kind { return name == "工作" }
+            return false
+        }
+        let hasPriority = tokens.contains { token in
+            if case .priority(let imp, let urg, _) = token.kind { return imp && urg }
+            return false
+        }
+
+        #expect(hasTime == true)
+        #expect(hasTag == true)
+        #expect(hasPriority == true)
+    }
 }

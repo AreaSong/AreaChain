@@ -194,4 +194,29 @@ struct BatchMutationsTests {
 
         #expect(routine.checks.filter(\.isSkipped).isEmpty)
     }
+
+    @Test func addCapturedTodoTokenOnlyIsBlocked() throws {
+        let (_, context) = try makeContainer()
+        let result = DayBoardMutations.addCapturedTodo(text: "@01:00", dayKey: "2026-09-18", context: context)
+        #expect(result == false)
+
+        let fetchDescriptor = FetchDescriptor<TodoItem>()
+        let items = try context.fetch(fetchDescriptor)
+        #expect(items.isEmpty)
+    }
+
+    @Test func addCapturedTodoWithContentSucceeds() throws {
+        let (_, context) = try makeContainer()
+        let result = DayBoardMutations.addCapturedTodo(text: "@01:00 开会 #工作 !p1", dayKey: "2026-09-18", context: context)
+        #expect(result == true)
+
+        let fetchDescriptor = FetchDescriptor<TodoItem>()
+        let items = try context.fetch(fetchDescriptor)
+        #expect(items.count == 1)
+        let todo = try #require(items.first)
+        #expect(todo.title == "开会")
+        #expect(todo.remindMinutes == 60)
+        #expect(todo.isImportant == true)
+        #expect(todo.isUrgent == true)
+    }
 }

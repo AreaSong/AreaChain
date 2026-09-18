@@ -37,6 +37,7 @@ struct DaybookTextField: NSViewRepresentable {
     var focus: Binding<Bool>
     var autocomplete: SyntaxAutocompleteState? = nil
     var availableTags: [String] = []
+    var highlightsSyntax: Bool = false
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)? = nil
     var onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil
@@ -77,6 +78,9 @@ struct DaybookTextField: NSViewRepresentable {
             guard let field else { return }
             coordinator?.requestFocus(in: field)
         }
+        if highlightsSyntax && !text.isEmpty {
+            field.attributedStringValue = SyntaxHighlighter.attributedString(for: text, font: nativeFont)
+        }
         return field
     }
 
@@ -94,7 +98,7 @@ struct DaybookTextField: NSViewRepresentable {
             context.coordinator.parent.autocomplete?.dismiss()
             extra()
         }
-        Self.synchronizeText(text, in: field)
+        Self.synchronizeText(text, in: field, highlightsSyntax: highlightsSyntax, font: nativeFont)
         if let autocomplete = context.coordinator.parent.autocomplete {
             if autocomplete.inputText != text || autocomplete.availableTags != context.coordinator.parent.availableTags {
                 let cursor = (field.currentEditor() as? NSTextView)?.selectedRange().location ?? (text as NSString).length
@@ -113,15 +117,24 @@ struct DaybookTextField: NSViewRepresentable {
     }
 
     /// 同步外部草稿更新，但不打断中文输入法的组合文本。
-    static func synchronizeText(_ text: String, in field: NSTextField) {
+    static func synchronizeText(_ text: String, in field: NSTextField, highlightsSyntax: Bool = false, font: NSFont? = nil) {
         let editor = field.currentEditor() as? NSTextView
         let current = editor?.string ?? field.stringValue
         guard current != text, editor?.hasMarkedText() != true else { return }
         let length = (text as NSString).length
         let delta = length - (current as NSString).length
         let cursor = min(length, max(0, (editor?.selectedRange().location ?? 0) + delta))
-        field.stringValue = text
-        editor?.string = text
+        if highlightsSyntax, let font {
+            field.attributedStringValue = SyntaxHighlighter.attributedString(for: text, font: font)
+            if let editor, let storage = editor.textStorage {
+                SyntaxHighlighter.applyHighlighting(to: storage, font: font)
+            } else {
+                field.stringValue = text
+            }
+        } else {
+            field.stringValue = text
+            editor?.string = text
+        }
         editor?.setSelectedRange(NSRange(location: cursor, length: 0))
     }
 
@@ -184,8 +197,12 @@ struct DaybookTextField: NSViewRepresentable {
             }
             parent.text = value
 
+            let editor = field.currentEditor() as? NSTextView
+            if parent.highlightsSyntax, let storage = editor?.textStorage, editor?.hasMarkedText() != true {
+                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
+            }
+
             if let autocomplete = parent.autocomplete {
-                let editor = field.currentEditor() as? NSTextView
                 guard editor?.hasMarkedText() != true else { autocomplete.dismissSuggestionsOnly(); return }
                 let cursor = editor?.selectedRange().location ?? (value as NSString).length
                 autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
@@ -210,6 +227,9 @@ struct DaybookTextField: NSViewRepresentable {
                 textView.string = value
             }
             parent.text = value
+            if parent.highlightsSyntax, let storage = textView.textStorage, !textView.hasMarkedText() {
+                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
+            }
             guard !textView.hasMarkedText() else {
                 autocomplete.dismissSuggestionsOnly()
                 return
@@ -222,6 +242,10 @@ struct DaybookTextField: NSViewRepresentable {
             parent.focus.wrappedValue = true
             guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
             parent.autocomplete?.editor = editor
+
+            if parent.highlightsSyntax, let storage = editor.textStorage, !editor.hasMarkedText() {
+                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
+            }
 
             if let autocomplete = parent.autocomplete {
                 let cursor = editor.selectedRange().location
@@ -265,6 +289,9 @@ struct DaybookTextField: NSViewRepresentable {
             parent.focus.wrappedValue = false
             parent.autocomplete?.dismiss()
             parent.autocomplete?.editor = nil
+            if parent.highlightsSyntax {
+                (obj.object as? NSTextField)?.attributedStringValue = SyntaxHighlighter.attributedString(for: parent.text, font: parent.nativeFont)
+            }
             if let editor = observedEditor {
                 NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: editor)
                 NotificationCenter.default.removeObserver(self, name: NSText.didChangeNotification, object: editor)
@@ -371,14 +398,14 @@ extension DaybookTextField {
         text: Binding<String>, placeholder: String, fontSize: CGFloat = DaybookType.bodySize,
         fontWeight: NSFont.Weight = .regular,
         focus: FocusState<Bool>.Binding, autocomplete: SyntaxAutocompleteState? = nil,
-        availableTags: [String] = [], onSubmit: @escaping () -> Void,
+        availableTags: [String] = [], highlightsSyntax: Bool = false, onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil, onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
         allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil
     ) {
         self.init(
             text: text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight,
             focus: Binding(get: { focus.wrappedValue }, set: { focus.wrappedValue = $0 }),
-            autocomplete: autocomplete, availableTags: availableTags, onSubmit: onSubmit,
+            autocomplete: autocomplete, availableTags: availableTags, highlightsSyntax: highlightsSyntax, onSubmit: onSubmit,
             onCommandReturn: onCommandReturn, onCommitAutocomplete: onCommitAutocomplete,
             allowsShiftNewline: allowsShiftNewline, onEscape: onEscape
         )

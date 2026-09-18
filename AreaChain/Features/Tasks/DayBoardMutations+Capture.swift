@@ -9,6 +9,7 @@ extension DayBoardMutations {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
+        guard parsed.hasContentTitle else { return false }
         let saved = ModelChanges.perform(in: context) {
             let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(tagIDs), in: context)
             let params = CreateTodoParams(
@@ -28,6 +29,7 @@ extension DayBoardMutations {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
+        guard parsed.hasContentTitle else { return false }
         let saved = ModelChanges.perform(in: context) {
             let ids = try InputTagResolver.resolve(parsed.tagNames, in: context)
             _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(

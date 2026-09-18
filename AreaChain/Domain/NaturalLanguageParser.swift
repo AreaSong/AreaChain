@@ -1,5 +1,16 @@
 import Foundation
 
+enum SyntaxTokenKind: Equatable {
+    case tag(name: String)
+    case time(minutes: Int)
+    case priority(isImportant: Bool, isUrgent: Bool, raw: String)
+}
+
+struct SyntaxHighlightToken: Equatable {
+    let kind: SyntaxTokenKind
+    let range: NSRange
+}
+
 struct ParsedCapture: Equatable {
     var rawInput: String
     var cleanTitle: String
@@ -10,9 +21,14 @@ struct ParsedCapture: Equatable {
     var hasPriorityToken: Bool = false
     var notes: String = ""
     var tagNames: [String] = []
+    var hasContentTitle: Bool = true
 
     var hasTokens: Bool {
         remindMinutes != nil || tagName != nil || hasPriorityToken
+    }
+
+    var isTokenOnly: Bool {
+        hasTokens && !hasContentTitle
     }
 
     var priorityLabel: String? {
@@ -46,6 +62,8 @@ enum NaturalLanguageParser {
         let priority = consumePriority(from: &text)
         let remindMinutes = consumeTime(from: &text)
 
+        let trimmedText = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hasContentTitle = !trimmedText.isEmpty
         let fallbackTitle = firstLine.isEmpty ? input : firstLine
         let cleanTitle = cleanTitle(from: text, fallback: fallbackTitle)
 
@@ -58,7 +76,8 @@ enum NaturalLanguageParser {
             isUrgent: priority.isUrgent,
             hasPriorityToken: priority.hasPriorityToken,
             notes: notesText,
-            tagNames: tagNames
+            tagNames: tagNames,
+            hasContentTitle: hasContentTitle
         )
     }
 
@@ -73,8 +92,54 @@ enum NaturalLanguageParser {
         return ParsedCapture(
             rawInput: input, cleanTitle: input, remindMinutes: time, tagName: tags.first,
             isImportant: priority.isImportant, isUrgent: priority.isUrgent,
-            hasPriorityToken: priority.hasPriorityToken, notes: input, tagNames: tags
+            hasPriorityToken: priority.hasPriorityToken, notes: input, tagNames: tags,
+            hasContentTitle: !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         )
+    }
+
+    /// 提取输入文本中所有的语法高亮 Token 区间（用于输入框实时着色）
+    static func extractHighlightTokens(in text: String) -> [SyntaxHighlightToken] {
+        guard !text.isEmpty else { return [] }
+        var tokens: [SyntaxHighlightToken] = []
+        let nsText = text as NSString
+        let fullRange = NSRange(location: 0, length: nsText.length)
+        let protected = TagSyntax.protectedRanges(in: text)
+
+        func isFree(_ range: NSRange) -> Bool {
+            guard range.location != NSNotFound, NSMaxRange(range) <= nsText.length else { return false }
+            if protected.contains(where: { NSIntersectionRange($0, range).length > 0 }) { return false }
+            return !tokens.contains(where: { NSIntersectionRange($0.range, range).length > 0 })
+        }
+
+        // 1. 标签（#标签）
+        for tag in TagSyntax.tokens(in: text, includesDiaryTags: false) {
+            if isFree(tag.range) {
+                tokens.append(SyntaxHighlightToken(kind: .tag(name: tag.name), range: tag.range))
+            }
+        }
+
+        // 2. 优先级（!p1 ~ !p4 / !重要紧急 等）
+        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+        if let regex = try? NSRegularExpression(pattern: priorityPattern) {
+            let unprotected = TagSyntax.unprotectedText(text)
+            for match in regex.matches(in: unprotected, options: [], range: fullRange) {
+                if isFree(match.range) {
+                    let raw = nsText.substring(with: match.range)
+                    let result = priorityResult(for: raw)
+                    tokens.append(SyntaxHighlightToken(
+                        kind: .priority(isImportant: result.isImportant, isUrgent: result.isUrgent, raw: raw),
+                        range: match.range
+                    ))
+                }
+            }
+        }
+
+        // 3. 时间时刻（@15:30 或 中文时刻）
+        if let time = extractTime(from: text), isFree(time.range) {
+            tokens.append(SyntaxHighlightToken(kind: .time(minutes: time.minutes), range: time.range))
+        }
+
+        return tokens.sorted { $0.range.location < $1.range.location }
     }
 
     static func timeMinutes(_ token: String) -> Int? {
@@ -93,16 +158,8 @@ enum NaturalLanguageParser {
         static let none = PriorityResult(isImportant: false, isUrgent: false, hasPriorityToken: false)
     }
 
-    private static func consumePriority(from text: inout String) -> PriorityResult {
-        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
-        guard let range = firstMatchRange(pattern: priorityPattern, in: text) else {
-            return .none
-        }
-        let match = (text as NSString).substring(with: range)
-        text = (text as NSString).replacingCharacters(in: range, with: "")
-        let token = match.lowercased()
-
-        switch token {
+    private static func priorityResult(for token: String) -> PriorityResult {
+        switch token.lowercased() {
         case "!重要紧急", "!紧急重要", "!重要且紧急", "!p1":
             return PriorityResult(isImportant: true, isUrgent: true, hasPriorityToken: true)
         case "!重要", "!重要不紧急", "!p2":
@@ -114,6 +171,16 @@ enum NaturalLanguageParser {
         default:
             return .none
         }
+    }
+
+    private static func consumePriority(from text: inout String) -> PriorityResult {
+        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+        guard let range = firstMatchRange(pattern: priorityPattern, in: text) else {
+            return .none
+        }
+        let match = (text as NSString).substring(with: range)
+        text = (text as NSString).replacingCharacters(in: range, with: "")
+        return priorityResult(for: match)
     }
 
     private static func consumeTime(from text: inout String) -> Int? {

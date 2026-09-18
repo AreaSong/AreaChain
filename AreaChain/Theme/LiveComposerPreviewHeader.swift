@@ -14,10 +14,9 @@ struct LiveComposerPreviewHeader: View {
     }
 
     private var displayTitle: String {
+        guard parsed.hasContentTitle else { return "" }
         let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if !title.isEmpty, !isSyntaxPrefixOnly(title) { return title }
-        let raw = text.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if !raw.isEmpty, !isSyntaxPrefixOnly(raw) { return raw }
         return ""
     }
 
