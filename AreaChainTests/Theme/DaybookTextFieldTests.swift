@@ -164,4 +164,45 @@ struct DaybookTextFieldTests {
         #expect(text == "#work ")
         #expect(autocomplete.isActive == false)
     }
+
+    @Test func livePreviewTwoStageEscapeInterception() {
+        var text = "买牛奶 #"
+        let binding = Binding(get: { text }, set: { text = $0 })
+        let focus = FocusState<Bool>()
+        let autocomplete = SyntaxAutocompleteState(context: .capture, allowsLivePreview: true)
+        autocomplete.inputText = text
+        autocomplete.isActive = true
+        autocomplete.trigger = SyntaxTrigger(kind: .tag, query: "", range: NSRange(location: 4, length: 1))
+        autocomplete.candidates = [
+            SyntaxCandidate(id: "tag_work", title: "#工作", insertText: "#工作 ", kind: .tag)
+        ]
+
+        #expect(autocomplete.showsPreview == true)
+        #expect(autocomplete.hasPresentation == true)
+
+        let daybookField = DaybookTextField(
+            text: binding,
+            placeholder: "test",
+            focus: focus.projectedValue,
+            autocomplete: autocomplete,
+            onSubmit: {}
+        )
+
+        let coordinator = daybookField.makeCoordinator()
+        let tf = DaybookAppKitTextField(string: text)
+        let editor = NSTextView()
+        editor.string = text
+
+        // 第一次按 Esc：应该仅关闭候选列表，保留实时预览
+        let handledFirstEsc = coordinator.control(tf, textView: editor, doCommandBy: #selector(NSResponder.cancelOperation(_:)))
+        #expect(handledFirstEsc == true)
+        #expect(autocomplete.isActive == false)
+        #expect(autocomplete.showsPreview == true)
+
+        // 第二次按 Esc：应该关闭实时预览
+        let handledSecondEsc = coordinator.control(tf, textView: editor, doCommandBy: #selector(NSResponder.cancelOperation(_:)))
+        #expect(handledSecondEsc == true)
+        #expect(autocomplete.showsPreview == false)
+        #expect(autocomplete.hasPresentation == false)
+    }
 }

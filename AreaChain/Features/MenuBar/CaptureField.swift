@@ -17,7 +17,7 @@ struct CaptureField: View {
     var onDiary: () -> Void
     var allowsDiaryShortcut = true
 
-    @State private var autocomplete = SyntaxAutocompleteState()
+    @State private var autocomplete = SyntaxAutocompleteState(context: .capture, allowsLivePreview: true)
 
     private var availableTags: [String] {
         allTags.filter { $0.deletedAt == nil }.map(\.name)

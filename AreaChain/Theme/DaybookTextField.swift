@@ -200,6 +200,11 @@ struct DaybookTextField: NSViewRepresentable {
             guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
             parent.autocomplete?.editor = editor
 
+            if let autocomplete = parent.autocomplete {
+                let cursor = editor.selectedRange().location
+                autocomplete.update(text: editor.string, cursorLocation: cursor, availableTags: parent.availableTags)
+            }
+
             // 注意：不能将 editor.delegate 设为 self！
             // NSTextField 内部强依赖自身作为 fieldEditor 的 delegate 来同步状态与派发通知。
             // 若覆盖 delegate，NSTextField 将不会向此 Coordinator 转发 controlTextDidChange 与 doCommandBy。
@@ -240,6 +245,14 @@ struct DaybookTextField: NSViewRepresentable {
             guard !textView.hasMarkedText() else { return false }
             if commandSelector == #selector(NSResponder.cancelOperation(_:)),
                let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
+                if autocomplete.isActive && !autocomplete.candidates.isEmpty {
+                    autocomplete.dismissSuggestionsOnly()
+                    return true
+                }
+                if autocomplete.showsPreview {
+                    autocomplete.dismissPreview()
+                    return true
+                }
                 autocomplete.dismiss()
                 return true
             }

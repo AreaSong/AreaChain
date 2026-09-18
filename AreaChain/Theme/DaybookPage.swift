@@ -155,7 +155,7 @@ struct DaybookComposer<Accessory: View>: View {
     @Environment(\.locale) private var locale
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var fallbackFocus = false
-    @State private var autocomplete = SyntaxAutocompleteState()
+    @State private var autocomplete = SyntaxAutocompleteState(context: .capture, allowsLivePreview: true)
 
     init(
         text: Binding<String>,

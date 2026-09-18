@@ -32,7 +32,14 @@ struct SyntaxOverlayAnchor {
 
     @MainActor var preferredSize: CGSize {
         if let attributes { return CGSize(width: 280, height: min(280, 80 + CGFloat(attributes.count) * 42)) }
-        return CGSize(width: 240, height: min(180, CGFloat(state.candidates.count) * 29 + 8) + 25)
+        var h: CGFloat = 0
+        if state.showsPreview { h += 32 }
+        if state.isActive && !state.candidates.isEmpty {
+            if state.showsPreview { h += 1 }
+            h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
+        }
+        let targetWidth: CGFloat = state.context == .capture ? 316 : 240
+        return CGSize(width: targetWidth, height: max(32, h))
     }
 }
 
@@ -59,7 +66,7 @@ private struct SyntaxOverlaySource: ViewModifier {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     func body(content: Content) -> some View {
-        let presented = enabled && (attributes == nil ? state.isActive : state.showsAttributes)
+        let presented = enabled && (attributes == nil ? state.hasPresentation : state.showsAttributes)
         content
             .transformAnchorPreference(key: SyntaxOverlayAnchorKey.self, value: .bounds) { anchors, bounds in
                 if presented {

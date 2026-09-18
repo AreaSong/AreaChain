@@ -6,33 +6,51 @@ import SwiftUI
 final class SyntaxAutocompleteState {
     let id = UUID()
     let context: SyntaxInputContext
+    var allowsLivePreview: Bool = false
     var isActive: Bool = false
     var trigger: SyntaxTrigger? = nil
     var candidates: [SyntaxCandidate] = []
     var selectedIndex: Int = 0
     var showsAttributes = false
     var presentedAt: TimeInterval = 0
+    var inputText: String = ""
+    var isDismissedByUser: Bool = false
+    var availableTags: [String] = []
     @ObservationIgnored weak var editor: NSTextView?
     @ObservationIgnored var restoreEditing: (() -> Void)?
 
-    var hasPresentation: Bool { isActive || showsAttributes }
+    var showsPreview: Bool {
+        guard allowsLivePreview, context == .capture, !isDismissedByUser else { return false }
+        return !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
 
-    init(context: SyntaxInputContext = .capture) {
+    var hasPresentation: Bool {
+        (isActive && !candidates.isEmpty) || showsAttributes || showsPreview
+    }
+
+    init(context: SyntaxInputContext = .capture, allowsLivePreview: Bool = false) {
         self.context = context
+        self.allowsLivePreview = allowsLivePreview
     }
 
     func update(text: String, cursorLocation: Int, availableTags: [String] = []) {
+        inputText = text
+        self.availableTags = availableTags
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            isDismissedByUser = false
+        }
         guard let detected = SyntaxAutocompleteEngine.detectTrigger(in: text, cursorLocation: cursorLocation) else {
-            dismiss()
+            dismissSuggestionsOnly()
             return
         }
 
         let items = SyntaxAutocompleteEngine.candidates(for: detected, availableTags: availableTags, context: context)
         guard !items.isEmpty else {
-            dismiss()
+            dismissSuggestionsOnly()
             return
         }
 
+        isDismissedByUser = false
         trigger = detected
         candidates = items
         selectedIndex = max(0, min(selectedIndex, items.count - 1))
@@ -69,16 +87,25 @@ final class SyntaxAutocompleteState {
         editor.insertText(candidate.insertText, replacementRange: trigger.range)
         editor.setSelectedRange(NSRange(location: cursor, length: 0))
         editor.breakUndoCoalescing()
-        dismiss()
+        dismissSuggestionsOnly()
         return true
     }
 
-    func dismiss() {
+    func dismissSuggestionsOnly() {
         isActive = false
-        showsAttributes = false
         trigger = nil
         candidates = []
         selectedIndex = 0
+    }
+
+    func dismissPreview() {
+        isDismissedByUser = true
+    }
+
+    func dismiss() {
+        dismissSuggestionsOnly()
+        showsAttributes = false
+        isDismissedByUser = true
     }
 
     func showAttributes() {
@@ -101,19 +128,42 @@ final class SyntaxAutocompleteState {
 struct SyntaxAutocompletePopup: View {
     @Bindable var state: SyntaxAutocompleteState
     var growsUpward = false
-    var width: CGFloat = 240
-    var maxHeight: CGFloat = 205
+    var width: CGFloat = 316
+    var maxHeight: CGFloat = 260
     var motionDisabled = false
     var onCommit: (SyntaxCandidate) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        if state.isActive && !state.candidates.isEmpty {
+        let showsPreview = state.showsPreview
+        let showsSuggestions = state.isActive && !state.candidates.isEmpty
+
+        if showsPreview || showsSuggestions {
             VStack(alignment: .leading, spacing: 0) {
-                candidateList
-                Divider()
-                    .background(DaybookTheme.rule.opacity(0.5))
-                footerGuide
+                if showsPreview {
+                    LiveComposerPreviewHeader(
+                        text: state.inputText,
+                        knownTags: state.availableTags,
+                        activeCandidate: showsSuggestions ? state.selectedCandidate() : nil,
+                        onClose: {
+                            withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
+                                state.dismissPreview()
+                            }
+                        }
+                    )
+                }
+
+                if showsPreview && showsSuggestions {
+                    Divider()
+                        .background(DaybookTheme.rule.opacity(0.4))
+                }
+
+                if showsSuggestions {
+                    candidateList
+                    Divider()
+                        .background(DaybookTheme.rule.opacity(0.5))
+                    footerGuide
+                }
             }
             .frame(width: width)
             .background(
