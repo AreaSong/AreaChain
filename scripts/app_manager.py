@@ -16,6 +16,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 import signing
 
@@ -100,6 +101,25 @@ def running():
 
 def stopped():
     require(not running(), "请先在 AreaChain 中保存内容并正常退出，再重新执行；脚本不会强制结束进程。")
+
+
+def quit_running(timeout=5):
+    if not running():
+        return
+    subprocess.run(["osascript", "-e", 'tell application "AreaChain" to quit'],
+                   capture_output=True, timeout=5, check=False)
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if not running():
+            return
+        time.sleep(0.1)
+    subprocess.run(["pkill", "-x", "AreaChain"], capture_output=True, timeout=5, check=False)
+    deadline = time.time() + 2
+    while time.time() < deadline:
+        if not running():
+            return
+        time.sleep(0.1)
+    require(not running(), "无法退出正在运行的 AreaChain，请手动退出后再试。")
 
 
 def installed_signature(paths):
@@ -234,7 +254,7 @@ def install(args, paths):
     real_path(paths.applications)
     if not args.dry_run:
         require(os.geteuid() != 0, "请以当前用户运行，不要使用 sudo。")
-        stopped()
+        quit_running()
         if not args.no_build:
             result = subprocess.run([str(paths.project / "scripts/build.sh"), "release"], check=False)
             require(result.returncode == 0, "Release 构建失败，未安装。需要续签时请单独使用 build.sh release --allow-provisioning。")
@@ -251,6 +271,7 @@ def install(args, paths):
         return
     confirm("install", args.yes)
     with operation_lock(paths):
+        quit_running()
         backup = replace_app(paths, source, expected, previous, candidate)
     show({"installed": True, "previousApp": backup, "dataPreserved": True})
     if not args.no_open:

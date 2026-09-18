@@ -95,6 +95,12 @@ struct DaybookTextField: NSViewRepresentable {
             extra()
         }
         Self.synchronizeText(text, in: field)
+        if let autocomplete = context.coordinator.parent.autocomplete {
+            if autocomplete.inputText != text || autocomplete.availableTags != context.coordinator.parent.availableTags {
+                let cursor = (field.currentEditor() as? NSTextView)?.selectedRange().location ?? (text as NSString).length
+                autocomplete.update(text: text, cursorLocation: cursor, availableTags: context.coordinator.parent.availableTags)
+            }
+        }
         if let cell = field.cell as? NSTextFieldCell {
             cell.usesSingleLineMode = !allowsShiftNewline
         }
@@ -180,7 +186,7 @@ struct DaybookTextField: NSViewRepresentable {
 
             if let autocomplete = parent.autocomplete {
                 let editor = field.currentEditor() as? NSTextView
-                guard editor?.hasMarkedText() != true else { autocomplete.dismiss(); return }
+                guard editor?.hasMarkedText() != true else { autocomplete.dismissSuggestionsOnly(); return }
                 let cursor = editor?.selectedRange().location ?? (value as NSString).length
                 autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
             }
@@ -190,9 +196,26 @@ struct DaybookTextField: NSViewRepresentable {
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
             if textView.window?.firstResponder === textView { lastSelection = textView.selectedRange() }
-            guard !textView.hasMarkedText() else { autocomplete.dismiss(); return }
+            guard !textView.hasMarkedText() else { autocomplete.dismissSuggestionsOnly(); return }
             let cursor = textView.selectedRange().location
             autocomplete.update(text: textView.string, cursorLocation: cursor, availableTags: parent.availableTags)
+        }
+
+        @objc private func editorDidChangeText(_ notification: Notification) {
+            guard let autocomplete = parent.autocomplete,
+                  let textView = notification.object as? NSTextView else { return }
+            var value = textView.string
+            if !parent.allowsShiftNewline, value.contains("\n") {
+                value = value.replacingOccurrences(of: "\n", with: " ")
+                textView.string = value
+            }
+            parent.text = value
+            guard !textView.hasMarkedText() else {
+                autocomplete.dismissSuggestionsOnly()
+                return
+            }
+            let cursor = textView.selectedRange().location
+            autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
         }
 
         func controlTextDidBeginEditing(_ obj: Notification) {
@@ -211,12 +234,19 @@ struct DaybookTextField: NSViewRepresentable {
             if observedEditor !== editor {
                 if let old = observedEditor {
                     NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: old)
+                    NotificationCenter.default.removeObserver(self, name: NSText.didChangeNotification, object: old)
                 }
                 observedEditor = editor
                 NotificationCenter.default.addObserver(
                     self,
                     selector: #selector(editorDidChangeSelection(_:)),
                     name: NSTextView.didChangeSelectionNotification,
+                    object: editor
+                )
+                NotificationCenter.default.addObserver(
+                    self,
+                    selector: #selector(editorDidChangeText(_:)),
+                    name: NSText.didChangeNotification,
                     object: editor
                 )
             }
@@ -237,6 +267,7 @@ struct DaybookTextField: NSViewRepresentable {
             parent.autocomplete?.editor = nil
             if let editor = observedEditor {
                 NotificationCenter.default.removeObserver(self, name: NSTextView.didChangeSelectionNotification, object: editor)
+                NotificationCenter.default.removeObserver(self, name: NSText.didChangeNotification, object: editor)
                 observedEditor = nil
             }
         }

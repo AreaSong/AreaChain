@@ -59,7 +59,7 @@ struct DaybookTextFieldTests {
     @Test func textFieldCommandReturnViaPerformKeyEquivalent() {
         var text = ""
         var diaryCalled = false
-        var todoCalled = false
+        let todoCalled = false
 
         let tf = DaybookAppKitTextField(string: "")
         let window = NSWindow(
@@ -121,7 +121,7 @@ struct DaybookTextFieldTests {
         )
 
         let coordinator = daybookField.makeCoordinator()
-        let tf = DaybookAppKitTextField(string: text)
+        let _ = DaybookAppKitTextField(string: text)
         let editor = NSTextView()
         editor.string = text
 
@@ -204,5 +204,77 @@ struct DaybookTextFieldTests {
         #expect(handledSecondEsc == true)
         #expect(autocomplete.showsPreview == false)
         #expect(autocomplete.hasPresentation == false)
+    }
+
+    @Test func plainTextInputPreservesLivePreviewAndHandlesIME() {
+        var text = ""
+        let binding = Binding(get: { text }, set: { text = $0 })
+        let focus = FocusState<Bool>()
+        let autocomplete = SyntaxAutocompleteState(context: .capture, allowsLivePreview: true)
+
+        let daybookField = DaybookTextField(
+            text: binding,
+            placeholder: "test",
+            focus: focus.projectedValue,
+            autocomplete: autocomplete,
+            onSubmit: {}
+        )
+
+        let coordinator = daybookField.makeCoordinator()
+        let tf = DaybookAppKitTextField(string: "")
+        tf.delegate = coordinator
+        let editor = NSTextView()
+        editor.string = ""
+
+        // 1. 开始编辑空文本
+        coordinator.controlTextDidBeginEditing(Notification(name: NSControl.textDidBeginEditingNotification, object: tf))
+        #expect(autocomplete.showsPreview == false)
+
+        // 2. 模拟普通文字输入（如 "你 23123"）
+        tf.stringValue = "你 23123"
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(text == "你 23123")
+        #expect(autocomplete.inputText == "你 23123")
+        #expect(autocomplete.showsPreview == true)
+        #expect(autocomplete.hasPresentation == true)
+        #expect(autocomplete.presentedAt > 0)
+
+        // 3. 模拟失焦触发 dismiss
+        coordinator.controlTextDidEndEditing(Notification(name: NSControl.textDidEndEditingNotification, object: tf))
+        #expect(autocomplete.isDismissedByUser == false)
+        #expect(autocomplete.showsPreview == true)
+
+        // 4. 再次聚焦继续输入
+        tf.stringValue = "你 23123 再次输入"
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(autocomplete.showsPreview == true)
+        #expect(autocomplete.hasPresentation == true)
+
+        // 5. 模拟输入 "1312312313你 #" (带空标签库，应展示空态引导项，绝不一片空白)
+        tf.stringValue = "1312312313你 #"
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(autocomplete.isActive == true)
+        #expect(autocomplete.candidates.count == 1)
+        #expect(autocomplete.candidates.first?.id == "tag_empty_guide")
+
+        // 6. 模拟有可用标签后输入 "#"
+        coordinator.parent.availableTags = ["工作", "生活"]
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(autocomplete.isActive == true)
+        #expect(autocomplete.candidates.count == 2)
+        #expect(autocomplete.candidates.map(\.title) == ["#工作", "#生活"])
+
+        // 7. 模拟全角 "＃" 识别
+        tf.stringValue = "1312312313你 ＃"
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(autocomplete.isActive == true)
+        #expect(autocomplete.candidates.count == 2)
+
+        // 8. 模拟在 "#" 后继续输入具体文字（如 "#项目"），转为创建新标签候选
+        tf.stringValue = "1312312313你 #项目"
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: tf))
+        #expect(autocomplete.isActive == true)
+        #expect(autocomplete.candidates.first?.title == "#项目")
+        #expect(autocomplete.candidates.first?.isCreation == true)
     }
 }

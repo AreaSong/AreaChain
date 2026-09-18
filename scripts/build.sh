@@ -78,7 +78,7 @@ verify_candidate() {
 
 [[ "$command_name" != "verify" ]] || { verify_candidate; exit 0; }
 build_arguments=(-quiet -project AreaChain.xcodeproj -scheme AreaChain -configuration "$configuration"
-                 -destination 'platform=macOS' -derivedDataPath "$derived_data" -jobs 1)
+                 -destination 'platform=macOS' -derivedDataPath "$derived_data")
 if [[ "$allow_provisioning" == "YES" ]]; then
     [[ "$signing_mode" == "development" ]] || fail "本机临时签名模式不需要联网申请签名资源。"
     printf '%s\n' "已显式允许 Xcode 创建/更新应用标识、描述文件和证书，并在必要时注册设备。"

@@ -23,7 +23,7 @@ struct LiveComposerPreviewHeader: View {
         var list = parsed.tagNames
         if let candidate = activeCandidate, candidate.kind == .tag {
             let candidateTag = candidate.title.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
-            if !candidateTag.isEmpty && !list.contains(where: { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(candidateTag) }) {
+            if !candidateTag.isEmpty && candidateTag != "..." && !list.contains(where: { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(candidateTag) }) {
                 list.append(candidateTag)
             }
         }

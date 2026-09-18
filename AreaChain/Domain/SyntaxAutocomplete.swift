@@ -64,10 +64,18 @@ enum SyntaxAutocompleteEngine {
         guard cursor > 0 else { return nil }
         guard !TagSyntax.protectedRanges(in: text).contains(where: { NSLocationInRange(cursor - 1, $0) }) else { return nil }
         let prefix = nsString.substring(to: cursor)
-        let pattern = ##"(?<![^\s(\[（【])([#!@])("(?:\\.|[^"\\\r\n])*"?|[\p{L}\p{M}\p{N}_:：.\-]*)$"##
+        let pattern = ##"(?<![^\s(\[（【])([#!@＃！＠])("(?:\\.|[^"\\\r\n])*"?|[\p{L}\p{M}\p{N}_:：.\-]*)$"##
         guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: prefix, range: NSRange(location: 0, length: cursor)),
-              let kind = SyntaxTriggerKind(rawValue: nsString.substring(with: match.range(at: 1))) else { return nil }
+              let match = regex.firstMatch(in: prefix, range: NSRange(location: 0, length: cursor)) else { return nil }
+        let rawSymbol = nsString.substring(with: match.range(at: 1))
+        let symbol: String
+        switch rawSymbol {
+        case "#", "＃": symbol = "#"
+        case "!", "！": symbol = "!"
+        case "@", "＠": symbol = "@"
+        default: symbol = rawSymbol
+        }
+        guard let kind = SyntaxTriggerKind(rawValue: symbol) else { return nil }
         let rawQuery = nsString.substring(with: match.range(at: 2))
         let query = rawQuery.hasPrefix("\"")
             ? String(rawQuery.dropFirst()).trimmingCharacters(in: CharacterSet(charactersIn: "\""))
@@ -124,6 +132,17 @@ enum SyntaxAutocompleteEngine {
                     insertText: TagSyntax.spelling(for: trimmed) + " ",
                     kind: .tag,
                     isCreation: !context.isSearch
+                )
+            )
+        } else if trimmed.isEmpty && tags.isEmpty && !context.isSearch {
+            result.append(
+                SyntaxCandidate(
+                    id: "tag_empty_guide",
+                    title: "#...",
+                    subtitle: "syntax.tag.type.to.create",
+                    insertText: "#",
+                    kind: .tag,
+                    isCreation: true
                 )
             )
         }

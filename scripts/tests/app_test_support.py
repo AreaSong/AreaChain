@@ -106,6 +106,9 @@ class AppTestCase(unittest.TestCase):
         elif arguments[0] == str(self.paths.project / "scripts/build.sh"):
             self.assertEqual(arguments[1:], ["release"])
             code = self.build_exit
+        elif arguments[0] in ("osascript", "pkill"):
+            self.process_running = False
+            code = 0
         else:
             self.fail(f"意外的外部命令：{arguments}")
         return subprocess.CompletedProcess(arguments, code, b"", b"")

@@ -41,13 +41,13 @@ class InstallTests(AppTestCase):
         self.assertIn("构建失败", errors)
         self.assert_original_untouched()
 
-    def test_running_app_is_not_killed_or_replaced(self):
+    def test_running_app_is_automatically_quit_during_install(self):
         self.process_running = True
         result, _, errors = self.invoke("install", "--yes")
-        self.assertEqual(result, 1)
-        self.assertIn("正常退出", errors)
-        self.assert_original_untouched()
-        self.settings.assert_not_called()
+        self.assertEqual(result, 0, errors)
+        self.assertFalse(self.process_running)
+        self.assertEqual(self.signature(self.paths.app)["codeHash"], "new")
+        self.assertIn(["osascript", "-e", 'tell application "AreaChain" to quit'], self.command_calls)
 
     def test_signature_identity_changes_cannot_be_bypassed_by_yes(self):
         for change in ({"teamIdentifier": "OTHER12345"}, {"mode": "local"},

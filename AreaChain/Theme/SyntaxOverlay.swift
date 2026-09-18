@@ -189,6 +189,14 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
                         guard event.keyCode == 53,
                               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
                               (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
+                        if self.parent.state.isActive && !self.parent.state.candidates.isEmpty {
+                            self.parent.state.dismissSuggestionsOnly()
+                            return true
+                        }
+                        if self.parent.state.showsPreview {
+                            self.parent.state.dismissPreview()
+                            return true
+                        }
                         self.parent.state.dismiss()
                         return true
                     }

@@ -39,6 +39,9 @@ final class SyntaxAutocompleteState {
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             isDismissedByUser = false
         }
+        if showsPreview && presentedAt == 0 {
+            presentedAt = ProcessInfo.processInfo.systemUptime
+        }
         guard let detected = SyntaxAutocompleteEngine.detectTrigger(in: text, cursorLocation: cursorLocation) else {
             dismissSuggestionsOnly()
             return
@@ -82,6 +85,10 @@ final class SyntaxAutocompleteState {
         guard isActive, let trigger, let editor = textView ?? self.editor,
               !editor.hasMarkedText(), trigger.range.location != NSNotFound,
               NSMaxRange(trigger.range) <= (editor.string as NSString).length else { return false }
+        if candidate.id == "tag_empty_guide" {
+            dismissSuggestionsOnly()
+            return true
+        }
         let cursor = trigger.range.location + (candidate.insertText as NSString).length
         editor.breakUndoCoalescing()
         editor.insertText(candidate.insertText, replacementRange: trigger.range)
@@ -105,7 +112,13 @@ final class SyntaxAutocompleteState {
     func dismiss() {
         dismissSuggestionsOnly()
         showsAttributes = false
-        isDismissedByUser = true
+    }
+
+    func reset() {
+        dismiss()
+        isDismissedByUser = false
+        inputText = ""
+        presentedAt = 0
     }
 
     func showAttributes() {

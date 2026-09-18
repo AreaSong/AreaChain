@@ -8399,6 +8399,23 @@
         }
       }
     },
+    "syntax.tag.type.to.create" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Type name to create"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入名称回车创建"
+          }
+        }
+      }
+    },
     "syntax.tag.remove" : {
       "extractionState" : "manual",
       "localizations" : {
