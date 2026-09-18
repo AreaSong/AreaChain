@@ -144,14 +144,8 @@ struct TaskRow: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .center, spacing: 5) {
-                ModernTaskTitle(text: state.title, isDone: state.isDone)
-                    .lineLimit(2)
-                QuadrantDots(
-                    isImportant: state.classify?.isImportant == true || state.isImportant,
-                    isUrgent: state.classify?.isUrgent == true || state.isUrgent
-                )
-            }
+            ModernTaskTitle(text: state.title, isDone: state.isDone)
+                .lineLimit(2)
 
             if let noteSnippet = formattedNoteSnippet {
                 Text(noteSnippet)
@@ -180,6 +174,8 @@ struct TaskRow: View {
     @ViewBuilder
     private var metadataCluster: some View {
         HStack(spacing: 5) {
+            quadrantBadge
+
             if state.isResident, let streak = state.streak, streak >= 1 {
                 streakBadge(streak)
             }
@@ -203,6 +199,14 @@ struct TaskRow: View {
         .fixedSize(horizontal: true, vertical: false)
         .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+    }
+
+    private var quadrantBadge: some View {
+        let isImportant = state.classify?.isImportant == true || state.isImportant
+        let isUrgent = state.classify?.isUrgent == true || state.isUrgent
+        let slot = QuadrantSlot.of(important: isImportant, urgent: isUrgent)
+        let isHighlighted = hovering || state.isSelected
+        return QuadrantBadge(slot: slot, isHighlighted: isHighlighted)
     }
 
     private var formattedNoteSnippet: String? {

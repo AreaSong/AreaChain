@@ -34,9 +34,10 @@ final class SyntaxAutocompleteState {
     }
 
     func update(text: String, cursorLocation: Int, availableTags: [String] = []) {
+        let textChanged = text != inputText
         inputText = text
         self.availableTags = availableTags
-        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || textChanged {
             isDismissedByUser = false
         }
         if showsPreview && presentedAt == 0 {
@@ -180,12 +181,12 @@ struct SyntaxAutocompletePopup: View {
             }
             .frame(width: width)
             .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(DaybookTheme.paper)
                     .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
             )
             .transition((reduceMotion || motionDisabled) ? .identity : .opacity.combined(with: .scale(
@@ -317,8 +318,8 @@ struct SyntaxAutocompletePopup: View {
                     .foregroundStyle(DaybookTheme.muted)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3.5)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
         .background(DaybookTheme.ink.opacity(0.02))
     }
 }

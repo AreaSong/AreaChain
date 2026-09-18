@@ -277,4 +277,17 @@ struct DaybookTextFieldTests {
         #expect(autocomplete.candidates.first?.title == "#项目")
         #expect(autocomplete.candidates.first?.isCreation == true)
     }
+
+    @Test func livePreviewSnapsToAnchorWidthAndCleansSyntaxPrefix() {
+        // 测试几何定位 snapToAnchor 宽度严格对齐输入框
+        let container = CGSize(width: 400, height: 500)
+        let anchor = CGRect(x: 20, y: 50, width: 340, height: 36)
+        let preferred = CGSize(width: 316, height: 32)
+        let placement = SyntaxOverlayPlacement.resolve(
+            anchor: anchor, container: container, preferred: preferred, prefersAbove: false, matchAnchorWidth: true
+        )
+        #expect(placement.frame.width == 340.0)
+        #expect(placement.frame.minX == 20.0)
+        #expect(placement.frame.minY == 90.0)
+    }
 }

@@ -15,8 +15,15 @@ struct LiveComposerPreviewHeader: View {
 
     private var displayTitle: String {
         let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !title.isEmpty { return title }
-        return text.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !title.isEmpty, !isSyntaxPrefixOnly(title) { return title }
+        let raw = text.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !raw.isEmpty, !isSyntaxPrefixOnly(raw) { return raw }
+        return ""
+    }
+
+    private func isSyntaxPrefixOnly(_ str: String) -> Bool {
+        let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed == "#" || trimmed == "＃" || trimmed == "@" || trimmed == "＠" || trimmed == "!" || trimmed == "！"
     }
 
     private var previewTags: [String] {
@@ -63,7 +70,7 @@ struct LiveComposerPreviewHeader: View {
                 .frame(width: 13, height: 13)
                 .foregroundStyle(DaybookTheme.muted)
 
-            Text(displayTitle.isEmpty ? L10n.string("capture.preview.empty", locale: locale) : displayTitle)
+            Text(displayTitle.isEmpty ? L10n.string("capture.preview.untitled", locale: locale) : displayTitle)
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(displayTitle.isEmpty ? DaybookTheme.muted.opacity(0.6) : DaybookTheme.ink)
                 .lineLimit(1)
@@ -120,7 +127,7 @@ struct LiveComposerPreviewHeader: View {
             .help("common.close")
             .accessibilityLabel("common.close")
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(height: 32)
         .background(DaybookTheme.ink.opacity(0.03))

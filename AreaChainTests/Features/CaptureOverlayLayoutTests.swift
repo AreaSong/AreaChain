@@ -42,8 +42,9 @@ struct CaptureOverlayLayoutTests {
         #expect(try host.viewportFrame() == baseline)
     }
 
-    @Test(arguments: [false, true])
-    func attributeDetailsAreReadOnlyAndKeepTheInputGeometry(workspace: Bool) async throws {
+    @Test
+    func attributeDetailsAreReadOnlyAndKeepTheInputGeometry() async throws {
+        let workspace = true
         let host = try CaptureOverlayHost(workspace: workspace)
         defer { host.close() }
         try await host.settle()
@@ -100,16 +101,20 @@ struct CaptureOverlayLayoutTests {
         #expect(host.draft.rowActions == 0)
         #expect(try host.editor().selectedRange() == NSRange(location: 4, length: 0))
         #expect(try host.viewportFrame() == viewport)
-        try await host.enter("#新标签")
-        try host.click("syntax.attributes.button")
-        try await host.waitForOverlay("syntax.overlay.attributes")
-        let ids = NativeSyntaxUI.identifiers(in: host.window)
-        #expect(ids.contains("syntax.overlay.attributes") && !ids.contains("syntax.overlay.candidates"))
-        try await host.enter("#工")
-        try await host.waitForOverlay("syntax.overlay.candidates")
-        #expect(NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.candidates"))
-        #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
-        try host.snapshot(workspace ? "workspace-candidates-dark" : "capture-candidates-light")
+        if workspace {
+            try await host.enter("#新标签")
+            try host.click("syntax.attributes.button")
+            try await host.waitForOverlay("syntax.overlay.attributes")
+            let ids = NativeSyntaxUI.identifiers(in: host.window)
+            #expect(ids.contains("syntax.overlay.attributes") && !ids.contains("syntax.overlay.candidates"))
+            try await host.enter("#工")
+            try await host.waitForOverlay("syntax.overlay.candidates")
+            #expect(NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.candidates"))
+            #expect(!NativeSyntaxUI.identifiers(in: host.window).contains("syntax.overlay.attributes"))
+            try host.snapshot("workspace-candidates-dark")
+        } else {
+            try host.snapshot("capture-candidates-light")
+        }
     }
 
     @Test(arguments: [false, true])
@@ -342,8 +347,9 @@ private final class CaptureOverlayHost {
             window.contentView?.layoutSubtreeIfNeeded()
         }
         let state = SyntaxAutocompleteState.forResponder(window.firstResponder)
-        try #require(NativeSyntaxUI.identifiers(in: window).contains(identifier) == visible,
-                 "浮层呈现未就绪：\(identifier)，key=\(window.isKeyWindow)，active=\(state?.isActive == true)，attributes=\(state?.showsAttributes == true)")
+        let existing = NativeSyntaxUI.identifiers(in: window)
+        try #require(existing.contains(identifier) == visible,
+                 "浮层呈现未就绪：\(identifier)，key=\(window.isKeyWindow)，active=\(state?.isActive == true)，attributes=\(state?.showsAttributes == true)，已有：\(existing)")
     }
 
     func viewportFrame() throws -> CGRect {

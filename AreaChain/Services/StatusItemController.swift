@@ -13,6 +13,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private var popover: NSPopover?
     private var container: ModelContainer?
     private var didAttach = false
+    private var globalEventMonitor: Any?
+    private var resignActiveObserver: NSObjectProtocol?
 
     func attach(container: ModelContainer) {
         self.container = container
@@ -85,6 +87,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     func close() {
         popover?.performClose(nil)
+        stopDismissMonitors()
     }
 
     @objc func toggle() {
@@ -103,11 +106,55 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.contentSize = DaybookTheme.popoverSize
         popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        startDismissMonitors()
         NotificationCenter.default.post(name: .focusCapture, object: nil)
     }
 
     func popoverDidClose(_ notification: Notification) {
+        stopDismissMonitors()
         refreshCount()
+    }
+
+    private func startDismissMonitors() {
+        stopDismissMonitors()
+
+        // 1. 全局监听屏幕任意外部区域的点击（桌面、其他 App 窗口等），点击即自动收起
+        globalEventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            guard let self = self, let popover = self.popover, popover.isShown else { return }
+            // 若点击落在状态栏按钮本身，交由按钮自己的 action 处理，避免与 toggle 循环冲突
+            if let button = self.statusItem?.button, let window = button.window {
+                let mouseLocation = NSEvent.mouseLocation
+                let buttonScreenRect = window.convertToScreen(button.bounds)
+                if buttonScreenRect.contains(mouseLocation) {
+                    return
+                }
+            }
+            Task { @MainActor in
+                self.close()
+            }
+        }
+
+        // 2. 监听应用失去激活状态（如切换应用），自动收起
+        resignActiveObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didResignActiveNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.close()
+            }
+        }
+    }
+
+    private func stopDismissMonitors() {
+        if let monitor = globalEventMonitor {
+            NSEvent.removeMonitor(monitor)
+            globalEventMonitor = nil
+        }
+        if let observer = resignActiveObserver {
+            NotificationCenter.default.removeObserver(observer)
+            resignActiveObserver = nil
+        }
     }
 
     private func refreshCount() {

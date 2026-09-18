@@ -94,6 +94,24 @@ enum QuadrantSlot: Int, CaseIterable, Identifiable {
         }
     }
 
+    var subtitleKeyName: String {
+        switch self {
+        case .importantUrgent: "quadrant.iu.hint"
+        case .important: "quadrant.i.hint"
+        case .urgent: "quadrant.u.hint"
+        case .rest: "quadrant.rest.hint"
+        }
+    }
+
+    var iconName: String {
+        switch self {
+        case .importantUrgent: "exclamationmark.3"
+        case .important: "calendar.badge.clock"
+        case .urgent: "arrow.triangle.branch"
+        case .rest: "archivebox"
+        }
+    }
+
     static func of(important: Bool, urgent: Bool) -> QuadrantSlot {
         switch (important, urgent) {
         case (true, true): return .importantUrgent

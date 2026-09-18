@@ -1051,6 +1051,23 @@
         }
       }
     },
+    "capture.preview.untitled" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Untitled Todo"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未命名待办"
+          }
+        }
+      }
+    },
     "capture.placeholder.today" : {
       "extractionState" : "manual",
       "localizations" : {

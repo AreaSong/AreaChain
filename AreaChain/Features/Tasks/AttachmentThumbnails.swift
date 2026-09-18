@@ -1,31 +1,5 @@
 import SwiftUI
 
-struct QuadrantDots: View {
-    var isImportant: Bool
-    var isUrgent: Bool
-
-    var body: some View {
-        if isImportant || isUrgent {
-            HStack(spacing: 3) {
-                if isImportant {
-                    Circle()
-                        .fill(DaybookTheme.stamp)
-                        .frame(width: 6, height: 6)
-                        .accessibilityLabel("classify.important")
-                        .help("classify.important")
-                }
-                if isUrgent {
-                    Circle()
-                        .strokeBorder(DaybookTheme.stamp, lineWidth: 1.4)
-                        .frame(width: 6, height: 6)
-                        .accessibilityLabel("classify.urgent")
-                        .help("classify.urgent")
-                }
-            }
-        }
-    }
-}
-
 struct AttachmentThumbnails: View {
     var items: [AttachmentRef]
     @State private var preview: AttachmentRef?

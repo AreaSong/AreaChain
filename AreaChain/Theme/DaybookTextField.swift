@@ -276,6 +276,10 @@ struct DaybookTextField: NSViewRepresentable {
             guard !textView.hasMarkedText() else { return false }
             if commandSelector == #selector(NSResponder.cancelOperation(_:)),
                let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
+                if autocomplete.showsAttributes {
+                    autocomplete.dismiss()
+                    return true
+                }
                 if autocomplete.isActive && !autocomplete.candidates.isEmpty {
                     autocomplete.dismissSuggestionsOnly()
                     return true

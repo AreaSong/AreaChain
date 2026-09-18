@@ -5,19 +5,29 @@ struct SyntaxOverlayPlacement: Equatable {
     var frame: CGRect
     var growsUpward: Bool
 
-    static func resolve(anchor: CGRect, container: CGSize, preferred: CGSize, prefersAbove: Bool) -> Self {
+    static func resolve(
+        anchor: CGRect,
+        container: CGSize,
+        preferred: CGSize,
+        prefersAbove: Bool,
+        matchAnchorWidth: Bool = false
+    ) -> Self {
         guard CGRect(origin: .zero, size: container).intersects(anchor) else {
             return Self(frame: .zero, growsUpward: false)
         }
         let margin: CGFloat = 8
-        let gap: CGFloat = 5
-        let width = max(0, min(preferred.width, container.width - margin * 2))
+        let gap: CGFloat = 4
+        let width = matchAnchorWidth
+            ? min(anchor.width, container.width - margin * 2)
+            : max(0, min(preferred.width, container.width - margin * 2))
         let below = max(0, container.height - margin - anchor.maxY - gap)
         let above = max(0, anchor.minY - gap - margin)
         let upward = prefersAbove ? (above >= preferred.height || above > below)
             : (below < preferred.height && above > below)
         let height = min(preferred.height, upward ? above : below)
-        let x = min(max(margin, anchor.minX), max(margin, container.width - margin - width))
+        let x = matchAnchorWidth
+            ? anchor.minX
+            : min(max(margin, anchor.minX), max(margin, container.width - margin - width))
         let y = upward ? anchor.minY - gap - height : anchor.maxY + gap
         return Self(frame: CGRect(x: x, y: y, width: width, height: height), growsUpward: upward)
     }
@@ -105,20 +115,31 @@ private struct SyntaxOverlayLayer: View {
 
     var body: some View {
         let sourceAnchor = proxy[source.bounds]
-        let anchor = source.attributes == nil ? sourceAnchor : sourceAnchor.insetBy(dx: 0, dy: -8)
+        let isAttributes = source.attributes != nil
+        let anchor = isAttributes ? sourceAnchor.insetBy(dx: 0, dy: -8) : sourceAnchor
+        let matchAnchorWidth = !isAttributes && source.state.context == .capture
         let placement = SyntaxOverlayPlacement.resolve(
-            anchor: anchor, container: proxy.size, preferred: source.preferredSize, prefersAbove: source.prefersAbove
+            anchor: anchor,
+            container: proxy.size,
+            preferred: source.preferredSize,
+            prefersAbove: source.prefersAbove,
+            matchAnchorWidth: matchAnchorWidth
         )
         ZStack(alignment: .topLeading) {
             SyntaxOverlayEventMonitor(state: source.state, panelFrame: placement.frame, sourceFrame: sourceAnchor)
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .allowsHitTesting(false)
             if placement.frame.height > 0 {
+                let overlayID: String = {
+                    if source.attributes != nil { return "syntax.overlay.attributes" }
+                    if source.state.isActive && !source.state.candidates.isEmpty { return "syntax.overlay.candidates" }
+                    return "syntax.overlay.preview"
+                }()
                 panel(placement)
                     .environment(\.locale, source.appearance.locale)
                     .environment(\.colorScheme, source.appearance.colorScheme)
                     .frame(width: placement.frame.width, height: placement.frame.height, alignment: .top)
-                    .background(SyntaxViewAnchor(source.attributes == nil ? "syntax.overlay.candidates" : "syntax.overlay.attributes"))
+                    .background(SyntaxViewAnchor(overlayID))
                     .offset(x: placement.frame.minX, y: placement.frame.minY)
             }
         }
@@ -134,11 +155,14 @@ private struct SyntaxOverlayLayer: View {
         if let attributes = source.attributes {
             CaptureAttributesPopup(attributes: attributes, maxHeight: placement.frame.height, state: source.state)
         } else {
+            let overlayID = (source.state.isActive && !source.state.candidates.isEmpty)
+                ? "syntax.overlay.candidates"
+                : "syntax.overlay.preview"
             SyntaxAutocompletePopup(
                 state: source.state, growsUpward: placement.growsUpward,
                 width: placement.frame.width, maxHeight: placement.frame.height, motionDisabled: source.appearance.reduceMotion
             ) { source.state.commit($0) }
-            .accessibilityIdentifier("syntax.overlay.candidates")
+            .accessibilityIdentifier(overlayID)
         }
     }
 }
@@ -189,6 +213,10 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
                         guard event.keyCode == 53,
                               event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
                               (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
+                        if self.parent.state.showsAttributes {
+                            self.parent.state.dismiss()
+                            return true
+                        }
                         if self.parent.state.isActive && !self.parent.state.candidates.isEmpty {
                             self.parent.state.dismissSuggestionsOnly()
                             return true

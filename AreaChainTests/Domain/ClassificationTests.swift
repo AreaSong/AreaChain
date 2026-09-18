@@ -21,6 +21,18 @@ struct ClassificationTests {
         #expect(Classification.priorityRank(important: false, urgent: false) == 3)
     }
 
+    @Test func quadrantSlotVisualMetadata() {
+        #expect(QuadrantSlot.importantUrgent.iconName == "exclamationmark.3")
+        #expect(QuadrantSlot.important.iconName == "calendar.badge.clock")
+        #expect(QuadrantSlot.urgent.iconName == "arrow.triangle.branch")
+        #expect(QuadrantSlot.rest.iconName == "archivebox")
+
+        #expect(QuadrantSlot.importantUrgent.subtitleKeyName == "quadrant.iu.hint")
+        #expect(QuadrantSlot.important.subtitleKeyName == "quadrant.i.hint")
+        #expect(QuadrantSlot.urgent.subtitleKeyName == "quadrant.u.hint")
+        #expect(QuadrantSlot.rest.subtitleKeyName == "quadrant.rest.hint")
+    }
+
     @Test func boardOrderPutsQuadrantThenTimeThenCreated() {
         let early = Date(timeIntervalSince1970: 1)
         let late = Date(timeIntervalSince1970: 9)
