@@ -7,11 +7,12 @@
 
 import SwiftUI
 
-/// 快捷语法自展开卡片（聚焦时为轻量小条，点击后原地平铺展开为大卡片）
+/// 快捷输入语法伴随气泡卡片（平时纯净单项介绍，悬停原地切换真实范例，底部常驻全能综合复杂范例）
 struct SyntaxExpandableCard: View {
     @Binding var isExpanded: Bool
     var context: SyntaxInputContext = .capture
     var onSelectToken: (String) -> Void
+    var onSelectExample: ((String) -> Void)? = nil
 
     @State private var hoveredToken: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -19,197 +20,291 @@ struct SyntaxExpandableCard: View {
     var body: some View {
         VStack(spacing: 0) {
             headerBar
-            
-            if isExpanded {
-                VStack(spacing: 0) {
-                    Divider().background(DaybookTheme.rule.opacity(0.45))
-                        .padding(.horizontal, 12)
-                    
-                    syntaxList
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                    
-                    Divider().background(DaybookTheme.rule.opacity(0.45))
-                        .padding(.horizontal, 12)
-                        
-                    footer
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                }
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
+
+            Divider()
+                .background(DaybookTheme.rule.opacity(0.35))
+                .padding(.horizontal, 12)
+
+            syntaxItemsList
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+
+            Divider()
+                .background(DaybookTheme.rule.opacity(0.35))
+                .padding(.horizontal, 12)
+
+            complexExampleBar
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6.5)
         }
-        .frame(width: 324)
+        .frame(width: DaybookTheme.popoverWidth - 24)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(isExpanded ? 0.12 : 0.08), radius: isExpanded ? 12 : 4, x: 0, y: isExpanded ? 4 : 2)
+                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 5)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.68), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
         )
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-        .animation(DaybookMotion.interactive(reduceMotion), value: isExpanded)
+        .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .onExitCommand {
-            if isExpanded {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                isExpanded = false
+            }
+        }
+    }
+
+    // MARK: - 顶栏
+
+    private var headerBar: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(DaybookTheme.stamp)
+
+            Text(context == .search ? "syntax.search.title" : "syntax.guide.title")
+                .font(.system(size: 12.5, weight: .bold))
+                .foregroundStyle(DaybookTheme.ink)
+
+            Spacer(minLength: 0)
+
+            Button {
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     isExpanded = false
                 }
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .frame(width: 18, height: 18)
+                    .background(
+                        Circle()
+                            .fill(DaybookTheme.ink.opacity(0.06))
+                    )
+                    .contentShape(Circle())
             }
+            .buttonStyle(.plain)
+            .accessibilityLabel("dialog.cancel")
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 7)
     }
 
-    // MARK: - 统一顶栏（聚焦或展开始终保持在顶部）
+    // MARK: - 单项语法列表（悬停原地平滑替换为单项范例）
 
-    private var headerBar: some View {
-        Button {
-            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                isExpanded.toggle()
-            }
-        } label: {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                
-                Text(context == .search ? "syntax.search.title" : "快捷语法指南")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundStyle(DaybookTheme.ink)
-                    
-                if !isExpanded {
-                    Spacer(minLength: 4)
-                    HStack(spacing: 4) {
-                        miniBadge("#", color: Color(nsColor: .systemIndigo))
-                        miniBadge("!", color: DaybookTheme.destructive)
-                        if context.supportsTaskAttributes { miniBadge("@", color: DaybookTheme.stamp) }
-                    }
-                }
+    private var syntaxItemsList: some View {
+        VStack(alignment: .leading, spacing: 3.5) {
+            // 1. # 标签分类
+            syntaxRow(
+                token: "#",
+                title: "标签分类",
+                exampleSnippet: "写周报 #工作",
+                exampleText: Text("写周报 ")
+                    + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                    + Text("  或  ")
+                    + Text("#生活").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                    + Text(" 买牛奶"),
+                color: Color(nsColor: .systemIndigo)
+            )
 
-                Spacer(minLength: 0)
+            // 2. ! 四象限优先级
+            syntaxRow(
+                token: "!",
+                title: "四象限优先级",
+                exampleSnippet: "修线上Bug !p1",
+                exampleText: Text("修线上Bug ")
+                    + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
+                    + Text("  或  ")
+                    + Text("!p2").foregroundStyle(Color.orange).bold()
+                    + Text(" 整理书架"),
+                color: DaybookTheme.destructive
+            )
 
-                HStack(spacing: 4) {
-                    Text(LocalizedStringKey(isExpanded ? "收起" : "展开"))
-                        .font(.system(size: 11, weight: .medium))
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 9.5, weight: .bold))
-                }
-                .foregroundStyle(DaybookTheme.stamp)
-                .padding(.horizontal, isExpanded ? 6 : 0)
-                .padding(.vertical, isExpanded ? 3 : 0)
-                .background(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(isExpanded ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+            // 3. @ 时刻提醒
+            if context.supportsTaskAttributes {
+                syntaxRow(
+                    token: "@",
+                    title: "时刻提醒",
+                    exampleSnippet: "开晨会 @10:00",
+                    exampleText: Text("开晨会 ")
+                        + Text("@10:00").foregroundStyle(DaybookTheme.stamp).bold()
+                        + Text("  或  明天下午 散步"),
+                    color: DaybookTheme.stamp
                 )
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
 
-    private func miniBadge(_ text: String, color: Color) -> some View {
-        Text(text)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
-            .foregroundStyle(color)
-            .lineLimit(1)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(color.opacity(0.18))
-            )
-            .fixedSize()
-    }
-
-    private var syntaxList: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            syntaxRow(token: "#", title: "标签分类", desc: context == .search
-                ? "syntax.search.tag.help" : "syntax.capture.tag.help", color: Color(nsColor: .systemIndigo))
-            syntaxRow(token: "!", title: "四象限优先级", desc: context == .search
-                ? "syntax.search.priority.help" : "!p1 ~ !p4 快速设定重要与紧急", color: DaybookTheme.destructive)
-            if context.supportsTaskAttributes {
-                syntaxRow(token: "@", title: "时刻提醒", desc: context.isSearch
-                    ? "syntax.search.time.help" : "@15:30 或预设时刻定时通知", color: DaybookTheme.stamp)
-            }
+            // 4. ⌘↩ 直接存入手记
             if context == .capture {
-                syntaxRow(token: "⌘↩", title: "直接存入手记", desc: "跳过待办直接存入今日随笔", color: DaybookTheme.stamp)
-                syntaxRow(token: "⇧↩", title: "换行输入备注", desc: "Shift + 回车换行，输入详情说明", color: DaybookTheme.muted)
+                syntaxRow(
+                    token: "⌘↩",
+                    title: "直接存入手记",
+                    exampleSnippet: "随时记录灵感闪念",
+                    exampleText: Text("随时记录灵感 ")
+                        + Text("⌘↵").foregroundStyle(DaybookTheme.stamp).bold()
+                        + Text(" 直接存入今日手记"),
+                    color: DaybookTheme.stamp
+                )
+
+                // 5. ⇧↩ 换行输入备注
+                syntaxRow(
+                    token: "⇧↩",
+                    title: "换行输入备注",
+                    exampleSnippet: "首行待办标题\n换行输入详细备注",
+                    exampleText: Text("首行待办标题 ")
+                        + Text("⇧↵").foregroundStyle(DaybookTheme.ink).bold()
+                        + Text(" 换行输入详细备注"),
+                    color: DaybookTheme.muted
+                )
             }
         }
     }
 
-    private func syntaxRow(token: String, title: String, desc: String, color: Color) -> some View {
+    private func syntaxRow(
+        token: String,
+        title: String,
+        exampleSnippet: String,
+        exampleText: Text,
+        color: Color
+    ) -> some View {
         let isHovered = hoveredToken == token
 
         return Button {
-            onSelectToken(token)
+            if let onSelectExample {
+                onSelectExample(exampleSnippet)
+            } else {
+                onSelectToken(token)
+            }
         } label: {
-            HStack(alignment: .center, spacing: 9) {
-                Text(token)
-                    .font(.system(size: 12.5, weight: .bold, design: .monospaced))
-                    .foregroundStyle(color)
-                    .padding(.horizontal, 5.5)
-                    .padding(.vertical, 2.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
-                            .fill(color.opacity(0.16))
-                    )
-                    .frame(width: 38, alignment: .center)
-
-                VStack(alignment: .leading, spacing: 1.5) {
-                    Text(LocalizedStringKey(title))
-                        .font(.system(size: 12.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.ink)
-                        .lineLimit(1)
-                    Text(LocalizedStringKey(desc))
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(DaybookTheme.muted)
-                        .lineLimit(1)
-                }
-
-                Spacer(minLength: 4)
-
+            ZStack(alignment: .leading) {
                 if isHovered {
-                    HStack(spacing: 2) {
-                        Text("点击填入")
-                            .font(.system(size: 10, weight: .medium))
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 9, weight: .bold))
+                    // 悬停聚焦态：整条直接替换为完整真实范例 + 填入试用
+                    HStack(alignment: .center, spacing: 4) {
+                        exampleText
+                            .font(.system(size: 10.5, design: .monospaced))
+                            .foregroundStyle(DaybookTheme.ink)
+                            .lineLimit(1)
+
+                        Spacer(minLength: 4)
+
+                        HStack(spacing: 2) {
+                            Text("填入试用")
+                                .font(.system(size: 8.5, weight: .semibold))
+                            Image(systemName: "arrow.right.circle.fill")
+                                .font(.system(size: 8.5))
+                        }
+                        .foregroundStyle(DaybookTheme.stamp)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(DaybookTheme.stamp.opacity(0.12))
+                        )
                     }
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .transition(.opacity.combined(with: .move(edge: .trailing)))
+                    .transition(.opacity)
+                } else {
+                    // 默认未聚焦态：极致干净素雅，仅展示符号徽标与条例名称
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(token)
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .foregroundStyle(color)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(
+                                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                    .fill(color.opacity(0.14))
+                            )
+                            .frame(width: 32, alignment: .center)
+
+                        Text(LocalizedStringKey(title))
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(DaybookTheme.ink)
+
+                        Spacer(minLength: 0)
+                    }
+                    .transition(.opacity)
                 }
             }
+            .frame(height: 22)
             .padding(.horizontal, 7)
-            .padding(.vertical, 5)
+            .padding(.vertical, 3.5)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.08) : Color.clear)
+                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.06) : Color.clear)
             )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .onHover { hovered in
+        .onHover { hovering in
             withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                hoveredToken = hovered ? token : nil
+                hoveredToken = hovering ? token : nil
             }
         }
     }
 
-    private var footer: some View {
-        HStack(spacing: 5) {
-            Image(systemName: "keyboard")
-                .font(.system(size: 10))
-                .foregroundStyle(DaybookTheme.muted)
-            Text(context == .search ? "syntax.search.scope.help" : "syntax.capture.scope.help")
-                .font(.system(size: 10))
-                .foregroundStyle(DaybookTheme.muted)
-            Spacer(minLength: 0)
-            Text("Esc 收起")
-                .font(.system(size: 9.5, design: .monospaced))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.8))
+    // MARK: - 底部总复杂范例（常驻展示，点击一键注入输入框试用）
+
+    private var complexExampleBar: some View {
+        Button {
+            onSelectExample?("重构核心模块 #工作 !p1 @15:30")
+        } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(alignment: .center, spacing: 6) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color.orange.opacity(0.9))
+
+                    (Text("重构核心模块 ")
+                        + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                        + Text(" ")
+                        + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
+                        + Text(" ")
+                        + Text("@15:30").foregroundStyle(DaybookTheme.stamp).bold())
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundStyle(DaybookTheme.ink)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 4)
+
+                    HStack(spacing: 2) {
+                        Text("填入试用")
+                            .font(.system(size: 8.5, weight: .semibold))
+                        Image(systemName: "arrow.right.circle.fill")
+                            .font(.system(size: 8.5))
+                    }
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .padding(.horizontal, 5.5)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule()
+                            .fill(DaybookTheme.stamp.opacity(0.12))
+                    )
+                }
+
+                HStack(spacing: 4) {
+                    Text("综合范例：全属性完整待办 · 顺序自由，点击一键试用")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(DaybookTheme.muted)
+
+                    Spacer(minLength: 0)
+
+                    Text("Esc")
+                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.8))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(DaybookTheme.ink.opacity(0.035))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: 0.6)
+            )
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }

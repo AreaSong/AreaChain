@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -87,11 +88,23 @@ struct TasksPage: View {
                             upcomingSection
                         }
                         dayBoardView
+
+                        blankClickArea
                     }
                     .padding(.vertical, 2)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                    .containerRelativeFrame(.vertical, alignment: .topLeading) { length, _ in
+                        max(length - 4, 120)
+                    }
+                    .background(
+                        BlankClickArea(onClick: clearSelection)
+                    )
                 }
                 .daybookScroll()
                 .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
+                .background(
+                    BlankClickArea(onClick: clearSelection)
+                )
                 .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
                     if let newValue {
                         withAnimation(DaybookMotion.interactive) {
@@ -264,6 +277,45 @@ struct TasksPage: View {
         let hasDoneTodos = todos.contains { $0.dayKey == todayKey && $0.isDone }
         let hasDoneRoutines = !DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).isEmpty
         return !hasDoneTodos && !hasDoneRoutines
+    }
+
+    private var blankClickArea: some View {
+        BlankClickArea(onClick: clearSelection)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minHeight: 48)
+    }
+
+    func clearSelection() {
+        taskSelection.focus(nil)
+        focusedTaskID?.wrappedValue = nil
+        NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+}
+
+/// 任务列表下方空白区域的原生点击接收器：点击立即取消选中，0 延迟且绝不被滚动视图手势吞噬
+struct BlankClickArea: NSViewRepresentable {
+    var onClick: () -> Void
+
+    func makeNSView(context: Context) -> BlankClickNSView {
+        let view = BlankClickNSView()
+        view.onClick = onClick
+        return view
+    }
+
+    func updateNSView(_ view: BlankClickNSView, context: Context) {
+        view.onClick = onClick
+    }
+}
+
+final class BlankClickNSView: NSView {
+    var onClick: (() -> Void)?
+
+    override var acceptsFirstResponder: Bool { false }
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+
+    override func mouseDown(with event: NSEvent) {
+        onClick?()
+        super.mouseDown(with: event)
     }
 }
 

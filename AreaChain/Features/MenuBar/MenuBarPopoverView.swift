@@ -99,7 +99,7 @@ struct MenuBarPopoverView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .top) {
             VStack(spacing: 10) {
                 integratedHeader
 
@@ -143,34 +143,38 @@ struct MenuBarPopoverView: View {
             .daybookHideInputChrome()
 
             if showingSyntaxHelp {
-                if showingSyntaxHelp {
-                    Color.black.opacity(0.30)
-                        .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
-                                showingSyntaxHelp = false
-                            }
+                // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
+                Color.black.opacity(0.001)
+                    .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            showingSyntaxHelp = false
                         }
-                        .transition(.opacity)
-                        .zIndex(20)
-                }
+                    }
+                    .zIndex(20)
 
                 SyntaxExpandableCard(
                     isExpanded: $showingSyntaxHelp,
                     context: helpContext,
                     onSelectToken: { token in
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
                             showingSyntaxHelp = false
                         }
                         handleSyntaxTokenSelection(token)
+                    },
+                    onSelectExample: helpContext == .search ? nil : { snippet in
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            showingSyntaxHelp = false
+                        }
+                        capture.draft = snippet
+                        captureFocused = true
                     }
                 )
-                .padding(.top, 40)
-                .padding(.trailing, 12)
+                .padding(.top, 92)
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 0.88, anchor: .topTrailing).combined(with: .opacity),
-                    removal: .opacity
+                    insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -6)),
+                    removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
                 ))
                 .zIndex(21)
             }
@@ -349,8 +353,14 @@ struct MenuBarPopoverView: View {
     }
 
     private func showSyntaxHelp() {
+        if tab != .tasks {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                tab = .tasks
+            }
+        }
         helpContext = toolbar.isSearching || toolbar.searchIsFocused ? .search : .capture
         toolbar.autocomplete.dismiss()
+        captureFocused = true
         showingSyntaxHelp = true
     }
 
@@ -460,11 +470,13 @@ struct MenuBarPopoverView: View {
     }
 
     private func addTodo() {
+        if showingSyntaxHelp { showingSyntaxHelp = false }
         guard DayBoardMutations.addCapturedTodo(text: capture.draft, dayKey: todayKey, context: modelContext) else { return }
         capture.draft = ""
     }
 
     private func addDiary() {
+        if showingSyntaxHelp { showingSyntaxHelp = false }
         let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         let context = modelContext

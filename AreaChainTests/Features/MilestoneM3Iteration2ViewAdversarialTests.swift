@@ -461,4 +461,24 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
         nav.clearSelection()
         #expect(nav.selectedTaskIDs.isEmpty)
     }
+
+    @Test func tasksPageClearSelectionOnBlankClick() throws {
+        var focusedID: UUID? = UUID()
+        let binding = Binding<UUID?>(get: { focusedID }, set: { focusedID = $0 })
+        let page = TasksPage(
+            todayKey: "2026-09-09",
+            routines: [],
+            checks: [],
+            todos: [],
+            config: TasksPageConfig(
+                interaction: DayBoardInteraction(focusedTaskID: binding)
+            )
+        )
+        #expect(page.focusedTaskID?.wrappedValue == focusedID)
+
+        // Trigger clearSelection (as executed by clicking blank area)
+        page.clearSelection()
+        #expect(page.focusedTaskID?.wrappedValue == nil)
+        #expect(focusedID == nil)
+    }
 }
