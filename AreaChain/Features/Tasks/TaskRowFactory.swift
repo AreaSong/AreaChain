@@ -87,7 +87,12 @@ enum TaskRowFactory {
     private static func handleTodoAction(_ action: TaskRowAction, context: TodoRowContext) {
         let todo = context.todo
         switch action {
-        case .toggleDone: DayBoardMutations.toggleTodo(todo)
+        case .toggleDone:
+            if let onToggle = context.actions.onToggle {
+                onToggle()
+            } else {
+                DayBoardMutations.toggleTodo(todo)
+            }
         case .select(let modifiers): context.actions.onSelect(modifiers)
         case .editTitle(let title): DayBoardMutations.editTodoWithSyntax(todo, rawInput: title)
         case .endEditing: context.actions.onEndEditing?()

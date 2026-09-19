@@ -13,7 +13,7 @@ struct MenuBarSearchField: View {
             Button { toolbar.focusSearch() } label: {
                 Image(systemName: "magnifyingglass")
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(toolbar.searchIsFocused ? DaybookTheme.ink : DaybookTheme.muted)
             }
             .buttonStyle(.plain)
             .keyboardShortcut("f", modifiers: .command)
@@ -48,10 +48,16 @@ struct MenuBarSearchField: View {
         .padding(.horizontal, 7)
         .frame(minWidth: 110, maxWidth: .infinity)
         .frame(height: 28)
-        .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookTheme.hoverFill))
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.small)
+                .fill(toolbar.searchIsFocused ? DaybookTheme.surface : DaybookTheme.hoverFill)
+        )
         .overlay {
             RoundedRectangle(cornerRadius: DaybookRadius.small)
-                .strokeBorder(toolbar.searchIsFocused ? DaybookTheme.stamp : DaybookTheme.rule.opacity(0.55), lineWidth: 1)
+                .strokeBorder(
+                    toolbar.searchIsFocused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.55),
+                    lineWidth: toolbar.searchIsFocused ? 0.9 : 0.6
+                )
         }
         .syntaxSuggestions(toolbar.autocomplete, prefersAbove: true, enabled: toolbar.searchIsFocused && !toolbar.isFiltering)
         .background(KeyWindowHost { hostWindow = $0 })

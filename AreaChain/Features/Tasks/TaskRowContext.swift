@@ -249,15 +249,18 @@ struct TaskRowSelectionState: Equatable {
 struct TodoRowActions {
     var onSelect: (TaskSelectionModifiers) -> Void
     var onDelete: () -> Void
+    var onToggle: (() -> Void)?
     var onEndEditing: (() -> Void)?
 
     init(
         onSelect: @escaping (TaskSelectionModifiers) -> Void,
         onDelete: @escaping () -> Void,
+        onToggle: (() -> Void)? = nil,
         onEndEditing: (() -> Void)? = nil
     ) {
         self.onSelect = onSelect
         self.onDelete = onDelete
+        self.onToggle = onToggle
         self.onEndEditing = onEndEditing
     }
 }

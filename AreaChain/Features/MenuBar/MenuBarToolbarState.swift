@@ -31,6 +31,14 @@ final class MenuBarToolbarState {
         allowsFilterHover = true
     }
 
+    func toggleFilters() {
+        if isFiltering {
+            closeFilters()
+        } else {
+            showFilters()
+        }
+    }
+
     func focusSearch() {
         closeFilters()
         searchIsFocused = true

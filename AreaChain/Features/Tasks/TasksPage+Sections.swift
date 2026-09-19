@@ -15,39 +15,69 @@ extension TasksPage {
     var yesterdaySection: some View {
         Group {
             if showYesterday, !yesterdayItems.isEmpty {
-                HStack(alignment: .center) {
-                    SectionStamp(title: "stamp.yesterday", count: yesterdayItems.count)
-                    Spacer()
-                    if yesterdayItems.contains(where: { $0.kind == .todo }) {
-                        Button {
-                            withAnimation(DaybookMotion.interactive) {
-                                moveAllYesterdayTodosToToday()
-                            }
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "arrow.right.to.line")
-                                    .font(.system(size: 8.5, weight: .semibold))
-                                Text("stamp.yesterday.moveAll")
-                                    .font(DaybookType.badge)
-                            }
-                            .foregroundStyle(DaybookTheme.stamp)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2.5)
-                            .background(
-                                Capsule()
-                                    .fill(DaybookTheme.stamp.opacity(0.10))
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .help("stamp.yesterday.moveAll.help")
-                        .accessibilityLabel("stamp.yesterday.moveAll")
-                    }
-                }
-                .padding(.horizontal, 2)
+                yesterdaySectionHeader
+                    .padding(.horizontal, 2)
 
                 ForEach(yesterdayItems) { item in
                     leftoverRow(item)
                 }
+            }
+        }
+    }
+
+    var centeredYesterdaySection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            yesterdaySectionHeader
+                .padding(.horizontal, 4)
+
+            VStack(spacing: 2) {
+                ForEach(yesterdayItems) { item in
+                    leftoverRow(item)
+                }
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .fill(DaybookTheme.cardSurface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+        )
+        .padding(.horizontal, 4)
+        .containerRelativeFrame(.vertical, alignment: .center) { length, _ in
+            max(length - 16, 120)
+        }
+    }
+
+    private var yesterdaySectionHeader: some View {
+        HStack(alignment: .center) {
+            SectionStamp(title: "stamp.yesterday", count: yesterdayItems.count)
+            Spacer()
+            if yesterdayItems.contains(where: { $0.kind == .todo }) {
+                Button {
+                    withAnimation(DaybookMotion.interactive) {
+                        moveAllYesterdayTodosToToday()
+                    }
+                } label: {
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.right.to.line")
+                            .font(.system(size: 8.5, weight: .semibold))
+                        Text("stamp.yesterday.moveAll")
+                            .font(DaybookType.badge)
+                    }
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
+                    .background(
+                        Capsule()
+                            .fill(DaybookTheme.stamp.opacity(0.10))
+                    )
+                }
+                .buttonStyle(.plain)
+                .help("stamp.yesterday.moveAll.help")
+                .accessibilityLabel("stamp.yesterday.moveAll")
             }
         }
     }
@@ -64,12 +94,12 @@ extension TasksPage {
     func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
         let display = TodoRowDisplayOptions(
             isDone: false,
-            isSelected: highlightedTaskID == todo.id,
+            isSelected: isLeftoverSelected(todo.id),
             note: note,
             includeSubtasks: false
         )
         let actions = TodoRowActions(
-            onSelect: { _ in inspectLeftover(todo.id, dayKey: todo.dayKey) },
+            onSelect: { selectLeftover(todo.id, dayKey: todo.dayKey, modifiers: $0) },
             onDelete: { deleteTodo(todo) }
         )
         return TaskRowFactory.todo(TodoRowContext(
@@ -90,14 +120,14 @@ extension TasksPage {
         } else {
             let actions = LeftoverRowActions(
                 onToggle: { completeYesterday(item) },
-                onSelect: { _ in inspectLeftover(item.id, dayKey: yesterdayKey) },
+                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, modifiers: $0) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
             )
             TaskRowFactory.leftoverFallback(LeftoverRowContext(
                 item: item,
                 todayKey: todayKey,
                 yesterdayKey: yesterdayKey,
-                isSelected: highlightedTaskID == item.id,
+                isSelected: isLeftoverSelected(item.id),
                 actions: actions
             ))
         }
@@ -112,11 +142,11 @@ extension TasksPage {
         )
         let display = RoutineRowDisplayOptions(
             isDone: false,
-            isSelected: highlightedTaskID == routine.id,
+            isSelected: isLeftoverSelected(routine.id),
             usesDefaultNote: false
         )
         let actions = RoutineRowActions(
-            onSelect: { _ in inspectLeftover(routine.id, dayKey: yesterdayKey) },
+            onSelect: { selectLeftover(routine.id, dayKey: yesterdayKey, modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
@@ -136,13 +166,26 @@ extension TasksPage {
         ))
     }
 
-    func inspectLeftover(_ id: UUID, dayKey: String) {
-        BoardSelection.shared.inspectBoard(dayKey)
-        if let onInspect {
-            onInspect(id)
-            return
+    func isLeftoverSelected(_ id: UUID) -> Bool {
+        if taskSelection.anchorID != nil || !taskSelection.ids.isEmpty {
+            return taskSelection.ids.contains(id)
         }
-        AppWindows.openWorkspace(tab: .today, inspecting: id, dayKey: dayKey)
+        return focusedTaskID?.wrappedValue == id || highlightedTaskID == id
+    }
+
+    func selectLeftover(_ id: UUID, dayKey: String, modifiers: TaskSelectionModifiers = []) {
+        var selection = taskSelection
+        if selection.anchorID == nil && selection.ids.isEmpty {
+            selection.focus(focusedTaskID?.wrappedValue ?? highlightedTaskID)
+        }
+        selection.select(id, in: allVisibleIDs, modifiers: modifiers)
+        taskSelection = selection
+        focusedTaskID?.wrappedValue = selection.ids.contains(id)
+            ? id : allVisibleIDs.first { selection.ids.contains($0) }
+        BoardSelection.shared.inspectBoard(dayKey)
+        if modifiers.isEmpty {
+            onInspect?(id)
+        }
     }
 }
 

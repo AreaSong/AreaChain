@@ -112,24 +112,54 @@ private struct DaybookQuietButton: View {
 
 struct DaybookEmptyState: View {
     var title: LocalizedStringKey
+    var subtitle: LocalizedStringKey? = nil
     var systemImage: String = "square.and.pencil"
     var compact: Bool = false
+    var alignment: HorizontalAlignment = .center
+    var centerVertically: Bool = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 4 : DaybookTheme.space) {
+        VStack(alignment: alignment, spacing: compact ? 4 : 6) {
             if !compact {
                 Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .font(.system(size: alignment == .center ? 28 : 16, weight: .light))
+                    .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
+                    .padding(.bottom, alignment == .center ? 4 : 0)
                     .accessibilityHidden(true)
             }
             Text(title)
-                .font(compact ? DaybookType.caption : DaybookType.body)
-                .foregroundStyle(DaybookTheme.muted)
+                .font(compact ? DaybookType.caption : (alignment == .center ? .system(size: 13, weight: .medium) : DaybookType.body))
+                .foregroundStyle(DaybookTheme.ink.opacity(0.88))
+                .multilineTextAlignment(alignment == .center ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
+
+            if let subtitle {
+                Text(subtitle)
+                    .font(.system(size: 11.5, weight: .regular))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .multilineTextAlignment(alignment == .center ? .center : .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
-        .padding(.vertical, compact ? 2 : DaybookTheme.space)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, compact ? 2 : (alignment == .center ? (centerVertically ? 12 : 28) : DaybookTheme.space))
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity, alignment: alignment == .center ? .center : .leading)
+        .modifier(EmptyStateCenterModifier(centerVertically: centerVertically && !compact))
+    }
+}
+
+private struct EmptyStateCenterModifier: ViewModifier {
+    var centerVertically: Bool
+
+    func body(content: Content) -> some View {
+        if centerVertically {
+            content
+                .containerRelativeFrame(.vertical, alignment: .center) { length, _ in
+                    max(length - 16, 120)
+                }
+        } else {
+            content
+        }
     }
 }
 

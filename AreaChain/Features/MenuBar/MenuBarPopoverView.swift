@@ -56,6 +56,33 @@ struct MenuBarPopoverView: View {
         DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
     }
 
+    private var currentTabTagCounts: [UUID: Int] {
+        var counts: [UUID: Int] = [:]
+        switch tab {
+        case .tasks:
+            let activeTodos = todos.filter { $0.deletedAt == nil && ($0.dayKey == todayKey || ($0.dayKey < todayKey && !$0.isDone)) }
+            for todo in activeTodos {
+                for id in TagIDList.parse(todo.tagIDs) {
+                    counts[id, default: 0] += 1
+                }
+            }
+            let dueRoutines = routines.filter { $0.deletedAt == nil && DayBoardLogic.isRoutineDue($0.snapshot, on: todayKey) }
+            for routine in dueRoutines {
+                for id in TagIDList.parse(routine.tagIDs) {
+                    counts[id, default: 0] += 1
+                }
+            }
+        case .diary:
+            let todayDiaries = diaries.filter { $0.deletedAt == nil && $0.dayKey == todayKey }
+            for diary in todayDiaries {
+                for id in TagIDList.parse(diary.tagIDs) {
+                    counts[id, default: 0] += 1
+                }
+            }
+        }
+        return counts
+    }
+
     private var headerSubtitle: LocalizedStringKey {
         if toolbar.isSearching { return "search.scope.all" }
         switch tab {
@@ -104,6 +131,7 @@ struct MenuBarPopoverView: View {
                     filter: $boardFilter,
                     diaryFilterTagID: $diaryFilterTagID,
                     tags: Array(tags),
+                    tagCounts: currentTabTagCounts,
                     onShowSyntaxHelp: showSyntaxHelp
                 )
                 .zIndex(10)

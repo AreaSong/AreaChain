@@ -9,6 +9,7 @@ struct FooterBar: View {
     var filter: Binding<BoardFilter>? = nil
     var diaryFilterTagID: Binding<UUID?>? = nil
     var tags: [TagItem] = []
+    var tagCounts: [UUID: Int] = [:]
     var onShowSyntaxHelp: () -> Void = {}
 
     @Environment(\.locale) private var locale
@@ -20,6 +21,17 @@ struct FooterBar: View {
 
     private var activeTags: [TagItem] {
         tab == .tasks ? Catalog.liveTaskTags(tags) : Catalog.liveTags(tags)
+    }
+
+    /// 所有标签均完整可见；若有今日任务计数，则有任务的优先排在前面
+    private var visibleFilterTags: [TagItem] {
+        guard !tagCounts.isEmpty else { return activeTags }
+        return activeTags.sorted { lhs, rhs in
+            let countL = tagCounts[lhs.id] ?? 0
+            let countR = tagCounts[rhs.id] ?? 0
+            if countL != countR { return countL > countR }
+            return lhs.sortOrder < rhs.sortOrder
+        }
     }
 
     private var selectedTagID: UUID? {
@@ -61,7 +73,6 @@ struct FooterBar: View {
     }
 
     private var contentTransition: AnyTransition {
-        // 原控件先退出，新的内容只淡入，不在原按钮上叠一层滑动面板。
         .asymmetric(insertion: reduceMotion ? .identity : .opacity, removal: .identity)
     }
 
@@ -78,16 +89,56 @@ struct FooterBar: View {
     }
 
     private var filterTrigger: some View {
-        HStack(spacing: 3) {
+        Group {
+            if activeCount > 0 {
+                activeFilterCapsule
+            } else {
+                inactiveFilterButton
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var inactiveFilterButton: some View {
+        Button { openFilters(focus: true) } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "line.3.horizontal.decrease")
+                    .accessibilityHidden(true)
+                Text(filterTitle).lineLimit(1)
+            }
+            .font(DaybookType.caption)
+            .padding(.horizontal, 5)
+            .frame(height: 28)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .keyboardShortcut("f", modifiers: [.command, .shift])
+        .onHover { hovering in
+            if hovering {
+                hoverWorkItem?.cancel()
+                toolbar.showFiltersFromHover()
+            }
+        }
+        .focused($triggerFocused)
+        .foregroundStyle(DaybookTheme.muted)
+        .accessibilityLabel("filter.label")
+        .accessibilityIdentifier("menubar.filter.open")
+        .help(L10n.string("filter.open.help", locale: locale))
+    }
+
+    private var activeFilterCapsule: some View {
+        HStack(spacing: 2) {
             Button { openFilters(focus: true) } label: {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Image(systemName: "line.3.horizontal.decrease")
+                        .font(.system(size: 9.5, weight: .semibold))
                         .accessibilityHidden(true)
-                    Text(filterTitle).lineLimit(1).truncationMode(.tail)
+                    Text(filterTitle)
+                        .font(DaybookType.caption.weight(.medium))
+                        .lineLimit(1)
                 }
-                .font(DaybookType.caption)
-                .padding(.horizontal, 5)
-                .frame(height: 28)
+                .padding(.leading, 7)
+                .padding(.vertical, 3)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -99,24 +150,26 @@ struct FooterBar: View {
                 }
             }
             .focused($triggerFocused)
-            .accessibilityLabel("filter.label")
-            .accessibilityIdentifier("menubar.filter.open")
-            .accessibilityValue(activeDescription)
-            .help(activeCount == 0 ? L10n.string("filter.open.help", locale: locale) : activeDescription)
 
-            if activeCount > 0 {
-                Button(action: clearFilter) {
-                    Image(systemName: "xmark").font(DaybookType.badge)
-                        .frame(width: 14, height: 28)
-                }
-                .buttonStyle(.plain)
-                .help("footer.filter.clear")
-                .accessibilityLabel("footer.filter.clear")
+            Button(action: clearFilter) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 4)
+                    .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .help("footer.filter.clear")
+            .accessibilityLabel("footer.filter.clear")
         }
-        .foregroundStyle(activeCount > 0 ? DaybookTheme.stamp : DaybookTheme.muted)
-        .frame(maxWidth: 88)
-        .fixedSize(horizontal: true, vertical: false)
+        .frame(height: 24)
+        .foregroundStyle(DaybookTheme.stamp)
+        .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
+        .overlay(Capsule().strokeBorder(DaybookTheme.stamp.opacity(0.40), lineWidth: 0.8))
+        .accessibilityLabel("filter.label")
+        .accessibilityIdentifier("menubar.filter.open")
+        .accessibilityValue(activeDescription)
+        .help(activeDescription)
     }
 
     private var filterTitle: String {
@@ -142,19 +195,17 @@ struct FooterBar: View {
                 HStack(spacing: 5) {
                     filterChip(L10n.string("filter.all", locale: locale), selected: activeCount == 0) {
                         clearFilter()
-                        closeFilters()
                     }
                     .focused($filterFocused)
                     if tab == .tasks {
                         filterChip(L10n.string("filter.highPriority", locale: locale), selected: highPriority) {
                             filter?.wrappedValue = (filter?.wrappedValue ?? BoardFilter()).withHighPriority(!highPriority)
-                            closeFilters()
                         }
                     }
-                    ForEach(activeTags) { tag in
-                        filterChip("#" + tag.name, selected: selectedTagID == tag.id) {
+                    ForEach(visibleFilterTags) { tag in
+                        let count = tagCounts[tag.id]
+                        filterChip("#" + tag.name, count: count, selected: selectedTagID == tag.id) {
                             selectTag(tag.id)
-                            closeFilters()
                         }
                     }
                 }
@@ -176,19 +227,31 @@ struct FooterBar: View {
         }
     }
 
-    private func filterChip(_ title: String, selected: Bool, action: @escaping () -> Void) -> some View {
+    private func filterChip(_ title: String, count: Int? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            Text(title)
-                .font(DaybookType.caption)
-                .fixedSize()
-                .padding(.horizontal, 8)
-                .frame(height: 26)
-                .foregroundStyle(selected ? DaybookTheme.stamp : DaybookTheme.ink)
-                .background(Capsule().fill(selected ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.hoverFill))
-                .overlay(Capsule().strokeBorder(
-                    selected ? DaybookTheme.stamp.opacity(0.45) : DaybookTheme.rule.opacity(0.6),
-                    lineWidth: 0.7
-                ))
+            HStack(spacing: 3.5) {
+                Text(title)
+                    .font(DaybookType.caption)
+                    .lineLimit(1)
+                if let count, count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .padding(.horizontal, 3.5)
+                        .padding(.vertical, 0.5)
+                        .background(selected ? DaybookTheme.stamp.opacity(0.25) : DaybookTheme.ink.opacity(0.08))
+                        .foregroundStyle(selected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .clipShape(Capsule())
+                }
+            }
+            .fixedSize()
+            .padding(.horizontal, 8)
+            .frame(height: 26)
+            .foregroundStyle(selected ? DaybookTheme.stamp : DaybookTheme.ink)
+            .background(Capsule().fill(selected ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.hoverFill))
+            .overlay(Capsule().strokeBorder(
+                selected ? DaybookTheme.stamp.opacity(0.45) : DaybookTheme.rule.opacity(0.6),
+                lineWidth: 0.7
+            ))
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
@@ -268,7 +331,7 @@ struct FooterBar: View {
             toolbar.pointerLeftToolbar()
         }
         hoverWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22, execute: work)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28, execute: work)
     }
 
     private func selectTag(_ id: UUID) {

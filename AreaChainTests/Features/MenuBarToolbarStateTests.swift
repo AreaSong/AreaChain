@@ -21,6 +21,24 @@ struct MenuBarToolbarStateTests {
         #expect(!toolbar.isFiltering)
     }
 
+    @Test func explicitFilterToggleRespectsStateAndSearchFocus() {
+        let toolbar = MenuBarToolbarState()
+        toolbar.showFilters()
+        #expect(toolbar.isFiltering)
+        toolbar.closeFilters()
+        #expect(!toolbar.isFiltering)
+        toolbar.toggleFilters()
+        #expect(toolbar.isFiltering)
+        toolbar.toggleFilters()
+        #expect(!toolbar.isFiltering)
+        toolbar.focusSearch()
+        #expect(!toolbar.isFiltering)
+        #expect(toolbar.searchIsFocused)
+        toolbar.showFilters()
+        #expect(toolbar.isFiltering)
+        #expect(!toolbar.searchIsFocused)
+    }
+
     @Test func swiftUIKeyHandlersAlsoRespectToolbarMode() {
         let toolbar = MenuBarToolbarState()
         var selectedID: UUID? = UUID()
@@ -35,7 +53,7 @@ struct MenuBarToolbarStateTests {
         )
         #expect(modifier.handle(.space) == .handled)
         #expect(actions == 1)
-        toolbar.showFiltersFromHover()
+        toolbar.showFilters()
         for key in [KeyEquivalent.space, .delete, .return, .upArrow, .downArrow] {
             #expect(modifier.handle(key) == .ignored)
         }

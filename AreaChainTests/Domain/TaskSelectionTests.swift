@@ -96,4 +96,15 @@ struct WorkspaceTaskSelectionTests {
         #expect(navigation.selectedTaskIDs == [ids[1]])
         #expect(navigation.selectionAnchorID == nil)
     }
+
+    @Test @MainActor func pendingCompletionManagerHandlesBatchToggleImmediatelyInTest() {
+        let manager = PendingCompletionManager.shared
+        let target = Set([UUID(), UUID()])
+        var committed = false
+        manager.toggleBatch(ids: target, markDone: true) {
+            committed = true
+        }
+        #expect(committed)
+        #expect(!manager.pendingDoneIDs.contains(target.first!))
+    }
 }

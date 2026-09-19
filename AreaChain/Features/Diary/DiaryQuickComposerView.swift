@@ -50,8 +50,7 @@ struct DiaryQuickComposerView: View {
 
     private var compactInputRow: some View {
         let focused = focused.wrappedValue
-        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.4)
-        let ringColor = focused ? DaybookTheme.stamp.opacity(0.16) : Color.clear
+        let strokeColor = focused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.4)
 
         return HStack(alignment: .center, spacing: 8) {
             statusIcon
@@ -99,12 +98,7 @@ struct DiaryQuickComposerView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(strokeColor, lineWidth: focused ? 1.1 : 0.6)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(ringColor, lineWidth: 2.0)
-                .padding(-2)
+                .stroke(strokeColor, lineWidth: focused ? 0.9 : 0.6)
         )
         .background(KeyWindowHost { hostWindow = $0 })
         .background(SyntaxViewAnchor("syntax.diary.composer"))

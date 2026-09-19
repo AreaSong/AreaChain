@@ -46,10 +46,18 @@ struct SyntaxOverlayAnchor {
         let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
         let hasMultiTags = parsed.tagNames.count > 1
+        let targetWidth: CGFloat = state.context == .capture ? (DaybookTheme.popoverWidth - 24) : 240
+        let canFitInline = LiveComposerPreviewHeader.canFit(
+            title: parsed.cleanTitle,
+            tags: parsed.tagNames,
+            hasTime: parsed.remindMinutes != nil,
+            hasPriority: parsed.hasPriorityToken,
+            cardWidth: targetWidth
+        )
 
         if state.showsPreview {
             h += 36
-            if !showsSuggestions && hasMultiTags {
+            if !showsSuggestions && hasMultiTags && !canFitInline {
                 h += min(135, CGFloat(parsed.tagNames.count) * 26 + 40)
             }
         }
@@ -57,7 +65,6 @@ struct SyntaxOverlayAnchor {
             if state.showsPreview { h += 1 }
             h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
         }
-        let targetWidth: CGFloat = state.context == .capture ? 316 : 240
         return CGSize(width: targetWidth, height: max(36, h))
     }
 }

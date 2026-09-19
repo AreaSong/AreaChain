@@ -9,6 +9,8 @@ struct LiveComposerPreviewHeader: View {
     var onClose: () -> Void
 
     @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isTitleHovered = false
 
     init(
         text: String,
@@ -37,14 +39,6 @@ struct LiveComposerPreviewHeader: View {
     private func isSyntaxPrefixOnly(_ str: String) -> Bool {
         let trimmed = str.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed == "#" || trimmed == "＃" || trimmed == "@" || trimmed == "＠" || trimmed == "!" || trimmed == "！"
-    }
-
-    private var formattedTitle: String {
-        let title = displayTitle
-        guard title.count > 16 else { return title }
-        let head = title.prefix(9)
-        let tail = title.suffix(6)
-        return "\(head)...\(tail)"
     }
 
     private var previewTags: [String] {
@@ -76,7 +70,7 @@ struct LiveComposerPreviewHeader: View {
     var body: some View {
         VStack(alignment: .trailing, spacing: 4) {
             mainRow
-            if previewTags.count > 1 && !showsSuggestions {
+            if !canFitAllTagsInline && previewTags.count > 1 && !showsSuggestions && !isTitleHovered {
                 tagDetailBubble
                     .padding(.trailing, 4)
                     .transition(.asymmetric(
@@ -85,6 +79,16 @@ struct LiveComposerPreviewHeader: View {
                     ))
             }
         }
+    }
+
+    /// 计算单行内是否能平铺完整放下所有标签（无需折叠与浮窗）
+    private var canFitAllTagsInline: Bool {
+        Self.canFit(
+            title: displayTitle,
+            tags: previewTags,
+            hasTime: displayTime != nil,
+            hasPriority: displayPriority != nil
+        )
     }
 
     /// 单行主卡片（固定 36pt 高度，大字号 13pt/11pt）
@@ -96,19 +100,26 @@ struct LiveComposerPreviewHeader: View {
                 .foregroundStyle(DaybookTheme.muted)
 
             if !displayTitle.isEmpty {
-                Text(formattedTitle)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineLimit(1)
-                    .help(displayTitle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                titleView
             } else {
                 Spacer(minLength: 4)
             }
 
-            // 右侧属性集群（首个标签 + 标签数量徽标、时间、优先级）
+            // 右侧属性集群（有地方放则平铺标签，重合放不下则折叠为首个+计数）
             HStack(spacing: 5) {
-                if previewTags.count == 1, let singleTag = previewTags.first {
+                if canFitAllTagsInline {
+                    // 放得下：所有标签平铺展示在单行，干净清爽无多余浮窗
+                    ForEach(previewTags, id: \.self) { tag in
+                        Text("#\(tag)")
+                            .font(.system(size: 11, weight: .semibold))
+                            .lineLimit(1)
+                            .padding(.horizontal, 5.5)
+                            .padding(.vertical, 2.5)
+                            .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
+                            .foregroundStyle(DaybookTheme.Syntax.tag)
+                            .help("#\(tag)")
+                    }
+                } else if previewTags.count == 1, let singleTag = previewTags.first {
                     Text("#\(singleTag)")
                         .font(.system(size: 11, weight: .semibold))
                         .lineLimit(1)
@@ -119,28 +130,16 @@ struct LiveComposerPreviewHeader: View {
                         .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
                         .foregroundStyle(DaybookTheme.Syntax.tag)
                         .help("#\(singleTag)")
-                } else if previewTags.count > 1, let firstTag = previewTags.first {
-                    // 展示首个标签，一眼看清当前输入的标签内容
-                    Text("#\(firstTag)")
-                        .font(.system(size: 11, weight: .semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: 86, alignment: .leading)
-                        .padding(.horizontal, 5.5)
-                        .padding(.vertical, 2.5)
-                        .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
-                        .help("#\(firstTag)")
-
-                    // 标签数量徽标（免点击，直观提示）
-                    HStack(spacing: 2) {
+                } else if previewTags.count > 1 {
+                    // 放不下（正文和条目重合挤压）：主行只显示数字标签，所有标签在浮动面板中展示
+                    HStack(spacing: 2.5) {
                         Image(systemName: "number")
-                            .font(.system(size: 8, weight: .bold))
+                            .font(.system(size: 8.5, weight: .bold))
                         Text("\(previewTags.count)")
-                            .font(.system(size: 10.5, weight: .bold, design: .rounded))
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
                     }
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
                     .background(Capsule().fill(DaybookTheme.Syntax.tagBadgeFill))
                     .foregroundStyle(DaybookTheme.Syntax.tag)
                     .help("共 \(previewTags.count) 个标签")
@@ -257,5 +256,111 @@ struct LiveComposerPreviewHeader: View {
             insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
             removal: .opacity
         ))
+    }
+
+    private var isTitleTruncated: Bool {
+        displayTitle.count > 12
+    }
+
+    private var titleView: some View {
+        Text(displayTitle)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundStyle(DaybookTheme.ink)
+            .lineLimit(1)
+            .truncationMode(.middle)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .help(displayTitle)
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isTitleHovered = hovering && isTitleTruncated
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if isTitleHovered && !showsSuggestions {
+                    titleTooltipBubble
+                        .offset(y: 28)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)),
+                            removal: .opacity
+                        ))
+                }
+            }
+    }
+
+    private var titleTooltipBubble: some View {
+        HStack(alignment: .top, spacing: 5) {
+            Image(systemName: "text.alignleft")
+                .font(.system(size: 9.5))
+                .foregroundStyle(DaybookTheme.muted)
+                .padding(.top, 2)
+
+            Text(displayTitle)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(DaybookTheme.ink)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5.5)
+        .frame(maxWidth: 260, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+        )
+        .zIndex(999)
+    }
+
+    // MARK: - 容量碰撞检测算法
+
+    static func canFit(
+        title: String,
+        tags: [String],
+        hasTime: Bool,
+        hasPriority: Bool,
+        cardWidth: CGFloat = DaybookTheme.popoverWidth - 24
+    ) -> Bool {
+        guard !tags.isEmpty else { return true }
+        let horizontalPadding: CGFloat = 20
+        let circleAndGap: CGFloat = 20
+        let closeButtonAndGap: CGFloat = 24
+        let timeWidth: CGFloat = hasTime ? 48 : 0
+        let priorityWidth: CGFloat = hasPriority ? 38 : 0
+
+        let availableForContent = cardWidth - horizontalPadding - circleAndGap - closeButtonAndGap - timeWidth - priorityWidth
+
+        let titleWidth = estimatedWidth(for: title, fontSize: 13)
+        let tagsWidth = tags.reduce(0) { sum, tag in
+            sum + estimatedWidth(for: "#" + tag, fontSize: 11) + 11 + 5
+        }
+
+        return (titleWidth + tagsWidth) <= availableForContent
+    }
+
+    static func estimatedWidth(for str: String, fontSize: CGFloat) -> CGFloat {
+        guard !str.isEmpty else { return 0 }
+        var w: CGFloat = 0
+        for ch in str {
+            if ch.isASCII {
+                switch ch {
+                case "1", "l", "i", "I", "!", "|", ":", ";", " ", ".", "'", "`":
+                    w += fontSize * 0.32
+                case "j", "r", "t", "f":
+                    w += fontSize * 0.42
+                case "w", "W", "M", "m", "@", "%", "#":
+                    w += fontSize * 0.68
+                default:
+                    w += fontSize * 0.52
+                }
+            } else {
+                w += fontSize * 1.0
+            }
+        }
+        return w
     }
 }

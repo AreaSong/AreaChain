@@ -64,13 +64,60 @@ final class PendingCompletionManager {
             guard !Task.isCancelled else { return }
 
             // 提交持久化，并伴随折叠动效沉底
-            _ = withAnimation(DaybookMotion.collapse) {
+            withAnimation(DaybookMotion.collapse) {
                 pendingDoneIDs.remove(id)
                 onCommit()
             }
             pendingTasks.removeValue(forKey: id)
         }
         pendingTasks[id] = task
+    }
+
+    /// 批量切换任务完成状态（带驻留防反悔与平滑沉底）
+    func toggleBatch(
+        ids: Set<UUID>,
+        markDone: Bool,
+        reduceMotion: Bool = false,
+        onCommit: @escaping @MainActor () -> Void
+    ) {
+        guard !ids.isEmpty else { return }
+
+        // 如果是要取消完成（即 markDone == false），或者在测试/减弱动效下，直接无延迟提交
+        if !markDone || isRunningTests || reduceMotion {
+            for id in ids {
+                pendingTasks[id]?.cancel()
+                pendingTasks.removeValue(forKey: id)
+            }
+            withAnimation(DaybookMotion.snappy) {
+                pendingDoneIDs.subtract(ids)
+            }
+            onCommit()
+            return
+        }
+
+        // 正常批量标记完成：进入 0.4s 驻留期
+        withAnimation(DaybookMotion.checkmark) {
+            pendingDoneIDs.formUnion(ids)
+        }
+        DaybookHaptics.celebrate()
+
+        let batchTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 400_000_000) // 0.4 秒
+            guard !Task.isCancelled else { return }
+
+            // 提交持久化，并伴随折叠动效沉底
+            withAnimation(DaybookMotion.collapse) {
+                pendingDoneIDs.subtract(ids)
+                onCommit()
+            }
+            for id in ids {
+                pendingTasks.removeValue(forKey: id)
+            }
+        }
+        for id in ids {
+            pendingTasks[id]?.cancel()
+            pendingTasks[id] = batchTask
+        }
     }
 
     /// 取消某项的待沉底状态（用户在驻留期内反选）

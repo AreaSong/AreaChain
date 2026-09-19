@@ -361,4 +361,42 @@ struct MilestoneM3Iteration2DTOStressTests {
         config.upcoming.onToggle()
         #expect(upcomingToggled)
     }
+
+    @Test func dayBoardListYesterdayUnfinishedEmptyStateSwitch() throws {
+        var toggled = false
+        let collapsedConfig = DayBoardListConfig(
+            todayKey: "2026-09-10",
+            yesterdayUnfinishedCount: 2,
+            isYesterdayExpanded: false,
+            onToggleYesterday: { toggled = true }
+        )
+        let collapsedList = DayBoardList(
+            dayKey: "2026-09-10",
+            routines: [],
+            checks: [],
+            todos: [],
+            config: collapsedConfig
+        )
+        _ = collapsedList.body
+        #expect(collapsedConfig.yesterdayUnfinishedCount == 2)
+        #expect(collapsedConfig.isYesterdayExpanded == false)
+        collapsedConfig.onToggleYesterday?()
+        #expect(toggled)
+
+        let expandedConfig = DayBoardListConfig(
+            todayKey: "2026-09-10",
+            yesterdayUnfinishedCount: 2,
+            isYesterdayExpanded: true
+        )
+        let expandedList = DayBoardList(
+            dayKey: "2026-09-10",
+            routines: [],
+            checks: [],
+            todos: [],
+            config: expandedConfig
+        )
+        _ = expandedList.body
+        #expect(expandedConfig.yesterdayUnfinishedCount == 2)
+        #expect(expandedConfig.isYesterdayExpanded == true)
+    }
 }

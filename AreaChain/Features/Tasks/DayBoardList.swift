@@ -32,19 +32,34 @@ struct DayBoardListConfig {
     var allowsTodoDrag: Bool = false
     var dayKeyForID: ((UUID) -> String)? = nil
     var interaction: DayBoardInteraction = DayBoardInteraction()
+    var yesterdayUnfinishedCount: Int = 0
+    var isYesterdayExpanded: Bool = false
+    var selection: Binding<TaskSelection>? = nil
+    var visibleIDsProvider: (() -> [UUID])? = nil
+    var onToggleYesterday: (() -> Void)? = nil
 
     init(
         todayKey: String? = nil,
         filter: BoardFilter = BoardFilter(),
         allowsTodoDrag: Bool = false,
         dayKeyForID: ((UUID) -> String)? = nil,
-        interaction: DayBoardInteraction = DayBoardInteraction()
+        interaction: DayBoardInteraction = DayBoardInteraction(),
+        yesterdayUnfinishedCount: Int = 0,
+        isYesterdayExpanded: Bool = false,
+        selection: Binding<TaskSelection>? = nil,
+        visibleIDsProvider: (() -> [UUID])? = nil,
+        onToggleYesterday: (() -> Void)? = nil
     ) {
         self.todayKey = todayKey
         self.filter = filter
         self.allowsTodoDrag = allowsTodoDrag
         self.dayKeyForID = dayKeyForID
         self.interaction = interaction
+        self.yesterdayUnfinishedCount = yesterdayUnfinishedCount
+        self.isYesterdayExpanded = isYesterdayExpanded
+        self.selection = selection
+        self.visibleIDsProvider = visibleIDsProvider
+        self.onToggleYesterday = onToggleYesterday
     }
 
     var focusedTaskID: Binding<UUID?>? { interaction.focusedTaskID }
@@ -92,7 +107,14 @@ struct DayBoardList: View {
     @Query private var attachments: [AttachmentItem]
 
     @State var showCompleted = false
-    @State var taskSelection = TaskSelection()
+    @State private var internalSelection = TaskSelection()
+    private var activeSelection: Binding<TaskSelection> {
+        config.selection ?? $internalSelection
+    }
+    var taskSelection: TaskSelection {
+        get { activeSelection.wrappedValue }
+        nonmutating set { activeSelection.wrappedValue = newValue }
+    }
     @State var pendingTrash: PendingTrash?
     @State var editingTaskID: UUID? = nil
     @State var hostWindow: NSWindow?
@@ -102,10 +124,7 @@ struct DayBoardList: View {
     var body: some View {
         Group {
             if openTodosList.isEmpty && openRoutinesList.isEmpty && doneItemsList.isEmpty {
-                DaybookEmptyState(
-                    title: filter.isActive ? "empty.filter" : "empty.todos",
-                    systemImage: filter.isActive ? "line.3.horizontal.decrease" : "square.and.pencil"
-                )
+                emptyStateView
             } else {
                 openItemsSection
             }
@@ -135,13 +154,46 @@ struct DayBoardList: View {
             if let id, taskSelection.ids.contains(id) { return }
             taskSelection.focus(id)
         }
-        .onChange(of: orderedVisibleIDs) { _, ids in
+        .onChange(of: effectiveVisibleIDs) { _, ids in
             taskSelection.reconcile(with: ids)
         }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
         .animation(DaybookMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
         .animation(DaybookMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
+        .animation(DaybookMotion.interactive(reduceMotion), value: config.isYesterdayExpanded)
+    }
+
+    var effectiveVisibleIDs: [UUID] {
+        config.visibleIDsProvider?() ?? orderedVisibleIDs
+    }
+
+    @ViewBuilder
+    private var emptyStateView: some View {
+        if filter.isActive {
+            DaybookEmptyState(
+                title: "empty.filter",
+                subtitle: "empty.filter.hint",
+                systemImage: "line.3.horizontal.decrease",
+                centerVertically: true
+            )
+        } else if config.yesterdayUnfinishedCount > 0 {
+            if !config.isYesterdayExpanded {
+                DaybookEmptyState(
+                    title: "empty.yesterday.title",
+                    subtitle: "empty.yesterday.hint",
+                    systemImage: "clock.arrow.circlepath",
+                    centerVertically: true
+                )
+            }
+        } else {
+            DaybookEmptyState(
+                title: "empty.todos.title",
+                subtitle: "empty.todos.hint",
+                systemImage: "square.and.pencil",
+                centerVertically: true
+            )
+        }
     }
 
     func selectTask(_ id: UUID, modifiers: TaskSelectionModifiers = []) {
@@ -150,12 +202,12 @@ struct DayBoardList: View {
         if selection.anchorID == nil && selection.ids.isEmpty {
             selection.focus(focusedTaskID?.wrappedValue ?? highlightedTaskID)
         }
-        let visibleIDs = orderedVisibleIDs
+        let visibleIDs = effectiveVisibleIDs
         selection.select(id, in: visibleIDs, modifiers: modifiers)
         taskSelection = selection
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
             ? id : visibleIDs.first { selection.ids.contains($0) }
-        BoardSelection.shared.inspectBoard(dayKey)
+        BoardSelection.shared.inspectBoard(mappedDayKey(for: id))
         if modifiers.isEmpty { onInspect?(id) }
     }
 
@@ -315,7 +367,7 @@ struct DayBoardList: View {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onToggle: nil,
+            onToggle: { toggleSelected(id: routine.id) },
             onSkip: visuallyDone ? nil : {
                 DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext)
             },
@@ -344,6 +396,7 @@ struct DayBoardList: View {
                     DayBoardMutations.trashTodo(todo)
                 }
             },
+            onToggle: { toggleSelected(id: todo.id) },
             onEndEditing: { editingTaskID = nil }
         )
         return TaskRowFactory.todo(TodoRowContext(

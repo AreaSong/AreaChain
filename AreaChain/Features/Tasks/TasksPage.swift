@@ -68,6 +68,7 @@ struct TasksPage: View {
     @State var showUpcoming = false
     @State var pendingTrash: PendingTrash?
     @State var boardFilter = BoardFilter()
+    @State var taskSelection = TaskSelection()
 
     private var effectiveFilter: BoardFilter {
         config.externalFilter?.wrappedValue ?? boardFilter
@@ -79,8 +80,12 @@ struct TasksPage: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
-                        yesterdaySection
-                        upcomingSection
+                        if isTodayEmpty && showYesterday && !yesterdayItems.isEmpty {
+                            centeredYesterdaySection
+                        } else {
+                            yesterdaySection
+                            upcomingSection
+                        }
                         dayBoardView
                     }
                     .padding(.vertical, 2)
@@ -101,6 +106,13 @@ struct TasksPage: View {
         .animation(DaybookMotion.interactive, value: effectiveFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)
         .animation(DaybookMotion.interactive, value: showYesterday)
+        .onChange(of: allVisibleIDs) { _, ids in
+            taskSelection.reconcile(with: ids)
+        }
+        .onChange(of: focusedTaskID?.wrappedValue) { _, id in
+            if let id, taskSelection.ids.contains(id) { return }
+            taskSelection.focus(id)
+        }
     }
 
     private var headerBar: some View {
@@ -162,7 +174,12 @@ struct TasksPage: View {
                 dayKeyForID: { [yesterdayKey] id in
                     resolveDayKey(for: id, yesterdayKey: yesterdayKey)
                 },
-                interaction: config.interaction
+                interaction: config.interaction,
+                yesterdayUnfinishedCount: yesterdayItems.count,
+                isYesterdayExpanded: showYesterday,
+                selection: $taskSelection,
+                visibleIDsProvider: { allVisibleIDs },
+                onToggleYesterday: { showYesterday.toggle() }
             )
         )
     }
@@ -216,6 +233,37 @@ struct TasksPage: View {
     private func matchesFilter(_ bits: ClassifyBits) -> Bool {
         let allowed = effectiveFilter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
         return Classification.matches(bits, filter: effectiveFilter, projectIDs: allowed)
+    }
+
+    var todayVisibleIDs: [UUID] {
+        let openTodoIDs = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
+            .filter { matchesFilter($0.classifyBits) }
+            .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+            .map(\.id)
+        let openRoutineIDs = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
+            .filter { matchesFilter($0.classifyBits) }
+            .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+            .map(\.id)
+        return openTodoIDs + openRoutineIDs
+    }
+
+    var allVisibleIDs: [UUID] {
+        var ids: [UUID] = []
+        if showYesterday {
+            ids.append(contentsOf: yesterdayItems.map(\.id))
+        }
+        if showUpcoming {
+            ids.append(contentsOf: upcomingModels.map(\.id))
+        }
+        ids.append(contentsOf: todayVisibleIDs)
+        return ids
+    }
+
+    var isTodayEmpty: Bool {
+        guard todayVisibleIDs.isEmpty else { return false }
+        let hasDoneTodos = todos.contains { $0.dayKey == todayKey && $0.isDone }
+        let hasDoneRoutines = !DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).isEmpty
+        return !hasDoneTodos && !hasDoneRoutines
     }
 }
 

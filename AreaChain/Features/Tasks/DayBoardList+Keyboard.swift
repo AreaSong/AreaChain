@@ -49,14 +49,15 @@ extension DayBoardList {
     private func handleNavigationKey(event: NSEvent) -> NSEvent? {
         switch event.keyCode {
         case 125:
-            navigateSelection(delta: 1)
+            navigateSelection(delta: 1, extending: event.modifierFlags.contains(.shift))
             return nil
         case 126:
-            navigateSelection(delta: -1)
+            navigateSelection(delta: -1, extending: event.modifierFlags.contains(.shift))
             return nil
         case 49:
-            if let id = focusedTaskID?.wrappedValue {
-                toggleSelected(id: id)
+            let targetID = focusedTaskID?.wrappedValue ?? taskSelection.ids.first
+            if let targetID {
+                toggleSelected(id: targetID)
                 return nil
             }
         case 36:
@@ -65,8 +66,15 @@ extension DayBoardList {
                 return nil
             }
         case 51:
-            if let id = focusedTaskID?.wrappedValue {
-                deleteSelected(id: id)
+            let targetID = focusedTaskID?.wrappedValue ?? taskSelection.ids.first
+            if let targetID {
+                deleteSelected(id: targetID)
+                return nil
+            }
+        case 0:
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
+            if mods == .command {
+                selectAllVisible()
                 return nil
             }
         case 14:
@@ -83,7 +91,7 @@ extension DayBoardList {
                 WorkspaceNavigation.shared.isInspectorPresented = false
                 return nil
             }
-            if focusedTaskID?.wrappedValue != nil {
+            if focusedTaskID?.wrappedValue != nil || !taskSelection.ids.isEmpty {
                 focusTask(nil)
                 onReturnToInput?()
                 return nil
@@ -111,25 +119,47 @@ extension DayBoardList {
         }
     }
 
-    func navigateSelection(delta: Int) {
-        let ids = orderedVisibleIDs
+    func navigateSelection(delta: Int, extending: Bool = false) {
+        let ids = effectiveVisibleIDs
         guard !ids.isEmpty else { return }
         if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
             let nextIdx = idx + delta
             if nextIdx >= 0 && nextIdx < ids.count {
                 let nextID = ids[nextIdx]
-                focusTask(nextID)
-                BoardSelection.shared.inspectBoard(dayKey)
-            } else if nextIdx < 0 {
+                if extending {
+                    var selection = taskSelection
+                    if selection.anchorID == nil {
+                        selection.anchorID = current
+                    }
+                    selection.select(nextID, in: ids, modifiers: .shift)
+                    taskSelection = selection
+                    focusedTaskID?.wrappedValue = nextID
+                } else {
+                    focusTask(nextID)
+                }
+                BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
+            } else if nextIdx < 0 && !extending {
                 focusTask(nil)
                 onReturnToInput?()
             }
         } else {
             let nextID = delta >= 0 ? ids.first : ids.last
             focusTask(nextID)
-            if nextID != nil {
-                BoardSelection.shared.inspectBoard(dayKey)
+            if let nextID {
+                BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
             }
+        }
+    }
+
+    func selectAllVisible() {
+        let ids = effectiveVisibleIDs
+        guard !ids.isEmpty else { return }
+        taskSelection.ids = Set(ids)
+        if taskSelection.anchorID == nil {
+            taskSelection.anchorID = ids.first
+        }
+        if focusedTaskID?.wrappedValue == nil {
+            focusedTaskID?.wrappedValue = ids.first
         }
     }
 
@@ -156,7 +186,16 @@ extension DayBoardList {
     }
 
     func toggleSelected(id: UUID) {
-        let previousIDs = orderedVisibleIDs
+        let selected = taskSelection.ids
+        if selected.count > 1 && (selected.contains(id) || focusedTaskID?.wrappedValue == nil) {
+            batchToggleSelected(selected)
+            return
+        }
+        singleToggleSelected(id: id)
+    }
+
+    private func singleToggleSelected(id: UUID) {
+        let previousIDs = effectiveVisibleIDs
         let checkOn = checkDay(for: id)
         if let todo = todos.first(where: { $0.id == id }) {
             PendingCompletionManager.shared.toggle(
@@ -189,20 +228,87 @@ extension DayBoardList {
         }
     }
 
+    func batchToggleSelected(_ ids: Set<UUID>) {
+        let previousIDs = effectiveVisibleIDs
+        let selectedTodos = todos.filter { ids.contains($0.id) }
+        let selectedRoutines = routines.filter { ids.contains($0.id) }
+
+        let anyUndone = selectedTodos.contains(where: {
+            !$0.isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
+        }) || selectedRoutines.contains(where: {
+            let checkOn = checkDay(for: $0.id)
+            let isDone = DayBoardLogic.isRoutineDone(
+                $0.snapshot,
+                checks: checks.compactMap(\.snapshot),
+                on: checkOn
+            )
+            return !isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
+        })
+
+        let markDone = anyUndone
+
+        PendingCompletionManager.shared.toggleBatch(
+            ids: ids,
+            markDone: markDone,
+            reduceMotion: reduceMotion
+        ) {
+            let todoIDs = Set(selectedTodos.map(\.id))
+            if !todoIDs.isEmpty {
+                DayBoardMutations.batchToggleDone(todoIDs, markDone: markDone, todos: self.todos)
+            }
+            for routine in selectedRoutines {
+                let checkOn = self.checkDay(for: routine.id)
+                DayBoardMutations.batchSetRoutineChecks(
+                    [routine.id],
+                    markDone: markDone,
+                    on: checkOn,
+                    routines: self.routines,
+                    context: self.modelContext
+                )
+            }
+            if markDone {
+                self.shiftFocusAfterBatchCompletion(completedIDs: ids, previousIDs: previousIDs)
+            }
+        }
+    }
+
     private func shiftFocusAfterCompletion(id: UUID, previousIDs: [UUID]) {
         guard !showCompleted, let index = previousIDs.firstIndex(of: id) else { return }
-        let remaining = Set(orderedVisibleIDs)
+        let remaining = Set(effectiveVisibleIDs)
         let candidates = Array(previousIDs.dropFirst(index + 1)) + Array(previousIDs.prefix(index).reversed())
         focusTask(candidates.first { remaining.contains($0) })
-        if focusedTaskID?.wrappedValue != nil {
-            BoardSelection.shared.inspectBoard(dayKey)
+        if let focused = focusedTaskID?.wrappedValue {
+            BoardSelection.shared.inspectBoard(mappedDayKey(for: focused))
+        } else {
+            onReturnToInput?()
+        }
+    }
+
+    private func shiftFocusAfterBatchCompletion(completedIDs: Set<UUID>, previousIDs: [UUID]) {
+        guard !showCompleted else { return }
+        let remaining = Set(effectiveVisibleIDs).subtracting(completedIDs)
+        let lastSelectedIdx = previousIDs.lastIndex { completedIDs.contains($0) } ?? 0
+        let candidates = Array(previousIDs.dropFirst(lastSelectedIdx + 1)) + Array(previousIDs.prefix(lastSelectedIdx).reversed())
+        let nextFocus = candidates.first { remaining.contains($0) }
+        focusTask(nextFocus)
+        if let nextFocus {
+            BoardSelection.shared.inspectBoard(mappedDayKey(for: nextFocus))
         } else {
             onReturnToInput?()
         }
     }
 
     func deleteSelected(id: UUID) {
-        let ids = orderedVisibleIDs
+        let selected = taskSelection.ids
+        if selected.count > 1 && selected.contains(id) {
+            batchDeleteSelected(selected)
+            return
+        }
+        singleDeleteSelected(id: id)
+    }
+
+    private func singleDeleteSelected(id: UUID) {
+        let ids = effectiveVisibleIDs
         if let idx = ids.firstIndex(of: id) {
             if idx + 1 < ids.count {
                 focusTask(ids[idx + 1])
@@ -222,6 +328,24 @@ extension DayBoardList {
         if let routine = routines.first(where: { $0.id == id }) {
             pendingTrash = PendingTrash(title: routine.title) {
                 DayBoardMutations.trashRoutine(routine)
+            }
+        }
+    }
+
+    func batchDeleteSelected(_ ids: Set<UUID>) {
+        let previousIDs = effectiveVisibleIDs
+        let remaining = Set(effectiveVisibleIDs).subtracting(ids)
+        let lastIdx = previousIDs.lastIndex { ids.contains($0) } ?? 0
+        let candidates = Array(previousIDs.dropFirst(lastIdx + 1)) + Array(previousIDs.prefix(lastIdx).reversed())
+        let nextFocus = candidates.first { remaining.contains($0) }
+
+        pendingTrash = PendingTrash(title: "\(ids.count)") {
+            DayBoardMutations.batchTrash(ids, todos: self.todos, routines: self.routines)
+            self.focusTask(nextFocus)
+            if let nextFocus {
+                BoardSelection.shared.inspectBoard(self.mappedDayKey(for: nextFocus))
+            } else {
+                self.onReturnToInput?()
             }
         }
     }

@@ -390,19 +390,13 @@ struct DiaryPage: View {
     }
 
     private var emptyState: some View {
-        VStack(spacing: 12) {
-            Image(systemName: "note.text")
-                .font(.system(size: 32, weight: .light))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.5))
-            Text(selectedTagID != nil || !searchQuery.isEmpty ? "diary.empty.filtered" : "diary.empty.title")
-                .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(DaybookTheme.muted)
-            Text(showsPageHeader ? "diary.empty.hint" : "diary.quick.empty.hint")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.8))
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
+        DaybookEmptyState(
+            title: selectedTagID != nil || !searchQuery.isEmpty ? "diary.empty.filtered" : "diary.empty.title",
+            subtitle: showsPageHeader ? "diary.empty.hint" : "diary.quick.empty.hint",
+            systemImage: selectedTagID != nil || !searchQuery.isEmpty ? "magnifyingglass" : "note.text",
+            alignment: .center,
+            centerVertically: true
+        )
     }
 
     private func submitNote() {
