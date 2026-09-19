@@ -6,14 +6,16 @@ struct TaskRow: View {
     let dispatch: (TaskRowAction) -> Void
     var onSaveTitle: ((String) -> Bool)? = nil
 
-    @Environment(\.locale) private var locale
+    @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.daybookViewStyle) var style
 
     @State var editing = false
     @State var hovering = false
     @State private var isPointerHovered = false
     @State private var isNoteHovered = false
+    @State var isCommandPressed = false
+    @State private var flagsMonitor: Any? = nil
     @State var draft = ""
     @State var pickingDay = false
     @State var pickingTime = false
@@ -37,6 +39,7 @@ struct TaskRow: View {
         rowContent
             .onHover { hovering = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
             .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
             .contextMenu { menus }
             .popover(isPresented: $pickingDay) {
@@ -45,13 +48,35 @@ struct TaskRow: View {
             .popover(isPresented: $pickingTime) {
                 timePicker
             }
-            .onAppear { draft = state.title }
+            .onAppear {
+                draft = state.title
+                startObservingModifiers()
+            }
+            .onDisappear {
+                stopObservingModifiers()
+            }
             .onChange(of: state.title) { _, value in
                 if !editing { draft = value }
             }
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
             }
+    }
+
+    private func startObservingModifiers() {
+        guard flagsMonitor == nil else { return }
+        isCommandPressed = NSEvent.modifierFlags.contains(.command)
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+            isCommandPressed = event.modifierFlags.contains(.command)
+            return event
+        }
+    }
+
+    private func stopObservingModifiers() {
+        if let flagsMonitor {
+            NSEvent.removeMonitor(flagsMonitor)
+            self.flagsMonitor = nil
+        }
     }
 
     private var rowContent: some View {
@@ -69,6 +94,12 @@ struct TaskRow: View {
             if editing {
                 editor
                     .frame(maxWidth: .infinity, alignment: .leading)
+            } else if isHovered && isCommandPressed {
+                commandActionStrip
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                        removal: .opacity
+                    ))
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     selectableContent
@@ -79,11 +110,11 @@ struct TaskRow: View {
                         .padding(.top, 2)
                     }
                 }
+
+                metadataCluster
+
+                actionCluster
             }
-
-            metadataCluster
-
-            actionCluster
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
@@ -308,119 +339,11 @@ struct TaskRow: View {
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
-    private var attachedTagNames: [String] {
+    var attachedTagNames: [String] {
         guard let classify = state.classify else { return [] }
         let selectedIDs = Set(TagIDList.parse(classify.tagIDs))
         guard !selectedIDs.isEmpty else { return [] }
         return classify.tags.filter { selectedIDs.contains($0.id) }.map(\.name)
-    }
-
-    @ViewBuilder
-    private var tagChips: some View {
-        let tags = attachedTagNames
-        if !tags.isEmpty {
-            let displayTags = Array(tags.prefix(2))
-            let overflow = tags.count - displayTags.count
-
-            HStack(spacing: 3) {
-                ForEach(displayTags, id: \.self) { tagName in
-                    Text("#\(tagName)")
-                        .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
-                        .lineLimit(1)
-                        .padding(.horizontal, 4.5)
-                        .frame(height: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .fill(DaybookTheme.Syntax.tagFill)
-                        )
-                        .help("#\(tagName)")
-                }
-
-                if overflow > 0 {
-                    Text("+\(overflow)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
-                        .padding(.horizontal, 3.5)
-                        .frame(height: 18)
-                        .background(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .fill(DaybookTheme.Syntax.tagBadgeFill)
-                        )
-                        .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
-                }
-            }
-        }
-    }
-
-    private var quadrantBadge: some View {
-        let isImportant = state.classify?.isImportant == true || state.isImportant
-        let isUrgent = state.classify?.isUrgent == true || state.isUrgent
-        let slot = QuadrantSlot.of(important: isImportant, urgent: isUrgent)
-        let isHighlighted = isHovered || state.isSelected
-        return QuadrantBadge(slot: slot, isHighlighted: isHighlighted)
-    }
-
-    private var formattedNoteSnippet: String? {
-        guard let notes = state.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
-        let firstLine = notes.components(separatedBy: .newlines).first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })
-        return firstLine?.trimmingCharacters(in: .whitespaces)
-    }
-
-    private func streakBadge(_ streak: Int) -> some View {
-        let isHighlighted = isHovered || state.isSelected
-        return HStack(spacing: 2.5) {
-            Image(systemName: "flame.fill")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
-            Text("\(streak)")
-                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
-                .lineLimit(1)
-                .contentTransition(.numericText())
-                .animation(DaybookMotion.interactive(reduceMotion), value: streak)
-                .offset(y: -0.6)
-        }
-        .fixedSize()
-        .padding(.horizontal, 4.5)
-        .frame(height: 18)
-        .background(
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                .fill(isHighlighted ? Color.orange.opacity(0.12) : Color.clear)
-        )
-    }
-
-    @ViewBuilder
-    private func remindBadge(_ minutes: Int) -> some View {
-        let isHighlighted = isHovered || state.isSelected
-        let content = HStack(spacing: 2.5) {
-            Image(systemName: "clock")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
-            Text(RemindMinutes.label(minutes, locale: locale))
-                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
-                .lineLimit(1)
-                .offset(y: -0.6)
-        }
-        .fixedSize()
-        .padding(.horizontal, 4.5)
-        .frame(height: 18)
-        .background(
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                .fill(isHighlighted ? DaybookTheme.stamp.opacity(0.10) : Color.clear)
-        )
-
-        if state.canSetRemind {
-            Button {
-                pickingTime = true
-            } label: {
-                content
-            }
-            .buttonStyle(.plain)
-        } else {
-            content
-        }
     }
 
     private var editor: some View {

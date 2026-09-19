@@ -17,12 +17,36 @@ extension TaskRow {
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
+    // MARK: - 「···」 4 逻辑分区更多菜单
+
     private var moreMenu: some View {
         Menu {
+            // 分区 1: 编辑与排程
             Button("row.edit", action: beginEdit)
+            scheduleSection
+            timeMenus
+
             Divider()
-            overflowMenus
+
+            // 分区 2: 四象限与分类
+            prioritySubMenu
+            projectSubMenu
+            tagsSubMenu
+
             Divider()
+
+            // 分区 3: 附件与习惯上下文
+            attachmentMenus
+            standingMenus
+            if state.canSkip {
+                Button("row.skip") {
+                    dispatch(.skip)
+                }
+            }
+
+            Divider()
+
+            // 分区 4: 危险区（移入废纸篓）
             Button("row.delete", role: .destructive) {
                 dispatch(.delete)
             }
@@ -47,30 +71,183 @@ extension TaskRow {
     @ViewBuilder
     var menus: some View {
         Button("row.edit", action: beginEdit)
-        overflowMenus
+        scheduleSection
+        timeMenus
+        Divider()
+        prioritySubMenu
+        projectSubMenu
+        tagsSubMenu
+        Divider()
+        attachmentMenus
+        standingMenus
+        if state.canSkip {
+            Button("row.skip") {
+                dispatch(.skip)
+            }
+        }
+        Divider()
         Button("row.delete", role: .destructive) {
             dispatch(.delete)
         }
     }
 
+    // MARK: - ⌘ 平铺极速快捷操作条
+
     @ViewBuilder
-    private var overflowMenus: some View {
-        timeMenus
-        classifyMenus
-        attachmentMenus
+    var commandActionStrip: some View {
+        HStack(spacing: 5) {
+            // 1. 提醒时间 ⏰
+            if state.canSetRemind {
+                commandStripButton(
+                    icon: "clock",
+                    label: "row.quick.remind",
+                    isActive: state.remindMinutes != nil
+                ) {
+                    if state.remindMinutes == nil {
+                        dispatch(.setRemindMinutes(RemindMinutes.from(date: .now)))
+                    }
+                    pickingTime = true
+                }
+            }
+
+            // 2. 四象限优先级 ⚡️
+            if state.classify != nil {
+                Menu {
+                    priorityMenuItems
+                } label: {
+                    commandStripIcon(
+                        icon: "exclamationmark.circle",
+                        label: "row.quick.priority",
+                        isActive: hasActivePriority
+                    )
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+            }
+
+            // 3. 移至明天 📅
+            if state.todayKey != nil {
+                commandStripButton(
+                    icon: "arrow.right.circle",
+                    label: "row.quick.tomorrow",
+                    isActive: false
+                ) {
+                    let tomorrow = DayKey.tomorrow(from: .now)
+                    dispatch(.moveToDay(tomorrow))
+                }
+            }
+
+            // 4. 标签 🏷
+            if let classify = state.classify, !classify.tags.isEmpty {
+                Menu {
+                    tagsMenuItems(classify)
+                } label: {
+                    commandStripIcon(
+                        icon: "tag",
+                        label: "row.quick.tags",
+                        isActive: !attachedTagNames.isEmpty
+                    )
+                }
+                .menuStyle(.borderlessButton)
+                .menuIndicator(.hidden)
+            }
+
+            Spacer(minLength: 4)
+
+            // 5. 移入废纸篓 🗑
+            commandStripButton(
+                icon: "trash",
+                label: "row.quick.delete",
+                isDestructive: true
+            ) {
+                dispatch(.delete)
+            }
+        }
+        .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+    }
+
+    private var hasActivePriority: Bool {
+        state.classify?.isImportant == true || state.isImportant || state.classify?.isUrgent == true || state.isUrgent
+    }
+
+    func setQuadrant(_ slot: QuadrantSlot?) {
+        guard let classify = state.classify else { return }
+        switch slot {
+        case .importantUrgent:
+            classify.onImportant(true)
+            classify.onUrgent(true)
+        case .important:
+            classify.onImportant(true)
+            classify.onUrgent(false)
+        case .urgent:
+            classify.onImportant(false)
+            classify.onUrgent(true)
+        case .rest, .none:
+            classify.onImportant(false)
+            classify.onUrgent(false)
+        }
+    }
+
+    private func commandStripButton(
+        icon: String,
+        label: LocalizedStringKey,
+        isActive: Bool = false,
+        isDestructive: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            commandStripIcon(icon: icon, label: label, isActive: isActive, isDestructive: isDestructive)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func commandStripIcon(
+        icon: String,
+        label: LocalizedStringKey,
+        isActive: Bool = false,
+        isDestructive: Bool = false
+    ) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .font(.system(size: 10, weight: .semibold))
+            Text(label)
+                .font(.system(size: 10.5, weight: .medium))
+        }
+        .padding(.horizontal, 5.5)
+        .padding(.vertical, 3)
+        .background(
+            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                .fill(
+                    isDestructive
+                        ? Color.red.opacity(0.12)
+                        : (isActive ? DaybookTheme.stamp.opacity(0.14) : DaybookTheme.ink.opacity(0.06))
+                )
+        )
+        .foregroundStyle(
+            isDestructive
+                ? Color.red
+                : (isActive ? DaybookTheme.stamp : DaybookTheme.ink.opacity(0.85))
+        )
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - 子菜单辅助
+
+    @ViewBuilder
+    private var scheduleSection: some View {
         if state.todayKey != nil {
+            Button {
+                let tomorrow = DayKey.tomorrow(from: .now)
+                dispatch(.moveToDay(tomorrow))
+            } label: {
+                Label("row.tomorrow", systemImage: "arrow.right.circle")
+            }
             DayScheduleMenu(
                 todayKey: state.todayKey ?? "",
                 currentDayKey: state.currentDayKey,
                 onMove: { dispatch(.moveToDay($0)) },
                 pickingDay: $pickingDay
             )
-        }
-        standingMenus
-        if state.canSkip {
-            Button("row.skip") {
-                dispatch(.skip)
-            }
         }
     }
 
@@ -92,6 +269,117 @@ extension TaskRow {
     }
 
     @ViewBuilder
+    private var prioritySubMenu: some View {
+        if state.classify != nil {
+            Menu {
+                priorityMenuItems
+            } label: {
+                Label("classify.priority", systemImage: "exclamationmark.circle")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var priorityMenuItems: some View {
+        let currentImportant = state.classify?.isImportant == true || state.isImportant
+        let currentUrgent = state.classify?.isUrgent == true || state.isUrgent
+        let currentSlot = QuadrantSlot.of(important: currentImportant, urgent: currentUrgent)
+        let hasPriority = currentImportant || currentUrgent
+
+        Button {
+            setQuadrant(.importantUrgent)
+        } label: {
+            if currentSlot == .importantUrgent && hasPriority {
+                Label("P1 · \(L10n.string("quadrant.iu", locale: locale))", systemImage: "checkmark")
+            } else {
+                Text("P1 · \(L10n.string("quadrant.iu", locale: locale))")
+            }
+        }
+        Button {
+            setQuadrant(.important)
+        } label: {
+            if currentSlot == .important && hasPriority {
+                Label("P2 · \(L10n.string("quadrant.i", locale: locale))", systemImage: "checkmark")
+            } else {
+                Text("P2 · \(L10n.string("quadrant.i", locale: locale))")
+            }
+        }
+        Button {
+            setQuadrant(.urgent)
+        } label: {
+            if currentSlot == .urgent && hasPriority {
+                Label("P3 · \(L10n.string("quadrant.u", locale: locale))", systemImage: "checkmark")
+            } else {
+                Text("P3 · \(L10n.string("quadrant.u", locale: locale))")
+            }
+        }
+        Button {
+            setQuadrant(.rest)
+        } label: {
+            if currentSlot == .rest && hasPriority {
+                Label("P4 · \(L10n.string("quadrant.rest", locale: locale))", systemImage: "checkmark")
+            } else {
+                Text("P4 · \(L10n.string("quadrant.rest", locale: locale))")
+            }
+        }
+        if hasPriority {
+            Divider()
+            Button("classify.priority.clear") {
+                setQuadrant(nil)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var projectSubMenu: some View {
+        if let classify = state.classify, !classify.projects.isEmpty {
+            Menu {
+                Button("classify.project.none") { classify.onProject(nil) }
+                ForEach(classify.projects) { project in
+                    Button {
+                        classify.onProject(project.id)
+                    } label: {
+                        if classify.projectID == project.id {
+                            Label(project.name, systemImage: "checkmark")
+                        } else {
+                            Text(project.name)
+                        }
+                    }
+                }
+            } label: {
+                Label("classify.project", systemImage: "folder")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var tagsSubMenu: some View {
+        if let classify = state.classify, !classify.tags.isEmpty {
+            Menu {
+                tagsMenuItems(classify)
+            } label: {
+                Label("classify.tags", systemImage: "tag")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func tagsMenuItems(_ classify: TaskClassifyContext) -> some View {
+        ForEach(classify.tags) { tag in
+            let on = TagIDList.contains(classify.tagIDs, tag.id)
+            Button {
+                classify.onToggleTag(tag.id)
+            } label: {
+                if on {
+                    Label(tag.name, systemImage: "checkmark")
+                } else {
+                    Text(tag.name)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
     private var standingMenus: some View {
         if state.isResident {
             if let weekdaysOnly = state.weekdaysOnly {
@@ -107,50 +395,6 @@ extension TaskRow {
                 } else {
                     Button("row.enable") {
                         dispatch(.setEnabled(true))
-                    }
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var classifyMenus: some View {
-        if let classify = state.classify {
-            Button(classify.isImportant ? "classify.important.on" : "classify.important") {
-                classify.onImportant(!classify.isImportant)
-            }
-            Button(classify.isUrgent ? "classify.urgent.on" : "classify.urgent") {
-                classify.onUrgent(!classify.isUrgent)
-            }
-            if !classify.projects.isEmpty {
-                Menu("classify.project") {
-                    Button("classify.project.none") { classify.onProject(nil) }
-                    ForEach(classify.projects) { project in
-                        Button {
-                            classify.onProject(project.id)
-                        } label: {
-                            if classify.projectID == project.id {
-                                Label(project.name, systemImage: "checkmark")
-                            } else {
-                                Text(project.name)
-                            }
-                        }
-                    }
-                }
-            }
-            if !classify.tags.isEmpty {
-                Menu("classify.tags") {
-                    ForEach(classify.tags) { tag in
-                        let on = TagIDList.contains(classify.tagIDs, tag.id)
-                        Button {
-                            classify.onToggleTag(tag.id)
-                        } label: {
-                            if on {
-                                Label(tag.name, systemImage: "checkmark")
-                            } else {
-                                Text(tag.name)
-                            }
-                        }
                     }
                 }
             }
