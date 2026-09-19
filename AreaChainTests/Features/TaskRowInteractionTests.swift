@@ -229,7 +229,7 @@ struct TaskRowInteractionTests {
         #expect(editor(in: window.contentView) == nil)
     }
 
-    @Test func taskRowWithNotesConfiguresTrackingAreaAndTooltip() async throws {
+    @Test func taskRowWithNotesConfiguresHoverTrackingArea() async throws {
         let probe = RowActionProbe()
         let taskID = UUID()
         let notesContent = "第一行备注\n第二行备注"
@@ -242,8 +242,8 @@ struct TaskRowInteractionTests {
         defer { close(window) }
         try await settle(window)
         let region = try #require(findRegion(taskID, in: window.contentView))
-        #expect(region.toolTip == notesContent)
         #expect(!region.trackingAreas.isEmpty)
+        #expect(region.toolTip == nil, "避免系统原生黑底 Tooltip 与自定义纸感浮层重叠双发")
     }
 
     private func row(isDone: Bool = false, isSelected: Bool = false, probe: RowActionProbe) -> some View {

@@ -4,7 +4,6 @@ import SwiftUI
 /// 原生 clickCount 让第一次点击立即选中，不必等双击手势失败。
 struct TaskRowPointerRegion: NSViewRepresentable {
     var id: UUID
-    var tooltip: String? = nil
     var onSelect: (TaskSelectionModifiers) -> Void
     var onEdit: () -> Void
     var onHover: ((Bool) -> Void)? = nil
@@ -17,7 +16,6 @@ struct TaskRowPointerRegion: NSViewRepresentable {
 
     func updateNSView(_ view: TaskRowPointerView, context: Context) {
         view.identifier = NSUserInterfaceItemIdentifier(id.uuidString)
-        view.toolTip = tooltip
         view.onSelect = onSelect
         view.onEdit = onEdit
         view.onHover = onHover

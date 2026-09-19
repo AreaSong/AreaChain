@@ -141,36 +141,50 @@ struct TaskRow: View {
     }
 
     private var noteFloatingBubble: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: "text.alignleft")
-                    .font(.system(size: 9.5, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                Text(L10n.string("drawer.notes.title", locale: locale))
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(DaybookTheme.muted)
-                Spacer(minLength: 0)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Spacer().frame(width: 6)
+                Image(systemName: "arrowtriangle.up.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(DaybookTheme.paper)
+                    .offset(y: 1)
+                Spacer()
             }
+            .frame(height: 5)
 
-            Text(fullNoteText ?? "")
-                .font(.system(size: 11, weight: .regular))
-                .foregroundStyle(DaybookTheme.ink)
-                .lineSpacing(2.5)
-                .lineLimit(8)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.stamp)
+                    Text(L10n.string("drawer.notes.title", locale: locale))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted)
+                    Spacer(minLength: 0)
+                }
+
+                Text(fullNoteText ?? "")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineSpacing(2.5)
+                    .lineLimit(8)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .frame(width: 210, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(DaybookTheme.paper)
+                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+            )
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 7)
-        .frame(maxWidth: 280, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-        )
+        .frame(width: 210, alignment: .leading)
+        .fixedSize()
         .allowsHitTesting(false)
     }
 
@@ -179,7 +193,6 @@ struct TaskRow: View {
             .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
             .overlay(TaskRowPointerRegion(
                 id: state.id,
-                tooltip: fullNoteText,
                 onSelect: { dispatch(.select($0)) },
                 onEdit: beginEdit,
                 onHover: { isPointerHovered = $0 }
@@ -187,16 +200,6 @@ struct TaskRow: View {
             .padding(.top, -6)
             .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
             .accessibilityHidden(true))
-            .overlay(alignment: .topLeading) {
-                if shouldShowNoteBubble {
-                    noteFloatingBubble
-                        .offset(y: 24)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)),
-                            removal: .opacity
-                        ))
-                }
-            }
             .modifier(TodoDragIfNeeded(payload: state.dragPayload))
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
@@ -224,7 +227,16 @@ struct TaskRow: View {
             )
             .contentShape(Rectangle())
             .onHover { isNoteHovered = $0 }
-            .help(fullNoteText ?? "")
+            .overlay(alignment: .topLeading) {
+                if shouldShowNoteBubble {
+                    noteFloatingBubble
+                        .offset(x: -8, y: 16)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)),
+                            removal: .opacity
+                        ))
+                }
+            }
     }
 
     private var titleContent: some View {
@@ -262,7 +274,6 @@ struct TaskRow: View {
             }
         }
         .contentShape(Rectangle())
-        .help(fullNoteText ?? "")
     }
 
     @ViewBuilder
