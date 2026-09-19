@@ -151,9 +151,9 @@ struct SyntaxExpandableCard: View {
                     token: "⇧↩",
                     title: "换行输入备注",
                     exampleSnippet: "首行待办标题\n换行输入详细备注",
-                    exampleText: Text("首行待办标题 ")
+                    exampleText: Text("首行标题 ")
                         + Text("⇧↵").foregroundStyle(DaybookTheme.ink).bold()
-                        + Text(" 换行输入详细备注"),
+                        + Text(" 换行转备注 (悬停清单查看)"),
                     color: DaybookTheme.muted
                 )
             }

@@ -12,12 +12,18 @@ struct TaskRow: View {
 
     @State var editing = false
     @State var hovering = false
+    @State private var isPointerHovered = false
+    @State private var isNoteHovered = false
     @State var draft = ""
     @State var pickingDay = false
     @State var pickingTime = false
     @State private var isSubtasksExpanded = false
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
+
+    var isHovered: Bool {
+        hovering || isPointerHovered || isNoteHovered
+    }
 
     // MARK: - 现代标准构造器 (State + Action)
 
@@ -30,7 +36,7 @@ struct TaskRow: View {
     var body: some View {
         rowContent
             .onHover { hovering = $0 }
-            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
             .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
             .contextMenu { menus }
             .popover(isPresented: $pickingDay) {
@@ -84,10 +90,11 @@ struct TaskRow: View {
         .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : nil)
         .modernRow(
             cornerRadius: DaybookRadius.small,
-            isHovered: hovering,
+            isHovered: isHovered,
             isSelected: state.isSelected
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .zIndex(isHovered ? 60 : 1)
     }
 
     @ViewBuilder
@@ -105,28 +112,91 @@ struct TaskRow: View {
     }
 
     private var hasVisibleNote: Bool {
-        if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return true
+        if style.isWorkspace {
+            if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return true
+            }
+            if let source = state.classify?.sourceLabel, !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                return true
+            }
+            return formattedNoteSnippet != nil
         }
-        if let source = state.classify?.sourceLabel, !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return true
-        }
-        return formattedNoteSnippet != nil
+        return false
     }
 
     // MARK: - Subviews
+
+    private var fullNoteText: String? {
+        if let notes = state.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return note.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return nil
+    }
+
+    private var shouldShowNoteBubble: Bool {
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime && isHovered && fullNoteText != nil
+    }
+
+    private var noteFloatingBubble: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "text.alignleft")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.stamp)
+                Text(L10n.string("drawer.notes.title", locale: locale))
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(DaybookTheme.muted)
+                Spacer(minLength: 0)
+            }
+
+            Text(fullNoteText ?? "")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundStyle(DaybookTheme.ink)
+                .lineSpacing(2.5)
+                .lineLimit(8)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .frame(maxWidth: 280, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+        )
+        .allowsHitTesting(false)
+    }
 
     private var selectableContent: some View {
         titleContent
             .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
             .overlay(TaskRowPointerRegion(
                 id: state.id,
+                tooltip: fullNoteText,
                 onSelect: { dispatch(.select($0)) },
-                onEdit: beginEdit
+                onEdit: beginEdit,
+                onHover: { isPointerHovered = $0 }
             )
             .padding(.top, -6)
             .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
             .accessibilityHidden(true))
+            .overlay(alignment: .topLeading) {
+                if shouldShowNoteBubble {
+                    noteFloatingBubble
+                        .offset(y: 24)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)),
+                            removal: .opacity
+                        ))
+                }
+            }
             .modifier(TodoDragIfNeeded(payload: state.dragPayload))
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
@@ -142,33 +212,57 @@ struct TaskRow: View {
             .help("row.resident")
     }
 
+    private var noteIndicator: some View {
+        Image(systemName: "text.alignleft")
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(isHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .padding(.horizontal, 3.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+            )
+            .contentShape(Rectangle())
+            .onHover { isNoteHovered = $0 }
+            .help(fullNoteText ?? "")
+    }
+
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            ModernTaskTitle(text: state.title, isDone: state.isDone)
-                .lineLimit(2)
-
-            if let noteSnippet = formattedNoteSnippet {
-                Text(noteSnippet)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.85))
-                    .lineLimit(1)
+            HStack(alignment: .center, spacing: 5) {
+                ModernTaskTitle(text: state.title, isDone: state.isDone)
+                    .lineLimit(style.isWorkspace ? 2 : 1)
                     .truncationMode(.tail)
+
+                if !style.isWorkspace, fullNoteText != nil {
+                    noteIndicator
+                }
             }
 
-            if let note = state.note {
-                Text(note)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
-            }
+            if style.isWorkspace {
+                if let noteSnippet = formattedNoteSnippet {
+                    Text(noteSnippet)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.85))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                }
 
-            if let source = state.classify?.sourceLabel, !source.isEmpty {
-                Text(source)
-                    .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
-            }
+                if let note = state.note {
+                    Text(note)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
+                }
 
+                if let source = state.classify?.sourceLabel, !source.isEmpty {
+                    Text(source)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.75))
+                }
+            }
         }
         .contentShape(Rectangle())
+        .help(fullNoteText ?? "")
     }
 
     @ViewBuilder
@@ -252,7 +346,7 @@ struct TaskRow: View {
         let isImportant = state.classify?.isImportant == true || state.isImportant
         let isUrgent = state.classify?.isUrgent == true || state.isUrgent
         let slot = QuadrantSlot.of(important: isImportant, urgent: isUrgent)
-        let isHighlighted = hovering || state.isSelected
+        let isHighlighted = isHovered || state.isSelected
         return QuadrantBadge(slot: slot, isHighlighted: isHighlighted)
     }
 
@@ -263,7 +357,7 @@ struct TaskRow: View {
     }
 
     private func streakBadge(_ streak: Int) -> some View {
-        let isHighlighted = hovering || state.isSelected
+        let isHighlighted = isHovered || state.isSelected
         return HStack(spacing: 2.5) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 9.5, weight: .semibold))
@@ -287,7 +381,7 @@ struct TaskRow: View {
 
     @ViewBuilder
     private func remindBadge(_ minutes: Int) -> some View {
-        let isHighlighted = hovering || state.isSelected
+        let isHighlighted = isHovered || state.isSelected
         let content = HStack(spacing: 2.5) {
             Image(systemName: "clock")
                 .font(.system(size: 9.5, weight: .medium))

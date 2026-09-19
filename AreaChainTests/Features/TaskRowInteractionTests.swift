@@ -229,6 +229,23 @@ struct TaskRowInteractionTests {
         #expect(editor(in: window.contentView) == nil)
     }
 
+    @Test func taskRowWithNotesConfiguresTrackingAreaAndTooltip() async throws {
+        let probe = RowActionProbe()
+        let taskID = UUID()
+        let notesContent = "第一行备注\n第二行备注"
+        let state = TaskRowState(
+            identity: TaskRowIdentityState(id: taskID, title: "带备注的任务"),
+            content: TaskRowContentState(notes: notesContent),
+            interaction: TaskRowInteractionState()
+        )
+        let window = host(TaskRow(state: state, dispatch: probe.record))
+        defer { close(window) }
+        try await settle(window)
+        let region = try #require(findRegion(taskID, in: window.contentView))
+        #expect(region.toolTip == notesContent)
+        #expect(!region.trackingAreas.isEmpty)
+    }
+
     private func row(isDone: Bool = false, isSelected: Bool = false, probe: RowActionProbe) -> some View {
         TaskRow(state: TaskRowState(
             identity: TaskRowIdentityState(title: "测试任务", isDone: isDone),

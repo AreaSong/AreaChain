@@ -87,7 +87,8 @@ struct LiveComposerPreviewHeader: View {
             title: displayTitle,
             tags: previewTags,
             hasTime: displayTime != nil,
-            hasPriority: displayPriority != nil
+            hasPriority: displayPriority != nil,
+            hasNotes: !parsed.notes.isEmpty
         )
     }
 
@@ -171,6 +172,20 @@ struct LiveComposerPreviewHeader: View {
                     .background(Capsule().fill(priority.fill))
                     .foregroundStyle(priority.color)
                     .help(LocalizedStringKey(priority.tooltip))
+                }
+
+                if !parsed.notes.isEmpty {
+                    HStack(spacing: 2.5) {
+                        Image(systemName: "text.alignleft")
+                            .font(.system(size: 9))
+                        Text("row.note")
+                            .font(.system(size: 10.5, weight: .semibold))
+                    }
+                    .padding(.horizontal, 5.5)
+                    .padding(.vertical, 2.5)
+                    .background(Capsule().fill(DaybookTheme.ink.opacity(0.06)))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .help(parsed.notes)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
@@ -323,6 +338,7 @@ struct LiveComposerPreviewHeader: View {
         tags: [String],
         hasTime: Bool,
         hasPriority: Bool,
+        hasNotes: Bool = false,
         cardWidth: CGFloat = DaybookTheme.popoverWidth - 24
     ) -> Bool {
         guard !tags.isEmpty else { return true }
@@ -331,8 +347,9 @@ struct LiveComposerPreviewHeader: View {
         let closeButtonAndGap: CGFloat = 24
         let timeWidth: CGFloat = hasTime ? 48 : 0
         let priorityWidth: CGFloat = hasPriority ? 38 : 0
+        let notesWidth: CGFloat = hasNotes ? 42 : 0
 
-        let availableForContent = cardWidth - horizontalPadding - circleAndGap - closeButtonAndGap - timeWidth - priorityWidth
+        let availableForContent = cardWidth - horizontalPadding - circleAndGap - closeButtonAndGap - timeWidth - priorityWidth - notesWidth
 
         let titleWidth = estimatedWidth(for: title, fontSize: 13)
         let tagsWidth = tags.reduce(0) { sum, tag in

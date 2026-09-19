@@ -52,6 +52,7 @@ struct SyntaxOverlayAnchor {
             tags: parsed.tagNames,
             hasTime: parsed.remindMinutes != nil,
             hasPriority: parsed.hasPriorityToken,
+            hasNotes: !parsed.notes.isEmpty,
             cardWidth: targetWidth
         )
 

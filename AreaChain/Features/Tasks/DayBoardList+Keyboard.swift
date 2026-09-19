@@ -194,7 +194,7 @@ extension DayBoardList {
         singleToggleSelected(id: id)
     }
 
-    private func singleToggleSelected(id: UUID) {
+    func singleToggleSelected(id: UUID) {
         let previousIDs = effectiveVisibleIDs
         let checkOn = checkDay(for: id)
         if let todo = todos.first(where: { $0.id == id }) {

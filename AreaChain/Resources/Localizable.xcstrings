@@ -6731,6 +6731,23 @@
         }
       }
     },
+    "row.note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备注"
+          }
+        }
+      }
+    },
     "row.resident": {
       "extractionState": "manual",
       "localizations": {
