@@ -246,6 +246,19 @@ struct TaskRowInteractionTests {
         #expect(region.toolTip == nil, "避免系统原生黑底 Tooltip 与自定义纸感浮层重叠双发")
     }
 
+    @Test func commandKeyModifierRendersQuickActionStripWithTrackingAreas() async throws {
+        let probe = RowActionProbe()
+        let taskRow = TaskRow(state: TaskRowState(
+            identity: TaskRowIdentityState(title: "测试快捷条任务")
+        ), dispatch: probe.record)
+        let window = host(taskRow.commandActionStrip)
+        defer { close(window) }
+        try await settle(window)
+        let trackingViews = findTrackingViews(in: window.contentView)
+        #expect(!trackingViews.isEmpty, "Command 快捷条应注入 AppKit 原生悬停追踪区")
+        #expect(trackingViews.count >= 2, "至少包含编辑与删除等快捷按钮的追踪区")
+    }
+
     private func row(isDone: Bool = false, isSelected: Bool = false, probe: RowActionProbe) -> some View {
         TaskRow(state: TaskRowState(
             identity: TaskRowIdentityState(title: "测试任务", isDone: isDone),
@@ -316,6 +329,18 @@ struct TaskRowInteractionTests {
         guard let view else { return nil }
         if let region = view as? TaskRowPointerView, region.identifier?.rawValue == id.uuidString { return region }
         return view.subviews.lazy.compactMap { findRegion(id, in: $0) }.first
+    }
+
+    private func findTrackingViews(in view: NSView?) -> [HoverTrackingNSView] {
+        guard let view else { return [] }
+        var result: [HoverTrackingNSView] = []
+        if let tracking = view as? HoverTrackingNSView {
+            result.append(tracking)
+        }
+        for subview in view.subviews {
+            result.append(contentsOf: findTrackingViews(in: subview))
+        }
+        return result
     }
 
     private func snapshot(_ window: NSWindow, name: String) throws {

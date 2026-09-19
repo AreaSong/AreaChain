@@ -90,134 +90,7 @@ extension TaskRow {
             dispatch(.delete)
         }
     }
-
-    // MARK: - ⌘ 平铺极速快捷操作条（纯图标 + 悬浮聚焦信息提示）
-
-    @ViewBuilder
-    var commandActionStrip: some View {
-        HStack(spacing: 4) {
-            // 1. 编辑标题 ✏️
-            commandStripButton(
-                icon: "pencil",
-                key: "row.quick.edit"
-            ) {
-                beginEdit()
-            }
-
-            // 2. 提醒时间 ⏰
-            if state.canSetRemind {
-                commandStripButton(
-                    icon: "clock",
-                    key: "row.quick.remind",
-                    isActive: state.remindMinutes != nil
-                ) {
-                    if state.remindMinutes == nil {
-                        dispatch(.setRemindMinutes(RemindMinutes.from(date: .now)))
-                    }
-                    pickingTime = true
-                }
-            }
-
-            // 3. 四象限优先级 ⚡️
-            if state.classify != nil {
-                Menu {
-                    priorityMenuItems
-                } label: {
-                    commandStripIcon(
-                        icon: "exclamationmark.circle",
-                        key: "row.quick.priority",
-                        isActive: hasActivePriority
-                    )
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-            }
-
-            // 4. 移至明天 📅
-            if state.todayKey != nil {
-                commandStripButton(
-                    icon: "arrow.right.circle",
-                    key: "row.quick.tomorrow",
-                    isActive: false
-                ) {
-                    let tomorrow = DayKey.tomorrow(from: .now)
-                    dispatch(.moveToDay(tomorrow))
-                }
-            }
-
-            // 5. 归属项目 📁
-            if let classify = state.classify, !classify.projects.isEmpty {
-                Menu {
-                    projectMenuItems(classify)
-                } label: {
-                    commandStripIcon(
-                        icon: "folder",
-                        key: "row.quick.project",
-                        isActive: classify.projectID != nil
-                    )
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-            }
-
-            // 6. 标签 🏷
-            if let classify = state.classify, !classify.tags.isEmpty {
-                Menu {
-                    tagsMenuItems(classify)
-                } label: {
-                    commandStripIcon(
-                        icon: "tag",
-                        key: "row.quick.tags",
-                        isActive: !attachedTagNames.isEmpty
-                    )
-                }
-                .menuStyle(.borderlessButton)
-                .menuIndicator(.hidden)
-            }
-
-            // 7. 习惯跳过 ⏭
-            if state.canSkip {
-                commandStripButton(
-                    icon: "forward.frame",
-                    key: "row.quick.skip"
-                ) {
-                    dispatch(.skip)
-                }
-            }
-
-            // 悬浮聚焦文字提示区（新用户悬浮出信息，老用户凭图标盲操）
-            if let tip = hoveredQuickActionTip {
-                Text(tip)
-                    .font(.system(size: 10, weight: .semibold, design: .rounded))
-                    .foregroundStyle(tip == L10n.string("row.quick.delete", locale: locale) ? Color.red : DaybookTheme.ink.opacity(0.85))
-                    .lineLimit(1)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                            .fill(tip == L10n.string("row.quick.delete", locale: locale) ? Color.red.opacity(0.08) : DaybookTheme.ink.opacity(0.06))
-                    )
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.92, anchor: .leading)),
-                        removal: .opacity
-                    ))
-            }
-
-            Spacer(minLength: 4)
-
-            // 8. 移入废纸篓 🗑（靠最右侧，危险操作）
-            commandStripButton(
-                icon: "trash",
-                key: "row.quick.delete",
-                isDestructive: true
-            ) {
-                dispatch(.delete)
-            }
-        }
-        .frame(maxWidth: .infinity, minHeight: 22, alignment: .leading)
-    }
-
-    private var hasActivePriority: Bool {
+    var hasActivePriority: Bool {
         state.classify?.isImportant == true || state.isImportant || state.classify?.isUrgent == true || state.isUrgent
     }
 
@@ -239,63 +112,10 @@ extension TaskRow {
         }
     }
 
-    private func commandStripButton(
-        icon: String,
-        key: String,
-        isActive: Bool = false,
-        isDestructive: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            commandStripIcon(icon: icon, key: key, isActive: isActive, isDestructive: isDestructive)
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func commandStripIcon(
-        icon: String,
-        key: String,
-        isActive: Bool = false,
-        isDestructive: Bool = false
-    ) -> some View {
-        let localizedText = L10n.string(String.LocalizationValue(stringLiteral: key), locale: locale)
-        let isButtonHovered = hoveredQuickActionTip == localizedText
-
-        return Image(systemName: icon)
-            .font(.system(size: 10.5, weight: .medium))
-            .frame(width: 22, height: 22)
-            .background(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                    .fill(
-                        isDestructive
-                            ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
-                            : (isActive
-                                ? DaybookTheme.stamp.opacity(isButtonHovered ? 0.22 : 0.14)
-                                : (isButtonHovered ? DaybookTheme.ink.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
-                    )
-            )
-            .foregroundStyle(
-                isDestructive
-                    ? Color.red
-                    : (isActive ? DaybookTheme.stamp : DaybookTheme.ink.opacity(isButtonHovered ? 0.95 : 0.72))
-            )
-            .contentShape(Rectangle())
-            .help(LocalizedStringKey(key))
-            .onHover { hovering in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    if hovering {
-                        hoveredQuickActionTip = localizedText
-                    } else if hoveredQuickActionTip == localizedText {
-                        hoveredQuickActionTip = nil
-                    }
-                }
-            }
-    }
-
     // MARK: - 子菜单辅助
 
     @ViewBuilder
-    private var scheduleSection: some View {
+    var scheduleSection: some View {
         if state.todayKey != nil {
             Button {
                 let tomorrow = DayKey.tomorrow(from: .now)
@@ -313,7 +133,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private var timeMenus: some View {
+    var timeMenus: some View {
         if state.canSetRemind {
             Button("row.time.set") {
                 if state.remindMinutes == nil {
@@ -341,7 +161,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private var priorityMenuItems: some View {
+    var priorityMenuItems: some View {
         let currentImportant = state.classify?.isImportant == true || state.isImportant
         let currentUrgent = state.classify?.isUrgent == true || state.isUrgent
         let currentSlot = QuadrantSlot.of(important: currentImportant, urgent: currentUrgent)
@@ -403,7 +223,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private func projectMenuItems(_ classify: TaskClassifyContext) -> some View {
+    func projectMenuItems(_ classify: TaskClassifyContext) -> some View {
         Button("classify.project.none") { classify.onProject(nil) }
         ForEach(classify.projects) { project in
             Button {
@@ -430,7 +250,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private func tagsMenuItems(_ classify: TaskClassifyContext) -> some View {
+    func tagsMenuItems(_ classify: TaskClassifyContext) -> some View {
         ForEach(classify.tags) { tag in
             let on = TagIDList.contains(classify.tagIDs, tag.id)
             Button {
@@ -446,7 +266,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private var standingMenus: some View {
+    var standingMenus: some View {
         if state.isResident {
             if let weekdaysOnly = state.weekdaysOnly {
                 Button(weekdaysOnly ? "row.everyday" : "row.weekdays") {
@@ -468,7 +288,7 @@ extension TaskRow {
     }
 
     @ViewBuilder
-    private var attachmentMenus: some View {
+    var attachmentMenus: some View {
         if let attachments = state.attachments {
             Button("row.attach", action: attachments.onPickFile)
             Button("row.attach.paste", action: attachments.onPaste)

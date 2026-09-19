@@ -97,10 +97,7 @@ struct TaskRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else if isHovered && isCommandPressed {
                 commandActionStrip
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                        removal: .opacity
-                    ))
+                    .transition(.opacity)
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     selectableContent
@@ -119,7 +116,7 @@ struct TaskRow: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : nil)
+        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : 34)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
