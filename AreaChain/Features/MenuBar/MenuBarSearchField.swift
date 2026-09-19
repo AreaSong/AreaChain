@@ -2,11 +2,18 @@ import AppKit
 import SwiftUI
 
 struct MenuBarSearchField: View {
+    var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
     var availableTags: [String]
 
     @Environment(\.locale) private var locale
     @State private var hostWindow: NSWindow?
+
+    private var searchPlaceholder: String {
+        tab == .diary
+            ? L10n.string("diary.search.placeholder", locale: locale)
+            : L10n.string("footer.search.placeholder", locale: locale)
+    }
 
     var body: some View {
         HStack(spacing: 5) {
@@ -21,7 +28,7 @@ struct MenuBarSearchField: View {
 
             DaybookTextField(
                 text: $toolbar.searchText,
-                placeholder: L10n.string("footer.search.placeholder", locale: locale),
+                placeholder: searchPlaceholder,
                 fontSize: 11,
                 focus: $toolbar.searchIsFocused,
                 autocomplete: toolbar.autocomplete,

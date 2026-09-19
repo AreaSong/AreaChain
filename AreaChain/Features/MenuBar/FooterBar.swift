@@ -205,8 +205,9 @@ struct FooterBar: View {
                     )
             } else {
                 MenuBarSearchField(
+                    tab: tab,
                     toolbar: toolbar,
-                    availableTags: Catalog.liveTags(tags).map(\.name)
+                    availableTags: activeTags.map(\.name)
                 )
                 .accessibilityElement(children: .contain)
                 .accessibilityIdentifier("menubar.toolbar.tools")

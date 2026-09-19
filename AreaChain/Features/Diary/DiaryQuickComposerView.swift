@@ -15,6 +15,7 @@ struct DiaryQuickComposerView: View {
     var isSensitive: Bool = false
     var onOpenWindow: (() -> Void)? = nil
     @State private var hostWindow: NSWindow?
+    @State private var isPopoutHovered = false
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -50,7 +51,7 @@ struct DiaryQuickComposerView: View {
 
     private var compactInputRow: some View {
         let focused = focused.wrappedValue
-        let strokeColor = focused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.4)
+        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.48) : DaybookTheme.rule.opacity(0.45)
 
         return HStack(alignment: .center, spacing: 8) {
             statusIcon
@@ -73,10 +74,15 @@ struct DiaryQuickComposerView: View {
                 } label: {
                     Image(systemName: "arrow.up.forward.square")
                         .font(.system(size: 11.5, weight: .semibold))
-                        .frame(width: 20, height: 20)
+                        .frame(width: 22, height: 22)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                                .fill(isPopoutHovered ? DaybookTheme.ink.opacity(0.08) : .clear)
+                        )
                 }
                 .buttonStyle(.plain)
-                .foregroundStyle(DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
+                .foregroundStyle(isPopoutHovered ? DaybookTheme.ink : DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
+                .onHover { isPopoutHovered = $0 }
                 .help(canSubmit ? "diary.window.continue" : "diary.window.new")
                 .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
                 .background(SyntaxViewAnchor("syntax.diary.popout"))
@@ -94,7 +100,8 @@ struct DiaryQuickComposerView: View {
         .frame(height: 34)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03))
+                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.025))
+                .shadow(color: focused ? DaybookShadow.cardSubtle : .clear, radius: 2, y: 1)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -126,6 +133,8 @@ struct DiaryQuickComposerView: View {
             .help(LocalizedStringKey(status ?? (isSensitive ? "diary.privacy" : "diary.quick.input")))
             .accessibilityLabel(LocalizedStringKey(status ?? (isSensitive ? "diary.privacy" : "diary.quick.input")))
             .accessibilityHidden(status == nil && !isSensitive)
+            .animation(.easeInOut(duration: 0.2), value: status)
+            .animation(.easeInOut(duration: 0.2), value: isSensitive)
     }
 
     private var hasMarkedText: Bool {

@@ -341,12 +341,16 @@ struct DiaryPage: View {
     private var entryListSection: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: showsPageHeader ? 10 : 0) {
+                LazyVStack(alignment: .leading, spacing: showsPageHeader ? 10 : 4) {
                     if filteredEntries.isEmpty {
                         emptyState
                     } else {
                         ForEach(filteredEntries) { entry in
                             entryRow(entry).id(entry.id)
+                        }
+
+                        if !showsPageHeader && filteredEntries.count <= 5 {
+                            quietEmptyWatermark
                         }
                     }
                 }
@@ -373,6 +377,7 @@ struct DiaryPage: View {
                           privacyTags: Array(allTags), draftStore: cardDrafts, vault: vault)
         } else {
             DiarySummaryRow(entry: entry, privacyTags: Array(allTags),
+                            allTags: activeTags,
                             isSelected: selectedEntryID == entry.id,
                             isHighlighted: boardSelection.inspectingDiaryID == entry.id,
                             onSelect: { selectedEntryID = entry.id },
@@ -397,6 +402,17 @@ struct DiaryPage: View {
             alignment: .center,
             centerVertically: true
         )
+    }
+
+    private var quietEmptyWatermark: some View {
+        HStack {
+            Spacer()
+            Label("diary.quick.empty.hint", systemImage: "sparkles")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookTheme.muted.opacity(0.4))
+                .padding(.vertical, 14)
+            Spacer()
+        }
     }
 
     private func submitNote() {
