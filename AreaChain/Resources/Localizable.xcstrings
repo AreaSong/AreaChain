@@ -6918,6 +6918,23 @@
         }
       }
     },
+    "row.quick.edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit title"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑标题"
+          }
+        }
+      }
+    },
     "row.quick.priority": {
       "extractionState": "manual",
       "localizations": {
@@ -6930,7 +6947,24 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "优先级"
+            "value": "四象限优先级"
+          }
+        }
+      }
+    },
+    "row.quick.project": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Assign project"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "归属项目"
           }
         }
       }
@@ -6965,6 +6999,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "标签"
+          }
+        }
+      }
+    },
+    "row.quick.skip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skip today"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "跳过今天"
           }
         }
       }

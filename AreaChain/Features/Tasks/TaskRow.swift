@@ -22,6 +22,7 @@ struct TaskRow: View {
     @State private var isSubtasksExpanded = false
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
+    @State var hoveredQuickActionTip: String? = nil
 
     var isHovered: Bool {
         hovering || isPointerHovered || isNoteHovered
