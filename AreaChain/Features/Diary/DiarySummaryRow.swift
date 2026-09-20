@@ -19,6 +19,9 @@ struct DiarySummaryRow: View {
     @State private var isCommandPressed = false
     @State private var hoveredQuickActionTip: String? = nil
     @State private var flagsMonitor: Any? = nil
+    @State private var isNoteHovered = false
+    @State private var growsUpward = false
+    @State private var bubbleShiftX: CGFloat = 0
 
     private var isSensitive: Bool { DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
     var previewText: String {
@@ -63,24 +66,157 @@ struct DiarySummaryRow: View {
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
+                HStack(alignment: .center, spacing: 4) {
+                    Text(presentation.body)
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .multilineTextAlignment(.leading)
+
+                    if !isSensitive && !presentation.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        noteIndicator(fullText: presentation.body)
+                    }
+                    Spacer(minLength: 0)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            HStack(alignment: .center, spacing: 4) {
                 Text(presentation.body)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .font(DaybookType.body)
+                    .lineSpacing(2)
+                    .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                if !isSensitive && !presentation.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    noteIndicator(fullText: presentation.body)
+                }
+                Spacer(minLength: 0)
             }
-        } else {
-            Text(presentation.body)
-                .font(DaybookType.body)
-                .lineSpacing(2)
-                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                .lineLimit(2)
-                .truncationMode(.tail)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private func noteIndicator(fullText: String) -> some View {
+        Image(systemName: "text.alignleft")
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .padding(.horizontal, 3.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+            )
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { updateBubblePlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+                }
+            )
+            .contentShape(Rectangle())
+            .onHover { isNoteHovered = $0 }
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                if isNoteHovered {
+                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+                    let transformAnchor = UnitPoint(
+                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                        y: growsUpward ? 1.0 : 0.0
+                    )
+                    noteFloatingBubble(fullText: fullText, arrowPadding: arrowPadding)
+                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                            removal: .opacity
+                        ))
+                }
+            }
+    }
+
+    private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let globalY = frame.minY
+        let globalX = frame.minX
+
+        growsUpward = globalY > 260
+
+        let safeMaxX: CGFloat = 356
+        let safeMinX: CGFloat = 12
+        let bubbleRight = globalX + 202
+        if bubbleRight > safeMaxX {
+            let overflow = bubbleRight - safeMaxX
+            let maxShift = max(0, (globalX - 8) - safeMinX)
+            bubbleShiftX = -min(overflow, maxShift)
+        } else {
+            bubbleShiftX = 0
+        }
+    }
+
+    private func noteFloatingBubble(fullText: String, arrowPadding: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !growsUpward {
+                HStack {
+                    Spacer().frame(width: arrowPadding)
+                    Image(systemName: "arrowtriangle.up.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(DaybookTheme.paper)
+                        .offset(y: 1)
+                    Spacer()
+                }
+                .frame(height: 5)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.stamp)
+                    Text(L10n.string("drawer.notes.title", locale: locale))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted)
+                    Spacer(minLength: 0)
+                }
+
+                Text(fullText)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineSpacing(2.5)
+                    .lineLimit(8)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .frame(width: 210, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(DaybookTheme.paper)
+                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+            )
+
+            if growsUpward {
+                HStack {
+                    Spacer().frame(width: arrowPadding)
+                    Image(systemName: "arrowtriangle.down.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(DaybookTheme.paper)
+                        .offset(y: -1)
+                    Spacer()
+                }
+                .frame(height: 5)
+            }
+        }
+        .frame(width: 210, alignment: .leading)
+        .fixedSize()
+        .allowsHitTesting(false)
+        .zIndex(999)
     }
 
     private var assignedTags: [TagItem] {
@@ -110,6 +246,7 @@ struct DiarySummaryRow: View {
             }
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
         .foregroundStyle(DaybookTheme.muted)
         .background(
@@ -154,6 +291,7 @@ struct DiarySummaryRow: View {
             noteContentHeader
             metadataLine
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .overlay(
             DiaryRowPointerRegion(
@@ -231,133 +369,17 @@ struct DiarySummaryRow: View {
         VStack(alignment: .leading, spacing: 4) {
             noteContentHeader
 
-            HStack(spacing: 4) {
-                HStack(spacing: 3) {
-                    // 1. 打开小窗 ↗
-                    commandStripButton(
-                        icon: "arrow.up.forward.square",
-                        key: "diary.quick.open",
-                        action: openWindow
-                    )
-                    // 2. 复制手记 📋
-                    commandStripButton(
-                        icon: "doc.on.doc",
-                        key: "diary.quick.copy",
-                        action: copy
-                    )
-                    // 3. 置顶 / 取消置顶 📌
-                    commandStripButton(
-                        icon: entry.isPinned ? "pin.slash" : "pin",
-                        key: entry.isPinned ? "diary.quick.unpin" : "diary.quick.pin",
-                        isActive: entry.isPinned,
-                        action: togglePin
-                    )
-                    // 4. 添加附件 📎
-                    commandStripButton(
-                        icon: "paperclip",
-                        key: "diary.quick.attach",
-                        action: attach
-                    )
-                    .disabled(isSensitive)
-                    // 5. 工作台查看 🖥
-                    commandStripButton(
-                        icon: "macwindow",
-                        key: "diary.quick.workspace",
-                        action: inspectInWorkspace
-                    )
-                    // 6. 删除手记 🗑
-                    commandStripButton(
-                        icon: "trash",
-                        key: "diary.quick.delete",
-                        isDestructive: true,
-                        action: onDelete
-                    )
-                }
-                .fixedSize(horizontal: true, vertical: true)
-
-                if let tip = hoveredQuickActionTip {
-                    Text(tip)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(DaybookTheme.ink.opacity(0.85))
-                        .lineLimit(1)
-                        .padding(.horizontal, 7)
-                        .frame(height: 18)
-                        .background(
-                            Capsule()
-                                .fill(DaybookTheme.surface)
-                                .shadow(color: Color.black.opacity(0.08), radius: 2, x: 0, y: 1)
-                        )
-                        .overlay(
-                            Capsule()
-                                .strokeBorder(DaybookTheme.rule.opacity(0.4), lineWidth: 0.5)
-                        )
-                        .transition(.opacity)
-                }
-
-                Spacer(minLength: 0)
-            }
-            .frame(height: 22)
-            .clipped()
-        }
-    }
-
-    private func commandStripButton(
-        icon: String,
-        key: String,
-        isActive: Bool = false,
-        isDestructive: Bool = false,
-        action: @escaping () -> Void
-    ) -> some View {
-        let localizedText = L10n.string(String.LocalizationValue(stringLiteral: key), locale: locale)
-        return Button(action: action) {
-            commandStripIcon(
-                icon: icon,
-                isButtonHovered: hoveredQuickActionTip == localizedText,
-                isActive: isActive,
-                isDestructive: isDestructive
+            DiaryRowCommandStrip(
+                isSensitive: isSensitive,
+                isPinned: entry.isPinned,
+                onOpen: openWindow,
+                onCopy: copy,
+                onTogglePin: togglePin,
+                onAttach: attach,
+                onInspect: inspectInWorkspace,
+                onDelete: onDelete
             )
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(LocalizedStringKey(key))
-        .help(LocalizedStringKey(key))
-        .background(
-            QuickActionHoverArea { hovering in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    if hovering {
-                        hoveredQuickActionTip = localizedText
-                    } else if hoveredQuickActionTip == localizedText {
-                        hoveredQuickActionTip = nil
-                    }
-                }
-            }
-        )
-    }
-
-    private func commandStripIcon(
-        icon: String,
-        isButtonHovered: Bool,
-        isActive: Bool = false,
-        isDestructive: Bool = false
-    ) -> some View {
-        Image(systemName: icon)
-            .font(.system(size: 10.5, weight: .medium))
-            .frame(width: 22, height: 22)
-            .background(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                    .fill(
-                        isDestructive
-                            ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
-                            : (isActive
-                                ? DaybookTheme.stamp.opacity(isButtonHovered ? 0.22 : 0.14)
-                                : (isButtonHovered ? DaybookTheme.ink.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
-                    )
-            )
-            .foregroundStyle(
-                isDestructive
-                    ? Color.red
-                    : (isActive ? DaybookTheme.stamp : DaybookTheme.ink.opacity(isButtonHovered ? 0.95 : 0.72))
-            )
-            .contentShape(Rectangle())
     }
 
     private var moreMenu: some View {
@@ -429,56 +451,5 @@ struct DiarySummaryRow: View {
             NSEvent.removeMonitor(monitor)
             flagsMonitor = nil
         }
-    }
-}
-
-/// 原生 clickCount 让第一次点击立即选中，双击直接打开独立编辑小窗
-struct DiaryRowPointerRegion: NSViewRepresentable {
-    var id: UUID
-    var onSelect: () -> Void
-    var onOpen: () -> Void
-
-    func makeNSView(context: Context) -> DiaryRowPointerView {
-        let view = DiaryRowPointerView()
-        updateNSView(view, context: context)
-        return view
-    }
-
-    func updateNSView(_ view: DiaryRowPointerView, context: Context) {
-        view.identifier = NSUserInterfaceItemIdentifier(id.uuidString)
-        view.onSelect = onSelect
-        view.onOpen = onOpen
-    }
-}
-
-final class DiaryRowPointerView: NSView {
-    var onSelect: (() -> Void)?
-    var onOpen: (() -> Void)?
-    private var mouseDownLocation: NSPoint?
-
-    override var acceptsFirstResponder: Bool { true }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
-
-    override func mouseDown(with event: NSEvent) {
-        guard !event.modifierFlags.contains(.control) else {
-            super.mouseDown(with: event)
-            return
-        }
-        mouseDownLocation = event.locationInWindow
-        window?.makeFirstResponder(self)
-        onSelect?()
-        super.mouseDown(with: event)
-    }
-
-    override func mouseUp(with event: NSEvent) {
-        defer { mouseDownLocation = nil }
-        let stayedNearStart = mouseDownLocation.map {
-            hypot(event.locationInWindow.x - $0.x, event.locationInWindow.y - $0.y) < 4
-        } ?? false
-        let shouldOpen = event.clickCount == 2
-            && !event.modifierFlags.contains(.control)
-            && stayedNearStart && bounds.contains(convert(event.locationInWindow, from: nil))
-        super.mouseUp(with: event)
-        if shouldOpen { onOpen?() }
     }
 }

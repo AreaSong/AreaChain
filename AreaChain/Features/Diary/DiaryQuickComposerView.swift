@@ -38,6 +38,7 @@ struct DiaryQuickComposerView: View {
                     ))
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .animation(DaybookMotion.interactive(reduceMotion), value: canSubmit)
         } else {
             workspaceComposer
@@ -117,6 +118,7 @@ struct DiaryQuickComposerView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 7)
+        .frame(maxWidth: .infinity)
         .frame(height: 34)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
