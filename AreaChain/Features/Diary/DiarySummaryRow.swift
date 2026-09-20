@@ -78,19 +78,15 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        Group {
-            if isHovered && isCommandPressed {
-                commandActionStrip
-                    .transition(.opacity)
-            } else {
-                HStack(alignment: .top, spacing: 6) {
-                    selectableContent
-                    actionCluster
-                }
-            }
+        VStack(alignment: .leading, spacing: 2) {
+            headerRow
+                .frame(height: 18)
+
+            footerRow
+                .frame(height: 18)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 5)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 46)
         .modernRow(
@@ -108,7 +104,20 @@ struct DiarySummaryRow: View {
                 )
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .onHover { isHovered = $0 }
+        .overlay(
+            DiaryRowPointerRegion(
+                id: entry.id,
+                onSelect: { onSelect?() },
+                onOpen: openWindow
+            )
+            .accessibilityHidden(true)
+        )
+        .onHover { hovering in
+            isHovered = hovering
+            if hovering {
+                isCommandPressed = NSEvent.modifierFlags.contains(.command)
+            }
+        }
         .task(id: hasCopied) {
             guard hasCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))
@@ -123,29 +132,18 @@ struct DiarySummaryRow: View {
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
     }
 
-    // MARK: - 主内容区 (首行标题/正文 + 次行元数据)
+    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 20pt 占位的设置按钮)
 
-    private var selectableContent: some View {
-        VStack(alignment: .leading, spacing: 2) {
+    private var headerRow: some View {
+        HStack(alignment: .center, spacing: 4) {
             noteContentHeader
-                .frame(height: 18)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-            metadataLine
-                .frame(height: 16)
+            actionCluster
+                .frame(width: 20, height: 18)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .overlay(
-            DiaryRowPointerRegion(
-                id: entry.id,
-                onSelect: { onSelect?() },
-                onOpen: openWindow
-            )
-            .accessibilityHidden(true)
-        )
+        .frame(height: 18)
     }
-
-    // MARK: - 首行标题/正文与气泡联动
 
     @ViewBuilder
     private var noteContentHeader: some View {
@@ -231,7 +229,68 @@ struct DiarySummaryRow: View {
         bubbleShiftX = placement.bubbleShiftX
     }
 
-    // MARK: - 次行元数据行
+    // MARK: - 右侧单按钮设置菜单 (恒定 20x18 占位，避免任何横向跳动)
+
+    private var actionCluster: some View {
+        moreMenu
+            .opacity((isHovered || isSelected || isHighlighted) && !isCommandPressed ? 1.0 : 0.0)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button("diary.window.open", action: openWindow)
+            Button(hasCopied ? "diary.copied" : (isSensitive ? "diary.copy.password" : "diary.copy"), action: copy)
+            Button(entry.isPinned ? "diary.unpin" : "diary.pin", action: togglePin)
+            Button("diary.attach", action: attach).disabled(isSensitive)
+            Button("diary.window.workspace", action: inspectInWorkspace)
+            Divider()
+            Button("alert.trash.move", role: .destructive, action: onDelete)
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(DaybookTheme.muted)
+                .frame(width: 20, height: 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                        .fill(DaybookTheme.ink.opacity(0.06))
+                )
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .help("footer.more")
+        .accessibilityLabel("footer.more")
+        .fixedSize()
+    }
+
+    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 18pt)
+
+    private var footerRow: some View {
+        ZStack(alignment: .leading) {
+            if isHovered && isCommandPressed {
+                DiaryRowCommandStrip(
+                    isSensitive: isSensitive,
+                    isPinned: entry.isPinned,
+                    onOpen: openWindow,
+                    onCopy: copy,
+                    onTogglePin: togglePin,
+                    onAttach: attach,
+                    onInspect: inspectInWorkspace,
+                    onDelete: onDelete
+                )
+                .transition(.opacity)
+            } else {
+                metadataLine
+                    .transition(.opacity)
+            }
+        }
+        .frame(height: 18, alignment: .leading)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
+    }
 
     private var metadataLine: some View {
         HStack(spacing: 5) {
@@ -266,7 +325,7 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 16)
+        .frame(height: 18)
         .font(DaybookType.badge)
     }
 
@@ -286,65 +345,6 @@ struct DiarySummaryRow: View {
                 RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
             )
-    }
-
-    // MARK: - 右侧单按钮设置菜单 (完全对齐任务条规范)
-
-    @ViewBuilder
-    private var actionCluster: some View {
-        if isHovered || isSelected || isHighlighted {
-            moreMenu
-                .transition(.opacity)
-        }
-    }
-
-    private var moreMenu: some View {
-        Menu {
-            Button("diary.window.open", action: openWindow)
-            Button(hasCopied ? "diary.copied" : (isSensitive ? "diary.copy.password" : "diary.copy"), action: copy)
-            Button(entry.isPinned ? "diary.unpin" : "diary.pin", action: togglePin)
-            Button("diary.attach", action: attach).disabled(isSensitive)
-            Button("diary.window.workspace", action: inspectInWorkspace)
-            Divider()
-            Button("alert.trash.move", role: .destructive, action: onDelete)
-        } label: {
-            Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(DaybookTheme.ink.opacity(0.06))
-                )
-                .contentShape(Rectangle())
-        }
-        .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .buttonStyle(.plain)
-        .help("footer.more")
-        .accessibilityLabel("footer.more")
-        .fixedSize()
-    }
-
-    // MARK: - ⌘ 快捷平铺操作条 (按住 Command 时整行平滑替换)
-
-    private var commandActionStrip: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            noteContentHeader
-                .frame(height: 18)
-
-            DiaryRowCommandStrip(
-                isSensitive: isSensitive,
-                isPinned: entry.isPinned,
-                onOpen: openWindow,
-                onCopy: copy,
-                onTogglePin: togglePin,
-                onAttach: attach,
-                onInspect: inspectInWorkspace,
-                onDelete: onDelete
-            )
-            .frame(height: 18)
-        }
     }
 
     private var dateLabel: String {
@@ -386,11 +386,10 @@ struct DiarySummaryRow: View {
 
     private func setupFlagsMonitor() {
         isCommandPressed = NSEvent.modifierFlags.contains(.command)
-        if flagsMonitor == nil {
-            flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [self] event in
-                self.isCommandPressed = event.modifierFlags.contains(.command)
-                return event
-            }
+        guard flagsMonitor == nil else { return }
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
+            isCommandPressed = event.modifierFlags.contains(.command)
+            return event
         }
     }
 

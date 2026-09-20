@@ -191,6 +191,7 @@ struct TaskRow: View {
     private var selectableContent: some View {
         HStack(alignment: .center, spacing: 5) {
             titleContent
+                .layoutPriority(1)
                 .overlay(TaskRowPointerRegion(
                     id: state.id,
                     onSelect: { dispatch(.select($0)) },
@@ -203,6 +204,7 @@ struct TaskRow: View {
 
             if !style.isWorkspace, fullNoteText != nil {
                 noteIndicator
+                    .fixedSize()
             }
 
             Color.clear
@@ -313,6 +315,7 @@ struct TaskRow: View {
             ModernTaskTitle(text: state.title, isDone: state.isDone)
                 .lineLimit(style.isWorkspace ? 2 : 1)
                 .truncationMode(.tail)
+                .layoutPriority(1)
                 .contentShape(Rectangle())
                 .onHover { hovering in
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
