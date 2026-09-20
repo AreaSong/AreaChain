@@ -4,6 +4,7 @@ import SwiftUI
 /// 灵感手记快捷编辑器
 struct DiaryQuickComposerView: View {
     @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.daybookViewStyle) private var style
     @Binding var text: String
     var focused: Binding<Bool>
@@ -22,7 +23,25 @@ struct DiaryQuickComposerView: View {
     }
 
     var body: some View {
-        if isCompact { compactInputRow } else { workspaceComposer }
+        if isCompact {
+            VStack(alignment: .leading, spacing: 6) {
+                compactInputRow
+                if canSubmit {
+                    LiveDiaryComposerPreview(
+                        text: text,
+                        allTags: orderedTags,
+                        isSensitiveExternal: isSensitive
+                    )
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .top)),
+                        removal: .opacity
+                    ))
+                }
+            }
+            .animation(DaybookMotion.interactive(reduceMotion), value: canSubmit)
+        } else {
+            workspaceComposer
+        }
     }
 
     @ViewBuilder

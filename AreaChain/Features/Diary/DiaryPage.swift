@@ -421,10 +421,29 @@ struct DiaryPage: View {
         PrivacyAccess.perform(requiresUnlock: composerNeedsProtection, vault: vault) {
             guard draftBinding.wrappedValue.id == draftID else { throw PrivacyError.staleOperation }
             try draftBinding.wrappedValue.restore(vault: vault)
-            let text = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { return }
+            let rawText = draftText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !rawText.isEmpty else { return }
+
+            let parsed = NaturalLanguageParser.parseDiaryCapture(rawText)
+            let textToSave: String = {
+                if parsed.hasNoteSeparator && !parsed.cleanTitle.isEmpty {
+                    return parsed.cleanTitle + (parsed.body.isEmpty ? "" : "\n" + parsed.body)
+                } else if !parsed.body.isEmpty {
+                    return parsed.body
+                } else {
+                    return NaturalLanguageParser.unescapeSyntax(rawText)
+                }
+            }()
+            guard !textToSave.isEmpty else { return }
+
+            var effectiveTagIDs = composerSelectedTagIDs
+            if !parsed.tagNames.isEmpty {
+                let resolvedIDs = try InputTagResolver.resolve(parsed.tagNames, in: modelContext)
+                effectiveTagIDs.formUnion(resolvedIDs)
+            }
+
             guard DayBoardMutations.addDiary(
-                text: text, dayKey: todayKey, selectedTagIDs: composerSelectedTagIDs,
+                text: textToSave, dayKey: todayKey, selectedTagIDs: effectiveTagIDs,
                 tags: Array(allTags), context: modelContext
             ) else { composerStatus = "diary.window.save.failed"; return }
             draftBinding.wrappedValue = DiaryComposerDraft()

@@ -203,4 +203,49 @@ struct NaturalLanguageParserTests {
         #expect(hasNote == true)
         #expect(hasTime == true)
     }
+
+    @Test func escapesSlashSyntax() {
+        let input = "学习 C++ \\// 注释语法"
+        let parsed = NaturalLanguageParser.parseTaskCapture(input)
+        #expect(parsed.cleanTitle == "学习 C++ // 注释语法")
+        #expect(parsed.notes == "")
+
+        let tokens = NaturalLanguageParser.extractHighlightTokens(in: input)
+        let hasNoteToken = tokens.contains { token in
+            if case .note = token.kind { return true }
+            return false
+        }
+        #expect(hasNoteToken == false)
+    }
+
+    @Test func escapesTagAndPrioritySyntax() {
+        let input = "这是一条 \\#日常 笔记 \\!p1"
+        let parsed = NaturalLanguageParser.parseTaskCapture(input)
+        #expect(parsed.cleanTitle == "这是一条 #日常 笔记 !p1")
+        #expect(parsed.tagNames.isEmpty == true)
+        #expect(parsed.hasPriorityToken == false)
+
+        let tokens = NaturalLanguageParser.extractHighlightTokens(in: input)
+        #expect(tokens.isEmpty == true)
+    }
+
+    @Test func parsesDiaryCaptureWithTitleAndBody() {
+        let input = "首行标题 // 详细小巧思正文内容 #灵感"
+        let diary = NaturalLanguageParser.parseDiaryCapture(input)
+        #expect(diary.cleanTitle == "首行标题")
+        #expect(diary.body == "详细小巧思正文内容")
+        #expect(diary.tagNames == ["灵感"])
+        #expect(diary.hasNoteSeparator == true)
+        #expect(diary.hasContent == true)
+    }
+
+    @Test func parsesDiaryCaptureSingleLine() {
+        let input = "这是一句随手记 #日常"
+        let diary = NaturalLanguageParser.parseDiaryCapture(input)
+        #expect(diary.cleanTitle == "")
+        #expect(diary.body == "这是一句随手记")
+        #expect(diary.tagNames == ["日常"])
+        #expect(diary.hasNoteSeparator == false)
+        #expect(diary.hasContent == true)
+    }
 }

@@ -48,6 +48,15 @@ struct ParsedCapture: Equatable {
     }
 }
 
+struct ParsedDiaryCapture: Equatable {
+    var rawInput: String
+    var cleanTitle: String
+    var body: String
+    var tagNames: [String] = []
+    var hasNoteSeparator: Bool = false
+    var hasContent: Bool = true
+}
+
 enum NaturalLanguageParser {
     static func parseTaskCapture(_ input: String) -> ParsedCapture {
         parse(input, consumeDiaryPresetTags: false)
@@ -98,17 +107,19 @@ enum NaturalLanguageParser {
             .joined(separator: " ")
         let hasTokens = !tagNames.isEmpty || priority.hasPriorityToken || remindMinutes != nil
         let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (baseTitlePart.isEmpty ? input : baseTitlePart) : cleaned)
-        let hasContentTitle = !cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let unescapedTitle = unescapeSyntax(cleanTitle)
+        let unescapedNotes = unescapeSyntax(finalNotes)
+        let hasContentTitle = !unescapedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         return ParsedCapture(
             rawInput: input,
-            cleanTitle: cleanTitle,
+            cleanTitle: unescapedTitle,
             remindMinutes: remindMinutes,
             tagName: tagNames.first,
             isImportant: priority.isImportant,
             isUrgent: priority.isUrgent,
             hasPriorityToken: priority.hasPriorityToken,
-            notes: finalNotes,
+            notes: unescapedNotes,
             tagNames: tagNames,
             hasContentTitle: hasContentTitle
         )
@@ -119,7 +130,7 @@ enum NaturalLanguageParser {
     }
 
     private static func findNoteRange(in input: String) -> Range<String.Index>? {
-        let pattern = #"(?<!:)(//|／／)"#
+        let pattern = #"(?<![:\\])(//|／／)"#
         return input.range(of: pattern, options: .regularExpression)
     }
 
@@ -382,5 +393,61 @@ enum NaturalLanguageParser {
             group1: nsString.substring(with: match.range(at: 1)),
             group2: nsString.substring(with: match.range(at: 2))
         )
+    }
+
+    // MARK: - 手记语法解析 (Diary Capture)
+
+    static func parseDiaryCapture(_ input: String) -> ParsedDiaryCapture {
+        let tagNames = TagSyntax.names(in: input, includesDiaryTags: true)
+        let noteRange = findNoteRange(in: input)
+
+        if let noteRange {
+            let rawTitle = String(input[..<noteRange.lowerBound])
+            let rawBody = String(input[noteRange.upperBound...])
+
+            let cleanTitlePart = TagSyntax.removingTags(from: rawTitle, includesDiaryTags: true)
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+            let cleanBodyPart = TagSyntax.removingTags(from: rawBody, includesDiaryTags: true)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let title = unescapeSyntax(cleanTitlePart)
+            let body = unescapeSyntax(cleanBodyPart)
+            let hasContent = !title.isEmpty || !body.isEmpty || !tagNames.isEmpty
+
+            return ParsedDiaryCapture(
+                rawInput: input,
+                cleanTitle: title,
+                body: body,
+                tagNames: tagNames,
+                hasNoteSeparator: true,
+                hasContent: hasContent
+            )
+        } else {
+            let cleanText = TagSyntax.removingTags(from: input, includesDiaryTags: true)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let unescaped = unescapeSyntax(cleanText)
+            let hasContent = !unescaped.isEmpty || !tagNames.isEmpty
+
+            return ParsedDiaryCapture(
+                rawInput: input,
+                cleanTitle: "",
+                body: unescaped,
+                tagNames: tagNames,
+                hasNoteSeparator: false,
+                hasContent: hasContent
+            )
+        }
+    }
+
+    // MARK: - 转义反编译 (Escape Unescaping)
+
+    static func unescapeSyntax(_ text: String) -> String {
+        guard !text.isEmpty else { return "" }
+        let pattern = #"\\(//|／／|[#＃@＠!！])"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return text }
+        let range = NSRange(location: 0, length: (text as NSString).length)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "$1")
     }
 }

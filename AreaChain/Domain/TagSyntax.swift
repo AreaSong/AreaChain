@@ -17,6 +17,9 @@ enum TagSyntax {
     private static let linkExpression = try! NSRegularExpression(
         pattern: #"\[[^\]\r\n]*\]\((?:\\.|[^\\)\r\n])*(?:\)|$)"#
     )
+    private static let escapeExpression = try! NSRegularExpression(
+        pattern: #"\\(//|／／|[#＃@＠!！])"#
+    )
 
     static func normalizedName(_ name: String) -> String {
         name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -79,7 +82,9 @@ enum TagSyntax {
 
     static func protectedRanges(in text: String) -> [NSRange] {
         let range = NSRange(location: 0, length: (text as NSString).length)
-        return (codeExpression.matches(in: text, range: range) + linkExpression.matches(in: text, range: range))
+        return (codeExpression.matches(in: text, range: range) +
+                linkExpression.matches(in: text, range: range) +
+                escapeExpression.matches(in: text, range: range))
             .map(\.range).sorted { $0.location < $1.location }
     }
 
