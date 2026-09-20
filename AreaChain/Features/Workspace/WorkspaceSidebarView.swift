@@ -34,6 +34,7 @@ struct WorkspaceSidebarActions {
 struct WorkspaceSidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var navigation: WorkspaceNavigation
+    @Bindable private var prefs = AppPreferences.shared
 
     var projects: [ProjectItem]
     var tags: [TagItem]
@@ -61,7 +62,7 @@ struct WorkspaceSidebarView: View {
             systemSection
         }
         .listStyle(.sidebar)
-        .daybookScroll()
+        .daybookScroll(featherEdges: false)
         .confirmMoveToTrash($pendingTrash)
         .sheet(item: $pendingRename, onDismiss: { renameDraft = "" }) { _ in
             renameSheet
@@ -69,10 +70,13 @@ struct WorkspaceSidebarView: View {
     }
 
     private var focusSection: some View {
-        Section("sidebar.focus") {
+        Section {
             tabRow(.today, badgeCount: todayUnfinishedCount)
             tabRow(.residents)
             tabRow(.search)
+        } header: {
+            Text("sidebar.focus")
+                .padding(.top, WorkspaceStyle.sidebarTopInset)
         }
     }
 
@@ -92,7 +96,7 @@ struct WorkspaceSidebarView: View {
     }
 
     private var projectsSection: some View {
-        Section {
+        Section(isExpanded: $prefs.isProjectsExpanded) {
             ForEach(ProjectTree.outline(projects)) { row in
                 if let project = projects.first(where: { $0.id == row.id }) {
                     projectRow(project, depth: row.depth)
@@ -102,18 +106,13 @@ struct WorkspaceSidebarView: View {
             HStack {
                 Text("sidebar.projects")
                 Spacer()
-                Button(action: onAddProject) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .buttonStyle(.plain)
-                .help("sidebar.add.project")
+                WorkspaceSidebarHeaderAction(labelKey: "sidebar.add.project", action: onAddProject)
             }
         }
     }
 
     private var tagsSection: some View {
-        Section {
+        Section(isExpanded: $prefs.isTagsExpanded) {
             ForEach(Catalog.liveTaskTags(tags)) { tag in
                 tagRow(tag)
             }
@@ -121,12 +120,7 @@ struct WorkspaceSidebarView: View {
             HStack {
                 Text("sidebar.tags")
                 Spacer()
-                Button(action: onAddTag) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10, weight: .bold))
-                }
-                .buttonStyle(.plain)
-                .help("sidebar.add.tag")
+                WorkspaceSidebarHeaderAction(labelKey: "sidebar.add.tag", action: onAddTag)
             }
         }
     }
@@ -152,29 +146,14 @@ struct WorkspaceSidebarView: View {
         let isSelected = navigation.selectedProjectID == nil
             && navigation.selectedTagID == nil
             && navigation.selectedTab == tab
-        return Button {
+        return WorkspaceSidebarRow(
+            titleKey: tab.titleKey,
+            systemImage: tab.iconName,
+            badgeCount: badgeCount,
+            isSelected: isSelected
+        ) {
             navigation.revealTab(tab)
-        } label: {
-            HStack {
-                Label(tab.titleKey, systemImage: tab.iconName)
-                Spacer()
-                if let badgeCount {
-                    Text("\(badgeCount)")
-                        .font(WorkspaceStyle.countFont)
-                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
-                }
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        .font(DaybookType.body.weight(isSelected ? .medium : .regular))
     }
 
     private func projectRow(_ project: ProjectItem, depth: Int) -> some View {
@@ -188,32 +167,15 @@ struct WorkspaceSidebarView: View {
             projects: projects,
             dayKey: DayClock.shared.todayKey
         )
-        return Button {
+        return WorkspaceSidebarRow(
+            title: project.name,
+            systemImage: "folder",
+            badgeCount: count,
+            depth: depth,
+            isSelected: isSelected
+        ) {
             navigation.selectedProjectID = project.id
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "folder")
-                    .font(DaybookType.body)
-                Text(project.name)
-                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
-                Spacer()
-                if count > 0 {
-                    Text("\(count)")
-                        .font(WorkspaceStyle.countFont)
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.leading, 6 + CGFloat(depth) * 12)
-        .padding(.trailing, 6)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
             projectContextMenu(project)
         }
@@ -258,31 +220,14 @@ struct WorkspaceSidebarView: View {
             projects: projects,
             dayKey: DayClock.shared.todayKey
         )
-        return Button {
+        return WorkspaceSidebarRow(
+            title: tag.name,
+            systemImage: "tag",
+            badgeCount: count,
+            isSelected: isSelected
+        ) {
             navigation.selectedTagID = tag.id
-        } label: {
-            HStack(spacing: 6) {
-                Image(systemName: "tag")
-                    .font(DaybookType.body)
-                Text(tag.name)
-                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
-                Spacer()
-                if count > 0 {
-                    Text("\(count)")
-                        .font(WorkspaceStyle.countFont)
-                        .foregroundStyle(DaybookTheme.muted)
-                }
-            }
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .padding(.vertical, 2)
-        .padding(.horizontal, 6)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(isSelected ? WorkspaceStyle.selection : Color.clear)
-        )
-        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
         .contextMenu {
             Button("sidebar.rename") { beginRename(.tag(tag.id), name: tag.name) }
             Button("alert.trash.move", role: .destructive) {

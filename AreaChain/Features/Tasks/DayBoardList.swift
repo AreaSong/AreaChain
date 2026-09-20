@@ -122,7 +122,7 @@ struct DayBoardList: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 4) {
             if openTodosList.isEmpty && openRoutinesList.isEmpty && doneItemsList.isEmpty {
                 emptyStateView
             } else {

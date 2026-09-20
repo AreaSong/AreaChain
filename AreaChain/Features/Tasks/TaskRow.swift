@@ -65,6 +65,7 @@ struct TaskRow: View {
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
             }
+            .zIndex((isHovered || shouldShowTitleBubble || shouldShowNoteBubble) ? 100 : 1)
     }
 
     private func startObservingModifiers() {
@@ -135,7 +136,6 @@ struct TaskRow: View {
                     .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
             }
         )
-        .zIndex(isHovered ? 60 : 1)
     }
 
     @ViewBuilder
@@ -205,7 +205,8 @@ struct TaskRow: View {
                 .accessibilityHidden(true))
 
             Color.clear
-                .frame(maxWidth: .infinity, minHeight: 20)
+                .frame(maxWidth: .infinity)
+                .frame(height: 20)
                 .contentShape(Rectangle())
                 .overlay(TaskRowPointerRegion(
                     id: state.id,
@@ -221,7 +222,7 @@ struct TaskRow: View {
                     .fixedSize()
             }
         }
-        .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .modifier(TodoDragIfNeeded(payload: state.dragPayload))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)

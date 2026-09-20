@@ -356,7 +356,7 @@ struct DiaryPage: View {
                 }
                 .padding(.vertical, 4)
             }
-            .daybookScroll()
+            .daybookScroll(featherEdges: true)
             .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
             .onAppear { scrollToInspected(proxy) }
             .onChange(of: boardSelection.inspectingDiaryID) { _, id in

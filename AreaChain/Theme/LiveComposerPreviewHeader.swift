@@ -138,6 +138,7 @@ struct LiveComposerPreviewHeader: View {
                             .padding(.horizontal, 5.5)
                             .padding(.vertical, 2.5)
                             .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
+                            .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
                             .foregroundStyle(DaybookTheme.Syntax.tag)
                             .help("#\(tag)")
                     }
@@ -150,6 +151,7 @@ struct LiveComposerPreviewHeader: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2.5)
                         .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
+                        .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
                         .foregroundStyle(DaybookTheme.Syntax.tag)
                         .help("#\(singleTag)")
                 } else if previewTags.count > 1 {
@@ -162,6 +164,7 @@ struct LiveComposerPreviewHeader: View {
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
                     .background(Capsule().fill(DaybookTheme.Syntax.tagBadgeFill))
+                    .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
                     .foregroundStyle(DaybookTheme.Syntax.tag)
                     .help("共 \(previewTags.count) 个标签")
                 }

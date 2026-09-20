@@ -35,6 +35,8 @@ enum DaybookSwatch {
     static let destructiveDark = (0.98, 0.52, 0.48)
     static let checkmarkLight = (1.0, 1.0, 1.0)
     static let checkmarkDark = (0.08, 0.08, 0.10)
+    static let tagLight = (0.10, 0.46, 0.24)
+    static let tagDark = (0.28, 0.78, 0.48)
 }
 
 enum ContrastMath {
@@ -104,12 +106,37 @@ enum DaybookTheme {
 
     // MARK: - 语法色彩体系（输入框、预览胶囊、补全弹窗统一）
     enum Syntax {
-        // Tag 标签（竹青 / 鼠尾草绿）
-        static let tag = Color(nsColor: .systemTeal)
-        static let tagNS = NSColor.systemTeal
-        static let tagFill = Color(nsColor: .systemTeal).opacity(0.12)
-        static let tagSubtleFill = Color(nsColor: .systemTeal).opacity(0.08)
-        static let tagBadgeFill = Color(nsColor: .systemTeal).opacity(0.16)
+        // Tag 标签（森林绿 / 鼠尾草绿）
+        static let tag = Color.daybook(
+            name: "daybook.syntax.tag",
+            swatch: DaybookSwatch.tagLight,
+            dark: DaybookSwatch.tagDark
+        )
+        static let tagNS = NSColor.daybook(
+            name: "daybook.syntax.tag",
+            swatch: DaybookSwatch.tagLight,
+            dark: DaybookSwatch.tagDark
+        )
+        static let tagFill = Color.daybook(
+            name: "daybook.syntax.tagFill",
+            light: NSColor.daybook(DaybookSwatch.tagLight).withAlphaComponent(0.12),
+            dark: NSColor.daybook(DaybookSwatch.tagDark).withAlphaComponent(0.16)
+        )
+        static let tagSubtleFill = Color.daybook(
+            name: "daybook.syntax.tagSubtleFill",
+            light: NSColor.daybook(DaybookSwatch.tagLight).withAlphaComponent(0.08),
+            dark: NSColor.daybook(DaybookSwatch.tagDark).withAlphaComponent(0.10)
+        )
+        static let tagStroke = Color.daybook(
+            name: "daybook.syntax.tagStroke",
+            light: NSColor.daybook(DaybookSwatch.tagLight).withAlphaComponent(0.25),
+            dark: NSColor.daybook(DaybookSwatch.tagDark).withAlphaComponent(0.35)
+        )
+        static let tagBadgeFill = Color.daybook(
+            name: "daybook.syntax.tagBadgeFill",
+            light: NSColor.daybook(DaybookSwatch.tagLight).withAlphaComponent(0.16),
+            dark: NSColor.daybook(DaybookSwatch.tagDark).withAlphaComponent(0.20)
+        )
 
         // Time 时间（Daybook 印章蓝）
         static let time = DaybookTheme.stamp
@@ -214,6 +241,20 @@ extension NSColor {
     static func daybook(_ rgb: (Double, Double, Double)) -> NSColor {
         NSColor(calibratedRed: rgb.0, green: rgb.1, blue: rgb.2, alpha: 1)
     }
+
+    static func daybook(name: String, light: NSColor, dark: NSColor) -> NSColor {
+        NSColor(name: NSColor.Name(name), dynamicProvider: { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
+        })
+    }
+
+    static func daybook(
+        name: String,
+        swatch: (Double, Double, Double),
+        dark: (Double, Double, Double)
+    ) -> NSColor {
+        daybook(name: name, light: .daybook(swatch), dark: .daybook(dark))
+    }
 }
 
 struct SectionStamp: View {
@@ -279,10 +320,11 @@ struct ComposerAddButton: View {
 }
 
 extension View {
-    func daybookScroll() -> some View {
+    func daybookScroll(featherEdges: Bool = false) -> some View {
         self
-            .scrollIndicators(.automatic)
+            .scrollIndicators(.hidden)
             .background(DaybookScrollerConfigurator())
+            .modifier(DaybookScrollEdgeFeatherModifier(enabled: featherEdges))
     }
 
     @ViewBuilder

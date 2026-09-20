@@ -100,7 +100,7 @@ struct TasksPage: View {
                         BlankClickArea(onClick: clearSelection)
                     )
                 }
-                .daybookScroll()
+                .daybookScroll(featherEdges: true)
                 .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
                 .background(
                     BlankClickArea(onClick: clearSelection)

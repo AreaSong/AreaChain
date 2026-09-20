@@ -4,19 +4,15 @@ extension DayBoardList {
     @ViewBuilder
     var openItemsSection: some View {
         if !openTodosList.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
-                ForEach(openTodosList) { todo in
-                    todoRow(todo, isDone: false)
-                }
+            SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+            ForEach(openTodosList) { todo in
+                todoRow(todo, isDone: false)
             }
         }
         if !openRoutinesList.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
-                ForEach(openRoutinesList) { routine in
-                    residentRow(routine, isDone: false)
-                }
+            SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
+            ForEach(openRoutinesList) { routine in
+                residentRow(routine, isDone: false)
             }
         }
         if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {

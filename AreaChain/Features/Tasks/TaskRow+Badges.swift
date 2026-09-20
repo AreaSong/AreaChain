@@ -22,6 +22,10 @@ extension TaskRow {
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                                 .fill(DaybookTheme.Syntax.tagFill)
                         )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                .stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6)
+                        )
                         .help("#\(tagName)")
                 }
 
@@ -34,6 +38,10 @@ extension TaskRow {
                         .background(
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                                 .fill(DaybookTheme.Syntax.tagBadgeFill)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                                .stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6)
                         )
                         .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
                 }

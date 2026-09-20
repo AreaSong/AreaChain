@@ -275,3 +275,142 @@ final class DaybookScrollerHostNSView: NSView {
         return nil
     }
 }
+
+// MARK: - 智能动态视口边缘羽化 (Fading Edges)
+
+struct DaybookScrollEdgeObserver: NSViewRepresentable {
+    var onEdgeChange: (Bool, Bool) -> Void
+
+    func makeNSView(context: Context) -> DaybookScrollEdgeObserverNSView {
+        let view = DaybookScrollEdgeObserverNSView()
+        view.onEdgeChange = onEdgeChange
+        return view
+    }
+
+    func updateNSView(_ nsView: DaybookScrollEdgeObserverNSView, context: Context) {
+        nsView.onEdgeChange = onEdgeChange
+        nsView.checkEdges()
+    }
+}
+
+final class DaybookScrollEdgeObserverNSView: NSView {
+    var onEdgeChange: ((Bool, Bool) -> Void)?
+    private var observer: NSObjectProtocol?
+    private var lastTop = false
+    private var lastBottom = false
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        alphaValue = 0
+        wantsLayer = true
+        setupObserver()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setupObserver()
+    }
+
+    deinit {
+        if let observer {
+            NotificationCenter.default.removeObserver(observer)
+        }
+    }
+
+    private func setupObserver() {
+        observer = NotificationCenter.default.addObserver(
+            forName: NSScrollView.didLiveScrollNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.checkEdges()
+        }
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        checkEdges()
+        DispatchQueue.main.async { [weak self] in self?.checkEdges() }
+    }
+
+    override func layout() {
+        super.layout()
+        checkEdges()
+    }
+
+    func checkEdges() {
+        guard let scrollView = enclosingScrollView ?? findTargetScrollView() else { return }
+        let visible = scrollView.documentVisibleRect
+        guard let docView = scrollView.documentView else { return }
+        let docHeight = docView.bounds.height
+
+        let hasScrollableContent = docHeight > visible.height + 4
+        let topFeather = hasScrollableContent && visible.minY > 3.0
+        let bottomFeather = hasScrollableContent && (visible.maxY < docHeight - 3.0)
+
+        if topFeather != lastTop || bottomFeather != lastBottom {
+            lastTop = topFeather
+            lastBottom = bottomFeather
+            onEdgeChange?(topFeather, bottomFeather)
+        }
+    }
+
+    private func findTargetScrollView() -> NSScrollView? {
+        if let siblings = superview?.subviews {
+            for sibling in siblings where sibling !== self {
+                if let sv = sibling as? NSScrollView { return sv }
+                if let found = findFirst(in: sibling) { return found }
+            }
+        }
+        return nil
+    }
+
+    private func findFirst(in view: NSView) -> NSScrollView? {
+        if let sv = view as? NSScrollView { return sv }
+        for sub in view.subviews where sub !== self {
+            if let found = findFirst(in: sub) { return found }
+        }
+        return nil
+    }
+}
+
+struct DaybookScrollEdgeFeatherModifier: ViewModifier {
+    var enabled: Bool
+    var featherHeight: CGFloat = 7.0
+
+    @State private var topFeather = false
+    @State private var bottomFeather = false
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .background(DaybookScrollEdgeObserver { top, bottom in
+                    topFeather = top
+                    bottomFeather = bottom
+                })
+                .mask {
+                    GeometryReader { geo in
+                        let total = geo.size.height
+                        if total > featherHeight * 2 {
+                            LinearGradient(
+                                stops: [
+                                    .init(color: topFeather ? .clear : .black, location: 0),
+                                    .init(color: .black, location: topFeather ? (featherHeight / total) : 0),
+                                    .init(color: .black, location: bottomFeather ? (1.0 - featherHeight / total) : 1.0),
+                                    .init(color: bottomFeather ? .clear : .black, location: 1)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .animation(.easeOut(duration: 0.15), value: topFeather)
+                            .animation(.easeOut(duration: 0.15), value: bottomFeather)
+                        } else {
+                            Color.black
+                        }
+                    }
+                }
+        } else {
+            content
+        }
+    }
+}

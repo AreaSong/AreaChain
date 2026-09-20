@@ -70,9 +70,10 @@ final class GanttRowPointerView: NSView {
     }
 
     override func resetCursorRects() {
-        addCursorRect(barRect.intersection(visibleRect), cursor: .openHand)
-        addCursorRect(NSRect(x: 0, y: 0, width: GanttRowMetrics.titleWidth, height: bounds.height)
-            .intersection(visibleRect), cursor: .pointingHand)
+        let bar = barRect.intersection(visibleRect)
+        if !bar.isEmpty { addCursorRect(bar, cursor: .openHand) }
+        let title = NSRect(x: 0, y: 0, width: GanttRowMetrics.titleWidth, height: bounds.height).intersection(visibleRect)
+        if !title.isEmpty { addCursorRect(title, cursor: .pointingHand) }
     }
 
     override func mouseDown(with event: NSEvent) {

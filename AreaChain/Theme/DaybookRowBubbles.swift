@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// 统一行标题超长截断判定逻辑（加权字符长度计算）
@@ -59,13 +60,18 @@ public struct RowTitleBubble: View {
         .frame(maxWidth: 260, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(Color(nsColor: .windowBackgroundColor))
+        )
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+                .stroke(DaybookTheme.rule.opacity(0.9), lineWidth: 0.8)
         )
+        .compositingGroup()
         .allowsHitTesting(false)
         .zIndex(999)
     }
@@ -124,12 +130,16 @@ public struct RowNoteBubble: View {
             .frame(width: 210, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color(nsColor: .windowBackgroundColor))
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+                    .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+                    .stroke(DaybookTheme.rule.opacity(0.9), lineWidth: 0.8)
             )
 
             if growsUpward {
@@ -146,6 +156,7 @@ public struct RowNoteBubble: View {
         }
         .frame(width: 210, alignment: .leading)
         .fixedSize()
+        .compositingGroup()
         .allowsHitTesting(false)
         .zIndex(999)
     }

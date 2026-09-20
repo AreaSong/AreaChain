@@ -78,17 +78,17 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
             headerRow
                 .frame(height: 18)
 
             footerRow
-                .frame(height: 22)
+                .frame(height: 24)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4.5)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 52)
+        .frame(height: 54)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -130,6 +130,7 @@ struct DiarySummaryRow: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
+        .zIndex((isHovered || shouldShowTitleBubble || shouldShowNoteBubble) ? 100 : 1)
     }
 
     // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 22x22 占位的设置按钮)
@@ -288,7 +289,7 @@ struct DiarySummaryRow: View {
                     .transition(.opacity)
             }
         }
-        .frame(height: 22, alignment: .leading)
+        .frame(height: 24, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
     }
 
@@ -325,7 +326,7 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 22)
+        .frame(height: 24)
         .font(DaybookType.badge)
     }
 

@@ -18,15 +18,15 @@ struct DiaryRowCommandStrip: View {
     var body: some View {
         HStack(spacing: 4) {
             HStack(spacing: 3) {
-                // 1. 打开小窗 ↗
+                // 1. 打开小窗 ↗（与任务 pencil 对齐的精细单线轮廓）
                 commandStripButton(
-                    icon: "arrow.up.forward.square",
+                    icon: "arrow.up.forward",
                     key: "diary.quick.open",
                     action: onOpen
                 )
-                // 2. 复制手记 📋
+                // 2. 复制手记 📋（精细双层边框）
                 commandStripButton(
-                    icon: "doc.on.doc",
+                    icon: "square.on.square",
                     key: "diary.quick.copy",
                     action: onCopy
                 )
@@ -37,52 +37,51 @@ struct DiaryRowCommandStrip: View {
                     isActive: isPinned,
                     action: onTogglePin
                 )
-                // 4. 添加附件 📎
+                // 4. 添加附件 📎（与任务 100% 一致）
                 commandStripButton(
                     icon: "paperclip",
                     key: "diary.quick.attach",
                     action: onAttach
                 )
                 .disabled(isSensitive)
-                // 5. 工作台查看 🖥
+                // 5. 工作台查看 🖥（标准系统工作台细线符号）
                 commandStripButton(
-                    icon: "macwindow",
+                    icon: "sidebar.left",
                     key: "diary.quick.workspace",
                     action: onInspect
-                )
-                // 6. 删除手记 🗑
-                commandStripButton(
-                    icon: "trash",
-                    key: "diary.quick.delete",
-                    isDestructive: true,
-                    action: onDelete
                 )
             }
             .fixedSize(horizontal: true, vertical: true)
 
             if let tip = hoveredQuickActionTip {
                 Text(tip)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(DaybookTheme.ink.opacity(0.85))
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .foregroundStyle(tip == L10n.string("diary.quick.delete", locale: locale) ? Color.red : DaybookTheme.ink.opacity(0.85))
                     .lineLimit(1)
-                    .padding(.horizontal, 7)
+                    .padding(.horizontal, 5)
                     .frame(height: 18)
                     .background(
-                        Capsule()
-                            .fill(DaybookTheme.surface)
-                            .shadow(color: Color.black.opacity(0.08), radius: 2, x: 0, y: 1)
-                    )
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(DaybookTheme.rule.opacity(0.4), lineWidth: 0.5)
+                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            .fill(tip == L10n.string("diary.quick.delete", locale: locale) ? Color.red.opacity(0.08) : DaybookTheme.ink.opacity(0.06))
                     )
                     .transition(.opacity)
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 4)
+
+            // 6. 删除手记 🗑（靠最右侧，危险操作，与任务卡片完全对齐）
+            commandStripButton(
+                icon: "trash",
+                key: "diary.quick.delete",
+                isDestructive: true,
+                action: onDelete
+            )
+            .fixedSize()
         }
-        .frame(height: 22)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 24)
         .clipped()
+        .animation(.easeInOut(duration: 0.12), value: hoveredQuickActionTip)
     }
 
     private func commandStripButton(
@@ -102,6 +101,8 @@ struct DiaryRowCommandStrip: View {
             )
         }
         .buttonStyle(.plain)
+        .frame(width: 24, height: 24)
+        .fixedSize()
         .accessibilityLabel(LocalizedStringKey(key))
         .help(LocalizedStringKey(key))
         .background(
@@ -124,10 +125,10 @@ struct DiaryRowCommandStrip: View {
         isDestructive: Bool = false
     ) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 10.5, weight: .medium))
-            .frame(width: 22, height: 22)
+            .font(.system(size: 12, weight: .medium))
+            .frame(width: 24, height: 24)
             .background(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
                     .fill(
                         isDestructive
                             ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
