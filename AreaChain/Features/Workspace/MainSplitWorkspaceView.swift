@@ -31,6 +31,9 @@ struct MainSplitWorkspaceView: View {
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 400)
         }
         .toolbar {
+            ToolbarItem {
+                Spacer()
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     navigation.isInspectorPresented.toggle()
@@ -40,7 +43,7 @@ struct MainSplitWorkspaceView: View {
                 .help("drawer.inspector.toggle")
             }
         }
-        .navigationTitle("AreaChain")
+        .workspaceToolbarTitleHidden()
         .sheet(isPresented: $isAddingProject) {
             addProjectSheet
         }
@@ -73,6 +76,7 @@ struct MainSplitWorkspaceView: View {
     private var detailColumn: some View {
         detailView
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .workspaceToolbarTitleHidden()
             .overlay(alignment: .bottom) {
                 if !navigation.selectedTaskIDs.isEmpty {
                     WorkspaceBatchActionBar(
@@ -247,5 +251,19 @@ struct MainSplitWorkspaceView: View {
         }
         .padding(DaybookSpacing.page)
         .frame(width: 260)
+    }
+}
+
+private extension View {
+    @ViewBuilder
+    func workspaceToolbarTitleHidden() -> some View {
+        if #available(macOS 15.0, *) {
+            self
+                .toolbar(removing: .title)
+                .navigationTitle("")
+        } else {
+            self
+                .navigationTitle("")
+        }
     }
 }

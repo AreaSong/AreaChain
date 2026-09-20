@@ -247,6 +247,7 @@ struct WorkspaceRenderingTests {
         let window = NSWindow(contentViewController: NSHostingController(rootView: content))
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.titlebarAppearsTransparent = true
+        window.titleVisibility = .hidden
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)

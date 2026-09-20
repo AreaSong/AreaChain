@@ -111,6 +111,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.minSize = minSize ?? size
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             next.titlebarAppearsTransparent = true
+            next.titleVisibility = .hidden
             next.isReleasedWhenClosed = false
             next.isRestorable = false
             next.delegate = self
@@ -129,7 +130,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     }
 
     private func refreshChrome() {
-        let locale = AppPreferences.shared.resolvedLocale
-        window?.title = L10n.string(String.LocalizationValue(stringLiteral: titleKey), locale: locale)
+        window?.title = ""
+        window?.titleVisibility = .hidden
     }
 }
