@@ -109,7 +109,8 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             let next = NSWindow(contentViewController: NSHostingController(rootView: provider()))
             next.setContentSize(size)
             next.minSize = minSize ?? size
-            next.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            next.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            next.titlebarAppearsTransparent = true
             next.isReleasedWhenClosed = false
             next.isRestorable = false
             next.delegate = self

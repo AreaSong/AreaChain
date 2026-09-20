@@ -78,17 +78,17 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             headerRow
                 .frame(height: 18)
 
             footerRow
-                .frame(height: 24)
+                .frame(height: 22)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 3)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 54)
+        .frame(height: 48)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -289,7 +289,7 @@ struct DiarySummaryRow: View {
                     .transition(.opacity)
             }
         }
-        .frame(height: 24, alignment: .leading)
+        .frame(height: 22, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
     }
 
@@ -326,7 +326,7 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 24)
+        .frame(height: 22)
         .font(DaybookType.badge)
     }
 

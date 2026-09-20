@@ -245,7 +245,8 @@ struct WorkspaceRenderingTests {
             .transaction { $0.disablesAnimations = true }
             .preferredColorScheme(scheme)
         let window = NSWindow(contentViewController: NSHostingController(rootView: content))
-        window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+        window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+        window.titlebarAppearsTransparent = true
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
@@ -328,6 +329,7 @@ struct WorkspaceRenderingTests {
     private func release(_ window: NSWindow) {
         window.makeFirstResponder(nil)
         window.orderOut(nil)
+        window.toolbar = nil
         window.contentViewController = nil
     }
 

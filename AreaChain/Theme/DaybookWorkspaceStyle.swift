@@ -33,17 +33,17 @@ extension EnvironmentValues {
 
 enum WorkspaceSwatch {
     static let paperLight = (247.0 / 255, 247.0 / 255, 248.0 / 255)
-    static let paperDark = (37.0 / 255, 37.0 / 255, 39.0 / 255)
+    static let paperDark = (30.0 / 255, 30.0 / 255, 32.0 / 255)
     static let surfaceLight = (1.0, 1.0, 1.0)
-    static let surfaceDark = (45.0 / 255, 45.0 / 255, 48.0 / 255)
+    static let surfaceDark = (38.0 / 255, 38.0 / 255, 41.0 / 255)
     static let inputLight = (240.0 / 255, 240.0 / 255, 243.0 / 255)
-    static let inputDark = (46.0 / 255, 46.0 / 255, 50.0 / 255)
+    static let inputDark = (42.0 / 255, 42.0 / 255, 46.0 / 255)
     static let controlLight = (0.50, 0.50, 0.54)
     static let controlDark = (0.52, 0.52, 0.56)
     static let hoverLight = (0.91, 0.91, 0.93)
     static let hoverDark = (0.20, 0.20, 0.22)
     static let selectionLight = (0.88, 0.92, 0.98)
-    static let selectionDark = (0.16, 0.23, 0.31)
+    static let selectionDark = (0.12, 0.20, 0.32)
 }
 
 enum WorkspaceStyle {

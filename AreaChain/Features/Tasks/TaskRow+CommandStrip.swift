@@ -134,7 +134,7 @@ extension TaskRow {
             .fixedSize()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 24)
+        .frame(height: 22)
         .clipped()
         .animation(.easeInOut(duration: 0.12), value: hoveredQuickActionTip)
     }
@@ -153,7 +153,7 @@ extension TaskRow {
             commandStripIcon(icon: icon, isButtonHovered: isButtonHovered, isActive: isActive, isDestructive: isDestructive)
         }
         .buttonStyle(.plain)
-        .frame(width: 24, height: 24)
+        .frame(width: 22, height: 22)
         .fixedSize()
         .help(LocalizedStringKey(key))
         .background(
@@ -183,7 +183,7 @@ extension TaskRow {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .frame(width: 24, height: 24)
+        .frame(width: 22, height: 22)
         .fixedSize()
         .help(LocalizedStringKey(key))
         .background(
@@ -204,10 +204,10 @@ extension TaskRow {
         isDestructive: Bool = false
     ) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 12, weight: .medium))
-            .frame(width: 24, height: 24)
+            .font(.system(size: 11.5, weight: .medium))
+            .frame(width: 22, height: 22)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
                     .fill(
                         isDestructive
                             ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
