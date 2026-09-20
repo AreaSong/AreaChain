@@ -87,6 +87,26 @@ struct DiarySummaryRowTests {
 
         #expect(row.contentPresentation.title == nil)
         #expect(row.contentPresentation.body == "单行随手记正文内容没有换行")
+        #expect(row.contentPresentation.hasMultipleLines == false)
+    }
+
+    @Test func diarySummaryRowTruncationCalculation() throws {
+        let shortText = "短手记"
+        let longText = "这是一段非常非常非常非常非常长的单行手记正文，用于触发截断气泡展示"
+        #expect(!RowTitleTruncation.isTruncated(shortText))
+        #expect(RowTitleTruncation.isTruncated(longText))
+    }
+
+    @Test func diarySummaryRowBubblePlacementCalculation() throws {
+        // 顶部位置：向下生长
+        let topPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 50, y: 150), isWorkspace: false)
+        #expect(topPlacement.growsUpward == false)
+        #expect(topPlacement.bubbleShiftX == 0)
+
+        // 底部偏右位置：向上生长，且向左平移防溢出
+        let bottomPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 250, y: 320), isWorkspace: false)
+        #expect(bottomPlacement.growsUpward == true)
+        #expect(bottomPlacement.bubbleShiftX < 0)
     }
 
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {

@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 菜单栏只展示有界的正文预览，完整阅读与编辑交给同一条手记的小窗。
+/// 菜单栏手记紧凑数据条：严格锁定 46pt 固定高度，规范化展示标题/正文预览，并通过统一设置菜单与 ⌘ 快捷键提供深度操作。
 struct DiarySummaryRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.locale) private var locale
@@ -14,11 +14,12 @@ struct DiarySummaryRow: View {
     var isHighlighted = false
     var onSelect: (() -> Void)? = nil
     var onDelete: () -> Void
+
     @State private var isHovered = false
     @State private var hasCopied = false
     @State private var isCommandPressed = false
-    @State private var hoveredQuickActionTip: String? = nil
     @State private var flagsMonitor: Any? = nil
+    @State private var isTitleTextHovered = false
     @State private var isNoteHovered = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
@@ -29,194 +30,43 @@ struct DiarySummaryRow: View {
     }
 
     struct NotePresentation {
-        let title: String?
-        let body: String
+        let mainText: String
+        let note: String?
+
+        var hasMultipleLines: Bool { note != nil }
+        var title: String? { note == nil ? nil : mainText }
+        var body: String { note ?? mainText }
+    }
+
+    static func preview(_ text: String) -> String {
+        let prefix = text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(401)
+        let snippet = prefix.prefix(400).split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        return snippet + (prefix.count > 400 ? "…" : "")
     }
 
     var contentPresentation: NotePresentation {
         if isSensitive {
-            return NotePresentation(title: nil, body: L10n.string("diary.private.title", locale: locale))
+            return NotePresentation(mainText: L10n.string("diary.private.title", locale: locale), note: nil)
         }
         let raw = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard let newlineIndex = raw.firstIndex(of: "\n") else {
-            return NotePresentation(title: nil, body: raw)
+            return NotePresentation(mainText: raw, note: nil)
         }
         let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
         let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
 
         if firstLine.isEmpty {
-            return NotePresentation(title: nil, body: rest)
+            return NotePresentation(mainText: rest, note: nil)
         }
-        if rest.isEmpty {
-            return NotePresentation(title: nil, body: firstLine)
-        }
-        return NotePresentation(title: firstLine, body: rest)
+        return NotePresentation(mainText: firstLine, note: rest.isEmpty ? nil : rest)
     }
 
-    @ViewBuilder
-    private var noteContentHeader: some View {
-        let presentation = contentPresentation
-        if let title = presentation.title {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .font(DaybookType.body.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(alignment: .center, spacing: 4) {
-                    Text(presentation.body)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .multilineTextAlignment(.leading)
-
-                    if !isSensitive && !presentation.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        noteIndicator(fullText: presentation.body)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        } else {
-            HStack(alignment: .center, spacing: 4) {
-                Text(presentation.body)
-                    .font(DaybookType.body)
-                    .lineSpacing(2)
-                    .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.leading)
-
-                if !isSensitive && !presentation.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    noteIndicator(fullText: presentation.body)
-                }
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
+    private var shouldShowTitleBubble: Bool {
+        !isSensitive && isTitleTextHovered && RowTitleTruncation.isTruncated(contentPresentation.mainText)
     }
 
-    private func noteIndicator(fullText: String) -> some View {
-        Image(systemName: "text.alignleft")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
-            .padding(.horizontal, 3.5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
-            )
-            .background(
-                GeometryReader { proxy in
-                    Color.clear
-                        .onAppear { updateBubblePlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
-                }
-            )
-            .contentShape(Rectangle())
-            .onHover { isNoteHovered = $0 }
-            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if isNoteHovered {
-                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-                    let transformAnchor = UnitPoint(
-                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: growsUpward ? 1.0 : 0.0
-                    )
-                    noteFloatingBubble(fullText: fullText, arrowPadding: arrowPadding)
-                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                            removal: .opacity
-                        ))
-                }
-            }
-    }
-
-    private func updateBubblePlacement(_ proxy: GeometryProxy) {
-        let frame = proxy.frame(in: .global)
-        let globalY = frame.minY
-        let globalX = frame.minX
-
-        growsUpward = globalY > 260
-
-        let safeMaxX: CGFloat = 356
-        let safeMinX: CGFloat = 12
-        let bubbleRight = globalX + 202
-        if bubbleRight > safeMaxX {
-            let overflow = bubbleRight - safeMaxX
-            let maxShift = max(0, (globalX - 8) - safeMinX)
-            bubbleShiftX = -min(overflow, maxShift)
-        } else {
-            bubbleShiftX = 0
-        }
-    }
-
-    private func noteFloatingBubble(fullText: String, arrowPadding: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: 1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "text.alignleft")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                    Text(L10n.string("drawer.notes.title", locale: locale))
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                    Spacer(minLength: 0)
-                }
-
-                Text(fullText)
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineSpacing(2.5)
-                    .lineLimit(8)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .frame(width: 210, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-            )
-
-            if growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: -1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
-        }
-        .frame(width: 210, alignment: .leading)
-        .fixedSize()
-        .allowsHitTesting(false)
-        .zIndex(999)
+    private var shouldShowNoteBubble: Bool {
+        !isSensitive && isNoteHovered && contentPresentation.note != nil
     }
 
     private var assignedTags: [TagItem] {
@@ -225,12 +75,6 @@ struct DiarySummaryRow: View {
             name: { $0.name },
             isActive: { _ in true }
         )
-    }
-
-    static func preview(_ text: String) -> String {
-        let prefix = text.trimmingCharacters(in: .whitespacesAndNewlines).prefix(401)
-        let snippet = prefix.prefix(400).split(whereSeparator: \.isWhitespace).joined(separator: " ")
-        return snippet + (prefix.count > 400 ? "…" : "")
     }
 
     var body: some View {
@@ -245,51 +89,49 @@ struct DiarySummaryRow: View {
                 }
             }
         }
-        .padding(.horizontal, 10).padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 46)
-        .foregroundStyle(DaybookTheme.muted)
-        .background(
-            (isSelected || isHighlighted)
-                ? DaybookTheme.cardSelectionFill
-                : (isHovered ? DaybookTheme.hoverFill : DaybookTheme.ink.opacity(0.025)),
-            in: RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+        .frame(height: 46)
+        .modernRow(
+            cornerRadius: DaybookRadius.small,
+            isHovered: isHovered,
+            isSelected: isSelected || isHighlighted
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .strokeBorder(
-                    (isSelected || isHighlighted)
-                        ? DaybookTheme.stamp.opacity(0.4)
-                        : (entry.isPinned
-                            ? DaybookTheme.stamp.opacity(0.28)
-                            : (isHovered ? DaybookTheme.rule.opacity(0.6) : DaybookTheme.rule.opacity(0.25))),
-                    lineWidth: (isSelected || isHighlighted || entry.isPinned) ? 1.0 : 0.6
+                    (entry.isPinned && !isSelected && !isHighlighted)
+                        ? DaybookTheme.stamp.opacity(0.28)
+                        : Color.clear,
+                    lineWidth: 0.8
                 )
         )
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .onHover { isHovered = $0 }
         .task(id: hasCopied) {
             guard hasCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))
             if !Task.isCancelled { hasCopied = false }
         }
-        .onAppear {
-            setupFlagsMonitor()
-        }
-        .onDisappear {
-            tearDownFlagsMonitor()
-        }
+        .onAppear { setupFlagsMonitor() }
+        .onDisappear { tearDownFlagsMonitor() }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             isCommandPressed = false
-            hoveredQuickActionTip = nil
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
     }
 
+    // MARK: - 主内容区 (首行标题/正文 + 次行元数据)
+
     private var selectableContent: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             noteContentHeader
+                .frame(height: 18)
+
             metadataLine
+                .frame(height: 16)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
@@ -303,11 +145,113 @@ struct DiarySummaryRow: View {
         )
     }
 
+    // MARK: - 首行标题/正文与气泡联动
+
+    @ViewBuilder
+    private var noteContentHeader: some View {
+        let presentation = contentPresentation
+        HStack(alignment: .center, spacing: 4) {
+            Text(presentation.mainText.isEmpty ? " " : presentation.mainText)
+                .font(DaybookType.body)
+                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
+                .contentShape(Rectangle())
+                .onHover { hovering in
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = hovering
+                    }
+                }
+                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                    if shouldShowTitleBubble {
+                        RowTitleBubble(title: presentation.mainText, growsUpward: growsUpward)
+                            .offset(y: growsUpward ? -6 : 22)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                                removal: .opacity
+                            ))
+                    }
+                }
+
+            if !isSensitive, let note = presentation.note, !note.isEmpty {
+                noteIndicator(fullText: note)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { updateBubblePlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+            }
+        )
+    }
+
+    private func noteIndicator(fullText: String) -> some View {
+        Image(systemName: "text.alignleft")
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .padding(.horizontal, 3.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+            )
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isNoteHovered = hovering
+                }
+            }
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                if shouldShowNoteBubble {
+                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+                    let transformAnchor = UnitPoint(
+                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                        y: growsUpward ? 1.0 : 0.0
+                    )
+                    RowNoteBubble(note: fullText, growsUpward: growsUpward, bubbleShiftX: bubbleShiftX, headerTitleKey: "drawer.notes.title")
+                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                            removal: .opacity
+                        ))
+                }
+            }
+    }
+
+    private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), isWorkspace: false)
+        growsUpward = placement.growsUpward
+        bubbleShiftX = placement.bubbleShiftX
+    }
+
+    // MARK: - 次行元数据行
+
     private var metadataLine: some View {
         HStack(spacing: 5) {
-            if entry.isPinned { Image(systemName: "pin.fill").font(.system(size: 9.5)).accessibilityLabel("diary.pin") }
-            if isSensitive { Image(systemName: "lock.shield").font(.system(size: 9.5)).accessibilityLabel("diary.privacy") }
-            Text(dateLabel).lineLimit(1).font(DaybookType.badge)
+            if entry.isPinned {
+                Image(systemName: "pin.fill")
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .accessibilityLabel("diary.pin")
+            }
+            if isSensitive {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .accessibilityLabel("diary.privacy")
+            }
+            Text(dateLabel)
+                .lineLimit(1)
+                .font(DaybookType.badge)
+                .foregroundStyle(DaybookTheme.muted)
+
             if !assignedTags.isEmpty {
                 HStack(spacing: 3) {
                     ForEach(assignedTags) { tag in
@@ -322,63 +266,35 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 22)
+        .frame(height: 16)
         .font(DaybookType.badge)
-        .foregroundStyle(DaybookTheme.muted)
     }
 
     private func tagPill(_ tag: TagItem) -> some View {
         let color = DiaryTagChrome.color(for: tag.name)
         return Text("#" + tag.name)
-            .font(.system(size: 9.5, weight: .medium))
+            .font(.system(size: 9, weight: .medium))
             .lineLimit(1)
-            .padding(.horizontal, 4.5)
-            .padding(.vertical, 1.5)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1)
             .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .fill(color.opacity(0.12))
             )
             .foregroundStyle(color)
             .overlay(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
                     .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
             )
     }
 
+    // MARK: - 右侧单按钮设置菜单 (完全对齐任务条规范)
+
+    @ViewBuilder
     private var actionCluster: some View {
-        HStack(spacing: 2) {
-            Button(action: openWindow) {
-                Image(systemName: "arrow.up.forward.square")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .frame(width: 22, height: 24)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("diary.window.open")
-            .help("diary.window.open")
-
+        if isHovered || isSelected || isHighlighted {
             moreMenu
-        }
-        .opacity((isHovered || isSelected || isHighlighted) ? 1.0 : 0.0)
-        .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .animation(.easeInOut(duration: 0.15), value: isSelected)
-    }
-
-    // MARK: - ⌘ 快捷平铺操作条（与「···」更多菜单 1:1 对齐）
-
-    private var commandActionStrip: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            noteContentHeader
-
-            DiaryRowCommandStrip(
-                isSensitive: isSensitive,
-                isPinned: entry.isPinned,
-                onOpen: openWindow,
-                onCopy: copy,
-                onTogglePin: togglePin,
-                onAttach: attach,
-                onInspect: inspectInWorkspace,
-                onDelete: onDelete
-            )
+                .transition(.opacity)
         }
     }
 
@@ -392,11 +308,43 @@ struct DiarySummaryRow: View {
             Divider()
             Button("alert.trash.move", role: .destructive, action: onDelete)
         } label: {
-            Image(systemName: "ellipsis").frame(width: 22, height: 24)
+            Image(systemName: "ellipsis")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(DaybookTheme.ink.opacity(0.06))
+                )
+                .contentShape(Rectangle())
         }
-        .menuStyle(.borderlessButton).menuIndicator(.hidden)
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .help("footer.more")
         .accessibilityLabel("footer.more")
         .fixedSize()
+    }
+
+    // MARK: - ⌘ 快捷平铺操作条 (按住 Command 时整行平滑替换)
+
+    private var commandActionStrip: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            noteContentHeader
+                .frame(height: 18)
+
+            DiaryRowCommandStrip(
+                isSensitive: isSensitive,
+                isPinned: entry.isPinned,
+                onOpen: openWindow,
+                onCopy: copy,
+                onTogglePin: togglePin,
+                onAttach: attach,
+                onInspect: inspectInWorkspace,
+                onDelete: onDelete
+            )
+            .frame(height: 18)
+        }
     }
 
     private var dateLabel: String {

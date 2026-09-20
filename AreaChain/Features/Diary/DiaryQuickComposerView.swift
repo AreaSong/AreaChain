@@ -24,22 +24,26 @@ struct DiaryQuickComposerView: View {
 
     var body: some View {
         if isCompact {
-            VStack(alignment: .leading, spacing: 6) {
-                compactInputRow
-                if canSubmit {
-                    LiveDiaryComposerPreview(
-                        text: text,
-                        allTags: orderedTags,
-                        isSensitiveExternal: isSensitive
-                    )
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .top)),
-                        removal: .opacity
-                    ))
+            compactInputRow
+                .overlay(alignment: .topLeading) {
+                    GeometryReader { proxy in
+                        if canSubmit {
+                            LiveDiaryComposerPreview(
+                                text: text,
+                                allTags: orderedTags,
+                                isSensitiveExternal: isSensitive
+                            )
+                            .frame(width: proxy.size.width)
+                            .offset(y: proxy.size.height + 6)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .top)),
+                                removal: .opacity
+                            ))
+                        }
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .animation(DaybookMotion.interactive(reduceMotion), value: canSubmit)
+                .zIndex(100)
+                .animation(DaybookMotion.interactive(reduceMotion), value: canSubmit)
         } else {
             workspaceComposer
         }

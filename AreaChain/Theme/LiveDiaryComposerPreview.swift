@@ -46,8 +46,9 @@ struct LiveDiaryComposerPreview: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
         .background(
-            DaybookTheme.ink.opacity(0.025),
-            in: RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookTheme.paper)
+                .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 4)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -63,49 +64,25 @@ struct LiveDiaryComposerPreview: View {
 
     @ViewBuilder
     private var contentArea: some View {
-        if !parsed.cleanTitle.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(parsed.cleanTitle)
-                    .font(DaybookType.body.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+        let title = parsed.cleanTitle
+        let displayMainText = title.isEmpty ? parsed.body : title
+        let noteText = title.isEmpty ? "" : parsed.body
 
-                HStack(alignment: .center, spacing: 4) {
-                    Text(parsed.body)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .multilineTextAlignment(.leading)
+        HStack(alignment: .center, spacing: 4) {
+            Text(displayMainText.isEmpty ? " " : displayMainText)
+                .font(DaybookType.body)
+                .lineSpacing(2)
+                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
 
-                    if !isSensitive && !parsed.body.isEmpty {
-                        noteIndicator(fullText: parsed.body)
-                    }
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if !isSensitive && !noteText.isEmpty {
+                noteIndicator(fullText: noteText)
             }
-        } else {
-            let displayBody = parsed.body.isEmpty ? text.trimmingCharacters(in: .whitespacesAndNewlines) : parsed.body
-            HStack(alignment: .center, spacing: 4) {
-                Text(displayBody.isEmpty ? " " : displayBody)
-                    .font(DaybookType.body)
-                    .lineSpacing(2)
-                    .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                    .multilineTextAlignment(.leading)
-
-                if !isSensitive && !displayBody.isEmpty {
-                    noteIndicator(fullText: displayBody)
-                }
-                Spacer(minLength: 0)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func noteIndicator(fullText: String) -> some View {
@@ -250,10 +227,6 @@ struct LiveDiaryComposerPreview: View {
             }
 
             Spacer(minLength: 0)
-
-            Text("⌘↵")
-                .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.55))
         }
         .frame(height: 22)
     }

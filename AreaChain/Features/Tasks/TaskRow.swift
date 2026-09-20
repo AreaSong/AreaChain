@@ -14,6 +14,7 @@ struct TaskRow: View {
     @State var hovering = false
     @State private var isPointerHovered = false
     @State private var isNoteHovered = false
+    @State private var isTitleTextHovered = false
     @State var isCommandPressed = false
     @State private var flagsMonitor: Any? = nil
     @State var draft = ""
@@ -125,6 +126,13 @@ struct TaskRow: View {
             isSelected: state.isSelected
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { updateVerticalPlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
+            }
+        )
         .zIndex(isHovered ? 60 : 1)
     }
 
@@ -167,91 +175,54 @@ struct TaskRow: View {
         return nil
     }
 
-    private var shouldShowNoteBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime && isHovered && fullNoteText != nil
+    private var isTitleTruncated: Bool {
+        TaskTitleTruncation.isTruncated(state.title)
     }
 
-    private func noteFloatingBubble(growsUpward: Bool, bubbleShiftX: CGFloat) -> some View {
-        let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-        return VStack(alignment: .leading, spacing: 0) {
-            if !growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: 1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
+    private var shouldShowTitleBubble: Bool {
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime
+            && (isTitleTextHovered || isPointerHovered) && !isNoteHovered && isTitleTruncated
+    }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "text.alignleft")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                    Text(L10n.string("drawer.notes.title", locale: locale))
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                    Spacer(minLength: 0)
-                }
-
-                Text(fullNoteText ?? "")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineSpacing(2.5)
-                    .lineLimit(8)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .frame(width: 210, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-            )
-
-            if growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: -1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
-        }
-        .frame(width: 210, alignment: .leading)
-        .fixedSize()
-        .allowsHitTesting(false)
-        .zIndex(999)
+    private var shouldShowNoteBubble: Bool {
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime && isNoteHovered && fullNoteText != nil
     }
 
     private var selectableContent: some View {
-        titleContent
-            .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
-            .overlay(TaskRowPointerRegion(
-                id: state.id,
-                onSelect: { dispatch(.select($0)) },
-                onEdit: beginEdit,
-                onHover: { isPointerHovered = $0 }
-            )
-            .padding(.top, -6)
-            .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
-            .accessibilityHidden(true))
-            .modifier(TodoDragIfNeeded(payload: state.dragPayload))
-            .accessibilityElement(children: .combine)
-            .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
-            .accessibilityAction { dispatch(.select()) }
-            .accessibilityAction(named: Text("row.edit"), beginEdit)
+        HStack(alignment: .center, spacing: 5) {
+            titleContent
+                .overlay(TaskRowPointerRegion(
+                    id: state.id,
+                    onSelect: { dispatch(.select($0)) },
+                    onEdit: beginEdit,
+                    onHover: { isPointerHovered = $0 }
+                )
+                .padding(.top, -6)
+                .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
+                .accessibilityHidden(true))
+
+            if !style.isWorkspace, fullNoteText != nil {
+                noteIndicator
+            }
+
+            Color.clear
+                .frame(minWidth: 10, maxWidth: .infinity, minHeight: 20)
+                .contentShape(Rectangle())
+                .overlay(TaskRowPointerRegion(
+                    id: state.id,
+                    onSelect: { dispatch(.select($0)) },
+                    onEdit: beginEdit
+                )
+                .padding(.top, -6)
+                .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
+                .accessibilityHidden(true))
+        }
+        .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
+        .modifier(TodoDragIfNeeded(payload: state.dragPayload))
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction { dispatch(.select()) }
+        .accessibilityAction(named: Text("row.edit"), beginEdit)
     }
 
     private var residentMark: some View {
@@ -265,12 +236,12 @@ struct TaskRow: View {
     private var noteIndicator: some View {
         Image(systemName: "text.alignleft")
             .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
-            .padding(.horizontal, 3.5)
-            .padding(.vertical, 1.5)
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .padding(.horizontal, 4)
+            .padding(.vertical, 2)
             .background(
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
             )
             .background(
                 GeometryReader { proxy in
@@ -287,15 +258,19 @@ struct TaskRow: View {
                 }
             )
             .contentShape(Rectangle())
-            .onHover { isNoteHovered = $0 }
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isNoteHovered = hovering
+                }
+            }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if shouldShowNoteBubble {
+                if shouldShowNoteBubble, let noteText = fullNoteText {
                     let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
                     let transformAnchor = UnitPoint(
                         x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                         y: growsUpward ? 1.0 : 0.0
                     )
-                    noteFloatingBubble(growsUpward: growsUpward, bubbleShiftX: bubbleShiftX)
+                    TaskNoteBubble(note: noteText, growsUpward: growsUpward, bubbleShiftX: bubbleShiftX)
                         .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
                         .transition(.asymmetric(
                             insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
@@ -303,6 +278,10 @@ struct TaskRow: View {
                         ))
                 }
             }
+    }
+
+    private func updateVerticalPlacement(_ proxy: GeometryProxy) {
+        growsUpward = proxy.frame(in: .global).minY > 260
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
@@ -331,15 +310,25 @@ struct TaskRow: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(alignment: .center, spacing: 5) {
-                ModernTaskTitle(text: state.title, isDone: state.isDone)
-                    .lineLimit(style.isWorkspace ? 2 : 1)
-                    .truncationMode(.tail)
-
-                if !style.isWorkspace, fullNoteText != nil {
-                    noteIndicator
+            ModernTaskTitle(text: state.title, isDone: state.isDone)
+                .lineLimit(style.isWorkspace ? 2 : 1)
+                .truncationMode(.tail)
+                .contentShape(Rectangle())
+                .onHover { hovering in
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = hovering
+                    }
                 }
-            }
+                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                    if shouldShowTitleBubble {
+                        TaskTitleBubble(title: state.title, growsUpward: growsUpward)
+                            .offset(y: growsUpward ? -6 : 22)
+                            .transition(.asymmetric(
+                                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                                removal: .opacity
+                            ))
+                    }
+                }
 
             if style.isWorkspace {
                 if let noteSnippet = formattedNoteSnippet {
@@ -363,7 +352,6 @@ struct TaskRow: View {
                 }
             }
         }
-        .contentShape(Rectangle())
     }
 
     @ViewBuilder
