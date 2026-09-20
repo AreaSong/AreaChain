@@ -122,7 +122,7 @@ struct TaskRow: View {
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 6)
-        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : 34)
+        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : 36)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,

@@ -5,16 +5,21 @@ import SwiftUI
 extension TaskRow {
     @ViewBuilder
     var actionCluster: some View {
-        HStack(spacing: 2) {
-            if editing {
+        if editing {
+            HStack(spacing: 2) {
                 RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
                 RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
-            } else if hovering || state.isSelected {
-                moreMenu
             }
+            .frame(height: 24)
+        } else {
+            moreMenu
+                .frame(width: 24, height: 24)
+                .fixedSize()
+                .opacity((isHovered || state.isSelected) && !isCommandPressed ? 1.0 : 0.0)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+                .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
         }
-        .frame(minWidth: 22)
-        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
     }
 
     // MARK: - 「···」 4 逻辑分区更多菜单
@@ -56,7 +61,7 @@ extension TaskRow {
                 .foregroundStyle(DaybookTheme.muted)
                 .frame(width: 22, height: 22)
                 .background(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
                         .fill(DaybookTheme.ink.opacity(0.06))
                 )
                 .contentShape(Rectangle())
@@ -64,6 +69,8 @@ extension TaskRow {
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
         .buttonStyle(.plain)
+        .frame(width: 24, height: 24)
+        .fixedSize()
         .help("row.more")
         .accessibilityLabel("row.more")
     }

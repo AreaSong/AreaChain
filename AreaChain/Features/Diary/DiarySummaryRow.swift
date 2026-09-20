@@ -78,17 +78,15 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             headerRow
-                .frame(height: 18)
 
             footerRow
-                .frame(height: 22)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 3)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 48)
+        .frame(minHeight: 46)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -143,7 +141,6 @@ struct DiarySummaryRow: View {
             actionCluster
                 .frame(width: 22, height: 22)
         }
-        .frame(height: 18)
     }
 
     @ViewBuilder
@@ -268,7 +265,7 @@ struct DiarySummaryRow: View {
         .fixedSize()
     }
 
-    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 22pt)
+    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 24pt)
 
     private var footerRow: some View {
         ZStack(alignment: .leading) {
@@ -289,7 +286,7 @@ struct DiarySummaryRow: View {
                     .transition(.opacity)
             }
         }
-        .frame(height: 22, alignment: .leading)
+        .frame(height: 24, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
     }
 
@@ -326,7 +323,6 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 22)
         .font(DaybookType.badge)
     }
 

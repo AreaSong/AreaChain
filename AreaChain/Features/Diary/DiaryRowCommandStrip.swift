@@ -76,11 +76,9 @@ struct DiaryRowCommandStrip: View {
                 isDestructive: true,
                 action: onDelete
             )
-            .fixedSize()
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 22)
-        .clipped()
+        .frame(height: 24)
         .animation(.easeInOut(duration: 0.12), value: hoveredQuickActionTip)
     }
 
@@ -101,7 +99,7 @@ struct DiaryRowCommandStrip: View {
             )
         }
         .buttonStyle(.plain)
-        .frame(width: 22, height: 22)
+        .frame(width: 24, height: 24)
         .fixedSize()
         .accessibilityLabel(LocalizedStringKey(key))
         .help(LocalizedStringKey(key))
@@ -125,8 +123,8 @@ struct DiaryRowCommandStrip: View {
         isDestructive: Bool = false
     ) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 11.5, weight: .medium))
-            .frame(width: 22, height: 22)
+            .font(.system(size: 13.0, weight: .medium))
+            .frame(width: 24, height: 24)
             .background(
                 RoundedRectangle(cornerRadius: 4.5, style: .continuous)
                     .fill(
@@ -134,7 +132,7 @@ struct DiaryRowCommandStrip: View {
                             ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
                             : (isActive
                                 ? DaybookTheme.stamp.opacity(isButtonHovered ? 0.22 : 0.14)
-                                : (isButtonHovered ? DaybookTheme.ink.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
+                                : (isButtonHovered ? DaybookTheme.ink.opacity(0.12) : Color.clear))
                     )
             )
             .foregroundStyle(
