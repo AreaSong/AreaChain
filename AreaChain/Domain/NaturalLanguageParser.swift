@@ -4,6 +4,7 @@ enum SyntaxTokenKind: Equatable {
     case tag(name: String)
     case time(minutes: Int)
     case priority(isImportant: Bool, isUrgent: Bool, raw: String)
+    case note(text: String)
 }
 
 struct SyntaxHighlightToken: Equatable {
@@ -53,21 +54,50 @@ enum NaturalLanguageParser {
     }
 
     static func parse(_ input: String, consumeDiaryPresetTags: Bool = true) -> ParsedCapture {
-        let lines = input.components(separatedBy: .newlines)
-        let firstLine = lines.first ?? ""
-        let notesText = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-
         let tagNames = TagSyntax.names(in: input, includesDiaryTags: consumeDiaryPresetTags)
-        var text = TagSyntax.removingTags(from: firstLine, includesDiaryTags: consumeDiaryPresetTags)
-        let priority = consumePriority(from: &text)
-        let remindMinutes = consumeTime(from: &text)
 
-        let cleaned = text
+        let baseTitlePart: String
+        let finalNotes: String
+        let noteRemind: Int?
+        let notePriority: PriorityResult
+
+        if let noteRange = findNoteRange(in: input) {
+            baseTitlePart = String(input[..<noteRange.lowerBound])
+            var noteRaw = String(input[noteRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
+            noteCleanTags(from: &noteRaw, consumeDiaryPresetTags: consumeDiaryPresetTags)
+            notePriority = consumePriority(from: &noteRaw)
+            // 备注中仅提取显式 @时间 语法（如 @14:00），避免误伤备注正文中的自然语言或URL
+            noteRemind = firstMatch(
+                pattern: #"(?<![^\s(\[（【])@\d{1,2}[:：]\d{2}(?=$|[\s,，.。;；!！?？)）\]】])"#, in: noteRaw
+            ).flatMap(timeMinutes)
+            if noteRemind != nil, let matchRange = firstMatchRange(pattern: #"(?<![^\s(\[（【])@\d{1,2}[:：]\d{2}(?=$|[\s,，.。;；!！?？)）\]】])"#, in: noteRaw) {
+                noteRaw = (noteRaw as NSString).replacingCharacters(in: matchRange, with: "")
+            }
+            finalNotes = noteRaw
+                .components(separatedBy: .whitespacesAndNewlines)
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        } else {
+            let lines = input.components(separatedBy: .newlines)
+            baseTitlePart = lines.first ?? ""
+            finalNotes = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            noteRemind = nil
+            notePriority = .none
+        }
+
+        var titleText = TagSyntax.removingTags(from: baseTitlePart, includesDiaryTags: consumeDiaryPresetTags)
+        let titlePriority = consumePriority(from: &titleText)
+        let titleRemind = consumeTime(from: &titleText)
+
+        let priority = titlePriority.hasPriorityToken ? titlePriority : notePriority
+        let remindMinutes = titleRemind ?? noteRemind
+
+        let cleaned = titleText
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         let hasTokens = !tagNames.isEmpty || priority.hasPriorityToken || remindMinutes != nil
-        let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (firstLine.isEmpty ? input : firstLine) : cleaned)
+        let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (baseTitlePart.isEmpty ? input : baseTitlePart) : cleaned)
         let hasContentTitle = !cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         return ParsedCapture(
@@ -78,10 +108,19 @@ enum NaturalLanguageParser {
             isImportant: priority.isImportant,
             isUrgent: priority.isUrgent,
             hasPriorityToken: priority.hasPriorityToken,
-            notes: notesText,
+            notes: finalNotes,
             tagNames: tagNames,
             hasContentTitle: hasContentTitle
         )
+    }
+
+    private static func noteCleanTags(from text: inout String, consumeDiaryPresetTags: Bool) {
+        text = TagSyntax.removingTags(from: text, includesDiaryTags: consumeDiaryPresetTags)
+    }
+
+    private static func findNoteRange(in input: String) -> Range<String.Index>? {
+        let pattern = #"(?<!:)(//|／／)"#
+        return input.range(of: pattern, options: .regularExpression)
     }
 
     /// 长正文只接受显式属性语法，不把句子里的自然时间当成修改提醒的指令。
@@ -140,6 +179,35 @@ enum NaturalLanguageParser {
         // 3. 时间时刻（@15:30 或 中文时刻）
         if let time = extractTime(from: text), isFree(time.range) {
             tokens.append(SyntaxHighlightToken(kind: .time(minutes: time.minutes), range: time.range))
+        }
+
+        // 4. 单行备注（// 或 ／／ 开始直到末尾，排除 URL 协议冒号，避开已有属性 Token）
+        if let firstNote = findNoteRange(in: text) {
+            let noteNSRange = NSRange(firstNote.lowerBound..<text.endIndex, in: text)
+            var currentLoc = noteNSRange.location
+            let endLoc = NSMaxRange(noteNSRange)
+
+            let containedTokens = tokens
+                .filter { $0.range.location >= currentLoc && NSMaxRange($0.range) <= endLoc }
+                .sorted { $0.range.location < $1.range.location }
+
+            for token in containedTokens {
+                if token.range.location > currentLoc {
+                    let freeRange = NSRange(location: currentLoc, length: token.range.location - currentLoc)
+                    if isFree(freeRange) {
+                        let noteSub = nsText.substring(with: freeRange)
+                        tokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
+                    }
+                }
+                currentLoc = NSMaxRange(token.range)
+            }
+            if currentLoc < endLoc {
+                let freeRange = NSRange(location: currentLoc, length: endLoc - currentLoc)
+                if isFree(freeRange) {
+                    let noteSub = nsText.substring(with: freeRange)
+                    tokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
+                }
+            }
         }
 
         return tokens.sorted { $0.range.location < $1.range.location }

@@ -11,6 +11,8 @@ struct LiveComposerPreviewHeader: View {
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isTitleHovered = false
+    @State private var isNoteHovered = false
+    @State private var noteBubbleShiftX: CGFloat = 0
 
     init(
         text: String,
@@ -92,7 +94,7 @@ struct LiveComposerPreviewHeader: View {
         )
     }
 
-    /// 单行主卡片（固定 36pt 高度，大字号 13pt/11pt）
+    /// 单行主卡片（固定 36pt 高度，布局 100% 镜像 TaskRow 待办项）
     private var mainRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Circle()
@@ -100,16 +102,35 @@ struct LiveComposerPreviewHeader: View {
                 .frame(width: 14, height: 14)
                 .foregroundStyle(DaybookTheme.muted)
 
-            if !displayTitle.isEmpty {
-                titleView
-            } else {
-                Spacer(minLength: 4)
+            HStack(alignment: .center, spacing: 5) {
+                if !displayTitle.isEmpty {
+                    titleView
+                }
+                if !parsed.notes.isEmpty {
+                    noteIndicator
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 右侧属性集群（有地方放则平铺标签，重合放不下则折叠为首个+计数）
+            // 右侧属性集群（严格镜像 TaskRow: 优先级 -> 标签 -> 时间）
             HStack(spacing: 5) {
+                // 1. 优先级徽标（最前）
+                if let priority = displayPriority {
+                    HStack(spacing: 2.5) {
+                        Image(systemName: "exclamationmark.circle")
+                            .font(.system(size: 9.5, weight: .bold))
+                        Text(priority.badge)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2.5)
+                    .background(Capsule().fill(priority.fill))
+                    .foregroundStyle(priority.color)
+                    .help(LocalizedStringKey(priority.tooltip))
+                }
+
+                // 2. 标签集群
                 if canFitAllTagsInline {
-                    // 放得下：所有标签平铺展示在单行，干净清爽无多余浮窗
                     ForEach(previewTags, id: \.self) { tag in
                         Text("#\(tag)")
                             .font(.system(size: 11, weight: .semibold))
@@ -132,7 +153,6 @@ struct LiveComposerPreviewHeader: View {
                         .foregroundStyle(DaybookTheme.Syntax.tag)
                         .help("#\(singleTag)")
                 } else if previewTags.count > 1 {
-                    // 放不下（正文和条目重合挤压）：主行只显示数字标签，所有标签在浮动面板中展示
                     HStack(spacing: 2.5) {
                         Image(systemName: "number")
                             .font(.system(size: 8.5, weight: .bold))
@@ -146,6 +166,7 @@ struct LiveComposerPreviewHeader: View {
                     .help("共 \(previewTags.count) 个标签")
                 }
 
+                // 3. 提醒时间徽标（最后）
                 if let time = displayTime {
                     HStack(spacing: 2.5) {
                         Image(systemName: "clock")
@@ -158,34 +179,6 @@ struct LiveComposerPreviewHeader: View {
                     .background(Capsule().fill(DaybookTheme.Syntax.timeFill))
                     .foregroundStyle(DaybookTheme.Syntax.time)
                     .help(time)
-                }
-
-                if let priority = displayPriority {
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 9.5, weight: .bold))
-                        Text(priority.badge)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(priority.fill))
-                    .foregroundStyle(priority.color)
-                    .help(LocalizedStringKey(priority.tooltip))
-                }
-
-                if !parsed.notes.isEmpty {
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "text.alignleft")
-                            .font(.system(size: 9))
-                        Text("row.note")
-                            .font(.system(size: 10.5, weight: .semibold))
-                    }
-                    .padding(.horizontal, 5.5)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookTheme.ink.opacity(0.06)))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .help(parsed.notes)
                 }
             }
             .fixedSize(horizontal: true, vertical: false)
@@ -212,6 +205,115 @@ struct LiveComposerPreviewHeader: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
         )
+    }
+
+    /// 紧跟标题的纯图标备注指示器（样式 100% 对齐 TaskRow noteIndicator）
+    private var noteIndicator: some View {
+        Image(systemName: "text.alignleft")
+            .font(.system(size: 9, weight: .medium))
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
+            .padding(.horizontal, 3.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
+                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+            )
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            updateNoteBubblePlacement(proxy)
+                        }
+                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in
+                            updateNoteBubblePlacement(proxy)
+                        }
+                }
+            )
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isNoteHovered = hovering
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                if isNoteHovered && !showsSuggestions && !parsed.notes.isEmpty {
+                    let arrowPadding = max(8, min(186, 8 - noteBubbleShiftX))
+                    let transformAnchor = UnitPoint(
+                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                        y: 0.0
+                    )
+                    noteFloatingBubble(bubbleShiftX: noteBubbleShiftX)
+                        .offset(x: -8 + noteBubbleShiftX, y: 20)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                            removal: .opacity
+                        ))
+                }
+            }
+    }
+
+    private func updateNoteBubblePlacement(_ proxy: GeometryProxy) {
+        let globalX = proxy.frame(in: .global).minX
+        let safeMaxX: CGFloat = 356
+        let safeMinX: CGFloat = 12
+        let bubbleRight = globalX + 202
+        if bubbleRight > safeMaxX {
+            let overflow = bubbleRight - safeMaxX
+            let maxShift = max(0, (globalX - 8) - safeMinX)
+            noteBubbleShiftX = -min(overflow, maxShift)
+        } else {
+            noteBubbleShiftX = 0
+        }
+    }
+
+    private func noteFloatingBubble(bubbleShiftX: CGFloat) -> some View {
+        let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+        return VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Spacer().frame(width: arrowPadding)
+                Image(systemName: "arrowtriangle.up.fill")
+                    .font(.system(size: 7))
+                    .foregroundStyle(DaybookTheme.paper)
+                    .offset(y: 1)
+                Spacer()
+            }
+            .frame(height: 5)
+
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "text.alignleft")
+                        .font(.system(size: 9.5, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.stamp)
+                    Text(L10n.string("drawer.notes.title", locale: locale))
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(DaybookTheme.muted)
+                    Spacer(minLength: 0)
+                }
+
+                Text(parsed.notes)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineSpacing(2.5)
+                    .lineLimit(8)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 7)
+            .frame(width: 210, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(DaybookTheme.paper)
+                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
+            )
+        }
+        .frame(width: 210, alignment: .leading)
+        .fixedSize()
+        .allowsHitTesting(false)
+        .zIndex(999)
     }
 
     /// 浮动详细标签面板（大字号 11pt，查详细专用，输入时自动避让）
@@ -292,7 +394,7 @@ struct LiveComposerPreviewHeader: View {
                 }
             }
             .overlay(alignment: .topLeading) {
-                if isTitleHovered && !showsSuggestions {
+                if isTitleHovered && !showsSuggestions && !isNoteHovered {
                     titleTooltipBubble
                         .offset(y: 28)
                         .transition(.asymmetric(
@@ -347,7 +449,7 @@ struct LiveComposerPreviewHeader: View {
         let closeButtonAndGap: CGFloat = 24
         let timeWidth: CGFloat = hasTime ? 48 : 0
         let priorityWidth: CGFloat = hasPriority ? 38 : 0
-        let notesWidth: CGFloat = hasNotes ? 42 : 0
+        let notesWidth: CGFloat = hasNotes ? 20 : 0
 
         let availableForContent = cardWidth - horizontalPadding - circleAndGap - closeButtonAndGap - timeWidth - priorityWidth - notesWidth
 

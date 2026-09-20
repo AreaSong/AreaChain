@@ -162,4 +162,45 @@ struct NaturalLanguageParserTests {
         #expect(hasTag == true)
         #expect(hasPriority == true)
     }
+
+    @Test func parsesSingleLineNoteWithSlash() {
+        let input = "买咖啡 // 要脱脂大杯"
+        let parsed = NaturalLanguageParser.parse(input)
+        #expect(parsed.cleanTitle == "买咖啡")
+        #expect(parsed.notes == "要脱脂大杯")
+        #expect(parsed.hasTokens == false)
+    }
+
+    @Test func parsesSingleLineNoteWithFullWidthSlash() {
+        let input = "写周报 ／／ 记得同步项目进度"
+        let parsed = NaturalLanguageParser.parse(input)
+        #expect(parsed.cleanTitle == "写周报")
+        #expect(parsed.notes == "记得同步项目进度")
+    }
+
+    @Test func parsesHybridAttributesBeforeAndAfterNote() {
+        let input = "买咖啡 @14:00 // 要脱脂大杯 #日常 !p1"
+        let parsed = NaturalLanguageParser.parse(input)
+        #expect(parsed.cleanTitle == "买咖啡")
+        #expect(parsed.notes == "要脱脂大杯")
+        #expect(parsed.remindMinutes == 14 * 60)
+        #expect(parsed.tagName == "日常")
+        #expect(parsed.isImportant == true)
+        #expect(parsed.isUrgent == true)
+    }
+
+    @Test func extractsHighlightTokensWithNote() {
+        let text = "买咖啡 // 要脱脂 @14:00 大杯"
+        let tokens = NaturalLanguageParser.extractHighlightTokens(in: text)
+        let hasNote = tokens.contains { token in
+            if case .note = token.kind { return true }
+            return false
+        }
+        let hasTime = tokens.contains { token in
+            if case .time(let m) = token.kind { return m == 14 * 60 }
+            return false
+        }
+        #expect(hasNote == true)
+        #expect(hasTime == true)
+    }
 }

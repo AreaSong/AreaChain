@@ -20,6 +20,8 @@ struct TaskRow: View {
     @State var pickingDay = false
     @State var pickingTime = false
     @State private var isSubtasksExpanded = false
+    @State private var growsUpward = false
+    @State private var bubbleShiftX: CGFloat = 0
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
     @State var hoveredQuickActionTip: String? = nil
@@ -169,17 +171,20 @@ struct TaskRow: View {
         !style.isWorkspace && !editing && !pickingDay && !pickingTime && isHovered && fullNoteText != nil
     }
 
-    private var noteFloatingBubble: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Spacer().frame(width: 6)
-                Image(systemName: "arrowtriangle.up.fill")
-                    .font(.system(size: 7))
-                    .foregroundStyle(DaybookTheme.paper)
-                    .offset(y: 1)
-                Spacer()
+    private func noteFloatingBubble(growsUpward: Bool, bubbleShiftX: CGFloat) -> some View {
+        let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+        return VStack(alignment: .leading, spacing: 0) {
+            if !growsUpward {
+                HStack {
+                    Spacer().frame(width: arrowPadding)
+                    Image(systemName: "arrowtriangle.up.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(DaybookTheme.paper)
+                        .offset(y: 1)
+                    Spacer()
+                }
+                .frame(height: 5)
             }
-            .frame(height: 5)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
@@ -211,10 +216,23 @@ struct TaskRow: View {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
             )
+
+            if growsUpward {
+                HStack {
+                    Spacer().frame(width: arrowPadding)
+                    Image(systemName: "arrowtriangle.down.fill")
+                        .font(.system(size: 7))
+                        .foregroundStyle(DaybookTheme.paper)
+                        .offset(y: -1)
+                    Spacer()
+                }
+                .frame(height: 5)
+            }
         }
         .frame(width: 210, alignment: .leading)
         .fixedSize()
         .allowsHitTesting(false)
+        .zIndex(999)
     }
 
     private var selectableContent: some View {
@@ -254,18 +272,61 @@ struct TaskRow: View {
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
                     .fill(isHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
             )
+            .background(
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear {
+                            updateBubblePlacement(proxy)
+                        }
+                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in
+                            updateBubblePlacement(proxy)
+                        }
+                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in
+                            updateBubblePlacement(proxy)
+                        }
+                }
+            )
             .contentShape(Rectangle())
             .onHover { isNoteHovered = $0 }
-            .overlay(alignment: .topLeading) {
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                 if shouldShowNoteBubble {
-                    noteFloatingBubble
-                        .offset(x: -8, y: 16)
+                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+                    let transformAnchor = UnitPoint(
+                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                        y: growsUpward ? 1.0 : 0.0
+                    )
+                    noteFloatingBubble(growsUpward: growsUpward, bubbleShiftX: bubbleShiftX)
+                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
                         .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topLeading)),
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
                             removal: .opacity
                         ))
                 }
             }
+    }
+
+    private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let globalY = frame.minY
+        let globalX = frame.minX
+
+        // 纵向：菜单栏高度约为 460pt，底部分割线与搜索栏位于 400~410pt 附近。
+        // 气泡高约 70~120pt。当图标全局 Y > 260pt（即下半部分）时，下方空间受限，自动向上翻转展开。
+        growsUpward = globalY > 260
+
+        // 横向：气泡宽 210pt。默认 offset(x: -8)，气泡右边界 = globalX - 8 + 210 = globalX + 202。
+        // 菜单栏弹窗宽约 380pt，安全右边界设为 356pt（保留右侧呼吸感与视口边距）。
+        // 当长标题将 [≡] 靠右推时，自动向左平移夹紧，同时小三角动态跟随指示器居中。
+        let safeMaxX: CGFloat = style.isWorkspace ? 700 : 356
+        let safeMinX: CGFloat = 12
+        let bubbleRight = globalX + 202
+        if bubbleRight > safeMaxX {
+            let overflow = bubbleRight - safeMaxX
+            let maxShift = max(0, (globalX - 8) - safeMinX)
+            bubbleShiftX = -min(overflow, maxShift)
+        } else {
+            bubbleShiftX = 0
+        }
     }
 
     private var titleContent: some View {

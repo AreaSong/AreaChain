@@ -57,7 +57,8 @@ struct CaptureField: View {
                 availableTags: availableTags,
                 highlightsSyntax: true,
                 onSubmit: onTodo,
-                onCommandReturn: { if allowsDiaryShortcut { onDiary() } }
+                onCommandReturn: { if allowsDiaryShortcut { onDiary() } },
+                allowsShiftNewline: false
             )
             .accessibilityLabel("capture.placeholder.today")
 

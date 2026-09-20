@@ -12,6 +12,8 @@ enum SyntaxHighlighter {
             return DaybookTheme.Syntax.tagNS
         case .priority(let isImportant, let isUrgent, _):
             return DaybookTheme.Syntax.priorityColorNS(isImportant: isImportant, isUrgent: isUrgent)
+        case .note:
+            return NSColor(DaybookTheme.muted)
         }
     }
 

@@ -92,7 +92,7 @@ struct DaybookTextField: NSViewRepresentable {
             let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
             var value = editorString
             if !context.coordinator.parent.allowsShiftNewline, value.contains("\n") {
-                value = value.replacingOccurrences(of: "\n", with: " ")
+                value = DaybookTextField.sanitizeSingleLineText(value)
             }
             context.coordinator.parent.text = value
             context.coordinator.parent.autocomplete?.dismiss()
@@ -136,6 +136,23 @@ struct DaybookTextField: NSViewRepresentable {
             editor?.string = text
         }
         editor?.setSelectedRange(NSRange(location: cursor, length: 0))
+    }
+
+    static func sanitizeSingleLineText(_ input: String) -> String {
+        guard input.contains("\n") else { return input }
+        let lines = input.components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+        guard lines.count > 1 else {
+            return input.replacingOccurrences(of: "\n", with: " ")
+        }
+        let first = lines[0]
+        let rest = lines.dropFirst().joined(separator: " ")
+        if first.contains("//") || first.contains("／／") {
+            return "\(first) \(rest)"
+        } else {
+            return "\(first) // \(rest)"
+        }
     }
 
     @MainActor
@@ -192,7 +209,7 @@ struct DaybookTextField: NSViewRepresentable {
             }
             var value = field.stringValue
             if !parent.allowsShiftNewline, value.contains("\n") {
-                value = value.replacingOccurrences(of: "\n", with: " ")
+                value = DaybookTextField.sanitizeSingleLineText(value)
                 field.stringValue = value
             }
             parent.text = value
@@ -223,7 +240,7 @@ struct DaybookTextField: NSViewRepresentable {
                   let textView = notification.object as? NSTextView else { return }
             var value = textView.string
             if !parent.allowsShiftNewline, value.contains("\n") {
-                value = value.replacingOccurrences(of: "\n", with: " ")
+                value = DaybookTextField.sanitizeSingleLineText(value)
                 textView.string = value
             }
             parent.text = value
@@ -353,7 +370,7 @@ struct DaybookTextField: NSViewRepresentable {
                 if flags == .command, let extra = parent.onCommandReturn {
                     var value = textView.string
                     if !parent.allowsShiftNewline, value.contains("\n") {
-                        value = value.replacingOccurrences(of: "\n", with: " ")
+                        value = DaybookTextField.sanitizeSingleLineText(value)
                     }
                     parent.text = value
                     parent.autocomplete?.dismiss()
@@ -367,7 +384,7 @@ struct DaybookTextField: NSViewRepresentable {
                 }
                 var value = textView.string
                 if !parent.allowsShiftNewline, value.contains("\n") {
-                    value = value.replacingOccurrences(of: "\n", with: " ")
+                    value = DaybookTextField.sanitizeSingleLineText(value)
                 }
                 parent.text = value
                 submitted()
