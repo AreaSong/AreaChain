@@ -295,6 +295,37 @@ enum DayBoardMutations {
         ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).deleteDiary(id: entry.id, soft: true) }
     }
 
+    @discardableResult
+    static func convertDiaryToTodo(_ entry: DiaryEntry, context: ModelContext) -> Bool {
+        let raw = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !raw.isEmpty else { return false }
+        let (title, notes): (String, String) = {
+            if let newlineIndex = raw.firstIndex(of: "\n") {
+                let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+                let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+                return (firstLine.isEmpty ? rest : firstLine, rest.isEmpty ? "" : rest)
+            }
+            return (raw, "")
+        }()
+        return addTodo(title: title, notes: notes, dayKey: DayKey.today, context: context)
+    }
+
+    @discardableResult
+    static func moveDiary(_ entry: DiaryEntry, to dayKey: String) -> Bool {
+        guard let ctx = entry.modelContext else { return false }
+        return ModelChanges.attempt(in: ctx) {
+            entry.dayKey = dayKey
+        }
+    }
+
+    @discardableResult
+    static func togglePrivateDiary(_ entry: DiaryEntry) -> Bool {
+        guard let ctx = entry.modelContext else { return false }
+        return ModelChanges.attempt(in: ctx) {
+            entry.isPrivate.toggle()
+        }
+    }
+
     static func ownedAttachments(_ context: ModelContext?) -> [AttachmentItem] {
         guard let context else { return [] }
         return ModelChanges.value { try context.fetch(FetchDescriptor<AttachmentItem>()) } ?? []

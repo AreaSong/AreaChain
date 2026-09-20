@@ -30,19 +30,6 @@ struct MainSplitWorkspaceView: View {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 400)
         }
-        .toolbar {
-            ToolbarItem {
-                Spacer()
-            }
-            ToolbarItem(placement: .primaryAction) {
-                Button {
-                    navigation.isInspectorPresented.toggle()
-                } label: {
-                    Image(systemName: "sidebar.trailing")
-                }
-                .help("drawer.inspector.toggle")
-            }
-        }
         .workspaceToolbarTitleHidden()
         .sheet(isPresented: $isAddingProject) {
             addProjectSheet
@@ -74,31 +61,56 @@ struct MainSplitWorkspaceView: View {
     }
 
     private var detailColumn: some View {
-        detailView
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .workspaceToolbarTitleHidden()
-            .overlay(alignment: .bottom) {
-                if !navigation.selectedTaskIDs.isEmpty {
-                    WorkspaceBatchActionBar(
+        VStack(spacing: 0) {
+            WorkspaceHeaderBar(
+                navigation: navigation,
+                projects: projects,
+                tags: tags
+            )
+
+            ZStack {
+                if navigation.isSearching {
+                    WorkspaceGlobalSearchView(
                         navigation: navigation,
-                        data: WorkspaceBatchData(
-                            todos: todos,
-                            routines: routines,
-                            checks: checks,
-                            projects: projects,
-                            tags: tags
-                        )
+                        query: navigation.searchQuery
                     )
-                    .padding(.bottom, 16)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .transition(.opacity)
+                } else {
+                    detailView
+                        .transition(.opacity)
                 }
             }
-            .onKeyPress(.escape) {
-                handleEscapeKey()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .workspaceToolbarTitleHidden()
+        .overlay(alignment: .bottom) {
+            if !navigation.selectedTaskIDs.isEmpty {
+                WorkspaceBatchActionBar(
+                    navigation: navigation,
+                    data: WorkspaceBatchData(
+                        todos: todos,
+                        routines: routines,
+                        checks: checks,
+                        projects: projects,
+                        tags: tags
+                    )
+                )
+                .padding(.bottom, 16)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+        .onKeyPress(.escape) {
+            handleEscapeKey()
+        }
     }
 
     private func handleEscapeKey() -> KeyPress.Result {
+        if navigation.isSearching || navigation.isSearchFocused {
+            navigation.clearSearch()
+            NSApp.keyWindow?.makeFirstResponder(nil)
+            return .handled
+        }
         if let editor = NSApp.keyWindow?.firstResponder as? NSTextView {
             if editor.hasMarkedText() { return .ignored }
             if let state = SyntaxAutocompleteState.forResponder(editor), state.hasPresentation {

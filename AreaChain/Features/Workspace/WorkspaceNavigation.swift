@@ -126,6 +126,23 @@ final class WorkspaceNavigation {
         }
     }
 
+    // MARK: - Global Search
+    var searchQuery: String = ""
+    var isSearchFocused: Bool = false
+
+    var isSearching: Bool {
+        !BoardSearch.normalized(searchQuery).isEmpty
+    }
+
+    func focusSearch() {
+        isSearchFocused = true
+    }
+
+    func clearSearch() {
+        searchQuery = ""
+        isSearchFocused = false
+    }
+
     // MARK: - Task Inspector & Multi-Selection
     var selectedTaskID: UUID? = nil
     var selectedTaskIDs: Set<UUID> = []
@@ -154,6 +171,10 @@ final class WorkspaceNavigation {
     }
 
     func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
+        if tab == .search {
+            focusSearch()
+            return
+        }
         if tab != .diary {
             boardSelection.clearInspectedDiary()
         }

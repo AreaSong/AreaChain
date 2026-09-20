@@ -73,7 +73,6 @@ struct WorkspaceSidebarView: View {
         Section {
             tabRow(.today, badgeCount: todayUnfinishedCount)
             tabRow(.residents)
-            tabRow(.search)
         } header: {
             Text("sidebar.focus")
                 .padding(.top, WorkspaceStyle.sidebarTopInset)
