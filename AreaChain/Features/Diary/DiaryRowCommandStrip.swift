@@ -62,11 +62,11 @@ struct DiaryRowCommandStrip: View {
 
             if let tip = hoveredQuickActionTip {
                 Text(tip)
-                    .font(.system(size: 9.5, weight: .medium))
+                    .font(.system(size: 10, weight: .medium))
                     .foregroundStyle(DaybookTheme.ink.opacity(0.85))
                     .lineLimit(1)
-                    .padding(.horizontal, 6)
-                    .frame(height: 16)
+                    .padding(.horizontal, 7)
+                    .frame(height: 18)
                     .background(
                         Capsule()
                             .fill(DaybookTheme.surface)
@@ -81,7 +81,7 @@ struct DiaryRowCommandStrip: View {
 
             Spacer(minLength: 0)
         }
-        .frame(height: 18)
+        .frame(height: 22)
         .clipped()
     }
 
@@ -124,10 +124,10 @@ struct DiaryRowCommandStrip: View {
         isDestructive: Bool = false
     ) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 9.5, weight: .medium))
-            .frame(width: 18, height: 18)
+            .font(.system(size: 10.5, weight: .medium))
+            .frame(width: 22, height: 22)
             .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
                     .fill(
                         isDestructive
                             ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))

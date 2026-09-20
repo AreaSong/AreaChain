@@ -112,7 +112,9 @@ struct TaskRow: View {
                     }
                 }
 
-                metadataCluster
+                if hasVisibleMetadata {
+                    metadataCluster
+                }
 
                 actionCluster
             }
@@ -208,7 +210,7 @@ struct TaskRow: View {
             }
 
             Color.clear
-                .frame(minWidth: 10, maxWidth: .infinity, minHeight: 20)
+                .frame(maxWidth: .infinity, minHeight: 20)
                 .contentShape(Rectangle())
                 .overlay(TaskRowPointerRegion(
                     id: state.id,
@@ -394,6 +396,16 @@ struct TaskRow: View {
         let selectedIDs = Set(TagIDList.parse(classify.tagIDs))
         guard !selectedIDs.isEmpty else { return [] }
         return classify.tags.filter { selectedIDs.contains($0.id) }.map(\.name)
+    }
+
+    private var hasVisibleMetadata: Bool {
+        state.isImportant || state.classify?.isImportant == true
+            || state.isUrgent || state.classify?.isUrgent == true
+            || !attachedTagNames.isEmpty
+            || (state.isResident && (state.streak ?? 0) >= 1)
+            || state.remindMinutes != nil
+            || !state.subtasks.isEmpty
+            || !(state.attachments?.items.isEmpty ?? true)
     }
 
     private var editor: some View {

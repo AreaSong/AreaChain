@@ -280,7 +280,9 @@ struct ComposerAddButton: View {
 
 extension View {
     func daybookScroll() -> some View {
-        scrollIndicators(.automatic)
+        self
+            .scrollIndicators(.automatic)
+            .background(DaybookScrollerConfigurator())
     }
 
     @ViewBuilder

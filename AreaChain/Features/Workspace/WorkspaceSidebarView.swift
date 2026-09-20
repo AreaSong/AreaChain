@@ -61,6 +61,7 @@ struct WorkspaceSidebarView: View {
             systemSection
         }
         .listStyle(.sidebar)
+        .daybookScroll()
         .confirmMoveToTrash($pendingTrash)
         .sheet(item: $pendingRename, onDismiss: { renameDraft = "" }) { _ in
             renameSheet
@@ -166,7 +167,7 @@ struct WorkspaceSidebarView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
         .padding(.horizontal, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -205,7 +206,7 @@ struct WorkspaceSidebarView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
         .padding(.leading, 6 + CGFloat(depth) * 12)
         .padding(.trailing, 6)
         .background(
@@ -275,7 +276,7 @@ struct WorkspaceSidebarView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.vertical, 3)
+        .padding(.vertical, 2)
         .padding(.horizontal, 6)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)

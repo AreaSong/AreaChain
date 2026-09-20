@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 菜单栏手记紧凑数据条：严格锁定 46pt 固定高度，规范化展示标题/正文预览，并通过统一设置菜单与 ⌘ 快捷键提供深度操作。
+/// 菜单栏手记紧凑数据条：严格锁定 48pt 固定高度，规范化展示标题/正文预览，并通过统一设置菜单与 ⌘ 快捷键提供深度操作。
 struct DiarySummaryRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.locale) private var locale
@@ -80,15 +80,15 @@ struct DiarySummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             headerRow
-                .frame(height: 18)
+                .frame(height: 20)
 
             footerRow
-                .frame(height: 18)
+                .frame(height: 22)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 46)
+        .frame(height: 48)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -132,7 +132,7 @@ struct DiarySummaryRow: View {
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
     }
 
-    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 20pt 占位的设置按钮)
+    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 22x22 占位的设置按钮)
 
     private var headerRow: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -140,9 +140,9 @@ struct DiarySummaryRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             actionCluster
-                .frame(width: 20, height: 18)
+                .frame(width: 22, height: 22)
         }
-        .frame(height: 18)
+        .frame(height: 20)
     }
 
     @ViewBuilder
@@ -229,7 +229,7 @@ struct DiarySummaryRow: View {
         bubbleShiftX = placement.bubbleShiftX
     }
 
-    // MARK: - 右侧单按钮设置菜单 (恒定 20x18 占位，避免任何横向跳动)
+    // MARK: - 右侧单按钮设置菜单 (恒定 22x22 占位，避免任何横向跳动)
 
     private var actionCluster: some View {
         moreMenu
@@ -250,11 +250,11 @@ struct DiarySummaryRow: View {
             Button("alert.trash.move", role: .destructive, action: onDelete)
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 10, weight: .semibold))
+                .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 20, height: 18)
+                .frame(width: 22, height: 22)
                 .background(
-                    RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
                         .fill(DaybookTheme.ink.opacity(0.06))
                 )
                 .contentShape(Rectangle())
@@ -267,7 +267,7 @@ struct DiarySummaryRow: View {
         .fixedSize()
     }
 
-    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 18pt)
+    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 22pt)
 
     private var footerRow: some View {
         ZStack(alignment: .leading) {
@@ -288,7 +288,7 @@ struct DiarySummaryRow: View {
                     .transition(.opacity)
             }
         }
-        .frame(height: 18, alignment: .leading)
+        .frame(height: 22, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
     }
 
@@ -325,24 +325,24 @@ struct DiarySummaryRow: View {
             }
             Spacer(minLength: 0)
         }
-        .frame(height: 18)
+        .frame(height: 22)
         .font(DaybookType.badge)
     }
 
     private func tagPill(_ tag: TagItem) -> some View {
         let color = DiaryTagChrome.color(for: tag.name)
         return Text("#" + tag.name)
-            .font(.system(size: 9, weight: .medium))
+            .font(.system(size: 9.5, weight: .medium))
             .lineLimit(1)
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1)
+            .padding(.horizontal, 4.5)
+            .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                     .fill(color.opacity(0.12))
             )
             .foregroundStyle(color)
             .overlay(
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                     .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
             )
     }
