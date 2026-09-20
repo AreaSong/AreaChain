@@ -88,7 +88,7 @@ struct QuadrantPage: View {
                         }
                     }
                 }
-                .scrollIndicators(.visible, axes: .vertical)
+                .daybookScroll()
             }
         }
         .padding(10)

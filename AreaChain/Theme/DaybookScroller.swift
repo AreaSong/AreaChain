@@ -11,6 +11,19 @@ final class DaybookScroller: NSScroller {
 
     override class var isCompatibleWithOverlayScrollers: Bool { true }
 
+    // 锁定为 .overlay，绝不允许系统或外部将其降级为 .legacy（legacy 会强行开辟 15pt 灰槽挤压内容）
+    override var scrollerStyle: NSScroller.Style {
+        get { .overlay }
+        set { super.scrollerStyle = .overlay }
+    }
+
+    override var knobStyle: NSScroller.KnobStyle {
+        get { .default }
+        set { super.knobStyle = .default }
+    }
+
+    override var isOpaque: Bool { false }
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         setupScroller()
@@ -29,7 +42,7 @@ final class DaybookScroller: NSScroller {
     }
 
     private func setupScroller() {
-        scrollerStyle = .overlay
+        super.scrollerStyle = .overlay
         alphaValue = 0
         wantsLayer = true
         setupScrollObserver()
@@ -56,6 +69,13 @@ final class DaybookScroller: NSScroller {
 
     // MARK: - Drawing Overrides
 
+    override func draw(_ dirtyRect: NSRect) {
+        // 关键防护：坚决不调用 super.draw(dirtyRect)！
+        // super.draw 会在 legacy 模式或系统偏好开启时强行绘制系统灰色滑槽和方形滑块。
+        // 我们只在有滑块时自绘优雅的圆角胶囊：
+        drawKnob()
+    }
+
     override func drawKnobSlot(in slotRect: NSRect, highlight flag: Bool) {
         // 彻底不绘制滑槽背景，消除原生粗灰槽道
     }
@@ -67,13 +87,13 @@ final class DaybookScroller: NSScroller {
         let active = isHovered || isDragging
         let targetWidth: CGFloat = active ? 6.0 : 3.5
         let rightMargin: CGFloat = 2.5
-        let knobX = knob.maxX - targetWidth - rightMargin
+        let knobX = bounds.width - targetWidth - rightMargin
         let minHeight: CGFloat = 22.0
         let knobHeight = max(knob.height, minHeight)
         let pillRect = NSRect(x: knobX, y: knob.origin.y, width: targetWidth, height: knobHeight)
 
         let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let baseAlpha: CGFloat = active ? 0.45 : 0.22
+        let baseAlpha: CGFloat = active ? 0.48 : 0.24
         let pillColor = isDark ? NSColor(white: 1.0, alpha: baseAlpha) : NSColor(white: 0.0, alpha: baseAlpha)
 
         pillColor.setFill()
@@ -173,13 +193,24 @@ struct DaybookScrollerConfigurator: NSViewRepresentable {
 }
 
 final class DaybookScrollerHostNSView: NSView {
-    override var isHidden: Bool {
-        get { true }
-        set { _ = newValue }
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        alphaValue = 0
+        wantsLayer = true
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        applyScroller()
         DispatchQueue.main.async { [weak self] in
             self?.applyScroller()
         }
@@ -187,9 +218,15 @@ final class DaybookScrollerHostNSView: NSView {
 
     override func viewDidMoveToSuperview() {
         super.viewDidMoveToSuperview()
+        applyScroller()
         DispatchQueue.main.async { [weak self] in
             self?.applyScroller()
         }
+    }
+
+    override func layout() {
+        super.layout()
+        applyScroller()
     }
 
     func applyScroller() {
@@ -206,13 +243,22 @@ final class DaybookScrollerHostNSView: NSView {
         if let direct = enclosingScrollView {
             return direct
         }
+        // 1. 优先检查同级兄弟视图（.background(DaybookScrollerConfigurator()) 所在层级）
+        if let siblings = superview?.subviews {
+            for sibling in siblings where sibling !== self {
+                if let sv = sibling as? NSScrollView {
+                    return sv
+                }
+                if let child = findFirstScrollView(in: sibling) {
+                    return child
+                }
+            }
+        }
+        // 2. 向上递归检查父级及祖先
         var current = superview
         while let node = current {
             if let target = node as? NSScrollView {
                 return target
-            }
-            if let child = findFirstScrollView(in: node) {
-                return child
             }
             current = node.superview
         }
@@ -221,7 +267,7 @@ final class DaybookScrollerHostNSView: NSView {
 
     private func findFirstScrollView(in view: NSView) -> NSScrollView? {
         if let sv = view as? NSScrollView { return sv }
-        for sub in view.subviews {
+        for sub in view.subviews where sub !== self {
             if let found = findFirstScrollView(in: sub) {
                 return found
             }

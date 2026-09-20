@@ -224,6 +224,7 @@ struct SyntaxAutocompletePopup: View {
                 }
                 .padding(4)
             }
+            .daybookScroll()
             .frame(height: max(0, min(180, CGFloat(state.candidates.count) * 29 + 8, maxHeight - 25)))
             .onChange(of: state.selectedIndex) { _, newIndex in
                 if newIndex >= 0 && newIndex < state.candidates.count {

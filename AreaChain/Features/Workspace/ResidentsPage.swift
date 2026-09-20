@@ -29,6 +29,7 @@ struct ResidentsPage: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
+                .daybookScroll()
             }
         }
     }

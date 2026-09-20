@@ -356,6 +356,7 @@ struct LiveComposerPreviewHeader: View {
                     }
                 }
             }
+            .daybookScroll()
             .frame(maxHeight: min(120, CGFloat(previewTags.count) * 26 + 6))
         }
         .padding(7)

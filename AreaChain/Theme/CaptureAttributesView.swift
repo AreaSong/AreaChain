@@ -111,6 +111,7 @@ struct CaptureAttributesPopup: View {
                 .padding(10)
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .daybookScroll()
             .frame(height: max(0, maxHeight - 78))
             Divider()
             Text("syntax.attributes.readonly")

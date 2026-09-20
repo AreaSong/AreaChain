@@ -30,7 +30,9 @@ struct DaybookTextEditor: NSViewRepresentable {
     func makeNSView(context: Context) -> NSScrollView {
         let scroll = NSScrollView()
         scroll.drawsBackground = false
+        scroll.scrollerStyle = .overlay
         scroll.hasVerticalScroller = true
+        scroll.verticalScroller = DaybookScroller()
         scroll.autohidesScrollers = true
         let editor = DaybookAppKitTextView(frame: NSRect(x: 0, y: 0, width: 240, height: 64))
         editor.isRichText = false

@@ -46,6 +46,7 @@ struct PrivacySetupSheet: View {
                     }
                 }
             }
+            .daybookScroll()
             .disabled(busy)
             .frame(maxHeight: 430)
             HStack {

@@ -78,17 +78,17 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 3) {
             headerRow
-                .frame(height: 20)
+                .frame(height: 18)
 
             footerRow
                 .frame(height: 22)
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 2)
+        .padding(.vertical, 4.5)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 48)
+        .frame(height: 52)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -142,7 +142,7 @@ struct DiarySummaryRow: View {
             actionCluster
                 .frame(width: 22, height: 22)
         }
-        .frame(height: 20)
+        .frame(height: 18)
     }
 
     @ViewBuilder

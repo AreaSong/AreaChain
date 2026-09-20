@@ -204,11 +204,6 @@ struct TaskRow: View {
                 .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
                 .accessibilityHidden(true))
 
-            if !style.isWorkspace, fullNoteText != nil {
-                noteIndicator
-                    .fixedSize()
-            }
-
             Color.clear
                 .frame(maxWidth: .infinity, minHeight: 20)
                 .contentShape(Rectangle())
@@ -220,6 +215,11 @@ struct TaskRow: View {
                 .padding(.top, -6)
                 .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
                 .accessibilityHidden(true))
+
+            if !style.isWorkspace, fullNoteText != nil {
+                noteIndicator
+                    .fixedSize()
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
         .modifier(TodoDragIfNeeded(payload: state.dragPayload))

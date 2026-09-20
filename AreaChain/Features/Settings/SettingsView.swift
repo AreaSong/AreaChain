@@ -83,6 +83,7 @@ struct SettingsView: View {
             PrivacySettingsSection()
         }
         .formStyle(.grouped)
+        .daybookScroll()
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
