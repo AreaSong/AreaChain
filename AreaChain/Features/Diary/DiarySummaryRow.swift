@@ -25,6 +25,64 @@ struct DiarySummaryRow: View {
         isSensitive ? L10n.string("diary.private.title", locale: locale) : Self.preview(entry.text)
     }
 
+    struct NotePresentation {
+        let title: String?
+        let body: String
+    }
+
+    var contentPresentation: NotePresentation {
+        if isSensitive {
+            return NotePresentation(title: nil, body: L10n.string("diary.private.title", locale: locale))
+        }
+        let raw = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let newlineIndex = raw.firstIndex(of: "\n") else {
+            return NotePresentation(title: nil, body: raw)
+        }
+        let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if firstLine.isEmpty {
+            return NotePresentation(title: nil, body: rest)
+        }
+        if rest.isEmpty {
+            return NotePresentation(title: nil, body: firstLine)
+        }
+        return NotePresentation(title: firstLine, body: rest)
+    }
+
+    @ViewBuilder
+    private var noteContentHeader: some View {
+        let presentation = contentPresentation
+        if let title = presentation.title {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .font(DaybookType.body.weight(.semibold))
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Text(presentation.body)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookTheme.muted)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            Text(presentation.body)
+                .font(DaybookType.body)
+                .lineSpacing(2)
+                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .lineLimit(2)
+                .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     private var assignedTags: [TagItem] {
         DiaryMemoTags.ordered(
             allTags.filter { TagIDList.contains(entry.tagIDs, $0.id) },
@@ -93,13 +151,7 @@ struct DiarySummaryRow: View {
 
     private var selectableContent: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(previewText)
-                .font(DaybookType.body)
-                .lineSpacing(2)
-                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                .lineLimit(2).truncationMode(.tail)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            noteContentHeader
             metadataLine
         }
         .contentShape(Rectangle())
@@ -177,13 +229,7 @@ struct DiarySummaryRow: View {
 
     private var commandActionStrip: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(previewText)
-                .font(DaybookType.body)
-                .lineSpacing(2)
-                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
-                .lineLimit(2).truncationMode(.tail)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            noteContentHeader
 
             HStack(spacing: 4) {
                 HStack(spacing: 3) {

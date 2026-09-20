@@ -73,6 +73,22 @@ struct DiarySummaryRowTests {
         #expect(row.previewText == "置顶手记测试")
     }
 
+    @Test func diarySummaryRowSeparatesTitleAndBodyWhenMultiline() async throws {
+        let entry = DiaryEntry(text: "灵感标题\n这里是手记的具体正文细节", dayKey: "2026-09-20")
+        let row = DiarySummaryRow(entry: entry, onDelete: {})
+
+        #expect(row.contentPresentation.title == "灵感标题")
+        #expect(row.contentPresentation.body == "这里是手记的具体正文细节")
+    }
+
+    @Test func diarySummaryRowTreatsSingleLineAsBodyWithoutTitle() async throws {
+        let entry = DiaryEntry(text: "单行随手记正文内容没有换行", dayKey: "2026-09-20")
+        let row = DiarySummaryRow(entry: entry, onDelete: {})
+
+        #expect(row.contentPresentation.title == nil)
+        #expect(row.contentPresentation.body == "单行随手记正文内容没有换行")
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

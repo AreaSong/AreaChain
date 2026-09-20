@@ -2109,13 +2109,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Save note (⌘Return); Return inserts a new line"
+            "value": "Save note (Return / ⌘Return)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "保存手记（⌘Return）；回车换行"
+            "value": "保存手记 (Return / ⌘Return)"
           }
         }
       }

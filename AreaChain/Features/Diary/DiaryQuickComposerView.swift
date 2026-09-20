@@ -61,6 +61,7 @@ struct DiaryQuickComposerView: View {
                 placeholder: L10n.string("diary.quick.placeholder", locale: locale),
                 focus: self.focused,
                 availableTags: orderedTags.map(\.name),
+                highlightsSyntax: true,
                 onSubmit: submitCompact,
                 onCommandReturn: submitCompact,
                 allowsShiftNewline: false
