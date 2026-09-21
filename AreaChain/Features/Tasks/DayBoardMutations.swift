@@ -307,7 +307,7 @@ enum DayBoardMutations {
             }
             return (raw, "")
         }()
-        return addTodo(title: title, notes: notes, dayKey: DayKey.today, context: context)
+        return addTodo(title: title, notes: notes, dayKey: DayKey.today(), context: context)
     }
 
     @discardableResult

@@ -109,6 +109,36 @@ struct DiarySummaryRowTests {
         #expect(bottomPlacement.bubbleShiftX < 0)
     }
 
+    @Test func diaryMutationsConvertMoveAndTogglePrivate() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+
+        let entry = DiaryEntry(text: "随手记标题\n详细内容备忘", dayKey: "2026-09-18")
+        context.insert(entry)
+        try context.save()
+
+        // 1. 移动日期
+        let moved = DayBoardMutations.moveDiary(entry, to: "2026-09-20")
+        #expect(moved)
+        #expect(entry.dayKey == "2026-09-20")
+
+        // 2. 切换私密状态
+        let toggledPrivate = DayBoardMutations.togglePrivateDiary(entry)
+        #expect(toggledPrivate)
+        #expect(entry.isPrivate == true)
+
+        // 3. 转为待办
+        let converted = DayBoardMutations.convertDiaryToTodo(entry, context: context)
+        #expect(converted)
+
+        let todos = try context.fetch(FetchDescriptor<TodoItem>())
+        #expect(todos.contains { $0.title == "随手记标题" && $0.notes == "详细内容备忘" })
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

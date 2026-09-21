@@ -18,6 +18,8 @@ struct DiarySummaryRow: View {
     @State private var isHovered = false
     @State private var hasCopied = false
     @State private var isCommandPressed = false
+    @State private var hasConvertedToTask = false
+    @State private var pickingDay = false
     @State private var flagsMonitor: Any? = nil
     @State private var isTitleTextHovered = false
     @State private var isNoteHovered = false
@@ -77,6 +79,10 @@ struct DiarySummaryRow: View {
         )
     }
 
+    private var assignedTagIDs: Set<UUID> {
+        Set(TagIDList.parse(entry.tagIDs))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             headerRow
@@ -100,9 +106,9 @@ struct DiarySummaryRow: View {
                         : Color.clear,
                     lineWidth: 0.8
                 )
+                .allowsHitTesting(false)
         )
-        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .overlay(
+        .background(
             DiaryRowPointerRegion(
                 id: entry.id,
                 onSelect: { onSelect?() },
@@ -110,6 +116,7 @@ struct DiarySummaryRow: View {
             )
             .accessibilityHidden(true)
         )
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .onHover { hovering in
             isHovered = hovering
             if hovering {
@@ -121,6 +128,14 @@ struct DiarySummaryRow: View {
             try? await Task.sleep(for: .milliseconds(1200))
             if !Task.isCancelled { hasCopied = false }
         }
+        .task(id: hasConvertedToTask) {
+            guard hasConvertedToTask else { return }
+            try? await Task.sleep(for: .milliseconds(1500))
+            if !Task.isCancelled { hasConvertedToTask = false }
+        }
+        .popover(isPresented: $pickingDay) {
+            daySchedulePopover
+        }
         .onAppear { setupFlagsMonitor() }
         .onDisappear { tearDownFlagsMonitor() }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
@@ -129,6 +144,7 @@ struct DiarySummaryRow: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
         .zIndex((isHovered || shouldShowTitleBubble || shouldShowNoteBubble) ? 100 : 1)
+        .contextMenu { diaryMenuItems }
     }
 
     // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 22x22 占位的设置按钮)
@@ -239,13 +255,7 @@ struct DiarySummaryRow: View {
 
     private var moreMenu: some View {
         Menu {
-            Button("diary.window.open", action: openWindow)
-            Button(hasCopied ? "diary.copied" : (isSensitive ? "diary.copy.password" : "diary.copy"), action: copy)
-            Button(entry.isPinned ? "diary.unpin" : "diary.pin", action: togglePin)
-            Button("diary.attach", action: attach).disabled(isSensitive)
-            Button("diary.window.workspace", action: inspectInWorkspace)
-            Divider()
-            Button("alert.trash.move", role: .destructive, action: onDelete)
+            diaryMenuItems
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11, weight: .semibold))
@@ -265,6 +275,65 @@ struct DiarySummaryRow: View {
         .fixedSize()
     }
 
+    @ViewBuilder
+    private var diaryMenuItems: some View {
+        // 分区 1: 核心动作与流转
+        Button("diary.window.open", action: openWindow)
+        Button("diary.quick.convert_task", action: convertToTask)
+        Button(hasCopied ? "diary.copied" : (isSensitive ? "diary.copy.password" : "diary.copy"), action: copy)
+
+        Divider()
+
+        // 分区 2: 组织与分类（标签、排程日期、置顶）
+        if !allTags.isEmpty {
+            Menu("diary.quick.tags") {
+                ForEach(allTags) { tag in
+                    Button {
+                        toggleTag(tag.id)
+                    } label: {
+                        HStack {
+                            Text("#" + tag.name)
+                            if assignedTagIDs.contains(tag.id) {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        Menu("diary.quick.schedule") {
+            Button(L10n.string("diary.schedule.today", locale: locale)) {
+                moveDiary(to: DayKey.today())
+            }
+            Button(L10n.string("diary.schedule.yesterday", locale: locale)) {
+                moveDiary(to: DayKey.yesterday())
+            }
+            Button(L10n.string("diary.schedule.tomorrow", locale: locale)) {
+                moveDiary(to: DayKey.tomorrow())
+            }
+            Divider()
+            Button(L10n.string("diary.schedule.custom", locale: locale)) {
+                pickingDay = true
+            }
+        }
+
+        Button(entry.isPinned ? "diary.unpin" : "diary.pin", action: togglePin)
+
+        Divider()
+
+        // 分区 3: 资产与安全环境
+        Button("diary.attach", action: attach).disabled(isSensitive)
+        Button(isSensitive ? "diary.quick.privacy.unlock" : "diary.quick.privacy.lock", action: togglePrivate)
+        Button("diary.window.workspace", action: inspectInWorkspace)
+
+        Divider()
+
+        // 分区 4: 危险操作（移入废纸篓）
+        Button("alert.trash.move", role: .destructive, action: onDelete)
+    }
+
     // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 24pt)
 
     private var footerRow: some View {
@@ -273,10 +342,19 @@ struct DiarySummaryRow: View {
                 DiaryRowCommandStrip(
                     isSensitive: isSensitive,
                     isPinned: entry.isPinned,
+                    hasConvertedToTask: hasConvertedToTask,
+                    allTags: allTags,
+                    assignedTagIDs: Set(TagIDList.parse(entry.tagIDs)),
+                    currentDayKey: entry.dayKey,
                     onOpen: openWindow,
+                    onConvertToTask: convertToTask,
                     onCopy: copy,
+                    onToggleTag: toggleTag,
+                    onMoveToDay: moveDiary,
+                    onPickCustomDate: { pickingDay = true },
                     onTogglePin: togglePin,
                     onAttach: attach,
+                    onTogglePrivate: togglePrivate,
                     onInspect: inspectInWorkspace,
                     onDelete: onDelete
                 )
@@ -379,6 +457,34 @@ struct DiarySummaryRow: View {
     private func inspectInWorkspace() {
         BoardSelection.shared.inspectDiary(id: entry.id, dayKey: entry.dayKey)
         AppWindows.openDiary()
+    }
+
+    private func convertToTask() {
+        if DayBoardMutations.convertDiaryToTodo(entry, context: context) {
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                hasConvertedToTask = true
+            }
+        }
+    }
+
+    private func toggleTag(_ tagID: UUID) {
+        DayBoardMutations.toggleDiaryTag(entry, tagID: tagID)
+    }
+
+    private func moveDiary(to newDayKey: String) {
+        DayBoardMutations.moveDiary(entry, to: newDayKey)
+    }
+
+    private func togglePrivate() {
+        DayBoardMutations.togglePrivateDiary(entry)
+    }
+
+    @ViewBuilder
+    private var daySchedulePopover: some View {
+        DaySchedulePicker(initialKey: entry.dayKey) { key in
+            moveDiary(to: key)
+            pickingDay = false
+        }
     }
 
     private func setupFlagsMonitor() {
