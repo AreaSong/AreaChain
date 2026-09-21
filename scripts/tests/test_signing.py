@@ -188,6 +188,16 @@ class ReleaseTests(unittest.TestCase):
         misleading = signing.parse_signature("Executable=/tmp/runtime/AreaChain\nCodeDirectory v=20500 flags=0x2(adhoc)")
         self.assertFalse(signing.has_hardened_runtime(misleading))
 
+    def test_multi_architecture_requires_all_directories_to_have_runtime(self):
+        both_runtime = signing.parse_signature(
+            "CodeDirectory v=20500 flags=0x10000(runtime)\nCodeDirectory v=20400 flags=0x10000(runtime)"
+        )
+        self.assertTrue(signing.has_hardened_runtime(both_runtime))
+        partial_runtime = signing.parse_signature(
+            "CodeDirectory v=20500 flags=0x10000(runtime)\nCodeDirectory v=20400 flags=0x2(adhoc)"
+        )
+        self.assertFalse(signing.has_hardened_runtime(partial_runtime))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -4181,6 +4181,23 @@
         }
       }
     },
+    "footer.preferences": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preferences..."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "偏好设置..."
+          }
+        }
+      }
+    },
     "footer.quit": {
       "extractionState": "manual",
       "localizations": {

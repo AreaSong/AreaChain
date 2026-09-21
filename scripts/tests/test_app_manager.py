@@ -36,10 +36,13 @@ class InstallTests(AppTestCase):
 
     def test_build_failure_does_not_install(self):
         self.build_exit = 1
+        self.process_running = True
         result, _, errors = self.invoke("install", "--yes")
         self.assertEqual(result, 1)
         self.assertIn("构建失败", errors)
         self.assert_original_untouched()
+        self.assertTrue(self.process_running)
+        self.assertFalse(any(call[0] in ("osascript", "pkill") for call in self.command_calls))
 
     def test_running_app_is_automatically_quit_during_install(self):
         self.process_running = True

@@ -18,7 +18,7 @@ REQUIRED_DOCS = (
     "docs/signing.md", "docs/engineering.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
-IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI)\b")
+IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
 LIMITATIONS = [
     "文档检查覆盖内联本地链接及 Markdown 标题/显式锚点；不访问远端链接，不验证内容语义。",
     "Domain 检查仅识别显式 import；不替代 Swift 编译、宏展开或完整符号依赖分析。",

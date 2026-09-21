@@ -99,6 +99,44 @@ class BuildCommandTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(self.records(), [])
 
+    def test_only_testing_without_subcommand_infers_test(self):
+        result = self.invoke("--only-testing", "AreaChainTests/DayBoardLogicTests")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(self.xcode_call()["args"][-1], "test")
+        self.assertIn("-only-testing:AreaChainTests/DayBoardLogicTests", self.xcode_call()["args"])
+
+    def test_no_wait_exits_immediately_when_lock_held(self):
+        import fcntl
+        lock_file = self.root / "build/.build.lock"
+        lock_file.parent.mkdir(parents=True, exist_ok=True)
+        fd = open(lock_file, "a+")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        try:
+            result = self.invoke("build", "--no-wait")
+            self.assertEqual(result.returncode, 3)
+            self.assertIn("--no-wait", result.stderr)
+        finally:
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
+
+    def test_lock_waits_for_holder_and_succeeds(self):
+        import fcntl, time, threading
+        lock_file = self.root / "build/.build.lock"
+        lock_file.parent.mkdir(parents=True, exist_ok=True)
+        fd = open(lock_file, "a+")
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        
+        def release_later():
+            time.sleep(0.5)
+            fcntl.flock(fd, fcntl.LOCK_UN)
+            fd.close()
+
+        threading.Thread(target=release_later).start()
+        result = self.invoke("build")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("排队等待", result.stderr)
+        self.assertEqual(self.xcode_call()["args"][-1], "build")
+
 
 if __name__ == "__main__":
     unittest.main()

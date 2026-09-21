@@ -101,7 +101,7 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
 
     def test_domain_rejects_direct_typed_attributed_and_conditional_imports(self):
-        statements = ["import SwiftUI", "import class AppKit.NSView",
+        statements = ["import SwiftUI", "import class AppKit.NSView", "import Cocoa",
                       "@preconcurrency import AppKit", "#if false\nimport SwiftUI\n#endif"]
         for statement in statements:
             with self.subTest(statement=statement):

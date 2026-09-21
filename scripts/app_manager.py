@@ -254,7 +254,6 @@ def install(args, paths):
     real_path(paths.applications)
     if not args.dry_run:
         require(os.geteuid() != 0, "请以当前用户运行，不要使用 sudo。")
-        quit_running()
         if not args.no_build:
             result = subprocess.run([str(paths.project / "scripts/build.sh"), "release"], check=False)
             require(result.returncode == 0, "Release 构建失败，未安装。需要续签时请单独使用 build.sh release --allow-provisioning。")

@@ -66,13 +66,28 @@ def read_settings(configuration):
 
 
 def parse_signature(output):
-    return dict(line.split("=", 1) for line in output.splitlines()
-                if "=" in line and not line.startswith("designated"))
+    result = {}
+    code_directories = []
+    for line in output.splitlines():
+        if "=" in line and not line.startswith("designated"):
+            key, value = line.split("=", 1)
+            result[key] = value
+            if key == "CodeDirectory v":
+                code_directories.append(value)
+    if code_directories:
+        result["CodeDirectories"] = code_directories
+    return result
 
 
 def has_hardened_runtime(metadata):
-    flags = re.search(r"flags=0x[0-9a-fA-F]+\(([^)]*)\)", metadata.get("CodeDirectory v", ""))
-    return flags is not None and "runtime" in flags.group(1).split(",")
+    dirs = metadata.get("CodeDirectories") or ([metadata["CodeDirectory v"]] if "CodeDirectory v" in metadata else [])
+    if not dirs:
+        return False
+    for item in dirs:
+        flags = re.search(r"flags=0x[0-9a-fA-F]+\(([^)]*)\)", item)
+        if flags is None or "runtime" not in flags.group(1).split(","):
+            return False
+    return True
 
 
 def validate_hardening(metadata, mode):
