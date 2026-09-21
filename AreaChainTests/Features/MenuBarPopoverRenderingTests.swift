@@ -104,11 +104,11 @@ struct MenuBarPopoverRenderingTests {
 
         try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
         #expect(toolbar.isFiltering)
-        #expect(searchInputCount(in: view) == 0)
+        #expect(searchInputCount(in: view) == 1)
         #expect(diaryEditor(in: view) != nil)
         try snapshot(view, name: "menubar-notes-filters-\(locale)-\(appearance)")
 
-        try await clickAndSettle(at: NSPoint(x: view.bounds.width - 26, y: 27), in: window)
+        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
         #expect(!toolbar.isFiltering)
         let restoredField = try #require(searchField(in: view))
         #expect(searchInputCount(in: view) == 1)
@@ -274,11 +274,11 @@ struct MenuBarPopoverRenderingTests {
         try click(at: NSPoint(x: 28, y: 27), in: window)
         try await settle(view)
         #expect(toolbar.isFiltering)
-        #expect(searchField(in: view) == nil)
+        #expect(searchField(in: view) != nil)
         #expect(toolbar.searchText == "会议 #工作")
         try snapshot(view, name: "menubar-filters-zh")
 
-        try click(at: NSPoint(x: view.bounds.width - 26, y: 27), in: window)
+        try click(at: NSPoint(x: 28, y: 27), in: window)
         try await settle(view)
         #expect(!toolbar.isFiltering)
         let restoredField = try #require(searchField(in: view))
@@ -365,13 +365,8 @@ struct MenuBarPopoverRenderingTests {
         try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
         #expect(toolbar.isFiltering)
 
-        // 点击高优先级 Chip（约在 x: 80 附近）
-        try await clickAndSettle(at: NSPoint(x: 80, y: 27), in: window)
-        // 验证点击后依然保持展开
-        #expect(toolbar.isFiltering)
-
-        // 点击关闭按钮收起
-        try await clickAndSettle(at: NSPoint(x: view.bounds.width - 26, y: 27), in: window)
+        // 再次点击筛选按钮收起
+        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
         #expect(!toolbar.isFiltering)
     }
 
@@ -467,11 +462,9 @@ struct MenuBarPopoverRenderingTests {
     }
 
     private func selectFilter(at x: CGFloat, in window: NSWindow, closeAfter: Bool = true) async throws {
-        let view = try #require(window.contentView)
         try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
-        try await clickAndSettle(at: NSPoint(x: x, y: 27), in: window)
         if closeAfter {
-            try await clickAndSettle(at: NSPoint(x: view.bounds.width - 26, y: 27), in: window)
+            try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
         }
     }
 

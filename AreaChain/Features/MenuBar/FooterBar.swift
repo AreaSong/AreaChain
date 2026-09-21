@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 同一条底栏在工具与筛选之间切换；采用一体化连续三段布局，提供丝滑的手风琴推拉动效。
+/// 菜单栏底栏：左侧筛选气泡入口、中间常驻搜索框、右侧工作台与更多入口，结构稳定无抖动。
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
@@ -16,29 +16,11 @@ struct FooterBar: View {
     var onShowSyntaxHelp: () -> Void = {}
 
     @Environment(\.locale) private var locale
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var hoverWorkItem: DispatchWorkItem?
-    @State private var restoresTriggerFocus = false
-    @FocusState private var filterFocused: Bool
+    @State private var isFilterPopoverPresented = false
     @FocusState private var triggerFocused: Bool
-
-    private var filterSpring: Animation? {
-        reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.82)
-    }
 
     private var activeTags: [TagItem] {
         tab == .tasks ? Catalog.liveTaskTags(tags) : Catalog.liveTags(tags)
-    }
-
-    /// 所有标签均完整可见；若有今日任务计数，则有任务的优先排在前面
-    private var visibleFilterTags: [TagItem] {
-        guard !tagCounts.isEmpty else { return activeTags }
-        return activeTags.sorted { lhs, rhs in
-            let countL = tagCounts[lhs.id] ?? 0
-            let countR = tagCounts[rhs.id] ?? 0
-            if countL != countR { return countL > countR }
-            return lhs.sortOrder < rhs.sortOrder
-        }
     }
 
     private var selectedTagID: UUID? {
@@ -58,41 +40,42 @@ struct FooterBar: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            // 1. 左侧锚点区
-            leftAnchorSection
+            // 1. 左侧筛选入口区
+            filterTrigger
 
-            // 2. 中间弹性手风琴推拉区
-            centerContentSection
+            // 2. 中间常驻搜索框
+            MenuBarSearchField(
+                tab: tab,
+                toolbar: toolbar,
+                availableTags: activeTags.map(\.name)
+            )
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("menubar.toolbar.tools")
 
             // 3. 右侧稳定动作区
-            rightActionSection
+            HStack(spacing: 6) {
+                workspaceButton
+                moreMenu
+            }
+            .frame(width: 54, alignment: .trailing)
         }
         .frame(height: 30)
-        .contentShape(Rectangle())
-        .onHover(perform: trackFooterHover)
-        .animation(filterSpring, value: toolbar.isFiltering)
-        .onChange(of: tab) { _, _ in closeFilters() }
-        .onExitCommand(perform: closeFilters)
-        .onDisappear { hoverWorkItem?.cancel() }
-    }
-
-    // MARK: - 左侧锚点区
-
-    @ViewBuilder
-    private var leftAnchorSection: some View {
-        if toolbar.isFiltering {
-            Image(systemName: "line.3.horizontal.decrease")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 24, height: 28)
-                .contentShape(Rectangle())
-                .accessibilityHidden(true)
-                .transition(.opacity)
-        } else {
-            filterTrigger
-                .transition(.opacity)
+        .onChange(of: tab) { _, _ in isFilterPopoverPresented = false }
+        .onChange(of: isFilterPopoverPresented) { _, presented in
+            if presented {
+                toolbar.showFilters()
+            } else {
+                toolbar.closeFilters()
+            }
+        }
+        .onChange(of: toolbar.isFiltering) { _, filtering in
+            if filtering != isFilterPopoverPresented {
+                isFilterPopoverPresented = filtering
+            }
         }
     }
+
+    // MARK: - 左侧筛选入口与触发器
 
     private var filterTrigger: some View {
         Group {
@@ -103,10 +86,25 @@ struct FooterBar: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
+        .popover(isPresented: $isFilterPopoverPresented, arrowEdge: .top) {
+            MenuBarFilterPopover(
+                tab: tab,
+                filter: filter,
+                diaryFilterTagID: diaryFilterTagID,
+                projects: projects,
+                projectCounts: projectCounts,
+                unclassifiedCount: unclassifiedCount,
+                tags: activeTags,
+                tagCounts: tagCounts,
+                onDismiss: { isFilterPopoverPresented = false }
+            )
+        }
     }
 
     private var inactiveFilterButton: some View {
-        Button { openFilters(focus: true) } label: {
+        Button {
+            isFilterPopoverPresented.toggle()
+        } label: {
             HStack(spacing: 4) {
                 Image(systemName: "line.3.horizontal.decrease")
                     .accessibilityHidden(true)
@@ -119,12 +117,6 @@ struct FooterBar: View {
         }
         .buttonStyle(.plain)
         .keyboardShortcut("f", modifiers: [.command, .shift])
-        .onHover { hovering in
-            if hovering {
-                hoverWorkItem?.cancel()
-                toolbar.showFiltersFromHover()
-            }
-        }
         .focused($triggerFocused)
         .foregroundStyle(DaybookTheme.muted)
         .accessibilityLabel("filter.label")
@@ -134,7 +126,9 @@ struct FooterBar: View {
 
     private var activeFilterCapsule: some View {
         HStack(spacing: 2) {
-            Button { openFilters(focus: true) } label: {
+            Button {
+                isFilterPopoverPresented.toggle()
+            } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "line.3.horizontal.decrease")
                         .font(.system(size: 9.5, weight: .semibold))
@@ -149,12 +143,6 @@ struct FooterBar: View {
             }
             .buttonStyle(.plain)
             .keyboardShortcut("f", modifiers: [.command, .shift])
-            .onHover { hovering in
-                if hovering {
-                    hoverWorkItem?.cancel()
-                    toolbar.showFiltersFromHover()
-                }
-            }
             .focused($triggerFocused)
 
             Button(action: clearFilter) {
@@ -198,142 +186,15 @@ struct FooterBar: View {
         return L10n.format("footer.filter.active", locale: locale, activeCount)
     }
 
-    // MARK: - 中间弹性手风琴推拉区
-
-    private var centerContentSection: some View {
-        ZStack(alignment: .leading) {
-            if toolbar.isFiltering {
-                filterScrollView
-                    .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("menubar.toolbar.filters")
-                    .transition(
-                        reduceMotion
-                            ? .identity
-                            : .asymmetric(
-                                insertion: .move(edge: .leading).combined(with: .opacity),
-                                removal: .move(edge: .leading).combined(with: .opacity)
-                            )
-                    )
-            } else {
-                MenuBarSearchField(
-                    tab: tab,
-                    toolbar: toolbar,
-                    availableTags: activeTags.map(\.name)
-                )
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier("menubar.toolbar.tools")
-                .transition(
-                    reduceMotion
-                        ? .identity
-                        : .asymmetric(
-                            insertion: .move(edge: .trailing).combined(with: .opacity),
-                            removal: .move(edge: .trailing).combined(with: .opacity)
-                        )
-                )
-            }
-        }
-        .frame(maxWidth: .infinity)
-        .clipped()
-    }
-
-    private var filterScrollView: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 5) {
-                filterChip(L10n.string("filter.all", locale: locale), selected: activeCount == 0) {
-                    clearFilter()
-                }
-                .focused($filterFocused)
-                if tab == .tasks {
-                    filterChip(L10n.string("filter.highPriority", locale: locale), selected: highPriority) {
-                        filter?.wrappedValue = (filter?.wrappedValue ?? BoardFilter()).withHighPriority(!highPriority)
-                    }
-                    if !projects.isEmpty {
-                        footerProjectDropdown
-                    }
-                }
-                ForEach(visibleFilterTags) { tag in
-                    let count = tagCounts[tag.id]
-                    filterChip("#" + tag.name, count: count, selected: selectedTagID == tag.id) {
-                        selectTag(tag.id)
-                    }
-                }
-            }
-            .padding(.vertical, 2)
+    private func clearFilter() {
+        if tab == .tasks {
+            filter?.wrappedValue = BoardFilter()
+        } else {
+            diaryFilterTagID?.wrappedValue = nil
         }
     }
 
-    private func filterChip(_ title: String, count: Int? = nil, selected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            HStack(spacing: 3.5) {
-                Text(title)
-                    .font(DaybookType.caption)
-                    .lineLimit(1)
-                if let count, count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .padding(.horizontal, 3.5)
-                        .padding(.vertical, 0.5)
-                        .background(selected ? DaybookTheme.stamp.opacity(0.25) : DaybookTheme.ink.opacity(0.08))
-                        .foregroundStyle(selected ? DaybookTheme.stamp : DaybookTheme.muted)
-                        .clipShape(Capsule())
-                }
-            }
-            .fixedSize()
-            .padding(.horizontal, 8)
-            .frame(height: 26)
-            .foregroundStyle(selected ? DaybookTheme.stamp : DaybookTheme.ink)
-            .background(Capsule().fill(selected ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.hoverFill))
-            .overlay(Capsule().strokeBorder(
-                selected ? DaybookTheme.stamp.opacity(0.45) : DaybookTheme.rule.opacity(0.6),
-                lineWidth: 0.7
-            ))
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
-        .accessibilityIdentifier("menubar.filter.option." + title)
-        .help(title)
-    }
-
-    // MARK: - 右侧动作区
-
-    private var rightActionSection: some View {
-        ZStack(alignment: .trailing) {
-            if toolbar.isFiltering {
-                closeButton
-                    .transition(
-                        reduceMotion
-                            ? .identity
-                            : .scale(scale: 0.85).combined(with: .opacity)
-                    )
-            } else {
-                HStack(spacing: 6) {
-                    workspaceButton
-                    moreMenu
-                }
-                .transition(
-                    reduceMotion
-                        ? .identity
-                        : .scale(scale: 0.85).combined(with: .opacity)
-                )
-            }
-        }
-        .frame(width: toolbar.isFiltering ? 28 : 54, alignment: .trailing)
-    }
-
-    private var closeButton: some View {
-        Button(action: closeFilters) {
-            Image(systemName: "chevron.left")
-                .font(DaybookType.caption.weight(.semibold))
-                .frame(width: 28, height: 28)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .keyboardShortcut("f", modifiers: [.command, .shift])
-        .foregroundStyle(DaybookTheme.muted)
-        .help("filter.collapse")
-        .accessibilityLabel("filter.collapse")
-        .accessibilityIdentifier("menubar.filter.close")
-    }
+    // MARK: - 右侧稳定动作区
 
     private var workspaceButton: some View {
         Button {
@@ -359,75 +220,25 @@ struct FooterBar: View {
             Button {
                 AppWindows.openWorkspace(tab: .settings)
             } label: {
-                Label("window.settings", systemImage: "gearshape")
-            }
-            Button {
-                AppWindows.openWorkspace(tab: .trash)
-            } label: {
-                Label("window.trash", systemImage: "trash")
+                Label("footer.preferences", systemImage: "gearshape")
             }
             Divider()
-            Button(role: .destructive) { NSApplication.shared.terminate(nil) } label: {
+            Button {
+                NSApp.terminate(nil)
+            } label: {
                 Label("footer.quit", systemImage: "power")
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(DaybookType.caption.weight(.semibold))
+                .font(DaybookType.caption)
                 .frame(width: 24, height: 28)
                 .contentShape(Rectangle())
         }
         .menuStyle(.borderlessButton)
-        .menuIndicator(.hidden)
-        .buttonStyle(.plain)
+        .fixedSize()
         .foregroundStyle(DaybookTheme.muted)
         .help("footer.more")
         .accessibilityLabel("footer.more")
         .accessibilityIdentifier("menubar.more")
-    }
-
-    // MARK: - 交互动作
-
-    private func openFilters(focus: Bool = false) {
-        hoverWorkItem?.cancel()
-        restoresTriggerFocus = focus
-        toolbar.showFilters()
-        if focus { DispatchQueue.main.async { filterFocused = true } }
-    }
-
-    private func closeFilters() {
-        hoverWorkItem?.cancel()
-        filterFocused = false
-        toolbar.closeFilters()
-        if restoresTriggerFocus {
-            restoresTriggerFocus = false
-            DispatchQueue.main.async { triggerFocused = true }
-        }
-    }
-
-    private func trackFooterHover(_ hovering: Bool) {
-        hoverWorkItem?.cancel()
-        guard !hovering else { return }
-        toolbar.pointerLeftToolbar()
-        guard toolbar.isFiltering else { return }
-        let work = DispatchWorkItem {
-            closeFilters()
-            toolbar.pointerLeftToolbar()
-        }
-        hoverWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28, execute: work)
-    }
-
-    private func selectTag(_ id: UUID) {
-        let next = selectedTagID == id ? nil : id
-        if tab == .tasks {
-            filter?.wrappedValue = (filter?.wrappedValue ?? BoardFilter()).withTag(next)
-        } else {
-            diaryFilterTagID?.wrappedValue = next
-        }
-    }
-
-    private func clearFilter() {
-        if tab == .tasks { filter?.wrappedValue = BoardFilter() }
-        else { diaryFilterTagID?.wrappedValue = nil }
     }
 }

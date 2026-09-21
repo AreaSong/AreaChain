@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// 手记实时镜像预览卡片：在单行输入框打字时，100% 镜像呈现手记落入列表后的卡片版式。
-/// 单行 36pt 紧凑实线卡片，与任务卡片视觉规范完全统一（无虚线，实线圆角，左右 10pt 对齐，14pt 状态图标对齐）。
+/// 手记实时镜像预览卡片：在单行输入框打字时，100% 镜像呈现手记落入列表后的正式数据条版式。
+/// 双行紧凑卡片：首行纯文本标题与多行备注指示器（右侧关闭按钮）；次行时间标签与真实彩色标签群。
+/// 外框采用实线细边（无虚线）与柔和浮层阴影，与上方输入框宽度完美吻合。
 struct LiveDiaryComposerPreview: View {
     var text: String
     var allTags: [TagItem] = []
@@ -32,16 +33,12 @@ struct LiveDiaryComposerPreview: View {
         return names.contains("密码") || names.contains("password")
     }
 
-    private var timeOnlyString: String {
+    private var todayTimeString: String {
         let formatter = DateFormatter()
         formatter.locale = locale
         formatter.timeStyle = .short
         formatter.dateStyle = .none
-        return formatter.string(from: Date())
-    }
-
-    private var todayTimeString: String {
-        let time = timeOnlyString
+        let time = formatter.string(from: Date())
         return L10n.format("diary.date.today", locale: locale, time)
     }
 
@@ -61,40 +58,18 @@ struct LiveDiaryComposerPreview: View {
         return title.isEmpty ? "" : parsed.body.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private var canFitAllTagsInline: Bool {
-        Self.canFit(
-            title: displayTitle,
-            tags: parsed.tagNames,
-            hasNotes: !noteText.isEmpty
-        )
-    }
-
     var body: some View {
-        VStack(alignment: .trailing, spacing: 4) {
-            mainRow
-            if !canFitAllTagsInline && parsed.tagNames.count > 1 && !showsSuggestions && !isNoteHovered {
-                tagDetailBubble
-                    .padding(.trailing, 4)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: .topTrailing)),
-                        removal: .opacity
-                    ))
-            }
-        }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("diary.preview.card")
-    }
+        VStack(alignment: .leading, spacing: 3) {
+            headerRow
+                .zIndex(10)
 
-    private var mainRow: some View {
-        HStack(alignment: .center, spacing: 6) {
-            leadingIcon
-
-            titleArea
-
-            trailingCluster
+            footerRow
+                .zIndex(1)
         }
         .padding(.horizontal, 10)
-        .frame(height: 36)
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 48)
         .background(
             Group {
                 if !showsSuggestions {
@@ -112,109 +87,39 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("diary.preview.card")
     }
 
-    private var leadingIcon: some View {
-        Group {
-            if isSensitive {
-                Image(systemName: "lock.shield")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-            } else {
-                Image(systemName: "note.text")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.8))
-            }
-        }
-        .frame(width: 14, height: 14)
-    }
+    // MARK: - 第 1 行：标题与正文指示器 + 关闭按钮
 
-    private var titleArea: some View {
-        HStack(alignment: .center, spacing: 5) {
+    private var headerRow: some View {
+        HStack(alignment: .center, spacing: 4) {
             Text(displayTitle.isEmpty ? " " : displayTitle)
                 .font(DaybookType.body)
                 .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
                 .lineLimit(1)
                 .truncationMode(.tail)
+                .multilineTextAlignment(.leading)
 
             if !noteText.isEmpty {
                 noteIndicator(fullText: noteText)
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
 
-    private var trailingCluster: some View {
-        HStack(spacing: 5) {
-            tagsView
-
-            timeBadge
+            Spacer(minLength: 0)
 
             if let onClose, !showsSuggestions {
                 closeButton(onClose)
             }
         }
-        .fixedSize(horizontal: true, vertical: false)
-    }
-
-    @ViewBuilder
-    private var tagsView: some View {
-        let tags = parsed.tagNames
-        if canFitAllTagsInline {
-            ForEach(tags, id: \.self) { tag in
-                tagBadge(tag)
-            }
-        } else if tags.count == 1, let singleTag = tags.first {
-            tagBadge(singleTag)
-                .frame(maxWidth: 96, alignment: .leading)
-        } else if tags.count > 1 {
-            HStack(spacing: 2.5) {
-                Image(systemName: "number")
-                    .font(.system(size: 8.5, weight: .bold))
-                Text("\(tags.count)")
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2.5)
-            .background(Capsule().fill(DaybookTheme.Syntax.tagBadgeFill))
-            .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
-            .foregroundStyle(DaybookTheme.Syntax.tag)
-            .help(L10n.format("syntax.tags.count", locale: locale, tags.count))
-        }
-    }
-
-    private func tagBadge(_ name: String) -> some View {
-        let color = DiaryTagChrome.color(for: name)
-        return Text("#\(name)")
-            .font(.system(size: 11, weight: .semibold))
-            .lineLimit(1)
-            .padding(.horizontal, 5.5)
-            .padding(.vertical, 2.5)
-            .background(Capsule().fill(color.opacity(0.12)))
-            .overlay(Capsule().stroke(color.opacity(0.28), lineWidth: 0.6))
-            .foregroundStyle(color)
-            .help("#\(name)")
-    }
-
-    private var timeBadge: some View {
-        HStack(spacing: 2.5) {
-            Image(systemName: "clock")
-                .font(.system(size: 9.5))
-            Text(timeOnlyString)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 2.5)
-        .background(Capsule().fill(DaybookTheme.Syntax.timeFill))
-        .foregroundStyle(DaybookTheme.Syntax.time)
-        .help(todayTimeString)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func closeButton(_ action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: "xmark")
                 .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.8))
+                .foregroundStyle(DaybookTheme.muted.opacity(0.75))
                 .frame(width: 18, height: 18)
                 .contentShape(Rectangle())
         }
@@ -223,25 +128,56 @@ struct LiveDiaryComposerPreview: View {
         .accessibilityLabel("common.close")
     }
 
-    private var tagDetailBubble: some View {
-        HStack(spacing: 4) {
-            ForEach(parsed.tagNames, id: \.self) { tag in
-                tagBadge(tag)
+    // MARK: - 第 2 行：时间戳 + 真实彩色标签群（100% 镜像 DiarySummaryRow）
+
+    private var footerRow: some View {
+        HStack(spacing: 5) {
+            if isSensitive {
+                Image(systemName: "lock.shield")
+                    .font(.system(size: 8.5))
+                    .foregroundStyle(DaybookTheme.muted)
+                    .accessibilityLabel("diary.privacy")
             }
+
+            Text(todayTimeString)
+                .lineLimit(1)
+                .font(DaybookType.badge)
+                .foregroundStyle(DaybookTheme.muted)
+
+            if !parsed.tagNames.isEmpty {
+                HStack(spacing: 3) {
+                    ForEach(parsed.tagNames, id: \.self) { tagName in
+                        tagPill(tagName)
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-        )
-        .zIndex(999)
+        .font(DaybookType.badge)
+        .frame(height: 18, alignment: .leading)
     }
+
+    private func tagPill(_ name: String) -> some View {
+        let color = DiaryTagChrome.color(for: name)
+        return Text("#" + name)
+            .font(.system(size: 9.5, weight: .medium))
+            .lineLimit(1)
+            .padding(.horizontal, 4.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .fill(color.opacity(0.12))
+            )
+            .foregroundStyle(color)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
+            )
+            .help("#" + name)
+    }
+
+    // MARK: - 备注指示器与悬浮正文气泡
 
     private func noteIndicator(fullText: String) -> some View {
         Image(systemName: "text.alignleft")
@@ -360,52 +296,5 @@ struct LiveDiaryComposerPreview: View {
         .fixedSize()
         .allowsHitTesting(false)
         .zIndex(999)
-    }
-
-    // MARK: - 容量碰撞检测算法
-
-    static func canFit(
-        title: String,
-        tags: [String],
-        hasNotes: Bool = false,
-        cardWidth: CGFloat = DaybookTheme.popoverWidth - 24
-    ) -> Bool {
-        guard !tags.isEmpty else { return true }
-        let horizontalPadding: CGFloat = 20
-        let iconAndGap: CGFloat = 20
-        let closeButtonAndGap: CGFloat = 24
-        let timeWidth: CGFloat = 52
-        let notesWidth: CGFloat = hasNotes ? 20 : 0
-
-        let availableForContent = cardWidth - horizontalPadding - iconAndGap - closeButtonAndGap - timeWidth - notesWidth
-
-        let titleWidth = estimatedWidth(for: title, fontSize: 13)
-        let tagsWidth = tags.reduce(0) { sum, tag in
-            sum + estimatedWidth(for: "#" + tag, fontSize: 11) + 11 + 5
-        }
-
-        return (titleWidth + tagsWidth) <= availableForContent
-    }
-
-    static func estimatedWidth(for str: String, fontSize: CGFloat) -> CGFloat {
-        guard !str.isEmpty else { return 0 }
-        var w: CGFloat = 0
-        for ch in str {
-            if ch.isASCII {
-                switch ch {
-                case "1", "l", "i", "I", "!", "|", ":", ";", " ", ".", "'", "`":
-                    w += fontSize * 0.32
-                case "j", "r", "t", "f":
-                    w += fontSize * 0.42
-                case "w", "W", "M", "m", "@", "%", "#":
-                    w += fontSize * 0.68
-                default:
-                    w += fontSize * 0.55
-                }
-            } else {
-                w += fontSize * 1.05
-            }
-        }
-        return w
     }
 }
