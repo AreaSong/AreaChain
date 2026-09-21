@@ -291,14 +291,20 @@ struct DayBoardList: View {
     private func filteredTodos(_ list: [TodoItem]) -> [TodoItem] {
         guard filter.isActive else { return list }
         return list.filter {
-            Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects)
+            guard Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
+            if filter.dateScope != .all {
+                guard Classification.matchesDate(dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
+            }
+            return true
         }
     }
 
     private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
         guard filter.isActive else { return list }
         return list.filter {
-            Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects)
+            guard Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
+            if filter.dateScope == .overdue { return false }
+            return true
         }
     }
 
@@ -307,9 +313,15 @@ struct DayBoardList: View {
         return rows.filter { row in
             switch row {
             case .resident(let routine):
-                Classification.matches(routine.classifyBits, filter: filter, projectIDs: allowedProjects)
+                guard Classification.matches(routine.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
+                if filter.dateScope == .overdue { return false }
+                return true
             case .todo(let todo):
-                Classification.matches(todo.classifyBits, filter: filter, projectIDs: allowedProjects)
+                guard Classification.matches(todo.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
+                if filter.dateScope != .all {
+                    guard Classification.matchesDate(dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
+                }
+                return true
             }
         }
     }

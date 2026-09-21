@@ -207,6 +207,33 @@ struct ClassificationTests {
         #expect(ClipboardPayload.make(text: nil, hasImage: false, imageTitle: "图片") == nil)
     }
 
+    @Test func filterMatchesDateScope() {
+        let today = "2026-09-21"
+        let yesterday = "2026-09-20"
+        let future = "2026-09-25"
+        let farFuture = "2026-10-10"
+
+        #expect(Classification.matchesDate(dayKey: today, isDone: false, todayKey: today, scope: .all))
+        #expect(Classification.matchesDate(dayKey: yesterday, isDone: false, todayKey: today, scope: .all))
+
+        #expect(Classification.matchesDate(dayKey: today, isDone: false, todayKey: today, scope: .today))
+        #expect(!Classification.matchesDate(dayKey: yesterday, isDone: false, todayKey: today, scope: .today))
+        #expect(!Classification.matchesDate(dayKey: future, isDone: false, todayKey: today, scope: .today))
+
+        #expect(Classification.matchesDate(dayKey: today, isDone: false, todayKey: today, scope: .recent))
+        #expect(Classification.matchesDate(dayKey: future, isDone: false, todayKey: today, scope: .recent))
+        #expect(!Classification.matchesDate(dayKey: yesterday, isDone: false, todayKey: today, scope: .recent))
+        #expect(!Classification.matchesDate(dayKey: farFuture, isDone: false, todayKey: today, scope: .recent))
+
+        #expect(Classification.matchesDate(dayKey: yesterday, isDone: false, todayKey: today, scope: .overdue))
+        #expect(!Classification.matchesDate(dayKey: yesterday, isDone: true, todayKey: today, scope: .overdue))
+        #expect(!Classification.matchesDate(dayKey: today, isDone: false, todayKey: today, scope: .overdue))
+
+        let filter = BoardFilter().withDateScope(.today)
+        #expect(filter.isActive)
+        #expect(filter.withDateScope(.all).isActive == false)
+    }
+
     private var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

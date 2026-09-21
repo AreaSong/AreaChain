@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 菜单栏小窗内部手账风筛选抽屉：停靠在底栏上方，结构化展示全部、高优、项目与流式标签，支持即选即走。
+/// 菜单栏小窗内部手账风多维度筛选矩阵：分行紧凑排布时间、优先级、项目与标签，高度自适应贴合，支持多选自由叠加。
 struct MenuBarFilterDrawer: View {
     var tab: BoardTab = .tasks
     var filter: Binding<BoardFilter>? = nil
@@ -28,42 +28,47 @@ struct MenuBarFilterDrawer: View {
         tab == .tasks && activeFilter.isHighPriorityOnly
     }
 
-    private var isAllSelected: Bool {
+    private var isAnyFilterActive: Bool {
         if tab == .tasks {
-            return !activeFilter.isActive
+            return activeFilter.isActive
         }
-        return diaryFilterTagID?.wrappedValue == nil
+        return diaryFilterTagID?.wrappedValue != nil
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // 1. 顶部手账胶囊拉手
-            grabHandle
-
-            // 2. 快捷操作栏（全部 / 仅高优）
-            quickActionBar
-                .padding(.horizontal, 10)
-                .padding(.bottom, 6)
+            // 1. 顶部操作栏（重置、手柄、关闭）
+            headerBar
 
             Divider()
                 .overlay(DaybookTheme.rule.opacity(0.35))
-                .padding(.horizontal, 6)
+                .padding(.horizontal, 8)
+                .padding(.bottom, 6)
 
-            // 3. 滚动内容区（项目列表与流式标签）
-            ScrollView {
-                VStack(alignment: .leading, spacing: 10) {
+            // 2. 自适应内容区（多维度分行胶囊矩阵）
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 9) {
                     if tab == .tasks {
+                        // 维度 1：时间范围
+                        dateSection
+
+                        // 维度 2：优先级
+                        prioritySection
+
+                        // 维度 3：所属项目
                         projectSection
                     }
 
+                    // 维度 4：标签分类
                     if !tags.isEmpty {
                         tagSection
                     }
                 }
                 .padding(.horizontal, 10)
-                .padding(.vertical, 8)
+                .padding(.bottom, 10)
             }
-            .frame(maxHeight: 210)
+            .frame(maxHeight: 280)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .frame(width: DaybookTheme.popoverWidth - 20)
         .background(
@@ -77,48 +82,43 @@ struct MenuBarFilterDrawer: View {
         )
     }
 
-    // MARK: - 顶部手柄
+    // MARK: - 顶部操作栏
 
-    private var grabHandle: some View {
-        Capsule()
-            .fill(DaybookTheme.rule.opacity(0.6))
-            .frame(width: 28, height: 3.5)
-            .padding(.top, 6)
-            .padding(.bottom, 4)
-    }
-
-    // MARK: - 快捷操作栏
-
-    private var quickActionBar: some View {
-        HStack(spacing: 8) {
-            // 全部待办按钮
-            quickPill(
-                title: L10n.string("filter.all", locale: locale),
-                icon: "line.3.horizontal.decrease.circle",
-                isSelected: isAllSelected
-            ) {
-                resetAllFilters()
-                onDismiss()
-            }
-
-            if tab == .tasks {
-                // 仅高优切换按钮
-                quickPill(
-                    title: L10n.string("filter.highPriority", locale: locale),
-                    icon: "exclamationmark.3",
-                    isSelected: isHighPriority
-                ) {
-                    filter?.wrappedValue = activeFilter.withHighPriority(!isHighPriority)
-                    onDismiss()
+    private var headerBar: some View {
+        HStack(alignment: .center, spacing: 6) {
+            // 左侧：重置按钮
+            Button(action: resetAllFilters) {
+                HStack(spacing: 3) {
+                    Image(systemName: "arrow.counterclockwise")
+                        .font(.system(size: 8.5, weight: .bold))
+                    Text(L10n.string("filter.all", locale: locale))
+                        .font(.system(size: 10.5, weight: .medium))
                 }
+                .foregroundStyle(isAnyFilterActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.5))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(
+                    Capsule().fill(isAnyFilterActive ? DaybookTheme.stamp.opacity(0.10) : Color.clear)
+                )
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            .disabled(!isAnyFilterActive)
+            .help(L10n.string("filter.clear", locale: locale))
 
             Spacer(minLength: 0)
 
-            // 关闭按钮
+            // 居中手柄
+            Capsule()
+                .fill(DaybookTheme.rule.opacity(0.6))
+                .frame(width: 26, height: 3.5)
+
+            Spacer(minLength: 0)
+
+            // 右侧：完成/关闭按钮
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(.system(size: 9, weight: .bold))
                     .foregroundStyle(DaybookTheme.muted)
                     .frame(width: 20, height: 20)
                     .contentShape(Rectangle())
@@ -126,144 +126,200 @@ struct MenuBarFilterDrawer: View {
             .buttonStyle(.plain)
             .help(L10n.string("common.close", locale: locale))
         }
+        .padding(.horizontal, 10)
+        .padding(.top, 7)
+        .padding(.bottom, 5)
     }
 
-    private func quickPill(
+    // MARK: - 维度 1：时间范围
+
+    private var dateSection: some View {
+        matrixRow(title: L10n.string("filter.date", locale: locale)) {
+            matrixPill(
+                title: L10n.string("filter.all", locale: locale),
+                isSelected: activeFilter.dateScope == .all
+            ) {
+                filter?.wrappedValue = activeFilter.withDateScope(.all)
+            }
+
+            matrixPill(
+                title: L10n.string("filter.date.today", locale: locale),
+                icon: "calendar",
+                isSelected: activeFilter.dateScope == .today
+            ) {
+                let next: DateFilterScope = activeFilter.dateScope == .today ? .all : .today
+                filter?.wrappedValue = activeFilter.withDateScope(next)
+            }
+
+            matrixPill(
+                title: L10n.string("filter.date.recent", locale: locale),
+                isSelected: activeFilter.dateScope == .recent
+            ) {
+                let next: DateFilterScope = activeFilter.dateScope == .recent ? .all : .recent
+                filter?.wrappedValue = activeFilter.withDateScope(next)
+            }
+
+            matrixPill(
+                title: L10n.string("filter.date.overdue", locale: locale),
+                isSelected: activeFilter.dateScope == .overdue
+            ) {
+                let next: DateFilterScope = activeFilter.dateScope == .overdue ? .all : .overdue
+                filter?.wrappedValue = activeFilter.withDateScope(next)
+            }
+        }
+    }
+
+    // MARK: - 维度 2：优先级
+
+    private var prioritySection: some View {
+        matrixRow(title: L10n.string("filter.priority", locale: locale)) {
+            matrixPill(
+                title: L10n.string("filter.all", locale: locale),
+                isSelected: !isHighPriority
+            ) {
+                filter?.wrappedValue = activeFilter.withHighPriority(false)
+            }
+
+            matrixPill(
+                title: L10n.string("filter.highPriority", locale: locale),
+                icon: "exclamationmark.3",
+                isSelected: isHighPriority
+            ) {
+                filter?.wrappedValue = activeFilter.withHighPriority(!isHighPriority)
+            }
+        }
+    }
+
+    // MARK: - 维度 3：所属项目
+
+    private var projectSection: some View {
+        matrixRow(title: L10n.string("filter.project", locale: locale)) {
+            // 全部项目
+            matrixPill(
+                title: L10n.string("filter.all", locale: locale),
+                isSelected: activeFilter.projectID == nil
+            ) {
+                filter?.wrappedValue = activeFilter.withProject(nil)
+            }
+
+            // 无项目
+            matrixPill(
+                title: L10n.string("filter.project.none", locale: locale),
+                icon: "folder",
+                count: unclassifiedCount,
+                isSelected: activeFilter.isNoProject
+            ) {
+                let next: UUID? = activeFilter.isNoProject ? nil : BoardFilter.noneID
+                filter?.wrappedValue = activeFilter.withProject(next)
+            }
+
+            // 各具体项目
+            ForEach(projects.filter { $0.deletedAt == nil }) { proj in
+                matrixPill(
+                    title: proj.name,
+                    icon: "folder",
+                    count: projectCounts[proj.id],
+                    isSelected: activeFilter.projectID == proj.id
+                ) {
+                    let next = activeFilter.projectID == proj.id ? nil : proj.id
+                    filter?.wrappedValue = activeFilter.withProject(next)
+                }
+            }
+        }
+    }
+
+    // MARK: - 维度 4：标签分类
+
+    private var tagSection: some View {
+        matrixRow(title: L10n.string("filter.tag", locale: locale)) {
+            matrixPill(
+                title: L10n.string("filter.all", locale: locale),
+                isSelected: selectedTagID == nil
+            ) {
+                selectTag(nil)
+            }
+
+            ForEach(tags) { tag in
+                let isSelected = selectedTagID == tag.id
+                let color = DiaryTagChrome.color(for: tag.name)
+                let count = tagCounts[tag.id]
+
+                matrixPill(
+                    title: "#" + tag.name,
+                    dotColor: color,
+                    count: count,
+                    isSelected: isSelected
+                ) {
+                    selectTag(isSelected ? nil : tag.id)
+                }
+            }
+        }
+    }
+
+    // MARK: - 胶囊矩阵行与单个胶囊组件
+
+    private func matrixRow<Content: View>(
         title: String,
-        icon: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(DaybookType.badge)
+                .foregroundStyle(DaybookTheme.muted)
+                .padding(.leading, 2)
+
+            FlowTagLayout(spacing: 5) {
+                content()
+            }
+        }
+    }
+
+    private func matrixPill(
+        title: String,
+        icon: String? = nil,
+        dotColor: Color? = nil,
+        count: Int? = nil,
         isSelected: Bool,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10, weight: isSelected ? .bold : .medium))
+            HStack(spacing: 3.5) {
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8, weight: .bold))
+                } else if let dotColor {
+                    Circle()
+                        .fill(dotColor)
+                        .frame(width: 5, height: 5)
+                } else if let icon {
+                    Image(systemName: icon)
+                        .font(.system(size: 8.5, weight: .medium))
+                }
+
                 Text(title)
-                    .font(.system(size: 11, weight: isSelected ? .semibold : .regular))
+                    .font(.system(size: 10.5, weight: isSelected ? .semibold : .regular))
+                    .lineLimit(1)
+
+                if let count, count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                }
             }
-            .padding(.horizontal, 8)
+            .padding(.horizontal, 7)
             .padding(.vertical, 3.5)
             .background(
                 Capsule()
-                    .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.hoverFill)
+                    .fill(isSelected ? DaybookTheme.stamp.opacity(0.14) : DaybookTheme.hoverFill)
             )
             .overlay(
                 Capsule()
                     .strokeBorder(
-                        isSelected ? DaybookTheme.stamp.opacity(0.5) : DaybookTheme.rule.opacity(0.5),
+                        isSelected ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.45),
                         lineWidth: 0.6
                     )
             )
             .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - 项目分组
-
-    private var projectSection: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(L10n.string("filter.project", locale: locale))
-                .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
-                .padding(.leading, 4)
-
-            VStack(alignment: .leading, spacing: 1) {
-                // 无项目
-                FilterDropdownItemRow(
-                    item: FilterDropdownOption(
-                        id: BoardFilter.noneID.uuidString,
-                        title: L10n.string("filter.project.none", locale: locale),
-                        icon: "folder",
-                        count: unclassifiedCount,
-                        isSelected: activeFilter.isNoProject,
-                        action: {
-                            filter?.wrappedValue = activeFilter.withProject(BoardFilter.noneID)
-                            onDismiss()
-                        }
-                    )
-                ) {
-                    filter?.wrappedValue = activeFilter.withProject(BoardFilter.noneID)
-                    onDismiss()
-                }
-
-                // 各具体项目
-                ForEach(projects.filter { $0.deletedAt == nil }) { proj in
-                    FilterDropdownItemRow(
-                        item: FilterDropdownOption(
-                            id: proj.id.uuidString,
-                            title: proj.name,
-                            icon: "folder",
-                            count: projectCounts[proj.id],
-                            isSelected: activeFilter.projectID == proj.id,
-                            action: {
-                                filter?.wrappedValue = activeFilter.withProject(proj.id)
-                                onDismiss()
-                            }
-                        )
-                    ) {
-                        filter?.wrappedValue = activeFilter.withProject(proj.id)
-                        onDismiss()
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - 标签分组（流式排布）
-
-    private var tagSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(L10n.string("filter.tag", locale: locale))
-                .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
-                .padding(.leading, 4)
-
-            FlowTagLayout(spacing: 5) {
-                ForEach(tags) { tag in
-                    tagPill(tag)
-                }
-            }
-        }
-    }
-
-    private func tagPill(_ tag: TagItem) -> some View {
-        let isSelected = selectedTagID == tag.id
-        let color = DiaryTagChrome.color(for: tag.name)
-        let count = tagCounts[tag.id] ?? 0
-
-        return Button {
-            selectTag(tag.id)
-            onDismiss()
-        } label: {
-            HStack(spacing: 3.5) {
-                Circle()
-                    .fill(color)
-                    .frame(width: 5.5, height: 5.5)
-
-                Text("#" + tag.name)
-                    .font(.system(size: 10, weight: isSelected ? .semibold : .medium))
-                    .foregroundStyle(isSelected ? color : DaybookTheme.ink)
-
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 8.5, weight: .bold, design: .rounded))
-                        .foregroundStyle(isSelected ? color : DaybookTheme.muted)
-                }
-            }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                    .fill(isSelected ? color.opacity(0.14) : DaybookTheme.hoverFill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                    .strokeBorder(
-                        isSelected ? color.opacity(0.6) : DaybookTheme.rule.opacity(0.5),
-                        lineWidth: 0.6
-                    )
-            )
         }
         .buttonStyle(.plain)
     }
@@ -278,17 +334,16 @@ struct MenuBarFilterDrawer: View {
         }
     }
 
-    private func selectTag(_ id: UUID) {
-        let next = selectedTagID == id ? nil : id
+    private func selectTag(_ id: UUID?) {
         if tab == .tasks {
-            filter?.wrappedValue = activeFilter.withTag(next)
+            filter?.wrappedValue = activeFilter.withTag(id)
         } else {
-            diaryFilterTagID?.wrappedValue = next
+            diaryFilterTagID?.wrappedValue = id
         }
     }
 }
 
-// MARK: - 流式标签排版布局
+// MARK: - 流式胶囊排版布局
 
 private struct FlowTagLayout: Layout {
     var spacing: CGFloat = 4

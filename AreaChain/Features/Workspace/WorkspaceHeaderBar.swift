@@ -1,9 +1,8 @@
 import SwiftData
 import SwiftUI
 
-/// 工作台内容区置顶虚化顶栏：
+/// 工作台内容区置顶虚化顶栏（兼容组件与原生 Toolbar 两用）：
 /// 左侧跟随当前视图标题，右侧常驻胶囊搜索框与抽屉切换按钮。
-/// 背景采用 macOS 原生半透明磨砂材质（.ultraThinMaterial），下部内容滚动时自然在其下方虚化透出。
 struct WorkspaceHeaderBar: View {
     @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
@@ -12,13 +11,13 @@ struct WorkspaceHeaderBar: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            leadingTitleSection
+            WorkspaceHeaderLeadingTitle(navigation: navigation, projects: projects, tags: tags)
 
             Spacer(minLength: 16)
 
-            searchCapsuleField
+            WorkspaceHeaderSearchCapsule(navigation: navigation)
 
-            inspectorToggleButton
+            WorkspaceHeaderInspectorToggle(navigation: navigation)
         }
         .padding(.horizontal, DaybookSpacing.page)
         .frame(height: WorkspaceStyle.headerHeight)
@@ -29,11 +28,16 @@ struct WorkspaceHeaderBar: View {
         }
         .accessibilityIdentifier("workspace.header.bar")
     }
+}
 
-    // MARK: - Leading Title Section
+// MARK: - Subcomponents for Header & Native Toolbar
 
-    @ViewBuilder
-    private var leadingTitleSection: some View {
+struct WorkspaceHeaderLeadingTitle: View {
+    @Bindable var navigation: WorkspaceNavigation
+    var projects: [ProjectItem]
+    var tags: [TagItem]
+
+    var body: some View {
         HStack(spacing: 8) {
             if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
                 Image(systemName: "folder.fill")
@@ -63,10 +67,13 @@ struct WorkspaceHeaderBar: View {
         .offset(y: navigation.isInlineTitleVisible ? 0 : 4)
         .animation(DaybookMotion.interactive, value: navigation.isInlineTitleVisible)
     }
+}
 
-    // MARK: - Search Capsule Field
+struct WorkspaceHeaderSearchCapsule: View {
+    @Environment(\.locale) private var locale
+    @Bindable var navigation: WorkspaceNavigation
 
-    private var searchCapsuleField: some View {
+    var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12, weight: .medium))
@@ -122,10 +129,13 @@ struct WorkspaceHeaderBar: View {
             .accessibilityHidden(true)
         }
     }
+}
 
-    // MARK: - Inspector Toggle Button
+struct WorkspaceHeaderInspectorToggle: View {
+    @Environment(\.locale) private var locale
+    @Bindable var navigation: WorkspaceNavigation
 
-    private var inspectorToggleButton: some View {
+    var body: some View {
         Button {
             navigation.isInspectorPresented.toggle()
         } label: {
@@ -143,3 +153,46 @@ struct WorkspaceHeaderBar: View {
         .accessibilityIdentifier("workspace.header.inspector.toggle")
     }
 }
+
+// MARK: - Native Toolbar Integration
+
+struct WorkspaceToolbarModifier: ViewModifier {
+    @Bindable var navigation: WorkspaceNavigation
+    var projects: [ProjectItem]
+    var tags: [TagItem]
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    WorkspaceHeaderLeadingTitle(
+                        navigation: navigation,
+                        projects: projects,
+                        tags: tags
+                    )
+                }
+
+                ToolbarItem(placement: .primaryAction) {
+                    HStack(spacing: 8) {
+                        WorkspaceHeaderSearchCapsule(navigation: navigation)
+                        WorkspaceHeaderInspectorToggle(navigation: navigation)
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func workspaceToolbar(
+        navigation: WorkspaceNavigation,
+        projects: [ProjectItem],
+        tags: [TagItem]
+    ) -> some View {
+        modifier(WorkspaceToolbarModifier(
+            navigation: navigation,
+            projects: projects,
+            tags: tags
+        ))
+    }
+}
+

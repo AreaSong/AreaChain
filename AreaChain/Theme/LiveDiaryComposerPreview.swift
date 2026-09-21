@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// 手记实时镜像预览卡片：在单行输入框打字时，100% 镜像呈现手记落入列表后的正式数据条版式。
-/// 双行紧凑卡片：首行纯文本标题（超长悬停展开 RowTitleBubble）、多行备注指示器、右上角关闭按钮；
-/// 次行时间文本与真实彩色标签群；内边距 8/4pt、高度 46pt、圆角 DaybookRadius.small 与正式手记行 100% 像素级对齐。
+/// 像素级镜像 DiarySummaryRow：
+/// - 双行紧凑卡片：首行纯文本标题（超长 hover 展开 RowTitleBubble）、多行备注指示器、右侧悬停操作区（复制与更多操作）；
+/// - 次行时间文本与真实彩色标签小方块群（tagPill）；
+/// - 内边距 8/4pt、高度 57pt（minHeight: 46）、圆角 DaybookRadius.small(6pt)，悬停呈现 modernRow 浅灰高亮。
 struct LiveDiaryComposerPreview: View {
     var text: String
     var allTags: [TagItem] = []
@@ -14,6 +16,8 @@ struct LiveDiaryComposerPreview: View {
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var isHovered = false
+    @State private var hasCopied = false
     @State private var isTitleTextHovered = false
     @State private var isTitleBubbleHovered = false
     @State private var titleHoverTask: Task<Void, Never>? = nil
@@ -76,7 +80,12 @@ struct LiveDiaryComposerPreview: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 46)
+        .frame(minHeight: 46)
+        .modernRow(
+            cornerRadius: DaybookRadius.small,
+            isHovered: isHovered,
+            isSelected: false
+        )
         .background(
             Group {
                 if !showsSuggestions {
@@ -94,6 +103,24 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
         )
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .onHover { hovering in
+            isHovered = hovering
+            if !hovering {
+                titleHoverTask?.cancel()
+                titleHoverTask = nil
+                if !isTitleBubbleHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = false
+                    }
+                }
+                if !isNoteHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isNoteHovered = false
+                    }
+                }
+            }
+        }
         .background(
             GeometryReader { proxy in
                 Color.clear
@@ -102,13 +129,32 @@ struct LiveDiaryComposerPreview: View {
                     .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
             }
         )
+        .task(id: hasCopied) {
+            guard hasCopied else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            if !Task.isCancelled {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    hasCopied = false
+                }
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("diary.preview.card")
     }
 
-    // MARK: - 第 1 行：纯文本标题（超长 hover 展开完整气泡）+ 备注指示器 + 关闭按钮
+    // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 48x22 占位的悬停操作按钮)
 
     private var headerRow: some View {
+        HStack(alignment: .center, spacing: 4) {
+            noteContentHeader
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            actionCluster
+                .frame(width: 48, height: 22)
+        }
+    }
+
+    private var noteContentHeader: some View {
         HStack(alignment: .center, spacing: 4) {
             Text(displayTitle.isEmpty ? " " : displayTitle)
                 .font(DaybookType.body)
@@ -126,7 +172,7 @@ struct LiveDiaryComposerPreview: View {
                         RowTitleBubble(
                             title: displayTitle,
                             growsUpward: growsUpward,
-                            onCopy: { _ = PrivateClipboard.copy(displayTitle, sensitive: isSensitive) },
+                            onCopy: copyTitle,
                             onHover: { hovering in
                                 isTitleBubbleHovered = hovering
                                 if !hovering && !isTitleTextHovered {
@@ -147,12 +193,6 @@ struct LiveDiaryComposerPreview: View {
             if !noteText.isEmpty {
                 noteIndicator(fullText: noteText)
                     .fixedSize()
-            }
-
-            Spacer(minLength: 0)
-
-            if let onClose, !showsSuggestions {
-                closeButton(onClose)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -181,17 +221,70 @@ struct LiveDiaryComposerPreview: View {
         }
     }
 
-    private func closeButton(_ action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Image(systemName: "xmark")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted.opacity(0.75))
-                .frame(width: 18, height: 18)
+    // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多/关闭菜单，纯透明度渐变，零抖动)
+
+    private var actionCluster: some View {
+        HStack(spacing: 4) {
+            copyButton
+            moreMenu
+        }
+        .frame(width: 48, height: 22)
+        .opacity(isHovered ? 1.0 : 0.0)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+    }
+
+    private var copyButton: some View {
+        Button(action: copyTitle) {
+            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.15) : Color.clear)
+                )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .help("common.close")
-        .accessibilityLabel("common.close")
+        .help("diary.copy")
+        .accessibilityLabel("diary.copy")
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            if let onClose {
+                Button(action: onClose) {
+                    Label("common.close", systemImage: "xmark")
+                }
+            }
+            Button(action: copyTitle) {
+                Label(hasCopied ? "diary.copied" : "diary.copy", systemImage: "doc.on.doc")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                        .fill(Color.clear)
+                )
+                .contentShape(Rectangle())
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .buttonStyle(.plain)
+        .help("footer.more")
+        .accessibilityLabel("footer.more")
+        .fixedSize()
+    }
+
+    private func copyTitle() {
+        guard !displayTitle.isEmpty else { return }
+        guard PrivateClipboard.copy(displayTitle, sensitive: isSensitive) else { return }
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            hasCopied = true
+        }
     }
 
     // MARK: - 第 2 行：时间戳 + 真实彩色标签群（100% 镜像 DiarySummaryRow）
@@ -218,10 +311,16 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
 
+            if hasCopied {
+                Label("diary.copied", systemImage: "checkmark")
+                    .font(DaybookType.badge)
+                    .foregroundStyle(DaybookTheme.stamp)
+            }
+
             Spacer(minLength: 0)
         }
         .font(DaybookType.badge)
-        .frame(height: 18, alignment: .leading)
+        .frame(height: 24, alignment: .leading)
     }
 
     private func tagPill(_ name: String) -> some View {

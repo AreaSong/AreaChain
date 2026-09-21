@@ -1,10 +1,18 @@
 import Foundation
 
+enum DateFilterScope: String, CaseIterable, Equatable, Sendable {
+    case all
+    case today
+    case recent
+    case overdue
+}
+
 struct BoardFilter: Equatable {
     var projectID: UUID? = nil
     var tagID: UUID? = nil
     var bundleID: String? = nil
     var isHighPriorityOnly: Bool = false
+    var dateScope: DateFilterScope = .all
 
     static let noneID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
@@ -12,7 +20,7 @@ struct BoardFilter: Equatable {
     var isNoTag: Bool { tagID == Self.noneID }
 
     var isActive: Bool {
-        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly
+        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly || dateScope != .all
     }
 
     func withProject(_ id: UUID?) -> BoardFilter {
@@ -36,6 +44,12 @@ struct BoardFilter: Equatable {
     func withHighPriority(_ flag: Bool) -> BoardFilter {
         var next = self
         next.isHighPriorityOnly = flag
+        return next
+    }
+
+    func withDateScope(_ scope: DateFilterScope) -> BoardFilter {
+        var next = self
+        next.dateScope = scope
         return next
     }
 }
@@ -160,6 +174,20 @@ enum Classification {
         }
         if let bundleID = filter.bundleID, bits.sourceBundleID != bundleID { return false }
         return true
+    }
+
+    static func matchesDate(dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope) -> Bool {
+        switch scope {
+        case .all:
+            return true
+        case .today:
+            return dayKey == todayKey
+        case .recent:
+            let weekAhead = DayKey.shifted(todayKey, by: 7)
+            return dayKey >= todayKey && dayKey <= weekAhead
+        case .overdue:
+            return dayKey < todayKey && !isDone
+        }
     }
 
     static func precedes(_ left: BoardSortKey, _ right: BoardSortKey) -> Bool {

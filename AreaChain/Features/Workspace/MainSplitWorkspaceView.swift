@@ -62,29 +62,24 @@ struct MainSplitWorkspaceView: View {
     }
 
     private var detailColumn: some View {
-        VStack(spacing: 0) {
-            WorkspaceHeaderBar(
-                navigation: navigation,
-                projects: projects,
-                tags: tags
-            )
-
-            ZStack {
-                if navigation.isSearching {
-                    WorkspaceGlobalSearchView(
-                        navigation: navigation,
-                        query: navigation.searchQuery
-                    )
+        ZStack {
+            if navigation.isSearching {
+                WorkspaceGlobalSearchView(
+                    navigation: navigation,
+                    query: navigation.searchQuery
+                )
+                .transition(.opacity)
+            } else {
+                detailView
                     .transition(.opacity)
-                } else {
-                    detailView
-                        .transition(.opacity)
-                }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .workspaceToolbarTitleHidden()
+        .workspaceToolbar(
+            navigation: navigation,
+            projects: projects,
+            tags: tags
+        )
         .overlay(alignment: .bottom) {
             if !navigation.selectedTaskIDs.isEmpty {
                 WorkspaceBatchActionBar(

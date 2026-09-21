@@ -38,7 +38,7 @@ struct FooterBar: View {
     private var activeCount: Int {
         guard tab == .tasks else { return selectedTagID == nil ? 0 : 1 }
         let value = filter?.wrappedValue ?? BoardFilter()
-        return [value.projectID != nil, value.tagID != nil, value.bundleID != nil, value.isHighPriorityOnly]
+        return [value.projectID != nil, value.tagID != nil, value.bundleID != nil, value.isHighPriorityOnly, value.dateScope != .all]
             .filter { $0 }.count
     }
 
@@ -173,6 +173,14 @@ struct FooterBar: View {
 
     private var filterTitle: String {
         if activeCount > 1 { return L10n.format("footer.filter.count", locale: locale, activeCount) }
+        if let scope = filter?.wrappedValue.dateScope, scope != .all {
+            switch scope {
+            case .all: break
+            case .today: return L10n.string("filter.date.today", locale: locale)
+            case .recent: return L10n.string("filter.date.recent", locale: locale)
+            case .overdue: return L10n.string("filter.date.overdue", locale: locale)
+            }
+        }
         if highPriority { return L10n.string("filter.highPriority", locale: locale) }
         if let projectID = filter?.wrappedValue.projectID {
             if projectID == BoardFilter.noneID {

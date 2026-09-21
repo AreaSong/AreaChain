@@ -26,7 +26,7 @@ struct TaskRow: View {
     @State var draft = ""
     @State var pickingDay = false
     @State var pickingTime = false
-    @State private var isSubtasksExpanded = false
+    @State var isSubtasksExpanded = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
@@ -166,7 +166,7 @@ struct TaskRow: View {
                 actionCluster
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : 36)
         .modernRow(
@@ -213,7 +213,7 @@ struct TaskRow: View {
 
     // MARK: - Subviews
 
-    private var fullNoteText: String? {
+    var fullNoteText: String? {
         if let notes = state.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return notes.trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -472,123 +472,5 @@ struct TaskRow: View {
             }
         }
     }
-
-    @ViewBuilder
-    private var metadataCluster: some View {
-        HStack(spacing: 5) {
-            quadrantBadge
-
-            tagChips
-
-            if state.isResident, let streak = state.streak, streak >= 1 {
-                streakBadge(streak)
-            }
-
-            if let remindMinutes = state.remindMinutes {
-                remindBadge(remindMinutes)
-            }
-
-            if !state.subtasks.isEmpty {
-                TaskRowSubtaskChip(
-                    subtasks: state.subtasks,
-                    isExpanded: $isSubtasksExpanded,
-                    reduceMotion: reduceMotion
-                )
-            }
-
-            if let items = state.attachments?.items, !items.isEmpty {
-                AttachmentThumbnails(items: items)
-            }
-        }
-        .fixedSize(horizontal: true, vertical: false)
-        .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
-        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-    }
-
-    var attachedTagNames: [String] {
-        guard let classify = state.classify else { return [] }
-        let selectedIDs = Set(TagIDList.parse(classify.tagIDs))
-        guard !selectedIDs.isEmpty else { return [] }
-        return classify.tags.filter { selectedIDs.contains($0.id) }.map(\.name)
-    }
-
-    private var hasVisibleMetadata: Bool {
-        state.isImportant || state.classify?.isImportant == true
-            || state.isUrgent || state.classify?.isUrgent == true
-            || !attachedTagNames.isEmpty
-            || (state.isResident && (state.streak ?? 0) >= 1)
-            || state.remindMinutes != nil
-            || !state.subtasks.isEmpty
-            || !(state.attachments?.items.isEmpty ?? true)
-    }
-
-    private var editor: some View {
-        SyntaxTextField(
-            text: $draft, placeholder: L10n.string("row.edit.field", locale: locale),
-            focused: $editorFocused, allowsShiftNewline: true, onSubmit: saveEdit, onEscape: cancelEdit
-        )
-        .onAppear { DispatchQueue.main.async { editorFocused = true } }
-    }
-
-    private var timePicker: some View {
-        DatePicker(
-            "row.time",
-            selection: Binding(
-                get: {
-                    RemindMinutes.date(minutes: state.remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now
-                },
-                set: { dispatch(.setRemindMinutes(RemindMinutes.from(date: $0))) }
-            ),
-            displayedComponents: .hourAndMinute
-        )
-        .labelsHidden()
-        .padding(12)
-        .frame(minWidth: 180)
-    }
-
-    func beginEdit() {
-        draft = state.title
-        editorFocused = false
-        editing = true
-    }
-
-    func cancelEdit() {
-        draft = state.title
-        editing = false
-        editorFocused = false
-        dispatch(.endEditing)
-    }
-
-    func saveEdit() {
-        let next = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !next.isEmpty {
-            if let onSaveTitle {
-                guard onSaveTitle(next) else { return }
-            } else {
-                dispatch(.editTitle(next))
-            }
-        } else {
-            draft = state.title
-        }
-        editing = false
-        editorFocused = false
-        dispatch(.endEditing)
-    }
-
-    func copyTask() {
-        var content = state.title
-        if let note = fullNoteText, !note.isEmpty {
-            content += "\n" + note
-        }
-        copyToClipboard(content)
-        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-            hasCopied = true
-        }
-    }
-
-    private func copyToClipboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
-    }
 }
+

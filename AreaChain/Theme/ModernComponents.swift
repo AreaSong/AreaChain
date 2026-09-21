@@ -262,6 +262,7 @@ extension View {
 
 struct ModernRowModifier: ViewModifier {
     @Environment(\.daybookViewStyle) private var style
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var cornerRadius: CGFloat = DaybookRadius.small
     var isHovered: Bool = false
     var isSelected: Bool = false
@@ -274,8 +275,15 @@ struct ModernRowModifier: ViewModifier {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0.7)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0.6)
             )
+            .shadow(
+                color: style.isWorkspace && isHovered ? DaybookShadow.cardHover.opacity(0.4) : .clear,
+                radius: 1.5,
+                y: 0.5
+            )
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
     }
 
     private var backgroundFill: Color {
@@ -283,9 +291,9 @@ struct ModernRowModifier: ViewModifier {
             return style.selectionFill
         }
         if isHovered {
-            return style.hoverFill
+            return style.isWorkspace ? WorkspaceStyle.surface : style.hoverFill
         }
-        return Color.clear
+        return style.isWorkspace ? WorkspaceStyle.surface.opacity(0.72) : Color.clear
     }
 
     private var borderStroke: Color {
@@ -293,9 +301,9 @@ struct ModernRowModifier: ViewModifier {
             return DaybookTheme.cardSelectionStroke
         }
         if isHovered {
-            return DaybookTheme.rule.opacity(0.35)
+            return style.isWorkspace ? WorkspaceStyle.border.opacity(0.95) : DaybookTheme.rule.opacity(0.35)
         }
-        return Color.clear
+        return style.isWorkspace ? WorkspaceStyle.border.opacity(0.60) : Color.clear
     }
 }
 

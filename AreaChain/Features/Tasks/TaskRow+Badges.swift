@@ -118,4 +118,54 @@ extension TaskRow {
             content
         }
     }
+
+    @ViewBuilder
+    var metadataCluster: some View {
+        HStack(spacing: 5) {
+            quadrantBadge
+
+            tagChips
+
+            if state.isResident, let streak = state.streak, streak >= 1 {
+                streakBadge(streak)
+            }
+
+            if let remindMinutes = state.remindMinutes {
+                remindBadge(remindMinutes)
+            }
+
+            if !state.subtasks.isEmpty {
+                TaskRowSubtaskChip(
+                    subtasks: state.subtasks,
+                    isExpanded: $isSubtasksExpanded,
+                    reduceMotion: reduceMotion
+                )
+            }
+
+            if let items = state.attachments?.items, !items.isEmpty {
+                AttachmentThumbnails(items: items)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+        .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
+        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+    }
+
+    var attachedTagNames: [String] {
+        guard let classify = state.classify else { return [] }
+        let selectedIDs = Set(TagIDList.parse(classify.tagIDs))
+        guard !selectedIDs.isEmpty else { return [] }
+        return classify.tags.filter { selectedIDs.contains($0.id) }.map(\.name)
+    }
+
+    var hasVisibleMetadata: Bool {
+        state.isImportant || state.classify?.isImportant == true
+            || state.isUrgent || state.classify?.isUrgent == true
+            || !attachedTagNames.isEmpty
+            || (state.isResident && (state.streak ?? 0) >= 1)
+            || state.remindMinutes != nil
+            || !state.subtasks.isEmpty
+            || !(state.attachments?.items.isEmpty ?? true)
+    }
 }
+

@@ -30,7 +30,7 @@ struct TasksPageConfig {
 struct TasksPage: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.daybookViewStyle) var style
 
     var todayKey: String
     var routines: [DailyRoutine]
@@ -72,7 +72,7 @@ struct TasksPage: View {
     @State var boardFilter = BoardFilter()
     @State var taskSelection = TaskSelection()
 
-    private var effectiveFilter: BoardFilter {
+    var effectiveFilter: BoardFilter {
         config.externalFilter?.wrappedValue ?? boardFilter
     }
 
@@ -138,61 +138,6 @@ struct TasksPage: View {
         }
         .onDisappear {
             WorkspaceNavigation.shared.isInlineTitleVisible = false
-        }
-    }
-
-    private var headerBar: some View {
-        let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
-        let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
-        let hasFilters = style.isWorkspace
-            ? (!CatalogChoices.projects(projects).isEmpty || !tagChoices.isEmpty || !todayBundleIDs.isEmpty
-                || effectiveFilter.projectID != nil || effectiveFilter.bundleID != nil
-                || (config.externalFilter == nil && effectiveFilter.isActive))
-            : effectiveFilter.isActive
-        return Group {
-            if hasChips || hasFilters {
-                HStack(spacing: 8) {
-                    if hasChips {
-                        LeftoverChipsBar(
-                            config: LeftoverChipsBarConfig(
-                                yesterday: LeftoverChipState(
-                                    count: yesterdayItems.count,
-                                    isExpanded: showYesterday,
-                                    onToggle: { showYesterday.toggle() }
-                                ),
-                                upcoming: LeftoverChipState(
-                                    count: upcomingModels.count,
-                                    isExpanded: showUpcoming,
-                                    onToggle: { showUpcoming.toggle() }
-                                )
-                            )
-                        )
-                    }
-
-                    if hasChips && hasFilters {
-                        Spacer(minLength: 8)
-                    }
-
-                    if hasFilters {
-                        BoardFilterBar(
-                            filter: effectiveFilter,
-                            projects: CatalogChoices.projects(projects),
-                            tags: tagChoices,
-                            bundleIDs: todayBundleIDs,
-                            projectCounts: projectCounts,
-                            unclassifiedCount: unclassifiedTodosCount,
-                            untaggedCount: untaggedTodosCount,
-                            onChange: { next in
-                                if let external = config.externalFilter { external.wrappedValue = next }
-                                else { boardFilter = next }
-                            }
-                        )
-                    }
-                }
-                .padding(.horizontal, 1)
-                .padding(.top, 1)
-                .padding(.bottom, 4)
-            }
         }
     }
 
