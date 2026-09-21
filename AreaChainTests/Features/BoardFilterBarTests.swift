@@ -101,4 +101,24 @@ struct BoardFilterBarTests {
         #expect(page.unclassifiedTodosCount == 1)
         #expect(page.untaggedTodosCount == 3)
     }
+
+    @Test func footerBarProjectDropdownIntegration() {
+        let projectID = UUID()
+        let project = ProjectItem(name: "工程A", sortOrder: 0)
+        project.id = projectID
+
+        var currentFilter = BoardFilter()
+        let footer = FooterBar(
+            tab: .tasks,
+            toolbar: MenuBarToolbarState(),
+            filter: Binding(get: { currentFilter }, set: { currentFilter = $0 }),
+            projects: [project],
+            projectCounts: [projectID: 2],
+            unclassifiedCount: 1
+        )
+
+        #expect(footer.projects.count == 1)
+        #expect(footer.projectCounts[projectID] == 2)
+        #expect(footer.unclassifiedCount == 1)
+    }
 }

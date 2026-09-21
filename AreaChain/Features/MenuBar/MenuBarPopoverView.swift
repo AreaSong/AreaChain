@@ -19,7 +19,7 @@ enum BoardTab: String, CaseIterable, Identifiable {
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     private var dayClock: DayClock { DayClock.shared }
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
@@ -28,16 +28,16 @@ struct MenuBarPopoverView: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
 
-    @State private var tab: BoardTab = .tasks
+    @State var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
     @State private var dayTick = Date()
-    @State private var captureFocused = false
+    @State var captureFocused = false
     @State private var focusedTaskID: UUID? = nil
     @State private var showingSyntaxHelp = false
     @State private var helpContext: SyntaxInputContext = .capture
-    @State private var toolbar: MenuBarToolbarState
-    @State private var hostWindow: NSWindow?
-    @State private var tabKeyMonitor: Any? = nil
+    @State var toolbar: MenuBarToolbarState
+    @State var hostWindow: NSWindow?
+    @State var tabKeyMonitor: Any? = nil
     @State private var boardFilter = BoardFilter()
     @State private var diaryFilterTagID: UUID? = nil
     @Bindable private var diaryCapture: DiaryCaptureSession
@@ -81,6 +81,32 @@ struct MenuBarPopoverView: View {
             }
         }
         return counts
+    }
+
+    private var taskProjectCounts: [UUID: Int] {
+        var counts: [UUID: Int] = [:]
+        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }
+        for todo in activeTodos {
+            if let pid = todo.projectID {
+                counts[pid, default: 0] += 1
+            }
+        }
+        if !projects.isEmpty {
+            for project in projects {
+                let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
+                if subtrees.count > 1 {
+                    let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
+                    if sum > 0 {
+                        counts[project.id] = sum
+                    }
+                }
+            }
+        }
+        return counts
+    }
+
+    private var unclassifiedTodosCount: Int {
+        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
     }
 
     private var headerSubtitle: LocalizedStringKey {
@@ -130,6 +156,9 @@ struct MenuBarPopoverView: View {
                     toolbar: toolbar,
                     filter: $boardFilter,
                     diaryFilterTagID: $diaryFilterTagID,
+                    projects: projects.filter { $0.deletedAt == nil },
+                    projectCounts: taskProjectCounts,
+                    unclassifiedCount: unclassifiedTodosCount,
                     tags: Array(tags),
                     tagCounts: currentTabTagCounts,
                     onShowSyntaxHelp: showSyntaxHelp
@@ -420,53 +449,6 @@ struct MenuBarPopoverView: View {
             toolbar.focusSearch()
         }
         else if tab == .tasks { captureFocused = true }
-    }
-
-    private func setupTabKeyMonitor() {
-        guard tabKeyMonitor == nil else { return }
-        tabKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [self] event in
-            handleTabKeyDown(event)
-        }
-    }
-
-    private func tearDownTabKeyMonitor() {
-        if let monitor = tabKeyMonitor {
-            NSEvent.removeMonitor(monitor)
-            tabKeyMonitor = nil
-        }
-    }
-
-    private func handleTabKeyDown(_ event: NSEvent) -> NSEvent? {
-        guard event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
-        // macOS 方向键会自动附加 .numericPad 与 .function 标记，仅提取核心修饰键进行 Command 判定
-        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        guard modifiers == .command else { return event }
-        if event.charactersIgnoringModifiers?.lowercased() == "f" {
-            toolbar.focusSearch()
-            return nil
-        }
-        guard !toolbar.searchIsFocused else { return event }
-
-        // keyCode 123: Left Arrow (← 任务), 124: Right Arrow (→ 手记)
-        if event.keyCode == 123 {
-            if tab != .tasks {
-                withAnimation(DaybookMotion.animation(reduceMotion)) {
-                    tab = .tasks
-                }
-            } else {
-                captureFocused = true
-            }
-            return nil
-        } else if event.keyCode == 124 {
-            if tab != .diary {
-                withAnimation(DaybookMotion.animation(reduceMotion)) {
-                    tab = .diary
-                }
-            }
-            return nil
-        }
-
-        return event
     }
 
     private func addTodo() {

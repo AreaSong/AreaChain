@@ -47,14 +47,28 @@ struct SyntaxOverlayAnchor {
         let targetWidth: CGFloat = (state.context == .capture || state.context == .diaryCapture) ? (DaybookTheme.popoverWidth - 24) : 240
 
         if state.context == .diaryCapture {
+            let parsed = NaturalLanguageParser.parseDiaryCapture(state.inputText)
+            let hasMultiTags = parsed.tagNames.count > 1
+            let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+            let displayTitle = title.isEmpty ? parsed.body.trimmingCharacters(in: .whitespacesAndNewlines) : title
+            let canFitInline = LiveDiaryComposerPreview.canFit(
+                title: displayTitle,
+                tags: parsed.tagNames,
+                hasNotes: !title.isEmpty && !parsed.body.isEmpty,
+                cardWidth: targetWidth
+            )
+
             if state.showsPreview {
-                h += 46
+                h += 36
+                if !showsSuggestions && hasMultiTags && !canFitInline {
+                    h += min(135, CGFloat(parsed.tagNames.count) * 26 + 40)
+                }
             }
             if showsSuggestions {
                 if state.showsPreview { h += 1 }
                 h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
             }
-            return CGSize(width: targetWidth, height: max(46, h))
+            return CGSize(width: targetWidth, height: max(36, h))
         }
 
         let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)

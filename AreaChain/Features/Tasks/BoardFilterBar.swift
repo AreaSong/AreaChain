@@ -367,7 +367,7 @@ struct BoardFilterDropdownButton: View {
 
 // MARK: - 单个条目行
 
-private struct FilterDropdownItemRow: View {
+struct FilterDropdownItemRow: View {
     var item: FilterDropdownOption
     var onSelect: () -> Void
 

@@ -8,6 +8,9 @@ struct FooterBar: View {
     @Bindable var toolbar: MenuBarToolbarState
     var filter: Binding<BoardFilter>? = nil
     var diaryFilterTagID: Binding<UUID?>? = nil
+    var projects: [ProjectItem] = []
+    var projectCounts: [UUID: Int] = [:]
+    var unclassifiedCount: Int? = nil
     var tags: [TagItem] = []
     var tagCounts: [UUID: Int] = [:]
     var onShowSyntaxHelp: () -> Void = {}
@@ -178,6 +181,14 @@ struct FooterBar: View {
     private var filterTitle: String {
         if activeCount > 1 { return L10n.format("footer.filter.count", locale: locale, activeCount) }
         if highPriority { return L10n.string("filter.highPriority", locale: locale) }
+        if let projectID = filter?.wrappedValue.projectID {
+            if projectID == BoardFilter.noneID {
+                return L10n.string("filter.project.none", locale: locale)
+            }
+            if let name = projects.first(where: { $0.id == projectID })?.name {
+                return name
+            }
+        }
         if let tag = activeTags.first(where: { $0.id == selectedTagID }) { return "#" + tag.name }
         return L10n.string("filter.label", locale: locale)
     }
@@ -235,6 +246,9 @@ struct FooterBar: View {
                 if tab == .tasks {
                     filterChip(L10n.string("filter.highPriority", locale: locale), selected: highPriority) {
                         filter?.wrappedValue = (filter?.wrappedValue ?? BoardFilter()).withHighPriority(!highPriority)
+                    }
+                    if !projects.isEmpty {
+                        footerProjectDropdown
                     }
                 }
                 ForEach(visibleFilterTags) { tag in
