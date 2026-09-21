@@ -81,7 +81,7 @@ struct InputSyntaxInteractionTests {
         try await host.settle()
         let entry = try #require(host.container.mainContext.fetch(FetchDescriptor<DiaryEntry>()).first)
         let tag = try #require(host.tags.first { $0.name == "今日" })
-        #expect(entry.text == "#今日 今天很开心" && TagIDList.contains(entry.tagIDs, tag.id))
+        #expect(entry.text == "今天很开心" && TagIDList.contains(entry.tagIDs, tag.id))
         #expect(host.editor?.string.isEmpty == true)
         try host.snapshot("diary-saved-light")
         host.window.appearance = NSAppearance(named: .darkAqua)

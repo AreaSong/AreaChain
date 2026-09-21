@@ -23,7 +23,7 @@ struct QuadrantPage: View {
     }
 
     var body: some View {
-        DaybookPage(minWidth: 560, minHeight: 480) {
+        DaybookPage(minWidth: 560, minHeight: 480, fullWidth: true) {
             DaybookPeriodBar(
                 title: DayKey.displayName(selectedKey, calendar: calendar, locale: locale),
                 onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar) },

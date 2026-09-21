@@ -205,8 +205,8 @@ struct FooterBar: View {
         Button {
             AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
         } label: {
-            Image(systemName: "arrow.up.forward.app")
-                .font(.system(size: 11.5, weight: .medium))
+            Image(systemName: "macwindow")
+                .font(DaybookType.caption)
                 .modifier(FooterActionItemModifier(isFocused: workspaceFocused))
         }
         .buttonStyle(.plain)
@@ -223,7 +223,7 @@ struct FooterBar: View {
             Button {
                 AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
             } label: {
-                Label("window.workspace", systemImage: "arrow.up.forward.app")
+                Label("window.workspace", systemImage: "macwindow")
             }
             .keyboardShortcut("0", modifiers: .command)
 

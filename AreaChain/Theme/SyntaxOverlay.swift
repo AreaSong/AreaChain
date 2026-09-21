@@ -48,13 +48,13 @@ struct SyntaxOverlayAnchor {
 
         if state.context == .diaryCapture {
             if state.showsPreview {
-                h += 48
+                h += 46
             }
             if showsSuggestions {
                 if state.showsPreview { h += 1 }
                 h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
             }
-            return CGSize(width: targetWidth, height: max(48, h))
+            return CGSize(width: targetWidth, height: max(46, h))
         }
 
         let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)

@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// 手记实时镜像预览卡片：在单行输入框打字时，100% 镜像呈现手记落入列表后的正式数据条版式。
-/// 双行紧凑卡片：首行纯文本标题与多行备注指示器（右侧关闭按钮）；次行时间标签与真实彩色标签群。
-/// 外框采用实线细边（无虚线）与柔和浮层阴影，与上方输入框宽度完美吻合。
+/// 双行紧凑卡片：首行纯文本标题（超长悬停展开 RowTitleBubble）、多行备注指示器、右上角关闭按钮；
+/// 次行时间文本与真实彩色标签群；内边距 8/4pt、高度 46pt、圆角 DaybookRadius.small 与正式手记行 100% 像素级对齐。
 struct LiveDiaryComposerPreview: View {
     var text: String
     var allTags: [TagItem] = []
@@ -14,6 +14,9 @@ struct LiveDiaryComposerPreview: View {
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var isTitleTextHovered = false
+    @State private var isTitleBubbleHovered = false
+    @State private var titleHoverTask: Task<Void, Never>? = nil
     @State private var isNoteHovered = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
@@ -58,6 +61,10 @@ struct LiveDiaryComposerPreview: View {
         return title.isEmpty ? "" : parsed.body.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private var shouldShowTitleBubble: Bool {
+        !isSensitive && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(displayTitle)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             headerRow
@@ -66,14 +73,14 @@ struct LiveDiaryComposerPreview: View {
             footerRow
                 .zIndex(1)
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(height: 48)
+        .frame(height: 46)
         .background(
             Group {
                 if !showsSuggestions {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                         .fill(DaybookTheme.paper)
                         .shadow(color: DaybookTheme.ink.opacity(0.10), radius: 6, x: 0, y: 3)
                 }
@@ -82,16 +89,24 @@ struct LiveDiaryComposerPreview: View {
         .overlay(
             Group {
                 if !showsSuggestions {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                         .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
                 }
+            }
+        )
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { updateBubblePlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
             }
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("diary.preview.card")
     }
 
-    // MARK: - 第 1 行：标题与正文指示器 + 关闭按钮
+    // MARK: - 第 1 行：纯文本标题（超长 hover 展开完整气泡）+ 备注指示器 + 关闭按钮
 
     private var headerRow: some View {
         HStack(alignment: .center, spacing: 4) {
@@ -101,9 +116,37 @@ struct LiveDiaryComposerPreview: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
+                .layoutPriority(1)
+                .contentShape(Rectangle())
+                .onHover { hovering in
+                    handleTitleHover(hovering)
+                }
+                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                    if shouldShowTitleBubble {
+                        RowTitleBubble(
+                            title: displayTitle,
+                            growsUpward: growsUpward,
+                            onCopy: { _ = PrivateClipboard.copy(displayTitle, sensitive: isSensitive) },
+                            onHover: { hovering in
+                                isTitleBubbleHovered = hovering
+                                if !hovering && !isTitleTextHovered {
+                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                        isTitleTextHovered = false
+                                    }
+                                }
+                            }
+                        )
+                        .offset(y: growsUpward ? -6 : 22)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                            removal: .opacity
+                        ))
+                    }
+                }
 
             if !noteText.isEmpty {
                 noteIndicator(fullText: noteText)
+                    .fixedSize()
             }
 
             Spacer(minLength: 0)
@@ -113,6 +156,29 @@ struct LiveDiaryComposerPreview: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func handleTitleHover(_ hovering: Bool) {
+        titleHoverTask?.cancel()
+        if hovering {
+            titleHoverTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(250))
+                guard !Task.isCancelled else { return }
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isTitleTextHovered = true
+                }
+            }
+        } else {
+            titleHoverTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(100))
+                guard !Task.isCancelled else { return }
+                if !isTitleBubbleHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = false
+                    }
+                }
+            }
+        }
     }
 
     private func closeButton(_ action: @escaping () -> Void) -> some View {
@@ -189,14 +255,6 @@ struct LiveDiaryComposerPreview: View {
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
                     .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
             )
-            .background(
-                GeometryReader { proxy in
-                    Color.clear
-                        .onAppear { updateBubblePlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
-                }
-            )
             .contentShape(Rectangle())
             .onHover { isNoteHovered = $0 }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
@@ -218,21 +276,9 @@ struct LiveDiaryComposerPreview: View {
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
         let frame = proxy.frame(in: .global)
-        let globalY = frame.minY
-        let globalX = frame.minX
-
-        growsUpward = globalY > 260
-
-        let safeMaxX: CGFloat = 356
-        let safeMinX: CGFloat = 12
-        let bubbleRight = globalX + 202
-        if bubbleRight > safeMaxX {
-            let overflow = bubbleRight - safeMaxX
-            let maxShift = max(0, (globalX - 8) - safeMinX)
-            bubbleShiftX = -min(overflow, maxShift)
-        } else {
-            bubbleShiftX = 0
-        }
+        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), isWorkspace: false)
+        growsUpward = placement.growsUpward
+        bubbleShiftX = placement.bubbleShiftX
     }
 
     private func noteFloatingBubble(fullText: String, arrowPadding: CGFloat) -> some View {

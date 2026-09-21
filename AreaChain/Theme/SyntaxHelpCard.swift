@@ -85,7 +85,7 @@ struct SyntaxExpandableCard: View {
                     .contentShape(Circle())
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("dialog.cancel")
+            .accessibilityLabel(Text("common.close"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)

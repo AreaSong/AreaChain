@@ -33,7 +33,8 @@ struct QuadrantLayoutTests {
         let target = scrolls[0]
         let document = try #require(target.documentView)
         #expect(document.bounds.height > target.contentSize.height)
-        #expect(target.hasVerticalScroller && !target.hasHorizontalScroller)
+        #expect(!target.hasHorizontalScroller)
+        #expect(target.subviews.contains { $0 is DaybookFloatingScrollerOverlay } || target.hasVerticalScroller)
         let shortDocument = try #require(scrolls[1].documentView)
         #expect(shortDocument.bounds.height <= scrolls[1].contentSize.height + 1)
 

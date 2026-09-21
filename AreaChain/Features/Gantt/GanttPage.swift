@@ -23,7 +23,7 @@ struct GanttPage: View {
     }
 
     var body: some View {
-        DaybookPage(minWidth: 640, minHeight: 420) {
+        DaybookPage(minWidth: 640, minHeight: 420, fullWidth: true) {
             DaybookPeriodBar(
                 title: DayKey.monthTitle(monthKey, calendar: calendar, locale: locale),
                 onPrev: { monthKey = DayKey.shiftedMonth(monthKey, by: -1, calendar: calendar) },

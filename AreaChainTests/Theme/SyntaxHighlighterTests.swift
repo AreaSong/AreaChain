@@ -22,7 +22,7 @@ struct SyntaxHighlighterTests {
         let tagRange = nsText.range(of: "#工作")
         let tagColor = attr.attribute(.foregroundColor, at: tagRange.location, effectiveRange: nil) as? NSColor
         #expect(tagColor != nil)
-        #expect(tagColor == NSColor.systemTeal)
+        #expect(tagColor == DaybookTheme.Syntax.tagNS)
 
         // 验证 !p1 范围的颜色
         let priorityRange = nsText.range(of: "!p1")
@@ -49,7 +49,7 @@ struct SyntaxHighlighterTests {
     }
 
     @Test func syntaxColorPaletteMatches() {
-        #expect(DaybookTheme.Syntax.tagNS == NSColor.systemTeal)
+        #expect(DaybookTheme.Syntax.tagNS == NSColor.daybook(name: "daybook.syntax.tag", swatch: DaybookSwatch.tagLight, dark: DaybookSwatch.tagDark))
         #expect(DaybookTheme.Syntax.timeNS == NSColor(DaybookTheme.stamp))
         #expect(DaybookTheme.Syntax.p1NS == NSColor.systemRed)
         #expect(DaybookTheme.Syntax.p2NS == NSColor.systemOrange)

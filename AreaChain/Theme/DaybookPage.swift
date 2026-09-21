@@ -16,6 +16,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
     var subtitleText: String?
     var minWidth: CGFloat
     var minHeight: CGFloat
+    var fullWidth: Bool
     var trailing: Trailing
     var content: Content
 
@@ -28,6 +29,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
         subtitleText: String? = nil,
         minWidth: CGFloat = 480,
         minHeight: CGFloat = 480,
+        fullWidth: Bool = false,
         @ViewBuilder trailing: () -> Trailing,
         @ViewBuilder content: () -> Content
     ) {
@@ -39,6 +41,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
         self.subtitleText = subtitleText
         self.minWidth = minWidth
         self.minHeight = minHeight
+        self.fullWidth = fullWidth
         self.trailing = trailing()
         self.content = content()
     }
@@ -61,7 +64,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
             content
         }
         .frame(
-            maxWidth: style.isWorkspace ? WorkspaceStyle.maxContentWidth : .infinity,
+            maxWidth: (style.isWorkspace && !fullWidth) ? WorkspaceStyle.maxContentWidth : .infinity,
             maxHeight: .infinity,
             alignment: .topLeading
         )
@@ -130,6 +133,7 @@ extension DaybookPage where Trailing == EmptyView {
         subtitleText: String? = nil,
         minWidth: CGFloat = 480,
         minHeight: CGFloat = 480,
+        fullWidth: Bool = false,
         @ViewBuilder content: () -> Content
     ) {
         self.init(
@@ -141,6 +145,7 @@ extension DaybookPage where Trailing == EmptyView {
             subtitleText: subtitleText,
             minWidth: minWidth,
             minHeight: minHeight,
+            fullWidth: fullWidth,
             trailing: { EmptyView() },
             content: content
         )
