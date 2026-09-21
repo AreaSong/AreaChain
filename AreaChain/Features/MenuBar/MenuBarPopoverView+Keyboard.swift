@@ -18,6 +18,13 @@ extension MenuBarPopoverView {
 
     func handleTabKeyDown(_ event: NSEvent) -> NSEvent? {
         guard event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
+
+        // keyCode 53: Escape 键收起筛选抽屉
+        if event.keyCode == 53 && isFilterDrawerPresented {
+            dismissFilterDrawer()
+            return nil
+        }
+
         // macOS 方向键会自动附加 .numericPad 与 .function 标记，仅提取核心修饰键进行 Command 判定
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
         guard modifiers == .command else { return event }

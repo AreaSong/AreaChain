@@ -21,11 +21,11 @@ struct WorkspaceHeaderBar: View {
             inspectorToggleButton
         }
         .padding(.horizontal, DaybookSpacing.page)
-        .frame(height: 48)
+        .frame(height: WorkspaceStyle.headerHeight)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()
-                .background(DaybookTheme.rule.opacity(0.55))
+                .background(DaybookTheme.rule.opacity(0.65))
         }
         .accessibilityIdentifier("workspace.header.bar")
     }

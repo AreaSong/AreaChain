@@ -55,19 +55,19 @@ enum WorkspaceStyle {
     static let hover = Color.daybook(name: "workspace.hover", swatch: WorkspaceSwatch.hoverLight, dark: WorkspaceSwatch.hoverDark)
     static let selection = Color.daybook(name: "workspace.selection", swatch: WorkspaceSwatch.selectionLight, dark: WorkspaceSwatch.selectionDark)
 
-    static let headerHeight: CGFloat = 48
+    static let headerHeight: CGFloat = 50
     static let controlHeight: CGFloat = 28
     static let composerHeight: CGFloat = 38
     static let rowHeight: CGFloat = 38
     static let cardRadius: CGFloat = 8
-    static let maxContentWidth: CGFloat = 820
+    static let maxContentWidth: CGFloat = 880
     static let sectionFont = Font.system(size: DaybookType.subtitleSize, weight: .semibold)
     static let countFont = DaybookType.caption.monospacedDigit()
     static let progressFont = DaybookType.badge.weight(.semibold).monospacedDigit()
     static let sidebarRowHeight: CGFloat = 28
     static let sidebarRowVerticalPadding: CGFloat = 4.5
     static let sidebarRowHorizontalPadding: CGFloat = 8
-    static let sidebarTopInset: CGFloat = 10
+    static let sidebarTopInset: CGFloat = 28
 }
 
 struct DaybookPageHeader<Title: View, Subtitle: View, Trailing: View>: View {

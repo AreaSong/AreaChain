@@ -70,48 +70,62 @@ struct TrashPage: View {
 
     private var list: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 10) {
+            LazyVStack(alignment: .leading, spacing: 6) {
                 ForEach(items) { item in
                     trashCard(item)
                 }
             }
+            .padding(.vertical, 2)
         }
         .daybookScroll()
     }
 
     private func trashCard(_ item: TrashRow) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        HStack(spacing: 12) {
+            HStack(spacing: 8) {
                 if item.isResident {
                     Image(systemName: "repeat")
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 Text(item.kindLabel)
-                    .font(DaybookType.badge.weight(.semibold))
+                    .font(DaybookType.badge.weight(.medium))
                     .foregroundStyle(DaybookTheme.muted)
-                Spacer()
-                Text(ClockLabel.created(item.deletedAt, locale: locale))
-                    .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 2)
+                    .background(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .fill(DaybookTheme.hoverFill)
+                    )
+
                 Text(item.displayTitle)
-                .font(DaybookType.body)
-                .foregroundStyle(DaybookTheme.ink)
-                .fixedSize(horizontal: false, vertical: true)
-            HStack(spacing: 12) {
-                Button("trash.restore") { restore(item) }
-                    .buttonStyle(DaybookQuietButtonStyle(prominent: true))
-                    .disabled(!item.canRestore)
-                    .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
-                Button("trash.purge", role: .destructive) {
-                    pendingPurge = PendingTrash(title: "", titleProvider: { item.displayTitle }) { purge(item) }
-                }
-                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+                    .font(DaybookType.body)
+                    .foregroundStyle(DaybookTheme.ink)
+                    .lineLimit(2)
             }
-            .font(DaybookType.caption)
+
+            Spacer(minLength: 16)
+
+            HStack(spacing: 12) {
+                Text(ClockLabel.created(item.deletedAt, locale: locale))
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookTheme.muted)
+
+                HStack(spacing: 6) {
+                    Button("trash.restore") { restore(item) }
+                        .buttonStyle(DaybookQuietButtonStyle(prominent: true))
+                        .disabled(!item.canRestore)
+                        .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
+
+                    Button("trash.purge", role: .destructive) {
+                        pendingPurge = PendingTrash(title: "", titleProvider: { item.displayTitle }) { purge(item) }
+                    }
+                    .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+                }
+                .font(DaybookType.caption)
+            }
         }
-        .padding(.vertical, 4)
+        .daybookCardStyle(padding: EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12))
     }
 
     private func restore(_ item: TrashRow) {

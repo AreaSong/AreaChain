@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 菜单栏底栏：左侧筛选气泡入口、中间常驻搜索框、右侧工作台与更多入口，结构稳定无抖动。
+/// 菜单栏底栏：左侧筛选抽屉入口、中间常驻搜索框、右侧工作台与更多入口，结构稳定无抖动。
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
@@ -14,10 +14,14 @@ struct FooterBar: View {
     var tags: [TagItem] = []
     var tagCounts: [UUID: Int] = [:]
     var onShowSyntaxHelp: () -> Void = {}
+    var isFilterDrawerPresented: Binding<Bool> = .constant(false)
+    var onTriggerHover: ((Bool) -> Void)? = nil
+    var onTriggerClick: (() -> Void)? = nil
 
     @Environment(\.locale) private var locale
-    @State private var isFilterPopoverPresented = false
     @FocusState private var triggerFocused: Bool
+    @FocusState private var workspaceFocused: Bool
+    @FocusState private var moreFocused: Bool
 
     private var activeTags: [TagItem] {
         tab == .tasks ? Catalog.liveTaskTags(tags) : Catalog.liveTags(tags)
@@ -53,15 +57,15 @@ struct FooterBar: View {
             .accessibilityIdentifier("menubar.toolbar.tools")
 
             // 3. 右侧稳定动作区
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 workspaceButton
                 moreMenu
             }
-            .frame(width: 54, alignment: .trailing)
+            .frame(width: 56, alignment: .trailing)
         }
         .frame(height: 30)
-        .onChange(of: tab) { _, _ in isFilterPopoverPresented = false }
-        .onChange(of: isFilterPopoverPresented) { _, presented in
+        .onChange(of: tab) { _, _ in isFilterDrawerPresented.wrappedValue = false }
+        .onChange(of: isFilterDrawerPresented.wrappedValue) { _, presented in
             if presented {
                 toolbar.showFilters()
             } else {
@@ -69,8 +73,8 @@ struct FooterBar: View {
             }
         }
         .onChange(of: toolbar.isFiltering) { _, filtering in
-            if filtering != isFilterPopoverPresented {
-                isFilterPopoverPresented = filtering
+            if filtering != isFilterDrawerPresented.wrappedValue {
+                isFilterDrawerPresented.wrappedValue = filtering
             }
         }
     }
@@ -86,24 +90,11 @@ struct FooterBar: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
-        .popover(isPresented: $isFilterPopoverPresented, arrowEdge: .top) {
-            MenuBarFilterPopover(
-                tab: tab,
-                filter: filter,
-                diaryFilterTagID: diaryFilterTagID,
-                projects: projects,
-                projectCounts: projectCounts,
-                unclassifiedCount: unclassifiedCount,
-                tags: activeTags,
-                tagCounts: tagCounts,
-                onDismiss: { isFilterPopoverPresented = false }
-            )
-        }
     }
 
     private var inactiveFilterButton: some View {
         Button {
-            isFilterPopoverPresented.toggle()
+            onTriggerClick?() ?? isFilterDrawerPresented.wrappedValue.toggle()
         } label: {
             HStack(spacing: 4) {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -113,12 +104,23 @@ struct FooterBar: View {
             .font(DaybookType.caption)
             .padding(.horizontal, 5)
             .frame(height: 28)
+            .background(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .fill(isFilterDrawerPresented.wrappedValue ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(isFilterDrawerPresented.wrappedValue ? DaybookTheme.stamp.opacity(0.5) : Color.clear, lineWidth: 0.6)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .keyboardShortcut("f", modifiers: [.command, .shift])
         .focused($triggerFocused)
-        .foregroundStyle(DaybookTheme.muted)
+        .foregroundStyle(isFilterDrawerPresented.wrappedValue ? DaybookTheme.stamp : DaybookTheme.muted)
+        .onHover { hovering in
+            onTriggerHover?(hovering)
+        }
         .accessibilityLabel("filter.label")
         .accessibilityIdentifier("menubar.filter.open")
         .help(L10n.string("filter.open.help", locale: locale))
@@ -127,7 +129,7 @@ struct FooterBar: View {
     private var activeFilterCapsule: some View {
         HStack(spacing: 2) {
             Button {
-                isFilterPopoverPresented.toggle()
+                onTriggerClick?() ?? isFilterDrawerPresented.wrappedValue.toggle()
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "line.3.horizontal.decrease")
@@ -160,6 +162,9 @@ struct FooterBar: View {
         .foregroundStyle(DaybookTheme.stamp)
         .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
         .overlay(Capsule().strokeBorder(DaybookTheme.stamp.opacity(0.40), lineWidth: 0.8))
+        .onHover { hovering in
+            onTriggerHover?(hovering)
+        }
         .accessibilityLabel("filter.label")
         .accessibilityIdentifier("menubar.filter.open")
         .accessibilityValue(activeDescription)
@@ -195,50 +200,101 @@ struct FooterBar: View {
     }
 
     // MARK: - 右侧稳定动作区
-
+ 
     private var workspaceButton: some View {
         Button {
             AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
         } label: {
-            Image(systemName: "macwindow")
-                .font(DaybookType.caption)
-                .frame(width: 24, height: 28)
-                .contentShape(Rectangle())
+            Image(systemName: "arrow.up.forward.app")
+                .font(.system(size: 11.5, weight: .medium))
+                .modifier(FooterActionItemModifier(isFocused: workspaceFocused))
         }
         .buttonStyle(.plain)
-        .foregroundStyle(DaybookTheme.muted)
-        .help("window.workspace")
-        .accessibilityLabel("window.workspace")
+        .focused($workspaceFocused)
+        .keyboardShortcut("0", modifiers: .command)
+        .help(L10n.string("window.workspace", locale: locale))
+        .accessibilityLabel(L10n.string("window.workspace", locale: locale))
         .accessibilityIdentifier("menubar.workspace.open")
     }
 
     private var moreMenu: some View {
         Menu {
+            // 第一段：主工作台直接入口
+            Button {
+                AppWindows.openWorkspace(tab: tab == .diary ? .diary : .today)
+            } label: {
+                Label("window.workspace", systemImage: "arrow.up.forward.app")
+            }
+            .keyboardShortcut("0", modifiers: .command)
+
+            Divider()
+
+            // 第二段：辅助指南、偏好设置与系统回收站
             Button(action: onShowSyntaxHelp) {
                 Label("footer.syntax.guide", systemImage: "questionmark.circle")
             }
+            .keyboardShortcut("/", modifiers: .command)
+
             Button {
                 AppWindows.openWorkspace(tab: .settings)
             } label: {
-                Label("footer.preferences", systemImage: "gearshape")
+                Label("window.settings", systemImage: "gearshape")
             }
-            Divider()
+            .keyboardShortcut(",", modifiers: .command)
+
             Button {
+                AppWindows.openWorkspace(tab: .trash)
+            } label: {
+                Label("window.trash", systemImage: "trash")
+            }
+
+            Divider()
+
+            // 第三段：退出应用
+            Button(role: .destructive) {
                 NSApp.terminate(nil)
             } label: {
                 Label("footer.quit", systemImage: "power")
             }
+            .keyboardShortcut("q", modifiers: .command)
         } label: {
             Image(systemName: "ellipsis")
-                .font(DaybookType.caption)
-                .frame(width: 24, height: 28)
-                .contentShape(Rectangle())
+                .font(.system(size: 12, weight: .semibold))
+                .modifier(FooterActionItemModifier(isFocused: moreFocused))
         }
         .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
         .fixedSize()
-        .foregroundStyle(DaybookTheme.muted)
-        .help("footer.more")
-        .accessibilityLabel("footer.more")
+        .focused($moreFocused)
+        .help(L10n.string("footer.more", locale: locale))
+        .accessibilityLabel(L10n.string("footer.more", locale: locale))
         .accessibilityIdentifier("menubar.more")
+    }
+}
+
+// MARK: - 底栏动作按钮微交互修饰符
+
+private struct FooterActionItemModifier: ViewModifier {
+    @State private var isHovered = false
+    var isFocused: Bool = false
+
+    func body(content: Content) -> some View {
+        content
+            .frame(width: 26, height: 26)
+            .foregroundStyle(isHovered || isFocused ? DaybookTheme.ink : DaybookTheme.muted)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .fill(isHovered ? DaybookTheme.hoverFill : Color.clear)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .strokeBorder(DaybookTheme.focusRing, lineWidth: isFocused ? 1.5 : 0)
+            )
+            .contentShape(Rectangle())
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.12)) {
+                    isHovered = hovering
+                }
+            }
     }
 }

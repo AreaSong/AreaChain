@@ -39,6 +39,7 @@ struct MainSplitWorkspaceView: View {
         }
         .syntaxOverlayHost()
         .environment(\.daybookViewStyle, .workspace)
+        .ignoresSafeArea(.container, edges: .top)
     }
 
     private var sidebarColumn: some View {

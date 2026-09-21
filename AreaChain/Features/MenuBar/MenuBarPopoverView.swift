@@ -25,8 +25,8 @@ struct MenuBarPopoverView: View {
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
+    @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
+    @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
 
     @State var tab: BoardTab = .tasks
     @Bindable private var capture = CaptureSession.shared
@@ -38,8 +38,11 @@ struct MenuBarPopoverView: View {
     @State var toolbar: MenuBarToolbarState
     @State var hostWindow: NSWindow?
     @State var tabKeyMonitor: Any? = nil
-    @State private var boardFilter = BoardFilter()
-    @State private var diaryFilterTagID: UUID? = nil
+    @State var boardFilter = BoardFilter()
+    @State var diaryFilterTagID: UUID? = nil
+    @State var isFilterDrawerPresented = false
+    @State var hoverOpenWorkItem: DispatchWorkItem? = nil
+    @State var hoverCloseWorkItem: DispatchWorkItem? = nil
     @Bindable private var diaryCapture: DiaryCaptureSession
 
     init(toolbar: MenuBarToolbarState? = nil, diaryCapture: DiaryCaptureSession? = nil) {
@@ -56,7 +59,7 @@ struct MenuBarPopoverView: View {
         DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
     }
 
-    private var currentTabTagCounts: [UUID: Int] {
+    var currentTabTagCounts: [UUID: Int] {
         var counts: [UUID: Int] = [:]
         switch tab {
         case .tasks:
@@ -83,7 +86,7 @@ struct MenuBarPopoverView: View {
         return counts
     }
 
-    private var taskProjectCounts: [UUID: Int] {
+    var taskProjectCounts: [UUID: Int] {
         var counts: [UUID: Int] = [:]
         let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }
         for todo in activeTodos {
@@ -105,7 +108,7 @@ struct MenuBarPopoverView: View {
         return counts
     }
 
-    private var unclassifiedTodosCount: Int {
+    var unclassifiedTodosCount: Int {
         todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
     }
 
@@ -161,7 +164,10 @@ struct MenuBarPopoverView: View {
                     unclassifiedCount: unclassifiedTodosCount,
                     tags: Array(tags),
                     tagCounts: currentTabTagCounts,
-                    onShowSyntaxHelp: showSyntaxHelp
+                    onShowSyntaxHelp: showSyntaxHelp,
+                    isFilterDrawerPresented: $isFilterDrawerPresented,
+                    onTriggerHover: handleFilterTriggerHover,
+                    onTriggerClick: toggleFilterDrawer
                 )
                 .zIndex(10)
             }
@@ -206,6 +212,10 @@ struct MenuBarPopoverView: View {
                     removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
                 ))
                 .zIndex(21)
+            }
+
+            if isFilterDrawerPresented {
+                filterDrawerOverlay
             }
         }
         .syntaxOverlayHost(enabled: !showingSyntaxHelp)
