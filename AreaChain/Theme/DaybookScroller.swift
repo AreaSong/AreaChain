@@ -78,7 +78,7 @@ final class DaybookFloatingScrollerOverlay: NSView {
     }
 
     static func calculateFrame(for scrollView: NSScrollView) -> NSRect {
-        let width: CGFloat = 12
+        let width: CGFloat = 14
         let bounds = scrollView.bounds
         return NSRect(x: max(0, bounds.width - width), y: 0, width: width, height: bounds.height)
     }
@@ -106,6 +106,29 @@ final class DaybookFloatingScrollerOverlay: NSView {
             queue: .main
         ) { [weak self] _ in
             self?.handleScroll()
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
+            self?.flash()
+        }
+    }
+
+    func flash() {
+        updateKnobGeometry()
+        guard currentKnobRect.width > 0, currentKnobRect.height > 0 else { return }
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.2
+            self.animator().alphaValue = 1.0
+        }
+        fadeTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: false) { [weak self] _ in
+            guard let self, !self.isHovered, !self.isDragging else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.35
+                self.animator().alphaValue = 0.0
+            }
+            self.fadeTimer = nil
         }
     }
 
@@ -160,7 +183,7 @@ final class DaybookFloatingScrollerOverlay: NSView {
         let knobY = topPadding + progress * trackLength
 
         let active = isHovered || isDragging
-        let knobWidth: CGFloat = active ? 5.5 : 3.5
+        let knobWidth: CGFloat = active ? 6.0 : 4.0
         let rightMargin: CGFloat = 2.5
         let knobX = bounds.width - knobWidth - rightMargin
 
@@ -172,8 +195,8 @@ final class DaybookFloatingScrollerOverlay: NSView {
         guard currentKnobRect.width > 0, currentKnobRect.height > 0 else { return }
         let active = isHovered || isDragging
         let isDark = effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
-        let baseAlpha: CGFloat = active ? 0.55 : 0.32
-        let pillColor = isDark ? NSColor(white: 1.0, alpha: baseAlpha) : NSColor(white: 0.0, alpha: baseAlpha)
+        let baseAlpha: CGFloat = active ? 0.65 : 0.42
+        let pillColor = isDark ? NSColor(white: 1.0, alpha: baseAlpha) : NSColor(white: 0.12, alpha: baseAlpha)
 
         pillColor.setFill()
         let path = NSBezierPath(
@@ -376,20 +399,17 @@ final class DaybookScrollerHostNSView: NSView {
         if let direct = enclosingScrollView {
             return direct
         }
-        if let siblings = superview?.subviews {
-            for sibling in siblings where sibling !== self {
-                if let sv = sibling as? NSScrollView {
-                    return sv
-                }
-                if let child = findFirstScrollView(in: sibling) {
-                    return child
-                }
-            }
-        }
-        var current = superview
+        var current: NSView? = self
         while let node = current {
             if let target = node as? NSScrollView {
                 return target
+            }
+            if let parent = node.superview {
+                for sibling in parent.subviews where sibling !== node {
+                    if let found = findFirstScrollView(in: sibling) {
+                        return found
+                    }
+                }
             }
             current = node.superview
         }

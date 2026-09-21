@@ -39,10 +39,27 @@ struct PrivacySettingsSection: View {
             } else {
                 configuredControls
             }
-            if PrivacyStoreMaintenance.isPending(context) || attachments.contains(where: { $0.retiredStorageID != nil }) {
-                Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookTheme.destructive)
-                Button("privacy.cleanup.retry") { retryCleanup() }
-                Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
+            if attachments.contains(where: { $0.retiredStorageID != nil }) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookTheme.destructive)
+                    Button("privacy.cleanup.retry") { retryCleanup() }
+                }
+            } else if PrivacyStoreMaintenance.isPending(context) {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "checkmark.shield")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(DaybookTheme.stamp)
+                        Text("privacy.cleanup.database")
+                            .font(DaybookType.caption)
+                            .foregroundStyle(DaybookTheme.muted)
+                    }
+                    HStack(spacing: 8) {
+                        Button("privacy.cleanup.now") { retryCleanup() }
+                            .buttonStyle(.bordered)
+                        Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
+                    }
+                }
             }
             if let statusKey {
                 Text(LocalizedStringKey(statusKey)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
@@ -73,6 +90,11 @@ struct PrivacySettingsSection: View {
             }
             // macOS 的独立 sheet 宿主可能回落到系统语言，须显式沿用设置页的语言。
             .environment(\.locale, locale)
+        }
+        .task {
+            if PrivacyStoreMaintenance.isPending(context) && !attachments.contains(where: { $0.retiredStorageID != nil }) {
+                _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
+            }
         }
     }
 
@@ -171,6 +193,9 @@ struct PrivacySettingsSection: View {
         run {
             try await authenticate()
             try PrivacyAttachmentBatch.cleanup(attachments, context: context)
+            if PrivacyStoreMaintenance.isPending(context) {
+                _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
+            }
             vault.changed()
         }
     }

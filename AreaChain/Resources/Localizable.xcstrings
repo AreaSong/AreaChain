@@ -5065,6 +5065,40 @@
         }
       }
     },
+    "privacy.cleanup.database": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy protection is active. Database storage optimization is scheduled. You can optimize now or let it finish automatically on next launch."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "私密保护已生效。数据库已安排底层存储优化，点击可立即完成，亦可在下次启动时自动处理。"
+          }
+        }
+      }
+    },
+    "privacy.cleanup.now": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Optimize Now"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "立即完成优化"
+          }
+        }
+      }
+    },
     "privacy.cleanup.quit": {
       "extractionState": "manual",
       "localizations": {

@@ -21,9 +21,26 @@ enum PrivacyStoreMaintenance {
     }
 
     @MainActor static func request(_ context: ModelContext) {
-        guard storeURL(context) != nil else { return }
-        // 活跃的 SwiftData 连接可能继续写入 WAL；只在下次打开容器前执行重建。
+        guard let url = storeURL(context) else { return }
         PrivacyVault.shared.changed()
+        Task.detached(priority: .utility) {
+            try? await Task.sleep(for: .milliseconds(350))
+            if (try? finish(at: url)) != nil {
+                await MainActor.run { PrivacyVault.shared.changed() }
+            }
+        }
+    }
+
+    @discardableResult
+    @MainActor static func performOnlineCleanupIfPossible(for context: ModelContext) -> Bool {
+        guard let url = storeURL(context), isPending(context) else { return false }
+        do {
+            try finish(at: url)
+            PrivacyVault.shared.changed()
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// 只操作当前容器的已知库路径；不读取标记中的路径，也不清理用户的其他备份。
