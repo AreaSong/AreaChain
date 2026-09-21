@@ -15,12 +15,29 @@ extension TasksPage {
     var yesterdaySection: some View {
         Group {
             if showYesterday, !yesterdayItems.isEmpty {
-                yesterdaySectionHeader
-                    .padding(.horizontal, 2)
+                VStack(alignment: .leading, spacing: 6) {
+                    yesterdaySectionHeader
+                        .padding(.horizontal, 4)
+                        .padding(.top, 2)
 
-                ForEach(yesterdayItems) { item in
-                    leftoverRow(item)
+                    VStack(spacing: 2) {
+                        ForEach(yesterdayItems) { item in
+                            leftoverRow(item)
+                        }
+                    }
                 }
+                .padding(8)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                        .fill(DaybookTheme.cardSurface)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                        .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+                )
+                .padding(.horizontal, 1)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
@@ -53,7 +70,21 @@ extension TasksPage {
 
     private var yesterdaySectionHeader: some View {
         HStack(alignment: .center) {
-            SectionStamp(title: "stamp.yesterday", count: yesterdayItems.count)
+            HStack(spacing: 4) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 9.5, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.stamp)
+                Text("stamp.yesterday")
+                    .font(DaybookType.caption.weight(.semibold))
+                    .foregroundStyle(DaybookTheme.ink)
+                Text("\(yesterdayItems.count)")
+                    .font(DaybookType.badge.weight(.bold).monospacedDigit())
+                    .foregroundStyle(DaybookTheme.stamp)
+                    .padding(.horizontal, 4.5)
+                    .padding(.vertical, 0.5)
+                    .background(DaybookTheme.stamp.opacity(0.14))
+                    .clipShape(Capsule())
+            }
             Spacer()
             if yesterdayItems.contains(where: { $0.kind == .todo }) {
                 Button {
@@ -65,14 +96,18 @@ extension TasksPage {
                         Image(systemName: "arrow.right.to.line")
                             .font(.system(size: 8.5, weight: .semibold))
                         Text("stamp.yesterday.moveAll")
-                            .font(DaybookType.badge)
+                            .font(DaybookType.badge.weight(.medium))
                     }
                     .foregroundStyle(DaybookTheme.stamp)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
                     .background(
                         Capsule()
-                            .fill(DaybookTheme.stamp.opacity(0.10))
+                            .fill(DaybookTheme.stamp.opacity(0.12))
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(DaybookTheme.stamp.opacity(0.25), lineWidth: 0.6)
                     )
                 }
                 .buttonStyle(.plain)

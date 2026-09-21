@@ -192,7 +192,7 @@ struct TasksPage: View {
 
     var projectCounts: [UUID: Int] {
         var counts: [UUID: Int] = [:]
-        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && ($0.dayKey == todayKey || $0.dayKey == yesterdayKey) }
+        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }
         for todo in activeTodos {
             if let pid = todo.projectID {
                 counts[pid, default: 0] += 1
@@ -213,7 +213,7 @@ struct TasksPage: View {
     }
 
     var totalOpenTodosCount: Int {
-        todos.filter { $0.deletedAt == nil && !$0.isDone && ($0.dayKey == todayKey || $0.dayKey == yesterdayKey) }.count
+        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }.count
     }
 
     private var dayBoardView: some View {
