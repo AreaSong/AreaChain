@@ -234,6 +234,50 @@ struct ClassificationTests {
         #expect(filter.withDateScope(.all).isActive == false)
     }
 
+    @Test func filterMatchesPriorityScope() {
+        let p1Bits = ClassifyBits(isImportant: true, isUrgent: true)
+        let p2Bits = ClassifyBits(isImportant: true, isUrgent: false)
+        let p3Bits = ClassifyBits(isImportant: false, isUrgent: true)
+        let p4Bits = ClassifyBits(isImportant: false, isUrgent: false)
+
+        // 全部
+        let allFilter = BoardFilter().withPriorityScope(.all)
+        #expect(!allFilter.isActive)
+        #expect(Classification.matches(p1Bits, filter: allFilter))
+        #expect(Classification.matches(p4Bits, filter: allFilter))
+
+        // 全部高优 (P1-P3)
+        let highFilter = BoardFilter().withPriorityScope(.highPriorityOnly)
+        #expect(highFilter.isActive)
+        #expect(Classification.matches(p1Bits, filter: highFilter))
+        #expect(Classification.matches(p2Bits, filter: highFilter))
+        #expect(Classification.matches(p3Bits, filter: highFilter))
+        #expect(!Classification.matches(p4Bits, filter: highFilter))
+
+        // P1
+        let p1Filter = BoardFilter().withPriorityScope(.p1)
+        #expect(Classification.matches(p1Bits, filter: p1Filter))
+        #expect(!Classification.matches(p2Bits, filter: p1Filter))
+        #expect(!Classification.matches(p3Bits, filter: p1Filter))
+        #expect(!Classification.matches(p4Bits, filter: p1Filter))
+
+        // P2
+        let p2Filter = BoardFilter().withPriorityScope(.p2)
+        #expect(!Classification.matches(p1Bits, filter: p2Filter))
+        #expect(Classification.matches(p2Bits, filter: p2Filter))
+        #expect(!Classification.matches(p4Bits, filter: p2Filter))
+
+        // P3
+        let p3Filter = BoardFilter().withPriorityScope(.p3)
+        #expect(!Classification.matches(p1Bits, filter: p3Filter))
+        #expect(Classification.matches(p3Bits, filter: p3Filter))
+
+        // P4
+        let p4Filter = BoardFilter().withPriorityScope(.p4)
+        #expect(!Classification.matches(p1Bits, filter: p4Filter))
+        #expect(Classification.matches(p4Bits, filter: p4Filter))
+    }
+
     private var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

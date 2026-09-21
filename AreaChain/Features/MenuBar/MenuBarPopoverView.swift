@@ -43,6 +43,7 @@ struct MenuBarPopoverView: View {
     @State var isFilterDrawerPresented = false
     @State var hoverOpenWorkItem: DispatchWorkItem? = nil
     @State var hoverCloseWorkItem: DispatchWorkItem? = nil
+    @State var filterCategory: FilterCategory = .date
     @Bindable private var diaryCapture: DiaryCaptureSession
 
     init(toolbar: MenuBarToolbarState? = nil, diaryCapture: DiaryCaptureSession? = nil) {
@@ -166,8 +167,8 @@ struct MenuBarPopoverView: View {
                     tagCounts: currentTabTagCounts,
                     onShowSyntaxHelp: showSyntaxHelp,
                     isFilterDrawerPresented: $isFilterDrawerPresented,
-                    onTriggerHover: handleFilterTriggerHover,
-                    onTriggerClick: toggleFilterDrawer
+                    onTriggerClick: toggleFilterDrawer,
+                    activeCategory: $filterCategory
                 )
                 .zIndex(10)
             }

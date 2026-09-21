@@ -258,6 +258,40 @@ extension View {
     }
 }
 
+// MARK: - Modern Grouped Card
+
+/// macOS 26 / Settings 风格的圆角白色分组大卡片容器，内部包含行间细分割线与平滑高光
+struct DaybookGroupedCard<Content: View>: View {
+    @Environment(\.daybookViewStyle) private var style
+    var content: Content
+
+    init(@ViewBuilder content: () -> Content) {
+        self.content = content()
+    }
+
+    var body: some View {
+        if style.isWorkspace {
+            VStack(alignment: .leading, spacing: 0) {
+                content
+            }
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .fill(WorkspaceStyle.surface)
+            )
+            .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .strokeBorder(WorkspaceStyle.border.opacity(0.75), lineWidth: 0.8)
+            )
+            .shadow(color: DaybookShadow.cardSubtle.opacity(0.3), radius: 2, y: 1)
+        } else {
+            VStack(alignment: .leading, spacing: 4) {
+                content
+            }
+        }
+    }
+}
+
 // MARK: - Modern Row Modifier
 
 struct ModernRowModifier: ViewModifier {
@@ -270,17 +304,16 @@ struct ModernRowModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: style.isWorkspace ? DaybookRadius.small : cornerRadius, style: .continuous)
                     .fill(backgroundFill)
+                    .padding(.horizontal, style.isWorkspace ? 4 : 0)
+                    .padding(.vertical, style.isWorkspace ? 1.5 : 0)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0.6)
-            )
-            .shadow(
-                color: style.isWorkspace && isHovered ? DaybookShadow.cardHover.opacity(0.4) : .clear,
-                radius: 1.5,
-                y: 0.5
+                RoundedRectangle(cornerRadius: style.isWorkspace ? DaybookRadius.small : cornerRadius, style: .continuous)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : (isHovered && style.isWorkspace ? 0.5 : 0))
+                    .padding(.horizontal, style.isWorkspace ? 4 : 0)
+                    .padding(.vertical, style.isWorkspace ? 1.5 : 0)
             )
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
             .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
@@ -291,9 +324,9 @@ struct ModernRowModifier: ViewModifier {
             return style.selectionFill
         }
         if isHovered {
-            return style.isWorkspace ? WorkspaceStyle.surface : style.hoverFill
+            return style.isWorkspace ? WorkspaceStyle.hover : style.hoverFill
         }
-        return style.isWorkspace ? WorkspaceStyle.surface.opacity(0.72) : Color.clear
+        return Color.clear
     }
 
     private var borderStroke: Color {
@@ -301,9 +334,9 @@ struct ModernRowModifier: ViewModifier {
             return DaybookTheme.cardSelectionStroke
         }
         if isHovered {
-            return style.isWorkspace ? WorkspaceStyle.border.opacity(0.95) : DaybookTheme.rule.opacity(0.35)
+            return style.isWorkspace ? WorkspaceStyle.border.opacity(0.8) : DaybookTheme.rule.opacity(0.35)
         }
-        return style.isWorkspace ? WorkspaceStyle.border.opacity(0.60) : Color.clear
+        return Color.clear
     }
 }
 

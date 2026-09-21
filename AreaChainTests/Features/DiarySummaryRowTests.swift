@@ -253,6 +253,32 @@ struct DiarySummaryRowTests {
         #expect(selectCount == 4)
     }
 
+    @Test func diaryRowCommandStripRendersWithoutOverflow() async throws {
+        let strip = DiaryRowCommandStrip(
+            isSensitive: false,
+            isPinned: false,
+            allTags: [TagItem(name: "日记", sortOrder: 0)],
+            assignedTagIDs: [],
+            currentDayKey: "2026-09-21",
+            onOpen: {},
+            onConvertToTask: {},
+            onCopy: {},
+            onToggleTag: { _ in },
+            onMoveToDay: { _ in },
+            onPickCustomDate: {},
+            onTogglePin: {},
+            onAttach: {},
+            onTogglePrivate: {},
+            onInspect: {},
+            onDelete: {}
+        )
+
+        let window = host(strip, size: NSSize(width: 340, height: 24))
+        defer { close(window) }
+        try await settle(window)
+        #expect(window.contentView != nil)
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

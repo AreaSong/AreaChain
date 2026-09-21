@@ -48,12 +48,27 @@ struct CalendarPage: View {
 
     private var calendarSidebar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            DaybookPeriodBar(
-                title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
-                onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
-                onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
-                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
-            )
+            if !style.isWorkspace {
+                DaybookPeriodBar(
+                    title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
+                    onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
+                    onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
+                    onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+                )
+            } else {
+                HStack {
+                    Text(DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale))
+                        .font(DaybookType.section.weight(.semibold))
+                        .foregroundStyle(DaybookTheme.ink)
+                    Spacer()
+                    if selectedKey != todayKey {
+                        Button("calendar.today") { selectedKey = todayKey }
+                            .font(DaybookType.caption)
+                            .buttonStyle(DaybookQuietButtonStyle())
+                    }
+                }
+                .padding(.top, 2)
+            }
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,

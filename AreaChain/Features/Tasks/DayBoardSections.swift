@@ -6,15 +6,31 @@ extension DayBoardList {
         if !openTodosList.isEmpty {
             if !openRoutinesList.isEmpty {
                 SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+                    .padding(.leading, 2)
             }
-            ForEach(openTodosList) { todo in
-                todoRow(todo, isDone: false)
+            DaybookGroupedCard {
+                ForEach(Array(openTodosList.enumerated()), id: \.element.id) { index, todo in
+                    if index > 0 {
+                        Divider()
+                            .padding(.leading, 36)
+                            .opacity(0.35)
+                    }
+                    todoRow(todo, isDone: false)
+                }
             }
         }
         if !openRoutinesList.isEmpty {
             SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
-            ForEach(openRoutinesList) { routine in
-                residentRow(routine, isDone: false)
+                .padding(.leading, 2)
+            DaybookGroupedCard {
+                ForEach(Array(openRoutinesList.enumerated()), id: \.element.id) { index, routine in
+                    if index > 0 {
+                        Divider()
+                            .padding(.leading, 36)
+                            .opacity(0.35)
+                    }
+                    residentRow(routine, isDone: false)
+                }
             }
         }
         if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {
@@ -76,8 +92,15 @@ extension DayBoardList {
             .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
             if showCompleted {
-                ForEach(doneItemsList) { row in
-                    dayRow(row, isDone: true)
+                DaybookGroupedCard {
+                    ForEach(Array(doneItemsList.enumerated()), id: \.element.id) { index, row in
+                        if index > 0 {
+                            Divider()
+                                .padding(.leading, 36)
+                                .opacity(0.3)
+                        }
+                        dayRow(row, isDone: true)
+                    }
                 }
             }
         }

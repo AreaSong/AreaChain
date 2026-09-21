@@ -7,11 +7,21 @@ enum DateFilterScope: String, CaseIterable, Equatable, Sendable {
     case overdue
 }
 
+enum PriorityFilterScope: String, CaseIterable, Equatable, Sendable {
+    case all
+    case highPriorityOnly
+    case p1
+    case p2
+    case p3
+    case p4
+}
+
 struct BoardFilter: Equatable {
     var projectID: UUID? = nil
     var tagID: UUID? = nil
     var bundleID: String? = nil
     var isHighPriorityOnly: Bool = false
+    var priorityScope: PriorityFilterScope = .all
     var dateScope: DateFilterScope = .all
 
     static let noneID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
@@ -20,7 +30,7 @@ struct BoardFilter: Equatable {
     var isNoTag: Bool { tagID == Self.noneID }
 
     var isActive: Bool {
-        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly || dateScope != .all
+        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly || priorityScope != .all || dateScope != .all
     }
 
     func withProject(_ id: UUID?) -> BoardFilter {
@@ -44,6 +54,14 @@ struct BoardFilter: Equatable {
     func withHighPriority(_ flag: Bool) -> BoardFilter {
         var next = self
         next.isHighPriorityOnly = flag
+        next.priorityScope = flag ? .highPriorityOnly : .all
+        return next
+    }
+
+    func withPriorityScope(_ scope: PriorityFilterScope) -> BoardFilter {
+        var next = self
+        next.priorityScope = scope
+        next.isHighPriorityOnly = scope == .highPriorityOnly
         return next
     }
 
@@ -156,7 +174,24 @@ enum Classification {
     }
 
     static func matches(_ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil) -> Bool {
-        if filter.isHighPriorityOnly, !(bits.isImportant || bits.isUrgent) { return false }
+        if filter.priorityScope != .all {
+            switch filter.priorityScope {
+            case .all:
+                break
+            case .highPriorityOnly:
+                if !(bits.isImportant || bits.isUrgent) { return false }
+            case .p1:
+                if !(bits.isImportant && bits.isUrgent) { return false }
+            case .p2:
+                if !(bits.isImportant && !bits.isUrgent) { return false }
+            case .p3:
+                if !(!bits.isImportant && bits.isUrgent) { return false }
+            case .p4:
+                if !(!bits.isImportant && !bits.isUrgent) { return false }
+            }
+        } else if filter.isHighPriorityOnly, !(bits.isImportant || bits.isUrgent) {
+            return false
+        }
         if let projectID = filter.projectID {
             if projectID == BoardFilter.noneID {
                 guard bits.projectID == nil else { return false }

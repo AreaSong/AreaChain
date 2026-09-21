@@ -26,73 +26,30 @@ extension MenuBarPopoverView {
                 unclassifiedCount: unclassifiedTodosCount,
                 tags: tab == .tasks ? Catalog.liveTaskTags(Array(tags)) : Catalog.liveTags(Array(tags)),
                 tagCounts: currentTabTagCounts,
-                onDismiss: dismissFilterDrawer
+                onDismiss: dismissFilterDrawer,
+                externalCategory: $filterCategory
             )
             .padding(.horizontal, 10)
-            .padding(.bottom, 48)
+            .padding(.bottom, 42)
             .transition(
                 reduceMotion
                     ? .opacity
                     : .move(edge: .bottom).combined(with: .opacity)
             )
-            .onHover { hovering in
-                handleDrawerHover(hovering)
-            }
         }
         .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
         .zIndex(30)
     }
 
-    func handleFilterTriggerHover(_ hovering: Bool) {
-        hoverOpenWorkItem?.cancel()
-        if hovering {
-            hoverCloseWorkItem?.cancel()
-            guard !isFilterDrawerPresented else { return }
-            let work = DispatchWorkItem {
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isFilterDrawerPresented = true
-                }
-            }
-            hoverOpenWorkItem = work
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: work)
-        } else {
-            guard isFilterDrawerPresented else { return }
-            scheduleDrawerClose()
-        }
-    }
-
-    func handleDrawerHover(_ hovering: Bool) {
-        if hovering {
-            hoverCloseWorkItem?.cancel()
-        } else {
-            scheduleDrawerClose()
-        }
-    }
-
     func toggleFilterDrawer() {
-        hoverOpenWorkItem?.cancel()
-        hoverCloseWorkItem?.cancel()
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             isFilterDrawerPresented.toggle()
         }
     }
 
     func dismissFilterDrawer() {
-        hoverOpenWorkItem?.cancel()
-        hoverCloseWorkItem?.cancel()
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             isFilterDrawerPresented = false
         }
-    }
-
-    private func scheduleDrawerClose() {
-        hoverCloseWorkItem?.cancel()
-        let work = DispatchWorkItem {
-            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                isFilterDrawerPresented = false
-            }
-        }
-        hoverCloseWorkItem = work
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.30, execute: work)
     }
 }
