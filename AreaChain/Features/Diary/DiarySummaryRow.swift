@@ -86,8 +86,10 @@ struct DiarySummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             headerRow
+                .zIndex(10)
 
             footerRow
+                .zIndex(1)
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 4)

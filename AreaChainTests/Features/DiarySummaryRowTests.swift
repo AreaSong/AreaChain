@@ -139,6 +139,33 @@ struct DiarySummaryRowTests {
         #expect(todos.contains { $0.title == "随手记标题" && $0.notes == "详细内容备忘" })
     }
 
+    @Test func diarySummaryRowStackedListRendersMultipleEntries() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+
+        let entry1 = DiaryEntry(text: "11111111111111111111111111111111111111111111111", dayKey: "2026-09-21")
+        let entry2 = DiaryEntry(text: "还是想去比赛的\n备忘正文", dayKey: "2026-09-20")
+        context.insert(entry1)
+        context.insert(entry2)
+        try context.save()
+
+        let list = VStack(alignment: .leading, spacing: 4) {
+            DiarySummaryRow(entry: entry1, onDelete: {})
+            DiarySummaryRow(entry: entry2, onDelete: {})
+        }
+
+        let window = host(list, size: NSSize(width: 380, height: 160))
+        defer { close(window) }
+        try await settle(window)
+
+        #expect(RowTitleTruncation.isTruncated(entry1.text))
+        #expect(!RowTitleTruncation.isTruncated(entry2.text))
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

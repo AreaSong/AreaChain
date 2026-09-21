@@ -341,7 +341,7 @@ struct DiaryPage: View {
     private var entryListSection: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: showsPageHeader ? 10 : 4) {
+                VStack(alignment: .leading, spacing: showsPageHeader ? 10 : 4) {
                     if filteredEntries.isEmpty {
                         emptyState
                     } else {
