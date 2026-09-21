@@ -3926,6 +3926,40 @@
         }
       }
     },
+    "filter.project.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Project"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无项目"
+          }
+        }
+      }
+    },
+    "filter.tag.none": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No Tag"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无标签"
+          }
+        }
+      }
+    },
     "filtered.add.project": {
       "extractionState": "manual",
       "localizations": {

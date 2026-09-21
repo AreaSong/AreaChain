@@ -76,23 +76,29 @@ struct BoardFilterBarTests {
         let todoDone = TodoItem(title: "任务完成", isDone: true, dayKey: today, projectID: project1.id)
         // 插入项目2的1个未完成待办
         let todo3 = TodoItem(title: "任务3", dayKey: today, projectID: project2.id)
+        // 插入无项目、无标签的未完成待办
+        let todoUnclassified = TodoItem(title: "未分类任务", dayKey: today)
 
         context.insert(todo1)
         context.insert(todo2)
         context.insert(todoDone)
         context.insert(todo3)
+        context.insert(todoUnclassified)
         try context.save()
 
         let page = TasksPage(
             todayKey: today,
             routines: [],
             checks: [],
-            todos: [todo1, todo2, todoDone, todo3]
+            todos: [todo1, todo2, todoDone, todo3, todoUnclassified]
         )
 
         let counts = page.projectCounts
-        #expect(counts[project1.id] == 2)
+        // 验证只统计今日未完成任务：项目1的昨日未完成任务 todo2 不计入
+        #expect(counts[project1.id] == 1)
         #expect(counts[project2.id] == 1)
         #expect(page.totalOpenTodosCount == 3)
+        #expect(page.unclassifiedTodosCount == 1)
+        #expect(page.untaggedTodosCount == 3)
     }
 }

@@ -5,7 +5,9 @@ import SwiftUI
 struct LiveDiaryComposerPreview: View {
     var text: String
     var allTags: [TagItem] = []
+    var availableTags: [String] = []
     var isSensitiveExternal: Bool = false
+    var showsSuggestions: Bool = false
     var onClose: (() -> Void)? = nil
 
     @Environment(\.locale) private var locale
@@ -22,9 +24,12 @@ struct LiveDiaryComposerPreview: View {
     private var isSensitive: Bool {
         if isSensitiveExternal { return true }
         let names = Set(parsed.tagNames.map(TagSyntax.normalizedName))
-        return allTags.contains { tag in
-            tag.isPrivateDiary && names.contains(TagSyntax.normalizedName(tag.name))
+        if !allTags.isEmpty {
+            return allTags.contains { tag in
+                tag.isPrivateDiary && names.contains(TagSyntax.normalizedName(tag.name))
+            }
         }
+        return names.contains("密码") || names.contains("password")
     }
 
     private var todayTimeString: String {
@@ -37,26 +42,34 @@ struct LiveDiaryComposerPreview: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 3) {
             contentArea
             metadataLine
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 46)
+        .frame(height: 46)
         .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 4)
+            Group {
+                if !showsSuggestions {
+                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                        .fill(DaybookTheme.paper)
+                        .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
+                }
+            }
         )
         .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .strokeBorder(
-                    style: StrokeStyle(lineWidth: 0.9, dash: [3.5, 3]),
-                    antialiased: true
-                )
-                .foregroundStyle(DaybookTheme.stamp.opacity(0.48))
+            Group {
+                if !showsSuggestions {
+                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                        .strokeBorder(
+                            style: StrokeStyle(lineWidth: 0.9, dash: [3.5, 3]),
+                            antialiased: true
+                        )
+                        .foregroundStyle(DaybookTheme.stamp.opacity(0.48))
+                }
+            }
         )
         .accessibilityElement(children: .combine)
         .accessibilityLabel("diary.preview.card")
@@ -71,7 +84,6 @@ struct LiveDiaryComposerPreview: View {
         HStack(alignment: .center, spacing: 4) {
             Text(displayMainText.isEmpty ? " " : displayMainText)
                 .font(DaybookType.body)
-                .lineSpacing(2)
                 .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -81,6 +93,19 @@ struct LiveDiaryComposerPreview: View {
                 noteIndicator(fullText: noteText)
             }
             Spacer(minLength: 0)
+
+            if let onClose, !showsSuggestions {
+                Button(action: onClose) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.7))
+                        .frame(width: 16, height: 16)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .help("common.close")
+                .accessibilityLabel("common.close")
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

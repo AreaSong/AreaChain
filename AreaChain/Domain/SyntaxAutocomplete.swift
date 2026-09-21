@@ -11,6 +11,7 @@ enum SyntaxTriggerKind: String, CaseIterable, Equatable, Sendable {
 
 enum SyntaxInputContext: Equatable, Sendable {
     case capture
+    case diaryCapture
     case search
     case tags
     case taskTags

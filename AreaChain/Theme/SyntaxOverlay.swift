@@ -43,10 +43,22 @@ struct SyntaxOverlayAnchor {
     @MainActor var preferredSize: CGSize {
         if let attributes { return CGSize(width: 280, height: min(280, 80 + CGFloat(attributes.count) * 42)) }
         var h: CGFloat = 0
-        let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
+        let targetWidth: CGFloat = (state.context == .capture || state.context == .diaryCapture) ? (DaybookTheme.popoverWidth - 24) : 240
+
+        if state.context == .diaryCapture {
+            if state.showsPreview {
+                h += 46
+            }
+            if showsSuggestions {
+                if state.showsPreview { h += 1 }
+                h += min(180, CGFloat(state.candidates.count) * 29 + 8) + 25
+            }
+            return CGSize(width: targetWidth, height: max(46, h))
+        }
+
+        let parsed = NaturalLanguageParser.parseTaskCapture(state.inputText)
         let hasMultiTags = parsed.tagNames.count > 1
-        let targetWidth: CGFloat = state.context == .capture ? (DaybookTheme.popoverWidth - 24) : 240
         let canFitInline = LiveComposerPreviewHeader.canFit(
             title: parsed.cleanTitle,
             tags: parsed.tagNames,
@@ -134,7 +146,7 @@ private struct SyntaxOverlayLayer: View {
         let sourceAnchor = proxy[source.bounds]
         let isAttributes = source.attributes != nil
         let anchor = isAttributes ? sourceAnchor.insetBy(dx: 0, dy: -8) : sourceAnchor
-        let matchAnchorWidth = !isAttributes && source.state.context == .capture
+        let matchAnchorWidth = !isAttributes && (source.state.context == .capture || source.state.context == .diaryCapture)
         let placement = SyntaxOverlayPlacement.resolve(
             anchor: anchor,
             container: proxy.size,

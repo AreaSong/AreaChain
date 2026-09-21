@@ -11,6 +11,8 @@ struct BoardFilterBar: View {
     var bundleIDs: [String]
     var projectCounts: [UUID: Int] = [:]
     var tagCounts: [UUID: Int] = [:]
+    var unclassifiedCount: Int? = nil
+    var untaggedCount: Int? = nil
     var totalOpenCount: Int? = nil
     var onChange: (BoardFilter) -> Void
 
@@ -57,11 +59,19 @@ struct BoardFilterBar: View {
             id: "all",
             title: L10n.string("filter.all", locale: locale),
             icon: "folder",
-            count: totalOpenCount,
+            count: nil,
             isSelected: filter.projectID == nil,
             action: { onChange(filter.withProject(nil)) }
         )
-        let itemOptions = projects.map { project in
+        let noneOption = FilterDropdownOption(
+            id: BoardFilter.noneID.uuidString,
+            title: L10n.string("filter.project.none", locale: locale),
+            icon: "folder",
+            count: unclassifiedCount,
+            isSelected: filter.isNoProject,
+            action: { onChange(filter.withProject(BoardFilter.noneID)) }
+        )
+        let projectOptions = projects.map { project in
             FilterDropdownOption(
                 id: project.id.uuidString,
                 title: project.name,
@@ -78,7 +88,7 @@ struct BoardFilterBar: View {
             isExpanded: isExpanded,
             reset: { onChange(filter.withProject(nil)) },
             allOption: allOption,
-            items: itemOptions,
+            items: [noneOption] + projectOptions,
             style: style
         )
     }
@@ -94,11 +104,19 @@ struct BoardFilterBar: View {
             id: "all",
             title: L10n.string("filter.all", locale: locale),
             icon: "tag",
-            count: totalOpenCount,
+            count: nil,
             isSelected: filter.tagID == nil,
             action: { onChange(filter.withTag(nil)) }
         )
-        let itemOptions = tags.map { tag in
+        let noneOption = FilterDropdownOption(
+            id: BoardFilter.noneID.uuidString,
+            title: L10n.string("filter.tag.none", locale: locale),
+            icon: "tag",
+            count: untaggedCount,
+            isSelected: filter.isNoTag,
+            action: { onChange(filter.withTag(BoardFilter.noneID)) }
+        )
+        let tagOptions = tags.map { tag in
             FilterDropdownOption(
                 id: tag.id.uuidString,
                 title: tag.name,
@@ -115,7 +133,7 @@ struct BoardFilterBar: View {
             isExpanded: isExpanded,
             reset: { onChange(filter.withTag(nil)) },
             allOption: allOption,
-            items: itemOptions,
+            items: [noneOption] + tagOptions,
             style: style
         )
     }
@@ -158,6 +176,9 @@ struct BoardFilterBar: View {
     }
 
     private var projectTitle: String {
+        if filter.isNoProject {
+            return L10n.string("filter.project.none", locale: locale)
+        }
         if let id = filter.projectID, let name = projects.first(where: { $0.id == id })?.name {
             return name
         }
@@ -165,6 +186,9 @@ struct BoardFilterBar: View {
     }
 
     private var tagTitle: String {
+        if filter.isNoTag {
+            return L10n.string("filter.tag.none", locale: locale)
+        }
         if let id = filter.tagID, let name = tags.first(where: { $0.id == id })?.name {
             return "#" + name
         }

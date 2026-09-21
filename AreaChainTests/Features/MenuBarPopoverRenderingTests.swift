@@ -495,7 +495,7 @@ struct MenuBarPopoverRenderingTests {
     private func diaryField(in view: NSView) -> DaybookAppKitTextField? {
         if let field = view as? DaybookAppKitTextField,
            let coordinator = field.delegate as? DaybookTextField.Coordinator,
-           coordinator.parent.autocomplete == nil {
+           coordinator.parent.autocomplete == nil || coordinator.parent.autocomplete?.context == .diaryCapture {
             return field
         }
         return view.subviews.lazy.compactMap { diaryField(in: $0) }.first

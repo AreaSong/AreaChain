@@ -175,7 +175,8 @@ struct TasksPage: View {
                             tags: tagChoices,
                             bundleIDs: todayBundleIDs,
                             projectCounts: projectCounts,
-                            totalOpenCount: totalOpenTodosCount,
+                            unclassifiedCount: unclassifiedTodosCount,
+                            untaggedCount: untaggedTodosCount,
                             onChange: { next in
                                 if let external = config.externalFilter { external.wrappedValue = next }
                                 else { boardFilter = next }
@@ -210,6 +211,14 @@ struct TasksPage: View {
             }
         }
         return counts
+    }
+
+    var unclassifiedTodosCount: Int {
+        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
+    }
+
+    var untaggedTodosCount: Int {
+        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && TagIDList.parse($0.tagIDs).isEmpty }.count
     }
 
     var totalOpenTodosCount: Int {
@@ -285,7 +294,9 @@ struct TasksPage: View {
     }
 
     private func matchesFilter(_ bits: ClassifyBits) -> Bool {
-        let allowed = effectiveFilter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
+        let allowed = effectiveFilter.projectID.flatMap { id -> Set<UUID>? in
+            id == BoardFilter.noneID ? nil : ProjectTree.subtreeIDs(root: id, in: projects)
+        }
         return Classification.matches(bits, filter: effectiveFilter, projectIDs: allowed)
     }
 

@@ -178,4 +178,19 @@ struct SyntaxAutocompleteTests {
         let compoundHits = BoardSearch.hits(query: "总结 #工作 !p1", todos: todos, diaries: [], routines: [], tagMap: tagMap)
         #expect(compoundHits.map(\.id) == [t1.id])
     }
+
+    @Test func diaryCaptureContextOnlySupportsTags() {
+        let tagTrigger = SyntaxTrigger(kind: .tag, query: "灵感", range: NSRange(location: 0, length: 3))
+        let tagCandidates = SyntaxAutocompleteEngine.candidates(for: tagTrigger, availableTags: ["灵感手记"], context: .diaryCapture)
+        #expect(!tagCandidates.isEmpty)
+        #expect(tagCandidates.contains { $0.title == "#灵感手记" })
+
+        let priorityTrigger = SyntaxTrigger(kind: .priority, query: "", range: NSRange(location: 0, length: 1))
+        let priorityCandidates = SyntaxAutocompleteEngine.candidates(for: priorityTrigger, context: .diaryCapture)
+        #expect(priorityCandidates.isEmpty)
+
+        let timeTrigger = SyntaxTrigger(kind: .time, query: "", range: NSRange(location: 0, length: 1))
+        let timeCandidates = SyntaxAutocompleteEngine.candidates(for: timeTrigger, context: .diaryCapture)
+        #expect(timeCandidates.isEmpty)
+    }
 }

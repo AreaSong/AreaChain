@@ -20,7 +20,7 @@ final class SyntaxAutocompleteState {
     @ObservationIgnored var restoreEditing: (() -> Void)?
 
     var showsPreview: Bool {
-        guard allowsLivePreview, context == .capture, !isDismissedByUser else { return false }
+        guard allowsLivePreview, (context == .capture || context == .diaryCapture), !isDismissedByUser else { return false }
         return !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
@@ -156,17 +156,30 @@ struct SyntaxAutocompletePopup: View {
         if showsPreview || showsSuggestions {
             VStack(alignment: .leading, spacing: 0) {
                 if showsPreview {
-                    LiveComposerPreviewHeader(
-                        text: state.inputText,
-                        knownTags: state.availableTags,
-                        activeCandidate: showsSuggestions ? state.selectedCandidate() : nil,
-                        showsSuggestions: showsSuggestions,
-                        onClose: {
-                            withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
-                                state.dismissPreview()
+                    if state.context == .diaryCapture {
+                        LiveDiaryComposerPreview(
+                            text: state.inputText,
+                            availableTags: state.availableTags,
+                            showsSuggestions: showsSuggestions,
+                            onClose: {
+                                withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
+                                    state.dismissPreview()
+                                }
                             }
-                        }
-                    )
+                        )
+                    } else {
+                        LiveComposerPreviewHeader(
+                            text: state.inputText,
+                            knownTags: state.availableTags,
+                            activeCandidate: showsSuggestions ? state.selectedCandidate() : nil,
+                            showsSuggestions: showsSuggestions,
+                            onClose: {
+                                withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {
+                                    state.dismissPreview()
+                                }
+                            }
+                        )
+                    }
                 }
 
                 if showsPreview && showsSuggestions {

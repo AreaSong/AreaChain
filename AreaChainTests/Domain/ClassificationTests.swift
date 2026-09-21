@@ -76,6 +76,33 @@ struct ClassificationTests {
         #expect(!Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [child]))
     }
 
+    @Test func filterMatchesUnclassifiedAndUntagged() {
+        let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let tag = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
+        let classifiedBits = ClassifyBits(
+            projectID: project,
+            tagIDs: tag.uuidString,
+            sourceBundleID: ""
+        )
+        let unclassifiedBits = ClassifyBits(
+            projectID: nil,
+            tagIDs: "",
+            sourceBundleID: ""
+        )
+
+        let noneProjectFilter = BoardFilter().withProject(BoardFilter.noneID)
+        let noneTagFilter = BoardFilter().withTag(BoardFilter.noneID)
+
+        #expect(noneProjectFilter.isNoProject)
+        #expect(noneTagFilter.isNoTag)
+
+        #expect(!Classification.matches(classifiedBits, filter: noneProjectFilter))
+        #expect(Classification.matches(unclassifiedBits, filter: noneProjectFilter))
+
+        #expect(!Classification.matches(classifiedBits, filter: noneTagFilter))
+        #expect(Classification.matches(unclassifiedBits, filter: noneTagFilter))
+    }
+
     @Test func filterMatchesHighPriorityOnly() {
         let normal = ClassifyBits(isImportant: false, isUrgent: false)
         let important = ClassifyBits(isImportant: true, isUrgent: false)

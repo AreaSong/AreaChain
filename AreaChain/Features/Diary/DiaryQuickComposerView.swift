@@ -17,6 +17,7 @@ struct DiaryQuickComposerView: View {
     var onOpenWindow: (() -> Void)? = nil
     @State private var hostWindow: NSWindow?
     @State private var isPopoutHovered = false
+    @State private var autocomplete = SyntaxAutocompleteState(context: .diaryCapture, allowsLivePreview: true)
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -25,25 +26,9 @@ struct DiaryQuickComposerView: View {
     var body: some View {
         if isCompact {
             compactInputRow
-                .overlay(alignment: .topLeading) {
-                    GeometryReader { proxy in
-                        if canSubmit {
-                            LiveDiaryComposerPreview(
-                                text: text,
-                                allTags: orderedTags,
-                                isSensitiveExternal: isSensitive
-                            )
-                            .frame(width: proxy.size.width)
-                            .offset(y: proxy.size.height + 6)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.98, anchor: .top)),
-                                removal: .opacity
-                            ))
-                        }
-                    }
-                }
-                .zIndex(100)
-                .animation(DaybookMotion.interactive(reduceMotion), value: canSubmit)
+                .syntaxSuggestions(autocomplete)
+                .animation(DaybookMotion.interactive(reduceMotion), value: focused.wrappedValue)
+                .daybookHideInputChrome()
         } else {
             workspaceComposer
         }
@@ -84,6 +69,7 @@ struct DiaryQuickComposerView: View {
                 text: $text,
                 placeholder: L10n.string("diary.quick.placeholder", locale: locale),
                 focus: self.focused,
+                autocomplete: autocomplete,
                 availableTags: orderedTags.map(\.name),
                 highlightsSyntax: true,
                 onSubmit: submitCompact,
@@ -135,6 +121,17 @@ struct DiaryQuickComposerView: View {
         )
         .background(KeyWindowHost { hostWindow = $0 })
         .background(SyntaxViewAnchor("syntax.diary.composer"))
+        .onChange(of: text) { _, newText in
+            if newText.isEmpty {
+                autocomplete.dismiss()
+            }
+        }
+        .onChange(of: orderedTags) { _, tags in
+            autocomplete.availableTags = tags.map(\.name)
+        }
+        .onAppear {
+            autocomplete.availableTags = orderedTags.map(\.name)
+        }
     }
 
     private var statusIcon: some View {
@@ -169,6 +166,7 @@ struct DiaryQuickComposerView: View {
 
     private func submitCompact() {
         guard canSubmit, !hasMarkedText else { return }
+        autocomplete.dismiss()
         onSubmit()
     }
 
