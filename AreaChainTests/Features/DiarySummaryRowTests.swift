@@ -166,6 +166,31 @@ struct DiarySummaryRowTests {
         #expect(!RowTitleTruncation.isTruncated(entry2.text))
     }
 
+    @Test func diarySummaryRowActionClusterAndNoteIndicatorHostSmoothly() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+
+        let entry = DiaryEntry(text: "短手记标题\n这是手记的详细正文，支持点击独立复制", dayKey: "2026-09-21")
+        context.insert(entry)
+        try context.save()
+
+        var didSelect = false
+        let row = DiarySummaryRow(entry: entry, onSelect: { didSelect = true }, onDelete: {})
+
+        let window = host(row, size: NSSize(width: 380, height: 48))
+        defer { close(window) }
+        try await settle(window)
+
+        #expect(row.contentPresentation.title == "短手记标题")
+        #expect(row.contentPresentation.note == "这是手记的详细正文，支持点击独立复制")
+        row.onSelect?()
+        #expect(didSelect == true)
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

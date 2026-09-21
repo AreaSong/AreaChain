@@ -14,7 +14,11 @@ struct TaskRow: View {
     @State var hovering = false
     @State private var isPointerHovered = false
     @State private var isNoteHovered = false
+    @State private var isNoteBubbleHovered = false
     @State private var isTitleTextHovered = false
+    @State private var isTitleBubbleHovered = false
+    @State var hasCopied = false
+    @State var hasNoteCopied = false
     @State var isCommandPressed = false
     @State private var flagsMonitor: Any? = nil
     @State var draft = ""
@@ -28,7 +32,7 @@ struct TaskRow: View {
     @State var hoveredQuickActionTip: String? = nil
 
     var isHovered: Bool {
-        hovering || isPointerHovered || isNoteHovered
+        hovering || isPointerHovered || isNoteHovered || isNoteBubbleHovered || isTitleBubbleHovered
     }
 
     // MARK: - 现代标准构造器 (State + Action)
@@ -51,6 +55,24 @@ struct TaskRow: View {
             }
             .popover(isPresented: $pickingTime) {
                 timePicker
+            }
+            .task(id: hasCopied) {
+                guard hasCopied else { return }
+                try? await Task.sleep(for: .milliseconds(1200))
+                if !Task.isCancelled {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        hasCopied = false
+                    }
+                }
+            }
+            .task(id: hasNoteCopied) {
+                guard hasNoteCopied else { return }
+                try? await Task.sleep(for: .milliseconds(1200))
+                if !Task.isCancelled {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        hasNoteCopied = false
+                    }
+                }
             }
             .onAppear {
                 draft = state.title
@@ -183,11 +205,11 @@ struct TaskRow: View {
 
     private var shouldShowTitleBubble: Bool {
         !style.isWorkspace && !editing && !pickingDay && !pickingTime
-            && (isTitleTextHovered || isPointerHovered) && !isNoteHovered && isTitleTruncated
+            && (isTitleTextHovered || isPointerHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
     }
 
     private var shouldShowNoteBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime && isNoteHovered && fullNoteText != nil
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
     }
 
     private var selectableContent: some View {
@@ -239,14 +261,14 @@ struct TaskRow: View {
     }
 
     private var noteIndicator: some View {
-        Image(systemName: "text.alignleft")
+        Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)))
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04)))
             )
             .background(
                 GeometryReader { proxy in
@@ -264,8 +286,26 @@ struct TaskRow: View {
             )
             .contentShape(Rectangle())
             .onHover { hovering in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isNoteHovered = hovering
+                if hovering {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isNoteHovered = true
+                    }
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        if !isNoteBubbleHovered {
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isNoteHovered = false
+                            }
+                        }
+                    }
+                }
+            }
+            .onTapGesture {
+                if let note = fullNoteText {
+                    copyToClipboard(note)
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        hasNoteCopied = true
+                    }
                 }
             }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
@@ -275,12 +315,25 @@ struct TaskRow: View {
                         x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                         y: growsUpward ? 1.0 : 0.0
                     )
-                    TaskNoteBubble(note: noteText, growsUpward: growsUpward, bubbleShiftX: bubbleShiftX)
-                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                            removal: .opacity
-                        ))
+                    TaskNoteBubble(
+                        note: noteText,
+                        growsUpward: growsUpward,
+                        bubbleShiftX: bubbleShiftX,
+                        onCopy: { copyToClipboard(noteText) },
+                        onHover: { hovering in
+                            isNoteBubbleHovered = hovering
+                            if !hovering && !isNoteHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    isNoteHovered = false
+                                }
+                            }
+                        }
+                    )
+                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                        removal: .opacity
+                    ))
                 }
             }
     }
@@ -321,18 +374,40 @@ struct TaskRow: View {
                 .layoutPriority(1)
                 .contentShape(Rectangle())
                 .onHover { hovering in
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = hovering
+                    if hovering {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = true
+                        }
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            if !isTitleBubbleHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    isTitleTextHovered = false
+                                }
+                            }
+                        }
                     }
                 }
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
-                        TaskTitleBubble(title: state.title, growsUpward: growsUpward)
-                            .offset(y: growsUpward ? -6 : 22)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
-                                removal: .opacity
-                            ))
+                        TaskTitleBubble(
+                            title: state.title,
+                            growsUpward: growsUpward,
+                            onCopy: { copyToClipboard(state.title) },
+                            onHover: { hovering in
+                                isTitleBubbleHovered = hovering
+                                if !hovering && !isTitleTextHovered {
+                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                        isTitleTextHovered = false
+                                    }
+                                }
+                            }
+                        )
+                        .offset(y: growsUpward ? -6 : 22)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                            removal: .opacity
+                        ))
                     }
                 }
 
@@ -460,5 +535,22 @@ struct TaskRow: View {
         editing = false
         editorFocused = false
         dispatch(.endEditing)
+    }
+
+    func copyTask() {
+        var content = state.title
+        if let note = fullNoteText, !note.isEmpty {
+            content += "\n" + note
+        }
+        copyToClipboard(content)
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            hasCopied = true
+        }
+    }
+
+    private func copyToClipboard(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
     }
 }

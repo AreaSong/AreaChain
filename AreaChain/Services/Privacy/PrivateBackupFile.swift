@@ -30,18 +30,22 @@ enum PrivateBackupFile {
         let normalizer = JSONDecoder()
         normalizer.dateDecodingStrategy = ExportDates.decodeStrategy()
         manifest = try normalizer.decode(PrivateBackupManifest.self, from: manifestData)
-        let temporary = url.deletingLastPathComponent().appending(path: ".areachain-backup-\(UUID().uuidString).tmp")
-        defer { try? FileManager.default.removeItem(at: temporary) }
-        try writeTemporary(temporary, header: header, manifest: manifest, key: key) { attachmentID in
+        let staging = try temporaryURL(for: url)
+        defer { staging.cleanup() }
+        try writeTemporary(staging.url, header: header, manifest: manifest, key: key) { attachmentID in
             guard let ref = capture.references[attachmentID] else { throw PrivacyError.missingAttachment }
             return try readAttachment(ref)
         }
-        let verified = try read(from: temporary, password: password)
+        let verified = try read(from: staging.url, password: password)
         guard verified == manifest else { throw PrivacyError.corruptData }
         if FileManager.default.fileExists(atPath: url.path) {
-            _ = try FileManager.default.replaceItemAt(url, withItemAt: temporary)
+            _ = try FileManager.default.replaceItemAt(url, withItemAt: staging.url)
         } else {
-            try FileManager.default.moveItem(at: temporary, to: url)
+            do {
+                _ = try FileManager.default.replaceItemAt(url, withItemAt: staging.url)
+            } catch {
+                try FileManager.default.moveItem(at: staging.url, to: url)
+            }
         }
         return VerifiedPrivateBackup(sourceDigest: capture.sourceDigest, url: url, manifest: manifest,
                                      ciphertextDigest: try digest(url))
@@ -129,5 +133,16 @@ enum PrivateBackupFile {
             data.append(next)
         }
         return data
+    }
+
+    private static func temporaryURL(for target: URL) throws -> (url: URL, cleanup: () -> Void) {
+        let manager = FileManager.default
+        if let replacementDir = try? manager.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                                                 appropriateFor: target, create: true) {
+            let fileURL = replacementDir.appending(path: "areachain-backup-\(UUID().uuidString).tmp")
+            return (fileURL, { try? manager.removeItem(at: replacementDir) })
+        }
+        let fileURL = manager.temporaryDirectory.appending(path: ".areachain-backup-\(UUID().uuidString).tmp")
+        return (fileURL, { try? manager.removeItem(at: fileURL) })
     }
 }

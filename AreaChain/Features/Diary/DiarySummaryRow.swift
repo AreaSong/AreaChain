@@ -17,12 +17,15 @@ struct DiarySummaryRow: View {
 
     @State private var isHovered = false
     @State private var hasCopied = false
+    @State private var hasNoteCopied = false
     @State private var isCommandPressed = false
     @State private var hasConvertedToTask = false
     @State private var pickingDay = false
     @State private var flagsMonitor: Any? = nil
     @State private var isTitleTextHovered = false
+    @State private var isTitleBubbleHovered = false
     @State private var isNoteHovered = false
+    @State private var isNoteBubbleHovered = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
 
@@ -64,11 +67,11 @@ struct DiarySummaryRow: View {
     }
 
     private var shouldShowTitleBubble: Bool {
-        !isSensitive && isTitleTextHovered && RowTitleTruncation.isTruncated(contentPresentation.mainText)
+        !isSensitive && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(contentPresentation.mainText)
     }
 
     private var shouldShowNoteBubble: Bool {
-        !isSensitive && isNoteHovered && contentPresentation.note != nil
+        !isSensitive && (isNoteHovered || isNoteBubbleHovered) && contentPresentation.note != nil
     }
 
     private var assignedTags: [TagItem] {
@@ -130,6 +133,11 @@ struct DiarySummaryRow: View {
             try? await Task.sleep(for: .milliseconds(1200))
             if !Task.isCancelled { hasCopied = false }
         }
+        .task(id: hasNoteCopied) {
+            guard hasNoteCopied else { return }
+            try? await Task.sleep(for: .milliseconds(1200))
+            if !Task.isCancelled { hasNoteCopied = false }
+        }
         .task(id: hasConvertedToTask) {
             guard hasConvertedToTask else { return }
             try? await Task.sleep(for: .milliseconds(1500))
@@ -157,7 +165,7 @@ struct DiarySummaryRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             actionCluster
-                .frame(width: 22, height: 22)
+                .frame(width: 48, height: 22)
         }
     }
 
@@ -173,18 +181,40 @@ struct DiarySummaryRow: View {
                 .multilineTextAlignment(.leading)
                 .contentShape(Rectangle())
                 .onHover { hovering in
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = hovering
+                    if hovering {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = true
+                        }
+                    } else {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            if !isTitleBubbleHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    isTitleTextHovered = false
+                                }
+                            }
+                        }
                     }
                 }
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
-                        RowTitleBubble(title: presentation.mainText, growsUpward: growsUpward)
-                            .offset(y: growsUpward ? -6 : 22)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
-                                removal: .opacity
-                            ))
+                        RowTitleBubble(
+                            title: presentation.mainText,
+                            growsUpward: growsUpward,
+                            onCopy: { copyTitle(presentation.mainText) },
+                            onHover: { hovering in
+                                isTitleBubbleHovered = hovering
+                                if !hovering && !isTitleTextHovered {
+                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                        isTitleTextHovered = false
+                                    }
+                                }
+                            }
+                        )
+                        .offset(y: growsUpward ? -6 : 22)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                            removal: .opacity
+                        ))
                     }
                 }
 
@@ -206,19 +236,35 @@ struct DiarySummaryRow: View {
     }
 
     private func noteIndicator(fullText: String) -> some View {
-        Image(systemName: "text.alignleft")
+        Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)))
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04)))
             )
             .contentShape(Rectangle())
             .onHover { hovering in
+                if hovering {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isNoteHovered = true
+                    }
+                } else {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        if !isNoteBubbleHovered {
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isNoteHovered = false
+                            }
+                        }
+                    }
+                }
+            }
+            .onTapGesture {
+                copyNote(fullText)
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isNoteHovered = hovering
+                    hasNoteCopied = true
                 }
             }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
@@ -228,12 +274,26 @@ struct DiarySummaryRow: View {
                         x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                         y: growsUpward ? 1.0 : 0.0
                     )
-                    RowNoteBubble(note: fullText, growsUpward: growsUpward, bubbleShiftX: bubbleShiftX, headerTitleKey: "drawer.notes.title")
-                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                            removal: .opacity
-                        ))
+                    RowNoteBubble(
+                        note: fullText,
+                        growsUpward: growsUpward,
+                        bubbleShiftX: bubbleShiftX,
+                        headerTitleKey: "drawer.notes.title",
+                        onCopy: { copyNote(fullText) },
+                        onHover: { hovering in
+                            isNoteBubbleHovered = hovering
+                            if !hovering && !isNoteHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    isNoteHovered = false
+                                }
+                            }
+                        }
+                    )
+                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                        removal: .opacity
+                    ))
                 }
             }
     }
@@ -245,14 +305,36 @@ struct DiarySummaryRow: View {
         bubbleShiftX = placement.bubbleShiftX
     }
 
-    // MARK: - 右侧单按钮设置菜单 (恒定 22x22 占位，避免任何横向跳动)
+    // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多菜单，纯透明度渐变，零抖动)
 
     private var actionCluster: some View {
-        moreMenu
-            .opacity((isHovered || isSelected || isHighlighted) && !isCommandPressed ? 1.0 : 0.0)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+        HStack(spacing: 4) {
+            copyButton
+            moreMenu
+        }
+        .frame(width: 48, height: 22)
+        .opacity((isHovered || isSelected || isHighlighted) && !isCommandPressed ? 1.0 : 0.0)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+    }
+
+    private var copyButton: some View {
+        Button(action: copy) {
+            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.06))
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
+        .accessibilityLabel(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
+        .fixedSize()
     }
 
     private var moreMenu: some View {
@@ -441,6 +523,20 @@ struct DiarySummaryRow: View {
         PrivacyAccess.withDiary(entry) { current in
             let text = try DiaryContent.read(current)
             guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
+            hasCopied = true
+        }
+    }
+
+    private func copyTitle(_ title: String) {
+        PrivacyAccess.withDiary(entry) { current in
+            guard PrivateClipboard.copy(title, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
+            hasCopied = true
+        }
+    }
+
+    private func copyNote(_ note: String) {
+        PrivacyAccess.withDiary(entry) { current in
+            guard PrivateClipboard.copy(note, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
             hasCopied = true
         }
     }

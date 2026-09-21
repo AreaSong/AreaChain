@@ -18,4 +18,26 @@ struct TaskRowBubbleTests {
         // 能够在单行完整显示的字符（如 27 位数字）不应判定为截断
         #expect(!TaskTitleTruncation.isTruncated("123123123112312312311231231"))
     }
+
+    @Test func rowTitleBubbleTriggersCopyCallback() {
+        var copiedText: String?
+        let bubble = RowTitleBubble(title: "测试完整长标题", growsUpward: false, onCopy: {
+            copiedText = "测试完整长标题"
+        })
+
+        #expect(bubble.title == "测试完整长标题")
+        bubble.onCopy?()
+        #expect(copiedText == "测试完整长标题")
+    }
+
+    @Test func rowNoteBubbleTriggersCopyCallback() {
+        var copiedNote: String?
+        let bubble = RowNoteBubble(note: "这里是详细手记或任务备注内容", growsUpward: true, bubbleShiftX: -10, onCopy: {
+            copiedNote = "这里是详细手记或任务备注内容"
+        })
+
+        #expect(bubble.note == "这里是详细手记或任务备注内容")
+        bubble.onCopy?()
+        #expect(copiedNote == "这里是详细手记或任务备注内容")
+    }
 }

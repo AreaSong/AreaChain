@@ -12,14 +12,37 @@ extension TaskRow {
             }
             .frame(height: 24)
         } else {
-            moreMenu
-                .frame(width: 24, height: 24)
-                .fixedSize()
-                .opacity((isHovered || state.isSelected) && !isCommandPressed ? 1.0 : 0.0)
-                .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-                .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
-                .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
+            HStack(spacing: 4) {
+                copyButton
+                moreMenu
+            }
+            .frame(width: 48, height: 24)
+            .fixedSize()
+            .opacity((isHovered || state.isSelected) && !isCommandPressed ? 1.0 : 0.0)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+            .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
+            .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
         }
+    }
+
+    private var copyButton: some View {
+        Button {
+            copyTask()
+        } label: {
+            Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
+                .frame(width: 22, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.06))
+                )
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
+        .accessibilityLabel(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
+        .fixedSize()
     }
 
     // MARK: - 「···」 4 逻辑分区更多菜单
