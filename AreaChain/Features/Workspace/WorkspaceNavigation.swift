@@ -91,11 +91,15 @@ final class WorkspaceNavigation {
         set { boardSelection.discardEditsOnBlur = newValue }
     }
 
+    // MARK: - Header Bar Title Visibility
+    var isInlineTitleVisible: Bool = false
+
     // MARK: - Tab & Filter Navigation
     var selectedTab: WorkspaceTab = .today {
         didSet {
             selectedProjectID = nil
             selectedTagID = nil
+            isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash || selectedTab == .search)
             clearSelection()
             if selectedTab != .diary {
                 boardSelection.clearInspectedDiary()
@@ -108,6 +112,7 @@ final class WorkspaceNavigation {
         didSet {
             if selectedProjectID != nil {
                 selectedTagID = nil
+                isInlineTitleVisible = false
                 boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
             }
@@ -119,6 +124,7 @@ final class WorkspaceNavigation {
         didSet {
             if selectedTagID != nil {
                 selectedProjectID = nil
+                isInlineTitleVisible = false
                 boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
             }

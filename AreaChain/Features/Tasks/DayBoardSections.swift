@@ -4,7 +4,9 @@ extension DayBoardList {
     @ViewBuilder
     var openItemsSection: some View {
         if !openTodosList.isEmpty {
-            SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+            if !openRoutinesList.isEmpty {
+                SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+            }
             ForEach(openTodosList) { todo in
                 todoRow(todo, isDone: false)
             }

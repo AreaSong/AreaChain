@@ -60,6 +60,7 @@ enum WorkspaceStyle {
     static let composerHeight: CGFloat = 38
     static let rowHeight: CGFloat = 38
     static let cardRadius: CGFloat = 8
+    static let maxContentWidth: CGFloat = 820
     static let sectionFont = Font.system(size: DaybookType.subtitleSize, weight: .semibold)
     static let countFont = DaybookType.caption.monospacedDigit()
     static let progressFont = DaybookType.badge.weight(.semibold).monospacedDigit()

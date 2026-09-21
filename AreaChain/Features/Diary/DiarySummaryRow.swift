@@ -26,6 +26,8 @@ struct DiarySummaryRow: View {
     @State private var isTitleBubbleHovered = false
     @State private var isNoteHovered = false
     @State private var isNoteBubbleHovered = false
+    @State private var titleHoverTask: Task<Void, Never>? = nil
+    @State private var noteHoverTask: Task<Void, Never>? = nil
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
 
@@ -123,6 +125,21 @@ struct DiarySummaryRow: View {
             isHovered = hovering
             if hovering {
                 isCommandPressed = NSEvent.modifierFlags.contains(.command)
+            } else {
+                titleHoverTask?.cancel()
+                titleHoverTask = nil
+                noteHoverTask?.cancel()
+                noteHoverTask = nil
+                if !isTitleBubbleHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = false
+                    }
+                }
+                if !isNoteBubbleHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isNoteHovered = false
+                    }
+                }
             }
         }
         .task(id: hasCopied) {
@@ -144,13 +161,19 @@ struct DiarySummaryRow: View {
             daySchedulePopover
         }
         .onAppear { setupFlagsMonitor() }
-        .onDisappear { tearDownFlagsMonitor() }
+        .onDisappear {
+            tearDownFlagsMonitor()
+            titleHoverTask?.cancel()
+            titleHoverTask = nil
+            noteHoverTask?.cancel()
+            noteHoverTask = nil
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
             isCommandPressed = false
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
-        .zIndex((isHovered || shouldShowTitleBubble || shouldShowNoteBubble) ? 100 : 1)
+        .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
         .contextMenu { diaryMenuItems }
     }
 
@@ -241,12 +264,19 @@ struct DiarySummaryRow: View {
             )
             .contentShape(Rectangle())
             .onHover { hovering in
+                noteHoverTask?.cancel()
                 if hovering {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isNoteHovered = true
+                    noteHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = true
+                        }
                     }
                 } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    noteHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        guard !Task.isCancelled else { return }
                         if !isNoteBubbleHovered {
                             withAnimation(DaybookMotion.interactive(reduceMotion)) {
                                 isNoteHovered = false
@@ -461,13 +491,21 @@ struct DiarySummaryRow: View {
                 if hovering {
                     isCommandPressed = NSEvent.modifierFlags.contains(.command)
                     if isTitle {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = true
+                        titleHoverTask?.cancel()
+                        titleHoverTask = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(300))
+                            guard !Task.isCancelled else { return }
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isTitleTextHovered = true
+                            }
                         }
                     }
                 } else {
                     if isTitle {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        titleHoverTask?.cancel()
+                        titleHoverTask = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(100))
+                            guard !Task.isCancelled else { return }
                             if !isTitleBubbleHovered {
                                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                                     isTitleTextHovered = false

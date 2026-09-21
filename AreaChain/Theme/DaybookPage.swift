@@ -60,6 +60,11 @@ struct DaybookPage<Trailing: View, Content: View>: View {
             }
             content
         }
+        .frame(
+            maxWidth: style.isWorkspace ? WorkspaceStyle.maxContentWidth : .infinity,
+            maxHeight: .infinity,
+            alignment: .topLeading
+        )
         .padding(DaybookSpacing.page)
         // 独立页面的最小尺寸不能反向撑大工作台；嵌入时由三栏布局分配空间。
         .frame(

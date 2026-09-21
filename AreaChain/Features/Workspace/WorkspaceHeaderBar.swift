@@ -59,6 +59,9 @@ struct WorkspaceHeaderBar: View {
             }
         }
         .accessibilityAddTraits(.isHeader)
+        .opacity(navigation.isInlineTitleVisible ? 1.0 : 0.0)
+        .offset(y: navigation.isInlineTitleVisible ? 0 : 4)
+        .animation(DaybookMotion.interactive, value: navigation.isInlineTitleVisible)
     }
 
     // MARK: - Search Capsule Field

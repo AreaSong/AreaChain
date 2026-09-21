@@ -83,34 +83,28 @@ struct WorkspaceTodayView: View {
 
     private var headerTrailing: some View {
         HStack(spacing: 10) {
-            Button {
-                navigation.revealTab(.residents)
-            } label: {
-                Label("tab.residents", systemImage: "repeat")
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(progressTitleKey)
                     .font(DaybookType.caption)
-                    .labelStyle(.titleAndIcon)
+                    .foregroundStyle(DaybookTheme.muted)
+
+                Text("\(completedTodosCount)/\(totalTodosCount)")
+                    .font(DaybookType.body.weight(.medium).monospacedDigit())
+                    .foregroundStyle(completedTodosCount > 0 && completedTodosCount >= totalTodosCount ? DaybookTheme.stamp : DaybookTheme.ink)
             }
-            .buttonStyle(DaybookQuietButtonStyle())
-            .foregroundStyle(DaybookTheme.muted)
-            .help("workspace.residents.open")
 
-            if totalTodosCount > 0 {
-                HStack(spacing: 10) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(completedTodosCount >= totalTodosCount ? "workspace.progress.done" : "workspace.progress.label")
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted)
-
-                        Text("\(completedTodosCount)/\(totalTodosCount)")
-                            .font(DaybookType.body.weight(.medium).monospacedDigit())
-                            .foregroundStyle(completedTodosCount >= totalTodosCount ? DaybookTheme.stamp : DaybookTheme.ink)
-                    }
-
-                    DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)
-                }
-            }
+            DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)
         }
         .fixedSize(horizontal: true, vertical: false)
+        .animation(DaybookMotion.interactive, value: totalTodosCount)
+        .animation(DaybookMotion.interactive, value: completedTodosCount)
+    }
+
+    private var progressTitleKey: LocalizedStringKey {
+        if totalTodosCount == 0 {
+            return "workspace.progress.label"
+        }
+        return completedTodosCount >= totalTodosCount ? "workspace.progress.done" : "workspace.progress.label"
     }
 
     private func addTodo() {

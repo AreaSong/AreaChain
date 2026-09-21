@@ -17,6 +17,8 @@ struct TaskRow: View {
     @State private var isNoteBubbleHovered = false
     @State private var isTitleTextHovered = false
     @State private var isTitleBubbleHovered = false
+    @State private var titleHoverTask: Task<Void, Never>? = nil
+    @State private var noteHoverTask: Task<Void, Never>? = nil
     @State var hasCopied = false
     @State var hasNoteCopied = false
     @State var isCommandPressed = false
@@ -45,7 +47,25 @@ struct TaskRow: View {
 
     var body: some View {
         rowContent
-            .onHover { hovering = $0 }
+            .onHover { isHovering in
+                hovering = isHovering
+                if !isHovering {
+                    titleHoverTask?.cancel()
+                    titleHoverTask = nil
+                    noteHoverTask?.cancel()
+                    noteHoverTask = nil
+                    if !isTitleBubbleHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = false
+                        }
+                    }
+                    if !isNoteBubbleHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = false
+                        }
+                    }
+                }
+            }
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
             .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
             .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
@@ -80,6 +100,10 @@ struct TaskRow: View {
             }
             .onDisappear {
                 stopObservingModifiers()
+                titleHoverTask?.cancel()
+                titleHoverTask = nil
+                noteHoverTask?.cancel()
+                noteHoverTask = nil
             }
             .onChange(of: state.title) { _, value in
                 if !editing { draft = value }
@@ -87,7 +111,7 @@ struct TaskRow: View {
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
             }
-            .zIndex((isHovered || shouldShowTitleBubble || shouldShowNoteBubble) ? 100 : 1)
+            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
     }
 
     private func startObservingModifiers() {
@@ -285,13 +309,20 @@ struct TaskRow: View {
                 }
             )
             .contentShape(Rectangle())
-            .onHover { hovering in
-                if hovering {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isNoteHovered = true
+            .onHover { isHovering in
+                noteHoverTask?.cancel()
+                if isHovering {
+                    noteHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = true
+                        }
                     }
                 } else {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                    noteHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        guard !Task.isCancelled else { return }
                         if !isNoteBubbleHovered {
                             withAnimation(DaybookMotion.interactive(reduceMotion)) {
                                 isNoteHovered = false
@@ -373,13 +404,20 @@ struct TaskRow: View {
                 .truncationMode(.tail)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
-                .onHover { hovering in
-                    if hovering {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = true
+                .onHover { isHovering in
+                    titleHoverTask?.cancel()
+                    if isHovering {
+                        titleHoverTask = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(300))
+                            guard !Task.isCancelled else { return }
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isTitleTextHovered = true
+                            }
                         }
                     } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                        titleHoverTask = Task { @MainActor in
+                            try? await Task.sleep(for: .milliseconds(100))
+                            guard !Task.isCancelled else { return }
                             if !isTitleBubbleHovered {
                                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                                     isTitleTextHovered = false

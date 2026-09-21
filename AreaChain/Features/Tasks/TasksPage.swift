@@ -81,6 +81,8 @@ struct TasksPage: View {
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
+                        scrollOffsetTracker
+
                         if isTodayEmpty && showYesterday && !yesterdayItems.isEmpty {
                             centeredYesterdaySection
                         } else {
@@ -99,6 +101,13 @@ struct TasksPage: View {
                     .background(
                         BlankClickArea(onClick: clearSelection)
                     )
+                }
+                .coordinateSpace(name: "tasks_page_scroll")
+                .onPreferenceChange(TasksPageScrollOffsetKey.self) { offset in
+                    let shouldCollapse = offset < -32
+                    if WorkspaceNavigation.shared.isInlineTitleVisible != shouldCollapse {
+                        WorkspaceNavigation.shared.isInlineTitleVisible = shouldCollapse
+                    }
                 }
                 .daybookScroll(featherEdges: true)
                 .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
@@ -126,6 +135,9 @@ struct TasksPage: View {
             if let id, taskSelection.ids.contains(id) { return }
             taskSelection.focus(id)
         }
+        .onDisappear {
+            WorkspaceNavigation.shared.isInlineTitleVisible = false
+        }
     }
 
     private var headerBar: some View {
@@ -136,43 +148,44 @@ struct TasksPage: View {
             || (config.externalFilter == nil && effectiveFilter.isActive)
         return Group {
             if hasChips || hasFilters {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 6) {
-                        if hasChips {
-                            LeftoverChipsBar(
-                                config: LeftoverChipsBarConfig(
-                                    yesterday: LeftoverChipState(
-                                        count: yesterdayItems.count,
-                                        isExpanded: showYesterday,
-                                        onToggle: { showYesterday.toggle() }
-                                    ),
-                                    upcoming: LeftoverChipState(
-                                        count: upcomingModels.count,
-                                        isExpanded: showUpcoming,
-                                        onToggle: { showUpcoming.toggle() }
-                                    )
+                HStack(spacing: 8) {
+                    if hasChips {
+                        LeftoverChipsBar(
+                            config: LeftoverChipsBarConfig(
+                                yesterday: LeftoverChipState(
+                                    count: yesterdayItems.count,
+                                    isExpanded: showYesterday,
+                                    onToggle: { showYesterday.toggle() }
+                                ),
+                                upcoming: LeftoverChipState(
+                                    count: upcomingModels.count,
+                                    isExpanded: showUpcoming,
+                                    onToggle: { showUpcoming.toggle() }
                                 )
                             )
-                        }
-                        if hasFilters {
-                            BoardFilterBar(
-                                filter: effectiveFilter,
-                                projects: CatalogChoices.projects(projects),
-                                tags: tagChoices,
-                                bundleIDs: todayBundleIDs,
-                                projectCounts: projectCounts,
-                                totalOpenCount: totalOpenTodosCount,
-                                onChange: { next in
-                                    if let external = config.externalFilter { external.wrappedValue = next }
-                                    else { boardFilter = next }
-                                }
-                            )
-                        }
+                        )
                     }
-                    .padding(.horizontal, 1)
-                    .padding(.top, 2)
-                    .padding(.bottom, 6)
+
+                    Spacer(minLength: 8)
+
+                    if hasFilters {
+                        BoardFilterBar(
+                            filter: effectiveFilter,
+                            projects: CatalogChoices.projects(projects),
+                            tags: tagChoices,
+                            bundleIDs: todayBundleIDs,
+                            projectCounts: projectCounts,
+                            totalOpenCount: totalOpenTodosCount,
+                            onChange: { next in
+                                if let external = config.externalFilter { external.wrappedValue = next }
+                                else { boardFilter = next }
+                            }
+                        )
+                    }
                 }
+                .padding(.horizontal, 1)
+                .padding(.top, 1)
+                .padding(.bottom, 4)
             }
         }
     }
@@ -317,6 +330,23 @@ struct TasksPage: View {
         taskSelection.focus(nil)
         focusedTaskID?.wrappedValue = nil
         NSApp.keyWindow?.makeFirstResponder(nil)
+    }
+
+    private var scrollOffsetTracker: some View {
+        GeometryReader { proxy in
+            Color.clear.preference(
+                key: TasksPageScrollOffsetKey.self,
+                value: proxy.frame(in: .named("tasks_page_scroll")).minY
+            )
+        }
+        .frame(height: 0)
+    }
+}
+
+private struct TasksPageScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

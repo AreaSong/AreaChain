@@ -42,7 +42,7 @@ struct BoardFilterBar: View {
                 }
             }
             .font(.system(size: 11))
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: true, vertical: false)
         }
     }
 
