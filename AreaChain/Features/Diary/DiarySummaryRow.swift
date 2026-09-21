@@ -115,6 +115,10 @@ struct DiarySummaryRow: View {
                 )
                 .allowsHitTesting(false)
         )
+        .background(
+            pointerRegion(isTitle: false)
+                .accessibilityHidden(true)
+        )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .simultaneousGesture(
             TapGesture().onEnded {
@@ -477,6 +481,7 @@ struct DiarySummaryRow: View {
                     .transition(.opacity)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 24, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
     }
@@ -487,29 +492,24 @@ struct DiarySummaryRow: View {
             onSelect: { onSelect?() },
             onOpen: openWindow,
             onHover: { hovering in
-                isHovered = hovering
+                guard isTitle else { return }
                 if hovering {
-                    isCommandPressed = NSEvent.modifierFlags.contains(.command)
-                    if isTitle {
-                        titleHoverTask?.cancel()
-                        titleHoverTask = Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(300))
-                            guard !Task.isCancelled else { return }
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isTitleTextHovered = true
-                            }
+                    titleHoverTask?.cancel()
+                    titleHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(300))
+                        guard !Task.isCancelled else { return }
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = true
                         }
                     }
                 } else {
-                    if isTitle {
-                        titleHoverTask?.cancel()
-                        titleHoverTask = Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(100))
-                            guard !Task.isCancelled else { return }
-                            if !isTitleBubbleHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    isTitleTextHovered = false
-                                }
+                    titleHoverTask?.cancel()
+                    titleHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(100))
+                        guard !Task.isCancelled else { return }
+                        if !isTitleBubbleHovered {
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isTitleTextHovered = false
                             }
                         }
                     }

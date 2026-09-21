@@ -59,15 +59,33 @@ final class DiaryRowPointerView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        onSelect?()
         guard !event.modifierFlags.contains(.control) else {
             super.mouseDown(with: event)
             return
         }
         mouseDownLocation = event.locationInWindow
         didDrag = false
+        super.mouseDown(with: event)
+    }
+
+    private var isHandlingRightMouseDown = false
+
+    override func rightMouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
         onSelect?()
-        super.mouseDown(with: event)
+        isHandlingRightMouseDown = true
+        super.rightMouseDown(with: event)
+        isHandlingRightMouseDown = false
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        if !isHandlingRightMouseDown {
+            window?.makeFirstResponder(self)
+            onSelect?()
+        }
+        return super.menu(for: event)
     }
 
     override func mouseUp(with event: NSEvent) {

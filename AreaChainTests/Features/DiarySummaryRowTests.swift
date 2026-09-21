@@ -198,6 +198,61 @@ struct DiarySummaryRowTests {
         #expect(row.previewText == "长标题手记内容测试用于层级检验")
     }
 
+    @Test func diaryRowPointerViewSelectsOnRightClickAndControlClick() throws {
+        let view = DiaryRowPointerView()
+        var selectCount = 0
+        view.onSelect = { selectCount += 1 }
+
+        // 1. 常规左键点击
+        let normalLeftDown = NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 1,
+            clickCount: 1,
+            pressure: 1.0
+        )!
+        view.mouseDown(with: normalLeftDown)
+        #expect(selectCount == 1)
+
+        // 2. Control + 左键点击（macOS 辅助右键点击）
+        let controlLeftDown = NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: .zero,
+            modifierFlags: [.control],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 2,
+            clickCount: 1,
+            pressure: 1.0
+        )!
+        view.mouseDown(with: controlLeftDown)
+        #expect(selectCount == 2)
+
+        // 3. 物理右键点击（rightMouseDown）
+        let rightDown = NSEvent.mouseEvent(
+            with: .rightMouseDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 3,
+            clickCount: 1,
+            pressure: 1.0
+        )!
+        view.rightMouseDown(with: rightDown)
+        #expect(selectCount == 3)
+
+        // 4. 上下文菜单弹出时请求 menu(for:)
+        _ = view.menu(for: rightDown)
+        #expect(selectCount == 4)
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content
