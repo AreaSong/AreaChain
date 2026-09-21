@@ -113,15 +113,12 @@ struct DiarySummaryRow: View {
                 )
                 .allowsHitTesting(false)
         )
-        .background(
-            DiaryRowPointerRegion(
-                id: entry.id,
-                onSelect: { onSelect?() },
-                onOpen: openWindow
-            )
-            .accessibilityHidden(true)
-        )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .simultaneousGesture(
+            TapGesture().onEnded {
+                onSelect?()
+            }
+        )
         .onHover { hovering in
             isHovered = hovering
             if hovering {
@@ -179,22 +176,11 @@ struct DiarySummaryRow: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
-                .contentShape(Rectangle())
-                .onHover { hovering in
-                    if hovering {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = true
-                        }
-                    } else {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
-                            if !isTitleBubbleHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    isTitleTextHovered = false
-                                }
-                            }
-                        }
-                    }
-                }
+                .layoutPriority(1)
+                .overlay(
+                    pointerRegion(isTitle: true)
+                        .accessibilityHidden(true)
+                )
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
                         RowTitleBubble(
@@ -220,9 +206,17 @@ struct DiarySummaryRow: View {
 
             if !isSensitive, let note = presentation.note, !note.isEmpty {
                 noteIndicator(fullText: note)
+                    .fixedSize()
             }
 
-            Spacer(minLength: 0)
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: 20)
+                .contentShape(Rectangle())
+                .overlay(
+                    pointerRegion(isTitle: false)
+                        .accessibilityHidden(true)
+                )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
@@ -445,11 +439,45 @@ struct DiarySummaryRow: View {
                 .transition(.opacity)
             } else {
                 metadataLine
+                    .contentShape(Rectangle())
+                    .overlay(
+                        pointerRegion(isTitle: false)
+                            .accessibilityHidden(true)
+                    )
                     .transition(.opacity)
             }
         }
         .frame(height: 24, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
+    }
+
+    private func pointerRegion(isTitle: Bool) -> some View {
+        DiaryRowPointerRegion(
+            id: entry.id,
+            onSelect: { onSelect?() },
+            onOpen: openWindow,
+            onHover: { hovering in
+                isHovered = hovering
+                if hovering {
+                    isCommandPressed = NSEvent.modifierFlags.contains(.command)
+                    if isTitle {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = true
+                        }
+                    }
+                } else {
+                    if isTitle {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+                            if !isTitleBubbleHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    isTitleTextHovered = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 
     private var metadataLine: some View {

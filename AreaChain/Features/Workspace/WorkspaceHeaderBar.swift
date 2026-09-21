@@ -10,8 +10,6 @@ struct WorkspaceHeaderBar: View {
     var projects: [ProjectItem]
     var tags: [TagItem]
 
-    @FocusState private var isFieldFocused: Bool
-
     var body: some View {
         HStack(spacing: 12) {
             leadingTitleSection
@@ -30,14 +28,6 @@ struct WorkspaceHeaderBar: View {
                 .background(DaybookTheme.rule.opacity(0.55))
         }
         .accessibilityIdentifier("workspace.header.bar")
-        .onChange(of: navigation.isSearchFocused) { _, focused in
-            if focused {
-                isFieldFocused = true
-            }
-        }
-        .onChange(of: isFieldFocused) { _, focused in
-            navigation.isSearchFocused = focused
-        }
     }
 
     // MARK: - Leading Title Section
@@ -77,21 +67,26 @@ struct WorkspaceHeaderBar: View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(isFieldFocused ? DaybookTheme.ink : DaybookTheme.muted)
+                .foregroundStyle(navigation.isSearchFocused ? DaybookTheme.ink : DaybookTheme.muted)
 
-            TextField(
-                L10n.string("search.placeholder", locale: locale),
-                text: $navigation.searchQuery
+            DaybookTextField(
+                text: $navigation.searchQuery,
+                placeholder: L10n.string("search.placeholder", locale: locale),
+                fontSize: 12,
+                focus: $navigation.isSearchFocused,
+                onSubmit: {},
+                allowsShiftNewline: false,
+                onEscape: {
+                    navigation.clearSearch()
+                    NSApp.keyWindow?.makeFirstResponder(nil)
+                }
             )
-            .textFieldStyle(.plain)
-            .font(DaybookType.caption)
-            .focused($isFieldFocused)
             .accessibilityIdentifier("workspace.header.search")
 
             if !navigation.searchQuery.isEmpty {
                 Button {
                     navigation.clearSearch()
-                    isFieldFocused = true
+                    navigation.isSearchFocused = true
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 11))
@@ -102,23 +97,22 @@ struct WorkspaceHeaderBar: View {
             }
         }
         .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .frame(width: 220, height: 28)
+        .frame(width: 240, height: 28)
         .background(
             Capsule()
-                .fill(isFieldFocused ? DaybookTheme.surface : WorkspaceStyle.input.opacity(0.85))
+                .fill(navigation.isSearchFocused ? DaybookTheme.surface : WorkspaceStyle.input.opacity(0.85))
         )
         .overlay(
             Capsule()
                 .strokeBorder(
-                    isFieldFocused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.65),
-                    lineWidth: isFieldFocused ? 1.2 : 0.8
+                    navigation.isSearchFocused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.65),
+                    lineWidth: 0.8
                 )
         )
         // ⌘F 全局快捷键聚焦
         .background {
             Button("") {
-                isFieldFocused = true
+                navigation.isSearchFocused = true
             }
             .keyboardShortcut("f", modifiers: .command)
             .opacity(0)

@@ -191,6 +191,115 @@ struct DiarySummaryRowTests {
         #expect(didSelect == true)
     }
 
+    @Test func diaryRowPointerViewClickAndDoubleClickBehavior() throws {
+        var selected = false
+        var opened = false
+        var hovered = false
+
+        let pointerView = DiaryRowPointerView()
+        pointerView.frame = NSRect(x: 0, y: 0, width: 200, height: 30)
+        pointerView.onSelect = { selected = true }
+        pointerView.onOpen = { opened = true }
+        pointerView.onHover = { hovered = $0 }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 100, y: 100, width: 200, height: 30),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        window.contentView = pointerView
+        window.makeKeyAndOrderFront(nil)
+        defer { window.orderOut(nil) }
+
+        // 1. 单击 mouseDown 立即选择
+        let downEvent = NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 1,
+            clickCount: 1,
+            pressure: 1.0
+        )!
+        pointerView.mouseDown(with: downEvent)
+        #expect(selected == true)
+        #expect(opened == false)
+
+        // 单击 mouseUp 不触发打开
+        let upEvent1 = NSEvent.mouseEvent(
+            with: .leftMouseUp,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 2,
+            clickCount: 1,
+            pressure: 0.0
+        )!
+        pointerView.mouseUp(with: upEvent1)
+        #expect(opened == false)
+
+        // 2. 双击 mouseUp 触发打开
+        let downEvent2 = NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 3,
+            clickCount: 2,
+            pressure: 1.0
+        )!
+        pointerView.mouseDown(with: downEvent2)
+        let upEvent2 = NSEvent.mouseEvent(
+            with: .leftMouseUp,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 4,
+            clickCount: 2,
+            pressure: 0.0
+        )!
+        pointerView.mouseUp(with: upEvent2)
+        #expect(opened == true)
+
+        // 3. Hover 测试
+        let enterEvent = NSEvent.mouseEvent(
+            with: .mouseEntered,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 5,
+            clickCount: 0,
+            pressure: 0.0
+        )!
+        pointerView.mouseEntered(with: enterEvent)
+        #expect(hovered == true)
+
+        let exitEvent = NSEvent.mouseEvent(
+            with: .mouseExited,
+            location: NSPoint(x: 10, y: 10),
+            modifierFlags: [],
+            timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber,
+            context: nil,
+            eventNumber: 6,
+            clickCount: 0,
+            pressure: 0.0
+        )!
+        pointerView.mouseExited(with: exitEvent)
+        #expect(hovered == false)
+    }
+
     private func host<Content: View>(_ content: Content, size: NSSize = NSSize(width: 380, height: 80)) -> NSWindow {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content

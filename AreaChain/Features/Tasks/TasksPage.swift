@@ -160,6 +160,8 @@ struct TasksPage: View {
                                 projects: CatalogChoices.projects(projects),
                                 tags: tagChoices,
                                 bundleIDs: todayBundleIDs,
+                                projectCounts: projectCounts,
+                                totalOpenCount: totalOpenTodosCount,
                                 onChange: { next in
                                     if let external = config.externalFilter { external.wrappedValue = next }
                                     else { boardFilter = next }
@@ -173,6 +175,32 @@ struct TasksPage: View {
                 }
             }
         }
+    }
+
+    var projectCounts: [UUID: Int] {
+        var counts: [UUID: Int] = [:]
+        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && ($0.dayKey == todayKey || $0.dayKey == yesterdayKey) }
+        for todo in activeTodos {
+            if let pid = todo.projectID {
+                counts[pid, default: 0] += 1
+            }
+        }
+        if !projects.isEmpty {
+            for project in projects {
+                let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
+                if subtrees.count > 1 {
+                    let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
+                    if sum > 0 {
+                        counts[project.id] = sum
+                    }
+                }
+            }
+        }
+        return counts
+    }
+
+    var totalOpenTodosCount: Int {
+        todos.filter { $0.deletedAt == nil && !$0.isDone && ($0.dayKey == todayKey || $0.dayKey == yesterdayKey) }.count
     }
 
     private var dayBoardView: some View {
