@@ -660,8 +660,8 @@ rg -n '\.buttonStyle\(\.plain\)' AreaChain/Theme AreaChain/Features/Quadrant | r
 ## 最终验证（全部必须通过）
 
 ```bash
-# 1. 全仓库没有裸 .plain（预期零输出）
-rg -n '\.buttonStyle\(\.plain\)' AreaChain --glob '*.swift' | rg -v '// control:'
+# 1. 代码里没有裸 .plain（预期零输出；基座文档注释里的字面量不算）
+rg -n '\.buttonStyle\(\.plain\)' AreaChain --glob '*.swift' | rg -v '// control:' | rg -v ':[0-9]+:[[:space:]]*///'
 
 # 2. control 总数（预期 28 = P3a 的 11 + 本阶段 17）
 rg -c '\.buttonStyle\(\.plain\) // control:' AreaChain --glob '*.swift' | awk -F: '{s+=$2} END {print s}'

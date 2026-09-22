@@ -15,7 +15,6 @@ struct DiaryQuickComposerView: View {
     var isSensitive: Bool = false
     var onOpenWindow: (() -> Void)? = nil
     @State private var hostWindow: NSWindow?
-    @State private var isPopoutHovered = false
     @State private var autocomplete = SyntaxAutocompleteState(context: .diaryCapture, allowsLivePreview: true)
 
     private var canSubmit: Bool {
@@ -76,16 +75,8 @@ struct DiaryQuickComposerView: View {
                         onOpenWindow()
                     } label: {
                         Image(systemName: "arrow.up.forward.square")
-                            .font(.system(size: 11.5, weight: .semibold))
-                            .frame(width: 22, height: 22)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                                    .fill(isPopoutHovered ? DaybookTheme.ink.opacity(0.08) : .clear)
-                            )
                     }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(isPopoutHovered ? DaybookTheme.ink : DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
-                    .onHover { isPopoutHovered = $0 }
+                    .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
                     .help(canSubmit ? "diary.window.continue" : "diary.window.new")
                     .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
                     .background(SyntaxViewAnchor("syntax.diary.popout"))
@@ -213,7 +204,7 @@ struct DiaryQuickComposerView: View {
             )
             .foregroundStyle(isSelected ? color : DaybookTheme.muted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 手记标签芯片，P5 迁 DaybookChip(.tag)
     }
 
     @ViewBuilder
@@ -225,19 +216,11 @@ struct DiaryQuickComposerView: View {
         Button(action: onSubmit) {
             HStack(spacing: 4) {
                 Image(systemName: "square.and.pencil")
-                    .font(.system(size: 10, weight: .semibold))
                 Text("diary.composer.save")
-                    .font(.system(size: 11.5, weight: .semibold))
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(canSubmit ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.2))
-            )
-            .foregroundStyle(canSubmit ? Color.white : DaybookTheme.muted)
+            .font(DaybookType.caption.weight(.semibold))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
         .disabled(!canSubmit)
         .keyboardShortcut(.return, modifiers: .command)
     }

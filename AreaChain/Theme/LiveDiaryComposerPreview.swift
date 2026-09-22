@@ -195,15 +195,8 @@ struct LiveDiaryComposerPreview: View {
         Button(action: copyTitle) {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.15) : Color.clear)
-                )
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help("diary.copy")
         .accessibilityLabel("diary.copy")
     }
@@ -221,17 +214,10 @@ struct LiveDiaryComposerPreview: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11, weight: .medium))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                        .fill(Color.clear)
-                )
-                .contentShape(Rectangle())
+                .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .buttonStyle(.plain)
         .help("footer.more")
         .accessibilityLabel("footer.more")
         .fixedSize()

@@ -207,7 +207,7 @@ struct DiaryNoteCard: View {
                 Capsule().strokeBorder(color.opacity(0.35), lineWidth: 0.8)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 已打标签胶囊，P5 迁 DaybookChip(.tag)
         .help("diary.tag.off")
     }
 

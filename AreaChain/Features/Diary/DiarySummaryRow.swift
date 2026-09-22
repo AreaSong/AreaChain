@@ -327,15 +327,8 @@ struct DiarySummaryRow: View {
         Button(action: copy) {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.06))
-                )
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
         .accessibilityLabel(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
         .fixedSize()
@@ -347,17 +340,10 @@ struct DiarySummaryRow: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                        .fill(DaybookTheme.ink.opacity(0.06))
-                )
-                .contentShape(Rectangle())
+                .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .buttonStyle(.plain)
         .help("footer.more")
         .accessibilityLabel("footer.more")
         .fixedSize()

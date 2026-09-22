@@ -88,15 +88,16 @@ struct DiaryWindowView: View {
             HStack(spacing: 10) {
                 if session.isSensitive && session.canRevealContent {
                     Button("diary.mask") { session.mask() }
-                    .buttonStyle(.plain)
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 }
                 if let record = session.record, session.canRevealContent {
-                    Button { attach(to: record) } label: { Image(systemName: "photo") }
-                        .buttonStyle(.plain).accessibilityLabel("diary.attach").help("diary.attach")
+                    DaybookIconButton(systemName: "photo", label: "diary.attach", size: .compact) {
+                        attach(to: record)
+                    }
                 }
                 if session.issue == .conflict {
                     Button("diary.window.reload") { confirmsReload = true }
-                        .buttonStyle(.plain)
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 }
                 Spacer(minLength: 0)
                 Button("common.save", action: save)

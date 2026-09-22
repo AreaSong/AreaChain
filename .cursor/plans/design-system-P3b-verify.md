@@ -18,8 +18,8 @@
 ### A. 裸 `.plain` 消失，control 数量正确
 
 ```bash
-# A1 预期零输出
-rg -n '\.buttonStyle\(\.plain\)' AreaChain --glob '*.swift' | rg -v '// control:'
+# A1 预期零输出。基座文档注释里的字面量不算裸按钮。
+rg -n '\.buttonStyle\(\.plain\)' AreaChain --glob '*.swift' | rg -v '// control:' | rg -v ':[0-9]+:[[:space:]]*///'
 
 # A2 预期打印 28
 rg -c '\.buttonStyle\(\.plain\) // control:' AreaChain --glob '*.swift' | awk -F: '{s+=$2} END {print s}'
@@ -72,10 +72,10 @@ rg -c 'workspace\.header\.inspector\.toggle' AreaChain/Features/Workspace/Worksp
 rg -c 'DaybookIconButton\(\s*systemName: "sidebar.trailing"' AreaChain/Features/Workspace/WorkspaceHeaderBar.swift
 ```
 
-预期：`isPopoutHovered`、`Color.green`（日记目录）、`CommandReturnButton` 里的 `isHovered` 为 0；其余各 ≥ 1。`pill(tint:` 若出现非 `DaybookPalette` 的颜色 → FAIL：
+预期：`isPopoutHovered`、`Color.green`（日记目录）、`CommandReturnButton` 里的 `isHovered` 为 0；其余各 ≥ 1。调用处的 `.pill(tint:` 若 tint 不是 `DaybookPalette` → FAIL。枚举声明 `case pill(tint: Color)` 不算：
 
 ```bash
-rg -n 'pill\(tint:' AreaChain/Features AreaChain/Theme | rg -v 'DaybookPalette\.'
+rg -n '\.pill\(tint:' AreaChain/Features AreaChain/Theme | rg -v 'DaybookPalette\.'
 ```
 
 预期零输出。

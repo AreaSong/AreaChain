@@ -227,7 +227,7 @@ struct SyntaxAutocompletePopup: View {
                         Button { onCommit(item) } label: {
                             candidateRow(item, isSelected: index == state.selectedIndex)
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                         .focusable(false)
                         .background(SyntaxViewAnchor("syntax.candidate." + item.id))
                         .accessibilityIdentifier("syntax.candidate." + item.id)

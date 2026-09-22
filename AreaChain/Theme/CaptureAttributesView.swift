@@ -68,7 +68,7 @@ struct CaptureAttributesButton: View {
             .frame(width: 58, height: 22)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 属性按钮固定 58×22，胶囊留给 P5
         .background(SyntaxViewAnchor("syntax.attributes.button"))
         .disabled(attributes.count == 0)
         .accessibilityIdentifier("syntax.attributes.button")
@@ -93,13 +93,11 @@ struct CaptureAttributesPopup: View {
                 Label("syntax.attributes.title", systemImage: "slider.horizontal.3")
                     .font(DaybookType.label)
                 Spacer()
-                Button { state.dismiss() } label: {
-                    Image(systemName: "xmark").font(DaybookType.caption)
+                DaybookIconButton(systemName: "xmark", label: "common.close", size: .inline) {
+                    state.dismiss()
                 }
-                .buttonStyle(.plain)
                 .focusable(false)
                 .background(SyntaxViewAnchor("syntax.attributes.close"))
-                .accessibilityLabel("common.close")
                 .accessibilityIdentifier("syntax.attributes.close")
             }
             .padding(10)

@@ -133,7 +133,7 @@ struct WorkspaceSidebarRow: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 侧栏导航行，非按钮语义
         .onHover { isHovered = $0 }
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
     }

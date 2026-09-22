@@ -62,11 +62,10 @@ struct WorkspaceFilteredListView: View {
                     }
                 } label: {
                     Image(systemName: navigation.selectedTaskIDs.isEmpty ? "checklist" : "checklist.checked")
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(navigation.selectedTaskIDs.isEmpty ? DaybookTheme.muted : DaybookTheme.stamp)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(navigation.selectedTaskIDs.isEmpty ? .icon : .iconActive, size: .compact))
                 .help(navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit")
+                .accessibilityLabel(navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit")
             }
         }
     }
@@ -150,9 +149,7 @@ struct WorkspaceFilteredListView: View {
                 VStack(alignment: .leading, spacing: 3) {
                     if let parent = subtask.todo {
                         Button(parent.title) { navigation.inspectTask(parent.id) }
-                            .buttonStyle(.plain)
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted)
+                            .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
                     }
                     SubtaskRowView(
                         subtask: subtask, onToggle: { DayBoardMutations.toggleSubtask(subtask) },
@@ -184,7 +181,7 @@ struct WorkspaceFilteredListView: View {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain) // control: 已完成折叠头，整行点击
             .padding(.top, 8)
 
             if showCompleted {

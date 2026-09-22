@@ -69,23 +69,11 @@ struct SyntaxExpandableCard: View {
 
             Spacer(minLength: 0)
 
-            Button {
+            DaybookIconButton(systemName: "xmark", label: "common.close", size: .inline) {
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     isExpanded = false
                 }
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 9, weight: .bold))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(width: 18, height: 18)
-                    .background(
-                        Circle()
-                            .fill(DaybookTheme.ink.opacity(0.06))
-                    )
-                    .contentShape(Circle())
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel(Text("common.close"))
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 7)
@@ -234,7 +222,7 @@ struct SyntaxExpandableCard: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 语法条目悬停替换正文
         .onHover { hovering in
             withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 hoveredToken = hovering ? token : nil
@@ -305,6 +293,6 @@ struct SyntaxExpandableCard: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 语法范例卡片，P4 迁 daybookSurface(.card)
     }
 }

@@ -80,14 +80,9 @@ struct TaskDetailRemindChips: View {
                     Text(RemindMinutes.label(remindMinutes, locale: locale))
                         .font(.system(size: 10, weight: .bold, design: .monospaced))
                         .foregroundStyle(DaybookTheme.stamp)
-                    Button {
+                    DaybookIconButton(systemName: "xmark.circle.fill", label: "row.time.clear", size: .inline) {
                         onSelectMinutes(nil)
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 10))
-                            .foregroundStyle(DaybookTheme.muted)
                     }
-                    .buttonStyle(.plain)
                 }
             }
 
@@ -147,7 +142,7 @@ struct TaskDetailWeekdayPicker: View {
                             )
                             .foregroundStyle(isSelected ? Color.white : DaybookTheme.ink)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plain) // control: 星期圆点，P5 迁 DaybookChip(.filter)
                     .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
                     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
                 }

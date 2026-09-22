@@ -40,9 +40,8 @@ struct TaskDetailNotesView: View {
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookTheme.destructive)
                 Button("common.save", action: flushSave)
-                    .buttonStyle(.plain)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.stamp)
                     .help("syntax.notes.save.help")
             }
             if !draft.isEmpty {
@@ -110,7 +109,7 @@ struct TaskDetailNotesView: View {
                     .fill(DaybookTheme.stamp.opacity(0.08))
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 备注链接芯片，P5 迁 DaybookChip
     }
 
     private func flushSave() {

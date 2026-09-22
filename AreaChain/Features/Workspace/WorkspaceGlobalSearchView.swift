@@ -130,7 +130,7 @@ struct WorkspaceGlobalSearchView: View {
             )
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 附件结果整行点击区，P4 迁 daybookSurface(.row)
         .help(attachment.filename)
     }
 

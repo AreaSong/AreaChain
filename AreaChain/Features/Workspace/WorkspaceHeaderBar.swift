@@ -84,16 +84,10 @@ struct WorkspaceHeaderSearchCapsule: View {
             .accessibilityIdentifier("workspace.header.search")
         } trailing: {
             if !navigation.searchQuery.isEmpty {
-                Button {
+                DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
                     navigation.clearSearch()
                     navigation.isSearchFocused = true
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DaybookTheme.muted)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("footer.search.clear")
             } else {
                 Text("⌘F")
                     .font(.system(size: 9.5, weight: .bold, design: .rounded))
@@ -124,20 +118,13 @@ struct WorkspaceHeaderInspectorToggle: View {
     @Bindable var navigation: WorkspaceNavigation
 
     var body: some View {
-        Button {
+        DaybookIconButton(systemName: "sidebar.trailing",
+            label: "drawer.inspector.toggle",
+            size: .regular,
+            isActive: navigation.isInspectorPresented
+        ) {
             navigation.isInspectorPresented.toggle()
-        } label: {
-            Image(systemName: "sidebar.trailing")
-                .font(.system(size: 13.5))
-                .foregroundStyle(navigation.isInspectorPresented ? DaybookTheme.stamp : DaybookTheme.ink)
-                .frame(width: 28, height: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(navigation.isInspectorPresented ? DaybookTheme.hoverFill : Color.clear)
-                )
         }
-        .buttonStyle(.plain)
-        .help(L10n.string("drawer.inspector.toggle", locale: locale))
         .accessibilityIdentifier("workspace.header.inspector.toggle")
     }
 }

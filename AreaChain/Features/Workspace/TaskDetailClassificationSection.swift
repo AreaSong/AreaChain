@@ -74,17 +74,11 @@ struct TaskDetailTagSelector: View {
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
-                Button {
+                DaybookIconButton(systemName: "plus.circle", label: "drawer.tag.add", size: .inline) {
                     createError = nil
                     newTagName = ""
                     isCreatingTag = true
-                } label: {
-                    Image(systemName: "plus.circle")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DaybookTheme.stamp)
                 }
-                .buttonStyle(.plain)
-                .help("drawer.tag.add")
             }
 
             if activeTags.isEmpty {

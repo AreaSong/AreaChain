@@ -111,9 +111,8 @@ struct TaskDetailSubtasksView: View {
                 } label: {
                     Text("drawer.subtasks.add")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(DaybookTheme.stamp)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.prominent, size: .inline))
             }
         }
     }
@@ -170,7 +169,7 @@ struct SubtaskRowView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 子任务复选框，非按钮语义
     }
 
     @ViewBuilder
@@ -219,7 +218,7 @@ struct SubtaskRowView: View {
                                 .padding(.horizontal, 5).padding(.vertical, 2)
                                 .background(Capsule().fill(DaybookTheme.hoverFill))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.plain) // control: 子任务标签移除芯片，P5 迁 DaybookChip(.token)
                         .foregroundStyle(DaybookTheme.stamp)
                         .help("syntax.tag.remove")
                     }
@@ -231,21 +230,9 @@ struct SubtaskRowView: View {
     @ViewBuilder
     private var hoverActionButtons: some View {
         if isHovering && !isEditing {
-            Button(action: startEdit) {
-                Image(systemName: "pencil")
-                    .font(.system(size: 9))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-            .buttonStyle(.plain)
-            .help("drawer.subtasks.edit")
+            DaybookIconButton(systemName: "pencil", label: "drawer.subtasks.edit", size: .inline, action: startEdit)
 
-            Button(action: onDelete) {
-                Image(systemName: "trash")
-                    .font(.system(size: 9))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-            .buttonStyle(.plain)
-            .help("drawer.subtasks.delete")
+            DaybookIconButton(systemName: "trash", label: "drawer.subtasks.delete", size: .inline, action: onDelete)
         }
     }
 

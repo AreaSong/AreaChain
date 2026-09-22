@@ -98,7 +98,7 @@ extension DiaryNoteCard {
 
             HStack {
                 Button("alert.cancel", action: discardEditingDraft)
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 .font(.system(size: 11))
 
                 Button("common.save", action: saveTextEdit)
@@ -138,16 +138,11 @@ extension DiaryNoteCard {
             } label: {
                 HStack(spacing: 3) {
                     Image(systemName: "eye")
-                        .font(.system(size: 10))
                     Text("diary.reveal")
-                        .font(.system(size: 11))
                 }
-                .foregroundStyle(DaybookTheme.stamp)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
+                .font(DaybookType.caption)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(.pill(tint: DaybookPalette.accent.base), size: .compact))
         }
         .padding(.vertical, 4)
     }
@@ -176,18 +171,11 @@ extension DiaryNoteCard {
             Button(action: copyContent) {
                 HStack(spacing: 2) {
                     Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                        .font(.system(size: 10, weight: .bold))
                     Text(hasCopied ? "diary.copied" : "diary.copy.password")
-                        .font(.system(size: 10.5, weight: .medium))
                 }
-                .foregroundStyle(hasCopied ? Color.green : DaybookTheme.stamp)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 2.5)
-                .background(
-                    Capsule().fill((hasCopied ? Color.green : DaybookTheme.stamp).opacity(0.14))
-                )
+                .font(DaybookType.badge.weight(.medium))
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(hasCopied ? .active : .prominent, size: .compact))
             .help("diary.copy.password.help")
 
             Button {
@@ -195,21 +183,17 @@ extension DiaryNoteCard {
                 else { revealContent() }
             } label: {
                 Image(systemName: isMasked ? "eye" : "eye.slash")
-                    .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
             .help(isMasked ? "diary.unmask" : "diary.mask")
+            .accessibilityLabel(isMasked ? "diary.unmask" : "diary.mask")
         } else {
             Button(action: copyContent) {
                 Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                    .font(.system(size: 11))
-                    .foregroundStyle(hasCopied ? Color.green : DaybookTheme.muted)
-                    .frame(width: 24, height: 24)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
             .help("diary.copy")
+            .accessibilityLabel("diary.copy")
         }
     }
 
@@ -218,12 +202,10 @@ extension DiaryNoteCard {
             DayBoardMutations.togglePinDiary(entry)
         } label: {
             Image(systemName: entry.isPinned ? "pin.fill" : "pin")
-                .font(.system(size: 11))
-                .foregroundStyle(entry.isPinned ? DaybookTheme.stamp : DaybookTheme.muted)
-                .frame(width: 24, height: 24)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(entry.isPinned ? .iconActive : .icon, size: .compact))
         .help(entry.isPinned ? "diary.unpin" : "diary.pin")
+        .accessibilityLabel(entry.isPinned ? "diary.unpin" : "diary.pin")
     }
 
     private var editActionButton: some View {
@@ -232,14 +214,11 @@ extension DiaryNoteCard {
             beginEditing()
         } label: {
             Image(systemName: "pencil")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 24, height: 24)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
         .disabled(isPasswordType && isMasked)
-        .opacity(isPasswordType && isMasked ? 0.35 : 1)
         .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.edit.help")
+        .accessibilityLabel("diary.edit.help")
     }
 
     private var attachActionButton: some View {
@@ -248,25 +227,15 @@ extension DiaryNoteCard {
             AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
         } label: {
             Image(systemName: "photo")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 24, height: 24)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
         .disabled(isPasswordType && isMasked)
-        .opacity(isPasswordType && isMasked ? 0.35 : 1)
         .help(isPasswordType && isMasked ? "diary.unmask.first" : "diary.attach")
+        .accessibilityLabel("diary.attach")
     }
 
     private var deleteActionButton: some View {
-        Button(action: onDelete) {
-            Image(systemName: "trash")
-                .font(.system(size: 11))
-                .foregroundStyle(DaybookTheme.destructive.opacity(0.8))
-                .frame(width: 24, height: 24)
-        }
-        .buttonStyle(.plain)
-        .help("alert.trash.move")
+        DaybookIconButton(systemName: "trash", label: "alert.trash.move", size: .compact, role: .destructive, action: onDelete)
     }
 
     @ViewBuilder

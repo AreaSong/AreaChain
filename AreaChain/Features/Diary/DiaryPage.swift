@@ -215,12 +215,10 @@ struct DiaryPage: View {
 
     private var searchChrome: some View {
         DaybookInputShell(kind: .search, focused: searchFocused) {
-            Button { searchFocused = true } label: {
-                Image(systemName: "magnifyingglass").font(.system(size: 11))
+            DaybookIconButton(systemName: "magnifyingglass", label: "diary.search.placeholder", size: .inline) {
+                searchFocused = true
             }
-            .buttonStyle(.plain)
             .keyboardShortcut(showsPageHeader ? KeyboardShortcut("f", modifiers: .command) : nil)
-            .accessibilityLabel("diary.search.placeholder")
         } field: {
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),
@@ -232,15 +230,9 @@ struct DiaryPage: View {
             )
         } trailing: {
             if !searchQuery.isEmpty {
-                Button {
+                DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
                     searchQuery = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 11))
-                        .foregroundStyle(DaybookTheme.muted)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("footer.search.clear")
             }
         }
     }
@@ -285,7 +277,7 @@ struct DiaryPage: View {
         Button(action: action) {
             standardFilterLabel(title: title, count: count, isSelected: isSelected, color: color)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 手记筛选胶囊，P5 迁 DaybookChip(.filter)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 

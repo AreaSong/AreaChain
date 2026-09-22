@@ -101,16 +101,14 @@ private struct ResidentEditorRow: View {
                 .toggleStyle(.switch)
                 .labelsHidden()
                 .help("residents.enabled")
-            Button {
+            DaybookIconButton(
+                systemName: "sidebar.trailing",
+                label: "drawer.inspector.toggle",
+                size: .regular,
+                isActive: isSelected
+            ) {
                 navigation.inspectTask(routine.id)
-            } label: {
-                Image(systemName: "sidebar.trailing")
-                    .font(DaybookType.subtitle.weight(.semibold))
-                    .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
-                    .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
             }
-            .buttonStyle(.plain)
-            .help("drawer.inspector.toggle")
             DaybookIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
         }
     }
@@ -161,15 +159,13 @@ private struct ResidentEditorRow: View {
             }
             pickingTime = true
         }
-        .buttonStyle(.plain)
-        .foregroundStyle(DaybookTheme.muted)
+        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
         if let minutes = routine.remindMinutes {
             Text(RemindMinutes.label(minutes, locale: locale))
                 .foregroundStyle(DaybookTheme.muted)
                 .monospacedDigit()
             Button("row.time.clear") { setRemind(nil) }
-                .buttonStyle(.plain)
-                .foregroundStyle(DaybookTheme.muted)
+                .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
         }
     }
 

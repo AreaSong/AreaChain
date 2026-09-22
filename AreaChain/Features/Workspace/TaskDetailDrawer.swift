@@ -181,7 +181,7 @@ struct TaskDetailDrawer: View {
                 Button("common.close") {
                     previewAttachment = nil
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
 
             if let image = AttachmentStore.image(id: item.id) {

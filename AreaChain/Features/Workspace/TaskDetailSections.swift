@@ -222,25 +222,13 @@ struct TaskDetailAssetsSectionView: View {
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
-                Button {
+                DaybookIconButton(systemName: "plus", label: "drawer.attachments.pick", size: .inline) {
                     AttachmentActions.pickImage(ownerKind: props.ownerKind, ownerID: props.ownerID, context: modelContext)
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 10))
-                        .foregroundStyle(DaybookTheme.stamp)
                 }
-                .buttonStyle(.plain)
-                .help("drawer.attachments.pick")
 
-                Button {
+                DaybookIconButton(systemName: "doc.on.clipboard", label: "drawer.attachments.paste", size: .inline) {
                     _ = AttachmentActions.pasteImage(ownerKind: props.ownerKind, ownerID: props.ownerID, context: modelContext)
-                } label: {
-                    Image(systemName: "doc.on.clipboard")
-                        .font(.system(size: 10))
-                        .foregroundStyle(DaybookTheme.stamp)
                 }
-                .buttonStyle(.plain)
-                .help("drawer.attachments.paste")
             }
 
             if !taskAttachments.isEmpty {
@@ -275,15 +263,9 @@ struct TaskDetailAssetsSectionView: View {
                     )
             }
 
-            Button {
+            DaybookIconButton(systemName: "xmark.circle.fill", label: "alert.trash.move", size: .inline) {
                 DayBoardMutations.trashAttachment(att)
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(DaybookTheme.ink.opacity(0.75))
-                    .background(Circle().fill(DaybookTheme.surface))
             }
-            .buttonStyle(.plain)
             .padding(2)
         }
     }

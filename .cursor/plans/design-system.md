@@ -200,7 +200,7 @@ flowchart TB
 ### P3b 按钮 Diary / Workspace / Theme / Quadrant
 提示词：`design-system-P3b-execute.md` / `design-system-P3b-verify.md`。
 做：不新增 variant。Diary 21、Workspace 24、Theme 13、Quadrant 1 处 `.plain`：图标与文字动作迁到 `DaybookButtonStyle` / `DaybookIconButton` / `daybookMenuLabel`；胶囊、复选框、整行、固定 58×22 属性按钮、语法行悬停替换共 17 处加 `// control:`（清单见验收 B2）。`CommandReturnButton` 去掉自绘底，改用 `.icon` / `.iconActive`（⌘ 按下为 active）。`.bordered` / `.borderedProminent` 不动。已复制的绿色改成 `.iconActive` / `.active`（绿色留给 P6 的 `status.success`）。
-完成标准：全仓库裸 `.plain` 为零；`// control:` 共 28 条（P3a 的 11 + 本阶段 17）；`syntax.diary.popout`、`syntax.commandReturn.button`、`syntax.attributes.button`、`syntax.attributes.close`、`syntax.candidate.` 仍在；定向测试通过。
+完成标准：代码里的裸 `.buttonStyle(.plain)` 为零（同行 `// control:` 或 `///` 文档注释不算）；`// control:` 共 28 条（P3a 的 11 + 本阶段 17）；`.pill(tint:` 的调用 tint 来自 `DaybookPalette`（枚举声明 `case pill(tint: Color)` 不算）；`syntax.diary.popout`、`syntax.commandReturn.button`、`syntax.attributes.button`、`syntax.attributes.close`、`syntax.candidate.` 仍在；定向测试通过。
 
 ### P4 表面与浮层
 必读：`Theme/ModernComponents.swift`、`Theme/DaybookChrome.swift`（`DaybookCardModifier`）、`Features/Board/BoardRowChrome.swift`、`Features/Tasks/DayBoardSections.swift`、`Features/Workspace/WorkspaceFilteredListView.swift`、3.5 节全部文件。
@@ -228,7 +228,7 @@ flowchart TB
 - [x] P1 删除双宿主分支
 - [x] P2 输入壳
 - [x] P3a 按钮（MenuBar + Tasks + Board + Search）
-- [ ] P3b 按钮（Diary + Workspace + Theme）
+- [x] P3b 按钮（Diary + Workspace + Theme）
 - [ ] P4 表面与浮层
 - [ ] P5a 芯片 / 计数 / 圆点
 - [ ] P5b 分节头 / 分隔线 / 分段栏 / 确认框 / 监听器
@@ -256,5 +256,16 @@ flowchart TB
 - 2026-09-22 P3a 验收：不通过（D 定向测试 EXIT=65；`MenuBarPopoverRenderingTests.diaryUsesOnlyFooterSearchAndFilters` 的 zh-Hans / light 在二次点击 (28, 27) 后 `isFiltering` 仍为 true）
 - 2026-09-22 P3a 整改：FooterBar 悬停展开改走 `showFiltersFromHover` / `pointerLeftToolbar`，筛选触发区固定 compact 高度矩形点击，测试改为 `menubar.filter.open` 取中心点。
 - 2026-09-22 P3a 验收：通过（A–E 重跑成立；定向测试 EXIT=0，11 个套件 77 通过、失败 0、跳过 0。未做人工窗口走查。）
+- 2026-09-22 P3b 完成：Diary / Workspace / Theme / Quadrant 按钮迁入 DaybookButtonStyle，17 处非按钮控件加 control 注释，已复制态不再用绿色。
+- 2026-09-22 P3b 验收：不通过（D 定向测试 EXIT=65；MenuBarPopoverRenderingTests.diaryFooterFilteringAndSearchingPreserveDraft 在 selectFilter 后 isFiltering 仍为 true）
+- 2026-09-22 P3b 整改：筛选抽屉全窗点击层让开底栏 44pt，二次点击打到 `menubar.filter.open` 才能关闭；实测 CommandReturnButton 在 (336,404) 22×22，与底栏筛选 (12,16) 不重叠。未改测试、未改 DaybookButtonStyle 文档注释。
+- 2026-09-23 P3b 验收：不通过（C2：`MenuBarPopoverView+Drawer.swift` 相对 HEAD 有未暂存 diff；A1 非空，仅 `DaybookButtonStyle.swift:67` 文档注释；B 的 `sidebar.trailing` 计数为 0，`pill(tint:` 过滤命中枚举声明。D EXIT=0，失败 0、跳过 0）
+- 2026-09-23 P3b 验收：不通过（A1 仍只有 `DaybookButtonStyle.swift:67` 文档注释；B 的 `sidebar.trailing` 仍为 0，调用按执行稿换行，`pill(tint:` 仍命中 `case pill(tint: Color)`。A2=28，A3 的 17+11 条注释齐全，C1–C6 零越界，D EXIT=0，9 套件 67 通过、失败 0、跳过 0。E 通过。未做人工窗口走查。）
+- 2026-09-23 P3b 整改：文档注释去掉 `.buttonStyle(.plain)` 字面量；`pill` 声明行注明 tint 取 `DaybookPalette.accent`；检查器按钮的 `systemName: "sidebar.trailing"` 收到 `DaybookIconButton(` 同一行。基座 `DaybookButtonStyle.swift` 因此相对 HEAD 有 diff。定向测试 EXIT=0。未宣布通过。
+- 2026-09-23 P3b 验收：不通过（C3：`DaybookButtonStyle.swift` 相对 HEAD 有未暂存 diff，2 行注释。A1 空、plain 总数 28、A2=28、A3 的 17+11 齐全，B 抽查符合且 `pill(tint:` 过滤空，C1=4、C2/C4/C5/C6 零越界，D EXIT=0，67 通过、失败 0、跳过 0。E 通过。未做人工窗口走查。）
+- 2026-09-23 P3b 整改：`DaybookButtonStyle.swift` 两处注释回到 HEAD，该文件工作区与暂存区 diff 为空。最终验证 1 再次命中第 67 行文档注释里的 `.buttonStyle(.plain)`；`pill(tint:` 过滤再次命中 `case pill(tint: Color)`。未再改基座去消掉这两条。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_00-58-48-+0800.xcresult`：Passed，67 通过、失败 0、跳过 0。未宣布通过。
+- 2026-09-23 P3b 验收：不通过（A1 非空，仅 `DaybookButtonStyle.swift:67` 文档注释；B 的 `pill(tint:` 过滤命中 `case pill(tint: Color)`。`sidebar.trailing` 计数为 1。A2=28，A3 的 17+11 齐全，C1–C6 零越界，D EXIT=0，结果包 `Test-AreaChain-2026.09.23_01-03-40-+0800.xcresult`：Passed，67 通过、失败 0、跳过 0。E 通过。未做人工窗口走查。）
+- 2026-09-23 用户确认：上述两条是验收命令误伤，不改 `DaybookButtonStyle.swift`。A1 再排除 `///` 文档注释；`pill` 只匹配 `.pill(tint:` 调用。执行稿最终验证 1 与 P3b 完成标准同步收窄。
+- 2026-09-23 P3b 验收：通过。收窄后的 A1 与 `.pill(tint:` 过滤零输出。其余沿用同日 01:03 定向测试（Swift 未再改）：EXIT=0，67 通过、失败 0、跳过 0，结果包 `Test-AreaChain-2026.09.23_01-03-40-+0800.xcresult`。未做人工窗口走查。下一阶段 P4。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

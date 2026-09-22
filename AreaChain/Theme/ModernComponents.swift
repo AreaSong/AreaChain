@@ -27,7 +27,7 @@ struct ModernCheckbox: View {
 
     var body: some View {
         Button(action: handleTap) { checkboxContent }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain) // control: 复选框，非按钮语义
             .onHover { hovering = $0 }
             .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
             .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
@@ -107,7 +107,7 @@ struct PillBadge: View {
                 Button(action: action) {
                     badgeContent
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain) // control: 胶囊徽章，P5 迁 DaybookChip
             } else {
                 badgeContent
             }

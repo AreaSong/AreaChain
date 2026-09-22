@@ -167,16 +167,7 @@ struct LiveComposerPreviewHeader: View {
             }
             .fixedSize(horizontal: true, vertical: false)
 
-            Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.8))
-                    .frame(width: 18, height: 18)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help("common.close")
-            .accessibilityLabel("common.close")
+            DaybookIconButton(systemName: "xmark", label: "common.close", size: .inline, action: onClose)
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
