@@ -208,7 +208,9 @@ flowchart TB
 完成标准：上述旧 API 零引用；Features 里 `.shadow(color:` 数量与 P4a 前相同（本阶段不碰阴影）；定向测试通过。
 
 ### P4b 浮层与剩余自绘表面
-做：全部 `.shadow(color:` 改为 `daybookElevation`（浮层 `.floating`，分段栏滑块 `.raised`）；搜索命中行、附件结果行、语法范例卡、手记卡片、抽屉分组、日历格、甘特色块按 variant 迁入。象限选择格保留象限色，不压成通用选中色。提示词在 P4a 验收通过后生成。
+提示词：`design-system-P4b-execute.md` / `design-system-P4b-verify.md`。
+做：12 处 `.shadow(color:` 全部换成 `daybookElevation`（分段栏滑块 `.raised`，其余浮层 `.floating`）。搜索工作台行、附件结果行、语法范例卡、抽屉分组、手记卡片改用已有 `daybookSurface`；手记置顶且未高亮时另留一条印章描边。象限选择格、日历日格、甘特色块保留自绘（今日环 / 投放 / 优先级色是表面基座没有的第三态），只改注释。不新增 variant，不改 `DaybookSurface.swift` 的外观规则。
+完成标准：代码里的 `.shadow(color:` 只剩 `DaybookElevation.swift` 改写后的说明或为零；上述行与卡片已用 `daybookSurface`；定向测试通过。
 
 ### P5 芯片、分节头、分隔线、分段栏、确认框、监听器（可分两次：a = 芯片/计数/圆点；b = 其余）
 必读：`Theme/ModernComponents.swift`（`PillBadge`）、`Theme/DaybookTheme.swift`（`SectionStamp`）、`Features/MenuBar/MenuBarControls.swift`、`Theme/TrashConfirm.swift`、`Theme/CommandReturnButton.swift`、`Features/Board/BoardRowChrome.swift`（80–100）、3.6 / 3.7 节全部文件。
