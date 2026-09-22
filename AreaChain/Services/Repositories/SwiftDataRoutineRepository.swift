@@ -276,7 +276,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         for routine in routines where ids.contains(routine.id) {
-            routine.projectID = projectID
+            ClassifiedFieldsUpdate.setProject(routine, projectID: projectID)
         }
         try saveAndNotify()
     }
@@ -285,7 +285,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         for routine in routines where ids.contains(routine.id) {
-            routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
+            ClassifiedFieldsUpdate.toggleTag(routine, tagID: tagID)
         }
         try saveAndNotify()
     }
@@ -301,7 +301,10 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             routine.deletedAt = now
             SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .routine)
         } else {
-            try OwnedAttachments.purge(ownerID: routine.id, kind: .routine, in: context)
+            let stamp = routine.deletedAt ?? SoftDelete.stamp()
+            SoftDelete.stampAttachments(
+                ownerID: routine.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .routine
+            )
             context.delete(routine)
         }
         try saveAndNotify()
@@ -323,17 +326,20 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     }
 
     func purgeRoutine(id: UUID) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: routine.id, kind: .routine).map(\.id))
         try deleteRoutine(id: id, soft: false)
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
 
     // MARK: - 排序 (Reorder)
 
     func reorderRoutines(orderedIDs: [UUID]) throws {
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
-        for (idx, id) in orderedIDs.enumerated() {
-            if let routine = routines.first(where: { $0.id == id }) {
-                routine.sortOrder = idx
-            }
+        Catalog.writeSortOrder(routines, orderedIDs: orderedIDs, id: \.id) { routine, index in
+            routine.sortOrder = index
         }
         try saveAndNotify()
     }

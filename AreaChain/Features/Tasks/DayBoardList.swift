@@ -291,20 +291,17 @@ struct DayBoardList: View {
     private func filteredTodos(_ list: [TodoItem]) -> [TodoItem] {
         guard filter.isActive else { return list }
         return list.filter {
-            guard Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
-            if filter.dateScope != .all {
-                guard Classification.matchesDate(dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
-            }
-            return true
+            Classification.matchesListedTodo(
+                $0.classifyBits, dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey,
+                filter: filter, projectIDs: allowedProjects
+            )
         }
     }
 
     private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
         guard filter.isActive else { return list }
         return list.filter {
-            guard Classification.matches($0.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
-            if filter.dateScope == .overdue { return false }
-            return true
+            Classification.matchesListedRoutine($0.classifyBits, filter: filter, projectIDs: allowedProjects)
         }
     }
 
@@ -313,15 +310,12 @@ struct DayBoardList: View {
         return rows.filter { row in
             switch row {
             case .resident(let routine):
-                guard Classification.matches(routine.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
-                if filter.dateScope == .overdue { return false }
-                return true
+                return Classification.matchesListedRoutine(routine.classifyBits, filter: filter, projectIDs: allowedProjects)
             case .todo(let todo):
-                guard Classification.matches(todo.classifyBits, filter: filter, projectIDs: allowedProjects) else { return false }
-                if filter.dateScope != .all {
-                    guard Classification.matchesDate(dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
-                }
-                return true
+                return Classification.matchesListedTodo(
+                    todo.classifyBits, dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey,
+                    filter: filter, projectIDs: allowedProjects
+                )
             }
         }
     }

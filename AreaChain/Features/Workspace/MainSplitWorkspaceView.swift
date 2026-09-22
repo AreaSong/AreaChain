@@ -204,12 +204,7 @@ struct MainSplitWorkspaceView: View {
     private func commitNewProject() {
         let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return }
-        let project = ProjectItem(
-            name: name,
-            sortOrder: Catalog.nextSortOrder(projects.map(\.sortOrder)),
-            parentID: newProjectParentID
-        )
-        guard ModelChanges.perform(in: modelContext, { modelContext.insert(project) }) else { return }
+        guard let project = DayBoardMutations.addProject(name: name, parentID: newProjectParentID, context: modelContext) else { return }
         newProjectName = ""
         newProjectParentID = nil
         isAddingProject = false

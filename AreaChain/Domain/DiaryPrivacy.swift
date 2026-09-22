@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum DiaryPrivacy {
     enum ContentMode { case masked, editing, text }
@@ -46,19 +47,34 @@ enum AttachmentAccess {
         return true
     }
 
+    static func isSingleLive(deletedAts: [Date?]) -> Bool {
+        deletedAts.count == 1 && deletedAts[0] == nil
+    }
+
     static func ownerIsLive(
         _ owner: AttachmentOwnerKey, todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]
     ) -> Bool {
         switch owner.kind {
         case .todo:
-            let matches = todos.filter { $0.id == owner.id }
-            return matches.count == 1 && matches[0].deletedAt == nil
+            return isSingleLive(deletedAts: todos.filter { $0.id == owner.id }.map(\.deletedAt))
         case .routine:
-            let matches = routines.filter { $0.id == owner.id }
-            return matches.count == 1 && matches[0].deletedAt == nil
+            return isSingleLive(deletedAts: routines.filter { $0.id == owner.id }.map(\.deletedAt))
         case .diary:
-            let matches = diaries.filter { $0.id == owner.id }
-            return matches.count == 1 && matches[0].deletedAt == nil
+            return isSingleLive(deletedAts: diaries.filter { $0.id == owner.id }.map(\.deletedAt))
+        }
+    }
+
+    static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
+        switch owner.kind {
+        case .todo:
+            let matches = try context.fetch(FetchDescriptor<TodoItem>()).filter { $0.id == owner.id }
+            return isSingleLive(deletedAts: matches.map(\.deletedAt))
+        case .routine:
+            let matches = try context.fetch(FetchDescriptor<DailyRoutine>()).filter { $0.id == owner.id }
+            return isSingleLive(deletedAts: matches.map(\.deletedAt))
+        case .diary:
+            let matches = try context.fetch(FetchDescriptor<DiaryEntry>()).filter { $0.id == owner.id }
+            return isSingleLive(deletedAts: matches.map(\.deletedAt))
         }
     }
 }

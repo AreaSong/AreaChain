@@ -16,6 +16,7 @@ struct DiaryNoteCard: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
     @Environment(\.daybookViewStyle) var viewStyle
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var entry: DiaryEntry
     var activeTags: [TagItem]
     var attachments: [AttachmentItem]
@@ -25,8 +26,10 @@ struct DiaryNoteCard: View {
     var draftStore: DiaryCardDrafts? = nil
     var vault: PrivacyVault? = nil
 
-    @State var isHovered = false
+    @State private var chrome = BoardRowChrome()
     @State private var localDrafts = DiaryCardDrafts()
+    @State var pickingDay = false
+    @State var hasConvertedToTask = false
     @State private var hostWindow: NSWindow?
     @State var showsEditConflict = false
     @State var editFocused = false
@@ -38,6 +41,8 @@ struct DiaryNoteCard: View {
     var drafts: DiaryCardDrafts { draftStore ?? localDrafts }
     var editingSession: DiaryEditorSession? { drafts.editor(for: entry.id) }
     var isEditing: Bool { editingSession != nil }
+    var isHovered: Bool { chrome.isRowHovered }
+    var showsCommandStrip: Bool { isHovered && chrome.isCommandPressed }
 
     var isPasswordType: Bool {
         editingSession?.isSensitive == true || DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags)
@@ -97,7 +102,15 @@ struct DiaryNoteCard: View {
                     lineWidth: isHighlighted || entry.isPinned ? 1.2 : 0.8
                 )
         )
-        .onHover { isHovered = $0 }
+        .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
+        .onAppear { chrome.startCommandMonitor(reduceMotion: reduceMotion) }
+        .onDisappear { chrome.stop() }
+        .popover(isPresented: $pickingDay) {
+            DaySchedulePicker(initialKey: entry.dayKey) { key in
+                DayBoardMutations.moveDiary(entry, to: key)
+                pickingDay = false
+            }
+        }
         .background(KeyWindowHost { hostWindow = $0 })
         .alert("diary.window.reload.title", isPresented: $showsEditConflict) {
             Button("diary.window.reload") { reloadEditingDraft() }

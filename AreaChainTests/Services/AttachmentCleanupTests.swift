@@ -65,7 +65,7 @@ struct AttachmentCleanupTests {
         context.insert(image)
         try context.save()
         let row = try #require(TrashRow.diary(diary, attachments: [image], tags: { [] }, locale: .current))
-        #expect(ModelChanges.perform(in: context) { row.removeFromStore(context) })
+        #expect(ModelChanges.perform(in: context) { try row.removeFromStore(context) })
         #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
         #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 1)
         try AttachmentCleanup.purge(ids: Set(row.filesToRemove), context: context, removeFile: { _ in })

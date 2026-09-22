@@ -43,7 +43,12 @@ enum DayBoardMutations {
 
     @discardableResult
     static func trashAttachment(_ item: AttachmentItem) -> Bool {
-        persist(context: item.modelContext) { item.deletedAt = .now }
+        persist(context: item.modelContext) { item.deletedAt = SoftDelete.stamp() }
+    }
+
+    @discardableResult
+    static func restoreAttachment(_ item: AttachmentItem) -> Bool {
+        persist(context: item.modelContext) { item.deletedAt = nil }
     }
 
     @discardableResult
@@ -144,6 +149,11 @@ enum DayBoardMutations {
     @discardableResult
     static func restoreTodo(_ todo: TodoItem) -> Bool {
         ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).restoreTodo(id: todo.id) }
+    }
+
+    @discardableResult
+    static func purgeTodo(_ todo: TodoItem) -> Bool {
+        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).purgeTodo(id: todo.id) }
     }
 
     @discardableResult
@@ -274,6 +284,20 @@ enum DayBoardMutations {
     }
 
     @discardableResult
+    static func restoreRoutine(_ routine: DailyRoutine) -> Bool {
+        ModelChanges.attempt(in: routine.modelContext) {
+            try routineRepo(for: routine.modelContext).restoreRoutine(id: routine.id)
+        }
+    }
+
+    @discardableResult
+    static func purgeRoutine(_ routine: DailyRoutine) -> Bool {
+        ModelChanges.attempt(in: routine.modelContext) {
+            try routineRepo(for: routine.modelContext).purgeRoutine(id: routine.id)
+        }
+    }
+
+    @discardableResult
     static func trashRoutine(_ routine: DailyRoutine) -> Bool {
         ModelChanges.attempt(in: routine.modelContext) { try routineRepo(for: routine.modelContext).deleteRoutine(id: routine.id, soft: true) }
     }
@@ -350,6 +374,47 @@ enum DayBoardMutations {
     @discardableResult
     static func deleteDiary(_ entry: DiaryEntry) -> Bool {
         ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).deleteDiary(id: entry.id, soft: true) }
+    }
+
+    @discardableResult
+    static func restoreDiary(_ entry: DiaryEntry) -> Bool {
+        ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).restoreDiary(id: entry.id) }
+    }
+
+    @discardableResult
+    static func purgeDiary(_ entry: DiaryEntry) -> Bool {
+        ModelChanges.attempt(in: entry.modelContext) { try diaryRepo(for: entry.modelContext).purgeDiary(id: entry.id) }
+    }
+
+    @discardableResult
+    static func restoreProject(_ project: ProjectItem) -> Bool {
+        guard let context = project.modelContext else { return false }
+        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).restoreProject(id: project.id) }
+    }
+
+    @discardableResult
+    static func purgeProject(_ project: ProjectItem) -> Bool {
+        guard let context = project.modelContext else { return false }
+        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).purgeProject(id: project.id) }
+    }
+
+    @discardableResult
+    static func restoreTag(_ tag: TagItem) -> Bool {
+        guard let context = tag.modelContext else { return false }
+        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).restoreTag(id: tag.id) }
+    }
+
+    @discardableResult
+    static func purgeTag(_ tag: TagItem) -> Bool {
+        guard let context = tag.modelContext else { return false }
+        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).purgeTag(id: tag.id) }
+    }
+
+    @discardableResult
+    static func addProject(name: String, parentID: UUID?, context: ModelContext) -> ProjectItem? {
+        ModelChanges.value(in: context) {
+            try catalogRepo(for: context).createProject(name: name, parentID: parentID, sortOrder: nil)
+        }
     }
 
     @discardableResult

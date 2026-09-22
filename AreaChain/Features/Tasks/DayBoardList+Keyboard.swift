@@ -4,8 +4,7 @@ import SwiftUI
 extension DayBoardList {
     func setupKeyMonitor() {
         guard focusedTaskID != nil else { return }
-        guard keyMonitor == nil else { return }
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        keyMonitor = BoardKeyMonitor.install(existing: keyMonitor) { event in
             guard self.shouldHandle(event) else { return event }
 
             let firstResponder = NSApp.keyWindow?.firstResponder
@@ -113,10 +112,8 @@ extension DayBoardList {
     }
 
     func tearDownKeyMonitor() {
-        if let monitor = keyMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyMonitor = nil
-        }
+        BoardKeyMonitor.remove(keyMonitor)
+        keyMonitor = nil
     }
 
     func navigateSelection(delta: Int, extending: Bool = false) {

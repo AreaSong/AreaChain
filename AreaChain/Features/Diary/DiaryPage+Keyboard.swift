@@ -3,17 +3,14 @@ import SwiftUI
 
 extension DiaryPage {
     func setupKeyMonitor() {
-        guard keyMonitor == nil else { return }
-        keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        keyMonitor = BoardKeyMonitor.install(existing: keyMonitor) { event in
             self.handleListKeyDown(event)
         }
     }
 
     func tearDownKeyMonitor() {
-        if let monitor = keyMonitor {
-            NSEvent.removeMonitor(monitor)
-            keyMonitor = nil
-        }
+        BoardKeyMonitor.remove(keyMonitor)
+        keyMonitor = nil
     }
 
     func handleListKeyDown(_ event: NSEvent) -> NSEvent? {

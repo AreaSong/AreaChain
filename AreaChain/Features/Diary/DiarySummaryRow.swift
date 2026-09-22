@@ -375,36 +375,16 @@ struct DiarySummaryRow: View {
         // 分区 2: 组织与分类（标签、排程日期、置顶）
         if !allTags.isEmpty {
             Menu("diary.quick.tags") {
-                ForEach(allTags) { tag in
-                    Button {
-                        toggleTag(tag.id)
-                    } label: {
-                        HStack {
-                            Text("#" + tag.name)
-                            if assignedTagIDs.contains(tag.id) {
-                                Spacer()
-                                Image(systemName: "checkmark")
-                            }
-                        }
-                    }
-                }
+                DiaryTagToggleButtons(
+                    tags: allTags,
+                    assignedIDs: Set(TagIDList.parse(entry.tagIDs)),
+                    onToggle: toggleTag
+                )
             }
         }
 
         Menu("diary.quick.schedule") {
-            Button(L10n.string("diary.schedule.today", locale: locale)) {
-                moveDiary(to: DayKey.today())
-            }
-            Button(L10n.string("diary.schedule.yesterday", locale: locale)) {
-                moveDiary(to: DayKey.yesterday())
-            }
-            Button(L10n.string("diary.schedule.tomorrow", locale: locale)) {
-                moveDiary(to: DayKey.tomorrow())
-            }
-            Divider()
-            Button(L10n.string("diary.schedule.custom", locale: locale)) {
-                pickingDay = true
-            }
+            DiaryDayMoveButtons(onMove: moveDiary(to:), onPickCustom: { pickingDay = true })
         }
 
         Button(entry.isPinned ? "diary.unpin" : "diary.pin", action: togglePin)

@@ -107,14 +107,7 @@ enum AttachmentPicker {
     }
 
     private static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
-        switch owner.kind {
-        case .todo:
-            return try context.fetch(FetchDescriptor<TodoItem>()).contains { $0.id == owner.id && $0.deletedAt == nil }
-        case .routine:
-            return try context.fetch(FetchDescriptor<DailyRoutine>()).contains { $0.id == owner.id && $0.deletedAt == nil }
-        case .diary:
-            return try context.fetch(FetchDescriptor<DiaryEntry>()).contains { $0.id == owner.id && $0.deletedAt == nil }
-        }
+        try AttachmentAccess.ownerIsLive(owner, context: context)
     }
 }
 

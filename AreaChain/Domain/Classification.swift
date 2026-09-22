@@ -211,6 +211,24 @@ enum Classification {
         return true
     }
 
+    static func matchesListedTodo(
+        _ bits: ClassifyBits, dayKey: String, isDone: Bool, todayKey: String,
+        filter: BoardFilter, projectIDs: Set<UUID>? = nil
+    ) -> Bool {
+        guard matches(bits, filter: filter, projectIDs: projectIDs) else { return false }
+        if filter.dateScope != .all {
+            guard matchesDate(dayKey: dayKey, isDone: isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
+        }
+        return true
+    }
+
+    static func matchesListedRoutine(
+        _ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil
+    ) -> Bool {
+        guard matches(bits, filter: filter, projectIDs: projectIDs) else { return false }
+        return filter.dateScope != .overdue
+    }
+
     static func matchesDate(dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope) -> Bool {
         switch scope {
         case .all:

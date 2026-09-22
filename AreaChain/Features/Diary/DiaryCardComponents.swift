@@ -26,10 +26,55 @@ extension DiaryNoteCard {
                 .background(Capsule().fill(Color.red.opacity(0.10)))
             }
 
-            Spacer()
-
-            actionButtons
+            if showsCommandStrip {
+                DiaryRowCommandStrip(
+                    isSensitive: isPasswordType,
+                    isPinned: entry.isPinned,
+                    hasConvertedToTask: hasConvertedToTask,
+                    allTags: activeTags,
+                    assignedTagIDs: Set(TagIDList.parse(entry.tagIDs)),
+                    currentDayKey: entry.dayKey,
+                    onOpen: openDiaryWindow,
+                    onConvertToTask: convertDiaryToTask,
+                    onCopy: copyContent,
+                    onToggleTag: { toggleDiaryTag($0) },
+                    onMoveToDay: { DayBoardMutations.moveDiary(entry, to: $0) },
+                    onPickCustomDate: { pickingDay = true },
+                    onTogglePin: { _ = DayBoardMutations.togglePinDiary(entry) },
+                    onAttach: attachImage,
+                    onTogglePrivate: { _ = DayBoardMutations.togglePrivateDiary(entry) },
+                    onInspect: inspectDiaryInWorkspace,
+                    onDelete: onDelete
+                )
+            } else {
+                Spacer()
+                actionButtons
+            }
         }
+    }
+
+    private func openDiaryWindow() {
+        DiaryWindows.shared.open(entry: entry, context: modelContext)
+    }
+
+    private func convertDiaryToTask() {
+        if DayBoardMutations.convertDiaryToTodo(entry, context: modelContext) {
+            hasConvertedToTask = true
+        }
+    }
+
+    private func toggleDiaryTag(_ tagID: UUID) {
+        DayBoardMutations.toggleDiaryTag(entry, tagID: tagID)
+    }
+
+    private func attachImage() {
+        guard !(isPasswordType && isMasked) else { return }
+        AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
+    }
+
+    private func inspectDiaryInWorkspace() {
+        BoardSelection.shared.inspectDiary(id: entry.id, dayKey: entry.dayKey)
+        AppWindows.openDiary()
     }
 
     @ViewBuilder var editingContentView: some View {
@@ -113,8 +158,14 @@ extension DiaryNoteCard {
             .foregroundStyle(DaybookTheme.ink)
             .fixedSize(horizontal: false, vertical: true)
             .contentShape(Rectangle())
-            .onTapGesture(count: 2) {
-                beginEditing()
+            .overlay {
+                BoardRowPointerRegion(
+                    id: entry.id,
+                    plainDoubleClick: true,
+                    onSelect: { _, _ in },
+                    onDoubleClick: beginEditing
+                )
+                .accessibilityHidden(true)
             }
     }
 

@@ -157,7 +157,10 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             entry.deletedAt = now
             SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .diary)
         } else {
-            try OwnedAttachments.purge(ownerID: entry.id, kind: .diary, in: context)
+            let stamp = entry.deletedAt ?? SoftDelete.stamp()
+            SoftDelete.stampAttachments(
+                ownerID: entry.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .diary
+            )
             context.delete(entry)
         }
         try saveAndNotify()
@@ -179,7 +182,12 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     }
 
     func purgeDiary(id: UUID) throws {
+        guard let entry = try fetchDiary(id: id) else {
+            throw RepositoryError.notFound("DiaryEntry(id: \(id))")
+        }
+        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: entry.id, kind: .diary).map(\.id))
         try deleteDiary(id: id, soft: false)
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
 
     // MARK: - 内部辅助 (Internal Helpers)

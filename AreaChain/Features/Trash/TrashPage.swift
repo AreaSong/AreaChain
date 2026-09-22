@@ -35,8 +35,8 @@ struct TrashPage: View {
                 return item.filename
             })
         }
-        let catalog = projects.compactMap { TrashRow.project($0, todos: todos, routines: routines, projects: projects) }
-            + tags.compactMap { TrashRow.tag($0, todos: todos, routines: routines, diaries: diaries) }
+        let catalog = projects.compactMap { TrashRow.project($0) }
+            + tags.compactMap { TrashRow.tag($0) }
         return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
     }
 
@@ -129,13 +129,12 @@ struct TrashPage: View {
     }
 
     private func restore(_ item: TrashRow) {
-        ModelChanges.perform(in: modelContext) { item.restore() }
+        item.restore()
     }
 
     private func purge(_ item: TrashRow) {
-        guard ModelChanges.perform(in: modelContext, { item.removeFromStore(modelContext) }) else { return }
+        guard item.purge() else { return }
         if let owner = item.purgesOwner { EditDrafts.shared.discard(owner: owner) }
-        ModelChanges.attempt { try AttachmentCleanup.purge(ids: Set(item.filesToRemove), context: modelContext) }
     }
 
     private func emptyTrash() {
@@ -144,7 +143,7 @@ struct TrashPage: View {
         guard ModelChanges.perform(in: modelContext, {
             for item in rows {
                 if let owner = item.skipIfOwnerPurged, purgedOwners.contains(owner) { continue }
-                item.removeFromStore(modelContext)
+                try item.removeFromStore(modelContext)
             }
         }) else { return }
         for owner in purgedOwners { EditDrafts.shared.discard(owner: owner) }
@@ -152,14 +151,16 @@ struct TrashPage: View {
     }
 }
 
+@MainActor
 struct TrashRow: Identifiable {
     var id: UUID
     var title: String
     var kindLabel: LocalizedStringKey
     var isResident: Bool
     var deletedAt: Date
-    var restore: () -> Void
-    var removeFromStore: (ModelContext) -> Void
+    var restore: @MainActor () -> Void
+    var purge: @MainActor () -> Bool
+    var removeFromStore: @MainActor (ModelContext) throws -> Void
     var purgesOwner: AttachmentOwnerKey? = nil
     var skipIfOwnerPurged: AttachmentOwnerKey? = nil
     var canRestore: Bool = true
@@ -176,21 +177,10 @@ struct TrashRow: Identifiable {
             kindLabel: "trash.kind.resident",
             isResident: true,
             deletedAt: deletedAt,
-            restore: {
-                let stamp = item.deletedAt
-                item.deletedAt = nil
-                SoftDelete.restoreCascadedAttachments(
-                    ownerID: item.id,
-                    parentDeletedAt: stamp,
-                    attachments: attachments,
-                    ownerKind: .routine
-                )
-            },
+            restore: { _ = DayBoardMutations.restoreRoutine(item) },
+            purge: { DayBoardMutations.purgeRoutine(item) },
             removeFromStore: { context in
-                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .routine, id: item.id) {
-                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
-                }
-                context.delete(item)
+                try DayBoardMutations.routineRepo(for: context).deleteRoutine(id: item.id, soft: false)
             },
             purgesOwner: AttachmentOwnerKey(kind: .routine, id: item.id),
             filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .routine, id: item.id) }.map(\.id)
@@ -205,25 +195,10 @@ struct TrashRow: Identifiable {
             kindLabel: "trash.kind.todo",
             isResident: false,
             deletedAt: deletedAt,
-            restore: {
-                let stamp = item.deletedAt
-                item.deletedAt = nil
-                SoftDelete.restoreCascadedSubtasks(parentDeletedAt: stamp, subtasks: item.subtasks)
-                SoftDelete.restoreCascadedAttachments(
-                    ownerID: item.id,
-                    parentDeletedAt: stamp,
-                    attachments: attachments,
-                    ownerKind: .todo
-                )
-            },
+            restore: { _ = DayBoardMutations.restoreTodo(item) },
+            purge: { DayBoardMutations.purgeTodo(item) },
             removeFromStore: { context in
-                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .todo, id: item.id) {
-                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
-                }
-                for sub in item.subtasks {
-                    context.delete(sub)
-                }
-                context.delete(item)
+                try DayBoardMutations.taskRepo(for: context).deleteTodo(id: item.id, soft: false)
             },
             purgesOwner: AttachmentOwnerKey(kind: .todo, id: item.id),
             filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .todo, id: item.id) }.map(\.id)
@@ -238,21 +213,10 @@ struct TrashRow: Identifiable {
             kindLabel: "trash.kind.diary",
             isResident: false,
             deletedAt: deletedAt,
-            restore: {
-                let stamp = item.deletedAt
-                item.deletedAt = nil
-                SoftDelete.restoreCascadedAttachments(
-                    ownerID: item.id,
-                    parentDeletedAt: stamp,
-                    attachments: attachments,
-                    ownerKind: .diary
-                )
-            },
+            restore: { _ = DayBoardMutations.restoreDiary(item) },
+            purge: { DayBoardMutations.purgeDiary(item) },
             removeFromStore: { context in
-                for attachment in attachments where attachment.ownerKey == AttachmentOwnerKey(kind: .diary, id: item.id) {
-                    if attachment.deletedAt == nil { attachment.deletedAt = deletedAt }
-                }
-                context.delete(item)
+                try DayBoardMutations.diaryRepo(for: context).deleteDiary(id: item.id, soft: false)
             },
             purgesOwner: AttachmentOwnerKey(kind: .diary, id: item.id),
             titleProvider: { DiaryPrivacy.displayText(item.snapshot, tags: tags(), locale: locale) },
@@ -260,12 +224,7 @@ struct TrashRow: Identifiable {
         )
     }
 
-    static func project(
-        _ item: ProjectItem,
-        todos: [TodoItem],
-        routines: [DailyRoutine],
-        projects: [ProjectItem]
-    ) -> TrashRow? {
+    static func project(_ item: ProjectItem) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -273,20 +232,15 @@ struct TrashRow: Identifiable {
             kindLabel: "trash.kind.project",
             isResident: false,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: { _ = DayBoardMutations.restoreProject(item) },
+            purge: { DayBoardMutations.purgeProject(item) },
             removeFromStore: { context in
-                Catalog.unlinkProject(item.id, todos: todos, routines: routines, projects: projects)
-                context.delete(item)
+                try DayBoardMutations.catalogRepo(for: context).deleteProject(id: item.id, soft: false)
             }
         )
     }
 
-    static func tag(
-        _ item: TagItem,
-        todos: [TodoItem],
-        routines: [DailyRoutine],
-        diaries: [DiaryEntry]
-    ) -> TrashRow? {
+    static func tag(_ item: TagItem) -> TrashRow? {
         guard let deletedAt = item.deletedAt else { return nil }
         return TrashRow(
             id: item.id,
@@ -294,10 +248,10 @@ struct TrashRow: Identifiable {
             kindLabel: "trash.kind.tag",
             isResident: false,
             deletedAt: deletedAt,
-            restore: { item.deletedAt = nil },
+            restore: { _ = DayBoardMutations.restoreTag(item) },
+            purge: { DayBoardMutations.purgeTag(item) },
             removeFromStore: { context in
-                Catalog.unlinkTag(item.id, todos: todos, routines: routines, diaries: diaries)
-                context.delete(item)
+                try DayBoardMutations.catalogRepo(for: context).deleteTag(id: item.id, soft: false)
             }
         )
     }
@@ -312,7 +266,13 @@ struct TrashRow: Identifiable {
             deletedAt: deletedAt,
             restore: {
                 guard !ownerDeleted else { return }
-                item.deletedAt = nil
+                _ = DayBoardMutations.restoreAttachment(item)
+            },
+            purge: {
+                guard let context = item.modelContext else { return false }
+                return ModelChanges.attempt(in: context) {
+                    try AttachmentCleanup.purge(ids: [item.id], context: context)
+                }
             },
             removeFromStore: { _ in
                 // 文件成功删除后由 AttachmentCleanup 移除元数据，失败则留在回收站供重试。

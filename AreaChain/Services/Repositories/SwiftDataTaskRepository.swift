@@ -177,7 +177,10 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
             SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .todo)
         } else {
-            try OwnedAttachments.purge(ownerID: todo.id, kind: .todo, in: context)
+            let stamp = todo.deletedAt ?? SoftDelete.stamp()
+            SoftDelete.stampAttachments(
+                ownerID: todo.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .todo
+            )
             context.delete(todo)
         }
         try saveAndNotify()
@@ -200,7 +203,12 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     }
 
     func purgeTodo(id: UUID) throws {
+        guard let todo = try fetchTodo(id: id) else {
+            throw RepositoryError.notFound("TodoItem(id: \(id))")
+        }
+        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: todo.id, kind: .todo).map(\.id))
         try deleteTodo(id: id, soft: false)
+        if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
 
     // MARK: - 子任务级联操作 (Subtask Operations)
@@ -263,7 +271,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             throw RepositoryError.notFound("SubtaskItem(id: \(id))")
         }
         if soft {
-            subtask.deletedAt = .now
+            subtask.deletedAt = SoftDelete.stamp()
         } else {
             context.delete(subtask)
         }
@@ -274,10 +282,8 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: todoID) else {
             throw RepositoryError.notFound("TodoItem(id: \(todoID))")
         }
-        for (idx, id) in orderedIDs.enumerated() {
-            if let item = todo.subtasks.first(where: { $0.id == id }) {
-                item.sortOrder = idx
-            }
+        Catalog.writeSortOrder(Array(todo.subtasks), orderedIDs: orderedIDs, id: \.id) { item, index in
+            item.sortOrder = index
         }
         try saveAndNotify()
     }
@@ -322,7 +328,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let todos = try fetchAllTodos(includeDeleted: false)
         for todo in todos where ids.contains(todo.id) {
-            todo.projectID = projectID
+            ClassifiedFieldsUpdate.setProject(todo, projectID: projectID)
         }
         try saveAndNotify()
     }
@@ -331,7 +337,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let todos = try fetchAllTodos(includeDeleted: false)
         for todo in todos where ids.contains(todo.id) {
-            todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
+            ClassifiedFieldsUpdate.toggleTag(todo, tagID: tagID)
         }
         try saveAndNotify()
     }

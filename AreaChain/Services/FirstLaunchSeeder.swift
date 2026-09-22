@@ -19,19 +19,22 @@ enum FirstLaunchSeeder {
             return
         }
         let locale = AppPreferences.shared.resolvedLocale
-        context.insert(
-            DailyRoutine(
-                title: L10n.string("seed.routine.daily", locale: locale),
-                sortOrder: 0,
-                weekdaysOnly: true
-            )
-        )
-        context.insert(
-            DailyRoutine(
-                title: L10n.string("seed.routine.review", locale: locale),
-                sortOrder: 1
-            )
-        )
+        do {
+            try ModelChanges.transaction(in: context) {
+                let repo = SwiftDataRoutineRepository(context: context)
+                _ = try repo.addRoutine(CreateRoutineParams(
+                    title: L10n.string("seed.routine.daily", locale: locale),
+                    sortOrder: 0,
+                    weekdaysOnly: true
+                ))
+                _ = try repo.addRoutine(CreateRoutineParams(
+                    title: L10n.string("seed.routine.review", locale: locale),
+                    sortOrder: 1
+                ))
+            }
+        } catch {
+            return
+        }
         defaults.set(true, forKey: defaultsKey)
     }
 }

@@ -109,6 +109,16 @@ enum Catalog {
         return openTodos + openRoutines + openSubtasks
     }
 
+    static func writeSortOrder<Item>(
+        _ items: [Item], orderedIDs: [UUID], id: (Item) -> UUID, assign: (Item, Int) -> Void
+    ) {
+        for (index, orderedID) in orderedIDs.enumerated() {
+            if let item = items.first(where: { id($0) == orderedID }) {
+                assign(item, index)
+            }
+        }
+    }
+
     static func reindexRoutines(_ items: [DailyRoutine], from source: IndexSet, to destination: Int) {
         var ordered = items
         ordered.move(fromOffsets: source, toOffset: destination)

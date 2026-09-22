@@ -56,19 +56,7 @@ struct DiaryRowCommandStrip: View {
                         key: "diary.quick.tags",
                         isActive: !assignedTagIDs.isEmpty
                     ) {
-                        ForEach(allTags) { tag in
-                            Button {
-                                onToggleTag(tag.id)
-                            } label: {
-                                HStack {
-                                    Text("#" + tag.name)
-                                    if assignedTagIDs.contains(tag.id) {
-                                        Spacer()
-                                        Image(systemName: "checkmark")
-                                    }
-                                }
-                            }
-                        }
+                        DiaryTagToggleButtons(tags: allTags, assignedIDs: assignedTagIDs, onToggle: onToggleTag)
                     }
                 }
 
@@ -78,19 +66,7 @@ struct DiaryRowCommandStrip: View {
                     key: "diary.quick.schedule",
                     isActive: currentDayKey == DayKey.today()
                 ) {
-                    Button(L10n.string("diary.schedule.today", locale: locale)) {
-                        onMoveToDay(DayKey.today())
-                    }
-                    Button(L10n.string("diary.schedule.yesterday", locale: locale)) {
-                        onMoveToDay(DayKey.yesterday())
-                    }
-                    Button(L10n.string("diary.schedule.tomorrow", locale: locale)) {
-                        onMoveToDay(DayKey.tomorrow())
-                    }
-                    Divider()
-                    Button(L10n.string("diary.schedule.custom", locale: locale)) {
-                        onPickCustomDate()
-                    }
+                    DiaryDayMoveButtons(onMove: onMoveToDay, onPickCustom: onPickCustomDate)
                 }
 
                 // 6. 置顶 / 取消置顶 📌

@@ -232,6 +232,14 @@ struct ClassificationTests {
         let filter = BoardFilter().withDateScope(.today)
         #expect(filter.isActive)
         #expect(filter.withDateScope(.all).isActive == false)
+
+        let bits = ClassifyBits()
+        let todayFilter = BoardFilter().withDateScope(.today)
+        let overdue = BoardFilter().withDateScope(.overdue)
+        #expect(Classification.matchesListedTodo(bits, dayKey: today, isDone: false, todayKey: today, filter: todayFilter))
+        #expect(!Classification.matchesListedTodo(bits, dayKey: yesterday, isDone: false, todayKey: today, filter: todayFilter))
+        #expect(!Classification.matchesListedRoutine(bits, filter: overdue))
+        #expect(Classification.matchesListedRoutine(bits, filter: todayFilter))
     }
 
     @Test func filterMatchesPriorityScope() {
