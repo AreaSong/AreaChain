@@ -1,5 +1,37 @@
 import SwiftUI
 
+/// 按日分组的搜索命中。搜索页、菜单栏和工作台共用分组，打开方式和行外观由调用方决定。
+struct BoardSearchHitGroups: View {
+    var hits: [BoardSearchHit]
+    var presentation: BoardSearchHitRow.Presentation = .list
+    var sectionSpacing: CGFloat = 14
+    var rowSpacing: CGFloat = 6
+    var isSelected: (BoardSearchHit) -> Bool = { _ in false }
+    var open: (BoardSearchHit) -> Void
+
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: sectionSpacing) {
+            ForEach(BoardSearch.grouped(hits), id: \.dayKey) { group in
+                VStack(alignment: .leading, spacing: rowSpacing) {
+                    Text(DayKey.displayName(group.dayKey, locale: locale))
+                        .font(DaybookType.caption.weight(.semibold))
+                        .foregroundStyle(DaybookTheme.muted)
+                    ForEach(group.items) { hit in
+                        BoardSearchHitRow(
+                            hit: hit,
+                            presentation: presentation,
+                            isSelected: isSelected(hit),
+                            action: { open(hit) }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// 搜索命中行。列表和菜单栏用紧凑文字，工作台用卡片并带选中标记。打开方式由调用方决定。
 struct BoardSearchHitRow: View {
     enum Presentation {

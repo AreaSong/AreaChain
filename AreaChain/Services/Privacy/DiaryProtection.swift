@@ -89,7 +89,7 @@ enum DiaryProtection {
                 entry.text = text
                 entry.encryptedText = nil
                 entry.privacyVaultID = nil
-                entry.isPrivate = false
+                DiaryPrivacy.assign(entry, isPrivate: false)
                 batch.apply()
             }
         } catch { batch.rollback(); throw error }

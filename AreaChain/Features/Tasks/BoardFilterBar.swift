@@ -51,126 +51,85 @@ struct BoardFilterBar: View {
     // MARK: - 项目筛选下拉
 
     private var projectDropdown: some View {
-        let isExpanded = Binding(
-            get: { activeDropdown == .project },
-            set: { activeDropdown = $0 ? .project : nil }
-        )
-        let allOption = FilterDropdownOption(
-            id: "all",
-            title: L10n.string("filter.all", locale: locale),
-            icon: "folder",
-            count: nil,
-            isSelected: filter.projectID == nil,
-            action: { onChange(filter.withProject(nil)) }
-        )
-        let noneOption = FilterDropdownOption(
-            id: BoardFilter.noneID.uuidString,
-            title: L10n.string("filter.project.none", locale: locale),
-            icon: "folder",
-            count: unclassifiedCount,
-            isSelected: filter.isNoProject,
-            action: { onChange(filter.withProject(BoardFilter.noneID)) }
-        )
-        let projectOptions = projects.map { project in
-            FilterDropdownOption(
-                id: project.id.uuidString,
-                title: project.name,
-                icon: "folder",
-                count: projectCounts[project.id],
-                isSelected: filter.projectID == project.id,
-                action: { onChange(filter.withProject(project.id)) }
-            )
-        }
-        return BoardFilterDropdownButton(
+        choiceDropdown(
+            BoardFilterChoices.projects(
+                filter: filter,
+                rows: projects.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
+                counts: projectCounts,
+                unclassifiedCount: unclassifiedCount,
+                locale: locale
+            ),
             icon: "folder",
             title: projectTitle,
             active: filter.projectID != nil,
-            isExpanded: isExpanded,
-            reset: { onChange(filter.withProject(nil)) },
-            allOption: allOption,
-            items: [noneOption] + projectOptions,
-            style: style
+            kind: .project,
+            reset: { onChange(filter.withProject(nil)) }
         )
     }
 
     // MARK: - 标签筛选下拉
 
     private var tagDropdown: some View {
-        let isExpanded = Binding(
-            get: { activeDropdown == .tag },
-            set: { activeDropdown = $0 ? .tag : nil }
-        )
-        let allOption = FilterDropdownOption(
-            id: "all",
-            title: L10n.string("filter.all", locale: locale),
-            icon: "tag",
-            count: nil,
-            isSelected: filter.tagID == nil,
-            action: { onChange(filter.withTag(nil)) }
-        )
-        let noneOption = FilterDropdownOption(
-            id: BoardFilter.noneID.uuidString,
-            title: L10n.string("filter.tag.none", locale: locale),
-            icon: "tag",
-            count: untaggedCount,
-            isSelected: filter.isNoTag,
-            action: { onChange(filter.withTag(BoardFilter.noneID)) }
-        )
-        let tagOptions = tags.map { tag in
-            FilterDropdownOption(
-                id: tag.id.uuidString,
-                title: tag.name,
-                icon: "tag",
-                count: tagCounts[tag.id],
-                isSelected: filter.tagID == tag.id,
-                action: { onChange(filter.withTag(tag.id)) }
-            )
-        }
-        return BoardFilterDropdownButton(
+        choiceDropdown(
+            BoardFilterChoices.tags(
+                filter: filter,
+                rows: tags.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
+                counts: tagCounts,
+                untaggedCount: untaggedCount,
+                includeNone: true,
+                locale: locale
+            ),
             icon: "tag",
             title: tagTitle,
             active: filter.tagID != nil,
-            isExpanded: isExpanded,
-            reset: { onChange(filter.withTag(nil)) },
-            allOption: allOption,
-            items: [noneOption] + tagOptions,
-            style: style
+            kind: .tag,
+            reset: { onChange(filter.withTag(nil)) }
         )
     }
 
     // MARK: - 来源应用筛选下拉
 
     private var bundleDropdown: some View {
-        let isExpanded = Binding(
-            get: { activeDropdown == .bundle },
-            set: { activeDropdown = $0 ? .bundle : nil }
-        )
-        let allOption = FilterDropdownOption(
-            id: "all",
-            title: L10n.string("filter.all", locale: locale),
-            icon: "app",
-            count: nil,
-            isSelected: filter.bundleID == nil,
-            action: { onChange(filter.withBundle(nil)) }
-        )
-        let itemOptions = bundleIDs.map { bundleID in
-            FilterDropdownOption(
-                id: bundleID,
-                title: BundleDisplay.name(for: bundleID),
-                icon: "app",
-                count: nil,
-                isSelected: filter.bundleID == bundleID,
-                action: { onChange(filter.withBundle(bundleID)) }
-            )
-        }
-        return BoardFilterDropdownButton(
+        choiceDropdown(
+            BoardFilterChoices.bundles(filter: filter, bundleIDs: bundleIDs, locale: locale),
             icon: "app",
             title: appTitle,
             active: filter.bundleID != nil,
+            kind: .bundle,
+            reset: { onChange(filter.withBundle(nil)) }
+        )
+    }
+
+    private func choiceDropdown(
+        _ choices: [BoardFilterChoice],
+        icon: String,
+        title: String,
+        active: Bool,
+        kind: ActiveDropdown,
+        reset: @escaping () -> Void
+    ) -> some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == kind },
+            set: { activeDropdown = $0 ? kind : nil }
+        )
+        let options = choices.map { choice in
+            FilterDropdownOption(
+                id: choice.id,
+                title: choice.title,
+                icon: icon,
+                count: choice.count,
+                isSelected: choice.isSelected,
+                action: { onChange(choice.applied) }
+            )
+        }
+        return BoardFilterDropdownButton(
+            icon: icon,
+            title: title,
+            active: active,
             isExpanded: isExpanded,
-            reset: { onChange(filter.withBundle(nil)) },
-            allOption: allOption,
-            items: itemOptions,
+            reset: reset,
+            allOption: options.first { $0.id == "all" },
+            items: options.filter { $0.id != "all" },
             style: style
         )
     }

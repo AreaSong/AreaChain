@@ -351,31 +351,21 @@ struct TaskRow: View {
     }
 
     private func updateVerticalPlacement(_ proxy: GeometryProxy) {
-        growsUpward = proxy.frame(in: .global).minY > 260
+        growsUpward = bubblePlacement(proxy).growsUpward
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        let placement = bubblePlacement(proxy)
+        growsUpward = placement.growsUpward
+        bubbleShiftX = placement.bubbleShiftX
+    }
+
+    private func bubblePlacement(_ proxy: GeometryProxy) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
         let frame = proxy.frame(in: .global)
-        let globalY = frame.minY
-        let globalX = frame.minX
-
-        // 纵向：菜单栏高度约为 460pt，底部分割线与搜索栏位于 400~410pt 附近。
-        // 气泡高约 70~120pt。当图标全局 Y > 260pt（即下半部分）时，下方空间受限，自动向上翻转展开。
-        growsUpward = globalY > 260
-
-        // 横向：气泡宽 210pt。默认 offset(x: -8)，气泡右边界 = globalX - 8 + 210 = globalX + 202。
-        // 菜单栏弹窗宽约 380pt，安全右边界设为 356pt（保留右侧呼吸感与视口边距）。
-        // 当长标题将 [≡] 靠右推时，自动向左平移夹紧，同时小三角动态跟随指示器居中。
-        let safeMaxX: CGFloat = style.isWorkspace ? 700 : 356
-        let safeMinX: CGFloat = 12
-        let bubbleRight = globalX + 202
-        if bubbleRight > safeMaxX {
-            let overflow = bubbleRight - safeMaxX
-            let maxShift = max(0, (globalX - 8) - safeMinX)
-            bubbleShiftX = -min(overflow, maxShift)
-        } else {
-            bubbleShiftX = 0
-        }
+        return RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: frame.minX, y: frame.minY),
+            isWorkspace: style.isWorkspace
+        )
     }
 
     private var titleContent: some View {

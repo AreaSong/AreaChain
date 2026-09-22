@@ -250,155 +250,58 @@ struct MenuBarFilterFlyout: View {
     // MARK: - 1. 时间选项
 
     private var dateOptionsView: some View {
-        VStack(spacing: 2) {
-            flyoutItem(
-                title: L10n.string("filter.all", locale: locale),
-                icon: "circle",
-                isSelected: activeFilter.dateScope == .all
-            ) {
-                toggleDateScope(.all)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.date.today", locale: locale),
-                icon: "calendar",
-                isSelected: activeFilter.dateScope == .today
-            ) {
-                toggleDateScope(.today)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.date.recent", locale: locale),
-                icon: "calendar.badge.clock",
-                isSelected: activeFilter.dateScope == .recent
-            ) {
-                toggleDateScope(.recent)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.date.overdue", locale: locale),
-                icon: "clock.badge.exclamationmark",
-                isSelected: activeFilter.dateScope == .overdue
-            ) {
-                toggleDateScope(.overdue)
-            }
-        }
+        choiceRows(BoardFilterChoices.dates(filter: activeFilter, locale: locale))
     }
-
-    // MARK: - 2. 优先级选项
 
     private var priorityOptionsView: some View {
-        VStack(spacing: 2) {
-            flyoutItem(
-                title: L10n.string("filter.all", locale: locale),
-                icon: "circle",
-                isSelected: activeFilter.priorityScope == .all && !activeFilter.isHighPriorityOnly
-            ) {
-                togglePriorityScope(.all)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.priority.high", locale: locale),
-                icon: "exclamationmark.3",
-                isSelected: activeFilter.priorityScope == .highPriorityOnly || (activeFilter.isHighPriorityOnly && activeFilter.priorityScope == .all)
-            ) {
-                togglePriorityScope(.highPriorityOnly)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.priority.p1", locale: locale),
-                dotColor: Color.red,
-                isSelected: activeFilter.priorityScope == .p1
-            ) {
-                togglePriorityScope(.p1)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.priority.p2", locale: locale),
-                dotColor: Color.orange,
-                isSelected: activeFilter.priorityScope == .p2
-            ) {
-                togglePriorityScope(.p2)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.priority.p3", locale: locale),
-                dotColor: Color.blue,
-                isSelected: activeFilter.priorityScope == .p3
-            ) {
-                togglePriorityScope(.p3)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.priority.p4", locale: locale),
-                dotColor: Color.gray,
-                isSelected: activeFilter.priorityScope == .p4
-            ) {
-                togglePriorityScope(.p4)
-            }
-        }
+        choiceRows(BoardFilterChoices.priorities(filter: activeFilter, locale: locale))
     }
-
-    // MARK: - 3. 项目层级缩进选项
 
     private var projectOptionsView: some View {
-        VStack(spacing: 2) {
-            flyoutItem(
-                title: L10n.string("filter.all", locale: locale),
-                icon: "circle",
-                isSelected: activeFilter.projectID == nil
-            ) {
-                selectProject(nil)
-            }
-
-            flyoutItem(
-                title: L10n.string("filter.project.none", locale: locale),
-                icon: "folder",
-                count: unclassifiedCount,
-                isSelected: activeFilter.isNoProject
-            ) {
-                toggleProject(BoardFilter.noneID)
-            }
-
-            let outline = ProjectTree.outline(projects.filter { $0.deletedAt == nil })
-            ForEach(outline) { row in
-                flyoutItem(
-                    title: row.name,
-                    icon: "folder",
-                    count: projectCounts[row.id],
-                    indent: CGFloat(row.depth) * 8,
-                    isSelected: activeFilter.projectID == row.id
-                ) {
-                    toggleProject(row.id)
-                }
-            }
-        }
+        let outline = ProjectTree.outline(projects.filter { $0.deletedAt == nil })
+        return choiceRows(
+            BoardFilterChoices.projects(
+                filter: activeFilter,
+                rows: outline.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name, depth: $0.depth) },
+                counts: projectCounts,
+                unclassifiedCount: unclassifiedCount,
+                locale: locale
+            ),
+            icon: { $0.id == "all" ? "circle" : "folder" }
+        )
     }
 
-    // MARK: - 4. 标签选项
-
     private var tagOptionsView: some View {
+        choiceRows(
+            BoardFilterChoices.tags(
+                filter: activeFilter,
+                rows: tags.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
+                counts: tagCounts,
+                untaggedCount: nil,
+                includeNone: false,
+                locale: locale
+            ),
+            icon: { $0.id == "all" ? "circle" : nil },
+            title: BoardFilterChoices.markedTagTitle
+        )
+    }
+
+    private func choiceRows(
+        _ choices: [BoardFilterChoice],
+        icon: @escaping (BoardFilterChoice) -> String? = { $0.systemImage },
+        title: @escaping (BoardFilterChoice) -> String = { $0.title }
+    ) -> some View {
         VStack(spacing: 2) {
-            flyoutItem(
-                title: L10n.string("filter.all", locale: locale),
-                icon: "circle",
-                isSelected: selectedTagID == nil
-            ) {
-                selectTag(nil)
-            }
-
-            ForEach(tags) { tag in
-                let isSelected = selectedTagID == tag.id
-                let color = DiaryTagChrome.color(for: tag.name)
-                let count = tagCounts[tag.id]
-
+            ForEach(choices) { choice in
                 flyoutItem(
-                    title: "#" + tag.name,
-                    dotColor: color,
-                    count: count,
-                    isSelected: isSelected
+                    title: title(choice),
+                    icon: icon(choice),
+                    dotColor: choice.dotColor,
+                    count: choice.count,
+                    indent: choice.indent,
+                    isSelected: choice.isSelected
                 ) {
-                    toggleTag(tag.id)
+                    writeFilter(choice.isSelected ? choice.cleared : choice.applied)
                 }
             }
         }
@@ -481,34 +384,6 @@ struct MenuBarFilterFlyout: View {
         case .tag:
             return selectedTagID != nil
         }
-    }
-
-    private func toggleDateScope(_ scope: DateFilterScope) {
-        let next: DateFilterScope = activeFilter.dateScope == scope ? .all : scope
-        writeFilter(activeFilter.withDateScope(next))
-    }
-
-    private func togglePriorityScope(_ scope: PriorityFilterScope) {
-        let next: PriorityFilterScope = activeFilter.priorityScope == scope ? .all : scope
-        writeFilter(activeFilter.withPriorityScope(next))
-    }
-
-    private func selectProject(_ id: UUID?) {
-        writeFilter(activeFilter.withProject(id))
-    }
-
-    private func toggleProject(_ id: UUID) {
-        let next: UUID? = activeFilter.projectID == id ? nil : id
-        selectProject(next)
-    }
-
-    private func selectTag(_ id: UUID?) {
-        writeFilter(activeFilter.withTag(id))
-    }
-
-    private func toggleTag(_ id: UUID) {
-        let next: UUID? = selectedTagID == id ? nil : id
-        selectTag(next)
     }
 
     private func clearAllAndDismiss() {

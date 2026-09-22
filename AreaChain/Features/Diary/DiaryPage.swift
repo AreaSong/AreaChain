@@ -100,10 +100,7 @@ struct DiaryPage: View {
 
     private var composerNeedsProtection: Bool {
         if draftBinding.wrappedValue.sealed != nil { return true }
-        let names = Set((TagSyntax.names(in: draftText) + DiaryMemoTags.autoTagNames(in: draftText)).map(TagSyntax.normalizedName))
-        return allTags.contains {
-            $0.isPrivateDiary && (composerSelectedTagIDs.contains($0.id) || names.contains(TagSyntax.normalizedName($0.name)))
-        }
+        return DiaryContent.requiresProtection(text: draftText, tagIDs: composerSelectedTagIDs, tags: allTags)
     }
 
     private var draftText: String {
@@ -248,25 +245,28 @@ struct DiaryPage: View {
     }
 
     private var tagFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        let counts = Dictionary(uniqueKeysWithValues: orderedTags.map { tag in
+            (tag.id, nonDeletedEntries.filter { TagIDList.contains($0.tagIDs, tag.id) }.count)
+        })
+        let choices = BoardFilterChoices.tags(
+            filter: filterBinding.wrappedValue,
+            rows: orderedTags.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
+            counts: counts,
+            untaggedCount: nil,
+            includeNone: false,
+            totalCount: nonDeletedEntries.count,
+            locale: locale
+        )
+        return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-                filterPill(title: L10n.string("filter.all", locale: locale), count: nonDeletedEntries.count, isSelected: selectedTagID == nil) {
-                    selectedTagID = nil
-                }
-
-                ForEach(orderedTags) { tag in
-                    let count = nonDeletedEntries.filter { TagIDList.contains($0.tagIDs, tag.id) }.count
+                ForEach(choices) { choice in
                     filterPill(
-                        title: "#\(tag.name)",
-                        count: count,
-                        isSelected: selectedTagID == tag.id,
-                        color: DiaryTagChrome.color(for: tag.name)
+                        title: BoardFilterChoices.markedTagTitle(choice),
+                        count: choice.count ?? 0,
+                        isSelected: choice.isSelected,
+                        color: choice.dotColor ?? DaybookTheme.stamp
                     ) {
-                        if selectedTagID == tag.id {
-                            selectedTagID = nil
-                        } else {
-                            selectedTagID = tag.id
-                        }
+                        filterBinding.wrappedValue = choice.isSelected ? choice.cleared : choice.applied
                     }
                 }
             }

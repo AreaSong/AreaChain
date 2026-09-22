@@ -66,23 +66,14 @@ struct WorkspaceGlobalSearchView: View {
 
                         // 任务、习惯与手记分组
                         if !hits.isEmpty {
-                            ForEach(BoardSearch.grouped(hits), id: \.dayKey) { group in
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text(DayKey.displayName(group.dayKey, locale: locale))
-                                        .font(DaybookType.caption.weight(.semibold))
-                                        .foregroundStyle(DaybookTheme.muted)
-
-                                    ForEach(group.items) { hit in
-                                        BoardSearchHitRow(
-                                            hit: hit,
-                                            presentation: .workspace,
-                                            isSelected: navigation.selectedTaskID == hit.id && navigation.isInspectorPresented
-                                        ) {
-                                            openHit(hit)
-                                        }
-                                    }
-                                }
-                            }
+                            BoardSearchHitGroups(
+                                hits: hits,
+                                presentation: .workspace,
+                                sectionSpacing: 20,
+                                rowSpacing: 8,
+                                isSelected: { navigation.selectedTaskID == $0.id && navigation.isInspectorPresented },
+                                open: openHit
+                            )
                         }
 
                         // 匹配的附件

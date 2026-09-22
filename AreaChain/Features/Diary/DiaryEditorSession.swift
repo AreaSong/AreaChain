@@ -87,11 +87,8 @@ final class DiaryEditorSession {
     }
     var needsUnlock: Bool {
         if record?.hasProtectedContent == true || sealedDraft != nil { return true }
-        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
-        return privacyTags.contains {
-            $0.isPrivateDiary && (TagIDList.contains(record?.tagIDs ?? baselineTags, $0.id)
-                                  || names.contains(TagSyntax.normalizedName($0.name)))
-        }
+        let attached = Set(TagIDList.parse(record?.tagIDs ?? baselineTags))
+        return DiaryContent.requiresProtection(text: text, tagIDs: attached, tags: privacyTags)
     }
     var canRevealContent: Bool {
         !privacyUnavailable && issue != .missing

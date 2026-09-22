@@ -58,7 +58,8 @@ struct FooterBar: View {
             }
 
             if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
-                let (dotColor, icon) = priorityVisual(currentFilter)
+                let mark = BoardFilterChoices.priorityMark(currentFilter)
+                let (dotColor, icon) = (mark.dot, mark.icon)
                 tokens.append(SearchFilterToken(
                     id: "priority",
                     title: currentFilter.priorityTitle(locale: locale),
@@ -241,21 +242,6 @@ struct FooterBar: View {
     }
 
     // MARK: - 辅助计算
-
-    private func priorityVisual(_ filter: BoardFilter) -> (Color?, String?) {
-        switch filter.priorityScope {
-        case .all, .highPriorityOnly:
-            return (nil, "exclamationmark.3")
-        case .p1:
-            return (Color.red, nil)
-        case .p2:
-            return (Color.orange, nil)
-        case .p3:
-            return (Color.blue, nil)
-        case .p4:
-            return (Color.gray, nil)
-        }
-    }
 
     private func clearTag() {
         writeFilter(currentFilter.withTag(nil))

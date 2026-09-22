@@ -444,7 +444,7 @@ enum DayBoardMutations {
     static func togglePrivateDiary(_ entry: DiaryEntry) -> Bool {
         guard let ctx = entry.modelContext else { return false }
         return ModelChanges.attempt(in: ctx) {
-            entry.isPrivate.toggle()
+            DiaryPrivacy.toggle(entry)
         }
     }
 

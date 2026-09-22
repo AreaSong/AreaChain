@@ -46,18 +46,24 @@ enum DiaryContent {
         // 从来不把解密正文回填进可自动保存的 SwiftData 属性。
         entry.encryptedText = data
         entry.privacyVaultID = config.vaultID
-        entry.isPrivate = true
+        DiaryPrivacy.assign(entry, isPrivate: true)
         entry.text = ""
         vault.touch()
     }
 
     static func requiresProtection(tagIDs: String, tags: [TagItem]) -> Bool {
-        tags.contains { $0.isPrivateDiary && TagIDList.contains(tagIDs, $0.id) }
+        requiresProtection(text: "", tagIDs: Set(TagIDList.parse(tagIDs)), tags: tags)
+    }
+
+    static func requiresProtection(text: String, tagIDs: Set<UUID>, tags: [TagItem]) -> Bool {
+        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
+        return tags.contains { tag in
+            tag.isPrivateDiary && (tagIDs.contains(tag.id) || names.contains(TagSyntax.normalizedName(tag.name)))
+        }
     }
 
     static func requiresProtection(text: String, tagIDs: Set<UUID>, context: ModelContext) throws -> Bool {
         let tags = try context.fetch(FetchDescriptor<TagItem>())
-        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
-        return tags.contains { $0.isPrivateDiary && (tagIDs.contains($0.id) || names.contains(TagSyntax.normalizedName($0.name))) }
+        return requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
     }
 }

@@ -4,24 +4,12 @@ import SwiftUI
 /// 工作台与菜单栏共用结果展示，私密正文仍由 BoardSearch 在生成命中项前遮罩。
 struct SearchResultsView: View {
     var hits: [BoardSearchHit]
-    @Environment(\.locale) private var locale
     @Environment(\.modelContext) private var context
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 14) {
-                ForEach(BoardSearch.grouped(hits), id: \.dayKey) { group in
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(DayKey.displayName(group.dayKey, locale: locale))
-                            .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookTheme.muted)
-                        ForEach(group.items) { hit in
-                            BoardSearchHitRow(hit: hit) { open(hit) }
-                        }
-                    }
-                }
-            }
-            .padding(.vertical, 2)
+            BoardSearchHitGroups(hits: hits, open: open)
+                .padding(.vertical, 2)
         }
         .daybookScroll()
     }

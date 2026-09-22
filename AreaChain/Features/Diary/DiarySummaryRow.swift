@@ -494,21 +494,7 @@ struct DiarySummaryRow: View {
     }
 
     private func tagPill(_ tag: TagItem) -> some View {
-        let color = DiaryTagChrome.color(for: tag.name)
-        return Text("#" + tag.name)
-            .font(.system(size: 9.5, weight: .medium))
-            .lineLimit(1)
-            .padding(.horizontal, 4.5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(color.opacity(0.12))
-            )
-            .foregroundStyle(color)
-            .overlay(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
-            )
+        DiaryTagPill(name: tag.name)
     }
 
     private var dateLabel: String {

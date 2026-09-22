@@ -20,6 +20,23 @@ struct DiaryPrivacyTests {
         #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
     }
 
+    @Test func protectionAndPrivateFlagShareOneRule() {
+        let secret = TagItem(name: "密码", sortOrder: 0)
+        secret.isPrivateDiary = true
+        let journal = TagItem(name: "日记", sortOrder: 1)
+        #expect(DiaryContent.requiresProtection(text: "今天", tagIDs: [secret.id], tags: [journal, secret]))
+        #expect(DiaryContent.requiresProtection(text: "#密码 备忘", tagIDs: [], tags: [secret]))
+        #expect(DiaryContent.requiresProtection(text: "含有密码二字", tagIDs: [], tags: [secret]))
+        #expect(!DiaryContent.requiresProtection(text: "普通", tagIDs: [], tags: [journal]))
+        #expect(DiaryContent.requiresProtection(tagIDs: secret.id.uuidString, tags: [secret]))
+
+        let entry = DiaryEntry(text: "标记", dayKey: "2026-09-11")
+        DiaryPrivacy.assign(entry, isPrivate: true)
+        #expect(entry.isPrivate)
+        DiaryPrivacy.toggle(entry)
+        #expect(!entry.isPrivate)
+    }
+
     @Test func maskingAlwaysWinsOverAnExistingEditor() {
         #expect(DiaryPrivacy.contentMode(isSensitive: true, isMasked: true, isEditing: true) == .masked)
         #expect(DiaryPrivacy.contentMode(isSensitive: true, isMasked: false, isEditing: true) == .editing)

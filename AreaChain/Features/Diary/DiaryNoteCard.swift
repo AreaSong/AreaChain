@@ -11,6 +11,29 @@ enum DiaryTagChrome {
     }
 }
 
+struct DiaryTagPill: View {
+    var name: String
+
+    var body: some View {
+        let color = DiaryTagChrome.color(for: name)
+        Text("#" + name)
+            .font(.system(size: 9.5, weight: .medium))
+            .lineLimit(1)
+            .padding(.horizontal, 4.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .fill(color.opacity(0.12))
+            )
+            .foregroundStyle(color)
+            .overlay(
+                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
+            )
+            .help("#" + name)
+    }
+}
+
 /// 灵感手记卡片：隐私遮罩、复制、置顶、就地编辑，以及「密码 / 小巧思 / 日记」打标。
 struct DiaryNoteCard: View {
     @Environment(\.modelContext) var modelContext

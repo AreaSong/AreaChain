@@ -16,14 +16,16 @@ struct LiveDiaryComposerPreview: View {
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var isHovered = false
+    @State private var chrome = BoardRowChrome()
     @State private var hasCopied = false
-    @State private var isTitleTextHovered = false
-    @State private var isTitleBubbleHovered = false
-    @State private var titleHoverTask: Task<Void, Never>? = nil
-    @State private var isNoteHovered = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
+
+    private var isHovered: Bool { chrome.isRowHovered }
+    private var isTitleTextHovered: Bool { chrome.isTitleTextHovered }
+    private var isTitleBubbleHovered: Bool { chrome.isTitleBubbleHovered }
+    private var isNoteHovered: Bool { chrome.isNoteHovered }
+    private var isNoteBubbleHovered: Bool { chrome.isNoteBubbleHovered }
 
     private var parsed: ParsedDiaryCapture {
         NaturalLanguageParser.parseDiaryCapture(text)
@@ -31,13 +33,9 @@ struct LiveDiaryComposerPreview: View {
 
     private var isSensitive: Bool {
         if isSensitiveExternal { return true }
-        let names = Set(parsed.tagNames.map(TagSyntax.normalizedName))
-        if !allTags.isEmpty {
-            return allTags.contains { tag in
-                tag.isPrivateDiary && names.contains(TagSyntax.normalizedName(tag.name))
-            }
-        }
-        return names.contains("密码") || names.contains("password")
+        if DiaryContent.requiresProtection(text: text, tagIDs: [], tags: allTags) { return true }
+        guard allTags.isEmpty else { return false }
+        return parsed.tagNames.contains { DiaryMemoTags.isPasswordName($0) }
     }
 
     private var todayTimeString: String {
@@ -104,23 +102,8 @@ struct LiveDiaryComposerPreview: View {
             }
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .onHover { hovering in
-            isHovered = hovering
-            if !hovering {
-                titleHoverTask?.cancel()
-                titleHoverTask = nil
-                if !isTitleBubbleHovered {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = false
-                    }
-                }
-                if !isNoteHovered {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isNoteHovered = false
-                    }
-                }
-            }
-        }
+        .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
+        .onDisappear { chrome.stop() }
         .background(
             GeometryReader { proxy in
                 Color.clear
@@ -164,9 +147,7 @@ struct LiveDiaryComposerPreview: View {
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
-                .onHover { hovering in
-                    handleTitleHover(hovering)
-                }
+                .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
                         RowTitleBubble(
@@ -174,10 +155,10 @@ struct LiveDiaryComposerPreview: View {
                             growsUpward: growsUpward,
                             onCopy: copyTitle,
                             onHover: { hovering in
-                                isTitleBubbleHovered = hovering
-                                if !hovering && !isTitleTextHovered {
+                                chrome.isTitleBubbleHovered = hovering
+                                if !hovering && !chrome.isTitleTextHovered {
                                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                        isTitleTextHovered = false
+                                        chrome.isTitleTextHovered = false
                                     }
                                 }
                             }
@@ -196,29 +177,6 @@ struct LiveDiaryComposerPreview: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func handleTitleHover(_ hovering: Bool) {
-        titleHoverTask?.cancel()
-        if hovering {
-            titleHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(250))
-                guard !Task.isCancelled else { return }
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isTitleTextHovered = true
-                }
-            }
-        } else {
-            titleHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(100))
-                guard !Task.isCancelled else { return }
-                if !isTitleBubbleHovered {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = false
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多/关闭菜单，纯透明度渐变，零抖动)
@@ -324,22 +282,7 @@ struct LiveDiaryComposerPreview: View {
     }
 
     private func tagPill(_ name: String) -> some View {
-        let color = DiaryTagChrome.color(for: name)
-        return Text("#" + name)
-            .font(.system(size: 9.5, weight: .medium))
-            .lineLimit(1)
-            .padding(.horizontal, 4.5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(color.opacity(0.12))
-            )
-            .foregroundStyle(color)
-            .overlay(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
-            )
-            .help("#" + name)
+        DiaryTagPill(name: name)
     }
 
     // MARK: - 备注指示器与悬浮正文气泡
@@ -355,22 +298,43 @@ struct LiveDiaryComposerPreview: View {
                     .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
             )
             .contentShape(Rectangle())
-            .onHover { isNoteHovered = $0 }
+            .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if isNoteHovered {
+                if isNoteHovered || isNoteBubbleHovered {
                     let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
                     let transformAnchor = UnitPoint(
                         x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
                         y: growsUpward ? 1.0 : 0.0
                     )
-                    noteFloatingBubble(fullText: fullText, arrowPadding: arrowPadding)
-                        .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                            removal: .opacity
-                        ))
+                    RowNoteBubble(
+                        note: fullText,
+                        growsUpward: growsUpward,
+                        bubbleShiftX: bubbleShiftX,
+                        headerTitleKey: "drawer.notes.title",
+                        onCopy: { copyNote(fullText) },
+                        onHover: { hovering in
+                            chrome.isNoteBubbleHovered = hovering
+                            if !hovering && !chrome.isNoteHovered {
+                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                    chrome.isNoteHovered = false
+                                }
+                            }
+                        }
+                    )
+                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                        removal: .opacity
+                    ))
                 }
             }
+    }
+
+    private func copyNote(_ note: String) {
+        guard PrivateClipboard.copy(note, sensitive: isSensitive) else { return }
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            hasCopied = true
+        }
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
@@ -378,68 +342,5 @@ struct LiveDiaryComposerPreview: View {
         let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), isWorkspace: false)
         growsUpward = placement.growsUpward
         bubbleShiftX = placement.bubbleShiftX
-    }
-
-    private func noteFloatingBubble(fullText: String, arrowPadding: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: 1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "text.alignleft")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                    Text(L10n.string("drawer.notes.title", locale: locale))
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                    Spacer(minLength: 0)
-                }
-
-                Text(fullText)
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineSpacing(2.5)
-                    .lineLimit(8)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .frame(width: 210, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-            )
-
-            if growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 7))
-                        .foregroundStyle(DaybookTheme.paper)
-                        .offset(y: -1)
-                    Spacer()
-                }
-                .frame(height: 5)
-            }
-        }
-        .frame(width: 210, alignment: .leading)
-        .fixedSize()
-        .allowsHitTesting(false)
-        .zIndex(999)
     }
 }

@@ -121,4 +121,35 @@ struct BoardFilterBarTests {
         #expect(footer.projectCounts[projectID] == 2)
         #expect(footer.unclassifiedCount == 1)
     }
+
+    @Test func filterChoicesShareSelectionAndClear() {
+        let locale = Locale(identifier: "en")
+        let today = BoardFilter().withDateScope(.today)
+        let dates = BoardFilterChoices.dates(filter: today, locale: locale)
+        let selectedDate = dates.first { $0.isSelected }
+        #expect(dates.count == DateFilterScope.allCases.count)
+        #expect(selectedDate?.applied.dateScope == .today)
+        #expect(selectedDate?.cleared.dateScope == .all)
+
+        let priorities = BoardFilterChoices.priorities(
+            filter: BoardFilter().withPriorityScope(.p1),
+            locale: locale
+        )
+        #expect(priorities.count == PriorityFilterScope.allCases.count)
+        #expect(priorities.first { $0.isSelected }?.applied.priorityScope == .p1)
+        #expect(priorities.first { $0.id == "priority.p1" }?.dotColor != nil)
+
+        let tagID = UUID()
+        let tags = BoardFilterChoices.tags(
+            filter: BoardFilter(tagID: tagID),
+            rows: [BoardFilterChoices.NamedRow(id: tagID, name: "日记")],
+            counts: [tagID: 2],
+            untaggedCount: 1,
+            includeNone: true,
+            locale: locale
+        )
+        #expect(tags.first { $0.id == tagID.uuidString }?.isSelected == true)
+        #expect(tags.contains { $0.id == BoardFilter.noneID.uuidString })
+        #expect(BoardFilterChoices.markedTagTitle(tags.first { $0.id == tagID.uuidString }!) == "#日记")
+    }
 }

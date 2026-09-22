@@ -28,6 +28,15 @@ enum DiaryPrivacy {
         !isSensitive || !isMasked
     }
 
+    /// 私密标记的唯一赋值。加密和解除保护决定何时为真，不各自写字段。
+    static func assign(_ entry: DiaryEntry, isPrivate: Bool) {
+        entry.isPrivate = isPrivate
+    }
+
+    static func toggle(_ entry: DiaryEntry) {
+        assign(entry, isPrivate: !entry.isPrivate)
+    }
+
     private static func hasPrivateMarker(_ text: String) -> Bool {
         text.contains("#密码") || text.localizedCaseInsensitiveContains("#password")
     }

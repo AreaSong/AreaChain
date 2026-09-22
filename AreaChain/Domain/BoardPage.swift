@@ -69,17 +69,25 @@ extension DateFilterScope {
     }
 }
 
+extension PriorityFilterScope {
+    func title(locale: Locale) -> String {
+        switch self {
+        case .all: L10n.string("filter.all", locale: locale)
+        case .highPriorityOnly: L10n.string("filter.priority.high", locale: locale)
+        case .p1: L10n.string("filter.priority.p1", locale: locale)
+        case .p2: L10n.string("filter.priority.p2", locale: locale)
+        case .p3: L10n.string("filter.priority.p3", locale: locale)
+        case .p4: L10n.string("filter.priority.p4", locale: locale)
+        }
+    }
+}
+
 extension BoardFilter {
     func priorityTitle(locale: Locale) -> String {
-        switch priorityScope {
-        case .all:
-            return isHighPriorityOnly ? L10n.string("filter.priority.high", locale: locale) : ""
-        case .highPriorityOnly:
-            return L10n.string("filter.priority.high", locale: locale)
-        case .p1: return L10n.string("filter.priority.p1", locale: locale)
-        case .p2: return L10n.string("filter.priority.p2", locale: locale)
-        case .p3: return L10n.string("filter.priority.p3", locale: locale)
-        case .p4: return L10n.string("filter.priority.p4", locale: locale)
+        if priorityScope == .all && isHighPriorityOnly {
+            return PriorityFilterScope.highPriorityOnly.title(locale: locale)
         }
+        if priorityScope == .all { return "" }
+        return priorityScope.title(locale: locale)
     }
 }
