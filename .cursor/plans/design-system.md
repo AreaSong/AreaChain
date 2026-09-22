@@ -197,9 +197,10 @@ flowchart TB
 做：新建 `DaybookButtonStyle.swift`（样式 + `DaybookIconButton` + `daybookMenuLabel`）；跨模块一行改名后删除 `DaybookQuietButtonStyle`、`RowIconButton`、`DaybookNavButton`、`ComposerAddButton`、`WorkspaceSidebarHeaderAction`、`FooterActionItemModifier`；`BoardCommandStripButton` / `BoardCommandStripMenu` 改用样式，`BoardCommandStripIcon` 退化为纯图标；四个模块现有 33 处 `.plain` 中 22 处迁为样式，11 处控件加 `// control:`（清单见验收提示词 B2）。新建 `DaybookButtonStyleTests`。
 完成标准：`rg 'DaybookQuietButtonStyle|RowIconButton|DaybookNavButton|ComposerAddButton|WorkspaceSidebarHeaderAction|FooterActionItemModifier|isButtonHovered' AreaChain AreaChainTests` 为空；四模块无裸 `.plain`；control 注释恰好 11 条；定向测试通过。
 
-### P3b 按钮 Diary / Workspace / Theme
-做：Diary 21 处、Workspace 24 处、Theme 14 处 `.plain` 按同一规则迁移或标 control；`CommandReturnButton`、`CaptureAttributesButton`、`SyntaxHelpCard`、`LiveComposerPreviewHeader` 等 Theme 内部按钮改用样式；`DiaryTagToggleButtons` / `DiaryDayMoveButtons` / `BoardFilterDropdownButton` 视情况改用样式或删除。提示词在 P3a 验收通过后生成。
-完成标准：`rg '\.buttonStyle\(\.plain\)' AreaChain` 只剩带 `// control:` 的行；模块测试通过。
+### P3b 按钮 Diary / Workspace / Theme / Quadrant
+提示词：`design-system-P3b-execute.md` / `design-system-P3b-verify.md`。
+做：不新增 variant。Diary 21、Workspace 24、Theme 13、Quadrant 1 处 `.plain`：图标与文字动作迁到 `DaybookButtonStyle` / `DaybookIconButton` / `daybookMenuLabel`；胶囊、复选框、整行、固定 58×22 属性按钮、语法行悬停替换共 17 处加 `// control:`（清单见验收 B2）。`CommandReturnButton` 去掉自绘底，改用 `.icon` / `.iconActive`（⌘ 按下为 active）。`.bordered` / `.borderedProminent` 不动。已复制的绿色改成 `.iconActive` / `.active`（绿色留给 P6 的 `status.success`）。
+完成标准：全仓库裸 `.plain` 为零；`// control:` 共 28 条（P3a 的 11 + 本阶段 17）；`syntax.diary.popout`、`syntax.commandReturn.button`、`syntax.attributes.button`、`syntax.attributes.close`、`syntax.candidate.` 仍在；定向测试通过。
 
 ### P4 表面与浮层
 必读：`Theme/ModernComponents.swift`、`Theme/DaybookChrome.swift`（`DaybookCardModifier`）、`Features/Board/BoardRowChrome.swift`、`Features/Tasks/DayBoardSections.swift`、`Features/Workspace/WorkspaceFilteredListView.swift`、3.5 节全部文件。
