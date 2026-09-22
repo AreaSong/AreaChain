@@ -11,7 +11,7 @@ extension TasksPage {
             ? (!CatalogChoices.projects(projects).isEmpty || !tagChoices.isEmpty || !todayBundleIDs.isEmpty
                 || effectiveFilter.projectID != nil || effectiveFilter.bundleID != nil
                 || (config.externalFilter == nil && effectiveFilter.isActive))
-            : effectiveFilter.isActive
+            : (config.externalFilter == nil && effectiveFilter.isActive)
 
         if hasChips || hasFilters {
             HStack(spacing: 8) {

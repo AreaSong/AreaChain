@@ -44,8 +44,60 @@ struct FooterBar: View {
             .filter { $0 }.count
     }
 
-    private var isFilterActiveOrDrawerOpen: Bool {
-        isFilterDrawerPresented.wrappedValue || (activeCount > 0 && !toolbar.isSearching && !toolbar.searchIsFocused)
+    @State private var hoverTask: Task<Void, Never>? = nil
+
+    private var activeTokens: [SearchFilterToken] {
+        var tokens: [SearchFilterToken] = []
+        if tab == .tasks {
+            if currentFilter.dateScope != .all {
+                tokens.append(SearchFilterToken(
+                    id: "date",
+                    title: dateScopeTitle(currentFilter.dateScope),
+                    icon: "calendar",
+                    onRemove: { filter?.wrappedValue = currentFilter.withDateScope(.all) }
+                ))
+            }
+
+            if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
+                let (dotColor, icon) = priorityVisual(currentFilter)
+                tokens.append(SearchFilterToken(
+                    id: "priority",
+                    title: priorityTitle(currentFilter),
+                    icon: icon,
+                    dotColor: dotColor,
+                    onRemove: {
+                        var next = currentFilter.withPriorityScope(.all)
+                        next.isHighPriorityOnly = false
+                        filter?.wrappedValue = next
+                    }
+                ))
+            }
+
+            if let pid = currentFilter.projectID {
+                let name = pid == BoardFilter.noneID
+                    ? L10n.string("filter.project.none", locale: locale)
+                    : (projects.first(where: { $0.id == pid })?.name ?? L10n.string("filter.project", locale: locale))
+                tokens.append(SearchFilterToken(
+                    id: "project",
+                    title: name,
+                    icon: "folder",
+                    onRemove: { filter?.wrappedValue = currentFilter.withProject(nil) }
+                ))
+            }
+        }
+
+        if let tid = selectedTagID {
+            if let tag = tags.first(where: { $0.id == tid }) {
+                tokens.append(SearchFilterToken(
+                    id: "tag",
+                    title: "#" + tag.name,
+                    dotColor: DiaryTagChrome.color(for: tag.name),
+                    onRemove: { clearTag() }
+                ))
+            }
+        }
+
+        return tokens
     }
 
     var body: some View {
@@ -53,31 +105,21 @@ struct FooterBar: View {
             // 1. 左侧筛选入口区
             filterTrigger
 
-            // 2. 中间就地联动区：筛选激活或抽屉打开时展示已选胶囊条，否则展示通用搜索框
-            Group {
-                if isFilterActiveOrDrawerOpen {
-                    activeFilterChipsBar
-                } else {
-                    MenuBarSearchField(
-                        tab: tab,
-                        toolbar: toolbar,
-                        availableTags: activeTags.map(\.name)
-                    )
-                    .accessibilityElement(children: .contain)
-                    .accessibilityIdentifier("menubar.toolbar.tools")
-                }
-            }
+            // 2. 中间全宽搜索框（内嵌已生效 Token 胶囊流）
+            MenuBarSearchField(
+                tab: tab,
+                toolbar: toolbar,
+                availableTags: activeTags.map(\.name),
+                tokens: activeTokens
+            )
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("menubar.toolbar.tools")
             .frame(maxWidth: .infinity)
 
-            // 3. 右侧稳定动作区 (抽屉展开时显示清晰的收起 ✕ 按钮)
+            // 3. 右侧稳定动作区
             HStack(spacing: 4) {
-                if isFilterDrawerPresented.wrappedValue {
-                    dismissDrawerButton
-                    moreMenu
-                } else {
-                    workspaceButton
-                    moreMenu
-                }
+                workspaceButton
+                moreMenu
             }
             .frame(width: 56, alignment: .trailing)
         }
@@ -108,6 +150,20 @@ struct FooterBar: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
+        .onHover { isHovered in
+            if isHovered {
+                hoverTask?.cancel()
+                hoverTask = Task {
+                    try? await Task.sleep(for: .milliseconds(120))
+                    if !Task.isCancelled {
+                        isFilterDrawerPresented.wrappedValue = true
+                    }
+                }
+            } else {
+                hoverTask?.cancel()
+                hoverTask = nil
+            }
+        }
     }
 
     private var inactiveFilterButton: some View {
@@ -185,133 +241,21 @@ struct FooterBar: View {
         onTriggerClick?() ?? isFilterDrawerPresented.wrappedValue.toggle()
     }
 
-    // MARK: - 中间已选胶囊横向流
+    // MARK: - 辅助计算
 
-    private var activeFilterChipsBar: some View {
-        HStack(spacing: 4) {
-            if activeCount > 0 {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 4) {
-                        if tab == .tasks {
-                            if currentFilter.dateScope != .all {
-                                chipItem(
-                                    title: dateScopeTitle(currentFilter.dateScope),
-                                    icon: "calendar",
-                                    onSelect: { navigateToCategory(.date) },
-                                    onRemove: { filter?.wrappedValue = currentFilter.withDateScope(.all) }
-                                )
-                            }
-
-                            if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
-                                chipItem(
-                                    title: priorityTitle(currentFilter),
-                                    icon: "exclamationmark.3",
-                                    onSelect: { navigateToCategory(.priority) },
-                                    onRemove: {
-                                        var next = currentFilter.withPriorityScope(.all)
-                                        next.isHighPriorityOnly = false
-                                        filter?.wrappedValue = next
-                                    }
-                                )
-                            }
-
-                            if let pid = currentFilter.projectID {
-                                let name = pid == BoardFilter.noneID
-                                    ? L10n.string("filter.project.none", locale: locale)
-                                    : (projects.first(where: { $0.id == pid })?.name ?? L10n.string("filter.project", locale: locale))
-                                chipItem(
-                                    title: name,
-                                    icon: "folder",
-                                    onSelect: { navigateToCategory(.project) },
-                                    onRemove: { filter?.wrappedValue = currentFilter.withProject(nil) }
-                                )
-                            }
-                        }
-
-                        if let tid = selectedTagID {
-                            if let tag = tags.first(where: { $0.id == tid }) {
-                                chipItem(
-                                    title: "#" + tag.name,
-                                    dotColor: DiaryTagChrome.color(for: tag.name),
-                                    onSelect: { navigateToCategory(.tag) },
-                                    onRemove: { clearTag() }
-                                )
-                            }
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-
-                // 清空全部小按钮
-                Button(action: clearFilter) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(DaybookTheme.stamp.opacity(0.8))
-                        .padding(4)
-                        .background(Circle().fill(DaybookTheme.stamp.opacity(0.08)))
-                }
-                .buttonStyle(.plain)
-                .help(L10n.string("filter.clear", locale: locale))
-            } else {
-                // 尚未选择任何条件时：清爽通透无假输入框，轻量提示
-                HStack(spacing: 3) {
-                    Image(systemName: "line.3.horizontal.decrease.circle")
-                        .font(.system(size: 9.5))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
-                    Text(L10n.string("filter.label", locale: locale))
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
-                }
-                .padding(.leading, 4)
-                Spacer(minLength: 0)
-            }
+    private func priorityVisual(_ filter: BoardFilter) -> (Color?, String?) {
+        switch filter.priorityScope {
+        case .all, .highPriorityOnly:
+            return (nil, "exclamationmark.3")
+        case .p1:
+            return (Color.red, nil)
+        case .p2:
+            return (Color.orange, nil)
+        case .p3:
+            return (Color.blue, nil)
+        case .p4:
+            return (Color.gray, nil)
         }
-        .padding(.horizontal, 4)
-        .frame(height: 26)
-    }
-
-    private func chipItem(
-        title: String,
-        icon: String? = nil,
-        dotColor: Color? = nil,
-        onSelect: @escaping () -> Void,
-        onRemove: @escaping () -> Void
-    ) -> some View {
-        HStack(spacing: 3) {
-            Button(action: onSelect) {
-                HStack(spacing: 2.5) {
-                    if let dotColor {
-                        Circle().fill(dotColor).frame(width: 4.5, height: 4.5)
-                    } else if let icon {
-                        Image(systemName: icon).font(.system(size: 8, weight: .medium))
-                    }
-                    Text(title)
-                        .font(.system(size: 9.5, weight: .medium))
-                        .lineLimit(1)
-                }
-            }
-            .buttonStyle(.plain)
-
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 7, weight: .bold))
-                    .frame(width: 10, height: 10)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.leading, 5)
-        .padding(.trailing, 3.5)
-        .padding(.vertical, 2)
-        .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
-        .overlay(Capsule().strokeBorder(DaybookTheme.stamp.opacity(0.4), lineWidth: 0.6))
-        .foregroundStyle(DaybookTheme.stamp)
-    }
-
-    private func navigateToCategory(_ cat: FilterCategory) {
-        if !isFilterDrawerPresented.wrappedValue {
-            isFilterDrawerPresented.wrappedValue = true
-        }
-        activeCategory?.wrappedValue = cat
     }
 
     private func clearTag() {

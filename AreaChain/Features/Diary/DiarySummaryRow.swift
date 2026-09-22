@@ -70,11 +70,11 @@ struct DiarySummaryRow: View {
     }
 
     private var shouldShowTitleBubble: Bool {
-        !isSensitive && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(contentPresentation.mainText)
+        !isSensitive && !isCommandPressed && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(contentPresentation.mainText)
     }
 
     private var shouldShowNoteBubble: Bool {
-        !isSensitive && (isNoteHovered || isNoteBubbleHovered) && contentPresentation.note != nil
+        !isSensitive && !isCommandPressed && (isNoteHovered || isNoteBubbleHovered) && contentPresentation.note != nil
     }
 
     private var assignedTags: [TagItem] {
@@ -290,6 +290,7 @@ struct DiarySummaryRow: View {
             .contentShape(Rectangle())
             .onHover { hovering in
                 noteHoverTask?.cancel()
+                guard !isCommandPressed else { return }
                 if hovering {
                     noteHoverTask = Task { @MainActor in
                         try? await Task.sleep(for: .milliseconds(300))
@@ -519,7 +520,7 @@ struct DiarySummaryRow: View {
             },
             onOpen: openWindow,
             onHover: { hovering in
-                guard isTitle else { return }
+                guard isTitle, !isCommandPressed else { return }
                 if hovering {
                     titleHoverTask?.cancel()
                     titleHoverTask = Task { @MainActor in
@@ -682,7 +683,16 @@ struct DiarySummaryRow: View {
         isCommandPressed = NSEvent.modifierFlags.contains(.command)
         guard flagsMonitor == nil else { return }
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
-            isCommandPressed = event.modifierFlags.contains(.command)
+            let command = event.modifierFlags.contains(.command)
+            if command {
+                titleHoverTask?.cancel()
+                noteHoverTask?.cancel()
+            }
+            if isCommandPressed != command {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isCommandPressed = command
+                }
+            }
             return event
         }
     }

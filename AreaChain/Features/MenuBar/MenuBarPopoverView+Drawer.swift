@@ -3,21 +3,20 @@ import SwiftData
 import SwiftUI
 
 extension MenuBarPopoverView {
-    // MARK: - 筛选抽屉浮层与交互协调
+    // MARK: - 筛选级联浮层与交互协调
 
     var filterDrawerOverlay: some View {
-        ZStack(alignment: .bottom) {
-            // 1. 半透明遮罩层：覆盖上方待办列表区域，点击任意空白处收起抽屉
-            Color.black.opacity(0.12)
+        ZStack(alignment: .bottomLeading) {
+            // 1. 透明点击感知层：无任何视觉遮罩与暗淡效果，点击外部任意处轻巧收起
+            Color.black.opacity(0.001)
                 .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dismissFilterDrawer()
                 }
-                .transition(.opacity)
 
-            // 2. 无缝吸附在底栏上沿的连体托盘
-            MenuBarFilterDrawer(
+            // 2. 树状两级级联悬停浮窗：紧贴底栏「筛选」按钮上沿
+            MenuBarFilterFlyout(
                 tab: tab,
                 filter: $boardFilter,
                 diaryFilterTagID: $diaryFilterTagID,
@@ -29,12 +28,15 @@ extension MenuBarPopoverView {
                 onDismiss: dismissFilterDrawer,
                 externalCategory: $filterCategory
             )
-            .padding(.horizontal, 12)
+            .padding(.leading, 12)
             .padding(.bottom, 44)
             .transition(
                 reduceMotion
                     ? .opacity
-                    : .move(edge: .bottom).combined(with: .opacity)
+                    : .asymmetric(
+                        insertion: .scale(scale: 0.96, anchor: .bottomLeading).combined(with: .opacity).combined(with: .offset(y: 4)),
+                        removal: .scale(scale: 0.98, anchor: .bottomLeading).combined(with: .opacity)
+                    )
             )
         }
         .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)

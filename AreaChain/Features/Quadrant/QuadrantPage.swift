@@ -24,32 +24,21 @@ struct QuadrantPage: View {
 
     var body: some View {
         DaybookPage(minWidth: 560, minHeight: 480, fullWidth: true) {
-            if !style.isWorkspace {
-                DaybookPeriodBar(
-                    title: DayKey.displayName(selectedKey, calendar: calendar, locale: locale),
-                    onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar) },
-                    onNext: { selectedKey = DayKey.shifted(selectedKey, by: 1, calendar: calendar) },
-                    onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
-                )
-            }
+            DaybookPeriodBar(
+                title: DayKey.displayName(selectedKey, calendar: calendar, locale: locale),
+                onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -1, calendar: calendar) },
+                onNext: { selectedKey = DayKey.shifted(selectedKey, by: 1, calendar: calendar) },
+                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+            )
+            Text("quadrant.hint")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookTheme.muted)
+                .accessibilityIdentifier("quadrant.hint")
             if style.isWorkspace {
                 GeometryReader { geometry in
-                    VStack(alignment: .leading, spacing: 6) {
-                        quadrantGrid(cellHeight: max(0, (geometry.size.height - 24 - DaybookSpacing.sm) / 2))
-                        HStack {
-                            Text("quadrant.hint")
-                                .font(DaybookType.caption)
-                                .foregroundStyle(DaybookTheme.muted)
-                                .accessibilityIdentifier("quadrant.hint")
-                            Spacer()
-                        }
-                    }
+                    quadrantGrid(cellHeight: max(0, (geometry.size.height - DaybookSpacing.sm) / 2))
                 }
             } else {
-                Text("quadrant.hint")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
-                    .accessibilityIdentifier("quadrant.hint")
                 quadrantGrid(cellHeight: 180)
             }
         }

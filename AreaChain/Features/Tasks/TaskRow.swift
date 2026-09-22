@@ -136,7 +136,16 @@ struct TaskRow: View {
         guard flagsMonitor == nil else { return }
         isCommandPressed = NSEvent.modifierFlags.contains(.command)
         flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
-            isCommandPressed = event.modifierFlags.contains(.command)
+            let command = event.modifierFlags.contains(.command)
+            if command {
+                titleHoverTask?.cancel()
+                noteHoverTask?.cancel()
+            }
+            if isCommandPressed != command {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isCommandPressed = command
+                }
+            }
             return event
         }
     }
@@ -246,12 +255,13 @@ struct TaskRow: View {
     }
 
     private var shouldShowTitleBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime && !isCommandPressed
             && (isTitleTextHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
     }
 
     private var shouldShowNoteBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
+        !style.isWorkspace && !editing && !pickingDay && !pickingTime && !isCommandPressed
+            && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
     }
 
     private func selectImmediately(_ modifiers: TaskSelectionModifiers = []) {
@@ -264,6 +274,7 @@ struct TaskRow: View {
 
     private func handleTitleHover(_ hovering: Bool) {
         titleHoverTask?.cancel()
+        guard !isCommandPressed else { return }
         if hovering {
             titleHoverTask = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(300))
@@ -364,6 +375,7 @@ struct TaskRow: View {
             .contentShape(Rectangle())
             .onHover { isHovering in
                 noteHoverTask?.cancel()
+                guard !isCommandPressed else { return }
                 if isHovering {
                     noteHoverTask = Task { @MainActor in
                         try? await Task.sleep(for: .milliseconds(300))

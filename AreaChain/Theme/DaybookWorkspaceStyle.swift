@@ -7,7 +7,7 @@ enum DaybookViewStyle: Equatable {
     case workspace
 
     var isWorkspace: Bool { self == .workspace }
-    var pageBackground: Color { isWorkspace ? WorkspaceStyle.paper : DaybookTheme.paper.opacity(0.94) }
+    var pageBackground: Color { isWorkspace ? WorkspaceStyle.paper.opacity(0.92) : DaybookTheme.paper.opacity(0.94) }
     var cardSurface: Color { isWorkspace ? WorkspaceStyle.surface : DaybookTheme.cardSurface }
     var cardBorder: Color { isWorkspace ? WorkspaceStyle.border : DaybookTheme.cardBorder }
     var hoverFill: Color { isWorkspace ? WorkspaceStyle.hover : DaybookTheme.hoverFill }

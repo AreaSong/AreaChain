@@ -4470,6 +4470,23 @@
         }
       }
     },
+    "footer.search.placeholder.short": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Search..."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "搜索..."
+          }
+        }
+      }
+    },
     "footer.syntax.help": {
       "extractionState": "manual",
       "localizations": {

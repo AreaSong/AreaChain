@@ -112,6 +112,8 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
+            next.isOpaque = false
+            next.backgroundColor = .clear
             next.isMovableByWindowBackground = true
             next.isReleasedWhenClosed = false
             next.isRestorable = false

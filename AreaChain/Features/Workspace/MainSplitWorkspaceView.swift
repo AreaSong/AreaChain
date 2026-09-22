@@ -78,8 +78,7 @@ struct MainSplitWorkspaceView: View {
         .workspaceToolbar(
             navigation: navigation,
             projects: projects,
-            tags: tags,
-            todos: todos
+            tags: tags
         )
         .overlay(alignment: .bottom) {
             if !navigation.selectedTaskIDs.isEmpty {
