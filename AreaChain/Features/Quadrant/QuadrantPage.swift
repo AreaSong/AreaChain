@@ -83,7 +83,7 @@ struct QuadrantPage: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         // 固定视口让长清单只在宫格内部滚动，空宫格也占据同样的空间。
         .frame(height: height, alignment: .topLeading)
-        .modernCard(cornerRadius: DaybookRadius.medium, isHovered: isTargeted, isSelected: isTargeted)
+        .daybookSurface(.card, isHovered: isTargeted, isSelected: isTargeted)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("quadrant.cell.\(slot.rawValue)")
         .dropDestination(for: String.self) { items, _ in
@@ -156,7 +156,7 @@ private struct QuadrantChip: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 4)
-            .modernCard(cornerRadius: DaybookRadius.small)
+            .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain) // control: 象限任务卡整行点击，P4 迁 daybookSurface(.card)

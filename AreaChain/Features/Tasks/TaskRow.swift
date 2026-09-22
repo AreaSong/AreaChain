@@ -152,11 +152,7 @@ struct TaskRow: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
         .frame(minHeight: DaybookMetrics.rowHeight)
-        .modernRow(
-            cornerRadius: DaybookRadius.small,
-            isHovered: isHovered,
-            isSelected: state.isSelected
-        )
+        .daybookSurface(.row, isHovered: isHovered, isSelected: state.isSelected)
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .background(
             GeometryReader { proxy in

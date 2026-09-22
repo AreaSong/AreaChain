@@ -110,7 +110,7 @@ struct WorkspaceFilteredListView: View {
                     .padding(.top, 40)
                 } else {
                     if !openTodos.isEmpty {
-                        DaybookGroupedCard {
+                        VStack(alignment: .leading, spacing: 4) {
                             ForEach(Array(openTodos.enumerated()), id: \.element.id) { index, todo in
                                 if index > 0 {
                                     Divider().padding(.leading, 36).opacity(0.35)
@@ -122,7 +122,7 @@ struct WorkspaceFilteredListView: View {
                     if !listedRoutines.isEmpty {
                         SectionStamp(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
                             .padding(.top, openTodos.isEmpty ? 0 : 8)
-                        DaybookGroupedCard {
+                        VStack(alignment: .leading, spacing: 4) {
                             ForEach(Array(listedRoutines.enumerated()), id: \.element.id) { index, routine in
                                 if index > 0 {
                                     Divider().padding(.leading, 36).opacity(0.35)
@@ -185,7 +185,7 @@ struct WorkspaceFilteredListView: View {
             .padding(.top, 8)
 
             if showCompleted {
-                DaybookGroupedCard {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(Array(doneTodos.enumerated()), id: \.element.id) { index, todo in
                         if index > 0 {
                             Divider().padding(.leading, 36).opacity(0.3)

@@ -8,7 +8,7 @@ extension DayBoardList {
                 SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
                     .padding(.leading, 2)
             }
-            DaybookGroupedCard {
+            VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(openTodosList.enumerated()), id: \.element.id) { index, todo in
                     if index > 0 {
                         Divider()
@@ -22,7 +22,7 @@ extension DayBoardList {
         if !openRoutinesList.isEmpty {
             SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
                 .padding(.leading, 2)
-            DaybookGroupedCard {
+            VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(openRoutinesList.enumerated()), id: \.element.id) { index, routine in
                     if index > 0 {
                         Divider()
@@ -92,7 +92,7 @@ extension DayBoardList {
             .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
             if showCompleted {
-                DaybookGroupedCard {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(Array(doneItemsList.enumerated()), id: \.element.id) { index, row in
                         if index > 0 {
                             Divider()

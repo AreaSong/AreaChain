@@ -43,7 +43,7 @@ struct TaskDetailProjectPicker: View {
                 }
                 .padding(.horizontal, 9)
                 .padding(.vertical, 6)
-                .modernCard(cornerRadius: DaybookRadius.small)
+                .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
             }
             .menuStyle(.borderlessButton)
         }

@@ -122,11 +122,7 @@ struct DiarySummaryRow: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
-        .modernRow(
-            cornerRadius: DaybookRadius.small,
-            isHovered: isHovered,
-            isSelected: isSelected || isHighlighted
-        )
+        .daybookSurface(.row, isHovered: isHovered, isSelected: isSelected || isHighlighted)
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .strokeBorder(

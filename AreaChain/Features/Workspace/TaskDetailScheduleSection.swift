@@ -217,7 +217,7 @@ struct TaskDetailStreakCard: View {
                 streakStatusRow
             }
             .padding(10)
-            .modernCard(cornerRadius: DaybookRadius.small)
+            .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
         }
     }
 

@@ -4,7 +4,7 @@ import SwiftUI
 /// 像素级镜像 DiarySummaryRow：
 /// - 双行紧凑卡片：首行纯文本标题（超长 hover 展开 RowTitleBubble）、多行备注指示器、右侧悬停操作区（复制与更多操作）；
 /// - 次行时间文本与真实彩色标签小方块群（tagPill）；
-/// - 内边距 8/4pt、高度 57pt（minHeight: 46）、圆角 DaybookRadius.small(6pt)，悬停呈现 modernRow 浅灰高亮。
+/// - 内边距 8/4pt、高度 57pt（minHeight: 46）、圆角 DaybookRadius.small(6pt)，悬停呈现 daybookSurface(.row) 浅灰高亮。
 struct LiveDiaryComposerPreview: View {
     var text: String
     var allTags: [TagItem] = []
@@ -79,11 +79,7 @@ struct LiveDiaryComposerPreview: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
-        .modernRow(
-            cornerRadius: DaybookRadius.small,
-            isHovered: isHovered,
-            isSelected: false
-        )
+        .daybookSurface(.row, isHovered: isHovered, isSelected: false)
         .background(
             Group {
                 if !showsSuggestions {

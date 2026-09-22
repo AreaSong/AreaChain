@@ -125,7 +125,10 @@ struct TrashPage: View {
                 .font(DaybookType.caption)
             }
         }
-        .daybookCardStyle(padding: EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12))
+        .daybookSurface(.card, configure: {
+    $0.radius = DaybookRadius.small
+    $0.padding = EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12)
+})
     }
 
     private func restore(_ item: TrashRow) {

@@ -70,7 +70,7 @@ private struct ResidentEditorRow: View {
             scheduleRow
         }
         .padding(10)
-        .modernCard(cornerRadius: DaybookRadius.small, isSelected: isSelected)
+        .daybookSurface(.card, isSelected: isSelected, configure: { $0.radius = DaybookRadius.small })
         .onAppear { titleDraft = routine.title }
         .onChange(of: routine.title) { _, value in
             if titleDraft != value { titleDraft = value }

@@ -142,7 +142,7 @@ struct TaskDetailMetadataSection: View {
             }
             .padding(8)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .modernCard(cornerRadius: DaybookRadius.small)
+            .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
         }
     }
 }

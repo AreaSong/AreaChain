@@ -232,7 +232,7 @@ flowchart TB
 - [x] P2 输入壳
 - [x] P3a 按钮（MenuBar + Tasks + Board + Search）
 - [x] P3b 按钮（Diary + Workspace + Theme）
-- [ ] P4a 表面基座
+- [x] P4a 表面基座
 - [ ] P4b 浮层与剩余自绘表面
 - [ ] P5a 芯片 / 计数 / 圆点
 - [ ] P5b 分节头 / 分隔线 / 分段栏 / 确认框 / 监听器
@@ -271,5 +271,7 @@ flowchart TB
 - 2026-09-23 P3b 验收：不通过（A1 非空，仅 `DaybookButtonStyle.swift:67` 文档注释；B 的 `pill(tint:` 过滤命中 `case pill(tint: Color)`。`sidebar.trailing` 计数为 1。A2=28，A3 的 17+11 齐全，C1–C6 零越界，D EXIT=0，结果包 `Test-AreaChain-2026.09.23_01-03-40-+0800.xcresult`：Passed，67 通过、失败 0、跳过 0。E 通过。未做人工窗口走查。）
 - 2026-09-23 用户确认：上述两条是验收命令误伤，不改 `DaybookButtonStyle.swift`。A1 再排除 `///` 文档注释；`pill` 只匹配 `.pill(tint:` 调用。执行稿最终验证 1 与 P3b 完成标准同步收窄。
 - 2026-09-23 P3b 验收：通过。收窄后的 A1 与 `.pill(tint:` 过滤零输出。其余沿用同日 01:03 定向测试（Swift 未再改）：EXIT=0，67 通过、失败 0、跳过 0，结果包 `Test-AreaChain-2026.09.23_01-03-40-+0800.xcresult`。未做人工窗口走查。下一阶段 P4。
+- 2026-09-23 P4a 完成：新建 daybookSurface（row / card / panel / banner），行与卡片迁入并去掉卡片阴影，锁定草稿改用 banner，分组容器改为 VStack 后删除旧表面 API。
+- 2026-09-23 P4a 验收：通过。A–E 重跑成立。A3 描边命令计数为 2，第二处是卡片未选中线宽 `: 0.8`。B1 命令合计 18，其中调用 11、函数定义 1、执行稿要求的预览注释 1、HEAD 里既有的 control 注释 5。B7 命令合计 7，分组替换 6 处，另一处是 `DayBoardSections.swift` 里原有的 `completedSection` 外层 `VStack`。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_07-51-20-+0800.xcresult`：Passed，49 个用例、67 次运行，失败 0、跳过 0。未做人工窗口走查。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

@@ -312,9 +312,7 @@ struct DiaryPage: View {
                 Button("privacy.draft.discard") { confirmsDiscardDraft = true }
             }
             .font(DaybookType.caption)
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: DaybookMetrics.Radius.inputComposer, style: .continuous).fill(DaybookPalette.fill.subtle)) // token-exempt: 锁定草稿提示框，P4 迁 daybookSurface(.banner)
-            .overlay(RoundedRectangle(cornerRadius: DaybookMetrics.Radius.inputComposer, style: .continuous).stroke(DaybookPalette.border.faint, lineWidth: DaybookMetrics.Stroke.regular)) // token-exempt: 同上
+            .daybookSurface(.banner)
         } else {
             DiaryQuickComposerView(
                 text: draftBinding.text, focused: $composerFocused, orderedTags: orderedTags,

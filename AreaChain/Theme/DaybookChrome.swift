@@ -150,56 +150,5 @@ extension View {
             .accessibilityHidden(!visible)
             .animation(DaybookMotion.animation(reduceMotion), value: visible)
     }
-
-    func daybookCardStyle(
-        isHoverable: Bool = true,
-        padding: EdgeInsets = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
-    ) -> some View {
-        modifier(DaybookCardModifier(isHoverable: isHoverable, padding: padding))
-    }
-}
-
-/// 现代生产力微质感卡片修饰器（Linear / Raycast 风格）：
-/// 规范微圆角（6~8pt）、精密细边框、半透明卡片底色与微弱悬浮态高亮。
-struct DaybookCardModifier: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    var isHoverable: Bool
-    var padding: EdgeInsets
-    @State private var isHovered = false
-
-    init(isHoverable: Bool = true, padding: EdgeInsets = EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)) {
-        self.isHoverable = isHoverable
-        self.padding = padding
-    }
-
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(backgroundFill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(borderStroke, lineWidth: 0.5)
-            )
-            .shadow(color: isHovered && isHoverable ? DaybookElevation.raised.color : DaybookElevation.raised.color, radius: isHovered && isHoverable ? 2 : 0.5, y: 0.5)
-            .onHover { isHovered = $0 }
-            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-    }
-
-    private var backgroundFill: Color {
-        if isHovered && isHoverable {
-            return DaybookTheme.cardSurfaceHover
-        }
-        return DaybookTheme.cardSurface
-    }
-
-    private var borderStroke: Color {
-        if isHovered && isHoverable {
-            return DaybookTheme.cardBorderHover
-        }
-        return DaybookTheme.cardBorder
-    }
 }
 
