@@ -202,10 +202,13 @@ flowchart TB
 做：不新增 variant。Diary 21、Workspace 24、Theme 13、Quadrant 1 处 `.plain`：图标与文字动作迁到 `DaybookButtonStyle` / `DaybookIconButton` / `daybookMenuLabel`；胶囊、复选框、整行、固定 58×22 属性按钮、语法行悬停替换共 17 处加 `// control:`（清单见验收 B2）。`CommandReturnButton` 去掉自绘底，改用 `.icon` / `.iconActive`（⌘ 按下为 active）。`.bordered` / `.borderedProminent` 不动。已复制的绿色改成 `.iconActive` / `.active`（绿色留给 P6 的 `status.success`）。
 完成标准：代码里的裸 `.buttonStyle(.plain)` 为零（同行 `// control:` 或 `///` 文档注释不算）；`// control:` 共 28 条（P3a 的 11 + 本阶段 17）；`.pill(tint:` 的调用 tint 来自 `DaybookPalette`（枚举声明 `case pill(tint: Color)` 不算）；`syntax.diary.popout`、`syntax.commandReturn.button`、`syntax.attributes.button`、`syntax.attributes.close`、`syntax.candidate.` 仍在；定向测试通过。
 
-### P4 表面与浮层
-必读：`Theme/ModernComponents.swift`、`Theme/DaybookChrome.swift`（`DaybookCardModifier`）、`Features/Board/BoardRowChrome.swift`、`Features/Tasks/DayBoardSections.swift`、`Features/Workspace/WorkspaceFilteredListView.swift`、3.5 节全部文件。
-做：新建 `DaybookSurface.swift`；24 处自绘 + 11 处浮层 + 四个旧修饰符消费者全部迁入；工作台列表去白卡（`DayBoardSections`、`WorkspaceFilteredListView` 改纸底 + `DaybookDivider`）；`DiarySummaryRow` 用 `configure { $0.minHeight = 46 }`。删除 `modernCard` / `modernRow` / `daybookCardStyle` / `DaybookGroupedCard` / `ModernCardModifier` / `ModernRowModifier` / `DaybookCardModifier`。
-完成标准：`WorkspaceRenderingTests` + `MenuBarPopoverRenderingTests` + `TaskRowInteractionTests` + `DiarySummaryRowTests` + `SyntaxOverlayPlacementTests` + `BoardFilterBarTests` 通过；`rg 'modernCard|modernRow|daybookCardStyle|DaybookGroupedCard|\.shadow\(color:' AreaChain/Features` 为空。
+### P4a 表面基座
+提示词：`design-system-P4a-execute.md` / `design-system-P4a-verify.md`。
+做：新建 `daybookSurface(_:isHovered:isSelected:configure:)`，variant 为 `.row` / `.card` / `.panel` / `.banner`。行 = 现 `modernRow`（悬停只改底、选中才描边、无阴影）；卡片 = 现 `modernCard` 去掉阴影，默认圆角 10，调用点原圆角 6 用 `configure` 保留；`.panel` 纸底 + `daybookElevation(.floating)`，本阶段只建不迁；`.banner` 接锁定草稿提示框。`DaybookGroupedCard` 已是无白卡的 `VStack`，6 处换成同样的 `VStack` 后删除。删除 `modernCard` / `modernRow` / `daybookCardStyle` 及三个 Modifier。`modernFocusRing`、象限格自绘色、浮层 `.shadow`、搜索行/附件行/语法范例卡留给 P4b。
+完成标准：上述旧 API 零引用；Features 里 `.shadow(color:` 数量与 P4a 前相同（本阶段不碰阴影）；定向测试通过。
+
+### P4b 浮层与剩余自绘表面
+做：全部 `.shadow(color:` 改为 `daybookElevation`（浮层 `.floating`，分段栏滑块 `.raised`）；搜索命中行、附件结果行、语法范例卡、手记卡片、抽屉分组、日历格、甘特色块按 variant 迁入。象限选择格保留象限色，不压成通用选中色。提示词在 P4a 验收通过后生成。
 
 ### P5 芯片、分节头、分隔线、分段栏、确认框、监听器（可分两次：a = 芯片/计数/圆点；b = 其余）
 必读：`Theme/ModernComponents.swift`（`PillBadge`）、`Theme/DaybookTheme.swift`（`SectionStamp`）、`Features/MenuBar/MenuBarControls.swift`、`Theme/TrashConfirm.swift`、`Theme/CommandReturnButton.swift`、`Features/Board/BoardRowChrome.swift`（80–100）、3.6 / 3.7 节全部文件。
@@ -229,7 +232,8 @@ flowchart TB
 - [x] P2 输入壳
 - [x] P3a 按钮（MenuBar + Tasks + Board + Search）
 - [x] P3b 按钮（Diary + Workspace + Theme）
-- [ ] P4 表面与浮层
+- [ ] P4a 表面基座
+- [ ] P4b 浮层与剩余自绘表面
 - [ ] P5a 芯片 / 计数 / 圆点
 - [ ] P5b 分节头 / 分隔线 / 分段栏 / 确认框 / 监听器
 - [ ] P6 MenuBar
