@@ -110,14 +110,26 @@ struct WorkspaceFilteredListView: View {
                     )
                     .padding(.top, 40)
                 } else {
-                    ForEach(openTodos) { todo in
-                        todoRowView(todo, isDone: false)
+                    if !openTodos.isEmpty {
+                        DaybookGroupedCard {
+                            ForEach(Array(openTodos.enumerated()), id: \.element.id) { index, todo in
+                                if index > 0 {
+                                    Divider().padding(.leading, 36).opacity(0.35)
+                                }
+                                todoRowView(todo, isDone: false)
+                            }
+                        }
                     }
                     if !listedRoutines.isEmpty {
                         SectionStamp(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
                             .padding(.top, openTodos.isEmpty ? 0 : 8)
-                        ForEach(listedRoutines) { routine in
-                            routineRowView(routine)
+                        DaybookGroupedCard {
+                            ForEach(Array(listedRoutines.enumerated()), id: \.element.id) { index, routine in
+                                if index > 0 {
+                                    Divider().padding(.leading, 36).opacity(0.35)
+                                }
+                                routineRowView(routine)
+                            }
                         }
                     }
                     completedSection(doneTodos)
@@ -176,8 +188,13 @@ struct WorkspaceFilteredListView: View {
             .padding(.top, 8)
 
             if showCompleted {
-                ForEach(doneTodos) { todo in
-                    todoRowView(todo, isDone: true)
+                DaybookGroupedCard {
+                    ForEach(Array(doneTodos.enumerated()), id: \.element.id) { index, todo in
+                        if index > 0 {
+                            Divider().padding(.leading, 36).opacity(0.3)
+                        }
+                        todoRowView(todo, isDone: true)
+                    }
                 }
             }
         }

@@ -2,6 +2,14 @@ import Foundation
 import SwiftData
 
 /// 待办创建参数 DTO（参数归一化，避免方法签名超过 5 个参数）
+struct ParsedNoteUpdate: Sendable {
+    var notes: String
+    var tagIDs: String
+    var remindMinutes: Int?
+    var isImportant: Bool?
+    var isUrgent: Bool?
+}
+
 struct CreateTodoParams: Sendable {
     var title: String
     var dayKey: String
@@ -99,6 +107,15 @@ protocol TaskRepositoryProtocol: AnyObject {
 
     /// 切换标签关联状态
     func toggleTag(id: UUID, tagID: UUID) throws
+
+    /// 用解析后的整组标签替换关联，不逐个切换。
+    func replaceTagIDs(id: UUID, tagIDs: String) throws
+
+    /// 备注保存：原文、标签、可选提醒与优先级一次写入。
+    func applyParsedNotes(id: UUID, update: ParsedNoteUpdate) throws
+
+    /// 日历回写字段。不在此处保存，避免 `BoardEvents.changed()` 再次发起同步。
+    func applyCalendarFields(id: UUID, title: String, dayKey: String, remindMinutes: Int?, eventID: String) throws
 
     // MARK: - 删除与恢复 (Delete & Restore)
     /// 删除待办：soft=true 时执行软删除并级联标记子任务/附件；soft=false 时彻底物理删除

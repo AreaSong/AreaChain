@@ -66,10 +66,7 @@ struct SearchPage: View {
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: tagMap,
-            privacy: BoardSearchPrivacy(
-                sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
-                placeholder: L10n.string("diary.private.title", locale: locale)
-            )
+            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale)
         )
     }
 }

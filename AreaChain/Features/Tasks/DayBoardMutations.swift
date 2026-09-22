@@ -436,7 +436,7 @@ enum DayBoardMutations {
     static func moveDiary(_ entry: DiaryEntry, to dayKey: String) -> Bool {
         guard let ctx = entry.modelContext else { return false }
         return ModelChanges.attempt(in: ctx) {
-            entry.dayKey = dayKey
+            try diaryRepo(for: ctx).moveDiary(id: entry.id, to: dayKey)
         }
     }
 

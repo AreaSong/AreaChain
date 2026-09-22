@@ -57,10 +57,7 @@ struct MenuBarSearchResults: View {
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),
-            privacy: BoardSearchPrivacy(
-                sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
-                placeholder: L10n.string("diary.private.title", locale: locale)
-            ),
+            privacy: BoardSearchPrivacy.protected(diaries: Array(diaries), tags: Array(tags), locale: locale),
             scope: BoardSearchScope(filter: filter, projectIDs: projectIDs)
         )
     }

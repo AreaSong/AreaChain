@@ -58,6 +58,22 @@ struct DiaryPrivacyTests {
         #expect(!trash.displayTitle.contains(entry.text))
     }
 
+    @Test func searchMasksAPrivateTagEvenWhenItsNameIsNotPassword() throws {
+        let tag = TagItem(name: "保险柜", sortOrder: 0)
+        tag.isPrivateDiary = true
+        let entry = DiaryEntry(text: "cabinet-secret", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tagNames: [tag.id: tag.name], privateTagIDs: [tag.id]))
+        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tagNames: [tag.id: tag.name]))
+        let hits = BoardSearch.hits(
+            query: "cabinet", todos: [], diaries: [entry.snapshot], routines: [],
+            tagMap: [tag.id: tag.name],
+            privacy: .protected(diaries: [entry], tags: [tag], locale: Locale(identifier: "en"))
+        )
+        let hit = try #require(hits.first)
+        #expect(hit.title == "Private note · hidden")
+        #expect(!hit.title.contains("cabinet-secret"))
+    }
+
     @Test func searchCanLocatePrivateNoteWithoutReturningItsBodyAsTitleOrHelp() throws {
         let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now)
         let entry = DiaryEntry(text: "account private-test-value", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)

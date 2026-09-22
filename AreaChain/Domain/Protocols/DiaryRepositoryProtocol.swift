@@ -28,6 +28,9 @@ protocol DiaryRepositoryProtocol: AnyObject {
     /// 修改手记文本内容
     func editDiary(id: UUID, text: String) throws
 
+    /// 把手记改到另一民事日期。
+    func moveDiary(id: UUID, to dayKey: String) throws
+
     // MARK: - 置顶与标签操作 (Pin & Tags)
     /// 切换置顶状态
     func togglePin(id: UUID) throws

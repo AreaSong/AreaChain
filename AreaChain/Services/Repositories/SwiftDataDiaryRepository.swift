@@ -88,6 +88,17 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         }
     }
 
+    func moveDiary(id: UUID, to dayKey: String) throws {
+        guard let entry = try fetchDiary(id: id) else {
+            throw RepositoryError.notFound("DiaryEntry(id: \(id))")
+        }
+        guard DayKey.date(from: dayKey) != nil else {
+            throw RepositoryError.invalidArgument("手记日期无效")
+        }
+        entry.dayKey = dayKey
+        try saveAndNotify()
+    }
+
     func editDiary(id: UUID, text: String) throws {
         guard let entry = try fetchDiary(id: id) else {
             throw RepositoryError.notFound("DiaryEntry(id: \(id))")

@@ -191,6 +191,29 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         try saveAndNotify()
     }
 
+    func replaceTagIDs(id: UUID, tagIDs: String) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        routine.tagIDs = tagIDs
+        try saveAndNotify()
+    }
+
+    func applyParsedNotes(id: UUID, update: ParsedNoteUpdate) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        routine.notes = update.notes
+        routine.tagIDs = update.tagIDs
+        if let minutes = update.remindMinutes {
+            ClassifiedFieldsUpdate.setRemind(routine, minutes: minutes)
+        }
+        if let isImportant = update.isImportant, let isUrgent = update.isUrgent {
+            ClassifiedFieldsUpdate.setPriority(routine, isImportant: isImportant, isUrgent: isUrgent)
+        }
+        try saveAndNotify()
+    }
+
     // MARK: - 打卡与跳过 (Check & Skip)
 
     func toggleRoutine(id: UUID, dayKey: String) throws {

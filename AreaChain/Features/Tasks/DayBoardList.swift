@@ -136,13 +136,6 @@ struct DayBoardList: View {
         .focusable()
         .focusEffectDisabled()
         .background(KeyWindowHost { hostWindow = $0 })
-        .modifier(DayBoardKeyNavigationModifier(
-            interaction: config.interaction,
-            onNavigate: { navigateSelection(delta: $0) },
-            onToggle: { toggleSelected(id: $0) },
-            onDelete: { deleteSelected(id: $0) },
-            onInspect: { inspectSelected(id: $0) }
-        ))
         .onAppear {
             setupKeyMonitor()
             expandIfHighlighted()

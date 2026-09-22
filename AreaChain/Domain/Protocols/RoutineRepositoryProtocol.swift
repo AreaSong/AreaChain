@@ -101,6 +101,12 @@ protocol RoutineRepositoryProtocol: AnyObject {
     /// 切换关联标签
     func toggleTag(id: UUID, tagID: UUID) throws
 
+    /// 用解析后的整组标签替换关联，不逐个切换。
+    func replaceTagIDs(id: UUID, tagIDs: String) throws
+
+    /// 备注保存：原文、标签、可选提醒与优先级一次写入。
+    func applyParsedNotes(id: UUID, update: ParsedNoteUpdate) throws
+
     // MARK: - 打卡与跳过 (Check & Skip)
     /// 切换指定日期的打卡完成状态
     func toggleRoutine(id: UUID, dayKey: String) throws

@@ -119,14 +119,18 @@ struct TaskDetailRemindChips: View {
 struct TaskDetailWeekdayPicker: View {
     var resolvedMask: Int
     var onUpdateMask: (Int) -> Void
+    var showsTitle = true
+    var accessibilityTitle: LocalizedStringKey = "drawer.weekdays.title"
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("drawer.weekdays.title")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted)
+            if showsTitle {
+                Text("drawer.weekdays.title")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(DaybookTheme.muted)
+            }
 
             HStack(spacing: 4) {
                 ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
@@ -145,8 +149,11 @@ struct TaskDetailWeekdayPicker: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
+                    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(accessibilityTitle)
         }
     }
 }

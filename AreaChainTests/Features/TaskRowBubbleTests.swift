@@ -15,8 +15,9 @@ struct TaskRowBubbleTests {
 
         // 超长英文与数字（真正超出单行容量）应判定为截断
         #expect(TaskTitleTruncation.isTruncated("11111111111111111111111111111111111111111111"))
-        // 能够在单行完整显示的字符（如 27 位数字）不应判定为截断
-        #expect(!TaskTitleTruncation.isTruncated("123123123112312312311231231"))
+        // 与手记行同一加权规则：27 位数字已超过阈值
+        #expect(TaskTitleTruncation.isTruncated("123123123112312312311231231"))
+        #expect(TaskTitleTruncation.isTruncated("买牛奶") == RowTitleTruncation.isTruncated("买牛奶"))
     }
 
     @Test func rowTitleBubbleTriggersCopyCallback() {

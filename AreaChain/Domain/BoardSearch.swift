@@ -37,7 +37,17 @@ struct BoardSearchPriority: Equatable {
 
 struct BoardSearchPrivacy {
     var sensitiveDiaryIDs: Set<UUID> = []
+    /// 名字表里看不出 `isPrivateDiary`，搜索遮罩必须带上这组标识。
+    var privateTagIDs: Set<UUID> = []
     var placeholder: String = "••••••••"
+
+    static func protected(diaries: [DiaryEntry], tags: [TagItem], locale: Locale) -> BoardSearchPrivacy {
+        BoardSearchPrivacy(
+            sensitiveDiaryIDs: Set(diaries.filter { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) }.map(\.id)),
+            privateTagIDs: Set(tags.filter(\.isPrivateDiary).map(\.id)),
+            placeholder: L10n.string("diary.private.title", locale: locale)
+        )
+    }
 }
 
 struct BoardSearchQuery: Equatable {
@@ -223,7 +233,8 @@ enum BoardSearch {
             return BoardSearchHit(
                 id: item.id,
                 kind: .diary,
-                title: privacy.sensitiveDiaryIDs.contains(item.id) || DiaryPrivacy.isSensitive(item, tagNames: tagMap)
+                title: privacy.sensitiveDiaryIDs.contains(item.id)
+                    || DiaryPrivacy.isSensitive(item, tagNames: tagMap, privateTagIDs: privacy.privateTagIDs)
                     ? privacy.placeholder : item.text,
                 dayKey: item.dayKey,
                 createdAt: item.createdAt

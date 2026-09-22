@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// 实时卡片预览头部：所见即所得展示清洗后的待办内容、提取的属性，并支持多标签溢出折叠与右侧浮层展开。
@@ -8,11 +9,13 @@ struct LiveComposerPreviewHeader: View {
     var showsSuggestions: Bool = false
     var onClose: () -> Void
 
-    @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isTitleHovered = false
     @State private var isNoteHovered = false
-    @State private var noteBubbleShiftX: CGFloat = 0
+    @State private var isTitleBubbleHovered = false
+    @State private var isNoteBubbleHovered = false
+    @State private var growsUpward = false
+    @State private var bubbleShiftX: CGFloat = 0
 
     init(
         text: String,
@@ -51,22 +54,10 @@ struct LiveComposerPreviewHeader: View {
         parsed.timeLabel
     }
 
-    private var displayPriority: (badge: String, tooltip: String, color: Color, fill: Color)? {
-        guard let label = parsed.priorityLabel else { return nil }
-        let badge: String
-        switch label {
-        case "quadrant.iu": badge = "P1"
-        case "quadrant.i": badge = "P2"
-        case "quadrant.u": badge = "P3"
-        case "quadrant.rest": badge = "P4"
-        default: badge = label
-        }
-        return (
-            badge: badge,
-            tooltip: label,
-            color: DaybookTheme.Syntax.priorityColor(for: label),
-            fill: DaybookTheme.Syntax.priorityFill(for: label)
-        )
+    private var prioritySlot: QuadrantSlot? {
+        guard parsed.hasPriorityToken else { return nil }
+        let slot = QuadrantSlot.of(important: parsed.isImportant, urgent: parsed.isUrgent)
+        return slot == .rest ? nil : slot
     }
 
     var body: some View {
@@ -89,7 +80,7 @@ struct LiveComposerPreviewHeader: View {
             title: displayTitle,
             tags: previewTags,
             hasTime: displayTime != nil,
-            hasPriority: displayPriority != nil,
+            hasPriority: prioritySlot != nil,
             hasNotes: !parsed.notes.isEmpty
         )
     }
@@ -115,18 +106,8 @@ struct LiveComposerPreviewHeader: View {
             // 右侧属性集群（严格镜像 TaskRow: 优先级 -> 标签 -> 时间）
             HStack(spacing: 5) {
                 // 1. 优先级徽标（最前）
-                if let priority = displayPriority {
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 9.5, weight: .bold))
-                        Text(priority.badge)
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(priority.fill))
-                    .foregroundStyle(priority.color)
-                    .help(LocalizedStringKey(priority.tooltip))
+                if let prioritySlot {
+                    QuadrantBadge(slot: prioritySlot)
                 }
 
                 // 2. 标签集群
@@ -224,12 +205,9 @@ struct LiveComposerPreviewHeader: View {
             .background(
                 GeometryReader { proxy in
                     Color.clear
-                        .onAppear {
-                            updateNoteBubblePlacement(proxy)
-                        }
-                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in
-                            updateNoteBubblePlacement(proxy)
-                        }
+                        .onAppear { updateBubblePlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
                 }
             )
             .contentShape(Rectangle())
@@ -238,85 +216,43 @@ struct LiveComposerPreviewHeader: View {
                     isNoteHovered = hovering
                 }
             }
-            .overlay(alignment: .topLeading) {
-                if isNoteHovered && !showsSuggestions && !parsed.notes.isEmpty {
-                    let arrowPadding = max(8, min(186, 8 - noteBubbleShiftX))
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                if (isNoteHovered || isNoteBubbleHovered) && !showsSuggestions && !parsed.notes.isEmpty && !isTitleHovered && !isTitleBubbleHovered {
+                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
                     let transformAnchor = UnitPoint(
                         x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: 0.0
+                        y: growsUpward ? 1.0 : 0.0
                     )
-                    noteFloatingBubble(bubbleShiftX: noteBubbleShiftX)
-                        .offset(x: -8 + noteBubbleShiftX, y: 20)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                            removal: .opacity
-                        ))
+                    RowNoteBubble(
+                        note: parsed.notes,
+                        growsUpward: growsUpward,
+                        bubbleShiftX: bubbleShiftX,
+                        onCopy: { copyPreview(parsed.notes) },
+                        onHover: { isNoteBubbleHovered = $0 }
+                    )
+                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                        removal: .opacity
+                    ))
                 }
             }
     }
 
-    private func updateNoteBubblePlacement(_ proxy: GeometryProxy) {
-        let globalX = proxy.frame(in: .global).minX
-        let safeMaxX: CGFloat = 356
-        let safeMinX: CGFloat = 12
-        let bubbleRight = globalX + 202
-        if bubbleRight > safeMaxX {
-            let overflow = bubbleRight - safeMaxX
-            let maxShift = max(0, (globalX - 8) - safeMinX)
-            noteBubbleShiftX = -min(overflow, maxShift)
-        } else {
-            noteBubbleShiftX = 0
-        }
+    private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let placement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: frame.minX, y: frame.minY),
+            isWorkspace: false
+        )
+        growsUpward = placement.growsUpward
+        bubbleShiftX = placement.bubbleShiftX
     }
 
-    private func noteFloatingBubble(bubbleShiftX: CGFloat) -> some View {
-        let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Spacer().frame(width: arrowPadding)
-                Image(systemName: "arrowtriangle.up.fill")
-                    .font(.system(size: 7))
-                    .foregroundStyle(DaybookTheme.paper)
-                    .offset(y: 1)
-                Spacer()
-            }
-            .frame(height: 5)
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "text.alignleft")
-                        .font(.system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                    Text(L10n.string("drawer.notes.title", locale: locale))
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                    Spacer(minLength: 0)
-                }
-
-                Text(parsed.notes)
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(DaybookTheme.ink)
-                    .lineSpacing(2.5)
-                    .lineLimit(8)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .frame(width: 210, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-            )
-        }
-        .frame(width: 210, alignment: .leading)
-        .fixedSize()
-        .allowsHitTesting(false)
-        .zIndex(999)
+    private func copyPreview(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
     }
 
     /// 浮动详细标签面板（大字号 11pt，查详细专用，输入时自动避让）
@@ -380,7 +316,7 @@ struct LiveComposerPreviewHeader: View {
     }
 
     private var isTitleTruncated: Bool {
-        displayTitle.count > 12
+        RowTitleTruncation.isTruncated(displayTitle)
     }
 
     private var titleView: some View {
@@ -397,44 +333,21 @@ struct LiveComposerPreviewHeader: View {
                     isTitleHovered = hovering && isTitleTruncated
                 }
             }
-            .overlay(alignment: .topLeading) {
-                if isTitleHovered && !showsSuggestions && !isNoteHovered {
-                    titleTooltipBubble
-                        .offset(y: 28)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.95, anchor: .topLeading)),
-                            removal: .opacity
-                        ))
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                if (isTitleHovered || isTitleBubbleHovered) && !showsSuggestions && !isNoteHovered && !isNoteBubbleHovered {
+                    RowTitleBubble(
+                        title: displayTitle,
+                        growsUpward: growsUpward,
+                        onCopy: { copyPreview(displayTitle) },
+                        onHover: { isTitleBubbleHovered = $0 }
+                    )
+                    .offset(y: growsUpward ? -6 : 22)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                        removal: .opacity
+                    ))
                 }
             }
-    }
-
-    private var titleTooltipBubble: some View {
-        HStack(alignment: .top, spacing: 5) {
-            Image(systemName: "text.alignleft")
-                .font(.system(size: 9.5))
-                .foregroundStyle(DaybookTheme.muted)
-                .padding(.top, 2)
-
-            Text(displayTitle)
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(DaybookTheme.ink)
-                .lineLimit(nil)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5.5)
-        .frame(maxWidth: 260, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.18), radius: 8, x: 0, y: 4)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.8), lineWidth: 0.8)
-        )
-        .zIndex(999)
     }
 
     // MARK: - 容量碰撞检测算法

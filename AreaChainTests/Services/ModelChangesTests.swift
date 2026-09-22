@@ -135,6 +135,7 @@ private final class RejectingDiaryRepository: DiaryRepositoryProtocol {
         throw CocoaError(.fileWriteNoPermission)
     }
     func editDiary(id: UUID, text: String) throws { throw CocoaError(.fileWriteNoPermission) }
+    func moveDiary(id: UUID, to dayKey: String) throws {}
     func togglePin(id: UUID) throws {}
     func setPinned(id: UUID, isPinned: Bool) throws {}
     func toggleTag(id: UUID, tagID: UUID) throws {}

@@ -117,7 +117,12 @@ private struct ResidentEditorRow: View {
 
     private var scheduleRow: some View {
         HStack(spacing: 8) {
-            WeekdayMaskChips(mask: routine.resolvedWeekdayMask, onToggle: toggleWeekday)
+            TaskDetailWeekdayPicker(
+                resolvedMask: routine.resolvedWeekdayMask,
+                onUpdateMask: { DayBoardMutations.setWeekdayMask(routine, mask: $0) },
+                showsTitle: false,
+                accessibilityTitle: "residents.days"
+            )
             Spacer(minLength: 8)
             timeControls
         }
@@ -193,42 +198,4 @@ private struct ResidentEditorRow: View {
         DayBoardMutations.setRemind(routine, minutes: minutes)
     }
 
-    private func toggleWeekday(_ weekday: Int) {
-        DayBoardMutations.setWeekdayMask(
-            routine,
-            mask: WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday)
-        )
-    }
-}
-
-private struct WeekdayMaskChips: View {
-    @Environment(\.locale) private var locale
-    @Environment(\.calendar) private var calendar
-    var mask: Int
-    var onToggle: (Int) -> Void
-
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
-                let on = WeekdayMask.contains(mask, weekday: weekday)
-                Button {
-                    onToggle(weekday)
-                } label: {
-                    Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
-                        .font(DaybookType.caption.weight(.semibold))
-                        .frame(width: 24, height: 24)
-                        .background(on ? DaybookTheme.stamp.opacity(0.38) : DaybookTheme.rule.opacity(0.45))
-                        .foregroundStyle(on ? DaybookTheme.ink : DaybookTheme.muted)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
-                .accessibilityAddTraits(on ? [.isSelected] : [])
-                .help(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
-            }
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("residents.days")
-        .help("residents.days")
-    }
 }

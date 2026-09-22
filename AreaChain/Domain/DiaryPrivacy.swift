@@ -14,9 +14,12 @@ enum DiaryPrivacy {
         }
     }
 
-    static func isSensitive(_ entry: DiarySnapshot, tagNames: [UUID: String]) -> Bool {
+    static func isSensitive(
+        _ entry: DiarySnapshot, tagNames: [UUID: String], privateTagIDs: Set<UUID> = []
+    ) -> Bool {
         entry.isPrivate || hasPrivateMarker(entry.text) || tagNames.contains {
-            DiaryMemoTags.isPasswordName($0.value) && TagIDList.contains(entry.tagIDs, $0.key)
+            TagIDList.contains(entry.tagIDs, $0.key)
+                && (privateTagIDs.contains($0.key) || DiaryMemoTags.isPasswordName($0.value))
         }
     }
 

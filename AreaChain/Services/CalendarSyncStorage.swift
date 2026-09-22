@@ -50,16 +50,17 @@ enum CalendarSyncStorage {
             for update in updates {
                 guard let todo = byID[update.id] else { throw CalendarSyncError.conflict }
                 if let incoming = update.content, incoming != content(todo) {
-                    guard todo.deletedAt == nil, !todo.isDone,
-                          !incoming.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-                          DayKey.date(from: incoming.dayKey) != nil else { throw CalendarSyncError.conflict }
-                    todo.title = incoming.title
-                    todo.dayKey = incoming.dayKey
-                    todo.remindMinutes = incoming.remindMinutes
+                    guard todo.deletedAt == nil, !todo.isDone else { throw CalendarSyncError.conflict }
+                    try TodoCalendarFieldUpdate.apply(
+                        todo, title: incoming.title, dayKey: incoming.dayKey,
+                        remindMinutes: incoming.remindMinutes, eventID: update.eventID
+                    )
                     changed = true
-                }
-                if todo.calendarEventID != update.eventID {
-                    todo.calendarEventID = update.eventID
+                } else if todo.calendarEventID != update.eventID {
+                    try TodoCalendarFieldUpdate.apply(
+                        todo, title: todo.title, dayKey: todo.dayKey,
+                        remindMinutes: todo.remindMinutes, eventID: update.eventID
+                    )
                     changed = true
                 }
             }

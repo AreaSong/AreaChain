@@ -1,6 +1,23 @@
 import Foundation
 import SwiftData
 
+enum TodoCalendarFieldUpdate {
+    static func apply(_ todo: TodoItem, title: String, dayKey: String, remindMinutes: Int?, eventID: String) throws {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, DayKey.date(from: dayKey) != nil else {
+            throw RepositoryError.invalidArgument("日历回写缺少标题或日期")
+        }
+        todo.title = trimmed
+        todo.dayKey = dayKey
+        if let remindMinutes {
+            ClassifiedFieldsUpdate.setRemind(todo, minutes: remindMinutes)
+        } else {
+            todo.remindMinutes = nil
+        }
+        todo.calendarEventID = eventID
+    }
+}
+
 /// 待办数据访问与变更 SwiftData 具体仓储实现
 @MainActor
 final class SwiftDataTaskRepository: TaskRepositoryProtocol {
@@ -163,6 +180,36 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         }
         ClassifiedFieldsUpdate.toggleTag(todo, tagID: tagID)
         try saveAndNotify()
+    }
+
+    func replaceTagIDs(id: UUID, tagIDs: String) throws {
+        guard let todo = try fetchTodo(id: id) else {
+            throw RepositoryError.notFound("TodoItem(id: \(id))")
+        }
+        todo.tagIDs = tagIDs
+        try saveAndNotify()
+    }
+
+    func applyParsedNotes(id: UUID, update: ParsedNoteUpdate) throws {
+        guard let todo = try fetchTodo(id: id) else {
+            throw RepositoryError.notFound("TodoItem(id: \(id))")
+        }
+        todo.notes = update.notes
+        todo.tagIDs = update.tagIDs
+        if let minutes = update.remindMinutes {
+            ClassifiedFieldsUpdate.setRemind(todo, minutes: minutes)
+        }
+        if let isImportant = update.isImportant, let isUrgent = update.isUrgent {
+            ClassifiedFieldsUpdate.setPriority(todo, isImportant: isImportant, isUrgent: isUrgent)
+        }
+        try saveAndNotify()
+    }
+
+    func applyCalendarFields(id: UUID, title: String, dayKey: String, remindMinutes: Int?, eventID: String) throws {
+        guard let todo = try fetchTodo(id: id) else {
+            throw RepositoryError.notFound("TodoItem(id: \(id))")
+        }
+        try TodoCalendarFieldUpdate.apply(todo, title: title, dayKey: dayKey, remindMinutes: remindMinutes, eventID: eventID)
     }
 
     // MARK: - 删除与恢复 (Delete & Restore)

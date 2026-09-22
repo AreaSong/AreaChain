@@ -52,7 +52,8 @@ extension DayBoardMutations {
             }
             if let minutes = parsed.remindMinutes { try repo.setRemind(id: todo.id, minutes: minutes) }
             let context = todo.modelContext ?? Persistence.session.container.mainContext
-            todo.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
+            let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
+            try repo.replaceTagIDs(id: todo.id, tagIDs: merged)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -71,7 +72,8 @@ extension DayBoardMutations {
             }
             if let minutes = parsed.remindMinutes { try repo.setRemind(id: routine.id, minutes: minutes) }
             let context = routine.modelContext ?? Persistence.session.container.mainContext
-            routine.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+            let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+            try repo.replaceTagIDs(id: routine.id, tagIDs: merged)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -81,13 +83,8 @@ extension DayBoardMutations {
         let context = todo.modelContext ?? Persistence.session.container.mainContext
         let parsed = NaturalLanguageParser.parseTaskNotes(notes)
         let saved = ModelChanges.perform(in: context) {
-            todo.notes = notes
-            todo.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
-            if let time = parsed.remindMinutes { todo.remindMinutes = time }
-            if parsed.hasPriorityToken {
-                todo.isImportant = parsed.isImportant
-                todo.isUrgent = parsed.isUrgent
-            }
+            let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
+            try taskRepo(for: context).applyParsedNotes(id: todo.id, update: parsedNoteUpdate(notes, parsed, merged))
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -97,15 +94,20 @@ extension DayBoardMutations {
         let context = routine.modelContext ?? Persistence.session.container.mainContext
         let parsed = NaturalLanguageParser.parseTaskNotes(notes)
         let saved = ModelChanges.perform(in: context) {
-            routine.notes = notes
-            routine.tagIDs = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
-            if let time = parsed.remindMinutes { routine.remindMinutes = time }
-            if parsed.hasPriorityToken {
-                routine.isImportant = parsed.isImportant
-                routine.isUrgent = parsed.isUrgent
-            }
+            let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
+            try routineRepo(for: context).applyParsedNotes(id: routine.id, update: parsedNoteUpdate(notes, parsed, merged))
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
+    }
+
+    private static func parsedNoteUpdate(_ notes: String, _ parsed: ParsedCapture, _ tagIDs: String) -> ParsedNoteUpdate {
+        ParsedNoteUpdate(
+            notes: notes,
+            tagIDs: tagIDs,
+            remindMinutes: parsed.remindMinutes,
+            isImportant: parsed.hasPriorityToken ? parsed.isImportant : nil,
+            isUrgent: parsed.hasPriorityToken ? parsed.isUrgent : nil
+        )
     }
 }
