@@ -22,7 +22,7 @@ description: "仅用于 AreaChain 仓库的 SwiftUI/AppKit 界面实现、布局
 | 关注点 | 项目来源 | 核对重点 |
 |---|---|---|
 | 双语与显示格式 | [Localizable.xcstrings](../../../AreaChain/Resources/Localizable.xcstrings)、[L10n.swift](../../../AreaChain/Domain/L10n.swift)、[AppPreferences.swift](../../../AreaChain/Services/AppPreferences.swift) | `en` / `zh-Hans`、格式参数、相关提示及可访问性名称；用户正文和机器值不翻译 |
-| 样式与宿主差异 | [DaybookTheme.swift](../../../AreaChain/Theme/DaybookTheme.swift)、[DaybookWorkspaceStyle.swift](../../../AreaChain/Theme/DaybookWorkspaceStyle.swift) | 复用字号、间距和语义色；保留 `.standard` 与 `.workspace` 的尺寸/材质差异 |
+| 样式与宿主差异 | [DaybookPalette.swift](../../../AreaChain/Theme/DaybookPalette.swift)、[DaybookMetrics.swift](../../../AreaChain/Theme/DaybookMetrics.swift)、[WorkspaceLayout.swift](../../../AreaChain/Theme/WorkspaceLayout.swift) | 复用语义色、尺寸与字号令牌；两宿主外观一致，只有 `workspaceEmbedded` 决定的布局/能力差异 |
 | 输入与浮层 | [Theme 组件目录](../../../AreaChain/Theme)、[使用说明](../../../docs/usage.md) | 复用原生文本、语法输入、候选和属性组件；按入口核对 Return、⌘Return、Esc、失焦及组合输入 |
 | 窗口与编辑会话 | [AppWindows.swift](../../../AreaChain/Services/AppWindows.swift)、[Diary 目录](../../../AreaChain/Features/Diary)、[架构说明](../../../docs/architecture.md) | 路由、窗口复用、关闭/退出、脏草稿和外部修改冲突；布局调整不重建唯一编辑会话 |
 | 事件与数据 | [DayBoardMutations.swift](../../../AreaChain/Features/Tasks/DayBoardMutations.swift)、[ModelChanges.swift](../../../AreaChain/Services/ModelChanges.swift) | 沿原有领域/仓储/事务路径；保存成功才发布变更，失败不丢草稿 |

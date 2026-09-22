@@ -110,7 +110,7 @@ struct WorkspaceHeaderSearchCapsule: View {
         .frame(width: 260, height: 28)
         .background(
             Capsule()
-                .fill(navigation.isSearchFocused ? DaybookTheme.surface : WorkspaceStyle.input.opacity(0.85))
+                .fill(navigation.isSearchFocused ? DaybookTheme.surface : DaybookPalette.fill.subtle)
         )
         .overlay(
             Capsule()

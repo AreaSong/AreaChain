@@ -99,12 +99,12 @@ struct DiarySummaryRowTests {
 
     @Test func diarySummaryRowBubblePlacementCalculation() throws {
         // 顶部位置：向下生长
-        let topPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 50, y: 150), isWorkspace: false)
+        let topPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 50, y: 150), wideHost: false)
         #expect(topPlacement.growsUpward == false)
         #expect(topPlacement.bubbleShiftX == 0)
 
         // 底部偏右位置：向上生长，且向左平移防溢出
-        let bottomPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 250, y: 320), isWorkspace: false)
+        let bottomPlacement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: 250, y: 320), wideHost: false)
         #expect(bottomPlacement.growsUpward == true)
         #expect(bottomPlacement.bubbleShiftX < 0)
     }

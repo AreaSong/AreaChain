@@ -24,7 +24,6 @@ struct ModernCheckbox: View {
     @State private var hovering = false
     @State private var isAnimating = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Button(action: handleTap) { checkboxContent }
@@ -70,7 +69,7 @@ struct ModernCheckbox: View {
         if hovering {
             return DaybookTheme.stamp.opacity(0.8)
         }
-        return style.isWorkspace ? WorkspaceStyle.control : DaybookTheme.ink.opacity(0.24)
+        return DaybookTheme.ink.opacity(0.24)
     }
 
     private func handleTap() {
@@ -101,7 +100,6 @@ struct PillBadge: View {
 
     @State private var hovering = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Group {
@@ -120,10 +118,10 @@ struct PillBadge: View {
         HStack(spacing: 3.5) {
             if let icon {
                 Image(systemName: icon)
-                    .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
+                    .font(DaybookType.badge)
             }
             Text(title)
-                .font(style.isWorkspace ? DaybookType.caption : DaybookType.badge)
+                .font(DaybookType.badge)
                 .lineLimit(1)
         }
         .foregroundStyle(isSelected ? color : DaybookTheme.muted)
@@ -165,7 +163,6 @@ struct PillBadge: View {
 // MARK: - Modern Card Modifier
 
 struct ModernCardModifier: ViewModifier {
-    @Environment(\.daybookViewStyle) private var style
     var cornerRadius: CGFloat = DaybookRadius.card
     var isHovered: Bool = false
     var isSelected: Bool = false
@@ -189,24 +186,20 @@ struct ModernCardModifier: ViewModifier {
     }
 
     private var shadowColor: Color {
-        if style.isWorkspace { return .clear }
         if isSelected {
             return DaybookTheme.stamp.opacity(0.18)
-        }
-        if isHovered {
-            return DaybookElevation.raised.color
         }
         return DaybookElevation.raised.color
     }
 
     private var backgroundFill: Color {
         if isSelected {
-            return style.selectionFill
+            return DaybookTheme.cardSelectionFill
         }
         if isHovered {
-            return style.isWorkspace ? WorkspaceStyle.hover : DaybookTheme.cardSurfaceHover
+            return DaybookTheme.cardSurfaceHover
         }
-        return style.cardSurface
+        return DaybookTheme.cardSurface
     }
 
     private var borderStroke: Color {
@@ -216,7 +209,7 @@ struct ModernCardModifier: ViewModifier {
         if isHovered {
             return DaybookTheme.cardBorderHover
         }
-        return style.cardBorder
+        return DaybookTheme.cardBorder
     }
 }
 
@@ -262,7 +255,6 @@ extension View {
 
 /// macOS 26 / Settings 风格的圆角白色分组大卡片容器，内部包含行间细分割线与平滑高光
 struct DaybookGroupedCard<Content: View>: View {
-    @Environment(\.daybookViewStyle) private var style
     var content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -270,24 +262,8 @@ struct DaybookGroupedCard<Content: View>: View {
     }
 
     var body: some View {
-        if style.isWorkspace {
-            VStack(alignment: .leading, spacing: 0) {
-                content
-            }
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .fill(WorkspaceStyle.surface)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .strokeBorder(WorkspaceStyle.border.opacity(0.75), lineWidth: 0.8)
-            )
-            .shadow(color: DaybookElevation.raised.color.opacity(0.3), radius: 2, y: 1)
-        } else {
-            VStack(alignment: .leading, spacing: 4) {
-                content
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            content
         }
     }
 }
@@ -295,7 +271,6 @@ struct DaybookGroupedCard<Content: View>: View {
 // MARK: - Modern Row Modifier
 
 struct ModernRowModifier: ViewModifier {
-    @Environment(\.daybookViewStyle) private var style
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var cornerRadius: CGFloat = DaybookRadius.small
     var isHovered: Bool = false
@@ -304,16 +279,12 @@ struct ModernRowModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .background(
-                RoundedRectangle(cornerRadius: style.isWorkspace ? DaybookRadius.small : cornerRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                     .fill(backgroundFill)
-                    .padding(.horizontal, style.isWorkspace ? 4 : 0)
-                    .padding(.vertical, style.isWorkspace ? 1.5 : 0)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: style.isWorkspace ? DaybookRadius.small : cornerRadius, style: .continuous)
-                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : (isHovered && style.isWorkspace ? 0.5 : 0))
-                    .padding(.horizontal, style.isWorkspace ? 4 : 0)
-                    .padding(.vertical, style.isWorkspace ? 1.5 : 0)
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .strokeBorder(borderStroke, lineWidth: isSelected ? 1.0 : 0)
             )
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
             .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
@@ -321,10 +292,10 @@ struct ModernRowModifier: ViewModifier {
 
     private var backgroundFill: Color {
         if isSelected {
-            return style.selectionFill
+            return DaybookTheme.cardSelectionFill
         }
         if isHovered {
-            return style.isWorkspace ? WorkspaceStyle.hover : style.hoverFill
+            return DaybookTheme.hoverFill
         }
         return Color.clear
     }
@@ -334,7 +305,7 @@ struct ModernRowModifier: ViewModifier {
             return DaybookTheme.cardSelectionStroke
         }
         if isHovered {
-            return style.isWorkspace ? WorkspaceStyle.border.opacity(0.8) : DaybookTheme.rule.opacity(0.35)
+            return DaybookTheme.rule.opacity(0.35)
         }
         return Color.clear
     }
@@ -349,22 +320,21 @@ struct ModernTaskTitle: View {
     var font: Font = DaybookType.body
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         Text(text)
             .font(font)
-            .foregroundStyle(isDone ? style.doneText : DaybookTheme.ink)
+            .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Rectangle()
-                        .fill(style.doneText.opacity(0.85))
+                        .fill(DaybookTheme.done.opacity(0.85))
                         .frame(width: isDone ? proxy.size.width : 0, height: 1.2)
                         .frame(maxHeight: .infinity, alignment: .center)
                 }
                 .allowsHitTesting(false)
             }
-            .strikethrough(reduceMotion && isDone, color: style.doneText.opacity(0.85))
+            .strikethrough(reduceMotion && isDone, color: DaybookTheme.done.opacity(0.85))
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
             .animation(DaybookMotion.strikethrough(reduceMotion), value: isDone)
     }

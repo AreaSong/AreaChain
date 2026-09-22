@@ -10,7 +10,7 @@ extension DiaryNoteCard {
             }
 
             Text(formatDate(entry.createdAt))
-                .font(viewStyle.isWorkspace ? WorkspaceStyle.countFont : DaybookType.caption.monospaced())
+                .font(DaybookType.caption.monospaced())
                 .foregroundStyle(DaybookTheme.muted)
 
             if isPasswordType {

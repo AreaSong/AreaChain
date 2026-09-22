@@ -7,7 +7,7 @@ extension TasksPage {
     var headerBar: some View {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
         let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
-        let hasFilters = style.isWorkspace
+        let hasFilters = embedded
             ? (!CatalogChoices.projects(projects).isEmpty || !tagChoices.isEmpty || !todayBundleIDs.isEmpty
                 || effectiveFilter.projectID != nil || effectiveFilter.bundleID != nil
                 || (config.externalFilter == nil && effectiveFilter.isActive))
@@ -37,7 +37,7 @@ extension TasksPage {
                 }
 
                 if hasFilters {
-                    if style.isWorkspace {
+                    if embedded {
                         BoardFilterBar(
                             filter: effectiveFilter,
                             projects: CatalogChoices.projects(projects),

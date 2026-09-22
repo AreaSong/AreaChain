@@ -220,7 +220,7 @@ flowchart TB
 ## 8. 状态与记录
 
 - [x] P0 令牌落地
-- [ ] P1 删除双宿主分支
+- [x] P1 删除双宿主分支
 - [ ] P2 输入壳
 - [ ] P3a 按钮（MenuBar + Tasks + Board + Search）
 - [ ] P3b 按钮（Diary + Workspace + Theme）
@@ -238,8 +238,12 @@ flowchart TB
 决策记录
 - 2026-09-22 用户确认：粒度 = 哪怕只用一次的视觉元素也必须经基座；重载 = configure 闭包只改尺寸、同一重载 ≥ 2 处升级 variant；旧组件一步到位删除，不留转发；双语补齐纳入。
 - 2026-09-22 用户确认基准：视觉与尺寸全部以菜单栏浮层任务页为准，单份令牌；输入框聚焦 = ink 35% 灰描边、无蓝环、全局 34 高；按钮悬停 = 淡灰圆角底；列表 = 纸底 + 分隔线、工作台去白卡；浮层阴影 = 黑 14% / 8 / 2；分节头一律不大写；工作台仅保留 `WorkspaceLayout` 布局尺寸；结构基准按 5.2 表。
-- 已知文档与实现差异：`docs/usage.md:57` 描述的菜单栏属性按钮实际只在工作台；`AGENTS.md` 中"不能把工作台尺寸和材质强制套到菜单栏"一句将在 P1 按用户决定改写。
+- 已知文档与实现差异：`docs/usage.md:57` 描述的菜单栏属性按钮实际只在工作台。`AGENTS.md` 中工作台尺寸与材质那一句已在 P1 改写为 `workspaceEmbedded` 只表达能力差异。
 - 2026-09-22 P0 完成：新建语义色、尺寸、阴影和工作台布局令牌，并把 Swatch、Syntax、圆角、间距、字号从 DaybookTheme 迁出。
 - 2026-09-22 P0 验收：通过
+- 2026-09-22 P1 完成：视觉分支统一到菜单栏侧，能力分支改用 workspaceEmbedded，并删除 DaybookWorkspaceStyle。
+- 2026-09-22 P1 记录：`WorkspaceRenderingTests` 在 `release` 窗口时触发 `NSWindowSectionController unregisterSeparator` 断言并挂起；改代码前的基线同样挂起。旧机制扫描还剩测试函数名 `diaryComposerKeepsNewlinesAndSavesOnceWithWorkspaceStyle`。
+- 2026-09-22 P1 验收：不通过（A1 测试名仍含 WorkspaceStyle；F 定向测试在 WorkspaceRenderingTests 释放窗口时断言挂起，中断后 EXIT=241）
+- 2026-09-22 P1 验收（复验）：通过。A–G 重跑成立；此前的测试名与窗口释放挂起已消失。定向测试 EXIT=0，11 个套件失败 0、跳过 0。未做人工窗口走查。`DaybookGroupedCard` 注释仍写白色分组卡，实现已不再绘制，不阻塞。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

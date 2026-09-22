@@ -94,7 +94,7 @@ struct WorkspaceRenderingTests {
         #expect(try fixture.container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 3)
     }
 
-    @Test func diaryComposerKeepsNewlinesAndSavesOnceWithWorkspaceStyle() async throws {
+    @Test func diaryComposerKeepsNewlinesAndSavesOnce() async throws {
         let previous = NavigationSnapshot()
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
@@ -263,7 +263,7 @@ struct WorkspaceRenderingTests {
         let host = NSHostingView(rootView: content
             .modelContainer(fixture.container)
             .environment(fixture.preferences)
-            .environment(\.daybookViewStyle, .workspace)
+            .environment(\.workspaceEmbedded, true)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
             .preferredColorScheme(scheme)
             .transaction { $0.disablesAnimations = true })
@@ -331,6 +331,12 @@ struct WorkspaceRenderingTests {
         window.makeFirstResponder(nil)
         window.orderOut(nil)
         window.toolbar = nil
+        // fullSizeContentView 下侧栏分隔条没有完成注册。此时清空 contentViewController，
+        // NSSplitView 离开窗口会走到 NSWindowSectionController.unregisterSeparator 并断言停住。
+        // 先去掉该样式，分隔条才能按普通标题栏路径注销。
+        if window.styleMask.contains(.fullSizeContentView) {
+            window.styleMask.remove(.fullSizeContentView)
+        }
         window.contentViewController = nil
     }
 

@@ -15,9 +15,9 @@ public enum RowTitleTruncation {
 
 /// 统一气泡几何位置计算器（自适应上下翻转与屏幕边缘防溢出）
 public enum RowBubblePlacement {
-    public static func calculate(globalPoint: CGPoint, isWorkspace: Bool = false) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
+    public static func calculate(globalPoint: CGPoint, wideHost: Bool = false) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
         let growsUpward = globalPoint.y > 260
-        let safeMaxX: CGFloat = isWorkspace ? 700 : 356
+        let safeMaxX: CGFloat = wideHost ? 700 : 356
         let safeMinX: CGFloat = 12
         let bubbleRight = globalPoint.x + 202
         let shiftX: CGFloat

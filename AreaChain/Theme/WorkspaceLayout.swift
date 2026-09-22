@@ -11,10 +11,23 @@ enum WorkspaceLayout {
     static let sidebarTopInset: CGFloat = 28
 }
 
-// MARK: - 以下三个组件从 DaybookWorkspaceStyle.swift 原样搬入，布局尺寸改为 WorkspaceLayout
+/// 只表示"当前视图嵌在三栏工作台里"。仅用于能力 / 布局分支：是否显示页内筛选条、独立窗口最小尺寸、页头最小高度、行数、气泡宿主宽度。
+/// 禁止用它切换颜色、字体、圆角、阴影——那些一律走令牌，两宿主相同。
+private struct WorkspaceEmbeddedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var workspaceEmbedded: Bool {
+        get { self[WorkspaceEmbeddedKey.self] }
+        set { self[WorkspaceEmbeddedKey.self] = newValue }
+    }
+}
+
+// MARK: - 页头与侧栏组件，布局尺寸使用 WorkspaceLayout
 
 struct DaybookPageHeader<Title: View, Subtitle: View, Trailing: View>: View {
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.workspaceEmbedded) private var embedded
     private let title: Title
     private let subtitle: Subtitle
     private let trailing: Trailing
@@ -30,12 +43,12 @@ struct DaybookPageHeader<Title: View, Subtitle: View, Trailing: View>: View {
     }
 
     var body: some View {
-        HStack(alignment: style.isWorkspace ? .center : .bottom, spacing: style.isWorkspace ? DaybookSpacing.md : DaybookSpacing.sm) {
+        HStack(alignment: .bottom, spacing: DaybookSpacing.sm) {
             VStack(alignment: .leading, spacing: 3) {
                 title.accessibilityAddTraits(.isHeader)
                 subtitle
             }
-            .frame(minHeight: style.isWorkspace ? WorkspaceLayout.headerHeight : nil, alignment: .topLeading)
+            .frame(minHeight: embedded ? WorkspaceLayout.headerHeight : nil, alignment: .topLeading)
             Spacer(minLength: 0)
             trailing
         }
@@ -60,7 +73,7 @@ struct WorkspaceSidebarHeaderAction: View {
                 .frame(width: 20, height: 20)
                 .background(
                     RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                        .fill(isHovered ? WorkspaceStyle.hover : Color.clear)
+                        .fill(isHovered ? DaybookPalette.fill.hover : Color.clear)
                 )
                 .contentShape(Rectangle())
         }
@@ -132,7 +145,7 @@ struct WorkspaceSidebarRow: View {
                 Spacer(minLength: 0)
                 if let badgeCount, badgeCount > 0 {
                     Text("\(badgeCount)")
-                        .font(WorkspaceStyle.countFont)
+                        .font(DaybookType.caption.monospacedDigit())
                         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
                 }
             }
@@ -155,10 +168,10 @@ struct WorkspaceSidebarRow: View {
 
     private var backgroundFill: Color {
         if isSelected {
-            return WorkspaceStyle.selection
+            return DaybookPalette.fill.selection
         }
         if isHovered {
-            return WorkspaceStyle.hover
+            return DaybookPalette.fill.hover
         }
         return .clear
     }

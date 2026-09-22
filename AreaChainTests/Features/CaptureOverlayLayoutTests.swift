@@ -141,7 +141,7 @@ struct CaptureOverlayLayoutTests {
         host.container.mainContext.insert(todo)
         try host.container.mainContext.save()
         host.show(
-            TaskDetailDrawer(taskID: .constant(todo.id)).environment(\.daybookViewStyle, .workspace),
+            TaskDetailDrawer(taskID: .constant(todo.id)).environment(\.workspaceEmbedded, true),
             size: NSSize(width: 380, height: 640)
         )
         try await host.settle()
@@ -306,7 +306,7 @@ private final class CaptureOverlayHost {
         window.appearance = NSAppearance(named: workspace ? .darkAqua : .aqua)
         window.contentView = NSHostingView(rootView: CaptureOverlayFixture(draft: draft, workspace: workspace)
             .modelContainer(container).environment(\.locale, Locale(identifier: "zh-Hans"))
-            .environment(\.daybookViewStyle, workspace ? .workspace : .standard)
+            .environment(\.workspaceEmbedded, workspace)
             .preferredColorScheme(workspace ? .dark : .light)
             .transaction { $0.disablesAnimations = true })
         NSApp.activate(ignoringOtherApps: true)

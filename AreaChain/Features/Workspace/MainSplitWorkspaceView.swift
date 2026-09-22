@@ -38,7 +38,7 @@ struct MainSplitWorkspaceView: View {
             addTagSheet
         }
         .syntaxOverlayHost()
-        .environment(\.daybookViewStyle, .workspace)
+        .environment(\.workspaceEmbedded, true)
         .ignoresSafeArea(.container, edges: .top)
     }
 

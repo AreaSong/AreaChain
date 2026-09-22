@@ -93,7 +93,7 @@ struct WorkspaceGlobalSearchView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(WorkspaceStyle.paper)
+        .background(DaybookPalette.fill.page)
         .accessibilityIdentifier("workspace.global.search.results")
     }
 
@@ -121,12 +121,12 @@ struct WorkspaceGlobalSearchView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
             .background(
-                RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                    .fill(WorkspaceStyle.surface)
+                RoundedRectangle(cornerRadius: DaybookRadius.regular)
+                    .fill(DaybookPalette.fill.surface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                    .strokeBorder(WorkspaceStyle.border, lineWidth: 0.8)
+                RoundedRectangle(cornerRadius: DaybookRadius.regular)
+                    .strokeBorder(DaybookPalette.border.default, lineWidth: 0.8)
             )
             .contentShape(Rectangle())
         }

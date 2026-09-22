@@ -5,43 +5,7 @@ import Testing
 
 @Suite(.serialized)
 @MainActor
-struct WorkspaceStyleTests {
-    @Test func workspaceStyleIsOptIn() {
-        #expect(EnvironmentValues().daybookViewStyle == .standard)
-        #expect(DaybookViewStyle.standard.doneText == DaybookTheme.done)
-        #expect(DaybookViewStyle.workspace.doneText == DaybookTheme.muted)
-        #expect(DaybookType.titleSize == 16)
-        #expect(DaybookType.bodySize == 13)
-        #expect(DaybookType.subtitleSize == 12)
-        #expect(DaybookType.captionSize == 11)
-    }
-
-    @Test func workspaceTextAndControlsMeetContrastTargets() {
-        let lightSurfaces = [WorkspaceSwatch.paperLight, WorkspaceSwatch.surfaceLight, WorkspaceSwatch.inputLight,
-                             WorkspaceSwatch.hoverLight, WorkspaceSwatch.selectionLight]
-        let darkSurfaces = [WorkspaceSwatch.paperDark, WorkspaceSwatch.surfaceDark, WorkspaceSwatch.inputDark,
-                            WorkspaceSwatch.hoverDark, WorkspaceSwatch.selectionDark]
-        for surface in lightSurfaces {
-            #expect(ContrastMath.ratio(DaybookSwatch.inkLight, surface) >= 4.5)
-            #expect(ContrastMath.ratio(DaybookSwatch.mutedLight, surface) >= 4.5)
-            #expect(ContrastMath.ratio(WorkspaceSwatch.controlLight, surface) >= 3)
-        }
-        for surface in darkSurfaces {
-            #expect(ContrastMath.ratio(DaybookSwatch.inkDark, surface) >= 4.5)
-            #expect(ContrastMath.ratio(DaybookSwatch.mutedDark, surface) >= 4.5)
-            #expect(ContrastMath.ratio(WorkspaceSwatch.controlDark, surface) >= 3)
-        }
-    }
-
-    @Test(arguments: [false, true])
-    func inputChromeKeepsStandardAndWorkspaceStrokesSeparate(focused: Bool) {
-        #expect(DaybookViewStyle.standard.inputBorderWidth(focused: focused, kind: .search) == (focused ? 1.6 : 1))
-        for kind in [DaybookInputKind.composer, .search, .editor] {
-            #expect(DaybookViewStyle.workspace.inputBorderWidth(focused: focused, kind: kind) == (focused ? 1.4 : 0.8))
-        }
-        #expect(DaybookViewStyle.standard.inputBorderWidth(focused: focused, kind: .composer) == (focused ? 1.4 : 0.8))
-    }
-
+struct WorkspaceLayoutTests {
     @Test func nativeFieldKeepsTheDeclaredSizeAndWeightWhenEditing() async throws {
         let host = NSHostingView(rootView: field())
         let window = makeWindow(host, size: NSSize(width: 360, height: 70))
@@ -71,7 +35,7 @@ struct WorkspaceStyleTests {
                 Color.clear.frame(width: 36, height: 36)
             }
             .background(WorkspaceMetricMarker(name: "header"))
-            .environment(\.daybookViewStyle, .workspace)
+            .environment(\.workspaceEmbedded, true)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             let host = NSHostingView(rootView: header)
             let window = makeWindow(host, size: NSSize(width: 520, height: 80))
@@ -86,27 +50,22 @@ struct WorkspaceStyleTests {
         #expect(abs(titleOrigins[0] - titleOrigins[1]) < 1)
     }
 
-    @Test func workspaceInputAndFilterUseTheirSharedControlMetrics() async throws {
-        let content = VStack(alignment: .leading, spacing: 12) {
-            Text("输入").frame(height: 22)
-                .daybookInputChrome(focused: false, kind: .composer)
-                .background(WorkspaceMetricMarker(name: "composer"))
-            Text("搜索").frame(height: 20)
-                .daybookInputChrome(focused: false, kind: .search)
-                .background(WorkspaceMetricMarker(name: "search"))
-            WorkspaceFilterLabel(isSelected: false) { Text("标签") }
-                .background(WorkspaceMetricMarker(name: "filter"))
+    @Test func pageHeaderHasNoMinimumHeightOutsideTheWorkspace() async throws {
+        let header = DaybookPageHeader {
+            Text("今日待办").font(DaybookType.title)
+        } subtitle: {
+            EmptyView()
+        } trailing: {
+            EmptyView()
         }
-        .environment(\.daybookViewStyle, .workspace)
+        .background(WorkspaceMetricMarker(name: "header"))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        let host = NSHostingView(rootView: content)
-        let window = makeWindow(host, size: NSSize(width: 360, height: 160))
+        let host = NSHostingView(rootView: header)
+        let window = makeWindow(host, size: NSSize(width: 520, height: 80))
         defer { window.contentView = nil; window.orderOut(nil) }
         try await settle(host)
-        for (name, height) in [("composer", WorkspaceStyle.composerHeight), ("search", WorkspaceStyle.controlHeight), ("filter", WorkspaceStyle.controlHeight)] {
-            let view = try #require(marker(name, in: host))
-            #expect(abs(view.bounds.height - height) < 1, "\(name) 高度应为 \(height)")
-        }
+        let headerMarker = try #require(marker("header", in: host))
+        #expect(headerMarker.bounds.height < WorkspaceLayout.headerHeight)
     }
 
     private func field(size: CGFloat = DaybookType.bodySize, weight: NSFont.Weight = .regular) -> DaybookTextField {

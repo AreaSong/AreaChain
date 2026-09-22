@@ -13,7 +13,7 @@ struct DiaryPageOptions {
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
 struct DiaryPage: View {
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) private var locale
 
@@ -144,14 +144,14 @@ struct DiaryPage: View {
             // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
             if showsPageHeader {
                 topHeader.zIndex(50)
-                if !style.isWorkspace { tagFilterBar }
+                if !embedded { tagFilterBar }
             }
 
             if showsComposer {
                 quickComposer.zIndex(20)
             }
 
-            if showsPageHeader && style.isWorkspace { tagFilterBar }
+            if showsPageHeader && embedded { tagFilterBar }
 
             entryListSection
         }
@@ -200,7 +200,7 @@ struct DiaryPage: View {
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookTheme.ink)
                 Text("diary.page.count \(filteredEntries.count)")
-                    .font(WorkspaceStyle.countFont)
+                    .font(DaybookType.caption.monospacedDigit())
                     .foregroundStyle(DaybookTheme.muted)
             }
         } subtitle: {
@@ -282,16 +282,7 @@ struct DiaryPage: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            if style.isWorkspace {
-                WorkspaceFilterLabel(isSelected: isSelected, tint: color) {
-                    HStack(spacing: 4) {
-                        Text(title)
-                        if count > 0 { Text("\(count)").font(WorkspaceStyle.countFont) }
-                    }
-                }
-            } else {
-                standardFilterLabel(title: title, count: count, isSelected: isSelected, color: color)
-            }
+            standardFilterLabel(title: title, count: count, isSelected: isSelected, color: color)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])

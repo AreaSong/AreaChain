@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct CalendarPage: View {
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
@@ -37,18 +37,18 @@ struct CalendarPage: View {
         GeometryReader { geometry in
             ViewThatFits(in: .horizontal) {
                 wideLayout
-                compactLayout(compactDates: style.isWorkspace && geometry.size.height < 560)
+                compactLayout(compactDates: embedded && geometry.size.height < 560)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .padding(DaybookSpacing.page)
-        .frame(minWidth: style.isWorkspace ? 0 : 420, maxWidth: .infinity, minHeight: style.isWorkspace ? 0 : 560, maxHeight: .infinity, alignment: .topLeading)
-        .background(style.pageBackground)
+        .frame(minWidth: embedded ? 0 : 420, maxWidth: .infinity, minHeight: embedded ? 0 : 560, maxHeight: .infinity, alignment: .topLeading)
+        .background(DaybookPalette.fill.page)
     }
 
     private var calendarSidebar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !style.isWorkspace {
+            if !embedded {
                 DaybookPeriodBar(
                     title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
                     onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },

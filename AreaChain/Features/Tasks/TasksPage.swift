@@ -30,7 +30,7 @@ struct TasksPageConfig {
 struct TasksPage: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
-    @Environment(\.daybookViewStyle) var style
+    @Environment(\.workspaceEmbedded) var embedded
 
     var todayKey: String
     var routines: [DailyRoutine]

@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct BoardFilterBar: View {
-    @Environment(\.daybookViewStyle) private var style
     @Environment(\.locale) private var locale
 
     var filter: BoardFilter
@@ -129,8 +128,7 @@ struct BoardFilterBar: View {
             isExpanded: isExpanded,
             reset: reset,
             allOption: options.first { $0.id == "all" },
-            items: options.filter { $0.id != "all" },
-            style: style
+            items: options.filter { $0.id != "all" }
         )
     }
 
@@ -181,18 +179,11 @@ struct BoardFilterDropdownButton: View {
     var reset: (() -> Void)? = nil
     var allOption: FilterDropdownOption?
     var items: [FilterDropdownOption]
-    var style: DaybookViewStyle
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Group {
-            if style.isWorkspace {
-                workspaceCapsule
-            } else {
-                standardCapsule
-            }
-        }
+        standardCapsule
         .popover(isPresented: isExpanded, arrowEdge: .bottom) {
             dropdownPopoverContent
         }
@@ -247,46 +238,6 @@ struct BoardFilterDropdownButton: View {
         .background(Capsule().fill(active ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
         .overlay(Capsule().stroke(active ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.5), lineWidth: 0.8))
         .contentShape(Capsule())
-    }
-
-    // MARK: - 工作台窗口胶囊样式
-
-    private var workspaceCapsule: some View {
-        HStack(spacing: 4) {
-            Button {
-                isExpanded.wrappedValue.toggle()
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: icon)
-                    Text(title).lineLimit(1)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if active, let reset {
-                Button(action: reset) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                        .padding(.horizontal, 2)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .help("footer.filter.clear")
-                .accessibilityLabel("footer.filter.clear")
-            } else {
-                Button {
-                    isExpanded.wrappedValue.toggle()
-                } label: {
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 8, weight: .medium))
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .workspaceFilterChrome(isSelected: active)
     }
 
     // MARK: - 手账风下拉气泡内容

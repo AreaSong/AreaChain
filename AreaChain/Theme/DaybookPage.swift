@@ -7,7 +7,7 @@ enum DaybookTitleStyle {
 }
 
 struct DaybookPage<Trailing: View, Content: View>: View {
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.workspaceEmbedded) private var embedded
     var title: LocalizedStringKey?
     var titleText: String?
     var titleStyle: DaybookTitleStyle
@@ -64,20 +64,20 @@ struct DaybookPage<Trailing: View, Content: View>: View {
             content
         }
         .frame(
-            maxWidth: (style.isWorkspace && !fullWidth) ? WorkspaceLayout.maxContentWidth : .infinity,
+            maxWidth: (embedded && !fullWidth) ? WorkspaceLayout.maxContentWidth : .infinity,
             maxHeight: .infinity,
             alignment: .topLeading
         )
         .padding(DaybookSpacing.page)
         // 独立页面的最小尺寸不能反向撑大工作台；嵌入时由三栏布局分配空间。
         .frame(
-            minWidth: style.isWorkspace ? 0 : minWidth,
+            minWidth: embedded ? 0 : minWidth,
             maxWidth: .infinity,
-            minHeight: style.isWorkspace ? 0 : minHeight,
+            minHeight: embedded ? 0 : minHeight,
             maxHeight: .infinity,
             alignment: .topLeading
         )
-        .background(style.pageBackground)
+        .background(DaybookPalette.fill.page)
     }
 
     @ViewBuilder
@@ -118,7 +118,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
     private var titleFont: Font {
         switch titleStyle {
         case .page: DaybookType.title
-        case .entity: style.isWorkspace ? DaybookType.title : DaybookType.entity
+        case .entity: DaybookType.entity
         }
     }
 }

@@ -110,7 +110,7 @@ private final class QuadrantLayoutHost {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         let host = NSHostingView(rootView: QuadrantPage(todayKey: day)
             .modelContainer(container)
-            .environment(\.daybookViewStyle, .workspace)
+            .environment(\.workspaceEmbedded, true)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
             .preferredColorScheme(scheme)
             .transaction { $0.disablesAnimations = true })

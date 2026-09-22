@@ -6,7 +6,6 @@ struct TaskDetailDrawer: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     @Binding var taskID: UUID?
 
@@ -33,13 +32,9 @@ struct TaskDetailDrawer: View {
         }
         .frame(minWidth: 280, maxWidth: .infinity, maxHeight: .infinity)
         .background {
-            if style.isWorkspace {
-                WorkspaceStyle.surface
-            } else {
-                ZStack {
-                    Rectangle().fill(.ultraThinMaterial)
-                    DaybookTheme.paper.opacity(0.4)
-                }
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial)
+                DaybookTheme.paper.opacity(0.4)
             }
         }
         .syntaxOverlayHost()
@@ -204,7 +199,6 @@ struct TaskDetailDrawer: View {
 // MARK: - Drawer Section Group
 
 struct DrawerSectionGroup<Content: View>: View {
-    @Environment(\.daybookViewStyle) private var style
     var title: LocalizedStringKey? = nil
     var content: Content
 
@@ -217,10 +211,9 @@ struct DrawerSectionGroup<Content: View>: View {
         VStack(alignment: .leading, spacing: 6) {
             if let title {
                 Text(title)
-                    .font(style.isWorkspace ? WorkspaceStyle.sectionFont : .system(size: 10.5, weight: .semibold))
+                    .font(.system(size: 10.5, weight: .semibold))
                     .foregroundStyle(DaybookTheme.muted)
-                    .textCase(style.isWorkspace ? nil : .uppercase)
-                    .tracking(style.isWorkspace ? 0 : 0.5)
+                    .tracking(0.5)
                     .padding(.leading, 2)
             }
             VStack(alignment: .leading, spacing: 10) {
@@ -230,11 +223,11 @@ struct DrawerSectionGroup<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .fill(style.isWorkspace ? WorkspaceStyle.paper : DaybookTheme.cardSurface.opacity(0.65))
+                    .fill(DaybookTheme.cardSurface.opacity(0.65))
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .strokeBorder(style.cardBorder, lineWidth: 0.8)
+                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
             )
         }
     }

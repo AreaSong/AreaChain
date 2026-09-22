@@ -30,7 +30,7 @@
 | 输入语法及落盘 | `InputSyntaxInteractionTests`、`InputSyntaxPersistenceTests`，结合相关解析/标签测试 |
 | 保存、失败与快照兼容 | [Services 测试](../../../../AreaChainTests/Services) 中的 `ModelChangesTests`、`SnapshotImporterTests`、`SnapshotImportValidationTests` |
 | 系统日历协调逻辑 | `CalendarSyncEngineTests` 及隔离测试支持；不能由此推断真实日历写入已验收 |
-| 字号、颜色与工作台外观 | [Theme 测试](../../../../AreaChainTests/Theme) 中的 `WorkspaceStyleTests`、`DaybookContrastTests` |
+| 字号、颜色与工作台外观 | [Theme 测试](../../../../AreaChainTests/Theme) 中的 `DaybookTokenTests`、`WorkspaceLayoutTests`、`DaybookContrastTests` |
 | 捕获、输入、窗口与渲染 | [Features 测试](../../../../AreaChainTests/Features) 中的 `CaptureOverlayLayoutTests`、`InputSyntaxInteractionTests`、`WorkspaceRenderingTests` 及相关窗口测试 |
 
 定向测试示例，按实际目标替换或增加测试标识：

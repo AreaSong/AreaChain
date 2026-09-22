@@ -213,7 +213,7 @@ private final class GanttTestHost {
             .modelContainer(container)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
             .environment(\.calendar, Calendar(identifier: .gregorian))
-            .environment(\.daybookViewStyle, .workspace)
+            .environment(\.workspaceEmbedded, true)
             .preferredColorScheme(scheme)
             .frame(width: size.width, height: size.height)
         let hosting = NSHostingView(rootView: content)

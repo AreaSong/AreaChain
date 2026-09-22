@@ -68,13 +68,13 @@ AreaChain/
 
 ### 工作台公共外观
 
-`MainSplitWorkspaceView` 在根部注入 `DaybookViewStyle.workspace`，统一页头、输入外框、筛选胶囊、列表与卡片表面；共享组件默认仍为 `.standard`，菜单栏和独立手记窗口不会自动套用工作台外观。`DaybookPageHeader` 保持标题起点与页头最小高度一致，`DaybookInputChrome` 区分新增、搜索和多行编辑，`WorkspaceFilterLabel` 只负责外观，菜单、筛选回调和快捷键仍由原组件处理。
+`MainSplitWorkspaceView` 在根部注入 `workspaceEmbedded = true`，只用于页内筛选条、独立窗口最小尺寸、页头最小高度、行数与气泡宿主宽度这类能力/布局分支；颜色、字体与尺寸令牌两宿主一致，来自 `DaybookPalette` / `DaybookMetrics` / `DaybookTokens`，工作台布局常量在 `WorkspaceLayout`。`DaybookPageHeader` 保持标题起点一致并在嵌入时使用页头最小高度；`DaybookInputChrome` 区分新增、搜索和多行编辑，将由 `DaybookInputShell` 取代。
 
 正文继续使用 13pt 系统字体，页标题使用 16pt 半粗；字号由 `DaybookType` 共用，原生 `DaybookTextField` 同时接受字重，避免详情标题进入编辑后变细。工作台内的可用尺寸由三栏容器决定，页面的独立宿主最小尺寸不再撑大工作台；日历宽窄布局、时间轴滚动及设置原生分组保持独立。设置子分组显式接收当前环境中的偏好对象，使正常窗口和隔离渲染测试使用同一注入路径。
 
-`WorkspaceStyleTests` 核对字号、字重、控件几何与对比度，包含完成态文字的悬停／选中背景及标准搜索框描边边界；`WorkspaceRenderingTests` 用内存模型渲染全部工作台路由、浅深色和最小窗口，包含六周月历、窄窗展开检查器以及手记换行与单次保存。系统材质未必能进入整窗位图缓存，侧栏与检查器另用独立原生宿主截图核验，不能把缓存占位当作应用画面。附件页面在此矩阵中使用空态，避免读取真实图片目录。
+`DaybookTokenTests` 核对令牌数值与对比度，`WorkspaceLayoutTests` 核对原生字段字重与页头几何；`WorkspaceRenderingTests` 用内存模型渲染全部工作台路由、浅深色和最小窗口，包含六周月历、窄窗展开检查器以及手记换行与单次保存。系统材质未必能进入整窗位图缓存，侧栏与检查器另用独立原生宿主截图核验，不能把缓存占位当作应用画面。附件页面在此矩阵中使用空态，避免读取真实图片目录。
 
-界面回归使用独立的 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.workspace-ui-qa` 和构建目录，以 `INFOPLIST_KEY_LSUIElement=NO` 将测试宿主作为前台应用运行，并逐套串行执行；生产构建保留菜单栏启动方式，不安装或覆盖现用应用。`CaptureOverlayLayoutTests` 为工作台分支显式注入新外观，通过原生事件队列投递点击与按键，并限时等待浮层实际呈现；测试窗口失去焦点会按产品规则关闭浮层，因此焦点敏感测试期间应保持测试窗口激活，截图查看与交互测试分开进行。
+界面回归使用独立的 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.workspace-ui-qa` 和构建目录，以 `INFOPLIST_KEY_LSUIElement=NO` 将测试宿主作为前台应用运行，并逐套串行执行；生产构建保留菜单栏启动方式，不安装或覆盖现用应用。`CaptureOverlayLayoutTests` 为工作台分支显式注入 `workspaceEmbedded`，通过原生事件队列投递点击与按键，并限时等待浮层实际呈现；测试窗口失去焦点会按产品规则关闭浮层，因此焦点敏感测试期间应保持测试窗口激活，截图查看与交互测试分开进行。
 
 ## 数据模型设计 (SwiftData 8 张表)
 

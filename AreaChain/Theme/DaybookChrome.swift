@@ -78,7 +78,6 @@ private struct DaybookQuietButton: View {
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         let ringOpacity: CGFloat = hovering && isEnabled ? 0.35 : 0
@@ -94,7 +93,7 @@ private struct DaybookQuietButton: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(DaybookTheme.focusRing.opacity(ringOpacity), lineWidth: 1)
             )
-            .scaleEffect(configuration.isPressed && !style.isWorkspace ? 0.97 : 1.0)
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
             .onHover { hovering = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
             .animation(DaybookMotion.snappy(reduceMotion), value: configuration.isPressed)
@@ -110,7 +109,7 @@ private struct DaybookQuietButton: View {
 
     private var fill: Color {
         if configuration.isPressed { return DaybookTheme.pressFill }
-        if hovering && isEnabled { return style.hoverFill }
+        if hovering && isEnabled { return DaybookTheme.hoverFill }
         return .clear
     }
 }
@@ -254,7 +253,6 @@ extension View {
 /// 现代生产力微质感卡片修饰器（Linear / Raycast 风格）：
 /// 规范微圆角（6~8pt）、精密细边框、半透明卡片底色与微弱悬浮态高亮。
 struct DaybookCardModifier: ViewModifier {
-    @Environment(\.daybookViewStyle) private var style
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var isHoverable: Bool
     var padding: EdgeInsets
@@ -283,16 +281,70 @@ struct DaybookCardModifier: ViewModifier {
 
     private var backgroundFill: Color {
         if isHovered && isHoverable {
-            return style.isWorkspace ? WorkspaceStyle.surface : DaybookTheme.cardSurfaceHover
+            return DaybookTheme.cardSurfaceHover
         }
-        return style.cardSurface
+        return DaybookTheme.cardSurface
     }
 
     private var borderStroke: Color {
         if isHovered && isHoverable {
-            return style.isWorkspace ? WorkspaceStyle.border.opacity(0.85) : DaybookTheme.cardBorderHover
+            return DaybookTheme.cardBorderHover
         }
-        return style.cardBorder
+        return DaybookTheme.cardBorder
+    }
+}
+
+// MARK: - 输入外框（从旧宿主样式搬入并去掉分支；P2 由 DaybookInputShell 取代）
+
+enum DaybookInputKind: Equatable {
+    case composer
+    case search
+    case editor
+}
+
+private struct DaybookInputChrome: ViewModifier {
+    var focused: Bool
+    var kind: DaybookInputKind
+
+    func body(content: Content) -> some View {
+        content
+            .padding(insets)
+            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill))
+            .overlay(
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .stroke(focused ? DaybookTheme.focusRing : border, lineWidth: borderWidth)
+            )
+    }
+
+    private var insets: EdgeInsets {
+        switch kind {
+        case .composer: EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+        case .search: EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
+        case .editor: EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
+        }
+    }
+
+    private var borderWidth: CGFloat {
+        kind == .search ? (focused ? 1.6 : 1) : (focused ? 1.4 : 0.8)
+    }
+
+    private var radius: CGFloat {
+        kind == .search ? DaybookRadius.medium : DaybookRadius.small
+    }
+
+    private var fill: Color {
+        if kind == .composer && !focused { return DaybookTheme.hoverFill.opacity(0.75) }
+        return DaybookTheme.surface
+    }
+
+    private var border: Color {
+        kind == .search ? DaybookTheme.rule : DaybookTheme.cardBorder
+    }
+}
+
+extension View {
+    func daybookInputChrome(focused: Bool, kind: DaybookInputKind) -> some View {
+        modifier(DaybookInputChrome(focused: focused, kind: kind))
     }
 }
 

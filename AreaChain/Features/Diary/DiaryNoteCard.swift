@@ -38,7 +38,6 @@ struct DiaryTagPill: View {
 struct DiaryNoteCard: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
-    @Environment(\.daybookViewStyle) var viewStyle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var entry: DiaryEntry
     var activeTags: [TagItem]
@@ -113,15 +112,15 @@ struct DiaryNoteCard: View {
         }
         .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: viewStyle.isWorkspace ? WorkspaceStyle.cardRadius : DaybookRadius.medium, style: .continuous)
-                .fill(isHovered ? (viewStyle.isWorkspace ? WorkspaceStyle.hover : DaybookTheme.cardSurfaceHover) : viewStyle.cardSurface)
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .fill(isHovered ? DaybookTheme.cardSurfaceHover : DaybookTheme.cardSurface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: viewStyle.isWorkspace ? WorkspaceStyle.cardRadius : DaybookRadius.medium, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .strokeBorder(
                     isHighlighted
                         ? DaybookTheme.stamp
-                        : (entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : viewStyle.cardBorder)),
+                        : (entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.cardBorder)),
                     lineWidth: isHighlighted || entry.isPinned ? 1.2 : 0.8
                 )
         )

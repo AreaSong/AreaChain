@@ -8,7 +8,7 @@ struct TaskRow: View {
 
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    @Environment(\.daybookViewStyle) var style
+    @Environment(\.workspaceEmbedded) var embedded
 
     @State var editing = false
     @State private var chrome = BoardRowChrome()
@@ -151,7 +151,7 @@ struct TaskRow: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-        .frame(minHeight: style.isWorkspace ? WorkspaceStyle.rowHeight : 36)
+        .frame(minHeight: DaybookMetrics.rowHeight)
         .modernRow(
             cornerRadius: DaybookRadius.small,
             isHovered: isHovered,
@@ -182,7 +182,7 @@ struct TaskRow: View {
     }
 
     private var hasVisibleNote: Bool {
-        if style.isWorkspace {
+        if embedded {
             if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 return true
             }
@@ -211,12 +211,12 @@ struct TaskRow: View {
     }
 
     private var shouldShowTitleBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime && !isCommandPressed
+        !embedded && !editing && !pickingDay && !pickingTime && !isCommandPressed
             && (isTitleTextHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
     }
 
     private var shouldShowNoteBubble: Bool {
-        !style.isWorkspace && !editing && !pickingDay && !pickingTime && !isCommandPressed
+        !embedded && !editing && !pickingDay && !pickingTime && !isCommandPressed
             && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
     }
 
@@ -265,7 +265,7 @@ struct TaskRow: View {
                     .accessibilityHidden(true)
                 )
 
-            if !style.isWorkspace, fullNoteText != nil {
+            if !embedded, fullNoteText != nil {
                 noteIndicator
                     .fixedSize()
             }
@@ -364,14 +364,14 @@ struct TaskRow: View {
         let frame = proxy.frame(in: .global)
         return RowBubblePlacement.calculate(
             globalPoint: CGPoint(x: frame.minX, y: frame.minY),
-            isWorkspace: style.isWorkspace
+            wideHost: embedded
         )
     }
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
             ModernTaskTitle(text: state.title, isDone: state.isDone)
-                .lineLimit(style.isWorkspace ? 2 : 1)
+                .lineLimit(embedded ? 2 : 1)
                 .truncationMode(.tail)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
@@ -399,7 +399,7 @@ struct TaskRow: View {
                     }
                 }
 
-            if style.isWorkspace {
+            if embedded {
                 if let noteSnippet = formattedNoteSnippet {
                     Text(noteSnippet)
                         .font(DaybookType.caption)

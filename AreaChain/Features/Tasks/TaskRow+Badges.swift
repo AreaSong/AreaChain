@@ -13,7 +13,7 @@ extension TaskRow {
             HStack(spacing: 3) {
                 ForEach(displayTags, id: \.self) { tagName in
                     Text("#\(tagName)")
-                        .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 9.5, weight: .semibold))
+                        .font(.system(size: 9.5, weight: .semibold))
                         .foregroundStyle(DaybookPalette.Syntax.tag)
                         .lineLimit(1)
                         .padding(.horizontal, 4.5)
@@ -68,10 +68,10 @@ extension TaskRow {
         return HStack(spacing: 2.5) {
             Image(systemName: "flame.fill")
                 .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
+                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(0.75))
             Text("\(streak)")
-                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
+                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
                 .lineLimit(1)
                 .contentTransition(.numericText())
                 .animation(DaybookMotion.interactive(reduceMotion), value: streak)
@@ -92,10 +92,10 @@ extension TaskRow {
         let content = HStack(spacing: 2.5) {
             Image(systemName: "clock")
                 .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
+                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
             Text(RemindMinutes.label(minutes, locale: locale))
-                .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(style.isWorkspace ? 1 : 0.75))
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
                 .lineLimit(1)
                 .offset(y: -0.6)
         }
@@ -147,7 +147,7 @@ extension TaskRow {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
-        .opacity(style.isWorkspace || isHovered || state.isSelected ? 1.0 : 0.65)
+        .opacity(isHovered || state.isSelected ? 1.0 : 0.65)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
     }
 

@@ -87,12 +87,12 @@ struct BoardSearchHitRow: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                .fill(isSelected ? WorkspaceStyle.selection : WorkspaceStyle.surface)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular)
+                .fill(isSelected ? DaybookPalette.fill.selection : DaybookPalette.fill.surface)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.4) : WorkspaceStyle.border, lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular)
+                .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.4) : DaybookPalette.border.default, lineWidth: 0.8)
         )
     }
 

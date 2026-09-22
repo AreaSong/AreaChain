@@ -35,7 +35,7 @@
 
 - 已支持英文 `en` 与简体中文 `zh-Hans`。可见文案维护在 [Localizable.xcstrings](AreaChain/Resources/Localizable.xcstrings)，遵循 [L10n.swift](AreaChain/Domain/L10n.swift) 和 [AppPreferences.swift](AreaChain/Services/AppPreferences.swift) 的语言选择与格式化方式；机器字段、稳定标识和用户正文不随翻译改变。
 - 新增或修改文案时同时核对两种语言，以及相关提示、错误、占位符和可访问性标签；检查格式参数和长文本布局。语言资源已有无关缺口时单独说明，不顺手全量重写。
-- 复用 [DaybookTheme.swift](AreaChain/Theme/DaybookTheme.swift) 中的主题、字号、间距等定义与已有共享组件。工作台样式由 [DaybookWorkspaceStyle.swift](AreaChain/Theme/DaybookWorkspaceStyle.swift) 的环境区分，不能把工作台尺寸和材质强制套到菜单栏或手记小窗。
+- 复用 [DaybookPalette.swift](AreaChain/Theme/DaybookPalette.swift)、[DaybookMetrics.swift](AreaChain/Theme/DaybookMetrics.swift)、[DaybookTokens.swift](AreaChain/Theme/DaybookTokens.swift) 中的语义色、尺寸、字号、圆角、间距令牌与已有共享组件。菜单栏、工作台与手记小窗共用同一套令牌与外观；工作台只在 [WorkspaceLayout.swift](AreaChain/Theme/WorkspaceLayout.swift) 保留页头、侧栏与内容宽度等布局尺寸，并用 `workspaceEmbedded` 环境值表达"有无侧栏/页头"这类能力差异，不得用它切换颜色、字体或尺寸。
 - 受影响界面检查中英文、浅深色、正常与最小支持窗口；共享组件覆盖其相关宿主。动效遵守系统减弱动态效果，操作保留键盘、焦点、输入法组合文本和撤销能力。
 - 输入优先复用现有 `DaybookTextField`、`DaybookTextEditor`、`SyntaxTextField`、`SyntaxTextEditor` 等组件。新增、搜索、标题编辑和手记保存有各自语义，不以统一外观为由改变 Return、⌘Return、Esc 或失焦行为。
 
@@ -54,7 +54,7 @@
 - Swift 变更：先选相关测试，并按共享层和调用方影响扩大范围；需要编译验证时运行 `./scripts/build.sh`。此命令只构建并验签 Debug，不安装、不启动，也不替代运行验收。
 - 定向测试示例：`./scripts/build.sh test --only-testing AreaChainTests/DayBoardLogicTests`，按实际变更替换测试类；需要全量回归时运行 `./scripts/build.sh test`。普通测试不得启用真实钥匙串授权。
 - 构建、签名或应用管理脚本变更：运行 `python3 -B -m unittest discover -s scripts/tests -v`，Shell 脚本另做语法检查。这些隔离测试不代替真实安装、系统认证或恢复验收。
-- 样式与交互分别选择 [AreaChainTests/Theme](AreaChainTests/Theme) 和 [AreaChainTests/Features](AreaChainTests/Features) 的相关测试，例如 `WorkspaceStyleTests`、`WorkspaceRenderingTests`、`InputSyntaxInteractionTests`；不能只做编译就宣布界面通过。
+- 样式与交互分别选择 [AreaChainTests/Theme](AreaChainTests/Theme) 和 [AreaChainTests/Features](AreaChainTests/Features) 的相关测试，例如 `DaybookTokenTests`、`WorkspaceLayoutTests`、`WorkspaceRenderingTests`、`InputSyntaxInteractionTests`；不能只做编译就宣布界面通过。
 - 原生窗口验证先读 [架构文档的隔离验收说明](docs/architecture.md#隔离验收与真实启用门禁)，采用独立 QA 标识、隔离构建目录和内存/临时数据，保持测试串行。焦点敏感测试期间不要同时操纵其他窗口；截图查看与交互执行分开，不能用跳过焦点断言消除失败。
 - 最终列出实际运行的检查和未覆盖项；相关编辑后重跑受影响检查，不把旧结果作为新改动的通过证据。
 

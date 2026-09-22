@@ -105,7 +105,6 @@ extension NSColor {
 }
 
 struct SectionStamp: View {
-    @Environment(\.daybookViewStyle) private var style
     var title: LocalizedStringKey
     var icon: String? = nil
     var count: Int? = nil
@@ -118,12 +117,12 @@ struct SectionStamp: View {
                     .foregroundStyle(DaybookTheme.stamp)
             }
             Text(title)
-                .font(style.isWorkspace ? WorkspaceStyle.sectionFont : DaybookType.section)
-                .tracking(style.isWorkspace ? 0 : 0.5)
+                .font(DaybookType.section)
+                .tracking(0.5)
                 .foregroundStyle(DaybookTheme.muted)
             if let count {
                 Text("\(count)")
-                    .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundStyle(DaybookTheme.muted)
             }
         }

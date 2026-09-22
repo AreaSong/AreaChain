@@ -243,7 +243,7 @@ struct LiveComposerPreviewHeader: View {
         let frame = proxy.frame(in: .global)
         let placement = RowBubblePlacement.calculate(
             globalPoint: CGPoint(x: frame.minX, y: frame.minY),
-            isWorkspace: false
+            wideHost: false
         )
         growsUpward = placement.growsUpward
         bubbleShiftX = placement.bubbleShiftX

@@ -339,7 +339,7 @@ struct LiveDiaryComposerPreview: View {
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
         let frame = proxy.frame(in: .global)
-        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), isWorkspace: false)
+        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), wideHost: false)
         growsUpward = placement.growsUpward
         bubbleShiftX = placement.bubbleShiftX
     }

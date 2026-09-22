@@ -2,7 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct QuadrantPage: View {
-    @Environment(\.daybookViewStyle) private var style
+    @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
@@ -34,7 +34,7 @@ struct QuadrantPage: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookTheme.muted)
                 .accessibilityIdentifier("quadrant.hint")
-            if style.isWorkspace {
+            if embedded {
                 GeometryReader { geometry in
                     quadrantGrid(cellHeight: max(0, (geometry.size.height - DaybookSpacing.sm) / 2))
                 }

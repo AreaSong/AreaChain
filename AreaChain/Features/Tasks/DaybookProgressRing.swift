@@ -6,12 +6,11 @@ struct DaybookProgressRing: View {
     var size: CGFloat = 42
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.daybookViewStyle) private var style
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(style.isWorkspace ? WorkspaceStyle.border : DaybookTheme.rule.opacity(0.35), lineWidth: lineWidth)
+                .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: CGFloat(min(max(progress, 0), 1)))
                 .stroke(
@@ -30,7 +29,7 @@ struct DaybookProgressRing: View {
                 .animation(DaybookMotion.smooth(reduceMotion), value: progress)
 
             Text("\(Int(round(progress * 100)))%")
-                .font(style.isWorkspace ? WorkspaceStyle.progressFont : .system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 10, weight: .bold, design: .rounded))
                 .foregroundStyle(DaybookTheme.ink)
         }
         .frame(width: size, height: size)

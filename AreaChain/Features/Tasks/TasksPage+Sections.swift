@@ -258,7 +258,6 @@ enum LeftoverChipKind {
 struct LeftoverChipsBar: View {
     var config: LeftoverChipsBarConfig
     @Environment(\.locale) private var locale
-    @Environment(\.daybookViewStyle) private var style
 
     private var yesterday: LeftoverChipState { config.yesterday }
     private var upcoming: LeftoverChipState { config.upcoming }
@@ -298,19 +297,7 @@ struct LeftoverChipsBar: View {
 
     private func chip(_ config: LeftoverChipConfig) -> some View {
         Button(action: config.action) {
-            if style.isWorkspace {
-                WorkspaceFilterLabel(isSelected: config.expanded) {
-                    HStack(spacing: 4) {
-                        Text(config.title)
-                        Text("\(config.count)").font(WorkspaceStyle.countFont)
-                        Image(systemName: config.expanded ? "chevron.up" : "chevron.down")
-                            .font(.system(size: 8, weight: .medium))
-                            .accessibilityHidden(true)
-                    }
-                }
-            } else {
-                standardChipLabel(config)
-            }
+            standardChipLabel(config)
         }
         .buttonStyle(.plain)
         .disabled(config.count == 0)
