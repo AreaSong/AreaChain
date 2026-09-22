@@ -59,7 +59,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 # 查看已安装版本和签名状态
 ./scripts/app.sh status
 
-# 只预览已有 Release 的安装检查，不安装、不启动
+# 只预览已有 Debug 的安装检查，不安装、不启动
 ./scripts/install.sh --dry-run
 
 # 执行全量单元测试
@@ -69,7 +69,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 python3 -B scripts/check_workflow.py
 ```
 
-构建与安装是独立入口。完成数据备份并正常退出应用后，运行 `./scripts/install.sh` 会构建 Release、验签、请求确认，再安装并启动；`--no-build` 使用已有 Release，`--no-open` 安装后不启动。
+构建与安装是独立入口。完成数据备份并正常退出应用后，运行 `./scripts/install.sh` 会增量构建当前 Debug、验签、请求确认，再安装并启动。开发中用 `./scripts/install.sh --yes` 装上工作区里的最新代码。`--no-build` 使用已有 Debug，`--no-open` 安装后不启动，`--release` 才改为整包优化的 Release。
 
 `./scripts/uninstall.sh`（或 `./scripts/app.sh delete`）确认后只将应用移到可恢复目录，保留全部数据、私密锁、钥匙串和证书；可先加 `--dry-run` 预览。脚本不会强制结束应用，不自动切换签名身份，也不提供清空数据命令。完整命令、回退与限制见 [安装与回退门禁](docs/signing.md#安装与回退门禁)。
 

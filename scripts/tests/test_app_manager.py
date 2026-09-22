@@ -8,16 +8,34 @@ from app_test_support import AppTestCase, app_manager
 
 
 class InstallTests(AppTestCase):
-    def test_default_install_builds_release_preserves_old_app_and_requests_launch(self):
+    def test_default_install_builds_debug_preserves_old_app_and_requests_launch(self):
         result, output, errors = self.invoke("install", "--yes")
         self.assertEqual(result, 0, errors)
         self.assertEqual(self.signature(self.paths.app)["codeHash"], "new")
         self.assertEqual(self.signature(self.saved_apps()[0])["codeHash"], "old")
-        self.assertIn([str(self.paths.project / "scripts/build.sh"), "release"], self.command_calls)
+        self.assertIn([str(self.paths.project / "scripts/build.sh"), "build"], self.command_calls)
         self.assertIn(["open", str(self.paths.app)], self.command_calls)
+        self.assertIn('"configuration": "Debug"', output)
         self.assertIn('"runtimeVerified": false', output)
         self.assertIn('"dataBackupCreated": false', output)
         self.assertFalse(any(self.paths.applications.glob(".areachain-install-*")))
+
+    def test_release_option_builds_and_installs_the_release_product(self):
+        release = self.source.parent.parent / "Release" / "AreaChain.app"
+        self.make_app(release, {**self.identity, "configuration": "Release"})
+        result, output, errors = self.invoke("install", "--release", "--yes")
+        self.assertEqual(result, 0, errors)
+        self.assertEqual(self.signature(self.paths.app)["configuration"], "Release")
+        self.assertIn([str(self.paths.project / "scripts/build.sh"), "release"], self.command_calls)
+        self.assertIn('"configuration": "Release"', output)
+
+    def test_debug_install_replaces_release_app_with_the_same_signature_identity(self):
+        shutil.rmtree(self.paths.app)
+        self.make_app(self.paths.app, {**self.identity, "codeHash": "old", "configuration": "Release"})
+        result, _, errors = self.invoke("install", "--no-build", "--no-open", "--yes")
+        self.assertEqual(result, 0, errors)
+        self.assertEqual(self.signature(self.paths.app)["codeHash"], "new")
+        self.assertEqual(self.signature(self.paths.app)["configuration"], "Debug")
 
     def test_no_build_and_no_open_only_install_existing_candidate(self):
         result, _, errors = self.invoke("install", "--no-build", "--no-open", "--yes")

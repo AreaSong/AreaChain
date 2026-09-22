@@ -21,7 +21,7 @@ usage() {
   --only-testing 标识            仅 test：限制测试范围，可重复指定；缺省命令时自动推导为 test
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
-安装请使用 ./scripts/install.sh；状态、启动与卸载见 ./scripts/app.sh --help。
+安装请使用 ./scripts/install.sh（开发中默认增量安装 Debug；--release 才安装优化包）。状态、启动与卸载见 ./scripts/app.sh --help。
 请按 docs/signing.md 完成数据备份和签名身份核对。
 脚本不替换 /Applications 中的应用，不启动应用，不保存任何账号密码。
 多会话同时执行构建或测试时会自动安全排队，避免冲突。

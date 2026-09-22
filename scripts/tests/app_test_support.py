@@ -28,8 +28,9 @@ class AppTestCase(unittest.TestCase):
         self.expected = {"mode": "development", "bundleIdentifier": "com.example.areachain",
                          "teamIdentifier": "ABCDE12345", "distributionReady": False}
         self.identity = {**self.expected, "applicationIdentifier": "ABCDE12345.com.example.areachain",
-                         "keychainGroups": ["ABCDE12345.com.example.areachain"], "codeHash": "new"}
-        self.source = self.paths.project / "build/development-DerivedData/Build/Products/Release/AreaChain.app"
+                         "keychainGroups": ["ABCDE12345.com.example.areachain"], "codeHash": "new",
+                         "configuration": "Debug"}
+        self.source = self.paths.project / "build/development-DerivedData/Build/Products/Debug/AreaChain.app"
         self.make_app(self.source, self.identity)
         self.make_app(self.paths.app, {**self.identity, "codeHash": "old"})
         self.privacy = self.paths.privacy_configuration(self.expected["bundleIdentifier"])
@@ -69,7 +70,7 @@ class AppTestCase(unittest.TestCase):
 
     def verify(self, app, configuration, expected):
         self.verifications.append(app)
-        self.assertEqual(configuration, "Release")
+        self.assertEqual(configuration, self.signature(app)["configuration"])
         self.assertEqual(self.signature(app)["bundleIdentifier"], expected["bundleIdentifier"])
         if self.verification_hook:
             self.verification_hook(app)
@@ -86,6 +87,8 @@ class AppTestCase(unittest.TestCase):
             if "--entitlements" in arguments:
                 entitlements = {"com.apple.application-identifier": signature["applicationIdentifier"],
                                 "keychain-access-groups": signature["keychainGroups"]}
+                if signature.get("configuration") == "Debug":
+                    entitlements["get-task-allow"] = True
                 return subprocess.CompletedProcess(arguments, 0, plistlib.dumps(entitlements), b"")
             self.assertIn("--verbose=4", arguments)
             authority = ("Signature=adhoc" if signature["mode"] == "local"
@@ -104,7 +107,7 @@ class AppTestCase(unittest.TestCase):
         elif arguments[0] == "open":
             code = self.open_exit
         elif arguments[0] == str(self.paths.project / "scripts/build.sh"):
-            self.assertEqual(arguments[1:], ["release"])
+            self.assertIn(arguments[1:], (["build"], ["release"]))
             code = self.build_exit
         elif arguments[0] in ("osascript", "pkill"):
             self.process_running = False

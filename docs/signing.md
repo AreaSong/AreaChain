@@ -85,9 +85,11 @@ python3 -B -m unittest discover -s scripts/tests -v
 | 命令 | 行为 |
 |---|---|
 | `./scripts/app.sh status` | 只读查看 `/Applications/AreaChain.app` 是否存在、进程与签名状态、开发描述文件有效期 |
-| `./scripts/install.sh --dry-run` | 检查已有 Release 候选包与现用应用身份，不构建、复制、安装或启动 |
-| `./scripts/install.sh` | 构建 Release、验签、请求确认，保留旧包后安装并请求启动 |
-| `./scripts/install.sh --no-build --no-open` | 复用已有 Release，确认安装但不启动 |
+| `./scripts/install.sh --dry-run` | 检查已有 Debug 产物与现用应用身份，不构建、复制、安装或启动 |
+| `./scripts/install.sh` | 增量构建当前 Debug、验签、请求确认，保留旧包后安装并请求启动 |
+| `./scripts/install.sh --yes` | 同上，并跳过终端确认。开发中用它装上工作区里的最新代码 |
+| `./scripts/install.sh --release` | 改为整包优化的 Release 构建后再安装 |
+| `./scripts/install.sh --no-build --no-open` | 复用已有 Debug，确认安装但不启动 |
 | `./scripts/app.sh start` | 验签后请求启动已安装应用，不构建、不安装 |
 | `./scripts/uninstall.sh --dry-run` | 预览卸载目标，不移动文件 |
 | `./scripts/uninstall.sh` | 确认后将应用移入可恢复目录，保留数据和钥匙串 |
@@ -95,13 +97,13 @@ python3 -B -m unittest discover -s scripts/tests -v
 
 `./scripts/app.sh install`、`./scripts/app.sh uninstall` 分别等价于两个独立脚本。各入口支持 `--help`；从其他目录调用时，使用脚本的实际路径，无需先切回仓库。
 
-`--dry-run` 只检查已有产物；如果没有候选包，应先执行 `./scripts/build.sh release`。它不是实际写入权限、安装成功或运行验收的保证。应用正在运行时，预览仍可报告 `running: true`；安装会自动请求正在运行的应用优雅退出并完成替换重启，卸载前则仍须正常退出。
+`--dry-run` 只检查已有产物；如果没有对应配置的包，应先执行 `./scripts/build.sh`，Release 则先执行 `./scripts/build.sh release`。它不是实际写入权限、安装成功或运行验收的保证。应用正在运行时，预览仍可报告 `running: true`；安装会自动请求正在运行的应用优雅退出并完成替换重启，卸载前则仍须正常退出。开发阶段的日常安装使用 Debug：只重编有改动的文件。`--release` 才做整包优化，耗时会明显变长。同一签名身份下，可以用 Debug 替换已经装上的 Release。
 
 ### 确认与签名边界
 
 安装或替换前应单独确认：
 
-1. 候选包确实是预期的 Release 产物，应用标识与签名身份已经核对；QA 标识的包不能覆盖日用应用。
+1. 候选包确实是这次选择的 Debug 或 Release 产物，应用标识与签名身份已经核对；QA 标识的包不能覆盖日用应用。
 2. 保存当前工作并确认已完成必要的数据备份；安装脚本仅保留原应用本体，不创建用户数据备份。
 3. 明确签名身份变化的影响，确认后再安装，并验证冷启动、系统解锁、附件和数据兼容。
 

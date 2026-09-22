@@ -86,11 +86,18 @@ def inspect_signature(app):
     return {"mode": mode, "bundleIdentifier": info["CFBundleIdentifier"],
             "teamIdentifier": "" if mode == "local" else metadata.get("TeamIdentifier", ""),
             "applicationIdentifier": entitlements.get("com.apple.application-identifier", ""),
-            "keychainGroups": sorted(groups), "codeHash": metadata.get("CDHash", "")}
+            "keychainGroups": sorted(groups), "codeHash": metadata.get("CDHash", ""),
+            "configuration": product_configuration(entitlements)}
 
 
 def access_identity(signature):
-    return {key: value for key, value in signature.items() if key != "codeHash"}
+    ignored = {"codeHash", "configuration"}
+    return {key: value for key, value in signature.items() if key not in ignored}
+
+
+def product_configuration(entitlements):
+    debugger = entitlements.get("get-task-allow") or entitlements.get("com.apple.security.get-task-allow")
+    return "Debug" if debugger else "Release"
 
 
 def running():
@@ -131,11 +138,11 @@ def installed_signature(paths):
     return result
 
 
-def verify_candidate(app, expected):
+def verify_candidate(app, expected, configuration):
     info = bundle_info(app)
     require(not re.search(r"(?:^|[.-])(?:qa|tests?|baseline)(?:$|[.-])", info["CFBundleIdentifier"], re.I),
             "QA／测试应用不能安装为日用 AreaChain。")
-    return signing.verify_app(app, "Release", expected)
+    return signing.verify_app(app, configuration, expected)
 
 
 def check_access(paths, candidate, previous):
@@ -206,7 +213,7 @@ def unchanged(paths, previous):
     require(installed_signature(paths) == previous, "确认后已安装应用发生变化，停止替换。")
 
 
-def switch_app(paths, staged, recovery, expected):
+def switch_app(paths, staged, recovery, expected, configuration):
     old = recovery / "AreaChain.app"
     had_old = exists(paths.app)
     installed_new = False
@@ -215,7 +222,7 @@ def switch_app(paths, staged, recovery, expected):
     try:
         os.rename(staged, paths.app)
         installed_new = True
-        verify_candidate(paths.app, expected)
+        verify_candidate(paths.app, expected, configuration)
     except (Exception, KeyboardInterrupt) as error:
         try:
             if installed_new:
@@ -227,20 +234,20 @@ def switch_app(paths, staged, recovery, expected):
         raise AppError("安装未通过，已恢复安装前状态；用户数据未操作。") from error
 
 
-def replace_app(paths, source, expected, previous, candidate):
+def replace_app(paths, source, expected, previous, candidate, configuration):
     recovery = recovery_directory(paths, "install")
     stage = None
     try:
         stage = Path(tempfile.mkdtemp(prefix=".areachain-install-", dir=paths.applications))
         staged = stage / "AreaChain.app"
         signing.run_tool(["ditto", "--rsrc", "--extattr", str(source), str(staged)])
-        verify_candidate(staged, expected)
+        verify_candidate(staged, expected, configuration)
         require(inspect_signature(staged) == candidate,
                 "暂存包与已确认的候选包不同，构建产物可能已改变；停止安装。")
         unchanged(paths, previous)
         check_access(paths, candidate, previous)
         show({"recoveryDirectory": str(recovery), "dataBackupCreated": False})
-        switch_app(paths, staged, recovery, expected)
+        switch_app(paths, staged, recovery, expected, configuration)
     finally:
         # 暂存目录只包含本次候选包副本；原应用始终保留在独立的回退目录。
         if stage is not None and stage.is_dir() and not stage.is_symlink():
@@ -252,26 +259,29 @@ def replace_app(paths, source, expected, previous, candidate):
 
 def install(args, paths):
     real_path(paths.applications)
+    configuration = "Release" if args.release else "Debug"
     if not args.dry_run:
         require(os.geteuid() != 0, "请以当前用户运行，不要使用 sudo。")
         if not args.no_build:
-            result = subprocess.run([str(paths.project / "scripts/build.sh"), "release"], check=False)
-            require(result.returncode == 0, "Release 构建失败，未安装。需要续签时请单独使用 build.sh release --allow-provisioning。")
-    expected = signing.read_settings("Release")
-    source = paths.project / f"build/{expected['mode']}-DerivedData/Build/Products/Release/AreaChain.app"
-    verified = verify_candidate(source, expected)
+            command = "release" if configuration == "Release" else "build"
+            result = subprocess.run([str(paths.project / "scripts/build.sh"), command], check=False)
+            renewal = "build.sh release --allow-provisioning" if configuration == "Release" else "build.sh --allow-provisioning"
+            require(result.returncode == 0, f"{configuration} 构建失败，未安装。需要续签时请单独使用 {renewal}。")
+    expected = signing.read_settings(configuration)
+    source = paths.project / f"build/{expected['mode']}-DerivedData/Build/Products/{configuration}/AreaChain.app"
+    verified = verify_candidate(source, expected, configuration)
     candidate = inspect_signature(source)
     previous = installed_signature(paths)
     check_access(paths, candidate, previous)
-    show({"action": "install", "dryRun": args.dry_run, "target": str(paths.app),
-          "candidate": str(source), "running": running(), "dataPreserved": True,
-          "profileExpiresUTC": verified.get("profileExpiresUTC")})
+    show({"action": "install", "dryRun": args.dry_run, "configuration": configuration,
+          "target": str(paths.app), "candidate": str(source), "running": running(),
+          "dataPreserved": True, "profileExpiresUTC": verified.get("profileExpiresUTC")})
     if args.dry_run:
         return
     confirm("install", args.yes)
     with operation_lock(paths):
         quit_running()
-        backup = replace_app(paths, source, expected, previous, candidate)
+        backup = replace_app(paths, source, expected, previous, candidate, configuration)
     show({"installed": True, "previousApp": backup, "dataPreserved": True})
     if not args.no_open:
         launch(paths)
@@ -306,7 +316,7 @@ def uninstall(args, paths):
 
 def launch(paths):
     signature = inspect_signature(paths.app)
-    verify_candidate(paths.app, signature)
+    verify_candidate(paths.app, signature, signature["configuration"])
     result = subprocess.run(["open", str(paths.app)], check=False, timeout=30)
     require(result.returncode == 0, "应用已保留在安装目录，但启动请求失败；未自动回退应用或数据。")
     show({"launchRequested": True, "app": str(paths.app), "runtimeVerified": False})
@@ -319,7 +329,7 @@ def status(paths):
     if result["installed"]:
         try:
             signature = inspect_signature(paths.app)
-            result["signature"] = verify_candidate(paths.app, signature)
+            result["signature"] = verify_candidate(paths.app, signature, signature["configuration"])
         except (OSError, ValueError, TypeError, KeyError, subprocess.TimeoutExpired) as error:
             result["verificationError"] = str(error)
     show(result)
@@ -329,8 +339,9 @@ def status(paths):
 def parser():
     command = argparse.ArgumentParser(prog="./scripts/app.sh", description=__doc__)
     commands = command.add_subparsers(dest="command", required=True)
-    install_command = commands.add_parser("install", help="构建、验签、确认后安装 Release 并请求启动")
-    install_command.add_argument("--no-build", action="store_true", help="安装已有 Release，不重新构建")
+    install_command = commands.add_parser("install", help="增量构建当前 Debug，验签、确认后安装并请求启动")
+    install_command.add_argument("--release", action="store_true", help="改为构建并安装优化后的 Release")
+    install_command.add_argument("--no-build", action="store_true", help="安装已有产物，不重新构建")
     install_command.add_argument("--no-open", action="store_true", help="安装后不启动")
     uninstall_command = commands.add_parser("uninstall", aliases=["delete"], help="只卸载应用，保留数据与密钥")
     for item in (install_command, uninstall_command):

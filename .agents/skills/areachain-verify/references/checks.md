@@ -68,6 +68,6 @@ Shell 脚本另做语法检查，例如 `bash -n scripts/build.sh`；只检查�
 ## 6. 候选包与真实操作
 
 - 只有任务需要候选包检查时才使用 `./scripts/build.sh release` 或 `./scripts/build.sh verify --configuration Release`；Release 不自动跑测试，也不是已公证发行包。
-- 安装脚本可能重新构建并启动产物；`--dry-run` 只检查已有候选包，不代表实际安装/写权限验证。不要把安装、卸载或 `app.sh start` 当成常规验证收尾。
+- 安装脚本默认增量构建并安装当前 Debug，`--release` 才构建 Release；`--dry-run` 只检查已有产物，不代表实际安装/写权限验证。不要把安装、卸载或 `app.sh start` 当成常规验证收尾。
 - `--allow-provisioning`、真实钥匙串验收、系统日历写入、真实数据转换及签名身份切换需独立确认。本技能不自动进入这些操作。
 - 保留应用本体不等于完成数据备份，启动请求成功不等于运行验收；这些边界以签名文档为准。
