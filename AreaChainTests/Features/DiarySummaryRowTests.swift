@@ -199,9 +199,9 @@ struct DiarySummaryRowTests {
     }
 
     @Test func diaryRowPointerViewSelectsOnRightClickAndControlClick() throws {
-        let view = DiaryRowPointerView()
+        let view = BoardRowPointerView()
         var selectCount = 0
-        view.onSelect = { selectCount += 1 }
+        view.onSelect = { _, _ in selectCount += 1 }
 
         // 1. 常规左键点击
         let normalLeftDown = NSEvent.mouseEvent(

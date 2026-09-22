@@ -1,34 +1,38 @@
 import AppKit
 import SwiftUI
 
-/// 原生 clickCount 让第一次点击立即选中，双击直接打开独立编辑小窗
-struct DiaryRowPointerRegion: NSViewRepresentable {
+/// 列表行的单击选中、双击主动作和悬停。任务用修饰键做多选，手记双击打开小窗。
+struct BoardRowPointerRegion: NSViewRepresentable {
     var id: UUID
-    var onSelect: () -> Void
-    var onOpen: () -> Void
+    var plainDoubleClick = false
+    var onSelect: (_ shift: Bool, _ command: Bool) -> Void
+    var onDoubleClick: () -> Void
     var onHover: ((Bool) -> Void)? = nil
 
-    func makeNSView(context: Context) -> DiaryRowPointerView {
-        let view = DiaryRowPointerView()
+    func makeNSView(context: Context) -> BoardRowPointerView {
+        let view = BoardRowPointerView()
         updateNSView(view, context: context)
         return view
     }
 
-    func updateNSView(_ view: DiaryRowPointerView, context: Context) {
+    func updateNSView(_ view: BoardRowPointerView, context: Context) {
         view.identifier = NSUserInterfaceItemIdentifier(id.uuidString)
+        view.plainDoubleClick = plainDoubleClick
         view.onSelect = onSelect
-        view.onOpen = onOpen
+        view.onDoubleClick = onDoubleClick
         view.onHover = onHover
     }
 }
 
-final class DiaryRowPointerView: NSView {
-    var onSelect: (() -> Void)?
-    var onOpen: (() -> Void)?
+final class BoardRowPointerView: NSView {
+    var plainDoubleClick = false
+    var onSelect: ((_ shift: Bool, _ command: Bool) -> Void)?
+    var onDoubleClick: (() -> Void)?
     var onHover: ((Bool) -> Void)?
     private var mouseDownLocation: NSPoint?
     private var didDrag = false
     private var trackingArea: NSTrackingArea?
+    private var isHandlingRightMouseDown = false
 
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
@@ -60,7 +64,7 @@ final class DiaryRowPointerView: NSView {
 
     override func mouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
-        onSelect?()
+        onSelect?(event.modifierFlags.contains(.shift), event.modifierFlags.contains(.command))
         guard !event.modifierFlags.contains(.control) else {
             super.mouseDown(with: event)
             return
@@ -70,11 +74,9 @@ final class DiaryRowPointerView: NSView {
         super.mouseDown(with: event)
     }
 
-    private var isHandlingRightMouseDown = false
-
     override func rightMouseDown(with event: NSEvent) {
         window?.makeFirstResponder(self)
-        onSelect?()
+        onSelect?(event.modifierFlags.contains(.shift), event.modifierFlags.contains(.command))
         isHandlingRightMouseDown = true
         super.rightMouseDown(with: event)
         isHandlingRightMouseDown = false
@@ -83,7 +85,7 @@ final class DiaryRowPointerView: NSView {
     override func menu(for event: NSEvent) -> NSMenu? {
         if !isHandlingRightMouseDown {
             window?.makeFirstResponder(self)
-            onSelect?()
+            onSelect?(event.modifierFlags.contains(.shift), event.modifierFlags.contains(.command))
         }
         return super.menu(for: event)
     }
@@ -93,11 +95,12 @@ final class DiaryRowPointerView: NSView {
         let stayedNearStart = mouseDownLocation.map {
             hypot(event.locationInWindow.x - $0.x, event.locationInWindow.y - $0.y) < 4
         } ?? false
-        let shouldOpen = event.clickCount == 2 && !didDrag
-            && !event.modifierFlags.contains(.control)
+        let plain = !plainDoubleClick || (!event.modifierFlags.contains(.shift) && !event.modifierFlags.contains(.command))
+        let shouldActivate = event.clickCount == 2 && !didDrag
+            && !event.modifierFlags.contains(.control) && plain
             && stayedNearStart && bounds.contains(convert(event.locationInWindow, from: nil))
         super.mouseUp(with: event)
-        if shouldOpen { onOpen?() }
+        if shouldActivate { onDoubleClick?() }
     }
 
     override func mouseDragged(with event: NSEvent) {

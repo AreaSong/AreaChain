@@ -15,22 +15,43 @@ struct DiarySummaryRow: View {
     var onSelect: (() -> Void)? = nil
     var onDelete: () -> Void
 
-    @State private var isHovered = false
+    @State private var chrome = BoardRowChrome()
     @State private var hasCopied = false
     @State private var hasNoteCopied = false
-    @State private var isCommandPressed = false
     @State private var hasConvertedToTask = false
     @State private var pickingDay = false
-    @State private var flagsMonitor: Any? = nil
-    @State private var isTitleTextHovered = false
-    @State private var isTitleBubbleHovered = false
-    @State private var isNoteHovered = false
-    @State private var isNoteBubbleHovered = false
-    @State private var titleHoverTask: Task<Void, Never>? = nil
-    @State private var noteHoverTask: Task<Void, Never>? = nil
-    @State private var rowHoverTask: Task<Void, Never>? = nil
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
+
+    private var isHovered: Bool {
+        get { chrome.isRowHovered }
+        nonmutating set { chrome.isRowHovered = newValue }
+    }
+
+    private var isCommandPressed: Bool {
+        get { chrome.isCommandPressed }
+        nonmutating set { chrome.isCommandPressed = newValue }
+    }
+
+    private var isTitleTextHovered: Bool {
+        get { chrome.isTitleTextHovered }
+        nonmutating set { chrome.isTitleTextHovered = newValue }
+    }
+
+    private var isTitleBubbleHovered: Bool {
+        get { chrome.isTitleBubbleHovered }
+        nonmutating set { chrome.isTitleBubbleHovered = newValue }
+    }
+
+    private var isNoteHovered: Bool {
+        get { chrome.isNoteHovered }
+        nonmutating set { chrome.isNoteHovered = newValue }
+    }
+
+    private var isNoteBubbleHovered: Bool {
+        get { chrome.isNoteBubbleHovered }
+        nonmutating set { chrome.isNoteBubbleHovered = newValue }
+    }
 
     private var isSensitive: Bool { DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
     var previewText: String {
@@ -123,48 +144,11 @@ struct DiarySummaryRow: View {
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .simultaneousGesture(
             TapGesture().onEnded {
-                rowHoverTask?.cancel()
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isHovered = true
-                }
+                chrome.revealRow(reduceMotion: reduceMotion)
                 onSelect?()
             }
         )
-        .onHover { hovering in
-            rowHoverTask?.cancel()
-            if hovering {
-                rowHoverTask = Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(120))
-                    guard !Task.isCancelled else { return }
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isHovered = true
-                        isCommandPressed = NSEvent.modifierFlags.contains(.command)
-                    }
-                }
-            } else {
-                rowHoverTask = Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(80))
-                    guard !Task.isCancelled else { return }
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isHovered = false
-                    }
-                    titleHoverTask?.cancel()
-                    titleHoverTask = nil
-                    noteHoverTask?.cancel()
-                    noteHoverTask = nil
-                    if !isTitleBubbleHovered {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = false
-                        }
-                    }
-                    if !isNoteBubbleHovered {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isNoteHovered = false
-                        }
-                    }
-                }
-            }
-        }
+        .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
         .task(id: hasCopied) {
             guard hasCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))
@@ -183,18 +167,10 @@ struct DiarySummaryRow: View {
         .popover(isPresented: $pickingDay) {
             daySchedulePopover
         }
-        .onAppear { setupFlagsMonitor() }
-        .onDisappear {
-            tearDownFlagsMonitor()
-            rowHoverTask?.cancel()
-            rowHoverTask = nil
-            titleHoverTask?.cancel()
-            titleHoverTask = nil
-            noteHoverTask?.cancel()
-            noteHoverTask = nil
-        }
+        .onAppear { chrome.startCommandMonitor(reduceMotion: reduceMotion) }
+        .onDisappear { chrome.stop() }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
-            isCommandPressed = false
+            chrome.resignCommand()
         }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
@@ -288,29 +264,7 @@ struct DiarySummaryRow: View {
                     .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04)))
             )
             .contentShape(Rectangle())
-            .onHover { hovering in
-                noteHoverTask?.cancel()
-                guard !isCommandPressed else { return }
-                if hovering {
-                    noteHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(300))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isNoteHovered = true
-                        }
-                    }
-                } else {
-                    noteHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(100))
-                        guard !Task.isCancelled else { return }
-                        if !isNoteBubbleHovered {
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isNoteHovered = false
-                            }
-                        }
-                    }
-                }
-            }
+            .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .onTapGesture {
                 copyNote(fullText)
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
@@ -509,39 +463,16 @@ struct DiarySummaryRow: View {
     }
 
     private func pointerRegion(isTitle: Bool) -> some View {
-        DiaryRowPointerRegion(
+        BoardRowPointerRegion(
             id: entry.id,
-            onSelect: {
-                rowHoverTask?.cancel()
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isHovered = true
-                }
+            onSelect: { _, _ in
+                chrome.revealRow(reduceMotion: reduceMotion)
                 onSelect?()
             },
-            onOpen: openWindow,
+            onDoubleClick: openWindow,
             onHover: { hovering in
-                guard isTitle, !isCommandPressed else { return }
-                if hovering {
-                    titleHoverTask?.cancel()
-                    titleHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(300))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = true
-                        }
-                    }
-                } else {
-                    titleHoverTask?.cancel()
-                    titleHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(100))
-                        guard !Task.isCancelled else { return }
-                        if !isTitleBubbleHovered {
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isTitleTextHovered = false
-                            }
-                        }
-                    }
-                }
+                guard isTitle else { return }
+                chrome.handleTitleHover(hovering, reduceMotion: reduceMotion)
             }
         )
     }
@@ -679,28 +610,4 @@ struct DiarySummaryRow: View {
         }
     }
 
-    private func setupFlagsMonitor() {
-        isCommandPressed = NSEvent.modifierFlags.contains(.command)
-        guard flagsMonitor == nil else { return }
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
-            let command = event.modifierFlags.contains(.command)
-            if command {
-                titleHoverTask?.cancel()
-                noteHoverTask?.cancel()
-            }
-            if isCommandPressed != command {
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isCommandPressed = command
-                }
-            }
-            return event
-        }
-    }
-
-    private func tearDownFlagsMonitor() {
-        if let monitor = flagsMonitor {
-            NSEvent.removeMonitor(monitor)
-            flagsMonitor = nil
-        }
-    }
 }

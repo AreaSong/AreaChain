@@ -252,9 +252,11 @@ private struct CaptureOverlayFixture: View {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(0..<30) { index in
                         Text("任务 \(index)").frame(maxWidth: .infinity, alignment: .leading).padding(6)
-                            .background(TaskRowPointerRegion(
+                            .background(BoardRowPointerRegion(
                                 id: draft.rowIDs[index],
-                                onSelect: { _ in draft.rowActions += 1 }, onEdit: { draft.rowActions += 1 }
+                                plainDoubleClick: true,
+                                onSelect: { _, _ in draft.rowActions += 1 },
+                                onDoubleClick: { draft.rowActions += 1 }
                             ))
                     }
                 }
@@ -381,11 +383,11 @@ private final class CaptureOverlayHost {
     }
 
     func rowFrames() -> [CGRect] {
-        descendants(window.contentView).compactMap { $0 as? TaskRowPointerView }.map { $0.convert($0.bounds, to: nil) }
+        descendants(window.contentView).compactMap { $0 as? BoardRowPointerView }.map { $0.convert($0.bounds, to: nil) }
     }
 
     func listScrollView() throws -> NSScrollView {
-        let row = try #require(descendants(window.contentView).compactMap { $0 as? TaskRowPointerView }.first)
+        let row = try #require(descendants(window.contentView).compactMap { $0 as? BoardRowPointerView }.first)
         return try #require(row.enclosingScrollView)
     }
 

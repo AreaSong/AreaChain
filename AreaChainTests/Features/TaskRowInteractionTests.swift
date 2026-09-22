@@ -260,9 +260,14 @@ struct TaskRowInteractionTests {
     }
 
     @Test func taskRowPointerViewSelectsOnRightClickAndControlClick() throws {
-        let view = TaskRowPointerView()
+        let view = BoardRowPointerView()
         var selectedModifiers: [TaskSelectionModifiers] = []
-        view.onSelect = { selectedModifiers.append($0) }
+        view.onSelect = { shift, command in
+            var modifiers = TaskSelectionModifiers()
+            if shift { modifiers.insert(.shift) }
+            if command { modifiers.insert(.command) }
+            selectedModifiers.append(modifiers)
+        }
 
         // 1. 常规左键点击
         let normalLeftDown = try #require(NSEvent.mouseEvent(
@@ -381,9 +386,9 @@ struct TaskRowInteractionTests {
         return NSPoint(x: bounds.midX, y: bounds.midY)
     }
 
-    private func findRegion(_ id: UUID, in view: NSView?) -> TaskRowPointerView? {
+    private func findRegion(_ id: UUID, in view: NSView?) -> BoardRowPointerView? {
         guard let view else { return nil }
-        if let region = view as? TaskRowPointerView, region.identifier?.rawValue == id.uuidString { return region }
+        if let region = view as? BoardRowPointerView, region.identifier?.rawValue == id.uuidString { return region }
         return view.subviews.lazy.compactMap { findRegion(id, in: $0) }.first
     }
 

@@ -11,18 +11,9 @@ struct TaskRow: View {
     @Environment(\.daybookViewStyle) var style
 
     @State var editing = false
-    @State private var isRowHovered = false
-    @State private var rowHoverTask: Task<Void, Never>? = nil
-    @State private var isNoteHovered = false
-    @State private var isNoteBubbleHovered = false
-    @State private var isTitleTextHovered = false
-    @State private var isTitleBubbleHovered = false
-    @State private var titleHoverTask: Task<Void, Never>? = nil
-    @State private var noteHoverTask: Task<Void, Never>? = nil
+    @State private var chrome = BoardRowChrome()
     @State var hasCopied = false
     @State var hasNoteCopied = false
-    @State var isCommandPressed = false
-    @State private var flagsMonitor: Any? = nil
     @State var draft = ""
     @State var pickingDay = false
     @State var pickingTime = false
@@ -32,6 +23,36 @@ struct TaskRow: View {
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
     @State var hoveredQuickActionTip: String? = nil
+
+    private var isRowHovered: Bool {
+        get { chrome.isRowHovered }
+        nonmutating set { chrome.isRowHovered = newValue }
+    }
+
+    private var isNoteHovered: Bool {
+        get { chrome.isNoteHovered }
+        nonmutating set { chrome.isNoteHovered = newValue }
+    }
+
+    private var isNoteBubbleHovered: Bool {
+        get { chrome.isNoteBubbleHovered }
+        nonmutating set { chrome.isNoteBubbleHovered = newValue }
+    }
+
+    private var isTitleTextHovered: Bool {
+        get { chrome.isTitleTextHovered }
+        nonmutating set { chrome.isTitleTextHovered = newValue }
+    }
+
+    private var isTitleBubbleHovered: Bool {
+        get { chrome.isTitleBubbleHovered }
+        nonmutating set { chrome.isTitleBubbleHovered = newValue }
+    }
+
+    var isCommandPressed: Bool {
+        get { chrome.isCommandPressed }
+        nonmutating set { chrome.isCommandPressed = newValue }
+    }
 
     var isHovered: Bool {
         isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered
@@ -47,41 +68,7 @@ struct TaskRow: View {
 
     var body: some View {
         rowContent
-            .onHover { hovering in
-                rowHoverTask?.cancel()
-                if hovering {
-                    rowHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(120))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isRowHovered = true
-                            isCommandPressed = NSEvent.modifierFlags.contains(.command)
-                        }
-                    }
-                } else {
-                    rowHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(80))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isRowHovered = false
-                        }
-                        titleHoverTask?.cancel()
-                        titleHoverTask = nil
-                        noteHoverTask?.cancel()
-                        noteHoverTask = nil
-                        if !isTitleBubbleHovered {
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isTitleTextHovered = false
-                            }
-                        }
-                        if !isNoteBubbleHovered {
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isNoteHovered = false
-                            }
-                        }
-                    }
-                }
-            }
+            .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
             .animation(DaybookMotion.interactive(reduceMotion), value: isCommandPressed)
             .animation(DaybookMotion.interactive(reduceMotion), value: state.isSelected)
@@ -112,16 +99,10 @@ struct TaskRow: View {
             }
             .onAppear {
                 draft = state.title
-                startObservingModifiers()
+                chrome.startCommandMonitor(reduceMotion: reduceMotion)
             }
             .onDisappear {
-                stopObservingModifiers()
-                rowHoverTask?.cancel()
-                rowHoverTask = nil
-                titleHoverTask?.cancel()
-                titleHoverTask = nil
-                noteHoverTask?.cancel()
-                noteHoverTask = nil
+                chrome.stop()
             }
             .onChange(of: state.title) { _, value in
                 if !editing { draft = value }
@@ -130,31 +111,6 @@ struct TaskRow: View {
                 if value && !editing { beginEdit() }
             }
             .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
-    }
-
-    private func startObservingModifiers() {
-        guard flagsMonitor == nil else { return }
-        isCommandPressed = NSEvent.modifierFlags.contains(.command)
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
-            let command = event.modifierFlags.contains(.command)
-            if command {
-                titleHoverTask?.cancel()
-                noteHoverTask?.cancel()
-            }
-            if isCommandPressed != command {
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isCommandPressed = command
-                }
-            }
-            return event
-        }
-    }
-
-    private func stopObservingModifiers() {
-        if let flagsMonitor {
-            NSEvent.removeMonitor(flagsMonitor)
-            self.flagsMonitor = nil
-        }
     }
 
     private var rowContent: some View {
@@ -265,35 +221,15 @@ struct TaskRow: View {
     }
 
     private func selectImmediately(_ modifiers: TaskSelectionModifiers = []) {
-        rowHoverTask?.cancel()
-        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-            isRowHovered = true
-        }
+        chrome.revealRow(reduceMotion: reduceMotion)
         dispatch(.select(modifiers))
     }
 
-    private func handleTitleHover(_ hovering: Bool) {
-        titleHoverTask?.cancel()
-        guard !isCommandPressed else { return }
-        if hovering {
-            titleHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(300))
-                guard !Task.isCancelled else { return }
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    isTitleTextHovered = true
-                }
-            }
-        } else {
-            titleHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(100))
-                guard !Task.isCancelled else { return }
-                if !isTitleBubbleHovered {
-                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = false
-                    }
-                }
-            }
-        }
+    private func selection(shift: Bool, command: Bool) -> TaskSelectionModifiers {
+        var modifiers = TaskSelectionModifiers()
+        if shift { modifiers.insert(.shift) }
+        if command { modifiers.insert(.command) }
+        return modifiers
     }
 
     private var selectableContent: some View {
@@ -301,11 +237,12 @@ struct TaskRow: View {
             titleContent
                 .layoutPriority(1)
                 .overlay(
-                    TaskRowPointerRegion(
+                    BoardRowPointerRegion(
                         id: state.id,
-                        onSelect: { selectImmediately($0) },
-                        onEdit: beginEdit,
-                        onHover: handleTitleHover
+                        plainDoubleClick: true,
+                        onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
+                        onDoubleClick: beginEdit,
+                        onHover: { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
                     )
                     .padding(.top, -6)
                     .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
@@ -317,10 +254,11 @@ struct TaskRow: View {
                 .frame(height: 20)
                 .contentShape(Rectangle())
                 .overlay(
-                    TaskRowPointerRegion(
+                    BoardRowPointerRegion(
                         id: state.id,
-                        onSelect: { selectImmediately($0) },
-                        onEdit: beginEdit
+                        plainDoubleClick: true,
+                        onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
+                        onDoubleClick: beginEdit
                     )
                     .padding(.top, -6)
                     .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
@@ -373,29 +311,7 @@ struct TaskRow: View {
                 }
             )
             .contentShape(Rectangle())
-            .onHover { isHovering in
-                noteHoverTask?.cancel()
-                guard !isCommandPressed else { return }
-                if isHovering {
-                    noteHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(300))
-                        guard !Task.isCancelled else { return }
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isNoteHovered = true
-                        }
-                    }
-                } else {
-                    noteHoverTask = Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(100))
-                        guard !Task.isCancelled else { return }
-                        if !isNoteBubbleHovered {
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isNoteHovered = false
-                            }
-                        }
-                    }
-                }
-            }
+            .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .onTapGesture {
                 if let note = fullNoteText {
                     copyToClipboard(note)
@@ -469,7 +385,7 @@ struct TaskRow: View {
                 .truncationMode(.tail)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
-                .onHover(perform: handleTitleHover)
+                .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
                         TaskTitleBubble(
