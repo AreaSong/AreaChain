@@ -163,7 +163,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        routine.remindMinutes = RemindMinutes.clamped(minutes)
+        ClassifiedFieldsUpdate.setRemind(routine, minutes: minutes)
         try saveAndNotify()
     }
 
@@ -171,8 +171,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        routine.isImportant = isImportant
-        routine.isUrgent = isUrgent
+        ClassifiedFieldsUpdate.setPriority(routine, isImportant: isImportant, isUrgent: isUrgent)
         try saveAndNotify()
     }
 
@@ -180,7 +179,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        routine.projectID = projectID
+        ClassifiedFieldsUpdate.setProject(routine, projectID: projectID)
         try saveAndNotify()
     }
 
@@ -188,7 +187,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
+        ClassifiedFieldsUpdate.toggleTag(routine, tagID: tagID)
         try saveAndNotify()
     }
 
@@ -204,6 +203,19 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             if !check.isDone {
                 check.isSkipped = false
             }
+        } else {
+            context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
+        }
+        try saveAndNotify()
+    }
+
+    func markRoutineDone(id: UUID, dayKey: String) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        let checks = try fetchChecks(for: routine.id)
+        if let check = checks.first(where: { $0.dayKey == dayKey }) {
+            check.isDone = true
         } else {
             context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
         }

@@ -187,7 +187,7 @@ struct WorkspaceSidebarView: View {
         projectParentMenu(project)
         Button("alert.trash.move", role: .destructive) {
             pendingTrash = PendingTrash(title: project.name) {
-                DayBoardMutations.persist(context: modelContext) { project.deletedAt = SoftDelete.stamp() }
+                DayBoardMutations.trashProject(id: project.id, context: modelContext)
                 if navigation.selectedProjectID == project.id {
                     navigation.selectedProjectID = nil
                 }
@@ -231,7 +231,7 @@ struct WorkspaceSidebarView: View {
             Button("sidebar.rename") { beginRename(.tag(tag.id), name: tag.name) }
             Button("alert.trash.move", role: .destructive) {
                 pendingTrash = PendingTrash(title: tag.name) {
-                    DayBoardMutations.persist(context: modelContext) { tag.deletedAt = SoftDelete.stamp() }
+                    DayBoardMutations.trashTag(id: tag.id, context: modelContext)
                     if navigation.selectedTagID == tag.id {
                         navigation.selectedTagID = nil
                     }
@@ -286,22 +286,22 @@ struct WorkspaceSidebarView: View {
             renameError = "tag.preset.reserved"
             return
         }
-        guard DayBoardMutations.persist(context: modelContext, {
-            switch target {
-            case .project(let id):
-                projects.first { $0.id == id }?.name = next
-            case .tag(let id):
-                tags.first { $0.id == id }?.name = next
-            }
-        }) else { return }
+        let saved: Bool
+        switch target {
+        case .project(let id):
+            saved = DayBoardMutations.renameProject(id: id, name: next, context: modelContext)
+        case .tag(let id):
+            saved = DayBoardMutations.renameTag(id: id, name: next, context: modelContext)
+        }
+        guard saved else { return }
         pendingRename = nil
         renameDraft = ""
         renameError = nil
     }
 
     private func setParent(_ id: UUID, _ parentID: UUID?) {
-        guard let item = projects.first(where: { $0.id == id }) else { return }
+        guard projects.contains(where: { $0.id == id }) else { return }
         guard !ProjectTree.wouldCycle(moving: id, to: parentID, in: projects) else { return }
-        DayBoardMutations.persist(context: modelContext) { item.parentID = parentID }
+        DayBoardMutations.setProjectParent(id: id, parentID: parentID, context: modelContext)
     }
 }

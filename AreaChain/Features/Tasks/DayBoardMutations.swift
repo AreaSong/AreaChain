@@ -41,6 +41,42 @@ enum DayBoardMutations {
         ModelChanges.perform(in: context ?? Persistence.session.container.mainContext, work)
     }
 
+    @discardableResult
+    static func trashAttachment(_ item: AttachmentItem) -> Bool {
+        persist(context: item.modelContext) { item.deletedAt = .now }
+    }
+
+    @discardableResult
+    static func trashProject(id: UUID, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) { try catalogRepo(for: context).deleteProject(id: id, soft: true) }
+    }
+
+    @discardableResult
+    static func trashTag(id: UUID, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) { try catalogRepo(for: context).deleteTag(id: id, soft: true) }
+    }
+
+    @discardableResult
+    static func renameProject(id: UUID, name: String, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) {
+            try catalogRepo(for: context).updateProject(id: id, name: name, parentID: nil, sortOrder: nil)
+        }
+    }
+
+    @discardableResult
+    static func renameTag(id: UUID, name: String, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) {
+            try catalogRepo(for: context).updateTag(id: id, name: name, sortOrder: nil)
+        }
+    }
+
+    @discardableResult
+    static func setProjectParent(id: UUID, parentID: UUID?, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) {
+            try catalogRepo(for: context).updateProject(id: id, name: nil, parentID: .some(parentID), sortOrder: nil)
+        }
+    }
+
     static func requestReminderAccessIfNeeded(_ minutes: Int?) {
         if minutes != nil { NotificationScheduler.shared.ensureAuthorization() }
     }
@@ -139,6 +175,13 @@ enum DayBoardMutations {
     }
 
     @discardableResult
+    static func toggleSubtaskTag(_ subtask: SubtaskItem, tagID: UUID) -> Bool {
+        ModelChanges.attempt(in: subtask.modelContext) {
+            try taskRepo(for: subtask.modelContext).toggleSubtaskTag(id: subtask.id, tagID: tagID)
+        }
+    }
+
+    @discardableResult
     static func editSubtask(_ subtask: SubtaskItem, title: String) -> Bool {
         let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
@@ -169,6 +212,20 @@ enum DayBoardMutations {
         let context = context ?? routine.modelContext
         return ModelChanges.attempt(in: context) {
             try routineRepo(for: context).setRoutineEnabled(id: routine.id, enabled: enabled, todayKey: todayKey)
+        }
+    }
+
+    @discardableResult
+    static func setWeekdayMask(_ routine: DailyRoutine, mask: Int) -> Bool {
+        ModelChanges.attempt(in: routine.modelContext) {
+            try routineRepo(for: routine.modelContext).setWeekdayMask(id: routine.id, mask: mask)
+        }
+    }
+
+    @discardableResult
+    static func markRoutineDone(_ routine: DailyRoutine, on dayKey: String) -> Bool {
+        ModelChanges.attempt(in: routine.modelContext) {
+            try routineRepo(for: routine.modelContext).markRoutineDone(id: routine.id, dayKey: dayKey)
         }
     }
 

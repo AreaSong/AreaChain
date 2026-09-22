@@ -121,6 +121,9 @@ protocol TaskRepositoryProtocol: AnyObject {
     /// 修改子任务标题
     func editSubtask(id: UUID, title: String) throws
 
+    /// 切换子任务关联标签
+    func toggleSubtaskTag(id: UUID, tagID: UUID) throws
+
     /// 软删除或物理删除子任务
     func deleteSubtask(id: UUID, soft: Bool) throws
 

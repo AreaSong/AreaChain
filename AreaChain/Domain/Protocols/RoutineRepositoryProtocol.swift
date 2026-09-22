@@ -105,6 +105,9 @@ protocol RoutineRepositoryProtocol: AnyObject {
     /// 切换指定日期的打卡完成状态
     func toggleRoutine(id: UUID, dayKey: String) throws
 
+    /// 将指定日期的习惯标为完成。已有打卡只置完成，不改跳过标记。
+    func markRoutineDone(id: UUID, dayKey: String) throws
+
     /// 将指定日期的习惯标记为已跳过（保留连续打卡桥接）
     func skipRoutine(id: UUID, dayKey: String) throws
 

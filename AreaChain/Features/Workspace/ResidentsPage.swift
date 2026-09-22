@@ -194,9 +194,10 @@ private struct ResidentEditorRow: View {
     }
 
     private func toggleWeekday(_ weekday: Int) {
-        DayBoardMutations.persist(context: modelContext) {
-            routine.setWeekdayMask(WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday))
-        }
+        DayBoardMutations.setWeekdayMask(
+            routine,
+            mask: WeekdayMask.toggling(routine.resolvedWeekdayMask, weekday: weekday)
+        )
     }
 }
 

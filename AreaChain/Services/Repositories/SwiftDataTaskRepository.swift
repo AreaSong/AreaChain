@@ -137,7 +137,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: id) else {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
-        todo.remindMinutes = RemindMinutes.clamped(minutes)
+        ClassifiedFieldsUpdate.setRemind(todo, minutes: minutes)
         try saveAndNotify()
     }
 
@@ -145,8 +145,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: id) else {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
-        todo.isImportant = isImportant
-        todo.isUrgent = isUrgent
+        ClassifiedFieldsUpdate.setPriority(todo, isImportant: isImportant, isUrgent: isUrgent)
         try saveAndNotify()
     }
 
@@ -154,7 +153,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: id) else {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
-        todo.projectID = projectID
+        ClassifiedFieldsUpdate.setProject(todo, projectID: projectID)
         try saveAndNotify()
     }
 
@@ -162,7 +161,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: id) else {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
-        todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
+        ClassifiedFieldsUpdate.toggleTag(todo, tagID: tagID)
         try saveAndNotify()
     }
 
@@ -218,7 +217,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         return try ModelChanges.transaction(in: context) {
             let names = TagSyntax.names(in: trimmed, includesDiaryTags: false)
             let tagIDs = try InputTagResolver.merging(names, into: "", in: context)
-            let nextOrder = (todo.subtasks.filter { $0.deletedAt == nil }.map(\.sortOrder).max() ?? -1) + 1
+            let nextOrder = Catalog.nextSortOrder(todo.subtasks.filter { $0.deletedAt == nil }.map(\.sortOrder))
             let subtask = SubtaskItem(
                 title: TagSyntax.title(from: trimmed, includesDiaryTags: false),
                 sortOrder: nextOrder, tagIDs: tagIDs, todo: todo
@@ -249,6 +248,14 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             subtask.tagIDs = try InputTagResolver.merging(names, into: subtask.tagIDs, in: context)
             subtask.title = TagSyntax.title(from: trimmed, includesDiaryTags: false)
         }
+    }
+
+    func toggleSubtaskTag(id: UUID, tagID: UUID) throws {
+        guard let subtask = try fetchSubtask(id: id) else {
+            throw RepositoryError.notFound("SubtaskItem(id: \(id))")
+        }
+        subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, tagID)
+        try saveAndNotify()
     }
 
     func deleteSubtask(id: UUID, soft: Bool) throws {

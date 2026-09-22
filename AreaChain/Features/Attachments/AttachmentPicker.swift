@@ -103,7 +103,7 @@ enum AttachmentPicker {
 
     @discardableResult
     static func trash(_ item: AttachmentItem) -> Bool {
-        DayBoardMutations.persist(context: item.modelContext) { item.deletedAt = .now }
+        return DayBoardMutations.trashAttachment(item)
     }
 
     private static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {

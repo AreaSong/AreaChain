@@ -167,6 +167,25 @@ enum BoardSearch {
         return matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap)
     }
 
+    private static func matchesRecord(
+        title: String,
+        notes: String,
+        tagIDs: String,
+        bits: ClassifyBits,
+        remindMinutes: Int?,
+        query: BoardSearchQuery,
+        tagMap: [UUID: String]
+    ) -> Bool {
+        if !query.textKeywords.isEmpty {
+            let matchesAll = query.textKeywords.allSatisfy { keyword in
+                matches(title, needle: keyword) || matches(notes, needle: keyword)
+            }
+            guard matchesAll else { return false }
+        }
+        guard matchesAttributes(query, bits: bits, remindMinutes: remindMinutes) else { return false }
+        return matchTags(tagNames: query.tagNames, attachedIDs: tagIDs, tagMap: tagMap)
+    }
+
     private static func matchesAttributes(_ query: BoardSearchQuery, bits: ClassifyBits, remindMinutes: Int?) -> Bool {
         if let priority = query.priority {
             guard bits.isImportant == priority.isImportant, bits.isUrgent == priority.isUrgent else { return false }
@@ -179,18 +198,11 @@ enum BoardSearch {
         todos.compactMap { item in
             guard item.deletedAt == nil else { return nil }
 
-            if !query.textKeywords.isEmpty {
-                let matchesAll = query.textKeywords.allSatisfy { kw in
-                    matches(item.title, needle: kw) || matches(item.notes, needle: kw)
-                }
-                guard matchesAll else { return nil }
-            }
-
-            guard matchesAttributes(query, bits: item.classifyBits, remindMinutes: item.remindMinutes) else { return nil }
-
-            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap) else {
-                return nil
-            }
+            guard matchesRecord(
+                title: item.title, notes: item.notes, tagIDs: item.tagIDs,
+                bits: item.classifyBits, remindMinutes: item.remindMinutes,
+                query: query, tagMap: tagMap
+            ) else { return nil }
 
             return BoardSearchHit(
                 id: item.id,
@@ -228,17 +240,11 @@ enum BoardSearch {
         return routines.compactMap { item in
             guard item.deletedAt == nil, item.isEnabled else { return nil }
 
-            if !query.textKeywords.isEmpty {
-                let matchesAll = query.textKeywords.allSatisfy { kw in
-                    matches(item.title, needle: kw) || matches(item.notes, needle: kw)
-                }
-                guard matchesAll else { return nil }
-            }
-
-            guard matchesAttributes(query, bits: item.classifyBits, remindMinutes: item.remindMinutes) else { return nil }
-            guard matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap) else {
-                return nil
-            }
+            guard matchesRecord(
+                title: item.title, notes: item.notes, tagIDs: item.tagIDs,
+                bits: item.classifyBits, remindMinutes: item.remindMinutes,
+                query: query, tagMap: tagMap
+            ) else { return nil }
 
             let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
             return BoardSearchHit(

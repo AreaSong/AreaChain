@@ -222,9 +222,7 @@ struct SubtaskRowView: View {
                 HStack(spacing: 4) {
                     ForEach(assigned) { tag in
                         Button {
-                            ModelChanges.perform(in: modelContext) {
-                                subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, tag.id)
-                            }
+                            DayBoardMutations.toggleSubtaskTag(subtask, tagID: tag.id)
                         } label: {
                             Label("#" + tag.name, systemImage: "xmark")
                                 .font(DaybookType.badge)

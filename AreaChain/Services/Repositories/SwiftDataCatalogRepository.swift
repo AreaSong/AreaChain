@@ -47,7 +47,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
             order = sortOrder
         } else {
             let live = try fetchProjects(includeDeleted: false)
-            order = (live.map(\.sortOrder).max() ?? -1) + 1
+            order = Catalog.nextSortOrder(live.map(\.sortOrder))
         }
         let project = ProjectItem(name: trimmed, sortOrder: order, parentID: parentID)
         context.insert(project)
@@ -140,7 +140,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
             order = sortOrder
         } else {
             let live = try fetchTags(includeDeleted: false)
-            order = (live.map(\.sortOrder).max() ?? -1) + 1
+            order = Catalog.nextSortOrder(live.map(\.sortOrder))
         }
         let tag = TagItem(name: trimmed, sortOrder: order)
         context.insert(tag)

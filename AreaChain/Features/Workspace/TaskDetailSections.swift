@@ -109,9 +109,7 @@ struct RoutineScheduleSectionView: View {
             }
 
             TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
-                DayBoardMutations.persist(context: routine.modelContext) {
-                    routine.setWeekdayMask(newMask)
-                }
+                DayBoardMutations.setWeekdayMask(routine, mask: newMask)
             }
         }
     }
@@ -278,7 +276,7 @@ struct TaskDetailAssetsSectionView: View {
             }
 
             Button {
-                DayBoardMutations.persist(context: att.modelContext) { att.deletedAt = .now }
+                DayBoardMutations.trashAttachment(att)
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 14))
