@@ -59,16 +59,34 @@ final class TaskRowPointerView: NSView {
     }
 
     override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        onSelect?(selectionModifiers(event))
         guard !event.modifierFlags.contains(.control) else {
             super.mouseDown(with: event)
             return
         }
         mouseDownLocation = event.locationInWindow
         didDrag = false
-        window?.makeFirstResponder(self)
-        onSelect?(selectionModifiers(event))
         // 保留上层 SwiftUI 的拖拽处理；本区域只负责选择与编辑。
         super.mouseDown(with: event)
+    }
+
+    private var isHandlingRightMouseDown = false
+
+    override func rightMouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+        onSelect?(selectionModifiers(event))
+        isHandlingRightMouseDown = true
+        super.rightMouseDown(with: event)
+        isHandlingRightMouseDown = false
+    }
+
+    override func menu(for event: NSEvent) -> NSMenu? {
+        if !isHandlingRightMouseDown {
+            window?.makeFirstResponder(self)
+            onSelect?(selectionModifiers(event))
+        }
+        return super.menu(for: event)
     }
 
     override func mouseUp(with event: NSEvent) {

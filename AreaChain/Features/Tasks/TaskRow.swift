@@ -11,8 +11,8 @@ struct TaskRow: View {
     @Environment(\.daybookViewStyle) var style
 
     @State var editing = false
-    @State var hovering = false
-    @State private var isPointerHovered = false
+    @State private var isRowHovered = false
+    @State private var rowHoverTask: Task<Void, Never>? = nil
     @State private var isNoteHovered = false
     @State private var isNoteBubbleHovered = false
     @State private var isTitleTextHovered = false
@@ -34,7 +34,7 @@ struct TaskRow: View {
     @State var hoveredQuickActionTip: String? = nil
 
     var isHovered: Bool {
-        hovering || isPointerHovered || isNoteHovered || isNoteBubbleHovered || isTitleBubbleHovered
+        isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered
     }
 
     // MARK: - 现代标准构造器 (State + Action)
@@ -47,21 +47,37 @@ struct TaskRow: View {
 
     var body: some View {
         rowContent
-            .onHover { isHovering in
-                hovering = isHovering
-                if !isHovering {
-                    titleHoverTask?.cancel()
-                    titleHoverTask = nil
-                    noteHoverTask?.cancel()
-                    noteHoverTask = nil
-                    if !isTitleBubbleHovered {
+            .onHover { hovering in
+                rowHoverTask?.cancel()
+                if hovering {
+                    rowHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(120))
+                        guard !Task.isCancelled else { return }
                         withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = false
+                            isRowHovered = true
+                            isCommandPressed = NSEvent.modifierFlags.contains(.command)
                         }
                     }
-                    if !isNoteBubbleHovered {
+                } else {
+                    rowHoverTask = Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(80))
+                        guard !Task.isCancelled else { return }
                         withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isNoteHovered = false
+                            isRowHovered = false
+                        }
+                        titleHoverTask?.cancel()
+                        titleHoverTask = nil
+                        noteHoverTask?.cancel()
+                        noteHoverTask = nil
+                        if !isTitleBubbleHovered {
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isTitleTextHovered = false
+                            }
+                        }
+                        if !isNoteBubbleHovered {
+                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                isNoteHovered = false
+                            }
                         }
                     }
                 }
@@ -100,6 +116,8 @@ struct TaskRow: View {
             }
             .onDisappear {
                 stopObservingModifiers()
+                rowHoverTask?.cancel()
+                rowHoverTask = nil
                 titleHoverTask?.cancel()
                 titleHoverTask = nil
                 noteHoverTask?.cancel()
@@ -229,39 +247,74 @@ struct TaskRow: View {
 
     private var shouldShowTitleBubble: Bool {
         !style.isWorkspace && !editing && !pickingDay && !pickingTime
-            && (isTitleTextHovered || isPointerHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
+            && (isTitleTextHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
     }
 
     private var shouldShowNoteBubble: Bool {
         !style.isWorkspace && !editing && !pickingDay && !pickingTime && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
     }
 
+    private func selectImmediately(_ modifiers: TaskSelectionModifiers = []) {
+        rowHoverTask?.cancel()
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            isRowHovered = true
+        }
+        dispatch(.select(modifiers))
+    }
+
+    private func handleTitleHover(_ hovering: Bool) {
+        titleHoverTask?.cancel()
+        if hovering {
+            titleHoverTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isTitleTextHovered = true
+                }
+            }
+        } else {
+            titleHoverTask = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(100))
+                guard !Task.isCancelled else { return }
+                if !isTitleBubbleHovered {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = false
+                    }
+                }
+            }
+        }
+    }
+
     private var selectableContent: some View {
         HStack(alignment: .center, spacing: 5) {
             titleContent
                 .layoutPriority(1)
-                .overlay(TaskRowPointerRegion(
-                    id: state.id,
-                    onSelect: { dispatch(.select($0)) },
-                    onEdit: beginEdit,
-                    onHover: { isPointerHovered = $0 }
+                .overlay(
+                    TaskRowPointerRegion(
+                        id: state.id,
+                        onSelect: { selectImmediately($0) },
+                        onEdit: beginEdit,
+                        onHover: handleTitleHover
+                    )
+                    .padding(.top, -6)
+                    .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
+                    .accessibilityHidden(true)
                 )
-                .padding(.top, -6)
-                .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
-                .accessibilityHidden(true))
 
             Color.clear
                 .frame(maxWidth: .infinity)
                 .frame(height: 20)
                 .contentShape(Rectangle())
-                .overlay(TaskRowPointerRegion(
-                    id: state.id,
-                    onSelect: { dispatch(.select($0)) },
-                    onEdit: beginEdit
+                .overlay(
+                    TaskRowPointerRegion(
+                        id: state.id,
+                        onSelect: { selectImmediately($0) },
+                        onEdit: beginEdit
+                    )
+                    .padding(.top, -6)
+                    .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
+                    .accessibilityHidden(true)
                 )
-                .padding(.top, -6)
-                .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
-                .accessibilityHidden(true))
 
             if !style.isWorkspace, fullNoteText != nil {
                 noteIndicator
@@ -272,7 +325,7 @@ struct TaskRow: View {
         .modifier(TodoDragIfNeeded(payload: state.dragPayload))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction { dispatch(.select()) }
+        .accessibilityAction { selectImmediately() }
         .accessibilityAction(named: Text("row.edit"), beginEdit)
     }
 
@@ -404,28 +457,7 @@ struct TaskRow: View {
                 .truncationMode(.tail)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
-                .onHover { isHovering in
-                    titleHoverTask?.cancel()
-                    if isHovering {
-                        titleHoverTask = Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(300))
-                            guard !Task.isCancelled else { return }
-                            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                isTitleTextHovered = true
-                            }
-                        }
-                    } else {
-                        titleHoverTask = Task { @MainActor in
-                            try? await Task.sleep(for: .milliseconds(100))
-                            guard !Task.isCancelled else { return }
-                            if !isTitleBubbleHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    isTitleTextHovered = false
-                                }
-                            }
-                        }
-                    }
-                }
+                .onHover(perform: handleTitleHover)
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
                     if shouldShowTitleBubble {
                         TaskTitleBubble(

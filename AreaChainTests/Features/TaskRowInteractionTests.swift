@@ -259,6 +259,62 @@ struct TaskRowInteractionTests {
         #expect(trackingViews.count >= 2, "至少包含编辑与删除等快捷按钮的追踪区")
     }
 
+    @Test func taskRowPointerViewSelectsOnRightClickAndControlClick() throws {
+        let view = TaskRowPointerView()
+        var selectedModifiers: [TaskSelectionModifiers] = []
+        view.onSelect = { selectedModifiers.append($0) }
+
+        // 1. 常规左键点击
+        let normalLeftDown = try #require(NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 1,
+            clickCount: 1,
+            pressure: 1.0
+        ))
+        view.mouseDown(with: normalLeftDown)
+        #expect(selectedModifiers.count == 1)
+        #expect(selectedModifiers.last == [])
+
+        // 2. Control + 左键点击（macOS 辅助右键点击）
+        let controlLeftDown = try #require(NSEvent.mouseEvent(
+            with: .leftMouseDown,
+            location: .zero,
+            modifierFlags: [.control],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 2,
+            clickCount: 1,
+            pressure: 1.0
+        ))
+        view.mouseDown(with: controlLeftDown)
+        #expect(selectedModifiers.count == 2)
+
+        // 3. 物理右键点击（rightMouseDown）
+        let rightDown = try #require(NSEvent.mouseEvent(
+            with: .rightMouseDown,
+            location: .zero,
+            modifierFlags: [],
+            timestamp: 0,
+            windowNumber: 0,
+            context: nil,
+            eventNumber: 3,
+            clickCount: 1,
+            pressure: 1.0
+        ))
+        view.rightMouseDown(with: rightDown)
+        #expect(selectedModifiers.count == 3)
+
+        // 4. 上下文菜单弹出时请求 menu(for:)
+        _ = view.menu(for: rightDown)
+        #expect(selectedModifiers.count == 4)
+    }
+
     private func row(isDone: Bool = false, isSelected: Bool = false, probe: RowActionProbe) -> some View {
         TaskRow(state: TaskRowState(
             identity: TaskRowIdentityState(title: "测试任务", isDone: isDone),

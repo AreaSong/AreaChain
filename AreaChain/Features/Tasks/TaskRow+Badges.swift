@@ -147,8 +147,8 @@ extension TaskRow {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
-        .opacity(style.isWorkspace || hovering || state.isSelected ? 1.0 : 0.65)
-        .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+        .opacity(style.isWorkspace || isHovered || state.isSelected ? 1.0 : 0.65)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
     }
 
     var attachedTagNames: [String] {

@@ -28,6 +28,7 @@ struct DiarySummaryRow: View {
     @State private var isNoteBubbleHovered = false
     @State private var titleHoverTask: Task<Void, Never>? = nil
     @State private var noteHoverTask: Task<Void, Never>? = nil
+    @State private var rowHoverTask: Task<Void, Never>? = nil
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
 
@@ -122,26 +123,44 @@ struct DiarySummaryRow: View {
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .simultaneousGesture(
             TapGesture().onEnded {
+                rowHoverTask?.cancel()
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isHovered = true
+                }
                 onSelect?()
             }
         )
         .onHover { hovering in
-            isHovered = hovering
+            rowHoverTask?.cancel()
             if hovering {
-                isCommandPressed = NSEvent.modifierFlags.contains(.command)
-            } else {
-                titleHoverTask?.cancel()
-                titleHoverTask = nil
-                noteHoverTask?.cancel()
-                noteHoverTask = nil
-                if !isTitleBubbleHovered {
+                rowHoverTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(120))
+                    guard !Task.isCancelled else { return }
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isTitleTextHovered = false
+                        isHovered = true
+                        isCommandPressed = NSEvent.modifierFlags.contains(.command)
                     }
                 }
-                if !isNoteBubbleHovered {
+            } else {
+                rowHoverTask = Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(80))
+                    guard !Task.isCancelled else { return }
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                        isNoteHovered = false
+                        isHovered = false
+                    }
+                    titleHoverTask?.cancel()
+                    titleHoverTask = nil
+                    noteHoverTask?.cancel()
+                    noteHoverTask = nil
+                    if !isTitleBubbleHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = false
+                        }
+                    }
+                    if !isNoteBubbleHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = false
+                        }
                     }
                 }
             }
@@ -167,6 +186,8 @@ struct DiarySummaryRow: View {
         .onAppear { setupFlagsMonitor() }
         .onDisappear {
             tearDownFlagsMonitor()
+            rowHoverTask?.cancel()
+            rowHoverTask = nil
             titleHoverTask?.cancel()
             titleHoverTask = nil
             noteHoverTask?.cancel()
@@ -489,7 +510,13 @@ struct DiarySummaryRow: View {
     private func pointerRegion(isTitle: Bool) -> some View {
         DiaryRowPointerRegion(
             id: entry.id,
-            onSelect: { onSelect?() },
+            onSelect: {
+                rowHoverTask?.cancel()
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isHovered = true
+                }
+                onSelect?()
+            },
             onOpen: openWindow,
             onHover: { hovering in
                 guard isTitle else { return }

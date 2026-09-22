@@ -6,9 +6,9 @@ import SwiftUI
 extension TaskRow {
     @ViewBuilder
     var commandActionStrip: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 3) {
             // 左侧高频操作图标组：强制固定尺寸，彻底杜绝任何水平挤压或位移
-            HStack(spacing: 3) {
+            HStack(spacing: 2.5) {
                 // 1. 编辑标题 ✏️
                 commandStripButton(
                     icon: "pencil",
@@ -118,10 +118,11 @@ extension TaskRow {
                         RoundedRectangle(cornerRadius: 3.5, style: .continuous)
                             .fill(tip == L10n.string("row.quick.delete", locale: locale) ? Color.red.opacity(0.08) : DaybookTheme.ink.opacity(0.06))
                     )
+                    .fixedSize(horizontal: true, vertical: true)
                     .transition(.opacity)
             }
 
-            Spacer(minLength: 4)
+            Spacer(minLength: 2)
 
             // 10. 移入废纸篓 🗑（靠最右侧，危险操作）
             commandStripButton(
@@ -152,15 +153,26 @@ extension TaskRow {
             commandStripIcon(icon: icon, isButtonHovered: isButtonHovered, isActive: isActive, isDestructive: isDestructive)
         }
         .buttonStyle(.plain)
-        .frame(width: 24, height: 24)
+        .frame(width: 22, height: 22)
         .fixedSize()
         .help(LocalizedStringKey(key))
-        .background(
-            QuickActionHoverArea { hovering in
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 if hovering {
                     hoveredQuickActionTip = localizedText
                 } else if hoveredQuickActionTip == localizedText {
                     hoveredQuickActionTip = nil
+                }
+            }
+        }
+        .background(
+            QuickActionHoverArea { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    if hovering {
+                        hoveredQuickActionTip = localizedText
+                    } else if hoveredQuickActionTip == localizedText {
+                        hoveredQuickActionTip = nil
+                    }
                 }
             }
         )
@@ -182,15 +194,26 @@ extension TaskRow {
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .frame(width: 24, height: 24)
+        .frame(width: 22, height: 22)
         .fixedSize()
         .help(LocalizedStringKey(key))
-        .background(
-            QuickActionHoverArea { hovering in
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
                 if hovering {
                     hoveredQuickActionTip = localizedText
                 } else if hoveredQuickActionTip == localizedText {
                     hoveredQuickActionTip = nil
+                }
+            }
+        }
+        .background(
+            QuickActionHoverArea { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    if hovering {
+                        hoveredQuickActionTip = localizedText
+                    } else if hoveredQuickActionTip == localizedText {
+                        hoveredQuickActionTip = nil
+                    }
                 }
             }
         )
@@ -203,10 +226,10 @@ extension TaskRow {
         isDestructive: Bool = false
     ) -> some View {
         Image(systemName: icon)
-            .font(.system(size: 13.0, weight: .medium))
-            .frame(width: 24, height: 24)
+            .font(.system(size: 11.5, weight: .medium))
+            .frame(width: 22, height: 22)
             .background(
-                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                RoundedRectangle(cornerRadius: 4.0, style: .continuous)
                     .fill(
                         isDestructive
                             ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))

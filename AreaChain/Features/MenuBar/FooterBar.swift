@@ -2,7 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-/// 菜单栏底栏：左侧筛选抽屉入口、中间动态切换搜索框/已选胶囊流、右侧工作台与更多入口，结构稳定无抖动。
+/// 菜单栏底栏：左侧筛选抽屉入口、中间动态切换搜索框/已选胶囊流、右侧工作台与收起入口，结构稳定无抖动。
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
@@ -69,10 +69,15 @@ struct FooterBar: View {
             }
             .frame(maxWidth: .infinity)
 
-            // 3. 右侧稳定动作区
+            // 3. 右侧稳定动作区 (抽屉展开时显示清晰的收起 ✕ 按钮)
             HStack(spacing: 4) {
-                workspaceButton
-                moreMenu
+                if isFilterDrawerPresented.wrappedValue {
+                    dismissDrawerButton
+                    moreMenu
+                } else {
+                    workspaceButton
+                    moreMenu
+                }
             }
             .frame(width: 56, alignment: .trailing)
         }
@@ -121,10 +126,6 @@ struct FooterBar: View {
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .fill(Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(Color.clear, lineWidth: 0.6)
             )
             .contentShape(Rectangle())
         }
@@ -188,93 +189,85 @@ struct FooterBar: View {
 
     private var activeFilterChipsBar: some View {
         HStack(spacing: 4) {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 4) {
-                    if tab == .tasks {
-                        // 时间范围胶囊
-                        if currentFilter.dateScope != .all {
-                            chipItem(
-                                title: dateScopeTitle(currentFilter.dateScope),
-                                icon: "calendar",
-                                onSelect: { navigateToCategory(.date) },
-                                onRemove: { filter?.wrappedValue = currentFilter.withDateScope(.all) }
-                            )
-                        }
-
-                        // 优先级胶囊
-                        if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
-                            chipItem(
-                                title: priorityTitle(currentFilter),
-                                icon: "exclamationmark.3",
-                                onSelect: { navigateToCategory(.priority) },
-                                onRemove: {
-                                    var next = currentFilter.withPriorityScope(.all)
-                                    next.isHighPriorityOnly = false
-                                    filter?.wrappedValue = next
-                                }
-                            )
-                        }
-
-                        // 项目胶囊
-                        if let pid = currentFilter.projectID {
-                            let name = pid == BoardFilter.noneID
-                                ? L10n.string("filter.project.none", locale: locale)
-                                : (projects.first(where: { $0.id == pid })?.name ?? L10n.string("filter.project", locale: locale))
-                            chipItem(
-                                title: name,
-                                icon: "folder",
-                                onSelect: { navigateToCategory(.project) },
-                                onRemove: { filter?.wrappedValue = currentFilter.withProject(nil) }
-                            )
-                        }
-                    }
-
-                    // 标签胶囊
-                    if let tid = selectedTagID {
-                        if let tag = tags.first(where: { $0.id == tid }) {
-                            chipItem(
-                                title: "#" + tag.name,
-                                dotColor: DiaryTagChrome.color(for: tag.name),
-                                onSelect: { navigateToCategory(.tag) },
-                                onRemove: { clearTag() }
-                            )
-                        }
-                    }
-
-                    // 若没有任何已选胶囊且抽屉开启，提示用户点选
-                    if activeCount == 0 {
-                        Text(L10n.string("filter.label", locale: locale) + "...")
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted.opacity(0.7))
-                            .padding(.leading, 4)
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-
-            // 清空全部小按钮
             if activeCount > 0 {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        if tab == .tasks {
+                            if currentFilter.dateScope != .all {
+                                chipItem(
+                                    title: dateScopeTitle(currentFilter.dateScope),
+                                    icon: "calendar",
+                                    onSelect: { navigateToCategory(.date) },
+                                    onRemove: { filter?.wrappedValue = currentFilter.withDateScope(.all) }
+                                )
+                            }
+
+                            if currentFilter.priorityScope != .all || currentFilter.isHighPriorityOnly {
+                                chipItem(
+                                    title: priorityTitle(currentFilter),
+                                    icon: "exclamationmark.3",
+                                    onSelect: { navigateToCategory(.priority) },
+                                    onRemove: {
+                                        var next = currentFilter.withPriorityScope(.all)
+                                        next.isHighPriorityOnly = false
+                                        filter?.wrappedValue = next
+                                    }
+                                )
+                            }
+
+                            if let pid = currentFilter.projectID {
+                                let name = pid == BoardFilter.noneID
+                                    ? L10n.string("filter.project.none", locale: locale)
+                                    : (projects.first(where: { $0.id == pid })?.name ?? L10n.string("filter.project", locale: locale))
+                                chipItem(
+                                    title: name,
+                                    icon: "folder",
+                                    onSelect: { navigateToCategory(.project) },
+                                    onRemove: { filter?.wrappedValue = currentFilter.withProject(nil) }
+                                )
+                            }
+                        }
+
+                        if let tid = selectedTagID {
+                            if let tag = tags.first(where: { $0.id == tid }) {
+                                chipItem(
+                                    title: "#" + tag.name,
+                                    dotColor: DiaryTagChrome.color(for: tag.name),
+                                    onSelect: { navigateToCategory(.tag) },
+                                    onRemove: { clearTag() }
+                                )
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+
+                // 清空全部小按钮
                 Button(action: clearFilter) {
                     Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 8.5, weight: .bold))
+                        .font(.system(size: 8, weight: .bold))
                         .foregroundStyle(DaybookTheme.stamp.opacity(0.8))
                         .padding(4)
                         .background(Circle().fill(DaybookTheme.stamp.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
                 .help(L10n.string("filter.clear", locale: locale))
+            } else {
+                // 尚未选择任何条件时：清爽通透无假输入框，轻量提示
+                HStack(spacing: 3) {
+                    Image(systemName: "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                    Text(L10n.string("filter.label", locale: locale))
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                }
+                .padding(.leading, 4)
+                Spacer(minLength: 0)
             }
         }
-        .padding(.horizontal, 6)
+        .padding(.horizontal, 4)
         .frame(height: 26)
-        .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DaybookTheme.hoverFill.opacity(0.6))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .strokeBorder(DaybookTheme.rule.opacity(0.35), lineWidth: 0.6)
-        )
     }
 
     private func chipItem(
@@ -369,6 +362,19 @@ struct FooterBar: View {
     }
 
     // MARK: - 右侧稳定动作区
+
+    private var dismissDrawerButton: some View {
+        Button {
+            isFilterDrawerPresented.wrappedValue = false
+        } label: {
+            Image(systemName: "xmark")
+                .font(.system(size: 9.5, weight: .bold))
+                .modifier(FooterActionItemModifier(isFocused: false))
+        }
+        .buttonStyle(.plain)
+        .help(L10n.string("common.close", locale: locale))
+        .accessibilityLabel(L10n.string("common.close", locale: locale))
+    }
 
     private var workspaceButton: some View {
         Button {

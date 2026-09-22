@@ -29,7 +29,7 @@ enum FilterCategory: String, CaseIterable, Identifiable {
     }
 }
 
-/// 菜单栏小窗母子结构筛选抽屉：左侧目录大类 + 右侧精细选项/多级项目树，高度紧凑收敛，反选即取消。
+/// 菜单栏小窗母子结构筛选吸附托盘：左侧目录大类 + 右侧整齐通栏选项行，高度紧凑，与底栏浑然一体。
 struct MenuBarFilterDrawer: View {
     var tab: BoardTab = .tasks
     var filter: Binding<BoardFilter>? = nil
@@ -59,95 +59,34 @@ struct MenuBarFilterDrawer: View {
         tab == .tasks ? activeFilter.tagID : diaryFilterTagID?.wrappedValue
     }
 
-    private var isAnyFilterActive: Bool {
-        if tab == .tasks {
-            return activeFilter.isActive
-        }
-        return diaryFilterTagID?.wrappedValue != nil
-    }
-
     private var availableCategories: [FilterCategory] {
         tab == .tasks ? FilterCategory.allCases : [.tag]
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
+        HStack(spacing: 0) {
+            // 1. 左侧大类侧边栏
+            sidebarCategoryList
+                .frame(width: 96)
 
             Divider()
                 .overlay(DaybookTheme.rule.opacity(0.35))
-                .padding(.horizontal, 8)
 
-            HStack(spacing: 0) {
-                // 1. 左侧大类目录列表
-                sidebarCategoryList
-                    .frame(width: 104)
-
-                Divider()
-                    .overlay(DaybookTheme.rule.opacity(0.35))
-
-                // 2. 右侧当前类别细项详情
-                contentDetailArea
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-            }
-            .frame(height: 140)
+            // 2. 右侧通栏选项详情区
+            contentDetailArea
+                .frame(maxWidth: .infinity, alignment: .topLeading)
         }
-        .frame(width: DaybookTheme.popoverWidth - 20)
+        .frame(height: 126)
+        .frame(width: DaybookTheme.popoverWidth - 24)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.14), radius: 12, x: 0, y: -3)
+                .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: -4)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(DaybookTheme.rule.opacity(0.65), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: 9, style: .continuous)
+                .strokeBorder(DaybookTheme.rule.opacity(0.55), lineWidth: 0.8)
         )
-    }
-
-    // MARK: - 顶部操作栏
-
-    private var headerBar: some View {
-        HStack(alignment: .center, spacing: 6) {
-            Button(action: resetAllFilters) {
-                HStack(spacing: 3) {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.system(size: 8.5, weight: .bold))
-                    Text(L10n.string("filter.clear", locale: locale))
-                        .font(.system(size: 10, weight: .medium))
-                }
-                .foregroundStyle(isAnyFilterActive ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.4))
-                .padding(.horizontal, 5)
-                .padding(.vertical, 2.5)
-                .background(
-                    Capsule().fill(isAnyFilterActive ? DaybookTheme.stamp.opacity(0.10) : Color.clear)
-                )
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .disabled(!isAnyFilterActive)
-            .help(L10n.string("filter.clear", locale: locale))
-
-            Spacer(minLength: 0)
-
-            Capsule()
-                .fill(DaybookTheme.rule.opacity(0.5))
-                .frame(width: 22, height: 3)
-
-            Spacer(minLength: 0)
-
-            Button(action: onDismiss) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 8.5, weight: .bold))
-                    .foregroundStyle(DaybookTheme.muted)
-                    .frame(width: 20, height: 20)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .help(L10n.string("common.close", locale: locale))
-        }
-        .padding(.horizontal, 8)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
     }
 
     // MARK: - 左侧分类侧边栏
@@ -165,11 +104,11 @@ struct MenuBarFilterDrawer: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: cat.icon)
-                            .font(.system(size: 9.5, weight: isSelected ? .semibold : .regular))
-                            .frame(width: 13)
+                            .font(.system(size: 9, weight: isSelected ? .semibold : .regular))
+                            .frame(width: 12)
 
                         Text(cat.title(locale: locale))
-                            .font(.system(size: 10.5, weight: isSelected ? .semibold : .regular))
+                            .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
                             .lineLimit(1)
 
                         Spacer(minLength: 0)
@@ -177,13 +116,13 @@ struct MenuBarFilterDrawer: View {
                         if hasActiveFilter {
                             Circle()
                                 .fill(DaybookTheme.stamp)
-                                .frame(width: 4.5, height: 4.5)
+                                .frame(width: 4, height: 4)
                         }
                     }
                     .padding(.horizontal, 6)
-                    .padding(.vertical, 4.5)
+                    .padding(.vertical, 4)
                     .background(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        RoundedRectangle(cornerRadius: 5, style: .continuous)
                             .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
                     )
                     .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
@@ -195,15 +134,15 @@ struct MenuBarFilterDrawer: View {
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 4)
-        .background(DaybookTheme.ink.opacity(0.015))
+        .background(DaybookTheme.ink.opacity(0.02))
     }
 
-    // MARK: - 右侧详情区
+    // MARK: - 右侧详情区 (通栏条目整洁排布)
 
     @ViewBuilder
     private var contentDetailArea: some View {
         ScrollView(.vertical, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 2) {
                 switch activeCategory.wrappedValue {
                 case .date:
                     dateOptionsView
@@ -215,16 +154,16 @@ struct MenuBarFilterDrawer: View {
                     tagOptionsView
                 }
             }
-            .padding(8)
+            .padding(5)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    // MARK: - 1. 时间范围选项
+    // MARK: - 1. 时间范围 (通栏行)
 
     private var dateOptionsView: some View {
-        FlowTagLayout(spacing: 5) {
-            matrixPill(
+        VStack(spacing: 2) {
+            filterRowItem(
                 title: L10n.string("filter.date.today", locale: locale),
                 icon: "calendar",
                 isSelected: activeFilter.dateScope == .today
@@ -232,7 +171,7 @@ struct MenuBarFilterDrawer: View {
                 toggleDateScope(.today)
             }
 
-            matrixPill(
+            filterRowItem(
                 title: L10n.string("filter.date.recent", locale: locale),
                 icon: "calendar.badge.clock",
                 isSelected: activeFilter.dateScope == .recent
@@ -240,7 +179,7 @@ struct MenuBarFilterDrawer: View {
                 toggleDateScope(.recent)
             }
 
-            matrixPill(
+            filterRowItem(
                 title: L10n.string("filter.date.overdue", locale: locale),
                 icon: "clock.badge.exclamationmark",
                 isSelected: activeFilter.dateScope == .overdue
@@ -250,11 +189,11 @@ struct MenuBarFilterDrawer: View {
         }
     }
 
-    // MARK: - 2. 优先级选项
+    // MARK: - 2. 优先级 (通栏行)
 
     private var priorityOptionsView: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            matrixPill(
+        VStack(spacing: 2) {
+            filterRowItem(
                 title: L10n.string("filter.priority.high", locale: locale),
                 icon: "exclamationmark.3",
                 isSelected: activeFilter.priorityScope == .highPriorityOnly || (activeFilter.isHighPriorityOnly && activeFilter.priorityScope == .all)
@@ -262,47 +201,45 @@ struct MenuBarFilterDrawer: View {
                 togglePriorityScope(.highPriorityOnly)
             }
 
-            FlowTagLayout(spacing: 5) {
-                matrixPill(
-                    title: L10n.string("filter.priority.p1", locale: locale),
-                    dotColor: Color.red,
-                    isSelected: activeFilter.priorityScope == .p1
-                ) {
-                    togglePriorityScope(.p1)
-                }
+            filterRowItem(
+                title: L10n.string("filter.priority.p1", locale: locale),
+                dotColor: Color.red,
+                isSelected: activeFilter.priorityScope == .p1
+            ) {
+                togglePriorityScope(.p1)
+            }
 
-                matrixPill(
-                    title: L10n.string("filter.priority.p2", locale: locale),
-                    dotColor: Color.orange,
-                    isSelected: activeFilter.priorityScope == .p2
-                ) {
-                    togglePriorityScope(.p2)
-                }
+            filterRowItem(
+                title: L10n.string("filter.priority.p2", locale: locale),
+                dotColor: Color.orange,
+                isSelected: activeFilter.priorityScope == .p2
+            ) {
+                togglePriorityScope(.p2)
+            }
 
-                matrixPill(
-                    title: L10n.string("filter.priority.p3", locale: locale),
-                    dotColor: Color.blue,
-                    isSelected: activeFilter.priorityScope == .p3
-                ) {
-                    togglePriorityScope(.p3)
-                }
+            filterRowItem(
+                title: L10n.string("filter.priority.p3", locale: locale),
+                dotColor: Color.blue,
+                isSelected: activeFilter.priorityScope == .p3
+            ) {
+                togglePriorityScope(.p3)
+            }
 
-                matrixPill(
-                    title: L10n.string("filter.priority.p4", locale: locale),
-                    dotColor: Color.gray,
-                    isSelected: activeFilter.priorityScope == .p4
-                ) {
-                    togglePriorityScope(.p4)
-                }
+            filterRowItem(
+                title: L10n.string("filter.priority.p4", locale: locale),
+                dotColor: Color.gray,
+                isSelected: activeFilter.priorityScope == .p4
+            ) {
+                togglePriorityScope(.p4)
             }
         }
     }
 
-    // MARK: - 3. 项目层级树选项
+    // MARK: - 3. 项目层级树 (通栏行 + 缩进)
 
     private var projectOptionsView: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            matrixPill(
+        VStack(spacing: 2) {
+            filterRowItem(
                 title: L10n.string("filter.project.none", locale: locale),
                 icon: "folder",
                 count: unclassifiedCount,
@@ -313,7 +250,7 @@ struct MenuBarFilterDrawer: View {
 
             let outline = ProjectTree.outline(projects.filter { $0.deletedAt == nil })
             ForEach(outline) { row in
-                matrixPill(
+                filterRowItem(
                     title: row.name,
                     icon: "folder",
                     count: projectCounts[row.id],
@@ -326,16 +263,16 @@ struct MenuBarFilterDrawer: View {
         }
     }
 
-    // MARK: - 4. 标签选项
+    // MARK: - 4. 标签分类 (通栏行)
 
     private var tagOptionsView: some View {
-        FlowTagLayout(spacing: 5) {
+        VStack(spacing: 2) {
             ForEach(tags) { tag in
                 let isSelected = selectedTagID == tag.id
                 let color = DiaryTagChrome.color(for: tag.name)
                 let count = tagCounts[tag.id]
 
-                matrixPill(
+                filterRowItem(
                     title: "#" + tag.name,
                     dotColor: color,
                     count: count,
@@ -347,9 +284,9 @@ struct MenuBarFilterDrawer: View {
         }
     }
 
-    // MARK: - 单个胶囊组件
+    // MARK: - 通栏条目组件 (撑满整行，信息饱满层次分明)
 
-    private func matrixPill(
+    private func filterRowItem(
         title: String,
         icon: String? = nil,
         dotColor: Color? = nil,
@@ -359,47 +296,51 @@ struct MenuBarFilterDrawer: View {
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
-            HStack(spacing: 3) {
+            HStack(spacing: 4) {
                 if indent > 0 {
                     Spacer().frame(width: indent)
                 }
 
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 7.5, weight: .bold))
-                } else if let dotColor {
+                if let dotColor {
                     Circle()
                         .fill(dotColor)
                         .frame(width: 5, height: 5)
                 } else if let icon {
                     Image(systemName: icon)
-                        .font(.system(size: 8, weight: .medium))
+                        .font(.system(size: 8.5, weight: .medium))
+                        .frame(width: 12)
                 }
 
                 Text(title)
                     .font(.system(size: 10, weight: isSelected ? .semibold : .regular))
                     .lineLimit(1)
 
+                Spacer(minLength: 4)
+
                 if let count, count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 7.5, weight: .bold, design: .rounded))
+                        .font(.system(size: 8, weight: .bold, design: .rounded))
                         .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                }
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(DaybookTheme.stamp)
                 }
             }
             .padding(.horizontal, 6)
-            .padding(.vertical, 3)
+            .padding(.vertical, 3.5)
             .background(
-                Capsule()
-                    .fill(isSelected ? DaybookTheme.stamp.opacity(0.14) : DaybookTheme.hoverFill)
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
             )
             .overlay(
-                Capsule()
-                    .strokeBorder(
-                    isSelected ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.4),
-                    lineWidth: 0.6
-                )
+                RoundedRectangle(cornerRadius: 5, style: .continuous)
+                    .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.35) : Color.clear, lineWidth: 0.6)
             )
             .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -439,64 +380,11 @@ struct MenuBarFilterDrawer: View {
         selectTag(next)
     }
 
-    private func resetAllFilters() {
-        if tab == .tasks {
-            filter?.wrappedValue = BoardFilter()
-        } else {
-            diaryFilterTagID?.wrappedValue = nil
-        }
-    }
-
     private func selectTag(_ id: UUID?) {
         if tab == .tasks {
             filter?.wrappedValue = activeFilter.withTag(id)
         } else {
             diaryFilterTagID?.wrappedValue = id
-        }
-    }
-}
-
-// MARK: - 流式胶囊排版布局
-
-private struct FlowTagLayout: Layout {
-    var spacing: CGFloat = 4
-
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let width = proposal.width ?? 0
-        var height: CGFloat = 0
-        var currentX: CGFloat = 0
-        var currentY: CGFloat = 0
-        var currentRowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if currentX + size.width > width, currentX > 0 {
-                currentX = 0
-                currentY += currentRowHeight + spacing
-                currentRowHeight = 0
-            }
-            currentRowHeight = max(currentRowHeight, size.height)
-            currentX += size.width + spacing
-        }
-        height = currentY + currentRowHeight
-        return CGSize(width: width, height: height)
-    }
-
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        var currentX = bounds.minX
-        var currentY = bounds.minY
-        var currentRowHeight: CGFloat = 0
-
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            if currentX + size.width > bounds.maxX, currentX > bounds.minX {
-                currentX = bounds.minX
-                currentY += currentRowHeight + spacing
-                currentRowHeight = 0
-            }
-            subview.place(at: CGPoint(x: currentX, y: currentY), proposal: ProposedViewSize(size))
-            currentRowHeight = max(currentRowHeight, size.height)
-            currentX += size.width + spacing
         }
     }
 }

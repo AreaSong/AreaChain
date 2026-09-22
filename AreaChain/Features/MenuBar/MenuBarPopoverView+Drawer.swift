@@ -16,7 +16,7 @@ extension MenuBarPopoverView {
                 }
                 .transition(.opacity)
 
-            // 2. 手账风内部抽屉卡片：停靠在底栏上方
+            // 2. 无缝吸附在底栏上沿的连体托盘
             MenuBarFilterDrawer(
                 tab: tab,
                 filter: $boardFilter,
@@ -29,8 +29,8 @@ extension MenuBarPopoverView {
                 onDismiss: dismissFilterDrawer,
                 externalCategory: $filterCategory
             )
-            .padding(.horizontal, 10)
-            .padding(.bottom, 42)
+            .padding(.horizontal, 12)
+            .padding(.bottom, 44)
             .transition(
                 reduceMotion
                     ? .opacity
