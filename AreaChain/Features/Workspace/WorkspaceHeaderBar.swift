@@ -20,7 +20,7 @@ struct WorkspaceHeaderBar: View {
             WorkspaceHeaderInspectorToggle(navigation: navigation)
         }
         .padding(.horizontal, DaybookSpacing.page)
-        .frame(height: WorkspaceStyle.headerHeight)
+        .frame(height: WorkspaceLayout.headerHeight)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
             Divider()

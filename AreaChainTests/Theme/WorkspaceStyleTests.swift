@@ -81,7 +81,7 @@ struct WorkspaceStyleTests {
             let frame = title.convert(title.bounds, to: host)
             titleOrigins.append(frame.minY)
             let headerMarker = try #require(marker("header", in: host))
-            #expect(abs(headerMarker.bounds.height - WorkspaceStyle.headerHeight) < 1)
+            #expect(abs(headerMarker.bounds.height - WorkspaceLayout.headerHeight) < 1)
         }
         #expect(abs(titleOrigins[0] - titleOrigins[1]) < 1)
     }

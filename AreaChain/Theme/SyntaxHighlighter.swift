@@ -7,11 +7,11 @@ enum SyntaxHighlighter {
     static func color(for token: SyntaxTokenKind) -> NSColor {
         switch token {
         case .time:
-            return DaybookTheme.Syntax.timeNS
+            return DaybookPalette.Syntax.timeNS
         case .tag:
-            return DaybookTheme.Syntax.tagNS
+            return DaybookPalette.Syntax.tagNS
         case .priority(let isImportant, let isUrgent, _):
-            return DaybookTheme.Syntax.priorityColorNS(isImportant: isImportant, isUrgent: isUrgent)
+            return DaybookPalette.Syntax.priorityColorNS(isImportant: isImportant, isUrgent: isUrgent)
         case .note:
             return NSColor(DaybookTheme.muted)
         }

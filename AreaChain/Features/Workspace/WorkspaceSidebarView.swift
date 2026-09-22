@@ -75,7 +75,7 @@ struct WorkspaceSidebarView: View {
             tabRow(.residents)
         } header: {
             Text("sidebar.focus")
-                .padding(.top, WorkspaceStyle.sidebarTopInset)
+                .padding(.top, WorkspaceLayout.sidebarTopInset)
         }
     }
 

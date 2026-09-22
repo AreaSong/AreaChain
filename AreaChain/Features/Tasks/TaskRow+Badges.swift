@@ -14,17 +14,17 @@ extension TaskRow {
                 ForEach(displayTags, id: \.self) { tagName in
                     Text("#\(tagName)")
                         .font(style.isWorkspace ? WorkspaceStyle.countFont : .system(size: 9.5, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
+                        .foregroundStyle(DaybookPalette.Syntax.tag)
                         .lineLimit(1)
                         .padding(.horizontal, 4.5)
                         .frame(height: 18)
                         .background(
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .fill(DaybookTheme.Syntax.tagFill)
+                                .fill(DaybookPalette.Syntax.tagFill)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6)
+                                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
                         )
                         .help("#\(tagName)")
                 }
@@ -32,16 +32,16 @@ extension TaskRow {
                 if overflow > 0 {
                     Text("+\(overflow)")
                         .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
+                        .foregroundStyle(DaybookPalette.Syntax.tag)
                         .padding(.horizontal, 3.5)
                         .frame(height: 18)
                         .background(
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .fill(DaybookTheme.Syntax.tagBadgeFill)
+                                .fill(DaybookPalette.Syntax.tagBadgeFill)
                         )
                         .overlay(
                             RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                .stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6)
+                                .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
                         )
                         .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
                 }

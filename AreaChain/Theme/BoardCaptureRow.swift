@@ -28,7 +28,7 @@ struct BoardCaptureRow<Leading: View, Field: View, Trailing: View>: View {
                 .background(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .fill(fill)
-                        .shadow(color: focused && showsFocusShadow ? DaybookShadow.cardSubtle : .clear, radius: 2, y: 1)
+                        .shadow(color: focused && showsFocusShadow ? DaybookElevation.raised.color : .clear, radius: 2, y: 1)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: 8, style: .continuous)

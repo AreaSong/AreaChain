@@ -3,19 +3,19 @@ import SwiftUI
 extension QuadrantSlot {
     var themeColor: Color {
         switch self {
-        case .importantUrgent: DaybookTheme.Syntax.p1
-        case .important: DaybookTheme.Syntax.p2
-        case .urgent: DaybookTheme.Syntax.p3
-        case .rest: DaybookTheme.Syntax.p4
+        case .importantUrgent: DaybookPalette.Syntax.p1
+        case .important: DaybookPalette.Syntax.p2
+        case .urgent: DaybookPalette.Syntax.p3
+        case .rest: DaybookPalette.Syntax.p4
         }
     }
 
     var themeFill: Color {
         switch self {
-        case .importantUrgent: DaybookTheme.Syntax.p1Fill
-        case .important: DaybookTheme.Syntax.p2Fill
-        case .urgent: DaybookTheme.Syntax.p3Fill
-        case .rest: DaybookTheme.Syntax.p4Fill
+        case .importantUrgent: DaybookPalette.Syntax.p1Fill
+        case .important: DaybookPalette.Syntax.p2Fill
+        case .urgent: DaybookPalette.Syntax.p3Fill
+        case .rest: DaybookPalette.Syntax.p4Fill
         }
     }
 }

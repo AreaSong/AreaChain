@@ -64,7 +64,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
             content
         }
         .frame(
-            maxWidth: (style.isWorkspace && !fullWidth) ? WorkspaceStyle.maxContentWidth : .infinity,
+            maxWidth: (style.isWorkspace && !fullWidth) ? WorkspaceLayout.maxContentWidth : .infinity,
             maxHeight: .infinity,
             alignment: .topLeading
         )

@@ -118,9 +118,9 @@ struct LiveComposerPreviewHeader: View {
                             .lineLimit(1)
                             .padding(.horizontal, 5.5)
                             .padding(.vertical, 2.5)
-                            .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
-                            .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
-                            .foregroundStyle(DaybookTheme.Syntax.tag)
+                            .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
+                            .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+                            .foregroundStyle(DaybookPalette.Syntax.tag)
                             .help("#\(tag)")
                     }
                 } else if previewTags.count == 1, let singleTag = previewTags.first {
@@ -131,9 +131,9 @@ struct LiveComposerPreviewHeader: View {
                         .frame(maxWidth: 96, alignment: .leading)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2.5)
-                        .background(Capsule().fill(DaybookTheme.Syntax.tagFill))
-                        .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
-                        .foregroundStyle(DaybookTheme.Syntax.tag)
+                        .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
+                        .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+                        .foregroundStyle(DaybookPalette.Syntax.tag)
                         .help("#\(singleTag)")
                 } else if previewTags.count > 1 {
                     HStack(spacing: 2.5) {
@@ -144,9 +144,9 @@ struct LiveComposerPreviewHeader: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookTheme.Syntax.tagBadgeFill))
-                    .overlay(Capsule().stroke(DaybookTheme.Syntax.tagStroke, lineWidth: 0.6))
-                    .foregroundStyle(DaybookTheme.Syntax.tag)
+                    .background(Capsule().fill(DaybookPalette.Syntax.tagBadgeFill))
+                    .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+                    .foregroundStyle(DaybookPalette.Syntax.tag)
                     .help("共 \(previewTags.count) 个标签")
                 }
 
@@ -160,8 +160,8 @@ struct LiveComposerPreviewHeader: View {
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookTheme.Syntax.timeFill))
-                    .foregroundStyle(DaybookTheme.Syntax.time)
+                    .background(Capsule().fill(DaybookPalette.Syntax.timeFill))
+                    .foregroundStyle(DaybookPalette.Syntax.time)
                     .help(time)
                 }
             }
@@ -282,7 +282,7 @@ struct LiveComposerPreviewHeader: View {
                         HStack(spacing: 3) {
                             Text("#\(tag)")
                                 .font(.system(size: 11, weight: .medium))
-                                .foregroundStyle(DaybookTheme.Syntax.tag)
+                                .foregroundStyle(DaybookPalette.Syntax.tag)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
@@ -290,7 +290,7 @@ struct LiveComposerPreviewHeader: View {
                         .padding(.vertical, 3)
                         .background(
                             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(DaybookTheme.Syntax.tagSubtleFill)
+                                .fill(DaybookPalette.Syntax.tagSubtleFill)
                         )
                     }
                 }

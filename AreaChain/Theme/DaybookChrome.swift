@@ -10,6 +10,7 @@ enum DaybookMotion {
     static let checkmark: Animation = .spring(response: 0.24, dampingFraction: 0.68)
     static let strikethrough: Animation = .easeInOut(duration: 0.24)
     static let collapse: Animation = .spring(response: 0.34, dampingFraction: 0.82)
+    static let fade: Animation = .easeInOut(duration: 0.15)
 
     static func snappy(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : snappy
@@ -37,6 +38,10 @@ enum DaybookMotion {
 
     static func collapse(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : collapse
+    }
+
+    static func fade(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : fade
     }
 }
 
@@ -271,7 +276,7 @@ struct DaybookCardModifier: ViewModifier {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(borderStroke, lineWidth: 0.5)
             )
-            .shadow(color: isHovered && isHoverable ? DaybookShadow.cardHover : DaybookShadow.cardSubtle, radius: isHovered && isHoverable ? 2 : 0.5, y: 0.5)
+            .shadow(color: isHovered && isHoverable ? DaybookElevation.raised.color : DaybookElevation.raised.color, radius: isHovered && isHoverable ? 2 : 0.5, y: 0.5)
             .onHover { isHovered = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
     }

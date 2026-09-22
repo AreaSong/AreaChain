@@ -194,9 +194,9 @@ struct ModernCardModifier: ViewModifier {
             return DaybookTheme.stamp.opacity(0.18)
         }
         if isHovered {
-            return DaybookShadow.cardHover
+            return DaybookElevation.raised.color
         }
-        return DaybookShadow.cardSubtle
+        return DaybookElevation.raised.color
     }
 
     private var backgroundFill: Color {
@@ -283,7 +283,7 @@ struct DaybookGroupedCard<Content: View>: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                     .strokeBorder(WorkspaceStyle.border.opacity(0.75), lineWidth: 0.8)
             )
-            .shadow(color: DaybookShadow.cardSubtle.opacity(0.3), radius: 2, y: 1)
+            .shadow(color: DaybookElevation.raised.color.opacity(0.3), radius: 2, y: 1)
         } else {
             VStack(alignment: .leading, spacing: 4) {
                 content

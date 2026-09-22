@@ -282,20 +282,20 @@ struct SyntaxAutocompletePopup: View {
             if item.isCreation {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 10.5))
-                    .foregroundStyle(DaybookTheme.Syntax.tag)
+                    .foregroundStyle(DaybookPalette.Syntax.tag)
             } else {
                 Image(systemName: "tag.fill")
                     .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.Syntax.tag)
+                    .foregroundStyle(DaybookPalette.Syntax.tag)
             }
         case .priority:
             Image(systemName: "exclamationmark.circle.fill")
                 .font(.system(size: 10))
-                .foregroundStyle(DaybookTheme.Syntax.priorityColor(for: item.title))
+                .foregroundStyle(DaybookPalette.Syntax.priorityColor(for: item.title))
         case .time:
             Image(systemName: "clock.fill")
                 .font(.system(size: 10))
-                .foregroundStyle(DaybookTheme.Syntax.time)
+                .foregroundStyle(DaybookPalette.Syntax.time)
         }
     }
 
