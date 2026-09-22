@@ -68,10 +68,10 @@ struct PrivacyRenderingTests {
         let f = try await PrivacyFixture.make()
         defer { f.cleanup() }
         let tag = try f.tag()
-        let capture = DiaryCaptureSession(vault: f.vault)
+        let capture = BoardComposerSession(vault: f.vault)
         let secret = "QUICK_PRIVATE_DRAFT_SENTINEL"
-        capture.draft = DiaryComposerDraft(text: secret, selectedTagIDs: [tag.id], needsProtection: true)
-        let binding = Binding(get: { capture.draft }, set: { capture.draft = $0 })
+        capture.diary = BoardComposerDraft(text: secret, selectedTagIDs: [tag.id], needsProtection: true)
+        let binding = Binding(get: { capture.diary }, set: { capture.diary = $0 })
         let content = DiaryPage(todayKey: "2026-09-15", entries: [],
                                 options: DiaryPageOptions(composerDraft: binding, vault: f.vault))
         let window = host(content, fixture: f, scheme: .light, size: NSSize(width: 560, height: 500))
@@ -81,12 +81,12 @@ struct PrivacyRenderingTests {
             (NSWindow.didResignKeyNotification, window)
         ]
         for (name, object) in notifications {
-            try capture.draft.restore(vault: f.vault)
+            try capture.diary.restore(vault: f.vault)
             try await settle(window)
             #expect(collect(window.contentView!, as: NSTextView.self).contains { $0.string.contains(secret) })
             NotificationCenter.default.post(name: name, object: object)
             try await settle(window)
-            #expect(capture.draft.text.isEmpty && capture.draft.sealed != nil && f.vault.isUnlocked)
+            #expect(capture.diary.text.isEmpty && capture.diary.sealed != nil && f.vault.isUnlocked)
             #expect(collect(window.contentView!, as: NSTextView.self).allSatisfy { !$0.string.contains(secret) })
             #expect(collect(window.contentView!, as: DaybookAppKitTextView.self).isEmpty, "Focus notification: \(name.rawValue)")
         }

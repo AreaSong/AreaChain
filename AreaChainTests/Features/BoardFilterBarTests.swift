@@ -107,11 +107,11 @@ struct BoardFilterBarTests {
         let project = ProjectItem(name: "工程A", sortOrder: 0)
         project.id = projectID
 
-        var currentFilter = BoardFilter()
+        var filters = BoardFilters()
         let footer = FooterBar(
             tab: .tasks,
             toolbar: MenuBarToolbarState(),
-            filter: Binding(get: { currentFilter }, set: { currentFilter = $0 }),
+            filters: Binding(get: { filters }, set: { filters = $0 }),
             projects: [project],
             projectCounts: [projectID: 2],
             unclassifiedCount: 1

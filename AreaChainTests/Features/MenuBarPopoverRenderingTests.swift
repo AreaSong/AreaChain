@@ -23,12 +23,11 @@ struct MenuBarPopoverRenderingTests {
     }
 
     @Test func emptySearchDoesNotSubmitTheCaptureDraftOnCommandReturn() async throws {
-        let previousDraft = CaptureSession.shared.draft
-        CaptureSession.shared.draft = "这条草稿不应被搜索快捷键提交"
-        defer { CaptureSession.shared.draft = previousDraft }
+        let composer = BoardComposerSession()
+        composer.tasks.text = "这条草稿不应被搜索快捷键提交"
         let container = try fixture()
         let toolbar = MenuBarToolbarState()
-        let window = host(toolbar: toolbar, container: container)
+        let window = host(toolbar: toolbar, container: container, composer: composer)
         defer { window.contentView = nil; window.orderOut(nil) }
         let view = try #require(window.contentView)
         try await settle(view)
@@ -39,7 +38,7 @@ struct MenuBarPopoverRenderingTests {
             isARepeat: false, keyCode: 36
         ))
         #expect(window.performKeyEquivalent(with: event))
-        #expect(CaptureSession.shared.draft == "这条草稿不应被搜索快捷键提交")
+        #expect(composer.tasks.text == "这条草稿不应被搜索快捷键提交")
         #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 4)
         #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
     }
@@ -398,9 +397,10 @@ struct MenuBarPopoverRenderingTests {
 
     private func host(
         toolbar: MenuBarToolbarState, container: ModelContainer,
+        composer: BoardComposerSession? = nil,
         locale: String = "zh-Hans", scheme: ColorScheme = .light
     ) -> NSWindow {
-        host(MenuBarPopoverView(toolbar: toolbar, diaryCapture: DiaryCaptureSession()), container: container, locale: locale, scheme: scheme)
+        host(MenuBarPopoverView(toolbar: toolbar, composer: composer ?? BoardComposerSession()), container: container, locale: locale, scheme: scheme)
     }
 
     private func host<Content: View>(

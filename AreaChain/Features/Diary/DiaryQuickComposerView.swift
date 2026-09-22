@@ -62,9 +62,15 @@ struct DiaryQuickComposerView: View {
         let focused = focused.wrappedValue
         let strokeColor = focused ? DaybookTheme.stamp.opacity(0.48) : DaybookTheme.rule.opacity(0.45)
 
-        return HStack(alignment: .center, spacing: 8) {
+        return BoardCaptureRow(
+            focused: focused,
+            fill: focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.025),
+            stroke: strokeColor,
+            locksHeight: true,
+            showsFocusShadow: true
+        ) {
             statusIcon
-
+        } field: {
             DaybookTextField(
                 text: $text,
                 placeholder: L10n.string("diary.quick.placeholder", locale: locale),
@@ -77,48 +83,37 @@ struct DiaryQuickComposerView: View {
                 allowsShiftNewline: false
             )
             .accessibilityLabel("diary.quick.input")
-
-            if let onOpenWindow {
-                Button {
-                    guard !hasMarkedText else { return }
-                    onOpenWindow()
-                } label: {
-                    Image(systemName: "arrow.up.forward.square")
-                        .font(.system(size: 11.5, weight: .semibold))
-                        .frame(width: 22, height: 22)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                                .fill(isPopoutHovered ? DaybookTheme.ink.opacity(0.08) : .clear)
-                        )
+        } trailing: {
+            HStack(spacing: 8) {
+                if let onOpenWindow {
+                    Button {
+                        guard !hasMarkedText else { return }
+                        onOpenWindow()
+                    } label: {
+                        Image(systemName: "arrow.up.forward.square")
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .frame(width: 22, height: 22)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                                    .fill(isPopoutHovered ? DaybookTheme.ink.opacity(0.08) : .clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(isPopoutHovered ? DaybookTheme.ink : DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
+                    .onHover { isPopoutHovered = $0 }
+                    .help(canSubmit ? "diary.window.continue" : "diary.window.new")
+                    .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
+                    .background(SyntaxViewAnchor("syntax.diary.popout"))
                 }
-                .buttonStyle(.plain)
-                .foregroundStyle(isPopoutHovered ? DaybookTheme.ink : DaybookTheme.muted.opacity(canSubmit ? 0.85 : 0.45))
-                .onHover { isPopoutHovered = $0 }
-                .help(canSubmit ? "diary.window.continue" : "diary.window.new")
-                .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
-                .background(SyntaxViewAnchor("syntax.diary.popout"))
-            }
 
-            CommandReturnButton(
-                enabled: canSubmit,
-                label: "diary.quick.save",
-                help: "diary.quick.save.help",
-                action: submitCompact
-            )
+                CommandReturnButton(
+                    enabled: canSubmit,
+                    label: "diary.quick.save",
+                    help: "diary.quick.save.help",
+                    action: submitCompact
+                )
+            }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .frame(maxWidth: .infinity)
-        .frame(height: 34)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.025))
-                .shadow(color: focused ? DaybookShadow.cardSubtle : .clear, radius: 2, y: 1)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(strokeColor, lineWidth: focused ? 0.9 : 0.6)
-        )
         .background(KeyWindowHost { hostWindow = $0 })
         .background(SyntaxViewAnchor("syntax.diary.composer"))
         .onChange(of: text) { _, newText in

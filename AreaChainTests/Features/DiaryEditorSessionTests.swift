@@ -8,7 +8,7 @@ struct DiaryEditorSessionTests {
     @Test func draftStaysInMemoryUntilSavedAndSubsequentSavesKeepIdentity() throws {
         let container = try fixture()
         let context = container.mainContext
-        let draft = DiaryComposerDraft(text: "长文草稿 #工作")
+        let draft = BoardComposerDraft(text: "长文草稿 #工作")
         let session = DiaryEditorSession(source: .draft(draft, dayKey: "2026-09-13"), context: context)
         #expect(session.entryID == nil && session.hasUnsavedChanges)
         #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
@@ -29,7 +29,7 @@ struct DiaryEditorSessionTests {
         let container = try fixture()
         let context = container.mainContext
         var rejectsSave = true
-        let session = DiaryEditorSession(source: .draft(DiaryComposerDraft(text: "不能丢失 #新标签"), dayKey: "2026-09-13"),
+        let session = DiaryEditorSession(source: .draft(BoardComposerDraft(text: "不能丢失 #新标签"), dayKey: "2026-09-13"),
                                          context: context, commit: { ctx in
             if rejectsSave { throw CocoaError(.fileWriteNoPermission) }
             try ctx.save()
@@ -113,14 +113,14 @@ struct DiaryEditorSessionTests {
         let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now)
         container.mainContext.insert(tag)
         try container.mainContext.save()
-        let draft = DiaryComposerDraft(text: "synthetic secret", selectedTagIDs: [tag.id])
+        let draft = BoardComposerDraft(text: "synthetic secret", selectedTagIDs: [tag.id])
         let session = DiaryEditorSession(source: .draft(draft, dayKey: "2026-09-13"), context: container.mainContext)
         #expect(session.isSensitive && !session.canRevealContent)
     }
 
     @Test func closingRequiresSuccessfulSaveOrExplicitDiscard() throws {
         let container = try fixture()
-        let draft = DiaryComposerDraft(text: "关闭前需要保存")
+        let draft = BoardComposerDraft(text: "关闭前需要保存")
         let session = DiaryEditorSession(source: .draft(draft, dayKey: "2026-09-13"), context: container.mainContext,
                                          commit: { _ in throw CocoaError(.fileWriteNoPermission) })
         #expect(!DiaryWindowController.canClose(session, choice: .cancel))

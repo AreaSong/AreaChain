@@ -6,8 +6,8 @@ struct DiaryPageOptions {
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
-    var externalSelectedTagID: Binding<UUID?>? = nil
-    var composerDraft: Binding<DiaryComposerDraft>? = nil
+    var externalFilter: Binding<BoardFilter>? = nil
+    var composerDraft: Binding<BoardComposerDraft>? = nil
     var vault: PrivacyVault? = nil
 }
 
@@ -23,17 +23,17 @@ struct DiaryPage: View {
     var usesSharedDiaryDay: Bool = false
     var maxScrollHeight: CGFloat? = nil
     var showsPageHeader: Bool = true
-    var externalSelectedTagID: Binding<UUID?>? = nil
-    @Binding private var externalComposerDraft: DiaryComposerDraft
+    var externalFilter: Binding<BoardFilter>? = nil
+    @Binding private var externalComposerDraft: BoardComposerDraft
     private let usesExternalComposerDraft: Bool
     private let vault: PrivacyVault
 
     @Query(sort: \TagItem.sortOrder) var allTags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
-    @State private var localSelectedTagID: UUID? = nil
     @State private var searchQuery: String = ""
-    @State private var localComposerDraft = DiaryComposerDraft()
+    @State private var localFilter = BoardFilter()
+    @State private var localComposerDraft = BoardComposerDraft()
     @State private var pendingTrash: PendingTrash?
     @State private var composerFocused = false
     @State private var searchFocused = false
@@ -56,8 +56,8 @@ struct DiaryPage: View {
         self.usesSharedDiaryDay = options.usesSharedDiaryDay
         self.maxScrollHeight = options.maxScrollHeight
         self.showsPageHeader = options.showsPageHeader
-        self.externalSelectedTagID = options.externalSelectedTagID
-        self._externalComposerDraft = options.composerDraft ?? .constant(DiaryComposerDraft())
+        self.externalFilter = options.externalFilter
+        self._externalComposerDraft = options.composerDraft ?? .constant(BoardComposerDraft())
         self.usesExternalComposerDraft = options.composerDraft != nil
         self.vault = options.vault ?? .shared
     }
@@ -68,7 +68,7 @@ struct DiaryPage: View {
         showsComposer: Bool = true,
         usesSharedDiaryDay: Bool = false,
         showsPageHeader: Bool = true,
-        externalSelectedTagID: Binding<UUID?>? = nil
+        externalFilter: Binding<BoardFilter>? = nil
     ) {
         self.init(
             todayKey: todayKey,
@@ -77,7 +77,7 @@ struct DiaryPage: View {
                 showsComposer: showsComposer,
                 usesSharedDiaryDay: usesSharedDiaryDay,
                 showsPageHeader: showsPageHeader,
-                externalSelectedTagID: externalSelectedTagID
+                externalFilter: externalFilter
             )
         )
     }
@@ -86,15 +86,15 @@ struct DiaryPage: View {
         allTags.filter { $0.deletedAt == nil }
     }
 
-    private var selectedTagBinding: Binding<UUID?> { externalSelectedTagID ?? $localSelectedTagID }
+    private var filterBinding: Binding<BoardFilter> { externalFilter ?? $localFilter }
 
     private var selectedTagID: UUID? {
-        get { selectedTagBinding.wrappedValue }
-        nonmutating set { selectedTagBinding.wrappedValue = newValue }
+        get { filterBinding.wrappedValue.tagID }
+        nonmutating set { filterBinding.wrappedValue = filterBinding.wrappedValue.withTag(newValue) }
     }
 
     // 外部草稿必须是动态属性，否则子编辑器会更新，父级的锁定分支却可能没有刷新。
-    private var draftBinding: Binding<DiaryComposerDraft> {
+    private var draftBinding: Binding<BoardComposerDraft> {
         usesExternalComposerDraft ? $externalComposerDraft : $localComposerDraft
     }
 
@@ -178,7 +178,7 @@ struct DiaryPage: View {
             tearDownKeyMonitor()
         }
         .confirmationDialog("privacy.draft.discard.confirm", isPresented: $confirmsDiscardDraft) {
-            Button("privacy.draft.discard", role: .destructive) { draftBinding.wrappedValue = DiaryComposerDraft() }
+            Button("privacy.draft.discard", role: .destructive) { draftBinding.wrappedValue = BoardComposerDraft() }
             Button("alert.cancel", role: .cancel) {}
         }
         .onAppear {
@@ -446,7 +446,7 @@ struct DiaryPage: View {
                 text: textToSave, dayKey: todayKey, selectedTagIDs: effectiveTagIDs,
                 tags: Array(allTags), context: modelContext
             ) else { composerStatus = "diary.window.save.failed"; return }
-            draftBinding.wrappedValue = DiaryComposerDraft()
+            draftBinding.wrappedValue = BoardComposerDraft()
             composerStatus = "diary.window.saved"
             composerFocused = true
         }
@@ -467,10 +467,10 @@ struct DiaryPage: View {
     private func detachDraft() {
         composerFocused = false
         if draftText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            DiaryWindows.shared.openDraft(DiaryComposerDraft(), dayKey: todayKey, context: modelContext)
+            DiaryWindows.shared.openDraft(BoardComposerDraft(), dayKey: todayKey, context: modelContext)
         } else {
             DiaryWindows.shared.openDraft(draftBinding.wrappedValue, dayKey: todayKey, context: modelContext) {
-                draftBinding.wrappedValue = DiaryComposerDraft()
+                draftBinding.wrappedValue = BoardComposerDraft()
                 composerStatus = nil
             }
         }

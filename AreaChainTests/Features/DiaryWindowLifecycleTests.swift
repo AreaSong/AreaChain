@@ -30,14 +30,14 @@ struct DiaryWindowLifecycleTests {
 
     @Test func transferredDraftBecomesSameRecordWithoutDuplicateWindow() throws {
         let container = try fixture()
-        let capture = DiaryCaptureSession()
-        capture.draft.text = "转到小窗继续写 #工作"
-        let original = capture.draft
+        let capture = BoardComposerSession()
+        capture.diary.text = "转到小窗继续写 #工作"
+        let original = capture.diary
         let manager = DiaryWindows()
         let controller = manager.openDraft(original, dayKey: "2026-09-13", context: container.mainContext,
-                                          activate: false) { capture.draft = DiaryComposerDraft() }
+                                          activate: false) { capture.diary = BoardComposerDraft() }
         defer { controller.window.close() }
-        #expect(capture.draft.text.isEmpty && capture.draft.id != original.id)
+        #expect(capture.diary.text.isEmpty && capture.diary.id != original.id)
         #expect(controller.session.text == original.text)
         #expect(try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
         #expect(manager.openDraft(original, dayKey: "2026-09-13", context: container.mainContext, activate: false) === controller)
@@ -76,7 +76,7 @@ struct DiaryWindowLifecycleTests {
     @Test func nativeCloseSheetCanCancelThenSaveWithoutLosingText() async throws {
         let container = try fixture()
         let manager = DiaryWindows()
-        let controller = manager.openDraft(DiaryComposerDraft(text: "关闭确认中的草稿"), dayKey: "2026-09-13",
+        let controller = manager.openDraft(BoardComposerDraft(text: "关闭确认中的草稿"), dayKey: "2026-09-13",
                                           context: container.mainContext, activate: false)
         defer { controller.window.close() }
         controller.window.performClose(nil)

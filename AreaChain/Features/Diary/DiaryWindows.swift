@@ -20,7 +20,7 @@ final class DiaryWindows {
 
     @discardableResult
     func openDraft(
-        _ draft: DiaryComposerDraft, dayKey: String, context: ModelContext,
+        _ draft: BoardComposerDraft, dayKey: String, context: ModelContext,
         activate: Bool = true, onTransferred: () -> Void = {}
     ) -> DiaryWindowController {
         let existing = controllers.values.first { $0.session.sourceDraftID == draft.id }
@@ -38,7 +38,7 @@ final class DiaryWindows {
         return controller
     }
 
-    func confirmTermination(capture: DiaryCaptureSession, context: ModelContext) -> Bool {
+    func confirmTermination(composer: BoardComposerSession, context: ModelContext) -> Bool {
         for controller in controllers.values where controller.session.hasUnsavedChanges {
             guard controller.window.attachedSheet == nil else {
                 controller.window.makeKeyAndOrderFront(nil)
@@ -48,11 +48,11 @@ final class DiaryWindows {
             let response = DiaryWindowController.closeAlert().runModal()
             guard DiaryWindowController.canClose(controller.session, choice: DiaryWindowController.choice(response)) else { return false }
         }
-        guard capture.draft.hasContent else { return true }
-        let session = DiaryEditorSession(source: .draft(capture.draft, dayKey: DayClock.shared.todayKey), context: context)
+        guard composer.diary.hasContent else { return true }
+        let session = DiaryEditorSession(source: .draft(composer.diary, dayKey: DayClock.shared.todayKey), context: context)
         let response = DiaryWindowController.closeAlert().runModal()
         guard DiaryWindowController.canClose(session, choice: DiaryWindowController.choice(response)) else { return false }
-        capture.draft = DiaryComposerDraft()
+        composer.diary = BoardComposerDraft()
         return true
     }
 }

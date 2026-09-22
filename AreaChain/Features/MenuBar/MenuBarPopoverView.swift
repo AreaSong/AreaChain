@@ -2,20 +2,6 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-enum BoardTab: String, CaseIterable, Identifiable {
-    case tasks
-    case diary
-
-    var id: String { rawValue }
-
-    var title: LocalizedStringKey {
-        switch self {
-        case .tasks: "tab.tasks"
-        case .diary: "tab.diary"
-        }
-    }
-}
-
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -29,7 +15,8 @@ struct MenuBarPopoverView: View {
     @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
 
     @State var tab: BoardTab = .tasks
-    @Bindable private var capture = CaptureSession.shared
+    @State var filters = BoardFilters()
+    @Bindable private var composer: BoardComposerSession
     @State private var dayTick = Date()
     @State var captureFocused = false
     @State private var focusedTaskID: UUID? = nil
@@ -38,17 +25,13 @@ struct MenuBarPopoverView: View {
     @State var toolbar: MenuBarToolbarState
     @State var hostWindow: NSWindow?
     @State var tabKeyMonitor: Any? = nil
-    @State var boardFilter = BoardFilter()
-    @State var diaryFilterTagID: UUID? = nil
     @State var isFilterDrawerPresented = false
     @State var hoverOpenWorkItem: DispatchWorkItem? = nil
     @State var hoverCloseWorkItem: DispatchWorkItem? = nil
     @State var filterCategory: FilterCategory = .date
-    @Bindable private var diaryCapture: DiaryCaptureSession
-
-    init(toolbar: MenuBarToolbarState? = nil, diaryCapture: DiaryCaptureSession? = nil) {
+    init(toolbar: MenuBarToolbarState? = nil, composer: BoardComposerSession? = nil) {
         _toolbar = State(initialValue: toolbar ?? MenuBarToolbarState())
-        self.diaryCapture = diaryCapture ?? .shared
+        self.composer = composer ?? .shared
     }
 
     private var todayKey: String {
@@ -137,7 +120,7 @@ struct MenuBarPopoverView: View {
                     if toolbar.isSearching {
                         MenuBarSearchResults(
                             query: toolbar.searchText,
-                            filter: tab == .tasks ? boardFilter : BoardFilter(tagID: diaryFilterTagID),
+                            filter: filters.selection(for: tab),
                             onClearSearch: { toolbar.clearSearch() },
                             onClearFilter: clearCurrentFilter
                         )
@@ -158,8 +141,7 @@ struct MenuBarPopoverView: View {
                 FooterBar(
                     tab: tab,
                     toolbar: toolbar,
-                    filter: $boardFilter,
-                    diaryFilterTagID: $diaryFilterTagID,
+                    filters: $filters,
                     projects: projects.filter { $0.deletedAt == nil },
                     projectCounts: taskProjectCounts,
                     unclassifiedCount: unclassifiedTodosCount,
@@ -203,7 +185,7 @@ struct MenuBarPopoverView: View {
                         withAnimation(DaybookMotion.interactive(reduceMotion)) {
                             showingSyntaxHelp = false
                         }
-                        capture.draft = snippet
+                        setTaskText(snippet)
                         captureFocused = true
                     }
                 )
@@ -255,7 +237,7 @@ struct MenuBarPopoverView: View {
     private var tasksView: some View {
         VStack(alignment: .leading, spacing: 6) {
             CaptureField(
-                text: $capture.draft,
+                text: taskText,
                 focus: $captureFocused,
                 onTodo: addTodo,
                 onDiary: addDiary,
@@ -276,7 +258,7 @@ struct MenuBarPopoverView: View {
                         },
                         isKeyboardEnabled: { !toolbar.searchIsFocused && !toolbar.isSearching && !toolbar.isFiltering }
                     ),
-                    externalFilter: $boardFilter
+                    externalFilter: taskFilter
                 )
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -291,8 +273,8 @@ struct MenuBarPopoverView: View {
             options: DiaryPageOptions(
                 showsComposer: true,
                 showsPageHeader: false,
-                externalSelectedTagID: $diaryFilterTagID,
-                composerDraft: $diaryCapture.draft
+                externalFilter: diaryFilter,
+                composerDraft: $composer.diary
             )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -404,9 +386,32 @@ struct MenuBarPopoverView: View {
         showingSyntaxHelp = true
     }
 
+    private var taskText: Binding<String> {
+        Binding(get: { composer.tasks.text }, set: { setTaskText($0) })
+    }
+
+    private var taskFilter: Binding<BoardFilter> {
+        Binding(
+            get: { filters.tasks },
+            set: { filters.write($0, for: .tasks) }
+        )
+    }
+
+    private var diaryFilter: Binding<BoardFilter> {
+        Binding(
+            get: { filters.diary },
+            set: { filters.write($0, for: .diary) }
+        )
+    }
+
+    private func setTaskText(_ text: String) {
+        var draft = composer.tasks
+        draft.text = text
+        composer.tasks = draft
+    }
+
     private func clearCurrentFilter() {
-        if tab == .tasks { boardFilter = BoardFilter() }
-        else { diaryFilterTagID = nil }
+        filters.clear(tab)
     }
 
     private func handleSyntaxTokenSelection(_ token: String) {
@@ -431,7 +436,7 @@ struct MenuBarPopoverView: View {
         }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            let draft = capture.draft
+            let draft = composer.tasks.text
             let prefix = (draft.isEmpty || draft.hasSuffix(" ") || draft.hasSuffix("\n")) ? "" : " "
             if token == "⌘↩" {
                 if !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -440,10 +445,10 @@ struct MenuBarPopoverView: View {
                     captureFocused = true
                 }
             } else if token == "⇧↩" {
-                capture.draft = draft + "\n"
+                setTaskText(draft + "\n")
                 captureFocused = true
             } else {
-                capture.draft = draft + prefix + token
+                setTaskText(draft + prefix + token)
                 captureFocused = true
             }
         }
@@ -464,25 +469,25 @@ struct MenuBarPopoverView: View {
 
     private func addTodo() {
         if showingSyntaxHelp { showingSyntaxHelp = false }
-        guard DayBoardMutations.addCapturedTodo(text: capture.draft, dayKey: todayKey, context: modelContext) else { return }
-        capture.draft = ""
+        guard DayBoardMutations.addCapturedTodo(text: composer.tasks.text, dayKey: todayKey, context: modelContext) else { return }
+        setTaskText("")
     }
 
     private func addDiary() {
         if showingSyntaxHelp { showingSyntaxHelp = false }
-        let text = capture.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let text = composer.tasks.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         let context = modelContext
         let dayKey = todayKey
         do {
             let requiresUnlock = try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context)
             PrivacyAccess.perform(requiresUnlock: requiresUnlock) {
-                guard capture.draft.trimmingCharacters(in: .whitespacesAndNewlines) == text,
+                guard composer.tasks.text.trimmingCharacters(in: .whitespacesAndNewlines) == text,
                       try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context) == requiresUnlock else {
                     throw PrivacyError.staleOperation
                 }
                 guard DayBoardMutations.addDiary(text: text, dayKey: dayKey, context: context) else { return }
-                capture.draft = ""
+                setTaskText("")
                 withAnimation(DaybookMotion.animation(reduceMotion)) { tab = .diary }
             }
         } catch {

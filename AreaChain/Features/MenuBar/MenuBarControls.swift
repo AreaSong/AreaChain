@@ -37,7 +37,7 @@ struct DaybookQuietTabBar: View {
                 selection = item
             }
         } label: {
-            Text(item.title)
+            Text(LocalizedStringKey(item.titleKey))
                 .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                 .frame(minWidth: 36)
                 .padding(.horizontal, 12)
@@ -56,7 +56,7 @@ struct DaybookQuietTabBar: View {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(item.title)
+        .accessibilityLabel(LocalizedStringKey(item.titleKey))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .help(item == .tasks ? Text("任务 (⌘←)") : Text("手记 (⌘→)"))
     }

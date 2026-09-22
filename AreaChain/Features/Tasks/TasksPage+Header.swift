@@ -65,7 +65,7 @@ extension TasksPage {
             HStack(spacing: 4) {
                 if effectiveFilter.dateScope != DateFilterScope.all {
                     activeFilterTag(
-                        title: dateScopeTitle(effectiveFilter.dateScope),
+                        title: effectiveFilter.dateScope.title(locale: locale),
                         icon: "calendar"
                     ) {
                         updateFilter(effectiveFilter.withDateScope(DateFilterScope.all))
@@ -131,15 +131,6 @@ extension TasksPage {
         .background(Capsule().fill(color.opacity(0.12)))
         .overlay(Capsule().strokeBorder(color.opacity(0.4), lineWidth: 0.7))
         .foregroundStyle(color)
-    }
-
-    private func dateScopeTitle(_ scope: DateFilterScope) -> String {
-        switch scope {
-        case .all: return L10n.string("filter.all", locale: locale)
-        case .today: return L10n.string("filter.date.today", locale: locale)
-        case .recent: return L10n.string("filter.date.recent", locale: locale)
-        case .overdue: return L10n.string("filter.date.overdue", locale: locale)
-        }
     }
 
     private func updateFilter(_ next: BoardFilter) {

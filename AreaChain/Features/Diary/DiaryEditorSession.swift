@@ -7,7 +7,7 @@ import SwiftData
 final class DiaryEditorSession {
     enum Source {
         case entry(DiaryEntry)
-        case draft(DiaryComposerDraft, dayKey: String)
+        case draft(BoardComposerDraft, dayKey: String)
     }
 
     enum Issue: String {

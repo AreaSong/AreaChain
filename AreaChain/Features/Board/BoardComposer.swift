@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-struct DiaryComposerDraft {
+/// 任务捕获和手记快速输入共用的草稿。任务只用正文；手记另外带标签选择和锁定封存。
+struct BoardComposerDraft {
     var id = UUID()
     var text = ""
     var selectedTagIDs: Set<UUID> = []
@@ -23,17 +24,23 @@ struct DiaryComposerDraft {
     }
 }
 
-/// 只在本次运行保留快速草稿；收起菜单栏不等于主动丢弃，也不把未保存正文写到偏好中。
+/// 本次运行里的任务草稿和手记草稿。收起菜单栏不丢弃，也不写入偏好。锁定只封存手记草稿。
 @Observable @MainActor
-final class DiaryCaptureSession {
-    static let shared = DiaryCaptureSession()
-    var draft = DiaryComposerDraft()
+final class BoardComposerSession {
+    static let shared = BoardComposerSession()
+    var tasks = BoardComposerDraft()
+    var diary = BoardComposerDraft()
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
 
     init(vault: PrivacyVault? = nil) {
         let vault = vault ?? .shared
         observers.append(NotificationCenter.default.addObserver(forName: .privacyWillLock, object: vault, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated { try? self?.draft.seal(vault: vault) }
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                var diary = self.diary
+                try? diary.seal(vault: vault)
+                self.diary = diary
+            }
         })
     }
 

@@ -32,8 +32,7 @@ enum FilterCategory: String, CaseIterable, Identifiable {
 /// 菜单栏两级树状级联悬停浮窗：轻量纯非模态卡片，一级目录分类 + 二级具体选项无缝级联展开。
 struct MenuBarFilterFlyout: View {
     var tab: BoardTab = .tasks
-    var filter: Binding<BoardFilter>? = nil
-    var diaryFilterTagID: Binding<UUID?>? = nil
+    var filters: Binding<BoardFilters>
     var projects: [ProjectItem] = []
     var projectCounts: [UUID: Int] = [:]
     var unclassifiedCount: Int? = nil
@@ -53,19 +52,19 @@ struct MenuBarFilterFlyout: View {
     }
 
     private var activeFilter: BoardFilter {
-        filter?.wrappedValue ?? BoardFilter()
+        filters.wrappedValue.selection(for: tab)
     }
 
     private var selectedTagID: UUID? {
-        tab == .tasks ? activeFilter.tagID : diaryFilterTagID?.wrappedValue
+        activeFilter.tagID
     }
 
     private var activeCount: Int {
-        guard tab == .tasks else { return selectedTagID == nil ? 0 : 1 }
-        let value = activeFilter
-        let isPriorityActive = value.isHighPriorityOnly || value.priorityScope != .all
-        return [value.projectID != nil, value.tagID != nil, value.bundleID != nil, isPriorityActive, value.dateScope != .all]
-            .filter { $0 }.count
+        filters.wrappedValue.activeCount(for: tab)
+    }
+
+    private func writeFilter(_ filter: BoardFilter) {
+        filters.wrappedValue.write(filter, for: tab)
     }
 
     var body: some View {
@@ -486,16 +485,16 @@ struct MenuBarFilterFlyout: View {
 
     private func toggleDateScope(_ scope: DateFilterScope) {
         let next: DateFilterScope = activeFilter.dateScope == scope ? .all : scope
-        filter?.wrappedValue = activeFilter.withDateScope(next)
+        writeFilter(activeFilter.withDateScope(next))
     }
 
     private func togglePriorityScope(_ scope: PriorityFilterScope) {
         let next: PriorityFilterScope = activeFilter.priorityScope == scope ? .all : scope
-        filter?.wrappedValue = activeFilter.withPriorityScope(next)
+        writeFilter(activeFilter.withPriorityScope(next))
     }
 
     private func selectProject(_ id: UUID?) {
-        filter?.wrappedValue = activeFilter.withProject(id)
+        writeFilter(activeFilter.withProject(id))
     }
 
     private func toggleProject(_ id: UUID) {
@@ -504,11 +503,7 @@ struct MenuBarFilterFlyout: View {
     }
 
     private func selectTag(_ id: UUID?) {
-        if tab == .tasks {
-            filter?.wrappedValue = activeFilter.withTag(id)
-        } else {
-            diaryFilterTagID?.wrappedValue = id
-        }
+        writeFilter(activeFilter.withTag(id))
     }
 
     private func toggleTag(_ id: UUID) {
@@ -517,11 +512,7 @@ struct MenuBarFilterFlyout: View {
     }
 
     private func clearAllAndDismiss() {
-        if tab == .tasks {
-            filter?.wrappedValue = BoardFilter()
-        } else {
-            diaryFilterTagID?.wrappedValue = nil
-        }
+        filters.wrappedValue.clear(tab)
         onDismiss()
     }
 }

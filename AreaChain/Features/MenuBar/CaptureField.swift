@@ -1,13 +1,6 @@
 import SwiftData
 import SwiftUI
 
-@Observable
-@MainActor
-final class CaptureSession {
-    static let shared = CaptureSession()
-    var draft = ""
-}
-
 struct CaptureField: View {
     @Environment(\.locale) private var locale
     @Query(sort: \TagItem.sortOrder) private var allTags: [TagItem]
@@ -43,12 +36,16 @@ struct CaptureField: View {
         let plusColor = focused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8)
         let strokeColor = focused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.4)
 
-        return HStack(alignment: .center, spacing: 8) {
+        return BoardCaptureRow(
+            focused: focused,
+            fill: focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03),
+            stroke: strokeColor
+        ) {
             Image(systemName: "plus")
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(plusColor)
                 .frame(width: 14)
-
+        } field: {
             DaybookTextField(
                 text: $text,
                 placeholder: L10n.string("capture.placeholder.today", locale: locale),
@@ -61,19 +58,9 @@ struct CaptureField: View {
                 allowsShiftNewline: false
             )
             .accessibilityLabel("capture.placeholder.today")
-
+        } trailing: {
             diaryShortcutButton
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(strokeColor, lineWidth: focused ? 0.9 : 0.6)
-        )
     }
 
     private var diaryShortcutButton: some View {

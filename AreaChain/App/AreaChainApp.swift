@@ -21,7 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return alert.runModal()
     }
     var confirmDiaryTermination: () -> Bool = {
-        DiaryWindows.shared.confirmTermination(capture: .shared, context: Persistence.session.container.mainContext)
+        DiaryWindows.shared.confirmTermination(composer: .shared, context: Persistence.session.container.mainContext)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {

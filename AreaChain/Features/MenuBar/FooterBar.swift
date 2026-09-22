@@ -6,8 +6,7 @@ import SwiftUI
 struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
-    var filter: Binding<BoardFilter>? = nil
-    var diaryFilterTagID: Binding<UUID?>? = nil
+    var filters: Binding<BoardFilters>
     var projects: [ProjectItem] = []
     var projectCounts: [UUID: Int] = [:]
     var unclassifiedCount: Int? = nil
@@ -29,19 +28,19 @@ struct FooterBar: View {
     }
 
     private var currentFilter: BoardFilter {
-        filter?.wrappedValue ?? BoardFilter()
+        filters.wrappedValue.selection(for: tab)
     }
 
     private var selectedTagID: UUID? {
-        tab == .tasks ? currentFilter.tagID : diaryFilterTagID?.wrappedValue
+        currentFilter.tagID
     }
 
     private var activeCount: Int {
-        guard tab == .tasks else { return selectedTagID == nil ? 0 : 1 }
-        let value = currentFilter
-        let isPriorityActive = value.isHighPriorityOnly || value.priorityScope != .all
-        return [value.projectID != nil, value.tagID != nil, value.bundleID != nil, isPriorityActive, value.dateScope != .all]
-            .filter { $0 }.count
+        filters.wrappedValue.activeCount(for: tab)
+    }
+
+    private func writeFilter(_ filter: BoardFilter) {
+        filters.wrappedValue.write(filter, for: tab)
     }
 
     @State private var hoverTask: Task<Void, Never>? = nil
@@ -52,9 +51,9 @@ struct FooterBar: View {
             if currentFilter.dateScope != .all {
                 tokens.append(SearchFilterToken(
                     id: "date",
-                    title: dateScopeTitle(currentFilter.dateScope),
+                    title: currentFilter.dateScope.title(locale: locale),
                     icon: "calendar",
-                    onRemove: { filter?.wrappedValue = currentFilter.withDateScope(.all) }
+                    onRemove: { writeFilter(currentFilter.withDateScope(.all)) }
                 ))
             }
 
@@ -62,13 +61,13 @@ struct FooterBar: View {
                 let (dotColor, icon) = priorityVisual(currentFilter)
                 tokens.append(SearchFilterToken(
                     id: "priority",
-                    title: priorityTitle(currentFilter),
+                    title: currentFilter.priorityTitle(locale: locale),
                     icon: icon,
                     dotColor: dotColor,
                     onRemove: {
                         var next = currentFilter.withPriorityScope(.all)
                         next.isHighPriorityOnly = false
-                        filter?.wrappedValue = next
+                        writeFilter(next)
                     }
                 ))
             }
@@ -81,7 +80,7 @@ struct FooterBar: View {
                     id: "project",
                     title: name,
                     icon: "folder",
-                    onRemove: { filter?.wrappedValue = currentFilter.withProject(nil) }
+                    onRemove: { writeFilter(currentFilter.withProject(nil)) }
                 ))
             }
         }
@@ -259,37 +258,7 @@ struct FooterBar: View {
     }
 
     private func clearTag() {
-        if tab == .tasks {
-            filter?.wrappedValue = currentFilter.withTag(nil)
-        } else {
-            diaryFilterTagID?.wrappedValue = nil
-        }
-    }
-
-    private func dateScopeTitle(_ scope: DateFilterScope) -> String {
-        switch scope {
-        case .all: return L10n.string("filter.all", locale: locale)
-        case .today: return L10n.string("filter.date.today", locale: locale)
-        case .recent: return L10n.string("filter.date.recent", locale: locale)
-        case .overdue: return L10n.string("filter.date.overdue", locale: locale)
-        }
-    }
-
-    private func priorityTitle(_ filter: BoardFilter) -> String {
-        switch filter.priorityScope {
-        case .all:
-            return filter.isHighPriorityOnly ? L10n.string("filter.priority.high", locale: locale) : ""
-        case .highPriorityOnly:
-            return L10n.string("filter.priority.high", locale: locale)
-        case .p1:
-            return L10n.string("filter.priority.p1", locale: locale)
-        case .p2:
-            return L10n.string("filter.priority.p2", locale: locale)
-        case .p3:
-            return L10n.string("filter.priority.p3", locale: locale)
-        case .p4:
-            return L10n.string("filter.priority.p4", locale: locale)
-        }
+        writeFilter(currentFilter.withTag(nil))
     }
 
     private var activeDescription: String {
@@ -298,11 +267,7 @@ struct FooterBar: View {
     }
 
     private func clearFilter() {
-        if tab == .tasks {
-            filter?.wrappedValue = BoardFilter()
-        } else {
-            diaryFilterTagID?.wrappedValue = nil
-        }
+        filters.wrappedValue.clear(tab)
     }
 
     // MARK: - 右侧稳定动作区

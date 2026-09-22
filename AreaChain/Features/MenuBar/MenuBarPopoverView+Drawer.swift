@@ -18,8 +18,7 @@ extension MenuBarPopoverView {
             // 2. 树状两级级联悬停浮窗：紧贴底栏「筛选」按钮上沿
             MenuBarFilterFlyout(
                 tab: tab,
-                filter: $boardFilter,
-                diaryFilterTagID: $diaryFilterTagID,
+                filters: $filters,
                 projects: projects.filter { $0.deletedAt == nil },
                 projectCounts: taskProjectCounts,
                 unclassifiedCount: unclassifiedTodosCount,
