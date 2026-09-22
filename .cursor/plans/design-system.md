@@ -163,7 +163,7 @@ flowchart TB
 
 ### 6.2 L2 组件基座（`AreaChain/Theme`）
 - `DaybookInputShell.swift`：`DaybookInputShell<Leading, Field, Trailing>(kind: DaybookInputKind, focused: Bool, configure: ((inout DaybookInputShellConfiguration) -> Void)? = nil, leading:, field:, trailing:)` + 两个便捷 init（只 field / leading+field）；`DaybookInputShellConfiguration` 顶层 struct，含 `height`（composer 34 / search 28 / editor nil）、`minHeight`、`insets`、`spacing`（8 / 4 / 0）、`radius`，`static func standard(for:)` 从 metrics 取值；壳内颜色固定为 `fill.subtle→surface`、`border.faint→focus`、描边 `Stroke.regular→focus`；内置 `.daybookHideInputChrome()`。`DaybookInputKind` 搬到本文件。
-- `DaybookButtonStyle.swift`：`DaybookButtonStyle(variant: .quiet | .prominent | .icon | .destructive | .pill(tint) | .menuLabel, size: .regular | .compact | .inline)`；`DaybookIconButton(systemName:label:size:role:action:)`。`CommandReturnButton`、`CaptureAttributesButton` 保留为专用组件（有 anchor 与测试），内部改用本样式。非按钮语义控件保留 `.plain` 并加 `// control: 非按钮语义，保留 .plain`。
+- `DaybookButtonStyle.swift`：`DaybookButtonStyle(_ variant, size:, isFocused:)`，variant 九种：文字类 `.quiet / .subtle / .prominent / .destructive / .active / .pill(tint:)`（只加内边距），图标类 `.icon / .iconActive / .iconDestructive`（固定正方形点击区）；size `.regular 28 / .compact 22 / .inline 18`；悬停 = `fill.hover` 淡灰底，无蓝环；`isFocused` 画键盘焦点环。`DaybookIconButton(systemName:label:size:role:isActive:enabled:action:)` 薄包装。`Menu` 标签用 `.daybookMenuLabel(size:isActive:isFocused:)` 修饰符。`CommandReturnButton`、`CaptureAttributesButton` 保留为专用组件（有 anchor 与测试），内部改用本样式（P3b）。非按钮语义控件保留 `.plain` 并在同一行加 `// control: <原因>`。
 - `DaybookSurface.swift`：`daybookSurface(_ variant: .row | .card | .panel | .banner | .cell, isHovered:, isSelected:, isFocused:, configure:)`；`.panel` 自带 `elevation.floating`。`BoardRowChrome` 内部视觉改走 `.row`。
 - `DaybookChip.swift`：`DaybookChip(variant: .tag | .count | .filter | .status | .token | .action, isSelected:, tint:, onRemove:, action:) { label }`；同文件 `DaybookStatusDot(color:)`、`DaybookCount(_:emphasis:)`（字体 `DaybookType.badge.monospacedDigit()`）。优先级色一律 `DaybookPalette.syntax.priorityColor / priorityFill`。
 - `DaybookSectionHeader.swift`：`DaybookSectionHeader(_ title, level: .page | .section | .field | .column, icon:, count:, trailing:)`；同文件 `DaybookDivider(emphasis: .subtle | .regular | .strong)`。
@@ -192,10 +192,14 @@ flowchart TB
 文档：`AGENTS.md:40` 输入组件句加 `DaybookInputShell`；`docs/architecture.md:71,111`、`docs/usage.md:57`、`docs/features.md:24` 修正属性按钮描述并写明共用外壳。
 完成标准：`rg 'BoardCaptureRow|DaybookInputChrome|daybookInputChrome|DaybookField\b|locksHeight|showsFocusShadow|paintsChrome' AreaChain AreaChainTests` 为空；输入框不得自绘 `focusRing`（`rg 'focusRing' AreaChain/Features` 只允许 `FooterBar.swift` 的 `FooterActionItemModifier` 按钮描边，该描边留给 P3 删除）；`DaybookInputShell(` ≥ 12 处；`DiaryPage` 锁定草稿提示框保持现有 `token-exempt` 自绘，不要再包进壳（P4 再迁 banner）；行为层 6 个文件 `git diff` 为空；定向测试（`DaybookInputShellTests` / `DaybookTokenTests` / `WorkspaceLayoutTests` / `DaybookTextFieldTests` / `DaybookTextFieldSearchTests` / `CaptureOverlayLayoutTests` / `InputSyntaxInteractionTests` / `DiaryComposerInteractionTests` / `WorkspaceRenderingTests` / `MenuBarPopoverRenderingTests` / `MenuBarToolbarStateTests` / `DiaryWindowLifecycleTests` / `PrivacyRenderingTests`）通过；`check_workflow.py` 通过。P2 通过后用户自行打开菜单栏与工作台各看一次输入框。
 
-### P3 按钮（可分两次：a = MenuBar + Tasks + Board + Search；b = Diary + Workspace + Theme）
-必读：`Theme/DaybookChrome.swift`（`DaybookQuietButtonStyle`）、`Theme/DaybookTheme.swift`（`RowIconButton` / `ComposerAddButton`）、`Features/MenuBar/FooterBar.swift`（340–370 `FooterActionItemModifier`）、3.4 节全部文件。
-做：新建 `DaybookButtonStyle.swift`；96 处 `.plain`、45 处图标按钮、7 处 Menu label、11 个 struct 全部迁入或改用；删除 `DaybookQuietButtonStyle`、`RowIconButton`、`DaybookNavButton`、`ComposerAddButton`、`WorkspaceSidebarHeaderAction`、`BoardCommandStripButton`、`FooterActionItemModifier`（其 hover 逻辑进 `.icon` variant）。
-完成标准：模块测试 + `WorkspaceRenderingTests` + `MenuBarPopoverRenderingTests` + `TaskRowInteractionTests` + `DiarySummaryRowTests` 通过；`rg '\.buttonStyle\(\.plain\)' AreaChain` 只剩带 `// control:` 的行；`rg 'DaybookQuietButtonStyle|RowIconButton|DaybookNavButton|ComposerAddButton|FooterActionItemModifier' AreaChain AreaChainTests` 为空。
+### P3a 按钮基座 + MenuBar / Tasks / Board / Search
+提示词：`design-system-P3a-execute.md` / `design-system-P3a-verify.md`。
+做：新建 `DaybookButtonStyle.swift`（样式 + `DaybookIconButton` + `daybookMenuLabel`）；跨模块一行改名后删除 `DaybookQuietButtonStyle`、`RowIconButton`、`DaybookNavButton`、`ComposerAddButton`、`WorkspaceSidebarHeaderAction`、`FooterActionItemModifier`；`BoardCommandStripButton` / `BoardCommandStripMenu` 改用样式，`BoardCommandStripIcon` 退化为纯图标；四个模块现有 33 处 `.plain` 中 22 处迁为样式，11 处控件加 `// control:`（清单见验收提示词 B2）。新建 `DaybookButtonStyleTests`。
+完成标准：`rg 'DaybookQuietButtonStyle|RowIconButton|DaybookNavButton|ComposerAddButton|WorkspaceSidebarHeaderAction|FooterActionItemModifier|isButtonHovered' AreaChain AreaChainTests` 为空；四模块无裸 `.plain`；control 注释恰好 11 条；定向测试通过。
+
+### P3b 按钮 Diary / Workspace / Theme
+做：Diary 21 处、Workspace 24 处、Theme 14 处 `.plain` 按同一规则迁移或标 control；`CommandReturnButton`、`CaptureAttributesButton`、`SyntaxHelpCard`、`LiveComposerPreviewHeader` 等 Theme 内部按钮改用样式；`DiaryTagToggleButtons` / `DiaryDayMoveButtons` / `BoardFilterDropdownButton` 视情况改用样式或删除。提示词在 P3a 验收通过后生成。
+完成标准：`rg '\.buttonStyle\(\.plain\)' AreaChain` 只剩带 `// control:` 的行；模块测试通过。
 
 ### P4 表面与浮层
 必读：`Theme/ModernComponents.swift`、`Theme/DaybookChrome.swift`（`DaybookCardModifier`）、`Features/Board/BoardRowChrome.swift`、`Features/Tasks/DayBoardSections.swift`、`Features/Workspace/WorkspaceFilteredListView.swift`、3.5 节全部文件。
