@@ -33,19 +33,7 @@ struct TaskDetailQuadrantGrid: View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "exclamationmark.circle")
-                            .font(.system(size: 8.5, weight: .bold))
-                        Text(slot.badgeText)
-                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                    }
-                    .foregroundStyle(slot.themeColor)
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                            .fill(slot.themeFill)
-                    )
+                    QuadrantMiniMark(slot: slot)
 
                     Text(LocalizedStringKey(slot.titleKeyName))
                         .font(.system(size: 11, weight: .semibold))
