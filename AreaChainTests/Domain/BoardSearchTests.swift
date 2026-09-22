@@ -130,6 +130,31 @@ struct BoardSearchTests {
             ).isEmpty
         )
     }
+
+    @Test func captureAndSearchSharePriorityTokens() {
+        let samples: [(String, Bool, Bool)] = [
+            ("!p1", true, true),
+            ("!P2", true, false),
+            ("!重要紧急", true, true),
+            ("!紧急不重要", false, true),
+            ("!不重要不紧急", false, false)
+        ]
+        for (token, important, urgent) in samples {
+            let parsed = NaturalLanguageParser.parse("任务 \(token)")
+            let query = BoardSearch.parseQuery(token)
+            #expect(parsed.hasPriorityToken && parsed.isImportant == important && parsed.isUrgent == urgent)
+            #expect(query.hasPriority)
+            #expect(query.priority == BoardSearchPriority(isImportant: important, isUrgent: urgent))
+        }
+        #expect(BoardSearch.parseQuery("!nope").hasPriority == false)
+    }
+
+    @Test func hitKindUsesOneTitleKey() {
+        #expect(BoardSearchHit.Kind.todo.titleKey == "search.kind.todo")
+        #expect(BoardSearchHit.Kind.routine.titleKey == "search.kind.routine")
+        #expect(BoardSearchHit.Kind.diary.titleKey == "search.kind.diary")
+        #expect(BoardSearchHit.Kind.subtask.titleKey == "search.kind.subtask")
+    }
 }
 
 struct FeedbackCopyTests {

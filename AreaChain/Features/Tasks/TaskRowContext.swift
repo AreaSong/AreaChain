@@ -136,10 +136,14 @@ enum CatalogChoices {
             sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { id in DayBoardMutations.persist(context: routine.modelContext) { routine.projectID = id } },
-            onToggleTag: { id in DayBoardMutations.persist(context: routine.modelContext) { routine.tagIDs = TagIDList.toggling(routine.tagIDs, id) } },
-            onImportant: { value in DayBoardMutations.persist(context: routine.modelContext) { routine.isImportant = value } },
-            onUrgent: { value in DayBoardMutations.persist(context: routine.modelContext) { routine.isUrgent = value } }
+            onProject: { DayBoardMutations.setProject(for: routine, projectID: $0) },
+            onToggleTag: { DayBoardMutations.toggleTag(for: routine, tagID: $0) },
+            onImportant: { value in
+                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: routine.isUrgent), to: routine)
+            },
+            onUrgent: { value in
+                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: routine.isImportant, urgent: value), to: routine)
+            }
         )
         return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
     }
@@ -161,10 +165,14 @@ enum CatalogChoices {
             sourceLabel: todo.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: todo.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { id in DayBoardMutations.persist(context: todo.modelContext) { todo.projectID = id } },
-            onToggleTag: { id in DayBoardMutations.persist(context: todo.modelContext) { todo.tagIDs = TagIDList.toggling(todo.tagIDs, id) } },
-            onImportant: { value in DayBoardMutations.persist(context: todo.modelContext) { todo.isImportant = value } },
-            onUrgent: { value in DayBoardMutations.persist(context: todo.modelContext) { todo.isUrgent = value } }
+            onProject: { DayBoardMutations.setProject(for: todo, projectID: $0) },
+            onToggleTag: { DayBoardMutations.toggleTag(for: todo, tagID: $0) },
+            onImportant: { value in
+                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: todo.isUrgent), to: todo)
+            },
+            onUrgent: { value in
+                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: todo.isImportant, urgent: value), to: todo)
+            }
         )
         return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
     }

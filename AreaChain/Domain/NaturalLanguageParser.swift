@@ -241,18 +241,8 @@ enum NaturalLanguageParser {
     }
 
     private static func priorityResult(for token: String) -> PriorityResult {
-        switch token.lowercased() {
-        case "!重要紧急", "!紧急重要", "!重要且紧急", "!p1":
-            return PriorityResult(isImportant: true, isUrgent: true, hasPriorityToken: true)
-        case "!重要", "!重要不紧急", "!p2":
-            return PriorityResult(isImportant: true, isUrgent: false, hasPriorityToken: true)
-        case "!紧急", "!不重要紧急", "!紧急不重要", "!p3":
-            return PriorityResult(isImportant: false, isUrgent: true, hasPriorityToken: true)
-        case "!p4", "!不重要不紧急":
-            return PriorityResult(isImportant: false, isUrgent: false, hasPriorityToken: true)
-        default:
-            return .none
-        }
+        guard let flags = PriorityToken.flags(in: token) else { return .none }
+        return PriorityResult(isImportant: flags.isImportant, isUrgent: flags.isUrgent, hasPriorityToken: true)
     }
 
     private static func consumePriority(from text: inout String) -> PriorityResult {

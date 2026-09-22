@@ -35,10 +35,7 @@ struct TodoScheduleSectionView: View {
                 isImportant: todo.isImportant,
                 isUrgent: todo.isUrgent,
                 onSelect: { imp, urg in
-                    DayBoardMutations.persist(context: todo.modelContext) {
-                        todo.isImportant = imp
-                        todo.isUrgent = urg
-                    }
+                    DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: imp, urgent: urg), to: todo)
                 }
             )
 
@@ -103,10 +100,7 @@ struct RoutineScheduleSectionView: View {
                 isImportant: routine.isImportant,
                 isUrgent: routine.isUrgent,
                 onSelect: { imp, urg in
-                    DayBoardMutations.persist(context: routine.modelContext) {
-                        routine.isImportant = imp
-                        routine.isUrgent = urg
-                    }
+                    DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: imp, urgent: urg), to: routine)
                 }
             )
 
@@ -140,11 +134,7 @@ struct TodoClassificationSectionView: View {
             TaskDetailTagSelector(
                 tagIDs: todo.tagIDs,
                 tags: tags,
-                onToggleTag: { tagID in
-                    DayBoardMutations.persist(context: todo.modelContext) {
-                        todo.tagIDs = TagIDList.toggling(todo.tagIDs, tagID)
-                    }
-                },
+                onToggleTag: { DayBoardMutations.toggleTag(for: todo, tagID: $0) },
                 onCreateTag: { name in
                     DayBoardMutations.addTag(
                         named: name,
@@ -173,11 +163,7 @@ struct RoutineClassificationSectionView: View {
             TaskDetailTagSelector(
                 tagIDs: routine.tagIDs,
                 tags: tags,
-                onToggleTag: { tagID in
-                    DayBoardMutations.persist(context: routine.modelContext) {
-                        routine.tagIDs = TagIDList.toggling(routine.tagIDs, tagID)
-                    }
-                },
+                onToggleTag: { DayBoardMutations.toggleTag(for: routine, tagID: $0) },
                 onCreateTag: { name in
                     DayBoardMutations.addTag(
                         named: name,

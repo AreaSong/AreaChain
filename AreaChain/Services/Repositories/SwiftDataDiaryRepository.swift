@@ -155,9 +155,9 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         if soft {
             let now = SoftDelete.stamp()
             entry.deletedAt = now
-            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: try fetchOwnedAttachments(), ownerKind: .diary)
+            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .diary)
         } else {
-            try purgeAttachments(ownerID: entry.id)
+            try OwnedAttachments.purge(ownerID: entry.id, kind: .diary, in: context)
             context.delete(entry)
         }
         try saveAndNotify()
@@ -172,7 +172,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: entry.id,
             parentDeletedAt: stamp,
-            attachments: try fetchOwnedAttachments(),
+            attachments: try OwnedAttachments.all(in: context),
             ownerKind: .diary
         )
         try saveAndNotify()
@@ -190,7 +190,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         if protect && !entry.hasProtectedContent {
             try PrivacyStoreMaintenance.mark(context)
             let batch = PrivacyAttachmentBatch(store: attachmentStore, root: attachmentRoot)
-            let items = try fetchOwnedAttachments().filter { $0.ownerID == entry.id && $0.ownerKind == AttachmentOwner.diary.rawValue }
+            let items = OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: entry.id, kind: .diary)
             try batch.prepare(items, vault: vault)
             ModelChanges.afterTransaction(in: context, commit: { [context, attachmentStore, attachmentRoot] in
                 try PrivacyAttachmentBatch.cleanup(items, context: context, store: attachmentStore, root: attachmentRoot)
@@ -199,16 +199,5 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             batch.apply()
         }
         try DiaryContent.write(text, to: entry, protect: protect, vault: vault)
-    }
-
-    private func fetchOwnedAttachments() throws -> [AttachmentItem] {
-        try context.fetch(FetchDescriptor<AttachmentItem>())
-    }
-
-    private func purgeAttachments(ownerID: UUID) throws {
-        let attachments = try fetchOwnedAttachments()
-        for item in attachments where item.ownerID == ownerID && item.ownerKind == AttachmentOwner.diary.rawValue {
-            context.delete(item)
-        }
     }
 }

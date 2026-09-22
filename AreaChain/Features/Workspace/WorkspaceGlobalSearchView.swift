@@ -73,7 +73,13 @@ struct WorkspaceGlobalSearchView: View {
                                         .foregroundStyle(DaybookTheme.muted)
 
                                     ForEach(group.items) { hit in
-                                        searchHitRow(hit)
+                                        BoardSearchHitRow(
+                                            hit: hit,
+                                            presentation: .workspace,
+                                            isSelected: navigation.selectedTaskID == hit.id && navigation.isInspectorPresented
+                                        ) {
+                                            openHit(hit)
+                                        }
                                     }
                                 }
                             }
@@ -101,53 +107,6 @@ struct WorkspaceGlobalSearchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(WorkspaceStyle.paper)
         .accessibilityIdentifier("workspace.global.search.results")
-    }
-
-    // MARK: - Hit Row
-
-    private func searchHitRow(_ hit: BoardSearchHit) -> some View {
-        let isSelected = navigation.selectedTaskID == hit.id && navigation.isInspectorPresented
-        return Button {
-            openHit(hit)
-        } label: {
-            HStack(alignment: .center, spacing: 10) {
-                Text(kindLabel(hit.kind))
-                    .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule().fill(DaybookTheme.stamp.opacity(0.12))
-                    )
-
-                Text(hit.title)
-                    .font(DaybookType.body)
-                    .foregroundStyle(DaybookTheme.ink)
-                    .multilineTextAlignment(.leading)
-                    .lineLimit(2)
-
-                Spacer(minLength: 0)
-
-                if isSelected {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                }
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                    .fill(isSelected ? WorkspaceStyle.selection : WorkspaceStyle.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: WorkspaceStyle.cardRadius)
-                    .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.4) : WorkspaceStyle.border, lineWidth: 0.8)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(hit.title)
     }
 
     // MARK: - Attachment Row
@@ -188,15 +147,6 @@ struct WorkspaceGlobalSearchView: View {
     }
 
     // MARK: - Helpers
-
-    private func kindLabel(_ kind: BoardSearchHit.Kind) -> LocalizedStringKey {
-        switch kind {
-        case .todo: "search.kind.todo"
-        case .routine: "search.kind.routine"
-        case .diary: "search.kind.diary"
-        case .subtask: "search.kind.subtask"
-        }
-    }
 
     private func openHit(_ hit: BoardSearchHit) {
         switch hit.kind {

@@ -6,6 +6,15 @@ struct BoardSearchHit: Equatable, Identifiable {
         case diary
         case routine
         case subtask
+
+        var titleKey: String {
+            switch self {
+            case .todo: "search.kind.todo"
+            case .routine: "search.kind.routine"
+            case .diary: "search.kind.diary"
+            case .subtask: "search.kind.subtask"
+            }
+        }
     }
 
     var id: UUID
@@ -86,19 +95,8 @@ enum BoardSearch {
     }
 
     private static func parsePriorityToken(_ token: String) -> BoardSearchPriority? {
-        let lower = token.lowercased()
-        switch lower {
-        case "!p1", "!重要紧急", "!紧急重要", "!重要且紧急":
-            return BoardSearchPriority(isImportant: true, isUrgent: true)
-        case "!p2", "!重要", "!重要不紧急":
-            return BoardSearchPriority(isImportant: true, isUrgent: false)
-        case "!p3", "!紧急", "!不重要紧急", "!紧急不重要":
-            return BoardSearchPriority(isImportant: false, isUrgent: true)
-        case "!p4", "!不重要不紧急":
-            return BoardSearchPriority(isImportant: false, isUrgent: false)
-        default:
-            return nil
-        }
+        guard let flags = PriorityToken.flags(in: token) else { return nil }
+        return BoardSearchPriority(isImportant: flags.isImportant, isUrgent: flags.isUrgent)
     }
 
     static func hits(

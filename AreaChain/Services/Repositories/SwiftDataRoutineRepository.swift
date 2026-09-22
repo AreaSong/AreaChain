@@ -251,7 +251,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     func batchTrashRoutines(ids: Set<UUID>) throws {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
-        let attachments = try fetchOwnedAttachments()
+        let attachments = try OwnedAttachments.all(in: context)
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         for routine in routines where ids.contains(routine.id) {
             routine.deletedAt = now
@@ -287,9 +287,9 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         if soft {
             let now = SoftDelete.stamp()
             routine.deletedAt = now
-            SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: try fetchOwnedAttachments(), ownerKind: .routine)
+            SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .routine)
         } else {
-            try purgeAttachments(ownerID: routine.id)
+            try OwnedAttachments.purge(ownerID: routine.id, kind: .routine, in: context)
             context.delete(routine)
         }
         try saveAndNotify()
@@ -304,7 +304,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: routine.id,
             parentDeletedAt: stamp,
-            attachments: try fetchOwnedAttachments(),
+            attachments: try OwnedAttachments.all(in: context),
             ownerKind: .routine
         )
         try saveAndNotify()
@@ -330,18 +330,5 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         Catalog.reindexRoutines(routines, from: source, to: destination)
         try saveAndNotify()
-    }
-
-    // MARK: - 内部辅助 (Internal Helpers)
-
-    private func fetchOwnedAttachments() throws -> [AttachmentItem] {
-        try context.fetch(FetchDescriptor<AttachmentItem>())
-    }
-
-    private func purgeAttachments(ownerID: UUID) throws {
-        let attachments = try fetchOwnedAttachments()
-        for item in attachments where item.ownerID == ownerID && item.ownerKind == AttachmentOwner.routine.rawValue {
-            context.delete(item)
-        }
     }
 }

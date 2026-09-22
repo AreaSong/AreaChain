@@ -176,9 +176,9 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             let now = SoftDelete.stamp()
             todo.deletedAt = now
             SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
-            SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: try fetchOwnedAttachments(), ownerKind: .todo)
+            SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .todo)
         } else {
-            try purgeAttachments(ownerID: todo.id)
+            try OwnedAttachments.purge(ownerID: todo.id, kind: .todo, in: context)
             context.delete(todo)
         }
         try saveAndNotify()
@@ -194,7 +194,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: todo.id,
             parentDeletedAt: stamp,
-            attachments: try fetchOwnedAttachments(),
+            attachments: try OwnedAttachments.all(in: context),
             ownerKind: .todo
         )
         try saveAndNotify()
@@ -301,7 +301,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     func batchTrashTodos(ids: Set<UUID>) throws {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
-        let attachments = try fetchOwnedAttachments()
+        let attachments = try OwnedAttachments.all(in: context)
         let todos = try fetchAllTodos(includeDeleted: false)
         for todo in todos where ids.contains(todo.id) {
             todo.deletedAt = now
@@ -334,16 +334,5 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     private func fetchSubtask(id: UUID) throws -> SubtaskItem? {
         let items = try context.fetch(FetchDescriptor<SubtaskItem>())
         return items.first { $0.id == id }
-    }
-
-    private func fetchOwnedAttachments() throws -> [AttachmentItem] {
-        try context.fetch(FetchDescriptor<AttachmentItem>())
-    }
-
-    private func purgeAttachments(ownerID: UUID) throws {
-        let attachments = try fetchOwnedAttachments()
-        for item in attachments where item.ownerID == ownerID && item.ownerKind == AttachmentOwner.todo.rawValue {
-            context.delete(item)
-        }
     }
 }
