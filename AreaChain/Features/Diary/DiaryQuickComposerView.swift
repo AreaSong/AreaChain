@@ -27,7 +27,6 @@ struct DiaryQuickComposerView: View {
             compactInputRow
                 .syntaxSuggestions(autocomplete)
                 .animation(DaybookMotion.interactive(reduceMotion), value: focused.wrappedValue)
-                .daybookHideInputChrome()
         } else {
             workspaceComposer
         }
@@ -53,15 +52,8 @@ struct DiaryQuickComposerView: View {
 
     private var compactInputRow: some View {
         let focused = focused.wrappedValue
-        let strokeColor = focused ? DaybookTheme.stamp.opacity(0.48) : DaybookTheme.rule.opacity(0.45)
 
-        return BoardCaptureRow(
-            focused: focused,
-            fill: focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.025),
-            stroke: strokeColor,
-            locksHeight: true,
-            showsFocusShadow: true
-        ) {
+        return DaybookInputShell(kind: .composer, focused: focused) {
             statusIcon
         } field: {
             DaybookTextField(
@@ -158,15 +150,15 @@ struct DiaryQuickComposerView: View {
         onSubmit()
     }
 
-    @ViewBuilder
     private var editorInputView: some View {
-        let editor = SyntaxTextEditor(
-            text: $text, focused: focused,
-            placeholder: L10n.string("diary.composer.placeholder", locale: locale),
-            onSubmit: onSubmit
-        )
-        .frame(minHeight: 64, maxHeight: 100)
-        editor.daybookInputChrome(focused: focused.wrappedValue, kind: .editor)
+        DaybookInputShell(kind: .editor, focused: focused.wrappedValue) {
+            SyntaxTextEditor(
+                text: $text, focused: focused,
+                placeholder: L10n.string("diary.composer.placeholder", locale: locale),
+                onSubmit: onSubmit
+            )
+            .frame(minHeight: 64, maxHeight: 100)
+        }
     }
 
     private var tagAndActionRow: some View {

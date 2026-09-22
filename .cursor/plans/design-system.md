@@ -190,7 +190,7 @@ flowchart TB
 提示词：`design-system-P2-execute.md` / `design-system-P2-verify.md`。
 做：palette 加 `border.faint`；metrics 纠正 `inputSearch` 6、search 内边距 h7 v4 并同步 `DaybookTokenTests`；新建 `DaybookInputShell.swift`（`DaybookInputKind` 搬入）；迁 13 处消费者：`CaptureField`、`DaybookComposer`、`DiaryQuickComposerView`（compact + editor）、`DiaryPage`（searchChrome；锁定草稿提示框改为带 `// token-exempt` 的令牌自绘，P4 迁 banner）、`DiaryCardComponents` 编辑器、`SearchPage`、`MenuBarSearchField`、`WorkspaceHeaderSearchCapsule`（胶囊改壳，保留 260 宽）、`TaskDetailSubtasksView.addSubtaskInput`、`TaskDetailNotesView.notesEditorBox`、`DiaryWindowView` 编辑器；删除 `BoardCaptureRow.swift`、`DaybookInputChrome` / `daybookInputChrome`、`DaybookField`。新建 `DaybookInputShellTests`（标准配置取值、三种 kind 原生高度、configure 重载）。
 文档：`AGENTS.md:40` 输入组件句加 `DaybookInputShell`；`docs/architecture.md:71,111`、`docs/usage.md:57`、`docs/features.md:24` 修正属性按钮描述并写明共用外壳。
-完成标准：`rg 'BoardCaptureRow|DaybookInputChrome|daybookInputChrome|DaybookField\b|locksHeight|showsFocusShadow|paintsChrome' AreaChain AreaChainTests` 为空；`rg 'focusRing' AreaChain/Features` 为空；`DaybookInputShell(` ≥ 13 处；行为层 6 个文件 `git diff` 为空；定向测试（`DaybookInputShellTests` / `DaybookTokenTests` / `WorkspaceLayoutTests` / `DaybookTextFieldTests` / `DaybookTextFieldSearchTests` / `CaptureOverlayLayoutTests` / `InputSyntaxInteractionTests` / `DiaryComposerInteractionTests` / `WorkspaceRenderingTests` / `MenuBarPopoverRenderingTests` / `MenuBarToolbarStateTests` / `DiaryWindowLifecycleTests` / `PrivacyRenderingTests`）通过；`check_workflow.py` 通过。P2 通过后用户自行打开菜单栏与工作台各看一次输入框。
+完成标准：`rg 'BoardCaptureRow|DaybookInputChrome|daybookInputChrome|DaybookField\b|locksHeight|showsFocusShadow|paintsChrome' AreaChain AreaChainTests` 为空；输入框不得自绘 `focusRing`（`rg 'focusRing' AreaChain/Features` 只允许 `FooterBar.swift` 的 `FooterActionItemModifier` 按钮描边，该描边留给 P3 删除）；`DaybookInputShell(` ≥ 12 处；`DiaryPage` 锁定草稿提示框保持现有 `token-exempt` 自绘，不要再包进壳（P4 再迁 banner）；行为层 6 个文件 `git diff` 为空；定向测试（`DaybookInputShellTests` / `DaybookTokenTests` / `WorkspaceLayoutTests` / `DaybookTextFieldTests` / `DaybookTextFieldSearchTests` / `CaptureOverlayLayoutTests` / `InputSyntaxInteractionTests` / `DiaryComposerInteractionTests` / `WorkspaceRenderingTests` / `MenuBarPopoverRenderingTests` / `MenuBarToolbarStateTests` / `DiaryWindowLifecycleTests` / `PrivacyRenderingTests`）通过；`check_workflow.py` 通过。P2 通过后用户自行打开菜单栏与工作台各看一次输入框。
 
 ### P3 按钮（可分两次：a = MenuBar + Tasks + Board + Search；b = Diary + Workspace + Theme）
 必读：`Theme/DaybookChrome.swift`（`DaybookQuietButtonStyle`）、`Theme/DaybookTheme.swift`（`RowIconButton` / `ComposerAddButton`）、`Features/MenuBar/FooterBar.swift`（340–370 `FooterActionItemModifier`）、3.4 节全部文件。
@@ -221,7 +221,7 @@ flowchart TB
 
 - [x] P0 令牌落地
 - [x] P1 删除双宿主分支
-- [ ] P2 输入壳
+- [x] P2 输入壳
 - [ ] P3a 按钮（MenuBar + Tasks + Board + Search）
 - [ ] P3b 按钮（Diary + Workspace + Theme）
 - [ ] P4 表面与浮层
@@ -245,5 +245,7 @@ flowchart TB
 - 2026-09-22 P1 记录：`WorkspaceRenderingTests` 在 `release` 窗口时触发 `NSWindowSectionController unregisterSeparator` 断言并挂起；改代码前的基线同样挂起。旧机制扫描还剩测试函数名 `diaryComposerKeepsNewlinesAndSavesOnceWithWorkspaceStyle`。
 - 2026-09-22 P1 验收：不通过（A1 测试名仍含 WorkspaceStyle；F 定向测试在 WorkspaceRenderingTests 释放窗口时断言挂起，中断后 EXIT=241）
 - 2026-09-22 P1 验收（复验）：通过。A–G 重跑成立；此前的测试名与窗口释放挂起已消失。定向测试 EXIT=0，11 个套件失败 0、跳过 0。未做人工窗口走查。`DaybookGroupedCard` 注释仍写白色分组卡，实现已不再绘制，不阻塞。
+- 2026-09-22 P2 完成：新建 DaybookInputShell 并迁入 12 处输入框，锁定草稿提示框改为令牌自绘；搜索圆角 10→6、内边距 8/10→4/7，新增 border.faint；删除 BoardCaptureRow 与 DaybookInputChrome。
+- 2026-09-22 P2 验收：通过。A–H 重跑成立；定向测试 EXIT=0，13 个套件 87 通过、失败 0、跳过 0。未做人工窗口走查。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

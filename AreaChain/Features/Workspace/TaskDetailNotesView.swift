@@ -54,29 +54,21 @@ struct TaskDetailNotesView: View {
     }
 
     private var notesEditorBox: some View {
-        ZStack(alignment: .topLeading) {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(DaybookTheme.cardSurface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(isFocused ? DaybookTheme.stamp.opacity(0.6) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
-                )
-
+        DaybookInputShell(kind: .editor, focused: isFocused) {
             SyntaxTextEditor(
                 text: $draft, focused: $isFocused, placeholder: L10n.string("drawer.notes.placeholder", locale: locale),
                 fontSize: 11, context: .capture, onSubmit: flushSave
             )
-                .padding(4)
-                .frame(minHeight: 56, maxHeight: 150)
-                .onChange(of: draft) { _, newValue in
-                    if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
+            .frame(minHeight: 56, maxHeight: 150)
+            .onChange(of: draft) { _, newValue in
+                if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
+            }
+            .onChange(of: isFocused) { _, focused in
+                if !focused {
+                    _ = BoardSelection.shared.consumeEscapeCancelsEdits()
+                    flushSave()
                 }
-                .onChange(of: isFocused) { _, focused in
-                    if !focused {
-                        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
-                        flushSave()
-                    }
-                }
+            }
         }
     }
 

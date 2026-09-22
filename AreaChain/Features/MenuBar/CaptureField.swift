@@ -28,19 +28,13 @@ struct CaptureField: View {
         inputRow
         .syntaxSuggestions(autocomplete)
         .animation(DaybookMotion.interactive, value: focus.wrappedValue)
-        .daybookHideInputChrome()
     }
 
     private var inputRow: some View {
         let focused = focus.wrappedValue
         let plusColor = focused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8)
-        let strokeColor = focused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.4)
 
-        return BoardCaptureRow(
-            focused: focused,
-            fill: focused ? DaybookTheme.surface : DaybookTheme.ink.opacity(0.03),
-            stroke: strokeColor
-        ) {
+        return DaybookInputShell(kind: .composer, focused: focused) {
             Image(systemName: "plus")
                 .font(.system(size: 11.5, weight: .semibold))
                 .foregroundStyle(plusColor)

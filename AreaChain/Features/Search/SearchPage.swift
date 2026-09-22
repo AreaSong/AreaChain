@@ -16,34 +16,34 @@ struct SearchPage: View {
 
     var body: some View {
         DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
-            DaybookField(focused: searchFocus) {
-                HStack(spacing: 8) {
-                    Button { searchFocus = true } label: {
-                        Image(systemName: "magnifyingglass").foregroundStyle(DaybookTheme.muted)
+            DaybookInputShell(kind: .search, focused: searchFocus) {
+                Button { searchFocus = true } label: {
+                    Image(systemName: "magnifyingglass").foregroundStyle(DaybookTheme.muted)
+                }
+                .buttonStyle(.plain)
+                .keyboardShortcut("f", modifiers: .command)
+                .accessibilityLabel("search.placeholder")
+            } field: {
+                SyntaxTextField(
+                    text: $query,
+                    placeholder: L10n.string("search.placeholder", locale: locale),
+                    focused: $searchFocus,
+                    context: .search,
+                    onEscape: {
+                        if !query.isEmpty { query = "" }
+                        else { NSApp.keyWindow?.makeFirstResponder(nil) }
+                    }
+                )
+            } trailing: {
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                        searchFocus = true
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(DaybookTheme.muted)
                     }
                     .buttonStyle(.plain)
-                    .keyboardShortcut("f", modifiers: .command)
-                    .accessibilityLabel("search.placeholder")
-                    SyntaxTextField(
-                        text: $query,
-                        placeholder: L10n.string("search.placeholder", locale: locale),
-                        focused: $searchFocus,
-                        context: .search,
-                        onEscape: {
-                            if !query.isEmpty { query = "" }
-                            else { NSApp.keyWindow?.makeFirstResponder(nil) }
-                        }
-                    )
-                    if !query.isEmpty {
-                        Button {
-                            query = ""
-                            searchFocus = true
-                        } label: {
-                            Image(systemName: "xmark.circle.fill").foregroundStyle(DaybookTheme.muted)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("footer.search.clear")
-                    }
+                    .accessibilityLabel("footer.search.clear")
                 }
             }
             .zIndex(50)

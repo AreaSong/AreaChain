@@ -37,7 +37,7 @@
 - 新增或修改文案时同时核对两种语言，以及相关提示、错误、占位符和可访问性标签；检查格式参数和长文本布局。语言资源已有无关缺口时单独说明，不顺手全量重写。
 - 复用 [DaybookPalette.swift](AreaChain/Theme/DaybookPalette.swift)、[DaybookMetrics.swift](AreaChain/Theme/DaybookMetrics.swift)、[DaybookTokens.swift](AreaChain/Theme/DaybookTokens.swift) 中的语义色、尺寸、字号、圆角、间距令牌与已有共享组件。菜单栏、工作台与手记小窗共用同一套令牌与外观；工作台只在 [WorkspaceLayout.swift](AreaChain/Theme/WorkspaceLayout.swift) 保留页头、侧栏与内容宽度等布局尺寸，并用 `workspaceEmbedded` 环境值表达"有无侧栏/页头"这类能力差异，不得用它切换颜色、字体或尺寸。
 - 受影响界面检查中英文、浅深色、正常与最小支持窗口；共享组件覆盖其相关宿主。动效遵守系统减弱动态效果，操作保留键盘、焦点、输入法组合文本和撤销能力。
-- 输入优先复用现有 `DaybookTextField`、`DaybookTextEditor`、`SyntaxTextField`、`SyntaxTextEditor` 等组件。新增、搜索、标题编辑和手记保存有各自语义，不以统一外观为由改变 Return、⌘Return、Esc 或失焦行为。
+- 输入外壳统一用 `DaybookInputShell`（composer / search / editor 三种 kind，尺寸可用 configure 重载，颜色不可），正文控件复用现有 `DaybookTextField`、`DaybookTextEditor`、`SyntaxTextField`、`SyntaxTextEditor`。新增、搜索、标题编辑和手记保存有各自语义，不以统一外观为由改变 Return、⌘Return、Esc 或失焦行为。
 
 ## 输入输出与数据约定
 

@@ -33,7 +33,7 @@ struct MenuBarSearchField: View {
     }
 
     var body: some View {
-        HStack(spacing: 4) {
+        DaybookInputShell(kind: .search, focused: toolbar.searchIsFocused) {
             Button { toolbar.focusSearch() } label: {
                 Image(systemName: "magnifyingglass")
                     .font(DaybookType.caption)
@@ -76,7 +76,7 @@ struct MenuBarSearchField: View {
                 }
                 .fixedSize(horizontal: false, vertical: true)
             }
-
+        } field: {
             DaybookTextField(
                 text: $toolbar.searchText,
                 placeholder: searchPlaceholder,
@@ -91,7 +91,7 @@ struct MenuBarSearchField: View {
             )
             .accessibilityLabel("footer.search.label")
             .accessibilityIdentifier("menubar.search.input")
-
+        } trailing: {
             if !toolbar.searchText.isEmpty {
                 Button { toolbar.clearSearch(); toolbar.focusSearch() } label: {
                     Image(systemName: "xmark.circle.fill")
@@ -103,20 +103,7 @@ struct MenuBarSearchField: View {
                 .help("footer.search.clear")
             }
         }
-        .padding(.horizontal, 7)
         .frame(minWidth: 110, maxWidth: .infinity)
-        .frame(height: 28)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small)
-                .fill(toolbar.searchIsFocused ? DaybookTheme.surface : DaybookTheme.hoverFill)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: DaybookRadius.small)
-                .strokeBorder(
-                    toolbar.searchIsFocused ? DaybookTheme.ink.opacity(0.35) : DaybookTheme.rule.opacity(0.55),
-                    lineWidth: toolbar.searchIsFocused ? 0.9 : 0.6
-                )
-        }
         .syntaxSuggestions(toolbar.autocomplete, prefersAbove: true, enabled: toolbar.searchIsFocused && !toolbar.isFiltering)
         .background(KeyWindowHost { hostWindow = $0 })
         .onDisappear(perform: resignSearch)

@@ -86,14 +86,15 @@ extension DiaryNoteCard {
     private func editingContent(_ session: DiaryEditorSession) -> some View {
         @Bindable var session = session
         return VStack(alignment: .trailing, spacing: 6) {
-            SyntaxTextEditor(
-                text: $session.text, focused: $editFocused,
-                placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
-            )
+            DaybookInputShell(kind: .editor, focused: editFocused) {
+                SyntaxTextEditor(
+                    text: $session.text, focused: $editFocused,
+                    placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
+                )
                 .frame(minHeight: 64, maxHeight: 160)
                 .onAppear { editFocused = true }
-                .zIndex(20)
-                .daybookInputChrome(focused: editFocused, kind: .editor)
+            }
+            .zIndex(20)
 
             HStack {
                 Button("alert.cancel", action: discardEditingDraft)

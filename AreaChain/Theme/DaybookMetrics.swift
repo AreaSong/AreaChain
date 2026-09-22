@@ -16,7 +16,7 @@ enum DaybookMetrics {
 
     enum Radius {
         static let inputComposer: CGFloat = 8
-        static let inputSearch: CGFloat = 10
+        static let inputSearch: CGFloat = 6
         static let inputEditor: CGFloat = 6
         static let control: CGFloat = 6
         static let panel: CGFloat = 8
@@ -34,7 +34,7 @@ enum DaybookMetrics {
     static func inputInsets(_ kind: DaybookInputKind) -> EdgeInsets {
         switch kind {
         case .composer: EdgeInsets(top: 7, leading: 10, bottom: 7, trailing: 10)
-        case .search: EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
+        case .search: EdgeInsets(top: 4, leading: 7, bottom: 4, trailing: 7)
         case .editor: EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
         }
     }

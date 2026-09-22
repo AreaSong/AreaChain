@@ -54,6 +54,7 @@ enum DaybookPalette {
         let strong: Color
         let focus: Color
         let selection: Color
+        let faint: Color
     }
 
     struct Status {
@@ -96,7 +97,8 @@ enum DaybookPalette {
         subtle: DaybookTheme.cardBorder,
         strong: alpha("palette.border.strong", DaybookSwatch.inkLight, DaybookSwatch.inkDark, 0.35),
         focus: alpha("palette.border.focus", DaybookSwatch.inkLight, DaybookSwatch.inkDark, 0.35),
-        selection: DaybookTheme.cardSelectionStroke
+        selection: DaybookTheme.cardSelectionStroke,
+        faint: alpha("palette.border.faint", DaybookSwatch.ruleLight, DaybookSwatch.ruleDark, 0.4)
     )
 
     static let status = Status(

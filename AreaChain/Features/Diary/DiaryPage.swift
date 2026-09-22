@@ -214,13 +214,14 @@ struct DiaryPage: View {
     }
 
     private var searchChrome: some View {
-        HStack(spacing: 6) {
+        DaybookInputShell(kind: .search, focused: searchFocused) {
             Button { searchFocused = true } label: {
                 Image(systemName: "magnifyingglass").font(.system(size: 11))
             }
             .buttonStyle(.plain)
             .keyboardShortcut(showsPageHeader ? KeyboardShortcut("f", modifiers: .command) : nil)
             .accessibilityLabel("diary.search.placeholder")
+        } field: {
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),
                 focused: $searchFocused, context: .tagSearch, fontSize: DaybookType.subtitleSize,
@@ -229,6 +230,7 @@ struct DiaryPage: View {
                     else { NSApp.keyWindow?.makeFirstResponder(nil) }
                 }
             )
+        } trailing: {
             if !searchQuery.isEmpty {
                 Button {
                     searchQuery = ""
@@ -241,7 +243,6 @@ struct DiaryPage: View {
                 .accessibilityLabel("footer.search.clear")
             }
         }
-        .daybookInputChrome(focused: searchFocused, kind: .search)
     }
 
     private var tagFilterBar: some View {
@@ -318,7 +319,10 @@ struct DiaryPage: View {
                 }
                 Button("privacy.draft.discard") { confirmsDiscardDraft = true }
             }
-            .font(DaybookType.caption).padding(10).daybookInputChrome(focused: false, kind: .composer)
+            .font(DaybookType.caption)
+            .padding(10)
+            .background(RoundedRectangle(cornerRadius: DaybookMetrics.Radius.inputComposer, style: .continuous).fill(DaybookPalette.fill.subtle)) // token-exempt: 锁定草稿提示框，P4 迁 daybookSurface(.banner)
+            .overlay(RoundedRectangle(cornerRadius: DaybookMetrics.Radius.inputComposer, style: .continuous).stroke(DaybookPalette.border.faint, lineWidth: DaybookMetrics.Stroke.regular)) // token-exempt: 同上
         } else {
             DiaryQuickComposerView(
                 text: draftBinding.text, focused: $composerFocused, orderedTags: orderedTags,

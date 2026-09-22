@@ -806,11 +806,12 @@ python3 -B scripts/check_workflow.py
 # 1. 旧壳彻底消失（预期零输出）
 rg -n 'BoardCaptureRow|DaybookInputChrome|daybookInputChrome|DaybookField\b|locksHeight|showsFocusShadow|paintsChrome' AreaChain AreaChainTests
 
-# 2. 新壳被 13 处消费（预期 ≥ 13）
+# 2. 新壳被 12 处消费（预期 ≥ 12）。DiaryPage 锁定草稿提示框保持现有 token-exempt 自绘（P4 再迁 banner），不要再包进壳。
 rg -c 'DaybookInputShell\(' AreaChain --glob '*.swift' | awk -F: '{s+=$2} END {print s}'
 
-# 3. 没有人绕过壳自己画输入框（预期零输出）：field 槽以外不应再出现 focusRing 描边
+# 3. 输入框不得自绘 focusRing。全量扫描只允许 FooterBar.swift 的 FooterActionItemModifier 按钮描边（留给 P3 删除）；去掉该文件后预期零输出。
 rg -n 'focusRing' AreaChain/Features
+rg -n 'focusRing' AreaChain/Features --glob '!**/FooterBar.swift'
 
 # 4. 文档
 rg -n 'DaybookInputChrome|BoardCaptureRow|动态智能属性按钮' AGENTS.md README.md docs .agents/skills --glob '*.md'

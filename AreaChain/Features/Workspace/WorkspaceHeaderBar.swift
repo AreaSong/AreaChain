@@ -64,11 +64,11 @@ struct WorkspaceHeaderSearchCapsule: View {
     @Bindable var navigation: WorkspaceNavigation
 
     var body: some View {
-        HStack(spacing: 6) {
+        DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 11.5, weight: .medium))
                 .foregroundStyle(navigation.isSearchFocused ? DaybookTheme.ink : DaybookTheme.muted)
-
+        } field: {
             DaybookTextField(
                 text: $navigation.searchQuery,
                 placeholder: L10n.string("search.placeholder", locale: locale),
@@ -82,7 +82,7 @@ struct WorkspaceHeaderSearchCapsule: View {
                 }
             )
             .accessibilityIdentifier("workspace.header.search")
-
+        } trailing: {
             if !navigation.searchQuery.isEmpty {
                 Button {
                     navigation.clearSearch()
@@ -106,19 +106,7 @@ struct WorkspaceHeaderSearchCapsule: View {
                     )
             }
         }
-        .padding(.horizontal, 10)
-        .frame(width: 260, height: 28)
-        .background(
-            Capsule()
-                .fill(navigation.isSearchFocused ? DaybookTheme.surface : DaybookPalette.fill.subtle)
-        )
-        .overlay(
-            Capsule()
-                .strokeBorder(
-                    navigation.isSearchFocused ? DaybookTheme.stamp.opacity(0.65) : DaybookTheme.rule.opacity(0.55),
-                    lineWidth: 0.8
-                )
-        )
+        .frame(width: 260)
         // ⌘F 全局快捷键聚焦
         .background {
             Button("") {

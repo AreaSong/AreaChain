@@ -68,7 +68,7 @@ AreaChain/
 
 ### 工作台公共外观
 
-`MainSplitWorkspaceView` 在根部注入 `workspaceEmbedded = true`，只用于页内筛选条、独立窗口最小尺寸、页头最小高度、行数与气泡宿主宽度这类能力/布局分支；颜色、字体与尺寸令牌两宿主一致，来自 `DaybookPalette` / `DaybookMetrics` / `DaybookTokens`，工作台布局常量在 `WorkspaceLayout`。`DaybookPageHeader` 保持标题起点一致并在嵌入时使用页头最小高度；`DaybookInputChrome` 区分新增、搜索和多行编辑，将由 `DaybookInputShell` 取代。
+`MainSplitWorkspaceView` 在根部注入 `workspaceEmbedded = true`，只用于页内筛选条、独立窗口最小尺寸、页头最小高度、行数与气泡宿主宽度这类能力/布局分支；颜色、字体与尺寸令牌两宿主一致，来自 `DaybookPalette` / `DaybookMetrics` / `DaybookTokens`，工作台布局常量在 `WorkspaceLayout`。`DaybookPageHeader` 保持标题起点一致并在嵌入时使用页头最小高度；`DaybookInputShell` 是全应用唯一的输入外壳：composer / search 固定单行高（34 / 28），editor 多行不锁高；聚焦为菜单栏捕获框的灰描边，没有蓝色聚焦环。
 
 正文继续使用 13pt 系统字体，页标题使用 16pt 半粗；字号由 `DaybookType` 共用，原生 `DaybookTextField` 同时接受字重，避免详情标题进入编辑后变细。工作台内的可用尺寸由三栏容器决定，页面的独立宿主最小尺寸不再撑大工作台；日历宽窄布局、时间轴滚动及设置原生分组保持独立。设置子分组显式接收当前环境中的偏好对象，使正常窗口和隔离渲染测试使用同一注入路径。
 
@@ -108,7 +108,7 @@ AreaChain/
 - **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 是从今天起下一个排定日。
 - **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。浮层「任务 / 手记」共用底栏入口和 `BoardFilters`。任务与手记各持有一份 `BoardFilter`，手记只使用标签这一维；`DiaryPage` 通过 `Binding` 直接读写这份筛选，不再另持一个标签 ID。只有工作台保留页内搜索与分类栏。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。 手记搜索结果直接进入同一条记录的小窗，任务路由保持不变。
 - **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力。`SyntaxTextField` / `SyntaxTextEditor` 保留原生组合文本、光标及撤销。`SyntaxOverlay` 在菜单栏、工作台和检查器根部消费输入锚点，统一候选和只读属性详情，自动上下避让，不参与正文排版；就近消费避免嵌套宿主重复呈现。`CaptureAttributesButton` 在新增输入栏内预留固定宽度，由原文解析「属性 N」，不新增第二套可编辑状态。浮层保留来源语言和配色，Esc 先关闭浮层，不提前触发失焦保存。
-- **快捷操作按钮与捕获对齐**：`CommandReturnButton` 共用任务和手记的符号、悬停/Command 高亮及禁用反馈。手记输入与按钮同行，不另设底部保存行；⌘Return 由焦点原生编辑器处理，不再注册一份会抢占搜索或输入法的全局按钮快捷键。保存状态放入固定宽度的前导图标，输入私密标签时图标切换为盾牌反馈，避免挤动输入区。浮层手记输入框使用 `DaybookTextField` 严格锁定为单行 34pt（与任务捕获框像素级对齐），底层设置 `cell.usesSingleLineMode = !allowsShiftNewline` 保证多行文本粘贴保持单行模式且不撑高布局；长文本横向平滑滚动；右侧独立小窗入口全时段可用（空草稿直接打开空白小窗）。
+- **快捷操作按钮与捕获对齐**：`CommandReturnButton` 共用任务和手记的符号、悬停/Command 高亮及禁用反馈。手记输入与按钮同行，不另设底部保存行；⌘Return 由焦点原生编辑器处理，不再注册一份会抢占搜索或输入法的全局按钮快捷键。保存状态放入固定宽度的前导图标，输入私密标签时图标切换为盾牌反馈，避免挤动输入区。浮层手记输入框与任务捕获框共用 `DaybookInputShell(kind: .composer)`，固定单行 34pt，底层设置 `cell.usesSingleLineMode = !allowsShiftNewline` 保证多行文本粘贴保持单行模式且不撑高布局；长文本横向平滑滚动；右侧独立小窗入口全时段可用（空草稿直接打开空白小窗）。
 - **手记行交互与键盘路由**：`DiarySummaryRow` 结合 `DiaryRowPointerRegion` 原生事件监听，单击整行立即选中高亮，双击呼出独立编辑小窗；辅助动作按钮在悬停或选中时淡入显示。`DiaryPage+Keyboard` 监听本窗口按键，打通手记列表的 `↑/↓` 选中切换、`Return/⌘O` 独立窗口打开、`⌘C` 复制（含隐私保护标记）、`Delete/⌘⌫` 移入废纸篓及 `Esc` 清除选中。
 - **`ReminderPlanning`**：结合时钟、习惯掩码与待办 `dayKey` 算下一枪通知时刻。
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。

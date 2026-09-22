@@ -57,10 +57,10 @@ rg -c 'inputSearch == 6' AreaChainTests/Theme/DaybookTokenTests.swift           
 rg -c 'search.top == 4' AreaChainTests/Theme/DaybookTokenTests.swift                                            # 预期 1
 ```
 
-### D. 13 处消费者都迁了，且没绕过壳
+### D. 输入框都迁入壳，且没绕过壳
 
 ```bash
-# D1 预期 ≥ 13
+# D1 预期 ≥ 12。DiaryPage 锁定草稿提示框保持现有 token-exempt 自绘（P4 再迁 banner），不要把它再包进壳，所以不计入这 12 处。
 rg -c 'DaybookInputShell\(' AreaChain --glob '*.swift' | awk -F: '{s+=$2} END {print s}'
 
 # D2 每个文件至少 1（逐个核对；缺任何一个 → FAIL）
@@ -69,8 +69,9 @@ for f in Features/MenuBar/CaptureField.swift Theme/DaybookPage.swift Features/Di
 # D3 DiaryQuickComposerView 里应有 2 处（compact + editor）
 rg -c 'DaybookInputShell\(' AreaChain/Features/Diary/DiaryQuickComposerView.swift   # 预期 2
 
-# D4 Features 里不应再有自己画的输入框描边（预期零输出）
+# D4 输入框不得自绘 focusRing。全量扫描只允许 FooterBar.swift 的 FooterActionItemModifier 按钮描边（留给 P3 删除）；去掉该文件后预期零输出。
 rg -n 'focusRing' AreaChain/Features
+rg -n 'focusRing' AreaChain/Features --glob '!**/FooterBar.swift'
 rg -n 'Capsule\(\)' AreaChain/Features/Workspace/WorkspaceHeaderBar.swift        # 预期零输出（搜索胶囊已换成壳）
 
 # D5 没有人用 configure 改颜色（预期零输出）

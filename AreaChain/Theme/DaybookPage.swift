@@ -197,21 +197,20 @@ struct DaybookComposer<Accessory: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            BoardCaptureRow(focused: isFocused, fill: .clear, stroke: .clear, paintsChrome: false) {
+            DaybookInputShell(kind: .composer, focused: isFocused) {
                 Image(systemName: "plus")
-                    .font(DaybookType.subtitle.weight(.semibold))
-                    .foregroundStyle(isFocused ? DaybookTheme.stamp : DaybookTheme.muted)
+                    .font(.system(size: 11.5, weight: .semibold))
+                    .foregroundStyle(isFocused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8))
+                    .frame(width: 14)
             } field: {
                 field
             } trailing: {
                 CaptureAttributesButton(text: text, knownTags: completionTags, state: autocomplete)
                 ComposerAddButton(enabled: canSubmit, action: onSubmit)
             }
-            .daybookInputChrome(focused: isFocused, kind: .composer)
             .syntaxSuggestions(autocomplete)
             accessory
         }
-        .daybookHideInputChrome()
     }
 
     @ViewBuilder

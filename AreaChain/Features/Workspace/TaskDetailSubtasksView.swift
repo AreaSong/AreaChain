@@ -95,16 +95,16 @@ struct TaskDetailSubtasksView: View {
     // MARK: - Add Input
 
     private var addSubtaskInput: some View {
-        HStack(spacing: 6) {
+        DaybookInputShell(kind: .composer, focused: isInputFocused) {
             Image(systemName: "plus.circle")
                 .font(.system(size: 11))
                 .foregroundStyle(DaybookTheme.stamp)
-
+        } field: {
             SyntaxTextField(
                 text: $newSubtaskTitle, placeholder: L10n.string("drawer.subtasks.placeholder", locale: locale),
                 focused: $isInputFocused, context: .taskTags, fontSize: 11, onSubmit: submitNewSubtask
             )
-
+        } trailing: {
             if !newSubtaskTitle.isEmpty {
                 Button {
                     submitNewSubtask()
@@ -116,16 +116,6 @@ struct TaskDetailSubtasksView: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5)
-        .background(
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(DaybookTheme.cardSurface)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .stroke(DaybookTheme.rule.opacity(0.25), lineWidth: 0.8)
-                )
-        )
     }
 
     private func submitNewSubtask() {

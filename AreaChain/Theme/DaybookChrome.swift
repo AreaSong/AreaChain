@@ -213,21 +213,6 @@ struct DaybookPeriodBar: View {
     }
 }
 
-struct DaybookField<Content: View>: View {
-    var focused: Bool = false
-    var content: Content
-
-    init(focused: Bool = false, @ViewBuilder content: () -> Content) {
-        self.focused = focused
-        self.content = content()
-    }
-
-    var body: some View {
-        content
-            .daybookInputChrome(focused: focused, kind: .search)
-    }
-}
-
 extension View {
     func daybookPanel(minWidth: CGFloat, minHeight: CGFloat) -> some View {
         padding(DaybookSpacing.page)
@@ -291,60 +276,6 @@ struct DaybookCardModifier: ViewModifier {
             return DaybookTheme.cardBorderHover
         }
         return DaybookTheme.cardBorder
-    }
-}
-
-// MARK: - 输入外框（从旧宿主样式搬入并去掉分支；P2 由 DaybookInputShell 取代）
-
-enum DaybookInputKind: Equatable {
-    case composer
-    case search
-    case editor
-}
-
-private struct DaybookInputChrome: ViewModifier {
-    var focused: Bool
-    var kind: DaybookInputKind
-
-    func body(content: Content) -> some View {
-        content
-            .padding(insets)
-            .background(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(fill))
-            .overlay(
-                RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(focused ? DaybookTheme.focusRing : border, lineWidth: borderWidth)
-            )
-    }
-
-    private var insets: EdgeInsets {
-        switch kind {
-        case .composer: EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
-        case .search: EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10)
-        case .editor: EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
-        }
-    }
-
-    private var borderWidth: CGFloat {
-        kind == .search ? (focused ? 1.6 : 1) : (focused ? 1.4 : 0.8)
-    }
-
-    private var radius: CGFloat {
-        kind == .search ? DaybookRadius.medium : DaybookRadius.small
-    }
-
-    private var fill: Color {
-        if kind == .composer && !focused { return DaybookTheme.hoverFill.opacity(0.75) }
-        return DaybookTheme.surface
-    }
-
-    private var border: Color {
-        kind == .search ? DaybookTheme.rule : DaybookTheme.cardBorder
-    }
-}
-
-extension View {
-    func daybookInputChrome(focused: Bool, kind: DaybookInputKind) -> some View {
-        modifier(DaybookInputChrome(focused: focused, kind: kind))
     }
 }
 

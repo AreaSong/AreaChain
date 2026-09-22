@@ -72,12 +72,10 @@ struct DiaryWindowView: View {
             }
             .foregroundStyle(DaybookTheme.muted)
         } else {
-            SyntaxTextEditor(text: $session.text, focused: $editorFocused,
-                             placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: save)
-                .padding(8)
-                .background(DaybookTheme.surface, in: RoundedRectangle(cornerRadius: DaybookRadius.small))
-                .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small)
-                    .strokeBorder(editorFocused ? DaybookTheme.focusRing : DaybookTheme.rule, lineWidth: 1))
+            DaybookInputShell(kind: .editor, focused: editorFocused) {
+                SyntaxTextEditor(text: $session.text, focused: $editorFocused,
+                                 placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: save)
+            }
         }
     }
 
