@@ -150,18 +150,22 @@ struct FooterBar: View {
             }
         }
         .fixedSize(horizontal: true, vertical: false)
+        .frame(minHeight: DaybookMetrics.Hit.compact)
+        .contentShape(Rectangle())
+        .background(SyntaxViewAnchor("menubar.filter.open"))
         .onHover { isHovered in
             if isHovered {
                 hoverTask?.cancel()
                 hoverTask = Task {
                     try? await Task.sleep(for: .milliseconds(120))
                     if !Task.isCancelled {
-                        isFilterDrawerPresented.wrappedValue = true
+                        toolbar.showFiltersFromHover()
                     }
                 }
             } else {
                 hoverTask?.cancel()
                 hoverTask = nil
+                toolbar.pointerLeftToolbar()
             }
         }
     }
@@ -177,18 +181,11 @@ struct FooterBar: View {
                     .lineLimit(1)
             }
             .font(DaybookType.caption)
-            .padding(.horizontal, 6)
-            .frame(height: 26)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(Color.clear)
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact, isFocused: triggerFocused))
+        .contentShape(Rectangle())
         .keyboardShortcut("f", modifiers: [.command, .shift])
         .focused($triggerFocused)
-        .foregroundStyle(DaybookTheme.muted)
         .accessibilityLabel("filter.label")
         .accessibilityIdentifier("menubar.filter.open")
         .help(L10n.string("filter.open.help", locale: locale))
@@ -216,20 +213,9 @@ struct FooterBar: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 6)
-            .frame(height: 26)
-            .foregroundStyle(DaybookTheme.stamp)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(DaybookTheme.stamp.opacity(0.12))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .strokeBorder(DaybookTheme.stamp.opacity(0.40), lineWidth: 0.8)
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.pill(tint: DaybookPalette.accent.base), size: .compact, isFocused: triggerFocused))
+        .contentShape(Rectangle())
         .keyboardShortcut("f", modifiers: [.command, .shift])
         .focused($triggerFocused)
         .accessibilityLabel("filter.label")
@@ -238,6 +224,8 @@ struct FooterBar: View {
     }
 
     private func triggerAction() {
+        hoverTask?.cancel()
+        hoverTask = nil
         onTriggerClick?() ?? isFilterDrawerPresented.wrappedValue.toggle()
     }
 
@@ -259,16 +247,9 @@ struct FooterBar: View {
     // MARK: - 右侧稳定动作区
 
     private var dismissDrawerButton: some View {
-        Button {
+        DaybookIconButton(systemName: "xmark", label: "common.close", size: .regular) {
             isFilterDrawerPresented.wrappedValue = false
-        } label: {
-            Image(systemName: "xmark")
-                .font(.system(size: 9.5, weight: .bold))
-                .modifier(FooterActionItemModifier(isFocused: false))
         }
-        .buttonStyle(.plain)
-        .help(L10n.string("common.close", locale: locale))
-        .accessibilityLabel(L10n.string("common.close", locale: locale))
     }
 
     private var workspaceButton: some View {
@@ -277,9 +258,8 @@ struct FooterBar: View {
         } label: {
             Image(systemName: "macwindow")
                 .font(DaybookType.caption)
-                .modifier(FooterActionItemModifier(isFocused: workspaceFocused))
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(.icon, size: .regular, isFocused: workspaceFocused))
         .focused($workspaceFocused)
         .keyboardShortcut("0", modifiers: .command)
         .help(L10n.string("window.workspace", locale: locale))
@@ -327,7 +307,7 @@ struct FooterBar: View {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 12, weight: .semibold))
-                .modifier(FooterActionItemModifier(isFocused: moreFocused))
+                .daybookMenuLabel(size: .regular, isFocused: moreFocused)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
@@ -336,32 +316,5 @@ struct FooterBar: View {
         .help(L10n.string("footer.more", locale: locale))
         .accessibilityLabel(L10n.string("footer.more", locale: locale))
         .accessibilityIdentifier("menubar.more")
-    }
-}
-
-// MARK: - 底栏动作按钮微交互修饰符
-
-private struct FooterActionItemModifier: ViewModifier {
-    @State private var isHovered = false
-    var isFocused: Bool = false
-
-    func body(content: Content) -> some View {
-        content
-            .frame(width: 26, height: 26)
-            .foregroundStyle(isHovered || isFocused ? DaybookTheme.ink : DaybookTheme.muted)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(isHovered ? DaybookTheme.hoverFill : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .strokeBorder(DaybookTheme.focusRing, lineWidth: isFocused ? 1.5 : 0)
-            )
-            .contentShape(Rectangle())
-            .onHover { hovering in
-                withAnimation(.easeInOut(duration: 0.12)) {
-                    isHovered = hovering
-                }
-            }
     }
 }

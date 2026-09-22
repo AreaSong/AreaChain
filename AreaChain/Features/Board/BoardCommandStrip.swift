@@ -63,15 +63,9 @@ struct BoardCommandStripButton: View {
 
     var body: some View {
         Button(action: action) {
-            BoardCommandStripIcon(
-                icon: icon,
-                isButtonHovered: hoveredTip == localizedText,
-                isActive: isActive,
-                isDestructive: isDestructive
-            )
+            BoardCommandStripIcon(icon: icon)
         }
-        .buttonStyle(.plain)
-        .frame(width: 22, height: 22)
+        .buttonStyle(DaybookButtonStyle(isDestructive ? .iconDestructive : (isActive ? .iconActive : .icon), size: .compact))
         .fixedSize()
         .accessibilityLabel(LocalizedStringKey(labelKey))
         .help(LocalizedStringKey(labelKey))
@@ -108,15 +102,11 @@ struct BoardCommandStripMenu<Content: View>: View {
         Menu {
             content()
         } label: {
-            BoardCommandStripIcon(
-                icon: icon,
-                isButtonHovered: hoveredTip == localizedText,
-                isActive: isActive
-            )
+            BoardCommandStripIcon(icon: icon)
+                .daybookMenuLabel(size: .compact, isActive: isActive)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .frame(width: 22, height: 22)
         .fixedSize()
         .help(LocalizedStringKey(labelKey))
         .onHover { updateTip($0) }
@@ -140,30 +130,10 @@ struct BoardCommandStripMenu<Content: View>: View {
 
 struct BoardCommandStripIcon: View {
     var icon: String
-    var isButtonHovered: Bool
-    var isActive = false
-    var isDestructive = false
 
     var body: some View {
         Image(systemName: icon)
             .font(.system(size: 11.5, weight: .medium))
-            .frame(width: 22, height: 22)
-            .background(
-                RoundedRectangle(cornerRadius: 4.0, style: .continuous)
-                    .fill(
-                        isDestructive
-                            ? (isButtonHovered ? Color.red.opacity(0.18) : Color.red.opacity(0.08))
-                            : (isActive
-                                ? DaybookTheme.stamp.opacity(isButtonHovered ? 0.22 : 0.14)
-                                : (isButtonHovered ? DaybookTheme.ink.opacity(0.12) : Color.clear))
-                    )
-            )
-            .foregroundStyle(
-                isDestructive
-                    ? Color.red
-                    : (isActive ? DaybookTheme.stamp : DaybookTheme.ink.opacity(isButtonHovered ? 0.95 : 0.72))
-            )
-            .contentShape(Rectangle())
     }
 }
 

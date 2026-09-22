@@ -64,7 +64,7 @@ struct CalendarPage: View {
                     if selectedKey != todayKey {
                         Button("calendar.today") { selectedKey = todayKey }
                             .font(DaybookType.caption)
-                            .buttonStyle(DaybookQuietButtonStyle())
+                            .buttonStyle(DaybookButtonStyle(.quiet))
                     }
                 }
                 .padding(.top, 2)

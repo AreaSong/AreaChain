@@ -105,7 +105,7 @@ struct WorkspaceSidebarView: View {
             HStack {
                 Text("sidebar.projects")
                 Spacer()
-                WorkspaceSidebarHeaderAction(labelKey: "sidebar.add.project", action: onAddProject)
+                DaybookIconButton(systemName: "plus", label: "sidebar.add.project", size: .compact, action: onAddProject)
             }
         }
     }
@@ -119,7 +119,7 @@ struct WorkspaceSidebarView: View {
             HStack {
                 Text("sidebar.tags")
                 Spacer()
-                WorkspaceSidebarHeaderAction(labelKey: "sidebar.add.tag", action: onAddTag)
+                DaybookIconButton(systemName: "plus", label: "sidebar.add.tag", size: .compact, action: onAddTag)
             }
         }
     }

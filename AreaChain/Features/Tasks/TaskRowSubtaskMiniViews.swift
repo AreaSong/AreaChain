@@ -35,7 +35,7 @@ struct TaskRowSubtaskChip: View {
             )
             .foregroundStyle(allDone ? DaybookTheme.stamp : DaybookTheme.muted)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 子任务计数芯片，P5 迁 DaybookChip(.count)
         .help(isExpanded ? "row.subtasks.collapse" : "row.subtasks.expand")
     }
 }
@@ -73,7 +73,7 @@ struct TaskRowSubtaskInlineList: View {
                         }
                         .frame(width: 14, height: 14)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.plain) // control: 复选框，非按钮语义
 
                     ModernTaskTitle(
                         text: subtask.title,

@@ -80,7 +80,7 @@ struct AttachmentBrowserPage: View {
                         .lineLimit(1)
                 }
             }
-            .buttonStyle(DaybookQuietButtonStyle())
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .accessibilityLabel(item.filename)
             .help(item.filename)
             .contextMenu {

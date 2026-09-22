@@ -101,13 +101,13 @@ struct MenuBarPopoverRenderingTests {
         let appearance = scheme == .dark ? "dark" : "light"
         try snapshot(view, name: "menubar-notes-\(locale)-\(appearance)")
 
-        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         #expect(toolbar.isFiltering)
         #expect(searchInputCount(in: view) == 1)
         #expect(diaryEditor(in: view) != nil)
         try snapshot(view, name: "menubar-notes-filters-\(locale)-\(appearance)")
 
-        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         #expect(!toolbar.isFiltering)
         let restoredField = try #require(searchField(in: view))
         #expect(searchInputCount(in: view) == 1)
@@ -270,14 +270,14 @@ struct MenuBarPopoverRenderingTests {
         toolbar.searchText = "会议 #工作"
         try await settle(view)
         try snapshot(view, name: "menubar-search-zh")
-        try click(at: NSPoint(x: 28, y: 27), in: window)
+        try click(at: try filterTriggerPoint(in: window), in: window)
         try await settle(view)
         #expect(toolbar.isFiltering)
         #expect(searchField(in: view) != nil)
         #expect(toolbar.searchText == "会议 #工作")
         try snapshot(view, name: "menubar-filters-zh")
 
-        try click(at: NSPoint(x: 28, y: 27), in: window)
+        try click(at: try filterTriggerPoint(in: window), in: window)
         try await settle(view)
         #expect(!toolbar.isFiltering)
         let restoredField = try #require(searchField(in: view))
@@ -361,11 +361,11 @@ struct MenuBarPopoverRenderingTests {
         try await settle(view)
 
         // 展开筛选
-        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         #expect(toolbar.isFiltering)
 
         // 再次点击筛选按钮收起
-        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         #expect(!toolbar.isFiltering)
     }
 
@@ -461,10 +461,14 @@ struct MenuBarPopoverRenderingTests {
         view.layoutSubtreeIfNeeded()
     }
 
+    private func filterTriggerPoint(in window: NSWindow) throws -> NSPoint {
+        try NativeSyntaxUI.center("menubar.filter.open", in: window)
+    }
+
     private func selectFilter(at x: CGFloat, in window: NSWindow, closeAfter: Bool = true) async throws {
-        try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+        try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         if closeAfter {
-            try await clickAndSettle(at: NSPoint(x: 28, y: 27), in: window)
+            try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         }
     }
 

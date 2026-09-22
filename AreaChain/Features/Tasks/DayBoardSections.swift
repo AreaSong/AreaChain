@@ -87,7 +87,7 @@ extension DayBoardList {
                 }
                 .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain) // control: 分节折叠头，整行点击
             .opacity(showCompleted ? 1.0 : 0.6)
             .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 

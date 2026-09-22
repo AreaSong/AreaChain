@@ -50,13 +50,13 @@ struct BoardSearchHitRow: View {
             Button(action: action) {
                 listLabel.contentShape(Rectangle())
             }
-            .buttonStyle(DaybookQuietButtonStyle())
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .help(hit.title)
         case .workspace:
             Button(action: action) {
                 workspaceLabel.contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain) // control: 搜索结果整行点击区，P4 迁 daybookSurface(.row)
             .help(hit.title)
         }
     }

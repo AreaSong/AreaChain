@@ -17,12 +17,10 @@ struct SearchPage: View {
     var body: some View {
         DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
             DaybookInputShell(kind: .search, focused: searchFocus) {
-                Button { searchFocus = true } label: {
-                    Image(systemName: "magnifyingglass").foregroundStyle(DaybookTheme.muted)
+                DaybookIconButton(systemName: "magnifyingglass", label: "search.placeholder", size: .inline) {
+                    searchFocus = true
                 }
-                .buttonStyle(.plain)
                 .keyboardShortcut("f", modifiers: .command)
-                .accessibilityLabel("search.placeholder")
             } field: {
                 SyntaxTextField(
                     text: $query,
@@ -36,14 +34,10 @@ struct SearchPage: View {
                 )
             } trailing: {
                 if !query.isEmpty {
-                    Button {
+                    DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
                         query = ""
                         searchFocus = true
-                    } label: {
-                        Image(systemName: "xmark.circle.fill").foregroundStyle(DaybookTheme.muted)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("footer.search.clear")
                 }
             }
             .zIndex(50)

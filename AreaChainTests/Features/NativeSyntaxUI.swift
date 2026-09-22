@@ -52,7 +52,8 @@ enum NativeSyntaxUI {
     }
 
     private static func id(_ element: NSObject) -> String? {
-        if let view = element as? NSView, let id = view.identifier?.rawValue, id.hasPrefix("syntax.") { return id }
+        if let view = element as? NSView, let id = view.identifier?.rawValue,
+           id.hasPrefix("syntax.") || id.hasPrefix("menubar.") { return id }
         if let accessible = element as? NSAccessibilityProtocol, let id = accessible.accessibilityIdentifier() {
             return id
         }

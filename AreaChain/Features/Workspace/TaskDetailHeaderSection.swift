@@ -28,7 +28,7 @@ struct TaskDetailHeaderBar: View {
                     .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+            .buttonStyle(DaybookButtonStyle(.destructive))
             .help("drawer.delete")
 
             if let onClose {
@@ -39,7 +39,7 @@ struct TaskDetailHeaderBar: View {
                         .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                         .contentShape(Rectangle())
                 }
-                .buttonStyle(DaybookQuietButtonStyle())
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .help("drawer.close.help")
             }
         }

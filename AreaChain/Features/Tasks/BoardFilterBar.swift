@@ -30,7 +30,7 @@ struct BoardFilterBar: View {
             HStack(spacing: 6) {
                 if filter.isActive {
                     Button("filter.all") { onChange(BoardFilter()) }
-                        .buttonStyle(DaybookQuietButtonStyle())
+                        .buttonStyle(DaybookButtonStyle(.quiet))
                 }
                 if !projects.isEmpty {
                     projectDropdown
@@ -205,20 +205,15 @@ struct BoardFilterDropdownButton: View {
                         .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
                         .lineLimit(1)
                 }
-                .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(.quiet, size: .inline))
 
             if active, let reset {
                 Button(action: reset) {
                     Image(systemName: "xmark")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(DaybookTheme.stamp)
-                        .padding(.horizontal, 3)
-                        .padding(.vertical, 2)
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.iconActive, size: .inline))
                 .help("footer.filter.clear")
                 .accessibilityLabel("footer.filter.clear")
             } else {
@@ -227,10 +222,8 @@ struct BoardFilterDropdownButton: View {
                 } label: {
                     Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
                         .font(.system(size: 7.5, weight: .bold))
-                        .foregroundStyle(active ? DaybookTheme.stamp.opacity(0.8) : DaybookTheme.muted.opacity(0.6))
-                        .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.icon, size: .inline))
             }
         }
         .padding(.horizontal, 7)
@@ -281,9 +274,6 @@ struct FilterDropdownItemRow: View {
     var item: FilterDropdownOption
     var onSelect: () -> Void
 
-    @State private var isHovered = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     var body: some View {
         Button(action: onSelect) {
             HStack(spacing: 5) {
@@ -320,16 +310,8 @@ struct FilterDropdownItemRow: View {
                         .clipShape(Capsule())
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(isHovered ? DaybookTheme.hoverFill : Color.clear)
-            )
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .onHover { isHovered = $0 }
-        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

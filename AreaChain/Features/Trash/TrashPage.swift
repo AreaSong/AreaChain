@@ -49,7 +49,7 @@ struct TrashPage: View {
         ) {
             Button("trash.empty.action") { confirmEmpty = true }
                 .font(DaybookType.caption.weight(.semibold))
-                .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+                .buttonStyle(DaybookButtonStyle(.destructive))
                 .disabled(items.isEmpty)
                 .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
                     Button("alert.purge.all", role: .destructive, action: emptyTrash)
@@ -113,14 +113,14 @@ struct TrashPage: View {
 
                 HStack(spacing: 6) {
                     Button("trash.restore") { restore(item) }
-                        .buttonStyle(DaybookQuietButtonStyle(prominent: true))
+                        .buttonStyle(DaybookButtonStyle(.prominent))
                         .disabled(!item.canRestore)
                         .help(item.canRestore ? "trash.restore" : "trash.restore.blocked")
 
                     Button("trash.purge", role: .destructive) {
                         pendingPurge = PendingTrash(title: "", titleProvider: { item.displayTitle }) { purge(item) }
                     }
-                    .buttonStyle(DaybookQuietButtonStyle(destructive: true))
+                    .buttonStyle(DaybookButtonStyle(.destructive))
                 }
                 .font(DaybookType.caption)
             }

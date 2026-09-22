@@ -206,7 +206,10 @@ struct DaybookComposer<Accessory: View>: View {
                 field
             } trailing: {
                 CaptureAttributesButton(text: text, knownTags: completionTags, state: autocomplete)
-                ComposerAddButton(enabled: canSubmit, action: onSubmit)
+                Button("row.add", action: onSubmit)
+                    .font(DaybookType.subtitle.weight(.semibold))
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
+                    .disabled(!canSubmit)
             }
             .syntaxSuggestions(autocomplete)
             accessory

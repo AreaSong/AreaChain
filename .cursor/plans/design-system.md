@@ -226,7 +226,7 @@ flowchart TB
 - [x] P0 令牌落地
 - [x] P1 删除双宿主分支
 - [x] P2 输入壳
-- [ ] P3a 按钮（MenuBar + Tasks + Board + Search）
+- [x] P3a 按钮（MenuBar + Tasks + Board + Search）
 - [ ] P3b 按钮（Diary + Workspace + Theme）
 - [ ] P4 表面与浮层
 - [ ] P5a 芯片 / 计数 / 圆点
@@ -251,5 +251,9 @@ flowchart TB
 - 2026-09-22 P1 验收（复验）：通过。A–G 重跑成立；此前的测试名与窗口释放挂起已消失。定向测试 EXIT=0，11 个套件失败 0、跳过 0。未做人工窗口走查。`DaybookGroupedCard` 注释仍写白色分组卡，实现已不再绘制，不阻塞。
 - 2026-09-22 P2 完成：新建 DaybookInputShell 并迁入 12 处输入框，锁定草稿提示框改为令牌自绘；搜索圆角 10→6、内边距 8/10→4/7，新增 border.faint；删除 BoardCaptureRow 与 DaybookInputChrome。
 - 2026-09-22 P2 验收：通过。A–H 重跑成立；定向测试 EXIT=0，13 个套件 87 通过、失败 0、跳过 0。未做人工窗口走查。
+- 2026-09-22 P3a 完成：新建 DaybookButtonStyle / DaybookIconButton / daybookMenuLabel，迁 MenuBar/Tasks/Board/Search 按钮并删除旧 API。
+- 2026-09-22 P3a 验收：不通过（D 定向测试 EXIT=65；`MenuBarPopoverRenderingTests.diaryUsesOnlyFooterSearchAndFilters` 的 zh-Hans / light 在二次点击 (28, 27) 后 `isFiltering` 仍为 true）
+- 2026-09-22 P3a 整改：FooterBar 悬停展开改走 `showFiltersFromHover` / `pointerLeftToolbar`，筛选触发区固定 compact 高度矩形点击，测试改为 `menubar.filter.open` 取中心点。
+- 2026-09-22 P3a 验收：通过（A–E 重跑成立；定向测试 EXIT=0，11 个套件 77 通过、失败 0、跳过 0。未做人工窗口走查。）
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

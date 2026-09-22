@@ -110,7 +110,7 @@ extension TasksPage {
                             .stroke(DaybookTheme.stamp.opacity(0.25), lineWidth: 0.6)
                     )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain) // control: 胶囊操作，P5 迁 DaybookChip(.action)
                 .help("stamp.yesterday.moveAll.help")
                 .accessibilityLabel("stamp.yesterday.moveAll")
             }
@@ -299,7 +299,7 @@ struct LeftoverChipsBar: View {
         Button(action: config.action) {
             standardChipLabel(config)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 遗留芯片，P5 迁 DaybookChip(.filter)
         .disabled(config.count == 0)
         .opacity(config.count == 0 ? 0.45 : 1)
         .accessibilityLabel(config.kind.accessibilityLabel(count: config.count, locale: locale))

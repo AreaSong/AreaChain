@@ -56,34 +56,6 @@ struct DaybookPageHeader<Title: View, Subtitle: View, Trailing: View>: View {
     }
 }
 
-/// 侧边栏分组标题操作微按钮
-struct WorkspaceSidebarHeaderAction: View {
-    var icon: String = "plus"
-    var labelKey: LocalizedStringKey
-    var action: () -> Void
-
-    @State private var isHovered = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(isHovered ? DaybookTheme.stamp : DaybookTheme.muted)
-                .frame(width: 20, height: 20)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                        .fill(isHovered ? DaybookPalette.fill.hover : Color.clear)
-                )
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .help(labelKey)
-        .onHover { isHovered = $0 }
-        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-    }
-}
-
 /// 侧边栏统一导航行组件
 struct WorkspaceSidebarRow: View {
     var titleKey: LocalizedStringKey?

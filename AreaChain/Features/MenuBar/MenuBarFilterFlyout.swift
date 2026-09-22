@@ -142,16 +142,8 @@ struct MenuBarFilterFlyout: View {
                             .font(.system(size: 7.5, weight: .bold))
                             .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.7))
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                            .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
-                    )
-                    .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(isSelected ? .active : .quiet, size: .compact))
                 .onHover { hovering in
                     if hovering {
                         activeCategory.wrappedValue = cat
@@ -172,12 +164,8 @@ struct MenuBarFilterFlyout: View {
                             .font(.system(size: 9.5))
                             .lineLimit(1)
                     }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3.5)
-                    .foregroundStyle(DaybookTheme.stamp.opacity(0.9))
-                    .contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(DaybookButtonStyle(.prominent, size: .inline))
             }
         }
         .padding(4)
@@ -225,12 +213,8 @@ struct MenuBarFilterFlyout: View {
                                 .font(.system(size: 9.5))
                                 .lineLimit(1)
                         }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3.5)
-                        .foregroundStyle(DaybookTheme.stamp.opacity(0.9))
-                        .contentShape(Rectangle())
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .inline))
                 }
             }
             .padding(4)
@@ -355,20 +339,8 @@ struct MenuBarFilterFlyout: View {
                         .foregroundStyle(DaybookTheme.stamp)
                 }
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3.5)
-            .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.35) : Color.clear, lineWidth: 0.6)
-            )
-            .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(isSelected ? .active : .quiet, size: .compact))
     }
 
     // MARK: - 筛选交互与即反选

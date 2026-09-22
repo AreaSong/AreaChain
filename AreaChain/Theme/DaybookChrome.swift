@@ -58,62 +58,6 @@ enum DaybookHaptics {
     }
 }
 
-struct DaybookQuietButtonStyle: ButtonStyle {
-    var prominent: Bool = false
-    var destructive: Bool = false
-
-    func makeBody(configuration: Configuration) -> some View {
-        DaybookQuietButton(
-            configuration: configuration,
-            prominent: prominent,
-            destructive: destructive
-        )
-    }
-}
-
-private struct DaybookQuietButton: View {
-    let configuration: ButtonStyle.Configuration
-    var prominent: Bool
-    var destructive: Bool
-    @State private var hovering = false
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        let ringOpacity: CGFloat = hovering && isEnabled ? 0.35 : 0
-        return configuration.label
-            .foregroundStyle(ink)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(fill)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(DaybookTheme.focusRing.opacity(ringOpacity), lineWidth: 1)
-            )
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
-            .onHover { hovering = $0 }
-            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-            .animation(DaybookMotion.snappy(reduceMotion), value: configuration.isPressed)
-            .opacity(isEnabled ? 1 : 0.45)
-    }
-
-    private var ink: Color {
-        if !isEnabled { return DaybookTheme.muted }
-        if destructive { return DaybookTheme.destructive }
-        if prominent { return DaybookTheme.stamp }
-        return DaybookTheme.ink
-    }
-
-    private var fill: Color {
-        if configuration.isPressed { return DaybookTheme.pressFill }
-        if hovering && isEnabled { return DaybookTheme.hoverFill }
-        return .clear
-    }
-}
-
 struct DaybookEmptyState: View {
     var title: LocalizedStringKey
     var subtitle: LocalizedStringKey? = nil
@@ -167,26 +111,6 @@ private struct EmptyStateCenterModifier: ViewModifier {
     }
 }
 
-struct DaybookNavButton: View {
-    var systemName: String
-    var label: LocalizedStringKey
-    var enabled: Bool = true
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: systemName)
-                .font(DaybookType.subtitle.weight(.semibold))
-                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(DaybookQuietButtonStyle())
-        .disabled(!enabled)
-        .accessibilityLabel(label)
-        .help(label)
-    }
-}
-
 struct DaybookPeriodBar: View {
     var title: String
     var onPrev: () -> Void
@@ -197,17 +121,17 @@ struct DaybookPeriodBar: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            DaybookNavButton(systemName: "chevron.left", label: prevLabel, action: onPrev)
+            DaybookIconButton(systemName: "chevron.left", label: prevLabel, action: onPrev)
             Text(title)
                 .font(DaybookType.title)
                 .foregroundStyle(DaybookTheme.ink)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
-            DaybookNavButton(systemName: "chevron.right", label: nextLabel, action: onNext)
+            DaybookIconButton(systemName: "chevron.right", label: nextLabel, action: onNext)
             if let onToday {
                 Button("calendar.today", action: onToday)
                     .font(DaybookType.caption.weight(.semibold))
-                    .buttonStyle(DaybookQuietButtonStyle(prominent: true))
+                    .buttonStyle(DaybookButtonStyle(.prominent))
             }
         }
     }

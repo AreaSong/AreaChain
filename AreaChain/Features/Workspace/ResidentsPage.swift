@@ -111,7 +111,7 @@ private struct ResidentEditorRow: View {
             }
             .buttonStyle(.plain)
             .help("drawer.inspector.toggle")
-            RowIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
+            DaybookIconButton(systemName: "trash", label: "row.delete", role: .destructive, action: requestTrash)
         }
     }
 

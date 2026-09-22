@@ -100,7 +100,7 @@ struct CalendarMonthGrid: View {
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }
-        .buttonStyle(DaybookQuietButtonStyle())
+        .buttonStyle(DaybookButtonStyle(.quiet))
         .frame(maxWidth: .infinity, minHeight: cellHeight)
         .contentShape(Rectangle())
         .overlay(

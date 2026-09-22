@@ -34,14 +34,10 @@ struct MenuBarSearchField: View {
 
     var body: some View {
         DaybookInputShell(kind: .search, focused: toolbar.searchIsFocused) {
-            Button { toolbar.focusSearch() } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(DaybookType.caption)
-                    .foregroundStyle(toolbar.searchIsFocused ? DaybookTheme.ink : DaybookTheme.muted)
+            DaybookIconButton(systemName: "magnifyingglass", label: "footer.search.label", size: .inline) {
+                toolbar.focusSearch()
             }
-            .buttonStyle(.plain)
             .keyboardShortcut("f", modifiers: .command)
-            .accessibilityLabel("footer.search.label")
 
             if !tokens.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -62,7 +58,7 @@ struct MenuBarSearchField: View {
                                         .frame(width: 9, height: 9)
                                         .contentShape(Rectangle())
                                 }
-                                .buttonStyle(.plain)
+                                .buttonStyle(.plain) // control: 筛选 token 移除角标，P5 迁 DaybookChip(.token)
                             }
                             .padding(.leading, 4)
                             .padding(.trailing, 2.5)
@@ -93,14 +89,10 @@ struct MenuBarSearchField: View {
             .accessibilityIdentifier("menubar.search.input")
         } trailing: {
             if !toolbar.searchText.isEmpty {
-                Button { toolbar.clearSearch(); toolbar.focusSearch() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
+                DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
+                    toolbar.clearSearch()
+                    toolbar.focusSearch()
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel("footer.search.clear")
-                .help("footer.search.clear")
             }
         }
         .frame(minWidth: 110, maxWidth: .infinity)

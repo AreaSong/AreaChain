@@ -181,18 +181,12 @@ struct BatchActionBar: View {
             Button(role: .destructive, action: onTrash) {
                 Label("alert.trash.move", systemImage: "trash")
                     .font(.system(size: 11))
-                    .foregroundStyle(DaybookTheme.destructive)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(DaybookButtonStyle(.destructive, size: .compact))
 
             Spacer(minLength: 8)
 
-            Button(action: onClear) {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 14))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-            .buttonStyle(.plain)
+            DaybookIconButton(systemName: "xmark.circle.fill", label: "batch.clear", size: .compact, action: onClear)
             .help("batch.clear")
         }
     }

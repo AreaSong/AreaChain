@@ -7,8 +7,8 @@ extension TaskRow {
     var actionCluster: some View {
         if editing {
             HStack(spacing: 2) {
-                RowIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
-                RowIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
+                DaybookIconButton(systemName: "checkmark", label: "row.save", action: saveEdit)
+                DaybookIconButton(systemName: "xmark", label: "row.cancel", action: cancelEdit)
             }
             .frame(height: 24)
         } else {
@@ -31,15 +31,8 @@ extension TaskRow {
         } label: {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(hasCopied ? DaybookTheme.stamp : DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                        .fill(hasCopied ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.06))
-                )
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
         .accessibilityLabel(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
         .fixedSize()
@@ -81,17 +74,10 @@ extension TaskRow {
         } label: {
             Image(systemName: "ellipsis")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(DaybookTheme.muted)
-                .frame(width: 22, height: 22)
-                .background(
-                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
-                        .fill(DaybookTheme.ink.opacity(0.06))
-                )
-                .contentShape(Rectangle())
+                .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)
         .menuIndicator(.hidden)
-        .buttonStyle(.plain)
         .frame(width: 24, height: 24)
         .fixedSize()
         .help("row.more")

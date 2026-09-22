@@ -131,40 +131,6 @@ struct SectionStamp: View {
     }
 }
 
-struct RowIconButton: View {
-    var systemName: String
-    var label: LocalizedStringKey
-    var role: ButtonRole? = nil
-    var action: () -> Void
-
-    var body: some View {
-        Button(role: role, action: action) {
-            Image(systemName: systemName)
-                .font(DaybookType.subtitle.weight(.semibold))
-                .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(DaybookQuietButtonStyle(destructive: role == .destructive))
-        .accessibilityLabel(label)
-        .help(label)
-    }
-}
-
-struct ComposerAddButton: View {
-    var title: LocalizedStringKey = "row.add"
-    var enabled: Bool
-    var emphasized: Bool = true
-    var action: () -> Void
-
-    var body: some View {
-        Button(title, action: action)
-            .font(DaybookType.subtitle.weight(.semibold))
-            .buttonStyle(DaybookQuietButtonStyle(prominent: emphasized && enabled))
-            .disabled(!enabled)
-            .opacity(enabled ? 1 : 0.45)
-    }
-}
-
 extension View {
     func daybookScroll(featherEdges: Bool = false) -> some View {
         self

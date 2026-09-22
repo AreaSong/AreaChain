@@ -55,7 +55,7 @@ struct DaybookQuietTabBar: View {
                 .foregroundStyle(ink)
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.plain) // control: 分段切换滑块，非按钮语义，P5 迁 DaybookSegmentedBar
         .accessibilityLabel(LocalizedStringKey(item.titleKey))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
         .help(item == .tasks ? Text("任务 (⌘←)") : Text("手记 (⌘→)"))

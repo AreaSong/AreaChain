@@ -123,7 +123,7 @@ extension TasksPage {
                     .frame(width: 12, height: 12)
                     .contentShape(Rectangle())
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.plain) // control: 筛选 token 移除角标，P5 迁 DaybookChip(.token)
         }
         .padding(.leading, 6)
         .padding(.trailing, 4)

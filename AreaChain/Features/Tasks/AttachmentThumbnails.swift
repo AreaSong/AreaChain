@@ -12,7 +12,7 @@ struct AttachmentThumbnails: View {
                 } label: {
                     thumbnail(item)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain) // control: 附件缩略图点击区
                 .help(item.filename)
                 .accessibilityLabel("a11y.attachment \(item.filename)")
             }

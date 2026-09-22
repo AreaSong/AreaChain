@@ -24,7 +24,7 @@ struct MenuBarSearchResults: View {
                 Spacer()
                 Button("footer.search.clear", action: onClearSearch)
                     .font(DaybookType.caption)
-                    .buttonStyle(.plain)
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                     .foregroundStyle(DaybookTheme.stamp)
             }
             Text(query)
@@ -37,7 +37,7 @@ struct MenuBarSearchResults: View {
                 DaybookEmptyState(title: "search.empty", systemImage: "magnifyingglass")
                 if filter.isActive {
                     Button("footer.filter.clear", action: onClearFilter)
-                        .buttonStyle(DaybookQuietButtonStyle())
+                        .buttonStyle(DaybookButtonStyle(.quiet))
                 }
                 Spacer(minLength: 0)
             } else {
