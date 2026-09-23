@@ -70,20 +70,20 @@ struct DaybookEmptyState: View {
         VStack(alignment: alignment, spacing: compact ? 4 : 6) {
             if !compact {
                 Image(systemName: systemImage)
-                    .font(.system(size: alignment == .center ? 28 : 16, weight: .light))
-                    .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
+                    .font(.system(size: alignment == .center ? 28 : 16, weight: .light)) // token-exempt: 28pt 没有令牌，display 是 26pt，字重是 light
+                    .foregroundStyle(DaybookTheme.stamp.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
                     .padding(.bottom, alignment == .center ? 4 : 0)
                     .accessibilityHidden(true)
             }
             Text(title)
-                .font(compact ? DaybookType.caption : (alignment == .center ? .system(size: 13, weight: .medium) : DaybookType.body))
-                .foregroundStyle(DaybookTheme.ink.opacity(0.88))
+                .font(compact ? DaybookType.caption : (alignment == .center ? DaybookType.body.weight(.medium) : DaybookType.body))
+                .foregroundStyle(DaybookTheme.ink.opacity(0.88)) // token-exempt: 88% 墨色没有对应令牌
                 .multilineTextAlignment(alignment == .center ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle {
                 Text(subtitle)
-                    .font(.system(size: 11.5, weight: .regular))
+                    .font(DaybookType.caption.weight(.regular))
                     .foregroundStyle(DaybookTheme.muted)
                     .multilineTextAlignment(alignment == .center ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -141,7 +141,7 @@ extension View {
     func daybookPanel(minWidth: CGFloat, minHeight: CGFloat) -> some View {
         padding(DaybookSpacing.page)
             .frame(minWidth: minWidth, maxWidth: .infinity, minHeight: minHeight, maxHeight: .infinity, alignment: .topLeading)
-            .background(DaybookTheme.paper.opacity(0.94))
+            .background(DaybookTheme.paper.opacity(0.94)) // token-exempt: 94% 纸色没有对应令牌
     }
 
     func daybookHoverReveal(visible: Bool, reduceMotion: Bool) -> some View {

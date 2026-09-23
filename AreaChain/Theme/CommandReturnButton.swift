@@ -17,7 +17,7 @@ struct CommandReturnButton: View {
                 Image(systemName: "command")
                 Image(systemName: "return")
             }
-            .font(.system(size: 10.5, weight: .semibold))
+            .font(DaybookType.badge.weight(.semibold))
         }
         .buttonStyle(DaybookButtonStyle(enabled && isCommandPressed ? .iconActive : .icon, size: .compact))
         .focusable(false)

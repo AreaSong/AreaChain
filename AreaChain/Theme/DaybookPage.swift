@@ -199,8 +199,8 @@ struct DaybookComposer<Accessory: View>: View {
         VStack(alignment: .leading, spacing: 4) {
             DaybookInputShell(kind: .composer, focused: isFocused) {
                 Image(systemName: "plus")
-                    .font(.system(size: 11.5, weight: .semibold))
-                    .foregroundStyle(isFocused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8))
+                    .font(DaybookType.caption.weight(.semibold))
+                    .foregroundStyle(isFocused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
                     .frame(width: 14)
             } field: {
                 field

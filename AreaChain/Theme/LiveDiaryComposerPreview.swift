@@ -93,7 +93,7 @@ struct LiveDiaryComposerPreview: View {
             Group {
                 if !showsSuggestions {
                     RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                        .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+                        .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
                 }
             }
         )
@@ -190,7 +190,7 @@ struct LiveDiaryComposerPreview: View {
     private var copyButton: some View {
         Button(action: copyTitle) {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 11, weight: .medium))
+                .font(DaybookType.caption.weight(.medium))
         }
         .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help("diary.copy")
@@ -209,7 +209,7 @@ struct LiveDiaryComposerPreview: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .medium))
+                .font(DaybookType.caption.weight(.medium))
                 .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)
@@ -233,7 +233,7 @@ struct LiveDiaryComposerPreview: View {
         HStack(spacing: 5) {
             if isSensitive {
                 Image(systemName: "lock.shield")
-                    .font(.system(size: 8.5))
+                    .font(.system(size: 8.5)) // token-exempt: 小于 9pt
                     .foregroundStyle(DaybookTheme.muted)
                     .accessibilityLabel("diary.privacy")
             }
@@ -271,13 +271,13 @@ struct LiveDiaryComposerPreview: View {
 
     private func noteIndicator(fullText: String) -> some View {
         Image(systemName: "text.alignleft")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))
+            .font(DaybookType.micro.weight(.medium))
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
             )
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }

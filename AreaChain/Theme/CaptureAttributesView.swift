@@ -43,7 +43,7 @@ struct CaptureAttributesButton: View {
                 if attributes.count > 0 {
                     HStack(spacing: 3) {
                         Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 9))
+                            .font(DaybookType.micro)
                         Text(displayCount)
                             .font(DaybookType.caption.weight(.semibold))
                             .monospacedDigit()
@@ -53,16 +53,16 @@ struct CaptureAttributesButton: View {
                     .foregroundStyle(DaybookTheme.stamp)
                     .background(
                         Capsule()
-                            .fill(DaybookTheme.stamp.opacity(state.showsAttributes ? 0.20 : 0.12))
+                            .fill(DaybookTheme.stamp.opacity(state.showsAttributes ? 0.20 : 0.12)) // token-exempt: 20% 与 12% 写在同一个三元表达式里
                     )
                     .overlay(
                         Capsule()
-                            .stroke(DaybookTheme.stamp.opacity(0.35), lineWidth: 0.8)
+                            .stroke(DaybookPalette.accent.border, lineWidth: 0.8)
                     )
                 } else {
                     Image(systemName: "slider.horizontal.3")
-                        .font(.system(size: 10.5))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.40))
+                        .font(DaybookType.badge)
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.40)) // token-exempt: 40% 次要色没有对应令牌
                 }
             }
             .frame(width: 58, height: 22)
@@ -120,7 +120,7 @@ struct CaptureAttributesPopup: View {
         .frame(height: maxHeight, alignment: .top)
         .foregroundStyle(DaybookTheme.ink)
         .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookTheme.paper))
-        .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7))
+        .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)) // token-exempt: 70% 分隔线没有对应令牌
         .daybookElevation(.floating)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("syntax.overlay.attributes")

@@ -58,20 +58,20 @@ public struct RowTitleBubble: View {
     public var body: some View {
         HStack(alignment: .top, spacing: 5) {
             Image(systemName: isCopied ? "checkmark" : "text.alignleft")
-                .font(.system(size: 9.5, weight: isCopied ? .bold : .medium))
+                .font(DaybookType.micro.weight(isCopied ? .bold : .medium))
                 .foregroundStyle(isCopied ? DaybookTheme.stamp : DaybookTheme.muted)
                 .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 2) {
                 if isCopied {
                     Text(L10n.string("diary.copied", locale: locale))
-                        .font(.system(size: 9.5, weight: .bold))
+                        .font(DaybookType.micro.weight(.bold))
                         .foregroundStyle(DaybookTheme.stamp)
                         .transition(.opacity)
                 }
 
                 Text(title)
-                    .font(.system(size: 11.5, weight: .medium))
+                    .font(DaybookType.caption.weight(.medium))
                     .foregroundStyle(DaybookTheme.ink)
                     .lineLimit(nil)
                     .fixedSize(horizontal: false, vertical: true)
@@ -81,15 +81,15 @@ public struct RowTitleBubble: View {
         .padding(.vertical, 5.5)
         .frame(maxWidth: 260, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .fill(DaybookTheme.paper)
                 .daybookElevation(.floating)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(isCopied ? DaybookTheme.stamp.opacity(0.7) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.rule.opacity(0.9)), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .stroke(isCopied ? DaybookTheme.stamp.opacity(0.7) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.rule.opacity(0.9)), lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
         )
-        .contentShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .onHover { hovering in
             isHovered = hovering
             onHover?(hovering)
@@ -159,7 +159,7 @@ public struct RowNoteBubble: View {
                 HStack {
                     Spacer().frame(width: arrowPadding)
                     Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 7))
+                        .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
                         .foregroundStyle(DaybookTheme.paper)
                         .offset(y: 1)
                     Spacer()
@@ -170,16 +170,16 @@ public struct RowNoteBubble: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: isCopied ? "checkmark" : "text.alignleft")
-                        .font(.system(size: 9.5, weight: isCopied ? .bold : .semibold))
+                        .font(DaybookType.micro.weight(isCopied ? .bold : .semibold))
                         .foregroundStyle(DaybookTheme.stamp)
                     Text(isCopied ? L10n.string("diary.copied", locale: locale) : L10n.string(String.LocalizationValue(stringLiteral: headerTitleKey), locale: locale))
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DaybookType.badge.weight(.bold))
                         .foregroundStyle(isCopied ? DaybookTheme.stamp : DaybookTheme.muted)
                     Spacer(minLength: 0)
                 }
 
                 Text(note)
-                    .font(.system(size: 11, weight: .regular))
+                    .font(DaybookType.caption.weight(.regular))
                     .foregroundStyle(DaybookTheme.ink)
                     .lineSpacing(2.5)
                     .lineLimit(8)
@@ -189,20 +189,20 @@ public struct RowNoteBubble: View {
             .padding(.vertical, 7)
             .frame(width: 210, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                RoundedRectangle(cornerRadius: 7, style: .continuous) // token-exempt: 7pt 与 small、regular 都差 1pt
                     .fill(DaybookTheme.paper)
                     .daybookElevation(.floating)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .stroke(isCopied ? DaybookTheme.stamp.opacity(0.7) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.rule.opacity(0.9)), lineWidth: 0.8)
+                RoundedRectangle(cornerRadius: 7, style: .continuous) // token-exempt: 7pt 与 small、regular 都差 1pt
+                    .stroke(isCopied ? DaybookTheme.stamp.opacity(0.7) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.rule.opacity(0.9)), lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
             )
 
             if growsUpward {
                 HStack {
                     Spacer().frame(width: arrowPadding)
                     Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 7))
+                        .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
                         .foregroundStyle(DaybookTheme.paper)
                         .offset(y: -1)
                     Spacer()

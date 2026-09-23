@@ -19,7 +19,7 @@ struct DaybookSectionHeader: View {
                 .foregroundStyle(DaybookTheme.muted)
             if let count {
                 Text("\(count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 分节计数用圆体
                     .foregroundStyle(DaybookTheme.muted)
             }
         }

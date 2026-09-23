@@ -16,8 +16,8 @@ struct DaybookSegmentedBar: View {
         }
         .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.06))
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+                .fill(DaybookTheme.ink.opacity(0.06)) // token-exempt: 6% 墨色没有对应令牌
         )
     }
 
@@ -30,14 +30,14 @@ struct DaybookSegmentedBar: View {
             }
         } label: {
             Text(LocalizedStringKey(item.titleKey))
-                .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
+                .font(DaybookType.body.weight(isSelected ? .semibold : .medium))
                 .frame(minWidth: 36)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 4.5)
                 .background(
                     ZStack {
                         if isSelected {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                                 .fill(DaybookTheme.paper)
                                 .daybookElevation(.raised)
                                 .matchedGeometryEffect(id: "SliderBackground", in: sliderAnimation)

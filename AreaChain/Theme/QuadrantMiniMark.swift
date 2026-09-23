@@ -34,9 +34,9 @@ struct QuadrantMiniMark: View {
     var body: some View {
         HStack(spacing: metrics == .row ? 2.5 : 2) {
             Image(systemName: "exclamationmark.circle")
-                .font(.system(size: 8.5, weight: .bold))
+                .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt，kbd 是等宽
             Text(slot.badgeText)
-                .font(.system(size: metrics == .row ? 10 : 9.5, weight: .bold, design: .rounded))
+                .font(.system(size: metrics == .row ? 10 : 9.5, weight: .bold, design: .rounded)) // token-exempt: 象限徽章用圆体
         }
         .fixedSize()
         .foregroundStyle(slot.themeColor)
@@ -44,13 +44,13 @@ struct QuadrantMiniMark: View {
         .padding(.vertical, metrics == .row ? 0 : 1.5)
         .frame(height: metrics == .row ? 18 : nil)
         .background(
-            RoundedRectangle(cornerRadius: metrics == .row ? 4 : 3.5, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                 .fill(slot.themeFill)
         )
         .overlay {
             if metrics == .row {
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(slot.themeColor.opacity(isHighlighted ? 0.35 : 0.15), lineWidth: 0.6)
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .stroke(slot.themeColor.opacity(isHighlighted ? 0.35 : 0.15), lineWidth: 0.6) // token-exempt: 象限色 35% 与 15% 不是印章色
             }
         }
     }
