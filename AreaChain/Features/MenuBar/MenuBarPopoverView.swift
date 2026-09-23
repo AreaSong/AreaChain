@@ -342,7 +342,7 @@ struct MenuBarPopoverView: View {
             switch tab {
             case .tasks:
                 if todayRemaining > 0 {
-                    Circle()
+                    Circle() // token-exempt: 头部状态圆点
                         .fill(DaybookPalette.status.pending)
                         .frame(width: 5, height: 5)
                         .transition(.scale.combined(with: .opacity))
@@ -359,7 +359,7 @@ struct MenuBarPopoverView: View {
                 }
             case .diary:
                 if todayDiariesCount > 0 {
-                    Circle()
+                    Circle() // token-exempt: 头部状态圆点
                         .fill(DaybookPalette.accent.base)
                         .frame(width: 5, height: 5)
                         .transition(.scale.combined(with: .opacity))

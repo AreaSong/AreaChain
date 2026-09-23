@@ -214,9 +214,9 @@ struct DiaryNoteCard: View {
             .foregroundStyle(DaybookPalette.text.secondary)
             .padding(.horizontal, assignedTags.isEmpty ? 6 : 4)
             .frame(height: 18)
-            .background(Capsule().fill(DaybookPalette.fill.hover))
+            .background(Capsule().fill(DaybookPalette.fill.hover)) // token-exempt: 加标签胶囊，圆角由形状决定
             .overlay(
-                Capsule().strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.7)
+                Capsule().strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.7) // token-exempt: 加标签胶囊，圆角由形状决定
             )
         }
         .menuStyle(.borderlessButton)

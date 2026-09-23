@@ -83,7 +83,7 @@ extension TasksPage {
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 0.5)
                     .background(DaybookPalette.accent.base.opacity(0.14)) // token-exempt: 14% 印章底没有对应令牌
-                    .clipShape(Capsule())
+                    .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
             }
             Spacer()
             if yesterdayItems.contains(where: { $0.kind == .todo }) {

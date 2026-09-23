@@ -133,7 +133,7 @@ struct MenuBarFilterFlyout: View {
                         Spacer(minLength: 2)
 
                         if hasActive {
-                            Circle()
+                            Circle() // token-exempt: 筛选状态圆点
                                 .fill(DaybookPalette.accent.base)
                                 .frame(width: 4, height: 4)
                         }
@@ -310,7 +310,7 @@ struct MenuBarFilterFlyout: View {
                 }
 
                 if let dotColor {
-                    Circle()
+                    Circle() // token-exempt: 筛选状态圆点
                         .fill(dotColor)
                         .frame(width: 5, height: 5)
                 } else if let icon {

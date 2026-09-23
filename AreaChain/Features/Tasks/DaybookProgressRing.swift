@@ -9,9 +9,9 @@ struct DaybookProgressRing: View {
 
     var body: some View {
         ZStack {
-            Circle()
+            Circle() // token-exempt: 进度环轨道
                 .stroke(DaybookPalette.border.default.opacity(0.35), lineWidth: lineWidth) // token-exempt: 35% 分隔线没有对应令牌
-            Circle()
+            Circle() // token-exempt: 进度环
                 .trim(from: 0, to: CGFloat(min(max(progress, 0), 1)))
                 .stroke(
                     AngularGradient(

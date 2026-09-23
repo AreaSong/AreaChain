@@ -169,7 +169,7 @@ struct FooterBar: View {
                         .padding(.horizontal, 3.5)
                         .padding(.vertical, 0.5)
                         .background(DaybookPalette.accent.fill)
-                        .clipShape(Capsule())
+                        .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
                 }
             }
         }

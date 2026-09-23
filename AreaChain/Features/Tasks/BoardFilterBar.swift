@@ -230,7 +230,7 @@ struct BoardFilterDropdownButton: View {
         .padding(.vertical, 4)
         .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
         .overlay(Capsule().stroke(active ? DaybookPalette.accent.border : DaybookPalette.border.default.opacity(0.5), lineWidth: 0.8)) // token-exempt: 50% 分隔线没有对应令牌
-        .contentShape(Capsule())
+        .contentShape(Capsule()) // token-exempt: 筛选胶囊点击区
     }
 
     // MARK: - 手账风下拉气泡内容
@@ -306,7 +306,7 @@ struct FilterDropdownItemRow: View {
                         .padding(.vertical, 0.5)
                         .background(item.isSelected ? DaybookPalette.accent.base.opacity(0.20) : DaybookPalette.text.primary.opacity(0.06)) // token-exempt: 20% 与 6% 没有对应令牌
                         .foregroundStyle(item.isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-                        .clipShape(Capsule())
+                        .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
                 }
             }
         }

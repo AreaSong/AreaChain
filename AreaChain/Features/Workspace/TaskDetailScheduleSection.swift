@@ -142,7 +142,7 @@ struct TaskDetailWeekdayPicker: View {
                             .font(DaybookType.badge.weight(.medium))
                             .frame(width: 25, height: 25)
                             .background(
-                                Circle()
+                                Circle() // token-exempt: 星期圆点，不是胶囊
                                     .fill(isSelected ? DaybookPalette.accent.base : DaybookPalette.cardSurface)
                             )
                             .foregroundStyle(isSelected ? DaybookPalette.text.onAccent : DaybookPalette.text.primary)

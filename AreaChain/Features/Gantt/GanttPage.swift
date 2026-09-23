@@ -153,7 +153,7 @@ struct GanttPage: View {
             .accessibilityLabel(title)
             .accessibilityAddTraits(.isButton)
             ForEach(days, id: \.self) { key in
-                Circle()
+                Circle() // token-exempt: 习惯完成点，不是按钮
                     .fill(dots.contains(key) ? DaybookPalette.accent.base : Color.clear)
                     .frame(width: 6, height: 6)
                     .frame(width: dayWidth, height: 22)

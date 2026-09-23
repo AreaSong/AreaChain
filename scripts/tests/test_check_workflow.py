@@ -146,7 +146,7 @@ class WorkflowCheckTests(unittest.TestCase):
         report = workflow.run_checks(self.root)
         self.assertEqual(report["status"], "passed", report)
         self.assertEqual({check["name"] for check in report["checks"]},
-                         {"project-identity", "project-links", "domain-imports", "skill-git-scope"})
+                         {"project-identity", "project-links", "domain-imports", "skill-git-scope", "theme-tokens"})
 
     def test_accidentally_exposed_local_agent_file_fails(self):
         self.make_project()
@@ -248,6 +248,49 @@ class WorkflowCheckTests(unittest.TestCase):
         report = json.loads(passed.stdout)
         self.assertEqual(report["schemaVersion"], 1)
         self.assertEqual(report["status"], "passed")
+
+    def test_theme_tokens_flags_literal_shape_color_and_layout(self):
+        self.write("AreaChain/Features/Sample.swift",
+                   "RoundedRectangle(cornerRadius: 4)\n"
+                   "Text(\"x\").font(.system(size: 11))\n"
+                   "Color.red\n"
+                   ".buttonStyle(.plain)\n"
+                   "DaybookTheme.ink\n"
+                   "if isWorkspace {}\n"
+                   ".shadow(color: .black)\n"
+                   "WorkspaceLayout.headerHeight\n"
+                   "if embedded { DaybookPalette.text.primary }\n"
+                   "Capsule().fill(DaybookPalette.accent.base.opacity(0.2))\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertGreaterEqual(len(result["issues"]), 8)
+
+    def test_theme_tokens_skip_control_exempt_and_token_radius(self):
+        self.write("AreaChain/Features/Sample.swift",
+                   "RoundedRectangle(cornerRadius: DaybookRadius.small)\n"
+                   "Circle() // token-exempt: 状态点\n"
+                   ".buttonStyle(.plain) // control: 整行点击\n"
+                   "Divider().opacity(0.35)\n"
+                   ".opacity(0)\n"
+                   "let note = \"Color.red\"\n"
+                   "// DaybookTheme.ink\n"
+                   "WorkspaceHeaderSearchCapsule(navigation: navigation)\n")
+        self.write("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift",
+                   "WorkspaceLayout.headerHeight\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "passed", result)
+
+    def test_theme_tokens_embedded_layout_alone_is_allowed(self):
+        self.write("AreaChain/Features/Sample.swift", "if embedded { showFilters }\n")
+        self.write("AreaChain/Features/Workspace/MainSplitWorkspaceView.swift",
+                   "WorkspaceLayout.maxContentWidth\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["issues"], [])
+
+    def test_theme_tokens_reports_original_line_number(self):
+        self.write("AreaChain/Features/Sample.swift", "let ok = 1\nColor.orange\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["issues"][0]["line"], 2)
 
 
 if __name__ == "__main__":

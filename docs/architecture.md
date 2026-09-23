@@ -36,7 +36,7 @@ AreaChain/
     Search/       跨天搜索与工作台/浮层共用的结果列表
     Settings/     设置（外观、启动、捕获、通知、日历、iCloud、隐私与解锁、数据）
     Trash/        回收站（工作台 tab）
-  Theme/          色板、DaybookType 字号、动效系统 (DaybookMotion / CheckmarkShape / DaybookHaptics)、确认组件
+  Theme/          令牌（DaybookPalette / DaybookMetrics / DaybookTokens / DaybookColor）、基座（输入壳、按钮、表面、芯片、分节头）与页壳
 ```
 
 各 `*StandaloneView` 仍是工作台 tab 的包装。`AppWindows.openWorkspace(tab:)` 负责工作台；新增的单条手记小窗由 Features/Diary 中的 `DiaryWindows` 注册和持有，不声明额外 SwiftUI Window Scene，不复制数据模型。
@@ -46,11 +46,11 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：色彩、圆角、阴影、无障碍动效（`DaybookMotion`）、触控板触感（`DaybookHaptics`）、页壳 `DaybookPage` 与字号令牌 `DaybookType`。
+- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。
 
 ### 开发时的边界与状态核对
 
-目录层次不是编译隔离保证。修改边界时沿入口、调用方及实际状态确认责任，不把理想依赖图当成全部现有代码的证明。`python3 -B scripts/check_workflow.py` 只守住 Domain 禁止显式导入 SwiftUI/AppKit 这一条可判定约束，不检查完整符号依赖或运行语义。
+目录层次不是编译隔离保证。修改边界时沿入口、调用方及实际状态确认责任，不把理想依赖图当成全部现有代码的证明。`python3 -B scripts/check_workflow.py` 只守住 Domain 禁止显式导入 SwiftUI/AppKit，以及 Features 里未豁免的字面颜色、字号、圆角、阴影和旧主题名；不证明视觉一致，也不检查完整符号依赖或运行语义。
 
 - 无 UI 的解析/过滤/日期规则沿 Domain 复用；持久化与系统 IO 沿 Services 及已有仓储入口，界面沿 Features，公共展示沿 Theme。窗口装配等现有平台协调按实际调用链理解，不借治理任务重排全仓库。
 - `ModelChanges` 拥有事务提交和保存后通知；编辑会话拥有草稿与冲突基线，展示筛选不成为第二份持久化真相。变更需说明权威状态、写入者、生命周期、线程/actor 与失效责任。

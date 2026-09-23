@@ -46,7 +46,7 @@ struct MenuBarSearchField: View {
                             DaybookChip(tint: DaybookPalette.accent.base, isSelected: true) {
                                 HStack(spacing: 2) {
                                     if let dotColor = token.dotColor {
-                                        Circle().fill(dotColor).frame(width: 4.5, height: 4.5)
+                                        Circle().fill(dotColor).frame(width: 4.5, height: 4.5) // token-exempt: 筛选色点
                                     } else if let icon = token.icon {
                                         Image(systemName: icon)
                                     }

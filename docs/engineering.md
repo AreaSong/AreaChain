@@ -51,7 +51,7 @@
 
 | 改动/声明 | 本地入口 | 结果能证明什么 |
 |---|---|---|
-| 工作流文档、Domain UI 依赖、项目技能 Git 边界 | `python3 -B scripts/check_workflow.py` | 内联本地引用/锚点、显式 import、已共享技能和本地状态忽略边界 |
+| 工作流文档、Domain UI 依赖、项目技能 Git 边界 | `python3 -B scripts/check_workflow.py` | 内联本地引用/锚点、显式 import、已共享技能和本地状态忽略边界，以及 Features 的 theme-tokens 字面模式 |
 | 本检查器改变 | `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` | 临时夹具的正/反例、作用域、输出与退出码；不是技能决策质量 |
 | 构建/验签/管理/工作流脚本 | `python3 -B -m unittest discover -s scripts/tests -v`；改 Shell 时另做 `bash -n` | mock 外部命令和临时目录中的行为，不是真实安装、签名或恢复 |
 | Swift 业务/接口/数据 | 按项目验证技能选择 `./scripts/build.sh test --only-testing AreaChainTests/具体测试类` | 实际执行且未跳过的用例；测试存在不能代替执行 |
@@ -59,6 +59,8 @@
 | 原生 UI / 磁盘兼容 | 按 [架构隔离命令](architecture.md#隔离验收与真实启用门禁) 选择范围并串行 | 已走到的隔离场景；不可启用普通测试之外的真实钥匙串授权 |
 
 `check_workflow.py` 仅用标准库和只读 Git 命令。支持 `--format json`（`schemaVersion: 1`）、`--root` 指定 AreaChain 工作副本；全部选定检查通过返回 0，失败/依赖阻塞返回 1，参数错误返回 2。输出区分 passed/failed/blocked 的检查项；不忽略依赖缺失后报成功。
+
+`theme-tokens` 只扫描 `AreaChain/Features` 的字面模式。同行有 `// control:` 或 `// token-exempt:` 则跳过。圆角已经写成 `DaybookRadius` 的形状，以及不带颜色名的视图显隐透明度，不报。它不证明界面看起来一致。
 
 默认不扫描个人目录；本次确需验证个人规则时，显式加 `--personal-root <实际目录>`，范围只有该目录的 AGENTS、路由及自有 `areasong-development` 文档，不扫描其他技能/插件缓存。Skill Creator 的格式校验、元数据解析及受控新会话发现仍是单独证据。
 

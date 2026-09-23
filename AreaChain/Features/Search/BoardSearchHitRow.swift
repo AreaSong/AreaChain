@@ -75,7 +75,7 @@ struct BoardSearchHitRow: View {
             kindText
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Capsule().fill(DaybookPalette.accent.fill))
+                .background(Capsule().fill(DaybookPalette.accent.fill)) // token-exempt: 搜索种类胶囊
             titleText(lineLimit: 2)
             Spacer(minLength: 0)
             if isSelected {

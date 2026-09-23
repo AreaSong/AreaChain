@@ -23,6 +23,7 @@ LIMITATIONS = [
     "文档检查覆盖内联本地链接及 Markdown 标题/显式锚点；不访问远端链接，不验证内容语义。",
     "Domain 检查仅识别显式 import；不替代 Swift 编译、宏展开或完整符号依赖分析。",
     "技能 Git 边界不证明发现或调用成功；本地通过不代表 CI、运行验收或发行通过。",
+    "theme-tokens 只匹配 Features 里的字面模式，并跳过同行的 control 与 token-exempt 注释；不证明视觉一致。",
 ]
 
 
@@ -209,6 +210,58 @@ def check_domain(root):
     return result("domain-imports", len(paths), issues)
 
 
+THEME_LINE = re.compile(
+    r"\.font\(\.system\(|cornerRadius:\s*[0-9]|"
+    r"\bColor\.(?:orange|red|green|white|black|blue|gray|primary|secondary)\b|"
+    r"\.buttonStyle\(\.plain\)|\bDaybookTheme\.|\bisWorkspace\b|\.shadow\("
+)
+THEME_SHAPE = re.compile(r"(?<![A-Za-z])(?:RoundedRectangle|Capsule|Circle)\(")
+THEME_OPACITY = re.compile(r"\.opacity\([0-9.]+\)")
+THEME_COLORISH = re.compile(r"DaybookPalette|Color\.")
+THEME_LAYOUT = re.compile(r"\bWorkspaceLayout\.")
+THEME_EMBEDDED = re.compile(r"\bembedded\b.*(?:DaybookPalette|DaybookType|\.opacity\(|Color\.)")
+THEME_LAYOUT_FILES = {
+    "AreaChain/Features/Workspace/MainSplitWorkspaceView.swift",
+    "AreaChain/Features/Workspace/WorkspaceSidebarView.swift",
+    "AreaChain/Features/Workspace/WorkspaceHeaderBar.swift",
+}
+
+
+def theme_line_allowed(original):
+    return "// control:" in original or "// token-exempt:" in original
+
+
+def check_theme_tokens(root):
+    directory = root / "AreaChain/Features"
+    paths = sorted(directory.rglob("*.swift")) if directory.is_dir() else []
+    issues = []
+    for path in paths:
+        if not contained(path, root):
+            issues.append(issue(path, "源文件通过符号链接越出检查根目录。"))
+            continue
+        try:
+            original = path.read_text(encoding="utf-8")
+            masked = swift_code(original)
+        except (OSError, UnicodeError, RuntimeError) as error:
+            issues.append(issue(path, f"无法读取界面文件：{type(error).__name__}"))
+            continue
+        relative = path.relative_to(root).as_posix()
+        for number, (raw, code) in enumerate(zip(original.splitlines(), masked.splitlines()), 1):
+            if theme_line_allowed(raw):
+                continue
+            if THEME_LINE.search(code):
+                issues.append(issue(path, "Features 出现未豁免的字面视觉写法。", number))
+            elif THEME_SHAPE.search(code) and "DaybookRadius" not in code and "DaybookMetrics" not in code:
+                issues.append(issue(path, "Features 出现未豁免的自绘形状。", number))
+            elif THEME_OPACITY.search(code) and THEME_COLORISH.search(code):
+                issues.append(issue(path, "Features 对颜色使用了未豁免的透明度。", number))
+            if relative not in THEME_LAYOUT_FILES and THEME_LAYOUT.search(code):
+                issues.append(issue(path, "WorkspaceLayout 只允许白名单文件引用。", number))
+            if THEME_EMBEDDED.search(code):
+                issues.append(issue(path, "workspaceEmbedded 不能和颜色或字号写在同一行。", number))
+    return result("theme-tokens", len(paths), issues)
+
+
 def git(root, arguments, stdin=None):
     return subprocess.run(["git", "-C", str(root), *arguments], input=stdin,
                           text=True, capture_output=True, timeout=15, check=False)
@@ -286,7 +339,7 @@ def run_checks(root, personal_root=None):
     checks = [result("project-identity", len(markers), missing)]
     if not missing:
         checks.extend([check_links(root, project_docs(root), "project-links"),
-                       check_domain(root), check_skill_scope(root)])
+                       check_domain(root), check_skill_scope(root), check_theme_tokens(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)
