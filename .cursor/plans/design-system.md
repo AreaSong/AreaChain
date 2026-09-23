@@ -296,5 +296,7 @@ flowchart TB
 - 2026-09-23 P6 Tasks 验收：不通过（C1：`AreaChain/Features/Diary` 六个文件相对 HEAD 有未暂存 diff，内容是随后的手记令牌清扫。A1–A5、B、C2、D、E 本次重跑通过；定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_11-44-28-+0800.xcresult`，4 套件、27 通过、设备侧 36 次通过，失败 0、跳过 0。未做人工窗口走查。）
 - 2026-09-23 P6 Tasks 验收：通过。A1–A4 零输出，A5 计数为 2、2、1、1、2、5；B 的 10 行小字号/圆体/等宽与 14 行未映射透明度均含 token-exempt；C1–C2 零越界（手记清扫已在 HEAD `cb5bfd2`，工作区与暂存区无 diff）；定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_12-02-56-+0800.xcresult`：Passed，4 套件、汇总 27 通过、设备侧 36 次通过，失败 0、跳过 0。check_workflow EXIT=0，计划已勾选并有完成记录。未做人工窗口走查。
 - 2026-09-23 P6 Workspace 完成：工作台点名的字号、颜色和圆角收到现有令牌，圆体、等宽、36pt 和没有对应令牌的透明度保持原样并写 token-exempt。
+- 2026-09-23 P6 Workspace 验收：不通过（B：`WorkspaceTodayView.swift:96` 的 `DaybookProgressRing` `size: 36` 不含 `token-exempt`。A1–A4、其余豁免色、象限与星期圆点、C1–C2、D EXIT=0、E 通过）
+- 2026-09-23 P6 Workspace 整改：B 的字号命令把 `size: 36` 收成 `.font(.system(size: 36`。进度环直径不再被当成 36pt 字体，未给 `WorkspaceTodayView.swift` 补豁免。未宣布通过。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

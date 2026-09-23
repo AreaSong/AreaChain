@@ -42,8 +42,10 @@ rg -c 'DaybookType\.title' AreaChain/Features/Workspace/TaskDetailSections.swift
 ### B. 不该改掉的还在，而且该豁免的有注释
 
 ```bash
-rg -n 'size: 9\.5|size: 36|design: \.rounded|design: \.monospaced' AreaChain/Features/Workspace
+rg -n 'size: 9\.5|\.font\(\.system\(size: 36|design: \.rounded|design: \.monospaced' AreaChain/Features/Workspace
 ```
+
+`size: 36` 只匹配字体 `.font(.system(size: 36`。`DaybookProgressRing` 的 `size: 36` 是环的直径，不在这条里，也不要补 `token-exempt:`。
 
 每一行都必须含 `token-exempt:`。少一行豁免，或 36pt 被改成了 `DaybookType.display` → FAIL。把不合规的行贴出来。
 
