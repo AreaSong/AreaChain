@@ -109,10 +109,10 @@ struct BatchActionBar: View {
     private var selectedCountBadge: some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.badge.questionmark.fill")
-                .font(.system(size: 13))
+                .font(DaybookType.body)
                 .foregroundStyle(DaybookTheme.stamp)
             Text("batch.selected \(selectedCount)")
-                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .font(.system(size: 12, weight: .semibold, design: .monospaced)) // token-exempt: 批量计数用等宽，令牌是无衬线
                 .foregroundStyle(DaybookTheme.ink)
         }
         .padding(.trailing, 4)
@@ -124,7 +124,7 @@ struct BatchActionBar: View {
             Button("capture.tomorrow", action: onMoveTomorrow)
         } label: {
             Label("batch.move.date", systemImage: "calendar")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -136,7 +136,7 @@ struct BatchActionBar: View {
             Button("batch.undone") { onToggleDone(false) }
         } label: {
             Label("batch.status", systemImage: "checkmark.circle")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -153,7 +153,7 @@ struct BatchActionBar: View {
                 }
             } label: {
                 Label("batch.project", systemImage: "folder")
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
@@ -169,7 +169,7 @@ struct BatchActionBar: View {
                 }
             } label: {
                 Label("batch.tag", systemImage: "tag")
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
@@ -180,7 +180,7 @@ struct BatchActionBar: View {
         HStack(spacing: 8) {
             Button(role: .destructive, action: onTrash) {
                 Label("alert.trash.move", systemImage: "trash")
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
             }
             .buttonStyle(DaybookButtonStyle(.destructive, size: .compact))
 
@@ -192,11 +192,11 @@ struct BatchActionBar: View {
     }
 
     private var barBackground: some View {
-        RoundedRectangle(cornerRadius: 10, style: .continuous)
+        RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
             .fill(.ultraThickMaterial)
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(DaybookTheme.stamp.opacity(0.35), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .stroke(DaybookPalette.accent.border, lineWidth: 1)
             )
             .daybookElevation(.floating)
     }

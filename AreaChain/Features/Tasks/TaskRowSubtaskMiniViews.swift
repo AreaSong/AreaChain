@@ -39,7 +39,7 @@ struct TaskRowSubtaskInlineList: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .strokeBorder(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.4), lineWidth: 1.2)
+                                .strokeBorder(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.4), lineWidth: 1.2) // token-exempt: 40% 次要色没有对应令牌
                                 .background(
                                     Circle().fill(subtask.isDone ? DaybookTheme.stamp : Color.clear)
                                 )

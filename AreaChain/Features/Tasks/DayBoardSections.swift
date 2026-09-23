@@ -41,22 +41,22 @@ extension DayBoardList {
     var allDoneBanner: some View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookTheme.stamp)
             Text("太棒了，今日任务全清！")
                 .font(DaybookType.caption.weight(.medium))
-                .foregroundStyle(DaybookTheme.ink.opacity(0.85))
+                .foregroundStyle(DaybookTheme.ink.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
             Spacer()
         }
         .padding(.vertical, 7)
         .padding(.horizontal, 10)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.stamp.opacity(0.05))
+                .fill(DaybookTheme.stamp.opacity(0.05)) // token-exempt: 5% 印章底没有对应令牌
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .strokeBorder(DaybookTheme.stamp.opacity(0.12), lineWidth: 0.8)
+                .strokeBorder(DaybookPalette.accent.fill, lineWidth: 0.8)
         )
         .padding(.top, 2)
     }
@@ -75,7 +75,7 @@ extension DayBoardList {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DaybookType.micro.weight(.bold))
                         .foregroundStyle(DaybookTheme.muted)
                     DaybookSectionHeader(
                         title: showCompleted

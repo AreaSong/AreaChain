@@ -26,7 +26,7 @@ struct AttachmentThumbnails: View {
                     .padding(8)
             } else {
                 Text(item.filename)
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
                     .padding(12)
             }
@@ -42,11 +42,11 @@ struct AttachmentThumbnails: View {
                 .resizable()
                 .scaledToFill()
                     .frame(width: 22, height: 22)
-                    .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous))
                     .contentShape(Rectangle())
         } else {
             Image(systemName: "photo")
-                .font(.system(size: 10))
+                .font(DaybookType.badge)
                 .foregroundStyle(DaybookTheme.muted)
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())

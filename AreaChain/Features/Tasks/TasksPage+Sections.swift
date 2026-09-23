@@ -72,7 +72,7 @@ extension TasksPage {
         HStack(alignment: .center) {
             HStack(spacing: 4) {
                 Image(systemName: "clock.arrow.circlepath")
-                    .font(.system(size: 9.5, weight: .semibold))
+                    .font(DaybookType.micro.weight(.semibold))
                     .foregroundStyle(DaybookTheme.stamp)
                 Text("stamp.yesterday")
                     .font(DaybookType.caption.weight(.semibold))
@@ -82,7 +82,7 @@ extension TasksPage {
                     .foregroundStyle(DaybookTheme.stamp)
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 0.5)
-                    .background(DaybookTheme.stamp.opacity(0.14))
+                    .background(DaybookTheme.stamp.opacity(0.14)) // token-exempt: 14% 印章底没有对应令牌
                     .clipShape(Capsule())
             }
             Spacer()
@@ -286,7 +286,7 @@ struct LeftoverChipsBar: View {
             HStack(spacing: 4) {
                 Text(config.title)
                 Text("\(config.count)")
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 遗留计数用圆体
                 Image(systemName: config.expanded ? "chevron.up" : "chevron.down")
                     .accessibilityHidden(true)
             }

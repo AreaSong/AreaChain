@@ -38,7 +38,7 @@ struct DaySchedulePicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("day.pick.title")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.muted)
             DatePicker(
                 "day.date",

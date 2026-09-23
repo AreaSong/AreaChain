@@ -42,7 +42,7 @@ struct BoardFilterBar: View {
                     bundleDropdown
                 }
             }
-            .font(.system(size: 11))
+            .font(DaybookType.caption)
             .fixedSize(horizontal: true, vertical: false)
         }
     }
@@ -198,10 +198,10 @@ struct BoardFilterDropdownButton: View {
             } label: {
                 HStack(spacing: 4) {
                     Image(systemName: icon)
-                        .font(.system(size: 9.5, weight: .medium))
+                        .font(DaybookType.micro.weight(.medium))
                         .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
                     Text(title)
-                        .font(.system(size: 11, weight: active ? .semibold : .regular))
+                        .font(DaybookType.caption.weight(active ? .semibold : .regular))
                         .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
                         .lineLimit(1)
                 }
@@ -211,7 +211,7 @@ struct BoardFilterDropdownButton: View {
             if active, let reset {
                 Button(action: reset) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold))
+                        .font(.system(size: 8, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
                 }
                 .buttonStyle(DaybookButtonStyle(.iconActive, size: .inline))
                 .help("footer.filter.clear")
@@ -221,15 +221,15 @@ struct BoardFilterDropdownButton: View {
                     isExpanded.wrappedValue.toggle()
                 } label: {
                     Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 7.5, weight: .bold))
+                        .font(.system(size: 7.5, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
                 }
                 .buttonStyle(DaybookButtonStyle(.icon, size: .inline))
             }
         }
         .padding(.horizontal, 7)
         .padding(.vertical, 4)
-        .background(Capsule().fill(active ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.05)))
-        .overlay(Capsule().stroke(active ? DaybookTheme.stamp.opacity(0.35) : DaybookTheme.rule.opacity(0.5), lineWidth: 0.8))
+        .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
+        .overlay(Capsule().stroke(active ? DaybookPalette.accent.border : DaybookTheme.rule.opacity(0.5), lineWidth: 0.8)) // token-exempt: 50% 分隔线没有对应令牌
         .contentShape(Capsule())
     }
 
@@ -278,7 +278,7 @@ struct FilterDropdownItemRow: View {
             HStack(spacing: 5) {
                 if item.isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 8.5, weight: .bold))
+                        .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
                         .foregroundStyle(DaybookTheme.stamp)
                         .frame(width: 10)
                 } else {
@@ -288,7 +288,7 @@ struct FilterDropdownItemRow: View {
 
                 if let icon = item.icon {
                     Image(systemName: icon)
-                        .font(.system(size: 9.5, weight: .medium))
+                        .font(DaybookType.micro.weight(.medium))
                         .foregroundStyle(item.isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
                 }
 
@@ -301,10 +301,10 @@ struct FilterDropdownItemRow: View {
 
                 if let count = item.count, count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 下拉计数用圆体
                         .padding(.horizontal, 4)
                         .padding(.vertical, 0.5)
-                        .background(item.isSelected ? DaybookTheme.stamp.opacity(0.20) : DaybookTheme.ink.opacity(0.06))
+                        .background(item.isSelected ? DaybookTheme.stamp.opacity(0.20) : DaybookTheme.ink.opacity(0.06)) // token-exempt: 20% 与 6% 没有对应令牌
                         .foregroundStyle(item.isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
                         .clipShape(Capsule())
                 }

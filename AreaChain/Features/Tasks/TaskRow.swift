@@ -284,13 +284,13 @@ struct TaskRow: View {
 
     private var noteIndicator: some View {
         Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)))
+            .font(DaybookType.micro.weight(.medium))
+            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04)))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
             )
             .background(
                 GeometryReader { proxy in
@@ -399,7 +399,7 @@ struct TaskRow: View {
                 if let noteSnippet = formattedNoteSnippet {
                     Text(noteSnippet)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.85))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
@@ -407,13 +407,13 @@ struct TaskRow: View {
                 if let note = state.note {
                     Text(note)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.stamp.opacity(0.85))
+                        .foregroundStyle(DaybookTheme.stamp.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
                 }
 
                 if let source = state.classify?.sourceLabel, !source.isEmpty {
                     Text(source)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.75))
+                        .foregroundStyle(DaybookPalette.text.tertiary)
                 }
             }
         }

@@ -13,17 +13,17 @@ extension TaskRow {
             HStack(spacing: 3) {
                 ForEach(displayTags, id: \.self) { tagName in
                     Text("#\(tagName)")
-                        .font(.system(size: 9.5, weight: .semibold))
+                        .font(DaybookType.micro.weight(.semibold))
                         .foregroundStyle(DaybookPalette.Syntax.tag)
                         .lineLimit(1)
                         .padding(.horizontal, 4.5)
                         .frame(height: 18)
                         .background(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .fill(DaybookPalette.Syntax.tagFill)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
                         )
                         .help("#\(tagName)")
@@ -31,16 +31,16 @@ extension TaskRow {
 
                 if overflow > 0 {
                     Text("+\(overflow)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 标签溢出计数用圆体
                         .foregroundStyle(DaybookPalette.Syntax.tag)
                         .padding(.horizontal, 3.5)
                         .frame(height: 18)
                         .background(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .fill(DaybookPalette.Syntax.tagBadgeFill)
                         )
                         .overlay(
-                            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
                         )
                         .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
@@ -67,11 +67,11 @@ extension TaskRow {
         let isHighlighted = isHovered || state.isSelected
         return HStack(spacing: 2.5) {
             Image(systemName: "flame.fill")
-                .font(.system(size: 9.5, weight: .semibold))
-                .foregroundStyle(isHighlighted ? Color.orange : DaybookTheme.muted.opacity(0.75))
+                .font(DaybookType.micro.weight(.semibold))
+                .foregroundStyle(isHighlighted ? DaybookPalette.status.pending : DaybookPalette.text.tertiary)
             Text("\(streak)")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
+                .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
+                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookPalette.text.tertiary)
                 .lineLimit(1)
                 .contentTransition(.numericText())
                 .animation(DaybookMotion.interactive(reduceMotion), value: streak)
@@ -81,8 +81,8 @@ extension TaskRow {
         .padding(.horizontal, 4.5)
         .frame(height: 18)
         .background(
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                .fill(isHighlighted ? Color.orange.opacity(0.12) : Color.clear)
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .fill(isHighlighted ? DaybookPalette.status.pending.opacity(0.12) : Color.clear) // token-exempt: 待办橙 12% 底没有单独令牌
         )
     }
 

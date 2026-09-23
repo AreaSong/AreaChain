@@ -30,7 +30,7 @@ extension TaskRow {
             copyTask()
         } label: {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
         }
         .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help(Text(hasCopied ? "diary.copied" : "diary.quick.copy"))
@@ -73,7 +73,7 @@ extension TaskRow {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
                 .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)

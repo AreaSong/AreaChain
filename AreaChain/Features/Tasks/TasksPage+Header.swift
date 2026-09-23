@@ -118,7 +118,7 @@ extension TasksPage {
                     .lineLimit(1)
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 7.5, weight: .bold))
+                        .font(.system(size: 7.5, weight: .bold)) // token-exempt: 芯片内移除角标小于 9pt
                         .frame(width: 12, height: 12)
                         .contentShape(Rectangle())
                 }

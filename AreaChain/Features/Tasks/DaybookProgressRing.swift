@@ -10,13 +10,13 @@ struct DaybookProgressRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: lineWidth)
+                .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: lineWidth) // token-exempt: 35% 分隔线没有对应令牌
             Circle()
                 .trim(from: 0, to: CGFloat(min(max(progress, 0), 1)))
                 .stroke(
                     AngularGradient(
                         gradient: Gradient(colors: [
-                            DaybookTheme.stamp.opacity(0.75),
+                            DaybookTheme.stamp.opacity(0.75), // token-exempt: 75% 印章色没有对应令牌
                             DaybookTheme.stamp
                         ]),
                         center: .center,
@@ -29,7 +29,7 @@ struct DaybookProgressRing: View {
                 .animation(DaybookMotion.smooth(reduceMotion), value: progress)
 
             Text("\(Int(round(progress * 100)))%")
-                .font(.system(size: 10, weight: .bold, design: .rounded))
+                .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 进度环数字用圆体
                 .foregroundStyle(DaybookTheme.ink)
         }
         .frame(width: size, height: size)
