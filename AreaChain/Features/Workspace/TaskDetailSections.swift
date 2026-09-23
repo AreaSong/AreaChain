@@ -258,7 +258,7 @@ struct TaskDetailAssetsSectionView: View {
                     .frame(width: 56, height: 56)
                     .overlay(
                         Image(systemName: "photo")
-                            .font(.system(size: 16))
+                            .font(DaybookType.title)
                             .foregroundStyle(DaybookTheme.muted)
                     )
             }

@@ -251,7 +251,7 @@ struct WorkspaceSidebarView: View {
                 .onChange(of: renameDraft) { _, _ in renameError = nil }
             if let renameError {
                 Text(renameError)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.destructive)
             }
             HStack {

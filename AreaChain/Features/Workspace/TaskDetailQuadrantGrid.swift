@@ -36,27 +36,27 @@ struct TaskDetailQuadrantGrid: View {
                     QuadrantMiniMark(slot: slot)
 
                     Text(LocalizedStringKey(slot.titleKeyName))
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DaybookType.caption.weight(.semibold))
                         .foregroundStyle(DaybookTheme.ink)
                     Spacer()
                     if isActive {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 9, weight: .heavy))
+                            .font(DaybookType.micro.weight(.heavy))
                             .foregroundStyle(slot.themeColor)
                     }
                 }
                 Text(LocalizedStringKey(slot.subtitleKeyName))
-                    .font(.system(size: 9))
+                    .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
             .padding(7)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .fill(isActive ? slot.themeFill : DaybookTheme.cardSurface)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 6, style: .continuous)
-                            .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookTheme.rule.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6)
+                        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                            .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookTheme.rule.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6) // token-exempt: 象限色 70% 和分隔线 25% 没有对应令牌
                     )
             )
         }

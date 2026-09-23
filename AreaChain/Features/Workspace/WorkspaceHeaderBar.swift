@@ -65,7 +65,7 @@ struct WorkspaceHeaderSearchCapsule: View {
     var body: some View {
         DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 11.5, weight: .medium))
+                .font(DaybookType.caption.weight(.medium))
                 .foregroundStyle(navigation.isSearchFocused ? DaybookTheme.ink : DaybookTheme.muted)
         } field: {
             DaybookTextField(
@@ -89,13 +89,13 @@ struct WorkspaceHeaderSearchCapsule: View {
                 }
             } else {
                 Text("⌘F")
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 快捷键提示用圆体
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
-                        RoundedRectangle(cornerRadius: 3)
-                            .fill(DaybookTheme.rule.opacity(0.18))
+                        RoundedRectangle(cornerRadius: DaybookRadius.xxs)
+                            .fill(DaybookTheme.rule.opacity(0.18)) // token-exempt: 18% 分隔线没有对应令牌
                     )
             }
         }

@@ -12,7 +12,7 @@ struct TaskDetailHeaderBar: View {
         HStack(spacing: 8) {
             if isRoutine {
                 Image(systemName: "repeat")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(DaybookType.body.weight(.bold))
                     .foregroundStyle(DaybookTheme.stamp)
                     .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
             }
@@ -23,8 +23,8 @@ struct TaskDetailHeaderBar: View {
 
             Button(role: .destructive, action: onTrash) {
                 Image(systemName: "trash")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(DaybookTheme.destructive.opacity(0.85))
+                    .font(DaybookType.subtitle.weight(.semibold))
+                    .foregroundStyle(DaybookPalette.status.danger.opacity(0.85)) // token-exempt: 85% 危险色没有对应令牌
                     .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                     .contentShape(Rectangle())
             }
@@ -34,7 +34,7 @@ struct TaskDetailHeaderBar: View {
             if let onClose {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .bold))
+                        .font(DaybookType.caption.weight(.bold))
                         .foregroundStyle(DaybookTheme.muted)
                         .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
                         .contentShape(Rectangle())
@@ -124,18 +124,18 @@ struct TaskDetailMetadataSection: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
                     Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 9))
+                        .font(DaybookType.micro)
                     Text("drawer.meta.created \(createdAt.formatted(date: .abbreviated, time: .shortened))")
-                        .font(.system(size: 10))
+                        .font(DaybookType.badge)
                 }
                 .foregroundStyle(DaybookTheme.muted)
 
                 if !sourceBundleID.isEmpty {
                     HStack(spacing: 4) {
                         Image(systemName: "app.badge")
-                            .font(.system(size: 9))
+                            .font(DaybookType.micro)
                         Text("drawer.meta.source \(BundleDisplay.name(for: sourceBundleID))")
-                            .font(.system(size: 10))
+                            .font(DaybookType.badge)
                     }
                     .foregroundStyle(DaybookTheme.muted)
                 }

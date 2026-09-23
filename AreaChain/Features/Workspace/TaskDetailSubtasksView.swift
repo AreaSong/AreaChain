@@ -50,7 +50,7 @@ struct TaskDetailSubtasksView: View {
             Spacer()
             if totalCount > 0 {
                 Text("\(completedCount)/\(totalCount)")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced)) // token-exempt: 子任务计数用等宽
                     .foregroundStyle(completedCount == totalCount ? DaybookTheme.stamp : DaybookTheme.muted)
             }
         }
@@ -59,11 +59,11 @@ struct TaskDetailSubtasksView: View {
     private var progressBar: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(DaybookTheme.rule.opacity(0.3))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(DaybookTheme.rule.opacity(0.3)) // token-exempt: 30% 分隔线没有对应令牌
                     .frame(height: 3)
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(completedCount == totalCount ? DaybookTheme.stamp : DaybookTheme.stamp.opacity(0.8))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(completedCount == totalCount ? DaybookTheme.stamp : DaybookTheme.stamp.opacity(0.8)) // token-exempt: 80% 印章色没有对应令牌
                     .frame(width: geo.size.width * CGFloat(progressRatio), height: 3)
             }
         }
@@ -97,7 +97,7 @@ struct TaskDetailSubtasksView: View {
     private var addSubtaskInput: some View {
         DaybookInputShell(kind: .composer, focused: isInputFocused) {
             Image(systemName: "plus.circle")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.stamp)
         } field: {
             SyntaxTextField(
@@ -110,7 +110,7 @@ struct TaskDetailSubtasksView: View {
                     submitNewSubtask()
                 } label: {
                     Text("drawer.subtasks.add")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(DaybookType.badge.weight(.medium))
                 }
                 .buttonStyle(DaybookButtonStyle(.prominent, size: .inline))
             }
@@ -151,7 +151,7 @@ struct SubtaskRowView: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                 .fill(isHovering ? DaybookTheme.cardSurfaceHover : Color.clear)
         )
         .onHover { isHovering = $0 }
@@ -166,7 +166,7 @@ struct SubtaskRowView: View {
     private var toggleCheckboxButton: some View {
         Button(action: onToggle) {
             Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
-                .font(.system(size: 12))
+                .font(DaybookType.subtitle)
                 .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
         }
         .buttonStyle(.plain) // control: 子任务复选框，非按钮语义
@@ -191,9 +191,9 @@ struct SubtaskRowView: View {
         } else {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subtask.title)
-                    .font(.system(size: 11))
-                    .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink)
-                    .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5))
+                    .font(DaybookType.caption)
+                    .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink) // token-exempt: 70% 次要色没有对应令牌
+                    .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
                 assignedTagChips
             }
             .frame(maxWidth: .infinity, alignment: .leading)

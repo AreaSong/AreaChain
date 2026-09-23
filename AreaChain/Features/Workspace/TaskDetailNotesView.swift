@@ -46,8 +46,8 @@ struct TaskDetailNotesView: View {
             }
             if !draft.isEmpty {
                 Text("drawer.notes.count \(draft.count)")
-                    .font(.system(size: 9))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                    .font(DaybookType.micro)
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
             }
         }
     }
@@ -77,8 +77,8 @@ struct TaskDetailNotesView: View {
         if !links.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
                 Text("drawer.notes.links")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.7))
+                    .font(DaybookType.micro.weight(.medium))
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
                 ForEach(links, id: \.self) { url in
                     linkButton(for: url)
                 }

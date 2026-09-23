@@ -29,16 +29,16 @@ struct TaskDetailProjectPicker: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "folder")
-                        .font(.system(size: 11))
+                        .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.stamp)
                     let name = projects.first(where: { $0.id == selectedID && $0.deletedAt == nil })?.name
                         ?? L10n.string("classify.project.none", locale: locale)
                     Text(name)
-                        .font(.system(size: 11.5))
+                        .font(DaybookType.caption)
                         .foregroundStyle(DaybookTheme.ink)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 9))
+                        .font(DaybookType.micro)
                         .foregroundStyle(DaybookTheme.muted)
                 }
                 .padding(.horizontal, 9)
@@ -83,14 +83,14 @@ struct TaskDetailTagSelector: View {
 
             if activeTags.isEmpty {
                 Text("drawer.tag.empty")
-                    .font(.system(size: 10))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.7))
+                    .font(DaybookType.badge)
+                    .foregroundStyle(DaybookTheme.muted.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60), spacing: 4)], spacing: 4) {
                     ForEach(activeTags) { tag in
                         let isContained = TagIDList.contains(tagIDs, tag.id)
                         DaybookChip(
-                            tint: Color(nsColor: .systemIndigo),
+                            tint: Color(nsColor: .systemIndigo), // token-exempt: 没有靛蓝令牌
                             isSelected: isContained,
                             action: { onToggleTag(tag.id) }
                         ) {
@@ -108,14 +108,14 @@ struct TaskDetailTagSelector: View {
     private var newTagSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("drawer.tag.create.title")
-                .font(.system(size: 13, weight: .semibold))
+                .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookTheme.ink)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: newTagName) { _, _ in createError = nil }
             if let createError {
                 Text(createError)
-                    .font(.system(size: 11))
+                    .font(DaybookType.caption)
                     .foregroundStyle(DaybookTheme.destructive)
             }
             HStack {

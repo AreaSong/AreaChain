@@ -172,10 +172,10 @@ struct WorkspaceFilteredListView: View {
             } label: {
                 HStack(spacing: 5) {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DaybookType.micro.weight(.bold))
                         .foregroundStyle(DaybookTheme.muted)
                     Text("stamp.completed \(doneTodos.count)")
-                        .font(.system(size: 11, weight: .medium))
+                        .font(DaybookType.caption.weight(.medium))
                         .foregroundStyle(DaybookTheme.muted)
                     Spacer()
                 }
