@@ -154,15 +154,15 @@ struct MenuBarPopoverView: View {
                 .zIndex(10)
             }
             .padding(12)
-            .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
-            .background(DaybookTheme.paper)
+            .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
+            .background(DaybookPalette.fill.page)
             .clipShape(Rectangle())
             .daybookHideInputChrome()
 
             if showingSyntaxHelp {
                 // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
                 DaybookPalette.fill.scrim
-                    .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
+                    .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
                     .contentShape(Rectangle())
                     .onTapGesture {
                         withAnimation(DaybookMotion.interactive(reduceMotion)) {
@@ -302,7 +302,7 @@ struct MenuBarPopoverView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(DayKey.displayName(todayKey, locale: locale))
                     .font(DaybookType.title)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 HStack(spacing: 4) {
                     headerIndicator
                         .animation(DaybookMotion.interactive(reduceMotion), value: tab)
@@ -311,7 +311,7 @@ struct MenuBarPopoverView: View {
 
                     Text(headerSubtitle)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                         .contentTransition(.numericText())
                         .animation(DaybookMotion.interactive(reduceMotion), value: tab)
                         .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
@@ -336,7 +336,7 @@ struct MenuBarPopoverView: View {
         if toolbar.isSearching {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .transition(.scale.combined(with: .opacity))
         } else {
             switch tab {
@@ -349,7 +349,7 @@ struct MenuBarPopoverView: View {
                 } else if todayCompleted > 0 {
                     Image(systemName: "checkmark")
                         .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                         .transition(.scale.combined(with: .opacity))
                 } else {
                     Image(systemName: "checkmark")
@@ -360,7 +360,7 @@ struct MenuBarPopoverView: View {
             case .diary:
                 if todayDiariesCount > 0 {
                     Circle()
-                        .fill(DaybookTheme.stamp)
+                        .fill(DaybookPalette.accent.base)
                         .frame(width: 5, height: 5)
                         .transition(.scale.combined(with: .opacity))
                 } else {

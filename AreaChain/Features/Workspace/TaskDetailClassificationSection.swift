@@ -15,7 +15,7 @@ struct TaskDetailProjectPicker: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("drawer.project.title")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             Menu {
                 Button("classify.project.none") {
@@ -30,16 +30,16 @@ struct TaskDetailProjectPicker: View {
                 HStack(spacing: 6) {
                     Image(systemName: "folder")
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                     let name = projects.first(where: { $0.id == selectedID && $0.deletedAt == nil })?.name
                         ?? L10n.string("classify.project.none", locale: locale)
                     Text(name)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                     Spacer()
                     Image(systemName: "chevron.up.chevron.down")
                         .font(DaybookType.micro)
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                 }
                 .padding(.horizontal, 9)
                 .padding(.vertical, 6)
@@ -72,7 +72,7 @@ struct TaskDetailTagSelector: View {
             HStack {
                 Text("drawer.tags.title")
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 DaybookIconButton(systemName: "plus.circle", label: "drawer.tag.add", size: .inline) {
                     createError = nil
@@ -84,7 +84,7 @@ struct TaskDetailTagSelector: View {
             if activeTags.isEmpty {
                 Text("drawer.tag.empty")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
+                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
             } else {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60), spacing: 4)], spacing: 4) {
                     ForEach(activeTags) { tag in
@@ -109,14 +109,14 @@ struct TaskDetailTagSelector: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("drawer.tag.create.title")
                 .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: newTagName) { _, _ in createError = nil }
             if let createError {
                 Text(createError)
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
             }
             HStack {
                 Spacer()

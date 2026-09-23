@@ -46,12 +46,12 @@ struct TaskDetailSubtasksView: View {
         HStack {
             Label("drawer.subtasks.title", systemImage: "checklist")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             Spacer()
             if totalCount > 0 {
                 Text("\(completedCount)/\(totalCount)")
                     .font(.system(size: 10, weight: .medium, design: .monospaced)) // token-exempt: 子任务计数用等宽
-                    .foregroundStyle(completedCount == totalCount ? DaybookTheme.stamp : DaybookTheme.muted)
+                    .foregroundStyle(completedCount == totalCount ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
             }
         }
     }
@@ -60,10 +60,10 @@ struct TaskDetailSubtasksView: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(DaybookTheme.rule.opacity(0.3)) // token-exempt: 30% 分隔线没有对应令牌
+                    .fill(DaybookPalette.border.default.opacity(0.3)) // token-exempt: 30% 分隔线没有对应令牌
                     .frame(height: 3)
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(completedCount == totalCount ? DaybookTheme.stamp : DaybookTheme.stamp.opacity(0.8)) // token-exempt: 80% 印章色没有对应令牌
+                    .fill(completedCount == totalCount ? DaybookPalette.accent.base : DaybookPalette.accent.base.opacity(0.8)) // token-exempt: 80% 印章色没有对应令牌
                     .frame(width: geo.size.width * CGFloat(progressRatio), height: 3)
             }
         }
@@ -98,7 +98,7 @@ struct TaskDetailSubtasksView: View {
         DaybookInputShell(kind: .composer, focused: isInputFocused) {
             Image(systemName: "plus.circle")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.stamp)
+                .foregroundStyle(DaybookPalette.accent.base)
         } field: {
             SyntaxTextField(
                 text: $newSubtaskTitle, placeholder: L10n.string("drawer.subtasks.placeholder", locale: locale),
@@ -152,7 +152,7 @@ struct SubtaskRowView: View {
         .padding(.vertical, 4)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                .fill(isHovering ? DaybookTheme.cardSurfaceHover : Color.clear)
+                .fill(isHovering ? DaybookPalette.cardSurfaceHover : Color.clear)
         )
         .onHover { isHovering = $0 }
         .zIndex(isEditing ? 20 : 0)
@@ -167,7 +167,7 @@ struct SubtaskRowView: View {
         Button(action: onToggle) {
             Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted)
+                .foregroundStyle(subtask.isDone ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
         }
         .buttonStyle(.plain) // control: 子任务复选框，非按钮语义
     }
@@ -192,8 +192,8 @@ struct SubtaskRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subtask.title)
                     .font(DaybookType.caption)
-                    .foregroundStyle(subtask.isDone ? DaybookTheme.muted.opacity(0.7) : DaybookTheme.ink) // token-exempt: 70% 次要色没有对应令牌
-                    .strikethrough(subtask.isDone, color: DaybookTheme.muted.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
+                    .foregroundStyle(subtask.isDone ? DaybookPalette.text.secondary.opacity(0.7) : DaybookPalette.text.primary) // token-exempt: 70% 次要色没有对应令牌
+                    .strikethrough(subtask.isDone, color: DaybookPalette.text.secondary.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
                 assignedTagChips
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -210,7 +210,7 @@ struct SubtaskRowView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(assigned) { tag in
-                        DaybookChip(tint: DaybookTheme.stamp, isSelected: true, action: {
+                        DaybookChip(tint: DaybookPalette.accent.base, isSelected: true, action: {
                             DayBoardMutations.toggleSubtaskTag(subtask, tagID: tag.id)
                         }) {
                             Label("#" + tag.name, systemImage: "xmark")

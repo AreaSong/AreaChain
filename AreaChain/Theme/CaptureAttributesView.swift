@@ -50,10 +50,10 @@ struct CaptureAttributesButton: View {
                     }
                     .padding(.horizontal, 6)
                     .frame(height: 20)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                     .background(
                         Capsule()
-                            .fill(DaybookTheme.stamp.opacity(state.showsAttributes ? 0.20 : 0.12)) // token-exempt: 20% 与 12% 写在同一个三元表达式里
+                            .fill(DaybookPalette.accent.base.opacity(state.showsAttributes ? 0.20 : 0.12)) // token-exempt: 20% 与 12% 写在同一个三元表达式里
                     )
                     .overlay(
                         Capsule()
@@ -62,7 +62,7 @@ struct CaptureAttributesButton: View {
                 } else {
                     Image(systemName: "slider.horizontal.3")
                         .font(DaybookType.badge)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.40)) // token-exempt: 40% 次要色没有对应令牌
+                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.40)) // token-exempt: 40% 次要色没有对应令牌
                 }
             }
             .frame(width: 58, height: 22)
@@ -114,13 +114,13 @@ struct CaptureAttributesPopup: View {
             Divider()
             Text("syntax.attributes.readonly")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .padding(10)
         }
         .frame(height: maxHeight, alignment: .top)
-        .foregroundStyle(DaybookTheme.ink)
-        .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookTheme.paper))
-        .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)) // token-exempt: 70% 分隔线没有对应令牌
+        .foregroundStyle(DaybookPalette.text.primary)
+        .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookPalette.fill.page))
+        .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7)) // token-exempt: 70% 分隔线没有对应令牌
         .daybookElevation(.floating)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("syntax.overlay.attributes")
@@ -128,13 +128,13 @@ struct CaptureAttributesPopup: View {
 
     private func attributeRow(_ item: CaptureAttributes.Item) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Image(systemName: item.icon).foregroundStyle(DaybookTheme.stamp).frame(width: 14)
+            Image(systemName: item.icon).foregroundStyle(DaybookPalette.accent.base).frame(width: 14)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 if item.isPriority { Text(LocalizedStringKey(item.title)) }
                 else { Text(item.title) }
                 if item.isNewTag {
-                    Text("syntax.tag.create.on.save").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+                    Text("syntax.tag.create.on.save").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
                 }
             }
             .font(DaybookType.subtitle)

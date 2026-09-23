@@ -59,7 +59,7 @@ struct CalendarPage: View {
                 HStack {
                     Text(DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale))
                         .font(DaybookType.section.weight(.semibold))
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                     Spacer()
                     if selectedKey != todayKey {
                         Button("calendar.today") { selectedKey = todayKey }
@@ -157,7 +157,7 @@ struct CalendarPage: View {
     private var selectedHeading: some View {
         Text(DayKey.displayName(selectedKey, calendar: calendar, locale: locale))
             .font(DaybookType.subtitle)
-            .foregroundStyle(DaybookTheme.muted)
+            .foregroundStyle(DaybookPalette.text.secondary)
     }
 
     private var composer: some View {

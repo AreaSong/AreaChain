@@ -45,7 +45,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.behavior = .transient
         popover.animates = true
         popover.delegate = self
-        popover.contentSize = DaybookTheme.popoverSize
+        popover.contentSize = DaybookMetrics.Window.popoverSize
         self.popover = popover
     }
 
@@ -102,8 +102,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         }
         let hosting = NSHostingController(rootView: provider())
         hosting.safeAreaRegions = []
-        hosting.view.frame = NSRect(origin: .zero, size: DaybookTheme.popoverSize)
-        popover.contentSize = DaybookTheme.popoverSize
+        hosting.view.frame = NSRect(origin: .zero, size: DaybookMetrics.Window.popoverSize)
+        popover.contentSize = DaybookMetrics.Window.popoverSize
         popover.contentViewController = hosting
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         startDismissMonitors()

@@ -86,11 +86,11 @@ struct WorkspaceTodayView: View {
             VStack(alignment: .trailing, spacing: 2) {
                 Text(progressTitleKey)
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
 
                 Text("\(completedTodosCount)/\(totalTodosCount)")
                     .font(DaybookType.body.weight(.medium).monospacedDigit())
-                    .foregroundStyle(completedTodosCount > 0 && completedTodosCount >= totalTodosCount ? DaybookTheme.stamp : DaybookTheme.ink)
+                    .foregroundStyle(completedTodosCount > 0 && completedTodosCount >= totalTodosCount ? DaybookPalette.accent.base : DaybookPalette.text.primary)
             }
 
             DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)

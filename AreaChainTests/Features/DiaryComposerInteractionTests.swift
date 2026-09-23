@@ -162,7 +162,7 @@ private final class DiaryComposerHost {
             .padding(12).frame(width: 380, height: 200, alignment: .top)
             .modelContainer(container).environment(AppPreferences.shared)
             .environment(\.locale, Locale(identifier: locale))
-            .preferredColorScheme(scheme).background(DaybookTheme.paper)
+            .preferredColorScheme(scheme).background(DaybookPalette.fill.page)
             .transaction { $0.disablesAnimations = true }.syntaxOverlayHost())
         hosting.safeAreaRegions = []
         window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 380, height: 200),

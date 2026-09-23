@@ -17,13 +17,13 @@ struct DaybookSegmentedBar: View {
         .padding(3)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.06)) // token-exempt: 6% 墨色没有对应令牌
+                .fill(DaybookPalette.text.primary.opacity(0.06)) // token-exempt: 6% 墨色没有对应令牌
         )
     }
 
     private func tabButton(_ item: BoardTab) -> some View {
         let isSelected = selection == item
-        let ink = isSelected ? DaybookTheme.ink : DaybookTheme.muted
+        let ink = isSelected ? DaybookPalette.text.primary : DaybookPalette.text.secondary
         return Button {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
                 selection = item
@@ -38,7 +38,7 @@ struct DaybookSegmentedBar: View {
                     ZStack {
                         if isSelected {
                             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                                .fill(DaybookTheme.paper)
+                                .fill(DaybookPalette.fill.page)
                                 .daybookElevation(.raised)
                                 .matchedGeometryEffect(id: "SliderBackground", in: sliderAnimation)
                         }

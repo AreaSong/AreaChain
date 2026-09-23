@@ -110,10 +110,10 @@ struct BatchActionBar: View {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle.badge.questionmark.fill")
                 .font(DaybookType.body)
-                .foregroundStyle(DaybookTheme.stamp)
+                .foregroundStyle(DaybookPalette.accent.base)
             Text("batch.selected \(selectedCount)")
                 .font(.system(size: 12, weight: .semibold, design: .monospaced)) // token-exempt: 批量计数用等宽，令牌是无衬线
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
         }
         .padding(.trailing, 4)
     }

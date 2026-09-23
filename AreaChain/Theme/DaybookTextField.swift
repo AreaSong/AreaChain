@@ -59,7 +59,7 @@ struct DaybookTextField: NSViewRepresentable {
         let field = DaybookAppKitTextField(string: "")
         field.placeholderString = placeholder
         field.font = nativeFont
-        field.textColor = NSColor(DaybookTheme.ink)
+        field.textColor = NSColor(DaybookPalette.text.primary)
         field.drawsBackground = false
         field.backgroundColor = .clear
         field.isBordered = false
@@ -112,7 +112,7 @@ struct DaybookTextField: NSViewRepresentable {
             field.placeholderString = placeholder
         }
         field.font = nativeFont
-        field.textColor = NSColor(DaybookTheme.ink)
+        field.textColor = NSColor(DaybookPalette.text.primary)
         context.coordinator.requestFocus(in: field)
     }
 

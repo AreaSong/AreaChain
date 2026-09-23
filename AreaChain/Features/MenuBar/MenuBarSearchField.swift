@@ -43,7 +43,7 @@ struct MenuBarSearchField: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 3) {
                         ForEach(tokens) { token in
-                            DaybookChip(tint: DaybookTheme.stamp, isSelected: true) {
+                            DaybookChip(tint: DaybookPalette.accent.base, isSelected: true) {
                                 HStack(spacing: 2) {
                                     if let dotColor = token.dotColor {
                                         Circle().fill(dotColor).frame(width: 4.5, height: 4.5)

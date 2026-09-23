@@ -9,7 +9,7 @@ extension MenuBarPopoverView {
         ZStack(alignment: .bottomLeading) {
             // 底栏留给筛选按钮。SwiftUI 的 onTapGesture 接不住测试和连点发出的鼠标按下，遮罩自己收起。
             FilterDrawerScrim(passHeight: 44) { dismissFilterDrawer() }
-                .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
+                .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
 
             // 树状两级级联悬停浮窗：紧贴底栏「筛选」按钮上沿
             MenuBarFilterFlyout(
@@ -34,7 +34,7 @@ extension MenuBarPopoverView {
                     )
             )
         }
-        .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
+        .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
         .zIndex(30)
     }
 

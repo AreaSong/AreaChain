@@ -162,7 +162,7 @@ private struct ResidentEditorRow: View {
         .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
         if let minutes = routine.remindMinutes {
             Text(RemindMinutes.label(minutes, locale: locale))
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .monospacedDigit()
             Button("row.time.clear") { setRemind(nil) }
                 .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))

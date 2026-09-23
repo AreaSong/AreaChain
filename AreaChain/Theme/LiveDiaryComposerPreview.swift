@@ -84,7 +84,7 @@ struct LiveDiaryComposerPreview: View {
             Group {
                 if !showsSuggestions {
                     RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                        .fill(DaybookTheme.paper)
+                        .fill(DaybookPalette.fill.page)
                         .daybookElevation(.floating)
                 }
             }
@@ -93,7 +93,7 @@ struct LiveDiaryComposerPreview: View {
             Group {
                 if !showsSuggestions {
                     RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                        .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
+                        .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
                 }
             }
         )
@@ -137,7 +137,7 @@ struct LiveDiaryComposerPreview: View {
         HStack(alignment: .center, spacing: 4) {
             Text(displayTitle.isEmpty ? " " : displayTitle)
                 .font(DaybookType.body)
-                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .foregroundStyle(isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
@@ -234,14 +234,14 @@ struct LiveDiaryComposerPreview: View {
             if isSensitive {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 8.5)) // token-exempt: 小于 9pt
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .accessibilityLabel("diary.privacy")
             }
 
             Text(todayTimeString)
                 .lineLimit(1)
                 .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             if !parsed.tagNames.isEmpty {
                 HStack(spacing: 3) {
@@ -254,7 +254,7 @@ struct LiveDiaryComposerPreview: View {
             if hasCopied {
                 Label("diary.copied", systemImage: "checkmark")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
 
             Spacer(minLength: 0)
@@ -272,12 +272,12 @@ struct LiveDiaryComposerPreview: View {
     private func noteIndicator(fullText: String) -> some View {
         Image(systemName: "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
+            .foregroundStyle(isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
             )
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }

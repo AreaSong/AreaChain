@@ -34,7 +34,7 @@ struct TaskDetailDrawer: View {
         .background {
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
-                DaybookTheme.paper.opacity(0.4) // token-exempt: 40% 纸色没有对应令牌
+                DaybookPalette.fill.page.opacity(0.4) // token-exempt: 40% 纸色没有对应令牌
             }
         }
         .syntaxOverlayHost()
@@ -50,13 +50,13 @@ struct TaskDetailDrawer: View {
         VStack(spacing: 12) {
             Image(systemName: "sidebar.trailing")
                 .font(.system(size: 36, weight: .light)) // token-exempt: display 是 26pt，这处是 36pt light
-                .foregroundStyle(DaybookTheme.muted.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
+                .foregroundStyle(DaybookPalette.text.secondary.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
             Text("drawer.empty.title")
                 .font(DaybookType.body.weight(.medium))
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             Text("drawer.empty.hint")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
+                .foregroundStyle(DaybookPalette.text.secondary.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
         }
@@ -176,7 +176,7 @@ struct TaskDetailDrawer: View {
             HStack {
                 Text(item.filename)
                     .font(DaybookType.subtitle.weight(.medium))
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 Spacer()
                 Button("common.close") {
                     previewAttachment = nil
@@ -212,7 +212,7 @@ struct DrawerSectionGroup<Content: View>: View {
             if let title {
                 Text(title)
                     .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .tracking(0.5)
                     .padding(.leading, 2)
             }

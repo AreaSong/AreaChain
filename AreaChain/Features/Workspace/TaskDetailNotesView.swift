@@ -33,12 +33,12 @@ struct TaskDetailNotesView: View {
         HStack {
             Label("drawer.notes.title", systemImage: "note.text")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             Spacer()
             if EditDrafts.shared.notes[draftKey] != nil {
                 Text("editor.unsaved")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
                 Button("common.save", action: flushSave)
                     .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                     .font(DaybookType.caption)
@@ -47,7 +47,7 @@ struct TaskDetailNotesView: View {
             if !draft.isEmpty {
                 Text("drawer.notes.count \(draft.count)")
                     .font(DaybookType.micro)
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
+                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
             }
         }
     }
@@ -78,7 +78,7 @@ struct TaskDetailNotesView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("drawer.notes.links")
                     .font(DaybookType.micro.weight(.medium))
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
+                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
                 ForEach(links, id: \.self) { url in
                     linkButton(for: url)
                 }
@@ -88,7 +88,7 @@ struct TaskDetailNotesView: View {
     }
 
     private func linkButton(for url: URL) -> some View {
-        DaybookChip(tint: DaybookTheme.stamp, isSelected: true, action: {
+        DaybookChip(tint: DaybookPalette.accent.base, isSelected: true, action: {
             NSWorkspace.shared.open(url)
         }) {
             HStack(spacing: 4) {

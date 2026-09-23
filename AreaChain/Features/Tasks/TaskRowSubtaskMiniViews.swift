@@ -9,7 +9,7 @@ struct TaskRowSubtaskChip: View {
         let completed = subtasks.filter(\.isDone).count
         let total = subtasks.count
         let allDone = completed == total && total > 0
-        return DaybookChip(tint: DaybookTheme.stamp, isSelected: allDone, action: {
+        return DaybookChip(tint: DaybookPalette.accent.base, isSelected: allDone, action: {
             withAnimation(DaybookMotion.animation(reduceMotion)) {
                 isExpanded.toggle()
             }
@@ -39,16 +39,16 @@ struct TaskRowSubtaskInlineList: View {
                     } label: {
                         ZStack {
                             Circle()
-                                .strokeBorder(subtask.isDone ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.4), lineWidth: 1.2) // token-exempt: 40% 次要色没有对应令牌
+                                .strokeBorder(subtask.isDone ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.4), lineWidth: 1.2) // token-exempt: 40% 次要色没有对应令牌
                                 .background(
-                                    Circle().fill(subtask.isDone ? DaybookTheme.stamp : Color.clear)
+                                    Circle().fill(subtask.isDone ? DaybookPalette.accent.base : Color.clear)
                                 )
                                 .frame(width: 12, height: 12)
 
                             CheckmarkShape()
                                 .trim(from: 0, to: subtask.isDone ? 1 : 0)
                                 .stroke(
-                                    DaybookTheme.checkmark,
+                                    DaybookPalette.checkmark,
                                     style: StrokeStyle(lineWidth: 1.4, lineCap: .round, lineJoin: .round)
                                 )
                                 .frame(width: 12, height: 12)

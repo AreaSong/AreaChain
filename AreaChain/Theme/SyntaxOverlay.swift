@@ -44,7 +44,7 @@ struct SyntaxOverlayAnchor {
         if let attributes { return CGSize(width: 280, height: min(280, 80 + CGFloat(attributes.count) * 42)) }
         var h: CGFloat = 0
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
-        let targetWidth: CGFloat = (state.context == .capture || state.context == .diaryCapture) ? (DaybookTheme.popoverWidth - 24) : 240
+        let targetWidth: CGFloat = (state.context == .capture || state.context == .diaryCapture) ? (DaybookMetrics.Window.popoverWidth - 24) : 240
 
         if state.context == .diaryCapture {
             if state.showsPreview {

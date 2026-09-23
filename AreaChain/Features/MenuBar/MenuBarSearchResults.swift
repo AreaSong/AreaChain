@@ -20,16 +20,16 @@ struct MenuBarSearchResults: View {
             HStack {
                 Text("search.results.count \(results.count)")
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 Button("footer.search.clear", action: onClearSearch)
                     .font(DaybookType.caption)
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
             Text(query)
                 .font(DaybookType.body.weight(.medium))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
                 .lineLimit(2)
                 .help(query)
 

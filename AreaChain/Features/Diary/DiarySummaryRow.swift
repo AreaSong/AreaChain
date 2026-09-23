@@ -127,7 +127,7 @@ struct DiarySummaryRow: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .strokeBorder(
                     (entry.isPinned && !isSelected && !isHighlighted)
-                        ? DaybookTheme.stamp.opacity(0.28) // token-exempt: 28% 印章色没有对应令牌
+                        ? DaybookPalette.accent.base.opacity(0.28) // token-exempt: 28% 印章色没有对应令牌
                         : Color.clear,
                     lineWidth: 0.8
                 )
@@ -192,7 +192,7 @@ struct DiarySummaryRow: View {
         HStack(alignment: .center, spacing: 4) {
             Text(presentation.mainText.isEmpty ? " " : presentation.mainText)
                 .font(DaybookType.body)
-                .foregroundStyle(isSensitive ? DaybookTheme.muted : DaybookTheme.ink)
+                .foregroundStyle(isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
@@ -252,12 +252,12 @@ struct DiarySummaryRow: View {
     private func noteIndicator(fullText: String) -> some View {
         Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
+            .foregroundStyle(hasNoteCopied ? DaybookPalette.accent.base : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
+                    .fill(hasNoteCopied ? DaybookPalette.accent.base.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
             )
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
@@ -444,19 +444,19 @@ struct DiarySummaryRow: View {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
                     .font(.system(size: 8.5)) // token-exempt: 小于 9pt 的图钉和锁图标
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                     .accessibilityLabel("diary.pin")
             }
             if isSensitive {
                 Image(systemName: "lock.shield")
                     .font(.system(size: 8.5)) // token-exempt: 小于 9pt 的图钉和锁图标
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .accessibilityLabel("diary.privacy")
             }
             Text(dateLabel)
                 .lineLimit(1)
                 .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             if !assignedTags.isEmpty {
                 HStack(spacing: 3) {
@@ -468,7 +468,7 @@ struct DiarySummaryRow: View {
             if hasCopied {
                 Label("diary.copied", systemImage: "checkmark")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
             Spacer(minLength: 0)
         }

@@ -7,7 +7,7 @@ enum DiaryTagChrome {
         if DiaryMemoTags.isPasswordName(name) { return .red } // token-exempt: 菜单栏和筛选共用，systemRed 不是同一个红
         if name == DiaryMemoTags.idea { return .orange } // token-exempt: 菜单栏和筛选共用，systemOrange 不是同一个橙
         if name == DiaryMemoTags.journal { return .blue } // token-exempt: 菜单栏和筛选共用，systemBlue 不是同一个蓝
-        return DaybookTheme.stamp
+        return DaybookPalette.accent.base
     }
 }
 
@@ -211,12 +211,12 @@ struct DiaryNoteCard: View {
                         .font(DaybookType.badge.weight(.medium))
                 }
             }
-            .foregroundStyle(DaybookTheme.muted)
+            .foregroundStyle(DaybookPalette.text.secondary)
             .padding(.horizontal, assignedTags.isEmpty ? 6 : 4)
             .frame(height: 18)
-            .background(Capsule().fill(DaybookTheme.hoverFill))
+            .background(Capsule().fill(DaybookPalette.fill.hover))
             .overlay(
-                Capsule().strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.7)
+                Capsule().strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.7)
             )
         }
         .menuStyle(.borderlessButton)

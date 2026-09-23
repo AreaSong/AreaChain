@@ -71,25 +71,25 @@ struct DaybookEmptyState: View {
             if !compact {
                 Image(systemName: systemImage)
                     .font(.system(size: alignment == .center ? 28 : 16, weight: .light)) // token-exempt: 28pt 没有令牌，display 是 26pt，字重是 light
-                    .foregroundStyle(DaybookTheme.stamp.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
+                    .foregroundStyle(DaybookPalette.accent.base.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
                     .padding(.bottom, alignment == .center ? 4 : 0)
                     .accessibilityHidden(true)
             }
             Text(title)
                 .font(compact ? DaybookType.caption : (alignment == .center ? DaybookType.body.weight(.medium) : DaybookType.body))
-                .foregroundStyle(DaybookTheme.ink.opacity(0.88)) // token-exempt: 88% 墨色没有对应令牌
+                .foregroundStyle(DaybookPalette.text.primary.opacity(0.88)) // token-exempt: 88% 墨色没有对应令牌
                 .multilineTextAlignment(alignment == .center ? .center : .leading)
                 .fixedSize(horizontal: false, vertical: true)
 
             if let subtitle {
                 Text(subtitle)
                     .font(DaybookType.caption.weight(.regular))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .multilineTextAlignment(alignment == .center ? .center : .leading)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.vertical, compact ? 2 : (alignment == .center ? (centerVertically ? 12 : 28) : DaybookTheme.space))
+        .padding(.vertical, compact ? 2 : (alignment == .center ? (centerVertically ? 12 : 28) : DaybookSpacing.sm))
         .padding(.horizontal, 16)
         .frame(maxWidth: .infinity, alignment: alignment == .center ? .center : .leading)
         .modifier(EmptyStateCenterModifier(centerVertically: centerVertically && !compact))
@@ -124,7 +124,7 @@ struct DaybookPeriodBar: View {
             DaybookIconButton(systemName: "chevron.left", label: prevLabel, action: onPrev)
             Text(title)
                 .font(DaybookType.title)
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
             DaybookIconButton(systemName: "chevron.right", label: nextLabel, action: onNext)
@@ -141,7 +141,7 @@ extension View {
     func daybookPanel(minWidth: CGFloat, minHeight: CGFloat) -> some View {
         padding(DaybookSpacing.page)
             .frame(minWidth: minWidth, maxWidth: .infinity, minHeight: minHeight, maxHeight: .infinity, alignment: .topLeading)
-            .background(DaybookTheme.paper.opacity(0.94)) // token-exempt: 94% 纸色没有对应令牌
+            .background(DaybookPalette.fill.page.opacity(0.94)) // token-exempt: 94% 纸色没有对应令牌
     }
 
     func daybookHoverReveal(visible: Bool, reduceMotion: Bool) -> some View {

@@ -38,12 +38,12 @@ struct HotKeyRecorder: View {
             if slot == .paste, !pasteArmed {
                 Text("hotkey.registration.failed")
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             if slot == .toggle, !toggleArmed {
                 Text("hotkey.registration.failed")
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
         .onAppear { refreshLabel() }

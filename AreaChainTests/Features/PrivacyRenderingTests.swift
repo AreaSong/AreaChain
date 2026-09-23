@@ -125,7 +125,7 @@ struct PrivacyRenderingTests {
         let root = content.modelContainer(fixture.container)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
             .environment(AppPreferences.shared)
-            .preferredColorScheme(scheme).background(DaybookTheme.paper).transaction { $0.disablesAnimations = true }
+            .preferredColorScheme(scheme).background(DaybookPalette.fill.page).transaction { $0.disablesAnimations = true }
         let hosting = NSHostingView(rootView: root)
         hosting.safeAreaRegions = []
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled],

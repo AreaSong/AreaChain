@@ -106,7 +106,7 @@ extension TasksPage {
     private func activeFilterTag(
         title: String,
         icon: String? = nil,
-        color: Color = DaybookTheme.stamp,
+        color: Color = DaybookPalette.accent.base,
         onRemove: @escaping () -> Void
     ) -> some View {
         DaybookChip(tint: color, isSelected: true) {

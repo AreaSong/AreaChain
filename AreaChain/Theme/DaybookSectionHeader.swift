@@ -11,16 +11,16 @@ struct DaybookSectionHeader: View {
             if let icon {
                 Image(systemName: icon)
                     .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
             Text(title)
                 .font(DaybookType.section)
                 .tracking(0.5)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             if let count {
                 Text("\(count)")
                     .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 分节计数用圆体
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
         .padding(.top, 6)
@@ -33,6 +33,6 @@ struct DaybookDivider: View {
     var opacity: Double = 0.4
 
     var body: some View {
-        Divider().overlay(DaybookTheme.rule.opacity(opacity))
+        Divider().overlay(DaybookPalette.border.default.opacity(opacity))
     }
 }

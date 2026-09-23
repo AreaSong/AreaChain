@@ -87,16 +87,16 @@ struct DaybookPage<Trailing: View, Content: View>: View {
                 if let systemImage {
                     Image(systemName: systemImage)
                         .font(titleFont)
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                 }
                 if let titleText {
                     Text(titleText)
                         .font(titleFont)
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                 } else if let title {
                     Text(title)
                         .font(titleFont)
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                 }
             }
         }
@@ -107,11 +107,11 @@ struct DaybookPage<Trailing: View, Content: View>: View {
         if let subtitleText {
             Text(subtitleText)
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         } else if let subtitle {
             Text(subtitle)
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         }
     }
 
@@ -200,7 +200,7 @@ struct DaybookComposer<Accessory: View>: View {
             DaybookInputShell(kind: .composer, focused: isFocused) {
                 Image(systemName: "plus")
                     .font(DaybookType.caption.weight(.semibold))
-                    .foregroundStyle(isFocused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
+                    .foregroundStyle(isFocused ? DaybookPalette.text.primary : DaybookPalette.text.secondary.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
                     .frame(width: 14)
             } field: {
                 field

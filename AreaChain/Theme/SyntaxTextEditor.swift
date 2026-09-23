@@ -35,7 +35,7 @@ struct SyntaxTextEditor: View {
             if text.isEmpty {
                 Text(placeholder)
                     .font(.system(size: fontSize))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
                     .allowsHitTesting(false)

@@ -174,7 +174,7 @@ struct MainSplitWorkspaceView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text(newProjectParentID == nil ? "sidebar.add.project" : "sidebar.add.child")
                 .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             TextField("sidebar.sheet.project.name", text: $newProjectName)
                 .textFieldStyle(.roundedBorder)
             HStack {
@@ -215,14 +215,14 @@ struct MainSplitWorkspaceView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("sidebar.add.tag")
                 .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             TextField("drawer.tag.create.name", text: $newTagName)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: newTagName) { _, _ in tagCreateError = nil }
             if let tagCreateError {
                 Text(tagCreateError)
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
             }
             HStack {
                 Spacer()

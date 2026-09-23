@@ -264,7 +264,7 @@ private struct CaptureOverlayFixture: View {
             .background(CaptureGeometryProbe())
         }
         .padding(12)
-        .background(DaybookTheme.paper)
+        .background(DaybookPalette.fill.page)
         .syntaxOverlayHost()
     }
 }

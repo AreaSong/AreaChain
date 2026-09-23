@@ -42,14 +42,14 @@ struct ModernCheckbox: View {
                 .strokeBorder(strokeColor, lineWidth: 1.5)
                 .background(
                     Circle()
-                        .fill(isDone ? DaybookTheme.stamp : Color.clear)
+                        .fill(isDone ? DaybookPalette.accent.base : Color.clear)
                 )
                 .frame(width: 17, height: 17)
 
             CheckmarkShape()
                 .trim(from: 0, to: isDone ? 1 : 0)
                 .stroke(
-                    DaybookTheme.checkmark,
+                    DaybookPalette.checkmark,
                     style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
                 )
                 .frame(width: 17, height: 17)
@@ -64,12 +64,12 @@ struct ModernCheckbox: View {
 
     private var strokeColor: Color {
         if isDone {
-            return DaybookTheme.stamp
+            return DaybookPalette.accent.base
         }
         if hovering {
-            return DaybookTheme.stamp.opacity(0.8)
+            return DaybookPalette.accent.base.opacity(0.8)
         }
-        return DaybookTheme.ink.opacity(0.24)
+        return DaybookPalette.text.primary.opacity(0.24)
     }
 
     private func handleTap() {
@@ -93,7 +93,7 @@ extension View {
     func modernFocusRing(isFocused: Bool) -> some View {
         overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .stroke(DaybookTheme.focusRing, lineWidth: isFocused ? 1.5 : 0)
+                .stroke(DaybookPalette.accent.base, lineWidth: isFocused ? 1.5 : 0)
                 .padding(-1.5)
                 .opacity(isFocused ? 0.9 : 0)
         )
@@ -114,17 +114,17 @@ struct ModernTaskTitle: View {
     var body: some View {
         Text(text)
             .font(font)
-            .foregroundStyle(isDone ? DaybookTheme.done : DaybookTheme.ink)
+            .foregroundStyle(isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Rectangle()
-                        .fill(DaybookTheme.done.opacity(0.85))
+                        .fill(DaybookPalette.text.done.opacity(0.85))
                         .frame(width: isDone ? proxy.size.width : 0, height: 1.2)
                         .frame(maxHeight: .infinity, alignment: .center)
                 }
                 .allowsHitTesting(false)
             }
-            .strikethrough(reduceMotion && isDone, color: DaybookTheme.done.opacity(0.85))
+            .strikethrough(reduceMotion && isDone, color: DaybookPalette.text.done.opacity(0.85))
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
             .animation(DaybookMotion.strikethrough(reduceMotion), value: isDone)
     }

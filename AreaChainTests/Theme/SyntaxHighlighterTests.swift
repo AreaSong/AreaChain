@@ -16,7 +16,7 @@ struct SyntaxHighlighterTests {
         var timeEffective = NSRange(location: 0, length: 0)
         let timeColor = attr.attribute(.foregroundColor, at: timeRange.location, effectiveRange: &timeEffective) as? NSColor
         #expect(timeColor != nil)
-        #expect(timeColor == NSColor(DaybookTheme.stamp))
+        #expect(timeColor == NSColor(DaybookPalette.accent.base))
 
         // 验证 #工作 范围的颜色
         let tagRange = nsText.range(of: "#工作")
@@ -33,7 +33,7 @@ struct SyntaxHighlighterTests {
         // 验证普通文本 团队开会 为默认墨水色
         let titleRange = nsText.range(of: "团队开会")
         let titleColor = attr.attribute(.foregroundColor, at: titleRange.location, effectiveRange: nil) as? NSColor
-        #expect(titleColor == NSColor(DaybookTheme.ink))
+        #expect(titleColor == NSColor(DaybookPalette.text.primary))
     }
 
     @Test func appliesHighlightingToTextStorage() {
@@ -45,16 +45,16 @@ struct SyntaxHighlighterTests {
         let nsText = text as NSString
         let timeRange = nsText.range(of: "@15:30")
         let timeColor = storage.attribute(.foregroundColor, at: timeRange.location, effectiveRange: nil) as? NSColor
-        #expect(timeColor == NSColor(DaybookTheme.stamp))
+        #expect(timeColor == NSColor(DaybookPalette.accent.base))
     }
 
     @Test func syntaxColorPaletteMatches() {
         #expect(DaybookPalette.Syntax.tagNS == NSColor.daybook(name: "daybook.syntax.tag", swatch: DaybookSwatch.tagLight, dark: DaybookSwatch.tagDark))
-        #expect(DaybookPalette.Syntax.timeNS == NSColor(DaybookTheme.stamp))
+        #expect(DaybookPalette.Syntax.timeNS == NSColor(DaybookPalette.accent.base))
         #expect(DaybookPalette.Syntax.p1NS == NSColor.systemRed)
         #expect(DaybookPalette.Syntax.p2NS == NSColor.systemOrange)
         #expect(DaybookPalette.Syntax.p3NS == NSColor.systemBlue)
-        #expect(DaybookPalette.Syntax.p4NS == NSColor(DaybookTheme.muted))
+        #expect(DaybookPalette.Syntax.p4NS == NSColor(DaybookPalette.text.secondary))
 
         #expect(DaybookPalette.Syntax.priorityColor(for: "!p1") == DaybookPalette.Syntax.p1)
         #expect(DaybookPalette.Syntax.priorityColor(for: "quadrant.iu") == DaybookPalette.Syntax.p1)

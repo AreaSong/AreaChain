@@ -251,9 +251,9 @@ struct WorkspaceRenderingTests {
         window.isReleasedWhenClosed = false
         window.isRestorable = false
         window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
-        window.setContentSize(DaybookTheme.workspaceSize)
-        window.minSize = DaybookTheme.workspaceMinSize
-        if minimumSize { window.setFrame(NSRect(origin: window.frame.origin, size: DaybookTheme.workspaceMinSize), display: true) }
+        window.setContentSize(DaybookMetrics.Window.workspaceSize)
+        window.minSize = DaybookMetrics.Window.workspaceMinSize
+        if minimumSize { window.setFrame(NSRect(origin: window.frame.origin, size: DaybookMetrics.Window.workspaceMinSize), display: true) }
         NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
         return window

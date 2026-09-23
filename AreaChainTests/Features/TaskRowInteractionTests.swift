@@ -332,7 +332,7 @@ struct TaskRowInteractionTests {
         NSApp.setActivationPolicy(.regular)
         let hosting = NSHostingView(rootView: content
             .frame(width: size.width, height: size.height)
-            .background(DaybookTheme.paper)
+            .background(DaybookPalette.fill.page)
             .environment(\.locale, Locale(identifier: "zh-Hans"))
             .preferredColorScheme(scheme)
             .syntaxOverlayHost())

@@ -90,9 +90,9 @@ struct LiveComposerPreviewHeader: View {
     private var mainRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Circle()
-                .strokeBorder(DaybookTheme.rule.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])) // token-exempt: 80% 分隔线没有对应令牌
+                .strokeBorder(DaybookPalette.border.default.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])) // token-exempt: 80% 分隔线没有对应令牌
                 .frame(width: 14, height: 14)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             HStack(alignment: .center, spacing: 5) {
                 if !displayTitle.isEmpty {
@@ -174,12 +174,12 @@ struct LiveComposerPreviewHeader: View {
         .frame(height: 36)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookTheme.paper)
+                .fill(DaybookPalette.fill.page)
                 .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
+                .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
         )
     }
 
@@ -187,12 +187,12 @@ struct LiveComposerPreviewHeader: View {
     private var noteIndicator: some View {
         Image(systemName: "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookPalette.text.tertiary)
+            .foregroundStyle(isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
+                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
             )
             .background(
                 GeometryReader { proxy in
@@ -253,14 +253,14 @@ struct LiveComposerPreviewHeader: View {
             HStack {
                 Text("syntax.preview.allTags")
                     .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 Text("\(previewTags.count)")
                     .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 1)
-                    .background(Capsule().fill(DaybookTheme.rule.opacity(0.4))) // token-exempt: 40% 分隔线没有对应令牌
-                    .foregroundStyle(DaybookTheme.muted)
+                    .background(Capsule().fill(DaybookPalette.border.default.opacity(0.4))) // token-exempt: 40% 分隔线没有对应令牌
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(.horizontal, 2)
             .padding(.top, 1)
@@ -293,12 +293,12 @@ struct LiveComposerPreviewHeader: View {
         .frame(width: 140)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookTheme.paper)
+                .fill(DaybookPalette.fill.page)
                 .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
+                .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
         )
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
@@ -313,7 +313,7 @@ struct LiveComposerPreviewHeader: View {
     private var titleView: some View {
         Text(displayTitle)
             .font(DaybookType.body.weight(.medium))
-            .foregroundStyle(DaybookTheme.ink)
+            .foregroundStyle(DaybookPalette.text.primary)
             .lineLimit(1)
             .truncationMode(.middle)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -349,7 +349,7 @@ struct LiveComposerPreviewHeader: View {
         hasTime: Bool,
         hasPriority: Bool,
         hasNotes: Bool = false,
-        cardWidth: CGFloat = DaybookTheme.popoverWidth - 24
+        cardWidth: CGFloat = DaybookMetrics.Window.popoverWidth - 24
     ) -> Bool {
         guard !tags.isEmpty else { return true }
         let horizontalPadding: CGFloat = 20

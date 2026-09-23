@@ -39,10 +39,10 @@ struct GeneralSettingsSection: View {
             Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
             Text("settings.capture.stamp.help")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             Text("settings.capture.screen.help")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         }
     }
 }
@@ -62,7 +62,7 @@ struct SyncSettingsSection: View {
         Section("settings.notify") {
             Text(notifyStatusText)
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             Button("settings.notify.request", action: onRequestNotifyAuth)
         }
 
@@ -71,7 +71,7 @@ struct SyncSettingsSection: View {
             if let calendarSyncStatusText {
                 Text(calendarSyncStatusText)
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             if prefs.syncCalendarEvents {
                 Button("settings.calendar.sync.retry") { CalendarSync.refreshIfEnabled() }
@@ -83,14 +83,14 @@ struct SyncSettingsSection: View {
             }
             Text("settings.calendar.sync.help")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         }
 
         Section("settings.icloud") {
             Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
             Text("settings.icloud.hint")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         }
     }
 }
@@ -110,7 +110,7 @@ struct AdvancedSettingsSection: View {
             if StoreHealth.shared.isUsingMemoryFallback {
                 Text("settings.memory")
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
                 Button("settings.reset", role: .destructive) {
                     confirmReset = true
                 }
@@ -118,7 +118,7 @@ struct AdvancedSettingsSection: View {
             if let statusMessage {
                 Text(statusMessage)
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .textSelection(.enabled)
             }
         }

@@ -17,7 +17,7 @@ struct BoardSearchHitGroups: View {
                 VStack(alignment: .leading, spacing: rowSpacing) {
                     Text(DayKey.displayName(group.dayKey, locale: locale))
                         .font(DaybookType.caption.weight(.semibold))
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                     ForEach(group.items) { hit in
                         BoardSearchHitRow(
                             hit: hit,
@@ -81,7 +81,7 @@ struct BoardSearchHitRow: View {
             if isSelected {
                 Image(systemName: "chevron.right")
                     .font(DaybookType.caption.weight(.bold))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
         }
         .padding(.horizontal, 12)
@@ -92,13 +92,13 @@ struct BoardSearchHitRow: View {
     private var kindText: some View {
         Text(LocalizedStringKey(hit.kind.titleKey))
             .font(DaybookType.badge.weight(.semibold))
-            .foregroundStyle(DaybookTheme.stamp)
+            .foregroundStyle(DaybookPalette.accent.base)
     }
 
     private func titleText(lineLimit: Int) -> some View {
         Text(hit.title)
             .font(DaybookType.body)
-            .foregroundStyle(DaybookTheme.ink)
+            .foregroundStyle(DaybookPalette.text.primary)
             .multilineTextAlignment(.leading)
             .lineLimit(lineLimit)
     }

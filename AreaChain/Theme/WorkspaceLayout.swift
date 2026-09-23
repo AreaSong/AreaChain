@@ -118,11 +118,11 @@ struct WorkspaceSidebarRow: View {
                 if let badgeCount, badgeCount > 0 {
                     Text("\(badgeCount)")
                         .font(DaybookType.caption.monospacedDigit())
-                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
                 }
             }
             .font(DaybookType.body.weight(isSelected ? .medium : .regular))
-            .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
+            .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.primary)
             .padding(.vertical, WorkspaceLayout.sidebarRowVerticalPadding)
             .padding(.leading, WorkspaceLayout.sidebarRowHorizontalPadding + CGFloat(depth) * 12)
             .padding(.trailing, WorkspaceLayout.sidebarRowHorizontalPadding)

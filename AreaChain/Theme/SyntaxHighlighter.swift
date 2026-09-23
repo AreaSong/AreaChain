@@ -13,7 +13,7 @@ enum SyntaxHighlighter {
         case .priority(let isImportant, let isUrgent, _):
             return DaybookPalette.Syntax.priorityColorNS(isImportant: isImportant, isUrgent: isUrgent)
         case .note:
-            return NSColor(DaybookTheme.muted)
+            return NSColor(DaybookPalette.text.secondary)
         }
     }
 
@@ -21,7 +21,7 @@ enum SyntaxHighlighter {
     static func attributedString(
         for text: String,
         font: NSFont,
-        defaultColor: NSColor = NSColor(DaybookTheme.ink)
+        defaultColor: NSColor = NSColor(DaybookPalette.text.primary)
     ) -> NSAttributedString {
         let attributed = NSMutableAttributedString(
             string: text,
@@ -45,7 +45,7 @@ enum SyntaxHighlighter {
     static func applyHighlighting(
         to textStorage: NSTextStorage,
         font: NSFont,
-        defaultColor: NSColor = NSColor(DaybookTheme.ink)
+        defaultColor: NSColor = NSColor(DaybookPalette.text.primary)
     ) {
         let text = textStorage.string
         let fullRange = NSRange(location: 0, length: (text as NSString).length)

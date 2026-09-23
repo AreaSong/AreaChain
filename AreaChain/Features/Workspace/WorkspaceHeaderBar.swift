@@ -40,17 +40,17 @@ struct WorkspaceHeaderLeadingTitle: View {
         HStack(spacing: 8) {
             if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
                 Image(systemName: "folder.fill")
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                 Text(project.name)
                     .font(DaybookType.body.weight(.medium))
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
             } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
                 Image(systemName: "number")
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                 Text("#\(tag.name)")
                     .font(DaybookType.body.weight(.medium))
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
             }
         }
@@ -66,7 +66,7 @@ struct WorkspaceHeaderSearchCapsule: View {
         DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
             Image(systemName: "magnifyingglass")
                 .font(DaybookType.caption.weight(.medium))
-                .foregroundStyle(navigation.isSearchFocused ? DaybookTheme.ink : DaybookTheme.muted)
+                .foregroundStyle(navigation.isSearchFocused ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
         } field: {
             DaybookTextField(
                 text: $navigation.searchQuery,
@@ -90,12 +90,12 @@ struct WorkspaceHeaderSearchCapsule: View {
             } else {
                 Text("⌘F")
                     .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 快捷键提示用圆体
-                    .foregroundStyle(DaybookTheme.muted.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
+                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
                     .background(
                         RoundedRectangle(cornerRadius: DaybookRadius.xxs)
-                            .fill(DaybookTheme.rule.opacity(0.18)) // token-exempt: 18% 分隔线没有对应令牌
+                            .fill(DaybookPalette.border.default.opacity(0.18)) // token-exempt: 18% 分隔线没有对应令牌
                     )
             }
         }

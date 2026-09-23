@@ -56,7 +56,7 @@ struct WorkspaceGlobalSearchView: View {
                         HStack {
                             Text("search.results.count \(hits.count + matchingAttachments.count)")
                                 .font(DaybookType.caption.weight(.medium))
-                                .foregroundStyle(DaybookTheme.muted)
+                                .foregroundStyle(DaybookPalette.text.secondary)
                             Spacer()
                         }
                         .padding(.top, 4)
@@ -78,7 +78,7 @@ struct WorkspaceGlobalSearchView: View {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("window.attachments")
                                     .font(DaybookType.caption.weight(.semibold))
-                                    .foregroundStyle(DaybookTheme.muted)
+                                    .foregroundStyle(DaybookPalette.text.secondary)
 
                                 ForEach(matchingAttachments) { attachment in
                                     attachmentRow(attachment)
@@ -105,18 +105,18 @@ struct WorkspaceGlobalSearchView: View {
         } label: {
             HStack(spacing: 10) {
                 Image(systemName: "paperclip")
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
 
                 Text(attachment.filename)
                     .font(DaybookType.body)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
 
                 Spacer()
 
                 Text(attachment.createdAt.formatted(date: .abbreviated, time: .omitted))
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)

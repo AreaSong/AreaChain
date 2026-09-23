@@ -13,7 +13,7 @@ struct TaskDetailQuadrantGrid: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("drawer.quadrant.title")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 6) {
                 ForEach(QuadrantSlot.allCases) { slot in
@@ -37,7 +37,7 @@ struct TaskDetailQuadrantGrid: View {
 
                     Text(LocalizedStringKey(slot.titleKeyName))
                         .font(DaybookType.caption.weight(.semibold))
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                     Spacer()
                     if isActive {
                         Image(systemName: "checkmark")
@@ -47,16 +47,16 @@ struct TaskDetailQuadrantGrid: View {
                 }
                 Text(LocalizedStringKey(slot.subtitleKeyName))
                     .font(DaybookType.micro)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(7)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(isActive ? slot.themeFill : DaybookTheme.cardSurface)
+                    .fill(isActive ? slot.themeFill : DaybookPalette.cardSurface)
                     .overlay(
                         RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                            .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookTheme.rule.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6) // token-exempt: 象限色 70% 和分隔线 25% 没有对应令牌
+                            .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookPalette.border.default.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6) // token-exempt: 象限色 70% 和分隔线 25% 没有对应令牌
                     )
             )
         }

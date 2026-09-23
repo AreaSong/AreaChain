@@ -6,12 +6,12 @@ extension DiaryNoteCard {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
 
             Text(formatDate(entry.createdAt))
                 .font(DaybookType.caption.monospaced())
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             if isPasswordType {
                 HStack(spacing: 3) {
@@ -128,7 +128,7 @@ extension DiaryNoteCard {
         HStack(spacing: 8) {
             Text("••••••••••••••••")
                 .font(.system(size: 14, weight: .bold, design: .monospaced)) // token-exempt: 密码占位用等宽粗体，bodyLarge 是 14pt 常规无衬线
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .blur(radius: 1.5)
 
             Spacer()
@@ -151,7 +151,7 @@ extension DiaryNoteCard {
         Text(displayedText)
             .font(DaybookType.body)
             .lineSpacing(3.5)
-            .foregroundStyle(DaybookTheme.ink)
+            .foregroundStyle(DaybookPalette.text.primary)
             .fixedSize(horizontal: false, vertical: true)
             .contentShape(Rectangle())
             .overlay {

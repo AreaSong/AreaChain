@@ -14,11 +14,11 @@ struct TaskDetailDateChips: View {
             HStack {
                 Text("drawer.date.title")
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 Text(DayKey.displayName(dayKey, locale: locale))
                     .font(DaybookType.badge.weight(.medium))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
 
             HStack(spacing: 5) {
@@ -27,28 +27,28 @@ struct TaskDetailDateChips: View {
                 let afterTomorrowKey = DayKey.shifted(todayKey, by: 2)
 
                 DaybookChip(
-                    tint: DaybookTheme.stamp,
+                    tint: DaybookPalette.accent.base,
                     isSelected: dayKey == todayKey,
                     action: { onSelectDate(todayKey) }
                 ) {
                     Text(L10n.string("capture.today", locale: locale))
                 }
                 DaybookChip(
-                    tint: DaybookTheme.stamp,
+                    tint: DaybookPalette.accent.base,
                     isSelected: dayKey == tomorrowKey,
                     action: { onSelectDate(tomorrowKey) }
                 ) {
                     Text(L10n.string("capture.tomorrow", locale: locale))
                 }
                 DaybookChip(
-                    tint: DaybookTheme.stamp,
+                    tint: DaybookPalette.accent.base,
                     isSelected: dayKey == afterTomorrowKey,
                     action: { onSelectDate(afterTomorrowKey) }
                 ) {
                     Text(L10n.string("capture.afterTomorrow", locale: locale))
                 }
                 DaybookChip(
-                    tint: DaybookTheme.stamp,
+                    tint: DaybookPalette.accent.base,
                     isSelected: dayKey != todayKey && dayKey != tomorrowKey && dayKey != afterTomorrowKey,
                     action: { pickingDay = true }
                 ) {
@@ -78,12 +78,12 @@ struct TaskDetailRemindChips: View {
             HStack {
                 Text("drawer.remind.title")
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 if let remindMinutes {
                     Text(RemindMinutes.label(remindMinutes, locale: locale))
                         .font(.system(size: 10, weight: .bold, design: .monospaced)) // token-exempt: 提醒时刻用等宽
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                     DaybookIconButton(systemName: "xmark.circle.fill", label: "row.time.clear", size: .inline) {
                         onSelectMinutes(nil)
                     }
@@ -102,7 +102,7 @@ struct TaskDetailRemindChips: View {
 
     private func chip(label: String, minutes: Int) -> some View {
         DaybookChip(
-            tint: DaybookTheme.stamp,
+            tint: DaybookPalette.accent.base,
             isSelected: remindMinutes == minutes,
             action: {
                 onSelectMinutes(remindMinutes == minutes ? nil : minutes)
@@ -129,7 +129,7 @@ struct TaskDetailWeekdayPicker: View {
             if showsTitle {
                 Text("drawer.weekdays.title")
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
 
             HStack(spacing: 4) {
@@ -143,9 +143,9 @@ struct TaskDetailWeekdayPicker: View {
                             .frame(width: 25, height: 25)
                             .background(
                                 Circle()
-                                    .fill(isSelected ? DaybookTheme.stamp : DaybookTheme.cardSurface)
+                                    .fill(isSelected ? DaybookPalette.accent.base : DaybookPalette.cardSurface)
                             )
-                            .foregroundStyle(isSelected ? DaybookPalette.text.onAccent : DaybookTheme.ink)
+                            .foregroundStyle(isSelected ? DaybookPalette.text.onAccent : DaybookPalette.text.primary)
                     }
                     .buttonStyle(.plain) // control: 星期圆点选择器，不是胶囊
                     .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
@@ -214,7 +214,7 @@ struct TaskDetailStreakCard: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("drawer.streak.title")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             VStack(spacing: 8) {
                 streakMetricsRow
@@ -240,17 +240,17 @@ struct TaskDetailStreakCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("drawer.streak.current")
                 .font(DaybookType.micro)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             HStack(spacing: 4) {
                 Image(systemName: "flame.fill")
                     .font(DaybookType.body.weight(.bold))
                     .foregroundStyle(DaybookPalette.status.pending)
                 Text("\(streakResult.currentStreak)")
                     .font(.system(size: 16, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 Text("drawer.streak.days")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -260,17 +260,17 @@ struct TaskDetailStreakCard: View {
         VStack(alignment: .leading, spacing: 2) {
             Text("drawer.streak.best")
                 .font(DaybookType.micro)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             HStack(spacing: 4) {
                 Image(systemName: "trophy.fill")
                     .font(DaybookType.body.weight(.bold))
                     .foregroundStyle(.yellow) // token-exempt: 没有黄色令牌
                 Text("\(streakResult.bestStreak)")
                     .font(.system(size: 16, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 Text("drawer.streak.days")
                     .font(DaybookType.badge)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -286,7 +286,7 @@ struct TaskDetailStreakCard: View {
                 if inspectDayKey != DayClock.shared.todayKey {
                     Text(DayKey.displayName(inspectDayKey, locale: locale))
                         .font(DaybookType.micro)
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                 }
             }
             Spacer()
@@ -298,23 +298,23 @@ struct TaskDetailStreakCard: View {
         if !isEnabled {
             Image(systemName: "pause.circle.fill")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         } else if inspectCompleted {
             Image(systemName: "checkmark.circle.fill")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.done)
+                .foregroundStyle(DaybookPalette.text.done)
         } else if inspectSkipped {
             Image(systemName: "forward.circle.fill")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         } else if !inspectDue {
             Image(systemName: "calendar.badge.clock")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         } else {
             Image(systemName: "circle")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.stamp)
+                .foregroundStyle(DaybookPalette.accent.base)
         }
     }
 
@@ -334,13 +334,13 @@ struct TaskDetailStreakCard: View {
 
     private var statusColor: Color {
         if !isEnabled {
-            return DaybookTheme.muted
+            return DaybookPalette.text.secondary
         } else if inspectCompleted {
-            return DaybookTheme.done
+            return DaybookPalette.text.done
         } else if inspectSkipped || !inspectDue {
-            return DaybookTheme.muted
+            return DaybookPalette.text.secondary
         } else {
-            return DaybookTheme.stamp
+            return DaybookPalette.accent.base
         }
     }
 }

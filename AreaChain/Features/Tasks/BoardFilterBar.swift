@@ -199,10 +199,10 @@ struct BoardFilterDropdownButton: View {
                 HStack(spacing: 4) {
                     Image(systemName: icon)
                         .font(DaybookType.micro.weight(.medium))
-                        .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
                     Text(title)
                         .font(DaybookType.caption.weight(active ? .semibold : .regular))
-                        .foregroundStyle(active ? DaybookTheme.stamp : DaybookTheme.ink)
+                        .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.primary)
                         .lineLimit(1)
                 }
             }
@@ -228,8 +228,8 @@ struct BoardFilterDropdownButton: View {
         }
         .padding(.horizontal, 7)
         .padding(.vertical, 4)
-        .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
-        .overlay(Capsule().stroke(active ? DaybookPalette.accent.border : DaybookTheme.rule.opacity(0.5), lineWidth: 0.8)) // token-exempt: 50% 分隔线没有对应令牌
+        .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
+        .overlay(Capsule().stroke(active ? DaybookPalette.accent.border : DaybookPalette.border.default.opacity(0.5), lineWidth: 0.8)) // token-exempt: 50% 分隔线没有对应令牌
         .contentShape(Capsule())
     }
 
@@ -263,7 +263,7 @@ struct BoardFilterDropdownButton: View {
         }
         .padding(6)
         .frame(minWidth: 140)
-        .background(DaybookTheme.paper)
+        .background(DaybookPalette.fill.page)
     }
 }
 
@@ -279,7 +279,7 @@ struct FilterDropdownItemRow: View {
                 if item.isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                         .frame(width: 10)
                 } else {
                     Spacer()
@@ -289,12 +289,12 @@ struct FilterDropdownItemRow: View {
                 if let icon = item.icon {
                     Image(systemName: icon)
                         .font(DaybookType.micro.weight(.medium))
-                        .foregroundStyle(item.isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .foregroundStyle(item.isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
                 }
 
                 Text(item.title)
                     .font(DaybookType.caption)
-                    .foregroundStyle(item.isSelected ? DaybookTheme.stamp : DaybookTheme.ink)
+                    .foregroundStyle(item.isSelected ? DaybookPalette.accent.base : DaybookPalette.text.primary)
                     .lineLimit(1)
 
                 Spacer(minLength: 6)
@@ -304,8 +304,8 @@ struct FilterDropdownItemRow: View {
                         .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 下拉计数用圆体
                         .padding(.horizontal, 4)
                         .padding(.vertical, 0.5)
-                        .background(item.isSelected ? DaybookTheme.stamp.opacity(0.20) : DaybookTheme.ink.opacity(0.06)) // token-exempt: 20% 与 6% 没有对应令牌
-                        .foregroundStyle(item.isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .background(item.isSelected ? DaybookPalette.accent.base.opacity(0.20) : DaybookPalette.text.primary.opacity(0.06)) // token-exempt: 20% 与 6% 没有对应令牌
+                        .foregroundStyle(item.isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
                         .clipShape(Capsule())
                 }
             }

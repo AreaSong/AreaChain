@@ -60,8 +60,8 @@ struct DaybookTextEditor: NSViewRepresentable {
         context.coordinator.parent = self
         guard let editor = scroll.documentView as? DaybookAppKitTextView else { return }
         editor.font = .systemFont(ofSize: fontSize)
-        editor.textColor = NSColor(DaybookTheme.ink)
-        editor.insertionPointColor = NSColor(DaybookTheme.ink)
+        editor.textColor = NSColor(DaybookPalette.text.primary)
+        editor.insertionPointColor = NSColor(DaybookPalette.text.primary)
         editor.setAccessibilityLabel(placeholder)
         editor.onCommandReturn = { [weak editor] in
             guard let editor, !editor.hasMarkedText() else { return }

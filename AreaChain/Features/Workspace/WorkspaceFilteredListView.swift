@@ -49,7 +49,7 @@ struct WorkspaceFilteredListView: View {
         HStack(spacing: 8) {
             Text("filter.open.count \(openCount)")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             if canBatchSelect {
                 Button {
@@ -173,10 +173,10 @@ struct WorkspaceFilteredListView: View {
                 HStack(spacing: 5) {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                         .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                     Text("stamp.completed \(doneTodos.count)")
                         .font(DaybookType.caption.weight(.medium))
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                     Spacer()
                 }
                 .contentShape(Rectangle())

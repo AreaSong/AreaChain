@@ -54,10 +54,10 @@ struct AttachmentBrowserPage: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(ownerTitle(cluster))
                 .font(DaybookType.subtitle.weight(.semibold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             Text(kindLabel(cluster.kind))
                 .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 8)], spacing: 8) {
                 ForEach(cluster.items) { item in
                     thumb(item)
@@ -76,7 +76,7 @@ struct AttachmentBrowserPage: View {
                     thumbImage(item)
                     Text(item.filename)
                         .font(DaybookType.badge)
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                         .lineLimit(1)
                 }
             }
@@ -104,7 +104,7 @@ struct AttachmentBrowserPage: View {
         } else {
             Image(systemName: "photo")
                 .font(.system(size: 18)) // token-exempt: entity 是 17pt，这处是 18pt
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .frame(width: 72, height: 72)
         }
     }
@@ -122,7 +122,7 @@ struct AttachmentBrowserPage: View {
         } else {
             Text(item.filename)
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .padding(12)
         }
     }

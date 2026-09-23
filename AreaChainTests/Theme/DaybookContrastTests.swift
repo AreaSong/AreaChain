@@ -24,12 +24,12 @@ struct DaybookContrastTests {
     }
 
     @Test func popoverDimensionsMeetCompactAndExpandLimits() {
-        #expect(DaybookTheme.popoverWidth == 380)
-        #expect(DaybookTheme.popoverMinHeight == 280)
-        #expect(DaybookTheme.popoverMaxHeight == 490)
-        #expect(DaybookTheme.popoverMinHeight < DaybookTheme.popoverMaxHeight)
-        #expect(DaybookTheme.workspaceSize.width == 960)
-        #expect(DaybookTheme.workspaceSize.height == 640)
+        #expect(DaybookMetrics.Window.popoverWidth == 380)
+        #expect(DaybookMetrics.Window.popoverMinHeight == 280)
+        #expect(DaybookMetrics.Window.popoverMaxHeight == 490)
+        #expect(DaybookMetrics.Window.popoverMinHeight < DaybookMetrics.Window.popoverMaxHeight)
+        #expect(DaybookMetrics.Window.workspaceSize.width == 960)
+        #expect(DaybookMetrics.Window.workspaceSize.height == 640)
     }
 
     @Test func pagePaddingUsesSixteenPoints() {

@@ -66,8 +66,8 @@ struct PrivacyUnlockView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Label("privacy.unlock.title", systemImage: "lock.shield")
-                .font(DaybookType.title).foregroundStyle(DaybookTheme.ink)
-            Text(reason).font(DaybookType.body).foregroundStyle(DaybookTheme.muted).fixedSize(horizontal: false, vertical: true)
+                .font(DaybookType.title).foregroundStyle(DaybookPalette.text.primary)
+            Text(reason).font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary).fixedSize(horizontal: false, vertical: true)
             if vault.hasSystemUnlock {
                 Button { authenticate(system: true) } label: {
                     Label("privacy.unlock.system", systemImage: "touchid").frame(maxWidth: .infinity)
@@ -88,7 +88,7 @@ struct PrivacyUnlockView: View {
             }
             if let error {
                 Text(LocalizedStringKey(error.messageKey)).font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.destructive).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(DaybookPalette.status.danger).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 if busy { ProgressView().controlSize(.small) }
@@ -97,7 +97,7 @@ struct PrivacyUnlockView: View {
             }
         }
         .padding(22).frame(width: 390)
-        .background(DaybookTheme.paper)
+        .background(DaybookPalette.fill.page)
         .onDisappear { password = "" }
     }
 

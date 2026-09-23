@@ -65,13 +65,13 @@ private struct DaybookSurfaceModifier: ViewModifier {
     private var fill: Color {
         switch variant {
         case .row:
-            if isSelected { return DaybookTheme.cardSelectionFill }
-            if highlighted { return DaybookTheme.hoverFill }
+            if isSelected { return DaybookPalette.fill.selection }
+            if highlighted { return DaybookPalette.fill.hover }
             return .clear
         case .card:
-            if isSelected { return DaybookTheme.cardSelectionFill }
-            if highlighted { return DaybookTheme.cardSurfaceHover }
-            return DaybookTheme.cardSurface
+            if isSelected { return DaybookPalette.fill.selection }
+            if highlighted { return DaybookPalette.cardSurfaceHover }
+            return DaybookPalette.cardSurface
         case .panel:
             return DaybookPalette.fill.page
         case .banner:
@@ -82,12 +82,12 @@ private struct DaybookSurfaceModifier: ViewModifier {
     private var border: Color {
         switch variant {
         case .row:
-            if isSelected { return DaybookTheme.cardSelectionStroke }
+            if isSelected { return DaybookPalette.border.selection }
             return .clear
         case .card:
-            if isSelected { return DaybookTheme.stamp.opacity(0.85) }
-            if highlighted { return DaybookTheme.cardBorderHover }
-            return DaybookTheme.cardBorder
+            if isSelected { return DaybookPalette.accent.base.opacity(0.85) }
+            if highlighted { return DaybookPalette.cardBorderHover }
+            return DaybookPalette.border.subtle
         case .panel:
             return DaybookPalette.border.default
         case .banner:

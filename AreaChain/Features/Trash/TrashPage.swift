@@ -86,21 +86,21 @@ struct TrashPage: View {
                 if item.isResident {
                     Image(systemName: "repeat")
                         .font(DaybookType.badge.weight(.bold))
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                 }
                 Text(item.kindLabel)
                     .font(DaybookType.badge.weight(.medium))
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
                     .background(
                         RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                            .fill(DaybookTheme.hoverFill)
+                            .fill(DaybookPalette.fill.hover)
                     )
 
                 Text(item.displayTitle)
                     .font(DaybookType.body)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(2)
             }
 
@@ -109,7 +109,7 @@ struct TrashPage: View {
             HStack(spacing: 12) {
                 Text(ClockLabel.created(item.deletedAt, locale: locale))
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
 
                 HStack(spacing: 6) {
                     Button("trash.restore") { restore(item) }

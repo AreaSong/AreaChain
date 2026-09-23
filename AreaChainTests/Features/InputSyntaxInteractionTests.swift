@@ -336,7 +336,7 @@ private final class InputSyntaxHost {
     func show<V: View>(_ view: V, size: NSSize) {
         let content = view.padding(12).modelContainer(container)
             .environment(AppPreferences.shared).environment(\.locale, Locale(identifier: "zh-Hans"))
-            .background(DaybookTheme.paper)
+            .background(DaybookPalette.fill.page)
             .transaction { $0.disablesAnimations = true }
             .syntaxOverlayHost()
         window.contentView = NSHostingView(rootView: content)

@@ -71,7 +71,7 @@ extension TaskRow {
                 .foregroundStyle(isHighlighted ? DaybookPalette.status.pending : DaybookPalette.text.tertiary)
             Text("\(streak)")
                 .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookPalette.text.tertiary)
+                .foregroundStyle(isHighlighted ? DaybookPalette.text.primary : DaybookPalette.text.tertiary)
                 .lineLimit(1)
                 .contentTransition(.numericText())
                 .animation(DaybookMotion.interactive(reduceMotion), value: streak)
@@ -88,7 +88,7 @@ extension TaskRow {
 
     func remindBadge(_ minutes: Int) -> some View {
         let isHighlighted = isHovered || state.isSelected
-        return DaybookChip(tint: DaybookTheme.stamp, isSelected: isHighlighted, action: state.canSetRemind ? { pickingTime = true } : nil) {
+        return DaybookChip(tint: DaybookPalette.accent.base, isSelected: isHighlighted, action: state.canSetRemind ? { pickingTime = true } : nil) {
             HStack(spacing: 2.5) {
                 Image(systemName: "clock")
                 Text(RemindMinutes.label(minutes, locale: locale))

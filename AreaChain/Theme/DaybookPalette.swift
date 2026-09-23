@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-// MARK: - L0 原始值（从 DaybookTheme.swift 原样搬入）
+// MARK: - L0 原始值
 
 enum DaybookSwatch {
     static let inkLight = (0.12, 0.12, 0.14)
@@ -70,21 +70,25 @@ enum DaybookPalette {
     }
 
     static let text = Text(
-        primary: DaybookTheme.ink,
-        secondary: DaybookTheme.muted,
+        primary: Color.daybook(name: "daybook.ink", swatch: DaybookSwatch.inkLight, dark: DaybookSwatch.inkDark),
+        secondary: Color.daybook(name: "daybook.muted", swatch: DaybookSwatch.mutedLight, dark: DaybookSwatch.mutedDark),
         tertiary: alpha("palette.text.tertiary", DaybookSwatch.mutedLight, DaybookSwatch.mutedDark, 0.75),
         disabled: alpha("palette.text.disabled", DaybookSwatch.mutedLight, DaybookSwatch.mutedDark, 0.45),
-        done: DaybookTheme.done,
+        done: Color.daybook(name: "daybook.done", swatch: DaybookSwatch.doneLight, dark: DaybookSwatch.doneDark),
         onAccent: Color.daybook(name: "palette.text.onAccent", light: .white, dark: .white)
     )
 
     static let fill = Fill(
-        page: DaybookTheme.paper,
-        surface: DaybookTheme.surface,
+        page: Color.daybook(name: "daybook.paper", swatch: DaybookSwatch.paperLight, dark: DaybookSwatch.paperDark),
+        surface: Color.daybook(name: "daybook.surface", light: NSColor.white.withAlphaComponent(0.65), dark: NSColor(white: 0.18, alpha: 0.55)),
         subtle: alpha("palette.fill.subtle", DaybookSwatch.inkLight, DaybookSwatch.inkDark, 0.03),
-        hover: DaybookTheme.hoverFill,
-        press: DaybookTheme.pressFill,
-        selection: DaybookTheme.cardSelectionFill,
+        hover: Color.daybook(name: "daybook.hoverFill", light: NSColor.black.withAlphaComponent(0.04), dark: NSColor.white.withAlphaComponent(0.08)),
+        press: Color.daybook(name: "daybook.pressFill", light: NSColor.black.withAlphaComponent(0.08), dark: NSColor.white.withAlphaComponent(0.14)),
+        selection: Color.daybook(
+            name: "daybook.cardSelectionFill",
+            light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.08),
+            dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.14)
+        ),
         scrim: Color.daybook(
             name: "palette.fill.scrim",
             light: NSColor.black.withAlphaComponent(0.001),
@@ -93,24 +97,41 @@ enum DaybookPalette {
     )
 
     static let border = Border(
-        default: DaybookTheme.rule,
-        subtle: DaybookTheme.cardBorder,
+        default: Color.daybook(name: "daybook.rule", swatch: DaybookSwatch.ruleLight, dark: DaybookSwatch.ruleDark),
+        subtle: Color.daybook(
+            name: "daybook.cardBorder",
+            light: NSColor.black.withAlphaComponent(0.06),
+            dark: NSColor.white.withAlphaComponent(0.08)
+        ),
         strong: alpha("palette.border.strong", DaybookSwatch.inkLight, DaybookSwatch.inkDark, 0.35),
         focus: alpha("palette.border.focus", DaybookSwatch.inkLight, DaybookSwatch.inkDark, 0.35),
-        selection: DaybookTheme.cardSelectionStroke,
+        selection: Color.daybook(
+            name: "daybook.cardSelectionStroke",
+            light: NSColor.daybook(DaybookSwatch.stampLight).withAlphaComponent(0.35),
+            dark: NSColor.daybook(DaybookSwatch.stampDark).withAlphaComponent(0.40)
+        ),
         faint: alpha("palette.border.faint", DaybookSwatch.ruleLight, DaybookSwatch.ruleDark, 0.4)
     )
 
     static let status = Status(
         pending: Color(nsColor: .systemOrange),
         success: Color(nsColor: .systemGreen),
-        danger: DaybookTheme.destructive
+        danger: Color.daybook(name: "daybook.destructive", swatch: DaybookSwatch.destructiveLight, dark: DaybookSwatch.destructiveDark)
     )
 
     static let accent = Accent(
-        base: DaybookTheme.stamp,
+        base: Color.daybook(name: "daybook.stamp", swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark),
         fill: alpha("palette.accent.fill", DaybookSwatch.stampLight, DaybookSwatch.stampDark, 0.12),
         border: alpha("palette.accent.border", DaybookSwatch.stampLight, DaybookSwatch.stampDark, 0.35)
+    )
+
+    static let checkmark = Color.daybook(name: "daybook.checkmark", swatch: DaybookSwatch.checkmarkLight, dark: DaybookSwatch.checkmarkDark)
+    static let cardSurface = Color.daybook(name: "daybook.cardSurface", light: NSColor.white.withAlphaComponent(0.55), dark: NSColor(white: 0.18, alpha: 0.55))
+    static let cardSurfaceHover = Color.daybook(name: "daybook.cardSurfaceHover", light: NSColor.white.withAlphaComponent(0.85), dark: NSColor(white: 0.24, alpha: 0.75))
+    static let cardBorderHover = Color.daybook(
+        name: "daybook.cardBorderHover",
+        light: NSColor.black.withAlphaComponent(0.12),
+        dark: NSColor.white.withAlphaComponent(0.16)
     )
 
     /// 手记预置标签色。来源：Features/Diary/DiaryNoteCard.swift 的 DiaryTagChrome（P5 再把消费者迁过来，本阶段不动它）。
@@ -172,9 +193,9 @@ enum DaybookPalette {
         )
 
         // Time 时间（Daybook 印章蓝）
-        static let time = DaybookTheme.stamp
-        static let timeNS = NSColor(DaybookTheme.stamp)
-        static let timeFill = DaybookTheme.stamp.opacity(0.12)
+        static let time = DaybookPalette.accent.base
+        static let timeNS = NSColor(DaybookPalette.accent.base)
+        static let timeFill = DaybookPalette.accent.base.opacity(0.12)
 
         // Priority 优先级
         static let p1 = Color(nsColor: .systemRed)
@@ -189,9 +210,9 @@ enum DaybookPalette {
         static let p3NS = NSColor.systemBlue
         static let p3Fill = Color(nsColor: .systemBlue).opacity(0.12)
 
-        static let p4 = DaybookTheme.muted
-        static let p4NS = NSColor(DaybookTheme.muted)
-        static let p4Fill = DaybookTheme.muted.opacity(0.10)
+        static let p4 = DaybookPalette.text.secondary
+        static let p4NS = NSColor(DaybookPalette.text.secondary)
+        static let p4Fill = DaybookPalette.text.secondary.opacity(0.10)
 
         static func priorityColor(isImportant: Bool, isUrgent: Bool) -> Color {
             if isImportant && isUrgent { return p1 }

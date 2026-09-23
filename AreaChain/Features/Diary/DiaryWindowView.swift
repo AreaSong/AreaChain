@@ -26,7 +26,7 @@ struct DiaryWindowView: View {
         }
         .padding(16)
         .frame(minWidth: 328, minHeight: 230)
-        .background(DaybookTheme.paper)
+        .background(DaybookPalette.fill.page)
         .syntaxOverlayHost()
         .onAppear { editorFocused = session.canRevealContent }
         .onChange(of: session.canRevealContent) { _, value in editorFocused = value }
@@ -41,7 +41,7 @@ struct DiaryWindowView: View {
         HStack {
             Text(session.entryID == nil ? "diary.window.new" : "tab.diary")
                 .font(DaybookType.title)
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             Spacer()
             Button(action: onPin) {
                 Label(session.isWindowPinned ? "diary.window.unpin" : "diary.window.pin",
@@ -50,7 +50,7 @@ struct DiaryWindowView: View {
                     .fixedSize()
             }
             .buttonStyle(.bordered)
-            .tint(session.isWindowPinned ? DaybookTheme.stamp : DaybookTheme.muted)
+            .tint(session.isWindowPinned ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
             .accessibilityIdentifier("diary.window.pin")
             .accessibilityAddTraits(session.isWindowPinned ? [.isSelected] : [])
         }
@@ -59,7 +59,7 @@ struct DiaryWindowView: View {
     @ViewBuilder private var content: some View {
         if session.issue == .missing {
             Text("diary.window.save.missing")
-                .font(DaybookType.body).foregroundStyle(DaybookTheme.muted)
+                .font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary)
         } else if !session.canRevealContent {
             VStack(spacing: 12) {
                 Image(systemName: "lock.shield").font(.system(size: 26)) // token-exempt: display 令牌是 26pt light，这处是默认字重
@@ -68,9 +68,9 @@ struct DiaryWindowView: View {
                     PrivacyAccess.perform(requiresUnlock: session.needsUnlock, vault: session.vault) { session.reveal() }
                 }
                     .buttonStyle(.bordered)
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
             }
-            .foregroundStyle(DaybookTheme.muted)
+            .foregroundStyle(DaybookPalette.text.secondary)
         } else {
             DaybookInputShell(kind: .editor, focused: editorFocused) {
                 SyntaxTextEditor(text: $session.text, focused: $editorFocused,
@@ -83,7 +83,7 @@ struct DiaryWindowView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(LocalizedStringKey(session.statusKey))
                 .font(DaybookType.caption)
-                .foregroundStyle(session.issue == nil ? DaybookTheme.muted : DaybookTheme.destructive)
+                .foregroundStyle(session.issue == nil ? DaybookPalette.text.secondary : DaybookPalette.status.danger)
                 .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: 10) {
                 if session.isSensitive && session.canRevealContent {
@@ -107,7 +107,7 @@ struct DiaryWindowView: View {
                     .help("diary.window.save.help")
             }
             .font(DaybookType.caption)
-            .foregroundStyle(DaybookTheme.stamp)
+            .foregroundStyle(DaybookPalette.accent.base)
         }
     }
 

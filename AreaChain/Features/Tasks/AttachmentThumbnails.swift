@@ -27,7 +27,7 @@ struct AttachmentThumbnails: View {
             } else {
                 Text(item.filename)
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .padding(12)
             }
         }
@@ -47,7 +47,7 @@ struct AttachmentThumbnails: View {
         } else {
             Image(systemName: "photo")
                 .font(DaybookType.badge)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
         }

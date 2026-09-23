@@ -42,17 +42,17 @@ extension DayBoardList {
         HStack(spacing: 6) {
             Image(systemName: "checkmark.circle")
                 .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookTheme.stamp)
+                .foregroundStyle(DaybookPalette.accent.base)
             Text("太棒了，今日任务全清！")
                 .font(DaybookType.caption.weight(.medium))
-                .foregroundStyle(DaybookTheme.ink.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
+                .foregroundStyle(DaybookPalette.text.primary.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
             Spacer()
         }
         .padding(.vertical, 7)
         .padding(.horizontal, 10)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookTheme.stamp.opacity(0.05)) // token-exempt: 5% 印章底没有对应令牌
+                .fill(DaybookPalette.accent.base.opacity(0.05)) // token-exempt: 5% 印章底没有对应令牌
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -76,7 +76,7 @@ extension DayBoardList {
                 HStack(spacing: 5) {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                         .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
                     DaybookSectionHeader(
                         title: showCompleted
                             ? "stamp.completed.collapse \(doneItemsList.count)"

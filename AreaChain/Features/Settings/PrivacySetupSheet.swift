@@ -34,15 +34,15 @@ struct PrivacySetupSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 14) {
                     if creating && !vault.isConfigured { methods }
-                    Text("privacy.tags.help").font(DaybookType.body).foregroundStyle(DaybookTheme.muted)
+                    Text("privacy.tags.help").font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary)
                     tagChoices
                     Toggle("privacy.legacy.include", isOn: $includeLegacy)
                     Text(L10n.format("privacy.migration.count", locale: locale, count))
-                        .font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+                        .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
                     if count > 0 { backupFields }
                     if let errorKey {
                         Text(LocalizedStringKey(errorKey)).font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.destructive).fixedSize(horizontal: false, vertical: true)
+                            .foregroundStyle(DaybookPalette.status.danger).fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
@@ -74,17 +74,17 @@ struct PrivacySetupSheet: View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle("privacy.methods.system", isOn: $useSystem).disabled(!systemAvailable)
             if !systemAvailable {
-                Text("privacy.system.signing").font(DaybookType.caption).foregroundStyle(DaybookTheme.destructive)
+                Text("privacy.system.signing").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
             }
             Toggle("privacy.methods.master", isOn: $useMaster)
             if useSystem && !useMaster {
-                Text("privacy.system.only.warning").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+                Text("privacy.system.only.warning").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }
             if useMaster {
                 SecureField("privacy.master.label", text: $master)
                 SecureField("privacy.password.repeat", text: $repeated)
             }
-            Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+            Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
         }
     }
 
@@ -106,7 +106,7 @@ struct PrivacySetupSheet: View {
             Text("privacy.migration.backup").font(DaybookType.body).fixedSize(horizontal: false, vertical: true)
             SecureField("privacy.backup.password.title", text: $backupPassword)
             SecureField("privacy.password.repeat", text: $backupRepeated)
-            Text("privacy.backup.password.help").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+            Text("privacy.backup.password.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
         }
     }
 

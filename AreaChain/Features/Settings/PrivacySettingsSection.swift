@@ -25,14 +25,14 @@ struct PrivacySettingsSection: View {
         Section("privacy.settings.title") {
             Label(!vault.isConfigured ? "privacy.state.unconfigured" : (vault.isUnlocked ? "privacy.state.unlocked" : "privacy.state.locked"),
                   systemImage: vault.isUnlocked ? "lock.open" : "lock.shield")
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             if vault.state == .unavailable {
                 Text(LocalizedStringKey(vault.issue?.messageKey ?? "privacy.error.storageFailure"))
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
             } else if !vault.isConfigured {
-                Text("privacy.settings.intro").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+                Text("privacy.settings.intro").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
                 if diaries.contains(where: \.hasProtectedContent) || attachments.contains(where: { $0.privacyVaultID != nil }) {
-                    Text("privacy.missing.config").foregroundStyle(DaybookTheme.destructive)
+                    Text("privacy.missing.config").foregroundStyle(DaybookPalette.status.danger)
                 } else {
                     Button("privacy.setup") { dialog = .setup }
                 }
@@ -41,7 +41,7 @@ struct PrivacySettingsSection: View {
             }
             if attachments.contains(where: { $0.retiredStorageID != nil }) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookTheme.destructive)
+                    Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
                     Button("privacy.cleanup.retry") { retryCleanup() }
                 }
             } else if PrivacyStoreMaintenance.isPending(context) {
@@ -49,10 +49,10 @@ struct PrivacySettingsSection: View {
                     HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "checkmark.shield")
                             .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookTheme.stamp)
+                            .foregroundStyle(DaybookPalette.accent.base)
                         Text("privacy.cleanup.database")
                             .font(DaybookType.caption)
-                            .foregroundStyle(DaybookTheme.muted)
+                            .foregroundStyle(DaybookPalette.text.secondary)
                     }
                     HStack(spacing: 8) {
                         Button("privacy.cleanup.now") { retryCleanup() }
@@ -65,7 +65,7 @@ struct PrivacySettingsSection: View {
                 Text(LocalizedStringKey(statusKey)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
             }
             if vault.hasPendingSystemKeyCleanup {
-                Text("privacy.error.systemCleanupPending").font(DaybookType.caption).foregroundStyle(DaybookTheme.destructive)
+                Text("privacy.error.systemCleanupPending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
                 Button("privacy.system.cleanup.retry") {
                     run {
                         if vault.isConfigured { try await authenticate() }
@@ -109,7 +109,7 @@ struct PrivacySettingsSection: View {
                 }
             }
             Text(L10n.format("privacy.tags.count", locale: locale, tags.filter(\.isPrivateDiary).count))
-                .font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+                .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             LabeledContent("privacy.methods.system", value: L10n.string(vault.hasSystemUnlock ? "privacy.enabled" : "privacy.disabled", locale: locale))
             Button(vault.hasSystemUnlock ? "privacy.system.disable" : "privacy.system.enable") {
                 if vault.hasSystemUnlock { dialog = .disableSystem }
@@ -132,7 +132,7 @@ struct PrivacySettingsSection: View {
                 Text("privacy.idle.5").tag(300)
                 Text("privacy.idle.15").tag(900)
             }
-            Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookTheme.muted)
+            Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             HStack {
                 Button("privacy.backup.export") { dialog = .export }
                 Button("privacy.backup.restore") { dialog = .restore }

@@ -220,7 +220,7 @@ struct TaskDetailAssetsSectionView: View {
             HStack {
                 Text("drawer.attachments.title \(taskAttachments.count)")
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
                 DaybookIconButton(systemName: "plus", label: "drawer.attachments.pick", size: .inline) {
                     AttachmentActions.pickImage(ownerKind: props.ownerKind, ownerID: props.ownerID, context: modelContext)
@@ -254,12 +254,12 @@ struct TaskDetailAssetsSectionView: View {
                     }
             } else {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookTheme.surface)
+                    .fill(DaybookPalette.fill.surface)
                     .frame(width: 56, height: 56)
                     .overlay(
                         Image(systemName: "photo")
                             .font(DaybookType.title)
-                            .foregroundStyle(DaybookTheme.muted)
+                            .foregroundStyle(DaybookPalette.text.secondary)
                     )
             }
 

@@ -277,7 +277,7 @@ struct TaskRow: View {
     private var residentMark: some View {
         Image(systemName: "repeat")
             .font(DaybookType.badge.weight(.bold))
-            .foregroundStyle(DaybookTheme.stamp)
+            .foregroundStyle(DaybookPalette.accent.base)
             .accessibilityLabel("row.resident")
             .help("row.resident")
     }
@@ -285,12 +285,12 @@ struct TaskRow: View {
     private var noteIndicator: some View {
         Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
+            .foregroundStyle(hasNoteCopied ? DaybookPalette.accent.base : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 4)
             .padding(.vertical, 2)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
+                    .fill(hasNoteCopied ? DaybookPalette.accent.base.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
             )
             .background(
                 GeometryReader { proxy in
@@ -399,7 +399,7 @@ struct TaskRow: View {
                 if let noteSnippet = formattedNoteSnippet {
                     Text(noteSnippet)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
+                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
@@ -407,7 +407,7 @@ struct TaskRow: View {
                 if let note = state.note {
                     Text(note)
                         .font(DaybookType.caption)
-                        .foregroundStyle(DaybookTheme.stamp.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
+                        .foregroundStyle(DaybookPalette.accent.base.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
                 }
 
                 if let source = state.classify?.sourceLabel, !source.isEmpty {

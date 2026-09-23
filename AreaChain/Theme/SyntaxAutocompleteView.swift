@@ -197,7 +197,7 @@ struct SyntaxAutocompletePopup: View {
                 Group {
                     if !isStandalonePreview {
                         RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                            .fill(DaybookTheme.paper)
+                            .fill(DaybookPalette.fill.page)
                             .daybookElevation(.floating)
                     }
                 }
@@ -206,7 +206,7 @@ struct SyntaxAutocompletePopup: View {
                 Group {
                     if !isStandalonePreview {
                         RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                            .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
+                            .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
                     }
                 }
             )
@@ -254,14 +254,14 @@ struct SyntaxAutocompletePopup: View {
 
             Text(item.title)
                 .font(.system(size: 11.5, weight: .semibold, design: .monospaced)) // token-exempt: 等宽候选标题，kbd 是 8.5pt
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
 
             Spacer(minLength: 4)
 
             if let subtitle = item.subtitle {
                 Text(LocalizedStringKey(subtitle))
                     .font(DaybookType.badge.weight(.regular))
-                    .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                    .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
             }
         }
         .padding(.horizontal, 6)
@@ -304,20 +304,20 @@ struct SyntaxAutocompletePopup: View {
                     .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookPalette.text.primary.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("syntax.footer.navigate")
                     .font(DaybookType.micro)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             HStack(spacing: 3) {
                 Text("⇥ / ↵")
                     .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookPalette.text.primary.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("syntax.footer.complete")
                     .font(DaybookType.micro)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
             Spacer(minLength: 0)
             HStack(spacing: 3) {
@@ -325,15 +325,15 @@ struct SyntaxAutocompletePopup: View {
                     .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookPalette.text.primary.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("syntax.footer.dismiss")
                     .font(DaybookType.micro)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background(DaybookTheme.ink.opacity(0.02)) // token-exempt: 2% 墨色没有对应令牌
+        .background(DaybookPalette.text.primary.opacity(0.02)) // token-exempt: 2% 墨色没有对应令牌
     }
 }
 

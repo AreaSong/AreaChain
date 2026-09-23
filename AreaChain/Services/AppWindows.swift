@@ -63,8 +63,8 @@ enum AppWindows {
 final class PanelWindowController: NSObject, NSWindowDelegate {
     static let workspace = PanelWindowController(
         titleKey: "window.workspace",
-        size: DaybookTheme.workspaceSize,
-        minSize: DaybookTheme.workspaceMinSize,
+        size: DaybookMetrics.Window.workspaceSize,
+        minSize: DaybookMetrics.Window.workspaceMinSize,
         root: {
             AppWindows.workspaceViewProvider?() ?? AnyView(EmptyView())
         }

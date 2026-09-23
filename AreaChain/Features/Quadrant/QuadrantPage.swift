@@ -32,7 +32,7 @@ struct QuadrantPage: View {
             )
             Text("quadrant.hint")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
                 .accessibilityIdentifier("quadrant.hint")
             if embedded {
                 GeometryReader { geometry in
@@ -62,7 +62,7 @@ struct QuadrantPage: View {
 
                 Text(LocalizedStringKey(slot.titleKeyName))
                     .font(DaybookType.section)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
             }
             .accessibilityAddTraits(.isHeader)
             .accessibilityIdentifier("quadrant.header.\(slot.rawValue)")
@@ -145,12 +145,12 @@ private struct QuadrantChip: View {
                 if isResident {
                     Image(systemName: "repeat")
                         .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                         .accessibilityLabel("row.resident")
                 }
                 Text(title)
                     .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(2)
                 Spacer(minLength: 0)
             }

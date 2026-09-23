@@ -134,13 +134,13 @@ struct MenuBarFilterFlyout: View {
 
                         if hasActive {
                             Circle()
-                                .fill(DaybookTheme.stamp)
+                                .fill(DaybookPalette.accent.base)
                                 .frame(width: 4, height: 4)
                         }
 
                         Image(systemName: "chevron.right")
                             .font(.system(size: 7.5, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
-                            .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookPalette.text.tertiary)
+                            .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
                     }
                 }
                 .buttonStyle(DaybookButtonStyle(isSelected ? .active : .quiet, size: .compact))
@@ -170,12 +170,12 @@ struct MenuBarFilterFlyout: View {
         .padding(4)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookTheme.paper)
+                .fill(DaybookPalette.fill.page)
                 .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .strokeBorder(DaybookTheme.rule.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
+                .strokeBorder(DaybookPalette.border.default.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
         )
     }
 
@@ -220,12 +220,12 @@ struct MenuBarFilterFlyout: View {
         .frame(maxHeight: 165)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookTheme.paper)
+                .fill(DaybookPalette.fill.page)
                 .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .strokeBorder(DaybookTheme.rule.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
+                .strokeBorder(DaybookPalette.border.default.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
         )
     }
 
@@ -328,13 +328,13 @@ struct MenuBarFilterFlyout: View {
                 if let count, count > 0 {
                     Text("\(count)")
                         .font(.system(size: 8, weight: .bold, design: .rounded)) // token-exempt: 小于 9pt 的筛选图标
-                        .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
+                        .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
                 }
 
                 if isSelected {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                 }
             }
         }

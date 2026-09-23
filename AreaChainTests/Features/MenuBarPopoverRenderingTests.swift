@@ -406,7 +406,7 @@ struct MenuBarPopoverRenderingTests {
     private func host<Content: View>(
         _ root: Content, container: ModelContainer,
         locale: String = "zh-Hans", scheme: ColorScheme = .light,
-        size: NSSize = DaybookTheme.popoverSize
+        size: NSSize = DaybookMetrics.Window.popoverSize
     ) -> NSWindow {
         let content = root
             .modelContainer(container)

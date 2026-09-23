@@ -68,7 +68,7 @@ struct CalendarMonthGrid: View {
             ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
                 Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
                     .font(DaybookType.label)
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                     .frame(maxWidth: .infinity)
             }
         }
@@ -86,17 +86,17 @@ struct CalendarMonthGrid: View {
                     .font(DaybookType.body.weight(selected ? .semibold : .regular))
                 Text(count > 0 ? "\(count)" : " ")
                     .font(.system(size: 9, weight: .semibold, design: .rounded)) // token-exempt: 日期计数用圆体
-                    .foregroundStyle(count > 0 ? DaybookTheme.stamp : .clear)
+                    .foregroundStyle(count > 0 ? DaybookPalette.accent.base : .clear)
             }
-            .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
+            .foregroundStyle(selected ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
             .frame(maxWidth: .infinity, minHeight: cellHeight)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface) // token-exempt: 18% 印章底没有对应令牌
+                    .fill(selected ? DaybookPalette.accent.base.opacity(0.18) : DaybookPalette.cardSurface) // token-exempt: 18% 印章底没有对应令牌
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .stroke(today ? DaybookTheme.stamp : (selected ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3)), lineWidth: today ? 1.4 : 0.8) // token-exempt: 40% 印章色和 30% 分隔线没有对应令牌
+                    .stroke(today ? DaybookPalette.accent.base : (selected ? DaybookPalette.accent.base.opacity(0.4) : DaybookPalette.border.default.opacity(0.3)), lineWidth: today ? 1.4 : 0.8) // token-exempt: 40% 印章色和 30% 分隔线没有对应令牌
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }
@@ -105,7 +105,7 @@ struct CalendarMonthGrid: View {
         .contentShape(Rectangle())
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 2)
+                .stroke(dropKey == key ? DaybookPalette.accent.base : Color.clear, lineWidth: 2)
         )
         .dropDestination(for: String.self) { items, _ in
             guard let onDropTodo, let id = items.compactMap(TodoDragToken.decode).first else {

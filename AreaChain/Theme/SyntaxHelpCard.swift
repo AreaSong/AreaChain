@@ -35,15 +35,15 @@ struct SyntaxExpandableCard: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6.5)
         }
-        .frame(width: DaybookTheme.popoverWidth - 24)
+        .frame(width: DaybookMetrics.Window.popoverWidth - 24)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookTheme.paper)
+                .fill(DaybookPalette.fill.page)
                 .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
+                .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
         )
         .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .onExitCommand {
@@ -59,11 +59,11 @@ struct SyntaxExpandableCard: View {
         HStack(spacing: 6) {
             Image(systemName: "sparkles")
                 .font(DaybookType.subtitle.weight(.semibold))
-                .foregroundStyle(DaybookTheme.stamp)
+                .foregroundStyle(DaybookPalette.accent.base)
 
             Text(context == .search ? "syntax.search.title" : "syntax.guide.title")
                 .font(DaybookType.subtitle.weight(.bold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
 
             Spacer(minLength: 0)
 
@@ -100,11 +100,11 @@ struct SyntaxExpandableCard: View {
                 title: "syntax.guide.priority",
                 exampleSnippet: "修线上Bug !p1",
                 exampleText: Text("修线上Bug ")
-                    + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
+                    + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
                     + Text("  或  ")
                     + Text("!p2").foregroundStyle(DaybookPalette.status.pending).bold()
                     + Text(" 整理书架"),
-                color: DaybookTheme.destructive
+                color: DaybookPalette.status.danger
             )
 
             // 3. @ 时刻提醒
@@ -114,9 +114,9 @@ struct SyntaxExpandableCard: View {
                     title: "syntax.guide.time",
                     exampleSnippet: "开晨会 @10:00",
                     exampleText: Text("开晨会 ")
-                        + Text("@10:00").foregroundStyle(DaybookTheme.stamp).bold()
+                        + Text("@10:00").foregroundStyle(DaybookPalette.accent.base).bold()
                         + Text("  或  明天下午 散步"),
-                    color: DaybookTheme.stamp
+                    color: DaybookPalette.accent.base
                 )
             }
 
@@ -127,9 +127,9 @@ struct SyntaxExpandableCard: View {
                     title: "syntax.guide.diary",
                     exampleSnippet: "随时记录灵感闪念",
                     exampleText: Text("随时记录灵感 ")
-                        + Text("⌘↵").foregroundStyle(DaybookTheme.stamp).bold()
+                        + Text("⌘↵").foregroundStyle(DaybookPalette.accent.base).bold()
                         + Text(" 直接存入今日手记"),
-                    color: DaybookTheme.stamp
+                    color: DaybookPalette.accent.base
                 )
 
                 // 5. ⇧↩ 换行输入备注
@@ -138,9 +138,9 @@ struct SyntaxExpandableCard: View {
                     title: "syntax.guide.note",
                     exampleSnippet: "首行待办标题\n换行输入详细备注",
                     exampleText: Text("首行标题 ")
-                        + Text("⇧↵").foregroundStyle(DaybookTheme.ink).bold()
+                        + Text("⇧↵").foregroundStyle(DaybookPalette.text.primary).bold()
                         + Text(" 换行转备注 (悬停清单查看)"),
-                    color: DaybookTheme.muted
+                    color: DaybookPalette.text.secondary
                 )
             }
         }
@@ -168,7 +168,7 @@ struct SyntaxExpandableCard: View {
                     HStack(alignment: .center, spacing: 4) {
                         exampleText
                             .font(.system(size: 10.5, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
-                            .foregroundStyle(DaybookTheme.ink)
+                            .foregroundStyle(DaybookPalette.text.primary)
                             .lineLimit(1)
 
                         Spacer(minLength: 4)
@@ -179,7 +179,7 @@ struct SyntaxExpandableCard: View {
                             Image(systemName: "arrow.right.circle.fill")
                                 .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
                         }
-                        .foregroundStyle(DaybookTheme.stamp)
+                        .foregroundStyle(DaybookPalette.accent.base)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(
@@ -204,7 +204,7 @@ struct SyntaxExpandableCard: View {
 
                         Text(LocalizedStringKey(title))
                             .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookTheme.ink)
+                            .foregroundStyle(DaybookPalette.text.primary)
 
                         Spacer(minLength: 0)
                     }
@@ -216,7 +216,7 @@ struct SyntaxExpandableCard: View {
             .padding(.vertical, 3.5)
             .background(
                 RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: 5pt 与 xs、small 都差 1pt
-                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.06) : Color.clear) // token-exempt: 6% 印章底没有对应令牌
+                    .fill(isHovered ? DaybookPalette.accent.base.opacity(0.06) : Color.clear) // token-exempt: 6% 印章底没有对应令牌
             )
             .contentShape(Rectangle())
         }
@@ -243,11 +243,11 @@ struct SyntaxExpandableCard: View {
                     (Text("重构核心模块 ")
                         + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
                         + Text(" ")
-                        + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
+                        + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
                         + Text(" ")
-                        + Text("@15:30").foregroundStyle(DaybookTheme.stamp).bold())
+                        + Text("@15:30").foregroundStyle(DaybookPalette.accent.base).bold())
                         .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
-                        .foregroundStyle(DaybookTheme.ink)
+                        .foregroundStyle(DaybookPalette.text.primary)
                         .lineLimit(1)
 
                     Spacer(minLength: 4)
@@ -258,7 +258,7 @@ struct SyntaxExpandableCard: View {
                         Image(systemName: "arrow.right.circle.fill")
                             .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
                     }
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                     .padding(.horizontal, 5.5)
                     .padding(.vertical, 2)
                     .background(
@@ -270,13 +270,13 @@ struct SyntaxExpandableCard: View {
                 HStack(spacing: 4) {
                     Text("syntax.guide.example")
                         .font(DaybookType.micro)
-                        .foregroundStyle(DaybookTheme.muted)
+                        .foregroundStyle(DaybookPalette.text.secondary)
 
                     Spacer(minLength: 0)
 
                     Text("Esc")
                         .font(DaybookType.kbd.weight(.bold))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
+                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
                 }
             }
             .padding(.horizontal, 8)

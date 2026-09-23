@@ -29,11 +29,11 @@ extension TasksPage {
                 .padding(8)
                 .background(
                     RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .fill(DaybookTheme.cardSurface)
+                        .fill(DaybookPalette.cardSurface)
                 )
                 .overlay(
                     RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+                        .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8)
                 )
                 .padding(.horizontal, 1)
                 .padding(.bottom, 8)
@@ -56,11 +56,11 @@ extension TasksPage {
         .padding(10)
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookTheme.cardSurface)
+                .fill(DaybookPalette.cardSurface)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
+                .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8)
         )
         .padding(.horizontal, 4)
         .containerRelativeFrame(.vertical, alignment: .center) { length, _ in
@@ -73,21 +73,21 @@ extension TasksPage {
             HStack(spacing: 4) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(DaybookType.micro.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                 Text("stamp.yesterday")
                     .font(DaybookType.caption.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 Text("\(yesterdayItems.count)")
                     .font(DaybookType.badge.weight(.bold).monospacedDigit())
-                    .foregroundStyle(DaybookTheme.stamp)
+                    .foregroundStyle(DaybookPalette.accent.base)
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 0.5)
-                    .background(DaybookTheme.stamp.opacity(0.14)) // token-exempt: 14% 印章底没有对应令牌
+                    .background(DaybookPalette.accent.base.opacity(0.14)) // token-exempt: 14% 印章底没有对应令牌
                     .clipShape(Capsule())
             }
             Spacer()
             if yesterdayItems.contains(where: { $0.kind == .todo }) {
-                DaybookChip(tint: DaybookTheme.stamp, isSelected: true, action: {
+                DaybookChip(tint: DaybookPalette.accent.base, isSelected: true, action: {
                     withAnimation(DaybookMotion.interactive) {
                         moveAllYesterdayTodosToToday()
                     }
@@ -282,7 +282,7 @@ struct LeftoverChipsBar: View {
     }
 
     private func chip(_ config: LeftoverChipConfig) -> some View {
-        DaybookChip(tint: DaybookTheme.stamp, isSelected: config.expanded, action: config.action) {
+        DaybookChip(tint: DaybookPalette.accent.base, isSelected: config.expanded, action: config.action) {
             HStack(spacing: 4) {
                 Text(config.title)
                 Text("\(config.count)")

@@ -12,7 +12,7 @@ struct DaybookChip<Label: View>: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     init(
-        tint: Color = DaybookTheme.stamp,
+        tint: Color = DaybookPalette.accent.base,
         isSelected: Bool = false,
         action: (() -> Void)? = nil,
         @ViewBuilder label: @escaping () -> Label
@@ -38,7 +38,7 @@ struct DaybookChip<Label: View>: View {
     private var chip: some View {
         label()
             .font(DaybookType.badge)
-            .foregroundStyle(isSelected ? tint : DaybookTheme.muted)
+            .foregroundStyle(isSelected ? tint : DaybookPalette.text.secondary)
             .lineLimit(1)
             .padding(.horizontal, 7)
             .padding(.vertical, 2.5)
@@ -51,13 +51,13 @@ struct DaybookChip<Label: View>: View {
 
     private var fill: Color {
         if isSelected { return tint.opacity(0.14) }
-        if hovering { return DaybookTheme.hoverFill }
+        if hovering { return DaybookPalette.fill.hover }
         return .clear
     }
 
     private var stroke: Color {
         if isSelected { return tint.opacity(0.35) }
-        if hovering { return DaybookTheme.rule.opacity(0.8) }
-        return DaybookTheme.rule.opacity(0.4)
+        if hovering { return DaybookPalette.border.default.opacity(0.8) }
+        return DaybookPalette.border.default.opacity(0.4)
     }
 }

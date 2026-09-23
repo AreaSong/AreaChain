@@ -13,8 +13,8 @@ struct TaskDetailHeaderBar: View {
             if isRoutine {
                 Image(systemName: "repeat")
                     .font(DaybookType.body.weight(.bold))
-                    .foregroundStyle(DaybookTheme.stamp)
-                    .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                    .foregroundStyle(DaybookPalette.accent.base)
+                    .frame(width: DaybookMetrics.Hit.regular, height: DaybookMetrics.Hit.regular)
             }
 
             ModernCheckbox(isDone: isDone, action: onToggle)
@@ -25,7 +25,7 @@ struct TaskDetailHeaderBar: View {
                 Image(systemName: "trash")
                     .font(DaybookType.subtitle.weight(.semibold))
                     .foregroundStyle(DaybookPalette.status.danger.opacity(0.85)) // token-exempt: 85% 危险色没有对应令牌
-                    .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                    .frame(width: DaybookMetrics.Hit.regular, height: DaybookMetrics.Hit.regular)
                     .contentShape(Rectangle())
             }
             .buttonStyle(DaybookButtonStyle(.destructive))
@@ -35,8 +35,8 @@ struct TaskDetailHeaderBar: View {
                 Button(action: onClose) {
                     Image(systemName: "xmark")
                         .font(DaybookType.caption.weight(.bold))
-                        .foregroundStyle(DaybookTheme.muted)
-                        .frame(width: DaybookTheme.hit, height: DaybookTheme.hit)
+                        .foregroundStyle(DaybookPalette.text.secondary)
+                        .frame(width: DaybookMetrics.Hit.regular, height: DaybookMetrics.Hit.regular)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(DaybookButtonStyle(.quiet))
@@ -76,12 +76,12 @@ struct TaskDetailTitleEditor: View {
                     .padding(6)
                     .background(
                         RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                            .fill(DaybookTheme.surface)
+                            .fill(DaybookPalette.fill.surface)
                     )
             } else {
                 Text(title.isEmpty ? L10n.string("drawer.untitled", locale: locale) : title)
                     .font(DaybookType.headline)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -119,7 +119,7 @@ struct TaskDetailMetadataSection: View {
         VStack(alignment: .leading, spacing: 6) {
             Text("drawer.meta.title")
                 .font(DaybookType.label)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
@@ -128,7 +128,7 @@ struct TaskDetailMetadataSection: View {
                     Text("drawer.meta.created \(createdAt.formatted(date: .abbreviated, time: .shortened))")
                         .font(DaybookType.badge)
                 }
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
 
                 if !sourceBundleID.isEmpty {
                     HStack(spacing: 4) {
@@ -137,7 +137,7 @@ struct TaskDetailMetadataSection: View {
                         Text("drawer.meta.source \(BundleDisplay.name(for: sourceBundleID))")
                             .font(DaybookType.badge)
                     }
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
                 }
             }
             .padding(8)

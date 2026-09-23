@@ -15,13 +15,13 @@ struct PrivacyPasswordSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             Text(title).font(DaybookType.title)
-            Text(explanation).font(DaybookType.body).foregroundStyle(DaybookTheme.muted)
+            Text(explanation).font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             SecureField(title, text: $password).onSubmit(submit)
             if confirmation { SecureField("privacy.password.repeat", text: $repeated).onSubmit(submit) }
             if let errorKey {
                 Text(LocalizedStringKey(errorKey)).font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.destructive).fixedSize(horizontal: false, vertical: true)
+                    .foregroundStyle(DaybookPalette.status.danger).fixedSize(horizontal: false, vertical: true)
             }
             HStack {
                 if busy { ProgressView().controlSize(.small) }

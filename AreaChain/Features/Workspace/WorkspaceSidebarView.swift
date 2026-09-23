@@ -244,7 +244,7 @@ struct WorkspaceSidebarView: View {
         VStack(alignment: .leading, spacing: 12) {
             Text("sidebar.rename")
                 .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookTheme.ink)
+                .foregroundStyle(DaybookPalette.text.primary)
             TextField("sidebar.rename.name", text: $renameDraft)
                 .textFieldStyle(.roundedBorder)
                 .onSubmit(commitRename)
@@ -252,7 +252,7 @@ struct WorkspaceSidebarView: View {
             if let renameError {
                 Text(renameError)
                     .font(DaybookType.caption)
-                    .foregroundStyle(DaybookTheme.destructive)
+                    .foregroundStyle(DaybookPalette.status.danger)
             }
             HStack {
                 Spacer()

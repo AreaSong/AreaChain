@@ -31,6 +31,16 @@ enum DaybookMetrics {
         static let emphasis: CGFloat = 1.0
     }
 
+    enum Window {
+        static let popoverWidth: CGFloat = 380
+        static let popoverMinHeight: CGFloat = 280
+        static let popoverMaxHeight: CGFloat = 490
+        static let popoverHeight: CGFloat = 490
+        static let popoverSize = CGSize(width: popoverWidth, height: popoverHeight)
+        static let workspaceSize = CGSize(width: 960, height: 640)
+        static let workspaceMinSize = CGSize(width: 780, height: 500)
+    }
+
     static func inputInsets(_ kind: DaybookInputKind) -> EdgeInsets {
         switch kind {
         case .composer: EdgeInsets(top: 7, leading: 10, bottom: 7, trailing: 10)

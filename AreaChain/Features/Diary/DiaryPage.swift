@@ -198,15 +198,15 @@ struct DiaryPage: View {
             HStack(spacing: 8) {
                 Text("diary.page.title")
                     .font(DaybookType.title)
-                    .foregroundStyle(DaybookTheme.ink)
+                    .foregroundStyle(DaybookPalette.text.primary)
                 Text("diary.page.count \(filteredEntries.count)")
                     .font(DaybookType.caption.monospacedDigit())
-                    .foregroundStyle(DaybookTheme.muted)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
         } subtitle: {
             Text("diary.page.subtitle")
                 .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookTheme.muted)
+                .foregroundStyle(DaybookPalette.text.secondary)
         } trailing: {
             searchChrome
                 .frame(width: 200)
@@ -257,7 +257,7 @@ struct DiaryPage: View {
                         title: BoardFilterChoices.markedTagTitle(choice),
                         count: choice.count ?? 0,
                         isSelected: choice.isSelected,
-                        color: choice.dotColor ?? DaybookTheme.stamp
+                        color: choice.dotColor ?? DaybookPalette.accent.base
                     ) {
                         filterBinding.wrappedValue = choice.isSelected ? choice.cleared : choice.applied
                     }
@@ -271,7 +271,7 @@ struct DiaryPage: View {
         title: String,
         count: Int,
         isSelected: Bool,
-        color: Color = DaybookTheme.stamp,
+        color: Color = DaybookPalette.accent.base,
         action: @escaping () -> Void
     ) -> some View {
         DaybookChip(tint: color, isSelected: isSelected, action: action) {
@@ -381,7 +381,7 @@ struct DiaryPage: View {
             Spacer()
             Label("diary.quick.empty.hint", systemImage: "sparkles")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted.opacity(0.4)) // token-exempt: 40% 次要色没有对应令牌
+                .foregroundStyle(DaybookPalette.text.secondary.opacity(0.4)) // token-exempt: 40% 次要色没有对应令牌
                 .padding(.vertical, 14)
             Spacer()
         }
