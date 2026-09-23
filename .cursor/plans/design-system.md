@@ -311,5 +311,6 @@ flowchart TB
 - 2026-09-23 P6 Theme 双语完成：补全副标题、页脚和语法卡片的界面中文改成本地化 key，中英字符串已写入，筛选词留在 matchText。提交 `435f1c0`。执行侧定向测试未通过，当时未勾选。
 - 2026-09-23 P6 Theme 双语验收：用户确认通过。独立验收未重跑。执行对话里 `priorityAndTimeCandidatesStillMatchSpokenWords` 失败：查询「重要」命中 !p1–!p4，期望只有 !p1 和 !p2。未做人工窗口走查。
 - 2026-09-23 P6 删除 DaybookTheme 完成：窗口尺寸迁入 DaybookMetrics.Window，颜色迁入 DaybookPalette，工厂迁入 DaybookColor.swift 后删除 DaybookTheme.swift。
+- 2026-09-23 P6 Workspace 验收：通过。A1–A3 零输出，A4 计数为 1、1、1、4、2、2、1、1（`DaybookType.label` 含星期标题第 131 行与连击标题第 216 行）；B 的 6 行圆体/等宽/36pt 字体均含 token-exempt，进度环直径 `size: 36` 无豁免。颜色字面正则只命中 4 行（danger 0.85、themeColor 0.7、systemIndigo、yellow）；其余 12 行已按删 DaybookTheme 换成 `text.secondary` / `border.default` / `accent.base` / `fill.page`，透明度数字和 token-exempt 仍在，不改回旧名。象限仍用 themeFill / themeColor，星期仍是 Circle。列表分隔线 0.35 / 0.35 / 0.3 未改。C1–C2 零越界。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_14-09-49-+0800.xcresult`：Passed，3 套件、汇总 17 通过、设备侧 28 次通过，失败 0、跳过 0。check_workflow EXIT=0，计划已勾选并有完成记录。未做人工窗口走查。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。
