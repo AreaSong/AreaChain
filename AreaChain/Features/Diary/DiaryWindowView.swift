@@ -62,7 +62,7 @@ struct DiaryWindowView: View {
                 .font(DaybookType.body).foregroundStyle(DaybookTheme.muted)
         } else if !session.canRevealContent {
             VStack(spacing: 12) {
-                Image(systemName: "lock.shield").font(.system(size: 26))
+                Image(systemName: "lock.shield").font(.system(size: 26)) // token-exempt: display 令牌是 26pt light，这处是默认字重
                 Text("diary.private.title").font(DaybookType.body)
                 Button("diary.reveal") {
                     PrivacyAccess.perform(requiresUnlock: session.needsUnlock, vault: session.vault) { session.reveal() }

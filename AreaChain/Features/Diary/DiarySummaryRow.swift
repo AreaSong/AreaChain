@@ -127,7 +127,7 @@ struct DiarySummaryRow: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .strokeBorder(
                     (entry.isPinned && !isSelected && !isHighlighted)
-                        ? DaybookTheme.stamp.opacity(0.28)
+                        ? DaybookTheme.stamp.opacity(0.28) // token-exempt: 28% 印章色没有对应令牌
                         : Color.clear,
                     lineWidth: 0.8
                 )
@@ -251,13 +251,13 @@ struct DiarySummaryRow: View {
 
     private func noteIndicator(fullText: String) -> some View {
         Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65)))
+            .font(DaybookType.micro.weight(.medium))
+            .foregroundStyle(hasNoteCopied ? DaybookTheme.stamp : (isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04)))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(hasNoteCopied ? DaybookTheme.stamp.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
             )
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
@@ -322,7 +322,7 @@ struct DiarySummaryRow: View {
     private var copyButton: some View {
         Button(action: copy) {
             Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
         }
         .buttonStyle(DaybookButtonStyle(hasCopied ? .iconActive : .icon, size: .compact))
         .help(L10n.string(hasCopied ? "diary.copied" : "diary.quick.copy", locale: locale))
@@ -335,7 +335,7 @@ struct DiarySummaryRow: View {
             diaryMenuItems
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 11, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
                 .daybookMenuLabel(size: .compact)
         }
         .menuStyle(.borderlessButton)
@@ -443,13 +443,13 @@ struct DiarySummaryRow: View {
         HStack(spacing: 5) {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 8.5))
+                    .font(.system(size: 8.5)) // token-exempt: 小于 9pt 的图钉和锁图标
                     .foregroundStyle(DaybookTheme.stamp)
                     .accessibilityLabel("diary.pin")
             }
             if isSensitive {
                 Image(systemName: "lock.shield")
-                    .font(.system(size: 8.5))
+                    .font(.system(size: 8.5)) // token-exempt: 小于 9pt 的图钉和锁图标
                     .foregroundStyle(DaybookTheme.muted)
                     .accessibilityLabel("diary.privacy")
             }

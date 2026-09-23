@@ -5,7 +5,7 @@ extension DiaryNoteCard {
         HStack(alignment: .center, spacing: 6) {
             if entry.isPinned {
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 10))
+                    .font(DaybookType.badge)
                     .foregroundStyle(DaybookTheme.stamp)
             }
 
@@ -16,14 +16,14 @@ extension DiaryNoteCard {
             if isPasswordType {
                 HStack(spacing: 3) {
                     Image(systemName: "lock.shield.fill")
-                        .font(.system(size: 9))
+                        .font(DaybookType.micro)
                     Text("diary.privacy")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(DaybookType.badge.weight(.medium))
                 }
-                .foregroundStyle(Color.red.opacity(0.85))
+                .foregroundStyle(DaybookPalette.status.danger.opacity(0.85)) // token-exempt: 85% 危险色没有对应令牌
                 .padding(.horizontal, 5)
                 .padding(.vertical, 1.5)
-                .background(Capsule().fill(Color.red.opacity(0.10)))
+                .background(Capsule().fill(DaybookPalette.status.danger.opacity(0.10))) // token-exempt: 10% 危险色底没有对应令牌
             }
 
             if showsCommandStrip {
@@ -99,11 +99,11 @@ extension DiaryNoteCard {
             HStack {
                 Button("alert.cancel", action: discardEditingDraft)
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
 
                 Button("common.save", action: saveTextEdit)
                 .buttonStyle(.borderedProminent)
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
             }
         }
     }
@@ -127,7 +127,7 @@ extension DiaryNoteCard {
     var maskedPasswordContentView: some View {
         HStack(spacing: 8) {
             Text("••••••••••••••••")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 14, weight: .bold, design: .monospaced)) // token-exempt: 密码占位用等宽粗体，bodyLarge 是 14pt 常规无衬线
                 .foregroundStyle(DaybookTheme.muted)
                 .blur(radius: 1.5)
 

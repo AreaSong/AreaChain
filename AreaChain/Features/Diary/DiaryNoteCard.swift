@@ -4,9 +4,9 @@ import SwiftUI
 
 enum DiaryTagChrome {
     static func color(for name: String) -> Color {
-        if DiaryMemoTags.isPasswordName(name) { return .red }
-        if name == DiaryMemoTags.idea { return .orange }
-        if name == DiaryMemoTags.journal { return .blue }
+        if DiaryMemoTags.isPasswordName(name) { return .red } // token-exempt: 菜单栏和筛选共用，systemRed 不是同一个红
+        if name == DiaryMemoTags.idea { return .orange } // token-exempt: 菜单栏和筛选共用，systemOrange 不是同一个橙
+        if name == DiaryMemoTags.journal { return .blue } // token-exempt: 菜单栏和筛选共用，systemBlue 不是同一个蓝
         return DaybookTheme.stamp
     }
 }
@@ -17,18 +17,18 @@ struct DiaryTagPill: View {
     var body: some View {
         let color = DiaryTagChrome.color(for: name)
         Text("#" + name)
-            .font(.system(size: 9.5, weight: .medium))
+            .font(DaybookType.micro.weight(.medium))
             .lineLimit(1)
             .padding(.horizontal, 4.5)
             .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(color.opacity(0.12))
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .fill(color.opacity(0.12)) // token-exempt: 标签色 12% 底不是印章色
             )
             .foregroundStyle(color)
             .overlay(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5)
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .strokeBorder(color.opacity(0.25), lineWidth: 0.5) // token-exempt: 标签色 25% 描边没有对应令牌
             )
             .help("#" + name)
     }
@@ -115,7 +115,7 @@ struct DiaryNoteCard: View {
         .overlay {
             if entry.isPinned && !isHighlighted {
                 RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .strokeBorder(DaybookTheme.stamp.opacity(0.35), lineWidth: 1.2) // token-exempt: 置顶手记的第三态描边，表面选中态留给高亮
+                    .strokeBorder(DaybookPalette.accent.border, lineWidth: 1.2) // 置顶手记的第三态描边，表面选中态留给高亮
             }
         }
         .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
@@ -205,10 +205,10 @@ struct DiaryNoteCard: View {
         } label: {
             HStack(spacing: 3) {
                 Image(systemName: "plus")
-                    .font(.system(size: 8.5, weight: .bold))
+                    .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt 的加号，kbd 是等宽
                 if assignedTags.isEmpty {
                     Text("diary.tag.add")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(DaybookType.badge.weight(.medium))
                 }
             }
             .foregroundStyle(DaybookTheme.muted)

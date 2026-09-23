@@ -36,7 +36,7 @@ struct DiaryQuickComposerView: View {
         composerContent
             .padding(10)
             .background(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookTheme.hoverFill.opacity(0.5)))
+                .fill(DaybookTheme.hoverFill.opacity(0.5))) // token-exempt: 悬停底 50% 没有对应令牌
             .overlay(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8))
             .fixedSize(horizontal: false, vertical: true)
@@ -117,11 +117,11 @@ struct DiaryQuickComposerView: View {
         let iconColor: Color = {
             if failed { return DaybookTheme.destructive }
             if focused.wrappedValue || saved || isSensitive { return DaybookTheme.stamp }
-            return DaybookTheme.muted.opacity(0.8)
+            return DaybookTheme.muted.opacity(0.8) // token-exempt: 80% 次要色没有对应令牌
         }()
 
         return Image(systemName: systemName)
-            .font(.system(size: 11.5, weight: .semibold))
+            .font(DaybookType.caption.weight(.semibold))
             .foregroundStyle(iconColor)
             .frame(width: 14)
             .help(LocalizedStringKey(status ?? (isSensitive ? "diary.privacy" : "diary.quick.input")))
@@ -155,7 +155,7 @@ struct DiaryQuickComposerView: View {
     private var tagAndActionRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Image(systemName: "tag")
-                .font(.system(size: 11))
+                .font(DaybookType.caption)
                 .foregroundStyle(DaybookTheme.muted)
 
             tagScrollView

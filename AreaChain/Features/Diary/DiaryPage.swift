@@ -279,7 +279,7 @@ struct DiaryPage: View {
                 Text(title)
                 if count > 0 {
                     Text("\(count)")
-                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 筛选计数用圆体
                 }
             }
         }
@@ -381,7 +381,7 @@ struct DiaryPage: View {
             Spacer()
             Label("diary.quick.empty.hint", systemImage: "sparkles")
                 .font(DaybookType.caption)
-                .foregroundStyle(DaybookTheme.muted.opacity(0.4))
+                .foregroundStyle(DaybookTheme.muted.opacity(0.4)) // token-exempt: 40% 次要色没有对应令牌
                 .padding(.vertical, 14)
             Spacer()
         }
