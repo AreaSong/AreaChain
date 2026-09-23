@@ -315,5 +315,6 @@ flowchart TB
 - 2026-09-23 P7 验收：不通过（E 全量测试 TEST=65，唯一失败 `priorityAndTimeCandidatesStillMatchSpokenWords`，记为双语阶段遗留；F 计划未勾选且无「P7 完成」记录）
 - 2026-09-23 P7 完成：检查器、18 处形状豁免和文档已落地；全量测试仍失败于双语阶段遗留 `priorityAndTimeCandidatesStillMatchSpokenWords`，未改筛选、未放宽检查器。
 - 2026-09-23 用户要求修好口令筛选：`spokenText` 跳过紧挨在「不」后面的命中，所以「重要」只出 !p1、!p2，「紧急」只出 !p1、!p3。`SyntaxAutocompleteTests` EXIT=0。未重跑全量。
+- 2026-09-23 P7 验收：通过（A–F 重跑成立。WORKFLOW=0、UNIT=0、SCRIPTS=0、TEST=0。结果包 `Test-AreaChain-2026.09.23_14-46-22-+0800.xcresult`：Passed，失败 0；`SystemVaultIntegrationTests.testAuthorizedPhase` 按普通测试跳过。未做人工窗口走查。）
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。
