@@ -4,7 +4,7 @@ extension TasksPage {
     var upcomingSection: some View {
         Group {
             if showUpcoming, !upcomingModels.isEmpty {
-                SectionStamp(title: "stamp.upcoming")
+                DaybookSectionHeader(title: "stamp.upcoming")
                 ForEach(upcomingModels, id: \.id) { todo in
                     leftoverTodoRow(todo, note: DayKey.shortStamp(todo.dayKey, locale: locale))
                 }

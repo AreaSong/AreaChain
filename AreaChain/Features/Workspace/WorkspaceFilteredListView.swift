@@ -120,7 +120,7 @@ struct WorkspaceFilteredListView: View {
                         }
                     }
                     if !listedRoutines.isEmpty {
-                        SectionStamp(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
+                        DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
                             .padding(.top, openTodos.isEmpty ? 0 : 8)
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(Array(listedRoutines.enumerated()), id: \.element.id) { index, routine in
@@ -143,7 +143,7 @@ struct WorkspaceFilteredListView: View {
     @ViewBuilder
     private var subtaskSection: some View {
         if !matchingSubtasks.isEmpty {
-            SectionStamp(title: "drawer.subtasks.title", icon: "checklist", count: matchingSubtasks.count)
+            DaybookSectionHeader(title: "drawer.subtasks.title", icon: "checklist", count: matchingSubtasks.count)
                 .padding(.top, 8)
             ForEach(matchingSubtasks) { subtask in
                 VStack(alignment: .leading, spacing: 3) {

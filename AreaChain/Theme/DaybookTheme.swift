@@ -104,33 +104,6 @@ extension NSColor {
     }
 }
 
-struct SectionStamp: View {
-    var title: LocalizedStringKey
-    var icon: String? = nil
-    var count: Int? = nil
-
-    var body: some View {
-        HStack(spacing: 4) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookTheme.stamp)
-            }
-            Text(title)
-                .font(DaybookType.section)
-                .tracking(0.5)
-                .foregroundStyle(DaybookTheme.muted)
-            if let count {
-                Text("\(count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundStyle(DaybookTheme.muted)
-            }
-        }
-        .padding(.top, 6)
-        .padding(.bottom, 2)
-    }
-}
-
 extension View {
     func daybookScroll(featherEdges: Bool = false) -> some View {
         self

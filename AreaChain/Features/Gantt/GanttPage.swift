@@ -53,7 +53,7 @@ struct GanttPage: View {
         ScrollView(.horizontal) {
             VStack(alignment: .leading, spacing: 4) {
                 headerRow.padding(.bottom, 2)
-                Divider().overlay(DaybookTheme.rule.opacity(0.5))
+                DaybookDivider(opacity: 0.5)
                 ScrollView(.vertical) {
                     VStack(alignment: .leading, spacing: 4) {
                         ForEach(bars) { bar in todoRow(bar) }

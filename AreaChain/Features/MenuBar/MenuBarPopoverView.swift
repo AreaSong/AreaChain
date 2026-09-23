@@ -134,8 +134,7 @@ struct MenuBarPopoverView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(DaybookMotion.interactive(reduceMotion), value: tab)
 
-                Divider()
-                    .overlay(DaybookTheme.rule.opacity(0.25))
+                DaybookDivider(opacity: 0.25)
                     .padding(.horizontal, -12)
 
                 FooterBar(
@@ -322,7 +321,7 @@ struct MenuBarPopoverView: View {
 
             Spacer(minLength: 8)
 
-            DaybookQuietTabBar(
+            DaybookSegmentedBar(
                 selection: $tab,
                 tasksCount: todayRemaining,
                 diariesCount: todayDiariesCount

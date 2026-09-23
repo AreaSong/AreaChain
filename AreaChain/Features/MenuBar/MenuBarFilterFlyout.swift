@@ -152,8 +152,7 @@ struct MenuBarFilterFlyout: View {
             }
 
             if activeCount > 0 {
-                Divider()
-                    .overlay(DaybookTheme.rule.opacity(0.4))
+                DaybookDivider(opacity: 0.4)
                     .padding(.vertical, 1)
 
                 Button(action: clearAllAndDismiss) {
@@ -201,8 +200,7 @@ struct MenuBarFilterFlyout: View {
                 }
 
                 if tab == .diary && selectedTagID != nil {
-                    Divider()
-                        .overlay(DaybookTheme.rule.opacity(0.4))
+                    DaybookDivider(opacity: 0.4)
                         .padding(.vertical, 1)
 
                     Button(action: clearAllAndDismiss) {

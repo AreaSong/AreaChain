@@ -183,14 +183,12 @@ struct SyntaxAutocompletePopup: View {
                 }
 
                 if showsPreview && showsSuggestions {
-                    Divider()
-                        .background(DaybookTheme.rule.opacity(0.4))
+                    DaybookDivider(opacity: 0.4)
                 }
 
                 if showsSuggestions {
                     candidateList
-                    Divider()
-                        .background(DaybookTheme.rule.opacity(0.5))
+                    DaybookDivider(opacity: 0.5)
                     footerGuide
                 }
             }

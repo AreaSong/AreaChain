@@ -21,16 +21,14 @@ struct SyntaxExpandableCard: View {
         VStack(spacing: 0) {
             headerBar
 
-            Divider()
-                .background(DaybookTheme.rule.opacity(0.35))
+            DaybookDivider(opacity: 0.35)
                 .padding(.horizontal, 12)
 
             syntaxItemsList
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
 
-            Divider()
-                .background(DaybookTheme.rule.opacity(0.35))
+            DaybookDivider(opacity: 0.35)
                 .padding(.horizontal, 12)
 
             complexExampleBar

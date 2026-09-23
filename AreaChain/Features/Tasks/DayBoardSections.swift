@@ -5,7 +5,7 @@ extension DayBoardList {
     var openItemsSection: some View {
         if !openTodosList.isEmpty {
             if !openRoutinesList.isEmpty {
-                SectionStamp(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
+                DaybookSectionHeader(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
                     .padding(.leading, 2)
             }
             VStack(alignment: .leading, spacing: 4) {
@@ -20,7 +20,7 @@ extension DayBoardList {
             }
         }
         if !openRoutinesList.isEmpty {
-            SectionStamp(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
+            DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
                 .padding(.leading, 2)
             VStack(alignment: .leading, spacing: 4) {
                 ForEach(Array(openRoutinesList.enumerated()), id: \.element.id) { index, routine in
@@ -77,7 +77,7 @@ extension DayBoardList {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                         .font(.system(size: 9, weight: .bold))
                         .foregroundStyle(DaybookTheme.muted)
-                    SectionStamp(
+                    DaybookSectionHeader(
                         title: showCompleted
                             ? "stamp.completed.collapse \(doneItemsList.count)"
                             : "stamp.completed \(doneItemsList.count)",

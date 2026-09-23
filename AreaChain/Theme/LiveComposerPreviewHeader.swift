@@ -264,8 +264,7 @@ struct LiveComposerPreviewHeader: View {
             .padding(.horizontal, 2)
             .padding(.top, 1)
 
-            Divider()
-                .overlay(DaybookTheme.rule.opacity(0.3))
+            DaybookDivider(opacity: 0.3)
 
             ScrollView(.vertical, showsIndicators: previewTags.count > 5) {
                 VStack(alignment: .leading, spacing: 3) {

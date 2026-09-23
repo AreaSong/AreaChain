@@ -242,8 +242,7 @@ struct BoardFilterDropdownButton: View {
                     allOption.action()
                     isExpanded.wrappedValue = false
                 }
-                Divider()
-                    .background(DaybookTheme.rule.opacity(0.35))
+                DaybookDivider(opacity: 0.35)
                     .padding(.vertical, 2)
                     .padding(.horizontal, 2)
             }

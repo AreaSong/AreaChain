@@ -8,60 +8,6 @@
 import SwiftUI
 import SwiftData
 
-/// 状态栏弹窗标签栏组件
-struct DaybookQuietTabBar: View {
-    @Binding var selection: BoardTab
-    var tasksCount: Int = 0
-    var diariesCount: Int = 0
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Namespace private var sliderAnimation
-
-    var body: some View {
-        HStack(spacing: 2) {
-            ForEach(BoardTab.allCases) { item in
-                tabButton(item)
-            }
-        }
-        .padding(3)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(DaybookTheme.ink.opacity(0.06))
-        )
-    }
-
-    private func tabButton(_ item: BoardTab) -> some View {
-        let isSelected = selection == item
-        let ink = isSelected ? DaybookTheme.ink : DaybookTheme.muted
-        return Button {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
-                selection = item
-            }
-        } label: {
-            Text(LocalizedStringKey(item.titleKey))
-                .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
-                .frame(minWidth: 36)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 4.5)
-                .background(
-                    ZStack {
-                        if isSelected {
-                            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .fill(DaybookTheme.paper)
-                                .daybookElevation(.raised)
-                                .matchedGeometryEffect(id: "SliderBackground", in: sliderAnimation)
-                        }
-                    }
-                )
-                .foregroundStyle(ink)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain) // control: 分段切换滑块，非按钮语义，P5 迁 DaybookSegmentedBar
-        .accessibilityLabel(LocalizedStringKey(item.titleKey))
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .help(item == .tasks ? Text("任务 (⌘←)") : Text("手记 (⌘→)"))
-    }
-}
-
 /// 状态栏图标与角标组件
 struct MenuBarLabel: View {
     private var dayClock: DayClock { DayClock.shared }

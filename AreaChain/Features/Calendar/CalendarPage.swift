@@ -101,8 +101,7 @@ struct CalendarPage: View {
         HStack(alignment: .top, spacing: 16) {
             calendarSidebar
 
-            Divider()
-                .overlay(DaybookTheme.rule.opacity(0.5))
+            DaybookDivider(opacity: 0.5)
 
             VStack(alignment: .leading, spacing: 10) {
                 selectedHeading

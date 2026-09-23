@@ -141,70 +141,29 @@ struct FooterBar: View {
 
     // MARK: - 左侧筛选入口与触发器
 
+    private var filterIsActive: Bool {
+        isFilterDrawerPresented.wrappedValue || activeCount > 0
+    }
+
     private var filterTrigger: some View {
-        Group {
-            if isFilterDrawerPresented.wrappedValue || activeCount > 0 {
-                activeFilterButton
-            } else {
-                inactiveFilterButton
-            }
-        }
-        .fixedSize(horizontal: true, vertical: false)
-        .frame(minHeight: DaybookMetrics.Hit.compact)
-        .contentShape(Rectangle())
-        .background(SyntaxViewAnchor("menubar.filter.open"))
-        .onHover { isHovered in
-            if isHovered {
-                hoverTask?.cancel()
-                hoverTask = Task {
-                    try? await Task.sleep(for: .milliseconds(120))
-                    if !Task.isCancelled {
-                        toolbar.showFiltersFromHover()
-                    }
-                }
-            } else {
-                hoverTask?.cancel()
-                hoverTask = nil
-                toolbar.pointerLeftToolbar()
-            }
-        }
+        filterButton
+            .fixedSize(horizontal: true, vertical: false)
+            .frame(minHeight: DaybookMetrics.Hit.compact)
+            .contentShape(Rectangle())
+            .background(SyntaxViewAnchor("menubar.filter.open"))
+            .onHover(perform: handleFilterHover)
     }
 
-    private var inactiveFilterButton: some View {
-        Button {
-            triggerAction()
-        } label: {
-            HStack(spacing: 4) {
+    private var filterButton: some View {
+        Button(action: triggerAction) {
+            HStack(spacing: filterIsActive ? 3.5 : 4) {
                 Image(systemName: "line.3.horizontal.decrease")
+                    .font(filterIsActive ? .system(size: 9, weight: .bold) : DaybookType.caption)
                     .accessibilityHidden(true)
                 Text(L10n.string("filter.label", locale: locale))
+                    .font(filterIsActive ? DaybookType.caption.weight(.semibold) : DaybookType.caption)
                     .lineLimit(1)
-            }
-            .font(DaybookType.caption)
-        }
-        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact, isFocused: triggerFocused))
-        .contentShape(Rectangle())
-        .keyboardShortcut("f", modifiers: [.command, .shift])
-        .focused($triggerFocused)
-        .accessibilityLabel("filter.label")
-        .accessibilityIdentifier("menubar.filter.open")
-        .help(L10n.string("filter.open.help", locale: locale))
-    }
-
-    private var activeFilterButton: some View {
-        Button {
-            triggerAction()
-        } label: {
-            HStack(spacing: 3.5) {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(.system(size: 9, weight: .bold))
-                    .accessibilityHidden(true)
-
-                Text(L10n.string("filter.label", locale: locale))
-                    .font(DaybookType.caption.weight(.semibold))
-                    .lineLimit(1)
-
-                if activeCount > 0 {
+                if filterIsActive, activeCount > 0 {
                     Text("\(activeCount)")
                         .font(.system(size: 8, weight: .bold, design: .rounded))
                         .padding(.horizontal, 3.5)
@@ -214,13 +173,31 @@ struct FooterBar: View {
                 }
             }
         }
-        .buttonStyle(DaybookButtonStyle(.pill(tint: DaybookPalette.accent.base), size: .compact, isFocused: triggerFocused))
+        .buttonStyle(DaybookButtonStyle(
+            filterIsActive ? .pill(tint: DaybookPalette.accent.base) : .subtle,
+            size: .compact,
+            isFocused: triggerFocused
+        ))
         .contentShape(Rectangle())
         .keyboardShortcut("f", modifiers: [.command, .shift])
         .focused($triggerFocused)
         .accessibilityLabel("filter.label")
         .accessibilityIdentifier("menubar.filter.open")
-        .help(activeDescription)
+        .help(filterIsActive ? activeDescription : L10n.string("filter.open.help", locale: locale))
+    }
+
+    /// 开关会改按钮尺寸。离开若立刻重新允许悬停，同一次点击里的跟踪重建会把刚关掉的筛选又打开。
+    private func handleFilterHover(_ isHovered: Bool) {
+        hoverTask?.cancel()
+        hoverTask = Task {
+            try? await Task.sleep(for: .milliseconds(isHovered ? 120 : 160))
+            guard !Task.isCancelled else { return }
+            if isHovered {
+                toolbar.showFiltersFromHover()
+            } else {
+                toolbar.pointerLeftToolbar()
+            }
+        }
     }
 
     private func triggerAction() {

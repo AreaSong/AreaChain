@@ -23,8 +23,7 @@ struct WorkspaceHeaderBar: View {
         .frame(height: WorkspaceLayout.headerHeight)
         .background(.ultraThinMaterial)
         .overlay(alignment: .bottom) {
-            Divider()
-                .background(DaybookTheme.rule.opacity(0.65))
+            DaybookDivider(opacity: 0.65)
         }
         .accessibilityIdentifier("workspace.header.bar")
     }
