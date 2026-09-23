@@ -282,5 +282,6 @@ flowchart TB
 - 2026-09-23 P4b 验收：不通过（D 定向测试 EXIT=65；MenuBarPopoverRenderingTests.nativeToolbarReplacementPreservesSearchAndRendersBothAppearances 点击筛选后 isFiltering 仍为 false）
 - 2026-09-23 P4b 验收：通过。A–E 重跑成立。floating=11，MenuBarControls 的 raised=1，BatchActionBar 仍为 ultraThickMaterial。日历注释 3、甘特注释 2，DaybookSurface.swift 零 diff。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_08-56-46-+0800.xcresult`：Passed，8 套件，失败 0、跳过 0。未做人工窗口走查。
 - 2026-09-23 P5a 完成：新建 DaybookChip，PillBadge 与 12 处手写胶囊改用它，星期圆点只改注释。
+- 2026-09-23 P5a 验收：通过。A–E 重跑成立。B1=17，12 个调用文件都有 DaybookChip。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_09-15-04-+0800.xcresult`：Passed，5 套件 50 个用例（设备侧 65 次通过），失败 0、跳过 0。未做人工窗口走查。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。
