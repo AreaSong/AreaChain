@@ -26,30 +26,34 @@ struct TaskDetailDateChips: View {
                 let tomorrowKey = DayKey.shifted(todayKey, by: 1)
                 let afterTomorrowKey = DayKey.shifted(todayKey, by: 2)
 
-                PillBadge(
-                    title: L10n.string("capture.today", locale: locale),
-                    color: DaybookTheme.stamp,
+                DaybookChip(
+                    tint: DaybookTheme.stamp,
                     isSelected: dayKey == todayKey,
                     action: { onSelectDate(todayKey) }
-                )
-                PillBadge(
-                    title: L10n.string("capture.tomorrow", locale: locale),
-                    color: DaybookTheme.stamp,
+                ) {
+                    Text(L10n.string("capture.today", locale: locale))
+                }
+                DaybookChip(
+                    tint: DaybookTheme.stamp,
                     isSelected: dayKey == tomorrowKey,
                     action: { onSelectDate(tomorrowKey) }
-                )
-                PillBadge(
-                    title: L10n.string("capture.afterTomorrow", locale: locale),
-                    color: DaybookTheme.stamp,
+                ) {
+                    Text(L10n.string("capture.tomorrow", locale: locale))
+                }
+                DaybookChip(
+                    tint: DaybookTheme.stamp,
                     isSelected: dayKey == afterTomorrowKey,
                     action: { onSelectDate(afterTomorrowKey) }
-                )
-                PillBadge(
-                    title: L10n.string("day.pick", locale: locale),
-                    color: DaybookTheme.stamp,
+                ) {
+                    Text(L10n.string("capture.afterTomorrow", locale: locale))
+                }
+                DaybookChip(
+                    tint: DaybookTheme.stamp,
                     isSelected: dayKey != todayKey && dayKey != tomorrowKey && dayKey != afterTomorrowKey,
                     action: { pickingDay = true }
-                )
+                ) {
+                    Text(L10n.string("day.pick", locale: locale))
+                }
             }
             .popover(isPresented: $pickingDay) {
                 DaySchedulePicker(initialKey: dayKey) { key in
@@ -97,14 +101,15 @@ struct TaskDetailRemindChips: View {
     }
 
     private func chip(label: String, minutes: Int) -> some View {
-        PillBadge(
-            title: label,
-            color: DaybookTheme.stamp,
+        DaybookChip(
+            tint: DaybookTheme.stamp,
             isSelected: remindMinutes == minutes,
             action: {
                 onSelectMinutes(remindMinutes == minutes ? nil : minutes)
             }
-        )
+        ) {
+            Text(label)
+        }
     }
 }
 
@@ -142,7 +147,7 @@ struct TaskDetailWeekdayPicker: View {
                             )
                             .foregroundStyle(isSelected ? Color.white : DaybookTheme.ink)
                     }
-                    .buttonStyle(.plain) // control: 星期圆点，P5 迁 DaybookChip(.filter)
+                    .buttonStyle(.plain) // control: 星期圆点选择器，不是胶囊
                     .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
                     .accessibilityAddTraits(isSelected ? [.isSelected] : [])
                 }

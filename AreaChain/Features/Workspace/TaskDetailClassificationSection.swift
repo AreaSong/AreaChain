@@ -89,12 +89,13 @@ struct TaskDetailTagSelector: View {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 60), spacing: 4)], spacing: 4) {
                     ForEach(activeTags) { tag in
                         let isContained = TagIDList.contains(tagIDs, tag.id)
-                        PillBadge(
-                            title: "#\(tag.name)",
-                            color: Color(nsColor: .systemIndigo),
+                        DaybookChip(
+                            tint: Color(nsColor: .systemIndigo),
                             isSelected: isContained,
                             action: { onToggleTag(tag.id) }
-                        )
+                        ) {
+                            Text("#\(tag.name)")
+                        }
                     }
                 }
             }

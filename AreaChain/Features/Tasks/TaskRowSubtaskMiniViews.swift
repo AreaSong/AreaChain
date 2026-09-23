@@ -9,33 +9,17 @@ struct TaskRowSubtaskChip: View {
         let completed = subtasks.filter(\.isDone).count
         let total = subtasks.count
         let allDone = completed == total && total > 0
-
-        Button {
+        return DaybookChip(tint: DaybookTheme.stamp, isSelected: allDone, action: {
             withAnimation(DaybookMotion.animation(reduceMotion)) {
                 isExpanded.toggle()
             }
-        } label: {
+        }) {
             HStack(spacing: 3) {
                 Image(systemName: allDone ? "checkmark.circle.fill" : "checklist")
-                    .font(.system(size: 8))
                 Text("\(completed)/\(total)")
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
                 Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                    .font(.system(size: 6))
             }
-            .padding(.horizontal, 4)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                    .fill(allDone ? DaybookTheme.stamp.opacity(0.15) : DaybookTheme.cardSurface)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                            .stroke(allDone ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3), lineWidth: 0.8)
-                    )
-            )
-            .foregroundStyle(allDone ? DaybookTheme.stamp : DaybookTheme.muted)
         }
-        .buttonStyle(.plain) // control: 子任务计数芯片，P5 迁 DaybookChip(.count)
         .help(isExpanded ? "row.subtasks.collapse" : "row.subtasks.expand")
     }
 }

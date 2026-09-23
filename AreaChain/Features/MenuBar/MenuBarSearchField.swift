@@ -43,29 +43,24 @@ struct MenuBarSearchField: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 3) {
                         ForEach(tokens) { token in
-                            HStack(spacing: 2) {
-                                if let dotColor = token.dotColor {
-                                    Circle().fill(dotColor).frame(width: 4.5, height: 4.5)
-                                } else if let icon = token.icon {
-                                    Image(systemName: icon).font(.system(size: 7.5, weight: .bold))
+                            DaybookChip(tint: DaybookTheme.stamp, isSelected: true) {
+                                HStack(spacing: 2) {
+                                    if let dotColor = token.dotColor {
+                                        Circle().fill(dotColor).frame(width: 4.5, height: 4.5)
+                                    } else if let icon = token.icon {
+                                        Image(systemName: icon)
+                                    }
+                                    Text(token.title)
+                                        .lineLimit(1)
+                                    Button(action: token.onRemove) {
+                                        Image(systemName: "xmark")
+                                            .font(.system(size: 6.5, weight: .bold))
+                                            .frame(width: 9, height: 9)
+                                            .contentShape(Rectangle())
+                                    }
+                                    .buttonStyle(.plain) // control: 芯片内的移除角标
                                 }
-                                Text(token.title)
-                                    .font(.system(size: 9.5, weight: .medium))
-                                    .lineLimit(1)
-                                Button(action: token.onRemove) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 6.5, weight: .bold))
-                                        .frame(width: 9, height: 9)
-                                        .contentShape(Rectangle())
-                                }
-                                .buttonStyle(.plain) // control: 筛选 token 移除角标，P5 迁 DaybookChip(.token)
                             }
-                            .padding(.leading, 4)
-                            .padding(.trailing, 2.5)
-                            .padding(.vertical, 1.5)
-                            .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
-                            .overlay(Capsule().strokeBorder(DaybookTheme.stamp.opacity(0.35), lineWidth: 0.6))
-                            .foregroundStyle(DaybookTheme.stamp)
                         }
                     }
                     .padding(.vertical, 1)

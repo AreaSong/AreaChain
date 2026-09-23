@@ -86,36 +86,13 @@ extension TaskRow {
         )
     }
 
-    @ViewBuilder
     func remindBadge(_ minutes: Int) -> some View {
         let isHighlighted = isHovered || state.isSelected
-        let content = HStack(spacing: 2.5) {
-            Image(systemName: "clock")
-                .font(.system(size: 9.5, weight: .medium))
-                .foregroundStyle(isHighlighted ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
-            Text(RemindMinutes.label(minutes, locale: locale))
-                .font(.system(size: 10, weight: .medium, design: .rounded))
-                .foregroundStyle(isHighlighted ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.75))
-                .lineLimit(1)
-                .offset(y: -0.6)
-        }
-        .fixedSize()
-        .padding(.horizontal, 4.5)
-        .frame(height: 18)
-        .background(
-            RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                .fill(isHighlighted ? DaybookTheme.stamp.opacity(0.10) : Color.clear)
-        )
-
-        if state.canSetRemind {
-            Button {
-                pickingTime = true
-            } label: {
-                content
+        return DaybookChip(tint: DaybookTheme.stamp, isSelected: isHighlighted, action: state.canSetRemind ? { pickingTime = true } : nil) {
+            HStack(spacing: 2.5) {
+                Image(systemName: "clock")
+                Text(RemindMinutes.label(minutes, locale: locale))
             }
-            .buttonStyle(.plain) // control: 时间胶囊，P5 迁 DaybookChip(.status)
-        } else {
-            content
         }
     }
 

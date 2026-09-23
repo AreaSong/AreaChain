@@ -210,16 +210,11 @@ struct SubtaskRowView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 4) {
                     ForEach(assigned) { tag in
-                        Button {
+                        DaybookChip(tint: DaybookTheme.stamp, isSelected: true, action: {
                             DayBoardMutations.toggleSubtaskTag(subtask, tagID: tag.id)
-                        } label: {
+                        }) {
                             Label("#" + tag.name, systemImage: "xmark")
-                                .font(DaybookType.badge)
-                                .padding(.horizontal, 5).padding(.vertical, 2)
-                                .background(Capsule().fill(DaybookTheme.hoverFill))
                         }
-                        .buttonStyle(.plain) // control: 子任务标签移除芯片，P5 迁 DaybookChip(.token)
-                        .foregroundStyle(DaybookTheme.stamp)
                         .help("syntax.tag.remove")
                     }
                 }

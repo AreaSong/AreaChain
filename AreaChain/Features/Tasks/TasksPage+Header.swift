@@ -109,28 +109,22 @@ extension TasksPage {
         color: Color = DaybookTheme.stamp,
         onRemove: @escaping () -> Void
     ) -> some View {
-        HStack(spacing: 3) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(.system(size: 8.5, weight: .bold))
+        DaybookChip(tint: color, isSelected: true) {
+            HStack(spacing: 3) {
+                if let icon {
+                    Image(systemName: icon)
+                }
+                Text(title)
+                    .lineLimit(1)
+                Button(action: onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 7.5, weight: .bold))
+                        .frame(width: 12, height: 12)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain) // control: 芯片内的移除角标
             }
-            Text(title)
-                .font(.system(size: 10.5, weight: .medium))
-                .lineLimit(1)
-            Button(action: onRemove) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 7.5, weight: .bold))
-                    .frame(width: 12, height: 12)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain) // control: 筛选 token 移除角标，P5 迁 DaybookChip(.token)
         }
-        .padding(.leading, 6)
-        .padding(.trailing, 4)
-        .padding(.vertical, 2.5)
-        .background(Capsule().fill(color.opacity(0.12)))
-        .overlay(Capsule().strokeBorder(color.opacity(0.4), lineWidth: 0.7))
-        .foregroundStyle(color)
     }
 
     private func updateFilter(_ next: BoardFilter) {

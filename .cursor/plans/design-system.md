@@ -239,7 +239,7 @@ flowchart TB
 - [x] P3b 按钮（Diary + Workspace + Theme）
 - [x] P4a 表面基座
 - [x] P4b 浮层与剩余自绘表面
-- [ ] P5a 芯片 / 计数 / 圆点
+- [x] P5a 芯片 / 计数 / 圆点
 - [ ] P5b 分节头 / 分隔线 / 分段栏 / 确认框 / 监听器
 - [ ] P6 MenuBar
 - [ ] P6 Tasks
@@ -281,5 +281,6 @@ flowchart TB
 - 2026-09-23 P4b 完成：12 处手写阴影改为 daybookElevation（分段滑块 raised，其余 floating），五处表面改用 daybookSurface，象限格、日历日格和甘特色块保留自绘。
 - 2026-09-23 P4b 验收：不通过（D 定向测试 EXIT=65；MenuBarPopoverRenderingTests.nativeToolbarReplacementPreservesSearchAndRendersBothAppearances 点击筛选后 isFiltering 仍为 false）
 - 2026-09-23 P4b 验收：通过。A–E 重跑成立。floating=11，MenuBarControls 的 raised=1，BatchActionBar 仍为 ultraThickMaterial。日历注释 3、甘特注释 2，DaybookSurface.swift 零 diff。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_08-56-46-+0800.xcresult`：Passed，8 套件，失败 0、跳过 0。未做人工窗口走查。
+- 2026-09-23 P5a 完成：新建 DaybookChip，PillBadge 与 12 处手写胶囊改用它，星期圆点只改注释。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

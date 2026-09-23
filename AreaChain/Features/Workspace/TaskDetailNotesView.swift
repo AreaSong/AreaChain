@@ -88,28 +88,17 @@ struct TaskDetailNotesView: View {
     }
 
     private func linkButton(for url: URL) -> some View {
-        Button {
+        DaybookChip(tint: DaybookTheme.stamp, isSelected: true, action: {
             NSWorkspace.shared.open(url)
-        } label: {
+        }) {
             HStack(spacing: 4) {
                 Image(systemName: "link")
-                    .font(.system(size: 9))
                 Text(url.absoluteString)
-                    .font(.system(size: 10))
                     .lineLimit(1)
                     .truncationMode(.middle)
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 8))
             }
-            .foregroundStyle(DaybookTheme.stamp)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(
-                RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .fill(DaybookTheme.stamp.opacity(0.08))
-            )
         }
-        .buttonStyle(.plain) // control: 备注链接芯片，P5 迁 DaybookChip
     }
 
     private func flushSave() {

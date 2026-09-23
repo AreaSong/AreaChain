@@ -182,26 +182,13 @@ struct DiaryNoteCard: View {
 
     private func assignedTagChip(_ tag: TagItem) -> some View {
         let color = DiaryTagChrome.color(for: tag.name)
-        return Button {
+        return DaybookChip(tint: color, isSelected: true, action: {
             PrivacyAccess.withDiary(entry, requiresUnlock: tag.isPrivateDiary, vault: privacyVault) { current in
                 DayBoardMutations.toggleDiaryTag(current, tagID: tag.id)
             }
-        } label: {
-            HStack(spacing: 3) {
-                Text("#\(tag.name)")
-                    .font(.system(size: 10.5, weight: .semibold))
-                    .foregroundStyle(color)
-            }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2.5)
-            .background(
-                Capsule().fill(color.opacity(0.12))
-            )
-            .overlay(
-                Capsule().strokeBorder(color.opacity(0.35), lineWidth: 0.8)
-            )
+        }) {
+            Text("#\(tag.name)")
         }
-        .buttonStyle(.plain) // control: 已打标签胶囊，P5 迁 DaybookChip(.tag)
         .help("diary.tag.off")
     }
 

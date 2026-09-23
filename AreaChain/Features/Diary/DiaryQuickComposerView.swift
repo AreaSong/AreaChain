@@ -179,32 +179,20 @@ struct DiaryQuickComposerView: View {
     private func tagChip(_ tag: TagItem) -> some View {
         let isSelected = selectedTagIDs.contains(tag.id)
         let color = DiaryTagChrome.color(for: tag.name)
-        return Button {
+        return DaybookChip(tint: color, isSelected: isSelected, action: {
             if isSelected {
                 selectedTagIDs.remove(tag.id)
             } else {
                 selectedTagIDs.insert(tag.id)
             }
-        } label: {
+        }) {
             HStack(spacing: 3) {
                 if isSelected {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 8, weight: .bold))
                 }
                 Text("#\(tag.name)")
-                    .font(.system(size: 11))
             }
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(
-                Capsule().fill(isSelected ? color.opacity(0.18) : Color.clear)
-            )
-            .overlay(
-                Capsule().strokeBorder(isSelected ? color.opacity(0.5) : DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
-            )
-            .foregroundStyle(isSelected ? color : DaybookTheme.muted)
         }
-        .buttonStyle(.plain) // control: 手记标签芯片，P5 迁 DaybookChip(.tag)
     }
 
     @ViewBuilder

@@ -274,28 +274,15 @@ struct DiaryPage: View {
         color: Color = DaybookTheme.stamp,
         action: @escaping () -> Void
     ) -> some View {
-        Button(action: action) {
-            standardFilterLabel(title: title, count: count, isSelected: isSelected, color: color)
-        }
-        .buttonStyle(.plain) // control: 手记筛选胶囊，P5 迁 DaybookChip(.filter)
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
-
-    private func standardFilterLabel(title: String, count: Int, isSelected: Bool, color: Color) -> some View {
-        HStack(spacing: 4) {
-            Text(title)
-                .font(.system(size: 11.5, weight: isSelected ? .semibold : .regular))
-            if count > 0 {
-                Text("\(count)")
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                    .opacity(0.8)
+        DaybookChip(tint: color, isSelected: isSelected, action: action) {
+            HStack(spacing: 4) {
+                Text(title)
+                if count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                }
             }
         }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4.5)
-        .background(Capsule().fill(isSelected ? color.opacity(0.16) : DaybookTheme.hoverFill.opacity(0.8)))
-        .overlay(Capsule().strokeBorder(isSelected ? color.opacity(0.4) : DaybookTheme.cardBorder, lineWidth: 0.8))
-        .foregroundStyle(isSelected ? color : DaybookTheme.ink)
     }
 
     @ViewBuilder private var quickComposer: some View {
