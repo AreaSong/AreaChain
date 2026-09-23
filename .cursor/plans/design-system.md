@@ -222,7 +222,7 @@ flowchart TB
 做：`SectionStamp` 原样改名为 `DaybookSectionHeader`（图标、标题、计数、字距不变）。已经改过颜色的布局分隔线换成 `DaybookDivider(opacity:)`。菜单里的 `Divider()`、列表行之间的分隔线不要换。`DaybookQuietTabBar` 挪到 Theme 并改名为 `DaybookSegmentedBar`，仍只服务「任务 / 手记」，不改成通用控件。确认框和按键监听不在本阶段：对话框文案各不相同，监听器绑在各自的视图生命周期上，收成一个会改行为。
 
 ### P6 颜色、字号、圆角清扫（按模块做）
-菜单栏已完成。下一份是任务模块：`design-system-P6-tasks-execute.md` / `design-system-P6-tasks-verify.md`。规则与菜单栏相同：误差不超过 0.5pt 才换令牌；小于 9pt、圆体、等宽保持原样并写 `token-exempt`。手记、工作台、其余页面和 Theme 仍各写一份。
+菜单栏和任务模块已完成。下一份是手记：`design-system-P6-diary-execute.md` / `design-system-P6-diary-verify.md`。规则与前两份相同：误差不超过 0.5pt 才换令牌；小于 9pt、圆体、等宽保持原样并写 `token-exempt`。`DiaryTagChrome` 的 `Color.red` / `.orange` / `.blue` 本阶段不换成 `diaryPreset`，因为菜单栏、任务筛选和看板还在用它，而预置色是 system 色，不是同一个颜色。工作台、其余页面和 Theme 仍各写一份。
 做：`DaybookTheme.x` / `DaybookTheme.x.opacity(字面)` → `DaybookPalette.*`；系统色 → `palette.status.* / text.onAccent / fill.scrim`；`.font(.system(size:` → `DaybookType.*`；字面圆角 → `DaybookRadius.*` 或 `metrics.radius.*`；字面动画 → `DaybookMotion.*`。双语补齐：`Domain/SyntaxAutocomplete.swift` 候选副标题（「标签」「重要且紧急…」「早上…」）改为返回本地化 key，由 `SyntaxAutocompletePopup` 用 `LocalizedStringKey` 显示；`SyntaxAutocompletePopup.footerGuide`「切换 / 补全 / 关闭」改 key；`Localizable.xcstrings` 同时补 en / zh-Hans。Theme 模块完成后删除 `DaybookTheme` enum（`DaybookTheme.swift` 文件删除）。
 完成标准（每模块）：模块目录下 `rg '\.font\(\.system\(size:|cornerRadius:\s*[0-9]|DaybookTheme\.|Color\.(orange|red|green|white|black|blue|gray)\b|\.(spring|easeInOut|easeOut|easeIn|linear)\((response|duration)' <模块目录>` 为空；`WorkspaceRenderingTests` + `MenuBarPopoverRenderingTests` + `SyntaxAutocompleteTests` 通过。Theme 完成后 `rg 'DaybookTheme' AreaChain AreaChainTests` 为空。
 
