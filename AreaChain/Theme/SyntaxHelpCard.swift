@@ -43,7 +43,7 @@ struct SyntaxExpandableCard: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
+                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
         )
         .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .onExitCommand {
@@ -58,11 +58,11 @@ struct SyntaxExpandableCard: View {
     private var headerBar: some View {
         HStack(spacing: 6) {
             Image(systemName: "sparkles")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DaybookType.subtitle.weight(.semibold))
                 .foregroundStyle(DaybookTheme.stamp)
 
             Text(context == .search ? "syntax.search.title" : "syntax.guide.title")
-                .font(.system(size: 12.5, weight: .bold))
+                .font(DaybookType.subtitle.weight(.bold))
                 .foregroundStyle(DaybookTheme.ink)
 
             Spacer(minLength: 0)
@@ -87,11 +87,11 @@ struct SyntaxExpandableCard: View {
                 title: "标签分类",
                 exampleSnippet: "写周报 #工作",
                 exampleText: Text("写周报 ")
-                    + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                    + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
                     + Text("  或  ")
-                    + Text("#生活").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                    + Text("#生活").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
                     + Text(" 买牛奶"),
-                color: Color(nsColor: .systemIndigo)
+                color: Color(nsColor: .systemIndigo) // token-exempt: 没有靛蓝令牌
             )
 
             // 2. ! 四象限优先级
@@ -102,7 +102,7 @@ struct SyntaxExpandableCard: View {
                 exampleText: Text("修线上Bug ")
                     + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
                     + Text("  或  ")
-                    + Text("!p2").foregroundStyle(Color.orange).bold()
+                    + Text("!p2").foregroundStyle(DaybookPalette.status.pending).bold()
                     + Text(" 整理书架"),
                 color: DaybookTheme.destructive
             )
@@ -167,7 +167,7 @@ struct SyntaxExpandableCard: View {
                     // 悬停聚焦态：整条直接替换为完整真实范例 + 填入试用
                     HStack(alignment: .center, spacing: 4) {
                         exampleText
-                            .font(.system(size: 10.5, design: .monospaced))
+                            .font(.system(size: 10.5, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
                             .foregroundStyle(DaybookTheme.ink)
                             .lineLimit(1)
 
@@ -175,16 +175,16 @@ struct SyntaxExpandableCard: View {
 
                         HStack(spacing: 2) {
                             Text("填入试用")
-                                .font(.system(size: 8.5, weight: .semibold))
+                                .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
                             Image(systemName: "arrow.right.circle.fill")
-                                .font(.system(size: 8.5))
+                                .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
                         }
                         .foregroundStyle(DaybookTheme.stamp)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
                         .background(
                             Capsule()
-                                .fill(DaybookTheme.stamp.opacity(0.12))
+                                .fill(DaybookPalette.accent.fill)
                         )
                     }
                     .transition(.opacity)
@@ -192,18 +192,18 @@ struct SyntaxExpandableCard: View {
                     // 默认未聚焦态：极致干净素雅，仅展示符号徽标与条例名称
                     HStack(alignment: .center, spacing: 8) {
                         Text(token)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .font(.system(size: 11, weight: .bold, design: .monospaced)) // token-exempt: 等宽符号，kbd 是 8.5pt
                             .foregroundStyle(color)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 2)
                             .background(
-                                RoundedRectangle(cornerRadius: 3.5, style: .continuous)
-                                    .fill(color.opacity(0.14))
+                                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                                    .fill(color.opacity(0.14)) // token-exempt: 符号色 14% 不是印章色
                             )
                             .frame(width: 32, alignment: .center)
 
                         Text(LocalizedStringKey(title))
-                            .font(.system(size: 11.5, weight: .semibold))
+                            .font(DaybookType.caption.weight(.semibold))
                             .foregroundStyle(DaybookTheme.ink)
 
                         Spacer(minLength: 0)
@@ -215,8 +215,8 @@ struct SyntaxExpandableCard: View {
             .padding(.horizontal, 7)
             .padding(.vertical, 3.5)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.06) : Color.clear)
+                RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: 5pt 与 xs、small 都差 1pt
+                    .fill(isHovered ? DaybookTheme.stamp.opacity(0.06) : Color.clear) // token-exempt: 6% 印章底没有对应令牌
             )
             .contentShape(Rectangle())
         }
@@ -237,16 +237,16 @@ struct SyntaxExpandableCard: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .center, spacing: 6) {
                     Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color.orange.opacity(0.9))
+                        .font(DaybookType.badge)
+                        .foregroundStyle(DaybookPalette.status.pending.opacity(0.9)) // token-exempt: 90% 待办橙没有对应令牌
 
                     (Text("重构核心模块 ")
-                        + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold()
+                        + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
                         + Text(" ")
                         + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
                         + Text(" ")
                         + Text("@15:30").foregroundStyle(DaybookTheme.stamp).bold())
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
                         .foregroundStyle(DaybookTheme.ink)
                         .lineLimit(1)
 
@@ -254,29 +254,29 @@ struct SyntaxExpandableCard: View {
 
                     HStack(spacing: 2) {
                         Text("填入试用")
-                            .font(.system(size: 8.5, weight: .semibold))
+                            .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
                         Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 8.5))
+                            .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
                     }
                     .foregroundStyle(DaybookTheme.stamp)
                     .padding(.horizontal, 5.5)
                     .padding(.vertical, 2)
                     .background(
                         Capsule()
-                            .fill(DaybookTheme.stamp.opacity(0.12))
+                            .fill(DaybookPalette.accent.fill)
                     )
                 }
 
                 HStack(spacing: 4) {
                     Text("综合范例：全属性完整待办 · 顺序自由，点击一键试用")
-                        .font(.system(size: 9.5))
+                        .font(DaybookType.micro)
                         .foregroundStyle(DaybookTheme.muted)
 
                     Spacer(minLength: 0)
 
                     Text("Esc")
-                        .font(.system(size: 8.5, weight: .bold, design: .monospaced))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.8))
+                        .font(DaybookType.kbd.weight(.bold))
+                        .foregroundStyle(DaybookTheme.muted.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
                 }
             }
             .padding(.horizontal, 8)

@@ -89,7 +89,7 @@ struct LiveComposerPreviewHeader: View {
     private var mainRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Circle()
-                .strokeBorder(DaybookTheme.rule.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2]))
+                .strokeBorder(DaybookTheme.rule.opacity(0.8), style: StrokeStyle(lineWidth: 1.2, dash: [2.5, 2])) // token-exempt: 80% 分隔线没有对应令牌
                 .frame(width: 14, height: 14)
                 .foregroundStyle(DaybookTheme.muted)
 
@@ -114,7 +114,7 @@ struct LiveComposerPreviewHeader: View {
                 if canFitAllTagsInline {
                     ForEach(previewTags, id: \.self) { tag in
                         Text("#\(tag)")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(DaybookType.caption.weight(.semibold))
                             .lineLimit(1)
                             .padding(.horizontal, 5.5)
                             .padding(.vertical, 2.5)
@@ -125,7 +125,7 @@ struct LiveComposerPreviewHeader: View {
                     }
                 } else if previewTags.count == 1, let singleTag = previewTags.first {
                     Text("#\(singleTag)")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(DaybookType.caption.weight(.semibold))
                         .lineLimit(1)
                         .truncationMode(.tail)
                         .frame(maxWidth: 96, alignment: .leading)
@@ -138,9 +138,9 @@ struct LiveComposerPreviewHeader: View {
                 } else if previewTags.count > 1 {
                     HStack(spacing: 2.5) {
                         Image(systemName: "number")
-                            .font(.system(size: 8.5, weight: .bold))
+                            .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt，kbd 是等宽
                         Text("\(previewTags.count)")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .font(.system(size: 11, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
@@ -154,9 +154,9 @@ struct LiveComposerPreviewHeader: View {
                 if let time = displayTime {
                     HStack(spacing: 2.5) {
                         Image(systemName: "clock")
-                            .font(.system(size: 9.5))
+                            .font(DaybookType.micro)
                         Text(time)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 时刻用等宽，kbd 是 8.5pt
                     }
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2.5)
@@ -172,26 +172,26 @@ struct LiveComposerPreviewHeader: View {
         .padding(.horizontal, 10)
         .frame(height: 36)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
                 .fill(DaybookTheme.paper)
                 .daybookElevation(.floating)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
         )
     }
 
     /// 紧跟标题的纯图标备注指示器（样式 100% 对齐 TaskRow noteIndicator）
     private var noteIndicator: some View {
         Image(systemName: "text.alignleft")
-            .font(.system(size: 9, weight: .medium))
-            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookTheme.muted.opacity(0.75))
+            .font(DaybookType.micro.weight(.medium))
+            .foregroundStyle(isNoteHovered ? DaybookTheme.stamp : DaybookPalette.text.tertiary)
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
-                RoundedRectangle(cornerRadius: 2.5, style: .continuous)
-                    .fill(isNoteHovered ? DaybookTheme.stamp.opacity(0.12) : DaybookTheme.ink.opacity(0.04))
+                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                    .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookTheme.ink.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
             )
             .background(
                 GeometryReader { proxy in
@@ -251,14 +251,14 @@ struct LiveComposerPreviewHeader: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("全部标签")
-                    .font(.system(size: 10.5, weight: .semibold))
+                    .font(DaybookType.badge.weight(.semibold))
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()
                 Text("\(previewTags.count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 1)
-                    .background(Capsule().fill(DaybookTheme.rule.opacity(0.4)))
+                    .background(Capsule().fill(DaybookTheme.rule.opacity(0.4))) // token-exempt: 40% 分隔线没有对应令牌
                     .foregroundStyle(DaybookTheme.muted)
             }
             .padding(.horizontal, 2)
@@ -271,7 +271,7 @@ struct LiveComposerPreviewHeader: View {
                     ForEach(previewTags, id: \.self) { tag in
                         HStack(spacing: 3) {
                             Text("#\(tag)")
-                                .font(.system(size: 11, weight: .medium))
+                                .font(DaybookType.caption.weight(.medium))
                                 .foregroundStyle(DaybookPalette.Syntax.tag)
                                 .lineLimit(1)
                             Spacer(minLength: 0)
@@ -279,7 +279,7 @@ struct LiveComposerPreviewHeader: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 3)
                         .background(
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .fill(DaybookPalette.Syntax.tagSubtleFill)
                         )
                     }
@@ -291,13 +291,13 @@ struct LiveComposerPreviewHeader: View {
         .padding(7)
         .frame(width: 140)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
                 .fill(DaybookTheme.paper)
                 .daybookElevation(.floating)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8)
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+                .stroke(DaybookTheme.rule.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
         )
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
@@ -311,7 +311,7 @@ struct LiveComposerPreviewHeader: View {
 
     private var titleView: some View {
         Text(displayTitle)
-            .font(.system(size: 13, weight: .medium))
+            .font(DaybookType.body.weight(.medium))
             .foregroundStyle(DaybookTheme.ink)
             .lineLimit(1)
             .truncationMode(.middle)

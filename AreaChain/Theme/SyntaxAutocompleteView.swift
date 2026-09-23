@@ -196,7 +196,7 @@ struct SyntaxAutocompletePopup: View {
             .background(
                 Group {
                     if !isStandalonePreview {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
                             .fill(DaybookTheme.paper)
                             .daybookElevation(.floating)
                     }
@@ -205,8 +205,8 @@ struct SyntaxAutocompletePopup: View {
             .overlay(
                 Group {
                     if !isStandalonePreview {
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7)
+                        RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+                            .stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
                     }
                 }
             )
@@ -253,22 +253,22 @@ struct SyntaxAutocompletePopup: View {
                 .frame(width: 16, height: 16)
 
             Text(item.title)
-                .font(.system(size: 11.5, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11.5, weight: .semibold, design: .monospaced)) // token-exempt: 等宽候选标题，kbd 是 8.5pt
                 .foregroundStyle(DaybookTheme.ink)
 
             Spacer(minLength: 4)
 
             if let subtitle = item.subtitle {
                 Text(LocalizedStringKey(subtitle))
-                    .font(.system(size: 10, weight: .regular))
+                    .font(DaybookType.badge.weight(.regular))
                     .foregroundStyle(isSelected ? DaybookTheme.stamp : DaybookTheme.muted)
             }
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(isSelected ? DaybookTheme.stamp.opacity(0.12) : Color.clear)
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .fill(isSelected ? DaybookPalette.accent.fill : Color.clear)
         )
         .contentShape(Rectangle())
     }
@@ -279,20 +279,20 @@ struct SyntaxAutocompletePopup: View {
         case .tag:
             if item.isCreation {
                 Image(systemName: "plus.circle.fill")
-                    .font(.system(size: 10.5))
+                    .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.Syntax.tag)
             } else {
                 Image(systemName: "tag.fill")
-                    .font(.system(size: 10))
+                    .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.Syntax.tag)
             }
         case .priority:
             Image(systemName: "exclamationmark.circle.fill")
-                .font(.system(size: 10))
+                .font(DaybookType.badge)
                 .foregroundStyle(DaybookPalette.Syntax.priorityColor(for: item.title))
         case .time:
             Image(systemName: "clock.fill")
-                .font(.system(size: 10))
+                .font(DaybookType.badge)
                 .foregroundStyle(DaybookPalette.Syntax.time)
         }
     }
@@ -301,39 +301,39 @@ struct SyntaxAutocompletePopup: View {
         HStack(spacing: 8) {
             HStack(spacing: 3) {
                 Text("↑↓")
-                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                    .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: 2.5).fill(DaybookTheme.ink.opacity(0.06)))
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("切换")
-                    .font(.system(size: 9))
+                    .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
             HStack(spacing: 3) {
                 Text("⇥ / ↵")
-                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                    .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: 2.5).fill(DaybookTheme.ink.opacity(0.06)))
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("补全")
-                    .font(.system(size: 9))
+                    .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
             Spacer(minLength: 0)
             HStack(spacing: 3) {
                 Text("Esc")
-                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                    .font(DaybookType.kbd)
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
-                    .background(RoundedRectangle(cornerRadius: 2.5).fill(DaybookTheme.ink.opacity(0.06)))
+                    .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
                 Text("关闭")
-                    .font(.system(size: 9))
+                    .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 4)
-        .background(DaybookTheme.ink.opacity(0.02))
+        .background(DaybookTheme.ink.opacity(0.02)) // token-exempt: 2% 墨色没有对应令牌
     }
 }
 
