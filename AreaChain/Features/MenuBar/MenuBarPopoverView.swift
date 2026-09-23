@@ -4,20 +4,20 @@ import SwiftUI
 
 struct MenuBarPopoverView: View {
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.locale) private var locale
+    @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
-    private var dayClock: DayClock { DayClock.shared }
-    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
-    @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
-    @Query private var checks: [RoutineCheck]
-    @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
+    var dayClock: DayClock { DayClock.shared }
+    @Query(sort: \DailyRoutine.sortOrder) var routines: [DailyRoutine]
+    @Query(sort: \TodoItem.createdAt) var todos: [TodoItem]
+    @Query var checks: [RoutineCheck]
+    @Query(sort: \DiaryEntry.createdAt, order: .reverse) var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
 
     @State var tab: BoardTab = .tasks
     @State var filters = BoardFilters()
     @Bindable private var composer: BoardComposerSession
-    @State private var dayTick = Date()
+    @State var dayTick = Date()
     @State var captureFocused = false
     @State private var focusedTaskID: UUID? = nil
     @State private var showingSyntaxHelp = false
@@ -34,14 +34,6 @@ struct MenuBarPopoverView: View {
         self.composer = composer ?? .shared
     }
 
-    private var todayKey: String {
-        _ = dayTick
-        return dayClock.todayKey
-    }
-
-    private var todayDiariesCount: Int {
-        DayBoardLogic.diaries(for: todayKey, in: diaries.map(\.snapshot)).count
-    }
 
     var currentTabTagCounts: [UUID: Int] {
         var counts: [UUID: Int] = [:]
@@ -96,104 +88,12 @@ struct MenuBarPopoverView: View {
         todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
     }
 
-    private var headerSubtitle: LocalizedStringKey {
-        if toolbar.isSearching { return "search.scope.all" }
-        switch tab {
-        case .tasks:
-            if todayRemaining > 0 { return "header.today.remaining \(todayRemaining)" }
-            return todayCompleted > 0 ? "header.today.done" : "header.today.empty"
-        case .diary:
-            let count = todayDiariesCount
-            if count == 0 {
-                return "header.diary.empty"
-            }
-            return "header.diary.count \(count)"
-        }
-    }
-
     var body: some View {
         ZStack(alignment: .top) {
-            VStack(spacing: 10) {
-                integratedHeader
-
-                Group {
-                    if toolbar.isSearching {
-                        MenuBarSearchResults(
-                            query: toolbar.searchText,
-                            filter: filters.selection(for: tab),
-                            onClearSearch: { toolbar.clearSearch() },
-                            onClearFilter: clearCurrentFilter
-                        )
-                    } else {
-                        switch tab {
-                        case .tasks: tasksView
-                        case .diary: diaryView
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(DaybookMotion.interactive(reduceMotion), value: tab)
-
-                DaybookDivider(opacity: 0.25)
-                    .padding(.horizontal, -12)
-
-                FooterBar(
-                    tab: tab,
-                    toolbar: toolbar,
-                    filters: $filters,
-                    projects: projects.filter { $0.deletedAt == nil },
-                    projectCounts: taskProjectCounts,
-                    unclassifiedCount: unclassifiedTodosCount,
-                    tags: Array(tags),
-                    tagCounts: currentTabTagCounts,
-                    onShowSyntaxHelp: showSyntaxHelp,
-                    isFilterDrawerPresented: $isFilterDrawerPresented,
-                    onTriggerClick: toggleFilterDrawer,
-                    activeCategory: $filterCategory
-                )
-                .zIndex(10)
-            }
-            .padding(12)
-            .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
-            .background(DaybookPalette.fill.page)
-            .clipShape(Rectangle())
-            .daybookHideInputChrome()
+            mainContentStack
 
             if showingSyntaxHelp {
-                // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
-                DaybookPalette.fill.scrim
-                    .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            showingSyntaxHelp = false
-                        }
-                    }
-                    .zIndex(20)
-
-                SyntaxExpandableCard(
-                    isExpanded: $showingSyntaxHelp,
-                    context: helpContext,
-                    onSelectToken: { token in
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            showingSyntaxHelp = false
-                        }
-                        handleSyntaxTokenSelection(token)
-                    },
-                    onSelectExample: helpContext == .search ? nil : { snippet in
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            showingSyntaxHelp = false
-                        }
-                        setTaskText(snippet)
-                        captureFocused = true
-                    }
-                )
-                .padding(.top, 92)
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -6)),
-                    removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
-                ))
-                .zIndex(21)
+                syntaxHelpOverlay
             }
 
             if isFilterDrawerPresented {
@@ -232,6 +132,92 @@ struct MenuBarPopoverView: View {
             dayTick = Date()
         }
     }
+
+    private var mainContentStack: some View {
+        VStack(spacing: 10) {
+            integratedHeader
+
+            Group {
+                if toolbar.isSearching {
+                    MenuBarSearchResults(
+                        query: toolbar.searchText,
+                        filter: filters.selection(for: tab),
+                        onClearSearch: { toolbar.clearSearch() },
+                        onClearFilter: clearCurrentFilter
+                    )
+                } else {
+                    switch tab {
+                    case .tasks: tasksView
+                    case .diary: diaryView
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(DaybookMotion.interactive(reduceMotion), value: tab)
+
+            DaybookDivider(opacity: 0.25)
+                .padding(.horizontal, -12)
+
+            FooterBar(
+                tab: tab,
+                toolbar: toolbar,
+                filters: $filters,
+                projects: projects.filter { $0.deletedAt == nil },
+                projectCounts: taskProjectCounts,
+                unclassifiedCount: unclassifiedTodosCount,
+                tags: Array(tags),
+                tagCounts: currentTabTagCounts,
+                onShowSyntaxHelp: showSyntaxHelp,
+                isFilterDrawerPresented: $isFilterDrawerPresented,
+                onTriggerClick: toggleFilterDrawer,
+                activeCategory: $filterCategory
+            )
+            .zIndex(10)
+        }
+        .padding(12)
+        .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
+        .background(DaybookPalette.fill.page)
+        .clipShape(Rectangle())
+        .daybookHideInputChrome()
+    }
+
+    @ViewBuilder
+    private var syntaxHelpOverlay: some View {
+        // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
+        DaybookPalette.fill.scrim
+            .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    showingSyntaxHelp = false
+                }
+            }
+            .zIndex(20)
+
+        SyntaxExpandableCard(
+            isExpanded: $showingSyntaxHelp,
+            context: helpContext,
+            onSelectToken: { token in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    showingSyntaxHelp = false
+                }
+                handleSyntaxTokenSelection(token)
+            },
+            onSelectExample: helpContext == .search ? nil : { snippet in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    showingSyntaxHelp = false
+                }
+                setTaskText(snippet)
+                captureFocused = true
+            }
+        )
+        .padding(.top, 92)
+        .transition(.asymmetric(
+            insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -6)),
+            removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
+        ))
+    }
+
 
     private var tasksView: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -277,100 +263,6 @@ struct MenuBarPopoverView: View {
             )
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var todayRemaining: Int {
-        DayBoardLogic.todayBadgeCount(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            dayKey: todayKey
-        )
-    }
-
-    private var todayCompleted: Int {
-        DayBoardLogic.completedRoutines(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            dayKey: todayKey
-        ).count
-            + DayBoardLogic.completedTodos(todos: todos.map(\.snapshot), dayKey: todayKey).count
-    }
-
-    private var integratedHeader: some View {
-        HStack(alignment: .center, spacing: 6) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(DaybookType.title)
-                    .foregroundStyle(DaybookPalette.text.primary)
-                HStack(spacing: 4) {
-                    headerIndicator
-                        .animation(DaybookMotion.interactive(reduceMotion), value: tab)
-                        .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
-                        .animation(DaybookMotion.interactive(reduceMotion), value: todayDiariesCount)
-
-                    Text(headerSubtitle)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                        .contentTransition(.numericText())
-                        .animation(DaybookMotion.interactive(reduceMotion), value: tab)
-                        .animation(DaybookMotion.interactive(reduceMotion), value: todayRemaining)
-                        .animation(DaybookMotion.interactive(reduceMotion), value: todayDiariesCount)
-                }
-            }
-
-            Spacer(minLength: 8)
-
-            DaybookSegmentedBar(
-                selection: $tab,
-                tasksCount: todayRemaining,
-                diariesCount: todayDiariesCount
-            )
-            .padding(.top, 1)
-
-        }
-    }
-
-    @ViewBuilder
-    private var headerIndicator: some View {
-        if toolbar.isSearching {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .transition(.scale.combined(with: .opacity))
-        } else {
-            switch tab {
-            case .tasks:
-                if todayRemaining > 0 {
-                    Circle() // token-exempt: 头部状态圆点
-                        .fill(DaybookPalette.status.pending)
-                        .frame(width: 5, height: 5)
-                        .transition(.scale.combined(with: .opacity))
-                } else if todayCompleted > 0 {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
-                        .foregroundStyle(DaybookPalette.accent.base)
-                        .transition(.scale.combined(with: .opacity))
-                } else {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
-                        .foregroundStyle(DaybookPalette.text.tertiary)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            case .diary:
-                if todayDiariesCount > 0 {
-                    Circle() // token-exempt: 头部状态圆点
-                        .fill(DaybookPalette.accent.base)
-                        .frame(width: 5, height: 5)
-                        .transition(.scale.combined(with: .opacity))
-                } else {
-                    Image(systemName: "feather")
-                        .font(.system(size: 8, weight: .semibold)) // token-exempt: 头部状态图标小于 9pt
-                        .foregroundStyle(DaybookPalette.text.tertiary)
-                        .transition(.scale.combined(with: .opacity))
-                }
-            }
-        }
     }
 
     private func showSyntaxHelp() {

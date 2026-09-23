@@ -23,56 +23,20 @@ struct PrivacySettingsSection: View {
 
     var body: some View {
         Section("privacy.settings.title") {
-            Label(!vault.isConfigured ? "privacy.state.unconfigured" : (vault.isUnlocked ? "privacy.state.unlocked" : "privacy.state.locked"),
-                  systemImage: vault.isUnlocked ? "lock.open" : "lock.shield")
-                .foregroundStyle(DaybookPalette.text.primary)
+            vaultStateRow
             if vault.state == .unavailable {
                 Text(LocalizedStringKey(vault.issue?.messageKey ?? "privacy.error.storageFailure"))
                     .foregroundStyle(DaybookPalette.status.danger)
             } else if !vault.isConfigured {
-                Text("privacy.settings.intro").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
-                if diaries.contains(where: \.hasProtectedContent) || attachments.contains(where: { $0.privacyVaultID != nil }) {
-                    Text("privacy.missing.config").foregroundStyle(DaybookPalette.status.danger)
-                } else {
-                    Button("privacy.setup") { dialog = .setup }
-                }
+                unconfiguredControls
             } else {
                 configuredControls
             }
-            if attachments.contains(where: { $0.retiredStorageID != nil }) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
-                    Button("privacy.cleanup.retry") { retryCleanup() }
-                }
-            } else if PrivacyStoreMaintenance.isPending(context) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(alignment: .top, spacing: 6) {
-                        Image(systemName: "checkmark.shield")
-                            .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookPalette.accent.base)
-                        Text("privacy.cleanup.database")
-                            .font(DaybookType.caption)
-                            .foregroundStyle(DaybookPalette.text.secondary)
-                    }
-                    HStack(spacing: 8) {
-                        Button("privacy.cleanup.now") { retryCleanup() }
-                            .buttonStyle(.bordered)
-                        Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
-                    }
-                }
-            }
+            cleanupNotices
             if let statusKey {
                 Text(LocalizedStringKey(statusKey)).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
             }
-            if vault.hasPendingSystemKeyCleanup {
-                Text("privacy.error.systemCleanupPending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
-                Button("privacy.system.cleanup.retry") {
-                    run {
-                        if vault.isConfigured { try await authenticate() }
-                        try await vault.retrySystemKeyCleanup()
-                    }
-                }
-            }
+            systemKeyCleanupRow
             if busy { ProgressView().controlSize(.small) }
         }
         .disabled(busy || StoreHealth.shared.isUsingMemoryFallback)
@@ -88,12 +52,66 @@ struct PrivacySettingsSection: View {
                     passwordSheet(item)
                 }
             }
-            // macOS 的独立 sheet 宿主可能回落到系统语言，须显式沿用设置页的语言。
             .environment(\.locale, locale)
         }
         .task {
             if PrivacyStoreMaintenance.isPending(context) && !attachments.contains(where: { $0.retiredStorageID != nil }) {
                 _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
+            }
+        }
+    }
+
+    private var vaultStateRow: some View {
+        Label(!vault.isConfigured ? "privacy.state.unconfigured" : (vault.isUnlocked ? "privacy.state.unlocked" : "privacy.state.locked"),
+              systemImage: vault.isUnlocked ? "lock.open" : "lock.shield")
+            .foregroundStyle(DaybookPalette.text.primary)
+    }
+
+    @ViewBuilder
+    private var unconfiguredControls: some View {
+        Text("privacy.settings.intro").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
+        if diaries.contains(where: \.hasProtectedContent) || attachments.contains(where: { $0.privacyVaultID != nil }) {
+            Text("privacy.missing.config").foregroundStyle(DaybookPalette.status.danger)
+        } else {
+            Button("privacy.setup") { dialog = .setup }
+        }
+    }
+
+    @ViewBuilder
+    private var cleanupNotices: some View {
+        if attachments.contains(where: { $0.retiredStorageID != nil }) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
+                Button("privacy.cleanup.retry") { retryCleanup() }
+            }
+        } else if PrivacyStoreMaintenance.isPending(context) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "checkmark.shield")
+                        .font(DaybookType.caption.weight(.semibold))
+                        .foregroundStyle(DaybookPalette.accent.base)
+                    Text("privacy.cleanup.database")
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookPalette.text.secondary)
+                }
+                HStack(spacing: 8) {
+                    Button("privacy.cleanup.now") { retryCleanup() }
+                        .buttonStyle(.bordered)
+                    Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var systemKeyCleanupRow: some View {
+        if vault.hasPendingSystemKeyCleanup {
+            Text("privacy.error.systemCleanupPending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
+            Button("privacy.system.cleanup.retry") {
+                run {
+                    if vault.isConfigured { try await authenticate() }
+                    try await vault.retrySystemKeyCleanup()
+                }
             }
         }
     }

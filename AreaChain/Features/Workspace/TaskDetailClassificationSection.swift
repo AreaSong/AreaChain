@@ -90,7 +90,7 @@ struct TaskDetailTagSelector: View {
                     ForEach(activeTags) { tag in
                         let isContained = TagIDList.contains(tagIDs, tag.id)
                         DaybookChip(
-                            tint: Color(nsColor: .systemIndigo), // token-exempt: 没有靛蓝令牌
+                            tint: DaybookPalette.tagDefault,
                             isSelected: isContained,
                             action: { onToggleTag(tag.id) }
                         ) {

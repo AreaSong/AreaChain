@@ -104,69 +104,7 @@ struct LiveComposerPreviewHeader: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 右侧属性集群（严格镜像 TaskRow: 优先级 -> 标签 -> 时间）
-            HStack(spacing: 5) {
-                // 1. 优先级徽标（最前）
-                if let prioritySlot {
-                    QuadrantBadge(slot: prioritySlot)
-                }
-
-                // 2. 标签集群
-                if canFitAllTagsInline {
-                    ForEach(previewTags, id: \.self) { tag in
-                        Text("#\(tag)")
-                            .font(DaybookType.caption.weight(.semibold))
-                            .lineLimit(1)
-                            .padding(.horizontal, 5.5)
-                            .padding(.vertical, 2.5)
-                            .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
-                            .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-                            .foregroundStyle(DaybookPalette.Syntax.tag)
-                            .help("#\(tag)")
-                    }
-                } else if previewTags.count == 1, let singleTag = previewTags.first {
-                    Text("#\(singleTag)")
-                        .font(DaybookType.caption.weight(.semibold))
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                        .frame(maxWidth: 96, alignment: .leading)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2.5)
-                        .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
-                        .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-                        .foregroundStyle(DaybookPalette.Syntax.tag)
-                        .help("#\(singleTag)")
-                } else if previewTags.count > 1 {
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "number")
-                            .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt，kbd 是等宽
-                        Text("\(previewTags.count)")
-                            .font(.system(size: 11, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookPalette.Syntax.tagBadgeFill))
-                    .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
-                    .foregroundStyle(DaybookPalette.Syntax.tag)
-                    .help(L10n.format("syntax.preview.tagCount", locale: locale, previewTags.count))
-                }
-
-                // 3. 提醒时间徽标（最后）
-                if let time = displayTime {
-                    HStack(spacing: 2.5) {
-                        Image(systemName: "clock")
-                            .font(DaybookType.micro)
-                        Text(time)
-                            .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 时刻用等宽，kbd 是 8.5pt
-                    }
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2.5)
-                    .background(Capsule().fill(DaybookPalette.Syntax.timeFill))
-                    .foregroundStyle(DaybookPalette.Syntax.time)
-                    .help(time)
-                }
-            }
-            .fixedSize(horizontal: true, vertical: false)
+            trailingAttributesCluster
 
             DaybookIconButton(systemName: "xmark", label: "common.close", size: .inline, action: onClose)
         }
@@ -181,6 +119,73 @@ struct LiveComposerPreviewHeader: View {
             RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
                 .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
         )
+    }
+
+    private var trailingAttributesCluster: some View {
+        HStack(spacing: 5) {
+            if let prioritySlot {
+                QuadrantBadge(slot: prioritySlot)
+            }
+
+            tagsBadgeCluster
+
+            if let time = displayTime {
+                HStack(spacing: 2.5) {
+                    Image(systemName: "clock")
+                        .font(DaybookType.micro)
+                    Text(time)
+                        .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 时刻用等宽，kbd 是 8.5pt
+                }
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2.5)
+                .background(Capsule().fill(DaybookPalette.Syntax.timeFill))
+                .foregroundStyle(DaybookPalette.Syntax.time)
+                .help(time)
+            }
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    @ViewBuilder
+    private var tagsBadgeCluster: some View {
+        if canFitAllTagsInline {
+            ForEach(previewTags, id: \.self) { tag in
+                Text("#\(tag)")
+                    .font(DaybookType.caption.weight(.semibold))
+                    .lineLimit(1)
+                    .padding(.horizontal, 5.5)
+                    .padding(.vertical, 2.5)
+                    .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
+                    .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+                    .foregroundStyle(DaybookPalette.Syntax.tag)
+                    .help("#\(tag)")
+            }
+        } else if previewTags.count == 1, let singleTag = previewTags.first {
+            Text("#\(singleTag)")
+                .font(DaybookType.caption.weight(.semibold))
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: 96, alignment: .leading)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2.5)
+                .background(Capsule().fill(DaybookPalette.Syntax.tagFill))
+                .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+                .foregroundStyle(DaybookPalette.Syntax.tag)
+                .help("#\(singleTag)")
+        } else if previewTags.count > 1 {
+            HStack(spacing: 2.5) {
+                Image(systemName: "number")
+                    .font(.system(size: 8.5, weight: .bold)) // token-exempt: 小于 9pt，kbd 是等宽
+                Text("\(previewTags.count)")
+                    .font(.system(size: 11, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2.5)
+            .background(Capsule().fill(DaybookPalette.Syntax.tagBadgeFill))
+            .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
+            .foregroundStyle(DaybookPalette.Syntax.tag)
+            .help(L10n.format("syntax.preview.tagCount", locale: locale, previewTags.count))
+        }
     }
 
     /// 紧跟标题的纯图标备注指示器（样式 100% 对齐 TaskRow noteIndicator）
@@ -259,7 +264,7 @@ struct LiveComposerPreviewHeader: View {
                     .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
                     .padding(.horizontal, 4.5)
                     .padding(.vertical, 1)
-                    .background(Capsule().fill(DaybookPalette.border.default.opacity(0.4))) // token-exempt: 40% 分隔线没有对应令牌
+                    .background(Capsule().fill(DaybookPalette.border.faint))
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(.horizontal, 2)

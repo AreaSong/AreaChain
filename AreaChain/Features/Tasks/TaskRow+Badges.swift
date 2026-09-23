@@ -43,7 +43,7 @@ extension TaskRow {
                             RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                                 .stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6)
                         )
-                        .help("更多 \(overflow) 个标签: \(tags.dropFirst(2).joined(separator: ", "))")
+                        .help(L10n.format("row.tag.overflow.help", locale: locale, overflow, tags.dropFirst(2).joined(separator: ", ")))
                 }
             }
         }

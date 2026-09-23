@@ -264,7 +264,7 @@ struct TaskDetailStreakCard: View {
             HStack(spacing: 4) {
                 Image(systemName: "trophy.fill")
                     .font(DaybookType.body.weight(.bold))
-                    .foregroundStyle(.yellow) // token-exempt: 没有黄色令牌
+                    .foregroundStyle(DaybookPalette.status.pending)
                 Text("\(streakResult.bestStreak)")
                     .font(.system(size: 16, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
                     .foregroundStyle(DaybookPalette.text.primary)

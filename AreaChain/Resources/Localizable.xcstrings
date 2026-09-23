@@ -54,7 +54,13 @@
       "localizations": {
         "en": {
           "stringUnit": {
-            "state": "new",
+            "state": "translated",
+            "value": "%1$lld/%2$lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
             "value": "%1$lld/%2$lld"
           }
         }
@@ -7275,6 +7281,23 @@
         }
       }
     },
+    "row.tag.overflow.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More %1$lld tags: %2$@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "更多 %1$lld 个标签: %2$@"
+          }
+        }
+      }
+    },
     "classify.priority": {
       "extractionState": "manual",
       "localizations": {
@@ -9332,6 +9355,40 @@
         }
       }
     },
+    "segmented.bar.diary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes (⌘→)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "手记 (⌘→)"
+          }
+        }
+      }
+    },
+    "segmented.bar.tasks.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks (⌘←)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务 (⌘←)"
+          }
+        }
+      }
+    },
     "tag.preset.reserved": {
       "extractionState": "manual",
       "localizations": {
@@ -10437,6 +10494,146 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Try it" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "填入试用" } }
+      }
+    },
+    "syntax.example.common.or": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "  or  " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "  或  " } }
+      }
+    },
+    "syntax.example.complex.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Refactor core module #work !p1 @15:30" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重构核心模块 #工作 !p1 @15:30" } }
+      }
+    },
+    "syntax.example.complex.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Refactor core module " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重构核心模块 " } }
+      }
+    },
+    "syntax.example.diary.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Capture thoughts anytime" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "随时记录灵感闪念" } }
+      }
+    },
+    "syntax.example.diary.text1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Capture thoughts " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "随时记录灵感 " } }
+      }
+    },
+    "syntax.example.diary.text2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": " Save directly to today's notes" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 直接存入今日手记" } }
+      }
+    },
+    "syntax.example.note.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Task title on first line\nNewline enters notes" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "首行待办标题\n换行输入详细备注" } }
+      }
+    },
+    "syntax.example.note.text1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "First line " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "首行标题 " } }
+      }
+    },
+    "syntax.example.note.text2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": " Newline for notes (hover list to view)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 换行转备注 (悬停清单查看)" } }
+      }
+    },
+    "syntax.example.priority.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Fix issue !p1" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "修线上Bug !p1" } }
+      }
+    },
+    "syntax.example.priority.text1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Fix issue " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "修线上Bug " } }
+      }
+    },
+    "syntax.example.priority.text2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": " Clean desk" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 整理书架" } }
+      }
+    },
+    "syntax.example.tag.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Weekly report #work" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "写周报 #工作" } }
+      }
+    },
+    "syntax.example.tag.text1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Weekly report " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "写周报 " } }
+      }
+    },
+    "syntax.example.tag.text2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": " Buy milk" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 买牛奶" } }
+      }
+    },
+    "syntax.example.tag.token1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "#work" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "#工作" } }
+      }
+    },
+    "syntax.example.tag.token2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "#life" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "#生活" } }
+      }
+    },
+    "syntax.example.time.snippet": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Morning standup @10:00" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "开晨会 @10:00" } }
+      }
+    },
+    "syntax.example.time.text1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Morning standup " } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "开晨会 " } }
+      }
+    },
+    "syntax.example.time.text2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "  or  walk tomorrow afternoon" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "  或  明天下午 散步" } }
       }
     },
     "syntax.preview.allTags": {

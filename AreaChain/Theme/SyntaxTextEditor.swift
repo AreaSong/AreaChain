@@ -34,13 +34,20 @@ struct SyntaxTextEditor: View {
         .overlay(alignment: .topLeading) {
             if text.isEmpty {
                 Text(placeholder)
-                    .font(.system(size: fontSize))
+                    .font(placeholderFont)
                     .foregroundStyle(DaybookPalette.text.secondary)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
+                    .padding(.horizontal, 9) // token-exempt: 对齐 AppKit NSTextView 文本容器内边距 (4 inset + 5 fragment padding)
+                    .padding(.vertical, 5) // token-exempt: 对齐 AppKit NSTextView 垂直容器内边距 (5)
                     .allowsHitTesting(false)
             }
         }
         .syntaxSuggestions(autocomplete)
+    }
+
+    private var placeholderFont: Font {
+        if fontSize <= DaybookType.captionSize {
+            return DaybookType.caption
+        }
+        return DaybookType.body
     }
 }

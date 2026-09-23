@@ -50,6 +50,6 @@ struct DaybookSegmentedBar: View {
         .buttonStyle(.plain) // control: 分段切换滑块，非按钮语义
         .accessibilityLabel(LocalizedStringKey(item.titleKey))
         .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-        .help(item == .tasks ? Text("任务 (⌘←)") : Text("手记 (⌘→)"))
+        .help(Text(LocalizedStringKey(item.helpKey)))
     }
 }

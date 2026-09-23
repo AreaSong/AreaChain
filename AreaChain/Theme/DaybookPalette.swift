@@ -134,6 +134,9 @@ enum DaybookPalette {
         dark: NSColor.white.withAlphaComponent(0.16)
     )
 
+    /// 默认通用分类标签色（替换直接硬编码的 .systemIndigo）
+    static let tagDefault = Color(nsColor: .systemIndigo)
+
     /// 手记预置标签色。来源：Features/Diary/DiaryNoteCard.swift 的 DiaryTagChrome（P5 再把消费者迁过来，本阶段不动它）。
     enum DiaryPreset {
         static let password = Color(nsColor: .systemRed)

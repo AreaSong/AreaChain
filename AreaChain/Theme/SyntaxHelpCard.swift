@@ -16,6 +16,7 @@ struct SyntaxExpandableCard: View {
 
     @State private var hoveredToken: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
 
     var body: some View {
         VStack(spacing: 0) {
@@ -81,69 +82,78 @@ struct SyntaxExpandableCard: View {
 
     private var syntaxItemsList: some View {
         VStack(alignment: .leading, spacing: 3.5) {
-            // 1. # 标签分类
-            syntaxRow(
-                token: "#",
-                title: "syntax.guide.tag",
-                exampleSnippet: "写周报 #工作",
-                exampleText: Text("写周报 ")
-                    + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
-                    + Text("  或  ")
-                    + Text("#生活").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
-                    + Text(" 买牛奶"),
-                color: Color(nsColor: .systemIndigo) // token-exempt: 没有靛蓝令牌
-            )
-
-            // 2. ! 四象限优先级
-            syntaxRow(
-                token: "!",
-                title: "syntax.guide.priority",
-                exampleSnippet: "修线上Bug !p1",
-                exampleText: Text("修线上Bug ")
-                    + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
-                    + Text("  或  ")
-                    + Text("!p2").foregroundStyle(DaybookPalette.status.pending).bold()
-                    + Text(" 整理书架"),
-                color: DaybookPalette.status.danger
-            )
-
-            // 3. @ 时刻提醒
-            if context.supportsTaskAttributes {
-                syntaxRow(
-                    token: "@",
-                    title: "syntax.guide.time",
-                    exampleSnippet: "开晨会 @10:00",
-                    exampleText: Text("开晨会 ")
-                        + Text("@10:00").foregroundStyle(DaybookPalette.accent.base).bold()
-                        + Text("  或  明天下午 散步"),
-                    color: DaybookPalette.accent.base
-                )
-            }
-
-            // 4. ⌘↩ 直接存入手记
+            attributeSyntaxItems
             if context == .capture {
-                syntaxRow(
-                    token: "⌘↩",
-                    title: "syntax.guide.diary",
-                    exampleSnippet: "随时记录灵感闪念",
-                    exampleText: Text("随时记录灵感 ")
-                        + Text("⌘↵").foregroundStyle(DaybookPalette.accent.base).bold()
-                        + Text(" 直接存入今日手记"),
-                    color: DaybookPalette.accent.base
-                )
-
-                // 5. ⇧↩ 换行输入备注
-                syntaxRow(
-                    token: "⇧↩",
-                    title: "syntax.guide.note",
-                    exampleSnippet: "首行待办标题\n换行输入详细备注",
-                    exampleText: Text("首行标题 ")
-                        + Text("⇧↵").foregroundStyle(DaybookPalette.text.primary).bold()
-                        + Text(" 换行转备注 (悬停清单查看)"),
-                    color: DaybookPalette.text.secondary
-                )
+                captureSyntaxItems
             }
         }
+    }
+
+    @ViewBuilder
+    private var attributeSyntaxItems: some View {
+        // 1. # 标签分类
+        syntaxRow(
+            token: "#",
+            title: "syntax.guide.tag",
+            exampleSnippet: L10n.string("syntax.example.tag.snippet", locale: locale),
+            exampleText: Text(LocalizedStringKey("syntax.example.tag.text1"))
+                + Text(LocalizedStringKey("syntax.example.tag.token1")).foregroundStyle(DaybookPalette.tagDefault).bold()
+                + Text(LocalizedStringKey("syntax.example.common.or"))
+                + Text(LocalizedStringKey("syntax.example.tag.token2")).foregroundStyle(DaybookPalette.tagDefault).bold()
+                + Text(LocalizedStringKey("syntax.example.tag.text2")),
+            color: DaybookPalette.tagDefault
+        )
+
+        // 2. ! 四象限优先级
+        syntaxRow(
+            token: "!",
+            title: "syntax.guide.priority",
+            exampleSnippet: L10n.string("syntax.example.priority.snippet", locale: locale),
+            exampleText: Text(LocalizedStringKey("syntax.example.priority.text1"))
+                + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
+                + Text(LocalizedStringKey("syntax.example.common.or"))
+                + Text("!p2").foregroundStyle(DaybookPalette.status.pending).bold()
+                + Text(LocalizedStringKey("syntax.example.priority.text2")),
+            color: DaybookPalette.status.danger
+        )
+
+        // 3. @ 时刻提醒
+        if context.supportsTaskAttributes {
+            syntaxRow(
+                token: "@",
+                title: "syntax.guide.time",
+                exampleSnippet: L10n.string("syntax.example.time.snippet", locale: locale),
+                exampleText: Text(LocalizedStringKey("syntax.example.time.text1"))
+                    + Text("@10:00").foregroundStyle(DaybookPalette.accent.base).bold()
+                    + Text(LocalizedStringKey("syntax.example.time.text2")),
+                color: DaybookPalette.accent.base
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var captureSyntaxItems: some View {
+        // 4. ⌘↩ 直接存入手记
+        syntaxRow(
+            token: "⌘↩",
+            title: "syntax.guide.diary",
+            exampleSnippet: L10n.string("syntax.example.diary.snippet", locale: locale),
+            exampleText: Text(LocalizedStringKey("syntax.example.diary.text1"))
+                + Text("⌘↵").foregroundStyle(DaybookPalette.accent.base).bold()
+                + Text(LocalizedStringKey("syntax.example.diary.text2")),
+            color: DaybookPalette.accent.base
+        )
+
+        // 5. ⇧↩ 换行输入备注
+        syntaxRow(
+            token: "⇧↩",
+            title: "syntax.guide.note",
+            exampleSnippet: L10n.string("syntax.example.note.snippet", locale: locale),
+            exampleText: Text(LocalizedStringKey("syntax.example.note.text1"))
+                + Text("⇧↵").foregroundStyle(DaybookPalette.text.primary).bold()
+                + Text(LocalizedStringKey("syntax.example.note.text2")),
+            color: DaybookPalette.text.secondary
+        )
     }
 
     private func syntaxRow(
@@ -164,58 +174,16 @@ struct SyntaxExpandableCard: View {
         } label: {
             ZStack(alignment: .leading) {
                 if isHovered {
-                    // 悬停聚焦态：整条直接替换为完整真实范例 + 填入试用
-                    HStack(alignment: .center, spacing: 4) {
-                        exampleText
-                            .font(.system(size: 10.5, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
-                            .foregroundStyle(DaybookPalette.text.primary)
-                            .lineLimit(1)
-
-                        Spacer(minLength: 4)
-
-                        HStack(spacing: 2) {
-                            Text("syntax.guide.try")
-                                .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
-                            Image(systemName: "arrow.right.circle.fill")
-                                .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
-                        }
-                        .foregroundStyle(DaybookPalette.accent.base)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(DaybookPalette.accent.fill)
-                        )
-                    }
-                    .transition(.opacity)
+                    syntaxRowHoveredView(exampleText: exampleText)
                 } else {
-                    // 默认未聚焦态：极致干净素雅，仅展示符号徽标与条例名称
-                    HStack(alignment: .center, spacing: 8) {
-                        Text(token)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced)) // token-exempt: 等宽符号，kbd 是 8.5pt
-                            .foregroundStyle(color)
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 2)
-                            .background(
-                                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                    .fill(color.opacity(0.14)) // token-exempt: 符号色 14% 不是印章色
-                            )
-                            .frame(width: 32, alignment: .center)
-
-                        Text(LocalizedStringKey(title))
-                            .font(DaybookType.caption.weight(.semibold))
-                            .foregroundStyle(DaybookPalette.text.primary)
-
-                        Spacer(minLength: 0)
-                    }
-                    .transition(.opacity)
+                    syntaxRowDefaultView(token: token, title: title, color: color)
                 }
             }
             .frame(height: 22)
             .padding(.horizontal, 7)
             .padding(.vertical, 3.5)
             .background(
-                RoundedRectangle(cornerRadius: 5, style: .continuous) // token-exempt: 5pt 与 xs、small 都差 1pt
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                     .fill(isHovered ? DaybookPalette.accent.base.opacity(0.06) : Color.clear) // token-exempt: 6% 印章底没有对应令牌
             )
             .contentShape(Rectangle())
@@ -228,11 +196,59 @@ struct SyntaxExpandableCard: View {
         }
     }
 
+    private func syntaxRowHoveredView(exampleText: Text) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            exampleText
+                .font(.system(size: 10.5, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
+                .foregroundStyle(DaybookPalette.text.primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            HStack(spacing: 2) {
+                Text("syntax.guide.try")
+                    .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
+                Image(systemName: "arrow.right.circle.fill")
+                    .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
+            }
+            .foregroundStyle(DaybookPalette.accent.base)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(DaybookPalette.accent.fill)
+            )
+        }
+        .transition(.opacity)
+    }
+
+    private func syntaxRowDefaultView(token: String, title: String, color: Color) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            Text(token)
+                .font(.system(size: 11, weight: .bold, design: .monospaced)) // token-exempt: 等宽符号，kbd 是 8.5pt
+                .foregroundStyle(color)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                        .fill(color.opacity(0.14)) // token-exempt: 符号色 14% 不是印章色
+                )
+                .frame(width: 32, alignment: .center)
+
+            Text(LocalizedStringKey(title))
+                .font(DaybookType.caption.weight(.semibold))
+                .foregroundStyle(DaybookPalette.text.primary)
+
+            Spacer(minLength: 0)
+        }
+        .transition(.opacity)
+    }
+
     // MARK: - 底部总复杂范例（常驻展示，点击一键注入输入框试用）
 
     private var complexExampleBar: some View {
         Button {
-            onSelectExample?("重构核心模块 #工作 !p1 @15:30")
+            onSelectExample?(L10n.string("syntax.example.complex.snippet", locale: locale))
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(alignment: .center, spacing: 6) {
@@ -240,8 +256,8 @@ struct SyntaxExpandableCard: View {
                         .font(DaybookType.badge)
                         .foregroundStyle(DaybookPalette.status.pending.opacity(0.9)) // token-exempt: 90% 待办橙没有对应令牌
 
-                    (Text("重构核心模块 ")
-                        + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
+                    (Text(LocalizedStringKey("syntax.example.complex.title"))
+                        + Text(LocalizedStringKey("syntax.example.tag.token1")).foregroundStyle(DaybookPalette.tagDefault).bold()
                         + Text(" ")
                         + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
                         + Text(" ")

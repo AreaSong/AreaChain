@@ -13,6 +13,13 @@ enum BoardTab: String, CaseIterable, Identifiable, Equatable, Sendable {
         case .diary: "tab.diary"
         }
     }
+
+    var helpKey: String {
+        switch self {
+        case .tasks: "segmented.bar.tasks.help"
+        case .diary: "segmented.bar.diary.help"
+        }
+    }
 }
 
 /// 一页清单的筛选。任务和手记各持有一份 `BoardFilter`；手记只使用标签这一维。

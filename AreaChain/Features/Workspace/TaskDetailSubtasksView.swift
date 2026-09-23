@@ -192,8 +192,8 @@ struct SubtaskRowView: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(subtask.title)
                     .font(DaybookType.caption)
-                    .foregroundStyle(subtask.isDone ? DaybookPalette.text.secondary.opacity(0.7) : DaybookPalette.text.primary) // token-exempt: 70% 次要色没有对应令牌
-                    .strikethrough(subtask.isDone, color: DaybookPalette.text.secondary.opacity(0.5)) // token-exempt: 50% 次要色没有对应令牌
+                    .foregroundStyle(subtask.isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
+                    .strikethrough(subtask.isDone, color: DaybookPalette.text.done)
                 assignedTagChips
             }
             .frame(maxWidth: .infinity, alignment: .leading)

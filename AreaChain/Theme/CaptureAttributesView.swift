@@ -68,7 +68,7 @@ struct CaptureAttributesButton: View {
             .frame(width: 58, height: 22)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) // control: 属性按钮固定 58×22，胶囊留给 P5
+        .buttonStyle(.plain) // control: 复合属性状态按钮与定位锚点
         .background(SyntaxViewAnchor("syntax.attributes.button"))
         .disabled(attributes.count == 0)
         .accessibilityIdentifier("syntax.attributes.button")

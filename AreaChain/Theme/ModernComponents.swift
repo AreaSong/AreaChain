@@ -88,18 +88,6 @@ struct ModernCheckbox: View {
     }
 }
 
-extension View {
-    /// 现代柔光焦点环
-    func modernFocusRing(isFocused: Bool) -> some View {
-        overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .stroke(DaybookPalette.accent.base, lineWidth: isFocused ? 1.5 : 0)
-                .padding(-1.5)
-                .opacity(isFocused ? 0.9 : 0)
-        )
-        .animation(.easeOut(duration: 0.15), value: isFocused)
-    }
-}
 
 // MARK: - Strikethrough Text
 

@@ -189,12 +189,12 @@ public struct RowNoteBubble: View {
             .padding(.vertical, 7)
             .frame(width: 210, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 7, style: .continuous) // token-exempt: 7pt 与 small、regular 都差 1pt
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .fill(DaybookPalette.fill.page)
                     .daybookElevation(.floating)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 7, style: .continuous) // token-exempt: 7pt 与 small、regular 都差 1pt
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                     .stroke(isCopied ? DaybookPalette.accent.base.opacity(0.7) : (isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)), lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
             )
 

@@ -6,7 +6,7 @@ import SwiftUI
 struct DiarySummaryRow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.locale) private var locale
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
     var entry: DiaryEntry
     var privacyTags: [TagItem] = []
     var allTags: [TagItem] = []
@@ -15,45 +15,45 @@ struct DiarySummaryRow: View {
     var onSelect: (() -> Void)? = nil
     var onDelete: () -> Void
 
-    @State private var chrome = BoardRowChrome()
+    @State var chrome = BoardRowChrome()
     @State private var hasCopied = false
-    @State private var hasNoteCopied = false
+    @State var hasNoteCopied = false
     @State private var hasConvertedToTask = false
     @State private var pickingDay = false
-    @State private var growsUpward = false
-    @State private var bubbleShiftX: CGFloat = 0
+    @State var growsUpward = false
+    @State var bubbleShiftX: CGFloat = 0
 
-    private var isHovered: Bool {
+    var isHovered: Bool {
         get { chrome.isRowHovered }
         nonmutating set { chrome.isRowHovered = newValue }
     }
 
-    private var isCommandPressed: Bool {
+    var isCommandPressed: Bool {
         get { chrome.isCommandPressed }
         nonmutating set { chrome.isCommandPressed = newValue }
     }
 
-    private var isTitleTextHovered: Bool {
+    var isTitleTextHovered: Bool {
         get { chrome.isTitleTextHovered }
         nonmutating set { chrome.isTitleTextHovered = newValue }
     }
 
-    private var isTitleBubbleHovered: Bool {
+    var isTitleBubbleHovered: Bool {
         get { chrome.isTitleBubbleHovered }
         nonmutating set { chrome.isTitleBubbleHovered = newValue }
     }
 
-    private var isNoteHovered: Bool {
+    var isNoteHovered: Bool {
         get { chrome.isNoteHovered }
         nonmutating set { chrome.isNoteHovered = newValue }
     }
 
-    private var isNoteBubbleHovered: Bool {
+    var isNoteBubbleHovered: Bool {
         get { chrome.isNoteBubbleHovered }
         nonmutating set { chrome.isNoteBubbleHovered = newValue }
     }
 
-    private var isSensitive: Bool { DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
+    var isSensitive: Bool { DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
     var previewText: String {
         isSensitive ? L10n.string("diary.private.title", locale: locale) : Self.preview(entry.text)
     }
@@ -90,14 +90,6 @@ struct DiarySummaryRow: View {
         return NotePresentation(mainText: firstLine, note: rest.isEmpty ? nil : rest)
     }
 
-    private var shouldShowTitleBubble: Bool {
-        !isSensitive && !isCommandPressed && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(contentPresentation.mainText)
-    }
-
-    private var shouldShowNoteBubble: Bool {
-        !isSensitive && !isCommandPressed && (isNoteHovered || isNoteBubbleHovered) && contentPresentation.note != nil
-    }
-
     private var assignedTags: [TagItem] {
         DiaryMemoTags.ordered(
             allTags.filter { TagIDList.contains(entry.tagIDs, $0.id) },
@@ -111,67 +103,50 @@ struct DiarySummaryRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            headerRow
-                .zIndex(10)
-
-            footerRow
-                .zIndex(1)
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .frame(minHeight: 46)
-        .daybookSurface(.row, isHovered: isHovered, isSelected: isSelected || isHighlighted)
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .strokeBorder(
-                    (entry.isPinned && !isSelected && !isHighlighted)
-                        ? DaybookPalette.accent.base.opacity(0.28) // token-exempt: 28% 印章色没有对应令牌
-                        : Color.clear,
-                    lineWidth: 0.8
-                )
-                .allowsHitTesting(false)
-        )
-        .background(
-            pointerRegion(isTitle: false)
-                .accessibilityHidden(true)
-        )
-        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .simultaneousGesture(
-            TapGesture().onEnded {
+        rowContent
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 46)
+            .daybookSurface(.row, isHovered: isHovered, isSelected: isSelected || isHighlighted)
+            .overlay(pinnedBorderOverlay)
+            .background(pointerRegion(isTitle: false).accessibilityHidden(true))
+            .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+            .simultaneousGesture(TapGesture().onEnded {
                 chrome.revealRow(reduceMotion: reduceMotion)
                 onSelect?()
-            }
-        )
-        .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
-        .task(id: hasCopied) {
-            guard hasCopied else { return }
-            try? await Task.sleep(for: .milliseconds(1200))
-            if !Task.isCancelled { hasCopied = false }
+            })
+            .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
+            .popover(isPresented: $pickingDay) { daySchedulePopover }
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
+            .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
+            .contextMenu { diaryMenuItems }
+            .modifier(DiaryRowTaskLifecycleModifier(
+                chrome: chrome,
+                reduceMotion: reduceMotion,
+                hasCopied: $hasCopied,
+                hasNoteCopied: $hasNoteCopied,
+                hasConvertedToTask: $hasConvertedToTask
+            ))
+    }
+
+    private var rowContent: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            headerRow.zIndex(10)
+            footerRow.zIndex(1)
         }
-        .task(id: hasNoteCopied) {
-            guard hasNoteCopied else { return }
-            try? await Task.sleep(for: .milliseconds(1200))
-            if !Task.isCancelled { hasNoteCopied = false }
-        }
-        .task(id: hasConvertedToTask) {
-            guard hasConvertedToTask else { return }
-            try? await Task.sleep(for: .milliseconds(1500))
-            if !Task.isCancelled { hasConvertedToTask = false }
-        }
-        .popover(isPresented: $pickingDay) {
-            daySchedulePopover
-        }
-        .onAppear { chrome.startCommandMonitor(reduceMotion: reduceMotion) }
-        .onDisappear { chrome.stop() }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
-            chrome.resignCommand()
-        }
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("diary.summary." + entry.id.uuidString)
-        .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
-        .contextMenu { diaryMenuItems }
+    }
+
+    private var pinnedBorderOverlay: some View {
+        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+            .strokeBorder(
+                (entry.isPinned && !isSelected && !isHighlighted)
+                    ? DaybookPalette.accent.base.opacity(0.28) // token-exempt: 28% 印章色没有对应令牌
+                    : Color.clear,
+                lineWidth: 0.8
+            )
+            .allowsHitTesting(false)
     }
 
     // MARK: - 第 1 行：主视觉行 (标题/正文首行 + 恒定 22x22 占位的设置按钮)
@@ -197,31 +172,9 @@ struct DiarySummaryRow: View {
                 .truncationMode(.tail)
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
-                .overlay(
-                    pointerRegion(isTitle: true)
-                        .accessibilityHidden(true)
-                )
+                .overlay(pointerRegion(isTitle: true).accessibilityHidden(true))
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                    if shouldShowTitleBubble {
-                        RowTitleBubble(
-                            title: presentation.mainText,
-                            growsUpward: growsUpward,
-                            onCopy: { copyTitle(presentation.mainText) },
-                            onHover: { hovering in
-                                isTitleBubbleHovered = hovering
-                                if !hovering && !isTitleTextHovered {
-                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                        isTitleTextHovered = false
-                                    }
-                                }
-                            }
-                        )
-                        .offset(y: growsUpward ? -6 : 22)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
-                            removal: .opacity
-                        ))
-                    }
+                    titleBubbleOverlay(for: presentation.mainText)
                 }
 
             if !isSensitive, let note = presentation.note, !note.isEmpty {
@@ -233,10 +186,7 @@ struct DiarySummaryRow: View {
                 .frame(maxWidth: .infinity)
                 .frame(height: 20)
                 .contentShape(Rectangle())
-                .overlay(
-                    pointerRegion(isTitle: false)
-                        .accessibilityHidden(true)
-                )
+                .overlay(pointerRegion(isTitle: false).accessibilityHidden(true))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
@@ -247,62 +197,6 @@ struct DiarySummaryRow: View {
                     .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
             }
         )
-    }
-
-    private func noteIndicator(fullText: String) -> some View {
-        Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
-            .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(hasNoteCopied ? DaybookPalette.accent.base : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
-            .padding(.horizontal, 3.5)
-            .padding(.vertical, 1.5)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookPalette.accent.base.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
-            )
-            .contentShape(Rectangle())
-            .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
-            .onTapGesture {
-                copyNote(fullText)
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    hasNoteCopied = true
-                }
-            }
-            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if shouldShowNoteBubble {
-                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-                    let transformAnchor = UnitPoint(
-                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: growsUpward ? 1.0 : 0.0
-                    )
-                    RowNoteBubble(
-                        note: fullText,
-                        growsUpward: growsUpward,
-                        bubbleShiftX: bubbleShiftX,
-                        headerTitleKey: "drawer.notes.title",
-                        onCopy: { copyNote(fullText) },
-                        onHover: { hovering in
-                            isNoteBubbleHovered = hovering
-                            if !hovering && !isNoteHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    isNoteHovered = false
-                                }
-                            }
-                        }
-                    )
-                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                        removal: .opacity
-                    ))
-                }
-            }
-    }
-
-    private func updateBubblePlacement(_ proxy: GeometryProxy) {
-        let frame = proxy.frame(in: .global)
-        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), wideHost: false)
-        growsUpward = placement.growsUpward
-        bubbleShiftX = placement.bubbleShiftX
     }
 
     // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多菜单，纯透明度渐变，零抖动)
@@ -348,11 +242,8 @@ struct DiarySummaryRow: View {
     @ViewBuilder
     private var diaryMenuItems: some View {
         // 分区 1: 核心动作与流转
-        Button("diary.window.open", action: openWindow)
-        Button("diary.quick.convert_task", action: convertToTask)
-        Button(hasCopied ? "diary.copied" : (isSensitive ? "diary.copy.password" : "diary.copy"), action: copy)
-
-        Divider()
+        Button("diary.quick.copy", action: copy)
+        Button("diary.quick.open", action: openWindow)
 
         // 分区 2: 组织与分类（标签、排程日期、置顶）
         if !allTags.isEmpty {
@@ -384,10 +275,10 @@ struct DiarySummaryRow: View {
         Button("alert.trash.move", role: .destructive, action: onDelete)
     }
 
-    // MARK: - 第 2 行：次视觉行 (原位平滑互换：平时元数据 vs ⌘ 平铺条，恒定 24pt)
+    // MARK: - 第 2 行：微信息区 (状态 / 时间 / 标签)
 
     private var footerRow: some View {
-        ZStack(alignment: .leading) {
+        Group {
             if isHovered && isCommandPressed {
                 DiaryRowCommandStrip(
                     isSensitive: isSensitive,
@@ -422,21 +313,6 @@ struct DiarySummaryRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 24, alignment: .leading)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered && isCommandPressed)
-    }
-
-    private func pointerRegion(isTitle: Bool) -> some View {
-        BoardRowPointerRegion(
-            id: entry.id,
-            onSelect: { _, _ in
-                chrome.revealRow(reduceMotion: reduceMotion)
-                onSelect?()
-            },
-            onDoubleClick: openWindow,
-            onHover: { hovering in
-                guard isTitle else { return }
-                chrome.handleTitleHover(hovering, reduceMotion: reduceMotion)
-            }
-        )
     }
 
     private var metadataLine: some View {
@@ -490,7 +366,7 @@ struct DiarySummaryRow: View {
         return format.string(from: entry.createdAt)
     }
 
-    private func openWindow() { DiaryWindows.shared.open(entry: entry, context: context) }
+    func openWindow() { DiaryWindows.shared.open(entry: entry, context: context) }
 
     private func copy() {
         PrivacyAccess.withDiary(entry) { current in
@@ -500,14 +376,14 @@ struct DiarySummaryRow: View {
         }
     }
 
-    private func copyTitle(_ title: String) {
+    func copyTitle(_ title: String) {
         PrivacyAccess.withDiary(entry) { current in
             guard PrivateClipboard.copy(title, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
             hasCopied = true
         }
     }
 
-    private func copyNote(_ note: String) {
+    func copyNote(_ note: String) {
         PrivacyAccess.withDiary(entry) { current in
             guard PrivateClipboard.copy(note, sensitive: current.hasProtectedContent || isSensitive) else { throw PrivacyError.storageFailure }
             hasCopied = true
@@ -557,5 +433,38 @@ struct DiarySummaryRow: View {
             pickingDay = false
         }
     }
+}
 
+// MARK: - 生命周期与事件监听辅助修饰符
+
+private struct DiaryRowTaskLifecycleModifier: ViewModifier {
+    var chrome: BoardRowChrome
+    var reduceMotion: Bool
+    @Binding var hasCopied: Bool
+    @Binding var hasNoteCopied: Bool
+    @Binding var hasConvertedToTask: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .task(id: hasCopied) {
+                guard hasCopied else { return }
+                try? await Task.sleep(for: .milliseconds(1200))
+                if !Task.isCancelled { hasCopied = false }
+            }
+            .task(id: hasNoteCopied) {
+                guard hasNoteCopied else { return }
+                try? await Task.sleep(for: .milliseconds(1200))
+                if !Task.isCancelled { hasNoteCopied = false }
+            }
+            .task(id: hasConvertedToTask) {
+                guard hasConvertedToTask else { return }
+                try? await Task.sleep(for: .milliseconds(1500))
+                if !Task.isCancelled { hasConvertedToTask = false }
+            }
+            .onAppear { chrome.startCommandMonitor(reduceMotion: reduceMotion) }
+            .onDisappear { chrome.stop() }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { _ in
+                chrome.resignCommand()
+            }
+    }
 }
