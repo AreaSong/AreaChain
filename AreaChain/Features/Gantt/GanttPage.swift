@@ -163,12 +163,12 @@ struct GanttPage: View {
 
     private func dayCell(_ key: String, rowID: UUID, filled: Bool, selected: Bool) -> some View {
         let target = GanttDropTarget(rowID: rowID, dayKey: key)
-        return RoundedRectangle(cornerRadius: 3, style: .continuous)
+        return RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: 甘特色块是数据标记，不是卡片
             .fill(filled ? DaybookTheme.stamp.opacity(0.85) : Color.clear)
             .frame(width: dayWidth - 2, height: 14)
             .frame(width: dayWidth, height: 22)
             .overlay {
-                RoundedRectangle(cornerRadius: 4)
+                RoundedRectangle(cornerRadius: 4) // token-exempt: 甘特色块是数据标记，不是卡片
                     .stroke((filled && selected) || dropTarget == target ? DaybookTheme.stamp : Color.clear, lineWidth: 1.5)
             }
             .contentShape(Rectangle())

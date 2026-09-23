@@ -221,14 +221,7 @@ struct DrawerSectionGroup<Content: View>: View {
             }
             .padding(12)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .fill(DaybookTheme.cardSurface.opacity(0.65))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                    .strokeBorder(DaybookTheme.cardBorder, lineWidth: 0.8)
-            )
+            .daybookSurface(.card)
         }
     }
 }

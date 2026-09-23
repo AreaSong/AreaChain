@@ -41,7 +41,7 @@ struct SyntaxExpandableCard: View {
         .background(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.12), radius: 12, x: 0, y: 5)
+                .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
@@ -283,16 +283,9 @@ struct SyntaxExpandableCard: View {
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(DaybookTheme.ink.opacity(0.035))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(DaybookTheme.rule.opacity(0.35), lineWidth: 0.6)
-            )
+            .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) // control: 语法范例卡片，P4 迁 daybookSurface(.card)
+        .buttonStyle(.plain) // control: 语法范例卡片
     }
 }

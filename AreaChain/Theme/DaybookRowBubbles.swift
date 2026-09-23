@@ -83,7 +83,7 @@ public struct RowTitleBubble: View {
         .background(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
+                .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -191,7 +191,7 @@ public struct RowNoteBubble: View {
             .background(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                     .fill(DaybookTheme.paper)
-                    .shadow(color: Color.black.opacity(0.24), radius: 10, x: 0, y: 5)
+                    .daybookElevation(.floating)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 7, style: .continuous)

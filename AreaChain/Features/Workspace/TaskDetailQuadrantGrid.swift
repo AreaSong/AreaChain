@@ -60,6 +60,6 @@ struct TaskDetailQuadrantGrid: View {
                     )
             )
         }
-        .buttonStyle(.plain) // control: 象限选择格，P4 迁 daybookSurface(.cell)
+        .buttonStyle(.plain) // control: 象限选择格保留象限色，不进通用表面
     }
 }

@@ -159,7 +159,7 @@ private struct QuadrantChip: View {
             .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) // control: 象限任务卡整行点击，P4 迁 daybookSurface(.card)
+        .buttonStyle(.plain) // control: 象限任务卡整行点击
         .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
     }

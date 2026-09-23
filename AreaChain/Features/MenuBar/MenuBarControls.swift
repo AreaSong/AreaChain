@@ -47,7 +47,7 @@ struct DaybookQuietTabBar: View {
                         if isSelected {
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
                                 .fill(DaybookTheme.paper)
-                                .shadow(color: Color.black.opacity(0.08), radius: 1.5, x: 0, y: 0.5)
+                                .daybookElevation(.raised)
                                 .matchedGeometryEffect(id: "SliderBackground", in: sliderAnimation)
                         }
                     }

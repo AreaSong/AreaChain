@@ -198,6 +198,6 @@ struct BatchActionBar: View {
                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                     .stroke(DaybookTheme.stamp.opacity(0.35), lineWidth: 1)
             )
-            .shadow(color: Color.black.opacity(0.18), radius: 10, x: 0, y: 4)
+            .daybookElevation(.floating)
     }
 }

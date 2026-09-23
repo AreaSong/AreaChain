@@ -120,17 +120,10 @@ struct WorkspaceGlobalSearchView: View {
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 9)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.regular)
-                    .fill(DaybookPalette.fill.surface)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.regular)
-                    .strokeBorder(DaybookPalette.border.default, lineWidth: 0.8)
-            )
+            .daybookSurface(.row, configure: { $0.radius = DaybookRadius.regular })
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) // control: 附件结果整行点击区，P4 迁 daybookSurface(.row)
+        .buttonStyle(.plain) // control: 附件结果整行点击区
         .help(attachment.filename)
     }
 

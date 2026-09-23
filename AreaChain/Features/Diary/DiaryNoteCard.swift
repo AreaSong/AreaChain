@@ -111,19 +111,13 @@ struct DiaryNoteCard: View {
             tagRow
         }
         .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(isHovered ? DaybookTheme.cardSurfaceHover : DaybookTheme.cardSurface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(
-                    isHighlighted
-                        ? DaybookTheme.stamp
-                        : (entry.isPinned ? DaybookTheme.stamp.opacity(0.35) : (isHovered ? DaybookTheme.cardBorderHover : DaybookTheme.cardBorder)),
-                    lineWidth: isHighlighted || entry.isPinned ? 1.2 : 0.8
-                )
-        )
+        .daybookSurface(.card, isHovered: isHovered, isSelected: isHighlighted)
+        .overlay {
+            if entry.isPinned && !isHighlighted {
+                RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                    .strokeBorder(DaybookTheme.stamp.opacity(0.35), lineWidth: 1.2) // token-exempt: 置顶手记的第三态描边，表面选中态留给高亮
+            }
+        }
         .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
         .onAppear { chrome.startCommandMonitor(reduceMotion: reduceMotion) }
         .onDisappear { chrome.stop() }

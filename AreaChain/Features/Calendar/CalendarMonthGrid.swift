@@ -91,11 +91,11 @@ struct CalendarMonthGrid: View {
             .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
             .frame(maxWidth: .infinity, minHeight: cellHeight)
             .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
                     .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
                     .stroke(today ? DaybookTheme.stamp : (selected ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3)), lineWidth: today ? 1.4 : 0.8)
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
@@ -104,7 +104,7 @@ struct CalendarMonthGrid: View {
         .frame(maxWidth: .infinity, minHeight: cellHeight)
         .contentShape(Rectangle())
         .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
                 .stroke(dropKey == key ? DaybookTheme.stamp : Color.clear, lineWidth: 2)
         )
         .dropDestination(for: String.self) { items, _ in

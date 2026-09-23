@@ -172,7 +172,7 @@ struct MenuBarFilterFlyout: View {
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 2)
+                .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
@@ -223,7 +223,7 @@ struct MenuBarFilterFlyout: View {
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(DaybookTheme.paper)
-                .shadow(color: Color.black.opacity(0.14), radius: 8, x: 0, y: 2)
+                .daybookElevation(.floating)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 8, style: .continuous)

@@ -121,7 +121,7 @@ struct CaptureAttributesPopup: View {
         .foregroundStyle(DaybookTheme.ink)
         .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookTheme.paper))
         .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookTheme.rule.opacity(0.7), lineWidth: 0.7))
-        .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
+        .daybookElevation(.floating)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("syntax.overlay.attributes")
     }

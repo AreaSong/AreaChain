@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// 阴影三档。用户决定：浮层面板统一黑 14% / 模糊 8 / 下偏 2；卡片与行不带阴影；分段栏滑块用 raised。
-/// 页面不得直接调用 .shadow(color:)。
+/// 页面用 daybookElevation，不要再写手写阴影。
 struct DaybookElevation: Equatable {
     let color: Color
     let radius: CGFloat

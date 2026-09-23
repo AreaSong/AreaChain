@@ -200,7 +200,7 @@ struct SyntaxAutocompletePopup: View {
                     if !isStandalonePreview {
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
                             .fill(DaybookTheme.paper)
-                            .shadow(color: DaybookTheme.ink.opacity(0.12), radius: 8, x: 0, y: 4)
+                            .daybookElevation(.floating)
                     }
                 }
             )

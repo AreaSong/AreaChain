@@ -85,7 +85,7 @@ struct LiveDiaryComposerPreview: View {
                 if !showsSuggestions {
                     RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                         .fill(DaybookTheme.paper)
-                        .shadow(color: DaybookTheme.ink.opacity(0.10), radius: 6, x: 0, y: 3)
+                        .daybookElevation(.floating)
                 }
             }
         )

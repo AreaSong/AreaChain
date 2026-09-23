@@ -56,7 +56,7 @@ struct BoardSearchHitRow: View {
             Button(action: action) {
                 workspaceLabel.contentShape(Rectangle())
             }
-            .buttonStyle(.plain) // control: 搜索结果整行点击区，P4 迁 daybookSurface(.row)
+            .buttonStyle(.plain) // control: 搜索结果整行点击区
             .help(hit.title)
         }
     }
@@ -86,14 +86,7 @@ struct BoardSearchHitRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular)
-                .fill(isSelected ? DaybookPalette.fill.selection : DaybookPalette.fill.surface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular)
-                .strokeBorder(isSelected ? DaybookTheme.stamp.opacity(0.4) : DaybookPalette.border.default, lineWidth: 0.8)
-        )
+        .daybookSurface(.row, isSelected: isSelected, configure: { $0.radius = DaybookRadius.regular })
     }
 
     private var kindText: some View {
