@@ -217,8 +217,9 @@ flowchart TB
 做：新建 `DaybookChip`（选中：色 14% 底 + 35% 描边；未选中：空底 + 细边；悬停淡灰底）。`PillBadge` 的 `color` 改名为 `tint` 后删除。注释里写了「P5 迁 DaybookChip」的胶囊改为这个芯片。星期圆点不是胶囊，只改注释，不改成芯片。预览条、属性按钮 58×22、语法色胶囊留给后面的清扫，本阶段不碰。
 完成标准：`PillBadge` 与「P5 迁 DaybookChip」为零；`DaybookChip` 已接上日期、提醒、标签、筛选、计数和 token；定向测试通过。
 
-### P5b 分节头、分隔线、分段栏、确认框、监听器
-做：`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`、`confirmDestructive`、`ModifierKeyObserver`。提示词在 P5a 验收通过后生成。
+### P5b 分节头、分隔线、分段栏
+提示词：`design-system-P5b-execute.md` / `design-system-P5b-verify.md`。
+做：`SectionStamp` 原样改名为 `DaybookSectionHeader`（图标、标题、计数、字距不变）。已经改过颜色的布局分隔线换成 `DaybookDivider(opacity:)`。菜单里的 `Divider()`、列表行之间的分隔线不要换。`DaybookQuietTabBar` 挪到 Theme 并改名为 `DaybookSegmentedBar`，仍只服务「任务 / 手记」，不改成通用控件。确认框和按键监听不在本阶段：对话框文案各不相同，监听器绑在各自的视图生命周期上，收成一个会改行为。
 
 ### P6 颜色、字号、圆角、动效清扫（按模块：MenuBar → Tasks → Diary → Workspace → 其余页面 → Theme）
 做：`DaybookTheme.x` / `DaybookTheme.x.opacity(字面)` → `DaybookPalette.*`；系统色 → `palette.status.* / text.onAccent / fill.scrim`；`.font(.system(size:` → `DaybookType.*`；字面圆角 → `DaybookRadius.*` 或 `metrics.radius.*`；字面动画 → `DaybookMotion.*`。双语补齐：`Domain/SyntaxAutocomplete.swift` 候选副标题（「标签」「重要且紧急…」「早上…」）改为返回本地化 key，由 `SyntaxAutocompletePopup` 用 `LocalizedStringKey` 显示；`SyntaxAutocompletePopup.footerGuide`「切换 / 补全 / 关闭」改 key；`Localizable.xcstrings` 同时补 en / zh-Hans。Theme 模块完成后删除 `DaybookTheme` enum（`DaybookTheme.swift` 文件删除）。
