@@ -34,40 +34,18 @@ struct CaptureAttributesButton: View {
 
     var body: some View {
         let attributes = CaptureAttributes(text: text, knownTags: knownTags)
-        let displayCount = attributes.count > 99 ? "99+" : String(attributes.count)
         Button {
             if state.showsAttributes { state.dismiss() }
             else { state.showAttributes() }
         } label: {
-            Group {
-                if attributes.count > 0 {
-                    HStack(spacing: 3) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(DaybookType.micro)
-                        Text(displayCount)
-                            .font(DaybookType.caption.weight(.semibold))
-                            .monospacedDigit()
-                    }
-                    .padding(.horizontal, 6)
-                    .frame(height: 20)
-                    .foregroundStyle(DaybookPalette.accent.base)
-                    .background(
-                        Capsule()
-                            .fill(DaybookPalette.accent.base.opacity(state.showsAttributes ? 0.20 : 0.12)) // token-exempt: 20% 与 12% 写在同一个三元表达式里
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(DaybookPalette.accent.border, lineWidth: 0.8)
-                    )
-                } else {
-                    Image(systemName: "slider.horizontal.3")
-                        .font(DaybookType.badge)
-                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.40)) // token-exempt: 40% 次要色没有对应令牌
-                }
+            if attributes.count > 0 {
+                activeBadge(count: attributes.count)
+            } else {
+                inactiveIcon
             }
-            .frame(width: 58, height: 22)
-            .contentShape(Rectangle())
         }
+        .frame(width: 58, height: 22)
+        .contentShape(Rectangle())
         .buttonStyle(.plain) // control: 复合属性状态按钮与定位锚点
         .background(SyntaxViewAnchor("syntax.attributes.button"))
         .disabled(attributes.count == 0)
@@ -79,6 +57,35 @@ struct CaptureAttributesButton: View {
         .onChange(of: text) { _, _ in
             if state.showsAttributes { state.dismiss() }
         }
+    }
+
+    private func activeBadge(count: Int) -> some View {
+        let displayCount = count > 99 ? "99+" : String(count)
+        return HStack(spacing: 3) {
+            Image(systemName: "slider.horizontal.3")
+                .font(DaybookType.micro)
+            Text(displayCount)
+                .font(DaybookType.caption.weight(.semibold))
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 6)
+        .frame(height: 20)
+        .foregroundStyle(DaybookPalette.accent.base)
+        .background(
+            Capsule()
+                .fill(DaybookPalette.accent.base.opacity(state.showsAttributes ? 0.20 : 0.12)) // token-exempt: 20% 与 12% 写在同一个三元表达式里
+        )
+        .overlay(
+            Capsule()
+                .stroke(DaybookPalette.accent.border, lineWidth: 0.8)
+        )
+    }
+
+    private var inactiveIcon: some View {
+        Image(systemName: "slider.horizontal.3")
+            .font(DaybookType.badge)
+            .foregroundStyle(DaybookPalette.text.secondary.opacity(0.40)) // token-exempt: 40% 次要色没有对应令牌
+            .frame(width: 22, height: 22)
     }
 }
 

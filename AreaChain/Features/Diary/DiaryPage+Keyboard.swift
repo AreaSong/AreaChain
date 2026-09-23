@@ -17,52 +17,53 @@ extension DiaryPage {
         guard !showsPageHeader else { return event }
         guard event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
         let firstResponder = NSApp.keyWindow?.firstResponder
-        let isEditing = (firstResponder as? NSTextView)?.isEditable == true
-        if isEditing { return event }
-        if firstResponder is NSControl { return event }
+        if (firstResponder as? NSTextView)?.isEditable == true || firstResponder is NSControl {
+            return event
+        }
 
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-
-        // 126: Up Arrow
-        if event.keyCode == 126 && modifiers.isEmpty {
-            navigateSelection(delta: -1)
-            return nil
-        }
-        // 125: Down Arrow
-        if event.keyCode == 125 && modifiers.isEmpty {
-            navigateSelection(delta: 1)
-            return nil
-        }
-        // 36: Return or ⌘O: 打开选中手记
-        if (event.keyCode == 36 && modifiers.isEmpty) || (modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "o") {
-            if let selectedEntryID, let entry = filteredEntries.first(where: { $0.id == selectedEntryID }) {
-                DiaryWindows.shared.open(entry: entry, context: modelContext)
-                return nil
-            }
-        }
-        // 51: Delete (⌫) or ⌘⌫: 删除
-        if (event.keyCode == 51 && modifiers.isEmpty) || (modifiers == .command && event.keyCode == 51) {
-            if let selectedEntryID, let entry = filteredEntries.first(where: { $0.id == selectedEntryID }) {
-                requestTrash(entry)
-                return nil
-            }
-        }
-        // 53: Escape: 清空选中
-        if event.keyCode == 53 && modifiers.isEmpty {
-            if selectedEntryID != nil {
-                selectedEntryID = nil
-                return nil
-            }
-        }
-        // ⌘C: 复制选中手记正文
-        if modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "c" {
-            if let selectedEntryID, let entry = filteredEntries.first(where: { $0.id == selectedEntryID }) {
-                copyEntry(entry)
-                return nil
-            }
-        }
+        if handleNavigationKey(event, modifiers: modifiers) { return nil }
+        if handleActionKey(event, modifiers: modifiers) { return nil }
 
         return event
+    }
+
+    private func handleNavigationKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+        guard modifiers.isEmpty else { return false }
+        if event.keyCode == 126 {
+            navigateSelection(delta: -1)
+            return true
+        }
+        if event.keyCode == 125 {
+            navigateSelection(delta: 1)
+            return true
+        }
+        if event.keyCode == 53, selectedEntryID != nil {
+            selectedEntryID = nil
+            return true
+        }
+        return false
+    }
+
+    private func handleActionKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+        guard let selectedEntryID, let entry = filteredEntries.first(where: { $0.id == selectedEntryID }) else {
+            return false
+        }
+        let isOpen = (event.keyCode == 36 && modifiers.isEmpty) || (modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "o")
+        if isOpen {
+            DiaryWindows.shared.open(entry: entry, context: modelContext)
+            return true
+        }
+        let isDelete = (event.keyCode == 51 && modifiers.isEmpty) || (modifiers == .command && event.keyCode == 51)
+        if isDelete {
+            requestTrash(entry)
+            return true
+        }
+        if modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "c" {
+            copyEntry(entry)
+            return true
+        }
+        return false
     }
 
     private func navigateSelection(delta: Int) {

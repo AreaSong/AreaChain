@@ -133,9 +133,7 @@ struct MenuBarFilterFlyout: View {
                         Spacer(minLength: 2)
 
                         if hasActive {
-                            Circle() // token-exempt: 筛选状态圆点
-                                .fill(DaybookPalette.accent.base)
-                                .frame(width: 4, height: 4)
+                            DaybookStatusDot(color: DaybookPalette.accent.base, size: 4)
                         }
 
                         Image(systemName: "chevron.right")
@@ -310,9 +308,7 @@ struct MenuBarFilterFlyout: View {
                 }
 
                 if let dotColor {
-                    Circle() // token-exempt: 筛选状态圆点
-                        .fill(dotColor)
-                        .frame(width: 5, height: 5)
+                    DaybookStatusDot(color: dotColor, size: 5)
                 } else if let icon {
                     Image(systemName: icon)
                         .font(.system(size: 8.5, weight: .medium)) // token-exempt: 小于 9pt 的筛选图标

@@ -77,13 +77,7 @@ extension TasksPage {
                 Text("stamp.yesterday")
                     .font(DaybookType.caption.weight(.semibold))
                     .foregroundStyle(DaybookPalette.text.primary)
-                Text("\(yesterdayItems.count)")
-                    .font(DaybookType.badge.weight(.bold).monospacedDigit())
-                    .foregroundStyle(DaybookPalette.accent.base)
-                    .padding(.horizontal, 4.5)
-                    .padding(.vertical, 0.5)
-                    .background(DaybookPalette.accent.base.opacity(0.14)) // token-exempt: 14% 印章底没有对应令牌
-                    .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
+                DaybookCount(count: yesterdayItems.count, emphasis: true)
             }
             Spacer()
             if yesterdayItems.contains(where: { $0.kind == .todo }) {

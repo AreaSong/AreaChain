@@ -43,6 +43,7 @@ enum DaybookType {
     static let section: Font = .system(size: 11, weight: .semibold)
     static let kbd: Font = .system(size: 8.5, weight: .semibold, design: .monospaced)
     static let micro: Font = .system(size: 9, weight: .medium)
+    static let counter: Font = .system(size: 10, weight: .bold, design: .rounded)
     static let bodyLarge: Font = .system(size: 14)
     static let display: Font = .system(size: 26, weight: .light)
 }

@@ -11,21 +11,20 @@ struct LiveDiaryComposerPreview: View {
     var availableTags: [String] = []
     var isSensitiveExternal: Bool = false
     var showsSuggestions: Bool = false
+    var onCopy: ((String, Bool) -> Bool)? = nil
     var onClose: (() -> Void)? = nil
 
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    @State private var chrome = BoardRowChrome()
+    @State private var isRowHovered = false
+    @State private var isTitleTextHovered = false
+    @State private var isTitleBubbleHovered = false
+    @State private var isNoteHovered = false
+    @State private var isNoteBubbleHovered = false
     @State private var hasCopied = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
-
-    private var isHovered: Bool { chrome.isRowHovered }
-    private var isTitleTextHovered: Bool { chrome.isTitleTextHovered }
-    private var isTitleBubbleHovered: Bool { chrome.isTitleBubbleHovered }
-    private var isNoteHovered: Bool { chrome.isNoteHovered }
-    private var isNoteBubbleHovered: Bool { chrome.isNoteBubbleHovered }
 
     private var parsed: ParsedDiaryCapture {
         NaturalLanguageParser.parseDiaryCapture(text)
@@ -79,7 +78,7 @@ struct LiveDiaryComposerPreview: View {
         .padding(.vertical, 4)
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
-        .daybookSurface(.row, isHovered: isHovered, isSelected: false)
+        .daybookSurface(.row, isHovered: isRowHovered, isSelected: false)
         .background(
             Group {
                 if !showsSuggestions {
@@ -98,8 +97,15 @@ struct LiveDiaryComposerPreview: View {
             }
         )
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
-        .onDisappear { chrome.stop() }
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                isRowHovered = hovering
+                if !hovering {
+                    isTitleTextHovered = false
+                    isNoteHovered = false
+                }
+            }
+        }
         .background(
             GeometryReader { proxy in
                 Color.clear
@@ -143,28 +149,13 @@ struct LiveDiaryComposerPreview: View {
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
                 .contentShape(Rectangle())
-                .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
-                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                    if shouldShowTitleBubble {
-                        RowTitleBubble(
-                            title: displayTitle,
-                            growsUpward: growsUpward,
-                            onCopy: copyTitle,
-                            onHover: { hovering in
-                                chrome.isTitleBubbleHovered = hovering
-                                if !hovering && !chrome.isTitleTextHovered {
-                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                        chrome.isTitleTextHovered = false
-                                    }
-                                }
-                            }
-                        )
-                        .offset(y: growsUpward ? -6 : 22)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
-                            removal: .opacity
-                        ))
+                .onHover { hovering in
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        isTitleTextHovered = hovering
                     }
+                }
+                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                    titleBubbleOverlay
                 }
 
             if !noteText.isEmpty {
@@ -175,6 +166,30 @@ struct LiveDiaryComposerPreview: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @ViewBuilder
+    private var titleBubbleOverlay: some View {
+        if shouldShowTitleBubble {
+            RowTitleBubble(
+                title: displayTitle,
+                growsUpward: growsUpward,
+                onCopy: copyTitle,
+                onHover: { hovering in
+                    isTitleBubbleHovered = hovering
+                    if !hovering && !isTitleTextHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = false
+                        }
+                    }
+                }
+            )
+            .offset(y: growsUpward ? -6 : 22)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                removal: .opacity
+            ))
+        }
+    }
+
     // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多/关闭菜单，纯透明度渐变，零抖动)
 
     private var actionCluster: some View {
@@ -183,8 +198,8 @@ struct LiveDiaryComposerPreview: View {
             moreMenu
         }
         .frame(width: 48, height: 22)
-        .opacity(isHovered ? 1.0 : 0.0)
-        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+        .opacity(isRowHovered ? 1.0 : 0.0)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isRowHovered)
     }
 
     private var copyButton: some View {
@@ -219,12 +234,25 @@ struct LiveDiaryComposerPreview: View {
         .fixedSize()
     }
 
-    private func copyTitle() {
-        guard !displayTitle.isEmpty else { return }
-        guard PrivateClipboard.copy(displayTitle, sensitive: isSensitive) else { return }
+    private func performCopy(_ text: String) {
+        guard !text.isEmpty else { return }
+        let success: Bool
+        if let onCopy {
+            success = onCopy(text, isSensitive)
+        } else {
+            let pasteboard = NSPasteboard.general
+            pasteboard.clearContents()
+            pasteboard.setString(text, forType: .string)
+            success = true
+        }
+        guard success else { return }
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             hasCopied = true
         }
+    }
+
+    private func copyTitle() {
+        performCopy(displayTitle)
     }
 
     // MARK: - 第 2 行：时间戳 + 真实彩色标签群（100% 镜像 DiarySummaryRow）
@@ -264,7 +292,21 @@ struct LiveDiaryComposerPreview: View {
     }
 
     private func tagPill(_ name: String) -> some View {
-        DiaryTagPill(name: name)
+        let color = DaybookPalette.diaryPreset(forTagName: name)
+        return Text("#" + name)
+            .font(DaybookType.micro.weight(.medium))
+            .lineLimit(1)
+            .padding(.horizontal, 4.5)
+            .padding(.vertical, 1.5)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .fill(color.opacity(0.12)) // token-exempt: 标签色 12% 底不是印章色
+            )
+            .foregroundStyle(color)
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                    .stroke(color.opacity(0.35), lineWidth: 0.6) // token-exempt: 标签色 35% 描边不是印章色
+            )
     }
 
     // MARK: - 备注指示器与悬浮正文气泡
@@ -280,43 +322,49 @@ struct LiveDiaryComposerPreview: View {
                     .fill(isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 墨色没有对应令牌
             )
             .contentShape(Rectangle())
-            .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
-            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if isNoteHovered || isNoteBubbleHovered {
-                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-                    let transformAnchor = UnitPoint(
-                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: growsUpward ? 1.0 : 0.0
-                    )
-                    RowNoteBubble(
-                        note: fullText,
-                        growsUpward: growsUpward,
-                        bubbleShiftX: bubbleShiftX,
-                        headerTitleKey: "drawer.notes.title",
-                        onCopy: { copyNote(fullText) },
-                        onHover: { hovering in
-                            chrome.isNoteBubbleHovered = hovering
-                            if !hovering && !chrome.isNoteHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    chrome.isNoteHovered = false
-                                }
-                            }
-                        }
-                    )
-                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                        removal: .opacity
-                    ))
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isNoteHovered = hovering
                 }
+            }
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                noteBubbleOverlay(fullText: fullText)
             }
     }
 
-    private func copyNote(_ note: String) {
-        guard PrivateClipboard.copy(note, sensitive: isSensitive) else { return }
-        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-            hasCopied = true
+    @ViewBuilder
+    private func noteBubbleOverlay(fullText: String) -> some View {
+        if isNoteHovered || isNoteBubbleHovered {
+            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+            let transformAnchor = UnitPoint(
+                x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                y: growsUpward ? 1.0 : 0.0
+            )
+            RowNoteBubble(
+                note: fullText,
+                growsUpward: growsUpward,
+                bubbleShiftX: bubbleShiftX,
+                headerTitleKey: "drawer.notes.title",
+                onCopy: { copyNote(fullText) },
+                onHover: { hovering in
+                    isNoteBubbleHovered = hovering
+                    if !hovering && !isNoteHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = false
+                        }
+                    }
+                }
+            )
+            .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                removal: .opacity
+            ))
         }
+    }
+
+    private func copyNote(_ note: String) {
+        performCopy(note)
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {

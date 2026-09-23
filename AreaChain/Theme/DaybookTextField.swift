@@ -318,8 +318,20 @@ struct DaybookTextField: NSViewRepresentable {
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             guard !textView.hasMarkedText() else { return false }
-            if commandSelector == #selector(NSResponder.cancelOperation(_:)),
-               let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
+            if let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
+                if handleAutocompleteCommand(commandSelector, textView: textView, autocomplete: autocomplete) {
+                    return true
+                }
+            }
+            if handleShiftNewline(commandSelector, textView: textView) { return true }
+            if handleCommandReturn(commandSelector, textView: textView) { return true }
+            if handleReturnSubmit(commandSelector, textView: textView) { return true }
+            if handleEscapeAndDismiss(commandSelector, textView: textView) { return true }
+            return false
+        }
+
+        private func handleAutocompleteCommand(_ selector: Selector, textView: NSTextView, autocomplete: SyntaxAutocompleteState) -> Bool {
+            if selector == #selector(NSResponder.cancelOperation(_:)) {
                 if autocomplete.showsAttributes {
                     autocomplete.dismiss()
                     return true
@@ -335,62 +347,62 @@ struct DaybookTextField: NSViewRepresentable {
                 autocomplete.dismiss()
                 return true
             }
-            if let autocomplete = parent.autocomplete, autocomplete.isActive {
-                if commandSelector == #selector(NSResponder.moveUp(_:)) {
-                    autocomplete.selectPrevious()
-                    return true
-                }
-                if commandSelector == #selector(NSResponder.moveDown(_:)) {
-                    autocomplete.selectNext()
-                    return true
-                }
-                if commandSelector == #selector(NSResponder.insertTab(_:)) ||
-                   commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                    if let candidate = autocomplete.selectedCandidate(), autocomplete.commit(candidate, in: textView) {
-                        parent.text = textView.string
-                        parent.onCommitAutocomplete?(candidate)
-                        return true
-                    }
-                }
-                if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
-                    autocomplete.dismiss()
-                    return true
-                }
-            }
-
-            if commandSelector == #selector(NSResponder.insertLineBreak(_:)) ||
-               (commandSelector == #selector(NSResponder.insertNewline(_:)) && NSApp.currentEvent?.modifierFlags.contains(.shift) == true) {
-                if parent.allowsShiftNewline {
-                    textView.insertNewlineIgnoringFieldEditor(nil)
-                }
+            guard autocomplete.isActive else { return false }
+            if selector == #selector(NSResponder.moveUp(_:)) {
+                autocomplete.selectPrevious()
                 return true
             }
-            if commandSelector == Selector(("noop:")) {
-                let flags = (NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags).intersection(.deviceIndependentFlagsMask)
-                if flags == .command, let extra = parent.onCommandReturn {
-                    var value = textView.string
-                    if !parent.allowsShiftNewline, value.contains("\n") {
-                        value = DaybookTextField.sanitizeSingleLineText(value)
-                    }
-                    parent.text = value
-                    parent.autocomplete?.dismiss()
-                    extra()
-                    return true
-                }
+            if selector == #selector(NSResponder.moveDown(_:)) {
+                autocomplete.selectNext()
+                return true
             }
-            if commandSelector == #selector(NSResponder.insertNewline(_:)) {
-                if textView.hasMarkedText() {
+            if selector == #selector(NSResponder.insertTab(_:)) || selector == #selector(NSResponder.insertNewline(_:)) {
+                guard let candidate = autocomplete.selectedCandidate(), autocomplete.commit(candidate, in: textView) else {
                     return false
                 }
-                var value = textView.string
-                if !parent.allowsShiftNewline, value.contains("\n") {
-                    value = DaybookTextField.sanitizeSingleLineText(value)
-                }
-                parent.text = value
-                submitted()
+                parent.text = textView.string
+                parent.onCommitAutocomplete?(candidate)
                 return true
             }
-            if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            return false
+        }
+
+        private func handleShiftNewline(_ selector: Selector, textView: NSTextView) -> Bool {
+            let isShiftNewline = selector == #selector(NSResponder.insertNewline(_:)) && NSApp.currentEvent?.modifierFlags.contains(.shift) == true
+            guard selector == #selector(NSResponder.insertLineBreak(_:)) || isShiftNewline else { return false }
+            if parent.allowsShiftNewline {
+                textView.insertNewlineIgnoringFieldEditor(nil)
+            }
+            return true
+        }
+
+        private func handleCommandReturn(_ selector: Selector, textView: NSTextView) -> Bool {
+            guard selector == Selector(("noop:")) else { return false }
+            let flags = (NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags).intersection(.deviceIndependentFlagsMask)
+            guard flags == .command, let extra = parent.onCommandReturn else { return false }
+            var value = textView.string
+            if !parent.allowsShiftNewline, value.contains("\n") {
+                value = DaybookTextField.sanitizeSingleLineText(value)
+            }
+            parent.text = value
+            parent.autocomplete?.dismiss()
+            extra()
+            return true
+        }
+
+        private func handleReturnSubmit(_ selector: Selector, textView: NSTextView) -> Bool {
+            guard selector == #selector(NSResponder.insertNewline(_:)), !textView.hasMarkedText() else { return false }
+            var value = textView.string
+            if !parent.allowsShiftNewline, value.contains("\n") {
+                value = DaybookTextField.sanitizeSingleLineText(value)
+            }
+            parent.text = value
+            submitted()
+            return true
+        }
+
+        private func handleEscapeAndDismiss(_ selector: Selector, textView: NSTextView) -> Bool {
+            if selector == #selector(NSResponder.cancelOperation(_:)) {
                 if let onEscape = parent.onEscape {
                     onEscape()
                     return true
@@ -399,7 +411,7 @@ struct DaybookTextField: NSViewRepresentable {
                 parent.focus.wrappedValue = false
                 return true
             }
-            if commandSelector == #selector(NSResponder.moveDown(_:)), textView.string.isEmpty {
+            if selector == #selector(NSResponder.moveDown(_:)), textView.string.isEmpty {
                 textView.window?.makeFirstResponder(nil)
                 parent.focus.wrappedValue = false
                 return true

@@ -149,15 +149,13 @@ struct TasksPage: View {
                 counts[pid, default: 0] += 1
             }
         }
-        if !projects.isEmpty {
-            for project in projects {
-                let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
-                if subtrees.count > 1 {
-                    let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
-                    if sum > 0 {
-                        counts[project.id] = sum
-                    }
-                }
+        guard !projects.isEmpty else { return counts }
+        for project in projects {
+            let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
+            guard subtrees.count > 1 else { continue }
+            let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
+            if sum > 0 {
+                counts[project.id] = sum
             }
         }
         return counts

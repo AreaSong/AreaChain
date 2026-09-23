@@ -46,59 +46,70 @@ extension DayBoardList {
     }
 
     private func handleNavigationKey(event: NSEvent) -> NSEvent? {
-        switch event.keyCode {
-        case 125:
-            navigateSelection(delta: 1, extending: event.modifierFlags.contains(.shift))
-            return nil
-        case 126:
-            navigateSelection(delta: -1, extending: event.modifierFlags.contains(.shift))
-            return nil
+        let keyCode = event.keyCode
+        let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
+
+        if handleArrowNavigation(keyCode: keyCode, mods: mods) { return nil }
+        if handleSelectionAction(keyCode: keyCode) { return nil }
+        if handleShortcutAction(keyCode: keyCode, mods: mods) { return nil }
+
+        return event
+    }
+
+    private func handleArrowNavigation(keyCode: UInt16, mods: NSEvent.ModifierFlags) -> Bool {
+        if keyCode == 125 {
+            navigateSelection(delta: 1, extending: mods.contains(.shift))
+            return true
+        }
+        if keyCode == 126 {
+            navigateSelection(delta: -1, extending: mods.contains(.shift))
+            return true
+        }
+        return false
+    }
+
+    private func handleSelectionAction(keyCode: UInt16) -> Bool {
+        let targetID = focusedTaskID?.wrappedValue ?? taskSelection.ids.first
+        switch keyCode {
         case 49:
-            let targetID = focusedTaskID?.wrappedValue ?? taskSelection.ids.first
-            if let targetID {
-                toggleSelected(id: targetID)
-                return nil
-            }
+            guard let targetID else { return false }
+            toggleSelected(id: targetID)
+            return true
         case 36:
-            if let id = focusedTaskID?.wrappedValue {
-                inspectSelected(id: id)
-                return nil
-            }
+            guard let id = focusedTaskID?.wrappedValue else { return false }
+            inspectSelected(id: id)
+            return true
         case 51:
-            let targetID = focusedTaskID?.wrappedValue ?? taskSelection.ids.first
-            if let targetID {
-                deleteSelected(id: targetID)
-                return nil
-            }
-        case 0:
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
-            if mods == .command {
-                selectAllVisible()
-                return nil
-            }
-        case 14:
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask).subtracting(.capsLock)
-            guard mods.isEmpty else { break }
-            if let id = focusedTaskID?.wrappedValue {
-                editingTaskID = id
-                return nil
-            }
-        case 53:
+            guard let targetID else { return false }
+            deleteSelected(id: targetID)
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func handleShortcutAction(keyCode: UInt16, mods: NSEvent.ModifierFlags) -> Bool {
+        if keyCode == 0, mods == .command {
+            selectAllVisible()
+            return true
+        }
+        if keyCode == 14, mods.isEmpty, let id = focusedTaskID?.wrappedValue {
+            editingTaskID = id
+            return true
+        }
+        if keyCode == 53 {
             if WorkspaceNavigation.shared.isInspectorPresented,
-               hostWindow === PanelWindowController.workspace.hostedWindow
-            {
+               hostWindow === PanelWindowController.workspace.hostedWindow {
                 WorkspaceNavigation.shared.isInspectorPresented = false
-                return nil
+                return true
             }
             if focusedTaskID?.wrappedValue != nil || !taskSelection.ids.isEmpty {
                 focusTask(nil)
                 onReturnToInput?()
-                return nil
+                return true
             }
-        default:
-            break
         }
-        return event
+        return false
     }
 
     func shouldHandle(_ event: NSEvent) -> Bool {
@@ -119,33 +130,36 @@ extension DayBoardList {
     func navigateSelection(delta: Int, extending: Bool = false) {
         let ids = effectiveVisibleIDs
         guard !ids.isEmpty else { return }
-        if let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) {
-            let nextIdx = idx + delta
-            if nextIdx >= 0 && nextIdx < ids.count {
-                let nextID = ids[nextIdx]
-                if extending {
-                    var selection = taskSelection
-                    if selection.anchorID == nil {
-                        selection.anchorID = current
-                    }
-                    selection.select(nextID, in: ids, modifiers: .shift)
-                    taskSelection = selection
-                    focusedTaskID?.wrappedValue = nextID
-                } else {
-                    focusTask(nextID)
-                }
-                BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
-            } else if nextIdx < 0 && !extending {
-                focusTask(nil)
-                onReturnToInput?()
-            }
-        } else {
+
+        guard let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) else {
             let nextID = delta >= 0 ? ids.first : ids.last
             focusTask(nextID)
             if let nextID {
                 BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
             }
+            return
         }
+
+        let nextIdx = idx + delta
+        guard nextIdx >= 0 && nextIdx < ids.count else {
+            if nextIdx < 0 && !extending {
+                focusTask(nil)
+                onReturnToInput?()
+            }
+            return
+        }
+
+        let nextID = ids[nextIdx]
+        if extending {
+            var selection = taskSelection
+            if selection.anchorID == nil { selection.anchorID = current }
+            selection.select(nextID, in: ids, modifiers: .shift)
+            taskSelection = selection
+            focusedTaskID?.wrappedValue = nextID
+        } else {
+            focusTask(nextID)
+        }
+        BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
     }
 
     func selectAllVisible() {

@@ -56,6 +56,35 @@ public struct RowTitleBubble: View {
     }
 
     public var body: some View {
+        bubbleContent
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5.5)
+            .frame(maxWidth: 260, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .fill(DaybookPalette.fill.page)
+                    .daybookElevation(.floating)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                    .stroke(borderStrokeColor, lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
+            )
+            .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+            .onHover(perform: handleHover)
+            .onDisappear(perform: handleDisappear)
+            .onTapGesture(perform: handleTap)
+            .task(id: isCopied) {
+                guard isCopied else { return }
+                try? await Task.sleep(for: .milliseconds(1200))
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    isCopied = false
+                }
+            }
+            .compositingGroup()
+            .zIndex(999)
+    }
+
+    private var bubbleContent: some View {
         HStack(alignment: .top, spacing: 5) {
             Image(systemName: isCopied ? "checkmark" : "text.alignleft")
                 .font(DaybookType.micro.weight(isCopied ? .bold : .medium))
@@ -77,49 +106,37 @@ public struct RowTitleBubble: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 5.5)
-        .frame(maxWidth: 260, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .stroke(isCopied ? DaybookPalette.accent.base.opacity(0.7) : (isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)), lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
-        )
-        .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .onHover { hovering in
-            isHovered = hovering
-            onHover?(hovering)
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
+    }
+
+    private var borderStrokeColor: Color {
+        if isCopied {
+            return DaybookPalette.accent.base.opacity(0.7)
         }
-        .onDisappear {
-            if isHovered {
-                NSCursor.pop()
-            }
+        return isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)
+    }
+
+    private func handleHover(_ hovering: Bool) {
+        isHovered = hovering
+        onHover?(hovering)
+        if hovering {
+            NSCursor.pointingHand.push()
+        } else {
+            NSCursor.pop()
         }
-        .onTapGesture {
-            guard onCopy != nil else { return }
-            onCopy?()
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                isCopied = true
-            }
+    }
+
+    private func handleDisappear() {
+        if isHovered {
+            NSCursor.pop()
         }
-        .task(id: isCopied) {
-            guard isCopied else { return }
-            try? await Task.sleep(for: .milliseconds(1200))
-            withAnimation(.easeInOut(duration: 0.2)) {
-                isCopied = false
-            }
+    }
+
+    private func handleTap() {
+        guard onCopy != nil else { return }
+        onCopy?()
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+            isCopied = true
         }
-        .compositingGroup()
-        .zIndex(999)
     }
 }
 
@@ -156,84 +173,21 @@ public struct RowNoteBubble: View {
         let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
         VStack(alignment: .leading, spacing: 0) {
             if !growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.up.fill")
-                        .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
-                        .foregroundStyle(DaybookPalette.fill.page)
-                        .offset(y: 1)
-                    Spacer()
-                }
-                .frame(height: 5)
+                arrowIndicator(pointingUp: true, padding: arrowPadding)
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: isCopied ? "checkmark" : "text.alignleft")
-                        .font(DaybookType.micro.weight(isCopied ? .bold : .semibold))
-                        .foregroundStyle(DaybookPalette.accent.base)
-                    Text(isCopied ? L10n.string("diary.copied", locale: locale) : L10n.string(String.LocalizationValue(stringLiteral: headerTitleKey), locale: locale))
-                        .font(DaybookType.badge.weight(.bold))
-                        .foregroundStyle(isCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-                    Spacer(minLength: 0)
-                }
-
-                Text(note)
-                    .font(DaybookType.caption.weight(.regular))
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineSpacing(2.5)
-                    .lineLimit(8)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 9)
-            .padding(.vertical, 7)
-            .frame(width: 210, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookPalette.fill.page)
-                    .daybookElevation(.floating)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(isCopied ? DaybookPalette.accent.base.opacity(0.7) : (isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)), lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
-            )
+            noteCardContent
 
             if growsUpward {
-                HStack {
-                    Spacer().frame(width: arrowPadding)
-                    Image(systemName: "arrowtriangle.down.fill")
-                        .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
-                        .foregroundStyle(DaybookPalette.fill.page)
-                        .offset(y: -1)
-                    Spacer()
-                }
-                .frame(height: 5)
+                arrowIndicator(pointingUp: false, padding: arrowPadding)
             }
         }
         .frame(width: 210, alignment: .leading)
         .fixedSize()
         .contentShape(Rectangle())
-        .onHover { hovering in
-            isHovered = hovering
-            onHover?(hovering)
-            if hovering {
-                NSCursor.pointingHand.push()
-            } else {
-                NSCursor.pop()
-            }
-        }
-        .onDisappear {
-            if isHovered {
-                NSCursor.pop()
-            }
-        }
-        .onTapGesture {
-            guard onCopy != nil else { return }
-            onCopy?()
-            withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
-                isCopied = true
-            }
-        }
+        .onHover(perform: handleHover)
+        .onDisappear(perform: handleDisappear)
+        .onTapGesture(perform: handleTap)
         .task(id: isCopied) {
             guard isCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))
@@ -243,5 +197,85 @@ public struct RowNoteBubble: View {
         }
         .compositingGroup()
         .zIndex(999)
+    }
+
+    private func arrowIndicator(pointingUp: Bool, padding: CGFloat) -> some View {
+        HStack {
+            Spacer().frame(width: padding)
+            Image(systemName: pointingUp ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
+                .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
+                .foregroundStyle(DaybookPalette.fill.page)
+                .offset(y: pointingUp ? 1 : -1)
+            Spacer()
+        }
+        .frame(height: 5)
+    }
+
+    private var noteCardContent: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            noteCardHeader
+
+            Text(note)
+                .font(DaybookType.caption.weight(.regular))
+                .foregroundStyle(DaybookPalette.text.primary)
+                .lineSpacing(2.5)
+                .lineLimit(8)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 7)
+        .frame(width: 210, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookPalette.fill.page)
+                .daybookElevation(.floating)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .stroke(borderStrokeColor, lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
+        )
+    }
+
+    private var noteCardHeader: some View {
+        HStack(spacing: 4) {
+            Image(systemName: isCopied ? "checkmark" : "text.alignleft")
+                .font(DaybookType.micro.weight(isCopied ? .bold : .semibold))
+                .foregroundStyle(DaybookPalette.accent.base)
+            Text(isCopied ? L10n.string("diary.copied", locale: locale) : L10n.string(String.LocalizationValue(stringLiteral: headerTitleKey), locale: locale))
+                .font(DaybookType.badge.weight(.bold))
+                .foregroundStyle(isCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+            Spacer(minLength: 0)
+        }
+    }
+
+    private var borderStrokeColor: Color {
+        if isCopied {
+            return DaybookPalette.accent.base.opacity(0.7)
+        }
+        return isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)
+    }
+
+    private func handleHover(_ hovering: Bool) {
+        isHovered = hovering
+        onHover?(hovering)
+        if hovering {
+            NSCursor.pointingHand.push()
+        } else {
+            NSCursor.pop()
+        }
+    }
+
+    private func handleDisappear() {
+        if isHovered {
+            NSCursor.pop()
+        }
+    }
+
+    private func handleTap() {
+        guard onCopy != nil else { return }
+        onCopy?()
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+            isCopied = true
+        }
     }
 }

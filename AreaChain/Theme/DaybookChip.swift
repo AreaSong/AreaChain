@@ -61,3 +61,31 @@ struct DaybookChip<Label: View>: View {
         return DaybookPalette.border.default.opacity(0.4)
     }
 }
+
+/// 统一状态微色点：承载筛选状态、网络/任务状态等指示（默认直径 6pt）
+struct DaybookStatusDot: View {
+    var color: Color
+    var size: CGFloat = 6
+
+    var body: some View {
+        Circle()
+            .fill(color)
+            .frame(width: size, height: size)
+    }
+}
+
+/// 统一数字胶囊计数：呈现待办数、标签关联数（等宽圆体）
+struct DaybookCount: View {
+    var count: Int
+    var emphasis: Bool = false
+    var customFill: Color? = nil
+
+    var body: some View {
+        Text(count > 99 ? "99+" : "\(count)")
+            .font(DaybookType.counter)
+            .padding(.horizontal, 4.5)
+            .padding(.vertical, 1)
+            .background(Capsule().fill(customFill ?? (emphasis ? DaybookPalette.accent.fill : DaybookPalette.border.faint)))
+            .foregroundStyle(emphasis ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+    }
+}

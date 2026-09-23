@@ -123,8 +123,10 @@ struct LiveComposerPreviewHeader: View {
 
     private var trailingAttributesCluster: some View {
         HStack(spacing: 5) {
-            if let prioritySlot {
-                QuadrantBadge(slot: prioritySlot)
+            if let prioritySlot, prioritySlot != .rest {
+                QuadrantMiniMark(slot: prioritySlot, metrics: .row)
+                    .help(priorityHelpText(prioritySlot))
+                    .accessibilityLabel(priorityHelpText(prioritySlot))
             }
 
             tagsBadgeCluster
@@ -214,26 +216,39 @@ struct LiveComposerPreviewHeader: View {
                 }
             }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if (isNoteHovered || isNoteBubbleHovered) && !showsSuggestions && !parsed.notes.isEmpty && !isTitleHovered && !isTitleBubbleHovered {
-                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-                    let transformAnchor = UnitPoint(
-                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: growsUpward ? 1.0 : 0.0
-                    )
-                    RowNoteBubble(
-                        note: parsed.notes,
-                        growsUpward: growsUpward,
-                        bubbleShiftX: bubbleShiftX,
-                        onCopy: { copyPreview(parsed.notes) },
-                        onHover: { isNoteBubbleHovered = $0 }
-                    )
-                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                        removal: .opacity
-                    ))
-                }
+                noteBubbleOverlay
             }
+    }
+
+    @ViewBuilder
+    private var noteBubbleOverlay: some View {
+        if shouldShowNoteBubble {
+            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+            let transformAnchor = UnitPoint(
+                x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                y: growsUpward ? 1.0 : 0.0
+            )
+            RowNoteBubble(
+                note: parsed.notes,
+                growsUpward: growsUpward,
+                bubbleShiftX: bubbleShiftX,
+                onCopy: { copyPreview(parsed.notes) },
+                onHover: { isNoteBubbleHovered = $0 }
+            )
+            .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                removal: .opacity
+            ))
+        }
+    }
+
+    private var shouldShowNoteBubble: Bool {
+        (isNoteHovered || isNoteBubbleHovered) && !showsSuggestions && !parsed.notes.isEmpty && !isTitleHovered && !isTitleBubbleHovered
+    }
+
+    private func priorityHelpText(_ slot: QuadrantSlot) -> Text {
+        Text("\(slot.badgeText) · ") + Text(LocalizedStringKey(slot.titleKeyName)) + Text(" · ") + Text(LocalizedStringKey(slot.subtitleKeyName))
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
@@ -255,44 +270,9 @@ struct LiveComposerPreviewHeader: View {
     /// 浮动详细标签面板（大字号 11pt，查详细专用，输入时自动避让）
     private var tagDetailBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text("syntax.preview.allTags")
-                    .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                Spacer()
-                Text("\(previewTags.count)")
-                    .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 标签计数用圆体
-                    .padding(.horizontal, 4.5)
-                    .padding(.vertical, 1)
-                    .background(Capsule().fill(DaybookPalette.border.faint))
-                    .foregroundStyle(DaybookPalette.text.secondary)
-            }
-            .padding(.horizontal, 2)
-            .padding(.top, 1)
-
+            tagDetailHeader
             DaybookDivider(opacity: 0.3)
-
-            ScrollView(.vertical, showsIndicators: previewTags.count > 5) {
-                VStack(alignment: .leading, spacing: 3) {
-                    ForEach(previewTags, id: \.self) { tag in
-                        HStack(spacing: 3) {
-                            Text("#\(tag)")
-                                .font(DaybookType.caption.weight(.medium))
-                                .foregroundStyle(DaybookPalette.Syntax.tag)
-                                .lineLimit(1)
-                            Spacer(minLength: 0)
-                        }
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(
-                            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                                .fill(DaybookPalette.Syntax.tagSubtleFill)
-                        )
-                    }
-                }
-            }
-            .daybookScroll()
-            .frame(maxHeight: min(120, CGFloat(previewTags.count) * 26 + 6))
+            tagScrollList
         }
         .padding(7)
         .frame(width: 140)
@@ -309,6 +289,46 @@ struct LiveComposerPreviewHeader: View {
             insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
             removal: .opacity
         ))
+    }
+
+    private var tagDetailHeader: some View {
+        HStack {
+            Text("syntax.preview.allTags")
+                .font(DaybookType.badge.weight(.semibold))
+                .foregroundStyle(DaybookPalette.text.secondary)
+            Spacer()
+            DaybookCount(count: previewTags.count)
+        }
+        .padding(.horizontal, 2)
+        .padding(.top, 1)
+    }
+
+    private var tagScrollList: some View {
+        ScrollView(.vertical, showsIndicators: previewTags.count > 5) {
+            VStack(alignment: .leading, spacing: 3) {
+                ForEach(previewTags, id: \.self) { tag in
+                    tagRowItem(tag)
+                }
+            }
+        }
+        .daybookScroll()
+        .frame(maxHeight: min(120, CGFloat(previewTags.count) * 26 + 6))
+    }
+
+    private func tagRowItem(_ tag: String) -> some View {
+        HStack(spacing: 3) {
+            Text("#\(tag)")
+                .font(DaybookType.caption.weight(.medium))
+                .foregroundStyle(DaybookPalette.Syntax.tag)
+                .lineLimit(1)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
+                .fill(DaybookPalette.Syntax.tagSubtleFill)
+        )
     }
 
     private var isTitleTruncated: Bool {

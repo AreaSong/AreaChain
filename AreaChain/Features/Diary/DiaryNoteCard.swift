@@ -4,10 +4,7 @@ import SwiftUI
 
 enum DiaryTagChrome {
     static func color(for name: String) -> Color {
-        if DiaryMemoTags.isPasswordName(name) { return .red } // token-exempt: 菜单栏和筛选共用，systemRed 不是同一个红
-        if name == DiaryMemoTags.idea { return .orange } // token-exempt: 菜单栏和筛选共用，systemOrange 不是同一个橙
-        if name == DiaryMemoTags.journal { return .blue } // token-exempt: 菜单栏和筛选共用，systemBlue 不是同一个蓝
-        return DaybookPalette.accent.base
+        DaybookPalette.diaryPreset(forTagName: name)
     }
 }
 

@@ -300,13 +300,7 @@ struct FilterDropdownItemRow: View {
                 Spacer(minLength: 6)
 
                 if let count = item.count, count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 9, weight: .bold, design: .rounded)) // token-exempt: 下拉计数用圆体
-                        .padding(.horizontal, 4)
-                        .padding(.vertical, 0.5)
-                        .background(item.isSelected ? DaybookPalette.accent.base.opacity(0.20) : DaybookPalette.text.primary.opacity(0.06)) // token-exempt: 20% 与 6% 没有对应令牌
-                        .foregroundStyle(item.isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-                        .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
+                    DaybookCount(count: count, emphasis: item.isSelected)
                 }
             }
         }

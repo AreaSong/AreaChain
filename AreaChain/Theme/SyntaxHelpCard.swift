@@ -251,49 +251,8 @@ struct SyntaxExpandableCard: View {
             onSelectExample?(L10n.string("syntax.example.complex.snippet", locale: locale))
         } label: {
             VStack(alignment: .leading, spacing: 3) {
-                HStack(alignment: .center, spacing: 6) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(DaybookType.badge)
-                        .foregroundStyle(DaybookPalette.status.pending.opacity(0.9)) // token-exempt: 90% 待办橙没有对应令牌
-
-                    (Text(LocalizedStringKey("syntax.example.complex.title"))
-                        + Text(LocalizedStringKey("syntax.example.tag.token1")).foregroundStyle(DaybookPalette.tagDefault).bold()
-                        + Text(" ")
-                        + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
-                        + Text(" ")
-                        + Text("@15:30").foregroundStyle(DaybookPalette.accent.base).bold())
-                        .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
-                        .foregroundStyle(DaybookPalette.text.primary)
-                        .lineLimit(1)
-
-                    Spacer(minLength: 4)
-
-                    HStack(spacing: 2) {
-                        Text("syntax.guide.try")
-                            .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
-                        Image(systemName: "arrow.right.circle.fill")
-                            .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
-                    }
-                    .foregroundStyle(DaybookPalette.accent.base)
-                    .padding(.horizontal, 5.5)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule()
-                            .fill(DaybookPalette.accent.fill)
-                    )
-                }
-
-                HStack(spacing: 4) {
-                    Text("syntax.guide.example")
-                        .font(DaybookType.micro)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-
-                    Spacer(minLength: 0)
-
-                    Text("Esc")
-                        .font(DaybookType.kbd.weight(.bold))
-                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
-                }
+                complexExampleHeader
+                complexExampleFooter
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 5)
@@ -301,5 +260,61 @@ struct SyntaxExpandableCard: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain) // control: 语法范例卡片
+    }
+
+    private var complexExampleHeader: some View {
+        HStack(alignment: .center, spacing: 6) {
+            Image(systemName: "lightbulb.fill")
+                .font(DaybookType.badge)
+                .foregroundStyle(DaybookPalette.status.pending.opacity(0.9)) // token-exempt: 90% 待办橙没有对应令牌
+
+            exampleTextSnippet
+                .lineLimit(1)
+
+            Spacer(minLength: 4)
+
+            tryBadge
+        }
+    }
+
+    private var exampleTextSnippet: some View {
+        (Text(LocalizedStringKey("syntax.example.complex.title"))
+            + Text(LocalizedStringKey("syntax.example.tag.token1")).foregroundStyle(DaybookPalette.tagDefault).bold()
+            + Text(" ")
+            + Text("!p1").foregroundStyle(DaybookPalette.status.danger).bold()
+            + Text(" ")
+            + Text("@15:30").foregroundStyle(DaybookPalette.accent.base).bold())
+            .font(.system(size: 11, weight: .medium, design: .monospaced)) // token-exempt: 等宽范例，kbd 是 8.5pt
+            .foregroundStyle(DaybookPalette.text.primary)
+    }
+
+    private var tryBadge: some View {
+        HStack(spacing: 2) {
+            Text("syntax.guide.try")
+                .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
+            Image(systemName: "arrow.right.circle.fill")
+                .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
+        }
+        .foregroundStyle(DaybookPalette.accent.base)
+        .padding(.horizontal, 5.5)
+        .padding(.vertical, 2)
+        .background(
+            Capsule()
+                .fill(DaybookPalette.accent.fill)
+        )
+    }
+
+    private var complexExampleFooter: some View {
+        HStack(spacing: 4) {
+            Text("syntax.guide.example")
+                .font(DaybookType.micro)
+                .foregroundStyle(DaybookPalette.text.secondary)
+
+            Spacer(minLength: 0)
+
+            Text("Esc")
+                .font(DaybookType.kbd.weight(.bold))
+                .foregroundStyle(DaybookPalette.text.secondary.opacity(0.8)) // token-exempt: 80% 次要色没有对应令牌
+        }
     }
 }

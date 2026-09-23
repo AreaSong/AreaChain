@@ -233,44 +233,54 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
         init(_ parent: SyntaxOverlayEventMonitor) { self.parent = parent }
 
         func observe(_ view: NSView) {
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown, .scrollWheel]) {
-                [weak self, weak view] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .keyDown, .scrollWheel]) { [weak self, weak view] event in
+                guard let self, let view else { return event }
                 let consumed = MainActor.assumeIsolated {
-                    guard let self, let view, let window = view.window, event.window === window,
-                          self.parent.state.hasPresentation else { return false }
-                    if event.type == .keyDown {
-                        guard event.keyCode == 53,
-                              event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
-                              (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
-                        if self.parent.state.showsAttributes {
-                            self.parent.state.dismiss()
-                            return true
-                        }
-                        if self.parent.state.isActive && !self.parent.state.candidates.isEmpty {
-                            self.parent.state.dismissSuggestionsOnly()
-                            return true
-                        }
-                        if self.parent.state.showsPreview {
-                            self.parent.state.dismissPreview()
-                            return true
-                        }
-                        self.parent.state.dismiss()
-                        return true
-                    }
-                    let point = view.convert(event.locationInWindow, from: nil)
-                    if !self.parent.panelFrame.contains(point), !self.parent.sourceFrame.contains(point) {
-                        self.parent.state.dismiss()
-                    }
-                    return false
+                    self.handleMonitoredEvent(event, view: view)
                 }
                 return consumed ? nil : event
             }
-            resignObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: .main) {
-                [weak self, weak view] notification in
+            resignObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: .main) { [weak self, weak view] notification in
                 MainActor.assumeIsolated {
-                    if let window = notification.object as? NSWindow, window === view?.window { self?.parent.state.dismiss() }
+                    guard let window = notification.object as? NSWindow, window === view?.window else { return }
+                    self?.parent.state.dismiss()
                 }
             }
+        }
+
+        @MainActor
+        private func handleMonitoredEvent(_ event: NSEvent, view: NSView) -> Bool {
+            guard let window = view.window, event.window === window,
+                  parent.state.hasPresentation else { return false }
+            if event.type == .keyDown {
+                return handleKeyDownEscape(event, in: window)
+            }
+            let point = view.convert(event.locationInWindow, from: nil)
+            if !parent.panelFrame.contains(point), !parent.sourceFrame.contains(point) {
+                parent.state.dismiss()
+            }
+            return false
+        }
+
+        @MainActor
+        private func handleKeyDownEscape(_ event: NSEvent, in window: NSWindow) -> Bool {
+            guard event.keyCode == 53,
+                  event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                  (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
+            if parent.state.showsAttributes {
+                parent.state.dismiss()
+                return true
+            }
+            if parent.state.isActive && !parent.state.candidates.isEmpty {
+                parent.state.dismissSuggestionsOnly()
+                return true
+            }
+            if parent.state.showsPreview {
+                parent.state.dismissPreview()
+                return true
+            }
+            parent.state.dismiss()
+            return true
         }
 
         func stop() {

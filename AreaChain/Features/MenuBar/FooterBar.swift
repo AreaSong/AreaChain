@@ -164,12 +164,7 @@ struct FooterBar: View {
                     .font(filterIsActive ? DaybookType.caption.weight(.semibold) : DaybookType.caption)
                     .lineLimit(1)
                 if filterIsActive, activeCount > 0 {
-                    Text("\(activeCount)")
-                        .font(.system(size: 8, weight: .bold, design: .rounded)) // token-exempt: 8pt 圆体计数，放到 9pt 会变宽
-                        .padding(.horizontal, 3.5)
-                        .padding(.vertical, 0.5)
-                        .background(DaybookPalette.accent.fill)
-                        .clipShape(Capsule()) // token-exempt: 计数胶囊裁切
+                    DaybookCount(count: activeCount, emphasis: true)
                 }
             }
         }

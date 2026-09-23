@@ -89,9 +89,7 @@ extension MenuBarPopoverView {
             switch tab {
             case .tasks:
                 if todayRemaining > 0 {
-                    Circle() // token-exempt: 头部状态圆点
-                        .fill(DaybookPalette.status.pending)
-                        .frame(width: 5, height: 5)
+                    DaybookStatusDot(color: DaybookPalette.status.pending, size: 5)
                         .transition(.scale.combined(with: .opacity))
                 } else if todayCompleted > 0 {
                     Image(systemName: "checkmark")
@@ -106,9 +104,7 @@ extension MenuBarPopoverView {
                 }
             case .diary:
                 if todayDiariesCount > 0 {
-                    Circle() // token-exempt: 头部状态圆点
-                        .fill(DaybookPalette.accent.base)
-                        .frame(width: 5, height: 5)
+                    DaybookStatusDot(color: DaybookPalette.accent.base, size: 5)
                         .transition(.scale.combined(with: .opacity))
                 } else {
                     Image(systemName: "feather")
