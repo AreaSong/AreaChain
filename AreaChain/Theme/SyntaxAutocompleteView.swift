@@ -305,7 +305,7 @@ struct SyntaxAutocompletePopup: View {
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
                     .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
-                Text("切换")
+                Text("syntax.footer.navigate")
                     .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -315,7 +315,7 @@ struct SyntaxAutocompletePopup: View {
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
                     .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
-                Text("补全")
+                Text("syntax.footer.complete")
                     .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }
@@ -326,7 +326,7 @@ struct SyntaxAutocompletePopup: View {
                     .padding(.horizontal, 2.5)
                     .padding(.vertical, 1)
                     .background(RoundedRectangle(cornerRadius: DaybookRadius.xxs).fill(DaybookTheme.ink.opacity(0.06))) // token-exempt: 6% 墨色没有对应令牌
-                Text("关闭")
+                Text("syntax.footer.dismiss")
                     .font(DaybookType.micro)
                     .foregroundStyle(DaybookTheme.muted)
             }

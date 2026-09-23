@@ -10369,6 +10369,174 @@
         }
       }
     },
+    "syntax.footer.complete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Complete" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "补全" } }
+      }
+    },
+    "syntax.footer.dismiss": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Close" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关闭" } }
+      }
+    },
+    "syntax.footer.navigate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Move" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "切换" } }
+      }
+    },
+    "syntax.guide.diary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save as diary" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "直接存入手记" } }
+      }
+    },
+    "syntax.guide.example": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Full example · any order, click to try" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "综合范例：全属性完整待办 · 顺序自由，点击一键试用" } }
+      }
+    },
+    "syntax.guide.note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Note on the next line" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "换行输入备注" } }
+      }
+    },
+    "syntax.guide.priority": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Priority" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "四象限优先级" } }
+      }
+    },
+    "syntax.guide.tag": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tags" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "标签分类" } }
+      }
+    },
+    "syntax.guide.time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reminder" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "时刻提醒" } }
+      }
+    },
+    "syntax.guide.try": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Try it" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "填入试用" } }
+      }
+    },
+    "syntax.preview.allTags": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "All tags" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全部标签" } }
+      }
+    },
+    "syntax.preview.tagCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%lld tags" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "共 %lld 个标签" } }
+      }
+    },
+    "syntax.priority.p1": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Important and urgent" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重要且紧急" } }
+      }
+    },
+    "syntax.priority.p2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Important, not urgent" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重要不紧急" } }
+      }
+    },
+    "syntax.priority.p3": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Urgent, not important" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "紧急不重要" } }
+      }
+    },
+    "syntax.priority.p4": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Neither" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "不重要不紧急" } }
+      }
+    },
+    "syntax.tag.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tag" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "标签" } }
+      }
+    },
+    "syntax.time.afternoon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Afternoon" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下午" } }
+      }
+    },
+    "syntax.time.custom": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Custom time" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自定义时刻" } }
+      }
+    },
+    "syntax.time.evening": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Evening" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "傍晚" } }
+      }
+    },
+    "syntax.time.hour": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "On the hour" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "整点" } }
+      }
+    },
+    "syntax.time.morning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Morning" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "早上" } }
+      }
+    },
+    "syntax.time.night": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Night" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "晚上" } }
+      }
+    },
+    "syntax.time.noon": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Noon" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "中午" } }
+      }
+    },
     "syntax.section.input": {
       "extractionState": "manual",
       "localizations": {

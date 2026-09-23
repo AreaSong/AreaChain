@@ -90,10 +90,23 @@ struct SyntaxAutocompleteTests {
         let candidates = SyntaxAutocompleteEngine.candidates(for: trigger)
         #expect(candidates.count == 4)
         #expect(candidates.map(\.title) == ["!p1", "!p2", "!p3", "!p4"])
-        #expect(candidates[0].subtitle == "重要且紧急")
-        #expect(candidates[1].subtitle == "重要不紧急")
-        #expect(candidates[2].subtitle == "紧急不重要")
-        #expect(candidates[3].subtitle == "不重要不紧急")
+        #expect(candidates[0].subtitle == "syntax.priority.p1")
+        #expect(candidates[1].subtitle == "syntax.priority.p2")
+        #expect(candidates[2].subtitle == "syntax.priority.p3")
+        #expect(candidates[3].subtitle == "syntax.priority.p4")
+    }
+
+    @Test func priorityAndTimeCandidatesStillMatchSpokenWords() {
+        let important = SyntaxTrigger(kind: .priority, query: "重要", range: NSRange(location: 0, length: 2))
+        #expect(SyntaxAutocompleteEngine.candidates(for: important).map(\.title) == ["!p1", "!p2"])
+
+        let urgent = SyntaxTrigger(kind: .priority, query: "urgent", range: NSRange(location: 0, length: 6))
+        #expect(SyntaxAutocompleteEngine.candidates(for: urgent).map(\.title) == ["!p1", "!p3"])
+
+        let morning = SyntaxTrigger(kind: .time, query: "早上", range: NSRange(location: 0, length: 2))
+        let morningHits = SyntaxAutocompleteEngine.candidates(for: morning)
+        #expect(morningHits.map(\.title) == ["@09:00"])
+        #expect(morningHits.first?.subtitle == "syntax.time.morning")
     }
 
     @Test func applyCandidateReplacement() {

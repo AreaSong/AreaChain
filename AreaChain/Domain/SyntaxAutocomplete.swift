@@ -153,7 +153,7 @@ enum SyntaxAutocompleteEngine {
                 SyntaxCandidate(
                     id: "tag_\(tag)",
                     title: "#\(tag)",
-                    subtitle: context.isSearch ? "syntax.search.tag" : "标签",
+                    subtitle: context.isSearch ? "syntax.search.tag" : "syntax.tag.label",
                     insertText: TagSyntax.spelling(for: tag) + " ",
                     kind: .tag
                 )
@@ -164,24 +164,24 @@ enum SyntaxAutocompleteEngine {
     }
 
     private static func priorityCandidates(query: String) -> [SyntaxCandidate] {
-        let definitions: [(code: String, name: String)] = [
-            ("p1", "重要且紧急"),
-            ("p2", "重要不紧急"),
-            ("p3", "紧急不重要"),
-            ("p4", "不重要不紧急")
+        let definitions: [(code: String, subtitleKey: String, matchText: String)] = [
+            ("p1", "syntax.priority.p1", "重要且紧急 important urgent"),
+            ("p2", "syntax.priority.p2", "重要不紧急 important"),
+            ("p3", "syntax.priority.p3", "紧急不重要 urgent"),
+            ("p4", "syntax.priority.p4", "不重要不紧急 neither")
         ]
 
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let matches = definitions.filter { item in
             guard !trimmed.isEmpty else { return true }
-            return item.code.contains(trimmed) || item.name.contains(trimmed)
+            return item.code.contains(trimmed) || item.matchText.lowercased().contains(trimmed)
         }
 
         return matches.map { item in
             SyntaxCandidate(
                 id: "priority_\(item.code)",
                 title: "!\(item.code)",
-                subtitle: item.name,
+                subtitle: item.subtitleKey,
                 insertText: "!\(item.code) ",
                 kind: .priority
             )
@@ -189,15 +189,16 @@ enum SyntaxAutocompleteEngine {
     }
 
     private static func timeCandidates(query: String) -> [SyntaxCandidate] {
-        let presets: [(time: String, label: String)] = [
-            ("09:00", "早上"),
-            ("12:00", "中午"),
-            ("15:00", "下午"),
-            ("18:00", "傍晚"),
-            ("21:00", "晚上")
+        let presets: [(time: String, subtitleKey: String, matchText: String)] = [
+            ("09:00", "syntax.time.morning", "早上 morning"),
+            ("12:00", "syntax.time.noon", "中午 noon"),
+            ("15:00", "syntax.time.afternoon", "下午 afternoon"),
+            ("18:00", "syntax.time.evening", "傍晚 evening"),
+            ("21:00", "syntax.time.night", "晚上 night")
         ]
 
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let needle = trimmed.lowercased()
         var list: [SyntaxCandidate] = []
 
         if !trimmed.isEmpty, let custom = formatCustomTime(trimmed) {
@@ -215,7 +216,7 @@ enum SyntaxAutocompleteEngine {
 
         let filtered = presets.filter { item in
             guard !trimmed.isEmpty else { return true }
-            return item.time.contains(trimmed) || item.label.contains(trimmed)
+            return item.time.contains(trimmed) || item.matchText.lowercased().contains(needle)
         }
 
         for item in filtered {
@@ -224,7 +225,7 @@ enum SyntaxAutocompleteEngine {
                     SyntaxCandidate(
                         id: "time_\(item.time)",
                         title: "@\(item.time)",
-                        subtitle: item.label,
+                        subtitle: item.subtitleKey,
                         insertText: "@\(item.time) ",
                         kind: .time
                     )
@@ -241,14 +242,14 @@ enum SyntaxAutocompleteEngine {
 
         if digits.count <= 2, let h = Int(digits), h >= 0 && h < 24 {
             let formatted = String(format: "%02d:00", h)
-            return (formatted, "整点")
+            return (formatted, "syntax.time.hour")
         }
         if digits.count == 3 || digits.count == 4 {
             let hStr = String(digits.prefix(digits.count == 3 ? 1 : 2))
             let mStr = String(digits.suffix(2))
             if let h = Int(hStr), let m = Int(mStr), h >= 0 && h < 24 && m >= 0 && m < 60 {
                 let formatted = String(format: "%02d:%02d", h, m)
-                return (formatted, "自定义时刻")
+                return (formatted, "syntax.time.custom")
             }
         }
         return nil

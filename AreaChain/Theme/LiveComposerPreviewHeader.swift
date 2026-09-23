@@ -10,6 +10,7 @@ struct LiveComposerPreviewHeader: View {
     var onClose: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
     @State private var isTitleHovered = false
     @State private var isNoteHovered = false
     @State private var isTitleBubbleHovered = false
@@ -147,7 +148,7 @@ struct LiveComposerPreviewHeader: View {
                     .background(Capsule().fill(DaybookPalette.Syntax.tagBadgeFill))
                     .overlay(Capsule().stroke(DaybookPalette.Syntax.tagStroke, lineWidth: 0.6))
                     .foregroundStyle(DaybookPalette.Syntax.tag)
-                    .help("共 \(previewTags.count) 个标签")
+                    .help(L10n.format("syntax.preview.tagCount", locale: locale, previewTags.count))
                 }
 
                 // 3. 提醒时间徽标（最后）
@@ -250,7 +251,7 @@ struct LiveComposerPreviewHeader: View {
     private var tagDetailBubble: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("全部标签")
+                Text("syntax.preview.allTags")
                     .font(DaybookType.badge.weight(.semibold))
                     .foregroundStyle(DaybookTheme.muted)
                 Spacer()

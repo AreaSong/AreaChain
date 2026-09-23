@@ -84,7 +84,7 @@ struct SyntaxExpandableCard: View {
             // 1. # 标签分类
             syntaxRow(
                 token: "#",
-                title: "标签分类",
+                title: "syntax.guide.tag",
                 exampleSnippet: "写周报 #工作",
                 exampleText: Text("写周报 ")
                     + Text("#工作").foregroundStyle(Color(nsColor: .systemIndigo)).bold() // token-exempt: 没有靛蓝令牌
@@ -97,7 +97,7 @@ struct SyntaxExpandableCard: View {
             // 2. ! 四象限优先级
             syntaxRow(
                 token: "!",
-                title: "四象限优先级",
+                title: "syntax.guide.priority",
                 exampleSnippet: "修线上Bug !p1",
                 exampleText: Text("修线上Bug ")
                     + Text("!p1").foregroundStyle(DaybookTheme.destructive).bold()
@@ -111,7 +111,7 @@ struct SyntaxExpandableCard: View {
             if context.supportsTaskAttributes {
                 syntaxRow(
                     token: "@",
-                    title: "时刻提醒",
+                    title: "syntax.guide.time",
                     exampleSnippet: "开晨会 @10:00",
                     exampleText: Text("开晨会 ")
                         + Text("@10:00").foregroundStyle(DaybookTheme.stamp).bold()
@@ -124,7 +124,7 @@ struct SyntaxExpandableCard: View {
             if context == .capture {
                 syntaxRow(
                     token: "⌘↩",
-                    title: "直接存入手记",
+                    title: "syntax.guide.diary",
                     exampleSnippet: "随时记录灵感闪念",
                     exampleText: Text("随时记录灵感 ")
                         + Text("⌘↵").foregroundStyle(DaybookTheme.stamp).bold()
@@ -135,7 +135,7 @@ struct SyntaxExpandableCard: View {
                 // 5. ⇧↩ 换行输入备注
                 syntaxRow(
                     token: "⇧↩",
-                    title: "换行输入备注",
+                    title: "syntax.guide.note",
                     exampleSnippet: "首行待办标题\n换行输入详细备注",
                     exampleText: Text("首行标题 ")
                         + Text("⇧↵").foregroundStyle(DaybookTheme.ink).bold()
@@ -174,7 +174,7 @@ struct SyntaxExpandableCard: View {
                         Spacer(minLength: 4)
 
                         HStack(spacing: 2) {
-                            Text("填入试用")
+                            Text("syntax.guide.try")
                                 .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
                             Image(systemName: "arrow.right.circle.fill")
                                 .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
@@ -253,7 +253,7 @@ struct SyntaxExpandableCard: View {
                     Spacer(minLength: 4)
 
                     HStack(spacing: 2) {
-                        Text("填入试用")
+                        Text("syntax.guide.try")
                             .font(.system(size: 8.5, weight: .semibold)) // token-exempt: 小于 9pt，kbd 是等宽
                         Image(systemName: "arrow.right.circle.fill")
                             .font(.system(size: 8.5)) // token-exempt: 小于 9pt，kbd 是等宽
@@ -268,7 +268,7 @@ struct SyntaxExpandableCard: View {
                 }
 
                 HStack(spacing: 4) {
-                    Text("综合范例：全属性完整待办 · 顺序自由，点击一键试用")
+                    Text("syntax.guide.example")
                         .font(DaybookType.micro)
                         .foregroundStyle(DaybookTheme.muted)
 
