@@ -252,7 +252,7 @@ flowchart TB
 - [x] P6 Theme 语法卡片 / 自动补全 / 实时预览
 - [x] P6 Theme 双语
 - [x] P6 Theme 删 DaybookTheme
-- [ ] P7 禁令、文档、全量回归
+- [x] P7 禁令、文档、全量回归
 
 决策记录
 - 2026-09-22 用户确认：粒度 = 哪怕只用一次的视觉元素也必须经基座；重载 = configure 闭包只改尺寸、同一重载 ≥ 2 处升级 variant；旧组件一步到位删除，不留转发；双语补齐纳入。
@@ -313,5 +313,7 @@ flowchart TB
 - 2026-09-23 P6 删除 DaybookTheme 完成：窗口尺寸迁入 DaybookMetrics.Window，颜色迁入 DaybookPalette，工厂迁入 DaybookColor.swift 后删除 DaybookTheme.swift。
 - 2026-09-23 P6 Workspace 验收：通过。A1–A3 零输出，A4 计数为 1、1、1、4、2、2、1、1（`DaybookType.label` 含星期标题第 131 行与连击标题第 216 行）；B 的 6 行圆体/等宽/36pt 字体均含 token-exempt，进度环直径 `size: 36` 无豁免。颜色字面正则只命中 4 行（danger 0.85、themeColor 0.7、systemIndigo、yellow）；其余 12 行已按删 DaybookTheme 换成 `text.secondary` / `border.default` / `accent.base` / `fill.page`，透明度数字和 token-exempt 仍在，不改回旧名。象限仍用 themeFill / themeColor，星期仍是 Circle。列表分隔线 0.35 / 0.35 / 0.3 未改。C1–C2 零越界。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_14-09-49-+0800.xcresult`：Passed，3 套件、汇总 17 通过、设备侧 28 次通过，失败 0、跳过 0。check_workflow EXIT=0，计划已勾选并有完成记录。未做人工窗口走查。
 - 2026-09-23 P7 验收：不通过（E 全量测试 TEST=65，唯一失败 `priorityAndTimeCandidatesStillMatchSpokenWords`，记为双语阶段遗留；F 计划未勾选且无「P7 完成」记录）
+- 2026-09-23 P7 完成：检查器、18 处形状豁免和文档已落地；全量测试仍失败于双语阶段遗留 `priorityAndTimeCandidatesStillMatchSpokenWords`，未改筛选、未放宽检查器。
+- 2026-09-23 用户要求修好口令筛选：`spokenText` 跳过紧挨在「不」后面的命中，所以「重要」只出 !p1、!p2，「紧急」只出 !p1、!p3。`SyntaxAutocompleteTests` EXIT=0。未重跑全量。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

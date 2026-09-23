@@ -174,7 +174,7 @@ enum SyntaxAutocompleteEngine {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let matches = definitions.filter { item in
             guard !trimmed.isEmpty else { return true }
-            return item.code.contains(trimmed) || item.matchText.lowercased().contains(trimmed)
+            return item.code.contains(trimmed) || spokenText(item.matchText, contains: trimmed)
         }
 
         return matches.map { item in
@@ -186,6 +186,20 @@ enum SyntaxAutocompleteEngine {
                 kind: .priority
             )
         }
+    }
+
+    /// 「重要」不能命中「不重要」，「紧急」不能命中「不紧急」。
+    private static func spokenText(_ haystack: String, contains needle: String) -> Bool {
+        guard !needle.isEmpty else { return true }
+        let haystack = haystack.lowercased()
+        var start = haystack.startIndex
+        while let range = haystack.range(of: needle, range: start..<haystack.endIndex) {
+            let precededByNegation = range.lowerBound > haystack.startIndex
+                && haystack[haystack.index(before: range.lowerBound)] == "不"
+            if !precededByNegation { return true }
+            start = haystack.index(after: range.lowerBound)
+        }
+        return false
     }
 
     private static func timeCandidates(query: String) -> [SyntaxCandidate] {

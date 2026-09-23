@@ -103,6 +103,9 @@ struct SyntaxAutocompleteTests {
         let urgent = SyntaxTrigger(kind: .priority, query: "urgent", range: NSRange(location: 0, length: 6))
         #expect(SyntaxAutocompleteEngine.candidates(for: urgent).map(\.title) == ["!p1", "!p3"])
 
+        let urgentZh = SyntaxTrigger(kind: .priority, query: "紧急", range: NSRange(location: 0, length: 2))
+        #expect(SyntaxAutocompleteEngine.candidates(for: urgentZh).map(\.title) == ["!p1", "!p3"])
+
         let morning = SyntaxTrigger(kind: .time, query: "早上", range: NSRange(location: 0, length: 2))
         let morningHits = SyntaxAutocompleteEngine.candidates(for: morning)
         #expect(morningHits.map(\.title) == ["@09:00"])
