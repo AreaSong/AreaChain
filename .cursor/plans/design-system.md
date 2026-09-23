@@ -212,10 +212,13 @@ flowchart TB
 做：12 处 `.shadow(color:` 全部换成 `daybookElevation`（分段栏滑块 `.raised`，其余浮层 `.floating`）。搜索工作台行、附件结果行、语法范例卡、抽屉分组、手记卡片改用已有 `daybookSurface`；手记置顶且未高亮时另留一条印章描边。象限选择格、日历日格、甘特色块保留自绘（今日环 / 投放 / 优先级色是表面基座没有的第三态），只改注释。不新增 variant，不改 `DaybookSurface.swift` 的外观规则。
 完成标准：代码里的 `.shadow(color:` 只剩 `DaybookElevation.swift` 改写后的说明或为零；上述行与卡片已用 `daybookSurface`；定向测试通过。
 
-### P5 芯片、分节头、分隔线、分段栏、确认框、监听器（可分两次：a = 芯片/计数/圆点；b = 其余）
-必读：`Theme/ModernComponents.swift`（`PillBadge`）、`Theme/DaybookTheme.swift`（`SectionStamp`）、`Features/MenuBar/MenuBarControls.swift`、`Theme/TrashConfirm.swift`、`Theme/CommandReturnButton.swift`、`Features/Board/BoardRowChrome.swift`（80–100）、3.6 / 3.7 节全部文件。
-做：新建 `DaybookChip.swift`、`DaybookSectionHeader.swift`、`DaybookSegmentedBar.swift`、`ModifierKeyObserver.swift`；`TrashConfirm.swift` 增 `confirmDestructive`；48 处 Capsule、6 圆点、14 计数、18 分节头、7 分隔线、2 分段控件、7 裸确认框、2 重复监听全部迁入。删除 `PillBadge`、`SectionStamp`、`WorkspaceFilterLabel` / `workspaceFilterChrome`、`DaybookQuietTabBar`、`DiaryTagPill`、`DiaryTagChrome`（Features）、`QuadrantSlot.themeColor/themeFill` 与 `BoardFilterChoices.priorityDot` 旁路。
-完成标准：相关模块测试 + `WorkspaceRenderingTests` + `MenuBarPopoverRenderingTests` 通过；`rg 'Capsule\(\)|PillBadge|SectionStamp|DiaryTagChrome|DaybookQuietTabBar' AreaChain/Features` 只剩带 `// control:` 的行。
+### P5a 芯片
+提示词：`design-system-P5a-execute.md` / `design-system-P5a-verify.md`。
+做：新建 `DaybookChip`（选中：色 14% 底 + 35% 描边；未选中：空底 + 细边；悬停淡灰底）。`PillBadge` 的 `color` 改名为 `tint` 后删除。注释里写了「P5 迁 DaybookChip」的胶囊改为这个芯片。星期圆点不是胶囊，只改注释，不改成芯片。预览条、属性按钮 58×22、语法色胶囊留给后面的清扫，本阶段不碰。
+完成标准：`PillBadge` 与「P5 迁 DaybookChip」为零；`DaybookChip` 已接上日期、提醒、标签、筛选、计数和 token；定向测试通过。
+
+### P5b 分节头、分隔线、分段栏、确认框、监听器
+做：`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`、`confirmDestructive`、`ModifierKeyObserver`。提示词在 P5a 验收通过后生成。
 
 ### P6 颜色、字号、圆角、动效清扫（按模块：MenuBar → Tasks → Diary → Workspace → 其余页面 → Theme）
 做：`DaybookTheme.x` / `DaybookTheme.x.opacity(字面)` → `DaybookPalette.*`；系统色 → `palette.status.* / text.onAccent / fill.scrim`；`.font(.system(size:` → `DaybookType.*`；字面圆角 → `DaybookRadius.*` 或 `metrics.radius.*`；字面动画 → `DaybookMotion.*`。双语补齐：`Domain/SyntaxAutocomplete.swift` 候选副标题（「标签」「重要且紧急…」「早上…」）改为返回本地化 key，由 `SyntaxAutocompletePopup` 用 `LocalizedStringKey` 显示；`SyntaxAutocompletePopup.footerGuide`「切换 / 补全 / 关闭」改 key；`Localizable.xcstrings` 同时补 en / zh-Hans。Theme 模块完成后删除 `DaybookTheme` enum（`DaybookTheme.swift` 文件删除）。
