@@ -54,7 +54,7 @@ struct MenuBarSearchField: View {
                                         .lineLimit(1)
                                     Button(action: token.onRemove) {
                                         Image(systemName: "xmark")
-                                            .font(.system(size: 6.5, weight: .bold))
+                                            .font(.system(size: 6.5, weight: .bold)) // token-exempt: 芯片内移除角标小于 9pt
                                             .frame(width: 9, height: 9)
                                             .contentShape(Rectangle())
                                     }

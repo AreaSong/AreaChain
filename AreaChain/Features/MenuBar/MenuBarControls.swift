@@ -31,10 +31,10 @@ struct MenuBarLabel: View {
             Image(systemName: "book.closed.fill")
                 .accessibilityHidden(true)
             Text("menubar.today.mark")
-                .font(.system(size: 11, weight: .bold, design: .serif))
+                .font(.system(size: 11, weight: .bold, design: .serif)) // token-exempt: 菜单栏标记用衬线，令牌是无衬线
             if count > 0 {
                 Text("\(count)")
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded)) // token-exempt: 菜单栏计数用圆体
             }
         }
         .accessibilityLabel(count > 0 ? "a11y.app.remaining \(count)" : "a11y.app")

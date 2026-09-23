@@ -161,7 +161,7 @@ struct MenuBarPopoverView: View {
 
             if showingSyntaxHelp {
                 // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
-                Color.black.opacity(0.001)
+                DaybookPalette.fill.scrim
                     .frame(width: DaybookTheme.popoverWidth, height: DaybookTheme.popoverHeight)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -335,7 +335,7 @@ struct MenuBarPopoverView: View {
     private var headerIndicator: some View {
         if toolbar.isSearching {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 7, weight: .bold))
+                .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
                 .foregroundStyle(DaybookTheme.muted)
                 .transition(.scale.combined(with: .opacity))
         } else {
@@ -343,18 +343,18 @@ struct MenuBarPopoverView: View {
             case .tasks:
                 if todayRemaining > 0 {
                     Circle()
-                        .fill(Color.orange)
+                        .fill(DaybookPalette.status.pending)
                         .frame(width: 5, height: 5)
                         .transition(.scale.combined(with: .opacity))
                 } else if todayCompleted > 0 {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .bold))
+                        .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
                         .foregroundStyle(DaybookTheme.stamp)
                         .transition(.scale.combined(with: .opacity))
                 } else {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 7, weight: .bold))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                        .font(.system(size: 7, weight: .bold)) // token-exempt: 头部状态图标小于 9pt
+                        .foregroundStyle(DaybookPalette.text.tertiary)
                         .transition(.scale.combined(with: .opacity))
                 }
             case .diary:
@@ -365,8 +365,8 @@ struct MenuBarPopoverView: View {
                         .transition(.scale.combined(with: .opacity))
                 } else {
                     Image(systemName: "feather")
-                        .font(.system(size: 8, weight: .semibold))
-                        .foregroundStyle(DaybookTheme.muted.opacity(0.6))
+                        .font(.system(size: 8, weight: .semibold)) // token-exempt: 头部状态图标小于 9pt
+                        .foregroundStyle(DaybookPalette.text.tertiary)
                         .transition(.scale.combined(with: .opacity))
                 }
             }

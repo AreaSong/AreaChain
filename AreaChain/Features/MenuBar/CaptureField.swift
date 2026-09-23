@@ -32,11 +32,11 @@ struct CaptureField: View {
 
     private var inputRow: some View {
         let focused = focus.wrappedValue
-        let plusColor = focused ? DaybookTheme.ink : DaybookTheme.muted.opacity(0.8)
+        let plusColor = focused ? DaybookTheme.ink : DaybookPalette.text.tertiary
 
         return DaybookInputShell(kind: .composer, focused: focused) {
             Image(systemName: "plus")
-                .font(.system(size: 11.5, weight: .semibold))
+                .font(DaybookType.caption.weight(.semibold))
                 .foregroundStyle(plusColor)
                 .frame(width: 14)
         } field: {

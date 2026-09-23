@@ -158,17 +158,17 @@ struct FooterBar: View {
         Button(action: triggerAction) {
             HStack(spacing: filterIsActive ? 3.5 : 4) {
                 Image(systemName: "line.3.horizontal.decrease")
-                    .font(filterIsActive ? .system(size: 9, weight: .bold) : DaybookType.caption)
+                    .font(filterIsActive ? DaybookType.micro.weight(.bold) : DaybookType.caption)
                     .accessibilityHidden(true)
                 Text(L10n.string("filter.label", locale: locale))
                     .font(filterIsActive ? DaybookType.caption.weight(.semibold) : DaybookType.caption)
                     .lineLimit(1)
                 if filterIsActive, activeCount > 0 {
                     Text("\(activeCount)")
-                        .font(.system(size: 8, weight: .bold, design: .rounded))
+                        .font(.system(size: 8, weight: .bold, design: .rounded)) // token-exempt: 8pt 圆体计数，放到 9pt 会变宽
                         .padding(.horizontal, 3.5)
                         .padding(.vertical, 0.5)
-                        .background(DaybookTheme.stamp.opacity(0.18))
+                        .background(DaybookPalette.accent.fill)
                         .clipShape(Capsule())
                 }
             }
@@ -283,7 +283,7 @@ struct FooterBar: View {
             .keyboardShortcut("q", modifiers: .command)
         } label: {
             Image(systemName: "ellipsis")
-                .font(.system(size: 12, weight: .semibold))
+                .font(DaybookType.subtitle.weight(.semibold))
                 .daybookMenuLabel(size: .regular, isFocused: moreFocused)
         }
         .menuStyle(.borderlessButton)

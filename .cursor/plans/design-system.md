@@ -242,7 +242,7 @@ flowchart TB
 - [x] P4b 浮层与剩余自绘表面
 - [x] P5a 芯片 / 计数 / 圆点
 - [x] P5b 分节头 / 分隔线 / 分段栏 / 确认框 / 监听器
-- [ ] P6 MenuBar
+- [x] P6 MenuBar
 - [ ] P6 Tasks
 - [ ] P6 Diary
 - [ ] P6 Workspace
@@ -287,5 +287,7 @@ flowchart TB
 - 2026-09-23 P5b 完成：分节头改名为 DaybookSectionHeader，带颜色的布局分隔线换成 DaybookDivider，分段栏挪到 Theme 并改名为 DaybookSegmentedBar。
 - 2026-09-23 P5b 验收：不通过（D 定向测试 EXIT=65；MenuBarPopoverRenderingTests.diaryUsesOnlyFooterSearchAndFilters 的 en / dark 在二次点击后 isFiltering 仍为 true）
 - 2026-09-23 P5b 验收：通过（A–E 重跑成立。B1=6。定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_10-24-13-+0800.xcresult`：Passed，5 套件 55 个用例、展开 75 次通过，失败 0、跳过 0。未做人工窗口走查。）
+- 2026-09-23 P6 MenuBar 完成：菜单栏点名的字号、颜色和圆角收到现有令牌，小于 9pt 以及衬线、圆体保持原样并写 token-exempt。
+- 2026-09-23 P6 MenuBar 验收：通过。A1–A4 零输出，A5 计数均 ≥ 1；B 的 14 行小字号/衬线/圆体与 2 行 rule.opacity(0.65) 均含 token-exempt；C1–C2 零越界；定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_10-41-37-+0800.xcresult`：Passed，3 套件、失败 0、跳过 0。check_workflow EXIT=0，计划已勾选并有完成记录。未做人工窗口走查。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。
