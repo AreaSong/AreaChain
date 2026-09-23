@@ -247,7 +247,7 @@ flowchart TB
 - [x] P6 Tasks
 - [x] P6 Diary
 - [x] P6 Workspace
-- [ ] P6 Search / Calendar / Quadrant / Gantt / Trash / Attachments / Settings
+- [x] P6 Search / Calendar / Quadrant / Gantt / Trash / Attachments / Settings
 - [ ] P6 Theme（含双语补齐、删 DaybookTheme）
 - [ ] P7 禁令、文档、全量回归
 
@@ -299,5 +299,6 @@ flowchart TB
 - 2026-09-23 P6 Workspace 验收：不通过（B：`WorkspaceTodayView.swift:96` 的 `DaybookProgressRing` `size: 36` 不含 `token-exempt`。A1–A4、其余豁免色、象限与星期圆点、C1–C2、D EXIT=0、E 通过）
 - 2026-09-23 P6 Workspace 整改：B 的字号命令把 `size: 36` 收成 `.font(.system(size: 36`。进度环直径不再被当成 36pt 字体，未给 `WorkspaceTodayView.swift` 补豁免。未宣布通过。
 - 2026-09-23 P6 Workspace 验收：通过。A1–A3 零输出，A4 计数为 1、1、1、4、2、2、1、1（`DaybookType.label` 含星期标题与连击标题）；B 的 6 行圆体/等宽/36pt 字体与 16 行未映射颜色均含 token-exempt，进度环直径 `size: 36` 无豁免；C1–C2 零越界；定向测试 EXIT=0，结果包 `Test-AreaChain-2026.09.23_12-26-01-+0800.xcresult`：Passed，3 套件、汇总 17 通过、设备侧 28 次通过，失败 0、跳过 0。check_workflow EXIT=0，计划已勾选并有完成记录。未做人工窗口走查。
+- 2026-09-23 P6 其余页面完成：Board、Calendar、Gantt、Quadrant、Search、Trash、Attachments、Settings 点名的字号、颜色和圆角收到现有令牌，圆体、18pt 和没有对应令牌的透明度保持原样并写 token-exempt。
 
 每阶段追加：日期、改动文件、运行的命令与结果、未覆盖项、新增令牌/variant 登记、向用户提问及其确认答案。全部完成后删除本文件；`.cursor/plans/areachain.md` 与 `quality-fixes.md` 已完成，可一并删除。

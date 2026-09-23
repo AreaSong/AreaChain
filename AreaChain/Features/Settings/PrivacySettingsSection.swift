@@ -48,7 +48,7 @@ struct PrivacySettingsSection: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "checkmark.shield")
-                            .font(.system(size: 11, weight: .semibold))
+                            .font(DaybookType.caption.weight(.semibold))
                             .foregroundStyle(DaybookTheme.stamp)
                         Text("privacy.cleanup.database")
                             .font(DaybookType.caption)

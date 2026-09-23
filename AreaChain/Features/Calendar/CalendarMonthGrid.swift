@@ -67,7 +67,7 @@ struct CalendarMonthGrid: View {
         HStack(spacing: 4) {
             ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
                 Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
-                    .font(.system(size: 10, weight: .semibold))
+                    .font(DaybookType.label)
                     .foregroundStyle(DaybookTheme.muted)
                     .frame(maxWidth: .infinity)
             }
@@ -83,20 +83,20 @@ struct CalendarMonthGrid: View {
         } label: {
             VStack(spacing: 2) {
                 Text(DayKey.dayNumber(key, calendar: calendar))
-                    .font(.system(size: 13, weight: selected ? .semibold : .regular))
+                    .font(DaybookType.body.weight(selected ? .semibold : .regular))
                 Text(count > 0 ? "\(count)" : " ")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .font(.system(size: 9, weight: .semibold, design: .rounded)) // token-exempt: 日期计数用圆体
                     .foregroundStyle(count > 0 ? DaybookTheme.stamp : .clear)
             }
             .foregroundStyle(selected ? DaybookTheme.ink : DaybookTheme.muted)
             .frame(maxWidth: .infinity, minHeight: cellHeight)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface)
+                    .fill(selected ? DaybookTheme.stamp.opacity(0.18) : DaybookTheme.cardSurface) // token-exempt: 18% 印章底没有对应令牌
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .stroke(today ? DaybookTheme.stamp : (selected ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3)), lineWidth: today ? 1.4 : 0.8)
+                    .stroke(today ? DaybookTheme.stamp : (selected ? DaybookTheme.stamp.opacity(0.4) : DaybookTheme.rule.opacity(0.3)), lineWidth: today ? 1.4 : 0.8) // token-exempt: 40% 印章色和 30% 分隔线没有对应令牌
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }

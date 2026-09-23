@@ -92,7 +92,7 @@ struct GanttPage: View {
             Color.clear.frame(width: titleWidth, height: 18)
             ForEach(days, id: \.self) { key in
                 Text(DayKey.dayNumber(key, calendar: calendar))
-                    .font(.system(size: 9, weight: key == todayKey ? .semibold : .regular))
+                    .font(DaybookType.micro.weight(key == todayKey ? .semibold : .regular))
                     .foregroundStyle(key == todayKey ? DaybookTheme.ink : DaybookTheme.muted)
                     .frame(width: dayWidth)
                     .accessibilityLabel(DayKey.displayName(key, calendar: calendar, locale: locale))
@@ -116,7 +116,7 @@ struct GanttPage: View {
             }
         }
         .frame(height: GanttRowMetrics.height)
-        .background(isSelected ? DaybookTheme.cardSelectionFill : Color.clear, in: RoundedRectangle(cornerRadius: 4))
+        .background(isSelected ? DaybookTheme.cardSelectionFill : Color.clear, in: RoundedRectangle(cornerRadius: DaybookRadius.xs))
         .overlay {
             GanttRowPointerRegion(bar: bar, displayedDay: displayedDay, days: days, isSelected: isSelected) {
                 handle($0, for: bar)
@@ -130,7 +130,7 @@ struct GanttPage: View {
         return HStack(spacing: 0) {
             HStack(spacing: 4) {
                 Image(systemName: "repeat")
-                    .font(.system(size: 9, weight: .bold))
+                    .font(DaybookType.micro.weight(.bold))
                     .foregroundStyle(DaybookTheme.stamp)
                     .accessibilityHidden(true)
                 Text(title)
@@ -163,12 +163,12 @@ struct GanttPage: View {
 
     private func dayCell(_ key: String, rowID: UUID, filled: Bool, selected: Bool) -> some View {
         let target = GanttDropTarget(rowID: rowID, dayKey: key)
-        return RoundedRectangle(cornerRadius: 3, style: .continuous) // token-exempt: 甘特色块是数据标记，不是卡片
-            .fill(filled ? DaybookTheme.stamp.opacity(0.85) : Color.clear)
+        return RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous) // token-exempt: 甘特色块是数据标记，不是卡片
+            .fill(filled ? DaybookTheme.stamp.opacity(0.85) : Color.clear) // token-exempt: 85% 印章色没有对应令牌
             .frame(width: dayWidth - 2, height: 14)
             .frame(width: dayWidth, height: 22)
             .overlay {
-                RoundedRectangle(cornerRadius: 4) // token-exempt: 甘特色块是数据标记，不是卡片
+                RoundedRectangle(cornerRadius: DaybookRadius.xs) // token-exempt: 甘特色块是数据标记，不是卡片
                     .stroke((filled && selected) || dropTarget == target ? DaybookTheme.stamp : Color.clear, lineWidth: 1.5)
             }
             .contentShape(Rectangle())

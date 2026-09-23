@@ -37,12 +37,12 @@ struct HotKeyRecorder: View {
             }
             if slot == .paste, !pasteArmed {
                 Text("hotkey.registration.failed")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
             if slot == .toggle, !toggleArmed {
                 Text("hotkey.registration.failed")
-                    .font(.system(size: 12))
+                    .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookTheme.muted)
             }
         }

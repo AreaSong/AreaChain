@@ -75,12 +75,12 @@ struct BoardSearchHitRow: View {
             kindText
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(Capsule().fill(DaybookTheme.stamp.opacity(0.12)))
+                .background(Capsule().fill(DaybookPalette.accent.fill))
             titleText(lineLimit: 2)
             Spacer(minLength: 0)
             if isSelected {
                 Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .bold))
+                    .font(DaybookType.caption.weight(.bold))
                     .foregroundStyle(DaybookTheme.stamp)
             }
         }

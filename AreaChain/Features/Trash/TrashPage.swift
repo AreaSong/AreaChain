@@ -85,7 +85,7 @@ struct TrashPage: View {
             HStack(spacing: 8) {
                 if item.isResident {
                     Image(systemName: "repeat")
-                        .font(.system(size: 10, weight: .bold))
+                        .font(DaybookType.badge.weight(.bold))
                         .foregroundStyle(DaybookTheme.stamp)
                 }
                 Text(item.kindLabel)
@@ -94,7 +94,7 @@ struct TrashPage: View {
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
                     .background(
-                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
                             .fill(DaybookTheme.hoverFill)
                     )
 

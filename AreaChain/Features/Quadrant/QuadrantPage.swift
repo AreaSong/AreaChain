@@ -144,7 +144,7 @@ private struct QuadrantChip: View {
             HStack(spacing: 6) {
                 if isResident {
                     Image(systemName: "repeat")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(DaybookType.micro.weight(.bold))
                         .foregroundStyle(DaybookTheme.stamp)
                         .accessibilityLabel("row.resident")
                 }
