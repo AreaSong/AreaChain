@@ -12,13 +12,18 @@
 ```bash
 wc -l .cursor/plans/excellence/tools/check_s0.py .cursor/plans/excellence/tools/test_check_s0.py
 python3 - <<'PY'
-import ast, sys
+import ast, importlib.util, sys, sysconfig
 p = ".cursor/plans/excellence/tools/check_s0.py"
 tree = ast.parse(open(p, encoding="utf-8").read())
 funcs = [(n.end_lineno - n.lineno + 1, n.name) for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]
 mods = {a.name.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.Import) for a in n.names}
-mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module}
-print("最长函数", max(funcs)); print("非标准库", sorted(m for m in mods if m not in sys.stdlib_module_names))
+mods |= {n.module.split(".")[0] for n in ast.walk(tree) if isinstance(n, ast.ImportFrom) and n.module and n.level == 0}
+std = sysconfig.get_paths()["stdlib"]
+def stdlib(m):
+    spec = importlib.util.find_spec(m)
+    origin = (spec.origin or "") if spec else ""
+    return m in sys.builtin_module_names or origin in ("built-in", "frozen") or (origin.startswith(std) and "site-packages" not in origin)
+print("最长函数", max(funcs)); print("非标准库", sorted(m for m in mods if not stdlib(m)))
 PY
 ```
 check_s0.py 不超过 250 行、最长函数不超过 50 行、「非标准库」为空列表 → PASS。

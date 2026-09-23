@@ -1,6 +1,6 @@
 # R0a 执行：结果检查器 check_s0.py
 
-你是执行工程师。按本文写出 S0 摸底结果的检查器并测好。本对话新增内容不超过 16k tokens：不读本文没点名的文件（包括 `AreaChain/` 源码），不派子代理，命令输出一律截断。项目 `AGENTS.md` 已自动加载，不要再读。不 commit、不安装，只用 Python 3 标准库。
+你是执行工程师。按本文写出 S0 摸底结果的检查器并测好。本对话新增内容不超过 16k tokens：不读本文没点名的文件（包括 `AreaChain/` 源码），不派子代理，命令输出一律截断。项目 `AGENTS.md` 已自动加载，不要再读。不 commit、不安装，只用 Python 3 标准库。本机 `python3` 是 3.9.6，不要用 3.10 以上才有的写法（`match`、运行时求值的 `X | Y` 类型标注、`zip(strict=)` 等）。
 
 ## 要写的文件
 - `.cursor/plans/excellence/tools/check_s0.py`：不超过 250 行，每个函数不超过 50 行。

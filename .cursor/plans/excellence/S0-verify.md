@@ -6,7 +6,7 @@
 启动指令必须写明批次号 `Vxx` 和单元列表。缺任何一项，或任一单元的 `.cursor/plans/excellence/results/<单元>.md` 不存在，就把验收文件只写一行 `结论：BLOCKED（<原因>）` 后结束。
 
 ## 1. 机械检查
-`python3 .cursor/plans/excellence/tools/check_s0.py <本批全部结果文件>; echo "EXIT=$?"`
+`python3 .cursor/plans/excellence/tools/check_s0.py <本批全部结果文件>`
 FAIL 的单元直接判不通过，整改清单抄检查器给的原因；INCOMPLETE 的单元判不通过，整改清单写「补读剩余文件」。
 
 ## 2. 抽查发现是否属实（每单元 2 条）
@@ -15,7 +15,7 @@ FAIL 的单元直接判不通过，整改清单抄检查器给的原因；INCOMP
 - 有 1 条不实或明显夸大 → 该单元不通过，整改清单写明 ID 和应改成什么。
 
 ## 3. 抽查有无明显漏报（每单元 1 处）
-- 在单元表里取本单元行数最多的文件（`awk -F'\t' '$1=="<单元>"' .cursor/plans/excellence/S0-units.tsv`），读正中间 40 行：`sed -n '<中间-20>,<中间+20>p' <路径>`。
+- 在单元表里取本单元行数最多的文件（`rg -N '^<单元>\t' .cursor/plans/excellence/S0-units.tsv`），读正中间 40 行：`sed -n '<中间-20>,<中间+20>p' <路径>`。
 - 这 40 行里有高或中级问题而结果里没有 → 不通过，整改清单写明 `路径:行号` 和问题；低级的不算。
 - 类型为 `data` 的单元不做这一步，改为重跑 `python3 .cursor/plans/excellence/tools/l10n_scan.py | head -n 1`，核对问题总数与结果文件一致。
 

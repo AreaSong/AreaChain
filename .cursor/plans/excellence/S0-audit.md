@@ -4,7 +4,7 @@
 
 ## 输入
 - 单元号 `UNIT`：启动指令里的 `S0-xxx`，下文的 `UNIT` 都换成它。
-- 文件清单：`awk -F'\t' '$1=="UNIT"' .cursor/plans/excellence/S0-units.tsv`，四列依次是单元、类型、路径、行数。
+- 文件清单：`rg -N '^UNIT\t' .cursor/plans/excellence/S0-units.tsv`，四列依次是单元、类型、路径、行数。
 - 类型是 `data`：改读 `.cursor/plans/excellence/S0-l10n.md` 并按它做，结果格式和收尾仍按本文件。
 - 启动指令含「整改」：只按下文「整改模式」做，不重读整个单元。
 
@@ -70,5 +70,5 @@ files_read: 2
 读整改清单里本单元那一行，以及被点名的代码（`sed -n '<行号-5>,<行号+5>p' <路径>`）。按清单改结果文件：改正、删除或补充发现；要求补读的，只读剩下的文件。
 
 ## 收尾
-1. 运行 `python3 .cursor/plans/excellence/tools/check_s0.py .cursor/plans/excellence/results/UNIT.md; echo "EXIT=$?"`。退出码 0（完成）或 2（如实标注了未完成）才能结束；是 1 就按输出改结果文件再跑，最多 3 次。
-2. 只回复三行：`UNIT 完成`、`发现：高 x / 中 y / 低 z`、`check_s0 退出码：n`。
+1. 运行 `python3 .cursor/plans/excellence/tools/check_s0.py .cursor/plans/excellence/results/UNIT.md`，看最后一行 `TOTAL`：`ok=1` 是完成；`incomplete=1` 表示如实标注了未完成，也可以结束；`fail=1` 就按输出改结果文件再跑，最多 3 次。
+2. 只回复三行：`UNIT 完成`、`发现：高 x / 中 y / 低 z`、`check_s0：OK` 或 `check_s0：INCOMPLETE`。
