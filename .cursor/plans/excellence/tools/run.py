@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """S0 批量执行器：每个单元、每个验收批次各开一个全新的 claude -p 会话，串行执行。
 
-子命令：audit / verify / fix / smoke / status；--dry-run 只打印命令，不启动会话。
 退出码：0 全部成功，1 有失败作业，3 用法错误，4 git 比对或清单校验中止。
 """
 import argparse
 import collections
-import datetime
-import difflib
 import hashlib
 import json
 import os
@@ -43,14 +40,11 @@ RATE_RE = re.compile(r"\b429\b|overloaded|temporarily unavailable|rate limit", r
 Job = collections.namedtuple("Job", "mode name prompt")
 Attempt = collections.namedtuple("Attempt", "code seconds timed_out stats")
 
-
 class UsageError(Exception):
     """用法错误，退出码 3。"""
 
-
 class Abort(Exception):
     """git 比对或清单校验不符：中止整批，退出码 4。"""
-
 
 class Ctx:
     """一次运行的选项、路径与单元表；运行前建好 results、verify、logs/jobs。"""
@@ -76,7 +70,6 @@ class Ctx:
     def batch_of(self, unit):
         return "V%02d" % (self.units.index(unit) // BATCH_SIZE + 1)
 
-
 def load_units(path):
     """首行表头，取 unit 列；单元顺序 = 首次出现顺序。"""
     if not path.is_file():
@@ -87,14 +80,8 @@ def load_units(path):
     rows = (line.split("\t") for line in lines[1:])
     return list(dict.fromkeys(r[col].strip() for r in rows if len(r) > col and r[col].strip()))
 
-
 def sha256(path):
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for chunk in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
-
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 def git_snapshot(ctx):
     """受保护路径的 git 状态；脏文件附内容哈希，这样已脏的文件再被改动也能发现。"""
@@ -109,35 +96,28 @@ def git_snapshot(ctx):
         snapshot.append(f"{line}\t{sha256(path) if path.is_file() else '-'}")
     return snapshot
 
-
 def manifest_bad(ctx):
     """用 hashlib 校验 MANIFEST.sha256 里的每个文件，返回不符的条目。"""
     if not ctx.manifest.is_file():
         return ["缺少 MANIFEST.sha256"]
     bad = []
-    for line in ctx.manifest.read_text(encoding="utf-8").splitlines():
+    for line in filter(str.strip, ctx.manifest.read_text(encoding="utf-8").splitlines()):
         match = re.match(r"([0-9a-fA-F]{64}) [ *](.+)$", line)
-        if not match:
-            if line.strip():
-                bad.append(f"无法解析：{line[:60]}")
-            continue
-        path = ctx.root / match.group(2)
-        if not path.is_file() or sha256(path) != match.group(1).lower():
-            bad.append(match.group(2))
+        path = ctx.root / match.group(2) if match else None
+        if path is None or not path.is_file() or sha256(path) != match.group(1).lower():
+            bad.append(match.group(2) if match else f"无法解析：{line[:60]}")
     return bad
-
 
 def guard(ctx, before):
     """最后防线（规则挡不住 sed 写文件）：git 快照变了或清单不符就中止整批，不尝试还原。"""
     if before is not None:
         after = git_snapshot(ctx)
         if after != before:
-            diff = difflib.unified_diff(before, after, "作业前", "作业后", lineterm="", n=0)
-            raise Abort("受保护路径有变动：\n" + "\n".join(list(diff)[:60]))
+            diff = [f"- {s}" for s in before if s not in after] + [f"+ {s}" for s in after if s not in before]
+            raise Abort("受保护路径有变动（- 作业前 / + 作业后）：\n" + "\n".join(diff[:60]))
     bad = manifest_bad(ctx)
     if bad:
         raise Abort("清单校验不符：" + " ".join(bad[:30]))
-
 
 def build_cmd(ctx, job):
     """完整命令（参数列表，不经 shell）；env -i 清掉桌面端注入的宿主认证变量。"""
@@ -151,17 +131,15 @@ def build_cmd(ctx, job):
             + ["--permission-mode", "dontAsk", "--strict-mcp-config", "--no-session-persistence"]
             + ["--effort", ctx.args.effort, "--settings", '{"disableAllHooks":true}'])
 
-
 class Stats:
     """逐行解析 stream-json：上下文 = input + cache_read + cache_creation；缺字段保持 None（记 NA）。"""
 
-    def __init__(self):
-        self.baseline = self.peak = self.turns = self.cost = self.is_error = None
-        self.rate_limited = False
+    baseline = property(lambda self: self.sizes[0] if self.sizes else None)
+    peak = property(lambda self: max(self.sizes) if self.sizes else None)
+    new = property(lambda self: max(self.sizes) - self.sizes[0] if self.sizes else None)
 
-    @property
-    def new(self):
-        return None if self.baseline is None or self.peak is None else self.peak - self.baseline
+    def __init__(self):
+        self.sizes, self.turns, self.cost, self.is_error, self.rate_limited = [], None, None, None, False
 
     def feed(self, line):
         self.rate_limited = self.rate_limited or bool(RATE_RE.search(line))
@@ -172,19 +150,11 @@ class Stats:
         if not isinstance(event, dict):
             return
         message = event.get("message")
-        if event.get("type") == "assistant" and isinstance(message, dict):
-            self.add_usage(message.get("usage"))
+        usage = message.get("usage") if event.get("type") == "assistant" and isinstance(message, dict) else None
+        if isinstance(usage, dict) and any(k in usage for k in USAGE_KEYS):
+            self.sizes.append(sum(v for v in (usage.get(k) for k in USAGE_KEYS) if isinstance(v, (int, float))))
         elif event.get("type") == "result":
-            self.turns, self.cost = event.get("num_turns"), event.get("total_cost_usd")
-            self.is_error = event.get("is_error")
-
-    def add_usage(self, usage):
-        if not isinstance(usage, dict) or not any(k in usage for k in USAGE_KEYS):
-            return
-        size = sum(v for v in (usage.get(k) for k in USAGE_KEYS) if isinstance(v, (int, float)))
-        self.baseline = size if self.baseline is None else self.baseline
-        self.peak = size if self.peak is None else max(self.peak, size)
-
+            self.turns, self.cost, self.is_error = (event.get(k) for k in ("num_turns", "total_cost_usd", "is_error"))
 
 def kill_group(proc, fired):
     fired.set()
@@ -192,7 +162,6 @@ def kill_group(proc, fired):
         os.killpg(proc.pid, signal.SIGKILL)
     except OSError:
         pass
-
 
 def spawn(ctx, job, attempt):
     """启动一次会话，原始输出逐行写入 jsonl；超时杀掉整个进程组（含工具子进程）。"""
@@ -214,23 +183,16 @@ def spawn(ctx, job, attempt):
             kill_group(proc, threading.Event())
     return Attempt(code, round(time.monotonic() - start), fired.is_set(), stats)
 
-
 def run_checker(ctx, unit):
     """检查器退出码：0 OK、2 INCOMPLETE、其余视为 FAIL。"""
     cmd = [sys.executable, str(ctx.checker), "--root", str(ctx.root), f"{REL}/results/{unit}.md"]
-    try:
-        return subprocess.run(cmd, cwd=ctx.root, capture_output=True, timeout=300).returncode
-    except subprocess.TimeoutExpired:
-        return -1
-
+    return subprocess.run(cmd, cwd=ctx.root, capture_output=True).returncode
 
 def last_line(path):
     """最后一个非空行；文件不存在返回空串。"""
-    if not path.is_file():
-        return ""
-    lines = [s.strip() for s in path.read_text(encoding="utf-8", errors="replace").splitlines() if s.strip()]
+    text = path.read_text(encoding="utf-8", errors="replace") if path.is_file() else ""
+    lines = [s.strip() for s in text.splitlines() if s.strip()]
     return lines[-1] if lines else ""
-
 
 def outcome_problems(ctx, job, stats):
     """各模式的成功条件；返回不满足的项。"""
@@ -242,41 +204,29 @@ def outcome_problems(ctx, job, stats):
     if job.mode == "verify":
         return [] if last_line(ctx.verify / f"{job.name}.md").startswith("结论：") else ["缺结论"]
     ok_file, denied = (ctx.root / rel for rel in SMOKE_FILES)
-    problems = []
-    if not ok_file.is_file() or ok_file.read_text(encoding="utf-8", errors="replace").strip() != "ok":
-        problems.append("SMOKE.md不是ok")
-    if denied.exists():
-        problems.append("越界写入未被拒绝")
-    if stats.baseline is None or stats.peak is None:
-        problems.append("基线或峰值缺失")
-    return problems
-
+    ok_text = ok_file.read_text(encoding="utf-8", errors="replace").strip() if ok_file.is_file() else None
+    checks = (("SMOKE.md不是ok", ok_text != "ok"), ("越界写入未被拒绝", denied.exists()),
+              ("基线或峰值缺失", stats.baseline is None or stats.peak is None))
+    return [name for name, bad in checks if bad]
 
 def failure_note(ctx, job, result):
     """本次尝试的失败原因；空串表示成功。"""
-    notes = ["超时"] if result.timed_out else []
-    if result.code != 0:
-        notes.append(f"退出{result.code}")
-    if result.stats.is_error:
-        notes.append("is_error")
-    notes += outcome_problems(ctx, job, result.stats)
-    if notes and result.stats.rate_limited:
-        notes.append("限流")
-    return ",".join(notes)
-
+    stats = result.stats
+    notes = [name for name, bad in (("超时", result.timed_out), (f"退出{result.code}", result.code != 0),
+                                    ("is_error", bool(stats.is_error))) if bad]
+    notes += outcome_problems(ctx, job, stats)
+    return ",".join(notes + (["限流"] if notes and stats.rate_limited else []))
 
 def fmt(value):
     return "NA" if value is None else str(value)
 
-
 def kilo(value):
     return "NA" if value is None else f"{value / 1000:.1f}k"
-
 
 def log_attempt(ctx, job, attempt, result, note):
     """每次尝试追加一行 run-log.tsv（首次写表头），控制台同时打印一行。"""
     stats, status = result.stats, ("fail" if note else "ok")
-    row = [datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), job.mode, job.name, attempt,
+    row = [time.strftime("%Y-%m-%d %H:%M:%S"), job.mode, job.name, attempt,
            result.code, result.seconds, stats.turns, stats.baseline, stats.peak, stats.new,
            stats.cost, status, note]
     fresh = not ctx.run_log.is_file() or ctx.run_log.stat().st_size == 0
@@ -284,21 +234,15 @@ def log_attempt(ctx, job, attempt, result, note):
         if fresh:
             handle.write("\t".join(LOG_HEADER) + "\n")
         handle.write("\t".join(re.sub(r"\s+", " ", fmt(v)) for v in row) + "\n")
-    line = f"{job.name} #{attempt} {status} {result.seconds}s peak={kilo(stats.peak)} new={kilo(stats.new)}"
-    if note:
-        line += f" {note}"
-    if stats.new is not None and stats.new > NEW_LIMIT:
-        line += " 超出16k"
-    print(line, flush=True)
-
+    extra = (f" {note}" if note else "") + (" 超出16k" if stats.new is not None and stats.new > NEW_LIMIT else "")
+    print(f"{job.name} #{attempt} {status} {result.seconds}s peak={kilo(stats.peak)} new={kilo(stats.new)}{extra}",
+          flush=True)
 
 def clean_smoke(ctx):
     """只删冒烟的两个文件。"""
-    for rel in SMOKE_FILES:
-        path = ctx.root / rel
+    for path in (ctx.root / rel for rel in SMOKE_FILES):
         if path.is_file():
             path.unlink()
-
 
 def run_job(ctx, job):
     """一个作业：失败按退避重试，每次尝试后都过防线。返回 (是否成功, 最后一次尝试, 备注)。"""
@@ -316,7 +260,6 @@ def run_job(ctx, job):
             break
     return not note, result, note
 
-
 def run_batch(ctx, jobs):
     """串行执行；连续失败达到 --stop-after 就停。返回退出码 0 或 1。"""
     guard(ctx, None)
@@ -331,7 +274,6 @@ def run_batch(ctx, jobs):
     print(f"汇总：共 {len(jobs)} 个作业，成功 {ran - failed}，失败 {failed}，未执行 {len(jobs) - ran}")
     return 1 if failed else 0
 
-
 def pick(names, known, what):
     """校验 --ids / --batches 并按表内顺序返回；不给就是全部。"""
     unknown = [n for n in names or [] if n not in known]
@@ -339,14 +281,10 @@ def pick(names, known, what):
         raise UsageError(f"未知{what}：{' '.join(unknown)}")
     return [k for k in known if not names or k in names]
 
-
 def unit_verdict(ctx, unit):
     """所在批次验收表里该单元那一行的「结论」列；没有就返回空串。"""
-    path = ctx.verify / f"{ctx.batch_of(unit)}.md"
-    if not path.is_file():
-        return ""
-    col = None
-    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+    path, col = ctx.verify / f"{ctx.batch_of(unit)}.md", None
+    for line in (path.read_text(encoding="utf-8", errors="replace") if path.is_file() else "").splitlines():
         if not line.strip().startswith("|"):
             continue
         cells = [c.strip().strip("`* ") for c in line.strip().strip("|").split("|")]
@@ -356,12 +294,10 @@ def unit_verdict(ctx, unit):
             return cells[col]
     return ""
 
-
 def batch_verdict(line):
     """验收文件最后一行 → 通过 / 不通过 / BLOCKED / 其他。"""
     rest = line[len("结论："):] if line.startswith("结论：") else ""
     return next((k for k in ("不通过", "BLOCKED", "通过") if rest.startswith(k)), "其他")
-
 
 def audit_jobs(ctx):
     """audit / fix：每个单元一个作业，附跳过原因（空串表示要跑）。"""
@@ -377,23 +313,17 @@ def audit_jobs(ctx):
         pairs.append((Job(ctx.args.cmd, unit, prompt), skip))
     return pairs
 
-
 def verify_jobs(ctx):
     """按单元顺序每 4 个一批（V01 起）；本批结果未齐或验收文件已存在就跳过。"""
     pairs = []
     for batch in pick(ctx.args.batches, ctx.batches, "批次"):
         units = ctx.batches[batch]
         missing = [u for u in units if not ctx.result(u).exists()]
-        if missing:
-            skip = "本批结果未齐，缺 " + " ".join(missing)
-        elif (ctx.verify / f"{batch}.md").exists() and not ctx.args.force:
-            skip = "验收文件已存在"
-        else:
-            skip = ""
+        exists = (ctx.verify / f"{batch}.md").exists() and not ctx.args.force
+        skip = "本批结果未齐，缺 " + " ".join(missing) if missing else ("验收文件已存在" if exists else "")
         prompt = PROMPTS["verify"].format(batch=batch, units=" ".join(units))
         pairs.append((Job("verify", batch, prompt), skip))
     return pairs
-
 
 def dry_run(ctx, pairs):
     """打印前 2 条完整命令和作业总数；不做跳过判断，只在末尾标注。"""
@@ -406,24 +336,18 @@ def dry_run(ctx, pairs):
     print(f"注：dry-run 未做跳过判断，实际运行会跳过：{marks}")
     return 0
 
-
 def cmd_jobs(ctx, pairs):
     """audit / verify / fix 的公共流程：跳过、限量后串行执行。"""
     if ctx.args.dry_run:
         return dry_run(ctx, pairs)
-    skipped = collections.OrderedDict()
     for job, reason in pairs:
         if reason:
-            skipped.setdefault(reason, []).append(job.name)
-    for reason, names in skipped.items():
-        more = " …" if len(names) > 12 else ""
-        print(f"跳过 {len(names)} 个（{reason}）：{' '.join(names[:12])}{more}")
+            print(f"跳过 {job.name}：{reason}")
     jobs = [job for job, reason in pairs if not reason][:getattr(ctx.args, "limit", None)]
     if not jobs:
         print("没有需要执行的作业")
         return 0
     return run_batch(ctx, jobs)
-
 
 def cmd_smoke(ctx):
     """冒烟：不做 git 比对，但做清单校验；结束后只删 SMOKE 两个文件。"""
@@ -436,13 +360,9 @@ def cmd_smoke(ctx):
     finally:
         clean_smoke(ctx)
     numbers = f"基线（固定开销）={fmt(result.stats.baseline)} 新增={fmt(result.stats.new)}"
-    if ok:
-        print(f"冒烟 ok：{numbers}")
-        return 0
-    state = "BLOCKED（限流，重试用尽）" if "限流" in note else f"失败（{note}）"
+    state = "ok" if ok else ("BLOCKED（限流，重试用尽）" if "限流" in note else f"失败（{note}）")
     print(f"冒烟 {state}：{numbers}")
-    return 1
-
+    return 0 if ok else 1
 
 def cmd_status(ctx):
     """不开会话：汇总结果、检查器、验收与待整改单元。"""
@@ -459,14 +379,12 @@ def cmd_status(ctx):
     print(f"待整改单元：{len(todo)}" + (f"（{' '.join(todo[:20])}{more}）" if todo else ""))
     return 0
 
-
 class Parser(argparse.ArgumentParser):
     """argparse 的用法错误默认退出 2，这里统一为 3。"""
 
     def error(self, message):
         self.print_usage(sys.stderr)
         self.exit(3, f"{self.prog}: 错误: {message}\n")
-
 
 def build_parser():
     common = argparse.ArgumentParser(add_help=False)
@@ -492,18 +410,11 @@ def build_parser():
         sub.add_parser(name, parents=[common])
     return parser
 
-
 def validate(args):
     limit = getattr(args, "limit", None)
-    problems = [msg for ok, msg in (
-        (args.max_retries >= 0, "--max-retries 不能为负"),
-        (args.backoff >= 0, "--backoff 不能为负"),
-        (args.stop_after >= 1, "--stop-after 至少为 1"),
-        (args.timeout > 0, "--timeout 必须大于 0"),
-        (limit is None or limit >= 1, "--limit 至少为 1")) if not ok]
-    if problems:
-        raise UsageError("；".join(problems))
-
+    if min(args.max_retries, args.backoff) < 0 or args.stop_after < 1 or args.timeout <= 0 or (
+            limit is not None and limit < 1):
+        raise UsageError("--max-retries、--backoff 不能为负；--stop-after、--limit 至少为 1；--timeout 须大于 0")
 
 def main(argv=None):
     args = build_parser().parse_args(argv)
@@ -521,7 +432,6 @@ def main(argv=None):
     except Abort as exc:
         print(f"中止：{exc}", file=sys.stderr)
         return 4
-
 
 if __name__ == "__main__":
     sys.exit(main())

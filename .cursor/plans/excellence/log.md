@@ -8,3 +8,4 @@
 - 2026-09-24 01:16 架构师：自审发现本机 python3 为 3.9.6，两份验收稿的标准库判断改为 3.9 可用写法，两份执行稿注明版本；清单已重建（提示词：architect.md；自审：乱码 0、MANIFEST_OK）
 - 2026-09-24 01:45 R0a 执行：完成（提示词：R0a-execute.md；UNIT=0、PROBE=0、NOARGS=3、MANIFEST=0）
 - 2026-09-24 09:57 R0a 验收：通过（提示词：R0a-verify.md；249 行/最长函数 28 行/无非标准库、UNIT=0 通过 16、PROBE=0 7/7、NOARGS=3、越界零输出、MANIFEST=0）
+- 2026-09-24 10:46 R0b 执行：完成（提示词：R0b-execute.md；UNIT=0、SMOKE=0、基线=16161、新增=590）
