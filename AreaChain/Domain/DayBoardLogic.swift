@@ -209,14 +209,59 @@ enum DayBoardLogic {
             }
     }
 
+    static func todayProgress(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        dayKey: String
+    ) -> BoardProgress {
+        let dueTodos = self.todos(for: dayKey, in: todos)
+        let dueRoutines = self.routines(for: dayKey, in: routines)
+        let completed = dueTodos.filter(\.isDone).count
+            + dueRoutines.filter { isRoutineDone($0, checks: checks, on: dayKey) }.count
+        return BoardProgress(completed: completed, total: dueTodos.count + dueRoutines.count)
+    }
+
     static func todayBadgeCount(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
         todos: [TodoSnapshot],
         dayKey: String
     ) -> Int {
-        unfinishedRoutines(routines: routines, checks: checks, dayKey: dayKey).count
-            + unfinishedTodos(todos: todos, dayKey: dayKey).count
+        let progress = todayProgress(routines: routines, checks: checks, todos: todos, dayKey: dayKey)
+        return progress.total - progress.completed
+    }
+
+    static func openBoardItems(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        dayKey: String
+    ) -> [BoardItemReference] {
+        mixed(
+            todos: openTodos(todos: todos, dayKey: dayKey),
+            routines: openRoutines(routines: routines, checks: checks, dayKey: dayKey)
+        )
+    }
+
+    static func completedBoardItems(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        dayKey: String
+    ) -> [BoardItemReference] {
+        mixed(
+            todos: completedTodos(todos: todos, dayKey: dayKey),
+            routines: completedRoutines(routines: routines, checks: checks, dayKey: dayKey)
+        )
+    }
+
+    private static func mixed(todos: [TodoSnapshot], routines: [RoutineSnapshot]) -> [BoardItemReference] {
+        let entries = todos.map { (BoardItemReference.todo($0.id), $0.boardSortKey) }
+            + routines.map { (BoardItemReference.recurring($0.id), $0.boardSortKey) }
+        return entries
+            .sorted { Classification.precedes($0.1, $1.1) }
+            .map(\.0)
     }
 
     static func monthUnfinished(

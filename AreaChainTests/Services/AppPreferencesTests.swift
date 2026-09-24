@@ -21,15 +21,15 @@ struct AppPreferencesTests {
     }
 
     @Test func catalogFollowsExplicitLocale() {
-        #expect(L10n.string("tab.tasks", locale: Locale(identifier: "zh-Hans")) == "任务")
-        #expect(L10n.string("tab.tasks", locale: Locale(identifier: "en")) == "Tasks")
-        #expect(L10n.string("tab.residents", locale: Locale(identifier: "zh-Hans")) == "常驻")
-        #expect(L10n.string("tab.residents", locale: Locale(identifier: "en")) == "Daily")
+        #expect(L10n.string("tab.tasks", locale: Locale(identifier: "zh-Hans")) == "事项")
+        #expect(L10n.string("tab.tasks", locale: Locale(identifier: "en")) == "Items")
+        #expect(L10n.string("tab.residents", locale: Locale(identifier: "zh-Hans")) == "重复事项")
+        #expect(L10n.string("tab.residents", locale: Locale(identifier: "en")) == "Recurring")
         #expect(L10n.string("residents.hint", locale: Locale(identifier: "zh-Hans")) == "打开的会出现在今天的清单里。点星期决定哪几天出现；关掉只是先不出现，不是删除。")
         #expect(L10n.string("residents.empty", locale: Locale(identifier: "en")) == "None yet. Add one below.")
         #expect(L10n.string("sidebar.parent", locale: Locale(identifier: "en")) == "Nest under")
         #expect(L10n.string("row.attach.screen", locale: Locale(identifier: "en")) == "Capture current screen")
-        #expect(L10n.string("empty.filter", locale: Locale(identifier: "zh-Hans")) == "这个筛选下没有任务。")
+        #expect(L10n.string("empty.filter", locale: Locale(identifier: "zh-Hans")) == "这个筛选下没有事项。")
         #expect(L10n.string("empty.filter", locale: Locale(identifier: "en")) == "Nothing matches this filter.")
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "zh-Hans")) == "「密码」「小巧思」「日记」是手记分类，不能当作待办标签。")
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are note categories, not task tags.")

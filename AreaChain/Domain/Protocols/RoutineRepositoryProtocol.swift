@@ -13,6 +13,7 @@ struct CreateRoutineParams: Sendable {
     var isImportant: Bool
     var isUrgent: Bool
     var notes: String
+    var isEnabled: Bool
     var createdDayKey: String
 
     init(
@@ -26,6 +27,7 @@ struct CreateRoutineParams: Sendable {
         isImportant: Bool = false,
         isUrgent: Bool = false,
         notes: String = "",
+        isEnabled: Bool = true,
         createdDayKey: String = DayKey.today()
     ) {
         self.title = title
@@ -38,6 +40,7 @@ struct CreateRoutineParams: Sendable {
         self.isImportant = isImportant
         self.isUrgent = isUrgent
         self.notes = notes
+        self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
     }
 }

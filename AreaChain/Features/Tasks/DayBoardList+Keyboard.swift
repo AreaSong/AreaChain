@@ -188,8 +188,7 @@ extension DayBoardList {
 
     var orderedVisibleIDs: [UUID] {
         var ids: [UUID] = []
-        ids.append(contentsOf: openTodosList.map(\.id))
-        ids.append(contentsOf: openRoutinesList.map(\.id))
+        ids.append(contentsOf: openItemsList.map(\.id))
         if showCompleted {
             ids.append(contentsOf: doneItemsList.map(\.id))
         }

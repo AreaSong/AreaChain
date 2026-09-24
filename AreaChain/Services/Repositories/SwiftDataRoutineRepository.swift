@@ -60,7 +60,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         let routine = DailyRoutine(
             title: trimmed,
             sortOrder: params.sortOrder,
-            isEnabled: true,
+            isEnabled: params.isEnabled,
             createdDayKey: params.createdDayKey,
             weekdaysOnly: params.weekdaysOnly,
             weekdayMask: params.weekdayMask,
@@ -69,7 +69,8 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             tagIDs: TagIDList.encode(params.tagIDs),
             isImportant: params.isImportant,
             isUrgent: params.isUrgent,
-            notes: params.notes
+            notes: params.notes,
+            pausedOnDayKey: params.isEnabled ? nil : params.createdDayKey
         )
         context.insert(routine)
         try saveAndNotify()

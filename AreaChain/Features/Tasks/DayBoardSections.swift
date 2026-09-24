@@ -3,28 +3,14 @@ import SwiftUI
 extension DayBoardList {
     @ViewBuilder
     var openItemsSection: some View {
-        if !openTodosList.isEmpty {
-            if !openRoutinesList.isEmpty {
-                DaybookSectionHeader(title: "stamp.todos", icon: "checklist", count: openTodosList.count)
-                    .padding(.leading, 2)
-            }
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(openTodosList) { todo in
-                    todoRow(todo, isDone: false)
-                }
-            }
-        }
-        if !openRoutinesList.isEmpty {
-            DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
-                .padding(.leading, 2)
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(openRoutinesList) { routine in
-                    residentRow(routine, isDone: false)
-                }
-            }
-        }
-        if openTodosList.isEmpty && openRoutinesList.isEmpty && !doneItemsList.isEmpty {
+        if openItemsList.isEmpty && !doneItemsList.isEmpty {
             allDoneBanner
+        } else if !openItemsList.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(openItemsList) { row in
+                    dayRow(row, isDone: false)
+                }
+            }
         }
     }
 

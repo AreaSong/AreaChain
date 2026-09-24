@@ -659,7 +659,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "展示待办、常驻和普通手记的图片；私密手记图片请在手记中显示正文后查看。"
+            "value": "展示一次性事项、重复事项和普通手记的图片；私密手记图片请在手记中显示正文后查看。"
           }
         }
       }
@@ -687,13 +687,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Resident"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "重复事项"
           }
         }
       }
@@ -704,13 +704,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Temporary task"
+            "value": "One-off"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "临时任务"
+            "value": "一次性事项"
           }
         }
       }
@@ -2835,7 +2835,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在左侧列表中点击任意任务以查看和编辑详情"
+            "value": "在左侧列表中点击任意事项以查看和编辑详情"
           }
         }
       }
@@ -2852,7 +2852,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "未选中任务"
+            "value": "未选中事项"
           }
         }
       }
@@ -3101,13 +3101,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Habit"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯打卡"
+            "value": "重复事项"
           }
         }
       }
@@ -3220,13 +3220,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Habit paused"
+            "value": "Recurring item paused"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯已暂停"
+            "value": "重复事项已停用"
           }
         }
       }
@@ -3549,7 +3549,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "这个筛选下没有任务。"
+            "value": "这个筛选下没有事项。"
           }
         }
       }
@@ -3566,7 +3566,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "暂无相关任务"
+            "value": "暂无相关事项"
           }
         }
       }
@@ -3577,13 +3577,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No routines today. Manage the daily list on the Routines page."
+            "value": "Nothing recurring is scheduled today. Manage recurring items from Today."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今天没有例行。到「例行」页维护每天会出现的事。"
+            "value": "今天没有排定的重复事项。可在今日页管理重复事项。"
           }
         }
       }
@@ -4165,7 +4165,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加任务到此项目..."
+            "value": "添加事项到此项目..."
           }
         }
       }
@@ -4182,7 +4182,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加带此标签的任务..."
+            "value": "添加带此标签的事项..."
           }
         }
       }
@@ -4437,7 +4437,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "跨日期搜索待办、子任务、习惯和手记，支持 #标签、!p1～!p4 与 @时间。⌘F 聚焦搜索。"
+            "value": "跨日期搜索事项、子任务和手记，支持 #标签、!p1～!p4 与 @时间。⌘F 聚焦搜索。"
           }
         }
       }
@@ -4567,13 +4567,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "⌘-click task names or bars to select multiple tasks; Shift-click selects a range. Drag to reschedule together, or use ←/→ to move one day. Esc cancels a drag. Resident dots mark scheduled weekdays."
+            "value": "⌘-click names or bars to select multiple items; Shift-click selects a range. Drag to reschedule together, or use ←/→ to move one day. Esc cancels a drag. Recurring dots mark scheduled weekdays."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "⌘ 点选任务名或色块可多选，Shift 连选；拖动一起改期，←/→ 平移一天，Esc 取消拖动。常驻圆点表示排定日。"
+            "value": "⌘ 点选名称或色块可多选，Shift 连选；拖动一起改期，←/→ 平移一天，Esc 取消拖动。重复事项圆点表示排定日。"
           }
         }
       }
@@ -5009,13 +5009,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routines  new %lld / update %lld\nTasks  new %lld / update %lld\nNotes  new %lld / update %lld\nChecks  new %lld / update %lld\nProjects  new %lld / update %lld\nTags  new %lld / update %lld\nAttachments  new %lld / update %lld\nNothing is written until you confirm."
+            "value": "Recurring  new %lld / update %lld\nOne-off  new %lld / update %lld\nNotes  new %lld / update %lld\nChecks  new %lld / update %lld\nProjects  new %lld / update %lld\nTags  new %lld / update %lld\nAttachments  new %lld / update %lld\nNothing is written until you confirm."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "例行 新增 %lld / 覆盖 %lld\n待办 新增 %lld / 覆盖 %lld\n手记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n项目 新增 %lld / 覆盖 %lld\n标签 新增 %lld / 覆盖 %lld\n附件 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
+            "value": "重复事项 新增 %lld / 覆盖 %lld\n一次性事项 新增 %lld / 覆盖 %lld\n手记 新增 %lld / 覆盖 %lld\n勾选 新增 %lld / 覆盖 %lld\n项目 新增 %lld / 覆盖 %lld\n标签 新增 %lld / 覆盖 %lld\n附件 新增 %lld / 覆盖 %lld\n确定后才会写入本机。"
           }
         }
       }
@@ -6658,13 +6658,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add a daily task…"
+            "value": "Add a recurring item…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "加上每天…"
+            "value": "加上重复事项…"
           }
         }
       }
@@ -6698,7 +6698,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "还没有常驻。写在下面即可。"
+            "value": "还没有重复事项。写在下面即可。"
           }
         }
       }
@@ -6817,7 +6817,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "还没有例行项。下面加上第一条。"
+            "value": "还没有重复事项。下面加上第一条。"
           }
         }
       }
@@ -6851,7 +6851,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每天会出现什么。任务页只负责今天勾完。"
+            "value": "重复事项会出现在排定的日子。今日页负责当天完成、跳过和管理。"
           }
         }
       }
@@ -6885,7 +6885,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "新的例行项"
+            "value": "新的重复事项"
           }
         }
       }
@@ -7168,13 +7168,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "重复事项"
           }
         }
       }
@@ -7440,13 +7440,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routine rules"
+            "value": "Recurring rule"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "习惯设置"
+            "value": "重复规则"
           }
         }
       }
@@ -7746,13 +7746,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Habit"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "重复事项"
           }
         }
       }
@@ -7780,13 +7780,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task"
+            "value": "One-off"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "临时"
+            "value": "一次性事项"
           }
         }
       }
@@ -8058,7 +8058,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "把临时任务同步到系统日历"
+            "value": "把一次性事项同步到系统日历"
           }
         }
       }
@@ -8868,13 +8868,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily Routines"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日常习惯"
+            "value": "重复事项"
           }
         }
       }
@@ -9146,7 +9146,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "内容输入统一支持标签；待办和习惯还支持优先级、提醒。"
+            "value": "内容输入统一支持标签；事项还支持优先级、提醒。"
           }
         }
       }
@@ -9197,7 +9197,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "!p1～!p4 按优先级查找待办和习惯"
+            "value": "!p1～!p4 按优先级查找事项"
           }
         }
       }
@@ -9282,7 +9282,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "@15:30 按提醒时刻查找待办和习惯"
+            "value": "@15:30 按提醒时刻查找事项"
           }
         }
       }
@@ -9480,13 +9480,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "重复事项"
           }
         }
       }
@@ -9497,13 +9497,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Routines"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "例行"
+            "value": "重复事项"
           }
         }
       }
@@ -9548,13 +9548,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tasks"
+            "value": "Items"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务"
+            "value": "事项"
           }
         }
       }
@@ -9588,7 +9588,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务 (⌘←)"
+            "value": "事项 (⌘←)"
           }
         }
       }
@@ -9718,13 +9718,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily"
+            "value": "Recurring"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "常驻"
+            "value": "重复事项"
           }
         }
       }
@@ -9752,13 +9752,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task"
+            "value": "One-off"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务"
+            "value": "一次性事项"
           }
         }
       }
@@ -9809,7 +9809,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "请先恢复所属待办、习惯或手记"
+            "value": "请先恢复所属事项或手记"
           }
         }
       }
@@ -9990,13 +9990,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add a task, press Return (e.g. 3pm meeting #work !p1)"
+            "value": "Add an item, press Return (e.g. 3pm meeting #work !p1)"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加新待办，回车快速录入（支持自然语言如：下午3点开会 #工作 !p1）"
+            "value": "添加新事项，回车快速录入（支持自然语言如：下午3点开会 #工作 !p1）"
           }
         }
       }
@@ -10058,13 +10058,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Manage daily habits"
+            "value": "Manage recurring items"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "管理常驻"
+            "value": "管理重复事项"
           }
         }
       }
@@ -10098,7 +10098,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日待办"
+            "value": "今日事项"
           }
         }
       }
@@ -10166,7 +10166,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "任务 (⌘←)"
+            "value": "事项 (⌘←)"
           }
         }
       }
@@ -10251,7 +10251,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "太棒了，今日任务全清！"
+            "value": "太棒了，今日事项全清！"
           }
         }
       }
@@ -10650,309 +10650,749 @@
     "syntax.footer.complete": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Complete" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "补全" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Complete"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "补全"
+          }
+        }
       }
     },
     "syntax.footer.dismiss": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Close" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "关闭" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
       }
     },
     "syntax.footer.navigate": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Move" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "切换" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "切换"
+          }
+        }
       }
     },
     "syntax.guide.diary": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Save as diary" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "直接存入手记" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save as diary"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "直接存入手记"
+          }
+        }
       }
     },
     "syntax.guide.example": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Full example · any order, click to try" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "综合范例：全属性完整待办 · 顺序自由，点击一键试用" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full example · any order, click to try"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "综合范例：全属性完整待办 · 顺序自由，点击一键试用"
+          }
+        }
       }
     },
     "syntax.guide.note": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Note on the next line" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "换行输入备注" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Note on the next line"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "换行输入备注"
+          }
+        }
       }
     },
     "syntax.guide.priority": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Priority" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "四象限优先级" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Priority"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "四象限优先级"
+          }
+        }
       }
     },
     "syntax.guide.tag": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tags" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "标签分类" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tags"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标签分类"
+          }
+        }
       }
     },
     "syntax.guide.time": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Reminder" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "时刻提醒" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "时刻提醒"
+          }
+        }
       }
     },
     "syntax.guide.try": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Try it" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "填入试用" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try it"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "填入试用"
+          }
+        }
       }
     },
     "syntax.example.common.or": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "  or  " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "  或  " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "  or  "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "  或  "
+          }
+        }
       }
     },
     "syntax.example.complex.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Refactor core module #work !p1 @15:30" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重构核心模块 #工作 !p1 @15:30" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refactor core module #work !p1 @15:30"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重构核心模块 #工作 !p1 @15:30"
+          }
+        }
       }
     },
     "syntax.example.complex.title": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Refactor core module " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重构核心模块 " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refactor core module "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重构核心模块 "
+          }
+        }
       }
     },
     "syntax.example.diary.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Capture thoughts anytime" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "随时记录灵感闪念" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture thoughts anytime"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随时记录灵感闪念"
+          }
+        }
       }
     },
     "syntax.example.diary.text1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Capture thoughts " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "随时记录灵感 " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture thoughts "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "随时记录灵感 "
+          }
+        }
       }
     },
     "syntax.example.diary.text2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": " Save directly to today's notes" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 直接存入今日手记" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Save directly to today's notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 直接存入今日手记"
+          }
+        }
       }
     },
     "syntax.example.note.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Task title on first line\nNewline enters notes" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "首行待办标题\n换行输入详细备注" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task title on first line\nNewline enters notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首行待办标题\n换行输入详细备注"
+          }
+        }
       }
     },
     "syntax.example.note.text1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "First line " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "首行标题 " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "First line "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "首行标题 "
+          }
+        }
       }
     },
     "syntax.example.note.text2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": " Newline for notes (hover list to view)" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 换行转备注 (悬停清单查看)" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Newline for notes (hover list to view)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 换行转备注 (悬停清单查看)"
+          }
+        }
       }
     },
     "syntax.example.priority.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Fix issue !p1" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "修线上Bug !p1" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fix issue !p1"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修线上Bug !p1"
+          }
+        }
       }
     },
     "syntax.example.priority.text1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Fix issue " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "修线上Bug " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fix issue "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "修线上Bug "
+          }
+        }
       }
     },
     "syntax.example.priority.text2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": " Clean desk" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 整理书架" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Clean desk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 整理书架"
+          }
+        }
       }
     },
     "syntax.example.tag.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Weekly report #work" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "写周报 #工作" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly report #work"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写周报 #工作"
+          }
+        }
       }
     },
     "syntax.example.tag.text1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Weekly report " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "写周报 " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weekly report "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "写周报 "
+          }
+        }
       }
     },
     "syntax.example.tag.text2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": " Buy milk" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 买牛奶" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " Buy milk"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " 买牛奶"
+          }
+        }
       }
     },
     "syntax.example.tag.token1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "#work" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "#工作" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#work"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#工作"
+          }
+        }
       }
     },
     "syntax.example.tag.token2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "#life" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "#生活" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#life"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "#生活"
+          }
+        }
       }
     },
     "syntax.example.time.snippet": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Morning standup @10:00" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "开晨会 @10:00" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning standup @10:00"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开晨会 @10:00"
+          }
+        }
       }
     },
     "syntax.example.time.text1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Morning standup " } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "开晨会 " } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning standup "
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开晨会 "
+          }
+        }
       }
     },
     "syntax.example.time.text2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "  or  walk tomorrow afternoon" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "  或  明天下午 散步" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "  or  walk tomorrow afternoon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "  或  明天下午 散步"
+          }
+        }
       }
     },
     "syntax.preview.allTags": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "All tags" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全部标签" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All tags"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部标签"
+          }
+        }
       }
     },
     "syntax.preview.tagCount": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "%lld tags" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "共 %lld 个标签" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tags"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共 %lld 个标签"
+          }
+        }
       }
     },
     "syntax.priority.p1": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Important and urgent" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重要且紧急" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Important and urgent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重要且紧急"
+          }
+        }
       }
     },
     "syntax.priority.p2": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Important, not urgent" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "重要不紧急" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Important, not urgent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重要不紧急"
+          }
+        }
       }
     },
     "syntax.priority.p3": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Urgent, not important" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "紧急不重要" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Urgent, not important"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "紧急不重要"
+          }
+        }
       }
     },
     "syntax.priority.p4": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Neither" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "不重要不紧急" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neither"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不重要不紧急"
+          }
+        }
       }
     },
     "syntax.tag.label": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Tag" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "标签" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tag"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标签"
+          }
+        }
       }
     },
     "syntax.time.afternoon": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Afternoon" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下午" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afternoon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下午"
+          }
+        }
       }
     },
     "syntax.time.custom": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Custom time" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "自定义时刻" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Custom time"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "自定义时刻"
+          }
+        }
       }
     },
     "syntax.time.evening": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Evening" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "傍晚" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Evening"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "傍晚"
+          }
+        }
       }
     },
     "syntax.time.hour": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "On the hour" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "整点" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On the hour"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整点"
+          }
+        }
       }
     },
     "syntax.time.morning": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Morning" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "早上" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morning"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "早上"
+          }
+        }
       }
     },
     "syntax.time.night": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Night" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "晚上" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "晚上"
+          }
+        }
       }
     },
     "syntax.time.noon": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Noon" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "中午" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noon"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "中午"
+          }
+        }
       }
     },
     "syntax.section.input": {
@@ -11291,6 +11731,108 @@
           "stringUnit": {
             "state": "translated",
             "value": "选择指定日期..."
+          }
+        }
+      }
+    },
+    "recurring.create.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New recurring item"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建重复事项"
+          }
+        }
+      }
+    },
+    "recurring.create.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New recurring item"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建重复事项"
+          }
+        }
+      }
+    },
+    "recurring.create.title.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "标题"
+          }
+        }
+      }
+    },
+    "recurring.create.notes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备注"
+          }
+        }
+      }
+    },
+    "recurring.create.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消"
+          }
+        }
+      }
+    },
+    "recurring.create.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Could not save. Your draft is still here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有保存成功，草稿还在。"
           }
         }
       }

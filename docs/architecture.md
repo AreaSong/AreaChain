@@ -25,7 +25,7 @@ AreaChain/
   Domain/         纯领域层：日期、模型、过滤、解析、连击
   Services/       系统服务：SwiftData、时钟、通知、快照、热键、附件、日历同步
   Features/       界面（按模块）：
-    Workspace/    三栏工作台、常驻页、检查器抽屉、子任务、备注、2×2 四象限
+    Workspace/    三栏工作台、今日事项、重复事项面板、检查器抽屉、子任务、备注、2×2 四象限
     Tasks/        今日清单、待办行、键盘导航、过滤条、变更动作、批量栏、待沉底协调器 (PendingCompletionManager)
     MenuBar/      菜单栏浮层、捕获框、可切换底栏与语法搜索
     Calendar/     日历月网格（工作台 tab）
@@ -80,7 +80,7 @@ AreaChain/
 
 | 模型类名 | 所属领域 | 职责与字段 |
 |---|---|---|
-| `DailyRoutine` | 常驻习惯 | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
+| `DailyRoutine` | 重复事项（底层仍是该实体） | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
 | `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
 | `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`, `tagIDs`（默认空），一层，归属 `TodoItem`。 |
@@ -101,7 +101,7 @@ AreaChain/
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词、不提取项目。
-- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让项目或标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让项目或标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；进度与菜单栏角标共用 `DayBoardLogic.todayProgress`。重复事项从今日页的面板管理，不新增侧栏页。Dashboard、待处理和全部事项尚未实现。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。

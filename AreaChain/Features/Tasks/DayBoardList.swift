@@ -123,7 +123,7 @@ struct DayBoardList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            if openTodosList.isEmpty && openRoutinesList.isEmpty && doneItemsList.isEmpty {
+            if openItemsList.isEmpty && doneItemsList.isEmpty {
                 emptyStateView
             } else {
                 openItemsSection
@@ -152,8 +152,7 @@ struct DayBoardList: View {
         }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
-        .animation(DaybookMotion.interactive(reduceMotion), value: openTodosList.map(\.id))
-        .animation(DaybookMotion.interactive(reduceMotion), value: openRoutinesList.map(\.id))
+        .animation(DaybookMotion.interactive(reduceMotion), value: openItemsList.map(\.id))
         .animation(DaybookMotion.interactive(reduceMotion), value: config.isYesterdayExpanded)
     }
 
@@ -241,6 +240,10 @@ struct DayBoardList: View {
 
     var openRoutinesList: [DailyRoutine] {
         filteredRoutines(openRoutines)
+    }
+
+    var openItemsList: [BoardRow] {
+        sortedRows(filtered(openRoutines.map(BoardRow.resident) + openTodos.map(BoardRow.todo)))
     }
 
     var doneItemsList: [BoardRow] {

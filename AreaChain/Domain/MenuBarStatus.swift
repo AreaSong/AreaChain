@@ -8,11 +8,12 @@ enum MenuBarStatus: Equatable {
     static func forDay(
         routines: [RoutineSnapshot], checks: [CheckSnapshot], todos: [TodoSnapshot], dayKey: String
     ) -> MenuBarStatus {
-        let remaining = DayBoardLogic.todayBadgeCount(routines: routines, checks: checks, todos: todos, dayKey: dayKey)
-        if remaining > 0 { return .remaining(remaining) }
-        let hasItems = !DayBoardLogic.todos(for: dayKey, in: todos).isEmpty
-            || !DayBoardLogic.routines(for: dayKey, in: routines).isEmpty
-        return hasItems ? .completed : .empty
+        let progress = DayBoardLogic.todayProgress(
+            routines: routines, checks: checks, todos: todos, dayKey: dayKey
+        )
+        if progress.total == 0 { return .empty }
+        let remaining = progress.total - progress.completed
+        return remaining > 0 ? .remaining(remaining) : .completed
     }
 
     func accessibilityLabel(locale: Locale) -> String {

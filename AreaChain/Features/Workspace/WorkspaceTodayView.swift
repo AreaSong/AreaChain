@@ -15,27 +15,21 @@ struct WorkspaceTodayView: View {
     @State private var dayTick = Date()
     @State private var draftText = ""
     @State private var composerFocused = false
+    @State private var showingRecurringEditor = false
+    @State private var showingRecurringList = false
 
     private var todayKey: String {
         _ = dayTick
         return dayClock.todayKey
     }
 
-    private var openTodosCount: Int {
-        todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && !$0.isDone }.count
-    }
-
-    private var completedTodosCount: Int {
-        todos.filter { $0.dayKey == todayKey && $0.deletedAt == nil && $0.isDone }.count
-    }
-
-    private var totalTodosCount: Int {
-        openTodosCount + completedTodosCount
-    }
-
-    private var progressRatio: Double {
-        guard totalTodosCount > 0 else { return completedTodosCount > 0 ? 1.0 : 0.0 }
-        return Double(completedTodosCount) / Double(totalTodosCount)
+    private var progress: BoardProgress {
+        DayBoardLogic.todayProgress(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            todos: todos.map(\.snapshot),
+            dayKey: todayKey
+        )
     }
 
     var body: some View {
@@ -79,32 +73,46 @@ struct WorkspaceTodayView: View {
             DayClock.shared.refresh()
             dayTick = Date()
         }
+        .sheet(isPresented: $showingRecurringEditor) {
+            RecurringItemEditor()
+                .frame(minWidth: 460, minHeight: 520)
+        }
+        .sheet(isPresented: $showingRecurringList) {
+            ResidentsPage()
+                .frame(minWidth: 560, minHeight: 480)
+        }
     }
 
     private var headerTrailing: some View {
         HStack(spacing: 10) {
+            DaybookIconButton(systemName: "plus", label: "recurring.create.open", size: .compact) {
+                showingRecurringEditor = true
+            }
+            DaybookIconButton(systemName: "repeat", label: "workspace.residents.open", size: .compact) {
+                showingRecurringList = true
+            }
             VStack(alignment: .trailing, spacing: 2) {
                 Text(progressTitleKey)
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary)
 
-                Text("\(completedTodosCount)/\(totalTodosCount)")
+                Text("\(progress.completed)/\(progress.total)")
                     .font(DaybookType.body.weight(.medium).monospacedDigit())
-                    .foregroundStyle(completedTodosCount > 0 && completedTodosCount >= totalTodosCount ? DaybookPalette.accent.base : DaybookPalette.text.primary)
+                    .foregroundStyle(progress.total > 0 && progress.completed >= progress.total ? DaybookPalette.accent.base : DaybookPalette.text.primary)
             }
 
-            DaybookProgressRing(progress: progressRatio, lineWidth: 3.5, size: 36)
+            DaybookProgressRing(progress: progress.ratio, lineWidth: 3.5, size: 36)
         }
         .fixedSize(horizontal: true, vertical: false)
-        .animation(DaybookMotion.interactive, value: totalTodosCount)
-        .animation(DaybookMotion.interactive, value: completedTodosCount)
+        .animation(DaybookMotion.interactive, value: progress.total)
+        .animation(DaybookMotion.interactive, value: progress.completed)
     }
 
     private var progressTitleKey: LocalizedStringKey {
-        if totalTodosCount == 0 {
+        if progress.total == 0 {
             return "workspace.progress.label"
         }
-        return completedTodosCount >= totalTodosCount ? "workspace.progress.done" : "workspace.progress.label"
+        return progress.completed >= progress.total ? "workspace.progress.done" : "workspace.progress.label"
     }
 
     private func addTodo() {

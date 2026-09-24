@@ -98,30 +98,25 @@ struct WorkspaceFilteredListView: View {
     private var taskList: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                let openTodos = matchingTodos.filter { !$0.isDone }
-                let doneTodos = matchingTodos.filter { $0.isDone }
-                let listedRoutines = matchingRoutines
+                let openRows = mixedRows(open: true)
+                let doneTodos = matchingTodos.filter(\.isDone)
 
-                if openTodos.isEmpty && doneTodos.isEmpty && listedRoutines.isEmpty && matchingSubtasks.isEmpty {
+                if openRows.isEmpty && doneTodos.isEmpty && matchingSubtasks.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
                         systemImage: project != nil ? "folder" : "tag"
                     )
                     .padding(.top, 40)
                 } else {
-                    if !openTodos.isEmpty {
+                    if !openRows.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach(openTodos) { todo in
-                                todoRowView(todo, isDone: false)
-                            }
-                        }
-                    }
-                    if !listedRoutines.isEmpty {
-                        DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
-                            .padding(.top, openTodos.isEmpty ? 0 : 8)
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(listedRoutines) { routine in
-                                routineRowView(routine)
+                            ForEach(openRows) { row in
+                                switch row {
+                                case .todo(let todo):
+                                    todoRowView(todo, isDone: false)
+                                case .resident(let routine):
+                                    routineRowView(routine)
+                                }
                             }
                         }
                     }
@@ -277,11 +272,16 @@ struct WorkspaceFilteredListView: View {
         project == nil ? Catalog.matchingSubtasks(todos, tag: tag) : []
     }
 
+    private func mixedRows(open: Bool) -> [BoardRow] {
+        let todos = matchingTodos.filter { open ? !$0.isDone : $0.isDone }
+        let routines = open ? matchingRoutines : []
+        let rows = todos.map(BoardRow.todo) + routines.map(BoardRow.resident)
+        return rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+    }
+
     private var orderedVisibleIDs: [UUID] {
-        let listedTodos = matchingTodos
-        return listedTodos.filter { !$0.isDone }.map(\.id)
-            + matchingRoutines.map(\.id)
-            + (showCompleted ? listedTodos.filter(\.isDone).map(\.id) : [])
+        mixedRows(open: true).map(\.id)
+            + (showCompleted ? matchingTodos.filter(\.isDone).map(\.id) : [])
     }
 
     private var canBatchSelect: Bool {

@@ -39,6 +39,43 @@ extension DayBoardMutations {
         return saved
     }
 
+    /// 用结构化草稿创建重复事项。失败时不写入，调用方保留草稿。
+    @discardableResult
+    static func addRecurringItem(_ draft: RecurringCaptureDraft, sortOrder: Int, context: ModelContext) -> Bool {
+        guard draft.hasSelectedWeekday else { return false }
+        let titleParsed = NaturalLanguageParser.parseTaskCapture(draft.title)
+        let noteParsed = NaturalLanguageParser.parseTaskNotes(draft.notes)
+        let title = titleParsed.cleanTitle
+        let notes = draft.notes
+        let isImportant = titleParsed.hasPriorityToken
+            ? titleParsed.isImportant
+            : (noteParsed.hasPriorityToken ? noteParsed.isImportant : draft.isImportant)
+        let isUrgent = titleParsed.hasPriorityToken
+            ? titleParsed.isUrgent
+            : (noteParsed.hasPriorityToken ? noteParsed.isUrgent : draft.isUrgent)
+        let remind = titleParsed.remindMinutes ?? noteParsed.remindMinutes ?? draft.remindMinutes
+        let tagNames = titleParsed.tagNames + noteParsed.tagNames
+        let hasBody = !title.isEmpty || remind != nil || isImportant || isUrgent
+            || !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !tagNames.isEmpty
+        guard hasBody else { return false }
+        let saved = ModelChanges.perform(in: context) {
+            let ids = try InputTagResolver.resolve(tagNames, in: context)
+            _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(
+                title: title,
+                sortOrder: sortOrder,
+                weekdayMask: draft.weekdayMask,
+                remindMinutes: remind,
+                tagIDs: ids,
+                isImportant: isImportant,
+                isUrgent: isUrgent,
+                notes: notes,
+                isEnabled: draft.isEnabled
+            ))
+        }
+        if saved { requestReminderAccessIfNeeded(remind) }
+        return saved
+    }
+
     @discardableResult
     static func editTodoWithSyntax(_ todo: TodoItem, rawInput: String) -> Bool {
         let text = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
