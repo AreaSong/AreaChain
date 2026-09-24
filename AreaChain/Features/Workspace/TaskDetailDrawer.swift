@@ -22,7 +22,22 @@ struct TaskDetailDrawer: View {
 
     var body: some View {
         Group {
-            if let taskID, let todo = todos.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
+            if let taskID, let reference = WorkspaceNavigation.shared.inspectedReference, reference.modelID == taskID {
+                switch reference {
+                case .todo:
+                    if let todo = todos.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
+                        todoDetailView(todo)
+                    } else {
+                        emptyState
+                    }
+                case .recurring:
+                    if let routine = routines.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
+                        routineDetailView(routine)
+                    } else {
+                        emptyState
+                    }
+                }
+            } else if let taskID, let todo = todos.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
                 todoDetailView(todo)
             } else if let taskID, let routine = routines.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
                 routineDetailView(routine)
@@ -130,6 +145,14 @@ struct TaskDetailDrawer: View {
                     isDoneOnBoard: isDoneOnBoard,
                     isSkipped: checks.contains {
                         $0.routine?.id == routine.id && $0.dayKey == boardDayKey && $0.isSkipped
+                    },
+                    onSkip: {
+                        DayBoardMutations.skipRoutine(
+                            routine,
+                            on: boardDayKey,
+                            checks: checks,
+                            context: modelContext
+                        )
                     }
                 )
                 RoutineScheduleSectionView(routine: routine)

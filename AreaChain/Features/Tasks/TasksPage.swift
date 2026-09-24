@@ -347,6 +347,15 @@ enum BoardRow: Identifiable {
         }
     }
 
+    var reference: BoardItemReference {
+        switch self {
+        case .resident(let item): .recurring(item.id)
+        case .todo(let item): .todo(item.id)
+        }
+    }
+
+    var listID: String { reference.id }
+
     var boardSortKey: BoardSortKey {
         switch self {
         case .resident(let item):

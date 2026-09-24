@@ -120,6 +120,7 @@ struct TaskDetailWeekdayPicker: View {
     var resolvedMask: Int
     var onUpdateMask: (Int) -> Void
     var showsTitle = true
+    var allowsEmpty = false
     var accessibilityTitle: LocalizedStringKey = "drawer.weekdays.title"
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
@@ -134,9 +135,11 @@ struct TaskDetailWeekdayPicker: View {
 
             HStack(spacing: 4) {
                 ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
-                    let isSelected = WeekdayMask.contains(resolvedMask, weekday: weekday)
+                    let isSelected = allowsEmpty
+                        ? WeekdayMask.containsSelection(resolvedMask, weekday: weekday)
+                        : WeekdayMask.contains(resolvedMask, weekday: weekday)
                     Button {
-                        onUpdateMask(WeekdayMask.toggling(resolvedMask, weekday: weekday))
+                        onUpdateMask(WeekdayMask.toggling(resolvedMask, weekday: weekday, allowingEmpty: allowsEmpty))
                     } label: {
                         Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
                             .font(DaybookType.badge.weight(.medium))

@@ -56,10 +56,15 @@ extension DayBoardMutations {
         let remind = titleParsed.remindMinutes ?? noteParsed.remindMinutes ?? draft.remindMinutes
         let tagNames = titleParsed.tagNames + noteParsed.tagNames
         let hasBody = !title.isEmpty || remind != nil || isImportant || isUrgent
-            || !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !tagNames.isEmpty
+            || !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !tagNames.isEmpty || !draft.tagIDs.isEmpty
         guard hasBody else { return false }
         let saved = ModelChanges.perform(in: context) {
-            let ids = try InputTagResolver.resolve(tagNames, in: context)
+            let parsedIDs = try InputTagResolver.resolve(tagNames, in: context)
+            var ids = draft.tagIDs
+            for id in parsedIDs where !ids.contains(id) {
+                ids.append(id)
+            }
             _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(
                 title: title,
                 sortOrder: sortOrder,

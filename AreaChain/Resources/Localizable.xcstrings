@@ -11820,6 +11820,23 @@
         }
       }
     },
+    "recurring.create.weekdays.required": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose at least one day."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "至少选择一天。"
+          }
+        }
+      }
+    },
     "recurring.create.failed": {
       "extractionState": "manual",
       "localizations": {

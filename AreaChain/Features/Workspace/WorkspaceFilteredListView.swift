@@ -110,7 +110,7 @@ struct WorkspaceFilteredListView: View {
                 } else {
                     if !openRows.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach(openRows) { row in
+                            ForEach(openRows, id: \.listID) { row in
                                 switch row {
                                 case .todo(let todo):
                                     todoRowView(todo, isDone: false)

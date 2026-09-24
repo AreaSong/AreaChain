@@ -127,39 +127,65 @@ extension DayBoardList {
         keyMonitor = nil
     }
 
-    func navigateSelection(delta: Int, extending: Bool = false) {
-        let ids = effectiveVisibleIDs
-        guard !ids.isEmpty else { return }
+    var orderedVisibleRows: [BoardRow] {
+        var rows = openItemsList
+        if showCompleted {
+            rows.append(contentsOf: doneItemsList)
+        }
+        return rows
+    }
 
-        guard let current = focusedTaskID?.wrappedValue, let idx = ids.firstIndex(of: current) else {
-            let nextID = delta >= 0 ? ids.first : ids.last
-            focusTask(nextID)
-            if let nextID {
-                BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
+    func navigateSelection(delta: Int, extending: Bool = false) {
+        let rows = orderedVisibleRows
+        guard !rows.isEmpty else { return }
+        let listIDs = rows.map(\.listID)
+        let current = focusedListID ?? focusedTaskID?.wrappedValue.flatMap { modelID in
+            rows.first { $0.id == modelID }?.listID
+        }
+
+        guard let current, let idx = listIDs.firstIndex(of: current) else {
+            if let next = delta >= 0 ? rows.first : rows.last {
+                focusRow(next)
             }
             return
         }
 
         let nextIdx = idx + delta
-        guard nextIdx >= 0 && nextIdx < ids.count else {
+        guard nextIdx >= 0 && nextIdx < rows.count else {
             if nextIdx < 0 && !extending {
+                focusedListID = nil
                 focusTask(nil)
                 onReturnToInput?()
             }
             return
         }
 
-        let nextID = ids[nextIdx]
+        let next = rows[nextIdx]
         if extending {
             var selection = taskSelection
-            if selection.anchorID == nil { selection.anchorID = current }
-            selection.select(nextID, in: ids, modifiers: .shift)
+            if selection.anchorID == nil { selection.anchorID = rows[idx].id }
+            selection.select(next.id, in: rows.map(\.id), modifiers: .shift)
             taskSelection = selection
-            focusedTaskID?.wrappedValue = nextID
+            focusedListID = next.listID
+            focusedTaskID?.wrappedValue = next.id
+            BoardSelection.shared.inspectBoard(mappedDayKey(for: next.id))
         } else {
-            focusTask(nextID)
+            focusRow(next)
         }
-        BoardSelection.shared.inspectBoard(mappedDayKey(for: nextID))
+    }
+
+    func focusRow(_ row: BoardRow) {
+        focusedListID = row.listID
+        focusTask(row.id)
+        BoardSelection.shared.inspectBoard(mappedDayKey(for: row.id))
+    }
+
+    func activeReference(preferring id: UUID) -> BoardItemReference? {
+        let rows = orderedVisibleRows.filter { $0.id == id }
+        if let focusedListID, let match = rows.first(where: { $0.listID == focusedListID }) {
+            return match.reference
+        }
+        return rows.first?.reference
     }
 
     func selectAllVisible() {
@@ -207,16 +233,8 @@ extension DayBoardList {
     func singleToggleSelected(id: UUID) {
         let previousIDs = effectiveVisibleIDs
         let checkOn = checkDay(for: id)
-        if let todo = todos.first(where: { $0.id == id }) {
-            PendingCompletionManager.shared.toggle(
-                id: todo.id,
-                currentlyDone: todo.isDone,
-                reduceMotion: reduceMotion
-            ) {
-                guard DayBoardMutations.toggleTodo(todo) else { return }
-                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
-            }
-        } else if let routine = routines.first(where: { $0.id == id }) {
+        let reference = activeReference(preferring: id)
+        if reference?.kind == .recurring, let routine = routines.first(where: { $0.id == id }) {
             let isDone = DayBoardLogic.isRoutineDone(
                 routine.snapshot,
                 checks: checks.compactMap(\.snapshot),
@@ -233,6 +251,17 @@ extension DayBoardList {
                     checks: checks,
                     context: modelContext
                 ) else { return }
+                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+            }
+            return
+        }
+        if let todo = todos.first(where: { $0.id == id }), reference?.kind != .recurring {
+            PendingCompletionManager.shared.toggle(
+                id: todo.id,
+                currentlyDone: todo.isDone,
+                reduceMotion: reduceMotion
+            ) {
+                guard DayBoardMutations.toggleTodo(todo) else { return }
                 self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
             }
         }
@@ -364,8 +393,14 @@ extension DayBoardList {
         revealCompletedIfNeeded(id)
         let inspectDay = checkDay(for: id)
         BoardSelection.shared.inspectBoard(inspectDay)
+        if let reference = activeReference(preferring: id) {
+            WorkspaceNavigation.shared.inspectedReference = reference
+        }
         if let onInspect {
             onInspect(id)
+            if let reference = activeReference(preferring: id) {
+                WorkspaceNavigation.shared.inspectedReference = reference
+            }
             return
         }
         AppWindows.openWorkspace(

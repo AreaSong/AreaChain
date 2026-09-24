@@ -22,6 +22,13 @@ struct WeekdayMaskTests {
         #expect(!WeekdayMask.contains(WeekdayMask.workdays, dayKey: "2026-09-05", calendar: utc))
     }
 
+    @Test func togglingCanClearDraftSelection() {
+        let wednesday = 1 << (4 - 1)
+        #expect(WeekdayMask.toggling(wednesday, weekday: 4, allowingEmpty: true) == 0)
+        #expect(WeekdayMask.containsSelection(0, weekday: 4) == false)
+        #expect(WeekdayMask.toggling(wednesday, weekday: 4) == wednesday)
+    }
+
     @Test func togglingKeepsAtLeastOneDay() {
         let wednesday = 1 << (4 - 1)
         #expect(WeekdayMask.toggling(wednesday, weekday: 4) == wednesday)

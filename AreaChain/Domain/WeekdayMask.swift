@@ -28,15 +28,22 @@ enum WeekdayMask {
         (sanitized(mask) & bit(weekday: weekday)) != 0
     }
 
+    /// 草稿里的 0 表示没有选中任何一天，不能先收成「每天」再判断。
+    static func containsSelection(_ mask: Int, weekday: Int) -> Bool {
+        (mask & all & bit(weekday: weekday)) != 0
+    }
+
     static func contains(_ mask: Int, dayKey: String, calendar: Calendar = .current) -> Bool {
         guard let date = DayKey.date(from: dayKey, calendar: calendar) else { return false }
         return contains(mask, weekday: calendar.component(.weekday, from: date))
     }
 
-    static func toggling(_ mask: Int, weekday: Int) -> Int {
-        let current = sanitized(mask)
+    static func toggling(_ mask: Int, weekday: Int, allowingEmpty: Bool = false) -> Int {
+        let current = allowingEmpty ? (mask & all) : sanitized(mask)
         let next = current ^ bit(weekday: weekday)
-        return (next & all) == 0 ? current : next
+        let clipped = next & all
+        if clipped == 0 { return allowingEmpty ? 0 : current }
+        return clipped
     }
 
     static func orderedWeekdays(calendar: Calendar = .current) -> [Int] {

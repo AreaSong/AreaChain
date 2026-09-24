@@ -168,6 +168,7 @@ final class WorkspaceNavigation {
 
     // MARK: - Task Inspector & Multi-Selection
     var selectedTaskID: UUID? = nil
+    var inspectedReference: BoardItemReference?
     var selectedTaskIDs: Set<UUID> = []
     private(set) var selectionAnchorID: UUID?
     var isInspectorPresented: Bool = false
@@ -218,6 +219,7 @@ final class WorkspaceNavigation {
 
     /// Inspects a task, optionally synchronizing the inspecting board day in a single call.
     func inspectTask(_ id: UUID, dayKey: String? = nil) {
+        inspectedReference = nil
         if let dayKey {
             boardSelection.inspectBoard(dayKey)
         } else if InspectDayPolicy.pinsTodayWhenInspecting(

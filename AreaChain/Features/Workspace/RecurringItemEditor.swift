@@ -8,6 +8,7 @@ struct RecurringItemEditor: View {
     @Environment(\.dismiss) private var dismiss
 
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @State private var draft = RecurringCaptureDraft.fresh
     @State private var titleFocused = false
@@ -47,7 +48,25 @@ struct RecurringItemEditor: View {
             TaskDetailWeekdayPicker(
                 resolvedMask: draft.weekdayMask,
                 onUpdateMask: { draft.weekdayMask = $0 },
+                allowsEmpty: true,
                 accessibilityTitle: "residents.days"
+            )
+            if !draft.hasSelectedWeekday {
+                Text("recurring.create.weekdays.required")
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.status.danger)
+            }
+            TaskDetailTagSelector(
+                tagIDs: TagIDList.encode(draft.tagIDs),
+                tags: tags,
+                onToggleTag: { tagID in
+                    draft.tagIDs = TagIDList.parse(TagIDList.toggling(TagIDList.encode(draft.tagIDs), tagID))
+                },
+                onCreateTag: { name in
+                    guard let tag = DayBoardMutations.resolveTaskTag(named: name, context: modelContext) else { return false }
+                    if !draft.tagIDs.contains(tag.id) { draft.tagIDs.append(tag.id) }
+                    return true
+                }
             )
             Toggle("residents.enabled", isOn: $draft.isEnabled)
                 .toggleStyle(.switch)

@@ -7,7 +7,7 @@ extension DayBoardList {
             allDoneBanner
         } else if !openItemsList.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(openItemsList) { row in
+                ForEach(openItemsList, id: \.listID) { row in
                     dayRow(row, isDone: false)
                 }
             }
@@ -69,7 +69,7 @@ extension DayBoardList {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(doneItemsList) { row in
+                    ForEach(doneItemsList, id: \.listID) { row in
                         dayRow(row, isDone: true)
                     }
                 }

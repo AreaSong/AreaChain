@@ -31,6 +31,26 @@ enum BoardItemReference: Hashable, Identifiable {
         if case .todo = self { return true }
         return false
     }
+
+    var modelID: UUID {
+        switch self {
+        case .todo(let id), .recurring(let id):
+            return id
+        }
+    }
+
+    init?(listID: String) {
+        let parts = listID.split(separator: ":", maxSplits: 1).map(String.init)
+        guard parts.count == 2, let uuid = UUID(uuidString: parts[1]) else { return nil }
+        switch parts[0] {
+        case "todo":
+            self = .todo(uuid)
+        case "recurring":
+            self = .recurring(uuid)
+        default:
+            return nil
+        }
+    }
 }
 
 struct BoardProgress: Equatable {
@@ -52,6 +72,7 @@ struct RecurringCaptureDraft: Equatable {
     var remindMinutes: Int?
     var isImportant: Bool
     var isUrgent: Bool
+    var tagIDs: [UUID]
 
     static var fresh: RecurringCaptureDraft {
         RecurringCaptureDraft(
@@ -61,7 +82,8 @@ struct RecurringCaptureDraft: Equatable {
             isEnabled: true,
             remindMinutes: nil,
             isImportant: false,
-            isUrgent: false
+            isUrgent: false,
+            tagIDs: []
         )
     }
 

@@ -13,6 +13,8 @@ struct BoardItemProjectionTests {
         #expect(oneOff.id == "todo:\(shared.uuidString)")
         #expect(recurring.id == "recurring:\(shared.uuidString)")
         #expect(oneOff.id != recurring.id)
+        #expect(BoardItemReference(listID: oneOff.id) == oneOff)
+        #expect(BoardItemReference(listID: recurring.id) == recurring)
         #expect(oneOff.kind == .oneOff)
         #expect(recurring.kind == .recurring)
         #expect(oneOff.canReschedule)
@@ -132,5 +134,18 @@ struct RecurringCaptureDraftTests {
         #expect(routines.first?.weekdayMask == WeekdayMask.all)
         #expect(try model.fetch(FetchDescriptor<TodoItem>()).isEmpty)
         #expect(try model.fetch(FetchDescriptor<TagItem>()).isEmpty == false)
+    }
+
+    @Test func selectedTagIsStoredWithoutSyntax() throws {
+        let model = try context()
+        let tag = TagItem(name: "工作", sortOrder: 0)
+        model.insert(tag)
+        var draft = RecurringCaptureDraft.fresh
+        draft.title = "写日报"
+        draft.tagIDs = [tag.id]
+        #expect(DayBoardMutations.addRecurringItem(draft, sortOrder: 0, context: model))
+        let routine = try #require(model.fetch(FetchDescriptor<DailyRoutine>()).first)
+        #expect(TagIDList.contains(routine.tagIDs, tag.id))
+        #expect(try model.fetch(FetchDescriptor<TodoItem>()).isEmpty)
     }
 }

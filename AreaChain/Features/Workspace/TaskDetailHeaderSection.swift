@@ -15,6 +15,8 @@ struct TaskDetailHeaderBar: View {
                     .font(DaybookType.body.weight(.bold))
                     .foregroundStyle(DaybookPalette.accent.base)
                     .frame(width: DaybookMetrics.Hit.regular, height: DaybookMetrics.Hit.regular)
+                    .accessibilityLabel("row.resident")
+                    .help("row.resident")
             }
 
             ModernCheckbox(isDone: isDone, action: onToggle)

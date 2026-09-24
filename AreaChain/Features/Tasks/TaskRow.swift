@@ -416,9 +416,14 @@ struct TaskRow: View {
 
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
-            ModernTaskTitle(text: state.title, isDone: state.isDone)
-                .lineLimit(embedded ? 2 : 1)
-                .truncationMode(.tail)
+            HStack(spacing: 5) {
+                if state.isResident {
+                    residentMark
+                }
+                ModernTaskTitle(text: state.title, isDone: state.isDone)
+                    .lineLimit(embedded ? 2 : 1)
+                    .truncationMode(.tail)
+            }
                 .layoutPriority(1)
                 .contentShape(Rectangle())
                 .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }

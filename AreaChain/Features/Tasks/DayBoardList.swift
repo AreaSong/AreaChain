@@ -107,6 +107,7 @@ struct DayBoardList: View {
     @Query private var attachments: [AttachmentItem]
 
     @State var showCompleted = false
+    @State var focusedListID: String?
     @State private var internalSelection = TaskSelection()
     private var activeSelection: Binding<TaskSelection> {
         config.selection ?? $internalSelection
@@ -200,7 +201,12 @@ struct DayBoardList: View {
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
             ? id : visibleIDs.first { selection.ids.contains($0) }
         BoardSelection.shared.inspectBoard(mappedDayKey(for: id))
-        if modifiers.isEmpty { onInspect?(id) }
+        if modifiers.isEmpty {
+            onInspect?(id)
+            if let focusedListID, let reference = BoardItemReference(listID: focusedListID), reference.modelID == id {
+                WorkspaceNavigation.shared.inspectedReference = reference
+            }
+        }
     }
 
     func focusTask(_ id: UUID?) {
@@ -221,6 +227,14 @@ struct DayBoardList: View {
         if doneItemsList.contains(where: { $0.id == id }) {
             showCompleted = true
         }
+    }
+
+    private func isRowSelected(_ row: BoardRow) -> Bool {
+        let siblings = orderedVisibleRows.filter { $0.id == row.id }
+        if siblings.count > 1 {
+            return row.listID == focusedListID
+        }
+        return isRowSelected(row.id)
     }
 
     private func isRowSelected(_ id: UUID) -> Bool {
@@ -343,10 +357,10 @@ struct DayBoardList: View {
         )
     }
 
-    private func rowSelection(for id: UUID) -> TaskRowSelectionState {
+    private func rowSelection(for row: BoardRow) -> TaskRowSelectionState {
         TaskRowSelectionState(
-            isSelected: isRowSelected(id),
-            isExternalEditing: editingTaskID == id
+            isSelected: isRowSelected(row),
+            isExternalEditing: editingTaskID == row.id
         )
     }
 
@@ -360,10 +374,13 @@ struct DayBoardList: View {
         )
         let display = RoutineRowDisplayOptions(
             isDone: visuallyDone,
-            selection: rowSelection(for: routine.id)
+            selection: rowSelection(for: .resident(routine))
         )
         let actions = RoutineRowActions(
-            onSelect: { selectTask(routine.id, modifiers: $0) },
+            onSelect: {
+                focusedListID = BoardItemReference.recurring(routine.id).id
+                selectTask(routine.id, modifiers: $0)
+            },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
@@ -388,11 +405,14 @@ struct DayBoardList: View {
         let visuallyDone = PendingCompletionManager.shared.isVisuallyDone(id: todo.id, actualDone: isDone)
         let display = TodoRowDisplayOptions(
             isDone: visuallyDone,
-            selection: rowSelection(for: todo.id),
+            selection: rowSelection(for: .todo(todo)),
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
         )
         let actions = TodoRowActions(
-            onSelect: { selectTask(todo.id, modifiers: $0) },
+            onSelect: {
+                focusedListID = BoardItemReference.todo(todo.id).id
+                selectTask(todo.id, modifiers: $0)
+            },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)

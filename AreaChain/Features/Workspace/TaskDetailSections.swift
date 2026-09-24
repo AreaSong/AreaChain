@@ -58,6 +58,7 @@ struct RoutineHabitSectionView: View {
     var boardDayKey: String
     var isDoneOnBoard: Bool
     var isSkipped: Bool
+    var onSkip: (() -> Void)? = nil
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.habit") {
@@ -65,6 +66,11 @@ struct RoutineHabitSectionView: View {
                 DayBoardMutations.editRoutine(routine, title: newTitle)
             }
             .id("title-\(routine.id)")
+
+            if let onSkip, !isDoneOnBoard, !isSkipped {
+                Button("row.skip", action: onSkip)
+                    .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
+            }
 
             TaskDetailStreakCard(
                 config: StreakCardConfig(
