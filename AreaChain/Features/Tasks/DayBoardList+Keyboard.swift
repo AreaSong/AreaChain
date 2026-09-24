@@ -347,26 +347,38 @@ extension DayBoardList {
     }
 
     private func singleDeleteSelected(id: UUID) {
-        let ids = effectiveVisibleIDs
-        if let idx = ids.firstIndex(of: id) {
-            if idx + 1 < ids.count {
-                focusTask(ids[idx + 1])
+        let reference = activeReference(preferring: id)
+        let rows = orderedVisibleRows
+        if let idx = rows.firstIndex(where: { $0.listID == reference?.id }) ?? rows.firstIndex(where: { $0.id == id }) {
+            if idx + 1 < rows.count {
+                focusRow(rows[idx + 1])
             } else if idx > 0 {
-                focusTask(ids[idx - 1])
+                focusRow(rows[idx - 1])
             } else {
                 focusTask(nil)
                 onReturnToInput?()
             }
         }
-        if let todo = todos.first(where: { $0.id == id }) {
+        switch reference?.kind {
+        case .recurring:
+            guard let routine = routines.first(where: { $0.id == id }) else { return }
+            pendingTrash = PendingTrash(title: routine.title) {
+                DayBoardMutations.trashRoutine(routine)
+            }
+        case .oneOff:
+            guard let todo = todos.first(where: { $0.id == id }) else { return }
             pendingTrash = PendingTrash(title: todo.title) {
                 DayBoardMutations.trashTodo(todo)
             }
-            return
-        }
-        if let routine = routines.first(where: { $0.id == id }) {
-            pendingTrash = PendingTrash(title: routine.title) {
-                DayBoardMutations.trashRoutine(routine)
+        case nil:
+            if let todo = todos.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: todo.title) {
+                    DayBoardMutations.trashTodo(todo)
+                }
+            } else if let routine = routines.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                }
             }
         }
     }

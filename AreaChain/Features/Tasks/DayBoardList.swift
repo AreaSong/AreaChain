@@ -212,6 +212,16 @@ struct DayBoardList: View {
     func focusTask(_ id: UUID?) {
         taskSelection.focus(id)
         focusedTaskID?.wrappedValue = id
+        guard let id else {
+            focusedListID = nil
+            return
+        }
+        let stillVisible = focusedListID.map { listID in
+            orderedVisibleRows.contains { $0.listID == listID }
+        } ?? false
+        let sameModel = focusedListID.flatMap(BoardItemReference.init(listID:))?.modelID == id
+        if stillVisible && sameModel { return }
+        focusedListID = orderedVisibleRows.first { $0.id == id }?.listID
     }
 
     func expandIfHighlighted() {
