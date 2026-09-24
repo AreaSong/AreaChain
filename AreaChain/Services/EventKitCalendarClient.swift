@@ -43,6 +43,28 @@ final class EventKitCalendarClient: CalendarEventClient {
         try store.event(withIdentifier: id).map(snapshot)
     }
 
+    private func applyMutation(
+        _ mutation: CalendarEventMutation,
+        calendar: EKCalendar,
+        calendarID: String,
+        saved: inout [UUID: EKEvent]
+    ) throws {
+        switch mutation {
+        case let .upsert(id, content, expected):
+            let event = try expected.map { try checkedEvent($0, calendarID: calendarID) } ?? EKEvent(eventStore: store)
+            event.calendar = calendar
+            event.title = content.title
+            event.notes = TodoDragToken.encode(id)
+            if expected?.content.dayKey != content.dayKey || expected?.content.remindMinutes != content.remindMinutes {
+                try applySchedule(event, content: content)
+            }
+            try store.save(event, span: .thisEvent, commit: false)
+            saved[id] = event
+        case .remove(let expected):
+            try store.remove(checkedEvent(expected, calendarID: calendarID), span: .thisEvent, commit: false)
+        }
+    }
+
     func apply(_ mutations: [CalendarEventMutation], in calendarID: String) throws -> [UUID: CalendarRemoteItem] {
         guard let calendar = store.calendar(withIdentifier: calendarID), calendar.allowsContentModifications else {
             throw CalendarSyncError.unavailable
@@ -50,20 +72,7 @@ final class EventKitCalendarClient: CalendarEventClient {
         var saved: [UUID: EKEvent] = [:]
         do {
             for mutation in mutations {
-                switch mutation {
-                case let .upsert(id, content, expected):
-                    let event = try expected.map { try checkedEvent($0, calendarID: calendarID) } ?? EKEvent(eventStore: store)
-                    event.calendar = calendar
-                    event.title = content.title
-                    event.notes = TodoDragToken.encode(id)
-                    if expected?.content.dayKey != content.dayKey || expected?.content.remindMinutes != content.remindMinutes {
-                        try applySchedule(event, content: content)
-                    }
-                    try store.save(event, span: .thisEvent, commit: false)
-                    saved[id] = event
-                case .remove(let expected):
-                    try store.remove(checkedEvent(expected, calendarID: calendarID), span: .thisEvent, commit: false)
-                }
+                try applyMutation(mutation, calendar: calendar, calendarID: calendarID, saved: &saved)
             }
             if !mutations.isEmpty { try store.commit() }
             return try saved.mapValues(snapshot)

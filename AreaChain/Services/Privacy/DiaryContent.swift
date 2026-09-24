@@ -52,18 +52,15 @@ enum DiaryContent {
     }
 
     static func requiresProtection(tagIDs: String, tags: [TagItem]) -> Bool {
-        requiresProtection(text: "", tagIDs: Set(TagIDList.parse(tagIDs)), tags: tags)
+        DiaryPrivacy.requiresProtection(tagIDs: tagIDs, tags: tags)
     }
 
     static func requiresProtection(text: String, tagIDs: Set<UUID>, tags: [TagItem]) -> Bool {
-        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
-        return tags.contains { tag in
-            tag.isPrivateDiary && (tagIDs.contains(tag.id) || names.contains(TagSyntax.normalizedName(tag.name)))
-        }
+        DiaryPrivacy.requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
     }
 
     static func requiresProtection(text: String, tagIDs: Set<UUID>, context: ModelContext) throws -> Bool {
         let tags = try context.fetch(FetchDescriptor<TagItem>())
-        return requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
+        return DiaryPrivacy.requiresProtection(text: text, tagIDs: tagIDs, tags: tags)
     }
 }

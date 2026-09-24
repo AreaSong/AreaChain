@@ -111,14 +111,20 @@ final class DaybookScrollerHostNSView: NSView {
             if let target = node as? NSScrollView {
                 return target
             }
-            if let parent = node.superview {
-                for sibling in parent.subviews where sibling !== node {
-                    if let found = findFirstScrollView(in: sibling) {
-                        return found
-                    }
-                }
+            if let found = findScrollViewInSiblings(of: node) {
+                return found
             }
             current = node.superview
+        }
+        return nil
+    }
+
+    private func findScrollViewInSiblings(of node: NSView) -> NSScrollView? {
+        guard let parent = node.superview else { return nil }
+        for sibling in parent.subviews where sibling !== node {
+            if let found = findFirstScrollView(in: sibling) {
+                return found
+            }
         }
         return nil
     }

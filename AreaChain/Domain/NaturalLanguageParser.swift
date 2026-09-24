@@ -62,53 +62,68 @@ enum NaturalLanguageParser {
         parse(input, consumeDiaryPresetTags: false)
     }
 
-    static func parse(_ input: String, consumeDiaryPresetTags: Bool = true) -> ParsedCapture {
-        let tagNames = TagSyntax.names(in: input, includesDiaryTags: consumeDiaryPresetTags)
-
+    private struct ParsedNoteSection {
         let baseTitlePart: String
         let finalNotes: String
         let noteRemind: Int?
         let notePriority: PriorityResult
+    }
 
+    private static func parseNoteSection(from input: String, consumeDiaryPresetTags: Bool) -> ParsedNoteSection {
         if let noteRange = findNoteRange(in: input) {
-            baseTitlePart = String(input[..<noteRange.lowerBound])
+            let baseTitlePart = String(input[..<noteRange.lowerBound])
             var noteRaw = String(input[noteRange.upperBound...]).trimmingCharacters(in: .whitespacesAndNewlines)
             noteCleanTags(from: &noteRaw, consumeDiaryPresetTags: consumeDiaryPresetTags)
-            notePriority = consumePriority(from: &noteRaw)
+            let notePriority = consumePriority(from: &noteRaw)
             // 备注中仅提取显式 @时间 语法（如 @14:00），避免误伤备注正文中的自然语言或URL
-            noteRemind = firstMatch(
+            let noteRemind = firstMatch(
                 pattern: #"(?<![^\s(\[（【])@\d{1,2}[:：]\d{2}(?=$|[\s,，.。;；!！?？)）\]】])"#, in: noteRaw
             ).flatMap(timeMinutes)
             if noteRemind != nil, let matchRange = firstMatchRange(pattern: #"(?<![^\s(\[（【])@\d{1,2}[:：]\d{2}(?=$|[\s,，.。;；!！?？)）\]】])"#, in: noteRaw) {
                 noteRaw = (noteRaw as NSString).replacingCharacters(in: matchRange, with: "")
             }
-            finalNotes = noteRaw
+            let finalNotes = noteRaw
                 .components(separatedBy: .whitespacesAndNewlines)
                 .filter { !$0.isEmpty }
                 .joined(separator: " ")
+            return ParsedNoteSection(
+                baseTitlePart: baseTitlePart,
+                finalNotes: finalNotes,
+                noteRemind: noteRemind,
+                notePriority: notePriority
+            )
         } else {
             let lines = input.components(separatedBy: .newlines)
-            baseTitlePart = lines.first ?? ""
-            finalNotes = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-            noteRemind = nil
-            notePriority = .none
+            let baseTitlePart = lines.first ?? ""
+            let finalNotes = lines.dropFirst().joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+            return ParsedNoteSection(
+                baseTitlePart: baseTitlePart,
+                finalNotes: finalNotes,
+                noteRemind: nil,
+                notePriority: .none
+            )
         }
+    }
 
-        var titleText = TagSyntax.removingTags(from: baseTitlePart, includesDiaryTags: consumeDiaryPresetTags)
+    static func parse(_ input: String, consumeDiaryPresetTags: Bool = true) -> ParsedCapture {
+        let tagNames = TagSyntax.names(in: input, includesDiaryTags: consumeDiaryPresetTags)
+        let noteSection = parseNoteSection(from: input, consumeDiaryPresetTags: consumeDiaryPresetTags)
+
+        var titleText = TagSyntax.removingTags(from: noteSection.baseTitlePart, includesDiaryTags: consumeDiaryPresetTags)
         let titlePriority = consumePriority(from: &titleText)
         let titleRemind = consumeTime(from: &titleText)
 
-        let priority = titlePriority.hasPriorityToken ? titlePriority : notePriority
-        let remindMinutes = titleRemind ?? noteRemind
+        let priority = titlePriority.hasPriorityToken ? titlePriority : noteSection.notePriority
+        let remindMinutes = titleRemind ?? noteSection.noteRemind
 
         let cleaned = titleText
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
         let hasTokens = !tagNames.isEmpty || priority.hasPriorityToken || remindMinutes != nil
-        let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (baseTitlePart.isEmpty ? input : baseTitlePart) : cleaned)
+        let cleanTitle = hasTokens ? cleaned : (cleaned.isEmpty ? (noteSection.baseTitlePart.isEmpty ? input : noteSection.baseTitlePart) : cleaned)
         let unescapedTitle = unescapeSyntax(cleanTitle)
-        let unescapedNotes = unescapeSyntax(finalNotes)
+        let unescapedNotes = unescapeSyntax(noteSection.finalNotes)
         let hasContentTitle = !unescapedTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
 
         return ParsedCapture(
@@ -172,20 +187,7 @@ enum NaturalLanguageParser {
         }
 
         // 2. 优先级（!p1 ~ !p4 / !重要紧急 等）
-        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
-        if let regex = try? NSRegularExpression(pattern: priorityPattern) {
-            let unprotected = TagSyntax.unprotectedText(text)
-            for match in regex.matches(in: unprotected, options: [], range: fullRange) {
-                if isFree(match.range) {
-                    let raw = nsText.substring(with: match.range)
-                    let result = priorityResult(for: raw)
-                    tokens.append(SyntaxHighlightToken(
-                        kind: .priority(isImportant: result.isImportant, isUrgent: result.isUrgent, raw: raw),
-                        range: match.range
-                    ))
-                }
-            }
-        }
+        tokens += extractPriorityHighlightTokens(in: text, nsText: nsText, fullRange: fullRange, isFree: isFree)
 
         // 3. 时间时刻（@15:30 或 中文时刻）
         if let time = extractTime(from: text), isFree(time.range) {
@@ -193,35 +195,81 @@ enum NaturalLanguageParser {
         }
 
         // 4. 单行备注（// 或 ／／ 开始直到末尾，排除 URL 协议冒号，避开已有属性 Token）
-        if let firstNote = findNoteRange(in: text) {
-            let noteNSRange = NSRange(firstNote.lowerBound..<text.endIndex, in: text)
-            var currentLoc = noteNSRange.location
-            let endLoc = NSMaxRange(noteNSRange)
-
-            let containedTokens = tokens
-                .filter { $0.range.location >= currentLoc && NSMaxRange($0.range) <= endLoc }
-                .sorted { $0.range.location < $1.range.location }
-
-            for token in containedTokens {
-                if token.range.location > currentLoc {
-                    let freeRange = NSRange(location: currentLoc, length: token.range.location - currentLoc)
-                    if isFree(freeRange) {
-                        let noteSub = nsText.substring(with: freeRange)
-                        tokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
-                    }
-                }
-                currentLoc = NSMaxRange(token.range)
-            }
-            if currentLoc < endLoc {
-                let freeRange = NSRange(location: currentLoc, length: endLoc - currentLoc)
-                if isFree(freeRange) {
-                    let noteSub = nsText.substring(with: freeRange)
-                    tokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
-                }
-            }
-        }
+        let noteTokens = extractNoteHighlightTokens(
+            in: text,
+            nsText: nsText,
+            existingTokens: tokens,
+            protected: protected
+        )
+        tokens.append(contentsOf: noteTokens)
 
         return tokens.sorted { $0.range.location < $1.range.location }
+    }
+
+    private static func extractPriorityHighlightTokens(
+        in text: String,
+        nsText: NSString,
+        fullRange: NSRange,
+        isFree: (NSRange) -> Bool
+    ) -> [SyntaxHighlightToken] {
+        let pattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        var result: [SyntaxHighlightToken] = []
+        let unprotected = TagSyntax.unprotectedText(text)
+        for match in regex.matches(in: unprotected, options: [], range: fullRange) where isFree(match.range) {
+            let raw = nsText.substring(with: match.range)
+            let priority = priorityResult(for: raw)
+            result.append(SyntaxHighlightToken(
+                kind: .priority(isImportant: priority.isImportant, isUrgent: priority.isUrgent, raw: raw),
+                range: match.range
+            ))
+        }
+        return result
+    }
+
+    private static func extractNoteHighlightTokens(
+        in text: String,
+        nsText: NSString,
+        existingTokens: [SyntaxHighlightToken],
+        protected: [NSRange]
+    ) -> [SyntaxHighlightToken] {
+        guard let firstNote = findNoteRange(in: text) else { return [] }
+        let noteNSRange = NSRange(firstNote.lowerBound..<text.endIndex, in: text)
+        var currentLoc = noteNSRange.location
+        let endLoc = NSMaxRange(noteNSRange)
+        var noteTokens: [SyntaxHighlightToken] = []
+
+        func isRangeFree(_ range: NSRange) -> Bool {
+            guard range.location != NSNotFound, NSMaxRange(range) <= nsText.length else { return false }
+            if protected.contains(where: { NSIntersectionRange($0, range).length > 0 }) { return false }
+            if existingTokens.contains(where: { NSIntersectionRange($0.range, range).length > 0 }) { return false }
+            return !noteTokens.contains(where: { NSIntersectionRange($0.range, range).length > 0 })
+        }
+
+        let containedTokens = existingTokens
+            .filter { $0.range.location >= currentLoc && NSMaxRange($0.range) <= endLoc }
+            .sorted { $0.range.location < $1.range.location }
+
+        for token in containedTokens {
+            guard token.range.location > currentLoc else {
+                currentLoc = NSMaxRange(token.range)
+                continue
+            }
+            let freeRange = NSRange(location: currentLoc, length: token.range.location - currentLoc)
+            if isRangeFree(freeRange) {
+                let noteSub = nsText.substring(with: freeRange)
+                noteTokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
+            }
+            currentLoc = NSMaxRange(token.range)
+        }
+        if currentLoc < endLoc {
+            let freeRange = NSRange(location: currentLoc, length: endLoc - currentLoc)
+            if isRangeFree(freeRange) {
+                let noteSub = nsText.substring(with: freeRange)
+                noteTokens.append(SyntaxHighlightToken(kind: .note(text: noteSub), range: freeRange))
+            }
+        }
+        return noteTokens
     }
 
     static func timeMinutes(_ token: String) -> Int? {

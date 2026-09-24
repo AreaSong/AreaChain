@@ -31,6 +31,17 @@ enum DiaryPrivacy {
         !isSensitive || !isMasked
     }
 
+    static func requiresProtection(tagIDs: String, tags: [TagItem]) -> Bool {
+        requiresProtection(text: "", tagIDs: Set(TagIDList.parse(tagIDs)), tags: tags)
+    }
+
+    static func requiresProtection(text: String, tagIDs: Set<UUID>, tags: [TagItem]) -> Bool {
+        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
+        return tags.contains { tag in
+            tag.isPrivateDiary && (tagIDs.contains(tag.id) || names.contains(TagSyntax.normalizedName(tag.name)))
+        }
+    }
+
     /// 私密标记的唯一赋值。加密和解除保护决定何时为真，不各自写字段。
     static func assign(_ entry: DiaryEntry, isPrivate: Bool) {
         entry.isPrivate = isPrivate

@@ -32,7 +32,7 @@ struct LiveDiaryComposerPreview: View {
 
     private var isSensitive: Bool {
         if isSensitiveExternal { return true }
-        if DiaryContent.requiresProtection(text: text, tagIDs: [], tags: allTags) { return true }
+        if DiaryPrivacy.requiresProtection(text: text, tagIDs: [], tags: allTags) { return true }
         guard allTags.isEmpty else { return false }
         return parsed.tagNames.contains { DiaryMemoTags.isPasswordName($0) }
     }

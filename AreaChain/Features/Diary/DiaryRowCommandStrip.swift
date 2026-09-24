@@ -28,85 +28,102 @@ struct DiaryRowCommandStrip: View {
             hoveredTip: hoveredQuickActionTip,
             destructiveTitle: L10n.string("diary.quick.delete", locale: locale)
         ) {
-                commandStripButton(
-                    icon: "arrow.up.forward",
-                    key: "diary.quick.open",
-                    action: onOpen
-                )
-
-                // 2. 转为今日待办 􀆅
-                commandStripButton(
-                    icon: hasConvertedToTask ? "checkmark" : "checklist",
-                    key: hasConvertedToTask ? "diary.quick.converted_task" : "diary.quick.convert_task",
-                    isActive: hasConvertedToTask,
-                    action: onConvertToTask
-                )
-
-                // 3. 复制手记 📋
-                commandStripButton(
-                    icon: "square.on.square",
-                    key: "diary.quick.copy",
-                    action: onCopy
-                )
-
-                // 4. 标签选择 🏷
-                if !allTags.isEmpty {
-                    commandStripMenu(
-                        icon: "tag",
-                        key: "diary.quick.tags",
-                        isActive: !assignedTagIDs.isEmpty
-                    ) {
-                        DiaryTagToggleButtons(tags: allTags, assignedIDs: assignedTagIDs, onToggle: onToggleTag)
-                    }
-                }
-
-                // 5. 调整归属日期 📅
-                commandStripMenu(
-                    icon: "calendar",
-                    key: "diary.quick.schedule",
-                    isActive: currentDayKey == DayKey.today()
-                ) {
-                    DiaryDayMoveButtons(onMove: onMoveToDay, onPickCustom: onPickCustomDate)
-                }
-
-                // 6. 置顶 / 取消置顶 📌
-                commandStripButton(
-                    icon: isPinned ? "pin.slash" : "pin",
-                    key: isPinned ? "diary.quick.unpin" : "diary.quick.pin",
-                    isActive: isPinned,
-                    action: onTogglePin
-                )
-
-                // 7. 添加附件 📎
-                commandStripButton(
-                    icon: "paperclip",
-                    key: "diary.quick.attach",
-                    action: onAttach
-                )
-                .disabled(isSensitive)
-
-                // 8. 私密加锁 🔒
-                commandStripButton(
-                    icon: isSensitive ? "lock.fill" : "lock",
-                    key: isSensitive ? "diary.quick.privacy.unlock" : "diary.quick.privacy.lock",
-                    isActive: isSensitive,
-                    action: onTogglePrivate
-                )
-
-                // 9. 工作台查看 🖥
-                commandStripButton(
-                    icon: "sidebar.left",
-                    key: "diary.quick.workspace",
-                    action: onInspect
-                )
+            primaryActionButtons
+            classificationAndScheduleButtons
+            detailActionButtons
         } destructive: {
-            commandStripButton(
-                icon: "trash",
-                key: "diary.quick.delete",
-                isDestructive: true,
-                action: onDelete
-            )
+            destructiveButton
         }
+    }
+
+    @ViewBuilder
+    private var primaryActionButtons: some View {
+        commandStripButton(
+            icon: "arrow.up.forward",
+            key: "diary.quick.open",
+            action: onOpen
+        )
+
+        // 2. 转为今日待办 􀆅
+        commandStripButton(
+            icon: hasConvertedToTask ? "checkmark" : "checklist",
+            key: hasConvertedToTask ? "diary.quick.converted_task" : "diary.quick.convert_task",
+            isActive: hasConvertedToTask,
+            action: onConvertToTask
+        )
+
+        // 3. 复制手记 📋
+        commandStripButton(
+            icon: "square.on.square",
+            key: "diary.quick.copy",
+            action: onCopy
+        )
+    }
+
+    @ViewBuilder
+    private var classificationAndScheduleButtons: some View {
+        // 4. 标签选择 🏷
+        if !allTags.isEmpty {
+            commandStripMenu(
+                icon: "tag",
+                key: "diary.quick.tags",
+                isActive: !assignedTagIDs.isEmpty
+            ) {
+                DiaryTagToggleButtons(tags: allTags, assignedIDs: assignedTagIDs, onToggle: onToggleTag)
+            }
+        }
+
+        // 5. 调整归属日期 📅
+        commandStripMenu(
+            icon: "calendar",
+            key: "diary.quick.schedule",
+            isActive: currentDayKey == DayKey.today()
+        ) {
+            DiaryDayMoveButtons(onMove: onMoveToDay, onPickCustom: onPickCustomDate)
+        }
+
+        // 6. 置顶 / 取消置顶 📌
+        commandStripButton(
+            icon: isPinned ? "pin.slash" : "pin",
+            key: isPinned ? "diary.quick.unpin" : "diary.quick.pin",
+            isActive: isPinned,
+            action: onTogglePin
+        )
+    }
+
+    @ViewBuilder
+    private var detailActionButtons: some View {
+        // 7. 添加附件 📎
+        commandStripButton(
+            icon: "paperclip",
+            key: "diary.quick.attach",
+            action: onAttach
+        )
+        .disabled(isSensitive)
+
+        // 8. 私密加锁 🔒
+        commandStripButton(
+            icon: isSensitive ? "lock.fill" : "lock",
+            key: isSensitive ? "diary.quick.privacy.unlock" : "diary.quick.privacy.lock",
+            isActive: isSensitive,
+            action: onTogglePrivate
+        )
+
+        // 9. 工作台查看 🖥
+        commandStripButton(
+            icon: "sidebar.left",
+            key: "diary.quick.workspace",
+            action: onInspect
+        )
+    }
+
+    private var destructiveButton: some View {
+        commandStripButton(
+            icon: "trash",
+            key: "diary.quick.delete",
+            isDestructive: true,
+            action: onDelete
+        )
     }
 
     private func commandStripButton(

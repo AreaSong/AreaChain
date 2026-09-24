@@ -41,6 +41,28 @@ enum CalendarSyncStorage {
         CalendarContent(title: todo.title, dayKey: todo.dayKey, remindMinutes: todo.remindMinutes)
     }
 
+    private static func applyUpdate(
+        _ update: CalendarLocalUpdate,
+        todo: TodoItem
+    ) throws -> Bool {
+        if let incoming = update.content, incoming != content(todo) {
+            guard todo.deletedAt == nil, !todo.isDone else { throw CalendarSyncError.conflict }
+            try TodoCalendarFieldUpdate.apply(
+                todo, title: incoming.title, dayKey: incoming.dayKey,
+                remindMinutes: incoming.remindMinutes, eventID: update.eventID
+            )
+            return true
+        }
+        if todo.calendarEventID != update.eventID {
+            try TodoCalendarFieldUpdate.apply(
+                todo, title: todo.title, dayKey: todo.dayKey,
+                remindMinutes: todo.remindMinutes, eventID: update.eventID
+            )
+            return true
+        }
+        return false
+    }
+
     private static func apply(_ updates: [CalendarLocalUpdate], context: ModelContext) throws -> Bool {
         let tasks = try context.fetch(FetchDescriptor<TodoItem>())
         guard Set(tasks.map(\.id)).count == tasks.count, !context.hasChanges else { throw CalendarSyncError.invalidData }
@@ -49,18 +71,7 @@ enum CalendarSyncStorage {
         do {
             for update in updates {
                 guard let todo = byID[update.id] else { throw CalendarSyncError.conflict }
-                if let incoming = update.content, incoming != content(todo) {
-                    guard todo.deletedAt == nil, !todo.isDone else { throw CalendarSyncError.conflict }
-                    try TodoCalendarFieldUpdate.apply(
-                        todo, title: incoming.title, dayKey: incoming.dayKey,
-                        remindMinutes: incoming.remindMinutes, eventID: update.eventID
-                    )
-                    changed = true
-                } else if todo.calendarEventID != update.eventID {
-                    try TodoCalendarFieldUpdate.apply(
-                        todo, title: todo.title, dayKey: todo.dayKey,
-                        remindMinutes: todo.remindMinutes, eventID: update.eventID
-                    )
+                if try applyUpdate(update, todo: todo) {
                     changed = true
                 }
             }
