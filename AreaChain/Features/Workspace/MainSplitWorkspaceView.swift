@@ -144,10 +144,10 @@ struct MainSplitWorkspaceView: View {
             WorkspaceFilteredListView(tag: tag)
         } else {
             switch navigation.selectedTab {
+            case .dashboard, .pending, .allItems, .tags, .privacy, .dataBackup:
+                WorkspaceSectionPlaceholderView(tab: navigation.selectedTab)
             case .today:
                 WorkspaceTodayView()
-            case .residents:
-                ResidentsPage()
             case .calendar:
                 CalendarStandaloneView()
             case .quadrant:

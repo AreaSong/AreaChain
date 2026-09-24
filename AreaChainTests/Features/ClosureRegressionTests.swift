@@ -47,7 +47,9 @@ struct ClosureRegressionTests {
         #expect(navigation.selectedProjectID == nil)
         #expect(navigation.selectedTaskID == id)
         #expect(board.inspectingDayKey == "2026-09-10")
-        navigation.revealTab(.residents)
+        navigation.revealTab(.calendar)
+        #expect(board.inspectingDayKey == "2026-09-10")
+        navigation.revealTab(.today)
         #expect(board.inspectingDayKey == DayClock.shared.todayKey)
     }
 

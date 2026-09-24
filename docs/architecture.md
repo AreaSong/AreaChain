@@ -101,7 +101,7 @@ AreaChain/
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词、不提取项目。
-- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让常驻页 / 专属清单打开检查器时把检查日钉到今天，切到「任务」「常驻」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让项目或标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
@@ -170,6 +170,6 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 
 `MenuBarStatus` 复用今日看板规则区分未安排、未完成与已处理完，并保留准确数量。`MenuBarStatusImage` 使用固定 18×18pt 模板图像，在书本内部镂空小点或勾号表达状态，由系统统一着色。状态项固定 24pt 宽，按钮标题始终为空，不再绘制任何数量文字；所有正数共用同一个小点图标，完整计数只用于悬停提示与无障碍标签。读失败不覆盖上次有效状态。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「任务」页），并保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「任务」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，手记结果走 `DiaryWindows.open(entry:context:)`；显式「在工作台打开」仍走 `openDiary()`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。不传 tab 时打开 Dashboard；显式传入的今日、手记、日历等 tab 不会被 Dashboard 覆盖。切到不同 tab 会复位侧栏项目/标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉项目/标签过滤（浮层 Return 才能回到「今日」页），并保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「今日」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，手记结果走 `DiaryWindows.open(entry:context:)`；显式「在工作台打开」仍走 `openDiary()`。macOS ⌘, 打开 SwiftUI Settings 场景（同一套设置页）。
 2. **激活策略**：平时 `.accessory`（无 Dock）；工作台或手记小窗打开后升为 `.regular`。`AppWindows.diaryWindowsProvider` 把全部手记窗口纳入存活窗口集合，防止关设置/工作台时被当成杂散窗口隐藏；还有可见或最小化窗口时不撤去 Dock。
 3. **手记小窗**：`DiaryWindows` 按记录标识复用 `DiaryWindowController`，草稿首次保存后也复用原窗。窗口置顶只设置 `.floating` 层级，不改变记录的 `isPinned`，也不重新激活应用；不自动恢复窗口或未保存正文。关闭窗口使用原生保存确认，应用退出还检查独立窗口和 `BoardComposerSession` 中的手记草稿。

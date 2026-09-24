@@ -7,7 +7,7 @@ enum AppWindows {
     static var workspaceViewProvider: (@MainActor () -> AnyView)?
     static var diaryWindowsProvider: (@MainActor () -> [NSWindow])?
 
-    static func openWorkspace(tab: WorkspaceTab = .today, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
+    static func openWorkspace(tab: WorkspaceTab = .dashboard, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
         StatusItemController.shared.close()
         becomeActive()
         WorkspaceNavigation.shared.revealTab(tab, inspecting: taskID, dayKey: dayKey)

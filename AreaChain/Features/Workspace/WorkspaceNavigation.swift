@@ -1,57 +1,74 @@
 import SwiftUI
 
 enum WorkspaceTab: String, CaseIterable, Identifiable {
+    case dashboard
     case today
-    case residents
+    case pending
+    case allItems
     case calendar
     case quadrant
     case gantt
     case diary
     case attachments
-    case search
+    case tags
+    case privacy
+    case dataBackup
     case trash
     case settings
+    /// 内部全局搜索路由，不出现在侧栏。
+    case search
 
     var id: String { rawValue }
 
     var titleKey: LocalizedStringKey {
         switch self {
-        case .today: return "tab.tasks"
-        case .residents: return "tab.residents"
+        case .dashboard: return "tab.dashboard"
+        case .today: return "tab.today"
+        case .pending: return "tab.pending"
+        case .allItems: return "tab.allItems"
         case .calendar: return "window.calendar"
         case .quadrant: return "window.quadrant"
         case .gantt: return "window.gantt"
         case .diary: return "window.diary"
         case .attachments: return "window.attachments"
-        case .search: return "window.search"
+        case .tags: return "tab.tags"
+        case .privacy: return "tab.privacy"
+        case .dataBackup: return "tab.dataBackup"
         case .trash: return "window.trash"
         case .settings: return "window.settings"
+        case .search: return "window.search"
         }
     }
 
     var iconName: String {
         switch self {
+        case .dashboard: return "rectangle.grid.1x2"
         case .today: return "checklist"
-        case .residents: return "repeat"
+        case .pending: return "clock"
+        case .allItems: return "list.bullet"
         case .calendar: return "calendar"
         case .quadrant: return "square.grid.2x2"
         case .gantt: return "chart.bar.xaxis"
         case .diary: return "note.text"
         case .attachments: return "paperclip"
-        case .search: return "magnifyingglass"
+        case .tags: return "tag"
+        case .privacy: return "lock"
+        case .dataBackup: return "externaldrive"
         case .trash: return "trash"
         case .settings: return "gearshape"
+        case .search: return "magnifyingglass"
         }
     }
 }
 
 enum InspectDayPolicy {
     static func pinsTodayWhenInspecting(tab: WorkspaceTab, projectID: UUID?, tagID: UUID?) -> Bool {
-        tab == .residents || projectID != nil || tagID != nil
+        _ = tab
+        return projectID != nil || tagID != nil
     }
 
     static func pinsTodayWhenEntering(_ tab: WorkspaceTab) -> Bool {
-        tab == .today || tab == .residents
+        tab == .today
     }
 }
 
@@ -95,7 +112,7 @@ final class WorkspaceNavigation {
     var isInlineTitleVisible: Bool = false
 
     // MARK: - Tab & Filter Navigation
-    var selectedTab: WorkspaceTab = .today {
+    var selectedTab: WorkspaceTab = .dashboard {
         didSet {
             selectedProjectID = nil
             selectedTagID = nil
