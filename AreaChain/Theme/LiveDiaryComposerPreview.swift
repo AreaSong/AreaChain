@@ -66,6 +66,32 @@ struct LiveDiaryComposerPreview: View {
         !isSensitive && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(displayTitle)
     }
 
+    @ViewBuilder
+    private var floatingBackground: some View {
+        if !showsSuggestions {
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookPalette.fill.page)
+                .daybookElevation(.floating)
+        }
+    }
+
+    @ViewBuilder
+    private var floatingBorder: some View {
+        if !showsSuggestions {
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
+        }
+    }
+
+    private var geometryObserver: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
             headerRow
@@ -79,23 +105,8 @@ struct LiveDiaryComposerPreview: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(minHeight: 46)
         .daybookSurface(.row, isHovered: isRowHovered, isSelected: false)
-        .background(
-            Group {
-                if !showsSuggestions {
-                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                        .fill(DaybookPalette.fill.page)
-                        .daybookElevation(.floating)
-                }
-            }
-        )
-        .overlay(
-            Group {
-                if !showsSuggestions {
-                    RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                        .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
-                }
-            }
-        )
+        .background(floatingBackground)
+        .overlay(floatingBorder)
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .onHover { hovering in
             withAnimation(DaybookMotion.interactive(reduceMotion)) {
@@ -106,14 +117,7 @@ struct LiveDiaryComposerPreview: View {
                 }
             }
         }
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear { updateBubblePlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
-            }
-        )
+        .background(geometryObserver)
         .task(id: hasCopied) {
             guard hasCopied else { return }
             try? await Task.sleep(for: .milliseconds(1200))

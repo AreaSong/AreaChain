@@ -110,42 +110,42 @@ enum SyntaxAutocompleteEngine {
         }
     }
 
+    private static func tagPromptCandidate(query: String, existingTags: [String], context: SyntaxInputContext) -> SyntaxCandidate? {
+        let hasExactMatch = existingTags.contains { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(query) }
+        if !query.isEmpty && !hasExactMatch {
+            return SyntaxCandidate(
+                id: "new_tag_\(query)",
+                title: "#\(query)",
+                subtitle: context.isSearch ? "syntax.search.tag" : "syntax.tag.create.on.save",
+                insertText: TagSyntax.spelling(for: query) + " ",
+                kind: .tag,
+                isCreation: !context.isSearch
+            )
+        } else if query.isEmpty && existingTags.isEmpty && !context.isSearch {
+            return SyntaxCandidate(
+                id: "tag_empty_guide",
+                title: "#...",
+                subtitle: "syntax.tag.type.to.create",
+                insertText: "#",
+                kind: .tag,
+                isCreation: true
+            )
+        }
+        return nil
+    }
+
     private static func tagCandidates(query: String, tags: [String], context: SyntaxInputContext) -> [SyntaxCandidate] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard context.includesDiaryTags || !DiaryMemoTags.isPresetName(trimmed) else { return [] }
         let tags = TagSyntax.uniqueNames(tags.filter { context.includesDiaryTags || !DiaryMemoTags.isPresetName($0) })
         var result: [SyntaxCandidate] = []
 
-        let filteredTags: [String]
-        if trimmed.isEmpty {
-            filteredTags = tags
-        } else {
-            filteredTags = tags.filter { $0.localizedCaseInsensitiveContains(trimmed) }
-        }
+        let filteredTags: [String] = trimmed.isEmpty
+            ? tags
+            : tags.filter { $0.localizedCaseInsensitiveContains(trimmed) }
 
-        let hasExactMatch = tags.contains { TagSyntax.normalizedName($0) == TagSyntax.normalizedName(trimmed) }
-        if !trimmed.isEmpty && !hasExactMatch {
-            result.append(
-                SyntaxCandidate(
-                    id: "new_tag_\(trimmed)",
-                    title: "#\(trimmed)",
-                    subtitle: context.isSearch ? "syntax.search.tag" : "syntax.tag.create.on.save",
-                    insertText: TagSyntax.spelling(for: trimmed) + " ",
-                    kind: .tag,
-                    isCreation: !context.isSearch
-                )
-            )
-        } else if trimmed.isEmpty && tags.isEmpty && !context.isSearch {
-            result.append(
-                SyntaxCandidate(
-                    id: "tag_empty_guide",
-                    title: "#...",
-                    subtitle: "syntax.tag.type.to.create",
-                    insertText: "#",
-                    kind: .tag,
-                    isCreation: true
-                )
-            )
+        if let prompt = tagPromptCandidate(query: trimmed, existingTags: tags, context: context) {
+            result.append(prompt)
         }
 
         for tag in filteredTags {

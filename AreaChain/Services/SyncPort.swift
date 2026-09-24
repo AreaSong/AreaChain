@@ -17,41 +17,12 @@ enum SyncPort {
             routines: routines.map(exportedRoutine),
             checks: checks.compactMap(exportedCheck),
             todos: todos.map(exportedTodo),
-            diaries: diaries.filter { !privateIDs.contains($0.id) }.map {
-                ExportedDiary(
-                    id: $0.id,
-                    text: $0.text,
-                    dayKey: $0.dayKey,
-                    createdAt: $0.createdAt,
-                    deletedAt: $0.deletedAt,
-                    tagIDs: $0.tagIDs,
-                    isPinned: $0.isPinned
-                )
-            },
-            projects: projects.map {
-                ExportedProject(
-                    id: $0.id,
-                    name: $0.name,
-                    sortOrder: $0.sortOrder,
-                    parentID: $0.parentID,
-                    deletedAt: $0.deletedAt
-                )
-            },
-            tags: tags.map {
-                ExportedTag(id: $0.id, name: $0.name, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
-            },
+            diaries: diaries.filter { !privateIDs.contains($0.id) }.map(exportedDiary),
+            projects: projects.map(exportedProject),
+            tags: tags.map(exportedTag),
             attachments: attachments.filter {
                 $0.privacyVaultID == nil && !($0.ownerKind == AttachmentOwner.diary.rawValue && privateIDs.contains($0.ownerID))
-            }.map {
-                ExportedAttachment(
-                    id: $0.id,
-                    ownerKind: $0.ownerKind,
-                    ownerID: $0.ownerID,
-                    filename: $0.filename,
-                    createdAt: $0.createdAt,
-                    deletedAt: $0.deletedAt
-                )
-            }
+            }.map(exportedAttachment)
         )
     }
 
@@ -131,4 +102,42 @@ enum SyncPort {
             }
         )
     }
+
+    private static func exportedDiary(_ item: DiaryEntry) -> ExportedDiary {
+        ExportedDiary(
+            id: item.id,
+            text: item.text,
+            dayKey: item.dayKey,
+            createdAt: item.createdAt,
+            deletedAt: item.deletedAt,
+            tagIDs: item.tagIDs,
+            isPinned: item.isPinned
+        )
+    }
+
+    private static func exportedProject(_ item: ProjectItem) -> ExportedProject {
+        ExportedProject(
+            id: item.id,
+            name: item.name,
+            sortOrder: item.sortOrder,
+            parentID: item.parentID,
+            deletedAt: item.deletedAt
+        )
+    }
+
+    private static func exportedTag(_ item: TagItem) -> ExportedTag {
+        ExportedTag(id: item.id, name: item.name, sortOrder: item.sortOrder, deletedAt: item.deletedAt)
+    }
+
+    private static func exportedAttachment(_ item: AttachmentItem) -> ExportedAttachment {
+        ExportedAttachment(
+            id: item.id,
+            ownerKind: item.ownerKind,
+            ownerID: item.ownerID,
+            filename: item.filename,
+            createdAt: item.createdAt,
+            deletedAt: item.deletedAt
+        )
+    }
 }
+

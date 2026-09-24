@@ -131,32 +131,28 @@ struct DiaryNoteCard: View {
         } message: { Text("diary.window.save.conflict") }
         .zIndex(isEditing ? 20 : 0)
         .animation(.easeInOut(duration: 0.15), value: isHovered)
-        .onDisappear { maskContent() }
-        .onChange(of: entry.text) { _, _ in isMasked = true }
-        .onChange(of: entry.encryptedText) { _, _ in isMasked = true }
-        .onChange(of: entry.tagIDs) { _, _ in isMasked = true }
-        .onChange(of: isPasswordType) { _, _ in isMasked = true }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
-            maskContent()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
-            if let window = notification.object as? NSWindow, window === hostWindow { maskContent() }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock, object: privacyVault)) { _ in maskContent() }
-        .onReceive(NotificationCenter.default.publisher(for: .privacyMask, object: privacyVault)) { _ in maskContent() }
+        .diaryPrivacyLifecycle(
+            entry: entry,
+            isPasswordType: isPasswordType,
+            hostWindow: hostWindow,
+            privacyVault: privacyVault,
+            maskContent: maskContent
+        )
         .contextMenu {
             if entry.hasProtectedContent {
                 Button("privacy.unprotect", role: .destructive) { confirmsUnprotect = true }
             }
         }
         .confirmationDialog("privacy.unprotect.confirm", isPresented: $confirmsUnprotect) {
-            Button("privacy.unprotect", role: .destructive) {
-                PrivacyAccess.withDiary(entry, force: true, vault: privacyVault) { current in
-                    guard let context = current.modelContext else { throw PrivacyError.staleOperation }
-                    try DiaryProtection.unprotect(current, in: PrivacyPersistence(context: context, vault: privacyVault))
-                }
-            }
+            Button("privacy.unprotect", role: .destructive, action: unprotectEntry)
             Button("alert.cancel", role: .cancel) {}
+        }
+    }
+
+    private func unprotectEntry() {
+        PrivacyAccess.withDiary(entry, force: true, vault: privacyVault) { current in
+            guard let context = current.modelContext else { throw PrivacyError.staleOperation }
+            try DiaryProtection.unprotect(current, in: PrivacyPersistence(context: context, vault: privacyVault))
         }
     }
 
@@ -300,3 +296,51 @@ struct DiaryNoteCard: View {
         return formatter.string(from: date)
     }
 }
+
+private struct DiaryPrivacyLifecycleModifier: ViewModifier {
+    let entry: DiaryEntry
+    let isPasswordType: Bool
+    let hostWindow: NSWindow?
+    let privacyVault: PrivacyVault?
+    let maskContent: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onDisappear { maskContent() }
+            .onChange(of: entry.text) { _, _ in maskContent() }
+            .onChange(of: entry.encryptedText) { _, _ in maskContent() }
+            .onChange(of: entry.tagIDs) { _, _ in maskContent() }
+            .onChange(of: isPasswordType) { _, _ in maskContent() }
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+                maskContent()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
+                if let window = notification.object as? NSWindow, window === hostWindow { maskContent() }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock, object: privacyVault)) { _ in
+                maskContent()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .privacyMask, object: privacyVault)) { _ in
+                maskContent()
+            }
+    }
+}
+
+extension View {
+    fileprivate func diaryPrivacyLifecycle(
+        entry: DiaryEntry,
+        isPasswordType: Bool,
+        hostWindow: NSWindow?,
+        privacyVault: PrivacyVault?,
+        maskContent: @escaping () -> Void
+    ) -> some View {
+        modifier(DiaryPrivacyLifecycleModifier(
+            entry: entry,
+            isPasswordType: isPasswordType,
+            hostWindow: hostWindow,
+            privacyVault: privacyVault,
+            maskContent: maskContent
+        ))
+    }
+}
+

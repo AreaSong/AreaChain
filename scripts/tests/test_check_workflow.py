@@ -292,6 +292,41 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_theme_tokens(self.root)
         self.assertEqual(result["issues"][0]["line"], 2)
 
+    def test_theme_tokens_flags_extended_system_colors(self):
+        self.write("AreaChain/Features/Sample.swift",
+                   "let c1 = Color.indigo\n"
+                   "let c2 = Color.mint\n"
+                   "let c3 = Color.yellow\n"
+                   "let c4 = Color.purple\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(len(result["issues"]), 4)
+
+    def test_theme_tokens_control_cannot_mask_other_violations(self):
+        self.write("AreaChain/Features/Sample.swift",
+                   ".buttonStyle(.plain).foregroundColor(Color.red) // control: 行点击\n"
+                   ".buttonStyle(.plain).font(.system(size: 11)) // control: 行点击\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(len(result["issues"]), 2)
+        self.assertEqual(result["issues"][0]["line"], 1)
+        self.assertEqual(result["issues"][1]["line"], 2)
+
+    def test_theme_tokens_dynamic_opacity_is_flagged(self):
+        self.write("AreaChain/Features/Sample.swift",
+                   "DaybookPalette.accent.base.opacity(isHovered ? 0.8 : 0.4)\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertEqual(len(result["issues"]), 1)
+
+    def test_theme_rejects_services_diary_content_dependency(self):
+        self.write("AreaChain/Theme/SampleView.swift",
+                   "let sensitive = DiaryContent.requiresProtection(text: \"secret\")\n")
+        result = workflow.check_theme_tokens(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("DiaryContent" in issue["message"] for issue in result["issues"]))
+
 
 if __name__ == "__main__":
     unittest.main()
+

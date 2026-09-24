@@ -43,7 +43,7 @@ extension DayBoardList {
             Image(systemName: "checkmark.circle")
                 .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookPalette.accent.base)
-            Text("太棒了，今日任务全清！")
+            Text("board.banner.all_done")
                 .font(DaybookType.caption.weight(.medium))
                 .foregroundStyle(DaybookPalette.text.primary.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
             Spacer()

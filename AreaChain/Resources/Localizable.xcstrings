@@ -10018,7 +10018,7 @@
         }
       }
     },
-    "太棒了，今日任务全清！": {
+    "board.banner.all_done": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -10030,7 +10030,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日任务已全部完成"
+            "value": "太棒了，今日任务全清！"
           }
         }
       }

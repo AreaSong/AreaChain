@@ -32,6 +32,69 @@ struct MenuBarSearchField: View {
             : L10n.string("footer.search.placeholder", locale: locale)
     }
 
+    @ViewBuilder
+    private var tokenScrollView: some View {
+        if !tokens.isEmpty {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 3) {
+                    ForEach(tokens) { token in
+                        tokenChip(token)
+                    }
+                }
+                .padding(.vertical, 1)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func tokenChip(_ token: SearchFilterToken) -> some View {
+        DaybookChip(tint: DaybookPalette.accent.base, isSelected: true) {
+            HStack(spacing: 2) {
+                if let dotColor = token.dotColor {
+                    DaybookStatusDot(color: dotColor, size: 4.5)
+                } else if let icon = token.icon {
+                    Image(systemName: icon)
+                }
+                Text(token.title)
+                    .lineLimit(1)
+                Button(action: token.onRemove) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 6.5, weight: .bold)) // token-exempt: 芯片内移除角标小于 9pt
+                        .frame(width: 9, height: 9)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain) // control: 芯片内的移除角标
+            }
+        }
+    }
+
+    private var searchInput: some View {
+        DaybookTextField(
+            text: $toolbar.searchText,
+            placeholder: searchPlaceholder,
+            fontSize: 11,
+            focus: $toolbar.searchIsFocused,
+            autocomplete: toolbar.autocomplete,
+            availableTags: availableTags,
+            onSubmit: {},
+            onCommandReturn: {},
+            allowsShiftNewline: false,
+            onEscape: escapeSearch
+        )
+        .accessibilityLabel("footer.search.label")
+        .accessibilityIdentifier("menubar.search.input")
+    }
+
+    @ViewBuilder
+    private var clearButton: some View {
+        if !toolbar.searchText.isEmpty {
+            DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
+                toolbar.clearSearch()
+                toolbar.focusSearch()
+            }
+        }
+    }
+
     var body: some View {
         DaybookInputShell(kind: .search, focused: toolbar.searchIsFocused) {
             DaybookIconButton(systemName: "magnifyingglass", label: "footer.search.label", size: .inline) {
@@ -39,56 +102,11 @@ struct MenuBarSearchField: View {
             }
             .keyboardShortcut("f", modifiers: .command)
 
-            if !tokens.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 3) {
-                        ForEach(tokens) { token in
-                            DaybookChip(tint: DaybookPalette.accent.base, isSelected: true) {
-                                HStack(spacing: 2) {
-                                    if let dotColor = token.dotColor {
-                                        DaybookStatusDot(color: dotColor, size: 4.5)
-                                    } else if let icon = token.icon {
-                                        Image(systemName: icon)
-                                    }
-                                    Text(token.title)
-                                        .lineLimit(1)
-                                    Button(action: token.onRemove) {
-                                        Image(systemName: "xmark")
-                                            .font(.system(size: 6.5, weight: .bold)) // token-exempt: 芯片内移除角标小于 9pt
-                                            .frame(width: 9, height: 9)
-                                            .contentShape(Rectangle())
-                                    }
-                                    .buttonStyle(.plain) // control: 芯片内的移除角标
-                                }
-                            }
-                        }
-                    }
-                    .padding(.vertical, 1)
-                }
-                .fixedSize(horizontal: false, vertical: true)
-            }
+            tokenScrollView
         } field: {
-            DaybookTextField(
-                text: $toolbar.searchText,
-                placeholder: searchPlaceholder,
-                fontSize: 11,
-                focus: $toolbar.searchIsFocused,
-                autocomplete: toolbar.autocomplete,
-                availableTags: availableTags,
-                onSubmit: {},
-                onCommandReturn: {},
-                allowsShiftNewline: false,
-                onEscape: escapeSearch
-            )
-            .accessibilityLabel("footer.search.label")
-            .accessibilityIdentifier("menubar.search.input")
+            searchInput
         } trailing: {
-            if !toolbar.searchText.isEmpty {
-                DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
-                    toolbar.clearSearch()
-                    toolbar.focusSearch()
-                }
-            }
+            clearButton
         }
         .frame(minWidth: 110, maxWidth: .infinity)
         .syntaxSuggestions(toolbar.autocomplete, prefersAbove: true, enabled: toolbar.searchIsFocused && !toolbar.isFiltering)

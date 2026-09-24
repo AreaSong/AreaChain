@@ -282,6 +282,45 @@ struct TaskRow: View {
             .help("row.resident")
     }
 
+    @ViewBuilder
+    private var noteBubbleOverlay: some View {
+        if shouldShowNoteBubble, let noteText = fullNoteText {
+            let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
+            let transformAnchor = UnitPoint(
+                x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
+                y: growsUpward ? 1.0 : 0.0
+            )
+            TaskNoteBubble(
+                note: noteText,
+                growsUpward: growsUpward,
+                bubbleShiftX: bubbleShiftX,
+                onCopy: { copyToClipboard(noteText) },
+                onHover: { hovering in
+                    isNoteBubbleHovered = hovering
+                    if !hovering && !isNoteHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isNoteHovered = false
+                        }
+                    }
+                }
+            )
+            .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
+                removal: .opacity
+            ))
+        }
+    }
+
+    private var notePlacementReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+        }
+    }
+
     private var noteIndicator: some View {
         Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
@@ -292,20 +331,7 @@ struct TaskRow: View {
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
                     .fill(hasNoteCopied ? DaybookPalette.accent.base.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
             )
-            .background(
-                GeometryReader { proxy in
-                    Color.clear
-                        .onAppear {
-                            updateBubblePlacement(proxy)
-                        }
-                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in
-                            updateBubblePlacement(proxy)
-                        }
-                        .onChange(of: proxy.frame(in: .global).minX) { _, _ in
-                            updateBubblePlacement(proxy)
-                        }
-                }
-            )
+            .background(notePlacementReader)
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .onTapGesture {
@@ -317,32 +343,7 @@ struct TaskRow: View {
                 }
             }
             .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                if shouldShowNoteBubble, let noteText = fullNoteText {
-                    let arrowPadding = max(8, min(186, 8 - bubbleShiftX))
-                    let transformAnchor = UnitPoint(
-                        x: max(0.06, min(0.94, (arrowPadding + 3.5) / 210.0)),
-                        y: growsUpward ? 1.0 : 0.0
-                    )
-                    TaskNoteBubble(
-                        note: noteText,
-                        growsUpward: growsUpward,
-                        bubbleShiftX: bubbleShiftX,
-                        onCopy: { copyToClipboard(noteText) },
-                        onHover: { hovering in
-                            isNoteBubbleHovered = hovering
-                            if !hovering && !isNoteHovered {
-                                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                    isNoteHovered = false
-                                }
-                            }
-                        }
-                    )
-                    .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
-                        removal: .opacity
-                    ))
-                }
+                noteBubbleOverlay
             }
     }
 
@@ -364,6 +365,55 @@ struct TaskRow: View {
         )
     }
 
+    @ViewBuilder
+    private var titleBubbleOverlay: some View {
+        if shouldShowTitleBubble {
+            TaskTitleBubble(
+                title: state.title,
+                growsUpward: growsUpward,
+                onCopy: { copyToClipboard(state.title) },
+                onHover: { hovering in
+                    isTitleBubbleHovered = hovering
+                    if !hovering && !isTitleTextHovered {
+                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                            isTitleTextHovered = false
+                        }
+                    }
+                }
+            )
+            .offset(y: growsUpward ? -6 : 22)
+            .transition(.asymmetric(
+                insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
+                removal: .opacity
+            ))
+        }
+    }
+
+    @ViewBuilder
+    private var embeddedNoteSnippets: some View {
+        if embedded {
+            if let noteSnippet = formattedNoteSnippet {
+                Text(noteSnippet)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+
+            if let note = state.note {
+                Text(note)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.accent.base.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
+            }
+
+            if let source = state.classify?.sourceLabel, !source.isEmpty {
+                Text(source)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.tertiary)
+            }
+        }
+    }
+
     private var titleContent: some View {
         VStack(alignment: .leading, spacing: 3) {
             ModernTaskTitle(text: state.title, isDone: state.isDone)
@@ -373,49 +423,10 @@ struct TaskRow: View {
                 .contentShape(Rectangle())
                 .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
                 .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                    if shouldShowTitleBubble {
-                        TaskTitleBubble(
-                            title: state.title,
-                            growsUpward: growsUpward,
-                            onCopy: { copyToClipboard(state.title) },
-                            onHover: { hovering in
-                                isTitleBubbleHovered = hovering
-                                if !hovering && !isTitleTextHovered {
-                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                                        isTitleTextHovered = false
-                                    }
-                                }
-                            }
-                        )
-                        .offset(y: growsUpward ? -6 : 22)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
-                            removal: .opacity
-                        ))
-                    }
+                    titleBubbleOverlay
                 }
 
-            if embedded {
-                if let noteSnippet = formattedNoteSnippet {
-                    Text(noteSnippet)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
-
-                if let note = state.note {
-                    Text(note)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.accent.base.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
-                }
-
-                if let source = state.classify?.sourceLabel, !source.isEmpty {
-                    Text(source)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.tertiary)
-                }
-            }
+            embeddedNoteSnippets
         }
     }
 }

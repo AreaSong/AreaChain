@@ -212,11 +212,12 @@ def check_domain(root):
 
 THEME_LINE = re.compile(
     r"\.font\(\.system\(|cornerRadius:\s*[0-9]|"
-    r"\bColor\.(?:orange|red|green|white|black|blue|gray|primary|secondary)\b|"
+    r"\bColor\.(?:orange|red|green|white|black|blue|gray|primary|secondary|"
+    r"yellow|indigo|mint|cyan|brown|teal|purple)\b|"
     r"\.buttonStyle\(\.plain\)|\bDaybookTheme\.|\bisWorkspace\b|\.shadow\("
 )
 THEME_SHAPE = re.compile(r"(?<![A-Za-z])(?:RoundedRectangle|Capsule|Circle)\(")
-THEME_OPACITY = re.compile(r"\.opacity\([0-9.]+\)")
+THEME_OPACITY = re.compile(r"\.opacity\([^)]+\)")
 THEME_COLORISH = re.compile(r"DaybookPalette|Color\.")
 THEME_LAYOUT = re.compile(r"\bWorkspaceLayout\.")
 THEME_EMBEDDED = re.compile(r"\bembedded\b.*(?:DaybookPalette|DaybookType|\.opacity\(|Color\.)")
@@ -225,10 +226,6 @@ THEME_LAYOUT_FILES = {
     "AreaChain/Features/Workspace/WorkspaceSidebarView.swift",
     "AreaChain/Features/Workspace/WorkspaceHeaderBar.swift",
 }
-
-
-def theme_line_allowed(original):
-    return "// control:" in original or "// token-exempt:" in original
 
 
 def check_theme_tokens(root):
@@ -247,8 +244,11 @@ def check_theme_tokens(root):
             continue
         relative = path.relative_to(root).as_posix()
         for number, (raw, code) in enumerate(zip(original.splitlines(), masked.splitlines()), 1):
-            if theme_line_allowed(raw):
+            if "// token-exempt:" in raw:
                 continue
+            if "// control:" in raw:
+                # // control: 仅放行 .buttonStyle(.plain)，其余字面视觉违规仍须拦截
+                code = re.sub(r"\.buttonStyle\(\.plain\)", "                    ", code)
             if THEME_LINE.search(code):
                 issues.append(issue(path, "Features 出现未豁免的字面视觉写法。", number))
             elif THEME_SHAPE.search(code) and "DaybookRadius" not in code and "DaybookMetrics" not in code:
@@ -259,7 +259,21 @@ def check_theme_tokens(root):
                 issues.append(issue(path, "WorkspaceLayout 只允许白名单文件引用。", number))
             if THEME_EMBEDDED.search(code):
                 issues.append(issue(path, "workspaceEmbedded 不能和颜色或字号写在同一行。", number))
-    return result("theme-tokens", len(paths), issues)
+    theme_directory = root / "AreaChain/Theme"
+    theme_paths = sorted(theme_directory.rglob("*.swift")) if theme_directory.is_dir() else []
+    for path in theme_paths:
+        if not contained(path, root):
+            continue
+        try:
+            original = path.read_text(encoding="utf-8")
+            masked = swift_code(original)
+        except (OSError, UnicodeError, RuntimeError) as error:
+            issues.append(issue(path, f"无法读取主题文件：{type(error).__name__}"))
+            continue
+        for number, (raw, code) in enumerate(zip(original.splitlines(), masked.splitlines()), 1):
+            if re.search(r"\bDiaryContent\b", code):
+                issues.append(issue(path, "Theme 出现对 Services 层 DiaryContent 的反向依赖。", number))
+    return result("theme-tokens", len(paths) + len(theme_paths), issues)
 
 
 def git(root, arguments, stdin=None):
