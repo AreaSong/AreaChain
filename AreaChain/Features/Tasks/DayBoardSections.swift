@@ -9,12 +9,7 @@ extension DayBoardList {
                     .padding(.leading, 2)
             }
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(openTodosList.enumerated()), id: \.element.id) { index, todo in
-                    if index > 0 {
-                        Divider()
-                            .padding(.leading, 36)
-                            .opacity(0.35)
-                    }
+                ForEach(openTodosList) { todo in
                     todoRow(todo, isDone: false)
                 }
             }
@@ -23,12 +18,7 @@ extension DayBoardList {
             DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: openRoutinesList.count)
                 .padding(.leading, 2)
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(Array(openRoutinesList.enumerated()), id: \.element.id) { index, routine in
-                    if index > 0 {
-                        Divider()
-                            .padding(.leading, 36)
-                            .opacity(0.35)
-                    }
+                ForEach(openRoutinesList) { routine in
                     residentRow(routine, isDone: false)
                 }
             }
@@ -93,12 +83,7 @@ extension DayBoardList {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(doneItemsList.enumerated()), id: \.element.id) { index, row in
-                        if index > 0 {
-                            Divider()
-                                .padding(.leading, 36)
-                                .opacity(0.3)
-                        }
+                    ForEach(doneItemsList) { row in
                         dayRow(row, isDone: true)
                     }
                 }

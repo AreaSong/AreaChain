@@ -111,10 +111,7 @@ struct WorkspaceFilteredListView: View {
                 } else {
                     if !openTodos.isEmpty {
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach(Array(openTodos.enumerated()), id: \.element.id) { index, todo in
-                                if index > 0 {
-                                    Divider().padding(.leading, 36).opacity(0.35)
-                                }
+                            ForEach(openTodos) { todo in
                                 todoRowView(todo, isDone: false)
                             }
                         }
@@ -123,10 +120,7 @@ struct WorkspaceFilteredListView: View {
                         DaybookSectionHeader(title: "stamp.routines", icon: "repeat", count: listedRoutines.count)
                             .padding(.top, openTodos.isEmpty ? 0 : 8)
                         VStack(alignment: .leading, spacing: 4) {
-                            ForEach(Array(listedRoutines.enumerated()), id: \.element.id) { index, routine in
-                                if index > 0 {
-                                    Divider().padding(.leading, 36).opacity(0.35)
-                                }
+                            ForEach(listedRoutines) { routine in
                                 routineRowView(routine)
                             }
                         }
@@ -186,10 +180,7 @@ struct WorkspaceFilteredListView: View {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(doneTodos.enumerated()), id: \.element.id) { index, todo in
-                        if index > 0 {
-                            Divider().padding(.leading, 36).opacity(0.3)
-                        }
+                    ForEach(doneTodos) { todo in
                         todoRowView(todo, isDone: true)
                     }
                 }
