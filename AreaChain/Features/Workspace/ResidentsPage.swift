@@ -1,8 +1,9 @@
 import SwiftData
 import SwiftUI
 
-/// 聚焦区常驻页：增改习惯、周期与排序；详情走检查器。
+/// 今日页的重复事项管理面板。关闭只收起面板并回到今日，不提交输入框里尚未回车的草稿。
 struct ResidentsPage: View {
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @State private var draft = ""
@@ -13,6 +14,9 @@ struct ResidentsPage: View {
 
     var body: some View {
         DaybookPage(title: "tab.residents", subtitle: "residents.hint") {
+            Button("common.close", action: close)
+                .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
+        } content: {
             DaybookComposer(text: $draft, placeholder: "resident.add", onSubmit: add)
             if items.isEmpty {
                 DaybookEmptyState(title: "residents.empty", systemImage: "repeat")
@@ -32,6 +36,10 @@ struct ResidentsPage: View {
                 .daybookScroll()
             }
         }
+    }
+
+    private func close() {
+        dismiss()
     }
 
     private func add() {
