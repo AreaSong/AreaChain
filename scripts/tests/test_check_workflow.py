@@ -33,19 +33,33 @@ class WorkflowCheckTests(unittest.TestCase):
         (self.root / "AreaChainTests").mkdir()
         self.write("scripts/build.sh", "# isolated fixture\n")
         self.write("AreaChain/Domain/Rule.swift", "import Foundation\nimport SwiftData\n")
+        self.write("AreaChainTests/Domain/RuleTests.swift", "// fixture\n")
         for relative, symbol in workflow.COMPONENT_ENTRIES:
             self.write(relative, f"struct {symbol} {{}}\n")
         contract_docs = {
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为\n",
-            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md 用户输入契约\n",
+            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约\n",
+            "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardMutations ModelChanges 新公共组件\n",
         }
+        contract_docs["AGENTS.md"] += " quality-gates.md\n"
         for name in workflow.REQUIRED_DOCS:
             self.write(name, contract_docs.get(name, "# 文档\n"))
+        self.write("docs/performance-baselines.json", json.dumps({
+            "schemaVersion": 1,
+            "measurementPolicy": {"requiredFields": ["device", "sampleCount"], "note": "fixture"},
+            "entries": [{
+                "id": "rule", "scope": "AreaChain/Domain/Rule.swift",
+                "test": "AreaChainTests/Domain/RuleTests.swift",
+                "testFilter": "AreaChainTests/RuleTests", "metric": "wall_ms",
+                "budget": 10, "status": "provisional", "source": "fixture:1", "note": "fixture"
+            }]
+        }))
+        self.write(".github/workflows/quality.yml", """on: [push]\nworkflow_dispatch: {}\npermissions:\n  contents: read\nuses: actions/checkout@0123456789abcdef0123456789abcdef01234567\nfetch-depth: 2\nrun: python3 scripts/quality_gate.py --profile static --strict --format json\nrun: python3 scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json\n""")
         for name in workflow.SKILLS:
             content = f"---\nname: {name}\n---\n"
             if name == "areachain-workflow":
-                content += "skill-routing.md component-catalog.md areachain-verify 用户无需调用本技能\n"
+                content += "skill-routing.md component-catalog.md areachain-verify quality-gates.md 用户无需调用本技能\n"
             self.write(f".agents/skills/{name}/SKILL.md", content)
             self.write(f".agents/skills/{name}/agents/openai.yaml", 'interface: {}\n')
         self.write(".gitignore", ".agents/*\n!.agents/skills/\n.agents/skills/*\n"
@@ -157,8 +171,57 @@ class WorkflowCheckTests(unittest.TestCase):
         report = workflow.run_checks(self.root)
         self.assertEqual(report["status"], "passed", report)
         self.assertEqual({check["name"] for check in report["checks"]},
-                         {"project-identity", "project-links", "workflow-contract",
-                          "component-catalog", "domain-imports", "skill-git-scope", "theme-tokens"})
+                          {"project-identity", "project-links", "workflow-contract",
+                          "component-catalog", "performance-baselines", "domain-imports",
+                          "ci-contract", "skill-git-scope", "theme-tokens"})
+
+    def test_performance_manifest_rejects_non_object_root(self):
+        self.make_project()
+        self.write("docs/performance-baselines.json", "[]\n")
+        result = workflow.check_performance_manifest(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("顶层必须是对象", result["issues"][0]["message"])
+
+    def test_performance_manifest_rejects_observed_without_measurement(self):
+        self.make_project()
+        path = self.root / "docs/performance-baselines.json"
+        data = json.loads(path.read_text())
+        data["entries"][0]["status"] = "observed"
+        path.write_text(json.dumps(data), encoding="utf-8")
+        result = workflow.check_performance_manifest(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("measurement" in problem["message"] for problem in result["issues"]))
+
+    def test_performance_manifest_rejects_non_string_status(self):
+        self.make_project()
+        path = self.root / "docs/performance-baselines.json"
+        data = json.loads(path.read_text())
+        data["entries"][0]["status"] = []
+        path.write_text(json.dumps(data), encoding="utf-8")
+        result = workflow.check_performance_manifest(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("状态无效" in problem["message"] for problem in result["issues"]))
+
+    def test_ci_contract_rejects_unpinned_checkout(self):
+        self.make_project()
+        path = self.root / ".github/workflows/quality.yml"
+        path.write_text(path.read_text().replace("actions/checkout@0123456789abcdef0123456789abcdef01234567",
+                                                   "actions/checkout@main"), encoding="utf-8")
+        result = workflow.check_ci_contract(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("不可变 commit" in problem["message"] for problem in result["issues"]))
+
+    def test_ci_contract_rejects_missing_quality_entry(self):
+        self.make_project()
+        path = self.root / ".github/workflows/quality.yml"
+        content = path.read_text().replace(
+            "scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json",
+            "scripts/other.py",
+        )
+        path.write_text(content, encoding="utf-8")
+        result = workflow.check_ci_contract(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("profile swift" in problem["message"] for problem in result["issues"]))
 
     def test_workflow_contract_rejects_missing_router_marker(self):
         self.make_project()

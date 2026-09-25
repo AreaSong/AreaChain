@@ -16,7 +16,7 @@
 - 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
 - 入口、环境要求和命令见 [README.md](README.md)；产品范围见 [docs/product.md](docs/product.md) 与 [docs/features.md](docs/features.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
-- 开发全生命周期的覆盖状态、工程环境、质量门禁、发行准备及恢复/维护方法见 [docs/engineering.md](docs/engineering.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
+- 开发全生命周期的覆盖状态、工程环境、质量门禁、发行准备及恢复/维护方法见 [docs/engineering.md](docs/engineering.md) 与 [docs/quality-gates.md](docs/quality-gates.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
 - 触及构建、签名、安装或系统解锁时先读 [docs/signing.md](docs/signing.md)。不要把安装、启动或真实认证当作普通检查的隐含步骤。
 - 文档与实现有差异时先核对相关代码和测试，说明现状与目标；不凭单一旧说明扩大权限或修改无关行为。
 
@@ -31,9 +31,16 @@
 
 - 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
 - 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
-- 修改后按影响选择验证：规则/技能/文档运行 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建；共享契约或跨模块行为变化安排独立只读复核。
+- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建；共享契约或跨模块行为变化安排独立只读复核。
 - 交付时明确区分已实现、已验证、已安装、已发布、跳过、未运行和残余风险；旧测试结果、代码存在或构建成功不能单独宣称完成。
 - 新增或改变公共组件、路由、技能或验证入口时，必须同步维护 [技能路由](skill-routing.md)、[组件目录](docs/component-catalog.md)、相关文档和检查脚本测试。
+
+## 代码质量与安全默认门禁
+
+- 注释解释原因、不变量、平台限制或安全边界，不重复代码；`TODO`/`FIXME`/静态检查豁免必须有可追踪原因。
+- 质量、安全和性能的统一入口是 [质量门禁](docs/quality-gates.md)；不要为单个任务复制一套私有检查脚本或把警告写成通过。
+- 涉及用户正文、附件、密码、令牌、钥匙串、外部响应或通知内容时，先检查日志和测试产物是否泄露；疑似高置信秘密必须阻断。
+- 性能数字必须关联数据规模、环境、冷/热状态和测量方法；没有基线时报告未建立，不猜测产品预算。
 
 ## 技术与分层
 

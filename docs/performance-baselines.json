@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "unit": "milliseconds",
+  "measurementPolicy": {
+    "requiredFields": [
+      "device",
+      "os",
+      "buildConfiguration",
+      "dataset",
+      "sampleCount",
+      "temperature",
+      "metric"
+    ],
+    "note": "局部断言不是完整产品基线；新增预算必须提供同条件测量和回归证据。"
+  },
+  "entries": [
+    {
+      "id": "habit-streak-1000-days",
+      "scope": "AreaChain/Domain/HabitStreakLogic.swift",
+      "test": "AreaChainTests/Domain/HabitStreakEmpiricalTests.swift",
+      "testFilter": "AreaChainTests/HabitStreakEmpiricalTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/HabitStreakEmpiricalTests.swift:431",
+      "note": "1000 天连续记录的局部上限；不是启动或大库基线。"
+    },
+    {
+      "id": "task-row-pointer-response",
+      "scope": "AreaChain/Features/Tasks/TaskRow.swift",
+      "test": "AreaChainTests/Features/TaskRowInteractionTests.swift",
+      "testFilter": "AreaChainTests/TaskRowInteractionTests",
+      "metric": "wall_ms",
+      "budget": 100,
+      "status": "provisional",
+      "source": "AreaChainTests/Features/TaskRowInteractionTests.swift:24",
+      "note": "行点击反馈的局部阈值；不代表完整窗口帧率。"
+    },
+    {
+      "id": "application-startup",
+      "scope": "AreaChain/App/AreaChainApp.swift",
+      "test": null,
+      "testFilter": null,
+      "metric": "cold_start_ms",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "需要明确设备、数据规模、冷启动定义和样本后再设预算。"
+    },
+    {
+      "id": "large-store-reopen",
+      "scope": "AreaChain/Services/Persistence.swift",
+      "test": null,
+      "testFilter": null,
+      "metric": "reopen_ms_and_peak_memory_mb",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "需要合成大库和独立临时目录演练。"
+    },
+    {
+      "id": "backup-restore",
+      "scope": "AreaChain/Services/Privacy/PrivateBackupService.swift",
+      "test": "AreaChainTests/Services/PrivateBackupTests.swift",
+      "testFilter": null,
+      "metric": "restore_ms_and_peak_memory_mb",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "已有功能夹具，但尚未形成跨规模性能基线。"
+    }
+  ]
+}

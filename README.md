@@ -37,6 +37,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 使用说明与快捷键见 [docs/usage.md](docs/usage.md)。
 架构与数据模型见 [docs/architecture.md](docs/architecture.md)。
 共享组件与新增功能复用入口见 [docs/component-catalog.md](docs/component-catalog.md)。
+完整开发生命周期、注释、安全、性能、测试、交付与维护门禁见 [docs/quality-gates.md](docs/quality-gates.md)。
 开发协作、工程质量门禁、生命周期覆盖与发行/维护缺口见 [docs/engineering.md](docs/engineering.md)。
 
 隐私保护需要主动启用。旧密码遮罩本身不加密；首次转换已有内容前必须保存并验证加密备份。设置显示待清理时，按提示完成附件清理并重启，才能确认转换完成。系统解锁依赖受保护钥匙串和稳定的应用签名；未验证真实系统认证前，不应仅凭自动化测试启用真实密码库。详见 [隐私保护使用说明](docs/usage.md#9-隐私保护备份与恢复)。
@@ -68,6 +69,9 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 
 # 只读检查工作流引用、Domain 导入与项目技能共享边界；不构建/启动应用
 python3 -B scripts/check_workflow.py
+
+# 按当前差异自动选择本地质量、测试和交付门禁
+python3 -B scripts/quality_gate.py
 ```
 
 构建与安装是独立入口。完成数据备份并正常退出应用后，运行 `./scripts/install.sh` 会增量构建当前 Debug、验签、请求确认，再安装并启动。开发中用 `./scripts/install.sh --yes` 装上工作区里的最新代码。`--no-build` 使用已有 Debug，`--no-open` 安装后不启动，`--release` 才改为整包优化的 Release。
@@ -81,9 +85,9 @@ python3 -B scripts/check_workflow.py
 ```text
 AreaChain/          macOS 应用主源码（分层见 docs/architecture.md）
 AreaChainTests/     单元测试，镜像 Domain 与 Services
-scripts/            构建、签名核验、应用管理与测试脚本
+scripts/            构建、签名核验、应用管理、质量门禁与测试脚本
 Config/             通用签名配置与个人配置示例
-docs/               产品、功能、架构、用法
+docs/               产品、功能、架构、用法、质量与维护
 skill-routing.md    项目级技能选择与交付闭环
 .agents/skills/     可共享的 AreaChain 项目技能
 AreaChain.xcodeproj

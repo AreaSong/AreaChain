@@ -35,6 +35,7 @@
 - 所有任务先读 [AGENTS.md](AGENTS.md) 和本文件。
 - 产品行为读 `docs/product.md`、`docs/features.md`、`docs/usage.md`。
 - 模块、状态、窗口和数据契约读 `docs/architecture.md`。
+- 生命周期质量、注释、安全、性能、测试、交付和维护读 [质量门禁](docs/quality-gates.md)；性能数字再读 [`docs/performance-baselines.json`](docs/performance-baselines.json)。
 - 构建、脚本、签名、恢复或交付读 `docs/engineering.md`，必要时再读 `docs/signing.md`。
 - 需要新增或修改界面时读 [组件目录](docs/component-catalog.md) 及实际调用方；不能只看组件名。
 
@@ -63,7 +64,14 @@
 
 复用不等于抹平差异：任务输入、手记输入、剪贴板捕获、搜索、菜单栏和独立窗口可以共享外观，但 Return、Command-Return、Escape、失焦、隐私和保存语义必须分别核对。
 
-### 5. 实施
+### 5. 质量门禁
+
+- 默认从仓库根运行 `python3 -B scripts/quality_gate.py`，由它按当前差异选择静态、Swift、性能或候选包范围；需要机器读取时使用 `--format json`。
+- `failed` 和 `blocked` 不能宣称完成；`warning` 必须在交接中列出，发布/合并前可用 `--strict` 将其升级为失败。
+- 注释、敏感日志、依赖、性能和恢复不是“顺手检查”的口头要求，分别对应 [质量门禁](docs/quality-gates.md)、脚本扫描、工程/架构文档和性能基线清单。
+- 本地通过只证明本地命令；远端 CI、分支保护、真实钥匙串/日历、安装、恢复、公证和正式发行仍需各自证据。
+
+### 6. 实施
 
 - 沿 `Domain → Services → Features → Theme` 的责任方向修改；目录名不是依赖证明，需沿实际调用链核对。
 - 规则、筛选、日期、搜索和事务只保留一个权威入口；页面不能复制第二套判断。
@@ -71,7 +79,7 @@
 - 保存成功、通知排程、外部同步和界面反馈分别判断；失败不清除唯一草稿或虚报成功。
 - 触及真实钥匙串、系统日历、签名、迁移、删除或外部发布时，先按 `AGENTS.md` 的高风险门禁停下确认。
 
-### 6. 验证与交接
+### 7. 验证与交接
 
 完成相关编辑后：
 

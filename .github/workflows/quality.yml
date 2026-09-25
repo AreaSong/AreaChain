@@ -1,0 +1,37 @@
+name: AreaChain Quality
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static:
+    name: Static quality gates
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      # v4.2.2; keep the action pinned to an immutable revision.
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+      - name: Run static quality gates
+        run: python3 -B scripts/quality_gate.py --profile static --strict --format json
+
+  macos:
+    name: macOS Swift verification (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-14
+    timeout-minutes: 45
+    steps:
+      # v4.2.2; keep the action pinned to an immutable revision.
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+      - name: Run Swift quality gates
+        run: python3 -B scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json

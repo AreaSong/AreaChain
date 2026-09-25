@@ -12,6 +12,7 @@ description: "仅用于 AreaChain 仓库的变更验证或开发验收：按影�
 - 从本技能目录向上三级定位 [仓库根](../../..)，确认 `AreaChain.xcodeproj`、`AreaChainTests` 与 `scripts/build.sh`；所有仓库命令在这个根目录执行，不使用技能目录作工作目录。
 - 遵循 [项目 AGENTS.md](../../../AGENTS.md)，实际环境要求见 [README.md](../../../README.md)。目标不是本仓库或其工作副本时，不套用这里的命令与测试名。
 - 读取 [技能路由](../../../skill-routing.md)；涉及公共控件、主题或复用边界时读取 [共享组件与复用目录](../../../docs/component-catalog.md)，核对变更是否更新了真实消费者和相应证据。
+- 读取 [质量门禁](../../../docs/quality-gates.md)；统一质量入口是 `python3 -B scripts/quality_gate.py`，本技能负责按影响补充它不能替代的 Swift、构建和原生证据。
 - 获取本次变更范围、用户预期、相关宿主/数据契约，以及已有验证记录；保留用户的其他修改。来源不足时先做安全检查，不能猜测测试已经覆盖。
 - 执行前完整阅读 [验证入口与边界](references/checks.md)，只运行本次适用部分。若用户只要验证计划，输出计划而不启动测试或应用。
 

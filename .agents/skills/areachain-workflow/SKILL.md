@@ -14,6 +14,7 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 - [项目规则](../../../AGENTS.md)
 - [技能路由](../../../skill-routing.md)
 - [架构与目录](../../../docs/architecture.md)
+- [质量门禁](../../../docs/quality-gates.md)
 - [共享组件与复用目录](../../../docs/component-catalog.md)（涉及界面、公共规则或复用时）
 
 再按任务选择产品、使用、工程或签名文档；不要为了“完整”把无关源码和文案库全部载入上下文。
@@ -24,10 +25,10 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 
 1. 识别任务类型、目标、非目标、影响范围和高风险边界。
 2. 执行 `git status --short`、`git diff --cached --stat`、`git diff --stat`，保留既有修改。
-3. 沿路由表选择技能：有界面时交给 [areachain-ui](../areachain-ui/SKILL.md)，需要验证时交给 [areachain-verify](../areachain-verify/SKILL.md)；当前会话可用时，新功能再由 `areasong-development` 协调通用标准。
+3. 沿路由表选择技能：有界面时交给 [areachain-ui](../areachain-ui/SKILL.md)，需要验证时交给 [areachain-verify](../areachain-verify/SKILL.md)；当前会话可用时，新功能再由 `areasong-development` 协调通用标准。生命周期质量项以 [质量门禁](../../../docs/quality-gates.md) 为单一入口。
 4. 修改前输出简短的影响/复用表：已有入口、实际消费者、保持的契约、直接复用或新建的理由。
 5. 沿 `Domain → Services → Features → Theme` 的责任方向实施，复用已有解析、筛选、日期、仓储、事务和窗口入口。
-6. 修改后运行与影响匹配的检查；区分静态、单测、构建、原生隔离和真实系统证据。
+6. 修改后先运行 `python3 -B scripts/quality_gate.py`，再按影响补定向测试、构建、原生隔离和真实系统证据；区分静态、单测、构建、原生隔离和真实系统证据。
 7. 交接时列出变更、复用项、实际命令、失败/跳过/未运行项和残余风险；不把计划或旧结果写成通过。
 
 ## 复用硬门槛

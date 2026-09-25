@@ -58,7 +58,12 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             let granted = try await center.requestAuthorization(options: [.alert, .sound])
             NSLog("[NotificationScheduler] requestAuthorization granted: %d", granted ? 1 : 0)
         } catch {
-            NSLog("[NotificationScheduler] requestAuthorization FAILED: %@", error.localizedDescription)
+            let failure = error as NSError
+            NSLog(
+                "[NotificationScheduler] requestAuthorization FAILED domain=%@ code=%ld",
+                failure.domain,
+                failure.code
+            )
         }
         await refresh()
     }
@@ -83,30 +88,52 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             return
         }
 
+        await schedule(loadCatalog())
+    }
+
+    private func loadCatalog() -> [ReminderRequest] {
         let context = Persistence.session.container.mainContext
         let routines = (try? context.fetch(FetchDescriptor<DailyRoutine>())) ?? []
         let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
         let checks = (try? context.fetch(FetchDescriptor<RoutineCheck>())) ?? []
-        let todayKey = DayClock.shared.todayKey
         let catalog = ReminderPlanning.catalog(
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
             todos: todos.map(\.snapshot),
-            todayKey: todayKey
+            todayKey: DayClock.shared.todayKey
         )
-        NSLog("[NotificationScheduler] found %ld routines, %ld todos, %ld requests in catalog", routines.count, todos.count, catalog.count)
+        NSLog(
+            "[NotificationScheduler] found %ld routines, %ld todos, %ld requests in catalog",
+            routines.count,
+            todos.count,
+            catalog.count
+        )
+        return catalog
+    }
+
+    private func schedule(_ catalog: [ReminderRequest]) async {
         let now = Date()
         for request in catalog {
             guard let fire = ReminderPlanning.nextFireDate(request, now: now) else {
-                NSLog("[NotificationScheduler] request '%@' (remindMinutes=%ld) nextFireDate is nil (expired or already passed, now=%@)", request.title, request.remindMinutes, now.description)
+                NSLog(
+                    "[NotificationScheduler] request id=%@ (remindMinutes=%ld) nextFireDate is nil "
+                        + "(expired or already passed)",
+                    request.id.uuidString,
+                    request.remindMinutes
+                )
                 continue
             }
             do {
                 try await center.add(notificationRequest(request, fire: fire))
-                NSLog("[NotificationScheduler] SCHEDULED '%@' to fire at %@", request.title, fire.description)
+                NSLog("[NotificationScheduler] scheduled request id=%@", request.id.uuidString)
             } catch {
-                NSLog("[NotificationScheduler] center.add FAILED for '%@': %@", request.title, error.localizedDescription)
-                continue
+                let failure = error as NSError
+                NSLog(
+                    "[NotificationScheduler] center.add FAILED for id=%@ domain=%@ code=%ld",
+                    request.id.uuidString,
+                    failure.domain,
+                    failure.code
+                )
             }
         }
     }

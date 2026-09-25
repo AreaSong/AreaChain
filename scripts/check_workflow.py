@@ -3,6 +3,7 @@
 
 import argparse
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -16,7 +17,7 @@ SKILLS = ("areachain-workflow", "areachain-ui", "areachain-verify")
 REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
     "docs/signing.md", "docs/engineering.md", "skill-routing.md",
-    "docs/component-catalog.md",
+    "docs/component-catalog.md", "docs/quality-gates.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
 IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
@@ -27,23 +28,28 @@ LIMITATIONS = [
     "theme-tokens 只匹配 Features/Theme 里的字面模式，并跳过同行的 control 与 token-exempt 注释；不证明视觉一致。",
     "workflow-contract 只核对项目级路由、复用目录和编排技能的关键入口；不证明模型实际发现或调用技能。",
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
+    "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
 ]
 
 WORKFLOW_CONTRACT = {
     "AGENTS.md": (
-        "skill-routing.md", "component-catalog.md", "areachain-workflow",
-        "白话请求默认行为",
+        "skill-routing.md", "component-catalog.md", "quality-gates.md",
+        "areachain-workflow", "白话请求默认行为",
     ),
     "skill-routing.md": (
         "areachain-workflow", "areachain-ui", "areachain-verify",
-        "docs/component-catalog.md", "用户输入契约",
+        "docs/component-catalog.md", "docs/quality-gates.md", "用户输入契约",
     ),
     "docs/component-catalog.md": (
         "DaybookInputShell", "ModelChanges", "新公共组件",
     ),
     ".agents/skills/areachain-workflow/SKILL.md": (
         "skill-routing.md", "component-catalog.md", "areachain-verify",
-        "用户无需调用本技能",
+        "quality-gates.md", "用户无需调用本技能",
+    ),
+    "docs/quality-gates.md": (
+        "quality_gate.py", "performance-baselines.json", "security-static",
+        "comment-contract",
     ),
 }
 
@@ -363,6 +369,134 @@ def check_component_catalog(root):
     return result("component-catalog", checked, issues)
 
 
+def check_performance_manifest(root):
+    """确认性能基线清单可读，且登记的源码/测试仍存在。"""
+    path = root / "docs/performance-baselines.json"
+    if not path.is_file():
+        return result("performance-baselines", 0, [issue(path, "性能基线清单缺失。")])
+    try:
+        manifest = json.loads(
+            path.read_text(encoding="utf-8"),
+            parse_constant=lambda value: (_ for _ in ()).throw(ValueError(value)),
+        )
+    except (OSError, UnicodeError, json.JSONDecodeError, ValueError) as error:
+        return result("performance-baselines", 0,
+                      [issue(path, f"性能基线清单不可读：{type(error).__name__}")])
+    issues, checked = [], 1
+    if not isinstance(manifest, dict):
+        return result("performance-baselines", checked,
+                      [issue(path, "性能基线清单顶层必须是对象。")])
+    entries = manifest.get("entries")
+    if manifest.get("schemaVersion") != 1 or not isinstance(entries, list) or not entries:
+        issues.append(issue(path, "性能基线清单缺少受支持的 schemaVersion 或 entries。"))
+        return result("performance-baselines", checked, issues)
+    policy = manifest.get("measurementPolicy")
+    required_measurement_fields = []
+    if not isinstance(policy, dict):
+        issues.append(issue(path, "性能基线清单缺少 measurementPolicy。"))
+    else:
+        required_measurement_fields = policy.get("requiredFields")
+        if (not isinstance(required_measurement_fields, list) or not required_measurement_fields
+                or not all(isinstance(field, str) and field.strip() for field in required_measurement_fields)):
+            issues.append(issue(path, "measurementPolicy.requiredFields 无效。"))
+            required_measurement_fields = []
+    allowed = {"observed", "provisional", "not-established"}
+    required = {"id", "scope", "test", "testFilter", "metric", "budget", "status", "source", "note"}
+    identifiers = set()
+    for entry in manifest["entries"]:
+        checked += 1
+        missing = required - set(entry) if isinstance(entry, dict) else required
+        if missing:
+            issues.append(issue(path, f"性能条目缺少字段：{sorted(missing)}"))
+            continue
+        entry_id = entry["id"]
+        if not isinstance(entry_id, str) or not entry_id.strip():
+            issues.append(issue(path, "性能条目 id 必须是非空字符串。"))
+        elif entry_id in identifiers:
+            issues.append(issue(path, f"性能条目 id 重复：{entry_id}"))
+        else:
+            identifiers.add(entry_id)
+        for field in ("metric", "note"):
+            if not isinstance(entry[field], str) or not entry[field].strip():
+                issues.append(issue(path, f"性能条目 {field} 不能为空：{entry_id}"))
+        status_value = entry["status"]
+        if not isinstance(status_value, str) or status_value not in allowed:
+            issues.append(issue(path, f"性能条目状态无效：{entry['id']}"))
+        elif status_value != "not-established":
+            budget = entry["budget"]
+            if (not isinstance(budget, (int, float)) or isinstance(budget, bool)
+                    or not math.isfinite(budget) or budget <= 0):
+                issues.append(issue(path, f"已建立性能条目缺少有限且大于零的预算：{entry['id']}"))
+            if not isinstance(entry["test"], str) or not entry["test"].strip():
+                issues.append(issue(path, f"已建立性能条目缺少测试：{entry['id']}"))
+            if not isinstance(entry["testFilter"], str) or not entry["testFilter"].startswith("AreaChainTests/"):
+                issues.append(issue(path, f"已建立性能条目缺少有效 testFilter：{entry['id']}"))
+            if not isinstance(entry["source"], str) or not entry["source"].strip():
+                issues.append(issue(path, f"已建立性能条目缺少来源：{entry['id']}"))
+            if status_value == "observed":
+                measurement = entry.get("measurement")
+                if not isinstance(measurement, dict):
+                    issues.append(issue(path, f"observed 性能条目缺少 measurement：{entry['id']}"))
+                else:
+                    text_fields = [field for field in required_measurement_fields if field != "sampleCount"]
+                    missing_measurement = [field for field in text_fields
+                                           if not isinstance(measurement.get(field), str)
+                                           or not measurement[field].strip()]
+                    if missing_measurement:
+                        issues.append(issue(path, f"性能测量缺少字段 {missing_measurement}：{entry['id']}"))
+                    sample_count = measurement.get("sampleCount")
+                    if ("sampleCount" in required_measurement_fields
+                            and (not isinstance(sample_count, int) or isinstance(sample_count, bool)
+                                 or sample_count <= 0)):
+                        issues.append(issue(path, f"性能测量 sampleCount 必须为正整数：{entry['id']}"))
+        else:
+            if entry["budget"] is not None:
+                issues.append(issue(path, f"未建立性能条目不应声明预算：{entry['id']}"))
+            if entry["testFilter"] is not None:
+                issues.append(issue(path, f"未建立性能条目不应声明 testFilter：{entry['id']}"))
+        scope_value = entry["scope"]
+        if not isinstance(scope_value, str) or not scope_value:
+            issues.append(issue(path, f"性能条目源码路径无效：{entry['id']}"))
+        else:
+            scope = root / scope_value
+            if not contained(scope, root) or not scope.is_file():
+                issues.append(issue(path, f"性能条目源码不存在：{scope_value}"))
+        test_value = entry["test"]
+        if test_value is not None and not isinstance(test_value, str):
+            issues.append(issue(path, f"性能条目测试路径无效：{entry['id']}"))
+        elif test_value is not None:
+            test = root / test_value
+            if not contained(test, root) or not test.is_file():
+                issues.append(issue(path, f"性能条目测试不存在：{test_value}"))
+    return result("performance-baselines", checked, issues)
+
+
+def check_ci_contract(root):
+    """确认仓库 CI 入口使用统一质量脚本和只读权限。"""
+    path = root / ".github/workflows/quality.yml"
+    if not path.is_file():
+        return result("ci-contract", 0, [issue(path, "CI 质量工作流缺失。")])
+    try:
+        content = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return result("ci-contract", 0, [issue(path, f"无法读取 CI 工作流：{type(error).__name__}")])
+    issues = []
+    required = (
+        "workflow_dispatch",
+        "permissions:",
+        "contents: read",
+        "scripts/quality_gate.py --profile static --strict --format json",
+        "fetch-depth: 2",
+        "scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json",
+    )
+    for marker in required:
+        if marker not in content:
+            issues.append(issue(path, f"CI 工作流缺少关键入口：{marker}"))
+    if not re.search(r"actions/checkout@[0-9a-f]{40}", content):
+        issues.append(issue(path, "CI checkout action 必须固定到不可变 commit。"))
+    return result("ci-contract", len(required) + 2, issues)
+
+
 def git(root, arguments, stdin=None):
     return subprocess.run(["git", "-C", str(root), *arguments], input=stdin,
                           text=True, capture_output=True, timeout=15, check=False)
@@ -441,8 +575,8 @@ def run_checks(root, personal_root=None):
     if not missing:
         checks.extend([check_links(root, project_docs(root), "project-links"),
                        check_workflow_contract(root), check_domain(root),
-                       check_component_catalog(root), check_skill_scope(root),
-                       check_theme_tokens(root)])
+                       check_component_catalog(root), check_performance_manifest(root),
+                       check_ci_contract(root), check_skill_scope(root), check_theme_tokens(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)

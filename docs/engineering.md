@@ -16,21 +16,21 @@
 
 ## 生命周期覆盖矩阵
 
-状态快照：2026-09-17。各列独立：有规范 ≠ 有方法 ≠ 自动化已接入 ≠ 实际运行通过。“未运行”不是“不适用”。下表的本地测试存在仅指代码/入口已核实，不复用历史测试结果；本批实际命令见文末。
+状态快照：2026-09-26。各列独立：有规范 ≠ 有方法 ≠ 自动化已接入 ≠ 实际运行通过。“未运行”不是“不适用”。下表的本地测试存在仅指代码/入口已核实，不复用历史测试结果；本批实际命令见文末。
 
 | 生命周期环节 | 规范覆盖 | 可执行方法/来源 | 已自动化 | 本批实际验证层级 | 未覆盖或不适用 |
 |---|---|---|---|---|---|
 | 需求、范围与验收 | 已有全局/项目规则、通用开发技能 | 用户结果→入口/契约→适用验收；[产品](product.md)、[功能](features.md) | 需要判断，未自动判定需求 | 规则及引用检查 | 无已授权真实业务任务的全链路试跑 |
 | 架构、依赖与状态 | 已有分层；本批补责任/边界方法 | [架构边界](architecture.md#开发时的边界与状态核对)，沿符号追踪消费者 | 本批增加 Domain 导入守卫 | 源码核对；守卫结果见文末 | 完整符号依赖图、所有权不由文本扫描证明 |
-| 实现、共用代码与重构 | 已有原则；本批补提取/等价判据 | 模块内→项目共享→跨项目库按实际收益选择；相关仓储/解析测试 | 本地行为测试已有，CI 未接 | 测试与源码静态盘点 | 尚未以新标准完成真实重构；不强行提取跨项目库 |
-| 界面、语言与交互 | 已有 en/zh-Hans、Daybook、输入/窗口约定 | [原生验收](architecture.md#隔离验收与真实启用门禁)、项目 UI/验证技能 | Theme/Features 隔离测试已有 | 本批未跑 Swift/UI | 真实键盘/输入法/系统集成不可用离屏样例替代 |
+| 实现、共用代码与重构 | 已有原则；本批补提取/等价判据 | 模块内→项目共享→跨项目库按实际收益选择；相关仓储/解析测试 | 本地行为测试与静态门禁可运行；远端执行未取证 | 测试与源码静态盘点 | 尚未以新标准完成真实重构；不强行提取跨项目库 |
+| 界面、语言与交互 | 已有 en/zh-Hans、Daybook、输入/窗口约定 | [原生验收](architecture.md#隔离验收与真实启用门禁)、项目 UI/验证技能 | Theme/Features 隔离测试已有 | 本批全量 Swift 测试通过；未做原生 UI 操作验收 | 真实键盘/输入法/系统集成不可用离屏样例替代 |
 | 环境、配置与依赖 | 已有环境下限与签名隔离；本批补复现/升级判断 | 下文环境记录；核对工程、清单、来源/许可证、定向回归 | 部分构建配置检查；无工具链固定/CI | 实际版本查询、配置声明核对 | 尚无认证过的支持版本矩阵；无第三方包时不制造锁文件 |
-| Git、评审与 CI | 已有变更纪律；本批补分层门禁 | 下文检查顺序；必要独立复核 | 本地检查可运行；仓库未见 CI 工作流 | 本地证据见文末 | 未检查/配置远端 required checks、runner、合并权限 |
-| 测试、构建与验签 | 已有测试及签名脚本/隔离约束 | `build.sh test`、构建/验签；见 [signing.md](signing.md) | 本地脚本已有 | 本批只运行适用脚本测试，不构建应用 | 编译/候选包/原生运行是独立证据，不等于发行 |
+| Git、评审与 CI | 已有变更纪律；本批补分层门禁 | 下文检查顺序；必要独立复核 | 本地检查与 `.github/workflows/quality.yml` 已接入；远端执行未取证 | 本地证据见文末 | 未检查/配置远端 required checks、runner、合并权限 |
+| 测试、构建与验签 | 已有测试及签名脚本/隔离约束 | `quality_gate.py`、`build.sh test`、构建/验签；见 [signing.md](signing.md) | 本地质量入口与脚本回归已接入 | 脚本测试通过；Swift 测试另有实际记录 | 编译/候选包/原生运行是独立证据，不等于发行 |
 | 数据、迁移与恢复 | 已有事务/快照/加密边界；本批补演练方法 | `ModelChangesTests`、`SnapshotImportValidationTests`、`PrivateBackupTests`、迁移夹具 | 有内存/临时磁盘测试 | 测试隔离性与断言静态核对 | 全历史升级、真实恢复、RPO/RTO 和中断矩阵未验收 |
 | 错误、并发与资源 | 已有部分实现；本批补重试/取消/责任标准 | 日历 generation、事务后清理、草稿/窗口生命周期；按故障注入验证 | 对应局部测试已有 | 源码/测试静态核对 | 排程真实失败、生产等待时序和长期泄漏未覆盖完整 |
-| 性能与成本 | 已有局部阈值；本批补基线方法 | 1000 天连击计算、行交互阈值；见下文 | 局部性能断言已有 | 未执行性能测量 | 启动、大库、恢复的耗时/内存基线及预算未建立 |
-| 安全、隐私与供应链 | 已有高风险门禁/隐私隔离；本批补维护标准 | 按变更范围安全审查、依赖公告/来源核对、日志字段检查 | 隐私/权限局部测试；未接安全 CI | 源码核对，未做安全扫描或真实认证 | 日志标题问题未修复；许可证/发行审查与真实系统验收待做 |
+| 性能与成本 | 已有局部阈值；本批补基线方法 | 1000 天连击计算、行交互阈值；见下文 | 局部性能断言已纳入 performance profile | 本批局部性能测试通过 | 启动、大库、恢复的耗时/内存基线及预算未建立 |
+| 安全、隐私与供应链 | 已有高风险门禁/隐私隔离；本批补维护标准 | 按变更范围安全审查、依赖公告/来源核对、日志字段检查 | 静态候选扫描已接入本地/静态 CI | 本批扫描高风险 0、敏感日志候选 0；未做完整审计 | 许可证/发行审查与真实系统验收待做 |
 | 正式发行、安装与回退 | 已有本机构建/安装门禁；本批补发行准备 | 下文发行准备；`distributionReady` 明确为 false | 候选验签/本体回退脚本；无公证/上传流水线 | 原脚本隔离测试，不是真实安装 | 渠道、许可证、Developer ID/公证、升级/发行验收未落实 |
 | 运行诊断、故障处置 | 已有 StoreHealth/错误提示；本批补最小诊断方法 | 本地脱敏取证→复现/定位→获准修复→回归 | 无统一诊断导出或监控管线 | 源码/流程静态核对 | 不自动加入云遥测；止损/恢复动作需独立授权 |
 | 升级、废弃、反馈与文档 | 已有产品/架构文档；本批补闭环责任 | 下文维护与决策；版本支持、消费者、回访条件 | 引用检查已有本地入口；维护决策非自动化 | 引用/场景复核见文末 | 尚无正式发布说明和全历史支持窗口；不自动创建工单/定时任务 |
@@ -66,7 +66,7 @@
 
 检查器不解析完整 Markdown/Swift 语法，不验证引用内容正确性、远端网页、宏生成依赖或所有源码符号；未用尖括号包裹的括号路径等特殊链接、Swift 正则字面量等语法仍需人工/编译补充。不能靠跳过真实缺陷维持绿灯。项目技能的入口、文档及其中显式链接的文件须 Git 可见，允许目录与现有 `.gitignore` 对齐；以后新增共享技能时须同时检查范围，不能放开整个 `.agents`。
 
-合并前人工确认本次差异、适用测试和必需只读复核均有最终证据；未获授权不提交/推送。当前 origin 的托管主机已核对为 GitHub，但未查询远端 Actions 或分支规则。CI 可优先评估 GitHub Actions：无凭据的文档/脚本检查作为首层，macOS 编译/单测作为平台层，焦点敏感及真实系统验收另设受控门禁；实施前明确 runner/工具链、成本、权限、触发条件与维护责任。仓库工作流文件、runner 实际成功和远端强制检查三者分开取证；当前仅有本地入口，不擅自创建远端设置或凭据。
+合并前人工确认本次差异、适用测试和必需只读复核均有最终证据；未获授权不提交/推送。当前工作区已加入质量工作流文件：无凭据的文档/脚本检查作为 push/PR 首层，macOS 编译/单测作为手动平台层，焦点敏感及真实系统验收另设受控门禁。工作流文件是否提交、runner 实际成功和远端 required checks 三者分开取证；本地不会擅自修改远端设置或凭据。
 
 ## 发行准备与回退
 
@@ -108,7 +108,7 @@
 - 日历协调通过代次与串行合并处理取消/迟到结果，局部提交失败保留基线供重试；相关 [CalendarSyncEngineTests](../AreaChainTests/Services/CalendarSyncEngineTests.swift) 使用 fake 外部服务，不证明真实 EventKit 写入。
 - 草稿、窗口、附件已有生命周期/失败测试；生产中的 400ms 待沉底路径在测试环境被绕过，详见 [PendingCompletionManager](../AreaChain/Features/Tasks/PendingCompletionManager.swift)。普通测试不能证明这段真实等待、取消与时序。
 - [TaskRowInteractionTests](../AreaChainTests/Features/TaskRowInteractionTests.swift) 有行回调 100ms 阈值，[HabitStreakEmpiricalTests](../AreaChainTests/Domain/HabitStreakEmpiricalTests.swift) 有 1000 天计算 200ms 阈值；它们不是启动/大库/导入恢复的整体基线。新增性能要求应记录数据规模、配置、样本量、冷/热状态和内存/耗时预算。
-- [NotificationScheduler](../AreaChain/Services/NotificationScheduler.swift) 当前日志包含 `request.title`；本次仅确认源码事实，未评价日志访问/保留情况，也未修复。日志脱敏仍是实际缺口，不能因为规范要求脱敏就写成产品已落实。
+- [NotificationScheduler](../AreaChain/Services/NotificationScheduler.swift) 的排程日志当前只保留请求标识、目录计数、提醒分钟、授权状态和错误 domain/code，不输出任务标题、具体触发时刻或原始错误描述；这不替代日志保留策略审查和完整安全审计。
 
 ### 诊断与反馈的方法
 
@@ -122,30 +122,42 @@
 
 ## 本批证据与后续批次
 
-本批只修改规则、文档、技能引用和本地检查器；现有业务代码、签名配置、构建/安装实现保持不动。交接中的 173 项 AppKit 样例断言及历史发现记录不作为本批或真实 AreaChain 业务联动验收。
+本批主要修改规则、文档、技能引用和本地检查器，并修复 `NotificationScheduler` 的敏感日志字段；签名配置、构建/安装实现和数据模型保持不动。交接中的 173 项 AppKit 样例断言及历史发现记录不作为本批或真实 AreaChain 业务联动验收。
 
-- `python3 -B scripts/check_workflow.py --personal-root /Users/as/.codex --format json` 通过：12 份项目文档、36 个 Domain 文件、9 份个人文档及项目技能 Git 边界。个人目录是本次显式输入，不是脚本默认值；这是静态检查证据。
-- `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：31 项通过；`python3 -B -m unittest discover -s scripts/tests -v`：119 项通过。原脚本外部命令为 mock，工作流反例使用临时文档/代码/Git 仓库，不操作日用应用或真实数据。
-- 当前会话 Skill Creator 的 `quick_validate.py` 对 `areasong-development`、`areachain-ui`、`areachain-verify` 均通过；三个 `agents/openai.yaml` 解析与元数据约束通过，隐式调用策略未改变。
-- 全新 CLI app-server 进程执行 `skills/list`（仓库内/外两个 `cwds`，`forceReload: true`）：仓库内发现上述三者，仓库外只发现其中个人级 `areasong-development`，均启用且报告的技能错误为 0。没有启动任务/模型回合；这只证明发现与作用域，不证明业务联动或所有连接器可用。
+- `python3 -B scripts/check_workflow.py --personal-root /Users/as/.codex --format json` 通过：16 份项目文档、41 个 Domain 文件、9 份个人文档及项目技能 Git 边界。个人目录是本次显式输入，不是脚本默认值；这是静态检查证据。
+- `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：当前 46 项通过；`python3 -B -m unittest discover -s scripts/tests -v`：当前 165 项通过。原脚本外部命令为 mock，工作流反例使用临时文档/代码/Git 仓库，不操作日用应用或真实数据。
+- 当前会话 Skill Creator 的 `quick_validate.py` 对项目级 `areachain-workflow`、`areachain-ui`、`areachain-verify` 均通过；三个 `agents/openai.yaml` 解析与元数据约束通过，隐式调用策略未改变。
+- Skill Creator 校验只证明项目技能的结构、元数据和引用可解析；新对话是否自动发现并实际调用技能仍需在对应客户端会话中单独取证，不能由本地文件存在推断。
 - 独立只读检查器复核发现引用文件 Git 漏检（含被忽略的符号链接）、Swift 插值误报、个人锚点读取范围及 Git 解码异常，主代理先复现再修正/回测；另完成诊断、新功能方案、发行判断、复用评估和降级恢复五个静态场景推演。旧使用文档中“一律恢复备份”的回退表述已与兼容性/授权门禁对齐。
 - `git diff --check` 通过。以上是本批快照；后续相关编辑须重新取得受影响证据，不能永久沿用本页的通过状态。
-- Swift 全量/定向测试、原生 UI、真实钥匙串、真实日历、恢复/安装、候选包构建与正式发行均未由本批验证。
+- Swift 全量/定向测试、原生 UI、真实钥匙串、真实日历、恢复/安装、候选包构建与正式发行不由静态证据替代；本批全量 Swift 测试已由质量门禁实际运行并通过，原生 UI 及其余真实系统层级仍未执行。
 
 | 批次 | 价值与当前状态 | 下一步所需条件 |
 |---|---|---|
 | 1. 规范与本地守卫 | 本批已补架构/复用、工程、恢复/维护；现有技能引用与本地守卫已验证，证据如上 | 后续改动重跑受影响检查；保持产品与真实系统边界不变 |
-| 2. CI 工程接入 | 托管已核对为 GitHub，推荐从无凭据脚本检查接入 Actions；当前无仓库工作流和远端门禁证据 | 明确 runner/成本、触发策略及权限后配置并实际验证；本地草案、远端执行和合并规则分别验收 |
+| 2. CI 工程接入 | 已加入无凭据静态工作流和手动 macOS 工作流；当前没有远端 runner 或 required-check 证据 | 在目标仓库实际运行 Actions，核对成本/权限/触发策略及分支保护；本地文件不等于远端门禁生效 |
 | 3. 真实开发与可靠性验收 | 用明确真实需求检验标准联动，按影响补性能/日志/恢复/生产时序证据 | 用户明确业务或专项测试目标；涉及敏感处理/真实系统/数据时独立确认 |
 | 4. 正式发行与升级维护 | 候选物追溯、渠道、许可证、签名、公证、恢复和运行验收仍待落实 | 渠道/权利/身份决策及每个真实操作的授权；本机构建成功不能跳过这些门禁 |
 
 规范、方法和本地守卫已经增加，也仍须保留矩阵中尚未覆盖的内容；不能将本批交付描述为整个生命周期全部闭环。
 
-## 工作流闭环更新（2026-09-25）
+## 工作流闭环更新（2026-09-26）
 
-本次仅补强项目协作基础设施，没有改变业务数据、签名配置或安装行为：
+本次主要补强项目协作基础设施，并修复通知排程日志脱敏；没有改变业务数据、签名配置或安装行为：
 
 - 新增 [技能路由](../skill-routing.md)、[共享组件与复用目录](component-catalog.md) 和项目级 `areachain-workflow` 编排技能；`areachain-ui` 与 `areachain-verify` 已接入同一套冷启动和交接入口。
 - `scripts/check_workflow.py` 新增 `workflow-contract` 与 `component-catalog` 检查，并把路由、组件目录和项目技能纳入必需引用与 Git 作用域；检查器仍只做静态守卫，不证明模型实际调用或原生运行。
-- 实际验证：`python3 -B scripts/check_workflow.py --format json` 通过（含 `workflow-contract` 与 `component-catalog`）；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` 41 项通过；`python3 -B -m unittest discover -s scripts/tests -v` 135 项通过；三个项目技能的 `skill-creator quick_validate.py` 均通过；`git diff --check` 通过。
-- 本次未运行 Swift 构建或原生 UI 验收，因为改动仅涉及规则、文档、技能元数据和 Python 守卫；后续业务代码或共享 UI 改动仍必须按路由选择对应测试和构建。
+- 实际验证：`python3 -B scripts/check_workflow.py --format json` 通过（含 `workflow-contract`、`component-catalog`、`performance-baselines` 与 `ci-contract`）；项目技能结构校验、脚本回归和 `git diff --check` 也已在本批最终差异上重跑。
+- 全量 Swift 测试和本次变更文件的严格 SwiftLint 已由质量门禁实际运行；后续业务代码或共享 UI 改动仍必须按路由选择定向测试、构建和原生验收。
+
+## 全生命周期质量门禁更新（2026-09-26）
+
+本批把此前“有规范但缺统一执行入口”的部分接成可重复门禁，权威说明见 [质量门禁](quality-gates.md)：
+
+- 新增 `scripts/quality_gate.py`，按差异自动选择工作流契约、差异、脚本测试、Shell 语法、安全候选、注释契约、性能基线、SwiftLint、Swift 测试和 Release 候选包检查；`warning`、`blocked`、`failed` 分开报告，`--strict` 可用于合并/发布前收紧。性能 profile 的登记局部测试已通过，整体基线仍按清单保留 `not-established`。
+- 新增 [`docs/performance-baselines.json`](performance-baselines.json)，保留已有局部阈值的来源，并明确启动、大库和恢复等尚未建立的基线；没有证据不猜测预算。
+- 新增 `scripts/tests/test_quality_gate.py`，以临时目录验证质量脚本的配置、秘密/敏感日志候选、注释豁免、性能清单和状态聚合；不启动应用、不读取真实数据。
+- 新增 `.github/workflows/quality.yml`：push/PR 的静态门禁和手动触发的 macOS Swift 门禁共用本地脚本。工作流文件存在不等于远端 runner 成功或分支保护已启用，仍需分别取证。
+- 修复 `NotificationScheduler` 日志不再输出任务标题，只保留请求标识和错误类别；后续新增日志仍须通过安全候选扫描和人工隐私复核。
+
+本批最终实际证据：脚本回归 165 项通过，工作流定向测试 46 项通过，静态严格门禁通过，Swift 严格门禁（含全量 Swift 测试）通过，performance profile 的登记局部测试通过；质量脚本仍明确标出未建立的启动/大库/恢复基线及既有全库 advisory SwiftLint 债务。真实 CI runner、原生 UI、钥匙串、恢复和正式发行仍不是本批已通过证据。
