@@ -240,6 +240,7 @@ enum Classification {
         return true
     }
 
+    /// 今日清单上的重复事项已经按「今天」取出。逾期是过去的检查日，不能靠这条规则在全局搜索里判断。
     static func matchesListedRoutine(
         _ bits: ClassifyBits, filter: BoardFilter
     ) -> Bool {

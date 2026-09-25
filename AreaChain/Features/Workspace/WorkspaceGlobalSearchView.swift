@@ -13,6 +13,7 @@ struct WorkspaceGlobalSearchView: View {
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
@@ -28,6 +29,7 @@ struct WorkspaceGlobalSearchView: View {
             todos: todos.map(\.snapshot),
             diaries: diaries.map { DiaryContent.snapshot($0) },
             routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: tagMap,
             privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale),

@@ -224,6 +224,22 @@ struct DashboardProjectionTests {
         ).map(\.kind)
         #expect(kinds == [.created])
     }
+
+    @Test func createdRoutineOpensTheNextScheduledDay() {
+        let routine = routine(created: "2026-09-01", mask: mondayMask())
+        let rows = DashboardProjection.activities(
+            todos: [], routines: [routine], checks: [], diaries: [],
+            todayKey: "2026-09-25", calendar: calendar
+        )
+        let created = rows.first { $0.kind == .created }
+        #expect(created?.dayKey == "2026-09-01")
+        guard case .inspectItem(_, let dayKey, .routine) = created?.route else {
+            Issue.record("创建活动应打开重复事项")
+            return
+        }
+        #expect(dayKey == "2026-09-07")
+        #expect(WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey, calendar: calendar))
+    }
 }
 
 private extension DashboardProjectionTests {

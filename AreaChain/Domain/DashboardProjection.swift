@@ -394,9 +394,12 @@ private extension DashboardProjection {
             var items: [DashboardActivity] = []
             let createdDay = DayKey.from(routine.createdAt, calendar: calendar)
             if inWindow(createdDay, window: window) {
+                let routeDay = WeekdayMask.nextScheduledDayKey(
+                    mask: routine.weekdayMask, from: createdDay, calendar: calendar
+                )
                 items.append(itemActivity(
                     .created, dayKey: createdDay, id: routine.id, kind: .routine, title: routine.title,
-                    route: .inspectItem(id: routine.id, dayKey: createdDay, kind: .routine)
+                    route: .inspectItem(id: routine.id, dayKey: routeDay, kind: .routine)
                 ))
             }
             if let deleted = routine.deletedAt,

@@ -10,6 +10,7 @@ struct MenuBarSearchResults: View {
     @Environment(\.locale) private var locale
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
+    @Query private var checks: [RoutineCheck]
     @Query private var diaries: [DiaryEntry]
     @Query private var tags: [TagItem]
     var body: some View {
@@ -52,6 +53,7 @@ struct MenuBarSearchResults: View {
             todos: todos.map(\.snapshot),
             diaries: diaries.map { DiaryContent.snapshot($0) },
             routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),
             privacy: BoardSearchPrivacy.protected(diaries: Array(diaries), tags: Array(tags), locale: locale),

@@ -113,19 +113,24 @@ enum BoardSearch {
         todos: [TodoSnapshot],
         diaries: [DiarySnapshot],
         routines: [RoutineSnapshot],
+        checks: [CheckSnapshot] = [],
         todayKey: String = DayKey.today(),
         tagMap: [UUID: String] = [:],
         privacy: BoardSearchPrivacy = BoardSearchPrivacy(),
-        scope: BoardSearchScope = BoardSearchScope()
+        scope: BoardSearchScope = BoardSearchScope(),
+        calendar: Calendar = .current
     ) -> [BoardSearchHit] {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
+        let routineDays = routineDisplayDays(
+            routines, checks: checks, todayKey: todayKey, filter: scope.filter, calendar: calendar
+        )
         let filteredTodos = todos.filter { matchesTodoScope($0, todayKey: todayKey, filter: scope.filter) }
-        let filteredRoutines = routines.filter { matchesRoutineScope($0, todayKey: todayKey, filter: scope.filter) }
+        let filteredRoutines = routines.filter { routineDays[$0.id] != nil }
         let found = todoHits(parsed, filteredTodos, tagMap: tagMap)
             + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
-            + routineHits(parsed, filteredRoutines, todayKey: todayKey, tagMap: tagMap)
+            + routineHits(parsed, filteredRoutines, dayKeys: routineDays, tagMap: tagMap)
             + subtaskHits(parsed, todos, todayKey: todayKey, tagMap: tagMap, scope: scope)
 
         return found.sorted {
@@ -172,13 +177,47 @@ enum BoardSearch {
         ) && Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope)
     }
 
-    private static func matchesRoutineScope(_ item: RoutineSnapshot, todayKey: String, filter: BoardFilter) -> Bool {
-        guard Classification.matchesListedRoutine(item.classifyBits, filter: filter),
-              Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope) else { return false }
-        guard filter.dateScope != .all else { return true }
+    /// 逾期用待处理同一投影的最近未闭合排定日。其他日期范围仍用从今天起的下一个排定日。
+    private static func routineDisplayDays(
+        _ routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todayKey: String,
+        filter: BoardFilter,
+        calendar: Calendar
+    ) -> [UUID: String] {
+        var days: [UUID: String] = [:]
+        for routine in routines {
+            guard let day = routineDisplayDay(
+                routine, checks: checks, todayKey: todayKey, filter: filter, calendar: calendar
+            ) else { continue }
+            days[routine.id] = day
+        }
+        return days
+    }
+
+    private static func routineDisplayDay(
+        _ item: RoutineSnapshot,
+        checks: [CheckSnapshot],
+        todayKey: String,
+        filter: BoardFilter,
+        calendar: Calendar
+    ) -> String? {
+        guard item.deletedAt == nil, item.isEnabled else { return nil }
+        guard Classification.matches(item.classifyBits, filter: filter),
+              Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope) else { return nil }
+        if filter.dateScope == .overdue {
+            return AgendaProjection.overdueRoutines(
+                routines: [item], checks: checks, todayKey: todayKey, calendar: calendar
+            ).first?.displayDayKey
+        }
         let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
-        let scheduled = WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: fromKey)
-        return Classification.matchesDate(dayKey: scheduled, isDone: false, todayKey: todayKey, scope: filter.dateScope)
+        let scheduled = WeekdayMask.nextScheduledDayKey(
+            mask: item.weekdayMask, from: fromKey, calendar: calendar
+        )
+        guard filter.dateScope == .all || Classification.matchesDate(
+            dayKey: scheduled, isDone: false, todayKey: todayKey, scope: filter.dateScope
+        ) else { return nil }
+        return scheduled
     }
 
     private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
@@ -264,24 +303,22 @@ enum BoardSearch {
     private static func routineHits(
         _ query: BoardSearchQuery,
         _ routines: [RoutineSnapshot],
-        todayKey: String,
+        dayKeys: [UUID: String],
         tagMap: [UUID: String]
     ) -> [BoardSearchHit] {
         return routines.compactMap { item in
-            guard item.deletedAt == nil, item.isEnabled else { return nil }
-
+            guard let dayKey = dayKeys[item.id] else { return nil }
             guard matchesRecord(
                 title: item.title, notes: item.notes, tagIDs: item.tagIDs,
                 bits: item.classifyBits, remindMinutes: item.remindMinutes,
                 query: query, tagMap: tagMap
             ) else { return nil }
 
-            let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
             return BoardSearchHit(
                 id: item.id,
                 kind: .routine,
                 title: item.title,
-                dayKey: WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: fromKey),
+                dayKey: dayKey,
                 createdAt: item.createdAt
             )
         }

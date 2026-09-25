@@ -240,6 +240,41 @@ struct BoardSearchTests {
     }
 }
 
+struct OverdueBoardSearchTests {
+    @Test func overdueSearchUsesTheSameOpenCheckDayAsPending() {
+        let today = "2026-09-13"
+        let routine = RoutineSnapshot(
+            id: UUID(), title: "日报", sortOrder: 0, isEnabled: true,
+            createdDayKey: "2026-09-01", weekdayMask: WeekdayMask.all
+        )
+        let closedYesterday = CheckSnapshot(
+            routineId: routine.id, dayKey: "2026-09-12", isDone: true
+        )
+        let scope = BoardSearchScope(filter: BoardFilter(dateScope: .overdue))
+        let openDay = AgendaProjection.overdueRoutines(
+            routines: [routine], checks: [], todayKey: today
+        ).first?.displayDayKey
+        let hits = BoardSearch.hits(
+            query: "日报", todos: [], diaries: [], routines: [routine], checks: [],
+            todayKey: today, scope: scope
+        )
+        #expect(hits.map(\.id) == [routine.id])
+        #expect(hits.first?.dayKey == openDay)
+        #expect(hits.first?.dayKey == "2026-09-12")
+        let afterClose = BoardSearch.hits(
+            query: "日报", todos: [], diaries: [], routines: [routine], checks: [closedYesterday],
+            todayKey: today, scope: scope
+        )
+        #expect(afterClose.first?.dayKey == "2026-09-11")
+        var stopped = routine
+        stopped.isEnabled = false
+        #expect(BoardSearch.hits(
+            query: "日报", todos: [], diaries: [], routines: [stopped], checks: [],
+            todayKey: today, scope: scope
+        ).isEmpty)
+    }
+}
+
 struct FeedbackCopyTests {
     @Test func syncAndCaptureKeysStayStable() {
         #expect(CalendarSyncPhase.off.messageKey == "settings.calendar.sync.status.off")
