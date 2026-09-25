@@ -54,7 +54,6 @@ final class AppPreferences {
     static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let iCloudDesiredKey = "areachain.prefs.icloudDesired"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
-    static let isProjectsExpandedKey = "areachain.prefs.isProjectsExpanded"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
 
     private let defaults: UserDefaults
@@ -101,14 +100,6 @@ final class AppPreferences {
         }
     }
 
-    var isProjectsExpanded: Bool {
-        didSet {
-            guard !isLoading else { return }
-            defaults.set(isProjectsExpanded, forKey: Self.isProjectsExpandedKey)
-            notifyChange()
-        }
-    }
-
     var isTagsExpanded: Bool {
         didSet {
             guard !isLoading else { return }
@@ -130,7 +121,6 @@ final class AppPreferences {
         stampCaptureApp = defaults.bool(forKey: Self.stampCaptureAppKey)
         wantsICloudSync = defaults.bool(forKey: Self.iCloudDesiredKey)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
-        isProjectsExpanded = defaults.object(forKey: Self.isProjectsExpandedKey) as? Bool ?? true
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
         isLoading = false
         applyAppAppearance()

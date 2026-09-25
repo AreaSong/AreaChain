@@ -155,7 +155,7 @@ enum BoardSearch {
     }
 
     static func filteredDiaries(_ entries: [DiarySnapshot], filter: BoardFilter) -> [DiarySnapshot] {
-        // 手记没有项目、捕获来源和优先级，不能混进要求这些属性的结果。
+        // 手记没有捕获来源和优先级，不能混进要求这些属性的结果。
         guard filter.bundleID == nil, !filter.isHighPriorityOnly else { return [] }
         guard let tagID = filter.tagID else { return entries }
         return entries.filter { TagIDList.contains($0.tagIDs, tagID) }

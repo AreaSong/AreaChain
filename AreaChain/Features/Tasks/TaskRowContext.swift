@@ -174,7 +174,7 @@ enum CatalogChoices {
 
 // MARK: - Task Catalog Context
 
-/// 任务行目录与持久化上下文依赖（解耦各 Caller 重复传递 projects/tags/attachments/modelContext）
+/// 任务行目录与持久化上下文依赖（解耦各调用方重复传递 tags/attachments/modelContext）
 struct TaskCatalogContext {
     var tags: [TagItem]
     var attachments: [AttachmentItem]

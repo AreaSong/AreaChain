@@ -59,7 +59,7 @@ struct WorkspaceSidebarView: View {
     private var organizeSection: some View {
         Section("sidebar.organize") {
             tabRow(.tags)
-            ForEach(Catalog.liveTags(tags)) { tag in
+            ForEach(Catalog.liveTaskTags(tags)) { tag in
                 tagRow(tag)
             }
         }

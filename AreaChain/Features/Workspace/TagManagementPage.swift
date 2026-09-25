@@ -23,44 +23,15 @@ struct TagManagementPage: View {
     @State private var renameError: String?
     @State private var confirmDelete = false
     @State private var confirmCleanup = false
+    @State private var confirmPurge = false
+    @State private var showsDeleted = false
     @State private var mergeTarget: UUID?
     @State private var showMerge = false
     @State private var pageError: String?
 
     var body: some View {
-        DaybookPage(title: "tab.tags", systemImage: "tag", subtitle: "tags.page.subtitle") {
-            HStack(spacing: 8) {
-                Button("tags.create", action: commitCreate)
-                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
-                    .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                if !ordinarySelection.isEmpty {
-                    Button("tags.batch.delete") { confirmDelete = true }
-                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                    colorMenu
-                    if ordinarySelection.count >= 2 {
-                        Button("tags.merge") { beginMerge() }
-                            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                    }
-                }
-                if !unusedOrdinary.isEmpty {
-                    Button("tags.cleanup.unused") { confirmCleanup = true }
-                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                }
-            }
-        } content: {
-            VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-                searchField
-                createField
-                filterBar
-                if let pageError {
-                    Text(LocalizedStringKey(pageError))
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.status.danger)
-                }
-                tagList
-            }
-        }
-        .confirmationDialog("tags.delete.confirm.title", isPresented: $confirmDelete, titleVisibility: .visible) {
+        tagPage
+            .confirmationDialog("tags.delete.confirm.title", isPresented: $confirmDelete, titleVisibility: .visible) {
             Button("tags.batch.delete", role: .destructive, action: commitBatchDelete)
             Button("alert.cancel", role: .cancel) {}
         } message: {
@@ -72,7 +43,73 @@ struct TagManagementPage: View {
         } message: {
             Text("tags.cleanup.confirm.message")
         }
+        .confirmationDialog("tags.purge.confirm.title", isPresented: $confirmPurge, titleVisibility: .visible) {
+            Button("trash.purge", role: .destructive, action: commitPurge)
+            Button("alert.cancel", role: .cancel) {}
+        } message: {
+            Text("tags.purge.confirm.message")
+        }
         .sheet(isPresented: $showMerge) { mergeSheet }
+    }
+
+    private var tagPage: some View {
+        DaybookPage(title: "tab.tags", systemImage: "tag", subtitle: "tags.page.subtitle") {
+            pageToolbar
+        } content: {
+            pageContent
+        }
+    }
+
+    private var pageToolbar: some View {
+        HStack(spacing: 8) {
+            if showsDeleted {
+                Button("trash.restore", action: commitRestore)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
+                    .disabled(deletedSelection.isEmpty)
+                Button("trash.purge") { confirmPurge = true }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    .disabled(deletedSelection.isEmpty)
+            } else {
+                liveToolbar
+            }
+        }
+    }
+
+    private var liveToolbar: some View {
+        HStack(spacing: 8) {
+            Button("tags.create", action: commitCreate)
+                .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
+                .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            if !ordinarySelection.isEmpty {
+                Button("tags.batch.delete") { confirmDelete = true }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                colorMenu
+                if ordinarySelection.count >= 2 {
+                    Button("tags.merge") { beginMerge() }
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                }
+            }
+            if !unusedOrdinary.isEmpty {
+                Button("tags.cleanup.unused") { confirmCleanup = true }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            }
+        }
+    }
+
+    private var pageContent: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+            searchField
+            if !showsDeleted {
+                createField
+            }
+            filterBar
+            if let pageError {
+                Text(LocalizedStringKey(pageError))
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.status.danger)
+            }
+            tagList
+        }
     }
 
     private var usage: [UUID: TagUsageRecord] {
@@ -80,10 +117,19 @@ struct TagManagementPage: View {
     }
 
     private var displayed: [TagItem] {
-        let base = TagUsage.filtered(tags, filter: filter, usage: usage)
+        let base = showsDeleted ? deletedTags : TagUsage.filtered(tags, filter: filter, usage: usage)
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return base }
         return base.filter { $0.name.localizedStandardContains(needle) }
+    }
+
+    private var deletedTags: [TagItem] {
+        tags.filter { $0.deletedAt != nil && !$0.isDiaryPreset }
+            .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
+    }
+
+    private var deletedSelection: [TagItem] {
+        deletedTags.filter { selection.contains($0.id) }
     }
 
     private var ordinarySelection: [TagItem] {
@@ -95,7 +141,7 @@ struct TagManagementPage: View {
     }
 
     private var canReorder: Bool {
-        filter == .all && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !showsDeleted && filter == .all && query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var searchField: some View {
@@ -143,9 +189,17 @@ struct TagManagementPage: View {
     private var filterBar: some View {
         HStack(spacing: 6) {
             ForEach(TagListFilter.allCases, id: \.self) { item in
-                Button(filterTitle(item)) { filter = item }
-                    .buttonStyle(DaybookButtonStyle(filter == item ? .prominent : .quiet, size: .compact))
+                Button(filterTitle(item)) {
+                    showsDeleted = false
+                    filter = item
+                }
+                .buttonStyle(DaybookButtonStyle(!showsDeleted && filter == item ? .prominent : .quiet, size: .compact))
             }
+            Button("tags.deleted.show") {
+                showsDeleted = true
+                selection.removeAll()
+            }
+            .buttonStyle(DaybookButtonStyle(showsDeleted ? .prominent : .quiet, size: .compact))
         }
     }
 
@@ -163,9 +217,9 @@ struct TagManagementPage: View {
 
     @ViewBuilder
     private var tagList: some View {
-        if displayed.isEmpty {
+            if displayed.isEmpty {
             DaybookEmptyState(
-                title: query.isEmpty && filter == .all ? "tags.empty" : "tags.empty.filtered",
+                title: emptyTitle,
                 systemImage: "tag"
             )
         } else {
@@ -204,7 +258,7 @@ struct TagManagementPage: View {
                     .font(DaybookType.body)
                     .foregroundStyle(DaybookPalette.text.primary)
                     .onTapGesture(count: 2) {
-                        guard !tag.isDiaryPreset else { return }
+                        guard tag.deletedAt == nil, !tag.isDiaryPreset else { return }
                         renamingID = tag.id
                         renameDraft = tag.name
                         renameError = nil
@@ -246,6 +300,11 @@ struct TagManagementPage: View {
         }
         .padding(DaybookSpacing.page)
         .frame(width: 360)
+    }
+
+    private var emptyTitle: LocalizedStringKey {
+        if showsDeleted { return query.isEmpty ? "tags.deleted.empty" : "tags.empty.filtered" }
+        return query.isEmpty && filter == .all ? "tags.empty" : "tags.empty.filtered"
     }
 
     private func filterTitle(_ item: TagListFilter) -> LocalizedStringKey {
@@ -356,6 +415,24 @@ struct TagManagementPage: View {
         for tag in unusedOrdinary {
             if !DayBoardMutations.trashTag(id: tag.id, context: modelContext) { failed = true }
         }
+        pageError = failed ? "tags.error.save" : nil
+    }
+
+    private func commitRestore() {
+        var failed = false
+        for tag in deletedSelection {
+            if !DayBoardMutations.restoreTag(tag) { failed = true }
+        }
+        selection.removeAll()
+        pageError = failed ? "tags.error.save" : nil
+    }
+
+    private func commitPurge() {
+        var failed = false
+        for tag in deletedSelection {
+            if !DayBoardMutations.purgeTag(tag) { failed = true }
+        }
+        selection.removeAll()
         pageError = failed ? "tags.error.save" : nil
     }
 
