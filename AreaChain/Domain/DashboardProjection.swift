@@ -109,13 +109,9 @@ enum DashboardProjection {
             days: days, todos: todos, routines: routines, checks: checks, calendar: calendar
         )
         let byDay = Dictionary(uniqueKeysWithValues: stats.map { ($0.dayKey, $0) })
-        let today = progressStat(
-            dayKey: todayKey, todos: todos, routines: routines, checks: checks, calendar: calendar
-        )
+        let today = byDay[todayKey] ?? emptyStat(todayKey)
         let trendDays = closedDays(ending: todayKey, count: trendDayCount, calendar: calendar)
-        let trend = trendDays.map {
-            progressStat(dayKey: $0, todos: todos, routines: routines, checks: checks, calendar: calendar)
-        }
+        let trend = trendDays.map { byDay[$0] ?? emptyStat($0) }
         let pending = AgendaProjection.pending(
             routines: routines, checks: checks, todos: todos, todayKey: todayKey, calendar: calendar
         )
@@ -188,22 +184,8 @@ enum DashboardProjection {
 }
 
 private extension DashboardProjection {
-    static func progressStat(
-        dayKey: String,
-        todos: [TodoSnapshot],
-        routines: [RoutineSnapshot],
-        checks: [CheckSnapshot],
-        calendar: Calendar
-    ) -> DashboardDayStat {
-        let progress = DayBoardLogic.todayProgress(
-            routines: routines, checks: checks, todos: todos, dayKey: dayKey, calendar: calendar
-        )
-        return DashboardDayStat.make(
-            dayKey: dayKey,
-            scheduledCount: progress.total,
-            completedCount: progress.completed,
-            skippedCount: 0
-        )
+    static func emptyStat(_ dayKey: String) -> DashboardDayStat {
+        DashboardDayStat.make(dayKey: dayKey, scheduledCount: 0, completedCount: 0, skippedCount: 0)
     }
 
     static func dayStats(
@@ -266,9 +248,9 @@ private extension DashboardProjection {
     ) -> (scheduled: Int, completed: Int, skipped: Int)? {
         guard DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil else { return nil }
         guard dayKey >= routine.createdDayKey else { return nil }
+        guard isScheduled(routine, on: dayKey, calendar: calendar) else { return nil }
         if mark == .skipped { return (1, 0, 1) }
         if mark == .done { return (1, 1, 0) }
-        guard isScheduled(routine, on: dayKey, calendar: calendar) else { return nil }
         return (1, 0, 0)
     }
 

@@ -9394,6 +9394,13 @@
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "未完成" } }
       }
     },
+    "dashboard.today.accessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Completed today, %1$d of %2$d" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日完成，%1$d / %2$d" } }
+      }
+    },
     "dashboard.today.title": {
       "extractionState": "manual",
       "localizations": {
@@ -9441,7 +9448,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dashboard"
+            "value": "总览"
           }
         }
       }

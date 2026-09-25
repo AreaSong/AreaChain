@@ -43,7 +43,8 @@ struct DashboardInteractionTests {
         for identifier in ["en", "zh-Hans"] {
             let locale = Locale(identifier: identifier)
             for key in [
-                "dashboard.title", "dashboard.today.title", "dashboard.pending.overdue",
+                "dashboard.title", "dashboard.today.title", "dashboard.today.accessibility",
+                "dashboard.pending.overdue",
                 "dashboard.heatmap.title", "dashboard.heatmap.empty", "dashboard.activity.empty",
                 "dashboard.activity.kind.completed", "dashboard.heatmap.hint"
             ] {

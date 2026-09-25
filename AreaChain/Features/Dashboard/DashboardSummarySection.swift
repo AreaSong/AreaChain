@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct DashboardSummarySection: View {
+    @Environment(\.locale) private var locale
     var summary: DashboardSummary
     var navigation: WorkspaceNavigation
 
@@ -38,7 +39,7 @@ struct DashboardSummarySection: View {
         }
         .buttonStyle(DaybookButtonStyle(.quiet))
         .accessibilityIdentifier("dashboard.today")
-        .accessibilityLabel(Text(todayValue))
+        .accessibilityLabel(Text(todayAccessibility))
     }
 
     private var pendingRow: some View {
@@ -78,6 +79,15 @@ struct DashboardSummarySection: View {
 
     private var todayValue: String {
         "\(summary.todayStat.completedCount)/\(summary.todayStat.scheduledCount)"
+    }
+
+    private var todayAccessibility: String {
+        L10n.format(
+            "dashboard.today.accessibility",
+            locale: locale,
+            summary.todayStat.completedCount,
+            summary.todayStat.scheduledCount
+        )
     }
 
     private func metricButton(
