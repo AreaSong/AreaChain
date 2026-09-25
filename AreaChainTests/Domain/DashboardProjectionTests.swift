@@ -51,18 +51,30 @@ struct DashboardProjectionTests {
         let missed = day(monday, routines: [routine])
         #expect(missed.openCount == 1)
         #expect(missed.completedCount == 0)
-        let skipped = day(monday, routines: [routine], checks: [check(id, monday, skipped: true)])
-        #expect(skipped.skippedCount == 1)
-        #expect(skipped.completedCount == 0)
+        let skipCheck = [check(id, monday, skipped: true)]
+        let skipped = day(monday, routines: [routine], checks: skipCheck)
+        let skippedProgress = DayBoardLogic.todayProgress(
+            routines: [routine], checks: skipCheck, todos: [], dayKey: monday, calendar: calendar
+        )
+        #expect(skipped.completedCount == skippedProgress.completed)
+        #expect(skipped.scheduledCount == skippedProgress.total)
+        #expect(skipped.openCount == skippedProgress.total - skippedProgress.completed)
+        #expect(skipped.completedCount == 1)
         #expect(skipped.scheduledCount == 1)
-        let off = day(tuesday, routines: [routine], checks: [check(id, tuesday, done: true)])
-        #expect(off.completedCount == 1)
-        #expect(off.scheduledCount == 1)
-        #expect(off.completionRate == 1)
+        let offChecks = [check(id, tuesday, done: true)]
+        let off = day(tuesday, routines: [routine], checks: offChecks)
+        let offProgress = DayBoardLogic.todayProgress(
+            routines: [routine], checks: offChecks, todos: [], dayKey: tuesday, calendar: calendar
+        )
+        #expect(off.completedCount == offProgress.completed)
+        #expect(off.scheduledCount == offProgress.total)
+        #expect(off.completionRate == nil)
         routine.isEnabled = false
         routine.pausedOnDayKey = monday
-        let paused = day(monday, routines: [routine])
+        let pausedMark = [check(id, monday, done: true)]
+        let paused = day(monday, routines: [routine], checks: pausedMark)
         #expect(paused.scheduledCount == 0)
+        #expect(paused.completedCount == 0)
         routine.pausedOnDayKey = nil
         let legacy = day("2026-09-14", routines: [routine])
         #expect(legacy.scheduledCount == 0)
@@ -76,8 +88,12 @@ struct DashboardProjectionTests {
             check(id, "2026-09-02", done: true, skipped: true)
         ]
         let stat = day("2026-09-02", routines: [routine], checks: checks)
-        #expect(stat.completedCount == 0)
-        #expect(stat.skippedCount == 1)
+        let progress = DayBoardLogic.todayProgress(
+            routines: [routine], checks: checks, todos: [], dayKey: "2026-09-02", calendar: calendar
+        )
+        #expect(stat.completedCount == progress.completed)
+        #expect(stat.scheduledCount == progress.total)
+        #expect(stat.completedCount == 1)
         #expect(stat.scheduledCount == 1)
         let rows = DashboardProjection.activities(
             todos: [], routines: [routine], checks: checks, diaries: [],
@@ -129,8 +145,12 @@ struct DashboardProjectionTests {
         #expect(DashboardProjection.intensityLevel(completedCount: 9) == 4)
         let id = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
         let routine = routine(id: id, created: "2026-09-01")
-        let skipped = day("2026-09-01", routines: [routine], checks: [check(id, "2026-09-01", skipped: true)])
-        #expect(DashboardProjection.intensityLevel(completedCount: skipped.completedCount) == 0)
+        let skippedHeat = project(
+            today: "2026-09-01", routines: [routine], checks: [check(id, "2026-09-01", skipped: true)]
+        )
+        let skippedCell = skippedHeat.heatmap.first { $0.dayKey == "2026-09-01" }
+        #expect(skippedCell?.completedCount == 0)
+        #expect(skippedCell?.intensityLevel == 0)
         var child = todo("parent", day: "2026-09-01", isDone: true)
         child.subtasks = [SubtaskSnapshot(id: UUID(), todoId: child.id, title: "child", isDone: true)]
         let withChild = day("2026-09-01", todos: [child])

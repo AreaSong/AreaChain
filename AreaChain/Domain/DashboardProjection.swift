@@ -109,13 +109,13 @@ enum DashboardProjection {
             days: days, todos: todos, routines: routines, checks: checks, calendar: calendar
         )
         let byDay = Dictionary(uniqueKeysWithValues: stats.map { ($0.dayKey, $0) })
-        let today = byDay[todayKey] ?? DashboardDayStat.make(
-            dayKey: todayKey, scheduledCount: 0, completedCount: 0, skippedCount: 0
+        let today = progressStat(
+            dayKey: todayKey, todos: todos, routines: routines, checks: checks, calendar: calendar
         )
         let trendDays = closedDays(ending: todayKey, count: trendDayCount, calendar: calendar)
-        let trend = trendDays.map { byDay[$0] ?? DashboardDayStat.make(
-            dayKey: $0, scheduledCount: 0, completedCount: 0, skippedCount: 0
-        ) }
+        let trend = trendDays.map {
+            progressStat(dayKey: $0, todos: todos, routines: routines, checks: checks, calendar: calendar)
+        }
         let pending = AgendaProjection.pending(
             routines: routines, checks: checks, todos: todos, todayKey: todayKey, calendar: calendar
         )
@@ -188,6 +188,24 @@ enum DashboardProjection {
 }
 
 private extension DashboardProjection {
+    static func progressStat(
+        dayKey: String,
+        todos: [TodoSnapshot],
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        calendar: Calendar
+    ) -> DashboardDayStat {
+        let progress = DayBoardLogic.todayProgress(
+            routines: routines, checks: checks, todos: todos, dayKey: dayKey, calendar: calendar
+        )
+        return DashboardDayStat.make(
+            dayKey: dayKey,
+            scheduledCount: progress.total,
+            completedCount: progress.completed,
+            skippedCount: 0
+        )
+    }
+
     static func dayStats(
         days: [String],
         todos: [TodoSnapshot],

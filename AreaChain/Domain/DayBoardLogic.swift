@@ -112,9 +112,13 @@ struct UnfinishedItem: Equatable, Identifiable {
 }
 
 enum DayBoardLogic {
-    static func isRoutineDue(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
+    static func isRoutineDue(
+        _ routine: RoutineSnapshot,
+        on dayKey: String,
+        calendar: Calendar = .current
+    ) -> Bool {
         guard routine.deletedAt == nil, routine.isEnabled, routine.createdDayKey <= dayKey else { return false }
-        return WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey)
+        return WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey, calendar: calendar)
     }
 
     static func check(
@@ -173,9 +177,13 @@ enum DayBoardLogic {
         return next
     }
 
-    static func routines(for dayKey: String, in routines: [RoutineSnapshot]) -> [RoutineSnapshot] {
+    static func routines(
+        for dayKey: String,
+        in routines: [RoutineSnapshot],
+        calendar: Calendar = .current
+    ) -> [RoutineSnapshot] {
         routines
-            .filter { isRoutineDue($0, on: dayKey) }
+            .filter { isRoutineDue($0, on: dayKey, calendar: calendar) }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -210,10 +218,11 @@ enum DayBoardLogic {
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
         todos: [TodoSnapshot],
-        dayKey: String
+        dayKey: String,
+        calendar: Calendar = .current
     ) -> BoardProgress {
         let dueTodos = self.todos(for: dayKey, in: todos)
-        let dueRoutines = self.routines(for: dayKey, in: routines)
+        let dueRoutines = self.routines(for: dayKey, in: routines, calendar: calendar)
         let completed = dueTodos.filter(\.isDone).count
             + dueRoutines.filter { isRoutineDone($0, checks: checks, on: dayKey) }.count
         return BoardProgress(completed: completed, total: dueTodos.count + dueRoutines.count)
