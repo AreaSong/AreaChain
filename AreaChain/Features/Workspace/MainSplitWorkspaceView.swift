@@ -55,7 +55,7 @@ struct MainSplitWorkspaceView: View {
             tags: tags
         )
         .overlay(alignment: .bottom) {
-            if !navigation.selectedTaskIDs.isEmpty {
+            if showsBatchBar {
                 WorkspaceBatchActionBar(
                     navigation: navigation,
                     data: WorkspaceBatchData(
@@ -107,6 +107,17 @@ struct MainSplitWorkspaceView: View {
         return .ignored
     }
 
+    private var showsBatchBar: Bool {
+        guard !navigation.selectedTaskIDs.isEmpty else { return false }
+        if navigation.selectedTagID != nil { return true }
+        switch navigation.selectedTab {
+        case .pending, .allItems:
+            return true
+        default:
+            return false
+        }
+    }
+
     // MARK: - Detail Router
 
     @ViewBuilder
@@ -115,10 +126,14 @@ struct MainSplitWorkspaceView: View {
             WorkspaceFilteredListView(tag: tag)
         } else {
             switch navigation.selectedTab {
-            case .dashboard, .pending, .allItems, .privacy, .dataBackup:
+            case .dashboard, .privacy, .dataBackup:
                 WorkspaceSectionPlaceholderView(tab: navigation.selectedTab)
             case .today:
                 WorkspaceTodayView()
+            case .pending:
+                WorkspacePendingView()
+            case .allItems:
+                WorkspaceAllItemsView()
             case .calendar:
                 CalendarStandaloneView()
             case .quadrant:

@@ -46,7 +46,11 @@ enum TaskRowFactory {
     private static func makeTodoState(_ context: TodoRowContext) -> TaskRowState {
         let liveSubtasks = context.display.includeSubtasks
             ? context.todo.subtasks
-                .filter { $0.deletedAt == nil }
+                .filter { subtask in
+                    guard subtask.deletedAt == nil else { return false }
+                    guard let ids = context.display.visibleSubtaskIDs else { return true }
+                    return ids.contains(subtask.id)
+                }
                 .sorted(by: { $0.sortOrder < $1.sortOrder })
                 .compactMap(\.snapshot)
             : []
@@ -153,7 +157,8 @@ enum TaskRowFactory {
             selection: context.display.selection,
             canSetRemind: true,
             canSkip: context.actions.onSkip != nil,
-            isEnabled: context.routine.isEnabled
+            isEnabled: context.routine.isEnabled,
+            allowsCompletion: context.display.allowsCompletion
         )
         return TaskRowState(
             identity: identity,

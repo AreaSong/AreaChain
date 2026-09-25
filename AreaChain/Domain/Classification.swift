@@ -5,6 +5,7 @@ enum DateFilterScope: String, CaseIterable, Equatable, Sendable {
     case today
     case recent
     case overdue
+    case upcoming
 }
 
 enum PriorityFilterScope: String, CaseIterable, Equatable, Sendable {
@@ -232,6 +233,8 @@ enum Classification {
             return dayKey >= todayKey && dayKey <= weekAhead
         case .overdue:
             return dayKey < todayKey && !isDone
+        case .upcoming:
+            return dayKey > todayKey && !isDone
         }
     }
 

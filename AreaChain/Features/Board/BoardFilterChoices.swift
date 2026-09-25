@@ -173,6 +173,7 @@ enum BoardFilterChoices {
         case .today: "calendar"
         case .recent: "calendar.badge.clock"
         case .overdue: "clock.badge.exclamationmark"
+        case .upcoming: "calendar.badge.plus"
         }
     }
 

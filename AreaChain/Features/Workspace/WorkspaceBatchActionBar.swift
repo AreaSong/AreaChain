@@ -48,27 +48,63 @@ struct WorkspaceBatchActionBar: View {
             lifecycle: BatchLifecycleActions(
                 onTrash: handleTrash,
                 onClear: handleClear
-            )
+            ),
+            showsSchedule: capability.canReschedule,
+            showsStatus: capability.canComplete,
+            showsEnable: capability.canToggleEnabled,
+            onSetEnabled: handleSetEnabled,
+            noteKey: capability.noteKey.map { LocalizedStringKey($0) }
         )
         .confirmMoveToTrash($pendingTrash)
     }
 
+    private var capability: BatchCapability {
+        AgendaProjection.capability(
+            ids: navigation.selectedTaskIDs,
+            todos: todos.map(\.snapshot),
+            routines: routines.map(\.snapshot),
+            todayKey: DayClock.shared.todayKey
+        )
+    }
+
     private func handleMoveToday() {
+        guard capability.canReschedule else { return }
         let today = DayClock.shared.todayKey
         guard DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: today, todos: todos) else { return }
         navigation.clearSelection()
     }
 
     private func handleMoveTomorrow() {
+        guard capability.canReschedule else { return }
         let tomorrow = DayKey.shifted(DayClock.shared.todayKey, by: 1)
         guard DayBoardMutations.batchMoveTodos(navigation.selectedTaskIDs, to: tomorrow, todos: todos) else { return }
         navigation.clearSelection()
     }
 
     private func handleToggleDone(_ markDone: Bool) {
+        guard capability.canComplete else { return }
         let ids = navigation.selectedTaskIDs
         let today = DayClock.shared.todayKey
-        guard DayBoardMutations.batchSetCompletion(ids, markDone: markDone, on: today, context: modelContext) else { return }
+        let saved: Bool
+        if capability.kind == .routinesOnly {
+            saved = DayBoardMutations.batchSetRoutineChecks(
+                ids, markDone: markDone, on: today, routines: routines, context: modelContext
+            )
+        } else {
+            saved = DayBoardMutations.batchToggleDone(ids, markDone: markDone, todos: todos)
+        }
+        guard saved else { return }
+        navigation.clearSelection()
+    }
+
+    private func handleSetEnabled(_ enabled: Bool) {
+        guard capability.canToggleEnabled else { return }
+        guard DayBoardMutations.batchSetRoutineEnabled(
+            navigation.selectedTaskIDs,
+            enabled: enabled,
+            todayKey: DayClock.shared.todayKey,
+            routines: routines
+        ) else { return }
         navigation.clearSelection()
     }
 

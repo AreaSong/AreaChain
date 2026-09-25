@@ -201,13 +201,9 @@ struct TasksPage: View {
     }
 
     var upcomingModels: [TodoItem] {
-        let ids = Set(DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey).map(\.id))
-        return todos
-            .filter { ids.contains($0.id) && matchesFilter($0.classifyBits) }
-            .sorted {
-                if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
-                return $0.createdAt < $1.createdAt
-            }
+        let ordered = DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey)
+        let byID = Dictionary(uniqueKeysWithValues: todos.map { ($0.id, $0) })
+        return ordered.compactMap { byID[$0.id] }.filter { matchesFilter($0.classifyBits) }
     }
 
     var todayBundleIDs: [String] {

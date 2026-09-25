@@ -57,6 +57,11 @@ struct BatchActionBar: View {
     let schedule: BatchScheduleActions
     let classify: BatchClassifyActions
     let lifecycle: BatchLifecycleActions
+    var showsSchedule: Bool = true
+    var showsStatus: Bool = true
+    var showsEnable: Bool = false
+    var onSetEnabled: ((Bool) -> Void)?
+    var noteKey: LocalizedStringKey? = nil
 
     var onMoveToday: () -> Void { schedule.onMoveToday }
     var onMoveTomorrow: () -> Void { schedule.onMoveTomorrow }
@@ -71,12 +76,22 @@ struct BatchActionBar: View {
         selectedCount: Int,
         schedule: BatchScheduleActions,
         classify: BatchClassifyActions,
-        lifecycle: BatchLifecycleActions
+        lifecycle: BatchLifecycleActions,
+        showsSchedule: Bool = true,
+        showsStatus: Bool = true,
+        showsEnable: Bool = false,
+        onSetEnabled: ((Bool) -> Void)? = nil,
+        noteKey: LocalizedStringKey? = nil
     ) {
         self.selectedCount = selectedCount
         self.schedule = schedule
         self.classify = classify
         self.lifecycle = lifecycle
+        self.showsSchedule = showsSchedule
+        self.showsStatus = showsStatus
+        self.showsEnable = showsEnable
+        self.onSetEnabled = onSetEnabled
+        self.noteKey = noteKey
     }
 
     private var taskTags: [TagItem] {
@@ -91,8 +106,22 @@ struct BatchActionBar: View {
                 .frame(height: 14)
                 .opacity(0.3)
 
-            dateAdjustmentMenu
-            statusAdjustmentMenu
+            if showsSchedule {
+                dateAdjustmentMenu
+            }
+            if showsStatus {
+                statusAdjustmentMenu
+            }
+            if showsEnable {
+                enableButtons
+            }
+            if let noteKey {
+                Text(noteKey)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             tagAssignmentMenu
             actionButtons
         }
@@ -157,6 +186,15 @@ struct BatchActionBar: View {
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
+        }
+    }
+
+    private var enableButtons: some View {
+        HStack(spacing: 6) {
+            Button("items.status.enabled") { onSetEnabled?(true) }
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            Button("items.status.disabled") { onSetEnabled?(false) }
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         }
     }
 

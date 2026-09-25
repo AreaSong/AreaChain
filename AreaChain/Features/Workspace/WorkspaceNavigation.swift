@@ -138,6 +138,7 @@ final class WorkspaceNavigation {
     // MARK: - Global Search
     var searchQuery: String = ""
     var isSearchFocused: Bool = false
+    var wantsTodayComposerFocus: Bool = false
 
     var isSearching: Bool {
         !BoardSearch.normalized(searchQuery).isEmpty

@@ -24,12 +24,7 @@ struct WorkspaceTodayView: View {
     }
 
     private var progress: BoardProgress {
-        DayBoardLogic.todayProgress(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            dayKey: todayKey
-        )
+        DayBoardLogic.todayOneOffProgress(todos: todos.map(\.snapshot), dayKey: todayKey)
     }
 
     var body: some View {
@@ -68,6 +63,10 @@ struct WorkspaceTodayView: View {
                     )
                 )
             )
+        }
+        .onAppear(perform: consumeComposerFocus)
+        .onChange(of: navigation.wantsTodayComposerFocus) { _, _ in
+            consumeComposerFocus()
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
@@ -113,6 +112,12 @@ struct WorkspaceTodayView: View {
             return "workspace.progress.label"
         }
         return progress.completed >= progress.total ? "workspace.progress.done" : "workspace.progress.label"
+    }
+
+    private func consumeComposerFocus() {
+        guard navigation.wantsTodayComposerFocus else { return }
+        navigation.wantsTodayComposerFocus = false
+        composerFocused = true
     }
 
     private func addTodo() {

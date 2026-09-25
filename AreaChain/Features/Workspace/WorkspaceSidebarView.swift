@@ -36,7 +36,7 @@ struct WorkspaceSidebarView: View {
     private var itemsSection: some View {
         Section("sidebar.items") {
             tabRow(.today, badgeCount: todayUnfinishedCount)
-            tabRow(.pending)
+            tabRow(.pending, badgeCount: pendingCount)
             tabRow(.allItems)
         }
     }
@@ -81,6 +81,17 @@ struct WorkspaceSidebarView: View {
             todos: todos.map(\.snapshot),
             dayKey: DayClock.shared.todayKey
         )
+        return count > 0 ? count : nil
+    }
+
+    private var pendingCount: Int? {
+        let projection = AgendaProjection.pending(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            todos: todos.map(\.snapshot),
+            todayKey: DayClock.shared.todayKey
+        )
+        let count = projection.overdueCount + projection.upcomingCount
         return count > 0 ? count : nil
     }
 

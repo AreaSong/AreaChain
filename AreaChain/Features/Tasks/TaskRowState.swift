@@ -94,19 +94,22 @@ struct TaskRowInteractionState: Equatable {
     var canSetRemind: Bool
     var canSkip: Bool
     var isEnabled: Bool?
+    var allowsCompletion: Bool
 
     init(
         selection: TaskRowSelectionState = TaskRowSelectionState(),
         dragPayload: String? = nil,
         canSetRemind: Bool = false,
         canSkip: Bool = false,
-        isEnabled: Bool? = nil
+        isEnabled: Bool? = nil,
+        allowsCompletion: Bool = true
     ) {
         self.selection = selection
         self.dragPayload = dragPayload
         self.canSetRemind = canSetRemind
         self.canSkip = canSkip
         self.isEnabled = isEnabled
+        self.allowsCompletion = allowsCompletion
     }
 
     var isSelected: Bool {
@@ -239,6 +242,10 @@ struct TaskRowState: Identifiable, Equatable {
     var isEnabled: Bool? {
         get { interaction.isEnabled }
         set { interaction.isEnabled = newValue }
+    }
+    var allowsCompletion: Bool {
+        get { interaction.allowsCompletion }
+        set { interaction.allowsCompletion = newValue }
     }
 
     // MARK: - Equatable

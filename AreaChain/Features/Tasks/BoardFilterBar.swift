@@ -10,16 +10,18 @@ struct BoardFilterBar: View {
     var tagCounts: [UUID: Int] = [:]
     var untaggedCount: Int? = nil
     var totalOpenCount: Int? = nil
+    var showsPriority: Bool = false
+    var showsDate: Bool = false
     var onChange: (BoardFilter) -> Void
 
     @State private var activeDropdown: ActiveDropdown? = nil
 
     private enum ActiveDropdown: Hashable {
-        case tag, bundle
+        case tag, bundle, priority, date
     }
 
     var isVisible: Bool {
-        filter.isActive || !tags.isEmpty || !bundleIDs.isEmpty
+        filter.isActive || !tags.isEmpty || !bundleIDs.isEmpty || showsPriority || showsDate
     }
 
     var body: some View {
@@ -34,6 +36,12 @@ struct BoardFilterBar: View {
                 }
                 if !bundleIDs.isEmpty {
                     bundleDropdown
+                }
+                if showsPriority {
+                    priorityDropdown
+                }
+                if showsDate {
+                    dateDropdown
                 }
             }
             .font(DaybookType.caption)
@@ -115,6 +123,28 @@ struct BoardFilterBar: View {
             return "#" + name
         }
         return L10n.string("filter.tag", locale: locale)
+    }
+
+    private var priorityDropdown: some View {
+        choiceDropdown(
+            BoardFilterChoices.priorities(filter: filter, locale: locale),
+            icon: "exclamationmark.3",
+            title: filter.priorityScope == .all ? L10n.string("filter.priority", locale: locale) : filter.priorityTitle(locale: locale),
+            active: filter.priorityScope != .all || filter.isHighPriorityOnly,
+            kind: .priority,
+            reset: { onChange(filter.withPriorityScope(.all)) }
+        )
+    }
+
+    private var dateDropdown: some View {
+        choiceDropdown(
+            BoardFilterChoices.dates(filter: filter, locale: locale),
+            icon: "calendar",
+            title: filter.dateScope == .all ? L10n.string("filter.date", locale: locale) : filter.dateScope.title(locale: locale),
+            active: filter.dateScope != .all,
+            kind: .date,
+            reset: { onChange(filter.withDateScope(.all)) }
+        )
     }
 
     private var appTitle: String {

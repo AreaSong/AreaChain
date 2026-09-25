@@ -347,15 +347,17 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         #expect(DayBoardLogic.isRoutineDue(disabled, on: "2026-09-08") == false)
     }
 
-    @Test func dayBoardLogicUpcomingTodosTieBreaksByTitle() {
+    @Test func dayBoardLogicUpcomingTodosTieBreaksByClassificationThenID() {
         let today = "2026-09-08"
         let futureDay = "2026-09-10"
-        let todoZ = TodoSnapshot(id: UUID(), title: "Zulu Task", isDone: false, dayKey: futureDay)
-        let todoA = TodoSnapshot(id: UUID(), title: "Alpha Task", isDone: false, dayKey: futureDay)
-        let todoM = TodoSnapshot(id: UUID(), title: "Mike Task", isDone: false, dayKey: futureDay)
-
-        let upcoming = DayBoardLogic.upcomingTodos(todos: [todoZ, todoA, todoM], todayKey: today)
-        #expect(upcoming.map(\.title) == ["Alpha Task", "Mike Task", "Zulu Task"])
+        let later = Date(timeIntervalSince1970: 30)
+        let earlier = Date(timeIntervalSince1970: 10)
+        let rest = TodoSnapshot(id: UUID(), title: "Zulu Task", isDone: false, dayKey: futureDay, createdAt: earlier)
+        let urgent = TodoSnapshot(
+            id: UUID(), title: "Alpha Task", isDone: false, dayKey: futureDay, createdAt: later, isUrgent: true
+        )
+        let upcoming = DayBoardLogic.upcomingTodos(todos: [rest, urgent], todayKey: today)
+        #expect(upcoming.map(\.title) == ["Alpha Task", "Zulu Task"])
     }
 
     @Test func dayBoardLogicMatchingRoutinesAndSortedForBoard() {

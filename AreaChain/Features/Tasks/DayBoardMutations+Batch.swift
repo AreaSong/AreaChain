@@ -65,6 +65,19 @@ extension DayBoardMutations {
     }
 
     @discardableResult
+    static func batchSetRoutineEnabled(
+        _ ids: Set<UUID>, enabled: Bool, todayKey: String, routines: [DailyRoutine] = []
+    ) -> Bool {
+        let context = routines.first?.modelContext ?? Persistence.session.container.mainContext
+        let targets = routines.filter { ids.contains($0.id) && $0.deletedAt == nil }
+        guard !targets.isEmpty else { return false }
+        return ModelChanges.perform(in: context) {
+            for routine in targets {
+                try routineRepo(for: context).setRoutineEnabled(id: routine.id, enabled: enabled, todayKey: todayKey)
+            }
+        }
+    }
+
     static func batchTrash(_ ids: Set<UUID>, todos: [TodoItem] = [], routines: [DailyRoutine] = []) -> Bool {
         let context = todos.first?.modelContext ?? routines.first?.modelContext ?? Persistence.session.container.mainContext
         return ModelChanges.perform(in: context) {

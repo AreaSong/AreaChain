@@ -115,14 +115,22 @@ struct TaskRow: View {
 
     private var rowContent: some View {
         HStack(alignment: shouldAlignTop ? .top : .center, spacing: 8) {
-            ModernCheckbox(isDone: state.isDone) {
-                PendingCompletionManager.shared.toggle(
-                    id: state.id,
-                    currentlyDone: state.isDone,
-                    reduceMotion: reduceMotion
-                ) {
-                    dispatch(.toggleDone)
+            if state.allowsCompletion {
+                ModernCheckbox(isDone: state.isDone) {
+                    PendingCompletionManager.shared.toggle(
+                        id: state.id,
+                        currentlyDone: state.isDone,
+                        reduceMotion: reduceMotion
+                    ) {
+                        dispatch(.toggleDone)
+                    }
                 }
+            } else {
+                Image(systemName: "calendar")
+                    .font(DaybookType.body)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .accessibilityLabel("items.routine.notDue")
+                    .help("items.routine.notDue")
             }
 
             if editing {

@@ -71,6 +71,7 @@ extension DateFilterScope {
         case .today: L10n.string("filter.date.today", locale: locale)
         case .recent: L10n.string("filter.date.recent", locale: locale)
         case .overdue: L10n.string("filter.date.overdue", locale: locale)
+        case .upcoming: L10n.string("filter.date.upcoming", locale: locale)
         }
     }
 }

@@ -251,19 +251,22 @@ struct TodoRowDisplayOptions {
     var dragPayload: String?
     var note: String?
     var includeSubtasks: Bool
+    var visibleSubtaskIDs: Set<UUID>?
 
     init(
         isDone: Bool,
         selection: TaskRowSelectionState = TaskRowSelectionState(),
         dragPayload: String? = nil,
         note: String? = nil,
-        includeSubtasks: Bool = true
+        includeSubtasks: Bool = true,
+        visibleSubtaskIDs: Set<UUID>? = nil
     ) {
         self.isDone = isDone
         self.selection = selection
         self.dragPayload = dragPayload
         self.note = note
         self.includeSubtasks = includeSubtasks
+        self.visibleSubtaskIDs = visibleSubtaskIDs
     }
 
     init(
@@ -277,6 +280,7 @@ struct TodoRowDisplayOptions {
         self.dragPayload = nil
         self.note = note
         self.includeSubtasks = includeSubtasks
+        self.visibleSubtaskIDs = nil
     }
 }
 
@@ -354,17 +358,20 @@ struct RoutineRowDisplayOptions {
     var selection: TaskRowSelectionState
     var note: String?
     var usesDefaultNote: Bool
+    var allowsCompletion: Bool
 
     init(
         isDone: Bool,
         selection: TaskRowSelectionState = TaskRowSelectionState(),
         note: String? = nil,
-        usesDefaultNote: Bool = true
+        usesDefaultNote: Bool = true,
+        allowsCompletion: Bool = true
     ) {
         self.isDone = isDone
         self.selection = selection
         self.note = note
         self.usesDefaultNote = usesDefaultNote
+        self.allowsCompletion = allowsCompletion
     }
 
     init(
@@ -377,6 +384,7 @@ struct RoutineRowDisplayOptions {
         self.selection = TaskRowSelectionState(isSelected: isSelected)
         self.note = note
         self.usesDefaultNote = usesDefaultNote
+        self.allowsCompletion = true
     }
 }
 

@@ -197,12 +197,13 @@ enum DayBoardLogic {
     }
 
     static func upcomingTodos(todos: [TodoSnapshot], todayKey: String) -> [TodoSnapshot] {
-        todos
-            .filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey > todayKey }
-            .sorted {
-                if $0.dayKey != $1.dayKey { return $0.dayKey < $1.dayKey }
-                return $0.title.localizedStandardCompare($1.title) == .orderedAscending
-            }
+        AgendaProjection.upcomingTodos(todos: todos, todayKey: todayKey)
+    }
+
+    /// 进度环只统计当天一次性事项。角标仍用 `todayProgress`，把重复事项算进去。
+    static func todayOneOffProgress(todos: [TodoSnapshot], dayKey: String) -> BoardProgress {
+        let due = self.todos(for: dayKey, in: todos)
+        return BoardProgress(completed: due.filter(\.isDone).count, total: due.count)
     }
 
     static func todayProgress(
