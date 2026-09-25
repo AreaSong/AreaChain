@@ -60,6 +60,17 @@ struct WorkspaceItemsPageTests {
         #expect(navigation.selectedTaskIDs.isEmpty)
     }
 
+    @Test func listedPagesHideCompletionUnlessTheRowCanBeChecked() {
+        let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
+        let due = UUID()
+        let upcoming = UUID()
+        navigation.replaceListedCheckDays([due: "2026-09-01"])
+        #expect(navigation.allowsRoutineCompletion(due))
+        #expect(!navigation.allowsRoutineCompletion(upcoming))
+        navigation.clearListedCheckDays()
+        #expect(navigation.allowsRoutineCompletion(upcoming))
+    }
+
     @Test func pendingLaneChoiceSurvivesCountChangesUntilLeave() {
         var session = PendingLaneSession(overdueCount: 0)
         #expect(session.lane == .upcoming)

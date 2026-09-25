@@ -133,10 +133,16 @@ struct TaskDetailDrawer: View {
                 && $0.isDone
                 && $0.isSkipped != true
         }
+        let allowsCompletion = WorkspaceNavigation.shared.allowsRoutineCompletion(routine.id)
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                routineHeader(routine, isDoneOnBoard: isDoneOnBoard, boardDayKey: boardDayKey)
+                routineHeader(
+                    routine,
+                    isDoneOnBoard: isDoneOnBoard,
+                    boardDayKey: boardDayKey,
+                    allowsCompletion: allowsCompletion
+                )
                 RoutineHabitSectionView(
                     routine: routine,
                     streakResult: streakResult,
@@ -145,14 +151,14 @@ struct TaskDetailDrawer: View {
                     isSkipped: checks.contains {
                         $0.routine?.id == routine.id && $0.dayKey == boardDayKey && $0.isSkipped
                     },
-                    onSkip: {
+                    onSkip: allowsCompletion ? {
                         DayBoardMutations.skipRoutine(
                             routine,
                             on: boardDayKey,
                             checks: checks,
                             context: modelContext
                         )
-                    }
+                    } : nil
                 )
                 RoutineScheduleSectionView(routine: routine)
                 RoutineClassificationSectionView(routine: routine, tags: tags, modelContext: modelContext)
@@ -168,11 +174,18 @@ struct TaskDetailDrawer: View {
         .daybookScroll()
     }
 
-    private func routineHeader(_ routine: DailyRoutine, isDoneOnBoard: Bool, boardDayKey: String) -> some View {
+    private func routineHeader(
+        _ routine: DailyRoutine,
+        isDoneOnBoard: Bool,
+        boardDayKey: String,
+        allowsCompletion: Bool
+    ) -> some View {
         TaskDetailHeaderBar(
             isDone: isDoneOnBoard,
             isRoutine: true,
+            showsCompletion: allowsCompletion,
             onToggle: {
+                guard allowsCompletion else { return }
                 DayBoardMutations.toggleRoutine(
                     routine,
                     on: boardDayKey,

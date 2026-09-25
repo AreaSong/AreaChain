@@ -265,6 +265,12 @@ final class WorkspaceNavigation {
         routineCompletionDays = [:]
     }
 
+    /// 待处理和全部事项只给列表允许打卡的重复事项显示完成框。今日、日历等未登记检查日的宿主保持原样。
+    func allowsRoutineCompletion(_ id: UUID) -> Bool {
+        guard usesListedCheckDays else { return true }
+        return routineCompletionDays[id]?.isEmpty == false
+    }
+
     func reconcileTaskSelection(with visibleIDs: [UUID]) {
         let visible = Set(visibleIDs)
         selectedTaskIDs.formIntersection(visible)

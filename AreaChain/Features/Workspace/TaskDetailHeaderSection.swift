@@ -4,6 +4,7 @@ import SwiftUI
 struct TaskDetailHeaderBar: View {
     var isDone: Bool
     var isRoutine: Bool = false
+    var showsCompletion: Bool = true
     var onToggle: () -> Void
     var onTrash: () -> Void
     var onClose: (() -> Void)? = nil
@@ -19,7 +20,9 @@ struct TaskDetailHeaderBar: View {
                     .help("row.resident")
             }
 
-            ModernCheckbox(isDone: isDone, action: onToggle)
+            if showsCompletion {
+                ModernCheckbox(isDone: isDone, action: onToggle)
+            }
 
             Spacer()
 

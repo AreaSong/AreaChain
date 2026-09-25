@@ -26,7 +26,8 @@ struct WorkspaceAllItemsView: View {
                 todayKey: todayKey,
                 checks: checks,
                 filterActive: query.isNarrowed,
-                emptyTitle: query.isNarrowed ? "empty.filter" : "items.empty"
+                emptyTitle: query.isNarrowed ? "empty.filter" : "items.empty",
+                emptySubtitle: query.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
             )
         }
         .onAppear { query.todayKey = todayKey }
