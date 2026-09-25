@@ -58,7 +58,8 @@ struct BoardFilters: Equatable {
                 filter.tagID != nil,
                 filter.bundleID != nil,
                 priorityActive,
-                filter.dateScope != .all
+                filter.dateScope != .all,
+                filter.reminderScope != .all
             ].filter { $0 }.count
         }
     }
@@ -72,6 +73,16 @@ extension DateFilterScope {
         case .recent: L10n.string("filter.date.recent", locale: locale)
         case .overdue: L10n.string("filter.date.overdue", locale: locale)
         case .upcoming: L10n.string("filter.date.upcoming", locale: locale)
+        }
+    }
+}
+
+extension ReminderFilterScope {
+    func title(locale: Locale) -> String {
+        switch self {
+        case .all: L10n.string("filter.all", locale: locale)
+        case .set: L10n.string("filter.reminder.set", locale: locale)
+        case .unset: L10n.string("filter.reminder.unset", locale: locale)
         }
     }
 }

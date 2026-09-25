@@ -194,16 +194,20 @@ struct TasksPage: View {
             yesterdayKey: yesterdayKey
         ).filter { item in
             if let todo = todos.first(where: { $0.id == item.id }), item.kind == .todo {
-                return matchesFilter(todo.classifyBits)
+                return matchesFilter(todo.classifyBits, remindMinutes: todo.remindMinutes)
             }
-            return routines.first(where: { $0.id == item.id }).map { matchesFilter($0.classifyBits) } ?? false
+            return routines.first(where: { $0.id == item.id }).map {
+                matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes)
+            } ?? false
         }
     }
 
     var upcomingModels: [TodoItem] {
         let ordered = DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey)
         let byID = Dictionary(uniqueKeysWithValues: todos.map { ($0.id, $0) })
-        return ordered.compactMap { byID[$0.id] }.filter { matchesFilter($0.classifyBits) }
+        return ordered.compactMap { byID[$0.id] }.filter {
+            matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes)
+        }
     }
 
     var todayBundleIDs: [String] {
@@ -212,17 +216,18 @@ struct TasksPage: View {
         return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
     }
 
-    private func matchesFilter(_ bits: ClassifyBits) -> Bool {
+    private func matchesFilter(_ bits: ClassifyBits, remindMinutes: Int?) -> Bool {
         Classification.matches(bits, filter: effectiveFilter)
+            && Classification.matchesReminder(remindMinutes, scope: effectiveFilter.reminderScope)
     }
 
     var todayVisibleIDs: [UUID] {
         let openTodoIDs = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
-            .filter { matchesFilter($0.classifyBits) }
+            .filter { matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes) }
             .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
             .map(\.id)
         let openRoutineIDs = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
-            .filter { matchesFilter($0.classifyBits) }
+            .filter { matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes) }
             .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
             .map(\.id)
         return openTodoIDs + openRoutineIDs

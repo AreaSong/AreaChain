@@ -11,17 +11,18 @@ struct BoardFilterBar: View {
     var untaggedCount: Int? = nil
     var totalOpenCount: Int? = nil
     var showsPriority: Bool = false
+    var showsReminder: Bool = false
     var showsDate: Bool = false
     var onChange: (BoardFilter) -> Void
 
     @State private var activeDropdown: ActiveDropdown? = nil
 
     private enum ActiveDropdown: Hashable {
-        case tag, bundle, priority, date
+        case tag, bundle, priority, reminder, date
     }
 
     var isVisible: Bool {
-        filter.isActive || !tags.isEmpty || !bundleIDs.isEmpty || showsPriority || showsDate
+        filter.isActive || !tags.isEmpty || !bundleIDs.isEmpty || showsPriority || showsReminder || showsDate
     }
 
     var body: some View {
@@ -39,6 +40,9 @@ struct BoardFilterBar: View {
                 }
                 if showsPriority {
                     priorityDropdown
+                }
+                if showsReminder {
+                    reminderDropdown
                 }
                 if showsDate {
                     dateDropdown
@@ -133,6 +137,19 @@ struct BoardFilterBar: View {
             active: filter.priorityScope != .all || filter.isHighPriorityOnly,
             kind: .priority,
             reset: { onChange(filter.withPriorityScope(.all)) }
+        )
+    }
+
+    private var reminderDropdown: some View {
+        choiceDropdown(
+            BoardFilterChoices.reminders(filter: filter, locale: locale),
+            icon: "bell",
+            title: filter.reminderScope == .all
+                ? L10n.string("filter.reminder", locale: locale)
+                : filter.reminderScope.title(locale: locale),
+            active: filter.reminderScope != .all,
+            kind: .reminder,
+            reset: { onChange(filter.withReminderScope(.all)) }
         )
     }
 

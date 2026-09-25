@@ -8,9 +8,11 @@ extension TasksPage {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
         let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
         let hasFilters = embedded
-            ? (!tagChoices.isEmpty || !todayBundleIDs.isEmpty
+            ? (config.externalFilter == nil
+                || !tagChoices.isEmpty
+                || !todayBundleIDs.isEmpty
                 || effectiveFilter.bundleID != nil
-                || (config.externalFilter == nil && effectiveFilter.isActive))
+                || effectiveFilter.isActive)
             : (config.externalFilter == nil && effectiveFilter.isActive)
 
         if hasChips || hasFilters {
@@ -43,6 +45,8 @@ extension TasksPage {
                             tags: tagChoices,
                             bundleIDs: todayBundleIDs,
                             untaggedCount: untaggedTodosCount,
+                            showsPriority: true,
+                            showsReminder: true,
                             onChange: updateFilter
                         )
                     } else {

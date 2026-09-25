@@ -3728,6 +3728,57 @@
         }
       }
     },
+    "filter.reminder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reminder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "提醒"
+          }
+        }
+      }
+    },
+    "filter.reminder.set": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has reminder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有提醒"
+          }
+        }
+      }
+    },
+    "filter.reminder.unset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No reminder"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无提醒"
+          }
+        }
+      }
+    },
     "filter.priority": {
       "extractionState": "manual",
       "localizations": {
@@ -12496,6 +12547,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "下一次排定日：%@"
+          }
+        }
+      }
+    },
+    "items.routine.overdueDay %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last missed: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最近逾期：%@"
           }
         }
       }

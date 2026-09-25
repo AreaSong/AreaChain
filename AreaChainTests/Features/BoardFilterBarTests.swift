@@ -22,6 +22,15 @@ struct BoardFilterBarTests {
             onChange: { changedFilter = $0 }
         )
         #expect(!emptyBar.isVisible)
+        let todayBar = BoardFilterBar(
+            filter: BoardFilter(),
+            tags: [],
+            bundleIDs: [],
+            showsPriority: true,
+            showsReminder: true,
+            onChange: { changedFilter = $0 }
+        )
+        #expect(todayBar.isVisible)
         #expect(changedFilter == nil)
 
         let barWithProjects = BoardFilterBar(

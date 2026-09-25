@@ -17,11 +17,18 @@ enum PriorityFilterScope: String, CaseIterable, Equatable, Sendable {
     case p4
 }
 
+enum ReminderFilterScope: String, CaseIterable, Equatable, Sendable {
+    case all
+    case set
+    case unset
+}
+
 struct BoardFilter: Equatable {
     var tagID: UUID? = nil
     var bundleID: String? = nil
     var isHighPriorityOnly: Bool = false
     var priorityScope: PriorityFilterScope = .all
+    var reminderScope: ReminderFilterScope = .all
     var dateScope: DateFilterScope = .all
 
     static let noneID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
@@ -29,7 +36,8 @@ struct BoardFilter: Equatable {
     var isNoTag: Bool { tagID == Self.noneID }
 
     var isActive: Bool {
-        tagID != nil || bundleID != nil || isHighPriorityOnly || priorityScope != .all || dateScope != .all
+        tagID != nil || bundleID != nil || isHighPriorityOnly || priorityScope != .all
+            || reminderScope != .all || dateScope != .all
     }
 
     func withTag(_ id: UUID?) -> BoardFilter {
@@ -55,6 +63,12 @@ struct BoardFilter: Equatable {
         var next = self
         next.priorityScope = scope
         next.isHighPriorityOnly = scope == .highPriorityOnly
+        return next
+    }
+
+    func withReminderScope(_ scope: ReminderFilterScope) -> BoardFilter {
+        var next = self
+        next.reminderScope = scope
         return next
     }
 
@@ -202,6 +216,17 @@ enum Classification {
         }
         if let bundleID = filter.bundleID, bits.sourceBundleID != bundleID { return false }
         return true
+    }
+
+    static func matchesReminder(_ minutes: Int?, scope: ReminderFilterScope) -> Bool {
+        switch scope {
+        case .all:
+            return true
+        case .set:
+            return minutes != nil
+        case .unset:
+            return minutes == nil
+        }
     }
 
     static func matchesListedTodo(

@@ -214,6 +214,12 @@ enum AgendaProjection {
     }
 
     /// 把星期规则和逾期次数、下一次排定日拼在同一行。空片段省略。
+    /// 逾期次数至少为 1 时，行内要同时带上最近逾期日和次数。
+    static func overduePresentation(dayKey: String, count: Int) -> (dayKey: String, count: Int)? {
+        guard count > 0 else { return nil }
+        return (dayKey, count)
+    }
+
     static func routineNote(schedule: String?, extras: [String]) -> String? {
         let parts = extras.filter { !$0.isEmpty } + (schedule.map { [$0] } ?? [])
         guard !parts.isEmpty else { return nil }

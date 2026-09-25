@@ -197,8 +197,13 @@ struct WorkspaceItemsList: View {
     ) -> RoutineRowContext {
         let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
         var extras: [String] = []
-        if overdueCount > 1 {
-            extras.append(L10n.format("items.routine.overdueCount %lld", locale: locale, overdueCount))
+        if let overdue = AgendaProjection.overduePresentation(dayKey: day, count: overdueCount) {
+            extras.append(L10n.format(
+                "items.routine.overdueDay %@",
+                locale: locale,
+                DayKey.displayName(overdue.dayKey, locale: locale)
+            ))
+            extras.append(L10n.format("items.routine.overdueCount %lld", locale: locale, overdue.count))
         }
         if let noteDay {
             extras.append(L10n.format("items.routine.next %@", locale: locale, DayKey.displayName(noteDay, locale: locale)))

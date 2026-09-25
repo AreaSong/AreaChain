@@ -313,7 +313,7 @@ struct DayBoardList: View {
             Classification.matchesListedTodo(
                 $0.classifyBits, dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey,
                 filter: filter
-            )
+            ) && Classification.matchesReminder($0.remindMinutes, scope: filter.reminderScope)
         }
     }
 
@@ -321,6 +321,7 @@ struct DayBoardList: View {
         guard filter.isActive else { return list }
         return list.filter {
             Classification.matchesListedRoutine($0.classifyBits, filter: filter)
+                && Classification.matchesReminder($0.remindMinutes, scope: filter.reminderScope)
         }
     }
 
@@ -330,11 +331,12 @@ struct DayBoardList: View {
             switch row {
             case .resident(let routine):
                 return Classification.matchesListedRoutine(routine.classifyBits, filter: filter)
+                    && Classification.matchesReminder(routine.remindMinutes, scope: filter.reminderScope)
             case .todo(let todo):
                 return Classification.matchesListedTodo(
                     todo.classifyBits, dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey,
                     filter: filter
-                )
+                ) && Classification.matchesReminder(todo.remindMinutes, scope: filter.reminderScope)
             }
         }
     }

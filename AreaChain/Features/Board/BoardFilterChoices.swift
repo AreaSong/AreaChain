@@ -36,6 +36,22 @@ enum BoardFilterChoices {
         }
     }
 
+    static func reminders(filter: BoardFilter, locale: Locale) -> [BoardFilterChoice] {
+        ReminderFilterScope.allCases.map { scope in
+            BoardFilterChoice(
+                id: "reminder.\(scope.rawValue)",
+                title: scope.title(locale: locale),
+                count: nil,
+                indent: 0,
+                isSelected: filter.reminderScope == scope,
+                dotColor: nil,
+                systemImage: scope == .unset ? "bell.slash" : "bell",
+                applied: filter.withReminderScope(scope),
+                cleared: filter.withReminderScope(.all)
+            )
+        }
+    }
+
     static func priorities(filter: BoardFilter, locale: Locale) -> [BoardFilterChoice] {
         PriorityFilterScope.allCases.map { scope in
             BoardFilterChoice(

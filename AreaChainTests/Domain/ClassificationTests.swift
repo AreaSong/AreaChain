@@ -273,6 +273,20 @@ struct ClassificationTests {
         #expect(Classification.matches(p4Bits, filter: p4Filter))
     }
 
+    @Test func reminderScopeFiltersSetAndUnset() {
+        let set = BoardFilter().withReminderScope(.set)
+        let unset = BoardFilter().withReminderScope(.unset)
+        #expect(set.isActive)
+        #expect(unset.isActive)
+        #expect(!BoardFilter().isActive)
+        #expect(Classification.matchesReminder(540, scope: .set))
+        #expect(!Classification.matchesReminder(nil, scope: .set))
+        #expect(Classification.matchesReminder(nil, scope: .unset))
+        #expect(!Classification.matchesReminder(540, scope: .unset))
+        #expect(Classification.matchesReminder(nil, scope: .all))
+        #expect(!set.withReminderScope(.all).isActive)
+    }
+
     private var utc: Calendar {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!

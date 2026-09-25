@@ -204,4 +204,11 @@ struct AgendaProjectionTests {
         #expect(note == "下一次排定日：明天 · 工作日")
         #expect(AgendaProjection.routineNote(schedule: nil, extras: []) == nil)
     }
+
+    @Test func overduePresentationIncludesASingleMissedDay() {
+        let one = AgendaProjection.overduePresentation(dayKey: "2026-09-23", count: 1)
+        #expect(one?.dayKey == "2026-09-23")
+        #expect(one?.count == 1)
+        #expect(AgendaProjection.overduePresentation(dayKey: "2026-09-23", count: 0) == nil)
+    }
 }
