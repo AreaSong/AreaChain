@@ -1,52 +1,26 @@
 import AppKit
 import ServiceManagement
-import SwiftData
 import SwiftUI
-import UniformTypeIdentifiers
 import UserNotifications
 
 struct SettingsView: View {
     var resignsChromeOnDisappear: Bool = true
-    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
-    @Query private var checks: [RoutineCheck]
-    @Query private var todos: [TodoItem]
-    @Query private var diaries: [DiaryEntry]
-    @Query private var tags: [TagItem]
-    @Query private var attachments: [AttachmentItem]
     @Environment(AppPreferences.self) private var prefs
     @Environment(\.locale) private var locale
 
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
     @State private var statusMessage: String?
-    @State private var pendingImport: ExportSnapshot?
-    @State private var pendingPreview: ImportPreview?
-    @State private var confirmReset = false
     @State private var notifyStatus: UNAuthorizationStatus = .notDetermined
+    @State private var markers: Set<String> = []
     @Bindable private var syncStatus = CalendarSyncStatus.shared
-
-    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         DaybookPage(title: "window.settings", minWidth: 420, minHeight: 560) {
             settingsForm
         }
         .navigationTitle("AreaChain")
-        .alert("alert.import", isPresented: Binding(
-            get: { pendingPreview != nil },
-            set: { if !$0 { pendingImport = nil; pendingPreview = nil } }
-        )) {
-            Button("alert.cancel", role: .cancel) {
-                pendingImport = nil
-                pendingPreview = nil
-            }
-            Button("alert.write") { confirmImport() }
-        } message: {
-            Text(pendingPreview?.summary(locale: locale) ?? "")
-        }
-        .confirmationDialog("alert.reset", isPresented: $confirmReset, titleVisibility: .visible) {
-            Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
-            Button("alert.cancel", role: .cancel) {}
-        }
+        .accessibilityIdentifier("settings.preferences")
+        .accessibilityValue(markers.sorted().joined(separator: " "))
         .onAppear {
             Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
         }
@@ -64,6 +38,7 @@ struct SettingsView: View {
             GeneralSettingsSection(
                 prefs: prefs,
                 launchesAtLogin: $launchesAtLogin,
+                statusMessage: statusMessage,
                 onUpdateLoginItem: updateLoginItem
             )
             SyncSettingsSection(
@@ -73,16 +48,10 @@ struct SettingsView: View {
                 calendarSyncStatusText: calendarSyncStatusText,
                 onRequestNotifyAuth: requestNotificationAuth
             )
-            AdvancedSettingsSection(
-                confirmReset: $confirmReset,
-                statusMessage: statusMessage,
-                onExport: exportJSON,
-                onImport: importJSON
-            )
-            PrivacySettingsSection()
         }
         .formStyle(.grouped)
         .daybookScroll()
+        .systemPageMarkers($markers)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -131,91 +100,10 @@ struct SettingsView: View {
             } else {
                 try SMAppService.mainApp.unregister()
             }
+            statusMessage = nil
         } catch {
             statusMessage = error.localizedDescription
             launchesAtLogin = SMAppService.mainApp.status == .enabled
-        }
-    }
-
-    private func exportJSON() {
-        do {
-            let data = try SyncPort.encode(
-                SyncPort.makeSnapshot(
-                    routines: routines,
-                    checks: checks,
-                    todos: todos,
-                    diaries: diaries,
-                    tags: tags,
-                    attachments: attachments
-                )
-            )
-            presentSavePanel(data: data)
-        } catch {
-            statusMessage = error.localizedDescription
-        }
-    }
-
-    private func importJSON() {
-        let panel = NSOpenPanel()
-        panel.allowedContentTypes = [.json]
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                let snapshot = try SyncPort.decode(try Data(contentsOf: url))
-                try SnapshotImporter.validate(snapshot, context: modelContext)
-                pendingPreview = ImportPreviewing.preview(snapshot, existing: currentIDs())
-                pendingImport = snapshot
-            } catch {
-                statusMessage = importErrorMessage(error)
-            }
-        }
-    }
-
-    private func currentIDs() -> ExistingIDs {
-        ExistingIDs(
-            routines: Set(routines.map(\.id)),
-            todos: Set(todos.map(\.id)),
-            diaries: Set(diaries.map(\.id)),
-            checks: Set(checks.map(\.id)),
-            tags: Set(tags.map(\.id)),
-            attachments: Set(attachments.map(\.id))
-        )
-    }
-
-    private func confirmImport() {
-        guard let snapshot = pendingImport else { return }
-        do {
-            try SnapshotImporter.apply(snapshot, context: modelContext)
-            statusMessage = L10n.string("settings.imported", locale: locale)
-            BoardEvents.changed()
-        } catch {
-            statusMessage = importErrorMessage(error)
-        }
-        pendingImport = nil
-        pendingPreview = nil
-    }
-
-    private func importErrorMessage(_ error: Error) -> String {
-        (error as? SnapshotImportError)?.message(locale: locale) ?? error.localizedDescription
-    }
-
-    private func resetStoreAndQuit() {
-        Persistence.resetStoreOnDisk()
-        NSApplication.shared.terminate(nil)
-    }
-
-    private func presentSavePanel(data: Data) {
-        let panel = NSSavePanel()
-        panel.allowedContentTypes = [.json]
-        panel.nameFieldStringValue = "areachain-\(DayKey.today()).json"
-        panel.begin { response in
-            guard response == .OK, let url = panel.url else { return }
-            do {
-                try data.write(to: url)
-                statusMessage = L10n.string("settings.exported", locale: locale)
-            } catch {
-                statusMessage = error.localizedDescription
-            }
         }
     }
 }

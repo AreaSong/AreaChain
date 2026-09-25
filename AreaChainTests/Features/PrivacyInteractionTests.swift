@@ -76,6 +76,29 @@ struct PrivacyInteractionTests {
         #expect(!executed && note.tagIDs.isEmpty && !note.hasProtectedContent)
     }
 
+    @Test func setupKeepsMigrationBackupAndOmitsEverydayBackupActions() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        f.vault.lock()
+        let tag = try f.tag(private: false)
+        let note = DiaryEntry(text: "旧遮罩 #密码", dayKey: "2026-09-15")
+        f.context.insert(note)
+        try f.context.save()
+        let before = try f.context.fetchCount(FetchDescriptor<DiaryEntry>())
+        let unconfigured = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        let window = SystemPageHost.window(
+            PrivacySetupSheet(vault: unconfigured, tags: [tag], creating: true, onComplete: {}, probeSystem: false),
+            container: f.container, scheme: .light, locale: "zh-Hans", size: NSSize(width: 520, height: 560)
+        )
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+        let ids = SystemPageHost.identifiers(in: window)
+        #expect(ids.contains("privacy.migration.backup"))
+        #expect(!ids.contains("dataBackup.export.encrypted") && !ids.contains("dataBackup.export.json"))
+        #expect(!unconfigured.isConfigured && !note.hasProtectedContent)
+        #expect(try f.context.fetchCount(FetchDescriptor<DiaryEntry>()) == before)
+    }
+
     private func png() throws -> Data {
         let image = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1,
             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,

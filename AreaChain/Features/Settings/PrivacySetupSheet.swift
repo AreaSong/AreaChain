@@ -22,6 +22,7 @@ struct PrivacySetupSheet: View {
     @State private var busy = false
     @State private var errorKey: String?
     @State private var systemAvailable = true
+    @State private var markers: Set<String> = []
 
     private var count: Int {
         (try? DiaryProtection.candidates(tagIDs: selected, context: context, includeLegacy: includeLegacy).count) ?? 0
@@ -57,6 +58,9 @@ struct PrivacySetupSheet: View {
             }
         }
         .textFieldStyle(.roundedBorder).padding(24).frame(width: 480)
+        .systemPageMarkers($markers)
+        .accessibilityIdentifier("privacy.setup.sheet")
+        .accessibilityValue(markers.sorted().joined(separator: " "))
         .interactiveDismissDisabled(busy)
         .task {
             selected = Set(tags.filter { $0.isPrivateDiary || (creating && DiaryMemoTags.isPasswordName($0.name)) }.map(\.id))
@@ -104,6 +108,8 @@ struct PrivacySetupSheet: View {
     private var backupFields: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("privacy.migration.backup").font(DaybookType.body).fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("privacy.migration.backup")
+                .systemPageMarker("privacy.migration.backup")
             SecureField("privacy.backup.password.title", text: $backupPassword)
             SecureField("privacy.password.repeat", text: $backupRepeated)
             Text("privacy.backup.password.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)

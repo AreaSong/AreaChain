@@ -141,10 +141,18 @@ struct PrivacyPersistenceTests {
         let note = try f.repository.addDiary(text: secret, dayKey: "2026-09-15", tagIDs: [tag.id])
         let image = try f.image(owner: note)
         let publicNote = try f.repository.addDiary(text: "公开手记", dayKey: "2026-09-15", tagIDs: [])
-        let snapshot = SyncPort.makeSnapshot(routines: [], checks: [], todos: [], diaries: [note, publicNote],
-                                              tags: [tag], attachments: [image])
-        #expect(snapshot.diaries.map(\.id) == [publicNote.id] && snapshot.attachments.isEmpty)
-        #expect(String(decoding: try SyncPort.encode(snapshot), as: UTF8.self).contains(secret) == false)
+        let publicBytes = Data("PUBLIC_IMAGE_BYTES_SENTINEL".utf8)
+        let publicImage = try f.image(owner: publicNote, data: publicBytes)
+        let masked = DiaryEntry(text: "旧遮罩 #密码", dayKey: "2026-09-15")
+        f.context.insert(masked)
+        try f.context.save()
+        let snapshot = SyncPort.makeSnapshot(routines: [], checks: [], todos: [], diaries: [note, publicNote, masked],
+                                              tags: [tag], attachments: [image, publicImage])
+        #expect(snapshot.diaries.map(\.id) == [publicNote.id])
+        #expect(snapshot.attachments.map(\.id) == [publicImage.id])
+        let encoded = String(decoding: try SyncPort.encode(snapshot), as: UTF8.self)
+        #expect(!encoded.contains(secret) && !encoded.contains("PUBLIC_IMAGE_BYTES_SENTINEL") && !encoded.contains("旧遮罩"))
+        #expect(encoded.contains(publicImage.filename))
         var attack = snapshot
         attack.diaries.append(ExportedDiary(id: note.id, text: "覆盖", dayKey: note.dayKey, createdAt: note.createdAt))
         #expect(throws: PrivacyError.privateImport) { try SnapshotImporter.validate(attack, context: f.context) }

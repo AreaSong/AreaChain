@@ -7,6 +7,7 @@ import UserNotifications
 struct GeneralSettingsSection: View {
     @Bindable var prefs = AppPreferences.shared
     @Binding var launchesAtLogin: Bool
+    var statusMessage: String?
     var onUpdateLoginItem: (Bool) -> Void
 
     var body: some View {
@@ -16,11 +17,15 @@ struct GeneralSettingsSection: View {
                 Text("language.chinese").tag(AppLanguage.chinese)
                 Text("language.english").tag(AppLanguage.english)
             }
+            .accessibilityIdentifier("settings.language")
+            .systemPageMarker("settings.language")
             Picker("settings.look", selection: $prefs.appearance) {
                 Text("appearance.system").tag(AppAppearance.system)
                 Text("appearance.light").tag(AppAppearance.light)
                 Text("appearance.dark").tag(AppAppearance.dark)
             }
+            .accessibilityIdentifier("settings.look")
+            .systemPageMarker("settings.look")
         }
 
         Section("settings.launch") {
@@ -31,12 +36,23 @@ struct GeneralSettingsSection: View {
                     onUpdateLoginItem(enabled)
                 }
             ))
+            .accessibilityIdentifier("settings.login")
+            .systemPageMarker("settings.login")
             HotKeyRecorder()
             HotKeyRecorder(slot: .paste, title: "hotkey.paste", help: "hotkey.paste.help")
+            if let statusMessage {
+                Text(statusMessage)
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
 
         Section("settings.capture") {
             Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
+                .accessibilityIdentifier("settings.capture")
+                .systemPageMarker("settings.capture")
             Text("settings.capture.stamp.help")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
@@ -64,10 +80,14 @@ struct SyncSettingsSection: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
             Button("settings.notify.request", action: onRequestNotifyAuth)
+                .accessibilityIdentifier("settings.notify")
+                .systemPageMarker("settings.notify")
         }
 
         Section("settings.calendar.sync") {
             Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
+                .accessibilityIdentifier("settings.calendar.sync")
+                .systemPageMarker("settings.calendar.sync")
             if let calendarSyncStatusText {
                 Text(calendarSyncStatusText)
                     .font(DaybookType.subtitle)
@@ -88,39 +108,11 @@ struct SyncSettingsSection: View {
 
         Section("settings.icloud") {
             Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
+                .accessibilityIdentifier("settings.icloud")
+                .systemPageMarker("settings.icloud")
             Text("settings.icloud.hint")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
-        }
-    }
-}
-
-// MARK: - Advanced Settings Section
-
-struct AdvancedSettingsSection: View {
-    @Binding var confirmReset: Bool
-    var statusMessage: String?
-    var onExport: () -> Void
-    var onImport: () -> Void
-
-    var body: some View {
-        Section("settings.data") {
-            Button("settings.export", action: onExport)
-            Button("settings.import", action: onImport)
-            if StoreHealth.shared.isUsingMemoryFallback {
-                Text("settings.memory")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookPalette.status.danger)
-                Button("settings.reset", role: .destructive) {
-                    confirmReset = true
-                }
-            }
-            if let statusMessage {
-                Text(statusMessage)
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .textSelection(.enabled)
-            }
         }
     }
 }

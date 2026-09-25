@@ -5173,6 +5173,40 @@
         }
       }
     },
+    "privacy.boundary.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notes that match a private tag, and notes that stay protected, keep their text and images private. A private tag encrypts the whole note and its attachments. Removing a tag does not remove existing protection. Plain JSON leaves out protected notes, legacy password-masked notes, and private attachments, and it never includes image bytes. Use the separate-password encrypted backup on Data & Backup for a full restore. The privacy migration backup appears only while converting existing notes into private content. It is not the everyday backup entry."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "命中私密标签的手记，以及仍受保护的手记，正文和图片都属于私密内容。私密标签会加密整条手记和所属附件；移除标签不会自动解除已有保护。普通 JSON 不包含受保护手记、旧密码遮罩手记和私密附件，也不包含图片二进制。完整恢复请到「数据与备份」使用独立口令的加密备份。将旧手记转为私密内容前的隐私迁移备份，只出现在创建或调整私密保护时，不是日常备份入口。"
+          }
+        }
+      }
+    },
+    "privacy.boundary.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy boundary"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私边界"
+          }
+        }
+      }
+    },
     "privacy.backup.export": {
       "extractionState": "manual",
       "localizations": {
@@ -6155,6 +6189,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "尚未启用"
+          }
+        }
+      }
+    },
+    "privacy.state.cleanupPending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System key cleanup is pending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "存在待处理的密钥清理"
+          }
+        }
+      }
+    },
+    "privacy.state.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy vault unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私库不可用"
           }
         }
       }
@@ -8059,6 +8127,108 @@
           "stringUnit": {
             "state": "translated",
             "value": "外观"
+          }
+        }
+      }
+    },
+    "dataBackup.encrypted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate-password encrypted backup"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "独立口令加密备份"
+          }
+        }
+      }
+    },
+    "dataBackup.encrypted.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The backup includes records and image attachments. It uses a separate password that is not saved in preferences. Restore checks the manifest and shows a preview. After you confirm, it merges. Local records outside the backup are not deleted unconditionally."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "备份包含记录和图片附件，使用独立口令，不会记入应用偏好。恢复前会检查清单并显示预览；确认后按合并方式恢复，不会无条件删除备份之外的本地记录。"
+          }
+        }
+      }
+    },
+    "dataBackup.health": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Database health"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "数据库健康"
+          }
+        }
+      }
+    },
+    "dataBackup.health.ok": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Using the on-disk store."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在使用本机磁盘库。"
+          }
+        }
+      }
+    },
+    "dataBackup.json": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plain JSON"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "普通 JSON"
+          }
+        }
+      }
+    },
+    "dataBackup.json.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export or import ordinary records and attachment metadata. Protected notes, legacy password-masked notes, private attachments, and image bytes are excluded. Import validates and shows a preview, then writes only after you confirm. It does not replace the whole library."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导出或导入普通记录和附件元数据。不包含受保护手记、旧密码遮罩手记、私密附件和图片二进制。导入会先校验并显示预览，确认后才写入，不会整库覆盖。"
           }
         }
       }

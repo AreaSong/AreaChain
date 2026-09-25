@@ -34,7 +34,7 @@ AreaChain/
     Diary/        手记摘要、工作台卡片、编辑会话与可置顶小窗
     Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
     Search/       跨天搜索与工作台/浮层共用的结果列表
-    Settings/     设置（外观、启动、捕获、通知、日历、iCloud、隐私与解锁、数据）
+    Settings/     设置、隐私与解锁、数据与备份（三者页面分离）
     Trash/        回收站（工作台 tab）
   Theme/          令牌（DaybookPalette / DaybookMetrics / DaybookTokens / DaybookColor）、基座（输入壳、按钮、表面、芯片、分节头）与页壳
 ```
@@ -100,7 +100,7 @@ AreaChain/
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词。没有项目字段。
-- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。隐私与解锁、数据与备份拆分尚未实现，属于阶段六。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。工作台「隐私与解锁」和「数据与备份」已是独立页面，不再占用设置页。阶段七和阶段八仍未完成。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
@@ -130,7 +130,7 @@ AreaChain/
 - `PrivacyVault` 管理单个私密锁、共享会话与认证代次。系统认证和主密码是两条可选解锁路径，不是双重验证。随机 256 位数据密钥只在解锁会话中使用；`VaultKeyAccess` 提供受锁保护的访问，锁定时先通知编辑会话封存草稿，再清除可用密钥。迟到认证必须同时满足代次和当前配置一致，不能重新写回旧配置。
 - `VaultCrypto` 使用 CryptoKit AES-GCM，并将记录／附件身份绑定到认证附加数据。主密码路径使用 PBKDF2-HMAC-SHA256（独立 32 字节随机盐，当前 600,000 次）包装同一数据密钥；配置不保存明文密码或数据密钥。
 - `SystemVaultKeyStore` 使用本机 Data Protection Keychain 与 `userPresence` 访问控制，系统界面接受 Touch ID 或系统密码，应用不采集系统密码。`PrivacySystemKeyCleanup` 在创建系统条目前持久化待清理 UUID；只有配置提交后才清日志。清理依据成功读取、校验的落盘配置，不删除当前有效条目；删除失败或清日志失败保留可重试状态，不能显示为完全撤销。
-- `FileVaultConfigurationStore` 原子保存 `areachain-privacy.json`，以及只含待清理 UUID 的 `.pending-system-keys` 日志，权限为 0600。旧配置 JSON 仍兼容；日志读取失败阻止凭据变更，不把错误当成空列表。已有可用配置仍能正常验证，设置显示待清理状态。
+- `FileVaultConfigurationStore` 原子保存 `areachain-privacy.json`，以及只含待清理 UUID 的 `.pending-system-keys` 日志，权限为 0600。旧配置 JSON 仍兼容；日志读取失败阻止凭据变更，不把错误当成空列表。已有可用配置仍能正常验证，隐私与解锁页显示待清理状态。
 - `DiaryProtection` 将标签规则与记录级保护分开：移除标签不会解除已保存的保护。显式解除保护必须重新验证，且不再命中私密标签。转换需要已验证、未过期的备份；`PrivacyAttachmentBatch` 先写独立文件，再随模型事务切换指针，提交失败删除暂存文件而保留原文件。
 - `PrivateBackupFile` 使用独立口令对清单与附件分帧加密，回读核对内容和完整性。`PrivateBackupService` 恢复前完整验证，采用目标私密锁重新加密；备份外仍保留的本地图片若属于将受保护的手记，也纳入同一次暂存与提交。普通 JSON 不能替代加密备份，不能覆盖既有私密记录或解除保护。
 - `PrivacyStoreMaintenance` 在加密转换前记录待清理标记，在冷启动打开 SwiftData 容器前执行 SQLite 历史明文重建。重建成功才删除标记；设置显示未完成状态。不能承诺清除系统快照、外部备份、原始图片或第三方剪贴板历史。

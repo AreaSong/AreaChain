@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 @MainActor
 struct PrivacySettingsSection: View {
     private enum Dialog: String, Identifiable {
-        case setup, tags, master, disableSystem, export, restore
+        case setup, tags, master, disableSystem
         var id: String { rawValue }
     }
     var vault: PrivacyVault
@@ -62,9 +62,21 @@ struct PrivacySettingsSection: View {
     }
 
     private var vaultStateRow: some View {
-        Label(!vault.isConfigured ? "privacy.state.unconfigured" : (vault.isUnlocked ? "privacy.state.unlocked" : "privacy.state.locked"),
-              systemImage: vault.isUnlocked ? "lock.open" : "lock.shield")
-            .foregroundStyle(DaybookPalette.text.primary)
+        let status = VaultStatusPresentation.current(vault)
+        return VStack(alignment: .leading, spacing: 6) {
+            Label(status.title, systemImage: status.symbol)
+                .foregroundStyle(DaybookPalette.text.primary)
+                .accessibilityIdentifier("privacy.vault.state")
+                .systemPageMarker("privacy.vault.state")
+                .accessibilityLabel(Text(status.title))
+            if vault.hasPendingSystemKeyCleanup {
+                Label("privacy.state.cleanupPending", systemImage: "key.slash")
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .accessibilityIdentifier("privacy.vault.cleanup")
+                    .systemPageMarker("privacy.vault.cleanup")
+            }
+        }
     }
 
     @ViewBuilder
@@ -74,6 +86,8 @@ struct PrivacySettingsSection: View {
             Text("privacy.missing.config").foregroundStyle(DaybookPalette.status.danger)
         } else {
             Button("privacy.setup") { dialog = .setup }
+                .accessibilityIdentifier("privacy.setup")
+                .systemPageMarker("privacy.setup")
         }
     }
 
@@ -83,6 +97,8 @@ struct PrivacySettingsSection: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
                 Button("privacy.cleanup.retry") { retryCleanup() }
+                    .accessibilityIdentifier("privacy.cleanup.retry")
+                    .systemPageMarker("privacy.cleanup.retry")
             }
         } else if PrivacyStoreMaintenance.isPending(context) {
             VStack(alignment: .leading, spacing: 6) {
@@ -96,6 +112,8 @@ struct PrivacySettingsSection: View {
                 }
                 HStack(spacing: 8) {
                     Button("privacy.cleanup.now") { retryCleanup() }
+                        .accessibilityIdentifier("privacy.cleanup.now")
+                        .systemPageMarker("privacy.cleanup.now")
                         .buttonStyle(.bordered)
                     Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
                 }
@@ -113,6 +131,8 @@ struct PrivacySettingsSection: View {
                     try await vault.retrySystemKeyCleanup()
                 }
             }
+            .accessibilityIdentifier("privacy.system.cleanup.retry")
+            .systemPageMarker("privacy.system.cleanup.retry")
         }
     }
 
@@ -120,11 +140,15 @@ struct PrivacySettingsSection: View {
         Group {
             HStack {
                 Button("privacy.tags.manage") { dialog = .tags }
+                    .accessibilityIdentifier("privacy.tags.manage")
+                    .systemPageMarker("privacy.tags.manage")
                 Spacer()
                 Button(vault.isUnlocked ? "privacy.lock.now" : "privacy.unlock.title") {
                     if vault.isUnlocked { vault.lock() }
                     else { run { try await authenticate() } }
                 }
+                .accessibilityIdentifier("privacy.lock.toggle")
+                .systemPageMarker("privacy.lock.toggle")
             }
             Text(L10n.format("privacy.tags.count", locale: locale, tags.filter(\.isPrivateDiary).count))
                 .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
@@ -150,42 +174,28 @@ struct PrivacySettingsSection: View {
                 Text("privacy.idle.5").tag(300)
                 Text("privacy.idle.15").tag(900)
             }
+            .accessibilityIdentifier("privacy.autolock")
+            .systemPageMarker("privacy.autolock")
             Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
-            HStack {
-                Button("privacy.backup.export") { dialog = .export }
-                Button("privacy.backup.restore") { dialog = .restore }
-            }
         }
     }
 
     private func passwordSheet(_ item: Dialog) -> some View {
-        let backup = item == .export || item == .restore
-        return PrivacyPasswordSheet(
-            title: backup ? "privacy.backup.password.title" : "privacy.master.label",
-            confirmation: item == .master || item == .export,
-            explanation: backup ? "privacy.backup.password.help" : "privacy.master.help",
+        PrivacyPasswordSheet(
+            title: "privacy.master.label",
+            confirmation: item == .master,
+            explanation: "privacy.master.help",
             action: { password in try await perform(item, password: password) },
             onComplete: { dialog = nil; statusKey = "privacy.settings.saved" })
     }
 
     private func perform(_ item: Dialog, password: String) async throws {
-        let environment = PrivacyPersistence(context: context, vault: vault)
         switch item {
         case .master:
             try await authenticate()
             try await vault.changePassword(to: password)
         case .disableSystem:
             try await vault.disableSystemUnlock(masterPassword: password)
-        case .export:
-            guard let url = await PrivacyFilePanels.save() else { throw PrivacyError.cancelled }
-            try await authenticate()
-            _ = try await PrivateBackupService.export(to: url, password: password, environment: environment)
-        case .restore:
-            guard let url = await PrivacyFilePanels.open() else { throw PrivacyError.cancelled }
-            let preview = try await PrivateBackupService.inspect(url: url, password: password)
-            guard PrivacyFilePanels.confirmRestore(preview, locale: locale) else { throw PrivacyError.cancelled }
-            try await authenticate()
-            try await PrivateBackupService.restore(from: url, password: password, environment: environment)
         default:
             break
         }
@@ -215,6 +225,21 @@ struct PrivacySettingsSection: View {
                 _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
             }
             vault.changed()
+        }
+    }
+}
+
+private struct VaultStatusPresentation {
+    var title: LocalizedStringKey
+    var symbol: String
+
+    @MainActor
+    static func current(_ vault: PrivacyVault) -> Self {
+        switch vault.state {
+        case .unconfigured: return Self(title: "privacy.state.unconfigured", symbol: "lock.slash")
+        case .locked: return Self(title: "privacy.state.locked", symbol: "lock")
+        case .unlocked: return Self(title: "privacy.state.unlocked", symbol: "lock.open")
+        case .unavailable: return Self(title: "privacy.state.unavailable", symbol: "exclamationmark.triangle")
         }
     }
 }
