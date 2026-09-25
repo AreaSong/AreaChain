@@ -176,6 +176,39 @@ struct BoardSearchTests {
         ).isEmpty)
     }
 
+    @Test func noTagFilterKeepsUntaggedTodosSubtasksAndDiaries() {
+        let tagID = UUID()
+        let today = "2026-09-13"
+        let plain = TodoSnapshot(id: UUID(), title: "会议", isDone: false, dayKey: today)
+        let tagged = TodoSnapshot(
+            id: UUID(), title: "会议", isDone: false, dayKey: today, tagIDs: tagID.uuidString
+        )
+        let parentID = UUID()
+        let openChild = UUID()
+        let taggedChild = UUID()
+        let parent = TodoSnapshot(
+            id: parentID, title: "父任务", isDone: false, dayKey: today, tagIDs: tagID.uuidString,
+            subtasks: [
+                SubtaskSnapshot(id: openChild, todoId: parentID, title: "会议子项", isDone: false),
+                SubtaskSnapshot(id: taggedChild, todoId: parentID, title: "会议已标", isDone: false, tagIDs: tagID.uuidString)
+            ]
+        )
+        let bareDiary = DiarySnapshot(id: UUID(), text: "会议", dayKey: today, createdAt: .now)
+        let taggedDiary = DiarySnapshot(
+            id: UUID(), text: "会议", dayKey: today, createdAt: .now, tagIDs: tagID.uuidString
+        )
+        let hits = BoardSearch.hits(
+            query: "会议",
+            todos: [plain, tagged, parent],
+            diaries: [bareDiary, taggedDiary],
+            routines: [],
+            todayKey: today,
+            scope: BoardSearchScope(filter: BoardFilter(tagID: BoardFilter.noneID))
+        )
+        #expect(Set(hits.map(\.id)) == Set([plain.id, openChild, bareDiary.id]))
+        #expect(hits.first { $0.id == openChild }?.parentID == parentID)
+    }
+
     @Test func disabledDeletedAndUnscheduledRoutinesStayOutOfDatedSearch() {
         let today = "2026-09-13"
         let live = RoutineSnapshot(

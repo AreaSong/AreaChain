@@ -158,8 +158,12 @@ enum BoardSearch {
         // 手记只有标签。日期、提醒、优先级和来源是任务筛选，命中这些条件时手记整组退出。
         guard filter.bundleID == nil, filter.priorityScope == .all, !filter.isHighPriorityOnly,
               filter.dateScope == .all, filter.reminderScope == .all else { return [] }
-        guard let tagID = filter.tagID else { return entries }
-        return entries.filter { TagIDList.contains($0.tagIDs, tagID) }
+        return entries.filter { matchesOwnTags($0.tagIDs, filter: filter) }
+    }
+
+    /// 「无标签」是空列表，不是一条真实标签。与 `Classification.matches` 同一规则。
+    private static func matchesOwnTags(_ tagIDs: String, filter: BoardFilter) -> Bool {
+        Classification.matches(ClassifyBits(tagIDs: tagIDs), filter: BoardFilter(tagID: filter.tagID))
     }
 
     private static func matchesTodoScope(_ item: TodoSnapshot, todayKey: String, filter: BoardFilter) -> Bool {
@@ -293,8 +297,7 @@ enum BoardSearch {
             guard todo.deletedAt == nil,
                   matchesTodoScope(todo, todayKey: todayKey, filter: parentFilter) else { return [] }
             return todo.subtasks.compactMap { subtask in
-                guard subtask.deletedAt == nil else { return nil }
-                if let id = scope.filter.tagID, !TagIDList.contains(subtask.tagIDs, id) { return nil }
+                guard subtask.deletedAt == nil, matchesOwnTags(subtask.tagIDs, filter: scope.filter) else { return nil }
                 guard query.textKeywords.allSatisfy({ matches(subtask.title, needle: $0) }),
                       matchTags(tagNames: query.tagNames, attachedIDs: subtask.tagIDs, tagMap: tagMap) else { return nil }
                 return BoardSearchHit(
