@@ -9,13 +9,35 @@ import Testing
 struct WorkspaceRenderingTests {
     private static var retainedContainers: [ModelContainer] = []
 
-    @Test(arguments: [ColorScheme.light, .dark], [false, true])
-    func allWorkspaceRoutesRenderWithIsolatedData(scheme: ColorScheme, minimumSize: Bool) async throws {
+    private struct RouteAppearance: Sendable {
+        var scheme: ColorScheme
+        var minimumSize: Bool
+        var language: String
+    }
+
+    private static let routeAppearances: [RouteAppearance] = [
+        RouteAppearance(scheme: .light, minimumSize: false, language: "zh-Hans"),
+        RouteAppearance(scheme: .light, minimumSize: true, language: "zh-Hans"),
+        RouteAppearance(scheme: .dark, minimumSize: false, language: "zh-Hans"),
+        RouteAppearance(scheme: .dark, minimumSize: true, language: "zh-Hans"),
+        RouteAppearance(scheme: .light, minimumSize: false, language: "en"),
+        RouteAppearance(scheme: .light, minimumSize: true, language: "en"),
+        RouteAppearance(scheme: .dark, minimumSize: false, language: "en"),
+        RouteAppearance(scheme: .dark, minimumSize: true, language: "en")
+    ]
+
+    @Test(arguments: routeAppearances)
+    private func allWorkspaceRoutesRenderWithIsolatedData(_ appearance: RouteAppearance) async throws {
         let previous = NavigationSnapshot()
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
         let fixture = try makeFixture()
-        let window = makeWindow(fixture, scheme: scheme, minimumSize: minimumSize)
+        let window = makeWindow(
+            fixture,
+            scheme: appearance.scheme,
+            minimumSize: appearance.minimumSize,
+            localeIdentifier: appearance.language
+        )
         defer { release(window) }
         let view = try #require(window.contentView)
         for tab in WorkspaceTab.allCases {
@@ -23,12 +45,28 @@ struct WorkspaceRenderingTests {
             WorkspaceNavigation.shared.isInspectorPresented = false
             try await settle(view)
             try assertFits(view, in: window)
-            try snapshot(view, name: imageName(tab.rawValue, scheme: scheme, minimumSize: minimumSize))
+            try snapshot(
+                view,
+                name: imageName(
+                    tab.rawValue,
+                    scheme: appearance.scheme,
+                    minimumSize: appearance.minimumSize,
+                    localeIdentifier: appearance.language
+                )
+            )
         }
         WorkspaceNavigation.shared.selectedTagID = fixture.tag.id
         try await settle(view)
         try assertFits(view, in: window)
-        try snapshot(view, name: imageName("tag", scheme: scheme, minimumSize: minimumSize))
+        try snapshot(
+            view,
+            name: imageName(
+                "tag",
+                scheme: appearance.scheme,
+                minimumSize: appearance.minimumSize,
+                localeIdentifier: appearance.language
+            )
+        )
     }
 
     @Test(arguments: [ColorScheme.light, .dark], [false, true])
@@ -227,11 +265,12 @@ struct WorkspaceRenderingTests {
         context.insert(privateNote)
     }
 
-    private func makeWindow(_ fixture: Fixture, scheme: ColorScheme, minimumSize: Bool = false) -> NSWindow {
+    private func makeWindow(_ fixture: Fixture, scheme: ColorScheme, minimumSize: Bool = false, localeIdentifier: String = "zh-Hans") -> NSWindow {
+        fixture.preferences.language = localeIdentifier == "en" ? .english : .chinese
         let content = MainSplitWorkspaceView()
             .modelContainer(fixture.container)
             .environment(fixture.preferences)
-            .environment(\.locale, Locale(identifier: "zh-Hans"))
+            .environment(\.locale, Locale(identifier: localeIdentifier))
             .transaction { $0.disablesAnimations = true }
             .preferredColorScheme(scheme)
         let window = NSWindow(contentViewController: NSHostingController(rootView: content))
@@ -301,8 +340,9 @@ struct WorkspaceRenderingTests {
         return view.subviews.lazy.compactMap { noteEditor(in: $0) }.first
     }
 
-    private func imageName(_ route: String, scheme: ColorScheme, minimumSize: Bool = false) -> String {
-        "workspace-\(route)-\(scheme == .dark ? "dark" : "light")-\(minimumSize ? "minimum" : "default")"
+    private func imageName(_ route: String, scheme: ColorScheme, minimumSize: Bool = false, localeIdentifier: String = "zh-Hans") -> String {
+        let language = localeIdentifier == "en" ? "en" : "zh"
+        return "workspace-\(route)-\(scheme == .dark ? "dark" : "light")-\(minimumSize ? "minimum" : "default")-\(language)"
     }
 
     private func snapshot(_ view: NSView, name: String) throws {
