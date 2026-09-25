@@ -274,25 +274,25 @@ struct DayBoardLogicTests {
         #expect(counts["2026-10-01"] == nil)
     }
 
-    @Test func matchingTodosFiltersProjectAndKeepsOthers() {
-        let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+    @Test func matchingTodosFiltersTagAndBundle() {
+        let tagID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let tagged = TodoSnapshot(
             id: UUID(),
-            title: "项目里的",
+            title: "带标签的",
             isDone: false,
             dayKey: today,
-            tagIDs: project.uuidString,
+            tagIDs: tagID.uuidString,
             sourceBundleID: "com.apple.Safari"
         )
         let other = TodoSnapshot(id: UUID(), title: "别的", isDone: false, dayKey: today)
         let filtered = DayBoardLogic.matchingTodos(
             [tagged, other],
-            filter: BoardFilter(tagID: project)
+            filter: BoardFilter(tagID: tagID)
         )
-        #expect(filtered.map(\.title) == ["项目里的"])
+        #expect(filtered.map(\.title) == ["带标签的"])
         #expect(
             DayBoardLogic.matchingTodos([tagged, other], filter: BoardFilter(bundleID: "com.apple.Safari"))
-                .map(\.title) == ["项目里的"]
+                .map(\.title) == ["带标签的"]
         )
     }
 

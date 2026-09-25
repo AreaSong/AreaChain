@@ -124,7 +124,7 @@ struct WorkspaceAllItemsView: View {
             let next = AgendaProjection.nextDay(after: todayKey, routine: snapshot)
             return .routine(
                 routine,
-                checkDayKey: dueToday ? todayKey : (next ?? todayKey),
+                checkDayKey: AgendaProjection.inspectionDay(for: snapshot, todayKey: todayKey),
                 allowsCompletion: dueToday,
                 overdueCount: 0,
                 noteDayKey: dueToday ? nil : next

@@ -9725,23 +9725,6 @@
         }
       }
     },
-    "tab.routines": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recurring"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "重复事项"
-          }
-        }
-      }
-    },
     "tab.tags": {
       "extractionState": "manual",
       "localizations": {

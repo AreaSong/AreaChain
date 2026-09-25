@@ -151,6 +151,19 @@ struct AgendaProjectionTests {
         #expect(AgendaProjection.upcomingRoutines(routines: [disabled], todayKey: today, calendar: calendar).isEmpty)
     }
 
+    @Test func inspectionDayUsesTheNextScheduledDayInsteadOfToday() {
+        let due = routine("每天")
+        #expect(AgendaProjection.inspectionDay(for: due, todayKey: today, calendar: calendar) == today)
+        let weekend = routine("周末", mask: WeekdayMask.all ^ WeekdayMask.workdays)
+        let nextWeekend = AgendaProjection.nextDay(after: today, routine: weekend, calendar: calendar)
+        #expect(AgendaProjection.inspectionDay(for: weekend, todayKey: today, calendar: calendar) == nextWeekend)
+        let stopped = routine("停用", enabled: false)
+        #expect(AgendaProjection.inspectionDay(for: stopped, todayKey: today, calendar: calendar) == tomorrow)
+        var paused = routine("停", enabled: false, created: "bad-day")
+        paused.pausedOnDayKey = yesterday
+        #expect(AgendaProjection.inspectionDay(for: paused, todayKey: today, calendar: calendar) == yesterday)
+    }
+
     @Test func overdueRoutineCheckDayIsTheDisplayedDay() {
         let daily = routine("每天")
         let projection = AgendaProjection.pending(

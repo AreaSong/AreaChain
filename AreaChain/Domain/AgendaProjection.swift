@@ -193,6 +193,28 @@ enum AgendaProjection {
         return next > todayKey ? next : nil
     }
 
+    /// 全部事项打开检查器时用的日期：今天排定用今天，否则用下一次排定日。
+    /// 没有下一次排定日时用暂停日或创建日，不用今天冒充检查日。
+    static func inspectionDay(
+        for routine: RoutineSnapshot,
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> String {
+        if DayBoardLogic.isRoutineDue(routine, on: todayKey, calendar: calendar) {
+            return todayKey
+        }
+        if let next = nextDay(after: todayKey, routine: routine, calendar: calendar) {
+            return next
+        }
+        if let paused = routine.pausedOnDayKey, isValid(paused, calendar: calendar) {
+            return paused
+        }
+        if isValid(routine.createdDayKey, calendar: calendar) {
+            return routine.createdDayKey
+        }
+        return todayKey
+    }
+
     static func filtered(
         _ entries: [AgendaEntry],
         filter: BoardFilter,
