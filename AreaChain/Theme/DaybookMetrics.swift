@@ -31,6 +31,12 @@ enum DaybookMetrics {
         static let emphasis: CGFloat = 1.0
     }
 
+    enum Heatmap {
+        static let cell: CGFloat = 11
+        static let gap: CGFloat = 3
+        static let trendHeight: CGFloat = 72
+    }
+
     enum Window {
         static let popoverWidth: CGFloat = 380
         static let popoverMinHeight: CGFloat = 280

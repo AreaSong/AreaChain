@@ -265,4 +265,35 @@ enum DaybookPalette {
             }
         }
     }
+
+    /// 热力图五档。格子上不放文字，图例文字仍用 text 令牌。
+    struct Heatmap {
+        let empty: Color
+        let low: Color
+        let medium: Color
+        let high: Color
+        let peak: Color
+
+        func color(for level: Int) -> Color {
+            switch level {
+            case 1: return low
+            case 2: return medium
+            case 3: return high
+            case 4...: return peak
+            default: return empty
+            }
+        }
+    }
+
+    static let heatmap = Heatmap(
+        empty: Color.daybook(
+            name: "palette.heatmap.0",
+            light: NSColor.daybook(DaybookSwatch.ruleLight),
+            dark: NSColor.daybook(DaybookSwatch.ruleDark)
+        ),
+        low: alpha("palette.heatmap.1", DaybookSwatch.stampLight, DaybookSwatch.stampDark, 0.28),
+        medium: alpha("palette.heatmap.2", DaybookSwatch.stampLight, DaybookSwatch.stampDark, 0.48),
+        high: alpha("palette.heatmap.3", DaybookSwatch.stampLight, DaybookSwatch.stampDark, 0.72),
+        peak: Color.daybook(name: "palette.heatmap.4", swatch: DaybookSwatch.stampLight, dark: DaybookSwatch.stampDark)
+    )
 }

@@ -9219,6 +9219,216 @@
         }
       }
     },
+    "dashboard.activity.diaryCreated": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Note" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "手记" } }
+      }
+    },
+    "dashboard.activity.diaryTrashed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Note" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "手记" } }
+      }
+    },
+    "dashboard.activity.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No activity in the last 30 days." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "最近 30 天没有可显示的活动。" } }
+      }
+    },
+    "dashboard.activity.kind.completed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Completed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "完成" } }
+      }
+    },
+    "dashboard.activity.kind.created": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Created" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "新建" } }
+      }
+    },
+    "dashboard.activity.kind.skipped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Skipped" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跳过" } }
+      }
+    },
+    "dashboard.activity.kind.trashed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Trash" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "回收站" } }
+      }
+    },
+    "dashboard.activity.row": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@, %2$@, %3$@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%1$@，%2$@，%3$@" } }
+      }
+    },
+    "dashboard.activity.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recent activity" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "最近活动" } }
+      }
+    },
+    "dashboard.diary.today": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Notes today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日手记" } }
+      }
+    },
+    "dashboard.heatmap.cell": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@. Completed %2$d, scheduled %3$d, %4$@." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%1$@。完成 %2$d，排定 %3$d，%4$@。" } }
+      }
+    },
+    "dashboard.heatmap.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No completions in this range. Every day still stays on the grid." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这段日期还没有完成记录，每一天仍留在网格上。" } }
+      }
+    },
+    "dashboard.heatmap.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a day to open it in the calendar." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "点选日期后，在日历中打开该日。" } }
+      }
+    },
+    "dashboard.heatmap.legend.less": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Less" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "较少" } }
+      }
+    },
+    "dashboard.heatmap.legend.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "More" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "较多" } }
+      }
+    },
+    "dashboard.heatmap.level": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Level %d" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "强度 %d" } }
+      }
+    },
+    "dashboard.heatmap.skipped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": " Skipped %d." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": " 跳过 %d。" } }
+      }
+    },
+    "dashboard.heatmap.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Past year" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "年度热力图" } }
+      }
+    },
+    "dashboard.pending.overdue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Overdue" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "逾期" } }
+      }
+    },
+    "dashboard.pending.upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Upcoming" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "即将" } }
+      }
+    },
+    "dashboard.streak.best": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Best streak" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "历史最高" } }
+      }
+    },
+    "dashboard.streak.current": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Current streak" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "当前连击" } }
+      }
+    },
+    "dashboard.summary.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日概览" } }
+      }
+    },
+    "dashboard.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Dashboard" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "总览" } }
+      }
+    },
+    "dashboard.today.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Still open" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未完成" } }
+      }
+    },
+    "dashboard.today.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Completed today" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日完成" } }
+      }
+    },
+    "dashboard.trend.accessibility": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%1$@, completed %2$d of %3$d, %4$@" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "%1$@，完成 %2$d，排定 %3$d，%4$@" } }
+      }
+    },
+    "dashboard.trend.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nothing was scheduled in the last 7 days." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "近 7 日没有排定事项。" } }
+      }
+    },
+    "dashboard.trend.noRate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No completion rate" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "无完成率" } }
+      }
+    },
+    "dashboard.trend.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Last 7 days" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "近 7 日" } }
+      }
+    },
     "tab.dashboard": {
       "extractionState": "manual",
       "localizations": {
