@@ -119,9 +119,7 @@ struct MilestoneM2AdversarialTests {
         FirstLaunchSeeder.seedIfNeeded(container: container)
 
         // Verify FirstLaunchSeeder ONLY creates DailyRoutines, not projects or tags
-        let projects = try context.fetch(FetchDescriptor<ProjectItem>())
         let tags = try context.fetch(FetchDescriptor<TagItem>())
-        #expect(projects.isEmpty, "FirstLaunchSeeder must not create dummy projects")
         #expect(tags.isEmpty, "FirstLaunchSeeder does not directly seed tags")
 
         // Verify preset tags are seeded via CatalogRepository

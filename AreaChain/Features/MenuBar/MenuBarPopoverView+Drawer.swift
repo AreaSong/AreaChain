@@ -15,9 +15,6 @@ extension MenuBarPopoverView {
             MenuBarFilterFlyout(
                 tab: tab,
                 filters: $filters,
-                projects: projects.filter { $0.deletedAt == nil },
-                projectCounts: taskProjectCounts,
-                unclassifiedCount: unclassifiedTodosCount,
                 tags: tab == .tasks ? Catalog.liveTaskTags(Array(tags)) : Catalog.liveTags(Array(tags)),
                 tagCounts: currentTabTagCounts,
                 onDismiss: dismissFilterDrawer,

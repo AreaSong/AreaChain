@@ -58,14 +58,6 @@ struct ImportPreviewTests {
             checks: [],
             todos: [],
             diaries: [],
-            projects: [
-                ExportedProject(id: existingProject, name: "工作", sortOrder: 0),
-                ExportedProject(
-                    id: UUID(uuidString: "22222222-2222-2222-2222-222222222222")!,
-                    name: "生活",
-                    sortOrder: 1
-                )
-            ],
             tags: [
                 ExportedTag(
                     id: UUID(uuidString: "33333333-3333-3333-3333-333333333333")!,
@@ -90,18 +82,15 @@ struct ImportPreviewTests {
                 todos: [],
                 diaries: [],
                 checks: [],
-                projects: [existingProject],
                 tags: [],
                 attachments: []
             )
         )
-        #expect(preview.projectsNew == 1)
-        #expect(preview.projectsUpdate == 1)
         #expect(preview.tagsNew == 1)
         #expect(preview.attachmentsNew == 1)
-        #expect(preview.totalWrites == 4)
+        #expect(preview.totalWrites == 2)
         let chinese = preview.summary(locale: Locale(identifier: "zh-Hans"))
-        #expect(chinese.contains("项目"))
+        #expect(!chinese.contains("项目"))
         #expect(chinese.contains("标签"))
         #expect(chinese.contains("附件"))
     }

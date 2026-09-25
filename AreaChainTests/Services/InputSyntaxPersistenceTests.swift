@@ -45,18 +45,16 @@ struct InputSyntaxPersistenceTests {
     @Test func taskAndHabitEntryPointsReuseTagsAndPreserveTheirScopes() throws {
         let store = try container()
         let context = store.mainContext
-        let project = ProjectItem(name: "项目", sortOrder: 0)
         let existing = TagItem(name: "Work", sortOrder: 0)
-        context.insert(project)
         context.insert(existing)
         try context.save()
         #expect(DayBoardMutations.addCapturedTodo(
             text: "开会 #work #今日 !p1 @15:00\n#备注 内容", dayKey: "2026-09-15",
-            context: context, projectID: project.id, tagIDs: [existing.id]
+            context: context, tagIDs: [existing.id]
         ))
         let todo = try #require(context.fetch(FetchDescriptor<TodoItem>()).first)
         #expect(todo.title == "开会")
-        #expect(todo.dayKey == "2026-09-15" && todo.projectID == project.id)
+        #expect(todo.dayKey == "2026-09-15")
         #expect(todo.remindMinutes == 900 && todo.isImportant && todo.isUrgent)
         #expect(TagIDList.parse(todo.tagIDs).count == 3)
         #expect(todo.notes == "#备注 内容")
@@ -115,7 +113,7 @@ struct InputSyntaxPersistenceTests {
         let tag = try #require(store.mainContext.fetch(FetchDescriptor<TagItem>()).first { $0.name == "今日" })
         #expect(Catalog.matchingSubtasks([parent], tag: tag).map(\.id) == [child.id])
         #expect(Catalog.openCount(
-            todos: [parent], routines: [], checks: [], project: nil, tag: tag, projects: [], dayKey: "2026-09-13"
+            todos: [parent], routines: [], checks: [], tag: tag, dayKey: "2026-09-13"
         ) == 1)
         try SwiftDataCatalogRepository(container: store).purgeTag(id: tag.id)
         #expect(!TagIDList.contains(child.tagIDs, tag.id))

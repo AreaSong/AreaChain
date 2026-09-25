@@ -21,7 +21,7 @@ struct PrivateBackupManifest: Codable, Equatable, Sendable {
         let diaryIDs = Set(snapshot.diaries.map(\.id))
         let attachmentIDs = Set(snapshot.attachments.map(\.id))
         let groups = [snapshot.routines.map(\.id), snapshot.todos.map(\.id), snapshot.checks.map(\.id),
-                      snapshot.diaries.map(\.id), snapshot.tags.map(\.id), snapshot.projects.map(\.id),
+                      snapshot.diaries.map(\.id), snapshot.tags.map(\.id),
                       snapshot.attachments.map(\.id), snapshot.todos.flatMap { $0.subtasks.map(\.id) }]
         guard groups.allSatisfy({ Set($0).count == $0.count }),
               privateDiaryIDs.isSubset(of: diaryIDs),
@@ -46,7 +46,6 @@ struct PrivateBackupCapture: Sendable {
             routines: state.routines.sorted { $0.id.uuidString < $1.id.uuidString },
             checks: state.checks.sorted { $0.id.uuidString < $1.id.uuidString },
             todos: state.todos.sorted { $0.id.uuidString < $1.id.uuidString }, diaries: [],
-            projects: state.projects.sorted { $0.id.uuidString < $1.id.uuidString },
             tags: state.tags.sorted { $0.id.uuidString < $1.id.uuidString })
         snapshot.diaries = try state.diaries.sorted { $0.id.uuidString < $1.id.uuidString }.map {
             ExportedDiary(id: $0.id, text: readPrivateContent ? try DiaryContent.read($0, vault: vault) : $0.text, dayKey: $0.dayKey,

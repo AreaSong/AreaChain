@@ -114,7 +114,7 @@ struct MilestoneM3Iteration2DTOStressTests {
         #expect(state.attachments != nil)
 
         let classifyActions = TaskClassifyActions(
-            onProject: { _ in }, onToggleTag: { _ in }, onImportant: { _ in }, onUrgent: { _ in }
+            onToggleTag: { _ in }, onImportant: { _ in }, onUrgent: { _ in }
         )
         let classifyContext = TaskClassifyContext(
             priority: TaskPriorityFlags(isImportant: true, isUrgent: false),
@@ -157,7 +157,7 @@ struct MilestoneM3Iteration2DTOStressTests {
         context.insert(todo)
         try context.save()
 
-        var classify = CatalogChoices.classify(for: todo, projects: [], tags: [])
+        var classify = CatalogChoices.classify(for: todo, tags: [])
         #expect(classify.isImportant == false)
         #expect(classify.isUrgent == false)
         #expect(classify.priority.isImportant == false)
@@ -168,7 +168,7 @@ struct MilestoneM3Iteration2DTOStressTests {
         classify.onUrgent(true)
         #expect(todo.isUrgent == true)
 
-        classify = CatalogChoices.classify(for: todo, projects: [], tags: [])
+        classify = CatalogChoices.classify(for: todo, tags: [])
         #expect(classify.isImportant == true)
         #expect(classify.isUrgent == true)
         #expect(classify.priority.isImportant == true)
@@ -178,21 +178,14 @@ struct MilestoneM3Iteration2DTOStressTests {
     @Test func taskClassifyContextCatalogAndProjectActions() throws {
         let (_, context) = try makeContainer()
         let todo = TodoItem(title: "Catalog Target", dayKey: "2026-09-10")
-        let project = ProjectItem(name: "Engineering", sortOrder: 0)
         let tag = TagItem(name: "Core", sortOrder: 0)
         context.insert(todo)
-        context.insert(project)
         context.insert(tag)
         try context.save()
 
-        let classify = CatalogChoices.classify(for: todo, projects: [project], tags: [tag])
-        #expect(classify.projectID == nil)
+        let classify = CatalogChoices.classify(for: todo, tags: [tag])
         #expect(classify.tagIDs == "")
-        #expect(classify.projects.count == 1)
         #expect(classify.tags.count == 1)
-
-        classify.onProject(project.id)
-        #expect(todo.projectID == project.id)
 
         classify.onToggleTag(tag.id)
         #expect(TagIDList.contains(todo.tagIDs, tag.id))
@@ -200,8 +193,6 @@ struct MilestoneM3Iteration2DTOStressTests {
         classify.onToggleTag(tag.id)
         #expect(!TagIDList.contains(todo.tagIDs, tag.id))
 
-        classify.onProject(nil)
-        #expect(todo.projectID == nil)
     }
 
     // MARK: - 3. DayBoardListConfig & TasksPageConfig Interaction Closures

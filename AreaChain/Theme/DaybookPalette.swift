@@ -144,6 +144,22 @@ enum DaybookPalette {
         static let journal = Color(nsColor: .systemBlue)
     }
 
+    static func tagColor(_ token: TagColorToken) -> Color {
+        switch token {
+        case .moss: return Syntax.tag
+        case .stamp: return accent.base
+        case .ink: return text.primary
+        case .clay: return status.danger
+        case .amber: return status.pending
+        case .slate: return text.secondary
+        }
+    }
+
+    static func tagMark(name: String, token: String) -> Color {
+        if DiaryMemoTags.isPresetName(name) { return diaryPreset(forTagName: name) }
+        return tagColor(TagColorToken.resolved(token))
+    }
+
     static func diaryPreset(forTagName name: String) -> Color {
         if DiaryMemoTags.isPasswordName(name) { return DiaryPreset.password }
         if name == DiaryMemoTags.idea { return DiaryPreset.idea }

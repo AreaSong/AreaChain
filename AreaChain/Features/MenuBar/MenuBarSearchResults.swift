@@ -12,8 +12,6 @@ struct MenuBarSearchResults: View {
     @Query private var routines: [DailyRoutine]
     @Query private var diaries: [DiaryEntry]
     @Query private var tags: [TagItem]
-    @Query private var projects: [ProjectItem]
-
     var body: some View {
         let results = hits
         VStack(alignment: .leading, spacing: 10) {
@@ -49,7 +47,6 @@ struct MenuBarSearchResults: View {
     }
 
     private var hits: [BoardSearchHit] {
-        let projectIDs = filter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
         return BoardSearch.hits(
             query: query,
             todos: todos.map(\.snapshot),
@@ -58,7 +55,7 @@ struct MenuBarSearchResults: View {
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),
             privacy: BoardSearchPrivacy.protected(diaries: Array(diaries), tags: Array(tags), locale: locale),
-            scope: BoardSearchScope(filter: filter, projectIDs: projectIDs)
+            scope: BoardSearchScope(filter: filter)
         )
     }
 }

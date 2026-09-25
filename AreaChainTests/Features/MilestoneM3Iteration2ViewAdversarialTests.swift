@@ -353,12 +353,11 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
         var movedToday = false
         var movedTomorrow = false
         var toggledDoneVal: Bool? = nil
-        var projectSet: UUID? = nil
+        var appliedTag: (UUID, Bool)?
         var tagToggled: UUID? = nil
         var trashed = false
         var cleared = false
 
-        let projID = UUID()
         let tagID = UUID()
 
         let bar = BatchActionBar(
@@ -369,7 +368,7 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
                 onToggleDone: { toggledDoneVal = $0 }
             ),
             classify: BatchClassifyActions(
-                onSetProject: { projectSet = $0 },
+                onApplyTag: { appliedTag = ($0, $1) },
                 onToggleTag: { tagToggled = $0 }
             ),
             lifecycle: BatchLifecycleActions(
@@ -387,8 +386,8 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
         bar.onToggleDone(true)
         #expect(toggledDoneVal == true)
 
-        bar.onSetProject(projID)
-        #expect(projectSet == projID)
+        bar.onApplyTag(tagID, true)
+        #expect(appliedTag?.0 == tagID && appliedTag?.1 == true)
 
         bar.onToggleTag(tagID)
         #expect(tagToggled == tagID)
@@ -407,12 +406,10 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
         let t1 = TodoItem(title: "Batch Todo 1", dayKey: "2026-09-08")
         let t2 = TodoItem(title: "Batch Todo 2", dayKey: "2026-09-08")
         let r1 = DailyRoutine(title: "Batch Routine 1", sortOrder: 0, createdDayKey: "2026-09-01")
-        let proj = ProjectItem(name: "Batch Project", sortOrder: 0)
         let tag = TagItem(name: "BatchTag", sortOrder: 0)
         context.insert(t1)
         context.insert(t2)
         context.insert(r1)
-        context.insert(proj)
         context.insert(tag)
         try context.save()
 
@@ -423,7 +420,6 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
             todos: [t1, t2],
             routines: [r1],
             checks: [],
-            projects: [proj],
             tags: [tag]
         )
         let actionBar = WorkspaceBatchActionBar(navigation: nav, data: data)
@@ -440,10 +436,11 @@ struct MilestoneM3Iteration2ViewAdversarialTests {
         #expect(t2.isDone == false)
 
         // Verify batch project assignment
-        DayBoardMutations.batchSetProject([t1.id, r1.id], projectID: proj.id, todos: [t1, t2], routines: [r1])
-        #expect(t1.projectID == proj.id)
-        #expect(r1.projectID == proj.id)
-        #expect(t2.projectID == nil)
+        let appliedID = UUID()
+        DayBoardMutations.batchApplyTag([t1.id, r1.id], tagID: appliedID, present: true, todos: [t1, t2], routines: [r1])
+        #expect(TagIDList.contains(t1.tagIDs, appliedID))
+        #expect(TagIDList.contains(r1.tagIDs, appliedID))
+        #expect(!TagIDList.contains(t2.tagIDs, appliedID))
 
         // Verify batch tag assignment
         DayBoardMutations.batchToggleTag([t1.id, r1.id], tagID: tag.id, todos: [t1, t2], routines: [r1])

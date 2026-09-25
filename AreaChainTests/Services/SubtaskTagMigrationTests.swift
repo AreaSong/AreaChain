@@ -51,7 +51,7 @@ struct SubtaskTagMigrationTests {
     private func legacySchema() -> Schema {
         Schema([
             LegacyInputStore.TodoItem.self, LegacyInputStore.SubtaskItem.self,
-            DailyRoutine.self, RoutineCheck.self, DiaryEntry.self, ProjectItem.self, TagItem.self, AttachmentItem.self
+            DailyRoutine.self, RoutineCheck.self, DiaryEntry.self, TagItem.self, AttachmentItem.self
         ])
     }
 

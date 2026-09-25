@@ -12,8 +12,6 @@ struct MenuBarPopoverView: View {
     @Query var checks: [RoutineCheck]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
-    @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
-
     @State var tab: BoardTab = .tasks
     @State var filters = BoardFilters()
     @Bindable private var composer: BoardComposerSession
@@ -60,30 +58,6 @@ struct MenuBarPopoverView: View {
             }
         }
         return counts
-    }
-
-    var taskProjectCounts: [UUID: Int] {
-        var counts: [UUID: Int] = [:]
-        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }
-        for todo in activeTodos {
-            if let pid = todo.projectID {
-                counts[pid, default: 0] += 1
-            }
-        }
-        guard !projects.isEmpty else { return counts }
-        for project in projects {
-            let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
-            guard subtrees.count > 1 else { continue }
-            let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
-            if sum > 0 {
-                counts[project.id] = sum
-            }
-        }
-        return counts
-    }
-
-    var unclassifiedTodosCount: Int {
-        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
     }
 
     var body: some View {
@@ -160,9 +134,6 @@ struct MenuBarPopoverView: View {
                 tab: tab,
                 toolbar: toolbar,
                 filters: $filters,
-                projects: projects.filter { $0.deletedAt == nil },
-                projectCounts: taskProjectCounts,
-                unclassifiedCount: unclassifiedTodosCount,
                 tags: Array(tags),
                 tagCounts: currentTabTagCounts,
                 onShowSyntaxHelp: showSyntaxHelp,

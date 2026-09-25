@@ -17,7 +17,6 @@ struct BoardFilterBarTests {
         var changedFilter: BoardFilter?
         let emptyBar = BoardFilterBar(
             filter: BoardFilter(),
-            projects: [],
             tags: [],
             bundleIDs: [],
             onChange: { changedFilter = $0 }
@@ -25,34 +24,28 @@ struct BoardFilterBarTests {
         #expect(!emptyBar.isVisible)
         #expect(changedFilter == nil)
 
-        let projectID = UUID()
         let barWithProjects = BoardFilterBar(
             filter: BoardFilter(),
-            projects: [CatalogChoice(id: projectID, name: "测试项目")],
             tags: [],
             bundleIDs: [],
             onChange: { changedFilter = $0 }
         )
-        #expect(barWithProjects.isVisible)
+        #expect(!barWithProjects.isVisible)
     }
 
     @Test func boardFilterBarSelectionAndReset() {
         var lastFilter: BoardFilter?
-        let projectID = UUID()
-        let activeFilter = BoardFilter(projectID: projectID)
+        let activeFilter = BoardFilter()
 
         let bar = BoardFilterBar(
             filter: activeFilter,
-            projects: [CatalogChoice(id: projectID, name: "开发")],
             tags: [],
             bundleIDs: [],
-            projectCounts: [projectID: 3],
             totalOpenCount: 5,
             onChange: { lastFilter = $0 }
         )
 
-        #expect(bar.isVisible)
-        #expect(bar.projectCounts[projectID] == 3)
+        #expect(!bar.isVisible)
         #expect(bar.totalOpenCount == 5)
         #expect(lastFilter == nil)
     }
@@ -63,19 +56,12 @@ struct BoardFilterBarTests {
         let today = "2026-09-21"
         let yesterday = "2026-09-20"
 
-        let project1 = ProjectItem(name: "工程A", sortOrder: 0)
-        let project2 = ProjectItem(name: "工程B", sortOrder: 1)
-        context.insert(project1)
-        context.insert(project2)
-        try context.save()
-
-        // 插入项目1的2个未完成待办（1个今天，1个昨天）
-        let todo1 = TodoItem(title: "任务1", dayKey: today, projectID: project1.id)
-        let todo2 = TodoItem(title: "任务2", dayKey: yesterday, projectID: project1.id)
+        let todo1 = TodoItem(title: "任务1", dayKey: today)
+        let todo2 = TodoItem(title: "任务2", dayKey: yesterday)
         // 插入项目1的1个已完成待办（不应计入）
-        let todoDone = TodoItem(title: "任务完成", isDone: true, dayKey: today, projectID: project1.id)
+        let todoDone = TodoItem(title: "任务完成", isDone: true, dayKey: today)
         // 插入项目2的1个未完成待办
-        let todo3 = TodoItem(title: "任务3", dayKey: today, projectID: project2.id)
+        let todo3 = TodoItem(title: "任务3", dayKey: today)
         // 插入无项目、无标签的未完成待办
         let todoUnclassified = TodoItem(title: "未分类任务", dayKey: today)
 
@@ -93,33 +79,18 @@ struct BoardFilterBarTests {
             todos: [todo1, todo2, todoDone, todo3, todoUnclassified]
         )
 
-        let counts = page.projectCounts
-        // 验证只统计今日未完成任务：项目1的昨日未完成任务 todo2 不计入
-        #expect(counts[project1.id] == 1)
-        #expect(counts[project2.id] == 1)
         #expect(page.totalOpenTodosCount == 3)
-        #expect(page.unclassifiedTodosCount == 1)
         #expect(page.untaggedTodosCount == 3)
     }
 
-    @Test func footerBarProjectDropdownIntegration() {
-        let projectID = UUID()
-        let project = ProjectItem(name: "工程A", sortOrder: 0)
-        project.id = projectID
-
+    @Test func footerBarOmitsProjectFilter() {
         var filters = BoardFilters()
         let footer = FooterBar(
             tab: .tasks,
             toolbar: MenuBarToolbarState(),
-            filters: Binding(get: { filters }, set: { filters = $0 }),
-            projects: [project],
-            projectCounts: [projectID: 2],
-            unclassifiedCount: 1
+            filters: Binding(get: { filters }, set: { filters = $0 })
         )
-
-        #expect(footer.projects.count == 1)
-        #expect(footer.projectCounts[projectID] == 2)
-        #expect(footer.unclassifiedCount == 1)
+        #expect(footer.tab == .tasks)
     }
 
     @Test func filterChoicesShareSelectionAndClear() {

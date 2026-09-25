@@ -27,7 +27,6 @@ struct BoardSearchHit: Equatable, Identifiable {
 
 struct BoardSearchScope {
     var filter = BoardFilter()
-    var projectIDs: Set<UUID>? = nil
 }
 
 struct BoardSearchPriority: Equatable {
@@ -122,8 +121,8 @@ enum BoardSearch {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
-        let filteredTodos = todos.filter { Classification.matches($0.classifyBits, filter: scope.filter, projectIDs: scope.projectIDs) }
-        let filteredRoutines = routines.filter { Classification.matches($0.classifyBits, filter: scope.filter, projectIDs: scope.projectIDs) }
+        let filteredTodos = todos.filter { Classification.matches($0.classifyBits, filter: scope.filter) }
+        let filteredRoutines = routines.filter { Classification.matches($0.classifyBits, filter: scope.filter) }
         let found = todoHits(parsed, filteredTodos, tagMap: tagMap)
             + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
             + routineHits(parsed, filteredRoutines, todayKey: todayKey, tagMap: tagMap)
@@ -157,7 +156,7 @@ enum BoardSearch {
 
     static func filteredDiaries(_ entries: [DiarySnapshot], filter: BoardFilter) -> [DiarySnapshot] {
         // 手记没有项目、捕获来源和优先级，不能混进要求这些属性的结果。
-        guard filter.projectID == nil, filter.bundleID == nil, !filter.isHighPriorityOnly else { return [] }
+        guard filter.bundleID == nil, !filter.isHighPriorityOnly else { return [] }
         guard let tagID = filter.tagID else { return entries }
         return entries.filter { TagIDList.contains($0.tagIDs, tagID) }
     }
@@ -276,7 +275,7 @@ enum BoardSearch {
         parentFilter.tagID = nil
         return todos.flatMap { todo -> [BoardSearchHit] in
             guard todo.deletedAt == nil,
-                  Classification.matches(todo.classifyBits, filter: parentFilter, projectIDs: scope.projectIDs) else { return [] }
+                  Classification.matches(todo.classifyBits, filter: parentFilter) else { return [] }
             return todo.subtasks.compactMap { subtask in
                 guard subtask.deletedAt == nil else { return nil }
                 if let id = scope.filter.tagID, !TagIDList.contains(subtask.tagIDs, id) { return nil }

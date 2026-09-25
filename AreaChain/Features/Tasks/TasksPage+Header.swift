@@ -8,8 +8,8 @@ extension TasksPage {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
         let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
         let hasFilters = embedded
-            ? (!CatalogChoices.projects(projects).isEmpty || !tagChoices.isEmpty || !todayBundleIDs.isEmpty
-                || effectiveFilter.projectID != nil || effectiveFilter.bundleID != nil
+            ? (!tagChoices.isEmpty || !todayBundleIDs.isEmpty
+                || effectiveFilter.bundleID != nil
                 || (config.externalFilter == nil && effectiveFilter.isActive))
             : (config.externalFilter == nil && effectiveFilter.isActive)
 
@@ -40,11 +40,8 @@ extension TasksPage {
                     if embedded {
                         BoardFilterBar(
                             filter: effectiveFilter,
-                            projects: CatalogChoices.projects(projects),
                             tags: tagChoices,
                             bundleIDs: todayBundleIDs,
-                            projectCounts: projectCounts,
-                            unclassifiedCount: unclassifiedTodosCount,
                             untaggedCount: untaggedTodosCount,
                             onChange: updateFilter
                         )
@@ -78,13 +75,6 @@ extension TasksPage {
                         icon: "exclamationmark.3"
                     ) {
                         updateFilter(effectiveFilter.withHighPriority(false))
-                    }
-                }
-
-                if let pid = effectiveFilter.projectID {
-                    let name = pid == BoardFilter.noneID ? L10n.string("filter.project.none", locale: locale) : (projects.first(where: { $0.id == pid })?.name ?? "")
-                    activeFilterTag(title: name, icon: "folder") {
-                        updateFilter(effectiveFilter.withProject(nil))
                     }
                 }
 

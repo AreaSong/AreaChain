@@ -157,7 +157,6 @@ struct SnapshotImporterTests {
         )
         let context = ModelContext(container)
         let todoID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
-        let projectID = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
         let tagID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
         context.insert(TodoItem(id: todoID, title: "旧", dayKey: "2026-09-07"))
         try context.save()
@@ -173,24 +172,20 @@ struct SnapshotImporterTests {
                     isDone: false,
                     dayKey: "2026-09-07",
                     createdAt: Date(timeIntervalSince1970: 2),
-                    projectID: projectID,
                     tagIDs: tagID.uuidString,
                     isImportant: true,
                     sourceBundleID: "com.apple.Safari"
                 )
             ],
             diaries: [],
-            projects: [ExportedProject(id: projectID, name: "工作", sortOrder: 1)],
             tags: [ExportedTag(id: tagID, name: "跟进", sortOrder: 2)]
         )
         try SnapshotImporter.apply(snapshot, context: context)
         let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let projects = try context.fetch(FetchDescriptor<ProjectItem>())
         let tags = try context.fetch(FetchDescriptor<TagItem>())
-        #expect(todos.first?.projectID == projectID)
+        #expect(todos.first?.tagIDs == tagID.uuidString)
         #expect(todos.first?.isImportant == true)
         #expect(todos.first?.sourceBundleID == "com.apple.Safari")
-        #expect(projects.first?.name == "工作")
         #expect(tags.first?.name == "跟进")
     }
 

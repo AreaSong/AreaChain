@@ -125,7 +125,7 @@ struct TaskRowInteractionTests {
         context.insert(todo)
         context.insert(routine)
         try context.save()
-        let catalogs = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogs = TaskCatalogContext(tags: [], attachments: [], context: context)
         var received: [TaskSelectionModifiers] = []
         let todoRow = TaskRowFactory.todo(TodoRowContext(
             todo: todo, todayKey: "2026-09-12", catalogs: catalogs, display: TodoRowDisplayOptions(isDone: false),

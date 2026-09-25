@@ -32,7 +32,6 @@ enum SnapshotImporter {
             upsert(routines: snapshot.routines, existing: existing.routines, context: context)
             upsert(todos: snapshot.todos, existing: existing.todos, context: context)
             upsert(diaries: snapshot.diaries, existing: existing.diaries, context: context)
-            upsert(projects: snapshot.projects, existing: existing.projects, context: context)
             upsert(tags: snapshot.tags, existing: existing.tags, context: context)
             upsert(attachments: snapshot.attachments, existing: existing.attachments, context: context)
             upsert(
@@ -82,7 +81,6 @@ enum SnapshotImporter {
                         createdAt: item.createdAt ?? .now,
                         remindMinutes: item.remindMinutes,
                         deletedAt: item.deletedAt,
-                        projectID: item.projectID,
                         tagIDs: item.tagIDs,
                         isImportant: item.isImportant,
                         isUrgent: item.isUrgent,
@@ -96,7 +94,6 @@ enum SnapshotImporter {
     }
 
     private static func applyClassify(_ item: ExportedRoutine, to found: DailyRoutine) {
-        found.projectID = item.projectID
         found.tagIDs = item.tagIDs
         found.isImportant = item.isImportant
         found.isUrgent = item.isUrgent
@@ -113,7 +110,6 @@ enum SnapshotImporter {
                 found.createdAt = item.createdAt
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
                 found.deletedAt = item.deletedAt
-                found.projectID = item.projectID
                 found.tagIDs = item.tagIDs
                 found.isImportant = item.isImportant
                 found.isUrgent = item.isUrgent
@@ -130,7 +126,6 @@ enum SnapshotImporter {
                     createdAt: item.createdAt,
                     remindMinutes: item.remindMinutes,
                     deletedAt: item.deletedAt,
-                    projectID: item.projectID,
                     tagIDs: item.tagIDs,
                     isImportant: item.isImportant,
                     isUrgent: item.isUrgent,
@@ -199,28 +194,6 @@ enum SnapshotImporter {
         }
     }
 
-    private static func upsert(projects: [ExportedProject], existing: [ProjectItem], context: ModelContext) {
-        let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
-        for item in projects {
-            if let found = map[item.id] {
-                found.name = item.name
-                found.sortOrder = item.sortOrder
-                found.parentID = item.parentID
-                found.deletedAt = item.deletedAt
-            } else {
-                context.insert(
-                    ProjectItem(
-                        id: item.id,
-                        name: item.name,
-                        sortOrder: item.sortOrder,
-                        parentID: item.parentID,
-                        deletedAt: item.deletedAt
-                    )
-                )
-            }
-        }
-    }
-
     private static func upsert(tags: [ExportedTag], existing: [TagItem], context: ModelContext) {
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
         for item in tags {
@@ -228,9 +201,13 @@ enum SnapshotImporter {
                 found.name = item.name
                 found.sortOrder = item.sortOrder
                 found.deletedAt = item.deletedAt
+                found.colorToken = item.colorToken
             } else {
                 context.insert(
-                    TagItem(id: item.id, name: item.name, sortOrder: item.sortOrder, deletedAt: item.deletedAt)
+                    TagItem(
+                        id: item.id, name: item.name, sortOrder: item.sortOrder,
+                        deletedAt: item.deletedAt, colorToken: item.colorToken
+                    )
                 )
             }
         }

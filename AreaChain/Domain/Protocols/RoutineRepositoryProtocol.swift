@@ -8,7 +8,6 @@ struct CreateRoutineParams: Sendable {
     var weekdayMask: Int?
     var weekdaysOnly: Bool
     var remindMinutes: Int?
-    var projectID: UUID?
     var tagIDs: [UUID]
     var isImportant: Bool
     var isUrgent: Bool
@@ -22,7 +21,6 @@ struct CreateRoutineParams: Sendable {
         weekdayMask: Int? = nil,
         weekdaysOnly: Bool = false,
         remindMinutes: Int? = nil,
-        projectID: UUID? = nil,
         tagIDs: [UUID] = [],
         isImportant: Bool = false,
         isUrgent: Bool = false,
@@ -35,7 +33,6 @@ struct CreateRoutineParams: Sendable {
         self.weekdayMask = weekdayMask
         self.weekdaysOnly = weekdaysOnly
         self.remindMinutes = remindMinutes
-        self.projectID = projectID
         self.tagIDs = tagIDs
         self.isImportant = isImportant
         self.isUrgent = isUrgent
@@ -76,7 +73,6 @@ protocol RoutineRepositoryProtocol: AnyObject {
         sortOrder: Int?,
         weekdayMask: Int?,
         remindMinutes: Int?,
-        projectID: UUID?,
         tagIDs: [UUID]?,
         priority: (isImportant: Bool, isUrgent: Bool)?,
         notes: String?
@@ -97,9 +93,6 @@ protocol RoutineRepositoryProtocol: AnyObject {
 
     /// 设置四象限优先级
     func setPriority(id: UUID, isImportant: Bool, isUrgent: Bool) throws
-
-    /// 变更所属项目
-    func setProject(id: UUID, projectID: UUID?) throws
 
     /// 切换关联标签
     func toggleTag(id: UUID, tagID: UUID) throws
@@ -127,8 +120,8 @@ protocol RoutineRepositoryProtocol: AnyObject {
     /// 批量软删除习惯
     func batchTrashRoutines(ids: Set<UUID>) throws
 
-    /// 批量设置所属项目
-    func batchSetProject(ids: Set<UUID>, projectID: UUID?) throws
+    /// 批量确保标签存在或移除
+    func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws
 
     /// 批量切换标签关联
     func batchToggleTag(ids: Set<UUID>, tagID: UUID) throws
@@ -162,12 +155,6 @@ extension RoutineRepositoryProtocol {
     func batchTrashRoutines(ids: Set<UUID>) throws {
         for id in ids {
             try? deleteRoutine(id: id, soft: true)
-        }
-    }
-
-    func batchSetProject(ids: Set<UUID>, projectID: UUID?) throws {
-        for id in ids {
-            try? setProject(id: id, projectID: projectID)
         }
     }
 
@@ -211,7 +198,6 @@ extension RoutineRepositoryProtocol {
         sortOrder: Int? = nil,
         weekdayMask: Int? = nil,
         remindMinutes: Int? = nil,
-        projectID: UUID? = nil,
         tagIDs: [UUID]? = nil,
         priority: (isImportant: Bool, isUrgent: Bool)? = nil,
         notes: String? = nil
@@ -221,7 +207,6 @@ extension RoutineRepositoryProtocol {
             sortOrder: sortOrder ?? 0,
             weekdayMask: weekdayMask,
             remindMinutes: remindMinutes,
-            projectID: projectID,
             tagIDs: tagIDs ?? [],
             isImportant: priority?.isImportant ?? false,
             isUrgent: priority?.isUrgent ?? false,

@@ -21,7 +21,7 @@ struct SnapshotImportValidationTests {
         ExportedTodo(id: id, title: "导入", isDone: false, dayKey: "2026-09-11", createdAt: .now, subtasks: subtasks)
     }
 
-    @Test(arguments: 0..<8)
+    @Test(arguments: 0..<7)
     func duplicateIncomingIDsAreRejectedBeforeAnyWrites(kind: Int) throws {
         let context = try makeContext()
         let snapshot = duplicateSnapshot(kind: kind)
@@ -51,9 +51,6 @@ struct SnapshotImportValidationTests {
             let item = ExportedDiary(id: id, text: "手记", dayKey: "2026-09-11", createdAt: .now)
             snapshot.diaries = [item, item]
         case 5:
-            let item = ExportedProject(id: id, name: "项目", sortOrder: 0)
-            snapshot.projects = [item, item]
-        case 6:
             let item = ExportedTag(id: id, name: "标签", sortOrder: 0)
             snapshot.tags = [item, item]
         default:

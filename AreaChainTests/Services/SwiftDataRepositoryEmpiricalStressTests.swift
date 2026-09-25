@@ -79,13 +79,9 @@ struct SwiftDataRepositoryEmpiricalStressTests {
 
     @Test func containerRetentionKeepsCatalogRepositoryAliveWithoutExternalReference() throws {
         let repo = try makeIsolatedCatalogRepo()
-        let project = try repo.createProject(name: "Autonomous Project", parentID: nil, sortOrder: 0)
         let tag = try repo.createTag(name: "Autonomous Tag", sortOrder: 0)
-        #expect(try repo.fetchProject(id: project.id) != nil)
         #expect(try repo.fetchTag(id: tag.id) != nil)
-        try repo.deleteProject(id: project.id, soft: true)
         try repo.deleteTag(id: tag.id, soft: true)
-        #expect(try repo.fetchProjects(includeDeleted: false).isEmpty)
         #expect(try repo.fetchTags(includeDeleted: false).isEmpty)
     }
 
@@ -221,51 +217,14 @@ struct SwiftDataRepositoryEmpiricalStressTests {
         #expect((try repo.fetchChecks(for: routine.id)).count == countBefore)
     }
 
-    // MARK: - 4. Project Tree Cycles & Nil Parent Stress
-
-    @Test func projectTreeCycleStressAndTerminationGuarantee() throws {
+    @Test func tagOrderPersistsWithoutNesting() throws {
         let repo = try makeIsolatedCatalogRepo()
-        let nodeA = try repo.createProject(name: "A", parentID: nil, sortOrder: 0)
-        let nodeB = try repo.createProject(name: "B", parentID: nodeA.id, sortOrder: 0)
-        let nodeC = try repo.createProject(name: "C", parentID: nodeB.id, sortOrder: 0)
-        let nodeD = try repo.createProject(name: "D", parentID: nodeC.id, sortOrder: 0)
-
-        let allowedForA = try repo.allowedParents(for: nodeA.id)
-        let allowedIDsForA = Set(allowedForA.map(\.id))
-        #expect(!allowedIDsForA.contains(nodeA.id))
-        #expect(!allowedIDsForA.contains(nodeB.id))
-        #expect(!allowedIDsForA.contains(nodeC.id))
-        #expect(!allowedIDsForA.contains(nodeD.id))
-
-        try repo.updateProject(id: nodeA.id, name: nil, parentID: .some(nodeD.id), sortOrder: nil)
-
-        let outline = try repo.projectOutline()
-        #expect(outline.isEmpty)
-
-        let labelA = try repo.pathLabel(for: nodeA.id)
-        #expect(!labelA.isEmpty)
-
-        try repo.updateProject(id: nodeA.id, name: nil, parentID: .some(nil), sortOrder: nil)
-        let restoredOutline = try repo.projectOutline()
-        #expect(restoredOutline.count == 4)
-    }
-
-    @Test func projectTreeNilParentAndReparentingStress() throws {
-        let repo = try makeIsolatedCatalogRepo()
-        let orphan = try repo.createProject(name: "Orphan", parentID: UUID(), sortOrder: 0)
-        let outline = try repo.projectOutline()
-        let orphanRow = try #require(outline.first(where: { $0.id == orphan.id }))
-        #expect(orphanRow.depth == 0)
-
-        let parent = try repo.createProject(name: "Parent", parentID: nil, sortOrder: 1)
-        let child = try repo.createProject(name: "Child", parentID: parent.id, sortOrder: 0)
-        #expect(try repo.pathLabel(for: child.id) == "Parent / Child")
-
-        try repo.updateProject(id: child.id, name: nil, parentID: .some(nil), sortOrder: nil)
-        #expect(try repo.pathLabel(for: child.id) == "Child")
-
-        try repo.updateProject(id: child.id, name: nil, parentID: .some(parent.id), sortOrder: nil)
-        #expect(try repo.pathLabel(for: child.id) == "Parent / Child")
+        let first = try repo.createTag(name: "A", sortOrder: 0)
+        let second = try repo.createTag(name: "B", sortOrder: 1)
+        let third = try repo.createTag(name: "C", sortOrder: 2)
+        try repo.reorderTags(orderedIDs: [third.id, first.id, second.id])
+        let ordered = try repo.fetchTags().map(\.name)
+        #expect(ordered == ["C", "A", "B"])
     }
 
     // MARK: - 5. Soft-Deleted Items Filtering
@@ -291,12 +250,6 @@ struct SwiftDataRepositoryEmpiricalStressTests {
         try routineRepo.deleteRoutine(id: routine.id, soft: true)
         #expect(try routineRepo.fetchRoutines(includeDisabled: true, includeDeleted: false).isEmpty)
         #expect(try routineRepo.fetchRoutines(includeDisabled: true, includeDeleted: true).count == 1)
-
-        let project = try catalogRepo.createProject(name: "Project Soft", parentID: nil, sortOrder: 0)
-        try catalogRepo.deleteProject(id: project.id, soft: true)
-        #expect(try catalogRepo.fetchProjects(includeDeleted: false).isEmpty)
-        #expect(try catalogRepo.fetchProjects(includeDeleted: true).count == 1)
-        #expect(try catalogRepo.projectOutline().isEmpty)
 
         let tag = try catalogRepo.createTag(name: "Tag Soft", sortOrder: 0)
         try catalogRepo.deleteTag(id: tag.id, soft: true)
@@ -325,10 +278,8 @@ struct SwiftDataRepositoryEmpiricalStressTests {
 
         #expect(try taskRepo.fetchTodo(id: ghost) == nil)
         #expect(try routineRepo.fetchRoutine(id: ghost) == nil)
-        #expect(try catalogRepo.fetchProject(id: ghost) == nil)
         #expect(try catalogRepo.fetchTag(id: ghost) == nil)
         #expect(try diaryRepo.fetchDiary(id: ghost) == nil)
-        #expect(try taskRepo.fetchTodos(forProject: ghost).isEmpty)
         #expect(try taskRepo.fetchTodos(forTag: ghost).isEmpty)
         #expect(try routineRepo.fetchChecks(for: ghost).isEmpty)
 
@@ -336,7 +287,7 @@ struct SwiftDataRepositoryEmpiricalStressTests {
         #expect(throws: RepositoryError.self) { try taskRepo.addSubtask(to: ghost, title: "Ghost Sub") }
         #expect(throws: RepositoryError.self) { try routineRepo.toggleRoutine(id: ghost, dayKey: "2026-09-10") }
         #expect(throws: RepositoryError.self) {
-            try catalogRepo.updateProject(id: ghost, name: "G", parentID: nil, sortOrder: nil)
+            try catalogRepo.updateTag(id: ghost, name: "G", sortOrder: nil)
         }
         #expect(throws: RepositoryError.self) { try diaryRepo.editDiary(id: ghost, text: "G") }
     }

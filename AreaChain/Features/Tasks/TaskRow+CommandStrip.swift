@@ -62,18 +62,7 @@ extension TaskRow {
             }
         }
 
-        // 5. 归属项目 📁 (无 + 各项目)
-        if let classify = state.classify, !classify.projects.isEmpty {
-            commandStripMenu(
-                icon: "folder",
-                key: "row.quick.project",
-                isActive: classify.projectID != nil
-            ) {
-                projectMenuItems(classify)
-            }
-        }
-
-        // 6. 标签 🏷 (各标签勾选)
+        // 标签
         if let classify = state.classify, !classify.tags.isEmpty {
             commandStripMenu(
                 icon: "tag",

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 分类目录（项目树与标签体系）SwiftData 具体仓储实现
+/// 平面标签目录的 SwiftData 仓储实现
 @MainActor
 final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     private let context: ModelContext
@@ -18,94 +18,6 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
 
     private func saveAndNotify() throws {
         try ModelChanges.commit(context)
-    }
-
-    // MARK: - 项目操作 (Projects)
-
-    func fetchProjects(includeDeleted: Bool) throws -> [ProjectItem] {
-        let items = try context.fetch(FetchDescriptor<ProjectItem>())
-        let sorted = items.sorted { $0.sortOrder < $1.sortOrder }
-        if includeDeleted {
-            return sorted
-        }
-        return sorted.filter { $0.deletedAt == nil }
-    }
-
-    func fetchProject(id: UUID) throws -> ProjectItem? {
-        let items = try context.fetch(FetchDescriptor<ProjectItem>())
-        return items.first { $0.id == id }
-    }
-
-    @discardableResult
-    func createProject(name: String, parentID: UUID?, sortOrder: Int?) throws -> ProjectItem {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            throw RepositoryError.invalidArgument("项目名称不能为空")
-        }
-        let order: Int
-        if let sortOrder {
-            order = sortOrder
-        } else {
-            let live = try fetchProjects(includeDeleted: false)
-            order = Catalog.nextSortOrder(live.map(\.sortOrder))
-        }
-        let project = ProjectItem(name: trimmed, sortOrder: order, parentID: parentID)
-        context.insert(project)
-        try saveAndNotify()
-        return project
-    }
-
-    func updateProject(id: UUID, name: String?, parentID: UUID??, sortOrder: Int?) throws {
-        guard let project = try fetchProject(id: id) else {
-            throw RepositoryError.notFound("ProjectItem(id: \(id))")
-        }
-        if let name {
-            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else {
-                throw RepositoryError.invalidArgument("项目名称不能为空")
-            }
-            project.name = trimmed
-        }
-        if let parentID {
-            project.parentID = parentID
-        }
-        if let sortOrder {
-            project.sortOrder = sortOrder
-        }
-        try saveAndNotify()
-    }
-
-    func deleteProject(id: UUID, soft: Bool) throws {
-        guard let project = try fetchProject(id: id) else {
-            throw RepositoryError.notFound("ProjectItem(id: \(id))")
-        }
-        if soft {
-            project.deletedAt = SoftDelete.stamp()
-        } else {
-            try unlinkProject(id: id)
-            context.delete(project)
-        }
-        try saveAndNotify()
-    }
-
-    func restoreProject(id: UUID) throws {
-        guard let project = try fetchProject(id: id) else {
-            throw RepositoryError.notFound("ProjectItem(id: \(id))")
-        }
-        project.deletedAt = nil
-        try saveAndNotify()
-    }
-
-    func purgeProject(id: UUID) throws {
-        try deleteProject(id: id, soft: false)
-    }
-
-    func unlinkProject(id: UUID) throws {
-        let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
-        let projects = try fetchProjects(includeDeleted: true)
-        Catalog.unlinkProject(id, todos: todos, routines: routines, projects: projects)
-        try saveAndNotify()
     }
 
     // MARK: - 标签操作 (Tags)
@@ -134,6 +46,13 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("标签名称不能为空")
+        }
+        if DiaryMemoTags.isPresetName(trimmed) {
+            throw RepositoryError.invalidArgument("手记预置标签不能当作普通标签创建")
+        }
+        let key = TagSyntax.normalizedName(trimmed)
+        if try fetchTags(includeDeleted: false).contains(where: { TagSyntax.normalizedName($0.name) == key }) {
+            throw RepositoryError.invalidArgument("标签名称已存在")
         }
         let order: Int
         if let sortOrder {
@@ -185,19 +104,33 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         }
     }
 
-    func updateTag(id: UUID, name: String?, sortOrder: Int?) throws {
+    func updateTag(id: UUID, name: String?, sortOrder: Int?, colorToken: String?) throws {
         guard let tag = try fetchTag(id: id) else {
             throw RepositoryError.notFound("TagItem(id: \(id))")
         }
         if let name {
+            if tag.isDiaryPreset {
+                throw RepositoryError.invalidArgument("手记预置标签不能改名")
+            }
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else {
                 throw RepositoryError.invalidArgument("标签名称不能为空")
             }
+            let key = TagSyntax.normalizedName(trimmed)
+            let clash = try fetchTags(includeDeleted: false).contains {
+                $0.id != id && TagSyntax.normalizedName($0.name) == key
+            }
+            if clash { throw RepositoryError.invalidArgument("标签名称已存在") }
             tag.name = trimmed
         }
         if let sortOrder {
             tag.sortOrder = sortOrder
+        }
+        if let colorToken {
+            if tag.isDiaryPreset {
+                throw RepositoryError.invalidArgument("手记预置标签不能改色")
+            }
+            tag.colorToken = TagColorToken.resolved(colorToken).rawValue
         }
         try saveAndNotify()
     }
@@ -206,10 +139,17 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         guard let tag = try fetchTag(id: id) else {
             throw RepositoryError.notFound("TagItem(id: \(id))")
         }
+        if tag.isDiaryPreset {
+            throw RepositoryError.invalidArgument("手记预置标签不能删除")
+        }
         if soft {
             tag.deletedAt = SoftDelete.stamp()
         } else {
-            try unlinkTag(id: id)
+            let todos = try context.fetch(FetchDescriptor<TodoItem>())
+            let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
+            let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
+            let subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
+            Catalog.unlinkTag(id, todos: todos, routines: routines, diaries: diaries, subtasks: subtasks)
             context.delete(tag)
         }
         try saveAndNotify()
@@ -236,23 +176,47 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         try saveAndNotify()
     }
 
+    func reorderTags(orderedIDs: [UUID]) throws {
+        let tags = try fetchTags(includeDeleted: false)
+        Catalog.writeSortOrder(tags, orderedIDs: orderedIDs, id: \.id) { $0.sortOrder = $1 }
+        try saveAndNotify()
+    }
+
+    func mergeTags(sourceIDs: [UUID], into targetID: UUID) throws {
+        try ModelChanges.transaction(in: context) {
+            let tags = try fetchTags(includeDeleted: true)
+            let todos = try context.fetch(FetchDescriptor<TodoItem>())
+            let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
+            let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
+            let subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
+            try Catalog.mergeTags(
+                sources: sourceIDs, into: targetID, tags: tags,
+                todos: todos, routines: routines, diaries: diaries, subtasks: subtasks
+            )
+        }
+    }
+
+    func batchSetColor(ids: Set<UUID>, colorToken: String) throws {
+        let token = TagColorToken.resolved(colorToken).rawValue
+        let tags = try fetchTags(includeDeleted: false).filter { ids.contains($0.id) }
+        guard tags.contains(where: { !$0.isDiaryPreset }) else {
+            throw RepositoryError.invalidArgument("手记预置标签不能改色")
+        }
+        for tag in tags where !tag.isDiaryPreset {
+            tag.colorToken = token
+        }
+        try saveAndNotify()
+    }
+
     // MARK: - 聚合指标 (Metrics)
 
-    func openCount(projectID: UUID?, tagID: UUID?, dayKey: String) throws -> Int {
+    func openCount(tagID: UUID?, dayKey: String) throws -> Int {
         let todos = try context.fetch(FetchDescriptor<TodoItem>())
         let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
         let checks = try context.fetch(FetchDescriptor<RoutineCheck>())
-        let projects = try fetchProjects(includeDeleted: false)
-        let project = projectID != nil ? try fetchProject(id: projectID!) : nil
         let tag = tagID != nil ? try fetchTag(id: tagID!) : nil
         return Catalog.openCount(
-            todos: todos,
-            routines: routines,
-            checks: checks,
-            project: project,
-            tag: tag,
-            projects: projects,
-            dayKey: dayKey
+            todos: todos, routines: routines, checks: checks, tag: tag, dayKey: dayKey
         )
     }
 }

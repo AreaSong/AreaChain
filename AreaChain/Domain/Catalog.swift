@@ -1,10 +1,93 @@
 import Foundation
 
-enum Catalog {
-    static func liveProjects(_ items: [ProjectItem]) -> [ProjectItem] {
-        items.filter { $0.deletedAt == nil }.sorted { $0.sortOrder < $1.sortOrder }
+enum TagListFilter: String, CaseIterable, Equatable, Sendable {
+    case all
+    case frequent
+    case recent
+    case unused
+}
+
+struct TagUsageRecord: Equatable, Sendable {
+    var tagID: UUID
+    var activeCount: Int
+    var latestCreatedAt: Date?
+}
+
+struct TagUsageSubject: Equatable, Sendable {
+    var tagIDs: String
+    var createdAt: Date
+    var isDeleted: Bool
+}
+
+enum TagUsage {
+    /// 活跃使用数只计未删除的事项、重复事项、子任务和手记，不计入打卡记录。
+    static func records(_ subjects: [TagUsageSubject]) -> [UUID: TagUsageRecord] {
+        var map: [UUID: TagUsageRecord] = [:]
+        for subject in subjects where !subject.isDeleted {
+            for id in TagIDList.parse(subject.tagIDs) {
+                var record = map[id] ?? TagUsageRecord(tagID: id, activeCount: 0, latestCreatedAt: nil)
+                record.activeCount += 1
+                if record.latestCreatedAt == nil || subject.createdAt > record.latestCreatedAt! {
+                    record.latestCreatedAt = subject.createdAt
+                }
+                map[id] = record
+            }
+        }
+        return map
     }
 
+    static func subjects(
+        todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]
+    ) -> [TagUsageSubject] {
+        let todoSubjects = todos.map {
+            TagUsageSubject(tagIDs: $0.tagIDs, createdAt: $0.createdAt, isDeleted: $0.deletedAt != nil)
+        }
+        let routineSubjects = routines.map {
+            TagUsageSubject(tagIDs: $0.tagIDs, createdAt: $0.createdAt, isDeleted: $0.deletedAt != nil)
+        }
+        let subtaskSubjects = todos.flatMap(\.subtasks).map {
+            TagUsageSubject(tagIDs: $0.tagIDs, createdAt: $0.createdAt, isDeleted: $0.deletedAt != nil)
+        }
+        let diarySubjects = diaries.map {
+            TagUsageSubject(tagIDs: $0.tagIDs, createdAt: $0.createdAt, isDeleted: $0.deletedAt != nil)
+        }
+        return todoSubjects + routineSubjects + subtaskSubjects + diarySubjects
+    }
+
+    static func filtered(_ tags: [TagItem], filter: TagListFilter, usage: [UUID: TagUsageRecord]) -> [TagItem] {
+        let live = Catalog.liveTags(tags)
+        switch filter {
+        case .all:
+            return live
+        case .frequent:
+            return live.sorted { lhs, rhs in
+                let left = usage[lhs.id]?.activeCount ?? 0
+                let right = usage[rhs.id]?.activeCount ?? 0
+                if left != right { return left > right }
+                return lhs.sortOrder < rhs.sortOrder
+            }
+        case .recent:
+            return live
+                .filter { usage[$0.id]?.latestCreatedAt != nil }
+                .sorted { lhs, rhs in
+                    let left = usage[lhs.id]?.latestCreatedAt ?? .distantPast
+                    let right = usage[rhs.id]?.latestCreatedAt ?? .distantPast
+                    if left != right { return left > right }
+                    return lhs.sortOrder < rhs.sortOrder
+                }
+        case .unused:
+            return live.filter { (usage[$0.id]?.activeCount ?? 0) == 0 }
+        }
+    }
+}
+
+enum TagMergeError: Error, Equatable {
+    case presetProtected
+    case missingTarget
+    case emptySources
+}
+
+enum Catalog {
     static func liveTags(_ items: [TagItem]) -> [TagItem] {
         items.filter { $0.deletedAt == nil }.sorted { $0.sortOrder < $1.sortOrder }
     }
@@ -37,46 +120,18 @@ enum Catalog {
         (orders.max() ?? -1) + 1
     }
 
-    static func matches(
-        projectID: UUID?,
-        tagIDs: String,
-        project: ProjectItem?,
-        tag: TagItem?,
-        projects: [ProjectItem]
-    ) -> Bool {
-        if let project {
-            guard let projectID else { return false }
-            return ProjectTree.subtreeIDs(root: project.id, in: projects).contains(projectID)
-        }
-        if let tag {
-            return TagIDList.contains(tagIDs, tag.id)
-        }
-        return false
+    static func matches(tagIDs: String, tag: TagItem?) -> Bool {
+        guard let tag, tag.deletedAt == nil else { return false }
+        return TagIDList.contains(tagIDs, tag.id)
     }
 
-    static func matchingTodos(
-        _ items: [TodoItem],
-        project: ProjectItem?,
-        tag: TagItem?,
-        projects: [ProjectItem]
-    ) -> [TodoItem] {
-        items.filter {
-            $0.deletedAt == nil
-                && matches(projectID: $0.projectID, tagIDs: $0.tagIDs, project: project, tag: tag, projects: projects)
-        }
+    static func matchingTodos(_ items: [TodoItem], tag: TagItem?) -> [TodoItem] {
+        items.filter { $0.deletedAt == nil && matches(tagIDs: $0.tagIDs, tag: tag) }
     }
 
-    static func matchingRoutines(
-        _ items: [DailyRoutine],
-        project: ProjectItem?,
-        tag: TagItem?,
-        projects: [ProjectItem]
-    ) -> [DailyRoutine] {
-        items.filter {
-            $0.deletedAt == nil
-                && matches(projectID: $0.projectID, tagIDs: $0.tagIDs, project: project, tag: tag, projects: projects)
-        }
-        .sorted { $0.sortOrder < $1.sortOrder }
+    static func matchingRoutines(_ items: [DailyRoutine], tag: TagItem?) -> [DailyRoutine] {
+        items.filter { $0.deletedAt == nil && matches(tagIDs: $0.tagIDs, tag: tag) }
+            .sorted { $0.sortOrder < $1.sortOrder }
     }
 
     static func matchingSubtasks(_ todos: [TodoItem], tag: TagItem?) -> [SubtaskItem] {
@@ -90,22 +145,18 @@ enum Catalog {
         todos: [TodoItem],
         routines: [DailyRoutine],
         checks: [RoutineCheck],
-        project: ProjectItem?,
         tag: TagItem?,
-        projects: [ProjectItem],
         dayKey: String
     ) -> Int {
-        let openTodos = matchingTodos(todos, project: project, tag: tag, projects: projects)
-            .filter { !$0.isDone }
-            .count
+        let openTodos = matchingTodos(todos, tag: tag).filter { !$0.isDone }.count
         let snaps = checks.compactMap(\.snapshot)
-        let openRoutines = matchingRoutines(routines, project: project, tag: tag, projects: projects)
+        let openRoutines = matchingRoutines(routines, tag: tag)
             .filter {
                 DayBoardLogic.isRoutineDue($0.snapshot, on: dayKey)
                     && !DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
             }
             .count
-        let openSubtasks = project == nil ? matchingSubtasks(todos, tag: tag).filter { !$0.isDone }.count : 0
+        let openSubtasks = matchingSubtasks(todos, tag: tag).filter { !$0.isDone }.count
         return openTodos + openRoutines + openSubtasks
     }
 
@@ -127,20 +178,38 @@ enum Catalog {
         }
     }
 
-    static func unlinkProject(
-        _ id: UUID,
+    static func mergeTags(
+        sources: [UUID],
+        into targetID: UUID,
+        tags: [TagItem],
         todos: [TodoItem],
         routines: [DailyRoutine],
-        projects: [ProjectItem]
-    ) {
-        for todo in todos where todo.projectID == id {
-            todo.projectID = nil
+        diaries: [DiaryEntry],
+        subtasks: [SubtaskItem]
+    ) throws {
+        let sourceSet = Set(sources).subtracting([targetID])
+        guard !sourceSet.isEmpty else { throw TagMergeError.emptySources }
+        guard let target = tags.first(where: { $0.id == targetID && $0.deletedAt == nil }) else {
+            throw TagMergeError.missingTarget
         }
-        for routine in routines where routine.projectID == id {
-            routine.projectID = nil
+        if target.isDiaryPreset { throw TagMergeError.presetProtected }
+        let sourceTags = tags.filter { sourceSet.contains($0.id) }
+        guard sourceTags.count == sourceSet.count else { throw TagMergeError.missingTarget }
+        if sourceTags.contains(where: \.isDiaryPreset) { throw TagMergeError.presetProtected }
+
+        func rewrite(_ raw: String) -> String {
+            let ids = TagIDList.parse(raw)
+            guard ids.contains(where: { sourceSet.contains($0) }) else { return TagIDList.normalized(raw) }
+            let kept = ids.filter { !sourceSet.contains($0) }
+            return TagIDList.encode(TagIDList.normalized(kept + [targetID]))
         }
-        for child in projects where child.parentID == id {
-            child.parentID = nil
+        for todo in todos { todo.tagIDs = rewrite(todo.tagIDs) }
+        for routine in routines { routine.tagIDs = rewrite(routine.tagIDs) }
+        for diary in diaries { diary.tagIDs = rewrite(diary.tagIDs) }
+        for subtask in subtasks { subtask.tagIDs = rewrite(subtask.tagIDs) }
+        let stamp = SoftDelete.stamp()
+        for tag in sourceTags where tag.deletedAt == nil {
+            tag.deletedAt = stamp
         }
     }
 
@@ -163,85 +232,6 @@ enum Catalog {
         for subtask in (subtasks.isEmpty ? todos.flatMap(\.subtasks) : subtasks) where TagIDList.contains(subtask.tagIDs, id) {
             subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, id)
         }
-    }
-}
-
-struct ProjectOutlineRow: Equatable, Identifiable {
-    var id: UUID
-    var name: String
-    var depth: Int
-    var parentID: UUID?
-}
-
-enum ProjectTree {
-    static func subtreeIDs(root: UUID, in projects: [ProjectItem]) -> Set<UUID> {
-        let live = projects.filter { $0.deletedAt == nil }
-        var result: Set<UUID> = [root]
-        var grew = true
-        while grew {
-            grew = false
-            for item in live where !result.contains(item.id) {
-                if let parent = item.parentID, result.contains(parent) {
-                    result.insert(item.id)
-                    grew = true
-                }
-            }
-        }
-        return result
-    }
-
-    static func wouldCycle(moving id: UUID, to parentID: UUID?, in projects: [ProjectItem]) -> Bool {
-        guard let parentID else { return false }
-        if parentID == id { return true }
-        return subtreeIDs(root: id, in: projects).contains(parentID)
-    }
-
-    static func outline(_ projects: [ProjectItem]) -> [ProjectOutlineRow] {
-        let live = Catalog.liveProjects(projects)
-        let byID = Dictionary(uniqueKeysWithValues: live.map { ($0.id, $0) })
-        var children: [UUID: [ProjectItem]] = [:]
-        for item in live {
-            if let parent = item.parentID, byID[parent] != nil {
-                children[parent, default: []].append(item)
-            }
-        }
-        for key in children.keys {
-            children[key]?.sort { $0.sortOrder < $1.sortOrder }
-        }
-        let roots = live.filter { item in
-            guard let parent = item.parentID else { return true }
-            return byID[parent] == nil
-        }
-        var rows: [ProjectOutlineRow] = []
-        var seen: Set<UUID> = []
-        func walk(_ item: ProjectItem, depth: Int) {
-            guard seen.insert(item.id).inserted else { return }
-            rows.append(ProjectOutlineRow(id: item.id, name: item.name, depth: depth, parentID: item.parentID))
-            for child in children[item.id] ?? [] {
-                walk(child, depth: depth + 1)
-            }
-        }
-        for root in roots {
-            walk(root, depth: 0)
-        }
-        return rows
-    }
-
-    static func pathLabel(_ id: UUID, in projects: [ProjectItem]) -> String {
-        let byID = Dictionary(uniqueKeysWithValues: Catalog.liveProjects(projects).map { ($0.id, $0) })
-        var names: [String] = []
-        var current: UUID? = id
-        var hops = 0
-        while let key = current, let item = byID[key], hops < 20 {
-            names.append(item.name)
-            current = item.parentID
-            hops += 1
-        }
-        return names.reversed().joined(separator: " / ")
-    }
-
-    static func allowedParents(for id: UUID, in projects: [ProjectItem]) -> [ProjectOutlineRow] {
-        outline(projects).filter { !wouldCycle(moving: id, to: $0.id, in: projects) }
     }
 }
 

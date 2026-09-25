@@ -43,13 +43,13 @@ extension DayBoardMutations {
     }
 
     @discardableResult
-    static func batchSetProject(
-        _ ids: Set<UUID>, projectID: UUID?, todos: [TodoItem] = [], routines: [DailyRoutine] = []
+    static func batchApplyTag(
+        _ ids: Set<UUID>, tagID: UUID, present: Bool, todos: [TodoItem] = [], routines: [DailyRoutine] = []
     ) -> Bool {
         let context = todos.first?.modelContext ?? routines.first?.modelContext ?? Persistence.session.container.mainContext
         return ModelChanges.perform(in: context) {
-            try taskRepo(for: context).batchSetProject(ids: ids, projectID: projectID)
-            try routineRepo(for: context).batchSetProject(ids: ids, projectID: projectID)
+            try taskRepo(for: context).batchApplyTag(ids: ids, tagID: tagID, present: present)
+            try routineRepo(for: context).batchApplyTag(ids: ids, tagID: tagID, present: present)
         }
     }
 

@@ -25,7 +25,6 @@ struct SwiftDataTaskRepositoryTests {
         #expect(throws: RepositoryError.self) { try repo.moveTodo(id: nonExistentID, to: "2026-09-10") }
         #expect(throws: RepositoryError.self) { try repo.setRemind(id: nonExistentID, minutes: 15) }
         #expect(throws: RepositoryError.self) { try repo.setPriority(id: nonExistentID, isImportant: true, isUrgent: false) }
-        #expect(throws: RepositoryError.self) { try repo.setProject(id: nonExistentID, projectID: UUID()) }
         #expect(throws: RepositoryError.self) { try repo.toggleTag(id: nonExistentID, tagID: UUID()) }
         #expect(throws: RepositoryError.self) { try repo.deleteTodo(id: nonExistentID, soft: true) }
         #expect(throws: RepositoryError.self) { try repo.restoreTodo(id: nonExistentID) }
@@ -183,11 +182,12 @@ struct SwiftDataTaskRepositoryTests {
         try repo.batchToggleDone(ids: set, markDone: false)
         #expect(!t1.isDone && !t2.isDone && s1.isDone)
 
-        let projID = UUID()
-        try repo.batchSetProject(ids: set, projectID: projID)
-        #expect(t1.projectID == projID && t2.projectID == projID)
-
         let tagID = UUID()
+        try repo.batchApplyTag(ids: set, tagID: tagID, present: true)
+        #expect(TagIDList.contains(t1.tagIDs, tagID) && TagIDList.contains(t2.tagIDs, tagID))
+        try repo.batchApplyTag(ids: set, tagID: tagID, present: false)
+        #expect(!TagIDList.contains(t1.tagIDs, tagID))
+
         try repo.batchToggleTag(ids: set, tagID: tagID)
         #expect(TagIDList.contains(t1.tagIDs, tagID))
         #expect(TagIDList.contains(t2.tagIDs, tagID))

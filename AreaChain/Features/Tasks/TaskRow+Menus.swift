@@ -51,7 +51,6 @@ extension TaskRow {
 
             // 分区 2: 四象限与分类
             prioritySubMenu
-            projectSubMenu
             tagsSubMenu
 
             Divider()
@@ -91,7 +90,6 @@ extension TaskRow {
         timeMenus
         Divider()
         prioritySubMenu
-        projectSubMenu
         tagsSubMenu
         Divider()
         attachmentMenus
@@ -223,33 +221,6 @@ extension TaskRow {
             Divider()
             Button("classify.priority.clear") {
                 setQuadrant(nil)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private var projectSubMenu: some View {
-        if let classify = state.classify, !classify.projects.isEmpty {
-            Menu {
-                projectMenuItems(classify)
-            } label: {
-                Label("classify.project", systemImage: "folder")
-            }
-        }
-    }
-
-    @ViewBuilder
-    func projectMenuItems(_ classify: TaskClassifyContext) -> some View {
-        Button("classify.project.none") { classify.onProject(nil) }
-        ForEach(classify.projects) { project in
-            Button {
-                classify.onProject(project.id)
-            } label: {
-                if classify.projectID == project.id {
-                    Label(project.name, systemImage: "checkmark")
-                } else {
-                    Text(project.name)
-                }
             }
         }
     }

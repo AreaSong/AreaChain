@@ -99,7 +99,6 @@ extension TasksPage {
 
     private var catalogContext: TaskCatalogContext {
         TaskCatalogContext(
-            projects: projects,
             tags: tags,
             attachments: attachments,
             context: modelContext

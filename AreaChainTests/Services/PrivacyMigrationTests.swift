@@ -72,7 +72,7 @@ struct PrivacyMigrationTests {
 
     private func writeLegacy(at url: URL, tagID: UUID, diaryID: UUID, imageID: UUID) throws {
         let schema = Schema([
-            TodoItem.self, SubtaskItem.self, DailyRoutine.self, RoutineCheck.self, ProjectItem.self,
+            TodoItem.self, SubtaskItem.self, DailyRoutine.self, RoutineCheck.self,
             LegacyPrivacyStore.DiaryEntry.self, LegacyPrivacyStore.TagItem.self, LegacyPrivacyStore.AttachmentItem.self
         ])
         let container = try ModelContainer(for: schema, configurations:

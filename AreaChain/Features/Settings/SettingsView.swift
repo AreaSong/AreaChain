@@ -11,7 +11,6 @@ struct SettingsView: View {
     @Query private var checks: [RoutineCheck]
     @Query private var todos: [TodoItem]
     @Query private var diaries: [DiaryEntry]
-    @Query private var projects: [ProjectItem]
     @Query private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
     @Environment(AppPreferences.self) private var prefs
@@ -146,7 +145,6 @@ struct SettingsView: View {
                     checks: checks,
                     todos: todos,
                     diaries: diaries,
-                    projects: projects,
                     tags: tags,
                     attachments: attachments
                 )
@@ -179,7 +177,6 @@ struct SettingsView: View {
             todos: Set(todos.map(\.id)),
             diaries: Set(diaries.map(\.id)),
             checks: Set(checks.map(\.id)),
-            projects: Set(projects.map(\.id)),
             tags: Set(tags.map(\.id)),
             attachments: Set(attachments.map(\.id))
         )

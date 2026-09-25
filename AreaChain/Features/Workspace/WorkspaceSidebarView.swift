@@ -1,31 +1,12 @@
 import SwiftData
 import SwiftUI
 
-/// 工作台侧边导航栏交互操作。项目与标签新建仍保留给调用方，本阶段侧栏不展示这些入口。
-struct WorkspaceSidebarActions {
-    var onAddProject: () -> Void
-    var onAddChildProject: (UUID) -> Void
-    var onAddTag: () -> Void
-
-    init(
-        onAddProject: @escaping () -> Void,
-        onAddChildProject: @escaping (UUID) -> Void,
-        onAddTag: @escaping () -> Void
-    ) {
-        self.onAddProject = onAddProject
-        self.onAddChildProject = onAddChildProject
-        self.onAddTag = onAddTag
-    }
-}
-
 /// 现代工作台侧边导航栏组件
 struct WorkspaceSidebarView: View {
     @Bindable var navigation: WorkspaceNavigation
 
-    var projects: [ProjectItem]
     var tags: [TagItem]
     var todos: [TodoItem]
-    var actions: WorkspaceSidebarActions
 
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
@@ -78,6 +59,9 @@ struct WorkspaceSidebarView: View {
     private var organizeSection: some View {
         Section("sidebar.organize") {
             tabRow(.tags)
+            ForEach(Catalog.liveTags(tags)) { tag in
+                tagRow(tag)
+            }
         }
     }
 
@@ -101,8 +85,7 @@ struct WorkspaceSidebarView: View {
     }
 
     private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {
-        let isSelected = navigation.selectedProjectID == nil
-            && navigation.selectedTagID == nil
+        let isSelected = navigation.selectedTagID == nil
             && navigation.selectedTab == tab
         return WorkspaceSidebarRow(
             titleKey: tab.titleKey,
@@ -112,5 +95,30 @@ struct WorkspaceSidebarView: View {
         ) {
             navigation.revealTab(tab)
         }
+    }
+
+    private func tagRow(_ tag: TagItem) -> some View {
+        let isSelected = navigation.selectedTagID == tag.id
+        return Button {
+            navigation.selectedTagID = tag.id
+        } label: {
+            HStack(spacing: 8) {
+                Circle() // token-exempt: 标签色点，不是按钮
+                    .fill(DaybookPalette.tagMark(name: tag.name, token: tag.colorToken))
+                    .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
+                Text(tag.name)
+                    .font(DaybookType.body)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.vertical, 2)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain) // control: 侧栏标签行，整行点击
+        .listRowBackground(isSelected ? DaybookPalette.fill.selection : Color.clear)
+        .accessibilityLabel(Text(tag.name))
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

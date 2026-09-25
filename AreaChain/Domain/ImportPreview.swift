@@ -5,7 +5,6 @@ struct ExistingIDs: Equatable {
     var todos: Set<UUID>
     var diaries: Set<UUID>
     var checks: Set<UUID>
-    var projects: Set<UUID> = []
     var tags: Set<UUID> = []
     var attachments: Set<UUID> = []
 }
@@ -19,8 +18,6 @@ struct ImportPreview: Equatable {
     var diariesUpdate: Int
     var checksNew: Int
     var checksUpdate: Int
-    var projectsNew: Int = 0
-    var projectsUpdate: Int = 0
     var tagsNew: Int = 0
     var tagsUpdate: Int = 0
     var attachmentsNew: Int = 0
@@ -29,7 +26,7 @@ struct ImportPreview: Equatable {
     var totalWrites: Int {
         routinesNew + routinesUpdate + todosNew + todosUpdate
             + diariesNew + diariesUpdate + checksNew + checksUpdate
-            + projectsNew + projectsUpdate + tagsNew + tagsUpdate
+            + tagsNew + tagsUpdate
             + attachmentsNew + attachmentsUpdate
     }
 
@@ -47,8 +44,6 @@ struct ImportPreview: Equatable {
             diariesUpdate,
             checksNew,
             checksUpdate,
-            projectsNew,
-            projectsUpdate,
             tagsNew,
             tagsUpdate,
             attachmentsNew,
@@ -63,7 +58,6 @@ enum ImportPreviewing {
         let todos = split(snapshot.todos.map(\.id), existing: existing.todos)
         let diaries = split(snapshot.diaries.map(\.id), existing: existing.diaries)
         let checks = split(snapshot.checks.map(\.id), existing: existing.checks)
-        let projects = split(snapshot.projects.map(\.id), existing: existing.projects)
         let tags = split(snapshot.tags.map(\.id), existing: existing.tags)
         let attachments = split(snapshot.attachments.map(\.id), existing: existing.attachments)
         return ImportPreview(
@@ -75,8 +69,6 @@ enum ImportPreviewing {
             diariesUpdate: diaries.update,
             checksNew: checks.new,
             checksUpdate: checks.update,
-            projectsNew: projects.new,
-            projectsUpdate: projects.update,
             tagsNew: tags.new,
             tagsUpdate: tags.update,
             attachmentsNew: attachments.new,

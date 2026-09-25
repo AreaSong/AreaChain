@@ -125,16 +125,11 @@ struct RoutineScheduleSectionView: View {
 
 struct TodoClassificationSectionView: View {
     var todo: TodoItem
-    var projects: [ProjectItem]
     var tags: [TagItem]
     var modelContext: ModelContext
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.classify") {
-            TaskDetailProjectPicker(selectedID: todo.projectID, projects: projects) { id in
-                DayBoardMutations.setProject(for: todo, projectID: id)
-            }
-
             TaskDetailTagSelector(
                 tagIDs: todo.tagIDs,
                 tags: tags,
@@ -154,16 +149,11 @@ struct TodoClassificationSectionView: View {
 
 struct RoutineClassificationSectionView: View {
     var routine: DailyRoutine
-    var projects: [ProjectItem]
     var tags: [TagItem]
     var modelContext: ModelContext
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.classify") {
-            TaskDetailProjectPicker(selectedID: routine.projectID, projects: projects) { id in
-                DayBoardMutations.setProject(for: routine, projectID: id)
-            }
-
             TaskDetailTagSelector(
                 tagIDs: routine.tagIDs,
                 tags: tags,

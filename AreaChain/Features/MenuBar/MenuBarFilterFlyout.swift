@@ -5,7 +5,6 @@ import SwiftUI
 enum FilterCategory: String, CaseIterable, Identifiable {
     case date
     case priority
-    case project
     case tag
 
     var id: String { rawValue }
@@ -14,7 +13,6 @@ enum FilterCategory: String, CaseIterable, Identifiable {
         switch self {
         case .date: return "calendar"
         case .priority: return "exclamationmark.3"
-        case .project: return "folder"
         case .tag: return "tag"
         }
     }
@@ -23,7 +21,6 @@ enum FilterCategory: String, CaseIterable, Identifiable {
         switch self {
         case .date: return L10n.string("filter.date", locale: locale)
         case .priority: return L10n.string("filter.priority", locale: locale)
-        case .project: return L10n.string("filter.project", locale: locale)
         case .tag: return L10n.string("filter.tag", locale: locale)
         }
     }
@@ -33,9 +30,6 @@ enum FilterCategory: String, CaseIterable, Identifiable {
 struct MenuBarFilterFlyout: View {
     var tab: BoardTab = .tasks
     var filters: Binding<BoardFilters>
-    var projects: [ProjectItem] = []
-    var projectCounts: [UUID: Int] = [:]
-    var unclassifiedCount: Int? = nil
     var tags: [TagItem] = []
     var tagCounts: [UUID: Int] = [:]
     var onDismiss: () -> Void
@@ -188,8 +182,6 @@ struct MenuBarFilterFlyout: View {
                         dateOptionsView
                     case .priority:
                         priorityOptionsView
-                    case .project:
-                        projectOptionsView
                     case .tag:
                         tagOptionsView
                     }
@@ -235,20 +227,6 @@ struct MenuBarFilterFlyout: View {
 
     private var priorityOptionsView: some View {
         choiceRows(BoardFilterChoices.priorities(filter: activeFilter, locale: locale))
-    }
-
-    private var projectOptionsView: some View {
-        let outline = ProjectTree.outline(projects.filter { $0.deletedAt == nil })
-        return choiceRows(
-            BoardFilterChoices.projects(
-                filter: activeFilter,
-                rows: outline.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name, depth: $0.depth) },
-                counts: projectCounts,
-                unclassifiedCount: unclassifiedCount,
-                locale: locale
-            ),
-            icon: { $0.id == "all" ? "circle" : "folder" }
-        )
     }
 
     private var tagOptionsView: some View {
@@ -345,8 +323,6 @@ struct MenuBarFilterFlyout: View {
             return activeFilter.dateScope != .all
         case .priority:
             return activeFilter.priorityScope != .all || activeFilter.isHighPriorityOnly
-        case .project:
-            return activeFilter.projectID != nil
         case .tag:
             return selectedTagID != nil
         }

@@ -5,7 +5,6 @@ protocol ClassifiedFields: AnyObject {
     var remindMinutes: Int? { get set }
     var isImportant: Bool { get set }
     var isUrgent: Bool { get set }
-    var projectID: UUID? { get set }
     var tagIDs: String { get set }
 }
 
@@ -22,11 +21,16 @@ enum ClassifiedFieldsUpdate {
         item.isUrgent = isUrgent
     }
 
-    static func setProject(_ item: some ClassifiedFields, projectID: UUID?) {
-        item.projectID = projectID
+    static func toggleTag(_ item: some ClassifiedFields, tagID: UUID) {
+        item.tagIDs = TagIDList.normalized(TagIDList.toggling(item.tagIDs, tagID))
     }
 
-    static func toggleTag(_ item: some ClassifiedFields, tagID: UUID) {
-        item.tagIDs = TagIDList.toggling(item.tagIDs, tagID)
+    static func setTag(_ item: some ClassifiedFields, tagID: UUID, present: Bool) {
+        let has = TagIDList.contains(item.tagIDs, tagID)
+        guard present != has else {
+            item.tagIDs = TagIDList.normalized(item.tagIDs)
+            return
+        }
+        item.tagIDs = TagIDList.normalized(TagIDList.toggling(item.tagIDs, tagID))
     }
 }

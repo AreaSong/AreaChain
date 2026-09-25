@@ -57,23 +57,21 @@ struct BatchMutationsTests {
         #expect(sub1.isDone)
     }
 
-    @Test func batchSetProject() throws {
+    @Test func batchApplyTagAddsAndRemoves() throws {
         let (_, context) = try makeContainer()
         let t1 = TodoItem(title: "任务 1", dayKey: "2026-09-08")
         let r1 = DailyRoutine(title: "习惯 1", sortOrder: 0, createdDayKey: "2026-09-08")
         context.insert(t1)
         context.insert(r1)
 
-        let projID = UUID()
-        DayBoardMutations.batchSetProject([t1.id, r1.id], projectID: projID, todos: [t1], routines: [r1])
+        let tagID = UUID()
+        DayBoardMutations.batchApplyTag([t1.id, r1.id], tagID: tagID, present: true, todos: [t1], routines: [r1])
+        #expect(TagIDList.contains(t1.tagIDs, tagID))
+        #expect(TagIDList.contains(r1.tagIDs, tagID))
 
-        #expect(t1.projectID == projID)
-        #expect(r1.projectID == projID)
-
-        // Clear project
-        DayBoardMutations.batchSetProject([t1.id, r1.id], projectID: nil, todos: [t1], routines: [r1])
-        #expect(t1.projectID == nil)
-        #expect(r1.projectID == nil)
+        DayBoardMutations.batchApplyTag([t1.id, r1.id], tagID: tagID, present: false, todos: [t1], routines: [r1])
+        #expect(!TagIDList.contains(t1.tagIDs, tagID))
+        #expect(!TagIDList.contains(r1.tagIDs, tagID))
     }
 
     @Test func batchToggleTag() throws {

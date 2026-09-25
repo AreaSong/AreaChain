@@ -246,10 +246,8 @@ struct SyncPortTests {
         }
         """
         let decoded = try SyncPort.decode(Data(json.utf8))
-        #expect(decoded.projects.isEmpty)
         #expect(decoded.tags.isEmpty)
         #expect(decoded.attachments.isEmpty)
-        #expect(decoded.routines.first?.projectID == nil)
         #expect(decoded.routines.first?.tagIDs == "")
         #expect(decoded.routines.first?.isImportant == false)
         #expect(decoded.todos.first?.sourceBundleID == "")
@@ -258,7 +256,6 @@ struct SyncPortTests {
     }
 
     @Test func encodeKeepsClassifyAndCatalog() throws {
-        let projectID = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
         let tagID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
         let snapshot = ExportSnapshot(
             exportedAt: Date(timeIntervalSince1970: 1_788_800_000),
@@ -271,7 +268,6 @@ struct SyncPortTests {
                     isDone: false,
                     dayKey: "2026-09-07",
                     createdAt: Date(timeIntervalSince1970: 1_788_800_100),
-                    projectID: projectID,
                     tagIDs: tagID.uuidString,
                     isImportant: true,
                     isUrgent: true,
@@ -279,7 +275,6 @@ struct SyncPortTests {
                 )
             ],
             diaries: [],
-            projects: [ExportedProject(id: projectID, name: "工作", sortOrder: 0)],
             tags: [ExportedTag(id: tagID, name: "跟进", sortOrder: 0)],
             attachments: [
                 ExportedAttachment(
@@ -294,8 +289,7 @@ struct SyncPortTests {
         let decoded = try SyncPort.decode(try SyncPort.encode(snapshot))
         #expect(decoded == snapshot)
         #expect(decoded.todos.first?.isImportant == true)
-        #expect(decoded.projects.first?.name == "工作")
-        #expect(decoded.projects.first?.parentID == nil)
+        #expect(decoded.tags.first?.name == "跟进")
         #expect(decoded.attachments.first?.filename == "shot.png")
         #expect(decoded.todos.first?.calendarEventID == "")
     }
@@ -326,7 +320,6 @@ struct SyncPortTests {
         }
         """
         let decoded = try SyncPort.decode(Data(json.utf8))
-        #expect(decoded.projects.first?.parentID == nil)
         #expect(decoded.todos.first?.calendarEventID == "")
     }
 

@@ -28,7 +28,6 @@ struct SwiftDataRoutineRepositoryTests {
         #expect(throws: RepositoryError.self) {
             try repo.setPriority(id: nonExistentID, isImportant: true, isUrgent: false)
         }
-        #expect(throws: RepositoryError.self) { try repo.setProject(id: nonExistentID, projectID: UUID()) }
         #expect(throws: RepositoryError.self) { try repo.toggleTag(id: nonExistentID, tagID: UUID()) }
         #expect(throws: RepositoryError.self) { try repo.toggleRoutine(id: nonExistentID, dayKey: "2026-09-10") }
         #expect(throws: RepositoryError.self) { try repo.skipRoutine(id: nonExistentID, dayKey: "2026-09-10") }

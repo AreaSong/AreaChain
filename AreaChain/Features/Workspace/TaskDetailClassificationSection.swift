@@ -1,55 +1,6 @@
 import SwiftData
 import SwiftUI
 
-// MARK: - Project Picker
-
-/// 抽屉归属项目选择组件
-struct TaskDetailProjectPicker: View {
-    var selectedID: UUID?
-    var projects: [ProjectItem]
-    var onSelect: (UUID?) -> Void
-
-    @Environment(\.locale) private var locale
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("drawer.project.title")
-                .font(DaybookType.label)
-                .foregroundStyle(DaybookPalette.text.secondary)
-
-            Menu {
-                Button("classify.project.none") {
-                    onSelect(nil)
-                }
-                ForEach(projects.filter { $0.deletedAt == nil }) { proj in
-                    Button(proj.name) {
-                        onSelect(proj.id)
-                    }
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "folder")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.accent.base)
-                    let name = projects.first(where: { $0.id == selectedID && $0.deletedAt == nil })?.name
-                        ?? L10n.string("classify.project.none", locale: locale)
-                    Text(name)
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.primary)
-                    Spacer()
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(DaybookType.micro)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                }
-                .padding(.horizontal, 9)
-                .padding(.vertical, 6)
-                .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
-            }
-            .menuStyle(.borderlessButton)
-        }
-    }
-}
-
 // MARK: - Tag Selector
 
 /// 抽屉标签多选与新建组件

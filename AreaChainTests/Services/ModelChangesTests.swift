@@ -101,7 +101,7 @@ struct ModelChangesTests {
     }
 
     @Test func activeFilterCanAlwaysBeClearedWithoutCatalogChoices() {
-        let bar = BoardFilterBar(filter: BoardFilter(tagID: UUID()), projects: [], tags: [], bundleIDs: [], onChange: { _ in })
+        let bar = BoardFilterBar(filter: BoardFilter(tagID: UUID()), tags: [], bundleIDs: [], onChange: { _ in })
         #expect(bar.isVisible)
     }
 

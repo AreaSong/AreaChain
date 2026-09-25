@@ -102,7 +102,6 @@ struct DayBoardList: View {
         self.config = config
     }
 
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
@@ -313,7 +312,7 @@ struct DayBoardList: View {
         return list.filter {
             Classification.matchesListedTodo(
                 $0.classifyBits, dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey,
-                filter: filter, projectIDs: allowedProjects
+                filter: filter
             )
         }
     }
@@ -321,7 +320,7 @@ struct DayBoardList: View {
     private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
         guard filter.isActive else { return list }
         return list.filter {
-            Classification.matchesListedRoutine($0.classifyBits, filter: filter, projectIDs: allowedProjects)
+            Classification.matchesListedRoutine($0.classifyBits, filter: filter)
         }
     }
 
@@ -330,18 +329,14 @@ struct DayBoardList: View {
         return rows.filter { row in
             switch row {
             case .resident(let routine):
-                return Classification.matchesListedRoutine(routine.classifyBits, filter: filter, projectIDs: allowedProjects)
+                return Classification.matchesListedRoutine(routine.classifyBits, filter: filter)
             case .todo(let todo):
                 return Classification.matchesListedTodo(
                     todo.classifyBits, dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey,
-                    filter: filter, projectIDs: allowedProjects
+                    filter: filter
                 )
             }
         }
-    }
-
-    private var allowedProjects: Set<UUID>? {
-        filter.projectID.map { ProjectTree.subtreeIDs(root: $0, in: projects) }
     }
 
     private func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
@@ -360,7 +355,6 @@ struct DayBoardList: View {
 
     private var catalogContext: TaskCatalogContext {
         TaskCatalogContext(
-            projects: projects,
             tags: tags,
             attachments: attachments,
             context: modelContext

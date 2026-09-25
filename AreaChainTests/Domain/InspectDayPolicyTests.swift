@@ -4,12 +4,12 @@ import Testing
 
 struct InspectDayPolicyTests {
     @Test func pinsTodayOnFilteredListsOnly() {
-        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .dashboard, projectID: nil, tagID: nil))
-        #expect(InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, projectID: UUID(), tagID: nil))
-        #expect(InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, projectID: nil, tagID: UUID()))
-        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, projectID: nil, tagID: nil))
-        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .calendar, projectID: nil, tagID: nil))
-        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .search, projectID: nil, tagID: nil))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .dashboard, tagID: nil))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, tagID: nil))
+        #expect(InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, tagID: UUID()))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, tagID: nil))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .calendar, tagID: nil))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .search, tagID: nil))
     }
 
     @Test func pinsTodayWhenEnteringTodayOnly() {
@@ -58,7 +58,7 @@ struct InspectDayPolicyTests {
         let nav = WorkspaceNavigation()
         nav.selectedTab = .calendar
         board.inspectBoard("2026-01-01")
-        nav.selectedProjectID = UUID()
+        nav.selectedTagID = UUID()
         #expect(board.inspectingDayKey == DayClock.shared.todayKey)
         nav.inspectTask(UUID())
         #expect(board.inspectingDayKey == DayClock.shared.todayKey)

@@ -3,26 +3,11 @@ import Testing
 @testable import AreaChain
 
 struct CatalogTests {
-    @Test func subtreeIncludesDescendantsAndCycleGuard() {
-        let rootID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
-        let childID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
-        let leafID = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
-        let otherID = UUID(uuidString: "dddddddd-dddd-dddd-dddd-dddddddddddd")!
-        let root = ProjectItem(id: rootID, name: "工作", sortOrder: 0)
-        let child = ProjectItem(id: childID, name: "客户端", sortOrder: 1, parentID: rootID)
-        let leaf = ProjectItem(id: leafID, name: "角标", sortOrder: 2, parentID: childID)
-        let other = ProjectItem(id: otherID, name: "生活", sortOrder: 3)
-        let items = [root, child, leaf, other]
-        #expect(ProjectTree.subtreeIDs(root: rootID, in: items) == [rootID, childID, leafID])
-        #expect(ProjectTree.wouldCycle(moving: rootID, to: leafID, in: items))
-        #expect(ProjectTree.wouldCycle(moving: childID, to: childID, in: items))
-        #expect(!ProjectTree.wouldCycle(moving: childID, to: otherID, in: items))
-        #expect(!ProjectTree.wouldCycle(moving: childID, to: nil, in: items))
-        let rows = ProjectTree.outline(items)
-        #expect(rows.map(\.id) == [rootID, childID, leafID, otherID])
-        #expect(rows.map(\.depth) == [0, 1, 2, 0])
-        #expect(ProjectTree.pathLabel(leafID, in: items) == "工作 / 客户端 / 角标")
-        #expect(ProjectTree.allowedParents(for: rootID, in: items).map(\.id) == [otherID])
+    @Test func liveTagsStayFlatAndSorted() {
+        let later = TagItem(name: "后", sortOrder: 2)
+        let first = TagItem(name: "先", sortOrder: 0)
+        let buried = TagItem(name: "删", sortOrder: 1, deletedAt: Date(timeIntervalSince1970: 1))
+        #expect(Catalog.liveTags([later, buried, first]).map(\.name) == ["先", "后"])
     }
 
     @Test func attachmentClustersGroupByOwnerAndSkipDeleted() {
@@ -86,17 +71,13 @@ struct CatalogTests {
         #expect(AttachmentClusters.grouped([keep, note], liveOwnerIDs: []).isEmpty)
     }
 
-    @Test func unlinkProjectClearsRefsAndChildParent() {
-        let parentID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
-        let childID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
-        let parent = ProjectItem(id: parentID, name: "父", sortOrder: 0)
-        let child = ProjectItem(id: childID, name: "子", sortOrder: 1, parentID: parentID)
-        let todo = TodoItem(title: "任务", dayKey: "2026-09-08", projectID: parentID)
-        let routine = DailyRoutine(title: "习惯", sortOrder: 0, projectID: parentID)
-        Catalog.unlinkProject(parentID, todos: [todo], routines: [routine], projects: [parent, child])
-        #expect(todo.projectID == nil)
-        #expect(routine.projectID == nil)
-        #expect(child.parentID == nil)
+    @Test func unlinkTagClearsSubtasksToo() {
+        let tagID = UUID()
+        let todo = TodoItem(title: "任务", dayKey: "2026-09-08")
+        let subtask = SubtaskItem(title: "子", tagIDs: tagID.uuidString, todo: todo)
+        todo.subtasks = [subtask]
+        Catalog.unlinkTag(tagID, todos: [todo], routines: [], diaries: [])
+        #expect(!TagIDList.contains(subtask.tagIDs, tagID))
     }
 
     @Test func unlinkTagClearsTodosRoutinesAndDiaries() {
@@ -138,23 +119,15 @@ struct CatalogTests {
         #expect(CatalogChoices.tags([password, work], attachedIDs: attached).map(\.name) == ["密码", "工作"])
     }
 
-    @Test func matchingIncludesSubtreeTodosAndRoutines() {
-        let rootID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
-        let childID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
-        let otherID = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
-        let root = ProjectItem(id: rootID, name: "工作", sortOrder: 0)
-        let child = ProjectItem(id: childID, name: "客户端", sortOrder: 1, parentID: rootID)
-        let other = ProjectItem(id: otherID, name: "生活", sortOrder: 2)
-        let inRoot = TodoItem(title: "根任务", dayKey: "2026-09-09", projectID: rootID)
-        let inChild = TodoItem(title: "子任务", dayKey: "2026-09-09", projectID: childID)
-        let elsewhere = TodoItem(title: "其它", dayKey: "2026-09-09", projectID: otherID)
-        let buried = TodoItem(title: "已删", dayKey: "2026-09-09", deletedAt: Date(timeIntervalSince1970: 1), projectID: rootID)
-        let habit = DailyRoutine(title: "习惯", sortOrder: 0, projectID: childID)
-        let projects = [root, child, other]
-        let todos = Catalog.matchingTodos([inRoot, inChild, elsewhere, buried], project: root, tag: nil, projects: projects)
-        #expect(Set(todos.map(\.title)) == ["根任务", "子任务"])
-        #expect(Catalog.matchingRoutines([habit], project: root, tag: nil, projects: projects).map(\.title) == ["习惯"])
-        #expect(Catalog.matchingRoutines([habit], project: other, tag: nil, projects: projects).isEmpty)
+    @Test func matchingTodosAndRoutinesUseTheSameTag() {
+        let tag = TagItem(name: "工作", sortOrder: 0)
+        let hit = TodoItem(title: "根任务", dayKey: "2026-09-09", tagIDs: tag.id.uuidString)
+        let miss = TodoItem(title: "其它", dayKey: "2026-09-09")
+        let buried = TodoItem(title: "已删", dayKey: "2026-09-09", deletedAt: Date(timeIntervalSince1970: 1), tagIDs: tag.id.uuidString)
+        let habit = DailyRoutine(title: "习惯", sortOrder: 0, tagIDs: tag.id.uuidString)
+        #expect(Catalog.matchingTodos([hit, miss, buried], tag: tag).map(\.title) == ["根任务"])
+        #expect(Catalog.matchingRoutines([habit], tag: tag).map(\.title) == ["习惯"])
+        #expect(Catalog.matchingTodos([hit], tag: nil).isEmpty)
     }
 
     @Test func matchingRoutinesByTag() {
@@ -162,7 +135,7 @@ struct CatalogTests {
         let tag = TagItem(id: tagID, name: "跟进", sortOrder: 0)
         let hit = DailyRoutine(title: "带标", sortOrder: 0, tagIDs: tagID.uuidString)
         let miss = DailyRoutine(title: "无标", sortOrder: 1)
-        #expect(Catalog.matchingRoutines([hit, miss], project: nil, tag: tag, projects: []).map(\.title) == ["带标"])
+        #expect(Catalog.matchingRoutines([hit, miss], tag: tag).map(\.title) == ["带标"])
     }
 
     @Test func reindexRoutinesMovesSortOrder() {
@@ -175,27 +148,17 @@ struct CatalogTests {
     }
 
     @Test func openCountIncludesDueHabits() {
-        let projectID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
-        let project = ProjectItem(id: projectID, name: "工作", sortOrder: 0)
-        let openTodo = TodoItem(title: "未完成", dayKey: "2026-09-09", projectID: projectID)
-        let doneTodo = TodoItem(title: "已完成", isDone: true, dayKey: "2026-09-09", projectID: projectID)
-        let due = DailyRoutine(title: "该打", sortOrder: 0, createdDayKey: "2026-09-01", projectID: projectID)
+        let tag = TagItem(name: "工作", sortOrder: 0)
+        let encoded = tag.id.uuidString
+        let openTodo = TodoItem(title: "未完成", dayKey: "2026-09-09", tagIDs: encoded)
+        let doneTodo = TodoItem(title: "已完成", isDone: true, dayKey: "2026-09-09", tagIDs: encoded)
+        let due = DailyRoutine(title: "该打", sortOrder: 0, createdDayKey: "2026-09-01", tagIDs: encoded)
         let paused = DailyRoutine(
-            title: "停用",
-            sortOrder: 1,
-            isEnabled: false,
-            createdDayKey: "2026-09-01",
-            projectID: projectID
+            title: "停用", sortOrder: 1, isEnabled: false, createdDayKey: "2026-09-01", tagIDs: encoded
         )
         #expect(
             Catalog.openCount(
-                todos: [openTodo, doneTodo],
-                routines: [due, paused],
-                checks: [],
-                project: project,
-                tag: nil,
-                projects: [project],
-                dayKey: "2026-09-09"
+                todos: [openTodo, doneTodo], routines: [due, paused], checks: [], tag: tag, dayKey: "2026-09-09"
             ) == 2
         )
     }

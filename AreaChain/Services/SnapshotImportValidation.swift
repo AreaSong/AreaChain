@@ -33,7 +33,6 @@ struct SnapshotImportState {
     let todos: [TodoItem]
     let subtasks: [SubtaskItem]
     let diaries: [DiaryEntry]
-    let projects: [ProjectItem]
     let tags: [TagItem]
     let attachments: [AttachmentItem]
 
@@ -43,7 +42,6 @@ struct SnapshotImportState {
         todos = try context.fetch(FetchDescriptor<TodoItem>())
         subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
         diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
-        projects = try context.fetch(FetchDescriptor<ProjectItem>())
         tags = try context.fetch(FetchDescriptor<TagItem>())
         attachments = try context.fetch(FetchDescriptor<AttachmentItem>())
     }
@@ -55,7 +53,6 @@ struct SnapshotImportState {
             ("TodoItem", todos.map(\.id), snapshot.todos.map(\.id)),
             ("SubtaskItem", subtasks.map(\.id), snapshot.todos.flatMap { $0.subtasks.map(\.id) }),
             ("DiaryEntry", diaries.map(\.id), snapshot.diaries.map(\.id)),
-            ("ProjectItem", projects.map(\.id), snapshot.projects.map(\.id)),
             ("TagItem", tags.map(\.id), snapshot.tags.map(\.id)),
             ("AttachmentItem", attachments.map(\.id), snapshot.attachments.map(\.id))
         ]

@@ -60,11 +60,6 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         return sorted.filter { $0.deletedAt == nil }
     }
 
-    func fetchTodos(forProject projectID: UUID) throws -> [TodoItem] {
-        let all = try fetchAllTodos(includeDeleted: false)
-        return all.filter { $0.projectID == projectID }
-    }
-
     func fetchTodos(forTag tagID: UUID) throws -> [TodoItem] {
         let all = try fetchAllTodos(includeDeleted: false)
         return all.filter { TagIDList.contains($0.tagIDs, tagID) }
@@ -83,8 +78,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             title: trimmed,
             dayKey: params.dayKey,
             remindMinutes: params.remindMinutes,
-            projectID: params.projectID,
-            tagIDs: TagIDList.encode(params.tagIDs),
+            tagIDs: TagIDList.encode(TagIDList.normalized(params.tagIDs)),
             isImportant: params.isImportant,
             isUrgent: params.isUrgent,
             sourceBundleID: params.sourceBundleID,
@@ -163,14 +157,6 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
         ClassifiedFieldsUpdate.setPriority(todo, isImportant: isImportant, isUrgent: isUrgent)
-        try saveAndNotify()
-    }
-
-    func setProject(id: UUID, projectID: UUID?) throws {
-        guard let todo = try fetchTodo(id: id) else {
-            throw RepositoryError.notFound("TodoItem(id: \(id))")
-        }
-        ClassifiedFieldsUpdate.setProject(todo, projectID: projectID)
         try saveAndNotify()
     }
 
@@ -371,11 +357,11 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         try saveAndNotify()
     }
 
-    func batchSetProject(ids: Set<UUID>, projectID: UUID?) throws {
+    func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws {
         guard !ids.isEmpty else { return }
         let todos = try fetchAllTodos(includeDeleted: false)
         for todo in todos where ids.contains(todo.id) {
-            ClassifiedFieldsUpdate.setProject(todo, projectID: projectID)
+            ClassifiedFieldsUpdate.setTag(todo, tagID: tagID, present: present)
         }
         try saveAndNotify()
     }

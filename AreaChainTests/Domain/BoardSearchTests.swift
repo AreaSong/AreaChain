@@ -11,7 +11,7 @@ struct BoardSearchTests {
         #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter()) == entries)
         #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(tagID: tagID)) == [tagged])
         #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(isHighPriorityOnly: true)).isEmpty)
-        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(projectID: UUID())).isEmpty)
+        #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(tagID: UUID())).isEmpty)
         #expect(BoardSearch.filteredDiaries(entries, filter: BoardFilter(bundleID: "sample.app")).isEmpty)
     }
 

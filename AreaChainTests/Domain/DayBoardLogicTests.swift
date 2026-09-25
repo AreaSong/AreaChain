@@ -281,14 +281,13 @@ struct DayBoardLogicTests {
             title: "项目里的",
             isDone: false,
             dayKey: today,
-            projectID: project,
-            tagIDs: "",
+            tagIDs: project.uuidString,
             sourceBundleID: "com.apple.Safari"
         )
         let other = TodoSnapshot(id: UUID(), title: "别的", isDone: false, dayKey: today)
         let filtered = DayBoardLogic.matchingTodos(
             [tagged, other],
-            filter: BoardFilter(projectID: project)
+            filter: BoardFilter(tagID: project)
         )
         #expect(filtered.map(\.title) == ["项目里的"])
         #expect(

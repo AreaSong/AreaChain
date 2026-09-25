@@ -76,24 +76,23 @@ AreaChain/
 
 界面回归使用独立的 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.workspace-ui-qa` 和构建目录，以 `INFOPLIST_KEY_LSUIElement=NO` 将测试宿主作为前台应用运行，并逐套串行执行；生产构建保留菜单栏启动方式，不安装或覆盖现用应用。`CaptureOverlayLayoutTests` 为工作台分支显式注入 `workspaceEmbedded`，通过原生事件队列投递点击与按键，并限时等待浮层实际呈现；测试窗口失去焦点会按产品规则关闭浮层，因此焦点敏感测试期间应保持测试窗口激活，截图查看与交互测试分开进行。
 
-## 数据模型设计 (SwiftData 8 张表)
+## 数据模型设计 (SwiftData 7 张表)
 
 | 模型类名 | 所属领域 | 职责与字段 |
 |---|---|---|
-| `DailyRoutine` | 重复事项（底层仍是该实体） | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
+| `DailyRoutine` | 重复事项（底层仍是该实体） | `id`, `title`, `sortOrder`, `isEnabled`, `createdDayKey`, `weekdayMask`（及兼容字段 `weekdaysOnly`）, `createdAt`, `remindMinutes`, `deletedAt`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `notes`, `pausedOnDayKey`（停用当天；旧数据可空）；对 `RoutineCheck` cascade。 |
 | `RoutineCheck` | 习惯打卡 | `id`, `dayKey`, `isDone`, `isSkipped`，反向关联 `DailyRoutine`。跳过时 `isDone = true && isSkipped = true`。 |
-| `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `projectID`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
+| `TodoItem` | 临时待办 | `id`, `title`, `isDone`, `dayKey`, `createdAt`, `remindMinutes`, `deletedAt`, `tagIDs`, `isImportant`, `isUrgent`, `sourceBundleID`, `calendarEventID`, `notes`；对 `SubtaskItem` cascade（硬删除）。 |
 | `SubtaskItem` | 待办子任务 | `id`, `title`, `isDone`, `sortOrder`, `createdAt`, `deletedAt`, `tagIDs`（默认空），一层，归属 `TodoItem`。 |
 | `DiaryEntry` | 灵感手记 | `id`, `text`, `dayKey`, `createdAt`, `deletedAt`, `tagIDs`, `isPinned`；新增 `isPrivate`, `encryptedText`, `privacyVaultID`。受保护正文的 `text` 为空，普通 JSON 排除私密记录；旧库新增字段默认未保护，不自动迁移真实内容。 |
-| `ProjectItem` | 项目分类树 | `id`, `name`, `sortOrder`, `parentID`, `deletedAt`。 |
-| `TagItem` | 标签 | `id`, `name`, `sortOrder`, `deletedAt`, `isPrivateDiary`（默认 false）；隐私规则按稳定 UUID 关联。 |
+| `TagItem` | 平面标签 | `id`, `name`, `sortOrder`, `deletedAt`, `isPrivateDiary`（默认 false）, `colorToken`。没有父标签。隐私规则按稳定 UUID 关联。`colorToken` 是稳定语义色标识，不是平台颜色对象。 |
 | `AttachmentItem` | 附件元数据 | `id`, `ownerKind`（todo/routine/diary）, `ownerID`, `filename`, `createdAt`, `deletedAt`, `storageID`, `privacyVaultID`, `retiredStorageID`。图像在 `Application Support/areachain-attachments/<storageID 或 id>`；私密图为密文，普通 JSON 不含二进制，加密备份包含。退休指针保留待清理原文件，清理完成前禁止再次转换覆盖它。 |
 
 ### 数据约束与设计考量
 
 1. **CloudKit 边界**：不用 `@Attribute(.unique)`；对外稳定 UUID。iCloud 开关只写入 `wantsICloudSync`，此版本尚未接入 CloudKit，打开不改变本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件、项目与标签。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私；父项未知或已删时附件不能单独恢复。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件与标签。永久清除标签会先解除事项、重复事项、子任务和手记上的关联。手记预置标签不能删除。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私；父项未知或已删时附件不能单独恢复。
 4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
 5. **快照日期**：JSON 使用带小数秒的 ISO8601，旧备份整秒日期仍能导入。
 

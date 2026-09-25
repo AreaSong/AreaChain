@@ -7,7 +7,6 @@ struct TrashPage: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
 
@@ -35,8 +34,7 @@ struct TrashPage: View {
                 return item.filename
             })
         }
-        let catalog = projects.compactMap { TrashRow.project($0) }
-            + tags.compactMap { TrashRow.tag($0) }
+        let catalog = tags.compactMap { TrashRow.tag($0) }
         return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
     }
 
@@ -224,22 +222,6 @@ struct TrashRow: Identifiable {
             purgesOwner: AttachmentOwnerKey(kind: .diary, id: item.id),
             titleProvider: { DiaryPrivacy.displayText(item.snapshot, tags: tags(), locale: locale) },
             filesToRemove: attachments.filter { $0.ownerKey == AttachmentOwnerKey(kind: .diary, id: item.id) }.map(\.id)
-        )
-    }
-
-    static func project(_ item: ProjectItem) -> TrashRow? {
-        guard let deletedAt = item.deletedAt else { return nil }
-        return TrashRow(
-            id: item.id,
-            title: item.name,
-            kindLabel: "trash.kind.project",
-            isResident: false,
-            deletedAt: deletedAt,
-            restore: { _ = DayBoardMutations.restoreProject(item) },
-            purge: { DayBoardMutations.purgeProject(item) },
-            removeFromStore: { context in
-                try DayBoardMutations.catalogRepo(for: context).deleteProject(id: item.id, soft: false)
-            }
         )
     }
 

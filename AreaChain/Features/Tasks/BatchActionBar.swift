@@ -20,20 +20,17 @@ struct BatchScheduleActions {
 
 /// 批量操作归类与目录动作
 struct BatchClassifyActions {
-    var onSetProject: (UUID?) -> Void
+    var onApplyTag: (UUID, Bool) -> Void
     var onToggleTag: (UUID) -> Void
-    var projects: [ProjectItem]
     var tags: [TagItem]
 
     init(
-        onSetProject: @escaping (UUID?) -> Void,
-        onToggleTag: @escaping (UUID) -> Void,
-        projects: [ProjectItem] = [],
+        onApplyTag: @escaping (UUID, Bool) -> Void = { _, _ in },
+        onToggleTag: @escaping (UUID) -> Void = { _ in },
         tags: [TagItem] = []
     ) {
-        self.onSetProject = onSetProject
+        self.onApplyTag = onApplyTag
         self.onToggleTag = onToggleTag
-        self.projects = projects
         self.tags = tags
     }
 }
@@ -64,11 +61,10 @@ struct BatchActionBar: View {
     var onMoveToday: () -> Void { schedule.onMoveToday }
     var onMoveTomorrow: () -> Void { schedule.onMoveTomorrow }
     var onToggleDone: (Bool) -> Void { schedule.onToggleDone }
-    var onSetProject: (UUID?) -> Void { classify.onSetProject }
+    var onApplyTag: (UUID, Bool) -> Void { classify.onApplyTag }
     var onToggleTag: (UUID) -> Void { classify.onToggleTag }
     var onTrash: () -> Void { lifecycle.onTrash }
     var onClear: () -> Void { lifecycle.onClear }
-    var projects: [ProjectItem] { classify.projects }
     var tags: [TagItem] { classify.tags }
 
     init(
@@ -97,7 +93,6 @@ struct BatchActionBar: View {
 
             dateAdjustmentMenu
             statusAdjustmentMenu
-            projectAssignmentMenu
             tagAssignmentMenu
             actionButtons
         }
@@ -143,29 +138,18 @@ struct BatchActionBar: View {
     }
 
     @ViewBuilder
-    private var projectAssignmentMenu: some View {
-        if !projects.isEmpty {
-            Menu {
-                Button("classify.project.none") { onSetProject(nil) }
-                Divider()
-                ForEach(projects.filter { $0.deletedAt == nil }) { proj in
-                    Button(proj.name) { onSetProject(proj.id) }
-                }
-            } label: {
-                Label("batch.project", systemImage: "folder")
-                    .font(DaybookType.caption)
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
-        }
-    }
-
-    @ViewBuilder
     private var tagAssignmentMenu: some View {
         if !taskTags.isEmpty {
             Menu {
-                ForEach(taskTags) { tag in
-                    Button("#\(tag.name)") { onToggleTag(tag.id) }
+                Section("batch.tag.add") {
+                    ForEach(taskTags) { tag in
+                        Button("#\(tag.name)") { onApplyTag(tag.id, true) }
+                    }
+                }
+                Section("batch.tag.remove") {
+                    ForEach(taskTags) { tag in
+                        Button("#\(tag.name)") { onApplyTag(tag.id, false) }
+                    }
                 }
             } label: {
                 Label("batch.tag", systemImage: "tag")

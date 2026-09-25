@@ -1,26 +1,19 @@
 import Foundation
 import SwiftData
 
-@Model
-final class ProjectItem {
-    var id: UUID
-    var name: String
-    var sortOrder: Int
-    var parentID: UUID?
-    var deletedAt: Date?
+/// 标签色只存稳定标识，颜色映射在 Theme，不持久化平台颜色对象。
+enum TagColorToken: String, CaseIterable, Codable, Sendable, Equatable {
+    case moss
+    case stamp
+    case ink
+    case clay
+    case amber
+    case slate
 
-    init(
-        id: UUID = UUID(),
-        name: String,
-        sortOrder: Int,
-        parentID: UUID? = nil,
-        deletedAt: Date? = nil
-    ) {
-        self.id = id
-        self.name = name
-        self.sortOrder = sortOrder
-        self.parentID = parentID
-        self.deletedAt = deletedAt
+    static let `default` = TagColorToken.moss
+
+    static func resolved(_ raw: String) -> TagColorToken {
+        TagColorToken(rawValue: raw) ?? .default
     }
 }
 
@@ -31,17 +24,28 @@ final class TagItem {
     var sortOrder: Int
     var deletedAt: Date?
     var isPrivateDiary: Bool = false
+    var colorToken: String = TagColorToken.default.rawValue
+
+    var resolvedColorToken: TagColorToken {
+        TagColorToken.resolved(colorToken)
+    }
+
+    var isDiaryPreset: Bool {
+        DiaryMemoTags.isPresetName(name)
+    }
 
     init(
         id: UUID = UUID(),
         name: String,
         sortOrder: Int,
-        deletedAt: Date? = nil
+        deletedAt: Date? = nil,
+        colorToken: String = TagColorToken.default.rawValue
     ) {
         self.id = id
         self.name = name
         self.sortOrder = sortOrder
         self.deletedAt = deletedAt
+        self.colorToken = TagColorToken.resolved(colorToken).rawValue
     }
 }
 

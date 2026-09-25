@@ -6,7 +6,6 @@ enum SyncPort {
         checks: [RoutineCheck],
         todos: [TodoItem],
         diaries: [DiaryEntry],
-        projects: [ProjectItem] = [],
         tags: [TagItem] = [],
         attachments: [AttachmentItem] = [],
         exportedAt: Date = .now
@@ -18,7 +17,6 @@ enum SyncPort {
             checks: checks.compactMap(exportedCheck),
             todos: todos.map(exportedTodo),
             diaries: diaries.filter { !privateIDs.contains($0.id) }.map(exportedDiary),
-            projects: projects.map(exportedProject),
             tags: tags.map(exportedTag),
             attachments: attachments.filter {
                 $0.privacyVaultID == nil && !($0.ownerKind == AttachmentOwner.diary.rawValue && privateIDs.contains($0.ownerID))
@@ -52,7 +50,6 @@ enum SyncPort {
             createdAt: item.createdAt,
             remindMinutes: item.remindMinutes,
             deletedAt: item.deletedAt,
-            projectID: item.projectID,
             tagIDs: item.tagIDs,
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
@@ -82,7 +79,6 @@ enum SyncPort {
             createdAt: item.createdAt,
             remindMinutes: item.remindMinutes,
             deletedAt: item.deletedAt,
-            projectID: item.projectID,
             tagIDs: item.tagIDs,
             isImportant: item.isImportant,
             isUrgent: item.isUrgent,
@@ -115,18 +111,11 @@ enum SyncPort {
         )
     }
 
-    private static func exportedProject(_ item: ProjectItem) -> ExportedProject {
-        ExportedProject(
-            id: item.id,
-            name: item.name,
-            sortOrder: item.sortOrder,
-            parentID: item.parentID,
-            deletedAt: item.deletedAt
-        )
-    }
-
     private static func exportedTag(_ item: TagItem) -> ExportedTag {
-        ExportedTag(id: item.id, name: item.name, sortOrder: item.sortOrder, deletedAt: item.deletedAt)
+        ExportedTag(
+            id: item.id, name: item.name, sortOrder: item.sortOrder,
+            deletedAt: item.deletedAt, colorToken: item.colorToken
+        )
     }
 
     private static func exportedAttachment(_ item: AttachmentItem) -> ExportedAttachment {

@@ -11,7 +11,6 @@ struct TaskDetailDrawer: View {
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
@@ -88,7 +87,7 @@ struct TaskDetailDrawer: View {
                 todoHeader(todo)
                 TodoBasicsSectionView(todo: todo)
                 TodoScheduleSectionView(todo: todo)
-                TodoClassificationSectionView(todo: todo, projects: projects, tags: tags, modelContext: modelContext)
+                TodoClassificationSectionView(todo: todo, tags: tags, modelContext: modelContext)
                 TaskDetailAssetsSectionView(
                     props: TaskDetailAssetsProps(ownerID: todo.id, ownerKind: .todo, createdAt: todo.createdAt, sourceBundleID: todo.sourceBundleID),
                     attachments: attachments,
@@ -156,7 +155,7 @@ struct TaskDetailDrawer: View {
                     }
                 )
                 RoutineScheduleSectionView(routine: routine)
-                RoutineClassificationSectionView(routine: routine, projects: projects, tags: tags, modelContext: modelContext)
+                RoutineClassificationSectionView(routine: routine, tags: tags, modelContext: modelContext)
                 TaskDetailAssetsSectionView(
                     props: TaskDetailAssetsProps(ownerID: routine.id, ownerKind: .routine, createdAt: routine.createdAt, sourceBundleID: routine.sourceBundleID),
                     attachments: attachments,

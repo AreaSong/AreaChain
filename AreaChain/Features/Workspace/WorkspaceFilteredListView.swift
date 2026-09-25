@@ -7,12 +7,10 @@ struct WorkspaceFilteredListView: View {
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    var project: ProjectItem?
-    var tag: TagItem?
+    var tag: TagItem
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
@@ -24,9 +22,9 @@ struct WorkspaceFilteredListView: View {
 
     var body: some View {
         DaybookPage(
-            titleText: project?.name ?? tag?.name,
+            titleText: tag.name,
             titleStyle: .entity,
-            systemImage: project != nil ? "folder.fill" : "number",
+            systemImage: "number",
             minWidth: 480,
             minHeight: 480
         ) {
@@ -34,7 +32,7 @@ struct WorkspaceFilteredListView: View {
         } content: {
             DaybookComposer(
                 text: $draftTitle,
-                placeholder: project != nil ? "filtered.add.project" : "filtered.add.tag",
+                placeholder: "filtered.add.tag",
                 onSubmit: addTask
             )
             taskList
@@ -75,9 +73,7 @@ struct WorkspaceFilteredListView: View {
             todos: todos,
             routines: routines,
             checks: checks,
-            project: project,
             tag: tag,
-            projects: projects,
             dayKey: DayClock.shared.todayKey
         )
     }
@@ -88,7 +84,7 @@ struct WorkspaceFilteredListView: View {
         let todayKey = DayClock.shared.todayKey
         guard DayBoardMutations.addCapturedTodo(
             text: title, dayKey: todayKey, context: modelContext,
-            projectID: project?.id, tagIDs: tag.map { [$0.id] } ?? []
+            tagIDs: [tag.id]
         ) else { return }
         draftTitle = ""
     }
@@ -104,7 +100,7 @@ struct WorkspaceFilteredListView: View {
                 if openRows.isEmpty && doneTodos.isEmpty && matchingSubtasks.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
-                        systemImage: project != nil ? "folder" : "tag"
+                        systemImage: "tag"
                     )
                     .padding(.top, 40)
                 } else {
@@ -185,7 +181,6 @@ struct WorkspaceFilteredListView: View {
 
     private var catalogContext: TaskCatalogContext {
         TaskCatalogContext(
-            projects: projects,
             tags: tags,
             attachments: attachments,
             context: modelContext
@@ -261,15 +256,15 @@ struct WorkspaceFilteredListView: View {
     }
 
     private var matchingTodos: [TodoItem] {
-        Catalog.matchingTodos(todos, project: project, tag: tag, projects: projects)
+        Catalog.matchingTodos(todos, tag: tag)
     }
 
     private var matchingRoutines: [DailyRoutine] {
-        Catalog.matchingRoutines(routines, project: project, tag: tag, projects: projects)
+        Catalog.matchingRoutines(routines, tag: tag)
     }
 
     private var matchingSubtasks: [SubtaskItem] {
-        project == nil ? Catalog.matchingSubtasks(todos, tag: tag) : []
+        Catalog.matchingSubtasks(todos, tag: tag)
     }
 
     private func mixedRows(open: Bool) -> [BoardRow] {

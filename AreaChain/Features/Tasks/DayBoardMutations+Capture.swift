@@ -4,7 +4,7 @@ import SwiftData
 extension DayBoardMutations {
     @discardableResult
     static func addCapturedTodo(
-        text: String, dayKey: String, context: ModelContext, projectID: UUID? = nil, tagIDs: [UUID] = []
+        text: String, dayKey: String, context: ModelContext, tagIDs: [UUID] = []
     ) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
@@ -14,7 +14,7 @@ extension DayBoardMutations {
             let params = CreateTodoParams(
                 title: parsed.cleanTitle, dayKey: dayKey, notes: parsed.notes,
                 remindMinutes: parsed.remindMinutes, isImportant: parsed.isImportant,
-                isUrgent: parsed.isUrgent, projectID: projectID, tagIDs: TagIDList.parse(ids),
+                isUrgent: parsed.isUrgent, tagIDs: TagIDList.parse(ids),
                 sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
             )
             _ = try taskRepo(for: context).addTodo(params)

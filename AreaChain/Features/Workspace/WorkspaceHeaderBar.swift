@@ -6,12 +6,11 @@ import SwiftUI
 struct WorkspaceHeaderBar: View {
     @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
-    var projects: [ProjectItem]
     var tags: [TagItem]
 
     var body: some View {
         HStack(spacing: 12) {
-            WorkspaceHeaderLeadingTitle(navigation: navigation, projects: projects, tags: tags)
+            WorkspaceHeaderLeadingTitle(navigation: navigation, tags: tags)
 
             Spacer(minLength: 16)
 
@@ -33,19 +32,11 @@ struct WorkspaceHeaderBar: View {
 
 struct WorkspaceHeaderLeadingTitle: View {
     @Bindable var navigation: WorkspaceNavigation
-    var projects: [ProjectItem]
     var tags: [TagItem]
 
     var body: some View {
         HStack(spacing: 8) {
-            if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
-                Image(systemName: "folder.fill")
-                    .foregroundStyle(DaybookPalette.accent.base)
-                Text(project.name)
-                    .font(DaybookType.body.weight(.medium))
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
-            } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
+            if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
                 Image(systemName: "number")
                     .foregroundStyle(DaybookPalette.accent.base)
                 Text("#\(tag.name)")
@@ -132,7 +123,6 @@ struct WorkspaceHeaderInspectorToggle: View {
 
 struct WorkspaceToolbarModifier: ViewModifier {
     @Bindable var navigation: WorkspaceNavigation
-    var projects: [ProjectItem]
     var tags: [TagItem]
 
     func body(content: Content) -> some View {
@@ -141,7 +131,6 @@ struct WorkspaceToolbarModifier: ViewModifier {
                 ToolbarItem(placement: .navigation) {
                     WorkspaceHeaderLeadingTitle(
                         navigation: navigation,
-                        projects: projects,
                         tags: tags
                     )
                 }
@@ -162,12 +151,10 @@ struct WorkspaceToolbarModifier: ViewModifier {
 extension View {
     func workspaceToolbar(
         navigation: WorkspaceNavigation,
-        projects: [ProjectItem],
         tags: [TagItem]
     ) -> some View {
         modifier(WorkspaceToolbarModifier(
             navigation: navigation,
-            projects: projects,
             tags: tags
         ))
     }

@@ -52,48 +52,6 @@ enum BoardFilterChoices {
         }
     }
 
-    static func projects(
-        filter: BoardFilter,
-        rows: [NamedRow],
-        counts: [UUID: Int],
-        unclassifiedCount: Int?,
-        locale: Locale
-    ) -> [BoardFilterChoice] {
-        let all = BoardFilterChoice(
-            id: "all",
-            title: L10n.string("filter.all", locale: locale),
-            count: nil,
-            indent: 0,
-            isSelected: filter.projectID == nil,
-            dotColor: nil,
-            systemImage: nil,
-            applied: filter.withProject(nil),
-            cleared: filter.withProject(nil)
-        )
-        let none = BoardFilterChoice(
-            id: BoardFilter.noneID.uuidString,
-            title: L10n.string("filter.project.none", locale: locale),
-            count: unclassifiedCount,
-            indent: 0,
-            isSelected: filter.isNoProject,
-            dotColor: nil,
-            systemImage: nil,
-            applied: filter.withProject(BoardFilter.noneID),
-            cleared: filter.withProject(nil)
-        )
-        return [all, none] + rows.map { row in
-            valueChoice(
-                id: row.id,
-                title: row.name,
-                count: counts[row.id],
-                indent: CGFloat(row.depth) * 8,
-                isSelected: filter.projectID == row.id,
-                applied: filter.withProject(row.id),
-                cleared: filter.withProject(nil)
-            )
-        }
-    }
-
     static func tags(
         filter: BoardFilter,
         rows: [NamedRow],

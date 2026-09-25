@@ -17,7 +17,6 @@ enum PriorityFilterScope: String, CaseIterable, Equatable, Sendable {
 }
 
 struct BoardFilter: Equatable {
-    var projectID: UUID? = nil
     var tagID: UUID? = nil
     var bundleID: String? = nil
     var isHighPriorityOnly: Bool = false
@@ -26,17 +25,10 @@ struct BoardFilter: Equatable {
 
     static let noneID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
 
-    var isNoProject: Bool { projectID == Self.noneID }
     var isNoTag: Bool { tagID == Self.noneID }
 
     var isActive: Bool {
-        projectID != nil || tagID != nil || bundleID != nil || isHighPriorityOnly || priorityScope != .all || dateScope != .all
-    }
-
-    func withProject(_ id: UUID?) -> BoardFilter {
-        var next = self
-        next.projectID = id
-        return next
+        tagID != nil || bundleID != nil || isHighPriorityOnly || priorityScope != .all || dateScope != .all
     }
 
     func withTag(_ id: UUID?) -> BoardFilter {
@@ -73,7 +65,6 @@ struct BoardFilter: Equatable {
 }
 
 struct ClassifyBits: Equatable {
-    var projectID: UUID? = nil
     var tagIDs: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
@@ -91,6 +82,15 @@ enum TagIDList {
 
     static func contains(_ raw: String, _ id: UUID) -> Bool {
         parse(raw).contains(id)
+    }
+
+    static func normalized(_ ids: [UUID]) -> [UUID] {
+        var seen: Set<UUID> = []
+        return ids.filter { seen.insert($0).inserted }
+    }
+
+    static func normalized(_ raw: String) -> String {
+        encode(normalized(parse(raw)))
     }
 
     static func toggling(_ raw: String, _ id: UUID) -> String {
@@ -173,7 +173,7 @@ enum Classification {
         QuadrantSlot.of(important: important, urgent: urgent).rawValue
     }
 
-    static func matches(_ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil) -> Bool {
+    static func matches(_ bits: ClassifyBits, filter: BoardFilter) -> Bool {
         if filter.priorityScope != .all {
             switch filter.priorityScope {
             case .all:
@@ -192,14 +192,6 @@ enum Classification {
         } else if filter.isHighPriorityOnly, !(bits.isImportant || bits.isUrgent) {
             return false
         }
-        if let projectID = filter.projectID {
-            if projectID == BoardFilter.noneID {
-                guard bits.projectID == nil else { return false }
-            } else {
-                let allowed = projectIDs ?? [projectID]
-                guard let current = bits.projectID, allowed.contains(current) else { return false }
-            }
-        }
         if let tagID = filter.tagID {
             if tagID == BoardFilter.noneID {
                 guard TagIDList.parse(bits.tagIDs).isEmpty else { return false }
@@ -213,9 +205,9 @@ enum Classification {
 
     static func matchesListedTodo(
         _ bits: ClassifyBits, dayKey: String, isDone: Bool, todayKey: String,
-        filter: BoardFilter, projectIDs: Set<UUID>? = nil
+        filter: BoardFilter
     ) -> Bool {
-        guard matches(bits, filter: filter, projectIDs: projectIDs) else { return false }
+        guard matches(bits, filter: filter) else { return false }
         if filter.dateScope != .all {
             guard matchesDate(dayKey: dayKey, isDone: isDone, todayKey: todayKey, scope: filter.dateScope) else { return false }
         }
@@ -223,9 +215,9 @@ enum Classification {
     }
 
     static func matchesListedRoutine(
-        _ bits: ClassifyBits, filter: BoardFilter, projectIDs: Set<UUID>? = nil
+        _ bits: ClassifyBits, filter: BoardFilter
     ) -> Bool {
-        guard matches(bits, filter: filter, projectIDs: projectIDs) else { return false }
+        guard matches(bits, filter: filter) else { return false }
         return filter.dateScope != .overdue
     }
 

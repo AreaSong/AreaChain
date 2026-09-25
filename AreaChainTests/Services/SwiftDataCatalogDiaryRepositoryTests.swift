@@ -30,13 +30,6 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(throws: RepositoryError.self) { try diaryRepo.restoreDiary(id: id) }
         #expect(throws: RepositoryError.self) { try diaryRepo.purgeDiary(id: id) }
 
-        #expect(throws: RepositoryError.self) {
-            try catalogRepo.updateProject(id: id, name: "p", parentID: nil, sortOrder: nil)
-        }
-        #expect(throws: RepositoryError.self) { try catalogRepo.deleteProject(id: id, soft: true) }
-        #expect(throws: RepositoryError.self) { try catalogRepo.restoreProject(id: id) }
-        #expect(throws: RepositoryError.self) { try catalogRepo.purgeProject(id: id) }
-
         #expect(throws: RepositoryError.self) { try catalogRepo.updateTag(id: id, name: "t", sortOrder: nil) }
         #expect(throws: RepositoryError.self) { try catalogRepo.deleteTag(id: id, soft: true) }
         #expect(throws: RepositoryError.self) { try catalogRepo.restoreTag(id: id) }
@@ -47,14 +40,8 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         let (container, diaryRepo, catalogRepo) = try makeRepos()
         _ = container
         #expect(throws: RepositoryError.self) { try diaryRepo.addDiary(text: "  ", dayKey: "2026-09-10", tagIDs: []) }
-        #expect(throws: RepositoryError.self) { try catalogRepo.createProject(name: "  ", parentID: nil, sortOrder: nil) }
         #expect(throws: RepositoryError.self) { try catalogRepo.createTag(name: "  ", sortOrder: nil) }
         #expect(throws: RepositoryError.self) { try catalogRepo.resolveOrCreateTag(name: "  ") }
-
-        let proj = try catalogRepo.createProject(name: "Valid Proj", parentID: nil, sortOrder: 0)
-        #expect(throws: RepositoryError.self) {
-            try catalogRepo.updateProject(id: proj.id, name: "  ", parentID: nil, sortOrder: nil)
-        }
 
         let tag = try catalogRepo.createTag(name: "Valid Tag", sortOrder: 0)
         #expect(throws: RepositoryError.self) {
@@ -107,54 +94,12 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(attachments.isEmpty)
     }
 
-    @Test func projectTreeHierarchyAndNilParentID() throws {
-        let (container, _, catalogRepo) = try makeRepos()
-        _ = container
-        let root = try catalogRepo.createProject(name: "Root", parentID: nil, sortOrder: 0)
-        let sub1 = try catalogRepo.createProject(name: "Sub 1", parentID: root.id, sortOrder: 0)
-        let sub2 = try catalogRepo.createProject(name: "Sub 2", parentID: sub1.id, sortOrder: 0)
-
-        var outline = try catalogRepo.projectOutline()
-        #expect(outline.count == 3)
-        #expect(outline[0].id == root.id && outline[0].depth == 0)
-        #expect(outline[1].id == sub1.id && outline[1].depth == 1)
-        #expect(outline[2].id == sub2.id && outline[2].depth == 2)
-
-        #expect(try catalogRepo.pathLabel(for: sub2.id) == "Root / Sub 1 / Sub 2")
-
-        try catalogRepo.updateProject(id: sub2.id, name: nil, parentID: .some(nil), sortOrder: nil)
-        outline = try catalogRepo.projectOutline()
-        let sub2Row = try #require(outline.first(where: { $0.id == sub2.id }))
-        #expect(sub2Row.depth == 0)
-    }
-
-    @Test func projectTreeCyclePreventionViaAllowedParents() throws {
-        let (container, _, catalogRepo) = try makeRepos()
-        _ = container
-        let rootA = try catalogRepo.createProject(name: "Root A", parentID: nil, sortOrder: 0)
-        let childA = try catalogRepo.createProject(name: "Child A", parentID: rootA.id, sortOrder: 0)
-        let grandA = try catalogRepo.createProject(name: "Grand A", parentID: childA.id, sortOrder: 0)
-        let rootB = try catalogRepo.createProject(name: "Root B", parentID: nil, sortOrder: 1)
-
-        let allowedForRootA = try catalogRepo.allowedParents(for: rootA.id)
-        let allowedIDsForRootA = Set(allowedForRootA.map(\.id))
-        #expect(!allowedIDsForRootA.contains(rootA.id))
-        #expect(!allowedIDsForRootA.contains(childA.id))
-        #expect(!allowedIDsForRootA.contains(grandA.id))
-        #expect(allowedIDsForRootA.contains(rootB.id))
-
-        let allowedForGrandA = try catalogRepo.allowedParents(for: grandA.id)
-        let allowedIDsForGrandA = Set(allowedForGrandA.map(\.id))
-        #expect(!allowedIDsForGrandA.contains(grandA.id))
-        #expect(allowedIDsForGrandA.contains(rootA.id))
-        #expect(allowedIDsForGrandA.contains(childA.id))
-        #expect(allowedIDsForGrandA.contains(rootB.id))
-
-        try catalogRepo.updateProject(id: rootA.id, name: nil, parentID: .some(childA.id), sortOrder: nil)
-        let cycleOutline = try catalogRepo.projectOutline()
-        #expect(!cycleOutline.contains(where: { $0.id == rootA.id }))
-        let cycleLabel = try catalogRepo.pathLabel(for: rootA.id)
-        #expect(!cycleLabel.isEmpty)
+    @Test func tagReorderIsFlat() throws {
+        let (_, _, catalogRepo) = try makeRepos()
+        let root = try catalogRepo.createTag(name: "Root", sortOrder: 0)
+        let sub = try catalogRepo.createTag(name: "Sub", sortOrder: 1)
+        try catalogRepo.reorderTags(orderedIDs: [sub.id, root.id])
+        #expect(try catalogRepo.fetchTags().map(\.name) == ["Sub", "Root"])
     }
 
     @Test func tagResolutionAndPresetRules() throws {
@@ -331,23 +276,16 @@ struct SwiftDataCatalogDiaryRepositoryTests {
 
     @Test func projectAndTagUnlinkingOnPurge() throws {
         let (container, _, catalogRepo) = try makeRepos()
-        let proj = try catalogRepo.createProject(name: "DeleteMe", parentID: nil, sortOrder: 0)
-        let childProj = try catalogRepo.createProject(name: "Child", parentID: proj.id, sortOrder: 0)
         let tag = try catalogRepo.createTag(name: "UntagMe", sortOrder: 0)
 
-        let todo = TodoItem(title: "Task", dayKey: "2026-09-10", projectID: proj.id, tagIDs: TagIDList.encode([tag.id]))
-        let routine = DailyRoutine(title: "Habit", sortOrder: 0, projectID: proj.id, tagIDs: TagIDList.encode([tag.id]))
+        let todo = TodoItem(title: "Task", dayKey: "2026-09-10", tagIDs: TagIDList.encode([tag.id]))
+        let routine = DailyRoutine(title: "Habit", sortOrder: 0, tagIDs: TagIDList.encode([tag.id]))
         let diary = DiaryEntry(text: "Entry", dayKey: "2026-09-10", tagIDs: TagIDList.encode([tag.id]))
 
         container.mainContext.insert(todo)
         container.mainContext.insert(routine)
         container.mainContext.insert(diary)
         try container.mainContext.save()
-
-        try catalogRepo.purgeProject(id: proj.id)
-        #expect(todo.projectID == nil)
-        #expect(routine.projectID == nil)
-        #expect(childProj.parentID == nil)
 
         try catalogRepo.purgeTag(id: tag.id)
         #expect(!TagIDList.contains(todo.tagIDs, tag.id))
@@ -358,17 +296,15 @@ struct SwiftDataCatalogDiaryRepositoryTests {
     @Test func catalogOpenCountCalculation() throws {
         let (container, _, catalogRepo) = try makeRepos()
         let day = "2026-09-10"
-        let proj = try catalogRepo.createProject(name: "Metrics Project", parentID: nil, sortOrder: 0)
         let tag = try catalogRepo.createTag(name: "Metrics Tag", sortOrder: 0)
 
-        let t1 = TodoItem(title: "T1", isDone: false, dayKey: day, projectID: proj.id, tagIDs: TagIDList.encode([tag.id]))
-        let t2 = TodoItem(title: "T2", isDone: true, dayKey: day, projectID: proj.id, tagIDs: TagIDList.encode([tag.id]))
+        let t1 = TodoItem(title: "T1", isDone: false, dayKey: day, tagIDs: TagIDList.encode([tag.id]))
+        let t2 = TodoItem(title: "T2", isDone: true, dayKey: day, tagIDs: TagIDList.encode([tag.id]))
         let r1 = DailyRoutine(
             title: "R1",
             sortOrder: 0,
             isEnabled: true,
             createdDayKey: day,
-            projectID: proj.id,
             tagIDs: TagIDList.encode([tag.id])
         )
 
@@ -377,7 +313,7 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         container.mainContext.insert(r1)
         try container.mainContext.save()
 
-        let count = try catalogRepo.openCount(projectID: proj.id, tagID: tag.id, dayKey: day)
+        let count = try catalogRepo.openCount(tagID: tag.id, dayKey: day)
         #expect(count == 2)
     }
 }

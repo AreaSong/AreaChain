@@ -38,7 +38,6 @@ struct TasksPage: View {
     var todos: [TodoItem]
     var config: TasksPageConfig
 
-    @Query(sort: \ProjectItem.sortOrder) var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query var attachments: [AttachmentItem]
 
@@ -141,30 +140,6 @@ struct TasksPage: View {
         }
     }
 
-    var projectCounts: [UUID: Int] {
-        var counts: [UUID: Int] = [:]
-        let activeTodos = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }
-        for todo in activeTodos {
-            if let pid = todo.projectID {
-                counts[pid, default: 0] += 1
-            }
-        }
-        guard !projects.isEmpty else { return counts }
-        for project in projects {
-            let subtrees = ProjectTree.subtreeIDs(root: project.id, in: projects)
-            guard subtrees.count > 1 else { continue }
-            let sum = subtrees.reduce(0) { $0 + (counts[$1] ?? 0) }
-            if sum > 0 {
-                counts[project.id] = sum
-            }
-        }
-        return counts
-    }
-
-    var unclassifiedTodosCount: Int {
-        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && $0.projectID == nil }.count
-    }
-
     var untaggedTodosCount: Int {
         todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && TagIDList.parse($0.tagIDs).isEmpty }.count
     }
@@ -242,10 +217,7 @@ struct TasksPage: View {
     }
 
     private func matchesFilter(_ bits: ClassifyBits) -> Bool {
-        let allowed = effectiveFilter.projectID.flatMap { id -> Set<UUID>? in
-            id == BoardFilter.noneID ? nil : ProjectTree.subtreeIDs(root: id, in: projects)
-        }
-        return Classification.matches(bits, filter: effectiveFilter, projectIDs: allowed)
+        Classification.matches(bits, filter: effectiveFilter)
     }
 
     var todayVisibleIDs: [UUID] {

@@ -19,24 +19,18 @@ struct TaskPriorityFlags: Equatable {
     }
 }
 
-/// 任务分类目录绑定（项目/标签/来源）
+/// 任务分类目录绑定（标签/来源）
 struct TaskCatalogBinding {
-    var projectID: UUID?
     var tagIDs: String
-    var projects: [CatalogChoice]
     var tags: [CatalogChoice]
     var sourceLabel: String?
 
     init(
-        projectID: UUID? = nil,
         tagIDs: String = "",
-        projects: [CatalogChoice] = [],
         tags: [CatalogChoice] = [],
         sourceLabel: String? = nil
     ) {
-        self.projectID = projectID
         self.tagIDs = tagIDs
-        self.projects = projects
         self.tags = tags
         self.sourceLabel = sourceLabel
     }
@@ -44,18 +38,15 @@ struct TaskCatalogBinding {
 
 /// 任务分类交互回调
 struct TaskClassifyActions {
-    var onProject: (UUID?) -> Void
     var onToggleTag: (UUID) -> Void
     var onImportant: (Bool) -> Void
     var onUrgent: (Bool) -> Void
 
     init(
-        onProject: @escaping (UUID?) -> Void,
         onToggleTag: @escaping (UUID) -> Void,
         onImportant: @escaping (Bool) -> Void,
         onUrgent: @escaping (Bool) -> Void
     ) {
-        self.onProject = onProject
         self.onToggleTag = onToggleTag
         self.onImportant = onImportant
         self.onUrgent = onUrgent
@@ -81,12 +72,9 @@ struct TaskClassifyContext {
     // MARK: - Forwarding for ergonomic access and zero-breakage compatibility
     var isImportant: Bool { priority.isImportant }
     var isUrgent: Bool { priority.isUrgent }
-    var projectID: UUID? { catalog.projectID }
     var tagIDs: String { catalog.tagIDs }
-    var projects: [CatalogChoice] { catalog.projects }
     var tags: [CatalogChoice] { catalog.tags }
     var sourceLabel: String? { catalog.sourceLabel }
-    var onProject: (UUID?) -> Void { actions.onProject }
     var onToggleTag: (UUID) -> Void { actions.onToggleTag }
     var onImportant: (Bool) -> Void { actions.onImportant }
     var onUrgent: (Bool) -> Void { actions.onUrgent }
@@ -101,12 +89,6 @@ struct TaskAttachmentContext {
 
 @MainActor
 enum CatalogChoices {
-    static func projects(_ items: [ProjectItem]) -> [CatalogChoice] {
-        ProjectTree.outline(items).map {
-            CatalogChoice(id: $0.id, name: ProjectTree.pathLabel($0.id, in: items))
-        }
-    }
-
     static func tags(_ items: [TagItem], attachedIDs: String = "") -> [CatalogChoice] {
         Catalog.taskPickerTags(items, attachedIDs: attachedIDs).map {
             CatalogChoice(id: $0.id, name: $0.name)
@@ -121,7 +103,6 @@ enum CatalogChoices {
 
     static func classify(
         for routine: DailyRoutine,
-        projects: [ProjectItem],
         tags: [TagItem]
     ) -> TaskClassifyContext {
         let priority = TaskPriorityFlags(
@@ -129,14 +110,11 @@ enum CatalogChoices {
             isUrgent: routine.isUrgent
         )
         let catalog = TaskCatalogBinding(
-            projectID: routine.projectID,
             tagIDs: routine.tagIDs,
-            projects: Self.projects(projects),
             tags: Self.tags(tags, attachedIDs: routine.tagIDs),
             sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { DayBoardMutations.setProject(for: routine, projectID: $0) },
             onToggleTag: { DayBoardMutations.toggleTag(for: routine, tagID: $0) },
             onImportant: { value in
                 DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: routine.isUrgent), to: routine)
@@ -150,7 +128,6 @@ enum CatalogChoices {
 
     static func classify(
         for todo: TodoItem,
-        projects: [ProjectItem],
         tags: [TagItem]
     ) -> TaskClassifyContext {
         let priority = TaskPriorityFlags(
@@ -158,14 +135,11 @@ enum CatalogChoices {
             isUrgent: todo.isUrgent
         )
         let catalog = TaskCatalogBinding(
-            projectID: todo.projectID,
             tagIDs: todo.tagIDs,
-            projects: Self.projects(projects),
             tags: Self.tags(tags, attachedIDs: todo.tagIDs),
             sourceLabel: todo.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: todo.sourceBundleID)
         )
         let actions = TaskClassifyActions(
-            onProject: { DayBoardMutations.setProject(for: todo, projectID: $0) },
             onToggleTag: { DayBoardMutations.toggleTag(for: todo, tagID: $0) },
             onImportant: { value in
                 DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: todo.isUrgent), to: todo)
@@ -202,18 +176,15 @@ enum CatalogChoices {
 
 /// 任务行目录与持久化上下文依赖（解耦各 Caller 重复传递 projects/tags/attachments/modelContext）
 struct TaskCatalogContext {
-    var projects: [ProjectItem]
     var tags: [TagItem]
     var attachments: [AttachmentItem]
     var context: ModelContext
 
     init(
-        projects: [ProjectItem],
         tags: [TagItem],
         attachments: [AttachmentItem],
         context: ModelContext
     ) {
-        self.projects = projects
         self.tags = tags
         self.attachments = attachments
         self.context = context
@@ -221,12 +192,12 @@ struct TaskCatalogContext {
 
     @MainActor
     func classify(for routine: DailyRoutine) -> TaskClassifyContext {
-        CatalogChoices.classify(for: routine, projects: projects, tags: tags)
+        CatalogChoices.classify(for: routine, tags: tags)
     }
 
     @MainActor
     func classify(for todo: TodoItem) -> TaskClassifyContext {
-        CatalogChoices.classify(for: todo, projects: projects, tags: tags)
+        CatalogChoices.classify(for: todo, tags: tags)
     }
 
     @MainActor

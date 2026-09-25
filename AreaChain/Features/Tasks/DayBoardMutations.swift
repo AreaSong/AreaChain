@@ -52,20 +52,8 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func trashProject(id: UUID, context: ModelContext) -> Bool {
-        ModelChanges.attempt(in: context) { try catalogRepo(for: context).deleteProject(id: id, soft: true) }
-    }
-
-    @discardableResult
     static func trashTag(id: UUID, context: ModelContext) -> Bool {
         ModelChanges.attempt(in: context) { try catalogRepo(for: context).deleteTag(id: id, soft: true) }
-    }
-
-    @discardableResult
-    static func renameProject(id: UUID, name: String, context: ModelContext) -> Bool {
-        ModelChanges.attempt(in: context) {
-            try catalogRepo(for: context).updateProject(id: id, name: name, parentID: nil, sortOrder: nil)
-        }
     }
 
     @discardableResult
@@ -76,9 +64,33 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func setProjectParent(id: UUID, parentID: UUID?, context: ModelContext) -> Bool {
+    static func createTag(name: String, context: ModelContext) -> TagItem? {
+        ModelChanges.value(in: context) { try catalogRepo(for: context).createTag(name: name, sortOrder: nil) }
+    }
+
+    @discardableResult
+    static func setTagColor(id: UUID, colorToken: String, context: ModelContext) -> Bool {
         ModelChanges.attempt(in: context) {
-            try catalogRepo(for: context).updateProject(id: id, name: nil, parentID: .some(parentID), sortOrder: nil)
+            try catalogRepo(for: context).updateTag(id: id, name: nil, sortOrder: nil, colorToken: colorToken)
+        }
+    }
+
+    @discardableResult
+    static func reorderTags(orderedIDs: [UUID], context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) { try catalogRepo(for: context).reorderTags(orderedIDs: orderedIDs) }
+    }
+
+    @discardableResult
+    static func mergeTags(sourceIDs: [UUID], into targetID: UUID, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) {
+            try catalogRepo(for: context).mergeTags(sourceIDs: sourceIDs, into: targetID)
+        }
+    }
+
+    @discardableResult
+    static func batchSetTagColor(ids: Set<UUID>, colorToken: String, context: ModelContext) -> Bool {
+        ModelChanges.attempt(in: context) {
+            try catalogRepo(for: context).batchSetColor(ids: ids, colorToken: colorToken)
         }
     }
 
@@ -154,11 +166,6 @@ enum DayBoardMutations {
     @discardableResult
     static func purgeTodo(_ todo: TodoItem) -> Bool {
         ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).purgeTodo(id: todo.id) }
-    }
-
-    @discardableResult
-    static func setProject(for todo: TodoItem, projectID: UUID?) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).setProject(id: todo.id, projectID: projectID) }
     }
 
     @discardableResult
@@ -303,11 +310,6 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func setProject(for routine: DailyRoutine, projectID: UUID?) -> Bool {
-        ModelChanges.attempt(in: routine.modelContext) { try routineRepo(for: routine.modelContext).setProject(id: routine.id, projectID: projectID) }
-    }
-
-    @discardableResult
     static func toggleTag(for routine: DailyRoutine, tagID: UUID) -> Bool {
         ModelChanges.attempt(in: routine.modelContext) { try routineRepo(for: routine.modelContext).toggleTag(id: routine.id, tagID: tagID) }
     }
@@ -387,18 +389,6 @@ enum DayBoardMutations {
     }
 
     @discardableResult
-    static func restoreProject(_ project: ProjectItem) -> Bool {
-        guard let context = project.modelContext else { return false }
-        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).restoreProject(id: project.id) }
-    }
-
-    @discardableResult
-    static func purgeProject(_ project: ProjectItem) -> Bool {
-        guard let context = project.modelContext else { return false }
-        return ModelChanges.attempt(in: context) { try catalogRepo(for: context).purgeProject(id: project.id) }
-    }
-
-    @discardableResult
     static func restoreTag(_ tag: TagItem) -> Bool {
         guard let context = tag.modelContext else { return false }
         return ModelChanges.attempt(in: context) { try catalogRepo(for: context).restoreTag(id: tag.id) }
@@ -408,13 +398,6 @@ enum DayBoardMutations {
     static func purgeTag(_ tag: TagItem) -> Bool {
         guard let context = tag.modelContext else { return false }
         return ModelChanges.attempt(in: context) { try catalogRepo(for: context).purgeTag(id: tag.id) }
-    }
-
-    @discardableResult
-    static func addProject(name: String, parentID: UUID?, context: ModelContext) -> ProjectItem? {
-        ModelChanges.value(in: context) {
-            try catalogRepo(for: context).createProject(name: name, parentID: parentID, sortOrder: nil)
-        }
     }
 
     @discardableResult

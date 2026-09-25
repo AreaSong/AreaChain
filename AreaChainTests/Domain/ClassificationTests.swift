@@ -60,44 +60,31 @@ struct ClassificationTests {
         let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let tag = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
         let bits = ClassifyBits(
-            projectID: project,
             tagIDs: tag.uuidString,
             sourceBundleID: "com.apple.Safari"
         )
         #expect(Classification.matches(bits, filter: BoardFilter()))
-        #expect(Classification.matches(bits, filter: BoardFilter(projectID: project)))
-        #expect(!Classification.matches(bits, filter: BoardFilter(projectID: UUID())))
         #expect(Classification.matches(bits, filter: BoardFilter(tagID: tag)))
         #expect(!Classification.matches(bits, filter: BoardFilter(tagID: UUID())))
         #expect(Classification.matches(bits, filter: BoardFilter(bundleID: "com.apple.Safari")))
         #expect(!Classification.matches(bits, filter: BoardFilter(bundleID: "com.apple.mail")))
-        let child = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
-        #expect(Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [project, child]))
-        #expect(!Classification.matches(bits, filter: BoardFilter(projectID: child), projectIDs: [child]))
     }
 
     @Test func filterMatchesUnclassifiedAndUntagged() {
         let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let tag = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
         let classifiedBits = ClassifyBits(
-            projectID: project,
             tagIDs: tag.uuidString,
             sourceBundleID: ""
         )
         let unclassifiedBits = ClassifyBits(
-            projectID: nil,
             tagIDs: "",
             sourceBundleID: ""
         )
 
-        let noneProjectFilter = BoardFilter().withProject(BoardFilter.noneID)
         let noneTagFilter = BoardFilter().withTag(BoardFilter.noneID)
 
-        #expect(noneProjectFilter.isNoProject)
         #expect(noneTagFilter.isNoTag)
-
-        #expect(!Classification.matches(classifiedBits, filter: noneProjectFilter))
-        #expect(Classification.matches(unclassifiedBits, filter: noneProjectFilter))
 
         #expect(!Classification.matches(classifiedBits, filter: noneTagFilter))
         #expect(Classification.matches(unclassifiedBits, filter: noneTagFilter))

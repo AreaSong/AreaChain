@@ -5,14 +5,14 @@ import Testing
 struct BoardPageTests {
     @Test func taskAndDiaryKeepSeparateFiltersOfTheSameType() {
         var filters = BoardFilters()
-        filters.write(BoardFilter(projectID: UUID(), tagID: UUID(), dateScope: .today), for: .tasks)
-        filters.write(BoardFilter(projectID: UUID(), tagID: UUID(), priorityScope: .p1), for: .diary)
+        filters.write(BoardFilter(tagID: UUID(), dateScope: .today), for: .tasks)
+        filters.write(BoardFilter(tagID: UUID(), priorityScope: .p1), for: .diary)
 
         let tasks = filters.selection(for: .tasks)
         let diary = filters.selection(for: .diary)
-        #expect(tasks.projectID != nil && tasks.dateScope == .today)
-        #expect(diary.tagID != nil && diary.projectID == nil && diary.priorityScope == .all)
-        #expect(filters.activeCount(for: .tasks) == 3)
+        #expect(tasks.tagID != nil && tasks.dateScope == .today)
+        #expect(diary.tagID != nil && diary.priorityScope == .all)
+        #expect(filters.activeCount(for: .tasks) == 2)
         #expect(filters.activeCount(for: .diary) == 1)
 
         filters.clear(.diary)

@@ -10,7 +10,6 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
     var deletedAt: Date? = nil
-    var projectID: UUID? = nil
     var tagIDs: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
@@ -20,7 +19,6 @@ struct RoutineSnapshot: Equatable, Identifiable {
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
@@ -64,7 +62,6 @@ struct TodoSnapshot: Equatable, Identifiable {
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
     var deletedAt: Date? = nil
-    var projectID: UUID? = nil
     var tagIDs: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
@@ -74,7 +71,6 @@ struct TodoSnapshot: Equatable, Identifiable {
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,

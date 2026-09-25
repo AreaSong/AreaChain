@@ -65,8 +65,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             weekdaysOnly: params.weekdaysOnly,
             weekdayMask: params.weekdayMask,
             remindMinutes: params.remindMinutes,
-            projectID: params.projectID,
-            tagIDs: TagIDList.encode(params.tagIDs),
+            tagIDs: TagIDList.encode(TagIDList.normalized(params.tagIDs)),
             isImportant: params.isImportant,
             isUrgent: params.isUrgent,
             notes: params.notes,
@@ -173,14 +172,6 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
         ClassifiedFieldsUpdate.setPriority(routine, isImportant: isImportant, isUrgent: isUrgent)
-        try saveAndNotify()
-    }
-
-    func setProject(id: UUID, projectID: UUID?) throws {
-        guard let routine = try fetchRoutine(id: id) else {
-            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
-        }
-        ClassifiedFieldsUpdate.setProject(routine, projectID: projectID)
         try saveAndNotify()
     }
 
@@ -296,11 +287,11 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         try saveAndNotify()
     }
 
-    func batchSetProject(ids: Set<UUID>, projectID: UUID?) throws {
+    func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws {
         guard !ids.isEmpty else { return }
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         for routine in routines where ids.contains(routine.id) {
-            ClassifiedFieldsUpdate.setProject(routine, projectID: projectID)
+            ClassifiedFieldsUpdate.setTag(routine, tagID: tagID, present: present)
         }
         try saveAndNotify()
     }

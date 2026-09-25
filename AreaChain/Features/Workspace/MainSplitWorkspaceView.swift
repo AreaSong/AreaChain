@@ -4,21 +4,12 @@ import AppKit
 
 /// 三栏工作台：侧栏、详情页与检查器抽屉。
 struct MainSplitWorkspaceView: View {
-    @Environment(\.modelContext) private var modelContext
     @Bindable private var navigation = WorkspaceNavigation.shared
 
-    @Query(sort: \ProjectItem.sortOrder) private var projects: [ProjectItem]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var todos: [TodoItem]
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
-
-    @State private var isAddingProject = false
-    @State private var newProjectName = ""
-    @State private var newProjectParentID: UUID?
-    @State private var isAddingTag = false
-    @State private var newTagName = ""
-    @State private var tagCreateError: LocalizedStringKey?
 
     var body: some View {
         NavigationSplitView {
@@ -31,12 +22,6 @@ struct MainSplitWorkspaceView: View {
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 400)
         }
         .workspaceToolbarTitleHidden()
-        .sheet(isPresented: $isAddingProject) {
-            addProjectSheet
-        }
-        .sheet(isPresented: $isAddingTag) {
-            addTagSheet
-        }
         .syntaxOverlayHost()
         .environment(\.workspaceEmbedded, true)
         .ignoresSafeArea(.container, edges: .top)
@@ -45,18 +30,8 @@ struct MainSplitWorkspaceView: View {
     private var sidebarColumn: some View {
         WorkspaceSidebarView(
             navigation: navigation,
-            projects: projects,
             tags: tags,
-            todos: todos,
-            actions: WorkspaceSidebarActions(
-                onAddProject: { beginAddProject(parentID: nil) },
-                onAddChildProject: { beginAddProject(parentID: $0) },
-                onAddTag: {
-                    newTagName = ""
-                    tagCreateError = nil
-                    isAddingTag = true
-                }
-            )
+            todos: todos
         )
         .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
     }
@@ -77,7 +52,6 @@ struct MainSplitWorkspaceView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .workspaceToolbar(
             navigation: navigation,
-            projects: projects,
             tags: tags
         )
         .overlay(alignment: .bottom) {
@@ -88,7 +62,6 @@ struct MainSplitWorkspaceView: View {
                         todos: todos,
                         routines: routines,
                         checks: checks,
-                        projects: projects,
                         tags: tags
                     )
                 )
@@ -138,13 +111,11 @@ struct MainSplitWorkspaceView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        if let pid = navigation.selectedProjectID, let project = projects.first(where: { $0.id == pid && $0.deletedAt == nil }) {
-            WorkspaceFilteredListView(project: project)
-        } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
+        if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
             WorkspaceFilteredListView(tag: tag)
         } else {
             switch navigation.selectedTab {
-            case .dashboard, .pending, .allItems, .tags, .privacy, .dataBackup:
+            case .dashboard, .pending, .allItems, .privacy, .dataBackup:
                 WorkspaceSectionPlaceholderView(tab: navigation.selectedTab)
             case .today:
                 WorkspaceTodayView()
@@ -158,6 +129,8 @@ struct MainSplitWorkspaceView: View {
                 DiaryStandaloneView()
             case .attachments:
                 AttachmentBrowserPage()
+            case .tags:
+                TagManagementPage()
             case .search:
                 SearchPage()
             case .trash:
@@ -168,93 +141,6 @@ struct MainSplitWorkspaceView: View {
         }
     }
 
-    // MARK: - Sheets
-
-    private var addProjectSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text(newProjectParentID == nil ? "sidebar.add.project" : "sidebar.add.child")
-                .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookPalette.text.primary)
-            TextField("sidebar.sheet.project.name", text: $newProjectName)
-                .textFieldStyle(.roundedBorder)
-            HStack {
-                Spacer()
-                Button("alert.cancel") {
-                    newProjectName = ""
-                    newProjectParentID = nil
-                    isAddingProject = false
-                }
-                Button("drawer.tag.create") {
-                    commitNewProject()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(newProjectName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(DaybookSpacing.page)
-        .frame(width: 260)
-    }
-
-    private func beginAddProject(parentID: UUID?) {
-        newProjectParentID = parentID
-        newProjectName = ""
-        isAddingProject = true
-    }
-
-    private func commitNewProject() {
-        let name = newProjectName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return }
-        guard let project = DayBoardMutations.addProject(name: name, parentID: newProjectParentID, context: modelContext) else { return }
-        newProjectName = ""
-        newProjectParentID = nil
-        isAddingProject = false
-        navigation.selectedProjectID = project.id
-    }
-
-    private var addTagSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("sidebar.add.tag")
-                .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookPalette.text.primary)
-            TextField("drawer.tag.create.name", text: $newTagName)
-                .textFieldStyle(.roundedBorder)
-                .onChange(of: newTagName) { _, _ in tagCreateError = nil }
-            if let tagCreateError {
-                Text(tagCreateError)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.status.danger)
-            }
-            HStack {
-                Spacer()
-                Button("alert.cancel") {
-                    newTagName = ""
-                    tagCreateError = nil
-                    isAddingTag = false
-                }
-                Button("drawer.tag.create") {
-                    let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !name.isEmpty else { return }
-                    if DiaryMemoTags.isPresetName(name) {
-                        tagCreateError = "tag.preset.reserved"
-                        return
-                    }
-                    if let tag = DayBoardMutations.resolveTaskTag(named: name, among: tags, context: modelContext) {
-                        newTagName = ""
-                        tagCreateError = nil
-                        isAddingTag = false
-                        navigation.selectedTagID = tag.id
-                        BoardEvents.changed()
-                    } else {
-                        tagCreateError = "save.failure.title"
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(DaybookSpacing.page)
-        .frame(width: 260)
-    }
 }
 
 private extension View {

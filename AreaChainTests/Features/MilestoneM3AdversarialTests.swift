@@ -23,7 +23,7 @@ struct MilestoneM3AdversarialTests {
         todo.notes = ""
         context.insert(todo)
 
-        let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogContext = TaskCatalogContext(tags: [], attachments: [], context: context)
         let display = TodoRowDisplayOptions(isDone: false, isSelected: false, note: nil)
         var selectCalled = false
         var deleteCalled = false
@@ -40,7 +40,6 @@ struct MilestoneM3AdversarialTests {
         #expect(row.state.title == "Simple Todo")
         #expect(row.state.notes == "")
         #expect(row.state.note == nil)
-        #expect(row.state.classify?.projects.isEmpty == true)
         #expect(row.state.classify?.tags.isEmpty == true)
         #expect(row.state.isSelected == false)
         #expect(row.state.isExternalEditing == false)
@@ -59,7 +58,7 @@ struct MilestoneM3AdversarialTests {
         todo.notes = longNote
         context.insert(todo)
 
-        let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogContext = TaskCatalogContext(tags: [], attachments: [], context: context)
         let selection = TaskRowSelectionState(isSelected: true, isExternalEditing: true)
         let display = TodoRowDisplayOptions(
             isDone: true,
@@ -98,7 +97,7 @@ struct MilestoneM3AdversarialTests {
         context.insert(check2)
         try context.save()
 
-        let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogContext = TaskCatalogContext(tags: [], attachments: [], context: context)
         let schedule = RoutineScheduleContext(
             todayKey: "2026-09-10",
             checkDayKey: "2026-09-10",
@@ -186,14 +185,13 @@ struct MilestoneM3AdversarialTests {
 
         // Empty set resilience
         try repo.batchTrashRoutines(ids: [])
-        try repo.batchSetProject(ids: [], projectID: UUID())
-        try repo.batchSetProject(ids: [], projectID: nil)
+        try repo.batchApplyTag(ids: [], tagID: UUID(), present: true)
         try repo.batchToggleTag(ids: [], tagID: UUID())
         try repo.batchSetRoutineChecks(ids: [], markDone: true, on: "2026-09-10")
 
         // Non-existent UUIDs resilience
         try repo.batchTrashRoutines(ids: nonExistentIDs)
-        try repo.batchSetProject(ids: nonExistentIDs, projectID: UUID())
+        try repo.batchApplyTag(ids: nonExistentIDs, tagID: UUID(), present: true)
         try repo.batchToggleTag(ids: nonExistentIDs, tagID: UUID())
         try repo.batchSetRoutineChecks(ids: nonExistentIDs, markDone: true, on: "2026-09-10")
 
@@ -209,14 +207,13 @@ struct MilestoneM3AdversarialTests {
         let r2 = try repo.addRoutine(title: "R2")
         let r3 = try repo.addRoutine(title: "R3")
 
-        let projectID = UUID()
+        let appliedID = UUID()
         let tagID = UUID()
 
-        // Batch project on subset
-        try repo.batchSetProject(ids: [r1.id, r2.id], projectID: projectID)
-        #expect(r1.projectID == projectID)
-        #expect(r2.projectID == projectID)
-        #expect(r3.projectID == nil)
+        try repo.batchApplyTag(ids: [r1.id, r2.id], tagID: appliedID, present: true)
+        #expect(TagIDList.contains(r1.tagIDs, appliedID))
+        #expect(TagIDList.contains(r2.tagIDs, appliedID))
+        #expect(!TagIDList.contains(r3.tagIDs, appliedID))
 
         // Batch toggle tag on subset
         try repo.batchToggleTag(ids: [r1.id, r3.id], tagID: tagID)
@@ -255,16 +252,15 @@ struct MilestoneM3AdversarialTests {
         context.insert(r2)
         try context.save()
 
-        let projectID = UUID()
+        let appliedID = UUID()
         let tagID = UUID()
-        let mixedIDs: Set<UUID> = [t1.id, r1.id, UUID()] // includes non-existent UUID
+        let mixedIDs: Set<UUID> = [t1.id, r1.id, UUID()]
 
-        // 1. Concurrent Batch Project
-        DayBoardMutations.batchSetProject(mixedIDs, projectID: projectID, todos: [t1, t2], routines: [r1, r2])
-        #expect(t1.projectID == projectID)
-        #expect(r1.projectID == projectID)
-        #expect(t2.projectID == nil)
-        #expect(r2.projectID == nil)
+        DayBoardMutations.batchApplyTag(mixedIDs, tagID: appliedID, present: true, todos: [t1, t2], routines: [r1, r2])
+        #expect(TagIDList.contains(t1.tagIDs, appliedID))
+        #expect(TagIDList.contains(r1.tagIDs, appliedID))
+        #expect(!TagIDList.contains(t2.tagIDs, tagID))
+        #expect(!TagIDList.contains(r2.tagIDs, tagID))
 
         // 2. Concurrent Batch Tag
         DayBoardMutations.batchToggleTag(mixedIDs, tagID: tagID, todos: [t1, t2], routines: [r1, r2])
@@ -294,7 +290,7 @@ struct MilestoneM3AdversarialTests {
         context.insert(sub)
         try context.save()
 
-        let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogContext = TaskCatalogContext(tags: [], attachments: [], context: context)
         var endEditingFired = false
         let actions = TodoRowActions(
             onSelect: { _ in },
@@ -344,7 +340,7 @@ struct MilestoneM3AdversarialTests {
         context.insert(routine)
         try context.save()
 
-        let catalogContext = TaskCatalogContext(projects: [], tags: [], attachments: [], context: context)
+        let catalogContext = TaskCatalogContext(tags: [], attachments: [], context: context)
         let schedule = RoutineScheduleContext(
             todayKey: "2026-09-10",
             checkDayKey: "2026-09-10",
@@ -383,13 +379,11 @@ struct MilestoneM3AdversarialTests {
         let (_, context) = try makeContainer()
         let todo = TodoItem(title: "Classified Todo", dayKey: "2026-09-10")
         context.insert(todo)
-        let project = ProjectItem(name: "Work Project", sortOrder: 0)
         let tag = TagItem(name: "UrgentTag", sortOrder: 0)
-        context.insert(project)
         context.insert(tag)
         try context.save()
 
-        let classify = CatalogChoices.classify(for: todo, projects: [project], tags: [tag])
+        let classify = CatalogChoices.classify(for: todo, tags: [tag])
 
         classify.onImportant(true)
         #expect(todo.isImportant == true)
@@ -397,17 +391,11 @@ struct MilestoneM3AdversarialTests {
         classify.onUrgent(true)
         #expect(todo.isUrgent == true)
 
-        classify.onProject(project.id)
-        #expect(todo.projectID == project.id)
-
         classify.onToggleTag(tag.id)
         #expect(TagIDList.contains(todo.tagIDs, tag.id))
 
         classify.onToggleTag(tag.id)
         #expect(!TagIDList.contains(todo.tagIDs, tag.id))
 
-        let clearProject: UUID? = nil
-        classify.onProject(clearProject)
-        #expect(todo.projectID == nil)
     }
 }

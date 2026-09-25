@@ -17,7 +17,6 @@ struct CreateTodoParams: Sendable {
     var remindMinutes: Int?
     var isImportant: Bool
     var isUrgent: Bool
-    var projectID: UUID?
     var tagIDs: [UUID]
     var sourceBundleID: String
     var calendarEventID: String
@@ -29,7 +28,6 @@ struct CreateTodoParams: Sendable {
         remindMinutes: Int? = nil,
         isImportant: Bool = false,
         isUrgent: Bool = false,
-        projectID: UUID? = nil,
         tagIDs: [UUID] = [],
         sourceBundleID: String = "",
         calendarEventID: String = ""
@@ -40,7 +38,6 @@ struct CreateTodoParams: Sendable {
         self.remindMinutes = remindMinutes
         self.isImportant = isImportant
         self.isUrgent = isUrgent
-        self.projectID = projectID
         self.tagIDs = tagIDs
         self.sourceBundleID = sourceBundleID
         self.calendarEventID = calendarEventID
@@ -60,9 +57,6 @@ protocol TaskRepositoryProtocol: AnyObject {
     /// 全量待办查询（支持是否包含软删除）
     func fetchAllTodos(includeDeleted: Bool) throws -> [TodoItem]
 
-    /// 按所属项目筛选活跃待办
-    func fetchTodos(forProject projectID: UUID) throws -> [TodoItem]
-
     /// 按标签筛选活跃待办
     func fetchTodos(forTag tagID: UUID) throws -> [TodoItem]
 
@@ -79,7 +73,6 @@ protocol TaskRepositoryProtocol: AnyObject {
         notes: String?,
         remindMinutes: Int?,
         priority: (isImportant: Bool, isUrgent: Bool)?,
-        projectID: UUID?,
         tagIDs: [UUID]?
     ) throws -> TodoItem
 
@@ -101,9 +94,6 @@ protocol TaskRepositoryProtocol: AnyObject {
 
     /// 设置四象限优先级
     func setPriority(id: UUID, isImportant: Bool, isUrgent: Bool) throws
-
-    /// 归属项目变更
-    func setProject(id: UUID, projectID: UUID?) throws
 
     /// 切换标签关联状态
     func toggleTag(id: UUID, tagID: UUID) throws
@@ -157,8 +147,8 @@ protocol TaskRepositoryProtocol: AnyObject {
     /// 批量软删除待办
     func batchTrashTodos(ids: Set<UUID>) throws
 
-    /// 批量设置所属项目
-    func batchSetProject(ids: Set<UUID>, projectID: UUID?) throws
+    /// 批量确保标签存在或移除
+    func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws
 
     /// 批量切换标签关联
     func batchToggleTag(ids: Set<UUID>, tagID: UUID) throws
@@ -171,7 +161,6 @@ extension TaskRepositoryProtocol {
         notes: String? = nil,
         remindMinutes: Int? = nil,
         priority: (isImportant: Bool, isUrgent: Bool)? = nil,
-        projectID: UUID? = nil,
         tagIDs: [UUID]? = nil
     ) throws -> TodoItem {
         let params = CreateTodoParams(
@@ -181,7 +170,6 @@ extension TaskRepositoryProtocol {
             remindMinutes: remindMinutes,
             isImportant: priority?.isImportant ?? false,
             isUrgent: priority?.isUrgent ?? false,
-            projectID: projectID,
             tagIDs: tagIDs ?? []
         )
         return try addTodo(params)

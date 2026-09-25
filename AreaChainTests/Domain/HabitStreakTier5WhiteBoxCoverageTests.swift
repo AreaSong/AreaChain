@@ -18,7 +18,6 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         isEnabled: Bool = true,
         deletedAt: Date? = nil,
         sortOrder: Int = 0,
-        projectID: UUID? = nil,
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
@@ -35,7 +34,6 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
             createdAt: createdAt,
             remindMinutes: remindMinutes,
             deletedAt: deletedAt,
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent
@@ -367,7 +365,7 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         let rLow = makeRoutine(
             id: UUID(),
             title: "Low Priority",
-            projectID: projA,
+            tagIDs: projA.uuidString,
             isImportant: false,
             isUrgent: false,
             createdAt: Date(timeIntervalSince1970: 100)
@@ -375,7 +373,7 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         let rUrgent = makeRoutine(
             id: UUID(),
             title: "Urgent Routine",
-            projectID: projA,
+            tagIDs: projA.uuidString,
             isImportant: false,
             isUrgent: true,
             createdAt: Date(timeIntervalSince1970: 50)
@@ -383,7 +381,7 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         let rImportantUrgent = makeRoutine(
             id: UUID(),
             title: "Critical Routine",
-            projectID: projA,
+            tagIDs: projA.uuidString,
             isImportant: true,
             isUrgent: true,
             createdAt: Date(timeIntervalSince1970: 200)
@@ -391,13 +389,13 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         let rOtherProject = makeRoutine(
             id: UUID(),
             title: "Other Project Routine",
-            projectID: projB,
+            tagIDs: projB.uuidString,
             isImportant: true,
             isUrgent: true
         )
 
         // Matching routines by project filter
-        let filterA = BoardFilter(projectID: projA)
+        let filterA = BoardFilter(tagID: projA)
         let matched = DayBoardLogic.matchingRoutines([rLow, rUrgent, rImportantUrgent, rOtherProject], filter: filterA)
         #expect(matched.count == 3)
         #expect(!matched.contains { $0.id == rOtherProject.id })

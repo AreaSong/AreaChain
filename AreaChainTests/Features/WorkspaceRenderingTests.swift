@@ -25,10 +25,6 @@ struct WorkspaceRenderingTests {
             try assertFits(view, in: window)
             try snapshot(view, name: imageName(tab.rawValue, scheme: scheme, minimumSize: minimumSize))
         }
-        WorkspaceNavigation.shared.selectedProjectID = fixture.project.id
-        try await settle(view)
-        try assertFits(view, in: window)
-        try snapshot(view, name: imageName("project", scheme: scheme, minimumSize: minimumSize))
         WorkspaceNavigation.shared.selectedTagID = fixture.tag.id
         try await settle(view)
         try assertFits(view, in: window)
@@ -145,9 +141,8 @@ struct WorkspaceRenderingTests {
         nav.revealTab(.today)
         let context = fixture.container.mainContext
         let sidebar = WorkspaceSidebarView(
-            navigation: nav, projects: [fixture.project], tags: try context.fetch(FetchDescriptor<TagItem>()),
-            todos: try context.fetch(FetchDescriptor<TodoItem>()),
-            actions: WorkspaceSidebarActions(onAddProject: {}, onAddChildProject: { _ in }, onAddTag: {})
+            navigation: nav, tags: try context.fetch(FetchDescriptor<TagItem>()),
+            todos: try context.fetch(FetchDescriptor<TodoItem>())
         )
         let sidebarWindow = makeContentWindow(sidebar, fixture: fixture, scheme: scheme, size: NSSize(width: 220, height: 640))
         defer { release(sidebarWindow) }
@@ -182,7 +177,6 @@ struct WorkspaceRenderingTests {
     private struct Fixture {
         let container: ModelContainer
         let preferences: AppPreferences
-        let project: ProjectItem
         let tag: TagItem
         let todo: TodoItem
         let routine: DailyRoutine
@@ -192,26 +186,22 @@ struct WorkspaceRenderingTests {
         let container = try ModelContainer(for: Schema(AreaChainSchema.models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         let context = container.mainContext
         let preferences = AppPreferences(defaults: try #require(UserDefaults(suiteName: "AreaChain.WorkspaceQA." + UUID().uuidString)))
-        let project = ProjectItem(name: "AreaChain", sortOrder: 0)
-        context.insert(project)
         let names = ["工作", "生活", DiaryMemoTags.idea, DiaryMemoTags.journal, DiaryMemoTags.password]
         let tags = names.enumerated().map { TagItem(name: $0.element, sortOrder: $0.offset) }
         tags.forEach { context.insert($0) }
         let today = DayClock.shared.todayKey
         let todo = TodoItem(title: "核对工作台的公共组件", dayKey: today, remindMinutes: 10 * 60 + 30, tagIDs: tags[0].id.uuidString)
-        todo.projectID = project.id
         todo.notes = "先统一页头与输入区，再检查各页面的文字层级。"
         context.insert(todo)
         addTodos(to: context, today: today, tag: tags[0])
         let routine = DailyRoutine(title: "阅读 20 分钟", sortOrder: 0, createdDayKey: DayKey.shifted(today, by: -1))
-        routine.projectID = project.id
         context.insert(routine)
         context.insert(RoutineCheck(dayKey: DayKey.shifted(today, by: -1), isDone: true, routine: routine))
         context.insert(DailyRoutine(title: "晚间散步", sortOrder: 1, createdDayKey: today))
         addNotes(to: context, today: today, tags: tags)
         try context.save()
         Self.retainedContainers.append(container)
-        return Fixture(container: container, preferences: preferences, project: project, tag: tags[0], todo: todo, routine: routine)
+        return Fixture(container: container, preferences: preferences, tag: tags[0], todo: todo, routine: routine)
     }
 
     private func addTodos(to context: ModelContext, today: String, tag: TagItem) {
@@ -343,7 +333,6 @@ struct WorkspaceRenderingTests {
     @MainActor
     private struct NavigationSnapshot {
         let tab = WorkspaceNavigation.shared.selectedTab
-        let project = WorkspaceNavigation.shared.selectedProjectID
         let tag = WorkspaceNavigation.shared.selectedTagID
         let task = WorkspaceNavigation.shared.selectedTaskID
         let tasks = WorkspaceNavigation.shared.selectedTaskIDs
@@ -353,7 +342,6 @@ struct WorkspaceRenderingTests {
         func restore() {
             let nav = WorkspaceNavigation.shared
             nav.revealTab(tab)
-            nav.selectedProjectID = project
             nav.selectedTagID = tag
             nav.selectedTaskID = task
             nav.selectedTaskIDs = tasks

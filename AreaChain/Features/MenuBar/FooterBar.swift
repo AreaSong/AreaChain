@@ -7,8 +7,6 @@ struct FooterBar: View {
     var tab: BoardTab = .tasks
     @Bindable var toolbar: MenuBarToolbarState
     var filters: Binding<BoardFilters>
-    var projects: [ProjectItem] = []
-    var projectCounts: [UUID: Int] = [:]
     var unclassifiedCount: Int? = nil
     var tags: [TagItem] = []
     var tagCounts: [UUID: Int] = [:]
@@ -73,17 +71,6 @@ struct FooterBar: View {
                 ))
             }
 
-            if let pid = currentFilter.projectID {
-                let name = pid == BoardFilter.noneID
-                    ? L10n.string("filter.project.none", locale: locale)
-                    : (projects.first(where: { $0.id == pid })?.name ?? L10n.string("filter.project", locale: locale))
-                tokens.append(SearchFilterToken(
-                    id: "project",
-                    title: name,
-                    icon: "folder",
-                    onRemove: { writeFilter(currentFilter.withProject(nil)) }
-                ))
-            }
         }
 
         if let tid = selectedTagID {

@@ -6,20 +6,17 @@ struct WorkspaceBatchData {
     var todos: [TodoItem]
     var routines: [DailyRoutine]
     var checks: [RoutineCheck]
-    var projects: [ProjectItem]
     var tags: [TagItem]
 
     init(
         todos: [TodoItem] = [],
         routines: [DailyRoutine] = [],
         checks: [RoutineCheck] = [],
-        projects: [ProjectItem] = [],
         tags: [TagItem] = []
     ) {
         self.todos = todos
         self.routines = routines
         self.checks = checks
-        self.projects = projects
         self.tags = tags
     }
 }
@@ -34,7 +31,6 @@ struct WorkspaceBatchActionBar: View {
     private var todos: [TodoItem] { data.todos }
     private var routines: [DailyRoutine] { data.routines }
     private var checks: [RoutineCheck] { data.checks }
-    private var projects: [ProjectItem] { data.projects }
     private var tags: [TagItem] { data.tags }
 
     var body: some View {
@@ -46,9 +42,7 @@ struct WorkspaceBatchActionBar: View {
                 onToggleDone: handleToggleDone
             ),
             classify: BatchClassifyActions(
-                onSetProject: handleSetProject,
-                onToggleTag: handleToggleTag,
-                projects: projects,
+                onApplyTag: handleApplyTag,
                 tags: tags
             ),
             lifecycle: BatchLifecycleActions(
@@ -78,10 +72,11 @@ struct WorkspaceBatchActionBar: View {
         navigation.clearSelection()
     }
 
-    private func handleSetProject(_ pid: UUID?) {
-        guard DayBoardMutations.batchSetProject(
+    private func handleApplyTag(_ tid: UUID, _ present: Bool) {
+        guard DayBoardMutations.batchApplyTag(
             navigation.selectedTaskIDs,
-            projectID: pid,
+            tagID: tid,
+            present: present,
             todos: todos,
             routines: routines
         ) else { return }

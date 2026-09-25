@@ -5,12 +5,9 @@ struct BoardFilterBar: View {
     @Environment(\.locale) private var locale
 
     var filter: BoardFilter
-    var projects: [CatalogChoice]
     var tags: [CatalogChoice]
     var bundleIDs: [String]
-    var projectCounts: [UUID: Int] = [:]
     var tagCounts: [UUID: Int] = [:]
-    var unclassifiedCount: Int? = nil
     var untaggedCount: Int? = nil
     var totalOpenCount: Int? = nil
     var onChange: (BoardFilter) -> Void
@@ -18,11 +15,11 @@ struct BoardFilterBar: View {
     @State private var activeDropdown: ActiveDropdown? = nil
 
     private enum ActiveDropdown: Hashable {
-        case project, tag, bundle
+        case tag, bundle
     }
 
     var isVisible: Bool {
-        filter.isActive || !projects.isEmpty || !tags.isEmpty || !bundleIDs.isEmpty
+        filter.isActive || !tags.isEmpty || !bundleIDs.isEmpty
     }
 
     var body: some View {
@@ -31,9 +28,6 @@ struct BoardFilterBar: View {
                 if filter.isActive {
                     Button("filter.all") { onChange(BoardFilter()) }
                         .buttonStyle(DaybookButtonStyle(.quiet))
-                }
-                if !projects.isEmpty {
-                    projectDropdown
                 }
                 if !tags.isEmpty {
                     tagDropdown
@@ -45,25 +39,6 @@ struct BoardFilterBar: View {
             .font(DaybookType.caption)
             .fixedSize(horizontal: true, vertical: false)
         }
-    }
-
-    // MARK: - 项目筛选下拉
-
-    private var projectDropdown: some View {
-        choiceDropdown(
-            BoardFilterChoices.projects(
-                filter: filter,
-                rows: projects.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
-                counts: projectCounts,
-                unclassifiedCount: unclassifiedCount,
-                locale: locale
-            ),
-            icon: "folder",
-            title: projectTitle,
-            active: filter.projectID != nil,
-            kind: .project,
-            reset: { onChange(filter.withProject(nil)) }
-        )
     }
 
     // MARK: - 标签筛选下拉
@@ -130,16 +105,6 @@ struct BoardFilterBar: View {
             allOption: options.first { $0.id == "all" },
             items: options.filter { $0.id != "all" }
         )
-    }
-
-    private var projectTitle: String {
-        if filter.isNoProject {
-            return L10n.string("filter.project.none", locale: locale)
-        }
-        if let id = filter.projectID, let name = projects.first(where: { $0.id == id })?.name {
-            return name
-        }
-        return L10n.string("filter.project", locale: locale)
     }
 
     private var tagTitle: String {

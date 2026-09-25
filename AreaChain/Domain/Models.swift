@@ -13,7 +13,6 @@ final class DailyRoutine {
     var createdAt: Date = Date()
     var remindMinutes: Int?
     var deletedAt: Date?
-    var projectID: UUID?
     var tagIDs: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
@@ -35,7 +34,6 @@ final class DailyRoutine {
         createdAt: Date = .now,
         remindMinutes: Int? = nil,
         deletedAt: Date? = nil,
-        projectID: UUID? = nil,
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
@@ -54,7 +52,6 @@ final class DailyRoutine {
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
-        self.projectID = projectID
         self.tagIDs = tagIDs
         self.isImportant = isImportant
         self.isUrgent = isUrgent
@@ -70,7 +67,6 @@ final class DailyRoutine {
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
@@ -95,7 +91,6 @@ final class DailyRoutine {
             createdAt: createdAt,
             remindMinutes: remindMinutes,
             deletedAt: deletedAt,
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
@@ -194,7 +189,6 @@ final class TodoItem {
     var createdAt: Date
     var remindMinutes: Int?
     var deletedAt: Date?
-    var projectID: UUID?
     var tagIDs: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
@@ -213,7 +207,6 @@ final class TodoItem {
         createdAt: Date = .now,
         remindMinutes: Int? = nil,
         deletedAt: Date? = nil,
-        projectID: UUID? = nil,
         tagIDs: String = "",
         isImportant: Bool = false,
         isUrgent: Bool = false,
@@ -228,7 +221,6 @@ final class TodoItem {
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
         self.deletedAt = deletedAt
-        self.projectID = projectID
         self.tagIDs = tagIDs
         self.isImportant = isImportant
         self.isUrgent = isUrgent
@@ -240,7 +232,6 @@ final class TodoItem {
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
@@ -257,7 +248,6 @@ final class TodoItem {
             createdAt: createdAt,
             remindMinutes: remindMinutes,
             deletedAt: deletedAt,
-            projectID: projectID,
             tagIDs: tagIDs,
             isImportant: isImportant,
             isUrgent: isUrgent,
@@ -323,7 +313,6 @@ enum AreaChainSchema {
         TodoItem.self,
         SubtaskItem.self,
         DiaryEntry.self,
-        ProjectItem.self,
         TagItem.self,
         AttachmentItem.self
     ]

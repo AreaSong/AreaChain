@@ -55,7 +55,6 @@ struct BoardFilters: Equatable {
         case .tasks:
             let priorityActive = filter.isHighPriorityOnly || filter.priorityScope != .all
             return [
-                filter.projectID != nil,
                 filter.tagID != nil,
                 filter.bundleID != nil,
                 priorityActive,

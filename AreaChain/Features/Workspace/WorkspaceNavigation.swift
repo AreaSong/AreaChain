@@ -62,9 +62,9 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
 }
 
 enum InspectDayPolicy {
-    static func pinsTodayWhenInspecting(tab: WorkspaceTab, projectID: UUID?, tagID: UUID?) -> Bool {
+    static func pinsTodayWhenInspecting(tab: WorkspaceTab, tagID: UUID?) -> Bool {
         _ = tab
-        return projectID != nil || tagID != nil
+        return tagID != nil
     }
 
     static func pinsTodayWhenEntering(_ tab: WorkspaceTab) -> Bool {
@@ -114,7 +114,6 @@ final class WorkspaceNavigation {
     // MARK: - Tab & Filter Navigation
     var selectedTab: WorkspaceTab = .dashboard {
         didSet {
-            selectedProjectID = nil
             selectedTagID = nil
             isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash || selectedTab == .search)
             clearSelection()
@@ -125,22 +124,9 @@ final class WorkspaceNavigation {
         }
     }
 
-    var selectedProjectID: UUID? = nil {
-        didSet {
-            if selectedProjectID != nil {
-                selectedTagID = nil
-                isInlineTitleVisible = false
-                boardSelection.clearInspectedDiary()
-                pinTodayInspectDay()
-            }
-            clearSelection()
-        }
-    }
-
     var selectedTagID: UUID? = nil {
         didSet {
             if selectedTagID != nil {
-                selectedProjectID = nil
                 isInlineTitleVisible = false
                 boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
@@ -205,7 +191,6 @@ final class WorkspaceNavigation {
         if selectedTab != tab {
             selectedTab = tab
         } else {
-            selectedProjectID = nil
             selectedTagID = nil
             if InspectDayPolicy.pinsTodayWhenEntering(tab) {
                 pinTodayInspectDay()
@@ -224,7 +209,6 @@ final class WorkspaceNavigation {
             boardSelection.inspectBoard(dayKey)
         } else if InspectDayPolicy.pinsTodayWhenInspecting(
             tab: selectedTab,
-            projectID: selectedProjectID,
             tagID: selectedTagID
         ) {
             pinTodayInspectDay()
