@@ -9,7 +9,7 @@ struct InspectDayPolicyTests {
         #expect(InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, tagID: UUID()))
         #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .today, tagID: nil))
         #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .calendar, tagID: nil))
-        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .search, tagID: nil))
+        #expect(!InspectDayPolicy.pinsTodayWhenInspecting(tab: .settings, tagID: nil))
     }
 
     @Test func pinsTodayWhenEnteringTodayOnly() {

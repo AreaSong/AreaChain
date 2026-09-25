@@ -152,8 +152,6 @@ struct MainSplitWorkspaceView: View {
                 AttachmentBrowserPage()
             case .tags:
                 TagManagementPage()
-            case .search:
-                SearchPage()
             case .trash:
                 TrashPage()
             case .settings:

@@ -10286,23 +10286,6 @@
         }
       }
     },
-    "workspace.section.placeholder.body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Navigation is connected in this phase. The feature will be implemented later."
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "当前阶段只接通导航，功能将在后续阶段实现。"
-          }
-        }
-      }
-    },
     "workspace.today.title": {
       "extractionState": "manual",
       "localizations": {

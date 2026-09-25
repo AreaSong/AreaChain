@@ -17,7 +17,7 @@ struct DataBackupInteractionTests {
             size: DaybookMetrics.Window.workspaceMinSize
         )
         defer { SystemPageHost.release(window) }
-        let placeholder = L10n.string("workspace.section.placeholder.body", locale: Locale(identifier: "zh-Hans"))
+        let placeholder = "当前阶段只接通导航，功能将在后续阶段实现。"
         for tab in [WorkspaceTab.privacy, .dataBackup] {
             WorkspaceNavigation.shared.revealTab(tab)
             try await SystemPageHost.settle(window)

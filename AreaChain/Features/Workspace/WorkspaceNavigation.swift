@@ -15,8 +15,6 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case dataBackup
     case trash
     case settings
-    /// 内部全局搜索路由，不出现在侧栏。
-    case search
 
     var id: String { rawValue }
 
@@ -36,7 +34,6 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .dataBackup: return "tab.dataBackup"
         case .trash: return "window.trash"
         case .settings: return "window.settings"
-        case .search: return "window.search"
         }
     }
 
@@ -56,7 +53,6 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .dataBackup: return "externaldrive"
         case .trash: return "trash"
         case .settings: return "gearshape"
-        case .search: return "magnifyingglass"
         }
     }
 }
@@ -115,7 +111,7 @@ final class WorkspaceNavigation {
     var selectedTab: WorkspaceTab = .dashboard {
         didSet {
             selectedTagID = nil
-            isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash || selectedTab == .search)
+            isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash)
             clearSelection()
             if selectedTab != .diary {
                 boardSelection.clearInspectedDiary()
@@ -185,10 +181,6 @@ final class WorkspaceNavigation {
     }
 
     func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
-        if tab == .search {
-            focusSearch()
-            return
-        }
         if tab != .diary {
             boardSelection.clearInspectedDiary()
         }

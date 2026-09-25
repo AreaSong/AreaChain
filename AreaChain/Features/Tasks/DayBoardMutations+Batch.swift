@@ -55,14 +55,6 @@ extension DayBoardMutations {
     }
 
     @discardableResult
-    static func batchSetCompletion(_ ids: Set<UUID>, markDone: Bool, on dayKey: String, context: ModelContext) -> Bool {
-        ModelChanges.perform(in: context) {
-            try taskRepo(for: context).batchToggleDone(ids: ids, markDone: markDone)
-            try routineRepo(for: context).batchSetRoutineChecks(ids: ids, markDone: markDone, on: dayKey)
-        }
-    }
-
-    @discardableResult
     static func reorderRoutines(_ items: [DailyRoutine], from source: IndexSet, to destination: Int) -> Bool {
         ModelChanges.attempt(in: items.first?.modelContext) {
             try routineRepo(for: items.first?.modelContext).reorderRoutines(from: source, to: destination)
