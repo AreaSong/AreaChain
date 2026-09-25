@@ -24,6 +24,13 @@ struct BoardComposerDraft {
     }
 }
 
+/// 菜单栏和工作台今日、手记页共用的筛选。只留在本次运行，不写入偏好。
+@Observable @MainActor
+final class BoardFilterSession {
+    static let shared = BoardFilterSession()
+    var filters = BoardFilters()
+}
+
 /// 本次运行里的任务草稿和手记草稿。收起菜单栏不丢弃，也不写入偏好。锁定只封存手记草稿。
 @Observable @MainActor
 final class BoardComposerSession {

@@ -121,12 +121,12 @@ enum BoardSearch {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
-        let filteredTodos = todos.filter { Classification.matches($0.classifyBits, filter: scope.filter) }
-        let filteredRoutines = routines.filter { Classification.matches($0.classifyBits, filter: scope.filter) }
+        let filteredTodos = todos.filter { matchesTodoScope($0, todayKey: todayKey, filter: scope.filter) }
+        let filteredRoutines = routines.filter { matchesRoutineScope($0, todayKey: todayKey, filter: scope.filter) }
         let found = todoHits(parsed, filteredTodos, tagMap: tagMap)
             + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
             + routineHits(parsed, filteredRoutines, todayKey: todayKey, tagMap: tagMap)
-            + subtaskHits(parsed, todos, tagMap: tagMap, scope: scope)
+            + subtaskHits(parsed, todos, todayKey: todayKey, tagMap: tagMap, scope: scope)
 
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
@@ -155,10 +155,26 @@ enum BoardSearch {
     }
 
     static func filteredDiaries(_ entries: [DiarySnapshot], filter: BoardFilter) -> [DiarySnapshot] {
-        // 手记没有捕获来源和优先级，不能混进要求这些属性的结果。
-        guard filter.bundleID == nil, !filter.isHighPriorityOnly else { return [] }
+        // 手记只有标签。日期、提醒、优先级和来源是任务筛选，命中这些条件时手记整组退出。
+        guard filter.bundleID == nil, filter.priorityScope == .all, !filter.isHighPriorityOnly,
+              filter.dateScope == .all, filter.reminderScope == .all else { return [] }
         guard let tagID = filter.tagID else { return entries }
         return entries.filter { TagIDList.contains($0.tagIDs, tagID) }
+    }
+
+    private static func matchesTodoScope(_ item: TodoSnapshot, todayKey: String, filter: BoardFilter) -> Bool {
+        Classification.matchesListedTodo(
+            item.classifyBits, dayKey: item.dayKey, isDone: item.isDone, todayKey: todayKey, filter: filter
+        ) && Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope)
+    }
+
+    private static func matchesRoutineScope(_ item: RoutineSnapshot, todayKey: String, filter: BoardFilter) -> Bool {
+        guard Classification.matchesListedRoutine(item.classifyBits, filter: filter),
+              Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope) else { return false }
+        guard filter.dateScope != .all else { return true }
+        let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
+        let scheduled = WeekdayMask.nextScheduledDayKey(mask: item.weekdayMask, from: fromKey)
+        return Classification.matchesDate(dayKey: scheduled, isDone: false, todayKey: todayKey, scope: filter.dateScope)
     }
 
     private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
@@ -268,14 +284,14 @@ enum BoardSearch {
     }
 
     private static func subtaskHits(
-        _ query: BoardSearchQuery, _ todos: [TodoSnapshot], tagMap: [UUID: String], scope: BoardSearchScope
+        _ query: BoardSearchQuery, _ todos: [TodoSnapshot], todayKey: String, tagMap: [UUID: String], scope: BoardSearchScope
     ) -> [BoardSearchHit] {
         guard !query.hasPriority, query.remindMinutes == nil, !scope.filter.isHighPriorityOnly else { return [] }
         var parentFilter = scope.filter
         parentFilter.tagID = nil
         return todos.flatMap { todo -> [BoardSearchHit] in
             guard todo.deletedAt == nil,
-                  Classification.matches(todo.classifyBits, filter: parentFilter) else { return [] }
+                  matchesTodoScope(todo, todayKey: todayKey, filter: parentFilter) else { return [] }
             return todo.subtasks.compactMap { subtask in
                 guard subtask.deletedAt == nil else { return nil }
                 if let id = scope.filter.tagID, !TagIDList.contains(subtask.tagIDs, id) { return nil }

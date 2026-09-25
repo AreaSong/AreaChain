@@ -149,6 +149,56 @@ struct BoardSearchTests {
         #expect(BoardSearch.parseQuery("!nope").hasPriority == false)
     }
 
+    @Test func filterDateReminderAndTagsIntersectWithTheQuery() {
+        let tagID = UUID()
+        let today = "2026-09-13"
+        let due = TodoSnapshot(
+            id: UUID(), title: "会议", isDone: false, dayKey: today,
+            remindMinutes: 900, tagIDs: tagID.uuidString, sourceBundleID: "mail.app"
+        )
+        let later = TodoSnapshot(
+            id: UUID(), title: "会议", isDone: false, dayKey: "2026-09-20",
+            remindMinutes: 900, tagIDs: tagID.uuidString, sourceBundleID: "mail.app"
+        )
+        let untagged = TodoSnapshot(
+            id: UUID(), title: "会议", isDone: false, dayKey: today, remindMinutes: 900, sourceBundleID: "mail.app"
+        )
+        let scope = BoardSearchScope(filter: BoardFilter(tagID: tagID, bundleID: "mail.app", reminderScope: .set, dateScope: .today))
+        let hits = BoardSearch.hits(
+            query: "会议", todos: [due, later, untagged], diaries: [], routines: [],
+            todayKey: today, tagMap: [tagID: "工作"], scope: scope
+        )
+        #expect(hits.map { $0.id } == [due.id])
+        let diary = DiarySnapshot(id: UUID(), text: "会议", dayKey: today, createdAt: .now, tagIDs: tagID.uuidString)
+        #expect(BoardSearch.filteredDiaries([diary], filter: scope.filter).isEmpty)
+        #expect(BoardSearch.hits(
+            query: "会议", todos: [], diaries: [diary], routines: [], todayKey: today, scope: scope
+        ).isEmpty)
+    }
+
+    @Test func disabledDeletedAndUnscheduledRoutinesStayOutOfDatedSearch() {
+        let today = "2026-09-13"
+        let live = RoutineSnapshot(
+            id: UUID(), title: "日报", sortOrder: 0, isEnabled: true, createdDayKey: today, weekdayMask: WeekdayMask.all
+        )
+        let stopped = RoutineSnapshot(
+            id: UUID(), title: "日报", sortOrder: 1, isEnabled: false, createdDayKey: today, weekdayMask: WeekdayMask.all
+        )
+        var removed = live
+        removed.id = UUID()
+        removed.deletedAt = .now
+        let scope = BoardSearchScope(filter: BoardFilter(dateScope: .today))
+        let hits = BoardSearch.hits(
+            query: "日报", todos: [], diaries: [], routines: [live, stopped, removed], todayKey: today, scope: scope
+        )
+        #expect(hits.map(\.id) == [live.id])
+        #expect(hits.first?.dayKey == today)
+        #expect(BoardSearch.hits(
+            query: "日报", todos: [], diaries: [], routines: [live], todayKey: today,
+            scope: BoardSearchScope(filter: BoardFilter(dateScope: .overdue))
+        ).isEmpty)
+    }
+
     @Test func hitKindUsesOneTitleKey() {
         #expect(BoardSearchHit.Kind.todo.titleKey == "search.kind.todo")
         #expect(BoardSearchHit.Kind.routine.titleKey == "search.kind.routine")

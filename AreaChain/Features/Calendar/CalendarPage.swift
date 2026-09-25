@@ -171,8 +171,8 @@ struct CalendarPage: View {
     }
 
     private func dropTodo(_ id: UUID, onto key: String) {
-        guard let todo = todos.first(where: { $0.id == id }) else { return }
-        DayBoardMutations.moveTodo(todo, to: key)
+        guard let todo = todos.first(where: { $0.id == id && $0.deletedAt == nil }) else { return }
+        guard DayBoardMutations.moveTodo(todo, to: key) else { return }
         selectedKey = key
     }
 }

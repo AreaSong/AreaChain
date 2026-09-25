@@ -75,9 +75,11 @@ struct MainSplitWorkspaceView: View {
     }
 
     private func handleEscapeKey() -> KeyPress.Result {
-        if navigation.isSearching || navigation.isSearchFocused {
-            navigation.clearSearch()
-            NSApp.keyWindow?.makeFirstResponder(nil)
+        if navigation.isSearchFocused {
+            return .ignored
+        }
+        if navigation.isSearching {
+            navigation.searchQuery = ""
             return .handled
         }
         if let editor = NSApp.keyWindow?.firstResponder as? NSTextView {
@@ -108,7 +110,7 @@ struct MainSplitWorkspaceView: View {
     }
 
     private var showsBatchBar: Bool {
-        guard !navigation.selectedTaskIDs.isEmpty else { return false }
+        guard !navigation.isSearching, !navigation.selectedTaskIDs.isEmpty else { return false }
         if navigation.selectedTagID != nil { return true }
         switch navigation.selectedTab {
         case .pending, .allItems:

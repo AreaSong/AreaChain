@@ -12,6 +12,7 @@ struct WorkspaceTodayView: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @Bindable private var navigation = WorkspaceNavigation.shared
+    @Bindable private var filterSession = BoardFilterSession.shared
     @State private var dayTick = Date()
     @State private var draftText = ""
     @State private var composerFocused = false
@@ -60,6 +61,10 @@ struct WorkspaceTodayView: View {
                             navigation.selectedTaskID = nil
                             composerFocused = true
                         }
+                    ),
+                    externalFilter: Binding(
+                        get: { filterSession.filters.tasks },
+                        set: { writeTaskFilter($0) }
                     )
                 )
             )
@@ -118,6 +123,12 @@ struct WorkspaceTodayView: View {
         guard navigation.wantsTodayComposerFocus else { return }
         navigation.wantsTodayComposerFocus = false
         composerFocused = true
+    }
+
+    private func writeTaskFilter(_ filter: BoardFilter) {
+        var next = filterSession.filters
+        next.write(filter, for: .tasks)
+        filterSession.filters = next
     }
 
     private func addTodo() {

@@ -36,7 +36,14 @@ extension MenuBarPopoverRenderingTests {
         composer: BoardComposerSession? = nil,
         locale: String = "zh-Hans", scheme: ColorScheme = .light
     ) -> NSWindow {
-        host(MenuBarPopoverView(toolbar: toolbar, composer: composer ?? BoardComposerSession()), container: container, locale: locale, scheme: scheme)
+        host(
+            MenuBarPopoverView(
+                toolbar: toolbar,
+                composer: composer ?? BoardComposerSession(),
+                filterSession: BoardFilterSession()
+            ),
+            container: container, locale: locale, scheme: scheme
+        )
     }
 
     func host<Content: View>(

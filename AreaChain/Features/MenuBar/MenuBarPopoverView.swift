@@ -13,7 +13,7 @@ struct MenuBarPopoverView: View {
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @State var tab: BoardTab = .tasks
-    @State var filters = BoardFilters()
+    @Bindable private var filterSession: BoardFilterSession
     @Bindable private var composer: BoardComposerSession
     @State var dayTick = Date()
     @State var captureFocused = false
@@ -27,9 +27,19 @@ struct MenuBarPopoverView: View {
     @State var hoverOpenWorkItem: DispatchWorkItem? = nil
     @State var hoverCloseWorkItem: DispatchWorkItem? = nil
     @State var filterCategory: FilterCategory = .date
-    init(toolbar: MenuBarToolbarState? = nil, composer: BoardComposerSession? = nil) {
+    init(
+        toolbar: MenuBarToolbarState? = nil,
+        composer: BoardComposerSession? = nil,
+        filterSession: BoardFilterSession? = nil
+    ) {
         _toolbar = State(initialValue: toolbar ?? MenuBarToolbarState())
         self.composer = composer ?? .shared
+        self.filterSession = filterSession ?? .shared
+    }
+
+    private var filters: BoardFilters {
+        get { filterSession.filters }
+        nonmutating set { filterSession.filters = newValue }
     }
 
 
@@ -133,7 +143,7 @@ struct MenuBarPopoverView: View {
             FooterBar(
                 tab: tab,
                 toolbar: toolbar,
-                filters: $filters,
+                filters: filtersBinding,
                 tags: Array(tags),
                 tagCounts: currentTabTagCounts,
                 onShowSyntaxHelp: showSyntaxHelp,
@@ -250,17 +260,21 @@ struct MenuBarPopoverView: View {
         Binding(get: { composer.tasks.text }, set: { setTaskText($0) })
     }
 
+    var filtersBinding: Binding<BoardFilters> {
+        Binding(get: { filterSession.filters }, set: { filterSession.filters = $0 })
+    }
+
     private var taskFilter: Binding<BoardFilter> {
         Binding(
-            get: { filters.tasks },
-            set: { filters.write($0, for: .tasks) }
+            get: { filterSession.filters.tasks },
+            set: { writeFilter($0, for: .tasks) }
         )
     }
 
     private var diaryFilter: Binding<BoardFilter> {
         Binding(
-            get: { filters.diary },
-            set: { filters.write($0, for: .diary) }
+            get: { filterSession.filters.diary },
+            set: { writeFilter($0, for: .diary) }
         )
     }
 
@@ -271,7 +285,15 @@ struct MenuBarPopoverView: View {
     }
 
     private func clearCurrentFilter() {
-        filters.clear(tab)
+        var next = filterSession.filters
+        next.clear(tab)
+        filterSession.filters = next
+    }
+
+    private func writeFilter(_ filter: BoardFilter, for tab: BoardTab) {
+        var next = filterSession.filters
+        next.write(filter, for: tab)
+        filterSession.filters = next
     }
 
     private func handleSyntaxTokenSelection(_ token: String) {

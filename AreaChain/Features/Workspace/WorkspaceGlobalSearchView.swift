@@ -33,6 +33,8 @@ struct WorkspaceGlobalSearchView: View {
         )
     }
 
+    /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
+    /// 菜单栏和专门搜索页不查文件名，避免把局部行为扩成统一搜索契约。
     private var matchingAttachments: [AttachmentItem] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return [] }

@@ -14,7 +14,7 @@ extension MenuBarPopoverView {
             // 树状两级级联悬停浮窗：紧贴底栏「筛选」按钮上沿
             MenuBarFilterFlyout(
                 tab: tab,
-                filters: $filters,
+                filters: filtersBinding,
                 tags: tab == .tasks ? Catalog.liveTaskTags(Array(tags)) : Catalog.liveTags(Array(tags)),
                 tagCounts: currentTabTagCounts,
                 onDismiss: dismissFilterDrawer,

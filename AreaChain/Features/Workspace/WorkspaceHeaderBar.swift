@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -52,6 +53,7 @@ struct WorkspaceHeaderLeadingTitle: View {
 struct WorkspaceHeaderSearchCapsule: View {
     @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
+    @State private var hostWindow: NSWindow?
 
     var body: some View {
         DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
@@ -66,10 +68,7 @@ struct WorkspaceHeaderSearchCapsule: View {
                 focus: $navigation.isSearchFocused,
                 onSubmit: {},
                 allowsShiftNewline: false,
-                onEscape: {
-                    navigation.clearSearch()
-                    NSApp.keyWindow?.makeFirstResponder(nil)
-                }
+                onEscape: { escapeSearch() }
             )
             .accessibilityIdentifier("workspace.header.search")
         } trailing: {
@@ -91,6 +90,7 @@ struct WorkspaceHeaderSearchCapsule: View {
             }
         }
         .frame(width: 260)
+        .background(KeyWindowHost { hostWindow = $0 })
         // ⌘F 全局快捷键聚焦
         .background {
             Button("") {
@@ -99,6 +99,17 @@ struct WorkspaceHeaderSearchCapsule: View {
             .keyboardShortcut("f", modifiers: .command)
             .opacity(0)
             .accessibilityHidden(true)
+        }
+    }
+
+    private func escapeSearch() {
+        if !BoardSearch.normalized(navigation.searchQuery).isEmpty {
+            navigation.searchQuery = ""
+            return
+        }
+        navigation.isSearchFocused = false
+        if hostWindow?.firstResponder is NSTextView {
+            hostWindow?.makeFirstResponder(nil)
         }
     }
 }
