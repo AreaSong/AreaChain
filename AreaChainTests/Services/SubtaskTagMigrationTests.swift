@@ -14,8 +14,11 @@ struct SubtaskTagMigrationTests {
         defer { try? FileManager.default.removeItem(at: root) }
         let parentID = UUID()
         let childID = UUID()
+        let legacyProjectID = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
         let storeURL = working.appendingPathComponent("fixture.store")
-        try autoreleasepool { try writeLegacyStore(at: storeURL, parentID: parentID, childID: childID) }
+        try autoreleasepool {
+            try writeLegacyStore(at: storeURL, parentID: parentID, childID: childID, projectID: legacyProjectID)
+        }
         // 复制整个已关闭的临时库目录，包含 SQLite sidecar；不接触用户的真实存储。
         try FileManager.default.copyItem(at: working, to: backup)
 
@@ -30,6 +33,8 @@ struct SubtaskTagMigrationTests {
             #expect(parent.notes == "原始备注" && parent.remindMinutes == 900)
             #expect(child.id == childID && child.todo?.id == parentID)
             #expect(child.title == "升级前子任务" && child.isDone && child.tagIDs.isEmpty)
+            let tags = try context.fetch(FetchDescriptor<TagItem>())
+            #expect(!tags.contains { $0.id == legacyProjectID || $0.name == "旧项目" })
             #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 1)
             #expect(try context.fetchCount(FetchDescriptor<DailyRoutine>()) == 1)
             try SwiftDataTaskRepository(container: store).editSubtask(id: child.id, title: "升级后子任务 #今日")
@@ -55,11 +60,12 @@ struct SubtaskTagMigrationTests {
         ])
     }
 
-    private func writeLegacyStore(at url: URL, parentID: UUID, childID: UUID) throws {
+    private func writeLegacyStore(at url: URL, parentID: UUID, childID: UUID, projectID: UUID) throws {
         let schema = legacySchema()
         let configuration = ModelConfiguration("Fixture", schema: schema, url: url, cloudKitDatabase: .none)
         let store = try ModelContainer(for: schema, configurations: configuration)
         let parent = LegacyInputStore.TodoItem(id: parentID)
+        parent.projectID = projectID
         let child = LegacyInputStore.SubtaskItem(id: childID, todo: parent)
         store.mainContext.insert(parent)
         store.mainContext.insert(child)

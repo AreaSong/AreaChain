@@ -783,23 +783,6 @@
         }
       }
     },
-    "batch.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "设置项目"
-          }
-        }
-      }
-    },
     "batch.select.all": {
       "extractionState": "manual",
       "localizations": {
@@ -1272,40 +1255,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "重要（已开）"
-          }
-        }
-      }
-    },
-    "classify.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
-          }
-        }
-      }
-    },
-    "classify.project.none": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无项目"
           }
         }
       }
@@ -2993,23 +2942,6 @@
         }
       }
     },
-    "drawer.project.title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
-          }
-        }
-      }
-    },
     "drawer.quadrant.title": {
       "extractionState": "manual",
       "localizations": {
@@ -4085,23 +4017,6 @@
         }
       }
     },
-    "filter.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
-          }
-        }
-      }
-    },
     "filter.tag": {
       "extractionState": "manual",
       "localizations": {
@@ -4119,23 +4034,6 @@
         }
       }
     },
-    "filter.project.none": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "无项目"
-          }
-        }
-      }
-    },
     "filter.tag.none": {
       "extractionState": "manual",
       "localizations": {
@@ -4149,23 +4047,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "无标签"
-          }
-        }
-      }
-    },
-    "filtered.add.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a task to this project…"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "添加事项到此项目..."
           }
         }
       }
@@ -7400,23 +7281,6 @@
         }
       }
     },
-    "row.quick.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Assign project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "归属项目"
-          }
-        }
-      }
-    },
     "row.quick.remind": {
       "extractionState": "manual",
       "localizations": {
@@ -8488,40 +8352,6 @@
         }
       }
     },
-    "sidebar.add.child": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New subproject"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新建子项目"
-          }
-        }
-      }
-    },
-    "sidebar.add.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "New project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新建项目"
-          }
-        }
-      }
-    },
     "sidebar.add.tag": {
       "extractionState": "manual",
       "localizations": {
@@ -8641,40 +8471,6 @@
         }
       }
     },
-    "sidebar.parent": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nest under"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "挂到下面"
-          }
-        }
-      }
-    },
-    "sidebar.parent.none": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Top level"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "顶层"
-          }
-        }
-      }
-    },
     "sidebar.planning": {
       "extractionState": "manual",
       "localizations": {
@@ -8688,23 +8484,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "规划"
-          }
-        }
-      }
-    },
-    "sidebar.projects": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Projects"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
           }
         }
       }
@@ -8756,23 +8535,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "名称"
-          }
-        }
-      }
-    },
-    "sidebar.sheet.project.name": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project name"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目名称"
           }
         }
       }
@@ -9691,23 +9453,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "手记"
-          }
-        }
-      }
-    },
-    "trash.kind.project": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Project"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "项目"
           }
         }
       }

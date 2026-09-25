@@ -40,6 +40,23 @@ struct TagCatalogTests {
         #expect(usage[other]?.activeCount == 1)
     }
 
+    @Test func subjectsCountLiveTodosRoutinesSubtasksAndDiariesWithoutBody() {
+        let tag = UUID()
+        let encoded = TagIDList.encode([tag])
+        let secret = "PRIVATE_BODY_SENTINEL"
+        let live = TodoItem(title: "事项", dayKey: "2026-09-24", tagIDs: encoded)
+        let removed = TodoItem(title: "已删", dayKey: "2026-09-24", deletedAt: .now, tagIDs: encoded)
+        let child = SubtaskItem(title: "子", tagIDs: encoded, todo: live)
+        let droppedChild = SubtaskItem(title: "已删子", deletedAt: .now, tagIDs: encoded, todo: live)
+        live.subtasks = [child, droppedChild]
+        let routine = DailyRoutine(title: "重复", sortOrder: 0, tagIDs: encoded)
+        let diary = DiaryEntry(text: secret, dayKey: "2026-09-24", tagIDs: encoded)
+        let subjects = TagUsage.subjects(todos: [live, removed], routines: [routine], diaries: [diary])
+        let usage = TagUsage.records(subjects)
+        #expect(usage[tag]?.activeCount == 4)
+        #expect(!String(describing: subjects).contains(secret))
+    }
+
     @Test func filtersFrequentRecentAndUnused() {
         let used = TagItem(name: "常用", sortOrder: 1)
         let quiet = TagItem(name: "闲置", sortOrder: 0)
