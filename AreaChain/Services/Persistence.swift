@@ -18,7 +18,7 @@ enum Persistence {
             return memorySession(schema: schema, openError: nil)
         }
         let disk = ModelConfiguration("areachain", schema: schema)
-        // 标记仅由用户确认过的加密转换创建；失败保留标记，由设置页提示重试。
+        // 标记仅由用户确认过的加密转换创建；失败保留标记，由隐私与解锁页提示重试。
         try? PrivacyStoreMaintenance.finish(at: disk.url)
         sanitizeSqliteStoreIfNeeded()
         do {

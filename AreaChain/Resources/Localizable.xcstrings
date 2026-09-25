@@ -5179,13 +5179,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notes that match a private tag, and notes that stay protected, keep their text and images private. A private tag encrypts the whole note and its attachments. Removing a tag does not remove existing protection. Plain JSON leaves out protected notes, legacy password-masked notes, and private attachments, and it never includes image bytes. Use the separate-password encrypted backup on Data & Backup for a full restore. The privacy migration backup appears only while converting existing notes into private content. It is not the everyday backup entry."
+            "value": "Notes that match a private tag, and notes that stay protected, keep their text and images private. A private tag encrypts the whole note and its attachments. Removing a tag does not remove existing protection. Plain JSON leaves out protected notes, legacy password-masked notes, and private attachments, and it never includes image bytes. Use the separate-password encrypted backup on Data & Backup. That restore merges records and images; it does not replace the whole library. The privacy migration backup appears only while converting existing notes into private content. It is not the everyday backup entry."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "命中私密标签的手记，以及仍受保护的手记，正文和图片都属于私密内容。私密标签会加密整条手记和所属附件；移除标签不会自动解除已有保护。普通 JSON 不包含受保护手记、旧密码遮罩手记和私密附件，也不包含图片二进制。完整恢复请到「数据与备份」使用独立口令的加密备份。将旧手记转为私密内容前的隐私迁移备份，只出现在创建或调整私密保护时，不是日常备份入口。"
+            "value": "命中私密标签的手记，以及仍受保护的手记，正文和图片都属于私密内容。私密标签会加密整条手记和所属附件；移除标签不会自动解除已有保护。普通 JSON 不包含受保护手记、旧密码遮罩手记和私密附件，也不包含图片二进制。记录和图片请到「数据与备份」使用独立口令的加密备份；恢复是合并，不会整库覆盖。将旧手记转为私密内容前的隐私迁移备份，只出现在创建或调整私密保护时，不是日常备份入口。"
           }
         }
       }
@@ -8148,6 +8148,23 @@
         }
       }
     },
+    "dataBackup.encrypted.exported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted backup exported. The password was not saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加密备份已导出。口令没有写入偏好。"
+          }
+        }
+      }
+    },
     "dataBackup.encrypted.help": {
       "extractionState": "manual",
       "localizations": {
@@ -8161,6 +8178,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "备份包含记录和图片附件，使用独立口令，不会记入应用偏好。恢复前会检查清单并显示预览；确认后按合并方式恢复，不会无条件删除备份之外的本地记录。"
+          }
+        }
+      }
+    },
+    "dataBackup.encrypted.restored": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Encrypted backup merged. Records outside the backup were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加密备份已按合并方式恢复。备份之外的本地记录仍保留。"
           }
         }
       }

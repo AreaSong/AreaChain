@@ -223,7 +223,18 @@ struct DataBackupView: View {
             confirmation: item == .export,
             explanation: "privacy.backup.password.help",
             action: { password in try await perform(item, password: password) },
-            onComplete: { dialog = nil; statusMessage = L10n.string("privacy.settings.saved", locale: locale) }
+            onComplete: {
+                let finished = dialog
+                dialog = nil
+                switch finished {
+                case .export:
+                    statusMessage = L10n.string("dataBackup.encrypted.exported", locale: locale)
+                case .restore:
+                    statusMessage = L10n.string("dataBackup.encrypted.restored", locale: locale)
+                case nil:
+                    break
+                }
+            }
         )
     }
 
