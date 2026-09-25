@@ -8,6 +8,7 @@ struct WorkspaceGlobalSearchView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Bindable var navigation = WorkspaceNavigation.shared
+    @Bindable private var filterSession = BoardFilterSession.shared
 
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
@@ -29,7 +30,8 @@ struct WorkspaceGlobalSearchView: View {
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: tagMap,
-            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale)
+            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale),
+            scope: BoardSearchScope(filter: filterSession.globalSearchFilter)
         )
     }
 

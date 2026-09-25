@@ -123,4 +123,20 @@ struct MenuBarToolbarStateTests {
         toolbar.closeFilters()
         #expect(list.config.interaction.isKeyboardEnabled())
     }
+
+    @Test func globalSearchUsesTheSharedTaskFilter() {
+        let session = BoardFilterSession()
+        var filters = BoardFilters()
+        filters.tasks = BoardFilter(tagID: UUID(), reminderScope: .set, dateScope: .today)
+        filters.diary = BoardFilter(tagID: UUID())
+        session.filters = filters
+        #expect(session.globalSearchFilter == filters.tasks)
+        #expect(session.globalSearchFilter.dateScope == .today)
+        #expect(session.globalSearchFilter.tagID != filters.diary.tagID)
+    }
+
+    @Test func failedCalendarDropKeepsTheSelectedDay() {
+        #expect(CalendarDayDrop.nextSelectedDay(current: "2026-09-13", target: "2026-09-20", saved: false) == "2026-09-13")
+        #expect(CalendarDayDrop.nextSelectedDay(current: "2026-09-13", target: "2026-09-20", saved: true) == "2026-09-20")
+    }
 }

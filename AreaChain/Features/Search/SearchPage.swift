@@ -9,6 +9,7 @@ struct SearchPage: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var query = ""
     @State private var searchFocus = false
+    @Bindable private var filterSession = BoardFilterSession.shared
 
     private var tagMap: [UUID: String] {
         Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
@@ -60,7 +61,8 @@ struct SearchPage: View {
             routines: routines.map(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: tagMap,
-            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale)
+            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale),
+            scope: BoardSearchScope(filter: filterSession.globalSearchFilter)
         )
     }
 }

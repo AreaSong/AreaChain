@@ -1,6 +1,13 @@
 import SwiftData
 import SwiftUI
 
+enum CalendarDayDrop {
+    /// 拖动保存失败时保留原来的选中日。
+    static func nextSelectedDay(current: String, target: String, saved: Bool) -> String {
+        saved ? target : current
+    }
+}
+
 struct CalendarPage: View {
     @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) private var modelContext
@@ -172,7 +179,7 @@ struct CalendarPage: View {
 
     private func dropTodo(_ id: UUID, onto key: String) {
         guard let todo = todos.first(where: { $0.id == id && $0.deletedAt == nil }) else { return }
-        guard DayBoardMutations.moveTodo(todo, to: key) else { return }
-        selectedKey = key
+        let saved = DayBoardMutations.moveTodo(todo, to: key)
+        selectedKey = CalendarDayDrop.nextSelectedDay(current: selectedKey, target: key, saved: saved)
     }
 }
