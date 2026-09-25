@@ -43,7 +43,7 @@ struct FooterBar: View {
 
     @State private var hoverTask: Task<Void, Never>? = nil
 
-    private var activeTokens: [SearchFilterToken] {
+    var activeTokens: [SearchFilterToken] {
         var tokens: [SearchFilterToken] = []
         if tab == .tasks {
             if currentFilter.dateScope != .all {
@@ -71,10 +71,34 @@ struct FooterBar: View {
                 ))
             }
 
+            if currentFilter.reminderScope != .all {
+                tokens.append(SearchFilterToken(
+                    id: "reminder",
+                    title: currentFilter.reminderScope.title(locale: locale),
+                    icon: "bell",
+                    onRemove: { writeFilter(currentFilter.withReminderScope(.all)) }
+                ))
+            }
+
+            if let bundleID = currentFilter.bundleID {
+                tokens.append(SearchFilterToken(
+                    id: "bundle",
+                    title: BundleDisplay.name(for: bundleID),
+                    icon: "app",
+                    onRemove: { writeFilter(currentFilter.withBundle(nil)) }
+                ))
+            }
         }
 
         if let tid = selectedTagID {
-            if let tag = tags.first(where: { $0.id == tid }) {
+            if tid == BoardFilter.noneID {
+                tokens.append(SearchFilterToken(
+                    id: "tag",
+                    title: L10n.string("filter.tag.none", locale: locale),
+                    icon: "tag",
+                    onRemove: { clearTag() }
+                ))
+            } else if let tag = tags.first(where: { $0.id == tid }) {
                 tokens.append(SearchFilterToken(
                     id: "tag",
                     title: "#" + tag.name,

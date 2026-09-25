@@ -102,6 +102,32 @@ struct BoardFilterBarTests {
         #expect(footer.tab == .tasks)
     }
 
+    @Test func footerTokensExposeSharedReminderSourceAndNoTag() {
+        var filters = BoardFilters()
+        filters.tasks = BoardFilter(
+            tagID: BoardFilter.noneID,
+            bundleID: "com.example.mail",
+            reminderScope: .set,
+            dateScope: .today
+        )
+        filters.diary = BoardFilter(reminderScope: .unset)
+        let tasks = FooterBar(
+            tab: .tasks,
+            toolbar: MenuBarToolbarState(),
+            filters: Binding(get: { filters }, set: { filters = $0 })
+        )
+        #expect(tasks.activeTokens.map(\.id) == ["date", "reminder", "bundle", "tag"])
+        let noTag = tasks.activeTokens.first { $0.id == "tag" }?.title
+        #expect(noTag == "No Tag" || noTag == "无标签")
+
+        let diary = FooterBar(
+            tab: .diary,
+            toolbar: MenuBarToolbarState(),
+            filters: Binding(get: { filters }, set: { filters = $0 })
+        )
+        #expect(diary.activeTokens.map(\.id) == [])
+    }
+
     @Test func filterChoicesShareSelectionAndClear() {
         let locale = Locale(identifier: "en")
         let today = BoardFilter().withDateScope(.today)

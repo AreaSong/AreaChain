@@ -73,12 +73,32 @@ extension TasksPage {
                     }
                 }
 
-                if effectiveFilter.isHighPriorityOnly {
+                if effectiveFilter.priorityScope != .all || effectiveFilter.isHighPriorityOnly {
                     activeFilterTag(
-                        title: L10n.string("filter.highPriority", locale: locale),
+                        title: effectiveFilter.priorityTitle(locale: locale),
                         icon: "exclamationmark.3"
                     ) {
-                        updateFilter(effectiveFilter.withHighPriority(false))
+                        var next = effectiveFilter.withPriorityScope(.all)
+                        next.isHighPriorityOnly = false
+                        updateFilter(next)
+                    }
+                }
+
+                if effectiveFilter.reminderScope != .all {
+                    activeFilterTag(
+                        title: effectiveFilter.reminderScope.title(locale: locale),
+                        icon: "bell"
+                    ) {
+                        updateFilter(effectiveFilter.withReminderScope(.all))
+                    }
+                }
+
+                if let bundleID = effectiveFilter.bundleID {
+                    activeFilterTag(
+                        title: BundleDisplay.name(for: bundleID),
+                        icon: "app"
+                    ) {
+                        updateFilter(effectiveFilter.withBundle(nil))
                     }
                 }
 
