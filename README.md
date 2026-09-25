@@ -36,6 +36,7 @@ AreaChain 是专为 macOS 打造的个人任务看板与习惯打卡助手：菜
 完整功能清单与产品边界见 [docs/features.md](docs/features.md)。
 使用说明与快捷键见 [docs/usage.md](docs/usage.md)。
 架构与数据模型见 [docs/architecture.md](docs/architecture.md)。
+共享组件与新增功能复用入口见 [docs/component-catalog.md](docs/component-catalog.md)。
 开发协作、工程质量门禁、生命周期覆盖与发行/维护缺口见 [docs/engineering.md](docs/engineering.md)。
 
 隐私保护需要主动启用。旧密码遮罩本身不加密；首次转换已有内容前必须保存并验证加密备份。设置显示待清理时，按提示完成附件清理并重启，才能确认转换完成。系统解锁依赖受保护钥匙串和稳定的应用签名；未验证真实系统认证前，不应仅凭自动化测试启用真实密码库。详见 [隐私保护使用说明](docs/usage.md#9-隐私保护备份与恢复)。
@@ -83,6 +84,8 @@ AreaChainTests/     单元测试，镜像 Domain 与 Services
 scripts/            构建、签名核验、应用管理与测试脚本
 Config/             通用签名配置与个人配置示例
 docs/               产品、功能、架构、用法
+skill-routing.md    项目级技能选择与交付闭环
+.agents/skills/     可共享的 AreaChain 项目技能
 AreaChain.xcodeproj
 ```
 

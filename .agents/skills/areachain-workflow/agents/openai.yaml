@@ -1,0 +1,6 @@
+interface:
+  display_name: "AreaChain 工作流"
+  short_description: "编排 AreaChain 的复用与验收闭环"
+  default_prompt: "使用 $areachain-workflow 先读取项目规则，建立复用/影响地图，再实施并交接验证。"
+policy:
+  allow_implicit_invocation: true

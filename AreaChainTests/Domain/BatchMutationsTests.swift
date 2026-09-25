@@ -142,6 +142,57 @@ struct BatchMutationsTests {
         #expect(!inserted.isSkipped)
     }
 
+    @Test func batchSetRoutineChecksRejectsUnscheduledDayWithoutWriting() throws {
+        let (_, context) = try makeContainer()
+        let calendar = Calendar(identifier: .gregorian)
+        let created = "2026-09-01"
+        let unscheduled = try #require(firstDay(from: created, calendar: calendar) {
+            !WeekdayMask.contains(WeekdayMask.workdays, dayKey: $0, calendar: calendar)
+        })
+        let scheduled = try #require(firstDay(from: created, calendar: calendar) {
+            WeekdayMask.contains(WeekdayMask.workdays, dayKey: $0, calendar: calendar)
+        })
+        let routine = DailyRoutine(
+            title: "仅工作日",
+            sortOrder: 0,
+            createdDayKey: created,
+            weekdayMask: WeekdayMask.workdays
+        )
+        context.insert(routine)
+
+        let rejected = DayBoardMutations.batchSetRoutineChecks(
+            [routine.id], markDone: true, on: unscheduled, routines: [routine], context: context
+        )
+        #expect(!rejected)
+        #expect(routine.checks.isEmpty)
+
+        let mixed = DayBoardMutations.batchSetRoutineChecks(
+            groupedByDay: [unscheduled: [routine.id], scheduled: [routine.id]],
+            markDone: true,
+            routines: [routine],
+            context: context
+        )
+        #expect(!mixed)
+        #expect(routine.checks.isEmpty)
+
+        let accepted = DayBoardMutations.batchSetRoutineChecks(
+            [routine.id], markDone: true, on: scheduled, routines: [routine], context: context
+        )
+        #expect(accepted)
+        #expect(routine.checks.contains { $0.dayKey == scheduled && $0.isDone })
+    }
+
+    private func firstDay(from start: String, calendar: Calendar, matching: (String) -> Bool) -> String? {
+        var cursor = start
+        for _ in 0..<14 {
+            if matching(cursor) { return cursor }
+            let next = DayKey.shifted(cursor, by: 1, calendar: calendar)
+            if next <= cursor { return nil }
+            cursor = next
+        }
+        return nil
+    }
+
     @Test func enablingLegacyPausedHabitFillsSkippedDays() throws {
         let (_, context) = try makeContainer()
         let routine = DailyRoutine(

@@ -9,10 +9,10 @@
 | 个人通用规则/标准 | 需求与验收、风险授权、架构/复用、工程交付、可靠性/维护判据；由个人 AGENTS.md 按影响加载 | 不硬编码 AreaChain 命令，不强制所有项目同一种架构 |
 | 通用开发 Skill | `areasong-development` 组织新功能和界面优化，引用适用标准 | 不接管单独诊断、重构、部署或技能配置任务 |
 | 技术栈方法 | SwiftUI/AppKit/SwiftData、macOS 工具链与平台证据；适用专项技能补足方法 | Web/移动工具不能替代原生窗口、钥匙串或桌面发行验收 |
-| 项目规则/技能 | 本页及已有项目文档给出实际支持范围；`areachain-ui` 处理项目界面，`areachain-verify` 选择和解释检查 | 不复制个人技能、不扩大真实系统操作授权 |
+| 项目规则/技能 | 本页及已有项目文档给出实际支持范围；`areachain-workflow` 编排冷启动与交接，`areachain-ui` 处理项目界面，`areachain-verify` 选择和解释检查 | 不复制个人技能、不扩大真实系统操作授权 |
 | 脚本/测试/CI | 确定性检查、隔离夹具及可重复命令；CI 接入后复用相同入口 | 不判断未决产品设计、不把本地通过变成远端门禁或正式发布 |
 
-只有重复、多步骤且确需专项方法的工作才建立新 Skill。本批扩充现有标准引用和验证入口，不为生命周期每一格创建一个技能。个人标准缺失时，项目自身文档与检查仍可使用；不得冒充个人技能已发现。
+只有重复、多步骤且确需专项方法的工作才建立新 Skill。`areachain-workflow` 是项目级编排入口，不替代 UI 或验收技能；后续新增项目技能必须接入 [技能路由](../skill-routing.md)、`.gitignore` 和 `check_workflow.py`。个人标准缺失时，项目自身文档与检查仍可使用；不得冒充个人技能已发现。
 
 ## 生命周期覆盖矩阵
 
@@ -51,7 +51,7 @@
 
 | 改动/声明 | 本地入口 | 结果能证明什么 |
 |---|---|---|
-| 工作流文档、Domain UI 依赖、项目技能 Git 边界 | `python3 -B scripts/check_workflow.py` | 内联本地引用/锚点、显式 import、已共享技能和本地状态忽略边界，以及 Features 的 theme-tokens 字面模式 |
+| 工作流文档、组件目录、Domain UI 依赖、项目技能 Git 边界 | `python3 -B scripts/check_workflow.py` | 内联本地引用/锚点、工作流入口、稳定复用符号、显式 import、已共享技能和本地状态忽略边界，以及 Features/Theme 的 theme-tokens 字面模式 |
 | 本检查器改变 | `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` | 临时夹具的正/反例、作用域、输出与退出码；不是技能决策质量 |
 | 构建/验签/管理/工作流脚本 | `python3 -B -m unittest discover -s scripts/tests -v`；改 Shell 时另做 `bash -n` | mock 外部命令和临时目录中的行为，不是真实安装、签名或恢复 |
 | Swift 业务/接口/数据 | 按项目验证技能选择 `./scripts/build.sh test --only-testing AreaChainTests/具体测试类` | 实际执行且未跳过的用例；测试存在不能代替执行 |
@@ -60,7 +60,7 @@
 
 `check_workflow.py` 仅用标准库和只读 Git 命令。支持 `--format json`（`schemaVersion: 1`）、`--root` 指定 AreaChain 工作副本；全部选定检查通过返回 0，失败/依赖阻塞返回 1，参数错误返回 2。输出区分 passed/failed/blocked 的检查项；不忽略依赖缺失后报成功。
 
-`theme-tokens` 只扫描 `AreaChain/Features` 的字面模式。同行有 `// control:` 或 `// token-exempt:` 则跳过。圆角已经写成 `DaybookRadius` 的形状，以及不带颜色名的视图显隐透明度，不报。它不证明界面看起来一致。
+`theme-tokens` 扫描 `AreaChain/Features` 和 `AreaChain/Theme` 的字面模式。同行有 `// control:` 或 `// token-exempt:` 则跳过。圆角已经写成 `DaybookRadius` 的形状，以及不带颜色名的视图显隐透明度，不报。它不证明界面看起来一致。
 
 默认不扫描个人目录；本次确需验证个人规则时，显式加 `--personal-root <实际目录>`，范围只有该目录的 AGENTS、路由及自有 `areasong-development` 文档，不扫描其他技能/插件缓存。Skill Creator 的格式校验、元数据解析及受控新会话发现仍是单独证据。
 
@@ -140,3 +140,12 @@
 | 4. 正式发行与升级维护 | 候选物追溯、渠道、许可证、签名、公证、恢复和运行验收仍待落实 | 渠道/权利/身份决策及每个真实操作的授权；本机构建成功不能跳过这些门禁 |
 
 规范、方法和本地守卫已经增加，也仍须保留矩阵中尚未覆盖的内容；不能将本批交付描述为整个生命周期全部闭环。
+
+## 工作流闭环更新（2026-09-25）
+
+本次仅补强项目协作基础设施，没有改变业务数据、签名配置或安装行为：
+
+- 新增 [技能路由](../skill-routing.md)、[共享组件与复用目录](component-catalog.md) 和项目级 `areachain-workflow` 编排技能；`areachain-ui` 与 `areachain-verify` 已接入同一套冷启动和交接入口。
+- `scripts/check_workflow.py` 新增 `workflow-contract` 与 `component-catalog` 检查，并把路由、组件目录和项目技能纳入必需引用与 Git 作用域；检查器仍只做静态守卫，不证明模型实际调用或原生运行。
+- 实际验证：`python3 -B scripts/check_workflow.py --format json` 通过（含 `workflow-contract` 与 `component-catalog`）；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` 41 项通过；`python3 -B -m unittest discover -s scripts/tests -v` 135 项通过；三个项目技能的 `skill-creator quick_validate.py` 均通过；`git diff --check` 通过。
+- 本次未运行 Swift 构建或原生 UI 验收，因为改动仅涉及规则、文档、技能元数据和 Python 守卫；后续业务代码或共享 UI 改动仍必须按路由选择对应测试和构建。

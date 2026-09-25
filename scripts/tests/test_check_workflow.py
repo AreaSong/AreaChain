@@ -33,12 +33,23 @@ class WorkflowCheckTests(unittest.TestCase):
         (self.root / "AreaChainTests").mkdir()
         self.write("scripts/build.sh", "# isolated fixture\n")
         self.write("AreaChain/Domain/Rule.swift", "import Foundation\nimport SwiftData\n")
+        for relative, symbol in workflow.COMPONENT_ENTRIES:
+            self.write(relative, f"struct {symbol} {{}}\n")
+        contract_docs = {
+            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow\n",
+            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md\n",
+            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardMutations ModelChanges 新公共组件\n",
+        }
         for name in workflow.REQUIRED_DOCS:
-            self.write(name, "# 文档\n")
+            self.write(name, contract_docs.get(name, "# 文档\n"))
         for name in workflow.SKILLS:
-            self.write(f".agents/skills/{name}/SKILL.md", f"---\nname: {name}\n---\n")
+            content = f"---\nname: {name}\n---\n"
+            if name == "areachain-workflow":
+                content += "skill-routing.md component-catalog.md areachain-verify\n"
+            self.write(f".agents/skills/{name}/SKILL.md", content)
             self.write(f".agents/skills/{name}/agents/openai.yaml", 'interface: {}\n')
         self.write(".gitignore", ".agents/*\n!.agents/skills/\n.agents/skills/*\n"
+                   "!.agents/skills/areachain-workflow/\n"
                    "!.agents/skills/areachain-ui/\n!.agents/skills/areachain-verify/\n")
         subprocess.run(["git", "init", "--quiet", str(self.root)], check=True,
                        capture_output=True, timeout=15)
@@ -146,7 +157,22 @@ class WorkflowCheckTests(unittest.TestCase):
         report = workflow.run_checks(self.root)
         self.assertEqual(report["status"], "passed", report)
         self.assertEqual({check["name"] for check in report["checks"]},
-                         {"project-identity", "project-links", "domain-imports", "skill-git-scope", "theme-tokens"})
+                         {"project-identity", "project-links", "workflow-contract",
+                          "component-catalog", "domain-imports", "skill-git-scope", "theme-tokens"})
+
+    def test_workflow_contract_rejects_missing_router_marker(self):
+        self.make_project()
+        self.write("skill-routing.md", "areachain-workflow\n")
+        result = workflow.check_workflow_contract(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_component_catalog_rejects_missing_stable_symbol(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookInputShell.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("DaybookInputShell" in problem["message"] for problem in result["issues"]))
 
     def test_accidentally_exposed_local_agent_file_fails(self):
         self.make_project()
@@ -329,4 +355,3 @@ class WorkflowCheckTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

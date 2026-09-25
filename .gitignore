@@ -12,6 +12,7 @@ build/
 .agents/*
 !.agents/skills/
 .agents/skills/*
+!.agents/skills/areachain-workflow/
 !.agents/skills/areachain-ui/
 !.agents/skills/areachain-verify/
 Config/Signing.local.xcconfig

@@ -12,10 +12,11 @@ from urllib.parse import unquote, urlsplit
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ("areachain-ui", "areachain-verify")
+SKILLS = ("areachain-workflow", "areachain-ui", "areachain-verify")
 REQUIRED_DOCS = (
     "AGENTS.md", "README.md", "docs/README.md", "docs/architecture.md",
-    "docs/signing.md", "docs/engineering.md",
+    "docs/signing.md", "docs/engineering.md", "skill-routing.md",
+    "docs/component-catalog.md",
 )
 LINK = re.compile(r"\[[^\]\n]*\]\((?:<([^>\n]+)>|([^\s)]+))(?:\s+\"[^\"]*\")?\)")
 IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|var|func)\s+)?(AppKit|SwiftUI|Cocoa)\b")
@@ -23,8 +24,40 @@ LIMITATIONS = [
     "文档检查覆盖内联本地链接及 Markdown 标题/显式锚点；不访问远端链接，不验证内容语义。",
     "Domain 检查仅识别显式 import；不替代 Swift 编译、宏展开或完整符号依赖分析。",
     "技能 Git 边界不证明发现或调用成功；本地通过不代表 CI、运行验收或发行通过。",
-    "theme-tokens 只匹配 Features 里的字面模式，并跳过同行的 control 与 token-exempt 注释；不证明视觉一致。",
+    "theme-tokens 只匹配 Features/Theme 里的字面模式，并跳过同行的 control 与 token-exempt 注释；不证明视觉一致。",
+    "workflow-contract 只核对项目级路由、复用目录和编排技能的关键入口；不证明模型实际发现或调用技能。",
+    "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
 ]
+
+WORKFLOW_CONTRACT = {
+    "AGENTS.md": ("skill-routing.md", "component-catalog.md", "areachain-workflow"),
+    "skill-routing.md": (
+        "areachain-workflow", "areachain-ui", "areachain-verify",
+        "docs/component-catalog.md",
+    ),
+    "docs/component-catalog.md": (
+        "DaybookInputShell", "ModelChanges", "新公共组件",
+    ),
+    ".agents/skills/areachain-workflow/SKILL.md": (
+        "skill-routing.md", "component-catalog.md", "areachain-verify",
+    ),
+}
+
+COMPONENT_ENTRIES = (
+    ("AreaChain/Theme/DaybookInputShell.swift", "DaybookInputShell"),
+    ("AreaChain/Theme/DaybookTextField.swift", "DaybookTextField"),
+    ("AreaChain/Theme/SyntaxTextField.swift", "SyntaxTextField"),
+    ("AreaChain/Theme/DaybookButtonStyle.swift", "DaybookButtonStyle"),
+    ("AreaChain/Theme/DaybookSurface.swift", "daybookSurface"),
+    ("AreaChain/Features/Tasks/TaskRow.swift", "TaskRow"),
+    ("AreaChain/Features/Tasks/DayBoardList.swift", "DayBoardList"),
+    ("AreaChain/Domain/Classification.swift", "BoardFilter"),
+    ("AreaChain/Domain/BoardSearch.swift", "BoardSearch"),
+    ("AreaChain/Domain/DayKey.swift", "DayKey"),
+    ("AreaChain/Domain/AgendaProjection.swift", "AgendaProjection"),
+    ("AreaChain/Features/Tasks/DayBoardMutations.swift", "DayBoardMutations"),
+    ("AreaChain/Services/ModelChanges.swift", "ModelChanges"),
+)
 
 
 def issue(path, message, line=1):
@@ -276,6 +309,56 @@ def check_theme_tokens(root):
     return result("theme-tokens", len(paths) + len(theme_paths), issues)
 
 
+def check_workflow_contract(root):
+    """确认冷启动所需的项目路由、复用目录和编排技能没有断链。"""
+    issues, checked = [], 0
+    for relative, markers in WORKFLOW_CONTRACT.items():
+        path = root / relative
+        if not path.is_file():
+            issues.append(issue(path, "工作流契约文件缺失。"))
+            continue
+        try:
+            content = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            issues.append(issue(path, f"无法读取工作流契约文件：{type(error).__name__}"))
+            continue
+        checked += 1
+        for marker in markers:
+            if marker not in content:
+                issues.append(issue(path, f"工作流契约缺少关键入口：{marker}"))
+    return result("workflow-contract", checked, issues)
+
+
+def check_component_catalog(root):
+    """确认复用目录没有脱离少量稳定的核心实现入口。"""
+    catalog = root / "docs/component-catalog.md"
+    issues, checked = [], 0
+    if not catalog.is_file():
+        return result("component-catalog", 0, [issue(catalog, "共享组件目录缺失。")])
+    try:
+        catalog_text = catalog.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as error:
+        return result("component-catalog", 0,
+                      [issue(catalog, f"无法读取共享组件目录：{type(error).__name__}")])
+    checked += 1
+    for relative, symbol in COMPONENT_ENTRIES:
+        source = root / relative
+        if not source.is_file():
+            issues.append(issue(source, f"组件目录对应源码缺失：{symbol}"))
+            continue
+        try:
+            source_text = source.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as error:
+            issues.append(issue(source, f"无法读取组件源码：{type(error).__name__}"))
+            continue
+        checked += 1
+        if symbol not in catalog_text:
+            issues.append(issue(catalog, f"组件目录未登记稳定入口：{symbol}"))
+        if not re.search(r"\b" + re.escape(symbol) + r"\b", source_text):
+            issues.append(issue(source, f"组件目录登记的符号不存在：{symbol}"))
+    return result("component-catalog", checked, issues)
+
+
 def git(root, arguments, stdin=None):
     return subprocess.run(["git", "-C", str(root), *arguments], input=stdin,
                           text=True, capture_output=True, timeout=15, check=False)
@@ -353,7 +436,9 @@ def run_checks(root, personal_root=None):
     checks = [result("project-identity", len(markers), missing)]
     if not missing:
         checks.extend([check_links(root, project_docs(root), "project-links"),
-                       check_domain(root), check_skill_scope(root), check_theme_tokens(root)])
+                       check_workflow_contract(root), check_domain(root),
+                       check_component_catalog(root), check_skill_scope(root),
+                       check_theme_tokens(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)

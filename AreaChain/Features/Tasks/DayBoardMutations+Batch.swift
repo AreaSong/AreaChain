@@ -34,11 +34,23 @@ extension DayBoardMutations {
         guard let context = context ?? routines.first?.modelContext else { return false }
         let groups = groupedByDay.filter { !$0.key.isEmpty && !$0.value.isEmpty }
         guard !groups.isEmpty else { return false }
+        if markDone, !groups.allSatisfy({ day, ids in allowsBatchCheck(ids, on: day, routines: routines) }) {
+            return false
+        }
         return ModelChanges.perform(in: context) {
             let repo = routineRepo(for: context)
             for (day, ids) in groups {
                 try repo.batchSetRoutineChecks(ids: ids, markDone: markDone, on: day)
             }
+        }
+    }
+
+    /// 批量打卡只接受这一天真实排定、且已启用的重复事项。取消打卡不走这道限制，避免无法撤回已有记录。
+    private static func allowsBatchCheck(_ ids: Set<UUID>, on dayKey: String, routines: [DailyRoutine]) -> Bool {
+        let byID = Dictionary(uniqueKeysWithValues: routines.map { ($0.id, $0.snapshot) })
+        return ids.allSatisfy { id in
+            guard let routine = byID[id] else { return false }
+            return DayBoardLogic.isRoutineDue(routine, on: dayKey)
         }
     }
 

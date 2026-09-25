@@ -4,19 +4,29 @@
 
 ## 开发技能分层
 
+- **项目级工作流编排**：[areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) 负责冷启动定界、上下文加载、复用检索、技能衔接和交付交接；不替代实现或验收技能。
 - **个人级通用流程**：已发现的 `areasong-development` 组织新功能与界面优化的需求、风险和交付，提供跨项目质量判据。
 - **项目级原生界面**：[areachain-ui](.agents/skills/areachain-ui/SKILL.md) 负责本仓库的双语、Daybook 样式、原生输入和窗口契约应用。
 - **项目级验证**：[areachain-verify](.agents/skills/areachain-verify/SKILL.md) 根据改动范围选择项目测试、构建和隔离验收，并报告真实证据与缺口。
-- 本文件和原有项目文档保留具体事实；技能引用这些来源，不复制通用技能或另建相互矛盾的规范。专项技能仍按触发要求协作，不扩大操作授权。
+- 本文件和原有项目文档保留具体事实；[技能路由](skill-routing.md) 负责选择顺序，[共享组件与复用目录](docs/component-catalog.md) 负责可复用入口索引。技能引用这些来源，不复制通用技能或另建相互矛盾的规范。专项技能仍按触发要求协作，不扩大操作授权。
 - 按当前会话实际发现的技能使用；项目技能缺失时说明并按现有文档/脚本完成允许部分，不自动安装或冒充调用。仅项目专用技能目录纳入版本管理，其他 `.agents` 本地状态继续忽略。
 
 ## 按任务读取上下文
 
+- 所有新对话先读 [技能路由](skill-routing.md)；新增控件、公共规则或界面时再读 [共享组件与复用目录](docs/component-catalog.md)，并沿实际调用方核对，不只按名称猜测。
 - 入口、环境要求和命令见 [README.md](README.md)；产品范围见 [docs/product.md](docs/product.md) 与 [docs/features.md](docs/features.md)。
 - 界面、快捷键和保存行为见 [docs/usage.md](docs/usage.md)；分层、数据与隔离验收见 [docs/architecture.md](docs/architecture.md)。
 - 开发全生命周期的覆盖状态、工程环境、质量门禁、发行准备及恢复/维护方法见 [docs/engineering.md](docs/engineering.md)；通用标准由全局规则按需引用，项目手册只保存本项目证据、入口和缺口。
 - 触及构建、签名、安装或系统解锁时先读 [docs/signing.md](docs/signing.md)。不要把安装、启动或真实认证当作普通检查的隐含步骤。
 - 文档与实现有差异时先核对相关代码和测试，说明现状与目标；不凭单一旧说明扩大权限或修改无关行为。
+
+## 新任务闭环
+
+- 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
+- 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
+- 修改后按影响选择验证：规则/技能/文档运行 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建；共享契约或跨模块行为变化安排独立只读复核。
+- 交付时明确区分已实现、已验证、已安装、已发布、跳过、未运行和残余风险；旧测试结果、代码存在或构建成功不能单独宣称完成。
+- 新增或改变公共组件、路由、技能或验证入口时，必须同步维护 [技能路由](skill-routing.md)、[组件目录](docs/component-catalog.md)、相关文档和检查脚本测试。
 
 ## 技术与分层
 
@@ -49,7 +59,7 @@
 
 ## 按影响选择验证
 
-- 仅改文档或协作规则：检查差异、引用路径、规则冲突与适用场景，不因此运行整套应用或安装流程。
+- 仅改文档、协作规则、技能或组件目录：检查差异、引用路径、规则冲突与适用场景，运行 `python3 -B scripts/check_workflow.py` 和必要的技能格式校验，不因此运行整套应用或安装流程。
 - 文档/技能引用、Domain 显式 UI 导入或项目技能共享边界受影响时，运行 `python3 -B scripts/check_workflow.py`；修改该检查器时运行其定向测试及 `scripts/tests` 回归。该脚本不读取个人配置、不启动应用，也不证明完整依赖图、技能发现或远端 CI 通过，详见工程手册。
 - Swift 变更：先选相关测试，并按共享层和调用方影响扩大范围；需要编译验证时运行 `./scripts/build.sh`。此命令只构建并验签 Debug，不安装、不启动，也不替代运行验收。
 - 定向测试示例：`./scripts/build.sh test --only-testing AreaChainTests/DayBoardLogicTests`，按实际变更替换测试类；需要全量回归时运行 `./scripts/build.sh test`。普通测试不得启用真实钥匙串授权。
