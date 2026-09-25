@@ -30,16 +30,20 @@ LIMITATIONS = [
 ]
 
 WORKFLOW_CONTRACT = {
-    "AGENTS.md": ("skill-routing.md", "component-catalog.md", "areachain-workflow"),
+    "AGENTS.md": (
+        "skill-routing.md", "component-catalog.md", "areachain-workflow",
+        "白话请求默认行为",
+    ),
     "skill-routing.md": (
         "areachain-workflow", "areachain-ui", "areachain-verify",
-        "docs/component-catalog.md",
+        "docs/component-catalog.md", "用户输入契约",
     ),
     "docs/component-catalog.md": (
         "DaybookInputShell", "ModelChanges", "新公共组件",
     ),
     ".agents/skills/areachain-workflow/SKILL.md": (
         "skill-routing.md", "component-catalog.md", "areachain-verify",
+        "用户无需调用本技能",
     ),
 }
 

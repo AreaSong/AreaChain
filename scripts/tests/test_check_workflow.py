@@ -36,8 +36,8 @@ class WorkflowCheckTests(unittest.TestCase):
         for relative, symbol in workflow.COMPONENT_ENTRIES:
             self.write(relative, f"struct {symbol} {{}}\n")
         contract_docs = {
-            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow\n",
-            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md\n",
+            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为\n",
+            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md 用户输入契约\n",
             "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardMutations ModelChanges 新公共组件\n",
         }
         for name in workflow.REQUIRED_DOCS:
@@ -45,7 +45,7 @@ class WorkflowCheckTests(unittest.TestCase):
         for name in workflow.SKILLS:
             content = f"---\nname: {name}\n---\n"
             if name == "areachain-workflow":
-                content += "skill-routing.md component-catalog.md areachain-verify\n"
+                content += "skill-routing.md component-catalog.md areachain-verify 用户无需调用本技能\n"
             self.write(f".agents/skills/{name}/SKILL.md", content)
             self.write(f".agents/skills/{name}/agents/openai.yaml", 'interface: {}\n')
         self.write(".gitignore", ".agents/*\n!.agents/skills/\n.agents/skills/*\n"

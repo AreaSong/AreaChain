@@ -20,6 +20,8 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 
 ## 工作方式
 
+用户无需调用本技能或提供额外工作流提示词。收到 AreaChain 的自然语言任务后，先按下列步骤自行加载上下文；用户只需描述想查看、调整或新增的目标。
+
 1. 识别任务类型、目标、非目标、影响范围和高风险边界。
 2. 执行 `git status --short`、`git diff --cached --stat`、`git diff --stat`，保留既有修改。
 3. 沿路由表选择技能：有界面时交给 [areachain-ui](../areachain-ui/SKILL.md)，需要验证时交给 [areachain-verify](../areachain-verify/SKILL.md)；当前会话可用时，新功能再由 `areasong-development` 协调通用标准。
