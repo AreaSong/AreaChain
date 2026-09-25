@@ -38,7 +38,8 @@ struct WorkspacePendingView: View {
                 todayKey: todayKey,
                 checks: checks,
                 filterActive: filter.isActive,
-                emptyTitle: filter.isActive ? "empty.filter" : "items.empty"
+                emptyTitle: filter.isActive ? "empty.filter" : emptyCopy.title,
+                emptySubtitle: filter.isActive ? "empty.filter.hint" : emptyCopy.hint
             )
         }
         .onAppear {
@@ -67,6 +68,15 @@ struct WorkspacePendingView: View {
                 showsPriority: true,
                 onChange: { filter = $0 }
             )
+        }
+    }
+
+    private var emptyCopy: (title: LocalizedStringKey, hint: LocalizedStringKey) {
+        switch lane {
+        case .overdue:
+            return ("items.empty.overdue", "items.empty.overdue.hint")
+        case .upcoming:
+            return ("items.empty.upcoming", "items.empty.upcoming.hint")
         }
     }
 

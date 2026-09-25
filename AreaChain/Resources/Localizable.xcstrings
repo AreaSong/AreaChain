@@ -12602,6 +12602,74 @@
         }
       }
     },
+    "items.empty.overdue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No overdue items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有逾期事项"
+          }
+        }
+      }
+    },
+    "items.empty.overdue.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open items scheduled before today appear here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "早于今天且未完成的事项会出现在这里。"
+          }
+        }
+      }
+    },
+    "items.empty.upcoming": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No upcoming items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "没有即将事项"
+          }
+        }
+      }
+    },
+    "items.empty.upcoming.hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Items scheduled after today appear here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "晚于今天的事项会出现在这里。"
+          }
+        }
+      }
+    },
     "items.filter.clear": {
       "extractionState": "manual",
       "localizations": {

@@ -159,6 +159,9 @@ final class WorkspaceNavigation {
     var selectedTaskIDs: Set<UUID> = []
     private(set) var selectionAnchorID: UUID?
     var isInspectorPresented: Bool = false
+    /// 待处理和全部事项把每一行的真实检查日交给批量打卡。标签清单不设置此项，仍按今天。
+    var usesListedCheckDays = false
+    var routineCompletionDays: [UUID: String] = [:]
 
     // MARK: - Navigation & Inspection Actions
     func inspectBoard(_ key: String) {
@@ -252,9 +255,25 @@ final class WorkspaceNavigation {
         selectionAnchorID = visibleIDs.first
     }
 
+    func replaceListedCheckDays(_ days: [UUID: String]) {
+        usesListedCheckDays = true
+        routineCompletionDays = days
+    }
+
+    func clearListedCheckDays() {
+        usesListedCheckDays = false
+        routineCompletionDays = [:]
+    }
+
     func reconcileTaskSelection(with visibleIDs: [UUID]) {
-        selectedTaskIDs.formIntersection(visibleIDs)
-        if let selectionAnchorID, !visibleIDs.contains(selectionAnchorID) { self.selectionAnchorID = nil }
+        let visible = Set(visibleIDs)
+        selectedTaskIDs.formIntersection(visible)
+        if let selectionAnchorID, !visible.contains(selectionAnchorID) { self.selectionAnchorID = nil }
+        if let selectedTaskID, !visible.contains(selectedTaskID) {
+            self.selectedTaskID = nil
+            inspectedReference = nil
+            isInspectorPresented = false
+        }
     }
 
     func clearSelection() {

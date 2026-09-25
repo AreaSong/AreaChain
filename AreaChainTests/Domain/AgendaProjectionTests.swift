@@ -186,5 +186,22 @@ struct AgendaProjectionTests {
         let onlyTodos = AgendaProjection.capability(ids: [item.id], todos: [item], routines: [habit], todayKey: today)
         #expect(onlyTodos.canReschedule)
         #expect(onlyTodos.canComplete)
+        let overdueDay = AgendaProjection.capability(
+            ids: [habit.id], todos: [], routines: [habit], todayKey: today,
+            routineCheckDays: [habit.id: yesterday]
+        )
+        #expect(overdueDay.canComplete)
+        let other = routine("另一天")
+        let partial = AgendaProjection.capability(
+            ids: [habit.id, other.id], todos: [], routines: [habit, other], todayKey: today,
+            routineCheckDays: [habit.id: yesterday]
+        )
+        #expect(!partial.canComplete)
+    }
+
+    @Test func routineNoteKeepsTheWeekdayRuleBesideTheNextDay() {
+        let note = AgendaProjection.routineNote(schedule: "工作日", extras: ["下一次排定日：明天", ""])
+        #expect(note == "下一次排定日：明天 · 工作日")
+        #expect(AgendaProjection.routineNote(schedule: nil, extras: []) == nil)
     }
 }

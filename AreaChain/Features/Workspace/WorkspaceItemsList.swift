@@ -74,6 +74,7 @@ struct WorkspaceItemsList: View {
     var checks: [RoutineCheck]
     var filterActive: Bool
     var emptyTitle: LocalizedStringKey
+    var emptySubtitle: LocalizedStringKey = "items.empty.hint"
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
@@ -88,7 +89,7 @@ struct WorkspaceItemsList: View {
             if entries.isEmpty {
                 DaybookEmptyState(
                     title: emptyTitle,
-                    subtitle: filterActive ? "empty.filter.hint" : "items.empty.hint",
+                    subtitle: emptySubtitle,
                     systemImage: filterActive ? "line.3.horizontal.decrease" : "tray",
                     centerVertically: true
                 )
@@ -111,14 +112,37 @@ struct WorkspaceItemsList: View {
         .focusEffectDisabled()
         .background(KeyWindowHost { hostWindow = $0 })
         .confirmMoveToTrash($pendingTrash)
-        .onAppear(perform: installKeys)
-        .onDisappear(perform: removeKeys)
+        .onAppear {
+            installKeys()
+            publishCheckDays()
+        }
+        .onDisappear {
+            removeKeys()
+            navigation.clearListedCheckDays()
+        }
         .onChange(of: entries.map(\.modelID)) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
+            publishCheckDays()
+        }
+        .onChange(of: checkDaySignature) { _, _ in
+            publishCheckDays()
         }
     }
 
     private var entries: [WorkspaceItemEntry] { groups.flatMap(\.entries) }
+
+    private var checkDaySignature: String {
+        entries.map { "\($0.modelID.uuidString):\($0.checkDayKey):\($0.allowsCompletion)" }.joined(separator: "|")
+    }
+
+    private func publishCheckDays() {
+        var days: [UUID: String] = [:]
+        for entry in entries {
+            guard entry.allowsCompletion, case .routine = entry else { continue }
+            days[entry.modelID] = entry.checkDayKey
+        }
+        navigation.replaceListedCheckDays(days)
+    }
 
     private func row(_ entry: WorkspaceItemEntry) -> some View {
         let selected = navigation.selectedTaskIDs.contains(entry.modelID) || navigation.selectedTaskID == entry.modelID
@@ -172,14 +196,18 @@ struct WorkspaceItemsList: View {
         noteDay: String?
     ) -> RoutineRowContext {
         let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
-        var note: String?
+        var extras: [String] = []
         if overdueCount > 1 {
-            note = L10n.format("items.routine.overdueCount %lld", locale: locale, overdueCount)
-        } else if let noteDay {
-            note = L10n.format("items.routine.next %@", locale: locale, DayKey.displayName(noteDay, locale: locale))
-        } else if !allowsCompletion {
-            note = L10n.format("items.routine.next %@", locale: locale, DayKey.displayName(day, locale: locale))
+            extras.append(L10n.format("items.routine.overdueCount %lld", locale: locale, overdueCount))
         }
+        if let noteDay {
+            extras.append(L10n.format("items.routine.next %@", locale: locale, DayKey.displayName(noteDay, locale: locale)))
+        }
+        let skipped = DayBoardLogic.isRoutineSkipped(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
+        let schedule = done
+            ? ResidentNote.done(routine, skipped: skipped, locale: locale)
+            : ResidentNote.days(routine, locale: locale)
+        let note = AgendaProjection.routineNote(schedule: schedule, extras: extras)
         return RoutineRowContext(
             routine: routine,
             schedule: RoutineScheduleContext(todayKey: todayKey, checkDayKey: day, checks: checks, locale: locale),

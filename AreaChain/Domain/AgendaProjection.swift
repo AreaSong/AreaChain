@@ -213,11 +213,19 @@ enum AgendaProjection {
         }
     }
 
+    /// 把星期规则和逾期次数、下一次排定日拼在同一行。空片段省略。
+    static func routineNote(schedule: String?, extras: [String]) -> String? {
+        let parts = extras.filter { !$0.isEmpty } + (schedule.map { [$0] } ?? [])
+        guard !parts.isEmpty else { return nil }
+        return parts.joined(separator: " · ")
+    }
+
     static func capability(
         ids: Set<UUID>,
         todos: [TodoSnapshot],
         routines: [RoutineSnapshot],
-        todayKey: String
+        todayKey: String,
+        routineCheckDays: [UUID: String]? = nil
     ) -> BatchCapability {
         let todoIDs = Set(todos.filter { $0.deletedAt == nil && ids.contains($0.id) }.map(\.id))
         let routineIDs = Set(routines.filter { $0.deletedAt == nil && ids.contains($0.id) }.map(\.id))
@@ -231,9 +239,9 @@ enum AgendaProjection {
         } else {
             kind = .mixed
         }
-        let routinesDue = !routineIDs.isEmpty && routines.filter { routineIDs.contains($0.id) }.allSatisfy {
-            DayBoardLogic.isRoutineDue($0, on: todayKey)
-        }
+        let routinesDue = routinesCanComplete(
+            routineIDs, routines: routines, todayKey: todayKey, routineCheckDays: routineCheckDays
+        )
         switch kind {
         case .empty:
             return BatchCapability(
@@ -281,6 +289,21 @@ enum AgendaProjection {
             steps += 1
         }
         return days
+    }
+
+    private static func routinesCanComplete(
+        _ routineIDs: Set<UUID>,
+        routines: [RoutineSnapshot],
+        todayKey: String,
+        routineCheckDays: [UUID: String]?
+    ) -> Bool {
+        guard !routineIDs.isEmpty else { return false }
+        if let routineCheckDays {
+            return routineIDs.allSatisfy { routineCheckDays[$0]?.isEmpty == false }
+        }
+        return routines.filter { routineIDs.contains($0.id) }.allSatisfy {
+            DayBoardLogic.isRoutineDue($0, on: todayKey)
+        }
     }
 
     private static func isActive(_ routine: RoutineSnapshot) -> Bool {

@@ -40,6 +40,19 @@ struct WorkspaceItemsPageTests {
         #expect(navigation.selectedTaskIDs.isEmpty)
     }
 
+    @Test func hiddenFocusClosesTheInspector() {
+        let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
+        let visible = UUID()
+        let hidden = UUID()
+        navigation.selectedTaskID = hidden
+        navigation.selectedTaskIDs = [visible, hidden]
+        navigation.isInspectorPresented = true
+        navigation.reconcileTaskSelection(with: [visible])
+        #expect(navigation.selectedTaskIDs == [visible])
+        #expect(navigation.selectedTaskID == nil)
+        #expect(!navigation.isInspectorPresented)
+    }
+
     @Test func escapeClearsSelectionWithoutDeleting() {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
         navigation.selectedTaskIDs = [UUID()]

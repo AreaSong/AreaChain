@@ -63,7 +63,8 @@ struct WorkspaceBatchActionBar: View {
             ids: navigation.selectedTaskIDs,
             todos: todos.map(\.snapshot),
             routines: routines.map(\.snapshot),
-            todayKey: DayClock.shared.todayKey
+            todayKey: DayClock.shared.todayKey,
+            routineCheckDays: navigation.usesListedCheckDays ? navigation.routineCompletionDays : nil
         )
     }
 
@@ -84,17 +85,30 @@ struct WorkspaceBatchActionBar: View {
     private func handleToggleDone(_ markDone: Bool) {
         guard capability.canComplete else { return }
         let ids = navigation.selectedTaskIDs
-        let today = DayClock.shared.todayKey
         let saved: Bool
         if capability.kind == .routinesOnly {
+            let groups = routineCheckGroups(ids)
+            guard !groups.isEmpty else { return }
             saved = DayBoardMutations.batchSetRoutineChecks(
-                ids, markDone: markDone, on: today, routines: routines, context: modelContext
+                groupedByDay: groups, markDone: markDone, routines: routines, context: modelContext
             )
         } else {
             saved = DayBoardMutations.batchToggleDone(ids, markDone: markDone, todos: todos)
         }
         guard saved else { return }
         navigation.clearSelection()
+    }
+
+    private func routineCheckGroups(_ ids: Set<UUID>) -> [String: Set<UUID>] {
+        if navigation.usesListedCheckDays {
+            var groups: [String: Set<UUID>] = [:]
+            for id in ids {
+                guard let day = navigation.routineCompletionDays[id], !day.isEmpty else { return [:] }
+                groups[day, default: []].insert(id)
+            }
+            return groups
+        }
+        return [DayClock.shared.todayKey: ids]
     }
 
     private func handleSetEnabled(_ enabled: Bool) {

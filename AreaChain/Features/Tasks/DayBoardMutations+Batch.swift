@@ -21,9 +21,24 @@ extension DayBoardMutations {
         _ ids: Set<UUID>, markDone: Bool, on dayKey: String,
         routines: [DailyRoutine] = [], context: ModelContext? = nil
     ) -> Bool {
-        let context = context ?? routines.first?.modelContext
-        return ModelChanges.attempt(in: context) {
-            try routineRepo(for: context).batchSetRoutineChecks(ids: ids, markDone: markDone, on: dayKey)
+        batchSetRoutineChecks(groupedByDay: [dayKey: ids], markDone: markDone, routines: routines, context: context)
+    }
+
+    /// 不同检查日分组后放进同一事务，避免只写成今天或中途失败留下一部分。
+    static func batchSetRoutineChecks(
+        groupedByDay: [String: Set<UUID>],
+        markDone: Bool,
+        routines: [DailyRoutine] = [],
+        context: ModelContext? = nil
+    ) -> Bool {
+        guard let context = context ?? routines.first?.modelContext else { return false }
+        let groups = groupedByDay.filter { !$0.key.isEmpty && !$0.value.isEmpty }
+        guard !groups.isEmpty else { return false }
+        return ModelChanges.perform(in: context) {
+            let repo = routineRepo(for: context)
+            for (day, ids) in groups {
+                try repo.batchSetRoutineChecks(ids: ids, markDone: markDone, on: day)
+            }
         }
     }
 
