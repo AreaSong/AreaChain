@@ -13012,13 +13012,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Date filters use the next real scheduled day for repeating items. Disabled items are left out."
+            "value": "Date filters use each repeating item's real scheduled day: overdue stays on unfinished scheduled days, otherwise today or the next scheduled day. Disabled items are left out."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日期筛选按重复事项的真实排定日计算。停用的重复事项不计入。"
+            "value": "日期筛选按重复事项的真实排定日计算：逾期用未闭合的排定日，其余用今天或下一次排定日。停用的重复事项不计入。"
           }
         }
       }

@@ -115,7 +115,7 @@ AreaChain/
 - **`NotificationScheduler`**：刷新时用 `Persistence.session.container.mainContext`，能读到刚 persist 的改动。
 
 - **`TagSyntax` / `InputTagResolver`**：共享多标签、引号名称、代码/转义边界及名称归一化。解析和补全没有存储副作用；`ModelChanges.transaction` 将标签创建/恢复与内容保存组成单个本地事务。子任务新增默认空 `tagIDs`，旧库轻量升级和旧 JSON 缺字段都保持兼容；永久删除标签会解除子任务关联。
-- **`Catalog`**：标签匹配、附件聚类和标签清单口径的权威入口。`matchingListedRoutines` 列出该标签下全部未删除的重复事项，按当天是否闭合分段，含非今日排定和停用；`openCount` 与未完成段共用这份列表，另加未完成待办和未完成子任务。`matchingOpenRoutines` 只保留当天排定且尚未闭合的项，给今日看板口径用，标签清单不要拿它当唯一列表。行上是否允许打卡仍由 `DayBoardLogic.isRoutineDue` 决定。工作台今日在 `TasksPage.showsFilterBar` 下始终挂 `BoardFilterBar` 并提供真实标签选项；菜单栏有 `externalFilter` 时仍用底栏筛选，不画第二条。
+- **`Catalog`**：标签匹配、附件聚类和标签清单口径的权威入口。`matchingListedRoutines` 列出该标签下全部未删除的重复事项，按当天是否闭合分段，含非今日排定和停用；`openCount` 与未完成段共用这份列表，另加未完成待办和未完成子任务。`matchingOpenRoutines` 只保留当天排定且尚未闭合的项，给今日看板口径用，标签清单不要拿它当唯一列表。行上是否允许打卡仍由 `DayBoardLogic.isRoutineDue` 决定。工作台今日在 `TasksPage.showsFilterBar` 下始终挂 `BoardFilterBar` 并提供真实标签选项；菜单栏有 `externalFilter` 时仍用底栏筛选，不画第二条。昨天/即将芯片与今日可见行共用 `Classification.matchesListedRow`，菜单栏带入的日期范围也会作用到芯片。
 
 ## 保存、恢复与同步边界
 

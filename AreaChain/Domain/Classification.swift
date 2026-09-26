@@ -249,13 +249,20 @@ enum Classification {
         todayKey: String,
         filter: BoardFilter
     ) -> Bool {
-        guard matches(bits, filter: filter) else { return false }
-        if filter.dateScope != .all {
-            guard matchesDate(
-                dayKey: dayKey, isDone: isDone, todayKey: todayKey, scope: filter.dateScope
-            ) else { return false }
-        }
-        return true
+        matchesListedTodo(bits, dayKey: dayKey, isDone: isDone, todayKey: todayKey, filter: filter)
+    }
+
+    /// 今日清单、昨天/即将芯片和键盘可见行共用：分类匹配 + 日期范围 + 提醒。
+    static func matchesListedRow(
+        _ bits: ClassifyBits,
+        dayKey: String,
+        isDone: Bool,
+        remindMinutes: Int?,
+        todayKey: String,
+        filter: BoardFilter
+    ) -> Bool {
+        matchesListedTodo(bits, dayKey: dayKey, isDone: isDone, todayKey: todayKey, filter: filter)
+            && matchesReminder(remindMinutes, scope: filter.reminderScope)
     }
 
     static func matchesDate(dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope) -> Bool {

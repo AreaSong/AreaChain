@@ -193,10 +193,10 @@ struct TasksPage: View {
             yesterdayKey: yesterdayKey
         ).filter { item in
             if let todo = todos.first(where: { $0.id == item.id }), item.kind == .todo {
-                return matchesFilter(todo.classifyBits, remindMinutes: todo.remindMinutes)
+                return matchesListed(todo)
             }
             return routines.first(where: { $0.id == item.id }).map {
-                matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes)
+                matchesListed($0, on: yesterdayKey)
             } ?? false
         }
     }
@@ -204,9 +204,7 @@ struct TasksPage: View {
     var upcomingModels: [TodoItem] {
         let ordered = DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey)
         let byID = Dictionary(uniqueKeysWithValues: todos.map { ($0.id, $0) })
-        return ordered.compactMap { byID[$0.id] }.filter {
-            matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes)
-        }
+        return ordered.compactMap { byID[$0.id] }.filter(matchesListed)
     }
 
     var todayBundleIDs: [String] {
@@ -215,9 +213,27 @@ struct TasksPage: View {
         return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
     }
 
-    private func matchesFilter(_ bits: ClassifyBits, remindMinutes: Int?) -> Bool {
-        Classification.matches(bits, filter: effectiveFilter)
-            && Classification.matchesReminder(remindMinutes, scope: effectiveFilter.reminderScope)
+    private func matchesListed(_ todo: TodoItem) -> Bool {
+        Classification.matchesListedRow(
+            todo.classifyBits,
+            dayKey: todo.dayKey,
+            isDone: todo.isDone,
+            remindMinutes: todo.remindMinutes,
+            todayKey: todayKey,
+            filter: effectiveFilter
+        )
+    }
+
+    private func matchesListed(_ routine: DailyRoutine, on dayKey: String) -> Bool {
+        let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snapshots.1, on: dayKey)
+        return Classification.matchesListedRow(
+            routine.classifyBits,
+            dayKey: dayKey,
+            isDone: done,
+            remindMinutes: routine.remindMinutes,
+            todayKey: todayKey,
+            filter: effectiveFilter
+        )
     }
 
     var todayVisibleIDs: [UUID] {
@@ -230,10 +246,10 @@ struct TasksPage: View {
             switch reference {
             case .todo(let id):
                 guard let todo = todos.first(where: { $0.id == id }) else { return false }
-                return matchesFilter(todo.classifyBits, remindMinutes: todo.remindMinutes)
+                return matchesListed(todo)
             case .recurring(let id):
                 guard let routine = routines.first(where: { $0.id == id }) else { return false }
-                return matchesFilter(routine.classifyBits, remindMinutes: routine.remindMinutes)
+                return matchesListed(routine, on: todayKey)
             }
         }.map(\.modelID)
     }

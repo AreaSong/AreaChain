@@ -305,10 +305,14 @@ struct DayBoardList: View {
     private func filteredTodos(_ list: [TodoItem]) -> [TodoItem] {
         guard filter.isActive else { return list }
         return list.filter {
-            Classification.matchesListedTodo(
-                $0.classifyBits, dayKey: $0.dayKey, isDone: $0.isDone, todayKey: todayKey,
+            Classification.matchesListedRow(
+                $0.classifyBits,
+                dayKey: $0.dayKey,
+                isDone: $0.isDone,
+                remindMinutes: $0.remindMinutes,
+                todayKey: todayKey,
                 filter: filter
-            ) && Classification.matchesReminder($0.remindMinutes, scope: filter.reminderScope)
+            )
         }
     }
 
@@ -319,9 +323,14 @@ struct DayBoardList: View {
 
     private func routineMatchesFilter(_ routine: DailyRoutine) -> Bool {
         let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snapshots.1, on: dayKey)
-        return Classification.matchesListedRoutine(
-            routine.classifyBits, dayKey: dayKey, isDone: done, todayKey: todayKey, filter: filter
-        ) && Classification.matchesReminder(routine.remindMinutes, scope: filter.reminderScope)
+        return Classification.matchesListedRow(
+            routine.classifyBits,
+            dayKey: dayKey,
+            isDone: done,
+            remindMinutes: routine.remindMinutes,
+            todayKey: todayKey,
+            filter: filter
+        )
     }
 
     private func filtered(_ rows: [BoardRow]) -> [BoardRow] {
@@ -331,10 +340,14 @@ struct DayBoardList: View {
             case .resident(let routine):
                 return routineMatchesFilter(routine)
             case .todo(let todo):
-                return Classification.matchesListedTodo(
-                    todo.classifyBits, dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey,
+                return Classification.matchesListedRow(
+                    todo.classifyBits,
+                    dayKey: todo.dayKey,
+                    isDone: todo.isDone,
+                    remindMinutes: todo.remindMinutes,
+                    todayKey: todayKey,
                     filter: filter
-                ) && Classification.matchesReminder(todo.remindMinutes, scope: filter.reminderScope)
+                )
             }
         }
     }

@@ -245,6 +245,25 @@ struct ClassificationTests {
         #expect(Classification.matchesListedRoutine(
             bits, dayKey: today, isDone: false, todayKey: today, filter: recent
         ))
+        let overdueWithReminder = overdue.withReminderScope(.set)
+        #expect(
+            Classification.matchesListedRow(
+                bits, dayKey: yesterday, isDone: false, remindMinutes: 540,
+                todayKey: today, filter: overdueWithReminder
+            )
+        )
+        #expect(
+            !Classification.matchesListedRow(
+                bits, dayKey: yesterday, isDone: false, remindMinutes: nil,
+                todayKey: today, filter: overdueWithReminder
+            )
+        )
+        #expect(
+            !Classification.matchesListedRow(
+                bits, dayKey: today, isDone: false, remindMinutes: 540,
+                todayKey: today, filter: overdueWithReminder
+            )
+        )
     }
 
     @Test func filterMatchesPriorityScope() {
