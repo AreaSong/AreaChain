@@ -55,7 +55,7 @@ class WorkflowCheckTests(unittest.TestCase):
                 "budget": 10, "status": "provisional", "source": "fixture:1", "note": "fixture"
             }]
         }))
-        self.write(".github/workflows/quality.yml", """on: [push]\nworkflow_dispatch: {}\npermissions:\n  contents: read\nuses: actions/checkout@0123456789abcdef0123456789abcdef01234567\nfetch-depth: 2\nrun: python3 scripts/quality_gate.py --profile static --strict --format json\nrun: python3 scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json\n""")
+        self.write(".github/workflows/quality.yml", """on: [push]\nworkflow_dispatch: {}\npermissions:\n  contents: read\nuses: actions/checkout@0123456789abcdef0123456789abcdef01234567\nfetch-depth: 2\nmacos-15\nbrew install swiftlint\nrun: python3 scripts/quality_gate.py --profile static --strict --format json\nrun: python3 scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json\n""")
         for name in workflow.SKILLS:
             content = f"---\nname: {name}\ndescription: Isolated fixture for {name}\n---\n"
             if name == "areachain-workflow":

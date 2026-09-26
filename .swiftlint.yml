@@ -1,0 +1,75 @@
+# 对齐 AGENTS.md / check_workflow 的项目约定，不另开一套格式宗教。
+# 单文件上限 500 行；SwiftUI 允许尾随闭包；测试夹具允许短标识；主密码 API 不是 master/slave。
+included:
+  - AreaChain
+  - AreaChainTests
+excluded:
+  - build
+  - .build
+
+disabled_rules:
+  - trailing_comma
+  - multiple_closures_with_trailing_closure
+  - implicit_optional_initialization
+  - statement_position
+  - unneeded_synthesized_initializer
+  - vertical_parameter_alignment
+  - opening_brace
+  - for_where
+  - optional_data_string_conversion
+  - non_optional_string_data_conversion
+  - static_over_final_class
+
+line_length:
+  warning: 160
+  error: 250
+  ignores_comments: true
+  ignores_urls: true
+  ignores_function_declarations: true
+  ignores_interpolated_strings: true
+
+identifier_name:
+  min_length:
+    warning: 1
+    error: 1
+  max_length:
+    warning: 60
+    error: 80
+
+type_name:
+  min_length: 3
+  max_length:
+    warning: 80
+    error: 100
+
+file_length:
+  warning: 500
+  error: 500
+
+type_body_length:
+  warning: 450
+  error: 500
+
+function_body_length:
+  warning: 80
+  error: 120
+
+function_parameter_count:
+  warning: 8
+  error: 12
+
+large_tuple:
+  warning: 6
+  error: 8
+
+cyclomatic_complexity:
+  ignores_case_statements: true
+  warning: 25
+  error: 40
+
+inclusive_language:
+  override_terms:
+    - whitelist
+    - blacklist
+    - slave
+    - colour

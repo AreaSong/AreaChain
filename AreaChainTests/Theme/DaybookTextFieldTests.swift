@@ -121,7 +121,7 @@ struct DaybookTextFieldTests {
         )
 
         let coordinator = daybookField.makeCoordinator()
-        let _ = DaybookAppKitTextField(string: text)
+        _ = DaybookAppKitTextField(string: text)
         let editor = NSTextView()
         editor.string = text
 

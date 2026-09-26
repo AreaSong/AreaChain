@@ -5,6 +5,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
@@ -22,10 +26,28 @@ jobs:
       - name: Run static quality gates
         run: python3 -B scripts/quality_gate.py --profile static --strict --format json
 
+  macos-compile:
+    name: macOS Swift compile
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: macos-15
+    timeout-minutes: 25
+    steps:
+      # v4.2.2; keep the action pinned to an immutable revision.
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          fetch-depth: 2
+      - name: Install SwiftLint
+        run: brew list swiftlint >/dev/null 2>&1 || brew install swiftlint
+      - name: Build Debug
+        run: ./scripts/build.sh
+      - name: Lint Swift sources
+        run: swiftlint lint --strict --quiet AreaChain AreaChainTests
+
   macos:
-    name: macOS Swift verification (manual)
+    name: macOS Swift verification
     if: github.event_name == 'workflow_dispatch'
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 45
     steps:
       # v4.2.2; keep the action pinned to an immutable revision.
@@ -33,5 +55,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           fetch-depth: 2
+      - name: Install SwiftLint
+        run: brew list swiftlint >/dev/null 2>&1 || brew install swiftlint
       - name: Run Swift quality gates
         run: python3 -B scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json

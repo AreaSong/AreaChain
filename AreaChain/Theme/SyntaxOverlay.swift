@@ -240,7 +240,11 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
                 }
                 return consumed ? nil : event
             }
-            resignObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification, object: nil, queue: .main) { [weak self, weak view] notification in
+            resignObserver = NotificationCenter.default.addObserver(
+                forName: NSWindow.didResignKeyNotification,
+                object: nil,
+                queue: .main
+            ) { [weak self, weak view] notification in
                 MainActor.assumeIsolated {
                     guard let window = notification.object as? NSWindow, window === view?.window else { return }
                     self?.parent.state.dismiss()
@@ -265,7 +269,7 @@ private struct SyntaxOverlayEventMonitor: NSViewRepresentable {
         @MainActor
         private func handleKeyDownEscape(_ event: NSEvent, in window: NSWindow) -> Bool {
             guard event.keyCode == 53,
-                  event.modifierFlags.intersection([.command, .control, .option, .shift]).isEmpty,
+                  event.modifierFlags.isDisjoint(with: [.command, .control, .option, .shift]),
                   (window.firstResponder as? NSTextView)?.hasMarkedText() != true else { return false }
             if parent.state.showsAttributes {
                 parent.state.dismiss()

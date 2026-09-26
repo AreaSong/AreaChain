@@ -15,7 +15,7 @@ final class DaybookAppKitTextField: NSTextField {
         // 只比较动作修饰键，不让 Caps Lock 阻断 ⌘Return。
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
         if flags == .command,
-           (event.keyCode == 36 || event.charactersIgnoringModifiers == "\r" || event.charactersIgnoringModifiers == "\n") {
+           event.keyCode == 36 || event.charactersIgnoringModifiers == "\r" || event.charactersIgnoringModifiers == "\n" {
             if let editor = currentEditor() as? NSTextView,
                window?.firstResponder === editor {
                 guard !editor.hasMarkedText() else { return true }

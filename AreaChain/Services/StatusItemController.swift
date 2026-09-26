@@ -91,7 +91,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     @objc func toggle() {
-        guard let button = statusItem?.button, let popover, let _ = container else { return }
+        guard let button = statusItem?.button, let popover, container != nil else { return }
         if popover.isShown {
             close()
             return

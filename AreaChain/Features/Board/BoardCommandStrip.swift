@@ -43,7 +43,11 @@ struct BoardCommandStripTip: View {
             .frame(height: 18)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xs, style: .continuous)
-                    .fill(isDestructive ? DaybookPalette.status.danger.opacity(0.08) : DaybookPalette.text.primary.opacity(0.06)) // token-exempt: 8% 危险色和 6% 墨色没有对应令牌
+                    .fill(
+                        isDestructive
+                            ? DaybookPalette.status.danger.opacity(0.08) // token-exempt: 8% 危险色没有对应令牌
+                            : DaybookPalette.text.primary.opacity(0.06) // token-exempt: 6% 墨色没有对应令牌
+                    )
             )
             .fixedSize(horizontal: true, vertical: true)
             .transition(.opacity)

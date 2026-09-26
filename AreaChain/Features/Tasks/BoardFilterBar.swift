@@ -241,7 +241,12 @@ struct BoardFilterDropdownButton: View {
         .padding(.horizontal, 7)
         .padding(.vertical, 4)
         .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
-        .overlay(Capsule().stroke(active ? DaybookPalette.accent.border : DaybookPalette.border.default.opacity(0.5), lineWidth: 0.8)) // token-exempt: 50% 分隔线没有对应令牌
+        .overlay(
+            Capsule().stroke( // token-exempt: 筛选胶囊描边
+                active ? DaybookPalette.accent.border : DaybookPalette.border.default.opacity(0.5), // token-exempt: 50% 分隔线没有对应令牌
+                lineWidth: 0.8
+            )
+        )
         .contentShape(Capsule()) // token-exempt: 筛选胶囊点击区
     }
 

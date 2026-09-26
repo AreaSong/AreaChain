@@ -39,7 +39,12 @@ struct TaskRowSubtaskInlineList: View {
                     } label: {
                         ZStack {
                             Circle() // token-exempt: 子任务圆框
-                                .strokeBorder(subtask.isDone ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.4), lineWidth: 1.2) // token-exempt: 40% 次要色没有对应令牌
+                                .strokeBorder(
+                                    subtask.isDone
+                                        ? DaybookPalette.accent.base
+                                        : DaybookPalette.text.secondary.opacity(0.4), // token-exempt: 40% 次要色没有对应令牌
+                                    lineWidth: 1.2
+                                ) // token-exempt: 40% 次要色没有对应令牌
                                 .background(
                                     Circle().fill(subtask.isDone ? DaybookPalette.accent.base : Color.clear) // token-exempt: 子任务圆底
                                 )

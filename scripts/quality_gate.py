@@ -492,7 +492,7 @@ def run_profile(root, profile, strict=False, base_ref=None):
         "limitations": [
             "本地门禁不证明远端 CI 已启用或分支保护已要求通过。",
             "静态安全扫描不是完整漏洞审计；真实钥匙串、日历、安装、恢复和发行需要独立授权与证据。",
-            "SwiftLint advisory 扫描 AreaChain/AreaChainTests 的历史告警；--strict 只阻断本次变更涉及的 Swift 文件。",
+            "SwiftLint 非严格模式扫描 AreaChain/AreaChainTests；--strict 只阻断本次变更涉及的 Swift 文件。",
         ],
     }
 

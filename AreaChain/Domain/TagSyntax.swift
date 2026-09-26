@@ -7,18 +7,22 @@ struct TagSyntaxToken: Equatable {
 
 /// 标签识别、补全和搜索共用边界；转义、链接及代码中的符号始终按原文保留。
 enum TagSyntax {
-    private static let expression = try! NSRegularExpression(
-        pattern: ##"(?<![^\s(\[（【])#(?:"((?:\\.|[^"\\\r\n])+)"|([\p{L}\p{M}\p{N}_-]+))(?=$|[\s,，.。;；:：!！?？)）\]】])"##
+    private static let tagPattern =
+        #"(?<![^\s(\[（【])#"#
+        + ##"(?:"((?:\\.|[^"\\\r\n])+)"|([\p{L}\p{M}\p{N}_-]+))"##
+        + #"(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+    private static let expression = CompiledRegularExpression.make(tagPattern)
+    // 成对匹配整个定界符，双反引号内的单反引号不能提前结束保护。
+    private static let codePattern =
+        #"(?<!\x60)(\x60{3,})(?!\x60)[\s\S]*?(?:(?<!\x60)\1(?!\x60)|\z)|"#
+        + #"(?<!~)(~{3,})(?!~)[\s\S]*?(?:(?<!~)\2(?!~)|\z)|"#
+        + #"(?<!\x60)(\x60{1,2})(?!\x60)[^\r\n]*?(?:(?<!\x60)\3(?!\x60)|\r?\n|\z)"#
+    private static let codeExpression = CompiledRegularExpression.make(codePattern)
+    private static let linkExpression = CompiledRegularExpression.make(
+        #"\[[^\]\r\n]*\]\((?:\\.|[^\\)\r\n])*(?:\)|$)"#
     )
-    private static let codeExpression = try! NSRegularExpression(
-        // 成对匹配整个定界符，双反引号内的单反引号不能提前结束保护。
-        pattern: #"(?<!\x60)(\x60{3,})(?!\x60)[\s\S]*?(?:(?<!\x60)\1(?!\x60)|\z)|(?<!~)(~{3,})(?!~)[\s\S]*?(?:(?<!~)\2(?!~)|\z)|(?<!\x60)(\x60{1,2})(?!\x60)[^\r\n]*?(?:(?<!\x60)\3(?!\x60)|\r?\n|\z)"#
-    )
-    private static let linkExpression = try! NSRegularExpression(
-        pattern: #"\[[^\]\r\n]*\]\((?:\\.|[^\\)\r\n])*(?:\)|$)"#
-    )
-    private static let escapeExpression = try! NSRegularExpression(
-        pattern: #"\\(//|／／|[#＃@＠!！])"#
+    private static let escapeExpression = CompiledRegularExpression.make(
+        #"\\(//|／／|[#＃@＠!！])"#
     )
 
     static func normalizedName(_ name: String) -> String {

@@ -25,11 +25,11 @@
 | 实现、共用代码与重构 | 已有原则；本批补提取/等价判据 | 模块内→项目共享→跨项目库按实际收益选择；相关仓储/解析测试 | 本地行为测试与静态门禁可运行；远端执行未取证 | 测试与源码静态盘点 | 尚未以新标准完成真实重构；不强行提取跨项目库 |
 | 界面、语言与交互 | 已有 en/zh-Hans、Daybook、输入/窗口约定 | [原生验收](architecture.md#隔离验收与真实启用门禁)、项目 UI/验证技能 | Theme/Features 隔离测试已有 | 本批全量 Swift 测试通过；未做原生 UI 操作验收 | 真实键盘/输入法/系统集成不可用离屏样例替代 |
 | 环境、配置与依赖 | 已有环境下限与签名隔离；本批补复现/升级判断 | 下文环境记录；核对工程、清单、来源/许可证、定向回归 | 部分构建配置检查；无工具链固定/CI | 实际版本查询、配置声明核对 | 尚无认证过的支持版本矩阵；无第三方包时不制造锁文件 |
-| Git、评审与 CI | 已有变更纪律；本批补分层门禁 | 下文检查顺序；跨模块只读复核只走 Cursor `verifier` | 本地检查与 `.github/workflows/quality.yml` 已接入；push 上的静态 job 已多次成功 | 本地证据见文末；静态 Actions 成功记录见 2026-09-26 路线说明 | macOS Swift job 只在手动触发时运行，不能把静态成功写成 Swift 通过；管理员仍可绕过分支保护 |
+| Git、评审与 CI | 已有变更纪律；本批补分层门禁 | 下文检查顺序；跨模块只读复核只走 Cursor `verifier` | 本地检查与 `.github/workflows/quality.yml` 已接入；push/PR 跑静态和 macOS 编译+SwiftLint，完整 Swift 测试仍手动触发 | 本地证据见文末；静态 Actions 成功记录见 2026-09-26 路线说明 | 完整 Swift 测试不在每次 push 上跑；分支保护仍只要求静态检查；管理员可绕过 |
 | 测试、构建与验签 | 已有测试及签名脚本/隔离约束 | `quality_gate.py`、`build.sh test`、构建/验签；见 [signing.md](signing.md) | 本地质量入口与脚本回归已接入 | 脚本测试通过；Swift 测试另有实际记录 | 编译/候选包/原生运行是独立证据，不等于发行 |
 | 数据、迁移与恢复 | 已有事务/快照/加密边界；本批补演练方法 | `ModelChangesTests`、`SnapshotImportValidationTests`、`PrivateBackupTests`、迁移夹具 | 有内存/临时磁盘测试 | 测试隔离性与断言静态核对 | 全历史升级、真实恢复、RPO/RTO 和中断矩阵未验收 |
 | 错误、并发与资源 | 已有部分实现；本批补重试/取消/责任标准 | 日历 generation、事务后清理、草稿/窗口生命周期；按故障注入验证 | 对应局部测试已有 | 源码/测试静态核对 | 排程真实失败、生产等待时序和长期泄漏未覆盖完整 |
-| 性能与成本 | 已有局部阈值；本批补磁盘打开/大库重开/加密恢复上限 | 1000 天连击、行交互、空库打开、2000 条重开、合成加密恢复；见下文 | 登记测试已纳入 performance profile | 本批 LifecycleBaselineTests 与既有局部测试通过 | 完整应用冷启动、峰值内存、长期泄漏和真实恢复仍未建立 |
+| 性能与成本 | 已有局部阈值；本批补磁盘打开/大库重开/加密恢复上限 | 1000 天连击、行交互、空库打开、2000 条重开、合成加密恢复、测试进程 RSS 安全网与重开增长；见下文 | 登记测试已纳入 performance profile | 本批 LifecycleBaselineTests 与既有局部测试通过 | NSApplication 完整冷启动、独立 App 峰值内存、长期泄漏和真实恢复仍未建立 |
 | 安全、隐私与供应链 | 已有高风险门禁/隐私隔离；本批补维护标准 | 按变更范围安全审查、依赖公告/来源核对、日志字段检查 | 静态候选扫描已接入本地/静态 CI | 本批扫描高风险 0、敏感日志候选 0；未做完整审计 | 仓库根 `LICENSE` 为 Apache-2.0；真实系统验收和完整漏洞审计仍待做 |
 | 正式发行、安装与回退 | 已有本机构建/安装门禁；本批补发行准备 | 下文发行准备；`distributionReady` 明确为 false | 候选验签/本体回退脚本；无公证/上传流水线 | 原脚本隔离测试，不是真实安装 | 渠道、许可证、Developer ID/公证、升级/发行验收未落实 |
 | 运行诊断、故障处置 | 已有 StoreHealth/错误提示；本批补最小诊断方法 | 本地脱敏取证→复现/定位→获准修复→回归 | 无统一诊断导出或监控管线 | 源码/流程静态核对 | 不自动加入云遥测；止损/恢复动作需独立授权 |
@@ -107,7 +107,7 @@
 
 - 日历协调通过代次与串行合并处理取消/迟到结果，局部提交失败保留基线供重试；相关 [CalendarSyncEngineTests](../AreaChainTests/Services/CalendarSyncEngineTests.swift) 使用 fake 外部服务，不证明真实 EventKit 写入。
 - 草稿、窗口、附件已有生命周期/失败测试；普通测试仍跳过 400ms 驻留，[PendingCompletionTimingTests](../AreaChainTests/Features/PendingCompletionTimingTests.swift) 关闭跳过后覆盖单次、批量与减弱动态效果时序。这仍不是真人勾选的生产动画验收。
-- [TaskRowInteractionTests](../AreaChainTests/Features/TaskRowInteractionTests.swift) 有行回调 100ms 阈值，[HabitStreakEmpiricalTests](../AreaChainTests/Domain/HabitStreakEmpiricalTests.swift) 有 1000 天计算 200ms 阈值；[LifecycleBaselineTests](../AreaChainTests/Services/LifecycleBaselineTests.swift) 另有空库打开 3000ms、2000 条重开 5000ms、合成加密恢复 8000ms 的 Debug 上限。它们都是 `provisional`，不是完整应用冷启动或峰值内存。
+- [TaskRowInteractionTests](../AreaChainTests/Features/TaskRowInteractionTests.swift) 有行回调 100ms 阈值，[HabitStreakEmpiricalTests](../AreaChainTests/Domain/HabitStreakEmpiricalTests.swift) 有 1000 天计算 200ms 阈值；[LifecycleBaselineTests](../AreaChainTests/Services/LifecycleBaselineTests.swift) 另有空库打开 3000ms、2000 条重开 5000ms、合成加密恢复 8000ms，以及 2000 条重开时测试进程 RSS 安全网与 8 次重开增长上限。它们都是 `provisional`。RSS 条目测量的是 Debug 测试进程，不是独立 App 峰值；XCTest 下 AppDelegate 会提前返回，因此也不是 NSApplication 完整冷启动。
 - [NotificationScheduler](../AreaChain/Services/NotificationScheduler.swift) 的排程日志当前只保留请求标识、目录计数、提醒分钟、授权状态和错误 domain/code，不输出任务标题、具体触发时刻或原始错误描述；这不替代日志保留策略审查和完整安全审计。
 
 ### 诊断与反馈的方法
@@ -135,7 +135,7 @@
 | 批次 | 价值与当前状态 | 下一步所需条件 |
 |---|---|---|
 | 1. 规范与本地守卫 | 本批已补架构/复用、工程、恢复/维护；现有技能引用与本地守卫已验证，证据如上 | 后续改动重跑受影响检查；保持产品与真实系统边界不变 |
-| 2. CI 工程接入 | 无凭据静态工作流已在 push 上多次成功；`main` 已要求检查 `Static quality gates` | 手动 macOS Swift 工作流仍未触发；管理员可绕过保护；静态成功不等于 Swift 或原生验收 |
+| 2. CI 工程接入 | 无凭据静态工作流已在 push 上多次成功；`main` 已要求检查 `Static quality gates`；push/PR 另有 macOS 编译与全库 SwiftLint | 完整 Swift 测试仍须 `workflow_dispatch`；管理员可绕过保护；编译成功不等于测试或原生验收 |
 | 3. 真实开发与可靠性验收 | 用明确真实需求检验标准联动，按影响补性能/日志/恢复/生产时序证据 | 用户明确业务或专项测试目标；涉及敏感处理/真实系统/数据时独立确认 |
 | 4. 正式发行与升级维护 | 候选物追溯、渠道、许可证、签名、公证、恢复和运行验收仍待落实 | 渠道/权利/身份决策及每个真实操作的授权；本机构建成功不能跳过这些门禁 |
 
@@ -154,8 +154,8 @@
 
 本批把此前“有规范但缺统一执行入口”的部分接成可重复门禁，权威说明见 [质量门禁](quality-gates.md)：
 
-- 新增 `scripts/quality_gate.py`，按差异自动选择工作流契约、差异、脚本测试、Shell 语法、安全候选、注释契约、性能基线、SwiftLint、Swift 测试和 Release 候选包检查；`warning`、`blocked`、`failed` 分开报告，`--strict` 可用于合并/发布前收紧。性能 profile 的登记测试覆盖局部阈值和 LifecycleBaselineTests；完整应用冷启动与峰值内存仍未建立。
-- 新增 [`docs/performance-baselines.json`](performance-baselines.json)，保留已有局部阈值的来源；当时启动、大库和恢复仍标为尚未建立。同日后续收口已改为 Debug 合成数据的 `provisional` 上限，完整应用冷启动与峰值内存仍未建立。
+- 新增 `scripts/quality_gate.py`，按差异自动选择工作流契约、差异、脚本测试、Shell 语法、安全候选、注释契约、性能基线、SwiftLint、Swift 测试和 Release 候选包检查；`warning`、`blocked`、`failed` 分开报告，`--strict` 可用于合并/发布前收紧。性能 profile 的登记测试覆盖局部阈值和 LifecycleBaselineTests；NSApplication 完整冷启动与独立 App 峰值内存仍未建立。
+- 新增 [`docs/performance-baselines.json`](performance-baselines.json)，保留已有局部阈值的来源；当时启动、大库和恢复仍标为尚未建立。同日后续收口已改为 Debug 合成数据的 `provisional` 上限，并补上测试进程 RSS 安全网与重开增长；NSApplication 完整冷启动与独立 App 峰值内存仍未建立。
 - 新增 `scripts/tests/test_quality_gate.py`，以临时目录验证质量脚本的配置、秘密/敏感日志候选、注释豁免、性能清单和状态聚合；不启动应用、不读取真实数据。
 - 新增 `.github/workflows/quality.yml`：push/PR 的静态门禁和手动触发的 macOS Swift 门禁共用本地脚本。工作流文件存在不等于远端 runner 成功或分支保护已启用，仍需分别取证。
 - 修复 `NotificationScheduler` 日志不再输出任务标题，只保留请求标识和错误类别；后续新增日志仍须通过安全候选扫描和人工隐私复核。
@@ -180,7 +180,7 @@
 
 真实钥匙串、系统日历、真实用户库、安装到日用应用、公证上传和修改个人签名配置不在上表自动执行，每次另获授权。
 
-2026-09-26 核对：`AreaChain Quality` 的 push 静态 job 已多次成功（例如 run `36222371946`，检查名 `Static quality gates`）。同日已为 `main` 打开分支保护，只要求该静态检查，不要求评审，且不强制管理员遵守（避免检查名错误时锁死仓库）。这约束的是合并进 `main` 的 pull request；管理员直接 push 仍可绕过。macOS Swift job 没有 `workflow_dispatch` 记录。同日删除 `.cursor/plans/`（设计系统归档与 excellence 执行器）；技能格式改由 `check_workflow.py` 的 `skill-format` 检查，不再依赖本机 Skill Creator。
+2026-09-26 核对：`AreaChain Quality` 的 push 静态 job 已多次成功（例如 run `36222371946`，检查名 `Static quality gates`）。同日已为 `main` 打开分支保护，只要求该静态检查，不要求评审，且不强制管理员遵守（避免检查名错误时锁死仓库）。这约束的是合并进 `main` 的 pull request；管理员直接 push 仍可绕过。当时 macOS 完整 Swift job 还没有 `workflow_dispatch` 记录；同日质量优化收口后 push/PR 增加了 macOS 编译与 SwiftLint，完整测试仍手动触发。同日删除 `.cursor/plans/`（设计系统归档与 excellence 执行器）；技能格式改由 `check_workflow.py` 的 `skill-format` 检查，不再依赖本机 Skill Creator。
 
 干净工作区运行 `python3 -B scripts/quality_gate.py`（profile `auto`）只会选择 `static`，因为没有文件差异。Swift 源码改动必须显式使用 `--profile swift`，不能把 auto 在干净树上的通过写成 Swift 已测。
 
@@ -193,7 +193,7 @@
 - 单文件超过 500 行才拆文件。当时只有 `DashboardProjection.swift` 超限，快照值已挪到 `DashboardModels.swift`。
 - `LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 继续作为 Theme 历史例外，不新增消费者，本路线不迁移。
 - 生产搜索只保留工作台顶栏和菜单栏底栏；无入口的独立搜索页已删除，测试改嵌相同的 `SyntaxInputContext.search` 夹具。
-- 全库扫描没有发现第二套日期、筛选或保存入口需要在本路线里合并。磁盘打开/大库重开/合成加密恢复已有 Debug 上限；完整应用冷启动、峰值内存、真实恢复和真实日历仍按原缺口保留。
+- 全库扫描没有发现第二套日期、筛选或保存入口需要在本路线里合并。磁盘打开/大库重开/合成加密恢复已有 Debug 上限；测试进程 RSS 安全网与重开增长已登记。NSApplication 完整冷启动、独立 App 峰值内存、真实恢复和真实日历仍按原缺口保留。
 
 ## 仓库内诚实收口（2026-09-26）
 
@@ -202,4 +202,13 @@
 - 设置里的 iCloud 改为静态说明，删除无效偏好；无入口的独立搜索页已删除，语法搜索测试改嵌 `SyntaxInputContext.search` 夹具。
 - `PendingCompletionTimingTests` 关闭测试跳过，覆盖 400ms 单次、批量与减弱动态效果；普通 UI 测试仍直调。
 - `LifecycleBaselineTests` 把空库打开、2000 条重开和合成加密恢复登记为 `provisional`；首次预置测试使用隔离 `UserDefaults`，不写系统偏好。
-- 完整应用冷启动、峰值内存、真实钥匙串/日历、公证和远端 Swift CI 仍不是本批证据。
+- 完整应用冷启动、独立 App 峰值内存、真实钥匙串/日历和公证仍不是该收口的证据。
+
+## 质量优化收口（2026-09-26）
+
+本批只补仓库内能诚实完成的质量优化，不接 CloudKit、不装到日用应用、不公证、不改分支保护：
+
+- 仓库增加 `.swiftlint.yml`，对齐 500 行文件上限、短标识和 SwiftUI 习惯；编译期正则改为 `CompiledRegularExpression` + `preconditionFailure`。本地 `swiftlint lint --strict AreaChain AreaChainTests` 为 0，`quality_gate --profile swift --strict` 的 swiftlint 检查通过。
+- `LifecycleBaselineTests` 增加 2000 条重开时的测试进程 RSS 安全网，以及连续 8 次重开的增长上限；测量的是 Debug XCTest 进程，不是独立 App 峰值。
+- `.github/workflows/quality.yml` 在 push/PR 增加 macOS 15 Debug 构建与全库 SwiftLint，并安装 SwiftLint；完整 `quality_gate --profile swift` 仍只在 `workflow_dispatch`。先前对 `main` 的手动触发 run `36237740856` 失败：`macos-14` 打不开 objectVersion 77，且未安装 SwiftLint。修复后的 runner 成功记录必须在提交后再取。
+- 隔离 PrivacyQA 本批结果包 `build/PrivacyQA/quality-opt.xcresult`：Passed，804 通过、0 失败、1 跳过（默认跳过的真实钥匙串入口）。不是真人输入法现场，也不是真实钥匙串验收。

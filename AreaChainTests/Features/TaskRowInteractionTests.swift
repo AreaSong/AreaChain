@@ -165,7 +165,7 @@ struct TaskRowInteractionTests {
         try await settle(window)
         let observer = NotificationCenter.default.addObserver(
             forName: NSMenu.didBeginTrackingNotification, object: nil, queue: nil
-        ) { notification in
+        ) { _ in
             MainActor.assumeIsolated {
                 probe.menuOpened = true
             }

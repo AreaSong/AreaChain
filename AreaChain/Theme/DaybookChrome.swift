@@ -153,4 +153,3 @@ extension View {
             .animation(DaybookMotion.animation(reduceMotion), value: visible)
     }
 }
-

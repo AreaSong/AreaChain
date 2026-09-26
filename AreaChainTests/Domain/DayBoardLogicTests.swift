@@ -395,4 +395,3 @@ struct DayBoardLogicTests {
         )
     }
 }
-

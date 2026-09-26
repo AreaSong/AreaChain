@@ -20,7 +20,7 @@ final class SyntaxAutocompleteState {
     @ObservationIgnored var restoreEditing: (() -> Void)?
 
     var showsPreview: Bool {
-        guard allowsLivePreview, (context == .capture || context == .diaryCapture), !isDismissedByUser else { return false }
+        guard allowsLivePreview, context == .capture || context == .diaryCapture, !isDismissedByUser else { return false }
         return !inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 

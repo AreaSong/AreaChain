@@ -88,7 +88,6 @@ struct ModernCheckbox: View {
     }
 }
 
-
 // MARK: - Strikethrough Text
 
 /// 待办完成时的删除线平滑划过与文字渐隐组件

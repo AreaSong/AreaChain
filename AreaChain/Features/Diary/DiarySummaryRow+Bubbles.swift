@@ -37,14 +37,20 @@ extension DiarySummaryRow {
     }
 
     func noteIndicator(fullText: String) -> some View {
-        Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
+        let iconColor = hasNoteCopied
+            ? DaybookPalette.accent.base
+            : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65)) // token-exempt: 65% 次要色没有对应令牌
+        let fillColor = hasNoteCopied
+            ? DaybookPalette.accent.base.opacity(0.16) // token-exempt: 16% 没有对应令牌
+            : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04)) // token-exempt: 4% 没有对应令牌
+        return Image(systemName: hasNoteCopied ? "checkmark" : "text.alignleft")
             .font(DaybookType.micro.weight(.medium))
-            .foregroundStyle(hasNoteCopied ? DaybookPalette.accent.base : (isNoteHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary.opacity(0.65))) // token-exempt: 65% 次要色没有对应令牌
+            .foregroundStyle(iconColor) // token-exempt: 65% 次要色没有对应令牌
             .padding(.horizontal, 3.5)
             .padding(.vertical, 1.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
-                    .fill(hasNoteCopied ? DaybookPalette.accent.base.opacity(0.16) : (isNoteHovered ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.04))) // token-exempt: 16% 与 4% 没有对应令牌
+                    .fill(fillColor) // token-exempt: 16% 与 4% 没有对应令牌
             )
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }

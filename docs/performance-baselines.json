@@ -11,7 +11,7 @@
       "temperature",
       "metric"
     ],
-    "note": "局部断言不是完整产品基线；新增预算必须提供同条件测量和回归证据。"
+    "note": "局部断言不是完整产品基线；新增预算必须提供同条件测量和回归证据。rss_* 条目的预算单位是字节。"
   },
   "entries": [
     {
@@ -44,8 +44,8 @@
       "metric": "cold_start_ms",
       "budget": 3000,
       "status": "provisional",
-      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:14",
-      "note": "Debug、空磁盘 SwiftData 打开加首次预置、隔离 UserDefaults、单次冷测量；不是 NSApplication 完整冷启动，也不是峰值内存。"
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:20",
+      "note": "Debug、空磁盘 SwiftData 打开加首次预置、隔离 UserDefaults、单次冷测量；不是 NSApplication 完整冷启动。"
     },
     {
       "id": "large-store-reopen",
@@ -55,8 +55,8 @@
       "metric": "reopen_ms",
       "budget": 5000,
       "status": "provisional",
-      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:37",
-      "note": "Debug、合成 2000 条待办加 365 条打卡、独立临时目录重开；不含峰值内存。"
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:29",
+      "note": "Debug、合成 2000 条待办加 365 条打卡、独立临时目录重开。"
     },
     {
       "id": "backup-restore",
@@ -66,8 +66,30 @@
       "metric": "restore_ms",
       "budget": 8000,
       "status": "provisional",
-      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:57",
-      "note": "Debug、内存夹具、约 256KB 合成图、独立口令加密恢复；功能路径仍见 PrivateBackupTests。不含峰值内存或真实钥匙串。"
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:83",
+      "note": "Debug、内存夹具、约 256KB 合成图、独立口令加密恢复；功能路径仍见 PrivateBackupTests。不含真实钥匙串。"
+    },
+    {
+      "id": "large-store-reopen-rss",
+      "scope": "AreaChain/Services/Persistence.swift",
+      "test": "AreaChainTests/Services/LifecycleBaselineTests.swift",
+      "testFilter": "AreaChainTests/LifecycleBaselineTests",
+      "metric": "rss_bytes",
+      "budget": 1500000000,
+      "status": "provisional",
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:40",
+      "note": "Debug 测试进程在 2000 条容器打开时的当前 RSS 安全网；全量套件会叠加其他用例，不是独立 App 峰值内存 SLA。"
+    },
+    {
+      "id": "large-store-reopen-rss-growth",
+      "scope": "AreaChain/Services/Persistence.swift",
+      "test": "AreaChainTests/Services/LifecycleBaselineTests.swift",
+      "testFilter": "AreaChainTests/LifecycleBaselineTests",
+      "metric": "rss_growth_bytes",
+      "budget": 134217728,
+      "status": "provisional",
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:60",
+      "note": "同一进程连续 8 次重开 2000 条库，末次相对首次 RSS 增量上限；用来挡住明显泄漏，不是完整 leak 审计。"
     }
   ]
 }

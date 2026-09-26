@@ -61,7 +61,7 @@ python3 -B scripts/quality_gate.py --profile release
 
 ## CI 与本地证据
 
-`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁；macOS Swift 验证只在明确的 `workflow_dispatch` 中运行，并用 `--base-ref HEAD^` 在干净 checkout 中检查最近提交的 Swift 差异，以控制 runner 成本并避免把原生焦点/系统权限测试误当成普通 CI。工作流文件已加入当前工作区，但必须在提交后分别取得 runner 实际成功和分支保护要求通过的证据，不能仅凭文件存在宣称 CI 已生效。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。
+`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。完整 Swift 测试仍只在 `workflow_dispatch` 中运行，并安装 SwiftLint。工作流文件已加入当前工作区，但必须在提交后分别取得 runner 实际成功和分支保护要求通过的证据，不能仅凭文件存在宣称 CI 已生效。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。分支保护目前仍只要求静态检查。
 
 CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻辑。第三方 action 使用不可变 revision；修改 action、runner 或触发条件时要重新核对来源、权限和成本。
 
@@ -83,7 +83,7 @@ CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻
 ## 性能与可靠性
 
 - 任何性能数字都必须关联设备/系统、构建配置、数据规模、冷/热状态、样本和测量方法。
-- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；启动、大库重开和合成加密恢复目前是 Debug 合成数据的 `provisional` 上限，完整应用冷启动、峰值内存和真实恢复仍未建立，不能猜数字。
+- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；启动、大库重开、合成加密恢复、测试进程 RSS 安全网和重开增长目前是 Debug 合成数据的 `provisional` 上限。NSApplication 完整冷启动、独立 App 峰值内存和真实恢复仍未建立，不能猜数字。
 - 性能优化必须同时通过功能、取消、资源释放和隐私回归；一次测试很快不等于没有泄漏或规模退化。
 - 失败、重试、部分提交、迟到结果、取消和恢复路径要说明状态所有者及可重复证据。
 

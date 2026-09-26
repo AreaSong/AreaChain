@@ -96,7 +96,14 @@ struct CalendarMonthGrid: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .stroke(today ? DaybookPalette.accent.base : (selected ? DaybookPalette.accent.base.opacity(0.4) : DaybookPalette.border.default.opacity(0.3)), lineWidth: today ? 1.4 : 0.8) // token-exempt: 40% 印章色和 30% 分隔线没有对应令牌
+                    .stroke(
+                        today
+                            ? DaybookPalette.accent.base
+                            : (selected
+                                ? DaybookPalette.accent.base.opacity(0.4) // token-exempt: 40% 印章色没有对应令牌
+                                : DaybookPalette.border.default.opacity(0.3)), // token-exempt: 30% 分隔线没有对应令牌
+                        lineWidth: today ? 1.4 : 0.8
+                    )
             )
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }

@@ -56,7 +56,12 @@ struct TaskDetailQuadrantGrid: View {
                     .fill(isActive ? slot.themeFill : DaybookPalette.cardSurface)
                     .overlay(
                         RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                            .stroke(isActive ? slot.themeColor.opacity(0.7) : DaybookPalette.border.default.opacity(0.25), lineWidth: isActive ? 1.2 : 0.6) // token-exempt: 象限色 70% 和分隔线 25% 没有对应令牌
+                            .stroke(
+                                isActive
+                                    ? slot.themeColor.opacity(0.7) // token-exempt: 象限色 70% 没有对应令牌
+                                    : DaybookPalette.border.default.opacity(0.25), // token-exempt: 分隔线 25% 没有对应令牌
+                                lineWidth: isActive ? 1.2 : 0.6
+                            ) // token-exempt: 象限色 70% 和分隔线 25% 没有对应令牌
                     )
             )
         }

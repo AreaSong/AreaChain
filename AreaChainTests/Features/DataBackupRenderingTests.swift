@@ -37,8 +37,15 @@ struct DataBackupRenderingTests {
         #expect(settings.isDisjoint(with: forbiddenOnSettings))
         let privacy = try await page(PrivacyUnlockSettingsView(vault: vault), container: container, appearance: appearance, size: size)
         #expect(privacy.contains("privacy.unlock.settings"))
-        #expect(privacy.contains("privacy.vault.state") && privacy.contains("privacy.setup") && privacy.contains("privacy.boundary"))
-        #expect(privacy.isDisjoint(with: ["dataBackup.export.json", "dataBackup.import.json", "dataBackup.export.encrypted", "dataBackup.restore.encrypted", "dataBackup.reset"]))
+        #expect(
+            privacy.contains("privacy.vault.state")
+                && privacy.contains("privacy.setup")
+                && privacy.contains("privacy.boundary")
+        )
+        #expect(privacy.isDisjoint(with: [
+            "dataBackup.export.json", "dataBackup.import.json",
+            "dataBackup.export.encrypted", "dataBackup.restore.encrypted", "dataBackup.reset"
+        ]))
         let backup = try await page(DataBackupView(), container: container, appearance: appearance, size: size)
         #expect(backup.contains("data.backup.page"))
         #expect(backup.contains("dataBackup.export.json") && backup.contains("dataBackup.import.json"))
@@ -75,7 +82,12 @@ struct DataBackupRenderingTests {
         defer { SystemPageHost.release(window) }
         try await SystemPageHost.settle(window)
         let ids = SystemPageHost.identifiers(in: window)
-        try SystemPageHost.assertContained(Array(ids.filter { $0.hasPrefix("settings.") || $0.hasPrefix("privacy.") || $0.hasPrefix("dataBackup.") || $0 == "data.backup.page" }), in: window)
+        try SystemPageHost.assertContained(
+            Array(ids.filter {
+                $0.hasPrefix("settings.") || $0.hasPrefix("privacy.") || $0.hasPrefix("dataBackup.") || $0 == "data.backup.page"
+            }),
+            in: window
+        )
         return ids
     }
 

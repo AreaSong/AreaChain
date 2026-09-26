@@ -42,7 +42,6 @@ struct MenuBarPopoverView: View {
         nonmutating set { filterSession.filters = newValue }
     }
 
-
     var currentTabTagCounts: [UUID: Int] {
         var counts: [UUID: Int] = [:]
         switch tab {
@@ -196,7 +195,6 @@ struct MenuBarPopoverView: View {
             removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
         ))
     }
-
 
     private var tasksView: some View {
         VStack(alignment: .leading, spacing: 6) {

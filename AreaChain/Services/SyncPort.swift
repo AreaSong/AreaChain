@@ -129,4 +129,3 @@ enum SyncPort {
         )
     }
 }
-

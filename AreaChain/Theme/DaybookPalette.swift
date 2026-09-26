@@ -126,8 +126,16 @@ enum DaybookPalette {
     )
 
     static let checkmark = Color.daybook(name: "daybook.checkmark", swatch: DaybookSwatch.checkmarkLight, dark: DaybookSwatch.checkmarkDark)
-    static let cardSurface = Color.daybook(name: "daybook.cardSurface", light: NSColor.white.withAlphaComponent(0.55), dark: NSColor(white: 0.18, alpha: 0.55))
-    static let cardSurfaceHover = Color.daybook(name: "daybook.cardSurfaceHover", light: NSColor.white.withAlphaComponent(0.85), dark: NSColor(white: 0.24, alpha: 0.75))
+    static let cardSurface = Color.daybook(
+        name: "daybook.cardSurface",
+        light: NSColor.white.withAlphaComponent(0.55),
+        dark: NSColor(white: 0.18, alpha: 0.55)
+    )
+    static let cardSurfaceHover = Color.daybook(
+        name: "daybook.cardSurfaceHover",
+        light: NSColor.white.withAlphaComponent(0.85),
+        dark: NSColor(white: 0.24, alpha: 0.75)
+    )
     static let cardBorderHover = Color.daybook(
         name: "daybook.cardBorderHover",
         light: NSColor.black.withAlphaComponent(0.12),

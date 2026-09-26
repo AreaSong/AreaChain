@@ -127,7 +127,10 @@ struct CaptureAttributesPopup: View {
         .frame(height: maxHeight, alignment: .top)
         .foregroundStyle(DaybookPalette.text.primary)
         .background(RoundedRectangle(cornerRadius: DaybookRadius.small).fill(DaybookPalette.fill.page))
-        .overlay(RoundedRectangle(cornerRadius: DaybookRadius.small).stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7)) // token-exempt: 70% 分隔线没有对应令牌
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.small)
+                .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
+        )
         .daybookElevation(.floating)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("syntax.overlay.attributes")

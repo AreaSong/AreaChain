@@ -9,7 +9,10 @@ final class DaybookScroller: NSScroller {
 
     override var scrollerStyle: NSScroller.Style {
         get { .overlay }
-        set { super.scrollerStyle = .overlay }
+        set {
+            _ = newValue
+            super.scrollerStyle = .overlay
+        }
     }
 
     override class func scrollerWidth(for controlSize: NSControl.ControlSize, scrollerStyle: NSScroller.Style) -> CGFloat {

@@ -1,13 +1,19 @@
+import Darwin
 import Foundation
 import SwiftData
 import Testing
 @testable import AreaChain
 
-/// 冷启动、大库重开和加密恢复的可重复上限。数字关联本机 Debug、合成数据和单次冷测量。
+/// 冷启动、大库重开、常驻内存和加密恢复的可重复上限。数字关联本机 Debug、合成数据和单次冷测量。
 @Suite(.serialized)
 @MainActor
 struct LifecycleBaselineTests {
     private static let schema = Schema(AreaChainSchema.models)
+    private static let populatedTodoCount = 2_000
+    /// Debug 测试进程在容器打开时的安全网，不是产品峰值内存 SLA。
+    private static let populatedReopenRSSBudget: UInt64 = 1_500_000_000
+    /// 连续重开后当前 RSS 相对首次的允许增量，用来挡住明显泄漏，不是完整 leak 审计。
+    private static let reopenRSSGrowthBudget: UInt64 = 128 * 1024 * 1024
 
     @Test func emptyDiskStoreOpensUnderStartupBudget() throws {
         let elapsed = try measureColdOpen(seedEmpty: true)
@@ -16,26 +22,46 @@ struct LifecycleBaselineTests {
     }
 
     @Test func populatedDiskStoreReopensUnderBudget() throws {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-large-\(UUID().uuidString)")
-        let storeURL = root.appendingPathComponent("areachain.store")
-        defer { try? FileManager.default.removeItem(at: root) }
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
-        try autoreleasepool {
-            let container = try diskContainer(url: storeURL)
-            let context = container.mainContext
-            for index in 0..<2_000 {
-                context.insert(TodoItem(title: "事项 \(index)", dayKey: "2026-09-01"))
-            }
-            let routine = DailyRoutine(title: "重复事项", sortOrder: 0)
-            context.insert(routine)
-            for offset in 0..<365 {
-                context.insert(RoutineCheck(dayKey: DayKey.shifted("2025-01-01", by: offset), isDone: true, routine: routine))
-            }
-            try context.save()
-        }
+        let storeURL = try makeTemporaryStoreURL()
+        defer { removeStore(storeURL) }
+        try seedPopulatedStore(url: storeURL)
         let elapsed = try measureReopen(url: storeURL)
         #expect(elapsed < 5_000, "2000 条待办加重开必须在 5000ms 内，实际 \(elapsed)ms")
         print("LARGE_STORE_BASELINE reopen_ms=\(elapsed)")
+    }
+
+    @Test func populatedDiskStoreReopenResidentMemoryStaysUnderBudget() throws {
+        let storeURL = try makeTemporaryStoreURL()
+        defer { removeStore(storeURL) }
+        try seedPopulatedStore(url: storeURL)
+        let bytes = try autoreleasepool {
+            try reopenResidentBytes(url: storeURL)
+        }
+        #expect(
+            bytes < Self.populatedReopenRSSBudget,
+            "2000 条重开时进程 RSS 必须低于 \(Self.populatedReopenRSSBudget) 字节，实际 \(bytes)"
+        )
+        print("PEAK_RSS_BASELINE reopen_bytes=\(bytes)")
+    }
+
+    @Test func repeatedLargeStoreReopenResidentMemoryDoesNotGrowUnbounded() throws {
+        let storeURL = try makeTemporaryStoreURL()
+        defer { removeStore(storeURL) }
+        try seedPopulatedStore(url: storeURL)
+        var samples: [UInt64] = []
+        for _ in 0..<8 {
+            let bytes = try autoreleasepool {
+                try reopenResidentBytes(url: storeURL)
+            }
+            samples.append(bytes)
+        }
+        let first = samples[0]
+        let last = samples[samples.count - 1]
+        #expect(
+            last <= first + Self.reopenRSSGrowthBudget,
+            "连续 8 次重开 RSS 增长必须低于 \(Self.reopenRSSGrowthBudget) 字节，首次 \(first) 末次 \(last)"
+        )
+        print("RSS_GROWTH_BASELINE samples=\(samples)")
     }
 
     @Test func encryptedBackupRestoreStaysUnderBudget() async throws {
@@ -60,16 +86,14 @@ struct LifecycleBaselineTests {
     }
 
     private func measureColdOpen(seedEmpty: Bool) throws -> Double {
-        let root = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-start-\(UUID().uuidString)")
-        let storeURL = root.appendingPathComponent("areachain.store")
+        let storeURL = try makeTemporaryStoreURL()
         let defaultsName = "areachain.baseline.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: defaultsName)!
         defaults.removePersistentDomain(forName: defaultsName)
         defer {
             defaults.removePersistentDomain(forName: defaultsName)
-            try? FileManager.default.removeItem(at: root)
+            removeStore(storeURL)
         }
-        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         let start = ProcessInfo.processInfo.systemUptime
         let container = try diskContainer(url: storeURL)
         if seedEmpty {
@@ -85,15 +109,61 @@ struct LifecycleBaselineTests {
         return elapsed
     }
 
+    private func seedPopulatedStore(url: URL) throws {
+        try autoreleasepool {
+            let container = try diskContainer(url: url)
+            let context = container.mainContext
+            for index in 0..<Self.populatedTodoCount {
+                context.insert(TodoItem(title: "事项 \(index)", dayKey: "2026-09-01"))
+            }
+            let routine = DailyRoutine(title: "重复事项", sortOrder: 0)
+            context.insert(routine)
+            for offset in 0..<365 {
+                context.insert(RoutineCheck(dayKey: DayKey.shifted("2025-01-01", by: offset), isDone: true, routine: routine))
+            }
+            try context.save()
+        }
+    }
+
     private func measureReopen(url: URL) throws -> Double {
         let start = ProcessInfo.processInfo.systemUptime
         let container = try diskContainer(url: url)
-        #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 2_000)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == Self.populatedTodoCount)
         return (ProcessInfo.processInfo.systemUptime - start) * 1_000
+    }
+
+    private func reopenResidentBytes(url: URL) throws -> UInt64 {
+        let container = try diskContainer(url: url)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == Self.populatedTodoCount)
+        return ProcessResidentMemory.bytes()
     }
 
     private func diskContainer(url: URL) throws -> ModelContainer {
         let configuration = ModelConfiguration("Baseline", schema: Self.schema, url: url, cloudKitDatabase: .none)
         return try ModelContainer(for: Self.schema, configurations: configuration)
+    }
+
+    private func makeTemporaryStoreURL() throws -> URL {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-life-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        return root.appendingPathComponent("areachain.store")
+    }
+
+    private func removeStore(_ url: URL) {
+        try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+    }
+}
+
+private enum ProcessResidentMemory {
+    static func bytes() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) { pointer in
+            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        precondition(result == KERN_SUCCESS, "task_info failed: \(result)")
+        return info.resident_size
     }
 }

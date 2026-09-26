@@ -491,6 +491,8 @@ def check_ci_contract(root):
         "scripts/quality_gate.py --profile static --strict --format json",
         "fetch-depth: 2",
         "scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json",
+        "macos-15",
+        "brew install swiftlint",
     )
     for marker in required:
         if marker not in content:

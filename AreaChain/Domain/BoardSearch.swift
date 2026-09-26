@@ -63,7 +63,7 @@ struct BoardSearchQuery: Equatable {
 }
 
 enum BoardSearch {
-    private static let wordExpression = try! NSRegularExpression(pattern: #"\S+"#)
+    private static let wordExpression = CompiledRegularExpression.make(#"\S+"#)
 
     static func parseQuery(_ raw: String) -> BoardSearchQuery {
         let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)

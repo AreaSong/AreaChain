@@ -99,7 +99,31 @@ struct TagCatalogTests {
 
     @Test func oldSnapshotIgnoresProjectsAndOmitsThemOnExport() throws {
         let raw = """
-        {"exportedAt":"2026-09-24T00:00:00Z","routines":[],"checks":[],"todos":[{"id":"11111111-1111-1111-1111-111111111111","title":"旧","isDone":false,"dayKey":"2026-09-24","createdAt":"2026-09-24T00:00:00Z","projectID":"22222222-2222-2222-2222-222222222222","tagIDs":""}],"diaries":[],"projects":[{"id":"22222222-2222-2222-2222-222222222222","name":"旧项目","sortOrder":0}],"tags":[{"id":"33333333-3333-3333-3333-333333333333","name":"标签","sortOrder":0}]}
+        {
+          "exportedAt":"2026-09-24T00:00:00Z",
+          "routines":[],
+          "checks":[],
+          "todos":[{
+            "id":"11111111-1111-1111-1111-111111111111",
+            "title":"旧",
+            "isDone":false,
+            "dayKey":"2026-09-24",
+            "createdAt":"2026-09-24T00:00:00Z",
+            "projectID":"22222222-2222-2222-2222-222222222222",
+            "tagIDs":""
+          }],
+          "diaries":[],
+          "projects":[{
+            "id":"22222222-2222-2222-2222-222222222222",
+            "name":"旧项目",
+            "sortOrder":0
+          }],
+          "tags":[{
+            "id":"33333333-3333-3333-3333-333333333333",
+            "name":"标签",
+            "sortOrder":0
+          }]
+        }
         """.data(using: .utf8)!
         let decoded = try SyncPort.decode(raw)
         #expect(decoded.todos.count == 1)

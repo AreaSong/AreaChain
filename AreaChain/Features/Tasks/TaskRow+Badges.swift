@@ -145,4 +145,3 @@ extension TaskRow {
             || !(state.attachments?.items.isEmpty ?? true)
     }
 }
-
