@@ -55,27 +55,8 @@ struct CalendarPage: View {
 
     private var calendarSidebar: some View {
         VStack(alignment: .leading, spacing: 10) {
-            if !embedded {
-                DaybookPeriodBar(
-                    title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
-                    onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
-                    onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
-                    onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
-                )
-            } else {
-                HStack {
-                    Text(DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale))
-                        .font(DaybookType.section.weight(.semibold))
-                        .foregroundStyle(DaybookPalette.text.primary)
-                    Spacer()
-                    if selectedKey != todayKey {
-                        Button("calendar.today") { selectedKey = todayKey }
-                            .font(DaybookType.caption)
-                            .buttonStyle(DaybookButtonStyle(.quiet))
-                    }
-                }
-                .padding(.top, 2)
-            }
+            // 嵌入只决定最小尺寸和月格是否紧凑。宽布局侧栏若只留标题，工作台主路径无法离开当月。
+            monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,
@@ -125,14 +106,18 @@ struct CalendarPage: View {
         .frame(minWidth: 660)
     }
 
+    private var monthBar: some View {
+        DaybookPeriodBar(
+            title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
+            onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
+            onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
+            onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
+        )
+    }
+
     private func compactLayout(compactDates: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            DaybookPeriodBar(
-                title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
-                onPrev: { selectedKey = DayKey.shiftedMonth(selectedKey, by: -1, calendar: calendar) },
-                onNext: { selectedKey = DayKey.shiftedMonth(selectedKey, by: 1, calendar: calendar) },
-                onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
-            )
+            monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,

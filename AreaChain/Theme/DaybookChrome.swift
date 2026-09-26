@@ -132,8 +132,10 @@ struct DaybookPeriodBar: View {
                 Button("calendar.today", action: onToday)
                     .font(DaybookType.caption.weight(.semibold))
                     .buttonStyle(DaybookButtonStyle(.prominent))
+                    .accessibilityIdentifier("period.today")
             }
         }
+        .background(SyntaxViewAnchor("period.bar"))
     }
 }
 

@@ -40,11 +40,9 @@ struct WorkspaceGlobalSearchView: View {
     /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
     /// 菜单栏和专门搜索页不查文件名，避免把局部行为扩成统一搜索契约。
     private var matchingAttachments: [AttachmentItem] {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return [] }
-        return attachments
+        attachments
             .filter { AttachmentAccess.canBrowse($0, todos: todos, routines: routines, diaries: diaries, tags: tags) }
-            .filter { $0.filename.localizedCaseInsensitiveContains(trimmed) }
+            .filter { WorkspaceAttachmentQuery.matches(filename: $0.filename, query: query) }
     }
 
     var body: some View {
@@ -162,5 +160,14 @@ struct WorkspaceGlobalSearchView: View {
                 DiaryWindows.shared.open(entry: entry, context: modelContext)
             }
         }
+    }
+}
+
+/// 文件名只吃文字关键词。标签、优先级和时刻留给事项结果，不要求出现在文件名里。
+enum WorkspaceAttachmentQuery {
+    static func matches(filename: String, query: String) -> Bool {
+        let keywords = BoardSearch.parseQuery(query).textKeywords
+        guard !keywords.isEmpty else { return false }
+        return keywords.allSatisfy { BoardSearch.matches(filename, needle: $0) }
     }
 }
