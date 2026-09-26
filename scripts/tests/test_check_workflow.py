@@ -173,7 +173,7 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual({check["name"] for check in report["checks"]},
                           {"project-identity", "project-links", "workflow-contract",
                           "component-catalog", "performance-baselines", "domain-imports",
-                          "ci-contract", "skill-git-scope", "theme-tokens"})
+                          "ci-contract", "skill-git-scope", "theme-tokens", "swift-file-size"})
 
     def test_performance_manifest_rejects_non_object_root(self):
         self.make_project()
@@ -407,6 +407,13 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_theme_tokens(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertEqual(len(result["issues"]), 1)
+
+    def test_swift_file_over_line_limit_fails(self):
+        self.make_project()
+        self.write("AreaChain/Domain/Huge.swift", "\n" * 501)
+        result = workflow.check_swift_file_size(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertIn("超过 500 行", result["issues"][0]["message"])
 
     def test_theme_rejects_services_diary_content_dependency(self):
         self.write("AreaChain/Theme/SampleView.swift",

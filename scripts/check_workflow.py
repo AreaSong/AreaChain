@@ -29,6 +29,7 @@ LIMITATIONS = [
     "workflow-contract 只核对项目级路由、复用目录和编排技能的关键入口；不证明模型实际发现或调用技能。",
     "component-catalog 只核对少量稳定入口的文件和符号仍存在；不把所有内部类型自动变成公共 API。",
     "ci-contract 只核对工作流中的关键文本标记与 checkout revision；不替代 GitHub Actions YAML 语义或远端运行验证。",
+    "swift-file-size 只数源码行数，不判断函数是否该拆，也不证明行为等价。",
 ]
 
 WORKFLOW_CONTRACT = {
@@ -527,6 +528,28 @@ def required_skill_files(root, prefixes):
     return sorted(required)
 
 
+def check_swift_file_size(root, limit=500):
+    """拦住单文件重新超过结构上限；不评价函数长短。"""
+    issues, checked = [], 0
+    for folder in ("AreaChain", "AreaChainTests"):
+        directory = root / folder
+        if not directory.is_dir():
+            continue
+        for path in sorted(directory.rglob("*.swift")):
+            checked += 1
+            if not contained(path, root):
+                issues.append(issue(path, "源文件通过符号链接越出检查根目录。"))
+                continue
+            try:
+                count = len(path.read_text(encoding="utf-8").splitlines())
+            except (OSError, UnicodeError) as error:
+                issues.append(issue(path, f"无法读取 Swift 文件：{type(error).__name__}"))
+                continue
+            if count > limit:
+                issues.append(issue(path, f"Swift 文件超过 {limit} 行：{count}。"))
+    return result("swift-file-size", checked, issues)
+
+
 def check_skill_scope(root):
     prefixes = tuple(f".agents/skills/{name}/" for name in SKILLS)
     hidden = [".agents/workflow-check-local-state", ".agents/skills/workflow-check-unshared/SKILL.md"]
@@ -576,7 +599,8 @@ def run_checks(root, personal_root=None):
         checks.extend([check_links(root, project_docs(root), "project-links"),
                        check_workflow_contract(root), check_domain(root),
                        check_component_catalog(root), check_performance_manifest(root),
-                       check_ci_contract(root), check_skill_scope(root), check_theme_tokens(root)])
+                       check_ci_contract(root), check_skill_scope(root), check_theme_tokens(root),
+                       check_swift_file_size(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))
     passed = all(check["status"] == "passed" for check in checks)

@@ -2,6 +2,8 @@
 
 本文件适用于本仓库，在全局与当前会话约束基础上补充项目事实和验证入口，不扩大操作授权。只检查本次变更相关的约定；改变已有产品边界时先说明并按风险分级处理。
 
+本仓库与个人会话规则冲突时，以本文件和 [技能路由](skill-routing.md) 为准。个人流程里的 Plan Mode 或额外 `.cursor/plans/` 总任务不得平行于本仓库路线。整项目优化只沿 [工程手册](docs/engineering.md) 的单一路线推进；`.cursor/plans/excellence/` 只充当该路线中结构审计与重构的执行器。
+
 ## 开发技能分层
 
 - **项目级工作流编排**：[areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) 负责冷启动定界、上下文加载、复用检索、技能衔接和交付交接；不替代实现或验收技能。
@@ -31,7 +33,7 @@
 
 - 修改前先判断任务类型，检查工作区状态，并建立最小影响/复用表；没有完成复用检索，不先新增控件、领域规则、保存入口或平行状态。
 - 实施沿现有 `Domain → Services → Features → Theme` 责任方向进行；任务、手记、搜索、菜单栏和独立窗口的外观可以复用，提交、快捷键、隐私和草稿语义必须分别核对。
-- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建；共享契约或跨模块行为变化安排独立只读复核。
+- 修改后按影响选择验证：默认运行 `python3 -B scripts/quality_gate.py`；规则/技能/文档仍需 `python3 -B scripts/check_workflow.py`，Swift/UI 交给项目验收技能选择定向测试和构建。共享契约或跨模块行为变化只走一个复核入口：Cursor `verifier` 做只读核对，测试、构建和隔离原生交给 [areachain-verify](.agents/skills/areachain-verify/SKILL.md)。
 - 交付时明确区分已实现、已验证、已安装、已发布、跳过、未运行和残余风险；旧测试结果、代码存在或构建成功不能单独宣称完成。
 - 新增或改变公共组件、路由、技能或验证入口时，必须同步维护 [技能路由](skill-routing.md)、[组件目录](docs/component-catalog.md)、相关文档和检查脚本测试。
 
@@ -69,7 +71,7 @@
 - 复用 [NaturalLanguageParser.swift](AreaChain/Domain/NaturalLanguageParser.swift)、[TagSyntax.swift](AreaChain/Domain/TagSyntax.swift) 与现有标签解析入口。剪贴板捕获保留原文、只解析标签，与普通任务输入不同；搜索不能创建标签。这些是产品约定，不是待统一消除的差异。
 - 日期键遵循 [DayKey.swift](AreaChain/Domain/DayKey.swift) 的民事日期语义；快照日期遵循 [ExportDates.swift](AreaChain/Domain/ExportDates.swift) 的编码与旧格式兼容。不要把本地日期、提醒时刻和时间戳互相替换。
 - 保存复用 [ModelChanges.swift](AreaChain/Services/ModelChanges.swift) 的事务与失败处理；只有保存成功才发布变更。失败不能清掉唯一草稿或虚报保存成功；本地保存、通知排程和日历同步分开判断结果。
-- 模型、软删除、子任务及附件归属、快照兼容和隐私投影遵守架构文档；相关语义变化按全局规则安排独立只读复核，不直接操作真实用户库来验证。
+- 模型、软删除、子任务及附件归属、快照兼容和隐私投影遵守架构文档；相关语义变化交给 Cursor `verifier` 做只读复核，不直接操作真实用户库来验证。
 
 ## 按影响选择验证
 

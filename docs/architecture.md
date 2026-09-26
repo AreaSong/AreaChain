@@ -43,12 +43,26 @@ AreaChain/
 
 各 `*StandaloneView` 仍是工作台 tab 的包装。`AppWindows.openWorkspace(tab:)` 负责工作台；新增的单条手记小窗由 Features/Diary 中的 `DiaryWindows` 注册和持有，不声明额外 SwiftUI Window Scene，不复制数据模型。
 
+### 已采用的结构模式
+
+这些是现有代码里为了解决具体问题才留下的做法，不是待推广的框架。
+
+| 模式 | 位置 | 解决的问题 | 不改成更简单写法的原因 |
+|---|---|---|---|
+| 事务后通知 | `ModelChanges` | 只有保存成功才发布变更 | 页面直接 `save` 会在失败时清掉草稿或虚报成功 |
+| 能力环境值 | `workspaceEmbedded` | 工作台有侧栏和页头，外观仍与菜单栏相同 | 用它切换颜色会把两个宿主拆成两套主题 |
+| 输入外壳 | `DaybookInputShell` | 外观共用，提交语义按入口区分 | 每个页面自绘边框会让快捷键和高度一起漂 |
+| 待沉底 | `PendingCompletionManager` | 勾选后 0.4 秒可反悔，测试里直调 | 立刻写库会让列表在防反悔期间重排 |
+| 隐私投影 | `DiaryPrivacy` | 锁定、搜索和总览不带出正文 | 各页面自己判断会漏一种入口 |
+
+单文件超过 500 行时拆文件，不拆行为。总览快照值在 `DashboardModels.swift`，计算留在 `DashboardProjection.swift`。
+
 ### 分层设计原则
 
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。
+- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增消费者，本路线不迁移它们。`SearchPage` 继续只给测试宿主嵌入，运行中的应用不打开它。
 
 ### 开发时的边界与状态核对
 
@@ -102,7 +116,7 @@ AreaChain/
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词。没有项目字段。
-- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。工作台「隐私与解锁」和「数据与备份」已是独立页面，不再占用设置页。阶段七已把搜索筛选交集、菜单栏与今日/手记筛选共享接到现有规则；浅深色和最小窗口已有 WorkspaceRenderingTests 覆盖；隔离原生走查和阶段八尚未开始。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。工作台「隐私与解锁」和「数据与备份」已是独立页面，不再占用设置页。阶段七已把搜索筛选交集、菜单栏与今日/手记筛选共享接到现有规则；浅深色和最小窗口已有 WorkspaceRenderingTests 覆盖；2026-09-26 的隔离 QA 全量测试已通过，证据见工程手册。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。

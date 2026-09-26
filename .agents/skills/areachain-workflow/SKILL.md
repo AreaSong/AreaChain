@@ -41,10 +41,10 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 
 ## 验证与规则维护
 
-- 规则、路由、技能或组件目录发生变化时运行 `python3 -B scripts/check_workflow.py`；修改检查器时再运行 `scripts/tests` 中的 `test_check_workflow.py` 和完整脚本回归。
+- 规则、路由、技能或组件目录发生变化时运行 `python3 -B scripts/check_workflow.py`；修改检查器时再运行 `scripts/tests` 中的 `test_check_workflow.py` 和完整脚本回归。该检查器也拦住 `AreaChain` 与 `AreaChainTests` 里超过 500 行的 Swift 文件。
 - 新增或修改 Skill 时使用 `skill-creator` 的 `quick_validate.py`，并检查 `agents/openai.yaml`、引用文件和 Git 作用域。
 - Swift 或 UI 改动按 [areachain-verify](../areachain-verify/SKILL.md) 选择定向测试和构建；本技能不把编译成功当作原生交互通过。
-- 共享契约、持久化语义、复杂状态或跨模块行为变化，按项目规则安排独立只读复核。
+- 共享契约、持久化语义、复杂状态或跨模块行为变化，只交给 Cursor `verifier` 做只读复核；测试与隔离原生仍交给 [areachain-verify](../areachain-verify/SKILL.md)。
 
 ## 适用边界
 

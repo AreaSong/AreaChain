@@ -46,7 +46,7 @@
 | 新增产品能力或页面 | `areasong-development`（当前会话可用时）与 [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 有界面时用 [areachain-ui](.agents/skills/areachain-ui/SKILL.md) | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | 既有界面、输入、窗口或视觉调整 | [areachain-ui](.agents/skills/areachain-ui/SKILL.md) 与 `areasong-development` 的 UI 路径 | 按实际问题选择 UI/UX 或平台方法 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | Domain、Services、持久化、同步或公共状态 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 的架构/可靠性/工程引用 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
-| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 架构治理 | 独立只读复核（按影响安排）及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
+| 重构、公共组件或跨模块契约 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | `areasong-development` 架构治理 | Cursor `verifier` 只读复核，以及 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) |
 | 只读诊断、代码审阅或进度查询 | 相关代码/文档和验证入口 | 不因“看起来像功能”而实施修改 | 按请求报告证据，不自动修复 |
 | 验证或回归 | [areachain-verify](.agents/skills/areachain-verify/SKILL.md) | 按影响选择测试、构建和原生证据 | 报告通过、失败、跳过和未运行 |
 | 文档、AGENTS、路由或项目技能维护 | [areachain-workflow](.agents/skills/areachain-workflow/SKILL.md) | 创建/更新 Skill 时使用 `skill-creator` | `check_workflow.py`、技能格式校验和差异复核 |
@@ -66,7 +66,7 @@
 
 ### 5. 质量门禁
 
-- 默认从仓库根运行 `python3 -B scripts/quality_gate.py`，由它按当前差异选择静态、Swift、性能或候选包范围；需要机器读取时使用 `--format json`。
+- 默认从仓库根运行 `python3 -B scripts/quality_gate.py`，由它按当前差异选择静态、Swift、性能或候选包范围；需要机器读取时使用 `--format json`。干净工作区没有差异时，`auto` 只会跑 `static`。Swift 源码改动必须显式加上 `--profile swift`，不能把干净树上的通过写成 Swift 已测。
 - `failed` 和 `blocked` 不能宣称完成；`warning` 必须在交接中列出，发布/合并前可用 `--strict` 将其升级为失败。
 - 注释、敏感日志、依赖、性能和恢复不是“顺手检查”的口头要求，分别对应 [质量门禁](docs/quality-gates.md)、脚本扫描、工程/架构文档和性能基线清单。
 - 本地通过只证明本地命令；远端 CI、分支保护、真实钥匙串/日历、安装、恢复、公证和正式发行仍需各自证据。
@@ -85,7 +85,7 @@
 
 1. 运行本次影响对应的静态检查、定向测试、脚本测试或构建；不要用旧结果代替新证据。
 2. UI 变更分别检查行为、焦点/键盘、双语、浅深色、最小窗口和原生宿主；网页截图不能证明 macOS 原生验收。
-3. 共享组件或公共契约变化扩大到所有真实消费者，并按影响安排独立只读复核。
+3. 共享组件或公共契约变化扩大到所有真实消费者。跨模块契约只由 Cursor `verifier` 做只读复核；测试、构建和隔离原生只由 [areachain-verify](.agents/skills/areachain-verify/SKILL.md) 选择并执行。
 4. 最终报告区分：已实现、已验证、已安装、已发布、跳过、未运行和残余风险。
 5. 更新权威文档和组件目录；不生成重复的计划性规范。
 
