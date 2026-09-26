@@ -378,13 +378,14 @@ struct RoutineRowDisplayOptions {
         isDone: Bool,
         isSelected: Bool,
         note: String? = nil,
-        usesDefaultNote: Bool = true
+        usesDefaultNote: Bool = true,
+        allowsCompletion: Bool = true
     ) {
         self.isDone = isDone
         self.selection = TaskRowSelectionState(isSelected: isSelected)
         self.note = note
         self.usesDefaultNote = usesDefaultNote
-        self.allowsCompletion = true
+        self.allowsCompletion = allowsCompletion
     }
 }
 

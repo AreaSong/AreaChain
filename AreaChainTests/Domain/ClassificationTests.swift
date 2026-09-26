@@ -223,10 +223,28 @@ struct ClassificationTests {
         let bits = ClassifyBits()
         let todayFilter = BoardFilter().withDateScope(.today)
         let overdue = BoardFilter().withDateScope(.overdue)
+        let upcoming = BoardFilter().withDateScope(.upcoming)
+        let recent = BoardFilter().withDateScope(.recent)
         #expect(Classification.matchesListedTodo(bits, dayKey: today, isDone: false, todayKey: today, filter: todayFilter))
         #expect(!Classification.matchesListedTodo(bits, dayKey: yesterday, isDone: false, todayKey: today, filter: todayFilter))
-        #expect(!Classification.matchesListedRoutine(bits, filter: overdue))
-        #expect(Classification.matchesListedRoutine(bits, filter: todayFilter))
+        #expect(!Classification.matchesListedRoutine(
+            bits, dayKey: today, isDone: false, todayKey: today, filter: overdue
+        ))
+        #expect(Classification.matchesListedRoutine(
+            bits, dayKey: yesterday, isDone: false, todayKey: today, filter: overdue
+        ))
+        #expect(!Classification.matchesListedRoutine(
+            bits, dayKey: yesterday, isDone: true, todayKey: today, filter: overdue
+        ))
+        #expect(Classification.matchesListedRoutine(
+            bits, dayKey: today, isDone: false, todayKey: today, filter: todayFilter
+        ))
+        #expect(!Classification.matchesListedRoutine(
+            bits, dayKey: today, isDone: false, todayKey: today, filter: upcoming
+        ))
+        #expect(Classification.matchesListedRoutine(
+            bits, dayKey: today, isDone: false, todayKey: today, filter: recent
+        ))
     }
 
     @Test func filterMatchesPriorityScope() {

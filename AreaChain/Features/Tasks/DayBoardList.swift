@@ -319,10 +319,14 @@ struct DayBoardList: View {
 
     private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
         guard filter.isActive else { return list }
-        return list.filter {
-            Classification.matchesListedRoutine($0.classifyBits, filter: filter)
-                && Classification.matchesReminder($0.remindMinutes, scope: filter.reminderScope)
-        }
+        return list.filter(routineMatchesFilter)
+    }
+
+    private func routineMatchesFilter(_ routine: DailyRoutine) -> Bool {
+        let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snapshots.1, on: dayKey)
+        return Classification.matchesListedRoutine(
+            routine.classifyBits, dayKey: dayKey, isDone: done, todayKey: todayKey, filter: filter
+        ) && Classification.matchesReminder(routine.remindMinutes, scope: filter.reminderScope)
     }
 
     private func filtered(_ rows: [BoardRow]) -> [BoardRow] {
@@ -330,8 +334,7 @@ struct DayBoardList: View {
         return rows.filter { row in
             switch row {
             case .resident(let routine):
-                return Classification.matchesListedRoutine(routine.classifyBits, filter: filter)
-                    && Classification.matchesReminder(routine.remindMinutes, scope: filter.reminderScope)
+                return routineMatchesFilter(routine)
             case .todo(let todo):
                 return Classification.matchesListedTodo(
                     todo.classifyBits, dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey,

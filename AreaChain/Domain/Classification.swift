@@ -240,12 +240,22 @@ enum Classification {
         return true
     }
 
-    /// 今日清单上的重复事项已经按「今天」取出。逾期是过去的检查日，不能靠这条规则在全局搜索里判断。
+    /// 日清单里的重复事项已经落在看板日上。日期筛选用这一天，不再把所有非逾期范围都当成匹配。
+    /// 因此当天不算逾期；昨天未完成的重复事项在逾期筛选下仍然保留。
     static func matchesListedRoutine(
-        _ bits: ClassifyBits, filter: BoardFilter
+        _ bits: ClassifyBits,
+        dayKey: String,
+        isDone: Bool,
+        todayKey: String,
+        filter: BoardFilter
     ) -> Bool {
         guard matches(bits, filter: filter) else { return false }
-        return filter.dateScope != .overdue
+        if filter.dateScope != .all {
+            guard matchesDate(
+                dayKey: dayKey, isDone: isDone, todayKey: todayKey, scope: filter.dateScope
+            ) else { return false }
+        }
+        return true
     }
 
     static func matchesDate(dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope) -> Bool {

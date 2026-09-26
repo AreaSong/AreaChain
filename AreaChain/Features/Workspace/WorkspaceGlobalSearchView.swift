@@ -151,15 +151,19 @@ struct WorkspaceGlobalSearchView: View {
     }
 
     private func openAttachment(_ attachment: AttachmentItem) {
-        guard let owner = AttachmentOwner(rawValue: attachment.ownerKind) else { return }
-        switch owner {
-        case .todo, .routine:
-            navigation.inspectTask(attachment.ownerID)
-        case .diary:
-            if let entry = diaries.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) {
-                DiaryWindows.shared.open(entry: entry, context: modelContext)
-            }
+        if let target = WorkspaceAttachmentQuery.inspectionTarget(
+            ownerKind: attachment.ownerKind,
+            ownerID: attachment.ownerID,
+            todos: todos.map(\.snapshot),
+            routines: routines.map(\.snapshot),
+            todayKey: DayClock.shared.todayKey
+        ) {
+            navigation.inspectTask(target.id, dayKey: target.dayKey)
+            return
         }
+        guard attachment.ownerKind == AttachmentOwner.diary.rawValue,
+              let entry = diaries.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) else { return }
+        DiaryWindows.shared.open(entry: entry, context: modelContext)
     }
 }
 
@@ -169,5 +173,30 @@ enum WorkspaceAttachmentQuery {
         let keywords = BoardSearch.parseQuery(query).textKeywords
         guard !keywords.isEmpty else { return false }
         return keywords.allSatisfy { BoardSearch.matches(filename, needle: $0) }
+    }
+
+    /// 附件结果没有自己的命中日。一次性事项用事项日，重复事项用真实检查日，不用当前页面日期代替。
+    static func inspectionTarget(
+        ownerKind: String,
+        ownerID: UUID,
+        todos: [TodoSnapshot],
+        routines: [RoutineSnapshot],
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> (id: UUID, dayKey: String)? {
+        switch AttachmentOwner(rawValue: ownerKind) {
+        case .todo:
+            guard let todo = todos.first(where: { $0.id == ownerID && $0.deletedAt == nil }),
+                  DayKey.date(from: todo.dayKey, calendar: calendar) != nil else { return nil }
+            return (todo.id, todo.dayKey)
+        case .routine:
+            guard let routine = routines.first(where: { $0.id == ownerID && $0.deletedAt == nil }) else { return nil }
+            return (
+                routine.id,
+                AgendaProjection.inspectionDay(for: routine, todayKey: todayKey, calendar: calendar)
+            )
+        case .diary, nil:
+            return nil
+        }
     }
 }

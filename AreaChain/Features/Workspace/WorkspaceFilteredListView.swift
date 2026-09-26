@@ -216,11 +216,10 @@ struct WorkspaceFilteredListView: View {
 
     private func routineRowView(_ routine: DailyRoutine) -> some View {
         let todayKey = DayClock.shared.todayKey
-        let isDone = DayBoardLogic.isRoutineDone(
-            routine.snapshot,
-            checks: checks.compactMap(\.snapshot),
-            on: todayKey
-        )
+        let snapshot = routine.snapshot
+        let checkSnapshots = checks.compactMap(\.snapshot)
+        let dueToday = DayBoardLogic.isRoutineDue(snapshot, on: todayKey)
+        let isDone = DayBoardLogic.isRoutineDone(snapshot, checks: checkSnapshots, on: todayKey)
         let schedule = RoutineScheduleContext(
             todayKey: todayKey,
             checkDayKey: todayKey,
@@ -229,7 +228,8 @@ struct WorkspaceFilteredListView: View {
         )
         let display = RoutineRowDisplayOptions(
             isDone: isDone,
-            isSelected: isRowSelected(routine.id)
+            isSelected: isRowSelected(routine.id),
+            allowsCompletion: dueToday
         )
         let actions = RoutineRowActions(
             onSelect: { selectRow(routine.id, modifiers: $0) },
@@ -238,9 +238,9 @@ struct WorkspaceFilteredListView: View {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onSkip: isDone ? nil : {
+            onSkip: dueToday && !isDone ? {
                 DayBoardMutations.skipRoutine(routine, on: todayKey, checks: checks, context: modelContext)
-            }
+            } : nil
         )
         return TaskRowFactory.routine(RoutineRowContext(
             routine: routine,
