@@ -9,8 +9,6 @@ struct WorkspacePendingView: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @Bindable private var navigation = WorkspaceNavigation.shared
-    @State private var laneSession: PendingLaneSession?
-    @State private var filter = BoardFilter()
 
     private var todayKey: String { DayClock.shared.todayKey }
 
@@ -24,7 +22,7 @@ struct WorkspacePendingView: View {
     }
 
     private var lane: PendingLane {
-        laneSession?.lane ?? PendingLanePolicy.initial(overdueCount: projection.overdueCount)
+        navigation.pendingLaneSession?.lane ?? PendingLanePolicy.initial(overdueCount: projection.overdueCount)
     }
 
     var body: some View {
@@ -37,18 +35,20 @@ struct WorkspacePendingView: View {
                 groups: [WorkspaceItemGroup(id: "pending", title: nil, entries: visibleEntries)],
                 todayKey: todayKey,
                 checks: checks,
-                filterActive: filter.isActive,
-                emptyTitle: filter.isActive ? "empty.filter" : emptyCopy.title,
-                emptySubtitle: filter.isActive ? "empty.filter.hint" : emptyCopy.hint
+                filterActive: navigation.pendingFilter.isActive,
+                emptyTitle: navigation.pendingFilter.isActive ? "empty.filter" : emptyCopy.title,
+                emptySubtitle: navigation.pendingFilter.isActive ? "empty.filter.hint" : emptyCopy.hint
             )
         }
         .onAppear {
-            if laneSession == nil {
-                laneSession = PendingLaneSession(overdueCount: projection.overdueCount)
+            if navigation.pendingLaneSession == nil {
+                navigation.pendingLaneSession = PendingLaneSession(overdueCount: projection.overdueCount)
             }
         }
         .onChange(of: projection.overdueCount) { _, count in
-            laneSession?.refreshDefault(overdueCount: count)
+            guard var session = navigation.pendingLaneSession else { return }
+            session.refreshDefault(overdueCount: count)
+            navigation.pendingLaneSession = session
         }
         .onChange(of: visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
@@ -62,11 +62,11 @@ struct WorkspacePendingView: View {
                 laneChip(.upcoming, count: projection.upcomingCount)
             }
             BoardFilterBar(
-                filter: filter,
+                filter: navigation.pendingFilter,
                 tags: CatalogChoices.tags(tags),
                 bundleIDs: bundleIDs,
                 showsPriority: true,
-                onChange: { filter = $0 }
+                onChange: { navigation.pendingFilter = $0 }
             )
         }
     }
@@ -81,15 +81,20 @@ struct WorkspacePendingView: View {
     }
 
     private func laneChip(_ next: PendingLane, count: Int) -> some View {
-        DaybookChip(isSelected: lane == next, action: {
-            var session = laneSession ?? PendingLaneSession(overdueCount: projection.overdueCount)
-            session.choose(next)
-            laneSession = session
-        }) {
+        DaybookChip(isSelected: lane == next, action: chooseLane(next), label: {
             Text("\(laneTitle(next)) \(count)")
                 .font(DaybookType.caption)
-        }
+        })
         .accessibilityLabel(laneTitle(next))
+    }
+
+    private func chooseLane(_ next: PendingLane) -> () -> Void {
+        {
+            var session = navigation.pendingLaneSession
+                ?? PendingLaneSession(overdueCount: projection.overdueCount)
+            session.choose(next)
+            navigation.pendingLaneSession = session
+        }
     }
 
     private func laneTitle(_ lane: PendingLane) -> String {
@@ -102,7 +107,7 @@ struct WorkspacePendingView: View {
     private var visibleEntries: [WorkspaceItemEntry] {
         let filtered = AgendaProjection.filtered(
             projection.entries(for: lane),
-            filter: filter,
+            filter: navigation.pendingFilter,
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
             todayKey: todayKey
@@ -127,7 +132,8 @@ struct WorkspacePendingView: View {
         switch item {
         case .todo(let snapshot):
             guard let todo = todos.first(where: { $0.id == snapshot.id }) else { return nil }
-            let listed = ItemsListing.todos([snapshot], query: ItemsListingQuery(filter: filter, todayKey: todayKey))
+            let query = ItemsListingQuery(filter: navigation.pendingFilter, todayKey: todayKey)
+            let listed = ItemsListing.todos([snapshot], query: query)
             let ids = listed.first.map { Set($0.subtasks.map(\.id)) }
             return .todo(todo, checkDayKey: snapshot.dayKey, subtaskIDs: ids)
         case .routine(let row):

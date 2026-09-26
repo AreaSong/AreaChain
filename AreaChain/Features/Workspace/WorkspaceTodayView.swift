@@ -14,7 +14,6 @@ struct WorkspaceTodayView: View {
     @Bindable private var navigation = WorkspaceNavigation.shared
     @Bindable private var filterSession = BoardFilterSession.shared
     @State private var dayTick = Date()
-    @State private var draftText = ""
     @State private var composerFocused = false
     @State private var showingRecurringEditor = false
     @State private var showingRecurringList = false
@@ -38,7 +37,7 @@ struct WorkspaceTodayView: View {
             headerTrailing
         } content: {
             DaybookComposer(
-                text: $draftText,
+                text: $navigation.todayDraft,
                 placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
                 focus: $composerFocused,
                 availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
@@ -102,7 +101,7 @@ struct WorkspaceTodayView: View {
 
                 Text("\(progress.completed)/\(progress.total)")
                     .font(DaybookType.body.weight(.medium).monospacedDigit())
-                    .foregroundStyle(progress.total > 0 && progress.completed >= progress.total ? DaybookPalette.accent.base : DaybookPalette.text.primary)
+                    .foregroundStyle(progressColor)
             }
 
             DaybookProgressRing(progress: progress.ratio, lineWidth: 3.5, size: 36)
@@ -110,6 +109,11 @@ struct WorkspaceTodayView: View {
         .fixedSize(horizontal: true, vertical: false)
         .animation(DaybookMotion.interactive, value: progress.total)
         .animation(DaybookMotion.interactive, value: progress.completed)
+    }
+
+    private var progressColor: Color {
+        let finished = progress.total > 0 && progress.completed >= progress.total
+        return finished ? DaybookPalette.accent.base : DaybookPalette.text.primary
     }
 
     private var progressTitleKey: LocalizedStringKey {
@@ -132,7 +136,10 @@ struct WorkspaceTodayView: View {
     }
 
     private func addTodo() {
-        guard DayBoardMutations.addCapturedTodo(text: draftText, dayKey: todayKey, context: modelContext) else { return }
-        draftText = ""
+        let saved = DayBoardMutations.addCapturedTodo(
+            text: navigation.todayDraft, dayKey: todayKey, context: modelContext
+        )
+        guard saved else { return }
+        navigation.todayDraft = ""
     }
 }

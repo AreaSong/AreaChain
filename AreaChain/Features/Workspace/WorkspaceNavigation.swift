@@ -110,6 +110,9 @@ final class WorkspaceNavigation {
     // MARK: - Tab & Filter Navigation
     var selectedTab: WorkspaceTab = .dashboard {
         didSet {
+            if oldValue != selectedTab {
+                releasePageMemory(leaving: oldValue)
+            }
             selectedTagID = nil
             isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash)
             clearSelection()
@@ -120,9 +123,11 @@ final class WorkspaceNavigation {
         }
     }
 
-    var selectedTagID: UUID? = nil {
+    var selectedTagID: UUID? {
         didSet {
             if selectedTagID != nil {
+                // 点进某个标签会盖住待处理或全部事项，这和顶部搜索不同，要按离开页面处理。
+                releasePageMemory(leaving: selectedTab)
                 isInlineTitleVisible = false
                 boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
@@ -130,6 +135,14 @@ final class WorkspaceNavigation {
             clearSelection()
         }
     }
+
+    /// 今日捕获草稿。顶部搜索会拆掉今日页，草稿不能放在页面 `@State` 里。
+    var todayDraft = ""
+    /// 待处理的通道和筛选。搜索期间保留；真正离开该页后清空，下次按逾期/即将规则重开。
+    var pendingLaneSession: PendingLaneSession?
+    var pendingFilter = BoardFilter()
+    /// 全部事项筛选。保留和清空的时机与待处理相同。
+    var allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
 
     // MARK: - Global Search
     var searchQuery: String = ""
@@ -150,7 +163,7 @@ final class WorkspaceNavigation {
     }
 
     // MARK: - Task Inspector & Multi-Selection
-    var selectedTaskID: UUID? = nil
+    var selectedTaskID: UUID?
     var inspectedReference: BoardItemReference?
     var selectedTaskIDs: Set<UUID> = []
     private(set) var selectionAnchorID: UUID?
@@ -277,6 +290,18 @@ final class WorkspaceNavigation {
     func clearSelection() {
         selectedTaskIDs.removeAll()
         selectionAnchorID = nil
+    }
+
+    private func releasePageMemory(leaving tab: WorkspaceTab) {
+        switch tab {
+        case .pending:
+            pendingLaneSession = nil
+            pendingFilter = BoardFilter()
+        case .allItems:
+            allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
+        default:
+            break
+        }
     }
 
     private func pinTodayInspectDayIfEnteringTab() {

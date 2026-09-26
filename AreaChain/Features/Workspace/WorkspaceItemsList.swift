@@ -64,6 +64,12 @@ struct WorkspaceItemGroup: Identifiable {
     var entries: [WorkspaceItemEntry]
 }
 
+private struct RoutineCompletionPrompt {
+    var allowed: Bool
+    var overdue: Int
+    var noteDay: String?
+}
+
 struct WorkspaceItemsList: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -160,9 +166,9 @@ struct WorkspaceItemsList: View {
                 routine,
                 day: day,
                 selected: selected,
-                allowsCompletion: allowsCompletion,
-                overdueCount: count,
-                noteDay: noteDay
+                completion: RoutineCompletionPrompt(
+                    allowed: allowsCompletion, overdue: count, noteDay: noteDay
+                )
             ))
         }
     }
@@ -191,13 +197,11 @@ struct WorkspaceItemsList: View {
         _ routine: DailyRoutine,
         day: String,
         selected: Bool,
-        allowsCompletion: Bool,
-        overdueCount: Int,
-        noteDay: String?
+        completion: RoutineCompletionPrompt
     ) -> RoutineRowContext {
         let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
         var extras: [String] = []
-        if let overdue = AgendaProjection.overduePresentation(dayKey: day, count: overdueCount) {
+        if let overdue = AgendaProjection.overduePresentation(dayKey: day, count: completion.overdue) {
             extras.append(L10n.format(
                 "items.routine.overdueDay %@",
                 locale: locale,
@@ -205,8 +209,12 @@ struct WorkspaceItemsList: View {
             ))
             extras.append(L10n.format("items.routine.overdueCount %lld", locale: locale, overdue.count))
         }
-        if let noteDay {
-            extras.append(L10n.format("items.routine.next %@", locale: locale, DayKey.displayName(noteDay, locale: locale)))
+        if let noteDay = completion.noteDay {
+            extras.append(L10n.format(
+                "items.routine.next %@",
+                locale: locale,
+                DayKey.displayName(noteDay, locale: locale)
+            ))
         }
         let skipped = DayBoardLogic.isRoutineSkipped(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
         let schedule = done
@@ -222,13 +230,13 @@ struct WorkspaceItemsList: View {
                 selection: TaskRowSelectionState(isSelected: selected, isExternalEditing: editingID == routine.id),
                 note: note,
                 usesDefaultNote: note == nil,
-                allowsCompletion: allowsCompletion
+                allowsCompletion: completion.allowed
             ),
             actions: RoutineRowActions(
                 onSelect: { select(routine.id, modifiers: $0) },
                 onDelete: { askTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine) } },
-                onToggle: allowsCompletion ? { toggle(routine.id) } : nil,
-                onSkip: allowsCompletion ? { DayBoardMutations.skipRoutine(routine, on: day, checks: checks, context: modelContext) } : nil,
+                onToggle: completion.allowed ? { toggle(routine.id) } : nil,
+                onSkip: completion.allowed ? { skip(routine, on: day) } : nil,
                 onEndEditing: { editingID = nil }
             )
         )
@@ -253,7 +261,11 @@ struct WorkspaceItemsList: View {
         guard let entry = entries.first(where: { $0.modelID == id }), entry.allowsCompletion else { return }
         switch entry {
         case .todo(let todo, _, _):
-            PendingCompletionManager.shared.toggle(id: todo.id, currentlyDone: todo.isDone, reduceMotion: reduceMotion) {
+            PendingCompletionManager.shared.toggle(
+                id: todo.id,
+                currentlyDone: todo.isDone,
+                reduceMotion: reduceMotion
+            ) {
                 _ = DayBoardMutations.toggleTodo(todo)
             }
         case .routine(let routine, let day, _, _, _):
@@ -268,7 +280,15 @@ struct WorkspaceItemsList: View {
         pendingTrash = PendingTrash(title: title, confirm: action)
     }
 
-    private func installKeys() {
+    private func skip(_ routine: DailyRoutine, on day: String) {
+        DayBoardMutations.skipRoutine(
+            routine, on: day, checks: checks, context: modelContext
+        )
+    }
+}
+
+extension WorkspaceItemsList {
+    fileprivate func installKeys() {
         keyMonitor = BoardKeyMonitor.install(existing: keyMonitor) { event in
             guard hostWindow == nil || event.window === hostWindow else { return event }
             return handle(event)
@@ -281,39 +301,57 @@ struct WorkspaceItemsList: View {
     }
 
     private func handle(_ event: NSEvent) -> NSEvent? {
-        if let editor = NSApp.keyWindow?.firstResponder as? NSTextView, editor.hasMarkedText() { return event }
-        if NSApp.keyWindow?.firstResponder is NSTextView { return event }
-        let ids = entries.map(\.modelID)
-        guard !ids.isEmpty else { return event }
-        switch event.keyCode {
-        case 125, 126:
-            move(event.keyCode == 125 ? 1 : -1, ids: ids)
-            return nil
-        case 49:
-            if let id = navigation.selectedTaskID { toggle(id) }
-            return nil
-        case 36:
+        guard ItemsListKeyRouting.consumes(event.keyCode, context: keyContext()) else { return event }
+        perform(event.keyCode)
+        return nil
+    }
+
+    private func keyContext() -> ItemsListKeyContext {
+        ItemsListKeyContext(
+            responderClaimsKeys: ItemsListKeyRouting.responderClaimsKeys(NSApp.keyWindow?.firstResponder),
+            hasRows: !entries.isEmpty,
+            hasSelection: navigation.selectedTaskID != nil,
+            hasMultiSelection: !navigation.selectedTaskIDs.isEmpty,
+            inspectorPresented: navigation.isInspectorPresented
+        )
+    }
+
+    private func perform(_ keyCode: UInt16) {
+        switch keyCode {
+        case ItemsListKey.arrowDown, ItemsListKey.arrowUp:
+            let delta = keyCode == ItemsListKey.arrowDown ? 1 : -1
+            move(delta, ids: entries.map(\.modelID))
+        case ItemsListKey.space:
+            toggleSelected()
+        case ItemsListKey.returnKey:
             if let id = navigation.selectedTaskID { select(id, modifiers: []) }
-            return nil
-        case 51:
-            if let entry = entries.first(where: { $0.modelID == navigation.selectedTaskID }) {
-                askTrash(title: entryTitle(entry)) { trash(entry) }
-            }
-            return nil
-        case 14:
+        case ItemsListKey.delete:
+            confirmTrashSelected()
+        case ItemsListKey.edit:
             editingID = navigation.selectedTaskID
-            return nil
-        case 53:
-            if navigation.isInspectorPresented {
-                navigation.closeInspector()
-            } else if !navigation.selectedTaskIDs.isEmpty {
-                navigation.clearSelection()
-            } else {
-                navigation.selectedTaskID = nil
-            }
-            return nil
+        case ItemsListKey.escape:
+            dismissKeyboardFocus()
         default:
-            return event
+            break
+        }
+    }
+
+    private func toggleSelected() {
+        if let id = navigation.selectedTaskID { toggle(id) }
+    }
+
+    private func confirmTrashSelected() {
+        guard let entry = entries.first(where: { $0.modelID == navigation.selectedTaskID }) else { return }
+        askTrash(title: entryTitle(entry)) { trash(entry) }
+    }
+
+    private func dismissKeyboardFocus() {
+        if navigation.isInspectorPresented {
+            navigation.closeInspector()
+        } else if !navigation.selectedTaskIDs.isEmpty {
+            navigation.clearSelection()
+        } else {
+            navigation.selectedTaskID = nil
         }
     }
 

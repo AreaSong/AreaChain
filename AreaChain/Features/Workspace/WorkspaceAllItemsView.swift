@@ -9,14 +9,13 @@ struct WorkspaceAllItemsView: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @Bindable private var navigation = WorkspaceNavigation.shared
-    @State private var query = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
 
     private var todayKey: String { DayClock.shared.todayKey }
 
     var body: some View {
         DaybookPage(title: "tab.allItems", systemImage: "list.bullet", minWidth: 480, minHeight: 480) {
-            if query.isNarrowed {
-                Button("items.filter.clear") { query = query.cleared() }
+            if liveQuery.isNarrowed {
+                Button("items.filter.clear") { navigation.allItemsQuery = liveQuery.cleared() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
         } content: {
@@ -25,12 +24,12 @@ struct WorkspaceAllItemsView: View {
                 groups: itemGroups,
                 todayKey: todayKey,
                 checks: checks,
-                filterActive: query.isNarrowed,
-                emptyTitle: query.isNarrowed ? "empty.filter" : "items.empty",
-                emptySubtitle: query.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
+                filterActive: liveQuery.isNarrowed,
+                emptyTitle: liveQuery.isNarrowed ? "empty.filter" : "items.empty",
+                emptySubtitle: liveQuery.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
             )
         }
-        .onAppear { query.todayKey = todayKey }
+        .onAppear { navigation.allItemsQuery.todayKey = todayKey }
         .onChange(of: visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }
@@ -39,31 +38,37 @@ struct WorkspaceAllItemsView: View {
     private var controls: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             HStack(spacing: DaybookSpacing.sm) {
-                scopeMenu(ItemKindScope.allCases.map(\.titleKey), selected: query.kind.titleKey) { key in
-                    if let next = ItemKindScope.allCases.first(where: { $0.titleKey == key }) {
-                        query.kind = next
-                    }
+                scopeMenu(
+                    ItemKindScope.allCases.map(\.titleKey),
+                    selected: navigation.allItemsQuery.kind.titleKey
+                ) { key in
+                    guard let next = ItemKindScope.allCases.first(where: { $0.titleKey == key }) else { return }
+                    navigation.allItemsQuery.kind = next
                 }
-                scopeMenu(TodoStatusScope.allCases.map(\.titleKey), selected: query.todoStatus.titleKey) { key in
-                    if let next = TodoStatusScope.allCases.first(where: { $0.titleKey == key }) {
-                        query.todoStatus = next
-                    }
+                scopeMenu(
+                    TodoStatusScope.allCases.map(\.titleKey),
+                    selected: navigation.allItemsQuery.todoStatus.titleKey
+                ) { key in
+                    guard let next = TodoStatusScope.allCases.first(where: { $0.titleKey == key }) else { return }
+                    navigation.allItemsQuery.todoStatus = next
                 }
-                scopeMenu(RoutineStatusScope.allCases.map(\.titleKey), selected: query.routineStatus.titleKey) { key in
-                    if let next = RoutineStatusScope.allCases.first(where: { $0.titleKey == key }) {
-                        query.routineStatus = next
-                    }
+                scopeMenu(
+                    RoutineStatusScope.allCases.map(\.titleKey),
+                    selected: navigation.allItemsQuery.routineStatus.titleKey
+                ) { key in
+                    guard let next = RoutineStatusScope.allCases.first(where: { $0.titleKey == key }) else { return }
+                    navigation.allItemsQuery.routineStatus = next
                 }
             }
             BoardFilterBar(
-                filter: query.filter,
+                filter: navigation.allItemsQuery.filter,
                 tags: CatalogChoices.tags(tags),
                 bundleIDs: bundleIDs,
                 showsPriority: true,
                 showsDate: true,
-                onChange: { query.filter = $0 }
+                onChange: { navigation.allItemsQuery.filter = $0 }
             )
-            if query.filter.dateScope != .all && query.kind != .oneOff {
+            if navigation.allItemsQuery.filter.dateScope != .all && navigation.allItemsQuery.kind != .oneOff {
                 Text("items.routine.dateHint")
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary)
@@ -87,10 +92,10 @@ struct WorkspaceAllItemsView: View {
 
     private var itemGroups: [WorkspaceItemGroup] {
         var groups: [WorkspaceItemGroup] = []
-        if query.kind != .recurring, !todoEntries.isEmpty {
+        if liveQuery.kind != .recurring, !todoEntries.isEmpty {
             groups.append(WorkspaceItemGroup(id: "todos", title: "items.section.todos", entries: todoEntries))
         }
-        if query.kind != .oneOff, !routineEntries.isEmpty {
+        if liveQuery.kind != .oneOff, !routineEntries.isEmpty {
             groups.append(WorkspaceItemGroup(id: "routines", title: "items.section.routines", entries: routineEntries))
         }
         return groups
@@ -105,7 +110,7 @@ struct WorkspaceAllItemsView: View {
     }
 
     private var liveQuery: ItemsListingQuery {
-        var next = query
+        var next = navigation.allItemsQuery
         next.todayKey = todayKey
         return next
     }
