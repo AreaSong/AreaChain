@@ -390,7 +390,7 @@ struct DayBoardList: View {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onToggle: { singleToggleSelected(id: routine.id) },
+            onToggle: { persistToggleSelected(id: routine.id) },
             onSkip: visuallyDone ? nil : {
                 DayBoardMutations.skipRoutine(routine, on: dayKey, checks: checks, context: modelContext)
             },
@@ -422,7 +422,7 @@ struct DayBoardList: View {
                     DayBoardMutations.trashTodo(todo)
                 }
             },
-            onToggle: { singleToggleSelected(id: todo.id) },
+            onToggle: { persistToggleSelected(id: todo.id) },
             onEndEditing: { editingTaskID = nil }
         )
         return TaskRowFactory.todo(TodoRowContext(

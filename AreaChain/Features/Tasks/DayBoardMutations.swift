@@ -402,17 +402,31 @@ enum DayBoardMutations {
 
     @discardableResult
     static func convertDiaryToTodo(_ entry: DiaryEntry, context: ModelContext) -> Bool {
-        let raw = entry.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else { return false }
-        let (title, notes): (String, String) = {
-            if let newlineIndex = raw.firstIndex(of: "\n") {
-                let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
-                let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
-                return (firstLine.isEmpty ? rest : firstLine, rest.isEmpty ? "" : rest)
-            }
-            return (raw, "")
-        }()
-        return addTodo(title: title, notes: notes, dayKey: DayKey.today(), context: context)
+        // 待办不加密。受保护或敏感手记即使模型里仍有明文，也不能绕过解锁写成公开事项。
+        let tags = (try? context.fetch(FetchDescriptor<TagItem>())) ?? []
+        guard !entry.hasProtectedContent,
+              !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags),
+              let raw = (try? DiaryContent.read(entry))?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !raw.isEmpty
+        else { return false }
+        return addTodo(
+            title: diaryTodoTitle(from: raw),
+            notes: diaryTodoNotes(from: raw),
+            dayKey: DayKey.today(),
+            context: context
+        )
+    }
+
+    private static func diaryTodoTitle(from raw: String) -> String {
+        guard let newlineIndex = raw.firstIndex(of: "\n") else { return raw }
+        let firstLine = String(raw[..<newlineIndex]).trimmingCharacters(in: .whitespacesAndNewlines)
+        let rest = String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return firstLine.isEmpty ? rest : firstLine
+    }
+
+    private static func diaryTodoNotes(from raw: String) -> String {
+        guard let newlineIndex = raw.firstIndex(of: "\n") else { return "" }
+        return String(raw[raw.index(after: newlineIndex)...]).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @discardableResult

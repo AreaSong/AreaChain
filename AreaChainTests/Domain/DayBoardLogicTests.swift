@@ -84,6 +84,7 @@ struct DayBoardLogicTests {
             CheckSnapshot(routineId: morningPages.id, dayKey: today, isDone: true, isSkipped: true)
         ]
         #expect(DayBoardLogic.isRoutineSkipped(morningPages, checks: checks, on: today))
+        #expect(DayBoardLogic.isRoutineDone(morningPages, checks: checks, on: today))
         #expect(
             DayBoardLogic.todayBadgeCount(
                 routines: [morningPages],

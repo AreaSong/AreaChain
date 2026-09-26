@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import AreaChain
 
+@Suite(.serialized)
 struct TaskSelectionTests {
     private let ids = (0..<5).map { _ in UUID() }
 
@@ -22,11 +23,11 @@ struct TaskSelectionTests {
         selection.select(ids[0], in: ids)
         selection.select(ids[3], in: ids, modifiers: .shift)
         selection.select(ids[4], in: ids)
-        #expect(selection.ids == [ids[4]])
+        #expect(selection.ids == Set([ids[4]]))
         selection.select(ids[1], in: ids, modifiers: .command)
-        #expect(selection.ids == [ids[1], ids[4]])
+        #expect(selection.ids == Set([ids[1], ids[4]]))
         selection.select(ids[1], in: ids, modifiers: .command)
-        #expect(selection.ids == [ids[4]])
+        #expect(selection.ids == Set([ids[4]]))
     }
 
     @Test func commandShiftAddsRangeWithoutDroppingExistingSelection() {
@@ -34,20 +35,20 @@ struct TaskSelectionTests {
         selection.select(ids[4], in: ids)
         selection.select(ids[0], in: ids, modifiers: .command)
         selection.select(ids[2], in: ids, modifiers: [.command, .shift])
-        #expect(selection.ids == [ids[0], ids[1], ids[2], ids[4]])
+        #expect(selection.ids == Set([ids[0], ids[1], ids[2], ids[4]]))
     }
 
     @Test func hiddenRowsAreExcludedAndMissingAnchorFallsBackToTheClickedItem() {
         var selection = TaskSelection()
         selection.select(ids[0], in: ids)
         selection.select(ids[4], in: [ids[0], ids[2], ids[4]], modifiers: .shift)
-        #expect(selection.ids == [ids[0], ids[2], ids[4]])
+        #expect(selection.ids == Set([ids[0], ids[2], ids[4]]))
         selection.reconcile(with: [ids[2], ids[4]])
         #expect(selection.anchorID == nil)
         selection.select(ids[4], in: [ids[2], ids[4]], modifiers: .shift)
-        #expect(selection.ids == [ids[4]])
+        #expect(selection.ids == Set([ids[4]]))
         selection.select(UUID(), in: ids)
-        #expect(selection.ids == [ids[4]])
+        #expect(selection.ids == Set([ids[4]]))
         selection.reconcile(with: [])
         #expect(selection.ids.isEmpty)
         #expect(selection.anchorID == nil)
@@ -56,9 +57,9 @@ struct TaskSelectionTests {
     @Test func shiftWithoutAnchorSelectsOnlyTheClickedItem() {
         var selection = TaskSelection()
         selection.select(ids[3], in: ids, modifiers: .shift)
-        #expect(selection.ids == [ids[3]])
+        #expect(selection.ids == Set([ids[3]]))
         selection.select(ids[3], in: ids, modifiers: .shift)
-        #expect(selection.ids == [ids[3]])
+        #expect(selection.ids == Set([ids[3]]))
     }
 
     @Test func shiftIntoAnotherPartitionDoesNotPullInThePreviousPartition() {
@@ -67,7 +68,7 @@ struct TaskSelectionTests {
         let today = [UUID(), UUID(), UUID()]
         selection.select(yesterday[0], in: yesterday)
         selection.select(today[2], in: today, modifiers: .shift)
-        #expect(selection.ids == [today[2]])
+        #expect(selection.ids == Set([today[2]]))
         #expect(selection.anchorID == today[2])
     }
 
@@ -75,18 +76,26 @@ struct TaskSelectionTests {
         var selection = TaskSelection()
         let yesterday = UUID()
         let today = [UUID(), UUID()]
-        selection.ids = [yesterday, today[0], today[1]]
+        selection.ids = Set([yesterday, today[0], today[1]])
         selection.anchorID = yesterday
         selection.dropRemoved(from: today, to: [today[1]])
-        #expect(selection.ids == [yesterday, today[1]])
+        #expect(selection.ids == Set([yesterday, today[1]]))
         #expect(selection.anchorID == yesterday)
+    }
 
-        selection.dropRemoved(from: [yesterday, today[1]], to: [today[1]])
-        #expect(selection.ids == [today[1]])
+    @Test func dropRemovedClearsAnchorWhenTheAnchorRowLeaves() {
+        var selection = TaskSelection()
+        let yesterday = UUID()
+        let remaining = UUID()
+        selection.ids = Set([yesterday, remaining])
+        selection.anchorID = yesterday
+        selection.dropRemoved(from: [yesterday, remaining], to: [remaining])
+        #expect(selection.ids == Set([remaining]))
         #expect(selection.anchorID == nil)
     }
 }
 
+@Suite(.serialized)
 @MainActor
 struct WorkspaceTaskSelectionTests {
     @Test func finderSelectionPreservesSingleInspectorAndSeparatesBatchSelection() {
@@ -104,7 +113,7 @@ struct WorkspaceTaskSelectionTests {
         #expect(navigation.selectedTaskIDs.isEmpty)
         #expect(navigation.selectedTaskID == ids[0])
         navigation.selectTask(ids[4], in: ids, modifiers: .command)
-        #expect(navigation.selectedTaskIDs == [ids[0], ids[4]])
+        #expect(navigation.selectedTaskIDs == Set([ids[0], ids[4]]))
     }
 
     @Test func clearAndNavigationResetTheRangeAnchorWithoutClearingInspectorTarget() {
@@ -118,7 +127,7 @@ struct WorkspaceTaskSelectionTests {
         #expect(navigation.selectedTaskID == ids[2])
         navigation.selectAllTasks(in: ids)
         navigation.reconcileTaskSelection(with: [ids[1]])
-        #expect(navigation.selectedTaskIDs == [ids[1]])
+        #expect(navigation.selectedTaskIDs == Set([ids[1]]))
         #expect(navigation.selectionAnchorID == nil)
     }
 

@@ -131,12 +131,39 @@ struct DiarySummaryRowTests {
         #expect(toggledPrivate)
         #expect(entry.isPrivate == true)
 
-        // 3. 转为待办
+        // 3. 转为待办：受保护或敏感手记不能把明文写进公开事项
+        let convertedWhilePrivate = DayBoardMutations.convertDiaryToTodo(entry, context: context)
+        #expect(!convertedWhilePrivate)
+        #expect(try context.fetch(FetchDescriptor<TodoItem>()).isEmpty)
+
+        DiaryPrivacy.assign(entry, isPrivate: false)
+        try context.save()
         let converted = DayBoardMutations.convertDiaryToTodo(entry, context: context)
         #expect(converted)
 
         let todos = try context.fetch(FetchDescriptor<TodoItem>())
         #expect(todos.contains { $0.title == "随手记标题" && $0.notes == "详细内容备忘" })
+    }
+
+    @Test func convertDiaryToTodoRejectsPasswordTaggedNotes() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+        let password = TagItem(name: "密码", sortOrder: 0)
+        context.insert(password)
+        let entry = DiaryEntry(
+            text: "邮箱口令 123456",
+            dayKey: "2026-09-18",
+            tagIDs: TagIDList.encode([password.id])
+        )
+        context.insert(entry)
+        try context.save()
+
+        #expect(!DayBoardMutations.convertDiaryToTodo(entry, context: context))
+        #expect(try context.fetch(FetchDescriptor<TodoItem>()).isEmpty)
     }
 
     @Test func diarySummaryRowStackedListRendersMultipleEntries() async throws {

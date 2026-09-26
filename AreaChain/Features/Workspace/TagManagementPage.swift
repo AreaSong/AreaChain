@@ -402,38 +402,36 @@ struct TagManagementPage: View {
     }
 
     private func commitBatchDelete() {
-        var failed = false
-        for tag in ordinarySelection {
-            if !DayBoardMutations.trashTag(id: tag.id, context: modelContext) { failed = true }
+        let ids = ordinarySelection.map(\.id)
+        if DayBoardMutations.batchTrashTags(ids: ids, context: modelContext) {
+            selection.removeAll()
+            pageError = nil
+        } else {
+            pageError = "tags.error.save"
         }
-        selection.removeAll()
-        pageError = failed ? "tags.error.save" : nil
     }
 
     private func commitCleanup() {
-        var failed = false
-        for tag in unusedOrdinary {
-            if !DayBoardMutations.trashTag(id: tag.id, context: modelContext) { failed = true }
-        }
-        pageError = failed ? "tags.error.save" : nil
+        let ids = unusedOrdinary.map(\.id)
+        pageError = DayBoardMutations.batchTrashTags(ids: ids, context: modelContext) ? nil : "tags.error.save"
     }
 
     private func commitRestore() {
-        var failed = false
-        for tag in deletedSelection {
-            if !DayBoardMutations.restoreTag(tag) { failed = true }
+        if DayBoardMutations.batchRestoreTags(deletedSelection) {
+            selection.removeAll()
+            pageError = nil
+        } else {
+            pageError = "tags.error.save"
         }
-        selection.removeAll()
-        pageError = failed ? "tags.error.save" : nil
     }
 
     private func commitPurge() {
-        var failed = false
-        for tag in deletedSelection {
-            if !DayBoardMutations.purgeTag(tag) { failed = true }
+        if DayBoardMutations.batchPurgeTags(deletedSelection) {
+            selection.removeAll()
+            pageError = nil
+        } else {
+            pageError = "tags.error.save"
         }
-        selection.removeAll()
-        pageError = failed ? "tags.error.save" : nil
     }
 
     private func beginMerge() {

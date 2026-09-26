@@ -136,4 +136,37 @@ extension DayBoardMutations {
             try routineRepo(for: context).batchTrashRoutines(ids: ids)
         }
     }
+
+    @discardableResult
+    static func batchTrashTags(ids: [UUID], context: ModelContext) -> Bool {
+        guard !ids.isEmpty else { return true }
+        return ModelChanges.perform(in: context) {
+            let repo = catalogRepo(for: context)
+            for id in ids {
+                try repo.deleteTag(id: id, soft: true)
+            }
+        }
+    }
+
+    @discardableResult
+    static func batchRestoreTags(_ tags: [TagItem]) -> Bool {
+        guard let context = tags.first?.modelContext, !tags.isEmpty else { return tags.isEmpty }
+        return ModelChanges.perform(in: context) {
+            let repo = catalogRepo(for: context)
+            for tag in tags {
+                try repo.restoreTag(id: tag.id)
+            }
+        }
+    }
+
+    @discardableResult
+    static func batchPurgeTags(_ tags: [TagItem]) -> Bool {
+        guard let context = tags.first?.modelContext, !tags.isEmpty else { return tags.isEmpty }
+        return ModelChanges.perform(in: context) {
+            let repo = catalogRepo(for: context)
+            for tag in tags {
+                try repo.purgeTag(id: tag.id)
+            }
+        }
+    }
 }

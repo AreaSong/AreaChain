@@ -187,7 +187,7 @@ struct WorkspaceItemsList: View {
             actions: TodoRowActions(
                 onSelect: { select(todo.id, modifiers: $0) },
                 onDelete: { askTrash(title: todo.title) { DayBoardMutations.trashTodo(todo) } },
-                onToggle: { toggle(todo.id) },
+                onToggle: { persistToggle(todo.id) },
                 onEndEditing: { editingID = nil }
             )
         )
@@ -235,7 +235,7 @@ struct WorkspaceItemsList: View {
             actions: RoutineRowActions(
                 onSelect: { select(routine.id, modifiers: $0) },
                 onDelete: { askTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine) } },
-                onToggle: completion.allowed ? { toggle(routine.id) } : nil,
+                onToggle: completion.allowed ? { persistToggle(routine.id) } : nil,
                 onSkip: completion.allowed ? { skip(routine, on: day) } : nil,
                 onEndEditing: { editingID = nil }
             )
@@ -266,13 +266,24 @@ struct WorkspaceItemsList: View {
                 currentlyDone: todo.isDone,
                 reduceMotion: reduceMotion
             ) {
-                _ = DayBoardMutations.toggleTodo(todo)
+                persistToggle(todo.id)
             }
         case .routine(let routine, let day, _, _, _):
             let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
             PendingCompletionManager.shared.toggle(id: routine.id, currentlyDone: done, reduceMotion: reduceMotion) {
-                _ = DayBoardMutations.toggleRoutine(routine, on: day, checks: checks, context: modelContext)
+                persistToggle(routine.id)
             }
+        }
+    }
+
+    /// 行复选框已经做过驻留；这里只落盘，避免鼠标路径套两层 0.4 秒。
+    private func persistToggle(_ id: UUID) {
+        guard let entry = entries.first(where: { $0.modelID == id }), entry.allowsCompletion else { return }
+        switch entry {
+        case .todo(let todo, _, _):
+            _ = DayBoardMutations.toggleTodo(todo)
+        case .routine(let routine, let day, _, _, _):
+            _ = DayBoardMutations.toggleRoutine(routine, on: day, checks: checks, context: modelContext)
         }
     }
 

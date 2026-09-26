@@ -51,6 +51,7 @@ struct DiaryRowCommandStrip: View {
             isActive: hasConvertedToTask,
             action: onConvertToTask
         )
+        .disabled(isSensitive)
 
         // 3. 复制手记 📋
         commandStripButton(

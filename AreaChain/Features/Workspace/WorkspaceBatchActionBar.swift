@@ -133,16 +133,6 @@ struct WorkspaceBatchActionBar: View {
         navigation.clearSelection()
     }
 
-    private func handleToggleTag(_ tid: UUID) {
-        guard DayBoardMutations.batchToggleTag(
-            navigation.selectedTaskIDs,
-            tagID: tid,
-            todos: todos,
-            routines: routines
-        ) else { return }
-        navigation.clearSelection()
-    }
-
     private func handleTrash() {
         let count = navigation.selectedTaskIDs.count
         pendingTrash = PendingTrash(title: "\(count)") {

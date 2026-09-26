@@ -127,12 +127,11 @@ struct TaskDetailDrawer: View {
             checks: checks.compactMap(\.snapshot),
             todayKey: todayKey
         )
-        let isDoneOnBoard = checks.contains {
-            $0.routine?.id == routine.id
-                && $0.dayKey == boardDayKey
-                && $0.isDone
-                && $0.isSkipped != true
-        }
+        let isDoneOnBoard = DayBoardLogic.isRoutineDone(
+            routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            on: boardDayKey
+        )
         let allowsCompletion = WorkspaceNavigation.shared.allowsRoutineCompletion(routine.id)
 
         return ScrollView {

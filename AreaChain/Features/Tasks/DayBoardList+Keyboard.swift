@@ -231,7 +231,6 @@ extension DayBoardList {
     }
 
     func singleToggleSelected(id: UUID) {
-        let previousIDs = effectiveVisibleIDs
         let checkOn = checkDay(for: id)
         let reference = activeReference(preferring: id)
         if reference?.kind == .recurring, let routine = routines.first(where: { $0.id == id }) {
@@ -245,13 +244,7 @@ extension DayBoardList {
                 currentlyDone: isDone,
                 reduceMotion: reduceMotion
             ) {
-                guard DayBoardMutations.toggleRoutine(
-                    routine,
-                    on: checkOn,
-                    checks: checks,
-                    context: modelContext
-                ) else { return }
-                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+                persistToggleSelected(id: id)
             }
             return
         }
@@ -261,9 +254,29 @@ extension DayBoardList {
                 currentlyDone: todo.isDone,
                 reduceMotion: reduceMotion
             ) {
-                guard DayBoardMutations.toggleTodo(todo) else { return }
-                self.shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+                persistToggleSelected(id: id)
             }
+        }
+    }
+
+    /// 行复选框已经做过驻留；这里只落盘，避免鼠标路径套两层 0.4 秒。
+    func persistToggleSelected(id: UUID) {
+        let previousIDs = effectiveVisibleIDs
+        let checkOn = checkDay(for: id)
+        let reference = activeReference(preferring: id)
+        if reference?.kind == .recurring, let routine = routines.first(where: { $0.id == id }) {
+            guard DayBoardMutations.toggleRoutine(
+                routine,
+                on: checkOn,
+                checks: checks,
+                context: modelContext
+            ) else { return }
+            shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
+            return
+        }
+        if let todo = todos.first(where: { $0.id == id }), reference?.kind != .recurring {
+            guard DayBoardMutations.toggleTodo(todo) else { return }
+            shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
         }
     }
 

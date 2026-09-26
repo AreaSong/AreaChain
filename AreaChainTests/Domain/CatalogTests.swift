@@ -147,7 +147,7 @@ struct CatalogTests {
         #expect(ordered.map(\.title) == ["乙", "丙", "甲"])
     }
 
-    @Test func openCountIncludesDueHabits() {
+    @Test func openCountMatchesListedOpenHabitsAndExcludesPaused() {
         let tag = TagItem(name: "工作", sortOrder: 0)
         let encoded = tag.id.uuidString
         let openTodo = TodoItem(title: "未完成", dayKey: "2026-09-09", tagIDs: encoded)
@@ -156,6 +156,10 @@ struct CatalogTests {
         let paused = DailyRoutine(
             title: "停用", sortOrder: 1, isEnabled: false, createdDayKey: "2026-09-01", tagIDs: encoded
         )
+        let listed = Catalog.matchingOpenRoutines(
+            [due, paused], checks: [], tag: tag, dayKey: "2026-09-09"
+        )
+        #expect(listed.map(\.title) == ["该打"])
         #expect(
             Catalog.openCount(
                 todos: [openTodo, doneTodo], routines: [due, paused], checks: [], tag: tag, dayKey: "2026-09-09"

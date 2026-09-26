@@ -321,3 +321,29 @@ struct BatchMutationsTests {
         #expect(todo.isUrgent == true)
     }
 }
+
+extension BatchMutationsTests {
+    @Test func batchTrashRestoreAndPurgeTagsShareOneTransaction() throws {
+        let (_, context) = try makeContainer()
+        let keep = TagItem(name: "保留", sortOrder: 0)
+        let first = TagItem(name: "批量甲", sortOrder: 1)
+        let second = TagItem(name: "批量乙", sortOrder: 2)
+        context.insert(keep)
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+
+        #expect(DayBoardMutations.batchTrashTags(ids: [first.id, second.id], context: context))
+        #expect(first.deletedAt != nil)
+        #expect(second.deletedAt != nil)
+        #expect(keep.deletedAt == nil)
+
+        #expect(DayBoardMutations.batchRestoreTags([first, second]))
+        #expect(first.deletedAt == nil)
+        #expect(second.deletedAt == nil)
+
+        #expect(DayBoardMutations.batchPurgeTags([first, second]))
+        let remaining = try context.fetch(FetchDescriptor<TagItem>())
+        #expect(Set(remaining.map(\.id)) == Set([keep.id]))
+    }
+}

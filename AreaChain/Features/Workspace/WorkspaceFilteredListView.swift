@@ -259,18 +259,21 @@ struct WorkspaceFilteredListView: View {
         Catalog.matchingTodos(todos, tag: tag)
     }
 
-    private var matchingRoutines: [DailyRoutine] {
-        Catalog.matchingRoutines(routines, tag: tag)
-    }
-
     private var matchingSubtasks: [SubtaskItem] {
         Catalog.matchingSubtasks(todos, tag: tag)
     }
 
     private func mixedRows(open: Bool) -> [BoardRow] {
         let todos = matchingTodos.filter { open ? !$0.isDone : $0.isDone }
-        let routines = open ? matchingRoutines : []
-        let rows = todos.map(BoardRow.todo) + routines.map(BoardRow.resident)
+        let listedRoutines = open
+            ? Catalog.matchingOpenRoutines(
+                routines,
+                checks: checks,
+                tag: tag,
+                dayKey: DayClock.shared.todayKey
+            )
+            : []
+        let rows = todos.map(BoardRow.todo) + listedRoutines.map(BoardRow.resident)
         return rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
 
