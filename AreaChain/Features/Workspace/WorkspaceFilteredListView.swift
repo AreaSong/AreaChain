@@ -92,37 +92,44 @@ struct WorkspaceFilteredListView: View {
     // MARK: - Task List
 
     private var taskList: some View {
-        ScrollView {
+        let openRows = mixedRows(open: true)
+        let doneRows = mixedRows(open: false)
+        return ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                let openRows = mixedRows(open: true)
-                let doneTodos = matchingTodos.filter(\.isDone)
-
-                if openRows.isEmpty && doneTodos.isEmpty && matchingSubtasks.isEmpty {
+                if openRows.isEmpty && doneRows.isEmpty && matchingSubtasks.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
                         systemImage: "tag"
                     )
                     .padding(.top, 40)
                 } else {
-                    if !openRows.isEmpty {
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(openRows, id: \.listID) { row in
-                                switch row {
-                                case .todo(let todo):
-                                    todoRowView(todo, isDone: false)
-                                case .resident(let routine):
-                                    routineRowView(routine)
-                                }
-                            }
-                        }
-                    }
-                    completedSection(doneTodos)
+                    taggedOpenRows(openRows)
+                    completedSection(doneRows)
                     subtaskSection
                 }
             }
             .padding(.vertical, 2)
         }
         .daybookScroll()
+    }
+
+    @ViewBuilder
+    private func taggedOpenRows(_ rows: [BoardRow]) -> some View {
+        if !rows.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(rows, id: \.listID, content: taggedRow)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func taggedRow(_ row: BoardRow) -> some View {
+        switch row {
+        case .todo(let todo):
+            todoRowView(todo, isDone: todo.isDone)
+        case .resident(let routine):
+            routineRowView(routine)
+        }
     }
 
     @ViewBuilder
@@ -148,8 +155,8 @@ struct WorkspaceFilteredListView: View {
     }
 
     @ViewBuilder
-    private func completedSection(_ doneTodos: [TodoItem]) -> some View {
-        if !doneTodos.isEmpty {
+    private func completedSection(_ doneRows: [BoardRow]) -> some View {
+        if !doneRows.isEmpty {
             Button {
                 withAnimation(DaybookMotion.animation(reduceMotion)) {
                     showCompleted.toggle()
@@ -159,7 +166,7 @@ struct WorkspaceFilteredListView: View {
                     Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
                         .font(DaybookType.micro.weight(.bold))
                         .foregroundStyle(DaybookPalette.text.secondary)
-                    Text("stamp.completed \(doneTodos.count)")
+                    Text("stamp.completed \(doneRows.count)")
                         .font(DaybookType.caption.weight(.medium))
                         .foregroundStyle(DaybookPalette.text.secondary)
                     Spacer()
@@ -171,9 +178,7 @@ struct WorkspaceFilteredListView: View {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(doneTodos) { todo in
-                        todoRowView(todo, isDone: true)
-                    }
+                    ForEach(doneRows, id: \.listID, content: taggedRow)
                 }
             }
         }
@@ -265,21 +270,20 @@ struct WorkspaceFilteredListView: View {
 
     private func mixedRows(open: Bool) -> [BoardRow] {
         let todos = matchingTodos.filter { open ? !$0.isDone : $0.isDone }
-        let listedRoutines = open
-            ? Catalog.matchingOpenRoutines(
-                routines,
-                checks: checks,
-                tag: tag,
-                dayKey: DayClock.shared.todayKey
-            )
-            : []
+        let listedRoutines = Catalog.matchingListedRoutines(
+            routines,
+            checks: checks,
+            tag: tag,
+            dayKey: DayClock.shared.todayKey,
+            open: open
+        )
         let rows = todos.map(BoardRow.todo) + listedRoutines.map(BoardRow.resident)
         return rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
     }
 
     private var orderedVisibleIDs: [UUID] {
         mixedRows(open: true).map(\.id)
-            + (showCompleted ? matchingTodos.filter(\.isDone).map(\.id) : [])
+            + (showCompleted ? mixedRows(open: false).map(\.id) : [])
     }
 
     private var canBatchSelect: Bool {

@@ -33,13 +33,13 @@ struct BoardFilterBarTests {
         #expect(todayBar.isVisible)
         #expect(changedFilter == nil)
 
-        let barWithProjects = BoardFilterBar(
+        let barWithoutChoices = BoardFilterBar(
             filter: BoardFilter(),
             tags: [],
             bundleIDs: [],
             onChange: { changedFilter = $0 }
         )
-        #expect(!barWithProjects.isVisible)
+        #expect(!barWithoutChoices.isVisible)
     }
 
     @Test func boardFilterBarSelectionAndReset() {

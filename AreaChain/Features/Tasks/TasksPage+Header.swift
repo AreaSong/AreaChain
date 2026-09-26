@@ -3,17 +3,29 @@ import SwiftUI
 extension TasksPage {
     // MARK: - 顶部工具栏与小窗微型筛选标签流
 
+    /// 工作台今日始终挂过滤条；浮层有 `externalFilter` 时用底栏筛选，避免再画一条。
+    static func showsFilterBar(
+        embedded: Bool,
+        hasExternalFilter: Bool,
+        filterIsActive: Bool
+    ) -> Bool {
+        if embedded { return true }
+        return !hasExternalFilter && filterIsActive
+    }
+
+    static func filterTagChoices(tags: [TagItem], embedded: Bool) -> [CatalogChoice] {
+        embedded ? CatalogChoices.tags(tags) : []
+    }
+
     @ViewBuilder
     var headerBar: some View {
         let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
-        let tagChoices = config.externalFilter == nil ? CatalogChoices.tags(tags) : []
-        let hasFilters = embedded
-            ? (config.externalFilter == nil
-                || !tagChoices.isEmpty
-                || !todayBundleIDs.isEmpty
-                || effectiveFilter.bundleID != nil
-                || effectiveFilter.isActive)
-            : (config.externalFilter == nil && effectiveFilter.isActive)
+        let tagChoices = Self.filterTagChoices(tags: tags, embedded: embedded)
+        let hasFilters = Self.showsFilterBar(
+            embedded: embedded,
+            hasExternalFilter: config.externalFilter != nil,
+            filterIsActive: effectiveFilter.isActive
+        )
 
         if hasChips || hasFilters {
             HStack(spacing: 8) {

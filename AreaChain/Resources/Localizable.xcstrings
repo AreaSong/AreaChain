@@ -4046,7 +4046,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "%lld 项待办"
+            "value": "%lld 项未完成"
           }
         }
       }

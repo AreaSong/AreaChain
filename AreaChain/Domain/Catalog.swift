@@ -134,17 +134,31 @@ enum Catalog {
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
-    /// 标签清单 open 段与 `openCount` 共用：只计当天排定且尚未闭合的重复事项。
+    /// 标签清单与 `openCount` 共用：全部未删除的挂签重复事项，按当天是否闭合分段。
+    /// 组织入口要能看到非今日排定和停用项；行上是否允许打卡仍由当天 `isRoutineDue` 决定。
+    static func matchingListedRoutines(
+        _ items: [DailyRoutine],
+        checks: [RoutineCheck],
+        tag: TagItem?,
+        dayKey: String,
+        open: Bool
+    ) -> [DailyRoutine] {
+        let snaps = checks.compactMap(\.snapshot)
+        return matchingRoutines(items, tag: tag).filter {
+            let done = DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
+            return open ? !done : done
+        }
+    }
+
+    /// 今日看板口径：当天排定且尚未闭合。标签清单不要用它当唯一列表。
     static func matchingOpenRoutines(
         _ items: [DailyRoutine],
         checks: [RoutineCheck],
         tag: TagItem?,
         dayKey: String
     ) -> [DailyRoutine] {
-        let snaps = checks.compactMap(\.snapshot)
-        return matchingRoutines(items, tag: tag).filter {
+        matchingListedRoutines(items, checks: checks, tag: tag, dayKey: dayKey, open: true).filter {
             DayBoardLogic.isRoutineDue($0.snapshot, on: dayKey)
-                && !DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
         }
     }
 
@@ -163,7 +177,9 @@ enum Catalog {
         dayKey: String
     ) -> Int {
         let openTodos = matchingTodos(todos, tag: tag).filter { !$0.isDone }.count
-        let openRoutines = matchingOpenRoutines(routines, checks: checks, tag: tag, dayKey: dayKey).count
+        let openRoutines = matchingListedRoutines(
+            routines, checks: checks, tag: tag, dayKey: dayKey, open: true
+        ).count
         let openSubtasks = matchingSubtasks(todos, tag: tag).filter { !$0.isDone }.count
         return openTodos + openRoutines + openSubtasks
     }

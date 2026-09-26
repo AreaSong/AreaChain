@@ -147,7 +147,7 @@ struct CatalogTests {
         #expect(ordered.map(\.title) == ["乙", "丙", "甲"])
     }
 
-    @Test func openCountMatchesListedOpenHabitsAndExcludesPaused() {
+    @Test func listedRoutinesIncludeOffDayAndPausedWhileOpenCountKeepsThem() {
         let tag = TagItem(name: "工作", sortOrder: 0)
         let encoded = tag.id.uuidString
         let openTodo = TodoItem(title: "未完成", dayKey: "2026-09-09", tagIDs: encoded)
@@ -156,14 +156,36 @@ struct CatalogTests {
         let paused = DailyRoutine(
             title: "停用", sortOrder: 1, isEnabled: false, createdDayKey: "2026-09-01", tagIDs: encoded
         )
-        let listed = Catalog.matchingOpenRoutines(
-            [due, paused], checks: [], tag: tag, dayKey: "2026-09-09"
+        let weekend = DailyRoutine(
+            title: "周末", sortOrder: 2, createdDayKey: "2026-09-01",
+            weekdayMask: WeekdayMask.all ^ WeekdayMask.workdays, tagIDs: encoded
         )
-        #expect(listed.map(\.title) == ["该打"])
+        let doneHabit = DailyRoutine(
+            title: "打完", sortOrder: 3, createdDayKey: "2026-09-01", tagIDs: encoded
+        )
+        let check = RoutineCheck(dayKey: "2026-09-09", isDone: true, routine: doneHabit)
+        let listed = Catalog.matchingListedRoutines(
+            [due, paused, weekend, doneHabit], checks: [check], tag: tag, dayKey: "2026-09-09", open: true
+        )
+        #expect(listed.map(\.title) == ["该打", "停用", "周末"])
+        #expect(
+            Catalog.matchingListedRoutines(
+                [due, paused, weekend, doneHabit], checks: [check], tag: tag, dayKey: "2026-09-09", open: false
+            ).map(\.title) == ["打完"]
+        )
+        #expect(
+            Catalog.matchingOpenRoutines(
+                [due, paused, weekend, doneHabit], checks: [check], tag: tag, dayKey: "2026-09-09"
+            ).map(\.title) == ["该打"]
+        )
         #expect(
             Catalog.openCount(
-                todos: [openTodo, doneTodo], routines: [due, paused], checks: [], tag: tag, dayKey: "2026-09-09"
-            ) == 2
+                todos: [openTodo, doneTodo],
+                routines: [due, paused, weekend, doneHabit],
+                checks: [check],
+                tag: tag,
+                dayKey: "2026-09-09"
+            ) == 4
         )
     }
 }
