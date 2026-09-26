@@ -89,7 +89,12 @@ struct TaskDetailDrawer: View {
                 TodoScheduleSectionView(todo: todo)
                 TodoClassificationSectionView(todo: todo, tags: tags, modelContext: modelContext)
                 TaskDetailAssetsSectionView(
-                    props: TaskDetailAssetsProps(ownerID: todo.id, ownerKind: .todo, createdAt: todo.createdAt, sourceBundleID: todo.sourceBundleID),
+                    props: TaskDetailAssetsProps(
+                        ownerID: todo.id,
+                        ownerKind: .todo,
+                        createdAt: todo.createdAt,
+                        sourceBundleID: todo.sourceBundleID
+                    ),
                     attachments: attachments,
                     modelContext: modelContext,
                     onPreview: { previewAttachment = $0 }
@@ -162,7 +167,12 @@ struct TaskDetailDrawer: View {
                 RoutineScheduleSectionView(routine: routine)
                 RoutineClassificationSectionView(routine: routine, tags: tags, modelContext: modelContext)
                 TaskDetailAssetsSectionView(
-                    props: TaskDetailAssetsProps(ownerID: routine.id, ownerKind: .routine, createdAt: routine.createdAt, sourceBundleID: routine.sourceBundleID),
+                    props: TaskDetailAssetsProps(
+                        ownerID: routine.id,
+                        ownerKind: .routine,
+                        createdAt: routine.createdAt,
+                        sourceBundleID: routine.sourceBundleID
+                    ),
                     attachments: attachments,
                     modelContext: modelContext,
                     onPreview: { previewAttachment = $0 }

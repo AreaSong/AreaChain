@@ -303,7 +303,10 @@ struct HabitStreakEmpiricalTests {
                     calendar: utcCalendar
                 )
 
-                #expect(result.bestStreak >= result.currentStreak, "Invariant violation: bestStreak (\(result.bestStreak)) < currentStreak (\(result.currentStreak)) on \(key)")
+                #expect(
+                    result.bestStreak >= result.currentStreak,
+                    "Invariant violation: bestStreak (\(result.bestStreak)) < currentStreak (\(result.currentStreak)) on \(key)"
+                )
                 #expect(result.currentStreak >= 0)
                 #expect(result.bestStreak >= 0)
 

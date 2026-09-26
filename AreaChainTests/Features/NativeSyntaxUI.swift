@@ -17,8 +17,14 @@ enum NativeSyntaxUI {
             try await Task.sleep(for: .milliseconds(20))
         }
         let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "none"
-        try #require(NSApp.activationPolicy() == .regular && NSApp.isActive && window.isVisible && window.isKeyWindow,
-                     "场景焦点未就绪：policy=\(NSApp.activationPolicy().rawValue)，visible=\(window.isVisible)，key=\(window.isKeyWindow)，active=\(NSApp.isActive)，foreground=\(foreground)")
+        try #require(
+            NSApp.activationPolicy() == .regular && NSApp.isActive && window.isVisible && window.isKeyWindow,
+            """
+            场景焦点未就绪：policy=\(NSApp.activationPolicy().rawValue)，\
+            visible=\(window.isVisible)，key=\(window.isKeyWindow)，\
+            active=\(NSApp.isActive)，foreground=\(foreground)
+            """
+        )
     }
 
     static func center(_ identifier: String, in window: NSWindow) throws -> NSPoint {

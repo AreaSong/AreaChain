@@ -350,8 +350,10 @@ private final class CaptureOverlayHost {
         }
         let state = SyntaxAutocompleteState.forResponder(window.firstResponder)
         let existing = NativeSyntaxUI.identifiers(in: window)
-        try #require(existing.contains(identifier) == visible,
-                 "浮层呈现未就绪：\(identifier)，key=\(window.isKeyWindow)，active=\(state?.isActive == true)，attributes=\(state?.showsAttributes == true)，已有：\(existing)")
+        try #require(
+            existing.contains(identifier) == visible,
+            "浮层呈现未就绪：\(identifier)，key=\(window.isKeyWindow)，active=\(state?.isActive == true)，attributes=\(state?.showsAttributes == true)，已有：\(existing)"
+        )
     }
 
     func viewportFrame() throws -> CGRect {
