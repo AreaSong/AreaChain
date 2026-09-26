@@ -11,11 +11,11 @@
 
 ## 2. 文档、规则与技能
 
-- 运行 `python3 -B scripts/check_workflow.py` 检查本地内联引用/锚点、Domain 显式 UI 导入及项目技能 Git 边界。它只读取仓库文件并执行只读 Git 查询，不触碰个人签名、应用或真实数据；边界见 [工程手册](../../../../docs/engineering.md)。
+- 运行 `python3 -B scripts/check_workflow.py` 检查本地内联引用/锚点、Domain 显式 UI 导入、项目技能格式及 Git 边界。它只读取仓库文件并执行只读 Git 查询，不触碰个人签名、应用或真实数据；边界见 [工程手册](../../../../docs/engineering.md)。
 - 检查差异、Markdown/元数据结构、相对引用和适用边界；仓库内使用 `git diff --check`。未跟踪文件还需单独检查，不能因 Git 未显示差异就略过。
 - 本检查器改变时，先运行 `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`，再运行下文脚本回归。反例应证明坏引用、UI 导入和错误忽略规则能被拒绝，不能只测试当前仓库恰好通过。
 - 个人规则也属于本次授权范围时，可显式传入 `--personal-root <实际个人规则目录>` 检查自有 AGENTS、路由及 `areasong-development` 的引用；默认不访问个人目录，不扫描其他技能/插件缓存。该选项不是 YAML 格式或冷启动发现测试。
-- 创建/更新 Skill 时，按当前 `skill-creator` 的路径运行其校验器，不硬编码维护者主目录。本机若找不到 `quick_validate.py`，记为缺口并仍运行 `python3 -B scripts/check_workflow.py`；不以构建应用替代技能校验。
+- 创建/更新 Skill 时，以 `python3 -B scripts/check_workflow.py` 的 `skill-format` 与 Git 作用域为准；不以构建应用或本机 `skill-creator` 替代。
 - 项目技能位于 `.agents/skills`，检查 Git 仅暴露预期技能文件，其他本地代理状态仍忽略。个人级技能不是本仓库内容，不复制同名技能来假定覆盖。
 - 验证发现和作用域时使用受控的新会话；区分文件存在、清单可见、实际调用和真实任务通过。不仅凭当前上下文已经读过文件就认定冷启动加载成功。
 - 只改这些文件不需要运行整套应用测试，也不需要安装或启动应用。

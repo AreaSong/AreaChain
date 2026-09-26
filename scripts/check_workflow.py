@@ -24,6 +24,7 @@ IMPORT = re.compile(r"\bimport\s+(?:(?:typealias|struct|class|enum|protocol|let|
 LIMITATIONS = [
     "文档检查覆盖内联本地链接及 Markdown 标题/显式锚点；不访问远端链接，不验证内容语义。",
     "Domain 检查仅识别显式 import；不替代 Swift 编译、宏展开或完整符号依赖分析。",
+    "skill-format 只核对 frontmatter 名称/描述和 openai.yaml 的显示字段；不证明模型发现或调用。",
     "技能 Git 边界不证明发现或调用成功；本地通过不代表 CI、运行验收或发行通过。",
     "theme-tokens 只匹配 Features/Theme 里的字面模式，并跳过同行的 control 与 token-exempt 注释；不证明视觉一致。",
     "workflow-contract 只核对项目级路由、复用目录和编排技能的关键入口；不证明模型实际发现或调用技能。",
@@ -35,18 +36,19 @@ LIMITATIONS = [
 WORKFLOW_CONTRACT = {
     "AGENTS.md": (
         "skill-routing.md", "component-catalog.md", "quality-gates.md",
-        "areachain-workflow", "白话请求默认行为",
+        "areachain-workflow", "白话请求默认行为", "不把 `.cursor/plans` 当项目路线",
     ),
     "skill-routing.md": (
         "areachain-workflow", "areachain-ui", "areachain-verify",
         "docs/component-catalog.md", "docs/quality-gates.md", "用户输入契约",
+        "三个项目技能",
     ),
     "docs/component-catalog.md": (
         "DaybookInputShell", "ModelChanges", "新公共组件",
     ),
     ".agents/skills/areachain-workflow/SKILL.md": (
         "skill-routing.md", "component-catalog.md", "areachain-verify",
-        "quality-gates.md", "用户无需调用本技能",
+        "quality-gates.md", "用户无需调用本技能", "skill-format",
     ),
     "docs/quality-gates.md": (
         "quality_gate.py", "performance-baselines.json", "security-static",
@@ -550,6 +552,78 @@ def check_swift_file_size(root, limit=500):
     return result("swift-file-size", checked, issues)
 
 
+def frontmatter_fields(text):
+    lines = text.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return None
+    closing = next((index for index, line in enumerate(lines[1:], 1) if line.strip() == "---"), None)
+    if closing is None:
+        return None
+    fields, key = {}, None
+    for line in lines[1:closing]:
+        if key and line[:1] in " \t":
+            fields[key] += " " + line.strip().strip("\"'")
+            continue
+        if ":" not in line or line.lstrip().startswith("#"):
+            continue
+        key, value = line.split(":", 1)
+        key, value = key.strip(), value.strip().strip("\"'")
+        if key:
+            fields[key] = value
+    return fields
+
+
+def yaml_scalar_keys(text):
+    found = {}
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#") or ":" not in stripped:
+            continue
+        name, value = stripped.split(":", 1)
+        name, value = name.strip(), value.strip().strip("\"'")
+        if name and value:
+            found[name] = value
+    return found
+
+
+def check_skill_format(root):
+    """核对项目技能入口元数据，不替代发现或调用证据。"""
+    issues, checked = [], 0
+    required_yaml = ("display_name", "short_description")
+    for name in SKILLS:
+        skill = root / ".agents/skills" / name / "SKILL.md"
+        checked += 1
+        if not skill.is_file():
+            issues.append(issue(skill, "项目技能 SKILL.md 缺失。"))
+            continue
+        try:
+            fields = frontmatter_fields(skill.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as error:
+            issues.append(issue(skill, f"无法读取技能文件：{type(error).__name__}"))
+            continue
+        if not fields:
+            issues.append(issue(skill, "SKILL.md 缺少 YAML frontmatter。"))
+        else:
+            if fields.get("name") != name:
+                issues.append(issue(skill, f"frontmatter name 必须是 {name}。"))
+            if not fields.get("description"):
+                issues.append(issue(skill, "frontmatter 缺少 description。"))
+        yaml_path = root / ".agents/skills" / name / "agents/openai.yaml"
+        checked += 1
+        if not yaml_path.is_file():
+            issues.append(issue(yaml_path, "项目技能 openai.yaml 缺失。"))
+            continue
+        try:
+            values = yaml_scalar_keys(yaml_path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as error:
+            issues.append(issue(yaml_path, f"无法读取 openai.yaml：{type(error).__name__}"))
+            continue
+        for key in required_yaml:
+            if key not in values:
+                issues.append(issue(yaml_path, f"openai.yaml 缺少 {key}。"))
+    return result("skill-format", checked, issues)
+
+
 def check_skill_scope(root):
     prefixes = tuple(f".agents/skills/{name}/" for name in SKILLS)
     hidden = [".agents/workflow-check-local-state", ".agents/skills/workflow-check-unshared/SKILL.md"]
@@ -599,7 +673,8 @@ def run_checks(root, personal_root=None):
         checks.extend([check_links(root, project_docs(root), "project-links"),
                        check_workflow_contract(root), check_domain(root),
                        check_component_catalog(root), check_performance_manifest(root),
-                       check_ci_contract(root), check_skill_scope(root), check_theme_tokens(root),
+                       check_ci_contract(root), check_skill_format(root),
+                       check_skill_scope(root), check_theme_tokens(root),
                        check_swift_file_size(root)])
     if personal_root is not None:
         checks.append(check_links(personal_root, personal_docs(personal_root), "personal-links", restrict_targets=True))

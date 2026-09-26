@@ -29,7 +29,7 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 4. 修改前输出简短的影响/复用表：已有入口、实际消费者、保持的契约、直接复用或新建的理由。
 5. 沿 `Domain → Services → Features → Theme` 的责任方向实施，复用已有解析、筛选、日期、仓储、事务和窗口入口。
 6. 修改后先运行 `python3 -B scripts/quality_gate.py`，再按影响补定向测试、构建、原生隔离和真实系统证据；区分静态、单测、构建、原生隔离和真实系统证据。
-7. 交接时列出变更、复用项、实际命令、失败/跳过/未运行项和残余风险；不把计划或旧结果写成通过。
+7. 交接时列出变更、复用项、实际命令、失败/跳过/未运行项和残余风险；不把计划或旧结果写成通过。日常任务不读取、不写入 `.cursor/plans/`。
 
 ## 复用硬门槛
 
@@ -42,7 +42,7 @@ description: "用于 AreaChain 仓库的任务定界、上下文加载、组件�
 ## 验证与规则维护
 
 - 规则、路由、技能或组件目录发生变化时运行 `python3 -B scripts/check_workflow.py`；修改检查器时再运行 `scripts/tests` 中的 `test_check_workflow.py` 和完整脚本回归。该检查器也拦住 `AreaChain` 与 `AreaChainTests` 里超过 500 行的 Swift 文件。
-- 新增或修改 Skill 时使用 `skill-creator` 的 `quick_validate.py`，并检查 `agents/openai.yaml`、引用文件和 Git 作用域。
+- 新增或修改 Skill 时运行 `python3 -B scripts/check_workflow.py`（含 `skill-format`），检查 `agents/openai.yaml`、引用文件和 Git 作用域；不依赖本机 `skill-creator`。不新建发行、诊断或 Domain 技能来填补空缺。
 - Swift 或 UI 改动按 [areachain-verify](../areachain-verify/SKILL.md) 选择定向测试和构建；本技能不把编译成功当作原生交互通过。
 - 共享契约、持久化语义、复杂状态或跨模块行为变化，只交给 Cursor `verifier` 做只读复核；测试与隔离原生仍交给 [areachain-verify](../areachain-verify/SKILL.md)。
 

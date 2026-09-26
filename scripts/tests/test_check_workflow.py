@@ -37,8 +37,8 @@ class WorkflowCheckTests(unittest.TestCase):
         for relative, symbol in workflow.COMPONENT_ENTRIES:
             self.write(relative, f"struct {symbol} {{}}\n")
         contract_docs = {
-            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为\n",
-            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约\n",
+            "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
+            "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardMutations ModelChanges 新公共组件\n",
         }
@@ -57,11 +57,12 @@ class WorkflowCheckTests(unittest.TestCase):
         }))
         self.write(".github/workflows/quality.yml", """on: [push]\nworkflow_dispatch: {}\npermissions:\n  contents: read\nuses: actions/checkout@0123456789abcdef0123456789abcdef01234567\nfetch-depth: 2\nrun: python3 scripts/quality_gate.py --profile static --strict --format json\nrun: python3 scripts/quality_gate.py --profile swift --strict --base-ref HEAD^ --format json\n""")
         for name in workflow.SKILLS:
-            content = f"---\nname: {name}\n---\n"
+            content = f"---\nname: {name}\ndescription: Isolated fixture for {name}\n---\n"
             if name == "areachain-workflow":
-                content += "skill-routing.md component-catalog.md areachain-verify quality-gates.md 用户无需调用本技能\n"
+                content += "skill-routing.md component-catalog.md areachain-verify quality-gates.md 用户无需调用本技能 skill-format\n"
             self.write(f".agents/skills/{name}/SKILL.md", content)
-            self.write(f".agents/skills/{name}/agents/openai.yaml", 'interface: {}\n')
+            self.write(f".agents/skills/{name}/agents/openai.yaml",
+                       "interface:\n  display_name: Fixture\n  short_description: Isolated fixture\n")
         self.write(".gitignore", ".agents/*\n!.agents/skills/\n.agents/skills/*\n"
                    "!.agents/skills/areachain-workflow/\n"
                    "!.agents/skills/areachain-ui/\n!.agents/skills/areachain-verify/\n")
@@ -173,7 +174,8 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual({check["name"] for check in report["checks"]},
                           {"project-identity", "project-links", "workflow-contract",
                           "component-catalog", "performance-baselines", "domain-imports",
-                          "ci-contract", "skill-git-scope", "theme-tokens", "swift-file-size"})
+                          "ci-contract", "skill-format", "skill-git-scope", "theme-tokens",
+                          "swift-file-size"})
 
     def test_performance_manifest_rejects_non_object_root(self):
         self.make_project()
@@ -236,6 +238,21 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookInputShell" in problem["message"] for problem in result["issues"]))
+
+    def test_skill_format_rejects_missing_description(self):
+        self.make_project()
+        self.write(".agents/skills/areachain-ui/SKILL.md", "---\nname: areachain-ui\n---\n")
+        result = workflow.check_skill_format(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("description" in problem["message"] for problem in result["issues"]))
+
+    def test_skill_format_rejects_missing_display_name(self):
+        self.make_project()
+        self.write(".agents/skills/areachain-ui/agents/openai.yaml",
+                   "interface:\n  short_description: Isolated fixture\n")
+        result = workflow.check_skill_format(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("display_name" in problem["message"] for problem in result["issues"]))
 
     def test_accidentally_exposed_local_agent_file_fails(self):
         self.make_project()
