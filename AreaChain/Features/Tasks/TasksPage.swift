@@ -128,8 +128,8 @@ struct TasksPage: View {
         .animation(DaybookMotion.interactive, value: effectiveFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)
         .animation(DaybookMotion.interactive, value: showYesterday)
-        .onChange(of: allVisibleIDs) { _, ids in
-            taskSelection.reconcile(with: ids)
+        .onChange(of: allVisibleIDs) { previous, next in
+            taskSelection.dropRemoved(from: previous, to: next)
         }
         .onChange(of: focusedTaskID?.wrappedValue) { _, id in
             if let id, taskSelection.ids.contains(id) { return }
@@ -164,7 +164,6 @@ struct TasksPage: View {
                 yesterdayUnfinishedCount: yesterdayItems.count,
                 isYesterdayExpanded: showYesterday,
                 selection: $taskSelection,
-                visibleIDsProvider: { allVisibleIDs },
                 onToggleYesterday: { showYesterday.toggle() }
             )
         )
@@ -222,15 +221,21 @@ struct TasksPage: View {
     }
 
     var todayVisibleIDs: [UUID] {
-        let openTodoIDs = DayBoardLogic.openTodos(todos: snapshots.2, dayKey: todayKey)
-            .filter { matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes) }
-            .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-            .map(\.id)
-        let openRoutineIDs = DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey)
-            .filter { matchesFilter($0.classifyBits, remindMinutes: $0.remindMinutes) }
-            .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-            .map(\.id)
-        return openTodoIDs + openRoutineIDs
+        DayBoardLogic.openBoardItems(
+            routines: snapshots.0,
+            checks: snapshots.1,
+            todos: snapshots.2,
+            dayKey: todayKey
+        ).filter { reference in
+            switch reference {
+            case .todo(let id):
+                guard let todo = todos.first(where: { $0.id == id }) else { return false }
+                return matchesFilter(todo.classifyBits, remindMinutes: todo.remindMinutes)
+            case .recurring(let id):
+                guard let routine = routines.first(where: { $0.id == id }) else { return false }
+                return matchesFilter(routine.classifyBits, remindMinutes: routine.remindMinutes)
+            }
+        }.map(\.modelID)
     }
 
     var allVisibleIDs: [UUID] {

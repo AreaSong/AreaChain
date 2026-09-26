@@ -60,6 +60,31 @@ struct TaskSelectionTests {
         selection.select(ids[3], in: ids, modifiers: .shift)
         #expect(selection.ids == [ids[3]])
     }
+
+    @Test func shiftIntoAnotherPartitionDoesNotPullInThePreviousPartition() {
+        var selection = TaskSelection()
+        let yesterday = [UUID(), UUID()]
+        let today = [UUID(), UUID(), UUID()]
+        selection.select(yesterday[0], in: yesterday)
+        selection.select(today[2], in: today, modifiers: .shift)
+        #expect(selection.ids == [today[2]])
+        #expect(selection.anchorID == today[2])
+    }
+
+    @Test func dropRemovedKeepsRowsThatWereNeverInThePreviousOrder() {
+        var selection = TaskSelection()
+        let yesterday = UUID()
+        let today = [UUID(), UUID()]
+        selection.ids = [yesterday, today[0], today[1]]
+        selection.anchorID = yesterday
+        selection.dropRemoved(from: today, to: [today[1]])
+        #expect(selection.ids == [yesterday, today[1]])
+        #expect(selection.anchorID == yesterday)
+
+        selection.dropRemoved(from: [yesterday, today[1]], to: [today[1]])
+        #expect(selection.ids == [today[1]])
+        #expect(selection.anchorID == nil)
+    }
 }
 
 @MainActor

@@ -291,23 +291,20 @@ extension DayBoardList {
             markDone: markDone,
             reduceMotion: reduceMotion
         ) {
-            let todoIDs = Set(selectedTodos.map(\.id))
-            if !todoIDs.isEmpty {
-                DayBoardMutations.batchToggleDone(todoIDs, markDone: markDone, todos: self.todos)
-            }
+            var groups: [String: Set<UUID>] = [:]
             for routine in selectedRoutines {
-                let checkOn = self.checkDay(for: routine.id)
-                DayBoardMutations.batchSetRoutineChecks(
-                    [routine.id],
-                    markDone: markDone,
-                    on: checkOn,
-                    routines: self.routines,
-                    context: self.modelContext
-                )
+                groups[self.checkDay(for: routine.id), default: []].insert(routine.id)
             }
-            if markDone {
-                self.shiftFocusAfterBatchCompletion(completedIDs: ids, previousIDs: previousIDs)
-            }
+            let saved = DayBoardMutations.batchToggleListed(
+                todoIDs: Set(selectedTodos.map(\.id)),
+                routineChecks: groups,
+                markDone: markDone,
+                todos: self.todos,
+                routines: self.routines,
+                context: self.modelContext
+            )
+            guard saved, markDone else { return }
+            self.shiftFocusAfterBatchCompletion(completedIDs: ids, previousIDs: previousIDs)
         }
     }
 
@@ -391,7 +388,7 @@ extension DayBoardList {
         let nextFocus = candidates.first { remaining.contains($0) }
 
         pendingTrash = PendingTrash(title: "\(ids.count)") {
-            DayBoardMutations.batchTrash(ids, todos: self.todos, routines: self.routines)
+            guard DayBoardMutations.batchTrash(ids, todos: self.todos, routines: self.routines) else { return }
             self.focusTask(nextFocus)
             if let nextFocus {
                 BoardSelection.shared.inspectBoard(self.mappedDayKey(for: nextFocus))

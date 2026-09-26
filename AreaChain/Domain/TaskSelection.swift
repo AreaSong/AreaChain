@@ -34,6 +34,14 @@ struct TaskSelection: Equatable {
         if let anchorID, !visible.contains(anchorID) { self.anchorID = nil }
     }
 
+    /// 只移除上一份顺序里消失的标识。另一分区的选择不在这份顺序中，不能被这次刷新清掉。
+    mutating func dropRemoved(from previous: [UUID], to next: [UUID]) {
+        let removed = Set(previous).subtracting(next)
+        guard !removed.isEmpty else { return }
+        ids.subtract(removed)
+        if let anchorID, removed.contains(anchorID) { self.anchorID = nil }
+    }
+
     mutating func focus(_ id: UUID?) {
         ids = id.map { Set([$0]) } ?? []
         anchorID = id

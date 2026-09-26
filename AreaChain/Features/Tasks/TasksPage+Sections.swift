@@ -6,7 +6,11 @@ extension TasksPage {
             if showUpcoming, !upcomingModels.isEmpty {
                 DaybookSectionHeader(title: "stamp.upcoming")
                 ForEach(upcomingModels, id: \.id) { todo in
-                    leftoverTodoRow(todo, note: DayKey.shortStamp(todo.dayKey, locale: locale))
+                    leftoverTodoRow(
+                        todo,
+                        note: DayKey.shortStamp(todo.dayKey, locale: locale),
+                        visibleIDs: upcomingModels.map(\.id)
+                    )
                 }
             }
         }
@@ -105,7 +109,7 @@ extension TasksPage {
         )
     }
 
-    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil) -> some View {
+    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil, visibleIDs: [UUID]) -> some View {
         let display = TodoRowDisplayOptions(
             isDone: false,
             isSelected: isLeftoverSelected(todo.id),
@@ -113,7 +117,7 @@ extension TasksPage {
             includeSubtasks: false
         )
         let actions = TodoRowActions(
-            onSelect: { selectLeftover(todo.id, dayKey: todo.dayKey, modifiers: $0) },
+            onSelect: { selectLeftover(todo.id, dayKey: todo.dayKey, in: visibleIDs, modifiers: $0) },
             onDelete: { deleteTodo(todo) }
         )
         return TaskRowFactory.todo(TodoRowContext(
@@ -128,13 +132,13 @@ extension TasksPage {
     @ViewBuilder
     func leftoverRow(_ item: UnfinishedItem) -> some View {
         if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
-            leftoverTodoRow(todo)
+            leftoverTodoRow(todo, visibleIDs: yesterdayItems.map(\.id))
         } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
             leftoverRoutineRow(routine, item: item)
         } else {
             let actions = LeftoverRowActions(
                 onToggle: { completeYesterday(item) },
-                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, modifiers: $0) },
+                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, in: yesterdayItems.map(\.id), modifiers: $0) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
             )
             TaskRowFactory.leftoverFallback(LeftoverRowContext(
@@ -160,7 +164,7 @@ extension TasksPage {
             usesDefaultNote: false
         )
         let actions = RoutineRowActions(
-            onSelect: { selectLeftover(routine.id, dayKey: yesterdayKey, modifiers: $0) },
+            onSelect: { selectLeftover(routine.id, dayKey: yesterdayKey, in: yesterdayItems.map(\.id), modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
@@ -187,15 +191,21 @@ extension TasksPage {
         return focusedTaskID?.wrappedValue == id || highlightedTaskID == id
     }
 
-    func selectLeftover(_ id: UUID, dayKey: String, modifiers: TaskSelectionModifiers = []) {
+    func selectLeftover(
+        _ id: UUID,
+        dayKey: String,
+        in visibleIDs: [UUID],
+        modifiers: TaskSelectionModifiers = []
+    ) {
         var selection = taskSelection
         if selection.anchorID == nil && selection.ids.isEmpty {
             selection.focus(focusedTaskID?.wrappedValue ?? highlightedTaskID)
         }
-        selection.select(id, in: allVisibleIDs, modifiers: modifiers)
+        // 昨天和即将各自成区。范围只沿当前分区的屏幕顺序，不把今日清单卷进来。
+        selection.select(id, in: visibleIDs, modifiers: modifiers)
         taskSelection = selection
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
-            ? id : allVisibleIDs.first { selection.ids.contains($0) }
+            ? id : visibleIDs.first { selection.ids.contains($0) }
         BoardSelection.shared.inspectBoard(dayKey)
         if modifiers.isEmpty {
             onInspect?(id)

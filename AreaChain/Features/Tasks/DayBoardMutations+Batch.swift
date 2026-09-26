@@ -16,6 +16,38 @@ extension DayBoardMutations {
         }
     }
 
+    /// 今日清单的多选会同时改一次性事项和重复事项。必须放进同一次事务，
+    /// 任一部分不能打卡时整批不写，避免待办已完成而打卡失败。
+    @discardableResult
+    static func batchToggleListed(
+        todoIDs: Set<UUID>,
+        routineChecks: [String: Set<UUID>],
+        markDone: Bool,
+        todos: [TodoItem] = [],
+        routines: [DailyRoutine] = [],
+        context: ModelContext? = nil
+    ) -> Bool {
+        if markDone, !routineChecks.allSatisfy({ day, ids in
+            !day.isEmpty && allowsBatchCheck(ids, on: day, routines: routines)
+        }) {
+            return false
+        }
+        let groups = routineChecks.filter { !$0.key.isEmpty && !$0.value.isEmpty }
+        guard !todoIDs.isEmpty || !groups.isEmpty else { return false }
+        guard let context = context ?? todos.first?.modelContext ?? routines.first?.modelContext else {
+            return false
+        }
+        return ModelChanges.perform(in: context) {
+            if !todoIDs.isEmpty {
+                try taskRepo(for: context).batchToggleDone(ids: todoIDs, markDone: markDone)
+            }
+            let repo = routineRepo(for: context)
+            for (day, ids) in groups {
+                try repo.batchSetRoutineChecks(ids: ids, markDone: markDone, on: day)
+            }
+        }
+    }
+
     @discardableResult
     static func batchSetRoutineChecks(
         _ ids: Set<UUID>, markDone: Bool, on dayKey: String,

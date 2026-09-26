@@ -35,7 +35,6 @@ struct DayBoardListConfig {
     var yesterdayUnfinishedCount: Int = 0
     var isYesterdayExpanded: Bool = false
     var selection: Binding<TaskSelection>? = nil
-    var visibleIDsProvider: (() -> [UUID])? = nil
     var onToggleYesterday: (() -> Void)? = nil
 
     init(
@@ -47,7 +46,6 @@ struct DayBoardListConfig {
         yesterdayUnfinishedCount: Int = 0,
         isYesterdayExpanded: Bool = false,
         selection: Binding<TaskSelection>? = nil,
-        visibleIDsProvider: (() -> [UUID])? = nil,
         onToggleYesterday: (() -> Void)? = nil
     ) {
         self.todayKey = todayKey
@@ -58,7 +56,6 @@ struct DayBoardListConfig {
         self.yesterdayUnfinishedCount = yesterdayUnfinishedCount
         self.isYesterdayExpanded = isYesterdayExpanded
         self.selection = selection
-        self.visibleIDsProvider = visibleIDsProvider
         self.onToggleYesterday = onToggleYesterday
     }
 
@@ -147,8 +144,8 @@ struct DayBoardList: View {
             if let id, taskSelection.ids.contains(id) { return }
             taskSelection.focus(id)
         }
-        .onChange(of: effectiveVisibleIDs) { _, ids in
-            taskSelection.reconcile(with: ids)
+        .onChange(of: orderedVisibleIDs) { previous, next in
+            taskSelection.dropRemoved(from: previous, to: next)
         }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
@@ -156,9 +153,7 @@ struct DayBoardList: View {
         .animation(DaybookMotion.interactive(reduceMotion), value: config.isYesterdayExpanded)
     }
 
-    var effectiveVisibleIDs: [UUID] {
-        config.visibleIDsProvider?() ?? orderedVisibleIDs
-    }
+    var effectiveVisibleIDs: [UUID] { orderedVisibleIDs }
 
     @ViewBuilder
     private var emptyStateView: some View {

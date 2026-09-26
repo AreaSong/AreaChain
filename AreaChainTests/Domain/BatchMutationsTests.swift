@@ -114,6 +114,55 @@ struct BatchMutationsTests {
         #expect(r1.deletedAt != nil)
     }
 
+    @Test func batchToggleListedWritesTodosAndRoutinesTogether() throws {
+        let (_, context) = try makeContainer()
+        let calendar = Calendar(identifier: .gregorian)
+        let created = "2026-09-01"
+        let unscheduled = try #require(firstDay(from: created, calendar: calendar) {
+            !WeekdayMask.contains(WeekdayMask.workdays, dayKey: $0, calendar: calendar)
+        })
+        let scheduled = try #require(firstDay(from: created, calendar: calendar) {
+            WeekdayMask.contains(WeekdayMask.workdays, dayKey: $0, calendar: calendar)
+        })
+        let todo = TodoItem(title: "待办", dayKey: scheduled)
+        let routine = DailyRoutine(
+            title: "仅工作日",
+            sortOrder: 0,
+            createdDayKey: created,
+            weekdayMask: WeekdayMask.workdays
+        )
+        context.insert(todo)
+        context.insert(routine)
+        #expect(DayBoardMutations.addSubtask(to: todo, title: "子任务", context: context))
+        let child = try #require(todo.subtasks.first)
+
+        let rejected = DayBoardMutations.batchToggleListed(
+            todoIDs: [todo.id],
+            routineChecks: [unscheduled: [routine.id]],
+            markDone: true,
+            todos: [todo],
+            routines: [routine],
+            context: context
+        )
+        #expect(!rejected)
+        #expect(!todo.isDone)
+        #expect(!child.isDone)
+        #expect(routine.checks.isEmpty)
+
+        let saved = DayBoardMutations.batchToggleListed(
+            todoIDs: [todo.id],
+            routineChecks: [scheduled: [routine.id]],
+            markDone: true,
+            todos: [todo],
+            routines: [routine],
+            context: context
+        )
+        #expect(saved)
+        #expect(todo.isDone)
+        #expect(child.isDone)
+        #expect(routine.checks.contains { $0.dayKey == scheduled && $0.isDone && !$0.isSkipped })
+    }
+
     @Test func batchSetRoutineChecksMarksToday() throws {
         let (_, context) = try makeContainer()
         let routine = DailyRoutine(title: "习惯", sortOrder: 0, createdDayKey: "2026-09-01")
