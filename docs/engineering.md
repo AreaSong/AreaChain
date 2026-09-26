@@ -210,5 +210,6 @@
 
 - 仓库增加 `.swiftlint.yml`，对齐 500 行文件上限、短标识和 SwiftUI 习惯；编译期正则改为 `CompiledRegularExpression` + `preconditionFailure`。本地 `swiftlint lint --strict AreaChain AreaChainTests` 为 0，`quality_gate --profile swift --strict` 的 swiftlint 检查通过。
 - `LifecycleBaselineTests` 增加 2000 条重开时的测试进程 RSS 安全网，以及连续 8 次重开的增长上限；测量的是 Debug XCTest 进程，不是独立 App 峰值。
-- `.github/workflows/quality.yml` 在 push/PR 增加 macOS 15 Debug 构建与全库 SwiftLint，并安装 SwiftLint；完整 `quality_gate --profile swift` 仍只在 `workflow_dispatch`。先前对 `main` 的手动触发 run `36237740856` 失败：`macos-14` 打不开 objectVersion 77，且未安装 SwiftLint。修复后的 runner 成功记录必须在提交后再取。
+- `.github/workflows/quality.yml` 在 push/PR 增加 macOS 15 Debug 构建与全库 SwiftLint，并安装 SwiftLint。push 与手动 `workflow_dispatch` 分开 concurrency，避免互相取消。远端已核实：静态 + 编译通过见 run [`36242540609`](https://github.com/AreaSong/AreaChain/actions/runs/36242540609)；旧 `macos-14` 手动跑 [`36237740856`](https://github.com/AreaSong/AreaChain/actions/runs/36237740856) 因工程格式与缺 SwiftLint 失败。完整 `quality_gate --profile swift` 的 `workflow_dispatch` [`36242245269`](https://github.com/AreaSong/AreaChain/actions/runs/36242245269) 在托管 runner 上 `build.sh test` 跑满 1800s 超时，原生焦点套件不能当作 GitHub hosted 必过项；全量 Swift 证据仍以本机 `quality_gate --profile swift` 和隔离 PrivacyQA 为准。
 - 隔离 PrivacyQA 本批结果包 `build/PrivacyQA/quality-opt.xcresult`：Passed，804 通过、0 失败、1 跳过（默认跳过的真实钥匙串入口）。不是真人输入法现场，也不是真实钥匙串验收。
+- 本次未改分支保护、未装到日用应用、未跑真实钥匙串/日历、未公证。新对话冷启动只能另开会话抽查。

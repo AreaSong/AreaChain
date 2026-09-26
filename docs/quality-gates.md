@@ -61,7 +61,7 @@ python3 -B scripts/quality_gate.py --profile release
 
 ## CI 与本地证据
 
-`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。完整 Swift 测试仍只在 `workflow_dispatch` 中运行，并安装 SwiftLint。工作流文件已加入当前工作区，但必须在提交后分别取得 runner 实际成功和分支保护要求通过的证据，不能仅凭文件存在宣称 CI 已生效。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免完整测试把正在跑的编译 job 取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。分支保护目前仍只要求静态检查。
+`.github/workflows/quality.yml` 在 push 和 pull request 上运行不依赖 Swift 工具链的无凭据静态门禁，以及 macOS Debug 构建加全库 SwiftLint。macOS job 使用 `macos-15` 和 Xcode 16+ 能打开的工程格式；GitHub `macos-14` 会因 objectVersion 77 打不开本仓库。完整 Swift 测试仍只在 `workflow_dispatch` 中运行。托管 runner 上该套件可能因无交互桌面而把 `build.sh test` 拖到 1800s 超时，不能把那次失败写成代码回归；全量 Swift 以本机质量门禁和隔离 PrivacyQA 为准。push 与手动 `workflow_dispatch` 使用不同的 concurrency 组，避免互相取消。`ci-contract` 只是关键标记守卫，不能替代 YAML 语义和远端执行验证。分支保护目前仍只要求静态检查。工作流文件存在不等于 runner 已通过。
 
 CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻辑。第三方 action 使用不可变 revision；修改 action、runner 或触发条件时要重新核对来源、权限和成本。
 
