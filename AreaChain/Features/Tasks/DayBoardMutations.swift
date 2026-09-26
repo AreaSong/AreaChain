@@ -402,8 +402,14 @@ enum DayBoardMutations {
 
     @discardableResult
     static func convertDiaryToTodo(_ entry: DiaryEntry, context: ModelContext) -> Bool {
+        convertDiaryToTodo(entry, tags: try? context.fetch(FetchDescriptor<TagItem>()), context: context)
+    }
+
+    /// `tags == nil` 表示标签查询失败，与空列表不同：失败时拒绝转换，避免漏判密码标签。
+    @discardableResult
+    static func convertDiaryToTodo(_ entry: DiaryEntry, tags: [TagItem]?, context: ModelContext) -> Bool {
         // 待办不加密。受保护或敏感手记即使模型里仍有明文，也不能绕过解锁写成公开事项。
-        let tags = (try? context.fetch(FetchDescriptor<TagItem>())) ?? []
+        guard let tags else { return false }
         guard !entry.hasProtectedContent,
               !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags),
               let raw = (try? DiaryContent.read(entry))?.trimmingCharacters(in: .whitespacesAndNewlines),

@@ -79,6 +79,15 @@ struct DayBoardLogicTests {
         #expect(DayBoardLogic.completedTodos(todos: todos, dayKey: today).map(\.title) == ["完"])
     }
 
+    @Test func completedTodosIgnoreDeletedDoneItems() {
+        let done = TodoSnapshot(id: UUID(), title: "完", isDone: true, dayKey: today)
+        let deletedDone = TodoSnapshot(
+            id: UUID(), title: "已删完", isDone: true, dayKey: today,
+            deletedAt: Date(timeIntervalSince1970: 9)
+        )
+        #expect(DayBoardLogic.completedTodos(todos: [done, deletedDone], dayKey: today).map(\.title) == ["完"])
+    }
+
     @Test func skippedRoutineCountsAsClosed() {
         let checks = [
             CheckSnapshot(routineId: morningPages.id, dayKey: today, isDone: true, isSkipped: true)

@@ -225,6 +225,44 @@ struct DashboardProjectionTests {
         #expect(kinds == [.created])
     }
 
+    @Test func diarySourceBlanksSensitiveNotesBeforeCountsAndActivities() {
+        let password = TagItem(name: "密码", sortOrder: 0)
+        let secret = "私密正文不应出现"
+        let tagged = DiarySnapshot(
+            id: UUID(), text: secret, dayKey: "2026-09-25",
+            createdAt: date("2026-09-25T03:00:00Z"), tagIDs: password.id.uuidString
+        )
+        let projected = DashboardProjection.diarySource(tagged, tags: [password])
+        #expect(projected.text.isEmpty)
+        #expect(projected.isPrivate)
+        #expect(!projected.isContentAvailable)
+        let hidden = project(today: "2026-09-25", diaries: [projected])
+        #expect(hidden.summary.todayDiaryCount == 0)
+        #expect(hidden.activities.isEmpty)
+
+        let marked = DashboardProjection.diarySource(
+            DiarySnapshot(
+                id: UUID(), text: "#password \(secret)", dayKey: "2026-09-25",
+                createdAt: date("2026-09-25T04:00:00Z")
+            ),
+            tags: []
+        )
+        #expect(marked.isPrivate)
+        #expect(project(today: "2026-09-25", diaries: [marked]).summary.todayDiaryCount == 0)
+
+        let visible = DashboardProjection.diarySource(
+            DiarySnapshot(
+                id: UUID(), text: "公开手记", dayKey: "2026-09-25",
+                createdAt: date("2026-09-25T05:00:00Z")
+            ),
+            tags: [password]
+        )
+        #expect(!visible.isPrivate)
+        #expect(visible.isContentAvailable)
+        #expect(visible.text.isEmpty)
+        #expect(project(today: "2026-09-25", diaries: [visible]).summary.todayDiaryCount == 1)
+    }
+
     @Test func createdRoutineOpensTheNextScheduledDay() {
         let routine = routine(created: "2026-09-01", mask: mondayMask())
         let rows = DashboardProjection.activities(
@@ -247,10 +285,11 @@ private extension DashboardProjectionTests {
         today: String,
         todos: [TodoSnapshot] = [],
         routines: [RoutineSnapshot] = [],
-        checks: [CheckSnapshot] = []
+        checks: [CheckSnapshot] = [],
+        diaries: [DiarySnapshot] = []
     ) -> DashboardSnapshot {
         DashboardProjection.project(
-            todos: todos, routines: routines, checks: checks, diaries: [],
+            todos: todos, routines: routines, checks: checks, diaries: diaries,
             todayKey: today, calendar: calendar
         )
     }

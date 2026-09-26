@@ -166,6 +166,23 @@ struct DiarySummaryRowTests {
         #expect(try context.fetch(FetchDescriptor<TodoItem>()).isEmpty)
     }
 
+    @Test func convertDiaryToTodoRejectsWhenTagsCannotBeLoaded() async throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        let context = container.mainContext
+        let entry = DiaryEntry(text: "买菜清单", dayKey: "2026-09-18")
+        context.insert(entry)
+        try context.save()
+
+        #expect(!DayBoardMutations.convertDiaryToTodo(entry, tags: nil, context: context))
+        #expect(try context.fetch(FetchDescriptor<TodoItem>()).isEmpty)
+        #expect(DayBoardMutations.convertDiaryToTodo(entry, tags: [], context: context))
+        #expect(try context.fetch(FetchDescriptor<TodoItem>()).contains { $0.title == "买菜清单" })
+    }
+
     @Test func diarySummaryRowStackedListRendersMultipleEntries() async throws {
         let container = try ModelContainer(
             for: Schema(AreaChainSchema.models),

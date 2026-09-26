@@ -163,6 +163,11 @@ struct TaskDetailWeekdayPicker: View {
 
 // MARK: - Streak Statistics Card
 
+/// 检查日连击卡的展示状态。跳过优先于完成，避免 `isRoutineDone` 把跳过日画成已完成。
+enum StreakInspectStatus: Equatable {
+    case paused, skipped, completed, offday, pending
+}
+
 /// 习惯连击状态标志集合
 struct StreakInspectionFlags {
     var isCompleted: Bool
@@ -177,6 +182,14 @@ struct StreakInspectionFlags {
         self.isCompleted = isCompleted
         self.isSkipped = isSkipped
         self.isDue = isDue
+    }
+
+    func status(isEnabled: Bool) -> StreakInspectStatus {
+        if !isEnabled { return .paused }
+        if isSkipped { return .skipped }
+        if isCompleted { return .completed }
+        if !isDue { return .offday }
+        return .pending
     }
 }
 
@@ -209,9 +222,7 @@ struct TaskDetailStreakCard: View {
     private var streakResult: StreakResult { config.streakResult }
     private var isEnabled: Bool { config.isEnabled }
     private var inspectDayKey: String { config.inspectDayKey }
-    private var inspectCompleted: Bool { config.flags.isCompleted }
-    private var inspectSkipped: Bool { config.flags.isSkipped }
-    private var inspectDue: Bool { config.flags.isDue }
+    private var inspectStatus: StreakInspectStatus { config.flags.status(isEnabled: isEnabled) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -298,23 +309,24 @@ struct TaskDetailStreakCard: View {
 
     @ViewBuilder
     private var statusIcon: some View {
-        if !isEnabled {
+        switch inspectStatus {
+        case .paused:
             Image(systemName: "pause.circle.fill")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
-        } else if inspectCompleted {
+        case .completed:
             Image(systemName: "checkmark.circle.fill")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.done)
-        } else if inspectSkipped {
+        case .skipped:
             Image(systemName: "forward.circle.fill")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
-        } else if !inspectDue {
+        case .offday:
             Image(systemName: "calendar.badge.clock")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
-        } else {
+        case .pending:
             Image(systemName: "circle")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.accent.base)
@@ -322,28 +334,20 @@ struct TaskDetailStreakCard: View {
     }
 
     private var statusText: LocalizedStringKey {
-        if !isEnabled {
-            return "drawer.streak.status.paused"
-        } else if inspectCompleted {
-            return "drawer.streak.status.completed"
-        } else if inspectSkipped {
-            return "drawer.streak.status.skipped"
-        } else if !inspectDue {
-            return "drawer.streak.status.offday"
-        } else {
-            return "drawer.streak.status.pending"
+        switch inspectStatus {
+        case .paused: "drawer.streak.status.paused"
+        case .skipped: "drawer.streak.status.skipped"
+        case .completed: "drawer.streak.status.completed"
+        case .offday: "drawer.streak.status.offday"
+        case .pending: "drawer.streak.status.pending"
         }
     }
 
     private var statusColor: Color {
-        if !isEnabled {
-            return DaybookPalette.text.secondary
-        } else if inspectCompleted {
-            return DaybookPalette.text.done
-        } else if inspectSkipped || !inspectDue {
-            return DaybookPalette.text.secondary
-        } else {
-            return DaybookPalette.accent.base
+        switch inspectStatus {
+        case .completed: DaybookPalette.text.done
+        case .pending: DaybookPalette.accent.base
+        case .paused, .skipped, .offday: DaybookPalette.text.secondary
         }
     }
 }

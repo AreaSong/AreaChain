@@ -5,7 +5,11 @@ import Testing
 
 @MainActor
 struct CalendarMonthNavigationTests {
-    @Test func embeddedWideCalendarShowsMonthBar() async throws {
+    @Test(arguments: [
+        NSSize(width: 1100, height: 720),
+        NSSize(width: 480, height: 640)
+    ])
+    func embeddedCalendarShowsMonthBar(size: NSSize) async throws {
         let container = try ModelContainer(
             for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
@@ -19,13 +23,13 @@ struct CalendarMonthNavigationTests {
             container: container,
             scheme: .light,
             locale: "zh-Hans",
-            size: NSSize(width: 1100, height: 720),
+            size: size,
             embedded: true
         )
         defer { SystemPageHost.release(window) }
         try await SystemPageHost.settle(window)
         let content = try #require(window.contentView)
-        let anchor = try #require(findAnchor(in: content), "宽布局没有月份切换条")
+        let anchor = try #require(findAnchor(in: content), "日历没有月份切换条")
         let frame = anchor.convert(anchor.bounds, to: content)
         #expect(frame.width > 40)
         #expect(frame.minX >= -1 && frame.maxX <= content.bounds.width + 1)

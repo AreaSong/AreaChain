@@ -62,6 +62,25 @@ struct BoardSearchTests {
         #expect(groups.map(\.dayKey) == ["2026-09-07", "2026-09-05"])
     }
 
+    @Test func todosMatchNotesWithoutMatchingTitle() {
+        let id = UUID()
+        let todo = TodoSnapshot(
+            id: id, title: "买菜", isDone: false, dayKey: "2026-09-07", notes: "记得带角标贴纸"
+        )
+        let hits = BoardSearch.hits(query: "角标", todos: [todo], diaries: [], routines: [])
+        #expect(hits.map(\.id) == [id])
+        #expect(hits.first?.kind == .todo)
+        #expect(hits.first?.title == "买菜")
+        #expect(
+            BoardSearch.hits(
+                query: "角标",
+                todos: [TodoSnapshot(id: UUID(), title: "买菜", isDone: false, dayKey: "2026-09-07")],
+                diaries: [],
+                routines: []
+            ).isEmpty
+        )
+    }
+
     @Test func routinesMatchTitleAndIgnoreCase() {
         let id = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
         let routine = RoutineSnapshot(

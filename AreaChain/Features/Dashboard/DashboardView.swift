@@ -8,6 +8,7 @@ struct DashboardView: View {
     @Query private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
     @Query private var diaries: [DiaryEntry]
+    @Query private var tags: [TagItem]
     @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var dayTick = Date()
 
@@ -21,7 +22,7 @@ struct DashboardView: View {
             todos: todos.map(\.snapshot),
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
-            diaries: diaries.map(diarySource),
+            diaries: diaries.map { DashboardProjection.diarySource($0.snapshot, tags: tags) },
             todayKey: todayKey
         )
     }
@@ -54,19 +55,5 @@ struct DashboardView: View {
             DayClock.shared.refresh()
             dayTick = Date()
         }
-    }
-
-    /// 手记只提供日期和隐私标记，不把正文送进总览。
-    private func diarySource(_ entry: DiaryEntry) -> DiarySnapshot {
-        DiarySnapshot(
-            id: entry.id,
-            text: "",
-            dayKey: entry.dayKey,
-            createdAt: entry.createdAt,
-            deletedAt: entry.deletedAt,
-            isPinned: entry.isPinned,
-            isPrivate: entry.hasProtectedContent,
-            isContentAvailable: !entry.hasProtectedContent
-        )
     }
 }

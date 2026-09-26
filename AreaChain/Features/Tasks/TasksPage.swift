@@ -252,9 +252,12 @@ struct TasksPage: View {
 
     var isTodayEmpty: Bool {
         guard todayVisibleIDs.isEmpty else { return false }
-        let hasDoneTodos = todos.contains { $0.dayKey == todayKey && $0.isDone }
-        let hasDoneRoutines = !DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: todayKey).isEmpty
-        return !hasDoneTodos && !hasDoneRoutines
+        let (routineSnaps, checkSnaps, todoSnaps) = snapshots
+        let hasClosedTodos = !DayBoardLogic.completedTodos(todos: todoSnaps, dayKey: todayKey).isEmpty
+        let hasClosedRoutines = !DayBoardLogic.completedRoutines(
+            routines: routineSnaps, checks: checkSnaps, dayKey: todayKey
+        ).isEmpty
+        return !hasClosedTodos && !hasClosedRoutines
     }
 
     private var blankClickArea: some View {

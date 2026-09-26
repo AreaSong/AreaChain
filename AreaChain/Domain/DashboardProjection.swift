@@ -181,6 +181,16 @@ enum DashboardProjection {
         rows += diaryActivities(diaries, window: window, calendar: calendar)
         return Array(rows.sorted(by: activityPrecedes).prefix(max(0, limit)))
     }
+
+    /// 总览不携带手记正文。敏感判定与卡片/搜索共用 `DiaryPrivacy.isSensitive`，不只看是否已加密。
+    static func diarySource(_ entry: DiarySnapshot, tags: [TagItem]) -> DiarySnapshot {
+        var projected = entry
+        let sensitive = DiaryPrivacy.isSensitive(entry, tags: tags)
+        projected.text = ""
+        projected.isPrivate = sensitive
+        projected.isContentAvailable = !sensitive
+        return projected
+    }
 }
 
 private extension DashboardProjection {

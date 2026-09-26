@@ -78,7 +78,7 @@ struct RoutineHabitSectionView: View {
                     isEnabled: routine.isEnabled,
                     inspectDayKey: boardDayKey,
                     flags: StreakInspectionFlags(
-                        isCompleted: isDoneOnBoard,
+                        isCompleted: isDoneOnBoard && !isSkipped,
                         isSkipped: isSkipped,
                         isDue: routine.isEnabled
                             && routine.createdDayKey <= boardDayKey
