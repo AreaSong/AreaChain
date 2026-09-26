@@ -52,7 +52,7 @@ AreaChain/
 | 事务后通知 | `ModelChanges` | 只有保存成功才发布变更 | 页面直接 `save` 会在失败时清掉草稿或虚报成功 |
 | 能力环境值 | `workspaceEmbedded` | 工作台有侧栏和页头，外观仍与菜单栏相同 | 用它切换颜色会把两个宿主拆成两套主题 |
 | 输入外壳 | `DaybookInputShell` | 外观共用，提交语义按入口区分 | 每个页面自绘边框会让快捷键和高度一起漂 |
-| 待沉底 | `PendingCompletionManager` | 勾选后 0.4 秒可反悔，测试里直调 | 立刻写库会让列表在防反悔期间重排 |
+| 待沉底 | `PendingCompletionManager` | 勾选后 0.4 秒可反悔；普通测试直调，时序用例关闭跳过 | 立刻写库会让列表在防反悔期间重排 |
 | 隐私投影 | `DiaryPrivacy` | 锁定、搜索和总览不带出正文 | 各页面自己判断会漏一种入口 |
 
 单文件超过 500 行时拆文件，不拆行为。总览快照值在 `DashboardModels.swift`，计算留在 `DashboardProjection.swift`。
@@ -62,7 +62,7 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增消费者，本路线不迁移它们。`SearchPage` 继续只给测试宿主嵌入，运行中的应用不打开它。
+- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增消费者，本路线不迁移它们。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
 
 ### 开发时的边界与状态核对
 
@@ -106,7 +106,7 @@ AreaChain/
 
 ### 数据约束与设计考量
 
-1. **CloudKit 边界**：不用 `@Attribute(.unique)`；对外稳定 UUID。iCloud 开关只写入 `wantsICloudSync`，此版本尚未接入 CloudKit，打开不改变本地库。
+1. **CloudKit 边界**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置页只说明本版本不做 iCloud 同步，不再保存无效偏好；打开说明不改变本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
 3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件与标签。永久清除标签会先解除事项、重复事项、子任务和手记上的关联。手记预置标签不能删除。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私；父项未知或已删时附件不能单独恢复。
 4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
@@ -116,11 +116,11 @@ AreaChain/
 
 - **`HabitStreakLogic`**：游标按日推进，得 `currentStreak` / `bestStreak`。跳过与非排定日桥接；当天未打卡不破击；历史排定日漏打清零；非排定日若仍 `isDone` 则连击 +1。停用区间（`pausedOnDayKey` 起，旧数据则整段停用）当桥接。启用时把暂停日到今天之前的空排定日补成跳过。
 - **`NaturalLanguageParser`**：正则提取时间（含 `@HH:mm`、带时段的「下午3点开会」、无时段时「点」后须空白/标点/`#@!`/「和跟与在去到给把从向」；「点」后直接「问题」不当时刻）、优先级（预览「重要且紧急 / 重要 / 紧急 / 其余」）、`#tag`、多行备注。待办捕获（`parseTaskCapture`）跳过「密码 / 小巧思 / 日记」，把这些 hashtag 留在标题里并收集其余全部普通标签；备注各行中的标签也会关联，原文保留。不提取日期词。没有项目字段。
-- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。工作台「隐私与解锁」和「数据与备份」已是独立页面，不再占用设置页。阶段七已把搜索筛选交集、菜单栏与今日/手记筛选共享接到现有规则；浅深色和最小窗口已有 WorkspaceRenderingTests 覆盖；2026-09-26 的隔离 QA 全量测试已通过，证据见工程手册。
+- **`DayBoardLogic`**：今天 / 昨天 / 即将 / 某月未完成等聚合；昨天未完成含习惯。`Classification.precedes`：四象限 → 提醒时刻 → `createdAt`。`BoardFocusDay.key` 把 leftover/即将映射到检查日；`BoardFocusDay.checkDay` 让空格跟点选检查日，避免同一习惯既在昨天芯片又在今日清单时总勾昨天。`InspectDayPolicy` 让标签专属清单打开检查器时把检查日钉到今天，切到「今日」也会复位 leftover 日历日；日历 / 昨天芯片仍由 `DayBoardList` 自己 `inspectBoard`。侧栏不再提供常驻页入口。今日列表把一次性事项和当天重复事项按同一 `Classification.precedes` 混排；菜单栏角标和「今天还剩」共用 `DayBoardLogic.todayProgress`（含当天重复事项）。工作台进度环只用 `todayOneOffProgress`，不把重复事项算进一次性事项进度。待处理和全部事项的日期、排序与子任务命中在 `AgendaProjection` / `ItemsListing`，不在视图里各写一套。重复事项不写虚假 `dayKey`。`DashboardProjection` 的今日、近 7 日和热力图共用同一套日统计：只把排定日上的实际完成计入完成数和热力图强度。跳过、非排定日和停用后的标记不计完成；同一天既完成又跳过时跳过优先，与 `HabitStreakLogic` 一致。菜单栏角标仍用 `DayBoardLogic.todayProgress`，跳过在今日页视为已闭合。视图不自己写公式，也不调用 `context.save()`。活动不进入 SwiftData schema，不读取手记正文，不触发解锁。工作台「隐私与解锁」和「数据与备份」已是独立页面，不再占用设置页。搜索筛选交集、菜单栏与今日/手记筛选共享已接到现有规则；浅深色和最小窗口已有 WorkspaceRenderingTests 覆盖；2026-09-26 的隔离 QA 全量测试已通过，证据见工程手册。
 - **`ClipboardPayload`**：剪贴板有文字则只取文字、不挂图；仅图片才挂附件。
 - **`SoftDelete`**：软删时间戳；父待办进回收站时子任务与附件共用同一戳，恢复只还原戳相同的项。
 - **`ExportDates`**：导出带小数秒，导入兼容旧的整秒 ISO8601。
-- **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。传入的 `BoardFilter` 与关键词取交集，日期范围和提醒是否设置会参与匹配；手记只吃标签，「无标签」表示标签列表为空；日期、提醒、优先级或来源一出现就整组退出。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 在逾期筛选下是 `AgendaProjection` 的真实逾期检查日，其余范围仍是从今天起的下一个排定日。今日清单按看板日套用日期筛选：当天重复事项不算逾期，昨天未完成的重复事项在逾期筛选下仍保留，即将筛选不显示当天重复事项。附件文件名不属于这套结果，只在工作台顶部搜索里按文字关键词额外匹配可浏览附件，不要求文件名包含标签、优先级或时刻。查询不写入偏好。菜单栏与工作台今日、手记页共用同一次运行里的 `BoardFilterSession`，待处理和全部事项仍用各自页面筛选，和今日未提交捕获草稿一起记在 `WorkspaceNavigation` 上。顶部搜索替换内容区时保留它们；真正离开待处理或全部事项后，待处理按逾期/即将规则重开，全部事项筛选回到默认。工作台顶部搜索使用这份会话里的任务筛选，并就地打开检查器。菜单栏搜索打开任务时进入日历。`SearchPage` 与菜单栏共用结果跳转，但工作台没有指向它的侧栏路由，运行中的应用也不打开该页。两边都使用命中的 `dayKey`。
+- **`BoardSearch`**：搜索待办/习惯标题和备注、子任务标题及手记正文；多个 `#标签` 匹配真实关联，待办和习惯支持优先级及 `@时间` 条件。传入的 `BoardFilter` 与关键词取交集，日期范围和提醒是否设置会参与匹配；手记只吃标签，「无标签」表示标签列表为空；日期、提醒、优先级或来源一出现就整组退出。子任务按自身标签匹配，并带父任务跳转标识。私密手记仅返回隐藏标题，不把原文复制进展示对象；习惯命中的 `dayKey` 在逾期筛选下是 `AgendaProjection` 的真实逾期检查日，其余范围仍是从今天起的下一个排定日。今日清单按看板日套用日期筛选：当天重复事项不算逾期，昨天未完成的重复事项在逾期筛选下仍保留，即将筛选不显示当天重复事项。附件文件名不属于这套结果，只在工作台顶部搜索里按文字关键词额外匹配可浏览附件，不要求文件名包含标签、优先级或时刻。查询不写入偏好。菜单栏与工作台今日、手记页共用同一次运行里的 `BoardFilterSession`，待处理和全部事项仍用各自页面筛选，和今日未提交捕获草稿一起记在 `WorkspaceNavigation` 上。顶部搜索替换内容区时保留它们；真正离开待处理或全部事项后，待处理按逾期/即将规则重开，全部事项筛选回到默认。工作台顶部搜索使用这份会话里的任务筛选，并就地打开检查器。菜单栏搜索打开任务时进入日历。两边都使用命中的 `dayKey`。
 - **底栏搜索**：`MenuBarToolbarState` 保留关键词与筛选展示状态；`FooterBar` 互斥显示工具或标签，不使用覆盖工具栏的面板。浮层「任务 / 手记」共用底栏入口和 `BoardFilters`。任务与手记各持有一份 `BoardFilter`，手记只使用标签这一维；`DiaryPage` 通过 `Binding` 直接读写这份筛选，不再另持一个标签 ID。只有工作台保留页内搜索与分类栏。`MenuBarSearchResults` 先应用当前筛选，再使用同一 `BoardSearch` 和隐私投影；`SearchResultsView` 共用分组与跳转。关键词只存在本次浮层内，不写入偏好或磁盘。手记搜索结果直接进入同一条记录的小窗。任务、子任务和重复事项进入工作台日历并打开检查器，日期用命中的 `dayKey`。工作台顶部搜索不走这条路由，留在结果页就地打开检查器。
 - **语法输入**：`SyntaxInputContext` 区分任务输入、仅标签输入及对应搜索能力。`SyntaxTextField` / `SyntaxTextEditor` 保留原生组合文本、光标及撤销。`SyntaxOverlay` 在菜单栏、工作台和检查器根部消费输入锚点，统一候选和只读属性详情，自动上下避让，不参与正文排版；就近消费避免嵌套宿主重复呈现。`CaptureAttributesButton` 在新增输入栏内预留固定宽度，由原文解析「属性 N」，不新增第二套可编辑状态。浮层保留来源语言和配色，Esc 先关闭浮层，不提前触发失焦保存。
 - **快捷操作按钮与捕获对齐**：`CommandReturnButton` 共用任务和手记的符号、悬停/Command 高亮及禁用反馈。手记输入与按钮同行，不另设底部保存行；⌘Return 由焦点原生编辑器处理，不再注册一份会抢占搜索或输入法的全局按钮快捷键。保存状态放入固定宽度的前导图标，输入私密标签时图标切换为盾牌反馈，避免挤动输入区。浮层手记输入框与任务捕获框共用 `DaybookInputShell(kind: .composer)`，固定单行 34pt，底层设置 `cell.usesSingleLineMode = !allowsShiftNewline` 保证多行文本粘贴保持单行模式且不撑高布局；长文本横向平滑滚动；右侧独立小窗入口全时段可用（空草稿直接打开空白小窗）。

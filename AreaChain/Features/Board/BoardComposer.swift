@@ -30,7 +30,7 @@ final class BoardFilterSession {
     static let shared = BoardFilterSession()
     var filters = BoardFilters()
 
-    /// 工作台顶部搜索和专门搜索页使用任务筛选，与菜单栏任务页同一份。
+    /// 工作台顶部搜索使用任务筛选，与菜单栏任务页同一份。
     var globalSearchFilter: BoardFilter { filters.tasks }
 }
 

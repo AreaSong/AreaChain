@@ -10,6 +10,8 @@ final class PendingCompletionManager {
     /// 当前正处于 0.4 秒驻留期内的任务或习惯 ID
     private(set) var pendingDoneIDs: Set<UUID> = []
     private var pendingTasks: [UUID: Task<Void, Never>] = [:]
+    /// 测试默认识别 XCTest 后直调。仅时序用例设为 `false`，才能走到 400ms 驻留。
+    var skipDelayOverride: Bool?
 
     /// 检查指定任务当前在 UI 上是否应当呈现为“已完成”（综合考虑数据库状态与驻留期状态）
     func isVisuallyDone(id: UUID, actualDone: Bool) -> Bool {
@@ -49,7 +51,7 @@ final class PendingCompletionManager {
         }
 
         // 3. 如果在测试环境或开启了减弱动态效果，直接无延迟提交
-        if isRunningTests || reduceMotion {
+        if shouldSkipDelay(reduceMotion: reduceMotion) {
             onCommit()
             return
         }
@@ -83,7 +85,7 @@ final class PendingCompletionManager {
         guard !ids.isEmpty else { return }
 
         // 如果是要取消完成（即 markDone == false），或者在测试/减弱动效下，直接无延迟提交
-        if !markDone || isRunningTests || reduceMotion {
+        if !markDone || shouldSkipDelay(reduceMotion: reduceMotion) {
             for id in ids {
                 pendingTasks[id]?.cancel()
                 pendingTasks.removeValue(forKey: id)
@@ -118,6 +120,12 @@ final class PendingCompletionManager {
             pendingTasks[id]?.cancel()
             pendingTasks[id] = batchTask
         }
+    }
+
+    private func shouldSkipDelay(reduceMotion: Bool) -> Bool {
+        if reduceMotion { return true }
+        if let skipDelayOverride { return skipDelayOverride }
+        return isRunningTests
     }
 
     /// 取消某项的待沉底状态（用户在驻留期内反选）

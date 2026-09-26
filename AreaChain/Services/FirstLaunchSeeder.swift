@@ -9,8 +9,7 @@ enum FirstLaunchSeeder {
     }
 
     @MainActor
-    static func seedIfNeeded(context: ModelContext, existingCount: Int) {
-        let defaults = UserDefaults.standard
+    static func seedIfNeeded(context: ModelContext, existingCount: Int, defaults: UserDefaults = .standard) {
         let already = defaults.bool(forKey: defaultsKey)
         guard shouldSeed(existingCount: existingCount, alreadySeeded: already) else {
             if existingCount > 0 {

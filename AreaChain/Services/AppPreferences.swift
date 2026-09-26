@@ -52,7 +52,6 @@ final class AppPreferences {
     static let languageKey = "areachain.prefs.language"
     static let appearanceKey = "areachain.prefs.appearance"
     static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
-    static let iCloudDesiredKey = "areachain.prefs.icloudDesired"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
 
@@ -84,14 +83,6 @@ final class AppPreferences {
         }
     }
 
-    var wantsICloudSync: Bool {
-        didSet {
-            guard !isLoading else { return }
-            defaults.set(wantsICloudSync, forKey: Self.iCloudDesiredKey)
-            notifyChange()
-        }
-    }
-
     var syncCalendarEvents: Bool {
         didSet {
             guard !isLoading else { return }
@@ -119,7 +110,6 @@ final class AppPreferences {
         let appearanceRaw = defaults.string(forKey: Self.appearanceKey) ?? AppAppearance.system.rawValue
         appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
         stampCaptureApp = defaults.bool(forKey: Self.stampCaptureAppKey)
-        wantsICloudSync = defaults.bool(forKey: Self.iCloudDesiredKey)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
         isLoading = false

@@ -70,13 +70,10 @@ struct AppPreferencesTests {
         #expect(prefs.resolvedLocale.identifier == "en")
         #expect(prefs.resolvedColorScheme == .dark)
         #expect(prefs.stampCaptureApp == false)
-        #expect(prefs.wantsICloudSync == false)
         #expect(prefs.syncCalendarEvents == false)
         prefs.stampCaptureApp = true
-        prefs.wantsICloudSync = true
         prefs.syncCalendarEvents = true
         #expect(defaults.bool(forKey: AppPreferences.stampCaptureAppKey))
-        #expect(defaults.bool(forKey: AppPreferences.iCloudDesiredKey))
         #expect(defaults.bool(forKey: AppPreferences.syncCalendarEventsKey))
     }
 }

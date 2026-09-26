@@ -83,7 +83,7 @@ CI 与本地统一调用 `scripts/quality_gate.py`，不维护第二套检查逻
 ## 性能与可靠性
 
 - 任何性能数字都必须关联设备/系统、构建配置、数据规模、冷/热状态、样本和测量方法。
-- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；未建立的启动、大库、恢复和长期资源基线保持 `not-established`，不能猜数字。
+- 现有局部阈值登记在 [`performance-baselines.json`](performance-baselines.json)；启动、大库重开和合成加密恢复目前是 Debug 合成数据的 `provisional` 上限，完整应用冷启动、峰值内存和真实恢复仍未建立，不能猜数字。
 - 性能优化必须同时通过功能、取消、资源释放和隐私回归；一次测试很快不等于没有泄漏或规模退化。
 - 失败、重试、部分提交、迟到结果、取消和恢复路径要说明状态所有者及可重复证据。
 

@@ -4,11 +4,11 @@ import SwiftUI
 
 extension FirstLaunchSeeder {
     @MainActor
-    static func seedIfNeeded(container: ModelContainer) {
+    static func seedIfNeeded(container: ModelContainer, defaults: UserDefaults = .standard) {
         let context = ModelContext(container)
         let descriptor = FetchDescriptor<DailyRoutine>()
         let count = (try? context.fetchCount(descriptor)) ?? 0
-        seedIfNeeded(context: context, existingCount: count)
+        seedIfNeeded(context: context, existingCount: count, defaults: defaults)
         try? context.save()
     }
 }

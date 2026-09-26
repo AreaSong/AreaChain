@@ -44,7 +44,8 @@ struct InputSyntaxInteractionTests {
         host.container.mainContext.insert(TagItem(name: "工作", sortOrder: 0))
         try host.container.mainContext.save()
         if multiline { host.show(DiaryInputFixture(), size: NSSize(width: 600, height: 500)) }
-        else { host.show(SearchPage(), size: NSSize(width: 600, height: 500)) }
+        else { host.show(SearchInputFixture(), size: NSSize(width: 600, height: 500)) }
+        try await NativeSyntaxUI.prepareFocus(in: host.window)
         try await host.settle()
         let editor = try host.focusEditor(multiline: multiline)
         editor.insertText("#工作事项", replacementRange: NSRange(location: 0, length: 0))
@@ -93,7 +94,7 @@ struct InputSyntaxInteractionTests {
     @Test func searchCompletesUnknownTagsWithoutCreatingThemAndEscapeClears() async throws {
         let host = try InputSyntaxHost()
         defer { host.close() }
-        host.show(SearchPage(), size: NSSize(width: 500, height: 480))
+        host.show(SearchInputFixture(), size: NSSize(width: 500, height: 480))
         try await host.settle()
         let field = try #require(host.field)
         host.window.makeFirstResponder(field)
@@ -297,6 +298,36 @@ private struct DiaryInputFixture: View {
     var body: some View { DiaryPage(todayKey: "2026-09-13", entries: entries) }
 }
 
+/// 复用生产搜索框契约（`SyntaxInputContext.search`），只存在于测试宿主。
+private struct SearchInputFixture: View {
+    @State private var query = ""
+    @State private var searchFocus = false
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        DaybookPage(title: "window.search", minWidth: 420, minHeight: 480) {
+            DaybookInputShell(kind: .search, focused: searchFocus) {
+                DaybookIconButton(systemName: "magnifyingglass", label: "search.placeholder", size: .inline) {
+                    searchFocus = true
+                }
+            } field: {
+                SyntaxTextField(
+                    text: $query,
+                    placeholder: L10n.string("search.placeholder", locale: locale),
+                    focused: $searchFocus,
+                    context: .search,
+                    onEscape: {
+                        if !query.isEmpty { query = "" }
+                        else { NSApp.keyWindow?.makeFirstResponder(nil) }
+                    }
+                )
+            }
+            .zIndex(50)
+        }
+        .onAppear { searchFocus = true }
+    }
+}
+
 @MainActor
 private final class UndoableSyntaxTestView: NSTextView {
     let history = UndoManager()
@@ -364,6 +395,7 @@ private final class InputSyntaxHost {
     func close() { window.contentView = nil; window.orderOut(nil) }
 
     func settle() async throws {
+        try await NativeSyntaxUI.prepareFocus(in: window)
         window.contentView?.layoutSubtreeIfNeeded()
         try await Task.sleep(for: .milliseconds(180))
         window.contentView?.layoutSubtreeIfNeeded()

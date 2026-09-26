@@ -107,12 +107,11 @@ struct SyncSettingsSection: View {
         }
 
         Section("settings.icloud") {
-            Toggle("settings.icloud.toggle", isOn: $prefs.wantsICloudSync)
-                .accessibilityIdentifier("settings.icloud")
-                .systemPageMarker("settings.icloud")
             Text("settings.icloud.hint")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
+                .accessibilityIdentifier("settings.icloud")
+                .systemPageMarker("settings.icloud")
         }
     }
 }

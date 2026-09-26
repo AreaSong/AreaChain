@@ -39,35 +39,35 @@
     {
       "id": "application-startup",
       "scope": "AreaChain/App/AreaChainApp.swift",
-      "test": null,
-      "testFilter": null,
+      "test": "AreaChainTests/Services/LifecycleBaselineTests.swift",
+      "testFilter": "AreaChainTests/LifecycleBaselineTests",
       "metric": "cold_start_ms",
-      "budget": null,
-      "status": "not-established",
-      "source": null,
-      "note": "需要明确设备、数据规模、冷启动定义和样本后再设预算。"
+      "budget": 3000,
+      "status": "provisional",
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:14",
+      "note": "Debug、空磁盘 SwiftData 打开加首次预置、隔离 UserDefaults、单次冷测量；不是 NSApplication 完整冷启动，也不是峰值内存。"
     },
     {
       "id": "large-store-reopen",
       "scope": "AreaChain/Services/Persistence.swift",
-      "test": null,
-      "testFilter": null,
-      "metric": "reopen_ms_and_peak_memory_mb",
-      "budget": null,
-      "status": "not-established",
-      "source": null,
-      "note": "需要合成大库和独立临时目录演练。"
+      "test": "AreaChainTests/Services/LifecycleBaselineTests.swift",
+      "testFilter": "AreaChainTests/LifecycleBaselineTests",
+      "metric": "reopen_ms",
+      "budget": 5000,
+      "status": "provisional",
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:37",
+      "note": "Debug、合成 2000 条待办加 365 条打卡、独立临时目录重开；不含峰值内存。"
     },
     {
       "id": "backup-restore",
       "scope": "AreaChain/Services/Privacy/PrivateBackupService.swift",
-      "test": "AreaChainTests/Services/PrivateBackupTests.swift",
-      "testFilter": null,
-      "metric": "restore_ms_and_peak_memory_mb",
-      "budget": null,
-      "status": "not-established",
-      "source": null,
-      "note": "已有功能夹具，但尚未形成跨规模性能基线。"
+      "test": "AreaChainTests/Services/LifecycleBaselineTests.swift",
+      "testFilter": "AreaChainTests/LifecycleBaselineTests",
+      "metric": "restore_ms",
+      "budget": 8000,
+      "status": "provisional",
+      "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:57",
+      "note": "Debug、内存夹具、约 256KB 合成图、独立口令加密恢复；功能路径仍见 PrivateBackupTests。不含峰值内存或真实钥匙串。"
     }
   ]
 }

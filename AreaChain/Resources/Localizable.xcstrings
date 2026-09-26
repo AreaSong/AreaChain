@@ -8341,30 +8341,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "iCloud sync is not implemented in this version. This switch only saves a preference; your data remains in the local store."
+            "value": "This version does not implement iCloud sync. Data stays in the local store."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "此版本尚未接入 iCloud 同步。开关只保存偏好，数据仍在本机库中。"
-          }
-        }
-      }
-    },
-    "settings.icloud.toggle": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "iCloud Sync"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "iCloud 同步"
+            "value": "此版本不做 iCloud 同步。数据只存放在本机库中。"
           }
         }
       }
