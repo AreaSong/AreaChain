@@ -4,31 +4,26 @@ import SwiftUI
 struct TrashPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
-    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
-    @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
-    @Query(sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
+    @Query(filter: SoftDelete.deletedRoutines, sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
+    @Query(filter: SoftDelete.deletedTodos, sort: \TodoItem.createdAt) private var todos: [TodoItem]
+    @Query(filter: SoftDelete.deletedDiaries, sort: \DiaryEntry.createdAt, order: .reverse) private var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
-    @Query private var attachments: [AttachmentItem]
+    @Query(filter: SoftDelete.deletedAttachments) private var attachments: [AttachmentItem]
 
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
-
-    private var deletedOwnerIDs: Set<UUID> {
-        Set(routines.compactMap { $0.deletedAt == nil ? nil : $0.id })
-            .union(todos.compactMap { $0.deletedAt == nil ? nil : $0.id })
-            .union(diaries.compactMap { $0.deletedAt == nil ? nil : $0.id })
-    }
 
     private var items: [TrashRow] {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale) }
-        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
+        let owners = (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey)))
+            ?? .empty
         let files = attachments.compactMap { item in
             let live = item.ownerKey.map { owners.ownerIsLive($0) } ?? false
             return TrashRow.attachment(item, ownerDeleted: !live, titleProvider: {
                 guard item.ownerKind == AttachmentOwner.diary.rawValue else { return item.filename }
-                guard let entry = diaries.first(where: { $0.id == item.ownerID }),
+                guard let entry = owners.uniqueDiaries[item.ownerID],
                       !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags) else {
                     return L10n.string("diary.private.attachment", locale: locale)
                 }

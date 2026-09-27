@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum SoftDelete {
     static func stamp() -> Date { Date() }
@@ -40,4 +41,11 @@ enum SoftDelete {
             item.deletedAt = nil
         }
     }
+
+    /// 回收站列表只需要墓碑行；拥有者是否可恢复另走 id predicate，不能靠这批结果当 live 集。
+    static var deletedTodos: Predicate<TodoItem> { #Predicate { $0.deletedAt != nil } }
+    static var deletedRoutines: Predicate<DailyRoutine> { #Predicate { $0.deletedAt != nil } }
+    static var deletedDiaries: Predicate<DiaryEntry> { #Predicate { $0.deletedAt != nil } }
+    static var deletedAttachments: Predicate<AttachmentItem> { #Predicate { $0.deletedAt != nil } }
+    static var liveAttachments: Predicate<AttachmentItem> { #Predicate { $0.deletedAt == nil } }
 }

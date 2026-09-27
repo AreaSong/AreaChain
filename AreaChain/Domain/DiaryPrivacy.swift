@@ -58,17 +58,26 @@ enum DiaryPrivacy {
 
 /// 已物化列表上的拥有者存活集。重复 UUID 不能放进 live 集合，否则会比 `isSingleLive` 更宽松。
 struct AttachmentOwnerIndex {
-    let liveTodoIDs: Set<UUID>
-    let liveRoutineIDs: Set<UUID>
-    let liveDiaryIDs: Set<UUID>
+    let liveTodos: [UUID: TodoItem]
+    let liveRoutines: [UUID: DailyRoutine]
     let liveDiaries: [UUID: DiaryEntry]
+    /// 恰好一行的手记，含已软删除；回收站附件标题要用，不能只用 live 集。
+    let uniqueDiaries: [UUID: DiaryEntry]
+
+    var liveTodoIDs: Set<UUID> { Set(liveTodos.keys) }
+    var liveRoutineIDs: Set<UUID> { Set(liveRoutines.keys) }
+    var liveDiaryIDs: Set<UUID> { Set(liveDiaries.keys) }
 
     func ownerIsLive(_ owner: AttachmentOwnerKey) -> Bool {
         switch owner.kind {
-        case .todo: liveTodoIDs.contains(owner.id)
-        case .routine: liveRoutineIDs.contains(owner.id)
-        case .diary: liveDiaryIDs.contains(owner.id)
+        case .todo: liveTodos[owner.id] != nil
+        case .routine: liveRoutines[owner.id] != nil
+        case .diary: liveDiaries[owner.id] != nil
         }
+    }
+
+    static var empty: AttachmentOwnerIndex {
+        AttachmentOwnerIndex(liveTodos: [:], liveRoutines: [:], liveDiaries: [:], uniqueDiaries: [:])
     }
 }
 
@@ -103,12 +112,33 @@ enum AttachmentAccess {
     static func ownerIndex(
         todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]
     ) -> AttachmentOwnerIndex {
-        let liveDiaries = liveUniqueDiaries(diaries)
+        let uniqueDiaries = uniqueItems(diaries, id: \.id)
         return AttachmentOwnerIndex(
-            liveTodoIDs: liveUniqueIDs(todos, id: \.id, deletedAt: \.deletedAt),
-            liveRoutineIDs: liveUniqueIDs(routines, id: \.id, deletedAt: \.deletedAt),
-            liveDiaryIDs: Set(liveDiaries.keys),
-            liveDiaries: liveDiaries
+            liveTodos: liveUniqueItems(todos, id: \.id, deletedAt: \.deletedAt),
+            liveRoutines: liveUniqueItems(routines, id: \.id, deletedAt: \.deletedAt),
+            liveDiaries: uniqueDiaries.filter { $0.value.deletedAt == nil },
+            uniqueDiaries: uniqueDiaries
+        )
+    }
+
+    /// 只拉 keys 里出现过的 UUID，仍不设 fetchLimit，重复行会全部回来。
+    static func ownerIndex(
+        context: ModelContext, keys: [AttachmentOwnerKey]
+    ) throws -> AttachmentOwnerIndex {
+        var todoIDs = Set<UUID>()
+        var routineIDs = Set<UUID>()
+        var diaryIDs = Set<UUID>()
+        for key in keys {
+            switch key.kind {
+            case .todo: todoIDs.insert(key.id)
+            case .routine: routineIDs.insert(key.id)
+            case .diary: diaryIDs.insert(key.id)
+            }
+        }
+        return ownerIndex(
+            todos: try fetchTodos(ids: todoIDs, in: context),
+            routines: try fetchRoutines(ids: routineIDs, in: context),
+            diaries: try fetchDiaries(ids: diaryIDs, in: context)
         )
     }
 
@@ -119,53 +149,81 @@ enum AttachmentAccess {
     }
 
     static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
-        switch owner.kind {
-        case .todo:
-            return isSingleLive(deletedAts: try fetchTodos(id: owner.id, in: context).map(\.deletedAt))
-        case .routine:
-            return isSingleLive(deletedAts: try fetchRoutines(id: owner.id, in: context).map(\.deletedAt))
-        case .diary:
-            return isSingleLive(deletedAts: try fetchDiaries(id: owner.id, in: context).map(\.deletedAt))
-        }
+        try ownerIndex(context: context, keys: [owner]).ownerIsLive(owner)
     }
 
     /// 不设 fetchLimit：同一 UUID 出现多行时拥有者必须判为不可用，不能只看第一行。
+    static func todosDescriptor(ids: Set<UUID>) -> FetchDescriptor<TodoItem>? {
+        guard !ids.isEmpty else { return nil }
+        let wanted = Array(ids)
+        return FetchDescriptor(predicate: #Predicate { wanted.contains($0.id) })
+    }
+
+    static func routinesDescriptor(ids: Set<UUID>) -> FetchDescriptor<DailyRoutine>? {
+        guard !ids.isEmpty else { return nil }
+        let wanted = Array(ids)
+        return FetchDescriptor(predicate: #Predicate { wanted.contains($0.id) })
+    }
+
+    static func diariesDescriptor(ids: Set<UUID>) -> FetchDescriptor<DiaryEntry>? {
+        guard !ids.isEmpty else { return nil }
+        let wanted = Array(ids)
+        return FetchDescriptor(predicate: #Predicate { wanted.contains($0.id) })
+    }
+
     static func fetchTodos(id: UUID, in context: ModelContext) throws -> [TodoItem] {
-        try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id }))
+        try fetchTodos(ids: [id], in: context)
+    }
+
+    static func fetchTodos(ids: Set<UUID>, in context: ModelContext) throws -> [TodoItem] {
+        guard let descriptor = todosDescriptor(ids: ids) else { return [] }
+        return try context.fetch(descriptor)
     }
 
     static func fetchRoutines(id: UUID, in context: ModelContext) throws -> [DailyRoutine] {
-        try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.id == id }))
+        try fetchRoutines(ids: [id], in: context)
+    }
+
+    static func fetchRoutines(ids: Set<UUID>, in context: ModelContext) throws -> [DailyRoutine] {
+        guard let descriptor = routinesDescriptor(ids: ids) else { return [] }
+        return try context.fetch(descriptor)
     }
 
     static func fetchDiaries(id: UUID, in context: ModelContext) throws -> [DiaryEntry] {
-        try context.fetch(FetchDescriptor<DiaryEntry>(predicate: #Predicate { $0.id == id }))
+        try fetchDiaries(ids: [id], in: context)
     }
 
-    private static func liveUniqueIDs<T>(
+    static func fetchDiaries(ids: Set<UUID>, in context: ModelContext) throws -> [DiaryEntry] {
+        guard let descriptor = diariesDescriptor(ids: ids) else { return [] }
+        return try context.fetch(descriptor)
+    }
+
+    private static func liveUniqueItems<T>(
         _ items: [T], id: KeyPath<T, UUID>, deletedAt: KeyPath<T, Date?>
-    ) -> Set<UUID> {
-        var grouped: [UUID: [Date?]] = [:]
+    ) -> [UUID: T] {
+        var grouped: [UUID: [T]] = [:]
         grouped.reserveCapacity(items.count)
         for item in items {
-            grouped[item[keyPath: id], default: []].append(item[keyPath: deletedAt])
+            grouped[item[keyPath: id], default: []].append(item)
         }
-        return Set(grouped.compactMap { key, ats in isSingleLive(deletedAts: ats) ? key : nil })
-    }
-
-    private static func liveUniqueDiaries(_ diaries: [DiaryEntry]) -> [UUID: DiaryEntry] {
-        var deletedAts: [UUID: [Date?]] = [:]
-        var rows: [UUID: DiaryEntry] = [:]
-        deletedAts.reserveCapacity(diaries.count)
-        for entry in diaries {
-            deletedAts[entry.id, default: []].append(entry.deletedAt)
-            if rows[entry.id] == nil { rows[entry.id] = entry }
-        }
-        var live: [UUID: DiaryEntry] = [:]
-        for (id, ats) in deletedAts {
-            guard isSingleLive(deletedAts: ats), let entry = rows[id] else { continue }
-            live[id] = entry
+        var live: [UUID: T] = [:]
+        for (key, rows) in grouped {
+            guard isSingleLive(deletedAts: rows.map { $0[keyPath: deletedAt] }) else { continue }
+            live[key] = rows[0]
         }
         return live
+    }
+
+    private static func uniqueItems<T>(_ items: [T], id: KeyPath<T, UUID>) -> [UUID: T] {
+        var grouped: [UUID: [T]] = [:]
+        grouped.reserveCapacity(items.count)
+        for item in items {
+            grouped[item[keyPath: id], default: []].append(item)
+        }
+        var unique: [UUID: T] = [:]
+        for (key, rows) in grouped where rows.count == 1 {
+            unique[key] = rows[0]
+        }
+        return unique
     }
 }

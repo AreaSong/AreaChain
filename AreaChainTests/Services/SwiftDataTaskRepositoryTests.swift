@@ -196,6 +196,41 @@ struct SwiftDataTaskRepositoryTests {
         #expect(t1.deletedAt != nil && t2.deletedAt != nil && s1.deletedAt == t1.deletedAt)
     }
 
+    @Test func batchTrashStampsMatchingAttachmentsAndIgnoresOtherOwners() throws {
+        let (container, repo) = try makeRepo()
+        let t1 = try repo.addTodo(title: "Keep File", dayKey: "2026-09-10")
+        let t2 = try repo.addTodo(title: "Other File", dayKey: "2026-09-10")
+        let neighbor = try repo.addTodo(title: "Neighbor", dayKey: "2026-09-10")
+        let first = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: t1.id, filename: "one.png"
+        )
+        let second = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: t2.id, filename: "two.png"
+        )
+        let other = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: neighbor.id, filename: "other.png"
+        )
+        let prior = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: t1.id, filename: "prior.png",
+            deletedAt: Date(timeIntervalSince1970: 4)
+        )
+        let diary = AttachmentItem(
+            ownerKind: AttachmentOwner.diary.rawValue, ownerID: t1.id, filename: "diary.png"
+        )
+        for item in [first, second, other, prior, diary] {
+            container.mainContext.insert(item)
+        }
+        try container.mainContext.save()
+
+        try repo.batchTrashTodos(ids: [t1.id, t2.id])
+        #expect(first.deletedAt == t1.deletedAt)
+        #expect(second.deletedAt == t2.deletedAt)
+        #expect(other.deletedAt == nil)
+        #expect(prior.deletedAt == Date(timeIntervalSince1970: 4))
+        #expect(diary.deletedAt == nil)
+        #expect(neighbor.deletedAt == nil)
+    }
+
     @Test func fetchTodoIncludesSoftDeletedAndMissesUnknown() throws {
         let (container, repo) = try makeRepo()
         _ = container

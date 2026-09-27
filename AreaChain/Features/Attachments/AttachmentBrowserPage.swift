@@ -4,11 +4,8 @@ import SwiftUI
 struct AttachmentBrowserPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
-    @Query private var attachments: [AttachmentItem]
-    @Query private var todos: [TodoItem]
-    @Query private var diaries: [DiaryEntry]
+    @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
     @Query private var tags: [TagItem]
-    @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @State private var preview: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
 
@@ -46,9 +43,13 @@ struct AttachmentBrowserPage: View {
         AttachmentClusters.grouped(visibleAttachments)
     }
 
+    private var owners: AttachmentOwnerIndex {
+        (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey)))
+            ?? .empty
+    }
+
     private var visibleAttachments: [AttachmentItem] {
-        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
-        return attachments.filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
+        attachments.filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
     }
 
     private func clusterBlock(_ cluster: AttachmentCluster) -> some View {
@@ -131,14 +132,14 @@ struct AttachmentBrowserPage: View {
     private func ownerTitle(_ cluster: AttachmentCluster) -> String {
         switch cluster.kind {
         case .todo:
-            return todos.first { $0.id == cluster.ownerID }?.title ?? cluster.items.first?.filename ?? ""
+            return owners.liveTodos[cluster.ownerID]?.title ?? cluster.items.first?.filename ?? ""
         case .diary:
-            guard let entry = diaries.first(where: { $0.id == cluster.ownerID }) else {
+            guard let entry = owners.liveDiaries[cluster.ownerID] else {
                 return L10n.string("diary.private.title", locale: locale)
             }
             return DiaryPrivacy.displayText(entry.snapshot, tags: tags, locale: locale)
         case .routine:
-            return routines.first { $0.id == cluster.ownerID }?.title ?? cluster.items.first?.filename ?? ""
+            return owners.liveRoutines[cluster.ownerID]?.title ?? cluster.items.first?.filename ?? ""
         }
     }
 

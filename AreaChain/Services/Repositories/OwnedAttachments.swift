@@ -16,15 +16,18 @@ enum OwnedAttachments {
         try matching(ownerIDs: [ownerID], kind: kind, in: context)
     }
 
-    static func matching(ownerIDs: Set<UUID>, kind: AttachmentOwner, in context: ModelContext) throws -> [AttachmentItem] {
-        guard !ownerIDs.isEmpty else { return [] }
+    static func descriptor(ownerIDs: Set<UUID>, kind: AttachmentOwner) -> FetchDescriptor<AttachmentItem>? {
+        guard !ownerIDs.isEmpty else { return nil }
         let wanted = Array(ownerIDs)
         let kindValue = kind.rawValue
-        return try context.fetch(
-            FetchDescriptor<AttachmentItem>(predicate: #Predicate {
-                wanted.contains($0.ownerID) && $0.ownerKind == kindValue
-            })
+        return FetchDescriptor(
+            predicate: #Predicate { wanted.contains($0.ownerID) && $0.ownerKind == kindValue }
         )
+    }
+
+    static func matching(ownerIDs: Set<UUID>, kind: AttachmentOwner, in context: ModelContext) throws -> [AttachmentItem] {
+        guard let descriptor = descriptor(ownerIDs: ownerIDs, kind: kind) else { return [] }
+        return try context.fetch(descriptor)
     }
 
     static func purge(ownerID: UUID, kind: AttachmentOwner, in context: ModelContext) throws {

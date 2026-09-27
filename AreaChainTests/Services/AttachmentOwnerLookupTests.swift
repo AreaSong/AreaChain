@@ -68,6 +68,8 @@ struct AttachmentOwnerLookupTests {
         #expect(owners.ownerIsLive(diaryKey))
         #expect(!owners.ownerIsLive(typedMismatch))
         #expect(!owners.ownerIsLive(duplicateKey))
+        #expect(owners.liveDiaries[liveDiary.id] != nil)
+        #expect(owners.uniqueDiaries[liveDiary.id]?.id == liveDiary.id)
         #expect(AttachmentAccess.canBrowse(
             AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: liveTodo.id, filename: "live.png"),
             owners: owners, tags: []
@@ -79,8 +81,11 @@ struct AttachmentOwnerLookupTests {
 
         let liveID = liveTodo.id
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) > 20)
-        #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == liveID })) == 1)
+        let liveDescriptor = try #require(AttachmentAccess.todosDescriptor(ids: [liveID]))
+        #expect(liveDescriptor.predicate != nil)
+        #expect(try context.fetchCount(liveDescriptor) == 1)
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == duplicateID })) == 2)
+        #expect(try context.fetchCount(FetchDescriptor(predicate: SoftDelete.deletedTodos)) == 1)
     }
 
     @Test func matchingKeepsSoftDeletedRowsAndIgnoresDateAndOtherOwners() throws {
@@ -162,6 +167,13 @@ struct AttachmentOwnerLookupTests {
         let goneKey = AttachmentOwnerKey(kind: .todo, id: gone.id)
         #expect(owners.ownerIsLive(liveKey) == AttachmentAccess.ownerIsLive(liveKey, todos: todos, routines: [], diaries: []))
         #expect(owners.ownerIsLive(goneKey) == AttachmentAccess.ownerIsLive(goneKey, todos: todos, routines: [], diaries: []))
+        let scoped = try AttachmentAccess.ownerIndex(context: context, keys: [liveKey, goneKey])
+        #expect(scoped.ownerIsLive(liveKey))
+        #expect(!scoped.ownerIsLive(goneKey))
+        #expect(scoped.liveTodoIDs.count == 1)
+        #expect(try AttachmentAccess.ownerIndex(context: context, keys: []).liveTodoIDs.isEmpty)
+        #expect(try context.fetchCount(FetchDescriptor(predicate: SoftDelete.deletedTodos)) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) == 2)
         let liveRow = try #require(TrashRow.attachment(liveFile, ownerDeleted: !owners.ownerIsLive(liveKey)))
         let orphanRow = try #require(TrashRow.attachment(orphanFile, ownerDeleted: !owners.ownerIsLive(goneKey)))
         let missingRow = try #require(TrashRow.attachment(missingFile, ownerDeleted: true))
@@ -256,8 +268,16 @@ struct AttachmentOwnerLookupTests {
 
         let ownerID = live.id
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) == 81)
+        let todoDescriptor = try #require(AttachmentAccess.todosDescriptor(ids: [ownerID]))
+        #expect(todoDescriptor.predicate != nil)
+        #expect(try context.fetchCount(todoDescriptor) == 1)
         #expect(try AttachmentAccess.fetchTodos(id: ownerID, in: context).count == 1)
+        #expect(AttachmentAccess.todosDescriptor(ids: []) == nil)
+        #expect(try AttachmentAccess.fetchTodos(ids: [], in: context).isEmpty)
         #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 81)
+        let attachmentDescriptor = try #require(OwnedAttachments.descriptor(ownerIDs: [ownerID], kind: .todo))
+        #expect(attachmentDescriptor.predicate != nil)
+        #expect(try context.fetchCount(attachmentDescriptor) == 1)
         let matched = try OwnedAttachments.matching(ownerID: ownerID, kind: .todo, in: context)
         #expect(matched.map(\.filename) == ["mine.png"])
         #expect(
@@ -271,6 +291,12 @@ struct AttachmentOwnerLookupTests {
         let owners = AttachmentAccess.ownerIndex(todos: todos, routines: [], diaries: [])
         #expect(owners.liveTodoIDs.count == 81)
         #expect(owners.ownerIsLive(AttachmentOwnerKey(kind: .todo, id: live.id)))
+        let scoped = try AttachmentAccess.ownerIndex(
+            context: context, keys: [AttachmentOwnerKey(kind: .todo, id: live.id)]
+        )
+        #expect(scoped.liveTodoIDs == [live.id])
+        #expect(try context.fetchCount(FetchDescriptor(predicate: SoftDelete.liveAttachments)) == 81)
+        #expect(try context.fetchCount(FetchDescriptor(predicate: SoftDelete.deletedAttachments)) == 0)
     }
 
     private func mutationCounts(

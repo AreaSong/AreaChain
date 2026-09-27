@@ -305,6 +305,37 @@ struct SwiftDataRoutineRepositoryTests {
         #expect(remainingLive.map(\.id) == [live.id, disabled.id])
     }
 
+    @Test func batchTrashStampsMatchingAttachmentsAndIgnoresOtherOwners() throws {
+        let (container, repo) = try makeRepo()
+        let live = try repo.addRoutine(title: "Live")
+        let neighbor = try repo.addRoutine(title: "Neighbor")
+        let other = try repo.addRoutine(title: "Other")
+        let first = AttachmentItem(
+            ownerKind: AttachmentOwner.routine.rawValue, ownerID: live.id, filename: "one.png"
+        )
+        let second = AttachmentItem(
+            ownerKind: AttachmentOwner.routine.rawValue, ownerID: neighbor.id, filename: "two.png"
+        )
+        let leftover = AttachmentItem(
+            ownerKind: AttachmentOwner.routine.rawValue, ownerID: other.id, filename: "other.png"
+        )
+        let prior = AttachmentItem(
+            ownerKind: AttachmentOwner.routine.rawValue, ownerID: live.id, filename: "prior.png",
+            deletedAt: Date(timeIntervalSince1970: 7)
+        )
+        for item in [first, second, leftover, prior] {
+            container.mainContext.insert(item)
+        }
+        try container.mainContext.save()
+
+        try repo.batchTrashRoutines(ids: [live.id, neighbor.id])
+        #expect(first.deletedAt == live.deletedAt)
+        #expect(second.deletedAt == neighbor.deletedAt)
+        #expect(leftover.deletedAt == nil)
+        #expect(prior.deletedAt == Date(timeIntervalSince1970: 7))
+        #expect(other.deletedAt == nil)
+    }
+
     @Test func blankTitleDoesNotInsertAndRepeatInvalidUpdateKeepsOriginal() throws {
         let (container, repo) = try makeRepo()
         _ = container
