@@ -23,8 +23,9 @@ struct TrashPage: View {
         let standing = routines.compactMap { TrashRow.resident($0, attachments: attachments) }
         let tasks = todos.compactMap { TrashRow.todo($0, attachments: attachments) }
         let notes = diaries.compactMap { TrashRow.diary($0, attachments: attachments, tags: { tags }, locale: locale) }
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
         let files = attachments.compactMap { item in
-            let live = item.ownerKey.map { AttachmentAccess.ownerIsLive($0, todos: todos, routines: routines, diaries: diaries) } ?? false
+            let live = item.ownerKey.map { owners.ownerIsLive($0) } ?? false
             return TrashRow.attachment(item, ownerDeleted: !live, titleProvider: {
                 guard item.ownerKind == AttachmentOwner.diary.rawValue else { return item.filename }
                 guard let entry = diaries.first(where: { $0.id == item.ownerID }),

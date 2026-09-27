@@ -40,8 +40,9 @@ struct WorkspaceGlobalSearchView: View {
     /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
     /// 菜单栏不查文件名，避免把局部行为扩成统一搜索契约。
     private var matchingAttachments: [AttachmentItem] {
-        attachments
-            .filter { AttachmentAccess.canBrowse($0, todos: todos, routines: routines, diaries: diaries, tags: tags) }
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
+        return attachments
+            .filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
             .filter { WorkspaceAttachmentQuery.matches(filename: $0.filename, query: query) }
     }
 

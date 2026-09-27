@@ -95,6 +95,8 @@ struct DiaryPrivacyTests {
         let todo = TodoItem(id: id, title: "公开任务", dayKey: "2026-09-11")
         let image = AttachmentItem(ownerKind: "diary", ownerID: id, filename: "private.png")
         #expect(!AttachmentAccess.canBrowse(image, todos: [todo], routines: [], diaries: [diary], tags: [tag]))
+        let owners = AttachmentAccess.ownerIndex(todos: [todo], routines: [], diaries: [diary])
+        #expect(!AttachmentAccess.canBrowse(image, owners: owners, tags: [tag]))
         #expect(Catalog.liveAttachments(for: id, in: [image], ownerKind: .todo).isEmpty)
         #expect(AttachmentAccess.ownerIsLive(AttachmentOwnerKey(kind: .diary, id: id), todos: [todo], routines: [], diaries: [diary]))
         diary.tagIDs = ""

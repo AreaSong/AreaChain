@@ -284,8 +284,11 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     func batchTrashRoutines(ids: Set<UUID>) throws {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
-        let attachments = try OwnedAttachments.all(in: context)
-        for routine in try fetchLiveRoutines(ids: ids) {
+        let routines = try fetchLiveRoutines(ids: ids)
+        let attachments = try OwnedAttachments.matching(
+            ownerIDs: Set(routines.map(\.id)), kind: .routine, in: context
+        )
+        for routine in routines {
             routine.deletedAt = now
             SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: attachments, ownerKind: .routine)
         }
@@ -317,11 +320,13 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         if soft {
             let now = SoftDelete.stamp()
             routine.deletedAt = now
-            SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .routine)
+            SoftDelete.stampAttachments(
+                ownerID: routine.id, at: now, attachments: try ownedAttachments(routine.id), ownerKind: .routine
+            )
         } else {
             let stamp = routine.deletedAt ?? SoftDelete.stamp()
             SoftDelete.stampAttachments(
-                ownerID: routine.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .routine
+                ownerID: routine.id, at: stamp, attachments: try ownedAttachments(routine.id), ownerKind: .routine
             )
             context.delete(routine)
         }
@@ -337,7 +342,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: routine.id,
             parentDeletedAt: stamp,
-            attachments: try OwnedAttachments.all(in: context),
+            attachments: try ownedAttachments(routine.id),
             ownerKind: .routine
         )
         try saveAndNotify()
@@ -347,7 +352,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: routine.id, kind: .routine).map(\.id))
+        let ids = Set(try ownedAttachments(routine.id).map(\.id))
         try deleteRoutine(id: id, soft: false)
         if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
@@ -384,6 +389,10 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             matching: #Predicate { wanted.contains($0.id) && $0.deletedAt == nil },
             sortBy: []
         )
+    }
+
+    private func ownedAttachments(_ ownerID: UUID) throws -> [AttachmentItem] {
+        try OwnedAttachments.matching(ownerID: ownerID, kind: .routine, in: context)
     }
 
     private func check(on routine: DailyRoutine, dayKey: String) -> RoutineCheck? {

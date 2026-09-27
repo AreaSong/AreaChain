@@ -212,11 +212,13 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             let now = SoftDelete.stamp()
             todo.deletedAt = now
             SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
-            SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .todo)
+            SoftDelete.stampAttachments(
+                ownerID: todo.id, at: now, attachments: try ownedAttachments(todo.id), ownerKind: .todo
+            )
         } else {
             let stamp = todo.deletedAt ?? SoftDelete.stamp()
             SoftDelete.stampAttachments(
-                ownerID: todo.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .todo
+                ownerID: todo.id, at: stamp, attachments: try ownedAttachments(todo.id), ownerKind: .todo
             )
             context.delete(todo)
         }
@@ -233,7 +235,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: todo.id,
             parentDeletedAt: stamp,
-            attachments: try OwnedAttachments.all(in: context),
+            attachments: try ownedAttachments(todo.id),
             ownerKind: .todo
         )
         try saveAndNotify()
@@ -243,7 +245,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let todo = try fetchTodo(id: id) else {
             throw RepositoryError.notFound("TodoItem(id: \(id))")
         }
-        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: todo.id, kind: .todo).map(\.id))
+        let ids = Set(try ownedAttachments(todo.id).map(\.id))
         try deleteTodo(id: id, soft: false)
         if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
@@ -349,8 +351,11 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     func batchTrashTodos(ids: Set<UUID>) throws {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
-        let attachments = try OwnedAttachments.all(in: context)
-        for todo in try fetchLiveTodos(ids: ids) {
+        let todos = try fetchLiveTodos(ids: ids)
+        let attachments = try OwnedAttachments.matching(
+            ownerIDs: Set(todos.map(\.id)), kind: .todo, in: context
+        )
+        for todo in todos {
             todo.deletedAt = now
             SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
             SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: attachments, ownerKind: .todo)
@@ -396,5 +401,9 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         var descriptor = FetchDescriptor<SubtaskItem>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
+    }
+
+    private func ownedAttachments(_ ownerID: UUID) throws -> [AttachmentItem] {
+        try OwnedAttachments.matching(ownerID: ownerID, kind: .todo, in: context)
     }
 }

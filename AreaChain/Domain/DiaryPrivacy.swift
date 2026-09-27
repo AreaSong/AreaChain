@@ -56,15 +56,41 @@ enum DiaryPrivacy {
     }
 }
 
+/// 已物化列表上的拥有者存活集。重复 UUID 不能放进 live 集合，否则会比 `isSingleLive` 更宽松。
+struct AttachmentOwnerIndex {
+    let liveTodoIDs: Set<UUID>
+    let liveRoutineIDs: Set<UUID>
+    let liveDiaryIDs: Set<UUID>
+    let liveDiaries: [UUID: DiaryEntry]
+
+    func ownerIsLive(_ owner: AttachmentOwnerKey) -> Bool {
+        switch owner.kind {
+        case .todo: liveTodoIDs.contains(owner.id)
+        case .routine: liveRoutineIDs.contains(owner.id)
+        case .diary: liveDiaryIDs.contains(owner.id)
+        }
+    }
+}
+
 enum AttachmentAccess {
     /// 所属类型是边界的一部分；不能因另一类型恰好使用相同 UUID 就放行图片。
     static func canBrowse(
         _ attachment: AttachmentItem, todos: [TodoItem], routines: [DailyRoutine],
         diaries: [DiaryEntry], tags: [TagItem]
     ) -> Bool {
+        canBrowse(
+            attachment,
+            owners: ownerIndex(todos: todos, routines: routines, diaries: diaries),
+            tags: tags
+        )
+    }
+
+    static func canBrowse(
+        _ attachment: AttachmentItem, owners: AttachmentOwnerIndex, tags: [TagItem]
+    ) -> Bool {
         guard attachment.deletedAt == nil, attachment.privacyVaultID == nil, let owner = attachment.ownerKey,
-              ownerIsLive(owner, todos: todos, routines: routines, diaries: diaries) else { return false }
-        if owner.kind == .diary, let entry = diaries.first(where: { $0.id == owner.id }) {
+              owners.ownerIsLive(owner) else { return false }
+        if owner.kind == .diary, let entry = owners.liveDiaries[owner.id] {
             return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
         }
         return true
@@ -74,17 +100,22 @@ enum AttachmentAccess {
         deletedAts.count == 1 && deletedAts[0] == nil
     }
 
+    static func ownerIndex(
+        todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]
+    ) -> AttachmentOwnerIndex {
+        let liveDiaries = liveUniqueDiaries(diaries)
+        return AttachmentOwnerIndex(
+            liveTodoIDs: liveUniqueIDs(todos, id: \.id, deletedAt: \.deletedAt),
+            liveRoutineIDs: liveUniqueIDs(routines, id: \.id, deletedAt: \.deletedAt),
+            liveDiaryIDs: Set(liveDiaries.keys),
+            liveDiaries: liveDiaries
+        )
+    }
+
     static func ownerIsLive(
         _ owner: AttachmentOwnerKey, todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry]
     ) -> Bool {
-        switch owner.kind {
-        case .todo:
-            return isSingleLive(deletedAts: todos.filter { $0.id == owner.id }.map(\.deletedAt))
-        case .routine:
-            return isSingleLive(deletedAts: routines.filter { $0.id == owner.id }.map(\.deletedAt))
-        case .diary:
-            return isSingleLive(deletedAts: diaries.filter { $0.id == owner.id }.map(\.deletedAt))
-        }
+        ownerIndex(todos: todos, routines: routines, diaries: diaries).ownerIsLive(owner)
     }
 
     static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
@@ -109,5 +140,32 @@ enum AttachmentAccess {
 
     static func fetchDiaries(id: UUID, in context: ModelContext) throws -> [DiaryEntry] {
         try context.fetch(FetchDescriptor<DiaryEntry>(predicate: #Predicate { $0.id == id }))
+    }
+
+    private static func liveUniqueIDs<T>(
+        _ items: [T], id: KeyPath<T, UUID>, deletedAt: KeyPath<T, Date?>
+    ) -> Set<UUID> {
+        var grouped: [UUID: [Date?]] = [:]
+        grouped.reserveCapacity(items.count)
+        for item in items {
+            grouped[item[keyPath: id], default: []].append(item[keyPath: deletedAt])
+        }
+        return Set(grouped.compactMap { key, ats in isSingleLive(deletedAts: ats) ? key : nil })
+    }
+
+    private static func liveUniqueDiaries(_ diaries: [DiaryEntry]) -> [UUID: DiaryEntry] {
+        var deletedAts: [UUID: [Date?]] = [:]
+        var rows: [UUID: DiaryEntry] = [:]
+        deletedAts.reserveCapacity(diaries.count)
+        for entry in diaries {
+            deletedAts[entry.id, default: []].append(entry.deletedAt)
+            if rows[entry.id] == nil { rows[entry.id] = entry }
+        }
+        var live: [UUID: DiaryEntry] = [:]
+        for (id, ats) in deletedAts {
+            guard isSingleLive(deletedAts: ats), let entry = rows[id] else { continue }
+            live[id] = entry
+        }
+        return live
     }
 }

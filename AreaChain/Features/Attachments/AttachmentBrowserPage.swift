@@ -47,7 +47,8 @@ struct AttachmentBrowserPage: View {
     }
 
     private var visibleAttachments: [AttachmentItem] {
-        attachments.filter { AttachmentAccess.canBrowse($0, todos: todos, routines: routines, diaries: diaries, tags: tags) }
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
+        return attachments.filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
     }
 
     private func clusterBlock(_ cluster: AttachmentCluster) -> some View {

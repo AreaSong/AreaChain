@@ -6,6 +6,7 @@ import SwiftData
 enum Phase1Scenarios {
     static func runAll(on corpus: Phase1Corpus) async throws {
         try measureIdentityReads(corpus)
+        try measureOwnerAttachmentReads(corpus)
         try measureListReads(corpus)
         try measureChecks(corpus)
         try measureSearch(corpus)
@@ -55,6 +56,9 @@ enum Phase1Scenarios {
             let rows = try corpus.catalog.fetchTag(id: corpus.probeTagID)
             return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
         }
+    }
+
+    private static func measureOwnerAttachmentReads(_ corpus: Phase1Corpus) throws {
         try Phase1Measure.record(
             scenario: "fetch.owner.live.todo",
             corpus: corpus,
@@ -87,6 +91,17 @@ enum Phase1Scenarios {
         ) {
             let rows = try OwnedAttachments.matching(
                 ownerID: corpus.probeTodoID, kind: .todo, in: corpus.context
+            ).count
+            return Phase1Work(rows: rows, fetchCalls: 1)
+        }
+        try Phase1Measure.record(
+            scenario: "fetch.attachment.byOwners.batch",
+            corpus: corpus,
+            extraCalls: ["tableAttachments": corpus.graph.attachments],
+            notes: "OwnedAttachments.matching(ownerIDs:)：批量 ownerID 集合，含软删除行。"
+        ) {
+            let rows = try OwnedAttachments.matching(
+                ownerIDs: [corpus.probeTodoID, corpus.probeRoutineID], kind: .todo, in: corpus.context
             ).count
             return Phase1Work(rows: rows, fetchCalls: 1)
         }

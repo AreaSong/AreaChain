@@ -60,6 +60,23 @@ struct AttachmentOwnerLookupTests {
         #expect(try !AttachmentAccess.ownerIsLive(duplicateKey, context: context))
         #expect(try AttachmentAccess.ownerIsLive(liveKey, context: context))
 
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
+        #expect(owners.ownerIsLive(liveKey))
+        #expect(!owners.ownerIsLive(deletedKey))
+        #expect(!owners.ownerIsLive(missingKey))
+        #expect(owners.ownerIsLive(routineKey))
+        #expect(owners.ownerIsLive(diaryKey))
+        #expect(!owners.ownerIsLive(typedMismatch))
+        #expect(!owners.ownerIsLive(duplicateKey))
+        #expect(AttachmentAccess.canBrowse(
+            AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: liveTodo.id, filename: "live.png"),
+            owners: owners, tags: []
+        ))
+        #expect(!AttachmentAccess.canBrowse(
+            AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: deletedTodo.id, filename: "gone.png"),
+            owners: owners, tags: []
+        ))
+
         let liveID = liveTodo.id
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) > 20)
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == liveID })) == 1)
@@ -100,6 +117,10 @@ struct AttachmentOwnerLookupTests {
         let fromAll = OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: owner, kind: .todo)
         #expect(Set(fromAll.map(\.id)) == Set(fetched.map(\.id)))
         #expect(try OwnedAttachments.matching(ownerID: UUID(), kind: .todo, in: context).isEmpty)
+        let batch = try OwnedAttachments.matching(ownerIDs: [owner, other], kind: .todo, in: context)
+        #expect(Set(batch.map(\.filename)) == ["early.png", "later.png", "trashed.png", "other.png"])
+        #expect(try OwnedAttachments.matching(ownerIDs: [], kind: .todo, in: context).isEmpty)
+        #expect(try OwnedAttachments.matching(ownerIDs: [owner, other], kind: .diary, in: context).map(\.filename) == ["diary.png"])
 
         try OwnedAttachments.purge(ownerID: owner, kind: .todo, in: context)
         try context.save()
@@ -136,12 +157,13 @@ struct AttachmentOwnerLookupTests {
         try context.save()
 
         let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let liveRow = try #require(TrashRow.attachment(liveFile, ownerDeleted: !AttachmentAccess.ownerIsLive(
-            AttachmentOwnerKey(kind: .todo, id: live.id), todos: todos, routines: [], diaries: []
-        )))
-        let orphanRow = try #require(TrashRow.attachment(orphanFile, ownerDeleted: !AttachmentAccess.ownerIsLive(
-            AttachmentOwnerKey(kind: .todo, id: gone.id), todos: todos, routines: [], diaries: []
-        )))
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: [], diaries: [])
+        let liveKey = AttachmentOwnerKey(kind: .todo, id: live.id)
+        let goneKey = AttachmentOwnerKey(kind: .todo, id: gone.id)
+        #expect(owners.ownerIsLive(liveKey) == AttachmentAccess.ownerIsLive(liveKey, todos: todos, routines: [], diaries: []))
+        #expect(owners.ownerIsLive(goneKey) == AttachmentAccess.ownerIsLive(goneKey, todos: todos, routines: [], diaries: []))
+        let liveRow = try #require(TrashRow.attachment(liveFile, ownerDeleted: !owners.ownerIsLive(liveKey)))
+        let orphanRow = try #require(TrashRow.attachment(orphanFile, ownerDeleted: !owners.ownerIsLive(goneKey)))
         let missingRow = try #require(TrashRow.attachment(missingFile, ownerDeleted: true))
         #expect(liveRow.canRestore)
         #expect(!orphanRow.canRestore)
@@ -216,7 +238,7 @@ struct AttachmentOwnerLookupTests {
         #expect(restored.contains { $0.filename == "restored-owner.png" })
     }
 
-    @Test func ownerLookupQueryShapeAvoidsFullTableScan() throws {
+    @Test func ownerLookupMaterializesOnlyMatchingRows() throws {
         let container = try makeContainer()
         let context = container.mainContext
         let live = TodoItem(title: "probe", dayKey: "2026-09-10")
@@ -233,39 +255,22 @@ struct AttachmentOwnerLookupTests {
         try context.save()
 
         let ownerID = live.id
-        let kind = AttachmentOwner.todo.rawValue
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) == 81)
-        #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == ownerID })) == 1)
+        #expect(try AttachmentAccess.fetchTodos(id: ownerID, in: context).count == 1)
         #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 81)
+        let matched = try OwnedAttachments.matching(ownerID: ownerID, kind: .todo, in: context)
+        #expect(matched.map(\.filename) == ["mine.png"])
         #expect(
-            try context.fetchCount(
-                FetchDescriptor<AttachmentItem>(predicate: #Predicate {
-                    $0.ownerID == ownerID && $0.ownerKind == kind
-                })
-            ) == 1
+            Set(matched.map(\.id)) == Set(
+                OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: ownerID, kind: .todo).map(\.id)
+            )
         )
+        #expect(try AttachmentAccess.ownerIsLive(AttachmentOwnerKey(kind: .todo, id: live.id), context: context))
 
-        let oldOwner = try Phase1Clock.millis {
-            let matches = try context.fetch(FetchDescriptor<TodoItem>()).filter { $0.id == live.id }
-            return AttachmentAccess.isSingleLive(deletedAts: matches.map(\.deletedAt))
-        }
-        let newOwner = try Phase1Clock.millis {
-            try AttachmentAccess.ownerIsLive(AttachmentOwnerKey(kind: .todo, id: live.id), context: context)
-        }
-        #expect(oldOwner.0 && newOwner.0)
-        let oldMatching = try Phase1Clock.millis {
-            OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: live.id, kind: .todo)
-        }
-        let newMatching = try Phase1Clock.millis {
-            try OwnedAttachments.matching(ownerID: live.id, kind: .todo, in: context)
-        }
-        #expect(Set(oldMatching.0.map(\.id)) == Set(newMatching.0.map(\.id)))
-        #expect(newMatching.0.map(\.filename) == ["mine.png"])
-        let rss = Phase1Clock.probe().rss
-        #expect(
-            oldOwner.1.wallMs >= 0 && newOwner.1.wallMs >= 0,
-            "PHASE2D oldOwnerMs=\(Phase1Clock.roundMs(oldOwner.1.wallMs)) newOwnerMs=\(Phase1Clock.roundMs(newOwner.1.wallMs)) oldMatchMs=\(Phase1Clock.roundMs(oldMatching.1.wallMs)) newMatchMs=\(Phase1Clock.roundMs(newMatching.1.wallMs)) rss=\(rss)"
-        )
+        let todos = try context.fetch(FetchDescriptor<TodoItem>())
+        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: [], diaries: [])
+        #expect(owners.liveTodoIDs.count == 81)
+        #expect(owners.ownerIsLive(AttachmentOwnerKey(kind: .todo, id: live.id)))
     }
 
     private func mutationCounts(
