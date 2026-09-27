@@ -133,7 +133,7 @@ AreaChain/
 
 ## 保存、恢复与同步边界
 
-- `ModelChanges` 在保存成功后才通知 UI/系统服务，组合操作延后仓储提交；失败时 `ModelRollback` 回滚并在同一 context 重新 fetch 八类模型，刷新已持有的对象缓存。
+- `ModelChanges` 在保存成功后才通知 UI/系统服务，组合操作延后仓储提交；失败时 `ModelRollback` 回滚并在同一 context 重新 fetch `AreaChainSchema.models` 中的 7 张表，刷新已持有的对象缓存。
 - `DiaryEditorSession` 在内存持有正文草稿及编辑基线；显式保存仍走 `SwiftDataDiaryRepository` 与 `ModelChanges.transaction`。外部正文改变时，干净会话跟随更新，脏会话阻止覆盖。卡片通过列表持有的 `DiaryCardDrafts` 复用同一编辑会话，搜索过滤移除卡片不会销毁唯一草稿；锁定前加密封存，解锁后仍需显式显示。失败保留草稿，已删除记录不可被旧窗口保存重建。
 - `SnapshotImportState` 在预览及写入前校验重复标识、嵌套子任务、附件归属及最终打卡业务键；不自动清洗现存数据。导入失败只撤销导入，调用前已有编辑先保存。
 - `DiaryPrivacy` 统一卡片、搜索、总览及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。`DiaryContent` 统一正文加解密，失败不回退明文；锁定时搜索投影没有私密正文。普通 JSON 排除受保护及旧密码遮罩手记和其附件。小窗、卡片和快速输入失焦后遮罩，锁定时不挂载私密编辑器；文件面板回调通过 `PrivacyAccess.withDiary` 重新鉴权并核对记录存活。
