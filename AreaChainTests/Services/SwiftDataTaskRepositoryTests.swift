@@ -195,4 +195,131 @@ struct SwiftDataTaskRepositoryTests {
         try repo.batchTrashTodos(ids: set)
         #expect(t1.deletedAt != nil && t2.deletedAt != nil && s1.deletedAt == t1.deletedAt)
     }
+
+    @Test func fetchTodoIncludesSoftDeletedAndMissesUnknown() throws {
+        let (container, repo) = try makeRepo()
+        _ = container
+        let live = try repo.addTodo(title: "Live", dayKey: "2026-09-10")
+        let trashed = try repo.addTodo(title: "Trashed", dayKey: "2026-09-10")
+        try repo.deleteTodo(id: trashed.id, soft: true)
+
+        #expect(try repo.fetchTodo(id: live.id)?.id == live.id)
+        #expect(try repo.fetchTodo(id: trashed.id)?.deletedAt != nil)
+        #expect(try repo.fetchTodo(id: UUID()) == nil)
+        try repo.restoreTodo(id: trashed.id)
+        #expect(try repo.fetchTodo(id: trashed.id)?.deletedAt == nil)
+    }
+
+    @Test func fetchTodosHonorsDayBoundaryDeletedAndEmpty() throws {
+        let (container, repo) = try makeRepo()
+        _ = container
+        let day = "2026-09-10"
+        let before = "2026-09-09"
+        let after = "2026-09-11"
+        let first = try repo.addTodo(title: "First", dayKey: day)
+        let second = try repo.addTodo(title: "Second", dayKey: day)
+        let otherDay = try repo.addTodo(title: "Other", dayKey: after)
+        let trashed = try repo.addTodo(title: "Trashed Same Day", dayKey: day)
+        try repo.deleteTodo(id: trashed.id, soft: true)
+
+        let fetched = try repo.fetchTodos(for: day)
+        #expect(fetched.map(\.id) == [first.id, second.id])
+        #expect(!fetched.contains(where: { $0.id == otherDay.id || $0.id == trashed.id }))
+        #expect(try repo.fetchTodos(for: before).isEmpty)
+        #expect(try repo.fetchTodos(for: "2026-09-12").isEmpty)
+        #expect(try repo.fetchAllTodos(includeDeleted: false).map(\.id) == [first.id, second.id, otherDay.id])
+        #expect(try repo.fetchAllTodos(includeDeleted: true).map(\.id) == [first.id, second.id, otherDay.id, trashed.id])
+    }
+
+    @Test func fetchTodosForTagUsesEncodedIDsAndSkipsDeleted() throws {
+        let (container, repo) = try makeRepo()
+        _ = container
+        let tagA = UUID()
+        let tagB = UUID()
+        let taggedA = try repo.addTodo(
+            title: "A",
+            dayKey: "2026-09-10",
+            notes: nil,
+            remindMinutes: nil,
+            priority: nil,
+            tagIDs: [tagA]
+        )
+        let taggedBoth = try repo.addTodo(
+            title: "Both",
+            dayKey: "2026-09-10",
+            notes: nil,
+            remindMinutes: nil,
+            priority: nil,
+            tagIDs: [tagA, tagB]
+        )
+        let taggedB = try repo.addTodo(
+            title: "B",
+            dayKey: "2026-09-10",
+            notes: nil,
+            remindMinutes: nil,
+            priority: nil,
+            tagIDs: [tagB]
+        )
+        let trashed = try repo.addTodo(
+            title: "Trashed A",
+            dayKey: "2026-09-10",
+            notes: nil,
+            remindMinutes: nil,
+            priority: nil,
+            tagIDs: [tagA]
+        )
+        try repo.deleteTodo(id: trashed.id, soft: true)
+
+        let matched = try repo.fetchTodos(forTag: tagA)
+        #expect(Set(matched.map(\.id)) == Set([taggedA.id, taggedBoth.id]))
+        #expect(!matched.contains(where: { $0.id == taggedB.id || $0.id == trashed.id }))
+        #expect(try repo.fetchTodos(forTag: UUID()).isEmpty)
+        #expect(try repo.fetchTodo(id: taggedA.id)?.tagIDs == TagIDList.encode([tagA]))
+    }
+
+    @Test func batchSkipsMissingDeletedAndEmptySetDoesNotThrow() throws {
+        let (container, repo) = try makeRepo()
+        _ = container
+        let live = try repo.addTodo(title: "Live", dayKey: "2026-09-10")
+        let neighbor = try repo.addTodo(title: "Neighbor", dayKey: "2026-09-10")
+        let trashed = try repo.addTodo(title: "Trashed", dayKey: "2026-09-10")
+        try repo.deleteTodo(id: trashed.id, soft: true)
+        let missing = UUID()
+
+        try repo.batchMoveTodos(ids: [], to: "2026-09-12")
+        #expect(live.dayKey == "2026-09-10")
+        try repo.batchMoveTodos(ids: [live.id, trashed.id, missing], to: "2026-09-12")
+        #expect(live.dayKey == "2026-09-12")
+        #expect(neighbor.dayKey == "2026-09-10")
+        #expect(trashed.dayKey == "2026-09-10")
+
+        try repo.batchToggleDone(ids: [live.id, trashed.id, missing], markDone: true)
+        #expect(live.isDone)
+        #expect(!trashed.isDone)
+        try repo.completeTodo(id: live.id)
+        #expect(live.isDone)
+
+        try repo.batchTrashTodos(ids: [live.id, missing])
+        #expect(live.deletedAt != nil)
+        #expect(try repo.fetchTodos(for: "2026-09-12").isEmpty)
+        #expect(try repo.fetchTodo(id: live.id)?.deletedAt != nil)
+    }
+
+    @Test func missingSubtaskAndDuplicateCompleteKeepCascadeContract() throws {
+        let (container, repo) = try makeRepo()
+        _ = container
+        #expect(throws: RepositoryError.self) { try repo.toggleSubtaskTag(id: UUID(), tagID: UUID()) }
+        let todo = try repo.addTodo(title: "Parent", dayKey: "2026-09-10")
+        let live = try repo.addSubtask(to: todo.id, title: "Live")
+        let trashed = try repo.addSubtask(to: todo.id, title: "Trashed")
+        try repo.deleteSubtask(id: trashed.id, soft: true)
+        try repo.completeTodo(id: todo.id)
+        try repo.completeTodo(id: todo.id)
+        #expect(todo.isDone && live.isDone)
+        #expect(!trashed.isDone)
+        try repo.toggleSubtask(id: live.id)
+        #expect(!live.isDone)
+        try repo.editSubtask(id: live.id, title: "Renamed")
+        #expect(live.title == "Renamed")
+    }
 }

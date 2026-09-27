@@ -40,29 +40,29 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
     // MARK: - 查询 (Query)
 
     func fetchTodos(for dayKey: String) throws -> [TodoItem] {
-        let all = try fetchAllTodos(includeDeleted: false)
-        return all
-            .filter { $0.dayKey == dayKey }
-            .sorted { $0.createdAt < $1.createdAt }
+        try fetchTodos(matching: #Predicate { $0.dayKey == dayKey && $0.deletedAt == nil })
     }
 
     func fetchTodo(id: UUID) throws -> TodoItem? {
-        let items = try context.fetch(FetchDescriptor<TodoItem>())
-        return items.first { $0.id == id }
+        // 含已软删除行：restore / purge / 按 id 变更都依赖这条路径找到回收站里的待办。
+        var descriptor = FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     func fetchAllTodos(includeDeleted: Bool) throws -> [TodoItem] {
-        let items = try context.fetch(FetchDescriptor<TodoItem>())
-        let sorted = items.sorted { $0.createdAt < $1.createdAt }
         if includeDeleted {
-            return sorted
+            return try fetchTodos(matching: nil)
         }
-        return sorted.filter { $0.deletedAt == nil }
+        return try fetchTodos(matching: #Predicate { $0.deletedAt == nil })
     }
 
     func fetchTodos(forTag tagID: UUID) throws -> [TodoItem] {
-        let all = try fetchAllTodos(includeDeleted: false)
-        return all.filter { TagIDList.contains($0.tagIDs, tagID) }
+        let needle = tagID.uuidString
+        // 库侧按编码子串缩小集合；是否命中仍以 TagIDList 解析为准，避免编码差异误匹配。
+        return try fetchTodos(
+            matching: #Predicate { $0.deletedAt == nil && $0.tagIDs.contains(needle) }
+        ).filter { TagIDList.contains($0.tagIDs, tagID) }
     }
 
     // MARK: - 创建 (Create)
@@ -329,8 +329,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     func batchMoveTodos(ids: Set<UUID>, to dayKey: String) throws {
         guard !ids.isEmpty else { return }
-        let todos = try fetchAllTodos(includeDeleted: false)
-        for todo in todos where ids.contains(todo.id) {
+        for todo in try fetchLiveTodos(ids: ids) {
             todo.dayKey = dayKey
         }
         try saveAndNotify()
@@ -338,8 +337,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     func batchToggleDone(ids: Set<UUID>, markDone: Bool) throws {
         guard !ids.isEmpty else { return }
-        let todos = try fetchAllTodos(includeDeleted: false)
-        for todo in todos where ids.contains(todo.id) {
+        for todo in try fetchLiveTodos(ids: ids) {
             todo.isDone = markDone
             if markDone {
                 cascadeCompleteSubtasks(todo)
@@ -352,8 +350,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
         let attachments = try OwnedAttachments.all(in: context)
-        let todos = try fetchAllTodos(includeDeleted: false)
-        for todo in todos where ids.contains(todo.id) {
+        for todo in try fetchLiveTodos(ids: ids) {
             todo.deletedAt = now
             SoftDelete.stampLiveSubtasks(todo.subtasks, at: now)
             SoftDelete.stampAttachments(ownerID: todo.id, at: now, attachments: attachments, ownerKind: .todo)
@@ -363,8 +360,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws {
         guard !ids.isEmpty else { return }
-        let todos = try fetchAllTodos(includeDeleted: false)
-        for todo in todos where ids.contains(todo.id) {
+        for todo in try fetchLiveTodos(ids: ids) {
             ClassifiedFieldsUpdate.setTag(todo, tagID: tagID, present: present)
         }
         try saveAndNotify()
@@ -372,8 +368,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     func batchToggleTag(ids: Set<UUID>, tagID: UUID) throws {
         guard !ids.isEmpty else { return }
-        let todos = try fetchAllTodos(includeDeleted: false)
-        for todo in todos where ids.contains(todo.id) {
+        for todo in try fetchLiveTodos(ids: ids) {
             ClassifiedFieldsUpdate.toggleTag(todo, tagID: tagID)
         }
         try saveAndNotify()
@@ -381,8 +376,25 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     // MARK: - 内部辅助 (Internal Helpers)
 
+    private func fetchTodos(
+        matching predicate: Predicate<TodoItem>?,
+        sortBy: [SortDescriptor<TodoItem>] = [SortDescriptor(\.createdAt)]
+    ) throws -> [TodoItem] {
+        try context.fetch(FetchDescriptor(predicate: predicate, sortBy: sortBy))
+    }
+
+    private func fetchLiveTodos(ids: Set<UUID>) throws -> [TodoItem] {
+        guard !ids.isEmpty else { return [] }
+        let wanted = Array(ids)
+        return try fetchTodos(
+            matching: #Predicate { wanted.contains($0.id) && $0.deletedAt == nil },
+            sortBy: []
+        )
+    }
+
     private func fetchSubtask(id: UUID) throws -> SubtaskItem? {
-        let items = try context.fetch(FetchDescriptor<SubtaskItem>())
-        return items.first { $0.id == id }
+        var descriptor = FetchDescriptor<SubtaskItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 }
