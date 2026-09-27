@@ -315,5 +315,92 @@ struct SwiftDataCatalogDiaryRepositoryTests {
 
         let count = try catalogRepo.openCount(tagID: tag.id, dayKey: day)
         #expect(count == 2)
+        #expect(try catalogRepo.openCount(tagID: UUID(), dayKey: day) == 0)
+        try catalogRepo.deleteTag(id: tag.id, soft: true)
+        #expect(try catalogRepo.openCount(tagID: tag.id, dayKey: day) == 0)
+    }
+
+    @Test func diaryIdentityDateSearchAndFailedSaveStayEquivalent() throws {
+        let (container, diaryRepo, catalogRepo) = try makeRepos()
+        let context = container.mainContext
+        #expect(try diaryRepo.fetchDiary(id: UUID()) == nil)
+        #expect(try diaryRepo.fetchDiaries(for: "2026-09-10").isEmpty)
+
+        let older = try diaryRepo.addDiary(text: "Older note", dayKey: "2026-09-10", tagIDs: [])
+        older.createdAt = Date(timeIntervalSince1970: 10)
+        let newer = try diaryRepo.addDiary(text: "Newer note", dayKey: "2026-09-10", tagIDs: [])
+        newer.createdAt = Date(timeIntervalSince1970: 20)
+        let otherDay = try diaryRepo.addDiary(text: "Other day", dayKey: "2026-09-11", tagIDs: [])
+        try context.save()
+
+        #expect(try diaryRepo.fetchDiaries(for: "2026-09-10").map(\.id) == [newer.id, older.id])
+        #expect(try diaryRepo.fetchDiaries(for: "2026-09-11").map(\.id) == [otherDay.id])
+        #expect(try diaryRepo.fetchDiaries(for: "2026-09-12").isEmpty)
+
+        let tag = try catalogRepo.createTag(name: "Swift", sortOrder: 0)
+        try diaryRepo.setTags(id: newer.id, tagIDs: [tag.id])
+        #expect(try diaryRepo.searchDiaries(query: "note", tagID: tag.id, includeDeleted: false).map(\.id) == [newer.id])
+        #expect(try diaryRepo.searchDiaries(query: "note", tagID: UUID(), includeDeleted: false).isEmpty)
+
+        try diaryRepo.deleteDiary(id: older.id, soft: true)
+        #expect(try diaryRepo.fetchDiary(id: older.id)?.deletedAt != nil)
+        #expect(try diaryRepo.fetchDiaries(for: "2026-09-10", includeDeleted: false).map(\.id) == [newer.id])
+        #expect(try diaryRepo.searchDiaries(query: "Older", tagID: nil, includeDeleted: true).map(\.id) == [older.id])
+        #expect(try diaryRepo.searchDiaries(query: "Older", tagID: nil, includeDeleted: false).isEmpty)
+
+        try diaryRepo.moveDiary(id: newer.id, to: "2026-09-12")
+        #expect(try diaryRepo.fetchDiary(id: newer.id)?.dayKey == "2026-09-12")
+        #expect(throws: RepositoryError.self) { try diaryRepo.moveDiary(id: newer.id, to: "not-a-day") }
+        #expect(try diaryRepo.fetchDiary(id: newer.id)?.dayKey == "2026-09-12")
+
+        let original = try #require(try diaryRepo.fetchDiary(id: newer.id)?.text)
+        let counts = mutationCounts(in: context) {
+            #expect(throws: CocoaError.self) {
+                try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
+                    try diaryRepo.editDiary(id: newer.id, text: "should roll back")
+                }
+            }
+        }
+        #expect(counts.saves == 0 && counts.notifications == 0)
+        #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == original)
+        try diaryRepo.editDiary(id: newer.id, text: "retried text")
+        #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == "retried text")
+        try diaryRepo.editDiary(id: newer.id, text: "retried text")
+        #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == "retried text")
+    }
+
+    @Test func catalogIdentityDeletedBatchColorAndUnlinkStayEquivalent() throws {
+        let (container, diaryRepo, catalogRepo) = try makeRepos()
+        #expect(try catalogRepo.fetchTag(id: UUID()) == nil)
+        let kept = try catalogRepo.createTag(name: "KeepColor", sortOrder: 0)
+        let removed = try catalogRepo.createTag(name: "DropMe", sortOrder: 1)
+        try catalogRepo.ensurePresetTags()
+        let preset = try #require(try catalogRepo.fetchTags().first { $0.isDiaryPreset })
+
+        try catalogRepo.deleteTag(id: removed.id, soft: true)
+        #expect(try catalogRepo.fetchTag(id: removed.id)?.deletedAt != nil)
+        #expect(try catalogRepo.fetchTags(includeDeleted: false).map(\.id).contains(removed.id) == false)
+        #expect(try catalogRepo.fetchTags(includeDeleted: true).contains { $0.id == removed.id })
+
+        try catalogRepo.batchSetColor(ids: [kept.id, preset.id], colorToken: TagColorToken.clay.rawValue)
+        #expect(try catalogRepo.fetchTag(id: kept.id)?.colorToken == TagColorToken.clay.rawValue)
+        #expect(try catalogRepo.fetchTag(id: preset.id)?.colorToken == TagColorToken.default.rawValue)
+        #expect(throws: RepositoryError.self) {
+            try catalogRepo.batchSetColor(ids: [preset.id], colorToken: TagColorToken.ink.rawValue)
+        }
+        #expect(throws: RepositoryError.self) {
+            try catalogRepo.batchSetColor(ids: [], colorToken: TagColorToken.ink.rawValue)
+        }
+
+        let diary = try diaryRepo.addDiary(text: "tagged", dayKey: "2026-09-10", tagIDs: [kept.id])
+        let orphanParent = TodoItem(title: "parent", dayKey: "2026-09-10")
+        let child = SubtaskItem(title: "child", tagIDs: TagIDList.encode([kept.id]), todo: orphanParent)
+        container.mainContext.insert(orphanParent)
+        container.mainContext.insert(child)
+        try container.mainContext.save()
+        try catalogRepo.unlinkTag(id: kept.id)
+        #expect(!TagIDList.contains(diary.tagIDs, kept.id))
+        #expect(!TagIDList.contains(child.tagIDs, kept.id))
+        #expect(try catalogRepo.fetchTag(id: kept.id) != nil)
     }
 }

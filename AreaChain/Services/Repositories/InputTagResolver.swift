@@ -6,16 +6,24 @@ enum InputTagResolver {
     /// 仅修改当前事务，不自行保存；标签与所属内容必须一起成功或一起回滚。
     static func resolve(_ names: [String], in context: ModelContext) throws -> [UUID] {
         var tags = try context.fetch(FetchDescriptor<TagItem>(sortBy: [SortDescriptor(\.sortOrder)]))
+        var byName: [String: [TagItem]] = [:]
+        byName.reserveCapacity(tags.count)
+        for tag in tags {
+            byName[TagSyntax.normalizedName(tag.name), default: []].append(tag)
+        }
+        var nextOrder = (tags.map(\.sortOrder).max() ?? -1) + 1
         return TagSyntax.uniqueNames(names).map { name in
             let key = TagSyntax.normalizedName(name)
-            let matches = tags.filter { TagSyntax.normalizedName($0.name) == key }
+            let matches = byName[key] ?? []
             if let existing = matches.first(where: { $0.deletedAt == nil }) ?? matches.first {
                 if existing.deletedAt != nil { existing.deletedAt = nil }
                 return existing.id
             }
-            let tag = TagItem(name: name, sortOrder: (tags.map(\.sortOrder).max() ?? -1) + 1)
+            let tag = TagItem(name: name, sortOrder: nextOrder)
+            nextOrder += 1
             context.insert(tag)
             tags.append(tag)
+            byName[key, default: []].append(tag)
             return tag.id
         }
     }

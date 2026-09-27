@@ -42,7 +42,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.diary.byId",
             corpus: corpus,
-            notes: "SwiftDataDiaryRepository.fetchDiary：整表再 first。"
+            notes: "SwiftDataDiaryRepository.fetchDiary：id predicate + fetchLimit 1。"
         ) {
             let rows = try corpus.diaries.fetchDiary(id: corpus.probeDiaryID)
             return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
@@ -50,7 +50,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.tag.byId",
             corpus: corpus,
-            notes: "SwiftDataCatalogRepository.fetchTag：整表再 first。"
+            notes: "SwiftDataCatalogRepository.fetchTag：id predicate + fetchLimit 1。"
         ) {
             let rows = try corpus.catalog.fetchTag(id: corpus.probeTagID)
             return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
@@ -114,7 +114,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "search.diary.repository",
             corpus: corpus,
-            notes: "searchDiaries：fetch 手记 + fetch 标签，再对每条明文 DiaryContent.read 可能再 fetch 标签。"
+            notes: "searchDiaries：predicate 手记 + 活跃标签；每条明文 DiaryContent.read 仍可能再 fetch 标签。"
         ) {
             let rows = try corpus.diaries.searchDiaries(query: "baseline", tagID: nil, includeDeleted: false).count
             let liveUnprotected = corpus.graph.diaries - corpus.graph.deletedDiaries - corpus.graph.privateDiaries

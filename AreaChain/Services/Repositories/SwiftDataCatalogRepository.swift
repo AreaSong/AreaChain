@@ -23,22 +23,18 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     // MARK: - 标签操作 (Tags)
 
     func fetchTags(includeDeleted: Bool) throws -> [TagItem] {
-        let items = try context.fetch(FetchDescriptor<TagItem>())
-        let sorted = items.sorted { $0.sortOrder < $1.sortOrder }
-        if includeDeleted {
-            return sorted
-        }
-        return sorted.filter { $0.deletedAt == nil }
+        try fetchTags(matching: includeDeleted ? nil : #Predicate { $0.deletedAt == nil })
     }
 
     func fetchTag(id: UUID) throws -> TagItem? {
-        let items = try context.fetch(FetchDescriptor<TagItem>())
-        return items.first { $0.id == id }
+        // 含已软删除行：restore / purge / 按 id 变更都依赖这条路径找到回收站里的标签。
+        var descriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     func fetchLiveTaskTags() throws -> [TagItem] {
-        let live = try fetchTags(includeDeleted: false)
-        return Catalog.liveTaskTags(live)
+        Catalog.liveTaskTags(try fetchTags(includeDeleted: false))
     }
 
     @discardableResult
@@ -51,16 +47,11 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
             throw RepositoryError.invalidArgument("手记预置标签不能当作普通标签创建")
         }
         let key = TagSyntax.normalizedName(trimmed)
-        if try fetchTags(includeDeleted: false).contains(where: { TagSyntax.normalizedName($0.name) == key }) {
+        let live = try fetchTags(includeDeleted: false)
+        if live.contains(where: { TagSyntax.normalizedName($0.name) == key }) {
             throw RepositoryError.invalidArgument("标签名称已存在")
         }
-        let order: Int
-        if let sortOrder {
-            order = sortOrder
-        } else {
-            let live = try fetchTags(includeDeleted: false)
-            order = Catalog.nextSortOrder(live.map(\.sortOrder))
-        }
+        let order = sortOrder ?? Catalog.nextSortOrder(live.map(\.sortOrder))
         let tag = TagItem(name: trimmed, sortOrder: order)
         context.insert(tag)
         try saveAndNotify()
@@ -145,11 +136,8 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         if soft {
             tag.deletedAt = SoftDelete.stamp()
         } else {
-            let todos = try context.fetch(FetchDescriptor<TodoItem>())
-            let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
-            let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
-            let subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
-            Catalog.unlinkTag(id, todos: todos, routines: routines, diaries: diaries, subtasks: subtasks)
+            let linked = try recordsLinked(to: id)
+            Catalog.unlinkTag(id, todos: linked.todos, routines: linked.routines, diaries: linked.diaries, subtasks: linked.subtasks)
             context.delete(tag)
         }
         try saveAndNotify()
@@ -168,11 +156,8 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     func unlinkTag(id: UUID) throws {
-        let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
-        let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
-        let subtasks = try context.fetch(FetchDescriptor<SubtaskItem>())
-        Catalog.unlinkTag(id, todos: todos, routines: routines, diaries: diaries, subtasks: subtasks)
+        let linked = try recordsLinked(to: id)
+        Catalog.unlinkTag(id, todos: linked.todos, routines: linked.routines, diaries: linked.diaries, subtasks: linked.subtasks)
         try saveAndNotify()
     }
 
@@ -185,6 +170,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     func mergeTags(sourceIDs: [UUID], into targetID: UUID) throws {
         try ModelChanges.transaction(in: context) {
             let tags = try fetchTags(includeDeleted: true)
+            // merge 会对传入集合做 TagIDList.normalized，不能先按来源 ID 缩小四表，否则会跳过无关行的编码归一化。
             let todos = try context.fetch(FetchDescriptor<TodoItem>())
             let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
             let diaries = try context.fetch(FetchDescriptor<DiaryEntry>())
@@ -198,7 +184,13 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
 
     func batchSetColor(ids: Set<UUID>, colorToken: String) throws {
         let token = TagColorToken.resolved(colorToken).rawValue
-        let tags = try fetchTags(includeDeleted: false).filter { ids.contains($0.id) }
+        let wanted = Array(ids)
+        let tags = wanted.isEmpty
+            ? []
+            : try fetchTags(
+                matching: #Predicate { wanted.contains($0.id) && $0.deletedAt == nil },
+                sortBy: []
+            )
         guard tags.contains(where: { !$0.isDiaryPreset }) else {
             throw RepositoryError.invalidArgument("手记预置标签不能改色")
         }
@@ -211,12 +203,41 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     // MARK: - 聚合指标 (Metrics)
 
     func openCount(tagID: UUID?, dayKey: String) throws -> Int {
-        let todos = try context.fetch(FetchDescriptor<TodoItem>())
-        let routines = try context.fetch(FetchDescriptor<DailyRoutine>())
-        let checks = try context.fetch(FetchDescriptor<RoutineCheck>())
         let tag = tagID != nil ? try fetchTag(id: tagID!) : nil
+        guard let tag, tag.deletedAt == nil else {
+            return Catalog.openCount(todos: [], routines: [], checks: [], tag: tag, dayKey: dayKey)
+        }
+        // 子任务可独立挂签：必须带上全部未删除待办，不能只取自己挂了该标签的父项。
+        let todos = try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.deletedAt == nil }))
+        let routines = try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.deletedAt == nil }))
+        let checks = try context.fetch(FetchDescriptor<RoutineCheck>())
         return Catalog.openCount(
             todos: todos, routines: routines, checks: checks, tag: tag, dayKey: dayKey
+        )
+    }
+
+    // MARK: - 内部辅助 (Internal Helpers)
+
+    private func fetchTags(
+        matching predicate: Predicate<TagItem>?,
+        sortBy: [SortDescriptor<TagItem>] = [SortDescriptor(\.sortOrder)]
+    ) throws -> [TagItem] {
+        try context.fetch(FetchDescriptor(predicate: predicate, sortBy: sortBy))
+    }
+
+    private func recordsLinked(to tagID: UUID) throws -> (
+        todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry], subtasks: [SubtaskItem]
+    ) {
+        let needle = tagID.uuidString
+        return (
+            try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.tagIDs.contains(needle) }))
+                .filter { TagIDList.contains($0.tagIDs, tagID) },
+            try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.tagIDs.contains(needle) }))
+                .filter { TagIDList.contains($0.tagIDs, tagID) },
+            try context.fetch(FetchDescriptor<DiaryEntry>(predicate: #Predicate { $0.tagIDs.contains(needle) }))
+                .filter { TagIDList.contains($0.tagIDs, tagID) },
+            try context.fetch(FetchDescriptor<SubtaskItem>(predicate: #Predicate { $0.tagIDs.contains(needle) }))
+                .filter { TagIDList.contains($0.tagIDs, tagID) }
         )
     }
 }

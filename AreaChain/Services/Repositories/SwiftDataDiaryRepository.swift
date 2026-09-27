@@ -30,38 +30,30 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     // MARK: - 查询与搜索 (Query & Search)
 
     func fetchDiaries(for dayKey: String?, includeDeleted: Bool) throws -> [DiaryEntry] {
-        let descriptor = FetchDescriptor<DiaryEntry>()
-        let items = try context.fetch(descriptor)
-        return items
-            .filter { item in
-                if !includeDeleted && item.deletedAt != nil { return false }
-                if let dayKey, item.dayKey != dayKey { return false }
-                return true
-            }
-            .sorted { a, b in
-                if a.isPinned != b.isPinned {
-                    return a.isPinned && !b.isPinned
-                }
-                return a.createdAt > b.createdAt
-            }
+        try fetchDiaries(matching: diaryPredicate(dayKey: dayKey, includeDeleted: includeDeleted))
     }
 
     func fetchDiary(id: UUID) throws -> DiaryEntry? {
-        let items = try context.fetch(FetchDescriptor<DiaryEntry>())
-        return items.first { $0.id == id }
+        // 含已软删除行：restore / purge / 按 id 变更都依赖这条路径找到回收站里的手记。
+        var descriptor = FetchDescriptor<DiaryEntry>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     func searchDiaries(query: String, tagID: UUID?, includeDeleted: Bool) throws -> [DiaryEntry] {
-        let entries = try fetchDiaries(for: nil, includeDeleted: includeDeleted)
         let parsed = BoardSearch.parseQuery(query)
-        let tags = try context.fetch(FetchDescriptor<TagItem>())
-        let activeTags = tags.filter { $0.deletedAt == nil }
-        let tagMap = Dictionary(uniqueKeysWithValues: activeTags.map { ($0.id, $0.name) })
+        let entries: [DiaryEntry]
+        if let tagID {
+            let needle = tagID.uuidString
+            entries = try fetchDiaries(
+                matching: diaryPredicate(dayKey: nil, includeDeleted: includeDeleted, tagNeedle: needle)
+            ).filter { TagIDList.contains($0.tagIDs, tagID) }
+        } else {
+            entries = try fetchDiaries(matching: diaryPredicate(dayKey: nil, includeDeleted: includeDeleted))
+        }
+        let tagMap = Dictionary(uniqueKeysWithValues: try liveTags().map { ($0.id, $0.name) })
 
         return entries.filter { entry in
-            if let tagID, !TagIDList.contains(entry.tagIDs, tagID) {
-                return false
-            }
             var snapshot = DiaryContent.snapshot(entry, vault: vault)
             if includeDeleted { snapshot.deletedAt = nil }
             return BoardSearch.matchesDiary(snapshot, query: parsed, tagMap: tagMap)
@@ -80,9 +72,11 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             let names = TagSyntax.names(in: trimmed) + DiaryMemoTags.autoTagNames(in: trimmed)
             let ids = try InputTagResolver.merging(names, into: TagIDList.encode(Array(tagIDs)), in: context)
             let entry = DiaryEntry(text: "", dayKey: dayKey, tagIDs: ids)
-            let tags = try context.fetch(FetchDescriptor<TagItem>())
-            try DiaryContent.write(trimmed, to: entry,
-                                   protect: DiaryContent.requiresProtection(tagIDs: ids, tags: tags), vault: vault)
+            try DiaryContent.write(
+                trimmed, to: entry,
+                protect: DiaryContent.requiresProtection(tagIDs: ids, tags: try protectionTags()),
+                vault: vault
+            )
             context.insert(entry)
             return entry
         }
@@ -134,8 +128,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         guard let entry = try fetchDiary(id: id) else {
             throw RepositoryError.notFound("DiaryEntry(id: \(id))")
         }
-        guard entry.deletedAt == nil,
-              try context.fetch(FetchDescriptor<TagItem>()).contains(where: { $0.id == tagID && $0.deletedAt == nil }) else {
+        guard entry.deletedAt == nil, try liveTagExists(tagID) else {
             throw PrivacyError.staleOperation
         }
         try ModelChanges.transaction(in: context) {
@@ -163,14 +156,15 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         guard let entry = try fetchDiary(id: id) else {
             throw RepositoryError.notFound("DiaryEntry(id: \(id))")
         }
+        let attachments = try ownedAttachments(entry.id)
         if soft {
             let now = SoftDelete.stamp()
             entry.deletedAt = now
-            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: try OwnedAttachments.all(in: context), ownerKind: .diary)
+            SoftDelete.stampAttachments(ownerID: entry.id, at: now, attachments: attachments, ownerKind: .diary)
         } else {
             let stamp = entry.deletedAt ?? SoftDelete.stamp()
             SoftDelete.stampAttachments(
-                ownerID: entry.id, at: stamp, attachments: try OwnedAttachments.all(in: context), ownerKind: .diary
+                ownerID: entry.id, at: stamp, attachments: attachments, ownerKind: .diary
             )
             context.delete(entry)
         }
@@ -186,7 +180,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         SoftDelete.restoreCascadedAttachments(
             ownerID: entry.id,
             parentDeletedAt: stamp,
-            attachments: try OwnedAttachments.all(in: context),
+            attachments: try ownedAttachments(entry.id),
             ownerKind: .diary
         )
         try saveAndNotify()
@@ -196,7 +190,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         guard let entry = try fetchDiary(id: id) else {
             throw RepositoryError.notFound("DiaryEntry(id: \(id))")
         }
-        let ids = Set(OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: entry.id, kind: .diary).map(\.id))
+        let ids = Set(try ownedAttachments(entry.id).map(\.id))
         try deleteDiary(id: id, soft: false)
         if !ids.isEmpty { try AttachmentCleanup.purge(ids: ids, context: context) }
     }
@@ -204,12 +198,12 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     // MARK: - 内部辅助 (Internal Helpers)
 
     private func writeContent(_ text: String, to entry: DiaryEntry) throws {
-        let tags = try context.fetch(FetchDescriptor<TagItem>())
+        let tags = try protectionTags()
         let protect = entry.hasProtectedContent || DiaryContent.requiresProtection(tagIDs: entry.tagIDs, tags: tags)
         if protect && !entry.hasProtectedContent {
             try PrivacyStoreMaintenance.mark(context)
             let batch = PrivacyAttachmentBatch(store: attachmentStore, root: attachmentRoot)
-            let items = OwnedAttachments.matching(try OwnedAttachments.all(in: context), ownerID: entry.id, kind: .diary)
+            let items = try ownedAttachments(entry.id)
             try batch.prepare(items, vault: vault)
             ModelChanges.afterTransaction(in: context, commit: { [context, attachmentStore, attachmentRoot] in
                 try PrivacyAttachmentBatch.cleanup(items, context: context, store: attachmentStore, root: attachmentRoot)
@@ -218,5 +212,60 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             batch.apply()
         }
         try DiaryContent.write(text, to: entry, protect: protect, vault: vault)
+    }
+
+    private func fetchDiaries(matching predicate: Predicate<DiaryEntry>?) throws -> [DiaryEntry] {
+        // SwiftData 的 SortDescriptor 没有 @Model + Bool 的可用重载；置顶仍按原比较器在过滤后集合上完成。
+        try context.fetch(
+            FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
+        ).sorted { a, b in
+            if a.isPinned != b.isPinned {
+                return a.isPinned && !b.isPinned
+            }
+            return a.createdAt > b.createdAt
+        }
+    }
+
+    private func diaryPredicate(dayKey: String?, includeDeleted: Bool, tagNeedle: String? = nil) -> Predicate<DiaryEntry>? {
+        switch (dayKey, includeDeleted, tagNeedle) {
+        case (nil, true, nil):
+            return nil
+        case (nil, false, nil):
+            return #Predicate { $0.deletedAt == nil }
+        case (let key?, true, nil):
+            return #Predicate { $0.dayKey == key }
+        case (let key?, false, nil):
+            return #Predicate { $0.dayKey == key && $0.deletedAt == nil }
+        case (nil, true, let needle?):
+            return #Predicate { $0.tagIDs.contains(needle) }
+        case (nil, false, let needle?):
+            return #Predicate { $0.deletedAt == nil && $0.tagIDs.contains(needle) }
+        case (let key?, true, let needle?):
+            return #Predicate { $0.dayKey == key && $0.tagIDs.contains(needle) }
+        case (let key?, false, let needle?):
+            return #Predicate { $0.dayKey == key && $0.deletedAt == nil && $0.tagIDs.contains(needle) }
+        }
+    }
+
+    private func liveTags() throws -> [TagItem] {
+        try context.fetch(FetchDescriptor<TagItem>(predicate: #Predicate { $0.deletedAt == nil }))
+    }
+
+    /// `requiresProtection` 只看 `isPrivateDiary`；含已软删除行，避免漏判仍挂在手记上的私密标签。
+    private func protectionTags() throws -> [TagItem] {
+        try context.fetch(FetchDescriptor<TagItem>(predicate: #Predicate { $0.isPrivateDiary == true }))
+    }
+
+    private func liveTagExists(_ tagID: UUID) throws -> Bool {
+        var descriptor = FetchDescriptor<TagItem>(predicate: #Predicate { $0.id == tagID && $0.deletedAt == nil })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first != nil
+    }
+
+    private func ownedAttachments(_ ownerID: UUID) throws -> [AttachmentItem] {
+        let kind = AttachmentOwner.diary.rawValue
+        return try context.fetch(
+            FetchDescriptor<AttachmentItem>(predicate: #Predicate { $0.ownerID == ownerID && $0.ownerKind == kind })
+        )
     }
 }
