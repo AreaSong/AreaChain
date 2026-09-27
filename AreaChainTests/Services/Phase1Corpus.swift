@@ -43,19 +43,24 @@ final class Phase1Corpus {
     let probeDiaryID: UUID
     let probeTagID: UUID
     let batchIDs: Set<UUID>
+    let privateDiaryIDs: Set<UUID>
     let diskRoot: URL?
+    let attachmentRoot: URL
 
     private init(
         container: ModelContainer,
         graph: Phase1Graph,
         vault: PrivacyVault,
+        files: AttachmentStore,
         todayKey: String,
         probeTodoID: UUID,
         probeRoutineID: UUID,
         probeDiaryID: UUID,
         probeTagID: UUID,
         batchIDs: Set<UUID>,
-        diskRoot: URL?
+        privateDiaryIDs: Set<UUID>,
+        diskRoot: URL?,
+        attachmentRoot: URL
     ) {
         self.container = container
         self.context = container.mainContext
@@ -67,16 +72,22 @@ final class Phase1Corpus {
         self.probeDiaryID = probeDiaryID
         self.probeTagID = probeTagID
         self.batchIDs = batchIDs
+        self.privateDiaryIDs = privateDiaryIDs
         self.diskRoot = diskRoot
+        self.attachmentRoot = attachmentRoot
         self.tasks = SwiftDataTaskRepository(context: context, container: container)
         self.routines = SwiftDataRoutineRepository(context: context, container: container)
-        self.diaries = SwiftDataDiaryRepository(context: context, container: container, vault: vault)
+        self.diaries = SwiftDataDiaryRepository(
+            context: context, container: container, vault: vault, attachmentStore: files, attachmentRoot: attachmentRoot
+        )
         self.catalog = SwiftDataCatalogRepository(context: context, container: container)
     }
 
     func cleanup() {
         if let diskRoot {
             try? FileManager.default.removeItem(at: diskRoot)
+        } else {
+            try? FileManager.default.removeItem(at: attachmentRoot)
         }
     }
 
@@ -87,31 +98,39 @@ final class Phase1Corpus {
     static func make(scale: Int, onDisk: Bool = false) async throws -> Phase1Corpus {
         let schema = Schema(AreaChainSchema.models)
         let diskRoot: URL?
+        let attachmentRoot: URL
         let configuration: ModelConfiguration
         if onDisk {
             let root = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-phase1-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
             diskRoot = root
+            attachmentRoot = root.appendingPathComponent("attachments")
             configuration = ModelConfiguration("Phase1", schema: schema, url: root.appendingPathComponent("store"), cloudKitDatabase: .none)
         } else {
             diskRoot = nil
+            attachmentRoot = FileManager.default.temporaryDirectory.appendingPathComponent("AreaChain-phase1-att-\(UUID().uuidString)")
             configuration = ModelConfiguration(isStoredInMemoryOnly: true)
         }
+        try FileManager.default.createDirectory(at: attachmentRoot, withIntermediateDirectories: true)
         let container = try ModelContainer(for: schema, configurations: configuration)
         let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         try await vault.create(password: "phase1-synthetic-only", systemUnlock: false)
+        let files = AttachmentStore(keys: vault.keys, root: attachmentRoot)
         let seeded = try seed(scale: scale, container: container, vault: vault, store: onDisk ? "disk" : "memory")
         return Phase1Corpus(
             container: container,
             graph: seeded.graph,
             vault: vault,
+            files: files,
             todayKey: seeded.todayKey,
             probeTodoID: seeded.probeTodoID,
             probeRoutineID: seeded.probeRoutineID,
             probeDiaryID: seeded.probeDiaryID,
             probeTagID: seeded.probeTagID,
             batchIDs: seeded.batchIDs,
-            diskRoot: diskRoot
+            privateDiaryIDs: seeded.privateDiaryIDs,
+            diskRoot: diskRoot,
+            attachmentRoot: attachmentRoot
         )
     }
 
@@ -123,42 +142,91 @@ final class Phase1Corpus {
         var probeDiaryID: UUID
         var probeTagID: UUID
         var batchIDs: Set<UUID>
+        var privateDiaryIDs: Set<UUID>
     }
 
-    // swiftlint:disable:next function_body_length
     private static func seed(scale: Int, container: ModelContainer, vault: PrivacyVault, store: String) throws -> Seeded {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         let todayKey = "2026-09-27"
         let context = container.mainContext
         let started = ProcessInfo.processInfo.systemUptime
-        let routineCount = min(40, max(8, scale / 50))
-        let checkDays = min(90, max(14, scale / 40))
-        let diaryCount = max(12, scale / 10)
-        let tagCount = min(40, max(8, scale / 50))
-        let subtaskCount = max(10, scale / 5)
-        let attachmentCount = max(6, scale / 20)
+        let tags = insertTags(count: min(40, max(8, scale / 50)), context: context)
+        let liveTag = tags[1 % tags.count]
+        let todos = insertTodos(scale: scale, todayKey: todayKey, calendar: calendar, tagIDs: TagIDList.encode([liveTag.id]), context: context)
+        let liveTodos = todos.filter { $0.deletedAt == nil }
+        insertSubtasks(count: max(10, scale / 5), onto: liveTodos, context: context)
+        let routineSeed = insertRoutines(
+            count: min(40, max(8, scale / 50)),
+            checkDays: min(90, max(14, scale / 40)),
+            todayKey: todayKey,
+            calendar: calendar,
+            tagIDs: TagIDList.encode([liveTag.id]),
+            context: context
+        )
+        let routines = routineSeed.routines
+        let diaries = try insertDiaries(
+            count: max(12, scale / 10),
+            todayKey: todayKey,
+            calendar: calendar,
+            liveTagIDs: TagIDList.encode([liveTag.id]),
+            privateTag: tags[0],
+            vault: vault,
+            context: context
+        )
+        let privateDiaryIDs = Set(diaries.prefix(3).map(\.id))
+        let attachmentCount = insertAttachments(
+            count: max(6, scale / 20),
+            todos: liveTodos,
+            routines: routines,
+            diaries: diaries,
+            context: context
+        )
+        try context.save()
+        return Seeded(
+            graph: makeGraph(
+                GraphInput(
+                    scale: scale,
+                    store: store,
+                    seedMs: (ProcessInfo.processInfo.systemUptime - started) * 1_000,
+                    todayKey: todayKey,
+                    todos: todos,
+                    subtasks: max(10, scale / 5),
+                    routines: routines,
+                    checkCount: routineSeed.checkCount,
+                    diaries: diaries,
+                    tags: tags,
+                    attachments: attachmentCount
+                )
+            ),
+            todayKey: todayKey,
+            probeTodoID: liveTodos[0].id,
+            probeRoutineID: routines.first { $0.deletedAt == nil }!.id,
+            probeDiaryID: diaries.first { $0.deletedAt == nil && !$0.hasProtectedContent }!.id,
+            probeTagID: liveTag.id,
+            batchIDs: Set(liveTodos.prefix(min(100, max(8, liveTodos.count / 10))).map(\.id)),
+            privateDiaryIDs: privateDiaryIDs
+        )
+    }
 
-        var tags: [TagItem] = []
-        for index in 0..<tagCount {
+    private static func insertTags(count: Int, context: ModelContext) -> [TagItem] {
+        (0..<count).map { index in
             let tag = TagItem(name: "基线标签\(index)", sortOrder: index)
             if index == 0 { tag.isPrivateDiary = true }
-            if index == tagCount - 1 { tag.deletedAt = Date(timeIntervalSince1970: 1) }
+            if index == count - 1 { tag.deletedAt = Date(timeIntervalSince1970: 1) }
             context.insert(tag)
-            tags.append(tag)
+            return tag
         }
-        let liveTag = tags[1 % tags.count]
-        let privateTag = tags[0]
-        let tagIDs = TagIDList.encode([liveTag.id])
+    }
 
-        var todos: [TodoItem] = []
-        todos.reserveCapacity(scale)
-        for index in 0..<scale {
-            let day = DayKey.shifted(todayKey, by: -(index % 14), calendar: calendar)
+    private static func insertTodos(
+        scale: Int, todayKey: String, calendar: Calendar, tagIDs: String, context: ModelContext
+    ) -> [TodoItem] {
+        (0..<scale).map { index in
             let todo = TodoItem(
                 title: "基线待办 \(index)",
                 isDone: index % 10 == 0,
-                dayKey: day,
+                dayKey: DayKey.shifted(todayKey, by: -(index % 14), calendar: calendar),
                 createdAt: Date(timeIntervalSince1970: Double(index)),
                 remindMinutes: index % 10 == 1 ? 600 : nil,
                 deletedAt: index % 10 == 9 ? Date(timeIntervalSince1970: 2) : nil,
@@ -167,25 +235,30 @@ final class Phase1Corpus {
                 notes: index % 11 == 0 ? "备注 \(index)" : ""
             )
             context.insert(todo)
-            todos.append(todo)
+            return todo
         }
-        let liveTodos = todos.filter { $0.deletedAt == nil }
-        for index in 0..<subtaskCount {
-            let parent = liveTodos[index % liveTodos.count]
-            let sub = SubtaskItem(
-                title: "子任务 \(index)",
-                isDone: index % 5 == 0,
-                sortOrder: index,
-                deletedAt: index % 10 == 9 ? Date(timeIntervalSince1970: 3) : nil,
-                todo: parent
-            )
-            context.insert(sub)
-        }
+    }
 
-        var routines: [DailyRoutine] = []
-        var checkCount = 0
+    private static func insertSubtasks(count: Int, onto todos: [TodoItem], context: ModelContext) {
+        for index in 0..<count {
+            context.insert(
+                SubtaskItem(
+                    title: "子任务 \(index)",
+                    isDone: index % 5 == 0,
+                    sortOrder: index,
+                    deletedAt: index % 10 == 9 ? Date(timeIntervalSince1970: 3) : nil,
+                    todo: todos[index % todos.count]
+                )
+            )
+        }
+    }
+
+    private static func insertRoutines(
+        count: Int, checkDays: Int, todayKey: String, calendar: Calendar, tagIDs: String, context: ModelContext
+    ) -> (routines: [DailyRoutine], checkCount: Int) {
         let created = DayKey.shifted(todayKey, by: -(checkDays - 1), calendar: calendar)
-        for index in 0..<routineCount {
+        var checkCount = 0
+        let routines: [DailyRoutine] = (0..<count).map { index in
             let routine = DailyRoutine(
                 title: "基线习惯 \(index)",
                 sortOrder: index,
@@ -198,47 +271,64 @@ final class Phase1Corpus {
                 pausedOnDayKey: index % 10 == 3 ? todayKey : nil
             )
             context.insert(routine)
-            routines.append(routine)
-            guard routine.deletedAt == nil else { continue }
-            for offset in 0..<checkDays {
-                let key = DayKey.shifted(todayKey, by: -offset, calendar: calendar)
-                let skipped = offset % 9 == 0
-                let done = skipped || offset % 3 != 2
-                context.insert(RoutineCheck(dayKey: key, isDone: done, isSkipped: skipped, routine: routine))
-                checkCount += 1
+            if routine.deletedAt == nil {
+                for offset in 0..<checkDays {
+                    let skipped = offset % 9 == 0
+                    context.insert(
+                        RoutineCheck(
+                            dayKey: DayKey.shifted(todayKey, by: -offset, calendar: calendar),
+                            isDone: skipped || offset % 3 != 2,
+                            isSkipped: skipped,
+                            routine: routine
+                        )
+                    )
+                    checkCount += 1
+                }
             }
+            return routine
         }
+        return (routines, checkCount)
+    }
 
+    private static func insertDiaries(
+        count: Int,
+        todayKey: String,
+        calendar: Calendar,
+        liveTagIDs: String,
+        privateTag: TagItem,
+        vault: PrivacyVault,
+        context: ModelContext
+    ) throws -> [DiaryEntry] {
         var diaries: [DiaryEntry] = []
-        var privateDiaries = 0
-        for index in 0..<diaryCount {
-            let day = DayKey.shifted(todayKey, by: -(index % 21), calendar: calendar)
+        for index in 0..<count {
             let entry = DiaryEntry(
                 text: "合成手记 \(index) 关键词baseline",
-                dayKey: day,
+                dayKey: DayKey.shifted(todayKey, by: -(index % 21), calendar: calendar),
                 createdAt: Date(timeIntervalSince1970: Double(1_000 + index)),
                 deletedAt: index % 10 == 9 ? Date(timeIntervalSince1970: 5) : nil,
-                tagIDs: index % 5 == 0 ? tagIDs : ""
+                tagIDs: index % 5 == 0 ? liveTagIDs : ""
             )
             context.insert(entry)
             if index < 3 {
                 entry.tagIDs = TagIDList.encode([privateTag.id])
                 try DiaryContent.write("私密合成正文 \(index)", to: entry, protect: true, vault: vault)
-                privateDiaries += 1
             }
             diaries.append(entry)
         }
+        return diaries
+    }
 
-        var deletedAttachments = 0
-        let owners: [(AttachmentOwner, UUID)] = liveTodos.prefix(attachmentCount).enumerated().map { index, todo in
-            if index % 3 == 1, let routine = routines.first(where: { $0.deletedAt == nil }) {
-                return (.routine, routine.id)
-            }
-            if index % 3 == 2, let diary = diaries.first(where: { $0.deletedAt == nil }) {
-                return (.diary, diary.id)
-            }
+    private static func insertAttachments(
+        count: Int, todos: [TodoItem], routines: [DailyRoutine], diaries: [DiaryEntry], context: ModelContext
+    ) -> (total: Int, deleted: Int) {
+        let liveRoutine = routines.first { $0.deletedAt == nil }
+        let liveDiary = diaries.first { $0.deletedAt == nil }
+        let owners: [(AttachmentOwner, UUID)] = todos.prefix(count).enumerated().map { index, todo in
+            if index % 3 == 1, let routine = liveRoutine { return (.routine, routine.id) }
+            if index % 3 == 2, let diary = liveDiary { return (.diary, diary.id) }
             return (.todo, todo.id)
         }
+        var deleted = 0
         for (index, owner) in owners.enumerated() {
             let item = AttachmentItem(
                 ownerKind: owner.0.rawValue,
@@ -246,49 +336,52 @@ final class Phase1Corpus {
                 filename: "synthetic-\(index).png",
                 deletedAt: index == 0 || index % 10 == 9 ? Date(timeIntervalSince1970: 6) : nil
             )
-            if item.deletedAt != nil { deletedAttachments += 1 }
+            if item.deletedAt != nil { deleted += 1 }
             context.insert(item)
         }
+        return (owners.count, deleted)
+    }
 
-        try context.save()
-        let seedMs = (ProcessInfo.processInfo.systemUptime - started) * 1_000
+    private struct GraphInput {
+        var scale: Int
+        var store: String
+        var seedMs: Double
+        var todayKey: String
+        var todos: [TodoItem]
+        var subtasks: Int
+        var routines: [DailyRoutine]
+        var checkCount: Int
+        var diaries: [DiaryEntry]
+        var tags: [TagItem]
+        var attachments: (total: Int, deleted: Int)
+    }
+
+    private static func makeGraph(_ input: GraphInput) -> Phase1Graph {
         let info = ProcessInfo.processInfo
-        let probeTodo = liveTodos[0]
-        let probeRoutine = routines.first { $0.deletedAt == nil }!
-        let probeDiary = diaries.first { $0.deletedAt == nil && !$0.hasProtectedContent }!
-        let batchSize = min(100, max(8, liveTodos.count / 10))
-        let graph = Phase1Graph(
-            scale: scale,
-            store: store,
-            seedMs: Phase1Clock.roundMs(seedMs),
-            todayKey: todayKey,
-            todos: todos.count,
-            deletedTodos: todos.filter { $0.deletedAt != nil }.count,
-            subtasks: subtaskCount,
-            routines: routines.count,
-            deletedRoutines: routines.filter { $0.deletedAt != nil }.count,
-            disabledRoutines: routines.filter { $0.deletedAt == nil && !$0.isEnabled }.count,
-            checks: checkCount,
-            diaries: diaries.count,
-            deletedDiaries: diaries.filter { $0.deletedAt != nil }.count,
-            privateDiaries: privateDiaries,
-            tags: tags.count,
-            deletedTags: tags.filter { $0.deletedAt != nil }.count,
-            attachments: owners.count,
-            deletedAttachments: deletedAttachments,
+        let liveRoutines = input.routines.filter { $0.deletedAt == nil }
+        return Phase1Graph(
+            scale: input.scale,
+            store: input.store,
+            seedMs: Phase1Clock.roundMs(input.seedMs),
+            todayKey: input.todayKey,
+            todos: input.todos.count,
+            deletedTodos: input.todos.filter { $0.deletedAt != nil }.count,
+            subtasks: input.subtasks,
+            routines: input.routines.count,
+            deletedRoutines: input.routines.count - liveRoutines.count,
+            disabledRoutines: liveRoutines.filter { !$0.isEnabled }.count,
+            checks: input.checkCount,
+            diaries: input.diaries.count,
+            deletedDiaries: input.diaries.filter { $0.deletedAt != nil }.count,
+            privateDiaries: min(3, input.diaries.count),
+            tags: input.tags.count,
+            deletedTags: input.tags.filter { $0.deletedAt != nil }.count,
+            attachments: input.attachments.total,
+            deletedAttachments: input.attachments.deleted,
             os: info.operatingSystemVersionString,
             processorCount: info.processorCount,
             physicalMemoryBytes: info.physicalMemory,
             buildConfiguration: "Debug"
-        )
-        return Seeded(
-            graph: graph,
-            todayKey: todayKey,
-            probeTodoID: probeTodo.id,
-            probeRoutineID: probeRoutine.id,
-            probeDiaryID: probeDiary.id,
-            probeTagID: liveTag.id,
-            batchIDs: Set(liveTodos.prefix(batchSize).map(\.id))
         )
     }
 }

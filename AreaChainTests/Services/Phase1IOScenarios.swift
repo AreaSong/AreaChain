@@ -16,12 +16,18 @@ enum Phase1IOScenarios {
     private static func measureCalendar(_ corpus: Phase1Corpus) async throws {
         let todos = try corpus.tasks.fetchAllTodos(includeDeleted: false).filter { $0.remindMinutes != nil }
         let fixture = CalendarSyncFixture()
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        fixture.calendar = calendar
+        fixture.client.normalize = { content in
+            content.normalizedForScheduling(calendar: fixture.calendar) ?? content
+        }
         fixture.tasks = todos.map { todo in
             CalendarLocalItem(
                 id: todo.id,
                 state: CalendarLocalState(
                     content: CalendarContent(title: todo.title, dayKey: todo.dayKey, remindMinutes: todo.remindMinutes),
-                    isPublished: false
+                    isPublished: todo.deletedAt == nil && !todo.isDone
                 ),
                 eventID: ""
             )
@@ -29,6 +35,9 @@ enum Phase1IOScenarios {
         let start = ProcessInfo.processInfo.systemUptime
         _ = await fixture.engine.synchronize { true }
         let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1_000
+        guard fixture.client.batchCount > 0 else {
+            throw Phase1ContractError.message("假日历 synchronize 没有 apply，写入路径未热起来")
+        }
         try Phase1Measure.writeSingle(
             scenario: "fanout.calendarFakeSynchronize",
             corpus: corpus,
@@ -42,45 +51,50 @@ enum Phase1IOScenarios {
                 "create": fixture.client.createCount,
                 "didSave": fixture.didSaveCount
             ],
-            notes: "CalendarSyncEngine.synchronize + FakeCalendarClient。不是 EventKit；生产 CalendarSync.refreshIfEnabled 在 XCTest 被跳过。单次，p50/p95 等于该次。"
+            notes: "CalendarSyncEngine.synchronize + FakeCalendarClient。isPublished 对齐生产活且未完成。不是 EventKit。单次 wall。"
         )
     }
 
     private static func measureSnapshots(_ corpus: Phase1Corpus) throws {
+        try assertOrdinaryExportOmitsPrivateDiaries(corpus)
         try Phase1Measure.record(
             scenario: "snapshot.exportOrdinaryJSON",
             corpus: corpus,
-            fetchCalls: 7,
-            resultRows: 0,
-            notes: "SnapshotImportState 七表 fetch + SyncPort.makeSnapshot + encode。普通 JSON 排除私密手记。"
+            notes: "SnapshotImportState 七表 fetch + SyncPort.makeSnapshot + encode。resultRows 是排除私密后的手记条数。"
         ) {
-            try encodeOrdinary(corpus).1
+            let pair = try encodeOrdinary(corpus)
+            return Phase1Work(rows: pair.0.diaries.count, fetchCalls: 7)
         }
+        let snapshot = try encodeOrdinary(corpus).0
         try Phase1Measure.record(
             scenario: "snapshot.validateExisting",
             corpus: corpus,
-            fetchCalls: 7,
-            resultRows: 0,
-            notes: "对当前库生成的快照做 validate，不写入。"
+            notes: "对已生成快照做 validate：另一次 SnapshotImportState 七表 fetch，不含 encode。"
         ) {
-            let snapshot = try encodeOrdinary(corpus).0
             try SnapshotImportState(context: corpus.context).validate(snapshot)
-            return snapshot.todos.count
+            return Phase1Work(rows: snapshot.todos.count, fetchCalls: 7)
         }
-        let snapshot = try encodeOrdinary(corpus).0
         let samples = corpus.graph.scale >= 10_000 ? 3 : Phase1Measure.samples
         try Phase1Measure.record(
             scenario: "snapshot.importApplyEmpty",
             corpus: corpus,
-            fetchCalls: 8,
-            resultRows: snapshot.todos.count,
-            notes: "每次向新的空内存库 apply。含 checks upsert 的额外 DailyRoutine fetch。不改 corpus。",
+            notes: "每次向新的空内存库 apply。SnapshotImportState 7 次 + checks upsert 的 DailyRoutine fetch。不改 corpus。",
             samples: samples
         ) {
             let schema = Schema(AreaChainSchema.models)
             let empty = try ModelContainer(for: schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
             try SnapshotImporter.apply(snapshot, context: empty.mainContext)
-            return try empty.mainContext.fetchCount(FetchDescriptor<TodoItem>())
+            return Phase1Work(rows: snapshot.todos.count, fetchCalls: 8)
+        }
+    }
+
+    private static func assertOrdinaryExportOmitsPrivateDiaries(_ corpus: Phase1Corpus) throws {
+        let exported = Set(try encodeOrdinary(corpus).0.diaries.map(\.id))
+        guard corpus.privateDiaryIDs.isDisjoint(with: exported) else {
+            throw Phase1ContractError.message("普通 JSON 导出了私密手记")
+        }
+        guard !corpus.privateDiaryIDs.isEmpty else {
+            throw Phase1ContractError.message("语料缺少私密手记，无法核对导出过滤")
         }
     }
 
@@ -102,11 +116,11 @@ enum Phase1IOScenarios {
         try Phase1Measure.record(
             scenario: "backup.capture",
             corpus: corpus,
-            fetchCalls: 7,
-            resultRows: 0,
-            notes: "PrivateBackupCapture.capture：七表 + 解密私密正文。附件只有元数据。Fake 金库。"
+            notes: "PrivateBackupCapture.capture：七表 + 每条明文手记 DiaryContent.read 再 fetch 标签。附件只有元数据。Fake 金库。"
         ) {
-            try PrivateBackupCapture.capture(context: corpus.context, vault: corpus.vault).manifest.snapshot.todos.count
+            let captured = try PrivateBackupCapture.capture(context: corpus.context, vault: corpus.vault)
+            let plaintextReads = corpus.graph.diaries - corpus.graph.privateDiaries
+            return Phase1Work(rows: captured.manifest.snapshot.todos.count, fetchCalls: 7 + plaintextReads)
         }
     }
 
@@ -137,7 +151,7 @@ enum Phase1IOScenarios {
             fetchCalls: 0,
             resultRows: 1,
             extraCalls: [:],
-            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。不含真实钥匙串。单次。"
+            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。不含真实钥匙串。单次 wall。"
         )
     }
 }

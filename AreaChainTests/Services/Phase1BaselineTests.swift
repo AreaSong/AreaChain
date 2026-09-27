@@ -31,20 +31,19 @@ struct Phase1BaselineTests {
                 let context = corpus.freshContext()
                 let rows = try SwiftDataTaskRepository(context: context, container: corpus.container)
                     .fetchTodo(id: corpus.probeTodoID)
-                return (1, rows == nil ? 0 : 1)
+                return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
             },
             hot: {
-                try corpus.tasks.fetchTodo(id: corpus.probeTodoID) == nil ? 0 : 1
+                let rows = try corpus.tasks.fetchTodo(id: corpus.probeTodoID)
+                return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
             }
         )
         try Phase1Measure.record(
             scenario: "disk.fetch.todos.byDay",
             corpus: corpus,
-            fetchCalls: 1,
-            resultRows: 0,
             notes: "临时磁盘库 fetchTodos(for:)。"
         ) {
-            try corpus.tasks.fetchTodos(for: corpus.todayKey).count
+            Phase1Work(rows: try corpus.tasks.fetchTodos(for: corpus.todayKey).count, fetchCalls: 1)
         }
         #expect(try corpus.tasks.fetchTodo(id: corpus.probeTodoID) != nil)
     }
@@ -65,5 +64,6 @@ struct Phase1BaselineTests {
         #expect(corpus.graph.checks > 0)
         #expect(corpus.graph.attachments > 0)
         #expect(corpus.graph.privateDiaries > 0)
+        #expect(!corpus.privateDiaryIDs.isEmpty)
     }
 }
