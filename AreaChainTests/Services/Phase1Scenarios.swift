@@ -75,10 +75,13 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.todos.byStatusOpen",
             corpus: corpus,
-            notes: "仓储没有按状态接口；按生产习惯 fetchAll 后滤 isDone。"
+            notes: "fetchAll 计入 fetchWall，isDone 过滤计入 computeWall。"
         ) {
-            let rows = try corpus.tasks.fetchAllTodos(includeDeleted: false).filter { !$0.isDone }.count
-            return Phase1Work(rows: rows, fetchCalls: 1)
+            try Phase1Work.splitting(fetchCalls: 1, fetch: {
+                try corpus.tasks.fetchAllTodos(includeDeleted: false)
+            }, compute: { todos in
+                todos.filter { !$0.isDone }.count
+            })
         }
     }
 
@@ -104,7 +107,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "search.global.remapHits",
             corpus: corpus,
-            notes: "五表 fetch + 每条明文手记 DiaryContent.read 再 fetch 标签 + BoardSearch.hits。不含 @Query 物化和附件文件名。"
+            notes: "fetchWall=五表；computeWall=明文 snapshot（含标签 fetch）+ BoardSearch.hits。不含 @Query。"
         ) {
             try globalHits(corpus)
         }
@@ -124,24 +127,50 @@ enum Phase1Scenarios {
     }
 
     private static func globalHits(_ corpus: Phase1Corpus) throws -> Phase1Work {
-        let todos = try corpus.context.fetch(FetchDescriptor<TodoItem>())
-        let diaries = try corpus.context.fetch(FetchDescriptor<DiaryEntry>())
-        let routines = try corpus.context.fetch(FetchDescriptor<DailyRoutine>())
-        let checks = try corpus.context.fetch(FetchDescriptor<RoutineCheck>())
-        let tags = try corpus.context.fetch(FetchDescriptor<TagItem>())
-        let tagMap = Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
-        let hits = BoardSearch.hits(
-            query: "baseline",
-            todos: todos.map(\.snapshot),
-            diaries: diaries.map { DiaryContent.snapshot($0, vault: corpus.vault) },
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todayKey: corpus.todayKey,
-            tagMap: tagMap,
-            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: Locale(identifier: "zh-Hans"))
+        let fetched = try Phase1Clock.millis { try loadSearchTables(corpus) }
+        let tables = fetched.0
+        let plaintextReads = tables.diaries.filter { !$0.hasProtectedContent }.count
+        let computed = Phase1Clock.millis { searchHits(tables, vault: corpus.vault, todayKey: corpus.todayKey) }
+        return Phase1Work(
+            rows: computed.0,
+            fetchCalls: 5 + plaintextReads,
+            fetchWallMs: fetched.1.wallMs,
+            computeWallMs: computed.1.wallMs
         )
-        let plaintextReads = diaries.filter { !$0.hasProtectedContent }.count
-        return Phase1Work(rows: hits.count, fetchCalls: 5 + plaintextReads)
+    }
+
+    private struct SearchTables {
+        var todos: [TodoItem]
+        var diaries: [DiaryEntry]
+        var routines: [DailyRoutine]
+        var checks: [RoutineCheck]
+        var tags: [TagItem]
+    }
+
+    private static func loadSearchTables(_ corpus: Phase1Corpus) throws -> SearchTables {
+        SearchTables(
+            todos: try corpus.context.fetch(FetchDescriptor<TodoItem>()),
+            diaries: try corpus.context.fetch(FetchDescriptor<DiaryEntry>()),
+            routines: try corpus.context.fetch(FetchDescriptor<DailyRoutine>()),
+            checks: try corpus.context.fetch(FetchDescriptor<RoutineCheck>()),
+            tags: try corpus.context.fetch(FetchDescriptor<TagItem>())
+        )
+    }
+
+    private static func searchHits(_ tables: SearchTables, vault: PrivacyVault, todayKey: String) -> Int {
+        let tagMap = Dictionary(uniqueKeysWithValues: tables.tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
+        return BoardSearch.hits(
+            query: "baseline",
+            todos: tables.todos.map(\.snapshot),
+            diaries: tables.diaries.map { DiaryContent.snapshot($0, vault: vault) },
+            routines: tables.routines.map(\.snapshot),
+            checks: tables.checks.compactMap(\.snapshot),
+            todayKey: todayKey,
+            tagMap: tagMap,
+            privacy: BoardSearchPrivacy.protected(
+                diaries: tables.diaries, tags: tables.tags, locale: Locale(identifier: "zh-Hans")
+            )
+        ).count
     }
 
     private static func measureProjections(_ corpus: Phase1Corpus) throws {
@@ -149,39 +178,46 @@ enum Phase1Scenarios {
             scenario: "projection.dashboard",
             corpus: corpus,
             repeatScans: 1,
-            notes: "五表 fetch（对齐 DashboardView @Query）+ diarySource(tags:) + project 一次。不是 SwiftUI body。"
+            notes: "fetchWall=五表；computeWall=diarySource+project 一次。不是 SwiftUI body。"
         ) {
-            _ = try dashboard(corpus)
-            return Phase1Work(rows: 1, fetchCalls: 5)
+            try Phase1Work.splitting(fetchCalls: 5, fetch: {
+                try dashboardPack(corpus)
+            }, compute: { pack in
+                _ = projectDashboard(pack, todayKey: corpus.todayKey)
+                return 1
+            })
         }
         try Phase1Measure.record(
             scenario: "projection.dashboard.viewLikeRepeat",
             corpus: corpus,
             repeatScans: 6,
-            notes: "同一份模型上连续 6 次 diarySource+project，近似 DashboardView body 多次读计算属性。"
+            notes: "fetchWall=五表一次；computeWall=连续 6 次 diarySource+project。近似 body 多次读。"
         ) {
-            let pack = try dashboardPack(corpus)
-            for _ in 0..<6 {
-                _ = projectDashboard(pack, todayKey: corpus.todayKey)
-            }
-            return Phase1Work(rows: 1, fetchCalls: 5)
+            try Phase1Work.splitting(fetchCalls: 5, fetch: {
+                try dashboardPack(corpus)
+            }, compute: { pack in
+                for _ in 0..<6 {
+                    _ = projectDashboard(pack, todayKey: corpus.todayKey)
+                }
+                return 1
+            })
         }
         try Phase1Measure.record(
             scenario: "projection.agendaPending",
             corpus: corpus,
-            notes: "AgendaProjection.pending。fetch 对齐 WorkspacePendingView 四表 @Query（含未用于 pending 的 tags）。"
+            notes: "fetchWall=四表；computeWall=AgendaProjection.pending。含未用于 pending 的 tags fetch。"
         ) {
-            let routines = try corpus.context.fetch(FetchDescriptor<DailyRoutine>())
-            let todos = try corpus.context.fetch(FetchDescriptor<TodoItem>())
-            let checks = try corpus.context.fetch(FetchDescriptor<RoutineCheck>())
-            _ = try corpus.context.fetch(FetchDescriptor<TagItem>())
-            let pending = AgendaProjection.pending(
-                routines: routines.map(\.snapshot),
-                checks: checks.compactMap(\.snapshot),
-                todos: todos.map(\.snapshot),
-                todayKey: corpus.todayKey
-            )
-            return Phase1Work(rows: pending.overdueCount + pending.upcomingCount, fetchCalls: 4)
+            try Phase1Work.splitting(fetchCalls: 4, fetch: {
+                try agendaPack(corpus)
+            }, compute: { pack in
+                let pending = AgendaProjection.pending(
+                    routines: pack.routines.map(\.snapshot),
+                    checks: pack.checks.compactMap(\.snapshot),
+                    todos: pack.todos.map(\.snapshot),
+                    todayKey: corpus.todayKey
+                )
+                return pending.overdueCount + pending.upcomingCount
+            })
         }
     }
 
@@ -213,8 +249,20 @@ enum Phase1Scenarios {
         )
     }
 
-    private static func dashboard(_ corpus: Phase1Corpus) throws -> DashboardSnapshot {
-        try projectDashboard(dashboardPack(corpus), todayKey: corpus.todayKey)
+    private struct AgendaPack {
+        var routines: [DailyRoutine]
+        var todos: [TodoItem]
+        var checks: [RoutineCheck]
+    }
+
+    private static func agendaPack(_ corpus: Phase1Corpus) throws -> AgendaPack {
+        let pack = AgendaPack(
+            routines: try corpus.context.fetch(FetchDescriptor<DailyRoutine>()),
+            todos: try corpus.context.fetch(FetchDescriptor<TodoItem>()),
+            checks: try corpus.context.fetch(FetchDescriptor<RoutineCheck>())
+        )
+        _ = try corpus.context.fetch(FetchDescriptor<TagItem>())
+        return pack
     }
 
     private static func measureEdits(_ corpus: Phase1Corpus) throws {
@@ -249,9 +297,8 @@ enum Phase1Scenarios {
         try Phase1Measure.writeSingle(
             scenario: "edit.fanout.boardDidChange",
             corpus: corpus,
-            elapsedMs: 0,
-            fetchCalls: 0,
-            resultRows: 0,
+            timing: Phase1Timing(),
+            work: Phase1Work(rows: 0, fetchCalls: 0),
             extraCalls: ["singleTogglePosts": singlePosts, "batchTwoTogglePosts": posts.value],
             notes: "只计 NotificationCenter.boardDidChange。NotificationScheduler/CalendarSync 在 XCTest 中被 BoardEvents 跳过。",
             temperature: "n/a"
@@ -263,23 +310,25 @@ enum Phase1Scenarios {
             scenario: "fanout.notificationCatalogAndMenuBar",
             corpus: corpus,
             extraCalls: ["reminderCatalog": 1, "menuBarStatus": 1],
-            notes: "分别复现 loadCatalog 与 StatusItem.refreshCount 各 3 次整表 fetch，共 6 次。不是系统通知中心或状态栏按钮。"
+            notes: "fetchWall=两次三表；computeWall=ReminderPlanning.catalog + MenuBarStatus.forDay。不是系统通知。"
         ) {
-            let catalogPack = try fetchSnaps(corpus)
-            let menuPack = try fetchSnaps(corpus)
-            let catalog = ReminderPlanning.catalog(
-                routines: catalogPack.routines,
-                checks: catalogPack.checks,
-                todos: catalogPack.todos,
-                todayKey: corpus.todayKey
-            )
-            _ = MenuBarStatus.forDay(
-                routines: menuPack.routines,
-                checks: menuPack.checks,
-                todos: menuPack.todos,
-                dayKey: corpus.todayKey
-            )
-            return Phase1Work(rows: catalog.count, fetchCalls: 6)
+            try Phase1Work.splitting(fetchCalls: 6, fetch: {
+                (try fetchSnaps(corpus), try fetchSnaps(corpus))
+            }, compute: { packs in
+                let catalog = ReminderPlanning.catalog(
+                    routines: packs.0.routines,
+                    checks: packs.0.checks,
+                    todos: packs.0.todos,
+                    todayKey: corpus.todayKey
+                )
+                _ = MenuBarStatus.forDay(
+                    routines: packs.1.routines,
+                    checks: packs.1.checks,
+                    todos: packs.1.todos,
+                    dayKey: corpus.todayKey
+                )
+                return catalog.count
+            })
         }
     }
 

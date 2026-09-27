@@ -32,18 +32,18 @@ enum Phase1IOScenarios {
                 eventID: ""
             )
         }
-        let start = ProcessInfo.processInfo.systemUptime
+        let before = Phase1Clock.probe()
         _ = await fixture.engine.synchronize { true }
-        let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1_000
+        let after = Phase1Clock.probe()
+        let timing = Phase1Clock.delta(before, after)
         guard fixture.client.batchCount > 0 else {
             throw Phase1ContractError.message("假日历 synchronize 没有 apply，写入路径未热起来")
         }
         try Phase1Measure.writeSingle(
             scenario: "fanout.calendarFakeSynchronize",
             corpus: corpus,
-            elapsedMs: elapsed,
-            fetchCalls: 0,
-            resultRows: fixture.tasks.count,
+            timing: timing,
+            work: Phase1Work(rows: fixture.tasks.count, fetchCalls: 0, computeWallMs: timing.wallMs),
             extraCalls: [
                 "authorize": fixture.client.authorizationCount,
                 "calendarID": fixture.client.calendarCount,
@@ -51,7 +51,16 @@ enum Phase1IOScenarios {
                 "create": fixture.client.createCount,
                 "didSave": fixture.didSaveCount
             ],
-            notes: "CalendarSyncEngine.synchronize + FakeCalendarClient。isPublished 对齐生产活且未完成。不是 EventKit。单次 wall。"
+            notes: "CalendarSyncEngine.synchronize + FakeCalendarClient。computeWall≈wall；不是 EventKit。",
+            memory: Phase1MemoryMark(
+                rssBefore: before.rss,
+                rssAfter: after.rss,
+                rssPeakBefore: before.rssPeak,
+                rssPeakAfter: after.rssPeak,
+                rssLoopMax: max(before.rss, after.rss),
+                footprintBefore: before.footprint,
+                footprintAfter: after.footprint
+            )
         )
     }
 
@@ -60,10 +69,22 @@ enum Phase1IOScenarios {
         try Phase1Measure.record(
             scenario: "snapshot.exportOrdinaryJSON",
             corpus: corpus,
-            notes: "SnapshotImportState 七表 fetch + SyncPort.makeSnapshot + encode。resultRows 是排除私密后的手记条数。"
+            notes: "fetchWall=七表 SnapshotImportState；computeWall=makeSnapshot+encode。resultRows 是排除私密后的手记条数。"
         ) {
-            let pair = try encodeOrdinary(corpus)
-            return Phase1Work(rows: pair.0.diaries.count, fetchCalls: 7)
+            try Phase1Work.splitting(fetchCalls: 7, fetch: {
+                try SnapshotImportState(context: corpus.context)
+            }, compute: { state in
+                let snapshot = SyncPort.makeSnapshot(
+                    routines: state.routines,
+                    checks: state.checks,
+                    todos: state.todos,
+                    diaries: state.diaries,
+                    tags: state.tags,
+                    attachments: state.attachments
+                )
+                _ = try SyncPort.encode(snapshot)
+                return snapshot.diaries.count
+            })
         }
         let snapshot = try encodeOrdinary(corpus).0
         try Phase1Measure.record(
@@ -139,19 +160,28 @@ enum Phase1IOScenarios {
         _ = try await PrivateBackupService.export(
             to: url, password: "phase1-backup-pass", environment: source.environment
         )
-        let start = ProcessInfo.processInfo.systemUptime
+        let before = Phase1Clock.probe()
         try await PrivateBackupService.restore(
             from: url, password: "phase1-backup-pass", environment: destination.environment
         )
-        let elapsed = (ProcessInfo.processInfo.systemUptime - start) * 1_000
+        let after = Phase1Clock.probe()
+        let timing = Phase1Clock.delta(before, after)
         try Phase1Measure.writeSingle(
             scenario: "backup.restore.smallFixture",
             corpus: corpus,
-            elapsedMs: elapsed,
-            fetchCalls: 0,
-            resultRows: 1,
+            timing: timing,
+            work: Phase1Work(rows: 1, fetchCalls: 0, computeWallMs: timing.wallMs),
             extraCalls: [:],
-            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。不含真实钥匙串。单次 wall。"
+            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。不含真实钥匙串。未再拆 IO/算法。",
+            memory: Phase1MemoryMark(
+                rssBefore: before.rss,
+                rssAfter: after.rss,
+                rssPeakBefore: before.rssPeak,
+                rssPeakAfter: after.rssPeak,
+                rssLoopMax: max(before.rss, after.rss),
+                footprintBefore: before.footprint,
+                footprintAfter: after.footprint
+            )
         )
     }
 }

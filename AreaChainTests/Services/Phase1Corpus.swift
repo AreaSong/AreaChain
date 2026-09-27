@@ -25,6 +25,8 @@ struct Phase1Graph: Codable {
     var processorCount: Int
     var physicalMemoryBytes: UInt64
     var buildConfiguration: String
+    var logDirectory: String = ""
+    var logIsolation: String = ""
 }
 
 @MainActor

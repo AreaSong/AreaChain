@@ -1,39 +1,67 @@
-import Darwin
 import Foundation
 
 /// 阶段 1 只记录测量，不设产品预算。分位数在小样本上是近似值。
 struct Phase1Sample: Codable {
-    var scenario: String
-    var scale: Int
-    var store: String
-    var temperature: String
-    var sampleCount: Int
-    var warmup: Int
-    var p50Ms: Double
-    var p95Ms: Double
-    var minMs: Double
-    var maxMs: Double
-    var meanMs: Double
-    var mainActor: Bool
-    var fetchCalls: Int
-    var resultRows: Int
-    var repeatScans: Int
-    var extraCalls: [String: Int]
-    var rssBefore: UInt64
-    var rssAfter: UInt64
-    var notes: String
-    var os: String
-    var processorCount: Int
-    var physicalMemoryBytes: UInt64
-    var buildConfiguration: String
-    var approximate: Bool
-    /// 目前只能量 wall；全部在 MainActor 上，不能拆 IO / 后台 / 纯算法。
-    var clock: String
+    var scenario = ""
+    var scale = 0
+    var store = ""
+    var temperature = ""
+    var sampleCount = 0
+    var warmup = 0
+    var p50Ms = 0.0
+    var p95Ms = 0.0
+    var minMs = 0.0
+    var maxMs = 0.0
+    var meanMs = 0.0
+    var p50MainCpuMs = 0.0
+    var p50FetchWallMs = 0.0
+    var p50ComputeWallMs = 0.0
+    var meanInBlock = 0.0
+    var meanOutBlock = 0.0
+    var mainActor = true
+    var fetchCalls = 0
+    var resultRows = 0
+    var repeatScans = 1
+    var extraCalls: [String: Int] = [:]
+    var rssBefore: UInt64 = 0
+    var rssAfter: UInt64 = 0
+    var rssPeakBefore: UInt64 = 0
+    var rssPeakAfter: UInt64 = 0
+    var rssLoopMax: UInt64 = 0
+    var footprintBefore: UInt64 = 0
+    var footprintAfter: UInt64 = 0
+    var notes = ""
+    var os = ""
+    var processorCount = 0
+    var physicalMemoryBytes: UInt64 = 0
+    var buildConfiguration = "Debug"
+    var approximate = true
+    /// wall=进程单调时钟；main_cpu=当前线程 user+system；fetch/compute=场景内分段；blocks=rusage。
+    var clock = ""
+    var logDirectory = ""
+    var logIsolation = ""
 }
 
 struct Phase1Work {
     var rows: Int
     var fetchCalls: Int
+    var fetchWallMs: Double = 0
+    var computeWallMs: Double = 0
+
+    static func splitting<Payload>(
+        fetchCalls: Int,
+        fetch: () throws -> Payload,
+        compute: (Payload) throws -> Int
+    ) throws -> Phase1Work {
+        let fetched = try Phase1Clock.millis(fetch)
+        let computed = try Phase1Clock.millis { try compute(fetched.0) }
+        return Phase1Work(
+            rows: computed.0,
+            fetchCalls: fetchCalls,
+            fetchWallMs: fetched.1.wallMs,
+            computeWallMs: computed.1.wallMs
+        )
+    }
 }
 
 enum Phase1ContractError: LocalizedError {
@@ -45,52 +73,18 @@ enum Phase1ContractError: LocalizedError {
     }
 }
 
-enum Phase1Clock {
-    static func millis<T>(_ work: () throws -> T) rethrows -> (T, Double) {
-        let start = ProcessInfo.processInfo.systemUptime
-        let value = try work()
-        return (value, (ProcessInfo.processInfo.systemUptime - start) * 1_000)
-    }
-
-    static func millis(_ work: () throws -> Void) rethrows -> Double {
-        try millis { try work(); return () }.1
-    }
-
-    static func rss() -> UInt64 {
-        var info = mach_task_basic_info()
-        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size / MemoryLayout<natural_t>.size)
-        let result = withUnsafeMutablePointer(to: &info) { pointer in
-            pointer.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
-                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
-            }
-        }
-        precondition(result == KERN_SUCCESS, "task_info failed: \(result)")
-        return info.resident_size
-    }
-
-    static func percentile(_ sorted: [Double], _ fraction: Double) -> Double {
-        guard !sorted.isEmpty else { return 0 }
-        let index = min(sorted.count - 1, max(0, Int(ceil(fraction * Double(sorted.count))) - 1))
-        return sorted[index]
-    }
-
-    static func roundMs(_ value: Double) -> Double {
-        (value * 1_000).rounded() / 1_000
-    }
-}
-
 enum Phase1Log {
     private static var prepared = false
-    /// 每次测试进程单独目录，避免追加到日用容器里上次留下的 scale 文件。
-    private static let runDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent(
-            "areachain-phase1-run-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString)",
-            isDirectory: true
-        )
+    private static let runDirectory = makeRunDirectory()
 
-    /// 测试宿主受沙盒限制，不能写 /tmp 或仓库 build/。
     static var combinedURL: URL {
         runDirectory.appendingPathComponent("baseline.jsonl")
+    }
+
+    static var isolationLabel: String {
+        runDirectory.path.contains("/Containers/com.areachain.app/")
+            ? "app_container_tmp_fallback"
+            : "outside_app_container"
     }
 
     static func prepare() throws {
@@ -98,28 +92,32 @@ enum Phase1Log {
         prepared = true
         try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
         try Data().write(to: combinedURL)
+        fputs("PHASE1_LOG \(combinedURL.path)\n", stderr)
     }
 
     static func write(_ sample: Phase1Sample) throws {
         try prepare()
         try append(encodedLine(sample), to: combinedURL)
-        try append(encodedLine(sample), to: scaleURL(sample.scale))
+        try append(encodedLine(sample), to: scaleURL(sample.scale, store: sample.store))
     }
 
     static func writeGraph(_ graph: Phase1Graph) throws {
         try prepare()
+        var recorded = graph
+        recorded.logDirectory = runDirectory.path
+        recorded.logIsolation = isolationLabel
         let encoder = JSONEncoder()
-        let data = try encoder.encode(graph)
+        let data = try encoder.encode(recorded)
         guard var line = String(data: data, encoding: .utf8) else {
             throw Phase1ContractError.message("图规模 JSON 编码失败")
         }
         line = "GRAPH \(line)\n"
         try append(line, to: combinedURL)
-        try append(line, to: scaleURL(graph.scale))
+        try append(line, to: scaleURL(graph.scale, store: graph.store))
     }
 
-    static func scaleURL(_ scale: Int) -> URL {
-        runDirectory.appendingPathComponent("scale-\(scale).jsonl")
+    static func scaleURL(_ scale: Int, store: String) -> URL {
+        runDirectory.appendingPathComponent("scale-\(scale)-\(store).jsonl")
     }
 
     private static func encodedLine(_ sample: Phase1Sample) throws -> String {
@@ -144,13 +142,57 @@ enum Phase1Log {
         }
         try handle.write(contentsOf: data)
     }
+
+    private static func makeRunDirectory() -> URL {
+        let name = "areachain-phase1-run-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString)"
+        return (firstWritableRoot() ?? FileManager.default.temporaryDirectory)
+            .appendingPathComponent(name, isDirectory: true)
+    }
+
+    /// 优先写到仓库 build/ 或 /tmp，避免污染日用应用容器；沙盒拒绝时再回退。
+    private static func firstWritableRoot() -> URL? {
+        let environment = ProcessInfo.processInfo.environment
+        var candidates: [URL] = []
+        if let override = environment["AREACHAIN_PHASE1_LOG_DIR"], !override.isEmpty {
+            candidates.append(URL(fileURLWithPath: override, isDirectory: true))
+        }
+        candidates.append(
+            URL(fileURLWithPath: #filePath)
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .deletingLastPathComponent()
+                .appendingPathComponent("build/phase1", isDirectory: true)
+        )
+        if let sourceRoot = environment["SRCROOT"] {
+            candidates.append(URL(fileURLWithPath: sourceRoot).appendingPathComponent("build/phase1", isDirectory: true))
+        }
+        candidates.append(URL(fileURLWithPath: "/tmp", isDirectory: true))
+        let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+        if !cwd.path.contains("/Containers/com.areachain.app/") {
+            candidates.append(cwd.appendingPathComponent("build/phase1", isDirectory: true))
+        }
+        return candidates.map { $0.appendingPathComponent("areachain-phase1", isDirectory: true) }
+            .first { canWrite(to: $0) }
+    }
+
+    private static func canWrite(to directory: URL) -> Bool {
+        do {
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let probe = directory.appendingPathComponent("write-probe-\(UUID().uuidString)")
+            try Data("ok".utf8).write(to: probe, options: .atomic)
+            try FileManager.default.removeItem(at: probe)
+            return true
+        } catch {
+            return false
+        }
+    }
 }
 
 @MainActor
 enum Phase1Measure {
     static let warmup = 1
     static let samples = 7
-    static let clockKind = "wall_ms_mainActor"
+    static let clockKind = "wall_ms,main_cpu_ms,fetch_wall_ms,compute_wall_ms,rusage_blocks"
 
     static func record(
         scenario: String,
@@ -163,20 +205,20 @@ enum Phase1Measure {
         samples: Int = 7,
         work: () throws -> Phase1Work
     ) throws {
-        var times: [Double] = []
         var last = Phase1Work(rows: 0, fetchCalls: 0)
         for _ in 0..<warmup {
             last = try work()
         }
-        let rssBefore = Phase1Clock.rss()
+        let series = Phase1Series()
+        let before = Phase1Clock.probe()
+        var loopMax = before.rss
         for _ in 0..<samples {
             let timed = try Phase1Clock.millis { try work() }
             last = timed.0
-            times.append(timed.1)
+            series.append(timing: timed.1, work: last)
+            loopMax = max(loopMax, Phase1Clock.probe().rss)
         }
-        let rssAfter = Phase1Clock.rss()
-        let sorted = times.sorted()
-        let mean = times.reduce(0, +) / Double(times.count)
+        let after = Phase1Clock.probe()
         try Phase1Log.write(
             sample(
                 corpus: corpus,
@@ -185,16 +227,13 @@ enum Phase1Measure {
                     temperature: "hot_after_\(warmup)_warmup",
                     sampleCount: samples,
                     warmup: warmup,
-                    times: sorted,
-                    mean: mean,
-                    fetchCalls: last.fetchCalls,
-                    resultRows: last.rows,
+                    last: last,
                     repeatScans: repeatScans,
                     extraCalls: extraCalls,
-                    rssBefore: rssBefore,
-                    rssAfter: rssAfter,
                     notes: notes,
-                    approximate: approximate
+                    approximate: approximate,
+                    series: series,
+                    memory: mark(before: before, after: after, loopMax: loopMax)
                 )
             )
         )
@@ -207,8 +246,11 @@ enum Phase1Measure {
         cold: () throws -> Phase1Work,
         hot: () throws -> Phase1Work
     ) throws {
-        let coldTimed = try Phase1Clock.millis { try cold() }
-        let ms = Phase1Clock.roundMs(coldTimed.1)
+        let before = Phase1Clock.probe()
+        let timed = try Phase1Clock.millis { try cold() }
+        let after = Phase1Clock.probe()
+        let series = Phase1Series()
+        series.append(timing: timed.1, work: timed.0)
         try Phase1Log.write(
             sample(
                 corpus: corpus,
@@ -217,16 +259,13 @@ enum Phase1Measure {
                     temperature: "cold_new_context",
                     sampleCount: 1,
                     warmup: 0,
-                    times: [ms],
-                    mean: ms,
-                    fetchCalls: coldTimed.0.fetchCalls,
-                    resultRows: coldTimed.0.rows,
+                    last: timed.0,
                     repeatScans: 1,
                     extraCalls: [:],
-                    rssBefore: 0,
-                    rssAfter: Phase1Clock.rss(),
-                    notes: notes + "；冷路径只有 1 次，p50/p95 等于该次。时钟仅为 wall。",
-                    approximate: true
+                    notes: notes + "；冷路径只有 1 次，p50/p95 等于该次。",
+                    approximate: true,
+                    series: series,
+                    memory: mark(before: before, after: after, loopMax: after.rss)
                 )
             )
         )
@@ -236,14 +275,16 @@ enum Phase1Measure {
     static func writeSingle(
         scenario: String,
         corpus: Phase1Corpus,
-        elapsedMs: Double,
-        fetchCalls: Int,
-        resultRows: Int,
+        timing: Phase1Timing,
+        work: Phase1Work,
         extraCalls: [String: Int],
         notes: String,
-        temperature: String = "single"
+        temperature: String = "single",
+        memory: Phase1MemoryMark? = nil
     ) throws {
-        let ms = Phase1Clock.roundMs(elapsedMs)
+        let series = Phase1Series()
+        series.append(timing: timing, work: work)
+        let probe = Phase1Clock.probe()
         try Phase1Log.write(
             sample(
                 corpus: corpus,
@@ -252,19 +293,34 @@ enum Phase1Measure {
                     temperature: temperature,
                     sampleCount: 1,
                     warmup: 0,
-                    times: [ms],
-                    mean: ms,
-                    fetchCalls: fetchCalls,
-                    resultRows: resultRows,
+                    last: work,
                     repeatScans: 1,
                     extraCalls: extraCalls,
-                    rssBefore: 0,
-                    rssAfter: Phase1Clock.rss(),
                     notes: notes,
-                    approximate: true
+                    approximate: true,
+                    series: series,
+                    memory: memory ?? mark(before: probe, after: probe, loopMax: probe.rss)
                 )
             )
         )
+    }
+
+    private final class Phase1Series {
+        var walls: [Double] = []
+        var mainCpus: [Double] = []
+        var fetches: [Double] = []
+        var computes: [Double] = []
+        var inBlocks: [Int64] = []
+        var outBlocks: [Int64] = []
+
+        func append(timing: Phase1Timing, work: Phase1Work) {
+            walls.append(timing.wallMs)
+            mainCpus.append(timing.mainCpuMs)
+            fetches.append(work.fetchWallMs)
+            computes.append(work.computeWallMs)
+            inBlocks.append(timing.inBlock)
+            outBlocks.append(timing.outBlock)
+        }
     }
 
     private struct SampleDraft {
@@ -272,47 +328,72 @@ enum Phase1Measure {
         var temperature: String
         var sampleCount: Int
         var warmup: Int
-        var times: [Double]
-        var mean: Double
-        var fetchCalls: Int
-        var resultRows: Int
+        var last: Phase1Work
         var repeatScans: Int
         var extraCalls: [String: Int]
-        var rssBefore: UInt64
-        var rssAfter: UInt64
         var notes: String
         var approximate: Bool
+        var series: Phase1Series
+        var memory: Phase1MemoryMark
+    }
+
+    private static func mark(before: Phase1Probe, after: Phase1Probe, loopMax: UInt64) -> Phase1MemoryMark {
+        Phase1MemoryMark(
+            rssBefore: before.rss,
+            rssAfter: after.rss,
+            rssPeakBefore: before.rssPeak,
+            rssPeakAfter: after.rssPeak,
+            rssLoopMax: loopMax,
+            footprintBefore: before.footprint,
+            footprintAfter: after.footprint
+        )
     }
 
     private static func sample(corpus: Phase1Corpus, draft: SampleDraft) -> Phase1Sample {
         let info = ProcessInfo.processInfo
-        let sorted = draft.times.sorted()
-        return Phase1Sample(
-            scenario: draft.scenario,
-            scale: corpus.graph.scale,
-            store: corpus.graph.store,
-            temperature: draft.temperature,
-            sampleCount: draft.sampleCount,
-            warmup: draft.warmup,
-            p50Ms: Phase1Clock.roundMs(Phase1Clock.percentile(sorted, 0.50)),
-            p95Ms: Phase1Clock.roundMs(Phase1Clock.percentile(sorted, 0.95)),
-            minMs: Phase1Clock.roundMs(sorted.first ?? 0),
-            maxMs: Phase1Clock.roundMs(sorted.last ?? 0),
-            meanMs: Phase1Clock.roundMs(draft.mean),
-            mainActor: true,
-            fetchCalls: draft.fetchCalls,
-            resultRows: draft.resultRows,
-            repeatScans: draft.repeatScans,
-            extraCalls: draft.extraCalls,
-            rssBefore: draft.rssBefore,
-            rssAfter: draft.rssAfter,
-            notes: draft.notes,
-            os: info.operatingSystemVersionString,
-            processorCount: info.processorCount,
-            physicalMemoryBytes: info.physicalMemory,
-            buildConfiguration: "Debug",
-            approximate: draft.approximate,
-            clock: clockKind
-        )
+        let walls = draft.series.walls.sorted()
+        let cpus = draft.series.mainCpus.sorted()
+        let fetches = draft.series.fetches.sorted()
+        let computes = draft.series.computes.sorted()
+        let meanWall = draft.series.walls.reduce(0, +) / Double(max(draft.series.walls.count, 1))
+        let meanIn = Double(draft.series.inBlocks.reduce(0, +)) / Double(max(draft.series.inBlocks.count, 1))
+        let meanOut = Double(draft.series.outBlocks.reduce(0, +)) / Double(max(draft.series.outBlocks.count, 1))
+        var value = Phase1Sample()
+        value.scenario = draft.scenario
+        value.scale = corpus.graph.scale
+        value.store = corpus.graph.store
+        value.temperature = draft.temperature
+        value.sampleCount = draft.sampleCount
+        value.warmup = draft.warmup
+        value.p50Ms = Phase1Clock.roundMs(Phase1Clock.percentile(walls, 0.50))
+        value.p95Ms = Phase1Clock.roundMs(Phase1Clock.percentile(walls, 0.95))
+        value.minMs = Phase1Clock.roundMs(walls.first ?? 0)
+        value.maxMs = Phase1Clock.roundMs(walls.last ?? 0)
+        value.meanMs = Phase1Clock.roundMs(meanWall)
+        value.p50MainCpuMs = Phase1Clock.roundMs(Phase1Clock.percentile(cpus, 0.50))
+        value.p50FetchWallMs = Phase1Clock.roundMs(Phase1Clock.percentile(fetches, 0.50))
+        value.p50ComputeWallMs = Phase1Clock.roundMs(Phase1Clock.percentile(computes, 0.50))
+        value.meanInBlock = Phase1Clock.roundMs(meanIn)
+        value.meanOutBlock = Phase1Clock.roundMs(meanOut)
+        value.fetchCalls = draft.last.fetchCalls
+        value.resultRows = draft.last.rows
+        value.repeatScans = draft.repeatScans
+        value.extraCalls = draft.extraCalls
+        value.rssBefore = draft.memory.rssBefore
+        value.rssAfter = draft.memory.rssAfter
+        value.rssPeakBefore = draft.memory.rssPeakBefore
+        value.rssPeakAfter = draft.memory.rssPeakAfter
+        value.rssLoopMax = draft.memory.rssLoopMax
+        value.footprintBefore = draft.memory.footprintBefore
+        value.footprintAfter = draft.memory.footprintAfter
+        value.notes = draft.notes
+        value.os = info.operatingSystemVersionString
+        value.processorCount = info.processorCount
+        value.physicalMemoryBytes = info.physicalMemory
+        value.approximate = draft.approximate
+        value.clock = clockKind
+        value.logDirectory = Phase1Log.combinedURL.deletingLastPathComponent().path
+        value.logIsolation = Phase1Log.isolationLabel
+        return value
     }
 }
