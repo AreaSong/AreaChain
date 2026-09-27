@@ -24,7 +24,12 @@ struct WorkspaceTodayView: View {
     }
 
     private var progress: BoardProgress {
-        DayBoardLogic.todayOneOffProgress(todos: todos.map(\.snapshot), dayKey: todayKey)
+        DayBoardLogic.todayProgress(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            todos: todos.map(\.snapshot),
+            dayKey: todayKey
+        )
     }
 
     var body: some View {

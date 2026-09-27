@@ -208,12 +208,7 @@ enum DayBoardLogic {
         AgendaProjection.upcomingTodos(todos: todos, todayKey: todayKey)
     }
 
-    /// 进度环只统计当天一次性事项。角标仍用 `todayProgress`，把重复事项算进去。
-    static func todayOneOffProgress(todos: [TodoSnapshot], dayKey: String) -> BoardProgress {
-        let due = self.todos(for: dayKey, in: todos)
-        return BoardProgress(completed: due.filter(\.isDone).count, total: due.count)
-    }
-
+    /// 今日进度。工作台进度环、侧栏今日角标和菜单栏共用；含当天排定的一次性事项和重复事项，跳过算闭合，子任务不算顶层。
     static func todayProgress(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],

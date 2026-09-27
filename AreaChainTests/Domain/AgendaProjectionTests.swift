@@ -74,16 +74,19 @@ struct AgendaProjectionTests {
         #expect(completed.map(\.id) == [daily.id])
     }
 
-    @Test func oneOffProgressIgnoresRoutinesWhileBadgeKeepsThem() {
+    @Test func todayProgressAndBadgeShareDueRecurringScope() {
         let daily = routine("每天")
         let open = todo("待办", day: today)
-        let ring = DayBoardLogic.todayOneOffProgress(todos: [open], dayKey: today)
+        let progress = DayBoardLogic.todayProgress(
+            routines: [daily], checks: [], todos: [open], dayKey: today
+        )
         let badge = DayBoardLogic.todayBadgeCount(
             routines: [daily], checks: [], todos: [open], dayKey: today
         )
-        #expect(ring.completed == 0)
-        #expect(ring.total == 1)
+        #expect(progress.completed == 0)
+        #expect(progress.total == 2)
         #expect(badge == 2)
+        #expect(badge == progress.total - progress.completed)
     }
 
     @Test func pendingTodosUseDayKeyAndStayStableAcrossYearBoundary() {
