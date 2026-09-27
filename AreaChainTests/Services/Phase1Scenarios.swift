@@ -55,6 +55,41 @@ enum Phase1Scenarios {
             let rows = try corpus.catalog.fetchTag(id: corpus.probeTagID)
             return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
         }
+        try Phase1Measure.record(
+            scenario: "fetch.owner.live.todo",
+            corpus: corpus,
+            extraCalls: ["tableTodos": corpus.graph.todos],
+            notes: "AttachmentAccess.ownerIsLive(context:)：id predicate，无 fetchLimit，重复 UUID 判不可用。"
+        ) {
+            let live = try AttachmentAccess.ownerIsLive(
+                AttachmentOwnerKey(kind: .todo, id: corpus.probeTodoID),
+                context: corpus.context
+            )
+            return Phase1Work(rows: live ? 1 : 0, fetchCalls: 1)
+        }
+        try Phase1Measure.record(
+            scenario: "fetch.owner.live.diary",
+            corpus: corpus,
+            extraCalls: ["tableDiaries": corpus.graph.diaries],
+            notes: "手记拥有者存活：id predicate。附件保存与选图共用这条路径。"
+        ) {
+            let live = try AttachmentAccess.ownerIsLive(
+                AttachmentOwnerKey(kind: .diary, id: corpus.probeDiaryID),
+                context: corpus.context
+            )
+            return Phase1Work(rows: live ? 1 : 0, fetchCalls: 1)
+        }
+        try Phase1Measure.record(
+            scenario: "fetch.attachment.byOwner",
+            corpus: corpus,
+            extraCalls: ["tableAttachments": corpus.graph.attachments],
+            notes: "OwnedAttachments.matching(in:)：ownerID+ownerKind predicate，含软删除行。"
+        ) {
+            let rows = try OwnedAttachments.matching(
+                ownerID: corpus.probeTodoID, kind: .todo, in: corpus.context
+            ).count
+            return Phase1Work(rows: rows, fetchCalls: 1)
+        }
     }
 
     private static func measureListReads(_ corpus: Phase1Corpus) throws {

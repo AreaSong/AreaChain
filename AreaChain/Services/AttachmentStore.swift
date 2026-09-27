@@ -39,7 +39,7 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
         var stored = data
         var vaultID: UUID?
         if ownerKind == .diary {
-            let matches = try context.fetch(FetchDescriptor<DiaryEntry>()).filter { $0.id == ownerID }
+            let matches = try AttachmentAccess.fetchDiaries(id: ownerID, in: context)
             guard matches.count == 1, let owner = matches.first, owner.deletedAt == nil else {
                 throw RepositoryError.invalidArgument("附件拥有者不可用")
             }

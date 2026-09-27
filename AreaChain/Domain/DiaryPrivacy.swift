@@ -90,14 +90,24 @@ enum AttachmentAccess {
     static func ownerIsLive(_ owner: AttachmentOwnerKey, context: ModelContext) throws -> Bool {
         switch owner.kind {
         case .todo:
-            let matches = try context.fetch(FetchDescriptor<TodoItem>()).filter { $0.id == owner.id }
-            return isSingleLive(deletedAts: matches.map(\.deletedAt))
+            return isSingleLive(deletedAts: try fetchTodos(id: owner.id, in: context).map(\.deletedAt))
         case .routine:
-            let matches = try context.fetch(FetchDescriptor<DailyRoutine>()).filter { $0.id == owner.id }
-            return isSingleLive(deletedAts: matches.map(\.deletedAt))
+            return isSingleLive(deletedAts: try fetchRoutines(id: owner.id, in: context).map(\.deletedAt))
         case .diary:
-            let matches = try context.fetch(FetchDescriptor<DiaryEntry>()).filter { $0.id == owner.id }
-            return isSingleLive(deletedAts: matches.map(\.deletedAt))
+            return isSingleLive(deletedAts: try fetchDiaries(id: owner.id, in: context).map(\.deletedAt))
         }
+    }
+
+    /// 不设 fetchLimit：同一 UUID 出现多行时拥有者必须判为不可用，不能只看第一行。
+    static func fetchTodos(id: UUID, in context: ModelContext) throws -> [TodoItem] {
+        try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id }))
+    }
+
+    static func fetchRoutines(id: UUID, in context: ModelContext) throws -> [DailyRoutine] {
+        try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.id == id }))
+    }
+
+    static func fetchDiaries(id: UUID, in context: ModelContext) throws -> [DiaryEntry] {
+        try context.fetch(FetchDescriptor<DiaryEntry>(predicate: #Predicate { $0.id == id }))
     }
 }

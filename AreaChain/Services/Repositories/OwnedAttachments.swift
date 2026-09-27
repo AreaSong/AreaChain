@@ -11,8 +11,18 @@ enum OwnedAttachments {
         attachments.filter { $0.ownerID == ownerID && $0.ownerKind == kind.rawValue }
     }
 
+    /// 含已软删除行：父项彻底删除仍要拿到墓碑附件做文件清理。不按日期过滤。
+    static func matching(ownerID: UUID, kind: AttachmentOwner, in context: ModelContext) throws -> [AttachmentItem] {
+        let kindValue = kind.rawValue
+        return try context.fetch(
+            FetchDescriptor<AttachmentItem>(predicate: #Predicate {
+                $0.ownerID == ownerID && $0.ownerKind == kindValue
+            })
+        )
+    }
+
     static func purge(ownerID: UUID, kind: AttachmentOwner, in context: ModelContext) throws {
-        for item in matching(try all(in: context), ownerID: ownerID, kind: kind) {
+        for item in try matching(ownerID: ownerID, kind: kind, in: context) {
             context.delete(item)
         }
     }
