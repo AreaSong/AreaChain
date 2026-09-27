@@ -34,7 +34,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.routine.byId",
             corpus: corpus,
-            notes: "SwiftDataRoutineRepository.fetchRoutine：整表再 first。"
+            notes: "SwiftDataRoutineRepository.fetchRoutine：id predicate + fetchLimit 1。"
         ) {
             let rows = try corpus.routines.fetchRoutine(id: corpus.probeRoutineID)
             return Phase1Work(rows: rows == nil ? 0 : 1, fetchCalls: 1)
@@ -89,14 +89,14 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.checks.byDay",
             corpus: corpus,
-            notes: "fetchChecks(for dayKey:) 整表 RoutineCheck 再按日过滤。"
+            notes: "fetchChecks(for dayKey:) dayKey predicate。"
         ) {
             Phase1Work(rows: try corpus.routines.fetchChecks(for: corpus.todayKey).count, fetchCalls: 1)
         }
         try Phase1Measure.record(
             scenario: "fetch.checks.byRoutine",
             corpus: corpus,
-            notes: "fetchChecks(for routineID:) 整表再按 routine.id 过滤。"
+            notes: "fetchChecks(for routineID:) 先按 id 取习惯，再读 inverse checks。"
         ) {
             Phase1Work(rows: try corpus.routines.fetchChecks(for: corpus.probeRoutineID).count, fetchCalls: 1)
         }

@@ -23,29 +23,34 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
     // MARK: - 查询 (Query)
 
     func fetchRoutines(includeDisabled: Bool, includeDeleted: Bool) throws -> [DailyRoutine] {
-        let items = try context.fetch(FetchDescriptor<DailyRoutine>())
-        return items
-            .filter { routine in
-                if !includeDeleted && routine.deletedAt != nil { return false }
-                if !includeDisabled && !routine.isEnabled { return false }
-                return true
-            }
-            .sorted { $0.sortOrder < $1.sortOrder }
+        let predicate: Predicate<DailyRoutine>?
+        switch (includeDisabled, includeDeleted) {
+        case (true, true):
+            predicate = nil
+        case (true, false):
+            predicate = #Predicate { $0.deletedAt == nil }
+        case (false, true):
+            predicate = #Predicate { $0.isEnabled == true }
+        case (false, false):
+            predicate = #Predicate { $0.deletedAt == nil && $0.isEnabled == true }
+        }
+        return try fetchRoutines(matching: predicate)
     }
 
     func fetchRoutine(id: UUID) throws -> DailyRoutine? {
-        let items = try context.fetch(FetchDescriptor<DailyRoutine>())
-        return items.first { $0.id == id }
+        // 含已软删除行：restore / purge / 按 id 变更都依赖这条路径找到回收站里的习惯。
+        var descriptor = FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.id == id })
+        descriptor.fetchLimit = 1
+        return try context.fetch(descriptor).first
     }
 
     func fetchChecks(for dayKey: String) throws -> [RoutineCheck] {
-        let allChecks = try context.fetch(FetchDescriptor<RoutineCheck>())
-        return allChecks.filter { $0.dayKey == dayKey }
+        try context.fetch(FetchDescriptor<RoutineCheck>(predicate: #Predicate { $0.dayKey == dayKey }))
     }
 
     func fetchChecks(for routineID: UUID) throws -> [RoutineCheck] {
-        let allChecks = try context.fetch(FetchDescriptor<RoutineCheck>())
-        return allChecks.filter { $0.routine?.id == routineID }
+        guard let routine = try fetchRoutine(id: routineID) else { return [] }
+        return routine.checks
     }
 
     // MARK: - 创建 (Create)
@@ -104,16 +109,16 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
         if enabled {
-            try enableRoutineAndBridgeSkips(routine, todayKey: todayKey)
+            enableRoutineAndBridgeSkips(routine, todayKey: todayKey)
         } else {
             disableRoutine(routine, todayKey: todayKey)
         }
         try saveAndNotify()
     }
 
-    private func enableRoutineAndBridgeSkips(_ routine: DailyRoutine, todayKey: String) throws {
+    private func enableRoutineAndBridgeSkips(_ routine: DailyRoutine, todayKey: String) {
         if !routine.isEnabled {
-            let checks = try fetchChecks(for: routine.id)
+            let checks = routine.checks
             let start = HabitStreakLogic.skipFillStart(
                 pausedOnDayKey: routine.pausedOnDayKey,
                 createdDayKey: routine.createdDayKey,
@@ -216,8 +221,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        let checks = try fetchChecks(for: routine.id)
-        if let check = checks.first(where: { $0.dayKey == dayKey }) {
+        if let check = check(on: routine, dayKey: dayKey) {
             check.isDone.toggle()
             if !check.isDone {
                 check.isSkipped = false
@@ -232,8 +236,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        let checks = try fetchChecks(for: routine.id)
-        if let check = checks.first(where: { $0.dayKey == dayKey }) {
+        if let check = check(on: routine, dayKey: dayKey) {
             check.isDone = true
         } else {
             context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
@@ -245,8 +248,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
-        let checks = try fetchChecks(for: routine.id)
-        if let check = checks.first(where: { $0.dayKey == dayKey }) {
+        if let check = check(on: routine, dayKey: dayKey) {
             check.isDone = true
             check.isSkipped = true
         } else {
@@ -257,10 +259,10 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
 
     func batchSetRoutineChecks(ids: Set<UUID>, markDone: Bool, on dayKey: String) throws {
         guard !ids.isEmpty else { return }
-        let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
-        let dayChecks = try fetchChecks(for: dayKey)
-        for routine in routines where ids.contains(routine.id) {
-            applyCheck(to: routine, dayKey: dayKey, markDone: markDone, existing: dayChecks)
+        let routines = try fetchLiveRoutines(ids: ids)
+        let existingByRoutineID = firstCheckByRoutineID(try fetchChecks(for: dayKey))
+        for routine in routines {
+            applyCheck(to: routine, dayKey: dayKey, markDone: markDone, existingByRoutineID: existingByRoutineID)
         }
         try saveAndNotify()
     }
@@ -269,9 +271,9 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         to routine: DailyRoutine,
         dayKey: String,
         markDone: Bool,
-        existing: [RoutineCheck]
+        existingByRoutineID: [UUID: RoutineCheck]
     ) {
-        if let check = existing.first(where: { $0.routine?.id == routine.id && $0.dayKey == dayKey }) {
+        if let check = existingByRoutineID[routine.id] {
             check.isDone = markDone
             check.isSkipped = false
         } else if markDone {
@@ -283,8 +285,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard !ids.isEmpty else { return }
         let now = SoftDelete.stamp()
         let attachments = try OwnedAttachments.all(in: context)
-        let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
-        for routine in routines where ids.contains(routine.id) {
+        for routine in try fetchLiveRoutines(ids: ids) {
             routine.deletedAt = now
             SoftDelete.stampAttachments(ownerID: routine.id, at: now, attachments: attachments, ownerKind: .routine)
         }
@@ -293,8 +294,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
 
     func batchApplyTag(ids: Set<UUID>, tagID: UUID, present: Bool) throws {
         guard !ids.isEmpty else { return }
-        let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
-        for routine in routines where ids.contains(routine.id) {
+        for routine in try fetchLiveRoutines(ids: ids) {
             ClassifiedFieldsUpdate.setTag(routine, tagID: tagID, present: present)
         }
         try saveAndNotify()
@@ -302,8 +302,7 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
 
     func batchToggleTag(ids: Set<UUID>, tagID: UUID) throws {
         guard !ids.isEmpty else { return }
-        let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
-        for routine in routines where ids.contains(routine.id) {
+        for routine in try fetchLiveRoutines(ids: ids) {
             ClassifiedFieldsUpdate.toggleTag(routine, tagID: tagID)
         }
         try saveAndNotify()
@@ -367,5 +366,37 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         let routines = try fetchRoutines(includeDisabled: true, includeDeleted: false)
         Catalog.reindexRoutines(routines, from: source, to: destination)
         try saveAndNotify()
+    }
+
+    // MARK: - 内部辅助 (Internal Helpers)
+
+    private func fetchRoutines(
+        matching predicate: Predicate<DailyRoutine>?,
+        sortBy: [SortDescriptor<DailyRoutine>] = [SortDescriptor(\.sortOrder)]
+    ) throws -> [DailyRoutine] {
+        try context.fetch(FetchDescriptor(predicate: predicate, sortBy: sortBy))
+    }
+
+    private func fetchLiveRoutines(ids: Set<UUID>) throws -> [DailyRoutine] {
+        guard !ids.isEmpty else { return [] }
+        let wanted = Array(ids)
+        return try fetchRoutines(
+            matching: #Predicate { wanted.contains($0.id) && $0.deletedAt == nil },
+            sortBy: []
+        )
+    }
+
+    private func check(on routine: DailyRoutine, dayKey: String) -> RoutineCheck? {
+        routine.checks.first { $0.dayKey == dayKey }
+    }
+
+    private func firstCheckByRoutineID(_ checks: [RoutineCheck]) -> [UUID: RoutineCheck] {
+        var mapped: [UUID: RoutineCheck] = [:]
+        mapped.reserveCapacity(checks.count)
+        for check in checks {
+            guard let routineID = check.routine?.id, mapped[routineID] == nil else { continue }
+            mapped[routineID] = check
+        }
+        return mapped
     }
 }
