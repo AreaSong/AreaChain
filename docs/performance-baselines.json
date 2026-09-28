@@ -22,8 +22,30 @@
       "metric": "wall_ms",
       "budget": 200,
       "status": "provisional",
-      "source": "AreaChainTests/Domain/HabitStreakEmpiricalTests.swift:431",
-      "note": "1000 天连续记录的局部上限；不是启动或大库基线。"
+      "source": "AreaChainTests/Domain/HabitStreakEmpiricalTests.swift:443",
+      "note": "Debug、UTC、1000 天连续 isDone 记录；热身 1 次后 3 次取样取中位数。局部 wall_ms 上限，不是启动或大库基线。索引路径额外 O(U) 排序键，产品 RSS 见 habit-streak-indexed-rss。"
+    },
+    {
+      "id": "habit-streak-10000-days-sparse",
+      "scope": "AreaChain/Domain/HabitStreakLogic.swift",
+      "test": "AreaChainTests/Domain/HabitStreakEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/HabitStreakEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/HabitStreakEquivalenceTests.swift:340",
+      "note": "Debug、UTC、10000 个民事日、工作日掩码、约每 37 天 done / 每 41 天 skip；热身后对索引实现与 NaiveCursor 各 3 次取样取中位数，并要求索引不慢于游标加 50ms 噪声下限。"
+    },
+    {
+      "id": "habit-streak-indexed-rss",
+      "scope": "AreaChain/Domain/HabitStreakLogic.swift",
+      "test": "AreaChainTests/Domain/HabitStreakEquivalenceTests.swift",
+      "testFilter": null,
+      "metric": "rss_bytes",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "索引路径内存仍是 O(U) map，另排序 O(U) 个规范键，不再为 D 个空日分配 key。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
     },
     {
       "id": "task-row-pointer-response",

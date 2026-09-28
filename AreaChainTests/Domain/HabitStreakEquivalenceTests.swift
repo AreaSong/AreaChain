@@ -187,6 +187,7 @@ struct HabitStreakEquivalenceTests {
         let checks = [
             CheckSnapshot(routineId: id, dayKey: "2026-09-04", isDone: true),
             CheckSnapshot(routineId: id, dayKey: "2026-09-05", isDone: true),
+            CheckSnapshot(routineId: id, dayKey: "2026-09-06", isDone: true, isSkipped: true),
             CheckSnapshot(routineId: id, dayKey: "2026-09-07", isDone: true)
         ]
         expectEqual(routine, checks: checks, todayKey: "2026-09-07")
@@ -304,18 +305,55 @@ struct HabitStreakEquivalenceTests {
             utcCalendar.date(byAdding: .day, value: -1, to: cursor)!,
             calendar: utcCalendar
         )
+        // Debug / UTC / 10000 个民事日 / 工作日掩码 / 约每 37 天 done、每 41 天 skip；热身 1 次后各 3 次取样。
+        _ = HabitStreakLogic.calculate(
+            routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
+        )
+        _ = HabitStreakNaiveCursor.calculate(
+            routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
+        )
 
+        var indexedResult = StreakResult(currentStreak: 0, bestStreak: 0)
+        var naiveResult = StreakResult(currentStreak: 0, bestStreak: 0)
+        var indexedSamples: [TimeInterval] = []
+        var naiveSamples: [TimeInterval] = []
+        indexedSamples.reserveCapacity(3)
+        naiveSamples.reserveCapacity(3)
+        for _ in 1...3 {
+            indexedSamples.append(elapsedSeconds {
+                indexedResult = HabitStreakLogic.calculate(
+                    routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
+                )
+            })
+            naiveSamples.append(elapsedSeconds {
+                naiveResult = HabitStreakNaiveCursor.calculate(
+                    routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
+                )
+            })
+        }
+
+        let indexedMedian = medianElapsed(indexedSamples)
+        let naiveMedian = medianElapsed(naiveSamples)
+        #expect(indexedResult == naiveResult)
+        #expect(indexedResult.bestStreak >= indexedResult.currentStreak)
+        #expect(
+            indexedMedian < 0.2,
+            "indexed median \(indexedMedian)s vs naive median \(naiveMedian)s over 3 Debug samples"
+        )
+        #expect(
+            indexedMedian <= naiveMedian + 0.05,
+            "indexed median \(indexedMedian)s exceeded naive median \(naiveMedian)s by more than 50ms noise floor"
+        )
+    }
+
+    private func elapsedSeconds(_ work: () -> Void) -> TimeInterval {
         let started = Date()
-        let actual = HabitStreakLogic.calculate(
-            routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
-        )
-        let elapsed = Date().timeIntervalSince(started)
-        let naive = HabitStreakNaiveCursor.calculate(
-            routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
-        )
+        work()
+        return Date().timeIntervalSince(started)
+    }
 
-        #expect(actual == naive)
-        #expect(actual.bestStreak >= actual.currentStreak)
-        #expect(elapsed < 0.2, "10_000-day sparse calculation took \(elapsed)s")
+    private func medianElapsed(_ samples: [TimeInterval]) -> TimeInterval {
+        let ordered = samples.sorted()
+        return ordered[ordered.count / 2]
     }
 }

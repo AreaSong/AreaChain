@@ -185,17 +185,22 @@ private extension DashboardProjection {
         return true
     }
 
+    /// 先按 routineId 分组，避免每个习惯再扫整表 checks。连击仍只走 `HabitStreakLogic.calculate`。
     static func streakPeaks(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
         todayKey: String,
         calendar: Calendar
     ) -> (current: Int, best: Int) {
+        let checksByRoutine = Dictionary(grouping: checks, by: \.routineId)
         var current = 0
         var best = 0
         for routine in routines where routine.deletedAt == nil {
             let streak = HabitStreakLogic.calculate(
-                routine: routine, checks: checks, todayKey: todayKey, calendar: calendar
+                routine: routine,
+                checks: checksByRoutine[routine.id] ?? [],
+                todayKey: todayKey,
+                calendar: calendar
             )
             current = max(current, streak.currentStreak)
             best = max(best, streak.bestStreak)

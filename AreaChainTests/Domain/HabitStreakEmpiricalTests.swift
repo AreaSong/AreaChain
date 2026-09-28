@@ -419,18 +419,29 @@ struct HabitStreakEmpiricalTests {
         }
 
         let todayKey = DayKey.from(utcCalendar.date(byAdding: .day, value: -1, to: cur)!, calendar: utcCalendar)
-
-        let start = Date()
-        let result = HabitStreakLogic.calculate(
-            routine: routine,
-            checks: checks,
-            todayKey: todayKey,
-            calendar: utcCalendar
+        _ = HabitStreakLogic.calculate(
+            routine: routine, checks: checks, todayKey: todayKey, calendar: utcCalendar
         )
-        let elapsed = Date().timeIntervalSince(start)
+        var result = StreakResult(currentStreak: 0, bestStreak: 0)
+        var samples: [TimeInterval] = []
+        samples.reserveCapacity(3)
+        for _ in 1...3 {
+            let start = Date()
+            result = HabitStreakLogic.calculate(
+                routine: routine,
+                checks: checks,
+                todayKey: todayKey,
+                calendar: utcCalendar
+            )
+            samples.append(Date().timeIntervalSince(start))
+        }
+        let median = samples.sorted()[1]
 
         #expect(result.currentStreak == 1000)
         #expect(result.bestStreak == 1000)
-        #expect(elapsed < 0.2, "1000-day calculation must complete in under 200ms, took \(elapsed)s")
+        #expect(
+            median < 0.2,
+            "1000 consecutive UTC Debug checks, median of 3 samples after warmup was \(median)s"
+        )
     }
 }

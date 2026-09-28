@@ -41,6 +41,31 @@ struct DashboardProjectionTests {
         #expect(summary.strongestCurrentStreak == 0)
     }
 
+    @Test func streakPeaksIgnoreForeignChecksAndDeletedRoutines() {
+        let liveID = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
+        let otherID = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!
+        let deletedID = UUID(uuidString: "cccccccc-cccc-cccc-cccc-cccccccccccc")!
+        let live = routine(id: liveID, created: "2026-09-01")
+        let other = routine(id: otherID, created: "2026-09-01")
+        var deleted = routine(id: deletedID, created: "2026-09-01")
+        deleted.deletedAt = date("2026-09-08")
+        let checks = [
+            check(liveID, "2026-09-07", done: true),
+            check(liveID, "2026-09-08", done: true),
+            check(otherID, "2026-09-08", done: true),
+            check(deletedID, "2026-09-06", done: true),
+            check(deletedID, "2026-09-07", done: true),
+            check(deletedID, "2026-09-08", done: true)
+        ]
+        let summary = project(
+            today: "2026-09-08",
+            routines: [live, other, deleted],
+            checks: checks
+        ).summary
+        #expect(summary.strongestCurrentStreak == 2)
+        #expect(summary.strongestBestStreak == 2)
+    }
+
     @Test func historicalMissSkipAndOffDayCompletion() {
         let id = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         var routine = routine(id: id, created: "2026-09-01", mask: mondayMask())

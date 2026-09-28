@@ -23,6 +23,8 @@ public struct StreakResult: Equatable, Sendable {
 }
 
 enum HabitStreakLogic {
+    /// 一次 `calculate` 只扫传入的 `checks` 一遍。map 仍是 O(U)；索引路径另排序 O(U) 个规范键，
+    /// 不再为创建日到今天的每个空日分配 key。产品进程 RSS 未建立。
     static func calculate(
         routine: RoutineSnapshot,
         checks: [CheckSnapshot],
@@ -34,10 +36,23 @@ enum HabitStreakLogic {
             return StreakResult(currentStreak: 0, bestStreak: 0)
         }
 
-        let checkMap = buildCheckMap(for: routine.id, from: checks)
+        let startKey = DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil
+            ? routine.createdDayKey
+            : todayKey
+        let collectEventKeys = canUseIndexedWalk(
+            routine: routine, startKey: startKey, todayKey: todayKey, calendar: calendar
+        )
+        let checkIndex = buildCheckIndex(
+            for: routine.id,
+            from: checks,
+            startKey: startKey,
+            todayKey: todayKey,
+            calendar: calendar,
+            collectEventKeys: collectEventKeys
+        )
         let todayStatus = evaluateTodayStatus(
             routine: routine,
-            todayCheck: checkMap[todayKey],
+            todayCheck: checkIndex.map[todayKey],
             todayKey: todayKey,
             calendar: calendar
         )
@@ -52,16 +67,14 @@ enum HabitStreakLogic {
             )
         }
 
-        let startKey = DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil
-            ? routine.createdDayKey
-            : todayKey
-
         let streaks = evaluateRunningStreaks(
             routine: routine,
-            checkMap: checkMap,
+            checkMap: checkIndex.map,
+            eventKeys: checkIndex.eventKeys,
             startKey: startKey,
             todayKey: todayKey,
-            calendar: calendar
+            calendar: calendar,
+            useIndexed: collectEventKeys
         )
 
         return StreakResult(
@@ -73,25 +86,44 @@ enum HabitStreakLogic {
         )
     }
 
-    private static func buildCheckMap(
+    private struct CheckIndex {
+        let map: [String: CheckSnapshot]
+        let eventKeys: [String]
+    }
+
+    private static func buildCheckIndex(
         for routineId: UUID,
-        from checks: [CheckSnapshot]
-    ) -> [String: CheckSnapshot] {
+        from checks: [CheckSnapshot],
+        startKey: String,
+        todayKey: String,
+        calendar: Calendar,
+        collectEventKeys: Bool
+    ) -> CheckIndex {
         var map: [String: CheckSnapshot] = [:]
-        map.reserveCapacity(min(checks.count, 64))
+        var eventKeys: [String] = []
         for check in checks where check.routineId == routineId {
-            if let existing = map[check.dayKey] {
-                map[check.dayKey] = CheckSnapshot(
+            let key = check.dayKey
+            if let existing = map[key] {
+                map[key] = CheckSnapshot(
                     routineId: routineId,
-                    dayKey: check.dayKey,
+                    dayKey: key,
                     isDone: existing.isDone || check.isDone,
                     isSkipped: existing.isSkipped || check.isSkipped
                 )
             } else {
-                map[check.dayKey] = check
+                map[key] = check
+                if collectEventKeys,
+                   key >= startKey,
+                   key <= todayKey,
+                   isCanonicalDayKey(key, calendar: calendar) {
+                    eventKeys.append(key)
+                }
             }
         }
-        return map
+        if collectEventKeys {
+            eventKeys.sort()
+        }
+        return CheckIndex(map: map, eventKeys: eventKeys)
     }
 
     private struct TodayStatus {
@@ -122,14 +154,17 @@ enum HabitStreakLogic {
     private static func evaluateRunningStreaks(
         routine: RoutineSnapshot,
         checkMap: [String: CheckSnapshot],
+        eventKeys: [String],
         startKey: String,
         todayKey: String,
-        calendar: Calendar
+        calendar: Calendar,
+        useIndexed: Bool
     ) -> (currentStreak: Int, bestStreak: Int) {
-        if canUseIndexedWalk(routine: routine, startKey: startKey, todayKey: todayKey, calendar: calendar) {
+        if useIndexed {
             return evaluateIndexedStreakLoop(
                 routine: routine,
                 checkMap: checkMap,
+                eventKeys: eventKeys,
                 startKey: startKey,
                 todayKey: todayKey,
                 calendar: calendar
@@ -164,6 +199,7 @@ enum HabitStreakLogic {
     private static func evaluateIndexedStreakLoop(
         routine: RoutineSnapshot,
         checkMap: [String: CheckSnapshot],
+        eventKeys: [String],
         startKey: String,
         todayKey: String,
         calendar: Calendar
@@ -171,9 +207,6 @@ enum HabitStreakLogic {
         var runningStreak = 0
         var bestStreak = 0
         var gapStart = startKey
-        let eventKeys = inRangeCanonicalCheckKeys(
-            checkMap: checkMap, startKey: startKey, todayKey: todayKey, calendar: calendar
-        )
 
         for key in eventKeys {
             let previous = DayKey.shifted(key, by: -1, calendar: calendar)
@@ -338,18 +371,6 @@ enum HabitStreakLogic {
             cursor = next
         }
         return false
-    }
-
-    private static func inRangeCanonicalCheckKeys(
-        checkMap: [String: CheckSnapshot],
-        startKey: String,
-        todayKey: String,
-        calendar: Calendar
-    ) -> [String] {
-        checkMap.keys.filter { key in
-            key >= startKey && key <= todayKey && isCanonicalDayKey(key, calendar: calendar)
-        }
-        .sorted()
     }
 
     private static func isCanonicalDayKey(_ key: String, calendar: Calendar) -> Bool {
