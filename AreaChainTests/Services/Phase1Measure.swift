@@ -74,32 +74,42 @@ enum Phase1ContractError: LocalizedError {
 }
 
 enum Phase1Log {
-    private static var prepared = false
-    private static let runDirectory = makeRunDirectory()
-
-    static var combinedURL: URL {
-        runDirectory.appendingPathComponent("baseline.jsonl")
+    private struct Storage {
+        let directory: URL
+        let persistFiles: Bool
     }
 
+    private static var prepared = false
+    private static let storage = makeStorage()
+    private static let memoryLock = NSLock()
+    private static var memoryFiles: [String: String] = [:]
+
+    static var combinedURL: URL {
+        storage.directory.appendingPathComponent("baseline.jsonl")
+    }
+
+    static var persistsFiles: Bool { storage.persistFiles }
+
     static var isolationLabel: String {
-        runDirectory.path.contains("/Containers/com.areachain.app/")
-            ? "app_container_tmp_fallback"
-            : "outside_app_container"
+        if isApplicationContainer(storage.directory) { return "app_container_tmp_fallback" }
+        return storage.persistFiles ? "outside_app_container" : "stderr_and_memory"
     }
 
     static func prepare() throws {
         guard !prepared else { return }
         prepared = true
-        try FileManager.default.createDirectory(at: runDirectory, withIntermediateDirectories: true)
-        try Data().write(to: combinedURL)
-        fputs("PHASE1_LOG \(combinedURL.path)\n", stderr)
+        if storage.persistFiles {
+            try FileManager.default.createDirectory(at: storage.directory, withIntermediateDirectories: true)
+            try Data().write(to: combinedURL)
+        }
+        fputs("PHASE1_LOG \(combinedURL.path) isolation=\(isolationLabel)\n", stderr)
     }
 
     static func write(_ sample: Phase1Sample) throws {
         try prepare()
         try append(encodedLine(sample), to: combinedURL)
         try append(encodedLine(sample), to: scaleURL(sample.scale, store: sample.store))
-        // 沙盒可能只能写到应用容器 tmp；关键样本同步打到 stderr，验收不必读日用容器。
+        // 关键样本同步打到 stderr；沙盒写不进仓库/tmp 时只留内存，不写日用容器。
         if sample.scenario.hasPrefix("backup.") || sample.scenario == "snapshot.exportOrdinaryJSON" {
             fputs("PHASE1_SAMPLE \(try encodedLine(sample))", stderr)
         }
@@ -107,7 +117,7 @@ enum Phase1Log {
 
     static func samples() throws -> [Phase1Sample] {
         try prepare()
-        let text = try String(contentsOf: combinedURL, encoding: .utf8)
+        let text = try logText(at: combinedURL)
         let decoder = JSONDecoder()
         return try text.split(whereSeparator: \.isNewline).compactMap { line in
             let raw = String(line)
@@ -119,7 +129,7 @@ enum Phase1Log {
     static func writeGraph(_ graph: Phase1Graph) throws {
         try prepare()
         var recorded = graph
-        recorded.logDirectory = runDirectory.path
+        recorded.logDirectory = storage.directory.path
         recorded.logIsolation = isolationLabel
         let encoder = JSONEncoder()
         let data = try encoder.encode(recorded)
@@ -132,7 +142,7 @@ enum Phase1Log {
     }
 
     static func scaleURL(_ scale: Int, store: String) -> URL {
-        runDirectory.appendingPathComponent("scale-\(scale)-\(store).jsonl")
+        storage.directory.appendingPathComponent("scale-\(scale)-\(store).jsonl")
     }
 
     private static func encodedLine(_ sample: Phase1Sample) throws -> String {
@@ -146,6 +156,12 @@ enum Phase1Log {
     }
 
     private static func append(_ line: String, to url: URL) throws {
+        if !storage.persistFiles {
+            memoryLock.lock()
+            memoryFiles[url.lastPathComponent, default: ""] += line
+            memoryLock.unlock()
+            return
+        }
         if !FileManager.default.fileExists(atPath: url.path) {
             try Data().write(to: url)
         }
@@ -158,13 +174,29 @@ enum Phase1Log {
         try handle.write(contentsOf: data)
     }
 
-    private static func makeRunDirectory() -> URL {
-        let name = "areachain-phase1-run-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString)"
-        return (firstWritableRoot() ?? FileManager.default.temporaryDirectory)
-            .appendingPathComponent(name, isDirectory: true)
+    private static func logText(at url: URL) throws -> String {
+        if storage.persistFiles {
+            return try String(contentsOf: url, encoding: .utf8)
+        }
+        memoryLock.lock()
+        let text = memoryFiles[url.lastPathComponent] ?? ""
+        memoryLock.unlock()
+        return text
     }
 
-    /// 优先写到仓库 build/ 或 /tmp，避免污染日用应用容器；沙盒拒绝时再回退。
+    private static func makeStorage() -> Storage {
+        let name = "areachain-phase1-run-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString)"
+        if let root = firstWritableRoot() {
+            return Storage(directory: root.appendingPathComponent(name, isDirectory: true), persistFiles: true)
+        }
+        // 占位路径，不创建、不写入；样本留在进程内存和 stderr。
+        return Storage(
+            directory: URL(fileURLWithPath: "/tmp/areachain-phase1-memory/\(name)", isDirectory: true),
+            persistFiles: false
+        )
+    }
+
+    /// 只接受沙盒外目录。应用容器（含日用 `com.areachain.app`）一律拒绝。
     private static func firstWritableRoot() -> URL? {
         let environment = ProcessInfo.processInfo.environment
         var candidates: [URL] = []
@@ -185,14 +217,19 @@ enum Phase1Log {
         }
         candidates.append(URL(fileURLWithPath: "/tmp", isDirectory: true))
         let cwd = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
-        if !cwd.path.contains("/Containers/com.areachain.app/") {
+        if !isApplicationContainer(cwd) {
             candidates.append(cwd.appendingPathComponent("build/phase1", isDirectory: true))
         }
         return candidates.map { $0.appendingPathComponent("areachain-phase1", isDirectory: true) }
             .first { canWrite(to: $0) }
     }
 
+    private static func isApplicationContainer(_ url: URL) -> Bool {
+        url.standardizedFileURL.path.contains("/Library/Containers/")
+    }
+
     private static func canWrite(to directory: URL) -> Bool {
+        if isApplicationContainer(directory) { return false }
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let probe = directory.appendingPathComponent("write-probe-\(UUID().uuidString)")

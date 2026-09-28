@@ -230,12 +230,14 @@ struct PrivateBackupTests {
         let files = f.files
         let root = f.root
         let password = backupPassword
+        let gate = CancelGate()
         let task = Task.detached {
-            try PrivateBackupFile.write(capture, password: password, to: url) {
-                try files.read(reference: $0, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
+            try PrivateBackupFile.write(capture, password: password, to: url) { reference in
+                try gate.blockUntilCancelled()
+                return try files.read(reference: reference, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
             }
         }
-        try await Task.sleep(for: .milliseconds(20))
+        try gate.waitUntilWorkStarted()
         task.cancel()
         await #expect(throws: PrivacyError.cancelled) { try await task.value }
         #expect(try Data(contentsOf: url) == sentinel)
@@ -253,7 +255,6 @@ struct PrivateBackupTests {
         let task = Task {
             try await PrivateBackupService.export(to: url, password: backupPassword, environment: f.environment)
         }
-        try await Task.sleep(for: .milliseconds(20))
         task.cancel()
         await expectCancellation { _ = try await task.value }
         #expect(try Data(contentsOf: url) == sentinel)
@@ -271,7 +272,6 @@ struct PrivateBackupTests {
         let task = Task {
             try await PrivateBackupService.restore(from: url, password: backupPassword, environment: destination.environment)
         }
-        try await Task.sleep(for: .milliseconds(20))
         task.cancel()
         await expectCancellation { try await task.value }
         #expect(try destination.repository.fetchDiary(id: local.id)?.text == "目的地原文")
@@ -297,6 +297,28 @@ struct PrivateBackupTests {
         #expect(try FileManager.default.contentsOfDirectory(atPath: f.root.path) == [image.id.uuidString])
     }
 
+    @Test func cancelledTagProtectionLeavesOriginalNoteAndFile() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag(private: false)
+        let note = try f.repository.addDiary(text: "取消转换原文", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let image = try f.image(owner: note, data: Data(repeating: 0x44, count: 16 * 1024))
+        let original = try f.files.read(reference: image.reference, root: f.root)
+        let url = f.root.appending(path: "cancel-convert.areachainbackup")
+        let proof = try await PrivateBackupService.export(
+            to: url, password: backupPassword, environment: f.environment, additionalPrivateTags: [tag.id]
+        )
+        let task = Task {
+            try await DiaryProtection.applyTagsAsync([tag.id], in: f.environment, backup: proof)
+        }
+        task.cancel()
+        await expectCancellation { try await task.value }
+        #expect(note.text == "取消转换原文" && !note.hasProtectedContent && !tag.isPrivateDiary)
+        #expect(image.storageID == nil && image.privacyVaultID == nil && image.retiredStorageID == nil)
+        #expect(try f.files.read(reference: image.reference, root: f.root) == original)
+        #expect(Set(try FileManager.default.contentsOfDirectory(atPath: f.root.path)) == [image.id.uuidString, url.lastPathComponent])
+    }
+
     private func expectCancellation(_ work: () async throws -> Void) async {
         do {
             try await work()
@@ -308,5 +330,35 @@ struct PrivateBackupTests {
         } catch {
             Issue.record("unexpected \(error)")
         }
+    }
+}
+
+/// 等写入循环真正进入附件回调后再取消，避免 20ms 竞态。
+private final class CancelGate: @unchecked Sendable {
+    private let condition = NSCondition()
+    private var started = false
+
+    func waitUntilWorkStarted(timeout: TimeInterval = 5) throws {
+        condition.lock()
+        defer { condition.unlock() }
+        let deadline = Date().addingTimeInterval(timeout)
+        while !started {
+            let remaining = deadline.timeIntervalSinceNow
+            guard remaining > 0 else { throw PrivacyError.busy }
+            _ = condition.wait(until: Date().addingTimeInterval(remaining))
+        }
+    }
+
+    func blockUntilCancelled(timeout: TimeInterval = 5) throws {
+        condition.lock()
+        started = true
+        condition.broadcast()
+        condition.unlock()
+        let deadline = Date().addingTimeInterval(timeout)
+        while !Task.isCancelled {
+            guard Date() < deadline else { throw PrivacyError.busy }
+            Thread.sleep(forTimeInterval: 0.005)
+        }
+        try PrivacyTask.checkCancellation()
     }
 }

@@ -22,7 +22,7 @@ struct Phase1BaselineTests {
         let corpus = try await Phase1Corpus.make(scale: 1_000, onDisk: true)
         defer { corpus.cleanup() }
         try Phase1Log.writeGraph(corpus.graph)
-        #expect(FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
+        try assertPhase1LogIsIsolated(requireSamples: false)
         try Phase1Measure.coldThenHot(
             scenario: "disk.fetch.todo.byId",
             corpus: corpus,
@@ -46,6 +46,7 @@ struct Phase1BaselineTests {
             Phase1Work(rows: try corpus.tasks.fetchTodos(for: corpus.todayKey).count, fetchCalls: 1)
         }
         #expect(try corpus.tasks.fetchTodo(id: corpus.probeTodoID) != nil)
+        try assertPhase1LogIsIsolated()
     }
 
     private func run(scale: Int, onDisk: Bool) async throws {
@@ -53,7 +54,7 @@ struct Phase1BaselineTests {
         defer { corpus.cleanup() }
         try Phase1Log.writeGraph(corpus.graph)
         try await Phase1Scenarios.runAll(on: corpus)
-        #expect(FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
+        try assertPhase1LogIsIsolated()
         try assertOwnerLookupMaterializesFewerRows(scale: scale, graph: corpus.graph)
         #expect(try corpus.tasks.fetchTodo(id: corpus.probeTodoID) != nil)
         #expect(try corpus.routines.fetchRoutine(id: corpus.probeRoutineID) != nil)
@@ -66,6 +67,17 @@ struct Phase1BaselineTests {
         #expect(corpus.graph.attachments > 0)
         #expect(corpus.graph.privateDiaries > 0)
         #expect(!corpus.privateDiaryIDs.isEmpty)
+    }
+
+    private func assertPhase1LogIsIsolated(requireSamples: Bool = true) throws {
+        #expect(Phase1Log.isolationLabel != "app_container_tmp_fallback")
+        #expect(!Phase1Log.combinedURL.path.contains("/Library/Containers/"))
+        if Phase1Log.persistsFiles {
+            #expect(FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
+        }
+        if requireSamples {
+            #expect(!(try Phase1Log.samples().isEmpty))
+        }
     }
 
     /// 同一次运行里对照物化行数：owner lookup 不是整表热点。
