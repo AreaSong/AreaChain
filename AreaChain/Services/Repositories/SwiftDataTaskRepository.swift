@@ -45,6 +45,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     func fetchTodo(id: UUID) throws -> TodoItem? {
         // 含已软删除行：restore / purge / 按 id 变更都依赖这条路径找到回收站里的待办。
+        // fetchLimit 1 是身份读取；附件存活仍走 AttachmentAccess，不设 limit，以便 isSingleLive 看到重复 UUID。
         var descriptor = FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id })
         descriptor.fetchLimit = 1
         return try context.fetch(descriptor).first
@@ -63,6 +64,11 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         return try fetchTodos(
             matching: #Predicate { $0.deletedAt == nil && $0.tagIDs.contains(needle) }
         ).filter { TagIDList.contains($0.tagIDs, tagID) }
+    }
+
+    func fetchTodos(isDone: Bool) throws -> [TodoItem] {
+        let wantedDone = isDone
+        return try fetchTodos(matching: #Predicate { $0.deletedAt == nil && $0.isDone == wantedDone })
     }
 
     // MARK: - 创建 (Create)

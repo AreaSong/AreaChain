@@ -110,4 +110,77 @@ struct AttachmentCleanupTests {
         #expect(!ids.contains(diary.id))
         #expect(try AttachmentCleanup.fileIDs(listed: [], purgedOwners: [], context: context).isEmpty)
     }
+
+    @Test func emptyListedRemovesLiveOrphansThenPurgesByID() throws {
+        let container = try container()
+        let context = container.mainContext
+        let todo = TodoItem(title: "trashed", dayKey: "2026-09-12", deletedAt: Date(timeIntervalSince1970: 3))
+        let live = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "orphan.png"
+        )
+        let tombstone = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "gone.png",
+            deletedAt: Date(timeIntervalSince1970: 3)
+        )
+        let neighbor = TodoItem(title: "keep", dayKey: "2026-09-12")
+        let other = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: neighbor.id, filename: "other.png"
+        )
+        let diary = AttachmentItem(
+            ownerKind: AttachmentOwner.diary.rawValue, ownerID: todo.id, filename: "diary.png"
+        )
+        context.insert(todo)
+        context.insert(live)
+        context.insert(tombstone)
+        context.insert(neighbor)
+        context.insert(other)
+        context.insert(diary)
+        try context.save()
+
+        let row = try #require(TrashRow.todo(todo, attachments: [tombstone]))
+        let targetIDs = Set([live.id, tombstone.id])
+        let descriptor = try #require(OwnedAttachments.descriptor(ids: targetIDs))
+        #expect(try context.fetchCount(descriptor) == 2)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 4)
+
+        #expect(try AttachmentCleanup.emptyListed(
+            listedFileIDs: row.filesToRemove,
+            purgedOwners: [AttachmentOwnerKey(kind: .todo, id: todo.id)],
+            context: context,
+            removeParents: { ctx in try row.removeFromStore(ctx) },
+            removeFile: { _ in }
+        ))
+        let purgedTodoID = todo.id
+        #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == purgedTodoID })) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 2)
+        let leftover = try context.fetch(FetchDescriptor<AttachmentItem>())
+        #expect(Set(leftover.map(\.id)) == [other.id, diary.id])
+        try AttachmentCleanup.purge(ids: [], context: context, removeFile: { _ in
+            Issue.record("empty purge must not touch files")
+        })
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 2)
+    }
+
+    @Test func emptyListedKeepsParentsWhenDeleteFails() throws {
+        let container = try container()
+        let context = container.mainContext
+        let todo = TodoItem(title: "trashed", dayKey: "2026-09-12", deletedAt: Date(timeIntervalSince1970: 3))
+        let live = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "orphan.png"
+        )
+        context.insert(todo)
+        context.insert(live)
+        try context.save()
+
+        #expect(try AttachmentCleanup.emptyListed(
+            listedFileIDs: [live.id],
+            purgedOwners: [AttachmentOwnerKey(kind: .todo, id: todo.id)],
+            context: context,
+            removeParents: { _ in throw RepositoryError.invalidArgument("parent delete failed") },
+            removeFile: { _ in Issue.record("must not purge after parent failure") }
+        ) == false)
+        let keptTodoID = todo.id
+        #expect(try context.fetchCount(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == keptTodoID })) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 1)
+    }
 }

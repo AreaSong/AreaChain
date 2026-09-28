@@ -20,7 +20,7 @@ enum Phase1Scenarios {
         try Phase1Measure.coldThenHot(
             scenario: "fetch.todo.byId",
             corpus: corpus,
-            notes: "SwiftDataTaskRepository.fetchTodo：整表 FetchDescriptor 再 first。",
+            notes: "SwiftDataTaskRepository.fetchTodo：id predicate + fetchLimit 1。",
             cold: {
                 let context = corpus.freshContext()
                 let rows = try SwiftDataTaskRepository(context: context, container: corpus.container)
@@ -137,27 +137,23 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "fetch.todos.byDay",
             corpus: corpus,
-            notes: "fetchTodos(for:) 先 fetchAll 再按 dayKey 过滤。"
+            notes: "fetchTodos(for:)：dayKey + deletedAt predicate，库侧 createdAt 排序。"
         ) {
             Phase1Work(rows: try corpus.tasks.fetchTodos(for: corpus.todayKey).count, fetchCalls: 1)
         }
         try Phase1Measure.record(
             scenario: "fetch.todos.byTag",
             corpus: corpus,
-            notes: "fetchTodos(forTag:) 先 fetchAll 再 TagIDList.contains。"
+            notes: "fetchTodos(forTag:)：tagIDs.contains 缩小后再 TagIDList.contains。"
         ) {
             Phase1Work(rows: try corpus.tasks.fetchTodos(forTag: corpus.probeTagID).count, fetchCalls: 1)
         }
         try Phase1Measure.record(
             scenario: "fetch.todos.byStatusOpen",
             corpus: corpus,
-            notes: "fetchAll 计入 fetchWall，isDone 过滤计入 computeWall。"
+            notes: "fetchTodos(isDone: false)：deletedAt == nil && isDone == false。"
         ) {
-            try Phase1Work.splitting(fetchCalls: 1, fetch: {
-                try corpus.tasks.fetchAllTodos(includeDeleted: false)
-            }, compute: { todos in
-                todos.filter { !$0.isDone }.count
-            })
+            Phase1Work(rows: try corpus.tasks.fetchTodos(isDone: false).count, fetchCalls: 1)
         }
     }
 
@@ -354,7 +350,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "edit.single.toggleTodo",
             corpus: corpus,
-            notes: "toggleTodo：按 id 整表查找 + save + BoardEvents.changed。测试进程会跳过通知排程和日历。"
+            notes: "toggleTodo：按 id predicate 查找 + save + BoardEvents.changed。测试进程会跳过通知排程和日历。"
         ) {
             try corpus.tasks.toggleTodo(id: corpus.probeTodoID)
             return Phase1Work(rows: 1, fetchCalls: 1)
@@ -364,7 +360,7 @@ enum Phase1Scenarios {
         try Phase1Measure.record(
             scenario: "edit.batch.toggleDone",
             corpus: corpus,
-            notes: "batchToggleDone 各测一次 markDone true/false；每次 fetchAll + 一事务，共 2 次 fetch。"
+            notes: "batchToggleDone 各测一次 markDone true/false；每次 fetchLiveTodos + 一事务，共 2 次 fetch。"
         ) {
             try corpus.tasks.batchToggleDone(ids: corpus.batchIDs, markDone: true)
             try corpus.tasks.batchToggleDone(ids: corpus.batchIDs, markDone: false)

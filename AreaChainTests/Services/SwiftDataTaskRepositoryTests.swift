@@ -264,6 +264,12 @@ struct SwiftDataTaskRepositoryTests {
         #expect(try repo.fetchTodos(for: "2026-09-12").isEmpty)
         #expect(try repo.fetchAllTodos(includeDeleted: false).map(\.id) == [first.id, second.id, otherDay.id])
         #expect(try repo.fetchAllTodos(includeDeleted: true).map(\.id) == [first.id, second.id, otherDay.id, trashed.id])
+        #expect(try repo.fetchTodos(isDone: false).map(\.id) == [first.id, second.id, otherDay.id])
+        #expect(try repo.fetchTodos(isDone: true).isEmpty)
+        try repo.toggleTodo(id: first.id)
+        #expect(try repo.fetchTodos(isDone: true).map(\.id) == [first.id])
+        #expect(try repo.fetchTodos(isDone: false).map(\.id) == [second.id, otherDay.id])
+        #expect(!Set(try repo.fetchTodos(isDone: false).map(\.id)).contains(trashed.id))
     }
 
     @Test func fetchTodosForTagUsesEncodedIDsAndSkipsDeleted() throws {

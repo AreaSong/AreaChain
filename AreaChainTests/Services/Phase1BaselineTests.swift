@@ -68,7 +68,8 @@ struct Phase1BaselineTests {
         #expect(!corpus.privateDiaryIDs.isEmpty)
     }
 
-    /// 同一次运行里对照物化行数：owner lookup 不是整表热点。不把 p50 写成产品预算。
+    /// 同一次运行里对照物化行数：owner lookup 不是整表热点。
+    /// scale≥1000 时再对照 p50，挡住整表 fetch 再 filter；不把 p50 写成产品预算。
     private func assertOwnerLookupMaterializesFewerRows(scale: Int, graph: Phase1Graph) throws {
         let samples = try Phase1Log.samples().filter { $0.scale == scale && $0.store == graph.store }
         let todo = try sample(samples, "fetch.owner.live.todo")
@@ -83,6 +84,10 @@ struct Phase1BaselineTests {
         #expect(attachmentUnscoped.resultRows == graph.attachments)
         #expect(attachmentUnscoped.resultRows > attachment.resultRows)
         #expect(byDay.resultRows > todo.resultRows)
+        if scale >= 1_000 {
+            #expect(todo.p50Ms < todoUnscoped.p50Ms)
+            #expect(attachment.p50Ms < attachmentUnscoped.p50Ms)
+        }
     }
 
     private func sample(_ samples: [Phase1Sample], _ scenario: String) throws -> Phase1Sample {

@@ -25,6 +25,12 @@ enum OwnedAttachments {
         )
     }
 
+    static func descriptor(ids: Set<UUID>) -> FetchDescriptor<AttachmentItem>? {
+        guard !ids.isEmpty else { return nil }
+        let wanted = Array(ids)
+        return FetchDescriptor(predicate: #Predicate { wanted.contains($0.id) })
+    }
+
     static func matching(ownerIDs: Set<UUID>, kind: AttachmentOwner, in context: ModelContext) throws -> [AttachmentItem] {
         guard let descriptor = descriptor(ownerIDs: ownerIDs, kind: kind) else { return [] }
         return try context.fetch(descriptor)

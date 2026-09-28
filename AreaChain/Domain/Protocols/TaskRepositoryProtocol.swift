@@ -60,6 +60,9 @@ protocol TaskRepositoryProtocol: AnyObject {
     /// 按标签筛选活跃待办
     func fetchTodos(forTag tagID: UUID) throws -> [TodoItem]
 
+    /// 按完成态筛选未删除待办（不含软删除）
+    func fetchTodos(isDone: Bool) throws -> [TodoItem]
+
     // MARK: - 创建 (Create)
     /// 基于结构化参数创建待办
     @discardableResult

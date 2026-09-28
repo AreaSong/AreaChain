@@ -108,7 +108,7 @@ AreaChain/
 
 1. **CloudKit 边界**：不用 `@Attribute(.unique)`；对外稳定 UUID。设置页只说明本版本不做 iCloud 同步，不再保存无效偏好；打开说明不改变本地库。
 2. **日期键 (`DayKey`)**：`yyyy-MM-dd` 字符串，避免时区与「当天零点 Date」错位。
-3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件与标签。永久清除标签会先解除事项、重复事项、子任务和手记上的关联。手记预置标签不能删除。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私。回收站和附件浏览只 `@Query` 墓碑或活附件，再按 owner key 做 id predicate。工作台搜索的待办/习惯/手记仍整表 `@Query`，否则 `isSingleLive` 看不到重复 UUID；附件只拉未删除行。清空回收站按 owner matching 收集活附件与墓碑再清文件。重复 UUID 仍判不可用。父项未知或已删时附件不能单独恢复。
+3. **软删除 (`deletedAt`)**：优先标时间进回收站；彻底删除才物理移除。回收站 UI 列习惯、待办、手记、附件与标签。永久清除标签会先解除事项、重复事项、子任务和手记上的关联。手记预置标签不能删除。父项软删时，当时活着的子任务与同类型拥有者附件共用同一戳。附件中心通过 `AttachmentAccess` 校验拥有者类型、存活状态和手记隐私。回收站和附件浏览只 `@Query` 墓碑或活附件，再按 owner key 做 id predicate。工作台搜索的待办/习惯/手记仍整表 `@Query`，否则 `isSingleLive` 看不到重复 UUID；附件只拉未删除行。清空回收站经 `emptyListed` 按 owner matching 收集活附件与墓碑，再删父项，再按附件 id predicate 清文件。重复 UUID 仍判不可用。父项未知或已删时附件不能单独恢复。
 4. **软删除与级联**：父待办勾完成时，应用层把未完成子任务标完成。父待办进回收站时，当时未删的子任务和附件打上同一 `deletedAt`；恢复时只还原时间戳相同的项。SwiftData `.cascade` 只管硬删除。
 5. **快照日期**：JSON 使用带小数秒的 ISO8601，旧备份整秒日期仍能导入。
 
@@ -137,7 +137,7 @@ AreaChain/
 - `DiaryEditorSession` 在内存持有正文草稿及编辑基线；显式保存仍走 `SwiftDataDiaryRepository` 与 `ModelChanges.transaction`。外部正文改变时，干净会话跟随更新，脏会话阻止覆盖。卡片通过列表持有的 `DiaryCardDrafts` 复用同一编辑会话，搜索过滤移除卡片不会销毁唯一草稿；锁定前加密封存，解锁后仍需显式显示。失败保留草稿，已删除记录不可被旧窗口保存重建。
 - `SnapshotImportState` 在预览及写入前校验重复标识、嵌套子任务、附件归属及最终打卡业务键；不自动清洗现存数据。导入失败只撤销导入，调用前已有编辑先保存。
 - `DiaryPrivacy` 统一卡片、搜索、总览及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。`DiaryContent` 统一正文加解密，失败不回退明文；锁定时搜索投影没有私密正文。普通 JSON 排除受保护及旧密码遮罩手记和其附件。小窗、卡片和快速输入失焦后遮罩，锁定时不挂载私密编辑器；文件面板回调通过 `PrivacyAccess.withDiary` 重新鉴权并核对记录存活。
-- 附件级联按 `ownerKind + ownerID` 执行。永久删除后，`AttachmentCleanup` 仅在文件清理成功后移除附件元数据；失败的附件记录留在回收站，下一次操作可以重试。
+- 附件级联按 `ownerKind + ownerID` 执行。永久删除后，`AttachmentCleanup` 按 id predicate 拉待清理行，仅在文件清理成功后移除附件元数据；失败的附件记录留在回收站，下一次操作可以重试。清空回收站先 `emptyListed` 收集活孤儿与墓碑，再删父项再清文件。
 - `CalendarSyncCoordinator` 串行合并本地/远端事件；`CalendarSyncEngine` 对比上次本地与远端基线，不盲目先拉后推。基线保存在本机 `areachain-calendar-sync.json`，不改七张表 schema，也不导出到快照。读失败或内存降级时禁写；未知事件保留，冲突需核对一致后重试。跨系统部分提交失败不宣称已同步，旧基线用于幂等恢复。
 - `EventKitCalendarClient` 按年分片查询，补查绑定 ID，并在写入前验证事件版本和所属日历。夏令时归一化保存原始本地时刻和实际远端时刻，避免把正常顺延误判为冲突。
 - 测试宿主在 `Persistence.makeSession` 的磁盘访问之前切换内存库；端到端系统权限/真实日历验证与单元测试证据分开报告。

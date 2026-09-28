@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 import Testing
 @testable import AreaChain
 
@@ -53,5 +54,29 @@ struct WorkspaceAttachmentSearchTests {
             ownerKind: AttachmentOwner.diary.rawValue, ownerID: UUID(),
             todos: [todo], routines: [weekend], todayKey: today, calendar: calendar
         ) == nil)
+    }
+
+    @Test @MainActor func attachmentQueryMatchesLivePredicateAndSkipsTombstones() throws {
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let live = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: UUID(), filename: "live.png"
+        )
+        let gone = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: UUID(), filename: "gone.png",
+            deletedAt: Date(timeIntervalSince1970: 4)
+        )
+        context.insert(live)
+        context.insert(gone)
+        try context.save()
+
+        let query = WorkspaceGlobalSearchView.attachmentQuery
+        #expect(try context.fetchCount(FetchDescriptor(predicate: query)) == 1)
+        #expect(try context.fetchCount(FetchDescriptor(predicate: SoftDelete.liveAttachments)) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 2)
+        #expect(try context.fetch(FetchDescriptor(predicate: query)).map(\.id) == [live.id])
     }
 }

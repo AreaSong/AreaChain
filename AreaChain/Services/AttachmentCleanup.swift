@@ -30,12 +30,28 @@ enum AttachmentCleanup {
         return ids
     }
 
+    /// 与回收站清空同一顺序：先收集文件 ID，再删父项，再按 id 清文件。收集失败不删父项。
+    @discardableResult
+    static func emptyListed(
+        listedFileIDs: [UUID],
+        purgedOwners: Set<AttachmentOwnerKey>,
+        context: ModelContext,
+        removeParents: (ModelContext) throws -> Void,
+        removeFile: (UUID) throws -> Void = { try AttachmentStore.removeFiles([$0]) }
+    ) throws -> Bool {
+        let ids = try fileIDs(listed: listedFileIDs, purgedOwners: purgedOwners, context: context)
+        guard ModelChanges.perform(in: context, { try removeParents(context) }) else { return false }
+        ModelChanges.attempt { try purge(ids: ids, context: context, removeFile: removeFile) }
+        return true
+    }
+
     /// 删除意图以回收站元数据保留；文件或提交失败都能在下一次清空时重试。
     static func purge(
         ids: Set<UUID>, context: ModelContext,
         removeFile: (UUID) throws -> Void = { try AttachmentStore.removeFiles([$0]) }
     ) throws {
-        let items = try context.fetch(FetchDescriptor<AttachmentItem>()).filter { ids.contains($0.id) }
+        guard let descriptor = OwnedAttachments.descriptor(ids: ids) else { return }
+        let items = try context.fetch(descriptor)
         guard Set(items.map(\.id)).count == items.count else { throw RepositoryError.invalidArgument("附件标识重复") }
         var remaining: Set<UUID> = []
         for item in items {

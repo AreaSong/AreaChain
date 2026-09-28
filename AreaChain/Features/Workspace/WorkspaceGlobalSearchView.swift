@@ -16,7 +16,10 @@ struct WorkspaceGlobalSearchView: View {
     @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     /// 可浏览附件必须未删除；拥有者列表仍整表拉取，否则 `isSingleLive` 看不到重复 UUID。
-    @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
+    @Query(filter: Self.attachmentQuery) private var attachments: [AttachmentItem]
+
+    /// 测试锁住 `@Query` 形状：必须是活附件 predicate，不能改回整表。
+    static var attachmentQuery: Predicate<AttachmentItem> { SoftDelete.liveAttachments }
 
     let query: String
 
