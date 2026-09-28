@@ -12,9 +12,15 @@ struct WorkspaceSidebarView: View {
     @Query private var checks: [RoutineCheck]
 
     var body: some View {
+        let badges = WorkspaceSidebarBadges.make(
+            routines: routines,
+            checks: checks,
+            todos: todos,
+            todayKey: DayClock.shared.todayKey
+        )
         List {
             overviewSection
-            itemsSection
+            itemsSection(todayUnfinished: badges.todayUnfinished, pending: badges.pending)
             planningSection
             contentSection
             organizeSection
@@ -33,10 +39,10 @@ struct WorkspaceSidebarView: View {
         }
     }
 
-    private var itemsSection: some View {
+    private func itemsSection(todayUnfinished: Int?, pending: Int?) -> some View {
         Section("sidebar.items") {
-            tabRow(.today, badgeCount: todayUnfinishedCount)
-            tabRow(.pending, badgeCount: pendingCount)
+            tabRow(.today, badgeCount: todayUnfinished)
+            tabRow(.pending, badgeCount: pending)
             tabRow(.allItems)
         }
     }
@@ -72,27 +78,6 @@ struct WorkspaceSidebarView: View {
             tabRow(.dataBackup)
             tabRow(.trash)
         }
-    }
-
-    private var todayUnfinishedCount: Int? {
-        let count = DayBoardLogic.todayBadgeCount(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            dayKey: DayClock.shared.todayKey
-        )
-        return count > 0 ? count : nil
-    }
-
-    private var pendingCount: Int? {
-        let projection = AgendaProjection.pending(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            todayKey: DayClock.shared.todayKey
-        )
-        let count = projection.overdueCount + projection.upcomingCount
-        return count > 0 ? count : nil
     }
 
     private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {

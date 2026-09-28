@@ -23,38 +23,10 @@ struct WorkspaceGlobalSearchView: View {
 
     let query: String
 
-    private var tagMap: [UUID: String] {
-        Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) })
-    }
-
-    private var hits: [BoardSearchHit] {
-        BoardSearch.hits(
-            query: query,
-            todos: todos.map(\.snapshot),
-            diaries: diaries.map { DiaryContent.snapshot($0) },
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todayKey: DayClock.shared.todayKey,
-            tagMap: tagMap,
-            privacy: BoardSearchPrivacy.protected(diaries: diaries, tags: tags, locale: locale),
-            scope: BoardSearchScope(filter: filterSession.globalSearchFilter)
-        )
-    }
-
-    /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
-    /// 菜单栏不查文件名，避免把局部行为扩成统一搜索契约。
-    /// 待办/手记/习惯的 `@Query` 必须含墓碑，才能按 `isSingleLive` 判重复 UUID。
-    /// 附件已用 live predicate；这里只对已物化拥有者建 `ownerIndex`，不再嵌套扫描。
-    private var matchingAttachments: [AttachmentItem] {
-        let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
-        return attachments
-            .filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
-            .filter { WorkspaceAttachmentQuery.matches(filename: $0.filename, query: query) }
-    }
-
     var body: some View {
+        let page = makeSearchPage()
         VStack(alignment: .leading, spacing: 0) {
-            if hits.isEmpty && matchingAttachments.isEmpty {
+            if page.isEmpty {
                 DaybookEmptyState(
                     title: "search.empty",
                     systemImage: "magnifyingglass"
@@ -63,19 +35,17 @@ struct WorkspaceGlobalSearchView: View {
             } else {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 20) {
-                        // 结果总数小字说明
                         HStack {
-                            Text("search.results.count \(hits.count + matchingAttachments.count)")
+                            Text("search.results.count \(page.resultCount)")
                                 .font(DaybookType.caption.weight(.medium))
                                 .foregroundStyle(DaybookPalette.text.secondary)
                             Spacer()
                         }
                         .padding(.top, 4)
 
-                        // 任务、习惯与手记分组
-                        if !hits.isEmpty {
+                        if !page.hits.isEmpty {
                             BoardSearchHitGroups(
-                                hits: hits,
+                                hits: page.hits,
                                 presentation: .workspace,
                                 sectionSpacing: 20,
                                 rowSpacing: 8,
@@ -84,14 +54,13 @@ struct WorkspaceGlobalSearchView: View {
                             )
                         }
 
-                        // 匹配的附件
-                        if !matchingAttachments.isEmpty {
+                        if !page.matchingAttachments.isEmpty {
                             VStack(alignment: .leading, spacing: 8) {
                                 Text("window.attachments")
                                     .font(DaybookType.caption.weight(.semibold))
                                     .foregroundStyle(DaybookPalette.text.secondary)
 
-                                ForEach(matchingAttachments) { attachment in
+                                ForEach(page.matchingAttachments) { attachment in
                                     attachmentRow(attachment)
                                 }
                             }
@@ -108,8 +77,27 @@ struct WorkspaceGlobalSearchView: View {
         .accessibilityIdentifier("workspace.global.search.results")
     }
 
-    // MARK: - Attachment Row
+    private func makeSearchPage() -> WorkspaceSearchPageModel {
+        WorkspaceSearchPageModel.make(
+            query: query,
+            sources: WorkspaceSearchSources(
+                todos: todos,
+                diaries: diaries,
+                routines: routines,
+                checks: checks,
+                tags: tags,
+                attachments: attachments
+            ),
+            filter: filterSession.globalSearchFilter,
+            todayKey: DayClock.shared.todayKey,
+            locale: locale
+        )
+    }
 
+    /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
+    /// 菜单栏不查文件名，避免把局部行为扩成统一搜索契约。
+    /// 待办/手记/习惯的 `@Query` 必须含墓碑，才能按 `isSingleLive` 判重复 UUID。
+    /// 附件已用 live predicate；搜索页一次 body 只建一份 `ownerIndex`。
     private func attachmentRow(_ attachment: AttachmentItem) -> some View {
         Button {
             openAttachment(attachment)

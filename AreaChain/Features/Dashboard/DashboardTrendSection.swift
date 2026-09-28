@@ -1,3 +1,4 @@
+import Foundation
 import SwiftUI
 
 struct DashboardTrendSection: View {
@@ -5,6 +6,7 @@ struct DashboardTrendSection: View {
     var locale: Locale
 
     var body: some View {
+        let percentFormatter = makePercentFormatter()
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             DaybookSectionHeader(title: "dashboard.trend.title", icon: "chart.bar")
             if days.allSatisfy({ $0.scheduledCount == 0 }) {
@@ -15,7 +17,7 @@ struct DashboardTrendSection: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .bottom, spacing: DaybookSpacing.sm) {
                     ForEach(days, id: \.dayKey) { day in
-                        trendColumn(day)
+                        trendColumn(day, percentFormatter: percentFormatter)
                     }
                 }
             }
@@ -23,7 +25,7 @@ struct DashboardTrendSection: View {
         .accessibilityIdentifier("dashboard.trend")
     }
 
-    private func trendColumn(_ day: DashboardDayStat) -> some View {
+    private func trendColumn(_ day: DashboardDayStat, percentFormatter: NumberFormatter) -> some View {
         VStack(spacing: DaybookSpacing.xs) {
             ZStack(alignment: .bottom) {
                 Color.clear
@@ -38,7 +40,7 @@ struct DashboardTrendSection: View {
                 .lineLimit(1)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(label(day)))
+        .accessibilityLabel(Text(label(day, percentFormatter: percentFormatter)))
     }
 
     private func barHeight(_ day: DashboardDayStat) -> CGFloat {
@@ -46,10 +48,10 @@ struct DashboardTrendSection: View {
         return DaybookMetrics.Heatmap.trendHeight * CGFloat(rate)
     }
 
-    private func label(_ day: DashboardDayStat) -> String {
+    private func label(_ day: DashboardDayStat, percentFormatter: NumberFormatter) -> String {
         let percent: String
         if let rate = day.completionRate {
-            percent = percentText(rate)
+            percent = percentFormatter.string(from: NSNumber(value: rate)) ?? ""
         } else {
             percent = L10n.string("dashboard.trend.noRate", locale: locale)
         }
@@ -63,10 +65,10 @@ struct DashboardTrendSection: View {
         )
     }
 
-    private func percentText(_ rate: Double) -> String {
+    private func makePercentFormatter() -> NumberFormatter {
         let formatter = NumberFormatter()
         formatter.locale = locale
         formatter.numberStyle = .percent
-        return formatter.string(from: NSNumber(value: rate)) ?? ""
+        return formatter
     }
 }

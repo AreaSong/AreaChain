@@ -23,15 +23,6 @@ struct WorkspaceTodayView: View {
         return dayClock.todayKey
     }
 
-    private var progress: BoardProgress {
-        DayBoardLogic.todayProgress(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            dayKey: todayKey
-        )
-    }
-
     var body: some View {
         DaybookPage(
             title: "workspace.today.title",
@@ -92,7 +83,9 @@ struct WorkspaceTodayView: View {
         }
     }
 
+    @ViewBuilder
     private var headerTrailing: some View {
+        let progress = todayProgress
         HStack(spacing: 10) {
             DaybookIconButton(systemName: "plus", label: "recurring.create.open", size: .compact) {
                 showingRecurringEditor = true
@@ -101,13 +94,13 @@ struct WorkspaceTodayView: View {
                 showingRecurringList = true
             }
             VStack(alignment: .trailing, spacing: 2) {
-                Text(progressTitleKey)
+                Text(progressTitleKey(progress))
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary)
 
                 Text("\(progress.completed)/\(progress.total)")
                     .font(DaybookType.body.weight(.medium).monospacedDigit())
-                    .foregroundStyle(progressColor)
+                    .foregroundStyle(progressColor(progress))
             }
 
             DaybookProgressRing(progress: progress.ratio, lineWidth: 3.5, size: 36)
@@ -117,12 +110,21 @@ struct WorkspaceTodayView: View {
         .animation(DaybookMotion.interactive, value: progress.completed)
     }
 
-    private var progressColor: Color {
+    private var todayProgress: BoardProgress {
+        DayBoardLogic.todayProgress(
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            todos: todos.map(\.snapshot),
+            dayKey: todayKey
+        )
+    }
+
+    private func progressColor(_ progress: BoardProgress) -> Color {
         let finished = progress.total > 0 && progress.completed >= progress.total
         return finished ? DaybookPalette.accent.base : DaybookPalette.text.primary
     }
 
-    private var progressTitleKey: LocalizedStringKey {
+    private func progressTitleKey(_ progress: BoardProgress) -> LocalizedStringKey {
         if progress.total == 0 {
             return "workspace.progress.label"
         }

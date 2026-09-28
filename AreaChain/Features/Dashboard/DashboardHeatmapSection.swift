@@ -1,5 +1,20 @@
 import SwiftUI
 
+enum DashboardHeatmapLayout {
+    static let daysPerColumn = 7
+
+    static func columns(from cells: [DashboardHeatmapDay]) -> [[DashboardHeatmapDay]] {
+        guard !cells.isEmpty else { return [] }
+        return stride(from: 0, to: cells.count, by: daysPerColumn).map { start in
+            Array(cells[start..<min(start + daysPerColumn, cells.count)])
+        }
+    }
+
+    static func hasCompletions(_ cells: [DashboardHeatmapDay]) -> Bool {
+        cells.contains { !$0.isPaddingCell && $0.completedCount > 0 }
+    }
+}
+
 struct DashboardHeatmapSection: View {
     var cells: [DashboardHeatmapDay]
     var hasCompletions: Bool
@@ -7,6 +22,7 @@ struct DashboardHeatmapSection: View {
     var navigation: WorkspaceNavigation
 
     var body: some View {
+        let columns = DashboardHeatmapLayout.columns(from: cells)
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             DaybookSectionHeader(title: "dashboard.heatmap.title", icon: "square.grid.3x3")
             if !hasCompletions {
@@ -33,12 +49,6 @@ struct DashboardHeatmapSection: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .accessibilityIdentifier("dashboard.heatmap")
-    }
-
-    private var columns: [[DashboardHeatmapDay]] {
-        stride(from: 0, to: cells.count, by: 7).map { start in
-            Array(cells[start..<min(start + 7, cells.count)])
-        }
     }
 
     private var legend: some View {

@@ -39,6 +39,25 @@ struct DashboardInteractionTests {
         #expect(navigation.selectedTab == .trash)
     }
 
+    @Test func heatmapLayoutChunksWeeksAndIgnoresPaddingCompletions() {
+        #expect(DashboardHeatmapLayout.columns(from: []).isEmpty)
+        #expect(!DashboardHeatmapLayout.hasCompletions([]))
+        let padding = heatmapDay("pad-0", completed: 3, padding: true)
+        let empty = heatmapDay("2026-09-01", completed: 0, padding: false)
+        let done = heatmapDay("2026-09-02", completed: 2, padding: false)
+        #expect(!DashboardHeatmapLayout.hasCompletions([padding, empty]))
+        #expect(DashboardHeatmapLayout.hasCompletions([padding, done]))
+        let cells = (0..<14).map { index in
+            heatmapDay(String(format: "2026-09-%02d", index + 1), completed: 0, padding: false)
+        }
+        let columns = DashboardHeatmapLayout.columns(from: cells)
+        #expect(columns.count == 2)
+        #expect(columns[0].count == 7)
+        #expect(columns[1].count == 7)
+        #expect(columns[0].first?.dayKey == "2026-09-01")
+        #expect(columns[1].first?.dayKey == "2026-09-08")
+    }
+
     @Test func dashboardCopyResolvesInEnglishAndChinese() {
         for identifier in ["en", "zh-Hans"] {
             let locale = Locale(identifier: identifier)
@@ -57,5 +76,16 @@ struct DashboardInteractionTests {
 
     private func date(_ text: String) -> Date {
         ISO8601DateFormatter().date(from: text)!
+    }
+
+    private func heatmapDay(_ dayKey: String, completed: Int, padding: Bool) -> DashboardHeatmapDay {
+        DashboardHeatmapDay(
+            dayKey: dayKey,
+            completedCount: completed,
+            skippedCount: 0,
+            scheduledCount: completed,
+            intensityLevel: min(4, completed),
+            isPaddingCell: padding
+        )
     }
 }

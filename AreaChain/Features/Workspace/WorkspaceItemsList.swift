@@ -91,8 +91,9 @@ struct WorkspaceItemsList: View {
     @State private var keyMonitor: Any?
 
     var body: some View {
+        let identity = makeIdentity()
         Group {
-            if entries.isEmpty {
+            if identity.entries.isEmpty {
                 DaybookEmptyState(
                     title: emptyTitle,
                     subtitle: emptySubtitle,
@@ -107,7 +108,7 @@ struct WorkspaceItemsList: View {
                         }
                         VStack(alignment: .leading, spacing: 4) {
                             ForEach(group.entries) { entry in
-                                row(entry)
+                                row(entry, identity: identity)
                             }
                         }
                     }
@@ -120,47 +121,57 @@ struct WorkspaceItemsList: View {
         .confirmMoveToTrash($pendingTrash)
         .onAppear {
             installKeys()
-            publishCheckDays()
+            publishCheckDays(identity)
         }
         .onDisappear {
             removeKeys()
             navigation.clearListedCheckDays()
         }
-        .onChange(of: entries.map(\.modelID)) { _, ids in
+        .onChange(of: identity.entryIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
-            publishCheckDays()
+            publishCheckDays(makeIdentity())
         }
-        .onChange(of: checkDaySignature) { _, _ in
-            publishCheckDays()
+        .onChange(of: identity.checkDaySignature) { _, _ in
+            publishCheckDays(makeIdentity())
         }
     }
 
-    private var entries: [WorkspaceItemEntry] { groups.flatMap(\.entries) }
-
-    private var checkDaySignature: String {
-        entries.map { "\($0.modelID.uuidString):\($0.checkDayKey):\($0.allowsCompletion)" }.joined(separator: "|")
+    private func makeIdentity() -> WorkspaceItemsListIdentity {
+        WorkspaceItemsListIdentity.make(
+            groups: groups,
+            todayKey: todayKey,
+            checks: checks,
+            tags: tags,
+            attachments: attachments,
+            context: modelContext,
+            locale: locale
+        )
     }
 
-    private func publishCheckDays() {
+    private func publishCheckDays(_ identity: WorkspaceItemsListIdentity) {
         var days: [UUID: String] = [:]
-        for entry in entries {
+        for entry in identity.entries {
             guard entry.allowsCompletion, case .routine = entry else { continue }
             days[entry.modelID] = entry.checkDayKey
         }
         navigation.replaceListedCheckDays(days)
     }
 
-    private func row(_ entry: WorkspaceItemEntry) -> some View {
+    private func row(_ entry: WorkspaceItemEntry, identity: WorkspaceItemsListIdentity) -> some View {
         let selected = navigation.selectedTaskIDs.contains(entry.modelID) || navigation.selectedTaskID == entry.modelID
-        return rowView(entry, selected: selected)
+        return rowView(entry, selected: selected, identity: identity)
             .id(entry.modelID)
     }
 
     @ViewBuilder
-    private func rowView(_ entry: WorkspaceItemEntry, selected: Bool) -> some View {
+    private func rowView(
+        _ entry: WorkspaceItemEntry,
+        selected: Bool,
+        identity: WorkspaceItemsListIdentity
+    ) -> some View {
         switch entry {
         case .todo(let todo, _, let subtaskIDs):
-            TaskRowFactory.todo(todoContext(todo, selected: selected, subtaskIDs: subtaskIDs))
+            TaskRowFactory.todo(todoContext(todo, selected: selected, subtaskIDs: subtaskIDs, identity: identity))
         case .routine(let routine, let day, let allowsCompletion, let count, let noteDay):
             TaskRowFactory.routine(routineContext(
                 routine,
@@ -168,16 +179,22 @@ struct WorkspaceItemsList: View {
                 selected: selected,
                 completion: RoutineCompletionPrompt(
                     allowed: allowsCompletion, overdue: count, noteDay: noteDay
-                )
+                ),
+                identity: identity
             ))
         }
     }
 
-    private func todoContext(_ todo: TodoItem, selected: Bool, subtaskIDs: Set<UUID>?) -> TodoRowContext {
+    private func todoContext(
+        _ todo: TodoItem,
+        selected: Bool,
+        subtaskIDs: Set<UUID>?,
+        identity: WorkspaceItemsListIdentity
+    ) -> TodoRowContext {
         TodoRowContext(
             todo: todo,
             todayKey: todayKey,
-            catalogs: catalogs,
+            catalogs: identity.catalogs,
             display: TodoRowDisplayOptions(
                 isDone: PendingCompletionManager.shared.isVisuallyDone(id: todo.id, actualDone: todo.isDone),
                 selection: TaskRowSelectionState(isSelected: selected, isExternalEditing: editingID == todo.id),
@@ -197,9 +214,10 @@ struct WorkspaceItemsList: View {
         _ routine: DailyRoutine,
         day: String,
         selected: Bool,
-        completion: RoutineCompletionPrompt
+        completion: RoutineCompletionPrompt,
+        identity: WorkspaceItemsListIdentity
     ) -> RoutineRowContext {
-        let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
+        let done = identity.checkIndex.isClosed(routineId: routine.id, dayKey: day)
         var extras: [String] = []
         if let overdue = AgendaProjection.overduePresentation(dayKey: day, count: completion.overdue) {
             extras.append(L10n.format(
@@ -216,15 +234,21 @@ struct WorkspaceItemsList: View {
                 DayKey.displayName(noteDay, locale: locale)
             ))
         }
-        let skipped = DayBoardLogic.isRoutineSkipped(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
+        let skipped = identity.checkIndex.isSkipped(routineId: routine.id, dayKey: day)
         let schedule = done
             ? ResidentNote.done(routine, skipped: skipped, locale: locale)
             : ResidentNote.days(routine, locale: locale)
         let note = AgendaProjection.routineNote(schedule: schedule, extras: extras)
         return RoutineRowContext(
             routine: routine,
-            schedule: RoutineScheduleContext(todayKey: todayKey, checkDayKey: day, checks: checks, locale: locale),
-            catalogs: catalogs,
+            schedule: RoutineScheduleContext(
+                todayKey: todayKey,
+                checkDayKey: day,
+                checks: identity.checks,
+                locale: locale,
+                lookups: identity.routineLookups(for: routine.id)
+            ),
+            catalogs: identity.catalogs,
             display: RoutineRowDisplayOptions(
                 isDone: PendingCompletionManager.shared.isVisuallyDone(id: routine.id, actualDone: done),
                 selection: TaskRowSelectionState(isSelected: selected, isExternalEditing: editingID == routine.id),
@@ -242,23 +266,21 @@ struct WorkspaceItemsList: View {
         )
     }
 
-    private var catalogs: TaskCatalogContext {
-        TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext)
-    }
-
     private func select(_ id: UUID, modifiers: TaskSelectionModifiers) {
-        guard let entry = entries.first(where: { $0.modelID == id }) else { return }
+        let identity = makeIdentity()
+        guard let entry = identity.entry(id) else { return }
         if modifiers.isEmpty {
             navigation.clearSelection()
             navigation.inspectTask(id, dayKey: entry.checkDayKey)
             navigation.inspectedReference = entry.reference
             return
         }
-        navigation.selectTask(id, in: entries.map(\.modelID), modifiers: modifiers)
+        navigation.selectTask(id, in: identity.entryIDs, modifiers: modifiers)
     }
 
     private func toggle(_ id: UUID) {
-        guard let entry = entries.first(where: { $0.modelID == id }), entry.allowsCompletion else { return }
+        let identity = makeIdentity()
+        guard let entry = identity.entry(id), entry.allowsCompletion else { return }
         switch entry {
         case .todo(let todo, _, _):
             PendingCompletionManager.shared.toggle(
@@ -269,7 +291,7 @@ struct WorkspaceItemsList: View {
                 persistToggle(todo.id)
             }
         case .routine(let routine, let day, _, _, _):
-            let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: checks.compactMap(\.snapshot), on: day)
+            let done = identity.checkIndex.isClosed(routineId: routine.id, dayKey: day)
             PendingCompletionManager.shared.toggle(id: routine.id, currentlyDone: done, reduceMotion: reduceMotion) {
                 persistToggle(routine.id)
             }
@@ -278,12 +300,13 @@ struct WorkspaceItemsList: View {
 
     /// 行复选框已经做过驻留；这里只落盘，避免鼠标路径套两层 0.4 秒。
     private func persistToggle(_ id: UUID) {
-        guard let entry = entries.first(where: { $0.modelID == id }), entry.allowsCompletion else { return }
+        let identity = makeIdentity()
+        guard let entry = identity.entry(id), entry.allowsCompletion else { return }
         switch entry {
         case .todo(let todo, _, _):
             _ = DayBoardMutations.toggleTodo(todo)
         case .routine(let routine, let day, _, _, _):
-            _ = DayBoardMutations.toggleRoutine(routine, on: day, checks: checks, context: modelContext)
+            _ = DayBoardMutations.toggleRoutine(routine, on: day, checks: identity.checks, context: modelContext)
         }
     }
 
@@ -318,9 +341,10 @@ extension WorkspaceItemsList {
     }
 
     private func keyContext() -> ItemsListKeyContext {
-        ItemsListKeyContext(
+        let identity = makeIdentity()
+        return ItemsListKeyContext(
             responderClaimsKeys: ItemsListKeyRouting.responderClaimsKeys(NSApp.keyWindow?.firstResponder),
-            hasRows: !entries.isEmpty,
+            hasRows: !identity.entries.isEmpty,
             hasSelection: navigation.selectedTaskID != nil,
             hasMultiSelection: !navigation.selectedTaskIDs.isEmpty,
             inspectorPresented: navigation.isInspectorPresented
@@ -328,16 +352,17 @@ extension WorkspaceItemsList {
     }
 
     private func perform(_ keyCode: UInt16) {
+        let identity = makeIdentity()
         switch keyCode {
         case ItemsListKey.arrowDown, ItemsListKey.arrowUp:
             let delta = keyCode == ItemsListKey.arrowDown ? 1 : -1
-            move(delta, ids: entries.map(\.modelID))
+            move(delta, identity: identity)
         case ItemsListKey.space:
             toggleSelected()
         case ItemsListKey.returnKey:
             if let id = navigation.selectedTaskID { select(id, modifiers: []) }
         case ItemsListKey.delete:
-            confirmTrashSelected()
+            confirmTrashSelected(identity)
         case ItemsListKey.edit:
             editingID = navigation.selectedTaskID
         case ItemsListKey.escape:
@@ -351,8 +376,8 @@ extension WorkspaceItemsList {
         if let id = navigation.selectedTaskID { toggle(id) }
     }
 
-    private func confirmTrashSelected() {
-        guard let entry = entries.first(where: { $0.modelID == navigation.selectedTaskID }) else { return }
+    private func confirmTrashSelected(_ identity: WorkspaceItemsListIdentity) {
+        guard let entry = navigation.selectedTaskID.flatMap(identity.entry) else { return }
         askTrash(title: entryTitle(entry)) { trash(entry) }
     }
 
@@ -366,14 +391,15 @@ extension WorkspaceItemsList {
         }
     }
 
-    private func move(_ delta: Int, ids: [UUID]) {
+    private func move(_ delta: Int, identity: WorkspaceItemsListIdentity) {
+        let ids = identity.entryIDs
         let current = navigation.selectedTaskID
         let index = current.flatMap { ids.firstIndex(of: $0) } ?? (delta > 0 ? -1 : ids.count)
         let next = min(max(index + delta, 0), ids.count - 1)
         let id = ids[next]
         navigation.selectedTaskID = id
         navigation.clearSelection()
-        if navigation.isInspectorPresented, let entry = entries.first(where: { $0.modelID == id }) {
+        if navigation.isInspectorPresented, let entry = identity.entry(id) {
             navigation.inspectTask(id, dayKey: entry.checkDayKey)
             navigation.inspectedReference = entry.reference
         }

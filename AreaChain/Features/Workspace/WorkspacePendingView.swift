@@ -12,66 +12,64 @@ struct WorkspacePendingView: View {
 
     private var todayKey: String { DayClock.shared.todayKey }
 
-    private var projection: PendingProjection {
-        AgendaProjection.pending(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            todayKey: todayKey
-        )
-    }
-
-    private var lane: PendingLane {
-        navigation.pendingLaneSession?.lane ?? PendingLanePolicy.initial(overdueCount: projection.overdueCount)
-    }
-
     var body: some View {
+        let model = makePageModel()
         DaybookPage(title: "tab.pending", systemImage: "clock", minWidth: 480, minHeight: 480) {
             Button("items.goToday") { openTodayComposer() }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         } content: {
-            controls
+            controls(model)
             WorkspaceItemsList(
-                groups: [WorkspaceItemGroup(id: "pending", title: nil, entries: visibleEntries)],
-                todayKey: todayKey,
+                groups: [WorkspaceItemGroup(id: "pending", title: nil, entries: model.visibleEntries)],
+                todayKey: model.todayKey,
                 checks: checks,
                 filterActive: navigation.pendingFilter.isActive,
-                emptyTitle: navigation.pendingFilter.isActive ? "empty.filter" : emptyCopy.title,
-                emptySubtitle: navigation.pendingFilter.isActive ? "empty.filter.hint" : emptyCopy.hint
+                emptyTitle: navigation.pendingFilter.isActive ? "empty.filter" : emptyCopy(model.lane).title,
+                emptySubtitle: navigation.pendingFilter.isActive ? "empty.filter.hint" : emptyCopy(model.lane).hint
             )
         }
         .onAppear {
             if navigation.pendingLaneSession == nil {
-                navigation.pendingLaneSession = PendingLaneSession(overdueCount: projection.overdueCount)
+                navigation.pendingLaneSession = PendingLaneSession(overdueCount: model.projection.overdueCount)
             }
         }
-        .onChange(of: projection.overdueCount) { _, count in
+        .onChange(of: model.projection.overdueCount) { _, count in
             guard var session = navigation.pendingLaneSession else { return }
             session.refreshDefault(overdueCount: count)
             navigation.pendingLaneSession = session
         }
-        .onChange(of: visibleIDs) { _, ids in
+        .onChange(of: model.visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }
     }
 
-    private var controls: some View {
+    private func makePageModel() -> WorkspacePendingPageModel {
+        WorkspacePendingPageModel.make(
+            routines: routines,
+            todos: todos,
+            checks: checks,
+            todayKey: todayKey,
+            navigation: navigation
+        )
+    }
+
+    private func controls(_ model: WorkspacePendingPageModel) -> some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             HStack(spacing: DaybookSpacing.sm) {
-                laneChip(.overdue, count: projection.overdueCount)
-                laneChip(.upcoming, count: projection.upcomingCount)
+                laneChip(.overdue, count: model.projection.overdueCount, model: model)
+                laneChip(.upcoming, count: model.projection.upcomingCount, model: model)
             }
             BoardFilterBar(
                 filter: navigation.pendingFilter,
                 tags: CatalogChoices.tags(tags),
-                bundleIDs: bundleIDs,
+                bundleIDs: model.bundleIDs,
                 showsPriority: true,
                 onChange: { navigation.pendingFilter = $0 }
             )
         }
     }
 
-    private var emptyCopy: (title: LocalizedStringKey, hint: LocalizedStringKey) {
+    private func emptyCopy(_ lane: PendingLane) -> (title: LocalizedStringKey, hint: LocalizedStringKey) {
         switch lane {
         case .overdue:
             return ("items.empty.overdue", "items.empty.overdue.hint")
@@ -80,18 +78,18 @@ struct WorkspacePendingView: View {
         }
     }
 
-    private func laneChip(_ next: PendingLane, count: Int) -> some View {
-        DaybookChip(isSelected: lane == next, action: chooseLane(next), label: {
+    private func laneChip(_ next: PendingLane, count: Int, model: WorkspacePendingPageModel) -> some View {
+        DaybookChip(isSelected: model.lane == next, action: chooseLane(next, overdueCount: model.projection.overdueCount), label: {
             Text("\(laneTitle(next)) \(count)")
                 .font(DaybookType.caption)
         })
         .accessibilityLabel(laneTitle(next))
     }
 
-    private func chooseLane(_ next: PendingLane) -> () -> Void {
+    private func chooseLane(_ next: PendingLane, overdueCount: Int) -> () -> Void {
         {
             var session = navigation.pendingLaneSession
-                ?? PendingLaneSession(overdueCount: projection.overdueCount)
+                ?? PendingLaneSession(overdueCount: overdueCount)
             session.choose(next)
             navigation.pendingLaneSession = session
         }
@@ -101,50 +99,6 @@ struct WorkspacePendingView: View {
         switch lane {
         case .overdue: L10n.string("items.pending.overdue", locale: locale)
         case .upcoming: L10n.string("items.pending.upcoming", locale: locale)
-        }
-    }
-
-    private var visibleEntries: [WorkspaceItemEntry] {
-        let filtered = AgendaProjection.filtered(
-            projection.entries(for: lane),
-            filter: navigation.pendingFilter,
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todayKey: todayKey
-        )
-        return filtered.compactMap(entry)
-    }
-
-    private var visibleIDs: [UUID] { visibleEntries.map(\.modelID) }
-
-    private var bundleIDs: [String] {
-        let ids = projection.entries(for: lane).compactMap { entry -> String? in
-            switch entry {
-            case .todo(let todo): return todo.sourceBundleID
-            case .routine(let row):
-                return routines.first { $0.id == row.routineID }?.sourceBundleID
-            }
-        }
-        return Array(Set(ids.filter { !$0.isEmpty })).sorted()
-    }
-
-    private func entry(_ item: AgendaEntry) -> WorkspaceItemEntry? {
-        switch item {
-        case .todo(let snapshot):
-            guard let todo = todos.first(where: { $0.id == snapshot.id }) else { return nil }
-            let query = ItemsListingQuery(filter: navigation.pendingFilter, todayKey: todayKey)
-            let listed = ItemsListing.todos([snapshot], query: query)
-            let ids = listed.first.map { Set($0.subtasks.map(\.id)) }
-            return .todo(todo, checkDayKey: snapshot.dayKey, subtaskIDs: ids)
-        case .routine(let row):
-            guard let routine = routines.first(where: { $0.id == row.routineID }) else { return nil }
-            return .routine(
-                routine,
-                checkDayKey: row.displayDayKey,
-                allowsCompletion: lane == .overdue,
-                overdueCount: row.openCount,
-                noteDayKey: lane == .upcoming ? row.displayDayKey : nil
-            )
         }
     }
 

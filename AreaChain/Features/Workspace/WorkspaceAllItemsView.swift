@@ -2,7 +2,6 @@ import SwiftData
 import SwiftUI
 
 struct WorkspaceAllItemsView: View {
-    @Environment(\.locale) private var locale
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
@@ -13,29 +12,40 @@ struct WorkspaceAllItemsView: View {
     private var todayKey: String { DayClock.shared.todayKey }
 
     var body: some View {
+        let model = makePageModel()
         DaybookPage(title: "tab.allItems", systemImage: "list.bullet", minWidth: 480, minHeight: 480) {
-            if liveQuery.isNarrowed {
-                Button("items.filter.clear") { navigation.allItemsQuery = liveQuery.cleared() }
+            if model.liveQuery.isNarrowed {
+                Button("items.filter.clear") { navigation.allItemsQuery = model.liveQuery.cleared() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
         } content: {
-            controls
+            controls(model)
             WorkspaceItemsList(
-                groups: itemGroups,
+                groups: model.groups,
                 todayKey: todayKey,
                 checks: checks,
-                filterActive: liveQuery.isNarrowed,
-                emptyTitle: liveQuery.isNarrowed ? "empty.filter" : "items.empty",
-                emptySubtitle: liveQuery.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
+                filterActive: model.liveQuery.isNarrowed,
+                emptyTitle: model.liveQuery.isNarrowed ? "empty.filter" : "items.empty",
+                emptySubtitle: model.liveQuery.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
             )
         }
         .onAppear { navigation.allItemsQuery.todayKey = todayKey }
-        .onChange(of: visibleIDs) { _, ids in
+        .onChange(of: model.visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }
     }
 
-    private var controls: some View {
+    private func makePageModel() -> WorkspaceAllItemsPageModel {
+        WorkspaceAllItemsPageModel.make(
+            routines: routines,
+            todos: todos,
+            checks: checks,
+            todayKey: todayKey,
+            navigation: navigation
+        )
+    }
+
+    private func controls(_ model: WorkspaceAllItemsPageModel) -> some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             HStack(spacing: DaybookSpacing.sm) {
                 scopeMenu(
@@ -63,7 +73,7 @@ struct WorkspaceAllItemsView: View {
             BoardFilterBar(
                 filter: navigation.allItemsQuery.filter,
                 tags: CatalogChoices.tags(tags),
-                bundleIDs: bundleIDs,
+                bundleIDs: model.bundleIDs,
                 showsPriority: true,
                 showsDate: true,
                 onChange: { navigation.allItemsQuery.filter = $0 }
@@ -88,61 +98,5 @@ struct WorkspaceAllItemsView: View {
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
-    }
-
-    private var itemGroups: [WorkspaceItemGroup] {
-        var groups: [WorkspaceItemGroup] = []
-        if liveQuery.kind != .recurring, !todoEntries.isEmpty {
-            groups.append(WorkspaceItemGroup(id: "todos", title: "items.section.todos", entries: todoEntries))
-        }
-        if liveQuery.kind != .oneOff, !routineEntries.isEmpty {
-            groups.append(WorkspaceItemGroup(id: "routines", title: "items.section.routines", entries: routineEntries))
-        }
-        return groups
-    }
-
-    private var listedTodos: [ListedTodo] {
-        ItemsListing.todos(todos.map(\.snapshot), query: liveQuery)
-    }
-
-    private var listedRoutines: [RoutineSnapshot] {
-        ItemsListing.routines(routines.map(\.snapshot), checks: checks.compactMap(\.snapshot), query: liveQuery)
-    }
-
-    private var liveQuery: ItemsListingQuery {
-        var next = navigation.allItemsQuery
-        next.todayKey = todayKey
-        return next
-    }
-
-    private var todoEntries: [WorkspaceItemEntry] {
-        listedTodos.compactMap { listed in
-            guard let todo = todos.first(where: { $0.id == listed.id }) else { return nil }
-            return .todo(todo, checkDayKey: listed.todo.dayKey, subtaskIDs: Set(listed.subtasks.map(\.id)))
-        }
-    }
-
-    private var routineEntries: [WorkspaceItemEntry] {
-        listedRoutines.compactMap { snapshot in
-            guard let routine = routines.first(where: { $0.id == snapshot.id }) else { return nil }
-            let dueToday = DayBoardLogic.isRoutineDue(snapshot, on: todayKey)
-            let next = AgendaProjection.nextDay(after: todayKey, routine: snapshot)
-            return .routine(
-                routine,
-                checkDayKey: AgendaProjection.inspectionDay(for: snapshot, todayKey: todayKey),
-                allowsCompletion: dueToday,
-                overdueCount: 0,
-                noteDayKey: dueToday ? nil : next
-            )
-        }
-    }
-
-    private var visibleIDs: [UUID] {
-        (todoEntries + routineEntries).map(\.modelID)
-    }
-
-    private var bundleIDs: [String] {
-        let values = todos.map(\.sourceBundleID) + routines.map(\.sourceBundleID)
-        return Array(Set(values.filter { !$0.isEmpty })).sorted()
     }
 }

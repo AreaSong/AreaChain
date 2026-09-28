@@ -21,6 +21,7 @@ struct WorkspaceFilteredListView: View {
     @State private var pendingTrash: PendingTrash?
 
     var body: some View {
+        let model = makeListModel()
         DaybookPage(
             titleText: tag.name,
             titleStyle: .entity,
@@ -28,32 +29,44 @@ struct WorkspaceFilteredListView: View {
             minWidth: 480,
             minHeight: 480
         ) {
-            headerTrailing
+            headerTrailing(model)
         } content: {
             DaybookComposer(
                 text: $draftTitle,
                 placeholder: "filtered.add.tag",
                 onSubmit: addTask
             )
-            taskList
+            taskList(model)
         }
         .confirmMoveToTrash($pendingTrash)
-        .onChange(of: orderedVisibleIDs) { _, ids in
+        .onChange(of: model.orderedVisibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }
     }
 
-    private var headerTrailing: some View {
+    private func makeListModel() -> WorkspaceFilteredListModel {
+        WorkspaceFilteredListModel.make(
+            tag: tag,
+            todos: todos,
+            routines: routines,
+            checks: checks,
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            locale: locale,
+            showCompleted: showCompleted
+        )
+    }
+
+    private func headerTrailing(_ model: WorkspaceFilteredListModel) -> some View {
         HStack(spacing: 8) {
-            Text("filter.open.count \(openCount)")
+            Text("filter.open.count \(model.openCount)")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
 
-            if canBatchSelect {
+            if model.canBatchSelect {
                 Button {
                     withAnimation(.snappy(duration: 0.2)) {
                         if navigation.selectedTaskIDs.isEmpty {
-                            navigation.selectAllTasks(in: orderedVisibleIDs)
+                            navigation.selectAllTasks(in: model.orderedVisibleIDs)
                         } else {
                             navigation.clearSelection()
                         }
@@ -66,16 +79,6 @@ struct WorkspaceFilteredListView: View {
                 .accessibilityLabel(navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit")
             }
         }
-    }
-
-    private var openCount: Int {
-        Catalog.openCount(
-            todos: todos,
-            routines: routines,
-            checks: checks,
-            tag: tag,
-            dayKey: DayClock.shared.todayKey
-        )
     }
 
     private func addTask() {
@@ -91,21 +94,19 @@ struct WorkspaceFilteredListView: View {
 
     // MARK: - Task List
 
-    private var taskList: some View {
-        let openRows = mixedRows(open: true)
-        let doneRows = mixedRows(open: false)
-        return ScrollView {
+    private func taskList(_ model: WorkspaceFilteredListModel) -> some View {
+        ScrollView {
             VStack(alignment: .leading, spacing: 6) {
-                if openRows.isEmpty && doneRows.isEmpty && matchingSubtasks.isEmpty {
+                if model.isEmpty {
                     DaybookEmptyState(
                         title: "empty.filtered.todos",
                         systemImage: "tag"
                     )
                     .padding(.top, 40)
                 } else {
-                    taggedOpenRows(openRows)
-                    completedSection(doneRows)
-                    subtaskSection
+                    taggedOpenRows(model.openRows, model: model)
+                    completedSection(model.doneRows, model: model)
+                    subtaskSection(model)
                 }
             }
             .padding(.vertical, 2)
@@ -114,30 +115,32 @@ struct WorkspaceFilteredListView: View {
     }
 
     @ViewBuilder
-    private func taggedOpenRows(_ rows: [BoardRow]) -> some View {
+    private func taggedOpenRows(_ rows: [BoardRow], model: WorkspaceFilteredListModel) -> some View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(rows, id: \.listID, content: taggedRow)
+                ForEach(rows, id: \.listID) { row in
+                    taggedRow(row, model: model)
+                }
             }
         }
     }
 
     @ViewBuilder
-    private func taggedRow(_ row: BoardRow) -> some View {
+    private func taggedRow(_ row: BoardRow, model: WorkspaceFilteredListModel) -> some View {
         switch row {
         case .todo(let todo):
-            todoRowView(todo, isDone: todo.isDone)
+            todoRowView(todo, isDone: todo.isDone, model: model)
         case .resident(let routine):
-            routineRowView(routine)
+            routineRowView(routine, model: model)
         }
     }
 
     @ViewBuilder
-    private var subtaskSection: some View {
-        if !matchingSubtasks.isEmpty {
-            DaybookSectionHeader(title: "drawer.subtasks.title", icon: "checklist", count: matchingSubtasks.count)
+    private func subtaskSection(_ model: WorkspaceFilteredListModel) -> some View {
+        if !model.matchingSubtasks.isEmpty {
+            DaybookSectionHeader(title: "drawer.subtasks.title", icon: "checklist", count: model.matchingSubtasks.count)
                 .padding(.top, 8)
-            ForEach(matchingSubtasks) { subtask in
+            ForEach(model.matchingSubtasks) { subtask in
                 VStack(alignment: .leading, spacing: 3) {
                     if let parent = subtask.todo {
                         Button(parent.title) { navigation.inspectTask(parent.id) }
@@ -155,7 +158,7 @@ struct WorkspaceFilteredListView: View {
     }
 
     @ViewBuilder
-    private func completedSection(_ doneRows: [BoardRow]) -> some View {
+    private func completedSection(_ doneRows: [BoardRow], model: WorkspaceFilteredListModel) -> some View {
         if !doneRows.isEmpty {
             Button {
                 withAnimation(DaybookMotion.animation(reduceMotion)) {
@@ -178,18 +181,12 @@ struct WorkspaceFilteredListView: View {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(doneRows, id: \.listID, content: taggedRow)
+                    ForEach(doneRows, id: \.listID) { row in
+                        taggedRow(row, model: model)
+                    }
                 }
             }
         }
-    }
-
-    private var catalogContext: TaskCatalogContext {
-        TaskCatalogContext(
-            tags: tags,
-            attachments: attachments,
-            context: modelContext
-        )
     }
 
     private func isRowSelected(_ id: UUID) -> Bool {
@@ -197,13 +194,13 @@ struct WorkspaceFilteredListView: View {
             (navigation.selectedTaskIDs.isEmpty && navigation.selectedTaskID == id)
     }
 
-    private func todoRowView(_ todo: TodoItem, isDone: Bool) -> some View {
+    private func todoRowView(_ todo: TodoItem, isDone: Bool, model: WorkspaceFilteredListModel) -> some View {
         let display = TodoRowDisplayOptions(
             isDone: isDone,
             isSelected: isRowSelected(todo.id)
         )
         let actions = TodoRowActions(
-            onSelect: { selectRow(todo.id, modifiers: $0) },
+            onSelect: { selectRow(todo.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
             onDelete: {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
@@ -212,24 +209,23 @@ struct WorkspaceFilteredListView: View {
         )
         return TaskRowFactory.todo(TodoRowContext(
             todo: todo,
-            todayKey: DayClock.shared.todayKey,
-            catalogs: catalogContext,
+            todayKey: model.todayKey,
+            catalogs: model.catalogs,
             display: display,
             actions: actions
         ))
     }
 
-    private func routineRowView(_ routine: DailyRoutine) -> some View {
-        let todayKey = DayClock.shared.todayKey
+    private func routineRowView(_ routine: DailyRoutine, model: WorkspaceFilteredListModel) -> some View {
         let snapshot = routine.snapshot
-        let checkSnapshots = checks.compactMap(\.snapshot)
-        let dueToday = DayBoardLogic.isRoutineDue(snapshot, on: todayKey)
-        let isDone = DayBoardLogic.isRoutineDone(snapshot, checks: checkSnapshots, on: todayKey)
+        let dueToday = DayBoardLogic.isRoutineDue(snapshot, on: model.todayKey)
+        let isDone = model.checkIndex.isClosed(routineId: routine.id, dayKey: model.todayKey)
         let schedule = RoutineScheduleContext(
-            todayKey: todayKey,
-            checkDayKey: todayKey,
-            checks: checks,
-            locale: locale
+            todayKey: model.todayKey,
+            checkDayKey: model.todayKey,
+            checks: model.checks,
+            locale: model.locale,
+            lookups: model.routineLookups(for: routine.id)
         )
         let display = RoutineRowDisplayOptions(
             isDone: isDone,
@@ -237,56 +233,26 @@ struct WorkspaceFilteredListView: View {
             allowsCompletion: dueToday
         )
         let actions = RoutineRowActions(
-            onSelect: { selectRow(routine.id, modifiers: $0) },
+            onSelect: { selectRow(routine.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
             onSkip: dueToday && !isDone ? {
-                DayBoardMutations.skipRoutine(routine, on: todayKey, checks: checks, context: modelContext)
+                DayBoardMutations.skipRoutine(routine, on: model.todayKey, checks: model.checks, context: modelContext)
             } : nil
         )
         return TaskRowFactory.routine(RoutineRowContext(
             routine: routine,
             schedule: schedule,
-            catalogs: catalogContext,
+            catalogs: model.catalogs,
             display: display,
             actions: actions
         ))
     }
 
-    private func selectRow(_ id: UUID, modifiers: TaskSelectionModifiers) {
-        navigation.selectTask(id, in: orderedVisibleIDs, modifiers: modifiers)
-    }
-
-    private var matchingTodos: [TodoItem] {
-        Catalog.matchingTodos(todos, tag: tag)
-    }
-
-    private var matchingSubtasks: [SubtaskItem] {
-        Catalog.matchingSubtasks(todos, tag: tag)
-    }
-
-    private func mixedRows(open: Bool) -> [BoardRow] {
-        let todos = matchingTodos.filter { open ? !$0.isDone : $0.isDone }
-        let listedRoutines = Catalog.matchingListedRoutines(
-            routines,
-            checks: checks,
-            tag: tag,
-            dayKey: DayClock.shared.todayKey,
-            open: open
-        )
-        let rows = todos.map(BoardRow.todo) + listedRoutines.map(BoardRow.resident)
-        return rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-    }
-
-    private var orderedVisibleIDs: [UUID] {
-        mixedRows(open: true).map(\.id)
-            + (showCompleted ? mixedRows(open: false).map(\.id) : [])
-    }
-
-    private var canBatchSelect: Bool {
-        !orderedVisibleIDs.isEmpty
+    private func selectRow(_ id: UUID, modifiers: TaskSelectionModifiers, visibleIDs: [UUID]) {
+        navigation.selectTask(id, in: visibleIDs, modifiers: modifiers)
     }
 }

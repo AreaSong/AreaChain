@@ -17,20 +17,12 @@ struct DashboardView: View {
         return DayClock.shared.todayKey
     }
 
-    private var snapshot: DashboardSnapshot {
-        DashboardProjection.project(
-            todos: todos.map(\.snapshot),
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            diaries: diaries.map { DashboardProjection.diarySource($0.snapshot, tags: tags) },
-            todayKey: todayKey
-        )
-    }
-
     var body: some View {
+        let today = todayKey
+        let snapshot = makeSnapshot(todayKey: today)
         DaybookPage(
             title: "dashboard.title",
-            subtitleText: DayKey.displayName(todayKey, locale: locale),
+            subtitleText: DayKey.displayName(today, locale: locale),
             fullWidth: true
         ) {
             ScrollView {
@@ -39,7 +31,7 @@ struct DashboardView: View {
                     DashboardTrendSection(days: snapshot.trend, locale: locale)
                     DashboardHeatmapSection(
                         cells: snapshot.heatmap,
-                        hasCompletions: snapshot.heatmap.contains { !$0.isPaddingCell && $0.completedCount > 0 },
+                        hasCompletions: DashboardHeatmapLayout.hasCompletions(snapshot.heatmap),
                         locale: locale,
                         navigation: navigation
                     )
@@ -55,5 +47,15 @@ struct DashboardView: View {
             DayClock.shared.refresh()
             dayTick = Date()
         }
+    }
+
+    private func makeSnapshot(todayKey: String) -> DashboardSnapshot {
+        DashboardProjection.project(
+            todos: todos.map(\.snapshot),
+            routines: routines.map(\.snapshot),
+            checks: checks.compactMap(\.snapshot),
+            diaries: diaries.map { DashboardProjection.diarySource($0.snapshot, tags: tags) },
+            todayKey: todayKey
+        )
     }
 }
