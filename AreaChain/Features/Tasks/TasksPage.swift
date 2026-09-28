@@ -76,20 +76,21 @@ struct TasksPage: View {
     }
 
     var body: some View {
+        let page = makePageModel()
         VStack(alignment: .leading, spacing: 10) {
-            headerBar
+            headerBar(page)
             ScrollViewReader { scrollProxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: 6) {
                         scrollOffsetTracker
 
-                        if isTodayEmpty && showYesterday && !yesterdayItems.isEmpty {
-                            centeredYesterdaySection
+                        if page.isTodayEmpty && showYesterday && !page.yesterdayItems.isEmpty {
+                            centeredYesterdaySection(page)
                         } else {
-                            yesterdaySection
-                            upcomingSection
+                            yesterdaySection(page)
+                            upcomingSection(page)
                         }
-                        dayBoardView
+                        dayBoardView(page)
 
                         blankClickArea
                     }
@@ -128,7 +129,7 @@ struct TasksPage: View {
         .animation(DaybookMotion.interactive, value: effectiveFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)
         .animation(DaybookMotion.interactive, value: showYesterday)
-        .onChange(of: allVisibleIDs) { previous, next in
+        .onChange(of: page.allVisibleIDs(showYesterday: showYesterday, showUpcoming: showUpcoming)) { previous, next in
             taskSelection.dropRemoved(from: previous, to: next)
         }
         .onChange(of: focusedTaskID?.wrappedValue) { _, id in
@@ -140,15 +141,39 @@ struct TasksPage: View {
         }
     }
 
-    var untaggedTodosCount: Int {
-        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey && TagIDList.parse($0.tagIDs).isEmpty }.count
+    func makePageModel() -> TasksPageViewModel {
+        TasksPageViewModel.make(
+            todayKey: todayKey,
+            yesterdayKey: yesterdayKey,
+            routines: routines,
+            checks: checks,
+            todos: todos,
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            filter: effectiveFilter
+        )
     }
 
-    var totalOpenTodosCount: Int {
-        todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey == todayKey }.count
+    var pageSnapshot: DayBoardPageSnapshot {
+        DayBoardPageProjection.project(
+            source: DayBoardSource(routines: routines, checks: checks, todos: todos),
+            todayKey: todayKey,
+            yesterdayKey: yesterdayKey,
+            filter: effectiveFilter
+        )
     }
 
-    private var dayBoardView: some View {
+    var untaggedTodosCount: Int { pageSnapshot.untaggedOpenTodoCount }
+    var totalOpenTodosCount: Int { pageSnapshot.totalOpenTodoCount }
+    var yesterdayItems: [UnfinishedItem] { pageSnapshot.yesterdayItems }
+    var upcomingModels: [TodoItem] {
+        let byID = Dictionary(todos.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return pageSnapshot.upcomingTodos.compactMap { byID[$0.id] }
+    }
+    var todayBundleIDs: [String] { pageSnapshot.todayBundleIDs }
+    var todayVisibleIDs: [UUID] { pageSnapshot.todayVisibleIDs }
+    var isTodayEmpty: Bool { pageSnapshot.isTodayEmpty }
+
+    private func dayBoardView(_ page: TasksPageViewModel) -> some View {
         DayBoardList(
             dayKey: todayKey,
             routines: routines,
@@ -157,123 +182,16 @@ struct TasksPage: View {
             config: DayBoardListConfig(
                 todayKey: todayKey,
                 filter: effectiveFilter,
-                dayKeyForID: { [yesterdayKey] id in
-                    resolveDayKey(for: id, yesterdayKey: yesterdayKey)
+                dayKeyForID: { id in
+                    page.dayKey(for: id, listDayKey: todayKey, yesterdayKey: yesterdayKey)
                 },
                 interaction: config.interaction,
-                yesterdayUnfinishedCount: yesterdayItems.count,
+                yesterdayUnfinishedCount: page.yesterdayItems.count,
                 isYesterdayExpanded: showYesterday,
                 selection: $taskSelection,
                 onToggleYesterday: { showYesterday.toggle() }
             )
         )
-    }
-
-    private func resolveDayKey(for id: UUID, yesterdayKey: String) -> String {
-        BoardFocusDay.key(
-            for: id,
-            listDayKey: todayKey,
-            yesterdayKey: yesterdayKey,
-            yesterdayIDs: Set(yesterdayItems.map(\.id)),
-            upcomingDayKeys: Dictionary(
-                uniqueKeysWithValues: upcomingModels.map { ($0.id, $0.dayKey) }
-            )
-        )
-    }
-
-    var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
-        (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
-    }
-
-    var yesterdayItems: [UnfinishedItem] {
-        DayBoardLogic.yesterdayUnfinished(
-            routines: snapshots.0,
-            checks: snapshots.1,
-            todos: snapshots.2,
-            yesterdayKey: yesterdayKey
-        ).filter { item in
-            if let todo = todos.first(where: { $0.id == item.id }), item.kind == .todo {
-                return matchesListed(todo)
-            }
-            return routines.first(where: { $0.id == item.id }).map {
-                matchesListed($0, on: yesterdayKey)
-            } ?? false
-        }
-    }
-
-    var upcomingModels: [TodoItem] {
-        let ordered = DayBoardLogic.upcomingTodos(todos: snapshots.2, todayKey: todayKey)
-        let byID = Dictionary(uniqueKeysWithValues: todos.map { ($0.id, $0) })
-        return ordered.compactMap { byID[$0.id] }.filter(matchesListed)
-    }
-
-    var todayBundleIDs: [String] {
-        let routineIDs = DayBoardLogic.routines(for: todayKey, in: snapshots.0).map(\.sourceBundleID)
-        let todoIDs = DayBoardLogic.todos(for: todayKey, in: snapshots.2).map(\.sourceBundleID)
-        return Array(Set((routineIDs + todoIDs).filter { !$0.isEmpty })).sorted()
-    }
-
-    private func matchesListed(_ todo: TodoItem) -> Bool {
-        Classification.matchesListedRow(
-            todo.classifyBits,
-            dayKey: todo.dayKey,
-            isDone: todo.isDone,
-            remindMinutes: todo.remindMinutes,
-            todayKey: todayKey,
-            filter: effectiveFilter
-        )
-    }
-
-    private func matchesListed(_ routine: DailyRoutine, on dayKey: String) -> Bool {
-        let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snapshots.1, on: dayKey)
-        return Classification.matchesListedRow(
-            routine.classifyBits,
-            dayKey: dayKey,
-            isDone: done,
-            remindMinutes: routine.remindMinutes,
-            todayKey: todayKey,
-            filter: effectiveFilter
-        )
-    }
-
-    var todayVisibleIDs: [UUID] {
-        DayBoardLogic.openBoardItems(
-            routines: snapshots.0,
-            checks: snapshots.1,
-            todos: snapshots.2,
-            dayKey: todayKey
-        ).filter { reference in
-            switch reference {
-            case .todo(let id):
-                guard let todo = todos.first(where: { $0.id == id }) else { return false }
-                return matchesListed(todo)
-            case .recurring(let id):
-                guard let routine = routines.first(where: { $0.id == id }) else { return false }
-                return matchesListed(routine, on: todayKey)
-            }
-        }.map(\.modelID)
-    }
-
-    var allVisibleIDs: [UUID] {
-        var ids: [UUID] = []
-        if showYesterday {
-            ids.append(contentsOf: yesterdayItems.map(\.id))
-        }
-        if showUpcoming {
-            ids.append(contentsOf: upcomingModels.map(\.id))
-        }
-        ids.append(contentsOf: todayVisibleIDs)
-        return ids
-    }
-
-    var isTodayEmpty: Bool {
-        guard todayVisibleIDs.isEmpty else { return false }
-        let (routineSnaps, checkSnaps, todoSnaps) = snapshots
-        let hasClosedTodos = !DayBoardLogic.completedTodos(todos: todoSnaps, dayKey: todayKey).isEmpty
-        let hasClosedRoutines = !DayBoardLogic.completedRoutines(
-            routines: routineSnaps, checks: checkSnaps, dayKey: todayKey
-        ).isEmpty
-        return !hasClosedTodos && !hasClosedRoutines
     }
 
     private var blankClickArea: some View {

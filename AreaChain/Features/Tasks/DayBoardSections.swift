@@ -2,13 +2,13 @@ import SwiftUI
 
 extension DayBoardList {
     @ViewBuilder
-    var openItemsSection: some View {
-        if openItemsList.isEmpty && !doneItemsList.isEmpty {
+    func openItemsSection(_ identity: DayBoardListIdentity) -> some View {
+        if identity.openRows.isEmpty && !identity.doneRows.isEmpty {
             allDoneBanner
-        } else if !openItemsList.isEmpty {
+        } else if !identity.openRows.isEmpty {
             VStack(alignment: .leading, spacing: 4) {
-                ForEach(openItemsList, id: \.listID) { row in
-                    dayRow(row, isDone: false)
+                ForEach(identity.openRows, id: \.listID) { row in
+                    dayRow(row, isDone: false, identity: identity)
                 }
             }
         }
@@ -37,7 +37,7 @@ extension DayBoardList {
         .padding(.top, 2)
     }
 
-    var completedSection: some View {
+    func completedSection(_ identity: DayBoardListIdentity) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Divider()
                 .opacity(0.15)
@@ -55,8 +55,8 @@ extension DayBoardList {
                         .foregroundStyle(DaybookPalette.text.secondary)
                     DaybookSectionHeader(
                         title: showCompleted
-                            ? "stamp.completed.collapse \(doneItemsList.count)"
-                            : "stamp.completed \(doneItemsList.count)",
+                            ? "stamp.completed.collapse \(identity.doneRows.count)"
+                            : "stamp.completed \(identity.doneRows.count)",
                         icon: "checkmark.circle"
                     )
                     Spacer()
@@ -69,8 +69,8 @@ extension DayBoardList {
 
             if showCompleted {
                 VStack(alignment: .leading, spacing: 4) {
-                    ForEach(doneItemsList, id: \.listID) { row in
-                        dayRow(row, isDone: true)
+                    ForEach(identity.doneRows, id: \.listID) { row in
+                        dayRow(row, isDone: true, identity: identity)
                     }
                 }
             }

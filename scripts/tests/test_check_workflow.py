@@ -40,7 +40,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardMutations ModelChanges 新公共组件\n",
+            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle daybookSurface TaskRow DayBoardList BoardFilter BoardSearch DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges 新公共组件\n",
         }
         contract_docs["AGENTS.md"] += " quality-gates.md\n"
         for name in workflow.REQUIRED_DOCS:

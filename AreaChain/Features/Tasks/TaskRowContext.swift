@@ -87,125 +87,6 @@ struct TaskAttachmentContext {
     var onCaptureScreen: (() -> Void)? = nil
 }
 
-@MainActor
-enum CatalogChoices {
-    static func tags(_ items: [TagItem], attachedIDs: String = "") -> [CatalogChoice] {
-        Catalog.taskPickerTags(items, attachedIDs: attachedIDs).map {
-            CatalogChoice(id: $0.id, name: $0.name)
-        }
-    }
-
-    static func attachments(_ ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentRef] {
-        Catalog.liveAttachments(for: ownerID, in: items, ownerKind: ownerKind).map {
-            $0.reference
-        }
-    }
-
-    static func classify(
-        for routine: DailyRoutine,
-        tags: [TagItem]
-    ) -> TaskClassifyContext {
-        let priority = TaskPriorityFlags(
-            isImportant: routine.isImportant,
-            isUrgent: routine.isUrgent
-        )
-        let catalog = TaskCatalogBinding(
-            tagIDs: routine.tagIDs,
-            tags: Self.tags(tags, attachedIDs: routine.tagIDs),
-            sourceLabel: routine.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: routine.sourceBundleID)
-        )
-        let actions = TaskClassifyActions(
-            onToggleTag: { DayBoardMutations.toggleTag(for: routine, tagID: $0) },
-            onImportant: { value in
-                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: routine.isUrgent), to: routine)
-            },
-            onUrgent: { value in
-                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: routine.isImportant, urgent: value), to: routine)
-            }
-        )
-        return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
-    }
-
-    static func classify(
-        for todo: TodoItem,
-        tags: [TagItem]
-    ) -> TaskClassifyContext {
-        let priority = TaskPriorityFlags(
-            isImportant: todo.isImportant,
-            isUrgent: todo.isUrgent
-        )
-        let catalog = TaskCatalogBinding(
-            tagIDs: todo.tagIDs,
-            tags: Self.tags(tags, attachedIDs: todo.tagIDs),
-            sourceLabel: todo.sourceBundleID.isEmpty ? nil : BundleDisplay.name(for: todo.sourceBundleID)
-        )
-        let actions = TaskClassifyActions(
-            onToggleTag: { DayBoardMutations.toggleTag(for: todo, tagID: $0) },
-            onImportant: { value in
-                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: value, urgent: todo.isUrgent), to: todo)
-            },
-            onUrgent: { value in
-                DayBoardMutations.applyQuadrant(QuadrantSlot.of(important: todo.isImportant, urgent: value), to: todo)
-            }
-        )
-        return TaskClassifyContext(priority: priority, catalog: catalog, actions: actions)
-    }
-
-    static func attachments(
-        ownerKind: AttachmentOwner,
-        ownerID: UUID,
-        items: [AttachmentItem],
-        context: ModelContext
-    ) -> TaskAttachmentContext {
-        TaskAttachmentContext(
-            items: attachments(ownerID, in: items, ownerKind: ownerKind),
-            onPickFile: {
-                AttachmentActions.pickImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
-            },
-            onPaste: {
-                _ = AttachmentActions.pasteImage(ownerKind: ownerKind, ownerID: ownerID, context: context)
-            },
-            onCaptureScreen: {
-                AttachmentActions.captureScreen(ownerKind: ownerKind, ownerID: ownerID, context: context)
-            }
-        )
-    }
-}
-
-// MARK: - Task Catalog Context
-
-/// 任务行目录与持久化上下文依赖（解耦各调用方重复传递 tags/attachments/modelContext）
-struct TaskCatalogContext {
-    var tags: [TagItem]
-    var attachments: [AttachmentItem]
-    var context: ModelContext
-
-    init(
-        tags: [TagItem],
-        attachments: [AttachmentItem],
-        context: ModelContext
-    ) {
-        self.tags = tags
-        self.attachments = attachments
-        self.context = context
-    }
-
-    @MainActor
-    func classify(for routine: DailyRoutine) -> TaskClassifyContext {
-        CatalogChoices.classify(for: routine, tags: tags)
-    }
-
-    @MainActor
-    func classify(for todo: TodoItem) -> TaskClassifyContext {
-        CatalogChoices.classify(for: todo, tags: tags)
-    }
-
-    @MainActor
-    func attachments(ownerKind: AttachmentOwner, ownerID: UUID) -> TaskAttachmentContext {
-        CatalogChoices.attachments(ownerKind: ownerKind, ownerID: ownerID, items: attachments, context: context)
-    }
-}
-
 // MARK: - Selection State
 
 /// 任务行选中与就地编辑状态
@@ -309,23 +190,43 @@ struct TodoRowContext {
 
 // MARK: - Routine Row DTOs
 
+/// 列表一次投影后的打卡索引与连击。失效条件：当日 checks 或习惯快照变化。
+struct RoutineDisplayLookups {
+    var checkIndex: DayBoardCheckIndex
+    var currentStreak: Int?
+    var routineCheckSnaps: [CheckSnapshot]
+
+    init(
+        checkIndex: DayBoardCheckIndex,
+        currentStreak: Int? = nil,
+        routineCheckSnaps: [CheckSnapshot] = []
+    ) {
+        self.checkIndex = checkIndex
+        self.currentStreak = currentStreak
+        self.routineCheckSnaps = routineCheckSnaps
+    }
+}
+
 /// 常驻习惯日程与打卡上下文
 struct RoutineScheduleContext {
     var todayKey: String
     var checkDayKey: String
     var checks: [RoutineCheck]
     var locale: Locale
+    var lookups: RoutineDisplayLookups? = nil
 
     init(
         todayKey: String,
         checkDayKey: String,
         checks: [RoutineCheck],
-        locale: Locale = .current
+        locale: Locale = .current,
+        lookups: RoutineDisplayLookups? = nil
     ) {
         self.todayKey = todayKey
         self.checkDayKey = checkDayKey
         self.checks = checks
         self.locale = locale
+        self.lookups = lookups
     }
 }
 

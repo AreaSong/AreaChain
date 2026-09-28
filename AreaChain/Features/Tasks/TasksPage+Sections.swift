@@ -1,32 +1,33 @@
 import SwiftUI
 
 extension TasksPage {
-    var upcomingSection: some View {
+    func upcomingSection(_ page: TasksPageViewModel) -> some View {
         Group {
-            if showUpcoming, !upcomingModels.isEmpty {
+            if showUpcoming, !page.upcomingModels.isEmpty {
                 DaybookSectionHeader(title: "stamp.upcoming")
-                ForEach(upcomingModels, id: \.id) { todo in
+                ForEach(page.upcomingModels, id: \.id) { todo in
                     leftoverTodoRow(
                         todo,
+                        page: page,
                         note: DayKey.shortStamp(todo.dayKey, locale: locale),
-                        visibleIDs: upcomingModels.map(\.id)
+                        visibleIDs: page.upcomingModels.map(\.id)
                     )
                 }
             }
         }
     }
 
-    var yesterdaySection: some View {
+    func yesterdaySection(_ page: TasksPageViewModel) -> some View {
         Group {
-            if showYesterday, !yesterdayItems.isEmpty {
+            if showYesterday, !page.yesterdayItems.isEmpty {
                 VStack(alignment: .leading, spacing: 6) {
-                    yesterdaySectionHeader
+                    yesterdaySectionHeader(page)
                         .padding(.horizontal, 4)
                         .padding(.top, 2)
 
                     VStack(spacing: 2) {
-                        ForEach(yesterdayItems) { item in
-                            leftoverRow(item)
+                        ForEach(page.yesterdayItems) { item in
+                            leftoverRow(item, page: page)
                         }
                     }
                 }
@@ -46,14 +47,14 @@ extension TasksPage {
         }
     }
 
-    var centeredYesterdaySection: some View {
+    func centeredYesterdaySection(_ page: TasksPageViewModel) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            yesterdaySectionHeader
+            yesterdaySectionHeader(page)
                 .padding(.horizontal, 4)
 
             VStack(spacing: 2) {
-                ForEach(yesterdayItems) { item in
-                    leftoverRow(item)
+                ForEach(page.yesterdayItems) { item in
+                    leftoverRow(item, page: page)
                 }
             }
         }
@@ -72,7 +73,7 @@ extension TasksPage {
         }
     }
 
-    private var yesterdaySectionHeader: some View {
+    private func yesterdaySectionHeader(_ page: TasksPageViewModel) -> some View {
         HStack(alignment: .center) {
             HStack(spacing: 4) {
                 Image(systemName: "clock.arrow.circlepath")
@@ -81,13 +82,13 @@ extension TasksPage {
                 Text("stamp.yesterday")
                     .font(DaybookType.caption.weight(.semibold))
                     .foregroundStyle(DaybookPalette.text.primary)
-                DaybookCount(count: yesterdayItems.count, emphasis: true)
+                DaybookCount(count: page.yesterdayItems.count, emphasis: true)
             }
             Spacer()
-            if yesterdayItems.contains(where: { $0.kind == .todo }) {
+            if page.yesterdayItems.contains(where: { $0.kind == .todo }) {
                 DaybookChip(tint: DaybookPalette.accent.base, isSelected: true, action: {
                     withAnimation(DaybookMotion.interactive) {
-                        moveAllYesterdayTodosToToday()
+                        moveAllYesterdayTodosToToday(page)
                     }
                 }) {
                     HStack(spacing: 3) {
@@ -101,15 +102,12 @@ extension TasksPage {
         }
     }
 
-    private var catalogContext: TaskCatalogContext {
-        TaskCatalogContext(
-            tags: tags,
-            attachments: attachments,
-            context: modelContext
-        )
-    }
-
-    func leftoverTodoRow(_ todo: TodoItem, note: String? = nil, visibleIDs: [UUID]) -> some View {
+    func leftoverTodoRow(
+        _ todo: TodoItem,
+        page: TasksPageViewModel,
+        note: String? = nil,
+        visibleIDs: [UUID]
+    ) -> some View {
         let display = TodoRowDisplayOptions(
             isDone: false,
             isSelected: isLeftoverSelected(todo.id),
@@ -123,23 +121,23 @@ extension TasksPage {
         return TaskRowFactory.todo(TodoRowContext(
             todo: todo,
             todayKey: todayKey,
-            catalogs: catalogContext,
+            catalogs: page.catalogs,
             display: display,
             actions: actions
         ))
     }
 
     @ViewBuilder
-    func leftoverRow(_ item: UnfinishedItem) -> some View {
-        if item.kind == .todo, let todo = todos.first(where: { $0.id == item.id }) {
-            leftoverTodoRow(todo, visibleIDs: yesterdayItems.map(\.id))
-        } else if item.kind == .routine, let routine = routines.first(where: { $0.id == item.id }) {
-            leftoverRoutineRow(routine, item: item)
+    func leftoverRow(_ item: UnfinishedItem, page: TasksPageViewModel) -> some View {
+        if item.kind == .todo, let todo = page.todo(item.id) {
+            leftoverTodoRow(todo, page: page, visibleIDs: page.yesterdayItems.map(\.id))
+        } else if item.kind == .routine, let routine = page.routine(item.id) {
+            leftoverRoutineRow(routine, item: item, page: page)
         } else {
             let actions = LeftoverRowActions(
-                onToggle: { completeYesterday(item) },
-                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, in: yesterdayItems.map(\.id), modifiers: $0) },
-                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0) } : nil
+                onToggle: { completeYesterday(item, page: page) },
+                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, in: page.yesterdayItems.map(\.id), modifiers: $0) },
+                onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0, page: page) } : nil
             )
             TaskRowFactory.leftoverFallback(LeftoverRowContext(
                 item: item,
@@ -151,12 +149,17 @@ extension TasksPage {
         }
     }
 
-    private func leftoverRoutineRow(_ routine: DailyRoutine, item: UnfinishedItem) -> some View {
+    private func leftoverRoutineRow(
+        _ routine: DailyRoutine,
+        item: UnfinishedItem,
+        page: TasksPageViewModel
+    ) -> some View {
         let schedule = RoutineScheduleContext(
             todayKey: todayKey,
             checkDayKey: yesterdayKey,
             checks: checks,
-            locale: locale
+            locale: locale,
+            lookups: page.routineLookups(for: routine.id)
         )
         let display = RoutineRowDisplayOptions(
             isDone: false,
@@ -164,13 +167,13 @@ extension TasksPage {
             usesDefaultNote: false
         )
         let actions = RoutineRowActions(
-            onSelect: { selectLeftover(routine.id, dayKey: yesterdayKey, in: yesterdayItems.map(\.id), modifiers: $0) },
+            onSelect: { selectLeftover(routine.id, dayKey: yesterdayKey, in: page.yesterdayItems.map(\.id), modifiers: $0) },
             onDelete: {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
             },
-            onToggle: { completeYesterday(item) },
+            onToggle: { completeYesterday(item, page: page) },
             onSkip: {
                 DayBoardMutations.skipRoutine(routine, on: yesterdayKey, checks: checks, context: modelContext)
             }
@@ -178,7 +181,7 @@ extension TasksPage {
         return TaskRowFactory.routine(RoutineRowContext(
             routine: routine,
             schedule: schedule,
-            catalogs: catalogContext,
+            catalogs: page.catalogs,
             display: display,
             actions: actions
         ))

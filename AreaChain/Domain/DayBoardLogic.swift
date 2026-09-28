@@ -114,27 +114,7 @@ struct UnfinishedItem: Equatable, Identifiable {
 enum DayBoardLogic {
     /// 看板闭合看同一 (routineId, dayKey) 的**第一条**打卡；后写的完成/跳过不能覆盖先写的未闭合。
     /// 待处理逾期用「任一条完成或跳过即闭合」，两套规则不能合成一张表。
-    private struct CheckLookup {
-        private let firstByRoutineDay: [UUID: [String: CheckSnapshot]]
-
-        init(_ checks: [CheckSnapshot]) {
-            var map: [UUID: [String: CheckSnapshot]] = [:]
-            for check in checks {
-                var days = map[check.routineId] ?? [:]
-                if days[check.dayKey] == nil {
-                    days[check.dayKey] = check
-                    map[check.routineId] = days
-                }
-            }
-            firstByRoutineDay = map
-        }
-
-        func isClosed(routineId: UUID, dayKey: String) -> Bool {
-            guard let mark = firstByRoutineDay[routineId]?[dayKey] else { return false }
-            return mark.isDone || mark.isSkipped
-        }
-    }
-
+    /// 多次查询时复用 `DayBoardCheckIndex`，不要每次再扫一遍 checks。
     static func isRoutineDue(
         _ routine: RoutineSnapshot,
         on dayKey: String,
@@ -157,8 +137,15 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         on dayKey: String
     ) -> Bool {
-        guard let mark = check(for: routine, checks: checks, on: dayKey) else { return false }
-        return mark.isDone || mark.isSkipped
+        isRoutineDone(routine, index: DayBoardCheckIndex(checks), on: dayKey)
+    }
+
+    static func isRoutineDone(
+        _ routine: RoutineSnapshot,
+        index: DayBoardCheckIndex,
+        on dayKey: String
+    ) -> Bool {
+        index.isClosed(routineId: routine.id, dayKey: dayKey)
     }
 
     static func isRoutineSkipped(
@@ -166,7 +153,15 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         on dayKey: String
     ) -> Bool {
-        check(for: routine, checks: checks, on: dayKey)?.isSkipped == true
+        isRoutineSkipped(routine, index: DayBoardCheckIndex(checks), on: dayKey)
+    }
+
+    static func isRoutineSkipped(
+        _ routine: RoutineSnapshot,
+        index: DayBoardCheckIndex,
+        on dayKey: String
+    ) -> Bool {
+        index.isSkipped(routineId: routine.id, dayKey: dayKey)
     }
 
     static func openRoutines(
@@ -182,9 +177,17 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         dayKey: String
     ) -> [RoutineSnapshot] {
-        let lookup = CheckLookup(checks)
-        return self.routines(for: dayKey, in: routines)
-            .filter { lookup.isClosed(routineId: $0.id, dayKey: dayKey) }
+        completedRoutines(routines: routines, index: DayBoardCheckIndex(checks), dayKey: dayKey)
+    }
+
+    static func completedRoutines(
+        routines: [RoutineSnapshot],
+        index: DayBoardCheckIndex,
+        dayKey: String,
+        calendar: Calendar = .current
+    ) -> [RoutineSnapshot] {
+        self.routines(for: dayKey, in: routines, calendar: calendar)
+            .filter { index.isClosed(routineId: $0.id, dayKey: dayKey) }
     }
 
     static func openTodos(todos: [TodoSnapshot], dayKey: String) -> [TodoSnapshot] {
@@ -216,9 +219,17 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         dayKey: String
     ) -> [RoutineSnapshot] {
-        let lookup = CheckLookup(checks)
-        return self.routines(for: dayKey, in: routines)
-            .filter { !lookup.isClosed(routineId: $0.id, dayKey: dayKey) }
+        unfinishedRoutines(routines: routines, index: DayBoardCheckIndex(checks), dayKey: dayKey)
+    }
+
+    static func unfinishedRoutines(
+        routines: [RoutineSnapshot],
+        index: DayBoardCheckIndex,
+        dayKey: String,
+        calendar: Calendar = .current
+    ) -> [RoutineSnapshot] {
+        self.routines(for: dayKey, in: routines, calendar: calendar)
+            .filter { !index.isClosed(routineId: $0.id, dayKey: dayKey) }
     }
 
     static func todos(for dayKey: String, in todos: [TodoSnapshot]) -> [TodoSnapshot] {
@@ -243,7 +254,7 @@ enum DayBoardLogic {
     ) -> BoardProgress {
         let dueTodos = self.todos(for: dayKey, in: todos)
         let dueRoutines = self.routines(for: dayKey, in: routines, calendar: calendar)
-        let lookup = CheckLookup(checks)
+        let lookup = DayBoardCheckIndex(checks)
         let completed = dueTodos.filter(\.isDone).count
             + dueRoutines.filter { lookup.isClosed(routineId: $0.id, dayKey: dayKey) }.count
         return BoardProgress(completed: completed, total: dueTodos.count + dueRoutines.count)
@@ -303,7 +314,7 @@ enum DayBoardLogic {
     ) -> [String: Int] {
         let keys = DayKey.daysInMonth(containing: dayKey, calendar: calendar)
         guard !keys.isEmpty else { return [:] }
-        let lookup = CheckLookup(checks)
+        let lookup = DayBoardCheckIndex(checks)
         var openTodosByDay: [String: Int] = [:]
         for todo in todos where todo.deletedAt == nil && !todo.isDone {
             openTodosByDay[todo.dayKey, default: 0] += 1
@@ -344,10 +355,26 @@ enum DayBoardLogic {
         todos: [TodoSnapshot],
         yesterdayKey: String
     ) -> [UnfinishedItem] {
+        yesterdayUnfinished(
+            routines: routines,
+            index: DayBoardCheckIndex(checks),
+            todos: todos,
+            yesterdayKey: yesterdayKey
+        )
+    }
+
+    static func yesterdayUnfinished(
+        routines: [RoutineSnapshot],
+        index: DayBoardCheckIndex,
+        todos: [TodoSnapshot],
+        yesterdayKey: String,
+        calendar: Calendar = .current
+    ) -> [UnfinishedItem] {
         let routineItems = unfinishedRoutines(
             routines: routines,
-            checks: checks,
-            dayKey: yesterdayKey
+            index: index,
+            dayKey: yesterdayKey,
+            calendar: calendar
         ).map { UnfinishedItem(id: $0.id, title: $0.title, kind: .routine) }
 
         let todoItems = unfinishedTodos(todos: todos, dayKey: yesterdayKey)

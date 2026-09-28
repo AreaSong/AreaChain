@@ -70,6 +70,17 @@
       "note": "Debug、UTC、30 个习惯加当月待办；热身 1 次后对按日分组实现与逐日 badge 扫描各 3 次取样取中位数。不是日历页原生交互证据。"
     },
     {
+      "id": "dayboard-page-projection",
+      "scope": "AreaChain/Domain/DayBoardPageProjection.swift",
+      "test": "AreaChainTests/Domain/DayBoardPageProjectionTests.swift",
+      "testFilter": "AreaChainTests/DayBoardPageProjectionTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/DayBoardPageProjectionTests.swift:146",
+      "note": "Debug、UTC、40 个习惯加待办；热身 1 次后对一次 Source+投影 与 8 次重复 snapshot/openBoard 扫描各 3 次取样取中位数。不是列表滚动或输入的原生帧率。"
+    },
+    {
       "id": "dashboard-heatmap-365",
       "scope": "AreaChain/Domain/DashboardProjection.swift",
       "test": "AreaChainTests/Domain/DashboardProjectionEquivalenceTests.swift",

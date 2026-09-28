@@ -113,8 +113,10 @@ struct TaskRow: View {
             .zIndex((shouldShowTitleBubble || shouldShowNoteBubble) ? 120 : (isHovered ? 100 : 1))
     }
 
+    @ViewBuilder
     private var rowContent: some View {
-        HStack(alignment: shouldAlignTop ? .top : .center, spacing: 8) {
+        let hasSubs = isSubtasksExpanded && !state.subtasks.isEmpty
+        HStack(alignment: (hasVisibleNote || hasSubs || editing) ? .top : .center, spacing: 8) {
             if state.allowsCompletion {
                 ModernCheckbox(isDone: state.isDone) {
                     PendingCompletionManager.shared.toggle(
@@ -142,7 +144,7 @@ struct TaskRow: View {
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     selectableContent
-                    if isSubtasksExpanded && !state.subtasks.isEmpty {
+                    if hasSubs {
                         TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
                             dispatch(.toggleSubtask(subtaskID))
                         }
@@ -179,10 +181,6 @@ struct TaskRow: View {
                 pickingDay = false
             }
         }
-    }
-
-    private var shouldAlignTop: Bool {
-        hasVisibleNote || (isSubtasksExpanded && !state.subtasks.isEmpty) || editing
     }
 
     private var hasVisibleNote: Bool {

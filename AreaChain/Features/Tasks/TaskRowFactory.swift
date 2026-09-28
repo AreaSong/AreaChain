@@ -117,22 +117,37 @@ enum TaskRowFactory {
             return note
         }
         guard context.display.usesDefaultNote else { return nil }
-        let skipped = DayBoardLogic.isRoutineSkipped(
-            context.routine.snapshot,
-            checks: context.schedule.checks.compactMap(\.snapshot),
-            on: context.schedule.checkDayKey
-        )
+        let skipped: Bool
+        if let lookups = context.schedule.lookups {
+            skipped = lookups.checkIndex.isSkipped(
+                routineId: context.routine.id,
+                dayKey: context.schedule.checkDayKey
+            )
+        } else {
+            skipped = DayBoardLogic.isRoutineSkipped(
+                context.routine.snapshot,
+                checks: context.schedule.checks.compactMap(\.snapshot),
+                on: context.schedule.checkDayKey
+            )
+        }
         return context.display.isDone
             ? ResidentNote.done(context.routine, skipped: skipped, locale: context.schedule.locale)
             : ResidentNote.days(context.routine, locale: context.schedule.locale)
     }
 
     private static func makeRoutineState(context: RoutineRowContext) -> TaskRowState {
-        let streak = HabitStreakLogic.calculate(
-            routine: context.routine.snapshot,
-            checks: context.schedule.checks.compactMap(\.snapshot),
-            todayKey: context.schedule.todayKey
-        )
+        let streak: Int
+        if let prepared = context.schedule.lookups?.currentStreak {
+            streak = prepared
+        } else {
+            let snaps = context.schedule.lookups?.routineCheckSnaps
+                ?? context.schedule.checks.compactMap(\.snapshot)
+            streak = HabitStreakLogic.calculate(
+                routine: context.routine.snapshot,
+                checks: snaps,
+                todayKey: context.schedule.todayKey
+            ).currentStreak
+        }
         let identity = TaskRowIdentityState(
             id: context.routine.id,
             title: context.routine.title,
@@ -145,7 +160,7 @@ enum TaskRowFactory {
         )
         let schedule = TaskRowScheduleState(
             remindMinutes: context.routine.remindMinutes,
-            streak: streak.currentStreak
+            streak: streak
         )
         let content = TaskRowContentState(
             note: resolveResidentNote(context: context),

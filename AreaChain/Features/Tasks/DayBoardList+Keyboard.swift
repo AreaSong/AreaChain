@@ -128,15 +128,12 @@ extension DayBoardList {
     }
 
     var orderedVisibleRows: [BoardRow] {
-        var rows = openItemsList
-        if showCompleted {
-            rows.append(contentsOf: doneItemsList)
-        }
-        return rows
+        makeListIdentity().visibleRows(showCompleted: showCompleted)
     }
 
     func navigateSelection(delta: Int, extending: Bool = false) {
-        let rows = orderedVisibleRows
+        let identity = makeListIdentity()
+        let rows = identity.visibleRows(showCompleted: showCompleted)
         guard !rows.isEmpty else { return }
         let listIDs = rows.map(\.listID)
         let current = focusedListID ?? focusedTaskID?.wrappedValue.flatMap { modelID in
@@ -180,8 +177,8 @@ extension DayBoardList {
         BoardSelection.shared.inspectBoard(mappedDayKey(for: row.id))
     }
 
-    func activeReference(preferring id: UUID) -> BoardItemReference? {
-        let rows = orderedVisibleRows.filter { $0.id == id }
+    func activeReference(preferring id: UUID, identity: DayBoardListIdentity? = nil) -> BoardItemReference? {
+        let rows = (identity ?? makeListIdentity()).visibleRows(showCompleted: showCompleted).filter { $0.id == id }
         if let focusedListID, let match = rows.first(where: { $0.listID == focusedListID }) {
             return match.reference
         }
@@ -213,12 +210,7 @@ extension DayBoardList {
     }
 
     var orderedVisibleIDs: [UUID] {
-        var ids: [UUID] = []
-        ids.append(contentsOf: openItemsList.map(\.id))
-        if showCompleted {
-            ids.append(contentsOf: doneItemsList.map(\.id))
-        }
-        return ids
+        makeListIdentity().visibleIDs(showCompleted: showCompleted)
     }
 
     func toggleSelected(id: UUID) {
@@ -231,14 +223,11 @@ extension DayBoardList {
     }
 
     func singleToggleSelected(id: UUID) {
+        let identity = makeListIdentity()
         let checkOn = checkDay(for: id)
-        let reference = activeReference(preferring: id)
-        if reference?.kind == .recurring, let routine = routines.first(where: { $0.id == id }) {
-            let isDone = DayBoardLogic.isRoutineDone(
-                routine.snapshot,
-                checks: checks.compactMap(\.snapshot),
-                on: checkOn
-            )
+        let reference = activeReference(preferring: id, identity: identity)
+        if reference?.kind == .recurring, let routine = identity.routine(id) {
+            let isDone = identity.source.checkIndex.isClosed(routineId: routine.id, dayKey: checkOn)
             PendingCompletionManager.shared.toggle(
                 id: routine.id,
                 currentlyDone: isDone,
@@ -248,7 +237,7 @@ extension DayBoardList {
             }
             return
         }
-        if let todo = todos.first(where: { $0.id == id }), reference?.kind != .recurring {
+        if let todo = identity.todo(id), reference?.kind != .recurring {
             PendingCompletionManager.shared.toggle(
                 id: todo.id,
                 currentlyDone: todo.isDone,
@@ -261,10 +250,11 @@ extension DayBoardList {
 
     /// 行复选框已经做过驻留；这里只落盘，避免鼠标路径套两层 0.4 秒。
     func persistToggleSelected(id: UUID) {
-        let previousIDs = effectiveVisibleIDs
+        let identity = makeListIdentity()
+        let previousIDs = identity.visibleIDs(showCompleted: showCompleted)
         let checkOn = checkDay(for: id)
-        let reference = activeReference(preferring: id)
-        if reference?.kind == .recurring, let routine = routines.first(where: { $0.id == id }) {
+        let reference = activeReference(preferring: id, identity: identity)
+        if reference?.kind == .recurring, let routine = identity.routine(id) {
             guard DayBoardMutations.toggleRoutine(
                 routine,
                 on: checkOn,
@@ -274,26 +264,23 @@ extension DayBoardList {
             shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
             return
         }
-        if let todo = todos.first(where: { $0.id == id }), reference?.kind != .recurring {
+        if let todo = identity.todo(id), reference?.kind != .recurring {
             guard DayBoardMutations.toggleTodo(todo) else { return }
             shiftFocusAfterCompletion(id: id, previousIDs: previousIDs)
         }
     }
 
     func batchToggleSelected(_ ids: Set<UUID>) {
-        let previousIDs = effectiveVisibleIDs
-        let selectedTodos = todos.filter { ids.contains($0.id) }
-        let selectedRoutines = routines.filter { ids.contains($0.id) }
+        let identity = makeListIdentity()
+        let previousIDs = identity.visibleIDs(showCompleted: showCompleted)
+        let selectedTodos = ids.compactMap(identity.todo)
+        let selectedRoutines = ids.compactMap(identity.routine)
 
         let anyUndone = selectedTodos.contains(where: {
             !$0.isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
         }) || selectedRoutines.contains(where: {
             let checkOn = checkDay(for: $0.id)
-            let isDone = DayBoardLogic.isRoutineDone(
-                $0.snapshot,
-                checks: checks.compactMap(\.snapshot),
-                on: checkOn
-            )
+            let isDone = identity.source.checkIndex.isClosed(routineId: $0.id, dayKey: checkOn)
             return !isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
         })
 
@@ -357,8 +344,9 @@ extension DayBoardList {
     }
 
     private func singleDeleteSelected(id: UUID) {
-        let reference = activeReference(preferring: id)
-        let rows = orderedVisibleRows
+        let identity = makeListIdentity()
+        let reference = activeReference(preferring: id, identity: identity)
+        let rows = identity.visibleRows(showCompleted: showCompleted)
         if let idx = rows.firstIndex(where: { $0.listID == reference?.id }) ?? rows.firstIndex(where: { $0.id == id }) {
             if idx + 1 < rows.count {
                 focusRow(rows[idx + 1])
@@ -371,21 +359,21 @@ extension DayBoardList {
         }
         switch reference?.kind {
         case .recurring:
-            guard let routine = routines.first(where: { $0.id == id }) else { return }
+            guard let routine = identity.routine(id) else { return }
             pendingTrash = PendingTrash(title: routine.title) {
                 DayBoardMutations.trashRoutine(routine)
             }
         case .oneOff:
-            guard let todo = todos.first(where: { $0.id == id }) else { return }
+            guard let todo = identity.todo(id) else { return }
             pendingTrash = PendingTrash(title: todo.title) {
                 DayBoardMutations.trashTodo(todo)
             }
         case nil:
-            if let todo = todos.first(where: { $0.id == id }) {
+            if let todo = identity.todo(id) {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
                 }
-            } else if let routine = routines.first(where: { $0.id == id }) {
+            } else if let routine = identity.routine(id) {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }

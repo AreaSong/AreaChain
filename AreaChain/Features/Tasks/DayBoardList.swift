@@ -119,15 +119,16 @@ struct DayBoardList: View {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var body: some View {
+        let identity = makeListIdentity()
         VStack(alignment: .leading, spacing: 4) {
-            if openItemsList.isEmpty && doneItemsList.isEmpty {
+            if identity.openRows.isEmpty && identity.doneRows.isEmpty {
                 emptyStateView
             } else {
-                openItemsSection
+                openItemsSection(identity)
             }
 
-            if !doneItemsList.isEmpty {
-                completedSection
+            if !identity.doneRows.isEmpty {
+                completedSection(identity)
             }
         }
         .focusable()
@@ -135,25 +136,38 @@ struct DayBoardList: View {
         .background(KeyWindowHost { hostWindow = $0 })
         .onAppear {
             setupKeyMonitor()
-            expandIfHighlighted()
+            expandIfHighlighted(identity)
         }
         .onChange(of: highlightedTaskID) { _, _ in
-            expandIfHighlighted()
+            expandIfHighlighted(makeListIdentity())
         }
         .onChange(of: focusedTaskID?.wrappedValue) { _, id in
             if let id, taskSelection.ids.contains(id) { return }
             taskSelection.focus(id)
         }
-        .onChange(of: orderedVisibleIDs) { previous, next in
+        .onChange(of: identity.visibleIDs(showCompleted: showCompleted)) { previous, next in
             taskSelection.dropRemoved(from: previous, to: next)
         }
         .onDisappear(perform: tearDownKeyMonitor)
         .confirmMoveToTrash($pendingTrash)
-        .animation(DaybookMotion.interactive(reduceMotion), value: openItemsList.map(\.id))
+        .animation(DaybookMotion.interactive(reduceMotion), value: identity.openIDs)
         .animation(DaybookMotion.interactive(reduceMotion), value: config.isYesterdayExpanded)
     }
 
-    var effectiveVisibleIDs: [UUID] { orderedVisibleIDs }
+    func makeListIdentity() -> DayBoardListIdentity {
+        DayBoardListIdentity.make(
+            dayKey: dayKey,
+            todayKey: todayKey,
+            filter: filter,
+            routines: routines,
+            checks: checks,
+            todos: todos,
+            catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
+            includeDoneStreaks: showCompleted
+        )
+    }
+
+    var effectiveVisibleIDs: [UUID] { makeListIdentity().visibleIDs(showCompleted: showCompleted) }
 
     @ViewBuilder
     private var emptyStateView: some View {
@@ -184,12 +198,16 @@ struct DayBoardList: View {
     }
 
     func selectTask(_ id: UUID, modifiers: TaskSelectionModifiers = []) {
-        revealCompletedIfNeeded(id)
+        let identity = makeListIdentity()
+        let revealDone = identity.doneRows.contains { $0.id == id }
+        if revealDone {
+            showCompleted = true
+        }
         var selection = taskSelection
         if selection.anchorID == nil && selection.ids.isEmpty {
             selection.focus(focusedTaskID?.wrappedValue ?? highlightedTaskID)
         }
-        let visibleIDs = effectiveVisibleIDs
+        let visibleIDs = identity.visibleIDs(showCompleted: showCompleted || revealDone)
         selection.select(id, in: visibleIDs, modifiers: modifiers)
         taskSelection = selection
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
@@ -210,31 +228,34 @@ struct DayBoardList: View {
             focusedListID = nil
             return
         }
+        let rows = makeListIdentity().visibleRows(showCompleted: showCompleted)
         let stillVisible = focusedListID.map { listID in
-            orderedVisibleRows.contains { $0.listID == listID }
+            rows.contains { $0.listID == listID }
         } ?? false
         let sameModel = focusedListID.flatMap(BoardItemReference.init(listID:))?.modelID == id
         if stillVisible && sameModel { return }
-        focusedListID = orderedVisibleRows.first { $0.id == id }?.listID
+        focusedListID = rows.first { $0.id == id }?.listID
     }
 
-    func expandIfHighlighted() {
+    func expandIfHighlighted(_ identity: DayBoardListIdentity? = nil) {
+        let rows = identity ?? makeListIdentity()
         if let highlightedTaskID {
-            revealCompletedIfNeeded(highlightedTaskID)
+            revealCompletedIfNeeded(highlightedTaskID, identity: rows)
         }
         if let focused = focusedTaskID?.wrappedValue {
-            revealCompletedIfNeeded(focused)
+            revealCompletedIfNeeded(focused, identity: rows)
         }
     }
 
-    func revealCompletedIfNeeded(_ id: UUID) {
-        if doneItemsList.contains(where: { $0.id == id }) {
+    func revealCompletedIfNeeded(_ id: UUID, identity: DayBoardListIdentity? = nil) {
+        let rows = identity ?? makeListIdentity()
+        if rows.doneRows.contains(where: { $0.id == id }) {
             showCompleted = true
         }
     }
 
-    private func isRowSelected(_ row: BoardRow) -> Bool {
-        let siblings = orderedVisibleRows.filter { $0.id == row.id }
+    private func isRowSelected(_ row: BoardRow, identity: DayBoardListIdentity) -> Bool {
+        let siblings = identity.visibleRows(showCompleted: showCompleted).filter { $0.id == row.id }
         if siblings.count > 1 {
             return row.listID == focusedListID
         }
@@ -248,150 +269,35 @@ struct DayBoardList: View {
         return focusedTaskID?.wrappedValue == id || highlightedTaskID == id
     }
 
-    private var snapshots: ([RoutineSnapshot], [CheckSnapshot], [TodoSnapshot]) {
-        (routines.map(\.snapshot), checks.compactMap(\.snapshot), todos.map(\.snapshot))
-    }
-
-    var openTodosList: [TodoItem] {
-        filteredTodos(openTodos)
-    }
-
-    var openRoutinesList: [DailyRoutine] {
-        filteredRoutines(openRoutines)
-    }
-
-    var openItemsList: [BoardRow] {
-        sortedRows(filtered(openRoutines.map(BoardRow.resident) + openTodos.map(BoardRow.todo)))
-    }
-
-    var doneItemsList: [BoardRow] {
-        sortedRows(filtered(doneRoutines.map(BoardRow.resident) + doneTodos.map(BoardRow.todo)))
-    }
-
-    private var openRoutines: [DailyRoutine] {
-        let ids = Set(DayBoardLogic.openRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: dayKey).map(\.id))
-        let items = routines.filter { ids.contains($0.id) }
-        return items.sorted {
-            Classification.precedes(
-                BoardSortKey(isImportant: $0.isImportant, isUrgent: $0.isUrgent, remindMinutes: $0.remindMinutes, createdAt: $0.createdAt),
-                BoardSortKey(isImportant: $1.isImportant, isUrgent: $1.isUrgent, remindMinutes: $1.remindMinutes, createdAt: $1.createdAt)
-            )
-        }
-    }
-
-    private var doneRoutines: [DailyRoutine] {
-        let ids = Set(
-            DayBoardLogic.completedRoutines(routines: snapshots.0, checks: snapshots.1, dayKey: dayKey).map(\.id)
-        )
-        return routines.filter { ids.contains($0.id) }.sorted { $0.sortOrder < $1.sortOrder }
-    }
-
-    private var openTodos: [TodoItem] {
-        let ids = Set(DayBoardLogic.openTodos(todos: snapshots.2, dayKey: dayKey).map(\.id))
-        let items = todos.filter { ids.contains($0.id) }
-        return items.sorted {
-            Classification.precedes(
-                BoardSortKey(isImportant: $0.isImportant, isUrgent: $0.isUrgent, remindMinutes: $0.remindMinutes, createdAt: $0.createdAt),
-                BoardSortKey(isImportant: $1.isImportant, isUrgent: $1.isUrgent, remindMinutes: $1.remindMinutes, createdAt: $1.createdAt)
-            )
-        }
-    }
-
-    private var doneTodos: [TodoItem] {
-        let ids = Set(DayBoardLogic.completedTodos(todos: snapshots.2, dayKey: dayKey).map(\.id))
-        return todos.filter { ids.contains($0.id) }.sorted { $0.createdAt < $1.createdAt }
-    }
-
-    private func filteredTodos(_ list: [TodoItem]) -> [TodoItem] {
-        guard filter.isActive else { return list }
-        return list.filter {
-            Classification.matchesListedRow(
-                $0.classifyBits,
-                dayKey: $0.dayKey,
-                isDone: $0.isDone,
-                remindMinutes: $0.remindMinutes,
-                todayKey: todayKey,
-                filter: filter
-            )
-        }
-    }
-
-    private func filteredRoutines(_ list: [DailyRoutine]) -> [DailyRoutine] {
-        guard filter.isActive else { return list }
-        return list.filter(routineMatchesFilter)
-    }
-
-    private func routineMatchesFilter(_ routine: DailyRoutine) -> Bool {
-        let done = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snapshots.1, on: dayKey)
-        return Classification.matchesListedRow(
-            routine.classifyBits,
-            dayKey: dayKey,
-            isDone: done,
-            remindMinutes: routine.remindMinutes,
-            todayKey: todayKey,
-            filter: filter
-        )
-    }
-
-    private func filtered(_ rows: [BoardRow]) -> [BoardRow] {
-        guard filter.isActive else { return rows }
-        return rows.filter { row in
-            switch row {
-            case .resident(let routine):
-                return routineMatchesFilter(routine)
-            case .todo(let todo):
-                return Classification.matchesListedRow(
-                    todo.classifyBits,
-                    dayKey: todo.dayKey,
-                    isDone: todo.isDone,
-                    remindMinutes: todo.remindMinutes,
-                    todayKey: todayKey,
-                    filter: filter
-                )
-            }
-        }
-    }
-
-    private func sortedRows(_ rows: [BoardRow]) -> [BoardRow] {
-        rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-    }
-
     @ViewBuilder
-    func dayRow(_ row: BoardRow, isDone: Bool) -> some View {
+    func dayRow(_ row: BoardRow, isDone: Bool, identity: DayBoardListIdentity) -> some View {
         switch row {
         case .resident(let routine):
-            residentRow(routine, isDone: isDone)
+            residentRow(routine, isDone: isDone, identity: identity)
         case .todo(let todo):
-            todoRow(todo, isDone: isDone)
+            todoRow(todo, isDone: isDone, identity: identity)
         }
     }
 
-    private var catalogContext: TaskCatalogContext {
-        TaskCatalogContext(
-            tags: tags,
-            attachments: attachments,
-            context: modelContext
-        )
-    }
-
-    private func rowSelection(for row: BoardRow) -> TaskRowSelectionState {
+    private func rowSelection(for row: BoardRow, identity: DayBoardListIdentity) -> TaskRowSelectionState {
         TaskRowSelectionState(
-            isSelected: isRowSelected(row),
+            isSelected: isRowSelected(row, identity: identity),
             isExternalEditing: editingTaskID == row.id
         )
     }
 
-    func residentRow(_ routine: DailyRoutine, isDone: Bool) -> some View {
+    func residentRow(_ routine: DailyRoutine, isDone: Bool, identity: DayBoardListIdentity) -> some View {
         let visuallyDone = PendingCompletionManager.shared.isVisuallyDone(id: routine.id, actualDone: isDone)
         let schedule = RoutineScheduleContext(
             todayKey: todayKey,
             checkDayKey: dayKey,
             checks: checks,
-            locale: locale
+            locale: locale,
+            lookups: identity.routineLookups(for: routine.id)
         )
         let display = RoutineRowDisplayOptions(
             isDone: visuallyDone,
-            selection: rowSelection(for: .resident(routine))
+            selection: rowSelection(for: .resident(routine), identity: identity)
         )
         let actions = RoutineRowActions(
             onSelect: {
@@ -412,17 +318,17 @@ struct DayBoardList: View {
         return TaskRowFactory.routine(RoutineRowContext(
             routine: routine,
             schedule: schedule,
-            catalogs: catalogContext,
+            catalogs: identity.catalogs,
             display: display,
             actions: actions
         ))
     }
 
-    func todoRow(_ todo: TodoItem, isDone: Bool) -> some View {
+    func todoRow(_ todo: TodoItem, isDone: Bool, identity: DayBoardListIdentity) -> some View {
         let visuallyDone = PendingCompletionManager.shared.isVisuallyDone(id: todo.id, actualDone: isDone)
         let display = TodoRowDisplayOptions(
             isDone: visuallyDone,
-            selection: rowSelection(for: .todo(todo)),
+            selection: rowSelection(for: .todo(todo), identity: identity),
             dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
         )
         let actions = TodoRowActions(
@@ -441,7 +347,7 @@ struct DayBoardList: View {
         return TaskRowFactory.todo(TodoRowContext(
             todo: todo,
             todayKey: todayKey,
-            catalogs: catalogContext,
+            catalogs: identity.catalogs,
             display: display,
             actions: actions
         ))

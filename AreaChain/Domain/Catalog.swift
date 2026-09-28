@@ -99,7 +99,11 @@ enum Catalog {
 
     /// 抽屉选择器：预设分类仅在该项已打上时出现，方便去掉。
     static func taskPickerTags(_ items: [TagItem], attachedIDs: String) -> [TagItem] {
-        liveTags(items).filter { tag in
+        taskPickerTags(liveTags: liveTags(items), attachedIDs: attachedIDs)
+    }
+
+    static func taskPickerTags(liveTags: [TagItem], attachedIDs: String) -> [TagItem] {
+        liveTags.filter { tag in
             if DiaryMemoTags.isPresetName(tag.name) {
                 return TagIDList.contains(attachedIDs, tag.id)
             }
@@ -108,12 +112,7 @@ enum Catalog {
     }
 
     static func liveAttachments(for ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentItem] {
-        items
-            .filter {
-                $0.deletedAt == nil && $0.ownerID == ownerID
-                    && (ownerKind == nil || $0.ownerKind == ownerKind?.rawValue)
-            }
-            .sorted { $0.createdAt < $1.createdAt }
+        CatalogAttachmentIndex(items).live(ownerID: ownerID, ownerKind: ownerKind)
     }
 
     static func nextSortOrder(_ orders: [Int]) -> Int {

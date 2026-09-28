@@ -18,8 +18,8 @@ extension TasksPage {
     }
 
     @ViewBuilder
-    var headerBar: some View {
-        let hasChips = yesterdayItems.count > 0 || upcomingModels.count > 0
+    func headerBar(_ page: TasksPageViewModel) -> some View {
+        let hasChips = page.yesterdayItems.count > 0 || page.upcomingModels.count > 0
         let tagChoices = Self.filterTagChoices(tags: tags, embedded: embedded)
         let hasFilters = Self.showsFilterBar(
             embedded: embedded,
@@ -33,12 +33,12 @@ extension TasksPage {
                     LeftoverChipsBar(
                         config: LeftoverChipsBarConfig(
                             yesterday: LeftoverChipState(
-                                count: yesterdayItems.count,
+                                count: page.yesterdayItems.count,
                                 isExpanded: showYesterday,
                                 onToggle: { showYesterday.toggle() }
                             ),
                             upcoming: LeftoverChipState(
-                                count: upcomingModels.count,
+                                count: page.upcomingModels.count,
                                 isExpanded: showUpcoming,
                                 onToggle: { showUpcoming.toggle() }
                             )
@@ -55,8 +55,8 @@ extension TasksPage {
                         BoardFilterBar(
                             filter: effectiveFilter,
                             tags: tagChoices,
-                            bundleIDs: todayBundleIDs,
-                            untaggedCount: untaggedTodosCount,
+                            bundleIDs: page.todayBundleIDs,
+                            untaggedCount: page.untaggedTodosCount,
                             showsPriority: true,
                             showsReminder: true,
                             onChange: updateFilter

@@ -68,6 +68,8 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Domain/BoardSearch.swift", "BoardSearch"),
     ("AreaChain/Domain/DayKey.swift", "DayKey"),
     ("AreaChain/Domain/AgendaProjection.swift", "AgendaProjection"),
+    ("AreaChain/Domain/DayBoardPageProjection.swift", "DayBoardPageProjection"),
+    ("AreaChain/Domain/DayBoardCheckIndex.swift", "DayBoardCheckIndex"),
     ("AreaChain/Features/Tasks/DayBoardMutations.swift", "DayBoardMutations"),
     ("AreaChain/Services/ModelChanges.swift", "ModelChanges"),
 )
