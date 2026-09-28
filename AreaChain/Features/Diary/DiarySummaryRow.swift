@@ -12,6 +12,7 @@ struct DiarySummaryRow: View {
     var allTags: [TagItem] = []
     var isSelected = false
     var isHighlighted = false
+    var projectedSensitive: Bool? = nil
     var onSelect: (() -> Void)? = nil
     var onDelete: () -> Void
 
@@ -53,7 +54,7 @@ struct DiarySummaryRow: View {
         nonmutating set { chrome.isNoteBubbleHovered = newValue }
     }
 
-    var isSensitive: Bool { DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
+    var isSensitive: Bool { projectedSensitive ?? DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags) }
     var previewText: String {
         isSensitive ? L10n.string("diary.private.title", locale: locale) : Self.preview(entry.text)
     }

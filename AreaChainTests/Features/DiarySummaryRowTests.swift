@@ -90,6 +90,15 @@ struct DiarySummaryRowTests {
         #expect(row.contentPresentation.hasMultipleLines == false)
     }
 
+    @Test func projectedSensitiveMasksOrdinaryTextWithoutChangingPrivacyRules() {
+        let entry = DiaryEntry(text: "普通可见正文", dayKey: "2026-09-20")
+        let masked = DiarySummaryRow(entry: entry, projectedSensitive: true, onDelete: {})
+        let visible = DiarySummaryRow(entry: entry, projectedSensitive: false, onDelete: {})
+        #expect(masked.isSensitive)
+        #expect(!visible.isSensitive)
+        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
+    }
+
     @Test func diarySummaryRowTruncationCalculation() throws {
         let shortText = "短手记"
         let longText = "这是一段非常非常非常非常非常长的单行手记正文，用于触发截断气泡展示"

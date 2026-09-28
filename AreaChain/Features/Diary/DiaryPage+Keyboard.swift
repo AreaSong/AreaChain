@@ -22,20 +22,25 @@ extension DiaryPage {
         }
 
         let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        if handleNavigationKey(event, modifiers: modifiers) { return nil }
-        if handleActionKey(event, modifiers: modifiers) { return nil }
+        let list = makeListModel()
+        if handleNavigationKey(event, modifiers: modifiers, list: list) { return nil }
+        if handleActionKey(event, modifiers: modifiers, list: list) { return nil }
 
         return event
     }
 
-    private func handleNavigationKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
+    private func handleNavigationKey(
+        _ event: NSEvent,
+        modifiers: NSEvent.ModifierFlags,
+        list: DiaryPageListModel
+    ) -> Bool {
         guard modifiers.isEmpty else { return false }
         if event.keyCode == 126 {
-            navigateSelection(delta: -1)
+            navigateSelection(delta: -1, list: list)
             return true
         }
         if event.keyCode == 125 {
-            navigateSelection(delta: 1)
+            navigateSelection(delta: 1, list: list)
             return true
         }
         if event.keyCode == 53, selectedEntryID != nil {
@@ -45,8 +50,12 @@ extension DiaryPage {
         return false
     }
 
-    private func handleActionKey(_ event: NSEvent, modifiers: NSEvent.ModifierFlags) -> Bool {
-        guard let selectedEntryID, let entry = filteredEntries.first(where: { $0.id == selectedEntryID }) else {
+    private func handleActionKey(
+        _ event: NSEvent,
+        modifiers: NSEvent.ModifierFlags,
+        list: DiaryPageListModel
+    ) -> Bool {
+        guard let selectedEntryID, let entry = list.entry(selectedEntryID) else {
             return false
         }
         let isOpen = (event.keyCode == 36 && modifiers.isEmpty) || (modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "o")
@@ -60,14 +69,14 @@ extension DiaryPage {
             return true
         }
         if modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "c" {
-            copyEntry(entry)
+            copyEntry(entry, isSensitive: list.isSensitive(selectedEntryID))
             return true
         }
         return false
     }
 
-    private func navigateSelection(delta: Int) {
-        let entries = filteredEntries
+    private func navigateSelection(delta: Int, list: DiaryPageListModel) {
+        let entries = list.filteredEntries
         guard !entries.isEmpty else { return }
         guard let currentID = selectedEntryID,
               let currentIndex = entries.firstIndex(where: { $0.id == currentID }) else {
@@ -80,8 +89,7 @@ extension DiaryPage {
         }
     }
 
-    private func copyEntry(_ entry: DiaryEntry) {
-        let isSensitive = DiaryPrivacy.isSensitive(entry.snapshot, tags: Array(allTags))
+    private func copyEntry(_ entry: DiaryEntry, isSensitive: Bool) {
         PrivacyAccess.withDiary(entry) { current in
             let text = try DiaryContent.read(current)
             _ = PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isSensitive)

@@ -275,6 +275,28 @@ struct BoardSearchTests {
         #expect(!BoardSearch.omitsDiaries(BoardSearch.parseQuery("周报 #工作")))
         #expect(BoardSearch.hits(BoardSearchQuery(raw: "   "), todos: [todo], diaries: [], routines: []).isEmpty)
     }
+
+    @Test func listedDiariesKeepLiveRowsOnEmptyQueryAndShareTagIndex() {
+        let tagID = UUID()
+        let tagged = DiarySnapshot(
+            id: UUID(), text: "周报想法", dayKey: "2026-09-10", createdAt: .now, tagIDs: tagID.uuidString
+        )
+        let other = DiarySnapshot(id: UUID(), text: "散步", dayKey: "2026-09-10", createdAt: .now)
+        var removed = tagged
+        removed.id = UUID()
+        removed.deletedAt = .now
+        let tagMap = [tagID: "工作"]
+        let empty = BoardSearch.parseQuery("")
+        #expect(BoardSearch.listedDiaries([tagged, other, removed], query: empty, tagMap: tagMap).map(\.id) == [tagged.id, other.id])
+        #expect(BoardSearch.hits(empty, todos: [], diaries: [tagged, other], routines: []).isEmpty)
+
+        let parsed = BoardSearch.parseQuery("周报 #工作")
+        let listed = BoardSearch.listedDiaries([tagged, other], query: parsed, tagMap: tagMap)
+        #expect(listed.map(\.id) == [tagged.id])
+        #expect(listed == [tagged, other].filter { BoardSearch.matchesDiary($0, query: parsed, tagMap: tagMap) })
+        #expect(BoardSearch.listedDiaries([tagged], query: BoardSearch.parseQuery("!p2"), tagMap: tagMap).isEmpty)
+        #expect(BoardSearch.listedDiaries([tagged], query: BoardSearch.parseQuery("@15:00"), tagMap: tagMap).isEmpty)
+    }
 }
 
 struct OverdueBoardSearchTests {

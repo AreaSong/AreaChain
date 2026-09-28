@@ -117,43 +117,33 @@ struct DiaryPage: View {
         DiaryMemoTags.ordered(activeTags, name: { $0.name }, isActive: { _ in true })
     }
 
-    private var nonDeletedEntries: [DiaryEntry] {
-        entries.filter { $0.deletedAt == nil }
-    }
-
-    var filteredEntries: [DiaryEntry] {
-        let query = BoardSearch.parseQuery(searchQuery)
-        let tagMap = Dictionary(uniqueKeysWithValues: activeTags.map { ($0.id, $0.name) })
-        return nonDeletedEntries
-            .filter { entry in
-                if let selectedTagID {
-                    guard TagIDList.contains(entry.tagIDs, selectedTagID) else { return false }
-                }
-                return BoardSearch.matchesDiary(DiaryContent.snapshot(entry, vault: vault), query: query, tagMap: tagMap)
-            }
-            .sorted { a, b in
-                if a.isPinned != b.isPinned {
-                    return a.isPinned && !b.isPinned
-                }
-                return a.createdAt > b.createdAt
-            }
+    func makeListModel() -> DiaryPageListModel {
+        DiaryPageListModel.make(
+            entries: entries,
+            activeTags: activeTags,
+            allTags: Array(allTags),
+            searchQuery: searchQuery,
+            selectedTagID: selectedTagID,
+            vault: vault
+        )
     }
 
     var body: some View {
+        let list = makeListModel()
         VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
             // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
             if showsPageHeader {
-                topHeader.zIndex(50)
-                if !embedded { tagFilterBar }
+                topHeader(list).zIndex(50)
+                if !embedded { tagFilterBar(list) }
             }
 
             if showsComposer {
                 quickComposer.zIndex(20)
             }
 
-            if showsPageHeader && embedded { tagFilterBar }
+            if showsPageHeader && embedded { tagFilterBar(list) }
 
-            entryListSection
+            entryListSection(list)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(KeyWindowHost { hostWindow = $0 })
@@ -193,13 +183,13 @@ struct DiaryPage: View {
         }
     }
 
-    private var topHeader: some View {
+    private func topHeader(_ list: DiaryPageListModel) -> some View {
         DaybookPageHeader {
             HStack(spacing: 8) {
                 Text("diary.page.title")
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookPalette.text.primary)
-                Text("diary.page.count \(filteredEntries.count)")
+                Text("diary.page.count \(list.rows.count)")
                     .font(DaybookType.caption.monospacedDigit())
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
@@ -237,17 +227,14 @@ struct DiaryPage: View {
         }
     }
 
-    private var tagFilterBar: some View {
-        let counts = Dictionary(uniqueKeysWithValues: orderedTags.map { tag in
-            (tag.id, nonDeletedEntries.filter { TagIDList.contains($0.tagIDs, tag.id) }.count)
-        })
+    private func tagFilterBar(_ list: DiaryPageListModel) -> some View {
         let choices = BoardFilterChoices.tags(
             filter: filterBinding.wrappedValue,
             rows: orderedTags.map { BoardFilterChoices.NamedRow(id: $0.id, name: $0.name) },
-            counts: counts,
+            counts: list.tagCounts,
             untaggedCount: nil,
             includeNone: false,
-            totalCount: nonDeletedEntries.count,
+            totalCount: list.liveEntries.count,
             locale: locale
         )
         return ScrollView(.horizontal, showsIndicators: false) {
@@ -310,18 +297,18 @@ struct DiaryPage: View {
         }
     }
 
-    private var entryListSection: some View {
+    private func entryListSection(_ list: DiaryPageListModel) -> some View {
         ScrollViewReader { proxy in
             ScrollView {
                 VStack(alignment: .leading, spacing: showsPageHeader ? 10 : 4) {
-                    if filteredEntries.isEmpty {
+                    if list.rows.isEmpty {
                         emptyState
                     } else {
-                        ForEach(filteredEntries) { entry in
-                            entryRow(entry).id(entry.id)
+                        ForEach(list.rows) { row in
+                            entryRow(row).id(row.id)
                         }
 
-                        if !showsPageHeader && filteredEntries.count <= 5 {
+                        if !showsPageHeader && list.rows.count <= 5 {
                             quietEmptyWatermark
                         }
                     }
@@ -341,19 +328,25 @@ struct DiaryPage: View {
         }
     }
 
-    @ViewBuilder private func entryRow(_ entry: DiaryEntry) -> some View {
+    @ViewBuilder private func entryRow(_ row: DiaryPageListModel.Row) -> some View {
         if showsPageHeader {
-            DiaryNoteCard(entry: entry, activeTags: activeTags, attachments: attachments,
-                          onDelete: { requestTrash(entry) },
-                          isHighlighted: boardSelection.inspectingDiaryID == entry.id,
-                          privacyTags: Array(allTags), draftStore: cardDrafts, vault: vault)
+            DiaryNoteCard(
+                entry: row.entry, activeTags: activeTags, attachments: attachments,
+                onDelete: { requestTrash(row.entry) },
+                isHighlighted: boardSelection.inspectingDiaryID == row.id,
+                privacyTags: Array(allTags), draftStore: cardDrafts, vault: vault,
+                projectedSensitive: row.isSensitive
+            )
         } else {
-            DiarySummaryRow(entry: entry, privacyTags: Array(allTags),
-                            allTags: activeTags,
-                            isSelected: selectedEntryID == entry.id,
-                            isHighlighted: boardSelection.inspectingDiaryID == entry.id,
-                            onSelect: { selectedEntryID = entry.id },
-                            onDelete: { requestTrash(entry) })
+            DiarySummaryRow(
+                entry: row.entry, privacyTags: Array(allTags),
+                allTags: activeTags,
+                isSelected: selectedEntryID == row.id,
+                isHighlighted: boardSelection.inspectingDiaryID == row.id,
+                projectedSensitive: row.isSensitive,
+                onSelect: { selectedEntryID = row.id },
+                onDelete: { requestTrash(row.entry) }
+            )
         }
     }
 

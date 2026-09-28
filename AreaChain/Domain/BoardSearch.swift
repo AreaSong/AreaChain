@@ -250,6 +250,21 @@ enum BoardSearch {
         )
     }
 
+    /// 手记页列表一次筛选。空查询返回全部未删除项，与 `hits` 空查询返回 [] 不同。
+    /// 同一次调用共用 `TagNameIndex`，不要对每条再走公开 `matchesDiary`。
+    static func listedDiaries(
+        _ diaries: [DiarySnapshot],
+        query: BoardSearchQuery,
+        tagMap: [UUID: String]
+    ) -> [DiarySnapshot] {
+        guard !query.isEmpty else {
+            return diaries.filter { $0.deletedAt == nil }
+        }
+        guard !omitsDiaries(query) else { return [] }
+        let names = TagNameIndex(tagMap: tagMap, queryTags: query.tagNames)
+        return diaries.filter { matchesDiary($0, query: query, names: names, tagMap: tagMap) }
+    }
+
     /// 含优先级或提醒的查询对手记整组无意义，调用方可以不建手记 snapshot。
     static func omitsDiaries(_ query: BoardSearchQuery) -> Bool {
         query.hasPriority || query.remindMinutes != nil

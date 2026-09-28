@@ -44,6 +44,7 @@ struct DiaryNoteCard: View {
     var privacyTags: [TagItem]? = nil
     var draftStore: DiaryCardDrafts? = nil
     var vault: PrivacyVault? = nil
+    var projectedSensitive: Bool? = nil
 
     @State private var chrome = BoardRowChrome()
     @State private var localDrafts = DiaryCardDrafts()
@@ -64,7 +65,8 @@ struct DiaryNoteCard: View {
     var showsCommandStrip: Bool { isHovered && chrome.isCommandPressed }
 
     var isPasswordType: Bool {
-        editingSession?.isSensitive == true || DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags)
+        editingSession?.isSensitive == true
+            || (projectedSensitive ?? DiaryPrivacy.isSensitive(entry.snapshot, tags: privacyTags ?? activeTags))
     }
 
     var canRevealContent: Bool {

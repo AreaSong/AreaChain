@@ -68,6 +68,48 @@ struct SyntaxHighlighterTests {
         #expect(priorityColor == NSColor.systemRed)
     }
 
+    @Test func rebuildsWhenHostedTextViewAppearanceChanges() {
+        let previous = NSApp.appearance
+        defer { NSApp.appearance = previous }
+        NSApp.appearance = NSAppearance(named: .aqua)
+
+        let font = NSFont.systemFont(ofSize: 13)
+        let storage = NSTextStorage(string: "@15:30 跑步打卡")
+        let layout = NSLayoutManager()
+        let container = NSTextContainer(size: NSSize(width: 240, height: 40))
+        layout.addTextContainer(container)
+        storage.addLayoutManager(layout)
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 240, height: 40), textContainer: container)
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 240, height: 40),
+            styleMask: [.titled],
+            backing: .buffered,
+            defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.appearance = NSAppearance(named: .aqua)
+        window.contentView = textView
+        defer {
+            window.contentView = nil
+            window.orderOut(nil)
+            window.close()
+        }
+
+        SyntaxHighlighter.applyHighlighting(to: storage, font: font)
+        let fullRange = NSRange(location: 0, length: storage.length)
+        storage.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: fullRange)
+        SyntaxHighlighter.applyHighlighting(to: storage, font: font)
+        #expect(
+            (storage.attribute(.underlineStyle, at: 0, effectiveRange: nil) as? NSNumber)?.intValue
+                == NSUnderlineStyle.single.rawValue
+        )
+
+        window.appearance = NSAppearance(named: .darkAqua)
+        textView.appearance = NSAppearance(named: .darkAqua)
+        SyntaxHighlighter.applyHighlighting(to: storage, font: font)
+        #expect(storage.attribute(.underlineStyle, at: 0, effectiveRange: nil) == nil)
+    }
+
     @Test func repeatedHighlightOfSameTextStaysFasterThanChangingText() {
         let font = NSFont.systemFont(ofSize: 13)
         let stable = NSTextStorage(string: "@15:30 团队开会 #工作 !p1 记得带材料")

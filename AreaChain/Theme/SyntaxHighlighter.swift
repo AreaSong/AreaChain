@@ -58,7 +58,7 @@ enum SyntaxHighlighter {
             return
         }
 
-        let signature = HighlightSignature(text: text, font: font, defaultColor: defaultColor)
+        let signature = HighlightSignature(text: text, font: font, defaultColor: defaultColor, storage: textStorage)
         if HighlightSignature.current(on: textStorage)?.matches(signature) == true {
             return
         }
@@ -88,12 +88,20 @@ private final class HighlightSignature: NSObject {
     let appearanceName: String
     let colorKey: String
 
-    init(text: String, font: NSFont, defaultColor: NSColor) {
+    init(text: String, font: NSFont, defaultColor: NSColor, storage: NSTextStorage) {
         self.text = text
         self.fontName = font.fontName
         self.pointSize = font.pointSize
-        self.appearanceName = NSApp.effectiveAppearance.name.rawValue
+        self.appearanceName = Self.appearanceName(for: storage)
         self.colorKey = Self.resolvedColorKey(defaultColor)
+    }
+
+    /// 跟所属文本视图/窗口，避免菜单栏与工作台外观不一致时仍按 `NSApp` 跳过重建。
+    private static func appearanceName(for storage: NSTextStorage) -> String {
+        if let view = storage.layoutManagers.first?.firstTextView {
+            return (view.window?.effectiveAppearance ?? view.effectiveAppearance).name.rawValue
+        }
+        return NSApp.effectiveAppearance.name.rawValue
     }
 
     func matches(_ other: HighlightSignature) -> Bool {
