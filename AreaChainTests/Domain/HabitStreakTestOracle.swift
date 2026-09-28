@@ -167,3 +167,126 @@ struct EmpiricalPRNG {
         nextDouble() < probability
     }
 }
+
+/// PHASE-3A 冻结的逐日游标：只给等价测试对照，不作为产品入口。
+enum HabitStreakNaiveCursor {
+    static func calculate(
+        routine: RoutineSnapshot,
+        checks: [CheckSnapshot],
+        todayKey: String,
+        calendar: Calendar
+    ) -> StreakResult {
+        guard routine.deletedAt == nil,
+              DayKey.date(from: todayKey, calendar: calendar) != nil else {
+            return StreakResult(currentStreak: 0, bestStreak: 0)
+        }
+
+        let checkMap = buildCheckMap(for: routine.id, from: checks)
+        let isDueToday = routine.isEnabled
+            && routine.createdDayKey <= todayKey
+            && WeekdayMask.contains(routine.weekdayMask, dayKey: todayKey, calendar: calendar)
+        let todayCheck = checkMap[todayKey]
+        let isCompletedToday = (todayCheck?.isDone == true && todayCheck?.isSkipped != true)
+        let isSkippedToday = (todayCheck?.isSkipped == true)
+
+        guard routine.createdDayKey <= todayKey else {
+            return StreakResult(
+                currentStreak: 0,
+                bestStreak: 0,
+                isDueToday: isDueToday,
+                isCompletedToday: isCompletedToday,
+                isSkippedToday: isSkippedToday
+            )
+        }
+
+        let startKey = DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil
+            ? routine.createdDayKey
+            : todayKey
+        let streaks = walkDays(
+            routine: routine,
+            checkMap: checkMap,
+            startKey: startKey,
+            todayKey: todayKey,
+            calendar: calendar
+        )
+        return StreakResult(
+            currentStreak: streaks.current,
+            bestStreak: streaks.best,
+            isDueToday: isDueToday,
+            isCompletedToday: isCompletedToday,
+            isSkippedToday: isSkippedToday
+        )
+    }
+
+    private static func buildCheckMap(
+        for routineId: UUID,
+        from checks: [CheckSnapshot]
+    ) -> [String: CheckSnapshot] {
+        var map: [String: CheckSnapshot] = [:]
+        for check in checks where check.routineId == routineId {
+            if let existing = map[check.dayKey] {
+                map[check.dayKey] = CheckSnapshot(
+                    routineId: routineId,
+                    dayKey: check.dayKey,
+                    isDone: existing.isDone || check.isDone,
+                    isSkipped: existing.isSkipped || check.isSkipped
+                )
+            } else {
+                map[check.dayKey] = check
+            }
+        }
+        return map
+    }
+
+    private static func walkDays(
+        routine: RoutineSnapshot,
+        checkMap: [String: CheckSnapshot],
+        startKey: String,
+        todayKey: String,
+        calendar: Calendar
+    ) -> (current: Int, best: Int) {
+        var runningStreak = 0
+        var bestStreak = 0
+        var cursorKey = startKey
+
+        while cursorKey <= todayKey {
+            let isScheduled = WeekdayMask.contains(routine.weekdayMask, dayKey: cursorKey, calendar: calendar)
+            let check = checkMap[cursorKey]
+
+            if check?.isSkipped == true {
+                // bridge
+            } else if check?.isDone == true {
+                runningStreak += 1
+                if runningStreak > bestStreak {
+                    bestStreak = runningStreak
+                }
+            } else if isScheduled {
+                if cursorKey == todayKey {
+                    // today in progress
+                } else if isPaused(routine, on: cursorKey) {
+                    // paused bridge
+                } else {
+                    runningStreak = 0
+                }
+            }
+
+            guard let date = DayKey.date(from: cursorKey, calendar: calendar),
+                  let next = calendar.date(byAdding: .day, value: 1, to: date) else {
+                break
+            }
+            let nextKey = DayKey.from(next, calendar: calendar)
+            guard nextKey > cursorKey else { break }
+            cursorKey = nextKey
+        }
+
+        return (runningStreak, max(bestStreak, runningStreak))
+    }
+
+    private static func isPaused(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
+        guard !routine.isEnabled else { return false }
+        if let start = routine.pausedOnDayKey {
+            return dayKey >= start
+        }
+        return true
+    }
+}
