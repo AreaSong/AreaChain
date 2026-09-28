@@ -15,13 +15,15 @@ enum DashboardProjection {
         calendar: Calendar = .current
     ) -> DashboardSnapshot {
         let days = closedDays(ending: todayKey, count: heatmapDayCount, calendar: calendar)
+        let marks = mergedMarks(checks)
         let stats = dayStats(
-            days: days, todos: todos, routines: routines, checks: checks, calendar: calendar
+            days: days, todos: todos, routines: routines, marks: marks, calendar: calendar
         )
-        let byDay = Dictionary(uniqueKeysWithValues: stats.map { ($0.dayKey, $0) })
+        let byDay = Dictionary(uniqueKeysWithValues: zip(days, stats).map { ($0, $1) })
         let today = byDay[todayKey] ?? emptyStat(todayKey)
-        let trendDays = closedDays(ending: todayKey, count: trendDayCount, calendar: calendar)
-        let trend = trendDays.map { byDay[$0] ?? emptyStat($0) }
+        let trend = endingKeys(
+            days, count: trendDayCount, ending: todayKey, calendar: calendar
+        ).map { byDay[$0] ?? emptyStat($0) }
         let pending = AgendaProjection.pending(
             routines: routines, checks: checks, todos: todos, todayKey: todayKey, calendar: calendar
         )
@@ -39,11 +41,13 @@ enum DashboardProjection {
             ),
             trend: trend,
             heatmap: heatmap(
-                ending: todayKey, dayCount: heatmapDayCount, stats: byDay, calendar: calendar
+                ending: todayKey, dayCount: heatmapDayCount, stats: byDay, calendar: calendar, days: days
             ),
-            activities: activities(
-                todos: todos, routines: routines, checks: checks, diaries: diaries,
-                todayKey: todayKey, calendar: calendar
+            activities: activityRows(
+                todos: todos, routines: routines, diaries: diaries,
+                todayKey: todayKey, calendar: calendar, limit: activityDisplayLimit,
+                marks: marks,
+                window: Set(endingKeys(days, count: activityDayCount, ending: todayKey, calendar: calendar))
             )
         )
     }
@@ -62,9 +66,10 @@ enum DashboardProjection {
         ending end: String,
         dayCount: Int,
         stats: [String: DashboardDayStat],
-        calendar: Calendar
+        calendar: Calendar,
+        days: [String]? = nil
     ) -> [DashboardHeatmapDay] {
-        let real = closedDays(ending: end, count: dayCount, calendar: calendar)
+        let real = days ?? closedDays(ending: end, count: dayCount, calendar: calendar)
         guard let first = real.first, let firstDate = DayKey.date(from: first, calendar: calendar) else {
             return []
         }
@@ -85,11 +90,12 @@ enum DashboardProjection {
         calendar: Calendar,
         limit: Int = activityDisplayLimit
     ) -> [DashboardActivity] {
-        let window = Set(closedDays(ending: todayKey, count: activityDayCount, calendar: calendar))
-        var rows = todoActivities(todos, window: window, calendar: calendar)
-        rows += routineActivities(routines, checks: checks, window: window, calendar: calendar)
-        rows += diaryActivities(diaries, window: window, calendar: calendar)
-        return Array(rows.sorted(by: activityPrecedes).prefix(max(0, limit)))
+        activityRows(
+            todos: todos, routines: routines, diaries: diaries,
+            todayKey: todayKey, calendar: calendar, limit: limit,
+            marks: mergedMarks(checks),
+            window: Set(closedDays(ending: todayKey, count: activityDayCount, calendar: calendar))
+        )
     }
 
     /// 总览不携带手记正文。敏感判定与卡片/搜索共用 `DiaryPrivacy.isSensitive`，不只看是否已加密。
@@ -108,33 +114,107 @@ private extension DashboardProjection {
         DashboardDayStat.make(dayKey: dayKey, scheduledCount: 0, completedCount: 0, skippedCount: 0)
     }
 
+    /// 热力窗口内每个习惯只解析一次创建日，并按民事日递增星期；不在每个日期再扫一遍习惯。
     static func dayStats(
         days: [String],
         todos: [TodoSnapshot],
         routines: [RoutineSnapshot],
-        checks: [CheckSnapshot],
+        marks: [UUID: [String: DashboardMark]],
         calendar: Calendar
     ) -> [DashboardDayStat] {
         let todoCounts = todoCountsByDay(todos, calendar: calendar)
-        let marks = mergedMarks(checks)
-        let live = routines.filter { $0.deletedAt == nil }
-        return days.map { day in
-            var scheduled = todoCounts[day]?.scheduled ?? 0
-            var completed = todoCounts[day]?.completed ?? 0
-            var skipped = 0
-            for routine in live {
-                let mark = marks[routine.id]?[day]
-                guard let contribution = routineContribution(
-                    routine, dayKey: day, mark: mark, calendar: calendar
-                ) else { continue }
-                scheduled += contribution.scheduled
-                completed += contribution.completed
-                skipped += contribution.skipped
-            }
-            return DashboardDayStat.make(
-                dayKey: day, scheduledCount: scheduled, completedCount: completed, skippedCount: skipped
+        var scheduled = days.map { todoCounts[$0]?.scheduled ?? 0 }
+        var completed = days.map { todoCounts[$0]?.completed ?? 0 }
+        var skipped = Array(repeating: 0, count: days.count)
+        for routine in routines where routine.deletedAt == nil {
+            addRoutineStats(
+                routine, days: days, marks: marks[routine.id] ?? [:],
+                scheduled: &scheduled, completed: &completed, skipped: &skipped, calendar: calendar
             )
         }
+        return days.indices.map { index in
+            DashboardDayStat.make(
+                dayKey: days[index],
+                scheduledCount: scheduled[index],
+                completedCount: completed[index],
+                skippedCount: skipped[index]
+            )
+        }
+    }
+
+    static func addRoutineStats(
+        _ routine: RoutineSnapshot,
+        days: [String],
+        marks: [String: DashboardMark],
+        scheduled: inout [Int],
+        completed: inout [Int],
+        skipped: inout [Int],
+        calendar: Calendar
+    ) {
+        guard DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil else { return }
+        let start = firstIndex(days, reaching: routine.createdDayKey)
+        let end: Int
+        if routine.isEnabled {
+            end = days.count
+        } else if let pause = routine.pausedOnDayKey, !pause.isEmpty {
+            end = firstIndex(days, reaching: pause)
+        } else {
+            return
+        }
+        guard start < end else { return }
+        let allDays = WeekdayMask.isAll(routine.weekdayMask)
+        var weekday = 0
+        let stepped: Bool
+        if allDays {
+            stepped = false
+        } else if let date = DayKey.date(from: days[start], calendar: calendar) {
+            weekday = calendar.component(.weekday, from: date)
+            stepped = true
+        } else {
+            stepped = false
+        }
+        for index in start..<end {
+            let due: Bool
+            if allDays {
+                due = true
+            } else if stepped {
+                due = WeekdayMask.contains(routine.weekdayMask, weekday: weekday)
+                weekday = weekday == 7 ? 1 : weekday + 1
+            } else {
+                due = WeekdayMask.contains(routine.weekdayMask, dayKey: days[index], calendar: calendar)
+            }
+            guard due else { continue }
+            scheduled[index] += 1
+            switch marks[days[index]] {
+            case .skipped: skipped[index] += 1
+            case .done: completed[index] += 1
+            default: break
+            }
+        }
+    }
+
+    static func firstIndex(_ days: [String], reaching bound: String) -> Int {
+        var low = 0
+        var high = days.count
+        while low < high {
+            let mid = (low + high) / 2
+            if days[mid] < bound {
+                low = mid + 1
+            } else {
+                high = mid
+            }
+        }
+        return low
+    }
+
+    static func endingKeys(
+        _ days: [String],
+        count: Int,
+        ending end: String,
+        calendar: Calendar
+    ) -> [String] {
+        if days.count >= count { return Array(days.suffix(count)) }
+        return closedDays(ending: end, count: count, calendar: calendar)
     }
 
     static func todoCountsByDay(
@@ -158,31 +238,6 @@ private extension DashboardProjection {
             marks[check.routineId, default: [:]][check.dayKey] = next
         }
         return marks
-    }
-
-    static func routineContribution(
-        _ routine: RoutineSnapshot,
-        dayKey: String,
-        mark: DashboardMark?,
-        calendar: Calendar
-    ) -> (scheduled: Int, completed: Int, skipped: Int)? {
-        guard DayKey.date(from: routine.createdDayKey, calendar: calendar) != nil else { return nil }
-        guard dayKey >= routine.createdDayKey else { return nil }
-        guard isScheduled(routine, on: dayKey, calendar: calendar) else { return nil }
-        if mark == .skipped { return (1, 0, 1) }
-        if mark == .done { return (1, 1, 0) }
-        return (1, 0, 0)
-    }
-
-    static func isScheduled(_ routine: RoutineSnapshot, on dayKey: String, calendar: Calendar) -> Bool {
-        guard !isPaused(routine, on: dayKey) else { return false }
-        return WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey, calendar: calendar)
-    }
-
-    static func isPaused(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {
-        guard !routine.isEnabled else { return false }
-        if let start = routine.pausedOnDayKey, !start.isEmpty { return dayKey >= start }
-        return true
     }
 
     /// 先按 routineId 分组，避免每个习惯再扫整表 checks。连击仍只走 `HabitStreakLogic.calculate`。
@@ -276,6 +331,22 @@ private extension DashboardProjection {
         window.contains(dayKey)
     }
 
+    static func activityRows(
+        todos: [TodoSnapshot],
+        routines: [RoutineSnapshot],
+        diaries: [DiarySnapshot],
+        todayKey _: String,
+        calendar: Calendar,
+        limit: Int,
+        marks: [UUID: [String: DashboardMark]],
+        window: Set<String>
+    ) -> [DashboardActivity] {
+        var rows = todoActivities(todos, window: window, calendar: calendar)
+        rows += routineActivities(routines, marks: marks, window: window, calendar: calendar)
+        rows += diaryActivities(diaries, window: window, calendar: calendar)
+        return Array(rows.sorted(by: activityPrecedes).prefix(max(0, limit)))
+    }
+
     static func todoActivities(
         _ todos: [TodoSnapshot],
         window: Set<String>,
@@ -310,7 +381,7 @@ private extension DashboardProjection {
 
     static func routineActivities(
         _ routines: [RoutineSnapshot],
-        checks: [CheckSnapshot],
+        marks: [UUID: [String: DashboardMark]],
         window: Set<String>,
         calendar: Calendar
     ) -> [DashboardActivity] {
@@ -336,20 +407,16 @@ private extension DashboardProjection {
             }
             return items
         }
-        let marks = mergedMarks(checks)
-        var seen = Set<String>()
-        for check in checks {
-            guard let title = titles[check.routineId] else { continue }
-            guard inWindow(check.dayKey, window: window) else { continue }
-            let mark = marks[check.routineId]?[check.dayKey]
-            guard mark == .done || mark == .skipped else { continue }
-            let kind: DashboardActivityKind = mark == .skipped ? .skipped : .completed
-            let key = "\(check.routineId.uuidString)|\(check.dayKey)|\(kind.rawValue)"
-            guard seen.insert(key).inserted else { continue }
-            rows.append(itemActivity(
-                kind, dayKey: check.dayKey, id: check.routineId, kind: .routine, title: title,
-                route: .inspectItem(id: check.routineId, dayKey: check.dayKey, kind: .routine)
-            ))
+        for (routineID, days) in marks {
+            guard let title = titles[routineID] else { continue }
+            for (dayKey, mark) in days {
+                guard inWindow(dayKey, window: window) else { continue }
+                let kind: DashboardActivityKind = mark == .skipped ? .skipped : .completed
+                rows.append(itemActivity(
+                    kind, dayKey: dayKey, id: routineID, kind: .routine, title: title,
+                    route: .inspectItem(id: routineID, dayKey: dayKey, kind: .routine)
+                ))
+            }
         }
         return rows
     }

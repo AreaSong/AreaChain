@@ -70,6 +70,28 @@
       "note": "Debug、UTC、30 个习惯加当月待办；热身 1 次后对按日分组实现与逐日 badge 扫描各 3 次取样取中位数。不是日历页原生交互证据。"
     },
     {
+      "id": "dashboard-heatmap-365",
+      "scope": "AreaChain/Domain/DashboardProjection.swift",
+      "test": "AreaChainTests/Domain/DashboardProjectionEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/DashboardProjectionEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/DashboardProjectionEquivalenceTests.swift:208",
+      "note": "Debug、UTC、40 个习惯、365 日热力窗口、稀疏 done/skip；热身 1 次后对窗口日桶实现与冻结的按日×习惯扫描各 3 次取样取中位数，并要求索引不慢于对照加 50ms。局部 wall_ms 上限，不是总览页原生交互证据。"
+    },
+    {
+      "id": "dashboard-index-rss",
+      "scope": "AreaChain/Domain/DashboardProjection.swift",
+      "test": "AreaChainTests/Domain/DashboardProjectionEquivalenceTests.swift",
+      "testFilter": null,
+      "metric": "rss_bytes",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "日统计另有 O(D) 日桶和 O(U) 打卡 map；连击仍按 routine 分组后走 HabitStreakLogic。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
+    },
+    {
       "id": "agenda-dayboard-index-rss",
       "scope": "AreaChain/Domain/AgendaProjection.swift",
       "test": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift",
