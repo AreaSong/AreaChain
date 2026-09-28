@@ -146,6 +146,7 @@ struct NotificationSchedulerTests {
         #expect(scheduler.completedRefreshCount == 2)
         #expect(center.pending.map(\.title) == ["C"])
         #expect(center.addCount == firstAdds + 1)
+        #expect(center.removePendingCount == 1)
         #expect(elapsed >= .milliseconds(80))
         #expect(elapsed < .milliseconds(1000))
     }
@@ -248,6 +249,30 @@ struct NotificationSchedulerTests {
         #expect(center.addCount == 2)
         #expect(center.pending.map(\.title) == ["成功项"])
         #expect(!center.pending.contains { $0.identifier == ReminderPlanning.notificationID(failing.id) })
+    }
+
+    @Test func failedAddIsRetriedOnNextRefresh() async throws {
+        let container = try container()
+        let failing = TodoItem(title: "失败项", dayKey: todayKey, remindMinutes: 9 * 60)
+        let surviving = TodoItem(title: "成功项", dayKey: todayKey, remindMinutes: 10 * 60)
+        container.mainContext.insert(failing)
+        container.mainContext.insert(surviving)
+        try container.mainContext.save()
+
+        let center = FakeReminderNotifications()
+        center.failingIdentifiers = [ReminderPlanning.notificationID(failing.id)]
+        let scheduler = makeScheduler(container: container, center: center, debounce: .zero)
+        scheduler.start()
+        try await wait(scheduler, refreshes: 1)
+        #expect(center.pending.map(\.title) == ["成功项"])
+
+        center.failingIdentifiers = []
+        await scheduler.refreshNow()
+
+        #expect(scheduler.completedRefreshCount == 2)
+        #expect(Set(center.pending.map(\.title)) == ["失败项", "成功项"])
+        #expect(center.addCount == 4)
+        #expect(center.removePendingCount == 1)
     }
 
     @Test func completingReminderCancelsItsPendingRequest() async throws {
