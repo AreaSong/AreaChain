@@ -3,29 +3,123 @@ import SwiftData
 import UserNotifications
 
 @MainActor
+protocol ReminderNotificationServing: AnyObject {
+    var attachesSystemCenter: Bool { get }
+    var authorizationStatus: UNAuthorizationStatus { get async }
+    func pendingRecords() async -> [ReminderNotificationRecord]
+    func removePending(identifiers: [String])
+    func removeDelivered(identifiers: [String])
+    func add(_ record: ReminderNotificationRecord) async throws
+    func requestAuthorization() async throws -> Bool
+    func attachDelegateIfNeeded(_ delegate: UNUserNotificationCenterDelegate)
+}
+
+@MainActor
+final class SystemReminderNotifications: ReminderNotificationServing {
+    let attachesSystemCenter = true
+    private let center = UNUserNotificationCenter.current()
+
+    var authorizationStatus: UNAuthorizationStatus {
+        get async { await center.notificationSettings().authorizationStatus }
+    }
+
+    func pendingRecords() async -> [ReminderNotificationRecord] {
+        await center.pendingNotificationRequests().compactMap { request in
+            guard let trigger = request.trigger as? UNCalendarNotificationTrigger else { return nil }
+            return ReminderNotificationRecord.make(
+                identifier: request.identifier,
+                title: request.content.title,
+                components: trigger.dateComponents
+            )
+        }
+    }
+
+    func removePending(identifiers: [String]) {
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
+    }
+
+    func removeDelivered(identifiers: [String]) {
+        center.removeDeliveredNotifications(withIdentifiers: identifiers)
+    }
+
+    func add(_ record: ReminderNotificationRecord) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = record.title
+        content.body = L10n.string("notify.body", locale: AppPreferences.shared.resolvedLocale)
+        content.sound = .default
+        let trigger = UNCalendarNotificationTrigger(dateMatching: record.dateComponents, repeats: false)
+        try await center.add(
+            UNNotificationRequest(identifier: record.identifier, content: content, trigger: trigger)
+        )
+    }
+
+    func requestAuthorization() async throws -> Bool {
+        try await center.requestAuthorization(options: [.alert, .sound])
+    }
+
+    func attachDelegateIfNeeded(_ delegate: UNUserNotificationCenterDelegate) {
+        center.delegate = delegate
+    }
+}
+
+@MainActor
 final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationScheduler()
 
     private var started = false
     private var generation = 0
-    private let center = UNUserNotificationCenter.current()
+    private let center: any ReminderNotificationServing
+    private let contextProvider: () -> ModelContext
+    private let now: () -> Date
+    private let todayKey: () -> String
+    private let calendar: () -> Calendar
+    private let debounce: Duration
+
+    private(set) var lastCatalogLoad: ReminderCatalogLoad?
+    private(set) var completedRefreshCount = 0
+    private(set) var skippedWriteCount = 0
+    private(set) var appliedWriteCount = 0
 
     nonisolated static var isRunningTests: Bool {
         ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
     }
 
+    override convenience init() {
+        self.init(center: SystemReminderNotifications())
+    }
+
+    init(
+        center: any ReminderNotificationServing,
+        context: (() -> ModelContext)? = nil,
+        now: (() -> Date)? = nil,
+        todayKey: (() -> String)? = nil,
+        calendar: (() -> Calendar)? = nil,
+        debounce: Duration = .milliseconds(80)
+    ) {
+        self.center = center
+        self.contextProvider = context ?? { Persistence.session.container.mainContext }
+        self.now = now ?? Date.init
+        self.todayKey = todayKey ?? { DayClock.shared.todayKey }
+        self.calendar = calendar ?? { Calendar.current }
+        self.debounce = debounce
+        super.init()
+    }
+
     func start() {
-        guard !Self.isRunningTests, !started else { return }
+        guard !started else { return }
+        if center.attachesSystemCenter, Self.isRunningTests { return }
         started = true
-        center.delegate = self
-        NotificationCenter.default.addObserver(
-            forName: .NSCalendarDayChanged,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                DayClock.shared.refresh()
-                self?.scheduleRefresh()
+        center.attachDelegateIfNeeded(self)
+        if center.attachesSystemCenter {
+            NotificationCenter.default.addObserver(
+                forName: .NSCalendarDayChanged,
+                object: nil,
+                queue: .main
+            ) { [weak self] _ in
+                Task { @MainActor in
+                    DayClock.shared.refresh()
+                    self?.scheduleRefresh()
+                }
             }
         }
         scheduleRefresh()
@@ -36,26 +130,31 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
         generation += 1
         let token = generation
         Task {
-            try? await Task.sleep(for: .milliseconds(80))
+            try? await Task.sleep(for: debounce)
             guard token == self.generation else { return }
             await self.refresh()
         }
     }
 
+    func refreshNow() async {
+        guard started else { return }
+        await refresh()
+    }
+
     func ensureAuthorization() {
-        guard !Self.isRunningTests else { return }
+        guard !(center.attachesSystemCenter && Self.isRunningTests) else { return }
         if !started { start() }
         Task { await requestAuthorizationAndRefresh() }
     }
 
     func currentStatus() async -> UNAuthorizationStatus {
-        await center.notificationSettings().authorizationStatus
+        await center.authorizationStatus
     }
 
     func requestAuthorizationAndRefresh() async {
-        guard !Self.isRunningTests else { return }
+        guard !(center.attachesSystemCenter && Self.isRunningTests) else { return }
         do {
-            let granted = try await center.requestAuthorization(options: [.alert, .sound])
+            let granted = try await center.requestAuthorization()
             NSLog("[NotificationScheduler] requestAuthorization granted: %d", granted ? 1 : 0)
         } catch {
             let failure = error as NSError
@@ -76,82 +175,63 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func refresh() async {
-        let pending = await center.pendingNotificationRequests()
-        let ours = pending.map(\.identifier).filter { $0.hasPrefix(ReminderPlanning.identifierPrefix) }
-        center.removePendingNotificationRequests(withIdentifiers: ours)
-        center.removeDeliveredNotifications(withIdentifiers: ours)
-
-        let status = await currentStatus()
+        let pending = await center.pendingRecords()
+        let ours = pending.filter { $0.identifier.hasPrefix(ReminderPlanning.identifierPrefix) }
+        let status = await center.authorizationStatus
         NSLog("[NotificationScheduler] refresh() authorization status: %ld", status.rawValue)
         guard status == .authorized || status == .provisional else {
             NSLog("[NotificationScheduler] refresh() skipped: not authorized (status=%ld)", status.rawValue)
+            if ours.isEmpty {
+                skippedWriteCount += 1
+            } else {
+                cancelOurs(ours)
+                appliedWriteCount += 1
+            }
+            completedRefreshCount += 1
             return
         }
 
-        await schedule(loadCatalog())
-    }
-
-    private func loadCatalog() -> [ReminderRequest] {
-        let context = Persistence.session.container.mainContext
-        let routines = (try? context.fetch(FetchDescriptor<DailyRoutine>())) ?? []
-        let todos = (try? context.fetch(FetchDescriptor<TodoItem>())) ?? []
-        let checks = (try? context.fetch(FetchDescriptor<RoutineCheck>())) ?? []
-        let catalog = ReminderPlanning.catalog(
-            routines: routines.map(\.snapshot),
-            checks: checks.compactMap(\.snapshot),
-            todos: todos.map(\.snapshot),
-            todayKey: DayClock.shared.todayKey
-        )
+        let load = ReminderCatalogStore.load(from: contextProvider(), todayKey: todayKey())
+        lastCatalogLoad = load
         NSLog(
             "[NotificationScheduler] found %ld routines, %ld todos, %ld requests in catalog",
-            routines.count,
-            todos.count,
-            catalog.count
+            load.routineRows,
+            load.todoRows,
+            load.requests.count
         )
-        return catalog
+        let planned = ReminderPlanning.records(catalog: load.requests, now: now(), calendar: calendar())
+        if Set(ours) == Set(planned) {
+            skippedWriteCount += 1
+            completedRefreshCount += 1
+            return
+        }
+        cancelOurs(ours)
+        await schedule(planned)
+        appliedWriteCount += 1
+        completedRefreshCount += 1
     }
 
-    private func schedule(_ catalog: [ReminderRequest]) async {
-        let now = Date()
-        for request in catalog {
-            guard let fire = ReminderPlanning.nextFireDate(request, now: now) else {
-                NSLog(
-                    "[NotificationScheduler] request id=%@ (remindMinutes=%ld) nextFireDate is nil "
-                        + "(expired or already passed)",
-                    request.id.uuidString,
-                    request.remindMinutes
-                )
-                continue
-            }
+    private func cancelOurs(_ ours: [ReminderNotificationRecord]) {
+        let identifiers = ours.map(\.identifier)
+        guard !identifiers.isEmpty else { return }
+        center.removePending(identifiers: identifiers)
+        center.removeDelivered(identifiers: identifiers)
+    }
+
+    private func schedule(_ planned: [ReminderNotificationRecord]) async {
+        for record in planned {
             do {
-                try await center.add(notificationRequest(request, fire: fire))
-                NSLog("[NotificationScheduler] scheduled request id=%@", request.id.uuidString)
+                try await center.add(record)
+                NSLog("[NotificationScheduler] scheduled request id=%@", record.identifier)
             } catch {
                 let failure = error as NSError
                 NSLog(
                     "[NotificationScheduler] center.add FAILED for id=%@ domain=%@ code=%ld",
-                    request.id.uuidString,
+                    record.identifier,
                     failure.domain,
                     failure.code
                 )
             }
         }
-    }
-
-    private func notificationRequest(_ request: ReminderRequest, fire: Date) -> UNNotificationRequest {
-        let content = UNMutableNotificationContent()
-        content.title = request.title
-        content.body = L10n.string("notify.body", locale: AppPreferences.shared.resolvedLocale)
-        content.sound = .default
-        let components = Calendar.current.dateComponents(
-            [.year, .month, .day, .hour, .minute],
-            from: fire
-        )
-        let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
-        return UNNotificationRequest(
-            identifier: ReminderPlanning.notificationID(request.id),
-            content: content,
-            trigger: trigger
-        )
     }
 }

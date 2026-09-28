@@ -203,4 +203,36 @@ struct ReminderPlanningTests {
         let id = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         #expect(ReminderPlanning.notificationID(id) == "areachain.remind.\(id.uuidString)")
     }
+
+    @Test func recordsDropExpiredAndKeepFutureFire() {
+        let open = ReminderRequest(
+            id: UUID(),
+            title: "修角标",
+            remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: false)
+        )
+        let done = ReminderRequest(
+            id: UUID(),
+            title: "已完成",
+            remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: true)
+        )
+        let records = ReminderPlanning.records(
+            catalog: [open, done],
+            now: date("2026-09-07", hour: 8),
+            calendar: utc
+        )
+        #expect(records.count == 1)
+        #expect(records[0].identifier == ReminderPlanning.notificationID(open.id))
+        #expect(records[0].title == "修角标")
+        #expect(records[0].hour == 9)
+        #expect(records[0].minute == 0)
+        #expect(
+            ReminderPlanning.records(
+                catalog: [open],
+                now: date("2026-09-07", hour: 10),
+                calendar: utc
+            ).isEmpty
+        )
+    }
 }

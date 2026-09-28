@@ -65,6 +65,50 @@ struct ReminderRequest: Equatable {
     }
 }
 
+/// 通知中心里一条待发送提醒的可比较快照；不含正文，避免把用户标题以外的本地化文案算进是否需要重排。
+struct ReminderNotificationRecord: Equatable, Hashable {
+    var identifier: String
+    var title: String
+    var year: Int
+    var month: Int
+    var day: Int
+    var hour: Int
+    var minute: Int
+
+    var dateComponents: DateComponents {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        components.hour = hour
+        components.minute = minute
+        return components
+    }
+
+    static func make(identifier: String, title: String, fire: Date, calendar: Calendar) -> ReminderNotificationRecord? {
+        make(identifier: identifier, title: title, components: calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: fire
+        ))
+    }
+
+    static func make(identifier: String, title: String, components: DateComponents) -> ReminderNotificationRecord? {
+        guard let year = components.year, let month = components.month, let day = components.day,
+              let hour = components.hour, let minute = components.minute else {
+            return nil
+        }
+        return ReminderNotificationRecord(
+            identifier: identifier,
+            title: title,
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute
+        )
+    }
+}
+
 enum ReminderPlanning {
     static let identifierPrefix = "areachain.remind."
 
@@ -141,6 +185,22 @@ enum ReminderPlanning {
                 cursor = DayKey.shifted(cursor, by: 1, calendar: calendar)
             }
             return nil
+        }
+    }
+
+    static func records(
+        catalog: [ReminderRequest],
+        now: Date,
+        calendar: Calendar = .current
+    ) -> [ReminderNotificationRecord] {
+        catalog.compactMap { request in
+            guard let fire = nextFireDate(request, now: now, calendar: calendar) else { return nil }
+            return ReminderNotificationRecord.make(
+                identifier: notificationID(request.id),
+                title: request.title,
+                fire: fire,
+                calendar: calendar
+            )
         }
     }
 }
