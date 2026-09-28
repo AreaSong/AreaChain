@@ -222,7 +222,10 @@ struct PrivateBackupTests {
         defer { f.cleanup() }
         let tag = try f.tag()
         let note = try f.repository.addDiary(text: "取消导出原文", dayKey: "2026-09-15", tagIDs: [tag.id])
-        _ = try f.image(owner: note, data: Data(repeating: 0x11, count: 64 * 1024))
+        let imageBytes = Data(repeating: 0x11, count: 64 * 1024)
+        let image = try f.image(owner: note, data: imageBytes)
+        let originalText = note.text
+        let originalProtected = note.hasProtectedContent
         let url = f.root.appending(path: "keep.areachainbackup")
         let sentinel = Data("EXISTING_BACKUP_SENTINEL".utf8)
         try sentinel.write(to: url)
@@ -230,17 +233,46 @@ struct PrivateBackupTests {
         let files = f.files
         let root = f.root
         let password = backupPassword
-        let gate = CancelGate()
+        let gate = CancelGate(allowPasses: 1)
         let task = Task.detached {
             try PrivateBackupFile.write(capture, password: password, to: url) { reference in
                 try gate.blockUntilCancelled()
                 return try files.read(reference: reference, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
             }
         }
-        try gate.waitUntilWorkStarted()
+        try await Task.detached { try gate.waitUntilWorkStarted() }.value
         task.cancel()
         await #expect(throws: PrivacyError.cancelled) { try await task.value }
         #expect(try Data(contentsOf: url) == sentinel)
+        #expect(note.text == originalText && note.hasProtectedContent == originalProtected)
+        #expect(try f.files.read(reference: image.reference, root: f.root) == imageBytes)
+    }
+
+    @Test func cancelledBackupReadStopsInAttachmentCallback() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag()
+        let note = try f.repository.addDiary(text: "取消回读原文", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let imageBytes = Data(repeating: 0x55, count: 32 * 1024)
+        let image = try f.image(owner: note, data: imageBytes)
+        let originalText = note.text
+        let originalProtected = note.hasProtectedContent
+        let url = f.root.appending(path: "read-cancel.areachainbackup")
+        _ = try await PrivateBackupService.export(to: url, password: backupPassword, environment: f.environment)
+        let original = try Data(contentsOf: url)
+        let gate = CancelGate()
+        let password = backupPassword
+        let task = Task.detached {
+            try PrivateBackupFile.read(from: url, password: password) { _, _ in
+                try gate.blockUntilCancelled()
+            }
+        }
+        try await Task.detached { try gate.waitUntilWorkStarted() }.value
+        task.cancel()
+        await #expect(throws: PrivacyError.cancelled) { try await task.value }
+        #expect(try Data(contentsOf: url) == original)
+        #expect(note.text == originalText && note.hasProtectedContent == originalProtected)
+        #expect(try f.files.read(reference: image.reference, root: f.root) == imageBytes)
     }
 
     @Test func cancelledExportDoesNotReplaceExistingBackup() async throws {
@@ -333,10 +365,15 @@ struct PrivateBackupTests {
     }
 }
 
-/// 等写入循环真正进入附件回调后再取消，避免 20ms 竞态。
+/// 等读写循环真正进入目标回调后再取消。allowPasses 用于跳过清单散列、卡在暂存写入。
 private final class CancelGate: @unchecked Sendable {
     private let condition = NSCondition()
     private var started = false
+    private var remainingPasses: Int
+
+    init(allowPasses: Int = 0) {
+        remainingPasses = allowPasses
+    }
 
     func waitUntilWorkStarted(timeout: TimeInterval = 5) throws {
         condition.lock()
@@ -351,6 +388,12 @@ private final class CancelGate: @unchecked Sendable {
 
     func blockUntilCancelled(timeout: TimeInterval = 5) throws {
         condition.lock()
+        if remainingPasses > 0 {
+            remainingPasses -= 1
+            condition.unlock()
+            try PrivacyTask.checkCancellation()
+            return
+        }
         started = true
         condition.broadcast()
         condition.unlock()

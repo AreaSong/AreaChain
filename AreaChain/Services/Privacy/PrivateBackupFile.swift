@@ -18,6 +18,8 @@ enum PrivateBackupFile {
         let key = SymmetricKey(data: keyData)
         let id = UUID()
         let header = Header(id: id, password: try VaultCrypto.wrap(keyData, password: password, vaultID: id))
+        // wrap 里的 PBKDF2 无法中途协作取消；返回后立刻再看一眼，避免口令派生期间被取消仍继续写盘。
+        try PrivacyTask.checkCancellation()
         var manifest = capture.manifest
         manifest.files = try manifest.snapshot.attachments.map { item in
             try PrivacyTask.checkCancellation()
@@ -73,6 +75,7 @@ enum PrivateBackupFile {
         let header = try JSONDecoder().decode(Header.self, from: readFrame(handle, limit: 65_536))
         guard header.version == 1 else { throw PrivacyError.unsupportedVersion }
         let keyData = try VaultCrypto.unwrap(header.password, password: password, vaultID: header.id)
+        try PrivacyTask.checkCancellation()
         let key = SymmetricKey(data: keyData)
         let sealedManifest = try readFrame(handle, limit: manifestLimit + 28)
         let raw = try VaultCrypto.open(sealedManifest, key: key, context: "backup:\(header.id):manifest")

@@ -70,13 +70,24 @@ struct Phase1BaselineTests {
     }
 
     private func assertPhase1LogIsIsolated(requireSamples: Bool = true) throws {
-        #expect(Phase1Log.isolationLabel != "app_container_tmp_fallback")
+        #expect(
+            Phase1Log.isolationLabel == "outside_app_container"
+                || Phase1Log.isolationLabel == "stderr_and_memory"
+        )
         #expect(!Phase1Log.combinedURL.path.contains("/Library/Containers/"))
         if Phase1Log.persistsFiles {
             #expect(FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
+        } else {
+            #expect(!FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
         }
         if requireSamples {
-            #expect(!(try Phase1Log.samples().isEmpty))
+            let samples = try Phase1Log.samples()
+            #expect(!samples.isEmpty)
+            if Phase1Log.persistsFiles {
+                #expect(samples.allSatisfy { $0.logIsolation == "outside_app_container" && !$0.logDirectory.isEmpty })
+            } else {
+                #expect(samples.allSatisfy { $0.logIsolation == "stderr_and_memory" && $0.logDirectory.isEmpty })
+            }
         }
     }
 

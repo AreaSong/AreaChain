@@ -102,7 +102,8 @@ enum Phase1Log {
             try FileManager.default.createDirectory(at: storage.directory, withIntermediateDirectories: true)
             try Data().write(to: combinedURL)
         }
-        fputs("PHASE1_LOG \(combinedURL.path) isolation=\(isolationLabel)\n", stderr)
+        let location = storage.persistFiles ? combinedURL.path : "-"
+        fputs("PHASE1_LOG \(location) isolation=\(isolationLabel)\n", stderr)
     }
 
     static func write(_ sample: Phase1Sample) throws {
@@ -129,7 +130,7 @@ enum Phase1Log {
     static func writeGraph(_ graph: Phase1Graph) throws {
         try prepare()
         var recorded = graph
-        recorded.logDirectory = storage.directory.path
+        recorded.logDirectory = storage.persistFiles ? storage.directory.path : ""
         recorded.logIsolation = isolationLabel
         let encoder = JSONEncoder()
         let data = try encoder.encode(recorded)
@@ -189,9 +190,9 @@ enum Phase1Log {
         if let root = firstWritableRoot() {
             return Storage(directory: root.appendingPathComponent(name, isDirectory: true), persistFiles: true)
         }
-        // 占位路径，不创建、不写入；样本留在进程内存和 stderr。
+        // 非文件路径，不创建、不写入；样本留在进程内存和 stderr。不要打印看起来像真实 /tmp 文件的地址。
         return Storage(
-            directory: URL(fileURLWithPath: "/tmp/areachain-phase1-memory/\(name)", isDirectory: true),
+            directory: URL(fileURLWithPath: "/areachain-phase1-not-persisted/\(name)", isDirectory: true),
             persistFiles: false
         )
     }
@@ -446,7 +447,7 @@ enum Phase1Measure {
         value.physicalMemoryBytes = info.physicalMemory
         value.approximate = draft.approximate
         value.clock = clockKind
-        value.logDirectory = Phase1Log.combinedURL.deletingLastPathComponent().path
+        value.logDirectory = Phase1Log.persistsFiles ? Phase1Log.combinedURL.deletingLastPathComponent().path : ""
         value.logIsolation = Phase1Log.isolationLabel
         return value
     }

@@ -89,7 +89,7 @@
 
 - [ModelChangesTests](../AreaChainTests/Services/ModelChangesTests.swift) 和 [SnapshotImportValidationTests](../AreaChainTests/Services/SnapshotImportValidationTests.swift) 有事务/通知、坏输入及此前编辑保留检查。
 - [SubtaskTagMigrationTests](../AreaChainTests/Services/SubtaskTagMigrationTests.swift) 使用临时旧库及已关闭目录备份；只冻结发生变化的两个实体，不能代表全部历史 schema，也不证明新库可被旧应用打开。
-- [PrivacyMigrationTests](../AreaChainTests/Services/PrivacyMigrationTests.swift) 有合成磁盘迁移、冷清理和重开；[PrivateBackupTests](../AreaChainTests/Services/PrivateBackupTests.swift) 有换钥恢复、缺图/坏密码/篡改/保存失败、导出/恢复/附件暂存/标签转换取消等夹具。备份文件写入取消在附件回调进入后协作停止；导出、恢复和转换另有启动即取消夹具。都不是进程杀死。fake 系统钥匙与内存库不等于真实系统认证或全流程灾难恢复。Phase1 测量不得写入 `/Library/Containers/`（含日用应用容器）；沙盒挡掉仓库/`/tmp` 时只留进程内存和 stderr。
+- [PrivacyMigrationTests](../AreaChainTests/Services/PrivacyMigrationTests.swift) 有合成磁盘迁移、冷清理和重开；[PrivateBackupTests](../AreaChainTests/Services/PrivateBackupTests.swift) 有换钥恢复、缺图/坏密码/篡改/保存失败、导出/恢复/附件暂存/标签转换取消等夹具。备份文件写入取消卡在第二次附件回调（暂存写入），回读取消卡在附件帧回调；导出、恢复和转换另有启动即取消夹具。PBKDF2 wrap/unwrap 无法中途协作停止，返回后会再检查取消。都不是进程杀死，也不覆盖 SQLite VACUUM 中途中断。fake 系统钥匙与内存库不等于真实系统认证或全流程灾难恢复。Phase1 测量不得写入 `/Library/Containers/`（含日用应用容器）；沙盒挡掉仓库/`/tmp` 时 `PHASE1_LOG` 路径为 `-`，样本只留进程内存和 stderr。
 
 下一次获准的数据/恢复任务按以下链路验收，先用合成数据：
 
