@@ -101,6 +101,17 @@ enum Phase1Log {
         try append(encodedLine(sample), to: scaleURL(sample.scale, store: sample.store))
     }
 
+    static func samples() throws -> [Phase1Sample] {
+        try prepare()
+        let text = try String(contentsOf: combinedURL, encoding: .utf8)
+        let decoder = JSONDecoder()
+        return try text.split(whereSeparator: \.isNewline).compactMap { line in
+            let raw = String(line)
+            guard !raw.hasPrefix("GRAPH "), !raw.isEmpty else { return nil }
+            return try decoder.decode(Phase1Sample.self, from: Data(raw.utf8))
+        }
+    }
+
     static func writeGraph(_ graph: Phase1Graph) throws {
         try prepare()
         var recorded = graph

@@ -90,6 +90,17 @@
       "status": "provisional",
       "source": "AreaChainTests/Services/LifecycleBaselineTests.swift:60",
       "note": "同一进程连续 8 次重开 2000 条库，末次相对首次 RSS 增量上限；用来挡住明显泄漏，不是完整 leak 审计。"
+    },
+    {
+      "id": "attachment-owner-lookup-wall",
+      "scope": "AreaChain/Domain/DiaryPrivacy.swift",
+      "test": "AreaChainTests/Services/Phase1BaselineTests.swift",
+      "testFilter": null,
+      "metric": "wall_ms",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "产品 wall_ms 预算未建立。Phase1 同一次运行对照 scoped fetchTodos 与整表 unscoped 的物化行数，证明行数热点不在 owner lookup。Debug 内存合成数据，不是产品加速 SLA。"
     }
   ]
 }

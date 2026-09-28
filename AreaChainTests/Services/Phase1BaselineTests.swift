@@ -54,6 +54,7 @@ struct Phase1BaselineTests {
         try Phase1Log.writeGraph(corpus.graph)
         try await Phase1Scenarios.runAll(on: corpus)
         #expect(FileManager.default.fileExists(atPath: Phase1Log.combinedURL.path))
+        try assertOwnerLookupMaterializesFewerRows(scale: scale, graph: corpus.graph)
         #expect(try corpus.tasks.fetchTodo(id: corpus.probeTodoID) != nil)
         #expect(try corpus.routines.fetchRoutine(id: corpus.probeRoutineID) != nil)
         #expect(try corpus.diaries.fetchDiary(id: corpus.probeDiaryID) != nil)
@@ -65,5 +66,29 @@ struct Phase1BaselineTests {
         #expect(corpus.graph.attachments > 0)
         #expect(corpus.graph.privateDiaries > 0)
         #expect(!corpus.privateDiaryIDs.isEmpty)
+    }
+
+    /// 同一次运行里对照物化行数：owner lookup 不是整表热点。不把 p50 写成产品预算。
+    private func assertOwnerLookupMaterializesFewerRows(scale: Int, graph: Phase1Graph) throws {
+        let samples = try Phase1Log.samples().filter { $0.scale == scale && $0.store == graph.store }
+        let todo = try sample(samples, "fetch.owner.live.todo")
+        let todoUnscoped = try sample(samples, "fetch.owner.live.todo.unscoped")
+        let attachment = try sample(samples, "fetch.attachment.byOwner")
+        let attachmentUnscoped = try sample(samples, "fetch.attachment.byOwner.unscoped")
+        let byDay = try sample(samples, "fetch.todos.byDay")
+        #expect(todo.resultRows == 1)
+        #expect(todoUnscoped.resultRows == graph.todos)
+        #expect(todoUnscoped.resultRows > todo.resultRows)
+        #expect(attachment.resultRows >= 1)
+        #expect(attachmentUnscoped.resultRows == graph.attachments)
+        #expect(attachmentUnscoped.resultRows > attachment.resultRows)
+        #expect(byDay.resultRows > todo.resultRows)
+    }
+
+    private func sample(_ samples: [Phase1Sample], _ scenario: String) throws -> Phase1Sample {
+        guard let match = samples.last(where: { $0.scenario == scenario }) else {
+            throw Phase1ContractError.message("缺少场景 \(scenario)")
+        }
+        return match
     }
 }

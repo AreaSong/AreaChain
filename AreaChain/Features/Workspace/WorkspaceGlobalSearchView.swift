@@ -15,7 +15,8 @@ struct WorkspaceGlobalSearchView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
-    @Query private var attachments: [AttachmentItem]
+    /// 可浏览附件必须未删除；拥有者列表仍整表拉取，否则 `isSingleLive` 看不到重复 UUID。
+    @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
 
     let query: String
 
@@ -39,7 +40,8 @@ struct WorkspaceGlobalSearchView: View {
 
     /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
     /// 菜单栏不查文件名，避免把局部行为扩成统一搜索契约。
-    /// 待办/手记/习惯的 `@Query` 属于搜索本身；这里只对已物化数组建 `ownerIndex`，不再嵌套扫描。
+    /// 待办/手记/习惯的 `@Query` 必须含墓碑，才能按 `isSingleLive` 判重复 UUID。
+    /// 附件已用 live predicate；这里只对已物化拥有者建 `ownerIndex`，不再嵌套扫描。
     private var matchingAttachments: [AttachmentItem] {
         let owners = AttachmentAccess.ownerIndex(todos: todos, routines: routines, diaries: diaries)
         return attachments

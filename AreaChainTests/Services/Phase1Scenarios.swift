@@ -59,35 +59,40 @@ enum Phase1Scenarios {
     }
 
     private static func measureOwnerAttachmentReads(_ corpus: Phase1Corpus) throws {
+        try measureScopedOwnerReads(corpus)
+        try measureUnscopedOwnerReads(corpus)
+    }
+
+    private static func measureScopedOwnerReads(_ corpus: Phase1Corpus) throws {
         try Phase1Measure.record(
             scenario: "fetch.owner.live.todo",
             corpus: corpus,
             extraCalls: ["tableTodos": corpus.graph.todos],
-            notes: "AttachmentAccess.ownerIsLive(context:)：id predicate，无 fetchLimit，重复 UUID 判不可用。"
+            notes: "resultRows=fetchTodos 物化行数。id predicate，无 fetchLimit。"
         ) {
-            let live = try AttachmentAccess.ownerIsLive(
-                AttachmentOwnerKey(kind: .todo, id: corpus.probeTodoID),
-                context: corpus.context
-            )
-            return Phase1Work(rows: live ? 1 : 0, fetchCalls: 1)
+            let fetched = try AttachmentAccess.fetchTodos(id: corpus.probeTodoID, in: corpus.context)
+            guard AttachmentAccess.isSingleLive(deletedAts: fetched.map(\.deletedAt)) else {
+                throw Phase1ContractError.message("probe todo 必须是唯一未删除行")
+            }
+            return Phase1Work(rows: fetched.count, fetchCalls: 1)
         }
         try Phase1Measure.record(
             scenario: "fetch.owner.live.diary",
             corpus: corpus,
             extraCalls: ["tableDiaries": corpus.graph.diaries],
-            notes: "手记拥有者存活：id predicate。附件保存与选图共用这条路径。"
+            notes: "resultRows=fetchDiaries 物化行数。附件保存与选图共用这条路径。"
         ) {
-            let live = try AttachmentAccess.ownerIsLive(
-                AttachmentOwnerKey(kind: .diary, id: corpus.probeDiaryID),
-                context: corpus.context
-            )
-            return Phase1Work(rows: live ? 1 : 0, fetchCalls: 1)
+            let fetched = try AttachmentAccess.fetchDiaries(id: corpus.probeDiaryID, in: corpus.context)
+            guard AttachmentAccess.isSingleLive(deletedAts: fetched.map(\.deletedAt)) else {
+                throw Phase1ContractError.message("probe diary 必须是唯一未删除行")
+            }
+            return Phase1Work(rows: fetched.count, fetchCalls: 1)
         }
         try Phase1Measure.record(
             scenario: "fetch.attachment.byOwner",
             corpus: corpus,
             extraCalls: ["tableAttachments": corpus.graph.attachments],
-            notes: "OwnedAttachments.matching(in:)：ownerID+ownerKind predicate，含软删除行。"
+            notes: "resultRows=matching 物化行数，含软删除。"
         ) {
             let rows = try OwnedAttachments.matching(
                 ownerID: corpus.probeTodoID, kind: .todo, in: corpus.context
@@ -104,6 +109,27 @@ enum Phase1Scenarios {
                 ownerIDs: [corpus.probeTodoID, corpus.probeRoutineID], kind: .todo, in: corpus.context
             ).count
             return Phase1Work(rows: rows, fetchCalls: 1)
+        }
+    }
+
+    private static func measureUnscopedOwnerReads(_ corpus: Phase1Corpus) throws {
+        try Phase1Measure.record(
+            scenario: "fetch.owner.live.todo.unscoped",
+            corpus: corpus,
+            extraCalls: ["tableTodos": corpus.graph.todos],
+            notes: "对照：整表 FetchDescriptor 再按 id 过滤。resultRows 是物化全表行数。"
+        ) {
+            let fetched = try corpus.context.fetch(FetchDescriptor<TodoItem>())
+            return Phase1Work(rows: fetched.count, fetchCalls: 1)
+        }
+        try Phase1Measure.record(
+            scenario: "fetch.attachment.byOwner.unscoped",
+            corpus: corpus,
+            extraCalls: ["tableAttachments": corpus.graph.attachments],
+            notes: "对照：OwnedAttachments.all 再内存 matching。resultRows 是物化全表行数。"
+        ) {
+            let fetched = try OwnedAttachments.all(in: corpus.context)
+            return Phase1Work(rows: fetched.count, fetchCalls: 1)
         }
     }
 

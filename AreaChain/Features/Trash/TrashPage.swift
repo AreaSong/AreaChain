@@ -137,6 +137,16 @@ struct TrashPage: View {
     private func emptyTrash() {
         let rows = items
         let purgedOwners = Set(rows.compactMap(\.purgesOwner))
+        let fileIDs: Set<UUID>
+        do {
+            fileIDs = try AttachmentCleanup.fileIDs(
+                listed: rows.flatMap(\.filesToRemove),
+                purgedOwners: purgedOwners,
+                context: modelContext
+            )
+        } catch {
+            return
+        }
         guard ModelChanges.perform(in: modelContext, {
             for item in rows {
                 if let owner = item.skipIfOwnerPurged, purgedOwners.contains(owner) { continue }
@@ -144,7 +154,7 @@ struct TrashPage: View {
             }
         }) else { return }
         for owner in purgedOwners { EditDrafts.shared.discard(owner: owner) }
-        ModelChanges.attempt { try AttachmentCleanup.purge(ids: Set(rows.flatMap(\.filesToRemove)), context: modelContext) }
+        ModelChanges.attempt { try AttachmentCleanup.purge(ids: fileIDs, context: modelContext) }
     }
 }
 

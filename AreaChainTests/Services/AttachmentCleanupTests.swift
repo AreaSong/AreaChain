@@ -71,4 +71,43 @@ struct AttachmentCleanupTests {
         try AttachmentCleanup.purge(ids: Set(row.filesToRemove), context: context, removeFile: { _ in })
         #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 0)
     }
+
+    @Test func emptyTrashFileIDsIncludeLiveAttachmentsOfPurgedOwners() throws {
+        let container = try container()
+        let context = container.mainContext
+        let todo = TodoItem(title: "trashed", dayKey: "2026-09-12", deletedAt: Date(timeIntervalSince1970: 3))
+        let live = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "orphan.png"
+        )
+        let tombstone = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: todo.id, filename: "gone.png",
+            deletedAt: Date(timeIntervalSince1970: 3)
+        )
+        let neighbor = TodoItem(title: "keep", dayKey: "2026-09-12")
+        let other = AttachmentItem(
+            ownerKind: AttachmentOwner.todo.rawValue, ownerID: neighbor.id, filename: "other.png"
+        )
+        let diary = AttachmentItem(
+            ownerKind: AttachmentOwner.diary.rawValue, ownerID: todo.id, filename: "diary.png"
+        )
+        context.insert(todo)
+        context.insert(live)
+        context.insert(tombstone)
+        context.insert(neighbor)
+        context.insert(other)
+        context.insert(diary)
+        try context.save()
+
+        let listed = try #require(TrashRow.todo(todo, attachments: [tombstone])).filesToRemove
+        #expect(Set(listed) == [tombstone.id])
+        let ids = try AttachmentCleanup.fileIDs(
+            listed: listed,
+            purgedOwners: [AttachmentOwnerKey(kind: .todo, id: todo.id)],
+            context: context
+        )
+        #expect(ids == [live.id, tombstone.id])
+        #expect(!ids.contains(other.id))
+        #expect(!ids.contains(diary.id))
+        #expect(try AttachmentCleanup.fileIDs(listed: [], purgedOwners: [], context: context).isEmpty)
+    }
 }
