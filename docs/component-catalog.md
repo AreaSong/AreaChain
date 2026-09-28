@@ -56,9 +56,10 @@
 |---|---|---|---|
 | 日期 | `DayKey` | [DayKey.swift](../AreaChain/Domain/DayKey.swift) | 使用民事日期语义；不要用 UTC 时间戳替代日键。 |
 | 解析 | `NaturalLanguageParser`、`TagSyntax` | [NaturalLanguageParser.swift](../AreaChain/Domain/NaturalLanguageParser.swift)、[TagSyntax.swift](../AreaChain/Domain/TagSyntax.swift) | 任务、习惯、手记和剪贴板的输入契约分别核对；搜索不创建标签。 |
-| 筛选/搜索 | `BoardFilter`、`BoardFilters`、`BoardSearch` | [Classification.swift](../AreaChain/Domain/Classification.swift)、[BoardPage.swift](../AreaChain/Domain/BoardPage.swift)、[BoardSearch.swift](../AreaChain/Domain/BoardSearch.swift) | 关键词与结构化筛选取交集；日清单和昨天/即将芯片用 `matchesListedRow`，不要在页面再写一套日期判断。 |
+| 筛选/搜索 | `BoardFilter`、`BoardFilters`、`BoardSearch` | [Classification.swift](../AreaChain/Domain/Classification.swift)、[BoardPage.swift](../AreaChain/Domain/BoardPage.swift)、[BoardSearch.swift](../AreaChain/Domain/BoardSearch.swift) | 关键词与结构化筛选取交集；日清单和昨天/即将芯片用 `matchesListedRow`，不要在页面再写一套日期判断。逾期筛选下一次 `hits` 对入围习惯只调一次 `AgendaProjection.overdueRoutines`，不为每个习惯重建闭合索引。 |
 | 待处理投影 | `AgendaProjection` | [AgendaProjection.swift](../AreaChain/Domain/AgendaProjection.swift) | 逾期、即将、当前/下一排定日和批量能力使用同一投影。 |
 | 总览投影 | `DashboardProjection`、`DashboardSnapshot` | [DashboardProjection.swift](../AreaChain/Domain/DashboardProjection.swift)、[DashboardModels.swift](../AreaChain/Domain/DashboardModels.swift) | 今日、趋势、热力图和活动只用这一份；视图不另写公式。日统计在一次 `project` 里共用闭合日键和打卡索引。快照值与计算分文件，只为遵守单文件行数上限。 |
+| 标签清单 | `Catalog` | [Catalog.swift](../AreaChain/Domain/Catalog.swift) | 标签匹配、附件聚类和标签清单口径只用这一份。`matchingListedRoutines` / `openCount` 对当天打卡做 first-wins 闭合集合；闭合语义与看板相同，不走待处理「任一条闭合」。 |
 | 任务变更 | `DayBoardMutations` | [DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift)、[DayBoardMutations+Batch.swift](../AreaChain/Features/Tasks/DayBoardMutations+Batch.swift) | 完成、打卡、标签、改期、回收站和批量动作沿现有事务入口。 |
 | 附件拥有者 | `AttachmentAccess`、`AttachmentOwnerIndex` | [DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift) | 回收站/浏览按 owner key 走 context predicate；工作台搜索拥有者仍用整表清单建索引，附件只 `@Query` 活行。选图/保存走同一套 id descriptor。重复 UUID 不可用。不能用「未删除 ID 集合」替代 `isSingleLive`。 |
 | 事务和通知 | `ModelChanges` | [ModelChanges.swift](../AreaChain/Services/ModelChanges.swift) | 保存成功后才发布变更；失败保留草稿和用户上下文。 |

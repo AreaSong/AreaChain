@@ -92,6 +92,39 @@
       "note": "日统计另有 O(D) 日桶和 O(U) 打卡 map；连击仍按 routine 分组后走 HabitStreakLogic。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
     },
     {
+      "id": "board-search-overdue-20x1000",
+      "scope": "AreaChain/Domain/BoardSearch.swift",
+      "test": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/CatalogSearchEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift:254",
+      "note": "Debug、UTC、20 个习惯、约 1000 个民事日、稀疏 done/skip；热身 1 次后对索引 hits 与冻结的按习惯重建逾期索引各 3 次取样取中位数，并要求索引不慢于对照加 50ms。局部 wall_ms 上限，不是搜索页原生交互证据。"
+    },
+    {
+      "id": "catalog-listed-routines-40x365",
+      "scope": "AreaChain/Domain/Catalog.swift",
+      "test": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/CatalogSearchEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift:323",
+      "note": "Debug、40 个习惯、各约 365 日稀疏打卡，另有待办和子任务；热身 1 次后对当天 first-wins 闭合集合与逐条 isRoutineDone 对照各 3 次取样取中位数。不是标签页原生交互证据。"
+    },
+    {
+      "id": "catalog-search-index-rss",
+      "scope": "AreaChain/Domain/BoardSearch.swift",
+      "test": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift",
+      "testFilter": null,
+      "metric": "rss_bytes",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "搜索逾期一次调用复用 Agenda 的 O(C) 闭合索引；Catalog 当天闭合集合是 O(U_day)。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
+    },
+    {
       "id": "agenda-dayboard-index-rss",
       "scope": "AreaChain/Domain/AgendaProjection.swift",
       "test": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift",

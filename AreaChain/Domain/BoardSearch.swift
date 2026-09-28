@@ -123,15 +123,16 @@ enum BoardSearch {
         let parsed = parseQuery(query)
         guard !parsed.isEmpty else { return [] }
 
+        let names = TagNameIndex(tagMap: tagMap, queryTags: parsed.tagNames)
         let routineDays = routineDisplayDays(
             routines, checks: checks, todayKey: todayKey, filter: scope.filter, calendar: calendar
         )
         let filteredTodos = todos.filter { matchesTodoScope($0, todayKey: todayKey, filter: scope.filter) }
         let filteredRoutines = routines.filter { routineDays[$0.id] != nil }
-        let found = todoHits(parsed, filteredTodos, tagMap: tagMap)
+        let found = todoHits(parsed, filteredTodos, names: names)
             + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
-            + routineHits(parsed, filteredRoutines, dayKeys: routineDays, tagMap: tagMap)
-            + subtaskHits(parsed, todos, todayKey: todayKey, tagMap: tagMap, scope: scope)
+            + routineHits(parsed, filteredRoutines, dayKeys: routineDays, names: names)
+            + subtaskHits(parsed, todos, todayKey: todayKey, names: names, scope: scope)
 
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
@@ -178,6 +179,7 @@ enum BoardSearch {
     }
 
     /// 逾期用待处理同一投影的最近未闭合排定日。其他日期范围仍用从今天起的下一个排定日。
+    /// 逾期路径先筛分类/提醒，再对入围习惯只建一次闭合索引，不按习惯重复扫整表 checks。
     private static func routineDisplayDays(
         _ routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
@@ -185,45 +187,32 @@ enum BoardSearch {
         filter: BoardFilter,
         calendar: Calendar
     ) -> [UUID: String] {
+        let eligible = routines.filter { item in
+            item.deletedAt == nil
+                && item.isEnabled
+                && Classification.matches(item.classifyBits, filter: filter)
+                && Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope)
+        }
+        if filter.dateScope == .overdue {
+            return Dictionary(
+                AgendaProjection.overdueRoutines(
+                    routines: eligible, checks: checks, todayKey: todayKey, calendar: calendar
+                ).map { ($0.routineID, $0.displayDayKey) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        }
         var days: [UUID: String] = [:]
-        for routine in routines {
-            guard let day = routineDisplayDay(
-                routine, checks: checks, todayKey: todayKey, filter: filter, calendar: calendar
+        for item in eligible {
+            let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
+            let scheduled = WeekdayMask.nextScheduledDayKey(
+                mask: item.weekdayMask, from: fromKey, calendar: calendar
+            )
+            guard filter.dateScope == .all || Classification.matchesDate(
+                dayKey: scheduled, isDone: false, todayKey: todayKey, scope: filter.dateScope
             ) else { continue }
-            days[routine.id] = day
+            days[item.id] = scheduled
         }
         return days
-    }
-
-    private static func routineDisplayDay(
-        _ item: RoutineSnapshot,
-        checks: [CheckSnapshot],
-        todayKey: String,
-        filter: BoardFilter,
-        calendar: Calendar
-    ) -> String? {
-        guard item.deletedAt == nil, item.isEnabled else { return nil }
-        guard Classification.matches(item.classifyBits, filter: filter),
-              Classification.matchesReminder(item.remindMinutes, scope: filter.reminderScope) else { return nil }
-        if filter.dateScope == .overdue {
-            return AgendaProjection.overdueRoutines(
-                routines: [item], checks: checks, todayKey: todayKey, calendar: calendar
-            ).first?.displayDayKey
-        }
-        let fromKey = item.createdDayKey > todayKey ? item.createdDayKey : todayKey
-        let scheduled = WeekdayMask.nextScheduledDayKey(
-            mask: item.weekdayMask, from: fromKey, calendar: calendar
-        )
-        guard filter.dateScope == .all || Classification.matchesDate(
-            dayKey: scheduled, isDone: false, todayKey: todayKey, scope: filter.dateScope
-        ) else { return nil }
-        return scheduled
-    }
-
-    private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
-        guard !tagNames.isEmpty else { return true }
-        let attached = Set(TagIDList.parse(attachedIDs).compactMap { tagMap[$0] }.map(TagSyntax.normalizedName))
-        return tagNames.allSatisfy { attached.contains(TagSyntax.normalizedName($0)) }
     }
 
     static func matchesDiary(_ item: DiarySnapshot, query: BoardSearchQuery, tagMap: [UUID: String]) -> Bool {
@@ -242,7 +231,7 @@ enum BoardSearch {
         bits: ClassifyBits,
         remindMinutes: Int?,
         query: BoardSearchQuery,
-        tagMap: [UUID: String]
+        names: TagNameIndex
     ) -> Bool {
         if !query.textKeywords.isEmpty {
             let matchesAll = query.textKeywords.allSatisfy { keyword in
@@ -251,7 +240,7 @@ enum BoardSearch {
             guard matchesAll else { return false }
         }
         guard matchesAttributes(query, bits: bits, remindMinutes: remindMinutes) else { return false }
-        return matchTags(tagNames: query.tagNames, attachedIDs: tagIDs, tagMap: tagMap)
+        return names.matchesAttached(tagIDs)
     }
 
     private static func matchesAttributes(_ query: BoardSearchQuery, bits: ClassifyBits, remindMinutes: Int?) -> Bool {
@@ -262,14 +251,14 @@ enum BoardSearch {
         return true
     }
 
-    private static func todoHits(_ query: BoardSearchQuery, _ todos: [TodoSnapshot], tagMap: [UUID: String]) -> [BoardSearchHit] {
+    private static func todoHits(_ query: BoardSearchQuery, _ todos: [TodoSnapshot], names: TagNameIndex) -> [BoardSearchHit] {
         todos.compactMap { item in
             guard item.deletedAt == nil else { return nil }
 
             guard matchesRecord(
                 title: item.title, notes: item.notes, tagIDs: item.tagIDs,
                 bits: item.classifyBits, remindMinutes: item.remindMinutes,
-                query: query, tagMap: tagMap
+                query: query, names: names
             ) else { return nil }
 
             return BoardSearchHit(
@@ -304,14 +293,14 @@ enum BoardSearch {
         _ query: BoardSearchQuery,
         _ routines: [RoutineSnapshot],
         dayKeys: [UUID: String],
-        tagMap: [UUID: String]
+        names: TagNameIndex
     ) -> [BoardSearchHit] {
         return routines.compactMap { item in
             guard let dayKey = dayKeys[item.id] else { return nil }
             guard matchesRecord(
                 title: item.title, notes: item.notes, tagIDs: item.tagIDs,
                 bits: item.classifyBits, remindMinutes: item.remindMinutes,
-                query: query, tagMap: tagMap
+                query: query, names: names
             ) else { return nil }
 
             return BoardSearchHit(
@@ -325,7 +314,7 @@ enum BoardSearch {
     }
 
     private static func subtaskHits(
-        _ query: BoardSearchQuery, _ todos: [TodoSnapshot], todayKey: String, tagMap: [UUID: String], scope: BoardSearchScope
+        _ query: BoardSearchQuery, _ todos: [TodoSnapshot], todayKey: String, names: TagNameIndex, scope: BoardSearchScope
     ) -> [BoardSearchHit] {
         guard !query.hasPriority, query.remindMinutes == nil, !scope.filter.isHighPriorityOnly else { return [] }
         var parentFilter = scope.filter
@@ -336,12 +325,33 @@ enum BoardSearch {
             return todo.subtasks.compactMap { subtask in
                 guard subtask.deletedAt == nil, matchesOwnTags(subtask.tagIDs, filter: scope.filter) else { return nil }
                 guard query.textKeywords.allSatisfy({ matches(subtask.title, needle: $0) }),
-                      matchTags(tagNames: query.tagNames, attachedIDs: subtask.tagIDs, tagMap: tagMap) else { return nil }
+                      names.matchesAttached(subtask.tagIDs) else { return nil }
                 return BoardSearchHit(
                     id: subtask.id, kind: .subtask, title: "\(todo.title) › \(subtask.title)",
                     dayKey: todo.dayKey, createdAt: subtask.createdAt, parentID: todo.id
                 )
             }
+        }
+    }
+
+    private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
+        TagNameIndex(tagMap: tagMap, queryTags: tagNames).matchesAttached(attachedIDs)
+    }
+
+    /// 一次 `hits` 内共用规范化标签名，避免每条记录重复 `normalizedName`。
+    private struct TagNameIndex {
+        var normalizedByID: [UUID: String]
+        var queryTags: [String]
+
+        init(tagMap: [UUID: String], queryTags: [String]) {
+            normalizedByID = tagMap.mapValues(TagSyntax.normalizedName)
+            self.queryTags = queryTags.map(TagSyntax.normalizedName)
+        }
+
+        func matchesAttached(_ attachedIDs: String) -> Bool {
+            guard !queryTags.isEmpty else { return true }
+            let attached = Set(TagIDList.parse(attachedIDs).compactMap { normalizedByID[$0] })
+            return queryTags.allSatisfy { attached.contains($0) }
         }
     }
 }

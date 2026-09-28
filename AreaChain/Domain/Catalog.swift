@@ -136,6 +136,7 @@ enum Catalog {
 
     /// 标签清单与 `openCount` 共用：全部未删除的挂签重复事项，按当天是否闭合分段。
     /// 组织入口要能看到非今日排定和停用项；行上是否允许打卡仍由当天 `isRoutineDue` 决定。
+    /// 当天闭合只扫一遍打卡：同一 `(routineId, dayKey)` 取第一条，完成或跳过都算闭合，与看板 `isRoutineDone` 相同，不是待处理「任一条闭合」。
     static func matchingListedRoutines(
         _ items: [DailyRoutine],
         checks: [RoutineCheck],
@@ -143,11 +144,8 @@ enum Catalog {
         dayKey: String,
         open: Bool
     ) -> [DailyRoutine] {
-        let snaps = checks.compactMap(\.snapshot)
-        return matchingRoutines(items, tag: tag).filter {
-            let done = DayBoardLogic.isRoutineDone($0.snapshot, checks: snaps, on: dayKey)
-            return open ? !done : done
-        }
+        let closed = firstClosedRoutineIDs(checks, on: dayKey)
+        return matchingRoutines(items, tag: tag).filter { closed.contains($0.id) != open }
     }
 
     /// 今日看板口径：当天排定且尚未闭合。标签清单不要用它当唯一列表。
@@ -176,12 +174,37 @@ enum Catalog {
         tag: TagItem?,
         dayKey: String
     ) -> Int {
-        let openTodos = matchingTodos(todos, tag: tag).filter { !$0.isDone }.count
-        let openRoutines = matchingListedRoutines(
-            routines, checks: checks, tag: tag, dayKey: dayKey, open: true
-        ).count
-        let openSubtasks = matchingSubtasks(todos, tag: tag).filter { !$0.isDone }.count
-        return openTodos + openRoutines + openSubtasks
+        guard let tag, tag.deletedAt == nil else { return 0 }
+        var openTodos = 0
+        var openSubtasks = 0
+        for todo in todos where todo.deletedAt == nil {
+            if matches(tagIDs: todo.tagIDs, tag: tag), !todo.isDone {
+                openTodos += 1
+            }
+            for subtask in todo.subtasks where subtask.deletedAt == nil
+                && TagIDList.contains(subtask.tagIDs, tag.id)
+                && !subtask.isDone
+            {
+                openSubtasks += 1
+            }
+        }
+        return openTodos
+            + matchingListedRoutines(routines, checks: checks, tag: tag, dayKey: dayKey, open: true).count
+            + openSubtasks
+    }
+
+    /// 只看目标日。其它日的打卡不占用 first-wins 名额，避免把次日记录当成当天已见。
+    private static func firstClosedRoutineIDs(_ checks: [RoutineCheck], on dayKey: String) -> Set<UUID> {
+        var seen: Set<UUID> = []
+        var closed: Set<UUID> = []
+        for check in checks {
+            guard let snap = check.snapshot, snap.dayKey == dayKey else { continue }
+            guard seen.insert(snap.routineId).inserted else { continue }
+            if snap.isDone || snap.isSkipped {
+                closed.insert(snap.routineId)
+            }
+        }
+        return closed
     }
 
     static func writeSortOrder<Item>(
