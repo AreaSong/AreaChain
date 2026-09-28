@@ -173,6 +173,8 @@ fi
 
 if [[ "$command_name" == "test" ]]; then
     if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
+    mkdir -p "$derived_data/phase1-logs"
+    build_arguments+=("TEST_RUNNER_AREACHAIN_PHASE1_LOG_DIR=$derived_data/phase1-logs")
     # 普通单测不能继承调用者留下的真实钥匙串授权。
     run_with_lock "$wait_for_lock" env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
         -u AREACHAIN_SYSTEM_KEYCHAIN_PHASE -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_QA \

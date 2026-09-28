@@ -53,7 +53,7 @@ enum DiaryProtection {
         if !plan.entries.isEmpty {
             guard let backup, tagIDs.isSubset(of: backup.manifest.privateTagIDs) else { throw PrivacyError.requiresBackup }
             guard baseline.sourceDigest == backup.sourceDigest else { throw PrivacyError.staleOperation }
-            let digest = try await Task.detached { try PrivateBackupFile.digest(backup.url) }.value
+            let digest = try await PrivacyTask.detached { try PrivateBackupFile.digest(backup.url) }
             guard digest == backup.ciphertextDigest else { throw PrivacyError.staleOperation }
             try PrivacyStoreMaintenance.mark(environment.context)
         }
@@ -61,11 +61,16 @@ enum DiaryProtection {
         let hashes = backup.map { Dictionary(uniqueKeysWithValues: $0.manifest.files.map { ($0.id, $0.digest) }) }
         do {
             try await batch.prepareAsync(plan.attachments, vault: environment.vault, expectedDigests: hashes)
+            try PrivacyTask.checkCancellation()
             let current = try PrivateBackupCapture.capture(context: environment.context, vault: environment.vault)
-            guard environment.vault.generation == token, environment.vault.isUnlocked, !Task.isCancelled,
+            guard environment.vault.generation == token, environment.vault.isUnlocked,
                   current.sourceDigest == baseline.sourceDigest else { throw PrivacyError.staleOperation }
             try commit(plan, batch: batch, environment: environment, save: { try $0.save() })
-        } catch { batch.rollback(); throw error }
+        } catch {
+            batch.rollback()
+            if error is CancellationError { throw PrivacyError.cancelled }
+            throw error
+        }
     }
 
     static func unprotect(_ entry: DiaryEntry, context: ModelContext) throws {

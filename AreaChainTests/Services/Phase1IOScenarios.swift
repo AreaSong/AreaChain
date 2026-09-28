@@ -134,13 +134,17 @@ enum Phase1IOScenarios {
     }
 
     private static func measureBackupCapture(_ corpus: Phase1Corpus) throws {
+        let plaintextReads = corpus.graph.diaries - corpus.graph.privateDiaries
         try Phase1Measure.record(
             scenario: "backup.capture",
             corpus: corpus,
-            notes: "PrivateBackupCapture.capture：七表 + 每条明文手记 DiaryContent.read 再 fetch 标签。附件只有元数据。Fake 金库。"
+            extraCalls: [
+                "snapshotTables": 7,
+                "plaintextTagRefetches": plaintextReads
+            ],
+            notes: "PrivateBackupCapture.capture。fetchCalls 是会计值（七表 + 每条明文手记再 fetch 标签），不是磁盘 syscall。附件只有元数据。Fake 金库。"
         ) {
             let captured = try PrivateBackupCapture.capture(context: corpus.context, vault: corpus.vault)
-            let plaintextReads = corpus.graph.diaries - corpus.graph.privateDiaries
             return Phase1Work(rows: captured.manifest.snapshot.todos.count, fetchCalls: 7 + plaintextReads)
         }
     }
@@ -171,8 +175,8 @@ enum Phase1IOScenarios {
             corpus: corpus,
             timing: timing,
             work: Phase1Work(rows: 1, fetchCalls: 0, computeWallMs: timing.wallMs),
-            extraCalls: [:],
-            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。不含真实钥匙串。未再拆 IO/算法。",
+            extraCalls: ["passwordUnwraps": 2],
+            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。inspect+stage 各一次 unwrap。不含真实钥匙串。fetchCalls 未计。",
             memory: Phase1MemoryMark(
                 rssBefore: before.rss,
                 rssAfter: after.rss,

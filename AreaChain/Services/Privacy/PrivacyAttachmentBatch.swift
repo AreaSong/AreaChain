@@ -31,14 +31,15 @@ final class PrivacyAttachmentBatch {
 
     func prepareAsync(_ attachments: [AttachmentItem], vault: PrivacyVault,
                       expectedDigests: [UUID: Data]? = nil) async throws {
+        try PrivacyTask.checkCancellation()
         guard vault.isUnlocked, let vaultID = vault.configuration?.vaultID else { throw PrivacyError.locked }
         let input = try inputs(attachments, protecting: true)
         let values = input.values
         let options = AttachmentStaging.Options(vaultID: vaultID, keys: vault.keys, protecting: true, expectedDigests: expectedDigests)
         let store = store, root = root
-        let files = try await Task.detached(priority: .userInitiated) {
+        let files = try await PrivacyTask.detached(priority: .userInitiated) {
             try AttachmentStaging.write(values, options: options, store: store, root: root)
-        }.value
+        }
         accept(files, models: input.models)
     }
 
@@ -112,7 +113,7 @@ private enum AttachmentStaging {
         var written: [Output] = []
         do {
             for input in inputs {
-                try Task.checkCancellation()
+                try PrivacyTask.checkCancellation()
                 guard input.ownerKind == AttachmentOwner.diary.rawValue else { throw PrivacyError.corruptData }
                 let ref = input.reference
                 let raw = try store.read(reference: ref, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)

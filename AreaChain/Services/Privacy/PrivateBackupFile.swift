@@ -13,12 +13,14 @@ enum PrivateBackupFile {
 
     static func write(_ capture: PrivateBackupCapture, password: String, to url: URL,
                       readAttachment: (AttachmentRef) throws -> Data) throws -> VerifiedPrivateBackup {
+        try PrivacyTask.checkCancellation()
         let keyData = try VaultCrypto.randomBytes(count: 32)
         let key = SymmetricKey(data: keyData)
         let id = UUID()
         let header = Header(id: id, password: try VaultCrypto.wrap(keyData, password: password, vaultID: id))
         var manifest = capture.manifest
         manifest.files = try manifest.snapshot.attachments.map { item in
+            try PrivacyTask.checkCancellation()
             guard let ref = capture.references[item.id] else { throw PrivacyError.missingAttachment }
             let data = try readAttachment(ref)
             guard data.count <= VaultCrypto.maximumAttachmentBytes else { throw PrivacyError.tooLarge }
@@ -38,6 +40,7 @@ enum PrivateBackupFile {
         }
         let verified = try read(from: staging.url, password: password)
         guard verified == manifest else { throw PrivacyError.corruptData }
+        try PrivacyTask.checkCancellation()
         if FileManager.default.fileExists(atPath: url.path) {
             _ = try FileManager.default.replaceItemAt(url, withItemAt: staging.url)
         } else {
@@ -55,12 +58,15 @@ enum PrivateBackupFile {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         var digest = SHA256()
-        while let data = try handle.read(upToCount: 65_536), !data.isEmpty { digest.update(data: data) }
+        while let data = try handle.read(upToCount: 65_536), !data.isEmpty {
+            digest.update(data: data)
+        }
         return Data(digest.finalize())
     }
 
     static func read(from url: URL, password: String,
                      attachment: (UUID, Data) throws -> Void = { _, _ in }) throws -> PrivateBackupManifest {
+        try PrivacyTask.checkCancellation()
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         guard try exact(handle, count: magic.count) == magic else { throw PrivacyError.corruptData }
@@ -75,6 +81,7 @@ enum PrivateBackupFile {
         let manifest = try decoder.decode(PrivateBackupManifest.self, from: raw)
         try manifest.validate()
         for file in manifest.files {
+            try PrivacyTask.checkCancellation()
             let sealed = try readFrame(handle, limit: VaultCrypto.maximumAttachmentBytes + 28)
             guard sealed.count == file.byteCount + 28 else { throw PrivacyError.corruptData }
             let data = try VaultCrypto.open(sealed, key: key, context: "backup:\(header.id):attachment:\(file.id)")
@@ -97,6 +104,7 @@ enum PrivateBackupFile {
         let raw = try encodeManifest(manifest)
         try writeFrame(VaultCrypto.seal(raw, key: key, context: "backup:\(header.id):manifest"), to: handle)
         for file in manifest.files {
+            try PrivacyTask.checkCancellation()
             let data = try read(file.id)
             guard data.count == file.byteCount, Data(SHA256.hash(data: data)) == file.digest else {
                 throw PrivacyError.staleOperation

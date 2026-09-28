@@ -99,6 +99,10 @@ enum Phase1Log {
         try prepare()
         try append(encodedLine(sample), to: combinedURL)
         try append(encodedLine(sample), to: scaleURL(sample.scale, store: sample.store))
+        // 沙盒可能只能写到应用容器 tmp；关键样本同步打到 stderr，验收不必读日用容器。
+        if sample.scenario.hasPrefix("backup.") || sample.scenario == "snapshot.exportOrdinaryJSON" {
+            fputs("PHASE1_SAMPLE \(try encodedLine(sample))", stderr)
+        }
     }
 
     static func samples() throws -> [Phase1Sample] {
@@ -164,8 +168,10 @@ enum Phase1Log {
     private static func firstWritableRoot() -> URL? {
         let environment = ProcessInfo.processInfo.environment
         var candidates: [URL] = []
-        if let override = environment["AREACHAIN_PHASE1_LOG_DIR"], !override.isEmpty {
-            candidates.append(URL(fileURLWithPath: override, isDirectory: true))
+        for key in ["AREACHAIN_PHASE1_LOG_DIR", "TEST_RUNNER_AREACHAIN_PHASE1_LOG_DIR"] {
+            if let override = environment[key], !override.isEmpty {
+                candidates.append(URL(fileURLWithPath: override, isDirectory: true))
+            }
         }
         candidates.append(
             URL(fileURLWithPath: #filePath)

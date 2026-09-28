@@ -83,6 +83,14 @@ class BuildCommandTests(unittest.TestCase):
         self.assertEqual(self.xcode_call()["qa"], {})
         self.assertEqual(self.xcode_call()["args"][-1], "test")
 
+    def test_tests_forward_phase1_log_dir_into_test_runner(self):
+        result = self.invoke("test")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        forwarded = [item for item in self.xcode_call()["args"]
+                     if item.startswith("TEST_RUNNER_AREACHAIN_PHASE1_LOG_DIR=")]
+        self.assertEqual(len(forwarded), 1)
+        self.assertTrue(forwarded[0].endswith("/phase1-logs"))
+
     def test_test_filters_are_forwarded_as_individual_arguments(self):
         result = self.invoke("test", "--only-testing", "AreaChainTests/PrivacyVaultTests",
                              "--only-testing", "AreaChainTests/SystemVaultIntegrationTests")
@@ -125,7 +133,7 @@ class BuildCommandTests(unittest.TestCase):
         lock_file.parent.mkdir(parents=True, exist_ok=True)
         fd = open(lock_file, "a+")
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        
+
         def release_later():
             time.sleep(0.5)
             fcntl.flock(fd, fcntl.LOCK_UN)

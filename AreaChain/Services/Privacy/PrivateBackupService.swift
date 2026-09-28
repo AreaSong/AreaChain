@@ -6,28 +6,32 @@ enum PrivateBackupService {
     static func export(to url: URL, password: String, environment: PrivacyPersistence,
                        additionalPrivateTags: Set<UUID> = []) async throws -> VerifiedPrivateBackup {
         guard !StoreHealth.shared.isUsingMemoryFallback else { throw PrivacyError.storageFailure }
+        try PrivacyTask.checkCancellation()
         if environment.vault.isConfigured { _ = try environment.vault.requireFreshAuthentication() }
         let capture = try PrivateBackupCapture.capture(context: environment.context, vault: environment.vault,
                                                         additionalPrivateTags: additionalPrivateTags)
         let store = environment.attachments
         let root = environment.root
-        let result = try await Task.detached(priority: .userInitiated) {
+        let result = try await PrivacyTask.detached(priority: .userInitiated) {
             try PrivateBackupFile.write(capture, password: password, to: url) {
                 try store.read(reference: $0, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
             }
-        }.value
+        }
         let current = try PrivateBackupCapture.capture(context: environment.context, vault: environment.vault)
         guard current.sourceDigest == capture.sourceDigest else { throw PrivacyError.staleOperation }
         return result
     }
 
     static func inspect(url: URL, password: String) async throws -> PrivateBackupManifest {
-        try await Task.detached(priority: .userInitiated) { try PrivateBackupFile.read(from: url, password: password) }.value
+        try await PrivacyTask.detached(priority: .userInitiated) {
+            try PrivateBackupFile.read(from: url, password: password)
+        }
     }
 
     static func restore(from url: URL, password: String, environment: PrivacyPersistence,
                         save: (ModelContext) throws -> Void = { try $0.save() }) async throws {
         guard !StoreHealth.shared.isUsingMemoryFallback else { throw PrivacyError.storageFailure }
+        try PrivacyTask.checkCancellation()
         let config = try environment.vault.requireFreshAuthentication()
         let token = environment.vault.generation
         let context = environment.context
@@ -37,13 +41,14 @@ enum PrivateBackupService {
         let plan = try RestorePlan(manifest: manifest, context: context, vaultID: config.vaultID)
         let store = environment.attachments
         let root = environment.root
-        try await Task.detached(priority: .userInitiated) {
+        try await PrivacyTask.detached(priority: .userInitiated) {
             try plan.stage(from: url, password: password, store: store, root: root)
-        }.value
+        }
         var committed = false
         do {
+            try PrivacyTask.checkCancellation()
             let current = try PrivateBackupCapture.capture(context: context, vault: environment.vault, readPrivateContent: false)
-            guard environment.vault.isUnlocked, environment.vault.generation == token, !Task.isCancelled,
+            guard environment.vault.isUnlocked, environment.vault.generation == token,
                   current.sourceDigest == baseline.sourceDigest else { throw PrivacyError.staleOperation }
             if !plan.privateDiaries.isEmpty { try PrivacyStoreMaintenance.mark(context) }
             try SnapshotImporter.applyDecryptedBackup(manifest.snapshot, context: context, prepare: { context in
@@ -56,6 +61,7 @@ enum PrivateBackupService {
             PrivacyStoreMaintenance.request(context)
         } catch {
             if !committed { plan.discard(store: store, root: root) }
+            if error is CancellationError { throw PrivacyError.cancelled }
             throw error
         }
     }
@@ -107,6 +113,7 @@ private struct RestorePlan: Sendable {
 
     func stage(from url: URL, password: String, store: AttachmentStore, root: URL?) throws {
         do {
+            try PrivacyTask.checkCancellation()
             let folder = root ?? store.directory()
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let checked = try PrivateBackupFile.read(from: url, password: password) { id, bytes in
@@ -119,7 +126,7 @@ private struct RestorePlan: Sendable {
             guard checked == manifest else { throw PrivacyError.staleOperation }
             for file in files.values {
                 guard let reference = file.localReference else { continue }
-                try Task.checkCancellation()
+                try PrivacyTask.checkCancellation()
                 let bytes = try store.read(reference: reference, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
                 let stored = try PrivateAttachments.encode(bytes, attachmentID: file.id, ownerID: file.ownerID,
                                                            vaultID: vaultID, keys: store.keys)

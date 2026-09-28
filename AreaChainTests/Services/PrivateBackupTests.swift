@@ -216,4 +216,97 @@ struct PrivateBackupTests {
         let files = try FileManager.default.contentsOfDirectory(atPath: f.root.path)
         #expect(Set(files) == [image.id.uuidString, url.lastPathComponent])
     }
+
+    @Test func cancelledBackupWriteLeavesExistingDestinationUntouched() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag()
+        let note = try f.repository.addDiary(text: "取消导出原文", dayKey: "2026-09-15", tagIDs: [tag.id])
+        _ = try f.image(owner: note, data: Data(repeating: 0x11, count: 64 * 1024))
+        let url = f.root.appending(path: "keep.areachainbackup")
+        let sentinel = Data("EXISTING_BACKUP_SENTINEL".utf8)
+        try sentinel.write(to: url)
+        let capture = try PrivateBackupCapture.capture(context: f.context, vault: f.vault)
+        let files = f.files
+        let root = f.root
+        let password = backupPassword
+        let task = Task.detached {
+            try PrivateBackupFile.write(capture, password: password, to: url) {
+                try files.read(reference: $0, root: root, maximumBytes: VaultCrypto.maximumAttachmentBytes)
+            }
+        }
+        try await Task.sleep(for: .milliseconds(20))
+        task.cancel()
+        await #expect(throws: PrivacyError.cancelled) { try await task.value }
+        #expect(try Data(contentsOf: url) == sentinel)
+    }
+
+    @Test func cancelledExportDoesNotReplaceExistingBackup() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag()
+        let note = try f.repository.addDiary(text: "取消服务导出", dayKey: "2026-09-15", tagIDs: [tag.id])
+        _ = try f.image(owner: note, data: Data(repeating: 0x22, count: 64 * 1024))
+        let url = f.root.appending(path: "export-keep.areachainbackup")
+        let sentinel = Data("EXISTING_SERVICE_BACKUP_SENTINEL".utf8)
+        try sentinel.write(to: url)
+        let task = Task {
+            try await PrivateBackupService.export(to: url, password: backupPassword, environment: f.environment)
+        }
+        try await Task.sleep(for: .milliseconds(20))
+        task.cancel()
+        await expectCancellation { _ = try await task.value }
+        #expect(try Data(contentsOf: url) == sentinel)
+    }
+
+    @Test func cancelledRestoreDoesNotMutateDestinationNotes() async throws {
+        let source = try await PrivacyFixture.make()
+        let destination = try await PrivacyFixture.make()
+        defer { source.cleanup(); destination.cleanup() }
+        let tag = try source.tag()
+        let note = try source.repository.addDiary(text: "不应写入目的地", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let url = source.root.appending(path: "cancel-restore.areachainbackup")
+        _ = try await PrivateBackupService.export(to: url, password: backupPassword, environment: source.environment)
+        let local = try destination.repository.addDiary(text: "目的地原文", dayKey: "2026-09-15", tagIDs: [])
+        let task = Task {
+            try await PrivateBackupService.restore(from: url, password: backupPassword, environment: destination.environment)
+        }
+        try await Task.sleep(for: .milliseconds(20))
+        task.cancel()
+        await expectCancellation { try await task.value }
+        #expect(try destination.repository.fetchDiary(id: local.id)?.text == "目的地原文")
+        #expect(try destination.repository.fetchDiary(id: note.id) == nil)
+        #expect(!local.hasProtectedContent)
+    }
+
+    @Test func cancelledAttachmentPrepareLeavesOriginalFile() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag(private: false)
+        let note = try f.repository.addDiary(text: "暂存取消", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let image = try f.image(owner: note, data: Data(repeating: 0x33, count: 32 * 1024))
+        let original = try f.files.read(reference: image.reference, root: f.root)
+        let batch = PrivacyAttachmentBatch(store: f.files, root: f.root)
+        let task = Task {
+            try await batch.prepareAsync([image], vault: f.vault)
+        }
+        task.cancel()
+        await expectCancellation { try await task.value }
+        #expect(image.storageID == nil && image.privacyVaultID == nil && image.retiredStorageID == nil)
+        #expect(try f.files.read(reference: image.reference, root: f.root) == original)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: f.root.path) == [image.id.uuidString])
+    }
+
+    private func expectCancellation(_ work: () async throws -> Void) async {
+        do {
+            try await work()
+            Issue.record("expected cancellation")
+        } catch is CancellationError {
+            return
+        } catch let error as PrivacyError where error == .cancelled {
+            return
+        } catch {
+            Issue.record("unexpected \(error)")
+        }
+    }
 }
