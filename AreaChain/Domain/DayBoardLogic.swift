@@ -112,6 +112,29 @@ struct UnfinishedItem: Equatable, Identifiable {
 }
 
 enum DayBoardLogic {
+    /// 看板闭合看同一 (routineId, dayKey) 的**第一条**打卡；后写的完成/跳过不能覆盖先写的未闭合。
+    /// 待处理逾期用「任一条完成或跳过即闭合」，两套规则不能合成一张表。
+    private struct CheckLookup {
+        private let firstByRoutineDay: [UUID: [String: CheckSnapshot]]
+
+        init(_ checks: [CheckSnapshot]) {
+            var map: [UUID: [String: CheckSnapshot]] = [:]
+            for check in checks {
+                var days = map[check.routineId] ?? [:]
+                if days[check.dayKey] == nil {
+                    days[check.dayKey] = check
+                    map[check.routineId] = days
+                }
+            }
+            firstByRoutineDay = map
+        }
+
+        func isClosed(routineId: UUID, dayKey: String) -> Bool {
+            guard let mark = firstByRoutineDay[routineId]?[dayKey] else { return false }
+            return mark.isDone || mark.isSkipped
+        }
+    }
+
     static func isRoutineDue(
         _ routine: RoutineSnapshot,
         on dayKey: String,
@@ -159,8 +182,9 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         dayKey: String
     ) -> [RoutineSnapshot] {
-        self.routines(for: dayKey, in: routines)
-            .filter { isRoutineDone($0, checks: checks, on: dayKey) }
+        let lookup = CheckLookup(checks)
+        return self.routines(for: dayKey, in: routines)
+            .filter { lookup.isClosed(routineId: $0.id, dayKey: dayKey) }
     }
 
     static func openTodos(todos: [TodoSnapshot], dayKey: String) -> [TodoSnapshot] {
@@ -192,8 +216,9 @@ enum DayBoardLogic {
         checks: [CheckSnapshot],
         dayKey: String
     ) -> [RoutineSnapshot] {
-        self.routines(for: dayKey, in: routines)
-            .filter { !isRoutineDone($0, checks: checks, on: dayKey) }
+        let lookup = CheckLookup(checks)
+        return self.routines(for: dayKey, in: routines)
+            .filter { !lookup.isClosed(routineId: $0.id, dayKey: dayKey) }
     }
 
     static func todos(for dayKey: String, in todos: [TodoSnapshot]) -> [TodoSnapshot] {
@@ -218,8 +243,9 @@ enum DayBoardLogic {
     ) -> BoardProgress {
         let dueTodos = self.todos(for: dayKey, in: todos)
         let dueRoutines = self.routines(for: dayKey, in: routines, calendar: calendar)
+        let lookup = CheckLookup(checks)
         let completed = dueTodos.filter(\.isDone).count
-            + dueRoutines.filter { isRoutineDone($0, checks: checks, on: dayKey) }.count
+            + dueRoutines.filter { lookup.isClosed(routineId: $0.id, dayKey: dayKey) }.count
         return BoardProgress(completed: completed, total: dueTodos.count + dueRoutines.count)
     }
 
@@ -227,9 +253,12 @@ enum DayBoardLogic {
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
         todos: [TodoSnapshot],
-        dayKey: String
+        dayKey: String,
+        calendar: Calendar = .current
     ) -> Int {
-        let progress = todayProgress(routines: routines, checks: checks, todos: todos, dayKey: dayKey)
+        let progress = todayProgress(
+            routines: routines, checks: checks, todos: todos, dayKey: dayKey, calendar: calendar
+        )
         return progress.total - progress.completed
     }
 
@@ -272,14 +301,41 @@ enum DayBoardLogic {
         containing dayKey: String,
         calendar: Calendar = .current
     ) -> [String: Int] {
-        Dictionary(
-            uniqueKeysWithValues: DayKey.daysInMonth(containing: dayKey, calendar: calendar).map { key in
-                (
-                    key,
-                    todayBadgeCount(routines: routines, checks: checks, todos: todos, dayKey: key)
-                )
+        let keys = DayKey.daysInMonth(containing: dayKey, calendar: calendar)
+        guard !keys.isEmpty else { return [:] }
+        let lookup = CheckLookup(checks)
+        var openTodosByDay: [String: Int] = [:]
+        for todo in todos where todo.deletedAt == nil && !todo.isDone {
+            openTodosByDay[todo.dayKey, default: 0] += 1
+        }
+        var weekdayByDay: [String: Int] = [:]
+        weekdayByDay.reserveCapacity(keys.count)
+        for key in keys {
+            if let date = DayKey.date(from: key, calendar: calendar) {
+                weekdayByDay[key] = calendar.component(.weekday, from: date)
             }
-        )
+        }
+        var counts: [String: Int] = [:]
+        counts.reserveCapacity(keys.count)
+        for key in keys {
+            var unfinished = openTodosByDay[key] ?? 0
+            let weekday = weekdayByDay[key]
+            for routine in routines {
+                if isDue(routine, on: key, weekday: weekday),
+                   !lookup.isClosed(routineId: routine.id, dayKey: key) {
+                    unfinished += 1
+                }
+            }
+            counts[key] = unfinished
+        }
+        return counts
+    }
+
+    private static func isDue(_ routine: RoutineSnapshot, on dayKey: String, weekday: Int?) -> Bool {
+        guard routine.deletedAt == nil, routine.isEnabled, routine.createdDayKey <= dayKey, let weekday else {
+            return false
+        }
+        return WeekdayMask.contains(routine.weekdayMask, weekday: weekday)
     }
 
     static func yesterdayUnfinished(

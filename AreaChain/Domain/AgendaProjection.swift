@@ -157,14 +157,18 @@ enum AgendaProjection {
         calendar: Calendar = .current
     ) -> [RoutineAgendaRow] {
         let yesterday = DayKey.shifted(todayKey, by: -1, calendar: calendar)
+        let closed = AgendaOpenDays.ClosedIndex(checks)
         return routines.compactMap { routine in
             guard isActive(routine), isValid(routine.createdDayKey, calendar: calendar) else { return nil }
             guard routine.createdDayKey <= yesterday else { return nil }
-            let open = openScheduledDays(
-                routine, checks: checks, from: routine.createdDayKey, through: yesterday, calendar: calendar
-            )
-            guard let latest = open.max() else { return nil }
-            return row(routine, dayKey: latest, openCount: open.count)
+            guard let summary = AgendaOpenDays.summary(
+                routine,
+                closed: closed.days(for: routine.id),
+                from: routine.createdDayKey,
+                through: yesterday,
+                calendar: calendar
+            ) else { return nil }
+            return row(routine, dayKey: summary.latest, openCount: summary.count)
         }
     }
 
@@ -224,12 +228,16 @@ enum AgendaProjection {
     ) -> [AgendaEntry] {
         guard filter.isActive else { return entries }
         let query = ItemsListingQuery(filter: filter, todayKey: todayKey)
+        let routinesByID = Dictionary(
+            routines.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
         return entries.filter { entry in
             switch entry {
             case .todo(let todo):
                 return !ItemsListing.todos([todo], query: query).isEmpty
             case .routine(let row):
-                guard let routine = routines.first(where: { $0.id == row.routineID }) else { return false }
+                guard let routine = routinesByID[row.routineID] else { return false }
                 return !ItemsListing.routines([routine], checks: checks, query: query).isEmpty
             }
         }
@@ -301,22 +309,13 @@ enum AgendaProjection {
         through end: String,
         calendar: Calendar = .current
     ) -> [String] {
-        let closed = Set(
-            checks.filter { $0.routineId == routine.id && ($0.isDone || $0.isSkipped) }.map(\.dayKey)
+        AgendaOpenDays.listed(
+            routine,
+            closed: AgendaOpenDays.ClosedIndex(checks).days(for: routine.id),
+            from: start,
+            through: end,
+            calendar: calendar
         )
-        var days: [String] = []
-        var cursor = start
-        var steps = 0
-        while cursor <= end, steps < 4000 {
-            if WeekdayMask.contains(routine.weekdayMask, dayKey: cursor, calendar: calendar), !closed.contains(cursor) {
-                days.append(cursor)
-            }
-            let next = DayKey.shifted(cursor, by: 1, calendar: calendar)
-            guard next > cursor else { break }
-            cursor = next
-            steps += 1
-        }
-        return days
     }
 
     private static func routinesCanComplete(

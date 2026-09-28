@@ -48,6 +48,39 @@
       "note": "索引路径内存仍是 O(U) map，另排序 O(U) 个规范键，不再为 D 个空日分配 key。产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
     },
     {
+      "id": "agenda-overdue-routines-1000-days",
+      "scope": "AreaChain/Domain/AgendaProjection.swift",
+      "test": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/AgendaDayBoardEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift:392",
+      "note": "Debug、UTC、20 个习惯、约 1000 个民事日、稀疏 done/skip；热身 1 次后对索引实现与冻结逐日扫描各 3 次取样取中位数，并要求索引不慢于对照加 50ms。局部 wall_ms 上限，不是启动或大库基线。"
+    },
+    {
+      "id": "dayboard-month-unfinished",
+      "scope": "AreaChain/Domain/DayBoardLogic.swift",
+      "test": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift",
+      "testFilter": "AreaChainTests/AgendaDayBoardEquivalenceTests",
+      "metric": "wall_ms",
+      "budget": 200,
+      "status": "provisional",
+      "source": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift:438",
+      "note": "Debug、UTC、30 个习惯加当月待办；热身 1 次后对按日分组实现与逐日 badge 扫描各 3 次取样取中位数。不是日历页原生交互证据。"
+    },
+    {
+      "id": "agenda-dayboard-index-rss",
+      "scope": "AreaChain/Domain/AgendaProjection.swift",
+      "test": "AreaChainTests/Domain/AgendaDayBoardEquivalenceTests.swift",
+      "testFilter": null,
+      "metric": "rss_bytes",
+      "budget": null,
+      "status": "not-established",
+      "source": null,
+      "note": "闭合日索引是 O(C) map，月未完成另有 O(T) 按日计数；产品与独立 App RSS 未建立，不以测试进程瞬时值冒充。"
+    },
+    {
       "id": "task-row-pointer-response",
       "scope": "AreaChain/Features/Tasks/TaskRow.swift",
       "test": "AreaChainTests/Features/TaskRowInteractionTests.swift",
