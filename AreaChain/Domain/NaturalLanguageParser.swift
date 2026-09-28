@@ -58,6 +58,20 @@ struct ParsedDiaryCapture: Equatable {
 }
 
 enum NaturalLanguageParser {
+    private static let priorityTokenExpression = CompiledRegularExpression.make(
+        #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
+    )
+    private static let explicitTimeTokenExpression = CompiledRegularExpression.make(#"^@\d{1,2}[:：]\d{2}$"#)
+    private static let standardTimeExpression = CompiledRegularExpression.make(
+        #"(?<![^\s(\[（【])@?(\d{1,2})[:：](\d{2})(?=$|[\s,，.。;；!！?？)）\]】])"#
+    )
+    private static let chinesePeriodTimeExpression = CompiledRegularExpression.make(
+        #"(早上|上午|中午|下午|晚上)\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?!问题)"#
+    )
+    private static let bareChineseHourExpression = CompiledRegularExpression.make(
+        #"(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!]|[和跟与在去到给把从向])"#
+    )
+
     static func parseTaskCapture(_ input: String) -> ParsedCapture {
         parse(input, consumeDiaryPresetTags: false)
     }
@@ -212,11 +226,9 @@ enum NaturalLanguageParser {
         fullRange: NSRange,
         isFree: (NSRange) -> Bool
     ) -> [SyntaxHighlightToken] {
-        let pattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
         var result: [SyntaxHighlightToken] = []
         let unprotected = TagSyntax.unprotectedText(text)
-        for match in regex.matches(in: unprotected, options: [], range: fullRange) where isFree(match.range) {
+        for match in priorityTokenExpression.matches(in: unprotected, options: [], range: fullRange) where isFree(match.range) {
             let raw = nsText.substring(with: match.range)
             let priority = priorityResult(for: raw)
             result.append(SyntaxHighlightToken(
@@ -273,7 +285,9 @@ enum NaturalLanguageParser {
     }
 
     static func timeMinutes(_ token: String) -> Int? {
-        guard token.range(of: #"^@\d{1,2}[:：]\d{2}$"#, options: .regularExpression) != nil else { return nil }
+        let nsToken = token as NSString
+        let tokenRange = NSRange(location: 0, length: nsToken.length)
+        guard explicitTimeTokenExpression.firstMatch(in: token, options: [], range: tokenRange) != nil else { return nil }
         let parts = token.dropFirst().replacingOccurrences(of: "：", with: ":").split(separator: ":")
         guard parts.count == 2, let hour = Int(parts[0]), let minute = Int(parts[1]),
               (0..<24).contains(hour), (0..<60).contains(minute) else { return nil }
@@ -294,9 +308,8 @@ enum NaturalLanguageParser {
     }
 
     private static func consumePriority(from text: inout String) -> PriorityResult {
-        let priorityPattern = #"(?<![^\s(\[（【])!(重要紧急|紧急重要|重要且紧急|重要不紧急|不重要不紧急|不重要紧急|紧急不重要|重要|紧急|p[1-4]|P[1-4])(?=$|[\s,，.。;；:：!！?？)）\]】])"#
         var lastResult: PriorityResult = .none
-        while let range = firstMatchRange(pattern: priorityPattern, in: text) {
+        while let range = firstMatch(of: priorityTokenExpression, in: text) {
             let match = (text as NSString).substring(with: range)
             text = (text as NSString).replacingCharacters(in: range, with: "")
             lastResult = priorityResult(for: match)
@@ -319,31 +332,24 @@ enum NaturalLanguageParser {
     }
 
     private static func extractTime(from text: String) -> ExtractedTime? {
-        // Pattern A: @15:30 or @9:00 or 15:30 or 09:30
-        let standardPattern = #"(?<![^\s(\[（【])@?(\d{1,2})[:：](\d{2})(?=$|[\s,，.。;；!！?？)）\]】])"#
-        if let match = matchRegex(pattern: standardPattern, in: text) {
+        if let match = matchRegex(standardTimeExpression, in: text) {
             if let h = Int(match.group1), let m = Int(match.group2), h >= 0 && h < 24 && m >= 0 && m < 60 {
                 return ExtractedTime(minutes: h * 60 + m, range: match.range)
             }
         }
 
-        // Pattern B: 带时段（下午3点开会）；点后直接跟「问题」仍不当时刻
-        let withPeriod = #"(早上|上午|中午|下午|晚上)\s*(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?!问题)"#
-        if let match = matchChineseTime(pattern: withPeriod, in: text) {
+        if let match = matchChineseTime(chinesePeriodTimeExpression, in: text) {
             return match
         }
 
-        // Pattern C: 无时段，必须是边界，避免「修复3点问题」
-        let withoutPeriod = #"(\d{1,2})\s*点(?:半|(\d{1,2})分?)?(?=\s|$|[，。！？、；：]|[[:punct:]]|[#@!]|[和跟与在去到给把从向])"#
-        if let match = matchBareChineseHour(pattern: withoutPeriod, in: text) {
+        if let match = matchBareChineseHour(bareChineseHourExpression, in: text) {
             return match
         }
 
         return nil
     }
 
-    private static func matchChineseTime(pattern: String, in text: String) -> ExtractedTime? {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    private static func matchChineseTime(_ regex: NSRegularExpression, in text: String) -> ExtractedTime? {
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
         guard let result = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
@@ -376,8 +382,7 @@ enum NaturalLanguageParser {
         return ExtractedTime(minutes: hour * 60 + minute, range: result.range)
     }
 
-    private static func matchBareChineseHour(pattern: String, in text: String) -> ExtractedTime? {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    private static func matchBareChineseHour(_ regex: NSRegularExpression, in text: String) -> ExtractedTime? {
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
         guard let result = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
@@ -406,10 +411,13 @@ enum NaturalLanguageParser {
 
     private static func firstMatchRange(pattern: String, in text: String) -> NSRange? {
         guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        return firstMatch(of: regex, in: text)
+    }
+
+    private static func firstMatch(of regex: NSRegularExpression, in text: String) -> NSRange? {
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
-        guard let match = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range) else { return nil }
-        return match.range
+        return regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range)?.range
     }
 
     private struct MatchResult {
@@ -418,8 +426,7 @@ enum NaturalLanguageParser {
         let group2: String
     }
 
-    private static func matchRegex(pattern: String, in text: String) -> MatchResult? {
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+    private static func matchRegex(_ regex: NSRegularExpression, in text: String) -> MatchResult? {
         let nsString = text as NSString
         let range = NSRange(location: 0, length: nsString.length)
         guard let match = regex.firstMatch(in: TagSyntax.unprotectedText(text), options: [], range: range),

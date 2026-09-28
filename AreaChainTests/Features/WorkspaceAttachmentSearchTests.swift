@@ -16,6 +16,8 @@ struct WorkspaceAttachmentSearchTests {
         #expect(!WorkspaceAttachmentQuery.matches(filename: "Quarter Report.pdf", query: "!p1"))
         #expect(!WorkspaceAttachmentQuery.matches(filename: "Quarter Report.pdf", query: "   "))
         #expect(!WorkspaceAttachmentQuery.matches(filename: "#家.txt", query: "#家"))
+        #expect(WorkspaceAttachmentQuery.matches(filename: "Quarter Report.pdf", keywords: ["report"]))
+        #expect(!WorkspaceAttachmentQuery.matches(filename: "Quarter Report.pdf", keywords: []))
     }
 
     @Test func attachmentOpensOnTheOwnerDay() {

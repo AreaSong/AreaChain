@@ -257,6 +257,24 @@ struct BoardSearchTests {
         #expect(BoardSearchHit.Kind.diary.titleKey == "search.kind.diary")
         #expect(BoardSearchHit.Kind.subtask.titleKey == "search.kind.subtask")
     }
+
+    @Test func parsedQueryHitsMatchStringQueryAndOmitDiariesForTaskTokens() {
+        let tagID = UUID()
+        let todo = TodoSnapshot(
+            id: UUID(), title: "周报", isDone: false, dayKey: "2026-09-10",
+            tagIDs: tagID.uuidString, isImportant: true, isUrgent: false
+        )
+        let diary = DiarySnapshot(id: UUID(), text: "周报想法", dayKey: "2026-09-10", createdAt: .now)
+        let tagMap = [tagID: "工作"]
+        let raw = "周报 #工作 !p2"
+        let parsed = BoardSearch.parseQuery(raw)
+        #expect(BoardSearch.hits(query: raw, todos: [todo], diaries: [diary], routines: [], tagMap: tagMap)
+            == BoardSearch.hits(parsed, todos: [todo], diaries: [diary], routines: [], tagMap: tagMap))
+        #expect(BoardSearch.omitsDiaries(parsed))
+        #expect(BoardSearch.omitsDiaries(BoardSearch.parseQuery("@15:00")))
+        #expect(!BoardSearch.omitsDiaries(BoardSearch.parseQuery("周报 #工作")))
+        #expect(BoardSearch.hits(BoardSearchQuery(raw: "   "), todos: [todo], diaries: [], routines: []).isEmpty)
+    }
 }
 
 struct OverdueBoardSearchTests {

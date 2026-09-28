@@ -12,8 +12,9 @@ struct BoardSearchHitGroups: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
+        let groups = BoardSearch.grouped(hits)
         VStack(alignment: .leading, spacing: sectionSpacing) {
-            ForEach(BoardSearch.grouped(hits), id: \.dayKey) { group in
+            ForEach(groups, id: \.dayKey) { group in
                 VStack(alignment: .leading, spacing: rowSpacing) {
                     Text(DayKey.displayName(group.dayKey, locale: locale))
                         .font(DaybookType.caption.weight(.semibold))

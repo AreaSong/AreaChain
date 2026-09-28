@@ -120,19 +120,45 @@ enum BoardSearch {
         scope: BoardSearchScope = BoardSearchScope(),
         calendar: Calendar = .current
     ) -> [BoardSearchHit] {
-        let parsed = parseQuery(query)
-        guard !parsed.isEmpty else { return [] }
+        hits(
+            parseQuery(query),
+            todos: todos,
+            diaries: diaries,
+            routines: routines,
+            checks: checks,
+            todayKey: todayKey,
+            tagMap: tagMap,
+            privacy: privacy,
+            scope: scope,
+            calendar: calendar
+        )
+    }
 
-        let names = TagNameIndex(tagMap: tagMap, queryTags: parsed.tagNames)
+    /// 已解析查询的命中。调用方在同一次 body 里复用 `textKeywords` 时走这条，避免再 `parseQuery`。
+    static func hits(
+        _ query: BoardSearchQuery,
+        todos: [TodoSnapshot],
+        diaries: [DiarySnapshot],
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot] = [],
+        todayKey: String = DayKey.today(),
+        tagMap: [UUID: String] = [:],
+        privacy: BoardSearchPrivacy = BoardSearchPrivacy(),
+        scope: BoardSearchScope = BoardSearchScope(),
+        calendar: Calendar = .current
+    ) -> [BoardSearchHit] {
+        guard !query.isEmpty else { return [] }
+
+        let names = TagNameIndex(tagMap: tagMap, queryTags: query.tagNames)
         let routineDays = routineDisplayDays(
             routines, checks: checks, todayKey: todayKey, filter: scope.filter, calendar: calendar
         )
         let filteredTodos = todos.filter { matchesTodoScope($0, todayKey: todayKey, filter: scope.filter) }
         let filteredRoutines = routines.filter { routineDays[$0.id] != nil }
-        let found = todoHits(parsed, filteredTodos, names: names)
-            + diaryHits(parsed, filteredDiaries(diaries, filter: scope.filter), tagMap: tagMap, privacy: privacy)
-            + routineHits(parsed, filteredRoutines, dayKeys: routineDays, names: names)
-            + subtaskHits(parsed, todos, todayKey: todayKey, names: names, scope: scope)
+        let found = todoHits(query, filteredTodos, names: names)
+            + diaryHits(query, filteredDiaries(diaries, filter: scope.filter), names: names, tagMap: tagMap, privacy: privacy)
+            + routineHits(query, filteredRoutines, dayKeys: routineDays, names: names)
+            + subtaskHits(query, todos, todayKey: todayKey, names: names, scope: scope)
 
         return found.sorted {
             if $0.dayKey != $1.dayKey { return $0.dayKey > $1.dayKey }
@@ -216,12 +242,32 @@ enum BoardSearch {
     }
 
     static func matchesDiary(_ item: DiarySnapshot, query: BoardSearchQuery, tagMap: [UUID: String]) -> Bool {
-        guard item.deletedAt == nil, !query.hasPriority, query.remindMinutes == nil else { return false }
-        let names = TagIDList.parse(item.tagIDs).compactMap { tagMap[$0] }
+        matchesDiary(
+            item,
+            query: query,
+            names: TagNameIndex(tagMap: tagMap, queryTags: query.tagNames),
+            tagMap: tagMap
+        )
+    }
+
+    /// 含优先级或提醒的查询对手记整组无意义，调用方可以不建手记 snapshot。
+    static func omitsDiaries(_ query: BoardSearchQuery) -> Bool {
+        query.hasPriority || query.remindMinutes != nil
+    }
+
+    private static func matchesDiary(
+        _ item: DiarySnapshot,
+        query: BoardSearchQuery,
+        names: TagNameIndex,
+        tagMap: [UUID: String]
+    ) -> Bool {
+        guard item.deletedAt == nil, !omitsDiaries(query) else { return false }
+        let attachedNames = TagIDList.parse(item.tagIDs).compactMap { tagMap[$0] }
         guard query.textKeywords.allSatisfy({ keyword in
-            (item.isContentAvailable && matches(item.text, needle: keyword)) || names.contains { matches($0, needle: keyword) }
+            (item.isContentAvailable && matches(item.text, needle: keyword))
+                || attachedNames.contains { matches($0, needle: keyword) }
         }) else { return false }
-        return matchTags(tagNames: query.tagNames, attachedIDs: item.tagIDs, tagMap: tagMap)
+        return names.matchesAttached(item.tagIDs)
     }
 
     private static func matchesRecord(
@@ -272,10 +318,14 @@ enum BoardSearch {
     }
 
     private static func diaryHits(
-        _ query: BoardSearchQuery, _ diaries: [DiarySnapshot], tagMap: [UUID: String], privacy: BoardSearchPrivacy
+        _ query: BoardSearchQuery,
+        _ diaries: [DiarySnapshot],
+        names: TagNameIndex,
+        tagMap: [UUID: String],
+        privacy: BoardSearchPrivacy
     ) -> [BoardSearchHit] {
         return diaries.compactMap { item in
-            guard matchesDiary(item, query: query, tagMap: tagMap) else { return nil }
+            guard matchesDiary(item, query: query, names: names, tagMap: tagMap) else { return nil }
 
             return BoardSearchHit(
                 id: item.id,
@@ -332,10 +382,6 @@ enum BoardSearch {
                 )
             }
         }
-    }
-
-    private static func matchTags(tagNames: [String], attachedIDs: String, tagMap: [UUID: String]) -> Bool {
-        TagNameIndex(tagMap: tagMap, queryTags: tagNames).matchesAttached(attachedIDs)
     }
 
     /// 一次 `hits` 内共用规范化标签名，避免每条记录重复 `normalizedName`。

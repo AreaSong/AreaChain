@@ -57,6 +57,9 @@ struct SyntaxCandidate: Identifiable, Equatable, Sendable {
 
 /// 纯领域语法补全解析与计算引擎
 enum SyntaxAutocompleteEngine {
+    private static let triggerExpression = CompiledRegularExpression.make(
+        ##"(?<![^\s(\[（【])([#!@＃！＠])("(?:\\.|[^"\\\r\n])*"?|[\p{L}\p{M}\p{N}_:：.\-]*)$"##
+    )
     // MARK: - 触发检测 (Detection)
 
     static func detectTrigger(in text: String, cursorLocation: Int) -> SyntaxTrigger? {
@@ -65,9 +68,7 @@ enum SyntaxAutocompleteEngine {
         guard cursor > 0 else { return nil }
         guard !TagSyntax.protectedRanges(in: text).contains(where: { NSLocationInRange(cursor - 1, $0) }) else { return nil }
         let prefix = nsString.substring(to: cursor)
-        let pattern = ##"(?<![^\s(\[（【])([#!@＃！＠])("(?:\\.|[^"\\\r\n])*"?|[\p{L}\p{M}\p{N}_:：.\-]*)$"##
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: prefix, range: NSRange(location: 0, length: cursor)) else { return nil }
+        guard let match = triggerExpression.firstMatch(in: prefix, range: NSRange(location: 0, length: cursor)) else { return nil }
         let rawSymbol = nsString.substring(with: match.range(at: 1))
         let symbol: String
         switch rawSymbol {

@@ -223,7 +223,8 @@ struct WorkspaceFilteredListModel {
     }
 }
 
-/// 工作台搜索一次 body 求值内复用的命中。失效条件：query / 模型数组 / 全局筛选 / 今日键变化。
+/// 工作台搜索一次 body 求值内复用的命中。先 parseQuery，空查询不建 snapshot。
+/// 失效条件：query / 模型数组 / 全局筛选 / 今日键变化。
 @MainActor
 struct WorkspaceSearchSources {
     var todos: [TodoItem]
@@ -249,20 +250,27 @@ struct WorkspaceSearchPageModel {
         todayKey: String,
         locale: Locale
     ) -> WorkspaceSearchPageModel {
+        let parsed = BoardSearch.parseQuery(query)
+        guard !parsed.isEmpty else {
+            return WorkspaceSearchPageModel(hits: [], matchingAttachments: [])
+        }
         let tagMap = Dictionary(
             uniqueKeysWithValues: sources.tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }
         )
+        let skipDiaries = BoardSearch.omitsDiaries(parsed)
         let hits = BoardSearch.hits(
-            query: query,
+            parsed,
             todos: sources.todos.map(\.snapshot),
-            diaries: sources.diaries.map { DiaryContent.snapshot($0) },
+            diaries: skipDiaries ? [] : sources.diaries.map { DiaryContent.snapshot($0) },
             routines: sources.routines.map(\.snapshot),
             checks: sources.checks.compactMap(\.snapshot),
             todayKey: todayKey,
             tagMap: tagMap,
-            privacy: BoardSearchPrivacy.protected(
-                diaries: sources.diaries, tags: sources.tags, locale: locale
-            ),
+            privacy: skipDiaries
+                ? BoardSearchPrivacy()
+                : BoardSearchPrivacy.protected(
+                    diaries: sources.diaries, tags: sources.tags, locale: locale
+                ),
             scope: BoardSearchScope(filter: filter)
         )
         let owners = AttachmentAccess.ownerIndex(
@@ -270,7 +278,7 @@ struct WorkspaceSearchPageModel {
         )
         let matchingAttachments = sources.attachments
             .filter { AttachmentAccess.canBrowse($0, owners: owners, tags: sources.tags) }
-            .filter { WorkspaceAttachmentQuery.matches(filename: $0.filename, query: query) }
+            .filter { WorkspaceAttachmentQuery.matches(filename: $0.filename, keywords: parsed.textKeywords) }
         return WorkspaceSearchPageModel(hits: hits, matchingAttachments: matchingAttachments)
     }
 }

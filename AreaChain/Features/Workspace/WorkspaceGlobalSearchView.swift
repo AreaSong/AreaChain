@@ -146,26 +146,45 @@ struct WorkspaceGlobalSearchView: View {
     }
 
     private func openAttachment(_ attachment: AttachmentItem) {
-        if let target = WorkspaceAttachmentQuery.inspectionTarget(
-            ownerKind: attachment.ownerKind,
-            ownerID: attachment.ownerID,
-            todos: todos.map(\.snapshot),
-            routines: routines.map(\.snapshot),
-            todayKey: DayClock.shared.todayKey
-        ) {
-            navigation.inspectTask(target.id, dayKey: target.dayKey)
+        switch AttachmentOwner(rawValue: attachment.ownerKind) {
+        case .todo:
+            guard let todo = todos.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) else { return }
+            if let target = WorkspaceAttachmentQuery.inspectionTarget(
+                ownerKind: attachment.ownerKind,
+                ownerID: attachment.ownerID,
+                todos: [todo.snapshot],
+                routines: [],
+                todayKey: DayClock.shared.todayKey
+            ) {
+                navigation.inspectTask(target.id, dayKey: target.dayKey)
+            }
+        case .routine:
+            guard let routine = routines.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) else { return }
+            if let target = WorkspaceAttachmentQuery.inspectionTarget(
+                ownerKind: attachment.ownerKind,
+                ownerID: attachment.ownerID,
+                todos: [],
+                routines: [routine.snapshot],
+                todayKey: DayClock.shared.todayKey
+            ) {
+                navigation.inspectTask(target.id, dayKey: target.dayKey)
+            }
+        case .diary:
+            guard let entry = diaries.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) else { return }
+            DiaryWindows.shared.open(entry: entry, context: modelContext)
+        case nil:
             return
         }
-        guard attachment.ownerKind == AttachmentOwner.diary.rawValue,
-              let entry = diaries.first(where: { $0.id == attachment.ownerID && $0.deletedAt == nil }) else { return }
-        DiaryWindows.shared.open(entry: entry, context: modelContext)
     }
 }
 
 /// 文件名只吃文字关键词。标签、优先级和时刻留给事项结果，不要求出现在文件名里。
 enum WorkspaceAttachmentQuery {
     static func matches(filename: String, query: String) -> Bool {
-        let keywords = BoardSearch.parseQuery(query).textKeywords
+        matches(filename: filename, keywords: BoardSearch.parseQuery(query).textKeywords)
+    }
+
+    static func matches(filename: String, keywords: [String]) -> Bool {
         guard !keywords.isEmpty else { return false }
         return keywords.allSatisfy { BoardSearch.matches(filename, needle: $0) }
     }

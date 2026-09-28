@@ -14,7 +14,7 @@ struct MenuBarSearchResults: View {
     @Query private var diaries: [DiaryEntry]
     @Query private var tags: [TagItem]
     var body: some View {
-        let results = hits
+        let results = makeHits()
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Text("search.results.count \(results.count)")
@@ -47,16 +47,21 @@ struct MenuBarSearchResults: View {
         .accessibilityIdentifier("menubar.search.results")
     }
 
-    private var hits: [BoardSearchHit] {
+    private func makeHits() -> [BoardSearchHit] {
+        let parsed = BoardSearch.parseQuery(query)
+        guard !parsed.isEmpty else { return [] }
+        let skipDiaries = BoardSearch.omitsDiaries(parsed)
         return BoardSearch.hits(
-            query: query,
+            parsed,
             todos: todos.map(\.snapshot),
-            diaries: diaries.map { DiaryContent.snapshot($0) },
+            diaries: skipDiaries ? [] : diaries.map { DiaryContent.snapshot($0) },
             routines: routines.map(\.snapshot),
             checks: checks.compactMap(\.snapshot),
             todayKey: DayClock.shared.todayKey,
             tagMap: Dictionary(uniqueKeysWithValues: tags.filter { $0.deletedAt == nil }.map { ($0.id, $0.name) }),
-            privacy: BoardSearchPrivacy.protected(diaries: Array(diaries), tags: Array(tags), locale: locale),
+            privacy: skipDiaries
+                ? BoardSearchPrivacy()
+                : BoardSearchPrivacy.protected(diaries: Array(diaries), tags: Array(tags), locale: locale),
             scope: BoardSearchScope(filter: filter)
         )
     }
