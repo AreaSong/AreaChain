@@ -20,27 +20,10 @@ enum PrivacyStoreMaintenance {
         return FileManager.default.fileExists(atPath: marker(for: url).path)
     }
 
+    /// 只刷新界面。VACUUM 必须在下次冷启动、SwiftData 容器尚未打开时由 `Persistence.makeSession` 调用 `finish(at:)`。
     @MainActor static func request(_ context: ModelContext) {
-        guard let url = storeURL(context) else { return }
+        guard storeURL(context) != nil else { return }
         PrivacyVault.shared.changed()
-        Task.detached(priority: .utility) {
-            try? await Task.sleep(for: .milliseconds(350))
-            if (try? finish(at: url)) != nil {
-                await MainActor.run { PrivacyVault.shared.changed() }
-            }
-        }
-    }
-
-    @discardableResult
-    @MainActor static func performOnlineCleanupIfPossible(for context: ModelContext) -> Bool {
-        guard let url = storeURL(context), isPending(context) else { return false }
-        do {
-            try finish(at: url)
-            PrivacyVault.shared.changed()
-            return true
-        } catch {
-            return false
-        }
     }
 
     /// 只操作当前容器的已知库路径；不读取标记中的路径，也不清理用户的其他备份。

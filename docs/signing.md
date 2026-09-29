@@ -43,7 +43,8 @@ Xcode 可能为 ad-hoc 构建关闭 Hardened Runtime。本机模式会如实报�
 # 再次核对已有 Release 产物
 ./scripts/build.sh verify --configuration Release
 
-# 普通单测；不会继承真实钥匙串验收授权
+# 普通单测；不会继承真实钥匙串验收授权。仅此次 xcodebuild 使用 AreaChainTesting.entitlements
+#（测试宿主关闭沙盒以便写 derivedData/phase1-logs），不改日用应用签名。
 ./scripts/build.sh test
 ./scripts/build.sh test --only-testing AreaChainTests/PrivacyVaultTests
 

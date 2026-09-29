@@ -54,11 +54,6 @@ struct PrivacySettingsSection: View {
             }
             .environment(\.locale, locale)
         }
-        .task {
-            if PrivacyStoreMaintenance.isPending(context) && !attachments.contains(where: { $0.retiredStorageID != nil }) {
-                _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
-            }
-        }
     }
 
     private var vaultStateRow: some View {
@@ -110,13 +105,9 @@ struct PrivacySettingsSection: View {
                         .font(DaybookType.caption)
                         .foregroundStyle(DaybookPalette.text.secondary)
                 }
-                HStack(spacing: 8) {
-                    Button("privacy.cleanup.now") { retryCleanup() }
-                        .accessibilityIdentifier("privacy.cleanup.now")
-                        .systemPageMarker("privacy.cleanup.now")
-                        .buttonStyle(.bordered)
-                    Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
-                }
+                Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
+                    .accessibilityIdentifier("privacy.cleanup.quit")
+                    .systemPageMarker("privacy.cleanup.quit")
             }
         }
     }
@@ -221,9 +212,6 @@ struct PrivacySettingsSection: View {
         run {
             try await authenticate()
             try PrivacyAttachmentBatch.cleanup(attachments, context: context)
-            if PrivacyStoreMaintenance.isPending(context) {
-                _ = PrivacyStoreMaintenance.performOnlineCleanupIfPossible(for: context)
-            }
             vault.changed()
         }
     }

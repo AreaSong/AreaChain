@@ -175,8 +175,8 @@ enum Phase1IOScenarios {
             corpus: corpus,
             timing: timing,
             work: Phase1Work(rows: 1, fetchCalls: 0, computeWallMs: timing.wallMs),
-            extraCalls: ["passwordUnwraps": 2],
-            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。inspect+stage 各一次 unwrap。不含真实钥匙串。fetchCalls 未计。",
+            extraCalls: ["passwordUnwraps": 1],
+            notes: "独立 PrivacyFixture 小库导出再恢复，不是 100 条全图。恢复路径只 unwrap 一次。不含真实钥匙串。fetchCalls 未计。",
             memory: Phase1MemoryMark(
                 rssBefore: before.rss,
                 rssAfter: after.rss,

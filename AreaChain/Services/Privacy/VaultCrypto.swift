@@ -8,6 +8,13 @@ enum VaultCrypto {
     static let attachmentMagic = Data("ACPRIV1\n".utf8)
     static let maximumAttachmentBytes = 64 * 1_024 * 1_024
 
+    #if DEBUG
+    /// 仅测试：恢复路径应只 PBKDF2 unwrap 一次；夹具必须在 defer 里清掉。
+    nonisolated(unsafe) static var testingPasswordUnwraps = 0
+    /// 仅测试：卡在 PBKDF2 返回后、继续封装/解封之前。
+    nonisolated(unsafe) static var testingAfterKeyDerivation: (@Sendable () throws -> Void)?
+    #endif
+
     static func randomBytes(count: Int) throws -> Data {
         var bytes = Data(count: count)
         let status = bytes.withUnsafeMutableBytes {
@@ -35,6 +42,7 @@ enum VaultCrypto {
     }
 
     static func deriveKey(password: String, salt: Data, iterations: Int) throws -> SymmetricKey {
+        try PrivacyTask.checkCancellation()
         guard salt.count == 32, (600_000...5_000_000).contains(iterations),
               password.utf8.count <= 4_096 else { throw PrivacyError.corruptData }
         var passwordBytes = Array(password.utf8)
@@ -55,6 +63,10 @@ enum VaultCrypto {
         }
         guard status == kCCSuccess else { throw PrivacyError.corruptData }
         defer { derived.resetBytes(in: 0..<derived.count) }
+        #if DEBUG
+        try testingAfterKeyDerivation?()
+        #endif
+        try PrivacyTask.checkCancellation()
         return SymmetricKey(data: derived)
     }
 
@@ -67,6 +79,9 @@ enum VaultCrypto {
     }
 
     static func unwrap(_ slot: PasswordKeySlot, password: String, vaultID: UUID) throws -> Data {
+        #if DEBUG
+        testingPasswordUnwraps += 1
+        #endif
         let key = try deriveKey(password: password, salt: slot.salt, iterations: slot.iterations)
         do {
             let data = try open(slot.wrappedKey, key: key, context: "key:\(vaultID.uuidString)")

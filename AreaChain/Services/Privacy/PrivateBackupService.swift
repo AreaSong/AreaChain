@@ -36,13 +36,15 @@ enum PrivateBackupService {
         let token = environment.vault.generation
         let context = environment.context
         let baseline = try PrivateBackupCapture.capture(context: context, vault: environment.vault, readPrivateContent: false)
-        let manifest = try await inspect(url: url, password: password)
-        try SnapshotImportState(context: context).validate(manifest.snapshot, privateRestore: true)
-        let plan = try RestorePlan(manifest: manifest, context: context, vaultID: config.vaultID)
+        let opened = try await PrivacyTask.detached(priority: .userInitiated) {
+            try PrivateBackupFile.open(from: url, password: password)
+        }
+        try SnapshotImportState(context: context).validate(opened.manifest.snapshot, privateRestore: true)
+        let plan = try RestorePlan(manifest: opened.manifest, context: context, vaultID: config.vaultID)
         let store = environment.attachments
         let root = environment.root
         try await PrivacyTask.detached(priority: .userInitiated) {
-            try plan.stage(from: url, password: password, store: store, root: root)
+            try plan.stage(opened: opened, from: url, store: store, root: root)
         }
         var committed = false
         do {
@@ -51,7 +53,7 @@ enum PrivateBackupService {
             guard environment.vault.isUnlocked, environment.vault.generation == token,
                   current.sourceDigest == baseline.sourceDigest else { throw PrivacyError.staleOperation }
             if !plan.privateDiaries.isEmpty { try PrivacyStoreMaintenance.mark(context) }
-            try SnapshotImporter.applyDecryptedBackup(manifest.snapshot, context: context, prepare: { context in
+            try SnapshotImporter.applyDecryptedBackup(opened.manifest.snapshot, context: context, prepare: { context in
                 try plan.apply(context: context, vault: environment.vault)
             }, save: save)
             committed = true
@@ -111,12 +113,12 @@ private struct RestorePlan: Sendable {
         files = planned
     }
 
-    func stage(from url: URL, password: String, store: AttachmentStore, root: URL?) throws {
+    func stage(opened: PrivateBackupFile.Opened, from url: URL, store: AttachmentStore, root: URL?) throws {
         do {
             try PrivacyTask.checkCancellation()
             let folder = root ?? store.directory()
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            let checked = try PrivateBackupFile.read(from: url, password: password) { id, bytes in
+            let checked = try PrivateBackupFile.readAttachments(from: url, opened: opened) { id, bytes in
                 guard let file = files[id] else { throw PrivacyError.corruptData }
                 let stored = file.isPrivate
                     ? try PrivateAttachments.encode(bytes, attachmentID: id, ownerID: file.ownerID, vaultID: vaultID, keys: store.keys)

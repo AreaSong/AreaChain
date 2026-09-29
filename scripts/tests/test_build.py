@@ -90,6 +90,10 @@ class BuildCommandTests(unittest.TestCase):
                      if item.startswith("TEST_RUNNER_AREACHAIN_PHASE1_LOG_DIR=")]
         self.assertEqual(len(forwarded), 1)
         self.assertTrue(forwarded[0].endswith("/phase1-logs"))
+        entitlements = [item for item in self.xcode_call()["args"]
+                        if item.startswith("CODE_SIGN_ENTITLEMENTS=")]
+        self.assertEqual(entitlements, ["CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChainTesting.entitlements"])
+        self.assertIn("ENABLE_APP_SANDBOX=NO", self.xcode_call()["args"])
 
     def test_test_filters_are_forwarded_as_individual_arguments(self):
         result = self.invoke("test", "--only-testing", "AreaChainTests/PrivacyVaultTests",

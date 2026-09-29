@@ -8,6 +8,14 @@ enum PrivateBackupFile {
         var id: UUID
         var password: PasswordKeySlot
     }
+
+    /// 口令只派生一次；后续附件帧用同一对称密钥打开，不再走 PBKDF2。
+    struct Opened: Sendable {
+        let id: UUID
+        let manifest: PrivateBackupManifest
+        let key: SymmetricKey
+    }
+
     static let magic = Data("ACBACKUP1\n".utf8)
     private static let manifestLimit = 16 * 1_024 * 1_024
 
@@ -68,30 +76,56 @@ enum PrivateBackupFile {
 
     static func read(from url: URL, password: String,
                      attachment: (UUID, Data) throws -> Void = { _, _ in }) throws -> PrivateBackupManifest {
+        try readAttachments(from: url, opened: try open(from: url, password: password), attachment: attachment)
+    }
+
+    static func open(from url: URL, password: String) throws -> Opened {
         try PrivacyTask.checkCancellation()
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
-        guard try exact(handle, count: magic.count) == magic else { throw PrivacyError.corruptData }
-        let header = try JSONDecoder().decode(Header.self, from: readFrame(handle, limit: 65_536))
-        guard header.version == 1 else { throw PrivacyError.unsupportedVersion }
+        let header = try readHeader(handle)
         let keyData = try VaultCrypto.unwrap(header.password, password: password, vaultID: header.id)
         try PrivacyTask.checkCancellation()
         let key = SymmetricKey(data: keyData)
+        let manifest = try readManifest(handle, header: header, key: key)
+        return Opened(id: header.id, manifest: manifest, key: key)
+    }
+
+    static func readAttachments(from url: URL, opened: Opened,
+                                attachment: (UUID, Data) throws -> Void) throws -> PrivateBackupManifest {
+        try PrivacyTask.checkCancellation()
+        let handle = try FileHandle(forReadingFrom: url)
+        defer { try? handle.close() }
+        let header = try readHeader(handle)
+        guard header.version == 1, header.id == opened.id else { throw PrivacyError.corruptData }
+        let manifest = try readManifest(handle, header: header, key: opened.key)
+        guard manifest == opened.manifest else { throw PrivacyError.staleOperation }
+        for file in manifest.files {
+            try PrivacyTask.checkCancellation()
+            let sealed = try readFrame(handle, limit: VaultCrypto.maximumAttachmentBytes + 28)
+            guard sealed.count == file.byteCount + 28 else { throw PrivacyError.corruptData }
+            let data = try VaultCrypto.open(sealed, key: opened.key, context: "backup:\(header.id):attachment:\(file.id)")
+            guard Data(SHA256.hash(data: data)) == file.digest else { throw PrivacyError.corruptData }
+            try attachment(file.id, data)
+        }
+        guard (try handle.read(upToCount: 1))?.isEmpty != false else { throw PrivacyError.corruptData }
+        return manifest
+    }
+
+    private static func readHeader(_ handle: FileHandle) throws -> Header {
+        guard try exact(handle, count: magic.count) == magic else { throw PrivacyError.corruptData }
+        let header = try JSONDecoder().decode(Header.self, from: readFrame(handle, limit: 65_536))
+        guard header.version == 1 else { throw PrivacyError.unsupportedVersion }
+        return header
+    }
+
+    private static func readManifest(_ handle: FileHandle, header: Header, key: SymmetricKey) throws -> PrivateBackupManifest {
         let sealedManifest = try readFrame(handle, limit: manifestLimit + 28)
         let raw = try VaultCrypto.open(sealedManifest, key: key, context: "backup:\(header.id):manifest")
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = ExportDates.decodeStrategy()
         let manifest = try decoder.decode(PrivateBackupManifest.self, from: raw)
         try manifest.validate()
-        for file in manifest.files {
-            try PrivacyTask.checkCancellation()
-            let sealed = try readFrame(handle, limit: VaultCrypto.maximumAttachmentBytes + 28)
-            guard sealed.count == file.byteCount + 28 else { throw PrivacyError.corruptData }
-            let data = try VaultCrypto.open(sealed, key: key, context: "backup:\(header.id):attachment:\(file.id)")
-            guard Data(SHA256.hash(data: data)) == file.digest else { throw PrivacyError.corruptData }
-            try attachment(file.id, data)
-        }
-        guard (try handle.read(upToCount: 1))?.isEmpty != false else { throw PrivacyError.corruptData }
         return manifest
     }
 
