@@ -48,6 +48,7 @@ struct SettingsView: View {
                 calendarSyncStatusText: calendarSyncStatusText,
                 onRequestNotifyAuth: requestNotificationAuth
             )
+            ProjectSupportSections()
         }
         .formStyle(.grouped)
         .daybookScroll()

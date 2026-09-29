@@ -34,6 +34,8 @@ struct DataBackupRenderingTests {
         let settings = try await page(SettingsView(resignsChromeOnDisappear: false), container: container, appearance: appearance, size: size)
         #expect(settings.contains("settings.preferences"))
         #expect(settings.contains("settings.language") && settings.contains("settings.icloud"))
+        #expect(settings.contains("project.version") && settings.contains("project.support.issue"))
+        #expect(settings.contains("project.support.boundary") && settings.contains("project.about.summary"))
         #expect(settings.isDisjoint(with: forbiddenOnSettings))
         let privacy = try await page(PrivacyUnlockSettingsView(vault: vault), container: container, appearance: appearance, size: size)
         #expect(privacy.contains("privacy.unlock.settings"))
@@ -84,7 +86,8 @@ struct DataBackupRenderingTests {
         let ids = SystemPageHost.identifiers(in: window)
         try SystemPageHost.assertContained(
             Array(ids.filter {
-                $0.hasPrefix("settings.") || $0.hasPrefix("privacy.") || $0.hasPrefix("dataBackup.") || $0 == "data.backup.page"
+                $0.hasPrefix("settings.") || $0.hasPrefix("privacy.") || $0.hasPrefix("dataBackup.")
+                    || $0.hasPrefix("project.") || $0 == "data.backup.page"
             }),
             in: window
         )

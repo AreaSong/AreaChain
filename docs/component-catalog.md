@@ -69,6 +69,7 @@
 | 附件拥有者 | `AttachmentAccess`、`AttachmentOwnerIndex` | [DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift) | 回收站/浏览按 owner key 走 context predicate；工作台搜索拥有者仍用整表清单建索引，附件只 `@Query` 活行。选图/保存走同一套 id descriptor。重复 UUID 不可用。不能用「未删除 ID 集合」替代 `isSingleLive`。 |
 | 事务和通知 | `ModelChanges` | [ModelChanges.swift](../AreaChain/Services/ModelChanges.swift) | 保存成功后才发布变更；失败保留草稿和用户上下文。 |
 | 窗口路由 | `AppWindows`、`DiaryWindows` | [AppWindows.swift](../AreaChain/Services/AppWindows.swift)、[DiaryWindows.swift](../AreaChain/Features/Diary/DiaryWindows.swift) | 工作台、菜单栏和手记小窗沿既有激活/复用策略，不新增平行窗口装配。 |
+| 项目支持 | `ProjectSupport` | [ProjectSupport.swift](../AreaChain/Domain/ProjectSupport.swift) | 版本、使用说明、问题报告、功能建议、仓库和许可证链接只用这一份。问题报告只含应用版本、构建号、macOS 版本和界面语言，不接收手记、附件或密码。 |
 
 ## 5. 新组件决策清单
 

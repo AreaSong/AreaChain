@@ -1,0 +1,38 @@
+name: 问题报告
+description: 报告可以复现的功能问题
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请先在应用里打开「设置 → 支持 → 报告问题」。应用会把环境信息复制到剪贴板。
+        把复制的内容粘贴到下面的环境字段，问题写在单独的字段里。
+        不要贴手记正文、附件、密码、日历标题或备份口令。
+  - type: textarea
+    id: environment
+    attributes:
+      label: 环境信息
+      description: 粘贴应用复制的环境信息。无法打开应用时，按占位格式手写。
+      placeholder: |
+        ### 环境 / Environment
+        App 版本 / App version:
+        macOS:
+        界面语言 / Interface language:
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: 问题
+      description: 实际发生了什么，以及你期望发生什么。不要包含手记正文、附件或密码。
+    validations:
+      required: true
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: 提交确认
+      options:
+        - label: 我没有贴手记正文、附件、密码、日历标题或备份口令
+          required: true

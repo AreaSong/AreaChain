@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 使用说明
+    url: https://github.com/AreaSong/AreaChain/discussions/categories/q-a
+    about: 怎么用、快捷键、隐私和备份。不要贴手记正文、附件或密码。
+  - name: 功能建议
+    url: https://github.com/AreaSong/AreaChain/discussions/categories/ideas
+    about: 功能改进和交互建议。不要贴手记正文、附件或密码。
