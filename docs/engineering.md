@@ -216,8 +216,9 @@
 
 ## PHASE-6 授权补证（2026-09-29）
 
-获准后补合成进程杀死与隔离真实钥匙串，仍不覆盖日用应用、不读真实手记：
+获准后补合成进程杀死、隔离真实钥匙串，以及同身份日用 Debug 安装；仍不读真实手记，不杀日用进程做 VACUUM SIGKILL：
 
 - `PrivacyStoreMaintenanceTests.killedExternalVacuumLeavesStoreReadableAndFinishSucceeds` 对独立 `/usr/bin/sqlite3 VACUUM` 发 SIGKILL：进程须仍在运行时被杀死，合成库可读，随后 `finish` 成功。sidecar 标记不是库文件，VACUUM 不得删掉它。进程内 VACUUM 中途中断由进度回调覆盖（`vacuumInterruptLeavesMarkerAndRetrySucceeds` / `vacuumCancelDuringStatementLeavesMarker`）。不是杀死 `/Applications/AreaChain.app`。
-- 隔离 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa`、`build/PrivacyQA-keychain`，`SystemVaultIntegrationTests` 分阶段 `create` / `read` / `cancel-read` / `rebuild-read`（`CURRENT_PROJECT_VERSION=2`）/ `cleanup` 均通过。授权变量必须出现在 xcodebuild 进程环境（含 `TEST_RUNNER_` 前缀映射），只写成 build setting 仍会 skip。条目使用随机 UUID 服务名，不读写日用私密锁。
-- 未执行 `scripts/install.sh`：日用 `/Applications/AreaChain.app` 当时正在运行；测试产物曾关闭沙盒，`--dry-run` 拒绝安装；安装脚本不备份用户数据。未修改个人签名配置，未加 `--allow-provisioning`。
+- 隔离 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa`、`build/PrivacyQA-keychain`，`SystemVaultIntegrationTests` 分阶段 `create` / `read` / `cancel-read` / `rebuild-read`（`CURRENT_PROJECT_VERSION=2`）/ `cleanup` 均通过。授权变量必须出现在 xcodebuild 进程环境（含 `TEST_RUNNER_` 前缀映射），只写成 build setting 仍会 skip。条目使用随机 UUID 服务名，不读写日用私密锁。覆盖 `CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements` 会丢掉钥匙串访问组并得到 `errSecMissingEntitlement (-34018)`；须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`。
+- 2026-09-29 12:09–12:11 本轮重跑钥匙串：`RUN_ID=FD91734C-81FE-43E3-974B-349A1ACB1745`。`create` / `read`（37s）/ `cancel-read`（重试，`OSStatus=-128`）/ `rebuild-read`（`bundleVersion=2`，9s）/ `cleanup` 通过。第一次 `cancel-read` 因认证通过而失败（夹具要求用户点取消），不能把超时或误通过写成用户取消。
+- 同日安装：先 `./scripts/build.sh` 得到开启沙盒的 `com.areachain.app` Debug，再 `./scripts/install.sh --yes --no-build`。测试产物关沙盒时 `--dry-run` 会拒绝。安装脚本不备份用户数据（`dataBackupCreated: false`）；本体回退在 `AreaChain-InstallBackups/install-20260929T041203Z-i8zbja7o`。`launchRequested: true`，`runtimeVerified: false`。未修改个人签名配置，未加 `--allow-provisioning`。日用私密锁 `com.areachain.app` 未做钥匙串分阶段验收。
