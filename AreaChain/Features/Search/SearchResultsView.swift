@@ -1,7 +1,7 @@
 import SwiftData
 import SwiftUI
 
-/// 工作台与菜单栏共用结果展示，私密正文仍由 BoardSearch 在生成命中项前遮罩。
+/// 菜单栏搜索结果：打开任务走日历检查器。工作台顶栏用 `BoardSearchHitGroups` 就地打开，不走这条路由。
 struct SearchResultsView: View {
     var hits: [BoardSearchHit]
     @Environment(\.modelContext) private var context

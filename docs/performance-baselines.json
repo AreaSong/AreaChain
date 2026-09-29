@@ -77,8 +77,8 @@
       "metric": "wall_ms",
       "budget": 200,
       "status": "provisional",
-      "source": "AreaChainTests/Domain/DayBoardPageProjectionTests.swift:146",
-      "note": "Debug、UTC、40 个习惯加待办；热身 1 次后对一次 Source+投影 与 8 次重复 snapshot/openBoard 扫描各 3 次取样取中位数。不是列表滚动或输入的原生帧率。"
+      "source": "AreaChainTests/Domain/DayBoardPageProjectionTests.swift:207",
+      "note": "Debug、UTC、40 个习惯加待办；热身 1 次后对一次 Source+投影 与 8 次重复 snapshot/open 扫描各 3 次取样取中位数。不是列表滚动或输入的原生帧率。"
     },
     {
       "id": "dashboard-heatmap-365",
@@ -111,7 +111,7 @@
       "budget": 200,
       "status": "provisional",
       "source": "AreaChainTests/Domain/CatalogSearchEquivalenceTests.swift:254",
-      "note": "Debug、UTC、20 个习惯、约 1000 个民事日、稀疏 done/skip；热身 1 次后对索引 hits 与冻结的按习惯重建逾期索引各 3 次取样取中位数，并要求索引不慢于对照加 50ms。局部 wall_ms 上限，不是搜索页原生交互证据。"
+      "note": "Debug、UTC、20 个习惯、约 1000 个民事日、稀疏 done/skip；热身 1 次后对索引 hits 与冻结的按习惯重建逾期索引各 3 次取样取中位数，并要求索引不慢于对照加 50ms。局部 wall_ms 上限，不是工作台顶栏或菜单栏底栏的原生交互证据。"
     },
     {
       "id": "catalog-listed-routines-40x365",

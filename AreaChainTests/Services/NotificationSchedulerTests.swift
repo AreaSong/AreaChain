@@ -295,6 +295,26 @@ struct NotificationSchedulerTests {
         #expect(scheduler.appliedWriteCount == 2)
     }
 
+    @Test func authorizationErrorStillRefreshesCatalog() async throws {
+        let container = try container()
+        let todo = TodoItem(title: "仍排程", dayKey: todayKey, remindMinutes: 9 * 60)
+        container.mainContext.insert(todo)
+        try container.mainContext.save()
+        let center = FakeReminderNotifications()
+        center.authorizationError = CocoaError(.fileReadNoPermission)
+        let scheduler = makeScheduler(container: container, center: center, debounce: .zero)
+        scheduler.start()
+        try await wait(scheduler, refreshes: 1)
+        #expect(center.addCount == 1)
+        let refreshes = scheduler.completedRefreshCount
+        let adds = center.addCount
+        await scheduler.requestAuthorizationAndRefresh()
+        #expect(center.authorizationCount == 1)
+        #expect(scheduler.completedRefreshCount == refreshes + 1)
+        #expect(center.addCount == adds)
+        #expect(center.pending.map(\.title) == ["仍排程"])
+    }
+
     private func container() throws -> ModelContainer {
         try ModelContainer(
             for: Schema(AreaChainSchema.models),

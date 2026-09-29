@@ -229,9 +229,9 @@ struct DayBoardPageProjectionTests {
         var yesterdayIDs: [UUID] = []
         for _ in 0..<8 {
             let snapshots = (routines, checks, todos)
-            todayVisibleIDs = DayBoardLogic.openBoardItems(
+            todayVisibleIDs = mixedOpenIDs(
                 routines: snapshots.0, checks: snapshots.1, todos: snapshots.2, dayKey: today
-            ).map(\.modelID)
+            )
             yesterdayIDs = DayBoardLogic.yesterdayUnfinished(
                 routines: snapshots.0, checks: snapshots.1, todos: snapshots.2, yesterdayKey: yesterday
             ).map(\.id)
@@ -249,6 +249,19 @@ struct DayBoardPageProjectionTests {
             _ = calendar
         }
         return NaivePageAccess(todayVisibleIDs: todayVisibleIDs, yesterdayIDs: yesterdayIDs)
+    }
+
+    private func mixedOpenIDs(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        dayKey: String
+    ) -> [UUID] {
+        let openTodos = DayBoardLogic.openTodos(todos: todos, dayKey: dayKey)
+        let openRoutines = DayBoardLogic.openRoutines(routines: routines, checks: checks, dayKey: dayKey)
+        let entries = openTodos.map { (BoardItemReference.todo($0.id), $0.boardSortKey) }
+            + openRoutines.map { (BoardItemReference.recurring($0.id), $0.boardSortKey) }
+        return entries.sorted { Classification.precedes($0.1, $1.1) }.map(\.0.modelID)
     }
 
     private func elapsedSeconds(_ work: () -> Void) -> TimeInterval {

@@ -153,26 +153,6 @@ struct TasksPage: View {
         )
     }
 
-    var pageSnapshot: DayBoardPageSnapshot {
-        DayBoardPageProjection.project(
-            source: DayBoardSource(routines: routines, checks: checks, todos: todos),
-            todayKey: todayKey,
-            yesterdayKey: yesterdayKey,
-            filter: effectiveFilter
-        )
-    }
-
-    var untaggedTodosCount: Int { pageSnapshot.untaggedOpenTodoCount }
-    var totalOpenTodosCount: Int { pageSnapshot.totalOpenTodoCount }
-    var yesterdayItems: [UnfinishedItem] { pageSnapshot.yesterdayItems }
-    var upcomingModels: [TodoItem] {
-        let byID = Dictionary(todos.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        return pageSnapshot.upcomingTodos.compactMap { byID[$0.id] }
-    }
-    var todayBundleIDs: [String] { pageSnapshot.todayBundleIDs }
-    var todayVisibleIDs: [UUID] { pageSnapshot.todayVisibleIDs }
-    var isTodayEmpty: Bool { pageSnapshot.isTodayEmpty }
-
     private func dayBoardView(_ page: TasksPageViewModel) -> some View {
         DayBoardList(
             dayKey: todayKey,

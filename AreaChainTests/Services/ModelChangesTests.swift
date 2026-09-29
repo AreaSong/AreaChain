@@ -110,10 +110,82 @@ struct ModelChangesTests {
         let allowed = TodoItem(title: "匹配", dayKey: "2026-09-10", tagIDs: tag.uuidString)
         let hidden = TodoItem(title: "不匹配", dayKey: "2026-09-10")
         let future = TodoItem(title: "未来不匹配", dayKey: "2026-09-12")
-        let page = TasksPage(todayKey: "2026-09-11", routines: [], checks: [], todos: [allowed, hidden, future],
-                             config: TasksPageConfig(externalFilter: .constant(BoardFilter(tagID: tag))))
+        let page = snapshot(
+            todayKey: "2026-09-11",
+            todos: [allowed, hidden, future],
+            filter: BoardFilter(tagID: tag)
+        )
         #expect(page.yesterdayItems.map(\.id) == [allowed.id])
-        #expect(page.upcomingModels.isEmpty)
+        #expect(page.upcomingTodos.isEmpty)
+    }
+
+    @Test func afterTransactionRollbackRunsWhenSaveFails() throws {
+        let container = try container()
+        defer { withExtendedLifetime(container) {} }
+        let context = container.mainContext
+        let todo = TodoItem(title: "原文", dayKey: "2026-09-11")
+        context.insert(todo)
+        try context.save()
+        let tasks = SwiftDataTaskRepository(context: context)
+        var committed = 0
+        var rolled = 0
+        var notifications = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: .boardDidChange, object: nil, queue: .main
+        ) { _ in notifications += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        #expect(throws: CocoaError.self) {
+            try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
+                ModelChanges.afterTransaction(in: context, commit: { committed += 1 }, rollback: { rolled += 1 })
+                try tasks.updateTodo(id: todo.id, title: "新标题", notes: nil)
+            }
+        }
+        #expect(committed == 0)
+        #expect(rolled == 1)
+        #expect(notifications == 0)
+        #expect(todo.title == "原文")
+    }
+
+    @Test func afterTransactionCommitFailureStillPublishesBoardChange() throws {
+        let container = try container()
+        defer { withExtendedLifetime(container) {} }
+        let context = container.mainContext
+        let todo = TodoItem(title: "原文", dayKey: "2026-09-11")
+        context.insert(todo)
+        try context.save()
+        let tasks = SwiftDataTaskRepository(context: context)
+        var notifications = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: .boardDidChange, object: nil, queue: .main
+        ) { _ in notifications += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        let failures = MutationFeedback.shared.failureCount
+        try ModelChanges.transaction(in: context) {
+            ModelChanges.afterTransaction(
+                in: context,
+                commit: { throw CocoaError(.fileWriteNoPermission) },
+                rollback: {}
+            )
+            try tasks.updateTodo(id: todo.id, title: "已保存", notes: nil)
+        }
+        #expect(notifications == 1)
+        #expect(MutationFeedback.shared.failureCount == failures + 1)
+        #expect(try ModelContext(context.container).fetch(FetchDescriptor<TodoItem>()).first?.title == "已保存")
+    }
+
+    private func snapshot(
+        todayKey: String,
+        todos: [TodoItem],
+        routines: [DailyRoutine] = [],
+        checks: [RoutineCheck] = [],
+        filter: BoardFilter = BoardFilter()
+    ) -> DayBoardPageSnapshot {
+        DayBoardPageProjection.project(
+            source: DayBoardSource(routines: routines, checks: checks, todos: todos),
+            todayKey: todayKey,
+            yesterdayKey: DayKey.shifted(todayKey, by: -1),
+            filter: filter
+        )
     }
 
     private func png() throws -> Data {

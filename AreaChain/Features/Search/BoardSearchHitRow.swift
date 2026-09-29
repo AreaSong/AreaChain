@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 按日分组的搜索命中。搜索页、菜单栏和工作台共用分组，打开方式和行外观由调用方决定。
+/// 按日分组的搜索命中。工作台顶栏和菜单栏底栏共用分组，打开方式和行外观由调用方决定。
 struct BoardSearchHitGroups: View {
     var hits: [BoardSearchHit]
     var presentation: BoardSearchHitRow.Presentation = .list

@@ -40,17 +40,17 @@ struct TasksPageFilterHeaderTests {
         let todos = [yesterday, today, future]
         let overdue = page(todos: todos, routines: [habit], scope: .overdue)
         #expect(overdue.yesterdayItems.map(\.id) == [habit.id, yesterday.id])
-        #expect(overdue.upcomingModels.isEmpty)
+        #expect(overdue.upcomingTodos.isEmpty)
         #expect(overdue.todayVisibleIDs.isEmpty)
 
         let todayOnly = page(todos: todos, routines: [habit], scope: .today)
         #expect(todayOnly.yesterdayItems.isEmpty)
-        #expect(todayOnly.upcomingModels.isEmpty)
+        #expect(todayOnly.upcomingTodos.isEmpty)
         #expect(todayOnly.todayVisibleIDs == [today.id])
 
         let upcoming = page(todos: todos, routines: [habit], scope: .upcoming)
         #expect(upcoming.yesterdayItems.isEmpty)
-        #expect(upcoming.upcomingModels.map(\.id) == [future.id])
+        #expect(upcoming.upcomingTodos.map(\.id) == [future.id])
         #expect(upcoming.todayVisibleIDs.isEmpty)
     }
 
@@ -58,13 +58,12 @@ struct TasksPageFilterHeaderTests {
         todos: [TodoItem],
         routines: [DailyRoutine],
         scope: DateFilterScope
-    ) -> TasksPage {
-        TasksPage(
+    ) -> DayBoardPageSnapshot {
+        DayBoardPageProjection.project(
+            source: DayBoardSource(routines: routines, checks: [], todos: todos),
             todayKey: "2026-09-11",
-            routines: routines,
-            checks: [],
-            todos: todos,
-            config: TasksPageConfig(externalFilter: .constant(BoardFilter().withDateScope(scope)))
+            yesterdayKey: "2026-09-10",
+            filter: BoardFilter().withDateScope(scope)
         )
     }
 }

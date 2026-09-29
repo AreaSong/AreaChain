@@ -81,15 +81,13 @@ struct BoardFilterBarTests {
         context.insert(todoUnclassified)
         try context.save()
 
-        let page = TasksPage(
+        let page = snapshot(
             todayKey: today,
-            routines: [],
-            checks: [],
             todos: [todo1, todo2, todoDone, todo3, todoUnclassified]
         )
 
-        #expect(page.totalOpenTodosCount == 3)
-        #expect(page.untaggedTodosCount == 3)
+        #expect(page.totalOpenTodoCount == 3)
+        #expect(page.untaggedOpenTodoCount == 3)
     }
 
     @Test func footerBarOmitsProjectFilter() {
@@ -157,5 +155,20 @@ struct BoardFilterBarTests {
         #expect(tags.first { $0.id == tagID.uuidString }?.isSelected == true)
         #expect(tags.contains { $0.id == BoardFilter.noneID.uuidString })
         #expect(BoardFilterChoices.markedTagTitle(tags.first { $0.id == tagID.uuidString }!) == "#日记")
+    }
+
+    private func snapshot(
+        todayKey: String,
+        todos: [TodoItem],
+        routines: [DailyRoutine] = [],
+        checks: [RoutineCheck] = [],
+        filter: BoardFilter = BoardFilter()
+    ) -> DayBoardPageSnapshot {
+        DayBoardPageProjection.project(
+            source: DayBoardSource(routines: routines, checks: checks, todos: todos),
+            todayKey: todayKey,
+            yesterdayKey: DayKey.shifted(todayKey, by: -1),
+            filter: filter
+        )
     }
 }

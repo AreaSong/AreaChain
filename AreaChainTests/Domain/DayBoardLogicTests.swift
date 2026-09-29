@@ -295,13 +295,10 @@ struct DayBoardLogicTests {
             sourceBundleID: "com.apple.Safari"
         )
         let other = TodoSnapshot(id: UUID(), title: "别的", isDone: false, dayKey: today)
-        let filtered = DayBoardLogic.matchingTodos(
-            [tagged, other],
-            filter: BoardFilter(tagID: tagID)
-        )
+        let filtered = [tagged, other].filter { Classification.matches($0.classifyBits, filter: BoardFilter(tagID: tagID)) }
         #expect(filtered.map(\.title) == ["带标签的"])
         #expect(
-            DayBoardLogic.matchingTodos([tagged, other], filter: BoardFilter(bundleID: "com.apple.Safari"))
+            [tagged, other].filter { Classification.matches($0.classifyBits, filter: BoardFilter(bundleID: "com.apple.Safari")) }
                 .map(\.title) == ["带标签的"]
         )
     }
@@ -327,7 +324,10 @@ struct DayBoardLogicTests {
             isImportant: true,
             isUrgent: true
         )
-        #expect(DayBoardLogic.sortedForBoard([rest, both]).map(\.title) == ["又重要又紧急", "其余"])
+        #expect(
+            [rest, both].sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }.map(\.title)
+                == ["又重要又紧急", "其余"]
+        )
     }
 
     @Test func diarySnapshotPreservesTagsAndPinnedState() {

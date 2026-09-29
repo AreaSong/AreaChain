@@ -107,7 +107,7 @@
 
 - 日历协调通过代次与串行合并处理取消/迟到结果，局部提交失败保留基线供重试；相关 [CalendarSyncEngineTests](../AreaChainTests/Services/CalendarSyncEngineTests.swift) 使用 fake 外部服务，不证明真实 EventKit 写入。
 - 草稿、窗口、附件已有生命周期/失败测试；普通测试仍跳过 400ms 驻留，[PendingCompletionTimingTests](../AreaChainTests/Features/PendingCompletionTimingTests.swift) 关闭跳过后覆盖单次、批量与减弱动态效果时序。这仍不是真人勾选的生产动画验收。
-- [TaskRowInteractionTests](../AreaChainTests/Features/TaskRowInteractionTests.swift) 有行回调 100ms 阈值，[DayBoardPageProjectionTests](../AreaChainTests/Domain/DayBoardPageProjectionTests.swift) 有 40 个习惯加待办的页面投影 200ms 阈值（Debug、UTC、热身后 3 次取样取中位数），[HabitStreakEmpiricalTests](../AreaChainTests/Domain/HabitStreakEmpiricalTests.swift) 有 1000 天连续打卡 200ms 阈值（Debug、UTC、热身后 3 次取样取中位数），[HabitStreakEquivalenceTests](../AreaChainTests/Domain/HabitStreakEquivalenceTests.swift) 另有 10000 天空稀疏对照 NaiveCursor 的 200ms 上限；连击索引的产品 RSS 未建立。[LifecycleBaselineTests](../AreaChainTests/Services/LifecycleBaselineTests.swift) 另有空库打开 3000ms、2000 条重开 5000ms、合成加密恢复 8000ms，以及 2000 条重开时测试进程 RSS 安全网与 8 次重开增长上限。它们都是 `provisional`。RSS 条目测量的是 Debug 测试进程，不是独立 App 峰值；XCTest 下 AppDelegate 会提前返回，因此也不是 NSApplication 完整冷启动。
+- [TaskRowInteractionTests](../AreaChainTests/Features/TaskRowInteractionTests.swift) 有行回调 100ms 阈值，[DayBoardPageProjectionTests](../AreaChainTests/Domain/DayBoardPageProjectionTests.swift) 有 40 个习惯加待办的页面投影 200ms 阈值（Debug、UTC、热身后 3 次取样取中位数），[HabitStreakEmpiricalTests](../AreaChainTests/Domain/HabitStreakEmpiricalTests.swift) 有 1000 天连续打卡 200ms 阈值（Debug、UTC、热身后 3 次取样取中位数），[HabitStreakEquivalenceTests](../AreaChainTests/Domain/HabitStreakEquivalenceTests.swift) 另有 10000 天空稀疏对照 NaiveCursor 的 200ms 上限；连击索引的产品 RSS 未建立。[LifecycleBaselineTests](../AreaChainTests/Services/LifecycleBaselineTests.swift) 另有空库打开 3000ms、2000 条重开 5000ms、合成加密恢复 8000ms，以及 2000 条重开时测试进程 RSS 安全网与 8 次重开增长上限。它们都是 `provisional`。RSS 条目测量的是 Debug 测试进程，不是独立 App 峰值；XCTest 下 AppDelegate 会提前返回，因此也不是 NSApplication 完整冷启动。已登记的局部 ID（含 `agenda-overdue-routines-1000-days`、`dayboard-month-unfinished`、`dashboard-heatmap-365`、`board-search-overdue-20x1000`、`catalog-listed-routines-40x365`）以 [`docs/performance-baselines.json`](performance-baselines.json) 为准，本段不另写预算。
 - [NotificationScheduler](../AreaChain/Services/NotificationScheduler.swift) 的排程日志当前只保留请求标识、目录计数、授权状态和错误 domain/code，不输出任务标题、提醒分钟、具体触发时刻或原始错误描述；这不替代日志保留策略审查和完整安全审计。
 
 ### 诊断与反馈的方法
@@ -124,8 +124,8 @@
 
 本批主要修改规则、文档、技能引用和本地检查器，并修复 `NotificationScheduler` 的敏感日志字段；签名配置、构建/安装实现和数据模型保持不动。交接中的 173 项 AppKit 样例断言及历史发现记录不作为本批或真实 AreaChain 业务联动验收。
 
-- `python3 -B scripts/check_workflow.py --personal-root /Users/as/.codex --format json` 通过：16 份项目文档、41 个 Domain 文件、9 份个人文档及项目技能 Git 边界。个人目录是本次显式输入，不是脚本默认值；这是静态检查证据。
-- `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：当前 46 项通过；`python3 -B -m unittest discover -s scripts/tests -v`：当前 165 项通过。原脚本外部命令为 mock，工作流反例使用临时文档/代码/Git 仓库，不操作日用应用或真实数据。
+- `python3 -B scripts/check_workflow.py --personal-root /Users/as/.codex --format json` 通过：16 份项目文档、41 个 Domain 文件、9 份个人文档及项目技能 Git 边界。个人目录是本次显式输入，不是脚本默认值；这是静态检查证据。后续 Domain 文件数以当时 `check_workflow.py` 的 `domain-imports.checked` 为准（2026-09-29 为 47）。
+- `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：当时 46 项通过；`python3 -B -m unittest discover -s scripts/tests -v`：当时 165 项通过。原脚本外部命令为 mock，工作流反例使用临时文档/代码/Git 仓库，不操作日用应用或真实数据。2026-09-29 静态盘点为 `test_check_workflow.py` 49 项、全套 `scripts/tests` 169 项；以当时实际 discover 结果为准。
 - 当前会话 Skill Creator 的 `quick_validate.py` 对项目级 `areachain-workflow`、`areachain-ui`、`areachain-verify` 均通过；三个 `agents/openai.yaml` 解析与元数据约束通过，隐式调用策略未改变。该批之后技能格式改由仓库内 `skill-format` 检查，不再依赖本机 Skill Creator。
 - Skill Creator 校验只证明项目技能的结构、元数据和引用可解析；新对话是否自动发现并实际调用技能仍需在对应客户端会话中单独取证，不能由本地文件存在推断。
 - 独立只读检查器复核发现引用文件 Git 漏检（含被忽略的符号链接）、Swift 插值误报、个人锚点读取范围及 Git 解码异常，主代理先复现再修正/回测；另完成诊断、新功能方案、发行判断、复用评估和降级恢复五个静态场景推演。旧使用文档中“一律恢复备份”的回退表述已与兼容性/授权门禁对齐。
@@ -160,7 +160,7 @@
 - 新增 `.github/workflows/quality.yml`：push/PR 的静态门禁和手动触发的 macOS Swift 门禁共用本地脚本。工作流文件存在不等于远端 runner 成功或分支保护已启用，仍需分别取证。
 - 修复 `NotificationScheduler` 日志不再输出任务标题，只保留请求标识和错误类别；后续新增日志仍须通过安全候选扫描和人工隐私复核。
 
-本批最终实际证据：脚本回归 165 项通过，工作流定向测试 46 项通过，静态严格门禁通过，Swift 严格门禁（含全量 Swift 测试）通过，performance profile 的登记局部测试通过；该批当时把启动/大库/恢复标为未建立，并留下全库 advisory SwiftLint 债务。同日后续收口见文末。该批当时还没有远端 runner 成功记录；2026-09-26 已另行核对静态 Actions 多次成功，见下一节。钥匙串、真实恢复和正式发行仍不是已通过证据。
+本批最终实际证据：脚本回归 165 项通过，工作流定向测试 46 项通过，静态严格门禁通过，Swift 严格门禁（含全量 Swift 测试）通过，performance profile 的登记局部测试通过；该批当时把启动/大库/恢复标为未建立，并留下全库 advisory SwiftLint 债务（同日质量优化收口后 `swiftlint lint --strict AreaChain AreaChainTests` 已为 0，见下文）。该批当时还没有远端 runner 成功记录；2026-09-26 已另行核对静态 Actions 多次成功，见下一节。钥匙串、真实恢复和正式发行仍不是已通过证据。
 
 ## 整项目优化路线
 
@@ -222,3 +222,12 @@
 - 隔离 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa`、`build/PrivacyQA-keychain`，`SystemVaultIntegrationTests` 分阶段 `create` / `read` / `cancel-read` / `rebuild-read`（`CURRENT_PROJECT_VERSION=2`）/ `cleanup` 均通过。授权变量必须出现在 xcodebuild 进程环境（含 `TEST_RUNNER_` 前缀映射），只写成 build setting 仍会 skip。条目使用随机 UUID 服务名，不读写日用私密锁。覆盖 `CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements` 会丢掉钥匙串访问组并得到 `errSecMissingEntitlement (-34018)`；须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`。
 - 2026-09-29 12:09–12:11 本轮重跑钥匙串：`RUN_ID=FD91734C-81FE-43E3-974B-349A1ACB1745`。`create` / `read`（37s）/ `cancel-read`（重试，`OSStatus=-128`）/ `rebuild-read`（`bundleVersion=2`，9s）/ `cleanup` 通过。第一次 `cancel-read` 因认证通过而失败（夹具要求用户点取消），不能把超时或误通过写成用户取消。
 - 同日安装：先 `./scripts/build.sh` 得到开启沙盒的 `com.areachain.app` Debug，再 `./scripts/install.sh --yes --no-build`。测试产物关沙盒时 `--dry-run` 会拒绝。安装脚本不备份用户数据（`dataBackupCreated: false`）；本体回退在 `AreaChain-InstallBackups/install-20260929T041203Z-i8zbja7o`。`launchRequested: true`，`runtimeVerified: false`。未修改个人签名配置，未加 `--allow-provisioning`。日用私密锁 `com.areachain.app` 未做钥匙串分阶段验收。
+
+## PHASE-7 维护清理（2026-09-29）
+
+本批只收口已有证据确认的旁路包装、测试缺口和文档漂移，不改产品规则，不合并独立契约：
+
+- 删除 `DayBoardLogic` 中无生产调用方的 `matching*` / `sortedForBoard` / `habitStreak` / `openBoardItems` / `completedBoardItems`。筛选、排序和连击仍走 `Classification` 与 `HabitStreakLogic`；`openTodos` / `openRoutines` / `todayProgress` 仍给菜单栏、四象限和进度环使用。
+- `TasksPage` 去掉仅供测试的第二份 `pageSnapshot`。body 仍走 `TasksPageViewModel.make`；筛选/空态测试改断言 `DayBoardPageProjection.project`。
+- 补失败路径：`ModelChanges.afterTransaction` 回滚与提交副作用失败仍发布、`requestAuthorization` 抛错后仍 refresh、错误口令 restore、不可打开库的 VACUUM `finish`、日历 `.denied` 与 ledger `version != 1`。
+- 文档：工程手册把 2026-09-26 的 165/46 和 41 个 Domain 文件标成当时快照；架构树补 `Dashboard/`、`Board/`；组件目录补多消费者入口并写明菜单栏 `SearchResultsView` 不服务工作台；性能清单 `dayboard-page-projection` 的 source 行改为预算断言处。不新写性能预算。

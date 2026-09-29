@@ -255,63 +255,6 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         #expect(result.bestStreak == 2)
     }
 
-    // MARK: - 6. DayBoardLogic: Habit Streak Forwarders Coverage
-
-    @Test func dayBoardLogicHabitStreakForRoutineForwardsCompletely() {
-        let routine = makeRoutine(createdDayKey: "2026-09-01")
-        let checks = [
-            makeCheck(routineId: routine.id, dayKey: "2026-09-01", isDone: true),
-            makeCheck(routineId: routine.id, dayKey: "2026-09-02", isDone: true)
-        ]
-
-        let direct = HabitStreakLogic.calculate(
-            routine: routine,
-            checks: checks,
-            todayKey: "2026-09-02",
-            calendar: utcCalendar
-        )
-
-        let forwarded = DayBoardLogic.habitStreak(
-            for: routine,
-            checks: checks,
-            todayKey: "2026-09-02",
-            calendar: utcCalendar
-        )
-
-        #expect(forwarded == direct)
-        #expect(forwarded.currentStreak == 2)
-        #expect(forwarded.bestStreak == 2)
-        #expect(forwarded.isDueToday == true)
-        #expect(forwarded.isCompletedToday == true)
-        #expect(forwarded.isSkippedToday == false)
-    }
-
-    @Test func dayBoardLogicHabitStreakEmptyChecksReturnsZero() {
-        let streak = DayBoardLogic.habitStreak(
-            checks: [],
-            todayKey: "2026-09-08",
-            calendar: utcCalendar
-        )
-        #expect(streak == 0)
-    }
-
-    @Test func dayBoardLogicHabitStreakFutureChecksOnlyUsesTodayKey() {
-        let id = UUID()
-        // Checks that only exist in the future relative to todayKey
-        let futureChecks = [
-            makeCheck(routineId: id, dayKey: "2026-09-15", isDone: true),
-            makeCheck(routineId: id, dayKey: "2026-09-16", isDone: true)
-        ]
-
-        let streak = DayBoardLogic.habitStreak(
-            checks: futureChecks,
-            todayKey: "2026-09-08",
-            calendar: utcCalendar
-        )
-
-        #expect(streak == 0)
-    }
-
     // MARK: - 7. DayBoardLogic: Routine Lists & Queries Coverage
 
     @Test func dayBoardLogicOpenAndCompletedRoutines() {
@@ -398,12 +341,13 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
 
         // Matching routines by project filter
         let filterA = BoardFilter(tagID: projA)
-        let matched = DayBoardLogic.matchingRoutines([rLow, rUrgent, rImportantUrgent, rOtherProject], filter: filterA)
+        let matched = [rLow, rUrgent, rImportantUrgent, rOtherProject].filter {
+            Classification.matches($0.classifyBits, filter: filterA)
+        }
         #expect(matched.count == 3)
         #expect(!matched.contains { $0.id == rOtherProject.id })
 
-        // Sorted for board (Eisenhower order: Q1 Important+Urgent > Q2 Important > Q3 Urgent > Q4 Rest)
-        let sorted = DayBoardLogic.sortedForBoard(matched)
+        let sorted = matched.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
         #expect(sorted.map(\.title) == ["Critical Routine", "Urgent Routine", "Low Priority"])
     }
 

@@ -59,6 +59,27 @@ struct CalendarSyncEngineTests {
         #expect(fixture.client.batchCount == 0)
     }
 
+    @Test func deniedAuthorizationDoesNotCreateCalendarsOrWriteRemoteEvents() async {
+        let fixture = CalendarSyncFixture()
+        fixture.seedBound()
+        fixture.client.granted = false
+        #expect(await fixture.engine.synchronize(isCurrent: { true }).phase == .denied)
+        #expect(fixture.client.authorizationCount == 1)
+        #expect(fixture.client.calendarCount == 0)
+        #expect(fixture.client.batchCount == 0)
+        #expect(fixture.client.createCount == 0)
+    }
+
+    @Test func invalidLedgerVersionDoesNotWriteRemoteEvents() async {
+        let fixture = CalendarSyncFixture()
+        fixture.seedBound()
+        fixture.checkpoint.version = 2
+        #expect(await fixture.engine.synchronize(isCurrent: { true }).phase == .failed)
+        #expect(fixture.client.authorizationCount == 0)
+        #expect(fixture.client.batchCount == 0)
+        #expect(fixture.client.createCount == 0)
+    }
+
     @Test func restartPullsOnlyRemoteChangesAndPushesOnlyLocalChanges() async {
         let fixture = CalendarSyncFixture()
         fixture.seedBound()

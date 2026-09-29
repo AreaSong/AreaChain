@@ -32,7 +32,7 @@ struct BoardItemProjectionTests {
             id: UUID(), title: "重复", sortOrder: 0, isEnabled: true,
             createdDayKey: "2026-09-01", createdAt: earlier
         )
-        let items = DayBoardLogic.openBoardItems(
+        let items = mixedOpenBoardItems(
             routines: [routine], checks: [], todos: [urgent], dayKey: today
         )
         #expect(items == [.todo(urgent.id), .recurring(routine.id)])
@@ -92,6 +92,19 @@ struct BoardItemProjectionTests {
         let decoded = try JSONDecoder().decode(ExportSnapshot.self, from: data)
         #expect(decoded.routines.isEmpty)
         #expect(decoded.checks.isEmpty)
+    }
+
+    private func mixedOpenBoardItems(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        dayKey: String
+    ) -> [BoardItemReference] {
+        let openTodos = DayBoardLogic.openTodos(todos: todos, dayKey: dayKey)
+        let openRoutines = DayBoardLogic.openRoutines(routines: routines, checks: checks, dayKey: dayKey)
+        let entries = openTodos.map { (BoardItemReference.todo($0.id), $0.boardSortKey) }
+            + openRoutines.map { (BoardItemReference.recurring($0.id), $0.boardSortKey) }
+        return entries.sorted { Classification.precedes($0.1, $1.1) }.map(\.0)
     }
 }
 

@@ -1,6 +1,5 @@
 import Foundation
 import SwiftData
-import SwiftUI
 import Testing
 @testable import AreaChain
 
@@ -13,14 +12,24 @@ struct TasksPageEmptyStateTests {
             deletedAt: Date(timeIntervalSince1970: 9)
         )
         #expect(
-            !TasksPage(
-                todayKey: "2026-09-09", routines: [], checks: [], todos: [liveDone]
-            ).isTodayEmpty
+            !snapshot(todayKey: "2026-09-09", todos: [liveDone]).isTodayEmpty
         )
         #expect(
-            TasksPage(
-                todayKey: "2026-09-09", routines: [], checks: [], todos: [deletedDone]
-            ).isTodayEmpty
+            snapshot(todayKey: "2026-09-09", todos: [deletedDone]).isTodayEmpty
+        )
+    }
+
+    private func snapshot(
+        todayKey: String,
+        todos: [TodoItem],
+        routines: [DailyRoutine] = [],
+        checks: [RoutineCheck] = []
+    ) -> DayBoardPageSnapshot {
+        DayBoardPageProjection.project(
+            source: DayBoardSource(routines: routines, checks: checks, todos: todos),
+            todayKey: todayKey,
+            yesterdayKey: DayKey.shifted(todayKey, by: -1),
+            filter: BoardFilter()
         )
     }
 }

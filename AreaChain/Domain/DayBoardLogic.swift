@@ -273,38 +273,6 @@ enum DayBoardLogic {
         return progress.total - progress.completed
     }
 
-    static func openBoardItems(
-        routines: [RoutineSnapshot],
-        checks: [CheckSnapshot],
-        todos: [TodoSnapshot],
-        dayKey: String
-    ) -> [BoardItemReference] {
-        mixed(
-            todos: openTodos(todos: todos, dayKey: dayKey),
-            routines: openRoutines(routines: routines, checks: checks, dayKey: dayKey)
-        )
-    }
-
-    static func completedBoardItems(
-        routines: [RoutineSnapshot],
-        checks: [CheckSnapshot],
-        todos: [TodoSnapshot],
-        dayKey: String
-    ) -> [BoardItemReference] {
-        mixed(
-            todos: completedTodos(todos: todos, dayKey: dayKey),
-            routines: completedRoutines(routines: routines, checks: checks, dayKey: dayKey)
-        )
-    }
-
-    private static func mixed(todos: [TodoSnapshot], routines: [RoutineSnapshot]) -> [BoardItemReference] {
-        let entries = todos.map { (BoardItemReference.todo($0.id), $0.boardSortKey) }
-            + routines.map { (BoardItemReference.recurring($0.id), $0.boardSortKey) }
-        return entries
-            .sorted { Classification.precedes($0.1, $1.1) }
-            .map(\.0)
-    }
-
     static func monthUnfinished(
         routines: [RoutineSnapshot],
         checks: [CheckSnapshot],
@@ -387,59 +355,6 @@ enum DayBoardLogic {
         entries
             .filter { $0.deletedAt == nil && $0.dayKey == dayKey }
             .sorted { $0.createdAt > $1.createdAt }
-    }
-
-    static func matchingRoutines(_ routines: [RoutineSnapshot], filter: BoardFilter) -> [RoutineSnapshot] {
-        routines.filter { Classification.matches($0.classifyBits, filter: filter) }
-    }
-
-    static func matchingTodos(_ todos: [TodoSnapshot], filter: BoardFilter) -> [TodoSnapshot] {
-        todos.filter { Classification.matches($0.classifyBits, filter: filter) }
-    }
-
-    static func sortedForBoard(_ routines: [RoutineSnapshot]) -> [RoutineSnapshot] {
-        routines.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-    }
-
-    static func sortedForBoard(_ todos: [TodoSnapshot]) -> [TodoSnapshot] {
-        todos.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-    }
-
-    static func habitStreak(
-        checks: [CheckSnapshot],
-        todayKey: String,
-        calendar: Calendar = .current
-    ) -> Int {
-        guard let first = checks.first else { return 0 }
-        let earliest = checks.map(\.dayKey).min() ?? todayKey
-        let dummy = RoutineSnapshot(
-            id: first.routineId,
-            title: "",
-            sortOrder: 0,
-            isEnabled: true,
-            createdDayKey: min(earliest, todayKey),
-            weekdayMask: WeekdayMask.all
-        )
-        return HabitStreakLogic.calculate(
-            routine: dummy,
-            checks: checks,
-            todayKey: todayKey,
-            calendar: calendar
-        ).currentStreak
-    }
-
-    static func habitStreak(
-        for routine: RoutineSnapshot,
-        checks: [CheckSnapshot],
-        todayKey: String,
-        calendar: Calendar = .current
-    ) -> StreakResult {
-        HabitStreakLogic.calculate(
-            routine: routine,
-            checks: checks,
-            todayKey: todayKey,
-            calendar: calendar
-        )
     }
 }
 

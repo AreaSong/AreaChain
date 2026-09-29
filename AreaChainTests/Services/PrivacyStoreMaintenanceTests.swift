@@ -89,6 +89,20 @@ struct PrivacyStoreMaintenanceTests {
         #expect(FileManager.default.fileExists(atPath: marker.path))
     }
 
+    @Test func unopenableStoreKeepsMarker() throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-vacuum-unopenable-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let url = root.appending(path: "not-a-store")
+        try Data("not sqlite".utf8).write(to: url)
+        let marker = PrivacyStoreMaintenance.marker(for: url)
+        try Data("AreaChain privacy cleanup v1".utf8).write(to: marker, options: .atomic)
+        #expect(throws: PrivacyError.storageFailure) {
+            try PrivacyStoreMaintenance.finish(at: url)
+        }
+        #expect(FileManager.default.fileExists(atPath: marker.path))
+    }
+
     @Test func killedExternalVacuumLeavesStoreReadableAndFinishSucceeds() throws {
         try #require(FileManager.default.isExecutableFile(atPath: "/usr/bin/sqlite3"))
         let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-vacuum-kill-\(UUID())")

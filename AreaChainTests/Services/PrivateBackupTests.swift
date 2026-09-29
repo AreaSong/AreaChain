@@ -167,6 +167,27 @@ struct PrivateBackupTests {
         #expect(try DiaryContent.read(note, vault: f.vault) == "#密码 OLD_PRIVATE_MARKER")
     }
 
+    @Test func restoreWithWrongPasswordDoesNotMutateDestination() async throws {
+        let source = try await PrivacyFixture.make()
+        let destination = try await PrivacyFixture.make()
+        defer { source.cleanup(); destination.cleanup() }
+        let tag = try source.tag()
+        let note = try source.repository.addDiary(text: "备份内容", dayKey: "2026-09-15", tagIDs: [tag.id])
+        _ = try source.image(owner: note)
+        let url = source.root.appending(path: "restore.areachainbackup")
+        _ = try await PrivateBackupService.export(to: url, password: backupPassword, environment: source.environment)
+        let existing = DiaryEntry(id: note.id, text: "目的地原文", dayKey: "2026-09-15")
+        destination.context.insert(existing)
+        try destination.context.save()
+        await #expect(throws: PrivacyError.wrongPassword) {
+            try await PrivateBackupService.restore(
+                from: url, password: "wrong-password", environment: destination.environment
+            )
+        }
+        #expect(existing.text == "目的地原文" && !existing.hasProtectedContent)
+        #expect(try destination.context.fetchCount(FetchDescriptor<DiaryEntry>()) == 1)
+    }
+
     @Test func corruptBackupAndFailedRestoreKeepDestinationAndItsFiles() async throws {
         let source = try await PrivacyFixture.make()
         let destination = try await PrivacyFixture.make()

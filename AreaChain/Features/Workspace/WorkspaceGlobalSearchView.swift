@@ -97,7 +97,7 @@ struct WorkspaceGlobalSearchView: View {
     /// 附件文件名只在工作台顶部搜索里匹配可浏览附件，不是 `BoardSearch` 的产品范围。
     /// 菜单栏不查文件名，避免把局部行为扩成统一搜索契约。
     /// 待办/手记/习惯的 `@Query` 必须含墓碑，才能按 `isSingleLive` 判重复 UUID。
-    /// 附件已用 live predicate；搜索页一次 body 只建一份 `ownerIndex`。
+    /// 附件已用 live predicate；工作台顶栏一次 body 只建一份 `ownerIndex`。
     private func attachmentRow(_ attachment: AttachmentItem) -> some View {
         Button {
             openAttachment(attachment)

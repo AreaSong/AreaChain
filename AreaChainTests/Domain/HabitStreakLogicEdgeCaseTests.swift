@@ -313,17 +313,6 @@ struct HabitStreakLogicEdgeCaseTests {
         #expect(result.isCompletedToday == false)
     }
 
-    // MARK: - 14. DayBoardLogic Legacy Forwarding
-
-    @Test func legacyDayBoardLogicHabitStreakForwardsCorrectly() {
-        let id = UUID()
-        let checks = (1...3).map { day in
-            makeCheck(routineId: id, dayKey: String(format: "2026-09-%02d", day), isDone: true)
-        }
-        let streak = DayBoardLogic.habitStreak(checks: checks, todayKey: "2026-09-03")
-        #expect(streak == 3)
-    }
-
     @Test func pausingBridgesMissedScheduledDays() {
         let id = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let routine = RoutineSnapshot(
