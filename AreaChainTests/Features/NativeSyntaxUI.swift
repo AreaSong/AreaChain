@@ -10,10 +10,14 @@ enum NativeSyntaxUI {
             DispatchQueue.main.async { continuation.resume() }
         }
         if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
-        NSApp.activate(ignoringOtherApps: true)
-        window.makeKeyAndOrderFront(nil)
-        let deadline = ContinuousClock.now + .seconds(2)
-        while (!NSApp.isActive || !window.isVisible || !window.isKeyWindow) && ContinuousClock.now < deadline {
+        // 等 key window 期间持续请求激活；其他前台应用抢走后只睡超时会假失败，最终仍要求 isKeyWindow。
+        let deadline = ContinuousClock.now + .seconds(4)
+        while ContinuousClock.now < deadline {
+            requestKeyWindow(window)
+            if NSApp.isActive && window.isVisible && window.isKeyWindow { break }
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                DispatchQueue.main.async { continuation.resume() }
+            }
             try await Task.sleep(for: .milliseconds(20))
         }
         let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "none"
@@ -25,6 +29,13 @@ enum NativeSyntaxUI {
             active=\(NSApp.isActive)，foreground=\(foreground)
             """
         )
+    }
+
+    private static func requestKeyWindow(_ window: NSWindow) {
+        NSApp.activate()
+        window.collectionBehavior.insert(.moveToActiveSpace)
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 
     static func center(_ identifier: String, in window: NSWindow) throws -> NSPoint {

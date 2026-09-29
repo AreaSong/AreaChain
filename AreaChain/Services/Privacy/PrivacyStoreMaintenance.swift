@@ -4,6 +4,11 @@ import SwiftData
 
 /// 更新正文列不足以清除 SQLite 空闲页/WAL。清理标记先于转换落盘，崩溃后仍可重试重建。
 enum PrivacyStoreMaintenance {
+    #if DEBUG
+    /// 注入 VACUUM 的 SQLite 返回码；非 SQLITE_OK 时跳过语句并保留标记。不是进程杀死。
+    nonisolated(unsafe) static var testingVacuumStatus: Int32?
+    #endif
+
     static func marker(for url: URL) -> URL { url.appendingPathExtension("privacy-cleanup") }
 
     @MainActor static func storeURL(_ context: ModelContext) -> URL? {
@@ -36,11 +41,21 @@ enum PrivacyStoreMaintenance {
         }
         defer { sqlite3_close(db) }
         sqlite3_busy_timeout(db, 1_000)
-        guard sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_TRUNCATE, nil, nil) == SQLITE_OK,
-              sqlite3_exec(db, "VACUUM;", nil, nil, nil) == SQLITE_OK,
+        guard sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_TRUNCATE, nil, nil) == SQLITE_OK else {
+            throw PrivacyError.storageFailure
+        }
+        try PrivacyTask.checkCancellation()
+        guard vacuum(db) == SQLITE_OK,
               sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_TRUNCATE, nil, nil) == SQLITE_OK else {
             throw PrivacyError.storageFailure
         }
         try FileManager.default.removeItem(at: marker(for: url))
+    }
+
+    private static func vacuum(_ db: OpaquePointer) -> Int32 {
+        #if DEBUG
+        if let injected = testingVacuumStatus { return injected }
+        #endif
+        return sqlite3_exec(db, "VACUUM;", nil, nil, nil)
     }
 }
