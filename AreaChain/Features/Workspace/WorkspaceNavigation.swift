@@ -10,6 +10,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case gantt
     case diary
     case attachments
+    case clipboard
     case tags
     case privacy
     case dataBackup
@@ -30,6 +31,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .gantt: return "window.gantt"
         case .diary: return "window.diary"
         case .attachments: return "window.attachments"
+        case .clipboard: return "window.clipboard"
         case .tags: return "tab.tags"
         case .privacy: return "tab.privacy"
         case .dataBackup: return "tab.dataBackup"
@@ -50,6 +52,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .gantt: return "chart.bar.xaxis"
         case .diary: return "note.text"
         case .attachments: return "paperclip"
+        case .clipboard: return "doc.on.clipboard"
         case .tags: return "tag"
         case .privacy: return "lock"
         case .dataBackup: return "externaldrive"

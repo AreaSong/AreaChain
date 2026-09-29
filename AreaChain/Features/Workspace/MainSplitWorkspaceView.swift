@@ -150,6 +150,8 @@ struct MainSplitWorkspaceView: View {
                 DiaryStandaloneView()
             case .attachments:
                 AttachmentBrowserPage()
+            case .clipboard:
+                ClipboardHistoryPage()
             case .tags:
                 TagManagementPage()
             case .trash:

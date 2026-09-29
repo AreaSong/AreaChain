@@ -58,6 +58,7 @@ struct WorkspaceSidebarView: View {
     private var contentSection: some View {
         Section("sidebar.content") {
             tabRow(.diary)
+            tabRow(.clipboard)
             tabRow(.attachments)
         }
     }

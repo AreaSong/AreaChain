@@ -66,6 +66,11 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
                 ClipboardCapture.ingest(container: container)
             }
         }
+        center.addObserver(forName: .revealWorkspace, object: nil, queue: .main) { _ in
+            Task { @MainActor in
+                AppWindows.revealWorkspace()
+            }
+        }
     }
 
     private func observeDayClock() {

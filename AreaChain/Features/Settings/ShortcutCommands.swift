@@ -28,7 +28,7 @@ extension ShortcutChord {
 extension ShortcutStore {
     func keyboardShortcut(for action: ShortcutAction) -> KeyboardShortcut? {
         let binding = binding(for: action)
-        guard binding.isArmed, let key = binding.chord.keyEquivalent else { return nil }
+        guard binding.isArmed, binding.chord.isBindable, let key = binding.chord.keyEquivalent else { return nil }
         return KeyboardShortcut(key, modifiers: binding.chord.eventModifiers)
     }
 }

@@ -4652,13 +4652,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click, then press the new shortcut. It must include ⌘, ⌥, or ⌃. Esc cancels."
+            "value": "Works while another app is in front. Unset until you record one. A shortcut already saved on this Mac stays. It must include ⌘, ⌥, or ⌃. Esc cancels."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点一下，再按下新的组合。必须包含 ⌘、⌥ 或 ⌃。Esc 取消。"
+            "value": "别的应用在前台时也能用。默认不绑定；这台 Mac 上已经录过的会保留。必须包含 ⌘、⌥ 或 ⌃。Esc 取消。"
           }
         }
       }
@@ -4731,6 +4731,321 @@
         }
       }
     },
+    "hotkey.clipboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clipboard history" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板历史" } }
+      }
+    },
+    "hotkey.clipboard.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Opens the clipboard history panel while another app is in front. Unset until you record one. Return copies, ⌥Return pastes, and ⌥⇧Return pastes plain text." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "别的应用在前台时打开剪贴板历史。默认不绑定。回车复制，⌥回车粘贴，⌥⇧回车粘贴纯文本。" } }
+      }
+    },
+    "window.clipboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clipboard" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板" } }
+      }
+    },
+    "clipboard.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "History stays on this Mac and is not turned into tasks. Record “Clipboard history” in Shortcuts to open the panel." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "历史只留在这台 Mac 上，不会写成待办。在快捷键页录制「剪贴板历史」后可弹出小窗。" } }
+      }
+    },
+    "clipboard.search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search history" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索历史" } }
+      }
+    },
+    "clipboard.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Nothing copied yet" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "还没有复制记录" } }
+      }
+    },
+    "clipboard.empty.filtered": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No matches" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "没有匹配的记录" } }
+      }
+    },
+    "clipboard.paused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recording is paused" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已暂停记录" } }
+      }
+    },
+    "clipboard.locked": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clipboard history is hidden" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板历史已隐藏" } }
+      }
+    },
+    "clipboard.locked.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unlock privacy to view copied items." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "解锁隐私后才能查看复制内容。" } }
+      }
+    },
+    "clipboard.footer": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "↩ copy    ⌥↩ paste    ⌥⇧↩ plain text    ⌥P pin" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "↩ 复制    ⌥↩ 粘贴    ⌥⇧↩ 纯文本    ⌥P 置顶" } }
+      }
+    },
+    "clipboard.copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复制" } }
+      }
+    },
+    "clipboard.paste": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Paste" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "粘贴" } }
+      }
+    },
+    "clipboard.pastePlain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Paste as plain text" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "粘贴为纯文本" } }
+      }
+    },
+    "clipboard.pin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pin" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "置顶" } }
+      }
+    },
+    "clipboard.unpin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unpin" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "取消置顶" } }
+      }
+    },
+    "clipboard.delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Delete" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "删除" } }
+      }
+    },
+    "clipboard.clearUnpinned": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear unpinned" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清空未置顶" } }
+      }
+    },
+    "clipboard.clearAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear all" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全部清空" } }
+      }
+    },
+    "clipboard.pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pause recording" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂停记录" } }
+      }
+    },
+    "clipboard.resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Resume recording" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "继续记录" } }
+      }
+    },
+    "clipboard.options": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clipboard options" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板选项" } }
+      }
+    },
+    "clipboard.openPage": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open in workspace" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在工作台打开" } }
+      }
+    },
+    "clipboard.ignoreNext": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignore the next copy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略下一次复制" } }
+      }
+    },
+    "clipboard.ignoreNext.done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The next copy will be skipped." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下一次复制不会被记下。" } }
+      }
+    },
+    "clipboard.ignoreApp": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignore this app" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略此应用" } }
+      }
+    },
+    "clipboard.ignoreUniversal": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignore Universal Clipboard" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略通用剪贴板" } }
+      }
+    },
+    "clipboard.limit %lld": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep %lld unpinned items" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未置顶保留 %lld 条" } }
+      }
+    },
+    "clipboard.searchMode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索方式" } }
+      }
+    },
+    "clipboard.searchMode.mixed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Contains" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "包含" } }
+      }
+    },
+    "clipboard.searchMode.exact": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Case sensitive" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "区分大小写" } }
+      }
+    },
+    "clipboard.searchMode.regex": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Regular expression" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "正则" } }
+      }
+    },
+    "clipboard.ignoredApps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignored apps" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略的应用" } }
+      }
+    },
+    "clipboard.patterns": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignored patterns" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略的正则" } }
+      }
+    },
+    "clipboard.patterns.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add a pattern" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加正则" } }
+      }
+    },
+    "clipboard.types": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ignored pasteboard types" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略的剪贴板类型" } }
+      }
+    },
+    "clipboard.types.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add a type" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加类型" } }
+      }
+    },
+    "clipboard.list.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "None" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "无" } }
+      }
+    },
+    "clipboard.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "添加" } }
+      }
+    },
+    "clipboard.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Remove" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "移除" } }
+      }
+    },
+    "clipboard.pattern.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "That pattern is not a valid regular expression." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这不是有效的正则表达式。" } }
+      }
+    },
+    "clipboard.sealed.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Passwords marked concealed or transient, and copies from 1Password or KeeWeb, are never stored." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "标成隐藏或临时的密码，以及来自 1Password、KeeWeb 的复制，一律不记录。" } }
+      }
+    },
+    "clipboard.image": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Image" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "图片" } }
+      }
+    },
+    "clipboard.paste.needsAccess": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Pasting into another app needs Accessibility access. The item is on the clipboard." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "粘贴到其他应用需要辅助功能权限。内容已经放回剪贴板。" } }
+      }
+    },
+    "clipboard.save.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Could not save clipboard history." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板历史没能保存。" } }
+      }
+    },
     "hotkey.paste.disabled": {
       "extractionState": "manual",
       "localizations": {
@@ -4754,13 +5069,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Default ⌘⇧V. Reads the clipboard once; an empty clipboard does nothing. If it matches another shortcut, the one you just set stays on and the other turns off."
+            "value": "Works while another app is in front. Unset until you record one. A shortcut already saved on this Mac stays. Reads the clipboard once; an empty clipboard does nothing."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认 ⌘⇧V。按一下读取剪贴板，空则不加。若与其他快捷键相同，刚录下的生效，另一项停用。"
+            "value": "别的应用在前台时也能用。默认不绑定；这台 Mac 上已经录过的会保留。按一下读取剪贴板，空则不加。"
           }
         }
       }
@@ -4944,8 +5259,8 @@
     "shortcut.page.scope": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Arrow keys, Space, Return, Delete, and Esc stay list actions. ⌘Return in notes still submits the note." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "方向键、空格、回车、Delete 和 Esc 仍是清单里的行内操作。备注里的 ⌘Return 仍用来提交备注。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Global shortcuts work in any app and start unset. Arrow keys, Space, Return, Delete, and Esc stay list actions. ⌘Return in notes still submits the note." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全局热键在任意应用前台生效，默认不绑定。方向键、空格、回车、Delete 和 Esc 仍是清单里的行内操作。备注里的 ⌘Return 仍用来提交备注。" } }
       }
     },
     "shortcut.quit": {
@@ -5070,8 +5385,29 @@
     "shortcut.workspace.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Open the workspace from the menu bar." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层打开工作台。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Open the workspace from the menu bar. Default is ⌘0." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层打开工作台。默认是 ⌘0。" } }
+      }
+    },
+    "shortcut.unset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Not set" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "未设置" } }
+      }
+    },
+    "shortcut.workspace.global": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open workspace globally" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全局打开工作台" } }
+      }
+    },
+    "shortcut.workspace.global.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Bring the workspace forward from any app. Unset until you record one. The current page stays put." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在任意应用前台把工作台叫到前面。默认不绑定。不改当前页面。" } }
       }
     },
     "import.error.attachment.owner": {

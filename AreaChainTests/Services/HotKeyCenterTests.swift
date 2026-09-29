@@ -39,5 +39,27 @@ struct HotKeyCenterTests {
         defer { NotificationCenter.default.removeObserver(observer) }
         center.dispatchHotKey(HotKeyCenter.pasteID)
         #expect(captures == 0)
+        center.dispatchHotKey(HotKeyCenter.workspaceID)
+        #expect(captures == 0)
+    }
+
+    @Test func workspaceHotKeyPostsRevealWhenArmed() throws {
+        let name = "areachain.hotkey.workspace.tests.\(UUID())"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+        let center = HotKeyCenter(defaults: defaults, registration: HotKeyRegistration(register: { _, _ in true }, unregister: { _ in }))
+        let chord = ShortcutChord(keyCode: ShortcutKey.zero, modifiers: ShortcutModifier.command | ShortcutModifier.option)
+        center.applyResolved(
+            toggle: .unset, armToggle: false,
+            paste: .unset, armPaste: false,
+            workspace: chord, armWorkspace: true
+        )
+        var reveals = 0
+        let observer = NotificationCenter.default.addObserver(forName: .revealWorkspace, object: nil, queue: nil) { _ in reveals += 1 }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        center.dispatchHotKey(HotKeyCenter.workspaceID)
+        #expect(reveals == 1)
+        #expect(center.workspaceIsArmed)
+        #expect(!center.toggleIsArmed && !center.pasteIsArmed)
     }
 }

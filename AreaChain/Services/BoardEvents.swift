@@ -7,6 +7,8 @@ extension Notification.Name {
     static let hotKeyDidChange = Notification.Name("areachain.hotKeyDidChange")
     static let appPreferencesDidChange = Notification.Name("areachain.appPreferencesDidChange")
     static let pasteClipboardCapture = Notification.Name("areachain.pasteClipboardCapture")
+    static let revealWorkspace = Notification.Name("areachain.revealWorkspace")
+    static let showClipboardHistory = Notification.Name("areachain.showClipboardHistory")
     static let focusTimerDidChange = Notification.Name("areachain.focusTimerDidChange")
 }
 

@@ -65,11 +65,17 @@ final class ShortcutStore {
     private func syncGlobals() {
         let toggle = binding(for: .toggleOverlay)
         let paste = binding(for: .pasteToday)
+        let workspace = binding(for: .openWorkspaceHotKey)
+        let history = binding(for: .clipboardHistory)
         center.applyResolved(
             toggle: toggle.chord,
-            armToggle: toggle.isArmed,
+            armToggle: toggle.isArmed && toggle.chord.isBindable,
             paste: paste.chord,
-            armPaste: paste.isArmed
+            armPaste: paste.isArmed && paste.chord.isBindable,
+            workspace: workspace.chord,
+            armWorkspace: workspace.isArmed && workspace.chord.isBindable,
+            history: history.chord,
+            armHistory: history.isArmed && history.chord.isBindable
         )
         var next = bindings
         if var toggleBinding = next[.toggleOverlay] {
@@ -79,6 +85,14 @@ final class ShortcutStore {
         if var pasteBinding = next[.pasteToday] {
             pasteBinding.isArmed = center.pasteIsArmed
             next[.pasteToday] = pasteBinding
+        }
+        if var workspaceBinding = next[.openWorkspaceHotKey] {
+            workspaceBinding.isArmed = center.workspaceIsArmed
+            next[.openWorkspaceHotKey] = workspaceBinding
+        }
+        if var historyBinding = next[.clipboardHistory] {
+            historyBinding.isArmed = center.historyIsArmed
+            next[.clipboardHistory] = historyBinding
         }
         bindings = next
     }
@@ -99,8 +113,15 @@ final class ShortcutStore {
     private func persistAll() {
         for action in ShortcutAction.allCases {
             let chord = binding(for: action).chord
-            defaults.set(Int(chord.keyCode), forKey: keyCodeDefaultsKey(action))
-            defaults.set(Int(chord.modifiers), forKey: modifiersDefaultsKey(action))
+            let keyCodeKey = keyCodeDefaultsKey(action)
+            let modifiersKey = modifiersDefaultsKey(action)
+            if chord.isUnset {
+                defaults.removeObject(forKey: keyCodeKey)
+                defaults.removeObject(forKey: modifiersKey)
+            } else {
+                defaults.set(Int(chord.keyCode), forKey: keyCodeKey)
+                defaults.set(Int(chord.modifiers), forKey: modifiersKey)
+            }
         }
     }
 
@@ -108,6 +129,7 @@ final class ShortcutStore {
         switch action {
         case .toggleOverlay: return ShortcutChord.keyCodeDefaultsKey
         case .pasteToday: return ShortcutChord.pasteKeyCodeDefaultsKey
+        case .openWorkspaceHotKey: return ShortcutChord.workspaceKeyCodeDefaultsKey
         default: return "areachain.shortcut.\(action.rawValue).keyCode"
         }
     }
@@ -116,6 +138,7 @@ final class ShortcutStore {
         switch action {
         case .toggleOverlay: return ShortcutChord.modifiersDefaultsKey
         case .pasteToday: return ShortcutChord.pasteModifiersDefaultsKey
+        case .openWorkspaceHotKey: return ShortcutChord.workspaceModifiersDefaultsKey
         default: return "areachain.shortcut.\(action.rawValue).modifiers"
         }
     }

@@ -21,7 +21,7 @@ struct ShortcutRecorder: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                if binding.chord != action.defaultChord || !binding.isArmed {
+                if binding.chord != action.defaultChord || (binding.chord.isBindable && !binding.isArmed) {
                     Button("shortcut.reset") { store.reset(action) }
                 }
                 Button {
@@ -29,6 +29,8 @@ struct ShortcutRecorder: View {
                 } label: {
                     if listening {
                         Text("hotkey.listen")
+                    } else if binding.chord.isUnset {
+                        Text("shortcut.unset")
                     } else {
                         Text(verbatim: label(for: binding))
                     }
@@ -36,7 +38,7 @@ struct ShortcutRecorder: View {
                 .help(LocalizedStringKey(action.helpKey))
                 .accessibilityIdentifier("shortcut.record.\(action.rawValue)")
             }
-            if !binding.isArmed {
+            if binding.chord.isBindable, !binding.isArmed {
                 Text("hotkey.registration.failed")
                     .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookPalette.text.secondary)

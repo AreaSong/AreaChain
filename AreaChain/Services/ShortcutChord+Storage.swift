@@ -4,8 +4,18 @@ import Foundation
 typealias HotKeySpec = ShortcutChord
 
 extension ShortcutChord {
-    static let fallback = ShortcutAction.toggleOverlay.defaultChord
-    static let pasteFallback = ShortcutAction.pasteToday.defaultChord
+    /// 旧的 `HotKeyCenter.load` 在缺键或非法值时仍回到这两个历史组合。
+    /// 产品里的全局热键默认是未设置，由 `ShortcutStore` 决定，不从这里取。
+    static let fallback = ShortcutChord(
+        keyCode: ShortcutKey.a,
+        modifiers: ShortcutModifier.command | ShortcutModifier.shift
+    )
+    static let pasteFallback = ShortcutChord(
+        keyCode: ShortcutKey.v,
+        modifiers: ShortcutModifier.command | ShortcutModifier.shift
+    )
+    static let workspaceKeyCodeDefaultsKey = "areachain.hotkey.workspace.keyCode"
+    static let workspaceModifiersDefaultsKey = "areachain.hotkey.workspace.modifiers"
 
     static let keyCodeDefaultsKey = "areachain.hotkey.keyCode"
     static let modifiersDefaultsKey = "areachain.hotkey.modifiers"
@@ -71,6 +81,7 @@ extension ShortcutChord {
     }
 
     func matches(_ event: NSEvent) -> Bool {
+        guard !isUnset else { return false }
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
         return matches(
             keyCode: event.keyCode,

@@ -11,13 +11,21 @@ final class HotKeyCenter {
     static let shared = HotKeyCenter()
     static let toggleID: UInt32 = 1
     static let pasteID: UInt32 = 2
+    static let workspaceID: UInt32 = 3
+    static let historyID: UInt32 = 4
 
     private(set) var spec: HotKeySpec = .fallback
     private(set) var pasteSpec: HotKeySpec = .pasteFallback
+    private(set) var workspaceSpec: HotKeySpec = .unset
+    private(set) var historySpec: HotKeySpec = .unset
     private(set) var pasteIsArmed = false
     private(set) var toggleIsArmed = false
+    private(set) var workspaceIsArmed = false
+    private(set) var historyIsArmed = false
     private var toggleRef: EventHotKeyRef?
     private var pasteRef: EventHotKeyRef?
+    private var workspaceRef: EventHotKeyRef?
+    private var historyRef: EventHotKeyRef?
     private var handlerRef: EventHandlerRef?
     private var handlerInstalled = false
     private var armedIDs: Set<UInt32> = []
@@ -104,21 +112,42 @@ final class HotKeyCenter {
         toggle: ShortcutChord,
         armToggle: Bool,
         paste: ShortcutChord,
-        armPaste: Bool
+        armPaste: Bool,
+        workspace: ShortcutChord,
+        armWorkspace: Bool,
+        history: ShortcutChord = .unset,
+        armHistory: Bool = false
     ) {
         installHandlerIfNeeded()
         spec = toggle
         pasteSpec = paste
+        workspaceSpec = workspace
+        historySpec = history
         unregister(id: Self.toggleID, ref: &toggleRef)
         unregister(id: Self.pasteID, ref: &pasteRef)
-        if armToggle {
+        unregister(id: Self.workspaceID, ref: &workspaceRef)
+        unregister(id: Self.historyID, ref: &historyRef)
+        if armToggle, toggle.isBindable {
             _ = register(toggle, id: Self.toggleID, ref: &toggleRef)
         }
-        if armPaste, paste != toggle {
+        if armPaste, paste.isBindable, !(armToggle && paste == toggle) {
             _ = register(paste, id: Self.pasteID, ref: &pasteRef)
+        }
+        if armWorkspace, workspace.isBindable,
+           !(armToggle && workspace == toggle),
+           !(armPaste && workspace == paste) {
+            _ = register(workspace, id: Self.workspaceID, ref: &workspaceRef)
+        }
+        if armHistory, history.isBindable,
+           !(armToggle && history == toggle),
+           !(armPaste && history == paste),
+           !(armWorkspace && history == workspace) {
+            _ = register(history, id: Self.historyID, ref: &historyRef)
         }
         toggleIsArmed = armedIDs.contains(Self.toggleID)
         pasteIsArmed = armedIDs.contains(Self.pasteID)
+        workspaceIsArmed = armedIDs.contains(Self.workspaceID)
+        historyIsArmed = armedIDs.contains(Self.historyID)
     }
 
     private func armPasteIfCompatible() {
@@ -201,6 +230,10 @@ final class HotKeyCenter {
             NotificationCenter.default.post(name: .pasteClipboardCapture, object: nil)
         } else if id == Self.toggleID, toggleIsArmed {
             NotificationCenter.default.post(name: .toggleBoardPopover, object: nil)
+        } else if id == Self.workspaceID, workspaceIsArmed {
+            NotificationCenter.default.post(name: .revealWorkspace, object: nil)
+        } else if id == Self.historyID, historyIsArmed {
+            NotificationCenter.default.post(name: .showClipboardHistory, object: nil)
         }
     }
 

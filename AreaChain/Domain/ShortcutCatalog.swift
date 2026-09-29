@@ -62,8 +62,13 @@ struct ShortcutChord: Equatable, Hashable, Sendable {
     /// 不会出现在真实按键里，用来表示这项快捷键当前不响应。
     static let unmatched = ShortcutChord(keyCode: .max, modifiers: ShortcutModifier.command)
 
+    /// 全局热键的出厂状态：不注册，也不占用别的组合。
+    static let unset = ShortcutChord(keyCode: .max - 1, modifiers: 0)
+
+    var isUnset: Bool { keyCode == UInt32.max - 1 && modifiers == 0 }
+
     var isUsable: Bool {
-        keyCode != ShortcutKey.escape && (modifiers & ShortcutModifier.required) != 0
+        !isUnset && keyCode != ShortcutKey.escape && (modifiers & ShortcutModifier.required) != 0
     }
 
     /// 能在菜单快捷键和清单监听里同时生效的组合。不认识的功能键只显示编号，不能拿来重设。
@@ -72,7 +77,8 @@ struct ShortcutChord: Equatable, Hashable, Sendable {
     }
 
     func matches(keyCode: UInt16, command: Bool, shift: Bool, option: Bool, control: Bool) -> Bool {
-        self.keyCode == UInt32(keyCode)
+        guard !isUnset else { return false }
+        return self.keyCode == UInt32(keyCode)
             && modifiers == ShortcutModifier.mask(command: command, shift: shift, option: option, control: control)
     }
 }
@@ -105,6 +111,8 @@ enum ShortcutGroup: CaseIterable, Sendable {
 enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
     case toggleOverlay
     case pasteToday
+    case openWorkspaceHotKey
+    case clipboardHistory
     case search
     case openFilter
     case openWorkspace
@@ -122,7 +130,7 @@ enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
 
     var group: ShortcutGroup {
         switch self {
-        case .toggleOverlay, .pasteToday: return .global
+        case .toggleOverlay, .pasteToday, .openWorkspaceHotKey, .clipboardHistory: return .global
         case .search, .openFilter, .openWorkspace, .syntaxHelp, .openSettings, .quit: return .navigation
         case .commitDiary, .saveDiary, .openDiary, .copyDiary, .trashDiary: return .diary
         case .selectAll: return .list
@@ -133,6 +141,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .toggleOverlay: return "hotkey.open"
         case .pasteToday: return "hotkey.paste"
+        case .openWorkspaceHotKey: return "shortcut.workspace.global"
+        case .clipboardHistory: return "hotkey.clipboard"
         case .search: return "shortcut.search"
         case .openFilter: return "shortcut.filter"
         case .openWorkspace: return "shortcut.workspace"
@@ -152,6 +162,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .toggleOverlay: return "hotkey.help"
         case .pasteToday: return "hotkey.paste.help"
+        case .openWorkspaceHotKey: return "shortcut.workspace.global.help"
+        case .clipboardHistory: return "hotkey.clipboard.help"
         case .search: return "shortcut.search.help"
         case .openFilter: return "shortcut.filter.help"
         case .openWorkspace: return "shortcut.workspace.help"
@@ -169,10 +181,8 @@ enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
 
     var defaultChord: ShortcutChord {
         switch self {
-        case .toggleOverlay:
-            return ShortcutChord(keyCode: ShortcutKey.a, modifiers: ShortcutModifier.command | ShortcutModifier.shift)
-        case .pasteToday:
-            return ShortcutChord(keyCode: ShortcutKey.v, modifiers: ShortcutModifier.command | ShortcutModifier.shift)
+        case .toggleOverlay, .pasteToday, .openWorkspaceHotKey, .clipboardHistory:
+            return .unset
         case .search:
             return ShortcutChord(keyCode: ShortcutKey.f, modifiers: ShortcutModifier.command)
         case .openFilter:
@@ -204,11 +214,16 @@ enum ShortcutAction: String, CaseIterable, Identifiable, Sendable {
     var usesLegacyHotKeyDefaults: Bool {
         self == .toggleOverlay || self == .pasteToday
     }
+
+    /// 系统热键只在彼此之间抢组合。应用内快捷键用同一组合时仍然保留。
+    var usesSystemHotKey: Bool {
+        self == .toggleOverlay || self == .pasteToday || self == .openWorkspaceHotKey || self == .clipboardHistory
+    }
 }
 
 enum ShortcutCatalog {
-    /// 没有“刚录下的那一项”时按目录顺序占住组合：打开浮层优先于剪贴板，和旧的停用规则一致。
-    /// 用户刚录下的一项放在最前，它留下，原先占用同一组合的那一项停用。
+    /// 没有“刚录下的那一项”时，同一范围内按目录顺序占住组合：打开浮层、剪贴板加今天、全局打开工作台，然后才是剪贴板历史。
+    /// 用户刚录下的一项放在最前，它留下，同一范围内原先占用这个组合的那一项停用。未设置不占组合。
     static func resolve(
         stored: [ShortcutAction: ShortcutChord],
         preferred: ShortcutAction? = nil
@@ -223,11 +238,20 @@ enum ShortcutCatalog {
             order.remove(at: index)
             order.insert(preferred, at: 0)
         }
-        var claimed = Set<ShortcutChord>()
+        var systemClaimed = Set<ShortcutChord>()
+        var commandClaimed = Set<ShortcutChord>()
         var armed: [ShortcutAction: Bool] = [:]
         for action in order {
             let chord = chords[action] ?? action.defaultChord
-            armed[action] = claimed.insert(chord).inserted
+            guard chord.isBindable else {
+                armed[action] = false
+                continue
+            }
+            if action.usesSystemHotKey {
+                armed[action] = systemClaimed.insert(chord).inserted
+            } else {
+                armed[action] = commandClaimed.insert(chord).inserted
+            }
         }
         return Dictionary(uniqueKeysWithValues: ShortcutAction.allCases.map { action in
             (action, ShortcutBinding(chord: chords[action] ?? action.defaultChord, isArmed: armed[action] ?? false))
