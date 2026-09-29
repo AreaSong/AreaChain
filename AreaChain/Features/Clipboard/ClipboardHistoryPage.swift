@@ -48,7 +48,9 @@ struct ClipboardHistoryPage: View {
             session.pageOwnsKeys = !shown
         }
         .sheet(isPresented: $showsOptions) {
+            // macOS 的 sheet 不会带上工作台的语言环境，不补上就会落回系统语言。
             ClipboardHistoryOptions(session: session)
+                .appChrome()
         }
     }
 }
