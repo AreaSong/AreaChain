@@ -7,17 +7,26 @@ enum AppWindows {
     static var workspaceViewProvider: (@MainActor () -> AnyView)?
     static var diaryWindowsProvider: (@MainActor () -> [NSWindow])?
 
+    /// 测试替换这两处，避免为路由断言激活应用或创建窗口。
+    static var activateForOpening: @MainActor () -> Void = { becomeActive() }
+    static var showWorkspaceWindow: @MainActor () -> Void = { PanelWindowController.workspace.show() }
+
     static func openWorkspace(tab: WorkspaceTab = .dashboard, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
         StatusItemController.shared.close()
-        becomeActive()
+        activateForOpening()
         WorkspaceNavigation.shared.revealTab(tab, inspecting: taskID, dayKey: dayKey)
-        PanelWindowController.workspace.show()
+        showWorkspaceWindow()
+    }
+
+    /// 应用菜单、⌘, 和浮层「设置」都进入工作台设置页。
+    static func openSettings() {
+        openWorkspace(tab: .settings)
     }
 
     static func revealWorkspace() {
         StatusItemController.shared.close()
-        becomeActive()
-        PanelWindowController.workspace.show()
+        activateForOpening()
+        showWorkspaceWindow()
     }
 
     static func openDiary() {
@@ -43,7 +52,7 @@ enum AppWindows {
         }
     }
 
-    /// 关掉设置后，SwiftUI Scene 里多出来的窗不要当成「下一扇」打开。
+    /// 工作台和手记以外的可见窗口不要当成「下一扇」留在前台。
     static func hideStrayWindows(closing: NSWindow? = nil) {
         let panels = Set(panelWindows.map { ObjectIdentifier($0) })
         for window in NSApp.windows {

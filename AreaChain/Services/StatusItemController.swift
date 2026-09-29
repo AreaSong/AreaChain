@@ -96,6 +96,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     }
 
     @objc func toggle() {
+        if handleClipboardModifierClick() { return }
         guard let button = statusItem?.button, let popover, container != nil else { return }
         if popover.isShown {
             close()
@@ -113,6 +114,23 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         startDismissMonitors()
         NotificationCenter.default.post(name: .focusCapture, object: nil)
+    }
+
+    /// 普通点击仍开关浮层。按住 Option 暂停或继续剪贴板记录，Option-Shift 跳过下一次复制。
+    private func handleClipboardModifierClick() -> Bool {
+        guard let event = NSApp.currentEvent, event.type == .leftMouseUp else {
+            return false
+        }
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.contains(.option) else { return false }
+        let session = ClipboardHistorySession.shared
+        if flags.contains(.shift) {
+            session.armIgnoreNext()
+        } else {
+            session.setRecording(!session.recording)
+            session.noticeKey = session.recording ? "clipboard.resumed" : "clipboard.paused"
+        }
+        return true
     }
 
     func popoverDidClose(_ notification: Notification) {

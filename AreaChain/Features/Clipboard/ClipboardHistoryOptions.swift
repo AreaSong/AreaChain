@@ -3,6 +3,7 @@ import SwiftUI
 struct ClipboardHistoryOptions: View {
     @Bindable var session: ClipboardHistorySession
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.locale) private var locale
     @State private var pattern = ""
     @State private var typeName = ""
     @State private var patternRejected = false
@@ -17,6 +18,20 @@ struct ClipboardHistoryOptions: View {
                 Button("alert.cancel") { dismiss() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
+            ScrollView {
+                VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+                    options
+                }
+            }
+            .daybookScroll()
+        }
+        .padding(DaybookSpacing.lg)
+        .frame(width: 440, height: 560)
+        .background(DaybookPalette.fill.page)
+    }
+
+    private var options: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.md) {
             Toggle("clipboard.ignoreUniversal", isOn: Binding(
                 get: { session.ignoreUniversal },
                 set: { session.setIgnoreUniversal($0) }
@@ -29,6 +44,13 @@ struct ClipboardHistoryOptions: View {
                 Text("clipboard.limit \(session.limit)")
                     .font(DaybookType.body)
             }
+            Stepper(value: Binding(
+                get: { session.interval },
+                set: { session.setInterval($0) }
+            ), in: ClipboardHistoryRules.minimumInterval...ClipboardHistoryRules.maximumInterval, step: 0.1) {
+                Text(L10n.format("clipboard.interval", locale: locale, session.interval))
+                    .font(DaybookType.body)
+            }
             Picker("clipboard.searchMode", selection: Binding(
                 get: { session.searchMode },
                 set: { session.setSearchMode($0) }
@@ -37,6 +59,32 @@ struct ClipboardHistoryOptions: View {
                 Text("clipboard.searchMode.exact").tag(ClipboardSearchMode.exact)
                 Text("clipboard.searchMode.regex").tag(ClipboardSearchMode.regex)
             }
+            .font(DaybookType.body)
+            Picker("clipboard.panelAnchor", selection: Binding(
+                get: { session.panelAnchor },
+                set: { session.setPanelAnchor($0) }
+            )) {
+                Text("clipboard.panelAnchor.cursor").tag(ClipboardPanelAnchor.cursor)
+                Text("clipboard.panelAnchor.center").tag(ClipboardPanelAnchor.center)
+            }
+            .font(DaybookType.body)
+            Picker("clipboard.clickAction", selection: Binding(
+                get: { session.clickAction },
+                set: { session.setClickAction($0) }
+            )) {
+                Text("clipboard.clickAction.copy").tag(ClipboardClickAction.copy)
+                Text("clipboard.clickAction.paste").tag(ClipboardClickAction.paste)
+            }
+            .font(DaybookType.body)
+            Toggle("clipboard.plainByDefault", isOn: Binding(
+                get: { session.plainByDefault },
+                set: { session.setPlainByDefault($0) }
+            ))
+            .font(DaybookType.body)
+            Toggle("clipboard.playSound", isOn: Binding(
+                get: { session.playSound },
+                set: { session.setPlaySound($0) }
+            ))
             .font(DaybookType.body)
             Button("clipboard.ignoreNext") { session.armIgnoreNext() }
                 .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
@@ -54,11 +102,8 @@ struct ClipboardHistoryOptions: View {
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            Spacer(minLength: 0)
         }
-        .padding(DaybookSpacing.lg)
-        .frame(width: 420, height: 520)
-        .background(DaybookPalette.fill.page)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func listSection(title: LocalizedStringKey, values: [String], remove: @escaping (String) -> Void) -> some View {

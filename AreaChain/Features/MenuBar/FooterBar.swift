@@ -267,7 +267,7 @@ struct FooterBar: View {
             .appShortcut(.syntaxHelp)
 
             Button {
-                AppWindows.openWorkspace(tab: .settings)
+                AppWindows.openSettings()
             } label: {
                 Label("window.settings", systemImage: "gearshape")
             }

@@ -60,10 +60,12 @@ enum ClipboardPasteboardReader {
     ) -> ClipboardHistoryDraft {
         let types = Set((board.types ?? []).map(\.rawValue))
         var plain = board.string(forType: .string) ?? ""
-        if plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
-           let urls = board.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
-           !urls.isEmpty {
-            plain = urls.map(\.path).joined(separator: "\n")
+        var filePaths: [String] = []
+        if let urls = board.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], !urls.isEmpty {
+            filePaths = urls.filter(\.isFileURL).map(\.path)
+            if plain.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                plain = urls.map(\.path).joined(separator: "\n")
+            }
         }
         let html = board.string(forType: .html)
         let rtf = board.data(forType: .rtf)
@@ -73,6 +75,7 @@ enum ClipboardPasteboardReader {
             html: html,
             rtf: rtf,
             png: png,
+            filePaths: filePaths,
             types: types,
             sourceBundleID: frontBundle ?? "",
             copiedAt: now
@@ -91,6 +94,19 @@ enum ClipboardHistoryWriter {
         to board: NSPasteboard
     ) -> Bool {
         board.clearContents()
+        let paths = plainOnly ? [] : record.filePaths.filter { !$0.isEmpty }
+        if !paths.isEmpty {
+            let urls = paths.map { URL(fileURLWithPath: $0) as NSURL }
+            guard board.writeObjects(urls) else { return false }
+            if board.addTypes([marker], owner: nil) > 0 {
+                board.setData(Data(), forType: marker)
+            }
+            let text = record.plainText
+            if !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                board.setString(text, forType: .string)
+            }
+            return board.data(forType: marker) != nil
+        }
         let item = NSPasteboardItem()
         item.setData(Data(), forType: marker)
         let text = record.plainText

@@ -4804,8 +4804,8 @@
     "clipboard.footer": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "↩ copy    ⌥↩ paste    ⌥⇧↩ plain text    ⌥P pin" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "↩ 复制    ⌥↩ 粘贴    ⌥⇧↩ 纯文本    ⌥P 置顶" } }
+        "en": { "stringUnit": { "state": "translated", "value": "↩ copy    ⌥↩ paste    ⌥⇧↩ plain text    ⌥P pin. With an empty search, a pin letter copies that item." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "↩ 复制    ⌥↩ 粘贴    ⌥⇧↩ 纯文本    ⌥P 置顶。搜索为空时，置顶字母直接复制。" } }
       }
     },
     "clipboard.copy": {
@@ -4937,8 +4937,8 @@
     "clipboard.searchMode.mixed": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Contains" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "包含" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Fuzzy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "模糊" } }
       }
     },
     "clipboard.searchMode.exact": {
@@ -5044,6 +5044,76 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Could not save clipboard history." } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板历史没能保存。" } }
+      }
+    },
+    "clipboard.interval": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Check every %.1f s" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "每 %.1f 秒检查一次" } }
+      }
+    },
+    "clipboard.panelAnchor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Panel position" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "浮窗位置" } }
+      }
+    },
+    "clipboard.panelAnchor.cursor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Near the pointer" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "指针旁边" } }
+      }
+    },
+    "clipboard.panelAnchor.center": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Center of the screen" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "屏幕中央" } }
+      }
+    },
+    "clipboard.clickAction": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Click in the panel" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "浮窗单击" } }
+      }
+    },
+    "clipboard.clickAction.copy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copy" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复制" } }
+      }
+    },
+    "clipboard.clickAction.paste": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Paste" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "粘贴" } }
+      }
+    },
+    "clipboard.plainByDefault": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copy as plain text by default" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "默认去掉格式" } }
+      }
+    },
+    "clipboard.playSound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Play a sound when something is copied" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记下复制时播放提示音" } }
+      }
+    },
+    "clipboard.resumed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Recording resumed" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已继续记录" } }
       }
     },
     "hotkey.paste.disabled": {
@@ -5343,8 +5413,8 @@
     "shortcut.settings.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Open settings from the menu bar. The system Settings window may still use ⌘,." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层打开设置。系统设置窗口可能仍使用 ⌘,。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Open the settings page in the workspace." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开工作台里的设置页。" } }
       }
     },
     "shortcut.syntax": {

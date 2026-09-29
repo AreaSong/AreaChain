@@ -98,11 +98,27 @@ struct AreaChainApp: App {
     }
 
     var body: some Scene {
-        // 手记小窗由 DiaryWindows 持有，避免 SwiftUI Scene 自动恢复出重复窗口。
-        Settings {
-            SettingsView()
-                .appChrome()
+        // SwiftUI App 必须有 Scene。Settings 场景会单独开窗并接走 ⌘,；
+        // 这里只占一个不插入的菜单栏场景，设置改由应用菜单进入工作台。
+        MenuBarExtra("AreaChain", isInserted: .constant(false)) {
+            Color.clear
         }
         .modelContainer(container)
+        .commands {
+            AreaChainCommands()
+        }
+    }
+}
+
+private struct AreaChainCommands: Commands {
+    @Bindable private var shortcuts = ShortcutStore.shared
+
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("window.settings") {
+                AppWindows.openSettings()
+            }
+            .keyboardShortcut(shortcuts.keyboardShortcut(for: .openSettings))
+        }
     }
 }

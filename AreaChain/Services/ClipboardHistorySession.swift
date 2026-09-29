@@ -39,6 +39,10 @@ final class ClipboardHistorySession {
     var limit = ClipboardHistoryRules.defaultLimit
     var interval = ClipboardHistoryRules.defaultInterval
     var ignoreUniversal = false
+    var panelAnchor: ClipboardPanelAnchor = .cursor
+    var clickAction: ClipboardClickAction = .copy
+    var plainByDefault = false
+    var playSound = false
     var ignoredApps: [String] = []
     var extraTypes: [String] = []
     var patterns: [String] = []
@@ -61,14 +65,8 @@ final class ClipboardHistorySession {
         items = store.load()
     }
 
-    var contentsHidden: Bool {
-        let vault = PrivacyVault.shared
-        return vault.isConfigured && !vault.isUnlocked
-    }
-
     var visibleItems: [ClipboardHistoryRecord] {
-        guard !contentsHidden else { return [] }
-        return ClipboardHistoryRules.filtered(items, query: query, mode: searchMode)
+        ClipboardHistoryRules.filtered(items, query: query, mode: searchMode)
     }
 
     func start() {
@@ -173,6 +171,26 @@ final class ClipboardHistorySession {
         savePreferences()
     }
 
+    func setPanelAnchor(_ anchor: ClipboardPanelAnchor) {
+        panelAnchor = anchor
+        savePreferences()
+    }
+
+    func setClickAction(_ action: ClipboardClickAction) {
+        clickAction = action
+        savePreferences()
+    }
+
+    func setPlainByDefault(_ enabled: Bool) {
+        plainByDefault = enabled
+        savePreferences()
+    }
+
+    func setPlaySound(_ enabled: Bool) {
+        playSound = enabled
+        savePreferences()
+    }
+
     func armIgnoreNext() {
         ignoreNext = true
         noticeKey = "clipboard.ignoreNext.done"
@@ -200,7 +218,7 @@ final class ClipboardHistorySession {
     }
 
     func stage(_ id: UUID, plainOnly: Bool) -> ClipboardPasteResult {
-        guard !contentsHidden, let record = items.first(where: { $0.id == id }) else { return .empty }
+        guard let record = items.first(where: { $0.id == id }) else { return .empty }
         let board = pasteboard ?? .general
         let image = imageData(for: record)
         guard ClipboardHistoryWriter.write(record, image: image, plainOnly: plainOnly, to: board) else { return .empty }
@@ -250,17 +268,22 @@ final class ClipboardHistorySession {
             }
         }
         let next = ClipboardHistoryRules.merging(items, new: record, limit: limit)
-        commit(next)
+        if commit(next), playSound {
+            NSSound(named: NSSound.Name("Pop"))?.play()
+        }
     }
 
-    private func commit(_ next: [ClipboardHistoryRecord]) {
+    @discardableResult
+    private func commit(_ next: [ClipboardHistoryRecord]) -> Bool {
         do {
             try store.save(next)
             items = next
             store.pruneImages(keeping: Set(next.compactMap(\.imageFile)))
             noticeKey = nil
+            return true
         } catch {
             noticeKey = "clipboard.save.failed"
+            return false
         }
     }
 
@@ -278,6 +301,14 @@ final class ClipboardHistorySession {
             searchMode = mode
         }
         ignoreUniversal = defaults.bool(forKey: Keys.ignoreUniversal)
+        if let raw = defaults.string(forKey: Keys.panelAnchor), let anchor = ClipboardPanelAnchor(rawValue: raw) {
+            panelAnchor = anchor
+        }
+        if let raw = defaults.string(forKey: Keys.clickAction), let action = ClipboardClickAction(rawValue: raw) {
+            clickAction = action
+        }
+        plainByDefault = defaults.bool(forKey: Keys.plainByDefault)
+        playSound = defaults.bool(forKey: Keys.playSound)
         ignoredApps = defaults.stringArray(forKey: Keys.ignoredApps) ?? []
         extraTypes = defaults.stringArray(forKey: Keys.extraTypes) ?? []
         patterns = defaults.stringArray(forKey: Keys.patterns) ?? []
@@ -289,6 +320,10 @@ final class ClipboardHistorySession {
         defaults.set(interval, forKey: Keys.interval)
         defaults.set(searchMode.rawValue, forKey: Keys.searchMode)
         defaults.set(ignoreUniversal, forKey: Keys.ignoreUniversal)
+        defaults.set(panelAnchor.rawValue, forKey: Keys.panelAnchor)
+        defaults.set(clickAction.rawValue, forKey: Keys.clickAction)
+        defaults.set(plainByDefault, forKey: Keys.plainByDefault)
+        defaults.set(playSound, forKey: Keys.playSound)
         defaults.set(ignoredApps, forKey: Keys.ignoredApps)
         defaults.set(extraTypes, forKey: Keys.extraTypes)
         defaults.set(patterns, forKey: Keys.patterns)
@@ -300,6 +335,10 @@ final class ClipboardHistorySession {
         static let interval = "areachain.clipboard.interval"
         static let searchMode = "areachain.clipboard.searchMode"
         static let ignoreUniversal = "areachain.clipboard.ignoreUniversal"
+        static let panelAnchor = "areachain.clipboard.panelAnchor"
+        static let clickAction = "areachain.clipboard.clickAction"
+        static let plainByDefault = "areachain.clipboard.plainByDefault"
+        static let playSound = "areachain.clipboard.playSound"
         static let ignoredApps = "areachain.clipboard.ignoredApps"
         static let extraTypes = "areachain.clipboard.extraTypes"
         static let patterns = "areachain.clipboard.patterns"

@@ -6,14 +6,78 @@ struct ClipboardHistoryRecord: Codable, Equatable, Identifiable, Sendable {
     var id: UUID
     var copiedAt: Date
     var pinnedAt: Date?
+    /// 置顶后固定的小写字母。列表重排不改它；取消置顶就释放。
+    var pinKey: String?
     var sourceBundleID: String
     var plainText: String
     var html: String?
     var rtf: Data?
     var imageFile: String?
+    /// 复制文件时记下的路径。粘贴时写回文件 URL，不把文件字节收进历史。
+    var filePaths: [String]
     var contentHash: String
 
     var isPinned: Bool { pinnedAt != nil }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, copiedAt, pinnedAt, pinKey, sourceBundleID, plainText, html, rtf, imageFile, filePaths, contentHash
+    }
+
+    init(
+        id: UUID,
+        copiedAt: Date,
+        pinnedAt: Date?,
+        pinKey: String? = nil,
+        sourceBundleID: String,
+        plainText: String,
+        html: String?,
+        rtf: Data?,
+        imageFile: String?,
+        filePaths: [String] = [],
+        contentHash: String
+    ) {
+        self.id = id
+        self.copiedAt = copiedAt
+        self.pinnedAt = pinnedAt
+        self.pinKey = pinKey
+        self.sourceBundleID = sourceBundleID
+        self.plainText = plainText
+        self.html = html
+        self.rtf = rtf
+        self.imageFile = imageFile
+        self.filePaths = filePaths
+        self.contentHash = contentHash
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        copiedAt = try container.decode(Date.self, forKey: .copiedAt)
+        pinnedAt = try container.decodeIfPresent(Date.self, forKey: .pinnedAt)
+        pinKey = try container.decodeIfPresent(String.self, forKey: .pinKey)
+        sourceBundleID = try container.decode(String.self, forKey: .sourceBundleID)
+        plainText = try container.decode(String.self, forKey: .plainText)
+        html = try container.decodeIfPresent(String.self, forKey: .html)
+        rtf = try container.decodeIfPresent(Data.self, forKey: .rtf)
+        imageFile = try container.decodeIfPresent(String.self, forKey: .imageFile)
+        filePaths = try container.decodeIfPresent([String].self, forKey: .filePaths) ?? []
+        contentHash = try container.decode(String.self, forKey: .contentHash)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(copiedAt, forKey: .copiedAt)
+        try container.encodeIfPresent(pinnedAt, forKey: .pinnedAt)
+        try container.encodeIfPresent(pinKey, forKey: .pinKey)
+        try container.encode(sourceBundleID, forKey: .sourceBundleID)
+        try container.encode(plainText, forKey: .plainText)
+        try container.encodeIfPresent(html, forKey: .html)
+        try container.encodeIfPresent(rtf, forKey: .rtf)
+        try container.encodeIfPresent(imageFile, forKey: .imageFile)
+        try container.encode(filePaths, forKey: .filePaths)
+        try container.encode(contentHash, forKey: .contentHash)
+    }
 
     var preview: String {
         let flattened = plainText.replacingOccurrences(of: "\n", with: " ")
@@ -29,12 +93,23 @@ enum ClipboardSearchMode: String, Codable, CaseIterable, Sendable {
     case regex
 }
 
+enum ClipboardPanelAnchor: String, Codable, CaseIterable, Sendable {
+    case cursor
+    case center
+}
+
+enum ClipboardClickAction: String, Codable, CaseIterable, Sendable {
+    case copy
+    case paste
+}
+
 /// 从剪贴板读出、尚未决定是否收录的草稿。
 struct ClipboardHistoryDraft: Equatable, Sendable {
     var plainText: String
     var html: String?
     var rtf: Data?
     var png: Data?
+    var filePaths: [String] = []
     var types: Set<String>
     var sourceBundleID: String
     var copiedAt: Date
@@ -62,6 +137,7 @@ enum ClipboardHistoryRules {
     static let defaultInterval: TimeInterval = 0.5
     static let minimumInterval: TimeInterval = 0.1
     static let maximumInterval: TimeInterval = 2
+    static let pinAlphabet = "abcdefghijklmnopqrstuvwxyz"
 
     static func clampLimit(_ value: Int) -> Int {
         min(maximumLimit, max(minimumLimit, value))
@@ -110,6 +186,7 @@ enum ClipboardHistoryRules {
             return nil
         }
         if trimmed.isEmpty { html = nil }
+        let paths = draft.filePaths
         return ClipboardHistoryRecord(
             id: id,
             copiedAt: draft.copiedAt,
@@ -119,7 +196,8 @@ enum ClipboardHistoryRules {
             html: html,
             rtf: rtf,
             imageFile: nil,
-            contentHash: digest(plain: plain, html: html, rtf: rtf, png: png)
+            filePaths: paths,
+            contentHash: digest(plain: plain, html: html, rtf: rtf, png: png, filePaths: paths)
         )
     }
 
@@ -184,6 +262,7 @@ enum ClipboardHistoryRules {
             existing.html = new.html
             existing.rtf = new.rtf
             if let imageFile = new.imageFile { existing.imageFile = imageFile }
+            if !new.filePaths.isEmpty { existing.filePaths = new.filePaths }
             if !new.sourceBundleID.isEmpty { existing.sourceBundleID = new.sourceBundleID }
             next.append(existing)
         } else {
@@ -193,10 +272,13 @@ enum ClipboardHistoryRules {
     }
 
     static func pin(_ items: [ClipboardHistoryRecord], id: UUID, at date: Date) -> [ClipboardHistoryRecord] {
-        items.map { item in
+        let used = Set(items.compactMap(\.pinKey))
+        let assigned = nextPinKey(used: used)
+        return items.map { item in
             guard item.id == id else { return item }
             var copy = item
-            copy.pinnedAt = item.pinnedAt ?? date
+            if copy.pinnedAt == nil { copy.pinnedAt = date }
+            if copy.pinKey == nil { copy.pinKey = assigned }
             return copy
         }
     }
@@ -206,8 +288,13 @@ enum ClipboardHistoryRules {
             guard item.id == id else { return item }
             var copy = item
             copy.pinnedAt = nil
+            copy.pinKey = nil
             return copy
         }
+    }
+
+    static func nextPinKey(used: Set<String>) -> String? {
+        pinAlphabet.first { !used.contains(String($0)) }.map(String.init)
     }
 
     static func removing(_ items: [ClipboardHistoryRecord], id: UUID) -> [ClipboardHistoryRecord] {
@@ -226,28 +313,59 @@ enum ClipboardHistoryRules {
         return pinned + unpinned
     }
 
-    static func digest(plain: String, html: String?, rtf: Data?, png: Data?) -> String {
+    static func digest(plain: String, html: String?, rtf: Data?, png: Data?, filePaths: [String] = []) -> String {
         var hasher = SHA256()
         hasher.update(data: Data(plain.utf8))
         hasher.update(data: Data((html ?? "").utf8))
         hasher.update(data: rtf ?? Data())
         hasher.update(data: png ?? Data())
+        hasher.update(data: Data(filePaths.joined(separator: "\n").utf8))
         return hasher.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+
+    /// 混合模式按字符顺序模糊匹配，因此「cta」也能命中「catalog」。
+    static func highlightRanges(in text: String, needle: String, mode: ClipboardSearchMode) -> [Range<String.Index>] {
+        let trimmed = needle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, !text.isEmpty else { return [] }
+        switch mode {
+        case .exact:
+            guard let range = text.range(of: trimmed) else { return [] }
+            return [range]
+        case .regex:
+            guard isValidPattern(trimmed),
+                  let expression = try? NSRegularExpression(pattern: trimmed, options: [.caseInsensitive]) else {
+                return []
+            }
+            let nsRange = NSRange(text.startIndex..., in: text)
+            return expression.matches(in: text, range: nsRange).compactMap { Range($0.range, in: text) }
+        case .mixed:
+            return fuzzyRanges(in: text, needle: trimmed)
+        }
     }
 
     private static func matches(_ item: ClipboardHistoryRecord, needle: String, mode: ClipboardSearchMode) -> Bool {
         switch mode {
         case .mixed:
-            return item.plainText.localizedCaseInsensitiveContains(needle)
+            return !fuzzyRanges(in: item.plainText, needle: needle).isEmpty
         case .exact:
             return item.plainText.contains(needle)
         case .regex:
-            guard isValidPattern(needle),
-                  let expression = try? NSRegularExpression(pattern: needle, options: [.caseInsensitive]) else {
-                return false
-            }
-            let range = NSRange(item.plainText.startIndex..., in: item.plainText)
-            return expression.firstMatch(in: item.plainText, range: range) != nil
+            return !highlightRanges(in: item.plainText, needle: needle, mode: .regex).isEmpty
         }
+    }
+
+    private static func fuzzyRanges(in text: String, needle: String) -> [Range<String.Index>] {
+        var search = text.startIndex
+        var ranges: [Range<String.Index>] = []
+        for character in needle {
+            let rest = text[search...]
+            guard let found = rest.firstIndex(where: {
+                String($0).localizedCaseInsensitiveCompare(String(character)) == .orderedSame
+            }) else { return [] }
+            let next = text.index(after: found)
+            ranges.append(found..<next)
+            search = next
+        }
+        return ranges
     }
 }

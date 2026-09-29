@@ -31,7 +31,7 @@ struct DataBackupRenderingTests {
         let before = try container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>())
         let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         let size = appearance.minimum ? DaybookMetrics.Window.workspaceMinSize : NSSize(width: 880, height: 640)
-        let settings = try await page(SettingsView(resignsChromeOnDisappear: false), container: container, appearance: appearance, size: size)
+        let settings = try await page(SettingsView(), container: container, appearance: appearance, size: size)
         #expect(settings.contains("settings.preferences"))
         #expect(settings.contains("settings.language") && settings.contains("settings.icloud"))
         #expect(settings.contains("project.version") && settings.contains("project.support.issue"))

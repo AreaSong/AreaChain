@@ -91,6 +91,10 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { $0.frame.contains(mouse) } ?? NSScreen.main
         let visible = screen?.visibleFrame ?? NSRect(x: mouse.x, y: mouse.y, width: size.width, height: size.height)
+        if ClipboardHistorySession.shared.panelAnchor == .center {
+            let origin = NSPoint(x: visible.midX - size.width / 2, y: visible.midY - size.height / 2)
+            return NSRect(origin: origin, size: size)
+        }
         var origin = NSPoint(x: mouse.x, y: mouse.y - size.height - DaybookSpacing.sm)
         if origin.x + size.width > visible.maxX { origin.x = visible.maxX - size.width }
         if origin.x < visible.minX { origin.x = visible.minX }
@@ -220,7 +224,7 @@ enum ClipboardHistoryKeys {
         }
         if event.keyCode == UInt16(ShortcutKey.returnKey) {
             guard let item = session.selectedOrFirst() else { return true }
-            let plain = flags.contains(.option) && flags.contains(.shift)
+            let plain = (flags.contains(.option) && flags.contains(.shift)) || session.plainByDefault
             commit(id: item.id, plain: plain, paste: flags.contains(.option), inPanel: inPanel)
             return true
         }
@@ -236,8 +240,17 @@ enum ClipboardHistoryKeys {
         if let number = Int(chars), (1...9).contains(number),
            flags.contains(.command) || flags.contains(.option) {
             guard let item = session.item(atQuickIndex: number) else { return true }
-            let plain = flags.contains(.option) && flags.contains(.shift)
+            let plain = (flags.contains(.option) && flags.contains(.shift)) || session.plainByDefault
             commit(id: item.id, plain: plain, paste: flags.contains(.option), inPanel: inPanel)
+            return true
+        }
+        if session.query.isEmpty,
+           chars.count == 1,
+           !flags.contains(.command),
+           !flags.contains(.option),
+           !flags.contains(.control),
+           let pinned = session.items.first(where: { $0.pinKey == chars }) {
+            commit(id: pinned.id, plain: session.plainByDefault, paste: false, inPanel: inPanel)
             return true
         }
         return false

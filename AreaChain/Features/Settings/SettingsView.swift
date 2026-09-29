@@ -1,10 +1,8 @@
-import AppKit
 import ServiceManagement
 import SwiftUI
 import UserNotifications
 
 struct SettingsView: View {
-    var resignsChromeOnDisappear: Bool = true
     @Environment(AppPreferences.self) private var prefs
     @Environment(\.locale) private var locale
 
@@ -23,13 +21,6 @@ struct SettingsView: View {
         .accessibilityValue(markers.sorted().joined(separator: " "))
         .onAppear {
             Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
-        }
-        .onDisappear {
-            guard resignsChromeOnDisappear else { return }
-            AppWindows.resignIfIdle()
-            DispatchQueue.main.async {
-                AppWindows.resignIfIdle()
-            }
         }
     }
 

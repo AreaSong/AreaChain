@@ -8,6 +8,7 @@ struct ClipboardHistoryBrowser: View {
     var onCommit: (UUID, Bool, Bool) -> Void
 
     @State private var searchFocus = false
+    @State private var previewID: UUID?
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
@@ -19,6 +20,9 @@ struct ClipboardHistoryBrowser: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
             content
+            if let preview = previewItem {
+                previewCard(preview)
+            }
             if showsFooter {
                 Text("clipboard.footer")
                     .font(DaybookType.caption)
@@ -42,7 +46,7 @@ struct ClipboardHistoryBrowser: View {
                 focus: $searchFocus,
                 onSubmit: {
                     if let item = session.selectedOrFirst() {
-                        onCommit(item.id, false, false)
+                        onCommit(item.id, session.plainByDefault, false)
                     }
                 },
                 allowsShiftNewline: false,
@@ -59,10 +63,7 @@ struct ClipboardHistoryBrowser: View {
 
     @ViewBuilder
     private var content: some View {
-        if session.contentsHidden {
-            DaybookEmptyState(title: "clipboard.locked", subtitle: "clipboard.locked.help", systemImage: "lock")
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        } else if !session.recording && session.items.isEmpty {
+        if !session.recording && session.items.isEmpty {
             DaybookEmptyState(title: "clipboard.paused", systemImage: "pause.circle")
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else if session.visibleItems.isEmpty {
@@ -86,7 +87,13 @@ struct ClipboardHistoryBrowser: View {
     private func row(_ item: ClipboardHistoryRecord, index: Int) -> some View {
         let selected = session.selectedID == item.id
         return HStack(alignment: .center, spacing: DaybookSpacing.sm) {
-            if index < 9 {
+            if let pinKey = item.pinKey {
+                Text(pinKey.uppercased())
+                    .font(DaybookType.badge)
+                    .foregroundStyle(DaybookPalette.accent.base)
+                    .frame(width: DaybookSpacing.lg, alignment: .center)
+                    .accessibilityLabel(Text(pinKey.uppercased()))
+            } else if index < 9 {
                 Text("\(index + 1)")
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.text.tertiary)
@@ -96,9 +103,8 @@ struct ClipboardHistoryBrowser: View {
             }
             thumbnail(item)
             VStack(alignment: .leading, spacing: DaybookSpacing.xxs) {
-                Text(item.preview.isEmpty ? String(localized: "clipboard.image") : item.preview)
+                highlightedPreview(item)
                     .font(DaybookType.body)
-                    .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(2)
                 if !item.sourceBundleID.isEmpty {
                     Text(BundleDisplay.name(for: item.sourceBundleID))
@@ -124,7 +130,15 @@ struct ClipboardHistoryBrowser: View {
         .onTapGesture {
             session.selectedID = item.id
             if commitsOnClick {
-                onCommit(item.id, false, false)
+                onCommit(item.id, session.plainByDefault, session.clickAction == .paste)
+            }
+        }
+        .onHover { inside in
+            guard showsExtendedPreview(item) else { return }
+            if inside {
+                previewID = item.id
+            } else if previewID == item.id {
+                previewID = nil
             }
         }
         .contextMenu {
@@ -140,6 +154,57 @@ struct ClipboardHistoryBrowser: View {
         }
             .accessibilityLabel(Text(item.preview.isEmpty ? String(localized: "clipboard.image") : item.preview))
             .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+
+    private var previewItem: ClipboardHistoryRecord? {
+        guard let previewID else { return nil }
+        return session.visibleItems.first { $0.id == previewID }
+    }
+
+    private func showsExtendedPreview(_ item: ClipboardHistoryRecord) -> Bool {
+        item.imageFile != nil || !item.filePaths.isEmpty || item.plainText.count > 180 || item.plainText.contains("\n")
+    }
+
+    private func highlightedPreview(_ item: ClipboardHistoryRecord) -> Text {
+        let source = item.preview.isEmpty ? String(localized: "clipboard.image") : item.preview
+        let ranges = ClipboardHistoryRules.highlightRanges(in: source, needle: session.query, mode: session.searchMode)
+        var attributed = AttributedString(source)
+        attributed.foregroundColor = DaybookPalette.text.primary
+        for range in ranges {
+            guard let start = AttributedString.Index(range.lowerBound, within: attributed),
+                  let end = AttributedString.Index(range.upperBound, within: attributed) else { continue }
+            attributed[start..<end].foregroundColor = DaybookPalette.accent.base
+        }
+        return Text(attributed)
+    }
+
+    private func previewCard(_ item: ClipboardHistoryRecord) -> some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            if let data = session.imageData(for: item), let image = NSImage(data: data) {
+                Image(nsImage: image)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(maxWidth: 280, maxHeight: 140)
+            }
+            if !item.plainText.isEmpty {
+                Text(item.plainText)
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .lineLimit(8)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if !item.filePaths.isEmpty {
+                Text(item.filePaths.map { URL(fileURLWithPath: $0).lastPathComponent }.joined(separator: "\n"))
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .lineLimit(4)
+            }
+        }
+        .padding(DaybookSpacing.sm)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DaybookPalette.cardSurface)
+        .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder

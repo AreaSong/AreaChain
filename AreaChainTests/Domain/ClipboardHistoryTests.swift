@@ -95,10 +95,28 @@ struct ClipboardHistoryRulesTests {
     @Test func searchModes() {
         let items = [record("Alpha", at: 1), record("beta", at: 2)]
         #expect(ClipboardHistoryRules.filtered(items, query: "alp", mode: .mixed).count == 1)
+        #expect(ClipboardHistoryRules.filtered([record("catalog", at: 3)], query: "cta", mode: .mixed).count == 1)
+        #expect(ClipboardHistoryRules.filtered([record("catalog", at: 3)], query: "cta", mode: .exact).isEmpty)
+        #expect(ClipboardHistoryRules.highlightRanges(in: "catalog", needle: "cta", mode: .mixed).map { String("catalog"[$0]) } == ["c", "t", "a"])
         #expect(ClipboardHistoryRules.filtered(items, query: "alp", mode: .exact).isEmpty)
         #expect(ClipboardHistoryRules.filtered(items, query: "Alpha", mode: .exact).count == 1)
         #expect(ClipboardHistoryRules.filtered(items, query: "^b", mode: .regex).map(\.plainText) == ["beta"])
         #expect(ClipboardHistoryRules.filtered(items, query: "(", mode: .regex).isEmpty)
+    }
+
+    @Test func pinLettersStayPutAndReturnAfterUnpin() {
+        let first = record("one", at: 1)
+        let second = record("two", at: 2)
+        let once = ClipboardHistoryRules.pin([first, second], id: first.id, at: Date(timeIntervalSince1970: 3))
+        let twice = ClipboardHistoryRules.pin(once, id: second.id, at: Date(timeIntervalSince1970: 4))
+        #expect(twice.first { $0.id == first.id }?.pinKey == "a")
+        #expect(twice.first { $0.id == second.id }?.pinKey == "b")
+        let released = ClipboardHistoryRules.unpin(twice, id: first.id)
+        #expect(released.first { $0.id == first.id }?.pinKey == nil)
+        let reused = ClipboardHistoryRules.pin(released, id: first.id, at: Date(timeIntervalSince1970: 5))
+        #expect(reused.first { $0.id == first.id }?.pinKey == "a")
+        let merged = ClipboardHistoryRules.merging(reused, new: record("one", at: 9), limit: 20)
+        #expect(merged.first { $0.plainText == "one" }?.pinKey == "a")
     }
 
     @Test func clearingKeepsPinsUnlessAsked() {
@@ -225,5 +243,69 @@ struct ClipboardHistoryStoreTests {
             copiedAt: .now
         ))
         #expect(session.items.map(\.plainText) == ["keep-me"])
+        session.setPanelAnchor(.center)
+        session.setClickAction(.paste)
+        session.setPlainByDefault(true)
+        session.setInterval(0.4)
+        let restored = ClipboardHistorySession(
+            store: ClipboardHistoryStore(root: root),
+            defaults: defaults,
+            pasteboard: nil
+        )
+        #expect(restored.panelAnchor == .center)
+        #expect(restored.clickAction == .paste)
+        #expect(restored.plainByDefault)
+        #expect(restored.interval == 0.4)
+    }
+
+    @Test func olderHistoryWithoutPinOrFilesStillLoads() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "areachain-clipboard-old-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let id = UUID()
+        let json = """
+        {"items":[{"id":"\(id.uuidString)","copiedAt":10,"sourceBundleID":"","plainText":"old","contentHash":"old"}]}
+        """
+        try Data(json.utf8).write(to: root.appending(path: "history.json"))
+        let loaded = ClipboardHistoryStore(root: root).load()
+        #expect(loaded.count == 1)
+        #expect(loaded.first?.plainText == "old")
+        #expect(loaded.first?.pinKey == nil)
+        #expect(loaded.first?.filePaths.isEmpty == true)
+    }
+
+    @Test func fileCopyPastesBackAsFileURLs() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "areachain-clipboard-files-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        let file = root.appending(path: "note.txt")
+        try Data("hi".utf8).write(to: file)
+        let item = ClipboardHistoryRecord(
+            id: UUID(),
+            copiedAt: .now,
+            pinnedAt: nil,
+            sourceBundleID: "",
+            plainText: file.path,
+            html: nil,
+            rtf: nil,
+            imageFile: nil,
+            filePaths: [file.path],
+            contentHash: "file"
+        )
+        let board = NSPasteboard(name: .init("areachain.clipboard.files.\(UUID().uuidString)"))
+        defer { board.clearContents() }
+        #expect(ClipboardHistoryWriter.write(item, image: nil, plainOnly: false, to: board))
+        let urls = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
+        #expect(urls?.map(\.standardizedFileURL.path) == [file.standardizedFileURL.path])
+        #expect(board.data(forType: ClipboardHistoryWriter.marker) != nil)
+        let draft = ClipboardPasteboardReader.draft(from: board, frontBundle: nil)
+        #expect(draft.filePaths.map { URL(fileURLWithPath: $0).standardizedFileURL.path } == [file.standardizedFileURL.path])
+
+        #expect(ClipboardHistoryWriter.write(item, image: nil, plainOnly: true, to: board))
+        let plainURLs = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
+        #expect(plainURLs?.isEmpty != false)
+        #expect(board.string(forType: .string) == file.path)
     }
 }

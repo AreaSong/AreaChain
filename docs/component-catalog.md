@@ -52,7 +52,7 @@
 | 搜索结果 | `BoardSearchHitGroups`、`BoardSearchHitRow`、`WorkspaceGlobalSearchView`、`SearchResultsView` | [BoardSearchHitRow.swift](../AreaChain/Features/Search/BoardSearchHitRow.swift)、[WorkspaceGlobalSearchView.swift](../AreaChain/Features/Workspace/WorkspaceGlobalSearchView.swift)、[SearchResultsView.swift](../AreaChain/Features/Search/SearchResultsView.swift) | 分组与命中行共用；打开方式由调用方决定。没有独立搜索页。工作台顶栏用 `BoardSearchHitGroups`（`presentation: .workspace`）就地打开检查器。`SearchResultsView` 只服务菜单栏，打开任务走日历。不要把菜单栏路由复制进工作台。工作台和菜单栏一次 body 先 `parseQuery`，空查询不建 snapshot；非空才 map snapshot 并 `hits(parsed)`。附件文件名复用同一份 `textKeywords`。含 `!优先级`/`@时刻` 的查询不建手记 snapshot。打开附件只 snapshot 命中的那一条拥有者，不整表 map 后再 `first(where:)`。每个字符仍会因 query 变化重算，但同一次 body 不再重复解析。 |
 | 日历 | `CalendarPage`、`CalendarMonthGrid` | [CalendarPage.swift](../AreaChain/Features/Calendar/CalendarPage.swift)、[CalendarMonthGrid.swift](../AreaChain/Features/Calendar/CalendarMonthGrid.swift) | 使用 `DayKey` 和已有日计数；只允许临时待办拖动，不能复制同步规则。 |
 | Dashboard | `DashboardView` 及其统计/热力图分节 | [DashboardView.swift](../AreaChain/Features/Dashboard/DashboardView.swift) | 使用既有投影和日期统计；Dashboard 不是第二个可编辑事项清单。一次 body 只建一份 `DashboardSnapshot`；热力列分组在 `DashboardHeatmapLayout` 内只切一次。 |
-| 剪贴板历史 | `ClipboardHistoryBrowser`、`ClipboardHistorySession` | [ClipboardHistoryBrowser.swift](../AreaChain/Features/Clipboard/ClipboardHistoryBrowser.swift)、[ClipboardHistorySession.swift](../AreaChain/Services/ClipboardHistorySession.swift) | 工作台「内容 → 剪贴板」和剪贴板历史小窗共用这一份会话。忽略、排序、搜索和条数只走 `ClipboardHistoryRules`。不要把历史写成待办，也不要并进 `ClipboardCapture`。 |
+| 剪贴板历史 | `ClipboardHistoryBrowser`、`ClipboardHistorySession` | [ClipboardHistoryBrowser.swift](../AreaChain/Features/Clipboard/ClipboardHistoryBrowser.swift)、[ClipboardHistorySession.swift](../AreaChain/Services/ClipboardHistorySession.swift) | 工作台「内容 → 剪贴板」和剪贴板历史小窗共用这一份会话。忽略、排序、搜索、置顶字母和条数只走 `ClipboardHistoryRules`。历史不跟隐私锁走。不要把历史写成待办，也不要并进 `ClipboardCapture`。菜单栏 Option 单击只切换记录开关，普通点击仍开关浮层。 |
 
 ## 4. 领域、服务与变更入口
 
@@ -68,7 +68,7 @@
 | 任务变更 | `DayBoardMutations` | [DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift)、[DayBoardMutations+Batch.swift](../AreaChain/Features/Tasks/DayBoardMutations+Batch.swift) | 完成、打卡、标签、改期、回收站和批量动作沿现有事务入口。 |
 | 附件拥有者 | `AttachmentAccess`、`AttachmentOwnerIndex` | [DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift) | 回收站/浏览按 owner key 走 context predicate；工作台搜索拥有者仍用整表清单建索引，附件只 `@Query` 活行。选图/保存走同一套 id descriptor。重复 UUID 不可用。不能用「未删除 ID 集合」替代 `isSingleLive`。 |
 | 事务和通知 | `ModelChanges` | [ModelChanges.swift](../AreaChain/Services/ModelChanges.swift) | 保存成功后才发布变更；失败保留草稿和用户上下文。 |
-| 窗口路由 | `AppWindows`、`DiaryWindows` | [AppWindows.swift](../AreaChain/Services/AppWindows.swift)、[DiaryWindows.swift](../AreaChain/Features/Diary/DiaryWindows.swift) | 工作台、菜单栏和手记小窗沿既有激活/复用策略，不新增平行窗口装配。 |
+| 窗口路由 | `AppWindows`、`DiaryWindows` | [AppWindows.swift](../AreaChain/Services/AppWindows.swift)、[DiaryWindows.swift](../AreaChain/Features/Diary/DiaryWindows.swift) | 工作台、菜单栏和手记小窗沿既有激活/复用策略，不新增平行窗口装配。设置从应用菜单、⌘, 和浮层进入工作台设置页。 |
 | 项目支持 | `ProjectSupport` | [ProjectSupport.swift](../AreaChain/Domain/ProjectSupport.swift) | 版本、使用说明、问题报告、功能建议、仓库和许可证链接只用这一份。问题报告只含应用版本、构建号、macOS 版本和界面语言，不接收手记、附件或密码。 |
 | 快捷键 | `ShortcutCatalog`、`ShortcutStore` | [ShortcutCatalog.swift](../AreaChain/Domain/ShortcutCatalog.swift)、[ShortcutStore.swift](../AreaChain/Services/ShortcutStore.swift) | 可重设组合、默认值和冲突只在目录里决定。全局热键默认不绑定，只在打开浮层、剪贴板加今天、全局打开工作台和剪贴板历史之间互相占用；应用内命令单独占用。浮层与剪贴板加今天仍用原来的 UserDefaults 键，缺键表示未设置。方向键、空格、回车、Delete、Esc 和备注 ⌘Return 不进目录。 |
 
