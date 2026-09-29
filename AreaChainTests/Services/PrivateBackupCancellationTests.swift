@@ -91,6 +91,35 @@ struct PrivateBackupCancellationTests {
         #expect(try f.files.read(reference: image.reference, root: f.root) == imageBytes)
     }
 
+    @Test func cancelledBackupReadStopsDuringPasswordUnwrap() async throws {
+        let f = try await PrivacyFixture.make()
+        defer {
+            VaultCrypto.testingDuringKeyDerivation = nil
+            f.cleanup()
+        }
+        let tag = try f.tag()
+        let note = try f.repository.addDiary(text: "回读轮次中取消", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let imageBytes = Data(repeating: 0x67, count: 16 * 1024)
+        let image = try f.image(owner: note, data: imageBytes)
+        let url = f.root.appending(path: "unwrap-mid-cancel.areachainbackup")
+        _ = try await PrivateBackupService.export(to: url, password: backupPassword, environment: f.environment)
+        let original = try Data(contentsOf: url)
+        let originalText = note.text
+        let originalProtected = note.hasProtectedContent
+        let gate = CancelGate()
+        let password = backupPassword
+        VaultCrypto.testingDuringKeyDerivation = { _ in try gate.blockUntilCancelled() }
+        let task = Task.detached {
+            _ = try PrivateBackupFile.open(from: url, password: password)
+        }
+        try await Task.detached { try gate.waitUntilWorkStarted() }.value
+        task.cancel()
+        await #expect(throws: PrivacyError.cancelled) { try await task.value }
+        #expect(try Data(contentsOf: url) == original)
+        #expect(note.text == originalText && note.hasProtectedContent == originalProtected)
+        #expect(try f.files.read(reference: image.reference, root: f.root) == imageBytes)
+    }
+
     @Test func restoreUnwrapsBackupPasswordOnce() async throws {
         let source = try await PrivacyFixture.make()
         let destination = try await PrivacyFixture.make()
