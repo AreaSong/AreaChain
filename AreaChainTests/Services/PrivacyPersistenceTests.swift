@@ -224,8 +224,16 @@ struct PrivacyPersistenceTests {
     }
 
     @Test func passwordDerivationMatchesIndependentPBKDF2Vector() throws {
-        let key = try VaultCrypto.deriveKey(password: "test-vector-password", salt: Data(0..<32), iterations: 600_000)
-        let hex = key.withUnsafeBytes { $0.map { String(format: "%02x", $0) }.joined() }
-        #expect(hex == "180876f8e432a9d9f315de26fc49e78b13ef1b1641c5f50844909c45ccfb9e51")
+        let salt = Data(0..<32)
+        let fast = try VaultCrypto.deriveKey(password: "test-vector-password", salt: salt, iterations: 600_000)
+        let cooperative = try VaultCrypto.deriveKey(
+            password: "test-vector-password", salt: salt, iterations: 600_000, cooperative: true
+        )
+        let expected = "180876f8e432a9d9f315de26fc49e78b13ef1b1641c5f50844909c45ccfb9e51"
+        func hex(_ key: SymmetricKey) -> String {
+            key.withUnsafeBytes { $0.map { String(format: "%02x", $0) }.joined() }
+        }
+        #expect(hex(fast) == expected)
+        #expect(hex(cooperative) == expected)
     }
 }

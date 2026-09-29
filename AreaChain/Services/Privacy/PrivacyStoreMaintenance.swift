@@ -5,8 +5,10 @@ import SwiftData
 /// 更新正文列不足以清除 SQLite 空闲页/WAL。清理标记先于转换落盘，崩溃后仍可重试重建。
 enum PrivacyStoreMaintenance {
     #if DEBUG
-    /// 注入 VACUUM 的 SQLite 返回码；非 SQLITE_OK 时跳过语句并保留标记。不是进程杀死。
-    nonisolated(unsafe) static var testingVacuumStatus: Int32?
+    /// 进度回调达到该次数后中断正在执行的 VACUUM；0 或 nil 只看任务取消。
+    nonisolated(unsafe) static var testingVacuumInterruptAfter: Int?
+    /// 进度回调里调用，便于测试卡在语句执行中；夹具必须在 defer 里清掉。
+    nonisolated(unsafe) static var testingVacuumProgress: (@Sendable () throws -> Void)?
     #endif
 
     static func marker(for url: URL) -> URL { url.appendingPathExtension("privacy-cleanup") }
@@ -45,17 +47,41 @@ enum PrivacyStoreMaintenance {
             throw PrivacyError.storageFailure
         }
         try PrivacyTask.checkCancellation()
-        guard vacuum(db) == SQLITE_OK,
-              sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_TRUNCATE, nil, nil) == SQLITE_OK else {
+        let status = vacuum(db)
+        if status != SQLITE_OK {
+            // 进度回调中断与打开失败一样保留标记；取消不要报成存储损坏。
+            if Task.isCancelled { throw PrivacyError.cancelled }
+            throw PrivacyError.storageFailure
+        }
+        guard sqlite3_wal_checkpoint_v2(db, nil, SQLITE_CHECKPOINT_TRUNCATE, nil, nil) == SQLITE_OK else {
             throw PrivacyError.storageFailure
         }
         try FileManager.default.removeItem(at: marker(for: url))
     }
 
     private static func vacuum(_ db: OpaquePointer) -> Int32 {
-        #if DEBUG
-        if let injected = testingVacuumStatus { return injected }
-        #endif
+        let probe = VacuumProbe()
+        sqlite3_progress_handler(db, 16, vacuumProgress, Unmanaged.passUnretained(probe).toOpaque())
+        defer { sqlite3_progress_handler(db, 0, nil, nil) }
         return sqlite3_exec(db, "VACUUM;", nil, nil, nil)
     }
+}
+
+private final class VacuumProbe: @unchecked Sendable {
+    var ticks = 0
+}
+
+private let vacuumProgress: @convention(c) (UnsafeMutableRawPointer?) -> Int32 = { pointer in
+    guard let pointer else { return 0 }
+    let probe = Unmanaged<VacuumProbe>.fromOpaque(pointer).takeUnretainedValue()
+    probe.ticks += 1
+    #if DEBUG
+    if let hook = PrivacyStoreMaintenance.testingVacuumProgress {
+        do { try hook() } catch { return 1 }
+    }
+    if let limit = PrivacyStoreMaintenance.testingVacuumInterruptAfter, limit > 0, probe.ticks >= limit {
+        return 1
+    }
+    #endif
+    return Task.isCancelled ? 1 : 0
 }

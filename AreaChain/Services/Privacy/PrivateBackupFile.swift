@@ -25,8 +25,8 @@ enum PrivateBackupFile {
         let keyData = try VaultCrypto.randomBytes(count: 32)
         let key = SymmetricKey(data: keyData)
         let id = UUID()
-        let header = Header(id: id, password: try VaultCrypto.wrap(keyData, password: password, vaultID: id))
-        // wrap 里的 PBKDF2 无法中途协作取消；返回后立刻再看一眼，避免口令派生期间被取消仍继续写盘。
+        let header = Header(id: id, password: try VaultCrypto.wrap(keyData, password: password, vaultID: id, cooperative: true))
+        // wrap 在 HMAC 轮次间会观察取消；返回后再看一眼，避免派生刚结束仍继续写盘。
         try PrivacyTask.checkCancellation()
         var manifest = capture.manifest
         manifest.files = try manifest.snapshot.attachments.map { item in
@@ -84,7 +84,8 @@ enum PrivateBackupFile {
         let handle = try FileHandle(forReadingFrom: url)
         defer { try? handle.close() }
         let header = try readHeader(handle)
-        let keyData = try VaultCrypto.unwrap(header.password, password: password, vaultID: header.id)
+        let keyData = try VaultCrypto.unwrap(header.password, password: password, vaultID: header.id, cooperative: true)
+        // unwrap 在 HMAC 轮次间已观察取消；返回后再看一眼，避免刚派生完仍继续读附件。
         try PrivacyTask.checkCancellation()
         let key = SymmetricKey(data: keyData)
         let manifest = try readManifest(handle, header: header, key: key)

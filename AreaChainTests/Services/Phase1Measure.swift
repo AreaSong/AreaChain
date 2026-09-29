@@ -18,6 +18,7 @@ struct Phase1Sample: Codable {
     var p50ComputeWallMs = 0.0
     var meanInBlock = 0.0
     var meanOutBlock = 0.0
+    var storeFileBytes: UInt64 = 0
     var mainActor = true
     var fetchCalls = 0
     var resultRows = 0
@@ -36,7 +37,7 @@ struct Phase1Sample: Codable {
     var physicalMemoryBytes: UInt64 = 0
     var buildConfiguration = "Debug"
     var approximate = true
-    /// wall=进程单调时钟；main_cpu=当前线程 user+system；fetch/compute=场景内分段；blocks=rusage。
+    /// wall=进程单调时钟；main_cpu=当前线程 user+system；fetch/compute=场景内分段；blocks=rusage；store_file_bytes=磁盘库文件大小。
     var clock = ""
     var logDirectory = ""
     var logIsolation = ""
@@ -247,7 +248,7 @@ enum Phase1Log {
 enum Phase1Measure {
     static let warmup = 1
     static let samples = 7
-    static let clockKind = "wall_ms,main_cpu_ms,fetch_wall_ms,compute_wall_ms,rusage_blocks"
+    static let clockKind = "wall_ms,main_cpu_ms,fetch_wall_ms,compute_wall_ms,rusage_blocks,store_file_bytes"
 
     static func record(
         scenario: String,
@@ -411,8 +412,6 @@ enum Phase1Measure {
         let fetches = draft.series.fetches.sorted()
         let computes = draft.series.computes.sorted()
         let meanWall = draft.series.walls.reduce(0, +) / Double(max(draft.series.walls.count, 1))
-        let meanIn = Double(draft.series.inBlocks.reduce(0, +)) / Double(max(draft.series.inBlocks.count, 1))
-        let meanOut = Double(draft.series.outBlocks.reduce(0, +)) / Double(max(draft.series.outBlocks.count, 1))
         var value = Phase1Sample()
         value.scenario = draft.scenario
         value.scale = corpus.graph.scale
@@ -428,8 +427,9 @@ enum Phase1Measure {
         value.p50MainCpuMs = Phase1Clock.roundMs(Phase1Clock.percentile(cpus, 0.50))
         value.p50FetchWallMs = Phase1Clock.roundMs(Phase1Clock.percentile(fetches, 0.50))
         value.p50ComputeWallMs = Phase1Clock.roundMs(Phase1Clock.percentile(computes, 0.50))
-        value.meanInBlock = Phase1Clock.roundMs(meanIn)
-        value.meanOutBlock = Phase1Clock.roundMs(meanOut)
+        value.meanInBlock = Double(draft.series.inBlocks.reduce(0, +)) / Double(max(draft.series.inBlocks.count, 1))
+        value.meanOutBlock = Double(draft.series.outBlocks.reduce(0, +)) / Double(max(draft.series.outBlocks.count, 1))
+        value.storeFileBytes = storeFileBytes(corpus)
         value.fetchCalls = draft.last.fetchCalls
         value.resultRows = draft.last.rows
         value.repeatScans = draft.repeatScans
@@ -450,5 +450,14 @@ enum Phase1Measure {
         value.logDirectory = Phase1Log.persistsFiles ? Phase1Log.combinedURL.deletingLastPathComponent().path : ""
         value.logIsolation = Phase1Log.isolationLabel
         return value
+    }
+
+    private static func storeFileBytes(_ corpus: Phase1Corpus) -> UInt64 {
+        guard let root = corpus.diskRoot else { return 0 }
+        let url = root.appendingPathComponent("store")
+        guard let size = try? FileManager.default.attributesOfItem(atPath: url.path)[.size] as? NSNumber else {
+            return 0
+        }
+        return size.uint64Value
     }
 }

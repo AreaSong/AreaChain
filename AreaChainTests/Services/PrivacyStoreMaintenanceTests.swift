@@ -1,6 +1,5 @@
 import Darwin
 import Foundation
-import SQLite3
 import SwiftData
 import Testing
 @testable import AreaChain
@@ -29,36 +28,52 @@ struct PrivacyStoreMaintenanceTests {
         let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-vacuum-interrupt-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer {
-            PrivacyStoreMaintenance.testingVacuumStatus = nil
+            PrivacyStoreMaintenance.testingVacuumInterruptAfter = nil
+            PrivacyStoreMaintenance.testingVacuumProgress = nil
             try? FileManager.default.removeItem(at: root)
         }
         let url = root.appending(path: "fixture.store")
         let title = "VACUUM_INTERRUPT_SENTINEL"
-        try autoreleasepool {
-            let container = try open(url)
-            let context = container.mainContext
-            context.insert(TodoItem(title: title, dayKey: "2026-09-29"))
-            try context.save()
-            try PrivacyStoreMaintenance.mark(context)
-        }
-        PrivacyStoreMaintenance.testingVacuumStatus = SQLITE_INTERRUPT
+        try seed(url, title: title, rows: 400, noteSize: 2_048)
+        PrivacyStoreMaintenance.testingVacuumInterruptAfter = 1
         #expect(throws: PrivacyError.storageFailure) {
             try PrivacyStoreMaintenance.finish(at: url)
         }
         #expect(FileManager.default.fileExists(atPath: PrivacyStoreMaintenance.marker(for: url).path))
         try autoreleasepool {
             let container = try open(url)
-            let todo = try #require(try container.mainContext.fetch(FetchDescriptor<TodoItem>()).first)
-            #expect(todo.title == title)
+            #expect(try container.mainContext.fetchCount(FetchDescriptor<TodoItem>()) == 400)
+            let wanted = "\(title)-0"
+            var descriptor = FetchDescriptor<TodoItem>(predicate: #Predicate { $0.title == wanted })
+            descriptor.fetchLimit = 1
+            #expect(try container.mainContext.fetch(descriptor).first?.title == wanted)
         }
-        PrivacyStoreMaintenance.testingVacuumStatus = nil
+        PrivacyStoreMaintenance.testingVacuumInterruptAfter = nil
         try PrivacyStoreMaintenance.finish(at: url)
         #expect(!FileManager.default.fileExists(atPath: PrivacyStoreMaintenance.marker(for: url).path))
-        try autoreleasepool {
-            let container = try open(url)
-            let todo = try #require(try container.mainContext.fetch(FetchDescriptor<TodoItem>()).first)
-            #expect(todo.title == title)
+    }
+
+    @Test func vacuumCancelDuringStatementLeavesMarker() async throws {
+        let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-vacuum-cancel-\(UUID())")
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer {
+            PrivacyStoreMaintenance.testingVacuumProgress = nil
+            try? FileManager.default.removeItem(at: root)
         }
+        let url = root.appending(path: "fixture.store")
+        try seed(url, title: "VACUUM_CANCEL_SENTINEL", rows: 400, noteSize: 2_048)
+        let gate = CancelGate()
+        PrivacyStoreMaintenance.testingVacuumProgress = { try gate.blockUntilCancelled() }
+        let task = Task.detached {
+            try PrivacyStoreMaintenance.finish(at: url)
+        }
+        try await Task.detached { try gate.waitUntilWorkStarted() }.value
+        task.cancel()
+        await #expect(throws: PrivacyError.cancelled) { try await task.value }
+        #expect(FileManager.default.fileExists(atPath: PrivacyStoreMaintenance.marker(for: url).path))
+        PrivacyStoreMaintenance.testingVacuumProgress = nil
+        try PrivacyStoreMaintenance.finish(at: url)
+        #expect(!FileManager.default.fileExists(atPath: PrivacyStoreMaintenance.marker(for: url).path))
     }
 
     @Test func missingStoreKeepsMarker() throws {

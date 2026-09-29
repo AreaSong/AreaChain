@@ -47,6 +47,11 @@ struct Phase1BaselineTests {
         }
         #expect(try corpus.tasks.fetchTodo(id: corpus.probeTodoID) != nil)
         try assertPhase1LogIsIsolated()
+        let samples = try Phase1Log.samples()
+        let cold = try sample(samples, "disk.fetch.todo.byId.cold")
+        #expect(cold.storeFileBytes > 0)
+        #expect(cold.fetchCalls == 1)
+        #expect(cold.clock.contains("store_file_bytes"))
     }
 
     private func run(scale: Int, onDisk: Bool) async throws {
