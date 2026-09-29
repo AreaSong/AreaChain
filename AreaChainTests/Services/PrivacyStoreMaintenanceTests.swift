@@ -74,7 +74,7 @@ struct PrivacyStoreMaintenanceTests {
         #expect(FileManager.default.fileExists(atPath: marker.path))
     }
 
-    @Test func killedVacuumLeavesMarkerAndRetrySucceeds() throws {
+    @Test func killedExternalVacuumLeavesStoreReadableAndFinishSucceeds() throws {
         try #require(FileManager.default.isExecutableFile(atPath: "/usr/bin/sqlite3"))
         let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-vacuum-kill-\(UUID())")
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
@@ -82,7 +82,8 @@ struct PrivacyStoreMaintenanceTests {
         let url = root.appending(path: "fixture.store")
         let title = "VACUUM_KILL_SENTINEL"
         try seed(url, title: title, rows: 1_500, noteSize: 4_096)
-        try killExternalVacuum(at: url)
+        try interruptExternalVacuum(at: url)
+        // sidecar 标记不是库文件；VACUUM 重写库时不得把它删掉。finish 成功后才删除。
         #expect(FileManager.default.fileExists(atPath: PrivacyStoreMaintenance.marker(for: url).path))
         try autoreleasepool {
             let container = try open(url)
@@ -109,18 +110,30 @@ struct PrivacyStoreMaintenanceTests {
         }
     }
 
-    /// 杀死独立 `sqlite3 VACUUM` 进程，模拟 `finish` 做到一半被 SIGKILL；不杀测试宿主。
-    private func killExternalVacuum(at url: URL) throws {
+    /// 杀死独立 `sqlite3 VACUUM`，证明辅助进程被 SIGKILL 后合成库仍可读、随后 `finish` 可完成。
+    /// 不杀测试宿主，也不等于应用进程内 `sqlite3_exec(VACUUM)` 被杀。
+    private func interruptExternalVacuum(at url: URL) throws {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/sqlite3")
-        process.arguments = [url.path, "PRAGMA wal_checkpoint(TRUNCATE); VACUUM;"]
+        process.arguments = [
+            url.path,
+            "PRAGMA cache_size=1; PRAGMA wal_checkpoint(TRUNCATE); VACUUM;"
+        ]
         process.standardOutput = Pipe()
         process.standardError = Pipe()
         try process.run()
-        // 启动后立刻杀死，避免小库 VACUUM 在等待循环里跑完；Process.run 不会等到语句结束。
-        if process.isRunning {
-            kill(process.processIdentifier, SIGKILL)
+        let started = Date().addingTimeInterval(0.2)
+        while !process.isRunning, Date() < started {
+            Thread.sleep(forTimeInterval: 0.001)
         }
+        try #require(process.isRunning, "未能启动 /usr/bin/sqlite3 VACUUM")
+        // 给 checkpoint/VACUUM 一个短窗口再杀；若已经正常退出，夹具太小，不能冒充中途中断。
+        let dwell = Date().addingTimeInterval(0.008)
+        while process.isRunning, Date() < dwell {
+            Thread.sleep(forTimeInterval: 0.001)
+        }
+        try #require(process.isRunning, "VACUUM 在观察窗口内已结束，无法证明进程被杀死")
+        kill(process.processIdentifier, SIGKILL)
         process.waitUntilExit()
         try #require(
             process.terminationReason == .uncaughtSignal,
