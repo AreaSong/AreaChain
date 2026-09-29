@@ -7,6 +7,7 @@ struct ClipboardHistoryBrowser: View {
     var commitsOnClick: Bool
     var onCommit: (UUID, Bool, Bool) -> Void
 
+    @Environment(\.locale) private var locale
     @State private var searchFocus = false
     @State private var previewID: UUID?
 
@@ -42,7 +43,7 @@ struct ClipboardHistoryBrowser: View {
         } field: {
             DaybookTextField(
                 text: $session.query,
-                placeholder: String(localized: "clipboard.search"),
+                placeholder: L10n.string("clipboard.search", locale: locale),
                 focus: $searchFocus,
                 onSubmit: {
                     if let item = session.selectedOrFirst() {

@@ -4755,8 +4755,8 @@
     "clipboard.subtitle": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "History stays on this Mac and is not turned into tasks. Record “Clipboard history” in Shortcuts to open the panel." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "历史只留在这台 Mac 上，不会写成待办。在快捷键页录制「剪贴板历史」后可弹出小窗。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "History stays on this Mac and is not turned into tasks. Use Show panel in the header, or record “Clipboard history” in Shortcuts." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "历史只留在这台 Mac 上，不会写成待办。页头的「弹出小窗」，或在快捷键页录制「剪贴板历史」，都可以打开小窗。" } }
       }
     },
     "clipboard.search": {
@@ -4883,6 +4883,13 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Clipboard options" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板选项" } }
+      }
+    },
+    "clipboard.showPanel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show panel" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "弹出小窗" } }
       }
     },
     "clipboard.openPage": {

@@ -12,6 +12,10 @@ struct ClipboardHistoryPage: View {
             minHeight: 480,
             trailing: {
                 HStack(spacing: DaybookSpacing.sm) {
+                    Button("clipboard.showPanel") {
+                        ClipboardHistoryPanel.shared.toggle()
+                    }
+                    .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
                     DaybookIconButton(
                         systemName: session.recording ? "pause" : "play",
                         label: session.recording ? "clipboard.pause" : "clipboard.resume",
