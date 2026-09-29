@@ -110,4 +110,13 @@ final class BoardRowPointerView: NSView {
         }
         super.mouseDragged(with: event)
     }
+
+    override func scrollWheel(with event: NSEvent) {
+        // 行点击层盖住整行。滚轮不继续交给所在滚动视图时，任务清单在行上滚不动。
+        guard let scrollView = enclosingScrollView else {
+            super.scrollWheel(with: event)
+            return
+        }
+        scrollView.scrollWheel(with: event)
+    }
 }

@@ -80,48 +80,54 @@ struct TasksPage: View {
         VStack(alignment: .leading, spacing: 10) {
             headerBar(page)
             ScrollViewReader { scrollProxy in
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 6) {
-                        scrollOffsetTracker
+                // 视口高度只作为内容的下限。固定成视口高度时，多出来的任务会被裁掉，滚动视图也认为没有可滚距离。
+                GeometryReader { viewport in
+                    let minimumHeight = max(viewport.size.height - 4, 120)
+                    let centersYesterday = page.isTodayEmpty && showYesterday && !page.yesterdayItems.isEmpty
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 6) {
+                            scrollOffsetTracker
 
-                        if page.isTodayEmpty && showYesterday && !page.yesterdayItems.isEmpty {
-                            centeredYesterdaySection(page)
-                        } else {
-                            yesterdaySection(page)
-                            upcomingSection(page)
+                            if centersYesterday {
+                                centeredYesterdaySection(page)
+                            } else {
+                                yesterdaySection(page)
+                                upcomingSection(page)
+                            }
+                            dayBoardView(page)
+
+                            blankClickArea
                         }
-                        dayBoardView(page)
-
-                        blankClickArea
+                        .padding(.vertical, 2)
+                        .frame(
+                            maxWidth: .infinity,
+                            minHeight: minimumHeight,
+                            alignment: centersYesterday ? .center : .topLeading
+                        )
+                        .background(
+                            BlankClickArea(onClick: clearSelection)
+                        )
                     }
-                    .padding(.vertical, 2)
-                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                    .containerRelativeFrame(.vertical, alignment: .topLeading) { length, _ in
-                        max(length - 4, 120)
+                    .coordinateSpace(name: "tasks_page_scroll")
+                    .onPreferenceChange(TasksPageScrollOffsetKey.self) { offset in
+                        let shouldCollapse = offset < -32
+                        if WorkspaceNavigation.shared.isInlineTitleVisible != shouldCollapse {
+                            WorkspaceNavigation.shared.isInlineTitleVisible = shouldCollapse
+                        }
                     }
-                    .background(
-                        BlankClickArea(onClick: clearSelection)
-                    )
+                    .daybookScroll(featherEdges: true)
+                    .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
+                        if let newValue {
+                            withAnimation(DaybookMotion.interactive) {
+                                scrollProxy.scrollTo(newValue, anchor: .center)
+                            }
+                        }
+                    }
                 }
-                .coordinateSpace(name: "tasks_page_scroll")
-                .onPreferenceChange(TasksPageScrollOffsetKey.self) { offset in
-                    let shouldCollapse = offset < -32
-                    if WorkspaceNavigation.shared.isInlineTitleVisible != shouldCollapse {
-                        WorkspaceNavigation.shared.isInlineTitleVisible = shouldCollapse
-                    }
-                }
-                .daybookScroll(featherEdges: true)
                 .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
                 .background(
                     BlankClickArea(onClick: clearSelection)
                 )
-                .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
-                    if let newValue {
-                        withAnimation(DaybookMotion.interactive) {
-                            scrollProxy.scrollTo(newValue, anchor: .center)
-                        }
-                    }
-                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -228,6 +234,14 @@ final class BlankClickNSView: NSView {
     override func mouseDown(with event: NSEvent) {
         onClick?()
         super.mouseDown(with: event)
+    }
+
+    override func scrollWheel(with event: NSEvent) {
+        guard let scrollView = enclosingScrollView else {
+            super.scrollWheel(with: event)
+            return
+        }
+        scrollView.scrollWheel(with: event)
     }
 }
 

@@ -68,9 +68,6 @@ extension TasksPage {
                 .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8)
         )
         .padding(.horizontal, 4)
-        .containerRelativeFrame(.vertical, alignment: .center) { length, _ in
-            max(length - 16, 120)
-        }
     }
 
     private func yesterdaySectionHeader(_ page: TasksPageViewModel) -> some View {

@@ -92,29 +92,35 @@ struct WorkspaceItemsList: View {
 
     var body: some View {
         let identity = makeIdentity()
-        Group {
-            if identity.entries.isEmpty {
-                DaybookEmptyState(
-                    title: emptyTitle,
-                    subtitle: emptySubtitle,
-                    systemImage: filterActive ? "line.3.horizontal.decrease" : "tray",
-                    centerVertically: true
-                )
-            } else {
-                VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-                    ForEach(groups) { group in
-                        if let title = group.title {
-                            DaybookSectionHeader(title: title, count: group.entries.count)
-                        }
-                        VStack(alignment: .leading, spacing: 4) {
-                            ForEach(group.entries) { entry in
-                                row(entry, identity: identity)
+        ScrollView {
+            Group {
+                if identity.entries.isEmpty {
+                    DaybookEmptyState(
+                        title: emptyTitle,
+                        subtitle: emptySubtitle,
+                        systemImage: filterActive ? "line.3.horizontal.decrease" : "tray",
+                        centerVertically: true
+                    )
+                } else {
+                    VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+                        ForEach(groups) { group in
+                            if let title = group.title {
+                                DaybookSectionHeader(title: title, count: group.entries.count)
+                            }
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(group.entries) { entry in
+                                    row(entry, identity: identity)
+                                }
                             }
                         }
                     }
                 }
             }
+            .padding(.vertical, 2)
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
+        .daybookScroll()
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .focusable()
         .focusEffectDisabled()
         .background(KeyWindowHost { hostWindow = $0 })
