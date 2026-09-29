@@ -6,6 +6,8 @@ enum AppWindows {
     /// 注入的工作台主视图构造器，由 App 启动时或 Features 协调层注册
     static var workspaceViewProvider: (@MainActor () -> AnyView)?
     static var diaryWindowsProvider: (@MainActor () -> [NSWindow])?
+    /// 剪贴板小窗。关工作台时不能把它当成杂散窗口关掉。
+    static var clipboardWindowProvider: (@MainActor () -> [NSWindow])?
 
     /// 测试替换这两处，避免为路由断言激活应用或创建窗口。
     static var activateForOpening: @MainActor () -> Void = { becomeActive() }
@@ -64,7 +66,9 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.workspace.hostedWindow].compactMap { $0 } + (diaryWindowsProvider?() ?? [])
+        [PanelWindowController.workspace.hostedWindow].compactMap { $0 }
+            + (diaryWindowsProvider?() ?? [])
+            + (clipboardWindowProvider?() ?? [])
     }
 }
 

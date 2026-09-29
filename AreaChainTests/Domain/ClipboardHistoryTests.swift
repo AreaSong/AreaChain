@@ -244,6 +244,7 @@ struct ClipboardHistoryStoreTests {
         ))
         #expect(session.items.map(\.plainText) == ["keep-me"])
         session.setPanelAnchor(.center)
+        session.setPanelStaysOnTop(false)
         session.setClickAction(.paste)
         session.setPlainByDefault(true)
         session.setInterval(0.4)
@@ -253,6 +254,7 @@ struct ClipboardHistoryStoreTests {
             pasteboard: nil
         )
         #expect(restored.panelAnchor == .center)
+        #expect(!restored.panelStaysOnTop)
         #expect(restored.clickAction == .paste)
         #expect(restored.plainByDefault)
         #expect(restored.interval == 0.4)
@@ -307,5 +309,35 @@ struct ClipboardHistoryStoreTests {
         let plainURLs = board.readObjects(forClasses: [NSURL.self], options: [.urlReadingFileURLsOnly: true]) as? [URL]
         #expect(plainURLs?.isEmpty != false)
         #expect(board.string(forType: .string) == file.path)
+    }
+
+    @Test func clipboardWindowSurvivesWorkspaceClose() {
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 200, height: 160),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isReleasedWhenClosed = false
+        panel.level = .normal
+        panel.hidesOnDeactivate = false
+        panel.orderFront(nil)
+        let previous = AppWindows.clipboardWindowProvider
+        AppWindows.clipboardWindowProvider = { [panel] in [panel] }
+        defer {
+            panel.orderOut(nil)
+            AppWindows.clipboardWindowProvider = previous
+        }
+        let parent = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 320, height: 200),
+            styleMask: [.titled, .closable],
+            backing: .buffered,
+            defer: false
+        )
+        parent.isReleasedWhenClosed = false
+        parent.orderFront(nil)
+        AppWindows.resignIfIdle(closing: parent)
+        parent.close()
+        #expect(panel.isVisible)
     }
 }

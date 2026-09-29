@@ -4741,8 +4741,8 @@
     "hotkey.clipboard.help": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Opens the clipboard history panel while another app is in front. Unset until you record one. Return copies, ⌥Return pastes, and ⌥⇧Return pastes plain text." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "别的应用在前台时打开剪贴板历史。默认不绑定。回车复制，⌥回车粘贴，⌥⇧回车粘贴纯文本。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Shows or hides the clipboard panel. Unset until you record one. Press again to close. Closing the workspace leaves the panel open. Return copies, ⌥Return pastes, and ⌥⇧Return pastes plain text." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开或关闭剪贴板小窗。默认不绑定。再按一次关闭。关掉工作台不会关掉小窗。回车复制，⌥回车粘贴，⌥⇧回车粘贴纯文本。" } }
       }
     },
     "window.clipboard": {
@@ -4883,6 +4883,20 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Clipboard options" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板选项" } }
+      }
+    },
+    "clipboard.panel.pin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep on top" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "窗口置顶" } }
+      }
+    },
+    "clipboard.panel.unpin": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Unpin window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "取消窗口置顶" } }
       }
     },
     "clipboard.showPanel": {

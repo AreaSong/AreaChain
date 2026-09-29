@@ -38,6 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             )
         }
         AppWindows.diaryWindowsProvider = { DiaryWindows.shared.hostedWindows }
+        AppWindows.clipboardWindowProvider = { ClipboardHistoryPanel.shared.hostedWindow.map { [$0] } ?? [] }
 
         StatusItemController.shared.popoverViewProvider = {
             AnyView(

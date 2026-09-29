@@ -12,6 +12,7 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
     private let size = NSSize(width: 380, height: 460)
 
     var isKey: Bool { panel?.isKeyWindow == true }
+    var hostedWindow: NSWindow? { panel }
 
     func install() {
         guard hotkeyObserver == nil else { return }
@@ -38,8 +39,18 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         }
         let window = ensurePanel()
         window.setFrame(frameNearCursor(), display: false)
-        NSApp.activate()
+        applyLevel()
+        AppWindows.becomeActive()
         window.makeKeyAndOrderFront(nil)
+    }
+
+    func setStaysOnTop(_ enabled: Bool) {
+        ClipboardHistorySession.shared.setPanelStaysOnTop(enabled)
+        applyLevel()
+    }
+
+    func applyLevel() {
+        panel?.level = ClipboardHistorySession.shared.panelStaysOnTop ? .floating : .normal
     }
 
     func closeReturning() {
@@ -50,12 +61,12 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         if let app, app.bundleIdentifier != Bundle.main.bundleIdentifier {
             app.activate()
         }
+        AppWindows.resignIfIdle(closing: panel)
         isClosing = false
     }
 
-    func windowDidResignKey(_ notification: Notification) {
-        guard panel?.isVisible == true else { return }
-        closeReturning()
+    func windowWillClose(_ notification: Notification) {
+        AppWindows.resignIfIdle(closing: panel)
     }
 
     private func ensurePanel() -> NSPanel {
@@ -69,8 +80,7 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         window.isFloatingPanel = true
-        window.level = .floating
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .transient]
+        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         window.isReleasedWhenClosed = false
         window.isMovableByWindowBackground = true
         window.hidesOnDeactivate = false
@@ -84,6 +94,7 @@ final class ClipboardHistoryPanel: NSObject, NSWindowDelegate {
                 .appChrome()
         )
         panel = window
+        applyLevel()
         return window
     }
 
@@ -114,6 +125,14 @@ private struct ClipboardHistoryPanelView: View {
                     .font(DaybookType.title)
                     .foregroundStyle(DaybookPalette.text.primary)
                 Spacer()
+                DaybookIconButton(
+                    systemName: session.panelStaysOnTop ? "pin.fill" : "pin",
+                    label: session.panelStaysOnTop ? "clipboard.panel.unpin" : "clipboard.panel.pin",
+                    size: .compact,
+                    isActive: session.panelStaysOnTop
+                ) {
+                    ClipboardHistoryPanel.shared.setStaysOnTop(!session.panelStaysOnTop)
+                }
                 DaybookIconButton(systemName: "macwindow", label: "clipboard.openPage", size: .compact) {
                     ClipboardHistoryPanel.shared.closeReturning()
                     AppWindows.openWorkspace(tab: .clipboard)

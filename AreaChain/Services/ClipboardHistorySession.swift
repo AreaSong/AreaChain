@@ -40,6 +40,7 @@ final class ClipboardHistorySession {
     var interval = ClipboardHistoryRules.defaultInterval
     var ignoreUniversal = false
     var panelAnchor: ClipboardPanelAnchor = .cursor
+    var panelStaysOnTop = true
     var clickAction: ClipboardClickAction = .copy
     var plainByDefault = false
     var playSound = false
@@ -176,6 +177,11 @@ final class ClipboardHistorySession {
         savePreferences()
     }
 
+    func setPanelStaysOnTop(_ enabled: Bool) {
+        panelStaysOnTop = enabled
+        savePreferences()
+    }
+
     func setClickAction(_ action: ClipboardClickAction) {
         clickAction = action
         savePreferences()
@@ -304,6 +310,9 @@ final class ClipboardHistorySession {
         if let raw = defaults.string(forKey: Keys.panelAnchor), let anchor = ClipboardPanelAnchor(rawValue: raw) {
             panelAnchor = anchor
         }
+        if defaults.object(forKey: Keys.panelStaysOnTop) != nil {
+            panelStaysOnTop = defaults.bool(forKey: Keys.panelStaysOnTop)
+        }
         if let raw = defaults.string(forKey: Keys.clickAction), let action = ClipboardClickAction(rawValue: raw) {
             clickAction = action
         }
@@ -321,6 +330,7 @@ final class ClipboardHistorySession {
         defaults.set(searchMode.rawValue, forKey: Keys.searchMode)
         defaults.set(ignoreUniversal, forKey: Keys.ignoreUniversal)
         defaults.set(panelAnchor.rawValue, forKey: Keys.panelAnchor)
+        defaults.set(panelStaysOnTop, forKey: Keys.panelStaysOnTop)
         defaults.set(clickAction.rawValue, forKey: Keys.clickAction)
         defaults.set(plainByDefault, forKey: Keys.plainByDefault)
         defaults.set(playSound, forKey: Keys.playSound)
@@ -336,6 +346,7 @@ final class ClipboardHistorySession {
         static let searchMode = "areachain.clipboard.searchMode"
         static let ignoreUniversal = "areachain.clipboard.ignoreUniversal"
         static let panelAnchor = "areachain.clipboard.panelAnchor"
+        static let panelStaysOnTop = "areachain.clipboard.panelStaysOnTop"
         static let clickAction = "areachain.clipboard.clickAction"
         static let plainByDefault = "areachain.clipboard.plainByDefault"
         static let playSound = "areachain.clipboard.playSound"
