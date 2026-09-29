@@ -36,6 +36,7 @@ struct DiaryNoteCard: View {
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Bindable var shortcuts = ShortcutStore.shared
     var entry: DiaryEntry
     var activeTags: [TagItem]
     var attachments: [AttachmentItem]

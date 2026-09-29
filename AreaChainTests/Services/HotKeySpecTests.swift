@@ -4,6 +4,28 @@ import Testing
 @testable import AreaChain
 
 struct HotKeySpecTests {
+    @Test func shortcutBitsMatchCarbonHotKeyConstants() {
+        #expect(ShortcutModifier.command == UInt32(cmdKey))
+        #expect(ShortcutModifier.shift == UInt32(shiftKey))
+        #expect(ShortcutModifier.option == UInt32(optionKey))
+        #expect(ShortcutModifier.control == UInt32(controlKey))
+        #expect(ShortcutKey.a == UInt32(kVK_ANSI_A))
+        #expect(ShortcutKey.s == UInt32(kVK_ANSI_S))
+        #expect(ShortcutKey.c == UInt32(kVK_ANSI_C))
+        #expect(ShortcutKey.f == UInt32(kVK_ANSI_F))
+        #expect(ShortcutKey.o == UInt32(kVK_ANSI_O))
+        #expect(ShortcutKey.q == UInt32(kVK_ANSI_Q))
+        #expect(ShortcutKey.v == UInt32(kVK_ANSI_V))
+        #expect(ShortcutKey.zero == UInt32(kVK_ANSI_0))
+        #expect(ShortcutKey.returnKey == UInt32(kVK_Return))
+        #expect(ShortcutKey.delete == UInt32(kVK_Delete))
+        #expect(ShortcutKey.escape == UInt32(kVK_Escape))
+        #expect(ShortcutKey.comma == UInt32(kVK_ANSI_Comma))
+        #expect(ShortcutKey.slash == UInt32(kVK_ANSI_Slash))
+        #expect(ShortcutKey.space == UInt32(kVK_Space))
+        #expect(ShortcutKey.tab == UInt32(kVK_Tab))
+    }
+
     @Test func fallbackDisplaysCommandShiftA() {
         #expect(HotKeySpec.fallback.displayName == "⌘⇧A")
         #expect(HotKeySpec.fallback.isUsable)

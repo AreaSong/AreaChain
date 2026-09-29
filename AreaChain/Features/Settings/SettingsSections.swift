@@ -38,8 +38,6 @@ struct GeneralSettingsSection: View {
             ))
             .accessibilityIdentifier("settings.login")
             .systemPageMarker("settings.login")
-            HotKeyRecorder()
-            HotKeyRecorder(slot: .paste, title: "hotkey.paste", help: "hotkey.paste.help")
             if let statusMessage {
                 Text(statusMessage)
                     .font(DaybookType.subtitle)

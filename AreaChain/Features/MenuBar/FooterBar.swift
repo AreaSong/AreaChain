@@ -185,7 +185,7 @@ struct FooterBar: View {
             isFocused: triggerFocused
         ))
         .contentShape(Rectangle())
-        .keyboardShortcut("f", modifiers: [.command, .shift])
+        .appShortcut(.openFilter)
         .focused($triggerFocused)
         .accessibilityLabel("filter.label")
         .accessibilityIdentifier("menubar.filter.open")
@@ -244,7 +244,7 @@ struct FooterBar: View {
         }
         .buttonStyle(DaybookButtonStyle(.icon, size: .regular, isFocused: workspaceFocused))
         .focused($workspaceFocused)
-        .keyboardShortcut("0", modifiers: .command)
+        .appShortcut(.openWorkspace)
         .help(L10n.string("window.workspace", locale: locale))
         .accessibilityLabel(L10n.string("window.workspace", locale: locale))
         .accessibilityIdentifier("menubar.workspace.open")
@@ -257,21 +257,21 @@ struct FooterBar: View {
             } label: {
                 Label("window.workspace", systemImage: "macwindow")
             }
-            .keyboardShortcut("0", modifiers: .command)
+            .appShortcut(.openWorkspace)
 
             Divider()
 
             Button(action: onShowSyntaxHelp) {
                 Label("footer.syntax.guide", systemImage: "questionmark.circle")
             }
-            .keyboardShortcut("/", modifiers: .command)
+            .appShortcut(.syntaxHelp)
 
             Button {
                 AppWindows.openWorkspace(tab: .settings)
             } label: {
                 Label("window.settings", systemImage: "gearshape")
             }
-            .keyboardShortcut(",", modifiers: .command)
+            .appShortcut(.openSettings)
 
             Button {
                 AppWindows.openWorkspace(tab: .trash)
@@ -286,7 +286,7 @@ struct FooterBar: View {
             } label: {
                 Label("footer.quit", systemImage: "power")
             }
-            .keyboardShortcut("q", modifiers: .command)
+            .appShortcut(.quit)
         } label: {
             Image(systemName: "ellipsis")
                 .font(DaybookType.subtitle.weight(.semibold))

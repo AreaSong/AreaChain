@@ -74,6 +74,7 @@ struct WorkspaceSidebarView: View {
     private var systemSection: some View {
         Section("sidebar.system") {
             tabRow(.settings)
+            tabRow(.shortcuts)
             tabRow(.privacy)
             tabRow(.dataBackup)
             tabRow(.trash)

@@ -58,17 +58,19 @@ extension DiaryPage {
         guard let selectedEntryID, let entry = list.entry(selectedEntryID) else {
             return false
         }
-        let isOpen = (event.keyCode == 36 && modifiers.isEmpty) || (modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "o")
+        let isOpen = (event.keyCode == UInt16(ShortcutKey.returnKey) && modifiers.isEmpty)
+            || ShortcutStore.shared.binding(for: .openDiary).matches(event)
         if isOpen {
             DiaryWindows.shared.open(entry: entry, context: modelContext)
             return true
         }
-        let isDelete = (event.keyCode == 51 && modifiers.isEmpty) || (modifiers == .command && event.keyCode == 51)
+        let isDelete = (event.keyCode == UInt16(ShortcutKey.delete) && modifiers.isEmpty)
+            || ShortcutStore.shared.binding(for: .trashDiary).matches(event)
         if isDelete {
             requestTrash(entry)
             return true
         }
-        if modifiers == .command && event.charactersIgnoringModifiers?.lowercased() == "c" {
+        if ShortcutStore.shared.binding(for: .copyDiary).matches(event) {
             copyEntry(entry, isSensitive: list.isSensitive(selectedEntryID))
             return true
         }

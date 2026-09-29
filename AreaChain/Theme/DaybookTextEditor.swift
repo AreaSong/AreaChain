@@ -3,11 +3,13 @@ import SwiftUI
 
 final class DaybookAppKitTextView: NSTextView {
     var onCommandReturn: (() -> Void)?
+    var commandChord: ShortcutChord?
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
-        // 大写锁定等状态不改变快捷键含义，单行和多行输入保持一致。
+        // 没有单独指定组合时，备注编辑仍只认 ⌘Return，不跟着「记入手记」改。
         let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        if flags == .command, event.keyCode == 36, window?.firstResponder === self {
+        let matches = commandChord?.matches(event) ?? (flags == .command && event.keyCode == UInt16(ShortcutKey.returnKey))
+        if matches, window?.firstResponder === self {
             if !hasMarkedText() { onCommandReturn?() }
             return true
         }
@@ -24,6 +26,7 @@ struct DaybookTextEditor: NSViewRepresentable {
     var autocomplete: SyntaxAutocompleteState
     var availableTags: [String]
     var onSubmit: (() -> Void)? = nil
+    var commandChord: ShortcutChord? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -63,6 +66,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.textColor = NSColor(DaybookPalette.text.primary)
         editor.insertionPointColor = NSColor(DaybookPalette.text.primary)
         editor.setAccessibilityLabel(placeholder)
+        editor.commandChord = commandChord
         editor.onCommandReturn = { [weak editor] in
             guard let editor, !editor.hasMarkedText() else { return }
             context.coordinator.parent.text = editor.string

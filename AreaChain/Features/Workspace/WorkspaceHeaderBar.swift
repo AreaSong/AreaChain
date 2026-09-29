@@ -53,6 +53,7 @@ struct WorkspaceHeaderLeadingTitle: View {
 struct WorkspaceHeaderSearchCapsule: View {
     @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
+    @Bindable private var shortcuts = ShortcutStore.shared
     @State private var hostWindow: NSWindow?
 
     var body: some View {
@@ -77,8 +78,8 @@ struct WorkspaceHeaderSearchCapsule: View {
                     navigation.clearSearch()
                     navigation.isSearchFocused = true
                 }
-            } else {
-                Text("⌘F")
+            } else if shortcuts.binding(for: .search).isArmed {
+                Text(verbatim: shortcuts.binding(for: .search).chord.displayName(locale: locale))
                     .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 快捷键提示用圆体
                     .foregroundStyle(DaybookPalette.text.secondary.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
                     .padding(.horizontal, 4)
@@ -96,7 +97,7 @@ struct WorkspaceHeaderSearchCapsule: View {
             Button("") {
                 navigation.isSearchFocused = true
             }
-            .keyboardShortcut("f", modifiers: .command)
+            .appShortcut(.search)
             .opacity(0)
             .accessibilityHidden(true)
         }

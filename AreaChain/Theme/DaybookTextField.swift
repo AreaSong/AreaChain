@@ -4,6 +4,7 @@ import SwiftUI
 /// 支持按键等效拦截（如 ⌘↩）的 AppKit 文本框
 final class DaybookAppKitTextField: NSTextField {
     var onCommandReturn: (() -> Void)?
+    var commandChord: ShortcutChord?
     var onWindowAttached: (() -> Void)?
 
     override func viewDidMoveToWindow() {
@@ -13,9 +14,7 @@ final class DaybookAppKitTextField: NSTextField {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         // 只比较动作修饰键，不让 Caps Lock 阻断 ⌘Return。
-        let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
-        if flags == .command,
-           event.keyCode == 36 || event.charactersIgnoringModifiers == "\r" || event.charactersIgnoringModifiers == "\n" {
+        if ShortcutChordMatching.accepts(event, chord: commandChord) {
             if let editor = currentEditor() as? NSTextView,
                window?.firstResponder === editor {
                 guard !editor.hasMarkedText() else { return true }
@@ -40,6 +39,7 @@ struct DaybookTextField: NSViewRepresentable {
     var highlightsSyntax: Bool = false
     var onSubmit: () -> Void
     var onCommandReturn: (() -> Void)? = nil
+    var commandChord: ShortcutChord? = nil
     var onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil
     var allowsShiftNewline: Bool = true
     var onEscape: (() -> Void)? = nil
@@ -87,6 +87,9 @@ struct DaybookTextField: NSViewRepresentable {
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
         context.coordinator.configureRestoration(in: field)
+        if let field = field as? DaybookAppKitTextField {
+            field.commandChord = commandChord
+        }
         (field as? DaybookAppKitTextField)?.onCommandReturn = onCommandReturn == nil ? nil : { [weak field] in
             guard let field, let extra = context.coordinator.parent.onCommandReturn else { return }
             let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
@@ -195,7 +198,7 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         @objc func submitted(_ sender: Any? = nil) {
-            if NSApp.currentEvent?.modifierFlags.contains(.command) == true, let extra = parent.onCommandReturn {
+            if let event = NSApp.currentEvent, parent.acceptsCommand(event), let extra = parent.onCommandReturn {
                 extra()
             } else {
                 parent.onSubmit()
@@ -378,8 +381,8 @@ struct DaybookTextField: NSViewRepresentable {
 
         private func handleCommandReturn(_ selector: Selector, textView: NSTextView) -> Bool {
             guard selector == Selector(("noop:")) else { return false }
-            let flags = (NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags).intersection(.deviceIndependentFlagsMask)
-            guard flags == .command, let extra = parent.onCommandReturn else { return false }
+            let event = NSApp.currentEvent
+            guard let event, parent.acceptsCommand(event), let extra = parent.onCommandReturn else { return false }
             var value = textView.string
             if !parent.allowsShiftNewline, value.contains("\n") {
                 value = DaybookTextField.sanitizeSingleLineText(value)
@@ -428,15 +431,22 @@ extension DaybookTextField {
         fontWeight: NSFont.Weight = .regular,
         focus: FocusState<Bool>.Binding, autocomplete: SyntaxAutocompleteState? = nil,
         availableTags: [String] = [], highlightsSyntax: Bool = false, onSubmit: @escaping () -> Void,
-        onCommandReturn: (() -> Void)? = nil, onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
+        onCommandReturn: (() -> Void)? = nil, commandChord: ShortcutChord? = nil,
+        onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
         allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil
     ) {
         self.init(
             text: text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight,
             focus: Binding(get: { focus.wrappedValue }, set: { focus.wrappedValue = $0 }),
             autocomplete: autocomplete, availableTags: availableTags, highlightsSyntax: highlightsSyntax, onSubmit: onSubmit,
-            onCommandReturn: onCommandReturn, onCommitAutocomplete: onCommitAutocomplete,
+            onCommandReturn: onCommandReturn, commandChord: commandChord, onCommitAutocomplete: onCommitAutocomplete,
             allowsShiftNewline: allowsShiftNewline, onEscape: onEscape
         )
+    }
+}
+
+extension DaybookTextField {
+    func acceptsCommand(_ event: NSEvent) -> Bool {
+        ShortcutChordMatching.accepts(event, chord: commandChord)
     }
 }

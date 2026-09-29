@@ -14,6 +14,7 @@ struct DiaryQuickComposerView: View {
     var status: String? = nil
     var isSensitive: Bool = false
     var onOpenWindow: (() -> Void)? = nil
+    @Bindable private var shortcuts = ShortcutStore.shared
     @State private var hostWindow: NSWindow?
     @State private var autocomplete = SyntaxAutocompleteState(context: .diaryCapture, allowsLivePreview: true)
 
@@ -64,6 +65,7 @@ struct DiaryQuickComposerView: View {
                 highlightsSyntax: true,
                 onSubmit: submitCompact,
                 onCommandReturn: submitCompact,
+                commandChord: shortcuts.armedChord(for: .commitDiary),
                 allowsShiftNewline: false
             )
             .accessibilityLabel("diary.quick.input")
@@ -86,6 +88,7 @@ struct DiaryQuickComposerView: View {
                     enabled: canSubmit,
                     label: "diary.quick.save",
                     help: "diary.quick.save.help",
+                    symbolText: diarySymbol,
                     action: submitCompact
                 )
             }
@@ -135,6 +138,12 @@ struct DiaryQuickComposerView: View {
         (hostWindow?.firstResponder as? NSTextView)?.hasMarkedText() == true
     }
 
+    private var diarySymbol: String? {
+        let binding = shortcuts.binding(for: .commitDiary)
+        guard binding.chord != ShortcutAction.commitDiary.defaultChord else { return nil }
+        return binding.chord.displayName(locale: locale)
+    }
+
     private func submitCompact() {
         guard canSubmit, !hasMarkedText else { return }
         autocomplete.dismiss()
@@ -146,7 +155,8 @@ struct DiaryQuickComposerView: View {
             SyntaxTextEditor(
                 text: $text, focused: focused,
                 placeholder: L10n.string("diary.composer.placeholder", locale: locale),
-                onSubmit: onSubmit
+                onSubmit: onSubmit,
+                commandChord: shortcuts.armedChord(for: .commitDiary)
             )
             .frame(minHeight: 64, maxHeight: 100)
         }
@@ -210,6 +220,6 @@ struct DiaryQuickComposerView: View {
         }
         .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
         .disabled(!canSubmit)
-        .keyboardShortcut(.return, modifiers: .command)
+        .appShortcut(.commitDiary)
     }
 }

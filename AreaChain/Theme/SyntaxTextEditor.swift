@@ -8,13 +8,15 @@ struct SyntaxTextEditor: View {
     var fontSize: CGFloat = DaybookType.bodySize
     var context: SyntaxInputContext
     var onSubmit: (() -> Void)?
+    var commandChord: ShortcutChord?
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var autocomplete: SyntaxAutocompleteState
 
     init(
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
-        fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags, onSubmit: (() -> Void)? = nil
+        fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags, onSubmit: (() -> Void)? = nil,
+        commandChord: ShortcutChord? = nil
     ) {
         _text = text
         _focused = focused
@@ -22,6 +24,7 @@ struct SyntaxTextEditor: View {
         self.fontSize = fontSize
         self.context = context
         self.onSubmit = onSubmit
+        self.commandChord = commandChord
         _autocomplete = State(initialValue: SyntaxAutocompleteState(context: context))
     }
 
@@ -29,7 +32,7 @@ struct SyntaxTextEditor: View {
         DaybookTextEditor(
             text: $text, focused: $focused, placeholder: placeholder, fontSize: fontSize,
             autocomplete: autocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-            onSubmit: onSubmit
+            onSubmit: onSubmit, commandChord: commandChord
         )
         .overlay(alignment: .topLeading) {
             if text.isEmpty {

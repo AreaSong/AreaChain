@@ -8,6 +8,7 @@ struct DiaryWindowView: View {
     var onStateChange: () -> Void = {}
     @Environment(\.locale) private var locale
     @Query private var attachments: [AttachmentItem]
+    @Bindable private var shortcuts = ShortcutStore.shared
     @State private var editorFocused = false
     @State private var confirmsReload = false
 
@@ -74,7 +75,8 @@ struct DiaryWindowView: View {
         } else {
             DaybookInputShell(kind: .editor, focused: editorFocused) {
                 SyntaxTextEditor(text: $session.text, focused: $editorFocused,
-                                 placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: save)
+                                 placeholder: L10n.string("diary.quick.placeholder", locale: locale), onSubmit: save,
+                                 commandChord: shortcuts.armedChord(for: .commitDiary))
             }
         }
     }
@@ -102,7 +104,7 @@ struct DiaryWindowView: View {
                 Spacer(minLength: 0)
                 Button("common.save", action: save)
                     .buttonStyle(.borderedProminent)
-                    .keyboardShortcut("s", modifiers: .command)
+                    .appShortcut(.saveDiary)
                     .disabled(!session.canSave || !session.canRevealContent)
                     .help("diary.window.save.help")
             }

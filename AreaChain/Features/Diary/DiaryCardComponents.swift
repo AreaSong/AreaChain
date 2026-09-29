@@ -89,7 +89,8 @@ extension DiaryNoteCard {
             DaybookInputShell(kind: .editor, focused: editFocused) {
                 SyntaxTextEditor(
                     text: $session.text, focused: $editFocused,
-                    placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit
+                    placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit,
+                    commandChord: shortcuts.armedChord(for: .commitDiary)
                 )
                 .frame(minHeight: 64, maxHeight: 160)
                 .onAppear { editFocused = true }

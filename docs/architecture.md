@@ -38,7 +38,7 @@ AreaChain/
     Diary/        手记摘要、工作台卡片、编辑会话与可置顶小窗
     Attachments/  附件浏览（工作台 tab，侧栏名「附件」）
     Search/       跨天搜索命中分组与行；工作台顶栏与菜单栏共用分组，打开路由不同
-    Settings/     设置、隐私与解锁、数据与备份（三者页面分离）
+    Settings/     设置、快捷键、隐私与解锁、数据与备份（页面分离）
     Trash/        回收站（工作台 tab）
   Theme/          令牌（DaybookPalette / DaybookMetrics / DaybookTokens / DaybookColor）、基座（输入壳、按钮、表面、芯片、分节头）与页壳；完整复用边界见 [共享组件与复用目录](component-catalog.md)
 ```

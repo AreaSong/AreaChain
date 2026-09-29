@@ -15,6 +15,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
     case dataBackup
     case trash
     case settings
+    case shortcuts
 
     var id: String { rawValue }
 
@@ -34,6 +35,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .dataBackup: return "tab.dataBackup"
         case .trash: return "window.trash"
         case .settings: return "window.settings"
+        case .shortcuts: return "tab.shortcuts"
         }
     }
 
@@ -53,6 +55,7 @@ enum WorkspaceTab: String, CaseIterable, Identifiable {
         case .dataBackup: return "externaldrive"
         case .trash: return "trash"
         case .settings: return "gearshape"
+        case .shortcuts: return "keyboard"
         }
     }
 }

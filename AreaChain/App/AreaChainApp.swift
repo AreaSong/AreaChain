@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         FirstLaunchSeeder.seedIfNeeded(container: Persistence.session.container)
         StatusItemController.shared.attach(container: Persistence.session.container)
-        HotKeyCenter.shared.start()
+        ShortcutStore.shared.start()
         NotificationScheduler.shared.start()
         CalendarSync.start()
         AppWindows.hideStrayWindows()

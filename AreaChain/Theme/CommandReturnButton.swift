@@ -6,6 +6,7 @@ struct CommandReturnButton: View {
     var enabled: Bool
     var label: LocalizedStringKey
     var help: LocalizedStringKey? = nil
+    var symbolText: String? = nil
     var action: () -> Void
 
     @State private var isCommandPressed = false
@@ -13,11 +14,17 @@ struct CommandReturnButton: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 2.5) {
-                Image(systemName: "command")
-                Image(systemName: "return")
+            if let symbolText {
+                Text(verbatim: symbolText)
+                    .font(DaybookType.badge.weight(.semibold))
+                    .lineLimit(1)
+            } else {
+                HStack(spacing: 2.5) {
+                    Image(systemName: "command")
+                    Image(systemName: "return")
+                }
+                .font(DaybookType.badge.weight(.semibold))
             }
-            .font(DaybookType.badge.weight(.semibold))
         }
         .buttonStyle(DaybookButtonStyle(enabled && isCommandPressed ? .iconActive : .icon, size: .compact))
         .focusable(false)

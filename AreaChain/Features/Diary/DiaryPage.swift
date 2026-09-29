@@ -208,7 +208,7 @@ struct DiaryPage: View {
             DaybookIconButton(systemName: "magnifyingglass", label: "diary.search.placeholder", size: .inline) {
                 searchFocused = true
             }
-            .keyboardShortcut(showsPageHeader ? KeyboardShortcut("f", modifiers: .command) : nil)
+            .appShortcut(.search, enabled: showsPageHeader)
         } field: {
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),

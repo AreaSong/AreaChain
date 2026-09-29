@@ -100,7 +100,7 @@ struct MenuBarSearchField: View {
             DaybookIconButton(systemName: "magnifyingglass", label: "footer.search.label", size: .inline) {
                 toolbar.focusSearch()
             }
-            .keyboardShortcut("f", modifiers: .command)
+            .appShortcut(.search)
 
             tokenScrollView
         } field: {

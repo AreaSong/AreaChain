@@ -4652,13 +4652,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Click, then press the new global shortcut. Esc cancels."
+            "value": "Click, then press the new shortcut. It must include ⌘, ⌥, or ⌃. Esc cancels."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点一下，再按下新的全局热键。Esc 取消。"
+            "value": "点一下，再按下新的组合。必须包含 ⌘、⌥ 或 ⌃。Esc 取消。"
           }
         }
       }
@@ -4720,13 +4720,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Same as the overlay shortcut, so paste-to-today is off until you pick another combo."
+            "value": "This matches another shortcut, so it stays off until you choose a different combination."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "与唤起浮层热键相同，剪贴板捕获已停用，请另选组合。"
+            "value": "与另一项快捷键相同，因此停用，请另选组合。"
           }
         }
       }
@@ -4754,13 +4754,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Default ⌘⇧V. Cannot match the overlay shortcut. Reads the clipboard once; empty clipboard does nothing."
+            "value": "Default ⌘⇧V. Reads the clipboard once; an empty clipboard does nothing. If it matches another shortcut, the one you just set stays on and the other turns off."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "默认 ⌘⇧V，不能和打开浮层撞车。按一下读剪贴板，空则不加。"
+            "value": "默认 ⌘⇧V。按一下读取剪贴板，空则不加。若与其他快捷键相同，刚录下的生效，另一项停用。"
           }
         }
       }
@@ -4848,6 +4848,230 @@
             "value": "键%lld"
           }
         }
+      }
+    },
+    "shortcut.commitDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save to diary" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "记入手记" } }
+      }
+    },
+    "shortcut.commitDiary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save a menu bar capture or diary draft. Default is ⌘Return." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "把浮层捕获或手记草稿记入手记。默认是 ⌘Return。" } }
+      }
+    },
+    "shortcut.copyDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copy diary" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复制手记" } }
+      }
+    },
+    "shortcut.copyDiary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Copy the selected diary text." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "复制选中手记的正文。" } }
+      }
+    },
+    "shortcut.filter": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Filter" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "筛选" } }
+      }
+    },
+    "shortcut.filter.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open the menu bar filter." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开浮层筛选。" } }
+      }
+    },
+    "shortcut.group.diary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Diary" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "手记" } }
+      }
+    },
+    "shortcut.group.global": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Global" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全局" } }
+      }
+    },
+    "shortcut.group.list": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Lists" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清单" } }
+      }
+    },
+    "shortcut.group.navigation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Navigation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "导航" } }
+      }
+    },
+    "shortcut.openDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open diary" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开手记" } }
+      }
+    },
+    "shortcut.openDiary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open the selected diary. Return alone still opens it." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开选中的手记。单独按回车仍会打开。" } }
+      }
+    },
+    "shortcut.page.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Click a shortcut, then press a new combination. It must include ⌘, ⌥, or ⌃. The one you just set stays on, and the previous item using that combination turns off. Esc cancels." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "点一下右侧组合，再按下新的快捷键。必须包含 ⌘、⌥ 或 ⌃。刚录下的生效，原来占用这个组合的一项会停用。Esc 取消。" } }
+      }
+    },
+    "shortcut.page.scope": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Arrow keys, Space, Return, Delete, and Esc stay list actions. ⌘Return in notes still submits the note." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "方向键、空格、回车、Delete 和 Esc 仍是清单里的行内操作。备注里的 ⌘Return 仍用来提交备注。" } }
+      }
+    },
+    "shortcut.quit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Quit" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "退出" } }
+      }
+    },
+    "shortcut.quit.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Quit from the menu bar. The system application menu may still use ⌘Q." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层退出。系统应用菜单可能仍使用 ⌘Q。" } }
+      }
+    },
+    "shortcut.reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reset" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "恢复默认" } }
+      }
+    },
+    "shortcut.resetAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reset all shortcuts" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "全部恢复默认" } }
+      }
+    },
+    "shortcut.saveDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save diary window" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存手记小窗" } }
+      }
+    },
+    "shortcut.saveDiary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save the open diary window. Default is ⌘S." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "保存当前手记小窗。默认是 ⌘S。" } }
+      }
+    },
+    "shortcut.search": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "搜索" } }
+      }
+    },
+    "shortcut.search.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Focus search in the menu bar, workspace, and diary page." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "聚焦菜单栏、工作台和手记页的搜索。" } }
+      }
+    },
+    "shortcut.selectAll": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Select all" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "清单全选" } }
+      }
+    },
+    "shortcut.selectAll.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Select the visible rows in the focused today list." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "焦点在今日清单时，选中当前可见项。" } }
+      }
+    },
+    "shortcut.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open settings" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开设置" } }
+      }
+    },
+    "shortcut.settings.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open settings from the menu bar. The system Settings window may still use ⌘,." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层打开设置。系统设置窗口可能仍使用 ⌘,。" } }
+      }
+    },
+    "shortcut.syntax": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Syntax help" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "语法帮助" } }
+      }
+    },
+    "shortcut.syntax.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open the syntax guide." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开语法帮助。" } }
+      }
+    },
+    "shortcut.trashDiary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Move diary to trash" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "手记移到回收站" } }
+      }
+    },
+    "shortcut.trashDiary.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Move the selected diary to the trash. Delete alone still asks." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "把选中手记移到回收站。单独按 Delete 仍会询问。" } }
+      }
+    },
+    "shortcut.workspace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open workspace" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开工作台" } }
+      }
+    },
+    "shortcut.workspace.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open the workspace from the menu bar." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从浮层打开工作台。" } }
       }
     },
     "import.error.attachment.owner": {
@@ -9621,6 +9845,13 @@
             "value": "Dashboard"
           }
         }
+      }
+    },
+    "tab.shortcuts": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Shortcuts" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "快捷键" } }
       }
     },
     "tab.dataBackup": {

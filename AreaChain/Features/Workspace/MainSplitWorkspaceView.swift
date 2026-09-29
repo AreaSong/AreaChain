@@ -156,6 +156,8 @@ struct MainSplitWorkspaceView: View {
                 TrashPage()
             case .settings:
                 SettingsView(resignsChromeOnDisappear: false)
+            case .shortcuts:
+                ShortcutsSettingsView()
             }
         }
     }

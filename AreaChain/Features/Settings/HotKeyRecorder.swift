@@ -1,97 +1,69 @@
 import AppKit
-import Carbon
 import SwiftUI
 
-enum HotKeySlot {
-    case toggle
-    case paste
-}
-
-struct HotKeyRecorder: View {
-    var slot: HotKeySlot = .toggle
-    var title: LocalizedStringKey = "hotkey.open"
-    var help: LocalizedStringKey = "hotkey.help"
+struct ShortcutRecorder: View {
+    var action: ShortcutAction
+    @Bindable var store: ShortcutStore
 
     @Environment(\.locale) private var locale
     @State private var listening = false
-    @State private var label = ""
-    @State private var pasteArmed = true
-    @State private var toggleArmed = true
     @State private var monitor: Any?
 
     var body: some View {
+        let binding = store.binding(for: action)
         VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(title)
-                Spacer()
+            HStack(alignment: .firstTextBaseline) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(LocalizedStringKey(action.titleKey))
+                    Text(LocalizedStringKey(action.helpKey))
+                        .font(DaybookType.subtitle)
+                        .foregroundStyle(DaybookPalette.text.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if binding.chord != action.defaultChord || !binding.isArmed {
+                    Button("shortcut.reset") { store.reset(action) }
+                }
                 Button {
                     startListening()
                 } label: {
                     if listening {
                         Text("hotkey.listen")
                     } else {
-                        Text(label)
+                        Text(verbatim: label(for: binding))
                     }
                 }
-                .help(help)
+                .help(LocalizedStringKey(action.helpKey))
+                .accessibilityIdentifier("shortcut.record.\(action.rawValue)")
             }
-            if slot == .paste, !pasteArmed {
+            if !binding.isArmed {
                 Text("hotkey.registration.failed")
                     .font(DaybookType.subtitle)
                     .foregroundStyle(DaybookPalette.text.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            if slot == .toggle, !toggleArmed {
-                Text("hotkey.registration.failed")
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-            }
-        }
-        .onAppear { refreshLabel() }
-        .onChange(of: locale.identifier) { _, _ in refreshLabel() }
-        .onReceive(NotificationCenter.default.publisher(for: .hotKeyDidChange)) { _ in
-            refreshLabel()
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .appPreferencesDidChange)) { _ in
-            refreshLabel()
         }
         .onDisappear(perform: stopListening)
     }
 
-    private func refreshLabel() {
-        switch slot {
-        case .toggle:
-            toggleArmed = HotKeyCenter.shared.toggleIsArmed
-            let name = HotKeyCenter.shared.displayName(locale: locale)
-            label = toggleArmed ? name : L10n.format("hotkey.paste.disabled", locale: locale, name)
-        case .paste:
-            pasteArmed = HotKeyCenter.shared.pasteIsArmed
-            let name = HotKeyCenter.shared.pasteDisplayName(locale: locale)
-            label = pasteArmed ? name : L10n.format("hotkey.paste.disabled", locale: locale, name)
-        }
+    private func label(for binding: ShortcutBinding) -> String {
+        let name = binding.chord.displayName(locale: locale)
+        return binding.isArmed ? name : L10n.format("hotkey.paste.disabled", locale: locale, name)
     }
 
     private func startListening() {
         guard !listening else { return }
         listening = true
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
-            if event.keyCode == UInt16(kVK_Escape) {
+            if event.keyCode == UInt16(ShortcutKey.escape) {
                 stopListening()
                 return nil
             }
-            if let spec = HotKeySpec.parse(event: event) {
-                apply(spec)
+            if let chord = ShortcutChord.captured(from: event) {
+                store.assign(chord, to: action)
                 stopListening()
             }
             return nil
-        }
-    }
-
-    private func apply(_ spec: HotKeySpec) {
-        switch slot {
-        case .toggle:
-            HotKeyCenter.shared.apply(spec)
-        case .paste:
-            HotKeyCenter.shared.applyPaste(spec)
         }
     }
 

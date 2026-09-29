@@ -51,6 +51,10 @@ extension DayBoardList {
 
         if handleArrowNavigation(keyCode: keyCode, mods: mods) { return nil }
         if handleSelectionAction(keyCode: keyCode) { return nil }
+        if ShortcutStore.shared.binding(for: .selectAll).matches(event) {
+            selectAllVisible()
+            return nil
+        }
         if handleShortcutAction(keyCode: keyCode, mods: mods) { return nil }
 
         return event
@@ -89,10 +93,6 @@ extension DayBoardList {
     }
 
     private func handleShortcutAction(keyCode: UInt16, mods: NSEvent.ModifierFlags) -> Bool {
-        if keyCode == 0, mods == .command {
-            selectAllVisible()
-            return true
-        }
         if keyCode == 14, mods.isEmpty, let id = focusedTaskID?.wrappedValue {
             editingTaskID = id
             return true

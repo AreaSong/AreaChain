@@ -10,6 +10,7 @@ struct CaptureField: View {
     var onDiary: () -> Void
     var allowsDiaryShortcut = true
 
+    @Bindable private var shortcuts = ShortcutStore.shared
     @State private var autocomplete = SyntaxAutocompleteState(context: .capture, allowsLivePreview: true)
 
     private var availableTags: [String] {
@@ -49,6 +50,7 @@ struct CaptureField: View {
                 highlightsSyntax: true,
                 onSubmit: onTodo,
                 onCommandReturn: { if allowsDiaryShortcut { onDiary() } },
+                commandChord: shortcuts.armedChord(for: .commitDiary),
                 allowsShiftNewline: false
             )
             .accessibilityLabel("capture.placeholder.today")
@@ -57,8 +59,19 @@ struct CaptureField: View {
         }
     }
 
+    private var diarySymbol: String? {
+        let binding = shortcuts.binding(for: .commitDiary)
+        guard binding.chord != ShortcutAction.commitDiary.defaultChord else { return nil }
+        return binding.chord.displayName(locale: locale)
+    }
+
     private var diaryShortcutButton: some View {
-        CommandReturnButton(enabled: canSubmit, label: "capture.diary", action: onDiary)
-            .keyboardShortcut(allowsDiaryShortcut ? KeyboardShortcut(.return, modifiers: [.command]) : nil)
+        CommandReturnButton(
+            enabled: canSubmit,
+            label: "capture.diary",
+            symbolText: diarySymbol,
+            action: onDiary
+        )
+            .appShortcut(.commitDiary, enabled: allowsDiaryShortcut)
     }
 }
