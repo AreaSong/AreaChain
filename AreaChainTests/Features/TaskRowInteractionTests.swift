@@ -259,6 +259,10 @@ struct TaskRowInteractionTests {
         #expect(trackingViews.count >= 2, "至少包含编辑与删除等快捷按钮的追踪区")
     }
 
+    @Test func taskRowPointerDoesNotMoveTheWindow() {
+        #expect(BoardRowPointerView().mouseDownCanMoveWindow == false)
+    }
+
     @Test func taskRowPointerViewSelectsOnRightClickAndControlClick() throws {
         let view = BoardRowPointerView()
         var selectedModifiers: [TaskSelectionModifiers] = []

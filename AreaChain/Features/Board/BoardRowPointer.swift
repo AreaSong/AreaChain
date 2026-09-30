@@ -5,6 +5,7 @@ import SwiftUI
 struct BoardRowPointerRegion: NSViewRepresentable {
     var id: UUID
     var plainDoubleClick = false
+    var dragPayload: String? = nil
     var onSelect: (_ shift: Bool, _ command: Bool) -> Void
     var onDoubleClick: () -> Void
     var onHover: ((Bool) -> Void)? = nil
@@ -18,24 +19,29 @@ struct BoardRowPointerRegion: NSViewRepresentable {
     func updateNSView(_ view: BoardRowPointerView, context: Context) {
         view.identifier = NSUserInterfaceItemIdentifier(id.uuidString)
         view.plainDoubleClick = plainDoubleClick
+        view.dragPayload = dragPayload
         view.onSelect = onSelect
         view.onDoubleClick = onDoubleClick
         view.onHover = onHover
     }
 }
 
-final class BoardRowPointerView: NSView {
+final class BoardRowPointerView: NSView, NSDraggingSource {
     var plainDoubleClick = false
+    var dragPayload: String?
     var onSelect: ((_ shift: Bool, _ command: Bool) -> Void)?
     var onDoubleClick: (() -> Void)?
     var onHover: ((Bool) -> Void)?
     private var mouseDownLocation: NSPoint?
     private var didDrag = false
+    private var dragSessionStarted = false
     private var trackingArea: NSTrackingArea?
     private var isHandlingRightMouseDown = false
 
     override var acceptsFirstResponder: Bool { true }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    /// 工作台允许拖背景移动窗口。行本身不透明点击区不能算背景，否则排序拖动会变成拖整扇窗口。
+    override var mouseDownCanMoveWindow: Bool { false }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -71,6 +77,7 @@ final class BoardRowPointerView: NSView {
         }
         mouseDownLocation = event.locationInWindow
         didDrag = false
+        dragSessionStarted = false
         super.mouseDown(with: event)
     }
 
@@ -91,7 +98,10 @@ final class BoardRowPointerView: NSView {
     }
 
     override func mouseUp(with event: NSEvent) {
-        defer { mouseDownLocation = nil }
+        defer {
+            mouseDownLocation = nil
+            dragSessionStarted = false
+        }
         let stayedNearStart = mouseDownLocation.map {
             hypot(event.locationInWindow.x - $0.x, event.locationInWindow.y - $0.y) < 4
         } ?? false
@@ -108,7 +118,18 @@ final class BoardRowPointerView: NSView {
            hypot(event.locationInWindow.x - start.x, event.locationInWindow.y - start.y) >= 4 {
             didDrag = true
         }
-        super.mouseDragged(with: event)
+        guard didDrag, !dragSessionStarted, let dragPayload, !dragPayload.isEmpty else { return }
+        dragSessionStarted = true
+        let item = NSDraggingItem(pasteboardWriter: dragPayload as NSString)
+        item.setDraggingFrame(bounds, contents: nil as NSImage?)
+        beginDraggingSession(with: [item], event: event, source: self)
+    }
+
+    func draggingSession(
+        _ session: NSDraggingSession,
+        sourceOperationMaskFor context: NSDraggingContext
+    ) -> NSDragOperation {
+        context == .outsideApplication ? [] : .move
     }
 
     override func scrollWheel(with event: NSEvent) {

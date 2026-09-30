@@ -242,6 +242,7 @@ struct TaskRow: View {
                     BoardRowPointerRegion(
                         id: state.id,
                         plainDoubleClick: true,
+                        dragPayload: state.dragPayload,
                         onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
                         onDoubleClick: beginEdit,
                         onHover: { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
@@ -259,6 +260,7 @@ struct TaskRow: View {
                     BoardRowPointerRegion(
                         id: state.id,
                         plainDoubleClick: true,
+                        dragPayload: state.dragPayload,
                         onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
                         onDoubleClick: beginEdit
                     )

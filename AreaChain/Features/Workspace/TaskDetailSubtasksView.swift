@@ -161,7 +161,6 @@ struct SubtaskRowView: View {
                 .fill(isHovering ? DaybookPalette.cardSurfaceHover : Color.clear)
         )
         .onHover { isHovering = $0 }
-        .draggable(SubtaskReorderToken.encode(subtask.id))
         .dropDestination(for: String.self) { items, _ in
             guard !isEditing, let raw = items.first,
                   let moving = SubtaskReorderToken.decode(raw),
@@ -213,7 +212,17 @@ struct SubtaskRowView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .onTapGesture(count: 2, perform: startEdit)
+            .overlay {
+                if !isEditing {
+                    BoardRowPointerRegion(
+                        id: subtask.id,
+                        plainDoubleClick: true,
+                        dragPayload: SubtaskReorderToken.encode(subtask.id),
+                        onSelect: { _, _ in },
+                        onDoubleClick: startEdit
+                    )
+                }
+            }
             .accessibilityAction(named: Text("drawer.subtasks.edit"), startEdit)
         }
     }
