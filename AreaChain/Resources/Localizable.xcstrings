@@ -7361,6 +7361,13 @@
         }
       }
     },
+    "quadrant.preview.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Read the rest in the inspector" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "在检查器中查看全文" } }
+      }
+    },
     "quadrant.rest": {
       "extractionState": "manual",
       "localizations": {
@@ -9363,6 +9370,34 @@
             "value": "到点会弹出通知。"
           }
         }
+      }
+    },
+    "settings.quadrant.truncation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Long quadrant titles" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "四象限过长标题" } }
+      }
+    },
+    "settings.quadrant.truncation.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Chooses where the ellipsis goes when a quadrant title does not fit on one line. The hover preview still starts at the beginning." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "四象限标题放不下一行时，省略号放在末尾或中间。悬停预览仍从开头显示。" } }
+      }
+    },
+    "settings.quadrant.truncation.middle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep both ends (111…111)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "留下首尾（111…111）" } }
+      }
+    },
+    "settings.quadrant.truncation.tail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep the start (111111…)" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "留下开头（111111…）" } }
       }
     },
     "settings.reset": {

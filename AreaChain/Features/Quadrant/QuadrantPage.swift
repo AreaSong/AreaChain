@@ -214,27 +214,6 @@ struct QuadrantPage: View {
     }
 }
 
-/// 四象限格子随窗口变宽，按真实排版宽度判断标题是否被截断。
-enum QuadrantTitleOverflow {
-    /// 气泡最高约六行。再高会把宫格撑满，超长标题改在气泡里滚动查看。
-    static let previewMaxHeight: CGFloat = 132
-
-    static func isOverflowing(idealWidth: CGFloat, visibleWidth: CGFloat) -> Bool {
-        visibleWidth > 1 && idealWidth > visibleWidth + 1
-    }
-
-    static func previewHeight(title: String, width: CGFloat = 260) -> CGFloat {
-        let font = NSFont.systemFont(ofSize: DaybookType.captionSize, weight: .medium)
-        let textWidth = max(1, width - 36)
-        let rect = (title as NSString).boundingRect(
-            with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
-            options: [.usesLineFragmentOrigin, .usesFontLeading],
-            attributes: [.font: font]
-        )
-        return min(max(ceil(rect.height) + 16, 28), previewMaxHeight)
-    }
-}
-
 private struct QuadrantChip: View {
     var row: BoardRow
     var isFocused: Bool
@@ -275,7 +254,11 @@ private struct QuadrantChip: View {
                         .foregroundStyle(DaybookPalette.accent.base)
                         .accessibilityLabel("row.resident")
                 }
-                QuadrantSingleLineTitle(text: title, overflows: $titleOverflows)
+                QuadrantSingleLineTitle(
+                    text: title,
+                    truncation: AppPreferences.shared.quadrantTitleTruncation.textTruncation,
+                    overflows: $titleOverflows
+                )
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
@@ -299,16 +282,13 @@ private struct QuadrantChip: View {
     @ViewBuilder
     private var titleBubble: some View {
         if showsTitleBubble {
-            let previewHeight = QuadrantTitleOverflow.previewHeight(title: title)
-            ScrollView(.vertical) {
-                RowTitleBubble(
-                    title: title,
-                    growsUpward: growsUpward,
-                    onCopy: copyTitle,
-                    onHover: holdBubble(_:)
-                )
-            }
-            .frame(width: 260, height: previewHeight, alignment: .topLeading)
+            let preview = QuadrantTitleOverflow.preview(title)
+            QuadrantTitlePreview(
+                excerpt: preview.excerpt,
+                showsHint: preview.isPartial,
+                onCopy: copyTitle,
+                onHover: holdBubble
+            )
             .offset(x: bubbleShiftX, y: growsUpward ? -6 : 22)
             .accessibilityIdentifier("quadrant.titleBubble.\(row.id.uuidString)")
             .transition(bubbleTransition)
@@ -371,6 +351,7 @@ private struct QuadrantChip: View {
 
 private struct QuadrantSingleLineTitle: View {
     var text: String
+    var truncation: Text.TruncationMode
     @Binding var overflows: Bool
     @State private var visibleWidth: CGFloat = 0
 
@@ -379,7 +360,7 @@ private struct QuadrantSingleLineTitle: View {
             .font(DaybookType.subtitle)
             .foregroundStyle(DaybookPalette.text.primary)
             .lineLimit(1)
-            .truncationMode(.tail)
+            .truncationMode(truncation)
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             .background {
                 GeometryReader { proxy in
@@ -388,6 +369,7 @@ private struct QuadrantSingleLineTitle: View {
             }
             .onPreferenceChange(QuadrantVisibleWidthKey.self, perform: updateVisibleWidth)
             .onChange(of: text) { _, _ in publishOverflow() }
+            .onChange(of: truncation) { _, _ in publishOverflow() }
     }
 
     private func updateVisibleWidth(_ width: CGFloat) {
@@ -397,9 +379,7 @@ private struct QuadrantSingleLineTitle: View {
     }
 
     private func publishOverflow() {
-        let font = NSFont.systemFont(ofSize: DaybookType.subtitleSize)
-        let ideal = (text as NSString).size(withAttributes: [.font: font]).width
-        let next = QuadrantTitleOverflow.isOverflowing(idealWidth: ideal, visibleWidth: visibleWidth)
+        let next = QuadrantTitleOverflow.overflowsProbe(text, visibleWidth: visibleWidth)
         if overflows != next { overflows = next }
     }
 }

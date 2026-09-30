@@ -78,5 +78,9 @@ struct AppPreferencesTests {
         prefs.syncCalendarEvents = true
         #expect(defaults.bool(forKey: AppPreferences.stampCaptureAppKey))
         #expect(defaults.bool(forKey: AppPreferences.syncCalendarEventsKey))
+        #expect(prefs.quadrantTitleTruncation == .tail)
+        prefs.quadrantTitleTruncation = .middle
+        #expect(defaults.string(forKey: AppPreferences.quadrantTitleTruncationKey) == "middle")
+        #expect(prefs.quadrantTitleTruncation.textTruncation == .middle)
     }
 }

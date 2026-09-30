@@ -44,6 +44,18 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     }
 }
 
+/// 四象限卡片放不下一行时的省略位置。气泡预览始终从标题开头开始。
+enum QuadrantTitleTruncation: String, CaseIterable, Identifiable {
+    case tail
+    case middle
+
+    var id: String { rawValue }
+
+    var textTruncation: Text.TruncationMode {
+        self == .middle ? .middle : .tail
+    }
+}
+
 @Observable
 @MainActor
 final class AppPreferences {
@@ -51,6 +63,7 @@ final class AppPreferences {
 
     static let languageKey = "areachain.prefs.language"
     static let appearanceKey = "areachain.prefs.appearance"
+    static let quadrantTitleTruncationKey = "areachain.prefs.quadrantTitleTruncation"
     static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
@@ -72,6 +85,14 @@ final class AppPreferences {
             guard !isLoading else { return }
             defaults.set(appearance.rawValue, forKey: Self.appearanceKey)
             applyAppAppearance()
+            notifyChange()
+        }
+    }
+
+    var quadrantTitleTruncation: QuadrantTitleTruncation {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(quadrantTitleTruncation.rawValue, forKey: Self.quadrantTitleTruncationKey)
             notifyChange()
         }
     }
@@ -110,6 +131,8 @@ final class AppPreferences {
         language = AppLanguage(rawValue: languageRaw) ?? .system
         let appearanceRaw = defaults.string(forKey: Self.appearanceKey) ?? AppAppearance.system.rawValue
         appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
+        let truncationRaw = defaults.string(forKey: Self.quadrantTitleTruncationKey) ?? QuadrantTitleTruncation.tail.rawValue
+        quadrantTitleTruncation = QuadrantTitleTruncation(rawValue: truncationRaw) ?? .tail
         stampCaptureApp = defaults.bool(forKey: Self.stampCaptureAppKey)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true

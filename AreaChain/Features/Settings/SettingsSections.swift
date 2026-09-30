@@ -27,6 +27,16 @@ struct GeneralSettingsSection: View {
             }
             .accessibilityIdentifier("settings.look")
             .systemPageMarker("settings.look")
+            Picker("settings.quadrant.truncation", selection: $prefs.quadrantTitleTruncation) {
+                Text("settings.quadrant.truncation.tail").tag(QuadrantTitleTruncation.tail)
+                Text("settings.quadrant.truncation.middle").tag(QuadrantTitleTruncation.middle)
+            }
+            .accessibilityIdentifier("settings.quadrant.truncation")
+            .systemPageMarker("settings.quadrant.truncation")
+            Text("settings.quadrant.truncation.help")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         Section("settings.launch") {

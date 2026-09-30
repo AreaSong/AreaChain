@@ -27,9 +27,13 @@ struct QuadrantLayoutTests {
         #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 80, visibleWidth: 80))
         #expect(QuadrantTitleOverflow.isOverflowing(idealWidth: 120, visibleWidth: 80))
         #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 200, visibleWidth: 0))
-        #expect(QuadrantTitleOverflow.previewHeight(title: "买牛奶") < QuadrantTitleOverflow.previewMaxHeight)
-        let wall = String(repeating: "1", count: 800)
-        #expect(QuadrantTitleOverflow.previewHeight(title: wall) == QuadrantTitleOverflow.previewMaxHeight)
+        let short = QuadrantTitleOverflow.preview("买牛奶")
+        #expect(short == QuadrantTitleOverflow.Preview(excerpt: "买牛奶", isPartial: false))
+        let wall = String(repeating: "1", count: 20_000)
+        let long = QuadrantTitleOverflow.preview(wall)
+        #expect(long.isPartial)
+        #expect(long.excerpt.count < QuadrantTitleOverflow.previewProbeLimit)
+        #expect(long.excerpt.count > 8)
     }
 
     @Test func longTitlesStayOnOneLineAndOnlyThoseOverflow() async throws {
