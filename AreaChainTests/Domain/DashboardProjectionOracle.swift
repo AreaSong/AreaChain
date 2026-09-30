@@ -56,7 +56,10 @@ enum DashboardProjectionOracle {
                 ending: todayKey,
                 dayCount: DashboardProjection.heatmapDayCount,
                 stats: byDay,
-                calendar: calendar
+                calendar: calendar,
+                titles: DashboardCompletionTitles.previews(
+                    todos: todos, routines: routines, marks: dashboardMarks(checks)
+                )
             ),
             activities: DashboardProjection.activities(
                 todos: todos, routines: routines, checks: checks, diaries: diaries,
@@ -146,6 +149,16 @@ enum DashboardProjectionOracle {
     ) -> Bool {
         guard !isPaused(routine, on: dayKey) else { return false }
         return WeekdayMask.contains(routine.weekdayMask, dayKey: dayKey, calendar: calendar)
+    }
+
+    /// 悬停标题跟产品投影走同一套完成标记；统计本身仍由上面的逐日扫描对照。
+    private static func dashboardMarks(_ checks: [CheckSnapshot]) -> [UUID: [String: DashboardMark]] {
+        var marks: [UUID: [String: DashboardMark]] = [:]
+        for check in checks {
+            guard let next = DashboardMark.merge(marks[check.routineId]?[check.dayKey], check) else { continue }
+            marks[check.routineId, default: [:]][check.dayKey] = next
+        }
+        return marks
     }
 
     private static func isPaused(_ routine: RoutineSnapshot, on dayKey: String) -> Bool {

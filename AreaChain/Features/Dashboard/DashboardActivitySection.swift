@@ -4,6 +4,7 @@ struct DashboardActivitySection: View {
     var activities: [DashboardActivity]
     var locale: Locale
     var navigation: WorkspaceNavigation
+    var openDiary: (UUID) -> Void = { _ in }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
@@ -24,7 +25,7 @@ struct DashboardActivitySection: View {
 
     private func activityRow(_ activity: DashboardActivity) -> some View {
         Button {
-            DashboardNavigation.open(activity.route, navigation: navigation)
+            open(activity.route)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: DaybookSpacing.sm) {
                 Text(kindKey(activity.kind))
@@ -46,6 +47,14 @@ struct DashboardActivitySection: View {
         .disabled(activity.route == nil)
         .accessibilityIdentifier("dashboard.activity.\(activity.id)")
         .accessibilityLabel(Text(accessibilityText(activity)))
+    }
+
+    private func open(_ route: DashboardActivityRoute?) {
+        if case .openDiary(let id) = route {
+            openDiary(id)
+            return
+        }
+        DashboardNavigation.open(route, navigation: navigation)
     }
 
     private func subject(_ activity: DashboardActivity) -> String {

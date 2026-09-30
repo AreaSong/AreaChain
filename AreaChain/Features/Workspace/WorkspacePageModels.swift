@@ -94,7 +94,8 @@ struct WorkspaceAllItemsPageModel {
         todos: [TodoItem],
         checks: [RoutineCheck],
         todayKey: String,
-        navigation: WorkspaceNavigation
+        navigation: WorkspaceNavigation,
+        locale: Locale
     ) -> WorkspaceAllItemsPageModel {
         var liveQuery = navigation.allItemsQuery
         liveQuery.todayKey = todayKey
@@ -123,7 +124,18 @@ struct WorkspaceAllItemsPageModel {
         }
         var groups: [WorkspaceItemGroup] = []
         if liveQuery.kind != .recurring, !todoEntries.isEmpty {
-            groups.append(WorkspaceItemGroup(id: "todos", title: "items.section.todos", entries: todoEntries))
+            let days = AllItemsDayOrder.ordered(todoEntries.map(\.checkDayKey), todayKey: todayKey)
+            for (index, day) in days.enumerated() {
+                let entries = todoEntries.filter { $0.checkDayKey == day }
+                guard !entries.isEmpty else { continue }
+                groups.append(WorkspaceItemGroup(
+                    id: "todos-\(day)",
+                    title: index == 0 ? "items.section.todos" : nil,
+                    entries: entries,
+                    titleText: DayKey.displayName(day, locale: locale),
+                    sectionCount: index == 0 ? todoEntries.count : nil
+                ))
+            }
         }
         if liveQuery.kind != .oneOff, !routineEntries.isEmpty {
             groups.append(WorkspaceItemGroup(id: "routines", title: "items.section.routines", entries: routineEntries))

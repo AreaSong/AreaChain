@@ -28,6 +28,7 @@ struct WorkspacePendingView: View {
                 emptySubtitle: navigation.pendingFilter.isActive ? "empty.filter.hint" : emptyCopy(model.lane).hint
             )
         }
+        .refreshBoardOnDayChange()
         .onAppear {
             if navigation.pendingLaneSession == nil {
                 navigation.pendingLaneSession = PendingLaneSession(overdueCount: model.projection.overdueCount)

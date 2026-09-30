@@ -7,6 +7,7 @@ struct WorkspaceAllItemsView: View {
     @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
+    @Environment(\.locale) private var locale
     @Bindable private var navigation = WorkspaceNavigation.shared
 
     private var todayKey: String { DayClock.shared.todayKey }
@@ -29,6 +30,7 @@ struct WorkspaceAllItemsView: View {
                 emptySubtitle: model.liveQuery.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
             )
         }
+        .refreshBoardOnDayChange()
         .onAppear { navigation.allItemsQuery.todayKey = todayKey }
         .onChange(of: model.visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
@@ -41,7 +43,8 @@ struct WorkspaceAllItemsView: View {
             todos: todos,
             checks: checks,
             todayKey: todayKey,
-            navigation: navigation
+            navigation: navigation,
+            locale: locale
         )
     }
 

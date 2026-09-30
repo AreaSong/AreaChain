@@ -29,11 +29,11 @@ enum DashboardNavigation {
     static func open(_ route: DashboardActivityRoute?, navigation: WorkspaceNavigation) {
         switch route {
         case .inspectItem(let id, let dayKey, _):
-            navigation.inspectTask(id, dayKey: dayKey)
-        case .diaryPage:
-            navigation.revealTab(.diary)
-        case .trash:
-            navigation.revealTab(.trash)
+            navigation.revealTab(.calendar, inspecting: id, dayKey: dayKey)
+        case .openDiary:
+            break
+        case .focusTrash(let id):
+            navigation.focusTrash(id)
         case nil:
             break
         }

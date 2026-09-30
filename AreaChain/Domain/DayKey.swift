@@ -119,6 +119,17 @@ enum DayKey {
         return formatter.string(from: date)
     }
 
+    /// 包含这一天的本地周，从 `calendar.firstWeekday` 起共 7 天。
+    static func weekKeys(containing key: String, calendar: Calendar = .current) -> [String] {
+        guard let date = date(from: key, calendar: calendar) else { return [] }
+        let weekday = calendar.component(.weekday, from: date)
+        let pad = (weekday - calendar.firstWeekday + 7) % 7
+        guard let start = calendar.date(byAdding: .day, value: -pad, to: date) else { return [] }
+        return (0..<7).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: start).map { from($0, calendar: calendar) }
+        }
+    }
+
     static func shiftedMonth(_ key: String, by months: Int, calendar: Calendar = .current) -> String {
         guard let date = date(from: key, calendar: calendar),
               let next = calendar.date(byAdding: .month, value: months, to: date)

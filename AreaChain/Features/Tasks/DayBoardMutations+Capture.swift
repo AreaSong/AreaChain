@@ -4,17 +4,20 @@ import SwiftData
 extension DayBoardMutations {
     @discardableResult
     static func addCapturedTodo(
-        text: String, dayKey: String, context: ModelContext, tagIDs: [UUID] = []
+        text: String, dayKey: String, context: ModelContext, tagIDs: [UUID] = [],
+        fallbackQuadrant: QuadrantSlot? = nil
     ) -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return false }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
+        let isImportant = parsed.hasPriorityToken ? parsed.isImportant : (fallbackQuadrant?.isImportant ?? parsed.isImportant)
+        let isUrgent = parsed.hasPriorityToken ? parsed.isUrgent : (fallbackQuadrant?.isUrgent ?? parsed.isUrgent)
         let saved = ModelChanges.perform(in: context) {
             let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(tagIDs), in: context)
             let params = CreateTodoParams(
                 title: parsed.cleanTitle, dayKey: dayKey, notes: parsed.notes,
-                remindMinutes: parsed.remindMinutes, isImportant: parsed.isImportant,
-                isUrgent: parsed.isUrgent, tagIDs: TagIDList.parse(ids),
+                remindMinutes: parsed.remindMinutes, isImportant: isImportant,
+                isUrgent: isUrgent, tagIDs: TagIDList.parse(ids),
                 sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
             )
             _ = try taskRepo(for: context).addTodo(params)

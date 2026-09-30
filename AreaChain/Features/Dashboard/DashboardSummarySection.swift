@@ -11,6 +11,7 @@ struct DashboardSummarySection: View {
             todayRow
             pendingRow
             streakRow
+            rangeRow
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .daybookSurface(.card)
@@ -74,11 +75,52 @@ struct DashboardSummarySection: View {
 
     private var streakRow: some View {
         HStack(spacing: DaybookSpacing.md) {
-            labeledCount("dashboard.streak.current", summary.strongestCurrentStreak)
-            labeledCount("dashboard.streak.best", summary.strongestBestStreak)
-            labeledCount("dashboard.diary.today", summary.todayDiaryCount)
+            metricButton(
+                title: "dashboard.streak.current",
+                value: summary.strongestCurrentStreak,
+                identifier: "dashboard.streak.current"
+            ) {
+                navigation.revealRecurringList()
+            }
+            metricButton(
+                title: "dashboard.streak.best",
+                value: summary.strongestBestStreak,
+                identifier: "dashboard.streak.best"
+            ) {
+                navigation.revealRecurringList()
+            }
+            metricButton(
+                title: "dashboard.diary.today",
+                value: summary.todayDiaryCount,
+                identifier: "dashboard.diary.today"
+            ) {
+                navigation.revealTab(.diary)
+            }
+            metricButton(
+                title: "dashboard.routines.active",
+                value: summary.activeRoutineCount,
+                identifier: "dashboard.routines.active"
+            ) {
+                navigation.revealRecurringList()
+            }
+        }
+    }
+
+    private var rangeRow: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            Text("dashboard.range.recent")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
+            Text(rangeValue)
+                .font(DaybookType.body.monospacedDigit())
+                .foregroundStyle(DaybookPalette.text.primary)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("dashboard.range.recent")
+    }
+
+    private var rangeValue: String {
+        "\(summary.recentRangeStat.completedCount)/\(summary.recentRangeStat.scheduledCount)"
     }
 
     private var todayValue: String {
@@ -115,17 +157,4 @@ struct DashboardSummarySection: View {
         .accessibilityIdentifier(identifier)
     }
 
-    private func labeledCount(_ key: LocalizedStringKey, _ value: Int) -> some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            Text(key)
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
-            Text("\(value)")
-                .font(DaybookType.body.monospacedDigit())
-                .foregroundStyle(DaybookPalette.text.primary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .accessibilityLabel(Text(key))
-        .accessibilityValue(Text("\(value)"))
-    }
 }

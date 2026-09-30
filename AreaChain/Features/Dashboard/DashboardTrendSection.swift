@@ -4,6 +4,7 @@ import SwiftUI
 struct DashboardTrendSection: View {
     var days: [DashboardDayStat]
     var locale: Locale
+    var navigation: WorkspaceNavigation
 
     var body: some View {
         let percentFormatter = makePercentFormatter()
@@ -26,6 +27,16 @@ struct DashboardTrendSection: View {
     }
 
     private func trendColumn(_ day: DashboardDayStat, percentFormatter: NumberFormatter) -> some View {
+        Button {
+            DashboardNavigation.openCalendar(dayKey: day.dayKey, isPadding: false, navigation: navigation)
+        } label: {
+            columnLabel(day, percentFormatter: percentFormatter)
+        }
+        .buttonStyle(DaybookButtonStyle(.quiet))
+        .accessibilityIdentifier("dashboard.trend.\(day.dayKey)")
+    }
+
+    private func columnLabel(_ day: DashboardDayStat, percentFormatter: NumberFormatter) -> some View {
         VStack(spacing: DaybookSpacing.xs) {
             ZStack(alignment: .bottom) {
                 Color.clear

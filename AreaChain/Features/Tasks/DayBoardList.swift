@@ -138,6 +138,13 @@ struct DayBoardList: View {
             setupKeyMonitor()
             expandIfHighlighted(identity)
         }
+        .onChange(of: focusedTaskID == nil) { _, missing in
+            if missing {
+                tearDownKeyMonitor()
+            } else {
+                setupKeyMonitor()
+            }
+        }
         .onChange(of: highlightedTaskID) { _, _ in
             expandIfHighlighted(makeListIdentity())
         }

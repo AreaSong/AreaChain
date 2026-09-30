@@ -10,6 +10,7 @@ struct TrashPage: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query(filter: SoftDelete.deletedAttachments) private var attachments: [AttachmentItem]
 
+    @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
 
@@ -31,7 +32,19 @@ struct TrashPage: View {
             })
         }
         let catalog = tags.compactMap { TrashRow.tag($0) }
-        return (standing + tasks + notes + files + catalog).sorted { $0.deletedAt > $1.deletedAt }
+        return standing + tasks + notes + files + catalog
+    }
+
+    private var sectioned: [(TrashSection, [TrashRow])] {
+        let grouped = Dictionary(grouping: items, by: \.section)
+        return TrashSection.allCases.compactMap { section in
+            let rows = (grouped[section] ?? []).sorted { $0.deletedAt > $1.deletedAt }
+            return rows.isEmpty ? nil : (section, rows)
+        }
+    }
+
+    private var flatItems: [TrashRow] {
+        sectioned.flatMap(\.1)
     }
 
     var body: some View {
@@ -63,15 +76,33 @@ struct TrashPage: View {
     }
 
     private var list: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 6) {
-                ForEach(items) { item in
-                    trashCard(item)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: DaybookSpacing.md) {
+                    ForEach(sectioned, id: \.0) { section, rows in
+                        DaybookSectionHeader(title: section.titleKey, count: rows.count)
+                        VStack(alignment: .leading, spacing: 6) {
+                            ForEach(rows) { item in
+                                trashCard(item)
+                                    .id(item.id)
+                            }
+                        }
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+            .daybookScroll()
+            .onChange(of: navigation.focusedTrashID) { _, id in
+                guard let id else { return }
+                proxy.scrollTo(id, anchor: .center)
+            }
+            .onAppear {
+                if let id = navigation.focusedTrashID {
+                    proxy.scrollTo(id, anchor: .center)
                 }
             }
-            .padding(.vertical, 2)
         }
-        .daybookScroll()
+        .trashKeys(items: flatItems, focusedID: $navigation.focusedTrashID, onRestore: restoreFocused)
     }
 
     private func trashCard(_ item: TrashRow) -> some View {
@@ -119,10 +150,15 @@ struct TrashPage: View {
                 .font(DaybookType.caption)
             }
         }
-        .daybookSurface(.card, configure: {
+        .daybookSurface(.card, isSelected: navigation.focusedTrashID == item.id, configure: {
     $0.radius = DaybookRadius.small
     $0.padding = EdgeInsets(top: 8, leading: 14, bottom: 8, trailing: 12)
 })
+    }
+
+    private func restoreFocused() {
+        guard let item = flatItems.first(where: { $0.id == navigation.focusedTrashID }), item.canRestore else { return }
+        restore(item)
     }
 
     private func restore(_ item: TrashRow) {
@@ -156,10 +192,29 @@ struct TrashPage: View {
     }
 }
 
+enum TrashSection: CaseIterable {
+    case todo
+    case routine
+    case diary
+    case attachment
+    case tag
+
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .todo: "trash.kind.todo"
+        case .routine: "trash.kind.resident"
+        case .diary: "trash.kind.diary"
+        case .attachment: "trash.kind.attachment"
+        case .tag: "trash.kind.tag"
+        }
+    }
+}
+
 @MainActor
 struct TrashRow: Identifiable {
     var id: UUID
     var title: String
+    var section: TrashSection
     var kindLabel: LocalizedStringKey
     var isResident: Bool
     var deletedAt: Date
@@ -179,6 +234,7 @@ struct TrashRow: Identifiable {
         return TrashRow(
             id: item.id,
             title: item.title,
+            section: .routine,
             kindLabel: "trash.kind.resident",
             isResident: true,
             deletedAt: deletedAt,
@@ -197,6 +253,7 @@ struct TrashRow: Identifiable {
         return TrashRow(
             id: item.id,
             title: item.title,
+            section: .todo,
             kindLabel: "trash.kind.todo",
             isResident: false,
             deletedAt: deletedAt,
@@ -215,6 +272,7 @@ struct TrashRow: Identifiable {
         return TrashRow(
             id: item.id,
             title: "",
+            section: .diary,
             kindLabel: "trash.kind.diary",
             isResident: false,
             deletedAt: deletedAt,
@@ -234,6 +292,7 @@ struct TrashRow: Identifiable {
         return TrashRow(
             id: item.id,
             title: item.name,
+            section: .tag,
             kindLabel: "trash.kind.tag",
             isResident: false,
             deletedAt: deletedAt,
@@ -250,6 +309,7 @@ struct TrashRow: Identifiable {
         return TrashRow(
             id: item.id,
             title: item.filename,
+            section: .attachment,
             kindLabel: "trash.kind.attachment",
             isResident: false,
             deletedAt: deletedAt,

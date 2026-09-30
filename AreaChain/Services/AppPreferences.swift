@@ -54,6 +54,7 @@ final class AppPreferences {
     static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
+    static let boardFiltersKey = "areachain.prefs.boardFilters"
 
     private let defaults: UserDefaults
     private var isLoading = true
@@ -125,6 +126,16 @@ final class AppPreferences {
         case .dark:
             NSApp.appearance = NSAppearance(named: .darkAqua)
         }
+    }
+
+    func storedBoardFilters() -> BoardFilters {
+        guard let data = defaults.data(forKey: Self.boardFiltersKey) else { return BoardFilters() }
+        return BoardFilterCodec.decode(data) ?? BoardFilters()
+    }
+
+    func storeBoardFilters(_ filters: BoardFilters) {
+        guard !isLoading, let data = BoardFilterCodec.encode(filters) else { return }
+        defaults.set(data, forKey: Self.boardFiltersKey)
     }
 
     private func notifyChange() {

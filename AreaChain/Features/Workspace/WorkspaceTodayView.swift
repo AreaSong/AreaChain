@@ -65,9 +65,15 @@ struct WorkspaceTodayView: View {
                 )
             )
         }
-        .onAppear(perform: consumeComposerFocus)
+        .onAppear {
+            consumeComposerFocus()
+            consumeRecurringListRequest()
+        }
         .onChange(of: navigation.wantsTodayComposerFocus) { _, _ in
             consumeComposerFocus()
+        }
+        .onChange(of: navigation.wantsRecurringList) { _, _ in
+            consumeRecurringListRequest()
         }
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
@@ -135,6 +141,12 @@ struct WorkspaceTodayView: View {
         guard navigation.wantsTodayComposerFocus else { return }
         navigation.wantsTodayComposerFocus = false
         composerFocused = true
+    }
+
+    private func consumeRecurringListRequest() {
+        guard navigation.wantsRecurringList else { return }
+        navigation.wantsRecurringList = false
+        showingRecurringList = true
     }
 
     private func writeTaskFilter(_ filter: BoardFilter) {

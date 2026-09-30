@@ -39,6 +39,7 @@ struct WorkspaceFilteredListView: View {
             taskList(model)
         }
         .confirmMoveToTrash($pendingTrash)
+        .refreshBoardOnDayChange()
         .onChange(of: model.orderedVisibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }

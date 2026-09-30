@@ -79,12 +79,23 @@ struct DashboardHeatmapSection: View {
                 .frame(width: DaybookMetrics.Heatmap.cell, height: DaybookMetrics.Heatmap.cell)
         }
         .buttonStyle(DaybookButtonStyle(.quiet, size: .inline))
+        .help(previewHelp(cell))
         .frame(width: DaybookMetrics.Heatmap.cell, height: DaybookMetrics.Heatmap.cell)
         .clipped()
         .disabled(cell.isPaddingCell)
         .accessibilityIdentifier(cell.isPaddingCell ? "dashboard.heat.pad" : "dashboard.heat.\(cell.dayKey)")
         .accessibilityLabel(Text(cellLabel(cell)))
         .accessibilityHidden(cell.isPaddingCell)
+    }
+
+    private func previewHelp(_ cell: DashboardHeatmapDay) -> String {
+        guard !cell.isPaddingCell, cell.completedCount > 0 else { return "" }
+        var lines = cell.previewTitles
+        let extra = cell.completedCount - lines.count
+        if extra > 0 {
+            lines.append(L10n.format("dashboard.heatmap.more", locale: locale, extra))
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func cellLabel(_ cell: DashboardHeatmapDay) -> String {

@@ -41,7 +41,8 @@ enum DashboardProjection {
             ),
             trend: trend,
             heatmap: heatmap(
-                ending: todayKey, dayCount: heatmapDayCount, stats: byDay, calendar: calendar, days: days
+                ending: todayKey, dayCount: heatmapDayCount, stats: byDay, calendar: calendar, days: days,
+                titles: DashboardCompletionTitles.previews(todos: todos, routines: routines, marks: marks)
             ),
             activities: activityRows(
                 todos: todos, routines: routines, diaries: diaries,
@@ -67,7 +68,8 @@ enum DashboardProjection {
         dayCount: Int,
         stats: [String: DashboardDayStat],
         calendar: Calendar,
-        days: [String]? = nil
+        days: [String]? = nil,
+        titles: [String: [String]] = [:]
     ) -> [DashboardHeatmapDay] {
         let real = days ?? closedDays(ending: end, count: dayCount, calendar: calendar)
         guard let first = real.first, let firstDate = DayKey.date(from: first, calendar: calendar) else {
@@ -76,7 +78,7 @@ enum DashboardProjection {
         let leading = weekdaySlot(firstDate, calendar: calendar)
         let trailing = (7 - ((leading + real.count) % 7)) % 7
         var cells = (0..<leading).map { paddingCell(slot: $0) }
-        cells += real.map { heatmapDay($0, stat: stats[$0]) }
+        cells += real.map { heatmapDay($0, stat: stats[$0], titles: titles[$0] ?? []) }
         cells += (0..<trailing).map { paddingCell(slot: leading + real.count + $0) }
         return cells
     }
@@ -294,7 +296,11 @@ private extension DashboardProjection {
         )
     }
 
-    static func heatmapDay(_ dayKey: String, stat: DashboardDayStat?) -> DashboardHeatmapDay {
+    static func heatmapDay(
+        _ dayKey: String,
+        stat: DashboardDayStat?,
+        titles: [String] = []
+    ) -> DashboardHeatmapDay {
         let completed = stat?.completedCount ?? 0
         return DashboardHeatmapDay(
             dayKey: dayKey,
@@ -302,12 +308,13 @@ private extension DashboardProjection {
             skippedCount: stat?.skippedCount ?? 0,
             scheduledCount: stat?.scheduledCount ?? 0,
             intensityLevel: intensityLevel(completedCount: completed),
-            isPaddingCell: false
+            isPaddingCell: false,
+            previewTitles: titles
         )
     }
 }
 
-private enum DashboardMark: Equatable {
+enum DashboardMark: Equatable {
     case done
     case skipped
 
@@ -435,7 +442,7 @@ private extension DashboardProjection {
                     id: activityID(.created, subject: diary.id, dayKey: createdDay),
                     kind: .created, dayKey: createdDay, subjectID: diary.id, subjectKind: .diary,
                     title: "", titleKey: "dashboard.activity.diaryCreated", isPrivate: false,
-                    route: .diaryPage
+                    route: .openDiary(id: diary.id)
                 ))
             }
             if let deleted = diary.deletedAt {
@@ -445,7 +452,7 @@ private extension DashboardProjection {
                         id: activityID(.trashed, subject: diary.id, dayKey: day),
                         kind: .trashed, dayKey: day, subjectID: diary.id, subjectKind: .diary,
                         title: "", titleKey: "dashboard.activity.diaryTrashed", isPrivate: false,
-                        route: .trash
+                        route: .focusTrash(id: diary.id)
                     ))
                 }
             }
@@ -479,7 +486,7 @@ private extension DashboardProjection {
         return DashboardActivity(
             id: activityID(.trashed, subject: id, dayKey: dayKey),
             kind: .trashed, dayKey: dayKey, subjectID: id, subjectKind: kind,
-            title: title, titleKey: nil, isPrivate: false, route: .trash
+            title: title, titleKey: nil, isPrivate: false, route: .focusTrash(id: id)
         )
     }
 

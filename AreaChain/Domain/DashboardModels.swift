@@ -50,6 +50,8 @@ struct DashboardHeatmapDay: Equatable, Sendable, Identifiable {
     var scheduledCount: Int
     var intensityLevel: Int
     var isPaddingCell: Bool
+    /// 悬停时展示的已完成标题，最多 8 条。其余数量用 `completedCount` 相减。
+    var previewTitles: [String] = []
 
     var id: String { isPaddingCell ? "pad-\(dayKey)" : dayKey }
 }
@@ -69,8 +71,8 @@ enum DashboardSubjectKind: String, Equatable, Sendable {
 
 enum DashboardActivityRoute: Equatable, Sendable {
     case inspectItem(id: UUID, dayKey: String, kind: DashboardSubjectKind)
-    case diaryPage
-    case trash
+    case openDiary(id: UUID)
+    case focusTrash(id: UUID)
 }
 
 struct DashboardActivity: Equatable, Sendable, Identifiable {

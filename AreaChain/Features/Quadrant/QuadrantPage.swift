@@ -11,7 +11,11 @@ struct QuadrantPage: View {
 
     var todayKey: String
     @Bindable private var selection = BoardSelection.shared
+    @Environment(\.modelContext) private var modelContext
     @State private var dropSlot: QuadrantSlot?
+    @State private var drafts: [QuadrantSlot: String] = [:]
+    @State private var fieldFocus: [QuadrantSlot: Bool] = [:]
+    @State private var focusedID: UUID?
 
     init(todayKey: String) {
         self.todayKey = todayKey
@@ -42,6 +46,12 @@ struct QuadrantPage: View {
                 quadrantGrid(cellHeight: 180)
             }
         }
+        .quadrantKeys(
+            ids: focusOrder,
+            focusedID: $focusedID,
+            onToggle: toggleFocused,
+            onInspect: inspectFocused
+        )
     }
 
     private func quadrantGrid(cellHeight: CGFloat) -> some View {
@@ -72,12 +82,27 @@ struct QuadrantPage: View {
                 ScrollView(.vertical) {
                     LazyVStack(alignment: .leading, spacing: 4) {
                         ForEach(rows) { row in
-                            QuadrantChip(row: row, inspectDayKey: selectedKey)
+                            QuadrantChip(
+                                row: row,
+                                isFocused: focusedID == row.id,
+                                onToggle: { toggle(row) },
+                                onInspect: {
+                                    focusedID = row.id
+                                    inspect(row)
+                                }
+                            )
                         }
                     }
                 }
                 .daybookScroll()
             }
+            DaybookTextField(
+                text: draftBinding(slot),
+                placeholder: L10n.string("quadrant.add", locale: locale),
+                focus: focusBinding(slot),
+                onSubmit: { addTodo(in: slot) },
+                allowsShiftNewline: false
+            )
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -118,6 +143,60 @@ struct QuadrantPage: View {
         }
     }
 
+    private var focusOrder: [UUID] {
+        QuadrantSlot.allCases.flatMap { rows(in: $0).map(\.id) }
+    }
+
+    private func draftBinding(_ slot: QuadrantSlot) -> Binding<String> {
+        Binding(
+            get: { drafts[slot] ?? "" },
+            set: { drafts[slot] = $0 }
+        )
+    }
+
+    private func focusBinding(_ slot: QuadrantSlot) -> Binding<Bool> {
+        Binding(
+            get: { fieldFocus[slot] ?? false },
+            set: { fieldFocus[slot] = $0 }
+        )
+    }
+
+    private func addTodo(in slot: QuadrantSlot) {
+        let text = drafts[slot] ?? ""
+        guard DayBoardMutations.addCapturedTodo(
+            text: text, dayKey: selectedKey, context: modelContext, fallbackQuadrant: slot
+        ) else { return }
+        drafts[slot] = ""
+    }
+
+    private func toggle(_ row: BoardRow) {
+        switch row {
+        case .todo(let todo):
+            _ = DayBoardMutations.toggleTodo(todo)
+        case .resident(let routine):
+            _ = DayBoardMutations.toggleRoutine(routine, on: selectedKey, checks: checks, context: modelContext)
+        }
+    }
+
+    private func inspect(_ row: BoardRow) {
+        BoardSelection.shared.inspectBoard(selectedKey)
+        WorkspaceNavigation.shared.inspectTask(row.id)
+    }
+
+    private func toggleFocused() {
+        guard let id = focusedID, let row = find(id) else { return }
+        toggle(row)
+    }
+
+    private func inspectFocused() {
+        guard let id = focusedID, let row = find(id) else { return }
+        inspect(row)
+    }
+
+    private func find(_ id: UUID) -> BoardRow? {
+        QuadrantSlot.allCases.lazy.compactMap { slot in rows(in: slot).first { $0.id == id } }.first
+    }
+
     private func apply(_ items: [String], to slot: QuadrantSlot) -> Bool {
         guard let raw = items.first else { return false }
         if let id = TodoDragToken.decode(raw), let todo = todos.first(where: { $0.id == id }) {
@@ -134,32 +213,34 @@ struct QuadrantPage: View {
 
 private struct QuadrantChip: View {
     var row: BoardRow
-    var inspectDayKey: String
+    var isFocused: Bool
+    var onToggle: () -> Void
+    var onInspect: () -> Void
 
     var body: some View {
-        Button {
-            BoardSelection.shared.inspectBoard(inspectDayKey)
-            WorkspaceNavigation.shared.inspectTask(row.id)
-        } label: {
-            HStack(spacing: 6) {
-                if isResident {
-                    Image(systemName: "repeat")
-                        .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookPalette.accent.base)
-                        .accessibilityLabel("row.resident")
+        HStack(spacing: 6) {
+            ModernCheckbox(isDone: false, action: onToggle)
+            Button(action: onInspect) {
+                HStack(spacing: 6) {
+                    if isResident {
+                        Image(systemName: "repeat")
+                            .font(DaybookType.micro.weight(.bold))
+                            .foregroundStyle(DaybookPalette.accent.base)
+                            .accessibilityLabel("row.resident")
+                    }
+                    Text(title)
+                        .font(DaybookType.subtitle)
+                        .foregroundStyle(DaybookPalette.text.primary)
+                        .lineLimit(2)
+                    Spacer(minLength: 0)
                 }
-                Text(title)
-                    .font(DaybookType.subtitle)
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(2)
-                Spacer(minLength: 0)
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 4)
-            .daybookSurface(.card, configure: { $0.radius = DaybookRadius.small })
-            .contentShape(Rectangle())
+            .buttonStyle(.plain) // control: 象限任务卡整行点击
         }
-        .buttonStyle(.plain) // control: 象限任务卡整行点击
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
+        .daybookSurface(.card, isSelected: isFocused, configure: { $0.radius = DaybookRadius.small })
         .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
     }

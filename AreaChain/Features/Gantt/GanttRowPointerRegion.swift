@@ -15,6 +15,7 @@ enum GanttPointerAction {
     case dragEnded
     case cancel
     case moveByDays(Int)
+    case complete
 }
 
 struct GanttRowPointerRegion: NSViewRepresentable {
@@ -130,6 +131,7 @@ final class GanttRowPointerView: NSView {
         case 36, 76: dispatch?(.inspect)
         case 123: dispatch?(.moveByDays(-1))
         case 124: dispatch?(.moveByDays(1))
+        case 49: dispatch?(.complete)
         default: super.keyDown(with: event)
         }
     }

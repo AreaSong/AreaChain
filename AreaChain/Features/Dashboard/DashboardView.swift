@@ -3,6 +3,7 @@ import SwiftUI
 
 struct DashboardView: View {
     @Environment(\.locale) private var locale
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
@@ -28,14 +29,19 @@ struct DashboardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
                     DashboardSummarySection(summary: snapshot.summary, navigation: navigation)
-                    DashboardTrendSection(days: snapshot.trend, locale: locale)
+                    DashboardTrendSection(days: snapshot.trend, locale: locale, navigation: navigation)
                     DashboardHeatmapSection(
                         cells: snapshot.heatmap,
                         hasCompletions: DashboardHeatmapLayout.hasCompletions(snapshot.heatmap),
                         locale: locale,
                         navigation: navigation
                     )
-                    DashboardActivitySection(activities: snapshot.activities, locale: locale, navigation: navigation)
+                    DashboardActivitySection(
+                        activities: snapshot.activities,
+                        locale: locale,
+                        navigation: navigation,
+                        openDiary: openDiary
+                    )
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -46,6 +52,14 @@ struct DashboardView: View {
         .onReceive(NotificationCenter.default.publisher(for: .NSCalendarDayChanged)) { _ in
             DayClock.shared.refresh()
             dayTick = Date()
+        }
+    }
+
+    private func openDiary(_ id: UUID) {
+        if let entry = diaries.first(where: { $0.id == id && $0.deletedAt == nil }) {
+            _ = DiaryWindows.shared.open(entry: entry, context: modelContext)
+        } else {
+            navigation.revealTab(.diary)
         }
     }
 

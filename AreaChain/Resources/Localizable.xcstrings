@@ -885,6 +885,41 @@
         }
       }
     },
+    "calendar.span": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calendar span" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "日历跨度" } }
+      }
+    },
+    "calendar.span.month": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Month" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "月" } }
+      }
+    },
+    "calendar.span.week": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Week" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "周" } }
+      }
+    },
+    "calendar.week.next": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Next week" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "下一周" } }
+      }
+    },
+    "calendar.week.prev": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Previous week" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "上一周" } }
+      }
+    },
     "calendar.next": {
       "extractionState": "manual",
       "localizations": {
@@ -7200,6 +7235,13 @@
         }
       }
     },
+    "quadrant.add": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Add to this quadrant" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "加到这个象限" } }
+      }
+    },
     "quadrant.empty": {
       "extractionState": "manual",
       "localizations": {
@@ -10177,8 +10219,29 @@
     "dashboard.heatmap.hint": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Choose a day to open it in the calendar." } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "点选日期后，在日历中打开该日。" } }
+        "en": { "stringUnit": { "state": "translated", "value": "Choose a day to open it in the calendar. Hover a day to see completed titles." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "点选日期后，在日历中打开该日。悬停可看当天已完成的标题。" } }
+      }
+    },
+    "dashboard.heatmap.more": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "%d more" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "还有 %d 项" } }
+      }
+    },
+    "dashboard.range.recent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Last 7 days" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "近 7 日" } }
+      }
+    },
+    "dashboard.routines.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Active routines" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "启用中的重复事项" } }
       }
     },
     "dashboard.heatmap.legend.less": {

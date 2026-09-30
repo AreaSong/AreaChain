@@ -62,6 +62,10 @@ struct WorkspaceItemGroup: Identifiable {
     var id: String
     var title: LocalizedStringKey?
     var entries: [WorkspaceItemEntry]
+    /// 日期分组的显示名。和 `title` 可以同时出现：标题是段名，这行是那一天。
+    var titleText: String? = nil
+    /// 段头计数。日期分组的第一天用全部一次性事项的数量，而不是当天的行数。
+    var sectionCount: Int? = nil
 }
 
 private struct RoutineCompletionPrompt {
@@ -105,7 +109,13 @@ struct WorkspaceItemsList: View {
                     VStack(alignment: .leading, spacing: DaybookSpacing.md) {
                         ForEach(groups) { group in
                             if let title = group.title {
-                                DaybookSectionHeader(title: title, count: group.entries.count)
+                                DaybookSectionHeader(title: title, count: group.sectionCount ?? group.entries.count)
+                            }
+                            if let titleText = group.titleText {
+                                Text(titleText)
+                                    .font(DaybookType.caption.weight(.semibold))
+                                    .foregroundStyle(DaybookPalette.text.secondary)
+                                    .accessibilityAddTraits(.isHeader)
                             }
                             VStack(alignment: .leading, spacing: 4) {
                                 ForEach(group.entries) { entry in

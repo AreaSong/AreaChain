@@ -24,11 +24,26 @@ struct BoardComposerDraft {
     }
 }
 
-/// 菜单栏和工作台今日、手记页共用的筛选。只留在本次运行，不写入偏好。
+/// 菜单栏和工作台今日、手记页共用的筛选。标签、优先级、提醒和来源写入偏好；日期范围只留在本次运行。
 @Observable @MainActor
 final class BoardFilterSession {
-    static let shared = BoardFilterSession()
-    var filters = BoardFilters()
+    static let shared: BoardFilterSession = {
+        let session = BoardFilterSession(filters: AppPreferences.shared.storedBoardFilters())
+        session.onChange = { AppPreferences.shared.storeBoardFilters($0) }
+        return session
+    }()
+
+    var onChange: ((BoardFilters) -> Void)?
+    var filters = BoardFilters() {
+        didSet {
+            guard filters != oldValue else { return }
+            onChange?(filters)
+        }
+    }
+
+    init(filters: BoardFilters = BoardFilters()) {
+        self.filters = filters
+    }
 
     /// 工作台顶部搜索使用任务筛选，与菜单栏任务页同一份。
     var globalSearchFilter: BoardFilter { filters.tasks }

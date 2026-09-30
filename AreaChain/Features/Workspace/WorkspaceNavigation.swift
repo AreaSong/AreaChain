@@ -149,6 +149,10 @@ final class WorkspaceNavigation {
     var pendingFilter = BoardFilter()
     /// 全部事项筛选。保留和清空的时机与待处理相同。
     var allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
+    /// 总览连击或重复事项数要求今日页打开重复事项面板。页面消费后清掉。
+    var wantsRecurringList = false
+    /// 总览活动点进回收站时选中的行。离开回收站后清空。
+    var focusedTrashID: UUID?
 
     // MARK: - Global Search
     var searchQuery: String = ""
@@ -201,7 +205,18 @@ final class WorkspaceNavigation {
         boardSelection.consumeEscapeCancelsEdits()
     }
 
+    func revealRecurringList() {
+        revealTab(.today)
+        wantsRecurringList = true
+    }
+
+    func focusTrash(_ id: UUID) {
+        revealTab(.trash)
+        focusedTrashID = id
+    }
+
     func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
+        focusedTrashID = nil
         if tab != .diary {
             boardSelection.clearInspectedDiary()
         }
@@ -307,6 +322,8 @@ final class WorkspaceNavigation {
             pendingFilter = BoardFilter()
         case .allItems:
             allItemsQuery = ItemsListingQuery(todayKey: DayClock.shared.todayKey)
+        case .trash:
+            focusedTrashID = nil
         default:
             break
         }

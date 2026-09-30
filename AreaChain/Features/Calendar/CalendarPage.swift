@@ -1,6 +1,25 @@
 import SwiftData
 import SwiftUI
 
+enum CalendarKeyboardFocus: Equatable {
+    case grid
+    case list
+}
+
+enum CalendarSpan: String, CaseIterable, Identifiable {
+    case month
+    case week
+
+    var id: String { rawValue }
+
+    var titleKey: LocalizedStringKey {
+        switch self {
+        case .month: "calendar.span.month"
+        case .week: "calendar.span.week"
+        }
+    }
+}
+
 enum CalendarDayDrop {
     /// 拖动保存失败时保留原来的选中日。
     static func nextSelectedDay(current: String, target: String, saved: Bool) -> String {
@@ -22,6 +41,9 @@ struct CalendarPage: View {
     @Bindable private var selection = BoardSelection.shared
     @Bindable private var navigation = WorkspaceNavigation.shared
     @State private var draft = ""
+    @State private var span: CalendarSpan = .month
+    @State private var keyboardFocus = CalendarKeyboardFocus.grid
+    @State private var listFocusID: UUID?
 
     init(
         todayKey: String,
@@ -48,6 +70,12 @@ struct CalendarPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .calendarGridKeys(
+            enabled: keyboardFocus == .grid,
+            selectedKey: selectedKey,
+            onSelect: { selectedKey = $0 },
+            onEnterList: enterDayList
+        )
         .padding(DaybookSpacing.page)
         .frame(minWidth: embedded ? 0 : 420, maxWidth: .infinity, minHeight: embedded ? 0 : 560, maxHeight: .infinity, alignment: .topLeading)
         .background(DaybookPalette.fill.page)
@@ -56,11 +84,12 @@ struct CalendarPage: View {
     private var calendarSidebar: some View {
         VStack(alignment: .leading, spacing: 10) {
             // 嵌入只决定最小尺寸和月格是否紧凑。宽布局侧栏若只留标题，工作台主路径无法离开当月。
+            spanPicker
             monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,
-                onSelect: { selectedKey = $0 },
+                onSelect: selectDayFromGrid,
                 onDropTodo: dropTodo
             )
             Spacer(minLength: 0)
@@ -78,14 +107,29 @@ struct CalendarPage: View {
                 todayKey: todayKey,
                 allowsTodoDrag: true,
                 interaction: DayBoardInteraction(
-                    highlightedTaskID: navigation.selectedTaskID,
-                    onInspect: { WorkspaceNavigation.shared.inspectTask($0) }
+                    focusedTaskID: keyboardFocus == .list ? $listFocusID : nil,
+                    highlightedTaskID: keyboardFocus == .list ? listFocusID : navigation.selectedTaskID,
+                    onInspect: { id in
+                        listFocusID = id
+                        keyboardFocus = .list
+                        WorkspaceNavigation.shared.inspectTask(id)
+                    },
+                    onReturnToInput: { keyboardFocus = .grid }
                 )
             )
         )
     }
 
+    @ViewBuilder
     private var wideLayout: some View {
+        if span == .week {
+            weekLayout
+        } else {
+            monthWideLayout
+        }
+    }
+
+    private var monthWideLayout: some View {
         HStack(alignment: .top, spacing: 16) {
             calendarSidebar
 
@@ -106,6 +150,46 @@ struct CalendarPage: View {
         .frame(minWidth: 660)
     }
 
+    private var weekLayout: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            spanPicker
+            weekBar
+            CalendarWeekBoard(
+                days: DayKey.weekKeys(containing: selectedKey, calendar: calendar),
+                selectedKey: selectedKey,
+                todayKey: todayKey,
+                routines: routines,
+                checks: checks,
+                todos: todos,
+                listFocused: keyboardFocus == .list,
+                listFocusID: $listFocusID,
+                onSelect: selectDayFromGrid,
+                onInspect: { id, day in
+                    selectedKey = day
+                    listFocusID = id
+                    keyboardFocus = .list
+                    navigation.inspectTask(id, dayKey: day)
+                },
+                onReturnToGrid: { keyboardFocus = .grid },
+                onDropTodo: dropTodo
+            )
+        }
+    }
+
+    private var spanPicker: some View {
+        Picker("calendar.span", selection: $span) {
+            ForEach(CalendarSpan.allCases) { item in
+                Text(item.titleKey).tag(item)
+            }
+        }
+        .pickerStyle(.segmented)
+        .frame(maxWidth: 220)
+        .accessibilityIdentifier("calendar.span")
+        .onChange(of: span) { _, _ in
+            keyboardFocus = .grid
+        }
+    }
+
     private var monthBar: some View {
         DaybookPeriodBar(
             title: DayKey.monthTitle(selectedKey, calendar: calendar, locale: locale),
@@ -115,14 +199,38 @@ struct CalendarPage: View {
         )
     }
 
+    private var weekBar: some View {
+        let days = DayKey.weekKeys(containing: selectedKey, calendar: calendar)
+        let title = weekTitle(days)
+        return DaybookPeriodBar(
+            title: title,
+            onPrev: { selectedKey = DayKey.shifted(selectedKey, by: -7, calendar: calendar) },
+            onNext: { selectedKey = DayKey.shifted(selectedKey, by: 7, calendar: calendar) },
+            onToday: days.contains(todayKey) ? nil : { selectedKey = todayKey },
+            prevLabel: "calendar.week.prev",
+            nextLabel: "calendar.week.next"
+        )
+    }
+
     private func compactLayout(compactDates: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
+            if span == .week {
+                weekLayout
+            } else {
+                monthCompact(compactDates: compactDates)
+            }
+        }
+    }
+
+    private func monthCompact(compactDates: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            spanPicker
             monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
                 counts: monthCounts,
                 isCompact: compactDates,
-                onSelect: { selectedKey = $0 },
+                onSelect: selectDayFromGrid,
                 onDropTodo: dropTodo
             )
             selectedHeading
@@ -160,6 +268,26 @@ struct CalendarPage: View {
         if DayBoardMutations.addCapturedTodo(text: draft, dayKey: selectedKey, context: modelContext) {
             draft = ""
         }
+    }
+
+    private func selectDayFromGrid(_ key: String) {
+        selectedKey = key
+        keyboardFocus = .grid
+    }
+
+    private func enterDayList() {
+        guard let id = CalendarDayFocus.firstOpenID(
+            dayKey: selectedKey, routines: routines, checks: checks, todos: todos
+        ) else { return }
+        listFocusID = id
+        keyboardFocus = .list
+    }
+
+    private func weekTitle(_ days: [String]) -> String {
+        guard let first = days.first, let last = days.last, first != last else {
+            return DayKey.displayName(selectedKey, calendar: calendar, locale: locale)
+        }
+        return "\(DayKey.shortStamp(first, locale: locale)) – \(DayKey.shortStamp(last, locale: locale))"
     }
 
     private func dropTodo(_ id: UUID, onto key: String) {

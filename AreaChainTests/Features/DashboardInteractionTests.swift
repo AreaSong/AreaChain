@@ -35,20 +35,23 @@ struct DashboardInteractionTests {
         #expect(navigation.inspectingDayKey == "2026-08-03")
     }
 
-    @Test func activityRoutesStayOnExistingSurfaces() {
+    @Test func activityRoutesOpenTheMatchingSurface() {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection(now: date("2026-09-25T00:00:00Z")))
         let id = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
         DashboardNavigation.open(
             .inspectItem(id: id, dayKey: "2026-09-20", kind: .todo),
             navigation: navigation
         )
+        #expect(navigation.selectedTab == .calendar)
         #expect(navigation.selectedTaskID == id)
         #expect(navigation.inspectingDayKey == "2026-09-20")
         #expect(navigation.isInspectorPresented)
-        DashboardNavigation.open(.diaryPage, navigation: navigation)
-        #expect(navigation.selectedTab == .diary)
-        DashboardNavigation.open(.trash, navigation: navigation)
+        let diaryID = UUID(uuidString: "22222222-2222-3333-4444-555555555555")!
+        DashboardNavigation.open(.openDiary(id: diaryID), navigation: navigation)
+        #expect(navigation.selectedTab == .calendar)
+        DashboardNavigation.open(.focusTrash(id: diaryID), navigation: navigation)
         #expect(navigation.selectedTab == .trash)
+        #expect(navigation.focusedTrashID == diaryID)
     }
 
     @Test func heatmapLayoutChunksWeeksAndIgnoresPaddingCompletions() {

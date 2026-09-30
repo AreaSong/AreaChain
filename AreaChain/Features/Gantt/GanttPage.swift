@@ -200,6 +200,15 @@ struct GanttPage: View {
             beginDrag(bar)
             drag?.update(dayOffset: offset)
             commitDrag()
+        case .complete:
+            completeSelected(including: bar.id)
+        }
+    }
+
+    private func completeSelected(including id: UUID) {
+        let ids = selection.ids.isEmpty ? [id] : selection.ids
+        for todo in todos where ids.contains(todo.id) && todo.deletedAt == nil && !todo.isDone {
+            _ = DayBoardMutations.toggleTodo(todo)
         }
     }
 
