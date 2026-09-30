@@ -36,6 +36,34 @@ struct QuadrantLayoutTests {
         #expect(long.excerpt.count > 8)
     }
 
+    @Test func previewOverlayTracksTheTitleAnchor() async throws {
+        let id = UUID()
+        let anchor = CGRect(x: 210, y: 180, width: 80, height: 20)
+        let previous = NSApp.accessibilityAttributeValue(NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+        NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+        let window = NSWindow(
+            contentRect: NSRect(x: 40, y: 40, width: 480, height: 320),
+            styleMask: [.titled], backing: .buffered, defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.contentView = NSHostingView(rootView: QuadrantPreviewProbe(id: id, anchor: anchor))
+        defer {
+            window.orderOut(nil)
+            window.contentView = nil
+            NSApp.accessibilitySetValue(previous ?? false, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+        }
+        NSApp.activate(ignoringOtherApps: true)
+        window.makeKeyAndOrderFront(nil)
+        window.contentView?.layoutSubtreeIfNeeded()
+        try await Task.sleep(for: .milliseconds(180))
+        window.contentView?.layoutSubtreeIfNeeded()
+
+        let bubble = try NativeSyntaxUI.frame("quadrant.titleBubble.\(id.uuidString)", in: window)
+        let host = try #require(window.contentView).convert(window.contentView?.bounds ?? .zero, to: nil)
+        #expect(bubble.minX > host.minX + 120, "预览应跟在标题旁，而不是停在左上角")
+        #expect(abs(bubble.minX - (host.minX + anchor.minX)) < 30)
+    }
+
     @Test func longTitlesStayOnOneLineAndOnlyThoseOverflow() async throws {
         let host = try QuadrantLayoutHost(scheme: .light, counts: [1, 0, 0, 1])
         defer { host.close() }
@@ -112,6 +140,30 @@ struct QuadrantLayoutTests {
         #expect(abs(cells[1].minX - cells[0].maxX - DaybookSpacing.sm) < 1)
         #expect(abs(cells[0].minY - cells[2].maxY - DaybookSpacing.sm) < 1)
         #expect(cells[0].minY == cells[1].minY && cells[2].minY == cells[3].minY)
+    }
+}
+
+private struct QuadrantPreviewProbe: View {
+    var id: UUID
+    var anchor: CGRect
+
+    var body: some View {
+        Color.clear
+            .frame(width: 480, height: 320)
+            .overlay(alignment: .topLeading) {
+                QuadrantPreviewOverlay(
+                    preview: QuadrantFloatingPreview(
+                        id: id,
+                        title: "1111",
+                        excerpt: "1111111111",
+                        showsHint: true
+                    ),
+                    anchor: anchor,
+                    containerSize: CGSize(width: 480, height: 320),
+                    onCopy: { _ in },
+                    onHover: { _ in }
+                )
+            }
     }
 }
 

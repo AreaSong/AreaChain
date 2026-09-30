@@ -64,55 +64,74 @@ enum QuadrantTitleOverflow {
     }
 }
 
-enum QuadrantPageSpace {
-    static let name = "quadrant.page"
-}
-
 struct QuadrantFloatingPreview: Equatable {
     var id: UUID
     var title: String
     var excerpt: String
     var showsHint: Bool
-    var anchor: CGRect
-    var growsUpward: Bool
-    var shiftX: CGFloat
+}
+
+struct QuadrantResolvedAnchor: Equatable {
+    var frame: CGRect
+    var containerSize: CGSize
+}
+
+struct QuadrantBubbleAnchorKey: PreferenceKey {
+    static var defaultValue: Anchor<CGRect>? = nil
+    static func reduce(value: inout Anchor<CGRect>?, nextValue: () -> Anchor<CGRect>?) {
+        value = nextValue() ?? value
+    }
+}
+
+struct QuadrantResolvedAnchorKey: PreferenceKey {
+    static var defaultValue: QuadrantResolvedAnchor? = nil
+    static func reduce(value: inout QuadrantResolvedAnchor?, nextValue: () -> QuadrantResolvedAnchor?) {
+        value = nextValue() ?? value
+    }
 }
 
 struct QuadrantPreviewLink {
-    var spaceName: String
     var preview: Binding<QuadrantFloatingPreview?>
     var hoverID: Binding<UUID?>
 }
 
 struct QuadrantPreviewOverlay: View {
     var preview: QuadrantFloatingPreview
+    var anchor: CGRect
+    var containerSize: CGSize
     var onCopy: (String) -> Void
     var onHover: (Bool) -> Void
 
     var body: some View {
-        // 先定宽再定位。挂在 1×1 上时，提议宽度会把长标题排成一条竖线，并留在宫格左上角。
-        QuadrantTitlePreview(
-            excerpt: preview.excerpt,
-            showsHint: preview.showsHint,
-            onCopy: { onCopy(preview.title) },
-            onHover: onHover
-        )
-        .frame(width: 260, alignment: .leading)
-        .fixedSize(horizontal: true, vertical: true)
-        .alignmentGuide(.leading) { _ in -originX }
-        .alignmentGuide(.top) { dimensions in -originY(height: dimensions.height) }
-        .accessibilityIdentifier("quadrant.titleBubble.\(preview.id.uuidString)")
+        // offset 必须包住卡片。只改 alignmentGuide 时，浮层会停在宫格左上角。
+        Color.clear
+            .frame(width: 0, height: 0)
+            .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                QuadrantTitlePreview(
+                    excerpt: preview.excerpt,
+                    showsHint: preview.showsHint,
+                    onCopy: { onCopy(preview.title) },
+                    onHover: onHover
+                )
+                .frame(width: 260, alignment: .leading)
+                .fixedSize(horizontal: true, vertical: true)
+                .offset(y: growsUpward ? -6 : 6)
+                .accessibilityIdentifier("quadrant.titleBubble.\(preview.id.uuidString)")
+            }
+            .offset(x: originX, y: edgeY)
+    }
+
+    private var growsUpward: Bool {
+        anchor.midY > containerSize.height / 2
     }
 
     private var originX: CGFloat {
-        preview.anchor.minX + preview.shiftX
+        let limit = max(0, containerSize.width - 268)
+        return min(max(0, anchor.minX), limit)
     }
 
-    private func originY(height: CGFloat) -> CGFloat {
-        if preview.growsUpward {
-            return preview.anchor.minY - 6 - height
-        }
-        return preview.anchor.maxY + 6
+    private var edgeY: CGFloat {
+        growsUpward ? anchor.minY : anchor.maxY
     }
 }
 

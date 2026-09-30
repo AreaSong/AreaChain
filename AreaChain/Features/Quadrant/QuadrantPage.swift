@@ -19,6 +19,7 @@ struct QuadrantPage: View {
     @State private var focusedID: UUID?
     @State private var floatingPreview: QuadrantFloatingPreview?
     @State private var previewHoverID: UUID?
+    @State private var resolvedAnchor: QuadrantResolvedAnchor?
 
     init(todayKey: String) {
         self.todayKey = todayKey
@@ -64,15 +65,29 @@ struct QuadrantPage: View {
                 cell(slot, height: cellHeight)
             }
         }
-        .coordinateSpace(name: QuadrantPageSpace.name)
+        .backgroundPreferenceValue(QuadrantBubbleAnchorKey.self, resolveBubbleAnchor)
+        .onPreferenceChange(QuadrantResolvedAnchorKey.self) { resolvedAnchor = $0 }
         .overlay(alignment: .topLeading) { floatingPreviewLayer }
+    }
+
+    private func resolveBubbleAnchor(_ anchor: Anchor<CGRect>?) -> some View {
+        GeometryReader { proxy in
+            Color.clear
+                .allowsHitTesting(false)
+                .preference(
+                    key: QuadrantResolvedAnchorKey.self,
+                    value: anchor.map { QuadrantResolvedAnchor(frame: proxy[$0], containerSize: proxy.size) }
+                )
+        }
     }
 
     @ViewBuilder
     private var floatingPreviewLayer: some View {
-        if let floatingPreview {
+        if let floatingPreview, let resolvedAnchor {
             QuadrantPreviewOverlay(
                 preview: floatingPreview,
+                anchor: resolvedAnchor.frame,
+                containerSize: resolvedAnchor.containerSize,
                 onCopy: copyPreview,
                 onHover: hoverPreview
             )
@@ -90,11 +105,7 @@ struct QuadrantPage: View {
     }
 
     private var previewLink: QuadrantPreviewLink {
-        QuadrantPreviewLink(
-            spaceName: QuadrantPageSpace.name,
-            preview: $floatingPreview,
-            hoverID: $previewHoverID
-        )
+        QuadrantPreviewLink(preview: $floatingPreview, hoverID: $previewHoverID)
     }
 
     private func cell(_ slot: QuadrantSlot, height: CGFloat) -> some View {
@@ -257,9 +268,6 @@ private struct QuadrantChip: View {
 
     @State private var chrome = BoardRowChrome()
     @State private var titleOverflows = false
-    @State private var growsUpward = false
-    @State private var bubbleShiftX: CGFloat = 0
-    @State private var anchorFrame: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -274,7 +282,6 @@ private struct QuadrantChip: View {
         .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
         .onChange(of: showsTitleBubble) { _, show in syncPreview(show) }
-        .onChange(of: anchorFrame) { _, _ in if showsTitleBubble { syncPreview(true) } }
         .onChange(of: previewHeld) { _, held in holdBubble(held) }
         .onDisappear {
             if previewLink.preview.wrappedValue?.id == row.id {
@@ -310,27 +317,15 @@ private struct QuadrantChip: View {
         .buttonStyle(.plain) // control: 象限任务卡整行点击
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
-        .background(placementReader)
+        .anchorPreference(key: QuadrantBubbleAnchorKey.self, value: .bounds) { anchor in
+            showsTitleBubble ? anchor : nil
+        }
     }
 
     private var previewHeld: Bool { previewLink.hoverID.wrappedValue == row.id }
 
-    private var placementReader: some View {
-        GeometryReader { proxy in
-            Color.clear
-                .onAppear { updateAnchor(proxy) }
-                .onChange(of: proxy.frame(in: .named(previewLink.spaceName))) { _, _ in updateAnchor(proxy) }
-        }
-    }
-
-    private func updateAnchor(_ proxy: GeometryProxy) {
-        let frame = proxy.frame(in: .named(previewLink.spaceName))
-        if anchorFrame != frame { anchorFrame = frame }
-        applyPlacement(proxy)
-    }
-
     private func syncPreview(_ show: Bool) {
-        guard show, anchorFrame.width > 1 else {
+        guard show else {
             if previewLink.preview.wrappedValue?.id == row.id {
                 previewLink.preview.wrappedValue = nil
             }
@@ -341,24 +336,11 @@ private struct QuadrantChip: View {
             id: row.id,
             title: title,
             excerpt: preview.excerpt,
-            showsHint: preview.isPartial,
-            anchor: anchorFrame,
-            growsUpward: growsUpward,
-            shiftX: bubbleShiftX
+            showsHint: preview.isPartial
         )
         if previewLink.preview.wrappedValue != next {
             previewLink.preview.wrappedValue = next
         }
-    }
-
-    private func applyPlacement(_ proxy: GeometryProxy) {
-        let frame = proxy.frame(in: .global)
-        let placement = RowBubblePlacement.calculate(
-            globalPoint: CGPoint(x: frame.minX, y: frame.minY),
-            wideHost: true
-        )
-        if growsUpward != placement.growsUpward { growsUpward = placement.growsUpward }
-        if abs(bubbleShiftX - placement.bubbleShiftX) > 0.5 { bubbleShiftX = placement.bubbleShiftX }
     }
 
     private func holdBubble(_ hovering: Bool) {
