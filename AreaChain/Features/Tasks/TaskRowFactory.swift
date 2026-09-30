@@ -104,7 +104,7 @@ enum TaskRowFactory {
         case .skip: break
         case .moveToDay(let day): DayBoardMutations.moveTodo(todo, to: day)
         case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(todo, minutes: minutes)
-        case .setWeekdaysOnly, .setEnabled: break
+        case .setEnabled: break
         case .toggleSubtask(let subID):
             if let sub = todo.subtasks.first(where: { $0.id == subID }) {
                 DayBoardMutations.toggleSubtask(sub)
@@ -204,7 +204,6 @@ enum TaskRowFactory {
         case .skip: context.actions.onSkip?()
         case .moveToDay: break
         case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(routine, minutes: minutes)
-        case .setWeekdaysOnly: break
         case .setEnabled(let enabled):
             DayBoardMutations.setRoutineEnabled(
                 routine,

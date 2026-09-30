@@ -33,6 +33,9 @@ struct DashboardSummarySection: View {
                     Text(todayValue)
                         .font(DaybookType.caption.monospacedDigit())
                         .foregroundStyle(DaybookPalette.text.secondary)
+                    Text("dashboard.today.skipNote")
+                        .font(DaybookType.caption)
+                        .foregroundStyle(DaybookPalette.text.tertiary)
                 }
                 Spacer(minLength: 0)
             }
@@ -40,6 +43,7 @@ struct DashboardSummarySection: View {
         .buttonStyle(DaybookButtonStyle(.quiet))
         .accessibilityIdentifier("dashboard.today")
         .accessibilityLabel(Text(todayAccessibility))
+        .accessibilityHint(Text("dashboard.today.skipNote"))
     }
 
     private var pendingRow: some View {
@@ -49,14 +53,14 @@ struct DashboardSummarySection: View {
                 value: summary.overdueCount,
                 identifier: "dashboard.overdue"
             ) {
-                DashboardNavigation.openPending(navigation)
+                DashboardNavigation.openPending(navigation, lane: .overdue)
             }
             metricButton(
                 title: "dashboard.pending.upcoming",
                 value: summary.upcomingCount,
                 identifier: "dashboard.upcoming"
             ) {
-                DashboardNavigation.openPending(navigation)
+                DashboardNavigation.openPending(navigation, lane: .upcoming)
             }
             metricButton(
                 title: "dashboard.today.open",

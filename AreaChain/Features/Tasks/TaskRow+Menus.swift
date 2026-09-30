@@ -255,11 +255,6 @@ extension TaskRow {
     @ViewBuilder
     var standingMenus: some View {
         if state.isResident {
-            if let weekdaysOnly = state.weekdaysOnly {
-                Button(weekdaysOnly ? "row.everyday" : "row.weekdays") {
-                    dispatch(.setWeekdaysOnly(!weekdaysOnly))
-                }
-            }
             if let isEnabled = state.isEnabled {
                 if isEnabled {
                     Button("row.disable") {

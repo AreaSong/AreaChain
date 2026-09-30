@@ -40,20 +40,17 @@ struct TaskRowScheduleState: Equatable {
     var todayKey: String?
     var currentDayKey: String?
     var remindMinutes: Int?
-    var weekdaysOnly: Bool?
     var streak: Int?
 
     init(
         todayKey: String? = nil,
         currentDayKey: String? = nil,
         remindMinutes: Int? = nil,
-        weekdaysOnly: Bool? = nil,
         streak: Int? = nil
     ) {
         self.todayKey = todayKey
         self.currentDayKey = currentDayKey
         self.remindMinutes = remindMinutes
-        self.weekdaysOnly = weekdaysOnly
         self.streak = streak
     }
 }
@@ -183,10 +180,6 @@ struct TaskRowState: Identifiable, Equatable {
         get { schedule.remindMinutes }
         set { schedule.remindMinutes = newValue }
     }
-    var weekdaysOnly: Bool? {
-        get { schedule.weekdaysOnly }
-        set { schedule.weekdaysOnly = newValue }
-    }
     var streak: Int? {
         get { schedule.streak }
         set { schedule.streak = newValue }
@@ -267,7 +260,6 @@ enum TaskRowAction {
     case skip
     case moveToDay(String)
     case setRemindMinutes(Int?)
-    case setWeekdaysOnly(Bool)
     case setEnabled(Bool)
     case toggleSubtask(UUID)
 }

@@ -7,7 +7,10 @@ enum DashboardNavigation {
     }
 
     @MainActor
-    static func openPending(_ navigation: WorkspaceNavigation) {
+    static func openPending(_ navigation: WorkspaceNavigation, lane: PendingLane) {
+        var session = navigation.pendingLaneSession ?? PendingLaneSession(overdueCount: 0)
+        session.choose(lane)
+        navigation.pendingLaneSession = session
         navigation.revealTab(.pending)
     }
 

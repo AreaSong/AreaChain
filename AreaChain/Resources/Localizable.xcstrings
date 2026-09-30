@@ -7745,23 +7745,6 @@
         }
       }
     },
-    "row.everyday": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every day"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "每天都出现"
-          }
-        }
-      }
-    },
     "row.more": {
       "extractionState": "manual",
       "localizations": {
@@ -8166,23 +8149,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "设时刻"
-          }
-        }
-      }
-    },
-    "row.weekdays": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Weekdays only"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "仅工作日"
           }
         }
       }
@@ -8703,13 +8669,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Capture current screen asks for Screen Recording once, then saves a still image. AreaChain does not keep recording. If the sandbox blocks it, attach a file or paste instead."
+            "value": "Capture current screen asks for Screen Recording once, then attaches a still image to a task or habit. It does not attach to a diary entry or keep recording. If the sandbox blocks it, attach a file or paste instead."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "「截当前屏」会要一次屏幕录制权限，只拍一张图，不会一直录。若沙盒拦住，仍可用选文件或贴图。"
+            "value": "「截当前屏」会要一次屏幕录制权限，只拍一张图，附到待办或习惯，不附到手记，也不会一直录。若沙盒拦住，仍可用选文件或贴图。"
           }
         }
       }
@@ -10222,6 +10188,13 @@
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "今日完成，%1$d / %2$d" } }
       }
     },
+    "dashboard.today.skipNote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Skips are not counted as completed." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "跳过不计完成。" } }
+      }
+    },
     "dashboard.today.title": {
       "extractionState": "manual",
       "localizations": {
@@ -11539,23 +11512,6 @@
         }
       }
     },
-    "syntax.guide.note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Note on the next line"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "换行输入备注"
-          }
-        }
-      }
-    },
     "syntax.guide.priority": {
       "extractionState": "manual",
       "localizations": {
@@ -11722,57 +11678,6 @@
           "stringUnit": {
             "state": "translated",
             "value": " 直接存入今日手记"
-          }
-        }
-      }
-    },
-    "syntax.example.note.snippet": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Task title on first line\nNewline enters notes"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首行待办标题\n换行输入详细备注"
-          }
-        }
-      }
-    },
-    "syntax.example.note.text1": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "First line "
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "首行标题 "
-          }
-        }
-      }
-    },
-    "syntax.example.note.text2": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " Newline for notes (hover list to view)"
-          }
-        },
-        "zh-Hans": {
-          "stringUnit": {
-            "state": "translated",
-            "value": " 换行转备注 (悬停清单查看)"
           }
         }
       }

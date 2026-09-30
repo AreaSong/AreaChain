@@ -8,8 +8,20 @@ struct DashboardInteractionTests {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection(now: date("2026-09-25T00:00:00Z")))
         DashboardNavigation.openToday(navigation)
         #expect(navigation.selectedTab == .today)
-        DashboardNavigation.openPending(navigation)
+        DashboardNavigation.openPending(navigation, lane: .overdue)
         #expect(navigation.selectedTab == .pending)
+        #expect(navigation.pendingLaneSession?.lane == .overdue)
+        #expect(navigation.pendingLaneSession?.userChose == true)
+    }
+
+    @Test func upcomingMetricKeepsTheUpcomingLaneWhenOverdueExists() {
+        let navigation = WorkspaceNavigation(boardSelection: BoardSelection(now: date("2026-09-25T00:00:00Z")))
+        DashboardNavigation.openPending(navigation, lane: .upcoming)
+        #expect(navigation.selectedTab == .pending)
+        var session = navigation.pendingLaneSession
+        #expect(session?.lane == .upcoming)
+        session?.refreshDefault(overdueCount: 4)
+        #expect(session?.lane == .upcoming)
     }
 
     @Test func heatmapPaddingDoesNotMoveTheCalendar() {
@@ -63,6 +75,7 @@ struct DashboardInteractionTests {
             let locale = Locale(identifier: identifier)
             for key in [
                 "dashboard.title", "dashboard.today.title", "dashboard.today.accessibility",
+                "dashboard.today.skipNote",
                 "dashboard.pending.overdue",
                 "dashboard.heatmap.title", "dashboard.heatmap.empty", "dashboard.activity.empty",
                 "dashboard.activity.kind.completed", "dashboard.heatmap.hint"

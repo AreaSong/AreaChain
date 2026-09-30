@@ -324,9 +324,6 @@ struct MenuBarPopoverView: View {
                 } else {
                     captureFocused = true
                 }
-            } else if token == "⇧↩" {
-                setTaskText(draft + "\n")
-                captureFocused = true
             } else {
                 setTaskText(draft + prefix + token)
                 captureFocused = true

@@ -214,11 +214,7 @@ extension DayBoardList {
     }
 
     func toggleSelected(id: UUID) {
-        let selected = taskSelection.ids
-        if selected.count > 1 && (selected.contains(id) || focusedTaskID?.wrappedValue == nil) {
-            batchToggleSelected(selected)
-            return
-        }
+        // 范围选择只高亮。空格仍只完成焦点行；整批完成留在有批量栏的页面。
         singleToggleSelected(id: id)
     }
 
@@ -270,44 +266,6 @@ extension DayBoardList {
         }
     }
 
-    func batchToggleSelected(_ ids: Set<UUID>) {
-        let identity = makeListIdentity()
-        let previousIDs = identity.visibleIDs(showCompleted: showCompleted)
-        let selectedTodos = ids.compactMap(identity.todo)
-        let selectedRoutines = ids.compactMap(identity.routine)
-
-        let anyUndone = selectedTodos.contains(where: {
-            !$0.isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
-        }) || selectedRoutines.contains(where: {
-            let checkOn = checkDay(for: $0.id)
-            let isDone = identity.source.checkIndex.isClosed(routineId: $0.id, dayKey: checkOn)
-            return !isDone && !PendingCompletionManager.shared.pendingDoneIDs.contains($0.id)
-        })
-
-        let markDone = anyUndone
-
-        PendingCompletionManager.shared.toggleBatch(
-            ids: ids,
-            markDone: markDone,
-            reduceMotion: reduceMotion
-        ) {
-            var groups: [String: Set<UUID>] = [:]
-            for routine in selectedRoutines {
-                groups[self.checkDay(for: routine.id), default: []].insert(routine.id)
-            }
-            let saved = DayBoardMutations.batchToggleListed(
-                todoIDs: Set(selectedTodos.map(\.id)),
-                routineChecks: groups,
-                markDone: markDone,
-                todos: self.todos,
-                routines: self.routines,
-                context: self.modelContext
-            )
-            guard saved, markDone else { return }
-            self.shiftFocusAfterBatchCompletion(completedIDs: ids, previousIDs: previousIDs)
-        }
-    }
-
     private func shiftFocusAfterCompletion(id: UUID, previousIDs: [UUID]) {
         guard !showCompleted, let index = previousIDs.firstIndex(of: id) else { return }
         let remaining = Set(effectiveVisibleIDs)
@@ -320,26 +278,7 @@ extension DayBoardList {
         }
     }
 
-    private func shiftFocusAfterBatchCompletion(completedIDs: Set<UUID>, previousIDs: [UUID]) {
-        guard !showCompleted else { return }
-        let remaining = Set(effectiveVisibleIDs).subtracting(completedIDs)
-        let lastSelectedIdx = previousIDs.lastIndex { completedIDs.contains($0) } ?? 0
-        let candidates = Array(previousIDs.dropFirst(lastSelectedIdx + 1)) + Array(previousIDs.prefix(lastSelectedIdx).reversed())
-        let nextFocus = candidates.first { remaining.contains($0) }
-        focusTask(nextFocus)
-        if let nextFocus {
-            BoardSelection.shared.inspectBoard(mappedDayKey(for: nextFocus))
-        } else {
-            onReturnToInput?()
-        }
-    }
-
     func deleteSelected(id: UUID) {
-        let selected = taskSelection.ids
-        if selected.count > 1 && selected.contains(id) {
-            batchDeleteSelected(selected)
-            return
-        }
         singleDeleteSelected(id: id)
     }
 
@@ -377,24 +316,6 @@ extension DayBoardList {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                 }
-            }
-        }
-    }
-
-    func batchDeleteSelected(_ ids: Set<UUID>) {
-        let previousIDs = effectiveVisibleIDs
-        let remaining = Set(effectiveVisibleIDs).subtracting(ids)
-        let lastIdx = previousIDs.lastIndex { ids.contains($0) } ?? 0
-        let candidates = Array(previousIDs.dropFirst(lastIdx + 1)) + Array(previousIDs.prefix(lastIdx).reversed())
-        let nextFocus = candidates.first { remaining.contains($0) }
-
-        pendingTrash = PendingTrash(title: "\(ids.count)") {
-            guard DayBoardMutations.batchTrash(ids, todos: self.todos, routines: self.routines) else { return }
-            self.focusTask(nextFocus)
-            if let nextFocus {
-                BoardSelection.shared.inspectBoard(self.mappedDayKey(for: nextFocus))
-            } else {
-                self.onReturnToInput?()
             }
         }
     }

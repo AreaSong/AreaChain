@@ -143,17 +143,6 @@ struct SyntaxExpandableCard: View {
                 + Text(LocalizedStringKey("syntax.example.diary.text2")),
             color: DaybookPalette.accent.base
         )
-
-        // 5. ⇧↩ 换行输入备注
-        syntaxRow(
-            token: "⇧↩",
-            title: "syntax.guide.note",
-            exampleSnippet: L10n.string("syntax.example.note.snippet", locale: locale),
-            exampleText: Text(LocalizedStringKey("syntax.example.note.text1"))
-                + Text("⇧↵").foregroundStyle(DaybookPalette.text.primary).bold()
-                + Text(LocalizedStringKey("syntax.example.note.text2")),
-            color: DaybookPalette.text.secondary
-        )
     }
 
     private func syntaxRow(

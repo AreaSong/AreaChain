@@ -43,7 +43,6 @@ struct MilestoneM3Iteration2DTOStressTests {
         state.todayKey = "2026-09-11"
         state.currentDayKey = "2026-09-12"
         state.remindMinutes = 45
-        state.weekdaysOnly = true
         state.streak = 10
 
         #expect(state.identity.title == "Updated Title")
@@ -57,7 +56,6 @@ struct MilestoneM3Iteration2DTOStressTests {
         #expect(state.schedule.todayKey == "2026-09-11")
         #expect(state.schedule.currentDayKey == "2026-09-12")
         #expect(state.schedule.remindMinutes == 45)
-        #expect(state.schedule.weekdaysOnly == true)
         #expect(state.schedule.streak == 10)
 
         // Inverse mutation

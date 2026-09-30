@@ -81,6 +81,32 @@ struct ClosureRegressionTests {
         #expect(returnedToInput)
     }
 
+    @Test func spaceOnAMultiSelectionOnlyTogglesTheFocusedRow() throws {
+        let container = try makeContainer()
+        let context = ModelContext(container)
+        let day = DayKey.today()
+        let first = TodoItem(title: "第一条", dayKey: day)
+        let second = TodoItem(title: "第二条", dayKey: day)
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+        var focusedID: UUID? = first.id
+        var selection = TaskSelection(ids: [first.id, second.id], anchorID: first.id)
+        let list = DayBoardList(
+            dayKey: day, routines: [], checks: [], todos: [first, second],
+            config: DayBoardListConfig(
+                interaction: DayBoardInteraction(
+                    focusedTaskID: Binding(get: { focusedID }, set: { focusedID = $0 })
+                ),
+                selection: Binding(get: { selection }, set: { selection = $0 })
+            )
+        )
+
+        list.toggleSelected(id: first.id)
+        #expect(first.isDone)
+        #expect(second.isDone == false)
+    }
+
     @Test func resumingPauseBridgesCancelledCheckWithoutChangingEarlierMiss() throws {
         let container = try makeContainer()
         let repo = SwiftDataRoutineRepository(container: container)
