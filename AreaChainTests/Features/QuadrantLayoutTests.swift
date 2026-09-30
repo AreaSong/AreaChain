@@ -22,6 +22,28 @@ struct QuadrantLayoutTests {
         }
     }
 
+    @Test func titleOverflowUsesRenderedWidth() {
+        #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 40, visibleWidth: 80))
+        #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 80, visibleWidth: 80))
+        #expect(QuadrantTitleOverflow.isOverflowing(idealWidth: 120, visibleWidth: 80))
+        #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 200, visibleWidth: 0))
+    }
+
+    @Test func longTitlesStayOnOneLineAndOnlyThoseOverflow() async throws {
+        let host = try QuadrantLayoutHost(scheme: .light, counts: [1, 0, 0, 1])
+        defer { host.close() }
+        let longItem = try #require(host.items[.importantUrgent]?.first)
+        let shortItem = try #require(host.items[.rest]?.first)
+        shortItem.title = "买牛奶"
+        try host.container.mainContext.save()
+        try await host.settle()
+
+        let longChip = try NativeSyntaxUI.frame("quadrant.task.\(longItem.id)", in: host.window)
+        let shortChip = try NativeSyntaxUI.frame("quadrant.task.\(shortItem.id)", in: host.window)
+        #expect(abs(longChip.height - shortChip.height) < 2, "长短标题都应占同一行高")
+        #expect(longChip.height < 36, "长标题不应折成两行")
+    }
+
     @Test func overflowingListsScrollIndependentlyAndKeepHeadersFixed() async throws {
         let host = try QuadrantLayoutHost(scheme: .dark, counts: [45, 1, 3, 34])
         defer { host.close() }

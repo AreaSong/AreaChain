@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -211,38 +212,125 @@ struct QuadrantPage: View {
     }
 }
 
+/// 四象限格子随窗口变宽，按真实排版宽度判断标题是否被截断。
+enum QuadrantTitleOverflow {
+    static func isOverflowing(idealWidth: CGFloat, visibleWidth: CGFloat) -> Bool {
+        visibleWidth > 1 && idealWidth > visibleWidth + 1
+    }
+}
+
 private struct QuadrantChip: View {
     var row: BoardRow
     var isFocused: Bool
     var onToggle: () -> Void
     var onInspect: () -> Void
 
+    @State private var chrome = BoardRowChrome()
+    @State private var titleOverflows = false
+    @State private var growsUpward = false
+    @State private var bubbleShiftX: CGFloat = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
         HStack(spacing: 6) {
             ModernCheckbox(isDone: false, action: onToggle)
-            Button(action: onInspect) {
-                HStack(spacing: 6) {
-                    if isResident {
-                        Image(systemName: "repeat")
-                            .font(DaybookType.micro.weight(.bold))
-                            .foregroundStyle(DaybookPalette.accent.base)
-                            .accessibilityLabel("row.resident")
-                    }
-                    Text(title)
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookPalette.text.primary)
-                        .lineLimit(2)
-                    Spacer(minLength: 0)
-                }
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain) // control: 象限任务卡整行点击
+            titleControl
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .daybookSurface(.card, isSelected: isFocused, configure: { $0.radius = DaybookRadius.small })
+        .zIndex(showsTitleBubble ? 4 : 0)
         .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
+        .onDisappear(perform: chrome.stop)
+    }
+
+    private var showsTitleBubble: Bool {
+        titleOverflows && (chrome.isTitleTextHovered || chrome.isTitleBubbleHovered)
+    }
+
+    private var titleControl: some View {
+        ZStack(alignment: growsUpward ? .bottomLeading : .topLeading) {
+            titleButton
+            titleBubble
+        }
+    }
+
+    private var titleButton: some View {
+        Button(action: onInspect) {
+            HStack(spacing: 6) {
+                if isResident {
+                    Image(systemName: "repeat")
+                        .font(DaybookType.micro.weight(.bold))
+                        .foregroundStyle(DaybookPalette.accent.base)
+                        .accessibilityLabel("row.resident")
+                }
+                QuadrantSingleLineTitle(text: title, overflows: $titleOverflows)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain) // control: 象限任务卡整行点击
+        .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
+        .background(placementReader)
+    }
+
+    private var placementReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { applyPlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global)) { _, _ in applyPlacement(proxy) }
+        }
+    }
+
+    @ViewBuilder
+    private var titleBubble: some View {
+        if showsTitleBubble {
+            RowTitleBubble(
+                title: title,
+                growsUpward: growsUpward,
+                onCopy: copyTitle,
+                onHover: holdBubble(_:)
+            )
+            .offset(x: bubbleShiftX, y: growsUpward ? -6 : 22)
+            .accessibilityIdentifier("quadrant.titleBubble.\(row.id.uuidString)")
+            .transition(bubbleTransition)
+        }
+    }
+
+    private var bubbleTransition: AnyTransition {
+        .asymmetric(
+            insertion: .opacity.combined(with: .scale(
+                scale: 0.96,
+                anchor: growsUpward ? .bottomLeading : .topLeading
+            )),
+            removal: .opacity
+        )
+    }
+
+    private func applyPlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let placement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: frame.minX, y: frame.minY),
+            wideHost: true
+        )
+        if growsUpward != placement.growsUpward { growsUpward = placement.growsUpward }
+        if abs(bubbleShiftX - placement.bubbleShiftX) > 0.5 { bubbleShiftX = placement.bubbleShiftX }
+    }
+
+    private func holdBubble(_ hovering: Bool) {
+        chrome.isTitleBubbleHovered = hovering
+        guard !hovering, !chrome.isTitleTextHovered else { return }
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            chrome.isTitleTextHovered = false
+        }
+    }
+
+    private func copyTitle() {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(title, forType: .string)
     }
 
     private var title: String {
@@ -262,6 +350,48 @@ private struct QuadrantChip: View {
         case .resident(let item): TodoDragToken.encodeRoutine(item.id)
         case .todo(let item): TodoDragToken.encode(item.id)
         }
+    }
+}
+
+private struct QuadrantSingleLineTitle: View {
+    var text: String
+    @Binding var overflows: Bool
+    @State private var visibleWidth: CGFloat = 0
+
+    var body: some View {
+        Text(text)
+            .font(DaybookType.subtitle)
+            .foregroundStyle(DaybookPalette.text.primary)
+            .lineLimit(1)
+            .truncationMode(.tail)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                GeometryReader { proxy in
+                    Color.clear.preference(key: QuadrantVisibleWidthKey.self, value: proxy.size.width)
+                }
+            }
+            .onPreferenceChange(QuadrantVisibleWidthKey.self, perform: updateVisibleWidth)
+            .onChange(of: text) { _, _ in publishOverflow() }
+    }
+
+    private func updateVisibleWidth(_ width: CGFloat) {
+        guard abs(visibleWidth - width) > 0.5 else { return }
+        visibleWidth = width
+        publishOverflow()
+    }
+
+    private func publishOverflow() {
+        let font = NSFont.systemFont(ofSize: DaybookType.subtitleSize)
+        let ideal = (text as NSString).size(withAttributes: [.font: font]).width
+        let next = QuadrantTitleOverflow.isOverflowing(idealWidth: ideal, visibleWidth: visibleWidth)
+        if overflows != next { overflows = next }
+    }
+}
+
+private struct QuadrantVisibleWidthKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
     }
 }
 
