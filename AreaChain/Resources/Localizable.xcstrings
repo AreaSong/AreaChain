@@ -10780,6 +10780,125 @@
         }
       }
     },
+    "undo.routine.reopened": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid the check-in for “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已撤销打卡「%@」"
+          }
+        }
+      }
+    },
+    "undo.routine.restored": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored the check-in for “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已恢复打卡「%@」"
+          }
+        }
+      }
+    },
+    "undo.subtask.recompleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marked subtask “%@” complete again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已重新标为完成子任务「%@」"
+          }
+        }
+      }
+    },
+    "undo.subtask.reopened": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid completion of subtask “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已撤销完成子任务「%@」"
+          }
+        }
+      }
+    },
+    "undo.todo.recompleted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marked “%@” complete again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已重新标为完成「%@」"
+          }
+        }
+      }
+    },
+    "undo.todo.reopened": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid completion of “%@”"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已撤销完成「%@」"
+          }
+        }
+      }
+    },
+    "undo.todo.reopened.subtasks": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Undid completion of “%@” and reopened %lld subtasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已撤销完成「%@」，并重新打开 %lld 个子任务"
+          }
+        }
+      }
+    },
     "window.search": {
       "extractionState": "manual",
       "localizations": {
