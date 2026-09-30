@@ -96,10 +96,37 @@ struct SyncSettingsSection: View {
     var notifyStatusText: String
     var calendarSyncStatusText: String?
     var onRequestNotifyAuth: () -> Void
+    @Environment(\.locale) private var locale
+    @State private var notifyTestMessage: String?
+    @State private var isSendingNotifyTest = false
     @Bindable private var calendarStatus = CalendarSyncStatus.shared
 
     private func openNotificationSettings() {
         SystemSettingsLinks.open("x-apple.systempreferences:com.apple.Notifications-Settings.extension")
+    }
+
+    private func sendTestNotification() {
+        guard !isSendingNotifyTest else { return }
+        isSendingNotifyTest = true
+        let title = L10n.string("notify.test.title", locale: locale)
+        let body = L10n.string("notify.test.body", locale: locale)
+        Task {
+            let outcome = await NotificationScheduler.shared.deliverTestBanner(title: title, body: body)
+            notifyStatus = await NotificationScheduler.shared.currentStatus()
+            isSendingNotifyTest = false
+            notifyTestMessage = message(for: outcome)
+        }
+    }
+
+    private func message(for outcome: NotificationTestOutcome) -> String? {
+        switch outcome {
+        case .delivered:
+            return L10n.string("settings.notify.test.sent", locale: locale)
+        case .failed:
+            return L10n.string("settings.notify.test.failed", locale: locale)
+        case .notAuthorized:
+            return nil
+        }
     }
 
     var body: some View {
@@ -115,6 +142,17 @@ struct SyncSettingsSection: View {
                 Button("settings.notify.request", action: onRequestNotifyAuth)
                     .accessibilityIdentifier("settings.notify")
                     .systemPageMarker("settings.notify")
+                Button("settings.notify.test", action: sendTestNotification)
+                    .disabled(isSendingNotifyTest)
+                    .accessibilityIdentifier("settings.notify.test")
+                    .systemPageMarker("settings.notify.test")
+            }
+            if let notifyTestMessage {
+                Text(notifyTestMessage)
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("settings.notify.test.message")
             }
         }
 

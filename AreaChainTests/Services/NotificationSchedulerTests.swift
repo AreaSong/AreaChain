@@ -11,6 +11,7 @@ final class FakeReminderNotifications: ReminderNotificationServing {
     var pending: [ReminderNotificationRecord] = []
     var delivered: Set<String> = []
     var addCount = 0
+    var posted: [PostedBanner] = []
     var removePendingCount = 0
     var removeDeliveredCount = 0
     var pendingQueryCount = 0
@@ -46,6 +47,14 @@ final class FakeReminderNotifications: ReminderNotificationServing {
         pending.append(record)
     }
 
+    func deliverImmediate(identifier: String, title: String, body: String) async throws {
+        if failingIdentifiers.contains(identifier) {
+            throw CocoaError(.fileWriteUnknown)
+        }
+        posted.removeAll { $0.identifier == identifier }
+        posted.append(PostedBanner(identifier: identifier, title: title, body: body))
+    }
+
     func requestAuthorization() async throws -> Bool {
         authorizationCount += 1
         if let authorizationError { throw authorizationError }
@@ -53,6 +62,12 @@ final class FakeReminderNotifications: ReminderNotificationServing {
     }
 
     func attachDelegateIfNeeded(_ delegate: UNUserNotificationCenterDelegate) {}
+
+    struct PostedBanner: Equatable {
+        var identifier: String
+        var title: String
+        var body: String
+    }
 }
 
 @MainActor
@@ -349,6 +364,62 @@ struct NotificationSchedulerTests {
         #expect(!center.pending.contains { $0.identifier == identifier })
         #expect(center.addCount == adds)
         #expect(center.removeDeliveredCount == removed)
+    }
+
+    @Test func testBannerPostsImmediatelyWithoutTouchingReminders() async throws {
+        let container = try container()
+        let center = FakeReminderNotifications()
+        let scheduler = makeScheduler(container: container, center: center, debounce: .zero)
+
+        let outcome = await scheduler.deliverTestBanner(title: "AreaChain", body: "这是一条测试通知。")
+
+        let banner = try #require(center.posted.first)
+        #expect(outcome == .delivered)
+        #expect(center.posted.count == 1)
+        #expect(banner.identifier == NotificationScheduler.testBannerIdentifier)
+        #expect(banner.title == "AreaChain")
+        #expect(banner.body == "这是一条测试通知。")
+        #expect(ReminderPlanning.itemID(from: banner.identifier) == nil)
+        #expect(center.addCount == 0)
+        #expect(scheduler.completedRefreshCount == 1)
+    }
+
+    @Test func deniedTestBannerLeavesExistingReminders() async throws {
+        let container = try container()
+        let center = FakeReminderNotifications()
+        center.status = .denied
+        let reminder = ReminderNotificationRecord(
+            identifier: ReminderPlanning.notificationID(UUID()),
+            title: "已有提醒",
+            year: 2026,
+            month: 9,
+            day: 28,
+            hour: 9,
+            minute: 0
+        )
+        center.pending = [reminder]
+        let scheduler = makeScheduler(container: container, center: center, debounce: .zero)
+
+        let outcome = await scheduler.deliverTestBanner(title: "AreaChain", body: "这是一条测试通知。")
+
+        #expect(outcome == .notAuthorized)
+        #expect(center.posted.isEmpty)
+        #expect(center.pending == [reminder])
+        #expect(center.removePendingCount == 0)
+        #expect(scheduler.completedRefreshCount == 0)
+    }
+
+    @Test func failedTestBannerDoesNotClaimDelivery() async throws {
+        let container = try container()
+        let center = FakeReminderNotifications()
+        center.failingIdentifiers = [NotificationScheduler.testBannerIdentifier]
+        let scheduler = makeScheduler(container: container, center: center, debounce: .zero)
+
+        let outcome = await scheduler.deliverTestBanner(title: "AreaChain", body: "这是一条测试通知。")
+
+        #expect(outcome == .failed)
+        #expect(center.posted.isEmpty)
+        #expect(scheduler.completedRefreshCount == 0)
     }
 
     private final class FollowUpClock {

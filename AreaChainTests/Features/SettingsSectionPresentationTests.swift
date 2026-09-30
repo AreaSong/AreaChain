@@ -2,6 +2,7 @@ import AppKit
 import SwiftData
 import SwiftUI
 import Testing
+import UserNotifications
 @testable import AreaChain
 
 @Suite(.serialized) @MainActor
@@ -22,6 +23,51 @@ struct SettingsSectionPresentationTests {
         try SystemPageHost.assertContained(["settings.login.needsApproval", "settings.login.openSystem"], in: window)
     }
 
+    @Test func notificationTestBannerIsOfferedUntilDenied() async throws {
+        let container = try makeContainer()
+        let allowed = SystemPageHost.window(
+            NotificationSettingsProbe(status: .authorized),
+            container: container,
+            scheme: .light,
+            locale: "zh-Hans",
+            size: NSSize(width: 420, height: 560)
+        )
+        defer { SystemPageHost.release(allowed) }
+        try await SystemPageHost.settle(allowed)
+        #expect(SystemPageHost.identifiers(in: allowed).contains("settings.notify.test"))
+        try SystemPageHost.assertContained(["settings.notify.test"], in: allowed)
+        #expect(L10n.string("settings.notify.test", locale: Locale(identifier: "zh-Hans")) == "测试通知")
+        #expect(L10n.string("settings.notify.test", locale: Locale(identifier: "en")) == "Send a test")
+        #expect(L10n.string("notify.test.body", locale: Locale(identifier: "zh-Hans")) == "这是一条测试通知。")
+        #expect(L10n.string("notify.test.body", locale: Locale(identifier: "en")) == "This is a test notification.")
+        #expect(L10n.string("settings.notify.test.sent", locale: Locale(identifier: "zh-Hans")) == "已发出测试通知。")
+        #expect(L10n.string("settings.notify.test.sent", locale: Locale(identifier: "en")) == "A test notification was sent.")
+
+        let english = SystemPageHost.window(
+            NotificationSettingsProbe(status: .authorized),
+            container: container,
+            scheme: .dark,
+            locale: "en",
+            size: NSSize(width: 420, height: 560)
+        )
+        defer { SystemPageHost.release(english) }
+        try await SystemPageHost.settle(english)
+        try SystemPageHost.assertContained(["settings.notify.test"], in: english)
+
+        let denied = SystemPageHost.window(
+            NotificationSettingsProbe(status: .denied),
+            container: container,
+            scheme: .light,
+            locale: "zh-Hans",
+            size: NSSize(width: 420, height: 560)
+        )
+        defer { SystemPageHost.release(denied) }
+        try await SystemPageHost.settle(denied)
+        let deniedIDs = SystemPageHost.identifiers(in: denied)
+        #expect(!deniedIDs.contains("settings.notify.test"))
+        #expect(deniedIDs.contains("settings.notify.openSystem"))
+    }
+
     @Test func calendarConflictListsBothSidesAndAMissingEvent() async throws {
         let container = try makeContainer()
         let local = CalendarContent(title: "本地标题", dayKey: "2026-09-30", remindMinutes: 9 * 60)
@@ -38,6 +84,30 @@ struct SettingsSectionPresentationTests {
         #expect(described.contains("日历 · 日历标题"), "\(described)")
         #expect(described.contains("无提醒"), "\(described)")
         #expect(described.contains("日历 · 日历里没有可对照的这一条"), "\(described)")
+    }
+
+    private struct NotificationSettingsProbe: View {
+        @State private var status: UNAuthorizationStatus
+        @State private var markers: Set<String> = []
+
+        init(status: UNAuthorizationStatus) {
+            _status = State(initialValue: status)
+        }
+
+        var body: some View {
+            Form {
+                SyncSettingsSection(
+                    notifyStatus: $status,
+                    notifyStatusText: "状态",
+                    calendarSyncStatusText: nil,
+                    onRequestNotifyAuth: {}
+                )
+            }
+            .formStyle(.grouped)
+            .systemPageMarkers($markers)
+            .accessibilityIdentifier("settings.notify.probe")
+            .accessibilityValue(markers.sorted().joined(separator: " "))
+        }
     }
 
     private struct LoginApprovalProbe: View {

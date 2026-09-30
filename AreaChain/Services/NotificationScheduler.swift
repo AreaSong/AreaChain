@@ -10,6 +10,7 @@ protocol ReminderNotificationServing: AnyObject {
     func removePending(identifiers: [String])
     func removeDelivered(identifiers: [String])
     func add(_ record: ReminderNotificationRecord) async throws
+    func deliverImmediate(identifier: String, title: String, body: String) async throws
     func requestAuthorization() async throws -> Bool
     func attachDelegateIfNeeded(_ delegate: UNUserNotificationCenterDelegate)
 }
@@ -57,6 +58,14 @@ final class SystemReminderNotifications: ReminderNotificationServing {
         )
     }
 
+    func deliverImmediate(identifier: String, title: String, body: String) async throws {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = body
+        content.sound = .default
+        try await center.add(UNNotificationRequest(identifier: identifier, content: content, trigger: nil))
+    }
+
     func requestAuthorization() async throws -> Bool {
         try await center.requestAuthorization(options: [.alert, .sound])
     }
@@ -92,9 +101,17 @@ final class SystemReminderNotifications: ReminderNotificationServing {
     }
 }
 
+enum NotificationTestOutcome: Equatable {
+    case delivered
+    case notAuthorized
+    case failed
+}
+
 @MainActor
 final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationScheduler()
+    /// 不用提醒标识前缀：点按不会打开事项，刷新排程也不会把它当成待取消的提醒。
+    static let testBannerIdentifier = "areachain.notification-test"
 
     private var started = false
     private var generation = 0
@@ -198,6 +215,31 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             )
         }
         await refresh()
+    }
+
+    func deliverTestBanner(title: String, body: String) async -> NotificationTestOutcome {
+        guard !(center.attachesSystemCenter && Self.isRunningTests) else { return .failed }
+        do {
+            let granted = try await center.requestAuthorization()
+            NSLog("[NotificationScheduler] test banner authorization granted: %d", granted ? 1 : 0)
+            guard granted else { return .notAuthorized }
+            center.removeDelivered(identifiers: [Self.testBannerIdentifier])
+            try await center.deliverImmediate(
+                identifier: Self.testBannerIdentifier,
+                title: title,
+                body: body
+            )
+        } catch {
+            let failure = error as NSError
+            NSLog(
+                "[NotificationScheduler] test banner FAILED domain=%@ code=%ld",
+                failure.domain,
+                failure.code
+            )
+            return .failed
+        }
+        await refresh()
+        return .delivered
     }
 
     func userNotificationCenter(

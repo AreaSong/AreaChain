@@ -9304,6 +9304,20 @@
         }
       }
     },
+    "notify.test.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "AreaChain" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "AreaChain" } }
+      }
+    },
+    "notify.test.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "This is a test notification." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这是一条测试通知。" } }
+      }
+    },
     "settings.notify.request": {
       "extractionState": "manual",
       "localizations": {
@@ -9319,6 +9333,27 @@
             "value": "允许通知"
           }
         }
+      }
+    },
+    "settings.notify.test": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Send a test" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "测试通知" } }
+      }
+    },
+    "settings.notify.test.failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Couldn't send a test notification." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "这次没能发出测试通知。" } }
+      }
+    },
+    "settings.notify.test.sent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "A test notification was sent." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "已发出测试通知。" } }
       }
     },
     "settings.notify.status.denied": {
