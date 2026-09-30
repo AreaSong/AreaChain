@@ -96,6 +96,10 @@ struct DiaryWindowView: View {
                     DaybookIconButton(systemName: "photo", label: "diary.attach", size: .compact) {
                         attach(to: record)
                     }
+                    DaybookIconButton(systemName: "doc.on.clipboard", label: "row.attach.paste", size: .compact) {
+                        paste(to: record)
+                    }
+                    .accessibilityIdentifier("diary.paste")
                 }
                 if session.issue == .conflict {
                     Button("diary.window.reload") { confirmsReload = true }
@@ -122,5 +126,9 @@ struct DiaryWindowView: View {
 
     private func attach(to entry: DiaryEntry) {
         AttachmentActions.pickDiaryImage(entry, context: session.context, vault: session.vault)
+    }
+
+    private func paste(to entry: DiaryEntry) {
+        AttachmentActions.pasteDiaryImage(entry, context: session.context, vault: session.vault)
     }
 }

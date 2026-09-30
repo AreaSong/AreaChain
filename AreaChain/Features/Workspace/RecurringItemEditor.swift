@@ -16,7 +16,11 @@ struct RecurringItemEditor: View {
     @State private var saveFailed = false
 
     var body: some View {
-        DaybookPage(title: "recurring.create.title", minWidth: 440, minHeight: 420) {
+        DaybookPage(
+            titleText: L10n.string("recurring.create.title", locale: locale),
+            minWidth: 440,
+            minHeight: 420
+        ) {
             form
             actions
         }
@@ -52,7 +56,7 @@ struct RecurringItemEditor: View {
                 accessibilityTitle: "residents.days"
             )
             if !draft.hasSelectedWeekday {
-                Text("recurring.create.weekdays.required")
+                Text(verbatim: L10n.string("recurring.create.weekdays.required", locale: locale))
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.status.danger)
             }
@@ -68,10 +72,12 @@ struct RecurringItemEditor: View {
                     return true
                 }
             )
-            Toggle("residents.enabled", isOn: $draft.isEnabled)
-                .toggleStyle(.switch)
+            Toggle(isOn: $draft.isEnabled) {
+                Text(verbatim: L10n.string("residents.enabled", locale: locale))
+            }
+            .toggleStyle(.switch)
             if saveFailed {
-                Text("recurring.create.failed")
+                Text(verbatim: L10n.string("recurring.create.failed", locale: locale))
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.status.danger)
             }
@@ -81,9 +87,9 @@ struct RecurringItemEditor: View {
     private var actions: some View {
         HStack {
             Spacer()
-            Button("recurring.create.cancel", action: cancel)
+            Button(L10n.string("recurring.create.cancel", locale: locale), action: cancel)
                 .buttonStyle(DaybookButtonStyle(.subtle))
-            Button("common.save", action: save)
+            Button(L10n.string("common.save", locale: locale), action: save)
                 .buttonStyle(DaybookButtonStyle(.prominent))
                 .disabled(!draft.hasSelectedWeekday)
         }

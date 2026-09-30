@@ -99,6 +99,30 @@ struct PrivacyInteractionTests {
         #expect(try f.context.fetchCount(FetchDescriptor<DiaryEntry>()) == before)
     }
 
+    @Test func pastingAPrivateDiaryImageEncryptsItAndEmptyClipboardDoesNothing() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tag = try f.tag()
+        let note = try f.repository.addDiary(text: "测试贴图", dayKey: "2026-09-15", tagIDs: [tag.id])
+        let empty = NSPasteboard(name: NSPasteboard.Name("areachain.test.diary-paste.empty"))
+        empty.clearContents()
+        #expect(!AttachmentPicker.pasteDiaryImage(note, context: f.context, vault: f.vault, store: f.files, pasteboard: empty))
+        #expect(try f.context.fetchCount(FetchDescriptor<AttachmentItem>()) == 0)
+        let board = NSPasteboard(name: NSPasteboard.Name("areachain.test.diary-paste.image"))
+        let bytes = try png()
+        let image = try #require(NSImage(data: bytes))
+        board.clearContents()
+        #expect(board.writeObjects([image]))
+        #expect(AttachmentPicker.pasteDiaryImage(note, context: f.context, vault: f.vault, store: f.files, pasteboard: board))
+        let saved = try #require(try f.context.fetch(FetchDescriptor<AttachmentItem>()).first)
+        #expect(saved.privacyVaultID == f.vault.configuration?.vaultID)
+        #expect(saved.filename == "paste.png")
+        let plain = try f.files.read(reference: saved.reference)
+        #expect(NSImage(data: plain) != nil)
+        let raw = try Data(contentsOf: f.files.fileURL(id: saved.id))
+        #expect(raw != plain)
+    }
+
     private func png() throws -> Data {
         let image = try #require(NSBitmapImageRep(bitmapDataPlanes: nil, pixelsWide: 1, pixelsHigh: 1,
             bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,

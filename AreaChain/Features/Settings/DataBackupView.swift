@@ -42,6 +42,8 @@ struct DataBackupView: View {
         .confirmationDialog("alert.reset", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
             Button("alert.cancel", role: .cancel) {}
+        } message: {
+            Text("alert.reset.keeps")
         }
         .sheet(item: $dialog) { item in
             passwordSheet(item).environment(\.locale, locale)

@@ -61,6 +61,26 @@ enum AttachmentPicker {
                          owner: AttachmentOwnerKey(kind: ownerKind, id: ownerID), context: context, store: store)
     }
 
+    /// 先读剪贴板，没有图就不打断解锁。有图时与选图共用同一条手记权限和加密保存。
+    @discardableResult
+    static func pasteDiaryImage(
+        _ entry: DiaryEntry, context: ModelContext, vault: PrivacyVault? = nil,
+        store: any AttachmentStorageProtocol = AttachmentStore.shared,
+        pasteboard: NSPasteboard = .general
+    ) -> Bool {
+        guard let image = ImageBytes.pasteboardImage(pasteboard), let data = ImageBytes.png(from: image) else {
+            NSSound.beep()
+            return false
+        }
+        var saved = false
+        PrivacyAccess.withDiary(entry, vault: vault) { current in
+            guard current.modelContext === context else { throw PrivacyError.staleOperation }
+            saved = saveImage(data: data, filename: "paste.png",
+                              owner: AttachmentOwnerKey(kind: .diary, id: current.id), context: context, store: store)
+        }
+        return saved
+    }
+
     /// 文件和元数据属于同一次捕获；写入失败时清理仅属于本次操作的新文件。
     @discardableResult
     static func saveImage(

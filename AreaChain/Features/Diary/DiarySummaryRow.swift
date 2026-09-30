@@ -267,6 +267,7 @@ struct DiarySummaryRow: View {
 
         // 分区 3: 资产与安全环境
         Button("diary.attach", action: attach).disabled(isSensitive)
+        Button("row.attach.paste", action: paste).disabled(isSensitive)
         Button(isSensitive ? "diary.quick.privacy.unlock" : "diary.quick.privacy.lock", action: togglePrivate)
         Button("diary.window.workspace", action: inspectInWorkspace)
 
@@ -296,6 +297,7 @@ struct DiarySummaryRow: View {
                     onPickCustomDate: { pickingDay = true },
                     onTogglePin: togglePin,
                     onAttach: attach,
+                    onPaste: paste,
                     onTogglePrivate: togglePrivate,
                     onInspect: inspectInWorkspace,
                     onDelete: onDelete
@@ -396,6 +398,11 @@ struct DiarySummaryRow: View {
             guard entry.deletedAt == nil, let tags = try? context.fetch(FetchDescriptor<TagItem>()) else { return false }
             return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
         })
+    }
+
+    private func paste() {
+        guard !isSensitive else { return }
+        AttachmentActions.pasteDiaryImage(entry, context: context)
     }
 
     private func togglePin() {

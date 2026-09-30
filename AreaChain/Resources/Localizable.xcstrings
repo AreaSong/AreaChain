@@ -456,6 +456,23 @@
         }
       }
     },
+    "alert.reset.keeps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clipboard history and the privacy lock configuration stay. Keychain credentials are not removed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剪贴板历史和私密锁配置会留下，钥匙串里的解锁凭据也不会删除。"
+          }
+        }
+      }
+    },
     "alert.reset.quit": {
       "extractionState": "manual",
       "localizations": {
@@ -8585,6 +8602,48 @@
         }
       }
     },
+    "settings.calendar.conflict.open": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open this task" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开这条待办" } }
+      }
+    },
+    "settings.calendar.conflict.local": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "On this Mac" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "本机" } }
+      }
+    },
+    "settings.calendar.conflict.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The AreaChain calendar has no event to compare." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "日历里没有可对照的这一条。" } }
+      }
+    },
+    "settings.calendar.conflict.noTime": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No reminder" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "无提醒" } }
+      }
+    },
+    "settings.calendar.conflict.remote": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Calendar" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "日历" } }
+      }
+    },
+    "settings.calendar.openSystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Calendar Settings" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开系统日历设置" } }
+      }
+    },
     "settings.calendar.sync": {
       "extractionState": "manual",
       "localizations": {
@@ -8642,13 +8701,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Calendar differences need review; neither conflicting version was overwritten. Open the task below and align its title, date and reminder with the AreaChain calendar, then retry. If a deleted task should remain, restore it first."
+            "value": "Calendar differences need review; neither conflicting version was overwritten. The title, date and reminder from this Mac and the calendar are listed below. Align both sides, then retry. If a deleted task should remain, restore it first."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "日历差异需要确认，冲突的两边都未被覆盖。打开下方待办，在待办或 AreaChain 日历中核对标题、日期和提醒，使两边一致后重试；若要保留已删除的待办，请先恢复。"
+            "value": "日历差异需要确认，冲突的两边都未被覆盖。下方列出本机和日历的标题、日期和提醒。改到两边一致后再重新同步；若要保留已删除的待办，请先恢复。"
           }
         }
       }
@@ -9161,6 +9220,30 @@
             "value": "登录时打开"
           }
         }
+      }
+    },
+    "settings.login.needsApproval": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "macOS still needs you to allow AreaChain in System Settings → General → Login Items. The switch stays off until that approval is granted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统还需要你在「系统设置 → 通用 → 登录项」里允许 AreaChain。批准之前，这个开关保持关闭。"
+          }
+        }
+      }
+    },
+    "settings.login.openSystem": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Open Login Items Settings" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "打开登录项设置" } }
       }
     },
     "settings.look": {

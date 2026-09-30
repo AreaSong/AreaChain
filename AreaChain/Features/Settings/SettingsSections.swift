@@ -1,6 +1,5 @@
 import AppKit
 import SwiftUI
-import SwiftData
 import UserNotifications
 
 // MARK: - General Settings Section
@@ -8,6 +7,7 @@ import UserNotifications
 struct GeneralSettingsSection: View {
     @Bindable var prefs = AppPreferences.shared
     @Binding var launchesAtLogin: Bool
+    var loginNeedsApproval: Bool
     var statusMessage: String?
     var onUpdateLoginItem: (Bool) -> Void
 
@@ -59,6 +59,22 @@ struct GeneralSettingsSection: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
         }
+
+        if loginNeedsApproval {
+            Section {
+                Text("settings.login.needsApproval")
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .accessibilityIdentifier("settings.login.needsApproval")
+                    .systemPageMarker("settings.login.needsApproval")
+                Button("settings.login.openSystem") {
+                    SystemSettingsLinks.open("x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
+                }
+                .accessibilityIdentifier("settings.login.openSystem")
+                .systemPageMarker("settings.login.openSystem")
+            }
+        }
     }
 }
 
@@ -70,12 +86,10 @@ struct SyncSettingsSection: View {
     var notifyStatusText: String
     var calendarSyncStatusText: String?
     var onRequestNotifyAuth: () -> Void
-    @Query private var todos: [TodoItem]
     @Bindable private var calendarStatus = CalendarSyncStatus.shared
 
     private func openNotificationSettings() {
-        guard let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") else { return }
-        NSWorkspace.shared.open(url)
+        SystemSettingsLinks.open("x-apple.systempreferences:com.apple.Notifications-Settings.extension")
     }
 
     var body: some View {
@@ -105,10 +119,17 @@ struct SyncSettingsSection: View {
             }
             if prefs.syncCalendarEvents {
                 Button("settings.calendar.sync.retry") { CalendarSync.refreshIfEnabled() }
-                ForEach(todos.filter { calendarStatus.conflictTaskIDs.contains($0.id) }) { todo in
-                    Button(todo.title) {
-                        AppWindows.openWorkspace(tab: .calendar, inspecting: todo.id, dayKey: todo.dayKey)
+                if calendarStatus.phase == .denied {
+                    Button("settings.calendar.openSystem") {
+                        SystemSettingsLinks.open(
+                            "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Calendars"
+                        )
                     }
+                    .accessibilityIdentifier("settings.calendar.openSystem")
+                    .systemPageMarker("settings.calendar.openSystem")
+                }
+                CalendarConflictList(comparisons: calendarStatus.conflictComparisons) { item in
+                    AppWindows.openWorkspace(tab: .calendar, inspecting: item.taskID, dayKey: item.local.dayKey)
                 }
             }
             Text("settings.calendar.sync.help")
@@ -123,5 +144,54 @@ struct SyncSettingsSection: View {
                 .accessibilityIdentifier("settings.icloud")
                 .systemPageMarker("settings.icloud")
         }
+    }
+}
+
+enum SystemSettingsLinks {
+    static func open(_ urlString: String) {
+        guard let url = URL(string: urlString) else { return }
+        NSWorkspace.shared.open(url)
+    }
+}
+
+struct CalendarConflictList: View {
+    var comparisons: [CalendarConflictComparison]
+    var onOpen: (CalendarConflictComparison) -> Void
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        ForEach(comparisons) { item in
+            Section {
+                Button("settings.calendar.conflict.open") { onOpen(item) }
+                    .accessibilityIdentifier("settings.calendar.conflict.open")
+                side(key: "settings.calendar.conflict.local", content: item.local)
+                if let remote = item.remote {
+                    side(key: "settings.calendar.conflict.remote", content: remote)
+                } else {
+                    labeledLine(
+                        key: "settings.calendar.conflict.remote",
+                        value: L10n.string("settings.calendar.conflict.missing", locale: locale)
+                    )
+                }
+            }
+            .systemPageMarker("settings.calendar.conflict")
+        }
+    }
+
+    private func side(key: String, content: CalendarContent) -> some View {
+        let time = content.remindMinutes.map { RemindMinutes.label($0, locale: locale) }
+            ?? L10n.string("settings.calendar.conflict.noTime", locale: locale)
+        let detail = content.title + " · " + DayKey.displayName(content.dayKey, locale: locale) + " · " + time
+        return labeledLine(key: key, value: detail)
+    }
+
+    private func labeledLine(key: String, value: String) -> some View {
+        let heading = L10n.string(String.LocalizationValue(stringLiteral: key), locale: locale)
+        return Text(heading + " · " + value)
+            .font(DaybookType.subtitle)
+            .foregroundStyle(DaybookPalette.text.primary)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier(key)
     }
 }

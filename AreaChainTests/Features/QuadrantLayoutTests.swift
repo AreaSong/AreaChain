@@ -27,6 +27,9 @@ struct QuadrantLayoutTests {
         #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 80, visibleWidth: 80))
         #expect(QuadrantTitleOverflow.isOverflowing(idealWidth: 120, visibleWidth: 80))
         #expect(!QuadrantTitleOverflow.isOverflowing(idealWidth: 200, visibleWidth: 0))
+        #expect(QuadrantTitleOverflow.previewHeight(title: "买牛奶") < QuadrantTitleOverflow.previewMaxHeight)
+        let wall = String(repeating: "1", count: 800)
+        #expect(QuadrantTitleOverflow.previewHeight(title: wall) == QuadrantTitleOverflow.previewMaxHeight)
     }
 
     @Test func longTitlesStayOnOneLineAndOnlyThoseOverflow() async throws {
@@ -34,14 +37,18 @@ struct QuadrantLayoutTests {
         defer { host.close() }
         let longItem = try #require(host.items[.importantUrgent]?.first)
         let shortItem = try #require(host.items[.rest]?.first)
+        longItem.title = String(repeating: "1", count: 800)
         shortItem.title = "买牛奶"
         try host.container.mainContext.save()
         try await host.settle()
 
         let longChip = try NativeSyntaxUI.frame("quadrant.task.\(longItem.id)", in: host.window)
         let shortChip = try NativeSyntaxUI.frame("quadrant.task.\(shortItem.id)", in: host.window)
+        let scroll = try host.scrollView(in: .importantUrgent)
         #expect(abs(longChip.height - shortChip.height) < 2, "长短标题都应占同一行高")
-        #expect(longChip.height < 36, "长标题不应折成两行")
+        #expect(longChip.height < 36, "超长标题不应撑开卡片")
+        #expect(!scroll.hasHorizontalScroller, "超长标题不应把宫格撑出横向滚动")
+        #expect(longChip.width <= shortChip.width + 1)
     }
 
     @Test func overflowingListsScrollIndependentlyAndKeepHeadersFixed() async throws {

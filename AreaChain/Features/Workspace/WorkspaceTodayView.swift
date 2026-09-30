@@ -80,11 +80,14 @@ struct WorkspaceTodayView: View {
             dayTick = Date()
         }
         .sheet(isPresented: $showingRecurringEditor) {
+            // macOS 的 sheet 不继承外层 locale，不补上就按系统语言显示。
             RecurringItemEditor()
+                .environment(\.locale, locale)
                 .frame(minWidth: 460, minHeight: 520)
         }
         .sheet(isPresented: $showingRecurringList) {
             ResidentsPage()
+                .environment(\.locale, locale)
                 .frame(minWidth: 560, minHeight: 480)
         }
     }
@@ -92,12 +95,14 @@ struct WorkspaceTodayView: View {
     @ViewBuilder
     private var headerTrailing: some View {
         let progress = todayProgress
-        HStack(spacing: 10) {
-            DaybookIconButton(systemName: "plus", label: "recurring.create.open", size: .compact) {
-                showingRecurringEditor = true
-            }
-            DaybookIconButton(systemName: "repeat", label: "workspace.residents.open", size: .compact) {
-                showingRecurringList = true
+        HStack(alignment: .center, spacing: 8) {
+            VStack(alignment: .trailing, spacing: 2) {
+                recurringHeaderButton(systemName: "plus", key: "recurring.create.open") {
+                    showingRecurringEditor = true
+                }
+                recurringHeaderButton(systemName: "repeat", key: "workspace.residents.open") {
+                    showingRecurringList = true
+                }
             }
             VStack(alignment: .trailing, spacing: 2) {
                 Text(progressTitleKey(progress))
@@ -111,9 +116,26 @@ struct WorkspaceTodayView: View {
 
             DaybookProgressRing(progress: progress.ratio, lineWidth: 3.5, size: 36)
         }
-        .fixedSize(horizontal: true, vertical: false)
         .animation(DaybookMotion.interactive, value: progress.total)
         .animation(DaybookMotion.interactive, value: progress.completed)
+    }
+
+    private func recurringHeaderButton(systemName: String, key: String, action: @escaping () -> Void) -> some View {
+        let title = L10n.string(String.LocalizationValue(stringLiteral: key), locale: locale)
+        return Button(action: action) {
+            Label {
+                Text(verbatim: title)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            } icon: {
+                Image(systemName: systemName)
+            }
+            .font(DaybookType.caption.weight(.semibold))
+            .labelStyle(.titleAndIcon)
+        }
+        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
+        .accessibilityLabel(Text(verbatim: title))
+        .help(Text(verbatim: title))
     }
 
     private var todayProgress: BoardProgress {

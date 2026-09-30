@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(\.locale) private var locale
 
     @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
     @State private var statusMessage: String?
     @State private var notifyStatus: UNAuthorizationStatus = .notDetermined
     @State private var markers: Set<String> = []
@@ -20,6 +21,7 @@ struct SettingsView: View {
         .accessibilityIdentifier("settings.preferences")
         .accessibilityValue(markers.sorted().joined(separator: " "))
         .onAppear {
+            refreshLoginItem()
             Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
         }
     }
@@ -29,6 +31,7 @@ struct SettingsView: View {
             GeneralSettingsSection(
                 prefs: prefs,
                 launchesAtLogin: $launchesAtLogin,
+                loginNeedsApproval: loginNeedsApproval,
                 statusMessage: statusMessage,
                 onUpdateLoginItem: updateLoginItem
             )
@@ -95,7 +98,13 @@ struct SettingsView: View {
             statusMessage = nil
         } catch {
             statusMessage = error.localizedDescription
-            launchesAtLogin = SMAppService.mainApp.status == .enabled
         }
+        refreshLoginItem()
+    }
+
+    private func refreshLoginItem() {
+        let status = SMAppService.mainApp.status
+        launchesAtLogin = status == .enabled
+        loginNeedsApproval = status == .requiresApproval
     }
 }

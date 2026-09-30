@@ -101,6 +101,10 @@ struct CalendarSyncEngineTests {
         fixture.client.remote["event"]?.content.title = "远端修改"
         let outcome = await fixture.engine.synchronize(isCurrent: { true })
         #expect(outcome.phase == .conflict && outcome.conflicts == [id])
+        #expect(outcome.comparisons.count == 1)
+        #expect(outcome.comparisons.first?.local.title == "本地修改")
+        #expect(outcome.comparisons.first?.remote?.title == "远端修改")
+        #expect(outcome.comparisons.first?.local.dayKey == outcome.comparisons.first?.remote?.dayKey)
         #expect(fixture.client.batchCount == 0 && fixture.localSaveCount == 0)
         #expect(fixture.checkpoint == oldLedger)
         fixture.client.remote["event"]?.content = fixture.tasks[0].state.content
@@ -160,7 +164,8 @@ struct CalendarSyncEngineTests {
         let fixture = CalendarSyncFixture()
         fixture.seedBound()
         fixture.client.remote["event"]?.calendarID = "other-calendar"
-        #expect(await fixture.engine.synchronize(isCurrent: { true }).phase == .conflict)
+        let foreign = await fixture.engine.synchronize(isCurrent: { true })
+        #expect(foreign.phase == .conflict && foreign.comparisons.count == 1 && foreign.comparisons.first?.remote == nil)
         #expect(fixture.client.batchCount == 0)
         fixture.client.remote["event"]?.calendarID = "owned"
         var duplicate = fixture.client.remote["event"]!

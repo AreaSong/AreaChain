@@ -4,6 +4,7 @@ struct TaskDetailQuadrantGrid: View {
     var isImportant: Bool
     var isUrgent: Bool
     var onSelect: (Bool, Bool) -> Void
+    @Environment(\.locale) private var locale
 
     private var currentSlot: QuadrantSlot {
         QuadrantSlot.of(important: isImportant, urgent: isUrgent)
@@ -11,7 +12,7 @@ struct TaskDetailQuadrantGrid: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("drawer.quadrant.title")
+            Text(verbatim: L10n.string("drawer.quadrant.title", locale: locale))
                 .font(DaybookType.label)
                 .foregroundStyle(DaybookPalette.text.secondary)
 
@@ -35,7 +36,7 @@ struct TaskDetailQuadrantGrid: View {
                 HStack(spacing: 4) {
                     QuadrantMiniMark(slot: slot)
 
-                    Text(LocalizedStringKey(slot.titleKeyName))
+                    Text(verbatim: L10n.string(String.LocalizationValue(stringLiteral: slot.titleKeyName), locale: locale))
                         .font(DaybookType.caption.weight(.semibold))
                         .foregroundStyle(DaybookPalette.text.primary)
                     Spacer()
@@ -45,7 +46,7 @@ struct TaskDetailQuadrantGrid: View {
                             .foregroundStyle(slot.themeColor)
                     }
                 }
-                Text(LocalizedStringKey(slot.subtitleKeyName))
+                Text(verbatim: L10n.string(String.LocalizationValue(stringLiteral: slot.subtitleKeyName), locale: locale))
                     .font(DaybookType.micro)
                     .foregroundStyle(DaybookPalette.text.secondary)
             }

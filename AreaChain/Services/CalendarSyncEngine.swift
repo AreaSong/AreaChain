@@ -34,6 +34,7 @@ struct CalendarLedgerAccess {
 struct CalendarSyncOutcome {
     var phase: CalendarSyncPhase
     var conflicts: Set<UUID> = []
+    var comparisons: [CalendarConflictComparison] = []
 }
 
 struct CalendarSyncClock {
@@ -127,8 +128,16 @@ final class CalendarSyncEngine {
         if !updates.isEmpty, try local.apply(updates) { local.didSave() }
         // 不承诺跨 EventKit / SwiftData / 文件的原子回滚：部分提交失败时保留旧基线供重试。
         if next != previous { try ledger.save(next) }
-        let conflicts = Set(steps.filter { $0.action == .conflict }.map { $0.local.id })
-        return CalendarSyncOutcome(phase: conflicts.isEmpty ? .synced : .conflict, conflicts: conflicts)
+        let conflictSteps = steps.filter { $0.action == .conflict }
+        let conflicts = Set(conflictSteps.map { $0.local.id })
+        let comparisons = conflictSteps.map {
+            CalendarConflictComparison(taskID: $0.local.id, local: $0.local.state.content, remote: $0.remote?.content)
+        }
+        return CalendarSyncOutcome(
+            phase: conflicts.isEmpty ? .synced : .conflict,
+            conflicts: conflicts,
+            comparisons: comparisons
+        )
     }
 
     private func mutation(for step: CalendarSyncStep) -> CalendarEventMutation? {

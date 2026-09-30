@@ -1,5 +1,13 @@
 import Foundation
 
+/// 一次冲突里留给设置页对照的两侧内容。`remote == nil` 表示日历里没有可对照的那一条。
+struct CalendarConflictComparison: Equatable, Sendable, Identifiable {
+    var taskID: UUID
+    var local: CalendarContent
+    var remote: CalendarContent?
+    var id: UUID { taskID }
+}
+
 struct CalendarContent: Codable, Equatable, Sendable {
     var title: String
     var dayKey: String

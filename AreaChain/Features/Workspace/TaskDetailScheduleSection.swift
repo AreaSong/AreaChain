@@ -77,7 +77,7 @@ struct TaskDetailRemindChips: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("drawer.remind.title")
+                Text(verbatim: L10n.string("drawer.remind.title", locale: locale))
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
@@ -97,7 +97,7 @@ struct TaskDetailRemindChips: View {
                 chip(label: "15:00", minutes: 15 * 60)
                 chip(label: "18:00", minutes: 18 * 60)
                 chip(label: "20:00", minutes: 20 * 60)
-                Button("row.time.set") { pickingTime = true }
+                Button(L10n.string("row.time.set", locale: locale)) { pickingTime = true }
                     .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
             }
             .popover(isPresented: $pickingTime) {
@@ -141,14 +141,14 @@ struct TaskDetailWeekdayPicker: View {
     var onUpdateMask: (Int) -> Void
     var showsTitle = true
     var allowsEmpty = false
-    var accessibilityTitle: LocalizedStringKey = "drawer.weekdays.title"
+    var accessibilityTitle = "drawer.weekdays.title"
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             if showsTitle {
-                Text("drawer.weekdays.title")
+                Text(verbatim: L10n.string("drawer.weekdays.title", locale: locale))
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
@@ -176,7 +176,10 @@ struct TaskDetailWeekdayPicker: View {
                 }
             }
             .accessibilityElement(children: .contain)
-            .accessibilityLabel(accessibilityTitle)
+            .accessibilityLabel(Text(verbatim: L10n.string(
+                String.LocalizationValue(stringLiteral: accessibilityTitle),
+                locale: locale
+            )))
         }
     }
 }

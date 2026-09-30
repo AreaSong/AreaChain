@@ -16,6 +16,7 @@ struct DiaryRowCommandStrip: View {
     var onPickCustomDate: () -> Void
     var onTogglePin: () -> Void
     var onAttach: () -> Void
+    var onPaste: () -> Void
     var onTogglePrivate: () -> Void
     var onInspect: () -> Void
     var onDelete: () -> Void
@@ -99,6 +100,13 @@ struct DiaryRowCommandStrip: View {
             icon: "paperclip",
             key: "diary.quick.attach",
             action: onAttach
+        )
+        .disabled(isSensitive)
+
+        commandStripButton(
+            icon: "doc.on.clipboard",
+            key: "row.attach.paste",
+            action: onPaste
         )
         .disabled(isSensitive)
 

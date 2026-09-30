@@ -92,8 +92,10 @@ struct QuadrantPage: View {
                                     inspect(row)
                                 }
                             )
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .daybookScroll()
             }
@@ -214,8 +216,22 @@ struct QuadrantPage: View {
 
 /// 四象限格子随窗口变宽，按真实排版宽度判断标题是否被截断。
 enum QuadrantTitleOverflow {
+    /// 气泡最高约六行。再高会把宫格撑满，超长标题改在气泡里滚动查看。
+    static let previewMaxHeight: CGFloat = 132
+
     static func isOverflowing(idealWidth: CGFloat, visibleWidth: CGFloat) -> Bool {
         visibleWidth > 1 && idealWidth > visibleWidth + 1
+    }
+
+    static func previewHeight(title: String, width: CGFloat = 260) -> CGFloat {
+        let font = NSFont.systemFont(ofSize: DaybookType.captionSize, weight: .medium)
+        let textWidth = max(1, width - 36)
+        let rect = (title as NSString).boundingRect(
+            with: NSSize(width: textWidth, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: [.font: font]
+        )
+        return min(max(ceil(rect.height) + 16, 28), previewMaxHeight)
     }
 }
 
@@ -234,8 +250,8 @@ private struct QuadrantChip: View {
     var body: some View {
         HStack(spacing: 6) {
             ModernCheckbox(isDone: false, action: onToggle)
-            titleControl
-                .frame(maxWidth: .infinity, alignment: .leading)
+            titleButton
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
@@ -250,13 +266,6 @@ private struct QuadrantChip: View {
         titleOverflows && (chrome.isTitleTextHovered || chrome.isTitleBubbleHovered)
     }
 
-    private var titleControl: some View {
-        ZStack(alignment: growsUpward ? .bottomLeading : .topLeading) {
-            titleButton
-            titleBubble
-        }
-    }
-
     private var titleButton: some View {
         Button(action: onInspect) {
             HStack(spacing: 6) {
@@ -267,13 +276,16 @@ private struct QuadrantChip: View {
                         .accessibilityLabel("row.resident")
                 }
                 QuadrantSingleLineTitle(text: title, overflows: $titleOverflows)
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain) // control: 象限任务卡整行点击
+        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
         .background(placementReader)
+        .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) { titleBubble }
     }
 
     private var placementReader: some View {
@@ -287,12 +299,16 @@ private struct QuadrantChip: View {
     @ViewBuilder
     private var titleBubble: some View {
         if showsTitleBubble {
-            RowTitleBubble(
-                title: title,
-                growsUpward: growsUpward,
-                onCopy: copyTitle,
-                onHover: holdBubble(_:)
-            )
+            let previewHeight = QuadrantTitleOverflow.previewHeight(title: title)
+            ScrollView(.vertical) {
+                RowTitleBubble(
+                    title: title,
+                    growsUpward: growsUpward,
+                    onCopy: copyTitle,
+                    onHover: holdBubble(_:)
+                )
+            }
+            .frame(width: 260, height: previewHeight, alignment: .topLeading)
             .offset(x: bubbleShiftX, y: growsUpward ? -6 : 22)
             .accessibilityIdentifier("quadrant.titleBubble.\(row.id.uuidString)")
             .transition(bubbleTransition)
@@ -364,7 +380,7 @@ private struct QuadrantSingleLineTitle: View {
             .foregroundStyle(DaybookPalette.text.primary)
             .lineLimit(1)
             .truncationMode(.tail)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             .background {
                 GeometryReader { proxy in
                     Color.clear.preference(key: QuadrantVisibleWidthKey.self, value: proxy.size.width)

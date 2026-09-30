@@ -321,6 +321,7 @@ struct DiarySummaryRowTests {
             onPickCustomDate: {},
             onTogglePin: {},
             onAttach: {},
+            onPaste: {},
             onTogglePrivate: {},
             onInspect: {},
             onDelete: {}

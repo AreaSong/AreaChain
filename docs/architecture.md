@@ -142,7 +142,7 @@ AreaChain/
 - `SnapshotImportState` 在预览及写入前校验重复标识、嵌套子任务、附件归属及最终打卡业务键；不自动清洗现存数据。导入失败只撤销导入，调用前已有编辑先保存。
 - `DiaryPrivacy` 统一卡片、搜索、总览及删除提示的安全投影；`AttachmentAccess` 按类型和 UUID 检查拥有者。`DiaryContent` 统一正文加解密，失败不回退明文；锁定时搜索投影没有私密正文。普通 JSON 排除受保护及旧密码遮罩手记和其附件。小窗、卡片和快速输入失焦后遮罩，锁定时不挂载私密编辑器；文件面板回调通过 `PrivacyAccess.withDiary` 重新鉴权并核对记录存活。
 - 附件级联按 `ownerKind + ownerID` 执行。永久删除后，`AttachmentCleanup` 按 id predicate 拉待清理行，仅在文件清理成功后移除附件元数据；失败的附件记录留在回收站，下一次操作可以重试。清空回收站先 `emptyListed` 收集活孤儿与墓碑，再删父项再清文件。
-- `CalendarSyncCoordinator` 串行合并本地/远端事件；`CalendarSyncEngine` 对比上次本地与远端基线，不盲目先拉后推。基线保存在本机 `areachain-calendar-sync.json`，不改七张表 schema，也不导出到快照。读失败或内存降级时禁写；未知事件保留，冲突需核对一致后重试。跨系统部分提交失败不宣称已同步，旧基线用于幂等恢复。
+- `CalendarSyncCoordinator` 串行合并本地/远端事件；`CalendarSyncEngine` 对比上次本地与远端基线，不盲目先拉后推。基线保存在本机 `areachain-calendar-sync.json`，不改七张表 schema，也不导出到快照。读失败或内存降级时禁写；未知事件保留。冲突把本机和日历的标题、日期、提醒留在结果里供设置页对照，`remote` 为空表示没有可对照事件；不代用户覆盖任一侧，核对一致后重试。跨系统部分提交失败不宣称已同步，旧基线用于幂等恢复。
 - `EventKitCalendarClient` 按年分片查询，补查绑定 ID，并在写入前验证事件版本和所属日历。夏令时归一化保存原始本地时刻和实际远端时刻，避免把正常顺延误判为冲突。
 - 测试宿主在 `Persistence.makeSession` 的磁盘访问之前切换内存库；端到端系统权限/真实日历验证与单元测试证据分开报告。
 

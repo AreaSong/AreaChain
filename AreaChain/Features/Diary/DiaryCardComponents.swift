@@ -42,6 +42,7 @@ extension DiaryNoteCard {
                     onPickCustomDate: { pickingDay = true },
                     onTogglePin: { _ = DayBoardMutations.togglePinDiary(entry) },
                     onAttach: attachImage,
+                    onPaste: pasteImage,
                     onTogglePrivate: { _ = DayBoardMutations.togglePrivateDiary(entry) },
                     onInspect: inspectDiaryInWorkspace,
                     onDelete: onDelete
@@ -70,6 +71,11 @@ extension DiaryNoteCard {
     private func attachImage() {
         guard !(isPasswordType && isMasked) else { return }
         AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
+    }
+
+    private func pasteImage() {
+        guard !(isPasswordType && isMasked) else { return }
+        AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
     }
 
     private func inspectDiaryInWorkspace() {
@@ -235,6 +241,20 @@ extension DiaryNoteCard {
         .accessibilityLabel("diary.attach")
     }
 
+    private var pasteActionButton: some View {
+        Button {
+            guard !(isPasswordType && isMasked) else { return }
+            AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
+        } label: {
+            Image(systemName: "doc.on.clipboard")
+        }
+        .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+        .disabled(isPasswordType && isMasked)
+        .help(isPasswordType && isMasked ? "diary.unmask.first" : "row.attach.paste")
+        .accessibilityLabel("row.attach.paste")
+        .accessibilityIdentifier("diary.paste")
+    }
+
     private var deleteActionButton: some View {
         DaybookIconButton(systemName: "trash", label: "alert.trash.move", size: .compact, role: .destructive, action: onDelete)
     }
@@ -244,6 +264,7 @@ extension DiaryNoteCard {
         pinActionButton
         editActionButton
         attachActionButton
+        pasteActionButton
         deleteActionButton
     }
 }

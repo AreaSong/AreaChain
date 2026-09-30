@@ -10,9 +10,10 @@ struct TaskDetailTagSelector: View {
     var onToggleTag: (UUID) -> Void
     var onCreateTag: (String) -> Bool
 
+    @Environment(\.locale) private var locale
     @State private var isCreatingTag = false
     @State private var newTagName = ""
-    @State private var createError: LocalizedStringKey?
+    @State private var createError: String?
 
     private var activeTags: [TagItem] {
         Catalog.taskPickerTags(tags, attachedIDs: tagIDs)
@@ -21,7 +22,7 @@ struct TaskDetailTagSelector: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("drawer.tags.title")
+                Text(verbatim: L10n.string("drawer.tags.title", locale: locale))
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookPalette.text.secondary)
                 Spacer()
@@ -33,7 +34,7 @@ struct TaskDetailTagSelector: View {
             }
 
             if activeTags.isEmpty {
-                Text("drawer.tag.empty")
+                Text(verbatim: L10n.string("drawer.tag.empty", locale: locale))
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.text.secondary.opacity(0.7)) // token-exempt: 70% 次要色没有对应令牌
             } else {
@@ -53,38 +54,39 @@ struct TaskDetailTagSelector: View {
         }
         .sheet(isPresented: $isCreatingTag) {
             newTagSheet
+                .environment(\.locale, locale)
         }
     }
 
     private var newTagSheet: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("drawer.tag.create.title")
+            Text(verbatim: L10n.string("drawer.tag.create.title", locale: locale))
                 .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookPalette.text.primary)
-            TextField("drawer.tag.create.name", text: $newTagName)
+            TextField(L10n.string("drawer.tag.create.name", locale: locale), text: $newTagName)
                 .textFieldStyle(.roundedBorder)
                 .onChange(of: newTagName) { _, _ in createError = nil }
             if let createError {
-                Text(createError)
+                Text(verbatim: createError)
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.status.danger)
             }
             HStack {
                 Spacer()
-                Button("alert.cancel") {
+                Button(L10n.string("alert.cancel", locale: locale)) {
                     newTagName = ""
                     createError = nil
                     isCreatingTag = false
                 }
-                Button("drawer.tag.create") {
+                Button(L10n.string("drawer.tag.create", locale: locale)) {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
                     if DiaryMemoTags.isPresetName(name) {
-                        createError = "tag.preset.reserved"
+                        createError = L10n.string("tag.preset.reserved", locale: locale)
                         return
                     }
                     guard onCreateTag(name) else {
-                        createError = "save.failure.title"
+                        createError = L10n.string("save.failure.title", locale: locale)
                         return
                     }
                     newTagName = ""
