@@ -37,6 +37,8 @@ struct AppPreferencesTests {
         #expect(L10n.string("empty.filter", locale: Locale(identifier: "en")) == "Nothing matches this filter.")
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "zh-Hans")) == "「密码」「小巧思」「日记」是手记分类，不能当作待办标签。")
         #expect(L10n.string("tag.preset.reserved", locale: Locale(identifier: "en")) == "「密码」「小巧思」「日记」 are note categories, not task tags.")
+        #expect(L10n.format("tags.usage.count", locale: Locale(identifier: "zh-Hans"), 3) == "使用 3")
+        #expect(L10n.format("tags.usage.count", locale: Locale(identifier: "en"), 3) == "3 in use")
     }
 
     @Test func noteEntryPointsUseConsistentNamesWithoutRenamingJournalCategory() {

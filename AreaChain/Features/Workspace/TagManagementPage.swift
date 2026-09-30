@@ -265,10 +265,7 @@ struct TagManagementPage: View {
                     }
             }
             Spacer(minLength: 8)
-            Text(tag.isDiaryPreset ? "tags.kind.preset" : "tags.kind.task")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
-            Text("tags.usage.count \(count)")
+            Text(verbatim: L10n.format("tags.usage.count", locale: locale, count))
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .monospacedDigit()
