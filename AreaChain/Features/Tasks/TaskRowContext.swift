@@ -260,19 +260,22 @@ struct RoutineRowDisplayOptions {
     var note: String?
     var usesDefaultNote: Bool
     var allowsCompletion: Bool
+    var dragPayload: String?
 
     init(
         isDone: Bool,
         selection: TaskRowSelectionState = TaskRowSelectionState(),
         note: String? = nil,
         usesDefaultNote: Bool = true,
-        allowsCompletion: Bool = true
+        allowsCompletion: Bool = true,
+        dragPayload: String? = nil
     ) {
         self.isDone = isDone
         self.selection = selection
         self.note = note
         self.usesDefaultNote = usesDefaultNote
         self.allowsCompletion = allowsCompletion
+        self.dragPayload = dragPayload
     }
 
     init(

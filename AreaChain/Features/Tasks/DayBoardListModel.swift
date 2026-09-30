@@ -58,13 +58,15 @@ struct DayBoardListIdentity {
             todos: lists.openTodos,
             routines: lists.openRoutines,
             todosByID: todosByID,
-            routinesByID: routinesByID
+            routinesByID: routinesByID,
+            listDay: dayKey
         )
         let doneRows = mixedRows(
             todos: lists.doneTodos,
             routines: lists.doneRoutines,
             todosByID: todosByID,
-            routinesByID: routinesByID
+            routinesByID: routinesByID,
+            listDay: dayKey
         )
         let streakRows = includeDoneStreaks ? openRows + doneRows : openRows
         let streakSnaps = streakRows.compactMap { row -> RoutineSnapshot? in
@@ -92,7 +94,8 @@ struct DayBoardListIdentity {
         todos: [TodoSnapshot],
         routines: [RoutineSnapshot],
         todosByID: [UUID: TodoItem],
-        routinesByID: [UUID: DailyRoutine]
+        routinesByID: [UUID: DailyRoutine],
+        listDay: String
     ) -> [BoardRow] {
         var rows: [BoardRow] = []
         rows.reserveCapacity(todos.count + routines.count)
@@ -106,6 +109,8 @@ struct DayBoardListIdentity {
                 rows.append(.resident(routine))
             }
         }
-        return rows.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+        return rows.sorted {
+            Classification.precedes($0.boardSortKey(listDay: listDay), $1.boardSortKey(listDay: listDay))
+        }
     }
 }

@@ -79,7 +79,8 @@ struct MenuBarSearchField: View {
             onSubmit: {},
             onCommandReturn: {},
             allowsShiftNewline: false,
-            onEscape: escapeSearch
+            onEscape: escapeSearch,
+            onMoveDown: moveToResults
         )
         .accessibilityLabel("footer.search.label")
         .accessibilityIdentifier("menubar.search.input")
@@ -113,6 +114,14 @@ struct MenuBarSearchField: View {
         .background(KeyWindowHost { hostWindow = $0 })
         .onDisappear(perform: resignSearch)
         .help("footer.search.help")
+    }
+
+    private func moveToResults() -> Bool {
+        guard toolbar.isSearching else { return false }
+        toolbar.resultIndex = 0
+        toolbar.searchIsFocused = false
+        hostWindow?.makeFirstResponder(nil)
+        return true
     }
 
     private func escapeSearch() {

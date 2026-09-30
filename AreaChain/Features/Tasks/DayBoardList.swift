@@ -152,6 +152,18 @@ struct DayBoardList: View {
         .confirmMoveToTrash($pendingTrash)
         .animation(DaybookMotion.interactive(reduceMotion), value: identity.openIDs)
         .animation(DaybookMotion.interactive(reduceMotion), value: config.isYesterdayExpanded)
+        .environment(\.boardReorderEntries, allowsTodoDrag ? [] : reorderEntries(identity))
+    }
+
+    private func reorderEntries(_ identity: DayBoardListIdentity) -> [ManualOrderEntry] {
+        identity.openRows.map { row in
+            switch row {
+            case .todo(let todo):
+                ManualOrderEntry(id: todo.id, dayKey: dayKey, sortOrder: todo.sortOrder)
+            case .resident(let routine):
+                ManualOrderEntry(id: routine.id, dayKey: dayKey, sortOrder: routine.sortOrder)
+            }
+        }
     }
 
     func makeListIdentity() -> DayBoardListIdentity {
@@ -319,7 +331,14 @@ struct DayBoardList: View {
             routine: routine,
             schedule: schedule,
             catalogs: identity.catalogs,
-            display: display,
+            display: RoutineRowDisplayOptions(
+                isDone: display.isDone,
+                selection: display.selection,
+                note: display.note,
+                usesDefaultNote: display.usesDefaultNote,
+                allowsCompletion: display.allowsCompletion,
+                dragPayload: allowsTodoDrag ? nil : BoardReorderToken.encode(routine.id)
+            ),
             actions: actions
         ))
     }
@@ -329,7 +348,7 @@ struct DayBoardList: View {
         let display = TodoRowDisplayOptions(
             isDone: visuallyDone,
             selection: rowSelection(for: .todo(todo), identity: identity),
-            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : nil
+            dragPayload: allowsTodoDrag ? TodoDragToken.encode(todo.id) : BoardReorderToken.encode(todo.id)
         )
         let actions = TodoRowActions(
             onSelect: {

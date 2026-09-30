@@ -203,4 +203,178 @@ enum ReminderPlanning {
             )
         }
     }
+
+    static let snoozeMarker = "snooze."
+    static let catchUpMarker = "catchup."
+
+    static func snoozeID(_ id: UUID) -> String {
+        identifierPrefix + snoozeMarker + id.uuidString
+    }
+
+    static func catchUpID(_ id: UUID, dayKey: String) -> String {
+        identifierPrefix + catchUpMarker + id.uuidString + "|" + dayKey
+    }
+
+    static func itemID(from identifier: String) -> UUID? {
+        guard identifier.hasPrefix(identifierPrefix) else { return nil }
+        var rest = String(identifier.dropFirst(identifierPrefix.count))
+        if let bar = rest.firstIndex(of: "|") {
+            rest = String(rest[..<bar])
+        }
+        if rest.hasPrefix(snoozeMarker) { rest.removeFirst(snoozeMarker.count) }
+        if rest.hasPrefix(catchUpMarker) { rest.removeFirst(catchUpMarker.count) }
+        return UUID(uuidString: rest)
+    }
+
+    static func catchUpDay(from identifier: String) -> String? {
+        guard let bar = identifier.firstIndex(of: "|") else { return nil }
+        let day = String(identifier[identifier.index(after: bar)...])
+        return day.isEmpty ? nil : day
+    }
+
+    static func isClosedForFollowUp(_ request: ReminderRequest, todayKey: String) -> Bool {
+        switch request.kind {
+        case .once(_, let isDone):
+            return isDone
+        case .resident(_, let closedToday):
+            return closedToday || request.closedDayKeys.contains(todayKey)
+        }
+    }
+
+    static func shouldCatchUp(
+        _ request: ReminderRequest,
+        now: Date,
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> Bool {
+        guard !isClosedForFollowUp(request, todayKey: todayKey) else { return false }
+        switch request.kind {
+        case .once(let dayKey, _):
+            guard dayKey == todayKey else { return false }
+            guard let fire = DayKey.date(dayKey: dayKey, minutes: request.remindMinutes, calendar: calendar) else {
+                return false
+            }
+            return fire <= now
+        case .resident(let days, _):
+            guard WeekdayMask.contains(days, dayKey: todayKey, calendar: calendar) else { return false }
+            if let created = request.createdDayKey, created > todayKey { return false }
+            guard let fire = DayKey.date(dayKey: todayKey, minutes: request.remindMinutes, calendar: calendar) else {
+                return false
+            }
+            return fire <= now
+        }
+    }
+
+    /// 横幅按整分触发。下一次补发用下一个整分，避免秒数和触发分对不上。
+    static func nextWholeMinute(after now: Date, calendar: Calendar) -> Date? {
+        let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: now)
+        guard let minute = calendar.date(from: parts) else { return nil }
+        return calendar.date(byAdding: .minute, value: 1, to: minute)
+    }
+
+    /// 触发分还没到，这条仍应留在待发送计划里。
+    static func triggerIsAwaiting(_ fire: Date, now: Date, calendar: Calendar) -> Bool {
+        guard let minute = calendar.date(from: calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute], from: fire
+        )) else { return false }
+        return minute > now
+    }
+
+    /// 触发分当分钟内不要取消或重排。过了这一分，系统已经送达的横幅不再由计划重发。
+    static func shouldRetainIssuedFire(_ fire: Date, now: Date, calendar: Calendar) -> Bool {
+        guard let minute = calendar.date(from: calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute], from: fire
+        )), let deadline = calendar.date(byAdding: .minute, value: 1, to: minute) else {
+            return false
+        }
+        return now < deadline
+    }
+
+    static func deliveryRecords(
+        catalog: [ReminderRequest],
+        followUps: [UUID: ReminderFollowUp],
+        now: Date,
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> (records: [ReminderNotificationRecord], issuedCatchUps: [UUID: Date], retainedIDs: Set<String>) {
+        var records: [ReminderNotificationRecord] = []
+        var issued: [UUID: Date] = [:]
+        var retained: Set<String> = []
+        for request in catalog {
+            let follow = followUps[request.id] ?? ReminderFollowUp()
+            let closed = isClosedForFollowUp(request, todayKey: todayKey)
+            if !closed, let snooze = follow.snoozeFire,
+               shouldRetainIssuedFire(snooze, now: now, calendar: calendar) {
+                retained.insert(snoozeID(request.id))
+            }
+            let snoozePending = !closed && follow.snoozeFire.map {
+                triggerIsAwaiting($0, now: now, calendar: calendar)
+            } == true
+            if snoozePending, let snooze = follow.snoozeFire,
+               let record = ReminderNotificationRecord.make(
+                identifier: snoozeID(request.id),
+                title: request.title,
+                fire: snooze,
+                calendar: calendar
+               ) {
+                records.append(record)
+            }
+            if let fire = nextFireDate(request, now: now, calendar: calendar),
+               let record = ReminderNotificationRecord.make(
+                identifier: notificationID(request.id),
+                title: request.title,
+                fire: fire,
+                calendar: calendar
+               ) {
+                records.append(record)
+            }
+            if snoozePending || closed { continue }
+            if follow.catchUpDayKey == todayKey {
+                if let fire = follow.catchUpFire {
+                    let identifier = catchUpID(request.id, dayKey: todayKey)
+                    if shouldRetainIssuedFire(fire, now: now, calendar: calendar) {
+                        retained.insert(identifier)
+                    }
+                    if triggerIsAwaiting(fire, now: now, calendar: calendar),
+                       let record = ReminderNotificationRecord.make(
+                        identifier: identifier,
+                        title: request.title,
+                        fire: fire,
+                        calendar: calendar
+                       ) {
+                        records.append(record)
+                    }
+                }
+                continue
+            }
+            if shouldCatchUp(request, now: now, todayKey: todayKey, calendar: calendar),
+               let fire = nextWholeMinute(after: now, calendar: calendar),
+               let record = ReminderNotificationRecord.make(
+                identifier: catchUpID(request.id, dayKey: todayKey),
+                title: request.title,
+                fire: fire,
+                calendar: calendar
+               ) {
+                records.append(record)
+                retained.insert(record.identifier)
+                issued[request.id] = fire
+            }
+        }
+        return (records, issued, retained)
+    }
+}
+
+struct ReminderFollowUp: Equatable {
+    var catchUpDayKey: String?
+    var catchUpFire: Date?
+    var snoozeFire: Date?
+}
+
+enum ReminderActions {
+    static let category = "areachain.reminder"
+    static let complete = "areachain.reminder.complete"
+    static let snooze10 = "areachain.reminder.snooze.10"
+    static let snooze60 = "areachain.reminder.snooze.60"
+    static let tenMinutes: TimeInterval = 600
+    static let oneHour: TimeInterval = 3600
 }

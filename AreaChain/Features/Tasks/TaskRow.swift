@@ -274,6 +274,7 @@ struct TaskRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .modifier(TodoDragIfNeeded(payload: state.dragPayload))
+        .modifier(BoardReorderDrop(targetID: state.id))
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(state.isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction { selectImmediately() }

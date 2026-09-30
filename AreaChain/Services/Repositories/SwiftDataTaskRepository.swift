@@ -93,11 +93,20 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             isUrgent: params.isUrgent,
             sourceBundleID: params.sourceBundleID,
             calendarEventID: params.calendarEventID,
-            notes: params.notes
+            notes: params.notes,
+            sortOrder: try nextBoardOrder(on: params.dayKey)
         )
         context.insert(todo)
         try saveAndNotify()
         return todo
+    }
+
+    private func nextBoardOrder(on dayKey: String) throws -> Int {
+        let todos = try fetchTodos(for: dayKey).map(\.sortOrder)
+        let routines = try context.fetch(
+            FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.deletedAt == nil })
+        ).map(\.sortOrder)
+        return (todos + routines).max().map { $0 + 1 } ?? 0
     }
 
     // MARK: - 状态与属性变更 (Update & Toggle)

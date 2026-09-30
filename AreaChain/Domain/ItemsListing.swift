@@ -94,7 +94,9 @@ enum ItemsListing {
     static func sortedTodos(_ todos: [TodoSnapshot]) -> [TodoSnapshot] {
         todos.sorted { left, right in
             if left.isDone != right.isDone { return !left.isDone }
-            if !left.isDone, left.dayKey != right.dayKey { return left.dayKey < right.dayKey }
+            if !left.isDone, left.dayKey != right.dayKey {
+                return Classification.dayKeyPrecedes(left.dayKey, right.dayKey)
+            }
             if !left.isDone {
                 let leftFirst = Classification.precedes(left.boardSortKey, right.boardSortKey)
                 let rightFirst = Classification.precedes(right.boardSortKey, left.boardSortKey)

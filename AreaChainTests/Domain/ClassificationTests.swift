@@ -40,20 +40,22 @@ struct ClassificationTests {
         #expect(QuadrantSlot.rest.badgeText == "P4")
     }
 
-    @Test func boardOrderPutsQuadrantThenTimeThenCreated() {
+    @Test func boardOrderPutsDayThenManualOrderThenCreated() {
         let early = Date(timeIntervalSince1970: 1)
         let late = Date(timeIntervalSince1970: 9)
-        let both = BoardSortKey(isImportant: true, isUrgent: true, remindMinutes: 600, createdAt: late)
-        let important = BoardSortKey(isImportant: true, isUrgent: false, remindMinutes: 60, createdAt: early)
-        let urgent = BoardSortKey(isImportant: false, isUrgent: true, remindMinutes: nil, createdAt: early)
-        let restTimed = BoardSortKey(isImportant: false, isUrgent: false, remindMinutes: 120, createdAt: late)
-        let restLater = BoardSortKey(isImportant: false, isUrgent: false, remindMinutes: nil, createdAt: late)
-        let restEarlier = BoardSortKey(isImportant: false, isUrgent: false, remindMinutes: nil, createdAt: early)
-        #expect(Classification.precedes(both, important))
-        #expect(Classification.precedes(important, urgent))
-        #expect(Classification.precedes(urgent, restTimed))
-        #expect(Classification.precedes(restTimed, restEarlier))
-        #expect(Classification.precedes(restEarlier, restLater))
+        let dated = BoardSortKey(sortOrder: 2, dayKey: "2026-09-07", isImportant: false, createdAt: late)
+        let earlierDay = BoardSortKey(sortOrder: 0, dayKey: "2026-09-06", isImportant: true, createdAt: early)
+        let undated = BoardSortKey(sortOrder: 0, dayKey: "", isImportant: true, createdAt: early)
+        let first = BoardSortKey(sortOrder: 0, dayKey: "2026-09-07", createdAt: late)
+        let second = BoardSortKey(sortOrder: 1, dayKey: "2026-09-07", isImportant: true, isUrgent: true, remindMinutes: 60, createdAt: late)
+        let sameOrderEarlier = BoardSortKey(sortOrder: 1, dayKey: "2026-09-07", createdAt: early)
+        #expect(Classification.precedes(earlierDay, dated))
+        #expect(Classification.precedes(dated, undated))
+        #expect(Classification.precedes(first, second))
+        #expect(Classification.precedes(sameOrderEarlier, second))
+        #expect(!Classification.precedes(second, first))
+        #expect(Classification.dayKeyPrecedes("2026-09-06", ""))
+        #expect(!Classification.dayKeyPrecedes("", "2026-09-06"))
     }
 
     @Test func filterMatchesProjectTagAndBundle() {

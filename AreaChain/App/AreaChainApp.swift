@@ -54,6 +54,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ClipboardHistorySession.shared.start()
         ClipboardHistoryPanel.shared.install()
         NotificationScheduler.shared.start()
+        CompletionUndo.shared.install()
         CalendarSync.start()
         AppWindows.hideStrayWindows()
         if Persistence.session.isFallback {

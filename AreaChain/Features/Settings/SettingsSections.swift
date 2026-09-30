@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import SwiftData
 import UserNotifications
@@ -72,14 +73,25 @@ struct SyncSettingsSection: View {
     @Query private var todos: [TodoItem]
     @Bindable private var calendarStatus = CalendarSyncStatus.shared
 
+    private func openNotificationSettings() {
+        guard let url = URL(string: "x-apple.systempreferences:com.apple.Notifications-Settings.extension") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     var body: some View {
         Section("settings.notify") {
             Text(notifyStatusText)
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
-            Button("settings.notify.request", action: onRequestNotifyAuth)
-                .accessibilityIdentifier("settings.notify")
-                .systemPageMarker("settings.notify")
+            if notifyStatus == .denied {
+                Button("settings.notify.openSystem", action: openNotificationSettings)
+                    .accessibilityIdentifier("settings.notify.openSystem")
+                    .systemPageMarker("settings.notify.openSystem")
+            } else {
+                Button("settings.notify.request", action: onRequestNotifyAuth)
+                    .accessibilityIdentifier("settings.notify")
+                    .systemPageMarker("settings.notify")
+            }
         }
 
         Section("settings.calendar.sync") {

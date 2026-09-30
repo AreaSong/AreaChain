@@ -112,6 +112,24 @@ struct WorkspaceFilteredListView: View {
             .padding(.vertical, 2)
         }
         .daybookScroll()
+        .environment(\.boardReorderEntries, reorderEntries(model))
+        .modifier(FilteredListKeys(
+            orderedIDs: model.orderedVisibleIDs,
+            hasRows: !model.orderedVisibleIDs.isEmpty
+        ) { keyCode in
+            handleListKey(keyCode, model: model)
+        })
+    }
+
+    private func reorderEntries(_ model: WorkspaceFilteredListModel) -> [ManualOrderEntry] {
+        model.openRows.map { row in
+            switch row {
+            case .todo(let todo):
+                ManualOrderEntry(id: todo.id, dayKey: todo.dayKey, sortOrder: todo.sortOrder)
+            case .resident(let routine):
+                ManualOrderEntry(id: routine.id, dayKey: "", sortOrder: routine.sortOrder)
+            }
+        }
     }
 
     @ViewBuilder
@@ -197,7 +215,8 @@ struct WorkspaceFilteredListView: View {
     private func todoRowView(_ todo: TodoItem, isDone: Bool, model: WorkspaceFilteredListModel) -> some View {
         let display = TodoRowDisplayOptions(
             isDone: isDone,
-            isSelected: isRowSelected(todo.id)
+            selection: TaskRowSelectionState(isSelected: isRowSelected(todo.id)),
+            dragPayload: BoardReorderToken.encode(todo.id)
         )
         let actions = TodoRowActions(
             onSelect: { selectRow(todo.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
@@ -229,8 +248,9 @@ struct WorkspaceFilteredListView: View {
         )
         let display = RoutineRowDisplayOptions(
             isDone: isDone,
-            isSelected: isRowSelected(routine.id),
-            allowsCompletion: dueToday
+            selection: TaskRowSelectionState(isSelected: isRowSelected(routine.id)),
+            allowsCompletion: dueToday,
+            dragPayload: BoardReorderToken.encode(routine.id)
         )
         let actions = RoutineRowActions(
             onSelect: { selectRow(routine.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
@@ -254,5 +274,92 @@ struct WorkspaceFilteredListView: View {
 
     private func selectRow(_ id: UUID, modifiers: TaskSelectionModifiers, visibleIDs: [UUID]) {
         navigation.selectTask(id, in: visibleIDs, modifiers: modifiers)
+    }
+
+    private func handleListKey(_ keyCode: UInt16, model: WorkspaceFilteredListModel) {
+        let ids = model.orderedVisibleIDs
+        switch keyCode {
+        case ItemsListKey.arrowDown, ItemsListKey.arrowUp:
+            let delta = keyCode == ItemsListKey.arrowDown ? 1 : -1
+            let index = navigation.selectedTaskID.flatMap { ids.firstIndex(of: $0) } ?? (delta > 0 ? -1 : ids.count)
+            let next = min(max(index + delta, 0), max(ids.count - 1, 0))
+            guard ids.indices.contains(next) else { return }
+            navigation.selectedTaskID = ids[next]
+            navigation.clearSelection()
+            if navigation.isInspectorPresented {
+                navigation.inspectTask(ids[next])
+            }
+        case ItemsListKey.space:
+            guard let id = navigation.selectedTaskID else { return }
+            if let todo = model.openRows.compactMap({ row -> TodoItem? in
+                if case .todo(let item) = row, item.id == id { return item }
+                return nil
+            }).first {
+                _ = DayBoardMutations.toggleTodo(todo)
+            } else if let routine = model.openRows.compactMap({ row -> DailyRoutine? in
+                if case .resident(let item) = row, item.id == id { return item }
+                return nil
+            }).first, DayBoardLogic.isRoutineDue(routine.snapshot, on: model.todayKey) {
+                _ = DayBoardMutations.toggleRoutine(routine, on: model.todayKey, checks: model.checks, context: modelContext)
+            }
+        case ItemsListKey.returnKey:
+            if let id = navigation.selectedTaskID { navigation.inspectTask(id) }
+        case ItemsListKey.delete:
+            guard let id = navigation.selectedTaskID else { return }
+            if let todo = todos.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: todo.title) { DayBoardMutations.trashTodo(todo) }
+            } else if let routine = routines.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine) }
+            }
+        case ItemsListKey.escape:
+            if navigation.isInspectorPresented {
+                navigation.closeInspector()
+            } else {
+                navigation.selectedTaskID = nil
+                navigation.clearSelection()
+            }
+        default:
+            break
+        }
+    }
+}
+
+private final class FilteredKeySink {
+    var hasRows = false
+    var perform: (UInt16) -> Void = { _ in }
+}
+
+private struct FilteredListKeys: ViewModifier {
+    var orderedIDs: [UUID]
+    var hasRows: Bool
+    var perform: (UInt16) -> Void
+    @State private var token: Any?
+    @State private var hostWindow: NSWindow?
+    @State private var sink = FilteredKeySink()
+
+    func body(content: Content) -> some View {
+        sink.hasRows = hasRows
+        sink.perform = perform
+        return content
+            .background(KeyWindowHost { hostWindow = $0 })
+            .onAppear {
+                token = BoardKeyMonitor.install(existing: token) { event in
+                    guard hostWindow == nil || event.window === hostWindow else { return event }
+                    let context = ItemsListKeyContext(
+                        responderClaimsKeys: ItemsListKeyRouting.responderClaimsKeys(NSApp.keyWindow?.firstResponder),
+                        hasRows: sink.hasRows,
+                        hasSelection: WorkspaceNavigation.shared.selectedTaskID != nil,
+                        hasMultiSelection: !WorkspaceNavigation.shared.selectedTaskIDs.isEmpty,
+                        inspectorPresented: WorkspaceNavigation.shared.isInspectorPresented
+                    )
+                    guard ItemsListKeyRouting.consumes(event.keyCode, context: context) else { return event }
+                    sink.perform(event.keyCode)
+                    return nil
+                }
+            }
+            .onDisappear {
+                BoardKeyMonitor.remove(token)
+                token = nil
+            }
     }
 }

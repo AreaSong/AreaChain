@@ -15,7 +15,10 @@ struct WorkspaceHeaderBar: View {
 
             Spacer(minLength: 16)
 
-            WorkspaceHeaderSearchCapsule(navigation: navigation)
+            WorkspaceHeaderSearchCapsule(
+                navigation: navigation,
+                tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
+            )
 
             WorkspaceHeaderInspectorToggle(navigation: navigation)
         }
@@ -53,8 +56,10 @@ struct WorkspaceHeaderLeadingTitle: View {
 struct WorkspaceHeaderSearchCapsule: View {
     @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
+    var tagNames: [String]
     @Bindable private var shortcuts = ShortcutStore.shared
     @State private var hostWindow: NSWindow?
+    @State private var autocomplete = SyntaxAutocompleteState(context: .search)
 
     var body: some View {
         DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
@@ -67,9 +72,12 @@ struct WorkspaceHeaderSearchCapsule: View {
                 placeholder: L10n.string("search.placeholder", locale: locale),
                 fontSize: 12,
                 focus: $navigation.isSearchFocused,
+                autocomplete: autocomplete,
+                availableTags: tagNames,
                 onSubmit: {},
                 allowsShiftNewline: false,
-                onEscape: { escapeSearch() }
+                onEscape: { escapeSearch() },
+                onMoveDown: moveToResults
             )
             .accessibilityIdentifier("workspace.header.search")
         } trailing: {
@@ -91,7 +99,11 @@ struct WorkspaceHeaderSearchCapsule: View {
             }
         }
         .frame(width: 260)
+        .syntaxSuggestions(autocomplete, enabled: navigation.isSearchFocused)
         .background(KeyWindowHost { hostWindow = $0 })
+        .onChange(of: navigation.searchQuery) { _, _ in
+            navigation.searchResultIndex = nil
+        }
         // ⌘F 全局快捷键聚焦
         .background {
             Button("") {
@@ -101,6 +113,14 @@ struct WorkspaceHeaderSearchCapsule: View {
             .opacity(0)
             .accessibilityHidden(true)
         }
+    }
+
+    private func moveToResults() -> Bool {
+        guard navigation.isSearching else { return false }
+        navigation.searchResultIndex = 0
+        navigation.isSearchFocused = false
+        hostWindow?.makeFirstResponder(nil)
+        return true
     }
 
     private func escapeSearch() {
@@ -148,7 +168,10 @@ struct WorkspaceToolbarModifier: ViewModifier {
                 }
 
                 ToolbarItem(placement: .principal) {
-                    WorkspaceHeaderSearchCapsule(navigation: navigation)
+                    WorkspaceHeaderSearchCapsule(
+                        navigation: navigation,
+                        tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
+                    )
                 }
 
                 ToolbarItem(placement: .primaryAction) {

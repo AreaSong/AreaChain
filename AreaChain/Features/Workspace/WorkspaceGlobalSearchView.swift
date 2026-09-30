@@ -50,6 +50,12 @@ struct WorkspaceGlobalSearchView: View {
                                 sectionSpacing: 20,
                                 rowSpacing: 8,
                                 isSelected: { navigation.selectedTaskID == $0.id && navigation.isInspectorPresented },
+                                isHighlighted: { hit in
+                                    let ordered = SearchResultOrder.flat(page.hits)
+                                    guard let index = navigation.searchResultIndex, ordered.indices.contains(index) else { return false }
+                                    let current = ordered[index]
+                                    return current.id == hit.id && current.kind == hit.kind && current.dayKey == hit.dayKey
+                                },
                                 open: openHit
                             )
                         }
@@ -75,6 +81,13 @@ struct WorkspaceGlobalSearchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DaybookPalette.fill.page)
         .accessibilityIdentifier("workspace.global.search.results")
+        .modifier(SearchResultKeys(
+            hits: page.hits,
+            index: $navigation.searchResultIndex,
+            onOpen: openHit,
+            onComplete: { SearchHitCommands.complete($0, context: modelContext) },
+            onLeaveToField: { navigation.focusSearch() }
+        ))
     }
 
     private func makeSearchPage() -> WorkspaceSearchPageModel {

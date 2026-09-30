@@ -120,6 +120,7 @@ struct WorkspaceItemsList: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .daybookScroll()
+        .environment(\.boardReorderEntries, reorderEntries(identity))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .focusable()
         .focusEffectDisabled()
@@ -204,6 +205,7 @@ struct WorkspaceItemsList: View {
             display: TodoRowDisplayOptions(
                 isDone: PendingCompletionManager.shared.isVisuallyDone(id: todo.id, actualDone: todo.isDone),
                 selection: TaskRowSelectionState(isSelected: selected, isExternalEditing: editingID == todo.id),
+                dragPayload: BoardReorderToken.encode(todo.id),
                 includeSubtasks: true,
                 visibleSubtaskIDs: subtaskIDs
             ),
@@ -260,7 +262,8 @@ struct WorkspaceItemsList: View {
                 selection: TaskRowSelectionState(isSelected: selected, isExternalEditing: editingID == routine.id),
                 note: note,
                 usesDefaultNote: note == nil,
-                allowsCompletion: completion.allowed
+                allowsCompletion: completion.allowed,
+                dragPayload: BoardReorderToken.encode(routine.id)
             ),
             actions: RoutineRowActions(
                 onSelect: { select(routine.id, modifiers: $0) },
@@ -324,6 +327,19 @@ struct WorkspaceItemsList: View {
         DayBoardMutations.skipRoutine(
             routine, on: day, checks: checks, context: modelContext
         )
+    }
+
+    private func reorderEntries(_ identity: WorkspaceItemsListIdentity) -> [ManualOrderEntry] {
+        identity.entries.map { entry in
+            let order: Int
+            switch entry {
+            case .todo(let todo, _, _):
+                order = todo.sortOrder
+            case .routine(let routine, _, _, _, _):
+                order = routine.sortOrder
+            }
+            return ManualOrderEntry(id: entry.modelID, dayKey: entry.checkDayKey, sortOrder: order)
+        }
     }
 }
 

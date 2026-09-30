@@ -153,6 +153,7 @@ final class WorkspaceNavigation {
     // MARK: - Global Search
     var searchQuery: String = ""
     var isSearchFocused: Bool = false
+    var searchResultIndex: Int?
     var wantsTodayComposerFocus: Bool = false
 
     var isSearching: Bool {
@@ -166,6 +167,7 @@ final class WorkspaceNavigation {
     func clearSearch() {
         searchQuery = ""
         isSearchFocused = false
+        searchResultIndex = nil
     }
 
     // MARK: - Task Inspector & Multi-Selection

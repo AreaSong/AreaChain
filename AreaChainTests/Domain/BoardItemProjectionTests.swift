@@ -35,7 +35,7 @@ struct BoardItemProjectionTests {
         let items = mixedOpenBoardItems(
             routines: [routine], checks: [], todos: [urgent], dayKey: today
         )
-        #expect(items == [.todo(urgent.id), .recurring(routine.id)])
+        #expect(items == [.recurring(routine.id), .todo(urgent.id)])
     }
 
     @Test func progressCountsDueRecurringAndSkipsAsComplete() {

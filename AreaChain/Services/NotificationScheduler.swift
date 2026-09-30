@@ -47,6 +47,10 @@ final class SystemReminderNotifications: ReminderNotificationServing {
         content.title = record.title
         content.body = L10n.string("notify.body", locale: AppPreferences.shared.resolvedLocale)
         content.sound = .default
+        content.categoryIdentifier = ReminderActions.category
+        if let itemID = ReminderPlanning.itemID(from: record.identifier) {
+            content.userInfo = ["itemID": itemID.uuidString]
+        }
         let trigger = UNCalendarNotificationTrigger(dateMatching: record.dateComponents, repeats: false)
         try await center.add(
             UNNotificationRequest(identifier: record.identifier, content: content, trigger: trigger)
@@ -59,6 +63,32 @@ final class SystemReminderNotifications: ReminderNotificationServing {
 
     func attachDelegateIfNeeded(_ delegate: UNUserNotificationCenterDelegate) {
         center.delegate = delegate
+        registerCategories()
+    }
+
+    func registerCategories() {
+        let complete = UNNotificationAction(
+            identifier: ReminderActions.complete,
+            title: L10n.string("notify.action.complete", locale: AppPreferences.shared.resolvedLocale),
+            options: []
+        )
+        let snooze10 = UNNotificationAction(
+            identifier: ReminderActions.snooze10,
+            title: L10n.string("notify.action.snooze10", locale: AppPreferences.shared.resolvedLocale),
+            options: []
+        )
+        let snooze60 = UNNotificationAction(
+            identifier: ReminderActions.snooze60,
+            title: L10n.string("notify.action.snooze60", locale: AppPreferences.shared.resolvedLocale),
+            options: []
+        )
+        let category = UNNotificationCategory(
+            identifier: ReminderActions.category,
+            actions: [complete, snooze10, snooze60],
+            intentIdentifiers: [],
+            options: []
+        )
+        center.setNotificationCategories([category])
     }
 }
 
@@ -74,6 +104,7 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
     private let todayKey: () -> String
     private let calendar: () -> Calendar
     private let debounce: Duration
+    private let followUps: ReminderFollowUpStore
 
     private(set) var lastCatalogLoad: ReminderCatalogLoad?
     private(set) var completedRefreshCount = 0
@@ -94,7 +125,8 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
         now: (() -> Date)? = nil,
         todayKey: (() -> String)? = nil,
         calendar: (() -> Calendar)? = nil,
-        debounce: Duration = .milliseconds(80)
+        debounce: Duration = .milliseconds(80),
+        followUps: ReminderFollowUpStore? = nil
     ) {
         self.center = center
         self.contextProvider = context ?? { Persistence.session.container.mainContext }
@@ -102,6 +134,7 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
         self.todayKey = todayKey ?? { DayClock.shared.todayKey }
         self.calendar = calendar ?? { Calendar.current }
         self.debounce = debounce
+        self.followUps = followUps ?? .shared
         super.init()
     }
 
@@ -174,6 +207,55 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
         [.banner, .sound, .list]
     }
 
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse
+    ) async {
+        let identifier = response.notification.request.identifier
+        guard let id = ReminderPlanning.itemID(from: identifier) else { return }
+        let day = ReminderPlanning.catchUpDay(from: identifier) ?? todayKey()
+        switch response.actionIdentifier {
+        case ReminderActions.complete:
+            completeItem(id, dayKey: day)
+        case ReminderActions.snooze10:
+            followUps.snooze(
+                id: id,
+                until: now().addingTimeInterval(ReminderActions.tenMinutes),
+                dayKey: todayKey()
+            )
+        case ReminderActions.snooze60:
+            followUps.snooze(
+                id: id,
+                until: now().addingTimeInterval(ReminderActions.oneHour),
+                dayKey: todayKey()
+            )
+        default:
+            let tab: WorkspaceTab = day == todayKey() ? .today : .calendar
+            AppWindows.openWorkspace(tab: tab, inspecting: id, dayKey: day)
+        }
+        scheduleRefresh()
+    }
+
+    private func completeItem(_ id: UUID, dayKey: String) {
+        let context = contextProvider()
+        let tasks = SwiftDataTaskRepository(context: context)
+        if let todo = try? tasks.fetchTodo(id: id), todo.deletedAt == nil, !todo.isDone {
+            _ = DayBoardMutations.completeTodo(todo)
+            return
+        }
+        let routines = SwiftDataRoutineRepository(context: context)
+        guard let routine = try? routines.fetchRoutine(id: id), routine.deletedAt == nil else { return }
+        let checks = (try? routines.fetchChecks(for: routine.id)) ?? []
+        let closed = DayBoardLogic.isRoutineDone(
+            routine.snapshot,
+            checks: checks.compactMap(\.snapshot),
+            on: dayKey
+        )
+        if !closed {
+            _ = DayBoardMutations.markRoutineDone(routine, on: dayKey)
+        }
+    }
+
     private func refresh() async {
         let pending = await center.pendingRecords()
         let ours = pending.filter { $0.identifier.hasPrefix(ReminderPlanning.identifierPrefix) }
@@ -199,14 +281,33 @@ final class NotificationScheduler: NSObject, UNUserNotificationCenterDelegate {
             load.todoRows,
             load.requests.count
         )
-        let planned = ReminderPlanning.records(catalog: load.requests, now: now(), calendar: calendar())
-        if Set(ours) == Set(planned) {
+        let today = todayKey()
+        let delivery = ReminderPlanning.deliveryRecords(
+            catalog: load.requests,
+            followUps: followUps.followUps(),
+            now: now(),
+            todayKey: today,
+            calendar: calendar()
+        )
+        let closed = load.requests.filter { ReminderPlanning.isClosedForFollowUp($0, todayKey: today) }.map(\.id)
+        followUps.clear(closed)
+        followUps.markCatchUps(delivery.issuedCatchUps, dayKey: today)
+        let planned = delivery.records
+        let plannedSet = Set(planned)
+        let cancel = ours.filter { record in
+            if plannedSet.contains(record) { return false }
+            let replaced = planned.contains { $0.identifier == record.identifier }
+            if delivery.retainedIDs.contains(record.identifier), !replaced { return false }
+            return true
+        }
+        let add = planned.filter { !ours.contains($0) }
+        if cancel.isEmpty, add.isEmpty {
             skippedWriteCount += 1
             completedRefreshCount += 1
             return
         }
-        cancelOurs(ours)
-        await schedule(planned)
+        cancelOurs(cancel)
+        await schedule(add)
         appliedWriteCount += 1
         completedRefreshCount += 1
     }

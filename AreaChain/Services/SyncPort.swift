@@ -78,6 +78,8 @@ enum SyncPort {
             dayKey: item.dayKey,
             createdAt: item.createdAt,
             remindMinutes: item.remindMinutes,
+            dueMinutes: item.dueMinutes,
+            sortOrder: item.sortOrder,
             deletedAt: item.deletedAt,
             tagIDs: item.tagIDs,
             isImportant: item.isImportant,

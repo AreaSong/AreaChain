@@ -235,4 +235,87 @@ struct ReminderPlanningTests {
             ).isEmpty
         )
     }
+
+    @Test func catchUpOnceAfterFireAndNotAgain() {
+        let id = UUID()
+        let request = ReminderRequest(
+            id: id,
+            title: "补发",
+            remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: false)
+        )
+        let now = date("2026-09-07", hour: 10)
+        let first = ReminderPlanning.deliveryRecords(
+            catalog: [request], followUps: [:], now: now, todayKey: "2026-09-07", calendar: utc
+        )
+        #expect(first.issuedCatchUps[id] != nil)
+        #expect(first.records.contains { $0.identifier == ReminderPlanning.catchUpID(id, dayKey: "2026-09-07") })
+        let kept = ReminderFollowUp(catchUpDayKey: "2026-09-07", catchUpFire: first.issuedCatchUps[id])
+        let second = ReminderPlanning.deliveryRecords(
+            catalog: [request], followUps: [id: kept], now: now, todayKey: "2026-09-07", calendar: utc
+        )
+        #expect(second.issuedCatchUps.isEmpty)
+        #expect(second.records.contains { $0.identifier == ReminderPlanning.catchUpID(id, dayKey: "2026-09-07") })
+    }
+
+    @Test func catchUpSkipsDonePastDayAndSnooze() {
+        let done = ReminderRequest(
+            id: UUID(), title: "完成", remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: true)
+        )
+        let past = ReminderRequest(
+            id: UUID(), title: "昨天", remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-06", isDone: false)
+        )
+        let snoozed = ReminderRequest(
+            id: UUID(), title: "稍后", remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: false)
+        )
+        let now = date("2026-09-07", hour: 10)
+        #expect(!ReminderPlanning.shouldCatchUp(done, now: now, todayKey: "2026-09-07", calendar: utc))
+        #expect(!ReminderPlanning.shouldCatchUp(past, now: now, todayKey: "2026-09-07", calendar: utc))
+        let plan = ReminderPlanning.deliveryRecords(
+            catalog: [snoozed],
+            followUps: [snoozed.id: ReminderFollowUp(snoozeFire: date("2026-09-07", hour: 11))],
+            now: now,
+            todayKey: "2026-09-07",
+            calendar: utc
+        )
+        #expect(plan.issuedCatchUps.isEmpty)
+        #expect(plan.records.contains { $0.identifier == ReminderPlanning.snoozeID(snoozed.id) })
+    }
+
+    @Test func catchUpIsNotReissuedAfterItsMinute() throws {
+        let id = UUID()
+        let request = ReminderRequest(
+            id: id, title: "补发", remindMinutes: 9 * 60,
+            kind: .once(dayKey: "2026-09-07", isDone: false)
+        )
+        let first = ReminderPlanning.deliveryRecords(
+            catalog: [request], followUps: [:], now: date("2026-09-07", hour: 10),
+            todayKey: "2026-09-07", calendar: utc
+        )
+        let fire = try #require(first.issuedCatchUps[id])
+        #expect(fire == date("2026-09-07", hour: 10, minute: 1))
+        let identifier = ReminderPlanning.catchUpID(id, dayKey: "2026-09-07")
+        let during = ReminderPlanning.deliveryRecords(
+            catalog: [request],
+            followUps: [id: ReminderFollowUp(catchUpDayKey: "2026-09-07", catchUpFire: fire)],
+            now: date("2026-09-07", hour: 10, minute: 1).addingTimeInterval(20),
+            todayKey: "2026-09-07",
+            calendar: utc
+        )
+        #expect(during.issuedCatchUps.isEmpty)
+        #expect(!during.records.contains { $0.identifier == identifier })
+        #expect(during.retainedIDs.contains(identifier))
+        let after = ReminderPlanning.deliveryRecords(
+            catalog: [request],
+            followUps: [id: ReminderFollowUp(catchUpDayKey: "2026-09-07", catchUpFire: fire)],
+            now: date("2026-09-07", hour: 10, minute: 2),
+            todayKey: "2026-09-07",
+            calendar: utc
+        )
+        #expect(after.issuedCatchUps.isEmpty)
+        #expect(!after.retainedIDs.contains(identifier))
+    }
 }

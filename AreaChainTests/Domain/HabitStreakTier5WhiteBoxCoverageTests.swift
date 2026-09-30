@@ -300,7 +300,7 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
             id: UUID(), title: "Alpha Task", isDone: false, dayKey: futureDay, createdAt: later, isUrgent: true
         )
         let upcoming = DayBoardLogic.upcomingTodos(todos: [rest, urgent], todayKey: today)
-        #expect(upcoming.map(\.title) == ["Alpha Task", "Zulu Task"])
+        #expect(upcoming.map(\.title) == ["Zulu Task", "Alpha Task"])
     }
 
     @Test func dayBoardLogicMatchingRoutinesAndSortedForBoard() {
@@ -348,7 +348,7 @@ struct HabitStreakTier5WhiteBoxCoverageTests {
         #expect(!matched.contains { $0.id == rOtherProject.id })
 
         let sorted = matched.sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
-        #expect(sorted.map(\.title) == ["Critical Routine", "Urgent Routine", "Low Priority"])
+        #expect(sorted.map(\.title) == ["Urgent Routine", "Low Priority", "Critical Routine"])
     }
 
     // MARK: - 8. Exhaustive Weekday Mask Permutations

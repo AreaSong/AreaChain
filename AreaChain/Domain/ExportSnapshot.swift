@@ -258,6 +258,8 @@ struct ExportedTodo: Codable, Equatable, Sendable {
     var dayKey: String
     var createdAt: Date
     var remindMinutes: Int?
+    var dueMinutes: Int?
+    var sortOrder: Int = 0
     var deletedAt: Date?
     var tagIDs: String
     var isImportant: Bool
@@ -268,7 +270,7 @@ struct ExportedTodo: Codable, Equatable, Sendable {
     var subtasks: [ExportedSubtask] = []
 
     enum CodingKeys: String, CodingKey {
-        case id, title, isDone, dayKey, createdAt, remindMinutes, deletedAt
+        case id, title, isDone, dayKey, createdAt, remindMinutes, dueMinutes, sortOrder, deletedAt
         case tagIDs, isImportant, isUrgent, sourceBundleID, calendarEventID
         case notes, subtasks
     }
@@ -280,6 +282,8 @@ struct ExportedTodo: Codable, Equatable, Sendable {
         dayKey: String,
         createdAt: Date,
         remindMinutes: Int? = nil,
+        dueMinutes: Int? = nil,
+        sortOrder: Int = 0,
         deletedAt: Date? = nil,
         tagIDs: String = "",
         isImportant: Bool = false,
@@ -295,6 +299,8 @@ struct ExportedTodo: Codable, Equatable, Sendable {
         self.dayKey = dayKey
         self.createdAt = createdAt
         self.remindMinutes = RemindMinutes.clamped(remindMinutes)
+        self.dueMinutes = RemindMinutes.clamped(dueMinutes)
+        self.sortOrder = sortOrder
         self.deletedAt = deletedAt
         self.tagIDs = tagIDs
         self.isImportant = isImportant
@@ -313,6 +319,8 @@ struct ExportedTodo: Codable, Equatable, Sendable {
         dayKey = try box.decode(String.self, forKey: .dayKey)
         createdAt = try box.decode(Date.self, forKey: .createdAt)
         remindMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .remindMinutes))
+        dueMinutes = RemindMinutes.clamped(try box.decodeIfPresent(Int.self, forKey: .dueMinutes))
+        sortOrder = try box.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
         deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
         tagIDs = try box.decodeIfPresent(String.self, forKey: .tagIDs) ?? ""
         isImportant = try box.decodeIfPresent(Bool.self, forKey: .isImportant) ?? false

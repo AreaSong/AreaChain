@@ -271,8 +271,8 @@ struct NotificationSchedulerTests {
 
         #expect(scheduler.completedRefreshCount == 2)
         #expect(Set(center.pending.map(\.title)) == ["失败项", "成功项"])
-        #expect(center.addCount == 4)
-        #expect(center.removePendingCount == 1)
+        #expect(center.addCount == 3)
+        #expect(center.removePendingCount == 0)
     }
 
     @Test func completingReminderCancelsItsPendingRequest() async throws {
@@ -313,6 +313,47 @@ struct NotificationSchedulerTests {
         #expect(scheduler.completedRefreshCount == refreshes + 1)
         #expect(center.addCount == adds)
         #expect(center.pending.map(\.title) == ["仍排程"])
+    }
+
+    @Test func issuedCatchUpStaysDeliveredOnLaterRefresh() async throws {
+        let suite = "areachain.tests.followup.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = ReminderFollowUpStore(defaults: defaults)
+        let container = try container()
+        let todo = TodoItem(title: "补发", dayKey: todayKey, remindMinutes: 9 * 60)
+        container.mainContext.insert(todo)
+        try container.mainContext.save()
+        let center = FakeReminderNotifications()
+        let clock = FollowUpClock(DayKey.date(dayKey: todayKey, minutes: 10 * 60, calendar: utc)!)
+        let scheduler = NotificationScheduler(
+            center: center,
+            context: { container.mainContext },
+            now: { clock.date },
+            todayKey: { self.todayKey },
+            calendar: { self.utc },
+            debounce: .zero,
+            followUps: store
+        )
+        scheduler.start()
+        try await wait(scheduler, refreshes: 1)
+        let identifier = ReminderPlanning.catchUpID(todo.id, dayKey: todayKey)
+        #expect(center.pending.contains { $0.identifier == identifier })
+        center.pending.removeAll { $0.identifier == identifier }
+        center.delivered.insert(identifier)
+        let adds = center.addCount
+        let removed = center.removeDeliveredCount
+        clock.date = DayKey.date(dayKey: todayKey, minutes: 10 * 60 + 1, calendar: utc)!.addingTimeInterval(20)
+        await scheduler.refreshNow()
+        #expect(center.delivered.contains(identifier))
+        #expect(!center.pending.contains { $0.identifier == identifier })
+        #expect(center.addCount == adds)
+        #expect(center.removeDeliveredCount == removed)
+    }
+
+    private final class FollowUpClock {
+        var date: Date
+        init(_ date: Date) { self.date = date }
     }
 
     private func container() throws -> ModelContainer {

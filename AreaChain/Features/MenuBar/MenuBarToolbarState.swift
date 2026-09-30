@@ -5,6 +5,7 @@ import SwiftUI
 final class MenuBarToolbarState {
     var searchText = ""
     var searchIsFocused = false
+    var resultIndex: Int?
     private(set) var isFiltering = false
     private(set) var allowsFilterHover = true
     let autocomplete = SyntaxAutocompleteState(context: .search)
@@ -46,6 +47,7 @@ final class MenuBarToolbarState {
 
     func clearSearch() {
         searchText = ""
+        resultIndex = nil
         autocomplete.dismiss()
     }
 }

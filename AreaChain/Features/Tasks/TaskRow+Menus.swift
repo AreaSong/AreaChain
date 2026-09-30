@@ -255,6 +255,25 @@ extension TaskRow {
     @ViewBuilder
     var standingMenus: some View {
         if state.isResident {
+            if let mask = state.weekdayMask {
+                Menu("drawer.weekdays.title") {
+                    ForEach(WeekdayMask.orderedWeekdays(), id: \.self) { weekday in
+                        let selected = WeekdayMask.contains(mask, weekday: weekday)
+                        Button {
+                            dispatch(.setWeekdayMask(WeekdayMask.toggling(mask, weekday: weekday)))
+                        } label: {
+                            if selected {
+                                Label(
+                                    WeekdayMask.accessibilityName(weekday, locale: AppPreferences.shared.resolvedLocale),
+                                    systemImage: "checkmark"
+                                )
+                            } else {
+                                Text(WeekdayMask.accessibilityName(weekday, locale: AppPreferences.shared.resolvedLocale))
+                            }
+                        }
+                    }
+                }
+            }
             if let isEnabled = state.isEnabled {
                 if isEnabled {
                     Button("row.disable") {

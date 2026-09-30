@@ -303,7 +303,7 @@ struct DayBoardLogicTests {
         )
     }
 
-    @Test func sortedForBoardUsesQuadrantBeforeTime() {
+    @Test func sortedForBoardUsesManualOrderBeforeCreated() {
         let later = Date(timeIntervalSince1970: 20)
         let earlier = Date(timeIntervalSince1970: 1)
         let rest = TodoSnapshot(
@@ -312,7 +312,8 @@ struct DayBoardLogicTests {
             isDone: false,
             dayKey: today,
             createdAt: earlier,
-            remindMinutes: 60
+            remindMinutes: 60,
+            sortOrder: 1
         )
         let both = TodoSnapshot(
             id: UUID(),
@@ -321,6 +322,7 @@ struct DayBoardLogicTests {
             dayKey: today,
             createdAt: later,
             remindMinutes: 600,
+            sortOrder: 0,
             isImportant: true,
             isUrgent: true
         )

@@ -28,6 +28,12 @@ enum WeekdayMask {
         (sanitized(mask) & bit(weekday: weekday)) != 0
     }
 
+    /// 只选中公历星期。非法星期收成每天，避免写出空掩码。
+    static func only(weekday: Int) -> Int {
+        let selected = bit(weekday: weekday)
+        return selected == 0 ? all : selected
+    }
+
     /// 草稿里的 0 表示没有选中任何一天，不能先收成「每天」再判断。
     static func containsSelection(_ mask: Int, weekday: Int) -> Bool {
         (mask & all & bit(weekday: weekday)) != 0

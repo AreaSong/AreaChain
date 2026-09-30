@@ -265,10 +265,12 @@ enum BoardRow: Identifiable {
 
     var listID: String { reference.id }
 
-    var boardSortKey: BoardSortKey {
+    func boardSortKey(listDay: String?) -> BoardSortKey {
         switch self {
         case .resident(let item):
             BoardSortKey(
+                sortOrder: item.sortOrder,
+                dayKey: listDay ?? "",
                 isImportant: item.isImportant,
                 isUrgent: item.isUrgent,
                 remindMinutes: item.remindMinutes,
@@ -276,6 +278,8 @@ enum BoardRow: Identifiable {
             )
         case .todo(let item):
             BoardSortKey(
+                sortOrder: item.sortOrder,
+                dayKey: listDay ?? item.dayKey,
                 isImportant: item.isImportant,
                 isUrgent: item.isUrgent,
                 remindMinutes: item.remindMinutes,
@@ -283,4 +287,6 @@ enum BoardRow: Identifiable {
             )
         }
     }
+
+    var boardSortKey: BoardSortKey { boardSortKey(listDay: nil) }
 }

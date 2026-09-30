@@ -28,6 +28,7 @@ struct RoutineSnapshot: Equatable, Identifiable {
 
     var boardSortKey: BoardSortKey {
         BoardSortKey(
+            sortOrder: sortOrder,
             isImportant: isImportant,
             isUrgent: isUrgent,
             remindMinutes: remindMinutes,
@@ -61,6 +62,8 @@ struct TodoSnapshot: Equatable, Identifiable {
     var dayKey: String
     var createdAt: Date = Date(timeIntervalSince1970: 0)
     var remindMinutes: Int? = nil
+    var dueMinutes: Int? = nil
+    var sortOrder: Int = 0
     var deletedAt: Date? = nil
     var tagIDs: String = ""
     var isImportant: Bool = false
@@ -80,6 +83,7 @@ struct TodoSnapshot: Equatable, Identifiable {
 
     var boardSortKey: BoardSortKey {
         BoardSortKey(
+            sortOrder: sortOrder,
             isImportant: isImportant,
             isUrgent: isUrgent,
             remindMinutes: remindMinutes,

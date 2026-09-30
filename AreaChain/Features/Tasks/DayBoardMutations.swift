@@ -113,12 +113,24 @@ enum DayBoardMutations {
 
     @discardableResult
     static func completeTodo(_ todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).completeTodo(id: todo.id) }
+        guard !todo.isDone else { return true }
+        let reopen = todo.subtasks.filter { $0.deletedAt == nil && !$0.isDone }.map(\.id)
+        let saved = ModelChanges.attempt(in: todo.modelContext) {
+            try taskRepo(for: todo.modelContext).completeTodo(id: todo.id)
+        }
+        if saved { CompletionUndo.shared.record(.todo(todo.id, wasDone: false, reopen: reopen)) }
+        return saved
     }
 
     @discardableResult
     static func toggleTodo(_ todo: TodoItem) -> Bool {
-        ModelChanges.attempt(in: todo.modelContext) { try taskRepo(for: todo.modelContext).toggleTodo(id: todo.id) }
+        let wasDone = todo.isDone
+        let reopen = wasDone ? [] : todo.subtasks.filter { $0.deletedAt == nil && !$0.isDone }.map(\.id)
+        let saved = ModelChanges.attempt(in: todo.modelContext) {
+            try taskRepo(for: todo.modelContext).toggleTodo(id: todo.id)
+        }
+        if saved { CompletionUndo.shared.record(.todo(todo.id, wasDone: wasDone, reopen: reopen)) }
+        return saved
     }
 
     @discardableResult
@@ -188,7 +200,12 @@ enum DayBoardMutations {
 
     @discardableResult
     static func toggleSubtask(_ subtask: SubtaskItem) -> Bool {
-        ModelChanges.attempt(in: subtask.modelContext) { try taskRepo(for: subtask.modelContext).toggleSubtask(id: subtask.id) }
+        let wasDone = subtask.isDone
+        let saved = ModelChanges.attempt(in: subtask.modelContext) {
+            try taskRepo(for: subtask.modelContext).toggleSubtask(id: subtask.id)
+        }
+        if saved { CompletionUndo.shared.record(.subtask(subtask.id, wasDone: wasDone)) }
+        return saved
     }
 
     @discardableResult
@@ -241,9 +258,11 @@ enum DayBoardMutations {
 
     @discardableResult
     static func markRoutineDone(_ routine: DailyRoutine, on dayKey: String) -> Bool {
-        ModelChanges.attempt(in: routine.modelContext) {
+        let saved = ModelChanges.attempt(in: routine.modelContext) {
             try routineRepo(for: routine.modelContext).markRoutineDone(id: routine.id, dayKey: dayKey)
         }
+        if saved { CompletionUndo.shared.record(.routine(routine.id, dayKey: dayKey, wasClosed: false)) }
+        return saved
     }
 
     @discardableResult
@@ -252,7 +271,13 @@ enum DayBoardMutations {
         checks: [RoutineCheck] = [], context: ModelContext? = nil
     ) -> Bool {
         let context = context ?? routine.modelContext
-        return ModelChanges.attempt(in: context) { try routineRepo(for: context).toggleRoutine(id: routine.id, dayKey: dayKey) }
+        let snaps = checks.compactMap(\.snapshot)
+        let wasClosed = DayBoardLogic.isRoutineDone(routine.snapshot, checks: snaps, on: dayKey)
+        let saved = ModelChanges.attempt(in: context) {
+            try routineRepo(for: context).toggleRoutine(id: routine.id, dayKey: dayKey)
+        }
+        if saved { CompletionUndo.shared.record(.routine(routine.id, dayKey: dayKey, wasClosed: wasClosed)) }
+        return saved
     }
 
     @discardableResult
@@ -454,25 +479,5 @@ enum DayBoardMutations {
     static func ownedAttachments(_ context: ModelContext?) -> [AttachmentItem] {
         guard let context else { return [] }
         return ModelChanges.value { try context.fetch(FetchDescriptor<AttachmentItem>()) } ?? []
-    }
-}
-
-enum ResidentNote {
-    static func days(_ routine: DailyRoutine, locale: Locale) -> String? {
-        let mask = routine.resolvedWeekdayMask
-        if WeekdayMask.isAll(mask) { return nil }
-        if WeekdayMask.isWorkdays(mask) { return L10n.string("note.weekdays", locale: locale) }
-        return WeekdayMask.selectedLabels(mask, locale: locale)
-    }
-
-    static func done(_ routine: DailyRoutine, skipped: Bool, locale: Locale) -> String? {
-        let days = days(routine, locale: locale)
-        if skipped {
-            if let days {
-                return L10n.string("note.skipped", locale: locale) + " · " + days
-            }
-            return L10n.string("note.skipped", locale: locale)
-        }
-        return days
     }
 }

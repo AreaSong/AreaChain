@@ -104,7 +104,7 @@ enum TaskRowFactory {
         case .skip: break
         case .moveToDay(let day): DayBoardMutations.moveTodo(todo, to: day)
         case .setRemindMinutes(let minutes): DayBoardMutations.setRemind(todo, minutes: minutes)
-        case .setEnabled: break
+        case .setEnabled, .setWeekdayMask: break
         case .toggleSubtask(let subID):
             if let sub = todo.subtasks.first(where: { $0.id == subID }) {
                 DayBoardMutations.toggleSubtask(sub)
@@ -160,7 +160,8 @@ enum TaskRowFactory {
         )
         let schedule = TaskRowScheduleState(
             remindMinutes: context.routine.remindMinutes,
-            streak: streak
+            streak: streak,
+            weekdayMask: context.routine.resolvedWeekdayMask
         )
         let content = TaskRowContentState(
             note: resolveResidentNote(context: context),
@@ -170,6 +171,7 @@ enum TaskRowFactory {
         )
         let interaction = TaskRowInteractionState(
             selection: context.display.selection,
+            dragPayload: context.display.dragPayload,
             canSetRemind: true,
             canSkip: context.actions.onSkip != nil,
             isEnabled: context.routine.isEnabled,
@@ -212,6 +214,8 @@ enum TaskRowFactory {
                 checks: context.schedule.checks,
                 context: context.catalogs.context
             )
+        case .setWeekdayMask(let mask):
+            DayBoardMutations.setWeekdayMask(routine, mask: mask)
         case .toggleSubtask: break
         }
     }

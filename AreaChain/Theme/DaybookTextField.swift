@@ -43,6 +43,7 @@ struct DaybookTextField: NSViewRepresentable {
     var onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil
     var allowsShiftNewline: Bool = true
     var onEscape: (() -> Void)? = nil
+    var onMoveDown: (() -> Bool)? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -326,6 +327,9 @@ struct DaybookTextField: NSViewRepresentable {
                     return true
                 }
             }
+            if commandSelector == #selector(NSResponder.moveDown(_:)), parent.onMoveDown?() == true {
+                return true
+            }
             if handleShiftNewline(commandSelector, textView: textView) { return true }
             if handleCommandReturn(commandSelector, textView: textView) { return true }
             if handleReturnSubmit(commandSelector, textView: textView) { return true }
@@ -356,6 +360,7 @@ struct DaybookTextField: NSViewRepresentable {
                 return true
             }
             if selector == #selector(NSResponder.moveDown(_:)) {
+                guard !autocomplete.candidates.isEmpty else { return false }
                 autocomplete.selectNext()
                 return true
             }
@@ -433,14 +438,15 @@ extension DaybookTextField {
         availableTags: [String] = [], highlightsSyntax: Bool = false, onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil, commandChord: ShortcutChord? = nil,
         onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
-        allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil
+        allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil,
+        onMoveDown: (() -> Bool)? = nil
     ) {
         self.init(
             text: text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight,
             focus: Binding(get: { focus.wrappedValue }, set: { focus.wrappedValue = $0 }),
             autocomplete: autocomplete, availableTags: availableTags, highlightsSyntax: highlightsSyntax, onSubmit: onSubmit,
             onCommandReturn: onCommandReturn, commandChord: commandChord, onCommitAutocomplete: onCommitAutocomplete,
-            allowsShiftNewline: allowsShiftNewline, onEscape: onEscape
+            allowsShiftNewline: allowsShiftNewline, onEscape: onEscape, onMoveDown: onMoveDown
         )
     }
 }

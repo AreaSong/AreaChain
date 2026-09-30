@@ -7,6 +7,7 @@ struct BoardSearchHitGroups: View {
     var sectionSpacing: CGFloat = 14
     var rowSpacing: CGFloat = 6
     var isSelected: (BoardSearchHit) -> Bool = { _ in false }
+    var isHighlighted: (BoardSearchHit) -> Bool = { _ in false }
     var open: (BoardSearchHit) -> Void
 
     @Environment(\.locale) private var locale
@@ -24,6 +25,7 @@ struct BoardSearchHitGroups: View {
                             hit: hit,
                             presentation: presentation,
                             isSelected: isSelected(hit),
+                            isHighlighted: isHighlighted(hit),
                             action: { open(hit) }
                         )
                     }
@@ -43,6 +45,7 @@ struct BoardSearchHitRow: View {
     var hit: BoardSearchHit
     var presentation: Presentation = .list
     var isSelected = false
+    var isHighlighted = false
     var action: () -> Void
 
     var body: some View {
@@ -69,6 +72,9 @@ struct BoardSearchHitRow: View {
             titleText(lineLimit: 3)
             Spacer(minLength: 0)
         }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(isHighlighted ? DaybookPalette.fill.hover : Color.clear, in: RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
     }
 
     private var workspaceLabel: some View {
@@ -87,6 +93,10 @@ struct BoardSearchHitRow: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 9)
+        .background(
+            isHighlighted && !isSelected ? DaybookPalette.fill.hover : Color.clear,
+            in: RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+        )
         .daybookSurface(.row, isSelected: isSelected, configure: { $0.radius = DaybookRadius.regular })
     }
 

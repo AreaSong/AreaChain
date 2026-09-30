@@ -354,7 +354,7 @@ enum AgendaProjection {
 
     private static func sortedTodos(_ todos: [TodoSnapshot]) -> [TodoSnapshot] {
         todos.sorted { left, right in
-            if left.dayKey != right.dayKey { return left.dayKey < right.dayKey }
+            if left.dayKey != right.dayKey { return Classification.dayKeyPrecedes(left.dayKey, right.dayKey) }
             let leftFirst = Classification.precedes(left.boardSortKey, right.boardSortKey)
             let rightFirst = Classification.precedes(right.boardSortKey, left.boardSortKey)
             if leftFirst != rightFirst { return leftFirst }
@@ -364,7 +364,7 @@ enum AgendaProjection {
 
     private static func sorted(_ entries: [AgendaEntry]) -> [AgendaEntry] {
         entries.sorted { left, right in
-            if left.dayKey != right.dayKey { return left.dayKey < right.dayKey }
+            if left.dayKey != right.dayKey { return Classification.dayKeyPrecedes(left.dayKey, right.dayKey) }
             let leftFirst = Classification.precedes(sortKey(left), sortKey(right))
             let rightFirst = Classification.precedes(sortKey(right), sortKey(left))
             if leftFirst != rightFirst { return leftFirst }

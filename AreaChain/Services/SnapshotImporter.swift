@@ -109,6 +109,8 @@ enum SnapshotImporter {
                 found.dayKey = item.dayKey
                 found.createdAt = item.createdAt
                 found.remindMinutes = RemindMinutes.clamped(item.remindMinutes)
+                found.dueMinutes = RemindMinutes.clamped(item.dueMinutes)
+                found.sortOrder = item.sortOrder
                 found.deletedAt = item.deletedAt
                 found.tagIDs = item.tagIDs
                 found.isImportant = item.isImportant
@@ -131,7 +133,9 @@ enum SnapshotImporter {
                     isUrgent: item.isUrgent,
                     sourceBundleID: item.sourceBundleID,
                     calendarEventID: item.calendarEventID,
-                    notes: item.notes
+                    notes: item.notes,
+                    sortOrder: item.sortOrder,
+                    dueMinutes: item.dueMinutes
                 )
                 context.insert(newTodo)
                 upsertSubtasks(item.subtasks, for: newTodo, context: context)

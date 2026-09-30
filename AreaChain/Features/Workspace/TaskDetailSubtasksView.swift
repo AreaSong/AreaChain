@@ -78,6 +78,7 @@ struct TaskDetailSubtasksView: View {
             ForEach(activeSubtasks) { subtask in
                 SubtaskRowView(
                     subtask: subtask,
+                    siblingIDs: activeSubtasks.map(\.id),
                     onToggle: {
                         DayBoardMutations.toggleSubtask(subtask)
                     },
@@ -86,6 +87,9 @@ struct TaskDetailSubtasksView: View {
                     },
                     onDelete: {
                         DayBoardMutations.deleteSubtask(subtask)
+                    },
+                    onReorder: { ordered in
+                        DayBoardMutations.reorderSubtasks(for: todo, orderedIDs: ordered)
                     }
                 )
             }
@@ -132,9 +136,11 @@ struct SubtaskRowView: View {
     @Environment(\.locale) private var locale
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     let subtask: SubtaskItem
+    var siblingIDs: [UUID] = []
     let onToggle: () -> Void
     let onUpdateTitle: (String) -> Bool
     let onDelete: () -> Void
+    var onReorder: ([UUID]) -> Bool = { _ in false }
 
     @State private var isHovering = false
     @State private var isEditing = false
@@ -155,6 +161,15 @@ struct SubtaskRowView: View {
                 .fill(isHovering ? DaybookPalette.cardSurfaceHover : Color.clear)
         )
         .onHover { isHovering = $0 }
+        .draggable(SubtaskReorderToken.encode(subtask.id))
+        .dropDestination(for: String.self) { items, _ in
+            guard !isEditing, let raw = items.first,
+                  let moving = SubtaskReorderToken.decode(raw),
+                  let next = ManualOrder.reordered(siblingIDs, moving: moving, before: subtask.id) else {
+                return false
+            }
+            return onReorder(next)
+        }
         .zIndex(isEditing ? 20 : 0)
         .onAppear { draftTitle = subtask.title }
         .onChange(of: subtask.title) { _, val in
@@ -253,5 +268,18 @@ struct SubtaskRowView: View {
         draftTitle = subtask.title
         isEditing = false
         editFocused = false
+    }
+}
+
+private enum SubtaskReorderToken {
+    private static let prefix = "subtask-order:"
+
+    static func encode(_ id: UUID) -> String {
+        prefix + id.uuidString
+    }
+
+    static func decode(_ raw: String) -> UUID? {
+        guard raw.hasPrefix(prefix) else { return nil }
+        return UUID(uuidString: String(raw.dropFirst(prefix.count)))
     }
 }

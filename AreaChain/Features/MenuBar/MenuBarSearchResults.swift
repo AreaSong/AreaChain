@@ -4,6 +4,7 @@ import SwiftUI
 struct MenuBarSearchResults: View {
     var query: String
     var filter: BoardFilter
+    @Bindable var toolbar: MenuBarToolbarState
     var onClearSearch: () -> Void
     var onClearFilter: () -> Void
 
@@ -40,11 +41,16 @@ struct MenuBarSearchResults: View {
                 }
                 Spacer(minLength: 0)
             } else {
-                SearchResultsView(hits: results)
+                SearchResultsView(
+                    hits: results,
+                    resultIndex: $toolbar.resultIndex,
+                    onLeaveToField: { toolbar.focusSearch() }
+                )
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityIdentifier("menubar.search.results")
+        .onChange(of: query) { _, _ in toolbar.resultIndex = nil }
     }
 
     private func makeHits() -> [BoardSearchHit] {

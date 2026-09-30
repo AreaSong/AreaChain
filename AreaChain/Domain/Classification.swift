@@ -120,6 +120,9 @@ enum TagIDList {
 }
 
 struct BoardSortKey: Equatable {
+    var sortOrder: Int = 0
+    /// 同一天内比较手动顺序。空字符串表示不参与按日分组。
+    var dayKey: String = ""
     var isImportant: Bool = false
     var isUrgent: Bool = false
     var remindMinutes: Int? = nil
@@ -281,20 +284,21 @@ enum Classification {
         }
     }
 
+    /// 空日期排在有日期之后。相同日期不比较。
+    static func dayKeyPrecedes(_ left: String, _ right: String) -> Bool {
+        if left == right { return false }
+        if left.isEmpty { return false }
+        if right.isEmpty { return true }
+        return left < right
+    }
+
+    /// 同一天里手动顺序优先，创建时间只作平局。四象限和提醒时刻不再决定先后。
     static func precedes(_ left: BoardSortKey, _ right: BoardSortKey) -> Bool {
-        let leftRank = priorityRank(important: left.isImportant, urgent: left.isUrgent)
-        let rightRank = priorityRank(important: right.isImportant, urgent: right.isUrgent)
-        if leftRank != rightRank { return leftRank < rightRank }
-        switch (left.remindMinutes, right.remindMinutes) {
-        case let (a?, b?) where a != b:
-            return a < b
-        case (_?, nil):
-            return true
-        case (nil, _?):
-            return false
-        default:
-            return left.createdAt < right.createdAt
+        if left.dayKey != right.dayKey {
+            return dayKeyPrecedes(left.dayKey, right.dayKey)
         }
+        if left.sortOrder != right.sortOrder { return left.sortOrder < right.sortOrder }
+        return left.createdAt < right.createdAt
     }
 }
 

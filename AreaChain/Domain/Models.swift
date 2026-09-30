@@ -195,6 +195,8 @@ final class TodoItem {
     var sourceBundleID: String = ""
     var calendarEventID: String = ""
     var notes: String = ""
+    var sortOrder: Int = 0
+    var dueMinutes: Int?
 
     @Relationship(deleteRule: .cascade, inverse: \SubtaskItem.todo)
     var subtasks: [SubtaskItem]
@@ -212,7 +214,9 @@ final class TodoItem {
         isUrgent: Bool = false,
         sourceBundleID: String = "",
         calendarEventID: String = "",
-        notes: String = ""
+        notes: String = "",
+        sortOrder: Int = 0,
+        dueMinutes: Int? = nil
     ) {
         self.id = id
         self.title = title
@@ -227,6 +231,8 @@ final class TodoItem {
         self.sourceBundleID = sourceBundleID
         self.calendarEventID = calendarEventID
         self.notes = notes
+        self.sortOrder = sortOrder
+        self.dueMinutes = RemindMinutes.clamped(dueMinutes)
         self.subtasks = []
     }
 
@@ -247,6 +253,8 @@ final class TodoItem {
             dayKey: dayKey,
             createdAt: createdAt,
             remindMinutes: remindMinutes,
+            dueMinutes: dueMinutes,
+            sortOrder: sortOrder,
             deletedAt: deletedAt,
             tagIDs: tagIDs,
             isImportant: isImportant,

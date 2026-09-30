@@ -123,6 +123,7 @@ struct MenuBarPopoverView: View {
                     MenuBarSearchResults(
                         query: toolbar.searchText,
                         filter: filters.selection(for: tab),
+                        toolbar: toolbar,
                         onClearSearch: { toolbar.clearSearch() },
                         onClearFilter: clearCurrentFilter
                     )

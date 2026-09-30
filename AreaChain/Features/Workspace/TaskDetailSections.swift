@@ -43,9 +43,20 @@ struct TodoScheduleSectionView: View {
                 DayBoardMutations.setRemind(todo, minutes: minutes)
             }
 
+            TaskDetailDueTime(dueMinutes: todo.dueMinutes) { minutes in
+                DayBoardMutations.setDue(todo, minutes: minutes)
+            }
+
             TaskDetailDateChips(dayKey: todo.dayKey) { newDay in
                 DayBoardMutations.moveTodo(todo, to: newDay)
             }
+
+            Button("drawer.convert.toRoutine") {
+                if let id = DayBoardMutations.convertTodoToRoutine(todo) {
+                    WorkspaceNavigation.shared.inspectTask(id)
+                }
+            }
+            .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
         }
     }
 }
@@ -87,6 +98,8 @@ struct RoutineHabitSectionView: View {
                 )
             )
 
+            HabitCheckMonthView(routine: routine, inspectDayKey: boardDayKey)
+
             TaskDetailNotesView(draftKey: "routine-\(routine.id)", notes: routine.notes) { newNotes in
                 DayBoardMutations.updateNotes(for: routine, notes: newNotes)
             }
@@ -117,6 +130,13 @@ struct RoutineScheduleSectionView: View {
             TaskDetailWeekdayPicker(resolvedMask: routine.resolvedWeekdayMask) { newMask in
                 DayBoardMutations.setWeekdayMask(routine, mask: newMask)
             }
+
+            Button("drawer.convert.toTodo") {
+                if let id = DayBoardMutations.convertRoutineToTodo(routine) {
+                    WorkspaceNavigation.shared.inspectTask(id, dayKey: DayKey.today())
+                }
+            }
+            .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
         }
     }
 }

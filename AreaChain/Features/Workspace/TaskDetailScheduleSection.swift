@@ -72,6 +72,7 @@ struct TaskDetailRemindChips: View {
     var remindMinutes: Int?
     var onSelectMinutes: (Int?) -> Void
     @Environment(\.locale) private var locale
+    @State private var pickingTime = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -96,8 +97,27 @@ struct TaskDetailRemindChips: View {
                 chip(label: "15:00", minutes: 15 * 60)
                 chip(label: "18:00", minutes: 18 * 60)
                 chip(label: "20:00", minutes: 20 * 60)
+                Button("row.time.set") { pickingTime = true }
+                    .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
+            }
+            .popover(isPresented: $pickingTime) {
+                DatePicker(
+                    "drawer.remind.title",
+                    selection: timeBinding,
+                    displayedComponents: .hourAndMinute
+                )
+                .labelsHidden()
+                .datePickerStyle(.stepperField)
+                .padding(12)
             }
         }
+    }
+
+    private var timeBinding: Binding<Date> {
+        Binding(
+            get: { RemindMinutes.date(minutes: remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now },
+            set: { onSelectMinutes(RemindMinutes.from(date: $0)) }
+        )
     }
 
     private func chip(label: String, minutes: Int) -> some View {

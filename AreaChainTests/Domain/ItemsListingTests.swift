@@ -109,6 +109,12 @@ struct ItemsListingTests {
         #expect(ItemsListing.routines([habits[1]], checks: [], query: dated).isEmpty)
     }
 
+    @Test func openTodosPlaceUndatedAfterDatedDays() {
+        let undated = todo("无日期", day: "")
+        let todayTodo = todo("今天", day: today)
+        #expect(ItemsListing.sortedTodos([undated, todayTodo]).map(\.title) == ["今天", "无日期"])
+    }
+
     @Test func routineSortKeepsUserOrderAheadOfStreak() {
         let later = routine("后", order: 2)
         let earlier = routine("先", enabled: false, order: 0)
