@@ -17,6 +17,8 @@ struct QuadrantPage: View {
     @State private var drafts: [QuadrantSlot: String] = [:]
     @State private var fieldFocus: [QuadrantSlot: Bool] = [:]
     @State private var focusedID: UUID?
+    @State private var floatingPreview: QuadrantFloatingPreview?
+    @State private var previewHoverID: UUID?
 
     init(todayKey: String) {
         self.todayKey = todayKey
@@ -62,6 +64,37 @@ struct QuadrantPage: View {
                 cell(slot, height: cellHeight)
             }
         }
+        .coordinateSpace(name: QuadrantPageSpace.name)
+        .overlay(alignment: .topLeading) { floatingPreviewLayer }
+    }
+
+    @ViewBuilder
+    private var floatingPreviewLayer: some View {
+        if let floatingPreview {
+            QuadrantPreviewOverlay(
+                preview: floatingPreview,
+                onCopy: copyPreview,
+                onHover: hoverPreview
+            )
+        }
+    }
+
+    private func copyPreview(_ text: String) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        pasteboard.setString(text, forType: .string)
+    }
+
+    private func hoverPreview(_ hovering: Bool) {
+        previewHoverID = hovering ? floatingPreview?.id : nil
+    }
+
+    private var previewLink: QuadrantPreviewLink {
+        QuadrantPreviewLink(
+            spaceName: QuadrantPageSpace.name,
+            preview: $floatingPreview,
+            hoverID: $previewHoverID
+        )
     }
 
     private func cell(_ slot: QuadrantSlot, height: CGFloat) -> some View {
@@ -86,6 +119,7 @@ struct QuadrantPage: View {
                             QuadrantChip(
                                 row: row,
                                 isFocused: focusedID == row.id,
+                                previewLink: previewLink,
                                 onToggle: { toggle(row) },
                                 onInspect: {
                                     focusedID = row.id
@@ -217,6 +251,7 @@ struct QuadrantPage: View {
 private struct QuadrantChip: View {
     var row: BoardRow
     var isFocused: Bool
+    var previewLink: QuadrantPreviewLink
     var onToggle: () -> Void
     var onInspect: () -> Void
 
@@ -224,6 +259,7 @@ private struct QuadrantChip: View {
     @State private var titleOverflows = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
+    @State private var anchorFrame: CGRect = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -235,10 +271,17 @@ private struct QuadrantChip: View {
         .padding(.horizontal, 6)
         .padding(.vertical, 4)
         .daybookSurface(.card, isSelected: isFocused, configure: { $0.radius = DaybookRadius.small })
-        .zIndex(showsTitleBubble ? 4 : 0)
         .accessibilityIdentifier("quadrant.task.\(row.id)")
         .draggable(payload)
-        .onDisappear(perform: chrome.stop)
+        .onChange(of: showsTitleBubble) { _, show in syncPreview(show) }
+        .onChange(of: anchorFrame) { _, _ in if showsTitleBubble { syncPreview(true) } }
+        .onChange(of: previewHeld) { _, held in holdBubble(held) }
+        .onDisappear {
+            if previewLink.preview.wrappedValue?.id == row.id {
+                previewLink.preview.wrappedValue = nil
+            }
+            chrome.stop()
+        }
     }
 
     private var showsTitleBubble: Bool {
@@ -268,41 +311,44 @@ private struct QuadrantChip: View {
         .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
         .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
         .background(placementReader)
-        .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) { titleBubble }
     }
+
+    private var previewHeld: Bool { previewLink.hoverID.wrappedValue == row.id }
 
     private var placementReader: some View {
         GeometryReader { proxy in
             Color.clear
-                .onAppear { applyPlacement(proxy) }
-                .onChange(of: proxy.frame(in: .global)) { _, _ in applyPlacement(proxy) }
+                .onAppear { updateAnchor(proxy) }
+                .onChange(of: proxy.frame(in: .named(previewLink.spaceName))) { _, _ in updateAnchor(proxy) }
         }
     }
 
-    @ViewBuilder
-    private var titleBubble: some View {
-        if showsTitleBubble {
-            let preview = QuadrantTitleOverflow.preview(title)
-            QuadrantTitlePreview(
-                excerpt: preview.excerpt,
-                showsHint: preview.isPartial,
-                onCopy: copyTitle,
-                onHover: holdBubble
-            )
-            .offset(x: bubbleShiftX, y: growsUpward ? -6 : 22)
-            .accessibilityIdentifier("quadrant.titleBubble.\(row.id.uuidString)")
-            .transition(bubbleTransition)
-        }
+    private func updateAnchor(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .named(previewLink.spaceName))
+        if anchorFrame != frame { anchorFrame = frame }
+        applyPlacement(proxy)
     }
 
-    private var bubbleTransition: AnyTransition {
-        .asymmetric(
-            insertion: .opacity.combined(with: .scale(
-                scale: 0.96,
-                anchor: growsUpward ? .bottomLeading : .topLeading
-            )),
-            removal: .opacity
+    private func syncPreview(_ show: Bool) {
+        guard show, anchorFrame.width > 1 else {
+            if previewLink.preview.wrappedValue?.id == row.id {
+                previewLink.preview.wrappedValue = nil
+            }
+            return
+        }
+        let preview = QuadrantTitleOverflow.preview(title)
+        let next = QuadrantFloatingPreview(
+            id: row.id,
+            title: title,
+            excerpt: preview.excerpt,
+            showsHint: preview.isPartial,
+            anchor: anchorFrame,
+            growsUpward: growsUpward,
+            shiftX: bubbleShiftX
         )
+        if previewLink.preview.wrappedValue != next {
+            previewLink.preview.wrappedValue = next
+        }
     }
 
     private func applyPlacement(_ proxy: GeometryProxy) {
@@ -321,12 +367,6 @@ private struct QuadrantChip: View {
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             chrome.isTitleTextHovered = false
         }
-    }
-
-    private func copyTitle() {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(title, forType: .string)
     }
 
     private var title: String {

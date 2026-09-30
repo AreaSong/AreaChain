@@ -64,6 +64,58 @@ enum QuadrantTitleOverflow {
     }
 }
 
+enum QuadrantPageSpace {
+    static let name = "quadrant.page"
+}
+
+struct QuadrantFloatingPreview: Equatable {
+    var id: UUID
+    var title: String
+    var excerpt: String
+    var showsHint: Bool
+    var anchor: CGRect
+    var growsUpward: Bool
+    var shiftX: CGFloat
+}
+
+struct QuadrantPreviewLink {
+    var spaceName: String
+    var preview: Binding<QuadrantFloatingPreview?>
+    var hoverID: Binding<UUID?>
+}
+
+struct QuadrantPreviewOverlay: View {
+    var preview: QuadrantFloatingPreview
+    var onCopy: (String) -> Void
+    var onHover: (Bool) -> Void
+
+    var body: some View {
+        // 先定宽再定位。挂在 1×1 上时，提议宽度会把长标题排成一条竖线，并留在宫格左上角。
+        QuadrantTitlePreview(
+            excerpt: preview.excerpt,
+            showsHint: preview.showsHint,
+            onCopy: { onCopy(preview.title) },
+            onHover: onHover
+        )
+        .frame(width: 260, alignment: .leading)
+        .fixedSize(horizontal: true, vertical: true)
+        .alignmentGuide(.leading) { _ in -originX }
+        .alignmentGuide(.top) { dimensions in -originY(height: dimensions.height) }
+        .accessibilityIdentifier("quadrant.titleBubble.\(preview.id.uuidString)")
+    }
+
+    private var originX: CGFloat {
+        preview.anchor.minX + preview.shiftX
+    }
+
+    private func originY(height: CGFloat) -> CGFloat {
+        if preview.growsUpward {
+            return preview.anchor.minY - 6 - height
+        }
+        return preview.anchor.maxY + 6
+    }
+}
+
 struct QuadrantTitlePreview: View {
     var excerpt: String
     var showsHint: Bool
