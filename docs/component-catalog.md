@@ -35,6 +35,8 @@
 - [MenuBarStatusImage.swift](../AreaChain/Theme/MenuBarStatusImage.swift)
 - [KeyWindowHost.swift](../AreaChain/Theme/KeyWindowHost.swift)
 
+第二阶段 A 的消费者接入：手记小窗 [DiaryWindowView.swift](../AreaChain/Features/Diary/DiaryWindowView.swift) 的置顶使用 `.active / .subtle`，显示正文和保存使用 `.prominent`（均 compact）；[DiaryCardComponents.swift](../AreaChain/Features/Diary/DiaryCardComponents.swift) 的编辑保存使用 `.prominent`、取消保留 `.quiet`（compact）；[TaskDetailClassificationSection.swift](../AreaChain/Features/Workspace/TaskDetailClassificationSection.swift) 的标签创建/取消使用 `.prominent / .quiet`（regular）。均直接使用 `DaybookButtonStyle`，已有图标按钮及快捷提交入口保留。系统 `confirmationDialog` / `alert` 内按钮继续由系统承载；标签芯片、输入框及其他特殊选择控件不在本次迁移范围。回调、禁用、快捷键、授权和草稿语义不变。消费者回归见 `DiaryButtonConsumerTests`，不替代[第一阶段未验项](engineering.md#第一阶段-b-补充验收2026-10-01)。
+
 ## 3. Feature 级复合组件
 
 这些不是全局通用控件，而是带业务语义的可复用组合。新入口优先复用它们的状态和回调契约，不复制内部筛选或保存逻辑。

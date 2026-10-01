@@ -284,3 +284,16 @@
 **独立复核**：本轮向 `cursor-agent --mode ask --print --workspace /Users/as/Ai-Project/project/AreaChain` 提供原始范围、完整实现文件、HEAD/工作区限度及上述真实证据，请其承担 Cursor verifier。一次调用即返回退出码 1：`Authentication required`。没有登录、读取凭据、修改配置或重试；项目/个人目录也未发现 `verifier.md`，不能宣称独立代理配置已加载。历史检索子代理只查记录，不替代规定的 Cursor 复核。复核缺口继续保留。
 
 **收尾检查**：本轮只编辑本节，按本次范围运行 `python3 -B scripts/quality_gate.py --profile static`，避免默认 auto 因既有/并发 Swift 差异启动无关全量测试及非本轮隔离宿主。172 项脚本测试通过，差异空白、安全静态（高风险/敏感日志候选均为 0）、注释和性能契约通过。`check_workflow.py` 与总门禁第一次执行失败于并发修改的 `docs/component-catalog.md:63` → `unified-search-commands.md#96-阶段-1a-目录决策与证据` 缺失锚点；其余工作流检查通过。该问题随后随并发文档更新消除，复跑静态总门禁（含 172 项脚本测试）、`check_workflow.py` 与 `git diff --check` 全部通过，本轮未修改或覆盖对方文件。Swift 全量测试、额外构建、安装、发布、提交和推送均未运行。
+
+### 第二阶段 A：手记与标签弹窗按钮接入（2026-10-01）
+
+**已实现，验收部分完成**：仅将 `DiaryWindowView` 的置顶、显示正文、保存，`DiaryCardComponents` 的编辑保存，以及 `TaskDetailTagSelector` 标签弹窗的创建/取消接入现有 `DaybookButtonStyle`；变体、尺寸及合理例外见[组件目录](component-catalog.md)。卡片取消和其他已接入按钮保留。没有修改公共 API、业务回调、禁用、快捷键、授权、编辑器或保存/关闭规则；系统 confirmationDialog/alert 保留系统按钮。本阶段纯消费者样式迁移，不新增必需独立复核。
+
+**本阶段证据**：沿架构文档的隔离 XCTest 命令，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、生产沙盒 entitlement、串行执行并清除六个真实钥匙串授权变量。测试使用内存库、合成内容和 `PrivacyFixture` 的内存配置/系统密钥替身，不直接启动 QA 包或日用应用。新增 `DiaryButtonConsumerTests` 直接挂载三个生产消费者，并通过原生鼠标事件验证按钮；没有另建展示页或复制生产回调。
+
+- `build/ButtonStage2A-verified.xcresult` 中手记消费者、`DiaryEditorSessionTests` 和 `DiaryWindowLifecycleTests` 共 23 次通过；覆盖最小 328×230 小窗、置顶往返、禁用保存、保存失败重试、显示/遮罩/冲突保留草稿、卡片保存/取消和原窗口生命周期。
+- 同包标签组曾有一次取消失败。修正测试对 SwiftUI 动态辅助树的读取、内存容器生命周期，以及原生 sheet 呈现/关闭等待后，最终 `build/ButtonStage2A-tag-focus.xcresult` 实际命中标签组，4 次通过、0 失败、0 跳过；覆盖中英文×浅深色的空值禁用、保留名称、失败保留输入与错误、成功、取消及重新打开清空。测试等待窗口稳定且为 key window，不跳过关闭或焦点断言。早期失败包保留，不作为通过证据。
+- 已查看三个消费者中英文×浅深色的原生缓存截图及按钮边界断言；长标签未挤压操作按钮，小窗最小尺寸可用。截图位于测试临时目录 `AreaChainButtonConsumersQA`；sheet 缓存的透明材质不代表完整屏幕合成效果。
+- 变更 Swift 文件严格 SwiftLint、`git diff --check`、`check_workflow.py` 和 `quality_gate.py --profile static` 通过（172 项脚本测试）。默认 Swift profile 会运行全量测试，本次按用户限定的隔离/系统操作边界改用上述定向测试，未执行全量 Swift profile。编译仍有既有测试辅助 API 弃用/未使用变量警告。
+
+**保留缺口**：未实测真人输入法/撤销、授权拒绝分支及卡片按钮直接触发保存失败/冲突弹窗（会话层失败/冲突回归已通过）。`SystemPageHost` 关闭动画，不能据此验收持续按下与真实动效。第一阶段的 Tab 全控件导航、持续按下视觉、系统减弱动态效果开启/切换、未认证 Cursor verifier 和历史误启动副作用均无新证据，继续保留。下一阶段候选仍包括设置隐私 sheet 等局部系统样式按钮，本次未迁移。未提交、推送、安装或发布，未改全局设置、权限或真实用户数据。

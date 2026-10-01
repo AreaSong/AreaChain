@@ -78,6 +78,7 @@ struct TaskDetailTagSelector: View {
                     createError = nil
                     isCreatingTag = false
                 }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 Button(L10n.string("drawer.tag.create", locale: locale)) {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
@@ -93,7 +94,7 @@ struct TaskDetailTagSelector: View {
                     createError = nil
                     isCreatingTag = false
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DaybookButtonStyle(.prominent))
                 .disabled(newTagName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }

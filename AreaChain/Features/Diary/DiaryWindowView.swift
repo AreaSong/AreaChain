@@ -50,8 +50,7 @@ struct DiaryWindowView: View {
                     .font(DaybookType.caption)
                     .fixedSize()
             }
-            .buttonStyle(.bordered)
-            .tint(session.isWindowPinned ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+            .buttonStyle(DaybookButtonStyle(session.isWindowPinned ? .active : .subtle, size: .compact))
             .accessibilityIdentifier("diary.window.pin")
             .accessibilityAddTraits(session.isWindowPinned ? [.isSelected] : [])
         }
@@ -68,8 +67,7 @@ struct DiaryWindowView: View {
                 Button("diary.reveal") {
                     PrivacyAccess.perform(requiresUnlock: session.needsUnlock, vault: session.vault) { session.reveal() }
                 }
-                    .buttonStyle(.bordered)
-                    .foregroundStyle(DaybookPalette.accent.base)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
             }
             .foregroundStyle(DaybookPalette.text.secondary)
         } else {
@@ -107,13 +105,12 @@ struct DiaryWindowView: View {
                 }
                 Spacer(minLength: 0)
                 Button("common.save", action: save)
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                     .appShortcut(.saveDiary)
                     .disabled(!session.canSave || !session.canRevealContent)
                     .help("diary.window.save.help")
             }
             .font(DaybookType.caption)
-            .foregroundStyle(DaybookPalette.accent.base)
         }
     }
 

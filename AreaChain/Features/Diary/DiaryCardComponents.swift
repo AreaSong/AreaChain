@@ -109,7 +109,7 @@ extension DiaryNoteCard {
                 .font(DaybookType.caption)
 
                 Button("common.save", action: saveTextEdit)
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                 .font(DaybookType.caption)
             }
         }
