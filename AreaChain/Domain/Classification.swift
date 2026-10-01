@@ -268,14 +268,16 @@ enum Classification {
             && matchesReminder(remindMinutes, scope: filter.reminderScope)
     }
 
-    static func matchesDate(dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope) -> Bool {
+    static func matchesDate(
+        dayKey: String, isDone: Bool, todayKey: String, scope: DateFilterScope, calendar: Calendar = .current
+    ) -> Bool {
         switch scope {
         case .all:
             return true
         case .today:
             return dayKey == todayKey
         case .recent:
-            let weekAhead = DayKey.shifted(todayKey, by: 7)
+            let weekAhead = DayKey.shifted(todayKey, by: 7, calendar: calendar)
             return dayKey >= todayKey && dayKey <= weekAhead
         case .overdue:
             return dayKey < todayKey && !isDone

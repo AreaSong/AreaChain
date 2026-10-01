@@ -36,6 +36,7 @@ struct ClipboardHistoryOptions: View {
                 get: { session.ignoreUniversal },
                 set: { session.setIgnoreUniversal($0) }
             ))
+            .toggleStyle(DaybookToggleStyle(.checkbox))
             .font(DaybookType.body)
             Stepper(value: Binding(
                 get: { session.limit },
@@ -80,11 +81,13 @@ struct ClipboardHistoryOptions: View {
                 get: { session.plainByDefault },
                 set: { session.setPlainByDefault($0) }
             ))
+            .toggleStyle(DaybookToggleStyle(.checkbox))
             .font(DaybookType.body)
             Toggle("clipboard.playSound", isOn: Binding(
                 get: { session.playSound },
                 set: { session.setPlaySound($0) }
             ))
+            .toggleStyle(DaybookToggleStyle(.checkbox))
             .font(DaybookType.body)
             Button("clipboard.ignoreNext") { session.armIgnoreNext() }
                 .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))

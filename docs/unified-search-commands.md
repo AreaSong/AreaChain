@@ -2,7 +2,7 @@
 
 ## 0. 状态、权威范围与基线
 
-2026-10-01 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成验证与最小修正见第 9.13 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，实际产品、数据提供者、UI、handler 与系统服务均未接线。各阶段原始检查仍在第 9.6～9.12 节；本阶段的定向证据不关闭历史整树、原生或指定复核缺口。
+2026-10-01 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成见第 9.13 节；2A 已实现注入快照上的 todo 只读匹配与类型化结果，见第 9.14 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，真实数据库、产品 UI、handler 与系统服务均未接线；其他类型提供者尚未实现。各阶段原始检查仍保留；本阶段定向证据不关闭历史整树、原生或指定复核缺口。
 
 设计决定来自阶段 0 与后续各次已确认需求。阶段 0 的源码核对日期为 2026-10-01，基线提交为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，另有下述未提交修改；这是当时的静态阅读基线，不能混用为本阶段运行证据。
 
@@ -274,7 +274,8 @@
 | 1C-2 | 待执行计划、依赖、合并与纯执行生命周期已实现 | 第 9.11 节；协议封存、合成回执与真实执行资格分层，无真实事务/重试/撤销；partial。 |
 | 1C-3 | 跨入口主动转交与唯一所有权领域协议已实现 | 第 9.12 节；同一协调者核验 lease、原子接管和失败保留；真实窗口/文件/私密接续未实现，partial。 |
 | 1D | 四条跨模块领域集成链路与必要最小修正 | 第 9.13 节；通过公共接口与合成输入验证，保留指定复核缺口；到本阶段停止，产品未接线。 |
-| 2（未实施） | 数据提供者与结果：任务/习惯定义和记录/子任务/手记/标签/图片，以及显式剪贴板/回收站；复用既有投影与身份 | 查询语法/范围沿第 9.8、9.9 节，不重新解析成旧 BoardFilter；首个有界子阶段建议见 9.13。真实匹配、片段、排序、数据/隐私/拥有者适配须另行实施验证。 |
+| 2A | 一次性 todo 的注入快照只读提供者与最小类型化结果 | 第 9.14 节；实际匹配有效条件，报告类型覆盖、未知数据与歧义；不读真实库、不接 UI/执行，指定复核缺失仍 partial，到此停止。 |
+| 2 后续（未实施） | 习惯定义和记录/子任务/手记/标签/图片，以及显式剪贴板/回收站提供者 | 复用第 9.8、9.9、9.14 节；片段呈现、全局排序、真实数据/隐私/拥有者适配仍须另行实施验证，不能把 todo 子集当作全部 tasks/global。 |
 | 3 | 从现有按钮/菜单/设置提取缺少的共用业务动作，建立校验、预览、执行结果、字段冲突、重试身份与可撤销能力；先处理授权范围内的本地普通操作 | 依赖 1；保留旧入口契约，仓储/`ModelChanges` 注入测试；逐动作检验相同输入产生相同写入与副作用次数。安全、权限和跨系统一致性改造单独审批，不能随普通提取潜入。 |
 | 4 | 两宿主共享搜索与指令发现 UI，页面默认条件与筛选双向同步，统一结果与键盘；删除已被替代的重复页内搜索 | 依赖 1、2；建议改 `Features/Search`、`Workspace`、`MenuBar`、手记/标签/剪贴板宿主及必要 `Theme`。原页面草稿/滚动、显式范围/删除标记、独立查询、菜单栏与最小窗口等价后才移除旧入口；受限选择器不冒充普通搜索。 |
 | 5 | 可编辑预览与长正文、操作草稿、多字段/多对象/多设置、队列执行、冲突处理、真实撤销、关闭/退出与主动转交 | 依赖 3、4；故障注入验证固定集合、未完成参数、顺序合并、依赖暂停、部分成功重试不重复创建、目标草稿不覆盖和唯一提交所有权。设置事务先有证据再开放多设置提交。 |
@@ -1013,3 +1014,65 @@ Swift 值副本不具备所有权证明。协调者只从页面创建空宿主�
 - **建议首个子阶段 2A**：只做**一次性任务 todo 的只读快照提供者及最小类型化结果**，以调用方注入的真实形状合成快照和现有有效条件验证 AND/OR/排除、静态适用性、完成/业务日/created、标签及稳定身份；`taskOrSubtask` 或 has:image 若纳入，必须一并给出所需的子任务/拥有者快照，否则明确报告尚不支持。仅实现 tasks/global 中的 todo 子集并报告覆盖范围，不宣称完整 `/tasks` 已提供；暂不做习惯、子任务独立结果、手记/附件/剪贴板/回收站提供者、全局排名、真实仓储接入、UI 或指令执行。未知结果恢复及真实操作适配属于后续执行阶段，不能塞入只读提供者。
 
 阶段 1D 到此停止；阶段 2 仅交接，不因本阶段定向通过而自动启动。
+
+### 9.14 阶段 2A：todo 只读快照提供者与类型化结果
+
+#### 范围、输入与接口（2026-10-01）
+
+本次明确授权实现阶段 2A。开始 HEAD 为 `fef34089ad1d3eb5cbfcf061c830d0f91aec2784`，索引无差异，已有未跟踪 `ClipboardOptionsConsumerTests.swift`；过程中剪贴板选项及组件目录有并行修改，全部保留。前阶段“未实施提供者”是历史时点，本次没有关闭其验收缺口。
+
+- [TodoQueryRead.swift](../AreaChain/Domain/TodoQueryRead.swift)：`TodoQueryRequest`、`TodoQueryResponse`、`TodoQueryMatch`、覆盖/诊断与 `ContentQueryMatchEvidence`；[TodoQueryProvider.swift](../AreaChain/Domain/TodoQueryProvider.swift) 的 `read(_:)` 是入口；[TodoQueryMatching.swift](../AreaChain/Domain/TodoQueryMatching.swift) 只承担该提供者内部的实际匹配。
+- 输入为调用方的 requestID、ContentQuerySession、原形 TodoSnapshot 数组、可选 UUID→名称表及 TodoQuerySubtaskData。不接受预判匹配 UUID 集合，不查 ModelContext、单例、偏好、文件或系统时间，不修改快照。真实 createdAt/业务字段须由调用方正确提供；合法的 epoch 时间不能与旧快照默认值自动区分，本实现不虚构创建时间。
+- 完整查询仅取 Session 的有效 conditions、scope/composition、queryDates 和原诊断；不重新解析 source，不经旧 BoardFilter 有损往返。页面默认、用户结构化及转交冻结条件均参与。即使 showsResults 为 false，显式读取仍评估默认条件，呈现由未来宿主决定。
+- 日期由会话/页面注入，转交沿原 handoffContext 冻结；boardDate 自带的日期/Calendar 保留。tagNames 为 nil 表示未提供，空字典表示已提供空映射；若真实关联 UUID 在已提供映射中仍缺名字，该行报告 missingAssociatedTagName，不能推导为无标签或通过排除条件入围。稳定 ID/noTags 不需要名字表。
+- includedInSnapshots 明确声明所有输入任务的 subtasks 已完整提供，数组可为空；unavailable 表示无法判断，不能把快照默认空数组当读取证据。只有 taskOrSubtask 需要此辅助数据。任务自身 tagIDs 沿 TagIDList.parse 作为关联事实，不创造标签。
+
+#### 实际支持条件与复用
+
+| 条件 | todo 实际匹配规则 |
+|---|---|
+| scope / contentTypes | 原 composition 求交集，liveOnly 且包含 todo 才评估。global、tasks、标签内容组合只覆盖 todo 子集；trash 即使含 todo 仍 notApplicable。 |
+| 文字、短语、OR、排除 | 条件间 AND，每条 clause 内 OR；多词可跨 title/notes，短语在同一字段连续命中，排除须两字段均不含对应文字。调用 BoardSearch.matches 的 localizedStandardContains：Foundation 当前语言环境的标准搜索，不计大小写/变音，不新加模糊、分词或编辑距离。普通文字不查标签名/子任务标题。 |
+| 文本标签 | TagSyntax.normalizedName 的修剪、规范组合、POSIX 大小写/全半角折叠，**不去除变音**。TagIDList 解析任务自身真实关联，再按名称相等判断；支持排除、任一组和组间交集。 |
+| page.tagID / noTags | own 直接检查任务；taskOrSubtask 复用原 ItemsListing 提取的 hasTag（任务自身或活子任务）。子任务 todoId 必须对应父项，重复子任务 UUID 隔离相关父项。noTags 只看任务自身解析后的空关联；stable tagID 即使全零也是真实 ID，不当 noTags 哨兵。 |
+| 状态 / 优先级 / 提醒 / 来源 | status 用自身 isDone；优先级精确比较 important/urgent；提醒精确比较分钟值，reminderPresence 复用 Classification；sourceApplication 精确比较 Bundle ID。子任务完成不代替父项。 |
+| itemKind / todoStatus / routineStatus | 前两项用 ItemsListing.todos 的既有语义；routineStatus 按原分类型契约对 todo 为中性，返回 typeNeutral 依据，绝不解释为完成态。 |
+| date / created | date 用 dayKey；created 用真实 createdAt 按注入 Calendar 转民事日。组内并集、组间交集、包含端点。非规范日期、坏日期、非有限/不可表示创建时间隔离该行并诊断，不回卷修正。 |
+| page.boardDate | listedDay 调 Classification.matchesDate；agenda 的 overdue/upcoming 调 AgendaProjection；items 调 ItemsListing.todos。保留逾期/即将要求未完成、recent 为 today…today+7 含端点且可含完成任务。 |
+
+真实共同语义只提取了 ItemsListing.hasTag，原列表继续调用它；另给 Classification.matchesDate 加默认兼容的 Calendar 参数，并在 ItemsListing/本提供者传入实际日历，避免 recent 偷读系统日历。原生产调用默认值、旧 BoardSearch 解析/排序及其他规则不变。
+
+明确未支持：has:image 返回 imageAssociationUnavailable 并 blocked。现有 AttachmentAccess/AttachmentOwnerIndex 依赖实体、类型和完整拥有者有效性，没有直接适用于此请求的已验证关联投影，本阶段不扩附件接入。手工构造 agenda 的 today/recent 等非现有页面语义返回 unsupportedAgendaDate，不发明解释。其他类型提供者、子任务独立结果、片段显示、相关性得分、全局排序、真实仓储/UI/执行均未实现。
+
+#### 覆盖、诊断、身份与命中依据
+
+- queryIsValid 复用 Session 静态有效性并拒绝重复条件 ID；文本/条件诊断原样返回。无效查询或指令输入为 invalidQuery，无结果；无 todo 范围或 deletedOnly 为 notApplicable。整体辅助数据缺失、不支持条件或日期上下文无效为 blocked，整个 todo 子集不返回，OR 不能绕过不支持条件。
+- 可评估请求为 evaluated。providerTypes 为 todo；requestedTypes 来自 composition，coveredTypes 是本提供者在该范围可承担的 live todo 子集，**不是全部条件已满足的证明**。isPartialTypeCoverage 比较两者；isCompleteForCoveredTypes 还要求 evaluated 且无提供者诊断。坏数据行可隔离而返回其他有效行，调用方必须同时读状态/覆盖/诊断；todo 零命中不是全局零命中。
+- 身份沿 CommandObjectReference 的 type＋UUID，todo 的 dayKey 仅为业务/展示值。重复 todo UUID 在整个输入中计数，包括已删行；同 ID 的所有行都不返回，诊断给对象和本请求输入下标，不 first-wins。正常记录保留输入相对顺序，非最终用户排序。
+- 结果为只读值投影，含标题、单份备注、业务日、createdAt、完成态及依据；无实体、分数或操作授权。requestID 回传关联本次快照和查询，不是数据库版本/lease；未来异步适配仍须核验过期，不能凭结果直接执行操作。
+- 依据含 conditionID、OR alternativeIndex、字段、positive/absence/typeNeutral 及可选关联对象。条件 ID 须在同次 requestID 的 Session 内解释；子任务标签命中附 child 类型身份，结果仍为父 todo。每个正向文字条件在每个命中字段保留首个范围，不枚举全部重复出现。
+- 范围来自原字符串 localizedStandardRange，转 UTF-16 NSRange 并扩展到完整字素，避免组合重音/emoji 截断；不使用规范化副本偏移。排除/noTags 只给 absence，无正向高亮。本阶段未生成片段。Request/Response/Match 的 description/debugDescription 脱敏；显式业务字段仍不可随意记录日志，依据不复制关键词/备注。
+
+#### 验证、差异与保留缺口
+
+证据位于忽略目录 `build/TodoQueryQA/`，不提交产物：
+
+| 检查 | 本次证据 |
+|---|---|
+| 新测试 | [TodoQueryTextTests](../AreaChainTests/Domain/TodoQueryTextTests.swift)、[TodoQueryAttributeTests](../AreaChainTests/Domain/TodoQueryAttributeTests.swift)、[TodoQueryDateTests](../AreaChainTests/Domain/TodoQueryDateTests.swift)、[TodoQueryIntegrationTests](../AreaChainTests/Domain/TodoQueryIntegrationTests.swift) 共 26 项；[夹具](../AreaChainTests/Domain/TodoQueryTestSupport.swift) 只用合成快照及原 QuerySessionFixture。 |
+| 完整链路 | 原始查询经 ContentQueryParser / Session 到结果；验证 source/priority/date 页面默认、结构化提醒、用户接管日期、handoff 冻结标签/日期/范围与目标切页；每个有效条件 ID 都有结果依据。 |
+| 旧搜索对照 | 8 组共同子集：跨字段文字、CAFE/CAFÉ、单/多标签、优先级、提醒、组合、空命中，todo ID 集合与 BoardSearch 一致。短语/OR/排除、新字段、空查询页面读取、坏数据隔离和输入顺序不纳入旧搜索等价声明。 |
+| 定向回归 | `./scripts/build.sh test` 加 regression-command.json 中 22 套过滤：四套新测试、查询/会话/投影/页面/转交、DayKey/DayBoard、Classification/ItemsListing/Agenda、BoardSearch/UnifiedSearch/CatalogSearch/TagSyntax。**208 passed / 0 failed / 0 skipped**，参数化运行 **215 passed**；regression.log、regression-summary.json、DomainRegression.xcresult。 |
+| Debug 构建 | `./scripts/build.sh` **passed**；build.log 的 staticSignatureVerified 为 true，distributionReady 为 false。仅构建/静态验签，不安装或启动生产应用。 |
+| 静态、工作流、lint | `python3 -B scripts/quality_gate.py --profile static --format json` **passed**（含 174 项脚本回归）；`python3 -B scripts/check_workflow.py` **passed**；5 份相关 Domain 与 5 份测试文件的 `swiftlint lint --strict --quiet` **passed**。证据为 static-gate.json、workflow.log、lint.log；本次未改变检查器。 |
+| 首轮失败及修正 | 25 passed / 1 failed：Cafe 后组合重音未在 Foundation 范围内，扩展原文字素后回归通过。同时磁盘仅余约 117 MiB，Xcode 系统诊断包写入失败（exit 251）；targeted.log、取回的 targeted-test-output.log 保留。只移除本轮未完成系统日志归档，没有清理其他成果。 |
+| 源码与环境 | source-before-regression.json / source-after-regression.json 的源码/资源摘要一致。macOS 26.6.2 arm64、Xcode 26.6 / Swift 6.3.3；没有性能优化或规模预算声明。 |
+| 指定复核 | 当前工具无 Cursor verifier 可调用入口，**blocked / 未执行，整体 partial**；没有重查登录、改认证或以其他代理/测试替代，历史缺口继续保留。 |
+
+文档最终编辑后重跑受影响静态/引用检查。过程中并行剪贴板测试曾有两条日志扫描候选（控件类型/几何与截图路径）及未写完的工程文档锚点；并行成果更新后当前门禁通过，本任务没有修改其源码或验收记录。不运行会启动无关原生交互的全量 auto / swift profile，不宣称整树 Swift 门禁、原生、真实数据库/权限/外部服务、安装或发布通过。构建/测试日志已有架构选择、旧可访问性 API 和并行原生测试的 Swift 6 actor 警告，本次不扩展修复。
+
+#### 后续有界建议与停止点
+
+建议下一个提供者先做**活子任务独立结果**：注入父 TodoSnapshot 和完整 SubtaskSnapshot，保留 parent 类型身份、父存活/业务日与自身 title/tags/isDone/createdAt；验证同 UUID 跨类型身份不冲突。复用 Session 有效条件、composition/applicability、CommandObjectReference、TagSyntax/TagIDList 和本节依据约定。第二个真实消费者需要相同文字范围/区间规则时，再从 TodoQueryMatching 提取窄函数；不提前建注册中心或泛型引擎。习惯排程、私密手记、附件拥有者和真实库分别定界。
+
+阶段 2A 到此停止，不进入后续提供者、生产 UI 或指令执行；当前为已实现、本地定向验证通过、指定复核缺失的部分完成状态。

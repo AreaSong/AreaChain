@@ -163,8 +163,13 @@ enum ItemsListing {
         if tagID == BoardFilter.noneID {
             return TagIDList.parse(todo.tagIDs).isEmpty
         }
-        if TagIDList.contains(todo.tagIDs, tagID) { return true }
-        return todo.subtasks.contains { $0.deletedAt == nil && TagIDList.contains($0.tagIDs, tagID) }
+        return hasTag(todo, id: tagID)
+    }
+
+    /// 父项自身或未删除子任务的真实关联；noneID 的旧页面哨兵语义由调用方单独处理。
+    static func hasTag(_ todo: TodoSnapshot, id: UUID) -> Bool {
+        TagIDList.contains(todo.tagIDs, id)
+            || todo.subtasks.contains { $0.deletedAt == nil && TagIDList.contains($0.tagIDs, id) }
     }
 
     private static func matchesTodoDate(
@@ -175,7 +180,7 @@ enum ItemsListing {
     ) -> Bool {
         guard DayKey.date(from: todo.dayKey, calendar: calendar) != nil else { return scope == .all }
         return Classification.matchesDate(
-            dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey, scope: scope
+            dayKey: todo.dayKey, isDone: todo.isDone, todayKey: todayKey, scope: scope, calendar: calendar
         )
     }
 

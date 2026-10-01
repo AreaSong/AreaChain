@@ -434,3 +434,21 @@ E 阶段结束时 D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取�
 **未验与停止边界**：当前键盘策略关闭，两个表现实际命中策略测试，覆盖拒绝焦点/空格不写入；最终 `settings-toggle-key-policy-false.png` 是本轮产物。不是正向 Tab、空格按住/重复/释放切换或真人辅助功能的完整证明。宿主关闭动画，悬停/持续按下及系统减弱动态效果实时联动未验。指定 Cursor verifier 当前没有可调用工具，按规则不以其他代理替代，整体验收保持部分完成。阶段 A 及更早的历史未验项保持，未重试相同补验。
 
 后续仅记录 SettingsSections 的登录启动/捕获来源/日历同步，以及 ClipboardHistoryOptions 的通用剪贴板过滤/纯文本默认/声音；应先核对实际宿主默认形态、提交、权限与失败回滚，再决定用滑动或方形入口。本阶段不迁移这些控件、其他隐私 Toggle、任务完成圆圈或子任务勾选。保留并发 Command/Query 改动，本阶段到此停止；未提交、推送、安装、发布，未修改全局设置、签名配置、权限或真实用户数据。
+
+### 第三阶段 C：剪贴板选项布尔控件（2026-10-01）
+
+已实现并通过本阶段限定验收。生产仅在 `ClipboardHistoryOptions.swift` 的 ignoreUniversal、plainByDefault、playSound 三处增加 `DaybookToggleStyle(.checkbox)`；原绑定、文字、字体、440×560 尺寸和其他控件不变。形态先由未修改生产页面的隔离原生截图确认：均为标签前的方形复选框；`build/ClipboardStageC-native-baseline.xcresult` 实际命中 1 项、4 次，en/zh-Hans × 浅深色通过。入口与立即保存/取消契约见[组件目录](component-catalog.md#第三阶段-c剪贴板选项布尔控件)。
+
+**隔离与结果**：macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3。沿架构文档的串行 XCTest 命令，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、生产 sandbox entitlement、`LSUIElement=NO`，清除六个真实钥匙串授权变量并遵守构建锁。正常测试目标编译全部源码，只通过 XCTest 启动宿主。`build/ClipboardStageC-acceptance.xcresult` 经 `xcresulttool get test-results summary` / `tests` 核对：10 项、38 次运行通过，0 失败/跳过，实际命中：
+
+- `ClipboardOptionsConsumerTests` 四项（16 次）：初始名称/值/布局；立即保存、取消、重开及重建；禁用不写入；未提交输入与滚动边界。
+- `DaybookToggleStyleTests` 的 `bindingAndSemantics`、`disabledRejectsMouseAndAccessibility`、`longLabelLayouts`、`checkboxGraphicAndLabelShareOneAction`、`mouseKeepsNativeNeighborFocusContract`（21 次）；覆盖公共两种表现及既有原生焦点对照。
+- `ClipboardHistoryRulesTests/ignoredAppPatternAndUniversalClipboard()`（1 次），仅纯规则回归。
+
+新增夹具显式构造 session：随机目录先确认不存在再创建，独立随机 UserDefaults suite 创建失败即终止，pasteboard 为 nil，paste gate 为无副作用替身。仅清理本轮目录和 suite；没有 shared/start/stage、真实剪贴板读写、粘贴按键或声音。逐次切换比较完整测试偏好字典，确认只有对应键变化；同时检查实际偏好和新建 UserDefaults/会话读取结果、其他偏好及运行状态。原 setter 外部更新反映到页面；真实 sheet 复用显式传递 locale 的宿主，严格按目标语言查找控件，取消后偏好仍在，原会话重开及同 suite 重建均保持。
+
+**画面与测试修正**：已查看最终中英文浅深色 sheet、禁用及长合成列表滚动截图；公共长标签 320×220 回归通过。原生输入两份未提交文本在切换后保留，未进入 patterns/types。字段边界使用 AppKit alignment rect，Toggle 语义节点仍用 AX 几何，均严格要求落在可见内容区。早期测试的动态本地化键构造、禁用属性读取及字段外框误判已修正；失败包保留。一轮签名子系统内部错误发生于测试启动前，保持参数重试成功，未改签名配置或删除旧产物。
+
+**门禁与剩余范围**：最终两份 Swift 严格 SwiftLint、`git diff --check`、`check_workflow.py`、`quality_gate.py --profile static`（174 项脚本测试）及 `./scripts/build.sh` Debug 构建/验签通过；保留正常目标已有编译警告。为遵守本次隔离和定向范围，没有执行会启动整套测试的 auto / swift profile。本次仅消费既有样式，不改变公共 API、持久化语义或跨模块业务，不新增必需独立复核。A/B 的指定 Cursor verifier、正向键盘导航/持续按下、真人辅助功能、系统减弱效果、最终系统材质及其他历史缺口继续保留，整条控件路线仍部分验收，不重复相同补验。真实复制/粘贴、声音与监控路径本轮未验。
+
+普通设置 `SettingsSections` 的登录启动、捕获来源、日历同步，以及其他隐私 Toggle 仅保留后续线索；须另核对形态、权限和失败处理。本阶段不迁移 Stepper、其他数值加减或上述控件，到此停止。未提交、推送、安装、发布，未修改全局设置、签名、权限或真实用户数据。

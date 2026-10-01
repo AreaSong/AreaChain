@@ -132,4 +132,6 @@
 
 阶段 1D 沿同一工作流与验证入口，选择四套领域集成测试及实际受影响的目录/参数/路径/查询/草稿/计划/执行/转交回归；边界、最小修正和证据统一见[第 9.13 节](docs/unified-search-commands.md#913-阶段-1d领域链路集成验证与最小修正)。仅静态门禁、严格局部 lint、定向测试和 Debug 构建，不运行无关原生全量测试；Cursor 指定复核缺失保持 partial，不重复认证检查。没有新检查器入口或脚本，不进入数据提供者或 UI 阶段。
 
+统一搜索 2A 的 todo 注入快照提供者沿 `areachain-workflow` → 架构治理 → `areachain-verify`；接口、支持与缺口见[组件目录](docs/component-catalog.md)和[权威设计第 9.14 节](docs/unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。验收选四套 TodoQuery 测试及查询/日期/分类/列表/旧搜索回归，运行静态、工作流、严格局部 lint 和 Debug 构建；不运行无关原生全量 profile。检查器接口/规则未改，不新增专项脚本；指定 Cursor verifier 不可用保留 partial，不重查登录或替代复核。仅合成数据，到 2A 停止。
+
 第三阶段 B 延续第三阶段 A 的 UI 与验证路由，公共入口扩展为 `DaybookToggleStyle(.checkbox)`，只接入 `PrivacySetupSheet.tagChoices`。复用 `DaybookControlsPreview`、原生测试宿主及 `PrivacyInteractionTests`；原开关与重复事项回归仍需执行。稳定表现/几何由 `check_workflow.py` 维护，独立只读复核仍指定 Cursor `verifier`，不可用保留缺口。后续迁移边界见[组件目录](docs/component-catalog.md)。

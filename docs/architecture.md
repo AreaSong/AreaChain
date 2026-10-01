@@ -237,3 +237,9 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 `DaybookToggleStyle` 位于 Theme，只承载外观，原生 `Toggle` 保留鼠标、状态与辅助操作；显式焦点容器消费空格，按住/重复不写入，释放仅写入一次，禁用或失焦清除临时按下状态。唯一业务状态是消费者的 Binding。几何集中在 `DaybookMetrics.Toggle`，颜色、字号、描边与动效复用 Daybook 令牌。隐藏可见标签须传本地化 `hiddenLabel`，不移除语义名称。新建表单仍是草稿提交，管理行仍经原绑定与仓储即时启停；不在公共层持有保存/导航能力，也不缓存乐观布尔值。入口与回归见[组件目录](component-catalog.md)。
 
 第三阶段 B 在上述样式增加 `.checkbox` 表现：图形置于标签前，几何集中在 `DaybookMetrics.Checkbox`，两种表现共用原生操作与焦点基础。复选框与原生 `.checkbox` 的相邻输入焦点单独对照，不能由滑动开关证据推定等价。隐私标签页只消费样式，业务选择仍属于原表单；初始化、取消与提交权威入口保持 `PrivacySetupSheet`，公共层不接触 vault、模型或保存。
+
+### todo 快照查询提供者（统一搜索 2A）
+
+`TodoQueryProvider.read` 位于 Domain，同步消费调用方注入的 TodoSnapshot 和 ContentQuerySession 有效条件，返回只读类型化结果、字段命中依据、覆盖和诊断。请求没有仓储、文件、偏好、系统时间或写入能力；结果身份沿 CommandObjectReference，requestID 只关联本次请求，不授予操作或过期校验能力。未知辅助数据、重复身份与坏日期显式处理；新接口只由领域测试消费。
+
+页面日期分别调用 Classification / AgendaProjection / ItemsListing；真实共同标签关联抽为 ItemsListing.hasTag，原列表继续使用。Classification.matchesDate 增加默认兼容的 Calendar 注入，ItemsListing 传递自身日历。文本沿 BoardSearch 的本地化匹配，不改旧搜索入口；完整契约、测试和指定复核缺口见[权威设计第 9.14 节](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。
