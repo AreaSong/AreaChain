@@ -94,6 +94,16 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 展示仍在 `DaybookControlsPreview`，开/关、禁用、隐藏标签、长中英文、主题与外部更新使用本地合成状态。上方减弱效果预览仅针对按钮；开关只读取系统减弱动态效果。测试为 `DaybookToggleStyleTests`、`RecurringToggleConsumerTests`，复用现有原生宿主与仓储/事务失败注入；证据与缺口见[工程手册](engineering.md#第三阶段-a公共启用开关与重复事项2026-10-01)。其他 Toggle（设置、剪贴板、隐私）、普通复选框与任务完成圆圈均未迁移；后续须分别核对权限、提交、拒绝更新和焦点契约。
 
+### 第三阶段 B：公共方形复选框与隐私标签多选
+
+`DaybookToggleStyle(.checkbox)` 是方形多选入口，`Presentation.switchControl` 为默认滑动开关；原 `DaybookToggleStyle()` 与 `hiddenLabel:` 调用兼容。两种表现共用原生 Toggle、Binding、禁用、空格与辅助操作路径，只分开图形及标签顺序。`DaybookMetrics.Checkbox` 集中 18pt 方框、4pt 圆角和 1.5pt 勾线，点击高度仍为 28pt；只复用 `CheckmarkShape` 纯绘制，不使用任务完成业务或反悔队列，无任意颜色覆盖。
+
+[PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 仅 `tagChoices` 替换样式。原 selected 集合、UUID、排序/过滤、初始化、lock/tag 图标、用户标签原文、busy 禁用与取消保持；切换仅修改表单选择，提交和内容保护链不变。其他隐私 Toggle 保持原生，父容器不设置样式。
+
+展示复用 `DaybookControlsPreview`，包含选中/未选中、禁用、长中英文、浅深色和独立外部更新按钮。`DaybookToggleStyleTests` 参数化覆盖两种表现，原生 checkbox 单独作为焦点对照；`PrivacyTagChoiceTests.swift` 扩展 `PrivacyInteractionTests`，复用原 `PrivacyButtonSheetHost` 和内存宿主，只测试选择/取消/重开，不点击 Apply。阶段证据与未验项见[工程手册](engineering.md#第三阶段-b公共复选框与隐私标签选择2026-10-01)。
+
+后续仅记录：SettingsSections 与 ClipboardHistoryOptions 等 Toggle 须先核对系统默认形态、即时提交/权限/失败回滚，再选择滑动或方形入口；其余隐私开关、任务完成圆圈及子任务勾选各自保留，不在本阶段迁移。
+
 ## 3. Feature 级复合组件
 
 这些不是全局通用控件，而是带业务语义的可复用组合。新入口优先复用它们的状态和回调契约，不复制内部筛选或保存逻辑。
@@ -173,3 +183,5 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 统一搜索 1C-2 的 [CommandPlan / Item / Snapshot](../AreaChain/Domain/CommandPlan.swift)、[CommandPlanValidation](../AreaChain/Domain/CommandPlanValidation.swift)、[CommandPlanSemantics](../AreaChain/Domain/CommandPlanSemantics.swift)、[CommandExecutionContract](../AreaChain/Domain/CommandExecutionContract.swift) 和 [CommandExecutionRun](../AreaChain/Domain/CommandExecutionRun.swift) 经原 [CommandHostSession](../AreaChain/Domain/CommandHostSession.swift) 组合。复用原草稿、参数、固定目标与基线；显式转移所有权，retained 不自动入队。新消费者为 CommandPlanOwnershipTests / CommandPlanDependencyTests / CommandPlanMergeTests / CommandExecutionTests / CommandAtomicPlanTests；已有草稿、宿主、目录、参数和查询回归继续执行。纯状态协议不授予执行、事务、重试或撤销能力，全部目录仍 unwired；唯一契约与 partial 证据见[权威设计第 9.11 节](unified-search-commands.md#911-阶段-1c-2待执行计划依赖与纯生命周期协议)。
 
 统一搜索 1C-3 的 [CommandHandoffCoordinator](../AreaChain/Domain/CommandHandoffCoordinator.swift) 和 [票据/所有权/宿主事件契约](../AreaChain/Domain/CommandHandoffContract.swift) 复用上述 HostSession、DraftSession、Plan、ExecutionRun 和 ContentQuerySession / Reducer。仅增加运行内唯一登记、双方原子接管、身份/引用迁移及冻结查询来源；没有窗口、执行器或权限持久化。实际消费者是 CommandHandoffTests / CommandHandoffIdentityTests / CommandHandoffBoundaryTests / ContentQueryHandoffTests；后续生产入口必须验证同一协调者的 lease，值副本不授予提交能力。资格、资源确认、源撤权与 partial 证据见[权威设计第 9.12 节](unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。
+
+阶段 1D 复用以上接口新增四套领域集成测试，不新增生产入口；CommandPlan 的多消费者旧引用修复及 CommandValue 描述脱敏、最终验证和阶段 2 交接只维护在[权威设计第 9.13 节](unified-search-commands.md#913-阶段-1d领域链路集成验证与最小修正)。产品、真实执行和提供者仍未接线。

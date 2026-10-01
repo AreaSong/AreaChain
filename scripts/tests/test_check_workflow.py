@@ -35,12 +35,13 @@ class WorkflowCheckTests(unittest.TestCase):
         self.write("AreaChain/Domain/Rule.swift", "import Foundation\nimport SwiftData\n")
         self.write("AreaChainTests/Domain/RuleTests.swift", "// fixture\n")
         for relative, symbol in workflow.COMPONENT_ENTRIES:
-            self.write(relative, f"struct {symbol} {{}}\n")
+            existing = (self.root / relative).read_text() if (self.root / relative).exists() else ""
+            self.write(relative, existing + f"struct {symbol} {{}}\n")
         contract_docs = {
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
+            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
         contract_docs["AGENTS.md"] += " quality-gates.md\n"
         for name in workflow.REQUIRED_DOCS:
@@ -262,6 +263,15 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookToggleStyle" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_checkbox_presentation_and_metrics(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookToggleStyle.swift", "struct DaybookToggleStyle {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum DaybookMetrics {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("checkbox", "Checkbox"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_rejects_missing_stable_symbol(self):
         self.make_project()

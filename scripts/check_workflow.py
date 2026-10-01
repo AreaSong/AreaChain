@@ -62,6 +62,8 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Theme/SyntaxTextField.swift", "SyntaxTextField"),
     ("AreaChain/Theme/DaybookButtonStyle.swift", "DaybookButtonStyle"),
     ("AreaChain/Theme/DaybookToggleStyle.swift", "DaybookToggleStyle"),
+    ("AreaChain/Theme/DaybookToggleStyle.swift", "checkbox"),
+    ("AreaChain/Theme/DaybookMetrics.swift", "Checkbox"),
     ("AreaChainTests/Theme/DaybookControlsPreview.swift", "DaybookControlsPreview"),
     ("AreaChain/Theme/DaybookSurface.swift", "daybookSurface"),
     ("AreaChain/Features/Tasks/TaskRow.swift", "TaskRow"),

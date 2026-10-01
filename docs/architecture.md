@@ -235,3 +235,5 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 ### 公共启用开关（第三阶段 A）
 
 `DaybookToggleStyle` 位于 Theme，只承载外观，原生 `Toggle` 保留鼠标、状态与辅助操作；显式焦点容器消费空格，按住/重复不写入，释放仅写入一次，禁用或失焦清除临时按下状态。唯一业务状态是消费者的 Binding。几何集中在 `DaybookMetrics.Toggle`，颜色、字号、描边与动效复用 Daybook 令牌。隐藏可见标签须传本地化 `hiddenLabel`，不移除语义名称。新建表单仍是草稿提交，管理行仍经原绑定与仓储即时启停；不在公共层持有保存/导航能力，也不缓存乐观布尔值。入口与回归见[组件目录](component-catalog.md)。
+
+第三阶段 B 在上述样式增加 `.checkbox` 表现：图形置于标签前，几何集中在 `DaybookMetrics.Checkbox`，两种表现共用原生操作与焦点基础。复选框与原生 `.checkbox` 的相邻输入焦点单独对照，不能由滑动开关证据推定等价。隐私标签页只消费样式，业务选择仍属于原表单；初始化、取消与提交权威入口保持 `PrivacySetupSheet`，公共层不接触 vault、模型或保存。

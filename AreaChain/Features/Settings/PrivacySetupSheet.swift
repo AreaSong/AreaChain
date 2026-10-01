@@ -101,7 +101,7 @@ struct PrivacySetupSheet: View {
                 })) {
                     Label(tag.name, systemImage: selected.contains(tag.id) ? "lock" : "tag")
                 }
-                .toggleStyle(.checkbox)
+                .toggleStyle(DaybookToggleStyle(.checkbox))
             }
         }
     }

@@ -1,21 +1,29 @@
 import SwiftUI
 
-/// 只统一启用开关的外观；原生 Toggle 持有操作语义，Binding 始终属于消费者。
+/// 统一启用开关与方形多选的外观；原生 Toggle 持有操作语义，Binding 始终属于消费者。
 struct DaybookToggleStyle: ToggleStyle {
+    enum Presentation: CaseIterable {
+        case switchControl
+        case checkbox
+    }
+
+    var presentation: Presentation
     // button ToggleStyle 不读取 labelsHidden；隐藏布局时要求名称，避免生成无名开关。
     var hiddenLabel: LocalizedStringKey?
-    init(hiddenLabel: LocalizedStringKey? = nil) {
+    init(_ presentation: Presentation = .switchControl, hiddenLabel: LocalizedStringKey? = nil) {
+        self.presentation = presentation
         self.hiddenLabel = hiddenLabel
     }
 
     func makeBody(configuration: Configuration) -> some View {
-        DaybookToggleBody(configuration: configuration, hiddenLabel: hiddenLabel)
+        DaybookToggleBody(configuration: configuration, hiddenLabel: hiddenLabel, presentation: presentation)
     }
 }
 
 private struct DaybookToggleBody: View {
     let configuration: ToggleStyleConfiguration
     let hiddenLabel: LocalizedStringKey?
+    let presentation: DaybookToggleStyle.Presentation
     @Environment(\.isEnabled) private var isEnabled
     @FocusState private var focused: Bool
     @State private var keyPressed = false
@@ -36,7 +44,7 @@ private struct DaybookToggleBody: View {
             .toggleStyle(.button)
             .buttonStyle(DaybookToggleButtonStyle(
                 isOn: configuration.isOn, showsLabel: hiddenLabel == nil,
-                keyPressed: keyPressed, focused: focused
+                keyPressed: keyPressed, focused: focused, presentation: presentation
             ))
         return Group {
             if let hiddenLabel { toggle.accessibilityLabel(hiddenLabel) } else { toggle }
@@ -63,10 +71,11 @@ private struct DaybookToggleButtonStyle: ButtonStyle {
     let showsLabel: Bool
     let keyPressed: Bool
     let focused: Bool
+    let presentation: DaybookToggleStyle.Presentation
 
     func makeBody(configuration: Configuration) -> some View {
         DaybookToggleChrome(label: configuration.label, isOn: isOn, showsLabel: showsLabel,
-                            isPressed: configuration.isPressed || keyPressed, focused: focused)
+                            isPressed: configuration.isPressed || keyPressed, focused: focused, presentation: presentation)
     }
 }
 
@@ -78,17 +87,19 @@ private struct DaybookToggleChrome<Label: View>: View {
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     let focused: Bool
+    let presentation: DaybookToggleStyle.Presentation
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: showsLabel ? DaybookSpacing.sm : 0) {
+            if presentation == .checkbox { checkbox }
             if showsLabel {
                 label
                 .font(DaybookType.body)
                 .foregroundStyle(isEnabled ? DaybookPalette.text.primary : DaybookPalette.text.disabled)
                 .fixedSize(horizontal: false, vertical: true)
             }
-            track
+            if presentation == .switchControl { track }
         }
         .frame(minHeight: DaybookMetrics.Hit.regular)
         .contentShape(Rectangle())
@@ -96,6 +107,32 @@ private struct DaybookToggleChrome<Label: View>: View {
         .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
         .animation(DaybookMotion.snappy(reduceMotion), value: isPressed)
         .animation(DaybookMotion.snappy(reduceMotion), value: isOn)
+    }
+
+    private var checkbox: some View {
+        RoundedRectangle(cornerRadius: DaybookMetrics.Checkbox.radius)
+            .fill(isOn ? DaybookPalette.accent.base : DaybookPalette.fill.press)
+            .overlay(RoundedRectangle(cornerRadius: DaybookMetrics.Checkbox.radius).fill(feedback))
+            .overlay {
+                RoundedRectangle(cornerRadius: DaybookMetrics.Checkbox.radius)
+                    .strokeBorder(DaybookPalette.border.strong, lineWidth: DaybookMetrics.Stroke.regular)
+            }
+            .overlay {
+                CheckmarkShape()
+                    .stroke(DaybookPalette.text.onAccent,
+                            style: StrokeStyle(lineWidth: DaybookMetrics.Checkbox.checkStroke, lineCap: .round, lineJoin: .round))
+                    .opacity(isOn ? 1 : 0)
+            }
+            .frame(width: DaybookMetrics.Checkbox.side, height: DaybookMetrics.Checkbox.side)
+            .fixedSize()
+            .overlay {
+                RoundedRectangle(cornerRadius: DaybookMetrics.Checkbox.radius)
+                    .strokeBorder(focused && isEnabled ? DaybookPalette.border.focus : .clear,
+                                  lineWidth: DaybookMetrics.Stroke.emphasis)
+                    .padding(-DaybookSpacing.xxs)
+            }
+            .opacity(isEnabled ? 1 : 0.45)
+            .accessibilityHidden(true)
     }
 
     private var track: some View {

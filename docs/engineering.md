@@ -418,3 +418,19 @@ E 阶段结束时 D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取�
 - **失败与门禁**：探索中的隐藏名称、测试宿主观察、焦点行为与测试作用域错误均经修正后重跑；原生 NSSwitch 对照曾因同步 mouseDown 未先排入 mouseUp 停滞，仅终止本次测试进程并修复事件队列，未直接打开 QA App。并发新增 ContentQueryHandoffTests 的比较编译错误曾阻断测试，待其被并发任务修复后重跑，没有修改或排除该源码。最终九份本阶段 Swift 严格 SwiftLint、`git diff --check`、`check_workflow.py`、53 项检查器测试与 `quality_gate.py --profile static`（173 项脚本测试）通过。正常目标保留已有辅助 API 弃用警告；为遵守限定隔离范围，没有机械运行 default auto / 全量 Swift profile。
 
 新增公共控件所需 Cursor verifier 当前无可调用工具，依项目规定不替换复核机制，故阶段整体仍部分完成。第二阶段静态接入及 F 限定回归是独立历史证据，Tab、持续按下、系统减弱效果、Cursor、误启动及其他消费者未验项保持。只记录后续设置/剪贴板/隐私 Toggle、普通复选框、任务完成圆圈等线索，没有迁移；本阶段到此停止，未提交、推送、安装、发布，未修改全局设置、个人签名、权限或真实用户数据。
+
+### 第三阶段 B：公共复选框与隐私标签选择（2026-10-01）
+
+已实现公共 `.checkbox` 表现、唯一消费者及原展示扩展，入口与后续边界见[组件目录](component-catalog.md)。默认开关和 `hiddenLabel:` 接口兼容，两种表现共用操作基础。生产消费者仅替换 `tagChoices` 一行样式，没有修改选择/初始化、busy、取消、valid、submit、认证或内容保护链。
+
+**最终验证：部分完成**。macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3，使用架构文档的 `build/PrivacyQA`、独立 QA 标识、本地临时签名、生产 sandbox entitlement、六项真实钥匙串变量清除和串行 XCTest 命令。正常测试目标编译，未排除源码，仅由 XCTest 启动宿主。`build/CheckboxStageBFinal.xcresult` 经 `xcresulttool` summary/tests 核对：17 项、55 次运行通过，0 失败/跳过。
+
+- 实际命中全部 `DaybookToggleStyleTests` 与 `RecurringToggleConsumerTests`；`PrivacyInteractionTests/tagChoicesRemainLocalThroughCancelAndReopen(creating:environment:)`；`PrivacyButtonConsumerTests` 的 `setupValidationAndLongUnlockLayout(locale:scheme:)`、`idleCancelDismissesActualSheetWithoutSubmitting(setup:)`；原展示 `galleryRenders(locale:dark:)` 与 `interactiveGallery()`。后者只默认挂载，未保留人工操作窗口。
+- 绑定往返、单次写入、外部更新、拒绝更新、禁用鼠标/AX 不写入、名称/值、方框与标签两侧点击通过。滑块旧像素断言保留；新增方框像素比较确认外部更新改变外观、拒绝写入不滞留错误状态。原生 `.checkbox` 与公共复选框的相邻输入焦点单独对照通过；旧 `.switch` 对照和重复事项标题/保存失败回归通过。
+- 隐私表单使用内存模型、合成标签、`MemoryVaultConfigurationStore`、`FakeSystemVaultKeys`，始终 `probeSystem: false`。创建/管理 × en/zh-Hans × 浅深色，等待原初始化任务产生私密标签选中值，检查密码标签初选、软删过滤/保留及排序。分别点不同标签后，仅对应 AX 选择变化，模型 ID/名称/排序/删除/私密值不变，context 无未保存修改；取消不提交，重开恢复原初选，配置仍空、fake key 集合仍空。未点击 Apply，未进入认证、文件面板、备份或内容保护链。
+- 长标签公共布局 320×220、实际 480pt 表单及 760×640 展示通过参数化检查；已查看本轮长中英文、消费者和展示缓存图。图标/方框保持完整，展示外部更新使用生产控件并断言名称和值。缓存图不证明系统最终材质；本轮新增资源最终仅做缩进整理，JSON 解析对象前后相等。
+- 首轮 2 次中文消费者取消失败，原因是测试 sheet 宿主未传 locale；只修正复用的 `PrivacyButtonSheetHost` 环境传递，保留严格目标语言断言，第二轮及最终轮全部通过。最终八份相关 Swift 严格 SwiftLint、54 项检查器测试、`check_workflow.py`、`quality_gate.py --profile static`（174 项脚本测试）与 `git diff --check` 通过。`./scripts/build.sh` Debug 构建/验签通过，未安装或启动其产物。为遵守限定隔离宿主范围，未运行会启动全套测试的 default auto / swift profile；指定范围的 QA 测试和严格 lint 分别提供 Swift 证据，保留已有编译弃用警告。
+
+**未验与停止边界**：当前键盘策略关闭，两个表现实际命中策略测试，覆盖拒绝焦点/空格不写入；最终 `settings-toggle-key-policy-false.png` 是本轮产物。不是正向 Tab、空格按住/重复/释放切换或真人辅助功能的完整证明。宿主关闭动画，悬停/持续按下及系统减弱动态效果实时联动未验。指定 Cursor verifier 当前没有可调用工具，按规则不以其他代理替代，整体验收保持部分完成。阶段 A 及更早的历史未验项保持，未重试相同补验。
+
+后续仅记录 SettingsSections 的登录启动/捕获来源/日历同步，以及 ClipboardHistoryOptions 的通用剪贴板过滤/纯文本默认/声音；应先核对实际宿主默认形态、提交、权限与失败回滚，再决定用滑动或方形入口。本阶段不迁移这些控件、其他隐私 Toggle、任务完成圆圈或子任务勾选。保留并发 Command/Query 改动，本阶段到此停止；未提交、推送、安装、发布，未修改全局设置、签名配置、权限或真实用户数据。

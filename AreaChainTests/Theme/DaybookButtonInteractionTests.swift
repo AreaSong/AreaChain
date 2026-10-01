@@ -46,6 +46,17 @@ struct DaybookButtonInteractionTests {
         let name = L10n.string("dev.controls.sample", locale: Locale(identifier: locale))
         #expect(name != "dev.controls.sample")
         #expect(SystemPageHost.labels(in: window).contains(name))
+        let native = SettingsButtonTestSupport.self
+        let checkbox = try #require(native.elements(window.contentView).first {
+            native.value($0, "accessibilityIdentifier") as? String == "preview.checkbox"
+        })
+        #expect(native.value(checkbox, "accessibilityLabel") as? String ==
+                L10n.string("dev.controls.checkbox.longLabel", locale: Locale(identifier: locale)))
+        #expect((native.value(checkbox, "accessibilityValue") as? NSNumber)?.boolValue == true)
+        try native.assertBounds([checkbox], in: window)
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await native.click(native.button("preview.checkbox.external", in: window), in: window)
+        #expect((native.value(checkbox, "accessibilityValue") as? NSNumber)?.boolValue == false)
         let view = try #require(window.contentView)
         let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
         view.cacheDisplay(in: view.bounds, to: bitmap)

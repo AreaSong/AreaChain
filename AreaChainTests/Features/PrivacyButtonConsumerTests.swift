@@ -443,11 +443,12 @@ struct PrivacyButtonConsumerTests {
     }
 }
 
-private struct PrivacyButtonSheetHost: View {
+struct PrivacyButtonSheetHost: View {
+    @Environment(\.locale) private var locale
     let content: AnyView
     var onDismiss: () -> Void
     @State private var presented = true
     var body: some View {
-        Color.clear.sheet(isPresented: $presented, onDismiss: onDismiss) { content }
+        Color.clear.sheet(isPresented: $presented, onDismiss: onDismiss) { content.environment(\.locale, locale) }
     }
 }

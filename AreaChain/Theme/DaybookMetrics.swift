@@ -21,6 +21,12 @@ enum DaybookMetrics {
         static let inset: CGFloat = 2
     }
 
+    enum Checkbox {
+        static let side: CGFloat = 18
+        static let radius: CGFloat = 4
+        static let checkStroke: CGFloat = 1.5
+    }
+
     enum Radius {
         static let inputComposer: CGFloat = 8
         static let inputSearch: CGFloat = 6

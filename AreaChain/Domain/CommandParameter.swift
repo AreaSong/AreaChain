@@ -46,11 +46,15 @@ enum CommandParameterType: Equatable, Sendable {
 }
 
 /// 值不含密码、密钥、原生文件路径或认证结果；安全交互只能存在于描述符要求中。
-enum CommandValue: Equatable, Sendable {
+enum CommandValue: Equatable, Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     case shortText(String), longText(String), choice(String), boolean(Bool), number(Double)
     case day(String), time(Int), weekdays(Int), tags([UUID])
     case object(CommandObjectReference), objects([CommandObjectReference])
     case nativeSelection(UUID), shortcut(ShortcutChord)
+
+    // 参数数组和原值字典也会被直接描述；在值边界隐藏载荷，避免绕过草稿外壳泄出正文。
+    var description: String { "CommandValue(redacted)" }
+    var debugDescription: String { description }
 }
 
 /// routineOccurrence 的 id 是习惯定义 ID，dayKey 构成业务身份；不解析真实记录。

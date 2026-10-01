@@ -12,6 +12,7 @@ struct DaybookControlsPreview: View {
     @State private var actions = 0
     @State private var enabledSample = true
     @State private var disabledSample = false
+    @State private var checkedSample = true
 
     private let sizes: [DaybookButtonSize] = [.regular, .compact, .inline]
     private let variants: [(String, DaybookButtonVariant)] = [
@@ -32,6 +33,7 @@ struct DaybookControlsPreview: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
                     toggleSamples
+                    checkboxSamples
                     buttonGrid
                 }
                 .disabled(disabled)
@@ -74,6 +76,25 @@ struct DaybookControlsPreview: View {
                 }.buttonStyle(DaybookButtonStyle(.quiet))
             }
             Text("dev.controls.toggle.motion").font(DaybookType.caption)
+        }
+    }
+
+    private var checkboxSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.checkboxes").font(DaybookType.title)
+            Toggle(isOn: $checkedSample) {
+                Label("dev.controls.checkbox.longLabel", systemImage: checkedSample ? "lock" : "tag")
+            }.toggleStyle(DaybookToggleStyle(.checkbox))
+                .accessibilityIdentifier("preview.checkbox")
+            ForEach([false, true], id: \.self) { selected in
+                Toggle("dev.controls.sample", isOn: .constant(selected))
+                    .toggleStyle(DaybookToggleStyle(.checkbox)).disabled(true)
+            }
+            Toggle("dev.controls.sample", isOn: Binding(get: { !checkedSample }, set: { checkedSample = !$0 }))
+                .toggleStyle(DaybookToggleStyle(.checkbox))
+            Button("dev.controls.toggle.external") { checkedSample.toggle() }
+                .buttonStyle(DaybookButtonStyle(.quiet))
+                .accessibilityIdentifier("preview.checkbox.external")
         }
     }
 

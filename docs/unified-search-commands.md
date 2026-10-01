@@ -2,9 +2,9 @@
 
 ## 0. 状态、权威范围与基线
 
-2026-10-01 阶段 1C-3 跨入口转交的纯领域契约增量实施见第 9.12 节；1C-2 纯计划/生命周期协议见第 9.11 节。第 9.10、9.11 节的“后阶段未实施”保留为历史交接记录。本次有独立限定开发授权，前阶段指定复核与整树验收缺口不因此关闭；没有真实窗口、命令执行或磁盘迁移。
+2026-10-01 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成验证与最小修正见第 9.13 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，实际产品、数据提供者、UI、handler 与系统服务均未接线。各阶段原始检查仍在第 9.6～9.12 节；本阶段的定向证据不关闭历史整树、原生或指定复核缺口。
 
-**状态：1A 目录和 1B-1 纯领域路径解析/补全已实现，阶段仍 partial；历史证据见 9.6，本轮接口与检查见 9.7。产品 UI 与执行接入尚未实施。** 设计决定来自阶段 0 与本次已确认需求，源码核对日期为 2026-10-01，基线提交为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，另有下述未提交修改。本段及阶段 0 记录保留当时的静态阅读基线；阶段 1A 的实际 Swift 检查另记于第 9.6 节，不能混用历史证据。
+设计决定来自阶段 0 与后续各次已确认需求。阶段 0 的源码核对日期为 2026-10-01，基线提交为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，另有下述未提交修改；这是当时的静态阅读基线，不能混用为本阶段运行证据。
 
 本文是该体系唯一的目标设计来源，后续阶段在本文更新决定、映射及完成证据，不复制计划、不另建自动执行器。当前行为仍见[功能清单](features.md)、[使用说明](usage.md)、[架构](architecture.md)；目标与现状有差异时以本文的“目标”理解未来工作，不能据此宣称当前产品已有能力。实现继续遵循[项目规则](../AGENTS.md)、[技能路由](../skill-routing.md)、[组件目录](component-catalog.md)与[质量门禁](quality-gates.md)。本文件不授予安全边界变更、真实数据写入、系统权限、安装或发布权限。
 
@@ -168,7 +168,7 @@
 | 原生键盘与视觉 | [DaybookTextField.swift](../AreaChain/Theme/DaybookTextField.swift)：324 组合文本守卫、367 补全；[DaybookTextEditor.swift](../AreaChain/Theme/DaybookTextEditor.swift)：132 原生命令；[WorkspaceHeaderSearch.swift](../AreaChain/Features/Workspace/WorkspaceHeaderSearch.swift)：18 输入、74 Escape | 直接复用原生输入、`DaybookInputShell` 和语义令牌，聚焦修改路由。当前顶栏 `onSubmit` 为空，Escape 会清查询；新的操作草稿/结果/多行优先级需要专项覆盖。 |
 | 事务、正文会话和日期/标签 | [ModelChanges.swift](../AreaChain/Services/ModelChanges.swift)：33 `commit`、78 `transaction`；[DiaryEditorSession.swift](../AreaChain/Features/Diary/DiaryEditorSession.swift)；[DayKey.swift](../AreaChain/Domain/DayKey.swift)、[TagSyntax.swift](../AreaChain/Domain/TagSyntax.swift)、[InputTagResolver.swift](../AreaChain/Services/Repositories/InputTagResolver.swift) | 直接复用保存与失败回滚、正文基线、民事日期和无副作用解析；补通用字段修改、执行结果、冲突/重试/撤销能力。`ModelChanges` 不是跨偏好/文件/系统的事务。 |
 
-功能级业务入口及测试映射见下一节；阶段 1A 新增的实际目录类型见 9.6；本节尚未实施的查询会话、执行等责任名仍不能误认成现有公共组件。
+功能级业务入口及测试映射见下一节；本表保留阶段 0 的生产基线。后续已实现的目录、查询会话、草稿、计划与转交领域协议以第 9.6～9.13 节为准，不能把领域接口误认成已接入的产品能力。
 
 ## 8. 用户功能覆盖映射
 
@@ -266,13 +266,15 @@
 | 阶段 | 准确目标与建议修改范围 | 前置与退出条件 |
 |---|---|---|
 | 0（设计基线） | 本文的已确认决定、功能/源码映射、工作区基线及文档引用 | 只改文档；静态/工作流检查和差异核对，明确未实现。 |
-| 1A（本次） | 纯领域指令目录、参数类型与操作模式、目标类型、预览与能力声明；覆盖第 8 节全部 48 组及独立动作，补双语资源 | 唯一 ID/路径/父子结构、映射覆盖、参数及安全交互可测试；全部执行未接线；不含解析、补全算法、UI、持久化、系统 IO 或页面会话。证据见 9.6。 |
-| 1B-1 | 纯领域指令路径解析与补全 | 本轮限定授权；独立指令、双语匹配、简单参数尾段、UTF-16 候选及诊断。不涉及内容集合或页面决策；证据见 9.7，1A 仍 partial。 |
-| 1B-2 | 内容查询契约、条件来源与页面状态转移 | 另行定稿短语/排除/AND/OR、tasks 集合、停用记录、16 页自动条件、日期字段及删除标记寿命；须另行授权。 |
-| 1C-1 | 操作草稿、固定目标与编辑保护；复用 1A 描述及 1B 查询状态 | 纯 Domain 模型、状态转移与测试；实际接口及 partial 证据见 9.10。没有队列、执行、转交、UI 或持久化。 |
-| 1C-2 | 待执行计划、依赖与纯执行状态协议 | 本次限定实施，接口与 partial 证据见 9.11；计划资格与真实接线分层，retained 不充当队列；无真实业务调用。 |
-| 1C-3 | 跨入口转交（未实施） | 在独立授权下定义目标接收、源撤去所有权及失败恢复；不得覆盖目标草稿，执行/授权锁与安全接线另按边界验证。 |
-| 2 | 扩展搜索查询与结果协议，任务/习惯定义和打卡/子任务/手记/标签/图片，以及显式剪贴板/回收站数据提供者；复用 `BoardSearch`、日期/隐私/附件规则 | 依赖 1；多词/短语/排除/交集、范围、片段、排序、父子/附件身份和私密投影通过合成测试；剪贴板/回收站默认隔离。停用习惯、日期字段等口径须先定稿。 |
+| 1A | 指令目录、类型化参数、能力与双语声明已实现 | 第 9.6 节；静态校验不授予权限，全部 execution 保持 unwired；指定复核缺失，partial。 |
+| 1B-1 | 指令路径解析与补全已实现 | 第 9.7 节；独立指令、双语、简单参数尾段及 UTF-16 编辑意图，未接 UI；partial。 |
+| 1B-2A | 内容查询语法、范围、字段与日期契约已实现 | 第 9.8 节；AND/OR、排除、tasks 组成和日期语义已明确，不产生真实命中；partial。 |
+| 1B-2B | 条件来源、页面投影与访问寿命已实现 | 第 9.9 节；用户接管、独立查询、删除标记与返回位置是纯状态协议，页面未接线；partial。 |
+| 1C-1 | 操作草稿、固定目标、基线与编辑保护已实现 | 第 9.10 节；唯一可编辑参数、active / retained 及版本保护，未持久化；partial。 |
+| 1C-2 | 待执行计划、依赖、合并与纯执行生命周期已实现 | 第 9.11 节；协议封存、合成回执与真实执行资格分层，无真实事务/重试/撤销；partial。 |
+| 1C-3 | 跨入口主动转交与唯一所有权领域协议已实现 | 第 9.12 节；同一协调者核验 lease、原子接管和失败保留；真实窗口/文件/私密接续未实现，partial。 |
+| 1D | 四条跨模块领域集成链路与必要最小修正 | 第 9.13 节；通过公共接口与合成输入验证，保留指定复核缺口；到本阶段停止，产品未接线。 |
+| 2（未实施） | 数据提供者与结果：任务/习惯定义和记录/子任务/手记/标签/图片，以及显式剪贴板/回收站；复用既有投影与身份 | 查询语法/范围沿第 9.8、9.9 节，不重新解析成旧 BoardFilter；首个有界子阶段建议见 9.13。真实匹配、片段、排序、数据/隐私/拥有者适配须另行实施验证。 |
 | 3 | 从现有按钮/菜单/设置提取缺少的共用业务动作，建立校验、预览、执行结果、字段冲突、重试身份与可撤销能力；先处理授权范围内的本地普通操作 | 依赖 1；保留旧入口契约，仓储/`ModelChanges` 注入测试；逐动作检验相同输入产生相同写入与副作用次数。安全、权限和跨系统一致性改造单独审批，不能随普通提取潜入。 |
 | 4 | 两宿主共享搜索与指令发现 UI，页面默认条件与筛选双向同步，统一结果与键盘；删除已被替代的重复页内搜索 | 依赖 1、2；建议改 `Features/Search`、`Workspace`、`MenuBar`、手记/标签/剪贴板宿主及必要 `Theme`。原页面草稿/滚动、显式范围/删除标记、独立查询、菜单栏与最小窗口等价后才移除旧入口；受限选择器不冒充普通搜索。 |
 | 5 | 可编辑预览与长正文、操作草稿、多字段/多对象/多设置、队列执行、冲突处理、真实撤销、关闭/退出与主动转交 | 依赖 3、4；故障注入验证固定集合、未完成参数、顺序合并、依赖暂停、部分成功重试不重复创建、目标草稿不覆盖和唯一提交所有权。设置事务先有证据再开放多设置提交。 |
@@ -283,7 +285,7 @@
 
 ### 9.2 阶段 1 的可检查交接
 
-1A 只建立目录、参数与能力声明；1B 才建立解析/补全及查询状态转移，1C 才建立草稿、队列和转交契约。三个子阶段均**不直接改现有设置绑定、不启动统一产品 UI、不触碰私密锁/持久化**。目录每项至少包含稳定 ID、规范路径、中文/英文名称与别名、分类、适用范围/目标类型、必需参数、字段模式、预览要素、风险/授权、能否排队、重试/撤销能力声明及现有业务出处。声明“待实现”不得伪装成 handler 已可执行。
+1A 负责目录、参数与能力声明；1B 负责解析/补全及查询状态转移，1C 负责草稿、计划和转交契约。三个子阶段均**不直接改现有设置绑定、不启动统一产品 UI、不触碰私密锁/持久化**。目录每项至少包含稳定 ID、规范路径、中文/英文名称与别名、分类、适用范围/目标类型、必需参数、字段模式、预览要素、风险/授权、能否排队、重试/撤销能力声明及现有业务出处。声明“待实现”不得伪装成 handler 已可执行。
 
 最小验收案例：
 
@@ -297,7 +299,7 @@
 
 ### 9.3 后续回归入口与证据缺口
 
-以下测试源码已经定位，部分关键用例已阅读，但本阶段均未执行。测试存在不能证明新增目标已经被覆盖。
+以下是阶段 0 定位的既有回归入口，当时未执行；后续各阶段实际运行范围见各节证据。测试存在不能证明新增目标已经被覆盖。
 
 | 领域 | 现有测试入口 | 必须补齐的目标证据 |
 |---|---|---|
@@ -792,9 +794,9 @@ retained 是**编辑保留集合**，没有待执行标记、排序依赖、运�
 
 #### 后续接线边界
 
-1C-2 仅登记，未实施：复用上述草稿身份、版本、类型化参数、固定对象与基线，另行设计队列项身份、依赖/前步结果引用、执行状态、失败保留与成功不重放；不要给 retained 加一个提交按钮就当队列，也不以本阶段授权执行真实业务。跨草稿合并、重试和撤销均尚未实现。
+1C-1 当时的后续要求（现行 1C-2 领域协议见第 9.11 节）：复用上述草稿身份、版本、类型化参数、固定对象与基线，另行设计队列项身份、依赖/前步结果引用、执行状态、失败保留与成功不重放；不要给 retained 加一个提交按钮就当队列，也不以领域授权执行真实业务。真实重试和撤销仍未实现。
 
-1C-3 仅登记，未实施：复用 hostID 和草稿 stamp，再定义跨入口所有权转交及失败协议。当前两宿主分别实例化，拒绝外宿主草稿/回调，没有自动共享或接管。生产 UI、原生关闭确认、正文持久化、系统设置写入、模板/历史与执行锁均未接线。私密编辑器后续必须复用既有 DiaryContent / PrivacyAccess / PrivacyVault 保护机制及高风险授权，不通过普通 CommandValue 存密码、密钥或认证结果。
+1C-1 当时的转交要求（现行 1C-3 领域协议见第 9.12 节）：复用 hostID 和草稿 stamp，再定义跨入口所有权转交及失败协议。当时两宿主分别实例化，尚无接管协议；现已增加协调者。生产 UI、原生关闭确认、正文持久化、系统设置写入、模板/历史与执行锁均未接线。私密编辑器后续必须复用既有 DiaryContent / PrivacyAccess / PrivacyVault 保护机制及高风险授权，不通过普通 CommandValue 存密码、密钥或认证结果。
 
 #### 验证与缺口
 
@@ -813,7 +815,7 @@ retained 是**编辑保留集合**，没有待执行标记、排序依赖、运�
 | 修正与证据追溯 | 首轮新增测试 12 passed / 1 failed：测试的 `.none` 被 Swift 推断为 Optional.nil，已显式写为 CommandDraftTargets.none。主代理自查另使单对象指令收到多目标时不派生首项，补断言后纳入上述最终 110 项。最终测试前后本轮 7 份 Swift SHA-256 一致，`source-before.json` / `source-after.json`；不代表所有并行文件已冻结。 |
 | 独立复核及未执行项 | 指定 Cursor verifier **blocked / 未执行**；主代理自查和测试不是指定复核。没有认证检查、真实数据/设置写入、执行器、生产 UI/原生关闭、私密封存、跨入口转交或 1C-2 实施。本阶段整体 **partial**，旧阶段验收缺口未关闭。 |
 
-本阶段到此停止。后续先补指定复核并处理整树/工作流缺口；1C-2 和 1C-3 仍须独立授权，不能把本次纯领域实现当作已接线、已安装或已发布。
+1C-1 历史停止点：当时后续阶段仍需独立授权。后续领域实施现见第 9.11、9.12 节，不能因此把本次纯领域实现当作已接线、已安装或已发布，也不自动关闭上述缺口。
 
 ### 9.11 阶段 1C-2：待执行计划、依赖与纯生命周期协议
 
@@ -882,7 +884,7 @@ retained 是**编辑保留集合**，没有待执行标记、排序依赖、运�
 
 首轮新增测试编译曾因 Testing 宏对嵌套 Optional 描述表达式的展开报错；改成局部描述变量后 22 项通过。随后新增/收紧合并、依赖恢复、描述与诊断反例，最终 25 项纳入上述 135 项回归。构建仍有既有未用变量、旧可访问性 API 和多目标选择警告；没有借本阶段改动清理这些历史项。主代理沿所有权、基线、目标引用和结果转换自查；这不替代指定 Cursor verifier。
 
-1C-3 仅接续要求，**未实施**：必须同时处理 hostID、planID/revision、draftID/version、itemID/version、运行/操作/尝试身份，以及 active / retained / plan / execution 的唯一所有权。不能只转交 active；运行快照不得复制为可提交草稿。`isBusy` 表示 running / waitingAuthorization，非忙碌不代表 execution 已解决；还须检查未保存保护、未释放运行、冲突/未知结果和单次 receipt。后续另行设计转交确认、失败回滚和迟到回调拒绝，不持久化本阶段明文状态，也不实现隐私锁定封存。本阶段到此停止。
+1C-2 当时的转交接续要求（现行实现见第 9.12 节）：必须同时处理 hostID、planID/revision、draftID/version、itemID/version、运行/操作/尝试身份，以及 active / retained / plan / execution 的唯一所有权。不能只转交 active；运行快照不得复制为可提交草稿。`isBusy` 表示 running / waitingAuthorization，非忙碌不代表 execution 已解决；还须检查未保存保护、未释放运行、冲突/未知结果和单次 receipt。后续已实现纯转交确认、失败保留和迟到回调拒绝；没有持久化明文状态或实现隐私锁定封存。这里保留 1C-2 的历史停止点。
 
 ### 9.12 阶段 1C-3：跨入口主动转交与唯一所有权
 
@@ -956,4 +958,58 @@ Swift 值副本不具备所有权证明。协调者只从页面创建空宿主�
 | 源码追溯 | 最终正常回归前后 14 份 Swift 的 SHA-256 一致，见 `source-before-host-regression.json` / `source-after-host-regression.json`；隔离回归到最终回归只有两份测试文件新增覆盖，9 份 Domain 实现未改变。macOS 26.6.2 arm64、Xcode 26.6 (17F113)、Swift 6.3.3。整树仍有并行改动，没有用 HEAD/索引假定冻结。 |
 | 指定复核与未运行项 | Cursor verifier **blocked / 未执行**；测试和主代理自查不替代指定复核。全量 auto / swift 门禁未运行；已有未用变量、旧可访问性 API 和多目标警告未在此阶段清理。没有真实窗口接收/焦点、文件访问能力、私密封存/解封、系统认证、磁盘迁移或业务执行证据。整体 **partial**，不关闭历史缺口。 |
 
-到 1C-3 停止；纯协议通过不等于真实窗口、权限资源或私密转交通过，不自动进入后续阶段。
+1C-3 历史停止点：纯协议通过不等于真实窗口、权限资源或私密转交通过。后续获独立限定授权的 1D 仅补下节领域集成验证。
+
+### 9.13 阶段 1D：领域链路集成验证与最小修正
+
+#### 范围与工作区（2026-10-01）
+
+本阶段仅串联 1A～1C-3 公共领域接口、合成普通内容和纯回执，不新增门面、状态机、参数模型、提供者、匹配/排序、UI 或真实执行。状态为**领域协议已实现、本地定向验证已通过、指定复核缺失、产品未接线，整体 partial**。当前总表以第 9.1 节为准，前节的失败/跳过/停止点保留为历史证据。
+
+开始 HEAD 为 `c9244deb14e7a96cb8c5c78edd0a1a3810778cbc`，52 个已有文件暂存、未暂存区为空。过程中外部操作将这些成果提交为 `34500ebdde39027405bc4ebc563a1e2e01fae910`；本任务未暂存、提交或推送。并行变化涉及 Settings/PrivacySetupSheet、Theme 开关/度量、语言资源、隐私与控件测试、架构/工程/组件文档及工作流检查器，全部保留。当前任务的 Domain 修改仅为下述两份文件。
+
+测试直接复用 `HandoffFixture`、`PlanFixture`、`QuerySessionFixture`；新增的 [CommandIntegrationTestSupport.swift](../AreaChainTests/Domain/CommandIntegrationTestSupport.swift) 只提供普通合成长文、已有创建参数和通过协调者发送事件的测试便捷方法，没有第二个宿主状态所有者。双宿主场景共用同一个 `CommandHandoffCoordinator`，正常事件使用当前 lease，迟到事件保留原 lease，不用宿主值副本冒充接线。面板信号单独用现有 `HostSession.presentationEvent` 验证严格不改草稿，未声称发生真实面板操作。
+
+#### 四条链路与实际发现
+
+| 链路 / 测试文件 | 本阶段验证结果 |
+|---|---|
+| [CommandLanguageIntegrationTests.swift](../AreaChainTests/Domain/CommandLanguageIntegrationTests.swift) | 中英文显示语言下，从 `/set` 逐步接受分组、语言指令和 chinese 参数候选，得到 `/setting/language/chinese`、同一 `setting.language` 和 `.value = .choice("chinese")`。查询解析不创建草稿；测试显式模拟用户接受后组装原 CommandDraft。编辑只改草稿参数，查询保留只读解析快照；显式入计划撤去 active/retained 副本，旧 stamp 重复入计划拒绝；查询/切页/清查询不动计划。参数完整及 `canSealProtocol` 始终不等于真实可执行。 |
+| [ContentQueryIntegrationTests.swift](../AreaChainTests/Domain/ContentQueryIntegrationTests.swift) | `/tasks 汇报 (#工作 \| #学习) -#归档 status:open` 从 parser 到条件来源和页面投影连续通过；自动条件不激活，输入激活。OR/排除留在原条件及 extended 身份，旧 BoardFilter 覆盖被拒绝；detach 后页面事件不覆盖，清查询返回最初页面。另验证默认日期由用户 `date:today` 接管后不随刷新改变、删除范围跨刷新/返回保留但新访问恢复、emoji/组合字符后的非法日期诊断精确对应原始 UTF-16，删除真实条件后重新定位。没有提供记录或产生真实命中，`showsResults` 是结果上下文激活，`isReady` 是静态有效性。 |
+| [CommandHandoffIntegrationTests.swift](../AreaChainTests/Domain/CommandHandoffIntegrationTests.swift) | 120 段普通合成备注经编辑、查询/切页/清查询/面板信号、retain/切换/restore、入计划就地修改和移除退回 retained；正文、固定对象、基线保持。源同时携带 todo 创建及子任务结果依赖，从 menubar 转给 workspace；占用目标拒绝，接收失败源完整，成功后旧 lease/候选事件/旧确认/封存事件不能改接收方。目标手记页默认条件及后续切页不覆盖转交查询；草稿/计划身份、依赖和基线保持，版本按原协议推进。描述测试发现并修正下述值展开问题。 |
+| [CommandExecutionIntegrationTests.swift](../AreaChainTests/Domain/CommandExecutionIntegrationTests.swift) | 使用目录真实声明的 `todo.create → todo`，引用、合法重排/窄合并、非法重排/合并/移除的原子拒绝和转交后封存连通。前置合成失败阻塞依赖者，独立项继续；显式合成重试确认后创建输出固定，消费者重试不换绑。已提交创建的外部失败仅重试确认的失败效果，不重建本地对象；未知 local/external 结果要求核验，保留快照且不能重试、释放或转交。旧计划版本、旧尝试及重复回执不重放；即使全部成功也须原显式释放接口后才允许转交。多消费者引用修复的失败案例见下文。 |
+
+实际装配判断：解析快照、不可编辑基线及执行快照有各自用途，测试没有发现 active / retained / plan 同时持有可重复提交正文；可编辑参数始终由原草稿承载。解析结果到草稿是用户接受动作的宿主装配，测试内即可表达，因此未抽取生产门面。正常链路中的 host/draft/plan/item/run/attempt 身份及 lease 通过现有入口传递，静态检查没有升级成权限或执行资格。
+
+#### 两处最小修正
+
+1. [CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift)：编辑生产者后，两个消费者同时产生 staleReference。旧 `.link` 每次要求整图无诊断，因此修复任一个都会被另一个旧引用拒绝，公共接口无法逐个完成文档要求的显式刷新。现在只允许**其他项原已存在的 staleReference** 暂留；当前项的旧引用、错误输出类型及新结构错误仍拒绝，失败不发布状态。封存与转交仍要求完整有效图，不自动换绑、不跳过依赖。测试证明可逐项恢复并继续转交，也保留错误链接反例。
+2. [CommandParameter.swift](../AreaChain/Domain/CommandParameter.swift)：宿主/草稿已有描述脱敏，但直接描述 `arguments` 或 `baseline.values` 会递归展开 CommandValue 中的正文。新增原值类型的 description/debugDescription 脱敏，数组/原值容器随之隐藏载荷；参数值、Equatable、静态校验和执行资格不变。没有日志、IO、加密或敏感存储变更。原始查询 `source/input` 和显式读取出的正文仍是业务数据，不构成可随意记录日志的安全接口；未来适配不得记录原始查询/正文。
+
+#### 当前验证证据与保留缺口
+
+证据保存在忽略目录 `build/CommandIntegrationQA/`；命令和源码摘要与结果包一起保存，不提交产物。
+
+| 检查 | 结果与适用范围 |
+|---|---|
+| 最终领域集成及回归 | `./scripts/build.sh test` 加 `regression-command.json` 所列 25 个 `--only-testing AreaChainTests/类名`：本节四套测试以及第 9.12 节的 21 套领域回归。**177 passed / 0 failed / 0 skipped；参数化计数 217 passed**。本阶段新增 **12 项 / 14 次参数化运行**，覆盖两处修正。`regression.log`、`regression-summary.json`、`regression-tests.json`、`DomainRegression.xcresult`。未排除源文件或断言。 |
+| Debug 构建 | `./scripts/build.sh` **passed**，`staticSignatureVerified: true`、`distributionReady: false`，见 `build.log`。只构建/静态验签，不安装或启动生产应用，不表示真实系统解锁已验收。 |
+| 静态/工作流/局部 lint | `python3 -B scripts/quality_gate.py --profile static --format json`、`python3 -B scripts/check_workflow.py` 及 2 份 Domain / 5 份测试的 `swiftlint lint --strict --quiet` 均 **passed**；静态门禁含 **174 项脚本回归**，见 `static-gate.json`、`workflow.log`、`lint.log`。检查器的变化属于并行成果，本阶段未修改它。文档收尾后重跑受影响静态/引用检查。 |
+| 源码适用性 | `source-before-regression.json` / `source-after-regression.json` 覆盖整个跟踪树与非忽略新文件。回归前后 Swift 和资源摘要一致；仅本权威文档与并行 `docs/engineering.md` 改变。构建后摘要 `source-after-build.json` 中 Swift/资源仍一致，另有本次组件目录/技能路由的引用补充。环境 macOS 26.6.2 arm64、Xcode 26.6 / Swift 6.3.3。HEAD/索引变化不替代文件摘要。 |
+| 原失败与检查选择记录 | 首轮 4 passed / 1 failed（参数化 5 passed），多消费者修复失败保存在 `InitialIntegration.xcresult` / `initial-targeted.log` / `initial-summary.json`。扩展测试一次遗漏 `try` 的编译失败保留在 `integration.log`，修正后 11 项通过。描述反例为 3 passed / 1 failed，保留 `ValueDescriptionFailure.xcresult` / `value-description-suite.log`；修正后纳入最终回归。此前一次方法过滤未匹配用例，摘要为 0 tests / unknown（`value-description-selection-summary.json`），未计为通过，改用完整测试类复现。 |
+| 指定复核 | Cursor `verifier` 无当前可调用入口，**blocked / 未执行，整体 partial**。没有登录检查、认证配置修改，也没有用集成测试或其他代理冒充指定复核；历史缺口不自动关闭。 |
+| 未运行 | 全量 auto / swift profile 会启动无关原生交互，本阶段不执行，不宣称最终整树 Swift 门禁通过。没有产品 UI/焦点/真实窗口、真实 handler/仓储/事务、UserDefaults/文件/系统服务、真实外部重试/撤销、私密封存、真实认证、安装或发布验证。 |
+
+构建/测试日志仍有多架构目标选择、既有原生可访问性 API 过时及并行测试的 Swift 6 actor 隔离警告；本阶段未扩展到这些无关文件修复。主代理已检查实际差异、失败原子性、参数所有者、来源范围和返回/迁移边界，这不是指定独立复核。
+
+纯协议已接受的是**合成回执和合成能力确认**，不是“真实执行成功”。未知结果当前保留在 verificationRequired，现有 resolveValidation 仅处理 waitingAuthorization/conflict，尚无未知结果核对后回填事实的真实适配/协议；这延续第 9.11 节边界，本阶段没有将它降格为安全重试或自行设计恢复语义。真实窗口准备、关闭保护和原生能力接续也仍须后续宿主负责。没有发现本阶段需要改变已确认产品语义的其他选择。
+
+#### 阶段 2 的有界交接（本阶段不实施）
+
+- **直接复用**：`ContentQueryParser` 的原文/条件/诊断、`ContentQuerySession.conditions` 的有效条件与来源（不能只读取 `input` 漏掉结构化或页面条件）、scope/composition、`ContentQueryApplicability`、注入的日期上下文。结果身份沿 `CommandObjectReference` 的 type＋UUID，习惯执行记录另含 dayKey；子任务保留 parent ID，图片保留 owner kind＋ID。条件 ID 只在会话内有效；跨入口继续保留来源上下文和 lease，不按裸整数 ID 合并状态。
+- **真实快照输入**：沿 [DayBoardLogic.swift](../AreaChain/Domain/DayBoardLogic.swift) 的 TodoSnapshot / SubtaskSnapshot / RoutineSnapshot / CheckSnapshot / DiarySnapshot 提供真实 ID、类型、存活/删除状态、标题/允许读取的备注或正文、完成态、标签关联、真实 createdAt、业务日、优先级/提醒及来源。子任务日期取父任务且保留父存活状态；习惯还需创建日、启停/暂停日、星期掩码及按日 checks；标签需 UUID/规范名称/删除和私密标签标记；图片需元数据、拥有者和可浏览性；剪贴板需 copiedAt 与载荷类别。不得用快照默认零时间或虚构字段满足 created/status；缺少提供者数据与空结果须分别报告。结果快照版本/查询请求关联、失效反馈及片段协议尚未定义，留给阶段 2 的最小具体消费者决定。
+- **依赖既有投影的条件**：`boardDate` 的 listedDay / agenda / items 分别复用 Classification / AgendaProjection / ItemsListing；逾期、即将、排程存在性不能改成星期匹配。`taskOrSubtask` 标签谓词需子任务关联快照，不等同 ownTags。routine 的 status 必须显式给记录日，`date:today` 不替代选择；created、has:image 和其他不适用字段必须遵守 applicability。OR/排除及扩展条件不能丢进旧 BoardFilter 往返；旧 BoardSearch 的匹配、归一化及投影仅在语义等价时复用。
+- **隐私与拥有者入口**：手记沿 [DiaryPrivacy](../AreaChain/Domain/DiaryPrivacy.swift)、[BoardSearchPrivacy](../AreaChain/Domain/BoardSearch.swift) 投影，真实正文访问继续经过既有 DiaryContent / PrivacyAccess / PrivacyVault；普通提供者不触发解锁。附件经 `AttachmentAccess.canBrowse`、`AttachmentOwnerIndex` / ownerKey、`isSingleLive`，重复 UUID、未知/已删拥有者和私密手记不能被“活 ID 集合”放宽。图片元数据命中不等于具备文件读取能力。剪贴板和回收站维持显式范围，默认全局不纳入。
+- **建议首个子阶段 2A**：只做**一次性任务 todo 的只读快照提供者及最小类型化结果**，以调用方注入的真实形状合成快照和现有有效条件验证 AND/OR/排除、静态适用性、完成/业务日/created、标签及稳定身份；`taskOrSubtask` 或 has:image 若纳入，必须一并给出所需的子任务/拥有者快照，否则明确报告尚不支持。仅实现 tasks/global 中的 todo 子集并报告覆盖范围，不宣称完整 `/tasks` 已提供；暂不做习惯、子任务独立结果、手记/附件/剪贴板/回收站提供者、全局排名、真实仓储接入、UI 或指令执行。未知结果恢复及真实操作适配属于后续执行阶段，不能塞入只读提供者。
+
+阶段 1D 到此停止；阶段 2 仅交接，不因本阶段定向通过而自动启动。

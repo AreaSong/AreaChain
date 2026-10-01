@@ -6,13 +6,18 @@ import Testing
 @Suite(.serialized) @MainActor
 struct DaybookToggleStyleTests {
     typealias Native = SettingsButtonTestSupport
+    typealias Presentation = DaybookToggleStyle.Presentation
+    static let variants: [(Bool, Presentation)] = [
+        (false, .switchControl), (true, .switchControl), (false, .checkbox), (true, .checkbox)
+    ]
 
-    @Test(arguments: [false, true], ["en", "zh-Hans"])
-    func bindingAndSemantics(hidden: Bool, locale: String) async throws {
+    @Test(arguments: variants, ["en", "zh-Hans"])
+    func bindingAndSemantics(variant: (Bool, Presentation), locale: String) async throws {
+        let (hidden, presentation) = variant
         let fixture = try Native()
         defer { fixture.cleanup() }
         let state = ToggleProbe()
-        let window = fixture.window(ToggleProbeView(state: state, hidden: hidden), locale: locale)
+        let window = fixture.window(ToggleProbeView(state: state, hidden: hidden, presentation: presentation), locale: locale)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
@@ -23,7 +28,7 @@ struct DaybookToggleStyleTests {
         try assertValue(false, in: window)
         let frame = try Native.frame(node, in: window)
         #expect(frame.height >= 28)
-        #expect(hidden ? frame.width == 34 : frame.width > 34)
+        #expect(hidden ? frame.width == (presentation == .checkbox ? 18 : 34) : frame.width > 34)
         try await Native.click(node, in: window)
         #expect(state.value && state.writes == 1)
         try assertValue(true, in: window)
@@ -45,11 +50,12 @@ struct DaybookToggleStyleTests {
         try assertValue(false, in: window)
     }
 
-    @Test func disabledRejectsMouseAndAccessibility() async throws {
+    @Test(arguments: Presentation.allCases)
+    func disabledRejectsMouseAndAccessibility(presentation: Presentation) async throws {
         let fixture = try Native()
         defer { fixture.cleanup() }
         let state = ToggleProbe()
-        let window = fixture.window(ToggleProbeView(state: state, hidden: true))
+        let window = fixture.window(ToggleProbeView(state: state, hidden: true, presentation: presentation))
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         state.disabled = true
@@ -63,18 +69,21 @@ struct DaybookToggleStyleTests {
         try assertValue(false, in: window)
     }
 
-    @Test(arguments: ["en", "zh-Hans"], [false, true])
-    func longLabelLayouts(locale: String, dark: Bool) async throws {
+    @Test(arguments: Presentation.allCases, [("en", false), ("en", true), ("zh-Hans", false), ("zh-Hans", true)])
+    func longLabelLayouts(presentation: Presentation, environment: (String, Bool)) async throws {
+        let (locale, dark) = environment
         let fixture = try Native()
         defer { fixture.cleanup() }
         let state = ToggleProbe()
         let content = VStack(spacing: DaybookSpacing.md) {
-            Toggle("dev.controls.toggle.longLabel", isOn: state.binding)
-                .toggleStyle(DaybookToggleStyle()).accessibilityIdentifier("toggle.probe")
+            Toggle(isOn: state.binding) {
+                Label("dev.controls.toggle.longLabel", systemImage: "lock")
+            }
+                .toggleStyle(DaybookToggleStyle(presentation)).accessibilityIdentifier("toggle.probe")
             Toggle("residents.enabled", isOn: .constant(true))
-                .toggleStyle(DaybookToggleStyle()).disabled(true)
+                .toggleStyle(DaybookToggleStyle(presentation)).disabled(true)
             Toggle("residents.enabled", isOn: .constant(false))
-                .toggleStyle(DaybookToggleStyle(hiddenLabel: "residents.enabled")).labelsHidden().disabled(true)
+                .toggleStyle(DaybookToggleStyle(presentation, hiddenLabel: "residents.enabled")).labelsHidden().disabled(true)
         }.padding(DaybookSpacing.page).background(DaybookPalette.fill.page)
         let window = fixture.window(content, locale: locale, scheme: dark ? .dark : .light,
                                     size: NSSize(width: 320, height: 220))
@@ -85,7 +94,7 @@ struct DaybookToggleStyleTests {
         #expect(try Native.frame(node, in: window).height > 28)
         #expect(Native.value(node, "accessibilityLabel") as? String ==
                 L10n.string("dev.controls.toggle.longLabel", locale: Locale(identifier: locale)))
-        try Native.snapshot(window, name: "toggle-\(locale)-\(dark)")
+        try Native.snapshot(window, name: "toggle-\(presentation)-\(locale)-\(dark)")
     }
 
     @Test func thumbFollowsExternalAndRejectedBinding() async throws {
@@ -107,6 +116,48 @@ struct DaybookToggleStyleTests {
         try Native.snapshot(window, name: "toggle-rejected-binding")
     }
 
+    @Test func checkboxGraphicAndLabelShareOneAction() async throws {
+        let fixture = try Native()
+        defer { fixture.cleanup() }
+        let state = ToggleProbe()
+        let window = fixture.window(ToggleProbeView(state: state, hidden: false, presentation: .checkbox))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        let rect = try Native.frame(toggle(in: window), in: window)
+        for x in [rect.minX + 9, rect.maxX - 4] {
+            for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+                NSApp.sendEvent(try MenuButtonTestSupport.mouse(type, at: NSPoint(x: x, y: rect.midY), in: window))
+            }
+            try await SystemPageHost.settle(window)
+        }
+        #expect(!state.value && state.writes == 2)
+        let before = try checkboxPixels(window)
+        state.value = true
+        try await SystemPageHost.settle(window)
+        let selected = try checkboxPixels(window)
+        #expect(before != selected, "外部更新必须改变方框的实际像素，而不只是 AX 值")
+        state.reject = true
+        try await Native.click(toggle(in: window), in: window)
+        #expect(try checkboxPixels(window) == selected)
+        #expect(state.value && state.writes == 3)
+    }
+
+    private func checkboxPixels(_ window: NSWindow) throws -> [UInt32] {
+        let view = try #require(window.contentView)
+        let rect = try Native.frame(toggle(in: window), in: window)
+        let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+        view.cacheDisplay(in: view.bounds, to: bitmap)
+        return try (4..<14).map { x in
+            let point = view.convert(NSPoint(x: rect.minX + CGFloat(x), y: rect.midY), from: nil)
+            let y = view.isFlipped ? point.y : view.bounds.height - point.y
+            let color = try #require(bitmap.colorAt(
+                x: Int(point.x * CGFloat(bitmap.pixelsWide) / view.bounds.width),
+                y: Int(y * CGFloat(bitmap.pixelsHigh) / view.bounds.height))?.usingColorSpace(.deviceRGB))
+            return UInt32(color.redComponent * 255) << 16 | UInt32(color.greenComponent * 255) << 8 | UInt32(color.blueComponent * 255)
+        }
+    }
+
     private func assertThumb(_ isOn: Bool, in window: NSWindow) throws {
         let view = try #require(window.contentView)
         let frame = try Native.frame(toggle(in: window), in: window)
@@ -126,11 +177,12 @@ struct DaybookToggleStyleTests {
         #expect(isOn ? right > left + 0.02 : left > right + 0.02)
     }
 
-    @Test func keyboardRespectsNativeActivationPolicy() async throws {
+    @Test(arguments: Presentation.allCases)
+    func keyboardRespectsNativeActivationPolicy(presentation: Presentation) async throws {
         let fixture = try Native()
         defer { fixture.cleanup() }
         let state = ToggleProbe()
-        let window = fixture.window(ToggleKeyboardProbe(state: state))
+        let window = fixture.window(ToggleKeyboardProbe(state: state, presentation: presentation))
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
@@ -155,16 +207,17 @@ struct DaybookToggleStyleTests {
         try assertValue(acceptsKeyboard, in: window)
     }
 
-    @Test func mouseKeepsNativeNeighborFocusContract() async throws {
-        let native = try await neighborFocus(custom: false)
-        let daybook = try await neighborFocus(custom: true)
+    @Test(arguments: Presentation.allCases)
+    func mouseKeepsNativeNeighborFocusContract(presentation: Presentation) async throws {
+        let native = try await neighborFocus(custom: false, presentation: presentation)
+        let daybook = try await neighborFocus(custom: true, presentation: presentation)
         #expect(native == daybook, "启用开关不能改变相邻标题的失焦提交时机")
     }
 
-    private func neighborFocus(custom: Bool) async throws -> Bool {
+    private func neighborFocus(custom: Bool, presentation: Presentation) async throws -> Bool {
         let fixture = try Native()
         defer { fixture.cleanup() }
-        let window = fixture.window(ToggleNeighborProbe(custom: custom))
+        let window = fixture.window(ToggleNeighborProbe(custom: custom, presentation: presentation))
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
@@ -231,10 +284,11 @@ private final class ToggleProbe {
 private struct ToggleProbeView: View {
     @Bindable var state: ToggleProbe
     let hidden: Bool
+    var presentation: DaybookToggleStyle.Presentation = .switchControl
 
     var body: some View {
         Toggle("residents.enabled", isOn: state.binding)
-            .toggleStyle(DaybookToggleStyle(hiddenLabel: hidden ? "residents.enabled" : nil))
+            .toggleStyle(DaybookToggleStyle(presentation, hiddenLabel: hidden ? "residents.enabled" : nil))
             .accessibilityIdentifier("toggle.probe")
             .disabled(state.disabled)
             // 自定义 setter 的测试宿主显式订阅外部模型，模拟生产 State/Query 的重绘生命周期。
@@ -246,11 +300,12 @@ private struct ToggleProbeView: View {
 @MainActor
 private struct ToggleKeyboardProbe: View {
     @Bindable var state: ToggleProbe
+    let presentation: DaybookToggleStyle.Presentation
     @FocusState private var focused: Bool
 
     var body: some View {
         Toggle("residents.enabled", isOn: state.binding)
-            .toggleStyle(DaybookToggleStyle())
+            .toggleStyle(DaybookToggleStyle(presentation))
             .focused($focused)
             .accessibilityIdentifier("toggle.probe")
             .disabled(state.disabled)
@@ -264,6 +319,7 @@ private struct ToggleKeyboardProbe: View {
 @MainActor
 private struct ToggleNeighborProbe: View {
     let custom: Bool
+    let presentation: DaybookToggleStyle.Presentation
     @State private var text = ""
     @State private var focused = false
     @State private var enabled = true
@@ -274,7 +330,9 @@ private struct ToggleNeighborProbe: View {
             Group {
                 if custom {
                     Toggle("residents.enabled", isOn: $enabled)
-                        .toggleStyle(DaybookToggleStyle(hiddenLabel: "residents.enabled"))
+                        .toggleStyle(DaybookToggleStyle(presentation, hiddenLabel: "residents.enabled"))
+                } else if presentation == .checkbox {
+                    Toggle("residents.enabled", isOn: $enabled).toggleStyle(.checkbox)
                 } else {
                     Toggle("residents.enabled", isOn: $enabled).toggleStyle(.switch)
                 }

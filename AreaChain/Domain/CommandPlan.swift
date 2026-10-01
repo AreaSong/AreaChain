@@ -124,11 +124,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         case .endEditing(let stamp, _):
             _ = try editingIndex(stamp)
             editing = nil
-        case .link(let stamp, let links):
-            let index = try index(of: stamp)
-            items[index].links = links
-            items[index].version += 1
-            try requireValidStructure()
+        case .link(let stamp, let links): try link(stamp, links)
         case .reorder(let ids): try reorder(ids)
         case .atomicGroup(let id, let members): try group(id, members: members)
         case .dissolveGroup(let id):
@@ -149,6 +145,20 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
     private func editingIndex(_ stamp: CommandPlanItemStamp) throws -> Int {
         guard editing == stamp.id else { throw CommandPlanError.busy }
         return try index(of: stamp)
+    }
+
+    private mutating func link(_ stamp: CommandPlanItemStamp, _ links: CommandPlanLinks) throws {
+        let index = try index(of: stamp)
+        // 生产者编辑可同时使多个消费者过期；逐项显式修复不能被其他旧引用锁死。
+        // 只暂留其他项原已存在的过期诊断，当前项及新增结构错误仍拒绝；封存/转交仍检查整图。
+        let remaining = CommandPlanValidation.structure(items).filter { issue in
+            if case .staleReference(let id, _) = issue { return id != stamp.id }
+            return false
+        }
+        items[index].links = links
+        items[index].version += 1
+        let issues = CommandPlanValidation.structure(items).filter { !remaining.contains($0) }
+        guard issues.isEmpty else { throw CommandPlanError.graph(issues) }
     }
 
     private mutating func reorder(_ ids: [UUID]) throws {

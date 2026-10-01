@@ -129,3 +129,7 @@
 第三阶段 A 的公共启用开关沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`，入口为 [DaybookToggleStyle.swift](AreaChain/Theme/DaybookToggleStyle.swift)。仅新建重复事项和管理行接入，具体参数、提交差异和后续边界见[组件目录](docs/component-catalog.md)。新增公共组件仍须 Cursor `verifier`，不可用保留复核缺口；原生证据仅走现有隔离 XCTest，展示复用 `DaybookControlsPreview`。稳定入口由原 `check_workflow.py` 维护，不新增技能或验收应用。
 
 统一搜索 1C-3 的跨入口主动转交沿 `areachain-workflow` → 架构/可靠性治理 → `areachain-verify`。入口为 [CommandHandoffCoordinator.swift](AreaChain/Domain/CommandHandoffCoordinator.swift)；既有宿主/草稿/计划/执行/查询协议继续复用，权威交接仅在[第 9.12 节](docs/unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。选择四套新增转交测试及相关既有 Domain 回归、构建、静态和工作流检查；本阶段不操作真实窗口，因此不运行会启动全套原生交互的 auto / swift profile，也不把定向证据冒充整树通过。指定 Cursor verifier 缺失继续 partial，不重复登录、不替代复核。检查器接口/规则不变，无专项脚本；完成后停止，不自动接真实窗口、权限资源、隐私或执行器。
+
+阶段 1D 沿同一工作流与验证入口，选择四套领域集成测试及实际受影响的目录/参数/路径/查询/草稿/计划/执行/转交回归；边界、最小修正和证据统一见[第 9.13 节](docs/unified-search-commands.md#913-阶段-1d领域链路集成验证与最小修正)。仅静态门禁、严格局部 lint、定向测试和 Debug 构建，不运行无关原生全量测试；Cursor 指定复核缺失保持 partial，不重复认证检查。没有新检查器入口或脚本，不进入数据提供者或 UI 阶段。
+
+第三阶段 B 延续第三阶段 A 的 UI 与验证路由，公共入口扩展为 `DaybookToggleStyle(.checkbox)`，只接入 `PrivacySetupSheet.tagChoices`。复用 `DaybookControlsPreview`、原生测试宿主及 `PrivacyInteractionTests`；原开关与重复事项回归仍需执行。稳定表现/几何由 `check_workflow.py` 维护，独立只读复核仍指定 Cursor `verifier`，不可用保留缺口。后续迁移边界见[组件目录](docs/component-catalog.md)。

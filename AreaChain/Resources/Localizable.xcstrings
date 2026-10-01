@@ -1,6 +1,40 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "dev.controls.checkbox.longLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A long synthetic tag name that wraps while its checkbox and lock icon remain visible"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于检查自动换行的合成长标签名称，方形复选框和锁定图标应保持完整可见"
+          }
+        }
+      }
+    },
+    "dev.controls.checkboxes": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Checkboxes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "方形复选框"
+          }
+        }
+      }
+    },
     "dev.controls.toggle.motion": {
       "extractionState": "manual",
       "localizations": {
