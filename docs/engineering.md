@@ -452,3 +452,19 @@ E 阶段结束时 D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取�
 **门禁与剩余范围**：最终两份 Swift 严格 SwiftLint、`git diff --check`、`check_workflow.py`、`quality_gate.py --profile static`（174 项脚本测试）及 `./scripts/build.sh` Debug 构建/验签通过；保留正常目标已有编译警告。为遵守本次隔离和定向范围，没有执行会启动整套测试的 auto / swift profile。本次仅消费既有样式，不改变公共 API、持久化语义或跨模块业务，不新增必需独立复核。A/B 的指定 Cursor verifier、正向键盘导航/持续按下、真人辅助功能、系统减弱效果、最终系统材质及其他历史缺口继续保留，整条控件路线仍部分验收，不重复相同补验。真实复制/粘贴、声音与监控路径本轮未验。
 
 普通设置 `SettingsSections` 的登录启动、捕获来源、日历同步，以及其他隐私 Toggle 仅保留后续线索；须另核对形态、权限和失败处理。本阶段不迁移 Stepper、其他数值加减或上述控件，到此停止。未提交、推送、安装、发布，未修改全局设置、签名、权限或真实用户数据。
+
+### 第三阶段 D：普通设置布尔控件（2026-10-01）
+
+已实现并通过本阶段限定 XCTest 验收。生产仅修改 `SettingsSections.swift` 的登录启动、捕获来源和日历同步，逐项使用 `DaybookToggleStyle(.switchControl)`。修改前直接挂载真实 General/Sync 分节，保留 grouped Form 与原滚动修饰；原生节点为 `PlatformSwitch`，截图确认三处均为左侧文字、行尾滑动开关。`build/SettingsStageD-native-form.xcresult` 实际命中 1 项、4 次，中英文 × 浅深色通过。公共样式直接接入时会使滑块紧挨标签，因此仅在三个原生 Text 标签上增加撑满宽度的布局约束，恢复 Form 两端排列；没有新增公共 API、包装、状态或令牌。契约与消费者入口见[组件目录](component-catalog.md#第三阶段-d普通设置布尔控件)。
+
+**隔离**：macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3；沿架构文档的串行 XCTest 入口与构建锁，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、临时签名、生产 sandbox entitlement、`LSUIElement=NO`，清除六个真实钥匙串变量；正常测试目标编译全部源码，只由 XCTest 启动宿主。每例随机 UserDefaults suite 创建失败即失败，显式传入 AppPreferences；登录使用合成 Binding 与参数记录回调。核对了全部 `appPreferencesDidChange` 监听：AppDelegate 在 XCTest 下跳过服务装配，CalendarSync 的监听只在受测试守卫保护的 start 内注册；菜单栏及手记监听依赖未挂载的宿主，PanelWindowController 的偏好回调只刷新已有窗口外观。没有调用 start/refresh 或为测试改生产守卫。SettingsButtonTestSupport 将测试守卫前置，恢复初始化改变的 NSApp.appearance；测试另串行保存/恢复 CalendarSyncStatus 的 phase、时间戳、冲突 ID 和内容。
+
+**最终结果包**：`build/SettingsStageD-acceptance.xcresult` 经 `xcresulttool get test-results summary` / `tests` 核对，24 项、57 次运行全部通过，0 失败/跳过。实际命中 SettingsToggleConsumerTests 的 6 项、全部 SettingsSectionPresentationTests / AppPreferencesTests、SettingsButtonConsumerTests 的通知/日历状态、登录批准和冲突回调三项，以及 DaybookToggleStyleTests 的绑定/语义、禁用、长标签、滑块回读像素、方框动作/像素及相邻输入焦点对照六项。
+
+- 原生鼠标分别点击滑块和标签：登录接受/关闭各只请求一次正确布尔值，拒绝后回读关闭；外部 Binding 更新、错误说明、待批准说明及入口显隐保持。仅证明分节与合成宿主契约，真实 SMAppService 路径未执行。
+- 捕获/日历往返切换即时写原键，每次一次原进程内通知；同 suite 重建 AppPreferences 及外部对象更新后控件跟随。对比整个测试 suite 的持久域，除对应键外保持原值，登录与通知回调不串改。启用日历后 denied/conflict 状态、重试/系统入口、双方对照及远端缺失说明仍在，不显示成功；没有启动同步。
+- 禁用鼠标/程序化 AX 动作均不写入；相邻通知按钮只调用计数回调，点击开关不会触发它。严格辅助名称和值、按钮无重叠、Form 左右边界、至少 28pt 点击高度通过。中英文 × 浅深色，640×760 与原 420×560 窄窗、长登录错误/日历说明及滚动后完整边界通过；已查看对应原生缓存截图，公共长标签 320×220 也回归。截图在 QA 临时目录 `AreaChainButtonConsumersQA/settings-toggle-*`，原生基线留在 `build/SettingsStageD-native-images`；不据此宣称最终系统材质/真人辅助功能已验收。
+
+**门禁与取证修正**：最终三份 Swift 严格 SwiftLint、`git diff --check` 及 `./scripts/build.sh` Debug 构建/静态验签通过，保留正常目标既有编译警告。最终 `check_workflow.py` 与 `quality_gate.py --profile static` 通过（174 项脚本测试，高风险/敏感日志候选均为 0）；按本次限定隔离范围不运行会启动整套测试的 auto / swift profile。首轮名称断言误把原生独立标签视为滑块自身名称；修正取证后基线通过，最终公共控件仍严格断言名称。该首轮 Xcode 还因磁盘不足无法完成诊断包，仅清理本轮未完成的冗余系统日志，测试日志/截图保留；后续使用 `-collect-test-diagnostics never`，不改变测试目标或隔离参数。新增测试辅助闭包的一次编译错误已修正，失败日志保留。
+
+本次仅消费既有公共样式，未改变公共契约、持久化语义或跨模块业务，不新增必需独立复核。A/B 的指定 Cursor verifier、正向键盘导航/持续按下、真人辅助功能、系统减弱效果、最终系统材质及其他历史未验项继续保留；未重复条件未变的补验，整条控件路线仍部分验收。真实登录注册/注销与回读、通知权限/发送、系统设置打开、日历授权/同步/重试均未执行。后续仅保留 PrivacySetupSheet 的 legacy/system/master 三个 Toggle、ClipboardHistoryOptions 两个 Stepper 及其他数值控件线索。本阶段到 D 停止；保护并发查询领域改动，未提交、推送、安装、发布，未修改全局设置、个人签名、权限或真实用户数据。

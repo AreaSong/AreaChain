@@ -40,13 +40,17 @@ struct GeneralSettingsSection: View {
         }
 
         Section("settings.launch") {
-            Toggle("settings.login", isOn: Binding(
+            Toggle(isOn: Binding(
                 get: { launchesAtLogin },
                 set: { enabled in
                     launchesAtLogin = enabled
                     onUpdateLoginItem(enabled)
                 }
-            ))
+            )) {
+                Text("settings.login")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(DaybookToggleStyle(.switchControl))
             .accessibilityIdentifier("settings.login")
             .systemPageMarker("settings.login")
             if let statusMessage {
@@ -59,9 +63,13 @@ struct GeneralSettingsSection: View {
         }
 
         Section("settings.capture") {
-            Toggle("settings.capture.stamp", isOn: $prefs.stampCaptureApp)
-                .accessibilityIdentifier("settings.capture")
-                .systemPageMarker("settings.capture")
+            Toggle(isOn: $prefs.stampCaptureApp) {
+                Text("settings.capture.stamp")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(DaybookToggleStyle(.switchControl))
+            .accessibilityIdentifier("settings.capture")
+            .systemPageMarker("settings.capture")
             Text("settings.capture.stamp.help")
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
@@ -161,9 +169,13 @@ struct SyncSettingsSection: View {
         }
 
         Section("settings.calendar.sync") {
-            Toggle("settings.calendar.sync.toggle", isOn: $prefs.syncCalendarEvents)
-                .accessibilityIdentifier("settings.calendar.sync")
-                .systemPageMarker("settings.calendar.sync")
+            Toggle(isOn: $prefs.syncCalendarEvents) {
+                Text("settings.calendar.sync.toggle")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(DaybookToggleStyle(.switchControl))
+            .accessibilityIdentifier("settings.calendar.sync")
+            .systemPageMarker("settings.calendar.sync")
             if let calendarSyncStatusText {
                 Text(calendarSyncStatusText)
                     .font(DaybookType.subtitle)

@@ -27,7 +27,7 @@ struct ContentQueryProjectionTests {
         Fixture.apply(.setInput(prefix + "!p1 \"未闭合"), &state)
         let priorityID = try Fixture.condition(.content(.priority), in: state).id
         let p2 = try #require(ContentQueryPageMapping.priorityValue(.p2))
-        Fixture.apply(.pageFilterChanged(state.page.location, .content(.priority), p2), &state)
+        Fixture.apply(.editCondition(priorityID, p2), &state)
         let source = try Fixture.source(state)
         #expect(source == prefix + " \"未闭合")
         let diagnostic = try #require(state.textDiagnostics.first)
@@ -84,8 +84,8 @@ struct ContentQueryProjectionTests {
     @Test func sameDimensionUserPrecedenceDoesNotHideRealCrossDimensionConflict() {
         var state = ContentQuerySession(page: Fixture.page(.pending(lane: .overdue, filter: .init())))
         Fixture.apply(.setInput("status:done"), &state)
-        #expect(!state.isReady)
-        #expect(state.conditionDiagnostics.contains { $0.issue == .unsatisfiable })
+        #expect(state.isStructurallyValid)
+        #expect(state.typeAnalysis.assessment(for: .todo)?.reasons.contains { $0.issue == .contradiction } == true)
         #expect(state.conditions.contains { $0.value == .atom(.status(.done)) })
         Fixture.apply(.setInput("date:today"), &state)
         #expect(state.isReady)
@@ -98,12 +98,14 @@ struct ContentQueryProjectionTests {
         Fixture.apply(.addCondition(.page(.noTags)), &state)
         Fixture.apply(.addCondition(.page(.tagID(UUID()))), &state)
         #expect(state.conditions.count == 2)
-        #expect(state.conditionDiagnostics == [.init(issue: .unsatisfiable, conditionIDs: state.conditions.map(\.id))])
+        #expect(state.typeAnalysis.assessment(for: .todo)?.reasons == [
+            .init(issue: .contradiction, conditionIDs: state.conditions.map(\.id), binding: .ownTags)
+        ])
         Fixture.apply(.clearUserQuery, &state)
         Fixture.apply(.addCondition(.page(.reminderPresence(.unset))), &state)
         Fixture.apply(.setInput("@15:30"), &state)
-        #expect(!state.isReady)
-        #expect(state.conditionDiagnostics.contains { $0.issue == .unsatisfiable })
+        #expect(state.isStructurallyValid)
+        #expect(state.typeAnalysis.assessment(for: .todo)?.reasons.contains { $0.issue == .contradiction } == true)
     }
 
     @Test func invalidSemanticConditionsAreNotReadyAndDoNotProduceExecution() {

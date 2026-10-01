@@ -57,8 +57,9 @@ enum ContentQueryPageMapping {
         case .calendar(let interval, _), .schedule(let interval):
             return [.scope(.catalog(.tasks)), .atom(.date(interval))]
         case .quadrants(let key, let selection):
-            let priority = selection.map { ContentQueryConditionValue.atom(.priority(.init(
-                isImportant: $0.isImportant, isUrgent: $0.isUrgent))) }
+            let priority = selection.flatMap { slot in
+                priorityValue([PriorityFilterScope.p1, .p2, .p3, .p4][slot.rawValue])
+            }
             return [.scope(.catalog(.tasks)), day(key)] + (priority.map { [$0] } ?? [])
         }
     }
@@ -73,8 +74,9 @@ enum ContentQueryPageMapping {
             values.append(.page(id == BoardFilter.noneID ? .noTags : .tagID(id, matching: matching)))
         }
         if let bundle = filter.bundleID { values.append(.page(.sourceApplication(bundle))) }
-        let priority = filter.priorityScope == .all && filter.isHighPriorityOnly ? .highPriorityOnly : filter.priorityScope
-        if let value = priorityValue(priority) { values.append(value) }
+        if filter.priorityScope != .all || filter.isHighPriorityOnly {
+            values.append(.page(.taskPriority(.init(scope: filter.priorityScope, highPriorityOnly: filter.isHighPriorityOnly))))
+        }
         if reminders, filter.reminderScope != .all { values.append(.page(.reminderPresence(filter.reminderScope))) }
         if filter.dateScope != .all {
             values.append(.page(.boardDate(filter.dateScope, .init(
@@ -84,16 +86,7 @@ enum ContentQueryPageMapping {
     }
 
     static func priorityValue(_ scope: PriorityFilterScope) -> ContentQueryConditionValue? {
-        let slots: [QuadrantSlot]
-        switch scope {
-        case .all: return nil
-        case .highPriorityOnly: slots = [.importantUrgent, .important, .urgent]
-        case .p1: slots = [.importantUrgent]
-        case .p2: slots = [.important]
-        case .p3: slots = [.urgent]
-        case .p4: slots = [.rest]
-        }
-        return .clause(slots.map { .init(atom: .priority(.init(isImportant: $0.isImportant, isUrgent: $0.isUrgent))) })
+        scope == .all ? nil : .page(.taskPriority(.init(scope: scope, highPriorityOnly: scope == .highPriorityOnly)))
     }
 
     private static func items(_ query: ItemsListingQuery, context: ContentQueryPageContext) -> [ContentQueryConditionValue] {

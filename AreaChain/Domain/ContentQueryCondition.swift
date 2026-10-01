@@ -24,6 +24,7 @@ enum ContentQueryPagePredicate: Equatable {
     case tagID(UUID, matching: ContentQueryTagMatching = .own)
     case noTags
     case sourceApplication(String)
+    case taskPriority(ContentQueryPagePriority)
     case reminderPresence(ReminderFilterScope)
     case boardDate(DateFilterScope, ContentQueryPageDateRule)
     case itemKind(ItemKindScope)
@@ -35,6 +36,7 @@ enum ContentQueryPagePredicate: Equatable {
         switch self {
         case .tagID, .noTags: .content(.tag)
         case .sourceApplication: .sourceApplication
+        case .taskPriority: .content(.priority)
         case .reminderPresence: .content(.reminder)
         case .boardDate: .content(.date)
         case .itemKind: .itemKind
@@ -43,6 +45,14 @@ enum ContentQueryPagePredicate: Equatable {
         case .contentTypes: .contentTypes
         }
     }
+}
+
+/// 保留 BoardFilter 的两个独立输入；旧搜索对子任务单独检查 highPriorityOnly。
+struct ContentQueryPagePriority: Equatable {
+    let scope: PriorityFilterScope
+    var highPriorityOnly = false
+
+    var filter: BoardFilter { .init(isHighPriorityOnly: highPriorityOnly, priorityScope: scope) }
 }
 
 enum ContentQueryTagMatching: Equatable {

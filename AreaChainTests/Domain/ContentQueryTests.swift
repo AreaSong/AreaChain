@@ -112,8 +112,9 @@ struct ContentQueryTests {
             "(#a | #b) (-#a | #b) (#a | -#b) (-#a | -#b)"
         ] {
             let result = try query(source)
-            #expect(result.diagnostics.contains { $0.issue == .unsatisfiable }, "\(source)")
-            #expect(!result.isReady)
+            #expect(result.isStructurallyValid)
+            let analysis = TodoQueryFixture.session(source).typeAnalysis
+            #expect(analysis.assessment(for: .todo)?.reasons.contains { $0.issue == .contradiction } == true, "\(source)")
             #expect(!result.clauses.isEmpty)
         }
         #expect(try query("(#工作 | #学习) -#工作").isReady)
@@ -155,8 +156,10 @@ struct ContentQueryTests {
         let source = (0..<129).map { "#tag\($0)" }.joined(separator: " ")
         let result = try query(source)
         #expect(result.clauses.count == 129)
-        #expect(result.diagnostics.contains { $0.issue == .analysisLimit })
-        #expect(!result.isReady)
+        #expect(result.isStructurallyValid)
+        let analysis = TodoQueryFixture.session(source).typeAnalysis
+        #expect(analysis.assessment(for: .todo)?.reasons.contains { $0.issue == .analysisLimit } == true)
+        #expect(analysis.possibleTypes.contains(.todo))
     }
 }
 

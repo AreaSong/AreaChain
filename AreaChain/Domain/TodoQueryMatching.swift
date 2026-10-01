@@ -59,31 +59,15 @@ struct TodoQueryMatching {
     private func text(
         _ needle: String, excluded: Bool, todo: TodoSnapshot, id: ContentQueryConditionID
     ) -> [ContentQueryMatchEvidence]? {
-        let fields: [(ContentQueryMatchField, String)] = [(.title, todo.title), (.notes, todo.notes)]
-        let found = fields.filter { BoardSearch.matches($0.1, needle: needle) }
-        if excluded {
-            guard found.isEmpty else { return nil }
-            return fields.map { .init(conditionID: id, field: $0.0, kind: .absence) }
-        }
-        guard !found.isEmpty else { return nil }
-        return found.map { field, original in
-            // 与 localizedStandardContains 对应的原文 Range；不对折叠/规范化副本求偏移。
-            let range = original.localizedStandardRange(of: needle).map {
-                // Foundation 的不计变音搜索可能在组合重音前结束；高亮扩展到原文完整字素。
-                (original as NSString).rangeOfComposedCharacterSequences(for: NSRange($0, in: original))
-            }
-            return .init(conditionID: id, field: field, range: range)
-        }
+        ContentQuerySnapshotMatching.text(needle, excluded: excluded,
+                                         fields: [(.title, todo.title), (.notes, todo.notes)], id: id)
     }
 
     private func tag(
         _ name: String, excluded: Bool, todo: TodoSnapshot, id: ContentQueryConditionID
     ) -> [ContentQueryMatchEvidence]? {
-        let normalized = TagSyntax.normalizedName(name)
-        let matched = TagIDList.normalized(TagIDList.parse(todo.tagIDs)).filter { normalizedTagNames[$0] == normalized }
-        if excluded { return matched.isEmpty ? [.init(conditionID: id, field: .tags, kind: .absence)] : nil }
-        guard !matched.isEmpty else { return nil }
-        return matched.map { .init(conditionID: id, field: .tags, relatedObject: .init(type: .tag, id: $0)) }
+        ContentQuerySnapshotMatching.tag(name, excluded: excluded, tagIDs: todo.tagIDs,
+                                        normalizedNames: normalizedTagNames, id: id)
     }
 
     private func page(
@@ -91,18 +75,24 @@ struct TodoQueryMatching {
     ) -> [ContentQueryMatchEvidence]? {
         switch predicate {
         case .tagID(let tagID, let matching): return pageTag(tagID, matching: matching, todo: todo, id: id)
+        case .taskPriority(let priority):
+            return evidence(TodoQueryPageRules.priority(priority, todo: todo), id: id, field: .priority)
         case .noTags: return evidence(TagIDList.parse(todo.tagIDs).isEmpty, id: id, field: .tags, kind: .absence)
         case .sourceApplication(let bundle):
             return evidence(Classification.matches(todo.classifyBits, filter: .init(bundleID: bundle)),
                             id: id, field: .sourceApplication)
         case .reminderPresence(let scope):
             return evidence(Classification.matchesReminder(todo.remindMinutes, scope: scope), id: id, field: .reminder)
-        case .boardDate(let scope, let rule): return evidence(boardDate(scope, rule: rule, todo: todo), id: id, field: .scheduledDay)
+        case .boardDate(let scope, let rule):
+            guard TodoQueryPageRules.boardDate(scope, rule: rule, todo: todo) else { return nil }
+            let fields: [ContentQueryMatchField] = [.overdue, .upcoming].contains(scope)
+                ? [.scheduledDay, .completion] : [.scheduledDay]
+            return fields.map { .init(conditionID: id, field: $0) }
         case .contentTypes(let types): return evidence(types.contains(.todo), id: id, field: .objectType)
         case .itemKind(let kind):
-            return evidence(listed(todo, kind: kind), id: id, field: .objectType)
+            return evidence(TodoQueryPageRules.listed(todo, dates: request.session.queryDates, kind: kind), id: id, field: .objectType)
         case .todoStatus(let status):
-            return evidence(listed(todo, status: status), id: id, field: .completion)
+            return evidence(TodoQueryPageRules.listed(todo, dates: request.session.queryDates, status: status), id: id, field: .completion)
         case .routineStatus:
             // ItemsListing.todos 仅消费 todoStatus；习惯启停不是 todo 的完成状态。
             return [.init(conditionID: id, field: .objectType, kind: .typeNeutral)]
@@ -125,31 +115,6 @@ struct TodoQueryMatching {
         return result
     }
 
-    private func boardDate(_ scope: DateFilterScope, rule: ContentQueryPageDateRule, todo: TodoSnapshot) -> Bool {
-        switch rule.evaluation {
-        case .listedDay:
-            return Classification.matchesDate(dayKey: todo.dayKey, isDone: todo.isDone, todayKey: rule.todayKey,
-                                              scope: scope, calendar: rule.calendar)
-        case .items:
-            let query = ItemsListingQuery(filter: .init(dateScope: scope), todayKey: rule.todayKey)
-            return !ItemsListing.todos([todo], query: query, calendar: rule.calendar).isEmpty
-        case .agenda:
-            switch scope {
-            case .overdue:
-                return !AgendaProjection.overdueTodos(todos: [todo], todayKey: rule.todayKey, calendar: rule.calendar).isEmpty
-            case .upcoming:
-                return !AgendaProjection.upcomingTodos(todos: [todo], todayKey: rule.todayKey, calendar: rule.calendar).isEmpty
-            default: return false
-            }
-        }
-    }
-
-    private func listed(_ todo: TodoSnapshot, kind: ItemKindScope = .all, status: TodoStatusScope = .all) -> Bool {
-        let dates = request.session.queryDates
-        let query = ItemsListingQuery(kind: kind, todoStatus: status, todayKey: dates.todayKey)
-        return !ItemsListing.todos([todo], query: query, calendar: dates.calendar).isEmpty
-    }
-
     private func evidence(
         _ matched: Bool, id: ContentQueryConditionID, field: ContentQueryMatchField, kind: ContentQueryMatchKind = .positive
     ) -> [ContentQueryMatchEvidence]? {
@@ -157,6 +122,6 @@ struct TodoQueryMatching {
     }
 
     private func contains(_ interval: ContentQueryDateInterval, day: String) -> Bool {
-        interval.lowerBound <= day && day <= interval.upperBound
+        ContentQuerySnapshotMatching.contains(interval, day: day)
     }
 }

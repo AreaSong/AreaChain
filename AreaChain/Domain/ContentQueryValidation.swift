@@ -1,18 +1,14 @@
 import Foundation
 
-/// 只诊断可由条件本身证明的矛盾，不读取对象、不猜测记录是否存在。
+/// 解析阶段保留范围/重复诊断；共享可满足性算法由按类型绑定的分析调用，不读取记录。
 enum ContentQueryValidation {
     static func diagnostics(_ query: ContentQuery) -> [ContentQueryDiagnostic] {
         var result = scopeDiagnostics(query.scopes)
         for dimension in ContentQueryDimension.allCases {
             let clauses = query.clauses.filter { $0.alternatives.first?.atom.dimension == dimension }
-            guard let first = clauses.first else { continue }
+            guard !clauses.isEmpty else { continue }
             result += duplicates(clauses)
-            let satisfiable = satisfiable(clauses.map { $0.alternatives.map(ContentQuerySemanticTerm.init) }, dimension: dimension)
-            if satisfiable != true {
-                result.append(.init(issue: satisfiable == nil ? .analysisLimit : .unsatisfiable,
-                                    range: first.range, relatedRanges: clauses.dropFirst().map(\.range)))
-            }
+
         }
         return result
     }

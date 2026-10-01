@@ -7,9 +7,9 @@ enum TodoQueryProvider {
         let composition = session.composition
         let applicable = composition?.types.contains(.todo) == true && composition?.deletion == .liveOnly
         let uniqueConditions = Set(session.conditions.map(\.id)).count == session.conditions.count
-        let valid = session.isReady && uniqueConditions
+        let valid = session.isStructurallyValid && uniqueConditions
         var response = TodoQueryResponse(
-            requestID: request.requestID, queryIsValid: valid,
+            requestID: request.requestID, queryIsValid: valid, typeAnalysis: session.typeAnalysis,
             state: valid ? (applicable ? .evaluated : .notApplicable) : .invalidQuery,
             coverage: .init(requestedTypes: composition?.types ?? [], coveredTypes: applicable ? [.todo] : [],
                             deletion: composition?.deletion),
@@ -20,6 +20,10 @@ enum TodoQueryProvider {
             return response
         }
         guard applicable else { return response }
+        if let state = response.typeAnalysis.assessment(for: .todo)?.readRestriction {
+            response.state = state
+            return response
+        }
         response.diagnostics = requirements(request)
         guard response.diagnostics.isEmpty else { response.state = .blocked; return response }
         evaluate(request, response: &response)
@@ -54,8 +58,6 @@ enum TodoQueryProvider {
     }
 
     private static func requirement(_ atom: ContentQueryAtom, request: TodoQueryRequest) -> TodoQueryIssue? {
-        let binding = ContentQueryApplicability.binding(atom.dimension, to: .todo)
-        guard binding != .notApplicable && binding != .requiresOccurrenceDay else { return .unsupportedCondition }
         switch atom {
         case .image: return .imageAssociationUnavailable
         case .tag: return request.tagNames == nil ? .missingTagNames : nil
@@ -95,11 +97,7 @@ enum TodoQueryProvider {
         var result: [TodoQueryDiagnostic] = []
         let dates = request.session.queryDates
         if !validDay(todo.dayKey, dates: dates) { result.append(.init(issue: .invalidScheduledDay)) }
-        // 限制到民事日期协议可表示的年份附近，再交给注入日历往返，避免 Foundation 归一化坏时间戳。
-        let seconds = todo.createdAt.timeIntervalSince1970
-        if !seconds.isFinite || !(-62_135_769_600...253_402_473_600).contains(seconds) {
-            result.append(.init(issue: .invalidCreatedAt))
-        } else if !validDay(DayKey.from(todo.createdAt, calendar: dates.calendar), dates: dates) {
+        if !ContentQuerySnapshotValidation.validTimestamp(todo.createdAt, dates: dates) {
             result.append(.init(issue: .invalidCreatedAt))
         }
         let tagConditions = request.session.conditions.filter { condition in
@@ -134,9 +132,7 @@ enum TodoQueryProvider {
     }
 
     private static func validDay(_ key: String, dates: ContentQueryDateContext) -> Bool {
-        guard CommandArgumentValidation.isCanonicalDay(key) else { return false }
-        if case .success = ContentQueryDates.parse(key, context: dates) { return true }
-        return false
+        ContentQuerySnapshotValidation.validDay(key, dates: dates)
     }
 
     private static func reference(_ todo: TodoSnapshot) -> CommandObjectReference { .init(type: .todo, id: todo.id) }

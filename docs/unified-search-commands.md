@@ -2,7 +2,7 @@
 
 ## 0. 状态、权威范围与基线
 
-2026-10-01 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成见第 9.13 节；2A 已实现注入快照上的 todo 只读匹配与类型化结果，见第 9.14 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，真实数据库、产品 UI、handler 与系统服务均未接线；其他类型提供者尚未实现。各阶段原始检查仍保留；本阶段定向证据不关闭历史整树、原生或指定复核缺口。
+2026-10-01 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成见第 9.13 节；2A / 2B 已实现注入快照上的 todo 与活子任务独立结果，见第 9.14 / 9.15 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，真实数据库、产品 UI、handler 与系统服务均未接线；其他类型提供者尚未实现。各阶段原始检查仍保留；本阶段定向证据不关闭历史整树、原生或指定复核缺口。
 
 设计决定来自阶段 0 与后续各次已确认需求。阶段 0 的源码核对日期为 2026-10-01，基线提交为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，另有下述未提交修改；这是当时的静态阅读基线，不能混用为本阶段运行证据。
 
@@ -275,7 +275,8 @@
 | 1C-3 | 跨入口主动转交与唯一所有权领域协议已实现 | 第 9.12 节；同一协调者核验 lease、原子接管和失败保留；真实窗口/文件/私密接续未实现，partial。 |
 | 1D | 四条跨模块领域集成链路与必要最小修正 | 第 9.13 节；通过公共接口与合成输入验证，保留指定复核缺口；到本阶段停止，产品未接线。 |
 | 2A | 一次性 todo 的注入快照只读提供者与最小类型化结果 | 第 9.14 节；实际匹配有效条件，报告类型覆盖、未知数据与歧义；不读真实库、不接 UI/执行，指定复核缺失仍 partial，到此停止。 |
-| 2 后续（未实施） | 习惯定义和记录/子任务/手记/标签/图片，以及显式剪贴板/回收站提供者 | 复用第 9.8、9.9、9.14 节；片段呈现、全局排序、真实数据/隐私/拥有者适配仍须另行实施验证，不能把 todo 子集当作全部 tasks/global。 |
+| 2B | 活子任务独立结果的注入快照只读提供者 | 第 9.15 节；自身字段与父级页面约束分开，类型覆盖与完整性显式报告；指定复核缺失仍 partial，停在本阶段。 |
+| 2 后续（未实施） | 习惯定义和记录/手记/标签/图片，以及显式剪贴板/回收站提供者 | 复用第 9.8、9.9、9.14、9.15 节；片段呈现、全局排序、真实数据/隐私/拥有者适配仍须另行实施验证，不能把 todo 子集当作全部 tasks/global。 |
 | 3 | 从现有按钮/菜单/设置提取缺少的共用业务动作，建立校验、预览、执行结果、字段冲突、重试身份与可撤销能力；先处理授权范围内的本地普通操作 | 依赖 1；保留旧入口契约，仓储/`ModelChanges` 注入测试；逐动作检验相同输入产生相同写入与副作用次数。安全、权限和跨系统一致性改造单独审批，不能随普通提取潜入。 |
 | 4 | 两宿主共享搜索与指令发现 UI，页面默认条件与筛选双向同步，统一结果与键盘；删除已被替代的重复页内搜索 | 依赖 1、2；建议改 `Features/Search`、`Workspace`、`MenuBar`、手记/标签/剪贴板宿主及必要 `Theme`。原页面草稿/滚动、显式范围/删除标记、独立查询、菜单栏与最小窗口等价后才移除旧入口；受限选择器不冒充普通搜索。 |
 | 5 | 可编辑预览与长正文、操作草稿、多字段/多对象/多设置、队列执行、冲突处理、真实撤销、关闭/退出与主动转交 | 依赖 3、4；故障注入验证固定集合、未完成参数、顺序合并、依赖暂停、部分成功重试不重复创建、目标草稿不覆盖和唯一提交所有权。设置事务先有证据再开放多设置提交。 |
@@ -1076,3 +1077,123 @@ Swift 值副本不具备所有权证明。协调者只从页面创建空宿主�
 建议下一个提供者先做**活子任务独立结果**：注入父 TodoSnapshot 和完整 SubtaskSnapshot，保留 parent 类型身份、父存活/业务日与自身 title/tags/isDone/createdAt；验证同 UUID 跨类型身份不冲突。复用 Session 有效条件、composition/applicability、CommandObjectReference、TagSyntax/TagIDList 和本节依据约定。第二个真实消费者需要相同文字范围/区间规则时，再从 TodoQueryMatching 提取窄函数；不提前建注册中心或泛型引擎。习惯排程、私密手记、附件拥有者和真实库分别定界。
 
 阶段 2A 到此停止，不进入后续提供者、生产 UI 或指令执行；当前为已实现、本地定向验证通过、指定复核缺失的部分完成状态。
+
+### 9.15 阶段 2B：活子任务独立结果的只读快照提供者
+
+#### 范围与核心接口（2026-10-01）
+
+本次明确授权限定开发：仅注入快照的匹配、类型化结果与测试。开始工作区干净；执行期间出现 `SettingsButtonTestSupport.swift`、`SettingsToggleConsumerTests.swift` 的并行改动，保留。前阶段 partial、指定 Cursor verifier 缺失与历史整树门禁缺口不因此关闭，不重复登录或认证检查。
+
+- [SubtaskQueryProvider.swift](../AreaChain/Domain/SubtaskQueryProvider.swift) — `SubtaskQueryProvider.read(_:)`；[SubtaskQueryRead.swift](../AreaChain/Domain/SubtaskQueryRead.swift) — `SubtaskQueryRequest / Response / Match / Coverage / Diagnostic / InputPosition`；[SubtaskQueryMatching.swift](../AreaChain/Domain/SubtaskQueryMatching.swift) — 提供者内部匹配。
+- 输入直接复用 TodoSnapshot 内嵌 SubtaskSnapshot、ContentQuerySession.conditions / composition / queryDates、requestID、可选标签名字表与 TodoQuerySubtaskData。没有实体、仓储、文件、系统当前日或写入能力；不重新解析 source，不把父任务整条查询先跑一次。
+- 只接受组成含 subtask 且删除策略 liveOnly 的子集，适用于 global、tasks、subtasks 与含子任务的标签内容组合；回收站为 notApplicable。providerTypes / coveredTypes 为 subtask，requestedTypes 来自原 composition。零命中不能解释成全局零命中，coveredTypes 也不表示所有条件已处理成功。
+- queryIsValid / invalidQuery、notApplicable、blocked、evaluated 与 2A 含义一致，复用 TodoQueryReadState / TodoQueryIssue；原文本和条件诊断回传。重复条件 ID 拒绝；`isCompleteForCoveredTypes` 要求 evaluated 且没有提供者诊断。
+
+#### 自身字段与父级页面约束
+
+| 条件 | 实际语义与命中依据 |
+|---|---|
+| 文字、短语、OR、排除 | 只查子标题。条件间 AND、clause 内 OR，短语连续，排除不能被父标题/备注影响。沿 BoardSearch.matches 与 2A 的标准搜索；首个原文 UTF-16 范围扩展到完整字素。父标题只用于所属关系展示。 |
+| 文本标签、page.tagID、noTags | 只查子任务自身 tagIDs；不继承父/兄弟。文本标签沿 TagSyntax.normalizedName 的精确名字关联。own / taskOrSubtask 在独立子结果上均要求自身关联；ItemsListing.visibleSubtasks 因父标签显示全部子行的布局行为不等于独立搜索命中。noTags 只看自身空关联；稳定全零 UUID 仍是真实标签。 |
+| status:open/done | 自身 isDone；依据 completion，无父引用。不受父完成态替代。 |
+| date | 父任务 dayKey；依据 parentScheduledDay＋父 todo 引用，不伪装为子任务创建日。 |
+| created | 子任务真实 createdAt 按 queryDates.calendar 转民事日；依据 createdAt。父 createdAt 仅参加输入有效性检查。日期闭区间含端点，组内并集、组间交集，today 与转交冻结沿原会话。 |
+| page.boardDate | 父任务日期与父完成态的页面入围：listedDay 用 Classification，items 用 ItemsListing，agenda 仅 overdue / upcoming 用 AgendaProjection。recent 含 today…today+7 与已完成父项；calendar 与 todayKey 使用谓词自带值。依据 parentScheduledDay＋父引用。 |
+| page.todoStatus / itemKind | 委托 ItemsListing 的父任务入围规则；分别返回 parentCompletion / parentItemKind＋父引用。可同时存在自身 status 条件，二者分别求值。recurring 不包含一次性父项及其子任务。 |
+| page.sourceApplication / reminderPresence | BoardSearch.subtaskHits 已有父级来源/提醒筛选口径；按 Classification 精确 Bundle ID / 提醒存在性判断，依据 parentSourceApplication / parentReminder＋父引用。没有为子任务虚构独立属性。 |
+| page.routineStatus | ItemsListing 的分类型状态只限制习惯，对一次性父项及其子任务为 typeNeutral；依据 objectType＋父引用，不转换成子完成态。 |
+| scope / page.contentTypes | 使用既有类型组成与收窄契约，contentTypes 查真实 subtask 类型。 |
+
+**2B 历史时点记录：以下父级 priority 与全局矛盾缺口由 [2B-R](#916-阶段-2b-r父级页面条件与按类型可满足性) 修正；其余缺口保留。**
+
+**明确阻止与缺口：** 显式 `!p1` 等 priority、`@15:30` 等 reminder、has:image 按 ContentQueryApplicability 为子任务不适用，返回 inapplicableCondition＋条件 ID，整个子任务子集 blocked，OR 不绕过。页面优先级当前同样投影为普通 priority clause，没有单独的父级页面谓词；本阶段不以 origin 猜测另一种字段语义，亦 blocked。非既有 agenda 日期组合返回 unsupportedAgendaDate。现有 ContentQueryConditionValidation 会把 overdue/upcoming 的 boardDate 与 status:done 判为全局 unsatisfiable，尚未分开父状态与子状态；提供者尊重该 invalidQuery，不绕过 Session，也未改前阶段契约。后续须先讨论类型化矛盾分析与父级 priority 表达，再开放这些组合。
+
+#### 完整性、身份与结果
+
+- subtaskData 必须为 includedInSnapshots，表示所有输入父项的子任务已完整提供，空数组可以是合法完整数据。unavailable 即使嵌套数组非空也 blocked / missingSubtasks，不能以快照默认空数组代替读取证据。
+- tagNames 为 nil 与已提供空字典不同；文本标签条件（包括排除与 OR）缺表则 blocked / missingTagNames。已有自身关联 UUID 缺名字时隔离该子项，报告 missingAssociatedTagName；不推导成无标签。父/兄弟关联不参与此子项的名字完整性判断。稳定 tagID 与 noTags 不需要名字表。
+- 父 ID 在全部输入中计数，包含已删父项；重复父 ID 的所有子项隔离。子 ID 在全部嵌套输入中计数，包含已删父/子项，同父或跨父重复均隔离所有相同子 ID。错归属不重挂到另一个父项。没有 first-wins；合法兄弟与其他父项可继续评估。
+- 先做全部身份诊断，再评估唯一活父下的唯一活子。身份诊断保留 issue、类型引用和全部输入位置（parentIndex＋可选 subtaskIndex），不带正文；重复 ID 每组诊断一次，错归属逐位置报告。2A / 2B 隔离相同歧义身份；因 2A 仅在 taskOrSubtask 使用子关联、结果粒度为父项，其诊断可分属多个父项，2B 则定位子项并保留全部嵌套位置。
+- 活父的规范安排日与 createdAt、活子的 createdAt 沿共用校验；非法父值隔离其子树，非法子值只隔离该子项。墓碑按 deletedAt 非 nil 排除，不解析其日期或返回回收站数据，与 2A 一致。合法 epoch 仍无法与快照旧缺省创建时间自动区分，真实调用方必须提供真实字段。
+- 结果 id 是 CommandObjectReference(subtask, 自身 UUID)，parent 是独立 todo 引用；跨类型同 UUID 不冲突。结果只保存自身 title / isDone / createdAt、parent / parentTitle / parentScheduledDay 与 evidence；没有父备注或整份父快照。
+- 顺序为父输入顺序＋嵌套子输入顺序，不按 sortOrder、业务日、创建时间或相关性重排。requestID 只关联本次结果与会话，不授予操作或异步版本有效性。
+- 依据复用 ContentQueryMatchEvidence：conditionID、alternativeIndex、真实字段、positive / absence / typeNeutral、可选范围与关联对象。新增五个 parent 字段，保留 2A 字段和值语义；公共类型继续留在 TodoQueryRead.swift，没有建立全类型包装框架。Request / Response / Match 的 description / debugDescription 脱敏，数组反射也不展开标题或参数。
+
+#### 共用提取与验证
+
+第二个真实消费者出现后，从 2A 小范围提取 [ContentQuerySnapshotMatching / Validation](../AreaChain/Domain/ContentQuerySnapshotMatching.swift) 的文字原文范围、文本标签、区间包含、规范日与创建时间戳校验；[TodoQueryPageRules](../AreaChain/Domain/TodoQueryPageRules.swift) 提取父任务 boardDate / ItemsListing 入围。TodoQueryMatching / Provider 改为委托相同函数，没有改变自身字段、诊断或结果。没有修改 BoardSearch、Classification、ItemsListing、解析器或 Session 来凑等价。
+
+测试为 [SubtaskQueryTextTests](../AreaChainTests/Domain/SubtaskQueryTextTests.swift)、[AttributeTests](../AreaChainTests/Domain/SubtaskQueryAttributeTests.swift)、[DateTests](../AreaChainTests/Domain/SubtaskQueryDateTests.swift)、[IdentityTests](../AreaChainTests/Domain/SubtaskQueryIdentityTests.swift)、[IntegrationTests](../AreaChainTests/Domain/SubtaskQueryIntegrationTests.swift)，夹具只用合成数据。原始 `/subtasks` / `/tasks` 经 ContentQueryParser → Session 有效条件 → 提供者 → 类型化结果；页面标签/日期、用户接管与转交冻结均有结果断言。旧搜索对照只比较共同子标题、多词、大小写/变音、标签及父级页面约束的 ID 集合，不比较旧排序/拼接标题；status / created、短语/排除/OR、坏数据策略与空查询不冒充旧搜索等价。
+
+证据位于忽略目录 `build/SubtaskQueryQA/`，不提交产物：
+
+| 检查 | 实际结果与证据 |
+|---|---|
+| 新测试与 2A 回归 | 五套子任务共 25 项＋原四套 todo 共 26 项，首轮 **51 passed / 0 failed / 0 skipped**；targeted.log / targeted-summary.json。 |
+| 完整领域回归 | `./scripts/build.sh test` 加 regression-command.json 的 27 套过滤，**229 passed / 0 failed / 0 skipped**；regression.log、regression-summary.json、regression-tests.json 与 DomainRegression.xcresult。27 个 suite 均在结果树核实为 Passed，含解析/会话/页面/转交/日期/分类/列表/Agenda/旧搜索与标签。 |
+| 兼容对照 | 六种旧页面筛选×六种共同查询；其中 noTags＋三条正标签查询由新 Session 判无效，旧子任务结果也为空，单独标注，不计有效查询等价。其余 33 组有效查询 ID 集合一致；不比较排序或把 status/created 当旧语法。 |
+| Debug 构建 | `./scripts/build.sh` **passed**，build.log：staticSignatureVerified=true、distributionReady=false；只构建/静态验签，不安装或启动生产应用，不表示真实系统解锁验收。 |
+| 静态、工作流、lint | `python3 -B scripts/quality_gate.py --profile static --format json` **passed**，含 174 项脚本回归、高风险与敏感日志候选均 0；`python3 -B scripts/check_workflow.py`、`git diff --check` 与本次 14 份 Swift 文件的严格局部 SwiftLint **passed**。最终文档编辑后重跑静态与引用检查。 |
+| 输入与环境 | source-before-regression.json / source-after-regression.json 的 196 份 Domain 源码与测试摘要一致；macOS 26.6.2 arm64、Xcode 26.6、Swift 6.3.3、Python 3.9.6。无性能预算声明。 |
+| 指定复核 | 当前工具无 Cursor verifier 入口，**blocked / 未执行，整体 partial**。没有重查登录、改认证或用其他代理/主代理自查替代。 |
+
+测试构建日志仍有既有原生测试的 Swift 6 actor、Sendable 和旧可访问性 API 警告；本次未修改其规则或扩大修复。静态与定向证据不代表整树 Swift 门禁、原生 UI、真实数据库/权限/服务、安装或发行通过。不运行会启动无关原生交互的全量 auto / swift profile；真实数据接入仍未完成。
+
+#### 停止点与后续建议
+
+2B 到此停止：真实数据接入、生产 UI、全局聚合/排序/评分、父子视觉归组和指令执行均未完成，未安装或发布。下一提供者建议是**习惯定义的注入快照提供者**，先讨论区间内应执行日存在性、暂停/启停历史完整性、显式 occurrenceDay 的完成态，以及不适用条件对混合范围的反馈；不在本次实现。子任务遗留的页面 priority 表达与 boardDate＋自身 done 矛盾判定亦须先定界讨论。
+
+### 9.16 阶段 2B-R：父级页面条件与按类型可满足性
+
+#### 2026-10-01 已确认目标（实施前登记，不等于产品行为或验收通过）
+
+本次只修正既有查询契约与 todo/subtask 注入快照提供者。保留 2B、前阶段及指定 Cursor verifier 的验收缺口；不重查认证，不实现习惯提供者、生产 UI、真实仓储或指令执行。
+
+- 矛盾按对象和字段绑定判断：父任务未完成与子任务已完成可并存；同一对象同一完成字段 open AND done 才矛盾。父级页面日期隐含的父完成条件不能替代子完成条件。
+- 页面优先级使用独立类型化谓词，todo 查自身、subtask 查父任务；文本 `!p1` 始终为自身 priority，子任务不适用。保留原 `BoardSearch.subtaskHits` 的 `isHighPriorityOnly` 排除子任务特例，明确 P1/P2/P3/P4 沿父任务筛选；不以 origin 临时换字段含义。页面映射、投影、编辑、用户维度接管、删除抑制及转交冻结须一致。
+- 结构错误（含重复条件身份）全局拒绝；静态语义按请求类型分别分析。请求类型与仍可能匹配类型分开保留，不因 todo 矛盾让整个 `/tasks` 失效。字段不适用、逻辑矛盾、缺执行日独立报告，原始条件、来源、ID 和文本范围不变。
+- 未能静态证明的组合留给提供者；暂未支持求值、缺辅助数据及歧义记录身份不包装成无结果。文本 date 继续沿 §9.8 的统一业务窗口交集；习惯页面的应执行日投影不与该窗口或完成字段直接类比，习惯完成态仍需显式执行日，不从 date 推导。
+- 提供者继续完整检查条件与输入能力，返回类型化状态及理由；零 matches 不能代表结构有效、全类型覆盖或完整求值。未来习惯提供者的排程、skip 及历史完整性仍需另行讨论。
+
+
+#### 2B-R 实际接口与兼容变化
+
+| 入口 | 本轮职责 |
+|---|---|
+| [ContentQueryTypeAnalysis.swift](../AreaChain/Domain/ContentQueryTypeAnalysis.swift) — `ContentQueryTypeAnalysis / TypeAssessment / TypeReason`、`ContentQueryTypeValidation.analyze` | 对 composition 的请求类型逐一返回 reasons；possibleTypes 只排除已证明矛盾或字段不适用的类型。缺执行日和分析超限保留为未知；不包含提供者存在性或记录命中声明。 |
+| [ContentQueryScope.swift](../AreaChain/Domain/ContentQueryScope.swift) — `ContentQueryApplicability.pageBinding` | 页面谓词按对象类型绑定自身/父级字段或 typeNeutral；中性仅用于已有 ItemsListing 的分类型状态规则，不把不适用转为 true。 |
+| [ContentQueryCondition.swift](../AreaChain/Domain/ContentQueryCondition.swift) — `taskPriority(ContentQueryPagePriority)` | scope 与 highPriorityOnly 分别保存 BoardFilter 原输入。todo 查自身 Classification；subtask 查父 priority，且保留 highPriorityOnly 排除子项的旧特例。明确 highPriorityOnly scope 与原 Bool 即使人工构造不一致也不互相覆盖。 |
+| [ContentQuerySession.swift](../AreaChain/Domain/ContentQuerySession.swift) — `isStructurallyValid / typeAnalysis / isReady` | 结构有效、按类型可行性独立暴露；兼容 isReady 为结构有效且存在静态可能类型，绝不代表缺执行日已解决或提供者完整求值。composition 的原显式范围/类型筛选语义保留，静态分析不改它或条件数组。 |
+| [ContentQueryValidation.swift](../AreaChain/Domain/ContentQueryValidation.swift)、[ContentQueryConditionValidation.swift](../AreaChain/Domain/ContentQueryConditionValidation.swift) | 解析及条件诊断只处理结构、范围冲突和重复提示；重复条件 ID 为全局 ambiguousConditionIDs。原布尔/标量/区间可满足性算法由类型分析复用，语义矛盾及分析超限移至类型 reasons，不再充当解析失败。 |
+| [TodoQueryRead.swift](../AreaChain/Domain/TodoQueryRead.swift)、[SubtaskQueryRead.swift](../AreaChain/Domain/SubtaskQueryRead.swift) | Response 增加完整 typeAnalysis；queryIsValid 明确只表示结构有效。ReadState 增加 unsatisfiable、inapplicableConditions、requiresInput，保留 invalidQuery / notApplicable / blocked / evaluated。真实消费者为 Domain 测试，已同步迁移；无生产 UI 接线。 |
+
+静态 constraints 仅在相同绑定上共用原 AND/OR 算法：todo 页面完成态与自身 status 共用 ownCompletion；subtask 分为 parentCompletion 与 ownCompletion；文本 priority 和页面 taskPriority 在 todo 绑定自身，在 subtask 分别为不适用与 parentPriority。页面 overdue/upcoming 对 todo/subtask 展开为相应任务未完成及安排日窗口，today/recent 为日期窗口；自身 created 始终独立。routine 页面日期不做排程推断；todoStatus 在 routine 上仍为原有中性谓词。无标签与 taskOrSubtask 标签在 todo 上不再误判冲突（可以是父无标签、子有标签），独立子结果仍按自身标签判断。
+
+页面优先级与文本 priority 共享“用户接管维度”，但不共享字段语义。输入 `!p1` 会接管并移除自动/转交父级优先级；它不能无损投影成旧页面筛选，因此列入 extendedConditions，页面筛选事件要求回查询编辑。显式 editCondition 可以将它转换为页面谓词并保留条件 ID；刷新/删除抑制/离页访问寿命/转交冻结继续复用原 Reducer，无新语法或平行状态。
+
+响应判定顺序为结构非法 → 范围/删除策略不适用 → 当前类型静态拒绝 → 提供者能力与输入 → 完整匹配。静态理由可同时有多类；状态优先 contradiction、fieldNotApplicable、requiresOccurrenceDay，全部理由仍可查。analysisLimit 不证明无解，提供者仍逐条完整求值。blocked 继续表示缺标签表/子快照、图片关联或不支持日期组合；evaluated 带记录诊断仍非完整。coveredTypes 沿原提供者承担范围，requestedTypes 不因静态排除收窄，isPartialTypeCoverage 不变；isCompleteForCoveredTypes 仍须 evaluated 且无输入诊断。仅 todo 或 subtask 的完成求值不能证明 `/tasks` 完整覆盖。
+
+#### 修正范围与未来习惯提供者
+
+已实现的修正目标：父级页面优先级具备类型化表达；父页面完成/安排日与子完成态分开；混合类型矛盾不全局拒绝；字段不适用、逻辑矛盾、缺执行日与能力缺失分别表达。原始 source、条件 ID、origin 和 UTF-16 范围在只读分析/提供者中不改写。
+
+保留：2B 的指定 Cursor verifier 复核、历史全量/原生验收缺口、生产适配、真实库/隐私、聚合/排序、图片关联及非既有 agenda 日期能力；没有实现习惯提供者或决定 skip。未来习惯提供者仍须先明确统一查询日期窗口内应执行日存在性、启停/暂停历史完整性、显式 occurrenceDay 及其与窗口关系、重复 checks 与 skip 口径、请求类型与实际提供者覆盖。analyze 的 occurrenceDay 只支持调用方显式传入，Session 本轮没有自动选择日期或扫描排程的路径。
+
+#### 2B-R 验证与交接（2026-10-01）
+
+证据位于忽略目录 `build/QueryTypeQA/`。仅合成快照，无生产数据读取或写入。
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 回归先行与初始阻塞 | 修改生产代码前加入父逾期＋子 done 回归并运行原 build.sh 定向入口；当时被并行 `SettingsToggleConsumerTests.swift:207` 的闭包编译错误阻断，**未取得修正前该回归运行失败的证据**。旧误判已沿原 `pageConflicts` / Session / Provider 代码确认；reproduce.log 保留编译失败，不冒充业务复现通过。 |
+| 首轮隔离与失败修正 | 临时 xcconfig 仅排除上述无关原生测试编译，10 项新测试中类型分析 6 项及状态寿命 2 项通过，2 项优先级夹具失败：父标题没有查询词，按完整条件正确不命中。修正合成标题，未删除或放宽断言。Xcode 在失败后写系统诊断归档因磁盘不足 exit 251；已保存 isolated-test-output.log，仅移除本轮未完成系统日志归档。 |
+| 隔离领域回归 | 34 套测试 **276 passed / 0 failed / 0 skipped**，参数化共 **317 passed**；Regression.xcresult、regression-summary.json、regression-tests.json。直接复用 build.sh 的原测试参数及构建锁，额外关闭失败系统诊断采集；这是隔离证据，不代表原生套件通过。 |
+| **最终普通入口回归** | 并行编译问题解除后，撤去源码排除，实际执行 `./scripts/build.sh test` 加 final-command.json 的 34 套过滤，**276 passed / 0 failed / 0 skipped**，参数化共 **317 passed**。final-regression.log、final-summary.json、final-tests.json；原结果为 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.01_19-01-14-+0800.xcresult`。包括 10 项新增测试、解析/条件/页面/Session、查询与指令转交、路径解析、两个提供者及日期/分类/列表/旧搜索回归。 |
+| 最终源码对应 | source-before-final.json / source-after-final.json 的 Domain 源码与 Domain 测试摘要一致；最终普通回归包含最后补充的父安排日＋父完成状态证据，之后没有修改 Swift。 |
+| Debug 构建 | 最终相关编辑后执行 `./scripts/build.sh`；结果见 final-build.log，仅构建/静态验签，不安装或启动生产应用。 |
+| 静态与代码规范 | `python3 -B scripts/quality_gate.py --profile static --format json`、`python3 -B scripts/check_workflow.py`、`git diff --check` 和受影响 ContentQuery/TodoQuery/SubtaskQuery 源码与测试的严格局部 SwiftLint；文档最后编辑后重跑。静态门禁包含 174 项脚本回归，无新增检查器或脚本接口。 |
+| 指定复核与历史缺口 | 当前无 Cursor verifier 可调用入口，**blocked / 未执行，阶段整体 partial**。不检查登录、不改认证、不以主代理自查或其他代理替代。旧阶段验收、整树 Swift 门禁及原生/真实库/权限/外部服务缺口保留。 |
+
+最终普通回归无源码排除；前面的临时隔离方式已不再作为唯一证据。构建日志仍有既有多架构目的地选择、原生测试 actor/旧可访问性 API 警告，不属于本轮修改范围。环境为 macOS 26.6.2 arm64 / Xcode 26.6；未声明性能预算、低版本真机兼容或生产行为验收。本轮保留并行设置界面及其测试/文档修改，未提交、推送、安装、发布或启动生产应用，到 2B-R 停止。
+
+**最终收尾结果：** final-build.log 为 passed，staticSignatureVerified=true、distributionReady=false；final-static-gate.json 为 passed（174 项脚本回归，高风险/敏感日志候选均 0），final-workflow.log、final-lint.log 与 git diff --check 全部通过。Domain 源码/测试摘要与最终普通回归保持一致。指定复核缺口不变。

@@ -12,17 +12,22 @@ final class SettingsButtonTestSupport {
     let defaults: UserDefaults
     let prefs: AppPreferences
     let container: ModelContainer
+    private let previousAppearance: NSAppearance?
 
     init() throws {
+        try #require(ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil)
+        previousAppearance = NSApp.appearance
         defaults = try #require(UserDefaults(suiteName: suite))
-        prefs = AppPreferences(defaults: defaults)
         container = try ModelContainer(for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        prefs = AppPreferences(defaults: defaults)
         Self.retained.append(container)
-        try #require(ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil)
     }
 
-    func cleanup() { defaults.removePersistentDomain(forName: suite) }
+    func cleanup() {
+        defaults.removePersistentDomain(forName: suite)
+        NSApp.appearance = previousAppearance
+    }
 
     func window<V: View>(_ content: V, locale: String = "en", scheme: ColorScheme = .light,
                          size: NSSize = NSSize(width: 420, height: 560)) -> NSWindow {

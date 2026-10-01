@@ -243,3 +243,7 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 `TodoQueryProvider.read` 位于 Domain，同步消费调用方注入的 TodoSnapshot 和 ContentQuerySession 有效条件，返回只读类型化结果、字段命中依据、覆盖和诊断。请求没有仓储、文件、偏好、系统时间或写入能力；结果身份沿 CommandObjectReference，requestID 只关联本次请求，不授予操作或过期校验能力。未知辅助数据、重复身份与坏日期显式处理；新接口只由领域测试消费。
 
 页面日期分别调用 Classification / AgendaProjection / ItemsListing；真实共同标签关联抽为 ItemsListing.hasTag，原列表继续使用。Classification.matchesDate 增加默认兼容的 Calendar 注入，ItemsListing 传递自身日历。文本沿 BoardSearch 的本地化匹配，不改旧搜索入口；完整契约、测试和指定复核缺口见[权威设计第 9.14 节](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。
+
+### 子任务快照查询提供者（统一搜索 2B）
+
+`SubtaskQueryProvider.read` 同步消费原 TodoSnapshot 内嵌的 SubtaskSnapshot 与 Session 有效条件，返回独立子身份、父引用及最小值投影。父子身份歧义与数据缺失显式诊断；自身文字/标签/完成/创建时间不能被父字段替代。父安排日和已确认页面约束分别附 parent 字段依据，不先调用 TodoQueryProvider 筛整份父查询。两提供者共用窄值匹配/校验与父级页面规则，公共结果证据类型保留原文件；没有全类型引擎或新的状态所有者。当前仅领域测试消费，真实仓储/UI/聚合/执行未接入；字段对照、条件限制、2A 回归和 partial 复核状态统一维护在[权威设计第 9.15 节](unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。

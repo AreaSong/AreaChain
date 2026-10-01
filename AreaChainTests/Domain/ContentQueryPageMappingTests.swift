@@ -32,7 +32,7 @@ struct ContentQueryPageMappingTests {
         let today = ContentQuerySession(page: Fixture.page(.today(filter)))
         #expect(today.conditions.contains { $0.value == .page(.noTags) })
         #expect(today.conditions.contains { $0.value == .page(.sourceApplication("example.source")) })
-        #expect(today.pageProjection.boardFilter?.priorityScope == .highPriorityOnly)
+        #expect(today.pageProjection.boardFilter?.priorityScope == .all && today.pageProjection.boardFilter?.isHighPriorityOnly == true)
         #expect(today.pageProjection.boardFilter?.reminderScope == .set)
         for page in [ContentQueryPage.pending(lane: .upcoming, filter: filter), .items(.init(filter: filter, todayKey: Fixture.today))] {
             let state = ContentQuerySession(page: Fixture.page(page))

@@ -41,7 +41,9 @@ struct ContentQueryPageProjection: Equatable {
             }
             if case .page(.noTags) = value, case .diaries = context.page { return false }
             return value == .page(.noTags)
-        case .content(.priority): return PriorityFilterScope.allCases.contains { ContentQueryPageMapping.priorityValue($0) == value }
+        case .content(.priority):
+            if case .page(.taskPriority) = value { return true }
+            return false
         case .content(.date): return acceptsDate(value, context: context)
         case .content(.reminder):
             if case .page(.reminderPresence(let scope)) = value { return scope != .all }
@@ -116,10 +118,9 @@ struct ContentQueryPageProjection: Equatable {
             case .page(.sourceApplication(let bundle)): filter.bundleID = bundle
             case .page(.reminderPresence(let scope)): filter.reminderScope = scope
             case .page(.boardDate(let scope, _)): filter.dateScope = scope
-            case .clause:
-                if let scope = PriorityFilterScope.allCases.first(where: { ContentQueryPageMapping.priorityValue($0) == value }) {
-                    filter = filter.withPriorityScope(scope)
-                }
+            case .page(.taskPriority(let priority)):
+                filter.priorityScope = priority.scope
+                filter.isHighPriorityOnly = priority.highPriorityOnly
             default: break
             }
         }

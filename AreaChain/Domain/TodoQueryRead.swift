@@ -15,7 +15,7 @@ struct TodoQueryRequest: CustomStringConvertible, CustomDebugStringConvertible {
     var debugDescription: String { description }
 }
 
-enum TodoQueryReadState: Equatable { case invalidQuery, notApplicable, blocked, evaluated }
+enum TodoQueryReadState: Equatable { case invalidQuery, notApplicable, unsatisfiable, inapplicableConditions, requiresInput, blocked, evaluated }
 
 /// 类型覆盖与记录完整性分开：todo 的零命中不代表全局零命中。
 struct TodoQueryCoverage: Equatable {
@@ -30,7 +30,7 @@ struct TodoQueryCoverage: Equatable {
 enum TodoQueryIssue: Equatable {
     case invalidQuery, ambiguousConditionIDs, invalidDateContext
     case missingTagNames, missingAssociatedTagName(UUID), missingSubtasks
-    case imageAssociationUnavailable, unsupportedCondition, unsupportedAgendaDate
+    case imageAssociationUnavailable, unsupportedCondition, unsupportedAgendaDate, inapplicableCondition
     case duplicateTodoID, invalidScheduledDay, invalidCreatedAt
     case duplicateSubtaskID, invalidSubtaskOwner
 }
@@ -46,6 +46,7 @@ struct TodoQueryDiagnostic: Equatable {
 enum ContentQueryMatchField: Equatable {
     case title, notes, tags, subtaskTags, completion, priority, reminder
     case scheduledDay, createdAt, sourceApplication, objectType, scope
+    case parentPriority, parentScheduledDay, parentCompletion, parentReminder, parentSourceApplication, parentItemKind
 }
 
 enum ContentQueryMatchKind: Equatable {
@@ -83,7 +84,9 @@ struct TodoQueryMatch: Equatable, Identifiable, CustomStringConvertible, CustomD
 
 struct TodoQueryResponse: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     let requestID: UUID
+    /// 仅表示结构有效；不包含静态可满足性或提供者完整性。
     let queryIsValid: Bool
+    let typeAnalysis: ContentQueryTypeAnalysis
     var state: TodoQueryReadState
     let coverage: TodoQueryCoverage
     let textDiagnostics: [ContentQueryDiagnostic]
@@ -95,4 +98,14 @@ struct TodoQueryResponse: Equatable, CustomStringConvertible, CustomDebugStringC
     var isCompleteForCoveredTypes: Bool { state == .evaluated && diagnostics.isEmpty }
     var description: String { "TodoQueryResponse(redacted)" }
     var debugDescription: String { description }
+}
+
+extension ContentQueryTypeAssessment {
+    /// 静态分析已证明的拒绝与能力缺失分离；详细原因（可有多种）始终保留在响应中。
+    var readRestriction: TodoQueryReadState? {
+        if reasons.contains(where: { $0.issue == .contradiction }) { return .unsatisfiable }
+        if reasons.contains(where: { $0.issue == .fieldNotApplicable }) { return .inapplicableConditions }
+        if requiresInput { return .requiresInput }
+        return nil
+    }
 }

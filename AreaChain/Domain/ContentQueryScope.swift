@@ -49,7 +49,9 @@ enum ContentQueryScopeContract {
 }
 
 /// 映射告诉提供者应取哪个真实字段/投影；绝不通过填假字段让类型通过条件。
-enum ContentQueryFieldBinding: Equatable {
+enum ContentQueryFieldBinding: Hashable {
+    case parentCompletion, parentPriority, parentReminder, sourceApplication, parentSourceApplication
+    case objectType, routineEnabled, taskOrSubtaskTags, typeNeutral
     case ownText, ownTags, ownPriority, ownReminder, ownCompletion, occurrenceCompletion
     case scheduledDay, parentScheduledDay, diaryDay, occurrenceDay, ownerBusinessDay, capturedDay
     case scheduledDayExistenceReturningOneDefinition
@@ -119,6 +121,30 @@ enum ContentQueryApplicability {
         case .image: .ownerBusinessDay
         case .clipboardEntry: .capturedDay
         default: .notApplicable
+        }
+    }
+}
+
+extension ContentQueryApplicability {
+    static func pageBinding(_ predicate: ContentQueryPagePredicate, to type: CommandObjectType) -> ContentQueryFieldBinding {
+        switch predicate {
+        case .tagID(_, let matching):
+            if type == .todo && matching == .taskOrSubtask { return .taskOrSubtaskTags }
+            return binding(.tag, to: type)
+        case .noTags: return binding(.tag, to: type)
+        case .contentTypes: return .objectType
+        default: break
+        }
+        guard [.todo, .subtask, .routine].contains(type) else { return .notApplicable }
+        switch predicate {
+        case .taskPriority: return type == .subtask ? .parentPriority : .ownPriority
+        case .boardDate: return binding(.date, to: type)
+        case .sourceApplication: return type == .subtask ? .parentSourceApplication : .sourceApplication
+        case .reminderPresence: return type == .subtask ? .parentReminder : .ownReminder
+        case .todoStatus: return type == .routine ? .typeNeutral : (type == .subtask ? .parentCompletion : .ownCompletion)
+        case .routineStatus: return type == .routine ? .routineEnabled : .typeNeutral
+        case .itemKind: return .objectType
+        case .tagID, .noTags, .contentTypes: return .notApplicable
         }
     }
 }

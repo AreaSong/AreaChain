@@ -7,7 +7,9 @@ struct ContentQuery: Equatable {
     var clauses: [ContentQueryClause] = []
     var diagnostics: [ContentQueryDiagnostic] = []
 
-    var isReady: Bool { !diagnostics.contains { $0.issue != .duplicateCondition } }
+    var isStructurallyValid: Bool { !diagnostics.contains { $0.issue.blocksStructure } }
+    /// 解析阶段不具备对象绑定；语义可行性由 Session.typeAnalysis 提供。
+    var isReady: Bool { isStructurallyValid }
 }
 
 struct ContentQueryScopeToken: Equatable {
@@ -67,7 +69,11 @@ enum ContentQueryIssue: String {
     case incompleteQuote, incompleteEscape, incompleteGroup, incompleteCondition
     case invalidEscape, invalidCondition, invalidDate, reversedDateInterval, invalidDateContext
     case mixedDimensions, nestedGroup, unsupportedStructure, unsupportedExclusion
-    case duplicateCondition, unsatisfiable, incompatibleScopes, analysisLimit
+    case duplicateCondition, unsatisfiable, incompatibleScopes, analysisLimit, ambiguousConditionIDs
+
+    var blocksStructure: Bool {
+        ![Self.duplicateCondition, .unsatisfiable, .analysisLimit].contains(self)
+    }
 }
 
 /// 独立指令（包括未完成路径）保持 1B-1 原结果，参数正文不会进入内容词法分析。

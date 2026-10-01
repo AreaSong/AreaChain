@@ -135,3 +135,7 @@
 统一搜索 2A 的 todo 注入快照提供者沿 `areachain-workflow` → 架构治理 → `areachain-verify`；接口、支持与缺口见[组件目录](docs/component-catalog.md)和[权威设计第 9.14 节](docs/unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。验收选四套 TodoQuery 测试及查询/日期/分类/列表/旧搜索回归，运行静态、工作流、严格局部 lint 和 Debug 构建；不运行无关原生全量 profile。检查器接口/规则未改，不新增专项脚本；指定 Cursor verifier 不可用保留 partial，不重查登录或替代复核。仅合成数据，到 2A 停止。
 
 第三阶段 B 延续第三阶段 A 的 UI 与验证路由，公共入口扩展为 `DaybookToggleStyle(.checkbox)`，只接入 `PrivacySetupSheet.tagChoices`。复用 `DaybookControlsPreview`、原生测试宿主及 `PrivacyInteractionTests`；原开关与重复事项回归仍需执行。稳定表现/几何由 `check_workflow.py` 维护，独立只读复核仍指定 Cursor `verifier`，不可用保留缺口。后续迁移边界见[组件目录](docs/component-catalog.md)。
+
+统一搜索 2B 的活子任务注入快照提供者沿 `areachain-workflow` → 架构治理 → `areachain-verify`；入口与真实消费者登记在组件目录，唯一契约与证据见[权威设计第 9.15 节](docs/unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。验收选五套 SubtaskQuery、四套 TodoQuery 及实际受影响的查询/日期/分类/列表/旧搜索回归，静态门禁、工作流、严格局部 lint 和 Debug 构建；不运行无关原生全量 profile。既有检查器接口/规则未改，继续使用并实际运行原检查和脚本回归，不新建专项检查器。指定 Cursor verifier 不可用仍 partial，不重查认证、不替代复核；不接真实数据/UI/聚合/执行，完成后停在 2B。
+
+统一搜索 2B-R 沿 `areachain-workflow` → 架构治理 → `areachain-verify` 修正页面父级条件、类型分析与两个快照提供者，入口见组件目录和[权威设计第 9.16 节](docs/unified-search-commands.md#916-阶段-2b-r父级页面条件与按类型可满足性)。验证覆盖解析、条件、页面映射/投影、Session、转交、todo/subtask 与旧共同查询，继续原静态/工作流/严格局部 lint 和 Debug 构建；无新增检查器接口或脚本。指定 Cursor verifier 与历史缺口保留，不重查认证、不替代复核；不进入习惯提供者、UI、仓储或执行。

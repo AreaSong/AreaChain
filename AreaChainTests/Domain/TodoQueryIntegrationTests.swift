@@ -120,7 +120,7 @@ struct TodoQueryIntegrationTests {
 
     @Test func invalidQueriesAndUnsupportedImagesNeverProduceWidenedResults() {
         let todos = [TodoQueryFixture.todo(1)]
-        for text in ["项目 date:2026-02-30", #"项目 "未结束"#, "status:open status:done", "/tasks /diaries", "/set"] {
+        for text in ["项目 date:2026-02-30", #"项目 "未结束"#, "/tasks /diaries", "/set"] {
             let response = TodoQueryFixture.read(text, todos)
             #expect(!response.queryIsValid && response.state == .invalidQuery && response.matches.isEmpty)
             #expect(response.diagnostics.first?.issue == .invalidQuery)
@@ -131,6 +131,9 @@ struct TodoQueryIntegrationTests {
             #expect(response.diagnostics.allSatisfy { $0.issue == .imageAssociationUnavailable && !$0.conditionIDs.isEmpty })
             #expect(!response.isCompleteForCoveredTypes)
         }
+        let contradiction = TodoQueryFixture.read("status:open status:done", todos)
+        #expect(contradiction.queryIsValid && contradiction.state == .unsatisfiable && contradiction.matches.isEmpty)
+        #expect(contradiction.typeAnalysis.assessment(for: .todo)?.reasons.contains { $0.issue == .contradiction } == true)
         var repeated = TodoQueryFixture.session("项目 汇报")
         repeated.conditions[1] = repeated.conditions[0]
         let invalid = TodoQueryFixture.read(repeated, todos)

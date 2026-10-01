@@ -100,7 +100,8 @@ struct ContentQuerySessionTests {
         #expect(state == snapshot)
         let id = try Fixture.condition(.content(.priority), in: state).id
         Fixture.apply(.editCondition(id, .atom(.priority(PriorityToken.flags(in: "!p1")!))), &state)
-        #expect(state.pageProjection.boardFilter?.priorityScope == .p1)
+        #expect(state.pageProjection.boardFilter?.priorityScope == .all)
+        #expect(state.pageProjection.extendedDimensions.contains(.content(.priority)))
         #expect(try Fixture.condition(.content(.priority), in: state).id == id)
     }
 

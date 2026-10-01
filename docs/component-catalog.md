@@ -23,7 +23,7 @@
 | 语法输入 | `SyntaxTextField`、`SyntaxTextEditor` | [SyntaxTextField.swift](../AreaChain/Theme/SyntaxTextField.swift)、[SyntaxTextEditor.swift](../AreaChain/Theme/SyntaxTextEditor.swift) | 任务/手记语法高亮和候选输入；必须提供正确的 `SyntaxInputContext`，搜索不能借此创建标签。触发检测和高亮正则编译一次。同一 `NSTextStorage` 在文本、字体、默认色和外观未变时不整段重建属性。外观键取自该 storage 所属文本视图或窗口的 `effectiveAppearance`，没有宿主时才回退 `NSApp`。 |
 | 候选与浮层 | `SyntaxAutocompletePopup`、`SyntaxOverlay` | [SyntaxAutocompleteView.swift](../AreaChain/Theme/SyntaxAutocompleteView.swift)、[SyntaxOverlay.swift](../AreaChain/Theme/SyntaxOverlay.swift) | 就近消费输入锚点，保留 Esc 先关闭候选、焦点和定位；不要在多个宿主重复呈现同一浮层。 |
 | 按钮 | `DaybookButtonStyle`、`DaybookIconButton`、`CommandReturnButton` | [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)、[CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift) | 复用尺寸、禁用、悬停、可访问性和 Command 反馈；图标按钮需有语义标签。`daybookMenuLabel` 与按钮共享内部视觉基座，保留 `fitsLabel` 和系统菜单语义；文字仍按内容加边距，图标为 28/22/18 正方形。原生焦点与显式 `isFocused` 均可显示焦点环，减弱动态效果禁用按下缩放。测试专用 `DaybookControlsPreview` 的开发展示见[工程手册](engineering.md#按钮开发展示与验收)。 |
-| 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。消费者含新建重复事项、管理行、隐私标签多选与剪贴板三项偏好；表现及提交差异见本页第三阶段 A–C。 |
+| 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。消费者含新建重复事项、管理行、隐私标签多选、剪贴板及普通设置各三项偏好；表现及提交差异见本页第三阶段 A–D。 |
 | 表面与分组 | `daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar` | [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift)、[DaybookChip.swift](../AreaChain/Theme/DaybookChip.swift)、[DaybookSectionHeader.swift](../AreaChain/Theme/DaybookSectionHeader.swift)、[DaybookSegmentedBar.swift](../AreaChain/Theme/DaybookSegmentedBar.swift) | 共享表面、芯片、分节头、分隔线和分段切换；不要在 Feature 自绘同义基座。 |
 | 页面和工作台布局 | `DaybookPage`、`DaybookPageHeader`、`WorkspaceLayout`、`WorkspaceSidebarRow` | [DaybookPage.swift](../AreaChain/Theme/DaybookPage.swift)、[WorkspaceLayout.swift](../AreaChain/Theme/WorkspaceLayout.swift) | 页面页头、侧栏和内容宽度遵循已有宿主；`workspaceEmbedded` 只表达能力/布局差异，不切换颜色、字体或主题。 |
 | 空态与周期栏 | `DaybookEmptyState`、`DaybookPeriodBar` | [DaybookChrome.swift](../AreaChain/Theme/DaybookChrome.swift) | 区分无数据、筛选无结果和失败；可见文案走本地化。 |
@@ -108,7 +108,15 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 消费者回归为 [ClipboardOptionsConsumerTests.swift](../AreaChainTests/Features/ClipboardOptionsConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost` 与显式传递 locale 的 `PrivacyButtonSheetHost`。会话使用本轮新建空目录、独立随机 UserDefaults suite、nil pasteboard 和无副作用 paste gate；不使用 shared/start/stage 或真实复制粘贴。持久化核对实际测试偏好、取消后重开与同 suite 新会话；证据及历史缺口见[工程手册](engineering.md#第三阶段-c剪贴板选项布尔控件2026-10-01)。Stepper、Picker、输入及按钮不迁移；普通设置和其他隐私 Toggle 继续留待后续，不能从本次证据推导权限、失败回滚或系统操作已验收。
 
-后续仅记录：SettingsSections 与 ClipboardHistoryOptions 等 Toggle 须先核对系统默认形态、即时提交/权限/失败回滚，再选择滑动或方形入口；其余隐私开关、任务完成圆圈及子任务勾选各自保留，不在本阶段迁移。
+### 第三阶段 D：普通设置布尔控件
+
+[SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift) 的 `settings.login`、`settings.capture.stamp`、`settings.calendar.sync.toggle` 在真实 General/Sync 分节的隔离 grouped Form 中均呈现行尾原生滑动开关，逐项接入 `DaybookToggleStyle(.switchControl)`。原生标签仅增加 `frame(maxWidth: .infinity, alignment: .leading)`，使公共样式继续保持左侧文字、右侧滑块；保留文字、字体、标识、帮助及分组，不向父容器设置 ToggleStyle，不新增公共 API、包装或状态。
+
+登录仍经原 `launchesAtLogin` Binding 和 `onUpdateLoginItem` 回调，由 `SettingsView` 注册/注销后回读；失败或待批准不会在控件内锁住乐观值。捕获来源与日历同步仍直接绑定 `AppPreferences`，立即保存原键并发布原进程内通知；日历布尔值只表示启用意图，不代表授权或同步成功。系统服务、权限、同步状态/冲突/重试、Picker 和按钮均未改变。
+
+消费者测试为 [SettingsToggleConsumerTests.swift](../AreaChainTests/Features/SettingsToggleConsumerTests.swift)，复用 `SettingsButtonTestSupport`、`SystemPageHost`、原呈现/按钮/偏好与公共 Toggle 测试。仅挂载真实分节，显式注入随机 suite 的偏好与合成登录回调；不调用 CalendarSync start/refresh，进程外服务不参与。夹具恢复 `NSApp.appearance`，合成日历状态串行保存/恢复；实际证据及继承缺口见[工程手册](engineering.md#第三阶段-d普通设置布尔控件2026-10-01)。
+
+后续仅记录：`PrivacySetupSheet` 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 仍为原生 Toggle，须分别核对内容保护和认证方式的表单契约；`ClipboardHistoryOptions` 的条数/文本上限 Stepper 及其他数值控件未迁移。任务完成圆圈和子任务勾选继续保持各自业务，本阶段到 D 停止。
 
 ## 3. Feature 级复合组件
 
@@ -193,3 +201,7 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 阶段 1D 复用以上接口新增四套领域集成测试，不新增生产入口；CommandPlan 的多消费者旧引用修复及 CommandValue 描述脱敏、最终验证和阶段 2 交接只维护在[权威设计第 9.13 节](unified-search-commands.md#913-阶段-1d领域链路集成验证与最小修正)。产品、真实执行和提供者仍未接线。
 
 统一搜索 2A 新增 [TodoQueryProvider.read](../AreaChain/Domain/TodoQueryProvider.swift)、[请求/结果/命中依据](../AreaChain/Domain/TodoQueryRead.swift) 及 [TodoQueryMatching](../AreaChain/Domain/TodoQueryMatching.swift)。消费者仅为四套 TodoQuery Domain 测试；输入沿 Session 有效条件和 TodoSnapshot，结果为 live todo 子集。直接复用 BoardSearch.matches、TagSyntax/TagIDList、日期/范围/适用性和原页面投影；[ItemsListing.hasTag](../AreaChain/Domain/ItemsListing.swift) 由原列表与新提供者共用，Classification.matchesDate 的注入 Calendar 默认值兼容旧调用。未知条件/辅助数据不得放宽结果，重复身份隔离，正文描述脱敏；真实库/UI/执行未接入。支持清单、诊断及后续复用仅维护在[权威设计第 9.14 节](unified-search-commands.md#914-阶段-2atodo-只读快照提供者与类型化结果)。
+
+统一搜索 2B 新增 [SubtaskQueryProvider.read](../AreaChain/Domain/SubtaskQueryProvider.swift)、[请求/结果/覆盖与诊断](../AreaChain/Domain/SubtaskQueryRead.swift) 和 [SubtaskQueryMatching](../AreaChain/Domain/SubtaskQueryMatching.swift)，只由五套 SubtaskQuery Domain 测试消费。自身标题/标签/完成态/创建时间与父级日期及类型化页面约束分开；身份为 subtask＋自身 UUID，另带父 todo 引用。2A / 2B 共用 [ContentQuerySnapshotMatching / Validation](../AreaChain/Domain/ContentQuerySnapshotMatching.swift) 的值匹配与校验、[TodoQueryPageRules](../AreaChain/Domain/TodoQueryPageRules.swift) 的父项页面入围；原 ContentQueryMatchEvidence 等类型继续留在 TodoQueryRead.swift，仅增 parent 字段。真实消费者回归包含原四套 TodoQuery 测试，没有仓储/UI/执行接线；规则、完整性、缺口和证据见[权威设计第 9.15 节](unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。
+
+统一搜索 2B-R 扩展 [ContentQueryTypeAnalysis / TypeValidation](../AreaChain/Domain/ContentQueryTypeAnalysis.swift)、[页面字段绑定](../AreaChain/Domain/ContentQueryScope.swift) 和 [taskPriority 页面谓词](../AreaChain/Domain/ContentQueryCondition.swift)，由 Session、todo/subtask 提供者及 ContentQueryTypeAnalysisTests / ContentQueryPagePriorityTests 消费。结构诊断与按类型语义分析分离，旧匹配算法、页面映射/投影、Reducer 与转交继续复用；响应不以空 matches 代替状态或覆盖。对象字段、兼容变化与保留缺口只维护在[权威设计第 9.16 节](unified-search-commands.md#916-阶段-2b-r父级页面条件与按类型可满足性)。

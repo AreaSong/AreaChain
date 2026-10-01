@@ -9,7 +9,7 @@ struct TodoQueryDateTests {
         let response = TodoQueryFixture.read(source, todos)
         #expect(response.queryIsValid && response.matches.map(\.id.id) == [todos[2].id, todos[4].id])
         let disjoint = TodoQueryFixture.read("date:2026-10-01 date:2026-10-02", todos)
-        #expect(!disjoint.queryIsValid && disjoint.state == .invalidQuery && disjoint.matches.isEmpty)
+        #expect(disjoint.queryIsValid && disjoint.state == .unsatisfiable && disjoint.matches.isEmpty)
     }
 
     @Test func createdUsesInjectedCivilDayAndDateUsesScheduledDay() throws {
