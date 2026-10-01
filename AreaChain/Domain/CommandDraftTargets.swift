@@ -39,7 +39,9 @@ struct CommandDraftTargets: Equatable {
     func argument(for command: CommandDescriptor) -> CommandArgument? {
         guard !objects.isEmpty, let parameter = command.parameters.first(where: { $0.id == .target }) else { return nil }
         switch parameter.type {
-        case .object: return .init(parameter: .target, operation: .assign, value: .object(objects[0]))
+        case .object:
+            guard objects.count == 1 else { return nil }
+            return .init(parameter: .target, operation: .assign, value: .object(objects[0]))
         case .objects: return .init(parameter: .target, operation: .assign, value: .objects(objects))
         default: return nil
         }

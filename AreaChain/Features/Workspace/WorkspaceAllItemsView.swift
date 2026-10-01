@@ -98,6 +98,7 @@ struct WorkspaceAllItemsView: View {
         } label: {
             Text(LocalizedStringKey(selected))
                 .font(DaybookType.caption)
+                .daybookMenuLabel(size: .compact, fitsLabel: true)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()

@@ -1,6 +1,91 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "dev.controls.toggle.motion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Switches follow system Reduce Motion only; the preview control above applies only to buttons."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开关仅遵循系统减弱动态效果；上方预览开关仅作用于按钮。"
+          }
+        }
+      }
+    },
+    "dev.controls.toggle.external": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Update state externally"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "外部更新状态"
+          }
+        }
+      }
+    },
+    "dev.controls.toggle.hidden": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable switch with hidden label"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无可见标签的启用开关"
+          }
+        }
+      }
+    },
+    "dev.controls.toggle.longLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable this recurring item with a long label while keeping its existing save behavior"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用这个具有较长名称的重复事项并保持原有保存方式"
+          }
+        }
+      }
+    },
+    "dev.controls.toggles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enable switches"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "启用开关"
+          }
+        }
+      }
+    },
     "command.choice.systemUnlock.aliases": {
       "extractionState": "manual",
       "localizations": {
@@ -126,13 +211,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Controls · Buttons"
+            "value": "Controls · Buttons and switches"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "控件 · 按钮"
+            "value": "控件 · 按钮与开关"
           }
         }
       }
@@ -211,13 +296,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reduce motion"
+            "value": "Button reduce motion"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "减弱动态效果"
+            "value": "按钮减弱效果"
           }
         }
       }
@@ -296,13 +381,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hover, press and Tab to inspect focus (enable macOS keyboard navigation if needed). Hold ⌘ or press ⌘Return. Actions only change this counter."
+            "value": "Hover, press or Tab to inspect focus. Hold ⌘ or press ⌘Return. Samples only change local synthetic state."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "悬停、按下或按 Tab 检查焦点（必要时开启 macOS 键盘导航）。按住 ⌘ 或按 ⌘Return。动作只改变本地计数。"
+            "value": "悬停、按下或按 Tab 检查焦点。按住 ⌘ 或按 ⌘Return。展示只改变本地合成状态。"
           }
         }
       }

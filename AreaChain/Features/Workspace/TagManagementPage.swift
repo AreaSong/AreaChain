@@ -53,7 +53,10 @@ struct TagManagementPage: View {
         } message: {
             Text("tags.purge.confirm.message")
         }
-        .sheet(isPresented: $showMerge) { mergeSheet }
+        .sheet(isPresented: $showMerge) {
+            mergeSheet
+                .environment(\.locale, locale)
+        }
         .workspaceHeader(actions: headerActions)
     }
 
@@ -233,6 +236,7 @@ struct TagManagementPage: View {
             }
         } label: {
             Text("tags.color")
+                .daybookMenuLabel(size: .compact, fitsLabel: true)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -314,6 +318,7 @@ struct TagManagementPage: View {
             HStack {
                 Spacer()
                 Button("alert.cancel") { showMerge = false }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 Button("tags.merge") { commitMerge() }
                     .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
             }

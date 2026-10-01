@@ -21,7 +21,7 @@ struct CommandDraftCheck: Equatable {
 /// 每份值由宿主持有，正文仅在 arguments 中编辑；基线是不可编辑的原值证据。
 struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     let id: UUID
-    let hostID: String
+    private(set) var hostID: String
     let commandID: CommandID
     private(set) var version: UInt64 = 0
     private(set) var targets: CommandDraftTargets
@@ -69,18 +69,21 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     }
 
     // 写入入口由 reducer 校验身份；每次接受编辑都推进版本，即使内容相同也使旧确认失效。
-    mutating func edit(_ argument: CommandArgument) {
+    mutating func edit(_ argument: CommandArgument, expecting stamp: CommandDraftStamp) {
+        guard self.stamp == stamp, argument.parameter != .target else { return }
         arguments.removeAll { $0.parameter == argument.parameter }
         arguments.append(argument)
         version += 1
     }
 
-    mutating func select(_ targets: CommandDraftTargets) {
+    mutating func select(_ targets: CommandDraftTargets, expecting stamp: CommandDraftStamp) {
+        guard self.stamp == stamp else { return }
         self.targets = targets
         version += 1
     }
 
-    mutating func reload(_ baseline: CommandDraftBaseline, arguments: [CommandArgument]) {
+    mutating func reload(_ baseline: CommandDraftBaseline, arguments: [CommandArgument], expecting stamp: CommandDraftStamp) {
+        guard self.stamp == stamp else { return }
         self.baseline = baseline
         self.arguments = arguments
         initialTargets = targets
@@ -88,4 +91,12 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     }
 
     mutating func activate() { version += 1 }
+
+    /// 仅迁移运行内归属，业务身份、参数与原始选择不重建、不重新解析。
+    func handedOff(to hostID: String) -> Self {
+        var next = self
+        next.hostID = hostID
+        next.version += 1
+        return next
+    }
 }

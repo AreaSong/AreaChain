@@ -10,6 +10,8 @@ struct DaybookControlsPreview: View {
     @State private var reduceMotion = false
     @State private var longLabels = false
     @State private var actions = 0
+    @State private var enabledSample = true
+    @State private var disabledSample = false
 
     private let sizes: [DaybookButtonSize] = [.regular, .compact, .inline]
     private let variants: [(String, DaybookButtonVariant)] = [
@@ -28,7 +30,10 @@ struct DaybookControlsPreview: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
             controls
             ScrollView {
-                buttonGrid
+                VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
+                    toggleSamples
+                    buttonGrid
+                }
                 .disabled(disabled)
                 .padding(DaybookSpacing.xs)
             }
@@ -47,6 +52,29 @@ struct DaybookControlsPreview: View {
         .environment(\.locale, Locale(identifier: localeID))
         .environment(\.daybookButtonReduceMotionPreview, reduceMotion)
         .preferredColorScheme(dark ? .dark : .light)
+    }
+
+    private var toggleSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.toggles").font(DaybookType.title)
+            Toggle(longLabels ? "dev.controls.toggle.longLabel" : "residents.enabled", isOn: $enabledSample)
+                .toggleStyle(DaybookToggleStyle())
+            HStack(spacing: DaybookSpacing.md) {
+                Toggle("dev.controls.toggle.hidden", isOn: $disabledSample)
+                    .toggleStyle(DaybookToggleStyle(hiddenLabel: "dev.controls.toggle.hidden"))
+                    .labelsHidden()
+                    .help("dev.controls.toggle.hidden")
+                Toggle("residents.enabled", isOn: .constant(true))
+                    .toggleStyle(DaybookToggleStyle()).disabled(true)
+                Toggle("residents.enabled", isOn: .constant(false))
+                    .toggleStyle(DaybookToggleStyle(hiddenLabel: "residents.enabled")).labelsHidden().disabled(true)
+                Button("dev.controls.toggle.external") {
+                    enabledSample.toggle()
+                    disabledSample.toggle()
+                }.buttonStyle(DaybookButtonStyle(.quiet))
+            }
+            Text("dev.controls.toggle.motion").font(DaybookType.caption)
+        }
     }
 
     private var buttonGrid: some View {

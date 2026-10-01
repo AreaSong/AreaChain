@@ -2,11 +2,13 @@
 
 ## 0. 状态、权威范围与基线
 
+2026-10-01 阶段 1C-3 跨入口转交的纯领域契约增量实施见第 9.12 节；1C-2 纯计划/生命周期协议见第 9.11 节。第 9.10、9.11 节的“后阶段未实施”保留为历史交接记录。本次有独立限定开发授权，前阶段指定复核与整树验收缺口不因此关闭；没有真实窗口、命令执行或磁盘迁移。
+
 **状态：1A 目录和 1B-1 纯领域路径解析/补全已实现，阶段仍 partial；历史证据见 9.6，本轮接口与检查见 9.7。产品 UI 与执行接入尚未实施。** 设计决定来自阶段 0 与本次已确认需求，源码核对日期为 2026-10-01，基线提交为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，另有下述未提交修改。本段及阶段 0 记录保留当时的静态阅读基线；阶段 1A 的实际 Swift 检查另记于第 9.6 节，不能混用历史证据。
 
 本文是该体系唯一的目标设计来源，后续阶段在本文更新决定、映射及完成证据，不复制计划、不另建自动执行器。当前行为仍见[功能清单](features.md)、[使用说明](usage.md)、[架构](architecture.md)；目标与现状有差异时以本文的“目标”理解未来工作，不能据此宣称当前产品已有能力。实现继续遵循[项目规则](../AGENTS.md)、[技能路由](../skill-routing.md)、[组件目录](component-catalog.md)与[质量门禁](quality-gates.md)。本文件不授予安全边界变更、真实数据写入、系统权限、安装或发布权限。
 
-2026-10-01 阶段 1B-2B 增量实施与证据见第 9.9 节。第 9.8 节“仅登记/未实现/不进入 1B-2B”保留为前阶段交接时点，不表示此次没有实施；前阶段指定复核及整树验收缺口未因此关闭。
+2026-10-01 阶段 1C-1 增量实施与证据见第 9.10 节，前文“不进入 1C”保留为历史交接时点。阶段 1B-2B 增量实施与证据见第 9.9 节。第 9.8 节“仅登记/未实现/不进入 1B-2B”保留为前阶段交接时点，不表示此次没有实施；前阶段指定复核及整树验收缺口未因此关闭。
 
 ### 工作区边界
 
@@ -96,6 +98,8 @@
 菜单栏与工作台分别拥有会话。主动“在工作台继续”转交完整查询、参数、正文、固定目标及待执行内容；目标已有草稿时不能覆盖。转交按“检查目标可接收 → 目标接管成功 → 源撤去提交所有权”完成，失败仍由源保留。成功后不能留下两份可分别提交的副本。正在执行或等待授权时暂不转交；转交不是提交，也不是重新解析后改变目标。该所有权规则需要运行内原子切换与失败测试，不要求新增磁盘协议。
 
 ## 4. 多项操作、字段与执行契约
+
+本节描述产品目标。1C-2 只实现第 9.11 节的内存计划、静态校验和纯结果协议；真实业务执行、事务、重试、取消及撤销的能力仍需后续适配验证，不能由本节或协议状态推导已经接线。
 
 ### 目标与队列
 
@@ -265,7 +269,9 @@
 | 1A（本次） | 纯领域指令目录、参数类型与操作模式、目标类型、预览与能力声明；覆盖第 8 节全部 48 组及独立动作，补双语资源 | 唯一 ID/路径/父子结构、映射覆盖、参数及安全交互可测试；全部执行未接线；不含解析、补全算法、UI、持久化、系统 IO 或页面会话。证据见 9.6。 |
 | 1B-1 | 纯领域指令路径解析与补全 | 本轮限定授权；独立指令、双语匹配、简单参数尾段、UTF-16 候选及诊断。不涉及内容集合或页面决策；证据见 9.7，1A 仍 partial。 |
 | 1B-2 | 内容查询契约、条件来源与页面状态转移 | 另行定稿短语/排除/AND/OR、tasks 集合、停用记录、16 页自动条件、日期字段及删除标记寿命；须另行授权。 |
-| 1C | 草稿、固定目标、队列与转交契约；复用 1A 描述及 1B 查询状态 | 表达独立草稿、固定类型/日期身份、依赖与部分失败、成功不重放、设置组一致性及单一提交所有权；不实现执行器、转交服务或持久化。 |
+| 1C-1 | 操作草稿、固定目标与编辑保护；复用 1A 描述及 1B 查询状态 | 纯 Domain 模型、状态转移与测试；实际接口及 partial 证据见 9.10。没有队列、执行、转交、UI 或持久化。 |
+| 1C-2 | 待执行计划、依赖与纯执行状态协议 | 本次限定实施，接口与 partial 证据见 9.11；计划资格与真实接线分层，retained 不充当队列；无真实业务调用。 |
+| 1C-3 | 跨入口转交（未实施） | 在独立授权下定义目标接收、源撤去所有权及失败恢复；不得覆盖目标草稿，执行/授权锁与安全接线另按边界验证。 |
 | 2 | 扩展搜索查询与结果协议，任务/习惯定义和打卡/子任务/手记/标签/图片，以及显式剪贴板/回收站数据提供者；复用 `BoardSearch`、日期/隐私/附件规则 | 依赖 1；多词/短语/排除/交集、范围、片段、排序、父子/附件身份和私密投影通过合成测试；剪贴板/回收站默认隔离。停用习惯、日期字段等口径须先定稿。 |
 | 3 | 从现有按钮/菜单/设置提取缺少的共用业务动作，建立校验、预览、执行结果、字段冲突、重试身份与可撤销能力；先处理授权范围内的本地普通操作 | 依赖 1；保留旧入口契约，仓储/`ModelChanges` 注入测试；逐动作检验相同输入产生相同写入与副作用次数。安全、权限和跨系统一致性改造单独审批，不能随普通提取潜入。 |
 | 4 | 两宿主共享搜索与指令发现 UI，页面默认条件与筛选双向同步，统一结果与键盘；删除已被替代的重复页内搜索 | 依赖 1、2；建议改 `Features/Search`、`Workspace`、`MenuBar`、手记/标签/剪贴板宿主及必要 `Theme`。原页面草稿/滚动、显式范围/删除标记、独立查询、菜单栏与最小窗口等价后才移除旧入口；受限选择器不冒充普通搜索。 |
@@ -738,3 +744,216 @@ created 仅 todo/subtask/routine/diary/image 有真实 createdAt；tag、routine
 整树运行较长时对本次测试宿主做过一次只读采样，命中 `PrivateBackupService.export → VaultCrypto.pbkdf2HMACSHA256` 的既有测试路径，记录 `full-test-sample.txt`；没有改动加密、降低测试强度或触发真实系统操作。完整整树正常结束后才运行最终定向与构建，未并行操纵焦点敏感窗口。
 
 最终 HEAD 仍为 `3fb727743759ebbe2d631b0fcb95dcfd3ef61f5e`。原有设置/隐私与新增并行手记、日期菜单及其消费者测试修改全部保留；它们不属于本阶段交付。未提交、推送、安装、发布或进入 1C。后续仍需指定复核及独立授权的页面/提供者/草稿接线验收，不能把本次 Domain 通过写成生产页面同步、滚动恢复、焦点或草稿保护通过。
+
+### 9.10 阶段 1C-1：操作草稿、固定目标与编辑保护
+
+#### 范围与来源（2026-10-01）
+
+本次仅获准实现纯 Domain 模型、转移和合成测试。开始时 HEAD 为 `3fb727743759ebbe2d631b0fcb95dcfd3ef61f5e`、索引为空，已有查询阶段、按钮及文档差异全部保留。期间并行任务暂存了部分工作区文件（包括初版 CommandDraft / CommandDraftTargets）并继续修改按钮消费者；本任务没有暂存、提交、推送或回退这些变更。交付按工作区最终文件理解，索引不代表完整的本阶段快照。
+
+复用 `CommandCatalog.standard`、`CommandDescriptor` / `CommandID`、`CommandParameter` / `CommandArgument` / `CommandValue`、`CommandArgumentValidation`、`CommandObjectReference` / `CommandOriginalValue`、`ContentQuerySession` / `ContentQueryReducer`。只读参考 `DiaryEditorSession` 的基线、修改判断、显式重载及保存失败保留约束；未引入其仓储、观察者、正文读取或隐私代码。前阶段指定复核缺口保持不变。
+
+| 文件 / 核心接口 | 当前责任和真实消费者 |
+|---|---|
+| [CommandDraftTargets.swift](../AreaChain/Domain/CommandDraftTargets.swift) — `CommandDraftTargets`、`CommandDraftBaseline` | 固定集合、目标诊断、派生 target 参数及原值索引；由 CommandDraft 与其领域测试消费。 |
+| [CommandDraft.swift](../AreaChain/Domain/CommandDraft.swift) — `CommandDraft`、`CommandDraftStamp`、`CommandDraftCheck` | 指令身份、版本、目标、参数、原值和修改判断；静态检查不授予执行资格。 |
+| [CommandDraftSession.swift](../AreaChain/Domain/CommandDraftSession.swift) — `CommandDraftSession`、`CommandDraftReducer.reduce`、`CommandDraftEvent` / `Decision` / `Intent` | 当前草稿、可枚举保留集合、版本确认与纯保护转移；唯一实际消费者是宿主组合与 Domain 测试。 |
+| [CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift) — `queryEvent` / `operationEvent` / `presentationEvent` | 每宿主独立组合；查询委托旧 reducer，展示信号严格不改草稿，不保存原生焦点。 |
+| [CommandDraftTests.swift](../AreaChainTests/Domain/CommandDraftTests.swift)、[CommandDraftProtectionTests.swift](../AreaChainTests/Domain/CommandDraftProtectionTests.swift)、[CommandHostSessionTests.swift](../AreaChainTests/Domain/CommandHostSessionTests.swift) | 合成参数/基线、身份/保护状态序列及查询组合；没有生产 UI、保存、删除、认证或关闭调用。 |
+
+#### 权威状态、身份与基线
+
+- 调用方为每个宿主创建 `CommandDraftSession(hostID:)`；草稿由调用方提供运行内 UUID，`commandID` 不在原草稿上切换。新独立指令创建新草稿，草稿 UUID 不代表持久化对象 ID。无目标设置和新建指令均用 `.none`，不伪造创建结果；新建子任务的 parent 仍是普通类型化参数。
+- `CommandDraftStamp` 为 hostID＋draftID＋version。每次接受参数/目标编辑、显式重载和激活/恢复推进版本；即使文字相同，也使旧回调失效。宿主 revision 保护切换请求；已使用 ID 在运行内保留用于拒绝重复创建，不保存正文历史。
+- `arguments` 是唯一可编辑参数/正文值。候选和预览必须派生读取并发送带 stamp 的 edit，不能各建正文真值；`input.command` 仍只是查询解析结果。target 参数不能通过 edit 或初始参数写入，只在静态校验时从固定集合派生。重复参数初始化/重载被拒绝，未知参数、空值、无效 operation 等可在编辑时保留并产生静态诊断。
+- baseline 使用 `Subject.ambient`（无对象设置等）或 `.object(reference)`＋parameter 索引。缺项表示调用方未提供，区别于已知 `.absent`；按全部固定对象派生原值，相同为 uniform/absent，不同或已有 mixed 为 mixed，任一缺项返回未提供。不会加载数据库、设置或真实正文。原始基线内容与当前正文分离，是比较证据，不是第二份可编辑正文。
+- modification 与参数完整、静态有效、可执行分开。赋值/替换/设置提醒与 uniform 原值比较；清空/取消提醒与 absent 比较；未指定保持原值；追加、标签增删等保守视为修改，是否业务无效果留给后续规则。目标与初始选择不同也算修改。新建正文无原值时，包括空正文在内的显式编辑受保护。没有参数且没有修改的空草稿不触发未保存处理。
+- 外部值通知只返回 `externalValuesRequireExplicitReload`，不保存外部正文、不更新基线、不覆盖当前参数。`reloadDiscardingChanges` 必须显式提供当前 stamp、新基线与参数；过期重载被拒绝。这不是三方冲突解决、读库或保存成功接口。完整冲突、对象存活、权限及业务检查留给执行接线阶段。
+- 新模型没有 Codable、数据库模型、文件写入或日志调用；草稿、基线、会话和事件的默认描述隐藏参数正文。此处只是运行内明文合成契约，没有“已加密/已保护”状态或安全保存承诺。
+
+#### 固定目标与编辑保护
+
+固定选择来源为 none、single、selected、allResults；allResults 只接收用户显式接受后由调用方传入的具体对象数组，没有查询表达式。按完整 `CommandObjectReference` 稳定 first-wins 去重，类型＋UUID＋习惯日期共同区分身份；非法日期、缺少习惯日期、非习惯多带日期均保留并诊断。混合不适用目标返回 `requiresExplicitSelection`，单类型不适用返回 `notApplicable`；不静默筛成子集。空选择、错误单选数量、单对象指令接多个对象分别诊断。
+
+| 转移 / 判断 | 行为 |
+|---|---|
+| start / restore | 无修改时切换；有修改时只建立包含当前 stamp 和目标的决策，不撤走当前草稿。待决期间不接受第二个切换请求。 |
+| resolve retain | 当前草稿进入 retained，目标成为 active；保留集合有完整可读身份/参数/基线，可枚举恢复。 |
+| resolve discard / cancel | 放弃只针对决策中的当前身份/版本；取消保留当前和原 retained，撤销待决请求。 |
+| 编辑发生于待决期间 | 保留最新编辑并撤销旧 pending；旧确认拒绝，调用方需基于新状态重新发起切换。已受理的新草稿 ID 不复用。 |
+| 恢复保留草稿 | 同样先保护当前修改，恢复后推进草稿版本；旧激活期间的候选回调不能复活。 |
+| discardRetained | 必须匹配保留项完整 stamp；旧版本不能删除恢复后再编辑/保留的内容。 |
+| 重复 start / restore / resolve / edit | revision、stamp、pending 和运行内已用 ID 拒绝重复请求；状态不变，不复制保留项。 |
+| externalValuesArrived | 只输出显式重载提示；重复通知不改状态。 |
+| unsavedDrafts / requiresUnsavedContentHandling | 包含 active 和 retained 中所有有修改项；不以参数有效性筛掉长文。仅纯判断，不执行关闭窗口、退出或保存。 |
+| 查询变化、清查询、切页、收起面板、外部点击、重新聚焦 | 不产生操作事件；保持目标、参数、正文、基线和版本。查询返回/同步意图也无权清稿。 |
+
+retained 是**编辑保留集合**，没有待执行标记、排序依赖、运行结果或提交动作；保留不会获得执行资格。`CommandDraftCheck` 复用静态参数校验，所有执行 binding 仍为 `.unwired`，`isExecutable` 始终 false。目标和参数完整不代表真实业务、权限或存活已检查。
+
+#### 后续接线边界
+
+1C-2 仅登记，未实施：复用上述草稿身份、版本、类型化参数、固定对象与基线，另行设计队列项身份、依赖/前步结果引用、执行状态、失败保留与成功不重放；不要给 retained 加一个提交按钮就当队列，也不以本阶段授权执行真实业务。跨草稿合并、重试和撤销均尚未实现。
+
+1C-3 仅登记，未实施：复用 hostID 和草稿 stamp，再定义跨入口所有权转交及失败协议。当前两宿主分别实例化，拒绝外宿主草稿/回调，没有自动共享或接管。生产 UI、原生关闭确认、正文持久化、系统设置写入、模板/历史与执行锁均未接线。私密编辑器后续必须复用既有 DiaryContent / PrivacyAccess / PrivacyVault 保护机制及高风险授权，不通过普通 CommandValue 存密码、密钥或认证结果。
+
+#### 验证与缺口
+
+指定 Cursor verifier 在当前工具清单没有可调用入口，仍 **blocked / 未执行**；没有重新检查登录或修改认证配置，也没有安排其他代理冒充指定复核。阶段整体 **partial**。最终本地检查结果在本节下方登记，不能关闭前阶段缺口或证明生产 UI/真实系统接线通过。
+
+本轮最终检查（2026-10-01），产物在忽略目录 `build/CommandDraftQA/`：
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 领域定向 | 最终 `./scripts/build.sh test` 配合重复 `--only-testing AreaChainTests/类名`：CommandDraftTests、CommandDraftProtectionTests、CommandHostSessionTests、CommandCatalogTests、CommandParameterTests、ContentQuerySessionTests、ContentQueryProjectionTests、ContentQueryPageMappingTests、ContentQueryTests、ContentQueryContractTests、CommandPathTests、CommandPathConflictTests，**110 passed / 0 failed / 0 skipped**，其中本阶段新增 15 项。`final-targeted.log` / `final-targeted-summary.json`；结果包为 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.01_15-37-46-+0800.xcresult`。 |
+| 状态序列覆盖 | 无目标设置、已有记录、新建无持久化 ID；空正文/缺参仍保留；正文/标签/提醒操作；固定集合、类型/日期身份、混合诊断；原值/修改分离、外部通知不覆盖及显式重载；切换三选、恢复、保留项删除；过期确认/编辑/目标回调和重复事件；查询/页面/面板保护、两宿主隔离及关闭纯判断。 |
+| Debug 构建 | `./scripts/build.sh` **passed**；`staticSignatureVerified: true`、`distributionReady: false`。仅构建和静态验签，`build.log`；未安装或启动生产应用。 |
+| 严格局部 lint | 4 份新增 Domain 与 3 份新增测试执行 `swiftlint lint --strict --quiet`，**passed**，`lint.log`。 |
+| Swift 质量门禁 | `python3 -B scripts/quality_gate.py --profile swift --format json` 只执行一次，**failed**：并行新增 `BatchMenuConsumerTests.swift:22` 当时引用不存在的 `NativeSyntaxNative`，导致整树测试编译失败、测试取消；不能记为整树通过。原结果 `swift-gate.json`。该引用随后由并行任务改成 `NativeSyntaxUI`，上述最终定向编译通过，但本任务没有重跑整树碰运气。 |
+| 最终静态/工作流 | `python3 -B scripts/quality_gate.py --profile static --format json` 与 `python3 -B scripts/check_workflow.py` **failed**：并行的组件目录第二阶段 F 链接指向尚不存在的 `engineering.md#第二阶段-f菜单入口与标签合并取消2026-10-01`。本阶段 9.10 引用通过；未替其他任务生成虚假验收章节。静态门禁其余检查通过，包括安全/注释、空白与 172 项脚本测试；见 `static-gate.json` / `workflow.log`。 |
+| 修正与证据追溯 | 首轮新增测试 12 passed / 1 failed：测试的 `.none` 被 Swift 推断为 Optional.nil，已显式写为 CommandDraftTargets.none。主代理自查另使单对象指令收到多目标时不派生首项，补断言后纳入上述最终 110 项。最终测试前后本轮 7 份 Swift SHA-256 一致，`source-before.json` / `source-after.json`；不代表所有并行文件已冻结。 |
+| 独立复核及未执行项 | 指定 Cursor verifier **blocked / 未执行**；主代理自查和测试不是指定复核。没有认证检查、真实数据/设置写入、执行器、生产 UI/原生关闭、私密封存、跨入口转交或 1C-2 实施。本阶段整体 **partial**，旧阶段验收缺口未关闭。 |
+
+本阶段到此停止。后续先补指定复核并处理整树/工作流缺口；1C-2 和 1C-3 仍须独立授权，不能把本次纯领域实现当作已接线、已安装或已发布。
+
+### 9.11 阶段 1C-2：待执行计划、依赖与纯生命周期协议
+
+#### 范围、复用与工作区（2026-10-01）
+
+本次独立授权仅覆盖 Domain 内存契约、纯状态转移与合成测试。复用第 9.10 节的 CommandDraft / Stamp、Targets / Baseline、DraftSession / Reducer 和 HostSession，以及目录、参数、CommandValue、CommandObjectReference、查询会话。没有第二套参数值、对象身份或可编辑正文。实际消费者只有领域宿主组合和测试，没有 handler、仓储、系统服务、持久化、产品 UI 或真实关闭事件。
+
+开始时已存在查询、草稿、按钮消费者及文档的 staged / unstaged / untracked 并行修改；本次保留原修改、不暂存/提交/推送。起始 `check_workflow.py` 确认组件目录的 `engineering.md#第二阶段-f菜单入口与标签合并取消2026-10-01` 仍缺失。实施期间该章节由并行任务补齐，随后静态检查通过；本任务没有替其补写章节，最终检查另列。历史指定复核和整树缺口继续作为历史事实保留，不用本阶段授权冒充前阶段验收。
+
+| 文件 / 核心接口 | 职责 |
+|---|---|
+| [CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift) — `CommandPlan`、`CommandPlanStamp`、`CommandPlanItemStamp`、`CommandPlanEvent`、`CommandPlanSnapshot` | 计划身份/修订版、稳定项顺序、唯一草稿所有权、编辑/移除/组与封存。快照只能从计划封存产生。 |
+| [CommandPlanValidation.swift](../AreaChain/Domain/CommandPlanValidation.swift) — `CommandPlanCheck`、`CommandPlanValidation` | 参数/目标检查、依赖图、结果引用及设置组结构诊断；`canSealProtocol` 不是执行许可。 |
+| [CommandPlanSemantics.swift](../AreaChain/Domain/CommandPlanSemantics.swift) — `CommandPlanSemantics`、`CommandMergeConflict` | 已核实的窄赋值白名单及保守合并冲突原因。 |
+| [CommandExecutionContract.swift](../AreaChain/Domain/CommandExecutionContract.swift) — `CommandExecutionStamp`、`CommandAttemptStamp`、`CommandOperationIdentity`、`CommandExecutionReceipt` / `Result` | 版本化运行/尝试/结果、提交确定性、外部效果、重试/取消/校验的适配协议；没有执行闭包或认证票据。 |
+| [CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift) — `beginNext` / `receive` / `retryAssessment` / `retry` / `resolveValidation` | 不可编辑快照、按顺序的纯状态转移、一次性结果绑定、组结果一致性及成功不重放。 |
+| [CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift) — `enqueue` / `planEvent` / `removeFromPlan` / `sealPlanForProtocol` / `receiveProtocolResult` | 草稿与计划间原子值转移、查询隔离、未保存保护与生命周期组合。 |
+| [CommandDraftSession.swift](../AreaChain/Domain/CommandDraftSession.swift) — `takeForPlan` / `retainFromPlan` | 原会话的窄所有权入口，复用运行内 usedIDs 和 stamp；不改变 retained 的原有用途。 |
+| [CommandDescriptor.swift](../AreaChain/Domain/CommandDescriptor.swift) — `createdObjectType` | 仅增加 `todo.create → todo` 输出形状声明；execution / isExecutable / canEnterOrdinaryQueue 保持原值。 |
+
+#### 权威所有权与编辑保护
+
+- `enqueue(draftStamp, itemID, expecting: planStamp)` 必须显式给出宿主/草稿 UUID/版本、计划修订版及新的计划项 UUID。宿主在同一值事务中从 active 或 retained 移出草稿，再加入计划；任何失败保持双方原样。待决草稿切换先解决，不能清掉 pending 内的内容。仅 retain 不加入计划。
+- 参数、正文、固定目标和原始基线直接由计划项内原 CommandDraft 持有，原草稿 UUID 保留。计划 UUID＋hostID＋revision 拒绝旧计划回调；项 UUID＋version 拒绝旧编辑/引用；草稿自己的版本继续推进。运行内已用项/组/草稿/运行 ID 防止身份重用，没有持久化 ID 登记。
+- `beginEditing` 指定项，编辑直接修改该项，不搬回 active、不建立可提交编辑副本。`finish` 结束编辑；`cancelKeepingChanges` 明确表示结束编辑并保留最新内容，不承诺回滚。结束前不允许封存或移除此项。直接参数与结果引用不可同时成为同一参数的权威值。
+- `removeFromPlan` 只在无依赖者、非组成员、未编辑且版本吻合时退回 retained，并推进草稿版本。丢弃仍须走原有显式草稿操作；移除不是删除正文。组须显式 dissolve 后再移除。移除被依赖项返回依赖者 ID，既不级联删除也不自动解绑。
+- 所有尚未封存的计划项（含未完成参数、无可证明修改的项）都参加宿主 `requiresUnsavedContentHandling`；失败、受阻、未知结果和待处理外部效果也保留保护。查询、切页、清查询、收起、外部点击和重新聚焦都不改计划/运行。没有窗口关闭接线。
+- 封存要求明确计划修订版，参数/目标与整个依赖图均有效，且没有正在编辑的项。内容所有权整体移入执行快照，当前计划清空并推进修订版；之后可以准备新计划，但已有 execution 未显式释放前不能封存第二个运行。新计划编辑不能覆盖旧快照。仅全部结果确认成功时 `releaseSuccessfulExecution` 才释放其运行内正文；失败/未知不退回成可重放创建。
+
+#### 计划资格、顺序、合并与结果引用
+
+普通计划只接受目录 `.modification + .declared + .eligibleAfterWiring`；unresolved / unavailable 和排除类指令直接拒绝，原草稿保留。导航、退出、隐私转换、永久删除、备份恢复等不能混入。参数未完成可以加入，`CommandPlanCheck` 显示 needsInput / blocked / needsValidation；统一封存不会静默跳过。`.eligibleAfterWiring` 仅是未来普通队列兼容性，所有实际 `isExecutable` 和 `canEnterOrdinaryQueue` 仍为 false。
+
+默认按列表顺序；显式重排必须保持前置在前、组连续，且不丢项或重复项。依赖边检查未知、自依赖、环、逆序和失效输出版本。原子组仅限 language / appearance / truncation / captureSource 四项本地偏好声明，不允许组内依赖；整组是一个生命周期单元。原子结果覆盖全部成员，没有逐成员半成功入口；这只约束后续适配必须报告什么，不证明 UserDefaults 事务已实现。
+
+合并须显式请求，仅合并相邻项。相同命令（业务字段相同）、相同固定选择/目标、完全相同且有已知非 mixed、字段类型有效原值的基线、单个 `.assign` 参数、静态有效、双方无前置/被依赖/结果引用且不在原子组时，保留最早项/草稿/基线并采用最后赋值，记录被合并草稿 stamp。白名单为四项偏好、todo.move、todo.priority、routine.priority。依据是现有偏好赋值、`SwiftDataTaskRepository.moveTodo` / `setPriority` 与 routine `setPriority` 的字段语义；这里只合并尚未执行的意图，不证明通知或业务副作用的事务/幂等。标题入口可能联动 NLP/标签解析，暂不自动合并。追加、替换正文、标签增删、跨命令同名参数、部分重叠批量目标、未知/不兼容基线、有依赖以及非相邻项保留两项并返回具体冲突。已经封存的步骤不属于可合并计划。
+
+`CommandCreationReference(producer: itemStamp, outputType:)` 可以绑定声明为 object / objects 的参数（包括 target、子任务 parent），自动计入依赖。先前没有对象 UUID，不把任意字符串解释成表达式。这里只声明 todo.create 的单 todo 输出：现有 [SwiftDataTaskRepository.addTodo](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift) 在 `saveAndNotify` 成功后返回 TodoItem；没有调用它，也未核实其他创建动作具备单对象输出，因此不扩展其声明。
+
+生产者版本变动使引用失效，必须显式刷新。生产者尚未成功、类型不符或没有输出时不能解析；前置失败/冲突/未知或外部效果未完成会阻塞依赖者，独立项继续。合成成功输出先检查成员和声明类型，再登记一次；消费者第一次进入 local 尝试时把对象引用固定在 bindings，只派生参数/目标视图，草稿不写占位对象。重试消费者复用固定 bindings；成功生产者不允许 local 重试或换绑另一对象。缺失输出保留 missingOutput 阻塞。
+
+#### 纯生命周期与未来适配边界
+
+- `CommandOperationState` 区分待补充、待校验、受阻、待执行、执行中、等待授权、冲突、成功、失败、未执行和结果待核实。ready / running / succeeded 是生命周期协议状态，不能当作真实接线证明；本阶段测试用合成事件推进，标准目录没有 wired 分支或 testOnly 开关。
+- 运行身份包含 runID 和封存 planStamp；操作身份保留 itemStamp、operationID（稳定项 UUID）；每个普通项/原子组有单调尝试号和 local / external 阶段。只接受当前运行/尝试的结果；完全相同的当前 receipt 幂等接受且不再改变状态，冲突回调、旧修订版、旧尝试、未来尝试均拒绝。重试授权后、下次开始前也拒绝上一 receipt。
+- local 提交确定性分为 notSubmitted / committed / unknown；external 分 notification / calendar 的 pending / running / succeeded / failed / unknown。local committed 后永不倒退成 notSubmitted。外部失败只能针对已确认可安全重复的失败效果重试，已经成功的效果不重放，local 创建和已登记输出也不重放。
+- failedWithoutCommit / notExecuted 还须由后续适配确认 safeLocalReplay 才进入 local 重试；已提交部分只接受 idempotentExternal 指定的失败子集。未知提交或任何未知外部结果返回 requiresVerification；能力未核实返回 requiresAdapterConfirmation。这里的 assurance 只验证协议一致性，本阶段没有验证任何真实重试能力、幂等存储、补偿或业务撤销。
+- 取消只对尝试号为 0 的 ready / blocked 单元标记 notExecuted；已开始返回需要适配确认，本地已提交返回不能取消已提交内容。没有真实取消句柄；收起面板不调用取消，取消不等于撤销。
+- waitingAuthorization 保持忙碌；冲突保留指向快照基线的字段诊断，并检查所属项、字段、目标与 valueChanged 所需的基线，不读取当前真实值、复制当前正文或实现冲突 UI。后续适配可用 `resolveValidation` 提供 readyForProtocol / notExecuted 纯结果，重新开始时推进尝试号；对象不可用诊断不能直接恢复 ready。这个结果不是认证票据，也没有解锁或权限变化。
+- 设置组统一成功/失败/冲突/未知结果来自后续真实适配确认。生产侧仍须验证事务能力、业务校验、目标存活、权限和接线；不得直接把 `beginNext` 或 `canSealProtocol` 接到真实 handler。
+- 新类型没有 IO、Codable 或数据库模型。宿主、计划、快照、草稿、基线、事件、结果和派生参数的默认 description/debugDescription 隐藏正文；失败类别只含类型化标识，不接原始错误字符串、私密名称、文件路径或凭据。
+
+#### 验证与交接
+
+新增测试入口：[CommandPlanOwnershipTests](../AreaChainTests/Domain/CommandPlanOwnershipTests.swift)、[CommandPlanDependencyTests](../AreaChainTests/Domain/CommandPlanDependencyTests.swift)、[CommandPlanMergeTests](../AreaChainTests/Domain/CommandPlanMergeTests.swift)、[CommandExecutionTests](../AreaChainTests/Domain/CommandExecutionTests.swift)、[CommandAtomicPlanTests](../AreaChainTests/Domain/CommandAtomicPlanTests.swift)，合成夹具仅在 [CommandPlanTestSupport](../AreaChainTests/Domain/CommandPlanTestSupport.swift)。它们通过宿主真实纯转移序列验证所有权、缺参/排除、顺序/环/移除、保守合并、类型化输出/固定绑定、失败隔离、组协议、重复/旧结果、本地与外部区分、未知结果/重试门槛、取消/校验、查询/面板保护和描述脱敏；不调用业务或系统 API。
+
+指定 Cursor verifier 当前无可调用入口，**blocked / 未执行**；没有再次检查登录、改认证或以其他代理复核替代。阶段整体仍为 **partial**。最终源码对应的本地证据在下表登记；本阶段不安装、不发布、不启动生产应用，不关闭前阶段缺口。
+
+| 检查 | 最终结果 |
+|---|---|
+| 最终领域及既有草稿/宿主/目录/参数/查询/路径回归 | `./scripts/build.sh test` 配合 17 个重复 `--only-testing AreaChainTests/类名`：本节五套新测试，以及 CommandDraftTests / CommandDraftProtectionTests / CommandHostSessionTests / CommandCatalogTests / CommandParameterTests / ContentQuerySessionTests / ContentQueryProjectionTests / ContentQueryPageMappingTests / ContentQueryTests / ContentQueryContractTests / CommandPathTests / CommandPathConflictTests。**135 passed / 0 failed / 0 skipped**，含本阶段 25 项；`final-targeted.log`、`final-targeted-summary.json`、保存副本 `DomainRegression.xcresult`，原包时间为 `2026.10.01_16-19-32-+0800`。 |
+| Debug 构建及静态验签 | 最终源码运行 `./scripts/build.sh` **passed**，`staticSignatureVerified: true`、`distributionReady: false`；`build.log`。没有安装或启动生产应用，不证明真实业务运行。 |
+| Swift 质量门禁 | `python3 -B scripts/quality_gate.py --profile swift --format json` **passed**；整树摘要 **1170 passed / 0 failed / 1 skipped**（参数化运行计数为 1321 passed），`swift-gate.json`、`whole-tree-summary.json`。这是最终基线类型校验、冲突字段校验和宿主描述补强之前的编译版本；补强后重跑上述 135 项和 Debug 构建，没有重跑整树，不宣称最终整树全部通过。整树原结果包在后续提取明细时已不存在，保留的摘要未列出跳过项身份，1 项不计为通过。 |
+| 严格局部 lint、静态与工作流 | 14 份本轮 Swift 执行 `swiftlint lint --strict --quiet` **passed**；最终 `python3 -B scripts/quality_gate.py --profile static --format json` 与 `python3 -B scripts/check_workflow.py` 均 **passed**，见 `static-gate.json` / `workflow.log`。静态门禁含 **172 项脚本回归**；检查器接口/规则没有修改。 |
+| 源码与产物追溯 | 忽略目录 `build/CommandPlanQA/` 保存日志、摘要、领域结果包及 14 份 Swift 的 SHA-256。`source-before-final.json` 与 `source-after-final.json` 相同，关联最终测试/构建；`source-before.json` 对应收尾补强之前。环境为 macOS 26.6.2 arm64、Xcode 26.6 (17F113)、Swift 6.3.3、Python 3.9.6。并行 UI/Theme 仍在变化，没有冻结整树，HEAD/索引不能替代源码清单。 |
+
+首轮新增测试编译曾因 Testing 宏对嵌套 Optional 描述表达式的展开报错；改成局部描述变量后 22 项通过。随后新增/收紧合并、依赖恢复、描述与诊断反例，最终 25 项纳入上述 135 项回归。构建仍有既有未用变量、旧可访问性 API 和多目标选择警告；没有借本阶段改动清理这些历史项。主代理沿所有权、基线、目标引用和结果转换自查；这不替代指定 Cursor verifier。
+
+1C-3 仅接续要求，**未实施**：必须同时处理 hostID、planID/revision、draftID/version、itemID/version、运行/操作/尝试身份，以及 active / retained / plan / execution 的唯一所有权。不能只转交 active；运行快照不得复制为可提交草稿。`isBusy` 表示 running / waitingAuthorization，非忙碌不代表 execution 已解决；还须检查未保存保护、未释放运行、冲突/未知结果和单次 receipt。后续另行设计转交确认、失败回滚和迟到回调拒绝，不持久化本阶段明文状态，也不实现隐私锁定封存。本阶段到此停止。
+
+### 9.12 阶段 1C-3：跨入口主动转交与唯一所有权
+
+#### 范围与复用（2026-10-01）
+
+本次独立授权仅覆盖纯 Domain 协议、合成普通内容测试及文档。开始时索引为空，已有 1C-1/1C-2 领域文件和并行按钮/开关、文案、工程文档、检查器差异全部保留。没有提交、推送、安装、生产应用启动、真实窗口操作、业务执行或磁盘数据迁移；第 9.6–9.11 节的历史验收与指定复核缺口不变。
+
+| 核心接口 | 责任与实际消费者 |
+|---|---|
+| [CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift) — `host` / `validate` / `send` / `prepare` / `confirm` / `commit` / `cancel` / `fail` | 注入的运行内引用对象，MainActor 串行登记宿主与唯一有效代次；没有全局单例、窗口、资源对象或持久化。当前只由 Domain 测试消费。 |
+| [CommandHandoffContract.swift](../AreaChain/Domain/CommandHandoffContract.swift) — `CommandHostOwnership` / `Lease` / `OwnedHost`、`CommandHandoffTicket` / `Requirements` / `Readiness` / `Status` | 版本化事件、接收条件和票据生命周期；`CommandHostEvent` 委托原宿主方法，不建立第二份草稿/计划/执行协议。 |
+| [CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift) — `handoffStates` / `handoffNativeSelections` | 生成候选双方状态，复用现有查询、草稿、计划和 usedRunIDs。候选值不授予提交所有权。 |
+| [CommandDraft.swift](../AreaChain/Domain/CommandDraft.swift)、[CommandDraftSession.swift](../AreaChain/Domain/CommandDraftSession.swift)、[CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift) — `handedOff` / `emptiedAfterHandoff` | 保留固定目标、参数/正文、基线、初始选择、稳定身份及防重放记录；计划图一次校验与迁移。 |
+| [ContentQuerySession.swift](../AreaChain/Domain/ContentQuerySession.swift)、[ContentQueryCondition.swift](../AreaChain/Domain/ContentQueryCondition.swift)、[ContentQueryReducer.swift](../AreaChain/Domain/ContentQueryReducer.swift) | 最小增加冻结来源、日期上下文、独立转交原因与查询替换判断；保留旧 reducer 与页面映射。 |
+
+`CommandExecutionRun`、Execution/Attempt/Operation 身份和状态直接复用，只用于资格判断与原有纯事件入口，**不迁移运行**。没有新增业务对象、参数解析器、真实 handler 或认证凭据；全部目录仍 `.unwired`，计划/草稿/运行的 `isExecutable` 仍为 false。
+
+#### 资格与接收需求
+
+- source 与 target 必须是协调者登记的不同宿主，lease 包含当前协调者 UUID、hostID、所有权 generation 和宿主 revision。旧身份、旧修订、重复转交 ID 或任一端已有进行中票据均拒绝。
+- 任一端 `execution != nil` 一律拒绝，包括 ready、running、waitingAuthorization、failed、conflict、notExecuted、部分提交、未知本地/外部结果和全部成功。不能通过 `isBusy == false` 或未保存判断绕过。只有全部成功先经原 `releaseSuccessfulExecution` 显式释放，才重新检查普通资格；失败/未知不能变回可重放草稿。
+- 任一端有草稿切换 pending 时拒绝。目标有任何 active、retained、计划项或计划编辑意图时拒绝，包含参数为空或 `modification == unchanged` 的草稿。源计划可以带未完成参数或正在编辑的项，但已有失效依赖/创建引用必须先显式修正，转交不暗中修复旧引用。
+- 目标仅有查询时，`requiresHandoffReplacement` 检查非空原始输入（含空白和指令候选）、用户条件、抑制维度、独立绑定和未结束返回上下文。需要替换时票据输出 `replacesQuery`，宿主必须显式接受；普通页面自动条件本身不要求替换。确认绑定目标当前 lease，新输入使其过期。
+- active、retained、plan 的参数和基线中出现 `nativeSelection` 时收集去重句柄，票据输出 `nativeSelections`。`confirm` 要求适配报告完全一致的已接续集合；漏项、多项或未确认均不提交。UUID 复制、纯协议确认不等于文件访问能力或安全验收。
+
+#### 原子接管、失败与旧事件
+
+1. `prepare` 只登记票据及双方修订，不移动内容、不冻结普通编辑。每次由 `send` 受理的事件都推进宿主 revision，包含同值输入和仅产生意图的事件；底层明确拒绝的事件也保守使准备过期，抛出错误则不发布状态。
+2. `confirm` 接收明确的宿主准备成功事件。相同确认在双方 lease 仍有效时幂等；替换接受及原生资源确认都绑定该票据。它不负责创建窗口、焦点或执行命令。
+3. `commit` 重新核对票据、双端 lease、资格和计划图，在局部候选中迁移双方，全部成功后以一次 `hosts = next` 发布；同步 MainActor 方法没有 await、外部回调或可失败的中间发布。目标接管和源撤权不可拆成两个公开提交动作。
+4. 成功后两端 generation 与 revision 都推进，源恢复自己的当前页空查询/默认条件，清空其 active、retained 和 plan 内容，但保留防重放记录。源可用新 lease 创建新的独立意图，不能重新获得已转交内容。
+5. `cancel` / `fail` 只终结票据，不改变任一端原状态/所有权。适配失败原因仅为 receiverUnavailable / windowPreparationFailed / resourceUnavailable / commitFailed，不接收原始错误正文。过期票据仍可显式取消；失败的提交不丢最新编辑。completed / cancelled / failed 身份留作运行内墓碑，不能重复确认、提交或用相同 ID 再准备。
+
+Swift 值副本不具备所有权证明。协调者只从页面创建空宿主，没有导入旧 `CommandHostSession` 快照的入口；快照可供渲染/纯计算，不能独立成为执行入口。后续生产装配须让两个入口共享**同一个注入的协调者实例**，保留事件产生时的 lease，所有编辑、计划提交、确认与迟到回调走它核验。不得用新 lease 给旧事件补身份，也不得先 `validate` 后跨 await 再无检查调用 handler。旧宿主字段清空只是状态结果，真正撤权来自权威登记的代次切换。令牌不提供安全认证能力，不能替代权限、对象存活、业务校验与隐私锁代次核对。
+
+#### 身份迁移与唯一参数所有者
+
+- draftID、planID、itemID、固定对象 type/UUID/习惯记录 dayKey、参数/正文、基线和 initialTargets 保持；草稿 hostID 改为目标，version 推进。没有重新搜索、翻译、解析或读取真实对象。
+- plan revision 推进至双方较大修订加一；每个项 version 推进。先校验旧结构，再按完整旧 itemStamp 映射新 stamp，一次更新全部创建结果引用并重新校验。顺序、前置 ID、编辑中项、原子组 ID 均保留；mergedOrigins 作为历史出处保留原 stamp，不伪装成新宿主编辑身份。
+- 草稿 usedIDs、计划 usedIDs（项与组）和 usedRunIDs 在接收方取双方并集；源清空内容时仍保留自己的历史。转交往返不允许重建旧草稿、计划项/组或运行身份。
+- active、retained、plan 分区与原值一并接续，不给任何一项创建另一份可编辑参数真值。接收后仍走原入计划、就地编辑、移除退回 retained 和封存协议。已执行步骤与已成功创建输出从不复活，因为任何未释放运行都不能转交。
+
+#### 查询与页面接续
+
+源 `input`（含诊断 UTF-16 范围）、条件 ID/值、显式范围、用户条件与实际 composition 原样接续。原 `.page` 条件冻结为 `.handoffPage(sourceLocation)`；缺少 scope 时显式冻结实际 global，避免目标页补默认范围。`handoffContext` 保留原来源/日期解释上下文，接收 `page` 与 `returnPoint` 使用目标当前可用位置及其 suppressed 状态；反复转交继续保留最初来源。
+
+接收后 `.independent(.handoff)`，源页刷新、目标刷新及切页不再更新冻结条件。冻结条件不计为用户主动搜索；只有原输入/用户条件或后续显式编辑激活结果。后续显式输入优先替换同维冻结条件；移除范围后切页仍保持独立。重新绑定必须发送 `.rebind`，只释放冻结自动条件、恢复目标默认条件；与目标不兼容的用户显式范围仍返回 requiresQueryEditing，不能覆盖。
+
+`.clearUserQuery` 或用户将查询清空触发返回时，移除冻结上下文，使用目标返回位置，不发送源宿主导航。保留源查询实际语义和保留源导航是不同责任；焦点、窗口几何、滚动视图对象均不进入 Domain。
+
+#### 原生与隐私适配前置
+
+未来适配负责真实目标准备、窗口创建/焦点、文件能力接续及失败回报，成功准备后才调用 `confirm`。认证不随转交继承，waitingAuthorization 运行被拒绝。私密正文封存/解封、锁定代次及访问校验必须接既有 DiaryContent / PrivacyAccess / PrivacyVault，不把密码、路径、权限票据或密钥塞进 CommandValue。本阶段只验证合成普通内容，未改变敏感内容或授权边界，不能宣称私密转交安全通过。
+
+#### 验证、缺口与停止点
+
+新增合成测试：[CommandHandoffTests](../AreaChainTests/Domain/CommandHandoffTests.swift)、[CommandHandoffIdentityTests](../AreaChainTests/Domain/CommandHandoffIdentityTests.swift)、[CommandHandoffBoundaryTests](../AreaChainTests/Domain/CommandHandoffBoundaryTests.swift)、[ContentQueryHandoffTests](../AreaChainTests/Domain/ContentQueryHandoffTests.swift)，共用 [CommandHandoffTestSupport](../AreaChainTests/Domain/CommandHandoffTestSupport.swift)。覆盖双端资格、查询替换/过期、编辑/取消/失败/重复、值副本与旧事件、稳定对象/基线/引用/组/防重放、原生句柄、全部运行状态、冻结查询/明确重绑/目标返回及描述脱敏；没有 handler、系统认证或原生交互测试。
+
+指定 Cursor `verifier` 仍无可调用入口，**blocked / 未执行**。仅核对本次工具能力清单，未重复登录检查、修改认证或用其他代理/检查冒充指定复核；整体状态 **partial**。首轮两套测试为 13 tests / 22 参数化运行通过；扩展测试曾因测试比较非 Equatable 日期上下文而编译失败，修为字段断言。随后并行 DaybookToggleStyleTests 未定义 acceptsKeyboard 又阻断整个测试 target；保留这些事实，最终证据另记于下表。
+
+`quality_gate.py --profile swift` 无条件调用全量 `build.sh test`，会运行真实原生窗口交互。根据本阶段明确边界未执行该 profile，也未运行会自动选择它的默认 auto；选用原静态/工作流入口、严格局部 SwiftLint、领域定向回归与 Debug 构建，不把这组证据称为整树 Swift 门禁通过。检查器接口/规则未改动，不新增专项脚本。
+
+最终检查（2026-10-01），日志、源码摘要与结果包保存在忽略目录 `build/CommandHandoffQA/`：
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 最终正常领域回归 | `./scripts/build.sh test` 配合 21 个 `--only-testing AreaChainTests/类名`：本节四套新增测试，以及 CommandPlanOwnershipTests / CommandPlanDependencyTests / CommandPlanMergeTests / CommandExecutionTests / CommandAtomicPlanTests / CommandDraftTests / CommandDraftProtectionTests / CommandHostSessionTests / CommandCatalogTests / CommandParameterTests / ContentQuerySessionTests / ContentQueryProjectionTests / ContentQueryPageMappingTests / ContentQueryTests / ContentQueryContractTests / CommandPathTests / CommandPathConflictTests。**165 passed / 0 failed / 0 skipped**，参数化运行计数 **203 passed**，其中新增 30 项。`host-regression-command.json`、`host-regression.log`、`host-regression-summary.json` 与 `HostDomainRegression.xcresult`。最终正常入口没有排除任何源码；并行 UI 文件已由其任务修正。 |
+| 临时隔离回归 | 并行测试编译阻断期间，直接 xcodebuild 使用独立 `com.areachain.command-handoff-qa`、ad-hoc 签名、独立 DerivedData、串行和清除真实钥匙串授权；仅该次以 `EXCLUDED_SOURCE_FILE_NAMES=DaybookToggleStyleTests.swift` 排除无关 UI 测试源文件，不修改它。**163 tests / 200 参数化运行 passed，0 failed / 0 skipped**，后续补两项测试后由上行正常入口重新覆盖。`regression-command.json` / `regression-summary.json` / `DomainRegression.xcresult`；不作为整树通过证据。 |
+| Debug 构建与静态验签 | `./scripts/build.sh` **passed**，`staticSignatureVerified: true`、`distributionReady: false`；`build.log`。没有安装、生产启动或真实系统认证；测试结束后重建正常 Debug 产物。 |
+| 严格局部 lint、静态与工作流 | 本轮 9 份 Domain 与 5 份测试执行 `swiftlint lint --strict --quiet` **passed**；`python3 -B scripts/quality_gate.py --profile static --format json` 与 `python3 -B scripts/check_workflow.py` **passed**。静态入口含 **173 项脚本回归**；`lint.log` / `static-gate.json` / `workflow.log`。检查器差异属于既有并行工作，本阶段未新增检查规则。 |
+| 源码追溯 | 最终正常回归前后 14 份 Swift 的 SHA-256 一致，见 `source-before-host-regression.json` / `source-after-host-regression.json`；隔离回归到最终回归只有两份测试文件新增覆盖，9 份 Domain 实现未改变。macOS 26.6.2 arm64、Xcode 26.6 (17F113)、Swift 6.3.3。整树仍有并行改动，没有用 HEAD/索引假定冻结。 |
+| 指定复核与未运行项 | Cursor verifier **blocked / 未执行**；测试和主代理自查不替代指定复核。全量 auto / swift 门禁未运行；已有未用变量、旧可访问性 API 和多目标警告未在此阶段清理。没有真实窗口接收/焦点、文件访问能力、私密封存/解封、系统认证、磁盘迁移或业务执行证据。整体 **partial**，不关闭历史缺口。 |
+
+到 1C-3 停止；纯协议通过不等于真实窗口、权限资源或私密转交通过，不自动进入后续阶段。

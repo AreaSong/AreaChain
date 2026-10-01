@@ -213,3 +213,25 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 `ContentQuerySession` 是宿主独立持有的 Domain 值；`ContentQueryReducer` 接收显式访问/编辑/刷新/回声事件，输出新状态及页面同步/返回意图。页面由调用方传入 `ContentQueryPageContext`，没有反向依赖 WorkspaceNavigation、共享偏好或系统 IO。来源与稳定条件 ID 不从文字推断；自动条件没有伪造 NSRange。页面快照仅供默认映射，完整查询是有效条件的权威来源，`ContentQueryPageProjection` 只读派生可表达字段与扩展条件身份，不能用旧 BoardFilter 覆盖完整 AST。
 
 原 ContentQueryValidation 的可满足性算法增加无位置语义入口，保留原文本诊断 API。新状态当前仅由 Domain 测试消费；操作草稿不在其字段和副作用类型中，滚动由宿主持有，生产页面和提供者未接线。生命周期、映射现状差异、日期/标签适配及实际证据统一见[权威设计第 9.9 节](unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。
+
+### 操作草稿领域契约（1C-1）
+
+`CommandDraftSession` 由宿主持有当前与保留草稿，`CommandDraftReducer` 只做显式事件的纯转移。`CommandDraft` 用身份/版本守住类型化参数与编辑基线，`CommandDraftTargets` 固定具体对象集合；目标参数只派生生成，正文不进入查询真值。`CommandHostSession` 并列组合查询和操作，查询转移委托原 `ContentQueryReducer`，返回/同步与展示信号不清草稿。当前消费者只有领域测试，没有生产服务或 UI 接线。
+
+保留集合不承担队列和执行；外部值不会自动更新基线，重载/放弃须匹配版本。没有持久化或私密保护实现，后续编辑器接线仍需原隐私机制。完整契约、1C-2/1C-3 边界和 partial 验证只维护在[权威设计第 9.10 节](unified-search-commands.md#910-阶段-1c-1操作草稿固定目标与编辑保护)。
+
+### 待执行计划与纯生命周期（1C-2）
+
+`CommandHostSession` 增加 `CommandPlan` 与可选 `CommandExecutionRun`。显式入计划通过原 DraftSession 的窄入口移交草稿；计划项持有唯一参数，返回编辑就地进行，移除退回 retained。封存按计划修订版将内容移入不可编辑快照，新计划与旧运行没有可分别提交的正文副本。查询 reducer 和展示信号没有修改这些所有者的权限。运行内身份防重用，不建立持久化任务系统。
+
+`CommandPlanValidation` 复用参数/目标检查，新增依赖图与类型化创建输出引用；`CommandPlanSemantics` 只处理已核实赋值白名单。`CommandExecutionRun` 接收纯结果协议，区分 local 提交确定性、external 效果、依赖阻塞和原子组；没有 handler、IO、真实事务、重试或撤销实现。目录全部 unwired；协议 ready 不等于可执行。新接口只由宿主组合和 Domain 测试消费。详细身份/所有权、合并限制、适配边界、1C-3 接续及 partial 证据只维护在[权威设计第 9.11 节](unified-search-commands.md#911-阶段-1c-2待执行计划依赖与纯生命周期协议)。
+
+### 主动转交与运行内所有权（1C-3）
+
+`CommandHandoffCoordinator` 是注入的 MainActor 引用对象，唯一登记参与转交的指令宿主、当前 lease（协调者/宿主/所有权代次/修订）及票据状态；不作为全局单例或窗口管理器。`CommandHostEvent` 委托原 HostSession，原会话值仅作快照/纯计算。未来两个入口必须共用此协调者，不能从旧值副本取得执行所有权；所有延迟事件保留产生时的 lease。
+
+准备与确认不移动内容；提交重新检查双方、在局部候选中更新草稿/计划与引用，单次发布同时完成目标接管和源撤权。任何未释放 execution、未决草稿确认、非空目标操作或旧修订都拒绝。查询冻结来源页语义与日期上下文，目标持有自己的导航返回位置；重新绑定须显式请求。原生句柄需适配确认接续，认证/隐私保护不继承；运行不迁移、没有业务执行或磁盘写入。资格、状态机、身份映射、后续适配门禁与 partial 证据只维护在[权威设计第 9.12 节](unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。
+
+### 公共启用开关（第三阶段 A）
+
+`DaybookToggleStyle` 位于 Theme，只承载外观，原生 `Toggle` 保留鼠标、状态与辅助操作；显式焦点容器消费空格，按住/重复不写入，释放仅写入一次，禁用或失焦清除临时按下状态。唯一业务状态是消费者的 Binding。几何集中在 `DaybookMetrics.Toggle`，颜色、字号、描边与动效复用 Daybook 令牌。隐藏可见标签须传本地化 `hiddenLabel`，不移除语义名称。新建表单仍是草稿提交，管理行仍经原绑定与仓储即时启停；不在公共层持有保存/导航能力，也不缓存乐观布尔值。入口与回归见[组件目录](component-catalog.md)。

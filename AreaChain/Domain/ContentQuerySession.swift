@@ -5,7 +5,7 @@ enum ContentQueryPageBinding: Equatable {
     case independent(ContentQueryDetachment)
 }
 
-enum ContentQueryDetachment: Equatable { case removedPageScope, explicit, userScope }
+enum ContentQueryDetachment: Equatable { case removedPageScope, explicit, userScope, handoff }
 
 struct ContentQueryReturnPoint: Equatable {
     var context: ContentQueryPageContext
@@ -13,7 +13,7 @@ struct ContentQueryReturnPoint: Equatable {
 }
 
 /// 值类型由各宿主分别持有。没有单例、持久化或操作草稿字段。
-struct ContentQuerySession: Equatable {
+struct ContentQuerySession: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     let hostID: String
     var page: ContentQueryPageContext
     var input: ContentQueryInput = .content(.init(source: ""))
@@ -22,6 +22,8 @@ struct ContentQuerySession: Equatable {
     var suppressed: Set<ContentQueryConditionDimension> = []
     var returnPoint: ContentQueryReturnPoint?
     var nextConditionID = 0
+    /// 仅用于冻结日期解释和来源；导航始终使用接收宿主的 page/returnPoint。
+    var handoffContext: ContentQueryPageContext?
 
     init(page: ContentQueryPageContext) {
         hostID = page.location.hostID
@@ -33,7 +35,7 @@ struct ContentQuerySession: Equatable {
     var showsResults: Bool {
         guard case .content(let query) = input else { return false }
         return !query.source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            || conditions.contains { !$0.origin.isPage }
+            || conditions.contains { $0.origin.isUser }
     }
 
     var textDiagnostics: [ContentQueryDiagnostic] {
@@ -42,7 +44,40 @@ struct ContentQuerySession: Equatable {
     }
 
     var conditionDiagnostics: [ContentQueryConditionDiagnostic] {
-        ContentQueryConditionValidation.diagnostics(conditions, dates: page.dates)
+        ContentQueryConditionValidation.diagnostics(conditions, dates: queryDates)
+    }
+
+    var queryDates: ContentQueryDateContext { handoffContext?.dates ?? page.dates }
+    var description: String { "ContentQuerySession(redacted)" }
+    var debugDescription: String { description }
+
+    /// 包括指令输入、显式脱离/抑制和未结束返回上下文；不能用 modification 代替操作意图。
+    var requiresHandoffReplacement: Bool {
+        if case .command = input { return true }
+        if case .content(let query) = input, !query.source.isEmpty { return true }
+        return conditions.contains { $0.origin.isUser } || !suppressed.isEmpty
+            || returnPoint != nil || binding != .page(visitID: page.location.visitID)
+    }
+
+    func handedOff(to target: Self) -> Self {
+        var next = Self(page: target.page)
+        next.input = input
+        next.conditions = conditions.map { condition in
+            var moved = condition
+            if moved.origin.isPage { moved.origin = .handoffPage(page.location) }
+            return moved
+        }
+        next.nextConditionID = nextConditionID
+        // 没有显式 scope 时也要冻结实际 global，不能由接收页补出自己的默认范围。
+        if !conditions.contains(where: { $0.value.dimension == .scope }) {
+            let frozen = next.makeCondition(.scope(.global), origin: .handoffPage(page.location))
+            next.conditions.append(frozen)
+        }
+        next.binding = .independent(.handoff)
+        next.suppressed = suppressed
+        next.handoffContext = handoffContext ?? page
+        next.returnPoint = .init(context: target.page, suppressed: target.suppressed)
+        return next
     }
 
     var isReady: Bool {
@@ -80,6 +115,8 @@ struct ContentQuerySession: Equatable {
     mutating func refreshAutomaticConditions() {
         let previous = conditions.filter { $0.origin.isPage }
         conditions.removeAll { $0.origin.isPage }
+        let explicitDimensions = Set(conditions.filter { $0.origin.isUser }.compactMap { $0.value.dimension })
+        conditions.removeAll { $0.origin.isHandoffPage && $0.value.dimension.map(explicitDimensions.contains) == true }
         guard binding == .page(visitID: page.location.visitID) else { return }
         let userDimensions = Set(conditions.compactMap { $0.value.dimension })
         for value in ContentQueryPageMapping.defaults(page) {

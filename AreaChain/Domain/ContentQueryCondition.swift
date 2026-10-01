@@ -78,6 +78,8 @@ struct ContentQueryConditionID: Hashable { let rawValue: Int }
 
 enum ContentQueryConditionOrigin: Equatable {
     case page(visitID: String)
+    /// 冻结的来源页条件：保留出处，但不再随任一页面自动刷新，也不冒充用户输入。
+    case handoffPage(ContentQueryPageLocation)
     case input(range: NSRange)
     case user
 
@@ -85,6 +87,13 @@ enum ContentQueryConditionOrigin: Equatable {
         if case .page = self { return true }
         return false
     }
+
+    var isHandoffPage: Bool {
+        if case .handoffPage = self { return true }
+        return false
+    }
+
+    var isUser: Bool { !isPage && !isHandoffPage }
 }
 
 struct ContentQueryCondition: Equatable, Identifiable {

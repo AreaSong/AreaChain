@@ -118,4 +118,7 @@ struct CommandDescriptor: Identifiable, Equatable, Sendable {
     // 阶段 1A 故意没有 wired 分支，目录完整不意味着任意适配已接通。
     var isExecutable: Bool { false }
     var canEnterOrdinaryQueue: Bool { isExecutable && queue == .eligibleAfterWiring }
+
+    /// 仅声明已核实的单对象创建输出；addTodo 提交后返回 TodoItem，不代表 handler 已接线。
+    var createdObjectType: CommandObjectType? { id.rawValue == "todo.create" ? .todo : nil }
 }

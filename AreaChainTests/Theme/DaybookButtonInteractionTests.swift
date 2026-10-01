@@ -59,7 +59,7 @@ struct DaybookButtonInteractionTests {
     @Test func interactiveGallery() async throws {
         let window = window(DaybookControlsPreview(), size: NSSize(width: 760, height: 640))
         defer { SystemPageHost.release(window) }
-        window.title = "Daybook Controls — Buttons (QA)"
+        window.title = "Daybook Controls (QA)"
         try await NativeSyntaxUI.prepareFocus(in: window)
         let seconds = min(600, max(0, Int(ProcessInfo.processInfo.environment["AREACHAIN_CONTROLS_PREVIEW_SECONDS"] ?? "0") ?? 0))
         let deadline = ContinuousClock.now + .seconds(seconds)

@@ -121,3 +121,11 @@
 统一搜索 1B-2A 的 `ContentQueryParser`、日期、范围与适用性仍走 Domain 工作流和定向验证；复用入口见[组件目录](docs/component-catalog.md)，语法、范围、接口与 1B-2B 仅登记要求见[权威设计第 9.8 节](docs/unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。新契约目前仅由领域测试消费，不因解析就接 UI/提供者/执行；指定 Cursor 复核缺失保持 partial，不重复检查认证或以其他复核替代。检查器接口未改变，继续使用原工作流/质量守卫。
 
 统一搜索 1B-2B 的页面上下文、条件身份/来源、绑定与纯转移同样由 `areachain-workflow` → `areachain-verify` 组织，架构治理只补状态所有权；入口与复用见组件目录，唯一交接为[权威设计第 9.9 节](docs/unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。验收选择 ContentQuerySessionTests / ContentQueryProjectionTests / ContentQueryPageMappingTests 和相关查询、路径、日期、筛选回归；生产 UI 与 1C 不在范围。指定 Cursor verifier 不可用仍 partial，不重新检查登录，不用其他复核替代。检查脚本接口/规则未改变，继续实际运行原静态、Swift 与工作流入口，不新增专项检查器。
+
+统一搜索 1C-1 的操作草稿、固定目标、基线及保护转移沿 `areachain-workflow` → 架构治理 → `areachain-verify`，新增入口见组件目录，唯一规格与 1C-2/1C-3 分界见[权威设计第 9.10 节](docs/unified-search-commands.md#910-阶段-1c-1操作草稿固定目标与编辑保护)。回归选 CommandDraftTests / CommandDraftProtectionTests / CommandHostSessionTests 及既有目录、参数、查询和路径测试。指定 Cursor verifier 缺失仍 partial，不重复认证检查，不以其他复核替代；既有检查器和规则未改动，不新建专项执行器或脚本。
+
+统一搜索 1C-2 的待执行计划、依赖/创建输出引用、合并和纯生命周期沿 `areachain-workflow` → 架构/可靠性治理 → `areachain-verify`。复用目录见组件目录，唯一协议与后续适配限制见[权威设计第 9.11 节](docs/unified-search-commands.md#911-阶段-1c-2待执行计划依赖与纯生命周期协议)。回归新增五套计划/执行 Domain 测试及原草稿、宿主、参数、目录、查询和路径测试；没有 UI 或真实执行验收。指定 Cursor verifier 缺失保持 partial，不重复登录、不替代复核；未改检查器接口/规则，不新建专项检查脚本，继续运行原静态、工作流、Swift 门禁和构建。停在 1C-2，不自动进入 1C-3。
+
+第三阶段 A 的公共启用开关沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`，入口为 [DaybookToggleStyle.swift](AreaChain/Theme/DaybookToggleStyle.swift)。仅新建重复事项和管理行接入，具体参数、提交差异和后续边界见[组件目录](docs/component-catalog.md)。新增公共组件仍须 Cursor `verifier`，不可用保留复核缺口；原生证据仅走现有隔离 XCTest，展示复用 `DaybookControlsPreview`。稳定入口由原 `check_workflow.py` 维护，不新增技能或验收应用。
+
+统一搜索 1C-3 的跨入口主动转交沿 `areachain-workflow` → 架构/可靠性治理 → `areachain-verify`。入口为 [CommandHandoffCoordinator.swift](AreaChain/Domain/CommandHandoffCoordinator.swift)；既有宿主/草稿/计划/执行/查询协议继续复用，权威交接仅在[第 9.12 节](docs/unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。选择四套新增转交测试及相关既有 Domain 回归、构建、静态和工作流检查；本阶段不操作真实窗口，因此不运行会启动全套原生交互的 auto / swift profile，也不把定向证据冒充整树通过。指定 Cursor verifier 缺失继续 partial，不重复登录、不替代复核。检查器接口/规则不变，无专项脚本；完成后停止，不自动接真实窗口、权限资源、隐私或执行器。

@@ -368,6 +368,53 @@
 
 **全应用静态核对**：具体 A/B/C/D 文件、符号与父容器依据维护在[组件目录](component-catalog.md#第二阶段-e按钮接入与全应用静态清单2026-10-01)。扫描覆盖普通/默认 Button、全部 plain 可疑项、样式、Menu label、公共封装、继承样式及 AppKit/手势入口；主代理抽查遗漏及菜单父容器。子代理首轮限流，重试只读核对完成；不是指定 Cursor verifier，也不用于替代历史复核。纯消费者样式等价迁移不新增必需契约复核。
 
-D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取消、`BatchActionBar.dateAdjustmentMenu/statusAdjustmentMenu/tagAssignmentMenu`、`WorkspaceAllItemsView.scopeMenu`（三处呈现）、`TagManagementPage.colorMenu`。系统菜单展开内容归 B，页面上的 `.borderlessButton` label 不因此豁免。未擅自迁移范围外入口；**第二阶段全部普通按钮/菜单入口接入尚未完成**，不能把此次静态核对写成全应用运行统一。
+E 阶段结束时 D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取消、`BatchActionBar.dateAdjustmentMenu/statusAdjustmentMenu/tagAssignmentMenu`、`WorkspaceAllItemsView.scopeMenu`（三处呈现）、`TagManagementPage.colorMenu`。系统菜单展开内容归 B，页面上的 `.borderlessButton` label 不因此豁免。未擅自迁移范围外入口；**当时第二阶段全部普通按钮/菜单入口接入尚未完成**；后续接入见 F 阶段，不能把此次静态核对写成全应用运行统一。
 
 **继承缺口与停止边界**：真实认证、系统钥匙串及解锁 Presenter 全链路未测；本轮快路径不补这些证据。历史 Tab、持续按下视觉、系统减弱动态效果联动、Cursor、误启动副作用和 A/B/C/D 其他消费者未验项保持原记录。`SystemPageHost` 禁动画和缓存图不证明真实动效/系统材质。默认 auto/Swift profile 会启动全量测试，本阶段按限定隔离范围使用静态门禁、严格 lint 和定向 XCTest，不执行全量 Swift profile。本轮到 E 停止，不重写日期选择器、开关，不提交、推送、安装、发布或修改全局设置、个人签名配置、权限及真实用户数据。
+
+### 第二阶段 F：菜单入口与标签合并取消（2026-10-01）
+
+**已实现，运行验收部分完成**：E 留下的六处定义全部接入，具体消费者与分类更新在[组件目录](component-catalog.md#第二阶段-f菜单入口与标签合并取消2026-10-01)。取消为 `.quiet / .compact`；五处 Menu label 为 compact、`fitsLabel: true`。保留原生 Menu、menuStyle、Section、角色、回调、参数、显隐及筛选状态。批量栏原横排在 580pt 英文全操作/说明场景出现逐字换行和删除文字消失，故按本轮允许的局部布局调整复用 `ViewThatFits`：宽时横排，窄时分行；没有改全局令牌、公共 API 或状态。
+
+**正常配置与隔离**：Xcode 26.6 / Swift 6.3.3、macOS 26.6.2 arm64。沿架构文档的串行 XCTest 命令及仓库构建锁，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、临时签名、生产 entitlement、`LSUIElement=NO`，清除六个真实钥匙串授权变量。未排除源码；应用与完整正常测试 target 编译成功，保留已有辅助 API 弃用等警告。仅通过 XCTest 启动宿主。直接挂载 `BatchActionBar`、`WorkspaceAllItemsView`、`TagManagementPage`，复用 `SystemPageHost`、独立偏好 suite、内存模型及合成事项/标签。全部事项测试保存并恢复实际受影响的进程内查询、选择/锚点、检查器和列表检查日，不切页或写日用偏好。
+
+**F 首轮最终证据（保留失败历史）**：`build/ButtonStage2F-final.xcresult` 的 `summary` / `tests` 已核对实际标识：45 项、57 次运行，44 项通过，1 项失败（中文浅/深色共 2 次），零跳过。7 个实际命中套件为 `BatchMenuConsumerTests`、`WorkspaceMenuConsumerTests`、`DaybookButtonStyleTests`、`ItemsListingTests`、`WorkspaceItemsPageTests`、`BatchMutationsTests`、`TagCatalogTests`。不能把本包写成测试全通过。
+
+- **真实原生事件**：批量菜单的文字、图标、左右及上下原生矩形边缘均能展开；NSMenu 追踪开始和 Escape 结束被观察到，未调用业务回调。三个真实 scope 入口逐一展开/取消，查询与选择不变；禁用批量菜单不展开，空标签和条件隐藏保持。颜色入口展开/取消不写库；真实取消按钮关闭合并 sheet，三条标签及关联待办保持原记录，context 无未保存变更。
+- **程序化动作**：通过实际展开得到的 NSMenu 派发原菜单项，今天/明天、完成 true/false、标签 UUID 与添加/移除布尔值均准确。三个 scope 选择只改变各自字段，当前标签、实际列表投影和计数一致。颜色选项只保存选中两条合成标签的稳定颜色标识，第三条不变。标签选择夹具通过原 NSTableView 的 `selectRowIndexes` 建立；没有复制菜单或业务回调。这些不冒充菜单项真实鼠标选择。
+- **画面/几何**：检查 en/zh-Hans × 浅深色的 580×160 批量栏、480×200 全操作/说明栏、480×500 全部事项和标签页、360pt 合并 sheet，包含长中英文合成标签。按钮严格边界/无重叠断言、文字宽度与原生缓存 PNG 结合；未放宽重叠容差。图片复用 QA 临时目录 `AreaChainButtonConsumersQA/settings-{batch,all-items,tags}-*.png`；`build/ButtonStage2F-contact.png` 为透明缓存加阅读底色的核对图，不是系统最终材质或对比度证据。
+
+**历史失败入口**：首轮 `TagManagementPage.body` 的 `.sheet(isPresented: $showMerge) { mergeSheet }`（当时 56 行）未显式传递 locale；中文页面下的合并标题、说明、按钮仍呈英文。相邻 `TaskDetailTagSelector` 的 sheet 显式注入 locale。当轮只获准改合并取消样式，未扩展到整个弹窗的语言传播。测试保留 `usesRequestedLanguage` 失败，并继续点击实际英文取消按钮核对关闭/无提交；没有把回退语言当成中文通过。当时中文 sheet 运行验收未完成；此失败已在下述 `build/ButtonStage2F-locale-matrix.xcresult` 与七组回归包中消除，旧包不改写。
+
+**修正与静态记录**：早期 `batch` 包把菜单 AX 紧边界误当 22pt 标签高度；随后按原生实际矩形做边缘点击，未修改全局尺寸。`consumers` 包因本轮测试辅助名笔误编译失败，已修正；`native` 包暴露动态文本读取、标签选择夹具和布局问题，`layout` / `tags` 包收敛到上述语言缺口。失败包保留。初次静态门禁还被并发 `CommandDraft.swift` 末尾空行阻断；未修改他人源码，后续该差异已自行消失。最终 `quality_gate.py --profile static`（172 项脚本测试）、`check_workflow.py`、六份本轮 Swift 的严格 SwiftLint 及 `git diff --check` 均通过，16 个相关文案键 en/zh-Hans 非空；不调用会启动非指定宿主的全量 Swift profile。
+
+**阶段边界**：当前静态清单中普通按钮/Menu 入口实现覆盖完整，未发现并发新增的确定遗漏；不是全应用运行统一。20 个 Menu 中 13 个公共标签、6 个系统子菜单、1 个手记标签胶囊，仍按 A/B/C 分类；系统展开内容和确认框不迁移。纯消费者样式与局部布局未改变公共契约或持久化语义，不新增必需独立复核；只读清单子代理不替代 Cursor verifier。既有 Tab、持续按下、系统减弱效果、Cursor、误启动和其他消费者未验项继续保留，不重复补验。菜单项真实鼠标选择、所有完整工作台宿主组合及系统最终材质未重跑。第三阶段仍留完成框、日期/星期、分段、象限、开关、芯片/标签胶囊、导航/内容选择等特殊控件。本轮停在 F；没有提交、推送、安装、发布、真实数据操作或全局设置/签名/权限变更。
+
+#### F 补修：标签合并弹窗语言传递（2026-10-01）
+
+**已实现并通过本次限定验收**：先核对原失败包、生产 sheet、相邻 `TaskDetailTagSelector` 和五个 en/zh-Hans 文案资源，再用未改动用例复现。原因是该 macOS sheet 呈现边界没有显式传入测试宿主的 locale；资源已有翻译。生产改动只在 `TagManagementPage.body` 的 sheet 内容添加 `.environment(\.locale, locale)`，沿用相邻模式。没有硬编码语言或改全局偏好、L10n、文案资源、Picker、按钮样式、选择、取消、提交、关闭及保存逻辑。
+
+| 新结果包 | 实际命中与结果 |
+|---|---|
+| `build/ButtonStage2F-locale-before.xcresult` | 原 `tagColorAndMergeCancellationUseOriginalSelection(locale:scheme:)` 1 项、4 次：en 浅/深色通过，zh-Hans 浅/深色因 `usesRequestedLanguage` 失败，零跳过；保留复现证据。 |
+| `build/ButtonStage2F-locale-matrix.xcresult` | 修复后同一用例完整矩阵 1 项、4 次全部通过，0 失败/跳过；使用加强后的严格目标语言、文本及几何断言。 |
+| `build/ButtonStage2F-locale-regression.xcresult` | 上述 F 七组全部实际命中，46 项、59 次全部通过，0 失败/跳过。较原范围增加 `reopenedMergeUsesChangedHostLanguage(scheme:)` 1 项、2 次；浅/深色各在同一页面按 en → zh-Hans → en 重开 sheet，原选择保留。 |
+
+三个包均以 `xcresulttool get test-results summary` 和 `tests` 核对标识、参数、通过/失败/跳过数。沿既有串行 XCTest 命令及构建锁：`build/PrivacyQA`、QA Bundle ID、本地临时签名、生产 entitlement、`LSUIElement=NO`，清除六个真实钥匙串变量；方法过滤保留完整 `(locale:scheme:)` 标识，七组用套件标识。正常测试 target 编译，不排除任何源码；编译保留已有辅助 API 弃用等警告。只通过 XCTest 启动隔离宿主，使用原内存模型、独立偏好 suite 和合成数据；重开测试只改变视图环境值。
+
+**行为与画面证据**：保留 `usesRequestedLanguage`，删除测试按英文查找控件的兜底；标题、完整说明、目标选择标签、取消和合并必须匹配预期语言。原取消回归仍经原生鼠标事件关闭实际 sheet，核对三条标签 ID/名称/颜色/删除状态及待办关联未变、没有提交合并、context 无未保存修改。现有 `TagCatalogTests` 的关联迁移、去重和来源软删除回归通过；本补修未新增 sheet 合并提交操作。Picker 默认目标保持长合成标签原文。四组参数均检查 360pt 宽、文案/Picker/按钮边界与无重叠；已查看 `settings-tags-merge-locale-*.png` 及 `build/ButtonStage2F-locale-contact.png`。后者只给透明缓存添加阅读底色，不证明系统最终材质或对比度。
+
+**门禁与交接**：最终两份 Swift 严格 SwiftLint、`git diff --check`、`check_workflow.py` 与 `quality_gate.py --profile static`（172 项脚本测试）通过。只将原误放在 F 末尾的“本轮到 E 停止”段落移回 E，并标明 E 未接入清单的历史时点；未清理其他任务记录。第二阶段静态清单的普通按钮/Menu 接入已实现，F 本次限定回归通过；整体运行验收仍部分完成，历史 Tab、持续按下、系统减弱效果、Cursor、误启动和各消费者其他未验项原样保留。此次局部语言传递不改变公共契约或持久化语义，不新增必需独立复核。停在 F 补修，不进入第三阶段，不提交、推送、安装或发布。
+
+### 第三阶段 A：公共启用开关与重复事项（2026-10-01）
+
+已实现：公共 `DaybookToggleStyle` 与两个限定消费者，参数和维护位置见[组件目录](component-catalog.md)。展示沿原 `DaybookControlsPreview` 与 `DaybookButtonInteractionTests/interactiveGallery()` 入口；窗口改为 Controls，新增开关区和外部状态更新按钮。原控制面板 Toggle 保持原生。减弱效果开关明确标为按钮专用，开关只读取系统环境，不修改全局设置。
+
+**最终验证：部分完成**。macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3；沿架构文档的 QA XCTest 命令、`build/PrivacyQA`、独立标识、临时签名、生产 sandbox entitlement、六个真实钥匙串变量清除及串行参数执行，没有排除源码。最终结果包 `build/ToggleStageAReview.xcresult` 经 `xcresulttool` summary/tests 核对：18 项测试、35 次运行通过，0 失败/0 跳过。范围为 DaybookToggleStyleTests、RecurringToggleConsumerTests、RecurringItemEditorTests；SwiftDataRoutineRepositoryTests 的 `routineReEnablingBridgesSkipsAccordingToMask()`，BatchMutationsTests 的 `enablingLegacyPausedHabitFillsSkippedDays()` / `enablingAlreadyEnabledHabitDoesNotBackfillSkips()`；已有展示的 `galleryRenders(locale:dark:)` / `interactiveGallery()`。后者仅默认挂载，未保留 300 秒人工操作。正常 Debug 的 `./scripts/build.sh` 重新构建、验签通过，未安装或启动该产物。
+
+- **状态与事务**：原生鼠标事件验证往返、单次写入、外部更新与拒绝更新；滑块左右像素独立核对真实显示。辅助操作经公开 AX selector 程序化派发，核对隐藏名称、状态和禁用不写入。新建不落库/取消不创建、合成记录启用值、失败保留草稿并重试通过。管理行沿原事务保存，注入提交失败后数据/显示回滚，暂停/恢复规则及历史回填回归通过。相邻标题草稿、失焦保存、检查器动作和几何无重叠通过；删除确认的完整操作链未重跑。
+- **焦点与事件边界**：补充对照发现 `.focusable()` 默认 edit 交互会在鼠标点击时抢走原生开关保留的标题焦点，已改为 `.activate` 并保留对照断言。最终 `TOGGLE_KEYBOARD_ACTIVATION enabled=false`：验证当前系统策略拒绝焦点、空格不写入，以及新旧开关的标题焦点行为一致；不是开启键盘导航后的正向切换证明。空格按住/重复、释放单写与禁用/失焦取消在生产路径实现，但先前 edit 试验的正向结果不计入最终验收。没有跳过焦点断言或修改全局键盘设置。
+- **布局与视觉**：长中英文开关 320×220、真实新建布局 440/560×640、管理行 440×520、展示 760×640，浅深色参数化几何/缓存图通过；已查看新开关长标签及两个消费者的最终缓存图。缓存图不证明系统最终材质；完整工作台、所有最小高度组合、悬停/持续按下的真人观察、Tab、真人辅助功能及系统减弱动态效果运行中联动未验。按钮专用预览不作为开关证据。
+- **失败与门禁**：探索中的隐藏名称、测试宿主观察、焦点行为与测试作用域错误均经修正后重跑；原生 NSSwitch 对照曾因同步 mouseDown 未先排入 mouseUp 停滞，仅终止本次测试进程并修复事件队列，未直接打开 QA App。并发新增 ContentQueryHandoffTests 的比较编译错误曾阻断测试，待其被并发任务修复后重跑，没有修改或排除该源码。最终九份本阶段 Swift 严格 SwiftLint、`git diff --check`、`check_workflow.py`、53 项检查器测试与 `quality_gate.py --profile static`（173 项脚本测试）通过。正常目标保留已有辅助 API 弃用警告；为遵守限定隔离范围，没有机械运行 default auto / 全量 Swift profile。
+
+新增公共控件所需 Cursor verifier 当前无可调用工具，依项目规定不替换复核机制，故阶段整体仍部分完成。第二阶段静态接入及 F 限定回归是独立历史证据，Tab、持续按下、系统减弱效果、Cursor、误启动及其他消费者未验项保持。只记录后续设置/剪贴板/隐私 Toggle、普通复选框、任务完成圆圈等线索，没有迁移；本阶段到此停止，未提交、推送、安装、发布，未修改全局设置、个人签名、权限或真实用户数据。

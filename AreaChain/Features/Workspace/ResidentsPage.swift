@@ -106,7 +106,7 @@ private struct ResidentEditorRow: View {
                 if !focused { saveTitle() }
             }
             Toggle("residents.enabled", isOn: enabledBinding)
-                .toggleStyle(.switch)
+                .toggleStyle(DaybookToggleStyle(hiddenLabel: "residents.enabled"))
                 .labelsHidden()
                 .help("residents.enabled")
             DaybookIconButton(

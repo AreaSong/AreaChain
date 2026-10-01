@@ -23,6 +23,7 @@
 | 语法输入 | `SyntaxTextField`、`SyntaxTextEditor` | [SyntaxTextField.swift](../AreaChain/Theme/SyntaxTextField.swift)、[SyntaxTextEditor.swift](../AreaChain/Theme/SyntaxTextEditor.swift) | 任务/手记语法高亮和候选输入；必须提供正确的 `SyntaxInputContext`，搜索不能借此创建标签。触发检测和高亮正则编译一次。同一 `NSTextStorage` 在文本、字体、默认色和外观未变时不整段重建属性。外观键取自该 storage 所属文本视图或窗口的 `effectiveAppearance`，没有宿主时才回退 `NSApp`。 |
 | 候选与浮层 | `SyntaxAutocompletePopup`、`SyntaxOverlay` | [SyntaxAutocompleteView.swift](../AreaChain/Theme/SyntaxAutocompleteView.swift)、[SyntaxOverlay.swift](../AreaChain/Theme/SyntaxOverlay.swift) | 就近消费输入锚点，保留 Esc 先关闭候选、焦点和定位；不要在多个宿主重复呈现同一浮层。 |
 | 按钮 | `DaybookButtonStyle`、`DaybookIconButton`、`CommandReturnButton` | [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)、[CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift) | 复用尺寸、禁用、悬停、可访问性和 Command 反馈；图标按钮需有语义标签。`daybookMenuLabel` 与按钮共享内部视觉基座，保留 `fitsLabel` 和系统菜单语义；文字仍按内容加边距，图标为 28/22/18 正方形。原生焦点与显式 `isFocused` 均可显示焦点环，减弱动态效果禁用按下缩放。测试专用 `DaybookControlsPreview` 的开发展示见[工程手册](engineering.md#按钮开发展示与验收)。 |
+| 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。仅接入新建重复事项与管理行。 |
 | 表面与分组 | `daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar` | [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift)、[DaybookChip.swift](../AreaChain/Theme/DaybookChip.swift)、[DaybookSectionHeader.swift](../AreaChain/Theme/DaybookSectionHeader.swift)、[DaybookSegmentedBar.swift](../AreaChain/Theme/DaybookSegmentedBar.swift) | 共享表面、芯片、分节头、分隔线和分段切换；不要在 Feature 自绘同义基座。 |
 | 页面和工作台布局 | `DaybookPage`、`DaybookPageHeader`、`WorkspaceLayout`、`WorkspaceSidebarRow` | [DaybookPage.swift](../AreaChain/Theme/DaybookPage.swift)、[WorkspaceLayout.swift](../AreaChain/Theme/WorkspaceLayout.swift) | 页面页头、侧栏和内容宽度遵循已有宿主；`workspaceEmbedded` 只表达能力/布局差异，不切换颜色、字体或主题。 |
 | 空态与周期栏 | `DaybookEmptyState`、`DaybookPeriodBar` | [DaybookChrome.swift](../AreaChain/Theme/DaybookChrome.swift) | 区分无数据、筛选无结果和失败；可见文案走本地化。 |
@@ -62,9 +63,9 @@
 | C 完成/日期/分段 | `Theme/ModernComponents.ModernCheckbox`、`TaskRowSubtaskMiniViews.TaskRowSubtaskInlineList`、`TaskDetailSubtasksView.toggleCheckboxButton`；`TaskDetailScheduleSection.TaskDetailWeekdayPicker`、`Theme/DaybookSegmentedBar.tabButton`、`HabitCheckMonthView.dayCell`、`TaskDetailQuadrantGrid` | 分别承担完成、星期掩码、分段滑块、日格和象限选择，不能批量改普通按钮样式。 |
 | C 行/芯片/内容 | `Theme/WorkspaceLayout.WorkspaceSidebarRow`、`WorkspaceSidebarView.tagRow`、`WorkspaceGlobalSearchView.attachmentRow`、`BoardSearchHitRow.workspace`、`QuadrantPage.titleButton`；`DayBoardSections`/`WorkspaceFilteredListView.completedSection`；`Theme/DaybookChip`、`TasksPage+Header.activeFilterTag`、`MenuBarSearchField.tokenChip`；`Theme/CaptureAttributesView.CaptureAttributesButton`、`SyntaxHelpCard` 条目/`complexExampleBar`、`AttachmentThumbnails` | 导航/整行选择、折叠、状态角标、属性浮层或内容预览点击区。`DiaryNoteCard.addTagMenu` 与标签芯片并列，18pt 胶囊随已有标签切换文字/加号，留标签控件阶段。 |
 
-**D：范围外未接入清单（本轮不改）**
+**D：E 阶段记录的未接入清单（已由下述 F 阶段接入）**
 
-| 精确入口 | 证据与后续接入点 |
+| 精确入口 | E 阶段当时的证据 |
 |---|---|
 | [TagManagementPage.swift:316](../AreaChain/Features/Workspace/TagManagementPage.swift) `mergeSheet` 的 `Button("alert.cancel")` | 自定义 sheet 的 HStack 普通按钮，无公共样式；相邻合并按钮样式只修饰自身。 |
 | [BatchActionBar.swift:145](../AreaChain/Features/Tasks/BatchActionBar.swift) `dateAdjustmentMenu` | 页面 HStack 的 Label 只有字体，未调用 `daybookMenuLabel`。 |
@@ -73,7 +74,25 @@
 | [WorkspaceAllItemsView.swift:93](../AreaChain/Features/Workspace/WorkspaceAllItemsView.swift) `scopeMenu` | `controls` 的三处筛选菜单共用此定义；label 只有文本/字体，未继承公共菜单外观。 |
 | [TagManagementPage.swift:229](../AreaChain/Features/Workspace/TagManagementPage.swift) `colorMenu` | 父级 `DaybookButtonStyle` 不等于 Menu label 接入；只有系统 `.borderlessButton`。 |
 
-共 1 处普通 Button、5 处 Menu 定义（`scopeMenu` 有三个呈现入口），因此第二阶段**尚未实现全部普通按钮/菜单入口统一**。系统 `.borderlessButton` 本身不是公共外观接入证据。未发现其他确定的普通按钮重复绘制遗漏；特殊控件和间接手势未据此宣称全覆盖。停止于 E，不进入日期选择器、开关或其他控件重写。
+E 阶段结束时共余 1 处普通 Button、5 处 Menu 定义（`scopeMenu` 有三个呈现入口）。该历史缺口已由 F 阶段接入；系统 `.borderlessButton` 本身仍不是公共外观证据。特殊控件和间接手势不据此宣称全覆盖。
+
+### 第二阶段 F：菜单入口与标签合并取消（2026-10-01）
+
+上表六处均直接接入公共基座：`TagManagementPage.mergeSheet` 取消使用 `.quiet / .compact`，与相邻 `.prominent / .compact` 合并按钮配合；`colorMenu`、`BatchActionBar` 三个菜单及 `WorkspaceAllItemsView.scopeMenu` 均在原生 Menu 的 label 内容上使用 `daybookMenuLabel(size: .compact, fitsLabel: true)`，保留字体、文字、图标、menuStyle、Section 和系统展开项。
+
+六处定义对应八个逻辑入口（取消、颜色、三个批量菜单、三个筛选）。批量菜单由 `WorkspaceBatchActionBar` 经 `MainSplitWorkspaceView` 的底部 overlay 供标签清单、待处理、全部事项三个宿主消费，共九个菜单/宿主组合，仍受能力和标签非空条件约束；全部事项有独立的事项类型、待办状态、重复事项状态三个入口。颜色工具条的横/竖布局候选是同一个逻辑入口。批量栏采用既有 `ViewThatFits` 模式：宽时横排，窄时将计数/操作、菜单、启停和说明分行，避免新增菜单边距后逐字换行或隐藏文字；不增加公共 API、状态、令牌或保存路径。
+
+F 后复查仍沿上面的 A/B/C 分类：20 个 Menu 定义中，13 个使用公共标签、6 个属于系统展开子菜单，1 个是 `DiaryNoteCard.addTagMenu` 标签胶囊控件。未发现确定遗漏的普通按钮/页面 Menu；21 处 plain 样式继续归完成、日期、星期、象限、分段、导航行、折叠、芯片和内容选择。该结论只覆盖当前静态清单，不能代表全应用运行验收。第三阶段保留 C 类特殊控件，不在 F 迁移。
+
+消费者回归直接挂载生产组件，复用 `SystemPageHost`、`SettingsButtonTestSupport` 及内存模型；入口为 [BatchMenuConsumerTests.swift](../AreaChainTests/Features/BatchMenuConsumerTests.swift)、[WorkspaceMenuConsumerTests.swift](../AreaChainTests/Features/WorkspaceMenuConsumerTests.swift)，菜单事件辅助仅在 [MenuButtonTestSupport.swift](../AreaChainTests/Features/MenuButtonTestSupport.swift)。真实追踪/Escape 与原菜单项动作派发分开取证，结果及剩余运行缺口见[工程手册](engineering.md#第二阶段-f菜单入口与标签合并取消2026-10-01)。
+
+F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `locale`，复用相邻 `TaskDetailTagSelector` 的环境注入模式；文案键与标签原文、Picker、选择/取消/提交/保存语义不变。`WorkspaceMenuConsumerTests` 保留严格语言断言，覆盖 en/zh-Hans × 浅深色五处文案、360pt 长标签布局、实际取消无提交，以及测试环境语言切换后重开。原中文失败保留在旧包，已由 `ButtonStage2F-locale-matrix.xcresult` 和七组 `ButtonStage2F-locale-regression.xcresult` 消除；完整证据与第二阶段仍部分验收的边界见[工程手册补修记录](engineering.md#f-补修标签合并弹窗语言传递2026-10-01)。
+
+### 第三阶段 A：公共启用开关与重复事项
+
+[RecurringItemEditor.swift](../AreaChain/Features/Workspace/RecurringItemEditor.swift) 使用默认 `DaybookToggleStyle()`，仅修改 `draft.isEnabled`，取消不创建，保存失败保留草稿。[ResidentsPage.swift](../AreaChain/Features/Workspace/ResidentsPage.swift) 使用 `DaybookToggleStyle(hiddenLabel: "residents.enabled")`，原 `enabledBinding` → `DayBoardMutations.setRoutineEnabled`、暂停/恢复及标题失焦保存规则保持。公共组件没有统一两种提交方式。
+
+展示仍在 `DaybookControlsPreview`，开/关、禁用、隐藏标签、长中英文、主题与外部更新使用本地合成状态。上方减弱效果预览仅针对按钮；开关只读取系统减弱动态效果。测试为 `DaybookToggleStyleTests`、`RecurringToggleConsumerTests`，复用现有原生宿主与仓储/事务失败注入；证据与缺口见[工程手册](engineering.md#第三阶段-a公共启用开关与重复事项2026-10-01)。其他 Toggle（设置、剪贴板、隐私）、普通复选框与任务完成圆圈均未迁移；后续须分别核对权限、提交、拒绝更新和焦点契约。
 
 ## 3. Feature 级复合组件
 
@@ -148,3 +167,9 @@
 统一搜索 1B-2A 的纯领域查询契约：`ContentQueryParser` / `ContentQuery`（[结构](../AreaChain/Domain/ContentQuery.swift)、[解析](../AreaChain/Domain/ContentQueryParser.swift)）、`ContentQueryDates`（[日期](../AreaChain/Domain/ContentQueryDates.swift)）、`ContentQueryScopeContract` / `ContentQueryApplicability`（[范围与字段](../AreaChain/Domain/ContentQueryScope.swift)）。由 `ContentQueryTests` / `ContentQueryContractTests` 及下述 1B-2B reducer 和测试消费；复用 CommandPath、TagSyntax、DayKey、PriorityToken 与提醒规则，没有接 BoardSearch 或真实提供者。来源与边界见[权威设计第 9.8 节](unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。
 
 统一搜索 1B-2B 新增 [ContentQueryPageContext / Mapping](../AreaChain/Domain/ContentQueryPageContext.swift)、[ContentQueryCondition](../AreaChain/Domain/ContentQueryCondition.swift)、[ContentQuerySession / Event / Intent](../AreaChain/Domain/ContentQuerySession.swift)、[ContentQueryReducer](../AreaChain/Domain/ContentQueryReducer.swift) 与 [PageProjection](../AreaChain/Domain/ContentQueryPageProjection.swift)。复用既有解析、范围、日期、BoardFilter 和 ItemsListing 枚举，只由三份对应 Domain 测试消费；原始文本、条件来源、访问寿命与 extended 投影不能通过旧 BoardFilter 有损往返。没有生产页面、操作草稿或执行接线；提供者要求和 partial 验收见[权威设计第 9.9 节](unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。
+
+统一搜索 1C-1 的 [CommandDraft / Stamp / Check](../AreaChain/Domain/CommandDraft.swift)、[CommandDraftTargets / Baseline](../AreaChain/Domain/CommandDraftTargets.swift)、[CommandDraftSession / Reducer](../AreaChain/Domain/CommandDraftSession.swift)、[CommandHostSession](../AreaChain/Domain/CommandHostSession.swift) 复用目录、参数和查询会话；新增真实消费者为 CommandDraftTests、CommandDraftProtectionTests、CommandHostSessionTests。固定目标、原值和版本保护仅在 Domain，正文只由操作参数持有；retained 可枚举恢复但不是执行队列。没有生产 UI、保存或隐私接线，1C 分阶段边界与 partial 证据见[权威设计第 9.10 节](unified-search-commands.md#910-阶段-1c-1操作草稿固定目标与编辑保护)。
+
+统一搜索 1C-2 的 [CommandPlan / Item / Snapshot](../AreaChain/Domain/CommandPlan.swift)、[CommandPlanValidation](../AreaChain/Domain/CommandPlanValidation.swift)、[CommandPlanSemantics](../AreaChain/Domain/CommandPlanSemantics.swift)、[CommandExecutionContract](../AreaChain/Domain/CommandExecutionContract.swift) 和 [CommandExecutionRun](../AreaChain/Domain/CommandExecutionRun.swift) 经原 [CommandHostSession](../AreaChain/Domain/CommandHostSession.swift) 组合。复用原草稿、参数、固定目标与基线；显式转移所有权，retained 不自动入队。新消费者为 CommandPlanOwnershipTests / CommandPlanDependencyTests / CommandPlanMergeTests / CommandExecutionTests / CommandAtomicPlanTests；已有草稿、宿主、目录、参数和查询回归继续执行。纯状态协议不授予执行、事务、重试或撤销能力，全部目录仍 unwired；唯一契约与 partial 证据见[权威设计第 9.11 节](unified-search-commands.md#911-阶段-1c-2待执行计划依赖与纯生命周期协议)。
+
+统一搜索 1C-3 的 [CommandHandoffCoordinator](../AreaChain/Domain/CommandHandoffCoordinator.swift) 和 [票据/所有权/宿主事件契约](../AreaChain/Domain/CommandHandoffContract.swift) 复用上述 HostSession、DraftSession、Plan、ExecutionRun 和 ContentQuerySession / Reducer。仅增加运行内唯一登记、双方原子接管、身份/引用迁移及冻结查询来源；没有窗口、执行器或权限持久化。实际消费者是 CommandHandoffTests / CommandHandoffIdentityTests / CommandHandoffBoundaryTests / ContentQueryHandoffTests；后续生产入口必须验证同一协调者的 lease，值副本不授予提交能力。资格、资源确认、源撤权与 partial 证据见[权威设计第 9.12 节](unified-search-commands.md#912-阶段-1c-3跨入口主动转交与唯一所有权)。

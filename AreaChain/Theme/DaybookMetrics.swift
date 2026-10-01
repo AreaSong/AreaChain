@@ -14,6 +14,13 @@ enum DaybookMetrics {
         static let inline: CGFloat = 18
     }
 
+    enum Toggle {
+        static let width: CGFloat = 34
+        static let height: CGFloat = 20
+        static let thumb: CGFloat = 16
+        static let inset: CGFloat = 2
+    }
+
     enum Radius {
         static let inputComposer: CGFloat = 8
         static let inputSearch: CGFloat = 6

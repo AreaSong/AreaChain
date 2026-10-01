@@ -18,6 +18,7 @@ enum ContentQueryReducer {
     }
 
     private static func apply(_ event: ContentQueryEvent, to transition: inout ContentQueryTransition) {
+        let preservesHandoffReturn = transition.state.handoffContext != nil
         switch event {
         case .enterPage(let page): enter(page, into: &transition)
         case .refreshPage(let page): refresh(page, into: &transition)
@@ -42,9 +43,10 @@ enum ContentQueryReducer {
         case .clearUserQuery:
             transition.state.input = .content(.init(source: ""))
             transition.state.conditions.removeAll { !$0.origin.isPage }
+            transition.state.handoffContext = nil
         }
         transition.state.refreshAutomaticConditions()
-        if transition.state.returnPoint?.context.location == transition.state.page.location {
+        if !preservesHandoffReturn, transition.state.returnPoint?.context.location == transition.state.page.location {
             transition.state.returnPoint?.suppressed = transition.state.suppressed
         }
     }
@@ -56,6 +58,8 @@ enum ContentQueryReducer {
             return
         }
         transition.state.page = page
+        // 转交后的移除范围仍属独立查询；切页不能把它重新变成页面默认查询。
+        if transition.state.handoffContext != nil { return }
         transition.state.suppressed = []
         switch transition.state.binding {
         case .page, .independent(.removedPageScope):
@@ -127,13 +131,15 @@ enum ContentQueryReducer {
         guard incompatible.isEmpty else {
             transition.intents.append(.requiresQueryEditing(incompatible.map(\.id))); return
         }
+        transition.state.conditions.removeAll { $0.origin.isHandoffPage }
+        transition.state.handoffContext = nil
         transition.state.binding = .page(visitID: transition.state.page.location.visitID)
         transition.state.suppressed.remove(.scope)
     }
 
     private static func incompatibleScopes(_ state: ContentQuerySession) -> [ContentQueryCondition] {
         let expected = ContentQueryPageMapping.defaults(state.page).first { $0.dimension == .scope } ?? .scope(.global)
-        return state.conditions.filter { !$0.origin.isPage && $0.value.dimension == .scope && $0.value != expected }
+        return state.conditions.filter { $0.origin.isUser && $0.value.dimension == .scope && $0.value != expected }
     }
 
     private static func detachForScopeChange(_ state: inout ContentQuerySession) {
@@ -144,7 +150,7 @@ enum ContentQueryReducer {
     private static func replaceInput(_ source: String, state: inout ContentQuerySession) {
         var previous = state.conditions.filter { if case .input = $0.origin { return true }; return false }
         state.conditions.removeAll { if case .input = $0.origin { return true }; return false }
-        state.input = ContentQueryParser().parse(source, context: state.page.dates)
+        state.input = ContentQueryParser().parse(source, context: state.queryDates)
         guard case .content(let query) = state.input else { return }
         let values = query.scopes.map { (ContentQueryConditionValue.scope(.catalog($0.scope)), $0.range) }
             + query.clauses.map { (ContentQueryConditionValue.clause($0.alternatives.map(ContentQuerySemanticTerm.init)), $0.range) }
@@ -186,6 +192,8 @@ enum ContentQueryReducer {
 
     private static func restoreReturnPoint(_ transition: inout ContentQueryTransition) {
         guard let point = transition.state.returnPoint else { return }
+        transition.state.conditions.removeAll { $0.origin.isHandoffPage }
+        transition.state.handoffContext = nil
         transition.state.page = point.context
         transition.state.suppressed = point.suppressed
         transition.state.binding = point.suppressed.contains(.scope)

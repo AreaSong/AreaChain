@@ -1,0 +1,138 @@
+import Foundation
+
+/// 最小组合边界；查询返回/同步意图不产生任何操作草稿事件。
+struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    private(set) var query: ContentQuerySession
+    private(set) var operations: CommandDraftSession
+    private(set) var plan: CommandPlan
+    private(set) var execution: CommandExecutionRun?
+    private var usedRunIDs: Set<UUID> = []
+
+    init(page: ContentQueryPageContext) {
+        query = .init(page: page)
+        operations = .init(hostID: page.location.hostID)
+        plan = .init(hostID: page.location.hostID)
+    }
+
+    @discardableResult mutating func queryEvent(_ event: ContentQueryEvent) -> [ContentQueryIntent] {
+        let transition = ContentQueryReducer.reduce(query, event)
+        query = transition.state
+        return transition.intents
+    }
+
+    @discardableResult mutating func operationEvent(_ event: CommandDraftEvent) -> [CommandDraftIntent] {
+        let transition = CommandDraftReducer.reduce(operations, event)
+        operations = transition.state
+        return transition.intents
+    }
+
+    /// 只建模“不影响草稿”的宿主信号，不保存焦点或面板可见性的第二份状态。
+    mutating func presentationEvent(_ event: CommandHostPresentationEvent) {}
+
+    var requiresUnsavedContentHandling: Bool {
+        operations.requiresUnsavedContentHandling || plan.requiresUnsavedContentHandling
+            || execution?.requiresUnsavedContentHandling == true
+    }
+
+    var isBusy: Bool { execution?.isBusy == true }
+    var hostID: String { operations.hostID }
+    var description: String { "CommandHostSession(planItems: \(plan.items.count), hasExecution: \(execution != nil))" }
+    var debugDescription: String { description }
+
+    /// 跨草稿/计划的值事务：任一校验失败，两个所有者都保持原样。
+    mutating func enqueue(_ draft: CommandDraftStamp, itemID: UUID, expecting stamp: CommandPlanStamp) throws {
+        var next = self
+        guard let transferred = next.operations.takeForPlan(draft) else { throw CommandPlanError.stale }
+        try next.plan.add(transferred, id: itemID, expecting: stamp)
+        self = next
+    }
+
+    mutating func planEvent(_ event: CommandPlanEvent, expecting stamp: CommandPlanStamp) throws {
+        try plan.apply(event, expecting: stamp)
+    }
+
+    /// 移除只退回 retained，不默认丢弃内容；丢弃仍用草稿原有显式版本化入口。
+    mutating func removeFromPlan(_ item: CommandPlanItemStamp, expecting stamp: CommandPlanStamp) throws {
+        var next = self
+        let draft = try next.plan.remove(item, expecting: stamp)
+        guard next.operations.retainFromPlan(draft) else { throw CommandPlanError.busy }
+        self = next
+    }
+
+    /// 封存只启动纯协议。目录仍 unwired；将来调用业务前还必须经过独立执行资格门禁。
+    mutating func sealPlanForProtocol(_ stamp: CommandPlanStamp, runID: UUID) throws {
+        guard execution == nil else { throw CommandPlanError.busy }
+        guard !usedRunIDs.contains(runID) else { throw CommandPlanError.duplicate }
+        let snapshot = try plan.seal(expecting: stamp)
+        execution = .init(id: runID, snapshot: snapshot)
+        usedRunIDs.insert(runID)
+    }
+
+    mutating func beginNextProtocolStep(expecting stamp: CommandExecutionStamp) throws -> CommandAttemptStamp {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        return try execution!.beginNext(expecting: stamp)
+    }
+
+    @discardableResult mutating func receiveProtocolResult(_ receipt: CommandExecutionReceipt) throws -> Bool {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        return try execution!.receive(receipt)
+    }
+
+    mutating func retryProtocolStep(_ attempt: CommandAttemptStamp, assurance: CommandRetryAssurance) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.retry(attempt, assurance: assurance)
+    }
+
+    mutating func cancelUnstartedProtocolStep(_ unitID: UUID, expecting stamp: CommandExecutionStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.cancelNotStarted(unitID, expecting: stamp)
+    }
+
+    mutating func resolveProtocolValidation(_ attempt: CommandAttemptStamp, resolution: CommandValidationResolution) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.resolveValidation(attempt, resolution: resolution)
+    }
+
+    /// 只有全部确认成功才可释放运行内正文；失败/未知结果继续保留，不退回成可重放创建。
+    mutating func releaseSuccessfulExecution(expecting stamp: CommandExecutionStamp) throws {
+        guard let execution, execution.stamp == stamp else { throw CommandExecutionError.stale }
+        guard execution.units.allSatisfy({ $0.state == .succeeded }) else { throw CommandExecutionError.busy }
+        self.execution = nil
+    }
+
+    /// 只生成候选状态，协调者在全部校验后同时发布双方；此入口本身不授予所有权。
+    func handoffStates(to target: Self) throws -> (source: Self, target: Self) {
+        guard execution == nil, target.execution == nil, operations.pending == nil,
+              target.operations.pending == nil else { throw CommandHandoffError.ineligible }
+        guard target.operations.active == nil, target.operations.retained.isEmpty,
+              target.plan.items.isEmpty, target.plan.editing == nil else { throw CommandHandoffError.targetOccupied }
+        var receiver = target
+        receiver.query = query.handedOff(to: target.query)
+        receiver.operations = operations.handedOff(to: target.operations)
+        receiver.plan = try plan.handedOff(to: target.plan)
+        receiver.usedRunIDs.formUnion(usedRunIDs)
+        var source = self
+        source.query = .init(page: query.page)
+        source.operations = operations.emptiedAfterHandoff()
+        source.plan = plan.emptiedAfterHandoff()
+        return (source, receiver)
+    }
+
+    var handoffNativeSelections: Set<UUID> {
+        let drafts = (operations.active.map { [$0] } ?? []) + operations.retained + plan.items.map(\.draft)
+        return Set(drafts.flatMap { draft in
+            let originals = draft.baseline.values.values.compactMap { original -> CommandValue? in
+                if case .uniform(let value) = original { return value }
+                return nil
+            }
+            return (draft.arguments.compactMap(\.value) + originals).compactMap { value -> UUID? in
+                if case .nativeSelection(let id) = value { return id }
+                return nil
+            }
+        })
+    }
+}
+
+enum CommandHostPresentationEvent: CaseIterable {
+    case collapseCompletion, collapsePreview, clickOutside, refocus
+}

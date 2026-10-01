@@ -75,7 +75,7 @@ struct RecurringItemEditor: View {
             Toggle(isOn: $draft.isEnabled) {
                 Text(verbatim: L10n.string("residents.enabled", locale: locale))
             }
-            .toggleStyle(.switch)
+            .toggleStyle(DaybookToggleStyle())
             if saveFailed {
                 Text(verbatim: L10n.string("recurring.create.failed", locale: locale))
                     .font(DaybookType.caption)

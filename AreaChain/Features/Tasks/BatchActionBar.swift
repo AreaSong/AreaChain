@@ -99,6 +99,29 @@ struct BatchActionBar: View {
     }
 
     var body: some View {
+        ViewThatFits(in: .horizontal) {
+            horizontalBar.fixedSize(horizontal: true, vertical: false)
+            VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+                HStack {
+                    selectedCountBadge
+                    Spacer(minLength: 8)
+                    actionButtons.fixedSize()
+                }
+                HStack(spacing: 10) {
+                    if showsSchedule { dateAdjustmentMenu }
+                    if showsStatus { statusAdjustmentMenu }
+                    tagAssignmentMenu
+                }
+                if showsEnable { enableButtons }
+                selectionNote
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(barBackground)
+    }
+
+    private var horizontalBar: some View {
         HStack(spacing: 10) {
             selectedCountBadge
 
@@ -115,19 +138,20 @@ struct BatchActionBar: View {
             if showsEnable {
                 enableButtons
             }
-            if let noteKey {
-                Text(noteKey)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            selectionNote
             tagAssignmentMenu
             actionButtons
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
-        .background(barBackground)
+    }
+
+    @ViewBuilder private var selectionNote: some View {
+        if let noteKey {
+            Text(noteKey)
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+        }
     }
 
     private var selectedCountBadge: some View {
@@ -149,6 +173,7 @@ struct BatchActionBar: View {
         } label: {
             Label("batch.move.date", systemImage: "calendar")
                 .font(DaybookType.caption)
+                .daybookMenuLabel(size: .compact, fitsLabel: true)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -161,6 +186,7 @@ struct BatchActionBar: View {
         } label: {
             Label("batch.status", systemImage: "checkmark.circle")
                 .font(DaybookType.caption)
+                .daybookMenuLabel(size: .compact, fitsLabel: true)
         }
         .menuStyle(.borderlessButton)
         .fixedSize()
@@ -183,6 +209,7 @@ struct BatchActionBar: View {
             } label: {
                 Label("batch.tag", systemImage: "tag")
                     .font(DaybookType.caption)
+                    .daybookMenuLabel(size: .compact, fitsLabel: true)
             }
             .menuStyle(.borderlessButton)
             .fixedSize()
