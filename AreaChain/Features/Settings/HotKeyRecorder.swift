@@ -23,6 +23,7 @@ struct ShortcutRecorder: View {
                 Spacer(minLength: 8)
                 if binding.chord != action.defaultChord || (binding.chord.isBindable && !binding.isArmed) {
                     Button("shortcut.reset") { store.reset(action) }
+                        .buttonStyle(DaybookButtonStyle(.subtle))
                 }
                 Button {
                     startListening()
@@ -35,6 +36,7 @@ struct ShortcutRecorder: View {
                         Text(verbatim: label(for: binding))
                     }
                 }
+                .buttonStyle(DaybookButtonStyle(listening ? .active : .quiet))
                 .help(LocalizedStringKey(action.helpKey))
                 .accessibilityIdentifier("shortcut.record.\(action.rawValue)")
             }

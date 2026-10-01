@@ -115,3 +115,5 @@
 按钮基础维护沿 `areachain-ui` → `areachain-verify`；公共入口和后续迁移边界见[组件目录](docs/component-catalog.md)，测试专用展示窗口打开方法见[按钮开发展示与验收](docs/engineering.md#按钮开发展示与验收)。展示与真实消费者分别回归，不加入正式导航。
 
 统一搜索与指令的阶段 1A 维护沿 `areachain-workflow` → `areachain-verify`，公共契约复核仍指定 Cursor `verifier`。入口为 [CommandCatalog.swift](AreaChain/Domain/CommandCatalog.swift)，消费者与边界见[组件目录](docs/component-catalog.md)，阶段决定与覆盖只更新[权威设计](docs/unified-search-commands.md)。目录不能作为执行器或权限授予来源，后续阶段需独立授权。
+
+统一搜索 1B-1 的 `CommandPathParser` 沿上述工作流与验证路由，复用 1A 目录/参数和既有语法保护区间；公共契约仍须 Cursor `verifier`，不可用时保持 partial。领域定向测试、编译和静态检查不能替代指定复核；独立输入、候选与后续 1B-2 边界见[权威设计](docs/unified-search-commands.md#97-阶段-1b-1-指令路径解析与补全)。

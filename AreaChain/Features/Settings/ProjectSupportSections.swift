@@ -39,12 +39,14 @@ struct ProjectSupportSections: View {
                 Text("project.support.usage")
             }
             .accessibilityIdentifier("project.support.usage")
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .systemPageMarker("project.support.usage")
 
             Button(action: reportIssue) {
                 Text("project.support.issue")
             }
             .accessibilityIdentifier("project.support.issue")
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .systemPageMarker("project.support.issue")
 
             Button {
@@ -53,6 +55,7 @@ struct ProjectSupportSections: View {
                 Text("project.support.idea")
             }
             .accessibilityIdentifier("project.support.idea")
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .systemPageMarker("project.support.idea")
 
             Text("project.support.boundary")
@@ -85,6 +88,7 @@ struct ProjectSupportSections: View {
                 Text("project.about.repository")
             }
             .accessibilityIdentifier("project.about.repository")
+            .buttonStyle(DaybookButtonStyle(.subtle))
             .systemPageMarker("project.about.repository")
 
             Button {
@@ -93,6 +97,7 @@ struct ProjectSupportSections: View {
                 Text("project.about.license")
             }
             .accessibilityIdentifier("project.about.license")
+            .buttonStyle(DaybookButtonStyle(.subtle))
             .systemPageMarker("project.about.license")
         }
     }

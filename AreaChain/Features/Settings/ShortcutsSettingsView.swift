@@ -34,6 +34,7 @@ struct ShortcutsSettingsView: View {
                 }
                 Section {
                     Button("shortcut.resetAll") { store.resetAll() }
+                        .buttonStyle(DaybookButtonStyle(.quiet))
                         .systemPageMarker("shortcuts.resetAll")
                 }
             }

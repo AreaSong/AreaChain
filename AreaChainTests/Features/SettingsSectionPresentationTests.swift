@@ -7,11 +7,11 @@ import UserNotifications
 
 @Suite(.serialized) @MainActor
 struct SettingsSectionPresentationTests {
-    private static var retained: [ModelContainer] = []
-
     @Test func loginApprovalExplainsAndOffersSystemSettings() async throws {
-        let container = try makeContainer()
-        let view = LoginApprovalProbe()
+        let fixture = try SettingsButtonTestSupport()
+        defer { fixture.cleanup() }
+        let container = fixture.container
+        let view = LoginApprovalProbe(prefs: fixture.prefs)
         let window = SystemPageHost.window(
             view, container: container, scheme: .light, locale: "zh-Hans", size: NSSize(width: 520, height: 420)
         )
@@ -24,9 +24,11 @@ struct SettingsSectionPresentationTests {
     }
 
     @Test func notificationTestBannerIsOfferedUntilDenied() async throws {
-        let container = try makeContainer()
+        let fixture = try SettingsButtonTestSupport()
+        defer { fixture.cleanup() }
+        let container = fixture.container
         let allowed = SystemPageHost.window(
-            NotificationSettingsProbe(status: .authorized),
+            NotificationSettingsProbe(prefs: fixture.prefs, status: .authorized),
             container: container,
             scheme: .light,
             locale: "zh-Hans",
@@ -44,7 +46,7 @@ struct SettingsSectionPresentationTests {
         #expect(L10n.string("settings.notify.test.sent", locale: Locale(identifier: "en")) == "A test notification was sent.")
 
         let english = SystemPageHost.window(
-            NotificationSettingsProbe(status: .authorized),
+            NotificationSettingsProbe(prefs: fixture.prefs, status: .authorized),
             container: container,
             scheme: .dark,
             locale: "en",
@@ -55,7 +57,7 @@ struct SettingsSectionPresentationTests {
         try SystemPageHost.assertContained(["settings.notify.test"], in: english)
 
         let denied = SystemPageHost.window(
-            NotificationSettingsProbe(status: .denied),
+            NotificationSettingsProbe(prefs: fixture.prefs, status: .denied),
             container: container,
             scheme: .light,
             locale: "zh-Hans",
@@ -69,7 +71,9 @@ struct SettingsSectionPresentationTests {
     }
 
     @Test func calendarConflictListsBothSidesAndAMissingEvent() async throws {
-        let container = try makeContainer()
+        let fixture = try SettingsButtonTestSupport()
+        defer { fixture.cleanup() }
+        let container = fixture.container
         let local = CalendarContent(title: "本地标题", dayKey: "2026-09-30", remindMinutes: 9 * 60)
         let remote = CalendarContent(title: "日历标题", dayKey: "2026-10-01", remindMinutes: nil)
         let view = CalendarConflictProbe(local: local, remote: remote)
@@ -87,16 +91,19 @@ struct SettingsSectionPresentationTests {
     }
 
     private struct NotificationSettingsProbe: View {
+        var prefs: AppPreferences
         @State private var status: UNAuthorizationStatus
         @State private var markers: Set<String> = []
 
-        init(status: UNAuthorizationStatus) {
+        init(prefs: AppPreferences, status: UNAuthorizationStatus) {
+            self.prefs = prefs
             _status = State(initialValue: status)
         }
 
         var body: some View {
             Form {
                 SyncSettingsSection(
+                    prefs: prefs,
                     notifyStatus: $status,
                     notifyStatusText: "状态",
                     calendarSyncStatusText: nil,
@@ -111,11 +118,13 @@ struct SettingsSectionPresentationTests {
     }
 
     private struct LoginApprovalProbe: View {
+        var prefs: AppPreferences
         @State private var markers: Set<String> = []
 
         var body: some View {
             Form {
                 GeneralSettingsSection(
+                    prefs: prefs,
                     launchesAtLogin: .constant(false),
                     loginNeedsApproval: true,
                     statusMessage: nil,
@@ -171,12 +180,4 @@ struct SettingsSectionPresentationTests {
         return lines.joined(separator: "\n")
     }
 
-    private func makeContainer() throws -> ModelContainer {
-        let container = try ModelContainer(
-            for: Schema(AreaChainSchema.models),
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
-        Self.retained.append(container)
-        return container
-    }
 }

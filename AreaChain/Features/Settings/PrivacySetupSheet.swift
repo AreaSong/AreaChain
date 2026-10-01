@@ -54,7 +54,8 @@ struct PrivacySetupSheet: View {
                 if busy { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("alert.cancel") { clearPasswords(); dismiss() }.disabled(busy).keyboardShortcut(.cancelAction)
-                Button("privacy.apply", action: submit).buttonStyle(.borderedProminent).disabled(busy || !valid)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
+                Button("privacy.apply", action: submit).buttonStyle(DaybookButtonStyle(.prominent)).disabled(busy || !valid)
             }
         }
         .textFieldStyle(.roundedBorder).padding(24).frame(width: 480)

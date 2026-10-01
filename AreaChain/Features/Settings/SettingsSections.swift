@@ -81,6 +81,7 @@ struct GeneralSettingsSection: View {
                 Button("settings.login.openSystem") {
                     SystemSettingsLinks.open("x-apple.systempreferences:com.apple.LoginItems-Settings.extension")
                 }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("settings.login.openSystem")
                 .systemPageMarker("settings.login.openSystem")
             }
@@ -136,13 +137,16 @@ struct SyncSettingsSection: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
             if notifyStatus == .denied {
                 Button("settings.notify.openSystem", action: openNotificationSettings)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("settings.notify.openSystem")
                     .systemPageMarker("settings.notify.openSystem")
             } else {
                 Button("settings.notify.request", action: onRequestNotifyAuth)
+                    .buttonStyle(DaybookButtonStyle(.prominent))
                     .accessibilityIdentifier("settings.notify")
                     .systemPageMarker("settings.notify")
                 Button("settings.notify.test", action: sendTestNotification)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .disabled(isSendingNotifyTest)
                     .accessibilityIdentifier("settings.notify.test")
                     .systemPageMarker("settings.notify.test")
@@ -167,12 +171,14 @@ struct SyncSettingsSection: View {
             }
             if prefs.syncCalendarEvents {
                 Button("settings.calendar.sync.retry") { CalendarSync.refreshIfEnabled() }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                 if calendarStatus.phase == .denied {
                     Button("settings.calendar.openSystem") {
                         SystemSettingsLinks.open(
                             "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_Calendars"
                         )
                     }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("settings.calendar.openSystem")
                     .systemPageMarker("settings.calendar.openSystem")
                 }
@@ -211,6 +217,7 @@ struct CalendarConflictList: View {
         ForEach(comparisons) { item in
             Section {
                 Button("settings.calendar.conflict.open") { onOpen(item) }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("settings.calendar.conflict.open")
                 side(key: "settings.calendar.conflict.local", content: item.local)
                 if let remote = item.remote {

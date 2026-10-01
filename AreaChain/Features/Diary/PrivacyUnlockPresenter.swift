@@ -72,7 +72,7 @@ struct PrivacyUnlockView: View {
                 Button { authenticate(system: true) } label: {
                     Label("privacy.unlock.system", systemImage: "touchid").frame(maxWidth: .infinity)
                 }
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(DaybookButtonStyle(.prominent))
                 .disabled(busy)
             }
             if vault.hasMasterPassword {
@@ -83,6 +83,7 @@ struct PrivacyUnlockView: View {
                         .accessibilityIdentifier("privacy.master.input")
                         .onSubmit { authenticate(system: false) }
                     Button("privacy.unlock.password") { authenticate(system: false) }
+                        .buttonStyle(DaybookButtonStyle(.prominent))
                         .disabled(busy || password.isEmpty)
                 }
             }
@@ -94,6 +95,7 @@ struct PrivacyUnlockView: View {
                 if busy { ProgressView().controlSize(.small) }
                 Spacer()
                 Button("alert.cancel", action: onCancel).keyboardShortcut(.cancelAction)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
             }
         }
         .padding(22).frame(width: 390)

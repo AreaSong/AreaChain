@@ -297,3 +297,35 @@
 - 变更 Swift 文件严格 SwiftLint、`git diff --check`、`check_workflow.py` 和 `quality_gate.py --profile static` 通过（172 项脚本测试）。默认 Swift profile 会运行全量测试，本次按用户限定的隔离/系统操作边界改用上述定向测试，未执行全量 Swift profile。编译仍有既有测试辅助 API 弃用/未使用变量警告。
 
 **保留缺口**：未实测真人输入法/撤销、授权拒绝分支及卡片按钮直接触发保存失败/冲突弹窗（会话层失败/冲突回归已通过）。`SystemPageHost` 关闭动画，不能据此验收持续按下与真实动效。第一阶段的 Tab 全控件导航、持续按下视觉、系统减弱动态效果开启/切换、未认证 Cursor verifier 和历史误启动副作用均无新证据，继续保留。下一阶段候选仍包括设置隐私 sheet 等局部系统样式按钮，本次未迁移。未提交、推送、安装或发布，未改全局设置、权限或真实用户数据。
+
+### 第二阶段 B：隐私弹窗按钮接入（2026-10-01）
+
+**已实现，验收部分完成**：三个隐私弹窗的 7 个按钮直接复用现有 `DaybookButtonStyle`，主操作 `.prominent`、取消 `.quiet`，均为 regular；消费者和布局例外见[组件目录](component-catalog.md)。生产差异只有按钮样式修饰符；没有改变认证、授权、密码校验、密钥、保护流程、生产默认值、窗口装配或公共 API。`PrivacyUnlockView` 的取消仍不随 busy 禁用，另外两个 sheet 的取消仍随 busy 禁用。原回调、密码清空、错误反馈、防重入、快捷键、辅助功能和 sheet 关闭限制全部保留。本次为纯消费者样式迁移，不新增必需独立复核；既有 Cursor 未认证缺口不标为通过。
+
+**本阶段隔离与证据**：沿架构文档的 XCTest 命令，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、`AreaChain.entitlements`、`LSUIElement=NO`、串行测试并清除六个真实钥匙串授权变量。`PrivacyFixture` 使用内存库、合成内容、内存配置和 `FakeSystemVaultKeys`；Setup 均显式传 `probeSystem: false`。没有直接启动 QA 包或日用应用。
+
+- 新增 `PrivacyButtonConsumerTests` 直接挂载生产视图，复用 `SystemPageHost`、原生鼠标事件及真实 sheet，未新建展示页。`build/ButtonStage2B-consumers.xcresult` 实际命中 5 项、12 次运行，通过且零失败/跳过：中英文×浅深色密码空值/不一致、busy 防重入和取消禁用、注入失败后恢复及成功回调一次；替身系统解锁和主密码解锁、busy 时取消回调一次；两个 sheet 空闲取消关闭且不提交；Setup 无解锁方式、主密码不足 12 字符及确认不一致时禁用。
+- `build/ButtonStage2B-regression.xcresult` 实际命中 `PrivacyRenderingTests`、`PrivacyInteractionTests` 及 `PrivacyVaultTests` 的 `bothRoutesUnlockTheSameKeyAndNeverStorePassword()`、`idleAndLateAuthenticationCannotReopenALockedVault()`、`passwordOnlyNeverTouchesSystemStoreAndCannotRemoveLastMethod()`，共 13 项通过、零失败/跳过。未选择真实钥匙串测试或能力探测测试。
+- 首次 `build/ButtonStage2B.xcresult` 因并发新增的 `CommandPathParser` 当时缺少 `CommandPathCompletion` 而编译失败、零测试；未修改该功能，依赖文件出现后才重跑。该包保留为失败证据。
+- 最终补充初始 390×300 解锁窗口的全部按钮边界及密码弹窗启用态截图后，`build/ButtonStage2B-layout.xcresult` 再次实际命中消费者 5 项、12 次运行，零失败/跳过。已检查三处中英文×浅深色、长说明的原生缓存截图和按钮边界：解锁 390×300 / 390×390、密码 440×330、Setup 480×540；截图复用测试临时目录 `AreaChainButtonConsumersQA/privacy-*.png`。sheet 缓存背景透明，不能证明完整系统材质合成或其最终对比度。
+- 最终 Swift 文件严格 SwiftLint、`git diff --check`、`python3 -B scripts/check_workflow.py` 和 `python3 -B scripts/quality_gate.py --profile static` 通过。默认 auto/Swift profile 会调用全量测试，本次按限定的隔离边界以静态门禁加上述定向 XCTest 替代，未运行全量 Swift profile。编译有既有测试辅助 API 弃用警告；构建及本地临时签名不代表安装、真实系统认证或发行。
+
+**明确未测**：Setup 的 Apply 提交可能进入 `PrivacyUnlockPresenter`、文件面板、备份和默认 `PrivacyPersistence`，因此没有执行提交、busy/失败恢复或完成回调路径；仅有替身 vault 不足以证明整条链路隔离。这些回调与判断已逐行核对未变。解锁取消测到视图回调，未重测 Presenter 请求/continuation 生命周期。真实认证、系统钥匙串、真实内容保护与数据处理均未执行；未补第一阶段 Tab、持续按下、系统减弱动态效果联动、Cursor 复核和误启动历史证据，也未补第二阶段 A 的输入法/撤销、授权拒绝、卡片失败/冲突弹窗。
+
+本阶段到此停止。普通设置、快捷键的重置等剩余按钮仅作后续线索；开关、密码框、加载指示器与其他页面未迁移。未提交、推送、安装或发布，未修改全局配置、签名配置、权限或真实用户数据。
+
+### 第二阶段 C：普通设置、快捷键和项目支持按钮接入（2026-10-01）
+
+**已实现，已完成本阶段隔离验证；真实系统路径未测**：生产范围限定 `SettingsSections.swift`、`ProjectSupportSections.swift`、`HotKeyRecorder.swift`、`ShortcutsSettingsView.swift`，15 处按钮声明直接接入 `DaybookButtonStyle`，变体与消费者见[组件目录](component-catalog.md)。未增加公共 API、令牌、状态或页面根按钮样式；Form 分组、action、角色、条件、禁用、帮助及辅助功能标识保持。通知防重复发送、结果提示/状态刷新、日历回调、支持链接/环境信息复制及部分失败提示、快捷键录入/Escape/冲突/持久化/全局注册/监听释放均沿原实现。本次纯消费者样式迁移，不新增必需独立复核。
+
+**隔离边界**：测试直接挂载生产分节、`ShortcutRecorder` 和 `ShortcutsSettingsView`，不复制按钮/业务回调，不挂载含系统状态查询的 `SettingsView`。复用 `SystemPageHost`；偏好使用随机独立 UserDefaults suite，模型为内存库；快捷键同时注入带 fake register/unregister 的 `HotKeyCenter` 后构造 `ShortcutStore`。`HotKeyCenter.installHandlerIfNeeded` 在 fake 路径跳过 Carbon 安装；XCTest 下 AppDelegate 跳过日用服务启动，`.hotKeyDidChange` 当前无订阅者，测试不启动日历协调器。设置页测试只暂存/恢复当前 XCTest 进程的合成 `CalendarSyncStatus`，不刷新真实日历；只点击注入的通知申请和冲突查看回调。
+
+**本阶段实际证据**（macOS 26.6.2，arm64）：沿架构文档已确认的隔离 XCTest 入口，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、`AreaChain.entitlements`、`LSUIElement=NO`，清除六个真实钥匙串授权变量，等待仓库构建锁后串行运行；没有直接打开 QA App 或日用应用。
+
+- `build/ButtonStage2C.xcresult`：`ShortcutStoreTests` 3 项、`SettingsSectionPresentationTests` 3 项、`ProjectSupportTests` 4 项、`DaybookButtonStyleTests` 3 项及原快捷键页面清单 1 项通过。新增消费者 8 项起初失败于测试辅助代码用 Objective-C `perform` 读取结构体矩形；改用既有宿主采用的 KVC 取值后重跑，没有修改生产行为或放宽断言。首轮四个按方法筛选的用例未命中，随后改用带完整参数/括号的方法标识补跑。
+- `build/ButtonStage2C-consumers.xcresult`：13 项、32 次运行全部通过，0 失败/跳过。包含 `SettingsButtonConsumerTests`、`ShortcutsPageTests`、通知 fake 的 `testBannerPostsImmediatelyWithoutTouchingReminders()` / `deniedTestBannerLeavesExistingReminders()` / `failedTestBannerDoesNotClaimDelivery()`，以及公共按钮 `disabledButtonsRejectMouseAndShortcut(disabled:)`。结果包 summary 和 tests 均核对实际执行标识，过滤退出成功不单独计为通过。
+- 补充已有绑定重新监听的相邻按钮边界和全部重置的双语主题窄窗场景后，`build/ButtonStage2C-shortcuts.xcresult` 实际运行 `ShortcutsPageTests` 5 项、14 次，全部通过，0 失败/跳过。原生鼠标/按键覆盖进入监听、重复点击防重入、Escape 保留原绑定、有效组合更新正确项并退出、fake 注册失败提示、单项/全部重置及偏好重建；移除视图后再投递组合不会写回 store 或注册，核对监听释放。
+- 已查看设置、项目支持、冲突长标题和快捷键各状态的中英文 × 浅深色原生缓存截图，并核对按钮存在、几何边界及相邻按钮无重叠。分节和快捷键页面窄窗为 420×560，既有全页面标识测试仍覆盖 780×500 的工作台最小尺寸；登录待批准与全部重置先滚动至按钮再检查/点击。英文重新录入提示在有重置按钮时自然换成两行，未遮挡重置。PNG 在测试临时目录 `AreaChainButtonConsumersQA/settings-*.png`；缓存截图不代表完整系统材质合成。
+- 最终 8 个变更 Swift 文件严格 SwiftLint、`git diff --check`、`python3 -B scripts/check_workflow.py` 和 `python3 -B scripts/quality_gate.py --profile static` 通过（172 项脚本测试）；隔离测试同时完成编译。默认 auto/Swift profile 会调用全量测试，按本阶段限定范围以静态门禁加上述定向 XCTest 替代，未执行全量 Swift profile。编译仍有既有测试辅助 API 弃用警告。生产差异核对为仅新增 15 行按钮样式修饰符。
+
+**明确未测与停止边界**：未发送系统通知、申请真实通知权限、打开系统设置或浏览器、写真实剪贴板、刷新真实日历。通知按钮自身的异步 busy/消息刷新、支持按钮外部打开/复制结果提示及日历重试仍以回调差异核对和已有 fake/领域测试取证，不能写成端到端通过；没有为此新增服务抽象。`SystemPageHost` 关闭动画，未补持续按下、系统减弱效果或真人 Tab/辅助功能导航。第一阶段与 A/B 的 Tab、持续按下、系统减弱动态效果、Cursor 未认证、历史误启动及其他消费者未验项保持原记录，未重试认证或重查历史。下一阶段仅留隐私主页、数据备份、其他页面局部按钮/Menu 标签线索；Picker、Toggle、输入框和其他控件不在本阶段。保留前期及并发修改，未提交、推送、安装、发布，未修改全局设置、个人签名配置、权限或真实用户数据。本阶段到此停止。

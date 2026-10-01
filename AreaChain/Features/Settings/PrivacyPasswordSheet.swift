@@ -28,7 +28,8 @@ struct PrivacyPasswordSheet: View {
                 Spacer()
                 Button("alert.cancel") { password = ""; repeated = ""; dismiss() }.disabled(busy)
                     .keyboardShortcut(.cancelAction)
-                Button("common.save", action: submit).buttonStyle(.borderedProminent)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
+                Button("common.save", action: submit).buttonStyle(DaybookButtonStyle(.prominent))
                     .disabled(busy || password.isEmpty || (confirmation && password != repeated))
             }
         }
