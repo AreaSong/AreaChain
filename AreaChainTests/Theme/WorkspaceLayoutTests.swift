@@ -68,6 +68,27 @@ struct WorkspaceLayoutTests {
         #expect(headerMarker.bounds.height < WorkspaceLayout.headerHeight)
     }
 
+    @Test func toolbarMenuLabelIncludesTextWhileExistingIconLabelsKeepTheirSize() async throws {
+        let label = Label("新建重复事项", systemImage: "repeat")
+            .daybookMenuLabel(size: .regular, fitsLabel: true)
+            .background(WorkspaceMetricMarker(name: "menu"))
+            .fixedSize()
+        let host = NSHostingView(rootView: label)
+        let window = makeWindow(host, size: NSSize(width: 360, height: 70))
+        defer { window.contentView = nil; window.orderOut(nil) }
+        try await settle(host)
+        let measured = try #require(marker("menu", in: host))
+        #expect(measured.bounds.width > DaybookMetrics.Hit.regular * 2)
+        #expect(abs(measured.bounds.height - DaybookMetrics.Hit.regular) < 1)
+        let icon = Image(systemName: "repeat").daybookMenuLabel(size: .regular)
+            .background(WorkspaceMetricMarker(name: "icon")).fixedSize()
+        let iconHost = NSHostingView(rootView: icon)
+        window.contentView = iconHost
+        try await settle(iconHost)
+        let original = try #require(marker("icon", in: iconHost))
+        #expect(original.bounds.width == DaybookMetrics.Hit.regular)
+    }
+
     private func field(size: CGFloat = DaybookType.bodySize, weight: NSFont.Weight = .regular) -> DaybookTextField {
         DaybookTextField(text: .constant("原生输入字号核验"), placeholder: "输入", fontSize: size,
                          fontWeight: weight, focus: .constant(false), onSubmit: {})

@@ -4,6 +4,8 @@ import SwiftUI
 /// 只允许 MainSplitWorkspaceView.swift、WorkspaceSidebarView.swift、WorkspaceHeaderBar.swift、DaybookPage.swift 与本文件引用。
 enum WorkspaceLayout {
     static let headerHeight: CGFloat = 50
+    static let headerStackedHeight: CGFloat = 82
+    static let headerSingleRowWidth: CGFloat = 720
     static let maxContentWidth: CGFloat = 880
     static let sidebarRowHeight: CGFloat = 28
     static let sidebarRowVerticalPadding: CGFloat = 4.5

@@ -255,6 +255,23 @@ struct WorkspaceSearchPageModel {
     var isEmpty: Bool { hits.isEmpty && matchingAttachments.isEmpty }
     var resultCount: Int { hits.count + matchingAttachments.count }
 
+    var inspectorIDs: [UUID] {
+        let tasks = hits.compactMap { hit -> UUID? in
+            switch hit.kind {
+            case .todo, .routine: hit.id
+            case .subtask: hit.parentID
+            case .diary: nil
+            }
+        }
+        let owners = matchingAttachments.compactMap { attachment -> UUID? in
+            switch AttachmentOwner(rawValue: attachment.ownerKind) {
+            case .todo, .routine: attachment.ownerID
+            default: nil
+            }
+        }
+        return tasks + owners
+    }
+
     static func make(
         query: String,
         sources: WorkspaceSearchSources,

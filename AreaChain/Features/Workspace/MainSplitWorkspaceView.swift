@@ -17,9 +17,15 @@ struct MainSplitWorkspaceView: View {
         } detail: {
             detailColumn
         }
-        .inspector(isPresented: $navigation.isInspectorPresented) {
+        .inspector(isPresented: Binding(
+            get: { navigation.isInspectorPresented && navigation.canInspectSelectedTask },
+            set: { navigation.isInspectorPresented = $0 }
+        )) {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
                 .inspectorColumnWidth(min: 280, ideal: 320, max: 400)
+        }
+        .onChange(of: tags.filter { $0.deletedAt == nil }.map(\.id)) { _, ids in
+            if let tagID = navigation.selectedTagID, !ids.contains(tagID) { navigation.selectedTagID = nil }
         }
         .workspaceToolbarTitleHidden()
         .syntaxOverlayHost()
@@ -37,23 +43,23 @@ struct MainSplitWorkspaceView: View {
     }
 
     private var detailColumn: some View {
-        ZStack {
-            if navigation.isSearching {
-                WorkspaceGlobalSearchView(
-                    navigation: navigation,
-                    query: navigation.searchQuery
-                )
-                .transition(.opacity)
-            } else {
-                detailView
-                    .transition(.opacity)
+        GeometryReader { geometry in
+            ZStack {
+                if navigation.isSearching {
+                    WorkspaceGlobalSearchView(navigation: navigation, query: navigation.searchQuery)
+                } else {
+                    detailView
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .padding(.top, WorkspaceHeaderGeometry(width: geometry.size.width).height)
+            .overlayPreferenceValue(WorkspaceHeaderContentKey.self, alignment: .top) { content in
+                WorkspaceHeaderBar(navigation: navigation, tags: tags,
+                                   content: navigation.isSearching ? WorkspaceHeaderContent() : content)
+                    .frame(height: WorkspaceHeaderGeometry(width: geometry.size.width).height)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .workspaceToolbar(
-            navigation: navigation,
-            tags: tags
-        )
+        .toolbarBackground(.hidden, for: .windowToolbar)
         .overlay(alignment: .bottom) {
             if showsBatchBar {
                 WorkspaceBatchActionBar(

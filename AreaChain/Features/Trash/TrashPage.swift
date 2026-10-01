@@ -54,17 +54,9 @@ struct TrashPage: View {
             minWidth: 360,
             minHeight: 420
         ) {
-            Button("trash.empty.action") { confirmEmpty = true }
-                .font(DaybookType.caption.weight(.semibold))
-                .buttonStyle(DaybookButtonStyle(.destructive))
-                .disabled(items.isEmpty)
-                .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
-                    Button("alert.purge.all", role: .destructive, action: emptyTrash)
-                    Button("alert.cancel", role: .cancel) {}
-                } message: {
-                    Text("alert.purge.all.message")
-                }
-        } content: {
+            Text("trash.hint")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
             if items.isEmpty {
                 DaybookEmptyState(title: "trash.empty", systemImage: "trash")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -72,6 +64,14 @@ struct TrashPage: View {
                 list
             }
         }
+        .workspaceHeader(actions: [WorkspaceHeaderAction(
+            id: "trash.empty", title: "trash.empty.action", systemImage: "trash",
+            isEnabled: !items.isEmpty, role: .destructive, overflowOnly: true
+        ) { confirmEmpty = true }])
+        .confirmationDialog("alert.purge.all.title", isPresented: $confirmEmpty, titleVisibility: .visible) {
+            Button("alert.purge.all", role: .destructive, action: emptyTrash)
+            Button("alert.cancel", role: .cancel) {}
+        } message: { Text("alert.purge.all.message") }
         .confirmPurge($pendingPurge)
     }
 

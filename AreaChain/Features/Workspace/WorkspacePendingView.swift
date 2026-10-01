@@ -28,6 +28,8 @@ struct WorkspacePendingView: View {
                 emptySubtitle: navigation.pendingFilter.isActive ? "empty.filter.hint" : emptyCopy(model.lane).hint
             )
         }
+        .workspaceHeader(actions: [WorkspaceHeaderAction(id: "today.add", title: "items.goToday", systemImage: "plus", perform: openTodayComposer)])
+        .workspaceInspectorTargets(model.visibleIDs)
         .refreshBoardOnDayChange()
         .onAppear {
             if navigation.pendingLaneSession == nil {

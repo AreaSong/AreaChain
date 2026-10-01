@@ -6,9 +6,11 @@ import Observation
 @MainActor
 final class EditDrafts {
     static let shared = EditDrafts()
+    var titles: [String: String] = [:]
     var notes: [String: String] = [:]
 
     func discard(owner: AttachmentOwnerKey) {
+        titles.removeValue(forKey: "\(owner.kind.rawValue)-\(owner.id)")
         notes.removeValue(forKey: "\(owner.kind.rawValue)-\(owner.id)")
     }
 }

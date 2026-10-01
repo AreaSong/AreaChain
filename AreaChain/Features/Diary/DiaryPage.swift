@@ -183,7 +183,16 @@ struct DiaryPage: View {
         }
     }
 
+    @ViewBuilder
     private func topHeader(_ list: DiaryPageListModel) -> some View {
+        if embedded {
+            VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+                searchChrome.frame(maxWidth: 360)
+                Text("diary.page.count \(list.rows.count)")
+                    .font(DaybookType.caption.monospacedDigit())
+                    .foregroundStyle(DaybookPalette.text.secondary)
+            }
+        } else {
         DaybookPageHeader {
             HStack(spacing: 8) {
                 Text("diary.page.title")
@@ -201,6 +210,7 @@ struct DiaryPage: View {
             searchChrome
                 .frame(width: 200)
         }
+        }
     }
 
     private var searchChrome: some View {
@@ -208,7 +218,7 @@ struct DiaryPage: View {
             DaybookIconButton(systemName: "magnifyingglass", label: "diary.search.placeholder", size: .inline) {
                 searchFocused = true
             }
-            .appShortcut(.search, enabled: showsPageHeader)
+            .appShortcut(.search, enabled: showsPageHeader && !embedded)
         } field: {
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),

@@ -15,12 +15,11 @@ struct WorkspaceAllItemsView: View {
     var body: some View {
         let model = makePageModel()
         DaybookPage(title: "tab.allItems", systemImage: "list.bullet", minWidth: 480, minHeight: 480) {
+            controls(model)
             if model.liveQuery.isNarrowed {
                 Button("items.filter.clear") { navigation.allItemsQuery = model.liveQuery.cleared() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
-        } content: {
-            controls(model)
             WorkspaceItemsList(
                 groups: model.groups,
                 todayKey: todayKey,
@@ -30,6 +29,7 @@ struct WorkspaceAllItemsView: View {
                 emptySubtitle: model.liveQuery.isNarrowed ? "empty.filter.hint" : "items.empty.hint"
             )
         }
+        .workspaceInspectorTargets(model.visibleIDs)
         .refreshBoardOnDayChange()
         .onAppear { navigation.allItemsQuery.todayKey = todayKey }
         .onChange(of: model.visibleIDs) { _, ids in

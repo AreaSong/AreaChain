@@ -3,6 +3,9 @@ import SwiftUI
 
 /// 组织 > 标签：平面列表、筛选、创建、重命名、排序、合并与颜色。
 struct TagManagementPage: View {
+    var saveTag: (String, ModelContext) -> TagItem? = { name, context in
+        DayBoardMutations.createTag(name: name, context: context)
+    }
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
 
@@ -16,6 +19,7 @@ struct TagManagementPage: View {
     @State private var searchFocused = false
     @State private var draftName = ""
     @State private var createFocused = false
+    @State private var showsCreate = false
     @State private var createError: String?
     @State private var selection: Set<UUID> = []
     @State private var renamingID: UUID?
@@ -50,61 +54,62 @@ struct TagManagementPage: View {
             Text("tags.purge.confirm.message")
         }
         .sheet(isPresented: $showMerge) { mergeSheet }
+        .workspaceHeader(actions: headerActions)
     }
 
     private var tagPage: some View {
         DaybookPage(title: "tab.tags", systemImage: "tag", subtitle: "tags.page.subtitle") {
-            pageToolbar
-        } content: {
             pageContent
         }
     }
 
-    private var pageToolbar: some View {
-        HStack(spacing: 8) {
-            if showsDeleted {
-                Button("trash.restore", action: commitRestore)
-                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
-                    .disabled(deletedSelection.isEmpty)
-                Button("trash.purge") { confirmPurge = true }
-                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                    .disabled(deletedSelection.isEmpty)
-            } else {
-                liveToolbar
+    private var headerActions: [WorkspaceHeaderAction] {
+        [
+            WorkspaceHeaderAction(id: "tags.create", title: "tags.create", systemImage: "plus", isEnabled: !showsDeleted) {
+                showsCreate = true
+                createFocused = true
+            },
+            WorkspaceHeaderAction(id: "tags.cleanup", title: "tags.cleanup.unused", systemImage: "trash",
+                                  isEnabled: !showsDeleted && !unusedOrdinary.isEmpty, overflowOnly: true) {
+                confirmCleanup = true
             }
+        ]
+    }
+
+    @ViewBuilder private var selectionToolbar: some View {
+        let selected = showsDeleted ? deletedSelection : liveSelection
+        if !selected.isEmpty {
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: DaybookSpacing.sm) { selectionActions(count: selected.count) }
+                VStack(alignment: .leading, spacing: DaybookSpacing.xs) { selectionActions(count: selected.count) }
+            }
+            .font(DaybookType.caption)
+            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         }
     }
 
-    private var liveToolbar: some View {
-        HStack(spacing: 8) {
-            Button("tags.create", action: commitCreate)
-                .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
-                .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            if !liveSelection.isEmpty {
-                Button("tags.batch.delete") { confirmDelete = true }
-                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-            }
+    @ViewBuilder private func selectionActions(count: Int) -> some View {
+        Text("tags.selection.count \(count)").foregroundStyle(DaybookPalette.text.secondary)
+        if showsDeleted {
+            Button("trash.restore", action: commitRestore)
+            Button("trash.purge") { confirmPurge = true }
+        } else {
+            Button("tags.batch.delete") { confirmDelete = true }
             if !ordinarySelection.isEmpty {
                 colorMenu
                 if ordinarySelection.count >= 2 {
-                    Button("tags.merge") { beginMerge() }
-                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    Button("tags.merge", action: beginMerge)
                 }
-            }
-            if !unusedOrdinary.isEmpty {
-                Button("tags.cleanup.unused") { confirmCleanup = true }
-                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
         }
     }
 
     private var pageContent: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-            searchField
-            if !showsDeleted {
-                createField
-            }
+            searchField.frame(maxWidth: 360)
             filterBar
+            if showsCreate && !showsDeleted { createField }
+            selectionToolbar
             if let pageError {
                 Text(LocalizedStringKey(pageError))
                     .font(DaybookType.caption)
@@ -181,8 +186,15 @@ struct TagManagementPage: View {
                     focus: $createFocused,
                     onSubmit: commitCreate,
                     allowsShiftNewline: false,
-                    onEscape: { draftName = ""; createError = nil; createFocused = false }
+                    onEscape: cancelCreate
                 )
+                .accessibilityIdentifier("tags.create.input")
+            } trailing: {
+                Button("tags.create", action: commitCreate)
+                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
+                    .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .accessibilityIdentifier("tags.create.submit")
+                DaybookIconButton(systemName: "xmark", label: "alert.cancel", size: .compact, action: cancelCreate)
             }
             if let createError {
                 Text(LocalizedStringKey(createError))
@@ -193,7 +205,13 @@ struct TagManagementPage: View {
     }
 
     private var filterBar: some View {
-        HStack(spacing: 6) {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 6) { filterButtons }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], alignment: .leading) { filterButtons }
+        }
+    }
+
+    @ViewBuilder private var filterButtons: some View {
             ForEach(TagListFilter.allCases, id: \.self) { item in
                 Button(filterTitle(item)) {
                     showsDeleted = false
@@ -206,7 +224,6 @@ struct TagManagementPage: View {
                 selection.removeAll()
             }
             .buttonStyle(DaybookButtonStyle(showsDeleted ? .prominent : .quiet, size: .compact))
-        }
     }
 
     private var colorMenu: some View {
@@ -345,13 +362,19 @@ struct TagManagementPage: View {
             createError = "tags.error.duplicate"
             return
         }
-        guard DayBoardMutations.createTag(name: name, context: modelContext) != nil else {
+        guard saveTag(name, modelContext) != nil else {
             createError = "tags.error.save"
             return
         }
+        cancelCreate()
+        pageError = nil
+    }
+
+    private func cancelCreate() {
         draftName = ""
         createError = nil
-        pageError = nil
+        createFocused = false
+        showsCreate = false
     }
 
     private func commitRename(_ tag: TagItem) {

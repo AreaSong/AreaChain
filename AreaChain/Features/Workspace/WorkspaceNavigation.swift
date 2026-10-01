@@ -117,6 +117,7 @@ final class WorkspaceNavigation {
     var selectedTab: WorkspaceTab = .dashboard {
         didSet {
             if oldValue != selectedTab {
+                invalidateInspectorContext()
                 releasePageMemory(leaving: oldValue)
             }
             selectedTagID = nil
@@ -131,6 +132,7 @@ final class WorkspaceNavigation {
 
     var selectedTagID: UUID? {
         didSet {
+            if oldValue != selectedTagID { invalidateInspectorContext() }
             if selectedTagID != nil {
                 // 点进某个标签会盖住待处理或全部事项，这和顶部搜索不同，要按离开页面处理。
                 releasePageMemory(leaving: selectedTab)
@@ -155,7 +157,13 @@ final class WorkspaceNavigation {
     var focusedTrashID: UUID?
 
     // MARK: - Global Search
-    var searchQuery: String = ""
+    var searchQuery: String = "" {
+        didSet {
+            if BoardSearch.normalized(oldValue) != BoardSearch.normalized(searchQuery) {
+                invalidateInspectorContext()
+            }
+        }
+    }
     var isSearchFocused: Bool = false
     var searchResultIndex: Int?
     var wantsTodayComposerFocus: Bool = false
@@ -180,6 +188,37 @@ final class WorkspaceNavigation {
     var selectedTaskIDs: Set<UUID> = []
     private(set) var selectionAnchorID: UUID?
     var isInspectorPresented: Bool = false
+    private(set) var inspectorTargetIDs: Set<UUID> = []
+
+    var contentIdentity: String {
+        if isSearching { return "search:" + BoardSearch.normalized(searchQuery) }
+        if let selectedTagID { return "tag:" + selectedTagID.uuidString }
+        return selectedTab.rawValue
+    }
+
+    var supportsTaskInspector: Bool {
+        isSearching || selectedTagID != nil || selectedTab.supportsTaskInspector
+    }
+
+    var canInspectSelectedTask: Bool {
+        supportsTaskInspector && selectedTaskID.map { inspectorTargetIDs.contains($0) } == true
+    }
+
+    func updateInspectorTargets(_ ids: Set<UUID>) {
+        inspectorTargetIDs = ids
+        if let selectedTaskID, !ids.contains(selectedTaskID) {
+            self.selectedTaskID = nil
+            inspectedReference = nil
+            closeInspector()
+        }
+    }
+
+    private func invalidateInspectorContext() {
+        closeInspector()
+        selectedTaskID = nil
+        inspectedReference = nil
+        inspectorTargetIDs = []
+    }
     /// 待处理和全部事项把每一行的真实检查日交给批量打卡。标签清单不设置此项，仍按今天。
     var usesListedCheckDays = false
     var routineCompletionDays: [UUID: String] = [:]

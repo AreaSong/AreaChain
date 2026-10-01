@@ -66,6 +66,12 @@ AreaChain/
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
 - **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增消费者，本路线不迁移它们。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
 
+### 工作台公共顶栏
+
+`MainSplitWorkspaceView` 在主内容区消费 `WorkspaceHeaderContentKey`，由 `WorkspaceHeaderBar` 统一呈现标题、帮助、居中搜索和操作。页面经 `workspaceHeader` 提供动作描述与原回调，不另建导航、筛选或保存状态。宽布局两侧等宽；窄布局搜索独占第二行，右侧按声明顺序收纳到更多菜单。`DaybookPage` 的普通页标题在工作台中由公共顶栏承担，实体/分组标题及非工作台宿主页头保留。重复事项 sheet 显式使用非工作台页头能力。
+
+各任务页经 `workspaceInspectorTargets` 登记当前投影的目标 ID；搜索登记任务、子任务的父任务和可打开附件拥有者。`WorkspaceNavigation` 按当前内容和有效目标决定详情能力，切页或查询改变使旧目标失效。检查器只在当前目标有效时展示；标题草稿复用 `EditDrafts.titles`，备注继续使用 `EditDrafts.notes`，都不写偏好或新建保存事务。
+
 ### 开发时的边界与状态核对
 
 目录层次不是编译隔离保证。修改边界时沿入口、调用方及实际状态确认责任，不把理想依赖图当成全部现有代码的证明。`python3 -B scripts/check_workflow.py` 只守住 Domain 禁止显式导入 SwiftUI/AppKit，以及 Features 里未豁免的字面颜色、字号、圆角、阴影和旧主题名；不证明视觉一致，也不检查完整符号依赖或运行语义。
@@ -190,6 +196,6 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 
 `MenuBarStatus` 复用今日看板规则区分未安排、未完成与已处理完，并保留准确数量。`MenuBarStatusImage` 使用固定 18×18pt 模板图像，在书本内部镂空小点或勾号表达状态，由系统统一着色。状态项固定 24pt 宽，按钮标题始终为空，不再绘制任何数量文字；所有正数共用同一个小点图标，完整计数只用于悬停提示与无障碍标签。读失败不覆盖上次有效状态。
 
-1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。不传 tab 时打开 Dashboard；显式传入的今日、手记、日历等 tab 不会被 Dashboard 覆盖。切到不同 tab 会复位侧栏标签并清掉**批量多选**；单选 `selectedTaskID` 与检查器是否打开会保留。同一 tab 再调 `revealTab` 会清掉标签过滤（浮层 Return 才能回到「今日」页），并保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「今日」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，手记结果走 `DiaryWindows.open(entry:context:)`；显式「在工作台打开」仍走 `openDiary()`。应用菜单「设置」、⌘, 和浮层「设置」都调用 `openSettings()`，进入工作台设置页。
+1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。不传 tab 时打开 Dashboard；显式传入的今日、手记、日历等 tab 不会被 Dashboard 覆盖。切到不同 tab 会复位侧栏标签并清掉**批量多选**；当前内容改变会清空旧任务检查目标并收起检查器，目标页面按实际清单重新登记可检查对象。同一 tab 再调 `revealTab` 会清掉标签过滤（浮层 Return 才能回到「今日」页），同一内容可保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「今日」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，手记结果走 `DiaryWindows.open(entry:context:)`；显式「在工作台打开」仍走 `openDiary()`。应用菜单「设置」、⌘, 和浮层「设置」都调用 `openSettings()`，进入工作台设置页。
 2. **激活策略**：平时 `.accessory`（无 Dock）；工作台、手记小窗或剪贴板小窗打开后升为 `.regular`。`AppWindows.diaryWindowsProvider` 把全部手记窗口纳入存活窗口集合，`clipboardWindowProvider` 纳入剪贴板小窗，防止关工作台时被当成杂散窗口隐藏；还有可见或最小化窗口时不撤去 Dock。剪贴板小窗失焦不关闭，置顶只改窗口层级。
 3. **手记小窗**：`DiaryWindows` 按记录标识复用 `DiaryWindowController`，草稿首次保存后也复用原窗。窗口置顶只设置 `.floating` 层级，不改变记录的 `isPinned`，也不重新激活应用；不自动恢复窗口或未保存正文。关闭窗口使用原生保存确认，应用退出还检查独立窗口和 `BoardComposerSession` 中的手记草稿。

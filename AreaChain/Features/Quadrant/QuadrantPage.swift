@@ -38,10 +38,12 @@ struct QuadrantPage: View {
                 onNext: { selectedKey = DayKey.shifted(selectedKey, by: 1, calendar: calendar) },
                 onToday: selectedKey == todayKey ? nil : { selectedKey = todayKey }
             )
-            Text("quadrant.hint")
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .accessibilityIdentifier("quadrant.hint")
+            if !embedded {
+                Text("quadrant.hint")
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .accessibilityIdentifier("quadrant.hint")
+            }
             if embedded {
                 GeometryReader { geometry in
                     quadrantGrid(cellHeight: max(0, (geometry.size.height - DaybookSpacing.sm) / 2))
@@ -50,6 +52,7 @@ struct QuadrantPage: View {
                 quadrantGrid(cellHeight: 180)
             }
         }
+        .workspaceInspectorTargets(focusOrder)
         .quadrantKeys(
             ids: focusOrder,
             focusedID: $focusedID,

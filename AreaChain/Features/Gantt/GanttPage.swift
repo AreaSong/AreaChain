@@ -2,6 +2,7 @@ import SwiftData
 import SwiftUI
 
 struct GanttPage: View {
+    @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
@@ -30,17 +31,21 @@ struct GanttPage: View {
                 onNext: { monthKey = DayKey.shiftedMonth(monthKey, by: 1, calendar: calendar) },
                 onToday: String(monthKey.prefix(7)) == String(todayKey.prefix(7))
                     ? nil
-                    : { monthKey = todayKey }
+                    : { monthKey = todayKey },
+                todayLabel: "gantt.currentMonth"
             )
-            Text("gantt.hint")
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.secondary)
+            if !embedded {
+                Text("gantt.hint")
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+            }
             if bars.isEmpty && marks.isEmpty {
                 DaybookEmptyState(title: "gantt.empty", systemImage: "calendar")
             } else {
                 timeline
             }
         }
+        .workspaceInspectorTargets(bars.map(\.id) + routineIDs)
         .onChange(of: monthKey) { _, _ in resetInteraction() }
         .onChange(of: bars) { _, current in
             selection.reconcile(with: current.map(\.id))

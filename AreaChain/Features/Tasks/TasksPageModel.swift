@@ -17,6 +17,13 @@ struct TasksPageViewModel {
         page.upcomingTodos.compactMap { todosByID[$0.id] }
     }
     var todayVisibleIDs: [UUID] { page.todayVisibleIDs }
+
+    func inspectorIDs(dayKey: String, filter: BoardFilter, showYesterday: Bool, showUpcoming: Bool) -> [UUID] {
+        let rows = DayBoardDayProjection.partition(source: source, dayKey: dayKey)
+            .matchingListed(dayKey: dayKey, todayKey: dayKey, filter: filter, index: source.checkIndex)
+        return allVisibleIDs(showYesterday: showYesterday, showUpcoming: showUpcoming)
+            + rows.doneTodos.map(\.id) + rows.doneRoutines.map(\.id)
+    }
     var todayBundleIDs: [String] { page.todayBundleIDs }
     var untaggedTodosCount: Int { page.untaggedOpenTodoCount }
     var totalOpenTodosCount: Int { page.totalOpenTodoCount }

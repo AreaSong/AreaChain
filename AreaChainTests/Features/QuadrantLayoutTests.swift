@@ -123,9 +123,9 @@ struct QuadrantLayoutTests {
         let cells = try host.frames("cell")
         let content = try #require(host.window.contentView)
         let bounds = content.convert(content.bounds, to: nil)
-        let hint = try NativeSyntaxUI.frame("quadrant.hint", in: host.window)
+        let period = try host.periodFrame()
         let bottom = bounds.minY + DaybookSpacing.page
-        let top = hint.minY - DaybookSpacing.md
+        let top = period.minY - DaybookSpacing.md
         let width = (bounds.width - 2 * DaybookSpacing.page - DaybookSpacing.sm) / 2
         let height = (top - bottom - DaybookSpacing.sm) / 2
         for cell in cells {
@@ -235,6 +235,11 @@ private final class QuadrantLayoutHost {
 
     func frames(_ kind: String) throws -> [CGRect] {
         try QuadrantSlot.allCases.map { try NativeSyntaxUI.frame("quadrant.\(kind).\($0.rawValue)", in: window) }
+    }
+
+    func periodFrame() throws -> CGRect {
+        let anchor = try #require(descendants(window.contentView).first { $0.identifier?.rawValue == "period.bar" })
+        return anchor.convert(anchor.bounds, to: nil)
     }
 
     var scrollViews: [NSScrollView] {

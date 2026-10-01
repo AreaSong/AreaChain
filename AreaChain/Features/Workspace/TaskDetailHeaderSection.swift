@@ -53,6 +53,7 @@ struct TaskDetailHeaderBar: View {
 
 /// 抽屉任务大标题可编辑组件
 struct TaskDetailTitleEditor: View {
+    var draftKey: String? = nil
     var title: String
     var onUpdate: (String) -> Bool
 
@@ -96,6 +97,19 @@ struct TaskDetailTitleEditor: View {
                     }
             }
         }
+        .onAppear {
+            if let draftKey, let retained = EditDrafts.shared.titles[draftKey] {
+                draft = retained
+                isEditing = true
+            }
+        }
+        .onChange(of: draft) { _, text in
+            if isEditing, let draftKey { EditDrafts.shared.titles[draftKey] = text }
+        }
+        .onDisappear {
+            // 关闭/切页不额外提交标题；失败或尚未提交的输入仍可在重新打开时找回。
+            if isEditing, let draftKey { EditDrafts.shared.titles[draftKey] = draft }
+        }
     }
 
     private func save() {
@@ -103,6 +117,7 @@ struct TaskDetailTitleEditor: View {
         if !trimmed.isEmpty {
             guard onUpdate(trimmed) else { return }
         }
+        if let draftKey { EditDrafts.shared.titles.removeValue(forKey: draftKey) }
         isEditing = false
         isFocused = false
     }
@@ -110,6 +125,7 @@ struct TaskDetailTitleEditor: View {
     private func cancel() {
         _ = BoardSelection.shared.consumeEscapeCancelsEdits()
         draft = title
+        if let draftKey { EditDrafts.shared.titles.removeValue(forKey: draftKey) }
         isEditing = false
         isFocused = false
     }

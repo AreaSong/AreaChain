@@ -81,6 +81,7 @@ struct WorkspaceGlobalSearchView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(DaybookPalette.fill.page)
         .accessibilityIdentifier("workspace.global.search.results")
+        .workspaceInspectorTargets(page.inspectorIDs)
         .modifier(SearchResultKeys(
             hits: page.hits,
             index: $navigation.searchResultIndex,

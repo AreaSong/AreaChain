@@ -118,6 +118,7 @@ struct DaybookPeriodBar: View {
     var onToday: (() -> Void)? = nil
     var prevLabel: LocalizedStringKey = "calendar.prev"
     var nextLabel: LocalizedStringKey = "calendar.next"
+    var todayLabel: LocalizedStringKey = "calendar.today"
 
     var body: some View {
         HStack(spacing: 4) {
@@ -129,7 +130,7 @@ struct DaybookPeriodBar: View {
                 .frame(maxWidth: .infinity)
             DaybookIconButton(systemName: "chevron.right", label: nextLabel, action: onNext)
             if let onToday {
-                Button("calendar.today", action: onToday)
+                Button(todayLabel, action: onToday)
                     .font(DaybookType.caption.weight(.semibold))
                     .buttonStyle(DaybookButtonStyle(.prominent))
                     .accessibilityIdentifier("period.today")

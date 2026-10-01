@@ -76,6 +76,9 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Features/Board/BoardRowChrome.swift", "BoardRowChrome"),
     ("AreaChain/Features/Board/BoardCommandStrip.swift", "BoardCommandStrip"),
     ("AreaChain/Features/Search/BoardSearchHitRow.swift", "BoardSearchHitGroups"),
+    ("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift", "WorkspaceHeaderBar"),
+    ("AreaChain/Features/Workspace/WorkspaceHeaderContent.swift", "WorkspaceHeaderAction"),
+    ("AreaChain/Features/Workspace/WorkspaceHeaderSearch.swift", "WorkspaceHeaderSearchCapsule"),
 )
 
 

@@ -54,6 +54,8 @@
 | Dashboard | `DashboardView` 及其统计/热力图分节 | [DashboardView.swift](../AreaChain/Features/Dashboard/DashboardView.swift) | 使用既有投影和日期统计；Dashboard 不是第二个可编辑事项清单。一次 body 只建一份 `DashboardSnapshot`；热力列分组在 `DashboardHeatmapLayout` 内只切一次。 |
 | 剪贴板历史 | `ClipboardHistoryBrowser`、`ClipboardHistorySession` | [ClipboardHistoryBrowser.swift](../AreaChain/Features/Clipboard/ClipboardHistoryBrowser.swift)、[ClipboardHistorySession.swift](../AreaChain/Services/ClipboardHistorySession.swift) | 工作台「内容 → 剪贴板」和剪贴板历史小窗共用这一份会话。忽略、排序、搜索、置顶字母和条数只走 `ClipboardHistoryRules`。历史不跟隐私锁走。不要把历史写成待办，也不要并进 `ClipboardCapture`。菜单栏 Option 单击只切换记录开关，普通点击仍开关浮层。 |
 
+工作台公共顶栏由 [WorkspaceHeaderContent.swift](../AreaChain/Features/Workspace/WorkspaceHeaderContent.swift) 的 `WorkspaceHeaderAction` / `workspaceHeader` 传递页面动作和动态状态，`WorkspaceHeaderBar` 只负责呈现与固定优先级收纳，搜索输入 `WorkspaceHeaderSearchCapsule` 在 [WorkspaceHeaderSearch.swift](../AreaChain/Features/Workspace/WorkspaceHeaderSearch.swift)。今日、待处理、日历、标签清单、标签管理、剪贴板、回收站提供各自原有操作；其他页面只用公共标题/帮助。`workspaceInspectorTargets` 由今日、待处理、全部事项、日历、安排、四象限、标签清单和搜索登记当前投影对象。回归见 `WorkspaceHeaderStateTests`、`WorkspaceHeaderInteractionTests`、`WorkspaceRenderingTests`，并覆盖菜单栏和独立输入宿主。菜单文字点击区复用 `daybookMenuLabel(fitsLabel: true)`，默认仍是原有图标正方形；`DaybookPeriodBar.todayLabel` 默认回到今天，安排页显式回到本月。`DaybookProgressRing.showsPercentage` 默认保留百分比，顶栏紧凑进度只关掉环内数字，旁边保留完成数/总数。
+
 ## 4. 领域、服务与变更入口
 
 | 语义 | 权威入口 | 文件 | 规则 |

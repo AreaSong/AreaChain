@@ -46,6 +46,7 @@ struct ClipboardHistoryPage: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         )
+        .workspaceHeader(actions: headerActions)
         .onAppear { session.pageOwnsKeys = true }
         .onDisappear { session.pageOwnsKeys = false }
         .onChange(of: showsOptions) { _, shown in
@@ -57,4 +58,23 @@ struct ClipboardHistoryPage: View {
                 .appChrome()
         }
     }
+    private var headerActions: [WorkspaceHeaderAction] {
+        [
+            WorkspaceHeaderAction(id: "clipboard.record", title: session.recording ? "clipboard.pause" : "clipboard.resume",
+                                  systemImage: session.recording ? "pause" : "play") { session.setRecording(!session.recording) },
+            WorkspaceHeaderAction(id: "clipboard.panel", title: "clipboard.showPanel", systemImage: "macwindow") {
+                ClipboardHistoryPanel.shared.toggle()
+            },
+            WorkspaceHeaderAction(id: "clipboard.options", title: "clipboard.options", systemImage: "gearshape", overflowOnly: true) {
+                showsOptions = true
+            },
+            WorkspaceHeaderAction(id: "clipboard.clear", title: "clipboard.clearUnpinned", systemImage: "trash", overflowOnly: true) {
+                session.clear(includingPinned: false)
+            },
+            WorkspaceHeaderAction(id: "clipboard.clearAll", title: "clipboard.clearAll", systemImage: "trash", role: .destructive, overflowOnly: true) {
+                session.clear(includingPinned: true)
+            }
+        ]
+    }
+
 }

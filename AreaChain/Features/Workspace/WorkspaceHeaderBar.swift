@@ -1,196 +1,211 @@
-import AppKit
-import SwiftData
 import SwiftUI
 
-/// 工作台内容区置顶虚化顶栏（兼容组件与原生 Toolbar 两用）：
-/// 左侧跟随当前视图标题，右侧常驻胶囊搜索框与抽屉切换按钮。
+/// 顶栏以主内容区为坐标；两侧等宽，操作数量不会挤走搜索中心。
 struct WorkspaceHeaderBar: View {
-    @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
     var tags: [TagItem]
+    var content = WorkspaceHeaderContent()
+    @State private var showsHelp = false
 
     var body: some View {
-        HStack(spacing: 12) {
-            WorkspaceHeaderLeadingTitle(navigation: navigation, tags: tags)
-
-            Spacer(minLength: 16)
-
-            WorkspaceHeaderSearchCapsule(
-                navigation: navigation,
-                tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
-            )
-
-            WorkspaceHeaderInspectorToggle(navigation: navigation)
+        GeometryReader { geometry in
+            let layout = WorkspaceHeaderGeometry(width: geometry.size.width)
+            VStack(spacing: DaybookSpacing.xs) {
+                HStack(spacing: DaybookSpacing.sm) {
+                    title
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    if !layout.stacked {
+                        search.frame(width: layout.searchWidth)
+                    }
+                    actions(limit: layout.directActionCount, compact: layout.stacked)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                if layout.stacked {
+                    search.frame(width: layout.searchWidth)
+                }
+            }
+            .padding(.horizontal, DaybookSpacing.page)
+            .frame(width: geometry.size.width, height: layout.height)
         }
-        .padding(.horizontal, DaybookSpacing.page)
-        .frame(height: WorkspaceLayout.headerHeight)
         .background(.ultraThinMaterial)
-        .overlay(alignment: .bottom) {
-            DaybookDivider(opacity: 0.65)
-        }
+        .background(SyntaxViewAnchor("syntax.workspace.header.bounds"))
+        .overlay(alignment: .bottom) { DaybookDivider(opacity: 0.65) }
+        .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workspace.header.bar")
+        .onChange(of: navigation.contentIdentity) { _, _ in showsHelp = false }
     }
-}
 
-// MARK: - Subcomponents for Header & Native Toolbar
+    private var search: some View {
+        WorkspaceHeaderSearchCapsule(
+            navigation: navigation,
+            tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
+        )
+        .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("workspace.header.search.shell")
+    }
 
-struct WorkspaceHeaderLeadingTitle: View {
-    @Bindable var navigation: WorkspaceNavigation
-    var tags: [TagItem]
-
-    var body: some View {
-        HStack(spacing: 8) {
-            if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
-                Image(systemName: "number")
-                    .foregroundStyle(DaybookPalette.accent.base)
-                Text("#\(tag.name)")
-                    .font(DaybookType.body.weight(.medium))
+    private var title: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xxs) {
+            HStack(spacing: DaybookSpacing.xs) {
+                titleLabel
+                    .font(DaybookType.body.weight(.semibold))
                     .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
+                    .accessibilityAddTraits(.isHeader)
+                if let helpKey {
+                    DaybookIconButton(systemName: "info.circle", label: "workspace.page.info", size: .inline) {
+                        showsHelp.toggle()
+                    }
+                    .help(Text(helpKey))
+                    .popover(isPresented: $showsHelp, arrowEdge: .bottom) {
+                        Text(helpKey)
+                            .font(DaybookType.body)
+                            .padding(DaybookSpacing.md)
+                            .frame(idealWidth: 280, maxWidth: 320, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .onExitCommand { showsHelp = false }
+                    }
+                    .accessibilityIdentifier("workspace.header.help")
+                }
+            }
+            if !navigation.isSearching && navigation.selectedTagID == nil && navigation.selectedTab == .today {
+                TimelineView(.periodic(from: .now, by: 60)) { _ in
+                    WorkspaceHeaderDate()
+                }
             }
         }
-        .accessibilityAddTraits(.isHeader)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("workspace.header.title")
+    }
+
+    @ViewBuilder private var titleLabel: some View {
+        if navigation.isSearching {
+            Text("workspace.search.title")
+        } else if let tag = tags.first(where: { $0.id == navigation.selectedTagID && $0.deletedAt == nil }) {
+            Text("#\(tag.name)")
+                .help(tag.name)
+        } else {
+            Text(navigation.selectedTab == .today ? "workspace.today.title" : navigation.selectedTab.titleKey)
+        }
+    }
+
+    private var helpKey: LocalizedStringKey? {
+        navigation.isSearching || navigation.selectedTagID != nil ? nil : navigation.selectedTab.helpKey
+    }
+
+    private func actions(limit: Int, compact: Bool) -> some View {
+        let direct = Array(content.actions.filter { !$0.overflowOnly }.prefix(limit))
+        let overflow = content.actions.filter { action in !direct.contains { $0.id == action.id } }
+        return HStack(spacing: DaybookSpacing.xs) {
+            ForEach(direct) { action in
+                WorkspaceHeaderActionView(action: action)
+            }
+            if !overflow.isEmpty {
+                Menu {
+                    ForEach(overflow) { action in WorkspaceHeaderMenuItem(action: action) }
+                } label: {
+                    Label("workspace.toolbar.more", systemImage: "ellipsis")
+                        .labelStyle(WorkspaceToolbarLabelStyle(iconOnly: compact))
+                        .daybookMenuLabel(size: .regular, fitsLabel: true)
+                }
+                .menuStyle(.borderlessButton)
+                .fixedSize()
+                .accessibilityLabel(Text("workspace.toolbar.more"))
+                .accessibilityIdentifier("workspace.header.more")
+            }
+            content.status
+            if navigation.supportsTaskInspector {
+                if !content.actions.isEmpty || content.status != nil {
+                    Divider().frame(height: DaybookMetrics.Hit.inline)
+                }
+                DaybookIconButton(systemName: "sidebar.trailing", label: "drawer.inspector.toggle",
+                                  isActive: navigation.isInspectorPresented) {
+                    if navigation.isInspectorPresented { navigation.closeInspector() }
+                    else if navigation.canInspectSelectedTask { navigation.isInspectorPresented = true }
+                }
+                .disabled(!navigation.canInspectSelectedTask)
+                .accessibilityAddTraits(navigation.isInspectorPresented ? .isSelected : [])
+                .accessibilityIdentifier("workspace.header.inspector.toggle")
+            }
+        }
+        .font(DaybookType.caption)
+        .fixedSize()
+        .background(SyntaxViewAnchor("syntax.workspace.actions.bounds"))
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("workspace.header.actions")
     }
 }
 
-struct WorkspaceHeaderSearchCapsule: View {
+private struct WorkspaceHeaderDate: View {
     @Environment(\.locale) private var locale
-    @Bindable var navigation: WorkspaceNavigation
-    var tagNames: [String]
-    @Bindable private var shortcuts = ShortcutStore.shared
-    @State private var hostWindow: NSWindow?
-    @State private var autocomplete = SyntaxAutocompleteState(context: .search)
-
     var body: some View {
-        DaybookInputShell(kind: .search, focused: navigation.isSearchFocused) {
-            Image(systemName: "magnifyingglass")
-                .font(DaybookType.caption.weight(.medium))
-                .foregroundStyle(navigation.isSearchFocused ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
-        } field: {
-            DaybookTextField(
-                text: $navigation.searchQuery,
-                placeholder: L10n.string("search.placeholder", locale: locale),
-                fontSize: 12,
-                focus: $navigation.isSearchFocused,
-                autocomplete: autocomplete,
-                availableTags: tagNames,
-                onSubmit: {},
-                allowsShiftNewline: false,
-                onEscape: { escapeSearch() },
-                onMoveDown: moveToResults
-            )
-            .accessibilityIdentifier("workspace.header.search")
-        } trailing: {
-            if !navigation.searchQuery.isEmpty {
-                DaybookIconButton(systemName: "xmark.circle.fill", label: "footer.search.clear", size: .inline) {
-                    navigation.clearSearch()
-                    navigation.isSearchFocused = true
-                }
-            } else if shortcuts.binding(for: .search).isArmed {
-                Text(verbatim: shortcuts.binding(for: .search).chord.displayName(locale: locale))
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 快捷键提示用圆体
-                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: DaybookRadius.xxs)
-                            .fill(DaybookPalette.border.default.opacity(0.18)) // token-exempt: 18% 分隔线没有对应令牌
-                    )
-            }
-        }
-        .frame(width: 260)
-        .syntaxSuggestions(autocomplete, enabled: navigation.isSearchFocused)
-        .background(KeyWindowHost { hostWindow = $0 })
-        .onChange(of: navigation.searchQuery) { _, _ in
-            navigation.searchResultIndex = nil
-        }
-        // ⌘F 全局快捷键聚焦
-        .background {
-            Button("") {
-                navigation.isSearchFocused = true
-            }
-            .appShortcut(.search)
-            .opacity(0)
-            .accessibilityHidden(true)
-        }
+        Text(DayKey.displayName(DayKey.today(), locale: locale))
+            .font(DaybookType.micro)
+            .foregroundStyle(DaybookPalette.text.secondary)
+            .lineLimit(1)
     }
+}
 
-    private func moveToResults() -> Bool {
-        guard navigation.isSearching else { return false }
-        navigation.searchResultIndex = 0
-        navigation.isSearchFocused = false
-        hostWindow?.makeFirstResponder(nil)
-        return true
-    }
+struct WorkspaceHeaderGeometry {
+    let width: CGFloat
+    var stacked: Bool { width < WorkspaceLayout.headerSingleRowWidth }
+    var height: CGFloat { stacked ? WorkspaceLayout.headerStackedHeight : WorkspaceLayout.headerHeight }
+    var searchWidth: CGFloat { min(300, max(160, stacked ? width - 2 * DaybookSpacing.page : width * 0.34)) }
+    var directActionCount: Int { width >= 1080 ? 3 : (width >= 920 ? 2 : (width >= 520 ? 1 : 0)) }
+}
 
-    private func escapeSearch() {
-        if !BoardSearch.normalized(navigation.searchQuery).isEmpty {
-            navigation.searchQuery = ""
-            return
-        }
-        navigation.isSearchFocused = false
-        if hostWindow?.firstResponder is NSTextView {
-            hostWindow?.makeFirstResponder(nil)
+private struct WorkspaceToolbarLabelStyle: LabelStyle {
+    var iconOnly: Bool
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: DaybookSpacing.xs) {
+            configuration.icon
+            if !iconOnly { configuration.title.lineLimit(1) }
         }
     }
 }
 
-struct WorkspaceHeaderInspectorToggle: View {
-    @Environment(\.locale) private var locale
-    @Bindable var navigation: WorkspaceNavigation
-
+private struct WorkspaceHeaderActionView: View {
+    let action: WorkspaceHeaderAction
     var body: some View {
-        DaybookIconButton(systemName: "sidebar.trailing",
-            label: "drawer.inspector.toggle",
-            size: .regular,
-            isActive: navigation.isInspectorPresented
-        ) {
-            navigation.isInspectorPresented.toggle()
-        }
-        .accessibilityIdentifier("workspace.header.inspector.toggle")
-    }
-}
-
-// MARK: - Native Toolbar Integration
-
-struct WorkspaceToolbarModifier: ViewModifier {
-    @Bindable var navigation: WorkspaceNavigation
-    var tags: [TagItem]
-
-    func body(content: Content) -> some View {
-        content
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    WorkspaceHeaderLeadingTitle(
-                        navigation: navigation,
-                        tags: tags
-                    )
+        Group {
+            if action.children.isEmpty {
+                Button(role: action.role, action: action.perform) {
+                    Label(action.title, systemImage: action.systemImage)
                 }
-
-                ToolbarItem(placement: .principal) {
-                    WorkspaceHeaderSearchCapsule(
-                        navigation: navigation,
-                        tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
-                    )
+                .buttonStyle(DaybookButtonStyle(action.isActive ? .prominent : .quiet))
+            } else {
+                Menu {
+                    ForEach(action.children) { child in WorkspaceHeaderMenuItem(action: child) }
+                } label: {
+                    Label(action.title, systemImage: action.systemImage).daybookMenuLabel(size: .regular, fitsLabel: true)
                 }
-
-                ToolbarItem(placement: .primaryAction) {
-                    WorkspaceHeaderInspectorToggle(navigation: navigation)
-                }
+                .menuStyle(.borderlessButton)
             }
-            .toolbarBackground(.ultraThinMaterial, for: .windowToolbar)
-            .toolbarBackground(.visible, for: .windowToolbar)
+        }
+        .disabled(!action.isEnabled)
+        .fixedSize()
+        .accessibilityIdentifier("workspace.header.action." + action.id)
     }
 }
 
-extension View {
-    func workspaceToolbar(
-        navigation: WorkspaceNavigation,
-        tags: [TagItem]
-    ) -> some View {
-        modifier(WorkspaceToolbarModifier(
-            navigation: navigation,
-            tags: tags
-        ))
+private struct WorkspaceHeaderMenuItem: View {
+    let action: WorkspaceHeaderAction
+    var body: some View {
+        if action.children.isEmpty {
+            Button(role: action.role, action: action.perform) {
+                Label(action.title, systemImage: action.isActive ? "checkmark" : action.systemImage)
+            }
+            .disabled(!action.isEnabled)
+        } else {
+            Menu {
+                ForEach(action.children) { child in
+                    Button(role: child.role, action: child.perform) {
+                        Label(child.title, systemImage: child.isActive ? "checkmark" : child.systemImage)
+                    }.disabled(!child.isEnabled)
+                }
+            } label: { Label(action.title, systemImage: action.systemImage) }
+            .disabled(!action.isEnabled)
+        }
     }
 }

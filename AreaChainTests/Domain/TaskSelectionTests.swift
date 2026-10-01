@@ -116,7 +116,7 @@ struct WorkspaceTaskSelectionTests {
         #expect(navigation.selectedTaskIDs == Set([ids[0], ids[4]]))
     }
 
-    @Test func clearAndNavigationResetTheRangeAnchorWithoutClearingInspectorTarget() {
+    @Test func navigationClearsTheRangeAnchorAndStaleInspectorTarget() {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
         let ids = (0..<3).map { _ in UUID() }
         navigation.selectTask(ids[0], in: ids)
@@ -124,7 +124,8 @@ struct WorkspaceTaskSelectionTests {
         navigation.selectedTab = .calendar
         #expect(navigation.selectedTaskIDs.isEmpty)
         #expect(navigation.selectionAnchorID == nil)
-        #expect(navigation.selectedTaskID == ids[2])
+        #expect(navigation.selectedTaskID == nil)
+        #expect(!navigation.isInspectorPresented && !navigation.canInspectSelectedTask)
         navigation.selectAllTasks(in: ids)
         navigation.reconcileTaskSelection(with: [ids[1]])
         #expect(navigation.selectedTaskIDs == Set([ids[1]]))

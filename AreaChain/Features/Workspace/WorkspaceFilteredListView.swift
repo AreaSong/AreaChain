@@ -24,13 +24,16 @@ struct WorkspaceFilteredListView: View {
         let model = makeListModel()
         DaybookPage(
             titleText: tag.name,
-            titleStyle: .entity,
+            titleStyle: .page,
             systemImage: "number",
             minWidth: 480,
             minHeight: 480
         ) {
             headerTrailing(model)
         } content: {
+            Text("filter.open.count \(model.openCount)")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
             DaybookComposer(
                 text: $draftTitle,
                 placeholder: "filtered.add.tag",
@@ -38,10 +41,18 @@ struct WorkspaceFilteredListView: View {
             )
             taskList(model)
         }
+        .workspaceHeader(actions: [WorkspaceHeaderAction(
+            id: "tags.selectAll", title: navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit",
+            systemImage: "checklist", isEnabled: model.canBatchSelect
+        ) {
+            if navigation.selectedTaskIDs.isEmpty { navigation.selectAllTasks(in: model.orderedVisibleIDs) }
+            else { navigation.clearSelection() }
+        }])
+        .workspaceInspectorTargets(model.orderedVisibleIDs + model.matchingSubtasks.compactMap { $0.todo?.id })
         .confirmMoveToTrash($pendingTrash)
         .refreshBoardOnDayChange()
         .onChange(of: model.orderedVisibleIDs) { _, ids in
-            navigation.reconcileTaskSelection(with: ids)
+            navigation.reconcileTaskSelection(with: ids + model.matchingSubtasks.compactMap { $0.todo?.id })
         }
     }
 

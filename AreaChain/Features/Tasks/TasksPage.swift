@@ -131,6 +131,7 @@ struct TasksPage: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .workspaceInspectorTargets(page.inspectorIDs(dayKey: todayKey, filter: effectiveFilter, showYesterday: showYesterday, showUpcoming: showUpcoming))
         .confirmMoveToTrash($pendingTrash)
         .animation(DaybookMotion.interactive, value: effectiveFilter)
         .animation(DaybookMotion.interactive, value: showUpcoming)

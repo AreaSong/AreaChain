@@ -8,7 +8,7 @@ struct TodoBasicsSectionView: View {
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.basics") {
-            TaskDetailTitleEditor(title: todo.title) { newTitle in
+            TaskDetailTitleEditor(draftKey: "todo-\(todo.id)", title: todo.title) { newTitle in
                 DayBoardMutations.editTodo(todo, title: newTitle)
             }
             .id("title-\(todo.id)")
@@ -73,7 +73,7 @@ struct RoutineHabitSectionView: View {
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.habit") {
-            TaskDetailTitleEditor(title: routine.title) { newTitle in
+            TaskDetailTitleEditor(draftKey: "routine-\(routine.id)", title: routine.title) { newTitle in
                 DayBoardMutations.editRoutine(routine, title: newTitle)
             }
             .id("title-\(routine.id)")

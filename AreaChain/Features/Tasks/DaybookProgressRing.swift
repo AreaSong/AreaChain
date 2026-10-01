@@ -4,6 +4,7 @@ struct DaybookProgressRing: View {
     var progress: Double // 0.0 ... 1.0
     var lineWidth: CGFloat = 4.5
     var size: CGFloat = 42
+    var showsPercentage = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -28,9 +29,11 @@ struct DaybookProgressRing: View {
                 .rotationEffect(.degrees(-90))
                 .animation(DaybookMotion.smooth(reduceMotion), value: progress)
 
-            Text("\(Int(round(progress * 100)))%")
-                .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 进度环数字用圆体
-                .foregroundStyle(DaybookPalette.text.primary)
+            if showsPercentage {
+                Text("\(Int(round(progress * 100)))%")
+                    .font(.system(size: 10, weight: .bold, design: .rounded)) // token-exempt: 进度环数字用圆体
+                    .foregroundStyle(DaybookPalette.text.primary)
+            }
         }
         .frame(width: size, height: size)
     }

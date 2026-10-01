@@ -70,6 +70,17 @@ struct CalendarPage: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
+        .workspaceHeader(actions: [WorkspaceHeaderAction(
+            id: "calendar.span", title: span.titleKey, systemImage: "calendar",
+            children: CalendarSpan.allCases.map { item in
+                WorkspaceHeaderAction(id: "calendar." + item.rawValue, title: item.titleKey,
+                                      systemImage: "calendar", isActive: span == item) {
+                    span = item
+                    keyboardFocus = .grid
+                }
+            }
+        )])
+        .workspaceInspectorTargets(inspectorIDs)
         .calendarGridKeys(
             enabled: keyboardFocus == .grid,
             selectedKey: selectedKey,
@@ -81,10 +92,20 @@ struct CalendarPage: View {
         .background(DaybookPalette.fill.page)
     }
 
+    private var inspectorIDs: [UUID] {
+        let source = DayBoardSource(routines: routines, checks: checks, todos: todos)
+        let days = span == .week ? DayKey.weekKeys(containing: selectedKey, calendar: calendar) : [selectedKey]
+        return days.flatMap { day in
+            let rows = DayBoardDayProjection.partition(source: source, dayKey: day, calendar: calendar)
+            return rows.openTodos.map(\.id) + rows.doneTodos.map(\.id)
+                + rows.openRoutines.map(\.id) + rows.doneRoutines.map(\.id)
+        }
+    }
+
     private var calendarSidebar: some View {
         VStack(alignment: .leading, spacing: 10) {
             // 嵌入只决定最小尺寸和月格是否紧凑。宽布局侧栏若只留标题，工作台主路径无法离开当月。
-            spanPicker
+            if !embedded { spanPicker }
             monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),
@@ -152,7 +173,7 @@ struct CalendarPage: View {
 
     private var weekLayout: some View {
         VStack(alignment: .leading, spacing: 10) {
-            spanPicker
+            if !embedded { spanPicker }
             weekBar
             CalendarWeekBoard(
                 days: DayKey.weekKeys(containing: selectedKey, calendar: calendar),
@@ -224,7 +245,7 @@ struct CalendarPage: View {
 
     private func monthCompact(compactDates: Bool) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            spanPicker
+            if !embedded { spanPicker }
             monthBar
             CalendarMonthGrid(
                 dates: CalendarMonthGridDates(monthKey: selectedKey, todayKey: todayKey, selectedKey: selectedKey),

@@ -64,11 +64,11 @@ enum DaybookButtonSize: Equatable {
     }
 }
 
-/// 全应用唯一的按钮样式。Features 里不再允许 `.buttonStyle(.plain)` 之后自己画底色。
+/// 公共按钮的权威样式；动作、角色和快捷键仍由原生 Button 及宿主负责。
 struct DaybookButtonStyle: ButtonStyle {
     var variant: DaybookButtonVariant
     var size: DaybookButtonSize
-    /// 键盘焦点环。只有底栏这类能 Tab 到的按钮需要传入 FocusState 的值。
+    /// 保留宿主显式焦点值；同时读取原生焦点环境，不额外注册焦点或快捷键。
     var isFocused: Bool
 
     init(_ variant: DaybookButtonVariant = .quiet, size: DaybookButtonSize = .regular, isFocused: Bool = false) {
@@ -87,22 +87,40 @@ private struct DaybookButtonBody: View {
     var variant: DaybookButtonVariant
     var size: DaybookButtonSize
     var isFocused: Bool
-    @State private var hovering = false
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: size.radius, style: .continuous)
         configuration.label
-            .foregroundStyle(ink)
             .modifier(DaybookButtonFrame(isIcon: variant.isIcon, size: size))
+            .modifier(DaybookButtonChrome(
+                variant: variant, size: size, isFocused: isFocused, isPressed: configuration.isPressed
+            ))
+    }
+}
+
+/// 菜单标签与按钮共享颜色、焦点和禁用反馈；菜单的按下/展开交互由 macOS 承载。
+private struct DaybookButtonChrome: ViewModifier {
+    var variant: DaybookButtonVariant
+    var size: DaybookButtonSize
+    var isFocused: Bool
+    var isPressed = false
+    @State private var hovering = false
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isFocused) private var nativeFocused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private var showsFocus: Bool { isEnabled && (isFocused || nativeFocused) }
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: size.radius, style: .continuous)
+        content
+            .foregroundStyle(ink)
             .background(shape.fill(fill))
             .overlay(shape.strokeBorder(border, lineWidth: borderWidth))
             .contentShape(shape)
-            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .scaleEffect(isPressed && isEnabled && !reduceMotion ? 0.97 : 1.0)
             .onHover { hovering = $0 }
             .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-            .animation(DaybookMotion.snappy(reduceMotion), value: configuration.isPressed)
+            .animation(DaybookMotion.snappy(reduceMotion), value: isPressed)
             .opacity(isEnabled ? 1 : 0.45)
     }
 
@@ -118,7 +136,7 @@ private struct DaybookButtonBody: View {
     }
 
     private var fill: Color {
-        if configuration.isPressed { return DaybookPalette.fill.press }
+        if isPressed && isEnabled { return DaybookPalette.fill.press }
         switch variant {
         case .active, .iconActive: return DaybookPalette.accent.fill
         case .pill(let tint): return tint.opacity(0.12)
@@ -128,13 +146,13 @@ private struct DaybookButtonBody: View {
     }
 
     private var border: Color {
-        if isFocused { return DaybookPalette.border.focus }
+        if showsFocus { return DaybookPalette.border.focus }
         if case .pill(let tint) = variant { return tint.opacity(0.35) }
         return .clear
     }
 
     private var borderWidth: CGFloat {
-        if isFocused { return 1.5 }
+        if showsFocus { return 1.5 }
         if case .pill = variant { return DaybookMetrics.Stroke.regular }
         return 0
     }
@@ -183,27 +201,22 @@ struct DaybookIconButton: View {
 
 /// `Menu` 不接受 ButtonStyle；它的 label 用这个修饰符获得与图标按钮一致的外观。
 private struct DaybookMenuLabelChrome: ViewModifier {
+    var fitsLabel: Bool
     var size: DaybookButtonSize
     var isActive: Bool
     var isFocused: Bool
-    @State private var hovering = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: size.radius, style: .continuous)
         content
-            .foregroundStyle(isActive ? DaybookPalette.accent.base : (hovering ? DaybookPalette.text.primary : DaybookPalette.text.secondary))
-            .frame(width: size.hit, height: size.hit)
-            .background(shape.fill(isActive ? DaybookPalette.accent.fill : (hovering ? DaybookPalette.fill.hover : .clear)))
-            .overlay(shape.strokeBorder(DaybookPalette.border.focus, lineWidth: isFocused ? 1.5 : 0))
-            .contentShape(Rectangle())
-            .onHover { hovering = $0 }
-            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+            .padding(.horizontal, fitsLabel ? size.padding.leading : 0)
+            .frame(width: fitsLabel ? nil : size.hit, height: size.hit)
+            .modifier(DaybookButtonChrome(
+                variant: isActive ? .iconActive : .icon, size: size, isFocused: isFocused
+            ))
     }
 }
 
 extension View {
-    func daybookMenuLabel(size: DaybookButtonSize = .compact, isActive: Bool = false, isFocused: Bool = false) -> some View {
-        modifier(DaybookMenuLabelChrome(size: size, isActive: isActive, isFocused: isFocused))
+    func daybookMenuLabel(size: DaybookButtonSize = .compact, isActive: Bool = false, isFocused: Bool = false, fitsLabel: Bool = false) -> some View {
+        modifier(DaybookMenuLabelChrome(fitsLabel: fitsLabel, size: size, isActive: isActive, isFocused: isFocused))
     }
 }

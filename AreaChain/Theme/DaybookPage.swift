@@ -52,7 +52,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-            if showsHeader {
+            if showsHeader && (!embedded || titleStyle == .entity) {
                 DaybookPageHeader {
                     titleLabel
                 } subtitle: {

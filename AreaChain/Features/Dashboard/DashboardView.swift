@@ -26,6 +26,9 @@ struct DashboardView: View {
             subtitleText: DayKey.displayName(today, locale: locale),
             fullWidth: true
         ) {
+            Text(DayKey.displayName(today, locale: locale))
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookPalette.text.secondary)
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
                     DashboardSummarySection(summary: snapshot.summary, navigation: navigation)

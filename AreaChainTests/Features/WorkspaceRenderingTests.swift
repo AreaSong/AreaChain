@@ -31,6 +31,9 @@ struct WorkspaceRenderingTests {
         let previous = NavigationSnapshot()
         let previousAppearance = NSApp.appearance
         defer { previous.restore(); NSApp.appearance = previousAppearance }
+        let previousAccessibility = NSApp.accessibilityAttributeValue(NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+        NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
+        defer { NSApp.accessibilitySetValue(previousAccessibility ?? false, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface")) }
         let fixture = try makeFixture()
         let window = makeWindow(
             fixture,
@@ -45,6 +48,7 @@ struct WorkspaceRenderingTests {
             WorkspaceNavigation.shared.isInspectorPresented = false
             try await settle(view)
             try assertFits(view, in: window)
+            try assertHeader(in: window, tab: tab)
             try snapshot(
                 view,
                 name: imageName(
@@ -55,6 +59,12 @@ struct WorkspaceRenderingTests {
                 )
             )
         }
+        WorkspaceNavigation.shared.searchQuery = "核对"
+        try await settle(view)
+        try assertFits(view, in: window)
+        try snapshot(view, name: imageName("search", scheme: appearance.scheme,
+                                         minimumSize: appearance.minimumSize, localeIdentifier: appearance.language))
+        WorkspaceNavigation.shared.clearSearch()
         WorkspaceNavigation.shared.selectedTagID = fixture.tag.id
         try await settle(view)
         try assertFits(view, in: window)
@@ -86,8 +96,10 @@ struct WorkspaceRenderingTests {
             nav.inspectTask(id)
             try await settle(view)
             try assertFits(view, in: window)
-            #expect(abs(try taskComposerFrame(in: view).minY - composerY) < 1,
-                    "展开检查器后，页头操作不应换行并推低输入区")
+            let offset = abs(try taskComposerFrame(in: view).minY - composerY)
+            let headerGrowth = WorkspaceLayout.headerStackedHeight - WorkspaceLayout.headerHeight
+            #expect(offset < 1 || abs(offset - headerGrowth) < 1,
+                    "跨过窄窗断点时只允许公共顶栏增加一行，页面操作不能再次推低输入区")
             try snapshot(view, name: imageName("inspector-" + name, scheme: scheme, minimumSize: minimumSize))
         }
         nav.selectedTaskID = nil
@@ -311,6 +323,22 @@ struct WorkspaceRenderingTests {
         view.layoutSubtreeIfNeeded()
         try await Task.sleep(for: .milliseconds(180))
         view.layoutSubtreeIfNeeded()
+    }
+
+    private func assertHeader(in window: NSWindow, tab: WorkspaceTab) throws {
+        let identifiers = NativeSyntaxUI.identifiers(in: window)
+        #expect(identifiers.contains("workspace.header.title"))
+        #expect(identifiers.contains("workspace.header.help") == (tab.helpKey != nil))
+        #expect(identifiers.contains("workspace.header.inspector.toggle") == tab.supportsTaskInspector)
+        let title = try NativeSyntaxUI.frame("workspace.header.title", in: window)
+        let search = try NativeSyntaxUI.frame("syntax.workspace.search.bounds", in: window)
+        let header = try NativeSyntaxUI.frame("syntax.workspace.header.bounds", in: window)
+        #expect(!title.intersects(search), "标题和搜索必须互不遮挡")
+        #expect(abs(search.midX - header.midX) < 1, "搜索须相对主内容区居中")
+        if tab.supportsTaskInspector || [.tags, .clipboard, .trash].contains(tab) {
+            let actions = try NativeSyntaxUI.frame("syntax.workspace.actions.bounds", in: window)
+            #expect(!actions.intersects(search), "功能区不能挤入搜索框")
+        }
     }
 
     private func assertFits(_ view: NSView, in window: NSWindow) throws {

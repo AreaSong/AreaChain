@@ -65,6 +65,7 @@ struct WorkspaceTodayView: View {
                 )
             )
         }
+        .workspaceHeader(actions: headerActions, status: AnyView(headerTrailing))
         .onAppear {
             consumeComposerFocus()
             consumeRecurringListRequest()
@@ -83,59 +84,38 @@ struct WorkspaceTodayView: View {
             // macOS 的 sheet 不继承外层 locale，不补上就按系统语言显示。
             RecurringItemEditor()
                 .environment(\.locale, locale)
+                .environment(\.workspaceEmbedded, false)
                 .frame(minWidth: 460, minHeight: 520)
         }
         .sheet(isPresented: $showingRecurringList) {
             ResidentsPage()
                 .environment(\.locale, locale)
+                .environment(\.workspaceEmbedded, false)
                 .frame(minWidth: 560, minHeight: 480)
         }
     }
 
-    @ViewBuilder
-    private var headerTrailing: some View {
-        let progress = todayProgress
-        HStack(alignment: .center, spacing: 8) {
-            VStack(alignment: .trailing, spacing: 2) {
-                recurringHeaderButton(systemName: "plus", key: "recurring.create.open") {
-                    showingRecurringEditor = true
-                }
-                recurringHeaderButton(systemName: "repeat", key: "workspace.residents.open") {
-                    showingRecurringList = true
-                }
+    private var headerActions: [WorkspaceHeaderAction] {
+        [WorkspaceHeaderAction(id: "recurring", title: "workspace.recurring.menu", systemImage: "repeat", children: [
+            WorkspaceHeaderAction(id: "recurring.create", title: "recurring.create.open", systemImage: "plus") {
+                showingRecurringEditor = true
+            },
+            WorkspaceHeaderAction(id: "recurring.manage", title: "workspace.residents.open", systemImage: "repeat") {
+                showingRecurringList = true
             }
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(progressTitleKey(progress))
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-
-                Text("\(progress.completed)/\(progress.total)")
-                    .font(DaybookType.body.weight(.medium).monospacedDigit())
-                    .foregroundStyle(progressColor(progress))
-            }
-
-            DaybookProgressRing(progress: progress.ratio, lineWidth: 3.5, size: 36)
-        }
-        .animation(DaybookMotion.interactive, value: progress.total)
-        .animation(DaybookMotion.interactive, value: progress.completed)
+        ])]
     }
 
-    private func recurringHeaderButton(systemName: String, key: String, action: @escaping () -> Void) -> some View {
-        let title = L10n.string(String.LocalizationValue(stringLiteral: key), locale: locale)
-        return Button(action: action) {
-            Label {
-                Text(verbatim: title)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.75)
-            } icon: {
-                Image(systemName: systemName)
-            }
-            .font(DaybookType.caption.weight(.semibold))
-            .labelStyle(.titleAndIcon)
+    private var headerTrailing: some View {
+        let progress = todayProgress
+        return HStack(spacing: DaybookSpacing.xs) {
+            DaybookProgressRing(progress: progress.ratio, lineWidth: 2, size: DaybookMetrics.Hit.inline, showsPercentage: false)
+            Text("\(progress.completed)/\(progress.total)")
+                .font(DaybookType.caption.monospacedDigit())
+                .foregroundStyle(progressColor(progress))
         }
-        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
-        .accessibilityLabel(Text(verbatim: title))
-        .help(Text(verbatim: title))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("workspace.progress.count \(progress.completed) \(progress.total)"))
     }
 
     private var todayProgress: BoardProgress {
