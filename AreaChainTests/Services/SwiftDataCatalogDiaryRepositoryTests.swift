@@ -175,7 +175,7 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(Set(tags.map(\.name)) == Set(DiaryMemoTags.presets))
     }
 
-    @Test func presetRepairRestoresAndCreatesTogetherWithoutRevivingLiveDuplicates() throws {
+    @Test func presetRepairCreatesMissingWithoutRestoringDeleted() throws {
         let (container, _, repository) = try makeRepos()
         let context = container.mainContext
         let stamp = Date(timeIntervalSince1970: 123)
@@ -189,13 +189,11 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(counts.saves == 1)
         #expect(counts.notifications == 1)
         #expect(duplicate.deletedAt == stamp)
-        #expect(journal.deletedAt == nil)
+        #expect(journal.deletedAt == stamp)
         let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
         #expect(tags.count == 4)
-        let savedJournal = try #require(tags.first { $0.id == journal.id })
-        #expect(savedJournal.deletedAt == nil)
         let liveNames = tags.filter { $0.deletedAt == nil }.map { TagSyntax.normalizedName($0.name) }
-        #expect(Set(liveNames) == Set(DiaryMemoTags.presets))
+        #expect(Set(liveNames) == Set([DiaryMemoTags.password, DiaryMemoTags.idea]))
         let repeated = try mutationCounts(in: context) { try repository.ensurePresetTags() }
         #expect(repeated.saves == 0 && repeated.notifications == 0)
     }
@@ -367,6 +365,27 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == "retried text")
         try diaryRepo.editDiary(id: newer.id, text: "retried text")
         #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == "retried text")
+    }
+
+    @Test func purgedPresetIsNotRecreatedByEnsureOrKeyword() throws {
+        let suiteName = "areachain.tests.presets.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        suite.removePersistentDomain(forName: suiteName)
+        let previous = DiaryPresetRetention.defaultsOverride
+        DiaryPresetRetention.defaultsOverride = suite
+        defer {
+            DiaryPresetRetention.defaultsOverride = previous
+            suite.removePersistentDomain(forName: suiteName)
+        }
+
+        let (_, diaryRepo, catalogRepo) = try makeRepos()
+        try catalogRepo.ensurePresetTags()
+        let password = try #require(try catalogRepo.fetchTags().first { $0.name == DiaryMemoTags.password })
+        try catalogRepo.purgeTag(id: password.id)
+        _ = try diaryRepo.addDiary(text: "家里 wifi 密码", dayKey: "2026-09-30", tagIDs: [])
+        try catalogRepo.ensurePresetTags()
+        let names = try catalogRepo.fetchTags(includeDeleted: true).map(\.name)
+        #expect(!names.contains(DiaryMemoTags.password))
     }
 
     @Test func catalogIdentityDeletedBatchColorAndUnlinkStayEquivalent() throws {

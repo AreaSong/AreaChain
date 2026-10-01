@@ -28,7 +28,7 @@ protocol CatalogRepositoryProtocol: AnyObject {
     /// 寻找任务标签（非手记预设标签）
     func resolveTaskTag(name: String) throws -> TagItem?
 
-    /// 确保手记预设标签（密码 / 小巧思 / 日记）存在且可用
+    /// 补齐尚未出现过的手记分类。已软删除或用户彻底删除的分类不会重建。
     func ensurePresetTags() throws
 
     /// 更新标签名称、排序或颜色。手记预置标签拒绝改名和改色。

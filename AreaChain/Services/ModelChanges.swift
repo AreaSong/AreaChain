@@ -10,6 +10,16 @@ enum ModelChanges {
     }
     private static var effects: [ObjectIdentifier: Effects] = [:]
 
+    /// 嵌套在事务里时延到外层保存成功；直接保存时调用方已经提交，立刻执行。
+    static func afterCommit(in context: ModelContext, _ effect: @escaping () -> Void) {
+        let key = ObjectIdentifier(context)
+        if deferredContexts.contains(key) {
+            effects[key, default: Effects()].committed.append(effect)
+        } else {
+            effect()
+        }
+    }
+
     /// 文件只在最外层事务成功后清理；不能把已提交的数据当成仍可 rollback。
     static func afterTransaction(in context: ModelContext, commit: @escaping () throws -> Void,
                                  rollback: @escaping () -> Void) {

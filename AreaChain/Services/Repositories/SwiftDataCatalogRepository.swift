@@ -86,9 +86,12 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     func ensurePresetTags() throws {
-        let liveNames = Set(try fetchTags(includeDeleted: false).map { TagSyntax.normalizedName($0.name) })
-        let missing = DiaryMemoTags.presets.filter { !liveNames.contains(TagSyntax.normalizedName($0)) }
-        // 页面反复出现时只读；确有缺失或软删除时，合并为一次保存和变更通知。
+        let known = Set(try fetchTags(includeDeleted: true).map { TagSyntax.normalizedName($0.name) })
+        let missing = DiaryMemoTags.presets.filter { name in
+            let key = TagSyntax.normalizedName(name)
+            return !known.contains(key) && !DiaryPresetRetention.isDismissed(name)
+        }
+        // 已软删除或用户彻底删除的分类不再补回。页面反复出现且没有缺失时只读。
         guard !missing.isEmpty else { return }
         try ModelChanges.transaction(in: context) {
             _ = try InputTagResolver.resolve(missing, in: context)
@@ -130,9 +133,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         guard let tag = try fetchTag(id: id) else {
             throw RepositoryError.notFound("TagItem(id: \(id))")
         }
-        if tag.isDiaryPreset {
-            throw RepositoryError.invalidArgument("手记预置标签不能删除")
-        }
+        let presetName = tag.isDiaryPreset ? tag.name : nil
         if soft {
             tag.deletedAt = SoftDelete.stamp()
         } else {
@@ -141,14 +142,21 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
             context.delete(tag)
         }
         try saveAndNotify()
+        if let presetName {
+            ModelChanges.afterCommit(in: context) { DiaryPresetRetention.dismiss(presetName) }
+        }
     }
 
     func restoreTag(id: UUID) throws {
         guard let tag = try fetchTag(id: id) else {
             throw RepositoryError.notFound("TagItem(id: \(id))")
         }
+        let presetName = tag.isDiaryPreset ? tag.name : nil
         tag.deletedAt = nil
         try saveAndNotify()
+        if let presetName {
+            ModelChanges.afterCommit(in: context) { DiaryPresetRetention.retain(presetName) }
+        }
     }
 
     func purgeTag(id: UUID) throws {

@@ -80,9 +80,11 @@ struct TagManagementPage: View {
             Button("tags.create", action: commitCreate)
                 .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            if !ordinarySelection.isEmpty {
+            if !liveSelection.isEmpty {
                 Button("tags.batch.delete") { confirmDelete = true }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            }
+            if !ordinarySelection.isEmpty {
                 colorMenu
                 if ordinarySelection.count >= 2 {
                     Button("tags.merge") { beginMerge() }
@@ -124,7 +126,7 @@ struct TagManagementPage: View {
     }
 
     private var deletedTags: [TagItem] {
-        tags.filter { $0.deletedAt != nil && !$0.isDiaryPreset }
+        tags.filter { $0.deletedAt != nil }
             .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
     }
 
@@ -132,12 +134,16 @@ struct TagManagementPage: View {
         deletedTags.filter { selection.contains($0.id) }
     }
 
+    private var liveSelection: [TagItem] {
+        Catalog.liveTags(tags).filter { selection.contains($0.id) }
+    }
+
     private var ordinarySelection: [TagItem] {
-        Catalog.liveTags(tags).filter { selection.contains($0.id) && !$0.isDiaryPreset }
+        liveSelection.filter { !$0.isDiaryPreset }
     }
 
     private var unusedOrdinary: [TagItem] {
-        TagUsage.filtered(tags, filter: .unused, usage: usage).filter { !$0.isDiaryPreset }
+        TagUsage.filtered(tags, filter: .unused, usage: usage)
     }
 
     private var canReorder: Bool {
@@ -399,7 +405,7 @@ struct TagManagementPage: View {
     }
 
     private func commitBatchDelete() {
-        let ids = ordinarySelection.map(\.id)
+        let ids = liveSelection.map(\.id)
         if DayBoardMutations.batchTrashTags(ids: ids, context: modelContext) {
             selection.removeAll()
             pageError = nil

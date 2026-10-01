@@ -176,12 +176,29 @@ struct TagRepositoryTests {
         #expect(try repo.fetchTag(id: tag.id) == nil)
     }
 
-    @Test func presetCannotBeDeletedAndMergeRollsBackTogether() throws {
+    @Test func deletedPresetStaysGoneAndMergeStillRejectsIt() throws {
+        let suiteName = "areachain.tests.presets.\(UUID().uuidString)"
+        let suite = UserDefaults(suiteName: suiteName)!
+        suite.removePersistentDomain(forName: suiteName)
+        let previous = DiaryPresetRetention.defaultsOverride
+        DiaryPresetRetention.defaultsOverride = suite
+        defer {
+            DiaryPresetRetention.defaultsOverride = previous
+            suite.removePersistentDomain(forName: suiteName)
+        }
+
         let (_, context, repo) = try makeRepo()
         try repo.ensurePresetTags()
-        let preset = try #require(try repo.fetchTags().first { $0.isDiaryPreset })
-        #expect(throws: RepositoryError.self) { try repo.deleteTag(id: preset.id, soft: true) }
-        #expect(throws: RepositoryError.self) { try repo.purgeTag(id: preset.id) }
+        let preset = try #require(try repo.fetchTags().first { $0.name == DiaryMemoTags.journal })
+        let presetName = preset.name
+        try repo.deleteTag(id: preset.id, soft: true)
+        #expect(preset.deletedAt != nil)
+        try repo.ensurePresetTags()
+        #expect(preset.deletedAt != nil)
+        try repo.purgeTag(id: preset.id)
+        try repo.ensurePresetTags()
+        #expect(try repo.fetchTags(includeDeleted: true).contains { $0.name == presetName } == false)
+
         let target = try repo.createTag(name: "目标", sortOrder: 8)
         let source = try repo.createTag(name: "来源", sortOrder: 9)
         let todo = TodoItem(title: "事项", dayKey: "2026-09-24", tagIDs: TagIDList.encode([source.id]))
@@ -190,10 +207,11 @@ struct TagRepositoryTests {
         try repo.mergeTags(sourceIDs: [source.id], into: target.id)
         #expect(todo.tagIDs == TagIDList.encode([target.id]))
         #expect(try repo.fetchTag(id: source.id)?.deletedAt != nil)
+        let remaining = try #require(try repo.fetchTags().first { $0.isDiaryPreset })
         #expect(throws: TagMergeError.self) {
-            try repo.mergeTags(sourceIDs: [preset.id], into: target.id)
+            try repo.mergeTags(sourceIDs: [remaining.id], into: target.id)
         }
-        #expect(preset.deletedAt == nil)
+        #expect(remaining.deletedAt == nil)
     }
 
     @Test func colorRoundTripsThroughSnapshot() throws {
