@@ -41,6 +41,40 @@
 
 第二阶段 C 的消费者接入：[SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift) 的系统设置入口、通知测试、日历重试/冲突查看使用 `.quiet`，通知申请使用 `.prominent`；[ProjectSupportSections.swift](../AreaChain/Features/Settings/ProjectSupportSections.swift) 的帮助、问题报告、功能建议使用 `.quiet`，仓库/许可证使用 `.subtle`；[HotKeyRecorder.swift](../AreaChain/Features/Settings/HotKeyRecorder.swift) 的录入使用 `.quiet`、原 `listening` 时切换 `.active`，单项重置 `.subtle`；[ShortcutsSettingsView.swift](../AreaChain/Features/Settings/ShortcutsSettingsView.swift) 全部重置 `.quiet`，均为 regular。直接复用 `DaybookButtonStyle`，不设置 Form 根样式，不新增公共 API 或平行状态；业务回调、条件、禁用、通知防重入、链接交接、热键冲突/持久化/注册和监听释放保持原实现。消费者测试复用 `SystemPageHost`，快捷键同时隔离偏好及 fake `HotKeyCenter`；系统按钮仅取呈现和静态回调证据，详见[工程手册](engineering.md#第二阶段-c普通设置快捷键和项目支持按钮接入2026-10-01)。隐私主页、备份、Picker、Toggle、输入框及其他页面不在此阶段。
 
+第二阶段 D 的消费者接入：[PrivacySettingsSection.swift](../AreaChain/Features/Settings/PrivacySettingsSection.swift) 的首次设置、标签管理、锁定/解锁、系统验证方式、主密码设置/移除、清理重试及退出使用 `.quiet`；[DataBackupView.swift](../AreaChain/Features/Settings/DataBackupView.swift) 的普通导入/导出和加密备份/恢复使用 `.quiet`，既有 destructive 重置入口使用 `.destructive`，均为 regular。只增加 14 处 `DaybookButtonStyle`，保留 Form/HStack、回调、角色、禁用、状态和原确认/密码弹窗语义；不新增主次层级、API、包装或令牌。系统 alert、confirmationDialog、NSAlert、文件面板内部按钮仍由系统承载。消费者测试复用 `PrivacyButtonConsumerTests`、`SettingsButtonTestSupport` 与 `SystemPageHost`，隔离范围和未执行链路见[工程手册](engineering.md#第二阶段-d隐私主页与数据备份页按钮接入2026-10-01)。
+
+### 第二阶段 E：按钮接入与全应用静态清单（2026-10-01）
+
+[DiaryPage.swift](../AreaChain/Features/Diary/DiaryPage.swift) 的 `quickComposer` 解锁使用 `.prominent`、丢弃入口使用 `.quiet`；[DayScheduleMenu.swift](../AreaChain/Features/Tasks/DayScheduleMenu.swift) 的 `DaySchedulePicker` 确认使用 `.prominent`，均为 regular，直接复用 `DaybookButtonStyle`。仅新增三行样式；指定 vault、restore/焦点、丢弃确认及角色、临时日期、`initialKey`、`confirmTitle`、`DayKey`、`onPick` 和宿主关闭/保存语义保持。日期本体不变。测试为 `DiaryButtonConsumerTests` 与 `DayScheduleButtonConsumerTests`，证据及限制见[工程手册](engineering.md#第二阶段-e剩余按钮接入与全应用清单核对2026-10-01)。
+
+核对覆盖 `AreaChain/**/*.swift` 的 `Button`、`buttonStyle`、`Menu`、`menuStyle`、公共封装、AppKit 按钮/弹框与点击入口；可疑项沿实际父容器核对。下表路径省略 `AreaChain/`，同一文件可同时包含不同组；不是运行验收或所有间接手势链的证明。
+
+| 组 | 文件与符号/入口 | 分类依据 |
+|---|---|---|
+| A 公共基座 | `Theme/DaybookButtonStyle.swift`（`DaybookIconButton` / `daybookMenuLabel`）、`CommandReturnButton.swift`；`Features/Board/BoardCommandStrip.swift`（`BoardCommandStripButton/Menu`） | 统一外观的权威实现和薄封装。 |
+| A Theme 消费者 | `Theme/DaybookChrome.swift` 日期导航、`DaybookPage.swift` 提交、`SyntaxAutocompleteView.swift`、`LiveComposerPreviewHeader.swift`、`LiveDiaryComposerPreview.swift` 复制/更多 | 显式公共样式/封装；预览的历史业务边界不扩大。 |
+| A 任务/手记/菜单栏 | `Features/Tasks/TaskRow+Menus.swift` 复制/更多、`TaskRow+CommandStrip.swift`、`BatchActionBar.swift` 普通操作、`BoardFilterBar.swift`；`Features/Diary/DiaryQuickComposerView.swift`、`DiaryCardComponents.swift`、`DiaryWindowView.swift`、`PrivacyUnlockPresenter.swift`、`DiarySummaryRow.swift` 复制/更多及本次两处；`Features/MenuBar/FooterBar.swift`、`MenuBarSearchResults.swift`、`MenuBarSearchField.swift` 搜索/清空、`MenuBarFilterFlyout.swift` | 使用公共按钮或公共菜单标签；菜单展开项另归 B。 |
+| A 设置/剪贴板 | `Features/Settings/SettingsSections.swift`、`ProjectSupportSections.swift`、`HotKeyRecorder.swift`、`ShortcutsSettingsView.swift`、`PrivacySetupSheet.swift`、`PrivacyPasswordSheet.swift`、`PrivacySettingsSection.swift`、`DataBackupView.swift`；`Features/Clipboard/ClipboardHistoryOptions.swift`、`ClipboardHistoryPanel.swift`、`ClipboardHistoryPage.swift` | 已有 A–D 阶段接入或原公共封装。 |
+| A 工作台 | `Features/Workspace/ResidentsPage.swift`、`WorkspaceHeaderBar.swift`、`WorkspaceHeaderSearch.swift` 清空、`WorkspacePendingView.swift`、`WorkspaceAllItemsView.swift` 清筛选、`WorkspaceFilteredListView.swift` 批选/父任务、`RecurringItemEditor.swift`；`TaskDetailHeaderSection.swift`、`TaskDetailDrawer.swift`、`TaskDetailSubtasksView.swift` 添加/操作、`TaskDetailNotesView.swift`、`TaskDetailClassificationSection.swift`、`TaskDetailScheduleSection.swift` 提醒、`TaskDetailDueTime.swift`、`TaskDetailSections.swift` | 显式公共样式/封装。`TagManagementPage.selectionActions` 的还原/删除/合并继承 `selectionToolbar` 样式；该证据不覆盖 sheet 或 Menu label。 |
+| A 其他页面 | `Features/Dashboard/DashboardSummarySection.swift`、`DashboardActivitySection.swift`、`DashboardTrendSection.swift`、`DashboardHeatmapSection.swift`；`Features/Calendar/CalendarMonthGrid.swift`、`CalendarWeekBoard.swift`；`Features/Attachments/AttachmentBrowserPage.swift`；`Features/Search/BoardSearchHitRow.swift` 的 `.list`；`Features/Trash/TrashPage.swift` 还原/删除 | 普通操作已使用公共入口；日期/内容单元的选择行为另判断。 |
+| B 系统菜单内容 | `TaskRow+Menus`、`DayScheduleMenu`、`DiaryOrganizeMenus`、`DiarySummaryRow`、`LiveDiaryComposerPreview`、`WorkspaceHeaderMenuItem`、`FooterBar`、`ClipboardHistoryPage/Browser`、`AttachmentBrowserPage` 的菜单项；下表 D 类 Menu 展开项 | 实际位于 `Menu` / `contextMenu` 中；**不据此豁免页面上的 Menu label**。 |
+| B 系统确认/命令 | `Theme/TrashConfirm.swift`；`TrashPage`、`TagManagementPage`、`DiaryPage`、`DiaryWindowView`、`DiaryNoteCard`、`DataBackupView` 的 alert/confirmationDialog；`App/AreaChainApp.quitAlert/AreaChainCommands`、`Services/MutationFeedback`、`DiaryWindows.closeAlert`、`AttachmentPicker`、`PrivacySettingsSection` 的 NSAlert | 系统弹框、CommandGroup 的原生语义。`Services/StatusItemController.setupStatusItemButton` 是系统状态项；`WorkspaceHeaderSearch` 隐藏快捷键桥接不属可见外观。 |
+| C 完成/日期/分段 | `Theme/ModernComponents.ModernCheckbox`、`TaskRowSubtaskMiniViews.TaskRowSubtaskInlineList`、`TaskDetailSubtasksView.toggleCheckboxButton`；`TaskDetailScheduleSection.TaskDetailWeekdayPicker`、`Theme/DaybookSegmentedBar.tabButton`、`HabitCheckMonthView.dayCell`、`TaskDetailQuadrantGrid` | 分别承担完成、星期掩码、分段滑块、日格和象限选择，不能批量改普通按钮样式。 |
+| C 行/芯片/内容 | `Theme/WorkspaceLayout.WorkspaceSidebarRow`、`WorkspaceSidebarView.tagRow`、`WorkspaceGlobalSearchView.attachmentRow`、`BoardSearchHitRow.workspace`、`QuadrantPage.titleButton`；`DayBoardSections`/`WorkspaceFilteredListView.completedSection`；`Theme/DaybookChip`、`TasksPage+Header.activeFilterTag`、`MenuBarSearchField.tokenChip`；`Theme/CaptureAttributesView.CaptureAttributesButton`、`SyntaxHelpCard` 条目/`complexExampleBar`、`AttachmentThumbnails` | 导航/整行选择、折叠、状态角标、属性浮层或内容预览点击区。`DiaryNoteCard.addTagMenu` 与标签芯片并列，18pt 胶囊随已有标签切换文字/加号，留标签控件阶段。 |
+
+**D：范围外未接入清单（本轮不改）**
+
+| 精确入口 | 证据与后续接入点 |
+|---|---|
+| [TagManagementPage.swift:316](../AreaChain/Features/Workspace/TagManagementPage.swift) `mergeSheet` 的 `Button("alert.cancel")` | 自定义 sheet 的 HStack 普通按钮，无公共样式；相邻合并按钮样式只修饰自身。 |
+| [BatchActionBar.swift:145](../AreaChain/Features/Tasks/BatchActionBar.swift) `dateAdjustmentMenu` | 页面 HStack 的 Label 只有字体，未调用 `daybookMenuLabel`。 |
+| 同文件 `statusAdjustmentMenu`（157 行） | 同上；展开后的系统菜单项保留。 |
+| 同文件 `tagAssignmentMenu`（170 行） | 同上；标签菜单触发器没有芯片本体结构。 |
+| [WorkspaceAllItemsView.swift:93](../AreaChain/Features/Workspace/WorkspaceAllItemsView.swift) `scopeMenu` | `controls` 的三处筛选菜单共用此定义；label 只有文本/字体，未继承公共菜单外观。 |
+| [TagManagementPage.swift:229](../AreaChain/Features/Workspace/TagManagementPage.swift) `colorMenu` | 父级 `DaybookButtonStyle` 不等于 Menu label 接入；只有系统 `.borderlessButton`。 |
+
+共 1 处普通 Button、5 处 Menu 定义（`scopeMenu` 有三个呈现入口），因此第二阶段**尚未实现全部普通按钮/菜单入口统一**。系统 `.borderlessButton` 本身不是公共外观接入证据。未发现其他确定的普通按钮重复绘制遗漏；特殊控件和间接手势未据此宣称全覆盖。停止于 E，不进入日期选择器、开关或其他控件重写。
+
 ## 3. Feature 级复合组件
 
 这些不是全局通用控件，而是带业务语义的可复用组合。新入口优先复用它们的状态和回调契约，不复制内部筛选或保存逻辑。
@@ -110,3 +144,7 @@
 - `python3 -B scripts/check_workflow.py` 和受影响测试。
 
 本目录是冷启动导航的单一入口之一，不记录一次性任务的临时方案，也不替代产品文档和测试结果。
+
+统一搜索 1B-2A 的纯领域查询契约：`ContentQueryParser` / `ContentQuery`（[结构](../AreaChain/Domain/ContentQuery.swift)、[解析](../AreaChain/Domain/ContentQueryParser.swift)）、`ContentQueryDates`（[日期](../AreaChain/Domain/ContentQueryDates.swift)）、`ContentQueryScopeContract` / `ContentQueryApplicability`（[范围与字段](../AreaChain/Domain/ContentQueryScope.swift)）。由 `ContentQueryTests` / `ContentQueryContractTests` 及下述 1B-2B reducer 和测试消费；复用 CommandPath、TagSyntax、DayKey、PriorityToken 与提醒规则，没有接 BoardSearch 或真实提供者。来源与边界见[权威设计第 9.8 节](unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。
+
+统一搜索 1B-2B 新增 [ContentQueryPageContext / Mapping](../AreaChain/Domain/ContentQueryPageContext.swift)、[ContentQueryCondition](../AreaChain/Domain/ContentQueryCondition.swift)、[ContentQuerySession / Event / Intent](../AreaChain/Domain/ContentQuerySession.swift)、[ContentQueryReducer](../AreaChain/Domain/ContentQueryReducer.swift) 与 [PageProjection](../AreaChain/Domain/ContentQueryPageProjection.swift)。复用既有解析、范围、日期、BoardFilter 和 ItemsListing 枚举，只由三份对应 Domain 测试消费；原始文本、条件来源、访问寿命与 extended 投影不能通过旧 BoardFilter 有损往返。没有生产页面、操作草稿或执行接线；提供者要求和 partial 验收见[权威设计第 9.9 节](unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。

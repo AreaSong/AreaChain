@@ -50,6 +50,7 @@ struct DaySchedulePicker: View {
             Button(confirmTitle) {
                 onPick(DayKey.from(pickedDate))
             }
+            .buttonStyle(DaybookButtonStyle(.prominent))
         }
         .padding(12)
         .onAppear {

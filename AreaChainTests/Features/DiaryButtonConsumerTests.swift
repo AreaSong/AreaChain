@@ -139,6 +139,62 @@ struct DiaryButtonConsumerTests {
         #expect(names.count == 2 && window.attachedSheet == nil)
     }
 
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func sealedComposerKeepsDraftOnCancelAndDiscardsOnlyAfterConfirmation(locale: String, scheme: ColorScheme) async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let drafts = BoardComposerSession(vault: f.vault)
+        drafts.diary = BoardComposerDraft(text: "Synthetic sealed draft", needsProtection: true)
+        try drafts.diary.seal(vault: f.vault)
+        let originalID = drafts.diary.id
+        f.vault.lock()
+        let page = DiaryPage(todayKey: "2026-10-01", entries: [], options: DiaryPageOptions(
+            showsPageHeader: false, composerDraft: Binding(get: { drafts.diary }, set: { drafts.diary = $0 }), vault: f.vault))
+        let window = host(page, f: f, locale: locale, scheme: scheme, size: NSSize(width: 380, height: 230))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        let unlock = try SettingsButtonTestSupport.button("privacy.unlock.title", locale: locale, in: window)
+        let discard = try SettingsButtonTestSupport.button("privacy.draft.discard", locale: locale, in: window)
+        try SettingsButtonTestSupport.assertBounds([unlock, discard], in: window)
+        try snapshot(window, name: "sealed-composer-\(locale)-\(scheme)")
+        try await SettingsButtonTestSupport.click(discard, in: window)
+        #expect(drafts.diary.id == originalID && drafts.diary.sealed != nil)
+        let sheet = try #require(window.attachedSheet)
+        try await prepareSheet(sheet)
+        try await click("alert.cancel", locale: locale, in: sheet)
+        try await waitForSheetToClose(window)
+        #expect(drafts.diary.id == originalID && drafts.diary.sealed != nil)
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await click("privacy.draft.discard", locale: locale, in: window)
+        let confirmation = try #require(window.attachedSheet)
+        try await prepareSheet(confirmation)
+        try await click("privacy.draft.discard", locale: locale, in: confirmation)
+        try await waitForSheetToClose(window)
+        #expect(drafts.diary.id != originalID && !drafts.diary.hasContent && drafts.diary.selectedTagIDs.isEmpty)
+    }
+
+    @Test func sealedComposerRestoresThroughOriginalButtonAndFocusCallback() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let drafts = BoardComposerSession(vault: f.vault)
+        drafts.diary = BoardComposerDraft(text: "Synthetic restored draft", needsProtection: true)
+        try drafts.diary.seal(vault: f.vault)
+        let originalID = drafts.diary.id
+        let page = DiaryPage(todayKey: "2026-10-01", entries: [], options: DiaryPageOptions(
+            showsPageHeader: false, composerDraft: Binding(get: { drafts.diary }, set: { drafts.diary = $0 }), vault: f.vault))
+        let window = host(page, f: f, locale: "en", scheme: .light, size: NSSize(width: 380, height: 230))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        // 替身 vault 已解锁但草稿仍封存，走原 PrivacyAccess 快路径而不触发系统认证。
+        try await click("privacy.unlock.title", locale: "en", in: window)
+        #expect(drafts.diary.id == originalID && drafts.diary.sealed == nil)
+        #expect(drafts.diary.text == "Synthetic restored draft")
+        let editor = try #require(window.firstResponder as? NSTextView)
+        #expect(editor.string == "Synthetic restored draft")
+    }
+
     private func host<Content: View>(_ content: Content, f: PrivacyFixture, locale: String,
                                      scheme: ColorScheme, size: NSSize) -> NSWindow {
         Self.retainedContainers.append(f.container)

@@ -329,3 +329,45 @@
 - 最终 8 个变更 Swift 文件严格 SwiftLint、`git diff --check`、`python3 -B scripts/check_workflow.py` 和 `python3 -B scripts/quality_gate.py --profile static` 通过（172 项脚本测试）；隔离测试同时完成编译。默认 auto/Swift profile 会调用全量测试，按本阶段限定范围以静态门禁加上述定向 XCTest 替代，未执行全量 Swift profile。编译仍有既有测试辅助 API 弃用警告。生产差异核对为仅新增 15 行按钮样式修饰符。
 
 **明确未测与停止边界**：未发送系统通知、申请真实通知权限、打开系统设置或浏览器、写真实剪贴板、刷新真实日历。通知按钮自身的异步 busy/消息刷新、支持按钮外部打开/复制结果提示及日历重试仍以回调差异核对和已有 fake/领域测试取证，不能写成端到端通过；没有为此新增服务抽象。`SystemPageHost` 关闭动画，未补持续按下、系统减弱效果或真人 Tab/辅助功能导航。第一阶段与 A/B 的 Tab、持续按下、系统减弱动态效果、Cursor 未认证、历史误启动及其他消费者未验项保持原记录，未重试认证或重查历史。下一阶段仅留隐私主页、数据备份、其他页面局部按钮/Menu 标签线索；Picker、Toggle、输入框和其他控件不在本阶段。保留前期及并发修改，未提交、推送、安装、发布，未修改全局设置、个人签名配置、权限或真实用户数据。本阶段到此停止。
+
+
+### 第二阶段 D：隐私主页与数据备份页按钮接入（2026-10-01）
+
+**实现范围**：仅在 `PrivacySettingsSection.swift` 和 `DataBackupView.swift` 增加 14 行公共按钮样式。隐私主页 9 处及备份页 4 处普通入口用 `.quiet`，原 destructive 重置入口用 `.destructive`，全部 regular；保留 Form、HStack 和对齐，无公共 API、状态、令牌或确认流程变更。移除这 14 行后，两份生产文件逐字等于本阶段开始时的 HEAD。busy/内存回退整组禁用、最后一种解锁方式限制、回调/角色/辅助功能标识、清理状态、导入预览/错误、密码 sheet 关闭方式及仅回退显示重置均保持原实现。系统 alert、confirmationDialog、NSAlert、NSOpenPanel、NSSavePanel 内部按钮保留系统承载。本次消费者样式等价改动不新增必需独立复核。
+
+**隔离核对**：沿既有架构 XCTest 命令，清除六个真实钥匙串授权变量，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名及串行选项；等待仓库构建锁，不直接打开 QA 或日用 App。XCTest 环境使 Persistence 使用内存库、AppDelegate 跳过真实启动服务。新增测试直接挂载生产消费者，复用 `PrivacyButtonConsumerTests`、`SettingsButtonTestSupport`、`SystemPageHost`、内存配置和 `FakeSystemVaultKeys`；独立随机偏好 suite 用后清理，附件只插入合成元数据，不创建/清理附件文件。StoreHealth 仅在两页、Setup/备份服务守卫及启动赋值处使用；测试不启动后续服务，串行暂存/恢复进程内回退标志。原有 `PrivacyFixture` 的随机临时目录仅供其隔离夹具使用。
+
+**实际验证**（macOS 26.6.2/arm64，Xcode 26.6，Swift 6.3.3）：
+
+- 首轮 `build/ButtonStage2D.xcresult` 编译被并发新增 `ContentQueryContractTests.swift:126` 的 `#expect(explicit.allSatisfy(\.isApplicable))` 宏报错阻断，未运行测试。后两轮仅在命令行传 `EXCLUDED_SOURCE_FILE_NAMES=ContentQueryContractTests.swift`，不编辑/删除该文件或修改工程；因此不声明搜索领域测试或完整测试 target 无条件通过。
+- `build/ButtonStage2D-consumers.xcresult` 实际执行 16 项、35 次，两个新增测试失败：英文 420×560 页的重置按钮需要滚动进入视口；不可用 vault 不加载 pending key journal，不能预期系统清理按钮。测试改为先复用 `reveal` 滚动并保留原边界断言、按真实不可用状态检查按钮缺席；没有改生产行为或放宽几何容差。
+- 最终 `build/ButtonStage2D-verified.xcresult`：16 项、35 次全部通过，0 失败/跳过；使用 `xcresulttool get test-results summary` 和 `tests` 核对实际命中。包括 `PrivacyButtonConsumerTests` 全部 9 项、`DaybookButtonStyleTests` 3 项、`DataBackupInteractionTests` 的状态命名/待清理 2 项、`DataBackupRenderingTests` 的回退重置 1 项及 `PrivacyRenderingTests` 的双外观 1 项。编译随隔离 XCTest 完成，仍有既有测试辅助 API 弃用警告。
+- 新消费者矩阵在 420×560、en/zh-Hans、浅深色下检查主密码/系统/双方式 × 锁定/解锁，最后方式不可移除及回退整组禁用；检查未配置、不可用、合成附件/密钥待清理。原回退测试覆盖工作台最小 780×500，原隐私渲染覆盖 560×640。按钮几何和相邻按钮无重叠通过；已查看生产主页、待清理、不可用和备份回退的双语主题缓存截图，英文主密码按钮自然换行、重置需正常滚动。缓存截图和关闭动画的宿主不证明真实系统材质或动效。
+- 真实原生鼠标事件只打开/取消标签管理、主密码更改、关闭系统方式以及两种加密备份密码 sheet；返回后 vault revision/解锁方式不变，备份入口恢复启用，内存模型无新增手记。既有密码 sheet/解锁视图的 fake 回调次数、busy、防重复、错误恢复和取消测试通过；不把它们外推为主页真实认证/备份提交次数已测。
+- 最终范围的严格 SwiftLint、`git diff --check`、`check_workflow.py` 与 `quality_gate.py --profile static` 通过；20 个相关按钮键的 en/zh-Hans 值非空。默认 auto/Swift profile 会启动全量测试，按本阶段隔离限制以静态门禁、严格 lint 和上述定向 XCTest 替代，未运行全量 Swift profile。本阶段样式接入与安全隔离验证已完成，下述系统路径明确未执行。
+
+**未执行边界**：首次设置的嵌套 Setup 默认 `probeSystem=true`，故不点击；标签管理 `creating=false` 不探测，主密码与关闭系统方式仅打开/取消，不 Save。加密备份仅打开/取消密码 sheet，禁止提交后连接默认 vault、面板与备份服务。未执行真实认证、密钥/附件清理、内容保护、普通文件选择/导入导出、备份恢复、数据库重置或退出。内存库的 `PrivacyStoreMaintenance.isPending` 固定为 false，因此数据库清理提示/退出入口只核对源码，未新增磁盘夹具或生产注入；主页 busy 的真实认证/清理时序亦未执行。系统路径不以编译、截图或静态相等冒充通过。
+
+前期 Tab、持续按下视觉、系统减弱效果联动、Cursor 复核、历史误启动及 A/B/C 消费者未验项保持原记录，不重复尝试。后续具体线索仅记录：`DiaryPage.quickComposer` 的锁定草稿解锁/丢弃（约 290/296 行），`DayScheduleMenu.swift` 日期弹出层确认（约 50 行）尚无公共按钮样式；菜单内按钮、芯片/星期/象限等特殊选择控件需分别判断，不批量迁移。组件目录与本节保留并发搜索领域文档；不提交、推送、安装、发布或修改真实数据、签名配置、权限、全局设置。
+
+
+### 第二阶段 E：剩余按钮接入与全应用清单核对（2026-10-01）
+
+**已实现**：仅在 `DiaryPage.quickComposer` 的封存草稿解锁/丢弃和 `DaySchedulePicker` 确认增加三行 `DaybookButtonStyle`；分别 `.prominent / .quiet / .prominent`、regular。不新增包装、公共 API、状态或令牌；移除这三行后两份生产文件与本轮开始时一致。指定 vault、`PrivacyAccess`、restore/焦点、丢弃入口与最终 destructive 确认的角色、日期临时值/初始化/转换及调用方保存和关闭语义均保持。日期选择器本体、菜单内容和系统确认按钮未改。
+
+**本轮隔离证据**：沿架构文档的串行 XCTest 入口，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、生产 entitlement、`LSUIElement=NO`，清除六个真实钥匙串授权变量并遵守仓库构建锁。仅通过 XCTest 启动宿主，没有直接打开 QA 或日用 App。内存模型、合成内容、`PrivacyFixture`/`FakeSystemVaultKeys` 和 `SystemPageHost` 沿用已有夹具。日期测试偏好使用独立 suite；没有读取真实正文、附件或凭据。
+
+- `build/ButtonStage2E.xcresult`：正常目标配置编译成功，**没有传 `EXCLUDED_SOURCE_FILE_NAMES` 或排除测试源码**。D 阶段阻断处在并发搜索改动中已改为 `allSatisfy { $0.isApplicable }`；本轮未修改搜索源码或测试。编译保留测试辅助 API 弃用及既有 actor 隔离警告，不等于零警告或搜索测试已运行。
+- 同一结果包的 `summary` 和 `tests` 实际命中 18 项、36 次，0 失败/跳过：`DiaryButtonConsumerTests` 6 项、`DayScheduleButtonConsumerTests` 首批 3 项、`DiaryComposerInteractionTests` 8 项，以及 `PrivacyInteractionTests.filteredOutCardKeepsItsSealedUnsavedSession()`。
+- 新增封存消费者测试直接挂载 `DiaryPage`，在锁定 vault 下检查两按钮边界、点击丢弃只打开原确认框、取消保留原草稿 ID/封存内容、确认后按原规则清空。另在 fake vault 已解锁但草稿仍封存时点击原解锁按钮，验证 `PrivacyAccess` 快路径恢复合成正文与同一草稿 ID，并核对原回调使原生编辑器成为 first responder；没有改变生产认证条件。
+- 日期消费者测试直接挂载 `DaySchedulePicker`，核对 2026-10-01 初值、通过原 NSDatePicker 的选择 action 改到 2026-10-18 不提交、原生鼠标点击确认只记录一次正确 DayKey；另验证自定义长确认文案及 2026-12-31。`TaskDetailDateChips` 实际打开弹出层后重复该链路并确认关闭。原生日历选择为程序化 `dateValue` + target/action，不能声称真人点击日格已验收。
+- 手记调用方静态核对覆盖 `DiaryNoteCard`、`DiarySummaryRow.daySchedulePopover`，任务调用方覆盖 `TaskRow`、`TaskDetailDateChips`；四处仍传原日期、使用默认 `day.confirm`，提交后走原变更入口并置 `pickingDay=false`。没有调用方自定义确认文案被覆盖。补测直接从已打开弹出层的状态挂载真实 `DiaryNoteCard`，未复制确认按钮/回调或改变生产条件；该测试不覆盖从手记菜单打开弹出层的手势。
+- 已检查 en/zh-Hans × 浅深色下封存页 380×230、日期组件 300×340 的原生缓存 PNG 与几何断言；英文解锁/丢弃完整、相邻按钮不重叠，长日期确认文案自然两行。图片复用 QA 临时目录 `AreaChainButtonConsumersQA` 的 `sealed-composer-*`、`settings-date-confirm-*`。透明背景/材质以及深色 NSDatePicker 白色缓存区域不能证明系统最终合成色与对比度，日期本体未改动。
+
+**最终补测与门禁**：等待并发任务释放仓库构建锁后，`build/ButtonStage2E-dates.xcresult` 在同一正常配置下完成编译，仍不排除任何源码。`summary` / `tests` 确认 `DayScheduleButtonConsumerTests` 4 项、7 次全部通过，0 失败/跳过，包含新增 `diaryConsumerCommitsAndClosesPopover()`：选择变化不改原记录，确认后 `dayKey` 正确且内存 context 无未保存变更，原弹出层关闭；任务回调也只提交一次并关闭。首轮生产/草稿测试后的唯一 Swift 增补是此手记测试，日期整套已重跑。最终四份 Swift 文件严格 SwiftLint、`git diff --check`、`check_workflow.py`、`quality_gate.py --profile static` 通过（172 项脚本测试），8 个受影响文案键 en/zh-Hans 均非空。文档和组件目录保留 A–D 及并发搜索记录。
+
+**全应用静态核对**：具体 A/B/C/D 文件、符号与父容器依据维护在[组件目录](component-catalog.md#第二阶段-e按钮接入与全应用静态清单2026-10-01)。扫描覆盖普通/默认 Button、全部 plain 可疑项、样式、Menu label、公共封装、继承样式及 AppKit/手势入口；主代理抽查遗漏及菜单父容器。子代理首轮限流，重试只读核对完成；不是指定 Cursor verifier，也不用于替代历史复核。纯消费者样式等价迁移不新增必需契约复核。
+
+D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取消、`BatchActionBar.dateAdjustmentMenu/statusAdjustmentMenu/tagAssignmentMenu`、`WorkspaceAllItemsView.scopeMenu`（三处呈现）、`TagManagementPage.colorMenu`。系统菜单展开内容归 B，页面上的 `.borderlessButton` label 不因此豁免。未擅自迁移范围外入口；**第二阶段全部普通按钮/菜单入口接入尚未完成**，不能把此次静态核对写成全应用运行统一。
+
+**继承缺口与停止边界**：真实认证、系统钥匙串及解锁 Presenter 全链路未测；本轮快路径不补这些证据。历史 Tab、持续按下视觉、系统减弱动态效果联动、Cursor、误启动副作用和 A/B/C/D 其他消费者未验项保持原记录。`SystemPageHost` 禁动画和缓存图不证明真实动效/系统材质。默认 auto/Swift profile 会启动全量测试，本阶段按限定隔离范围使用静态门禁、严格 lint 和定向 XCTest，不执行全量 Swift profile。本轮到 E 停止，不重写日期选择器、开关，不提交、推送、安装、发布或修改全局设置、个人签名配置、权限及真实用户数据。

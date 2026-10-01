@@ -74,9 +74,11 @@ struct DataBackupView: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("settings.export", action: exportJSON)
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("dataBackup.export.json")
                 .systemPageMarker("dataBackup.export.json")
             Button("settings.import", action: importJSON)
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("dataBackup.import.json")
                 .systemPageMarker("dataBackup.import.json")
         }
@@ -89,9 +91,11 @@ struct DataBackupView: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Button("privacy.backup.export") { dialog = .export }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("dataBackup.export.encrypted")
                 .systemPageMarker("dataBackup.export.encrypted")
             Button("privacy.backup.restore") { dialog = .restore }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("dataBackup.restore.encrypted")
                 .systemPageMarker("dataBackup.restore.encrypted")
         }
@@ -109,6 +113,7 @@ struct DataBackupView: View {
                     .accessibilityIdentifier("dataBackup.health.warning")
                     .systemPageMarker("dataBackup.health.warning")
                 Button("settings.reset", role: .destructive) { confirmReset = true }
+                    .buttonStyle(DaybookButtonStyle(.destructive))
                     .accessibilityIdentifier("dataBackup.reset")
                     .systemPageMarker("dataBackup.reset")
             } else {

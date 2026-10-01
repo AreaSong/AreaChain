@@ -25,7 +25,7 @@ enum CommandContentScope: String, CaseIterable, Sendable {
     var inclusion: CommandScopeInclusion {
         switch self {
         case .clipboard, .trash: .explicitOnly
-        case .tasks: .unresolvedComposition
+        case .tasks: .ordinaryContent
         default: .ordinaryContent
         }
     }

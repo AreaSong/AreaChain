@@ -6,7 +6,7 @@ enum ContentQueryAtomParser {
     ) -> Result<ContentQueryTerm, Failure> {
         if let issue = token.issues.first { return .failure(.init(issue: issue)) }
         var raw = token.raw
-        let excluded = !token.literal && raw.hasPrefix("-")
+        let excluded = raw.hasPrefix("-")
         if excluded { raw.removeFirst() }
         guard !raw.isEmpty else { return .failure(.init(issue: .incompleteCondition)) }
         let parsed = value(raw, literal: token.literal, context: context)
@@ -24,6 +24,7 @@ enum ContentQueryAtomParser {
         _ raw: String, literal: Bool, context: ContentQueryDateContext
     ) -> Result<ContentQueryAtom, Failure> {
         if literal { return literalText(raw) }
+        if raw.hasPrefix("/") { return .failure(.init(issue: .unsupportedStructure)) }
         if raw.hasPrefix("#") {
             let tags = TagSyntax.tokens(in: raw)
             guard tags.count == 1, let tag = tags.first, tag.range.length == raw.utf16.count else {
@@ -46,7 +47,7 @@ enum ContentQueryAtomParser {
         if raw.hasPrefix("@") {
             guard raw.range(of: #"^@[0-9]{2}:[0-9]{2}$"#, options: .regularExpression) != nil,
                   let minutes = NaturalLanguageParser.timeMinutes(raw), RemindMinutes.clamped(minutes) != nil else {
-                return .failure(.init(issue: raw == "@" ? .incompleteCondition : .invalidCondition))
+                return .failure(.init(issue: incompleteTime(raw) ? .incompleteCondition : .invalidCondition))
             }
             return .success(.reminder(minutes))
         }
@@ -65,7 +66,9 @@ enum ContentQueryAtomParser {
             switch value {
             case "open", "未完成": return .success(.status(.open))
             case "done", "已完成": return .success(.status(.done))
-            default: return .failure(.init(issue: .invalidCondition))
+            default:
+                let partial = ["open", "done", "未完成", "已完成"].contains { $0.hasPrefix(value) }
+                return .failure(.init(issue: partial ? .incompleteCondition : .invalidCondition))
             }
         case "date", "日期", "created", "创建日期":
             return ContentQueryDates.parse(value, context: context)
@@ -75,6 +78,11 @@ enum ContentQueryAtomParser {
             return value == "image" || value == "图片" ? .success(.image) : .failure(.init(issue: .invalidCondition))
         default: return .failure(.init(issue: .invalidCondition))
         }
+    }
+
+    private static func incompleteTime(_ raw: String) -> Bool {
+        raw.range(of: #"^@(?:[0-2]?[0-9]?(?::[0-5]?[0-9]?)?)?$"#, options: .regularExpression) != nil
+            && raw.count < 6
     }
 
     private static func literalText(_ raw: String) -> Result<ContentQueryAtom, Failure> {

@@ -57,7 +57,7 @@ struct CommandCatalogTests {
         let scope = try #require(catalog.command(path: "/tasks"))
         #expect(scope.category == .scope)
         #expect(scope.submission == .refineQuery)
-        #expect(scope.contentScope?.inclusion == .unresolvedComposition)
+        #expect(scope.contentScope?.inclusion == .ordinaryContent)
         #expect(catalog.command(path: "/go/today")?.submission == .navigate)
         #expect(catalog.command(path: "/setting")?.submission == .browse)
         #expect(catalog.command(path: "/tasks/add")?.submission == .previewModification)

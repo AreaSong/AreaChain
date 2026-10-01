@@ -205,6 +205,131 @@ struct PrivacyButtonConsumerTests {
         #expect(calls == 0 && completed == 0 && dismissals == 1)
     }
 
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func homeMethodsAndFallbackKeepButtonContracts(locale: String, scheme: ColorScheme) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let previous = StoreHealth.shared.isUsingMemoryFallback
+        defer { StoreHealth.shared.isUsingMemoryFallback = previous }
+        for method in ["password", "system", "both"] {
+            let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+            try await vault.create(password: method == "system" ? nil : "synthetic-password", systemUnlock: method != "password")
+            for locked in [false, true] {
+                if locked { vault.lock() }
+                StoreHealth.shared.isUsingMemoryFallback = false
+                let window = support.window(PrivacyUnlockSettingsView(vault: vault), locale: locale, scheme: scheme)
+                defer { SystemPageHost.release(window) }
+                try await ready(window)
+                let keys = ["privacy.tags.manage", locked ? "privacy.unlock.title" : "privacy.lock.now",
+                            method == "password" ? "privacy.system.enable" : "privacy.system.disable",
+                            method == "system" ? "privacy.master.set" : "privacy.master.change"]
+                    + (method == "system" ? [] : ["privacy.master.remove"])
+                let buttons = try keys.map { try element($0, locale: locale, in: window) }
+                try SettingsButtonTestSupport.assertBounds(buttons, in: window)
+                try expectEnabled(keys[2], method != "system", locale: locale, in: window)
+                if method != "system" { try expectEnabled("privacy.master.remove", method == "both", locale: locale, in: window) }
+                try snapshot(window, name: "home-\(method)-\(locked)-\(locale)-\(scheme)")
+                StoreHealth.shared.isUsingMemoryFallback = true
+                try await SystemPageHost.settle(window)
+                for key in keys { try expectEnabled(key, false, locale: locale, in: window) }
+            }
+        }
+    }
+
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func backupButtonsAndPasswordCancelStayIsolated(locale: String, scheme: ColorScheme) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let previous = StoreHealth.shared.isUsingMemoryFallback
+        defer { StoreHealth.shared.isUsingMemoryFallback = previous }
+        StoreHealth.shared.isUsingMemoryFallback = false
+        let window = support.window(DataBackupView(), locale: locale, scheme: scheme)
+        defer { SystemPageHost.release(window) }
+        try await ready(window)
+        let keys = ["settings.export", "settings.import", "privacy.backup.export", "privacy.backup.restore"]
+        try SettingsButtonTestSupport.assertBounds(try keys.map { try element($0, locale: locale, in: window) }, in: window)
+        #expect(!SystemPageHost.identifiers(in: window).contains("dataBackup.reset"))
+        try snapshot(window, name: "backup-\(locale)-\(scheme)")
+        for key in keys.suffix(2) {
+            try await ready(window)
+            try await click(key, locale: locale, in: window)
+            try await waitUntil { window.attachedSheet != nil }
+            let sheet = try #require(window.attachedSheet)
+            try await ready(sheet)
+            // 只打开/取消密码 sheet；Save 后才进入默认 vault、文件面板及备份服务。
+            try expectEnabled(keys[2], false, locale: locale, in: window)
+            try expectEnabled(keys[3], false, locale: locale, in: window)
+            try expectEnabled("common.save", false, locale: locale, in: sheet)
+            try await Task.sleep(for: .milliseconds(350))
+            try await click("alert.cancel", locale: locale, in: sheet)
+            try await waitUntil { window.attachedSheet == nil }
+            try expectEnabled(keys[2], true, locale: locale, in: window)
+            try expectEnabled(keys[3], true, locale: locale, in: window)
+        }
+        StoreHealth.shared.isUsingMemoryFallback = true
+        try await SystemPageHost.settle(window)
+        let reset = try element("settings.reset", locale: locale, in: window)
+        try await SettingsButtonTestSupport.reveal(reset, in: window)
+        _ = try buttonFrame("settings.reset", locale: locale, in: window)
+        try snapshot(window, name: "backup-fallback-\(locale)-\(scheme)")
+        #expect(try support.container.mainContext.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
+    }
+
+    @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
+    func homeUnconfiguredUnavailableAndCleanupLayout(locale: String, scheme: ColorScheme) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        for unavailable in [false, true] {
+            let store = MemoryVaultConfigurationStore()
+            store.pendingSystemKeyIDs = [UUID()]
+            if unavailable { store.loadError = PrivacyError.storageFailure }
+            let vault = PrivacyVault(store: store, systemKeys: FakeSystemVaultKeys())
+            let window = support.window(PrivacyUnlockSettingsView(vault: vault), locale: locale, scheme: scheme)
+            defer { SystemPageHost.release(window) }
+            try await ready(window)
+            let ids = SystemPageHost.identifiers(in: window)
+            #expect(ids.contains("privacy.setup") == !unavailable)
+            #expect(!ids.contains("privacy.tags.manage"))
+            if unavailable {
+                #expect(!ids.contains("privacy.system.cleanup.retry"))
+            } else {
+                _ = try buttonFrame("privacy.system.cleanup.retry", locale: locale, in: window)
+            }
+            try snapshot(window, name: "home-unavailable-\(unavailable)-\(locale)-\(scheme)")
+            if !unavailable {
+                let attachment = AttachmentItem(ownerKind: "diary", ownerID: UUID(), filename: "synthetic.png")
+                attachment.retiredStorageID = UUID()
+                support.container.mainContext.insert(attachment)
+                try support.container.mainContext.save()
+                try await SystemPageHost.settle(window)
+                _ = try buttonFrame("privacy.cleanup.retry", locale: locale, in: window)
+                try snapshot(window, name: "home-attachment-cleanup-\(locale)-\(scheme)")
+            }
+        }
+    }
+
+    @Test func homeManagementSheetsCancelWithoutChangingMethods() async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        try await vault.create(password: "synthetic-password", systemUnlock: true)
+        let revision = vault.revision
+        let window = support.window(PrivacyUnlockSettingsView(vault: vault))
+        defer { SystemPageHost.release(window) }
+        // 标签管理 creating=false 不执行系统探测；密码 sheet 在 Save 前不调用认证。
+        for key in ["privacy.tags.manage", "privacy.master.change", "privacy.system.disable"] {
+            try await ready(window)
+            try await click(key, locale: "en", in: window)
+            try await waitUntil { window.attachedSheet != nil }
+            let sheet = try #require(window.attachedSheet)
+            try await ready(sheet)
+            try await Task.sleep(for: .milliseconds(350))
+            try await click("alert.cancel", locale: "en", in: sheet)
+            try await waitUntil { window.attachedSheet == nil }
+            #expect(vault.revision == revision && vault.hasMasterPassword && vault.hasSystemUnlock)
+        }
+    }
+
     private func host<Content: View>(_ content: Content, f: PrivacyFixture, locale: String,
                                      scheme: ColorScheme, size: NSSize) -> NSWindow {
         Self.retainedContainers.append(f.container)

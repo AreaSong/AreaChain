@@ -26,6 +26,7 @@ enum ContentQueryDates {
         if parts.contains("today") || parts.contains("今天") {
             guard valid(context.todayKey, calendar: context.calendar) else { return .failure(.invalidDateContext) }
         }
+        if parts.contains(where: { partialDay($0) }) { return .failure(.incompleteCondition) }
         guard keys.allSatisfy({ valid($0, calendar: context.calendar) }) else { return .failure(.invalidDate) }
         let lower = keys[0]
         let upper = keys.last ?? lower
@@ -42,6 +43,15 @@ enum ContentQueryDates {
             case .incompleteCondition: .incompleteCondition
             case .invalidDateContext: .invalidDateContext
             }
+        }
+    }
+
+    private static func partialDay(_ text: String) -> Bool {
+        guard !text.isEmpty, text.count < 10, text != "today", text != "今天" else { return false }
+        if "today".hasPrefix(text) || "今天".hasPrefix(text) { return true }
+        let template = Array("0000-00-00")
+        return text.enumerated().allSatisfy { offset, char in
+            template[offset] == "-" ? char == "-" : char.isASCII && char.isNumber
         }
     }
 

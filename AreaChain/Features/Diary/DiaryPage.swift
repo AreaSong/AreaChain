@@ -293,7 +293,9 @@ struct DiaryPage: View {
                         composerFocused = true
                     }
                 }
+                .buttonStyle(DaybookButtonStyle(.prominent))
                 Button("privacy.draft.discard") { confirmsDiscardDraft = true }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
             }
             .font(DaybookType.caption)
             .daybookSurface(.banner)

@@ -117,3 +117,7 @@
 统一搜索与指令的阶段 1A 维护沿 `areachain-workflow` → `areachain-verify`，公共契约复核仍指定 Cursor `verifier`。入口为 [CommandCatalog.swift](AreaChain/Domain/CommandCatalog.swift)，消费者与边界见[组件目录](docs/component-catalog.md)，阶段决定与覆盖只更新[权威设计](docs/unified-search-commands.md)。目录不能作为执行器或权限授予来源，后续阶段需独立授权。
 
 统一搜索 1B-1 的 `CommandPathParser` 沿上述工作流与验证路由，复用 1A 目录/参数和既有语法保护区间；公共契约仍须 Cursor `verifier`，不可用时保持 partial。领域定向测试、编译和静态检查不能替代指定复核；独立输入、候选与后续 1B-2 边界见[权威设计](docs/unified-search-commands.md#97-阶段-1b-1-指令路径解析与补全)。
+
+统一搜索 1B-2A 的 `ContentQueryParser`、日期、范围与适用性仍走 Domain 工作流和定向验证；复用入口见[组件目录](docs/component-catalog.md)，语法、范围、接口与 1B-2B 仅登记要求见[权威设计第 9.8 节](docs/unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。新契约目前仅由领域测试消费，不因解析就接 UI/提供者/执行；指定 Cursor 复核缺失保持 partial，不重复检查认证或以其他复核替代。检查器接口未改变，继续使用原工作流/质量守卫。
+
+统一搜索 1B-2B 的页面上下文、条件身份/来源、绑定与纯转移同样由 `areachain-workflow` → `areachain-verify` 组织，架构治理只补状态所有权；入口与复用见组件目录，唯一交接为[权威设计第 9.9 节](docs/unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。验收选择 ContentQuerySessionTests / ContentQueryProjectionTests / ContentQueryPageMappingTests 和相关查询、路径、日期、筛选回归；生产 UI 与 1C 不在范围。指定 Cursor verifier 不可用仍 partial，不重新检查登录，不用其他复核替代。检查脚本接口/规则未改变，继续实际运行原静态、Swift 与工作流入口，不新增专项检查器。

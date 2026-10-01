@@ -81,6 +81,7 @@ struct PrivacySettingsSection: View {
             Text("privacy.missing.config").foregroundStyle(DaybookPalette.status.danger)
         } else {
             Button("privacy.setup") { dialog = .setup }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("privacy.setup")
                 .systemPageMarker("privacy.setup")
         }
@@ -92,6 +93,7 @@ struct PrivacySettingsSection: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("privacy.cleanup.pending").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
                 Button("privacy.cleanup.retry") { retryCleanup() }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("privacy.cleanup.retry")
                     .systemPageMarker("privacy.cleanup.retry")
             }
@@ -106,6 +108,7 @@ struct PrivacySettingsSection: View {
                         .foregroundStyle(DaybookPalette.text.secondary)
                 }
                 Button("privacy.cleanup.quit") { NSApp.terminate(nil) }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("privacy.cleanup.quit")
                     .systemPageMarker("privacy.cleanup.quit")
             }
@@ -122,6 +125,7 @@ struct PrivacySettingsSection: View {
                     try await vault.retrySystemKeyCleanup()
                 }
             }
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .accessibilityIdentifier("privacy.system.cleanup.retry")
             .systemPageMarker("privacy.system.cleanup.retry")
         }
@@ -131,6 +135,7 @@ struct PrivacySettingsSection: View {
         Group {
             HStack {
                 Button("privacy.tags.manage") { dialog = .tags }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .accessibilityIdentifier("privacy.tags.manage")
                     .systemPageMarker("privacy.tags.manage")
                 Spacer()
@@ -138,6 +143,7 @@ struct PrivacySettingsSection: View {
                     if vault.isUnlocked { vault.lock() }
                     else { run { try await authenticate() } }
                 }
+                .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("privacy.lock.toggle")
                 .systemPageMarker("privacy.lock.toggle")
             }
@@ -148,13 +154,16 @@ struct PrivacySettingsSection: View {
                 if vault.hasSystemUnlock { dialog = .disableSystem }
                 else { run { try await authenticate(); try await vault.enableSystemUnlock() } }
             }
+            .buttonStyle(DaybookButtonStyle(.quiet))
             .disabled(vault.hasSystemUnlock && !vault.hasMasterPassword)
             HStack {
                 Button(vault.hasMasterPassword ? "privacy.master.change" : "privacy.master.set") { dialog = .master }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                 if vault.hasMasterPassword {
                     Button("privacy.master.remove") {
                         run { try await vault.removePassword(reason: L10n.string("privacy.manage.reason", locale: locale)) }
                     }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
                     .disabled(!vault.hasSystemUnlock)
                 }
             }

@@ -201,3 +201,15 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 1. **工作台 (`openWorkspace`)**：`WorkspaceNavigation.revealTab` 后 `PanelWindowController.workspace.show()`。窗口已存在时只前置，**不**重挂 SwiftUI 树（保留草稿、过滤条、芯片展开等 `@State`）。不传 tab 时打开 Dashboard；显式传入的今日、手记、日历等 tab 不会被 Dashboard 覆盖。切到不同 tab 会复位侧栏标签并清掉**批量多选**；当前内容改变会清空旧任务检查目标并收起检查器，目标页面按实际清单重新登记可检查对象。同一 tab 再调 `revealTab` 会清掉标签过滤（浮层 Return 才能回到「今日」页），同一内容可保留当前检查器选中；带明确检查目标时，在普通导航归位后恢复传入的检查日。离开「灵感手记」tab 会清掉手记滚动高亮。浮层底栏窗口按钮走 `openWorkspace`；`revealWorkspace()` 只前置当前 tab，不切回「今日」页。搜索点习惯/待办走带 `inspecting` 和 `dayKey` 的 `openWorkspace`，手记结果走 `DiaryWindows.open(entry:context:)`；显式「在工作台打开」仍走 `openDiary()`。应用菜单「设置」、⌘, 和浮层「设置」都调用 `openSettings()`，进入工作台设置页。
 2. **激活策略**：平时 `.accessory`（无 Dock）；工作台、手记小窗或剪贴板小窗打开后升为 `.regular`。`AppWindows.diaryWindowsProvider` 把全部手记窗口纳入存活窗口集合，`clipboardWindowProvider` 纳入剪贴板小窗，防止关工作台时被当成杂散窗口隐藏；还有可见或最小化窗口时不撤去 Dock。剪贴板小窗失焦不关闭，置顶只改窗口层级。
 3. **手记小窗**：`DiaryWindows` 按记录标识复用 `DiaryWindowController`，草稿首次保存后也复用原窗。窗口置顶只设置 `.floating` 层级，不改变记录的 `isPinned`，也不重新激活应用；不自动恢复窗口或未保存正文。关闭窗口使用原生保存确认，应用退出还检查独立窗口和 `BoardComposerSession` 中的手记草稿。
+
+### 内容查询领域契约（1B-2A）
+
+`ContentQueryParser` 在 Domain 分离内容查询与现有 `CommandPathResult`；词法、原子条件、矛盾检查、日期、范围与字段适用性分别实现。原始文本和 UTF-16 范围不被规范化覆盖。查询输出不访问 SwiftData、附件拥有者、打卡或剪贴板，也没有执行入口。消费者为原 ContentQuery 领域测试及下述 1B-2B reducer 与测试；旧 BoardSearch 保持原生产语义。`/tasks` 目录 inclusion 的未决状态改为 ordinaryContent，具体组成与停用选择由 `ContentQueryScopeContract` 声明。
+
+日期输出民事日闭区间；习惯定义按区间内存在应执行日且每个定义只返回一次的提供者契约映射，不在本阶段实现命中或去重。`ContentQueryApplicability` 返回真实字段、所属记录/排程投影要求、不适用或需要具体执行日；不得忽略不适用条件扩大结果。语法和日期语义、后续页面绑定要求及 partial 验收见[权威设计第 9.8 节](unified-search-commands.md#98-阶段-1b-2a内容查询语法范围与日期契约)。
+
+### 页面查询状态契约（1B-2B）
+
+`ContentQuerySession` 是宿主独立持有的 Domain 值；`ContentQueryReducer` 接收显式访问/编辑/刷新/回声事件，输出新状态及页面同步/返回意图。页面由调用方传入 `ContentQueryPageContext`，没有反向依赖 WorkspaceNavigation、共享偏好或系统 IO。来源与稳定条件 ID 不从文字推断；自动条件没有伪造 NSRange。页面快照仅供默认映射，完整查询是有效条件的权威来源，`ContentQueryPageProjection` 只读派生可表达字段与扩展条件身份，不能用旧 BoardFilter 覆盖完整 AST。
+
+原 ContentQueryValidation 的可满足性算法增加无位置语义入口，保留原文本诊断 API。新状态当前仅由 Domain 测试消费；操作草稿不在其字段和副作用类型中，滚动由宿主持有，生产页面和提供者未接线。生命周期、映射现状差异、日期/标签适配及实际证据统一见[权威设计第 9.9 节](unified-search-commands.md#99-阶段-1b-2b页面查询上下文与纯状态转移)。

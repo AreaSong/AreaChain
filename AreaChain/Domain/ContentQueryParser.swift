@@ -8,9 +8,15 @@ struct ContentQueryParser {
         var query = ContentQuery(source: source)
         var start = source.startIndex
         if source.hasPrefix("/") {
+            let fullPath = pathParser.parse(.init(text: source))
+            if [.command, .incompleteArguments, .group].contains(fullPath.state)
+                || fullPath.diagnostics.contains(where: { $0.issue == .ambiguous }) { return .command(fullPath) }
             // 最长、完整的目录范围别名优先；仅空白边界可连接内容条件。
             if let prefix = scopePrefix(source, parser: pathParser) {
-                query.scopes.append(prefix.token)
+                guard prefix.result.state == .scope, let scope = prefix.result.command?.contentScope else {
+                    return .command(fullPath)
+                }
+                query.scopes.append(.init(scope: scope, range: NSRange(source.startIndex..<prefix.end, in: source)))
                 start = prefix.end
             } else {
                 let path = pathParser.parse(.init(text: source))
@@ -38,12 +44,13 @@ struct ContentQueryParser {
 
     private func scopePrefix(
         _ source: String, parser: CommandPathParser
-    ) -> (token: ContentQueryScopeToken, end: String.Index)? {
+    ) -> (result: CommandPathResult, end: String.Index)? {
         let boundaries = source.indices.filter { source[$0].isWhitespace } + [source.endIndex]
         for end in boundaries.reversed() {
             let result = parser.parse(.init(text: String(source[..<end])))
-            if result.state == .scope, let scope = result.command?.contentScope {
-                return (.init(scope: scope, range: NSRange(source.startIndex..<end, in: source)), end)
+            if [.scope, .command, .incompleteArguments, .group].contains(result.state)
+                || result.diagnostics.contains(where: { $0.issue == .ambiguous }) {
+                return (result, end)
             }
         }
         return nil
@@ -54,6 +61,9 @@ struct ContentQueryParser {
             let path = CommandPathParser(catalog: catalog).parse(.init(text: token.raw))
             if path.state == .scope, let scope = path.command?.contentScope {
                 query.scopes.append(.init(scope: scope, range: token.range))
+            } else if path.state == .ordinaryText {
+                let term = ContentQueryTerm(atom: .text(token.raw, phrase: false), range: token.range)
+                query.clauses.append(.init(alternatives: [term], range: token.range))
             } else {
                 query.diagnostics.append(.init(issue: .unsupportedStructure, range: token.range))
             }
