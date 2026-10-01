@@ -2,6 +2,8 @@
 
 工程采用 Xcode 文件系统同步组：往对应文件夹添加 `.swift` 即可纳入编译，无需频繁改 `project.pbxproj`。
 
+统一搜索与指令体系的目标状态、业务入口映射和实施边界见[权威设计](unified-search-commands.md)。阶段 1A 已加入纯领域 `CommandCatalog` 与参数声明，当前只由契约测试消费；产品会话、执行队列与默认范围仍未实现。目录与既有 `BoardSearch`、仓储、窗口之间没有执行接线。
+
 ## 仓库根目录
 
 ```text

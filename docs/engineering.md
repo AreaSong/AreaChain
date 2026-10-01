@@ -231,3 +231,56 @@
 - `TasksPage` 去掉仅供测试的第二份 `pageSnapshot`。body 仍走 `TasksPageViewModel.make`；筛选/空态测试改断言 `DayBoardPageProjection.project`。
 - 补失败路径：`ModelChanges.afterTransaction` 回滚与提交副作用失败仍发布、`requestAuthorization` 抛错后仍 refresh、错误口令 restore、不可打开库的 VACUUM `finish`、日历 `.denied` 与 ledger `version != 1`。
 - 文档：工程手册把 2026-09-26 的 165/46 和 41 个 Domain 文件标成当时快照；架构树补 `Dashboard/`、`Board/`；组件目录补多消费者入口并写明菜单栏 `SearchResultsView` 不服务工作台；性能清单 `dayboard-page-projection` 的 source 行改为预算断言处。不新写性能预算。
+
+## 按钮开发展示与验收
+
+公共维护入口是 `DaybookButtonStyle`、`DaybookIconButton`、`daybookMenuLabel`（均在 [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)），快捷提交继续用 [CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift)。动作、`ButtonRole`、禁用和快捷键注册由原生控件/宿主负责；样式不保存、不导航、不请求权限。既有变体与参数兼容，`pill(tint:)` 仅保留已有用法，不新增任意外观覆盖接口。
+
+[DaybookControlsPreview.swift](../AreaChainTests/Theme/DaybookControlsPreview.swift) 仅在 Debug 测试 target 中，直接装配生产按钮。它没有正式导航或应用启动入口，避免 Canvas 经生产 App 初始化触及服务。窗口可切换中英文、浅深色、禁用、长标签、减弱动态效果；鼠标悬停/按下、Tab 焦点、Command 高亮及 ⌘Return 使用真实原生事件。Tab 遍历受 macOS 的键盘导航设置影响，测试不修改全局设置。所有动作只增加本地计数。
+
+打开方法：使用[架构文档的隔离命令](architecture.md#隔离验收与真实启用门禁)，在 `env` 的 `-u` 参数之后加入 `TEST_RUNNER_AREACHAIN_CONTROLS_PREVIEW_SECONDS=300`，并在 `test` 前加入 `'-only-testing:AreaChainTests/DaybookButtonInteractionTests/interactiveGallery()'`。窗口保留 300 秒（上限 600 秒），关闭窗口可提前结束，结束自动释放；不启动日用应用、不连接用户库。可调整窗口大小检查窄布局。不要直接 Run 生产 App 来展示控件。
+
+自动检查沿同一隔离命令选 `DaybookButtonStyleTests`、`DaybookButtonInteractionTests`、`DiaryComposerInteractionTests`、`WorkspaceLayoutTests`；展示渲染 PNG 在测试进程临时目录的 `AreaChainButtonQA` 下。展示不代替真实消费者回归，快捷提交至少覆盖手记输入与菜单栏捕获。
+
+后续按钮迁移仍需逐宿主核对：菜单栏底栏、Board 命令条、工作台顶栏与检查器、设置/备份/回收站中的局部 plain/borderless 图文按钮和 Menu 标签。任务完成圆圈、星期选择、分段切换和行选择不属于普通按钮迁移。
+
+本阶段本机证据（2026-10-01）：`quality_gate.py --profile swift` 通过（1003 个测试通过、1 个真实钥匙串测试按授权边界跳过；包含参数化运行为 1089 次通过）；最终菜单命中区和展示宿主调整后，五组隔离定向测试 26 个测试 / 37 次运行全部通过，`./scripts/build.sh` 构建验签通过。`check_workflow.py`、51 项检查器定向测试、171 项脚本回归和本阶段 Swift 文件严格 SwiftLint 通过。展示窗口实际确认普通点击、⌘Return、系统菜单危险动作、禁用不触发、语言/主题/长标签切换；Tab 未进入按钮，持续按下视觉反馈及系统减弱动态效果联动仍待补验（本地展示开关已操作）。Cursor 只读 verifier 命令因未认证失败，不能视作独立复核通过。首次展示过滤器漏写 `()` 未运行测试，UI 工具随后启动过 QA 包，已立即终止；此启动不计验收证据，未检查其启动副作用。随后使用上面的完整测试标识完成隔离展示检查。未执行安装、发布或全应用按钮批量迁移。
+
+### 第一阶段 B 补充验收（2026-10-01）
+
+状态为**部分完成**。本轮只追加验收与核查记录，未修改生产代码或测试代码，未开展第二阶段。以上第一阶段记录保留为历史，不作为本轮通过证据。工作区已有并发文档、文案、脚本及按钮修改，均保留。
+
+**实现范围与基线**：完整读取当前 `DaybookButtonStyle.swift`（全部变体/尺寸、Body/Chrome/Frame、IconButton、Menu label 和 Debug 环境值），以及 `CommandReturnButton`、两个展示/交互测试文件、`DaybookButtonStyleTests`、`NativeSyntaxUI`、`SystemPageHost` 和 `DaybookMotion`；沿 `FooterBar`、`BoardCommandStrip`、`WorkspaceHeaderBar` 核对真实消费者。当前 HEAD 为 `25a7cb3777f52983c26a6e3f938bd1fac0bd441d`，公共基础部分已在 HEAD；工作区另有 Debug 减弱效果覆盖、菜单命中区和未跟踪测试文件。本轮没有取得“第一阶段开始前”的不可变完整快照，不能把当前 diff 当作整个阶段的等价性证明。
+
+**安全入口与本次执行**：使用架构文档的隔离命令，保留六个真实钥匙串授权变量清除、`build/PrivacyQA`、`com.areachain.privacy-qa`、临时本地签名、`AreaChain.entitlements`、`LSUIElement=NO` 和串行参数；增加 `TEST_RUNNER_AREACHAIN_CONTROLS_PREVIEW_SECONDS=600`、`'-only-testing:AreaChainTests/DaybookButtonInteractionTests/interactiveGallery()'`、`-resultBundlePath build/ButtonStageB.xcresult`。未修改工程或个人签名配置。结果包名已存在时应另选明确的新路径，不删除既有证据来重跑。
+
+- 北京时间 11:31:10–11:37:16，macOS 26.6.2（25G83）、arm64；`xcodebuild` 退出 0。
+- `xcresulttool get test-results summary` 与 `get test-results tests` 均核对 `build/ButtonStageB.xcresult`：目标 `DaybookButtonInteractionTests/interactiveGallery()` 实际运行，1 项 Passed、0 failed、0 skipped，目标时长 342.704 秒。此通过仅证明展示测试执行和窗口生命周期，不自动证明以下人工行为全部通过。
+- `Persistence.makeSession` 在磁盘访问前凭 `XCTestConfigurationFilePath` 切换内存库；`AppDelegate.applicationDidFinishLaunching` 使用同一条件跳过启动服务。展示直接使用生产按钮和本地动作计数，不使用 `SystemPageHost.window` 的全局禁动画事务。
+- UI 工具连接前先确认 XCTest 进程及精确可执行路径；Bundle ID 有两个本地 QA 包而存在歧义，改用**已确认运行的** `build/PrivacyQA/Build/Products/Debug/AreaChain.app`。只有目标测试实际运行且窗口存在时才连接；零测试、过滤失败或进程不存在时修正测试入口，不调用会自动启动应用的 `getApp` 作为替代。
+- 关闭测试窗口后 UI 状态读取超时；随后由测试结果和进程检查确认测试正常结束、QA 宿主已退出，没有再次调用 `getApp`。未操作日用应用。
+
+**交互证据与限度**（CUA 原生事件，截图观察与下一轮操作分开，未切换其他窗口）：
+
+| 项目 | 本轮结果 | 状态与剩余条件 |
+|---|---|---|
+| Tab / Shift-Tab | 实际正向 7 次、反向 2 次，AX 焦点始终为展示窗口；画面没有按钮焦点环。只读 `defaults read -g AppleKeyboardUIMode` 为 `1`，AppKit `NSApplication.shared.isFullKeyboardAccessEnabled` 为 `false`。 | 环境受限：未完成焦点进入、移动、退出及可见反馈。系统未开启全控件导航，但没有在开启条件下完成对照，不能单独排除宿主或组件问题。未强设 `isFocused` 或派发 action 冒充 Tab。 |
+| 焦点实现 | `DaybookButtonChrome` 读取原生 `isFocused` 与既有显式值，只负责描边；展示没有增加焦点注册。`CommandReturnButton` 明确 `.focusable(false)`。 | 快捷提交按钮不进入 Tab 是既有契约；普通 Button/Menu 的开启导航场景仍待验收，不为凑通过修改行为。 |
+| 释放与取消 | 普通文字按钮从内部拖到外部释放，计数保持 0；同坐标原位点击变为 1。图标按钮拖出释放保持 1，原位点击变为 2。禁用后两类拖出和点击均保持 2，禁用菜单不展开。 | 已验证这些释放/取消路径。当前 CUA 仅提供 click/drag，没有可分离的 down/hold/up，无法停留按下态取证；持续保持时的视觉、动作是否提前触发及释放动画均未通过验收。 |
+| 菜单差异 | 点击启用菜单只展开系统菜单，Escape 关闭，计数不变。 | Menu label 不接收 `ButtonStyle.Configuration.isPressed`；系统负责按下/展开交互，不应套用普通按钮的 0.97 缩放判据。持续按住菜单入口仍未测。 |
+| 减弱动态效果 | 系统 `defaults read com.apple.universalaccess reduceMotion` 为 `0`，`NSWorkspace.shared.accessibilityDisplayShouldReduceMotion=false`。展示开关实际开/关；开启时普通按钮拖出取消不计数、原位释放加 1（最终 3）。结束后系统两项偏好仍为 1 / 0。 | 仅验证当前系统状态、局部开关和相应释放行为。没有系统开启及运行中系统切换证据，没有持续按下缩放/动画的视觉证据。 |
+
+生产路径是 `@Environment(\.accessibilityReduceMotion)` → `systemReduceMotion`；Release 只读该值，Debug 取 `systemReduceMotion || daybookButtonReduceMotionPreview`。为 true 时按下缩放为 1，`DaybookMotion.interactive/snappy` 返回 nil；按下填充反馈仍保留。展示开关只加强本地视图树里的公共按钮 Chrome，不能关闭已开启的系统减弱效果，也不覆盖系统 Menu 动画或全应用其他动效。以上路径属于源码核对，不能替代真实系统联动验收。未修改全局键盘导航、辅助功能或其他系统设置；未因本轮纯证据更新机械重跑旧的 ⌘Return、全语言/主题矩阵或全量测试。
+
+**误启动只读核查**：历史来源为 Codex 会话 `01a0f55c-f9de-7d92-bc57-c06f148953a1`，turn `01a0f55c-fbfe-73d0-9674-98e31d48050f`。本轮历史检索在新测试前读取 `build/PrivacyQA/Logs/Test` 的三个结果摘要：11:05:40 的定向测试为 26 项/37 次通过；11:06:50 的缺 `()` 过滤为 0 项、result unknown；11:08:23 的正确展示为 1 项通过。新测试后再次访问旧的 11:06:50 结果路径已不存在，因此保留上述已读取摘要与历史会话出处，不承诺旧结果包仍可复查。
+
+- **有记录的执行**：缺括号命令结束后，UI 工具按 QA 包路径调用 `getApp`；`ps` 列出 PID 35111、该精确可执行路径、`etime=00:20`，随后 `kill -TERM 35111`。这补充了上文“立即终止”的时间限度。后续正确展示使用另一 PID 35289，不能用其 XCTest 环境外推前一进程。
+- **环境强推断**：顺序支持误启动脱离 XCTest，但当时没有 PID 的父进程或环境快照，无法直接证明 `XCTestConfigurationFilePath` 缺失。六项环境清除只适用于当时的 `xcodebuild`，不能自动外推到 UI 工具启动。
+- **隔离依据与边界**：新测试前核对旧 QA 产物的 Bundle ID、`LSUIElement=false` 和沙盒 entitlement；可执行文件/签名资源 mtime 为 11:06:52，与历史构建相符，仍不是不可变签名快照。QA 容器路径为 `~/Library/Containers/com.areachain.privacy-qa/Data/Library/Application Support`，与日用 ID `com.areachain.app` 不同，且解析后没有指向日用目录；它是既有 QA 容器，并非本次新建空白数据目录。未采集当时进程的实际路径调用，不能由包名推出所有访问均已隔离。剪贴板仍是系统 `.general`；通知/EventKit 也不是 fake。
+- **文件元数据**：只 stat 已知 QA 路径，不打开内容。`areachain.store` / `-wal` / `-shm` 均创建于 9 月 15 日，mtime 分别为 10 月 1 日 11:07:22.610 / .611 / .402，与误启动时段一致；这是该时段文件发生过修改的证据，不能证明具体记录变化或唯一归因到 PID 35111。已知剪贴板目录、附件目录、隐私配置和日历基线当前不存在；不存在不证明历史未创建、未读取或未调用系统服务。
+- **代码可能执行**：若没有 XCTest 环境，`Persistence` 可执行冷启动维护、SQLite 空备注修正及打开磁盘库；AppDelegate 可启动隐私配置读取/锁定监听、示例播种、状态栏、快捷键、剪贴板监控/面板、通知刷新、撤销与日历协调。剪贴板监控以 changeCount 变化为读取条件；日历写入取决于偏好、权限与同步结果；隐私生命周期不等于发生系统认证。这些代码可达性不是实际执行日志。
+- **无法追溯确认**：没有当时逐服务日志或前后快照，无法确认具体数据库改动、剪贴板读取/保存、通知排程或日历写入，也无法以进程退出、当前文件缺失或未见异常证明零副作用。没有读取真实正文、数据库内容、附件、剪贴板或凭据，没有复现启动或清理。若需恢复，应先由用户确认受影响范围及恢复授权，再基于可用历史备份核对；现有证据不足以建议自动回滚。
+
+**独立复核**：本轮向 `cursor-agent --mode ask --print --workspace /Users/as/Ai-Project/project/AreaChain` 提供原始范围、完整实现文件、HEAD/工作区限度及上述真实证据，请其承担 Cursor verifier。一次调用即返回退出码 1：`Authentication required`。没有登录、读取凭据、修改配置或重试；项目/个人目录也未发现 `verifier.md`，不能宣称独立代理配置已加载。历史检索子代理只查记录，不替代规定的 Cursor 复核。复核缺口继续保留。
+
+**收尾检查**：本轮只编辑本节，按本次范围运行 `python3 -B scripts/quality_gate.py --profile static`，避免默认 auto 因既有/并发 Swift 差异启动无关全量测试及非本轮隔离宿主。172 项脚本测试通过，差异空白、安全静态（高风险/敏感日志候选均为 0）、注释和性能契约通过。`check_workflow.py` 与总门禁第一次执行失败于并发修改的 `docs/component-catalog.md:63` → `unified-search-commands.md#96-阶段-1a-目录决策与证据` 缺失锚点；其余工作流检查通过。该问题随后随并发文档更新消除，复跑静态总门禁（含 172 项脚本测试）、`check_workflow.py` 与 `git diff --check` 全部通过，本轮未修改或覆盖对方文件。Swift 全量测试、额外构建、安装、发布、提交和推送均未运行。

@@ -106,7 +106,18 @@ private struct DaybookButtonChrome: ViewModifier {
     @State private var hovering = false
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.isFocused) private var nativeFocused
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    #if DEBUG
+    @Environment(\.daybookButtonReduceMotionPreview) private var previewReduceMotion
+    #endif
+
+    private var reduceMotion: Bool {
+        #if DEBUG
+        systemReduceMotion || previewReduceMotion
+        #else
+        systemReduceMotion
+        #endif
+    }
 
     private var showsFocus: Bool { isEnabled && (isFocused || nativeFocused) }
 
@@ -212,6 +223,7 @@ private struct DaybookMenuLabelChrome: ViewModifier {
             .modifier(DaybookButtonChrome(
                 variant: isActive ? .iconActive : .icon, size: size, isFocused: isFocused
             ))
+            .contentShape(Rectangle())
     }
 }
 
@@ -220,3 +232,17 @@ extension View {
         modifier(DaybookMenuLabelChrome(fitsLabel: fitsLabel, size: size, isActive: isActive, isFocused: isFocused))
     }
 }
+
+#if DEBUG
+// 系统辅助功能环境只读；测试展示只能加强减弱动态效果，不能关闭用户的系统设置。
+private struct DaybookButtonReduceMotionPreviewKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var daybookButtonReduceMotionPreview: Bool {
+        get { self[DaybookButtonReduceMotionPreviewKey.self] }
+        set { self[DaybookButtonReduceMotionPreviewKey.self] = newValue }
+    }
+}
+#endif
