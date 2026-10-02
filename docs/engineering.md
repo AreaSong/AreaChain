@@ -468,3 +468,112 @@ E 阶段结束时 D 类仍有 6 处定义：`TagManagementPage.mergeSheet` 取�
 **门禁与取证修正**：最终三份 Swift 严格 SwiftLint、`git diff --check` 及 `./scripts/build.sh` Debug 构建/静态验签通过，保留正常目标既有编译警告。最终 `check_workflow.py` 与 `quality_gate.py --profile static` 通过（174 项脚本测试，高风险/敏感日志候选均为 0）；按本次限定隔离范围不运行会启动整套测试的 auto / swift profile。首轮名称断言误把原生独立标签视为滑块自身名称；修正取证后基线通过，最终公共控件仍严格断言名称。该首轮 Xcode 还因磁盘不足无法完成诊断包，仅清理本轮未完成的冗余系统日志，测试日志/截图保留；后续使用 `-collect-test-diagnostics never`，不改变测试目标或隔离参数。新增测试辅助闭包的一次编译错误已修正，失败日志保留。
 
 本次仅消费既有公共样式，未改变公共契约、持久化语义或跨模块业务，不新增必需独立复核。A/B 的指定 Cursor verifier、正向键盘导航/持续按下、真人辅助功能、系统减弱效果、最终系统材质及其他历史未验项继续保留；未重复条件未变的补验，整条控件路线仍部分验收。真实登录注册/注销与回读、通知权限/发送、系统设置打开、日历授权/同步/重试均未执行。后续仅保留 PrivacySetupSheet 的 legacy/system/master 三个 Toggle、ClipboardHistoryOptions 两个 Stepper 及其他数值控件线索。本阶段到 D 停止；保护并发查询领域改动，未提交、推送、安装、发布，未修改全局设置、个人签名、权限或真实用户数据。
+
+### 第三阶段 E：隐私设置剩余布尔控件（2026-10-01）
+
+已实现并通过本阶段限定验收。生产只在 `PrivacySetupSheet.swift` 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 各增加一行 `DaybookToggleStyle(.checkbox)`；`tagChoices` 保持现状，无公共 API、状态、包装、全局令牌、密码框或提交逻辑修改。修改前直接挂载生产 sheet，`probeSystem: false`，`build/PrivacyStageE-baseline.xcresult` 实际命中 1 项、4 次参数化运行；原生截图确认三者均为前置方形控件，系统方式、主密码方式、标签和旧遮罩选项的顺序保持，未套用 grouped Form 的行尾滑块结论。消费者与全业务清单见[组件目录](component-catalog.md#第三阶段-e隐私设置剩余布尔控件)。
+
+**隔离与契约证据**：macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3，沿架构文档的串行 XCTest 入口，使用构建锁、`build/PrivacyQA`、`com.areachain.privacy-qa`、本地临时签名、生产 sandbox entitlement、`LSUIElement=NO`，清除六项真实钥匙串变量。正常目标编译全部源码，只由 XCTest 启动宿主。新增 `PrivacySetupToggleTests` 直接复用 `SettingsButtonTestSupport`、`SystemPageHost`、`PrivacyButtonSheetHost` 的真实 sheet 与显式 locale；随机测试偏好、内存模型、合成标签/旧内容、MemoryVaultConfigurationStore 和 FakeSystemVaultKeys。管理配置直接注入合成值，不调用创建/解锁；等待私密标签初始化选中、sheet 位置稳定后断言。
+
+- `build/PrivacyStageE-state.xcresult`：4 项、14 次运行全部通过，0 失败/跳过。创建未配置、管理已配置与创建已配置三种显隐；创建 includeLegacy 为 true、管理为 false；无方式、短密码、重复不一致时禁用 Apply，有效合成输入启用但不执行。系统/主密码往返保留原密码，系统单选说明随原条件显隐；includeLegacy 使候选数 1↔0、备份字段出现/隐藏，备份校验及隐藏后输入恢复保持。创建与管理取消后重开恢复初始化，标签选择不串改。
+- 比较标签身份/名称/排序/颜色/私密/删除字段、手记快照及加密字段、测试偏好、配置、待清理集合、vault 代次/修订/认证状态、fake key 集合和待认证任务；模型 `hasChanges` 保持 false。仅夹具准备时保存内存合成模型，切换/取消不提交。没有点击 Apply、创建 vault、能力探测、认证、文件面板、备份、迁移或内容保护。
+- `build/PrivacyStageE-regression.xcresult`：6 项、29 次运行全部通过，0 失败/跳过。命中原 `PrivacyInteractionTests/tagChoicesRemainLocalThroughCancelAndReopen`（PrivacyTagChoiceTests）及公共 Toggle 的绑定/语义、禁用、长标签、方框与文字点击、原生相邻输入焦点对照五项。两份结果包均经 `xcresulttool get test-results summary` / `tests` 核对，最终合计 10 项、43 次。复用 PrivacyButtonConsumerTests 的真实 sheet 宿主与输入/禁用取证方法；未为重跑整类引入其认证或保护场景。
+- 严格中英文名称和值、文字尾部点击区、相邻控件无重叠及 480pt 宽度通过；外层 `.disabled(true)` 的生产 sheet 三项拒绝鼠标切换。中英文 × 浅深色的长说明、动态四个密码字段及滚动到底部后帮助/按钮边界通过，已查看原生缓存图。透明缓存用固定浅/深底色合成便于阅读，不将其当作最终系统材质证据。
+
+**门禁与缺口**：最终两份 Swift 严格 SwiftLint、`git diff --check`、`quality_gate.py --profile static`、`check_workflow.py` 和 `./scripts/build.sh` Debug 构建/静态验签通过，既有正常目标编译警告保留。按限定范围不运行会启动全套场景的 auto / swift profile。初次测试比较表达式缺少括号导致编译失败已修正；一轮并发查询测试向 let 字段赋值导致全目标暂时失败，未修改/排除其源码，后续正常编译恢复。辅助属性误用对象返回调用曾导致测试崩溃，改为既有 KVC 布尔读取后通过；另一次系统设置前台导致焦点断言失败，未放宽断言。失败包/日志保留。
+
+真实 `systemAvailable=false` 只能由被禁用的系统探测产生，未运行该分支；原禁用、说明和回退逻辑静态确认未变。busy 来源于未执行的 submit，外层禁用不冒充生产 busy 生命周期验收。正向键盘导航、持续按下、真人辅助功能、系统减弱效果、最终系统材质、A/B 指定 Cursor verifier 及其他历史未验项继续保留，整条路线仍部分验收。本次纯消费者样式接入不改变公共契约、持久化或跨模块业务，不新增必需复核，也未将不可用工具标为通过。
+
+本轮定向检索生产 12 处业务 Toggle 均使用公共样式，滑动 5 处、方形 7 处（标签循环计一处定义）；公共实现内部原生 Toggle、测试对照、开发控制面板单独分类，未发现并发新增业务遗漏。后续仅记录 ClipboardHistoryOptions 两个 Stepper、其他数值控件、任务完成圆圈与子任务勾选，均未迁移。保留并发查询改动；到 E 停止，未提交、推送、安装、发布，未修改全局设置、签名配置、权限或真实用户数据。
+
+
+### 第三阶段 F：公共数值加减与剪贴板（2026-10-01）
+
+已实现，整体验收仍为部分完成：指定 Cursor verifier 没有可调用工具，不以其他代理替代；真实系统长按时序及辅助功能端到端仍有下述缺口。公共接口与两处消费者见[组件目录](component-catalog.md#第三阶段-f公共数值加减与剪贴板)。生产只新增 Theme 数值控件、键盘桥接和集中间距，ClipboardHistoryOptions 的两个 Stepper 直接替换；原 session setter、领域范围、Picker、Toggle、普通按钮和业务服务不变。
+
+**原生基线**：`build/StepperStageF-native-observation.xcresult` 实际命中 2 项，0 失败/跳过。20 减不写；25 加到 35、减到 20；989 加到 999；990/995 加到 999；999 加不写、减到 989。0.35 加为 0.44999999999999996、减为 0.24999999999999997；1.9/1.95/2.nextDown 加到 2；2 加不写。挂载所有合法非对齐初值均不回写；越界操作先限制基值，再执行一步。公共整数保持该口径；小数仅在本次运算的目标端点以 8 ULP 量级消除尾差，避免 1→0.1 要求第十次微小操作，不把合法初值或中间值归一化。
+
+**交互取证**：原生鼠标保留相邻编辑焦点；合成 1.2 秒按住只观察到一次写入，释放后无迟到写入，立即拖出仍保留按下时的一次写入，不能据此证明真实长按重复频率。原生 NSStepper 在本机全键盘导航关闭时仍接受显式焦点；上下方向在 keyDown/重复时操作，keyUp 不写，左右不写，空格沿最近的方向操作。公共控件用 NSStepper 键盘桥接避免 SwiftUI edit 焦点抢走相邻文本，桥接数值只是单次方向信号；业务唯一值仍为 Binding。鼠标按下先写一次，消费平台首次 Button 触发避免释放重复写入，持续重复由平台 Button 驱动，无自建计时器。后续用例独立核对拒绝写入、禁用、按住/拖出、释放、键盘及焦点，不能继承 Toggle 的结论。
+
+**隔离与业务**：沿架构文档的串行 XCTest 入口与 `build/.build.lock`，使用 `build/PrivacyQA`、`com.areachain.privacy-qa`、临时签名、生产 sandbox entitlement、`LSUIElement=NO`，清除六项真实钥匙串变量。正常测试目标编译全部源码，宿主只由 XCTest 启动。消费者复用 ClipboardOptionsFixture 的随机目录/suite、nil pasteboard 和无副作用 gate，预写 32 条合成历史及合成图片字节；两条置顶不占名额，其余保留最新 20 条及顺序，成功后按原入口清理图片。在自有 `history.json.tmp` 建阻断目录注入失败，验证新 limit 仍保存、旧历史与图片保留、错误键不变；这与公共 Binding 拒绝写入分别测试。间隔只验证立即保存及同 suite 重建，不启动监控或验证真实重排程。取消只关闭；其他选项和未提交输入保留。
+
+**最终证据**：`build/StepperStageF-acceptance.xcresult` 的 summary/tests 确认 18 项、40 次通过，0 失败/跳过，命中全部 DaybookStepperTests、DaybookStepperInteractionTests、DaybookStepperBaselineTests、ClipboardStepperConsumerTests 与 ClipboardOptionsConsumerTests。`build/StepperStageF-supplement.xcresult` 确认 7 项、10 次通过，覆盖最终上下界展示、鼠标后空格方向与四项 ClipboardHistoryRulesTests 裁剪/置顶回归。最后一处等价 lint 修正后，`build/StepperStageF-key-final.xcresult` 再次命中键盘用例 1 项通过；三份最终包合计 51 次运行、22 项去重用例，零失败/跳过。原生与公共控件在当前全键盘导航关闭时 Tab 均留在文本编辑器，正向 Tab 进入数值控件仍未验；显式 NSStepper 焦点后的上下/空格按下、重复、释放、禁用已验。公共按住 1.2 秒实际 11 次写入，拖出后保留 1 次、释放后不再写；还验证按住中禁用及恢复后下一次单击。
+
+已查看本轮中英文 × 浅深色 440×560 sheet、长标签 320×220、焦点、滚动输入及 600×800 原有展示窗口截图；长标签换行，数值与按钮未重叠。消费者截图保存在 QA sandbox 的 AreaChainButtonConsumersQA 临时目录。最终严格 SwiftLint、工作流检查、`quality_gate.py --profile static`（175 项脚本测试）、检查器定向 55 项、全脚本 175 项及 `./scripts/build.sh` Debug 构建/静态验签通过；普通 Debug 沿已有开发签名配置只构建，隔离测试仍用 QA 临时签名。按本轮隔离边界不运行会启动整套测试的 auto/swift profile。保留正常目标既有编译警告。
+
+早期两个结果包在并发 RoutineQueryPageTests 未完成时编译失败、零测试；待其修改后原命令重跑，未排除源码。第一次规则回归使用了错误 suite 名 ClipboardHistoryTests，结果包核对后改为 ClipboardHistoryRulesTests，四项均在 supplement 实际命中。SwiftUI edit 焦点抢占、空格方向的错误测试预期、边界禁用后指针临时状态未清理均在定向失败后定位并修正，旧失败包保留。指定 Cursor verifier 当前不可用，没有替代或宣称独立复核通过。
+
+**保留的缺口**：真实监控重排程、真人 VoiceOver、系统减弱动态效果实时切换和最终系统材质未验；原生合成按住未触发重复，真实原生重复延迟/频率未确认。历史阶段未验项继续保留。仅在测试宿主强制语言/主题并关闭动画，不能将截图或焦点动作派发扩写成所有系统设置下的完整交互验收。未提交、推送、安装、发布；未修改全局设置、个人签名、权限或真实用户数据。数值检索剩余为 TaskDetailScheduleSection / TaskDetailDueTime 的日期 `.stepperField`，本轮不迁移日期、任务完成或其他控件。
+
+
+### 第三阶段 F 补验：Stepper 重复触发与取消契约（2026-10-01）
+
+本轮部分完成：已确认并最小修复拆卸后的迟到写入；原生与公共控件的系统长按重复等价仍未取得可信证据。上节原始 1 次／11 次及历史失败包全部保留，不用新记录覆盖原观察。
+
+**对照方法与可证明范围**：正常测试目标、macOS 26.6.2（25G83）arm64、Xcode 26.6 / Swift 6.3.3，沿原隔离 XCTest 与 build/.build.lock 串行运行；没有排除源码、直接启动 QA App 或日用应用。合成初值统一为 500、范围 20...999、步长 10，分别检查增减方向、实际 key window 与命中位置。原生 NSStepper 实际 continuous/autoRepeat 均开启，cell 报告 delay=0.5s / interval=0.1s；内部 -2...2 是 SwiftUI 方向信号，不能误当业务范围。
+
+`build/StepperF-delivery.xcresult` 中原辅助方法再次得到 1／11；改为按序排队、释放时现场创建时间戳，并把 Timer 明确加入 common / eventTracking，仍为 1／11。原生首写约 1ms，公共首写数 ms、首次重复约 0.48s、后续约 0.076s。观测到的首写/释放回调都在 default mode，不能据这些采样断言完整跟踪循环从未进入其他模式。`StepperF-pointer.xcresult` 中把系统指针对齐到命中点也未恢复原生重复；仅入口位置对齐不保证整个操作期间的系统输入状态。`StepperF-process-events.xcresult` 的仅本进程 CGEvent 投递两侧均 0 写入，因此不是有效长按证据，未尝试申请权限或扩大投递范围。这三个各命中 1 项的包只是取证，不是重复等价验收；诊断导出保留在对应 `*-diagnostics` 下。
+
+正式测试辅助方法现在现场创建 down/drag/up，记录每次投递、收到的事件、相对时间、setter 方向和值；不再提前构造释放或同步 sendEvent 持有长按。应用内 NSEvent 没有建立系统 pressedMouseButtons 状态（本轮观察为 0），缺少可确认原生持续跟踪有效的系统长按输入；因此不能认定原生不重复，也不能把全部差异归因于工具。新 syntheticHoldComparison 明确输出 F_REPEAT_UNRESOLVED，只验证首写、方向/逐步值及释放后无写入，不断言重复等价或固定 1／11。100ms 首写采样窗低于原生 500ms 配置及公共约 480ms 观测，不是频率/墙钟计数容差。
+
+**独立确认的缺陷与修复**：`StepperF-contracts-events.xcresult` 中拆离 NSHostingView 后，公共增减两方向都在释放后继续写，观察窗口内各 22 次；其余新场景通过。根因是 Button 重复回调没有原生窗口生命周期防线，onDisappear 的清理不足以覆盖宿主直接拆卸。仅在 DaybookStepper / DaybookStepperKeyboard 增加内部 attachment：AppKit viewWillMove/viewDidMove 同步关闭写入，异步刷新按钮禁用，dismantle 清空回调；不改变 DragGesture 首写、首次 Button 消费、buttonRepeatBehavior、最近方向、数值运算或消费者 setter。attachment 的同步事件防线与下一轮 UI 禁用刷新分开，避免在 AppKit 更新期间直接刷新 SwiftUI。最终键盘禁用场景仍有一次 SwiftUI “Modifying state during view update” 警告；核对未修改生产实现的 contracts-events 包，相同警告已存在，本轮未解决，不宣称零运行警告。
+
+**最终验证**：`build/StepperF-final.xcresult` 的 summary 与 tests 树核对为 6 套、30 项、55 次运行通过，0 失败/跳过；实际命中 DaybookStepperBaselineTests、DaybookStepperInteractionTests、DaybookStepperTests、ClipboardStepperConsumerTests、ClipboardOptionsConsumerTests、ClipboardHistoryRulesTests。新增覆盖交替方向的 10 次快速点击、两方向按住/禁用/边界/拒绝写入、拖出与重新移入、释放、拆卸及同一 Binding 重建后下一次操作；既有整数/小数、键盘按下/重复/释放与两种最近鼠标方向、焦点及双语/主题/长标签回归通过。消费者沿本轮随机 ClipboardOptionsFixture 目录的 32 条合成记录验证裁剪、置顶、图片清理、保存失败及重开；没有读取真实历史或启动监控、粘贴、声音、权限流程。移除邻居焦点用例中的“至少一次”推论后，其首写/焦点断言保留，长按验证移入有逐次轨迹的新用例。没有扩大重复计数容差、合并保存或关闭重复。
+
+最终严格局部 SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static`（含 175 项脚本测试）、`./scripts/build.sh` Debug 构建/静态验签通过；构建日志为 `build/StepperF-debug-build.log`。按本轮隔离范围不运行会启动无关整套应用测试的 auto/swift profile。正常目标仍有既有弃用/actor 编译警告；首两次新增测试编译因默认参数的 actor 隔离失败，修正后正常目标重跑，未排除源码。最终增减两方向依然观测到 1／11，真实原生频率差异是否属于实现缺陷仍未确定；已确认的拆卸迟到写入已修复，没有把这项通过扩写成长按等价。
+
+本轮仍保留指定 Cursor verifier 缺口，当前会话没有可调用入口且不以其他代理替代；真人辅助功能、正向 Tab、真实长按重复、监控重排程、减弱效果实时切换、最终系统材质及其他历史未验项不因此消除。未提交、推送、安装、发布，未改 session、范围、裁剪/保存规则、日期控件、全局设置、签名或权限。
+
+### 第三阶段 G：公共任务完成控件与行内子任务（2026-10-01）
+
+本轮只扩展 ModernCheckbox 并接入 TaskRowSubtaskInlineList；接口、尺寸、动作及下一阶段边界以[组件目录](component-catalog.md#第三阶段-g公共任务完成控件与行内子任务)为权威来源。保留前期/并发变更，ModernTaskTitle、TaskRow/检查器/四象限调用及 PendingCompletionManager 未修改。
+
+原生基线在生产修改前运行：主任务行 14 项通过；新基线的四个参数组合发现旧子任务 AX 框是 12×12，而非声明的 14×14，空心圆中心合成鼠标事件不回调。保留截图于 build/CompletionG-before，诊断于 build/CompletionG-baseline-diagnostics。公共 contentShape 修正该命中区域，圆圈仍为 12；主任务仍 17/20。公共辅助元素需要显式 accessibilityAction 才能完成程序化激活，新增回调转接与禁用守卫，名称和选中 trait 保持。
+
+**最终证据**：macOS 26.6.2（25G83）arm64 / Xcode 26.6 / Swift 6.3.3，正常目标完整编译，沿架构文档的 PrivacyQA 命令、build/.build.lock、QA bundle、临时签名、生产 sandbox entitlement、LSUIElement=NO 与六项真实钥匙串变量清除，串行运行 ModernCheckboxTests、InlineSubtaskCompletionTests、TaskRowInteractionTests、PendingCompletionTimingTests、QuadrantLayoutTests、SubtaskModelTests、ModelChangesTests、DaybookButtonInteractionTests。最终 57 项测试、含参数化共 81 次运行，零失败/跳过；结果包 `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.01_22-31-47-+0800.xcresult`，日志 `build/CompletionG-final-tests.log`。已核对测试树中 4 项 PendingCompletionTimingTests 均 Passed，保留 400ms 真正驻留、期间反悔取消、批量延迟及减弱效果直提；未用普通测试默认跳过证明时序。
+
+公共测试覆盖外部正反状态/拒绝后稳定缓存图、中心与边缘命中、禁用鼠标及辅助激活、重建/拆卸与动画后的动作次数。消费者使用内存容器与合成内容，点击第二个子任务只更新其 UUID；经实际 TaskRowFactory / DayBoardMutations / 仓储保存，可由新 ModelContext 读取；父完成/选择/标题编辑/检查器不触发，非空拖动 payload 的原宿主和相邻未提交 SyntaxTextField 保留。保存失败使用原 ModelChanges.transaction 的 save 注入：模型回滚且不重试；随后主动重投影快照验证显示恢复。该用例发现原生观察在回滚后可能保留旧投影，不能据此声称所有真实宿主自动刷新已验证，本轮未修改失败链。检查器完成/未完成与三个按钮边界、四象限真实页面的完成入口/持久化/非检查器动作通过；四象限行标识落在标题 AX 框，测试按真实相邻几何定位完成按钮。
+
+**证据分层**：XCTest 内 NSApp.sendEvent 的合成鼠标事件与 accessibilityPerformPress 的程序化辅助动作已验证，均非真人操作。中英文 × 浅深色的 320pt 长标题/邻近草稿和 760×640 既有展示均有缓存图，已查看浅深色与双语样本；截图在 QA sandbox 临时目录 AreaChainButtonConsumersQA 的 settings-completion-* / settings-inline-completion-*。这些图不证明最终系统材质。另经原 interactiveGallery XCTest 入口保留 180 秒窗口（日志 `build/CompletionG-native-event.log`），外部原生工具按路径仍绑定同标识的已有应用窗口，未能唯一定位测试窗口，未发送点击并停止取证；该测试完成仅证明挂载，真实鼠标事件/拖动、真人 VoiceOver、硬件触感与系统减弱效果实时切换仍未验证。没有用网页或另建展示应用替代。
+
+严格局部 SwiftLint、工作流检查、quality_gate.py --profile static（含 176 项脚本测试）、检查器定向 56 项与 git diff --check 通过。`./scripts/build.sh` Debug 构建/静态验签通过，日志 `build/CompletionG-debug-build.log`；沿已有本机签名配置构建，未改配置。仅运行本轮定向隔离测试，不运行会启动无关整套应用测试的 auto/swift profile。正常目标的既有弃用/actor 警告及运行警告保留；测试开发中修正过只读系统环境值、初始化访问与滚动/辅助框定位，不排除源码、不跳过断言。
+
+指定 Cursor verifier 在本次工具清单不可用，未以其他代理替代，交付状态保留部分完成。Stepper 已确认的拆卸迟到写入修复独立保留；1/11 长按差异、运行警告及其他历史缺口未重复取证、未消除。停在 G：详情子任务需后续核对 TaskDetailSubtasksView 的完成、编辑、失焦与保存动作；日期及其他控件未迁移。未提交、推送、安装、发布或修改真实数据、全局设置、签名和权限。
+
+### 第三阶段 H：详情子任务完成控件接入（2026-10-01）
+
+本轮只迁移 SubtaskRowView.toggleCheckboxButton，新增 ModernCheckbox.detailSubtask，具体几何/反馈、真实消费者、稳定检查入口及完成操作清单见[组件目录](component-catalog.md#第三阶段-h详情子任务完成控件接入)。前期 F/G 与并发搜索改动保留；不改 ModernTaskTitle、详情删除线、DayBoardMutations、仓储或持久化架构，不迁移日期、分段或其他控件。
+
+**迁移前取证**：正常目标完整源码，沿架构 PrivacyQA XCTest、build/.build.lock、QA 标识、临时签名、生产 sandbox entitlement、LSUIElement=NO 和六项真实钥匙串变量清除，串行运行，未直接启动日用/QA 应用。`build/CompletionH-baseline.xcresult` 确认中心点击往返、正确子项、禁用/程序化辅助及原编辑测试通过；260pt 长标题、中英文与浅深色截图保存在 `build/CompletionH-before`，完成框均 12×12。编辑时点击完成标记保持同一 firstResponder、未提交草稿和零标题提交。随后 `build/CompletionH-baseline-feedback2.xcresult` 补齐水平边缘/相邻区和反馈，临时拦截 NSHapticFeedbackManager.defaultPerformer 确认详情零次、默认/行内每动作 alignment 一次；拦截在每个测试后恢复，不改生产 API，也不等于硬件触感已验。补验首包因测试已知问题闭包中的抛错处理不正确编译失败，修正后正常目标重跑，未排除源码。
+
+**原宿主失败与恢复**：旧实现 baseline 已发现完成保存失败时，模型恢复未完成，原 TaskDetailSubtasksView 的图形、标题删除线及计数仍停在完成/1/2；600ms 后未自动恢复。迁移后同一场景保留此缺陷，测试使用 withKnownIssue 明示，不归入自动回滚刷新通过。未手动重建或重新投影，下一次实际点击从已回滚模型提交完成，再点取消后控件/计数恢复一致；该证据只证明真实后续动作恢复，不证明失败即自动恢复。控件没有自己的镜像态；问题保留在已有 SwiftData 观察/宿主更新链，不在 H 扩大修复。
+
+**相邻操作补充对照**：completionKeepsTagsDragRegionAndAdjacentActions 确认完成动作不修改标签、不触发编辑/删除/排序，标题拖动区域与完成框不重叠且仍保留原排序 payload；但随后合成鼠标点击标签没有移除标签。为区分迁移回归，临时只还原本轮完成按钮那一处编辑，正常目标重跑同一用例，`build/CompletionH-old-tag2.xcresult` 实际命中 1 项且同样失败，随后恢复新组件。标题覆盖层与原标签代码未改变；将这一旧合成鼠标问题单独标为已知问题，不扩展为所有真实标签操作失效的结论。第一次单方法筛选缺少括号，`build/CompletionH-old-tag.xcresult` 实际为 0 项，未算通过，修正筛选后才采用上述证据。
+
+最终回归前的 `build/CompletionH-acceptance.xcresult` 因并发新增 RecordImageQueryPresenceTests 的方法语法错误未进入运行；待该文件修正后重跑正常目标，没有排除或修改并发源码。后续 acceptance2 包验证 108 次运行通过，另有上述标签失败和回滚刷新已知问题，不能当作最终全部通过。
+
+**最终有效证据（跨日完成于 2026-10-02）**：macOS 26.6.2（25G83）arm64、Xcode 26.6 / Swift 6.3.3。`build/CompletionH-final.xcresult`、`build/CompletionH-title-final.xcresult` 与 `build/CompletionH-gallery-final.xcresult` 的 summary/tests 树已逐一核对；后两包覆盖最后修改的标题夹具及展示文案/控件。去重覆盖 11 套、73 项：71 项通过，2 项上述已知问题，0 跳过；含参数化的最终有效结果为 108 次通过、2 次已知问题，没有未处理的新失败。final 包自身仍含 1 项已被补验替代的失败，不能把它单独称为全绿：新增外部标题测试最初未输入内容就断言 Escape 零保存，观察到既有失焦保存；夹具恢复先核对外部初值、再实际输入草稿的路径，取消/零提交断言保留，title-final 的 5 项/6 次全部通过。gallery-final 的 8 项/27 次通过，展示标题中英文均补上详情表现。
+
+实际命中 ModernCheckboxTests、ModernCheckboxFeedbackTests、DetailSubtaskCompletionTests、SubtaskTitleEditingTests、InlineSubtaskCompletionTests、TaskRowInteractionTests、PendingCompletionTimingTests、QuadrantLayoutTests、SubtaskModelTests、ModelChangesTests、DaybookButtonInteractionTests。包括真实详情/标签清单、正确子 UUID、单次动作、外部更新与拒绝、墓碑过滤/顺序/计数、编辑中完成保持焦点、Return 保存/失败重试、Escape 取消及失焦保存/失败草稿。标签辅助激活可移除且不触发完成，合成鼠标问题仍明确标记。PendingCompletionTimingTests 四项实际 Passed，保留 400ms 驻留、期间取消、批量时序与减弱效果直提；不是普通测试跳过延迟的推论。
+
+迁移前后八张 en/zh-Hans × 浅深色 × 完成/未完成的 260pt 长标题图，以及原宿主回滚失败图，PNG 逐字节一致；已查看实际浅深色与双语样本。对应 `build/CompletionH-before` / `build/CompletionH-after`，当前截图仍在 QA sandbox 的 AreaChainButtonConsumersQA。760×640 原展示直接显示三种生产完成控件、两态禁用和外部更新，已查看最终画面；截图与程序化辅助/合成鼠标证据不扩写为真人输入、系统材质或真实拖动验收。标题指针区/排序 payload 与完成框分离；真实悬停操作及拖动排序仍保留历史真人验证缺口。
+
+最终严格局部 SwiftLint、工作流检查、检查器定向 56 项、quality_gate.py --profile static（含全部 176 项脚本测试）及 git diff --check 通过；`./scripts/build.sh` Debug 编译/静态验签通过，日志 `build/CompletionH-debug-delivery.log`。只使用既有本机配置构建，QA 使用命令行隔离参数；未修改签名配置。遵照本轮隔离宿主范围不跑会启动无关整套应用测试的 auto/swift profile；定向测试没有排除源码。正常目标的既有弃用/actor 警告与历史运行警告继续保留。
+
+指定 Cursor verifier 在本轮工具清单没有可调用入口，未替代或宣称通过，交付保留部分完成。Stepper 的长按差异与运行警告、真人输入/VoiceOver、硬件触感、真实拖动、系统减弱动态效果实时切换、最终系统材质和其他历史未验项继续保留，不重复相同取证。未提交、推送、安装、发布或修改真实数据、全局设置、个人签名及权限。
+
+### 第四阶段 A：公共下拉选择器与剪贴板（2026-10-02）
+
+本轮只建立 DaybookPicker 并接入 ClipboardHistoryOptions 三处；接口、默认值、缺失值策略与后续清单以[组件目录](component-catalog.md#第四阶段-a公共下拉选择器与剪贴板)为准。保留前期/并发修改，不改 ClipboardHistorySession 或真实数据、全局设置、签名、权限。
+
+修改前 `build/PickerA-baseline.xcresult` 实际命中 1 项/4 次；补验 `build/PickerA-native-events.xcresult` 命中 2 项/5 次，均无失败/跳过。直接挂载生产 440×560 页面：标签在左，当前值/双箭头在右，SwiftUIPopupButtonCell 的原生入口高 24pt，选中项有勾。通过合成 NSEvent 打开/Escape 取消不写偏好；Return 重选当前项调用 setter 保存 13 个原键，↓+Return 从 mixed 切到 exact，pattern 输入焦点与未提交正文保留。菜单项程序化派发单独验证三者重选当前项；不将其当作真人点击证据。迁移后改用原生 NSPopUpButton + 公共菜单入口，高 28pt、无系统常驻灰底，双箭头与原生菜单继续保留，并显式提供控件名称。
+
+运行沿原串行 PrivacyQA XCTest、build/.build.lock、正常完整目标及六项真实钥匙串授权清除；没有排除源码或直接打开 QA App。消费者复用随机目录/suite、nil pasteboard、无副作用 gate，只读写本例合成历史/偏好，不调用 shared/start/stage、监控、声音或系统权限。首轮 contracts 包的失败是 NSCell 启用属性读取方式返回 nil，改用 KVC 原生属性后保留禁用/零写入断言重跑；该包不当作通过。展示浅深色补验显式向外层宿主传入 scheme，避免宿主默认 light 覆盖展示的 dark 偏好。
+
+**最终有效证据**：`build/PickerA-acceptance.xcresult` 的 summary/tests 树确认 ClipboardPickerConsumerTests、DaybookPickerTests、ClipboardOptionsConsumerTests、ClipboardStepperConsumerTests 共 4 套、15 项、46 次运行通过，零失败/跳过。最后新增的公共辅助/拒绝写入补验由 `build/PickerA-ax-tracking.xcresult` 覆盖（3 项/7 次全部通过）；替换旧公共测试结果后，最终去重仍为 15 项/46 次。AXPress 是程序化原生辅助操作，收到 didBeginTracking 后排队 Escape 并确认 didEndTracking，零 setter 写入；原生鼠标打开后的 ↓+Return 被拒绝时仍回显 Binding 原值。测试还覆盖相同显示文字的不同稳定值、重排及旧菜单、空/缺失选项、禁用/拆卸、每个枚举值的单项偏好变化、合成历史文件字节不变、取消重开和同 suite 新会话、未提交输入、双语/浅深色及长标签/滚动。
+
+辅助补验首次单方法筛选得到零测试（`PickerA-accessibility`），没有当作成功或直接打开 App，已改用整套公共测试入口。`PickerA-public-final` 中 AXPress 异步开始导致预先排队的 Escape 未关闭菜单，后续断言受到残留菜单影响；仅修正测试的事件时序和失败清理，保留零写入/焦点/拒绝断言，最终由 ax-tracking 包取代，不抹掉失败记录。
+
+本轮 `python3 -B scripts/check_workflow.py`、检查器定向 57 项、`python3 -B scripts/quality_gate.py --profile static`（含完整 177 项脚本测试）、相关文件严格 SwiftLint、文案解析与 `git diff --check` 通过。`./scripts/build.sh` Debug 编译/静态验签通过（`build/PickerA-debug-build.log`），生产编译后只追加了测试取证；没有安装或启动产物。Swift 运行验证使用上面的定向隔离命令，不调用会启动无关/非隔离宿主的 auto/swift 全量入口。已查看生产双语/主题、原展示以及 320pt 长标签位图；窗口位图不证明系统菜单材质。正常目标既有平台/actor/弃用警告保留。
+
+指定 Cursor verifier 在本轮工具清单中不可调用，未用其他代理替代，最终保留部分完成。真人菜单/VoiceOver、系统材质、系统全键盘导航及最低支持系统未验；NSEvent 合成追踪、原生语义检查、菜单动作派发与窗口位图分别说明。H 的保存回滚后显示未自动刷新、标签合成鼠标点击问题继续登记；Stepper 1/11 长按差异、正常目标既有编译/运行警告及其他历史未验项不因本轮通过消除。本轮完成验证后停止，不提交、推送、安装或发布。

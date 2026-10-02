@@ -12,6 +12,8 @@ struct ContentQueryTypeAnalysis: Equatable {
 struct ContentQueryTypeAssessment: Equatable {
     let type: CommandObjectType
     var reasons: [ContentQueryTypeReason] = []
+    /// 仅 image 使用；type 在此数组内表示拥有者，不能据此扩大提供者结果类型。
+    var imageOwnerAssessments: [ContentQueryTypeAssessment] = []
 
     var isPossible: Bool { !reasons.contains { [.contradiction, .fieldNotApplicable].contains($0.issue) } }
     var requiresInput: Bool { reasons.contains { $0.issue == .requiresOccurrenceDay } }
@@ -36,14 +38,54 @@ enum ContentQueryTypeValidation {
     static func analyze(
         _ conditions: [ContentQueryCondition], requestedTypes: Set<CommandObjectType>, occurrenceDay: String? = nil
     ) -> ContentQueryTypeAnalysis {
+        let selection = ContentQueryOccurrenceDay.resolve(conditions, explicitDay: occurrenceDay)
         let types = requestedTypes.sorted { $0.rawValue < $1.rawValue }.map { type in
-            assess(conditions, type: type, occurrenceDay: occurrenceDay)
+            type == .image ? assessImage(conditions, selection: selection)
+                : assess(conditions, type: type, selection: selection)
         }
         return .init(requestedTypes: requestedTypes, types: types)
     }
 
+    private static func assessImage(
+        _ conditions: [ContentQueryCondition], selection: ContentQueryOccurrenceDay
+    ) -> ContentQueryTypeAssessment {
+        // 复用每类拥有者的字段冲突分析；created 始终独立于业务 date，文字仍由图片匹配器选择 filename。
+        let ownerConditions = conditions.map { condition in
+            var value = condition
+            if case .page(.contentTypes(let types)) = value.value {
+                value.value = .page(.contentTypes(types.contains(.image) ? [.todo, .routine, .diary] : []))
+            }
+            if case .page(.tagID(let id, _)) = value.value { value.value = .page(.tagID(id, matching: .own)) }
+            return value
+        }
+        var branches = [CommandObjectType.todo, .routine, .diary].map {
+            assess(ownerConditions, type: $0, selection: selection)
+        }
+        let imageConditions = conditions.filter {
+            if case .clause(let terms) = $0.value { return terms.contains { $0.atom == .image } }
+            return false
+        }
+        if !imageConditions.isEmpty {
+            for index in branches.indices {
+                branches[index].reasons.append(.init(issue: .fieldNotApplicable,
+                    conditionIDs: imageConditions.map(\.id), binding: .notApplicable))
+            }
+        }
+        var result = ContentQueryTypeAssessment(type: .image, imageOwnerAssessments: branches)
+        if !imageConditions.isEmpty {
+            result.reasons = [.init(issue: .fieldNotApplicable, conditionIDs: imageConditions.map(\.id), binding: .notApplicable)]
+        } else {
+            let possible = branches.filter(\.isPossible)
+            if possible.isEmpty { result.reasons = branches.flatMap(\.reasons) }
+            else if possible.allSatisfy(\.requiresInput) {
+                result.reasons = possible.flatMap(\.reasons).filter { $0.issue == .requiresOccurrenceDay }
+            }
+        }
+        return result
+    }
+
     private static func assess(
-        _ conditions: [ContentQueryCondition], type: CommandObjectType, occurrenceDay: String?
+        _ conditions: [ContentQueryCondition], type: CommandObjectType, selection: ContentQueryOccurrenceDay
     ) -> ContentQueryTypeAssessment {
         var result = ContentQueryTypeAssessment(type: type)
         var constraints: [Constraint] = []
@@ -51,16 +93,16 @@ enum ContentQueryTypeValidation {
             switch condition.value {
             case .scope: break
             case .clause(let terms):
-                guard let dimension = terms.first?.atom.dimension else { continue }
-                let binding = ContentQueryApplicability.binding(dimension, to: type, occurrenceDay: occurrenceDay)
-                if let issue = applicabilityIssue(binding) {
-                    result.reasons.append(.init(issue: issue, conditionIDs: [condition.id], binding: binding))
-                } else {
-                    constraints.append(.init(id: condition.id, binding: binding, dimension: dimension, terms: terms))
-                }
+                constraints += clause(terms, id: condition.id, selection: selection, result: &result)
             case .page(let predicate):
                 constraints += page(predicate, condition: condition, result: &result)
             }
+        }
+        constraints += occurrenceWindow(conditions, type: type, selection: selection)
+        if case .invalid = selection, [.routine, .routineOccurrence].contains(type) {
+            result.reasons.append(.init(issue: .contradiction, conditionIDs: conditions.filter {
+                $0.value.dimension == .content(.on)
+            }.map(\.id), binding: .occurrenceDay))
         }
         var seen: Set<ContentQueryFieldBinding> = []
         for binding in constraints.map(\.binding) where seen.insert(binding).inserted {
@@ -74,6 +116,42 @@ enum ContentQueryTypeValidation {
         }
         result.reasons += pageConflicts(conditions, type: type)
         return result
+    }
+
+    private static func clause(
+        _ terms: [ContentQuerySemanticTerm], id: ContentQueryConditionID,
+        selection: ContentQueryOccurrenceDay, result: inout ContentQueryTypeAssessment
+    ) -> [Constraint] {
+        let bindings = terms.map { ContentQueryApplicability.binding(for: $0.atom, to: result.type, occurrenceDay: selection.dayKey) }
+        guard let first = bindings.first, let dimension = terms.first?.atom.dimension else { return [] }
+        // OR 不能隐藏该类型不具备的状态；理由锚定原条件，不改写条件或缩小请求类型。
+        let binding: ContentQueryFieldBinding = bindings.contains(.notApplicable) ? .notApplicable : first
+        if let issue = applicabilityIssue(binding) {
+            result.reasons.append(.init(issue: issue, conditionIDs: [id], binding: binding))
+        }
+        guard binding != .notApplicable else { return [] }
+        let values = terms.map { term -> ContentQuerySemanticTerm in
+            if case .on(let day) = term.atom { return .init(atom: .date(.init(lowerBound: day, upperBound: day))) }
+            return term
+        }
+        // 缺 on 仍保留同一执行日的互斥状态分析；缺输入不能掩盖 open AND done。
+        return [.init(id: id, binding: binding, dimension: dimension == .on ? .date : dimension, terms: values)]
+    }
+
+    private static func occurrenceWindow(
+        _ conditions: [ContentQueryCondition], type: CommandObjectType, selection: ContentQueryOccurrenceDay
+    ) -> [Constraint] {
+        guard type == .routine, let day = selection.dayKey,
+              conditions.contains(where: { if case .clause(let terms) = $0.value {
+                  return terms.first?.atom.dimension == .date
+              }; return false }) else { return [] }
+        let dateIDs = conditions.filter { $0.value.dimension == .content(.date) }.map(\.id)
+        let onIDs = conditions.filter { $0.value.dimension == .content(.on) }.map(\.id)
+        // 仅文本业务窗口和 on 建关系；页面逾期排程投影与 created 不在此字段绑定里。
+        return (onIDs.isEmpty ? Array(dateIDs.prefix(1)) : onIDs).map {
+            .init(id: $0, binding: .scheduledDayExistenceReturningOneDefinition, dimension: .date,
+                  terms: [.init(atom: .date(.init(lowerBound: day, upperBound: day)))])
+        }
     }
 
     private static func applicabilityIssue(_ binding: ContentQueryFieldBinding) -> ContentQueryTypeReason.Issue? {

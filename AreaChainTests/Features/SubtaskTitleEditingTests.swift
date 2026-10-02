@@ -7,6 +7,31 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct SubtaskTitleEditingTests {
+    @Test(arguments: [false, true])
+    func focusLossSavesAndFailureKeepsDraft(rejected: Bool) async throws {
+        let harness = try SubtaskEditorHarness()
+        defer { harness.close() }
+        harness.rejectWrites = rejected
+        try await harness.beginEditing("失焦草稿")
+        harness.window.makeFirstResponder(nil)
+        try await harness.settle()
+        #expect(harness.attemptedTitles == ["失焦草稿"])
+        #expect(harness.subtask.title == (rejected ? "原标题" : "失焦草稿"))
+        #expect(harness.editorText == (rejected ? "失焦草稿" : nil))
+    }
+
+    @Test func inactiveExternalTitleBecomesNextEditingDraft() async throws {
+        let harness = try SubtaskEditorHarness()
+        defer { harness.close() }
+        harness.subtask.title = "外部更新标题"
+        try harness.container.mainContext.save()
+        try await harness.settle()
+        try await harness.beginEditing("新草稿", expectedInitialTitle: "外部更新标题")
+        try await harness.press(.escape)
+        #expect(harness.subtask.title == "外部更新标题")
+        #expect(harness.attemptedTitles.isEmpty)
+    }
+
     @Test func failedSaveKeepsDraftOpenUntilRetrySucceeds() async throws {
         let harness = try SubtaskEditorHarness()
         defer { harness.close() }
@@ -105,7 +130,7 @@ private final class SubtaskEditorHarness {
         NSApp.setActivationPolicy(previousActivationPolicy)
     }
 
-    func beginEditing(_ title: String) async throws {
+    func beginEditing(_ title: String, expectedInitialTitle: String? = nil) async throws {
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await settle()
         for count in 1...2 {
@@ -132,6 +157,9 @@ private final class SubtaskEditorHarness {
                                      "key=\(window.isKeyWindow), active=\(NSApp.isActive), attempted=\(attemptedTitles)")
         window.makeFirstResponder(textField)
         let editor = try #require(textField.currentEditor() as? NSTextView)
+        if let expectedInitialTitle {
+            #expect(editor.string == expectedInitialTitle)
+        }
         editor.selectAll(nil)
         editor.insertText(title, replacementRange: editor.selectedRange())
         try await settle()

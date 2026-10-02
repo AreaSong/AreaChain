@@ -7,6 +7,34 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct QuadrantLayoutTests {
+    @Test func completionKeepsQuadrantMutationSeparateFromInspection() async throws {
+        let host = try QuadrantLayoutHost(scheme: .light, counts: [2, 0, 0, 0])
+        defer { host.close() }
+        try await NativeSyntaxUI.prepareFocus(in: host.window)
+        try await host.settle()
+        let selected = WorkspaceNavigation.shared.selectedTaskID
+        let todo = try #require(host.items[.importantUrgent]?.first)
+        let other = try #require(host.items[.importantUrgent]?.last)
+        let native = SettingsButtonTestSupport.self
+        // 当前行标识传播到标题按钮，不能把其 15pt AX 框当成整行或完成控件的框。
+        let titleFrame = try NativeSyntaxUI.frame("quadrant.task.\(todo.id)", in: host.window)
+        let buttons = try native.buttons(in: host.window).filter {
+            let frame = try native.frame($0, in: host.window)
+            return abs(frame.midY - titleFrame.midY) <= 1 && frame.minX <= titleFrame.maxX
+        }
+        let completion = try #require(buttons.first {
+            native.value($0, "accessibilityLabel") as? String ==
+                L10n.string("checkbox.open", locale: Locale(identifier: "zh-Hans"))
+        })
+        try native.assertBounds(buttons, in: host.window)
+        #expect(try native.frame(completion, in: host.window).size == CGSize(width: 20, height: 20))
+        try await native.click(completion, in: host.window)
+        #expect(todo.isDone && !other.isDone)
+        #expect(WorkspaceNavigation.shared.selectedTaskID == selected)
+        #expect(try ModelContext(host.container).fetch(FetchDescriptor<TodoItem>()).first { $0.id == todo.id }?.isDone == true)
+        #expect(PendingCompletionManager.shared.pendingDoneIDs.isEmpty)
+    }
+
     @Test(arguments: [ColorScheme.light, .dark], [false, true])
     func quadrantsFillWorkspaceEquallyWhenResized(scheme: ColorScheme, populated: Bool) async throws {
         let host = try QuadrantLayoutHost(scheme: scheme, counts: populated ? [45, 1, 0, 34] : [0, 0, 0, 0])

@@ -13,6 +13,16 @@ struct DaybookControlsPreview: View {
     @State private var enabledSample = true
     @State private var disabledSample = false
     @State private var checkedSample = true
+    @State private var taskDone = false
+    @State private var subtaskDone = true
+    @State private var detailSubtaskDone = false
+    @State private var pickerSample = ClipboardSearchMode.mixed
+    @State private var integerSample = 200
+    @State private var decimalSample = 0.35
+    @State private var integerLower = 20
+    @State private var integerUpper = 999
+    @State private var decimalLower = 0.1
+    @State private var decimalUpper = 2.0
 
     private let sizes: [DaybookButtonSize] = [.regular, .compact, .inline]
     private let variants: [(String, DaybookButtonVariant)] = [
@@ -32,6 +42,9 @@ struct DaybookControlsPreview: View {
             controls
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
+                    pickerSamples
+                    completionSamples
+                    stepperSamples
                     toggleSamples
                     checkboxSamples
                     buttonGrid
@@ -54,6 +67,77 @@ struct DaybookControlsPreview: View {
         .environment(\.locale, Locale(identifier: localeID))
         .environment(\.daybookButtonReduceMotionPreview, reduceMotion)
         .preferredColorScheme(dark ? .dark : .light)
+    }
+
+    private var pickerSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.pickers").font(DaybookType.title)
+            DaybookPicker("clipboard.searchMode", selection: $pickerSample, options: pickerOptions)
+            DaybookPicker("clipboard.searchMode", selection: .constant(ClipboardSearchMode.exact), options: pickerOptions)
+                .disabled(true)
+            DaybookPicker("dev.controls.picker.long", selection: $pickerSample, options: [
+                .init(.mixed, "dev.controls.picker.long"), .init(.exact, "clipboard.searchMode.exact"),
+                .init(.regex, "clipboard.searchMode.regex")
+            ])
+            Button("dev.controls.toggle.external") { pickerSample = pickerSample == .mixed ? .regex : .mixed }
+                .buttonStyle(DaybookButtonStyle(.quiet))
+                .accessibilityIdentifier("preview.picker.external")
+        }
+    }
+
+    private var pickerOptions: [DaybookPickerOption<ClipboardSearchMode>] {
+        [.init(.mixed, "clipboard.searchMode.mixed"), .init(.exact, "clipboard.searchMode.exact"),
+         .init(.regex, "clipboard.searchMode.regex")]
+    }
+
+    private var completionSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.completion").font(DaybookType.title)
+            HStack(spacing: DaybookSpacing.md) {
+                ModernCheckbox(isDone: taskDone) { taskDone.toggle(); actions += 1 }
+                    .accessibilityIdentifier("preview.completion.task")
+                ModernCheckbox(isDone: subtaskDone, presentation: .inlineSubtask) { subtaskDone.toggle(); actions += 1 }
+                    .accessibilityIdentifier("preview.completion.subtask")
+                ModernCheckbox(isDone: detailSubtaskDone, presentation: .detailSubtask) { detailSubtaskDone.toggle(); actions += 1 }
+                    .accessibilityIdentifier("preview.completion.detailSubtask")
+                Text("dev.controls.sample")
+            }
+            HStack(spacing: DaybookSpacing.md) {
+                ForEach([false, true], id: \.self) { done in
+                    ModernCheckbox(isDone: done) {}.disabled(true)
+                    ModernCheckbox(isDone: done, presentation: .inlineSubtask) {}.disabled(true)
+                    ModernCheckbox(isDone: done, presentation: .detailSubtask) {}.disabled(true)
+                }
+                Button("dev.controls.toggle.external") { taskDone.toggle(); subtaskDone.toggle(); detailSubtaskDone.toggle() }
+                    .buttonStyle(DaybookButtonStyle(.quiet))
+                    .accessibilityIdentifier("preview.completion.external")
+            }
+        }
+    }
+
+    private var stepperSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.steppers").font(DaybookType.title)
+            DaybookStepper(value: $integerSample, in: 20...999, step: 10) {
+                if longLabels { Text("dev.controls.stepper.longLabel") } else { Text("clipboard.limit \(integerSample)") }
+            }
+            DaybookStepper(value: $decimalSample, in: 0.1...2, step: 0.1) {
+                Text(L10n.format("clipboard.interval", locale: Locale(identifier: localeID), decimalSample))
+            }
+            DaybookStepper(value: $integerLower, in: 20...999, step: 10) { Text("clipboard.limit \(integerLower)") }
+            DaybookStepper(value: $integerUpper, in: 20...999, step: 10) { Text("clipboard.limit \(integerUpper)") }
+            DaybookStepper(value: $decimalLower, in: 0.1...2, step: 0.1) {
+                Text(L10n.format("clipboard.interval", locale: Locale(identifier: localeID), decimalLower))
+            }
+            DaybookStepper(value: $decimalUpper, in: 0.1...2, step: 0.1) {
+                Text(L10n.format("clipboard.interval", locale: Locale(identifier: localeID), decimalUpper))
+            }
+            DaybookStepper(value: .constant(200), in: 20...999, step: 10) { Text("clipboard.limit \(200)") }.disabled(true)
+            Button("dev.controls.toggle.external") {
+                integerSample = integerSample == 25 ? 995 : 25
+                decimalSample = decimalSample == 0.35 ? 1.95 : 0.35
+            }.buttonStyle(DaybookButtonStyle(.quiet))
+        }
     }
 
     private var toggleSamples: some View {

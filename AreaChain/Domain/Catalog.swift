@@ -55,28 +55,8 @@ enum TagUsage {
     }
 
     static func filtered(_ tags: [TagItem], filter: TagListFilter, usage: [UUID: TagUsageRecord]) -> [TagItem] {
-        let live = Catalog.liveTags(tags)
-        switch filter {
-        case .all:
-            return live
-        case .frequent:
-            return live.sorted { lhs, rhs in
-                let left = usage[lhs.id]?.activeCount ?? 0
-                let right = usage[rhs.id]?.activeCount ?? 0
-                if left != right { return left > right }
-                return lhs.sortOrder < rhs.sortOrder
-            }
-        case .recent:
-            return live
-                .filter { usage[$0.id]?.latestCreatedAt != nil }
-                .sorted { lhs, rhs in
-                    let left = usage[lhs.id]?.latestCreatedAt ?? .distantPast
-                    let right = usage[rhs.id]?.latestCreatedAt ?? .distantPast
-                    if left != right { return left > right }
-                    return lhs.sortOrder < rhs.sortOrder
-                }
-        case .unused:
-            return live.filter { (usage[$0.id]?.activeCount ?? 0) == 0 }
+        filteredValues(tags, filter: filter, usage: usage) {
+            .init(id: $0.id, sortOrder: $0.sortOrder, isDeleted: $0.deletedAt != nil)
         }
     }
 }

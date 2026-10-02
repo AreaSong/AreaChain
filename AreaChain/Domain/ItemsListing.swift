@@ -214,7 +214,7 @@ enum ItemsListing {
         case .all:
             return true
         case .today:
-            return DayBoardLogic.isRoutineDue(routine, on: todayKey)
+            return DayBoardLogic.isRoutineDue(routine, on: todayKey, calendar: calendar)
         case .overdue:
             return !AgendaProjection.overdueRoutines(
                 routines: [routine], checks: checks, todayKey: todayKey, calendar: calendar
@@ -233,7 +233,7 @@ enum ItemsListing {
         todayKey: String,
         calendar: Calendar
     ) -> String? {
-        if DayBoardLogic.isRoutineDue(routine, on: todayKey) { return todayKey }
+        if DayBoardLogic.isRoutineDue(routine, on: todayKey, calendar: calendar) { return todayKey }
         return AgendaProjection.nextDay(after: todayKey, routine: routine, calendar: calendar)
     }
 }

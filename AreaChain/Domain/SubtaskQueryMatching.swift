@@ -49,6 +49,7 @@ struct SubtaskQueryMatching {
         case .tag(let name):
             return ContentQuerySnapshotMatching.tag(name, excluded: term.excluded, tagIDs: child.tagIDs,
                                                     normalizedNames: normalizedTagNames, id: id)
+        case .status(.skipped), .on: return nil
         case .status(let status):
             return evidence(child.isDone == (status == .done), id: id, field: .completion)
         case .date(let interval):

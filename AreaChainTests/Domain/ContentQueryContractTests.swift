@@ -91,17 +91,19 @@ struct ContentQueryContractTests {
         #expect(ContentQueryApplicability.binding(.status, to: .routine, occurrenceDay: "2026-10-01") == .routineCompletionOnDay("2026-10-01"))
         #expect(ContentQueryApplicability.binding(.status, to: .routine, occurrenceDay: "2026-02-30") == .requiresOccurrenceDay)
         #expect(ContentQueryApplicability.binding(.status, to: .routineOccurrence) == .occurrenceCompletion)
-        for type in [CommandObjectType.diary, .tag, .image, .clipboardEntry] {
+        for type in [CommandObjectType.diary, .tag, .clipboardEntry] {
             #expect(ContentQueryApplicability.binding(.status, to: type) == .notApplicable)
         }
     }
 
     @Test func unsupportedFieldsAreNotInheritedOrFabricated() {
-        for type in [CommandObjectType.subtask, .diary, .tag, .image, .clipboardEntry, .routineOccurrence] {
+        for type in [CommandObjectType.subtask, .diary, .tag, .clipboardEntry, .routineOccurrence] {
             #expect(ContentQueryApplicability.binding(.priority, to: type) == .notApplicable)
             #expect(ContentQueryApplicability.binding(.reminder, to: type) == .notApplicable)
         }
-        #expect(ContentQueryApplicability.binding(.tag, to: .image) == .notApplicable)
+        for dimension in [ContentQueryDimension.tag, .priority, .reminder, .status, .on] {
+            #expect(ContentQueryApplicability.binding(dimension, to: .image) == .requiresImageOwnerType)
+        }
         #expect(ContentQueryApplicability.binding(.tag, to: .clipboardEntry) == .notApplicable)
         #expect(ContentQueryApplicability.binding(.image, to: .subtask) == .notApplicable)
         #expect(ContentQueryApplicability.binding(.image, to: .todo) == .attachedImage)

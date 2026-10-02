@@ -1,6 +1,74 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "picker.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No options"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无可用选项"
+          }
+        }
+      }
+    },
+    "picker.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selection unavailable"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前选项不可用"
+          }
+        }
+      }
+    },
+    "dev.controls.pickers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pickers"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下拉选择器"
+          }
+        }
+      }
+    },
+    "dev.controls.picker.long": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A long selection label to check layout and truncation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用于检查布局和截断表现的较长下拉选择标签"
+          }
+        }
+      }
+    },
     "dev.controls.checkbox.longLabel": {
       "extractionState": "manual",
       "localizations": {
@@ -286,6 +354,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "语言"
+          }
+        }
+      }
+    },
+    "dev.controls.completion": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task completion · regular / inline / detail"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务完成 · 普通 / 行内 / 详情"
           }
         }
       }
@@ -13139,6 +13224,34 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Ignore Universal Clipboard" } },
         "zh-Hans": { "stringUnit": { "state": "translated", "value": "忽略通用剪贴板" } }
+      }
+    },
+    "stepper.increase": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Increase" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "增加" } }
+      }
+    },
+    "stepper.decrease": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Decrease" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "减少" } }
+      }
+    },
+    "dev.controls.stepper.longLabel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Keep this many unpinned clipboard history items, including a longer explanation" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "剪贴板未置顶历史的保留条数，这是一段用来检查窄窗口换行的较长说明" } }
+      }
+    },
+    "dev.controls.steppers": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Number steppers" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "数值加减" } }
       }
     },
     "clipboard.limit %lld": {

@@ -29,7 +29,7 @@ struct ContentQueryTerm: Equatable {
 }
 
 enum ContentQueryDimension: String, CaseIterable {
-    case text, tag, priority, reminder, status, date, created, image
+    case text, tag, priority, reminder, status, date, on, created, image
 }
 
 enum ContentQueryAtom: Equatable {
@@ -39,6 +39,7 @@ enum ContentQueryAtom: Equatable {
     case reminder(Int)
     case status(ContentQueryStatus)
     case date(ContentQueryDateInterval)
+    case on(String)
     case created(ContentQueryDateInterval)
     case image
 
@@ -50,13 +51,14 @@ enum ContentQueryAtom: Equatable {
         case .reminder: .reminder
         case .status: .status
         case .date: .date
+        case .on: .on
         case .created: .created
         case .image: .image
         }
     }
 }
 
-enum ContentQueryStatus: String { case open, done }
+enum ContentQueryStatus: String { case open, done, skipped }
 
 /// 代码供后续双语 UI 映射；range 始终对应未经改写的 source。
 struct ContentQueryDiagnostic: Equatable {
@@ -70,6 +72,7 @@ enum ContentQueryIssue: String {
     case invalidEscape, invalidCondition, invalidDate, reversedDateInterval, invalidDateContext
     case mixedDimensions, nestedGroup, unsupportedStructure, unsupportedExclusion
     case duplicateCondition, unsatisfiable, incompatibleScopes, analysisLimit, ambiguousConditionIDs
+    case occurrenceDayMustBeSingle, multipleOccurrenceDaysInGroup, conflictingOccurrenceDays
 
     var blocksStructure: Bool {
         ![Self.duplicateCondition, .unsatisfiable, .analysisLimit].contains(self)

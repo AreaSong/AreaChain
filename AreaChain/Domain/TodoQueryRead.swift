@@ -10,6 +10,7 @@ struct TodoQueryRequest: CustomStringConvertible, CustomDebugStringConvertible {
     let todos: [TodoSnapshot]
     let tagNames: [UUID: String]?
     let subtaskData: TodoQuerySubtaskData
+    var imageInput: ContentQueryImageInput?
 
     var description: String { "TodoQueryRequest(redacted)" }
     var debugDescription: String { description }
@@ -33,18 +34,30 @@ enum TodoQueryIssue: Equatable {
     case imageAssociationUnavailable, unsupportedCondition, unsupportedAgendaDate, inapplicableCondition
     case duplicateTodoID, invalidScheduledDay, invalidCreatedAt
     case duplicateSubtaskID, invalidSubtaskOwner
+    case imageAssociation(ContentQueryImageIssue)
 }
+
+enum TodoQuerySeverity: Equatable { case warning, error }
 
 /// 不带查询原文、标签名、标题或备注；下标仅指本次请求，不用来恢复可操作身份。
 struct TodoQueryDiagnostic: Equatable {
     let issue: TodoQueryIssue
+    var severity: TodoQuerySeverity = .error
+    var affectsDetermination = true
     var conditionIDs: [ContentQueryConditionID] = []
     var object: CommandObjectReference?
     var inputIndices: [Int] = []
 }
 
 enum ContentQueryMatchField: Equatable {
+    case clipboardPlainText, clipboardCapturedDay, clipboardImage
+    case tagName
+    case imageAssociation
+    case filename, ownerTags, ownerPriority, ownerReminder, ownerCompletion, ownerBusinessDay
+    case ownerOccurrenceDay, ownerScheduleExistence
+    case diaryBody, diaryDay
     case title, notes, tags, subtaskTags, completion, priority, reminder
+    case routineEnabled, scheduleExistence, occurrenceDay, legacyPageProjection
     case scheduledDay, createdAt, sourceApplication, objectType, scope
     case parentPriority, parentScheduledDay, parentCompletion, parentReminder, parentSourceApplication, parentItemKind
 }
@@ -57,7 +70,8 @@ enum ContentQueryMatchKind: Equatable {
     case typeNeutral
 }
 
-/// range 指向结果内未经改写的 title/notes；每个适用字段保留首个命中，足供后续片段生成。
+/// range 指向结果内未经改写的 title/notes、filename、tagName、clipboardPlainText、公开 diaryBody 或 relatedObject 对应标签名。
+/// 私密手记结果完全丢弃 diaryBody 依据；每个可展示字段保留首个命中。
 /// conditionID / alternativeIndex 必须在同一 requestID 的 session.conditions 内解释。
 struct ContentQueryMatchEvidence: Equatable {
     let conditionID: ContentQueryConditionID
@@ -66,6 +80,8 @@ struct ContentQueryMatchEvidence: Equatable {
     var kind: ContentQueryMatchKind = .positive
     var range: NSRange?
     var relatedObject: CommandObjectReference?
+    /// 图片所属属性的来源；relatedObject 仍可独立指向命中的标签或执行日。
+    var ownerObject: CommandObjectReference?
 }
 
 /// 纯值投影；备注每条结果只保存一次，不随关键词复制，不持有 SwiftData 实体。
@@ -94,8 +110,11 @@ struct TodoQueryResponse: Equatable, CustomStringConvertible, CustomDebugStringC
     var diagnostics: [TodoQueryDiagnostic] = []
     /// 只保持输入相对顺序，不是全局排名，也不是最终产品排序。
     var matches: [TodoQueryMatch] = []
+    var undeterminedObjects: [CommandObjectReference] = []
 
-    var isCompleteForCoveredTypes: Bool { state == .evaluated && diagnostics.isEmpty }
+    var isCompleteForCoveredTypes: Bool {
+        state == .evaluated && undeterminedObjects.isEmpty && !diagnostics.contains { $0.affectsDetermination }
+    }
     var description: String { "TodoQueryResponse(redacted)" }
     var debugDescription: String { description }
 }

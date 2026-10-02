@@ -19,6 +19,11 @@ enum ContentQueryConditionValidation {
         result += identities.filter { $0.value.count > 1 }.map {
             .init(issue: .ambiguousConditionIDs, conditionIDs: [$0.key])
         }.sorted { $0.conditionIDs[0].rawValue < $1.conditionIDs[0].rawValue }
+        if case .invalid(let issue) = ContentQueryOccurrenceDay.resolve(conditions) {
+            result.append(.init(issue: issue, conditionIDs: conditions.filter {
+                $0.value.dimension == .content(.on)
+            }.map(\.id)))
+        }
         return result
     }
 
@@ -28,11 +33,14 @@ enum ContentQueryConditionValidation {
         case .clause(let terms):
             guard let first = terms.first else { return .incompleteCondition }
             guard terms.allSatisfy({ $0.atom.dimension == first.atom.dimension }) else { return .mixedDimensions }
+            if let issue = ContentQueryOccurrenceDay.groupIssue(terms) { return issue }
             for term in terms {
                 if term.excluded, ![.text, .tag].contains(term.atom.dimension) { return .unsupportedExclusion }
                 switch term.atom {
                 case .date(let interval), .created(let interval):
                     if let issue = invalidInterval(interval, dates: dates) { return issue }
+                case .on(let day):
+                    if let issue = invalidInterval(.init(lowerBound: day, upperBound: day), dates: dates) { return issue }
                 case .reminder(let minutes): if !(0..<1440).contains(minutes) { return .invalidCondition }
                 default: break
                 }
@@ -47,7 +55,7 @@ enum ContentQueryConditionValidation {
                                        dates: .init(todayKey: rule.todayKey, calendar: rule.calendar))
             case .reminderPresence(.all), .itemKind(.all), .todoStatus(.all), .routineStatus(.all): return .invalidCondition
             case .contentTypes(let types):
-                if types.isEmpty || !types.isSubset(of: [.todo, .routine, .subtask]) { return .invalidCondition }
+                if types.isEmpty || !types.isSubset(of: [.todo, .routine, .subtask, .diary, .image, .tag]) { return .invalidCondition }
             default: break
             }
         }

@@ -38,45 +38,44 @@ struct ClipboardHistoryOptions: View {
             ))
             .toggleStyle(DaybookToggleStyle(.checkbox))
             .font(DaybookType.body)
-            Stepper(value: Binding(
+            DaybookStepper(value: Binding(
                 get: { session.limit },
                 set: { session.setLimit($0) }
             ), in: ClipboardHistoryRules.minimumLimit...ClipboardHistoryRules.maximumLimit, step: 10) {
                 Text("clipboard.limit \(session.limit)")
                     .font(DaybookType.body)
             }
-            Stepper(value: Binding(
+            .accessibilityIdentifier("clipboard.limit")
+            DaybookStepper(value: Binding(
                 get: { session.interval },
                 set: { session.setInterval($0) }
             ), in: ClipboardHistoryRules.minimumInterval...ClipboardHistoryRules.maximumInterval, step: 0.1) {
                 Text(L10n.format("clipboard.interval", locale: locale, session.interval))
                     .font(DaybookType.body)
             }
-            Picker("clipboard.searchMode", selection: Binding(
+            .accessibilityIdentifier("clipboard.interval")
+            DaybookPicker("clipboard.searchMode", selection: Binding(
                 get: { session.searchMode },
                 set: { session.setSearchMode($0) }
-            )) {
-                Text("clipboard.searchMode.mixed").tag(ClipboardSearchMode.mixed)
-                Text("clipboard.searchMode.exact").tag(ClipboardSearchMode.exact)
-                Text("clipboard.searchMode.regex").tag(ClipboardSearchMode.regex)
-            }
-            .font(DaybookType.body)
-            Picker("clipboard.panelAnchor", selection: Binding(
+            ), options: [
+                .init(ClipboardSearchMode.mixed, "clipboard.searchMode.mixed"),
+                .init(ClipboardSearchMode.exact, "clipboard.searchMode.exact"),
+                .init(ClipboardSearchMode.regex, "clipboard.searchMode.regex")
+            ])
+            DaybookPicker("clipboard.panelAnchor", selection: Binding(
                 get: { session.panelAnchor },
                 set: { session.setPanelAnchor($0) }
-            )) {
-                Text("clipboard.panelAnchor.cursor").tag(ClipboardPanelAnchor.cursor)
-                Text("clipboard.panelAnchor.center").tag(ClipboardPanelAnchor.center)
-            }
-            .font(DaybookType.body)
-            Picker("clipboard.clickAction", selection: Binding(
+            ), options: [
+                .init(ClipboardPanelAnchor.cursor, "clipboard.panelAnchor.cursor"),
+                .init(ClipboardPanelAnchor.center, "clipboard.panelAnchor.center")
+            ])
+            DaybookPicker("clipboard.clickAction", selection: Binding(
                 get: { session.clickAction },
                 set: { session.setClickAction($0) }
-            )) {
-                Text("clipboard.clickAction.copy").tag(ClipboardClickAction.copy)
-                Text("clipboard.clickAction.paste").tag(ClipboardClickAction.paste)
-            }
-            .font(DaybookType.body)
+            ), options: [
+                .init(ClipboardClickAction.copy, "clipboard.clickAction.copy"),
+                .init(ClipboardClickAction.paste, "clipboard.clickAction.paste")
+            ])
             Toggle("clipboard.plainByDefault", isOn: Binding(
                 get: { session.plainByDefault },
                 set: { session.setPlainByDefault($0) }

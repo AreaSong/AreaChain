@@ -2,39 +2,42 @@ import Foundation
 
 /// 只接收通过提供者前置检查的请求。条件间 AND、同一 clause 内 OR；不读取或重解析 input.source。
 struct TodoQueryMatching {
+    typealias Result = TodoQueryEvaluation
     let request: TodoQueryRequest
+    let images: ContentQueryImageRead
     private let normalizedTagNames: [UUID: String]
 
     init(request: TodoQueryRequest) {
         self.request = request
+        images = ContentQueryImageRead(conditions: request.session.conditions, input: request.imageInput,
+                                       owners: .init(todos: request.todos))
         normalizedTagNames = (request.tagNames ?? [:]).mapValues(TagSyntax.normalizedName)
     }
 
-    func match(_ todo: TodoSnapshot) -> [ContentQueryMatchEvidence]? {
-        var evidence: [ContentQueryMatchEvidence] = []
-        for condition in request.session.conditions {
-            guard let matched = match(condition, todo: todo) else { return nil }
-            evidence += matched
-        }
-        return evidence
+    func evaluate(_ todo: TodoSnapshot, diagnostics: [TodoQueryDiagnostic] = []) -> Result {
+        Result.combine(request.session.conditions.map { condition in
+            let issues = diagnostics.filter { $0.conditionIDs.contains(condition.id) }
+            return issues.isEmpty ? match(condition, todo: todo) : .init(truth: .unknown, diagnostics: issues)
+        }, any: false)
     }
 
-    private func match(_ condition: ContentQueryCondition, todo: TodoSnapshot) -> [ContentQueryMatchEvidence]? {
+    private func match(_ condition: ContentQueryCondition, todo: TodoSnapshot) -> Result {
         switch condition.value {
-        case .scope: return [.init(conditionID: condition.id, field: .scope)]
-        case .page(let predicate): return page(predicate, todo: todo, id: condition.id)
+        case .scope: return .known([.init(conditionID: condition.id, field: .scope)])
+        case .page(let predicate): return .known(page(predicate, todo: todo, id: condition.id))
         case .clause(let terms):
-            var matched: [ContentQueryMatchEvidence] = []
-            for (index, term) in terms.enumerated() {
-                if let evidence = termMatch(term, todo: todo, id: condition.id) {
-                    matched += evidence.map { item in
-                        var item = item
-                        item.alternativeIndex = index
-                        return item
-                    }
+            let values = terms.enumerated().map { index, term in
+                var result = term.atom == .image
+                    ? images.evaluate(owner: .init(kind: .todo, id: todo.id), conditionID: condition.id).todo
+                    : .known(termMatch(term, todo: todo, id: condition.id))
+                result.evidence = result.evidence.map { item in
+                    var item = item
+                    item.alternativeIndex = index
+                    return item
                 }
+                return result
             }
-            return matched.isEmpty ? nil : matched
+            return Result.combine(values, any: true)
         }
     }
 
@@ -47,6 +50,7 @@ struct TodoQueryMatching {
         case .priority(let flags):
             return evidence(todo.isImportant == flags.isImportant && todo.isUrgent == flags.isUrgent, id: id, field: .priority)
         case .reminder(let minutes): return evidence(todo.remindMinutes == minutes, id: id, field: .reminder)
+        case .status(.skipped), .on: return nil
         case .status(let status): return evidence(todo.isDone == (status == .done), id: id, field: .completion)
         case .date(let interval): return evidence(contains(interval, day: todo.dayKey), id: id, field: .scheduledDay)
         case .created(let interval):

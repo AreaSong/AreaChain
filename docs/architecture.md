@@ -1,5 +1,9 @@
 # 架构与目录
 
+统一搜索 2H-1 的 TrashTombstoneReader 只消费注入快照与范围完整性，按类型化身份隔离重复后调用 SoftDelete 的原同戳规则，输出安全对象及引用式分组。墓碑读取与 ImageAssociationReader / AttachmentBrowseFacts 的 live-only 边界分离；恢复条件没有执行资格或闭包。TodoItem.snapshot 过滤已删子任务，真实适配不得据此声明墓碑完整。当前消费者仅四套合成墓碑测试；接口、保护计数限制与指定复核缺口统一见[权威设计第 9.25 节](unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)。
+
+统一搜索 2G 的 ClipboardQueryProvider 同步消费注入 ClipboardHistoryRecord；统一 Session 与显式模式原文加只读筛选 Session 互斥。ClipboardTextMatching 复用旧三模式语义并将正则编译移到单次请求；ClipboardHistorySession 的偏好、监听、保存和历史读取不变。结果仅含必要纯文本/元数据、字段依据与负载类别，类型覆盖、历史读取覆盖、未知对象及排序完整性分别表达。显式 clipboard 范围之外不求值；来源沿既有类型化条件，图片自身引用不经过任务附件关联。当前仅合成领域测试消费；契约及指定复核缺口见[权威设计第 9.24 节](unified-search-commands.md#924-阶段-2g显式剪贴板历史的只读搜索提供者)。
+
 工程采用 Xcode 文件系统同步组：往对应文件夹添加 `.swift` 即可纳入编译，无需频繁改 `project.pbxproj`。
 
 统一搜索与指令体系的目标状态、业务入口映射和实施边界见[权威设计](unified-search-commands.md)。阶段 1A 已加入纯领域 `CommandCatalog` 与参数声明，当前只由契约测试消费；产品会话、执行队列与默认范围仍未实现。目录与既有 `BoardSearch`、仓储、窗口之间没有执行接线。 1B-1 新增 `CommandPathParser` 与局部补全结果，直接复用目录/参数，当前也仅由 Domain 测试消费；只输出编辑意图，旧搜索/补全行为不变。独立输入与 UTF-16 边界见权威设计第 9.7 节，内容查询和页面状态留在 1B-2。
@@ -238,6 +242,8 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 
 第三阶段 B 在上述样式增加 `.checkbox` 表现：图形置于标签前，几何集中在 `DaybookMetrics.Checkbox`，两种表现共用原生操作与焦点基础。复选框与原生 `.checkbox` 的相邻输入焦点单独对照，不能由滑动开关证据推定等价。隐私标签页只消费样式，业务选择仍属于原表单；初始化、取消与提交权威入口保持 `PrivacySetupSheet`，公共层不接触 vault、模型或保存。
 
+第三阶段 F 的 `DaybookStepper` 在 Theme 维护 Int / Double 步进、可用状态与展示，不保存镜像业务值；操作始终回读消费者 Binding。`DaybookStepping` 只计算候选数值，不引入 Domain 依赖；范围与存储仍由 ClipboardHistoryRules / ClipboardHistorySession 决定。按钮外观和平台重复能力复用现有入口，数值格式与运算分离。窗口接入状态由现有 NSStepper 桥接的 AppKit 生命周期提供；拆离窗口同步阻断公共 adjust，SwiftUI 按钮禁用随后刷新，桥接销毁时清空回调，不依赖 onDisappear 先于重复事件执行。剪贴板历史保存失败时原 setLimit 仍保存新偏好、保留旧历史，这与公共 Binding 拒绝写入是两个不同契约，不新增业务回滚。接口、消费者与隔离测试见[组件目录](component-catalog.md#第三阶段-f公共数值加减与剪贴板)。
+
 ### todo 快照查询提供者（统一搜索 2A）
 
 `TodoQueryProvider.read` 位于 Domain，同步消费调用方注入的 TodoSnapshot 和 ContentQuerySession 有效条件，返回只读类型化结果、字段命中依据、覆盖和诊断。请求没有仓储、文件、偏好、系统时间或写入能力；结果身份沿 CommandObjectReference，requestID 只关联本次请求，不授予操作或过期校验能力。未知辅助数据、重复身份与坏日期显式处理；新接口只由领域测试消费。
@@ -247,3 +253,28 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 ### 子任务快照查询提供者（统一搜索 2B）
 
 `SubtaskQueryProvider.read` 同步消费原 TodoSnapshot 内嵌的 SubtaskSnapshot 与 Session 有效条件，返回独立子身份、父引用及最小值投影。父子身份歧义与数据缺失显式诊断；自身文字/标签/完成/创建时间不能被父字段替代。父安排日和已确认页面约束分别附 parent 字段依据，不先调用 TodoQueryProvider 筛整份父查询。两提供者共用窄值匹配/校验与父级页面规则，公共结果证据类型保留原文件；没有全类型引擎或新的状态所有者。当前仅领域测试消费，真实仓储/UI/聚合/执行未接入；字段对照、条件限制、2A 回归和 partial 复核状态统一维护在[权威设计第 9.15 节](unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。
+
+### 习惯单日读取与历史证据（统一搜索 2C-1）
+
+`ContentQueryOccurrenceDay` 从既有条件读取唯一 on，`ContentQueryDateWindow` 只计算 date 窗口；没有新的可变查询状态或持久化字段。`RoutineCheckReading` 使用 CheckSnapshot 和限定习惯/区间的完整性声明，返回单个业务身份的读取状态、输入下标与重复/冲突诊断。`RoutineScheduleHistory` 只解释调用方注明来源及适用区间的证据，当前定义仅证明明确观察日；`RoutineOccurrenceEvaluation` 组合排程与记录状态，不能把完整无记录单独当 open。它们不接旧 DayBoard/Agenda 索引，不修改七张表、排程写入或历史数据。完整协议和 2C-2 真实来源映射缺口只见[权威设计第 9.17 节](unified-search-commands.md#917-阶段-2c-1习惯执行日历史证据与只读状态契约)。
+
+统一搜索 2C-2 的 `RoutineQueryProvider` 仍为 Domain 注入快照纯函数，唯一实际消费者是四套 RoutineQuery Domain 测试。Session 是全部有效条件的权威来源；历史、记录完整性和来源声明由请求提供，结果只含一次定义投影、见证日/显式执行日及对象诊断，不持有 SwiftData 实体或操作能力。旧页面适配与新状态读取分离，真实历史转换与持久化仍未接线；详见[权威设计第 9.18 节](unified-search-commands.md#918-阶段-2c-2习惯定义只读快照提供者)。
+
+统一搜索 2D 的 `DiaryQueryProvider` 只消费注入 DiarySnapshot、完整查询与标签/敏感判定事实，沿 DiaryPrivacy 和既有文字/标签/日期规则求值。正文不可读采用三态，身份和安全诊断不受布尔短路遮蔽；DiaryQueryPresentation 的隐藏分支没有正文或正文证据字段。contentTypes 仅扩展 diary 合法组成，原生产页与其他提供者不接手记隐私模型。当前消费者只有合成 Domain 测试，没有 DiaryContent/vault、仓储、UI 或执行调用；来源完整性、锁定缓存失效和异步代次均留在后续真实适配，具体契约及 partial 验收见[权威设计第 9.19 节](unified-search-commands.md#919-阶段-2d手记只读快照提供者)。
+
+### 图片关联只读基础（2E-1）
+
+`ImageAssociationReader` 只消费注入图片纯值元数据、三个拥有者快照、保护资料和有范围的完整性声明。拥有者身份、图片身份、关联枚举及手记保护资料分别检查；墓碑参与唯一性，未知不变成没有图片。`AttachmentBrowseFacts` 承载原 `AttachmentAccess.canBrowse` 的纯条件，旧实体入口委托并保留行为；新读取器复用 `DiaryQueryPrivacy`，公开结果不存整份拥有者或敏感图片明细。当前只有合成领域测试消费，没有仓储、文件、查询匹配、生产 UI 或权限接线。类型化所属属性、受保护状态及 2E-2 接入限制以[权威设计第 9.20 节](unified-search-commands.md#920-阶段-2e-1类型化图片拥有者关联完整性与只读可浏览投影)为准。
+
+第三阶段 G 的 ModernCheckbox 仅承载外部完成态、共享图形与一次点击反馈；TaskRow 管理 PendingCompletionManager，行内子任务沿原 UUID 动作链直接提交，四象限保留显式展示值。集中几何、紧凑表现与验收入口见[组件目录](component-catalog.md#第三阶段-g公共任务完成控件与行内子任务)，Theme 不持有模型、保存或反悔计时；ModernTaskTitle 保持原实现。详情子任务后续 H 仅以明确表现接入公共完成控件，原行编辑/保存及模型边界不变，见[组件目录](component-catalog.md#第三阶段-h详情子任务完成控件接入)。
+
+统一搜索 2E-2A 的 `ImageQueryProvider` 在一次同步读取中消费上述关联接口，只匹配公开 ImageBrowseProjection 和共用 ImageOwnerProjection。静态类型分析保留三类拥有者分支，实例匹配明确所属字段；RoutineScheduleHistory 增加公开身份/创建日标量入口，旧快照入口兼容。图片结果覆盖、对象未知与关联保护状态独立，生产数据库、文件访问、UI 与指令执行仍未接线。唯一接口、支持矩阵、验证及 2E-2B 边界见[权威设计第 9.21 节](unified-search-commands.md#921-阶段-2e-2a公开图片元数据的只读搜索提供者)。
+
+
+统一搜索 2E-2B 在三个记录提供者的读取边界构建 ContentQueryImageRead，原始图片资料只通过 ContentQueryImageInput 注入；拥有者和 Diary metadata 始终来自当前主请求，预计算响应不作为输入。has:image 共用 ImageAssociationReader 的四态与类型化 ownerKey，再适配各自三态/诊断；Todo 增加对象未知及确定性标记。该纯值上下文每次 read 重建，没有持久缓存、授权票据或真实数据访问；无图片条件不读取附件资料。核心接口、保护边界与 partial 证据见[权威设计第 9.22 节](unified-search-commands.md#922-阶段-2e-2b三类记录的图片存在性查询)。
+
+统一搜索 2F 的 TagQueryProvider 只消费 TagQuerySnapshot、完整 Session、显式页面视图选项与可选 TagUsageRecord/覆盖声明，不持有 SwiftData 或关联内容。TagUsage.filteredValues 是原目录与新提供者的纯值共用规则；统计读取、计数口径、生产页和写入责任不变。类型覆盖、使用完整性与排序完成分开表达，默认保持输入顺序，不形成全局评分或查询副本。接口、测试及指定复核缺口只见[权威设计第 9.23 节](unified-search-commands.md#923-阶段-2f活标签只读快照搜索提供者)。
+
+### 公共下拉选择器（第四阶段 A）
+
+DaybookPicker 位于 Theme，仅接收类型化 Binding 与值/本地化标签分离的选项；NSPopUpButton 及原生 NSMenu 维护平台追踪、焦点和辅助操作，公共层没有业务状态镜像。菜单项携带稳定类型化值，协调器只保留当前 Binding；每次提交后立即回读，禁用/拆卸/旧菜单动作受守卫，销毁清空引用。缺失值与空选项采用显式占位，不默认写回第一项。三个剪贴板 setter、会话偏好/历史、未提交输入与关闭行为均保持；接口、呈现和消费者见[组件目录](component-catalog.md#第四阶段-a公共下拉选择器与剪贴板)。

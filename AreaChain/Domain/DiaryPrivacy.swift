@@ -97,12 +97,15 @@ enum AttachmentAccess {
     static func canBrowse(
         _ attachment: AttachmentItem, owners: AttachmentOwnerIndex, tags: [TagItem]
     ) -> Bool {
-        guard attachment.deletedAt == nil, attachment.privacyVaultID == nil, let owner = attachment.ownerKey,
-              owners.ownerIsLive(owner) else { return false }
-        if owner.kind == .diary, let entry = owners.liveDiaries[owner.id] {
-            return !DiaryPrivacy.isSensitive(entry.snapshot, tags: tags)
-        }
-        return true
+        let owner = attachment.ownerKey
+        let sensitive = owner.flatMap { key in
+            key.kind == .diary ? owners.liveDiaries[key.id] : nil
+        }.map { DiaryPrivacy.isSensitive($0.snapshot, tags: tags) } ?? false
+        return canBrowse(AttachmentBrowseFacts(
+            attachmentIsLive: attachment.deletedAt == nil, hasPrivacyVault: attachment.privacyVaultID != nil,
+            owner: owner, ownerIsSingleLive: owner.map(owners.ownerIsLive) ?? false,
+            diaryIsSensitive: sensitive
+        ))
     }
 
     static func isSingleLive(deletedAts: [Date?]) -> Bool {

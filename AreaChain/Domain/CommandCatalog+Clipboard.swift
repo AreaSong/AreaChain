@@ -6,7 +6,7 @@ extension CommandCatalogBuilder {
             entry("clipboard.browse", "/clipboard/browse", .query, "C1:browse")
                 .scope(.clipboard),
             entry("clipboard.search", "/clipboard/search", .query, "C1:search",
-                  [p(.query, .shortText), choice(.mode, "mixed exact regex")])
+                  [p(.query, .shortText).optional(), choice(.mode, "mixed exact regex")])
                 .scope(.clipboard),
             entry("clipboard.copy", "/clipboard/copy", .systemAction, "C2:copy")
                 .targets([.clipboardEntry]).risk([.externalEffect]),

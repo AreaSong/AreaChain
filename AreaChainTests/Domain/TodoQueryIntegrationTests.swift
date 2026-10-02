@@ -118,7 +118,7 @@ struct TodoQueryIntegrationTests {
         #expect(response.diagnostics.isEmpty && response.isCompleteForCoveredTypes)
     }
 
-    @Test func invalidQueriesAndUnsupportedImagesNeverProduceWidenedResults() {
+    @Test func invalidQueriesAndUnknownImagesNeverProduceWidenedResults() {
         let todos = [TodoQueryFixture.todo(1)]
         for text in ["项目 date:2026-02-30", #"项目 "未结束"#, "/tasks /diaries", "/set"] {
             let response = TodoQueryFixture.read(text, todos)
@@ -127,7 +127,8 @@ struct TodoQueryIntegrationTests {
         }
         for text in ["has:image", "项目 has:image", "(has:image | has:image)"] {
             let response = TodoQueryFixture.read(text, todos)
-            #expect(response.queryIsValid && response.state == .blocked && response.matches.isEmpty)
+            #expect(response.queryIsValid && response.state == .evaluated && response.matches.isEmpty)
+            #expect(response.undeterminedObjects.map(\.id) == todos.map(\.id))
             #expect(response.diagnostics.allSatisfy { $0.issue == .imageAssociationUnavailable && !$0.conditionIDs.isEmpty })
             #expect(!response.isCompleteForCoveredTypes)
         }

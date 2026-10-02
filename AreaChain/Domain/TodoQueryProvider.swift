@@ -1,6 +1,6 @@
 import Foundation
 
-/// 仅处理注入的活 todo 快照。先检查完整查询与能力，再匹配；未知条件绝不降格为 true。
+/// 仅处理注入的活 todo 快照；图片条件按对象三态求值，不阻断其他确定结果。
 enum TodoQueryProvider {
     static func read(_ request: TodoQueryRequest) -> TodoQueryResponse {
         let session = request.session
@@ -54,12 +54,13 @@ enum TodoQueryProvider {
             }
             if let issue { result.append(.init(issue: issue, conditionIDs: [condition.id])) }
         }
-        return result
+        guard ContentQueryImageRead.isRequired(request.session.conditions) else { return result }
+        // 图片组合需要完整对象求值；可按条件定位的辅助缺口下移，旧请求保持原前置门禁。
+        return result.filter { ![.missingTagNames, .missingSubtasks].contains($0.issue) }
     }
 
     private static func requirement(_ atom: ContentQueryAtom, request: TodoQueryRequest) -> TodoQueryIssue? {
         switch atom {
-        case .image: return .imageAssociationUnavailable
         case .tag: return request.tagNames == nil ? .missingTagNames : nil
         default: return nil
         }
@@ -74,20 +75,36 @@ enum TodoQueryProvider {
             guard indices.count == 1 else {
                 if indices.first == index {
                     response.diagnostics.append(.init(issue: .duplicateTodoID, object: reference(todo), inputIndices: indices))
+                    response.undeterminedObjects.append(reference(todo))
                 }
                 continue
             }
             guard todo.deletedAt == nil else { continue }
             let problems = recordDiagnostics(todo, request: request, subtaskCounts: subtaskCounts)
-            guard problems.isEmpty else {
+            let objectEvaluation = ContentQueryImageRead.isRequired(request.session.conditions)
+                && problems.allSatisfy { !$0.conditionIDs.isEmpty }
+            guard problems.isEmpty || objectEvaluation else {
                 response.diagnostics += problems.map {
                     .init(issue: $0.issue, conditionIDs: $0.conditionIDs, object: reference(todo), inputIndices: [index])
                 }
+                response.undeterminedObjects.append(reference(todo))
                 continue
             }
-            guard let evidence = matcher.match(todo) else { continue }
-            response.matches.append(.init(id: reference(todo), title: todo.title, notes: todo.notes,
-                                          dayKey: todo.dayKey, createdAt: todo.createdAt, isDone: todo.isDone, evidence: evidence))
+            let result = matcher.evaluate(todo, diagnostics: problems)
+            response.diagnostics += result.diagnostics.map {
+                var diagnostic = $0
+                diagnostic.object = reference(todo)
+                diagnostic.inputIndices = [index]
+                return diagnostic
+            }
+            switch result.truth {
+            case .matches:
+                response.matches.append(.init(id: reference(todo), title: todo.title, notes: todo.notes,
+                                              dayKey: todo.dayKey, createdAt: todo.createdAt, isDone: todo.isDone,
+                                              evidence: result.evidence))
+            case .unknown: response.undeterminedObjects.append(reference(todo))
+            case .doesNotMatch: break
+            }
         }
     }
 
@@ -104,12 +121,22 @@ enum TodoQueryProvider {
             if case .clause(let terms) = condition.value { return terms.contains { $0.atom.dimension == .tag } }
             return false
         }.map(\.id)
-        if !tagConditions.isEmpty, let names = request.tagNames {
-            for id in TagIDList.normalized(TagIDList.parse(todo.tagIDs)) where names[id] == nil {
-                result.append(.init(issue: .missingAssociatedTagName(id), conditionIDs: tagConditions))
+        if !tagConditions.isEmpty {
+            if let names = request.tagNames {
+                for id in TagIDList.normalized(TagIDList.parse(todo.tagIDs)) where names[id] == nil {
+                    result.append(.init(issue: .missingAssociatedTagName(id), conditionIDs: tagConditions))
+                }
+            } else {
+                result.append(.init(issue: .missingTagNames, conditionIDs: tagConditions))
             }
         }
         result += subtaskDiagnostics(todo, conditions: request.session.conditions, counts: subtaskCounts)
+        if request.subtaskData == .unavailable {
+            let ids = request.session.conditions.filter {
+                if case .page(.tagID(_, matching: .taskOrSubtask)) = $0.value { return true }; return false
+            }.map(\.id)
+            if !ids.isEmpty { result.append(.init(issue: .missingSubtasks, conditionIDs: ids)) }
+        }
         return result
     }
 

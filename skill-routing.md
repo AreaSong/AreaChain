@@ -1,5 +1,11 @@
 # AreaChain 技能路由与交付闭环
 
+统一搜索 2H-2 沿 `areachain-workflow` → `areasong-development` 领域/架构路径 → `areachain-verify`。入口 TrashQueryProvider.read 消费同次 TrashTombstoneReader 安全投影，字段匹配、routine 证据、命中提升与完整性见[权威设计第 9.26 节](docs/unified-search-commands.md#926-阶段-2h-2显式墓碑只读搜索与命中归组)。验证六套 TrashQuery、四套 TrashTombstone、活提供者/查询和旧软删除回归，静态质量/原脚本回归、工作流、严格局部 lint 与 Debug 构建。没有更改检查器接口或另建执行器。指定 Cursor verifier 缺失继续 partial，不重复登录或替代复核；真实枚举、恢复/永久删除/文件操作、生产 UI、聚合与独立执行记录均未接线，完成后停止。
+
+统一搜索 2H-1 沿 `areachain-workflow` → `areasong-development` 纯领域/架构治理 → `areachain-verify`。公共输入与读取入口 TrashTombstoneInput / TrashTombstoneReader 见组件目录，唯一交接见[权威设计第 9.25 节](docs/unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)。验证四套墓碑测试、旧 SoftDelete/子任务/附件/回收站与隐私投影定向回归，另跑静态质量及原脚本回归、工作流、严格局部 lint 和 Debug 构建。检查器接口不变，不新增专项执行器；指定 Cursor verifier 缺失仍 partial，不重查登录、不替代复核。不接查询提供者、真实恢复/删除/文件、生产 UI 或认证，完成后停在 2H-1。
+
+统一搜索 2G 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。ClipboardQueryProvider 与旧 ClipboardHistoryRules 共用 ClipboardTextMatching，实际入口见组件目录，唯一交接见[权威设计第 9.24 节](docs/unified-search-commands.md#924-阶段-2g显式剪贴板历史的只读搜索提供者)。验证四套 ClipboardQuery、独立旧算法对照、目录参数/补全、完整查询/转交及其他提供者回归，另跑静态质量/脚本回归、工作流、严格局部 lint 与 Debug 构建。检查器接口/规则不变；指定 Cursor verifier 缺失仍 partial，不重查登录或替代复核。不接真实历史、系统剪贴板、生产 UI、聚合或执行，完成后停在 2G。
+
 这是 AreaChain 的项目级路由契约。它把仓库规则、项目技能、共享组件、实现和验收串成一条冷启动也能执行的流程；它不改变全局技能的启用策略，也不授予安装、签名、真实数据或远端写入权限。
 
 ## 来源优先级
@@ -93,6 +99,8 @@
 4. 最终报告区分：已实现、已验证、已安装、已发布、跳过、未运行和残余风险。
 5. 更新权威文档和组件目录；不生成重复的计划性规范。
 
+第三阶段 F 的数值控件沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`；公共入口为 `DaybookStepper`，只接剪贴板两个数值绑定。原生对照、公共交互与真实消费者分别验证，展示复用 DaybookControlsPreview，隔离沿 ClipboardOptionsFixture。接口与边界见[组件目录](docs/component-catalog.md#第三阶段-f公共数值加减与剪贴板)，稳定实现/几何由原 check_workflow.py 守卫。公共能力仍指定 Cursor verifier 只读复核；工具不可用保持缺口，不以其他代理替代。不进入日期、任务完成或其他控件。
+
 ## 完成状态
 
 项目任务只能使用以下状态词：
@@ -139,3 +147,24 @@
 统一搜索 2B 的活子任务注入快照提供者沿 `areachain-workflow` → 架构治理 → `areachain-verify`；入口与真实消费者登记在组件目录，唯一契约与证据见[权威设计第 9.15 节](docs/unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。验收选五套 SubtaskQuery、四套 TodoQuery 及实际受影响的查询/日期/分类/列表/旧搜索回归，静态门禁、工作流、严格局部 lint 和 Debug 构建；不运行无关原生全量 profile。既有检查器接口/规则未改，继续使用并实际运行原检查和脚本回归，不新建专项检查器。指定 Cursor verifier 不可用仍 partial，不重查认证、不替代复核；不接真实数据/UI/聚合/执行，完成后停在 2B。
 
 统一搜索 2B-R 沿 `areachain-workflow` → 架构治理 → `areachain-verify` 修正页面父级条件、类型分析与两个快照提供者，入口见组件目录和[权威设计第 9.16 节](docs/unified-search-commands.md#916-阶段-2b-r父级页面条件与按类型可满足性)。验证覆盖解析、条件、页面映射/投影、Session、转交、todo/subtask 与旧共同查询，继续原静态/工作流/严格局部 lint 和 Debug 构建；无新增检查器接口或脚本。指定 Cursor verifier 与历史缺口保留，不重查认证、不替代复核；不进入习惯提供者、UI、仓储或执行。
+
+统一搜索 2C-1 沿 `areachain-workflow` → 架构治理（通用开发的纯领域路径）→ `areachain-verify`，维护 on/skipped、单日记录归并及有界历史证据；接口见组件目录，唯一交接见[权威设计第 9.17 节](docs/unified-search-commands.md#917-阶段-2c-1习惯执行日历史证据与只读状态契约)。四套新领域测试与查询/类型/条件/转交、todo/subtask、旧日期/看板/逾期回归串行验证，另运行静态、工作流、严格局部 lint 和 Debug 构建。检查器接口及规则未改，继续实际运行原脚本回归，不新建执行器；指定 Cursor verifier 缺失仍 partial，不重查登录、不替代复核，不进入 2C-2、真实仓储、UI、历史持久化或写入修复。
+
+统一搜索 2C-2 继续 `areachain-workflow` → 架构治理 → `areachain-verify`，入口为 RoutineQueryProvider，复用边界见组件目录，唯一交接见[权威设计第 9.18 节](docs/unified-search-commands.md#918-阶段-2c-2习惯定义只读快照提供者)。验证四套新增 RoutineQuery 与 todo/subtask、2C-1、查询/转交及旧投影回归，另跑 Debug 构建、严格局部 lint、静态和工作流门禁；检查器接口及规则未改，继续原脚本回归，不新建专项检查器。指定 Cursor verifier 缺口保留，不重查认证、不替代复核；开发停在快照定义提供者，不接真实证据适配、仓储、UI 或执行。
+
+统一搜索 2D 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`，入口为 DiaryQueryProvider；组件及实际消费者见目录，唯一交接见[权威设计第 9.19 节](docs/unified-search-commands.md#919-阶段-2d手记只读快照提供者)。验证选五套新增 DiaryQuery、原查询/日期/标签/类型/页面/转交、todo/subtask/routine 与旧搜索回归，另跑 Debug 构建、严格局部 lint、静态和工作流门禁。既有检查器入口/规则未改，继续实际运行原脚本回归，不新增专项检查器。指定 Cursor verifier 缺失保持 partial，不重查认证、不替代复核；合成数据不代替真实隐私接线验收，停在注入快照，不接生产 UI、仓储、附件或执行。
+
+统一搜索 2E-1 继续 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。入口 ImageAssociationReader 与 AttachmentBrowseFacts 见组件目录，唯一关联/覆盖契约和 2E-2 前置见[权威设计第 9.20 节](docs/unified-search-commands.md#920-阶段-2e-1类型化图片拥有者关联完整性与只读可浏览投影)。验证四套新增合成测试、旧 AttachmentAccess 浏览及现有 todo/subtask/routine/diary 回归，运行静态质量、工作流、严格局部 lint 与 Debug 构建；不读取图片或真实库。既有检查器接口/规则不变，继续原脚本回归。指定 Cursor verifier 缺失保留 partial，不重查认证、不替代复核；不接生产 UI、真实隐私适配或完整图片查询，停在 2E-1。
+
+第三阶段 G 沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`，扩展 ModernCheckbox 的 inlineSubtask 表现，只迁移 TaskRowSubtaskInlineList。尺寸、提交差异、测试与后续详情子任务边界统一见[组件目录](docs/component-catalog.md#第三阶段-g公共任务完成控件与行内子任务)。公共复核只交 Cursor verifier，不可用保留缺口；隔离验收复用原 XCTest 与 DaybookControlsPreview，保留真实延迟测试。完成后停止，不迁移详情子任务、日期或其他控件。
+
+第三阶段 H 继续 `areachain-workflow` → `areachain-ui` → `areachain-verify`；只把 SubtaskRowView.toggleCheckboxButton 接入 ModernCheckbox.detailSubtask，集中符号几何、真实行/详情前后对照与触感次数入口见[组件目录](docs/component-catalog.md#第三阶段-h详情子任务完成控件接入)。失败刷新必须在同一宿主自然更新下观察，既有缺陷与迁移回归分开；展示复用 DaybookControlsPreview。稳定入口仍由原 check_workflow.py 维护，公共复核仍只交 Cursor verifier，不可用保留缺口。完成后停止，不迁移日期、分段或其他控件。
+
+统一搜索 2E-2A 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。入口 ImageQueryProvider 与实际复用消费者见组件目录，唯一交接见[权威设计第 9.21 节](docs/unified-search-commands.md#921-阶段-2e-2a公开图片元数据的只读搜索提供者)。验收选五套 ImageQuery、2E-1、完整查询/类型/页面/转交、四类提供者及习惯历史/记录回归，另跑 Debug 构建、严格局部 lint、静态质量与工作流门禁；既有检查器接口/规则未变，继续原脚本回归。指定 Cursor verifier 缺失仍 partial，不重查登录、不替代复核；不读取真实图片、不接仓储/UI/执行、不进入其他提供者 has:image 的 2E-2B。
+
+
+统一搜索 2E-2B 继续 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。共用 ContentQueryImageRead 与三个提供者只消费本次主请求快照，接口见组件目录，唯一交接见[权威设计第 9.22 节](docs/unified-search-commands.md#922-阶段-2e-2b三类记录的图片存在性查询)。验证四套 RecordImageQuery、Todo 辅助未知组合、原提供者/查询/转交、2E-1 与 ImageQuery 回归，另跑 Debug 构建、严格局部 lint、静态质量和工作流门禁。检查器接口/规则不变，原脚本回归照常运行；指定 Cursor verifier 缺失与历史缺口保持 partial，不重查认证或替代复核。不接真实仓储、文件、UI、执行或私密授权能力，完成后停在 2E-2B。
+
+统一搜索 2F 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。入口 TagQueryProvider 与旧目录共用 TagUsage.filteredValues，实际消费者见组件目录，唯一交接见[权威设计第 9.23 节](docs/unified-search-commands.md#923-阶段-2f活标签只读快照搜索提供者)。验证四套 TagQuery、旧标签目录/搜索、查询/页面/转交及各类提供者回归，另跑静态质量/脚本回归、工作流、严格局部 lint 和 Debug 构建；检查器接口/规则不变。指定 Cursor verifier 缺失保持 partial，不重查登录或替代复核；不接真实统计/仓储、生产 UI、聚合或写入，完成后停在 2F。
+
+第四阶段 A 公共下拉沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`；只接 ClipboardHistoryOptions 三处，公共接口 DaybookPicker / DaybookPickerOption 与集中几何见[组件目录](docs/component-catalog.md#第四阶段-a公共下拉选择器与剪贴板)。直接挂载生产页面/控件、复用 ClipboardOptionsFixture 及原展示；原生事件与菜单项动作派发分别取证。公共契约仍只交 Cursor verifier，不可用保留缺口；不继续普通设置、标签合并、自动锁定或分段切换。

@@ -41,7 +41,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
+            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookPicker DaybookPickerOption Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
         contract_docs["AGENTS.md"] += " quality-gates.md\n"
         for name in workflow.REQUIRED_DOCS:
@@ -279,6 +279,33 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookInputShell" in problem["message"] for problem in result["issues"]))
+
+    def test_component_catalog_requires_stepper_and_geometry(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookStepper.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Checkbox {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookStepper", "Stepper"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_picker_and_geometry(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookPicker.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Checkbox {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookPicker", "DaybookPickerOption", "Picker"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_completion_presentation_and_geometry(self):
+        self.make_project()
+        self.write("AreaChain/Theme/ModernComponents.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Checkbox {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("ModernCheckbox", "inlineSubtask", "detailSubtask", "detailSubtaskSymbolSize", "Completion"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_skill_format_rejects_missing_description(self):
         self.make_project()

@@ -50,6 +50,8 @@ enum ContentQueryScopeContract {
 
 /// 映射告诉提供者应取哪个真实字段/投影；绝不通过填假字段让类型通过条件。
 enum ContentQueryFieldBinding: Hashable {
+    /// 图片字段必须再按公开拥有者类型求值，不能将静态可行当作所有图片适用。
+    case requiresImageOwnerType
     case parentCompletion, parentPriority, parentReminder, sourceApplication, parentSourceApplication
     case objectType, routineEnabled, taskOrSubtaskTags, typeNeutral
     case ownText, ownTags, ownPriority, ownReminder, ownCompletion, occurrenceCompletion
@@ -74,15 +76,28 @@ enum ContentQueryApplicability {
     static func requirements(
         for query: ContentQuery, type: CommandObjectType, occurrenceDay: String? = nil
     ) -> [ContentQueryFieldRequirement] {
-        query.clauses.flatMap(\.alternatives).map {
+        let selection = ContentQueryOccurrenceDay.resolve(
+            query.clauses.map { $0.alternatives.map(ContentQuerySemanticTerm.init) }, explicitDay: occurrenceDay)
+        return query.clauses.flatMap(\.alternatives).map {
             .init(dimension: $0.atom.dimension, range: $0.range,
-                  binding: binding($0.atom.dimension, to: type, occurrenceDay: occurrenceDay))
+                  binding: binding(for: $0.atom, to: type, occurrenceDay: selection.dayKey))
         }
+    }
+
+    /// 同一维度的枚举值也有适用性差异，不能把 skipped 当作任务未完成。
+    static func binding(
+        for atom: ContentQueryAtom, to type: CommandObjectType, occurrenceDay: String? = nil
+    ) -> ContentQueryFieldBinding {
+        if case .status(.skipped) = atom, [.todo, .subtask].contains(type) { return .notApplicable }
+        return binding(atom.dimension, to: type, occurrenceDay: occurrenceDay)
     }
 
     static func binding(
         _ dimension: ContentQueryDimension, to type: CommandObjectType, occurrenceDay: String? = nil
     ) -> ContentQueryFieldBinding {
+        if type == .image && [.tag, .priority, .reminder, .status, .on].contains(dimension) {
+            return .requiresImageOwnerType
+        }
         switch dimension {
         case .text:
             return [.todo, .subtask, .routine, .diary, .tag, .image, .clipboardEntry].contains(type) ? .ownText : .notApplicable
@@ -92,6 +107,7 @@ enum ContentQueryApplicability {
         case .reminder: return [.todo, .routine].contains(type) ? .ownReminder : .notApplicable
         case .status: return status(type, occurrenceDay: occurrenceDay)
         case .date: return businessDate(type)
+        case .on: return [.routine, .routineOccurrence].contains(type) ? .occurrenceDay : .notApplicable
         case .created:
             return [.todo, .subtask, .routine, .diary, .image].contains(type) ? .createdAt : .notApplicable
         case .image:
@@ -133,8 +149,10 @@ extension ContentQueryApplicability {
             return binding(.tag, to: type)
         case .noTags: return binding(.tag, to: type)
         case .contentTypes: return .objectType
+        case .sourceApplication where type == .clipboardEntry: return .sourceApplication
         default: break
         }
+        if type == .image { return .requiresImageOwnerType }
         guard [.todo, .subtask, .routine].contains(type) else { return .notApplicable }
         switch predicate {
         case .taskPriority: return type == .subtask ? .parentPriority : .ownPriority

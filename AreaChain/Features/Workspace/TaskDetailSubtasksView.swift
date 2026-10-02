@@ -178,12 +178,8 @@ struct SubtaskRowView: View {
     }
 
     private var toggleCheckboxButton: some View {
-        Button(action: onToggle) {
-            Image(systemName: subtask.isDone ? "checkmark.circle.fill" : "circle")
-                .font(DaybookType.subtitle)
-                .foregroundStyle(subtask.isDone ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-        }
-        .buttonStyle(.plain) // control: 子任务复选框，非按钮语义
+        ModernCheckbox(isDone: subtask.isDone, presentation: .detailSubtask, action: onToggle)
+            .accessibilityIdentifier("detail.subtask.complete.\(subtask.id)")
     }
 
     @ViewBuilder

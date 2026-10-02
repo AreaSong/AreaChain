@@ -244,9 +244,8 @@ enum ClipboardHistoryRules {
         query: String,
         mode: ClipboardSearchMode
     ) -> [ClipboardHistoryRecord] {
-        let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return ordered(items) }
-        return ordered(items).filter { matches($0, needle: needle, mode: mode) }
+        let matching = ClipboardTextMatching(needle: query, mode: mode)
+        return ordered(items).filter { matching.matches($0.plainText) }
     }
 
     static func merging(
@@ -325,47 +324,6 @@ enum ClipboardHistoryRules {
 
     /// 混合模式按字符顺序模糊匹配，因此「cta」也能命中「catalog」。
     static func highlightRanges(in text: String, needle: String, mode: ClipboardSearchMode) -> [Range<String.Index>] {
-        let trimmed = needle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !text.isEmpty else { return [] }
-        switch mode {
-        case .exact:
-            guard let range = text.range(of: trimmed) else { return [] }
-            return [range]
-        case .regex:
-            guard isValidPattern(trimmed),
-                  let expression = try? NSRegularExpression(pattern: trimmed, options: [.caseInsensitive]) else {
-                return []
-            }
-            let nsRange = NSRange(text.startIndex..., in: text)
-            return expression.matches(in: text, range: nsRange).compactMap { Range($0.range, in: text) }
-        case .mixed:
-            return fuzzyRanges(in: text, needle: trimmed)
-        }
-    }
-
-    private static func matches(_ item: ClipboardHistoryRecord, needle: String, mode: ClipboardSearchMode) -> Bool {
-        switch mode {
-        case .mixed:
-            return !fuzzyRanges(in: item.plainText, needle: needle).isEmpty
-        case .exact:
-            return item.plainText.contains(needle)
-        case .regex:
-            return !highlightRanges(in: item.plainText, needle: needle, mode: .regex).isEmpty
-        }
-    }
-
-    private static func fuzzyRanges(in text: String, needle: String) -> [Range<String.Index>] {
-        var search = text.startIndex
-        var ranges: [Range<String.Index>] = []
-        for character in needle {
-            let rest = text[search...]
-            guard let found = rest.firstIndex(where: {
-                String($0).localizedCaseInsensitiveCompare(String(character)) == .orderedSame
-            }) else { return [] }
-            let next = text.index(after: found)
-            ranges.append(found..<next)
-            search = next
-        }
-        return ranges
+        ClipboardTextMatching(needle: needle, mode: mode).ranges(in: text)
     }
 }

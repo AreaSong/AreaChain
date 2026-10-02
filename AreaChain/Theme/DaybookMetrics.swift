@@ -3,6 +3,21 @@ import SwiftUI
 /// 尺寸令牌，单份。基准 = 菜单栏浮层任务页现值（用户决定：菜单栏与工作台统一尺寸）。
 /// 页面不得写字面高度 / 圆角 / 描边；需要不同尺寸时在基座组件的 configure 闭包里改，同一改法出现两次就升级为 variant。
 enum DaybookMetrics {
+    /// 完成标记的真实宿主基线；不与表单方形 Checkbox 或普通按钮点击区混用。
+    enum Completion {
+        static let task = DaybookCompletionGeometry(circle: 17, hit: 20, border: 1.5, check: 1.8, offset: 0.5)
+        static let inlineSubtask = DaybookCompletionGeometry(circle: 12, hit: 14, border: 1.2, check: 1.4, offset: 0)
+        // 详情保留 SF Symbol 固有框；12pt 字号在当前原生基线中命中框为 12×12。
+        static let detailSubtaskSymbolSize = DaybookType.subtitleSize
+    }
+
+    enum Stepper {
+        static let labelSpacing: CGFloat = DaybookSpacing.sm
+        static let buttonSpacing: CGFloat = DaybookSpacing.xs
+    }
+    enum Picker {
+        static let labelSpacing: CGFloat = DaybookSpacing.sm
+    }
     static let inputHeight: CGFloat = 34
     static let controlHeight: CGFloat = 28
     static let rowHeight: CGFloat = 36
@@ -67,4 +82,12 @@ enum DaybookMetrics {
         case .editor: EdgeInsets(top: 4, leading: 4, bottom: 4, trailing: 4)
         }
     }
+}
+
+struct DaybookCompletionGeometry {
+    let circle: CGFloat
+    let hit: CGFloat
+    let border: CGFloat
+    let check: CGFloat
+    let offset: CGFloat
 }

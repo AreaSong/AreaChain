@@ -89,6 +89,8 @@ struct ContentQuerySession: Equatable, CustomStringConvertible, CustomDebugStrin
         ContentQueryTypeValidation.analyze(conditions, requestedTypes: composition?.types ?? [])
     }
 
+    var occurrenceDay: ContentQueryOccurrenceDay { .resolve(conditions) }
+
     /// 兼容的查询准备提示，不代表任一提供者已完整求值；提供者只用结构有效性及自身类型分析。
     var isReady: Bool { isStructurallyValid && !typeAnalysis.possibleTypes.isEmpty }
 

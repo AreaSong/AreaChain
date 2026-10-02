@@ -59,8 +59,9 @@ struct ContentQueryTypeAnalysisTests {
         let selected = ContentQueryTypeValidation.analyze(routine.conditions, requestedTypes: [.routine], occurrenceDay: "2026-10-01")
         #expect(selected.assessment(for: .routine)?.reasons.isEmpty == true)
         let noDay = TodoQueryFixture.session("/tasks status:open status:done")
-        #expect(noDay.typeAnalysis.possibleTypes == [.routine])
+        #expect(noDay.typeAnalysis.possibleTypes.isEmpty)
         #expect(noDay.typeAnalysis.assessment(for: .routine)?.requiresInput == true)
+        #expect(noDay.typeAnalysis.assessment(for: .routine)?.reasons.contains { $0.issue == .contradiction } == true)
     }
 
     @Test func structureErrorsRemainGlobalAndOriginalInputIsUnchanged() {
@@ -88,7 +89,8 @@ struct ContentQueryTypeAnalysisTests {
         #expect(missing.typeAnalysis.possibleTypes == missing.typeAnalysis.requestedTypes)
         #expect(Set(missing.diagnostics.map { String(describing: $0.issue) }) == ["missingSubtasks", "missingTagNames"])
         let image = TodoQueryFixture.read("/tasks has:image", [parent])
-        #expect(image.state == .blocked && image.diagnostics.first?.issue == .imageAssociationUnavailable)
+        #expect(image.state == .evaluated && image.diagnostics.first?.issue == .imageAssociationUnavailable)
+        #expect(image.undeterminedObjects.map(\.id) == [parent.id] && !image.isCompleteForCoveredTypes)
         #expect(image.typeAnalysis.assessment(for: .subtask)?.readRestriction == .inapplicableConditions)
         let duplicate = SubtaskQueryFixture.read(TodoQueryFixture.session("/tasks"), [parent, parent])
         #expect(duplicate.state == .evaluated && !duplicate.isCompleteForCoveredTypes)

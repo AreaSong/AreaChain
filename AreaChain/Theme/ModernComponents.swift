@@ -16,49 +16,78 @@ struct CheckmarkShape: Shape {
     }
 }
 
-/// 现代物理微弹性复选框：支持弹性回弹、Path 对勾描边动画、微触感与无障碍特性
+/// 完成标记只显示外部状态、派发一次动作；待沉底与保存由消费者决定。
 struct ModernCheckbox: View {
+    enum Presentation {
+        case task
+        case inlineSubtask
+        case detailSubtask
+    }
+
     var isDone: Bool
+    var presentation: Presentation = .task
     var action: () -> Void
 
     @State private var hovering = false
     @State private var isAnimating = false
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
+    @Environment(\.daybookButtonReduceMotionPreview) private var previewReduceMotion
+    @Environment(\.isEnabled) private var isEnabled
+
+    private var reduceMotion: Bool { systemReduceMotion || previewReduceMotion }
+
+    private var vectorGeometry: DaybookCompletionGeometry {
+        presentation == .task ? DaybookMetrics.Completion.task : DaybookMetrics.Completion.inlineSubtask
+    }
 
     var body: some View {
         Button(action: handleTap) { checkboxContent }
             .buttonStyle(.plain) // control: 复选框，非按钮语义
-            .onHover { hovering = $0 }
-            .animation(DaybookMotion.snappy(reduceMotion), value: isDone)
-            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+            .onHover { hovering = presentation == .task && $0 }
+            .animation(presentation == .task ? DaybookMotion.snappy(reduceMotion) : nil, value: isDone)
+            .animation(presentation == .task ? DaybookMotion.interactive(reduceMotion) : nil, value: hovering)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
             .accessibilityAddTraits(isDone ? [.isButton, .isSelected] : .isButton)
+            .accessibilityAction { handleTap() }
     }
 
+    @ViewBuilder
     private var checkboxContent: some View {
-        ZStack {
+        if presentation == .detailSubtask {
+            // 详情沿用系统符号的固有布局/命中范围，不继承主任务的勾线生长或缩放。
+            Image(systemName: isDone ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: DaybookMetrics.Completion.detailSubtaskSymbolSize))
+                .foregroundStyle(isDone ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+        } else {
+            vectorCheckboxContent
+        }
+    }
+
+    private var vectorCheckboxContent: some View {
+        let geometry = vectorGeometry
+        return ZStack {
             Circle()
-                .strokeBorder(strokeColor, lineWidth: 1.5)
+                .strokeBorder(strokeColor, lineWidth: geometry.border)
                 .background(
                     Circle()
                         .fill(isDone ? DaybookPalette.accent.base : Color.clear)
                 )
-                .frame(width: 17, height: 17)
+                .frame(width: geometry.circle, height: geometry.circle)
 
             CheckmarkShape()
                 .trim(from: 0, to: isDone ? 1 : 0)
                 .stroke(
                     DaybookPalette.checkmark,
-                    style: StrokeStyle(lineWidth: 1.8, lineCap: .round, lineJoin: .round)
+                    style: StrokeStyle(lineWidth: geometry.check, lineCap: .round, lineJoin: .round)
                 )
-                .frame(width: 17, height: 17)
+                .frame(width: geometry.circle, height: geometry.circle)
                 .animation(DaybookMotion.checkmark(reduceMotion), value: isDone)
                 .accessibilityHidden(true)
         }
-        .frame(width: 20, height: 20)
-        .offset(y: 0.5)
-        .scaleEffect(isAnimating ? 0.88 : (hovering ? 1.06 : 1.0))
+        .frame(width: geometry.hit, height: geometry.hit)
+        .offset(y: geometry.offset)
+        .scaleEffect(presentation == .task ? (isAnimating ? 0.88 : (hovering ? 1.06 : 1.0)) : 1)
         .contentShape(Rectangle())
     }
 
@@ -69,12 +98,15 @@ struct ModernCheckbox: View {
         if hovering {
             return DaybookPalette.accent.base.opacity(0.8)
         }
-        return DaybookPalette.text.primary.opacity(0.24)
+        return presentation == .task
+            ? DaybookPalette.text.primary.opacity(0.24)
+            : DaybookPalette.text.secondary.opacity(0.4)
     }
 
     private func handleTap() {
-        DaybookHaptics.tap()
-        if !reduceMotion {
+        guard isEnabled else { return }
+        if presentation != .detailSubtask { DaybookHaptics.tap() }
+        if presentation == .task && !reduceMotion {
             withAnimation(DaybookMotion.snappy) {
                 isAnimating = true
             }

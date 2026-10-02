@@ -1,5 +1,11 @@
 # 共享组件与复用目录
 
+统一搜索 2H-2 新增 [TrashQueryProvider.read](../AreaChain/Domain/TrashQueryProvider.swift)、[TrashQueryRequest / Response / Match / Group](../AreaChain/Domain/TrashQueryRead.swift)、[安全字段匹配](../AreaChain/Domain/TrashQueryMatching.swift)、[字段视图](../AreaChain/Domain/TrashQueryFields.swift)及 [routine 证据适配](../AreaChain/Domain/TrashQueryTemporal.swift)。Reader 内最小扩展 ImageOwnerProjection 父属性和手记标签合法性标记；身份、删除关联、保护与恢复描述仍由原 TrashTombstone 层负责。实际消费者只有六套 TrashQuery 测试及共享夹具；无仓储/UI/业务执行。完整支持、计数、辅助输入和验证只在[权威设计第 9.26 节](unified-search-commands.md#926-阶段-2h-2显式墓碑只读搜索与命中归组)维护。
+
+统一搜索 2H-1 新增 [TrashTombstoneInput / TrashReadCoverage](../AreaChain/Domain/TrashTombstoneInput.swift)、[TrashTombstoneReader](../AreaChain/Domain/TrashTombstoneReader.swift) 与 [TrashTombstoneResponse / RestoreConditions](../AreaChain/Domain/TrashTombstoneRead.swift)。复用现有六类快照/元数据、SoftDelete 精确同戳规则及 DiaryQueryPrivacy 安全投影；索引与保护投影分别在 TrashTombstoneIndex / TrashTombstoneProjection。实际消费者只有 TrashTombstoneRelationTests、CoverageTests、PrivacyTests、CompatibilityTests；没有接 TrashPage、普通图片提供者或执行器。覆盖、唯一身份、分组/计数与 2H-2 限制只在[权威设计第 9.25 节](unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)维护。
+
+统一搜索 2G 的 [ClipboardQueryProvider.read](../AreaChain/Domain/ClipboardQueryProvider.swift)、[互斥请求与记录覆盖](../AreaChain/Domain/ClipboardQueryRequest.swift)、[最小结果与负载说明](../AreaChain/Domain/ClipboardQueryRead.swift)及 [ClipboardQueryMatching](../AreaChain/Domain/ClipboardQueryMatching.swift)，当前仅四套 ClipboardQuery 领域测试消费。旧 ClipboardHistoryRules.filtered / highlightRanges 与新提供者共用 [ClipboardTextMatching](../AreaChain/Domain/ClipboardTextMatching.swift)；旧 Session.visibleItems 和 ClipboardHistoryBrowser 高亮间接沿原入口消费。目录 clipboard.search 的 query 最小改为可省略，mode 仍显式必选；sourceApplication 仅扩充 clipboardEntry 的真实字段绑定。完整性、范围、模式/正则参数边界、验证和 partial 状态见[权威设计第 9.24 节](unified-search-commands.md#924-阶段-2g显式剪贴板历史的只读搜索提供者)。没有存储、系统剪贴板、UI、聚合、执行或新检查器入口。
+
 这是 AreaChain 的复用导航，不是新的设计系统，也不是把所有 `struct` 都承诺成公共 API。新任务必须先查本目录，再查看声明和真实调用方；如果目录与代码不一致，以代码、测试和 `AGENTS.md` 的当前契约为准，并在同一任务中修正目录。
 
 ## 1. 复用原则
@@ -23,11 +29,11 @@
 | 语法输入 | `SyntaxTextField`、`SyntaxTextEditor` | [SyntaxTextField.swift](../AreaChain/Theme/SyntaxTextField.swift)、[SyntaxTextEditor.swift](../AreaChain/Theme/SyntaxTextEditor.swift) | 任务/手记语法高亮和候选输入；必须提供正确的 `SyntaxInputContext`，搜索不能借此创建标签。触发检测和高亮正则编译一次。同一 `NSTextStorage` 在文本、字体、默认色和外观未变时不整段重建属性。外观键取自该 storage 所属文本视图或窗口的 `effectiveAppearance`，没有宿主时才回退 `NSApp`。 |
 | 候选与浮层 | `SyntaxAutocompletePopup`、`SyntaxOverlay` | [SyntaxAutocompleteView.swift](../AreaChain/Theme/SyntaxAutocompleteView.swift)、[SyntaxOverlay.swift](../AreaChain/Theme/SyntaxOverlay.swift) | 就近消费输入锚点，保留 Esc 先关闭候选、焦点和定位；不要在多个宿主重复呈现同一浮层。 |
 | 按钮 | `DaybookButtonStyle`、`DaybookIconButton`、`CommandReturnButton` | [DaybookButtonStyle.swift](../AreaChain/Theme/DaybookButtonStyle.swift)、[CommandReturnButton.swift](../AreaChain/Theme/CommandReturnButton.swift) | 复用尺寸、禁用、悬停、可访问性和 Command 反馈；图标按钮需有语义标签。`daybookMenuLabel` 与按钮共享内部视觉基座，保留 `fitsLabel` 和系统菜单语义；文字仍按内容加边距，图标为 28/22/18 正方形。原生焦点与显式 `isFocused` 均可显示焦点环，减弱动态效果禁用按下缩放。测试专用 `DaybookControlsPreview` 的开发展示见[工程手册](engineering.md#按钮开发展示与验收)。 |
-| 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。消费者含新建重复事项、管理行、隐私标签多选、剪贴板及普通设置各三项偏好；表现及提交差异见本页第三阶段 A–D。 |
+| 启用开关 | `DaybookToggleStyle` | [DaybookToggleStyle.swift](../AreaChain/Theme/DaybookToggleStyle.swift)、[DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Toggle` | 默认显示原标签；紧凑布局传 `hiddenLabel: LocalizedStringKey`，同时提供辅助名称，并保留消费者 `labelsHidden` / help 意图。原生 Toggle 的 button 样式承载鼠标与辅助操作；显式焦点容器独占空格按下/释放，临时按下态不镜像业务布尔值。统一轨道、滑块及反馈，无保存、导航或权限行为。几何 34×20、滑块 16、点击高度 28 集中维护；不提供颜色覆盖。消费者含新建重复事项、管理行、隐私标签多选与三个表单布尔项、剪贴板及普通设置各三项偏好；表现及提交差异见本页第三阶段 A–E。 |
 | 表面与分组 | `daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar` | [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift)、[DaybookChip.swift](../AreaChain/Theme/DaybookChip.swift)、[DaybookSectionHeader.swift](../AreaChain/Theme/DaybookSectionHeader.swift)、[DaybookSegmentedBar.swift](../AreaChain/Theme/DaybookSegmentedBar.swift) | 共享表面、芯片、分节头、分隔线和分段切换；不要在 Feature 自绘同义基座。 |
 | 页面和工作台布局 | `DaybookPage`、`DaybookPageHeader`、`WorkspaceLayout`、`WorkspaceSidebarRow` | [DaybookPage.swift](../AreaChain/Theme/DaybookPage.swift)、[WorkspaceLayout.swift](../AreaChain/Theme/WorkspaceLayout.swift) | 页面页头、侧栏和内容宽度遵循已有宿主；`workspaceEmbedded` 只表达能力/布局差异，不切换颜色、字体或主题。 |
 | 空态与周期栏 | `DaybookEmptyState`、`DaybookPeriodBar` | [DaybookChrome.swift](../AreaChain/Theme/DaybookChrome.swift) | 区分无数据、筛选无结果和失败；可见文案走本地化。 |
-| 任务完成反馈 | `ModernCheckbox`、`ModernTaskTitle` | [ModernComponents.swift](../AreaChain/Theme/ModernComponents.swift) | 只在任务完成语义和现有待沉底/减弱动态效果契约一致时复用；不要把它当作任意布尔开关。 |
+| 任务完成反馈 | `ModernCheckbox`、`ModernTaskTitle` | [ModernComponents.swift](../AreaChain/Theme/ModernComponents.swift) | `ModernCheckbox` 默认 task，行内子任务使用 inlineSubtask，详情行使用 detailSubtask；外部 isDone/action，提交由消费者管理。几何在 DaybookMetrics.Completion；契约与反馈差异见本页第三阶段 G/H。ModernTaskTitle 不变。 |
 
 `CaptureAttributesView`、`SyntaxHelpCard`、`MenuBarStatusImage` 和 `KeyWindowHost` 也是已有专用基座，但它们分别绑定属性捕获、语法帮助、菜单栏状态图标和原生窗口宿主；复用前必须检查其宿主契约：
 
@@ -118,6 +124,36 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 后续仅记录：`PrivacySetupSheet` 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 仍为原生 Toggle，须分别核对内容保护和认证方式的表单契约；`ClipboardHistoryOptions` 的条数/文本上限 Stepper 及其他数值控件未迁移。任务完成圆圈和子任务勾选继续保持各自业务，本阶段到 D 停止。
 
+### 第三阶段 E：隐私设置剩余布尔控件
+
+[PrivacySetupSheet.swift](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 的 `privacy.legacy.include`、`privacy.methods.system`、`privacy.methods.master` 已在生产 sheet 的隔离宿主确认均为前置方形复选框，逐项接入 `DaybookToggleStyle(.checkbox)`；系统方式、主密码方式、标签、旧遮罩选项的顺序和 480pt 表单宽度保持。`tagChoices` 原样保留，不在父容器设置样式，不新增公共 API、包装、状态或令牌。
+
+绑定仍分别属于 `includeLegacy`、`useSystem`、`useMaster`；创建/管理初始化、系统不可用禁用和回退、密码与备份校验、候选计算、busy、取消和密码清空时机均沿原实现。切换不保存、不创建 vault、不认证或保护内容。测试为 [PrivacySetupToggleTests.swift](../AreaChainTests/Features/PrivacySetupToggleTests.swift)，直接复用 `SettingsButtonTestSupport`、`SystemPageHost`、`PrivacyButtonSheetHost`，显式 locale、内存模型/配置、合成旧内容和 fake keys；所有 sheet 均传 `probeSystem: false`，只编辑与取消，不点击 Apply。原标签与公共 Toggle 回归、实际证据及未验项见[工程手册](engineering.md#第三阶段-e隐私设置剩余布尔控件2026-10-01)。
+
+阶段 E 定向清单：生产业务共 12 处 Toggle 定义，均已使用公共样式。重复事项 2 处与普通设置 3 处为滑动开关；剪贴板 3 处、隐私 3 处及标签循环 1 处为方形复选框。`DaybookToggleStyle` 内部 `Toggle(configuration)` 属公共实现，测试原生对照及 `DaybookControlsPreview` 控制面板另列，不机械迁移。检查时未发现并发新增的业务遗漏；该清单不证明其他手势控件已统一。下一阶段仅保留 `ClipboardHistoryOptions` 两个 Stepper、其他数值控件、任务完成圆圈与子任务勾选线索，本轮到 E 停止。
+
+### 第三阶段 F：公共数值加减与剪贴板
+
+[DaybookStepper.swift](../AreaChain/Theme/DaybookStepper.swift) 是 Theme 的数值加减入口，提供 `Binding<Int>` / `Binding<Double>`、闭区间、步长和 ViewBuilder 标签两个重载；整体禁用走环境。标签与当前值、辅助增减操作属于同一个语义元素。按钮复用 `DaybookButtonStyle(.icon)` 的 28pt 点击区、颜色、字号、按下与减弱效果；专用间距在 [DaybookMetrics.swift](../AreaChain/Theme/DaybookMetrics.swift) 的 `Stepper`。没有数字输入、单位选择或持久化状态。键盘桥接在 [DaybookStepperKeyboard.swift](../AreaChain/Theme/DaybookStepperKeyboard.swift)，仅保存瞬时方向信号并复用 NSStepper 响应；鼠标点击不改变相邻文本焦点。桥接同时提供内部窗口接入标记，拆卸后不能向原 Binding 继续写入；这不改变首写、数值或重复频率。
+
+每次操作回读 Binding；原生对照确定最后一步截到端点（990/995→999，25→20），不把初值对齐步长。整数防溢出；小数保留合法中间精度，只消除本次数值运算在目标端点的舍入尾差，显示格式不参与运算。生产仅 [ClipboardHistoryOptions.swift](../AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift) 的 limit / interval 两处接入：20…999 / 10 / 默认 200，0.1…2 秒 / 0.1 / 默认 0.5；继续使用原 `clipboard.limit` / `clipboard.interval` 标签。
+
+业务范围仍由 `ClipboardHistoryRules` 维护，写入仍走 `session.setLimit` / `setInterval`。limit 立即更新偏好并尝试裁剪；历史保存失败保留旧历史、图片和错误提示，但不回滚 limit。置顶不占名额，成功才按原顺序裁剪并清理图片。interval 保存后只重排已有 monitor；取消只关闭，不撤销偏好或恢复裁剪。其他选项及未提交 pattern/typeName 保留。
+
+展示直接扩展 `DaybookControlsPreview`；验证入口为 [DaybookStepperTests.swift](../AreaChainTests/Theme/DaybookStepperTests.swift)、[原生基线](../AreaChainTests/Theme/DaybookStepperBaselineTests.swift)、[交互测试](../AreaChainTests/Theme/DaybookStepperInteractionTests.swift) 与 [ClipboardStepperConsumerTests.swift](../AreaChainTests/Features/ClipboardStepperConsumerTests.swift)。消费者复用 ClipboardOptionsFixture 的随机目录、suite、nil pasteboard 和无副作用 gate，预写合成历史；不调用 shared/start/stage。实际证据和未验项见[工程手册](engineering.md#第三阶段-f公共数值加减与剪贴板2026-10-01)。现存日期 `.stepperField` 及任务完成等控件不迁移。
+
+### 第四阶段 A：公共下拉选择器与剪贴板
+
+[DaybookPicker.swift](../AreaChain/Theme/DaybookPicker.swift) 提供 `DaybookPicker<Value: Hashable>`：本地化 title、唯一 `Binding<Value>` 和 `[DaybookPickerOption<Value>]`。选项 value 同时为稳定 id，必须唯一；label 为独立 `String.LocalizationValue`，按环境 locale 解析。顺序由调用方提供，不从翻译或位置推导业务值，不提供搜索、多选、分组或注册表。
+
+入口复用 `daybookMenuLabel` 的 regular 高度、间距/颜色/悬停，标签间距集中在 `DaybookMetrics.Picker`；原生无边框 NSPopUpButton 负责双箭头、菜单、勾选与键盘追踪，保留弹出选择器角色、名称、当前值与辅助操作。入口按最长选项预留宽度，窄窗原生尾部截断并保留完整 tooltip/菜单文字。挂载/外部更新不写；原生基线中再次选择当前项仍提交一次，setter 返回后立即回读 Binding，拒绝时恢复原选中态。空列表显示“无可用选项”并禁用；值缺失显示“当前选项不可用”的禁用占位项、无选中勾，仍允许主动选择有效项。取消、禁用、旧菜单及拆卸后的迟到动作不提交。
+
+唯一生产消费者为 [ClipboardHistoryOptions.swift](../AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift) 的三处：searchMode（mixed/exact/regex，默认 mixed）、panelAnchor（cursor/center，默认 cursor）、clickAction（copy/paste，默认 copy）。继续使用原标签、枚举 rawValue、areachain.clipboard 偏好键与 setSearchMode/setPanelAnchor/setClickAction；立即保存，取消只关闭，重开/重建读取偏好。公共层不接触筛选、定位、监控或复制粘贴；原 Toggle、Stepper、按钮、输入及页面 440×560 保留，单行选择高度由原生 24 调整到共享 regular 28。
+
+展示直接扩展 [DaybookControlsPreview](../AreaChainTests/Theme/DaybookControlsPreview.swift)，保留原控制面板，新增默认、禁用、长标签及外部更新。验证为 [DaybookPickerTests](../AreaChainTests/Theme/DaybookPickerTests.swift)、[ClipboardPickerConsumerTests](../AreaChainTests/Features/ClipboardPickerConsumerTests.swift) 与原剪贴板 Toggle/Stepper 消费者；沿 ClipboardOptionsFixture 随机目录/suite、nil pasteboard、无副作用 gate，只经隔离 XCTest 启动。稳定入口由 check_workflow.py 守卫；实际证据及 Cursor verifier 缺口见[工程手册](engineering.md#第四阶段-a公共下拉选择器与剪贴板2026-10-02)。
+
+后续清单只登记：SettingsSections 的语言、外观、四象限截断三个 Picker；TagManagementPage 的合并目标；PrivacySettingsSection 的自动锁定；CalendarPage 的 calendar.span 原生分段及菜单栏 DaybookSegmentedBar 各自核对后再迁移。展示控制面板语言 Picker 仍为原生；本轮到 A 停止。
+
 ## 3. Feature 级复合组件
 
 这些不是全局通用控件，而是带业务语义的可复用组合。新入口优先复用它们的状态和回调契约，不复制内部筛选或保存逻辑。
@@ -205,3 +241,38 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 统一搜索 2B 新增 [SubtaskQueryProvider.read](../AreaChain/Domain/SubtaskQueryProvider.swift)、[请求/结果/覆盖与诊断](../AreaChain/Domain/SubtaskQueryRead.swift) 和 [SubtaskQueryMatching](../AreaChain/Domain/SubtaskQueryMatching.swift)，只由五套 SubtaskQuery Domain 测试消费。自身标题/标签/完成态/创建时间与父级日期及类型化页面约束分开；身份为 subtask＋自身 UUID，另带父 todo 引用。2A / 2B 共用 [ContentQuerySnapshotMatching / Validation](../AreaChain/Domain/ContentQuerySnapshotMatching.swift) 的值匹配与校验、[TodoQueryPageRules](../AreaChain/Domain/TodoQueryPageRules.swift) 的父项页面入围；原 ContentQueryMatchEvidence 等类型继续留在 TodoQueryRead.swift，仅增 parent 字段。真实消费者回归包含原四套 TodoQuery 测试，没有仓储/UI/执行接线；规则、完整性、缺口和证据见[权威设计第 9.15 节](unified-search-commands.md#915-阶段-2b活子任务独立结果的只读快照提供者)。
 
 统一搜索 2B-R 扩展 [ContentQueryTypeAnalysis / TypeValidation](../AreaChain/Domain/ContentQueryTypeAnalysis.swift)、[页面字段绑定](../AreaChain/Domain/ContentQueryScope.swift) 和 [taskPriority 页面谓词](../AreaChain/Domain/ContentQueryCondition.swift)，由 Session、todo/subtask 提供者及 ContentQueryTypeAnalysisTests / ContentQueryPagePriorityTests 消费。结构诊断与按类型语义分析分离，旧匹配算法、页面映射/投影、Reducer 与转交继续复用；响应不以空 matches 代替状态或覆盖。对象字段、兼容变化与保留缺口只维护在[权威设计第 9.16 节](unified-search-commands.md#916-阶段-2b-r父级页面条件与按类型可满足性)。
+
+统一搜索 2C-1 在原 Parser / Validation / Session / TypeAnalysis 扩展 on/skipped；[ContentQueryOccurrenceDay](../AreaChain/Domain/ContentQueryOccurrenceDay.swift) 保留唯一执行日，独立于 [ContentQueryDateWindow](../AreaChain/Domain/ContentQueryDateWindow.swift) 的 date 窗口。[RoutineCheckReading / Coverage](../AreaChain/Domain/RoutineCheckReading.swift) 归并注入记录并报告不完整/重复/冲突；[RoutineScheduleEvidence / History](../AreaChain/Domain/RoutineScheduleEvidence.swift) 和 [RoutineQueryEvaluation](../AreaChain/Domain/RoutineQueryEvaluation.swift) 组合有界历史证据、日期存在性和单日状态。新读取接口仅由四套 Domain 测试消费；原 todo/subtask 提供者负责拒绝新不适用条件。旧看板/逾期索引、CheckSnapshot 和仓储写入均不接新归并器。2C-2 输入与 partial 证据只维护在[权威设计第 9.17 节](unified-search-commands.md#917-阶段-2c-1习惯执行日历史证据与只读状态契约)。
+
+统一搜索 2C-2 新增 [RoutineQueryProvider.read](../AreaChain/Domain/RoutineQueryProvider.swift)、[请求/定义结果/诊断](../AreaChain/Domain/RoutineQueryRead.swift)、[匹配器](../AreaChain/Domain/RoutineQueryMatching.swift) 与[旧页面适配](../AreaChain/Domain/RoutineQueryPageRules.swift)，仅由 RoutineQueryProviderTests / RoutineQueryTemporalTests / RoutineQueryPageTests / RoutineQueryBoundaryTests 消费。复用完整 Session、类型分析、快照值匹配、2C-1 的有界历史与记录读取、Classification/ItemsListing/AgendaProjection；最小追加公共命中字段及存在性原因，todo/subtask 和旧投影回归同步验证。支持/不确定性/旧页面边界与 partial 证据只在[权威设计第 9.18 节](unified-search-commands.md#918-阶段-2c-2习惯定义只读快照提供者)维护，不接仓储/UI/执行。
+
+统一搜索 2D 新增 [DiaryQueryProvider.read](../AreaChain/Domain/DiaryQueryProvider.swift)、[请求/安全投影/覆盖/诊断](../AreaChain/Domain/DiaryQueryRead.swift)、[匹配器](../AreaChain/Domain/DiaryQueryMatching.swift) 和[局部三态/敏感判定](../AreaChain/Domain/DiaryQueryEvaluation.swift)，实际消费者仅五套 DiaryQuery Domain 测试。复用 DiarySnapshot、DiaryPrivacy、完整 Session/Applicability/日期窗口、快照值匹配和 TagSyntax/TagIDList；contentTypes 最小允许 diary，公共命中字段仅追加 diaryBody/diaryDay，已有提供者同步回归。隐藏分支没有正文或正文证据存储位，未知对象与类型覆盖/严重度分开。输入辅助事实、旧行为差异、指定复核 partial 与后续真实适配只见[权威设计第 9.19 节](unified-search-commands.md#919-阶段-2d手记只读快照提供者)；不接真实库、vault、UI、附件或执行。
+
+统一搜索 2E-1 的 [ImageAssociationReader](../AreaChain/Domain/ImageAssociationReader.swift)、[输入与覆盖](../AreaChain/Domain/ImageAssociationRead.swift)、[拥有者解析](../AreaChain/Domain/ImageOwnerResolution.swift)及[所属属性投影](../AreaChain/Domain/ImageOwnerProjection.swift)只由四套 ImageAssociation / AttachmentBrowseCompatibility 领域测试消费，为后续图片与记录 has:image 提供类型化基础；尚未接提供者或 UI。[AttachmentBrowseFacts](../AreaChain/Domain/AttachmentBrowseFacts.swift)由原 AttachmentAccess.canBrowse 和新读取器共用，旧实际消费者仍是附件中心、工作台搜索与相关列表。完整性、墓碑、公开/受保护及后续接口只维护在[权威设计第 9.20 节](unified-search-commands.md#920-阶段-2e-1类型化图片拥有者关联完整性与只读可浏览投影)，不能拿活 UUID 集合或可浏览列表推导 has:image 的否定。
+
+### 第三阶段 G：公共任务完成控件与行内子任务
+
+公共入口仍为 [ModernCheckbox](../AreaChain/Theme/ModernComponents.swift)，`isDone/action` 旧调用兼容，新增 `presentation: .inlineSubtask`。默认 `.task` 保留圆圈 17、点击框 20、1.5 边框/1.8 勾线、0.5 纵偏移及原悬停/点击缩放；行内子任务保留圆圈 12、点击框 14、1.2 边框/1.4 勾线，无主任务缩放与悬停改色。尺寸集中在 [DaybookMetrics.Completion](../AreaChain/Theme/DaybookMetrics.swift)，没有颜色覆盖或第二份完成态。圆圈、CheckmarkShape、状态色及矩形命中共用；两种表现各点击一次调用 action、触感各一次；辅助激活动作显式转接同一入口，并受 isEnabled 守卫。系统减弱效果与已有展示环境值只影响动效，不改变提交。原子任务空心图形的 AX 范围为 12，中心合成鼠标点击未命中；本次共用 contentShape 后 14pt 点击框含空心区域，这是明确的命中修正，视觉尺寸不变。
+
+[TaskRowSubtaskInlineList](../AreaChain/Features/Tasks/TaskRowSubtaskMiniViews.swift) 删除独立圆圈/勾线/描边/颜色/动效绘制和额外触感调用，只传外部快照与 UUID；onToggle 为 nil 时仍无保存动作。行组合、长标题、ModernTaskTitle 留在原处。动作仍经 TaskRow.dispatch → TaskRowFactory → DayBoardMutations.toggleSubtask → 原仓储/事务；不接 PendingCompletionManager，不改变父子级联、日期、排序、计数、失败处理。
+
+默认消费者为 TaskRow、TaskDetailHeaderBar、QuadrantChip，调用不改。TaskRow 自行使用 PendingCompletionManager；四象限继续显式 `isDone: false`，不由公共控件推断。G 阶段时详情子任务尚未接入；后续接入及原宿主失败刷新差异见本页第三阶段 H。日期和其他控件不在 G/H。
+
+验证入口：ModernCheckboxTests、InlineSubtaskCompletionTests、TaskRowInteractionTests、PendingCompletionTimingTests（显式关闭延迟跳过）、QuadrantLayoutTests；复用 [DaybookControlsPreview](../AreaChainTests/Theme/DaybookControlsPreview.swift) 展示普通/紧凑、双状态、禁用与外部更新。正常测试目标及原串行 PrivacyQA XCTest 启动，实际证据与未验项见[工程手册](engineering.md#第三阶段-g公共任务完成控件与行内子任务2026-10-01)。`check_workflow.py` 只守卫稳定入口/几何，不代替行为测试；独立复核仍指定 Cursor verifier。
+
+### 第三阶段 H：详情子任务完成控件接入
+
+[SubtaskRowView.toggleCheckboxButton](../AreaChain/Features/Workspace/TaskDetailSubtasksView.swift) 改为 `ModernCheckbox(isDone:presentation:action:)` 的 `.detailSubtask`，消费者删除独立 Button、circle/checkmark.circle.fill 图标、字体及状态颜色。公共实现保留 SF Symbol 固有布局；字号由 `DaybookMetrics.Completion.detailSubtaskSymbolSize` 复用 subtitleSize（12pt），当前 QA 辅助框及中心/水平边缘命中为 12×12，没有改成主任务 20 或行内 14 的矩形点击框。未完成为 text.secondary、完成为 accent.base；没有触感、缩放、悬停改色或勾线生长，默认/行内的既有反馈继续保留。使用公共中英文辅助名称及选中状态，程序化激活与鼠标共用一次动作和禁用守卫。
+
+原行仍由 [TaskDetailSubtasksView](../AreaChain/Features/Workspace/TaskDetailSubtasksView.swift) 与 [WorkspaceFilteredListView.subtaskSection](../AreaChain/Features/Workspace/WorkspaceFilteredListView.swift) 两处组合；后者随同一生产行复用表现，没有另迁移页面。公共控件只消费外部 Bool 并派发原动作，不保存、不镜像模型状态、不引入 PendingCompletionManager。双击标题、Return/Escape、失焦保存/失败草稿、外部标题刷新、标签、拖动排序及删除仍留原行；ModernTaskTitle 和详情删除线不改。
+
+复用 ModernCheckboxTests / InlineSubtaskCompletionTests / SubtaskTitleEditingTests / TaskRowInteractionTests / PendingCompletionTimingTests 和模型/事务回归；新增 [DetailSubtaskCompletionTests](../AreaChainTests/Features/DetailSubtaskCompletionTests.swift) 与[同一原生宿主夹具](../AreaChainTests/Features/DetailSubtaskCompletionSupport.swift)直接挂载真实行、详情与标签页。[ModernCheckboxFeedbackTests](../AreaChainTests/Theme/ModernCheckboxFeedbackTests.swift) 在串行测试内临时拦截系统 performer 并恢复，核对反馈调用次数，不以禁用动画证明无触感；没有生产反馈注入 API。展示仍是 [DaybookControlsPreview](../AreaChainTests/Theme/DaybookControlsPreview.swift)，加入详情、双状态禁用及外部更新。`check_workflow.py` 守住原公共入口、detailSubtask 与 detailSubtaskSymbolSize；不证明运行时契约。失败基线、最终证据及指定 Cursor verifier 缺口见[工程手册](engineering.md#第三阶段-h详情子任务完成控件接入2026-10-01)。
+
+H 定向完成操作清单：TaskRow、TaskDetailHeaderBar、QuadrantChip、TaskRowSubtaskInlineList 和 SubtaskRowView 均使用 ModernCheckbox。批量完成/取消仍是 BatchActionBar 的系统菜单命令；键盘及 CompletionUndo 是原动作入口，没有独立圆圈组件。DayBoardSections 的完成分节、TaskRowSubtaskBadge 的计数/展开图标、TaskDetailScheduleSection 的检查日状态及搜索结果等是状态/导航展示，不当作遗漏迁移。日期、分段和其他控件停在原实现；此清单是定向静态核对，不等于全应用交互验收。
+
+统一搜索 2E-2A 新增 [ImageQueryProvider.read](../AreaChain/Domain/ImageQueryProvider.swift)、[请求/结果/覆盖](../AreaChain/Domain/ImageQueryRead.swift)、[文件名与所属属性匹配](../AreaChain/Domain/ImageQueryMatching.swift)和[日期/状态适配](../AreaChain/Domain/ImageQueryTemporal.swift)，实际消费者仅五套 ImageQuery Domain 测试。它成为 ImageAssociationReader / ImageBrowseProjection / ImageOwnerProjection 的真实消费者，复用完整 Session、SnapshotMatching/Validation、OccurrenceDay/DateWindow、RoutineScheduleHistory/CheckReading/OccurrenceEvaluation；不接真实库或图片 IO。Applicability 新增按图片拥有者分支求值，contentTypes 最小允许 image；History 增加身份/创建日标量初始化，旧调用保留。公共证据追加 filename/owner 字段及 ownerObject；todo/subtask/diary/routine 一并回归。唯一支持矩阵、覆盖/保护与 2E-2B has:image 交接见[权威设计第 9.21 节](unified-search-commands.md#921-阶段-2e-2a公开图片元数据的只读搜索提供者)。原检查器接口/规则不变，复用既有检查与脚本回归，无新增专项执行器。
+
+
+统一搜索 2E-2B 的共用入口为 [ContentQueryImageInput / Read](../AreaChain/Domain/ContentQueryImageRead.swift) 与[三类求值适配](../AreaChain/Domain/ContentQueryImageEvaluation.swift)，由 TodoQueryMatching、RoutineQueryProvider / Matching、DiaryQueryProvider / Matching 实际消费。每次 read 使用当前主请求拥有者快照，Diary 复用唯一 metadata，调用原 ImageAssociationReader / association(for:)；不接受旧响应、另一份 owner/隐私表或文件句柄。Todo 新增[对象三态组合](../AreaChain/Domain/TodoQueryEvaluation.swift)及未知对象/诊断影响，Routine/Diary 沿原组合器；没有 has:image 时不扫描附件。四套 RecordImageQuery 合成测试及原提供者/2E-1/2E-2A 回归覆盖新入口，契约和 partial 状态只见[权威设计第 9.22 节](unified-search-commands.md#922-阶段-2e-2b三类记录的图片存在性查询)。无新检查器接口/规则或生产接线。
+
+统一搜索 2F 新增 [TagQueryProvider.read](../AreaChain/Domain/TagQueryProvider.swift)、[只读快照/请求/结果](../AreaChain/Domain/TagQueryRead.swift) 与[使用统计覆盖](../AreaChain/Domain/TagQueryUsage.swift)，当前仅四套 TagQuery 领域测试消费。原 TagUsage.filtered 与新提供者共用 [TagUsage.filteredValues / TagListFacts](../AreaChain/Domain/TagUsageFiltering.swift)，旧消费者为 TagManagementPage.displayed/unusedTags；TagUsage.records/subjects 统计口径和生产页面未改。公共 contentTypes 最小增加 tag，命中字段增加 tagName；其余提供者及旧目录共同输入回归。原名/关联条件、完整性、显式排序与 partial 验收唯一维护在[权威设计第 9.23 节](unified-search-commands.md#923-阶段-2f活标签只读快照搜索提供者)。无仓储、UI、聚合、写入或新检查器入口。

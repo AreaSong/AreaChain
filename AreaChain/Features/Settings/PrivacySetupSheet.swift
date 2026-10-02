@@ -38,6 +38,7 @@ struct PrivacySetupSheet: View {
                     Text("privacy.tags.help").font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary)
                     tagChoices
                     Toggle("privacy.legacy.include", isOn: $includeLegacy)
+                        .toggleStyle(DaybookToggleStyle(.checkbox))
                     Text(L10n.format("privacy.migration.count", locale: locale, count))
                         .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
                     if count > 0 { backupFields }
@@ -78,10 +79,12 @@ struct PrivacySetupSheet: View {
     private var methods: some View {
         VStack(alignment: .leading, spacing: 8) {
             Toggle("privacy.methods.system", isOn: $useSystem).disabled(!systemAvailable)
+                .toggleStyle(DaybookToggleStyle(.checkbox))
             if !systemAvailable {
                 Text("privacy.system.signing").font(DaybookType.caption).foregroundStyle(DaybookPalette.status.danger)
             }
             Toggle("privacy.methods.master", isOn: $useMaster)
+                .toggleStyle(DaybookToggleStyle(.checkbox))
             if useSystem && !useMaster {
                 Text("privacy.system.only.warning").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }

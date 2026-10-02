@@ -8,7 +8,18 @@ enum ContentQueryValidation {
             let clauses = query.clauses.filter { $0.alternatives.first?.atom.dimension == dimension }
             guard !clauses.isEmpty else { continue }
             result += duplicates(clauses)
-
+        }
+        let occurrenceClauses = query.clauses.filter { $0.alternatives.first?.atom.dimension == .on }
+        for clause in occurrenceClauses {
+            if let issue = ContentQueryOccurrenceDay.groupIssue(clause.alternatives.map(ContentQuerySemanticTerm.init)) {
+                result.append(.init(issue: issue, range: clause.range))
+            }
+        }
+        let terms = occurrenceClauses.flatMap(\.alternatives)
+        if let first = terms.first {
+            for term in terms.dropFirst() where term.atom != first.atom {
+                result.append(.init(issue: .conflictingOccurrenceDays, range: term.range, relatedRanges: [first.range]))
+            }
         }
         return result
     }

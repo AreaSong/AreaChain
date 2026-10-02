@@ -66,10 +66,15 @@ enum ContentQueryAtomParser {
             switch value {
             case "open", "未完成": return .success(.status(.open))
             case "done", "已完成": return .success(.status(.done))
+            case "skipped", "已跳过": return .success(.status(.skipped))
             default:
-                let partial = ["open", "done", "未完成", "已完成"].contains { $0.hasPrefix(value) }
+                let partial = ["open", "done", "skipped", "未完成", "已完成", "已跳过"].contains { $0.hasPrefix(value) }
                 return .failure(.init(issue: partial ? .incompleteCondition : .invalidCondition))
             }
+        case "on", "执行日":
+            guard !value.contains("..") else { return .failure(.init(issue: .occurrenceDayMustBeSingle)) }
+            return ContentQueryDates.parse(value, context: context)
+                .map { .on($0.lowerBound) }.mapError { .init(issue: $0.issue) }
         case "date", "日期", "created", "创建日期":
             return ContentQueryDates.parse(value, context: context)
                 .map { field == "date" || field == "日期" ? .date($0) : .created($0) }
