@@ -5,11 +5,25 @@ import SwiftData
 enum DiaryContent {
     static func read(_ entry: DiaryEntry, vault: PrivacyVault? = nil) throws -> String {
         let vault = vault ?? .shared
+        let tags: [TagItem]
+        if !entry.hasProtectedContent, let context = entry.modelContext {
+            tags = try context.fetch(FetchDescriptor<TagItem>())
+        } else { tags = [] }
+        return try readChecked(entry, vault: vault, protectionTags: tags)
+    }
+
+    /// 同批目录重载只供搜索门禁持有的许可调用；普通调用方不能传空目录绕过旧检查。
+    static func read(_ entry: DiaryEntry, vault: PrivacyVault, protectionTags: [TagItem],
+                     permit: ContentQueryBodyReadPermit) throws -> String {
+        try permit.validate()
+        let text = try readChecked(entry, vault: vault, protectionTags: protectionTags)
+        try permit.validate()
+        return text
+    }
+
+    private static func readChecked(_ entry: DiaryEntry, vault: PrivacyVault, protectionTags: [TagItem]) throws -> String {
         if !entry.hasProtectedContent {
-            if let context = entry.modelContext {
-                let tags = try context.fetch(FetchDescriptor<TagItem>())
-                if requiresProtection(tagIDs: entry.tagIDs, tags: tags) { throw PrivacyError.corruptData }
-            }
+            if requiresProtection(tagIDs: entry.tagIDs, tags: protectionTags) { throw PrivacyError.corruptData }
             return entry.text
         }
         guard vault.isUnlocked else { throw PrivacyError.locked }

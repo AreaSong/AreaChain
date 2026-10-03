@@ -4,7 +4,6 @@ import SwiftUI
 /// 日历的一周：七列当天事项。待办可以拖到另一列改期。
 struct CalendarWeekBoard: View {
     @Environment(\.locale) private var locale
-    @Environment(\.calendar) private var calendar
 
     var days: [String]
     var selectedKey: String
@@ -31,18 +30,10 @@ struct CalendarWeekBoard: View {
     private func column(_ day: String) -> some View {
         let selected = day == selectedKey
         return VStack(alignment: .leading, spacing: 6) {
-            Button {
+            DaybookDateCell(dayKey: day, isToday: day == todayKey, isSelected: selected,
+                            presentation: .weekHeader(shortStamp: DayKey.shortStamp(day, locale: locale))) {
                 onSelect(day)
-            } label: {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(DayKey.shortStamp(day, locale: locale))
-                        .font(DaybookType.caption.weight(.semibold))
-                    Text(DayKey.dayNumber(day, calendar: calendar))
-                        .font(DaybookType.title)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .buttonStyle(DaybookButtonStyle(.quiet))
             .accessibilityIdentifier("calendar.week.\(day)")
             ScrollView {
                 DayBoardList(

@@ -42,7 +42,8 @@ extension RoutineScheduleHistory {
                      witnessDay: witness, intervalsContainingUnknownDays: unknown, unknownReasons: reasons)
     }
 
-    private func segments(in interval: ContentQueryDateInterval) -> [ContentQueryDateInterval] {
+    /// 同一分段也供执行记录枚举复用；调用方仍须限制证据输入与枚举工作量。
+    func segments(in interval: ContentQueryDateInterval) -> [ContentQueryDateInterval] {
         var starts: Set<String> = [interval.lowerBound]
         if ContentQuerySnapshotMatching.contains(interval, day: createdDayKey) { starts.insert(createdDayKey) }
         for item in evidence where item.routineID == routineID {

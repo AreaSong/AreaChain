@@ -17,12 +17,18 @@ struct DaybookControlsPreview: View {
     @State private var subtaskDone = true
     @State private var detailSubtaskDone = false
     @State private var pickerSample = ClipboardSearchMode.mixed
+    @State private var segmentSample = 1
+    @State private var otherSegmentSample = 2
+    @State private var verbatimSample = 0
     @State private var integerSample = 200
     @State private var decimalSample = 0.35
     @State private var integerLower = 20
     @State private var integerUpper = 999
     @State private var decimalLower = 0.1
     @State private var decimalUpper = 2.0
+    @State private var dateSample = "2026-09-18"
+    @State private var timeSample: Int? = 720
+    @State private var emptyTimeSample: Int?
 
     private let sizes: [DaybookButtonSize] = [.regular, .compact, .inline]
     private let variants: [(String, DaybookButtonVariant)] = [
@@ -42,6 +48,12 @@ struct DaybookControlsPreview: View {
             controls
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
+                    DaybookSecureInputSamples()
+                    DaybookFormInputSamples()
+                    DaybookWeekdaySamples()
+                    dateSamples
+                    timeSamples
+                    segmentedSamples
                     pickerSamples
                     completionSamples
                     stepperSamples
@@ -69,6 +81,47 @@ struct DaybookControlsPreview: View {
         .preferredColorScheme(dark ? .dark : .light)
     }
 
+    private var dateSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("day.date").font(DaybookType.title)
+            DaybookDatePicker(selection: $dateSample, todayKey: "2026-09-18")
+            DaybookDatePicker(selection: .constant("2028-02-29"), todayKey: "2028-02-28").disabled(true)
+            DaybookDateCellSamples { dateSample = $0 }
+            DaybookHabitDateCellSamples()
+            DaybookWeekHeaderSamples()
+            Button("dev.controls.toggle.external") {
+                dateSample = dateSample == "2026-09-18" ? "2028-02-29" : "2026-09-18"
+            }.buttonStyle(DaybookButtonStyle(.quiet))
+        }
+    }
+
+    private var timeSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.time").font(DaybookType.title)
+            HStack(alignment: .top) {
+                DaybookTimePicker(longLabels ? "dev.controls.time.long" : "row.time", minutes: $timeSample)
+                DaybookTimePicker("row.time", minutes: $emptyTimeSample)
+                DaybookTimePicker("row.time", minutes: .constant(0)).disabled(true)
+            }
+            Button("dev.controls.toggle.external") { timeSample = timeSample == 720 ? 1439 : 720 }
+                .buttonStyle(DaybookButtonStyle(.quiet))
+                .accessibilityIdentifier("preview.time.external")
+        }
+    }
+
+    private var segmentedSamples: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("dev.controls.segments").font(DaybookType.title)
+            DaybookSegmentedControl(selection: $segmentSample, options: segmentOptions)
+            DaybookSegmentedControl(selection: $otherSegmentSample, options: segmentOptions)
+            DaybookSegmentedControl(selection: .constant(1), options: segmentOptions).disabled(true)
+        }
+    }
+
+    private var segmentOptions: [DaybookSegmentOption<Int>] {
+        [.init(1, longLabels ? "dev.controls.picker.long" : "tab.tasks"), .init(2, "tab.diary")]
+    }
+
     private var pickerSamples: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text("dev.controls.pickers").font(DaybookType.title)
@@ -78,6 +131,10 @@ struct DaybookControlsPreview: View {
             DaybookPicker("dev.controls.picker.long", selection: $pickerSample, options: [
                 .init(.mixed, "dev.controls.picker.long"), .init(.exact, "clipboard.searchMode.exact"),
                 .init(.regex, "clipboard.searchMode.regex")
+            ])
+            DaybookPicker("tags.merge.pickTarget", selection: $verbatimSample, options: [
+                .init(0, verbatim: "common.save"), .init(1, verbatim: "中文 · English # & 🏷️"),
+                .init(2, verbatim: String(repeating: "合成的长标签 Synthetic long tag · ", count: 4))
             ])
             Button("dev.controls.toggle.external") { pickerSample = pickerSample == .mixed ? .regex : .mixed }
                 .buttonStyle(DaybookButtonStyle(.quiet))

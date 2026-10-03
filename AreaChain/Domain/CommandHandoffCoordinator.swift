@@ -1,17 +1,19 @@
 import Foundation
+import Observation
 
 /// 注入的单一运行内权威；引用不能按值复制。MainActor 串行、同步且无回调的提交不存在半次发布。
 /// 只登记指令宿主，不持有窗口、文件能力、业务对象或全局单例；不提供从旧快照重新登记的入口。
-@MainActor final class CommandHandoffCoordinator: CustomStringConvertible, CustomDebugStringConvertible {
+@Observable @MainActor final class CommandHandoffCoordinator: CustomStringConvertible, CustomDebugStringConvertible {
     private struct Pending {
         let ticket: CommandHandoffTicket
         var readiness: CommandHandoffReadiness?
     }
 
     private let id = UUID()
-    private var hosts: [String: CommandOwnedHost] = [:]
-    private var pending: [UUID: Pending] = [:]
-    private var statuses: [UUID: CommandHandoffStatus] = [:]
+    @ObservationIgnored private var hosts: [String: CommandOwnedHost] = [:]
+    @ObservationIgnored private var pending: [UUID: Pending] = [:]
+    @ObservationIgnored private var statuses: [UUID: CommandHandoffStatus] = [:]
+    private(set) var ownershipRevision: UInt64 = 0
 
     init(pages: [ContentQueryPageContext]) throws {
         guard Set(pages.map { $0.location.hostID }).count == pages.count else { throw CommandHandoffError.duplicate }
@@ -44,6 +46,16 @@ import Foundation
         hosts[lease.ownership.hostID] = .init(
             lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
         return effect
+    }
+
+    /// 系统失效只跨越同一所有权内的用户修订；不能跨转交代次，也不能重盖旧用户事件。
+    /// 仍经 send 委托唯一 HostSession，仅清查询，草稿/计划/执行不变。
+    @discardableResult
+    func invalidateSearch(ownedBy ownership: CommandHostOwnership) throws -> CommandHostLease {
+        let current = try host(ownership.hostID)
+        guard current.lease.ownership == ownership else { throw CommandHandoffError.stale }
+        try send(.query(.privacyInvalidated), expecting: current.lease)
+        return try host(ownership.hostID).lease
     }
 
     func prepare(id: UUID, source: CommandHostLease, target: CommandHostLease) throws -> CommandHandoffTicket {
@@ -98,6 +110,8 @@ import Foundation
         hosts = next
         pending[ticket.id] = nil
         statuses[ticket.id] = .completed
+        // 两端已原子发布后才通知展示层撤权；观察者不能介入半次转交。
+        ownershipRevision &+= 1
     }
 
     func cancel(_ ticket: CommandHandoffTicket) throws {

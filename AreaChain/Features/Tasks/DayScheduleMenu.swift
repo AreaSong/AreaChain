@@ -33,28 +33,23 @@ struct DaySchedulePicker: View {
     var confirmTitle: LocalizedStringKey = "day.confirm"
     var onPick: (String) -> Void
 
-    @State private var pickedDate = Date()
+    @Environment(\.calendar) private var calendar
+    @State private var pickedKey = DayKey.today()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("day.pick.title")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
-            DatePicker(
-                "day.date",
-                selection: $pickedDate,
-                displayedComponents: .date
-            )
-            .datePickerStyle(.graphical)
-            .labelsHidden()
+            DaybookDatePicker(selection: $pickedKey)
             Button(confirmTitle) {
-                onPick(DayKey.from(pickedDate))
+                onPick(pickedKey)
             }
             .buttonStyle(DaybookButtonStyle(.prominent))
         }
         .padding(12)
         .onAppear {
-            pickedDate = DayKey.date(from: initialKey) ?? .now
+            pickedKey = DayKey.from(DayKey.date(from: initialKey, calendar: calendar) ?? .now, calendar: calendar)
         }
     }
 }

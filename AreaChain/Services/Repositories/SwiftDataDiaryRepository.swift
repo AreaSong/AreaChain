@@ -216,6 +216,15 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
     }
 
     private func fetchDiaries(matching predicate: Predicate<DiaryEntry>?) throws -> [DiaryEntry] {
+        try Self.fetchDiaries(in: context, matching: predicate)
+    }
+
+    /// 完整只读枚举不需要仓储实例，避免元数据适配触发默认 vault / 附件依赖初始化。
+    static func fetchAllDiaries(in context: ModelContext) throws -> [DiaryEntry] {
+        try fetchDiaries(in: context, matching: nil)
+    }
+
+    private static func fetchDiaries(in context: ModelContext, matching predicate: Predicate<DiaryEntry>?) throws -> [DiaryEntry] {
         // SwiftData 的 SortDescriptor 没有 @Model + Bool 的可用重载；置顶仍按原比较器在过滤后集合上完成。
         try context.fetch(
             FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.createdAt, order: .reverse)])

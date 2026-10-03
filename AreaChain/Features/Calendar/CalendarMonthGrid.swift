@@ -14,7 +14,6 @@ struct CalendarMonthGridDates {
 }
 
 struct CalendarMonthGrid: View {
-    @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
 
     var dates: CalendarMonthGridDates
@@ -43,77 +42,38 @@ struct CalendarMonthGrid: View {
 
     @State private var dropKey: String?
 
-    private var cellHeight: CGFloat { isCompact ? 28 : 52 }
+    private var density: DaybookMonthGridDensity { isCompact ? .compact : .regular }
 
     var body: some View {
-        let cells = DayKey.monthGrid(containing: monthKey, calendar: calendar)
-        VStack(spacing: 4) {
-            weekdayHeaders
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 4), count: 7), spacing: 4) {
-                ForEach(Array(cells.enumerated()), id: \.offset) { _, key in
-                    if let key {
+        let cells = DaybookMonthGridDay.month(containing: monthKey, calendar: calendar)
+        VStack(spacing: DaybookSpacing.xs) {
+            DaybookWeekdayHeader()
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: DaybookSpacing.xs), count: 7), spacing: DaybookSpacing.xs) {
+                ForEach(cells) { day in
+                    if let key = day.key {
                         cell(key)
                     } else {
                         Color.clear
-                            .frame(maxWidth: .infinity, minHeight: cellHeight)
+                            .frame(maxWidth: .infinity, minHeight: density.minimumContentHeight)
                             .allowsHitTesting(false)
+                            .accessibilityHidden(true)
                     }
                 }
             }
         }
-    }
-
-    private var weekdayHeaders: some View {
-        HStack(spacing: 4) {
-            ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
-                Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
-                    .font(DaybookType.label)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                    .frame(maxWidth: .infinity)
-            }
-        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("calendar.month.grid")
     }
 
     private func cell(_ key: String) -> some View {
-        let selected = key == selectedKey
-        let today = key == todayKey
         let count = counts[key] ?? 0
-        return Button {
+        return DaybookDateCell(
+            dayKey: key, isToday: key == todayKey, isSelected: key == selectedKey,
+            presentation: .monthGrid(density), annotation: count > 0 ? Text("\(count)") : nil,
+            isDropTarget: dropKey == key
+        ) {
             onSelect(key)
-        } label: {
-            VStack(spacing: 2) {
-                Text(DayKey.dayNumber(key, calendar: calendar))
-                    .font(DaybookType.body.weight(selected ? .semibold : .regular))
-                Text(count > 0 ? "\(count)" : " ")
-                    .font(.system(size: 9, weight: .semibold, design: .rounded)) // token-exempt: 日期计数用圆体
-                    .foregroundStyle(count > 0 ? DaybookPalette.accent.base : .clear)
-            }
-            .foregroundStyle(selected ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
-            .frame(maxWidth: .infinity, minHeight: cellHeight)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .fill(selected ? DaybookPalette.accent.base.opacity(0.18) : DaybookPalette.cardSurface) // token-exempt: 18% 印章底没有对应令牌
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                    .stroke(
-                        today
-                            ? DaybookPalette.accent.base
-                            : (selected
-                                ? DaybookPalette.accent.base.opacity(0.4) // token-exempt: 40% 印章色没有对应令牌
-                                : DaybookPalette.border.default.opacity(0.3)), // token-exempt: 30% 分隔线没有对应令牌
-                        lineWidth: today ? 1.4 : 0.8
-                    )
-            )
-            .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         }
-        .buttonStyle(DaybookButtonStyle(.quiet))
-        .frame(maxWidth: .infinity, minHeight: cellHeight)
-        .contentShape(Rectangle())
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous) // token-exempt: 今日环、选中与投放三态
-                .stroke(dropKey == key ? DaybookPalette.accent.base : Color.clear, lineWidth: 2)
-        )
         .dropDestination(for: String.self) { items, _ in
             guard let onDropTodo, let id = items.compactMap(TodoDragToken.decode).first else {
                 return false
@@ -125,16 +85,7 @@ struct CalendarMonthGrid: View {
                 dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
             }
         }
-        .accessibilityLabel(cellLabel(key: key, count: count, today: today))
-        .accessibilityAddTraits(selected ? [.isSelected] : [])
         .accessibilityHint(count > 0 ? Text("a11y.calendar.remaining \(count)") : Text(""))
     }
 
-    private func cellLabel(key: String, count: Int, today: Bool) -> String {
-        let day = DayKey.displayName(key, calendar: calendar, locale: locale)
-        if today {
-            return L10n.string("a11y.calendar.today \(day)", locale: locale)
-        }
-        return day
-    }
 }

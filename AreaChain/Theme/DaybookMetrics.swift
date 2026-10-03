@@ -3,6 +3,36 @@ import SwiftUI
 /// 尺寸令牌，单份。基准 = 菜单栏浮层任务页现值（用户决定：菜单栏与工作台统一尺寸）。
 /// 页面不得写字面高度 / 圆角 / 描边；需要不同尺寸时在基座组件的 configure 闭包里改，同一改法出现两次就升级为 variant。
 enum DaybookMetrics {
+    enum WeekdayPicker {
+        static let diameter: CGFloat = 25
+        static let spacing: CGFloat = 4
+        static let titleSpacing: CGFloat = 6
+    }
+
+    enum DatePicker {
+        static let width: CGFloat = 252
+        static let cellHeight: CGFloat = 24
+    }
+
+    enum WeekHeader {
+        static let lineSpacing: CGFloat = 2
+    }
+
+    enum MonthGrid {
+        // 内容最小高度，不包含 DaybookButtonSize.regular 的内边距，也不限制文字撑高。
+        static let regularContentHeight: CGFloat = 52
+        static let compactContentHeight: CGFloat = 28
+        static let annotationSpacing: CGFloat = 2
+        static let annotationSize: CGFloat = 9
+    }
+
+    enum HabitMonthGrid {
+        static let minimumContentHeight: CGFloat = 22
+        static let columnSpacing: CGFloat = 4
+        static let rowSpacing: CGFloat = 4
+        static let headingSpacing: CGFloat = 6
+    }
+
     /// 完成标记的真实宿主基线；不与表单方形 Checkbox 或普通按钮点击区混用。
     enum Completion {
         static let task = DaybookCompletionGeometry(circle: 17, hit: 20, border: 1.5, check: 1.8, offset: 0.5)
@@ -15,8 +45,20 @@ enum DaybookMetrics {
         static let labelSpacing: CGFloat = DaybookSpacing.sm
         static let buttonSpacing: CGFloat = DaybookSpacing.xs
     }
+    enum Segmented {
+        static let spacing: CGFloat = 2
+        static let inset: CGFloat = 3
+        static let minimumLabelWidth: CGFloat = 36
+        static let horizontalPadding: CGFloat = 12
+        static let verticalPadding: CGFloat = 4.5
+    }
     enum Picker {
         static let labelSpacing: CGFloat = DaybookSpacing.sm
+    }
+    enum TimePicker {
+        static let minimumWidth: CGFloat = 156
+        static let popoverPadding: CGFloat = 12
+        static let popoverMinimumWidth: CGFloat = 180
     }
     static let inputHeight: CGFloat = 34
     static let controlHeight: CGFloat = 28

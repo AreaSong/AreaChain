@@ -167,13 +167,13 @@ struct PrivacySettingsSection: View {
                     .disabled(!vault.hasSystemUnlock)
                 }
             }
-            Picker("privacy.autolock", selection: Binding(get: { vault.idleSeconds }, set: { seconds in
+            DaybookPicker("privacy.autolock", selection: Binding(get: { vault.idleSeconds }, set: { seconds in
                 run { try await authenticate(); try vault.setIdleSeconds(seconds) }
-            })) {
-                Text("privacy.idle.1").tag(60)
-                Text("privacy.idle.5").tag(300)
-                Text("privacy.idle.15").tag(900)
-            }
+            }), options: [
+                DaybookPickerOption(60, "privacy.idle.1"),
+                DaybookPickerOption(300, "privacy.idle.5"),
+                DaybookPickerOption(900, "privacy.idle.15")
+            ], layout: .formRow)
             .accessibilityIdentifier("privacy.autolock")
             .systemPageMarker("privacy.autolock")
             Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)

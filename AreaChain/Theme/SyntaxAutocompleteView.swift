@@ -146,6 +146,9 @@ struct SyntaxAutocompletePopup: View {
     var maxHeight: CGFloat = 260
     var motionDisabled = false
     var onCommit: (SyntaxCandidate) -> Void
+    var customRow: ((SyntaxCandidate, Bool) -> AnyView)? = nil
+    var rowHeight: CGFloat = 29
+    var listMaximumHeight: CGFloat = 180
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
@@ -228,7 +231,8 @@ struct SyntaxAutocompletePopup: View {
                 LazyVStack(spacing: 2) {
                     ForEach(Array(state.candidates.enumerated()), id: \.element.id) { index, item in
                         Button { onCommit(item) } label: {
-                            candidateRow(item, isSelected: index == state.selectedIndex)
+                            if let customRow { customRow(item, index == state.selectedIndex) }
+                            else { candidateRow(item, isSelected: index == state.selectedIndex) }
                         }
                         .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                         .focusable(false)
@@ -241,7 +245,7 @@ struct SyntaxAutocompletePopup: View {
                 .padding(4)
             }
             .daybookScroll()
-            .frame(height: max(0, min(180, CGFloat(state.candidates.count) * 29 + 8, maxHeight - 25)))
+            .frame(height: max(0, min(listMaximumHeight, CGFloat(state.candidates.count) * rowHeight + 8, maxHeight - 25)))
             .onChange(of: state.selectedIndex) { _, newIndex in
                 if newIndex >= 0 && newIndex < state.candidates.count {
                     withAnimation(DaybookMotion.interactive(reduceMotion || motionDisabled)) {

@@ -17,8 +17,8 @@ struct PrivacyPasswordSheet: View {
             Text(title).font(DaybookType.title)
             Text(explanation).font(DaybookType.body).foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
-            SecureField(title, text: $password).onSubmit(submit)
-            if confirmation { SecureField("privacy.password.repeat", text: $repeated).onSubmit(submit) }
+            DaybookSecureField(title, text: $password).onSubmit(submit)
+            if confirmation { DaybookSecureField("privacy.password.repeat", text: $repeated).onSubmit(submit) }
             if let errorKey {
                 Text(LocalizedStringKey(errorKey)).font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.status.danger).fixedSize(horizontal: false, vertical: true)
@@ -33,7 +33,7 @@ struct PrivacyPasswordSheet: View {
                     .disabled(busy || password.isEmpty || (confirmation && password != repeated))
             }
         }
-        .textFieldStyle(.roundedBorder).padding(24).frame(width: 440)
+        .padding(24).frame(width: 440)
         .interactiveDismissDisabled(busy)
         .onDisappear { password = ""; repeated = "" }
     }

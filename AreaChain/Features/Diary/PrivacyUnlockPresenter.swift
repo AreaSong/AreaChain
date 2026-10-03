@@ -78,8 +78,7 @@ struct PrivacyUnlockView: View {
             if vault.hasMasterPassword {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("privacy.master.label").font(DaybookType.caption)
-                    SecureField("privacy.master.placeholder", text: $password)
-                        .textFieldStyle(.roundedBorder)
+                    DaybookSecureField("privacy.master.placeholder", text: $password)
                         .accessibilityIdentifier("privacy.master.input")
                         .onSubmit { authenticate(system: false) }
                     Button("privacy.unlock.password") { authenticate(system: false) }

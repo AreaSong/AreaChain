@@ -307,14 +307,10 @@ struct TagManagementPage: View {
             Text("tags.merge.confirm.message")
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
-            Picker("tags.merge.pickTarget", selection: Binding(
+            DaybookPicker("tags.merge.pickTarget", selection: Binding(
                 get: { mergeTarget ?? ordinarySelection.first?.id ?? UUID() },
                 set: { mergeTarget = $0 }
-            )) {
-                ForEach(ordinarySelection) { tag in
-                    Text(tag.name).tag(tag.id)
-                }
-            }
+            ), options: ordinarySelection.map { .init($0.id, verbatim: $0.name) })
             HStack {
                 Spacer()
                 Button("alert.cancel") { showMerge = false }

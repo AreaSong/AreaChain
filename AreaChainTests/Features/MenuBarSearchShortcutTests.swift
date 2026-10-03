@@ -6,7 +6,10 @@ import Testing
 struct MenuBarSearchShortcutTests {
     @Test func searchFollowsTheBindingInsteadOfAHardCodedCommandF() throws {
         let toolbar = MenuBarToolbarState()
-        let popover = MenuBarPopoverView(toolbar: toolbar)
+        let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        let popover = MenuBarPopoverView(toolbar: toolbar, composer: BoardComposerSession(vault: vault),
+                                        filterSession: BoardFilterSession())
+        let defaultSearch = ShortcutBinding(chord: ShortcutAction.search.defaultChord, isArmed: true)
         let commandF = try keyEvent(characters: "f", modifiers: .command, keyCode: 3)
         let shifted = try keyEvent(characters: "f", modifiers: [.command, .shift], keyCode: 3)
         let optionS = try keyEvent(characters: "s", modifiers: .option, keyCode: UInt16(ShortcutKey.s))
@@ -25,9 +28,9 @@ struct MenuBarSearchShortcutTests {
         #expect(popover.handleTabKeyDown(commandF, search: disarmed) != nil)
         #expect(!toolbar.searchIsFocused)
 
-        #expect(popover.handleTabKeyDown(shifted, search: ShortcutStore.shared.binding(for: .search)) != nil)
+        #expect(popover.handleTabKeyDown(shifted, search: defaultSearch) != nil)
         #expect(!toolbar.searchIsFocused)
-        #expect(popover.handleTabKeyDown(commandF, search: ShortcutStore.shared.binding(for: .search)) == nil)
+        #expect(popover.handleTabKeyDown(commandF, search: defaultSearch) == nil)
         #expect(toolbar.searchIsFocused)
     }
 

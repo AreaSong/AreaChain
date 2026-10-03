@@ -27,22 +27,17 @@ struct TaskDetailDueTime: View {
             }
             .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
             .popover(isPresented: $pickingTime) {
-                DatePicker(
-                    "drawer.due.title",
-                    selection: timeBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .labelsHidden()
-                .datePickerStyle(.stepperField)
+                DaybookTimePicker("drawer.due.title", minutes: timeBinding)
+                .environment(\.locale, locale)
                 .padding(12)
             }
         }
     }
 
-    private var timeBinding: Binding<Date> {
+    private var timeBinding: Binding<Int?> {
         Binding(
-            get: { RemindMinutes.date(minutes: dueMinutes ?? RemindMinutes.from(date: .now)) ?? .now },
-            set: { onSelectMinutes(RemindMinutes.from(date: $0)) }
+            get: { dueMinutes },
+            set: { onSelectMinutes($0) }
         )
     }
 }

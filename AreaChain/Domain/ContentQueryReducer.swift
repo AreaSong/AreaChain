@@ -2,6 +2,10 @@ import Foundation
 
 enum ContentQueryReducer {
     static func reduce(_ state: ContentQuerySession, _ event: ContentQueryEvent) -> ContentQueryTransition {
+        if case .privacyInvalidated = event { return privacyReset(state) }
+        if state.binding == .independent(.privacyInvalidated) {
+            guard case .enterPage = event else { return .init(state: state, intents: [.rejectedEvent]) }
+        }
         var transition = ContentQueryTransition(state: state)
         apply(event, to: &transition)
         guard !transition.intents.contains(.rejectedEvent) else { return .init(state: state, intents: [.rejectedEvent]) }
@@ -44,6 +48,7 @@ enum ContentQueryReducer {
             transition.state.input = .content(.init(source: ""))
             transition.state.conditions.removeAll { !$0.origin.isPage }
             transition.state.handoffContext = nil
+        case .privacyInvalidated: return
         }
         transition.state.refreshAutomaticConditions()
         if !preservesHandoffReturn, transition.state.returnPoint?.context.location == transition.state.page.location {
@@ -62,11 +67,22 @@ enum ContentQueryReducer {
         if transition.state.handoffContext != nil { return }
         transition.state.suppressed = []
         switch transition.state.binding {
-        case .page, .independent(.removedPageScope):
+        case .page, .independent(.removedPageScope), .independent(.privacyInvalidated):
             transition.state.binding = .page(visitID: page.location.visitID)
             detachForScopeChange(&transition.state)
         default: break
         }
+    }
+
+    private static func privacyReset(_ state: ContentQuerySession) -> ContentQueryTransition {
+        // 旧 page 的筛选与 reference 也可能携带用户资料。等待宿主显式传入可信新页面，
+        // 占位日期不沿用旧排序/返回上下文，也不代表当前日期。
+        let page = ContentQueryPageContext(
+            location: .init(hostID: state.hostID, visitID: UUID().uuidString, reference: ""),
+            page: .overview, todayKey: "1970-01-01", calendar: Calendar(identifier: .gregorian))
+        var empty = ContentQuerySession(page: page)
+        empty.binding = .independent(.privacyInvalidated)
+        return .init(state: empty)
     }
 
     private static func refresh(_ page: ContentQueryPageContext, into transition: inout ContentQueryTransition) {

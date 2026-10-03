@@ -11,9 +11,25 @@ final class ClipboardHistoryStore {
     }
 
     func load() -> [ClipboardHistoryRecord] {
-        guard let data = try? Data(contentsOf: fileURL) else { return [] }
-        guard let file = try? JSONDecoder().decode(ClipboardHistoryFile.self, from: data) else { return [] }
-        return file.items
+        if case .decoded(let items) = readHistory() { return items }
+        return []
+    }
+
+    /// 全文件一次读入后按原格式解码；不检查引用文件，也不修复或清理磁盘。
+    /// 只有系统读取错误明确表示不存在时才返回 missing，不能用 fileExists 推断空历史。
+    func readHistory(readData: (URL) throws -> Data = { try Data(contentsOf: $0) }) -> ClipboardHistoryReadResult {
+        let data: Data
+        do { data = try readData(fileURL) }
+        catch {
+            let failure = error as NSError
+            if (failure.domain == NSCocoaErrorDomain && failure.code == NSFileReadNoSuchFileError)
+                || (failure.domain == NSPOSIXErrorDomain && failure.code == Int(ENOENT)) {
+                return .missing
+            }
+            return .failed(.fileReadFailed)
+        }
+        do { return .decoded(try JSONDecoder().decode(ClipboardHistoryFile.self, from: data).items) }
+        catch { return .failed(.decodingFailed) }
     }
 
     func save(_ items: [ClipboardHistoryRecord]) throws {
@@ -55,4 +71,18 @@ final class ClipboardHistoryStore {
 
 private struct ClipboardHistoryFile: Codable {
     var items: [ClipboardHistoryRecord]
+}
+
+/// 封闭错误类别不保留路径、原始 JSON 或底层错误；当前磁盘格式没有版本字段。
+enum ClipboardHistoryReadFailure: Error, Equatable {
+    case fileReadFailed, decodingFailed
+}
+
+enum ClipboardHistoryReadResult: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    case missing
+    case decoded([ClipboardHistoryRecord])
+    case failed(ClipboardHistoryReadFailure)
+
+    var description: String { "ClipboardHistoryReadResult(redacted)" }
+    var debugDescription: String { description }
 }

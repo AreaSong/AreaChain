@@ -47,6 +47,11 @@ struct DaybookButtonInteractionTests {
         #expect(name != "dev.controls.sample")
         #expect(SystemPageHost.labels(in: window).contains(name))
         let native = SettingsButtonTestSupport.self
+        let segmentTitle = L10n.string("dev.controls.segments", locale: Locale(identifier: locale))
+        #expect(native.elements(window.contentView).contains {
+            native.value($0, "accessibilityValue") as? String == segmentTitle
+        })
+        try native.snapshot(window, name: "segment-gallery-\(locale)-\(dark)")
         let checkbox = try #require(native.elements(window.contentView).first {
             native.value($0, "accessibilityIdentifier") as? String == "preview.checkbox"
         })

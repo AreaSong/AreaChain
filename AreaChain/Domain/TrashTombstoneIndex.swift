@@ -6,9 +6,14 @@ struct TrashTombstoneIndex: CustomStringConvertible, CustomDebugStringConvertibl
     let input: TrashTombstoneInput
     let rows: [CommandObjectReference: [TrashInputValue]]
     let invalidContainers: Set<CommandObjectReference>
+    let unconvertedSubtasks: [UUID: Int]
+    var identities: Set<CommandObjectReference> {
+        Set(rows.keys).union(input.unconvertedSubtaskIDs.map { .init(type: .subtask, id: $0) })
+    }
 
     init(_ input: TrashTombstoneInput) {
         self.input = input
+        unconvertedSubtasks = input.unconvertedSubtaskIDs.reduce(into: [:]) { $0[$1, default: 0] += 1 }
         var values = (input.todos ?? []).map(TrashInputValue.todo)
             + (input.subtasks ?? []).map(TrashInputValue.subtask)
             + (input.routines ?? []).map(TrashInputValue.routine)
@@ -28,7 +33,9 @@ struct TrashTombstoneIndex: CustomStringConvertible, CustomDebugStringConvertibl
     }
 
     func identityIssue(_ id: CommandObjectReference) -> TrashTombstoneIssue? {
-        if rows[id, default: []].count > 1 { return .duplicateIdentity }
+        let unconverted = id.type == .subtask ? unconvertedSubtasks[id.id, default: 0] : 0
+        if rows[id, default: []].count + unconverted > 1 { return .duplicateIdentity }
+        if unconverted > 0 { return .missingSubtaskParent }
         if invalidContainers.contains(id) { return .invalidSubtaskContainer }
         guard input.isProvided(id.type) else { return .identityNotProvided }
         switch input.coverage.identity(id) {

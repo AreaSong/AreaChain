@@ -63,8 +63,8 @@ struct TaskDetailTagSelector: View {
             Text(verbatim: L10n.string("drawer.tag.create.title", locale: locale))
                 .font(DaybookType.body.weight(.semibold))
                 .foregroundStyle(DaybookPalette.text.primary)
-            TextField(L10n.string("drawer.tag.create.name", locale: locale), text: $newTagName)
-                .textFieldStyle(.roundedBorder)
+            DaybookFormTextField(verbatim: L10n.string("drawer.tag.create.name", locale: locale), text: $newTagName)
+                .accessibilityIdentifier("drawer.tag.create.name")
                 .onChange(of: newTagName) { _, _ in createError = nil }
             if let createError {
                 Text(verbatim: createError)

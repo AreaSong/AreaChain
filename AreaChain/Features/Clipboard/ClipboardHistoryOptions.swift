@@ -91,12 +91,12 @@ struct ClipboardHistoryOptions: View {
             Button("clipboard.ignoreNext") { session.armIgnoreNext() }
                 .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
             listSection(title: "clipboard.ignoredApps", values: session.ignoredApps, remove: session.removeIgnoredApp)
-            addRow(text: $pattern, placeholder: "clipboard.patterns.add", rejected: patternRejected) {
+            addRow(text: $pattern, placeholder: "clipboard.patterns.add", identifier: "clipboard.patterns.add", rejected: patternRejected) {
                 patternRejected = !session.addPattern(pattern)
                 if !patternRejected { pattern = "" }
             }
             listSection(title: "clipboard.patterns", values: session.patterns, remove: session.removePattern)
-            addRow(text: $typeName, placeholder: "clipboard.types.add", rejected: false) {
+            addRow(text: $typeName, placeholder: "clipboard.types.add", identifier: "clipboard.types.add", rejected: false) {
                 if session.addType(typeName) { typeName = "" }
             }
             listSection(title: "clipboard.types", values: session.extraTypes, remove: session.removeType)
@@ -137,17 +137,18 @@ struct ClipboardHistoryOptions: View {
     private func addRow(
         text: Binding<String>,
         placeholder: LocalizedStringKey,
+        identifier: String,
         rejected: Bool,
         add: @escaping () -> Void
     ) -> some View {
-        HStack(spacing: DaybookSpacing.sm) {
-            TextField(placeholder, text: text)
-                .textFieldStyle(.plain)
-                .font(DaybookType.body)
-            Button("clipboard.add", action: add)
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-        }
-        .overlay(alignment: .bottom) {
+        VStack(spacing: DaybookSpacing.xs) {
+            HStack(spacing: DaybookSpacing.sm) {
+                DaybookFormTextField(placeholder, text: text)
+                    .accessibilityIdentifier(identifier)
+                Button("clipboard.add", action: add)
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            }
+            // 为原错误反馈留出空间，避免公共输入壳增高后文字覆盖可编辑区域。
             if rejected {
                 Text("clipboard.pattern.invalid")
                     .font(DaybookType.caption)

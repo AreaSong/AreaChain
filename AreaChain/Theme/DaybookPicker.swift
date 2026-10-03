@@ -3,39 +3,76 @@ import SwiftUI
 
 /// 业务身份独立于翻译及排列；同一选择器内 value 必须唯一。
 struct DaybookPickerOption<Value: Hashable>: Identifiable {
+    enum Label {
+        case localized(String.LocalizationValue)
+        case verbatim(String)
+    }
+
     let value: Value
-    let label: String.LocalizationValue
+    let label: Label
     var id: Value { value }
 
     init(_ value: Value, _ label: String.LocalizationValue) {
         self.value = value
-        self.label = label
+        self.label = .localized(label)
+    }
+
+    /// 用户内容必须显式标为原文，避免与已有本地化键同名时被翻译。
+    init(_ value: Value, verbatim label: String) {
+        self.value = value
+        self.label = .verbatim(label)
+    }
+
+    fileprivate func title(locale: Locale) -> String {
+        switch label {
+        case .localized(let key): L10n.string(key, locale: locale)
+        case .verbatim(let text): text
+        }
     }
 }
 
 /// Binding 是唯一选中状态；公共层不保存偏好，也不在挂载或选项缺失时纠正业务值。
 struct DaybookPicker<Value: Hashable>: View {
+    enum Layout { case inline, formRow }
+
     let title: String.LocalizationValue
     @Binding var selection: Value
     let options: [DaybookPickerOption<Value>]
+    let layout: Layout
+    var eventVersion: UInt64?
     @Environment(\.locale) private var locale
 
-    init(_ title: String.LocalizationValue, selection: Binding<Value>, options: [DaybookPickerOption<Value>]) {
+    init(_ title: String.LocalizationValue, selection: Binding<Value>, options: [DaybookPickerOption<Value>],
+         layout: Layout = .inline, eventVersion: UInt64? = nil) {
         self.title = title
         _selection = selection
         self.options = options
+        self.layout = layout
+        self.eventVersion = eventVersion
     }
 
     var body: some View {
+        if layout == .formRow {
+            // 防止 Form 把原生菜单的辅助框扩大到包含标签与空白的整行。
+            row.accessibilityElement(children: .contain)
+        } else {
+            row
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: DaybookMetrics.Picker.labelSpacing) {
             Text(verbatim: L10n.string(title, locale: locale))
                 .font(DaybookType.body)
                 .foregroundStyle(DaybookPalette.text.primary)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityHidden(true)
+            // grouped Form 需要标签靠左、入口靠右；默认维持剪贴板的紧邻排列。
+            if layout == .formRow { Spacer(minLength: 0) }
             DaybookNativePicker(title: L10n.string(title, locale: locale), selection: $selection,
-                options: options.map { ($0.value, L10n.string($0.label, locale: locale)) },
-                unavailable: L10n.string(options.isEmpty ? "picker.empty" : "picker.unavailable", locale: locale))
+                options: options.map { ($0.value, $0.title(locale: locale)) },
+                unavailable: L10n.string(options.isEmpty ? "picker.empty" : "picker.unavailable", locale: locale),
+                eventVersion: eventVersion)
                 .daybookMenuLabel(size: .regular, fitsLabel: true)
                 .disabled(options.isEmpty)
         }
@@ -47,6 +84,7 @@ private struct DaybookNativePicker<Value: Hashable>: NSViewRepresentable {
     @Binding var selection: Value
     let options: [(Value, String)]
     let unavailable: String
+    let eventVersion: UInt64?
     @Environment(\.isEnabled) private var isEnabled
 
     func makeCoordinator() -> Coordinator { Coordinator() }
@@ -69,7 +107,8 @@ private struct DaybookNativePicker<Value: Hashable>: NSViewRepresentable {
         button.setAccessibilityLabel(title)
         button.cell?.setAccessibilityLabel(title)
         button.isEnabled = isEnabled && !options.isEmpty
-        if !coordinator.matches(options) {
+        if !coordinator.matches(options) || coordinator.eventVersion != eventVersion {
+            coordinator.eventVersion = eventVersion
             coordinator.options = options
             coordinator.rebuildMenu()
         }
@@ -97,6 +136,7 @@ private struct DaybookNativePicker<Value: Hashable>: NSViewRepresentable {
         var selection: Binding<Value>?
         var options: [(Value, String)] = []
         var unavailable = ""
+        var eventVersion: UInt64?
 
         func matches(_ other: [(Value, String)]) -> Bool {
             options.count == other.count && zip(options, other).allSatisfy { $0.0 == $1.0 && $0.1 == $1.1 }

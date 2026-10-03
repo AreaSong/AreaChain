@@ -59,7 +59,7 @@ struct PrivacySetupSheet: View {
                 Button("privacy.apply", action: submit).buttonStyle(DaybookButtonStyle(.prominent)).disabled(busy || !valid)
             }
         }
-        .textFieldStyle(.roundedBorder).padding(24).frame(width: 480)
+        .padding(24).frame(width: 480)
         .systemPageMarkers($markers)
         .accessibilityIdentifier("privacy.setup.sheet")
         .accessibilityValue(markers.sorted().joined(separator: " "))
@@ -89,8 +89,10 @@ struct PrivacySetupSheet: View {
                 Text("privacy.system.only.warning").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }
             if useMaster {
-                SecureField("privacy.master.label", text: $master)
-                SecureField("privacy.password.repeat", text: $repeated)
+                DaybookSecureField("privacy.master.label", text: $master)
+                    .accessibilityIdentifier("privacy.setup.master")
+                DaybookSecureField("privacy.password.repeat", text: $repeated)
+                    .accessibilityIdentifier("privacy.setup.master.confirmation")
             }
             Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
         }
@@ -114,8 +116,10 @@ struct PrivacySetupSheet: View {
             Text("privacy.migration.backup").font(DaybookType.body).fixedSize(horizontal: false, vertical: true)
                 .accessibilityIdentifier("privacy.migration.backup")
                 .systemPageMarker("privacy.migration.backup")
-            SecureField("privacy.backup.password.title", text: $backupPassword)
-            SecureField("privacy.password.repeat", text: $backupRepeated)
+            DaybookSecureField("privacy.backup.password.title", text: $backupPassword)
+                .accessibilityIdentifier("privacy.setup.backup")
+            DaybookSecureField("privacy.password.repeat", text: $backupRepeated)
+                .accessibilityIdentifier("privacy.setup.backup.confirmation")
             Text("privacy.backup.password.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
         }
     }

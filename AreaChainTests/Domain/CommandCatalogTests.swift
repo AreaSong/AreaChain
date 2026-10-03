@@ -16,9 +16,13 @@ struct CommandCatalogTests {
 
     @Test func mappingManifestMatchesAuthoritativeDocument() throws {
         let text = try String(contentsOf: root.appendingPathComponent("docs/unified-search-commands.md"), encoding: .utf8)
+        // 后续交接也可提及 D1 等编号；完整性只核对权威第 8 节的映射清单。
+        let start = try #require(text.range(of: "## 8. 用户功能覆盖映射"))
+        let end = try #require(text.range(of: "## 9. 实施依赖、验收与未决项"))
+        let manifest = String(text[start.upperBound..<end.lowerBound])
         let expression = try NSRegularExpression(pattern: #"\| (?:<a id="[^"]+"></a>)?([A-Z][0-9]+) "#)
-        let source = text as NSString
-        let names = expression.matches(in: text, range: NSRange(location: 0, length: source.length)).map {
+        let source = manifest as NSString
+        let names = expression.matches(in: manifest, range: NSRange(location: 0, length: source.length)).map {
             source.substring(with: $0.range(at: 1))
         }
         #expect(names.count == 48)

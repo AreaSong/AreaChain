@@ -12,23 +12,46 @@ enum SystemPageHost {
         scheme: ColorScheme,
         locale: String,
         size: NSSize,
-        embedded: Bool = true
+        embedded: Bool = true,
+        prefs: AppPreferences? = nil
     ) -> NSWindow {
         let root = content
             .modelContainer(container)
             .environment(\.locale, Locale(identifier: locale))
             .environment(\.workspaceEmbedded, embedded)
-            .environment(AppPreferences.shared)
+            .environment(prefs ?? .shared)
             .preferredColorScheme(scheme)
             .frame(width: size.width, height: size.height)
             .transaction { $0.disablesAnimations = true }
+        return makeWindow(root, size: size, appearance: NSAppearance(named: scheme == .dark ? .darkAqua : .aqua))
+    }
+
+    /// 动态偏好只沿生产 AppChrome 传播，不能被静态矩阵的 locale/主题/窗口外观覆盖。
+    static func preferenceWindow<Content: View>(
+        _ content: Content, container: ModelContainer, prefs: AppPreferences, size: NSSize
+    ) -> NSWindow {
+        let root = content
+            .modelContainer(container)
+            .environment(\.workspaceEmbedded, true)
+            .modifier(AppChrome(prefs: prefs))
+            .frame(width: size.width, height: size.height)
+            .transaction { $0.disablesAnimations = true }
+        return makeWindow(root, size: size, appearance: nil, usesHostingController: true)
+    }
+
+    private static func makeWindow<Content: View>(
+        _ root: Content, size: NSSize, appearance: NSAppearance?, usesHostingController: Bool = false
+    ) -> NSWindow {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
-        let hosting = NSHostingView(rootView: root)
+        // 与生产 PanelWindowController 一致，preferredColorScheme 的撤销由 hosting controller 处理。
+        let controller = usesHostingController ? NSHostingController(rootView: root) : nil
+        let hosting = (controller?.view as? NSHostingView<Content>) ?? NSHostingView(rootView: root)
         hosting.safeAreaRegions = []
         let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
-        window.appearance = NSAppearance(named: scheme == .dark ? .darkAqua : .aqua)
-        window.contentView = hosting
+        window.appearance = appearance
+        if let controller { window.contentViewController = controller }
+        else { window.contentView = hosting }
         window.setContentSize(size)
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
@@ -45,6 +68,7 @@ enum SystemPageHost {
     static func release(_ window: NSWindow) {
         window.makeFirstResponder(nil)
         window.orderOut(nil)
+        window.contentViewController = nil
         window.contentView = nil
     }
 

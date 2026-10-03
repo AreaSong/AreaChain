@@ -16,8 +16,8 @@ struct DayScheduleButtonConsumerTests {
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
-        let picker = try datePicker(in: window)
-        #expect(DayKey.from(picker.dateValue) == "2026-10-01" && picked.isEmpty)
+        let picker = window
+        #expect(try DatePickerTestSupport.selected("2026-10-01", in: picker) && picked.isEmpty)
         try await select("2026-10-18", picker: picker, in: window)
         #expect(picked.isEmpty)
         let button = try SettingsButtonTestSupport.button("day.confirm", locale: locale, in: window)
@@ -54,10 +54,10 @@ struct DayScheduleButtonConsumerTests {
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
         try await SettingsButtonTestSupport.click(SettingsButtonTestSupport.button("day.pick", in: window), in: window)
-        let popover = try #require(NSApp.windows.first { $0.isVisible && $0 !== window && hasDatePicker($0) })
+        let popover = try #require(NSApp.windows.first { $0.isVisible && $0 !== window && DatePickerTestSupport.hasPicker($0) })
         try await NativeSyntaxUI.prepareFocus(in: popover)
-        let picker = try datePicker(in: popover)
-        #expect(DayKey.from(picker.dateValue) == "2026-10-01")
+        let picker = popover
+        #expect(try DatePickerTestSupport.selected("2026-10-01", in: picker))
         try await select("2026-10-18", picker: picker, in: popover)
         #expect(picked.isEmpty)
         try await SettingsButtonTestSupport.click(SettingsButtonTestSupport.button("day.confirm", in: popover), in: popover)
@@ -66,40 +66,34 @@ struct DayScheduleButtonConsumerTests {
         #expect(!popover.isVisible)
     }
 
-    @Test func diaryConsumerCommitsAndClosesPopover() async throws {
+    @Test(arguments: ["en", "zh-Hans"])
+    func diaryConsumerCommitsAndClosesPopover(locale: String) async throws {
         let f = try await PrivacyFixture.make()
         defer { f.cleanup() }
+        let preferences = try SettingsButtonTestSupport()
+        defer { preferences.cleanup() }
         let note = try f.repository.addDiary(text: "Synthetic scheduled note", dayKey: "2026-10-01", tagIDs: [])
         // 从弹出层已打开的状态挂载真实卡片，保留其日期回调、事务和关闭绑定。
         let card = DiaryNoteCard(entry: note, activeTags: [], attachments: [], onDelete: {},
                                  vault: f.vault, pickingDay: true)
-        let window = SystemPageHost.window(card, container: f.container, scheme: .light, locale: "en",
-                                          size: NSSize(width: 380, height: 260))
+        let window = SystemPageHost.window(card, container: f.container, scheme: .light, locale: locale,
+                                          size: NSSize(width: 380, height: 260), prefs: preferences.prefs)
         defer { SystemPageHost.release(window) }
         try await SystemPageHost.settle(window)
-        let popover = try #require(NSApp.windows.first { $0.isVisible && $0 !== window && hasDatePicker($0) })
+        let popover = try #require(NSApp.windows.first { $0.isVisible && $0 !== window && DatePickerTestSupport.hasPicker($0) })
         try await NativeSyntaxUI.prepareFocus(in: popover)
-        let picker = try datePicker(in: popover)
-        #expect(DayKey.from(picker.dateValue) == "2026-10-01")
+        let picker = popover
+        #expect(try DatePickerTestSupport.selected("2026-10-01", in: picker))
         try await select("2026-10-18", picker: picker, in: popover)
         #expect(note.dayKey == "2026-10-01")
-        try await SettingsButtonTestSupport.click(SettingsButtonTestSupport.button("day.confirm", in: popover), in: popover)
+        try await SettingsButtonTestSupport.click(SettingsButtonTestSupport.button("day.confirm", locale: locale, in: popover), in: popover)
         #expect(note.dayKey == "2026-10-18" && !f.context.hasChanges)
+        #expect(note.text == "Synthetic scheduled note" && note.tagIDs.isEmpty && !note.isPrivate)
         try await SystemPageHost.settle(window)
         #expect(!popover.isVisible)
     }
 
-    private func datePicker(in window: NSWindow) throws -> NSDatePicker {
-        try #require(SettingsButtonTestSupport.elements(window.contentView).compactMap { $0 as? NSDatePicker }.first)
-    }
-
-    private func hasDatePicker(_ window: NSWindow) -> Bool {
-        SettingsButtonTestSupport.elements(window.contentView).contains { $0 is NSDatePicker }
-    }
-
-    private func select(_ key: String, picker: NSDatePicker, in window: NSWindow) async throws {
-        picker.dateValue = try #require(DayKey.date(from: key))
-        #expect(picker.sendAction(picker.action, to: picker.target))
-        try await SystemPageHost.settle(window)
+    private func select(_ key: String, picker: NSWindow, in window: NSWindow) async throws {
+        try await DatePickerTestSupport.select(key, in: window)
     }
 }

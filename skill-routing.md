@@ -1,5 +1,50 @@
 # AreaChain 技能路由与交付闭环
 
+第七阶段 D 沿 areachain-workflow → areasong-development UI/架构判据 → areachain-ui → areachain-verify；UI/UX 聚焦原生安全输入的身份、条件挂载与焦点。生产只接 PrivacySetupSheet 四字段，复用 DaybookSecureField / 28pt 输入壳及四个稳定身份；条件、校验、生命周期与 B/C 差异见[组件目录](docs/component-catalog.md#第七阶段-d隐私设置安全输入接入)。先用原 SetupFixture / PrivacyQA 直接挂载生产 sheet 建基线，再用同一宿主回归隐藏恢复、双语主题、键盘、滚动、取消和清空。合法键盘/Apply 先建立原 storageFailure 提前失败保护；不进入配置、认证、文件面板或迁移。静态 profile 配合完整正常隔离 XCTest、独立标识/目录、清除六项钥匙串变量及串行执行。稳定身份沿原检查器和反例维护；指定 Cursor verifier 缺口不替代，B 残留和历史未验项继续保留。到 D 停止，搜索、任务/手记编辑器不迁移。
+
+第七阶段 C 沿 areachain-workflow → areasong-development UI/架构判据 → areachain-ui → areachain-verify；UI/UX 聚焦原生焦点与视图身份。PrivacyUnlockView 仅接已有 DaybookSecureField，接口及与密码 sheet 的空值提交、busy 取消、关闭责任差异见[组件目录](docs/component-catalog.md#第七阶段-c解锁面板安全输入接入)。先直接挂载原 View 并经原 Presenter 注入合成 vault 建基线，再用相同宿主/配置/操作对照。复用原 ControlsPreview、SecureInputTestSupport 和 Presenter 归属/清理方式；静态 profile 配合完整正常 PrivacyQA、独立目录/标识、六项真实钥匙串变量清除和串行测试。稳定接入沿原检查器/反例维护；指定 Cursor verifier 不可用保留缺口，不重复认证或替换。B 的确认字段残留、真人/VoiceOver 和历史缺口保留，完成后停止，不迁移 Setup、搜索或任务/手记编辑器。
+
+第七阶段 B 沿 areachain-workflow → areasong-development 架构/UI 判据 → areachain-ui → areachain-verify；UI/UX 聚焦原生 SecureField 的 Binding 与焦点，不套用普通输入的“不提交”或明文辅助读取。公共 DaybookSecureField 仅接 PrivacyPasswordSheet，四种配置与后续差异见[组件目录](docs/component-catalog.md#第七阶段-b公共安全输入与通用密码弹窗)。复用原 PrivacyButtonSheetHost、隔离设置夹具和 ControlsPreview；静态 profile 配合完整正常 PrivacyQA、独立标识/目录、串行测试及真实钥匙串变量清除。稳定入口沿原检查器和反例维护；指定 Cursor verifier 不可用保留缺口，不重新认证或替换。完成后停止，不迁移 Setup、Unlock、搜索、任务/手记编辑器，不执行真实安全业务。
+
+
+第七阶段 A 沿 `areachain-workflow` → `areasong-development` UI/架构判据 → `areachain-ui` → `areachain-verify`；UI/UX 仅补 SwiftUI Binding 与焦点检查。普通表单公共入口 DaybookFormTextField 及三个真实字段见[组件目录](docs/component-catalog.md#第七阶段-a普通表单输入与三个输入框)。复用未改的 DaybookInputShell、SettingsButtonTestSupport、ClipboardOptionsFixture、真实 sheet 与 ControlsPreview；静态 profile 配合完整正常 PrivacyQA 目标和串行定向测试，原生事件、编辑 API、程序化 marked text 与真人证据分开。稳定公共入口和两个消费者由原检查器及反例维护，指定 Cursor verifier 不可用保留缺口，不重复认证或替换。完成后停止，不迁移 SecureField、搜索、任务/手记编辑器或其他控件；历史周布局、切周焦点、真实拖放、Tab 等未验项继续登记。
+
+第六阶段 E 沿 `areachain-workflow` → `areasong-development` 架构/UI 判据 → `areachain-ui` → `areachain-verify`；UI/UX 聚焦 SwiftUI 原生按钮身份与辅助语义。CalendarWeekBoard 只接 DaybookDateCell.weekHeader，纯短日期值保留格式来源差异，接口与剩余范围见[组件目录](docs/component-catalog.md#第六阶段-e周视图日期列头接入)。先直接挂载原周看板与生产 CalendarPage，再用完整 PrivacyQA 目标、串行事件和合成内存库验证公共呈现、真实消费者与日期回归。静态 profile 配合独立隔离 Swift 测试/Debug 验签，稳定入口沿原检查器维护。指定 Cursor verifier 缺失保留 partial，不认证或替换；历史周越界、标题挤压、切周焦点、真实拖放及 D 的 Tab 等缺口继续登记。完成后停止，不将业务周看板移入 Theme 或进入其他阶段。
+
+统一搜索 2K-8 沿 areachain-workflow → areasong-development 架构/可靠性规范 → areachain-verify；TagUsageContentQueryReads 复用五类元数据枚举和家庭同批装配，ContentQueryReadSession.prepareTagUsage 负责受门禁发布。旧计数口径、公开次数/排序及精确时间隔离、实际验证和生产前置只见[权威设计 §9.44](docs/unified-search-commands.md#944-阶段-2k-8全来源标签使用统计的只读存储适配与受门禁发布)。只验证隔离合成数据库；指定 Cursor verifier 缺口保留，不重复认证检查，完成后停止。
+
+统一搜索 2K-7 沿 areachain-workflow → areasong-development 架构/可靠性规范 → areachain-verify；TrashContentQueryReads 在 ContentQueryReadSession.prepareTrash 的内部许可中完成六类墓碑及活身份行的独立枚举，复用 2H 投影/查询与原排序、片段、分组、分页。正文授权只开放确认公开的普通墓碑，受保护墓碑不解密。实际覆盖、只读证据与 partial 状态统一见[权威设计 §9.43](docs/unified-search-commands.md#943-阶段-2k-7完整墓碑只读适配与受门禁回收站搜索)。仅隔离合成数据库，不接生产、文件或恢复执行；指定 Cursor verifier 缺口保留，不重复认证检查，完成后停止。
+
+统一搜索 2K-6 沿 areachain-workflow → areasong-development 架构/可靠性规范 → areachain-verify；ImageContentQueryReads 在 ContentQueryReadSession.prepareImages 的内部许可中复用 TaskFamilyContentQueryReader，同批接图片与 has:image。授权、实际全表读取、对象级保护、成本与 partial 状态统一见[权威设计 §9.42](docs/unified-search-commands.md#942-阶段-2k-6图片元数据只读适配同批图片查询与-hasimage)。只用隔离库及合成资料，不读图片文件或生产入口，完成后停止。
+
+统一搜索 2K-5 沿 areachain-workflow → areasong-development 架构/可靠性引用 → areachain-verify；ClipboardContentQueryReader 仅显式存储读取，ContentQueryReadSession.prepareClipboard 复用唯一发布门禁。实际接口、全文件成本、临时合成文件验证及指定复核 partial 状态见[权威设计 §9.41](docs/unified-search-commands.md#941-阶段-2k-5剪贴板历史文件只读适配与受门禁发布)。不读生产历史或系统剪贴板，不初始化监听/历史会话；完成后停止。
+
+统一搜索 2K-4D 沿 areachain-workflow → 架构治理 → areachain-verify；ContentQueryBodyReads、ContentQueryReadSession.prepareBodies 和 DiaryContentQueryReader 共同将正文留在内部许可与唯一冻结所有者中，复用 DiaryContent.read 同批目录校验。外部 Batch 仍仅 metadataOnly；无生产接线。实际接口、授权、生命周期、性能/内存限制和 partial 验证状态统一见[权威设计 §9.40](docs/unified-search-commands.md#940-阶段-2k-4d受搜索生命周期门禁约束的手记正文读取)。
+
+统一搜索 2K-4C 沿 `areachain-workflow` → `areasong-development` 架构/可靠性引用 → `areachain-verify`；ContentQueryReadSession 接注入 vault 的实际通知和 Observation，privacyInvalidated 经协调者只清搜索。接口与隔离验证见[权威设计 §9.39](docs/unified-search-commands.md#939-阶段-2k-4c搜索隐私失效查询清理与结果发布门禁)。指定 Cursor verifier 缺口保持 partial，不重查登录或替代；不接敏感草稿封存、正文或生产窗口，完成后停止。
+
+统一搜索 2K-4B 沿 `areachain-workflow` → `areasong-development` 架构/可靠性引用 → `areachain-verify`；DiaryContentQueryReader 仅显式 metadataOnly 注入读取，同批目录复用和完整限制见[权威设计 §9.38](docs/unified-search-commands.md#938-阶段-2k-4b手记元数据只读适配同批标签装配与隔离回归)。D1～D3 已确认，D3 仅登记；隔离回归后停止，不接生产或 2K-4C。指定 Cursor verifier 缺失继续 partial，不重查认证。
+
+统一搜索 2K-3 沿 `areachain-workflow` → `areasong-development` 架构/可靠性路径 → `areachain-verify`。TagContentQueryReader 读取完整标签目录，TaskFamilyContentQueryReader 同批装配，关联名字继续复用 ContentQueryTagNames；唯一契约、注入统计与全来源统计缺口见[权威设计第 9.36 节](docs/unified-search-commands.md#936-阶段-2k-3标签目录的-swiftdata-只读适配与同批装配)。验证使用原隔离 SwiftData 夹具、TagQuery/任务家庭/旧仓储、ReadOwner/展示分页、Debug 构建与原门禁；不读取手记正文或接生产 UI。指定 Cursor verifier 缺失继续 partial，不重查认证、不替代复核，完成后停止。
+
+统一搜索 2K-2 沿 `areachain-workflow` → `areasong-development` 架构/可靠性路径 → `areachain-verify`。任务家庭读取在同一注入上下文同步装配 todo/subtask/routine；习惯全定义与按需全记录表读取、坏关系限制、当前观察与冻结查询日分离、共享标签及 Batch 记录源问题见[权威设计第 9.35 节](docs/unified-search-commands.md#935-阶段-2k-2习惯与打卡的-swiftdata-只读适配及任务类同批装配)。只跑隔离内存库、相关领域/服务回归、Debug 构建及原门禁；Cursor verifier 缺失继续 partial，不重查认证或替代复核，不进入下一阶段。
+
+统一搜索 2K-1 沿 `areachain-workflow` → `areasong-development` 架构/可靠性路径 → `areachain-verify`。仅在 Services 将显式注入 ModelContext 中的 todo、平面 subtask 与必要标签名称转为 Batch，测试走内存库到 ReadOwner/展示分页；入口见组件目录，唯一契约与证据见[权威设计第 9.34 节](docs/unified-search-commands.md#934-阶段-2k-1任务与子任务的-swiftdata-只读快照适配)。指定 Cursor verifier 仍不可用，不重复认证检查、不以其他复核代替；整体 partial，完成后停止，不接其他来源或生产 UI。
+
+统一搜索 2J-3C 沿 `areachain-workflow` → `areasong-development` 纯领域/架构与可靠性路径 → `areachain-verify`。ReadOwner 只冻结注入 Batch，ContinuationPolicy 只处理提供者预算余量；完整重算复用 BatchReader/Sorter/Presenter/DisplayBuilder，发布复用 Pagination.reset 与稳定锚点。入口与消费者见组件目录，唯一契约和证据见[权威设计第 9.33 节](docs/unified-search-commands.md#933-阶段-2j-3c预算续读同快照重新求值与结果发布协调)。验收选四套新领域测试及既有提供者、聚合、排序、片段、分组和分页回归，严格局部 lint、静态/工作流门禁、原脚本回归及 Debug 构建；原检查器接口不变。指定 Cursor verifier 缺失保持 partial，不重查登录、不替代复核；不接真实仓储、UI、系统调度或持久缓存，完成后停在 2J-3C。
+
+统一搜索 2J-3B 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。PaginationState 复用 Display 的不可变来源与可见性、Browse 的 publish/apply；接口与消费者见组件目录，唯一契约及 2J-3C 交接见[权威设计第 9.32 节](docs/unified-search-commands.md#932-阶段-2j-3b展示分页组内分段与浏览状态接续)。运行四套分页测试、原 Display/Browse/保护、排序/片段/聚合与提供者回归，严格局部 lint、静态/工作流门禁及 Debug 构建；复用原检查器与脚本回归，不另建执行器。指定 Cursor verifier 缺失保持 partial，不重查认证或冒充复核。只实施已读取结果的展示分页，不接生产 UI、预算续读或实际滚动，完成后停在 2J-3B。
+
+统一搜索 2J-3A 沿 `areachain-workflow` → `areasong-development` 纯领域路径 → `areachain-verify`。展示与浏览入口、版本和后续可见性统一见[权威设计第 9.31 节](docs/unified-search-commands.md#931-阶段-2j-3a展示分组可见命中序列与键盘选择)，复用入口见组件目录。运行 Display/Browse/DisplayProtection 与原排序、片段、聚合、墓碑/提供者回归、局部严格 lint、静态/工作流门禁和 Debug 构建。原检查器入口不变，沿原脚本回归；指定 Cursor verifier 缺失保持 partial，不重查认证，不替代复核。只输出纯打开/焦点意图，不接原生 UI、分页、续读或执行，停在 2J-3A。
+
+统一搜索 2J-2B 沿 `areachain-workflow` → `areasong-development` 纯领域路径 → `areachain-verify`。ContentQueryPresenter.project 只消费同批安全排序响应，接口/预算/Unicode/隐私回退与验证统一见[权威设计第 9.30 节](docs/unified-search-commands.md#930-阶段-2j-2b安全摘要命中片段与高亮映射)，复用入口见组件目录。运行四套展示/片段测试及原排序、聚合、九类提供者回归、严格局部 lint、静态/工作流门禁与 Debug 构建。复用原检查器和脚本测试，不新增执行器；指定 Cursor verifier 缺失继续 partial，历史缺口保留。不接 UI、真实展开、键盘/组分页、缓存、真实读取或执行，完成后停止。
+
+统一搜索 2J-2A 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。ContentQuerySorter.sort 只消费同批绑定排序上下文的 ContentQueryBatchResponse，输出平面确定命中身份序列；实际规则与交接见[权威设计第 9.29 节](docs/unified-search-commands.md#929-阶段-2j-2a安全聚合结果的相关性与最近排序)，复用入口见组件目录。验证三套排序测试、原批次与九类提供者/查询回归、严格局部 lint、静态/工作流门禁及 Debug 构建；既有检查器规则不变，继续原脚本回归，不新增执行器。指定 Cursor verifier 缺失仍 partial，历史缺口保留；不接片段、UI、分页、缓存或真实读取，完成后停止，不进入 2J-2B。
+
+统一搜索 2J-1 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。入口 ContentQueryBatchReader.read 从唯一批次装配九个只读提供者，接口/消费者见组件目录，唯一交接见[权威设计第 9.28 节](docs/unified-search-commands.md#928-阶段-2j-1同步批次跨提供者类型化结果与完整性汇总)。验证四套 ContentQueryBatch 集成、原查询/九个提供者/关联/墓碑/记录回归，另跑严格局部 lint、静态及原脚本回归、工作流和 Debug 构建。检查器接口/规则不变，不新增执行器；指定 Cursor verifier 缺失继续 partial，不重查认证或替代复核。不接真实仓储、生产 UI、排序/片段/分页、缓存、异步失效或执行，完成后停止。
+
+统一搜索 2I 沿 `areachain-workflow` → `areasong-development` 纯领域/架构与可靠性路径 → `areachain-verify`。入口 RoutineOccurrenceQueryProvider.read 仅消费显式记录范围和日期窗口，复用 2C-1 归并/历史分段；组件与实际消费者见组件目录，唯一交接见[权威设计第 9.27 节](docs/unified-search-commands.md#927-阶段-2i显式日期窗口内的习惯执行情况只读提供者)。验证四套 RoutineOccurrenceQuery、2C-1/2C-2、完整查询/类型分析、现有提供者与旧看板/逾期/习惯仓储合成回归，另跑静态质量/原脚本回归、工作流、严格局部 lint 与 Debug 构建。检查器接口和规则不变，无新执行器。指定 Cursor verifier 缺失继续 partial，不重查登录或替代复核；不接真实仓储、生产 UI、写入、聚合或全局分页，完成后停止。
+
 统一搜索 2H-2 沿 `areachain-workflow` → `areasong-development` 领域/架构路径 → `areachain-verify`。入口 TrashQueryProvider.read 消费同次 TrashTombstoneReader 安全投影，字段匹配、routine 证据、命中提升与完整性见[权威设计第 9.26 节](docs/unified-search-commands.md#926-阶段-2h-2显式墓碑只读搜索与命中归组)。验证六套 TrashQuery、四套 TrashTombstone、活提供者/查询和旧软删除回归，静态质量/原脚本回归、工作流、严格局部 lint 与 Debug 构建。没有更改检查器接口或另建执行器。指定 Cursor verifier 缺失继续 partial，不重复登录或替代复核；真实枚举、恢复/永久删除/文件操作、生产 UI、聚合与独立执行记录均未接线，完成后停止。
 
 统一搜索 2H-1 沿 `areachain-workflow` → `areasong-development` 纯领域/架构治理 → `areachain-verify`。公共输入与读取入口 TrashTombstoneInput / TrashTombstoneReader 见组件目录，唯一交接见[权威设计第 9.25 节](docs/unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)。验证四套墓碑测试、旧 SoftDelete/子任务/附件/回收站与隐私投影定向回归，另跑静态质量及原脚本回归、工作流、严格局部 lint 和 Debug 构建。检查器接口不变，不新增专项执行器；指定 Cursor verifier 缺失仍 partial，不重查登录、不替代复核。不接查询提供者、真实恢复/删除/文件、生产 UI 或认证，完成后停在 2H-1。
@@ -168,3 +213,36 @@
 统一搜索 2F 沿 `areachain-workflow` → `areasong-development` 纯领域/架构路径 → `areachain-verify`。入口 TagQueryProvider 与旧目录共用 TagUsage.filteredValues，实际消费者见组件目录，唯一交接见[权威设计第 9.23 节](docs/unified-search-commands.md#923-阶段-2f活标签只读快照搜索提供者)。验证四套 TagQuery、旧标签目录/搜索、查询/页面/转交及各类提供者回归，另跑静态质量/脚本回归、工作流、严格局部 lint 和 Debug 构建；检查器接口/规则不变。指定 Cursor verifier 缺失保持 partial，不重查登录或替代复核；不接真实统计/仓储、生产 UI、聚合或写入，完成后停在 2F。
 
 第四阶段 A 公共下拉沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`；只接 ClipboardHistoryOptions 三处，公共接口 DaybookPicker / DaybookPickerOption 与集中几何见[组件目录](docs/component-catalog.md#第四阶段-a公共下拉选择器与剪贴板)。直接挂载生产页面/控件、复用 ClipboardOptionsFixture 及原展示；原生事件与菜单项动作派发分别取证。公共契约仍只交 Cursor verifier，不可用保留缺口；不继续普通设置、标签合并、自动锁定或分段切换。
+
+第四阶段 B 继续 `areachain-workflow` → `areachain-ui` → `areachain-verify`，只接 GeneralSettingsSection 三处普通偏好。公共 DaybookPicker.formRow 的默认布局兼容剪贴板；复用 SettingsButtonTestSupport、PickerNativeTestSupport 与 SystemPageHost.preferenceWindow 做原 AppChrome 动态传播验证。接口、消费者和后续边界见[组件目录](docs/component-catalog.md#第四阶段-b普通设置下拉选择器接入)，验证证据见工程手册；公共只读复核仍指定 Cursor verifier，不可用保留缺口。到 B 停止，不迁移标签合并、自动锁定或分段切换。
+
+第四阶段 C 沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`，只接 TagManagementPage.mergeSheet。公共 DaybookPickerOption 增加 verbatim 原文入口，UUID 与显示文字分离，原本地化初始化及 inline/formRow 兼容；接口与消费者见[组件目录](docs/component-catalog.md#第四阶段-c标签合并目标选择器接入)。复用公共 Picker/WorkspaceMenuConsumerTests、原合并宿主、TagCatalogTests 和 ControlsPreview，合成提交只走确认的内存仓储链路；旧 A/B 消费者回归。指定 Cursor verifier 不可用仍留缺口，不替换。到 C 停止，自动锁定、分段切换及历史缺口不纳入本轮。
+
+第四阶段 E 沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`；通用 DaybookSegmentedControl 与兼容 DaybookSegmentedBar 共用绘制，接口和几何见[组件目录](docs/component-catalog.md#第四阶段-e通用分段与菜单栏)。复用 ControlsPreview、原生宿主和 MenuBarPopoverRenderingTests，定向检查 Binding、动效、草稿/搜索/快捷键及 380pt 布局。稳定入口由原检查器守卫；公共只读复核仍指定 Cursor verifier，不可用留缺口、不替代。完成后停止，不迁移 CalendarPage。
+
+第四阶段 F 继续 `areachain-workflow` → `areachain-ui` → `areachain-verify`；CalendarPage 直接接公共分段，CalendarSpan 单一文案源同时适配顶栏菜单，范围与完整定向清单见[组件目录](docs/component-catalog.md#第四阶段-f日历月周分段接入)。沿原 PrivacyQA XCTest 直接挂载生产日历/顶栏，恢复 BoardSelection 和 WorkspaceNavigation；运行日历、公共分段、菜单栏与工作台相关定向回归。复用原检查器、ControlsPreview 和工程记录，无新公共 API 或执行器；原生对照的列表切周焦点及窄周布局已知失败、指定 Cursor verifier 缺口和历史未验项继续保留。到 F 停止，不改日期选择器、日期格或其他控件。
+
+第五阶段 A 沿 `areachain-workflow` → `areachain-ui` → `areachain-verify`，仅接 TaskRow.timePicker 与 ResidentsPage 提醒弹出层。公共 DaybookTimePicker、原生适配、分钟/空值与后续差异见[组件目录](docs/component-catalog.md#第五阶段-a公共时间选择器与首批消费者)。复用原 PrivacyQA XCTest、ControlsPreview、内存模型/独立偏好及仓储失败注入；原生合成事件、程序化赋值和截图分别取证。公共契约只交 Cursor verifier，不可用保留缺口、不替代。到 A 停止，不迁移详情提醒、截止时间或日期选择器，不补历史日历/主题/H/Stepper 未验项。
+
+
+第五阶段 B 继续 `areachain-workflow` → `areachain-ui` → `areachain-verify`；只接 TaskDetailRemindChips / TaskDetailDueTime 的分钟 Binding 与弹出层。实际消费者、空值不初始化及草稿/截止差异见[组件目录](docs/component-catalog.md#第五阶段-b详情提醒与截止时间接入)。复用 PrivacyQA XCTest、TimePickerConsumerTestSupport、原事务/仓储失败注入与公共关闭生命周期，并回归阶段 A 两消费者。不新增公共 API、执行器或展示应用；原指定 Cursor verifier、真人及历史未验项继续保留。到 B 停止，日期、星期与日历布局留后续阶段。
+
+第六阶段 A 沿 `areachain-workflow` → `areasong-development` / `areachain-ui` → `areachain-verify`；DaybookDatePicker / DaybookDateCell 只接 DaySchedulePicker 及其四个宿主，接口与复用见[组件目录](docs/component-catalog.md#第六阶段-a公共日期选择器与排期弹窗)。先保留原图形日期基线，再沿 PrivacyQA XCTest 验证生产控件和消费者；ControlsPreview 与原稳定入口检查原地扩展。Cursor verifier 不可用保留缺口，不替代复核。完成后停止，主日历、习惯月历、周布局、星期选择及历史未验项均不扩修。
+
+
+第六阶段 B 继续 `areachain-workflow` → `areasong-development` / `areachain-ui` → `areachain-verify`，仅接 CalendarMonthGrid。公共日格表现、星期入口、集中几何与业务边界见[组件目录](docs/component-catalog.md#第六阶段-b主日历月网格接入)。复用原 PrivacyQA XCTest、生产 CalendarPage、内存合成夹具和 ControlsPreview；新旧布局、点击、原生拖放接线、程序化回调与规则分别记证据。稳定入口沿原检查器/反例维护，指定 Cursor verifier 不可用保留缺口，不替代。完成后停止，习惯月历、星期选择、周布局和历史未验项不扩修。
+
+统一搜索 4A-1 沿 areachain-workflow → areasong-development → areachain-ui → areachain-verify；ui-ux-pro-max 仅做 SwiftUI 聚焦检索，AppKit 输入机制与 Daybook 样式为实现依据。公共输入与两个隔离宿主的唯一交接见[权威设计 §9.45](docs/unified-search-commands.md#945-阶段-4a-1公共原生搜索输入与斜杠补全)。不接生产入口、结果列表、长正文预览或真实执行；指定 Cursor verifier 与历史缺口保留，不重查认证。
+
+
+第六阶段 C 沿 `areachain-workflow` → `areasong-development` UI/架构判据 → `areachain-ui` → `areachain-verify`，UI/UX 仅聚焦 macOS 适用的身份与辅助语义。HabitCheckMonthView 接入 DaybookDateCell.habit / DaybookHabitDateState，复用完整日键身份与原 HabitMonth/导航；接口及后续星期选择线索见[组件目录](docs/component-catalog.md#第六阶段-c习惯月历接入公共日期格)。修改前直接挂载原生产组件，之后用完整 PrivacyQA 目标、隔离模型和串行测试比较原几何/像素、标题备注、真实检查器与公共日期回归。静态 profile 配合独立隔离 Swift 测试和 Debug 构建，避免 auto/swift profile 启动普通宿主。指定 Cursor verifier 不可用继续保留缺口，不重查认证或替代复核；不盲目重试 B 的真实拖放。完成后停止，不迁移星期选择、周布局或其他控件。
+
+统一搜索 4A-2 沿 areachain-workflow → areasong-development → areachain-ui（聚焦 SwiftUI/原生检索）→ areachain-verify。公共结果消费原 Presentation / Display / Browse / Pagination，ReadSession 通过同步 ContentQueryDisplayUpdates 撤除原生展示。只用两种隔离宿主与合成数据；生产搜索、操作预览及真实打开未接线。唯一交接见[权威设计 §9.46](docs/unified-search-commands.md#946-阶段-4a-2公共原生搜索结果列表与输入导航)。指定 Cursor verifier 和人工缺口保留，不重复认证检查。
+
+第六阶段 D 沿 `areachain-workflow` → `areasong-development` 架构判据 → `areachain-ui` → `areachain-verify`；UI/UX 只补原生身份与辅助语义。TaskDetailWeekdayPicker 薄适配转交 Theme 的 DaybookWeekdayPicker，三个消费者保留草稿/即时保存差异，接口见[组件目录](docs/component-catalog.md#第六阶段-d公共星期多选与三个消费者)。先直接挂载原控件/消费者测基线，再跑完整正常 PrivacyQA 目标、合成内存库、原事务失败注入、串行鼠标/焦点和像素对照；静态 profile 配合独立 Swift 测试与 Debug 构建，不启动普通宿主。稳定入口继续由 check_workflow.py 守卫；指定 Cursor verifier 缺失保留 partial，不认证或换机制。完成后停止，任务行原生星期子菜单、只读星期标题、周布局及历史未验项不扩修。
+
+统一搜索 4A-3A 沿 areachain-workflow → areasong-development → areachain-ui → areachain-verify；ui-ux-pro-max 聚焦原生表单校验与焦点，不重建设计系统。参数组件按真实目录元数据驱动、只修改协调者 operations；输入补全与下方预览共用原 lease/stamp，结果职责独立。只用合成资料和标准/紧凑隔离宿主，唯一交接见[权威设计 §9.47](docs/unified-search-commands.md#947-阶段-4a-3a普通参数编辑与操作即时预览)。指定 Cursor verifier 与人工缺口继续 partial，不重查登录或替代复核；完成后停止，不接对象选择、待执行列表、生产入口或真实执行。
+
+## 统一搜索 4A-3B1 对象接线
+
+本阶段沿 areachain-workflow → areasong-development → areachain-ui → areachain-verify；ui-ux-pro-max 仅聚焦 SwiftUI 焦点建议，保留 AppKit 原生输入。复用 Controller / OperationEditing、参数字段、结果行、Browse、ReadSession 与原草稿 reducer。只在合成隔离宿主中确认运行内固定目标及普通对象参数；候选限制不改变全局搜索。接口见[组件目录](docs/component-catalog.md#统一搜索-4a-3b1对象参数与固定操作目标)，唯一验收和交接见[权威设计 §9.48](docs/unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。指定 Cursor verifier 不可调用继续 partial，保留人工验收及 4A-3A 外观预期失败；不认证、不替代、不执行真实指令，不进入 4A-3B2。

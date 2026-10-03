@@ -13,24 +13,24 @@ struct GeneralSettingsSection: View {
 
     var body: some View {
         Section("settings.chrome") {
-            Picker("settings.language", selection: $prefs.language) {
-                Text("language.system").tag(AppLanguage.system)
-                Text("language.chinese").tag(AppLanguage.chinese)
-                Text("language.english").tag(AppLanguage.english)
-            }
+            DaybookPicker("settings.language", selection: $prefs.language, options: [
+                DaybookPickerOption(.system, "language.system"),
+                DaybookPickerOption(.chinese, "language.chinese"),
+                DaybookPickerOption(.english, "language.english")
+            ], layout: .formRow)
             .accessibilityIdentifier("settings.language")
             .systemPageMarker("settings.language")
-            Picker("settings.look", selection: $prefs.appearance) {
-                Text("appearance.system").tag(AppAppearance.system)
-                Text("appearance.light").tag(AppAppearance.light)
-                Text("appearance.dark").tag(AppAppearance.dark)
-            }
+            DaybookPicker("settings.look", selection: $prefs.appearance, options: [
+                DaybookPickerOption(.system, "appearance.system"),
+                DaybookPickerOption(.light, "appearance.light"),
+                DaybookPickerOption(.dark, "appearance.dark")
+            ], layout: .formRow)
             .accessibilityIdentifier("settings.look")
             .systemPageMarker("settings.look")
-            Picker("settings.quadrant.truncation", selection: $prefs.quadrantTitleTruncation) {
-                Text("settings.quadrant.truncation.tail").tag(QuadrantTitleTruncation.tail)
-                Text("settings.quadrant.truncation.middle").tag(QuadrantTitleTruncation.middle)
-            }
+            DaybookPicker("settings.quadrant.truncation", selection: $prefs.quadrantTitleTruncation, options: [
+                DaybookPickerOption(.tail, "settings.quadrant.truncation.tail"),
+                DaybookPickerOption(.middle, "settings.quadrant.truncation.middle")
+            ], layout: .formRow)
             .accessibilityIdentifier("settings.quadrant.truncation")
             .systemPageMarker("settings.quadrant.truncation")
             Text("settings.quadrant.truncation.help")

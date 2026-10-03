@@ -84,10 +84,10 @@ private struct ResidentEditorRow: View {
             if titleDraft != value { titleDraft = value }
         }
         .popover(isPresented: $pickingTime) {
-            DatePicker("row.time", selection: timeBinding, displayedComponents: .hourAndMinute)
-                .labelsHidden()
-                .padding(12)
-                .frame(minWidth: 180)
+            DaybookTimePicker("row.time", minutes: timeBinding)
+                .environment(\.locale, locale)
+                .padding(DaybookMetrics.TimePicker.popoverPadding)
+                .frame(minWidth: DaybookMetrics.TimePicker.popoverMinimumWidth)
         }
         .confirmMoveToTrash($pendingTrash)
     }
@@ -150,12 +150,10 @@ private struct ResidentEditorRow: View {
         )
     }
 
-    private var timeBinding: Binding<Date> {
+    private var timeBinding: Binding<Int?> {
         Binding(
-            get: {
-                RemindMinutes.date(minutes: routine.remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now
-            },
-            set: { date in setRemind(RemindMinutes.from(date: date)) }
+            get: { routine.remindMinutes },
+            set: { setRemind($0) }
         )
     }
 

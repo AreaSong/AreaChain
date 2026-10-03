@@ -11,7 +11,7 @@ struct PrivacySetupToggleTests {
     func initialShapeAndModeRules(locale: String, scheme: ColorScheme) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
-        for mode in [(true, false), (false, true), (true, true)] {
+        for mode in [(true, false), (false, true), (true, true), (false, false)] {
             let fixture = try SetupFixture(support, configured: mode.1)
             let host = fixture.host(creating: mode.0, locale: locale, scheme: scheme)
             defer { SystemPageHost.release(host) }
@@ -59,11 +59,11 @@ struct PrivacySetupToggleTests {
             try await validateMaster(locale: locale, in: sheet)
             try await toggle("privacy.methods.system", locale: locale, in: sheet)
             #expect(try checked(control("privacy.methods.master", locale: locale, in: sheet)))
-            #expect(fields(sheet).map(\.stringValue) == ["synthetic-password", "synthetic-password"])
+            try SetupSecureTestSupport.expectValues([.master: "synthetic-password", .masterConfirmation: "synthetic-password"], in: sheet)
             try await toggle("privacy.methods.master", locale: locale, in: sheet)
             #expect(fields(sheet).isEmpty && hasText("privacy.system.only.warning", locale: locale, in: sheet))
             try await toggle("privacy.methods.master", locale: locale, in: sheet)
-            #expect(fields(sheet).map(\.stringValue) == ["synthetic-password", "synthetic-password"])
+            try SetupSecureTestSupport.expectValues([.master: "synthetic-password", .masterConfirmation: "synthetic-password"], in: sheet)
             try await validateLegacyDrafts(locale: locale, in: sheet)
             let tag = try tagNode(fixture.tag.name, in: sheet)
             #expect(try checked(tag))
@@ -90,8 +90,8 @@ struct PrivacySetupToggleTests {
             try await toggle("privacy.legacy.include", locale: locale, in: sheet)
             try expectCount(1, locale: locale, in: sheet)
             try expectApply(false, locale: locale, in: sheet)
-            try await enter("synthetic-backup", index: 0, in: sheet)
-            try await enter("synthetic-backup", index: 1, in: sheet)
+            try await enter("synthetic-backup", field: .backup, in: sheet)
+            try await enter("synthetic-backup", field: .backupConfirmation, in: sheet)
             try expectApply(true, locale: locale, in: sheet)
             #expect(try checked(tagNode(fixture.tag.name, in: sheet)))
             try await SettingsButtonTestSupport.click(SettingsButtonTestSupport.button("alert.cancel", locale: locale, in: sheet), in: sheet)
@@ -102,12 +102,12 @@ struct PrivacySetupToggleTests {
 
     private func validateMaster(locale: String, in sheet: NSWindow) async throws {
         try expectApply(false, locale: locale, in: sheet)
-        try await enter("short", index: 0, in: sheet)
-        try await enter("short", index: 1, in: sheet)
+        try await enter("short", field: .master, in: sheet)
+        try await enter("short", field: .masterConfirmation, in: sheet)
         try expectApply(false, locale: locale, in: sheet)
-        try await enter("synthetic-password", index: 0, in: sheet)
+        try await enter("synthetic-password", field: .master, in: sheet)
         try expectApply(false, locale: locale, in: sheet)
-        try await enter("synthetic-password", index: 1, in: sheet)
+        try await enter("synthetic-password", field: .masterConfirmation, in: sheet)
         try expectApply(true, locale: locale, in: sheet)
     }
 
@@ -116,15 +116,16 @@ struct PrivacySetupToggleTests {
         try expectCount(1, locale: locale, in: sheet)
         #expect(fields(sheet).count == 4)
         try expectApply(false, locale: locale, in: sheet)
-        try await enter("synthetic-backup", index: 2, in: sheet)
-        try await enter("different-backup", index: 3, in: sheet)
+        try await enter("synthetic-backup", field: .backup, in: sheet)
+        try await enter("different-backup", field: .backupConfirmation, in: sheet)
         try expectApply(false, locale: locale, in: sheet)
-        try await enter("synthetic-backup", index: 3, in: sheet)
+        try await enter("synthetic-backup", field: .backupConfirmation, in: sheet)
         try expectApply(true, locale: locale, in: sheet)
         try await toggle("privacy.legacy.include", locale: locale, in: sheet)
         try expectCount(0, locale: locale, in: sheet)
         try await toggle("privacy.legacy.include", locale: locale, in: sheet)
-        #expect(fields(sheet).map(\.stringValue) == ["synthetic-password", "synthetic-password", "synthetic-backup", "synthetic-backup"])
+        try SetupSecureTestSupport.expectValues([.master: "synthetic-password", .masterConfirmation: "synthetic-password",
+                                               .backup: "synthetic-backup", .backupConfirmation: "synthetic-backup"], in: sheet)
         try expectApply(true, locale: locale, in: sheet)
         for field in fields(sheet) {
             try await SettingsButtonTestSupport.reveal(field, in: sheet)
@@ -213,14 +214,8 @@ struct PrivacySetupToggleTests {
         }
     }
 
-    private func enter(_ text: String, index: Int, in sheet: NSWindow) async throws {
-        let field = try #require(fields(sheet).dropFirst(index).first)
-        try await SettingsButtonTestSupport.reveal(field, in: sheet)
-        sheet.makeFirstResponder(field)
-        let editor = try #require(field.currentEditor())
-        editor.string = text
-        NotificationCenter.default.post(name: NSControl.textDidChangeNotification, object: field)
-        try await SystemPageHost.settle(sheet)
+    private func enter(_ text: String, field: SetupSecureTestSupport.Field, in sheet: NSWindow) async throws {
+        try await SetupSecureTestSupport.enter(text, field: field, in: sheet)
     }
 
     private func find(_ key: String, locale: String, in window: NSWindow) -> NSObject? {
@@ -241,7 +236,7 @@ struct PrivacySetupToggleTests {
 }
 
 @MainActor
-private final class SetupFixture {
+final class SetupFixture {
     let support: SettingsButtonTestSupport
     let store: MemoryVaultConfigurationStore
     let keys = FakeSystemVaultKeys()
@@ -252,10 +247,11 @@ private final class SetupFixture {
     let originalNote: DiarySnapshot
     let originalTagID: UUID
     let originalPreferences: NSDictionary
+    let originalModelCounts: [Int]
     var completed = 0
     var dismissed = false
 
-    init(_ support: SettingsButtonTestSupport, configured: Bool) throws {
+    init(_ support: SettingsButtonTestSupport, configured: Bool, tagged: Bool = false) throws {
         self.support = support
         original = configured ? PrivacyConfiguration(vaultID: UUID(), systemKeyID: UUID(),
                                                      verification: Data(repeating: 0, count: 28)) : nil
@@ -264,12 +260,14 @@ private final class SetupFixture {
         tag = TagItem(name: "Synthetic private 私密", sortOrder: 0)
         tag.isPrivateDiary = true
         note = DiaryEntry(text: "Synthetic legacy #密码", dayKey: "2026-09-15")
+        if tagged { note.tagIDs = TagIDList.encode([tag.id]) }
         support.container.mainContext.insert(tag)
         support.container.mainContext.insert(note)
         try support.container.mainContext.save()
         originalNote = note.snapshot
         originalTagID = tag.id
         originalPreferences = (support.defaults.persistentDomain(forName: support.suite) ?? [:]) as NSDictionary
+        originalModelCounts = try Self.modelCounts(in: support.container.mainContext)
     }
 
     func host(creating: Bool, locale: String, scheme: ColorScheme, disabled: Bool = false) -> NSWindow {
@@ -308,12 +306,21 @@ private final class SetupFixture {
         #expect(await keys.items.isEmpty)
         #expect(await keys.pendingRead == nil)
         #expect(tag.name == "Synthetic private 私密" && tag.isPrivateDiary && tag.deletedAt == nil)
-        #expect(note.text == "Synthetic legacy #密码" && note.tagIDs.isEmpty && !note.hasProtectedContent)
+        #expect(note.text == "Synthetic legacy #密码" && note.tagIDs == originalNote.tagIDs && !note.hasProtectedContent)
         #expect(note.snapshot == originalNote && note.encryptedText == nil && note.privacyVaultID == nil)
         #expect(tag.id == originalTagID && tag.sortOrder == 0 && tag.colorToken == TagColorToken.default.rawValue)
         #expect(vault.generation == 0 && vault.revision == 0 && !vault.isUnlocked)
         #expect(originalPreferences == (support.defaults.persistentDomain(forName: support.suite) ?? [:]) as NSDictionary)
         #expect(!support.container.mainContext.hasChanges)
+        #expect(try Self.modelCounts(in: support.container.mainContext) == originalModelCounts)
+    }
+
+    private static func modelCounts(in context: ModelContext) throws -> [Int] {
+        // 原配置矩阵复用同一内存库，各夹具以建立时的数量为基线，不能假定库里永远只有一条。
+        try [context.fetchCount(FetchDescriptor<DiaryEntry>()), context.fetchCount(FetchDescriptor<TagItem>()),
+             context.fetchCount(FetchDescriptor<AttachmentItem>()), context.fetchCount(FetchDescriptor<TodoItem>()),
+             context.fetchCount(FetchDescriptor<SubtaskItem>()), context.fetchCount(FetchDescriptor<DailyRoutine>()),
+             context.fetchCount(FetchDescriptor<RoutineCheck>())]
     }
 
     func wait(_ condition: () -> Bool) async throws {

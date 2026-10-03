@@ -49,7 +49,7 @@ struct TodoQueryDiagnostic: Equatable {
     var inputIndices: [Int] = []
 }
 
-enum ContentQueryMatchField: Equatable {
+enum ContentQueryMatchField: Hashable {
     case clipboardPlainText, clipboardCapturedDay, clipboardImage
     case tagName
     case imageAssociation
@@ -72,7 +72,7 @@ enum ContentQueryMatchKind: Equatable {
 
 /// range 指向结果内未经改写的 title/notes、filename、tagName、clipboardPlainText、公开 diaryBody 或 relatedObject 对应标签名。
 /// 私密手记结果完全丢弃 diaryBody 依据；每个可展示字段保留首个命中。
-/// conditionID / alternativeIndex 必须在同一 requestID 的 session.conditions 内解释。
+/// conditionID / alternativeIndex 必须在产生本结果的同批语义条件内解释；requestID 相同不足以证明查询一致。
 struct ContentQueryMatchEvidence: Equatable {
     let conditionID: ContentQueryConditionID
     var alternativeIndex: Int?

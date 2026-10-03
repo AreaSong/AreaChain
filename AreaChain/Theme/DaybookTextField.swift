@@ -44,6 +44,9 @@ struct DaybookTextField: NSViewRepresentable {
     var allowsShiftNewline: Bool = true
     var onEscape: (() -> Void)? = nil
     var onMoveDown: (() -> Bool)? = nil
+    var unifiedSearch: UnifiedSearchInputState? = nil
+    var searchBuffer: UnifiedSearchBuffer? = nil
+    var searchConfiguration: UnifiedSearchInputConfiguration? = nil
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -58,6 +61,16 @@ struct DaybookTextField: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSTextField {
         let field = DaybookAppKitTextField(string: "")
+        if unifiedSearch != nil {
+            let cell = UnifiedSearchFieldCell(textCell: "")
+            cell.searchEditor.onBegin = { [weak field, weak coordinator = context.coordinator] editor in
+                guard let field else { return }
+                coordinator?.beginEditing(field, editor: editor)
+            }
+            field.cell = cell
+            field.isEditable = true
+            field.isSelectable = true
+        }
         field.placeholderString = placeholder
         field.font = nativeFont
         field.textColor = NSColor(DaybookPalette.text.primary)
@@ -87,12 +100,14 @@ struct DaybookTextField: NSViewRepresentable {
 
     func updateNSView(_ field: NSTextField, context: Context) {
         context.coordinator.parent = self
+        unifiedSearch?.configure(searchConfiguration)
         context.coordinator.configureRestoration(in: field)
         if let field = field as? DaybookAppKitTextField {
             field.commandChord = commandChord
         }
         (field as? DaybookAppKitTextField)?.onCommandReturn = onCommandReturn == nil ? nil : { [weak field] in
             guard let field, let extra = context.coordinator.parent.onCommandReturn else { return }
+            if let search = context.coordinator.parent.unifiedSearch { search.submit(); return }
             let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
             var value = editorString
             if !context.coordinator.parent.allowsShiftNewline, value.contains("\n") {
@@ -102,7 +117,8 @@ struct DaybookTextField: NSViewRepresentable {
             context.coordinator.parent.autocomplete?.dismiss()
             extra()
         }
-        Self.synchronizeText(text, in: field, highlightsSyntax: highlightsSyntax, font: nativeFont)
+        if let unifiedSearch, let searchBuffer { unifiedSearch.synchronize(searchBuffer, field: field) }
+        else { Self.synchronizeText(text, in: field, highlightsSyntax: highlightsSyntax, font: nativeFont) }
         if let autocomplete = context.coordinator.parent.autocomplete {
             if autocomplete.inputText != text || autocomplete.availableTags != context.coordinator.parent.availableTags {
                 let cursor = (field.currentEditor() as? NSTextView)?.selectedRange().location ?? (text as NSString).length
@@ -211,6 +227,10 @@ struct DaybookTextField: NSViewRepresentable {
                 parent.text = ""
                 return
             }
+            if let search = parent.unifiedSearch, let editor = field.currentEditor() as? NSTextView {
+                search.changed(editor)
+                return
+            }
             var value = field.stringValue
             if !parent.allowsShiftNewline, value.contains("\n") {
                 value = DaybookTextField.sanitizeSingleLineText(value)
@@ -231,6 +251,7 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         @objc private func editorDidChangeSelection(_ notification: Notification) {
+            if let search = parent.unifiedSearch { search.refresh(); return }
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
             if textView.window?.firstResponder === textView { lastSelection = textView.selectedRange() }
@@ -240,6 +261,10 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         @objc private func editorDidChangeText(_ notification: Notification) {
+            if let search = parent.unifiedSearch, let editor = notification.object as? NSTextView {
+                search.changed(editor)
+                return
+            }
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
             var value = textView.string
@@ -260,9 +285,14 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         func controlTextDidBeginEditing(_ obj: Notification) {
+            guard let field = obj.object as? NSTextField, let editor = field.currentEditor() as? NSTextView else { return }
+            beginEditing(field, editor: editor)
+        }
+
+        func beginEditing(_ field: NSTextField, editor: NSTextView) {
             parent.focus.wrappedValue = true
-            guard let editor = (obj.object as? NSTextField)?.currentEditor() as? NSTextView else { return }
             parent.autocomplete?.editor = editor
+            parent.unifiedSearch?.begin(field, editor: editor)
 
             if parent.highlightsSyntax, let storage = editor.textStorage, !editor.hasMarkedText() {
                 SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
@@ -308,6 +338,7 @@ struct DaybookTextField: NSViewRepresentable {
 
         func controlTextDidEndEditing(_ obj: Notification) {
             parent.focus.wrappedValue = false
+            parent.unifiedSearch?.end()
             parent.autocomplete?.dismiss()
             parent.autocomplete?.editor = nil
             if parent.highlightsSyntax {
@@ -322,6 +353,7 @@ struct DaybookTextField: NSViewRepresentable {
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
             guard !textView.hasMarkedText() else { return false }
+            if let search = parent.unifiedSearch { return search.command(commandSelector, editor: textView) }
             if let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
                 if handleAutocompleteCommand(commandSelector, textView: textView, autocomplete: autocomplete) {
                     return true

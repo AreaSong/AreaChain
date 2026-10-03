@@ -5,7 +5,7 @@ enum ContentQueryPageBinding: Equatable {
     case independent(ContentQueryDetachment)
 }
 
-enum ContentQueryDetachment: Equatable { case removedPageScope, explicit, userScope, handoff }
+enum ContentQueryDetachment: Equatable { case removedPageScope, explicit, userScope, handoff, privacyInvalidated }
 
 struct ContentQueryReturnPoint: Equatable {
     var context: ContentQueryPageContext
@@ -60,6 +60,9 @@ struct ContentQuerySession: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     func handedOff(to target: Self) -> Self {
+        if binding == .independent(.privacyInvalidated) {
+            return ContentQueryReducer.reduce(target, .privacyInvalidated).state
+        }
         var next = Self(page: target.page)
         next.input = input
         next.conditions = conditions.map { condition in
@@ -149,6 +152,8 @@ enum ContentQueryEvent {
     case detach
     case rebind
     case clearUserQuery
+    /// 系统隐私失效：不恢复返回快照，也不从旧页面/冻结条件重建查询。
+    case privacyInvalidated
 }
 
 /// 仅查询与导航意图；没有执行、操作参数、目标或清空草稿的分支。

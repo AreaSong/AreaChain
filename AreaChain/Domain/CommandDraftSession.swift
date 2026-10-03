@@ -18,7 +18,7 @@ enum CommandDraftEvent {
     case restore(expectedRevision: UInt64, CommandDraftStamp)
     case resolve(CommandDraftDecision, CommandDraftSwitchChoice)
     case edit(CommandDraftStamp, CommandArgument)
-    case selectTargets(CommandDraftStamp, CommandDraftTargets)
+    case selectTargets(CommandDraftStamp, CommandDraftTargets, baseline: CommandDraftBaseline? = nil)
     /// 仅告知有新外部值；不把它写成新基线，也不保留第二份可编辑正文。
     case externalValuesArrived(CommandDraftStamp)
     /// 显式放弃该版本的修改并采用调用方提供的快照，不代表保存。
@@ -189,9 +189,9 @@ enum CommandDraftReducer {
         case .edit(let stamp, let argument):
             guard draft.stamp == stamp, argument.parameter != .target else { return [.rejectedEvent] }
             draft.edit(argument, expecting: stamp)
-        case .selectTargets(let stamp, let targets):
+        case .selectTargets(let stamp, let targets, let baseline):
             guard draft.stamp == stamp else { return [.rejectedEvent] }
-            draft.select(targets, expecting: stamp)
+            draft.select(targets, expecting: stamp, baseline: baseline)
         case .reloadDiscardingChanges(let stamp, let baseline, let arguments):
             guard draft.stamp == stamp, validArguments(arguments) else { return [.rejectedEvent] }
             draft.reload(baseline, arguments: arguments, expecting: stamp)

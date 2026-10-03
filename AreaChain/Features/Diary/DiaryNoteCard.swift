@@ -34,6 +34,7 @@ struct DiaryTagPill: View {
 /// 灵感手记卡片：隐私遮罩、复制、置顶、就地编辑，以及「密码 / 小巧思 / 日记」打标。
 struct DiaryNoteCard: View {
     @Environment(\.modelContext) var modelContext
+    @Environment(\.calendar) private var calendar
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Bindable var shortcuts = ShortcutStore.shared
@@ -126,6 +127,8 @@ struct DiaryNoteCard: View {
                 DayBoardMutations.moveDiary(entry, to: key)
                 pickingDay = false
             }
+            .environment(\.locale, locale)
+            .environment(\.calendar, calendar)
         }
         .background(KeyWindowHost { hostWindow = $0 })
         .alert("diary.window.reload.title", isPresented: $showsEditConflict) {

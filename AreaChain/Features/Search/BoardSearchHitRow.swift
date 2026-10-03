@@ -97,7 +97,7 @@ struct BoardSearchHitRow: View {
             isHighlighted && !isSelected ? DaybookPalette.fill.hover : Color.clear,
             in: RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
         )
-        .daybookSurface(.row, isSelected: isSelected, configure: { $0.radius = DaybookRadius.regular })
+        .daybookSearchResultSurface(isSelected: isSelected)
     }
 
     private var kindText: some View {

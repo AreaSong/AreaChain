@@ -6,6 +6,7 @@ import SwiftUI
 struct TaskDetailDateChips: View {
     var dayKey: String
     var onSelectDate: (String) -> Void
+    @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @State private var pickingDay = false
 
@@ -60,6 +61,8 @@ struct TaskDetailDateChips: View {
                     onSelectDate(key)
                     pickingDay = false
                 }
+                .environment(\.locale, locale)
+                .environment(\.calendar, calendar)
             }
         }
     }
@@ -101,22 +104,17 @@ struct TaskDetailRemindChips: View {
                     .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
             }
             .popover(isPresented: $pickingTime) {
-                DatePicker(
-                    "drawer.remind.title",
-                    selection: timeBinding,
-                    displayedComponents: .hourAndMinute
-                )
-                .labelsHidden()
-                .datePickerStyle(.stepperField)
+                DaybookTimePicker("drawer.remind.title", minutes: timeBinding)
+                .environment(\.locale, locale)
                 .padding(12)
             }
         }
     }
 
-    private var timeBinding: Binding<Date> {
+    private var timeBinding: Binding<Int?> {
         Binding(
-            get: { RemindMinutes.date(minutes: remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now },
-            set: { onSelectMinutes(RemindMinutes.from(date: $0)) }
+            get: { remindMinutes },
+            set: { onSelectMinutes($0) }
         )
     }
 
@@ -143,43 +141,22 @@ struct TaskDetailWeekdayPicker: View {
     var allowsEmpty = false
     var accessibilityTitle = "drawer.weekdays.title"
     @Environment(\.locale) private var locale
-    @Environment(\.calendar) private var calendar
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DaybookMetrics.WeekdayPicker.titleSpacing) {
             if showsTitle {
                 Text(verbatim: L10n.string("drawer.weekdays.title", locale: locale))
                     .font(DaybookType.label)
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
-
-            HStack(spacing: 4) {
-                ForEach(WeekdayMask.orderedWeekdays(calendar: calendar), id: \.self) { weekday in
-                    let isSelected = allowsEmpty
-                        ? WeekdayMask.containsSelection(resolvedMask, weekday: weekday)
-                        : WeekdayMask.contains(resolvedMask, weekday: weekday)
-                    Button {
-                        onUpdateMask(WeekdayMask.toggling(resolvedMask, weekday: weekday, allowingEmpty: allowsEmpty))
-                    } label: {
-                        Text(WeekdayMask.veryShortSymbol(weekday, locale: locale, calendar: calendar))
-                            .font(DaybookType.badge.weight(.medium))
-                            .frame(width: 25, height: 25)
-                            .background(
-                                Circle() // token-exempt: 星期圆点，不是胶囊
-                                    .fill(isSelected ? DaybookPalette.accent.base : DaybookPalette.cardSurface)
-                            )
-                            .foregroundStyle(isSelected ? DaybookPalette.text.onAccent : DaybookPalette.text.primary)
-                    }
-                    .buttonStyle(.plain) // control: 星期圆点选择器，不是胶囊
-                    .accessibilityLabel(WeekdayMask.accessibilityName(weekday, locale: locale, calendar: calendar))
-                    .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-                }
-            }
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel(Text(verbatim: L10n.string(
-                String.LocalizationValue(stringLiteral: accessibilityTitle),
-                locale: locale
-            )))
+            DaybookWeekdayPicker(
+                selection: resolvedMask,
+                onUpdateSelection: onUpdateMask,
+                allowsEmpty: allowsEmpty,
+                accessibilityTitle: Text(verbatim: L10n.string(
+                    String.LocalizationValue(stringLiteral: accessibilityTitle), locale: locale
+                ))
+            )
         }
     }
 }

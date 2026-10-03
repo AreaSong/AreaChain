@@ -5,6 +5,7 @@ import Foundation
 struct ContentQueryImageInput: CustomStringConvertible, CustomDebugStringConvertible {
     let images: [ImageAttachmentMetadata]?
     let coverage: ImageAssociationCoverage
+    var imagePrivacy: DiaryImageProtectionFacts?
 
     var description: String { "ContentQueryImageInput(redacted)" }
     var debugDescription: String { description }
@@ -45,7 +46,8 @@ struct ContentQueryImageRead: CustomStringConvertible, CustomDebugStringConverti
             return
         }
         let reading = ImageAssociationReader.read(.init(images: input.images, owners: owners,
-                                                        privacy: privacy, coverage: input.coverage))
+                                                        privacy: privacy, coverage: input.coverage,
+                                                        imagePrivacy: input.imagePrivacy))
         response = reading
         diagnostics = Dictionary(grouping: reading.diagnostics.compactMap { diagnostic in
             diagnostic.owner.map { ($0, diagnostic) }

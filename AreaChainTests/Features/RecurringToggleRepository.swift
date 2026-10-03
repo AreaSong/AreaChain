@@ -10,6 +10,8 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
     var fail = false
     var creations = 0
     var switches = 0
+    var reminderWrites: [Int?] = []
+    var weekdayWrites: [Int] = []
 
     init(_ context: ModelContext) {
         self.context = context
@@ -55,11 +57,23 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
     }
 
     func setWeekdayMask(id: UUID, mask: Int) throws {
-        try base.setWeekdayMask(id: id, mask: mask)
+        weekdayWrites.append(mask)
+        try ModelChanges.transaction(in: context, save: { context in
+            if self.fail { throw CocoaError(.fileWriteNoPermission) }
+            try context.save()
+        }) {
+            try base.setWeekdayMask(id: id, mask: mask)
+        }
     }
 
     func setRemind(id: UUID, minutes: Int?) throws {
-        try base.setRemind(id: id, minutes: minutes)
+        reminderWrites.append(minutes)
+        try ModelChanges.transaction(in: context, save: { context in
+            if self.fail { throw CocoaError(.fileWriteNoPermission) }
+            try context.save()
+        }) {
+            try base.setRemind(id: id, minutes: minutes)
+        }
     }
 
     func setPriority(id: UUID, isImportant: Bool, isUrgent: Bool) throws {

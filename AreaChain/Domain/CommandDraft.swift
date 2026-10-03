@@ -76,8 +76,11 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
         version += 1
     }
 
-    mutating func select(_ targets: CommandDraftTargets, expecting stamp: CommandDraftStamp) {
+    mutating func select(_ targets: CommandDraftTargets, expecting stamp: CommandDraftStamp,
+                         baseline: CommandDraftBaseline? = nil) {
         guard self.stamp == stamp else { return }
+        // 新对象集合需要新证据；不能沿用上一轮对象的基线，也不丢掉用户参数。
+        if self.targets.objects != targets.objects { self.baseline = baseline ?? .init() }
         self.targets = targets
         version += 1
     }

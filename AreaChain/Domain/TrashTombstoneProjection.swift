@@ -4,6 +4,7 @@ import Foundation
 struct TrashTombstoneProjection: CustomStringConvertible, CustomDebugStringConvertible {
     let index: TrashTombstoneIndex
     let publicDiaries: Set<UUID>
+    let publicImageOwners: Set<UUID>
     let incompleteDiaries: Set<UUID>
     let hiddenImageOwners: Set<AttachmentOwnerKey>
     let hiddenImageIDs: Set<UUID>
@@ -12,22 +13,32 @@ struct TrashTombstoneProjection: CustomStringConvertible, CustomDebugStringConve
         self.index = index
         var publicIDs: Set<UUID> = []
         var incomplete: Set<UUID> = []
+        var imageOwners: Set<UUID> = []
         for diary in index.input.diaries ?? [] {
             let key = AttachmentOwnerKey(kind: .diary, id: diary.id)
             let privacy = DiaryQueryPrivacy(diary: diary, metadata: index.input.privacy)
             let complete = index.input.coverage.diaryPrivacy.state(for: key) == .completeIncludingDeleted
+            let protection = index.input.diaryProtection?.protection(for: diary, metadata: index.input.privacy)
             if !complete || !privacy.diagnostics.isEmpty { incomplete.insert(diary.id) }
-            if complete && privacy.canPublishBody,
+            if complete && privacy.canPublishBody && (protection == nil || protection == .unprotected),
                index.identityIssue(.init(type: .diary, id: diary.id)) == nil {
                 publicIDs.insert(diary.id)
             }
+            if complete, index.identityIssue(.init(type: .diary, id: diary.id)) == nil {
+                if let facts = index.input.diaryProtection {
+                    if facts.protection(for: diary, metadata: index.input.privacy) == .unprotected {
+                        imageOwners.insert(diary.id)
+                    }
+                } else if publicIDs.contains(diary.id) { imageOwners.insert(diary.id) }
+            }
         }
         publicDiaries = publicIDs
+        publicImageOwners = imageOwners
         incompleteDiaries = incomplete
         let images = index.input.images ?? []
         let hidden = images.filter { image in
             guard let key = image.ownerKey else { return true }
-            return image.protection != .unprotected || (key.kind == .diary && !publicIDs.contains(key.id))
+            return image.protection != .unprotected || (key.kind == .diary && !imageOwners.contains(key.id))
         }
         let hiddenIDs = Set(hidden.map(\.id))
         hiddenImageIDs = hiddenIDs
@@ -72,7 +83,7 @@ struct TrashTombstoneProjection: CustomStringConvertible, CustomDebugStringConve
         case .todo(let todo): return ImageOwnerInput.todo(todo).projection
         case .routine(let routine): return ImageOwnerInput.routine(routine).projection
         case .diary(let diary):
-            guard publicDiaries.contains(diary.id) else { return nil }
+            guard publicImageOwners.contains(diary.id) else { return nil }
             return ImageOwnerInput.diary(diary).projection
         default: return nil
         }

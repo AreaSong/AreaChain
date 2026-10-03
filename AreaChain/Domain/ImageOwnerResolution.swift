@@ -59,6 +59,11 @@ struct ImageOwnerResolver: CustomStringConvertible, CustomDebugStringConvertible
 
     private func privacy(_ key: AttachmentOwnerKey, values: [ImageOwnerInput]) -> ImageProtection {
         guard key.kind == .diary else { return .unprotected }
+        if let facts = request.imagePrivacy {
+            guard request.coverage.diaryPrivacy.state(for: key) == .completeIncludingDeleted,
+                  values.count == 1, case .diary(let diary) = values[0] else { return .unknown }
+            return facts.protection(for: diary, metadata: request.privacy)
+        }
         guard request.coverage.diaryPrivacy.state(for: key) == .completeIncludingDeleted,
               !values.isEmpty else { return .unknown }
         let evaluations = values.compactMap { value -> DiaryQueryPrivacy? in

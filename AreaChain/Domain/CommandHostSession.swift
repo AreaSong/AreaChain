@@ -112,7 +112,8 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         receiver.plan = try plan.handedOff(to: target.plan)
         receiver.usedRunIDs.formUnion(usedRunIDs)
         var source = self
-        source.query = .init(page: query.page)
+        source.query = query.binding == .independent(.privacyInvalidated)
+            ? ContentQueryReducer.reduce(query, .privacyInvalidated).state : .init(page: query.page)
         source.operations = operations.emptiedAfterHandoff()
         source.plan = plan.emptiedAfterHandoff()
         return (source, receiver)

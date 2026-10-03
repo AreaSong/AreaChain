@@ -114,7 +114,9 @@ struct DaybookPickerTests {
         #expect(pickers.count >= 4, "原控制面板语言 Picker 仍在")
         let search = try Menus.menu("clipboard.searchMode", locale: environment.0, in: gallery)
         let old = Native.value(search, "accessibilityValue") as? String
-        try await Native.click(Native.button("preview.picker.external", locale: environment.0, in: gallery), in: gallery)
+        let external = try Native.button("preview.picker.external", locale: environment.0, in: gallery)
+        try await Native.reveal(external, in: gallery)
+        try await Native.click(external, in: gallery)
         #expect(Native.value(search, "accessibilityValue") as? String != old)
         try Native.snapshot(gallery, name: "picker-gallery-\(environment.0)-\(environment.1)")
     }

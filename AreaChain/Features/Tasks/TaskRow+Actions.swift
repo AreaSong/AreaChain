@@ -17,19 +17,16 @@ extension TaskRow {
     }
 
     var timePicker: some View {
-        DatePicker(
+        DaybookTimePicker(
             "row.time",
-            selection: Binding(
-                get: {
-                    RemindMinutes.date(minutes: state.remindMinutes ?? RemindMinutes.from(date: .now)) ?? .now
-                },
-                set: { dispatch(.setRemindMinutes(RemindMinutes.from(date: $0))) }
-            ),
-            displayedComponents: .hourAndMinute
+            minutes: Binding(
+                get: { state.remindMinutes },
+                set: { dispatch(.setRemindMinutes($0)) }
+            )
         )
-        .labelsHidden()
-        .padding(12)
-        .frame(minWidth: 180)
+        .environment(\.locale, locale)
+        .padding(DaybookMetrics.TimePicker.popoverPadding)
+        .frame(minWidth: DaybookMetrics.TimePicker.popoverMinimumWidth)
     }
 
     func beginEdit() {

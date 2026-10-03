@@ -32,7 +32,7 @@ final class SettingsButtonTestSupport {
     func window<V: View>(_ content: V, locale: String = "en", scheme: ColorScheme = .light,
                          size: NSSize = NSSize(width: 420, height: 560)) -> NSWindow {
         SystemPageHost.window(content.environment(prefs), container: container, scheme: scheme,
-                              locale: locale, size: size)
+                              locale: locale, size: size, prefs: prefs)
     }
 
     static func value(_ node: NSObject, _ name: String) -> Any? {

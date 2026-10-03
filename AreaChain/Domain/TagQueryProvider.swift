@@ -26,8 +26,9 @@ enum TagQueryProvider {
             response.diagnostics = [.init(issue: .unsupportedCondition, conditionIDs: unsupported.map(\.id))]
             return response
         }
-        evaluate(request, response: &response)
-        applyView(request.view, response: &response)
+        let usage = TagQueryUsageReader(input: request.usage, dates: session.queryDates)
+        evaluate(request, usage: usage, response: &response)
+        applyView(request.view, usage: usage, response: &response)
         return response
     }
 
@@ -39,9 +40,9 @@ enum TagQueryProvider {
         }
     }
 
-    private static func evaluate(_ request: TagQueryRequest, response: inout TagQueryResponse) {
+    private static func evaluate(_ request: TagQueryRequest, usage: TagQueryUsageReader,
+                                 response: inout TagQueryResponse) {
         let positions = Dictionary(grouping: request.tags.indices, by: { request.tags[$0].id })
-        let usage = TagQueryUsageReader(input: request.usage, dates: request.session.queryDates)
         if request.view.needsUsage && request.usage == nil {
             response.diagnostics.append(.init(issue: .usageUnavailable, severity: .warning, affectsDetermination: false))
         }
@@ -68,7 +69,8 @@ enum TagQueryProvider {
                 return diagnostic
             }
             guard let evidence else { continue }
-            response.matches.append(.init(tag: tag, evidence: evidence, usage: reading.record, usageState: reading.state))
+            response.matches.append(.init(tag: tag, evidence: evidence,
+                usage: reading.record.map { .init(activeCount: $0.activeCount) }, usageState: reading.state))
         }
     }
 
@@ -99,7 +101,8 @@ enum TagQueryProvider {
         return evidence
     }
 
-    private static func applyView(_ view: TagQueryView, response: inout TagQueryResponse) {
+    private static func applyView(_ view: TagQueryView, usage: TagQueryUsageReader,
+                                  response: inout TagQueryResponse) {
         guard case .catalog(let filter) = view else { return }
         let unknown = response.matches.filter { $0.usageState != .complete }
         if view.needsUsage && !unknown.isEmpty {
@@ -113,7 +116,7 @@ enum TagQueryProvider {
             response.matches.removeAll { $0.usageState != .complete }
         }
         let records = Dictionary(uniqueKeysWithValues: response.matches.compactMap { match in
-            match.usage.map { (match.tag.id, $0) }
+            usage.read(match.tag.id).record.map { (match.tag.id, $0) }
         })
         response.matches = TagUsage.filteredValues(response.matches, filter: filter, usage: records) { $0.tag.listFacts }
     }

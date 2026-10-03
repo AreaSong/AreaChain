@@ -3,7 +3,7 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-@MainActor
+@Suite(.serialized) @MainActor
 struct CalendarMonthNavigationTests {
     @Test(arguments: [
         NSSize(width: 1100, height: 720),
@@ -14,10 +14,9 @@ struct CalendarMonthNavigationTests {
             for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true)
         )
-        let selection = BoardSelection.shared
-        let original = selection.inspectingDayKey
-        defer { selection.inspectingDayKey = original }
-        selection.inspectingDayKey = "2026-09-15"
+        let restore = CalendarSpanTestSupport.preserveState()
+        defer { restore() }
+        BoardSelection.shared.inspectingDayKey = "2026-09-15"
         let window = SystemPageHost.window(
             CalendarPage(todayKey: "2026-09-26", routines: [], checks: [], todos: []),
             container: container,
@@ -38,7 +37,8 @@ struct CalendarMonthNavigationTests {
 
     private func findAnchor(in view: NSView?) -> NSView? {
         guard let view else { return nil }
-        if view.identifier?.rawValue == "period.bar" { return view }
+        if view.identifier?.rawValue == "period.bar",
+           !view.isHiddenOrHasHiddenAncestor, !view.visibleRect.isEmpty { return view }
         for child in view.subviews {
             if let found = findAnchor(in: child) { return found }
         }

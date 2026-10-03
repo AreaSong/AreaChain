@@ -96,7 +96,7 @@ struct TagQueryUsageTests {
                         TagUsageSubject(tagIDs: tag.id.uuidString, createdAt: Date(timeIntervalSince1970: 90), isDeleted: true)]
         let input = TagQueryUsageInput(records: Array(TagUsage.records(subjects).values), coverage: .complete)
         let result = TagQueryFixture.read("/tags", [tag], usage: input)
-        #expect(result.matches[0].usage == TagQueryFixture.record(tag))
+        #expect(result.matches[0].usage == .init(activeCount: TagQueryFixture.record(tag).activeCount))
         for source in ["/tags created:1970-01-01", "/tags date:1970-01-01"] {
             #expect(TagQueryFixture.read(source, [tag], usage: input).state == .inapplicableConditions)
         }

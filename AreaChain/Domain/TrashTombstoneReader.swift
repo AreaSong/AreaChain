@@ -7,7 +7,7 @@ enum TrashTombstoneReader {
         let projection = TrashTombstoneProjection(index)
         var objects: [TrashTombstone] = []
         var diagnostics: [TrashTombstoneDiagnostic] = []
-        for id in index.rows.keys.sorted(by: TrashTombstoneIndex.precedes) {
+        for id in index.identities.sorted(by: TrashTombstoneIndex.precedes) {
             let rows = index.rows[id, default: []]
             // 安全边界先于重复、日期与位置诊断，私密行的异常也不能暴露图片数量。
             if rows.contains(where: projection.hides) { continue }

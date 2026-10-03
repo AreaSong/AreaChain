@@ -6,6 +6,7 @@ struct TaskRow: View {
     let dispatch: (TaskRowAction) -> Void
     var onSaveTitle: ((String) -> Bool)? = nil
 
+    @Environment(\.calendar) private var calendar
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.workspaceEmbedded) var embedded
@@ -180,6 +181,8 @@ struct TaskRow: View {
                 dispatch(.moveToDay(key))
                 pickingDay = false
             }
+            .environment(\.locale, locale)
+            .environment(\.calendar, calendar)
         }
     }
 

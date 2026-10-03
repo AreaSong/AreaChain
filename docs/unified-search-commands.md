@@ -1,6 +1,14 @@
 # 统一搜索与指令体系
 
+2026-10-02 最新增量：2K-5 剪贴板历史文件只读适配与受门禁发布见 §9.41；仅显式临时目录与合成文件验证，指定 Cursor 复核和历史验收缺口保持 partial，无生产来源选择或监听。
+
+2026-10-02 最新增量：2K-4D 受生命周期门禁约束的正文读取见 §9.40，指定复核仍缺失；仅实施与隔离验证授权，无生产接线。历史增量：2K-4C 搜索生命周期、查询清理与发布门禁见 §9.39；仅隔离接线，不含敏感草稿封存或生产入口。历史记录：2K-4B 的 metadataOnly 手记只读适配、同批标签和隔离回归见 §9.38；D1～D3 已确认，D3 仅登记，未实施失效接线。2K-4A 的历史核验及更新后的决策见 §9.37。2K-3 标签目录及任务类同批装配见 §9.36；指定 Cursor 复核与历史缺口保留。
+
 ## 0. 状态、权威范围与基线
+
+2026-10-02 最新增量：2J-3C 的冻结值来源、预算续读、同快照全批重算及结果发布协调见第 9.33 节；2J-3A/B 的展示、浏览与分页见第 9.31～9.32 节。以下阶段状态和“不进入后续”保留为历史交接时点。本轮不关闭指定 Cursor verifier 或历史验收缺口，整体 partial；真实仓储、异步调度、合作式取消、隐私失效接线与生产 UI 仍未实现。
+
+2026-10-02 增量：2J-1 注入快照的同步批次、跨提供者类型化聚合与完整性汇总见第 9.28 节。只保证同一调用的值输入一致；指定 Cursor verifier 与旧阶段缺口保留，整体仍 partial。真实仓储、生产 UI、排序/片段/分页、缓存、异步失效和执行未接线。
 
 2026-10-02 当前状态：**1A～1C-3 领域协议已实现；1D 领域链路集成见第 9.13 节；2A / 2B 的 todo 与子任务提供者、2B-R 类型修正、2C 习惯证据与定义提供者见第 9.14～9.18 节；2D 手记只读快照提供者见第 9.19 节；2E-1 图片关联只读基础见第 9.20 节；2E-2A 公开图片元数据查询见第 9.21 节；2E-2B 三类记录 has:image 接入见第 9.22 节；2F 活标签只读快照提供者见第 9.23 节，整体仍 partial。** 指定 Cursor verifier 复核缺失，真实数据库、产品 UI、handler 与系统服务均未接线；todo/routine/diary 已接入注入资料的 has:image；受保护能力与真实接线仍未开放。各阶段原始检查仍保留；本阶段定向证据不关闭历史整树、原生或指定复核缺口。
 
@@ -178,7 +186,7 @@
 
 - 多关键词默认全部满足，可以分别命中不同适用字段；不同筛选维度取交集，同维度明确“任一/全部”。支持精确短语与显式排除条件，语法需与引号标签/转义规则协调。
 - 不静默模糊匹配；无结果时可提供近似建议，用户选择后才改查询。剪贴板原有模糊搜索选项需在接入时显式表达，不得让普通统一查询暗中继承它。
-- 默认相关性排序，可切换明确排序方式；具体权重和稳定并列顺序通过合成案例验证后定稿，不能将当前日期倒序当成相关性。
+- 默认相关性排序，可切换最近排序；四档、时间精度与稳定并列规则见第 9.29 节。纯领域排序不表示已接入生产界面，不能将当前日期倒序当成相关性。
 - 结果显示命中片段、命中字段、类型、所属对象；私密投影仍优先于展示丰富度。附件进入同一键盘序列；父子可归组但仍独立选择。
 - 最近使用仅持久化功能标识，不默认保存完整输入、正文、对象或路径。支持固定指令和用户主动保存的查询/操作模板。
 - 模板只预填，不自动执行；相对日期使用时显示实际日期，失效引用明确提示。主动保存模板时明确展示要保存的字段，敏感凭据始终排除；正文/对象引用的允许范围和私密模板策略需在实施前单独定界。
@@ -307,7 +315,13 @@
 | 2A | 一次性 todo 的注入快照只读提供者与最小类型化结果 | 第 9.14 节；实际匹配有效条件，报告类型覆盖、未知数据与歧义；不读真实库、不接 UI/执行，指定复核缺失仍 partial，到此停止。 |
 | 2B | 活子任务独立结果的注入快照只读提供者 | 第 9.15 节；自身字段与父级页面约束分开，类型覆盖与完整性显式报告；指定复核缺失仍 partial，停在本阶段。 |
 | 2C～2E-2B | 习惯历史/单日证据与定义、手记、公开图片提供者及三类记录 has:image 已实现 | 第 9.17～9.22 节；仅注入快照，指定复核与历史缺口保留，整体 partial。 |
-| 2 后续（未实施） | 标签、显式剪贴板/回收站提供者；执行记录尚无独立结果提供者 | 片段、聚合去重、统一排序/分页、全局覆盖汇总，以及真实数据/隐私/拥有者适配仍须独立实施验证；不能把已支持类型当作全部 tasks/global 已完整求值。 |
+| 2F～2H-2 | 标签、显式剪贴板、回收站墓碑读取与搜索提供者已实现 | 第 9.23～9.26 节；只读注入数据，指定复核与历史缺口保留，整体 partial。 |
+| 2I | 显式日期窗口内的习惯执行情况独立只读提供者 | 第 9.27 节；确定记录/可靠派生与未知/冲突/异常/截断分开；指定复核缺失仍 partial。 |
+| 2J-1 | 同步注入批次、类型化结果与完整性汇总 | 第 9.28 节；复用九个只读提供者，保留类型限制、缺源、未知、保护及记录剩余；指定复核缺失仍 partial。 |
+| 2J-2A | 已知安全聚合结果的相关性与最近排序 | 第 9.29 节；原匹配集合与覆盖保持，指定复核缺失仍 partial。 |
+| 2J-2B | 安全摘要、已知命中窗口与字素高亮映射 | 第 9.30 节；纯展示数据，指定复核缺失仍 partial；未验收原生两行布局。 |
+| 2J-3A～2J-3C | 纯领域展示/浏览、展示分页、同快照预算重算及发布协调 | 第 9.31～9.33 节；指定复核缺失仍 partial，只输出身份锚点和意图。 |
+| 2 后续（未实施） | 真实数据与产品读取适配 | 数据库读取一致性、原生宿主接线、真实异步调度、合作式取消与隐私失效清理仍须独立定稿、实施和验证。 |
 | 3 | 从现有按钮/菜单/设置提取缺少的共用业务动作，建立校验、预览、执行结果、字段冲突、重试身份与可撤销能力；先处理授权范围内的本地普通操作 | 依赖 1；保留旧入口契约，仓储/`ModelChanges` 注入测试；逐动作检验相同输入产生相同写入与副作用次数。安全、权限和跨系统一致性改造单独审批，不能随普通提取潜入。 |
 | 4 | 两宿主共享搜索与指令发现 UI，页面默认条件与筛选双向同步，统一结果与键盘；删除已被替代的重复页内搜索 | 依赖 1、2；建议改 `Features/Search`、`Workspace`、`MenuBar`、手记/标签/剪贴板宿主及必要 `Theme`。原页面草稿/滚动、显式范围/删除标记、独立查询、菜单栏与最小窗口等价后才移除旧入口；受限选择器不冒充普通搜索。 |
 | 5 | 可编辑预览与长正文、操作草稿、多字段/多对象/多设置、队列执行、冲突处理、真实撤销、关闭/退出与主动转交 | 依赖 3、4；故障注入验证固定集合、未完成参数、顺序合并、依赖暂停、部分成功重试不重复创建、目标草稿不覆盖和唯一提交所有权。设置事务先有证据再开放多设置提交。 |
@@ -1692,7 +1706,7 @@ TagUsage 的口径保持不变：未删除的待办、习惯、子任务、手�
 - usage=nil 表示未提供；partial(completeTagIDs) 仅对集合内 ID 声明完整，其他 ID 即使出现记录也仍局部；complete 声明全部标签统计完整。覆盖集合可以含本次未注入的标签，但不据此创建结果。
 - 缺字典项只有在对应 ID 完整覆盖时才生成准确的零数/nil 时间。局部正数本轮也不作为精确统计发布，usage=nil、usageState=partial；这是保守展示，不表示真实零使用。
 - 负数、非有限/超出民事日期范围的时间、零数却有时间/正数却无时间以及重复 usage ID 明确诊断；重复统计不相加、不任选首项。异常只使该标签统计无效，不能污染其他准确结果。活标签的坏统计即使名称未命中仍诊断，但不影响已确定的匹配；无关 usage 行不作为标签候选。
-- Match.usage 只保存完整且合法的 TagUsageRecord。类型 coverage、每项 usageState、undeterminedObjects、ordering 与诊断 affectsDetermination 分开；isCompleteForCoveredTypes 只证明本次注入对象的查询/视图求值完整，不证明标签枚举完整、真实仓储读取或全局覆盖。普通名称查询可在统计未知时完整确定匹配，并保留统计警告；即使无候选，使用视图在 usage=nil 时仍有请求级能力提示。
+- 2F 当时 Match.usage 保存完整且合法的 TagUsageRecord；2K-8 将公开字段收窄为只有 activeCount 的 TagQueryUsageSummary，精确时间只留内部排序（见 §9.44）。类型 coverage、每项 usageState、undeterminedObjects、ordering 与诊断 affectsDetermination 分开；isCompleteForCoveredTypes 只证明本次注入对象的查询/视图求值完整，不证明标签枚举完整、真实仓储读取或全局覆盖。普通名称查询可在统计未知时完整确定匹配，并保留统计警告；即使无候选，使用视图在 usage=nil 时仍有请求级能力提示。
 
 #### 公开元数据与安全边界
 
@@ -1934,3 +1948,1495 @@ Reader 内复用已有身份/关系结果，只有 cascaded / independent 且父
 | 指定 Cursor verifier | **未执行 / 缺口保留**；测试、构建与主代理自查不替代指定复核。 |
 
 首轮新增测试构建发现夹具试图修改 let 隐私元数据字段，已改为构造完整值；随后 22 项中 OR 夹具使用未支持的裸 `A|B` 语法，修正为协议既有 `(A | B)` 后通过。扩展及最后回归分别为 113 项、182 项通过。最后代码验证后仅追加文档证据，并重跑文档/静态检查。现有并行代码的 actor/Sendable、旧 AppKit API 和多目的地警告保留，不为本任务修改无关 UI。没有运行无关全量原生 auto/swift profile、真实库、附件文件、系统认证或发行验收；本轮到 2H-2 停止，历史验收缺口仍未关闭。
+
+### 9.27 阶段 2I：显式日期窗口内的习惯执行情况只读提供者
+
+#### 2026-10-02 实施前确认
+
+本次限定授权只实现注入快照的 routineOccurrence 独立结果及合成测试。开工工作区干净；持续保留并行修改。指定 Cursor verifier 与历史验收缺口保留，不重复登录检查、不改认证、不以其他复核替代，不表示此前阶段已经验收。完成本阶段后停止，不接真实仓储、UI、聚合或任何写入。
+
+- 仅显式 `ContentQueryScopeSelection.routineOccurrences` 求值。普通 global/tasks/routines 不混入每日记录；`/routines/checks` 仍是既有目录分组，不改变命令路径。专用文本范围入口留待后续接线，本阶段使用合法类型化选择。
+- 必须有 date、on 或明确记录浏览窗口；没有窗口返回需要选择日期，不默认今天或全部历史。date 多条件沿原并/交规则；浏览窗口与 date 同时提供时必须一致，不能静默覆盖。on 与窗口求交且必须落在窗口内；每行已有明确日期，状态无需额外 on，习惯定义搜索仍保持原要求。
+- 使用唯一、存活定义；重复 ID 整组隔离，已删除定义不进入活执行情况，回收站不自动展开记录。范围沿既有启停组成，当前停用不抹去可靠历史。创建前不派生；当前 weekdayMask/启停不冒充历史，currentDefinition 只证明明确观察日。
+- 业务身份为习惯 ID＋民事日。可靠排程确认应执行且该习惯/日记录完整时：completed → done，skipped → skipped，unprocessed 或完整无行 → open。无行派生只存在于读取投影，不插库、不创建打卡；已有行与派生来源分开。
+- 排程未知、冲突证据或记录不完整时不派生 open。观察到一条记录不等于完整最终状态；冲突记录不进入任何确定状态命中。非应执行日实际行、无法确认应执行日的行保留待核对信息；相同重复只出一条业务结果并保留诊断。缺失/歧义定义的记录单独报告无法归属，不伪造标题。
+- date 是行执行日，created 不适用；记录不继承定义正文、标签、优先级、提醒、附件等搜索属性。所属标题仅作上下文展示，所属字段查询没有已确认契约，明确不适用并登记后续需求。完整 Session 的用户/页面/冻结条件、类型分析与日期上下文均参与，不跳过其余条件。
+- 使用既有历史证据分段，未知以区间表达；明确注入输入规模、工作量和结果预算，截断报告剩余范围，确定结果可以与未知/未处理覆盖并存。请求窗口、定义枚举声明、记录完整性、历史完整性、枚举完整性和类型覆盖分别表达，不实现全局分页或持久游标。
+- 默认定义输入顺序后按日期升序；结果保留所属引用、状态、来源、重复标记和公共日期/状态依据。确定命中与未知、冲突、异常分开；结果不持有实体、文件、执行闭包或权限。调试描述和诊断不展开标题、查询或多余记录资料。
+
+#### 实际接口与条件边界
+
+| 入口 | 本阶段责任 |
+|---|---|
+| [RoutineOccurrenceQueryRequest / Response](../AreaChain/Domain/RoutineOccurrenceQueryRead.swift) | requestID、完整 Session、RoutineSnapshot/CheckSnapshot、按习惯/区间声明的 RoutineCheckCoverage、RoutineScheduleEvidence、definitionCoverage、可选 browseWindow 与可注入 budget。全部为调用方声明，不核实真实仓储；定义枚举完整性独立于记录完整性。响应不保存请求或查询原文。 |
+| [RoutineOccurrenceQueryProvider.read / Matching](../AreaChain/Domain/RoutineOccurrenceQueryProvider.swift) | 结构校验、显式范围、日期上下文/窗口、原类型分析及完整条件匹配。只接受 routineOccurrences/liveOnly；不修改 Parser、目录路径或 Session。缺窗口 requiresInput，冲突窗口 invalidQuery，on 在窗口外 unsatisfiable；类型不适用及矛盾沿原 readRestriction 返回。 |
+| [RoutineOccurrenceQueryInput / Pattern](../AreaChain/Domain/RoutineOccurrenceQueryInput.swift) | 按习惯切片并把局部记录/证据下标映射回原请求；归并调用原 RoutineCheckReading，排程调用 History.day，结果组合调用 RoutineOccurrenceEvaluation。History 原分段方法只由 private 改为内部可复用；记录覆盖边界再细分，每段至多采样七个星期位，不重写历史判断。 |
+| [RoutineOccurrenceQueryEnumeration](../AreaChain/Domain/RoutineOccurrenceQueryEnumeration.swift) | 有界枚举应执行日与窗口内实际记录的并集，同一业务日只求值一次；定义输入顺序后日期升序。未知排程或不完整记录区间不派生占位行，实际行仍进入核验。没有全局评分、游标或写入。 |
+
+`coverage.window` 保留原 date 窗口、browse 窗口、on 和最终 effective。date 仍按同维 OR 并集、条件间 AND 交集；browse/date 同时存在要求规范化窗口相等，on 在其中明确收窄单日。显式空窗口与缺窗口不同；空 date 交集仍由原类型分析判矛盾。`queryIsValid` 仅表示 Session 结构有效，外部窗口一致性及读取资格由 state/diagnostics 表示。
+
+每个合法有效条件都经过类型分析及匹配；支持的行字段为 date/on/status，命中使用现有 occurrenceDay/completion/scope 依据及原 conditionID、alternativeIndex。范围本身不伪造日期条件 ID；纯 browse 的行日期见 id.dayKey 与 occurrence.schedule，不能把浏览参数冒充文字命中。排除仅沿原语法允许范围，不能排除 date/status 绕过状态规则。
+
+记录无自身文字/标签/优先级/提醒/附件/createdAt；类型分析明确拒绝这些条件，包括排除文字。routineTitle 只作关系上下文，未参与文字匹配。页面 boardDate、routineStatus、todoStatus、itemKind、sourceApplication、taskPriority、reminderPresence 等对记录仍沿现有类型契约不适用，不忽略冻结页面条件或借用定义字段。`page.contentTypes` 的现有合法集合不含 routineOccurrence；不因本阶段扩大它，合法记录选择继续使用 `.scope(.routineOccurrences)`。文本专用范围、所属属性查询和记录页面谓词均是后续接线/产品契约缺口。
+
+#### 确定结果、异常与覆盖
+
+- `matches` 只含已确认应执行且记录输入完整的 done/open/skipped。source 为 existingRecords 或 derivedUnprocessed；后者必须 records.state=absent，前者包括明确 unprocessed 行。身份是 `CommandObjectReference(type: .routineOccurrence, id: routineID, dayKey: day)`，另带 routine 引用和必要标题；没有 createdAt、文件、实体、闭包、canExecute 或权限票据。
+- `reviewRecords` 只描述实际观察到的业务日，kind 区分 unknown/conflict/notScheduled/unattributed/invalidInput；records 保留原归并状态、完整性和重复/冲突诊断，schedule 保留应执行证据或未知原因。非应执行日同时存在冲突时 kind=notScheduled，records.state=conflict 与对应诊断仍保留，不掩盖任一事实。
+- 相同重复记录只返回一次，保留原下标与 warning，不自行降低确定性；不同状态或 done+skipped 均不匹配正常状态。未提供完整记录时，已观察到 completed 也只在待核对中展示。原始记录下标仅对本次 requestID 有意义，不是可写记录 UUID。
+- 当前停用定义保留可靠历史；删除定义不枚举也不展开记录。重复定义含删除副本时整组隔离；缺失/歧义定义的实际行单列无法归属，保留记录完整性，不生成标题或正常结果。非法同习惯记录日仍沿 2C-1 拒绝该习惯的记录输入；其他习惯不受影响。
+- `coverage.gaps` 区分 schedule(missingHistory/conflictingEvidence/invalidInput)、recordsIncomplete、invalidRecordInput、ambiguousDefinition。区间带精确星期掩码，表示区间中这些星期存在缺口，不声称每天均未知；创建前排程仍由原 History 排除。状态冲突与“输入是否完整”分别表达，完整输入也可能包含冲突。
+- 请求窗口、definitionCoverage、requested/covered/providerTypes 与 deletion、历史缺口、记录缺口、枚举剩余分别保留。historyIsComplete / recordsAreComplete 针对本次已枚举的注入范围；未枚举、无归属记录或各自缺口会保留对应不足。定义枚举不完整另由 definitions 表示。`isCompleteForCoveredTypes` 还要求 evaluated、定义完整、无待核对行及影响确定性的诊断；不代表真实来源可信或全局所有提供者已完成。
+- 不适用/缺窗口/矛盾的请求未进入枚举，enumerationIsComplete=false；evaluated 也可能带未知或截断，空 matches 不能解释成完整零结果。新请求、结果、内部习惯切片与诊断的 description/debugDescription 均脱敏，没有业务日志。
+
+#### 技术预算与剩余范围
+
+暂无已确认的统一提供者枚举预算。本阶段选择可注入 `maxInputItems=4096`、`maxWork=100000`、`maxResults=1000`，用于限制同步读取的内存与排程/归并工作；这些是本地技术限制，不宣称性能基线、分页大小或产品规模上限。
+
+输入计数包含定义、原始行、证据、覆盖声明/内部区间、条件/内部项、窗口区间；超限在建立输入索引前返回 inputLimit 和整个 effective 窗口。预处理受输入个数限制，不解析或匹配所属标题等大文本。工作单位按各习惯的记录、覆盖、证据数估算切片/分段/七日采样/单日归并成本，并计入 weekday 查找的固定开销；它是可重复的工作预算，不是毫秒或 CPU 指令计数。每个已知排程片段最多采样七日，长跨度未知/未完整记录直接出区间；有应执行日的片段只枚举可靠完整候选和实际记录，并复用公共单日读取。
+
+maxResults 同时限制 matches 与 reviewRecords 行，原重复行不重复消耗结果名额；范围诊断不计行数，但受输入与工作量边界限制。达到 workLimit/resultLimit 时返回已得到的确定结果，unprocessed 按习惯保留尚未求值的窗口后缀；后续习惯保留完整窗口。无法归属的未处理实际行使用 unprocessedCheckIndices，并保留原请求窗口。分散窗口仍保留区间集合，不把空隙变成待处理日期。所有截断均 enumerationIsComplete=false；不产生持久游标或假完整计数。
+
+#### 聚合前的差异与保留缺口
+
+1. routine 定义身份只含 UUID；routineOccurrence 必须同时带日键，不能在聚合中按 UUID 去重或合并。旧定义 date 是“窗口内存在应执行日”，本提供者 date 是具体行日；旧定义状态仍要求 on，记录状态不要求额外 on。
+2. 各提供者结果和完整性结构尚未统一。此处额外区分定义枚举、历史、记录、行枚举及未归属行；不能把其他提供者的 evaluated 或空结果直接折算为全局完整。Trash 仍有安全分组/保护计数限制，Clipboard 仍有历史覆盖/模式，图片仍有 owner/保护分支。
+3. 记录没有可用于通用文字片段或创建时间排序的自身字段，routineTitle 仅为展示关系；所属文字/标签等查询未获类型化契约。页面谓词、page.contentTypes 的记录支持和文本显式记录范围入口尚未接通，`/routines/checks` 语义保持。
+4. 真实定义/记录枚举、跨输入快照一致性、可靠历史来源与覆盖声明适配均未实施；requestID 不是数据库版本。真实仓储、缓存失效、隐私适配、生产 UI、全局排序/分页/片段/聚合、操作资格和执行仍需独立工作。
+5. 指定 Cursor verifier 当前可调用工具清单无入口，未执行；未重复登录、修改认证或使用其他代理替代。前阶段及历史整树原生、真实数据、系统权限和发行缺口保持，本阶段整体 partial。本次不提交、推送、安装或启动生产应用，完成后停止。
+
+#### 本轮验证与停止点（2026-10-02）
+
+| 检查 | 本次实际证据 |
+|---|---|
+| 四套新增 RoutineOccurrenceQuery 测试 | 最终 **40 项通过**；首轮为 33 通过/1 失败，原因是夹具使用原契约禁止的 `.all` 空筛选；改用合法 p1/set，文字优先级/提醒使用原 `!p1` / `@15:30` 后 34 项通过，再扩展六项冻结/日期/覆盖/预算边界并纳入最终回归。没有修改旧筛选规则来放宽测试。 |
+| `./scripts/build.sh test --only-testing …` | **70 套、520 项通过，0 失败、0 跳过**。覆盖新提供者、2C-1/2C-2、ContentQuery 全链路/类型/转交、七类已有提供者、图片存在性、目录/路径、旧 DayBoard/Agenda/BoardSearch/ItemsListing/日期/分类，以及 SwiftDataRoutineRepository 合成内存回归。命令清单与结果摘要在忽略目录 `build/RoutineOccurrenceQA/regression-command.json`、`regression-summary.json`、`regression-tests.json`。结果包为 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_09-34-02-+0800.xcresult`。 |
+| `./scripts/build.sh` | 最后 Swift 编辑后的 Debug 构建及静态验签通过，staticSignatureVerified=true、distributionReady=false；没有安装或启动生产应用。构建使用原锁等候并行任务，没有绕过锁或改变签名。 |
+| 严格局部 SwiftLint | `swiftlint lint --strict --quiet AreaChain/Domain/RoutineOccurrenceQuery*.swift AreaChain/Domain/RoutineQueryEvaluation.swift AreaChainTests/Domain/RoutineOccurrenceQuery*.swift` 通过。 |
+| 工作流、质量和差异 | `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static` 与 `git diff --check` 通过；最终静态质量包含当前工作区原脚本回归 **178 项通过**，高风险/敏感日志候选均 0。Swift 验证使用上述定向测试与构建，不运行无关全量原生 auto/swift profile。最后仅维护文档证据并重跑受影响检查，没有再编辑本阶段 Swift。 |
+| 指定复核 | 当前工具清单无 Cursor verifier 可调用入口，**未执行，整体 partial**。未检查登录、修改认证或用主代理自查/测试冒充指定复核；历史缺口继续保留。 |
+
+本次环境为 macOS 26.6.2 arm64 / Xcode 26.6 (17F113) / Python 3.9.6。保留既有原生测试的 actor/Sendable、旧 AppKit API 和多目的地警告，不在此阶段清理。自身生产改动仅四个新领域文件及 History.segments 的访问范围/契约注释；DayBoardLogic、AgendaProjection、BoardSearch、RoutineCheckReading、RoutineScheduleEvidence 和习惯写入仓储未改。真实仓储历史适配、真实用户数据、UI/系统认证与发行均未验证，本次有限授权不关闭历史验收缺口。
+
+并行修改持续保留，包括设置 Picker 与宿主测试、Theme/Settings、工程文档和工作流检查器/脚本测试；这些不计作本阶段实现。本阶段没有更改检查器接口或新增脚本；最终静态运行使用当时工作区的检查器。结果顺序仅对 matches 定义为定义输入顺序、日期升序；无法归属行先按原始输入的首个业务键读取并消耗共享行预算，不能因此宣称确定结果前缀覆盖了全部正常定义。
+
+完成本阶段后停止；不进入跨提供者聚合，不提交、推送、安装或发布。
+
+### 9.28 阶段 2J-1：同步批次、跨提供者类型化结果与完整性汇总
+
+2026-10-02 本轮授权仅实现注入快照的同步读取聚合。保留开工已有 2I 的 RoutineOccurrenceQuery 文件、RoutineQueryEvaluation 及设置 Picker、测试宿主、工作流检查器和文档的并行修改；没有把它们计作本阶段修改或关闭历史验收缺口。不接真实仓储、生产 UI、排序/分页、缓存或执行。指定 Cursor verifier 无可调用入口，不重复登录检查、不改认证、不冒充指定复核；整体仍 partial。
+
+#### 批次入口、单一输入与实际保证
+
+| 接口 | 职责与实际消费者 |
+|---|---|
+| [ContentQueryBatch / Snapshots / Facts / Options](../AreaChain/Domain/ContentQueryBatch.swift) | 单份 Session、requestID、分型源、辅助覆盖及显式选项。日期只取 Session.queryDates（含 handoff 冻结环境）。当前只由四套 ContentQueryBatch 领域集成测试消费，没有生产调用方。 |
+| [ContentQueryBatchReader.read](../AreaChain/Domain/ContentQueryBatchReader.swift) | 唯一聚合入口；选择提供者、装配请求、同步调用、隔离冲突并生成摘要。不接受预计算响应、任意提供者列表或额外 Session。 |
+| [ContentQueryBatchAssembly](../AreaChain/Domain/ContentQueryBatchAssembly.swift) | 共用任务视图、图片资料、手记保护资料、习惯定义/记录/证据；直接调用既有九个提供者。没有匹配、排程、日期或隐私判断的新实现。 |
+| [ContentQueryBatchMatch / ProviderRead / Response](../AreaChain/Domain/ContentQueryBatchResult.swift) | 关联值枚举直接保存既有安全投影及原生响应；matches 是各响应的派生视图，不再保存第二套全文或可操作实体。 |
+| [ContentQueryBatchCompleteness](../AreaChain/Domain/ContentQueryBatchCompleteness.swift) | 区分结构、原请求类型、静态可行类型、实际评估、缺源、限制、对象未知、覆盖、保护、历史/记录、枚举与排序提示。 |
+| [ContentQueryBatchIdentity](../AreaChain/Domain/ContentQueryBatchIdentity.swift) | 同类型业务身份冲突隔离、保留原提供者诊断；不跨类型去重，不把原始重复输入转成“干净完整”。 |
+
+`ContentQueryBatchSource<Value>` 将 notProvided / failed / partial(values) / complete(values) 与数据绑定。complete 表示调用方声明该类型候选及同身份核验所需行已提供，包含墓碑；不是空数组的默认含义，更不是本层验证了仓储已读全。Clipboard 继续使用原 ClipboardQueryRecords。未提供/失败不带可误认为当前值的旧数组；不构造完整空请求骗过提供者。
+
+任务主源的 TodoSnapshot 必须不含内嵌子项，SubtaskSnapshot 平面数组是唯一子任务源。需要活子任务或父项 taskOrSubtask 标签条件时，按原 todoId 一次装配嵌套视图，todo/subtask 提供者共用；不修正归属、不丢弃重复。存在第二份内嵌源时隔离任务读取并报告 nestedSubtaskInput，其他类型继续。活子项找不到输入父项时保留 uncontainedSubtasks，不能把组装时无法容纳的行悄悄丢掉后宣称完整；墓碑直接消费两份原始平面类型源，允许孤立行沿原 Reader 表达未知父关系，不重复投递嵌套子项。
+
+RoutineSnapshot 只有一个主源；routine、image owner 与 routineOccurrence 使用同一 checks/checkCoverage/scheduleEvidence。记录完整性仍按习惯/窗口声明；缺证据不补当前排程或今天。图片主源也只有一份，ImageQueryProvider 的 association 与三类记录 has:image 的 imageInput 使用同一数组/覆盖；图片拥有者来自同批 todos/routines/diaries。DiaryQueryMetadata 的名字与私密标签事实同时供普通记录、图片关联及墓碑使用，没有第二份保护表。标签名字资料属于关联辅助资料，可含仍生效的已删除标签，不从本次标签搜索结果反推它。
+
+主源为部分枚举时，图片关联和墓碑的整类型 completeIncludingDeleted 声明被收窄为 partial；图片主源部分时，整集合图片身份/关联声明也收窄。对象级精确覆盖仍按原读取器优先规则解释。覆盖表、公开元数据和保护声明都是调用方事实，本层不能证明其真实来源；没有新增认证机制或授予能力。
+
+保证仅限**同一同步调用的值输入一致**：请求全部使用 batch.session/requestID，临时数组采用 Swift 值语义；重复 requestID 仍重新读取本次输入。没有数据库事务快照版本、跨线程一致性、异步查询代次、缓存新鲜度或锁定失效承诺。Options 仅含 Locale、标签原视图、剪贴板原模式及执行记录原浏览窗口/技术预算；显式剪贴板模式用同份 Session 构造原 ModeRequest，第二份文字条件仍由原构造器拒绝。
+
+#### 提供者选择与顺序
+
+- global 固定 todo → subtask → routine → diary → image → tag；tasks 为前三者的原 composition 子集，各单范围只调用对应提供者。contentTypes 继续取原 Session 的交集，不扩大其合法集合。
+- clipboard 必须显式；trash 必须显式且只调用 TrashQueryProvider，不混入活提供者；routineOccurrences 只调用记录提供者，不混习惯定义。记录范围仍为类型化选择，没有修改 `/routines/checks` 或新增文本语法。
+- 结构非法、条件身份重复或独立命令输入不调用任何提供者。请求类型和静态可行类型均保留；单类型矛盾、不适用、需要 on 等通过原 assessment/readRestriction 说明，不从原请求删除后声称覆盖完整。无需读取的静态受限类型不访问其主源；其他可行类型继续。
+- 缺失某个普通主源时不调用该提供者，摘要报告 source 与 notProvided/failed，其他类型照常返回。部分源可以交给原提供者，但批次不能声称完整。子任务和图片的父/拥有者、墓碑的组上下文属于必要依赖；仅标签墓碑不读取其他家庭与图片。非标签墓碑可能含图片上下文，完整图片身份/保护检查需要同批跨类型拥有者。无关剪贴板模式、记录预算与其他主源不触发读取。
+- 每种 provider 在固定选择表中只出现一次，入口没有响应投递/重放通道。现阶段不建立分发框架、缓存、并发任务或重复响应协议。
+- 返回 order=temporaryProviderThenInput：保留提供者自己的结果顺序（包括显式标签目录视图、墓碑原分组顺序和记录原枚举顺序），无评分、全局结果上限、重排或分页。该顺序不称为相关性排序。
+
+#### 身份、安全投影与来源诊断
+
+普通结果使用 CommandObjectReference(type, UUID)；执行记录使用 routineOccurrence＋routine UUID＋dayKey。相同 UUID 的不同类型、定义与每日记录、父子、图片与拥有者、标签与同名记录均合法并存，不跨类型合并。单份响应内同类型同业务身份重复时全部隔离，即使值完全一样也不能作为 first-wins；原提供者已报告的重复输入继续保留对象/输入下标及不完整性。相同 CheckSnapshot 的归并警告仍由 2C-1/2I 区分，不误当重复响应或正常结果冲突。图片关联诊断不含隐藏图片 ID，聚合不得回查原输入补出冲突身份。
+
+readings 的枚举分支是诊断来源；其中 coverage/typeAnalysis 与原 diagnostics 的 object、conditionID(s)、inputIndices/positions 保留影响类型、条件及输入位置。墓碑 request 级原因使用该 reading 的 requestedTypes，对象级原因使用其 type。全局 textDiagnostics/conditionDiagnostics 只从唯一 Session 提供一份；不跨 provider 合并原因或按错误文本去重。摘要的 determiningDiagnostics 是指向该来源诊断的限制类别，不替换或删除原明细。图片 associationDiagnostics、公开 owners/associations 原样保留，不统计其条数推断隐藏图片数量。
+
+结果不持有批次或原始快照请求，不回补被提供者遮罩的手记正文，不展开 hiddenTitle，没有隐藏图片 ID/数量/文件名。所有新输入/结果包装的 description/debugDescription 脱敏，测试用合成标记递归检查实际存储字段。引用仅供读取关系；无 URL、实体、闭包、认证票据或执行能力。Todo 安排日、Subtask 父安排日、Diary 归属日、Image 附加时间/owner 业务日、Routine 存在性见证及 Occurrence 执行日保持原语义；不补造记录 createdAt，不把见证日设为操作日。原字段依据和真实时间供后续独立排序/片段设计使用。
+
+#### 完整性、展示计数与剩余工作
+
+批次不 AND 各提供者 isCompleteForCoveredTypes。Completeness 同时提供 queryState、requestedTypes、possibleTypes、evaluatedTypes，以及按来源分组的 limitations/hints：
+
+1. 结构/命令由 queryState 区分；静态矛盾、字段不适用、需要参数保留 assessment 全部 reasons、binding、conditionIDs。缺记录窗口/日期环境由原响应 state/diagnostic 区分。
+2. 主源 notProvided/failed/partial 与提供者覆盖单列；实际 evaluatedTypes 不能由“已支持”或“被请求”推断。墓碑 restrictedTypes 和记录 didEnumerate 继续收窄实际评估。
+3. 对象级未知列表、输入歧义/冲突与 provider 诊断原样保留。能力缺失不当字段不适用；AND/OR 已消解的影响仍保留诊断提示，不重新运行条件。
+4. 图片 associationCoverage 与 nonPublicCoverage 分开；手记已知元数据命中的隐藏展示只作 nonPublicPresentation 提示，不凭隐藏正文直接宣称匹配未知。实际正文/has:image 未定仍沿原对象与诊断反馈；记录 has:image 的保护问题若已被其他确定不匹配条件消解，只保留 nonPublicCoverage 提示和原诊断，不重新制造匹配未知。墓碑固定 imageDisplayLimited 保守阻止全范围完整性声明，不按是否有隐藏图改变形状。
+5. 执行记录的历史、记录、枚举、review 分开汇总；原 coverage.gaps、weekdayMask、unprocessed 窗口、unprocessedCheckIndices、workUsed/resultRowsUsed 与具体预算原因全部保留。review/冲突/异常/未知占位不进入 matches 或命中数；枚举截断不是聚合分页。
+6. 标签 frequent 的 usage 问题只影响排序/统计可用性；聚合将其归为提示并保留原诊断标志，不否定已知名称成员资格。recent/unused 的未知成员仍限制完整性。原 ordering.requested/applied/isComplete 可检查；没有改 TagQueryProvider 或复制目录规则。
+
+definiteMatchCount 只数安全确定 matches；visibleGroupCount/visibleContextCount 只适用于墓碑展示。TrashQueryGroup.source、displayAnchor、matches、context 和 TrashRestoreConditions 保留原提升/分组语义；非命中父项/兄弟仅为上下文，不计命中、不默认成为目标。零个可见图片不代表没有隐藏图片。
+
+canDeclareCompleteNoMatch 仅在结构有效、请求类型非空、所有请求类型均有来源摘要、无任何匹配完整性限制且 definiteMatchCount=0 时成立。它只描述本批声明的注入范围；不是全库或事务证明。空结果同时有缺源、静态限制、未知、保护或记录剩余时必须为 false；排序提示可以与完整匹配判断并存。
+
+#### 排序、片段、键盘与分页前仍需定稿
+
+- 各类型的相关性依据和稳定并列规则：缺自身日期的标签/执行记录、只有日期见证的定义、不同业务日期不能靠一个伪造 createdAt 排序。
+- 安全片段协议：原 UTF-16 依据指向哪个结果字段/原文、多个依据如何截取、隐藏手记只显示何种说明；记录标题只是关系上下文，不能伪装自身文字命中。
+- 墓碑按命中还是按展示组分页、上下文如何跟随提升、键盘如何区分命中和非操作上下文；不能把组数替换命中数。
+- 2I 工作/结果预算与未来全局分页/继续读取协议的关系，包括未知区间、待核对与无法归属下标；本轮没有续读游标或最终总数。
+- 真实含墓碑枚举、同身份覆盖、孤立子项、可靠历史来源与保护资料如何原子读取；随后才可定义异步查询代次、隐私失效、锁定撤回及跨线程责任。
+
+这些问题只登记，不实现后续服务框架、排序/片段、统一键盘序列、分页/缓存或真实适配。本阶段结束后停止。
+
+#### 本轮验证与交接（2026-10-02）
+
+新增测试与夹具：[ContentQueryBatchSelectionTests](../AreaChainTests/Domain/ContentQueryBatchSelectionTests.swift)、[ContentQueryBatchCompletenessTests](../AreaChainTests/Domain/ContentQueryBatchCompletenessTests.swift)、[ContentQueryBatchProtectionTests](../AreaChainTests/Domain/ContentQueryBatchProtectionTests.swift)、[ContentQueryBatchOccurrenceTests](../AreaChainTests/Domain/ContentQueryBatchOccurrenceTests.swift) 及 [ContentQueryBatchTestSupport](../AreaChainTests/Domain/ContentQueryBatchTestSupport.swift)。共 **30 项**，全部从原文/Parser/Session 或合法类型化 Session 经批次装配调用真实只读提供者；不手工拼响应。完整、缺失、失败、部分源均为合成资料。
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 最终集成及提供者回归 | `./scripts/build.sh test` 配 69 套 `--only-testing`，**477 passed / 0 failed / 0 skipped**。涵盖 30 项新批次测试、完整查询/页面/转交、九个提供者、图片关联/has:image、墓碑、习惯历史与记录回归。精确命令见忽略目录 `build/ContentQueryBatchQA/regression-command.json`；regression-summary.json / regression-tests.json 保存汇总及结果树。 |
+| 最终结果包 | `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_10-20-20-+0800.xcresult`；Domain 与其测试文件在此次回归前后摘要一致，见 source-before.json / source-after.json。并行 UI 文件不在本轮行为验收声明内。 |
+| Debug 构建 | 最终 Swift 编辑与回归后 `./scripts/build.sh` **passed**，build/ContentQueryBatchQA/build.log 中 staticSignatureVerified=true、distributionReady=false。此前等待原构建锁，不中止其他会话或更改锁/签名配置。没有安装或启动生产应用。 |
+| 严格局部 lint | `swiftlint lint --strict --quiet AreaChain/Domain/ContentQueryBatch*.swift AreaChainTests/Domain/ContentQueryBatch*.swift` **passed**；源码/测试均低于 500 行。 |
+| 静态、工作流与脚本 | `python3 -B scripts/quality_gate.py --profile static --format json`、`python3 -B scripts/check_workflow.py`、`git diff --check` **passed**；静态门禁含原脚本回归 **178 项通过**，高风险/敏感日志候选均 0。最后仅改文档并重跑受影响门禁。未修改并行检查器接口或另建专项执行脚本。 |
+| 指定复核 | Cursor verifier **未执行，整体 partial**；当前可调用工具无指定入口，按本次要求不重复登录/认证检查，不用测试、主代理自查或其他代理冒充指定复核。旧阶段缺口继续保留。 |
+
+先后修正了新调用的 Swift 参数标签及测试对非 Equatable 日期环境的比较方式，未改日期契约。自查补充标签墓碑的最小读取范围、主源部分覆盖限制，以及已由其他条件确定不匹配时保留保护提示的反例；上述最终回归包含这些修改。保留既有编译警告与并行改动，没有扩展 UI 修复或全量原生验收。
+
+本阶段只新增六个 Domain 文件和五个测试/夹具文件，并在本权威文档、架构、组件目录与技能路由增量交接。没有改九个提供者的匹配算法、持久化模型、原生产消费者或执行/认证边界。真实仓储、系统权限、原生 UI、异步/跨线程失效、安装与发行未运行；不宣称完整全库一致性或旧阶段已验收。没有提交、推送、安装、发布、生产应用启动，也不进入下一阶段。
+
+### 9.29 阶段 2J-2A：安全聚合结果的相关性与最近排序
+
+2026-10-02 已确认本阶段仅排列 2J-1 已返回的确定命中，不改变集合、不重新读取提供者、不接真实仓储、UI、片段、分页或缓存。历史指定 Cursor verifier 与验收缺口保留，限定授权不表示此前阶段已验收。
+
+#### 已确认规则与实施边界
+
+- 明确提供 relevance（相关性）和 recent（最近）。相关性依次为：自身名称完整匹配；全部正向文字条件命中自身名称；部分命中自身名称、其余命中适用其他字段；仅其他字段命中。受限或无公开文字证据也落最后档，单独返回原因，不猜测隐藏字段。
+- 正向文字仅未排除的普通词/短语；结构化标签、日期、状态与排除条件不加权。OR 按实际满足分支的 conditionID/alternativeIndex 判断，不要求所有替代词出现；重复条件不重复加权，一个条件的证据不能顶替不同 AND 条件。单一去重词/短语且无 OR 歧义、公开名称证据范围覆盖整个字段时才判完整匹配；多词/OR 保守使用后续档，不拼接搜索串。
+- 自身名称仅任务/习惯标题、子任务自身标题、标签名称和图片文件名。父/拥有者标题不是子项名称；手记/剪贴板首行不作为标题，执行记录所属标题不作为自身文字。不使用置顶、类型权重、隐藏正文位置/次数/长度。
+- 无正向文字回退 recent，返回实际模式与原因。显式剪贴板 mixed/exact 只消费原 modeEvidence，公开有效非空范围可作为其他字段依据；regex 不拆成关键词、不重跑表达式，缺可比较正向文字时明确回退 recent。模式依据不生成名称高档。
+- 最近时间只用真实 createdAt、剪贴板 copiedAt、执行记录 dayKey；标签无自身创建时间，不借关联使用时间。缺失或坏时间排在有时间之后，不借修改/置顶/删除时间，不把哨兵值当真实时间。
+- 使用同批显式 Calendar/时区：先民事日降序，同一天精确时刻在仅日期之前，精确时刻再倒序；只日期保留日键，不伪造时刻。最后按类型稳定 rawValue、UUID、执行日打破完全并列，不用 hashValue、输入或字典顺序。
+- 批次绑定不可变最小排序上下文；排序 API 不接受另一个 Session 或原始对象。检查证据条件引用、替代分支与字段范围；坏证据不能升级排名。原安全投影和完整性/保护/诊断仍保留，结果只声称本批已知子集有序。
+- 墓碑非命中上下文不参与排序或命中数。原 groups、关系与恢复条件保持；平面命中序列不是最终墓碑布局，展示组顺序、键盘进入子项和分页留待后续。
+
+#### 已确认、留待 2J-2B 的片段规则
+
+默认最多两行摘要，选覆盖更多正向词的紧凑片段；排除条件不高亮。私密手记不产生正文片段、范围或长度信息；图片仅文件名和所属信息；执行记录不伪造正文。复用各类型安全投影，不补回隐藏字段。两行是未来 UI 排版要求，字符数测试不代替原生两行验收。本轮不实现这些规则。
+
+#### 实际接口与保守判据
+
+| 接口 | 本阶段实现与后续复用 |
+|---|---|
+| [ContentQuerySorter.sort / ContentQuerySortedResponse](../AreaChain/Domain/ContentQuerySort.swift) | 只接受原响应和明确 mode；requested/applied/fallback、ordered、onlyKnownSubset 与 source。ordered 每项为 CommandObjectReference、可选 tier、reason、time；source 原样保留原批次完整性、保护限制、类型分析、诊断和 groups。 |
+| [ContentQuerySortContext](../AreaChain/Domain/ContentQuerySortContext.swift) | BatchReader 同次构造，Response 以 let 持有；conditionIDs、clauses 的原 id/terms、dates、explicitMode、hasExplicitText。没有第二份 Session 或完整输入字符串，显式模式仅保存模式及非空标记，不保存正则原文。 |
+| [ContentQueryRelevance](../AreaChain/Domain/ContentQueryRelevance.swift) | 单个条件只读取同 ID 的 alternativeIndex，检查未排除 text、positive、允许字段和 UTF-16 范围。未知 ID、坏替代项/范围或 owner 冒用不能升档，返回 invalidEvidence；无证据返回 noPublicTextEvidence，隐藏正文返回 protectedText。 |
+| [ContentQuerySortFields](../AreaChain/Domain/ContentQuerySortFields.swift) | 从原安全 Match 短暂取得公开字段核验范围，不存入排序键或解释；不访问父/owner 标题、不展开 hiddenTitle。 |
+| [ContentQuerySortTime](../AreaChain/Domain/ContentQuerySortTime.swift) | source、day、instant、issue；执行日只有 day，缺失/非法/无效日期环境只有原因，无伪时间。比较固定按档位、民事日、时刻存在性、精确时刻、类型 rawValue/UUID/dayKey。 |
+| [BatchReader](../AreaChain/Domain/ContentQueryBatchReader.swift) / [BatchResponse](../AreaChain/Domain/ContentQueryBatchResult.swift) | 仅新增绑定上下文，原安全投影、匹配与聚合完整性未重算；[Evidence 契约](../AreaChain/Domain/TodoQueryRead.swift) 明确相同 requestID 不足以证明查询一致。 |
+
+OR 的正向实际满足分支中有名称依据即可覆盖该组，不要求所有替代词；若该组仅由合法 absence 排除分支满足，则它不贡献正向文字，也不要求正向替代词命中。不同 AND 条件必须各有自身证据；重复相同条件只影响原诊断，不加分。最高档要求去重后唯一单词/短语条件、无 OR，且公开名称的范围覆盖全字段并通过不计大小写/变音的全文相等检查；组合字符扩展范围本身不证明完整相等。其余组合即使名称全部覆盖也保守为 allName。
+
+统一查询存在正向文字但某条结果无公开文字依据时保留 relevance，以 otherFields 加受限原因表达；不会反推隐藏证据。显式 mixed/exact 只有同模式、有效非空公开 modeEvidence 可作为 otherFields；空依据、空查询或 regex 回退 recent。显式模式不会伪造统一条件 ID，也不比较模式命中的位置、次数或长度。recent 模式不作分档，tier=nil，reason=recentOnly，fallback 只在实际回退时非空。
+
+时间环境必须是能按原日期协议往返的显式公历/时区，坏环境给 invalidDateEnvironment；非有限、超出原协议范围及 distantPast/distantFuture 哨兵给 invalid，不写入 day/instant。无时间与坏时间在同档有时间之后，彼此按稳定身份，不按错误类别给产品权重。仅日期在同日所有精确时刻之后，未给其创建零点时刻；类型只在时间完全并列后比较。onlyKnownSubset 依据原 matchingIsComplete，false 也仅指本批声明范围完整，不代表全库或真实读取完整。
+
+2J-2B 可直接复用 source.readings/matches 的安全 Match、ContentQueryMatchEvidence 的 conditionID/alternativeIndex/field/kind/range/relatedObject、剪贴板 modeEvidence、同批 clauses 及 ordered.id。片段应沿对应安全字段取值；排序解释不保存正文、文件名、命中范围、频次或长度。墓碑 groups 原样保留，片段、组布局和分页仍未实现。
+
+#### 本轮验证与停止交接（2026-10-02）
+
+本轮新增五个 Domain 文件（Sort、SortContext、SortFields、SortTime、Relevance）和四个测试/夹具文件；最小扩展 BatchReader/BatchResponse，更新 TodoQueryRead 的同批证据注释及原有权威文档、架构、目录、路由和工程交接。保留开工已有 2I、2J-1、Picker/设置/标签管理、工作流检查器及持续并行文档修改；未修改提供者匹配算法、检查器接口或新增执行器。
+
+新增 [ContentQueryRelevanceTests](../AreaChainTests/Domain/ContentQueryRelevanceTests.swift)、[ContentQuerySortTimeTests](../AreaChainTests/Domain/ContentQuerySortTimeTests.swift)、[ContentQuerySortIntegrationTests](../AreaChainTests/Domain/ContentQuerySortIntegrationTests.swift) 与[合成夹具](../AreaChainTests/Domain/ContentQuerySortTestSupport.swift)，共 **27 项**。覆盖四档/跨类型、短语/OR/重复/排除、证据引用/字段/范围反例、父与 owner、正文首行、隐藏正文不干涉、置顶、真实时间来源/时区/混合精度/缺失与坏值、身份/洗牌/比较器性质、显式三模式、墓碑上下文、部分源和 Parser→Session→BatchReader→Sorter。合成无效安全 Match 只用于排序边界反例，其余集成经原提供者读取，不接真实数据。
+
+| 检查 | 实际结果与限制 |
+|---|---|
+| 最终 Swift 回归 | `./scripts/build.sh test` 配 72 套 `--only-testing`，**504 passed / 0 failed / 0 skipped**；包括上述 27 项、原批次 30 项、完整查询/页面/转交及九类提供者、关联/墓碑/习惯历史与记录回归。精确命令在忽略目录 `build/ContentQuerySortQA/regression-command.json`，日志及 summary 同目录。 |
+| 结果与输入一致性 | `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_10-58-46-+0800.xcresult`。回归前后 Domain 与 Domain 测试文件 SHA-256 完全一致，source-before.json / source-after.json 留存证据；不把并行 UI 的行为纳入本次验收声明。 |
+| Debug 构建 | 最终 Swift 回归后 `./scripts/build.sh` **passed**；build/ContentQuerySortQA/build.log 的 staticSignatureVerified=true、distributionReady=false。没有安装或启动生产应用，构建不表示系统解锁/发布验收。 |
+| 严格局部 lint | `swiftlint lint --strict --quiet` 覆盖 ContentQuerySort*.swift、ContentQueryRelevance.swift、ContentQueryBatch*.swift、TodoQueryRead.swift 及新增测试，**passed**。所有新增文件低于 500 行。 |
+| 工作流、静态与脚本 | `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`、`git diff --check` **passed**；静态门禁含当前原脚本回归 **179 项通过**，高风险与敏感日志候选均 0。最终文档编辑后重跑受影响门禁。 |
+| 指定复核 | Cursor verifier **未执行，整体 partial**。当前可调用工具无指定入口；未重复登录检查、改认证或以其他代理/主代理自查冒充指定复核。历史阶段缺口继续保留。 |
+
+首轮编译发现新局部变量遮蔽辅助函数名，已显式限定 Self 后修复；新增测试先 22 项、补边界后 25 项通过，最终 27 项纳入上述 504 项回归。保留原有 actor/Sendable、AppKit 弃用和构建目的地警告，未扩大修改面处理无关 UI。纯领域阶段不运行无关全量原生 auto/swift profile；本轮没有真实仓储读取、文件读取、系统认证、安装、发布或生产应用启动，没有提交或推送。
+
+已在 2J-2A 停止。2J-2B 只有已确认规则和可复用接口，没有片段实现或原生两行验收；墓碑展示组顺序、分页、缓存及真实读取完整性仍未处理。
+
+
+### 9.30 阶段 2J-2B：安全摘要、命中片段与高亮映射
+
+2026-10-02 本轮只消费 2J-2A 的安全排序响应生成纯展示值。保留开工已有 2I、2J-1/2A、设置/Picker、测试宿主、工作流检查器及文档的并行修改。当前可调用工具没有指定 Cursor verifier；按本轮要求不重复登录检查、不改认证、不用其他代理或主代理自查冒充指定复核，整体保持 **partial**。本次限定授权不关闭任何旧阶段验收缺口。
+
+#### 接口、身份与共享边界
+
+| 接口 | 本次职责与消费者 |
+|---|---|
+| [ContentQueryPresenter.project](../AreaChain/Domain/ContentQueryPresenter.swift) | 输入同一个 ContentQuerySortedResponse、明确 budget/locale；唯一生产来源是 source.matches 与同批 sortContext。输出 rows 严格跟随 ordered.id，顶层只保留一次原 sorted/source。当前仅新增领域测试消费，没有 UI 或服务接线。 |
+| [ContentQueryPresentationResponse / Row / DisplayText](../AreaChain/Domain/ContentQueryPresentation.swift) | 行含稳定身份、可选 primary/summary、结构化 reasons/relations/metadata、公开内容省略标记、公开字段 expansion 引用及机器诊断。原来源、排名、计数、保护、覆盖、组和完整性不重算。 |
+| [ContentQuerySortFields](../AreaChain/Domain/ContentQuerySortFields.swift) | 排序与片段共用同一安全字段提取和 positiveText 条件/范围门槛；没有复制九类全文提取器。排序保留原 String 范围校验，展示额外复用一次建立的 NSString 索引检查 surrogate 边界；不会因展示的更严校验改变原排名。 |
+| [ContentQueryPresentationEvidence](../AreaChain/Domain/ContentQueryPresentationEvidence.swift) / [EvidenceRules](../AreaChain/Domain/ContentQueryPresentationEvidenceRules.swift) | 条件 ID、合法 OR 分支、排除/中性、字段类型、允许的 parent/owner/related 引用和 UTF-16 范围核验。SortContext 最小增加同批 presentationConditions，保存无宿主位置的条件值以核验元数据分支，不新增 Session、原始快照或替换查询参数。 |
+| [ContentQuerySnippet](../AreaChain/Domain/ContentQuerySnippet.swift) | 在已知合法范围周围枚举有界候选，选择窗口、字素收边、插入省略号和生成原文/片段映射。 |
+| [ContentQueryPresentationDetails](../AreaChain/Domain/ContentQueryPresentationDetails.swift) | 只处理已公开的元数据和所属关系；隐藏主展示直接使用 DiaryQueryPresentation.hiddenTitle，日期保留 DayKey 等既有字段语义，标签沿已有颜色和统计安全值。 |
+
+按完整 CommandObjectReference（类型、UUID、执行日）定位，禁止仅 UUID 回退。缺失/歧义 source 身份或 ordered 重复时，该位置保留身份与明确诊断，不挑 first-wins 对象；source 中未出现在 ordered 的身份给顶层诊断，不私自补行。墓碑 context 不进入 rows、命中数或 expansion；原 TrashQueryGroup/source/displayAnchor/关系完整保留在顶层来源。展示引用不是恢复、选择或执行资格。
+
+#### 技术预算、窗口与映射
+
+默认技术预算为 maxUTF16=160、contextUTF16=24、maxEvidence=128、maxCandidates=64；可显式注入。合法上限分别为 16384、maxUTF16、4096、256，非法参数返回逐行 invalidBudget，不静默修改输入或削减命中集合。每条结果只检查有界依据前缀；超限报告 evidenceLimit。条件去重仅在被检查的依据中进行，重复相同语义条件只投一票，保留其各自条件来源；重复依据不加权。
+
+每个已知范围最多提出两个窗口起点（命中前 context、命中起点），候选达到上限即停止；没有窗口组合幂集。先比较不同正向条件覆盖数，再比较实际覆盖跨度和稳定原文位置。mixed 的非连续范围共同证明同一次模式命中：可完整容纳全部已知范围的窗口优先；不会把字符伪装成统一条件 ID。短字段能完整放入预算时保留原字段；长字段再在获胜窗口内保留紧凑命中区及上下文。
+
+全文只作已公开字段的 UTF-16 索引，不为候选复制长字符串；实际字符串只为选中的片段构造。普通文字只在提供者给出的范围内核验字面内容，且其字素扩展必须恰好对应该范围，拒绝过期/扩大范围。此核验不发现新位置、不重跑全文搜索、模糊匹配或正则。提供者可能只保留字段首个命中，因此本阶段仅声称“在已知证据和预算内选择”，不声称全文最优或实测性能基线。
+
+保留原文换行和空白，不压缩，不解析 Markdown、HTML、URL 或 /指令。原始证据使用 UTF-16，校验后高亮扩到完整字素；截取边界向内收拢，不切开 surrogate pair、emoji、组合字符。开头单个字素放不进预算时无片段并给 graphemeExceedsBudget；已知命中整体放不进预算时给 hitExceedsBudget，不伪装成完整的局部命中。公开字段仍可作为展开引用。ContentQueryTextMapping 分别保存原字段范围和片段范围；首尾省略号是额外展示字符，不进入映射或高亮。重叠高亮合并外观范围，同时 contributions 保留各条件的原字段/片段子范围；不跨不相邻范围涂满间隙。本版每个摘要只输出一个连续窗口，不拼接两个远离片段。
+
+#### 各类型回退与隐私
+
+- 任务/习惯：主标题；仅备注存在合法文字依据时附命中附近摘要。仅标题、元数据或无正向文字时不无条件堆备注。
+- 子任务：自身标题及 parentTask 引用；活子任务使用原 parentTitle。墓碑未公开父名称时只给真实类型引用，不从其他原始输入补名，也不制造父标题高亮。
+- 公开手记：正文命中附近摘要；无正向文字（包括仅排除条件）可使用公开开头。正向文字仅命中标签等元数据时省略正文摘要，返回 metadataOnlySummaryOmitted 和真实结构化理由。无合法公开文字依据时返回 noPublicTextEvidence；不影响已确定的匹配。
+- 隐藏手记：仅原隐藏标题、允许的日期/置顶/标签元数据。没有正文摘要、范围、长度、截断或展开引用；公开投影相同时输出相同，不检查占位标题推测正文。
+- 图片：filename 及原安全 owner 类型引用；当前安全图片投影没有拥有者名称，不从同批其他命中或原始输入补回。受保护图片没有新增明细、读取、预览或打开入口。
+- 标签：原名称、已有允许颜色和使用统计状态；不查真实标签库，缺名字的关联只保留引用。
+- 剪贴板：仅 plainText；统一查询回退同公开手记。显式模式只消费 modeEvidence，mixed 可分段高亮，regex 零长度只给 zeroLengthModeMatch，不伪造字符。无合法范围仍给安全开头及 noLegalModeRange，不重跑模式算法，不展开富文本或文件负载。
+- 执行记录：所属习惯标题/引用、执行日和状态；没有伪造自身标题/正文片段。
+- 回收站：同类型安全展示加原删除时刻与关联说明；非命中上下文留在原组，未发布的正文/图片信息不恢复。
+
+omittedPublicContent 表示公开字段有内容因技术截取或简洁策略未显示；策略省略不自动生成省略号或展开按钮。expansion 只指向实际被技术预算截取的公开原字段，canRequestExpansion 由这些引用决定。行内不复制原全文或整个 BatchResponse，也不持有文件、实体、权限或执行闭包。新增展示容器、元数据、关系及诊断的 description/debugDescription 默认脱敏；合成测试覆盖数组和嵌套可选值，不记录用户正文。
+
+#### 两行、展开与后续待定问题
+
+lineLimit=2 与 canRequestExpansion 仅为呈现契约。本阶段没有原生字体/宽度测量、真实展开/收起、键盘导航、组布局、分页、异步查询、缓存、锁定失效或真实读取/认证接线。UTF-16 预算测试不证明两行已验收。
+
+下一阶段需先定稿：平面 ordered 与墓碑分组布局如何共存；键盘如何区分独立命中、提升项和非操作上下文，如何进入/退出展开摘要及保持焦点；分页按命中还是按组计量、上下文如何跟随，稳定排序与继续读取如何绑定同一批次；2I 剩余窗口/未知范围与全局页边界的关系；原生双语宽度下两行与展开控件的布局。上述事项仅登记，本阶段完成后停止。
+
+#### 本轮验证与停止交接
+
+本轮新增六个 Domain 文件（Presentation、Presenter、PresentationDetails、PresentationEvidence、PresentationEvidenceRules、Snippet）和五个测试/夹具文件；最小修改 ContentQuerySortFields、ContentQuerySortContext、ContentQueryRelevance，增量更新本权威文档、架构、组件目录及技能路由。没有修改原提供者匹配、UI、持久化、检查器或认证边界。排序的字段提取及原范围/排名行为继续由旧回归证明。
+
+新增 [ContentQueryPresentationTests](../AreaChainTests/Domain/ContentQueryPresentationTests.swift)、[ContentQuerySnippetTests](../AreaChainTests/Domain/ContentQuerySnippetTests.swift)、[ContentQueryPresentationBoundaryTests](../AreaChainTests/Domain/ContentQueryPresentationBoundaryTests.swift)、[ContentQueryPresentationProtectionTests](../AreaChainTests/Domain/ContentQueryPresentationProtectionTests.swift) 与[合成夹具](../AreaChainTests/Domain/ContentQueryPresentationTestSupport.swift)，共 **34 项**。覆盖九分支及六种墓碑字段、标题/备注/后段正文、OR/重复/排除、紧凑与稳定窗口、中文/emoji/组合字符/换行、重叠条件贡献与省略号映射、无效/过期/错类型/错关联依据、显式模式、无文字开头、双语隐藏投影不干涉、图片无名称回填、记录无正文、组上下文不提升、身份/计数/完整性和百万 UTF-16 单位长文/候选预算。身份反例经最后加严，确实复用 source 已有 UUID，仅改变类型/执行日；不是仅用一个从未出现的 UUID 证明不回退。
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 排序/聚合/提供者及展示回归 | `./scripts/build.sh test` 配 76 套 `--only-testing`，**538 passed / 0 failed / 0 skipped**；包括 34 项新测试及原 504 项查询、排序、聚合、九类提供者、关联、墓碑和记录回归。精确命令为忽略目录 build/ContentQueryPresentationQA/regression-command.json。 |
+| 回归来源与结果包 | 回归到 Debug 构建的 Domain 与 Domain 测试 SHA-256 一致：source-before.json、source-after.json、source-after-build.json。原包 Test-AreaChain-2026.10.02_11-41-37-+0800.xcresult，独立保留在 build/ContentQueryPresentationQA/Regression.xcresult；summary 与完整结果树同目录。并行 UI 文件不在本轮行为验收声明内。 |
+| 最后身份断言加严 | 只修改一个测试中错误身份的 UUID，使其与 source 真正相同；生产源码不变。四套展示测试最终复跑 **34 passed / 0 failed / 0 skipped**，随后 Debug 构建 **passed**；final-source-before.json / final-source-after.json 完全一致。final-targeted-command.json、final-targeted-summary.json、final-targeted.log 和 build.log 保存最终证据。 |
+| Debug 构建 | 上述 538 项回归后 `./scripts/build.sh` **passed**，staticSignatureVerified=true、distributionReady=false。测试使用脚本的普通隔离路径，不开启真实钥匙串授权，没有安装或启动生产应用。 |
+| 严格局部 lint | `swiftlint lint --strict --quiet` 覆盖六个新 Domain、三个共享修改及五个测试/夹具文件，**passed**；均低于 500 行。最终测试断言加严后已重跑通过。 |
+| 工作流、静态与脚本 | `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`、`git diff --check` **passed**。静态门禁含原脚本回归 **179 项通过**，高风险和敏感日志候选均 0；最终文档后重跑受影响门禁；未改原检查器接口或另建执行器。 |
+| 指定复核与原生验收 | Cursor verifier **未执行，整体 partial**，不重复认证检查、不替代指定复核。原生实际两行、展开/收起、键盘及组/分页均未实现或验收；所有历史阶段缺口保留。 |
+
+过程中修正了 mixed 单条件紧凑度可能只选末字符的问题、UTF-16 surrogate 半边拒绝、条件包装的嵌套描述脱敏、已公开标签关联的 UUID 核验，并区分完整命中超过预算与单个字素超过预算。失败测试与修复后回归不混记；敏感标记断言先计算布尔值，避免失败诊断展开合成正文。既有 AppKit 弃用、actor/Sendable、构建目的地警告仍保留。技术长文/窗口测试不是原生行数或性能 SLA 验收。
+
+完成本阶段后停止；未提交、推送、安装、发布、启动生产应用或进入键盘/分页/真实读取阶段。
+
+### 9.31 阶段 2J-3A：展示分组、可见命中序列与键盘选择
+
+#### 2026-10-02 实施前确认
+
+默认显示确定命中，未命中关联上下文收起。↑↓只遍历当前已展示的确定命中；标题、说明、上下文、未知和待核对项不进入序列。Return 请求打开当前命中，子任务保持自身定位及父导航，执行日保持日期，回收站只请求查看。Tab 可达展开按钮与上下文控件，但不混入命中序列。输入编辑器聚焦时现有编辑/补全优先。
+
+多选仅保存确定命中身份；选择已展示与选择全部已知是两个显式事件，追加展示不自动扩大选择。折叠或翻页不删除多选，但活动对象不能不可见。刷新/重排按稳定身份保留，消失对象清除，活动对象消失请求回到输入框，不按相似标题替换或自动选另一个可执行对象。浏览选择不创建、修改或清空 CommandDraftTargets，也不证明最新业务授权。
+
+展开不抢焦点；收起隐藏当前控件时返回其展开按钮。正文展开仅使用已有 ExpansionReference，隐藏手记没有正文入口。上下文控件显式指定目标，不从当前命中猜目标。所有列表事件绑定展示版本；仅输出打开/焦点意图，不接 NSEvent、NSWindow、FocusState 或监视器。
+
+普通搜索平铺。回收站仅沿已核实删除关联归组，组位置取组内排名最高的命中，组内沿全局排名；父未命中只是上下文，不参与排名。组身份与最佳命中分离；独立删除和未知关系不强制合组。缺失、歧义、冲突显式诊断，合法命中安全回退独立展示，不按标题拼接、不 first-wins、不从原始墓碑补回隐藏对象。
+
+后续分页仅登记：普通按命中、回收站按组，默认每次 20 个展示单位且可配置；加载更多追加同批结果，大组可分段并明确已知未展示命中数。查询/排序/批次变化不能拼接旧页。本阶段仅接受显式已展示单位/成员，不实现页码、游标。
+
+后续继续读取仅登记：与加载更多分开，沿同查询同快照处理剩余工作，数据变化发新查询；不支持安全增量时可同快照提高预算重算，但不称增量续读。新结果重新排序/分组，不能简单尾部追加；保留对象选择及可见位置稳定身份。历史不足、保护限制、冲突不能靠预算解决，不无限自动读取；取消保留最后完整发布版本。
+
+#### 实际接口与 2J-3B 接入点
+
+| 接口 | 本阶段契约 |
+|---|---|
+| [ContentQueryDisplayBuilder.build](../AreaChain/Domain/ContentQueryDisplayBuilder.swift) | 仅接受同批 ContentQueryPresentationResponse，沿 ordered 组装单位；不匹配、不排序、不生成摘要、不读取原始数据。校验组 ID、成员归属、命中/上下文分离及唯一性，缺失引用、冲突与独立回退分别诊断。 |
+| [ContentQueryDisplaySnapshot / Unit / Context](../AreaChain/Domain/ContentQueryDisplay.swift) | 顶层唯一安全来源；普通 `.row(object)`、墓碑 `.trashGroup(source.id)`。hits 引用 Row，context 引用原 TrashQueryGroup.context。sourceGroup、displayAnchor、bestMatch 分别保存原组、原显示锚点和当前排名最佳命中，排名变化不改组 ID。 |
+| `ContentQueryDisplayVisibility` | 显式单位集合＋成员集合，两者同时包含才可见；任意输入顺序不会重排结果。默认 all，支持组内子集。visible 为当前展示顺序，known 为全部合法确定命中集合，knownUndisplayedCount 及按单位重载提供已知未展示数量。没有页号、游标或自动追加。 |
+| [ContentQueryBrowseState / Event / Action](../AreaChain/Domain/ContentQueryBrowse.swift) | active、selected、expanded 分开；只存类型化对象/控件身份。apply 消费版本绑定事件，publish 使用 replacing 当前版本比较并替换；已发布版本不可重放。状态内 snapshot 仅持有同份安全呈现来源，选择集合没有正文、实体或操作草稿。 |
+| `ContentQueryBrowseOpen / Focus / Effect` | 仅返回打开/焦点意图及拒绝原因。打开携带实际对象、已有父导航和 viewingTrash；对象仍需最新业务核验。焦点可指输入、命中或明确控件；没有执行闭包、窗口或认证能力。 |
+
+普通单位顺序与 ordered 完全一致。墓碑沿全局 ranked 身份一次累计各组成员，在第一次遇到该组命中时输出组；组内仍沿全局顺序。组内排列会让低排名成员显示在下一组之前，这是已确认的组布局规则，不改写 source.ordered。组引用整体不合法时，原合法命中沿 ranked 顺序独立出现，不携带未经核实的组上下文；源响应、覆盖和诊断仍保留。排序层缺失/歧义/重复身份无法提供确定可执行行时给 invalidHit 或沿 Presenter 的 unorderedSourceIdentity 保留诊断，不凭外部下标补行。
+
+每次 build 生成独立 UUID 展示版本，包含本次安全响应、排序、分组与显式可见性；包括只改变成员可见性的发布。publish 必须给当前版本，旧事件返回 staleVersion 且无打开/焦点输出。同一批次刷新仍发新展示版本；不把 requestID 当数据库快照版本，不声称解决未来异步查询或真实隐私失效。
+
+↑↓首次向下到首项、向上到末项，边界停留；只有显式 move/activate 才改变活动对象，不由快照发布选择替代对象。selectVisible 将浏览多选替换为当前序列集合，selectAllKnown 替换为全部已知集合，select(id, Bool) 显式增减。发布只做身份交集，不自动加入新对象。活动项不可见/消失时清空并请求输入焦点，不选替代命中；仍存在但隐藏的多选保留。保留选择不代表权限或执行资格。
+
+contextToggle / bodyToggle 为稳定展开按钮身份，context / body 是明确目标的区域控件。toggleControls 与 reachableControls 提供 Tab 可达性，不实现系统 Tab 顺序；focusControl 只对当前可达控件发意图。展开不改变活动对象或请求焦点；收起隐藏焦点控件时回到对应按钮。发布隐藏控件时回到仍可达的对应按钮，否则回输入；活动命中消失的输入意图优先。expansionReference(for:) 只返回已有、已展开且可达的公开正文引用；没有给非命中上下文重新生成正文引用，隐藏手记无正文控件。
+
+2J-3B 可直接复用 UnitID、units、hits、context、visibility.units/members、visible、knownUndisplayedCount 和版本绑定 publish。分页策略、20 单位默认、组内分段调度、加载更多与继续读取尚未实现；需由后续明确授权的宿主提供新的可见身份集合或完整重新计算的安全响应。本阶段没有生产消费者，实际消费者仅三套新 Domain 测试及合成夹具。
+
+#### 本轮验证与停止交接（2026-10-02）
+
+本轮新增三个 Domain 文件及三个测试文件/一个夹具；TodoQueryRead 中 ContentQueryMatchField 只从 Equatable 扩展为 Hashable，为类型化控件身份服务，不改变字段或匹配行为。更新本权威文档、架构、组件目录与技能路由；保留原有和并行的设置/主题/搜索修改，没有修改检查器接口、认证、原匹配排序或生产 UI。
+
+新增 [ContentQueryDisplayTests](../AreaChainTests/Domain/ContentQueryDisplayTests.swift)、[ContentQueryBrowseTests](../AreaChainTests/Domain/ContentQueryBrowseTests.swift)、[ContentQueryDisplayProtectionTests](../AreaChainTests/Domain/ContentQueryDisplayProtectionTests.swift) 与[合成夹具](../AreaChainTests/Domain/ContentQueryDisplayTestSupport.swift)，共 **25 项**。覆盖平铺顺序、组最佳排名/子项提升/父子同时命中、上下文默认收起/不进入键盘、重复/缺失/冲突组回退、独立与未知关系、成员可见性、↑↓/打开/多选/两种全选、追加不扩选、展开/收起焦点意图、重排/对象消失/同名不替代、旧版本及重放拒绝、子任务/执行日导航、私密手记与受保护图片、未知/review 排除及 Parser→Batch→Sort→Presenter→分组→选择链路。
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 最终 Swift 回归 | `./scripts/build.sh test` 配 **79 套** `--only-testing`：**563 passed / 0 failed / 0 skipped**，包含本轮 25 项及原 538 项排序、片段、聚合、九类提供者、墓碑、关联与记录回归。xcresult 按参数运行展开为 615 次，测试摘要按 563 项报告。精确命令为忽略目录 build/ContentQueryDisplayQA/regression-command.json。 |
+| 证据与并行修改 | 回归前、回归后、Debug 构建后的 Domain 和 Domain 测试 SHA-256 一致。source-before.json / source-after.json / source-after-build.json 与 Regression.xcresult、regression-summary.json 保存在 build/ContentQueryDisplayQA。期间出现的并行 Theme/Features/资源修改保留，不纳入本轮 UI 行为验收。 |
+| Debug 构建 | 回归后 `./scripts/build.sh` **passed**，staticSignatureVerified=true；只构建验签，未安装、发布或启动生产应用。普通测试未开启真实钥匙串授权。 |
+| 局部 lint | `swiftlint lint --strict --quiet` 覆盖三个新 Domain、TodoQueryRead 及四个新测试/夹具文件，**passed**；所有新增 Swift 文件低于 500 行。 |
+| 工作流与质量 | 最终文档后运行 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json` 和 `git diff --check`，均 **passed**；门禁内原脚本回归 **180 项通过**，高风险与敏感日志候选均 0。Swift 行为另由上述定向回归和构建验证，不运行无关全量原生 profile。原检查器接口/规则未改变，沿已有脚本回归，不新增执行器。 |
+| 指定复核 | 当前可调用工具中没有 Cursor verifier，**未执行，整体仍 partial**。不重查登录、不改认证、不以主代理自查或其他代理冒充指定复核；本次限定授权不表示旧阶段已验收。 |
+| 原生与后续范围 | 原生 UI、真实 Tab/焦点/键盘、分页、续读调度、指令执行均未实现或验收。纯状态用例不能证明原生行为；既有历史验收缺口继续保留。 |
+
+实现停在 2J-3A；未提交、推送、安装、发布、启动生产应用或进入 2J-3B。
+
+### 9.32 阶段 2J-3B：展示分页、组内分段与浏览状态接续
+
+2026-10-02。本轮限定授权仅控制 2J-3A 已构造安全展示来源的可见范围。保留已有搜索、原生控件、文档和脚本的并行修改；不重新读取、匹配、排序、生成片段，不接生产 UI、真实焦点、滚动或预算续读调度。本阶段本地证据不关闭前阶段缺口；指定 Cursor verifier 当前无可调用入口，未检查登录、修改认证或使用其他复核冒充，整体 **partial**。
+
+#### 来源与可见性版本
+
+- [ContentQueryDisplaySnapshot](../AreaChain/Domain/ContentQueryDisplay.swift) 内部持有不可变 `ContentQueryDisplaySource` 引用，每次 `DisplayBuilder.build` 新建随机 `sourceID`。它绑定安全 PresentationResponse、排序/分组、诊断及安全身份索引，不能由调用方指定 ID 或替换已绑定内容；不使用正文散列或 requestID 推断同源。即使 requestID 相同、命中身份相同，新 build 也必须作为新来源。
+- `version` 是单次展示修订的随机 UUID；`revisingVisibility` 只接受单位/成员/上下文身份集合，生成新 version 并共享原来源。`sharesSource(with:)` 可核对实际引用同一性。分页不会调用 build、Presenter、Sorter 或提供者；仅重建可见身份集合，不重复构建业务快照或片段。源数据仍为原安全值，分页进度不存正文。
+- [ContentQueryPaginationStamp / Event / State](../AreaChain/Domain/ContentQueryPagination.swift) 同时绑定 sourceID 与 revision（即 snapshot.version）。加载事件必须携带产生时的 stamp；首次成功发布即使旧事件失效，同修订竞争事件也只能成功一次。拒绝时不改进度、浏览状态或修订，不发打开/焦点意图。没有接受任意数组追加的接口。
+- `reset(to:replacing:focused:)` 要求当前 stamp 与未在本分页会话发布过的新来源；同源修订不能用来重置，已退役来源也不能重新发布。新查询、新排序、新读取批次均从首段重建，不拼接旧页。此接口是纯同步比较并替换，不宣称解决未来异步查询取消、仓储一致性或隐私失效。
+
+#### 顶层、组内与上下文分页
+
+`ContentQueryPaginationPolicy` 的 `units`、`members`、`contexts` 是三个独立额度，默认分别为 20。建立分页时三个值均须为正数，否则抛出 `invalidPageSize`；进度以 `count + min(size, total - count)` 计算，合法 Int.max 额度不会产生加法溢出。空来源仍能建立合法状态。
+
+| 操作 | 单位与边界 |
+|---|---|
+| `loadMoreUnits` | 普通搜索每个命中行占一个单位；回收站每个既有组占一个单位，独立行也占一个。初始取前 units 个，之后扩展下一段，顺序完全来自 snapshot.units；组不会拆到多个顶层页。新出现单位初始化自己的成员/上下文前缀，已出现单位的进度保持。 |
+| `loadMoreMembers(UnitID)` | 只接受当前已展示的回收站组，按 unit.hits 原顺序扩展前缀，不重新排序。最佳命中 hits.first 必在初始段；只影响指定组，最后一段可不足额度。普通独立行无需组内加载。 |
+| `loadMoreContexts(UnitID)` | 与命中前缀独立，按 unit.context 原顺序扩展。分页始终显式提供有界 visibility.contexts；未加载的组、未知组被拒绝。上下文不占命中额度、不进入命中数或全选。 |
+
+到对应末尾返回 `exhausted`，不生成新修订或任何读取需求。所有加载均须显式事件，不实现页码跳转、上一页、无限自动加载或真正的继续读取命令。
+
+上下文默认仍收起。每个已出现组预分配有界上下文前缀，只有原 Browse 的 contextToggle 已展开时才暴露控件。`visibleContext(in:)` 表示该组可用的上下文范围；实际可达性还须经 `BrowseState.reachableControls`。Tab 不可进入前缀外或收起的上下文。`loadedContextCount` 与展开后的 `contexts.displayed` 分开；收起保留前缀进度，重新展开恢复该前缀。显式加载上下文不会自动展开。旧 2J-3A 调用可省略 contexts（nil 为其原全上下文语义），分页路径始终传入集合。
+
+#### 浏览状态接续与稳定锚点
+
+PaginationState 只组合一份既有 `BrowseState`，`applyBrowse` 委托其原事件入口；active、selected、expanded 仍只有原状态机这一份所有者。所有展示改变均调用版本绑定的 `publish`，旧版本浏览事件继续返回 staleVersion。
+
+- 同源加载保持原活动身份、已有选择和合法展开，不自动选新命中、不抢焦点、不请求打开；新增命中自然进入原 visible 的 ↑↓序列，新增公开正文/上下文控件按原 toggleControls/reachableControls 契约暴露。
+- selectVisible 只选择当前已展示确定命中；selectAllKnown 可选择来源中尚未展示的确定命中。两者均排除未知、review、非命中上下文和安全投影已隐藏的对象。浏览多选不复制到 CommandDraftTargets，保留身份不代表业务资格或权限。
+- 新来源发布按原 publish 取选择与新 known 的交集，合法展开按可见按钮交集保留；不复用旧成员进度。活动对象仍在初始范围则保留；不在初始范围或已消失则清空活动身份并返回 `.input` 焦点意图，不按相同下标替换。
+- `BrowseState.activeAnchor` 与 `PaginationEffect.previousAnchor` 提供 `ContentQueryBrowseAnchor(unit, hit)`。reset 返回发布前稳定身份供后续定位；这里只保存引用，不自动扩页、激活、选择替代对象或计算像素滚动。控件被新首段隐藏时，原 publish 回退到仍可达展开按钮，否则回输入；活动命中不可见时输入回退优先。
+
+#### 计数、完整性与安全
+
+[ContentQueryPaginationStatus](../AreaChain/Domain/ContentQueryPaginationStatus.swift) 输出 stamp、visibility、顶层 units、全局 hits、各组命中/上下文数量，以及原始 `ContentQueryBatchCompleteness`。`hits.known` 仅为已有安全确定命中数，`hits.displayed` 为 snapshot.visible.count；`remaining` 与原 `knownUndisplayedCount` 一致。组计数也只取 unit.hits/context，不从原始图片或墓碑输入补数量。
+
+`hasMoreUnits` / `hasMoreKnownHits` / `hasMoreToLoad` 描述已读取内容的展示余量；最后一个还含未分配的上下文前缀，收起但已加载的上下文由 expand 控制。`hasProviderUnprocessedWork` 单独反映原执行记录提供者的 unprocessed / unprocessedCheckIndices 是否非空，不将其条数解释为未知命中数，不生成续读操作。
+
+原 completeness 的来源/输入不足、历史/记录缺口、review、保护限制及非公开提示原样保留，细节仍沿 snapshot.source 访问同份安全响应。`canDeclareCompleteNoMatch` 直接沿原批次判断。展示到末段不意味着查询完整；提供者不完整也不妨碍加载已知命中；历史或保护限制不能解释成“加预算就能读取”。隐藏图片数量变化不能改变公开分页计数。State、Status、Display 的描述均脱敏，无全文游标、磁盘游标、隐藏计数或新权限能力。
+
+#### 2J-3C 可复用接口与停止边界
+
+后续预算续读若有独立授权，可读取原提供者余量/完整性，生成新的 Batch→Sort→Presenter→Display 来源后调用 reset，复用稳定选择与 previousAnchor；不能把旧源 loadMoreUnits 当续读，不能尾部拼接新读取结果，不能因同 requestID 复用旧页。锚点只有稳定组/对象身份，真实滚动位置、原生焦点、取消和最后完整发布、读取预算调度及安全增量能力均待后续实现与验收。
+
+实际消费者为四套新 Domain 测试及合成夹具，原 Display/Browse/保护、排序/片段和提供者回归继续复用。没有新增检查器规则、脚本或生产消费者，文档/组件引用仍由原 check_workflow.py 与原脚本测试验证。指定复核和所有历史验收缺口继续保留。本轮到 2J-3B 停止，不进入 2J-3C。
+
+#### 本轮验证与交接（2026-10-02）
+
+生产代码新增 Pagination / PaginationStatus 两文件，局部扩展原 Display / DisplayBuilder / Browse；未更改提供者、排序器、Presenter、业务保存或认证。测试新增 [PaginationTests](../AreaChainTests/Domain/ContentQueryPaginationTests.swift)、[GroupPaginationTests](../AreaChainTests/Domain/ContentQueryGroupPaginationTests.swift)、[PaginationBrowseTests](../AreaChainTests/Domain/ContentQueryPaginationBrowseTests.swift)、[PaginationStatusTests](../AreaChainTests/Domain/ContentQueryPaginationStatusTests.swift) 共 **23 项**，共用 [QueryPaginationFixture](../AreaChainTests/Domain/ContentQueryPaginationTestSupport.swift)。本权威文档、架构、组件目录和技能路由同步；其他已有和并行修改保留。
+
+| 检查 | 实际证据与边界 |
+|---|---|
+| 分页与直接消费者 | 四套新分页加原 Display/Browse/DisplayProtection，**48 passed / 0 failed / 0 skipped**；参数化展开 57 次。覆盖 0/1/19/20/21/整页/尾段、三个非法额度与 Int.max、防重放/跨源/旧浏览版本、组/独立行、安全回退行、独立成员/上下文进度、选择/展开/焦点意图、重排锚点、保护不泄露、预算与完整性分离。首轮两处夹具假设（独立墓碑的单成员组、无命中备注不提供展开）沿原契约修正，未修改产品规则。 |
+| 最终扩展 Swift 回归 | `./scripts/build.sh test` 配 **83 套** `--only-testing`，**586 passed / 0 failed / 0 skipped**，参数化展开 **647 次**；包含本轮 23 项及原 563 项展示/浏览、排序、片段、聚合、九类提供者、墓碑、关联、查询和记录回归。精确参数位于忽略目录 build/ContentQueryPaginationQA/regression-command.json；同目录保存 Regression.xcresult、regression-summary.json 与日志。 |
+| 源码与并行一致性 | Domain 及 Domain 测试在最终回归前、回归后、Debug 构建后 SHA-256 一致（source-before / source-after / source-after-build.json）；新文件集合也一致。并行原生主题/设置等不纳入本轮运行行为验收。 |
+| Debug 构建 | 回归后 `./scripts/build.sh` **passed**，staticSignatureVerified=true；只构建验签，普通测试未启用真实钥匙串授权。保留原多架构目标选择警告；定向测试编译中的旧原生 API/并发警告不在本轮修改范围，不写成零警告。 |
+| 严格 lint 与静态门禁 | `swiftlint lint --strict --quiet` 覆盖五个本轮 Domain 文件及五个测试/夹具文件，通过；最终文档后重跑 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`、`git diff --check`，结果见同目录 workflow.log / quality.json。原静态质量门禁包含 **180 项脚本回归**；未改检查器接口/规则，不新增执行器。 |
+| 指定复核 | Cursor verifier **未执行 / blocked，阶段整体 partial**。当前无可调用入口；不重复登录检查、不改认证、不以主代理自查或其他代理冒充指定复核。本轮授权不表示前阶段已验收。 |
+| 未执行与停止 | 没有生产 UI、真实 Tab/焦点、像素滚动、预算续读调度或完整恢复算法的实现/验收；无关全量原生 profile 未运行。所有历史真实库、隐私、系统与发行缺口保留。未提交、推送、安装、发布或启动生产应用，完成本地开发验证后停在 2J-3B。 |
+
+### 9.33 阶段 2J-3C：预算续读、同快照重新求值与结果发布协调
+
+2026-10-02。限定使用注入值和既有同步领域管线。保留工作区前序搜索与并行原生控件修改；不接真实仓储、UI、系统线程调度、持久缓存、认证或业务执行。历史指定 Cursor verifier 与验收缺口保留，本阶段整体 **partial**，不把前阶段授权解释为验收通过。
+
+#### 冻结来源、任务与展示版本
+
+| 接口 | 所有权与职责 |
+|---|---|
+| [ContentQueryReadOwner](../AreaChain/Domain/ContentQueryReadOwner.swift) | 唯一保留冻结 ContentQueryBatch 及展示配置的运行内所有者。begin 接受新值输入并返回初始任务；continueReading 只接受来源令牌和预算，不接受另一组快照、查询、日期或响应。宿主须串行调用，无 Sendable/后台线程承诺。 |
+| ContentQueryReadSource | 每次 begin 新建随机 generation；同一个 requestID、相同命中身份甚至相同 Batch 值再次 begin 也建立新来源。旧来源不能再求值、续读、完成或失败回写。 |
+| ContentQueryReadTask | 独立随机任务身份、来源代次、原 Batch requestID、预算与 initial / sameSnapshotReevaluation 方法。requestID 保留提供者证据/输入下标关联用途，不能单独证明新鲜度；任务不保存正文、文件名、Batch 或执行闭包。 |
+| ContentQueryReadTicket | 只能由本文件内的完整 evaluate 链签发，调用方不能拼装 Response 或替换候选；票据不是当前结果。描述脱敏，内部只保留原安全 Display 来源，不重复冻结输入。 |
+| ContentQueryReadPublication | 最后完整发布任务及 PaginationState；响应经 pagination.snapshot.source 回溯原唯一安全展示链，不另存平行 Response。新来源正在准备、取消或失败时，这份结果仍标注原 source，不会被重标成新查询结果。 |
+
+读取代次、单次任务身份、Batch requestID、提供者预算、Display.sourceID 与分页 revision 各自表达不同语义。加载更多可改变分页 revision，同时不改变读取任务；发布使用当时最新合法分页状态，而不是准备任务时的旧页戳。
+
+冻结保证仅限 Swift 值输入：外部修改原 Batch、数组、辅助事实或模式不会改变所有者冻结的版本。evaluate 仅在调用栈中临时换入任务预算，完整调用原管线，不将源输入复制到各层长期保留。没有真实数据库事务快照或锁定失效接线；没有正文序列化、正文散列、日志新鲜度证明或新增权限。
+
+#### 续读资格、预算增长与同快照重算
+
+[ContentQueryContinuationRemainder / Policy](../AreaChain/Domain/ContentQueryContinuation.swift) 只从 evaluated 的 routineOccurrence 读取中识别 `coverage.unprocessed` 的 inputLimit / workLimit / resultLimit。无法归属记录的 unprocessedCheckIndices 还须有原提供者相应预算诊断。历史/记录不足、冲突、缺失来源、身份歧义、权限/保护、字段不适用、正则或展示片段限制均不生成续读维度。
+
+- 加载更多只转交原 Pagination 事件；展示到末页不会触发读取。反之，只要有预算余量，不必先耗尽已知展示页。
+- 调用方显式提供下一份 RoutineOccurrenceQueryBudget，原默认值仍为输入 4,096、工作 100,000、结果 1,000，没有自动加倍或循环。
+- 本协调层技术硬上限分别为 **16,384 / 400,000 / 4,000**，策略 maximum 可再调小。选择原预算四倍作为本阶段有限复算空间，避免引入无限增长；这是工程约束，未建立生产数据规模、主线程性能或产品总量保证，不能据此扩大默认读取规模。
+- 全部维度须合法、非递减且不超过策略上限，至少一个实际中断维度严格增长；只增加无关维度、重复预算、负数、减小预算或 Int.max 越界均拒绝。比较验证不做乘法/加法增长，因此没有预算倍增溢出。已到相关维度上限返回 atBudgetLimit，超限输入返回 budgetExceeded。
+- attemptedBudget 记录本来源最近已接受的尝试，即使取消、失败或无进展也不回退，避免同预算重复启动；再次尝试必须显式提高相关预算。更换查询、日期解释环境、快照、保护事实、排序/展示或匹配模式都必须 begin 新来源。
+- sameSnapshotReevaluation **从冻结输入重新运行全批 BatchReader**，不是增量游标，不从未处理下标起拼接，不声称只处理剩余数据。新响应完整替换旧响应；没有跨提供者结果合并器。
+
+#### 准备、计算、发布、失败与无进展
+
+1. begin 或 continueReading 生成绑定来源和随机任务身份的任务；同来源有 prepared / computing / awaitingPublication 请求时，继续读取返回 busy。
+2. evaluate 核验来源、任务与 prepared 阶段，依次调用 **BatchReader → Sorter → Presenter → DisplayBuilder**，完整返回票据后进入 awaitingPublication。不能重复计算同一任务。
+3. publish 再次核验来源、当前任务和阶段。只有完整候选通过检查并完成 Pagination.reset 后，才替换 published；已消费、被取消、失败、跨所有者或被新来源取代的票据均拒绝。
+4. 继续读取若没有进入枚举、增加已处理结果/待核对行或推进实际未处理区间/下标，返回 noProgress，保留旧结果、分页、选择和锚点，清除忙碌状态。workUsed 增加或中断原因变化本身不算进展；不自动重试。continuationRemainder 仅更新最近完整求值的预算维度：例如工作预算变充足后才发现结果预算仍为零，下一次显式请求应提高结果预算；这份反馈不是发布新结果。
+5. fail 只记录封闭失败状态，不接收可能泄露正文/文件名的原始错误字符串；丢弃任务发布资格并保留最后完整结果。提供者覆盖缺口仍由原 Response 表达，不把部分覆盖伪装成成功读取全部数据。
+
+cancel 的结果明确为 **publicationCancelled**：取消结果发布资格，保留完整旧结果及合法浏览状态。当前同步函数执行中无法由此入口立即中断；测试用准备、求值返回和迟到发布事件证明拒绝，不声称正则或所有枚举即时停止，不强制终止线程。真实异步调度、合作式取消、CPU/内存和主线程预算仍待生产读取适配。
+
+#### 分页重置、选择与身份锚点
+
+[PaginationState.reset](../AreaChain/Domain/ContentQueryPagination.swift) 增加可选 `preservingActiveVisibility`，默认 false 保持 2J-3B 原行为；ReadOwner 发布时显式启用。reset 从新来源重建初始额度，内部沿当前 Browse.activeAnchor 的 unit/hit 寻找原对象，优先同组、再按稳定对象身份定位。能定位时只扩展到该单位及成员所需的最小前缀，其他新进入组保持初始成员/上下文额度，不复用旧下标或游标。
+
+- 所有新结果重新聚合、排序、生成安全片段与分组；新增高相关命中或较新日期可进入前方，不能简单尾部追加。墓碑关系仍只来自原 TrashQueryGroup/DisplayBuilder。
+- 选择、展开与活动身份继续由原 Browse.publish 管理；多选取原选择和新 known 的交集，新命中不自动加入。未显式选择任何新对象，不产生打开或执行权限。
+- previousAnchor 返回发布前稳定身份，activeAnchor 返回新来源中的活动身份。对象消失时原 publish 清空 active 并返回 input 焦点意图，不选相邻下标；控件被首段隐藏时沿原可达展开按钮/输入框回退。
+- 发布后旧分页 stamp 和旧浏览 version 均失效。同源准备/计算期间合法的加载更多和选择仍可发生，最终发布按最新状态恢复。
+- 输出仅为身份锚点和焦点意图，没有像素滚动或原生焦点实现。无预算余量不等于全局完整；原历史、记录、review、保护、缺源与类型限制在完整性汇总中继续保留。
+
+#### 来源失效与真实隐私边界
+
+invalidateSource 是供未来隐私代次变化消费的显式入口，核验当前令牌后释放本所有者的冻结输入、最后结果、任务和预算；旧任务/票据/令牌不能再发布或续读。它与普通 cancel 的保留策略分开。未来保护边界变化须先调用失效入口，不能用普通取消或保留旧结果的新查询过渡代替敏感展示清理。
+
+本阶段没有接锁定服务，也不能清理调用方已经持有的票据/结果副本、原生视图、展开正文或真实缓存。真实敏感结果清理、对外引用寿命、锁定中计算结果处置与锁后不可见性必须作为后续独立适配验收，不能从本值失效测试推断已实现。
+
+#### 本轮验证与停止交接
+
+新增生产文件 ReadOwner / Continuation，局部扩展原 Pagination.reset；没有修改匹配器、排序器、片段算法、分组规则或原提供者。测试新增 [ContinuationTests](../AreaChainTests/Domain/ContentQueryContinuationTests.swift)、[ReadLifecycleTests](../AreaChainTests/Domain/ContentQueryReadLifecycleTests.swift)、[ReadPublicationTests](../AreaChainTests/Domain/ContentQueryReadPublicationTests.swift)、[ReadSnapshotTests](../AreaChainTests/Domain/ContentQueryReadSnapshotTests.swift) 共 24 项，复用 [QueryReadFixture](../AreaChainTests/Domain/ContentQueryReadTestSupport.swift) 及前序 Batch/Sort/Presentation/Trash 合成夹具。
+
+| 检查 | 实际证据与边界 |
+|---|---|
+| 新领域行为 | 四套新增测试共 **24 项**，全部纳入最终回归；覆盖输入/工作/结果余量、非续读原因、显式上限/溢出/无效增长、无进展与中断维度切换、同源全批重算、忙碌/重放/异主/旧来源、取消迟到/失败保留、来源替换、重新排序、墓碑关系、分页重置、稳定选择/锚点/消失回退及脱敏。全部使用合成 Batch，求值和票据均经真实既有读取及展示管线。 |
+| 最终 Swift 回归 | `./scripts/build.sh test` 配 **87 套** `--only-testing`，**610 passed / 0 failed / 0 skipped**；含新增 24 项及既有 586 项提供者、聚合、排序、片段、分组、分页与相关查询/记录回归。精确命令、Regression.xcresult、regression-summary.json 和日志位于忽略目录 build/ContentQueryReadQA。 |
+| 并行修改与中间失败 | 首轮扩展回归曾因并行新增 CalendarSpanTestSupport 把 UUID 数组赋给 String 而编译失败，测试未运行；该文件由并行修改自行修正，本轮未修改。最终成功结果对应修正后的工作区。此前首轮局部 28 项通过只作过程证据，不替代最终结果。 |
+| 源码一致性 | 最终回归前、回归后和 Debug 构建后的 Domain 与 Domain 测试文件集合及 SHA-256 一致，见 source-before / source-after / source-after-build.json；仅比较源码文件，不对用户正文作散列。并行原生界面行为不纳入本轮验收。 |
+| Debug 构建 | 回归后 `./scripts/build.sh` **passed**，staticSignatureVerified=true；仅构建验签，未安装或启动生产应用。测试保留旧原生 API/并发编译警告及多架构目标选择提示，不宣称零警告。 |
+| 严格 lint 与静态检查 | 三个本轮生产文件及五个测试/夹具文件的 `swiftlint lint --strict --quiet` 通过。最终文档后运行 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json` 和 `git diff --check`；quality.json 包含原有 **180 项脚本回归**。Swift 行为采用上述定向命令，未运行包含无关原生测试的全量 profile。原检查器接口/规则未改，无新增执行器。 |
+| 指定复核与未验项 | Cursor verifier 当前无可调用入口，**未执行 / blocked，整体 partial**；不重复登录、不改认证、不用主代理自查或其他代理冒充。值冻结/取消测试不证明真实数据库事务、同步计算即时中断、敏感副本清理或原生焦点；所有历史缺口继续保留。 |
+
+阶段 2 剩余接线条件：真实仓储冻结读取与多源一致性证据、历史/关联资料适配、实际隐私代次与敏感结果清理、异步调度及合作式取消、产品规模与主线程性能、两宿主入口/双语布局/键盘焦点/像素滚动、真实打开与业务资格重新校验，以及指定复核和历史验收收口。本轮不实施这些条件，不提交、推送、安装、发布或启动生产应用，到 2J-3C 停止。
+
+### 9.34 阶段 2K-1：任务与子任务的 SwiftData 只读快照适配
+
+2026-10-02。本轮仅将显式注入的真实 SwiftData 模型装配为既有 Batch，并使用合成内存库验收。保留前序搜索与并行原生界面修改；Domain 无改动。没有生产页面调用方，不获取生产 Persistence 单例、不打开用户库、不安装或启动生产应用。指定 Cursor verifier 及历史验收缺口继续保留，整体 **partial**；本次授权不表示旧阶段已验收。
+
+#### 接口、上下文所有权和实际读取
+
+[TaskContentQueryReader](../AreaChain/Services/TaskContentQueryReader.swift) 是 Services 的 `@MainActor` 同步适配器。调用方通过 `init(context:)` 注入已有 ModelContext，并调用 `readTasks(session:requestID:options:)`；Session、requestID、日期环境和 BatchOptions 原样传入，不改写查询或页面条件。`init(reads:)` 接收同文件的窄读取闭包集合 TaskContentQueryReads，供故障注入，不是新仓储框架或服务定位器。注入者必须保持同一执行域、同一上下文与只读依赖契约；任意自定义闭包的副作用不能由类型系统自动证明。
+
+| 来源 | 实际 fetch 与投影 | 覆盖边界 |
+|---|---|---|
+| todo | 以 TaskRepositoryProtocol 持有 SwiftDataTaskRepository，调用 `fetchAllTodos(includeDeleted: true)`；无查询谓词/身份 fetchLimit，沿原创建时间排序。逐行使用 TodoItem.snapshot 后清空其临时嵌套子任务视图。 | 包含活行、软删除和重复 ID 行；不预先根据查询、父项状态或身份去重。Batch.todos 中所有 subtasks 均为空。 |
+| subtask | `context.fetch(FetchDescriptor<SubtaskItem>())` 独立枚举整表，包括软删除和无父关系行；逐行调用实际 SubtaskItem.snapshot。 | 唯一权威平面数组；BatchAssembly 在需要时同次组装活提供者的嵌套视图，墓碑直接消费平面源。不能用 TodoItem.snapshot 过滤后的子数组声明完整。 |
+| 标签名称 | 收集投影中任务/子任务关联的 UUID；无关联不 fetch，否则以这些 UUID 为谓词 fetch TagItem，不设数量上限、不滤软删除。 | 只供这些任务的条件匹配与展示，不接 TagQueryProvider。按 ID 分组核验，重复 ID 即使同名也不选 first；缺失、冲突或私密标记均不建立可信映射。 |
+
+TagItem 当前没有通用 snapshot 属性；本轮仅投影核验过的 `id/name`，不添加标签快照框架。标签读取不遍历手记或正文、不调用 ensurePresetTags / resolveOrCreateTag，不读取图片、附件、历史文件、钥匙串或系统剪贴板。私密标签名称保守返回不可用，不把局部标签 fetch 当成全局私密资料证明；metadata.privateTagIDs 始终 nil，snapshots.tags 始终 notProvided。
+
+纯 command 输入、结构无效或 possibleTypes 明显不涉及 todo/subtask 时三类 fetch 全部跳过。进入任务读取范围后枚举两张任务表，以满足父子查询与完整身份核验；未来总协调者可决定是否调用这个显式入口，不引入动态注册。routine、diary、image、clipboard 等始终 notProvided。`/tasks` 仍包含 routine，因此本轮只能声明 todo/subtask 来源覆盖，不能宣称完整 `/tasks` 或全局搜索已接入。
+
+#### 完整性、故障与只读证据
+
+TaskContentQueryReadResult 保存冻结 Batch、封闭类别 issues 和仅针对所需关联 ID 的 tagNamesCoverage。成功完整枚举的来源使用 complete；重复身份行完整保留后交由既有提供者拒绝，所以 complete 表示枚举完整，不表示身份唯一、查询或整个来源体系完整。独立失败分别标为 failed，绝不转换为 complete([])。无关已确定的来源继续按原 Batch 覆盖规则求值，缺父来源的子任务不能独立伪造活结果。
+
+- SubtaskItem.snapshot 在无父关系时返回 nil：记录 `unconvertibleSubtask(id:index:)` 并将来源降为 partial，不补造父 UUID、不修改关系。这种行无法进入现有 SubtaskSnapshot，诊断保留其身份和本次输入位置；同 ID 的可转换行也从可用子项中排除，避免丢掉坏行后制造唯一身份。其他可转换子项继续保留。
+- 能转换但父 ID 不在成功读取的父源中时，保留实际 todoId 和快照，记录 `uncontainedSubtask` 并标 partial；原 BatchAssembly 再报告关系不一致。父读取失败不等同证明父不存在。
+- 原始错误文本、SQL、正文均不进入公开诊断；三种 fetch 失败只报告封闭类别。结果 description/debugDescription 脱敏，不新增日志。
+- 标签资料缺失、重复或私密名称不可用标 partial，fetch 异常标 failed。既有提供者只有可选名称字典，没有逐 ID 覆盖契约，因此任一所需名称不能核验时传 nil，让依赖名称的条件保持未知，不把无资料解释成没有标签。非名称条件仍沿原提供者判断。所需 ID 集合为空时 complete 只表示该空集合的辅助资料已满足。
+- 仅完整的 todo/subtask 来源更新对应 trashCoverage 类型；其余墓碑来源与 trashTagNamesCoverage 保持未提供，不能把真实任务墓碑分组测试解释为完整回收站接线。
+
+适配器不调用 save、rollback、processPendingChanges、删除、修复、ModelChanges、BoardEvents.changed、通知或日历。ModelChanges 原“成功保存后才发布”契约不变，读取不借用其 value/transaction 包装。测试中的 insert/save 只用于合成建库；正常读取和失败读取均保留既有未保存变化。独立 ModelContext 验证保存态仍是旧值，boardDidChange 观察计数为零；未提交插入可见、未提交删除不再枚举，并且读取不会代替调用方提交或撤销。
+
+#### 同步一致性、冻结结果与重新读取
+
+所有必要 fetch 和投影在一个 MainActor 同步调用内完成，没有 await、UI 回调、后台监听、缓存或异步调度。实体只存在于读取闭包与投影栈，不进入 Batch/结果、不跨 actor，也没有 `@unchecked Sendable`。这个保证是**同一上下文一次同步装配与冻结值输入**：SwiftData 多次 fetch 不能由此证明磁盘事务原子性，也不保证多个上下文或外部进程的同一数据库版本。requestID 保留请求关联语义，不充当数据库版本号。
+
+上下文已发生但尚未 save 的模型变化属于本次可见状态；尚未写入模型的 UI 编辑草稿不在读取范围。适配器不访问 EditDrafts，不提交、不丢弃任何一类草稿；调用方的 autosave 设置也不由适配器改写。测试夹具关闭 autosave 是为了明确验证未提交状态，并非更改产品保存策略。
+
+读取所得 Batch 交给原 ContentQueryReadOwner.begin 后，经 BatchReader → Sorter → Presenter → DisplayBuilder → Pagination 发布。之后改实体不会改变冻结 Batch 或已发布结果，也不会自动触发重算；必须显式再次 readTasks 并 begin 新来源。即使沿用 requestID，ReadOwner 仍建立新来源代次，旧 task/ticket/分页事件被拒绝。本轮没有自动监听真实业务变更，也没有把普通重读当作隐私失效清理。
+
+#### 隔离测试与交接
+
+新增 [TaskContentQueryReaderTests](../AreaChainTests/Services/TaskContentQueryReaderTests.swift)、[TaskContentQueryFailureTests](../AreaChainTests/Services/TaskContentQueryFailureTests.swift)、[TaskContentQueryIntegrationTests](../AreaChainTests/Services/TaskContentQueryIntegrationTests.swift)。[TaskRepositoryFixture / TaskContentQueryFixture](../AreaChainTests/Services/TaskContentQueryTestSupport.swift) 从原 SwiftDataTaskRepositoryTests 提取既有全 schema 内存容器入口；原仓储测试继续复用。所有模型均为合成数据。
+
+集成用例实际创建并保存 TodoItem/SubtaskItem/TagItem，注入读取器产生最终快照，测试中不手工注入最终 Batch.snapshots。验证标题精确命中排序、备注摘要、子项父引用、墓碑分组、首段与加载更多、冻结值、新来源拒绝旧票据。失败由窄闭包注入，不破坏真实数据库制造错误；成功 fetch 与未保存状态通过真实 SwiftData 路径取证。
+
+| 检查 | 最终实际证据与限制 |
+|---|---|
+| 新服务测试 | 三套共 **19 项 / 27 次运行**，全部通过；覆盖空库、字段、活/删父子、平面来源、无父与缺父关系、父/子重复 ID、标签缺失/冲突/同名重复/私密/失败、不相关范围、未保存插改删、无业务通知、冻结及新旧来源。没有跳过用例。 |
+| 扩展 Swift 回归 | `./scripts/build.sh test` 配 **38 套** `--only-testing`，**254 项 / 271 次运行 passed，0 failed / 0 skipped**；含新增服务、原 SwiftDataTaskRepository / ModelChanges、Batch、todo/subtask、ReadOwner、排序/摘要/分组/分页及墓碑查询。精确命令见忽略目录 `build/TaskContentQueryQA/regression-command.json`；最终结果包为 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_16-31-05-+0800.xcresult`，摘要及测试树同在 TaskContentQueryQA。 |
+| 隔离与来源稳定 | 全部本轮模型数据来自内存容器。测试脚本串行执行并清除真实钥匙串授权；测试宿主在访问磁盘前切换内存库。回归前、回归后和构建后核对 Domain/Services 及对应测试源码，内容未变；并行 CalendarMonthNavigationTests 等界面改动保留且不纳入本轮行为验收。 |
+| Debug 构建 | 回归后 `./scripts/build.sh` passed，`staticSignatureVerified=true`；仅构建验签，未安装、启动生产应用或执行系统认证。保留既有原生 API 弃用/并发警告及多架构目标选择提示，不宣称零警告或发行通过。 |
+| lint、脚本和工作流 | 本轮 6 个 Swift 文件 `swiftlint lint --strict --quiet` passed；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` **61 passed**；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含 **181 项脚本回归**；`python3 -B scripts/check_workflow.py` 与 `git diff --check` passed。最终文档后重跑静态门禁，Swift 行为使用上述定向回归，不运行无关原生全量套件。原组件守卫仅增加稳定入口及反例，不新增执行器。 |
+| 指定复核与未验项 | Cursor verifier 当前无可调用入口，**未执行 / blocked，整体 partial**；按本轮约定不重查登录、不改认证、不用主代理或其他代理冒充。历史缺口保留；未验跨上下文/进程事务一致性、大库性能、自动失效、生产 UI 和真实敏感数据/系统集成。 |
+
+没有修改业务仓储实现或 Domain 契约，也没有对用户正文作散列；源码散列仅用于验证并行修改是否影响本次证据。测试产物不是生产数据。
+
+后续建议先单独定界 routine 定义与 RoutineCheck 只读适配：复用现有仓储/快照，先确认历史排程来源、记录覆盖、重复业务身份与显式枚举窗口；缺历史证据保持未知，禁止补造历史或创建派生 open 记录。继续使用注入内存库，不接生产 UI、调度或业务执行。手记/附件应另行确认隐私投影与失效清理前置，剪贴板需明确历史读取失败语义；它们均未获本阶段实施授权。本轮到 2K-1 停止，不提交、不推送、不安装、不发布。
+
+
+### 9.35 阶段 2K-2：习惯与打卡的 SwiftData 只读适配及任务类同批装配
+
+2026-10-02。本轮只实现显式注入上下文的存储读取与内存数据库集成；保留既有 2I～2K-1 和并行界面/文档/检查器修改。没有读取生产库、接 UI、自动监听、真实执行或历史迁移。指定 Cursor verifier 仍无当前可调用入口，未执行、不重查登录、不修改认证、不以主代理自查或其他代理冒充；整体 **partial**，历史阶段验收缺口不因此关闭。
+
+#### 接口、实际 fetch 与投影
+
+| 入口 | 实际责任与边界 |
+|---|---|
+| [TaskFamilyContentQueryReader / ReadResult](../AreaChain/Services/TaskFamilyContentQueryReader.swift) | `init(context:)` 为任务和习惯依赖绑定同一个 ModelContext；`read(session:requestID:observation:options:)` 同步建立一份 Batch。结果保留 taskIssues、routine 读取明细、tagIssues 和 tagNamesCoverage，调试描述脱敏。只读依赖重载用于故障测试，调用方仍须保证同上下文且无副作用。 |
+| [TaskContentQueryReader.readSources](../AreaChain/Services/TaskContentQueryReader.swift) | 从 2K-1 原入口提取任务/平面子项装配，原 `readTasks` 保持任务专用范围与诊断兼容；不复制任务读取器、不先生成第二份 Batch。 |
+| [RoutineContentQueryReads / Observation / CheckPlan](../AreaChain/Services/RoutineContentQueryRead.swift) | 定义通过 RoutineRepositoryProtocol 持有 SwiftDataRoutineRepository，调用 `fetchRoutines(includeDisabled: true, includeDeleted: true)`。保留启停、活/墓碑、重复身份核验行，排序仍沿仓储 sortOrder；逐行使用真实 DailyRoutine.snapshot。 |
+| [RoutineContentQueryReader](../AreaChain/Services/RoutineContentQueryReader.swift) | 有记录依赖时，独立 `context.fetch(FetchDescriptor<RoutineCheck>())` **完整读取整张记录表**，不按日/父关系预滤，不设置 fetchLimit，不调用 `fetchRoutine(id:)` 或每习惯 `fetchChecks(for:)`。在 MainActor 栈内调用实际 RoutineCheck.snapshot，保留原 isDone/isSkipped。 |
+| [ContentQueryTagNames](../AreaChain/Services/ContentQueryTagNames.swift) | 旧任务入口与家庭入口共用窄标签读取；家庭收集三类源关联 ID 的并集，一次调用原 TaskContentQueryReads.tags 谓词读取，不过滤软删除。没有新仓储框架、标签创建或补预设。 |
+
+生产实现不访问 Persistence 单例，不把 SwiftData 实体放入输出/后台任务，没有 `@unchecked Sendable`。没有 save、rollback、processPendingChanges、创建/启用/桥接/修复、ModelChanges、BoardEvents.changed 或系统同步调用。所有相关 fetch 与投影在一次无 await 的 MainActor 调用中完成；注入测试依赖必须遵守只读约定，类型系统不能证明任意外部闭包无副作用。返回 Batch 和读取明细均为冻结纯值。
+
+#### 覆盖计划、坏关系和失败
+
+普通名称、标签、定义字段或仅 date 的习惯查询不读取打卡历史；定义 status 缺 on 保持原 needs-input 限制，不默认今天。有 on 时计划该日；显式 routineOccurrences 使用原 date 窗口/显式 occurrenceWindow/on 的一致性规则，on 只保留所选单日。缺记录窗口、冲突窗口不全量扫描，交给原提供者反馈。未接入动态提供者注册或通用读取调度。
+
+旧页面 overdue 的 items/agenda 投影分别要求每个启用定义的 createdDayKey 到页面 yesterday；listedDay/today 计划页面当天。这些区间与 on 覆盖独立计算再合并，不能用 on 一天证明全部逾期记录完整。无法解释的 listedDay/agenda 组合仍由原领域报告；页面 Calendar 不匹配时记录服务问题、不从该页面推导覆盖。旧 DayBoardCheckIndex 的 first-wins 与 Agenda 的任一闭合规则完全未改。
+
+记录实际 fetch 是全表，包含窗口外记录；`fetchScope=allStoredRows` 明确其 IO 范围。完整区间却只授予本次需求，按每个已枚举的习惯 UUID 分别声明：一天不推广到其他日期，枚举之外的习惯没有覆盖；实际已完整枚举所有定义与记录时，可给多习惯各自的所需日期。无 per-routine N+1。**2I maxInputItems 只限制领域枚举，不限制数据库 fetch 或同步投影成本**；本阶段没有数据库行数预算、有界分页、后台取消或大库性能保证，未建立性能基线。
+
+| 输入或失败 | 保留证据与限制 |
+|---|---|
+| 完整空记录 | `checkSource=complete`，按所需区间给 RoutineCheckCoverage；只有另有可靠排程才派生 open。无窗口不读，标 notProvided。 |
+| 同业务日多条记录 | 不物理去重、不合并状态。每条实际记录 UUID 和输入下标存入 `RoutineContentQueryCheckRow`，snapshotIndex 指向同批 CheckSnapshot；业务身份仍为习惯 ID＋日。RoutineCheckReading 继续报告 identicalDuplicates、conflictingRecords、doneAndSkipped。 |
+| 相同记录 UUID | 单独报 duplicateCheckID，保留全部行/值，限制相关父习惯全部请求覆盖；不同记录 UUID 的同日记录不属于该问题。 |
+| 缺 routine / snapshot 为 nil | 保留 recordID、inputIndex、nil snapshotIndex 和不含身份组合的 missingCheckParent 问题，不伪造 routineID。无法可靠归属，全部记录覆盖撤回，集合标 partial。 |
+| 父关系歧义或不在完整定义源 | 从独立定义枚举按业务 ID 核对数量，再核对实际 persistentModelID；不以单个父 relationship 证明唯一。保留可转换原值，记录安全类别与行下标，限制对应父 ID；定义重复原样交领域隔离，不建立当前排程证据。 |
+| 非法日键 | 保留原 CheckSnapshot，报 invalidCheckDay，并撤回该习惯全部日期覆盖；无法可靠缩成某一天，其他习惯仍可确定。全表中窗口外的非法日键也属于这次实际输入。 |
+| 定义读取失败 | 主源 failed，未建立定义/排程证据；若有显式记录窗口仍可观察记录值，但不授予任何完整覆盖。独立任务来源继续。 |
+| 记录读取失败 | `checkSource=failed`，无记录覆盖，不等于 complete 空集合；封闭 checkFetchFailed 类别，不保留原始数据库错误、SQL、正文或标识组合。 |
+
+[BatchRoutineFacts](../AreaChain/Domain/ContentQueryBatch.swift) 增加可选 `checkSourceProblem`：仅 `incompleteUnattributedInput` / `readFailed`，默认 nil 不声明记录完整。它使“只有孤立行而没有任何定义”也不能在 [BatchReader](../AreaChain/Domain/ContentQueryBatchReader.swift) 汇总为完整无结果；[BatchCompleteness](../AreaChain/Domain/ContentQueryBatchCompleteness.swift) 用 `checkSource` 限制保留到 ReadOwner/展示来源。可定位问题仍依靠 RoutineCheckCoverage 和原提供者逐对象核验，不把局部问题自动扩大成无关习惯不可读。既有纯快照调用未提供该字段时保持原契约。记录源问题只附到实际相关 routine/routineOccurrence/含 routine 的 trash 汇总，不替代各提供者的诊断。
+
+#### 当前观察与查询/转交冻结日期
+
+`RoutineContentQueryObservation(instant:calendar:)` 是每次 read 的必需参数，没有默认系统时间或查询 today 回退。调用方负责在实际读取环境采样本次时刻；它不是可缓存的历史证明。本阶段没有生产调用方，隔离测试注入受控时刻。日期以该 instant 和与 Session.queryDates 相同的 Calendar/时区转换；不匹配或非法时刻不生成证据，并返回 observationCalendarMismatch / invalidObservation。
+
+只调用 `RoutineScheduleEvidence.currentDefinition(snapshot, observedOn:)`，证据区间只含明确观察日，启用沿当前 mask，停用为该观察日 notScheduled。不新增历史表，不从 pausedOnDayKey 重建暂停/恢复，不根据打卡存在推定当天应执行，不把当前 mask 推广到过去或未来。查询 date/on/today、转交冻结 today 与实际观察日是不同来源：冻结只控制查询语义，跨午夜显式再次读取必须注入新观察时刻，旧结果仍冻结。创建日之前仍由原领域返回 beforeCreation；其余未覆盖日期缺历史保持 unknown。
+
+#### 同批标签、只读集成与剩余来源
+
+Batch 只含一份原样 Session/requestID/options，todo/subtask/routine 的关联名字共用一份 metadata，不合并两个独立 Batch 或覆盖彼此名字。标签缺失、重复 ID（即使同名）或私密标签均不提供可信名字；任一所需名称不可核验时沿原提供者契约传 nil，tagNamesCoverage=partial；fetch 失败为 failed。privateTagIDs 仍 nil，不把局部名字读取当作全局保护事实。`snapshots.tags/diaries/images/clipboard` 仍 notProvided，has:image 没有真实关联证据，不能宣称能力完整。
+
+`/tasks` 现在可以覆盖 todo/subtask/routine 三种定义来源，但字段不适用、缺 on、历史或图片关联仍决定匹配完整性。显式执行记录只进入原 2I；可靠观察日排程＋完整空/未处理记录才派生 open，未插入打卡行。普通任务范围不混入每日结果。
+
+实际内存模型 → 家庭读取 → ReadOwner.begin/evaluate/publish → BatchReader/Sorter/Presenter/DisplayBuilder/Pagination 的测试没有手工替换最终 snapshots。同批验证标签字典、标题优先排序、备注摘要、子项父关系、分页和来源更新；实体后续变化不改旧 Batch 或发布结果，显式再次读取产生新来源代次，旧计算票据不能覆盖。测试通过独立 ModelContext 对比已保存状态，验证未保存插入/修改/删除保留、失败也不回滚，业务通知计数为零。
+
+同步多 fetch **不等于跨上下文/进程数据库原子快照**。调用方 autosave 配置不被更改；夹具关闭 autosave 只用于验证未提交状态。未完成生产监听/缓存/失效清理、跨库版本一致性、数据库有界读取与性能保证、合作式后台取消。没有 UI、生产数据库、真实系统或历史迁移验收。
+
+#### 本轮验证与停止点
+
+本次新增测试与夹具为 [RoutineContentQueryReaderTests](../AreaChainTests/Services/RoutineContentQueryReaderTests.swift)、[CoverageTests](../AreaChainTests/Services/RoutineContentQueryCoverageTests.swift)、[ObservationTests](../AreaChainTests/Services/RoutineContentQueryObservationTests.swift)、[FailureTests](../AreaChainTests/Services/RoutineContentQueryFailureTests.swift)、[TaskFamilyContentQueryIntegrationTests](../AreaChainTests/Services/TaskFamilyContentQueryIntegrationTests.swift) 和 [RoutineContentQueryTestSupport](../AreaChainTests/Services/RoutineContentQueryTestSupport.swift)。其容器复用原 TaskRepositoryFixture / TaskContentQueryFixture。除上文 5 个 Services 与 3 个 Batch 文件，本阶段只同步本权威文档、架构、组件目录、技能路由，以及原 check_workflow.py / test_check_workflow.py 的稳定入口和反例；未改旧仓储、模型、看板或 Agenda。
+
+| 检查 | 最终实际结果与证据 |
+|---|---|
+| 新服务验证 | 5 套 **28 项 / 38 次运行 passed**；覆盖启停/墓碑、实际 snapshot、定义和记录身份重复、同日冲突/原 flags、孤立/非法/缺父、局部覆盖、完整空/故障、普通查询不读历史、范围/on/旧页面覆盖、观察日/午夜/转交冻结、Calendar 拒绝、同批标签、原 ReadOwner/排序/摘要/分页、未保存变化及零业务通知。无跳过。 |
+| 最终 Swift 回归 | `./scripts/build.sh test` 配 **97 套 --only-testing**，**697 项 / 767 次运行 passed，0 failed / 0 skipped**。包含原 2K-1 三套、SwiftDataTaskRepository / SwiftDataRoutineRepository / ModelChanges、习惯历史/记录/2I、各查询提供者、Batch、ReadOwner、排序/展示/分页以及旧 DayBoard/Agenda/ItemsListing/日期/分类。精确命令与测试树见忽略目录 `build/RoutineContentQueryQA/regression-command.json`、`regression-summary.json`、`regression-tests.json`；97 套全部在结果树核实为 Passed。结果包 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_17-00-57-+0800.xcresult`。 |
+| 编译问题与修正 | 初轮 8 套服务验证 44 项 / 62 次运行通过。补午夜测试后首次扩展回归在编译期发现测试误把非 Equatable 的 ContentQueryDateContext 做整体比较；改为核对完整 Session，保留观察日前后断言后重跑取得上述最终结果。未修改产品规则或删掉失败断言。 |
+| 源码与只读隔离 | `source-before-regression.json` / `source-after-regression.json` 核对 Domain/Services 及其测试，回归前后、Debug 构建后无变化。所有本阶段模型来自真实内存 ModelContainer；普通 test 入口清除真实钥匙串授权、串行运行，既有测试宿主在访问磁盘库前使用内存分支。保存只在合成建库，读取成功/失败均不提交或撤销模型变化。没有生产应用运行或真实用户记录读取。 |
+| Debug 构建 | 最终 Swift 修改后 `./scripts/build.sh` **passed**，`staticSignatureVerified=true`，`distributionReady=false`；仅构建验签，未安装/启动生产应用或执行系统认证。结果见 `build/RoutineContentQueryQA/build.log`。 |
+| 静态、lint、工作流 | 14 个本阶段 Swift 文件严格局部 `swiftlint lint --strict --quiet` passed；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` **62 passed**；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含 **182 项原脚本回归**、高风险/敏感日志候选均 0；`python3 -B scripts/check_workflow.py` 与 `git diff --check` passed。最终文档后重跑受影响静态检查。现有检查器只新增稳定入口与反例，没有新执行器。Swift 验证使用上述定向回归，不运行超出本阶段范围的全量原生 UI profile。 |
+| 指定复核与未验项 | **Cursor verifier 未执行 / blocked，整体 partial**。没有重查认证或替代复核。历史验收缺口、生产接线、真实用户库、跨上下文原子性、数据库有界 IO/性能、自动失效及真实系统层均未验收。 |
+
+本次环境为 macOS 26.6.2 arm64 / Xcode 26.6 (17F113) / Swift 6.3.3 / Python 3.9.6。保留既有原生测试 actor/Sendable、旧 AppKit API 和多目标架构提示，不据此宣称零警告、低版本兼容或发行通过。
+
+下一存储适配建议先单独定界 diary 的公开元数据与正文保护投影：在合成隔离库明确 privateTagIDs 全局覆盖、锁定/失焦/来源失效清理与历史旧格式边界后，再决定实现；真实私密数据、钥匙串/认证、生产库读取及任何转换仍需独立明确授权。图片适配再核实真实 owner 关联及隐藏资料边界；本阶段不实施它们。到 **2K-2 停止**，不提交、不推送、不安装、不启动生产应用、不进入下一阶段。
+
+### 9.36 阶段 2K-3：标签目录的 SwiftData 只读适配与同批装配
+
+2026-10-02。本阶段只读取显式注入上下文的标签模型，接入原 TagQueryProvider 和任务家庭同批装配。模型均由原全 schema 内存 ModelContainer 夹具生成；不读生产库、手记正文或附件，不接生产 UI、标签写入及真实系统操作。保留并行代码/文档改动和历史验收缺口。指定 Cursor verifier 无当前可调用入口，未执行、不重查认证、不以主代理自查或其他代理替代；整体仍 **partial**，本次限定授权不表示旧阶段已验收。
+
+#### 实际读取、接口与按需计划
+
+| 入口 | 实际行为与覆盖 |
+|---|---|
+| [TagContentQueryReads](../AreaChain/Services/TagContentQueryReader.swift) | `init(context:)` 显式注入 ModelContext，以 CatalogRepositoryProtocol 持有 SwiftDataCatalogRepository，唯一生产读取为 `fetchTags(includeDeleted: true)`。沿原仓储 sortOrder 排序，无数量上限、名称谓词、身份 first-wins 或墓碑过滤。窄 allTags 闭包只用于故障/调用次数验证，注入者须遵守同上下文只读约定。 |
+| [TagContentQueryReader.readSources](../AreaChain/Services/TagContentQueryReader.swift) | 只在非命令、结构有效且 possibleTypes 含 tag 时读取；不相关范围、仅任务关联名字、无效查询及 tag 字段不适用时不全量 fetch。完整保留 ID/name/sortOrder/deletedAt/isPrivateDiary/原 colorToken，直接转 TagQuerySnapshot。未使用 ExportedTag、名称规范化副本、颜色修复、预设补齐或 resolveOrCreate。 |
+| [TaskFamilyContentQueryReader.read](../AreaChain/Services/TaskFamilyContentQueryReader.swift) | 继续接收原 session/requestID/observation/options，增加可选 `injectedUsage`，结果增加 `tagCatalog: TagContentQueryReadDetails`。原上下文入口为三类读取依赖绑定同一 ModelContext；故障重载显式接收 tasks/routines/tags。先装配任务与习惯，再装配标签，最后安装同批关联名字；全程只创建一份 Batch，不合并两个批次。 |
+| [ContentQueryTagNames.read / project](../AreaChain/Services/ContentQueryTagNames.swift) | 原保护/歧义规则提取为 project。全量目录与任务关联名字都需要时，同一次 fetch 的实体分别投影；否则继续原 tasks.tags 按关联 ID 集合读取。没有关联 ID 时不做额外 fetch。只输出纯值，不持有实体。 |
+| `TagContentQueryReadDetails` | source 区分 notProvided / complete / failed，issues 只有封闭 fetchFailed 类别；usageOrigin 只有 notProvided / injected。description/debugDescription 脱敏，不保存原始数据库错误、SQL、标签值或新增日志。 |
+
+全量成功包括完整空目录，Batch.tags 为 complete；重复 ID 行保留在完整枚举中，再由 TagQueryProvider 隔离所有冲突行，不触发 uniqueKeys 崩溃，也不把同名不同 ID 合并。枚举 complete 不表示查询、身份或全局内容完整。完整成功只提升 trashCoverage.types[tag]，不提升其他来源或隐私覆盖。失败时 tags=failed，标签墓碑覆盖撤回，绝不等价 complete([])；任务类独立成功来源保留。相关名字同批 fetch 失败时为 failed，不再用第二次 fetch 拼出另一观察时点。
+
+#### 标签内容与关联名字的公开边界
+
+目录内容继续遵守 §9.23：标签原名、颜色、预置识别和 isPrivateDiary 标记允许用于标签自身结果；预置识别和颜色解释仍调用已有 TagQuerySnapshot/领域规则。软删除行仅作核验及已有墓碑提供者输入，不出现在活标签结果。
+
+关联名字只对同批 todo/subtask/routine 的关联 ID 投影，不把完整目录字典直接塞入 metadata。任一所需 ID 缺失、重复（即使同名）或 isPrivateDiary 为 true，仍沿原 ContentQueryTagNames 返回 nil/partial，让依赖名字的条件保持未知；不相关私密目录行不污染已核验的关联集合。目录可展示名称不是关联内容或私密正文的公开授权。
+
+生产家庭入口的 metadata.privateTagIDs 仍 nil，trashCoverage.diaryPrivacy、trashTagNamesCoverage 及图片保护资料不因目录完整而提升。标签 reader 自身不覆盖 Batch 已有 metadata、其他 snapshots、routine facts 或 options；最终家庭装配只有一个 metadata 所有者。diaries/images/clipboard 仍 notProvided。全局请求即使标签和任务类均已读取，也不能宣称全局匹配完整。
+
+#### 统计的实际支持与未完成部分
+
+以下为 2K-3 当时状态；2K-8 已补充受控真实读取，见 §9.44，默认及显式 injected 接口仍保持原边界。
+
+**本阶段没有实际全来源统计适配，也没有自动从任务类快照生产部分统计。** 默认 tagUsage=nil、usageOrigin=notProvided，单项 usageState=unavailable。普通名称搜索、inputOrder 和 catalog(all) 不依赖使用量，继续准确匹配；目录初始输入顺序来自仓储 sortOrder，不把该顺序称为使用量排名。
+
+`injectedUsage: TagQueryUsageInput?` 原样交给同批 facts.tagUsage 和原 TagQueryProvider，非 nil 明确标为 **注入统计（injected）**。partial(completeTagIDs)、complete、重复/非法统计的校验仍由原领域处理；标注 injected 不验证或扩大调用方的完整声明。注入 complete 的集成测试只证明契约可消费合成统计，不能称作真实全来源统计已读取。无关查询跳过标签读取时也不安装注入统计。
+
+frequent/recent/unused 继续经 TagUsage.filteredValues：frequent 统计未知保留名称命中，requested=activeCountThenSortOrder、applied=inputOrder、isComplete=false，并保留排序提示；recent/unused 的未知项进入 undeterminedObjects。缺记录或局部零值都不证明 unused，局部正数也不作为精确计数发布。测试中的任务类部分统计用 TagUsage.subjects / records 生成，覆盖明确 partial(completeTagIDs: [])；全量合成统计同样复用 TagUsage.records，并与旧 TagUsage.filtered 同输入对照，没有新计数算法。
+
+现有完整口径包含未删除的待办、习惯、子任务和手记，不计打卡；latestCreatedAt 仍为关联活记录的最近创建时间。只读任务类不能知道未读手记的关联情况，因此真实全来源统计、准确使用量排名和可靠 unused 目录仍是功能缺口，需在手记元数据读取边界明确后单独补齐，不计入本阶段完成项。
+
+#### 只读、失败与冻结证据
+
+所有 fetch 和投影都在无 await 的 MainActor 调用内完成，实体不逃逸到 Batch/结果、后台任务或后续投影闭包。不使用 unchecked Sendable 或生产 Persistence 单例；没有 save、rollback、delete、processPendingChanges、BoardEvents、事务包装、补预设或模型修复，也不修改调用方 autosave 设置。隔离测试的 save/insert/delete 仅用于合成建库与构造未保存变化。
+
+真实保证是**同一上下文的一次同步装配和纯值冻结**，不是跨上下文/进程数据库事务原子性。未建立全目录行数预算、后台取消或大库性能基线。读取保留调用方未保存插入、修改与删除；成功和注入 fetch 失败后独立 ModelContext 仍看到旧保存态，业务通知计数为零。模型后续改名、改色、删除标记或私密标记不修改旧 Batch/发布结果；显式再次读取交给 ReadOwner.begin 产生新来源代次，即使 requestID 相同，旧票据不能发布。没有自动失效监听，不能把普通重读当作隐私失效清理。
+
+实际 TagItem → 家庭 reader → Batch → ReadOwner.begin/evaluate/publish → BatchReader/Sorter/Presenter/DisplayBuilder/Pagination 通过隔离集成测试连接，最终 snapshots 未被手工替换。分页首段、加载更多、纯值冻结和旧来源拒绝均由原领域链路执行，没有生产原生页面验收。
+
+#### 验证与交接
+
+新增 [TagContentQueryReaderTests](../AreaChainTests/Services/TagContentQueryReaderTests.swift)、[UsageTests](../AreaChainTests/Services/TagContentQueryUsageTests.swift)、[IntegrationTests](../AreaChainTests/Services/TagContentQueryIntegrationTests.swift)、[FailureTests](../AreaChainTests/Services/TagContentQueryFailureTests.swift) 与[薄夹具](../AreaChainTests/Services/TagContentQueryTestSupport.swift)。复用 RoutineContentQueryFixture / TaskContentQueryFixture / TaskRepositoryFixture；原 RoutineContentQueryTestSupport 只补显式标签读取依赖。Domain、原标签仓储和生产 UI 未改。稳定入口登记沿原 check_workflow.py 和反例测试，不新增检查执行器。
+
+| 检查 | 本轮实际结果与限制 |
+|---|---|
+| 新服务测试 | 四套最终 **19 项 / 30 次运行 passed，0 failed / 0 skipped**。覆盖完整空/普通/预置/私密标签、原值与墓碑、重复身份/同名异 ID、无需统计的名称搜索、注入统计各覆盖与旧筛选对照、frequent 回退、recent/unused 未知、同批投影边界、按需 fetch、失败与旧覆盖撤回、未保存变化、冻结、ReadOwner 与展示分页。 |
+| 最终 Swift 回归 | `./scripts/build.sh test` 配 **77 套 --only-testing**，**546 项 / 603 次运行 passed，0 failed / 0 skipped**。包括新标签服务、四套 TagQuery、原 TaskFamily/TaskContentQuery/RoutineContentQuery、SwiftDataCatalogDiaryRepository/TagCatalog/TagRepository/TagSyntax、任务/习惯仓储及 ModelChanges、查询/批次/排序/摘要/展示/分页/ReadOwner、原提供者和保护回归。77 套均在结果树核实为 Passed。精确命令及结果见忽略目录 `build/TagContentQueryQA/regression-command.json`、`regression-summary.json`、`regression-tests.json`；结果包 `build/development-DerivedData/Logs/Test/Test-AreaChain-2026.10.02_17-19-07-+0800.xcresult`。 |
+| 来源稳定与隔离 | `source-before-regression.json` / `source-after-regression.json` 核对 Domain/Services 及对应测试，最终回归前后无变化，Debug 构建后复核一致。普通 test 入口串行并清除真实钥匙串授权；全部本轮数据来自内存 ModelContainer，未访问生产库。并行时间控件、页面与文案修改保留，不纳入本轮界面验收。 |
+| Debug 构建 | 最终 Swift 修改后 `./scripts/build.sh` **passed**，`staticSignatureVerified=true`、`distributionReady=false`；构建等待既有仓库锁后执行，没有干预并行任务。日志 `build/TagContentQueryQA/build.log`。只构建/静态验签，未安装、启动生产应用或验证真实认证。 |
+| lint、脚本与工作流 | 本轮 9 个 Swift 文件 `swiftlint lint --strict --quiet` passed；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` **63 passed**；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含 **183 项原脚本回归**、高风险/敏感日志候选均 0；`python3 -B scripts/check_workflow.py` 与 `git diff --check` passed。最终文档后重跑受影响静态检查；Swift 采用上述定向范围，没有运行超出本阶段的全量原生 UI profile。 |
+| 指定复核与未验项 | **Cursor verifier 未执行 / blocked，整体 partial**。仅检查本会话可用工具清单，无指定入口，不重查登录/认证、不替代复核。历史验收缺口、生产 UI、真实用户库、跨上下文原子性、自动失效、大库性能与真实系统均未验收。 |
+
+环境为 macOS 26.6.2 arm64 / Xcode 26.6（17F113）/ Swift 6.3.3 / Python 3.9.6。保留编译中的既有原生 API 弃用、actor/Sendable、未使用变量和多目标架构提示，不宣称全库零警告或低版本兼容已验收。
+
+#### 后续手记安全读取须先确认的边界
+
+1. 可枚举的元数据字段与数据形态：手记 ID、民事日期、创建时间、删除状态、tagIDs 和记录级保护字段是否可读；当前模型 fetch 是否会物化正文/密文，如何证明元数据路径不读取或输出正文。不能因 Swift 属性未被访问就宣称底层未读取敏感列。
+2. privateTagIDs 的全局覆盖、缺失/重复标签及孤立关联的处理；记录级保护、私密标签、旧密码遮罩和未知格式如何共同保守判定，目录公开名称不能替代保护证据。
+3. 若后续允许正文投影，明确公开/保护/解锁/显式显示各状态允许的字段，以及锁定、失焦、来源变更时 Batch、ReadOwner、摘要、分页和迟到票据的清理时机；认证及真实系统操作仍须独立授权。
+4. 统计是否允许计入受保护手记的关联元数据、计数和最近创建时间，哪些输出会暴露存在性；明确全来源/逐标签完整声明与失败撤回规则后，才可接真实统计。
+
+本阶段到 **2K-3 停止**，不提交、不推送、不安装、不发布、不启动生产应用，不进入上述下一阶段。
+
+### 9.37 阶段 2K-4A：手记存储读取、隐私失效与统计边界的只读核验和方案设计
+
+#### 本阶段范围、证据与停止点
+
+2026-10-02，只读核对当前工作区源码，唯一修改是本文的本节及顶部索引。核对时 HEAD 为 `93f8bba561c4746fb71877af0f843074cc2dc973`；工作区已有 2K-1～3 的未跟踪读取器/测试、Domain 修改，以及原生控件、页面、文案、工程文档、检查器与本文的并行修改，均保留。下列 `file:line` 对应本次工作区而非仅 HEAD；后续实施须重查差异与符号位置。
+
+这是**设计交付，不是敏感读取授权或运行验收**。§1、§9.19 的已确认规则不重新讨论：不自动解锁；不可读正文不当作空；元数据可决定时正常判断，否则三态未知；私密结果只有隐藏标题及允许元数据，无正文、片段、长度、正文范围；图片不扩大披露；历史/模板不自动保存敏感输入。本段记录 2K-4A 当时状态；后续 D1～D3 已获确认，2K-4B 实际增量见 §9.38，其余“建议”“拟新增”仍未实现。
+
+读取与统计、失效事件分别作只读探索，主代理沿出处核对关键结论；该探索不是指定 Cursor verifier。指定复核仍未执行 / blocked，不重查登录、不改认证、不使用其他代理冒充，历史整树、原生、真实系统与前阶段 partial 状态继续保留。2K-4A 当时完成文档后停止；现 D1～D3 已确认，但仅 2K-4B 的元数据隔离实施获得本轮授权，不表示旧阶段已验收。
+
+#### 已核实事实一：模型物化、正文读取与转换状态
+
+| 问题 | 核实事实及源码依据 |
+|---|---|
+| 持久化字段 | [Models.swift](../AreaChain/Domain/Models.swift):270–312 `DiaryEntry`：普通正文为 `text: String`；保护后密文为 `encryptedText: Data?`，库归属为 `privacyVaultID`，另有 `isPrivate`。`hasProtectedContent` 在三者任一指示保护时成立。`dayKey/createdAt/deletedAt/tagIDs/isPinned` 独立存储。旧格式仍可把敏感明文放在 text，新增保护字段默认 false/nil，不是已迁移证明。 |
+| fetch 会得到什么 | [SwiftDataDiaryRepository.swift](../AreaChain/Services/Repositories/SwiftDataDiaryRepository.swift):32、218–247 返回完整 `DiaryEntry` 模型，按创建时间及置顶排序；没有本项目可证明的独立元数据表或仅列投影。fetch 本身没有调用应用的解密函数；但框架可能加载 text/密文或保留已注册模型，**无法保证元数据 fetch 不物化正文，也无法保证内存没有正文**。这里没有执行 SQL/内存实验，也没有框架保证可作为证据。 |
+| snapshot / text 的区别 | `Models.swift:302` 的 `entry.snapshot` 直接复制 `entry.text`，仅将保护标志折入 isPrivate/isContentAvailable，并不先清空 text，也不解密。直接读 `entry.text` 访问持久化明文字段，无自定义解密 getter。因此“受保护标志为真”不能证明 snapshot 内没有旧明文。 |
+| DiaryContent 的读取 | [DiaryContent.swift](../AreaChain/Services/Privacy/DiaryContent.swift):6–21：未保护模型会枚举完整 TagItem 并检查私密标签，然后返回 text；受保护模型先检查 vault 已解锁，再要求密文与 vaultID，调用 `keys.open`，返回新 String。它不主动认证，也不把解密结果回填模型。`:24–35` 的 snapshot 先复制 entry.snapshot，再尝试 read；失败清 text、置 isPrivate=true/isContentAvailable=false。成功仍可能产生敏感正文值副本。不能将该 API 当成无正文元数据接口。 |
+| 仓储旧搜索不能直接复用 | `SwiftDataDiaryRepository.swift:43–60` 的 `searchDiaries` 使用 BoardSearch、活标签字典、DiaryContent.snapshot；它可能解密，且 `Dictionary(uniqueKeysWithValues:)` 不是重复 ID 的保守归并。新入口复用枚举方法，不调用旧搜索；按 ID 的 `fetchDiary` 有 fetchLimit=1，也不适合证明重复身份不存在。 |
+| 写入边界 | `DiaryContent.swift:38–51` 保护写入密文/vaultID/isPrivate 并把 text 置空；`SwiftDataDiaryRepository.swift:201–215` 的 writeContent 可标记磁盘清理、转换附件并写正文。`:128–150` 的改标签是读正文后事务写入。新 reader 不调用这些方法、save/rollback、ensurePresetTags、resolveOrCreateTag 或通知发布。 |
+| 初始化做了什么 | [Persistence.swift](../AreaChain/Services/Persistence.swift):14–28 在生产容器打开前尝试 `PrivacyStoreMaintenance.finish`，失败被 `try?` 保留；还修复任务/习惯 NULL notes。测试入口先返回内存容器。该初始化不是手记全库保护迁移；[PrivacyVault.swift](../AreaChain/Services/Privacy/PrivacyVault.swift):51–69 只加载/校验配置与清理日志，状态 locked/unconfigured/unavailable 也不是手记格式就绪证明。 |
+| 迁移/清理如何发生 | [DiaryProtection.swift](../AreaChain/Services/Privacy/DiaryProtection.swift):27–32、111–134：转换候选可选择 includeLegacy，实际 applyTags 要新鲜认证、必要备份，并在事务中加密/更新私密标签。没有自动把全部旧密码标记升级的读取路径。[PrivacyStoreMaintenance.swift](../AreaChain/Services/Privacy/PrivacyStoreMaintenance.swift):20–59：标记先于转换，isPending 仅表示待清 SQLite 空闲页/WAL；冷启动 finish 做 checkpoint/VACUUM 并删除成功标记。无标记不证明全部旧数据已转换、有标记也不等于当前行无法读取。 |
+
+结论：不能复用一个不存在的“全库安全初始化完成”布尔值。可复用调用方**已打开的 context**、已存在 vault 的只读状态，以及由既有维护路径报告的 pending/unknown 事实；不能由新搜索调用 `Persistence.makeSession`、初始化全局服务或触发 finish/applyTags 来取得就绪状态。即使已有合成迁移测试，[PrivacyMigrationTests.swift](../AreaChainTests/Services/PrivacyMigrationTests.swift):9 起也是显式转换后的独立旧库夹具，不能证明当前真实库已完成转换。本阶段没有运行它。
+
+“仅元数据”在推荐方案中准确指**不显式读取/复制 text，不调用应用解密，返回值没有正文**；不承诺 SwiftData 底层列隔离。若实施授权要求连物化都必须避免，则当前模型路径不足，必须保持 diary 来源未接入，另行研究存储设计，不能偷偷换 SQLite 私有表查询或新增迁移。
+
+#### 已核实事实二：保护资料及完整性
+
+| 资料 | 用途及不足 |
+|---|---|
+| isPrivate / hasProtectedContent | 存储标志及密文/vaultID存在性仅说明必须按保护处理；不证明密文有效、可解密或旧 text 已擦除。新投影保留 `hasProtectedContent`，不得只复制 isPrivate。 |
+| isContentAvailable | [DayBoardLogic.swift](../AreaChain/Domain/DayBoardLogic.swift):95 的快照能力字段，不是持久化列或认证许可；true 仅表示本次实际提供可读正文。元数据投影必须 false，即使 vault 已解锁。不能把空占位设为可读来证明排除文字。 |
+| 私密标签与旧名称 | [DiaryPrivacy.swift](../AreaChain/Domain/DiaryPrivacy.swift):11–23 的 isSensitive 同时看快照 isPrivate、正文旧标记，以及关联标签的 isPrivateDiary/密码名称。[DiaryMemoTags.swift](../AreaChain/Domain/DiaryMemoTags.swift):11–12 保留中文“密码”和英文 password 名称规则；不能擅自替换成另一种规范化匹配。 |
+| 旧正文标记 | `DiaryPrivacy.swift:54–55` 的 `#密码` / 不区分大小写 `#password` 依赖实际正文。标签元数据无异常仍不能排除旧正文标记；元数据模式不读取它，也不宣称该记录公开。自动标签关键字另见 `DiaryMemoTags.swift:20`，不是已完成保护转换的历史证明。 |
+| 写保护与展示判定不同 | `DiaryPrivacy.swift:34–42` 的 requiresProtection 依赖 isPrivateDiary（text 重载还能从正文解析名字）；它不是 isSensitive 的同义函数。`DiaryContent.read` 未保护分支只调用 tagIDs 重载，不能单凭 read 成功宣称通过所有旧格式展示检查。 |
+| Query 的保守规则 | [DiaryQueryEvaluation.swift](../AreaChain/Domain/DiaryQueryEvaluation.swift):42–60 在正文不可用时忽略占位；要求名字表存在、所有关联有名字、privateTagIDs 非 nil、原 tagIDs 可解释，且正文可用/不敏感才 canPublishBody。完整性诊断不依赖旧正文标记。结果 [DiaryQueryRead.swift](../AreaChain/Domain/DiaryQueryRead.swift):83–96 删除隐藏结果全部文字条件证据；[DiaryQueryMatching.swift](../AreaChain/Domain/DiaryQueryMatching.swift):82–121 保留文字正负及 AND/OR 的三态。 |
+| 标签墓碑与历史资料 | 保护目录必须含已软删除标签的原 id/name/isPrivateDiary，以及同 ID 的所有行；不能使用 liveTags、搜索命中或显示出来的标签反推保护全集。`SwiftDataDiaryRepository.swift:255` 的 protectionTags 也明确含墓碑。已彻底删除的名字/标志没有在 DiaryEntry 中另存历史副本；孤立 tagID 无法追溯时必须保持未知，不能自动补标签或认定公开。 |
+| 缺失、重复与坏关联 | 名称为空/不可解释、关联缺失或重复 ID 均不能挑第一行；完整私密集合不能由不完整目录拼出。保留原 tagIDs，让 Query 的 invalidTagIDs 生效；[Classification.swift](../AreaChain/Domain/Classification.swift):90 的容错解析不能代替完整性校验。重复关联 ID 与重复实体 ID 分开，后者包括活行/墓碑冲突，交给既有 Provider 隔离。 |
+
+现有 [ContentQueryTagNames.swift](../AreaChain/Services/ContentQueryTagNames.swift):16–46 只收集任务/子任务/习惯 ID，遇缺失、重复或私密标签名便返回 names=nil；同批全目录不改变此限制。[TaskFamilyContentQueryReader.swift](../AreaChain/Services/TaskFamilyContentQueryReader.swift):38–47 是唯一 metadata 装配者，当前 privateTagIDs 恒 nil。不能在新增 reader 内先填完整隐私资料，然后又被家庭装配覆盖；也不能为了填满 diary 名字，顺带放宽任务关联名字的既有边界。
+
+图片有独立门禁：[ImageOwnerResolution.swift](../AreaChain/Domain/ImageOwnerResolution.swift):60–69 先要求 diaryPrivacy 覆盖完整，再运行同一个 DiaryQueryPrivacy；[ImageAssociationReader.swift](../AreaChain/Domain/ImageAssociationReader.swift):43–59 对 protected 或 diary privacy unknown 都返回统一 protected，不表达零/一/多图，也不发布图片明细。**名字完整、目录完整、vault 解锁都不自动提升 diaryPrivacy**。首批元数据投影的 canPublishBody 始终 false，不能借这个事实把未知保护格式标为“已核验完整”。
+
+#### 已核实事实三：事件、所有权与失效缺口
+
+| 事件/状态 | 实际语义与接线要求 |
+|---|---|
+| privacyWillLock | `PrivacyVault.swift:104–113` 同步发通知在 generation 递增、keys.clear 和 state 更新**之前**。回调此时仍可能读到 unlocked 与旧 generation；必须无条件先撤销本搜索来源，不能等待 didChange，也不能据旧 state 放行。 |
+| 自动/系统锁定 | `PrivacyVault.swift:120–144、209–215`：空闲阈值后 lock，common RunLoop 每秒检查；睡眠、系统会话失活、屏幕锁定、退出走 lock。后台搜索不能 touch 续期。 |
+| privacyMask / 窗口失焦 | 应用失活仅发 privacyMask，不改密钥、state、generation 或 revision。`DiaryNoteCard.swift:310–325` 另区分本窗口失去 key。[DiaryEditorSession.swift](../AreaChain/Features/Diary/DiaryEditorSession.swift):194–218 的 mask 与 sealForLock 分开，后者在钥匙清除前封存未保存正文；封存失败保留会话并遮罩，不是随意丢草稿。 |
+| generation / revision | `PrivacyVault.swift:147–173` 在认证开始推进 generation，但此时没有 privacyDidChange；认证成功核对代次/配置后通知。`:176–205` 的 revision 还包含配置、清理日志等变更，并非纯认证代次。只订阅 didChange 不覆盖认证开始。vault 是 @Observable @MainActor，可观察既有 generation/state/isAuthenticating/revision；新增观察接线仍需验证通知顺序和重入。 |
+| PrivacyAccess / Presenter | [PrivacyUnlockPresenter.swift](../AreaChain/Features/Diary/PrivacyUnlockPresenter.swift):129–159 可主动请求认证，已解锁路径还能 touch；不是无副作用的搜索资格检查器。搜索不能调用 perform/withDiary/request，显式打开后的现有编辑入口仍保持自己的认证责任。 |
+| ReadOwner 冻结 | [ContentQueryReadOwner.swift](../AreaChain/Domain/ContentQueryReadOwner.swift):49–86 内部持有 Batch（含 Session/原快照）及展示配置；task 只含身份/预算。begin 换来源但保留 published；cancel/fail 也保留旧结果。`:102–114` 同步完成 BatchReader→Sorter→Presenter→DisplayBuilder，无后台安全/合作式中断承诺。 |
+| 结果链与票据 | `ContentQueryReadOwner.swift:23–38、119–141`：ticket 含候选 DisplaySnapshot；publication 通过 Pagination→Browse→Display→Presentation→SortedResponse→BatchResponse 保留安全结果。原文字条件仍可存在 [ContentQuerySortContext.swift](../AreaChain/Domain/ContentQuerySortContext.swift):16–31，因此“结果正文隐藏”不代表整条响应链没有用户输入。选择/展开属于 Browse，分页进度属于 Pagination；不能只清可见行。 |
+| 真正失效 | `ContentQueryReadOwner.swift:158–165` 的 invalidateSource 才撤销 frozen/published/任务/预算。`:192–198` 阻止旧 source/task 发布，但外部持有的 ticket/publication/值副本不会被它远程擦除。普通取消保留旧结果不适合隐私失效；begin 新来源也不是清理替代品。 |
+| 宿主与转交 | [CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift):4–30 只持 query/operations/plan/execution，presentationEvent 故意不操作草稿，没有 ReadOwner 或隐私戳。[CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift):34、86、130 的 lease/ownership 只管宿主所有权；[CommandHandoffContract.swift](../AreaChain/Domain/CommandHandoffContract.swift):3 明确它不是认证凭据。没有生产宿主读取/敏感草稿接线。 |
+
+#### 已核实事实四：元数据与统计披露
+
+[Catalog.swift](../AreaChain/Domain/Catalog.swift):24–54 的 TagUsage 统计未删除待办、习惯、子任务和手记，使用 tagIDs、createdAt、deletedAt；不读正文，不排除受保护手记，不计打卡，不按完成/启停过滤。子任务从 todo 关系取出，只按子任务自身删除状态计数。`latestCreatedAt` 是这些来源的最大创建时间，**不是最近阅读或编辑时间**。
+
+这不只是内部计算：[TagManagementPage.swift](../AreaChain/Features/Workspace/TagManagementPage.swift):125、265–295 实际显示 activeCount；[TagUsageFiltering.swift](../AreaChain/Domain/TagUsageFiltering.swift):26 的 recent 使用最近创建时间排序，但该标签行没有直接显示时间。新搜索输出精确 latestCreatedAt 或根据内容查询统计命中数，都会增加与原标签页不同的推断途径；“旧函数算过”不足以授权披露。
+
+| 元数据 | 当前可见/可查询边界及推荐限制 |
+|---|---|
+| 标签 | 旧手记行显示关联活标签，标签目录本身显示标签；保护判定另外需要墓碑资料。[DiarySummaryRow.swift](../AreaChain/Features/Diary/DiarySummaryRow.swift):94、340–358。不得把用于保护核验的全量历史名字无条件输出给所有消费者。 |
+| 归属日期 dayKey | §1/§9.19 已允许 diary date 查询；`DiaryQueryMatching.swift:55–62` 与 created 分开。不能把旧 UI 的创建日期误称为归属日，也不据此开放正文。 |
+| 创建时间 | `DiarySummaryRow.swift:361–369` 在隐藏正文时仍显示创建日期/短时间；QueryMatch 已保留真实 createdAt。单条允许元数据与跨来源最近时间统计是不同披露面。 |
+| 置顶/私密标记 | `DiarySummaryRow.swift:321–335` 有图钉/锁图标；`DiaryQueryRead.swift:73–96` 保留置顶，隐私通过 hiddenTitle 投影，不输出 vaultID、密文存在性明细、认证状态或格式故障原因。元数据模式的“隐藏”不等于新宣称所有记录都确认为私密。 |
+| 正文未知与统计准确性 | 如果另行批准“全部活关联元数据均计入”，旧 TagUsage 可不读正文算准确次数/最大创建时间，前提是全部来源、关系及字段可靠且口径一致。若要排除私密/旧格式，元数据不足以排除旧正文标记；若统计当前正文查询命中，则未知对象使统计不完整。不能把可读子集称为全来源，或用缺项推导 unused。 |
+
+#### 推荐接线 A：首批手记元数据读取器（D1 已确认，2K-4B 实现见 §9.38）
+
+建议首批采用 **metadataOnly（仅元数据投影）**，连已解锁受保护正文也不读取；普通正文同样暂不提供。代价明确：普通手记在这条新路径也以隐藏标题显示，文字只有已提供标签可决定，否则未知。此限制仅属于首批 Services 适配能力，不修改 DiaryQuery 已支持的可读正文规则，也不接生产 UI 让用户误认为全文搜索已完成。以后开放普通正文或解锁正文须分别授权敏感接触与验证。
+
+以下为 2K-4A 原方案，生命周期部分留在 2K-4C；2K-4B 改为无 vault 依赖的仓储静态枚举，实际接口以 §9.38 为准。原拟新增 `AreaChain/Services/DiaryContentQueryReader.swift`，沿现有 Task/Routine/Tag reader 模式，必要纯值类型放同目录 `DiaryContentQueryRead.swift`，不新增隐私服务：
+
+- `DiaryContentQueryReads`：显式注入已有 ModelContext 和已有 vault，默认枚举闭包只调用 `SwiftDataDiaryRepository.fetchDiaries(for: nil, includeDeleted: true)`；不使用 fetchDiary 的单行截断。构造仓储显式传 vault，不能因默认参数意外初始化 shared。全量包含墓碑是为身份冲突核验，首批只发布 live diary，不启用回收站读取或图片能力。
+- `readSources(into:contextFacts:)`：输入调用方唯一 Batch（session/requestID/options/日期）、同批标签资料和来源覆盖、只读生命周期戳；戳包含明确 vault 实例身份、generation/revision/state、宿主本地失效序号，**不含 configuration、vaultID、密钥或认证闭包**。统计输入保持原注入接口，不由该 reader 生成。
+- 返回 `DiaryContentQueryReadDetails`：来源覆盖、body 模式、封闭问题类别（未提供/读取失败/保护资料不完整/来源失效），并只填 Batch.diaries；不返回模型、密文、正文闭包、文件路径或底层 error.localizedDescription。维护 pending/unknown 只作限制事实，不伪造 migrationComplete，也不把清理状态回显为逐条格式细节。
+- 每行显式组装 DiarySnapshot：id/dayKey/createdAt/deletedAt/tagIDs/isPinned 原值，isPrivate=`entry.hasProtectedContent`，text 为空且 isContentAvailable=false。不调用 entry.snapshot/DiaryContent.snapshot/read，不将该空字符串作已读正文。hasProtectedContent 的可选密文字段检查仍可能接触密文，属于 D1 已接受的模型接触边界。
+- 无 diary 需求、指令输入或结构非法时不 fetch；fetch 失败为 `.failed`，未授权模式或失效为 `.notProvided` 并有来源问题，绝不 `.complete([])`。成功全枚举可标“记录源完整”，与正文/隐私资料完整独立。非法日期、重复 diary ID 交原 Provider 隔离，不自行修复。vault 未配置/锁定/unavailable 不等于元数据为空；只要来源有效仍可投影隐藏元数据，但绝无正文能力。
+- 读取前后核对同一来源戳；来源改变时丢弃这次结果，不混合旧 diary 与新 tag。同步 MainActor 同一 context 不保证跨进程/上下文事务原子性，不设置 autosaveEnabled、不 save/rollback，不把调用方未保存变更清掉。模型注册缓存由 context 拥有，reader 返回后清自身引用不能保证 context 也释放敏感字段。
+
+同批 metadata 只在 TaskFamily 最后装配一次。扩展 `ContentQueryTagNames.associatedIDs` 纳入本批 diary ID；需要手记保护资料时通过现有 Catalog 仓储枚举完整标签（含墓碑），同次 rows 供 TagContentQueryReader 与保护投影复用，不拿两个独立 Batch 拼接。**保留 ContentQueryTagNames 现有私密名字拒绝规则**；它返回 nil 时接受名字查询未知，不悄悄扩大任务/手记名字可见范围。以后希望对私密关联显示名字应另行核对，不在此首批顺带实施。
+
+全目录成功、身份唯一且保护字段可解释，才可把全局 isPrivateDiary ID 集合填入 privateTagIDs；重复目录 ID、读取失败或无法证明全集时仍 nil，不以空集合代替。旧密码名称由 DiaryPrivacy 复用，不造另一份关键字规则。名字缺失/歧义仍阻止 canPublishBody。没有正文旧标记核验时，`imageCoverage.diaryPrivacy` 和 `trashCoverage.diaryPrivacy` 保持 notProvided/已有更保守值；也不提升 trashTagNamesCoverage、图片身份/关联覆盖。后续要放宽完整性必须单独证明，不能由本节读取器存在推导通过。
+
+#### 推荐接线 B：失效、发布与宿主生命周期（D3 已确认，搜索生命周期实现见 §9.39）
+
+以下保留 2K-4A 当时的设计措辞与限制；当前实际实现及证据以 §9.39 为准，敏感草稿封存仍未实现。
+
+拟由 `AreaChain/Services/ContentQueryReadSession.swift` 中的 `@MainActor` 宿主读取适配持有现有 ReadOwner、待发布票据、当前呈现引用和订阅。它只协调搜索生命周期，不负责认证、加解密或持久化；不把实体或票据塞入可复制的 CommandHostSession。生产工作台/菜单栏尚未接线，先做隔离宿主测试。
+
+1. 注入明确 vault 实例；订阅该实例 `.privacyWillLock/.privacyDidChange/.privacyMask`。willLock 同步先推进本地失效序号、关闭发布闸门，再 invalidateSource、清宿主持有的票据/展示链/摘要/分页/选择/待打开引用；此处不能读旧 unlocked 来跳过。没有当前 source 时同样清宿主引用。begin 普通替换保留旧 published 的行为保持不变，保护变化必须先 invalidate。
+2. 用现有 Observation 对 `vault.generation/state/isAuthenticating/revision` 建立只读跟踪，以补认证开始无通知的缺口；变更回调按“即将失效”处理，不依赖回调里读到新值。复订阅完成前闸门关闭，随后读取当前值建立新戳。该 adapter 不调用/改写 beginAuthentication、lock、persist 或认证方法；Observation 的回调时序、actor 假设及重复订阅是后续必测项，不能仅靠 didChange 宣称即时撤权已覆盖。无法可靠覆盖时，不上线需要即时失效的正文读取。
+3. 冻结来源绑定 `(host lease/ownership, local invalidation epoch, vault instance + generation/revision/state, ReadOwner.source)`；这些值功能不同，requestID 不能代替任何一个。读取、evaluate 前后，以及 publish/loadMore/applyBrowse/打开意图消费前都核对；检查与 publish 在同一个 MainActor 同步片段内，之间不 await、不补盖新戳给旧任务。任何不一致先清除再拒绝。认证结束/再次解锁只允许新读取，不复活原票据或自动显露旧内容。
+4. `.privacyDidChange` 或业务保护/标签变化先失效后重建。已保存变更沿 [ModelChanges.swift](../AreaChain/Services/ModelChanges.swift):31–39、100 的提交后 `BoardEvents.changed()` → [BoardEvents.swift](../AreaChain/Services/BoardEvents.swift):33–34 的 `.boardDidChange` 接入（通知不带 context，首批可保守失效，不据此宣称指定库的精确代次）；未保存实体变化不保证有通知，必须由实际宿主观察/显式重读，现有家庭 reader 不是观察器。涉及隐私判定变化时不走保留旧结果的普通重读。首批未接生产前需明确实际宿主的变化来源，不能假称完整业务失效已覆盖。
+5. `.privacyMask` 与本宿主 `NSWindow.didResignKeyNotification` 只撤销显示资格，不调用 vault.lock，不改变认证。建议遮住查询输入及结果，释放派生结果链、令旧票据失效；宿主内查询可短暂保留，重新聚焦不会自动恢复敏感结果，须显式恢复并重读。willLock 则按 D3 清查询文字。失焦不清操作草稿、不把遮罩当作加密，保留的 String 仍在内存。
+6. D3 已确认真正锁定时清除**搜索查询**的原文、用户文字/标签名条件、补全缓冲、返回快照与排序上下文，只从可信页面重新建自动范围/日期；不能只清编辑框而留 Session.conditions。没有无内容证明的用户输入都按敏感处理，不用关键词猜测。公开结果也先撤整条旧链（其 sort context 可能有输入），随后允许从安全新查询重建日期/置顶/已允许标签及隐藏标题，不沿用旧排名、数量、游标或锚点。清查询是已确认但尚未实施的生命周期行为，留在 2K-4C。
+7. CommandHostSession 的操作草稿/计划/执行与搜索查询分开。本阶段不接敏感写草稿；后续须复用 DiaryEditorSession/SealedDiaryDraft 的封存和失败保留，而不是清整个 HostSession。Handoff 仍依原 lease 原子转交普通查询/草稿；不转移 ticket、结果、解锁或显式显示许可，源目标旧读取分别失效，目标重新读取。私密草稿接线未完成前，不能把普通 Handoff 作为私密转交能力交付。
+
+同步 evaluate 在执行期间不能即时处理排队到主线程的系统事件；它完成后先回到调度边界，再在单独发布步骤重核闸门，且所有入口核对当前戳。此办法可拒绝已处理失效后的迟到结果，**不证明长同步计算期间事件零延迟**。首批无正文路线也须测事件次序；大库耗时与合作式取消另有缺口，不能在本轮把 ReadOwner 移到后台或宣称已有线程安全。
+
+清引用和值冻结分别证明逻辑不可再访问、输入不随模型变化；不证明物理内存擦除。Swift String 写时复制、临时值、Task 捕获、外部副本及 SwiftData 注册对象均可能延长存活。不得承诺字符串安全零化；公开 response 的 description 脱敏也不是内容访问控制。
+
+#### 推荐接线 C：统计暂不接入真实来源（D2 首批限制，2K-8 更新）
+
+以下保留首批决策；后续明确授权的全来源元数据统计与隔离证据见 §9.44。
+
+首批新搜索 `tagUsage=nil` / usageOrigin=notProvided，结果为 unavailable；不为补齐统计读取手记，不自动包含或单独计出受保护手记，不输出精确最近时间，不新增“受保护若干条”的计数。旧 TagManagementPage 行为保持原样。
+
+若后续仅有任务类/公开子集或读取失败，表达 `partial(completeTagIDs: [])`，只对能够证明所有来源与披露许可均完整的标签列入 completeTagIDs；不发布部分正数、假零或“至少 N”。[TagQueryUsage.swift](../AreaChain/Domain/TagQueryUsage.swift):45–64 已使 unavailable/partial 不带 record；只有完整覆盖缺项才补零。[TagQueryProvider.swift](../AreaChain/Domain/TagQueryProvider.swift):102 起已有 frequent 保留目录次序回退、recent/unused 未知反馈，继续复用。来源失败后撤回旧 complete，不能沿用上一批统计。
+
+若用户选择未来对齐旧全来源统计：可参与的字段限定稳定 tagIDs、createdAt、deletedAt及必要归属/唯一身份；计入受保护手记但不读正文、不发布私密子计数。必须核对所有 todo/subtask/routine/diary 的枚举完整、孤立/重复/坏日期及墓碑影响；不能对当前搜索确定命中子集调用 TagUsage 后声明全目录完整。精确 latestCreatedAt 对外显示相对旧标签页是新增信息，需再明确允许才进入实现；仅同意“旧次数/最近排序”不隐含同意精确时间披露。
+
+#### 文件、符号、消费者与最小改动建议
+
+以下是后续影响清单，不是本轮差异，也不是未经核验的代码补丁；目前只改本文。拟新增文件以代码格式列名，不创建空文件。
+
+| 文件/符号 | 最小改动与消费者 |
+|---|---|
+| `Services/DiaryContentQueryReader.swift`、必要时 `DiaryContentQueryRead.swift` | 新增明确依赖的只读枚举及 metadataOnly 投影；消费既有 DiaryRepository 的枚举、DiarySnapshot/QueryProvider；首先由 Services 隔离测试和家庭装配消费。无写入/解密/全局初始化。 |
+| `Services/TaskFamilyContentQueryReader.swift` | 唯一 Batch 装配增加 diary 源与 details；同批标签只 fetch 一次，metadata 最后赋值一次；旧任务类入口默认不开 diary，兼容原 Services 测试。名称是否日后泛化不在首批重构。 |
+| `Services/ContentQueryTagNames.swift`、`TagContentQueryReader.swift` | associatedIDs 加入 diary；窄扩展同批目录资料复用，保留私密名拒绝/失败撤回。全目录保护集合与公开关联名字是两种投影，不能用一个 coverage 替换。 |
+| `Services/ContentQueryReadSession.swift` | 拟新增搜索宿主适配，显式 vault + ReadOwner + 事件订阅；承接原 source/ticket/pagination，处理清理和发布前检查，不发认证请求。 |
+| `Domain/ContentQueryReadOwner.swift` 与展示/分页 | 优先直接复用 invalidateSource/身份拒绝，不改变普通 cancel 保留语义；若隔离测试证明生命周期 API 不足，再提出最小变更。不复制 Sorter/Presenter 或增加敏感结果缓存。 |
+| `Domain/CommandHostSession.swift` / `ContentQueryReducer` / Handoff | D3 已确认，2K-4C 才增加“只清搜索”的明确领域事件，覆盖原文与返回状态；操作草稿/计划不动。实际生产宿主与敏感转交另阶段接入。 |
+| DiaryContent / DiaryPrivacy / PrivacyVault / PrivacyAccess / DiaryProtection / Persistence | 首批只复用/读取既有契约，不改认证、密钥、加密、迁移或存储格式；完整性与事件缺口不能在这些文件里悄悄补高风险实现。 |
+| Catalog / TagQueryUsage / ImageAssociation | 保留算法与披露边界，新增夹具回归即可；统计及图片真实读取均不随 diary 元数据读取启用。 |
+| Services/Domain 对应测试、本文、原组件目录/架构/路由 | 后续实际新增公共入口时同步原索引与检查规则所需测试；2K-4A 未新增入口，按本次授权只维护本文，不建立平行报告或第二套检查器。 |
+
+#### 后续可执行的隔离验证计划（本轮未运行 Swift）
+
+在重新检查工作区、签名/测试入口和注入隔离条件后，复用原内存 ModelContainer、固定 Calendar/时钟、MemoryVaultConfigurationStore、FakeSystemVaultKeys 与 TaskFamily/Tag 夹具。不得初始化生产 Persistence.session 或读取真实用户库/偏好；测试计数只记录封闭操作类型，不记录查询/正文。普通脚本入口清除真实钥匙串授权；不要为了消除 skipped 而启用真实用例。
+
+| 场景 | 输入与断言；需新增的证据 |
+|---|---|
+| 未配置/锁定/已解锁/访问失败 | 注入四态 vault、失败 fetch、失败配置加载。metadataOnly 所有态均无 DiaryContent.read/keys.open；成功只给元数据，失败保留 failed/unknown。若未来授权正文模式，再用 fake keys 验证 read 失败降为不可用而非空，不自动解锁、不 touch。 |
+| 普通/受保护/旧格式/资料不足 | 合成 text、保护标志单独为真、密文或 vaultID 单独存在、旧 #密码/#password、明文与密文并存、坏日期/重复 ID。首批全部 text=""/available=false，模型原字段前后不变；旧格式不被清理/修复。完整行覆盖不等于完整隐私覆盖。 |
+| 标签完整性 | 完整空、缺名/空名、重复标签 ID（含活/墓碑）、同名不同 ID、删除私密标签、旧密码名、孤立 tagID、非法/重复关联片段。全局私密集合不足保持 nil；元数据已有证据可判断，无证据才未知；不创建标签。 |
+| 真实锁定与迟到发布 | 分别在 prepare 后、evaluate 前、票据完成后、publish 前注入 willLock/代次变化；尤其 willLock 回调仍 unlocked/旧 generation。断言立即撤引用、旧票据拒绝、重新解锁不能复活旧 source，旧分页/选择事件拒绝。 |
+| 认证开始/订阅重入 | 不运行认证，使用 fake/隔离 vault 的受控代次推进与同 actor 变更；验证 Observation 在 didChange 缺席时也关闸，复订阅间隙拒绝发布，取消/失败也不恢复旧结果。仅 notify 模拟不能证明真实属性观察有效，需直接改变被观察的注入对象。 |
+| 计算中失效 | 原 evaluate 同步，不伪造“并行修改同一个 owner”测试。先验证可控调度的完成/失效/发布顺序；若未来增加异步计算，必须另测计算完成前取消和晚到任务拒绝，不能拿现有同步测试宣称合作式中断。 |
+| 失焦遮罩 | 分别发 privacyMask、本窗口与另一窗口 resignKey；检查不调用 lock、vault generation 不变、不清操作草稿；只遮罩/撤显示资格。真正 lock 清查询按 D3 执行，回到前台不能自动显露旧敏感结果。原生事件测试留给未来隔离宿主，非本轮整套 UI。 |
+| 三态/安全输出 | 日期、tagID、允许标签名可决定的结果与正文依赖 unknown 分开；正负/AND/OR 用原 DiaryQueryUnknownTests；输出递归检查无原正文、片段、范围、长度或原始错误，含 SortContext 中查询残留的清理。 |
+| 图片 | 同一受保护手记分别零/一/多图，完整/不完整 diaryPrivacy、重复/坏图片元数据；安全公开结果等价，不能因标签完整或解锁输出文件名、图片数量/存在真值。新 reader 不读取图片文件。 |
+| 统计 | 默认 unavailable；仅部分来源是 partial 且 record=nil；不得以零证明 unused，recent 未知/frequent 回退；锁定前后不能残留上一批精确统计。若将来选择全来源口径，另测受保护记录贡献、创建时间而非编辑时间、失效撤回，仍不单独披露保护数量。 |
+| 只读副作用与释放 | 用独立 ModelContext 核对持久化前后及未保存插入/修改/删除保留；注入 spies 断言解锁、密钥读取、转换、save、rollback、业务通知和系统权限写入均零。外部持票据副本时失效仍必须拒绝发布；释放测试只证明所有者/引用生命周期，不证明 String 零化。 |
+
+可先复用的现有回归命令（后续实施时串行执行，**不是本轮执行记录**）：
+
+```bash
+./scripts/build.sh test \
+  --only-testing AreaChainTests/DiaryQueryPrivacyTests \
+  --only-testing AreaChainTests/DiaryQueryUnknownTests \
+  --only-testing AreaChainTests/DiaryQueryBoundaryTests \
+  --only-testing AreaChainTests/ImageAssociationPrivacyTests \
+  --only-testing AreaChainTests/RecordImageQueryPrivacyTests \
+  --only-testing AreaChainTests/ContentQueryReadLifecycleTests \
+  --only-testing AreaChainTests/ContentQueryReadPublicationTests \
+  --only-testing AreaChainTests/TagQueryUsageTests \
+  --only-testing AreaChainTests/TagContentQueryUsageTests \
+  --only-testing AreaChainTests/TaskFamilyContentQueryIntegrationTests
+```
+
+新增 reader/生命周期测试必须从实际模型→家庭装配→ReadOwner→展示/分页验证，不能手工替换最终 snapshot；受影响 Swift 最终编辑后再做定向回归和 Debug 构建。旧 PrivacyMigration/PrivacyStoreMaintenance 测试可作为夹具设计参考，首批只读验证不需要执行转换/冷库重建；真实钥匙串、真实系统锁屏、生产数据实验均不在本计划授权内。
+
+#### 实施授权、风险与回退
+
+| 拟议项 | 复用还是边界变化 | 实际风险、验证与回退 |
+|---|---|---|
+| 元数据 reader | 复用仓储枚举和安全 Query；**增加新入口对 DiaryEntry 模型/保护字段的接触**，即使无显式正文访问 | SwiftData 可能物化明文/密文；D1 已明确接受该物化限制。用隔离模型/副作用 spies/输出断言验证，不能证明底层零接触。关闭新 reader 恢复 diary=notProvided 只阻止后续读取，还需撤去已存在结果/上下文引用。 |
+| 失效 adapter / D3 查询清理 | 复用 vault 事件/可观察代次、ReadOwner 失效；**改变查询及派生值存活期** | 通知在状态改变前、迟到任务、外部副本、误清业务草稿。用事件顺序/观察重入/旧票据测试；出问题先关闭新搜索读取并撤结果，回退 adapter 代码不能让过期票据重新有效。 |
+| 首批 metadataOnly 安全投影 | 无正文解密和格式转换；新搜索获得已允许的单条元数据查询能力 | 隐藏标题也暴露记录存在性，允许范围沿已确认 §1，不扩到图片细节、历史名字全集或故障信息。使用输出等价和三态测试；回退读取/呈现入口，不改原手记页面。 |
+| 统计 unavailable | 复用原未知统计契约，首批不增加精确统计披露 | 用户可能无法使用新入口的 recent/unused 完整筛选；明确 unavailable，不假零。若以后开启受保护贡献/精确最近时间属于额外披露，须另定界、测覆盖，回退时撤掉统计及依赖排序，不能仅隐藏数字。 |
+| 普通/受保护正文后续开放 | 属于**敏感数据接触与生命周期扩大**，不是此次读取方案自动附带 | 复用 DiaryContent/DiaryPrivacy 仍需验证锁定、读取失败、内存副本与公开输出；当前暂缓，未获授权不能实施。回退禁止新读取并清逻辑引用，不承诺擦除全部内存。 |
+
+四种回退必须分清：**关闭入口**阻止新读；**撤去内存结果**使已有发布/票据/查询失效；**回退代码**恢复软件行为但不会自动清正在运行进程或其副本；**恢复数据**是独立高风险操作。本方案没有数据迁移、格式写入或数据库修改，因此正常回退不需要恢复数据，更不能以回退之名重置库、解保护或重做转换。若隔离测试发现任何写入，停止接线并调查，不能把备份恢复当作只读 reader 的常规后续。
+
+#### 已由用户确认的三个决策（2026-10-02）
+
+| 决策 | 已确认要求 | 实施状态 |
+|---|---|---|
+| D1 首批接触边界 | 暂时仅 metadataOnly；接受 SwiftData 可能物化正文/密文，不显式访问或复制正文、不解密，不宣称正文完全未进入内存。正文判断未知、隐藏展示，不替换生产搜索。普通正文搜索和既有授权下私密正文匹配仍是最终必须完成能力。 | 2K-4B 仅隔离实现，见 §9.38；生产入口须等待隐私失效接线及相关验收。 |
+| D2 新搜索统计 | 首批真实统计 unavailable 的阶段限制在 2K-8 按新增明确授权补齐：全来源含受保护手记，仅元数据、旧次数与最近排序，不公开精确时间或私密分项；旧页不变。缺源仍回退/未知。 | 2K-8 已增加隔离存储适配与受门禁发布，见 §9.44；生产入口、性能和指定复核仍未完成。显式注入统计继续独立标为 injected。 |
+| D3 真正锁定后的查询 | 清除搜索文字、查询条件、结果、摘要、选择、展开，立即失效旧任务/票据；锁定通知到来立即撤销发布资格，不等待 generation 递增。普通失焦/收起保留查询，仅遮罩敏感展示，不自动认证/提交；再次解锁不自动恢复已清查询或结果。操作草稿不能直接丢弃，敏感内容须沿已有封存/遮罩机制，封存失败反馈并保护唯一草稿，不宣称清理成功。清引用不等于字符串安全零化。 | 2K-4C 仅实现搜索生命周期、只清搜索和发布门禁，见 §9.39；敏感草稿封存仍未实现。指定复核与历史验收缺口保留。 |
+
+本轮用户仅明确授权 **2K-4B** 的注入上下文元数据读取、同批标签与隔离回归，完成后停止。**2K-4C** 仍待单独实施读取生命周期 adapter、Observation/发布闸门和只清搜索事件，先做 fake vault 与隔离宿主验收，不改认证；敏感操作草稿封存仍需明确后续阶段。后续正文能力与完整统计是必须完成的交付项，不因本阶段暂缓而从最终目标删除。4B 不可先于合格失效接线和相关验收开放生产全局手记搜索。每步共享契约复核仍指定 Cursor verifier，不可用继续 partial，不以其他代理或测试替代。
+
+#### 本轮实际检查与未执行项
+
+本轮只进行了源码/既有测试静态阅读、事实出处抽查、同一权威文档更新；实际运行 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json` 和 `git diff --check -- docs/unified-search-commands.md` 均 passed；static 包含 184 项原脚本回归，高风险/敏感日志候选均为 0。静态检查针对当时整工作区，不能认领并行 Swift 的运行验收，也不证明本方案安全接线已通过；最终文字修订后复跑同一门禁。没有运行 Swift 测试、构建、原生宿主、真实钥匙串、生产应用或生产数据实验；没有修改产品 Swift、认证/加密/权限/统计算法，没有提交、推送、安装、发布或新增平行报告。已有测试中的断言与前阶段通过数量仅是来源，不计作本轮通过证据。
+
+
+### 9.38 阶段 2K-4B：手记元数据只读适配、同批标签装配与隔离回归
+
+#### 范围与实际接口
+
+本阶段只处理注入的已打开 ModelContext 和隔离合成数据库。D1～D3 确认见 §9.37；D3 仅登记，不实现监听、ReadOwner 生产失效适配、窗口接线或敏感草稿封存。指定 Cursor verifier 仍未执行 / blocked，不重复登录检查、不改认证、不冒充指定复核；整体 partial，历史阶段验收缺口继续保留。
+
+- [DiaryContentQueryReader / Reads / ReadDetails](../AreaChain/Services/DiaryContentQueryReader.swift)：`init(context:)` 或窄闭包依赖，`readSources(into:)` 只填调用方 Batch.diaries。`TaskFamilyContentQueryReader(context:diaryMode:)` 默认 nil，只有显式 `.metadataOnly` 才启用；窄依赖初始化显式传 diaries 也表示开启。无手记需求、指令/非法查询、回收站范围均不读取。旧任务入口默认兼容。
+- [SwiftDataDiaryRepository.fetchAllDiaries(in:)](../AreaChain/Services/Repositories/SwiftDataDiaryRepository.swift) 复用原私有枚举和排序；原仓储实例方法也委托同一枚举。静态入口无需构造 vault/附件依赖，不初始化全局 PrivacyVault 或 Persistence。包含活行、墓碑、重复身份核验所需所有行，不设 fetchLimit、不去重、不修复。
+- 手工投影 ID、dayKey、createdAt、deletedAt、tagIDs、isPinned；`hasProtectedContent` 的布尔结果保留在快照 isPrivate。该已有 getter 判定 isPrivate、密文是否存在、vault 标识是否存在；不复制密文或库标识，不把 false 当作已确认公开/迁移完成。
+- `DiarySnapshot.text=""` 是无正文占位，`isContentAvailable=false` 恒成立；ReadDetails 明确 mode=metadataOnly、bodyNotRead/protectionNotEstablished。普通、保护标志、旧格式形状均如此，vault 已解锁也不会改变限制。所有匹配经既有 DiaryQueryPrivacy / DiaryQueryProvider 安全投影，不另建隐私分类。
+- 不调用 entry.snapshot、DiaryContent.snapshot/read、旧 searchDiaries、认证、解密、保护转换、维护修复、save/rollback、ensurePresetTags/resolveOrCreateTag。SwiftData 仍可能物化正文并由 ModelContext 缓存；测试和源码边界检查不证明正文完全未进入内存。
+- fetch 失败返回 failed 和封闭 fetchFailed，不伪装 complete([])，不返回底层错误。dayKey/createdAt/tagIDs/重复身份继续由 Query 验证；deletedAt 无效时间另在读取详情诊断，原值保留。只保证同一上下文、同步调用的值投影，不声明多次 fetch 跨上下文/进程事务原子性。读取不调整 autosave、不保存、回滚或清理已有未保存变化。
+
+#### 同批 metadata、覆盖及统计
+
+TaskFamily 先读取任务、平面子任务、习惯和显式开启的手记，再合并关联 tagID。手记成功枚举时，TagContentQueryReader 通过原 Catalog 仓储完整枚举一次标签（含墓碑）；同一 rows 同时用于按需 TagQuerySnapshot、ContentQueryTagNames 和 [DiaryContentQueryTagPrivacy](../AreaChain/Services/DiaryContentQueryTagPrivacy.swift)，最后仅在 TaskFamily 赋值唯一 metadata。不合并独立 Batch，不在目录失败后追加另一次关联读取。
+
+ContentQueryTagNames 保持原公开名字限制：缺失、重复关联 ID、isPrivateDiary 名字不可用分别诊断，任何问题仍 names=nil，不静默放宽其他来源。全目录身份唯一才输出私密标签 ID 集合，含未关联的私密墓碑；任意重复目录 ID 或 fetch 失败时集合为 nil，分别报告 ambiguousID/fetchFailed。名称缺失与全目录私密标志资料是不同事实，旧正文标记核验又是第三种事实。私密名字查询因此可保持未知，不因此公开私密关联名称。
+
+元数据枚举 complete 不提升 imageCoverage.diaryPrivacy、trashCoverage.diaryPrivacy、图片身份/关联、手记回收站类型或 trashTagNamesCoverage。单独手记查询为保护读全标签目录，也不宣称标签内容来源已接入；仅原请求需要标签提供者时装入 tags。图片、剪贴板仍 notProvided，无文件、附件读取。
+
+不生成真实 TagQueryUsageInput，不从手记计数推导全来源完整；默认 unavailable，all/名称仍可用，frequent 沿原明确回退，recent/unused 未知。injectedUsage 仅原显式测试接口，origin=injected 不表示本阶段真实统计已完成。旧标签页和 TagUsage 口径不变。普通正文、既有授权下私密正文匹配及完整统计仍须后续交付，默认统计披露以旧页公开口径为目标。
+
+#### 隔离验证与证据状态
+
+新增 DiaryContentQueryReaderTests、TagTests、FailureTests、IntegrationTests，复用原 TaskRepositoryFixture 全 schema 内存容器。覆盖真实 DiaryEntry → metadataOnly → 同批 Batch → DiaryQuery → ReadOwner → 排序/摘要/分页；同时检查普通/受保护/旧格式形状、墓碑/重复身份、字段异常、缺名/重复/私密标签墓碑、未知正负文字、零业务通知、未保存变化、冻结输出与其他来源不被覆盖。源码禁止调用核对与这些运行测试分开记录；不读取真实内容或运行内存物化实验。
+
+2026-10-02 最终 Swift 修改后的实际证据：
+
+| 检查 | 结果与边界 |
+|---|---|
+| 隔离串行 Swift 回归 | 40 套、234 个测试（292 次含动态参数运行），零失败、零跳过；涵盖四套新服务测试及 DiaryQuery、任务/习惯/标签读取、TagQuery、Batch、ReadOwner、排序/摘要/分页、图片隐私回归。使用架构文档的隔离 xcodebuild 方式，目录 `build/DiaryMetadataQA`、标识 `com.areachain.diary-metadata-qa`、本地临时签名，清除六个真实钥匙串授权变量、`-parallel-testing-enabled NO`，合成内存库。结果 `build/DiaryMetadataQA/Logs/Test/Test-AreaChain-2026.10.02_18-05-22-+0800.xcresult`。 |
+| 首轮失败及修正 | 新集成测试最初用混合维度 `(unknown | #工作)`，当前语法拒绝，未生成 diary 提供者；改为合法文字分支 `(unknown | 工作)`，通过已有文字对标签元数据匹配验证确定 OR。没有改解析器、三态规则或删掉未知/排除断言；最终整组回归通过。 |
+| 局部严格 SwiftLint | 本阶段 6 个 Services Swift 文件和 5 个测试/夹具文件，`swiftlint lint --strict --quiet <上述文件>` 通过，无警告。 |
+| Debug 构建及验签 | `./scripts/build.sh` exit 0，静态签名核验通过；使用原配置，未改变签名、安装或启动产物。隔离测试全 target 编译仍报告其他文件既有未使用返回值与废弃 API 警告，不将它们认领为本阶段修复。 |
+| 工作流与脚本 | `python3 -B scripts/check_workflow.py` 通过；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` 65 项通过；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含完整 185 项 scripts/tests 回归，高风险/敏感日志候选为 0。原组件守卫只增加两个入口及对应反例，未建立第二个检查器。最终文档回填后再跑工作流、静态门禁和差异检查。 |
+| 源码调用边界 | 单独核对五个读取/装配/名字/保护投影文件和仓储静态枚举段：无 entry.text、encryptedText 内容复制、snapshot、DiaryContent、PrivacyVault/Persistence 初始化、旧搜索或写入/认证调用。仓储静态段仅共享 fetch 与排序，hasProtectedContent 沿既有布尔存在性 getter。此为源码取证；运行测试证明安全值输出、失败、冻结、未保存变化和零业务通知，不声称监测 SwiftData 物化或证明字符串零化。 |
+
+本轮按用户“仅隔离”限制使用静态质量 profile，加上述严格 SwiftLint、显式 QA 定向测试与 Debug 构建；未运行 `quality_gate.py --profile swift`，因为它固定调用普通全套 `build.sh test`，不能传入本次 QA 标识与定向范围。未认领全树 Swift/原生验收。指定 Cursor 复核仍未执行 / blocked，整体 partial；未运行生产宿主、真实系统认证/锁屏、真实库、安装或发布。
+
+本次文件增量：上述 6 个 Services 文件（含原 ContentQueryTagNames、TagContentQueryReader、TaskFamilyContentQueryReader 及仓储），[ReaderTests](../AreaChainTests/Services/DiaryContentQueryReaderTests.swift)、[TagTests](../AreaChainTests/Services/DiaryContentQueryTagTests.swift)、[FailureTests](../AreaChainTests/Services/DiaryContentQueryFailureTests.swift)、[IntegrationTests](../AreaChainTests/Services/DiaryContentQueryIntegrationTests.swift)、[夹具](../AreaChainTests/Services/DiaryContentQueryTestSupport.swift)，以及本文、[架构](architecture.md)、[组件目录](component-catalog.md)、[技能路由](../skill-routing.md)、[原检查器](../scripts/check_workflow.py)和[原反例测试](../scripts/tests/test_check_workflow.py)。保留这些文件已有并行修改和其他不相关改动。
+
+
+#### 2K-4C 的准确前置与停止点
+
+后续首先处理 `privacyWillLock` 在 generation/state 变化之前同步到来的顺序：立即撤销本地发布资格和旧 source/ticket，再清查询及派生状态，不能等待代次增长或据回调中的旧 unlocked 放行。补齐 generation/state/isAuthenticating/revision 的 Observation、复订阅空窗和重入验证；只监听 didChange 不足以覆盖认证开始。读取、evaluate、publish、分页、选择/展开、打开意图消费需要一致的宿主归属/本地失效序号/来源戳检查，检查与发布之间不能 await，也不能给旧任务补新戳。
+
+真正锁定清搜索原文、条件、返回查询、结果链、摘要、排序上下文、选择和展开；再次解锁不能自动恢复。失焦/收起保留查询，只遮罩敏感展示，不自动认证或提交；操作草稿保护与搜索清理必须分开，封存失败仍保护唯一草稿并反馈。上述均为已确认要求而非本阶段实现。未保存模型变化的通知来源、真实宿主归属、外部票据/值副本、Observation 时序及敏感草稿后续衔接仍待实现和验收；清逻辑引用不等于字符串零化。
+
+完成 2K-4B 后停止。不进入 2K-4C，不开放生产全局手记搜索；不提交、推送、安装、启动生产应用或访问真实用户库。
+
+
+### 9.39 阶段 2K-4C：搜索隐私失效、查询清理与结果发布门禁
+
+本阶段获用户明确授权实施 D3 的搜索生命周期部分。复用 §9.37 推荐接线 B 和 §9.38 的 metadataOnly；没有修改 PrivacyVault 的认证、加密、配置或持久化规则，没有接生产入口、真实窗口、真实用户库、真实系统钥匙串或隐私转换。操作草稿仅使用普通合成设置草稿验证保留；**敏感操作草稿封存仍未实现，不具备安全承接敏感草稿的声明**。指定 Cursor verifier 未执行 / blocked，历史缺口不因本阶段授权消失；整体 partial。
+
+#### 实际接口与唯一所有权
+
+| 接口 | 责任与消费边界 |
+|---|---|
+| [ContentQueryReadSession](../AreaChain/Services/ContentQueryReadSession.swift) | `@MainActor`，显式注入 vault、独占 ReadOwner、CommandHandoffCoordinator、固定 CommandHostOwnership 和通知来源。`install/detach` 管理生命周期；`prepare(read:) → evaluate → await publish` 为唯一 Services 发布链。任务句柄只有不可外部拼装的 UUID，响应票据只保存在适配器内部。当前消费者仅新增隔离测试。 |
+| [ContentQueryReadNotifications / Gate / Subscriptions / VaultStamp](../AreaChain/Services/ContentQueryReadLifecycle.swift) | 显式 privacy/model/focus center、失焦通知名及对象；无生产窗口查找。Gate 使用 macOS 14 可用的 OSAllocatedUnfairLock，同步记录本地失效序号和误投递故障，不持有正文或查询。 |
+| [CommandHandoffCoordinator.invalidateSearch(ownedBy:)](../AreaChain/Domain/CommandHandoffCoordinator.swift) | 系统失效核对 coordinator、host、ownership generation，允许同一所有权内已更新的用户修订；随后通过原 `send` 和 HostSession 的查询 reducer 清理，并推进 lease revision。旧用户事件仍必须带原 lease，不能使用该入口给旧事件重盖新 lease。转交后来源旧 ownership 被拒绝，不清接收方的新内容。 |
+| [ContentQueryEvent.privacyInvalidated](../AreaChain/Domain/ContentQuerySession.swift) / [Reducer.privacyReset](../AreaChain/Domain/ContentQueryReducer.swift) | 与 `clearUserQuery` 独立：清原文、所有用户及自动/冻结条件、suppressed、返回与转交上下文；连旧 page 的筛选/reference 也撤去。只重建空查询，使用无条件 overview、空 reference、新 visitID 和固定占位日期，标记 `independent(.privacyInvalidated)`。没有返回/页面同步意图；宿主必须明确 `enterPage` 传可信当前页面，才重新生成允许的自动条件；此前普通编辑/rebind 被拒绝，读取返回 `pageContextRequired`，不能使用占位日期解析新查询。已清查询转交时两端继续等待可信页面。 |
+
+查询 reset 仅替换 HostSession.query；CommandDraftSession 的 active/retained/pending、CommandPlan 和执行记录原样保留，不提交、不恢复、不封存。补全缓冲由适配器 `setCompletionBuffer(expecting:)` 按当前 lease 接收，真正锁定时释放；未来原生输入、撤销/IME、候选控件若另持原文必须纳入宿主生命周期，不能声称这个字段已清除尚未接入的 UI 缓冲。
+
+#### 事件、Observation 与线程
+
+- `PrivacyVault.lock()` 现有顺序是同步 `.privacyWillLock` → generation 增长 → 清密钥/状态 → `changed()`。订阅 `queue:nil`，先比较通知 object 与注入 vault 的对象身份；Gate 在回调入口同步推进失效序号，再进入 MainActor 清 source、票据、显示引用、待打开意图和查询。willLock 不读取旧 unlocked 决定是否清理，也不等 generation。
+- `withObservationTracking` 跟踪实际 `generation/revision/state/isAuthenticating/isChangingMethods`。onChange 按 will-change 处理；此时不假定字段已经更新。同步撤权与释放旧读取，停止当前一次性跟踪；只安排一个 MainActor 重订阅任务，空窗期间 `isTrackingReady=false`，所有新读取被拒绝。重订阅结束也不签发许可、不恢复结果；必须显式 prepare。没有把旧任务盖上新代次。
+- 一次性 Observation 没有公开取消句柄。每次跟踪有独立可停用 token，重订阅先停用旧 token；旧 registrar 闭包只弱捕获适配器，不再派发或保留查询。重复 install 幂等；detach 取消重订阅任务、移除通知订阅并关闭 token；重装使用新 installation 身份，旧任务/回调不能修改新安装。销毁也关闭订阅并 invalidateSource。
+- actor 依据来自现有 `@MainActor PrivacyVault` 的 lock/changed/实际属性写入，以及 NotificationCenter 同步投递、Observation 同步 will-change。桥接在检查 `Thread.isMainThread` 后使用有上述依据的 `MainActor.assumeIsolated`；没有新增 unchecked Sendable、后台读写 vault 或 main.sync。若明确通知源被错误地从非主线程投递，锁内立即撤权，MainActor 清理排队执行，该安装保留 `unexpectedExecutor` 并持续关闭；不把这种误投递当成同步清理通过。
+- `.privacyDidChange` 保守撤去来源及显示；`.privacyMask`、注入的目标宿主失焦信号或 `loseFocus(expecting:)` 保留查询、撤去整条旧显示链并设遮罩。采用整链撤回可避免旧排序条件/摘要经公开行引用存活。不会调用 lock、认证或提交；恢复焦点本身不能复活旧结果。`resumeDisplay(expecting:)` 只解除本地遮罩，还需显式新读取。
+
+#### 读取、发布、分页和打开资格
+
+每次准备读取前后、求值前后、发布前、读取 presentation、加载更多、继续预算读取、浏览及消费打开意图，都核对固定宿主的当前 lease、installation 所属 Gate 的本地 epoch、注入 vault 身份与实际状态戳、ReadOwner.source；任务还核对内部 handle、owner.request 和原 task。准备闭包非逃逸，返回后再查查询相等与准备身份，重入不得让较早的读取覆盖新任务。首批拒绝可读正文/非空正文的 diary 快照，只接受 metadataOnly 的手记数据。
+
+适配器独占 owner；原 `begin/evaluate/publish/invalidateSource`、Pagination/Browse 和安全投影链不被复制。普通新读及 cancel 可保留最后完整结果；隐私失效无条件撤去适配器引用，即使 owner.source 已空也清 displayed、票据和待打开意图。所有清理先关闭资格；清理或过期宿主失败只返回封闭诊断，不记录查询、正文、标签名、文件路径或底层错误，不发起认证补救。
+
+`publish` 先 `await Task.yield()`，之后核验与 owner.publish、displayed 赋值处于同一 MainActor 同步片段，中间没有 await 或调用方回调。`browse` 不将 open 值直接交出去，暂存意图，`consumeOpenIntent` 再核验当前资格与可见性版本后只消费一次；它仍要求新鲜业务校验，不授予真正打开/编辑/恢复能力。旧分页、浏览和打开版本在失效及显式重读后均被拒绝。
+
+#### 模型变化与生产接线责任
+
+注入 model center 的 `.boardDidChange` 保守失效。实际 `BoardEvents.changed/changedLocally → notifyUI` 不携带 ModelContext，故不能解释为某个库的精确代次，也没有监听全部未保存实体变化。`modelDidChange(expecting:)` 是宿主对未保存/保护事实变化的显式失效入口，随后由宿主决定新读；reader 本身不是观察器。
+
+后续产品入口必须独占 owner，使用 Services 适配全部门禁入口；不得直接调用 Domain owner 发布或通过旧副本显示/导航。宿主在转交提交后应解绑两端旧适配、按新 ownership 建立新适配并显式重新读取；旧适配访问时会拒绝过期所有权，来源旧回调只能清来源自身缓存。未来 UI 必须把输入、候选、缓存视图与打开路由接到这一生命周期，并在遮罩/锁定时撤去自己保存的值；本阶段没有提供原生视图刷新接线。
+
+同步 evaluate 仍无法即时处理排队事件；让出一次调度只提供发布前重新核验机会，不保证排空所有外部事件，也不证明长计算可中断或零延迟。拒绝的是已处理的失效事件、当前状态/来源不匹配及迟到任务；大库预算、可合作式取消和真实调度仍待后续。
+
+`presentation()` 与最终消费的打开意图仍返回 Swift 值，调用方可以复制；清 owner/adapter 引用不撤回这些外部副本，不保证 Swift String 零化、清除全部进程内存、SwiftData 注册对象或 UI 撤销缓存。接口没有“全库安全就绪”布尔值；`hasPublicationPermit` 仅表示此适配器当前搜索读取资格。
+
+#### 本轮验证记录与交接
+
+最终源码验证结果如下。测试使用原 DiaryContentQueryFixture/内存 ModelContext、MemoryVaultConfigurationStore、FakeSystemVaultKeys、HandoffFixture 与普通设置草稿；通过真实 vault 方法产生 lock、认证开始和方法变化，未改私有状态、未初始化 `.shared` 生产 vault。当前四套新增测试覆盖 willLock 前置撤权、prepare/evaluate/publish 之间锁定、迟到票据、无 source 清理、解锁不恢复、失焦遮罩、Observation 空窗/多次变化/重装、异实例、旧来源转交、查询/草稿保留、旧分页/浏览/打开、普通取消区别、销毁、模型显式失效及 metadataOnly 实际链路。
+
+| 检查 | 最终实际证据与限制 |
+|---|---|
+| 隔离 Swift 定向回归 | 56 套、381 个测试定义 / 含动态参数 433 次执行，零失败、零跳过；其中本阶段新增四套共 27 个测试。最终结果 `build/SearchLifecycleQA/Logs/Test/Test-AreaChain-2026.10.02_18-57-44-+0800.xcresult`。Xcode 26.6 / Swift 6.3.3、macOS 26.6.2 arm64；不代表最低 macOS 14 真机通过。 |
+| 实际隔离参数 | 沿架构文档的 `env -u` 六个真实钥匙串变量，`xcodebuild -quiet -project AreaChain.xcodeproj -scheme AreaChain -configuration Debug -destination 'platform=macOS,arch=arm64' -derivedDataPath build/SearchLifecycleQA AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements PRODUCT_BUNDLE_IDENTIFIER=com.areachain.search-lifecycle-qa INFOPLIST_KEY_LSUIElement=NO -parallel-testing-enabled NO`，逐个 `-only-testing:AreaChainTests/<suite>` 后 `test`。 |
+| 定向范围 | Domain 的 ContentQuery 全套（含解析/会话/页面/类型/转交/聚合/排序/片段/展示/分页/续读/ReadOwner）、CommandHandoff、CommandHostSession、CommandPlan、CommandDraft、DiaryQuery；Services 的新增 ContentQueryReadSession 三套、DiaryContentQuery 四套及 TaskFamilyContentQueryIntegrationTests。只运行纯值/内存合成回归，不选择 PrivacyVaultTests 的真实钥匙串探测或 SystemVaultIntegrationTests。 |
+| willLock 实际时序 | `actualWillLockClearsBeforeGenerationChanges` 在真实 lock 的 generation setter 的 Observation will-change 回调中验证：generation 仍旧、state 仍 unlocked，搜索门禁/显示/查询已经撤去；没有用手写 didChange 代替真实 lock。认证开始测试使用公开 unlockWithSystem 加 FakeSystemVaultKeys 的受控挂起，验证 revision 未变、isAuthenticating=true 时旧结果已撤去。 |
+| 初次失败与修正 | 两处测试编译问题（异步断言与快照必填 createdAt）已修正。续读新测试最初复用含可读 diary 的旧混合 Batch，被 `metadataOnlyRequired` 正确拒绝；改为明确 routineOccurrences 范围且 diary=notProvided。没有削弱正文门禁或删除失败断言；最终整组重跑通过。 |
+| 严格局部 SwiftLint | 本轮 11 个 Swift 文件（四个 Domain、两个 Services、五个测试/夹具）执行 `swiftlint lint --strict --quiet`，通过。全 target 测试编译仍报告其他已有文件的未使用返回值、废弃 API 与 Swift 6 隔离警告，本阶段新文件没有这些编译警告；不认领并行改动或全库 lint 验收。 |
+| Debug 构建与验签 | 最终编辑后 `./scripts/build.sh` exit 0，`staticSignatureVerified=true`，产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`；沿已有配置，不修改个人签名、不安装、不启动产物。 |
+| 工作流与质量门禁 | `python3 -B scripts/check_workflow.py` passed；检查器定向 `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py` 66 项通过；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含 186 项完整脚本回归，高风险/敏感日志候选均 0；最终文档回填后复跑工作流、静态门禁、局部 lint 和 `git diff --check`。 |
+| 指定复核与未验 | Cursor verifier 未执行 / blocked，不重查登录、不以主代理自查或上述测试冒充指定复核；整体 partial。`quality_gate --profile swift` 固定运行普通全套测试、不能传本轮 QA 标识/定向范围，所以继续采用 static 加显式隔离 Swift 和 Debug 构建。未运行全树 Swift/UI、真实认证/锁屏、真实库、真实窗口适配、安装或发布。 |
+
+本轮文件：Domain 的 [ContentQuerySession](../AreaChain/Domain/ContentQuerySession.swift)、[Reducer](../AreaChain/Domain/ContentQueryReducer.swift)、[HandoffCoordinator](../AreaChain/Domain/CommandHandoffCoordinator.swift)、[HostSession](../AreaChain/Domain/CommandHostSession.swift)；Services 的 [ReadSession](../AreaChain/Services/ContentQueryReadSession.swift)、[Lifecycle](../AreaChain/Services/ContentQueryReadLifecycle.swift)；[锁定测试](../AreaChainTests/Services/ContentQueryReadSessionLockTests.swift)、[Observation 测试](../AreaChainTests/Services/ContentQueryReadSessionObservationTests.swift)、[交互测试](../AreaChainTests/Services/ContentQueryReadSessionInteractionTests.swift)、[清查询/转交测试](../AreaChainTests/Domain/ContentQueryPrivacyResetTests.swift)、[隔离夹具](../AreaChainTests/Services/ContentQueryReadSessionTestSupport.swift)；本文、[架构索引](architecture.md)、[组件目录](component-catalog.md)、[技能路由](../skill-routing.md)、[原检查器](../scripts/check_workflow.py)与[原反例测试](../scripts/tests/test_check_workflow.py)。原 PrivacyVault/钥匙/加密/持久化文件未改；保留这些文档/脚本原有增量和其他并行修改。
+
+停止在 2K-4C。后续需补指定 Cursor verifier 与历史指定验收；另行实施并确认敏感操作草稿封存及失败保护、普通/授权私密正文读取、真实窗口/输入缓冲与显示刷新、保存及未保存模型变化接线、转交适配生命周期和最终打开前业务校验。完整真实统计继续按 D2 留待后续；不把本阶段的 metadataOnly 或本地门禁扩大成生产可用声明。不提交、不推送、不安装、不启动生产应用，不进入下一阶段。
+
+
+### 9.40 阶段 2K-4D：受搜索生命周期门禁约束的手记正文读取
+
+本阶段用户明确授权：读取普通正文，以及仅在注入 vault 已有有效解锁状态下经既有 API 读取受保护正文用于搜索。授权限实现及合成内存库隔离验证；不主动认证、不访问生产库或生产窗口，不改变加密、存储格式、密钥生命周期、隐私转换或写回语义。§9.38 的 metadataOnly 保留为明确回退；§9.39 的生命周期门禁继续有效。指定 Cursor verifier 未执行 / blocked，不重查登录、不替代复核，整体 partial。
+
+#### 实际入口、所有权与同批资料
+
+- `ContentQueryReadSession(vault:bodyReads:coordinator:ownership:notifications:)` 内部创建唯一 ReadOwner，不接受或导出 owner 别名。`prepareBodies(observation:options:presentation:)` 使用协调者当前查询；读取前检查宿主、Observation 就绪、遮罩、vault 忙碌状态及本地失效代次。只有该校验路径可构造 `ContentQueryBodyReadPermit`，构造器 fileprivate，调用方无法获取票据或原始正文 Batch。
+- 原 `prepare(read:)` 仍硬性拒绝可读或非空手记正文，不能传旧 Batch、requestID、布尔标志来升级；原接受外部 owner 的初始化只能使用 metadataOnly。正文模式的新读取先撤旧来源；其 cancel 同样撤来源，不继承旧 metadataOnly 模式保留上次完整展示的取消语义。
+- `ContentQueryBodyReads` 显式注入已打开 context、完整手记/标签枚举及只读阶段观察依赖。阶段观察仅能接收 willRead/didRead，不返回字符串或获取正文；真实读取实现不可由调用方替换。它们属于可信装配边界，必须来自同一 context；故障注入不是安全权限声明。同次调用复用 TaskFamilyContentQueryReader 装配任务、子任务、习惯和标签，手记及全目录各读取一次，metadata 仍由家庭读取器唯一赋值。捕获本批实体仅用于内部正文投影，不返回正文结果给普通调用者。
+- `DiaryContentQueryReader.readBodies` 只接受不可外部构造的 permit。先核对实体 context、同批元数据相等、完整标签目录及关联 ID，再按含墓碑的全枚举分组身份。重复身份不会先解密再择一；删除行不读正文。缺失/歧义目录、坏关联或无法建立事实的行保持不可读投影。
+- `DiaryContent.read(_:vault:protectionTags:permit:)` 是最小共享校验重载，必须持有同一内部许可，外部不能传空目录绕过旧安全检查。旧入口仍只在未保护且有 modelContext 时 fetch 全标签，然后调用同一检查；保护行仍检查当前解锁、密文及 vault ID，并由原 keys.open 核验归属和加密上下文。新搜索显式传入同一 vault 和同批完整目录，避免逐普通手记再次 fetch 标签；不删除旧检查、不调用先复制 entry.text 的 snapshot。
+
+#### 可用正文与可公开正文
+
+可靠普通正文在 vault 未配置或锁定时仍可读取；不能仅依据 isPrivate=false，必须通过完整资料、既有 read 及读取后的 DiaryPrivacy 检查。正文中旧密码标记、关联密码标签、私密标签名语法等旧敏感明文保持未知/隐藏，不以“API 返回字符串”认定可公开或可搜索。缺资料、损坏密文、错误归属、读取失败均没有 entry.text 回退，不修复、不迁移、不 save/rollback、不发布业务事件。
+
+实际读取成功且许可仍有效时才设置 isContentAvailable=true。受保护正文可临时进入内部冻结输入用于匹配，但 isPrivate 保留为真；DiaryQueryPrivacy / DiaryQueryPresentation 隐藏分支剥离正文、范围、长度及依赖正文的文字证据。排序和 Presenter 只消费安全 Match，私密正文不进入排名字段、摘要、展开引用、高亮或诊断描述；正文“可读”不等于“可公开”。未知继续沿三态组合，排除条件不能把未知取反为成立。
+
+#### 失效和残余风险
+
+正文依赖调用前后、冻结前、同步求值前后、让出调度后的发布、展示/分页/打开消费都核验生命周期。准备身份不随异步回调更新，重入的新准备不能为旧输入重新盖戳。已读取行的元数据、密文/vaultID 和标签保护资料另保留内部比较闭包；变化使许可失效，清理闭包与冻结来源引用。willLock 仍在旧 unlocked 状态变化前撤权并清查询；失焦保留查询但撤资格；再解锁、再聚焦及转交不能恢复旧正文。
+
+比较闭包持有本批模型引用及密文、标签名字的值副本，清理不保证 SwiftData 注册对象、外部引用、String/Data 写时复制内存或所有进程副本被擦除。调用方获得的安全展示值也无法强制收回；生产宿主必须遵守门禁显示协议。完整枚举的新插入/删除、未保存正文变化和未捕获目录行变化仍要求真实宿主明确发送 modelDidChange 或已有业务通知；本阶段没有生产观察器接线，不声称对任意外部模型修改自动完备。
+
+为保守验证同批资料，每次正文前后会比较已捕获行及目录；因此当前最坏成本为 O(D × (D + T))，无后台调度或大库性能基线，不适合据此宣称生产规模已达标。同步计算仍不能即时处理主线程排队事件，发布前 yield 不保证排空全部事件。未提升图片/回收站隐私覆盖，不读取私密图片，不生成真实标签统计，tagUsage 继续未提供。
+
+#### 验证状态（本轮最终）
+
+新增 ContentQueryBodyReadTests、ContentQueryBodyLifecycleTests、ContentQueryBodyBoundaryTests 与合成夹具，覆盖普通/保护正文、旧格式和失败、重复身份、同批目录、生命周期重入、迟到任务、失焦、转交、metadataOnly、旧 API 等价及不写回。源码边界检查与实际运行结果分别记录：
+
+- 最终源码的严格局部 `swiftlint lint --strict --quiet`、Swift 语法解析与 `git diff --check` 通过；工作流检查通过，检查器定向 68 项通过。`python3 -B scripts/quality_gate.py --profile static --format json` 通过，含 188 项完整脚本回归，静态扫描高风险及敏感日志候选均 0；文档最终回填后重跑原门禁。
+- 首次隔离 xcodebuild 使用独立 `com.areachain.search-body-qa`、`build/SearchBodyQA`、ad-hoc 签名、串行测试，并清除六个真实钥匙串授权变量。因磁盘耗尽在 OpenGL 模块编译时失败，未进入测试运行；失败目录仅本轮新建部分已清理。
+- 磁盘空间随后由外部恢复，本轮未删除历史构建。最新接口收紧后的 **67 套隔离回归、449 个测试定义 / 含参数化 536 次执行通过，零失败、零跳过**。本阶段三套新增测试共 23 个定义 / 25 次执行。最终产物：`build/SearchBodyQA/Logs/Test/Test-AreaChain-2026.10.02_19-27-13-+0800.xcresult`；Xcode 26.6、Swift 6.3.3、macOS 26.6.2 arm64，不代表最低 macOS 14 真机通过。
+- 定向选择 Domain/Services 下以 ContentQuery、DiaryQuery、CommandHandoff、CommandHostSession、TaskContentQuery、RoutineContentQuery、TagContentQuery、DiaryContentQuery、TaskFamilyContentQuery、ImageAssociationPrivacy、RecordImageQueryPrivacy 开头的 `*Tests.swift` 对应套件；参数沿 §9.39 命令，仅改隔离目录为 `build/SearchBodyQA`、QA 标识为 `com.areachain.search-body-qa`。没有选真实钥匙串套件、生产 UI 或真实认证。
+- 首次实际运行 23 个测试定义中三项失败：锁定后的两项夹具没有显式 enterPage，被 pageContextRequired 正确拒绝；私密输出测试误要求合法 scope 元数据依据也为空。修正为显式新页面操作，并严格断言剩余依据只能是无范围 scope；正文/摘要/展开/排名断言保留。之后两轮完整回归通过；最后一轮覆盖同批重载必须持有许可、阶段观察不能替换正文的最终接口。
+- `./scripts/build.sh` exit 0，Debug `staticSignatureVerified=true`；产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`。只构建/验签，未安装、启动或变更签名配置。全 target 编译仍有其他既有测试的废弃 API / Swift 隔离警告，本轮文件未报告新增编译警告。
+- 源码边界独立核对：新搜索适配无 `.shared`、模型 `.snapshot` 捷径、原始 entry.text/row.text 读取、认证、保存/回滚或模型正文赋值；实际正文只进入旧 read 共用检查。运行证据由上述隔离断言提供，静态扫描不充当运行或指定复核。
+- 指定 Cursor verifier 仍未执行 / blocked，整体 partial，历史缺口保留。不重查登录或改认证配置，不用主代理检查/单测冒充指定复核。`quality_gate --profile swift` 不能传本轮隔离标识和定向范围，继续使用 static 加显式隔离 Swift 及 Debug 构建；未运行全树 UI、真实窗口、真实库、安装或发布。
+
+本轮只修改 Services 正文适配/共享 read 校验、对应测试与原文档索引/入口检查，不修改认证、密钥、转换或生产 UI。代码回退无需重写用户数据；应先撤许可、冻结来源和展示，再切回 metadataOnly，不能恢复旧敏感结果。
+
+完整正文目标已实现并隔离验证受控读取与安全投影；仍缺指定复核及生产窗口/输入缓冲/模型事件适配和实际运行验收。敏感草稿封存与失败保护、图片读取、真实标签统计、性能敏感后台调度和生产打开前业务校验均未实施。本阶段结束后停止，不提交、推送、安装、启动生产应用或进入下一阶段。
+
+
+本轮入口与文件：服务层 [ReadSession](../AreaChain/Services/ContentQueryReadSession.swift)、[BodyReads](../AreaChain/Services/ContentQueryBodyReads.swift)、[DiaryReader](../AreaChain/Services/DiaryContentQueryReader.swift)、[正文投影](../AreaChain/Services/DiaryContentQueryBodies.swift)、[旧 read 共享校验](../AreaChain/Services/Privacy/DiaryContent.swift)；测试 [正文读取](../AreaChainTests/Services/ContentQueryBodyReadTests.swift)、[生命周期](../AreaChainTests/Services/ContentQueryBodyLifecycleTests.swift)、[边界/旧 API](../AreaChainTests/Services/ContentQueryBodyBoundaryTests.swift)、[正文夹具](../AreaChainTests/Services/ContentQueryBodyTestSupport.swift)、[原生命周期夹具扩展](../AreaChainTests/Services/ContentQueryReadSessionTestSupport.swift)；以及本文、[架构索引](architecture.md)、[组件目录](component-catalog.md)、[技能路由](../skill-routing.md)、[原检查器](../scripts/check_workflow.py)与[反例测试](../scripts/tests/test_check_workflow.py)。这些文件中的前序/并行修改均保留，本轮不认领它们的全部差异。
+
+### 9.41 阶段 2K-5：剪贴板历史文件只读适配与受门禁发布
+
+2026-10-02。本轮仅实现显式存储读取与合成临时文件集成，不读取生产历史，不访问系统剪贴板，不初始化 ClipboardHistorySession / Monitor、不监听、不复制粘贴、不修改历史记录。保留开工时前序搜索、界面、文档与检查器并行修改；指定 Cursor verifier 仍未执行 / blocked，不重复登录检查、不修改认证、不以其他复核替代，整体 partial，历史阶段不因此验收。
+
+#### 接口、格式与失败映射
+
+| 接口 | 当前责任 |
+|---|---|
+| [ClipboardHistoryStore.readHistory(readData:)](../AreaChain/Services/ClipboardHistoryStore.swift) | 读取既有 history.json 一次到 Data，使用同一私有 ClipboardHistoryFile / ClipboardHistoryRecord 解码；窄 Data 依赖用于权限/重入故障测试。 |
+| 同文件 ClipboardHistoryReadResult / Failure | missing、decoded(records)、failed(fileReadFailed / decodingFailed)；decoded 空/非空由值明确区分。只接受系统 Cocoa fileReadNoSuchFile 或 POSIX ENOENT 为缺失，不依据 fileExists=false、不追溯不明外层错误的 underlyingError 推断缺失。 |
+| [ClipboardContentQueryReader.read(session:requestID:options:)](../AreaChain/Services/ClipboardContentQueryReader.swift) | 必须注入已构造存储，不自行选择 Application Support。输出 Batch 与不含负载的 notRequested / missing / decodedEmpty / decodedRecords / failed 状态；仅显式 clipboard 且结构有效、可读类型和独立模式筛选合法时执行 IO。 |
+| [ContentQueryReadSession.prepareClipboard](../AreaChain/Services/ContentQueryReadSession.swift) | 使用协调者当前 Session 与显式 reader/requestID/options/presentation，返回原任务句柄和此次安全读取状态；新的无 owner 注入初始化入口内部创建唯一 ReadOwner，宿主仅走 evaluate / publish / presentation / loadMore。 |
+
+当前格式只有 items，没有格式版本字段，不新增版本机制或磁盘字段。坏 JSON、错误结构、缺必填值及类型解码失败都映射 decodingFailed；权限、目录或其他读取错误为 fileReadFailed。整个文件有任一解码失败即失败，不提取前半段或猜 JSON。错误不保存 NSError、底层描述、正文、正则、文件路径或原始 JSON；结果 description/debugDescription 脱敏。
+
+旧 load() 委托新入口，成功返回原数组，missing 或任何失败继续返回 []，保持原消费者兼容。新搜索不调用 load：missing（尚无保存历史）及 decoded([]) 均映射 complete([])，正常解码映射 complete(records)，失败映射 failed，无需读取时保持 notProvided。存储层不去重、不排序、不截断、不 first-wins、不修复坏字段；完整解码不等于合法记录或完整匹配，重复 ID、坏日期、图片引用继续由原 ClipboardQueryProvider 诊断。
+
+#### 快照、负载与成本
+
+一次读取仅得到该次文件值快照。不承诺与运行中的 ClipboardHistorySession.items 一致，不涵盖未保存内存历史，也不承诺与其他 SwiftData 来源形成跨存储事务。生产宿主选择运行内还是磁盘历史尚未实现。
+
+实际为**全文件读取与全格式解码，无文件大小上限**；旧采集条数/maximumPayloadBytes 和提供者枚举预算都不是磁盘读取预算。合成超 999 条及超过旧单负载阈值的文件验证不静默截断；不因此给出大库耗时/内存预算或生产性能承诺。Data 与解码记录可同时占用内存，富文本解码成本随文件增大；未新增技术上限或历史保留规则。同步正则仍无即时取消/超时保证，没有改引擎或截断正文。
+
+原格式会解码 plainText、HTML、RTF Data、图片存储名、文件路径及 hash，不宣称只读取纯文本字段。读取链不打开/读取/验证引用指向的文件，不读图片二进制，不将 HTML/RTF 转正文；只调用原 Provider 搜索 plainText 并产生安全 Match，公开展示链不附原始记录、富文本、存储名、路径或 hash（用户 plainText 本身若含路径仍是原公开文本语义）。文件读取没有建目录、空文件修复、save、writeImage、pruneImages、损坏重写或临时文件清理路径；测试夹具独立创建和清理自己拥有的临时数据。
+
+#### 受门禁发布、冻结与重读
+
+链路为临时真实 history.json → readHistory → ClipboardQueryRecords → Batch → ReadSession → 内部 ReadOwner → 原排序/摘要/展示/分页。prepareClipboard 委托原 prepare，读取前核验宿主/lease、Observation、遮罩与 vault 状态，读取后核验上下文与准备身份；同步 evaluate 前后、yield 后 publish、展示与分页继续走原门禁。没有新隐私生命周期或随机 requestID 授权证明；同 requestID 明确重读仍产生新来源。
+
+修改文件不会追改已冻结 Batch；分页不会重新读文件，显式 prepareClipboard 才取得新文件。读取重入后旧准备被拒绝，旧任务不能覆盖新来源。锁定撤旧来源、票据、显示及搜索查询；失焦保留查询但撤展示资格，恢复显示后须显式重读。普通取消沿原非正文入口语义保留最后已发布结果，不能发布已取消票据。文件失败仍形成本次 failed 来源，发布后是空失败展示与不完整诊断，不把旧成功记录拼入；发布前或普通取消后可暂留的旧结果仍带原 task/source，不伪装为新读取成功。
+
+没有监听文件变化、后台调度或生产窗口接线；外部已复制安全展示值仍由宿主负责撤去，清引用不保证内存零化。沿原规则，锁定本身不永久禁止后来新的显式公开剪贴板查询，但必须先完成可信页面恢复与新读取，不复活旧查询。
+
+#### 本轮验证与停止交接
+
+测试入口为 [ClipboardHistoryReadTests](../AreaChainTests/Services/ClipboardHistoryReadTests.swift)、[ClipboardContentQueryReaderTests](../AreaChainTests/Services/ClipboardContentQueryReaderTests.swift)、[ClipboardContentQueryLifecycleTests](../AreaChainTests/Services/ClipboardContentQueryLifecycleTests.swift) 及[临时文件/fake vault 夹具](../AreaChainTests/Services/ClipboardContentQueryTestSupport.swift)。新增 18 个测试定义、22 次含参数化执行。缺失/空/正常文件、坏 JSON/结构/字段、注入权限与目录错误、旧 load、按需读取、模式与独立筛选、重复/异常行、富文本负载、不写回清理、冻结/重读/分页、锁定/失焦/重入/迟到及安全展示均有实际断言。
+
+| 验证 | 实际结果与边界 |
+|---|---|
+| 首轮定向 | 71 个测试定义、91 次执行通过，零失败/跳过；随后补强门禁模式及公开展示负载断言。 |
+| 最终隔离回归 | **422 个测试定义、496 次含参数化执行 passed，0 failed / 0 skipped**。选择 61 套 Domain/Services 回归，加原 ClipboardHistoryStoreTests 的旧格式单个方法；结果树核实 62 个套件全部 Passed。包含 ClipboardQuery/原纯规则、ContentQuery 查询/Batch/ReadOwner/排序/摘要/分页、ReadSession/正文生命周期、CommandHandoff/HostSession、DiaryQuery/DiaryContentQuery。 |
+| 隔离参数与产物 | 沿 §9.39 的六个 env -u、串行、ad-hoc 参数，独立标识 com.areachain.clipboard-storage-qa，目录 build/ClipboardStorageQA。结果包 build/ClipboardStorageQA/Logs/Test/Test-AreaChain-2026.10.02_19-50-10-+0800.xcresult；精确命令、摘要、结果树及前后 Swift 指纹见该目录 regression-command.json、regression-summary.json、regression-tests.json、source-before.json / source-after.json，指纹完全一致。Xcode 26.6、Swift 6.3.3、macOS 26.6.2 arm64；不代表最低 macOS 14 实机验收。 |
+| 失败定位与修正 | 首次扩展回归中新增夹具误用未支持的 is:pinned，被 ModeRequest 正确拒绝；改用既有 has:image 独立筛选，保持原断言目标，不改语法或产品规则。另消除可选句柄断言的类型推断警告，确保不能退回另一次 prepare。最终整组回归通过。 |
+| Debug 构建 | 最终 Swift 编辑后 ./scripts/build.sh exit 0，staticSignatureVerified=true、distributionReady=false；产物 build/development-DerivedData/Build/Products/Debug/AreaChain.app。只构建/验签，未安装/启动或修改个人签名。保留既有多目标匹配警告；测试 target 编译仍有其他文件的隔离/旧可访问性 API 警告，本轮文件无新增编译警告。 |
+| 静态与脚本 | 本轮 7 个 Swift 文件的 swiftlint lint --strict --quiet 和 git diff --check 通过；python3 -B scripts/check_workflow.py 通过；检查器定向 **69 项**通过；python3 -B scripts/quality_gate.py --profile static --format json 通过，包含 **189 项**脚本回归，高风险/敏感日志候选均 0。最终文档回填后重跑工作流、静态门禁和局部检查。 |
+| 未运行与指定复核 | 原存储套件的复制/粘贴和 ClipboardHistorySession 初始化用例未运行，避免越过本次禁止边界；只选旧格式读取方法并以新临时文件测试覆盖存储失败和兼容。quality_gate 的默认 auto / swift 会扩大到非本轮授权测试，因此沿前阶段采用 static 加显式隔离定向与构建，不冒充完整 Swift profile。Cursor verifier 无当前可调用入口，未执行 / blocked，阶段整体 **partial**；未重查登录或修改认证，未运行生产历史、系统剪贴板、真实 UI、系统认证、安装或发布。 |
+
+本轮修改清单：Services 的 [ClipboardHistoryStore](../AreaChain/Services/ClipboardHistoryStore.swift)、[ClipboardContentQueryReader](../AreaChain/Services/ClipboardContentQueryReader.swift)、[ContentQueryReadSession](../AreaChain/Services/ContentQueryReadSession.swift)；上述三套测试与夹具；本文、[组件目录](component-catalog.md)、[架构索引](architecture.md)、[技能路由](../skill-routing.md)、原[检查器](../scripts/check_workflow.py)与[反例测试](../scripts/tests/test_check_workflow.py)。对已存在并行增量仅作局部扩展，不认领其全部差异。生产磁盘格式未变，回退代码不需要用户数据迁移；宿主仍须撤旧许可和展示，不复活旧票据。
+
+剩余事项：图片实际存储与关联读取、墓碑来源适配、完整真实标签统计、生产运行内/磁盘来源选择、监听/失效事件和宿主窗口/输入缓存/打开前校验均留后续；敏感操作草稿封存与历史指定验收继续保留。本轮到 2K-5 停止，不提交、不推送、不安装、不发布、不启动生产应用、不进入下一阶段。
+
+### 9.42 阶段 2K-6：图片元数据只读适配、同批图片查询与 has:image
+
+#### 授权、入口与回退
+
+本阶段用户明确授权读取图片元数据、核实拥有者，并在既有搜索门禁内读取候选普通手记正文检查保护标记。只使用隔离数据库和合成资料；不为公开图片列表解密受保护正文。原查询需要手记结果时，仍可沿 §9.40 已有许可读取正文；可读的私密正文仍不能使图片公开。本阶段不改认证、加密、迁移、存储或业务写入规则，不读取生产数据或图片文件，不接生产入口，完成后停止。指定 Cursor verifier 的历史 blocked / 未执行状态保留，不能以本地检查冒充指定复核，整体 partial。
+
+| 接口 | 实际责任和消费者 |
+|---|---|
+| [ImageContentQueryReads / ImageContentQueryPlan](../AreaChain/Services/ImageContentQueryReads.swift) | 显式 context 与窄模型枚举依赖。只有有效 live 查询需要 image 或记录 has:image 时读取 AttachmentItem；只可由不可外部构造的 BodyReadPermit 调用。 |
+| [ImageContentQueryCapture](../AreaChain/Services/ImageContentQueryCapture.swift) | 包装原 TaskFamilyContentQueryReader 的任务、习惯、手记和标签依赖；记录同批实体证据并在许可检查时重新枚举。没有独立附件索引或 canBrowse。 |
+| [ContentQueryReadSession.prepareImages](../AreaChain/Services/ContentQueryReadSession.swift) | 图片模式内部创建唯一 ReadOwner；受控准备、求值、发布、分页和展示共用原生命周期。外部 prepare 不接受正文或 imagePrivacy 证据。 |
+| [DiaryContentQueryBodies / DiaryImageProtectionFacts](../AreaChain/Services/DiaryContentQueryBodies.swift) | 复用原正文读取及 DiaryPrivacy；仅生成对象级图片保护结论。构造/写入证据限制在该文件的受控检查中，没有任意 isPublic=true 注入入口。 |
+| [ContentQueryBatchAssembly](../AreaChain/Domain/ContentQueryBatchAssembly.swift) | imageQuery 与记录 ContentQueryImageRead 都消费 Batch 唯一图片源、主拥有者快照及 metadata；ImageOwnerResolver 最小增加独立保护证据分支。 |
+
+回退关闭图片读取适配并撤销 ReadSession 来源、关联事实和已发布结果，恢复 notProvided / unknown / protected。无格式迁移，无用户数据修改。图片公开投影只证明元数据可用，不证明文件存在、解码或打开成功；本阶段没有图片打开、预览、URL、另存为或删除能力，亦不消费 ClipboardHistoryRecord.imageFile。
+
+#### 实际 fetch、投影与完整性
+
+- 附件使用无谓词、无 fetchLimit 的 `FetchDescriptor<AttachmentItem>()`，包括活行与墓碑。只投影 id、ownerKind、ownerID、filename、createdAt、deletedAt，以及 privacyVaultID 是否存在形成的 protection。没有读取或返回 storageID / retiredStorageID 定位信息、路径、URL、图片二进制或凭据；SwiftData 可能物化整个模型，不能声称数据库列级裁剪。
+- `/images` 读取三种拥有者的完整表，包含零图对象和墓碑，避免保护对象零/一/多图改变公开关联状态。todo 复用 TaskRepository 的 includeDeleted 全枚举；routine 复用 includeDisabled / includeDeleted 定义枚举；diary 复用 SwiftDataDiaryRepository.fetchAllDiaries。记录单独 has:image 只要求其实际类型；主记录与辅助拥有者使用同一次家庭装配，辅助输入不改变 Session，不额外选择记录提供者。
+- 同批全标签目录复用 TagContentQueryReader；只有关联名字需求时沿原按 ID 读取。metadata 在家庭读取器中统一赋值。标签墓碑和私密标志参与保护检查；不建立全来源统计，tagUsage 继续未提供。
+- `snapshots.images.coverage` 表达图片枚举；`imageIdentities` 表达跨类型全图片 ID 核验范围；`owners` 表达各拥有者类型枚举；`associations` 表达关联枚举；`diaryPrivacy.objects` 仅表达实际完成保护检查的对象。完整枚举不等于数据唯一，重复活/活、活/删仍交原领域规则隔离。
+- complete 注入必须与同 context 物理行集合相符；不能先 live-only 截断再声明唯一。partial、notProvided、failed 与 complete([]) 独立保留，失败不变成空或 absent。每次新建 Batch 和覆盖，不继承上一批 complete。
+- 图片身份与拥有者身份分开核验，拥有者使用 kind + UUID；跨类型同 UUID 合法，未知类型不重挂，重复先隔离。四态继续由 ImageAssociationReader / ContentQueryImageRead / Evaluation 决定，unknown 和 protected 不作为普通 false，排除条件不能把它们变成 true。
+
+#### 最小保护证据与正文边界
+
+已知受保护手记直接登记 protected；没有手记结果需求时根本不进入其正文 API，即使 vault 已解锁或密文损坏也不尝试解密。候选普通手记先核对全枚举身份唯一、活状态、关联标签结构及目录覆盖，再以同一注入 vault、同一不可外部构造许可调用 ContentQueryBodyReads.readContent → DiaryContent.read 的同批目录重载，随后复用 DiaryPrivacy.isSensitive / requiresProtection 检查旧密码标记、关联密码标签和私密标签名称语法。无 .shared、无 entry.text 失败回退、无自动认证或修复。
+
+图片需要的是保护结论。临时检查普通正文时只在局部使用字符串，不放进图片结果或排序上下文；没有手记结果需求时 Batch.diaries 保持 text="" / isContentAvailable=false。确有手记查询需求时同一次检查同时填入合法正文事实，保留 isPrivate，不进行第二次为图片而解密。不会用空正文 + isContentAvailable=true 伪造公开证据。
+
+DiaryImageProtectionFacts 只保留元数据快照和保护枚举，与同批 metadata 及当前拥有者快照绑定。已知保护对象可以在目录不足时保持 protected；普通对象缺失资料、读取失败或旧敏感明文保持 unknown/protected。只有实际检查成功或已知保护的对象获得 diaryPrivacy.objects 完整声明；没有 diary 类型级完整保护声明。原 ImageOwnerResolver 的纯值旧调用仍兼容，但真实适配显式传入本批受控证据，不能借正文可读性提升图片公开资格。
+
+公开诊断继续不带隐藏图片 ID、文件名、行位置或数量；保护零/一/多图和重复图保持同一公开语义。候选原始元数据只留在私有冻结源，排序、摘要、分页消费原提供者安全投影。
+
+#### 生命周期、成本与残余限制
+
+附件读取前后、拥有者/标签读取前后、普通正文检查前后、冻结前、求值前后、发布与展示/分页/浏览消费前均走原许可。ContentQueryBodyReadPermit 的事实校验由单个闭包改为累积校验，避免后装配的正文事实覆盖图片事实。元数据校验保留内部物理行标识和最小投影，重新 fetch 同一 context 比较完整行集合及字段；插入、删除、墓碑变化或重入修改使旧许可失败，旧任务不重新盖代次。实际正文读取使用 Observation 跟踪其访问字段，读后明文或保护属性改变同样撤销资格，不为监视另取明文副本。
+
+willLock、失焦、保护变化和宿主转交沿原门禁撤权；新准备/取消会释放旧来源与展示，重新解锁/聚焦不能恢复旧文件名、关联结果或票据。requestID 仍只用于请求关联，不代表新鲜度或授权。适配器不接真实窗口监听，不承诺跨 context / 进程的数据库事务原子性；其他 context 变更的合并和宿主通知仍是后续接线责任。撤引用不保证 SwiftData、String/Data 或外部持有副本内存零化。
+
+成本明确采用全表读取和保守重复枚举校验：一次装配的附件依赖调用一次，主拥有者及目录各投影一次，但生命周期每次校验会重新 fetch 已登记类型的全表；每个正文检查也触发校验。最坏成本随 D 次正文读取及 A/T/R/D/G 全表大小增长，约 O(D × (A + T + R + D + G))，另有展示操作复查成本。领域查询预算、排序及分页不会限制数据库 fetch；尚无大库性能基线，不声称适合生产规模。
+
+墓碑本轮只服务唯一性、存活与否定核验；统一回收站的 SwiftData 读取、真实全来源统计、生产宿主接线和性能优化仍未实施。验证结果另列下方，历史指定复核与原生验收缺口不因本阶段关闭。
+
+#### 本轮验证证据（2026-10-02）
+
+- 新增 ImageContentQueryIntegrationTests / PrivacyTests / FailureTests / LifecycleTests 共 **22 项**，参数化 **30 次**。覆盖三类真实拥有者、跨类型同 UUID、墓碑与重复碰撞、缺失/部分/失败/完整空集、辅助输入不出正文结果、无需求不读附件、私密图片不解密、旧标记/私密标签/缺资料、正文前后撤权、同查询私密正文可匹配但图片隐藏、保护零/一/多图等价、同批 has:image、文件定位字段不投影及不保存/回滚、元数据/标签/正文/新增重复行变化、失焦/锁定/转交/重入与迟到发布。两条链路均从内存 SwiftData 实体经过原提供者、排序、摘要、分页和 ReadSession 发布，不是手工组装响应。
+- 最终采用架构文档的隔离 xcodebuild 入口，`PRODUCT_BUNDLE_IDENTIFIER=com.areachain.image-metadata-qa`、`-derivedDataPath build/ImageMetadataQA`、local 临时签名、串行执行并清除六个真实钥匙串授权变量。**60 套、388 passed / 0 failed / 0 skipped；参数化 462 passed**。包括全部 2E 图片关联/图片提供者/记录 has:image、2K-4D 正文、生命周期、任务家庭/标签/手记/习惯适配、Batch、排序/摘要/展示/分页和剪贴板生命周期回归。每套实际结果均为 Passed。
+- 完整命令及结果保存在忽略目录 `build/ImageContentQueryQA/regression-command.json`、`regression.log`、`regression-summary.json`、`regression-tests.json`；结果包 `build/ImageMetadataQA/Logs/Test/Test-AreaChain-2026.10.02_20-35-11-+0800.xcresult`。`source-before.json` 记录的相关 Domain/Services/测试摘要在测试后逐项一致；没有依赖旧源码的测试结果。环境 macOS 26.6.2 arm64；测试时间不作为产品性能基线。
+- `./scripts/build.sh` **passed**，`build/ImageContentQueryQA/build.log` 中 `staticSignatureVerified=true`、`distributionReady=false`。只构建与验签 Debug，没有安装、启动生产应用或发行。
+- 工作流检查、严格局部 SwiftLint、差异空白检查通过；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` **70 passed**。扩展原组件目录守卫并加入两个适配入口缺失的反例，没有新建检查执行器。静态质量门禁 `python3 -B scripts/quality_gate.py --profile static --format json` **passed**，含脚本回归 **190 passed**、高风险和敏感日志候选均 0。最终文档编辑后再次运行工作流和静态质量门禁。
+- 初次普通测试曾被并行 MonthGridDropTestSupport 编译错误阻断；早期隔离命令临时排除该夹具及对应月历测试，仅用于本阶段诊断，没有改动其源码。并行修正后，以上最终 60 套回归**无任何源码排除**。初轮新测试还暴露旧准备在重入新查询后误清新任务的问题，已将 preparation 身份检查提前，并通过本轮与原生命周期回归。测试中曾误假定 `/tasks` 不含习惯以及 `-has:image` 可解析；已按原契约修正断言，没有修改产品语法。
+- 未运行整树 auto/swift profile：其无过滤应用测试包含本阶段之外的原生界面及文件测试；本次使用静态门禁加明确筛选的 60 套隔离回归。编译保留既有测试 actor / Sendable、旧可访问性 API 等警告，没有顺带改写。未运行真实窗口监听、图片文件访问、生产数据库、系统钥匙串、安装、发行或大库性能验收。
+- 指定 Cursor verifier **blocked / 未执行，阶段整体 partial**；没有重查登录、改认证或以其他复核冒充。本阶段实现及上述本地验证已交接，保留历史指定复核、原生/生产验收缺口；停止在 2K-6。
+
+### 9.43 阶段 2K-7：完整墓碑只读适配与受门禁回收站搜索
+
+#### 授权、入口与唯一装配
+
+用户已明确授权完整枚举墓碑，并在现有门禁内读取候选普通已删除手记正文、核对保护标记，确认公开后供搜索。受保护墓碑不解密；不执行恢复、删除、清空、迁移、图片文件操作或真实认证。实现仅接显式注入的隔离上下文，未接生产 Persistence 或窗口。指定 Cursor verifier 的历史缺口仍保留，整体 **partial**，不重复登录检查或用主代理自查冒充指定复核。
+
+| 核心接口 | 责任与实际消费者 |
+|---|---|
+| [TrashContentQueryReads / Plan / Details](../AreaChain/Services/TrashContentQueryReads.swift) | 复用 TaskContentQueryReads、RoutineContentQueryReads、DiaryContentQueryReads、TagContentQueryReads 与 ImageContentQueryReads 的全枚举依赖。只在有效显式 trash / deletedOnly 查询启用；普通范围返回未提供，不读额外墓碑。 |
+| [TrashContentQueryReader](../AreaChain/Services/TrashContentQueryReader.swift) | 在同一 Session、requestID、options、Batch 中装配主模型、父属性、标签与保护资料；无独立旧 Batch 拼接。习惯只调用原 readFacts 的当前观察和有界记录证据。 |
+| [TrashContentQueryCapture](../AreaChain/Services/TrashContentQueryCapture.swift) | 复用 ImageContentQueryCapture.retain 的物理行集合及字段校验，在枚举依赖调用之前建立基线，之后与生命周期核验时重新枚举，拒绝重入变化、漏行的 complete 和跨上下文实体。 |
+| [DiaryContentQueryReader.readTrashBodies](../AreaChain/Services/DiaryContentQueryBodies.swift) | 独立于旧 live-only 路径，复用 ContentQueryBodyReads.readContent → DiaryContent.read、DiaryPrivacy 与对象级 DiaryImageProtectionFacts。没有 snapshot 捷径或失败时 entry.text 回退。 |
+| [ContentQueryReadSession.prepareTrash](../AreaChain/Services/ContentQueryReadSession.swift) | 当前宿主内部签发许可，内部创建并独占 ReadOwner，返回不可拼装句柄和脱敏读取状态；外部 prepare 仍拒绝任何可读手记快照与 imagePrivacy 事实，包括墓碑。 |
+| [TrashTombstoneInput / Index / Projection](../AreaChain/Domain/TrashTombstoneInput.swift) | 无父子任务以 unconvertedSubtaskIDs 继续参与类型化身份核验；图片公开使用本批对象级保护事实。级联、分组、恢复条件和查询仍由 2H 单一规则负责。 |
+
+唯一运行链路为：隔离模型 → 受控 Batch → TrashTombstoneReader → TrashQueryProvider / Fields / Temporal → BatchReader → Sorter → Presenter → DisplayBuilder → Pagination → ReadSession 发布。当前实际消费者只有 TrashContentQuery 的隔离服务测试，无 handler 或操作执行资格输出。没有清空 deletedAt 伪装活内容，也没有把 TaskFamily 的活准备路径当墓碑读取器。
+
+#### 实际读取与覆盖
+
+- 根据既有 trashInputTypes 计划读取实际所需类型；非标签墓碑组需要图片及三类拥有者参与安全核验，todo/subtask/image 请求独立枚举 SubtaskItem。标签型请求只读全标签目录。所需类型使用无删除筛选、无条数上限的完整表读取，包含活行、墓碑与重复业务 ID；相关父项即使存活仍参与核验。SwiftData 可物化整行，不声称列级裁剪。
+- TodoSnapshot 手工投影自身字段，不访问其活子项视图；子任务唯一权威来源是独立平面表。无法形成快照的无父行保留 ID 与 missingSubtaskParent；与可转换行同 ID 时仍产生 duplicateIdentity。投影 partial 与 Details 中原始枚举 complete 分开，所有父组的成员覆盖保持 partial，不能用可见子项数冒充完整。
+- 同类型活/删碰撞不 first-wins；跨类型同 UUID 不冲突，拥有者由类型＋UUID 核对。子任务父物理行不符不重挂；父类型未读、部分、缺失、歧义、非法墓碑时间仍由原 Reader 区分。不近似同一天或时间容差，只复用 SoftDelete 精确同戳判据。
+- `Details.sources` 是六类枚举状态；Batch 源与 `trashCoverage.types` 是可投影输入范围；`objects` 支持完整子任务表中已核验身份；`members` 仍沿领域覆盖语义，不提高局部范围；图片身份以完整 AttachmentItem 表核验；`trashTagNamesCoverage` 独立描述关联名字；`diaryPrivacy.objects` 只声明本批实际检查的手记。没有手记保护类型级 complete。
+- complete([])、notProvided、partial 与 failed 分开。源失败在 Details 和 Batch limitation 保留 failed；无值的领域输入仍是 notProvided，不能当空结果。错误只输出封闭类别，许可复查的数据库异常也映射 readFailed，无数据库错误正文。图片诊断不带隐藏行下标、身份、文件名或数量。
+- 同批全标签目录包含标签墓碑和私密标志。关联名字复用 ContentQueryTagNames，只提供唯一且允许公开的名字；缺失/私密关联名字保持部分覆盖。保留逐对象可用资料，避免一个私密关联清掉其他普通手记的保护资料；重复标签目录不能建立普通正文的完整保护证明。真实标签使用统计仍未提供。
+
+#### 正文与图片保护
+
+先核对宿主、查询、许可、同 context、唯一身份、墓碑状态和同批目录。已知受保护记录直接登记 protected，不调用正文 API，即使 vault 已解锁也不解密。候选普通墓碑沿既有正文 API 读取，再检查旧密码标记、私密标签及名称语法；资料不足、读取失败、非法标签或旧敏感明文保留 unknown / hidden，不转换、擦除或加密。只有确认公开且确需手记结果的墓碑才写入 Batch 的可读正文分支；空串占位保持 isContentAvailable=false。受保护墓碑正文搜索仍未开放，不能称为全部回收站正文能力完成。
+
+图片元数据仍仅含 id、ownerKind、ownerID、filename、createdAt、deletedAt、protection，不读取定位字段、URL 或二进制，不调用 AttachmentStore。普通 live 图片规则不变；墓碑安全投影独立消费当前手记拥有者的对象级保护事实。普通已删拥有者可提供公开图片及级联关系；只为图片检查正文时，辅助 DiarySnapshot 仍无可读正文。隐藏拥有者、旧格式不明、保护或混合身份碰撞继续隐藏整个受影响图片投影。零/一/多张隐藏图片不会进入组计数、逐图诊断、未知列表或命中提升；完整枚举不等于完整披露。
+
+#### 生命周期、只读与回退
+
+模型只在 MainActor 的注入上下文安全域使用。实体/物理身份只留在内部许可校验闭包，冻结 Batch 与输出均为值。依赖调用前后、正文检查前后、冻结前、求值前后、发布和展示/分页/浏览消费前核对资格；身份、墓碑、标签、保护或已读取正文变化拒绝旧证据。willLock 同步撤权并清查询；失焦撤显示资格；转交后旧宿主失效；重新解锁/聚焦不恢复旧票据。同 requestID 也创建新来源代次，重入旧任务不能清掉新准备。普通 cancel 释放来源/展示但保留查询，与隐私失效不同。
+
+读取不 save/rollback、不发 BoardEvents、不补标签或修模型，不持有恢复/删除/文件接口。回退只关闭 prepareTrash 并 detach / 撤去冻结结果，恢复未提供与未知，不改存储数据。冻结的已返回值不随后续实体变化更新；撤引用仍不保证 String/Data、SwiftData 或外部副本内存零化。
+
+采用全表读取和保守的重复全表复查，正文逐条检查还会触发累计事实校验；领域预算与展示分页不限制 fetch。没有大库性能基线，也不承诺跨 context / 进程事务原子性。生产接线前仍需数据变化合并/宿主通知、性能预算和指定复核证据。习惯删除前历史不重建；date/on/status 缺证据仍未知，has:image 墓碑语义仍为 imageAssociationUnavailable，不能用活关联替代。
+
+恢复执行、永久删除/清空、真实标签统计、受保护墓碑正文、生产接线及历史原生/认证验收仍未完成。本轮停在 2K-7，不进入下一阶段，不提交、推送、安装或启动生产应用。
+
+#### 本轮验证状态
+
+验证使用原全 schema 内存 ModelContainer、禁用自动保存与 FakeSystemVaultKeys；所有手记、密钥和图片元数据均为合成资料。
+
+- 新增四套 TrashContentQuery 服务测试共 **30 项定义、49 次参数化执行**。涵盖六类枚举与活父项、平面子任务/孤立行/活删碰撞、跨类型 UUID、精确同戳/提前独立删除、六源失败及四种覆盖、普通墓碑正文、受保护墓碑零正文 API 调用、旧敏感/私密标签/重复目录/资料不足、占位排除条件、删除拥有者图片、隐藏图片零/一/多/跨拥有者碰撞、读取中墓碑/标签/保护变更、初始依赖回调变更、同 requestID 旧句柄、重入/取消/锁定/失焦/转交、冻结副本、父子计数与提升、排序片段/分页/键盘选择及上下文不可选。只读测试保留未保存改动并用第二个隔离 ModelContext 核对未落盘，附件定位字段不进入结果。
+- 最终使用架构文档的隔离 xcodebuild 入口，`PRODUCT_BUNDLE_IDENTIFIER=com.areachain.trash-metadata-qa`、`-derivedDataPath build/TrashMetadataQA`、local 临时签名、串行执行并移除六个真实钥匙串授权变量。**107 套、704 passed / 0 failed / 0 skipped；参数化 812 passed**。包括 2H 读取/投影/查询、活 Todo/Subtask/Routine/Diary/Tag/Image、RecordImage、Batch、正文、图片、ReadSession、排序/片段/分组/分页等相关回归。没有源码排除，所有选中套件均为 Passed；六项历史变更用例不在最终选择内，原因见下方范围偏差记录。
+- 最终完整命令、输出与结果树保存在忽略目录 `build/TrashContentQueryQA/readonly-regression-command.json`、`readonly-regression.log`、`readonly-regression-summary.json`、`readonly-regression-tests.json`。结果包为 `build/TrashMetadataQA/Logs/Test/Test-AreaChain-2026.10.02_21-25-25-+0800.xcresult`。`source-before.json` 的 Domain/Services 及对应测试摘要在最终测试后逐项一致。环境 macOS 26.6.2 arm64、Xcode 26.6；执行耗时不作为大库性能基线。
+- `./scripts/build.sh` **passed**；`build/TrashContentQueryQA/build.log` 确认 Debug 的 `staticSignatureVerified=true`、`distributionReady=false`，只构建并验签，无安装或生产应用启动。
+- 严格局部 SwiftLint、`git diff --check` 和 `python3 -B scripts/check_workflow.py` 通过；原检查器增加墓碑适配入口守卫及两个符号缺失反例，定向脚本测试 **71 passed**。`python3 -B scripts/quality_gate.py --profile static --format json` **passed**，包含完整脚本回归 **191 passed**；最终文档更新后重跑工作流与静态门禁。没有新增检查执行器。
+- 初轮编译修正了本次测试宏表达式过长、可选 UUID 解包，以及共享夹具新增参数改变旧尾随闭包绑定的问题。初次无排除编译曾被并行 CalendarMonthGridDropTests 的 actor 隔离错误阻断；中间诊断轮只通过命令行排除该测试文件，未改其源码。其原工作流修正后，上述最终 107 套回归无排除。首次运行失败来自测试误用尚未支持的 `type:` 文本语法，已改为真实 Session 的 contentTypes 条件事件，未扩展语法或削弱规则。
+- **验证范围偏差**：前一次宽范围 710 项回归误带入 TrashTombstoneCompatibilityTests 的 `memoryRoutineRestorePreservesChecksAndEnabledState`、`memoryPrivateDiaryRestoreDoesNotDecryptOrGrantImageAccess`，确实对合成内存数据库调用了既有恢复方法；另有四项旧读取回归在隔离夹具内调用 ModelContext.delete 设置待删除行。这不符合本阶段严格只读验证边界，不能用“仅隔离数据”抹去偏差。没有接触生产库、真实密钥或图片文件。发现后向用户说明，最终命令改为仅选择这些套件中的读取用例，排除六项变更用例后重跑上述 704 项；保留原 `regression-*` 产物以便追溯，不将早先宽范围结果算作最终只读证据。本次新增读取实现未调用恢复或删除。
+- 未运行全库 auto/swift profile：其无过滤应用测试包含本阶段之外的原生界面与文件操作，本轮采用静态门禁、严格局部 lint、明确筛选的隔离回归及 Debug 构建。现有 actor / Sendable、旧 AppKit API 等编译警告保留。无真实库、系统认证、生产窗口、图片文件、统计、恢复或发行证据。
+- 指定 Cursor verifier **blocked / 未执行**，历史验收缺口保留，阶段整体 **partial**。没有重复登录检查、改认证或以本地测试冒充指定复核；本阶段实现与本地验证到此停止。
+
+
+### 9.44 阶段 2K-8：全来源标签使用统计的只读存储适配与受门禁发布
+
+用户明确授权按旧页统计任务、子任务、习惯和手记（包含受保护手记），只用必要元数据，不读正文或解密。授权披露只有既有总次数与最近使用排序；未授权精确最近时间、私密分项或关联明细。本阶段只接隔离合成数据库，不接生产入口，历史指定 Cursor verifier / 验收缺口仍保留，整体 **partial**。
+
+#### 入口、来源与同批责任
+
+| 接口 | 责任 |
+|---|---|
+| [TagUsageContentQueryReads / Plan / Details](../AreaChain/Services/TagUsageContentQueryReads.swift) | 复用 TaskContentQueryReads.todos/subtasks、RoutineContentQueryReads.definitions、DiaryContentQueryReads.allDiaries 与 TagContentQueryReads.allTags；保留五类 source 的 complete/partial/notProvided/failed。仅有效 liveOnly、可能包含 tag 且 tagView.needsUsage 时读取统计。 |
+| [TagUsageContentQueryCapture](../AreaChain/Services/TagUsageContentQueryCapture.swift) | 在同一 ModelContext、MainActor 同步边界缓存每类枚举实体，统计与 TaskFamilyContentQueryReader 的已请求内容投影复用同一批实体。复用 TrashContentQueryCapture / ImageContentQueryCapture.retain 的物理行及字段前后核验；只投影统计必需字段、子任务关系及保护布尔值，标签目录复用既有名字/顺序/颜色规则。 |
+| [TagUsageContentQueryStatistics](../AreaChain/Services/TagUsageContentQueryStatistics.swift) | 身份/格式/归属验证后直接调用 TagUsage.subjects → records；不是对当前搜索命中集合重算。只有全来源及身份有效才声明 complete，否则 partial(completeTagIDs: []) 且 records 为空，不发布“至少 N”。 |
+| [TaskFamilyContentQueryReader](../AreaChain/Services/TaskFamilyContentQueryReader.swift) / [TagContentQueryReader](../AreaChain/Services/TagContentQueryReader.swift) | 同一个 Batch 安装一份 storedUsage；普通 injectedUsage 的来源仍为 injected，真实读取为 stored。全目录行同时用于内容目录和关联名字，不拼接独立 Batch。不请求统计时保持原名称/all 的读取路径。 |
+| [ContentQueryReadSession.prepareTagUsage](../AreaChain/Services/ContentQueryReadSession.swift) | 内部建立许可并独占 ReadOwner，仅返回句柄和脱敏来源诊断。统计输入、实体及精确最近时间不返回给宿主；查询、宿主、隐私代次、来源和任务资格沿原链路核验。 |
+
+实际读取为含删除行的任务、平面子任务、习惯定义、手记和标签全枚举；不按名称谓词裁剪关联来源，不逐标签读取全库。统计不需要 RoutineCheck、附件或正文 API。混合查询确需原内容提供者时，家庭 reader 用同批缓存实体投影；打卡仅沿原内容查询需要时读取。名称/inputOrder 与 all 不启用统计，只有原查询需要的内容源读取。
+
+五个来源闭包每批各调用一次；这不等于只有五次数据库 fetch：既有物理行核验在回调前建基线、回调后比较、后续资格校验时重复 fetch 同上下文并比较必要字段。没有列级 fetch 保证；SwiftData 可能物化整行正文/密文。实现没有显式读取 entry.text、DiaryEntry.snapshot、DiaryContent.read/snapshot 或解密，不能宣称正文从未进入内存。没有跨上下文、进程事务原子性保证。
+
+#### 旧计数口径与完整性
+
+旧 TagManagementPage 的 todos/routines/diaries 查询均未预先排除删除；TagUsage.subjects 从所有 todos 的 subtasks 关系枚举，再由 records 逐条判断自身 deletedAt。由此保持：
+
+- 未删除任务、子任务、习惯、手记贡献次数，完成/停用不影响计数，打卡不参与；受保护手记与其他手记采用相同总数规则，无解锁前置。
+- 重复 tagIDs 每次出现都计次，最近值是活关联记录 createdAt 最大值，不是标签创建时间、访问或修改时间。
+- 父任务删除但子任务自身未删仍计次。此口径与某些旧关联列表的父过滤不同，保留旧行为，不在新统计接入时修正。
+- 平面子任务全表用于核对旧关系枚举：每行必须有同批唯一且物理身份相同的父项，父关系成员须与平面表一一对应。缺父、漏关系、重复成员/业务 UUID、跨上下文行及虚假 complete 子集不猜测修复。
+- 所有行（含删除行）核对 createdAt/deletedAt 有限且在既有民事日期范围；重复身份按类型判断，跨类型相同 UUID 可独立计数。tagIDs 允许旧合法重复值，但空段、不可解析 UUID、引用缺失目录 ID 会阻止 complete。完整标签目录本身也必须身份唯一、删除日期有效。
+- details.sources 只描述原始枚举状态；issues 描述身份/格式/归属。枚举 complete 不单独证明统计 complete。任一相关源部分/未提供/失败或任一完整性问题，都不建立局部完整 ID 猜测，TagQueryUsageReader 返回未知且不带可误作确定值的 count。
+- 只有全来源完整、合法、确无关联，旧 records 缺项才由 TagQueryUsageReader 补确定零。未读取手记时绝不能产生确定 unused。
+
+#### 次数、排序与公开边界
+
+[TagQueryUsageSummary](../AreaChain/Domain/TagQueryUsage.swift) 只含 activeCount。[TagQueryMatch](../AreaChain/Domain/TagQueryRead.swift) 与 [ContentQueryPresentationMetadata](../AreaChain/Domain/ContentQueryPresentation.swift) 改为此摘要，不再直接持有 TagUsageRecord。TagQueryProvider 在受控计算期间用原 UsageReader 取合法记录，再交 TagUsage.filteredValues；响应只保留次数、使用状态与排序状态。输入及公开摘要的 description/debugDescription 脱敏，没有私密数量、关联行身份、正文或时间线。
+
+frequent 不足时沿原输入顺序回退，recent/unused 的不足项保持 undetermined；未把部分正数升级为完整结果。[ContentQuerySorter](../AreaChain/Domain/ContentQuerySort.swift) 在既有聚合排序后的标签槽位中保留 provider 的 catalog 相对顺序（含 frequent 回退），其他类型位置不变；标签公开 rank.time 仍 unavailable、day/instant 为 nil。由此排序经过 Presenter → Display → Pagination 后仍与旧页一致，无须向展示添加精确日期字段。标签名字、颜色、预置及既有私密标签标记规则不变。
+
+#### 门禁、冻结与回退
+
+prepareTagUsage 沿原 prepareControlled，在读取/冻结前后、evaluate 前后、publish、展示/分页/浏览消费前检查查询、lease/ownership、隐私 epoch/vault stamp、source/task 与元数据事实。统计无正文仍视为敏感来源：新读取或取消先撤旧引用，fetch 失败不能延续上一批 complete。willLock 清查询并撤结果与排序；失焦撤显示；重新解锁/聚焦不会复活旧结果；同 requestID 重读仍产生新来源，旧句柄不能发布。
+
+保护标记、标签、关联及已捕获字段/成员变化在下次受门禁访问时被复查拒绝；已有 boardDidChange 和显式 modelDidChange 立即撤回。没有新增生产未保存变化监听，不能承诺实体 setter 后尚未调用门禁时生产 UI 已立即刷新。冻结结果不随实体变化；清引用不能远程抹除调用者复制的旧 Swift 值，也不保证 SwiftData 或内存安全零化。
+
+读取没有 save、rollback、修复、迁移、转换、认证或业务变更通知。回退只撤去真实统计入口和当前 Session 的冻结/已发布引用，使统计恢复 unavailable/partial；不改用户数据或旧标签页。
+
+#### 验证与生产接线前置
+
+本轮新增[读取测试](../AreaChainTests/Services/TagUsageContentQueryReaderTests.swift)、[失败测试](../AreaChainTests/Services/TagUsageContentQueryFailureTests.swift)、[集成测试](../AreaChainTests/Services/TagUsageContentQueryIntegrationTests.swift)、[生命周期测试](../AreaChainTests/Services/TagUsageContentQueryLifecycleTests.swift)及[薄夹具](../AreaChainTests/Services/TagUsageContentQueryTestSupport.swift)，沿原全 schema 内存 ModelContainer、SearchReadFixture、FakeSystemVaultKeys 和通知来源验证。测试的创建、未保存修改、软删除/物理删除均仅构造隔离合成资料；不按名称排除必要旧删除/恢复兼容回归。
+
+| 最终检查 | 实际结果 |
+|---|---|
+| 新增统计验证 | 四套共 **17 个定义、54 次执行**，全部通过。覆盖四类来源和受保护贡献、旧口径/重复 tagIDs/已删父活子、五源的缺失/失败/部分、坏身份/日期/归属/关联格式、确定零与未知、按需读取、同批复用、公开次数结构及无日期排序键、旧排序/摘要/20 项分页、失焦/锁定/重读/撤回/迟到发布和无保存/回滚/通知。Observation 包裹读取后修改合成 entry.text 未触发依赖变更，结合无正文/认证依赖的源码检查证明未显式读取正文；不推导 SwiftData 没有物化正文。 |
+| 最终隔离回归 | **128 套、846 passed / 0 failed / 0 skipped**；含参数化 **1,035 passed**。结果树逐套均 Passed，没有源码排除。覆盖 TagQuery/旧 Catalog/TagCatalog/CatalogSearchEquivalence/UnifiedSearch、各类 Query 与 ContentQuery 聚合/排序/摘要/分页/ReadOwner、家庭/标签/手记/任务/习惯/图片/墓碑读取及 ReadSession/转交/隐私生命周期。含 TrashTombstoneCompatibility 的合成恢复和旧未保存删除用例，未访问真实库。 |
+| 隔离环境与证据 | 沿架构文档清除六个真实钥匙串授权变量；xcodebuild 的 `-derivedDataPath build/TagUsageMetadataQA`、`PRODUCT_BUNDLE_IDENTIFIER=com.areachain.tag-usage-qa`、local 临时签名、串行测试。环境 macOS 26.6.2 arm64、Xcode 26.6。命令及结果在 `build/TagUsageQA/regression-command.json`、`regression.log`、`regression-summary.json`、`regression-tests.json`；结果包 `build/TagUsageMetadataQA/Logs/Test/Test-AreaChain-2026.10.02_21-54-59-+0800.xcresult`。`source-before.json` 中 Domain/Services 及对应测试在测试后摘要全部一致；不是最低 macOS 14 运行证据。 |
+| Debug 构建 | 最终代码后 `./scripts/build.sh` exit 0，`build/TagUsageQA/build.log` 确认 staticSignatureVerified=true；仅生成构建产物，没有安装或启动生产应用，也不是发行验收。 |
+| 工作流/质量 | `python3 -B scripts/check_workflow.py` passed；检查器定向 **72 passed**；`python3 -B scripts/quality_gate.py --profile static --format json` passed，含 **192 项脚本回归**。原组件守卫只增加两个统计入口及一个包含两入口反例的测试；最终文档后重跑工作流/静态门禁。没有新私有检查执行器。 |
+| 局部检查及修正 | 本轮 **18 份 Swift 文件**执行严格 SwiftLint 通过，差异空白检查通过。首轮测试编译发现 Observation 闭包不支持 throws，改用 Result 包裹后重跑；没有修改产品规则或删断言。最终回归编译仍有既有 AppKit 废弃 API、Sendable/actor 警告，本轮没有扩修。 |
+| 未运行/缺口 | 指定 Cursor verifier **blocked / 未执行，整体 partial**；不重复登录检查、不改认证、不冒充指定复核。未运行无过滤全树 UI/真实库/钥匙串、生产窗口或安装发行；auto/swift profile 会启动范围外全套测试，本轮以 static 加明确隔离回归、严格局部 lint 和 Debug 构建取证。 |
+
+`storedUsage` 采用仅由受控完整性校验构造的类型，不能直接以原始 TagQueryUsageInput 冒充存储统计。部分/缺失来源经旧数组接口投影后会恢复本次真实覆盖，局部标签目录也不会建立全局保护或关联名字完整声明。
+
+存储适配已分阶段具备任务/子任务、习惯/记录、标签目录、手记元数据/既有授权正文、剪贴板、图片、墓碑与本次统计的隔离入口；**不代表生产宿主或整体搜索已交付**。接线前还须补指定 Cursor verifier 与历史指定验收、实际窗口及输入/撤销缓存的失焦/锁定清理、保存与未保存变化合并监听、来源一致性/大库性能预算及取消、最后打开前业务校验和转交生命周期。习惯历史缺证据、受保护墓碑正文、敏感操作草稿封存/失败保护、旧格式转换及真实系统验收按原阶段保留。统计已完成隔离适配，不再列为“完全未实现”；生产性能与宿主接入仍未验。
+
+停止在 2K-8：不提交、不推送、不安装、不发布、不启动生产应用、不访问真实用户库，不进入下一阶段。
+
+### 9.45 阶段 4A-1：公共原生搜索输入与斜杠补全
+
+2026-10-02 已实现，验收仍为 partial。只接公共输入、指令高亮、补全和键盘意图，实际消费者为 UnifiedSearchTestFixture 的工作台宽/菜单栏紧凑隔离宿主。生产 WorkspaceHeaderSearchCapsule、MenuBarSearchField、捕获与检查器的保存入口保留；没有真实记录读取、结果列表、长正文预览、参数表单、计划 UI 或 handler。
+
+接口：UnifiedSearchInput 接收显示缓冲 UnifiedSearchBuffer（原 CommandHostLease、version、text、privacyRevision）、焦点绑定、UnifiedSearchActions、CommandPathParser 和明确的发现配置。默认 standard 全目录，内容范围不限制应用指令。edit / accept 是独立回调，均返回宿主接受的新版本；accept 携带 CommandPathEdit；submit/results/escape 只输出意图及原缓冲，不能给旧事件补新 lease。生产适配以后仍须 CommandHandoffCoordinator.validate。
+
+布局：standard 最小输入宽 420pt、候选最高 300pt；compact 最小 280pt、候选最高 240pt。统一 Daybook 输入字体、颜色、外壳；宿主提供可用区域并挂载一次 unifiedSearchOverlayHost。复用 SyntaxOverlayPlacement 默认上方、空间不足向下避让，浮层不参与输入布局。复用 SyntaxAutocompletePopup 的滚动/选择与减弱动态效果，搜索只替换候选行显示本地化名称、说明、分类和“暂不可用”。目录未接线仍可浏览、填写，不显示可执行；复杂参数提示继续选择/填写。
+
+原生：DaybookTextField 仅在显式 unifiedSearch 注入时使用专用 UnifiedSearchFieldCell；旧调用默认不变。候选由 CommandPathParser / Result 产生与接受，UTF-16 中间替换使用原生 insertText，保留撤销与光标。SyntaxHighlighter 的既有 #/!/@ 色彩扩展仅用于搜索，路径/范围/参数着色，诊断下划线和文字提示并存。高亮按输入/解析结果和外观变化更新，组合输入期间暂停。键盘只由字段 delegate/等效键处理：↑↓候选，Tab/Return接受，无候选输出结果导航；⌘Return只输出提交；Esc先关闭候选。没有新增全局或局部键盘监听。
+
+隐私：宿主必须先清显示缓冲并递增 privacyRevision；控件清专用 editor 的文字、marked text、候选、派生高亮缓存和独立 UndoManager。普通失焦只关闭候选，保留输入与撤销。旧候选必须同时匹配原缓冲版本、宿主 lease 与选区；不能恢复清理前文字。不清其他控件/窗口撤销、不替代业务读取会话失效，不声明 Swift String 零化；敏感操作草稿与真实锁定通知未接入。
+
+验证（2026-10-02）：所有本轮产物在忽略目录 `build/UnifiedSearchInputQA/`，仅合成输入和独立 `com.areachain.unified-input-qa`，ad-hoc、原项目 entitlement、串行 xcodebuild，不安装或启动日用应用。首轮没有继承任何系统钥匙串验收变量；后续命令均显式清除六个原生及 TEST_RUNNER 授权变量。
+
+| 检查 | 当前证据与边界 |
+|---|---|
+| 组件与旧消费者合并回归 | `RegressionNative.xcresult` / `regression-native-summary.json`：82 tests，71 passed、11 failed、0 skipped。失败全部为场景焦点前置（当时前台 Codex），失败涉及旧 InputSyntaxInteractionTests 和新输入两项；下行已按单套件重新覆盖。没有删断言或排除源码。 |
+| 最终单套件复验 | 同一源码（SHA-256 一致）下，`UnifiedSearchInputTests-Isolated.xcresult` **4 passed / 0 failed / 0 skipped**；`UnifiedSearchLayoutTests-Isolated.xcresult` **4 passed / 0 failed / 0 skipped**；`InputSyntaxInteractionTests-Isolated.xcresult` **12 passed / 0 failed / 0 skipped**（含参数化 15 次运行）。三次 xcodebuild 完整串行启动，均由独立 QA 标识承载。对应 `*-summary.json` / `*-Isolated.log` 保留。 |
+| 本轮已通过的新原生行为 | 合并回归通过鼠标接受/焦点返回/单次回调、候选滚动、布局稳定、上/下避让、外部点击保留输入、普通失焦保留撤销、组合状态隐私清理、旧候选拒绝、其他窗口撤销保留，以及三项独立契约/高亮测试。逐级 Tab/Return/⌘Return/Esc、原生组合文本、选区和撤销均由最终单套件结果再次验证。 |
+| 视觉 | 两宿主 × en/zh-Hans × 浅/深 × 正常/最小宽度，共 16 组；加紧凑向下避让、长说明与无候选，19 张原生 NSHostingView 截图在 `screenshots/`。几何断言已运行；主代理复查 19 张联系表及正常/最窄、浅深、长说明、未知路径原图，联系表为 `screenshot-contact.png`。长说明单行截断，完整内容在 help/辅助文本；截图不替代交互。 |
+| 旧消费者 | DaybookTextFieldTests / DaybookTextFieldSearchTests、SyntaxHighlighterTests / SyntaxAutocompleteTests / SyntaxOverlayPlacementTests、InputSyntaxPersistenceTests、MenuBarSearchShortcutTests 与 CommandPathTests / ConflictTests 在合并回归中通过。任务、手记、检查器原生 InputSyntaxInteractionTests 已经由最终独立运行的 12 项通过结果覆盖；原合并运行焦点失败保留为历史记录。 |
+| 静态与脚本 | 严格局部 SwiftLint、`check_workflow.py` 通过；原检查器加入五个公共入口及反例。定向脚本 73 项、完整脚本 193 项通过；`quality_gate.py --profile static --format json` passed。auto/swift 会运行非本轮独立 QA 标识的完整应用测试，故未运行；静态不冒充完整 Swift 门禁。 |
+| 构建 | 首轮 `build.sh` Debug 构建与静态验签通过（`initial-build.log`）；中途磁盘仅约 200 MB，分套件测试在链接报 `errno=28`，Debug 构建在 CodeSign 失败；空间恢复约 13 GB 后，最终 `./scripts/build.sh` **passed**、`staticSignatureVerified: true`，见 `build-recheck.log`。没有安装、启动生产应用或发布；失败 `build.log` 保留。 |
+| 历史失败与清理 | 首轮焦点失败；专用 cell 未显式 editable、首次焦点未初始化候选、高亮选区递归、配置 Observation 刷新循环均已定位修复。后续完成选区/输入测试，但旧包并非最终版本通过证据。磁盘满时仅删除本轮早期大结果包，保留对应 `*-summary.json`、日志与源码摘要；未清理其他任务产物。 |
+| 指定复核与人工边界 | Cursor verifier 仍 blocked / 未执行，不重查登录或用其他代理替代。中文检查使用真实 NSTextInputClient 的 setMarkedText/insertText 协议及事件优先级，未操作系统中文输入法候选窗；VoiceOver 真人朗读和系统减弱动态开关切换未验。减弱动效仅核对公共实现读取系统环境，并运行 motionDisabled 合成路径。 |
+
+阶段整体 **partial**；无生产库、真实锁定接线、敏感草稿封存、handler、执行、安装、提交、推送或发行。保留历史缺口。源文件摘要见 `source-sha256.json`，不把并行整树视为冻结。
+
+本阶段变更清单（相对仓库根，全部就地保留并行改动）：
+
+- 新公共组件：[UnifiedSearchInput.swift](../AreaChain/Theme/UnifiedSearchInput.swift)、[UnifiedSearchInputState.swift](../AreaChain/Theme/UnifiedSearchInputState.swift)、[UnifiedSearchNativeInput.swift](../AreaChain/Theme/UnifiedSearchNativeInput.swift)、[UnifiedSearchOverlay.swift](../AreaChain/Theme/UnifiedSearchOverlay.swift)。
+- 兼容扩展：[DaybookTextField.swift](../AreaChain/Theme/DaybookTextField.swift)、[SyntaxAutocompleteView.swift](../AreaChain/Theme/SyntaxAutocompleteView.swift)；双语资源：[Localizable.xcstrings](../AreaChain/Resources/Localizable.xcstrings)。
+- 隔离夹具与测试：[UnifiedSearchTestHost.swift](../AreaChainTests/Theme/UnifiedSearchTestHost.swift)、[UnifiedSearchInputTests.swift](../AreaChainTests/Theme/UnifiedSearchInputTests.swift)、[UnifiedSearchLayoutTests.swift](../AreaChainTests/Theme/UnifiedSearchLayoutTests.swift)、[UnifiedSearchContractTests.swift](../AreaChainTests/Theme/UnifiedSearchContractTests.swift)。
+- 入口守卫与反例：[check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py)；文档仅本节、[组件目录](component-catalog.md)、[架构](architecture.md)和[路由](../skill-routing.md)。
+
+4A-2 建议：在宿主的输入下方组合既有 ContentQueryDisplay / Presentation / Browse 输出，保持缓冲与结果版本关联；预览区域独立于补全 preference 层，不复用两次 SyntaxOverlay。先接只读展示与导航意图，再另阶段讨论长正文编辑和真实 handler；本轮不实施。
+
+### 9.46 阶段 4A-2：公共原生搜索结果列表与输入导航
+
+2026-10-02～03。本阶段仅实现隔离标准/紧凑宿主的公共结果呈现、分组、分页、只读公开展开和输入导航。生产入口、参数表单、长文编辑预览、真实打开/恢复/删除及命令执行均未接线。工作区既有搜索、日期/星期控件及文档改动保留；不提交、推送、安装或启动生产应用。指定 Cursor verifier 与历史人工缺口仍保持 partial，本节不关闭旧阶段门禁。
+
+#### 公共组件与实际链路
+
+- [UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift) 组合原 UnifiedSearchBuffer / Actions、CommandHandoffCoordinator 和 ContentQueryReadSession。原生编辑/接受携带原缓冲、lease、版本及选区；协调者验证后将内容编辑交给原 query reducer，再由注入的只读闭包调用 Session.prepare（合成 Batch）或 prepareBodies（内存 SwiftData）。之后沿既有 Owner → BatchReader → Sorter → Presenter → DisplayBuilder → Pagination / Browse 发布，最终只经 Session.presentation 进入公共结果边界。
+- [UnifiedSearchResults / Boundary](../AreaChain/Features/Search/UnifiedSearchResults.swift) 与 [ResultsContent](../AreaChain/Features/Search/UnifiedSearchResultsContent.swift) 共用 standard / compact 布局。实际消费者为原 [UnifiedSearchTestHost / Fixture](../AreaChainTests/Theme/UnifiedSearchTestHost.swift) 扩展的两种隔离宿主，以及 [ResultsTestSupport](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift)。输入最小宽度沿 420 / 280pt；测试外侧各 12pt。布局差异只控制行内间距、按钮排列和公开展开高度，颜色/字体仍沿 Daybook。隔离宿主把显示语言同时注入 BatchOptions；隐藏标题由同批安全投影本地化，View 不重新翻译用户正文。
+- [ResultRow](../AreaChain/Features/Search/UnifiedSearchResultRow.swift) 只消费 PresentationRow；[DaybookSearchFragment / ResultText](../AreaChain/Theme/DaybookSearchResultText.swift) 用原生 NSTextField.maximumNumberOfLines=2 落实标题/摘要最多两行，高亮只接受片段内完整字素范围。字数预算不是行数证明；短片段可以只有一行。旧 BoardSearchHitRow 与新行共用 daybookSearchResultSurface；空态、按钮和滚动条沿 DaybookEmptyState / DaybookButtonStyle / DaybookScroller。
+- [ResultCopy](../AreaChain/Features/Search/UnifiedSearchResultCopy.swift) 仅翻译既有排序、回退和完整性结论。显示“已展示 / 已知命中”，区分完整零匹配、未读取完、条件不适用、保护限制、判断未知、读取失败与输入不完整。只展示主要原因，额外说明经详情按钮；没有打印诊断枚举或根据提示推断隐藏数量。
+
+#### 门禁到原生界面的失效
+
+[ContentQueryDisplayUpdates](../AreaChain/Services/ContentQueryDisplayUpdates.swift) 同步通知发布、失效和搜索隐私清理，不存第二份资格真值。所有展示、分页、浏览、公开展开和打开意图消费仍调用原 ReadSession 门禁。publication 不复制进 View 的 @State；原生边界只持有当前通过门禁的 hosting 树，失效时同步清本组件的原生片段/公开展开 storage、替换空根并拆树。
+
+willLock 沿原 Session → coordinator.invalidateSearch 清搜索；随后 Controller 更新原所有权内的 lease、增加 Buffer.version / privacyRevision，并经 [UnifiedSearchInputReset](../AreaChain/Theme/UnifiedSearchInputReset.swift) 同步清本输入的文字、marked text、候选、派生高亮和独立撤销。不清操作草稿、计划或其他窗口撤销，不改变 vault 认证、加密或锁定。MainActor 的真实通知入口提供同步撤权；原服务对异常执行线程仍失败关闭。本组件不承诺擦除外部已复制值、系统快照或内存零化。
+
+输入到结果控件的内部焦点移动不视为窗口失焦。所属隔离窗口 didResignKey 或注入焦点通知才调用 loseFocus，保留查询但撤显示；重新聚焦不会恢复旧许可，resumeDisplay 后仍需显式 prepare / evaluate / publish。willLock 后原 query 仍要求新的页面上下文。旧宿主/旧窗口回调继续携带原 ownership、缓冲和版本，不能续租影响新所有权。原生边界拆卸移除观察者及键盘监听，宿主结束调用 Controller.detach。
+
+#### 分组、分页与公开展开
+
+- 组顺序、最佳子项命中、组内命中顺序完全消费 DisplayBuilder；父上下文不抢排名。[TrashContext](../AreaChain/Features/Search/UnifiedSearchTrashContext.swift) 只读取 DisplaySnapshot.context 的安全投影，明确“已删除 / 未命中上下文”，默认收起，不进入 hits 或浏览多选。只显示恢复条件说明；关联不明保留独立结果与提示，不制造级联或恢复动作。
+- 顶层、成员、上下文按钮分别发原 PaginationEvent，并保留产生时的 sourceID / revision；到末尾撤下对应按钮。分页不调用继续读取，不重跑查询、排序或片段生成；到末页不把提供者不完整变成完整。两种全选分别发 selectVisible / selectAllKnown，加载不自动扩选。
+- [DaybookSearchReadOnlyText](../AreaChain/Theme/DaybookSearchReadOnlyText.swift) 是可选择、不可编辑的 NSTextView。展开只经 Session.expandedText 解析当前已展开的 ExpansionReference，并再次核验门禁；[ContentQueryExpansionIndex](../AreaChain/Services/ContentQueryExpansionIndex.swift) 只持有同批身份到位置的索引，不复制所有正文到缓存。分页复用索引，失效丢弃索引。图片仅允许已有元数据，执行记录只呈现所属习惯、日期及状态；私密手记保持隐藏标题且无正文控件。
+
+#### 键盘与焦点交接
+
+原输入组件继续先处理组合输入和候选。无候选时 ↑↓ 发 results(Int)，Return 发 open，Tab 返回 AppKit 原生焦点链；⌘Return 的 submit 在本 Controller 中无写操作。命令输入保留下方既有内容查询上下文，不把结果当成操作预览，也不重复挂载补全浮层。命令状态不会消费结果打开。
+
+结果监听只接受本窗口、本结果子树中的键盘事件，排除 NSTextView；↑↓/Return/Esc 委托原 Browse，正文选择保留原生方向键。打开意图经 consumeOpenIntent 重新检查且只消费一次，再传给注入记录回调；没有调用 AppWindows、DiaryWindows 或文件打开，没有“已打开”反馈。按钮 Space 在所属焦点控件局部处理并返回 handled，避免重复触发。边界自身不占 Tab 位置，两种全选有独立可达控件。
+
+展开不主动抢焦点；收起正文时使用原 Browse 的 control 意图。原生正文退出 responder 链后才转交给对应按钮，并再次验证原缓冲、展示版本及控件可达性。实际控件焦点只作为提示传给原 Owner.publish / loadMore 的 focused 参数；对象或区域消失仍由既有 Browse 决定回按钮或输入，不按行下标找替代目标。
+
+#### 验证与保留边界
+
+本轮验证产物统一位于忽略目录 `build/UnifiedSearchResultsQA/`。所有原生验证使用 `com.areachain.unified-results-qa`、ad-hoc、原项目 entitlement、独立 DerivedData、内存/合成数据，清除六个真实钥匙串授权变量并持有项目共享构建锁串行运行；没有安装或启动日用应用。窗口场景使用实际 NSHostingView、NSWindow、NSEvent 和 NSTextInputClient；辅助层级/几何及程序化事件证据不等同 VoiceOver 真人或系统输入法候选窗操作。
+
+新增测试：[交互](../AreaChainTests/Features/UnifiedSearchResultsInteractionTests.swift)、[呈现](../AreaChainTests/Features/UnifiedSearchResultsPresentationTests.swift)、[生命周期](../AreaChainTests/Features/UnifiedSearchResultsLifecycleTests.swift)、[服务通知/公开展开](../AreaChainTests/Services/ContentQueryDisplayUpdatesTests.swift)。含普通混合、私密隐藏、图片、标签、剪贴板、显式执行记录、两个各 45 命中的回收站大组、上下文分段、查询不完整和命令下既有上下文。公开手记另经隔离真实模型与 prepareBodies 全链路验证。测试不宣称大库性能或真实仓储运行态验收。
+
+最终记录如下；重复运行不累计测试数量。指定 Cursor verifier 当前工具清单无入口，未运行、不检查登录、不改认证、不以其他代理或主代理自查替代。VoiceOver 真人朗读、系统中文输入法候选窗、真人多窗口操作及系统减弱动态开关切换仍未验；已有公共动效路径仍复用 Daybook。本阶段不接参数编辑、长文编辑预览、真实打开或 handler。下一阶段只能在宿主独立内容区域接入原操作草稿/参数权威状态与命名提交，补全层继续唯一；真实打开还须各业务入口重新校验对象与权限。
+
+除上述源文件和测试外，本次就地更新 [UnifiedSearchInput](../AreaChain/Theme/UnifiedSearchInput.swift)、[InputState](../AreaChain/Theme/UnifiedSearchInputState.swift)、[ReadSession](../AreaChain/Services/ContentQueryReadSession.swift)、[旧搜索行](../AreaChain/Features/Search/BoardSearchHitRow.swift)、[双语资源](../AreaChain/Resources/Localizable.xcstrings)、本权威文档、[组件目录](component-catalog.md)、[架构](architecture.md)、[路由](../skill-routing.md)和原[入口检查器](../scripts/check_workflow.py)/[反例测试](../scripts/tests/test_check_workflow.py)。没有修改 Domain 排序、分组、分页或选择算法。
+
+| 验证层 | 本轮证据与实际结果 |
+|---|---|
+| 新组件原生 | 交互 7 项、生命周期 4 项、呈现 4 项，共 15 项通过；最终 `*-Delivery.xcresult` / `*-delivery-summary.json` 复验行高、双语投影、无遮挡空态、真实上下文、Tab 与收起焦点。 |
+| 旧原生入口 | UnifiedSearchInputTests 4、UnifiedSearchLayoutTests 4、InputSyntaxInteractionTests 12（含参数化运行）、MenuBarSearchShortcutTests 1，共 21 项通过、0 failed、0 skipped。原输入/捕获/菜单栏分套件串行；最后提示文案改动另复验 Layout 4 项。 |
+| 门禁与旧契约 | `ContractsAndLegacy-Final.xcresult` / `contracts-legacy-summary.json`：32 套，228 passed / 0 failed / 0 skipped。含新增服务通知/公开展开 2 项，以及原 Session 隐私/读取、分页/分组/浏览/片段、旧字段/补全/持久化/BoardSearch/CommandPath。上述与原生合计 264 项，不把重复复验累加。 |
+| 原生图片 | `screenshots/` 37 张结果截图：两宿主 × 中英文 × 浅深色 × 正常/最小宽度 16 组，加各类结果、公开正文、上下文、命令上下文、锁定/失焦及 7 类空态。37 张均查看联系表，并检查公开手记两行/展开、私密中文标题、最窄浅深、保护/完整空态、回收站上下文及上方候选的原图。初稿行高和候选遮挡问题已修正并重新取图。 |
+| 静态与脚本 | 严格局部 SwiftLint 与 `check_workflow.py` 通过；检查器新增四个公共入口及反例，工作流定向脚本 74 项通过，最终全脚本回归 196 项通过。最终 `quality_gate.py --profile static --format json` 与 `git diff --check` 重新执行。auto/swift 会运行非独立 QA 标识的整套应用测试，按本次隔离要求未运行；不能把静态门禁写成完整 Swift profile 通过。 |
+| Debug | 最后资源编辑后 `./scripts/build.sh` 重新构建并静态验签；证据为 `build-delivery.log`，仅生成 Debug，不安装、不启动生产应用，不表示系统解锁或发行验收。 |
+| 指定复核/人工 | Cursor verifier 未执行，保持 partial；VoiceOver 真人、系统中文输入法候选窗、系统减弱动态开关等历史缺口保留。没有以截图替代键盘事件证据，也没有把 AX 检查写成人工朗读通过。 |
+
+失败记录保留在同一目录：早期测试夹具 actor 默认参数、辅助标识被容器覆盖、收起后的响应链转交、公开摘要原生行高及截图被候选覆盖均已定位修正；一次并行星期控件测试的编译错误由其原任务修正，本轮没有改动该文件。同步失效测试在通知返回后、任何 settle 前检查原生输入/撤销/展开 storage 和层级；普通窗口失焦使用非空查询，重新聚焦仍无旧许可。源码摘要 `source-delivery-before.json` / `source-delivery-after.json` 与搜索资源值摘要只核对本轮相关输入，不把并行整树视为冻结。
+
+4A-2 到此停止。已实现与本轮隔离自动化证据完成；指定复核和人工验收缺口使阶段整体仍为 **partial**。未安装、未发布，未执行真实打开、恢复、删除或命令，未进入参数编辑/操作预览阶段。
+
+### 9.47 阶段 4A-3A：普通参数编辑与操作即时预览
+
+2026-10-03，代码已实现并完成下述隔离自动化验证，阶段整体仍为 **partial**。本阶段只在隔离标准/紧凑宿主修改运行内普通操作草稿。没有设置写入、模型保存、真实指令、待执行列表 UI 或生产入口替换；指定 Cursor verifier 不可调用，不检查登录、不改认证、不以其他复核替代。
+
+#### 组件、目录与唯一草稿
+
+- 原 `UnifiedSearchInput / Buffer / Actions / Overlay` 继续承担原生补全，`UnifiedSearchController` 通过 [OperationEditing](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift) 把显式接受发送到 `CommandHandoffCoordinator.send(.operation(...), expecting:)`。普通路径输入只浏览描述及要求；明确接受动作/参数或点击开始后，按稳定 `CommandID` 创建或继续草稿。命令别名、显示语言和每个输入字符不会创建新操作。
+- 活动、保留与切换 pending 唯一属于原 `operations: CommandDraftSession`，继续用 `CommandDraftReducer`；没有 ViewModel 参数字典、模型写入或计划 UI。`CommandDraftTargets.none` 用于未选目标；对象需求仍由原目标与参数检查报告，不从搜索结果自动取目标。
+- 原 `UnifiedSearchBuffer` 增加可选 `operation: CommandDraftStamp`。原生候选、字段事件、切换确认都带产生时 lease、显示版本和草稿 stamp；拒绝旧候选/旧字段/旧确认。选择器的可选 `DaybookPicker.eventVersion` 在版本变化时重建原生菜单，旧菜单不再调用新 Binding，默认 nil 不改变旧消费者。
+- 数字/短文本沿原 `UnifiedSearchInputState`、`DaybookTextField` 和专用 field editor 编辑。原生状态只能消费同步接受返回的新缓冲；外部旧回调不能续租。`parameterText` 保存拼写与产生 stamp，只有匹配现有草稿字段时才用于重新挂载，不是可独立提交的 `CommandValue`。数字无效时发送缺值参数、保留原文与校验提示，不能留下旧合法值冒充本次输入；组合文本结束前不提交参数。
+- 选择“在上方输入框填写”只切换当前字段上下文，补全从该字段 `CommandChoice`/布尔元数据派生，双语别名复用原 `CommandPathArguments`。接受更新同一字段；不重拼所有已填参数，也不重写通用查询解析器。普通短文本保留原文，不翻译、不解析为另一条命令。
+
+#### 支持矩阵与预览
+
+| 类型 | 本阶段原生输入与校验 |
+|---|---|
+| choice | DaybookPicker + 原 CommandChoice / 双语别名；选项来自目录 |
+| boolean | 明确“开 / 关 / 尚未填写”，nil 与 false 分开 |
+| number | 原生单行拼写缓冲，复用目录上下限、整数/小数及 finite 校验 |
+| day | DaybookDatePicker、DayKey 民事日字符串与规范往返校验，不转业务 UTC 时间戳 |
+| time | DaybookTimePicker / 原生 NSDatePicker，保留 0…1439 分钟与提醒操作语义 |
+| weekdays | DaybookWeekdayPicker 的 allowsEmpty 编辑模式；空集合进入缺值校验，不补成每天 |
+| shortText | 独立原生编辑器；空白/换行非法，正文原文保留 |
+| longText、object/objects、tags、nativeFile、nativeShortcut | 只显示对应的后续编辑器/选择器/原生交互需求，不提供替代控件 |
+| secureInput / authentication / freshAuthentication | 整个指令不给普通参数输入，说明独立安全交互要求；不认证、不降格 |
+
+字段修改方式来自 `CommandParameter.operations`；未指定、赋值、清空、设置/取消提醒各自表达。静态合法仍不代表业务可执行。`CommandDraft.check` 负责参数和固定目标校验；未支持字段、缺必填与目标问题继续显示。
+
+[OperationPanel](../AreaChain/Features/Search/UnifiedSearchOperationPanel.swift) 在主输入下方承载 [OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)；结果区仍由原 `UnifiedSearchResults` 独立负责。只挂一个补全层，预览展开仅增加区域内滚动，不移动主输入锚点。预览显示操作名、说明、状态、已填摘要、修改方式、拟修改值与校验；参数可收起恢复。候选优先使用上方可用空间缩小滚动高度，补全区域不拦截下方参数点击。
+
+基线只来自 `CommandDraftBaseline` 显式注入：缺项显示“当前值尚未读取”，已知无值和 mixed 分别显示“当前无值”“多个不同值”；有合成基线时明确标记来源，再显示当前→拟修改值。目录默认值从不被当作真实设置。没有读取真实偏好、正文或业务库来填预览。
+
+#### 键盘、保护与后续边界
+
+候选活动时 ↑↓、Tab/Return 仍优先补全；参数 Return 只确认当前要素，⌘Return 只反馈“暂不可执行，参数仍保留”。组件没有执行闭包、偏好 setter、仓储保存、入计划入口或“已保存/已切换”反馈。Esc 先关候选/日期局部层，参数输入再回主输入；不丢草稿。展开不请求焦点，收起回对应控制。没有新增全局快捷键。
+
+切换沿原 retain/discard/cancel；保留项在面板可见且可恢复，恢复推进原草稿版本。待决时继续编辑会让旧确认失效。切页、清查询和收起只改变查询或展示。运行内拼写可跟随保留的普通草稿恢复，放弃后清对应拼写引用。
+
+面板通过 `ContentQueryReadSession.validateDisplayHost` 复用既有门禁；失焦/锁定同步清原生编辑器、marked text、独立撤销并卸载参数树，协调者中的普通草稿不删除。没有敏感草稿封存/解封、String 零化或系统快照清除承诺；此阶段隐藏 UI 不代表安全封存。QA 只用合成普通资料与既有 fake vault，不启用真实认证。
+
+4A-3B 接入对象选择时必须显式固化类型化目标，通过原 `selectTargets` 与 stamp 校验，不能把结果高亮/浏览多选直接变成操作目标。待执行列表须通过原 HostSession/Plan 的唯一所有权转移、依赖与版本协议，不能把 retained 当作队列；未支持输入、安全保护与真实执行仍需各自后续授权、实现及验证。本轮不实施 4A-3B。
+
+时间编辑补充：`DaybookTimePicker.eventVersion` 默认 nil；操作参数显式提供显示版本。外部字段修改令旧时分暂存失效，后续失焦 action 不得提交到新草稿版本；下一次真实鼠标/键盘输入才重新读取当前显示值。本次有效 time action 的回声单独识别，保留原生连续输入。该行为不修改提醒排程、通知或真实偏好。
+
+#### 最终验证、实际缺口与停止点
+
+产物在忽略目录 `build/UnifiedSearchOperationsQA/`。每次串行 xcodebuild 都使用 `com.areachain.unified-operations-qa`、独立 DerivedData、ad-hoc、原项目 entitlement、`-parallel-testing-enabled NO`，清除六个真实钥匙串 QA 授权变量并持有项目 `build/.build.lock`。每次精确命令见对应 `*-command.json`，运行日志、摘要与 xcresult 同目录。环境 Xcode 26.6 / Swift 6.3.3 / macOS 26.6.2 arm64；不代表最低 macOS 14 真机通过。
+
+| 验证层 | 本轮最终证据 |
+|---|---|
+| 新普通参数与操作预览 | `DeliveryOperations.xcresult`：四套新增测试 **16 passed / 0 failed / 0 skipped**。包括目录接受/别名/旧候选、每种普通参数、必填/非法数字/闰日/时分边界、原文与组合文本、选区/撤销/重做、Tab/Return/⌘Return/Esc、切换/保留/恢复/旧确认、锁定/遮罩/真实窗口失焦、无设置/计划/执行写入及所有权转交后拒绝旧事件。最后补周一＋周三多选演示，`WeekdayCombination.xcresult` 对受影响单项再次通过，不累计数量。 |
+| 目录/草稿/查询与原输入契约 | `DeliveryContracts.xcresult`：26 套、**177 passed / 0 failed / 0 skipped**；含参数化 218 次运行。涵盖 Catalog/Parameter/Path、Draft/Protection/Host/Handoff、Session/PrivacyReset/DisplayUpdates、旧文本/高亮/补全/浮层及输入持久化合成回归。 |
+| 4A-1 / 4A-2 原生 | `LegacyInput.xcresult` 8 项、`LegacyResults.xcresult` 15 项通过；`InputSyntaxIsolated.xcresult` 原输入消费者 12 项通过；MenuBarSearchShortcutTests 在 `LegacyInputConsumers.xcresult` 的结果树单项 Passed。 |
+| 共享 Picker / TimePicker 与既有消费者 | `PickerIsolated.xcresult` 5 项、`SharedTime.xcresult` 8 项通过；`SharedConsumers.xcresult` 10 passed、1 expected failure。既有 SettingsPickerConsumerTests 的 dark→system 环境仍深色问题由原 withKnownIssue 登记，未修复、未冒充通过。 |
+| 合计口径 | 去除复验重复后 **253 个测试定义：252 passed、1 既有 expected failure、0 unexpected failed、0 skipped**；含参数化 **325 次执行**。测试成功退出不抹掉上项既有问题。 |
+| 原生图片 | `screenshots/` **35 张**；16 组标准/紧凑 × en/zh-Hans × 浅深 × 正常/最小宽度（输入 420/280pt，宿主各加 24pt 边距），其余包含补全与预览同显、日期展开/收起、星期组合/时间、原文、非法数字、多参数折叠、未支持/安全参数、切换及遮罩/锁定。全部联系表已检查，并逐张放大核对最窄英文、中文安全需求、日期展开和最终星期/时间原图。最窄英文菜单长项使用原生省略与完整 tooltip；列表明细在固定区域滚动，不冒充全部明细同屏。 |
+| 静态/脚本 | 相关 Swift 严格局部 SwiftLint、`check_workflow.py` 与 `git diff --check` 通过；工作流定向 **78 项**、全脚本 **198 项**通过。最终 `quality_gate.py --profile static --format json` passed。auto/swift profile 会启动非本轮独立 QA 标识的整套宿主，依本次隔离要求未运行；以以上显式隔离 Swift 检查补充，不能写成完整 Swift profile 通过。 |
+| Debug 构建 | 最后应用源码修改后的 `./scripts/build.sh` passed，`build-final.log` 的 `staticSignatureVerified: true`。只构建/静态验签，没有安装、启动生产应用或发行。 |
+
+失败与修正保留原日志：首轮测试宏/可选值编译问题；上方避让漏算间隔；测试宿主误选参数文本框；原生菜单辅助框含标签导致未点中菜单，改用既有 formRow；数字撤销场景采用已填草稿作为初始值，验证单次选区替换的 undo/redo；时间字段旧暂存跨版本补交由事件版本阻止。旧目录测试原先扫描整篇文档，误计后续交接的 D1–D3，现只核对权威第 8 节，48 项断言未放宽；旧控件展示增长后按钮位于屏外，时间展示测试先实际滚动再点击，未跳过焦点/几何断言。两次旧消费者运行被前台 Codex 夺去焦点，按单套件重新运行通过，历史失败不删除。
+
+`source-final-before.json` / `source-final-after.json` 和资源值摘要只核对本轮相关源码与文案；后续仅增强一个星期组合测试并单项重跑，其最终指纹单独记录，不把并行整树视为冻结。调用链不引用 AppPreferences setter、ModelChanges 或执行器；无真实执行测试同时核对 QA 偏好不变、plan 为空、execution 为 nil 和打开记录为空。
+
+指定 **Cursor verifier 未执行**；VoiceOver 真人朗读、系统中文输入法候选窗、系统减弱动态开关切换、最低系统与真实用户多窗口使用未验。组合输入证据来自 NSTextInputClient 的真实 setMarkedText/insertText 协议，不等于系统输入法候选窗人工验收。敏感草稿封存/失败保护、生产入口和真实指令执行仍未实现。上述缺口及既有外观预期失败保留，不能宣布阶段完整验收。
+
+本轮到 **4A-3A 停止**。不提交、不推送、不安装、不发布、不启动生产应用，不进入对象选择或待执行列表阶段。
+
+#### 本轮文件清单
+
+- 控制器与操作： [UnifiedSearchController.swift](../AreaChain/Features/Search/UnifiedSearchController.swift)、[UnifiedSearchOperationEditing.swift](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift)、[UnifiedSearchOperationCopy.swift](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift)、[UnifiedSearchOperationPanel.swift](../AreaChain/Features/Search/UnifiedSearchOperationPanel.swift)、[UnifiedSearchOperationPreview.swift](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[UnifiedSearchParameterField.swift](../AreaChain/Features/Search/UnifiedSearchParameterField.swift)、[UnifiedSearchParameterText.swift](../AreaChain/Features/Search/UnifiedSearchParameterText.swift)。
+- 输入与共享控件：[UnifiedSearchInput.swift](../AreaChain/Theme/UnifiedSearchInput.swift)、[UnifiedSearchInputState.swift](../AreaChain/Theme/UnifiedSearchInputState.swift)、[UnifiedSearchOverlay.swift](../AreaChain/Theme/UnifiedSearchOverlay.swift)、[UnifiedSearchParameterContext.swift](../AreaChain/Theme/UnifiedSearchParameterContext.swift)、[DaybookPicker.swift](../AreaChain/Theme/DaybookPicker.swift)、[DaybookTimePicker.swift](../AreaChain/Theme/DaybookTimePicker.swift)、[DaybookNativeTimePicker.swift](../AreaChain/Theme/DaybookNativeTimePicker.swift)。
+- 门禁与文案：[ContentQueryReadSession.swift](../AreaChain/Services/ContentQueryReadSession.swift)、[Localizable.xcstrings](../AreaChain/Resources/Localizable.xcstrings)。
+- 新增隔离测试：[ContractTests](../AreaChainTests/Features/UnifiedSearchOperationContractTests.swift)、[InteractionTests](../AreaChainTests/Features/UnifiedSearchOperationInteractionTests.swift)、[LifecycleTests](../AreaChainTests/Features/UnifiedSearchOperationLifecycleTests.swift)、[PresentationTests](../AreaChainTests/Features/UnifiedSearchOperationPresentationTests.swift)、[TestSupport](../AreaChainTests/Features/UnifiedSearchOperationTestSupport.swift)；增量维护原 [UnifiedSearchTestHost](../AreaChainTests/Theme/UnifiedSearchTestHost.swift)、[CommandCatalogTests](../AreaChainTests/Domain/CommandCatalogTests.swift)、[DaybookTimePickerLifecycleTests](../AreaChainTests/Theme/DaybookTimePickerLifecycleTests.swift)。
+- 文档和入口守卫：本文、[组件目录](component-catalog.md)、[架构](architecture.md)、[技能路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py)。已有并行改动保留；没有改动指令目录定义、领域草稿 reducer、生产入口或业务保存路径。
+
+### 9.48 阶段 4A-3B1：对象参数选择与操作固定目标的原生接线
+
+2026-10-03。本阶段只在标准/紧凑隔离宿主、普通合成资料上更新运行内草稿；没有真实指令、仓储写入、待执行列表、长正文、标签集合或原生文件选择。保留已有并行修改、指定 Cursor verifier 缺口、§9.47 的外观预期失败和人工验收缺口；整体仍为 **partial**，不因本轮自动化结果关闭历史阶段。
+
+#### 权威状态与候选来源
+
+- [UnifiedSearchController / ObjectSelection 扩展](../AreaChain/Features/Search/UnifiedSearchObjectSelection.swift) 复用原 OperationEditing.sendOperation，发送 `CommandHandoffCoordinator.send(.operation(...), expecting: 原 lease)`。操作对象经原 `selectTargets` 写入 `CommandDraft.targets`；新建子任务 parent 等普通 `.object/.objects` 经 `.edit` 写入同一草稿的 `arguments`。两类值互不代写；没有新的对象身份或可提交目标数组。
+- `UnifiedSearchObjectSelection` 只在选择器打开期间持有独立的 `ContentQueryBrowseState`，用于活动行、临时多选及加载进度；它没有提交能力，取消释放引用，不改变原固定目标。重新选择从空的临时选择开始，界面明确要求接受后才替换。原全局 Browse 及查询状态不被覆盖。
+- 候选读取沿原注入 read 闭包、`ContentQueryReadSession.prepare/evaluate/publish/presentation`。本轮不另加名称搜索框，直接使用外层完整查询的当前确定命中；要改查询先取消选择再编辑公共输入，草稿保留。选择器不会把操作路径写入查询，不在 View 中做名称匹配，不从实体补标题或跨批 UUID 补明细。
+- [ContentQueryReadSession.objectCandidate](../AreaChain/Services/ContentQueryObjectCandidates.swift) 同时核验当前许可、sourceID、known 成员、完整 CommandObjectReference 与同批活提供者种类。身份仍是 type＋UUID，执行记录另含 dayKey；子任务保留自身身份和同批 parentTask 定位。未知、review 和非命中上下文不进入 known；墓碑即使 type 相同也不能伪装成活操作对象。
+
+| 输入/来源 | 本阶段支持与限制 |
+|---|---|
+| 操作 targets | 任务、子任务、习惯定义、指定日执行记录的安全活命中；单个、明确多个及显式全部已知命中。数量遵守 CommandDescriptor.batch，类型遵守 targetTypes。 |
+| 普通 object | 当前目录的 subtask.create / subtask.order 的 parent 使用任务候选；其他参数也从其类型声明校验，不写 targets。 |
+| 普通 objects | 同一选择→CommandValue.objects→原 edit 路径；当前目录没有非 target 的 objects 字段，合成描述符覆盖数组编码，不宣称存在生产目录消费者。 |
+| 未适配来源 | 手记（包括公开手记）、图片、标签对象、剪贴板条目、墓碑、窗口、草稿/计划项等均在此不可用。其他类型的安全搜索结果仍可正常显示，选择器会说明来源/类型限制；全局搜索能力不变。 |
+| 后续输入 | 未来步骤输出引用、tags 集合、longText、nativeFile/nativeShortcut、私密对象授权均未接线。普通参数原有的 choice/boolean/number/day/time/weekdays/shortText 继续走 §9.47。未填的范围外参数不冒充完整操作，所有操作仍不可执行。 |
+
+#### 版本、固定集合与基线
+
+`UnifiedSearchObjectSelectionStamp` 绑定选择器会话 ID、原 UnifiedSearchBuffer（原 lease、显示版本、草稿 ID/版本）、目标/参数位置和候选可见版本。确认重新经过 ReadSession 与协调者资格校验；任意旧来源、旧可见性、旧草稿、取消重开或转交后的事件被拒绝，不用当前 lease 替换旧事件。异步读取另有请求身份，取消后的迟到结果不能复活选择器。
+
+“选择已展示命中”调用原 Browse.selectVisible；“选择全部已知命中”调用 selectAllKnown，只包括当前已读出的确定命中，不能称全部数据。未适配或不符合目录类型的成员仍留在临时选择并明确报错，用户主动移除或改选；不静默筛成可用子集。加载更多经原 Pagination，推进候选版本且保留已选身份，旧确认拒绝；接受后 targets 固定具体集合，后续读取、排序及查询不会扩选。
+
+选择不是完整基线读取。原 `selectTargets` 增加可选 baseline 证据，仍只由原 reducer 调用 `CommandDraft.select`；具体目标集合变化而没有新证据时清除旧 baseline，arguments 不丢失。隔离宿主可显式注入 `syntheticBaselines`，按对象/字段索引派生原值；缺项、absent 和 mixed 分别显示“当前值尚未读取”“当前无值”“多个不同值”。不把安全摘要当正文或字段原值。更换目标不沿用上一对象的基线。
+
+接受或已固定对象草稿的参数编辑后，新草稿 lease 使旧读取许可失效，预览先标记待核验，再经原读取链获取当前安全明细；不保留另一份标题/正文缓存。对象删除、离开当前可确认命中或新门禁不足时，保留原固定身份并显示“需要重新核验”，不替换为同名对象。该状态不是最终存活/权限结论，真实执行前仍需独立核验。
+
+#### 原生交互、预览与生命周期
+
+- [UnifiedSearchObjectField](../AreaChain/Features/Search/UnifiedSearchObjectField.swift) 在 ParameterField 的对象分支提供计数、展开列表、单项移除及重新选择；[UnifiedSearchObjectPicker](../AreaChain/Features/Search/UnifiedSearchObjectPicker.swift) 在原 OperationPanel 内切换选择模式，候选独立滚动、确认/取消保持可达。两者共用 [UnifiedSearchResultRow](../AreaChain/Features/Search/UnifiedSearchResultRow.swift) 的安全标题、类型、关系和必要日期，不复制完整正文。限制原因与未接线执行说明显式可见。
+- 公共输入在选择模式暂停路径补全，但补全仍唯一挂载；↑↓ 复用 Browse 移动、空格切换临时选择、Return/Tab 接受临时选择（没有已选项时接受活动行）。⌘Return 仍只有 submitBlocked 提示。Esc/取消退出选择器，返回发起控件；展开不主动请求输入焦点。选择模式内输入不覆盖外层查询或草稿，取消后继续原输入。
+- 普通结果面板在选择模式暂撤显示，结束后仍沿原 ReadSession 显示；切页、清查询、面板收起不改变已固定 targets。只有明确重新选择或移除发送新的草稿事件。
+- 锁定、窗口失焦与既有门禁失效清临时候选引用、原生字段/候选显示，原 OperationBoundary 同步卸载目标明细。协调者的 `ownershipRevision` 在两端转交完成后才通知现有 ReadSession Observation 链，旧宿主立即撤显示并拒绝旧回调。没有直接删除普通操作草稿；敏感草稿封存仍未完成，遮罩不是加密或内存零化。
+
+#### 4A-3B2 应复用的接口与停止边界
+
+后续计划 UI 复用 `UnifiedSearchObjectLocation / SelectionStamp` 的编辑位置与事件绑定、`beginObjectSelection / browseObjects / acceptObjects / removeObject`、`ContentQueryReadSession.objectCandidate` 的安全行入口，以及原 `CommandDraftTargets / Baseline / Stamp / Session`。真正入计划须走原 HostSession.enqueue 与 CommandPlan 的所有权转移、版本和依赖协议，不能复制 targets、把 retained 当队列或沿用选择器临时 Browse 作为业务真值。未来输出引用 UI、未适配对象来源、敏感草稿保护及最终执行前核验仍需后续实施。
+
+#### 本轮验证记录
+
+产物统一在忽略目录 `build/UnifiedSearchTargetsQA/`；精确 xcodebuild 命令随各次运行保存。独立 `com.areachain.unified-targets-qa`、独立 DerivedData、ad-hoc、原 entitlement、串行测试并持有原 build/.build.lock；清除六个真实钥匙串授权变量。只用合成快照与 fake vault，没有生产应用启动或真实指令。
+
+初轮 Contracts 编译发现测试误用 plan.steps（正确字段为 items），修正后重跑。Targets.xcresult 为 14 passed / 2 failed：确认与取消落在长参数区屏外，辅助树找不到对应控件；保留失败记录，调整为原面板内独立选择布局后重验，未删除事件、焦点或几何断言。LayoutRetest 的截图进一步证明按钮可见，但父级辅助标识传播覆盖子按钮；增加显式 accessibility container 后恢复独立按钮标识。焦点失败先纠正 BOOL getter 的读取方式，再补发起按钮 focusable；实际空格激活仍失败，最终沿公共 Toggle 的按下/释放模式处理，保留按下时的原事件闭包。KeyboardRemoval.xcresult 的五项原生交互全部通过，包括辅助焦点、空格重新打开、Tab 到移除按钮并释放空格移除。两个单方法过滤尝试实际为 0 用例，不作为通过证据。最终组合结果见下表。
+
+| 验证层 | 本轮证据与范围 |
+|---|---|
+| 主组合回归 | `Final.xcresult`：42 套、243 个测试定义，**242 passed / 1 既有 expected failure / 0 unexpected failed / 0 skipped**；参数化合计 295 次运行。包含 4A-1（11 项）、4A-2（15 项）、4A-3A（16 项），以及草稿/转交/Plan、目录/参数、Browse/Display/Pagination、ReadSession、记录提供者、旧 UnifiedSearch/InputSyntax/MenuBar 搜索入口。 |
+| 最后界面修正 | 图片检查发现 ObjectField 未直接观察读取修订，控制器已可读而原生标题仍停留在待核验分支；补 `controller.revision` 依赖及“4 个原生安全标题均更新”断言。`PreviewRefresh.xcresult`：四套对象测试与 4A-3A 展示 **24 passed / 0 failed / 0 skipped**。其源码前后指纹一致。 |
+| 加载态收尾 | 加载候选时 Return/Tab/方向意图不重新开始草稿，Esc 仍取消，⌘Return 仍受执行边界阻止。`Loading.xcresult`：对象契约/生命周期/原生交互与公共输入契约/输入 **26 passed / 0 failed / 0 skipped**。其中新增一项加载态测试；与主组合去重后共 244 个定义（243 passed、1 既有 expected failure）。此后没有应用源码修改。 |
+| 原生截图 | 最后展示修正后生成 `screenshots/` **41 张原图**：标准/紧凑 × en/zh-Hans × 浅深 × 正常/最小宽度的选择与固定预览共 32 张，另含键盘临选/确认、parent、子任务父定位、两天执行记录、混合原值、移除保参、锁定和失焦。已检查全部六张联系表，放大核对最窄英文深色与混合原值原图。窄宿主限制说明和候选独立滚动，确认/取消可达；多对象明细在原面板内滚动，不宣称全列表同屏。后续加载态保护不改变这些布局，原生交互在 Loading 中再验。 |
+| 构建与本地门禁 | 最后应用源码的 `./scripts/build.sh` 通过，`build-delivery.log` 的 staticSignatureVerified 为 true、distributionReady 为 false。相关 Swift 严格局部 lint、工作流与静态质量门禁通过；最终工作流定向 81 项、全脚本 201 项通过。精确结果以 `final-lint.log`、`final-workflow.log`、`final-static-gate.json` 为准。auto/swift profile 会启动本轮隔离标识之外的整套宿主，依隔离约束未运行，以以上显式 QA 定向补充，不声称完整 Swift profile 通过。 |
+| 证据边界 | Final 与 PreviewRefresh 的相关源码前后指纹一致；加载态收尾另存当前源码指纹。仓库并行修改持续存在，没有把整棵工作树当作冻结版本。原生事件来自可见隔离 NSWindow 的 AppKit/SwiftUI 事件派发，截图不是事件身份或真实业务验证的替代。 |
+
+所有历史失败原包保留。§9.47 的 SettingsPickerConsumerTests dark→system 外观问题在主组合仍为 expected failure，没有修复或抹除；本阶段没有更改该偏好/主题路径。没有安装、真实系统认证、业务执行或发布。
+
+指定 Cursor verifier 当前无可调用入口，未重新认证，也不以其他代理替代。真人 VoiceOver、系统中文输入法候选窗、系统减弱动态开关切换、最低 macOS 和真实用户多窗口均仍未验。§9.47 SettingsPickerConsumerTests dark→system 的历史外观预期失败保留，本阶段不修改该偏好/外观路径。
+
+本轮停止于 **4A-3B1**；不提交、不推送、不安装、不发布、不启动生产应用、不执行真实指令，也不进入 4A-3B2。
+
+#### 本轮修改文件与核心接口
+
+| 层 | 文件与接口 |
+|---|---|
+| 权威草稿 | [CommandDraft.swift](../AreaChain/Domain/CommandDraft.swift) 的 select 基线失效；[CommandDraftSession.swift](../AreaChain/Domain/CommandDraftSession.swift) 的 selectTargets 可选基线；[CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift) 的 ownershipRevision。 |
+| 候选门禁 | [ContentQueryObjectCandidates.swift](../AreaChain/Services/ContentQueryObjectCandidates.swift) 的 objectCandidate；[ContentQueryReadSession.swift](../AreaChain/Services/ContentQueryReadSession.swift) 的所有权观察。 |
+| 选择接线 | [UnifiedSearchObjectSelection.swift](../AreaChain/Features/Search/UnifiedSearchObjectSelection.swift) 的 SelectionStamp / beginObjectSelection / browseObjects / acceptObjects / loadObjectCandidates / removeObject；[ObjectField](../AreaChain/Features/Search/UnifiedSearchObjectField.swift)、[ObjectPicker](../AreaChain/Features/Search/UnifiedSearchObjectPicker.swift)。 |
+| 原组合入口 | [Controller](../AreaChain/Features/Search/UnifiedSearchController.swift)、[OperationEditing](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift)、[OperationPanel](../AreaChain/Features/Search/UnifiedSearchOperationPanel.swift)、[OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[ParameterField](../AreaChain/Features/Search/UnifiedSearchParameterField.swift)、[OperationCopy](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift)、[ResultRow](../AreaChain/Features/Search/UnifiedSearchResultRow.swift)、[Results](../AreaChain/Features/Search/UnifiedSearchResults.swift)。 |
+| 原生输入 | [UnifiedSearchInput](../AreaChain/Theme/UnifiedSearchInput.swift)、[InputState](../AreaChain/Theme/UnifiedSearchInputState.swift)、[NativeInput](../AreaChain/Theme/UnifiedSearchNativeInput.swift) 的选择模式、Tab/Return/空格与唯一补全；[Localizable.xcstrings](../AreaChain/Resources/Localizable.xcstrings) 的 en/zh-Hans 文案。 |
+| 隔离测试 | [ObjectTestSupport](../AreaChainTests/Features/UnifiedSearchObjectTestSupport.swift)、[ObjectContractTests](../AreaChainTests/Features/UnifiedSearchObjectContractTests.swift)、[ObjectLifecycleTests](../AreaChainTests/Features/UnifiedSearchObjectLifecycleTests.swift)、[ObjectInteractionTests](../AreaChainTests/Features/UnifiedSearchObjectInteractionTests.swift)、[ObjectPresentationTests](../AreaChainTests/Features/UnifiedSearchObjectPresentationTests.swift)。 |
+| 文档与守卫 | 本文、[组件目录](component-catalog.md)、[架构](architecture.md)、[技能路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py)。 |

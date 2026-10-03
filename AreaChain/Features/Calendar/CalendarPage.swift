@@ -12,7 +12,7 @@ enum CalendarSpan: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    var titleKey: LocalizedStringKey {
+    var titleKey: String {
         switch self {
         case .month: "calendar.span.month"
         case .week: "calendar.span.week"
@@ -71,9 +71,9 @@ struct CalendarPage: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .workspaceHeader(actions: [WorkspaceHeaderAction(
-            id: "calendar.span", title: span.titleKey, systemImage: "calendar",
+            id: "calendar.span", title: LocalizedStringKey(span.titleKey), systemImage: "calendar",
             children: CalendarSpan.allCases.map { item in
-                WorkspaceHeaderAction(id: "calendar." + item.rawValue, title: item.titleKey,
+                WorkspaceHeaderAction(id: "calendar." + item.rawValue, title: LocalizedStringKey(item.titleKey),
                                       systemImage: "calendar", isActive: span == item) {
                     span = item
                     keyboardFocus = .grid
@@ -198,13 +198,12 @@ struct CalendarPage: View {
     }
 
     private var spanPicker: some View {
-        Picker("calendar.span", selection: $span) {
-            ForEach(CalendarSpan.allCases) { item in
-                Text(item.titleKey).tag(item)
-            }
-        }
-        .pickerStyle(.segmented)
+        DaybookSegmentedControl(selection: $span, options: CalendarSpan.allCases.map { item in
+            DaybookSegmentOption(item, String.LocalizationValue(item.titleKey))
+        })
         .frame(maxWidth: 220)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text("calendar.span"))
         .accessibilityIdentifier("calendar.span")
         .onChange(of: span) { _, _ in
             keyboardFocus = .grid

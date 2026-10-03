@@ -29,11 +29,15 @@ struct TrashReadCoverage: Equatable {
 struct TrashTombstoneInput: CustomStringConvertible, CustomDebugStringConvertible {
     var todos: [TodoSnapshot]?
     var subtasks: [SubtaskSnapshot]?
+    /// 原始无父引用行没有可构造的 SubtaskSnapshot；仍参与同类型身份隔离。
+    var unconvertedSubtaskIDs: [UUID] = []
     var routines: [RoutineSnapshot]?
     var diaries: [DiarySnapshot]?
     var tags: [TagQuerySnapshot]?
     var images: [ImageAttachmentMetadata]?
     var privacy = DiaryQueryMetadata(tagNames: nil, privateTagIDs: nil)
+    /// 存储适配显式提供对象级保护事实；旧纯值输入仍沿原正文投影判定。
+    var diaryProtection: DiaryImageProtectionFacts?
     var coverage = TrashReadCoverage()
     var locale = Locale(identifier: "en")
 

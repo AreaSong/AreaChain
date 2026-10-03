@@ -41,9 +41,27 @@ class WorkflowCheckTests(unittest.TestCase):
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/component-catalog.md": "DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookPicker DaybookPickerOption Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
+            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
+        contract_docs["docs/component-catalog.md"] += " DaybookDatePicker DaybookDateCell DaybookDateCellPresentation DaybookMonthGridDay DaybookWeekdayHeader DatePicker MonthGrid DaybookHabitDateState HabitMonthGrid\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
+        contract_docs["docs/component-catalog.md"] += " weekHeader WeekHeader\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookFormTextField DaybookSecureField privacy.master.input\n"
+        contract_docs["docs/component-catalog.md"] += (
+            " privacy.setup.master privacy.setup.master.confirmation"
+            " privacy.setup.backup privacy.setup.backup.confirmation\n"
+        )
         contract_docs["AGENTS.md"] += " quality-gates.md\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookTimePicker DaybookTimePresentation DaybookNativeTimePicker TimePicker\n"
+        contract_docs["docs/component-catalog.md"] += " DiaryContentQueryReader DiaryContentQueryTagPrivacy TagContentQueryReader TaskFamilyContentQueryReader RoutineContentQueryReader ContentQueryTagNames\n"
+        contract_docs["docs/component-catalog.md"] += " ContentQueryReadSession ContentQueryReadNotifications ContentQueryBodyReads\n"
+        contract_docs["docs/component-catalog.md"] += " ClipboardContentQueryReader ClipboardHistoryReadResult\n"
+        contract_docs["docs/component-catalog.md"] += " ImageContentQueryReads ImageContentQueryCapture\n"
+        contract_docs["docs/component-catalog.md"] += " TrashContentQueryReads TrashContentQueryCapture TagUsageContentQueryReads TagUsageContentQueryCapture\n"
+        contract_docs["docs/component-catalog.md"] += " UnifiedSearchResults UnifiedSearchController ContentQueryDisplayUpdates DaybookSearchResultText\n"
+        contract_docs["docs/component-catalog.md"] += " UnifiedSearchInput UnifiedSearchBuffer UnifiedSearchCompletion UnifiedSearchFieldCell unifiedSearchOverlayHost\n"
+        contract_docs["docs/component-catalog.md"] += " UnifiedSearchOperationPanel UnifiedSearchOperationPreview UnifiedSearchParameterField UnifiedSearchParameterContext\n"
+        contract_docs["docs/component-catalog.md"] += " UnifiedSearchObjectSelectionStamp UnifiedSearchObjectField UnifiedSearchObjectPicker objectCandidate\n"
         for name in workflow.REQUIRED_DOCS:
             self.write(name, contract_docs.get(name, "# 文档\n"))
         self.write("docs/performance-baselines.json", json.dumps({
@@ -249,6 +267,116 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("CommandCatalog" in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_task_read_adapter(self):
+        self.make_project()
+        self.write("AreaChain/Services/TaskContentQueryReader.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("TaskContentQueryReader" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_routine_family_read_adapters(self):
+        self.make_project()
+        for symbol in ("TaskFamilyContentQueryReader", "RoutineContentQueryReader", "ContentQueryTagNames"):
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{symbol}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_diary_metadata_adapters(self):
+        self.make_project()
+        for symbol in ("DiaryContentQueryReader", "DiaryContentQueryTagPrivacy"):
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{symbol}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_controlled_body_dependencies(self):
+        self.make_project()
+        path = self.root / "AreaChain/Services/ContentQueryBodyReads.swift"
+        path.write_text("struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("ContentQueryBodyReads" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_clipboard_storage_read_adapters(self):
+        self.make_project()
+        entries = (("ClipboardContentQueryReader", "ClipboardContentQueryReader"),
+                   ("ClipboardHistoryStore", "ClipboardHistoryReadResult"))
+        for filename, symbol in entries:
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{filename}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_image_metadata_adapters(self):
+        self.make_project()
+        for symbol in ("ImageContentQueryReads", "ImageContentQueryCapture"):
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{symbol}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_tag_usage_read_adapters(self):
+        self.make_project()
+        for symbol in ("TagUsageContentQueryReads", "TagUsageContentQueryCapture"):
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{symbol}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_trash_read_adapters(self):
+        self.make_project()
+        for symbol in ("TrashContentQueryReads", "TrashContentQueryCapture"):
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{symbol}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_search_lifecycle_adapters(self):
+        self.make_project()
+        entries = (("ContentQueryReadSession", "ContentQueryReadSession"),
+                   ("ContentQueryReadLifecycle", "ContentQueryReadNotifications"))
+        for filename, symbol in entries:
+            with self.subTest(symbol=symbol):
+                path = self.root / f"AreaChain/Services/{filename}.swift"
+                original = path.read_text()
+                path.write_text("struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                path.write_text(original)
+
+    def test_component_catalog_requires_tag_read_adapter(self):
+        self.make_project()
+        self.write("AreaChain/Services/TagContentQueryReader.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("TagContentQueryReader" in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_workspace_header_contract(self):
         self.make_project()
         source = self.root / "AreaChain/Features/Workspace/WorkspaceHeaderContent.swift"
@@ -280,6 +408,60 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookInputShell" in problem["message"] for problem in result["issues"]))
 
+    def test_component_catalog_requires_secure_field_and_password_consumers(self):
+        self.make_project()
+        for relative in (
+            "AreaChain/Theme/DaybookSecureField.swift",
+            "AreaChain/Features/Settings/PrivacyPasswordSheet.swift",
+            "AreaChain/Features/Settings/PrivacySetupSheet.swift",
+            "AreaChain/Features/Diary/PrivacyUnlockPresenter.swift",
+        ):
+            with self.subTest(relative=relative):
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct SecureField {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any("DaybookSecureField" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_unlock_input_identifier(self):
+        self.make_project()
+        relative = "AreaChain/Features/Diary/PrivacyUnlockPresenter.swift"
+        self.write(relative, "struct DaybookSecureField {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("privacy.master.input" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_each_setup_secure_identity(self):
+        self.make_project()
+        relative = "AreaChain/Features/Settings/PrivacySetupSheet.swift"
+        original = (self.root / relative).read_text()
+        for identity in (
+            "privacy.setup.master", "privacy.setup.master.confirmation",
+            "privacy.setup.backup", "privacy.setup.backup.confirmation",
+        ):
+            with self.subTest(identity=identity):
+                self.write(relative, original.replace(f"struct {identity} {{}}\n", ""))
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(identity in item["message"] for item in result["issues"]))
+        self.write(relative, original)
+
+    def test_component_catalog_requires_form_field_and_real_consumers(self):
+        self.make_project()
+        for relative in (
+            "AreaChain/Theme/DaybookFormTextField.swift",
+            "AreaChain/Features/Workspace/TaskDetailClassificationSection.swift",
+            "AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift",
+        ):
+            with self.subTest(relative=relative):
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct TextField {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any("DaybookFormTextField" in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_stepper_and_geometry(self):
         self.make_project()
         self.write("AreaChain/Theme/DaybookStepper.swift", "struct Other {}\n")
@@ -287,6 +469,15 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         for symbol in ("DaybookStepper", "Stepper"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_segmented_core_adapter_geometry_motion(self):
+        self.make_project()
+        for path in ("DaybookSegmentedControl", "DaybookSegmentedBar", "DaybookMetrics", "DaybookChrome"):
+            self.write(f"AreaChain/Theme/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookSegmentedControl", "DaybookSegmentOption", "DaybookSegmentedBar", "Segmented", "segmented"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_picker_and_geometry(self):
@@ -298,6 +489,90 @@ class WorkflowCheckTests(unittest.TestCase):
         for symbol in ("DaybookPicker", "DaybookPickerOption", "Picker"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_unified_operation_parameters(self):
+        self.make_project()
+        entries = (("Features/Search/UnifiedSearchOperationPanel", "UnifiedSearchOperationPanel"),
+                   ("Features/Search/UnifiedSearchOperationPreview", "UnifiedSearchOperationPreview"),
+                   ("Features/Search/UnifiedSearchParameterField", "UnifiedSearchParameterField"),
+                   ("Theme/UnifiedSearchParameterContext", "UnifiedSearchParameterContext"))
+        for path, _ in entries:
+            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_object_selection_boundaries(self):
+        self.make_project()
+        entries = (("Features/Search/UnifiedSearchObjectSelection", "UnifiedSearchObjectSelectionStamp"),
+                   ("Features/Search/UnifiedSearchObjectField", "UnifiedSearchObjectField"),
+                   ("Features/Search/UnifiedSearchObjectPicker", "UnifiedSearchObjectPicker"),
+                   ("Services/ContentQueryObjectCandidates", "objectCandidate"))
+        for path, _ in entries:
+            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_unified_result_boundary(self):
+        self.make_project()
+        for path in ("Features/Search/UnifiedSearchResults", "Features/Search/UnifiedSearchController",
+                     "Services/ContentQueryDisplayUpdates", "Theme/DaybookSearchResultText"):
+            self.write(f"AreaChain/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("UnifiedSearchResults", "UnifiedSearchController", "ContentQueryDisplayUpdates", "DaybookSearchResultText"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_unified_search_native_contract(self):
+        self.make_project()
+        for name in ("UnifiedSearchInput", "UnifiedSearchInputState", "UnifiedSearchNativeInput", "UnifiedSearchOverlay"):
+            self.write(f"AreaChain/Theme/{name}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("UnifiedSearchInput", "UnifiedSearchBuffer", "UnifiedSearchCompletion", "UnifiedSearchFieldCell", "unifiedSearchOverlayHost"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_date_picker_cell_and_geometry(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookDatePicker.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookDateCell.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookWeekdayHeader.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookDatePicker", "DaybookDateCell", "DaybookDateCellPresentation", "DaybookMonthGridDay", "DaybookWeekdayHeader", "DatePicker", "MonthGrid", "DaybookHabitDateState", "HabitMonthGrid"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_weekday_picker_and_compatibility_adapter(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookWeekdayPicker.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Other {}\n")
+        self.write("AreaChain/Features/Workspace/TaskDetailScheduleSection.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookWeekdayPicker", "WeekdayPicker", "TaskDetailWeekdayPicker"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_week_header_presentation_and_geometry(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookDateCell.swift", "struct Other {}\n")
+        self.write("AreaChain/Theme/DaybookMetrics.swift", "enum Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("weekHeader", "WeekHeader"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_time_picker_native_adapter_and_geometry(self):
+        self.make_project()
+        for name in ("DaybookTimePicker", "DaybookNativeTimePicker", "DaybookMetrics"):
+            self.write(f"AreaChain/Theme/{name}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("DaybookTimePicker", "DaybookTimePresentation", "DaybookNativeTimePicker", "TimePicker"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_completion_presentation_and_geometry(self):
         self.make_project()
         self.write("AreaChain/Theme/ModernComponents.swift", "struct Other {}\n")
@@ -306,6 +581,20 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         for symbol in ("ModernCheckbox", "inlineSubtask", "detailSubtask", "detailSubtaskSymbolSize", "Completion"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_picker_form_layout(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookPicker.swift", "struct DaybookPicker {}\nstruct DaybookPickerOption {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("formRow" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_picker_verbatim_input(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookPicker.swift", "struct DaybookPicker {}\nstruct DaybookPickerOption {}\nenum formRow {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("verbatim" in item["message"] for item in result["issues"]))
 
     def test_skill_format_rejects_missing_description(self):
         self.make_project()

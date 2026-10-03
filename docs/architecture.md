@@ -1,5 +1,66 @@
 # 架构与目录
 
+### 隐私设置安全输入呈现（第七阶段 D）
+
+PrivacySetupSheet 的四个密码仍唯一归原 @State，DaybookSecureField 只接 Binding。methods 的创建/配置条件、useMaster、原 candidates 计数和两组独立 Character 长度/匹配规则均未移动；四个稳定字段身份区分两个同名确认输入。没有新增 onSubmit、清空策略、密码镜像或焦点路由。
+
+Setup 捕获提交输入后保持界面字段，直到原成功、catch、取消或 onDisappear 清空；busy 禁用滚动区及取消/应用/交互关闭，不复用 B/C 的 busy 交互政策。隔离验证只利用原 StoreHealth 内存回退 guard 的提前失败，不能证明配置创建、备份取消、迁移失败或完整认证链。组件清单与证据见[组件目录](component-catalog.md#第七阶段-d隐私设置安全输入接入)。
+
+### 解锁面板安全输入呈现（第七阶段 C）
+
+PrivacyUnlockView 只把密码呈现交给既有 DaybookSecureField；状态仍是原 password/busy/error。密码按钮非空条件与 authenticate 仅防 busy 的守卫分别保留，聚焦空值 Return 不增加校验。开始认证的捕获/清空/Task 顺序与 onDisappear 清空不改；取消在 busy 时可用且只回调，原 Presenter 继续负责锁定、关闭和 continuation。与 PrivacyPasswordSheet 的校验及 busy 禁止取消差异必须保留，不能下沉为公共安全输入策略。
+
+隔离测试显式注入合成 vault，区分直接 View 回调与原 Presenter 请求完成/取消/迟到结果。实际 Presenter 的 locale 沿原 shared 偏好只读读取。接口、Setup 后续四字段差异及证据见[组件目录](component-catalog.md#第七阶段-c解锁面板安全输入接入)；未触及认证、权限、密码处理或加密边界。
+
+### 公共安全输入呈现（第七阶段 B）
+
+Theme 的 DaybookSecureField 只承载原生 SecureField、既有输入壳及瞬时焦点。密码仍在消费者 Binding；没有密码镜像、额外草稿、规范化、日志或撤销历史。公共层不安装 onSubmit，PrivacyPasswordSheet 的两个字段继续显式调用原 submit；input 捕获、宿主字段清空、Task/action、busy、失败与 onComplete 均保留原顺序。界面字段清空不等于 Swift String 或内存安全擦除。
+
+父页面继续拥有关闭与真实业务动作；本阶段四种配置的隔离 sheet 只证明注入回调及界面兼容，不证明真实认证/备份/恢复链路。后续安全消费者差异、公共接口与验收索引见[组件目录](component-catalog.md#第七阶段-b公共安全输入与通用密码弹窗)。
+
+
+### 普通表单输入公共组合（第七阶段 A）
+
+Theme 的 DaybookFormTextField 只组合 SwiftUI 原生 TextField、DaybookInputShell 的紧凑配置、公共字体/颜色与瞬时焦点。字符串草稿仍由 Feature 的 Binding 持有；本地化键与已解析文案使用不同初始化入口，输入内容不翻译、解析或规范化。公共层不持有业务错误、保存、关闭或隐式提交。任务语法、统一搜索状态、手记编辑与 SecureField 保留各自责任，不共享普通表单的提交算法。
+
+TaskDetailTagSelector 和 ClipboardHistoryOptions 三个字段使用同一公共实现；前者创建回调失败保留弹窗、编辑清错，后者接受后即时保存、取消不回滚且正则编辑不清错。新建重复事项的标签通过原 resolveTaskTag 立即保存，并非随事项草稿延迟保存。接口、预期外观变化和验证入口见[组件目录](component-catalog.md#第七阶段-a普通表单输入与三个输入框)。
+
+### 周日期列头公共呈现（第六阶段 E）
+
+CalendarWeekBoard 只将日期按钮转交 DaybookDateCell.weekHeader(shortStamp:)；公共层拥有两行布局、原 quiet 承载和完整日期辅助语义，选中值由外部提供且重选仍回调。shortStamp 是已格式化的纯字符串，以保留原默认日历来源；日号和完整辅助日期沿环境 calendar，不改民事日规则。picker/monthGrid/habit 的默认与附加参数保持兼容。
+
+列顺序、整列选中表面、列表/滚动/焦点、检查目标及所属日、周导航、拖放接收与保存继续归原 Feature。原 dropDestination 仍覆盖整列，不下移到按钮；公共层不接模型、查询、导航或第二份业务状态。接口、剩余范围与运行缺口见[组件目录](component-catalog.md#第六阶段-e周视图日期列头接入)和[工程记录](engineering.md#第六阶段-e周视图日期列头接入)。
+
+统一搜索 2K-8 在受控 Session 内按需读取全来源标签使用元数据，复用原全枚举依赖、同批实体及 TagUsage 的唯一计数规则。真实统计与 injected 来源分开；公开 TagQueryUsageSummary 仅含次数，最近排序不外传精确时间。既有来源/隐私/宿主门禁约束全部发布；性能、生产监听、指定复核和完整接口见[权威设计 §9.44](unified-search-commands.md#944-阶段-2k-8全来源标签使用统计的只读存储适配与受门禁发布)。
+
+统一搜索 2K-5 在 Services 显式注入 ClipboardHistoryStore，单次全文件读取后按原 ClipboardHistoryFile 解码；缺失、解码成功与读取/格式失败分开表达。ClipboardContentQueryReader 原样装入 Batch，ReadSession.prepareClipboard 复用当前查询、隐私失效、冻结和发布门禁，宿主不持有底层 owner。磁盘值快照不代表未保存运行内历史或 SwiftData 跨存储事务；成本、失败、临时文件证据及 partial 交接见[权威设计 §9.41](unified-search-commands.md#941-阶段-2k-5剪贴板历史文件只读适配与受门禁发布)。
+
+统一搜索 2K-4D 沿 areachain-workflow → 架构治理 → areachain-verify；ContentQueryBodyReads、ContentQueryReadSession.prepareBodies 和 DiaryContentQueryReader 共同将正文留在内部许可与唯一冻结所有者中，复用 DiaryContent.read 同批目录校验。外部 Batch 仍仅 metadataOnly；无生产接线。实际接口、授权、生命周期、性能/内存限制和 partial 验证状态统一见[权威设计 §9.40](unified-search-commands.md#940-阶段-2k-4d受搜索生命周期门禁约束的手记正文读取)。
+
+统一搜索 2K-4C 的 Services ContentQueryReadSession 独占注入 ReadOwner，并以固定宿主 ownership、当前 lease、本地失效代次、vault 实际状态和 source/task 约束读取及发布。willLock 同步撤权与只清搜索；Observation 重订阅期间门禁关闭；失焦保留查询但撤显示。只通过协调者系统失效入口改 query，不改草稿/计划/执行或 PrivacyVault 规则。完整事件、线程、外部副本、生产接线责任与 partial 证据见[权威设计 §9.39](unified-search-commands.md#939-阶段-2k-4c搜索隐私失效查询清理与结果发布门禁)。
+
+统一搜索 2K-4B 在 Services 显式启用 DiaryContentQueryReader 的 metadataOnly 读取能力；仓储无实例全枚举避免全局 vault 初始化，快照无正文且不可读，同批 metadata 最后唯一装配。保护标签目录与名字投影独立诊断，不提升图片/回收站隐私覆盖，不生成统计；只用注入上下文与合成库，无生产失效或宿主接线。实际 API、D1～D3 状态、验证及 2K-4C 前置见[权威设计 §9.38](unified-search-commands.md#938-阶段-2k-4b手记元数据只读适配同批标签装配与隔离回归)。
+
+统一搜索 2K-3 在同一 Services 装配链增加 TagContentQueryReader：标签内容由原目录仓储全量只读枚举，关联名字由 ContentQueryTagNames 对同批实体分别投影；完整目录不提升 privateTagIDs 或 diaryPrivacy 覆盖。TaskFamilyContentQueryReader 原上下文入口同步装配所有已接来源，统计只接受明确注入并记录来源，不读取手记补齐统计。纯值冻结、失败及指定复核 partial 的唯一交接见[权威设计第 9.36 节](unified-search-commands.md#936-阶段-2k-3标签目录的-swiftdata-只读适配与同批装配)。
+
+统一搜索 2K-2 的 TaskFamilyContentQueryReader 在 Services 共用 2K-1 任务快照读取、独立习惯读取和关联标签装配，一份 Batch 流入既有 ReadOwner。观察时刻是读取调用的明确依赖，Calendar 必须与证据解释环境一致；冻结查询 today 不充当时钟。BatchRoutineFacts.checkSourceProblem 跨过空定义集保留无法归属的记录缺口，普通局部缺口仍由按习惯/日期覆盖表达。没有模型/仓储写入或生产接线，范围、全记录读取成本及 partial 复核见[权威设计第 9.35 节](unified-search-commands.md#935-阶段-2k-2习惯与打卡的-swiftdata-只读适配及任务类同批装配)。
+
+统一搜索 2K-1 的 Services `TaskContentQueryReader` 同步读取调用方注入的上下文，输出纯值 Batch；Domain 与生产 UI 未修改。实体只在 MainActor 使用，来源代次仍由原 ReadOwner.begin 管理。任务/子任务之外保持未提供，完整性不等同磁盘事务原子性。接口、未保存变化、失败和指定复核 partial 见[权威设计第 9.34 节](unified-search-commands.md#934-阶段-2k-1任务与子任务的-swiftdata-只读快照适配)。
+
+统一搜索 2J-3C 的 ContentQueryReadOwner 在 Domain 单独保留一份冻结 Batch 值与读取来源代次，任务只含身份和预算；同步求值产生不可外部拼装的候选票据，核验来源与当前任务后才完整发布。发布结果仅沿原 Pagination/Browse 保留一条安全展示来源链；来源代次、任务身份、提供者预算、展示 sourceID 和 revision 独立。无进展、失败和普通取消保留最后完整结果；保护失效入口丢弃本所有者引用并拒绝旧票据，但未接真实锁定/宿主缓存清理。接口与同步取消限制只见[权威设计第 9.33 节](unified-search-commands.md#933-阶段-2j-3c预算续读同快照重新求值与结果发布协调)，指定复核及历史缺口保持 partial。
+
+统一搜索 2J-3B 在纯 Domain 中组合既有 Display/Browse。DisplaySnapshot 以不可变引用持有安全来源，sourceID 绑定结果集与排序，version 绑定单次可见性修订；分页只持有三类前缀进度及身份，浏览选择/展开仍唯一属于 BrowseState。每次加载复用来源并经原 publish 发布；新来源 reset 重建首段并返回稳定身份锚点，未引入查询、排序、片段或读取调度。接口、计数/保护与指定复核 partial 唯一见[权威设计第 9.32 节](unified-search-commands.md#932-阶段-2j-3b展示分页组内分段与浏览状态接续)，无生产 UI 或真实焦点/滚动验收。
+
+统一搜索 2J-3A 新增纯 Domain 展示分组与浏览状态层，位于 Presenter 之后；顶层保存同批安全来源，单位及选择仅引用类型化身份。DisplayBuilder 不重新匹配/排序，BrowseState 不触及 CommandDraftTargets 或系统焦点。稳定组、显式可见成员、版本拒绝和打开/焦点意图的唯一契约及验收见[权威设计第 9.31 节](unified-search-commands.md#931-阶段-2j-3a展示分组可见命中序列与键盘选择)；尚无生产接线，指定复核及历史缺口保留。
+
+统一搜索 2J-2B 的 ContentQueryPresenter.project 在 Domain 消费 ContentQuerySortedResponse，按完整 ordered.id 输出纯文本、结构化元数据/所属关系和字素高亮映射。顶层保留一次原来源，行内只含展示值与公开字段展开引用；SortFields 与排序共享提取，SortContext 绑定同批条件形状以核验证据。当前消费者仅领域测试，无 UI/IO/缓存/执行；安全边界、预算、原生两行未验及指定复核 partial 见[权威设计第 9.30 节](unified-search-commands.md#930-阶段-2j-2b安全摘要命中片段与高亮映射)。
+
+统一搜索 2J-2A 在 Domain 增加 ContentQuerySorter.sort，消费原批次响应及同次构造的最小不可变 ContentQuerySortContext。上下文只保留条件 ID、原文字条件、显式模式标记与日期环境，不保存 Session、宿主状态或原始对象；排序 API 不接受替换查询。安全投影只用于校验证据、分档与真实时间，输出身份序列与解释，source 原样保留保护/完整性/诊断和墓碑 groups。生产消费者、片段、UI、分页与缓存均未接入；规则和指定复核 partial 见[权威设计第 9.29 节](unified-search-commands.md#929-阶段-2j-2a安全聚合结果的相关性与最近排序)。
+
+统一搜索 2J-1 的 ContentQueryBatchReader 在 Domain 同步装配九个原提供者。批次是唯一 Session、主快照、日期环境与辅助事实的值输入边界；共享任务嵌套视图只装配一次，墓碑保留平面子项，原匹配/安全投影继续由各提供者负责。类型化结果与来源反馈不持有原批次、实体或操作能力；完整性按类型、来源、未知、保护、历史/记录和枚举分层。真实仓储事务、异步代次、隐私失效、UI、排序/片段/分页及执行均未接入；接口、当前测试消费者与指定复核 partial 见[权威设计第 9.28 节](unified-search-commands.md#928-阶段-2j-1同步批次跨提供者类型化结果与完整性汇总)。
+
+统一搜索 2I 的 RoutineOccurrenceQueryProvider 在 Domain 同步消费完整 Session、定义/记录快照、按习惯限定的记录覆盖、带来源的排程证据及显式窗口。记录归并与历史判断仍属于 2C-1；仅开放 History.segments 的既有分段，新增层负责有界枚举、独立每日结果和覆盖反馈。派生 open 不创建 CheckSnapshot 或数据库行；所属标题只用于上下文，读取引用不授予操作权限。当前仅合成领域测试消费，真实仓储、生产 UI、聚合与写入未接线；接口、预算、状态分类和指定复核缺口见[权威设计第 9.27 节](unified-search-commands.md#927-阶段-2i显式日期窗口内的习惯执行情况只读提供者)。
+
 统一搜索 2H-1 的 TrashTombstoneReader 只消费注入快照与范围完整性，按类型化身份隔离重复后调用 SoftDelete 的原同戳规则，输出安全对象及引用式分组。墓碑读取与 ImageAssociationReader / AttachmentBrowseFacts 的 live-only 边界分离；恢复条件没有执行资格或闭包。TodoItem.snapshot 过滤已删子任务，真实适配不得据此声明墓碑完整。当前消费者仅四套合成墓碑测试；接口、保护计数限制与指定复核缺口统一见[权威设计第 9.25 节](unified-search-commands.md#925-阶段-2h-1回收站墓碑删除关联与恢复条件的只读契约)。
 
 统一搜索 2G 的 ClipboardQueryProvider 同步消费注入 ClipboardHistoryRecord；统一 Session 与显式模式原文加只读筛选 Session 互斥。ClipboardTextMatching 复用旧三模式语义并将正则编译移到单次请求；ClipboardHistorySession 的偏好、监听、保存和历史读取不变。结果仅含必要纯文本/元数据、字段依据与负载类别，类型覆盖、历史读取覆盖、未知对象及排序完整性分别表达。显式 clipboard 范围之外不求值；来源沿既有类型化条件，图片自身引用不经过任务附件关联。当前仅合成领域测试消费；契约及指定复核缺口见[权威设计第 9.24 节](unified-search-commands.md#924-阶段-2g显式剪贴板历史的只读搜索提供者)。
@@ -278,3 +339,51 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 ### 公共下拉选择器（第四阶段 A）
 
 DaybookPicker 位于 Theme，仅接收类型化 Binding 与值/本地化标签分离的选项；NSPopUpButton 及原生 NSMenu 维护平台追踪、焦点和辅助操作，公共层没有业务状态镜像。菜单项携带稳定类型化值，协调器只保留当前 Binding；每次提交后立即回读，禁用/拆卸/旧菜单动作受守卫，销毁清空引用。缺失值与空选项采用显式占位，不默认写回第一项。三个剪贴板 setter、会话偏好/历史、未提交输入与关闭行为均保持；接口、呈现和消费者见[组件目录](component-catalog.md#第四阶段-a公共下拉选择器与剪贴板)。
+
+第四阶段 C 为上述公共选项增加显式 verbatim 原文分支，只有 localized 分支调用 L10n；唯一新增消费者 TagManagementPage.mergeSheet 保持本地 mergeTarget UUID 所有权，提交继续由原合并链路执行。公共层不认识 TagItem 或仓储，没有新增保存/校验责任。接口、兼容与内存合成验证见[组件目录](component-catalog.md#第四阶段-c标签合并目标选择器接入)。
+
+### 第四阶段 E 分段控件边界
+
+Theme 的 DaybookSegmentedControl 仅消费类型化 Binding 与稳定选项，不持有业务会话；DaybookSegmentedBar 是兼容 BoardTab 的适配入口，委托同一核心。Namespace 仅隔离视觉动画，不镜像 selection。菜单栏的 tab、草稿、筛选、搜索焦点、键盘监视器和计数仍归原有宿主；FooterBar 的切换关闭筛选行为不变。空值与缺失选项、动效及后续日历适配契约见[组件目录](component-catalog.md#第四阶段-e通用分段与菜单栏)。
+
+### 第五阶段 A 时间输入边界
+
+Theme 的 DaybookTimePicker / DaybookNativeTimePicker 只消费可空分钟 Binding，NSDatePicker 管理短暂字段输入；渲染戳不成为第二份业务值。DaybookTimePresentation 将环境日历复制为固定 UTC 展示日来承载时分，仍调用 RemindMinutes 转换，不改变日期、时区或通知领域规则。有效原生 action 即时传递并回读；挂载、格式/外部更新、禁用和拆卸没有业务写入或焦点请求。两个首批消费者继续管理原默认设置、清除、弹出层和事务，接口/消费者差异及下一阶段边界见[组件目录](component-catalog.md#第五阶段-a公共时间选择器与首批消费者)。
+
+### 公共日期选择与排期暂存（第六阶段 A）
+
+Theme 的 DaybookDatePicker 只读取民事日 Binding 和环境 calendar/locale，瞬时浏览月份与业务选中值分离。DayKey / WeekdayMask 是唯一日期算法来源，不使用时间控件的固定 UTC 展示日；DaybookDateCell 只绘制日期与辅助语义，Theme 不引用 CalendarMonthGrid。DaySchedulePicker 独占本次暂存日键，打开按 initialKey 的原 DayKey 解析及当前日期回退初始化；确认才调用 onPick，取消/关闭不提交。四个宿主沿原保存/关闭链路并显式传递环境；失败不会被公共层转成新关闭/回滚策略。接口与消费者见[组件目录](component-catalog.md#第六阶段-a公共日期选择器与排期弹窗)，验证及未验边界见[工程手册](engineering.md#第六阶段-a公共日期选择器与排期弹窗)。
+
+
+### 主月网格公共呈现（第六阶段 B）
+
+DaybookDateCell 以 picker / monthGrid 两种语义呈现共享日期基础，DaybookWeekdayHeader 共用环境星期名称与排序。月格附加文字是已计算显示值，投放高亮是外部状态；Theme 不持有任务、统计、解码、拖放事件、仓储或保存。CalendarMonthGrid 保留原 dates/counts/onSelect/onDropTodo 和临时 dropKey，CalendarPage/CalendarGridKeys 继续管理业务选择、导航及键盘。日期选择器原月份/焦点载体仍独立于日格，重选去重只存在其自己的 Binding 路径。几何与身份见[组件目录](component-catalog.md#第六阶段-b主日历月网格接入)，测试证据与指定复核缺口见[工程手册](engineering.md#第六阶段-b主日历月网格接入)。
+
+### 统一搜索原生输入边界（4A-1）
+
+UnifiedSearchInput 只消费宿主发布的 UnifiedSearchBuffer，并把原 lease、版本和编辑/提交意图回交宿主；CommandHandoffCoordinator 仍是 lease 资格的最终验证者。专用 field editor 仅拥有光标、选区、组合文本和本控件撤销，派生候选不能成为业务参数真值。隐私清理使用宿主递增的 privacyRevision 与已清空的显示缓冲，不替代 ContentQueryReadSession 的业务失效，也不涉及敏感操作草稿。当前只有两种合成 QA 宿主，生产搜索仍保留旧实现；接口、证据和缺口统一见[权威设计 §9.45](unified-search-commands.md#945-阶段-4a-1公共原生搜索输入与斜杠补全)。
+
+
+### 习惯月历公共呈现（第六阶段 C）
+
+HabitCheckMonthView 将打卡状态映射为 DaybookHabitDateState，日号、字体、圆角、状态色与选中反馈统一由 DaybookDateCell.habit 绘制。HabitMonth.mark 的创建日、星期掩码、删除、第一条历史记录及未来日语义均不改变；Feature 保留原全量 Query 与导航调用，不新增规则、缓存或保存。网格与状态计算显式使用局部 Calendar.current 默认值，并传给公共日格环境；今天仍来自 DayClock。公共层不依赖模型、SwiftData、时钟或导航单例。辅助名称使用公共完整日期，业务状态只在 value 中出现，outside 保留原文案；空白不生成相邻月日期。
+
+TaskDetailDrawer 仍从 BoardSelection 读取检查日；点击和重选沿原 inspectTask 同步检查目标与检查器显示状态，外部跨月更新重新派生网格。标题和备注保持原焦点与失焦保存，不把“导航不打卡”扩大成禁止合法编辑保存。公共按钮其他呈现的焦点、键盘和拖放承载未改变；接口与实际基线见[组件目录](component-catalog.md#第六阶段-c习惯月历接入公共日期格)，验收及 partial 缺口见[工程手册](engineering.md#第六阶段-c习惯月历接入公共日期格)。
+
+### 公共星期多选（第六阶段 D）
+
+Theme 的 DaybookWeekdayPicker 只持外部掩码值和更新回调；排序、名称、空草稿与至少一天均复用 WeekdayMask，不产生模型、仓储、保存或长期镜像状态。TaskDetailWeekdayPicker 保留兼容参数与业务标题，三个既有消费者不改调用：新建仅更新草稿；管理行、习惯详情继续原 DayBoardMutations.setWeekdayMask / ModelChanges 保存与失败回滚。拒绝最后一天取消仍回调原值，禁用和生命周期不写回。
+
+几何来自 DaybookMetrics.WeekdayPicker，圆点原形状/按钮承载保持；完整名称、选中状态和独立组名称由公共层表达，显示标题由适配决定。任务行 standingMenus 的系统星期子菜单和只读 DaybookWeekdayHeader 保留各自形态，不属于重复圆点实现。接口及验证入口见[组件目录](component-catalog.md#第六阶段-d公共星期多选与三个消费者)。本轮不修改旧掩码存储、启停、打卡、检查日、提醒、标签或通知投影。
+
+### 统一搜索原生结果边界（4A-2）
+
+Features 的 UnifiedSearchController 组合原输入和 ReadSession；UnifiedSearchResults 的原生边界只呈现重新通过门禁的 publication，失效通知同步移除 hosting 子树、公开展开 storage 和本输入的原生缓冲。ContentQueryDisplayUpdates 只广播修订，不拥有资格；ContentQueryExpansionIndex 只保留同批安全身份的位置，不存正文。Domain 的排序、分组、分页与选择保持原实现。标准/紧凑的隔离宿主消费同一结果组件，生产入口、真实打开及操作预览未接线，证据与保留缺口统一见[权威设计 §9.46](unified-search-commands.md#946-阶段-4a-2公共原生搜索结果列表与输入导航)。
+
+### 统一搜索普通操作预览（4A-3A）
+
+UnifiedSearchController 的操作扩展直接读写原协调者 operations，不保存第二份可提交参数。UnifiedSearchBuffer 带可选 CommandDraftStamp，普通字段拼写缓冲只保存原文与产生版本；原生事件必须核验原 lease、草稿和缓冲版本。DaybookPicker 的可选 eventVersion 隔离旧菜单身份，原消费者默认兼容。面板复用 ReadSession.validateDisplayHost 的既有宿主展示门禁，失焦/锁定同步清原生编辑器并卸载树；普通草稿留在协调者，这不是敏感草稿封存。实际链路、支持类型、测试与指定复核缺口见[权威设计 §9.47](unified-search-commands.md#947-阶段-4a-3a普通参数编辑与操作即时预览)。
+
+### 统一搜索对象选择边界（4A-3B1）
+
+对象选择只在原 Controller 暂存 Browse 交互；目标身份继续是 CommandObjectReference。操作目标唯一写入 draft.targets，普通 object / objects 参数写入 draft.arguments。候选与目标预览均由 ReadSession 当前发布核验，固定集合不随分页或查询扩张。选择接受带原 lease、草稿 stamp、位置和候选版本，原子草稿事件成功后重新读取展示；没有沿旧许可补发新事件。目标变更缺少新证据时清旧 baseline，arguments 保留。转交后 ownershipRevision 接入既有只读失效观察，撤去旧宿主候选与预览。普通合成草稿仍保留；这不是敏感草稿封存、加密或零化。接口与证据见[权威设计 §9.48](unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。

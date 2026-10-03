@@ -5,6 +5,7 @@ import SwiftUI
 /// 菜单栏手记紧凑数据条：严格锁定 48pt 固定高度，规范化展示标题/正文预览，并通过统一设置菜单与 ⌘ 快捷键提供深度操作。
 struct DiarySummaryRow: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.calendar) private var calendar
     @Environment(\.locale) private var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     var entry: DiaryEntry
@@ -440,6 +441,8 @@ struct DiarySummaryRow: View {
             moveDiary(to: key)
             pickingDay = false
         }
+        .environment(\.locale, locale)
+        .environment(\.calendar, calendar)
     }
 }
 

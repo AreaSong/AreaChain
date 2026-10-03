@@ -23,6 +23,13 @@ struct TagQueryUsageInput: CustomStringConvertible, CustomDebugStringConvertible
 
 enum TagQueryUsageState: Equatable { case unavailable, partial, complete, invalid }
 
+/// 展示只获准公开完整次数；最近时刻只留在统计输入和提供者内部排序中。
+struct TagQueryUsageSummary: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
+    let activeCount: Int
+    var description: String { "TagQueryUsageSummary(redacted)" }
+    var debugDescription: String { description }
+}
+
 /// 复用 TagUsage 的统计值，不重新读取关联对象或推导计数/最近时间。
 struct TagQueryUsageReading {
     let state: TagQueryUsageState

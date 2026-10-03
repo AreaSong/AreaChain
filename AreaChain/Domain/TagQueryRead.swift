@@ -92,7 +92,7 @@ struct TagQueryMatch: Equatable, Identifiable, CustomStringConvertible, CustomDe
     let tag: TagQuerySnapshot
     let evidence: [ContentQueryMatchEvidence]
     /// 只发布完整、合法的单标签统计；部分记录不能冒充准确计数。
-    let usage: TagUsageRecord?
+    let usage: TagQueryUsageSummary?
     let usageState: TagQueryUsageState
 
     var id: CommandObjectReference { .init(type: .tag, id: tag.id) }

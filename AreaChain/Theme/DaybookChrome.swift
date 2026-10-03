@@ -12,6 +12,11 @@ enum DaybookMotion {
     static let collapse: Animation = .spring(response: 0.34, dampingFraction: 0.82)
     static let fade: Animation = .easeInOut(duration: 0.15)
 
+    /// 菜单栏分段的原弹簧曲线；减弱模式只保留即时选中反馈。
+    static func segmented(_ reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .spring(response: 0.28, dampingFraction: 0.75)
+    }
+
     static func snappy(_ reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : snappy
     }

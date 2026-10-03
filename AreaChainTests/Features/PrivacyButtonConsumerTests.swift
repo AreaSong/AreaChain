@@ -447,8 +447,9 @@ struct PrivacyButtonSheetHost: View {
     @Environment(\.locale) private var locale
     let content: AnyView
     var onDismiss: () -> Void
+    var presentation: Binding<Bool>?
     @State private var presented = true
     var body: some View {
-        Color.clear.sheet(isPresented: $presented, onDismiss: onDismiss) { content.environment(\.locale, locale) }
+        Color.clear.sheet(isPresented: presentation ?? $presented, onDismiss: onDismiss) { content.environment(\.locale, locale) }
     }
 }

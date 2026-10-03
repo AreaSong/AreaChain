@@ -65,6 +65,7 @@ struct ImageAssociationRequest: CustomStringConvertible, CustomDebugStringConver
     let owners: ImageOwnerSnapshots
     let privacy: DiaryQueryMetadata
     let coverage: ImageAssociationCoverage
+    var imagePrivacy: DiaryImageProtectionFacts?
 
     var description: String { "ImageAssociationRequest(redacted)" }
     var debugDescription: String { description }

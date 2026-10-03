@@ -2,7 +2,7 @@ import Foundation
 
 enum TrashTombstoneIssue: Equatable {
     case duplicateIdentity, identityNotProvided, identityPartial, invalidCoverage
-    case invalidDeletedAt, invalidSubtaskContainer, unknownOwnerKind
+    case invalidDeletedAt, invalidSubtaskContainer, missingSubtaskParent, unknownOwnerKind
     case parentNotProvided, parentPartial, parentMissing, parentAmbiguous, parentInvalid
     case privacyMetadataIncomplete
 }

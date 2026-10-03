@@ -6,11 +6,7 @@ import Testing
 @MainActor
 struct SwiftDataTaskRepositoryTests {
     private func makeRepo() throws -> (ModelContainer, SwiftDataTaskRepository) {
-        let schema = Schema(AreaChainSchema.models)
-        let container = try ModelContainer(
-            for: schema,
-            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
-        )
+        let container = try TaskRepositoryFixture.container()
         return (container, SwiftDataTaskRepository(container: container))
     }
 
