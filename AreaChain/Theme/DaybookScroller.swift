@@ -284,10 +284,33 @@ struct DaybookScrollEdgeFeatherModifier: ViewModifier {
 }
 
 extension View {
-    /// 现代化细圆角胶囊滚动条与优雅视口羽化修饰器
+    /// 无参及仅传开关沿用原单参数入口：隐藏系统指示器，默认不羽化。
+    func daybookScroll(featherEdges: Bool = false) -> some View {
+        daybookScrollAssembly(featherEdges: featherEdges, featherHeight: 7.0,
+                              indicators: DaybookScrollIndicators.hidden)
+    }
+
+    /// 显式高度沿用原双参数入口：保留上游策略，仅传高度时默认羽化。
     func daybookScroll(featherEdges: Bool = true, featherHeight: CGFloat = 7.0) -> some View {
-        self
+        daybookScrollAssembly(featherEdges: featherEdges, featherHeight: featherHeight,
+                              indicators: DaybookScrollIndicators.preserved)
+    }
+
+    // 泛型变换保留原具体视图链；不以条件包装或 AnyView 引入额外身份/状态边界。
+    private func daybookScrollAssembly<IndicatorContent: View>(
+        featherEdges: Bool, featherHeight: CGFloat, indicators: (Self) -> IndicatorContent
+    ) -> some View {
+        indicators(self)
             .background(DaybookScrollerConfigurator())
             .modifier(DaybookScrollEdgeFeatherModifier(enabled: featherEdges, featherHeight: featherHeight))
     }
+}
+
+private enum DaybookScrollIndicators {
+    static func hidden<Content: View>(_ content: Content) -> some View {
+        content.scrollIndicators(.hidden)
+    }
+
+    // 保留必须是恒等变换，设置 automatic 仍会覆盖调用方选择。
+    static func preserved<Content: View>(_ content: Content) -> Content { content }
 }

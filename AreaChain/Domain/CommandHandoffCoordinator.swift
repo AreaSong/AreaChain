@@ -48,6 +48,17 @@ import Observation
         return effect
     }
 
+    /// 凭据只能由成功封存的内容服务生成，仍由此处核验唯一当前宿主。
+    func acceptProtection(_ checkpoint: CommandDraftCheckpoint) throws {
+        try validate(checkpoint.lease)
+        var next = try host(checkpoint.lease.ownership.hostID).session
+        guard next.allDrafts.contains(where: { $0.stamp == checkpoint.draft }) else { throw CommandHandoffError.stale }
+        try checkpoint.consume()
+        try next.acceptProtection(checkpoint.reference, expecting: checkpoint.draft)
+        hosts[next.hostID] = .init(lease: .init(ownership: checkpoint.lease.ownership,
+                                              revision: checkpoint.lease.revision + 1), session: next)
+    }
+
     /// 系统失效只跨越同一所有权内的用户修订；不能跨转交代次，也不能重盖旧用户事件。
     /// 仍经 send 委托唯一 HostSession，仅清查询，草稿/计划/执行不变。
     @discardableResult
@@ -133,6 +144,7 @@ import Observation
     }
 
     private func checkEligibility(source: CommandHostSession, target: CommandHostSession) throws {
+        guard !source.allDrafts.contains(where: \.blocksUnprotectedTransfer) else { throw CommandHandoffError.protectedContent }
         // 包括非忙碌的成功、失败、冲突、部分/未知结果；运行绝不随转交迁移或抹除。
         guard source.execution == nil, target.execution == nil,
               source.operations.pending == nil, target.operations.pending == nil else { throw CommandHandoffError.ineligible }

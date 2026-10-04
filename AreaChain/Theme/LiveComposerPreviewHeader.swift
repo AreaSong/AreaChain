@@ -110,15 +110,7 @@ struct LiveComposerPreviewHeader: View {
         }
         .padding(.horizontal, 10)
         .frame(height: 36)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .suggestions)
     }
 
     private var trailingAttributesCluster: some View {

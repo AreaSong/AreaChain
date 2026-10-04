@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-final class DaybookAppKitTextView: NSTextView {
+class DaybookAppKitTextView: NSTextView {
     var onCommandReturn: (() -> Void)?
     var commandChord: ShortcutChord?
 

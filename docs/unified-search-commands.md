@@ -3440,3 +3440,611 @@ willLock 沿原 Session → coordinator.invalidateSearch 清搜索；随后 Cont
 | 原生输入 | [UnifiedSearchInput](../AreaChain/Theme/UnifiedSearchInput.swift)、[InputState](../AreaChain/Theme/UnifiedSearchInputState.swift)、[NativeInput](../AreaChain/Theme/UnifiedSearchNativeInput.swift) 的选择模式、Tab/Return/空格与唯一补全；[Localizable.xcstrings](../AreaChain/Resources/Localizable.xcstrings) 的 en/zh-Hans 文案。 |
 | 隔离测试 | [ObjectTestSupport](../AreaChainTests/Features/UnifiedSearchObjectTestSupport.swift)、[ObjectContractTests](../AreaChainTests/Features/UnifiedSearchObjectContractTests.swift)、[ObjectLifecycleTests](../AreaChainTests/Features/UnifiedSearchObjectLifecycleTests.swift)、[ObjectInteractionTests](../AreaChainTests/Features/UnifiedSearchObjectInteractionTests.swift)、[ObjectPresentationTests](../AreaChainTests/Features/UnifiedSearchObjectPresentationTests.swift)。 |
 | 文档与守卫 | 本文、[组件目录](component-catalog.md)、[架构](architecture.md)、[技能路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py)。 |
+
+### 9.49 阶段 4A-3B2：待执行计划与就地编辑
+
+2026-10-03。本阶段仅在标准/紧凑隔离宿主、普通合成资料中更新运行内 CommandPlan。原工作区已有 4A-3A/3B1、Domain、Theme 和文档等并行修改；接续已有 plan/item stamp 草稿改动并保留全部并行差异。没有替换生产入口、提交、推送、安装、生产应用启动或真实指令。指定 Cursor verifier 不可调用，未重复登录检查、未改认证、未以其他代理冒充，阶段整体保持 **partial**。
+
+#### 唯一计划与原生组合
+
+| 入口 | 本轮责任 |
+|---|---|
+| [UnifiedSearchPlanEditing](../AreaChain/Features/Search/UnifiedSearchPlanEditing.swift) | Controller.plan 从协调者派生原 HostSession.plan；editingPlanItem / editingDraft 只选择当前编辑位置，没有待执行镜像数组。enqueue / sendPlan / removePlanItem 全部发送原 CommandHostEvent。 |
+| [UnifiedSearchPlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift) | 原 OperationPreview 的固定滚动区内显示计划；单次计算整图检查、稳定项身份、名称/目标计数/安全核验提醒/紧凑参数/缺参及依赖诊断、编辑/移出/上移/下移/合并入口。 |
+| [UnifiedSearchPlanButton](../AreaChain/Features/Search/UnifiedSearchPlanButton.swift) | 沿已有对象按钮的按下/释放约定，保留按下时的原回调；键盘焦点和回到编辑按钮仅为展示状态。 |
+| [OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[OperationCopy](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift)、[ParameterField](../AreaChain/Features/Search/UnifiedSearchParameterField.swift) | 活动草稿、retained 保留草稿和待执行列表分别命名。参数摘要共用格式化；计划内直接复用普通参数和对象字段。失败/入列/移出提示固定在面板上方，长列表不遮住反馈。 |
+| [PlanLinks](../AreaChain/Features/Search/UnifiedSearchPlanLinks.swift)、[PlanDependencies](../AreaChain/Features/Search/UnifiedSearchPlanDependencies.swift)、[PlanCopy](../AreaChain/Features/Search/UnifiedSearchPlanCopy.swift) | 声明输出候选、依赖展示/解除/刷新和类型化诊断；不创建表达式编辑器，不输出原始错误、正文或私密元数据。 |
+
+列表默认紧凑，只有选中的计划项展开字段，长列表在原 450pt QA 面板内滚动，不推开输入框；标准/紧凑使用同一实现。对象选择仍切换原 OperationPanel 的内容，补全仍只有原 unifiedSearchOverlayHost；计划不是另一层补全或独立浮窗。没有新增生产宿主。
+
+#### 所有权、编辑位置与版本
+
+- 明确“加入待执行列表”捕获原 lease、draft stamp 和 plan stamp，经协调者 `.enqueue` 调用 HostSession.enqueue。成功后 active/retained 移出、计划唯一持有同一 draft ID；失败保留原草稿。重复点击、旧显示版本、旧计划或旧草稿事件不能重入。资格直接由 CommandPlan.add 检查，导航、退出、安全及排除操作没有开放。
+- 未完成计划项可以入列，CommandPlanCheck 的缺参、目标、结构问题照常展示；没有将其视为可提交。参数原文/无效拼写仍只由原 parameterText 保存显示接续信息，不具有独立提交能力。
+- UnifiedSearchBuffer 增加可选 plan / planItem；原 lease、display version、privacy revision、draft ID/version 继续保留。OperationEditing / ObjectSelection 共用 editingDraft，并由 sendPlanDraft 将原 edit / selectTargets 翻译为原计划事件。没有把计划草稿复制到 operations.active。
+- beginEditing / edit / selectTargets / endEditing 直接作用于原计划项；切换先同步结束旧项再开始原先指定的新项。旧控件/参数补全/对象选择票据在切换、计划修订或转交后拒绝，不能补发当前 lease。原 SelectionStamp 自动包含完整 buffer，候选确认仍经 ReadSession.objectCandidate。
+- `cancelKeepingChanges` 对应“收起 · 保留修改”，不声称撤销。真正回退编辑仍是后续能力，没有创建第二份可提交副本。计划内对象更换不把候选摘要当完整 baseline；原领域 select 使旧基线失效，普通参数继续保留。
+- 移出调用 removeFromPlan，退回 retained 并推进草稿版本；依赖者、正在编辑和原子组的领域拒绝原样保留。恢复 retained 改为显式 draft stamp，避免多个同命令草稿总恢复第一项；命令浏览的继续入口仍按原协议。
+
+#### 顺序、合并、依赖与输出
+
+- 上移/下移发送 reorder；不合法逆序或组结构保持原顺序并显示原因，没有拖放专用通道或自动解依赖。
+- 合并按钮只请求 CommandPlanSemantics.mergeConflict 对相邻项的既有判断。提议只保存 source/earlier/later stamp，在原列表展示最终字段和值；明确“接受合并”才发送 merge。未知基线、顺序语义、目标不一致、不同业务字段、依赖和原子组继续保留各项。没有在 View 复制等价判断，也不覆盖追加正文或部分重叠目标。
+- 显示显式前置名称和结果参数、前置操作及输出类型；缺失、过期、逆序和无效类型沿领域诊断。显式前置可以逐项解除，本阶段未增加任意前置选择或工作流图。
+- 创建引用只列当前计划里排在前面的真实项，且必须有目录 createdObjectType 并通过原 CommandPlanValidation.acceptsReference。该函数仅从 private 调整为模块内复用，算法未改。当前目录唯一声明是 `todo.create → todo`，可接 subtask 的 parent、兼容操作的 target 等已声明 object/objects 参数；不生成尚未存在的业务 UUID。
+- 引用与直接值互斥；已绑定字段显示说明，须先明确解除引用再填直接值。生产者修改后的旧引用可重新选择生产者逐项刷新，沿原 CommandPlan.link 的既有修复门禁，不放宽整图校验。没有新增其他输出类型。
+- 可呈现合成原子组及诊断，不能在 UI 创建“所有设置保证一起成功”选项；未接真实设置事务。
+
+#### 不执行与保护边界
+
+所有目录指令仍 unwired。⌘Return/提交意图仅说明暂不可执行；计划形状与依赖有效不代表最新存活、权限、冲突或业务检查完成。UI 不调用 sealPlanForProtocol / beginNextProtocolStep，不生成成功回执、不清空计划、不显示已保存。
+
+清查询、切页、收起、失焦与锁定不删除 operations/plan；失焦/锁定沿原 ReadSession 和 OperationBoundary 撤原生字段与计划明细。转交后旧所有权事件失效。这里仅用普通合成目标和内容，敏感草稿封存仍未实现，隐藏面板不是安全封存。
+
+#### 原生验证与剩余项
+
+产物在忽略目录 `build/UnifiedSearchPlanQA/`，每次实际 xcodebuild 参数保存为 `*-command.json`。独立 `com.areachain.unified-plan-qa`、独立 DerivedData、ad-hoc、原 entitlement、清除六项真实钥匙串授权变量并持有原 build/.build.lock，测试串行。没有安装、生产启动或真实业务运行。
+
+新增 [PlanContractTests](../AreaChainTests/Features/UnifiedSearchPlanContractTests.swift)、[PlanDependencyTests](../AreaChainTests/Features/UnifiedSearchPlanDependencyTests.swift)、[PlanLifecycleTests](../AreaChainTests/Features/UnifiedSearchPlanLifecycleTests.swift)、[PlanInteractionTests](../AreaChainTests/Features/UnifiedSearchPlanInteractionTests.swift)、[PlanPresentationTests](../AreaChainTests/Features/UnifiedSearchPlanPresentationTests.swift)，夹具复用 [ResultsFixture](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift) / [ObjectTestSupport](../AreaChainTests/Features/UnifiedSearchObjectTestSupport.swift) / [TestHost](../AreaChainTests/Theme/UnifiedSearchTestHost.swift)，最小计划辅助放在 [PlanTestSupport](../AreaChainTests/Features/UnifiedSearchPlanTestSupport.swift)。
+
+首轮 Contracts 编译发现 Observable 控制器的初始化顺序问题，修正为先构造局部 initial buffer；Native.xcresult **15 passed / 0 failed / 0 skipped**。随后图片检查推动固定反馈、空摘要紧凑化、整图检查复用和按钮空格接续补强，并增加同命令 retained 恢复与键盘重排测试；Keyboard 编译发现测试宏内缺少显式 try，已修正。工作流反例曾因合成目录缺少三个新符号失败，补齐夹具后 83 项定向、203 项脚本回归通过。历史失败日志均保留，Native 结果不能替代补强后的最终验证。
+
+| 检查 | 实际结果与边界 |
+|---|---|
+| 最终领域与计划接线 | `Domain.xcresult`：**119 passed / 0 failed / 0 skipped**，包含全部 Command 领域测试及本轮 PlanContract / PlanDependency；最终增加计划 parent 候选确认与 target 创建输出引用反例。没有执行真实 handler。 |
+| 44 套组合回归 | `Regression.xcresult`：246 个测试定义，**185 passed / 61 failed / 0 skipped**（含参数化 220 passed / 70 failed）。全部失败停在 NativeSyntaxUI.prepareFocus：`active=false, key=false, foreground=com.apple.loginwindow`。这些失败没有进入各自交互，不能据此判定产品回归通过；已保留原包、摘要与前后相同源码指纹，未删或跳过焦点断言。已请求用户回到可用桌面，最终原生重验仍待完成。 |
+| 首轮原生证据 | `Native.xcresult` 的 15 项包含可见隔离 NSWindow 中的补全→入列→原生标题/对象编辑→收起→移除恢复、合并确认、引用选择、锁定与提交保护。`screenshots/` 的 **38 张原图、5 张联系表已实际查看**，含标准/紧凑×en/zh-Hans×浅深×正常/最小宽度的列表与展开 32 张。后续按钮/固定反馈修改使对应最终截图和键盘证据仍缺失，不能沿用首轮图宣称最终验收。 |
+| Debug 与静态验签 | 最终应用源码 `./scripts/build.sh` **passed**；`build-delivery.log`：`staticSignatureVerified: true`、`distributionReady: false`。只构建与验签，没有安装、启动生产应用或发布。 |
+| 静态门禁与脚本 | 最终相关 Swift 严格局部 lint 无输出/通过；工作流检查、静态质量门禁、`git diff --check` 通过。工作流定向 **83**、脚本回归 **203** 项通过。auto/swift profile 会启动非本轮独立标识的整套宿主，依隔离约束未运行；以上显式 QA 定向不冒充完整 Swift profile。 |
+| 指定复核与历史外观 | Cursor verifier **不可调用/未执行**，没有重新登录或替代复核。SettingsPickerConsumerTests dark→system 历史外观预期失败继续保留；本轮组合在焦点准备即失败，未触达该外观断言，不能写成已重验通过或归因已解决。 |
+
+最终本轮共 19 项新测试定义：11 项无窗口计划接线随 Domain 通过，8 项原生测试仍须在最终界面代码上复验。领域验证时指纹在 `source-final.json`，交付指纹在 `source-delivery.json`；其间仅 OperationPreview 给 retained 恢复按钮增加共用参数摘要，区分同命令的不同草稿，没有改状态或事件。该显示收尾重新通过构建和严格局部 lint，仍待原生截图重验。结果摘要在对应 `*-summary.json`；并行工作树未冻结。前述首次已通过的链路与最终未完成验收分别记录，不合并成一个通过数字。
+
+VoiceOver 真人、系统输入法候选窗、系统减弱动态开关、最低 macOS 和真实用户多窗口未验。§9.47 / §9.48 的 SettingsPickerConsumerTests dark→system 历史外观预期失败不关闭；本轮仅展示合成计划设置意图，没有改偏好应用或系统外观切换路径。
+
+#### 最终原生重验接续（2026-10-03，Asia/Shanghai）
+
+本次仅重验与交接，**原生重验 blocked，阶段仍 partial**。工作区已有 15 个已跟踪修改文件和 12 个未跟踪文件全部保留；本次没有修改 Swift、测试、资源或其他并行实现，仅追加本节记录。逐文件 SHA-256 核对 `source-delivery.json` 的 44 个源码/测试/资源文件，当前全部一致，记录为 `build/UnifiedSearchPlanQA/source-native-recheck.json`。已读取 Domain / Native / Regression 的原结果摘要，确认分别为 119/0/0、15/0/0、185/61/0（passed/failed/skipped）；这些仍是历史结果，不计为本轮重验。
+
+一次只读桌面预检（2026-10-03T10:04:44Z）返回 `foregroundBundleID=com.openai.codex`、`sessionOnConsole=true`、`sessionLoginDone=true`；锁屏字段未提供，不能据此断言 QA 已获得焦点。未发现正在运行的 xcodebuild/xctest。随后按原 QA 参数准备先执行现有 `UnifiedSearchPlanInteractionTests/keyboardReorderAndDependentRejectionKeepOriginalOrder()`，但对原 `build/.build.lock` 的非阻塞独占申请返回 `BlockingIOError: [Errno 35] Resource temporarily unavailable`。只读 lsof 未返回持有者，锁文件为空，故锁占用来源未确认；没有将其归因于 loginwindow、产品或测试预期。
+
+测试在申请锁处停止，**未启动 xcodebuild、QA 应用或任何 XCTest**。`FocusRecheck-command.json` 仅保存拟执行参数，不是执行证据；没有产生 FocusRecheck.xcresult 或测试日志。没有删除/重建/解锁原锁文件，没有终止其他任务或关闭用户应用，也没有解锁系统、输入凭据或更改安全设置。无法确认独占测试条件，因此不启动组合回归、不重复焦点失败。
+
+| 最终交接项 | 本次状态 |
+|---|---|
+| 最终原生结果 | 未运行。计划键盘、入列/移除/重排/合并/依赖、参数/对象接续、标准/紧凑布局及相关旧输入消费者均待补；不排除必需用例，不放松焦点或输入法断言。 |
+| 最终截图 | 本次新增与实际检查均为 0 张；最终代码的语言、主题、宽度、关键状态均未取得新视觉证据。首轮 en/zh-Hans、浅深色、标准/紧凑、正常/最小宽度的 38 张只保留历史身份。 |
+| 实际修复 | 无。仅更新本文 §9.49；未获得产品问题证据，不改变代码或主题规则。 |
+| 环境恢复条件 | 当前前台已不是 loginwindow，但独占测试锁不可得，QA 焦点尚未验证。需其他构建/验收任务正常结束并释放锁，保留已登录、可交互桌面，测试期间不切换窗口或操作键鼠；锁来源不明时先定位，不绕过锁。 |
+| 剩余缺口 | Cursor 指定 verifier 不可调用/未执行，未重复登录检查或替代复核；VoiceOver 真人、系统输入法候选窗、系统减弱动态开关、最低 macOS、真实多窗口仍未验。旧 dark→system 外观预期失败继续保留，本次未触达该断言。 |
+| 下一阶段依据 | 尚不具备最终原生验收完成的本地依据；不进入下一阶段或长正文阶段。既有领域/构建证据不替代本次缺失的原生与指定复核证据。 |
+
+本次文档验证：`python3 -B scripts/check_workflow.py`、`git diff --check`、`python3 -B scripts/quality_gate.py --profile static --format json` 均 passed；静态入口按现有工作区差异同时运行的 203 项隔离脚本回归通过。未运行 Swift 构建或原生测试。检查期间另有并行的 `DaybookScrollContractTests.swift` / `DaybookScrollNativeTests.swift` 差异出现，未修改或纳入本阶段实现；工作区并非冻结快照，续验前须重新核对相关源码与测试范围。
+
+长正文、标签集合、nativeFile/nativeShortcut、未适配对象来源、敏感草稿封存、真正撤销计划编辑、更多创建输出与 handler 接线仍是后续项。本轮到 **4A-3B2 停止**，不进入执行接线阶段。
+
+### 9.50 阶段 4A-3C0：长正文与敏感操作草稿的只读核验及接线方案
+
+2026-10-03（Asia/Shanghai）。本阶段仅阅读当前工作树并更新本文，**没有实施长正文或封存，没有修改产品 Swift/测试/资源，没有申请测试锁或启动 XCTest**。§9.49 的 Errno 35 独占锁阻塞、最终原生重验未启动、指定 Cursor verifier 不可调用、人工和历史验收缺口全部保留。本次授权允许继续只读设计，不改变前阶段 partial 状态；本文以下拟议类型、方法和阶段均不是已实现能力或实施授权。
+
+已读取 AGENTS、技能路由、组件目录、项目架构/质量门禁，按 areachain-workflow、areachain-ui、areachain-verify 及通用架构/可靠性规范组织。UI/UX 的 SwiftUI 聚焦检索支持 Binding 和稳定视图身份；其 iOS 的“避免手工 first responder”建议不替代本项目 AppKit 焦点契约。两项并行只读探索分别核验隐私/封存和命令所有权，主代理沿源码抽查；它们不是指定 Cursor verifier，未重复登录检查。原有 4A-3B2、滚动测试、规则与文档等并行修改全部保留，仅在本文追加交接，不另建方案或修改路由/组件实现。
+
+#### 推荐结论与最小影响/复用表
+
+**不能把现有 DiaryEditorSession 整体搬入搜索，也不能在 CommandDraft.arguments 外罩一层隐藏视图便开放敏感编辑。** 推荐先在原标准/紧凑 QA 宿主用合成普通正文完成原生接线；真实自由正文、敏感计划及转交，须先完成下述独立授权的保护契约。优先验证“每个已接受的内容修订已有同版本密文恢复点”，让真正锁定只撤销访问并释放明文引用，避免把第一次可能失败的加密留到密钥清除之前。若不能覆盖 marked text（输入法组合文本）等全部入口，该路径保持关闭，不用较旧密文冒充保住最新稿。
+
+| 需求 | 已有入口与实际消费者 | 推荐复用/扩展及必须保持的边界 |
+|---|---|---|
+| 下方多行正文 | DaybookTextEditor；DiaryWindowView、DiaryCardComponents、DiaryQuickComposerView 经 SyntaxTextEditor 消费 | 复用 NSTextView/NSScrollView、DaybookInputShell.editor、字体与滚动条；为命令场景增加可选版本/生命周期桥接，旧消费者默认行为兼容。不能直接采用 SyntaxTextEditor 的全量 @Query 标签作为安全候选来源。 |
+| active / planItem 编辑 | Controller.editingDraft、OperationEditing.sendOperation、PlanEditing.sendPlanDraft | 共用同一正文适配，直接编辑当前位置；不复制计划正文到 active，不另建可提交 @State String。 |
+| 草稿保留与转交 | DraftSession、HostSession、Plan、HandoffCoordinator | 保持原身份、版本、原子入列/移出、失败保留及目标接管/源撤权；保护载荷须覆盖 retained 和 pending，而非只覆盖可见项。 |
+| 密文与访问 | SealedDiaryDraft → VaultKeyAccess → VaultCrypto；PrivacyAccess | 复用同一 vault/key access/加密实现；新建命令载荷封装与受控读取边界，不复制算法、不增加另一套密钥、认证或磁盘存储。 |
+| 搜索锁定 | ContentQueryReadSession、InputReset、OperationBoundary | D3 的立即撤权、清搜索与旧票据失效继续独立执行；草稿保护不得等待搜索恢复，也不得把查询清理事件改成删稿。 |
+
+#### 核实的封存、密钥与敏感性事实
+
+以下行号对应本轮读取的工作树，可按符号定位；源码变化后需重核。引文仅保留决定方案的语句。
+
+| 问题 | 实际代码与结论 |
+|---|---|
+| 1. 现有会话封存哪些内容 | [SealedDiaryDraft.swift:3–23](../AreaChain/Services/Privacy/SealedDiaryDraft.swift)：`DiaryDraftText` 只有 `text`、`baseline`；外层是 data/vaultID/id/isDirty，`JSONEncoder().encode(DiaryDraftText(...))` 后调用 keys.seal。**包含正文基线，不含** Session.baselineTags、initialTagIDs、privacyTags、record/source、日期、窗口状态、选区、marked range、撤销栈或附件选择。不能用它直接承载完整 CommandDraft/计划。 |
+| 2. 封存依赖什么密钥 | [PrivacyVault.swift:104–113](../AreaChain/Services/Privacy/PrivacyVault.swift)：`post(name: .privacyWillLock...)` → generation 增长 → systemKeys.cancel → `keys.clear()` → 状态更新/changed。[VaultKeyAccess.swift:28–52](../AreaChain/Services/Privacy/VaultKeyAccess.swift) 前后检查 key/vaultID/generation；[VaultCrypto.swift:29–43](../AreaChain/Services/Privacy/VaultCrypto.swift) 唯一 AES.GCM 实现以 context 作认证附加数据。封存依赖这把即将清除的会话密钥，不能锁后另行补做或从配置推断仍可用。 |
+| 3. willLock 是否须同步封存 | [DiaryEditorSession.swift:194–218](../AreaChain/Features/Diary/DiaryEditorSession.swift) 主队列观察回调直接 `sealForLock()`，没有 await。当前 lock 在 MainActor 同步发通知，seal 必须在通知返回、keys.clear 前完成；把它包入稍后 Task 不等价。多个观察者之间的注册/回调顺序不是未来正文恢复的保证。 |
+| 4. 失败能否阻止锁定 | lock 返回 Void，无投票、错误返回或延期接口。sealForLock 先 mask；成功才 `text = ""; baseline = ""`，catch 只设 privacyUnavailable/issue.failed，**唯一最新稿仍在原会话明文 text/baseline**。这避免直接丢稿，但不是成功封存，也不是满足新路径安全要求的长期兜底。不能虚构“返回 false 阻止锁定”。 |
+| 5. 未配置时普通草稿 | Session.needsUnlock 为 false 时 sealForLock 的 guard 直接返回，普通 text/baseline 随会话留在内存；SealedDiaryDraft.seal 无 configuration 会抛 notConfigured。Command 层目前也是内存明文保留。没有默认落盘或跨进程恢复承诺；未配置状态不能宣称任意敏感输入受加密保护。 |
+| 6. 何时知道新内容需要保护 | [DiaryPrivacy.swift:11–23、38–55](../AreaChain/Domain/DiaryPrivacy.swift)：isSensitive 看 isPrivate、`#密码/#password` 和关联密码/私密标签；requiresProtection 用 TagSyntax/DiaryMemoTags 提取的名字及关联 UUID 匹配 `tag.isPrivateDiary`。Session.isSensitive/needsUnlock 在 [82–96 行](../AreaChain/Features/Diary/DiaryEditorSession.swift) 读取当前文字/目录/原记录，并非统一的写入前保护门禁。新文本、标签选择、目标或基线/标签目录变化均需重新判断；不能等保存再判断。 |
+| 7. 普通记录与任意敏感输入 | isSensitive 与 requiresProtection **不等价**：旧密码标记可触发遮罩但不一定触发加密；缺目录不能当空目录，移除当前标记也不证明基线/撤销内容不敏感。记录公开只说明已核实的来源；用户后续自由文字、未完成拼写和 IME 都可能敏感。沿 D3，搜索输入无无内容证明即按敏感清理；操作草稿不能套用“清掉即可”，也不能用无关键词证明安全。建议配置可用后的新自由正文一律进入受保护载荷，不等待标签才升级。 |
+| 8. 解锁是否自动恢复 | Session 的 privacyDidChange 调用 refresh；[114–118 行](../AreaChain/Features/Diary/DiaryEditorSession.swift) 在 vault.isUnlocked 时自动 open 密文并回填 text/baseline，isMasked 仍为 true，显式 reveal 才显示。**自动解密与自动显示须区分**。新命令方案更窄：保持密文，明确“恢复此草稿”且当前宿主通过访问校验后才解封，不复制旧 refresh 的自动解密行为。 |
+| 9. retained/计划能否直接复用 | 可复用低层 keys.seal/open 与密文保留模式，不能原样复用 DiaryEditorSession：它持 ModelContext、读真实记录和标签、保存经 ModelChanges/DiaryRepository，身份不是命令宿主/项 stamp。SealedDiaryDraft 的二字符串格式不包含参数操作、基线主体及 absent/mixed、未完成拼写、计划所有权等，须独立命令载荷契约。 |
+| 10. 已封存执行快照是什么 | [CommandPlan.swift:203–210、247–252](../AreaChain/Domain/CommandPlan.swift) 的 seal 仅 `CommandPlanSnapshot(stamp: stamp, items: items)` 后清 items；[CommandExecutionRun.swift:3–14、183–204](../AreaChain/Domain/CommandExecutionRun.swift) 持不可编辑 snapshot，resolvedInput 还能派生 arguments 值副本。**协议冻结不是加密封存**。失败/未知结果须保留原运行身份，不得退回成可重放创建。推荐在进入 sealPlanForProtocol 之前拒绝受保护/保护未知载荷；本阶段及上述后续 UI 均不接 seal/beginNext/handler。 |
+
+[PrivacyAccess.withDiary/perform:127–164](../AreaChain/Features/Diary/PrivacyUnlockPresenter.swift) 可复用显式认证后的访问与记录存活复查思路，但 perform 在需要解锁时会创建认证 Task；搜索渲染、预览、自动恢复不得调用它触发认证。未来显式恢复还要在 await 后核对**原** ownership、draft/payload revision、privacy epoch 与访问资格；原 PrivacyAccess 本身不认识命令 stamp，不能单独证明迟到恢复安全。
+
+现有失败标志也不能充当新隔离协议：[DiaryEditorSession.refresh:112–113](../AreaChain/Features/Diary/DiaryEditorSession.swift) 读取标签成功便把 privacyUnavailable 设回 false；它不是持久的“封存失败待修复”状态。[PrivacyRenderingTests:96–118](../AreaChainTests/Features/PrivacyRenderingTests.swift) 直接赋值后测试成功封存和自动解封但仍遮罩，未覆盖 seal 失败；同文件锁后等待 settle 再检查当前原生树，不证明锁返回时旧 storage/marked/undo 已全部撤除。
+
+[DiaryCardDrafts.swift:8–26](../AreaChain/Features/Diary/DiaryCardDrafts.swift) 让列表持有会话、过滤卸载卡片不丢稿；[DiaryWindows.swift:22–30](../AreaChain/Features/Diary/DiaryWindows.swift) 是窗口先接收 BoardComposerDraft 再回调清源。该回调没有 CommandHandoffTicket 或双端版本，不能直接作为敏感命令转交。其 canClose（136–141）复用真实 session.save，搜索未接 handler 时不能借这个按钮宣称保存完成。附件资料和异步选择另属原 composer/附件链，本阶段不承接附件选择或真实窗口转交。
+
+#### 正文及敏感参数持有清单
+
+“唯一正文”指**一个被授权编辑的真值**；Swift 值拷贝、只读基线、密文恢复点和原生瞬时缓冲仍需逐项管理。下表“锁定现状”不是未来能力；拟议清理必须以唯一最新内容已被可靠保全为前提。任何仅清 String 引用的动作均不承诺内存零化。
+
+| 持有点与源码 | 当前所有者、生命周期、可编辑性 | 锁定现状、失败时唯一内容及旧回调风险 | 后续要求 |
+|---|---|---|---|
+| 活动草稿 arguments；[CommandDraft:21–40、72–76](../AreaChain/Domain/CommandDraft.swift) | Coordinator.hosts → HostSession.operations.active；edit 推进版本；shortText/longText 均为 String。 | lock 不改它；编辑/入列失败仍在源草稿。旧 stamp 拒写不等于旧值不可读。 | 受保护路径从首次接收即用受控载荷引用，不先输出明文快照再事后遮罩。 |
+| retained；[DraftSession:44–46、60–80](../AreaChain/Domain/CommandDraftSession.swift) | 完整草稿保留集合；恢复才活动编辑，退列进入此处。 | lock 不改；恢复/转移失败保留源。隐形项目也含正文和基线。 | 同一载荷/草稿 ID 转移；密文项目只显无内容状态，显式恢复。 |
+| **pending 新草稿**；[DraftSession:5–14、147–155](../AreaChain/Domain/CommandDraftSession.swift) | destination.start 持整份新草稿；decision 同时可在 intent 和按钮闭包中存活。 | lock 不改；当前 active 与待接收正文都可能是唯一内容。旧确认被版本拒绝仍可能持值。 | 目的地只携受控引用；锁时撤确认资格但保留两侧载荷，不能清 pending 顺带丢新稿。 |
+| 计划项/编辑位置；[Plan:26–39、112–126](../AreaChain/Domain/CommandPlan.swift) | item.draft 持值；editing 仅项 UUID；cancelKeepingChanges 不回滚。 | lock 保留整个 plan；计划编辑失败保持原项。UI let item/draft 可留旧副本。 | active/retained/item 中一个逻辑所有者；入列/退列原子迁移引用和版本；非活动项优先仅持密文。 |
+| 编辑基线；[DraftTargets:56–71](../AreaChain/Domain/CommandDraftTargets.swift)、Session.baseline | immutable 比较证据，可含多个对象的 uniform(CommandValue)；显式 reload 或换目标替换。 | Command 无封存；Diary 只封正文 baseline，标签资料留会话。当前稿保护不能保护被漏掉的原文。 | 基线和当前稿同一保护单元内分别存储，保留未提供/absent/mixed 区别；失效与解封失败都不得当空值。 |
+| 执行协议 snapshot / resolvedInput；[ExecutionRun:3、183–204](../AreaChain/Domain/CommandExecutionRun.swift) | snapshot 至显式成功释放；resolvedInput 是调用方持有的参数副本，不可编辑运行稿。 | lock 不改；失败、冲突、未知均留快照。取消 Task 不撤回已导出值。 | 敏感/未知载荷前置拒绝进运行；未来执行保护另审，不能锁时删运行稿或允许重新创建。 |
+| 参数拼写 parameterText / syntheticBaselines；[Controller:23–25](../AreaChain/Features/Search/UnifiedSearchController.swift)、[OperationEditing:38–51、140–153](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift) | Controller 按 draft/parameter 持字符串及 stamp；可能重复合法值，也可能是 value=nil 的唯一未完成输入；合成基线另持整份证据。 | changed(.privacyInvalidated):215–224 不清这两个字典；parameterBuffer 可按解析值相同重新展示旧拼写。 | 长正文不写 parameterText，也不写主查询 buffer；其它内容型未完成拼写进入同一保护载荷。syntheticBaselines 只准 QA，不作真实原值缓存。 |
+| InputState/事件/候选/高亮；[UnifiedSearchInputState:5–20、42–66、87–105](../AreaChain/Theme/UnifiedSearchInputState.swift) | buffer、deferredBuffer、completion、pendingAcceptance 和 request.source/text；控件/闭包持到更新或释放。 | clearNative:241–255 清控件、候选等，**不直接清 state.buffer**；end:120–126 也非全值清理。只清 NSTextView 不等于这些值均消失。 | 新正文事件携身份而非旧整份正文；明确清派生显示值及 deferred/接受回声，旧事件不可补当前版本。 |
+| NSTextView/textStorage；[DaybookTextEditor:33–59、85–114](../AreaChain/Theme/DaybookTextEditor.swift) | 原生编辑器持实际文字和属性；delegate.textDidChange 把 editor.string 写回。 | 多行无同步撤销/销毁清理桥；OperationBoundary:70–84 目前只识别搜索 NSTextField 与 SearchFragmentLabel，不覆盖将来多行编辑器。清唯一 native 文本前须确认已保全。 | 增加可同步冻结/清理的窄适配，清 storage、选择及回调，禁止先卸载再读取唯一内容。 |
+| marked text / 替换范围 | NSTextInputClient/NSTextView；组合期间可变，不是已确定词；[InputState:129–146](../AreaChain/Theme/UnifiedSearchInputState.swift) 普通参数暂不写草稿。 | 当前参数锁定会 unmark/清控件，未证明保留仅存在于 native 的组词；多行 synchronizeText:85–91 有 marked 时拒绝更新。 | 保存可恢复的显示全文及组合范围/选区/必要替换信息，标成未完成输入；不得强制提交为手记或把拼音当最终词。恢复为普通待编辑文字，不自动重建系统候选窗。 |
+| UndoManager | 单行 [UnifiedSearchFieldEditor:14–29](../AreaChain/Theme/UnifiedSearchNativeInput.swift) 有独立 searchUndo；多行仅 allowsUndo=true，未声明专属 undo manager。 | 旧多行栈可能仍持历史字符串/操作；窗口共享栈不能整窗清空。 | 命令多行使用独立 undo；本次正常编辑保留撤销/重做，锁定/转交清本控件栈，不序列化历史。恢复不重建旧撤销；基线独立保全。 |
+| 预览/摘要/标签辅助值；[OperationCopy:5–12、27–49](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift)、[OperationPreview:153–170](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift) | View 派生摘要，retained 按钮也显示两行；longText 目前仅 later，shortText 原样格式化；候选可持用户标签名。 | 卸载树不是撤销外部副本；当前尚无长文摘要保护实现。 | 公共查询继续隐藏敏感正文；操作草稿仅明确恢复且有当前显示资格时生成摘要，不缓存完整正文/摘要，锁时清辅助与可访问性值。 |
+| Task/闭包捕获；[Controller:86–101](../AreaChain/Features/Search/UnifiedSearchController.swift)、[DaybookTextEditor:70–81](../AreaChain/Theme/DaybookTextEditor.swift) | refresh 捕获含 text 的 source；多行异步焦点捕获 editor/window/旧 focused，delegate.parent 也持 Binding。 | cancel 是合作式取消；已捕获值可存活，旧焦点块目前无命令版本。 | 异步只捕获 ID/stamp 与弱 owner；返回核对 epoch，不保留正文到 await；detach/lock 清闭包，焦点请求核对挂载代次及当前可显示性。 |
+| 加解密临时 Data/快照；[SealedDiaryDraft:16、22](../AreaChain/Services/Privacy/SealedDiaryDraft.swift)、[DiaryEditorSession:54、83、167](../AreaChain/Features/Diary/DiaryEditorSession.swift) | 同步编码/解码的完整 JSON 明文 Data、初始化文本、判定用 DiarySnapshot 和裁剪文本；均不是可编辑权威。 | 同步作用域结束仅释放引用；锁定无法追溯清除任意值副本，不能据此承诺物理擦除。 | 保持同步且不逃逸、不缓存/记录；失败保留原源/密文，不把临时编码数据当恢复库。 |
+| 转交准备、旧宿主值；[HandoffCoordinator:29–31、61–114](../AreaChain/Domain/CommandHandoffCoordinator.swift) | ticket 仅 lease/要求，不含正文；prepare/commit 局部值和 host() 调用方可持完整旧 Session。 | commit 单次 hosts=next 保证写所有权；旧 Swift 值不会被清零，可能继续被读取。失败源仍完整。 | 受保护草稿从一开始只向旧宿主快照暴露不透明引用；目标接管后旧引用不可读，准备期间源保持唯一恢复点。 |
+| mergedOrigins；[Plan:190–200](../AreaChain/Domain/CommandPlan.swift) | 只含被合并草稿 stamp，非正文历史。 | 不需正文封存；不可被用作恢复旧草稿能力。 | 保持出处及防重放；敏感正文/未知基线仍不合并，不扩大既有窄白名单。 |
+
+#### 推荐长正文原生接线（拟议，尚未实施）
+
+1. 在 `UnifiedSearchParameterField` 的 longText 分支组合 **DaybookInputShell.editor + DaybookTextEditor**，新增 Feature 内 `UnifiedSearchLongTextEditor` 窄适配。不把长文放回 `UnifiedSearchInput` 的命令解析/参数拼写模式。`SyntaxTextEditor` 是已核实的外壳参考，但其 @Query 读取全部未删标签；新适配应显式注入允许的候选，复用 SyntaxAutocompleteState 的 tags/diaryCapture 语义，不自行 fetch、不创建标签。`/`、`#`、引号、多行粘贴保持正文；# 可沿手记既有标签语法提示，路径样式文字绝不调用 CommandPathParser 的执行意图。
+2. 编辑位置显式携 `active(draftStamp)` 或 `planItem(planStamp,itemStamp,draftStamp)`，共同经过 Controller/原协调者；active 调原 edit，planItem 调 sendPlanDraft 的原计划 edit。retained 先显式恢复再编辑，计划就地编辑不移回 active。普通合成阶段参数真值仍为 arguments.longText；预览仅派生。受保护阶段改为下节载荷中的唯一 currentText，Domain 仅持引用，不能保留另一份 editable String。
+3. 原生桥接关联 `ownership + lease revision + draftStamp + plan/item stamp + parameterID + privacy epoch + editor mountID + native revision`；选区用 UTF-16。普通输入、粘贴、补全、撤销/重做均带原版本。仅同步成功的本次输入回声可接续新版本，拒绝旧参数/确认/候选。不能使用只比较 text 相等或 saved.version<=draft.version 的旧拼写恢复作为敏感准入依据。
+4. 多行 bridge 需要在**原生接受内容之前**取得候选修订及保全成功回执，覆盖 insertText/setMarkedText、删除/替换、补全、粘贴和 undo/redo。现有 textDidChange 是事后通知，不能证明此能力；须先在隔离宿主验证 NSTextInputClient 与 delegate 的完整顺序。组合期间不做语义提交、不弹命令补全、不强改 marked range；可恢复的组合状态归同一编辑所有者，仅 native 为短暂可写缓冲。非敏感 QA 也要证明组词内容在宿主卸载时不消失。
+5. 用户收起/切页/切 active-plan/转交前同步完成编辑所有者接收；marked 尚在时，优先保持 native 会话等待用户结束组词，或在已经保全完整组词显示值后结束显示，**不**调用真实保存。若本次切换的保全失败，可拒绝这个用户切换、保留原会话并反馈；这不意味着可以拒绝系统 lock。搜索 clearUserQuery 与操作编辑隔离：清查询不能顺带删正文或其组合恢复内容。
+6. 真正锁定由同步保护入口先关闭编辑/读取/焦点回调资格，再使用已存在的同版本密文，最后清 native storage、marked 状态、专属 undo、候选、摘要及事件缓冲。原 Search ReadSession 的 willLock 仍立即清查询、结果和票据；**不依赖**它与正文观察者谁先收到通知。若 OperationBoundary 先卸载正文，正文最新修订也必须早已保全，因此不能依赖“锁通知时再从 editor 抢读”。
+7. 日常展开/收起保持同一草稿与正文；只持无内容的展开、选区、滚动位置元数据，焦点回到触发的展开/计划编辑按钮。重新展开不得自动恢复敏感内容；明确恢复后才可焦点进入正文。正文 NSScrollView 有界滚动、外围仍复用原操作面板有界滚动，不推开顶部搜索；键盘光标/选择滚动属于文本视图，列表滚动属于面板。正常/最小宽度、滚轮边界与焦点可达性留给原生验收，不凭代码宣称体验已通过。
+8. Return 仍为换行，组词优先由输入法处理；⌘Return/保存按钮只说明“尚未执行”，Esc 优先关闭标签候选，再返回发起控件并保留草稿。不调用 DiaryEditorSession.save、repository、sealPlanForProtocol 或 handler；失败反馈不得写“已保存”。普通长文与敏感长文分阶段，未支持的内容入口在读取/粘贴/恢复**之前**拒绝，并给明确限制，不接收后再丢弃。
+
+#### 保护载荷、失败处理与授权边界
+
+**2026-10-03 / 4A-3C2A 已确认决定（优先于下文 C0 历史建议）**：用户授权本阶段公共草稿/计划契约及敏感数据处理实现，仅隔离合成验证。普通备注/手记在未配置私密锁时允许运行内明文编辑，不承诺加密、不自动落盘；明确受保护的记录/操作不得降级。普通转保护必须先成功建立恢复点再切换，失败保留普通稿并明确尚未保护、不执行私密操作。关键词缺失不是安全证明。下文关于未配置真实自由正文仍待决定的推荐保留为 C0 历史意见，已由本决定取代。
+
+C2A 仅实现应用接受修订的密文恢复点与显式恢复，不实现 NSTextView/IME 接受前门禁、原生撤销、生产敏感编辑、完整敏感转交、执行中保护、真实 handler、认证、迁移或磁盘草稿；不修改密钥生命周期及 PrivacyVault.lock 顺序。解锁不自动解封。原生缓冲与应用接受修订分别取证，缺失的原生保证继续关闭相关入口。
+
+推荐对**公共 CommandDraft 载荷契约**作显式扩展，而非仅给 View 加管理器。拟将当前 arguments+baseline 包为内容状态：普通合成路径为 plain，受保护路径为 `protected(reference)`；reference 只有不可复用载荷 ID/修订及所需形状，不携正文、密钥或权限。`CommandValue` 继续表达内层业务值，**不推荐把密文塞成 .longText(String)，也不必为每个值加入可任意解密的 sealed case**。Domain 的空值/缺项仍是业务语义；外层 sealed/masked/unavailable 与它们分开。具体名称是设计占位，尚未新增文件或类型。
+
+拟在 Services/Privacy 新建 `CommandDraftContentSession` 与 `SealedCommandDraft`：前者受注入的同一 Coordinator 所有权、vault 及编辑代次约束，独占可编辑 payload；后者只做命令格式编码与既有 VaultKeyAccess.seal/open 调用。载荷包括参数及 field operation、按 subject/parameter 编码的基线、未完成拼写、组词恢复数据、必要的敏感性来源与内容修订。固定目标/初始目标、计划图仍归原 Domain；若其中元数据被判敏感，只向普通展示投放允许投影。密文认证 context 区分命令草稿与既有 `draft:<id>`，绑定稳定载荷 ID/格式/修订；host lease 由所有权门禁核验，不把密文可复制当接管权限。旧 DiaryDraftText 编码与恢复兼容保持，不让新格式冒充旧格式。
+
+服务保存当前可编辑载荷和其**同一修订的不可编辑密文恢复点**，不是两份可提交正文。普通 Domain host()/plan()/decision 仅得到引用及无内容状态，无法通过旧值快照直接读取 protected payload；敏感 current/baseline 不通过普通 arguments/baseline getter 导出。读取返回的 String 仍会复制，必须限定在同步渲染/原生借用窗口并登记清理责任，禁止捕获进异步工作或正文日志；Swift 不提供这里所需的绝对内存零化保证。
+
+受保护编辑不能直接调用旧 `.edit(stamp, CommandArgument)` 再事后封存。拟由内容会话在原生接受前准备新 payload/密文，返回仅含候选 ID、原 owner/location、旧/新 payload revision 的一次性准备凭据；新增受保护内容提交事件由 Coordinator 同步核验当前引用、draft/plan/item stamp 及准备凭据后更新引用和版本。准备凭据不携正文，也不是解锁许可；候选失败或事件过期保持原 payload。plain 合成分支继续原 edit。计划和普通草稿共用这条提交路径，不能在新服务内绕过原 reducer 自行推进 owner。实现还必须验证候选资源发布与原生接受失败时的回退顺序；未证明这个原子性前保持敏感路径禁用。
+
+推荐失败协议如下，必须先验证再开放：
+
+| 时点 | 保全/失败处理 | 唯一内容位置及不能宣称的结果 |
+|---|---|---|
+| 首次接收/读取敏感或未知正文前 | 验证 vault 已配置且可用、当前访问与保护格式，完成初始密文后才允许原生编辑/普通投影。读取权限不从搜索 lease 获得。 | 初次 seal 失败不得把内容接入普通展示；原来源保持所有权。没有原来源/无法保全的入口保持禁用，不能把失败输入写临时文件。 |
+| 每次接受正文/组词修订 | 同步准备候选 → 同版本密文成功 → 原子发布载荷修订及接受原生更新；中途失败不推进成功状态。不得异步 debounce 后再补密文。 | **已接受的最新修订**仍在原 payload 及匹配密文；拒绝的新候选明确标“本次输入未接受”，不能声称它已保留。若平台已把唯一新内容写入 native 后才允许拦截，此方案前提失败，必须阻止该敏感路径开放。 |
+| 用户切换/收起时保全失败 | 拒绝该次可取消的用户切换、保留原编辑者，给无内容错误和重试入口；不更新目标版本或清源。 | 唯一稿留源；不能给旧 native 回调补新 stamp。转交失败同理。 |
+| willLock / 密钥即将清除 | 不再首度加密；立即撤访问，转换为仅持**最新已接受修订**密文，原 lock 按时清 keys。 | 锁定后唯一恢复材料是内存密文，含最新组词恢复内容与基线；没有自动落盘或进程崩溃恢复。旧密文落后一字也不能算保全。 |
+| 解封/格式/vault 不匹配失败 | 保留密文原件与身份，继续 masked/unavailable，显示固定错误；不覆盖成空稿、不自动认证/换钥/重试保存。 | 唯一可恢复内容仍为原密文；不能宣称已恢复。原 vault 永久不可用、退出进程等恢复能力未建立。 |
+| 发现无同版本密文却已接受明文 | 这是保护不变量破坏，**现有机制没有同时满足“立即锁定、不留明文、不丢唯一稿”的通用兜底**。 | 原 Session 的明文保留只能如实登记为安全缺口，不是新机制的成功分支。不得采用直接清稿、永久明文隔离、取消自动锁或新建密钥系统解决；实现/验收阶段保持入口关闭，另行提交具体修订方案。 |
+
+未配置私密锁的**已存在普通草稿**继续归原运行内所有者，收起/切页/清查询不丢，关闭保留原未保存处理；没有可用 key 时不强行调用 seal，也不自动配置。用户要求的“普通长文保留”与“任意自由输入都受保护”不能在未配置状态被混称为已实现。推荐首批普通长文只用合成资料；真实未配置自由输入暂不开放新的安全承诺或新路径。未来若要开放，需明确其非加密草稿产品边界及已知敏感/保护未知入口的阻断；只检测 #密码 不足以证明任意输入非敏感。配置/标签外部变化同样须使当前证明失效，不能延用旧 public 分类。
+
+配置可用后的推荐路径从首个自由正文修订就建立密文恢复点，覆盖短文字中用户内容、原值和未完成输入，避免由普通转敏感时已遗留无法撤回的明文 host 副本。锁定/不可用/busy 时不新建或解封这类载荷，明确提示原因；已封存内容保留原件。解锁本身不显示、不解封，显式“恢复此草稿”后才重新校验资格。保护成本为每次可恢复原生修订的编码/加密；需按合成长文规模测主线程延迟与内存，不先承诺无限长度、性能预算或用异步窗口削弱不变量。
+
+#### 所有权、计划及转交的具体变化
+
+- 原子入列/移出继续沿 HostSession.enqueue/removeFromPlan：只迁移同一 payload 引用与 owner location；失败不动源，retained 不是执行队列。pending 的目标载荷也参加保全和未保存枚举。封存/恢复推进保护 epoch 和编辑资格，业务目标与 baseline 不隐式重载；旧确认、候选、原生/焦点回调一律失效。
+- 修改、形状检查与显示资格分开：protected 状态不能把缺少可读正文解释为空或无修改。`CommandDraft.check/changesOriginal`、`CommandDraftBaseline.original` 需返回受保护/待校验状态或使用同修订的无内容检查证据，保守保留未保存标记；不能依据 opaque reference 相等推断正文等价。`CommandPlanValidation` 不因为有密文便判可执行；正文合并仍拒绝。原 mergedOrigins 只保存 stamp，继续保留。
+- 转交前源先停止当前编辑、保全同版本完整载荷（含组词）、撤掉显示/undo，并保留源所有权；完成此步后才按**新当前版本** prepare。准备不冻结后续普通操作，任何新编辑或锁定都使 ticket 过期，须重新准备，不能在 commit 内临时解密或强制结束旧组词。
+- confirm 只接受目标宿主已准备好处理该 protected 格式/密文引用的明确结果，不包含解锁许可、读取票据、认证结果或显示资格。commit 保留 MainActor 无 await、无外部回调、单次发布的结构；载荷 owner 元数据须和双方 hosts 一次发布，不能先改服务表再改 hosts 造成两套权威。不把加密搬进这个提交段；所有可失败准备在之前完成。
+- 最小集成建议：载荷资源寿命由注入的命令内容会话持有，**owner 的唯一权威仍由 Coordinator 登记**，服务每次读取都核对它，不另维护可独立授予资格的 owner 表。commit 移动引用并推进双端 ownership/generation、draft/item/plan 版本；密文以稳定载荷 ID 可在同 vault 内接续，旧宿主引用无当前 lease 即不可读。不同 vault/格式不兼容直接拒绝，不迁移密钥。
+- prepare/confirm/cancel/fail 均不删除源密文；失败或目标关闭仍由源恢复。成功后源只留防重放身份，目标保持封存，用户明确恢复才读取。锁定先发生：搜索撤权且 ticket 旧 lease 失效；commit 先发生：锁事件对协调者当前实际 owner 的全部载荷执行保护，而非只找已销毁源 Controller；编辑先发生：先完成新修订恢复点并使旧 ticket/确认失效。三者都串行核验，不跨 await 续租。
+- 任意未释放 execution 仍禁止转交；敏感/未知载荷在 `sealPlanForProtocol` 前拒绝进入 snapshot。未来真实 handler 的执行中/结果未知保护、不可撤回的已提交状态、异步参数借用及失败恢复需独立阶段，不能以当前 UI 的 submitBlocked 代替 Domain 防绕过门禁。
+
+公共契约的真实影响消费者如下；不是只改一个新服务就能交付：
+
+| 拟改文件/符号 | 影响及后续回归 |
+|---|---|
+| CommandDraft、CommandDraftTargets、CommandDraftSession、CommandArgumentValidation | plain/protected 读取、修改判断、baseline 三态、pending/恢复/显式重载及事件形状；CommandParameterTests、CommandDraftTests、CommandDraftProtectionTests。普通值入口兼容，受保护值不能被默认为合法普通参数。 |
+| CommandPlan、CommandPlanSemantics、CommandPlanValidation、CommandHostSession | 入列/退列/就地编辑、依赖/引用版本、未保存及执行前阻断；CommandPlanOwnership/Dependency/Merge、CommandAtomicPlan、CommandHostSession 测试。 |
+| CommandExecutionRun、CommandExecutionContract | snapshot/resolvedInput 不导出受保护明文、未知结果保留/不重放；CommandExecutionTests、CommandExecutionIntegrationTests。不接真实执行。 |
+| CommandHandoffCoordinator、CommandHandoffContract、HostSession.handoffStates | protected 引用接管、资格、双端原子性、旧值读取失效；CommandHandoff、Identity、Boundary、Integration 测试。 |
+| Controller、OperationEditing/Copy/Preview/ParameterField、PlanEditing/List/Links/Dependencies、ObjectSelection | 正文位置/预览/原值、无内容投影、同版本候选、旧回调清理；已有 Operation/Plan/Object 的 Contract/Lifecycle/Interaction/Presentation 及新长文用例。 |
+| DaybookTextEditor、UnifiedSearchInputState/InputReset/OperationBoundary；拟增 Feature 长文适配 | 可选生命周期桥、原生入口版本/专属 undo/同步清理，旧手记卡片/小窗/快速输入与任务备注、输入语法及搜索消费者回归；不顺带迁移原保存行为。 |
+| Services/Privacy 拟增命令内容会话/密文载荷；SealedDiaryDraft/VaultKeyAccess 的复用点 | 故障注入、格式/关联身份、锁前最新恢复点、显式解封。优先直接复用 keys API，必要抽取共有封装时须保持原 DiaryDraftText 兼容及原隐私测试；不得复制 VaultCrypto 算法。 |
+| ContentQueryReadSession / ReadLifecycle / 显示通知 | 保持 D3 同步清查询、许可隔离及旧票据拒绝；ReadSessionLock/Observation/Interaction、BodyLifecycle/Boundary 回归。新增草稿保护不能延长旧搜索许可。 |
+
+#### 后续实施拆分及必要授权
+
+以下是可审阅的推荐顺序，本阶段结束即停止，不据此自动进入任何一步。
+
+| 阶段 | 拟改范围、复用 | 新边界、失败/回退与隔离验收 | 授权 |
+|---|---|---|---|
+| 4A-3C1：合成普通长文原生接线 | 原 ParameterField/OperationEditing/PlanEditing/Preview；拟增 LongTextEditor，DaybookTextEditor 的可选版本/生命周期桥；双语文案 | 仅原 QA 标准/紧凑宿主与合成正文；active/retained/plan、组词、撤销、收起、切页、清查询/关闭保留。受保护或来源未知输入在导入前拒绝；失败保留源或拒绝切换，回退关闭 longText 分支。无 handler、真实对象/正文读取或生产入口。 | 需要后续明确实施请求；本轮无实施授权。普通原生接线不自行扩大隐私边界。 |
+| 4A-3C2：命令保护载荷与故障契约 | 上表 Domain 契约、Services 密文/内容会话，复用现有 vault.keys；原生 pre-accept 能力的隔离验证 | 明确改变敏感数据存活期/公共读值边界及编辑接受时机。先证明所有已接受修订有精确恢复点，故障时不丢稿、不保留普通展示明文、不延缓 lock。含 IME、baseline/pending、解封失败与性能；若任一入口无法证明，停止开放，不能保留未保护实现继续下一步。 | **必须明确授权高风险的公共草稿/计划及敏感数据处理契约变化**；范围含内存加密载荷、显式恢复、原生接受门禁和失败注入。授权不含密钥生命周期/认证/自动锁策略、磁盘持久化或真实数据。 |
+| 4A-3C3：受保护编辑、计划和同 vault 转交接线 | C2 载荷接原 Controller/OperationBoundary/Handoff；所有内容持有点按表回归 | retained/plan 仅密文、显式恢复、目标初始封存、锁/编辑/转交竞态、旧 callbacks/票据、无敏感快照执行。任何准备/接管失败源保留，回退禁入口并保留既有密文格式读取；不能回退到普通明文表示。 | 独立实施授权，并以前阶段证据/指定复核为前提；先隔离合成，真实读取、生产入口、真实认证和 handler 另列门禁。 |
+
+以下两项是 C0 当时待决定事项，现已由上方 4A-3C2A 授权及普通编辑边界取代；保留历史，不再请求确认：
+
+1. **是否授权 C2 的 protected payload + 同版本密文恢复点 + 显式恢复方案**。推荐授权后先做隔离契约/原生可行性验证；失败即维持敏感入口禁用。该方案复用现有密钥，不改 lock 顺序，不引入磁盘，也不承诺字符串零化。
+2. **未来未配置私密锁时真实自由正文的产品范围**。推荐本轮后续首批仍限合成 QA，真实未配置自由输入暂不开放；若要普通明文运行内编辑，必须明确接受其不具备任意敏感输入加密能力，并重新审定已知敏感/未知来源阻断及配置变化保护。不能把“普通手记”名称当安全证明，也不能先开放敏感路径再补保护。本项未决定不阻断 C0 文档交付或 C1 合成验证。
+
+指定 Cursor verifier 仍是后续公共契约/高风险实现的只读复核入口；本轮仅保留既有不可调用状态，不重复登录、不以本次两项探索/主代理自查冒充。未来代码完成、相关检查完成后向该入口交付原需求、实际差异和证据；不可用则继续登记 partial。本阶段没有要求修改 PrivacyVault.lock 使其可取消，任何这类方案也不在推荐授权范围内。
+
+#### 后续隔离验证计划（本阶段不执行）
+
+| 场景 | 必须检查的证据 |
+|---|---|
+| 原生长文 | 长中文/emoji/组合字符、多行粘贴、选区替换、Return、⌘Return、Esc、undo/redo；/ 与 # 不执行指令、不创建标签、不保存。标准/紧凑、en/zh-Hans、浅深色、正常/最小窗口及两层滚动。 |
+| 位置与未保存 | active→retain→恢复→入 plan→就地编辑→移出，pending 双侧正文；草稿/项/计划身份及版本、基线缺项/absent/mixed、取消保留修改；失败不改变唯一 owner。 |
+| IME 时序 | 在 setMarkedText、replacementRange、选区更新、候选确认、native/delegate 回声及卸载之间逐点注入锁/切换；验证每个已接受显示修订有同版本恢复点，不用“最后一个已提交词”冒充完整草稿。程序化 marked API 与真人中文输入法候选窗分别取证。 |
+| 封存成功/失败 | 合成 fake vault/内存配置，初次 seal、编辑 checkpoint、基线编码、解封、格式/vault/context 不匹配逐点故障注入；保存密文原件和最新修订，错误反馈无正文。无恢复点的反例必须拒绝准入，不能改断言接受丢字或长留明文。 |
+| 隐私状态 | unconfigured、locked、unlocked、unavailable、authenticating/methods changing；legacy 标记、新私密标签、目录缺失/更改、已去标记但基线仍敏感；不自动认证、不延缓自动锁，显式恢复前无明文读/显示。 |
+| 生命周期与转交 | 关闭面板/切页/清查询/收起/失焦后唯一稿仍在；锁定立即清搜索；准备前/confirm 前/commit 前后交错锁定和编辑，目标失败源保留、成功源旧值不可读、目标不自动解封。任何 execution（含未知/成功未释放）阻止转交。 |
+| 迟到与泄露 | 旧 lease/stamp/epoch、旧 confirm、deferred buffer、undo、失焦/焦点 Task、旧 host()/resolvedInput、候选和迟到查询结果均不得重新发布正文；检查原生 storage、摘要、可访问性、日志与故障产物。测试只含合成标记，不记录真实正文。 |
+| 无副作用 | fake repository/handler 调用计数为 0；无 UserDefaults/临时文件正文写入、无真实钥匙串/日历/生产库、无自动认证；不把密文 checkpoint 或协议 seal 表述为保存成功。 |
+| 性能与历史回归 | 测量指定长度/中文比例、每修订编码/加密延迟、cold/warm、主线程及内存；无数据不承诺预算。共享多行控件扩大到原手记/备注消费者，维持旧行为；§9.49 最终原生、旧 dark→system、VoiceOver/减弱动态/最低系统/真实多窗口缺口分别保留。 |
+
+后续原生验证沿架构文档既有 PrivacyQA 独立标识、独立 DerivedData、内存/临时合成资料、清除真实钥匙串授权变量和串行入口执行；须先由其他任务正常释放测试锁，不能删锁、抢锁或停止其他任务。C0 没有检查锁持有者或申请锁，没有启动 Swift 构建、应用或 XCTest。已阅读的 DiaryEditorSessionTests、PrivacyRenderingTests、InputSyntaxInteractionTests、Command/Operation/Plan/ReadSession 生命周期测试只作为覆盖线索，不能计成本轮通过。
+
+#### 本轮文档检查与停止交接
+
+本阶段仅追加本文；只读核验与方案已写入，**整体验证暂为 partial**。实际检查如下，后续并行变更不反向改变这些运行的历史身份：
+
+| 检查 | 本轮实际结果 |
+|---|---|
+| `python3 -B scripts/check_workflow.py` | 首轮 failed；project-links 通过，新增 §9.50 未报告坏引用。component-catalog 的 5 条错误来自并行滚动入口：daybookScroll、daybookScrollAssembly、DaybookScrollIndicators 当时未完成目录登记，后两项符号尚未在 DaybookScroller 中出现。未修改相关文件或绕过规则。 |
+| `python3 -B scripts/quality_gate.py --profile static --format json` | 首轮 failed；workflow-contract 同上，204 项脚本回归有 3 项失败。diff-whitespace、performance-contract、shell-syntax、security-static、comment-contract 均 passed；静态扫描无高置信秘密/敏感日志候选，不等于内存安全或完整审计。 |
+| 脚本失败定位 | 额外运行 `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：84 项，81 passed / 3 failed。失败为 test_cli_json_and_failure_exit_code、test_default_checks_pass_in_isolated_repository、test_default_run_never_enumerates_personal_documents；报告均指向合成组件目录尚未登记上述三个并行滚动符号。仅定位，不修该任务的夹具。 |
+| `git diff --check` | 已运行 passed。原检查命令与工作流使用 && 时因前者失败未运行 diff，因此另行单独执行并确认结果，未把未执行写成通过。 |
+| 工作区与未执行 | 初始及定稿时都有并行差异；期间 DaybookColor/DaybookScroller、目录及脚本又在变化，整树未冻结。本任务写入仅本文 §9.50，不把他人修改纳入产品交付。不运行 auto/swift profile、Swift 构建、XCTest、原生截图、系统认证或应用；不申请/删除/争抢测试锁。 |
+
+记录定稿后的第二轮 `check_workflow.py` / static 仍 failed：并行组件的三项符号/目录检查已通过，但 `docs/component-catalog.md:545` 新引用的 `engineering.md#第八阶段-b公共滚动装配去重` 尚无对应锚点；204 项脚本回归仍有上述 3 项失败，其余静态项通过。首轮与第二轮的错误不混为同一次快照，也不等待/修改他人工作来凑绿。额外直接调用原检查器的 `check_links(root, [本文], "authoritative-document-links")`，本文完整内联链接检查 passed；这只是本文件范围，不替代失败的仓库门禁。`git diff --check` 单独运行 passed。追加前本文的 704048 字节前缀 SHA-256 与追加后对应前缀一致，既有 §9.49 及更早内容未被改写；新 §9.50 只有一份。
+
+显式 static 避免当前并行 Swift 差异使 auto 启动原生测试；脚本隔离回归不申请原生锁。没有提交、推送、安装或发布。C0 文档交付不表示敏感封存、普通长文运行或前阶段原生验收通过；§9.49 的 Errno 35 锁阻塞、最终原生未运行、指定 Cursor/人工/历史外观缺口继续保留。完成本节文档交付后停止，后续实施须按上述范围单独授权。
+
+
+### 9.51 阶段 4A-3C2A：命令保护载荷与显式恢复
+
+2026-10-03。用户明确授权公共草稿/计划与敏感数据处理实现，仅隔离合成验证。§9.50 的 C0 待决定建议保留为历史；普通备注/手记未配置时允许内存明文编辑，不承诺加密、不落盘。required/unknown 不降级，转换失败保留原普通稿并返回 notProtected，私密执行关闭。已配置也不自动读取、认证或恢复。
+
+#### 载荷、修订与访问
+
+`CommandDraftPayload` v1 只编码格式、稳定 payloadID、应用内容 revision UUID、draftID、commandID、arguments（含 operation）、按 subject/parameter 的 absent/uniform/mixed baseline、未完成拼写及 UTF-16 选区。拒绝重复字段、非法选区、未知格式和 nativeSelection/shortcut；不序列化整个宿主、窗口、执行闭包、认证或文件能力。`SealedCommandDraft` 经现有 VaultKeyAccess / VaultCrypto AES-GCM，认证上下文绑定命令格式、vault、草稿、命令、载荷及内容修订；错关联、替换及损坏拒绝。旧 DiaryDraftText / draft:<id> 格式未修改。
+
+内容 revision 与宿主 lease / draft.version 分开：前者标识精确正文、基线、编辑状态恢复点；后者还会在普通移动/恢复激活时推进，不表示正文改变。每个应用接受内容修订先同步编码并加密，在服务资源表存候选后，Coordinator 核验当前 lease/stamp 并一次提交引用；提交失败恢复原密文。无公开 checkpoint 构造器，没有可填授权布尔值，没有独立 owner 表。服务表只保存恢复材料；当前访问每次回查唯一 Coordinator。
+
+公开 CommandDraft.arguments 不返回受保护值；baseline.isReadable=false，original 返回未提供值而非 absent，调用者必须同时看不可读标志；check.parameterCompleteness=protectedUnknown，dirty 保守 modified，引用相等不证明未修改。旧普通副本仍是转换前明文，Swift 值复制不能追溯擦除；本阶段无真实敏感入口，不将这点宣称为零化保证。
+
+`explicitlyRestore` 是唯一服务解密入口，恢复前后核验宿主 lease、草稿 stamp、载荷/修订、vault 和隐私代次/服务 epoch；不发起认证。返回不透明访问凭据，`withRestoredContents` 同步借用且前后复核；String 可被不遵守约定的进程内调用者复制，因此借用方禁止缓存、异步捕获、普通预览或日志。原生安全接线未完成，服务只在合成测试装配。锁定/隐私通知清受控明文引用并使凭据过期；willLock 当代次尚未递增时也禁止重新恢复。解锁通知只撤权，绝不自动解密。恢复失败保留密文。
+
+#### 失败与消费者边界
+
+- 初次转换：原普通稿完整保留到加密成功和协调者接受；失败 notProtected，无新引用、无版本推进、不执行私密操作。
+- 已保护编辑：必须先显式恢复；保持原基线，候选先封存，成功才替换引用与修订，失败 revisionNotAccepted，旧稿及密文不变。没有接受失败的新输入；不承诺尚未接入的 marked text 保全。
+- active/retained/plan 复用同一提交路径。pending 两侧纳入未保存枚举；存在 pending 时拒绝保护提交，不取消决策、不丢稿。计划入列/退出只移动引用；普通 edit/select/reload 不能覆盖 protected。计划就地保护编辑推进 item/plan/draft 版本，旧依赖自然过期。
+- CommandPlanValidation / Semantics / ExecutionRun：保护或未知内容不可合并/链接为普通参数；协议 seal 前拒绝保护/未知与自由长文导出，resolvedInput 也有拒绝检查。普通长文转交与旧追加合并错误继续兼容；明确保护/未知转交在 Coordinator 与 HostSession/Plan 边界拒绝，源所有权与密文不变。没有真实执行。
+- 两个原 Search 文案适配仅补无内容的 protectedContent 错误及 en/zh-Hans 文案，没有新增编辑或恢复按钮；不以 UI 禁用替代领域拒绝。
+
+#### 原生缺口、回退与交接
+
+只读核对 UnifiedSearchInputState 的 buffer / deferredBuffer / pendingAcceptance / lastSelection 及 NSTextView.hasMarkedText 分支；这些没有接入新服务。NSTextView/IME 接受前门禁、UndoManager、真实长正文、执行中敏感命令、完整跨宿主敏感转交继续关闭。应用修订合成事件不是系统输入法保证。下一步仅登记原生接受前候选拒绝、组合文本全部阶段、撤销缓冲与锁通知交错可行性，需单独阶段，不自动实施。
+
+回退关闭新保护入口，但保留当前内容服务及 v1 解码/显式恢复路径直至已持有密文处理完毕；不得卸掉唯一运行内服务/解码器、将密文降成公开明文或用旧代码读取新载荷。无磁盘草稿，不承诺进程退出/崩溃恢复；不改变用户数据格式、认证、密钥生命周期或 PrivacyVault.lock 顺序。
+
+#### 实际验证（持续更新至本阶段停止）
+
+首轮正常完整 PrivacyQA 目标沿 build/.build.lock 非阻塞取得锁，独立标识/目录、临时签名、六项真实钥匙串变量清除，测试仅内存配置、fake keys、合成载荷。79 项测试，74 通过、5 失败、0 跳过；含动态参数共 114 次运行，109 通过。失败是普通长文转交被扩大拒绝（4 项）及普通追加合并错误变更（1 项），已收窄转交/合并门禁，未放宽测试断言。首轮包曾为 `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.03_22-22-59-+0800.xcresult`，结果已读取；后续正常 Xcode 日志保留策略已移除该旧包，失败日志仍在 `build/CommandC2A-tests.log`，不将路径当作仍可访问的证据；重验结果另列。首次 Debug 编译漏两处新枚举分支失败，补齐后构建及静态验签通过，但后续相关编辑需重建。
+
+指定 Cursor verifier 当前无可调用入口，未执行、不重复登录、不改认证、不以主代理检查或其他代理替代；保持 partial。4A-3B2 最终原生重验缺失、历史测试锁阻塞及人工/旧阶段缺口全部保留。本次取得锁不等于补齐任何历史验收。未提交、推送、安装、启动生产应用或开放敏感编辑，停在 C2A。
+
+
+公共消费者的最终准入补充：明确 required/unknown 的普通种子由 CommandDraftReducer.validSeed 拒绝，直接 CommandPlan.add 同样拒绝；没有受控来源读取实现时不能先进入普通编辑再声称受保护。已有普通稿仍可显式 protect。protect 传入已保护稿报 unsupported，不误称旧稿“尚未保护”。
+
+第二轮完整定向结果：96 项测试、含参数化 131 次运行，零失败、零跳过；正常完整 PrivacyQA 应用/测试目标，结果包当时为 `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.03_22-31-42-+0800.xcresult`，日志 `build/CommandC2A-final-tests.log`。此轮后增加上述 required/unknown 准入拒绝与一项回归，最终结果另列，不把第二轮证据外推到新增改动。
+
+性能样本在 macOS 26.6.2 (25G83)、arm64 MacBook Pro、Xcode 26.6 (17F113)、Debug、MainActor、既有 AES-GCM 强度下测得。每档 6 次，正文为重复“中a🙂”（UTF-8 每单元 8 字节），基线与正文同大小；计时覆盖 DTO 构造/校验、JSON 编码、加密，不含解密、Coordinator 提交、原生接受或绘制。首样本是本测试该规模首轮，**不是冷进程**；热值取余下 5 次。每次随后解密比对内容，附件仅记录规模与时间、不记录正文。
+
+| 正文 / 基线各 UTF-8 字节 | 密文字节 | 首轮 ms | 热均值 ms | 热最大 ms |
+|---:|---:|---:|---:|---:|
+| 1,024 | 2,448 | 0.0348 | 0.0235 | 0.0260 |
+| 65,536 | 131,472 | 0.2598 | 0.2431 | 0.2465 |
+| 1,048,576 | 2,097,552 | 3.7208 | 3.5911 | 3.7905 |
+
+原始样本已从结果包导出到 `build/CommandC2A-metrics/`（含 manifest）；这不是逐键/组词延迟验收，没有内存峰值/输入时限预算，不降低密码学强度。
+
+工作流脚本新增四个稳定入口登记及缺符号反例。首次反例集三项失败来自合成组件目录未登记四项，补齐夹具后 86 项定向检查通过；静态 strict 门禁及 206 项 scripts/tests 通过，安全扫描 0 高风险、0 敏感日志候选；20 个本次 Swift 文件严格局部 SwiftLint 通过。后续只追加交接文档仍重跑工作流与 static。Debug 最终构建首次尝试因其他任务持锁退出 3，未删锁/抢锁/终止任务；不将前一构建当最终代码通过。
+
+
+**最终代码证据**：新增准入拒绝后的第三轮，97 项测试、含参数化 132 次运行，全部通过、0 跳过、0 预期失败。结果包 `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.03_22-43-29-+0800.xcresult`；日志 `build/CommandC2A-admission-tests.log`。正常完整目标串行运行上述 16 套：CommandProtectedDraftTests、SealedCommandDraftTests、CommandDraftTests、CommandDraftProtectionTests、CommandPlanOwnershipTests、CommandPlanDependencyTests、CommandPlanMergeTests、CommandAtomicPlanTests、CommandHostSessionTests、CommandHandoffTests、CommandHandoffIdentityTests、CommandHandoffBoundaryTests、CommandHandoffIntegrationTests、CommandExecutionTests、CommandExecutionIntegrationTests、CommandParameterTests。最终 Debug 构建再次经 `./scripts/build.sh --no-wait` 成功取得原锁，构建及静态验签通过，日志 `build/CommandC2A-final-build.log`；仅构建，不安装或启动。保留已发生的持锁阻塞记录。旧密文兼容由合成 SealedDiaryDraft 回归验证，不运行含真实钥匙串探测的完整 PrivacyVaultTests。
+
+本次实现和隔离单测/构建完成，但**阶段整体仍 partial**：指定 Cursor verifier 无可调用工具、未执行；原生长文接受前、IME、撤销、真人与历史验收未补齐。性能仅支持上表同步检查点测量，不支持系统输入保证。最终主代理检查确认原 SealedDiaryDraft / VaultKeyAccess / VaultCrypto / PrivacyVault 无差异，未接生产/handler、未提交、未推送、未安装、未启动生产应用；在 C2A 停止。
+
+本次文件清单（同文件内并行差异不算本阶段实现）：
+
+| 范围 | 文件与核心接口 |
+|---|---|
+| 新载荷/服务 | [CommandDraftPayload.swift](../AreaChain/Services/Privacy/CommandDraftPayload.swift) / CommandDraftContents、CommandDraftEditingState；[SealedCommandDraft.swift](../AreaChain/Services/Privacy/SealedCommandDraft.swift) / seal、open；[CommandDraftContentSession.swift](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) / protect、acceptRevision、explicitlyRestore、withRestoredContents、CommandDraftCheckpoint |
+| 草稿领域 | [CommandDraftProtection.swift](../AreaChain/Domain/CommandDraftProtection.swift)、[CommandDraft.swift](../AreaChain/Domain/CommandDraft.swift)、[CommandDraftTargets.swift](../AreaChain/Domain/CommandDraftTargets.swift)、[CommandDraftSession.swift](../AreaChain/Domain/CommandDraftSession.swift)、[CommandArgumentValidation.swift](../AreaChain/Domain/CommandArgumentValidation.swift) |
+| 计划/所有权/导出 | [CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift)、[CommandPlanValidation.swift](../AreaChain/Domain/CommandPlanValidation.swift)、[CommandPlanSemantics.swift](../AreaChain/Domain/CommandPlanSemantics.swift)、[CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift)、[CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift)、[CommandHandoffContract.swift](../AreaChain/Domain/CommandHandoffContract.swift)、[CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift) |
+| 无内容错误投影 | [UnifiedSearchOperationCopy.swift](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift)、[UnifiedSearchPlanCopy.swift](../AreaChain/Features/Search/UnifiedSearchPlanCopy.swift)、[Localizable.xcstrings](../AreaChain/Resources/Localizable.xcstrings) 的 unified.operation.protected |
+| 合成回归/性能 | [CommandProtectedDraftTestSupport.swift](../AreaChainTests/Services/CommandProtectedDraftTestSupport.swift)、[CommandProtectedDraftTests.swift](../AreaChainTests/Services/CommandProtectedDraftTests.swift)、[SealedCommandDraftTests.swift](../AreaChainTests/Services/SealedCommandDraftTests.swift) |
+| 原有文档与检查器 | 本文 §9.50/§9.51、[组件目录](component-catalog.md)、[架构](architecture.md)、[技能路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py) |
+
+### 9.52 阶段 4A-3C2B：原生接受与锁定交错的隔离可行性
+
+2026-10-03 开始，跨日续验。仅合成 PrivacyQA；不接生产、handler、完整敏感转交、真实认证或磁盘草稿。§9.50 为设计来源，§9.51 的 C2A 载荷/保护拒绝继续有效。本节区分应用接受、原生暂存和密文；最终状态与实际结果在本节末尾登记。
+
+#### 三种状态与受控持有
+
+- **应用修订 A**：唯一 Coordinator 的 active 草稿 stamp、lease 和 protectedReference。先沿原 SealedCommandDraft / CommandDraftPayload / VaultKeyAccess 建立密文，再经原 acceptProtection 提交。普通 acceptRevision 接口与基线不变校验保留。
+- **原生状态 N**：专用 CommandProtectedTextView 的 textStorage 与 UTF-16 单选区。仅 ContentSession 在同步 `attachNative` / `presentNative` 窗口可调用 `installProtectedContents`；外部直接调用安装方法被拒绝。不是任意 `withRestoredContents` 回调可缓存正文的新许可。
+- **恢复点 C(A)**：同一应用修订的完整 arguments、baseline、CommandDraftEditingState。原生接受成功后，字段 spelling / selection 与 N 一致。检查点成功但锁定先于原生更新时，A 与 C 已前进，N 被清空；这是“已保全但未显示”，不是原生接受成功。候选失败则 A/C/N 保留前一已接受状态；锁定时 N 清空，恢复仍只取 C。
+
+明文基线和其他参数只在原 ContentSession.restored，专用原生 owner 只取得 notes 字段。临时候选只存在 MainActor 同步栈；不放入 Task、异步闭包、日志、摘要或生产预览。undo/redo 闭包只捕获 SealedCommandDraft 密文，并归本控件独立 UndoManager；不使用/清除整个窗口的历史。撤销旧文字须在当前访问下解密旧点，经过相同基线核验、重新加密、Coordinator 提交，再显示为新修订。撤权清当前正文、选区、marked 状态和本控件撤销密文；重新显式恢复后历史为空，不承诺恢复系统 undo 栈，也不承诺进程内所有 String 已零化。
+
+#### 生命周期与最小契约变化
+
+`explicitlyRestore` 仍是用户恢复动作入口；成功恢复切换服务 epoch，避免恢复重入让旧候选继续提交。解锁通知只撤权。`attachNative(owner, using:)` 必须验证 C2A access、当前 active 位置、宿主与版本，且一次只有一个原生 owner。`acceptNative` / `undoNative` 共用原 acceptRevision 的校验/封存实现；只有该次验证通过的同步原生提交能把暂持关系移交到新 access，旧 access 不续期。协议没有每次编辑调用 explicitlyRestore。
+
+DaybookAppKitTextView 仅解除 final 供隔离子类继承，旧 DaybookTextEditor / SyntaxTextEditor 的默认构造、系统撤销、组词、delegate、保存/提交均未改。原生字段的 string 直接赋值拒绝；程序化同步必须携当前 access，旧回声不能补领新资格。重入撤销当前会话，旧候选不能再通过 epoch/lease 检查。失焦、卸载、宿主切换须调用 end；下次编辑必须重新显式恢复。独立窗口失焦与外部 Coordinator 修改的完整自动接线以实际实现/测试为准，不因每次操作有验证便宣称所有未触发回调的显示都已清理。
+
+active 是本阶段唯一原生接线位置；planItem 的 attach 明确 unsupported，不把正文复制到 active。原 C2A 的 plan/retained/pending 保护、执行与转交拒绝保持，plan 原生接线单独留后续。未配置普通输入仍是运行内明文，不自动落盘；转换失败不降级保护记录，沿原 notProtected 规则保留普通稿。
+
+#### 原生入口可行性矩阵
+
+下表“程序化”指正常 QA 应用内真实 AppKit 方法调用，不等同真人键盘、中文候选窗或 VoiceOver。最终运行结果见末尾；未通过项不得按此设计表算支持。
+
+| 原生入口 | 拦截点 | 恢复点 | 失败处理 | 证据类别 / 开放状态 |
+|---|---|---|---|---|
+| insertText、明确 replacementRange | 专用 override 在调用原生写入前构造完整替换文本；校验 Unicode/UTF-16 范围 | 同步 acceptNative 完整 payload | 保护失败保持旧 A/C/N；失效清 N | 程序化原生测试；仅隔离子集 |
+| 普通前删/后删、单选区替换、换行/Tab | 显式纯文本事务；删除按 composed character range | 同上，每次接受独立修订 | 拒绝非法范围，不拆 surrogate | 程序化原生测试；词/段删除等未列入口不开放 |
+| 多行粘贴 | readSelection 仅接 string，测试用 unique pasteboard | 插入前同步完整检查点 | 不接受富文本/附件；失败不标成功 | 程序化 AppKit 方法；真实系统剪贴板未读 |
+| 选区变化 | 单选区 override；多选区拒绝 | 同修订 editing selection | 校验失败保留旧选区 | 程序化验证；拖选连续时序未覆盖 |
+| undo/redo | 本控件 UndoManager → undoNative | 旧密文在当前资格下重封为新修订 | 锁定清本历史；不从旧 access 恢复 | 程序化原生测试；系统菜单/事件链另需验证 |
+| 程序化同步 / delegate 回声 | synchronize 要求原 access；didChangeText 不提交 | 只有明确同步可产生新点 | 旧版本拒绝，无文本变化回声不重复加密 | 程序化测试 |
+| setMarkedText / unmarkText | 在 super 前拒绝，不强制结束组词 | 不产生检查点，不谎称旧 C 包含 IME 暂存 | 保留旧 A/C/N；返回固定 compositionUnsupported | **不可安全开放**；普通 AppKit 对照验证更新/确认/取消 |
+| 失焦 / 卸载 | end 撤服务 owner 并同步清本控件 | 锁前已有 C，无末刻补加密 | 不续租；显式恢复才能再显示 | 原生焦点及程序化卸载分别记结果 |
+| 外部 mutable textStorage 写入 | didProcessEditing 才能检测，已是事后 | 没有该外部输入的检查点 | 撤权清 N，保留原 C；明确未保全外部输入 | **不可安全开放**，具体反例下述 |
+| 系统服务/拖放/替换/辅助功能写入 | shouldChangeText 未获本次内部安装许可即拒绝 | 无 | 拒绝；绕过 delegate 的路径不在支持集合 | 部分拒绝测试；各系统实现未覆盖 |
+
+最小反例一：`setMarkedText("zhong", …)` 的输入法可能仍持候选/拼写；应用拒绝后没有接受新修订，旧密文只有之前正文，无法承诺 zhong 已保全。程序化 setMarkedText 不观察真实系统 IME 私有存储，因此真实中文候选窗仍未覆盖。
+
+最小反例二：持有 `editor.textStorage` 的调用者直接 `replaceCharacters`；可绕过 insertText/shouldChangeText。检测在字符变更后，撤权清理不能把它变成接受前保护，新增字符串没有密文恢复点。此故障是“不受支持的输入可能丢失”，不冒充已接受修订无损。当前探针不能作为通用受保护 NSTextView 开放。
+
+#### 逐点失败注入的判据
+
+| 注入 | 最后应用修订 / 原生 / 可恢复内容 | 资格与损失判定 |
+|---|---|---|
+| 初次恢复的 open 后锁定 | 原 A/C 保留，N 从未安装 | 无 access；未接受新输入 |
+| 候选编码/加密失败 | 原 A/C/N 保持 | 原资格仍合法时保留；失败候选未接受、未保全 |
+| 建点前锁定 | 原 A/C；N 清空 | 撤权；旧已接受内容可恢复，新候选未接受 |
+| 建点后、原生接受前锁定 | 新 A/C；N 清空 | 撤权；新内容可恢复，但不算已原生显示 |
+| 原生回调重入 | 外层候选因 epoch 过期失败，旧 A/C | 撤权清 N；内外候选均未接受 |
+| 接受后旧回声 | 新 A/C/N 不变 | 旧 access 拒绝；不发布旧内容 |
+| 组词更新期间锁定 / 带候选请求卸载 | 原 A/C，N 清空 | 受保护 marked 从未接受；系统候选未保全不能算无损 |
+| undo/redo 封存期间失效 | 撤销前的 A/C 保留，N 清空 | 无资格/本控件历史；不得显示旧正文 |
+| 失焦 / 卸载 / 旧宿主回调 | 最后 C 保留，N 清空 | 旧回调拒绝；不自动续租 |
+
+每项实际断言位于 CommandNativeEditingTests / CommandNativeFailureTests，比较 Coordinator 状态、控件文本/marked/选区、可解密载荷、access 和本控件 undo；仅使用合成值。测试和探针存在不等于测试已通过。
+
+#### 验证与停止边界
+
+性能测试按正文 UTF-8 1 KiB / 64 KiB / 1 MiB，每档先装入，再逐次插入六个汉字；每次单独建立检查点，计时涵盖候选构造、payload 编码/加密、Coordinator 提交、新 access、textStorage/选区安装及 undo 注册，不含后续绘制和系统 IME。基线固定为合成短文本；首样本不是冷进程，后续五次为本档热样本；不把 C2A 加密微基准当逐键结果。只输出长度、时间和检查点次数，不输出正文。没有性能预算/内存峰值/真实逐键时限保证。
+
+指定 Cursor verifier 在本会话无可调用工具，未执行；不重复登录、不改认证、不以主代理检查替代。4A-3B2 最终原生重验、真人中文候选窗、VoiceOver、减弱动态、最低支持系统和历史外观/多窗口缺口保留。正常/最小尺寸、中英文/主题的产品长文面板未接线，不能由本探针外推。下一阶段最多继续隔离的 active notes、明确版本纯文本事务研究；**不允许据此开放敏感生产编辑、通用 IME、planItem 或完整转交**。本阶段结束即停止，不进入 C3。
+
+#### 上轮实际证据与续验前 partial 状态
+
+**2026-10-04 续验前快照：实现已写入，最终原生与编译验证未完成，不具备开放条件。以下保留上轮历史，最新状态以本节末的“编译续验与停止交接”为准。** 本节前述状态机/处理表是实现意图与测试判据，不是全部已通过的结果。不能将旧版某条通过外推到最后的修正。
+
+| 检查 / 版本 | 实际结果与限制 |
+|---|---|
+| 初次正常 PrivacyQA 编译 | 成功取得原 build/.build.lock；编译失败于 NSTextStorage 类型名及 epoch 局部遮蔽，随后修正。未修改目标、排除源码或绕过正常入口。 |
+| 第二次完整 QA 目标 + 五套定向测试 | `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.03_23-53-55-+0800.xcresult`：44 项，29 passed / 15 failed / 0 skipped（含参数运行口径 32 passed / 15 failed）。新子类错误使用便利初始化，触发未实现 init(frame:textContainer:)；旧 InputSyntaxInteractionTests 一项窗口焦点未就绪，foreground 为 Codex。没有修改旧测试或降低断言。此时 C2A 两套回归通过，但后续服务有编辑，不能当最终回归。 |
+| 第三次完整 QA 目标 + 新原生两套 | `build/PrivacyQA/Logs/Test/Test-AreaChain-2026.10.04_00-01-43-+0800.xcresult`，读取最终汇总为 11 项，3 passed / 8 failed / 0 skipped；部分参数未完成，测试取消。nil textContainer 未建立文本系统，原生正文为空，应用检查点却前进；这是实测不一致，不能允许丢字。undo 回调内 removeAllActions 触发 `_endUndoGroupRemovingIfEmpty` 异常，runner 长时间停滞。仅对本任务 runner 发送正常中断（退出 75），未停止其他任务、未删除锁。 |
+| 已写入但未重验的修正 | 显式创建 NSTextStorage → NSLayoutManager → NSTextContainer；安装后校验文本/选区，失败关闭会话；独立 UndoManager 撤权先禁止 undo/redo，当前调用退栈后清密文历史，避免破坏运行中分组；窗口失去 key/关闭同步 end；安装期间再次核验受控 owner。这些修改尚未获得新的 Swift 编译或运行证据。 |
+| 下一次正常非阻塞申请测试锁 | 退出 3，`C2B: test lock unavailable; native execution stopped`。按用户指令停止原生执行，未再尝试测试/构建，没有抢锁、删锁或停止持锁任务。最终 Debug 构建/验签未运行；之前测试目标的编译不能覆盖最终源码。 |
+| 性能 | 新 `nativeAcceptLatencySamplesIncludeCheckpointAndStorageUpdate` 未完成，没有任何有效的 C2B 原生逐键样本或检查点性能数据。上方 1 KiB/64 KiB/1 MiB、六次插入是测试方法，不是测量结果；不得引用 C2A 数字替代。 |
+| 严格局部 SwiftLint | 最终 6 个 Swift 文件实际运行通过；仅语法风格检查，不证明类型、AppKit 行为或保全。 |
+| 工作流定向反例 / scripts 回归 | `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v`：87 项通过；完整 `scripts/tests`：207 项通过。新增 NativeOwner/TextView 登记沿原检查器、合成目录和缺符号反例；没有新增检查执行器。 |
+| 仓库工作流 / static strict | 检查时 failed：并行主题入口 `DaybookSurface.swift` 缺少已登记的 smallBackground。project-links、Domain、技能、文件大小与本次两个符号登记通过；diff-whitespace、performance-contract、script-tests、shell-syntax、security-static、comment-contract passed。未改他人主题实现、删除检查或等待其工作来凑通过。最后一次命令结果以日志为准。 |
+| 指定复核 / 历史原生 / 人工 | Cursor verifier 无工具，未执行、不重查登录、不以其他代理代替。4A-3B2 最终原生重验仍缺失。真实中文候选窗、VoiceOver、真实键盘/系统菜单的完整链路、最低系统/减弱动态、长文面板的语言/主题/尺寸矩阵均未覆盖。 |
+
+原命令均是正常完整 PrivacyQA scheme/app/test target、独立 Bundle ID / DerivedData、临时本地签名、移除六项真实钥匙串授权、串行与 only-testing 筛选。五套为 CommandNativeEditingTests、CommandNativeFailureTests、CommandProtectedDraftTests、SealedCommandDraftTests、InputSyntaxInteractionTests；第三轮只缩小测试方法选择，未排除编译源码。日志 `build/CommandC2B-tests.log`；失败诊断 `build/CommandC2B-diagnostics/`；停滞只读采样 `build/CommandC2B-hang.sample`；中断汇总 `build/CommandC2B-interrupted-summary.json`；静态/脚本日志 `build/CommandC2B-static-final.json`、`build/CommandC2B-workflow-final.log`、`build/CommandC2B-workflow-tests.log`、`build/CommandC2B-script-tests.log`。构建目录未提交，Xcode 可能按保留策略移除旧结果包；这些运行历史不等于包永久可用。
+
+最终可行性分类：**已验证支持：无（最终源码缺运行证据）；仅程序化验证：早一版初次恢复失败、锁定两时点和焦点撤权的部分案例，不能计最终通过；未覆盖：最后修正的所有原生路径、性能及 planItem；不可安全开放：IME 暂存、任意 mutable textStorage/系统绕过路径以及当前整个敏感生产入口。** directMutableStorage 的最小反例目前是架构/API 层反例；该测试在无文本系统版本失败，修正后的真实变更/检测顺序未重验，不把失败测试描述成已证明的安全检测能力。
+
+下一阶段准确范围不是产品接线许可：只能在锁正常可得后，独立请求中续验本阶段 active notes 合成探针及旧消费者；先证明最终 A/N/C 一致、undo 退栈清理、回调和宿主生命周期，再讨论任何进一步接线。planItem、真实 IME、生产参数入口、执行、retained/pending 转交与完整敏感转交没有新增许可。本次停止在 C2B。
+
+本次变更清单（并行的同文件其他差异不算本阶段交付）：
+
+| 文件 | 本次接口或责任 |
+|---|---|
+| [CommandDraftContentSession.swift](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) | C2A 保护/借用保留；attachNative / validateNative / detachNative / acceptNative / undoNative / presentNative；显式恢复 epoch 修正 |
+| [CommandDraftNativeOwner.swift](../AreaChain/Services/Privacy/CommandDraftNativeOwner.swift) | 窄字段暂持/安装/同步清理协议，不给任意借用缓存许可 |
+| [CommandProtectedTextView.swift](../AreaChain/Features/Search/CommandProtectedTextView.swift) | 隔离 active notes 原生事务、拒绝路径、专属密文撤销及生命周期 |
+| [DaybookTextEditor.swift](../AreaChain/Theme/DaybookTextEditor.swift) | 仅 DaybookAppKitTextView 解除 final；旧默认行为原样保留 |
+| [CommandNativeEditingTests.swift](../AreaChainTests/Features/CommandNativeEditingTests.swift)、[CommandNativeFailureTests.swift](../AreaChainTests/Features/CommandNativeFailureTests.swift) | 真实 AppKit API、Unicode、独立撤销、回声/身份、失败、组词拒绝、性能及合成 QA 夹具 |
+| [组件目录](component-catalog.md)、[架构](architecture.md)、[技能路由](../skill-routing.md)、本文 | 本次边界与单一权威交接 |
+| [check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py) | 新接口登记、合成目录与缺符号反例 |
+
+主代理最终只读核对原 PrivacyVault / VaultKeyAccess / VaultCrypto / SealedDiaryDraft 无差异；没有改认证、锁顺序、密钥生命周期或磁盘格式，没有连接生产/handler、提交、推送、安装、发布或启动生产应用。保留全部既有并行修改。
+
+**最终文档后复跑**：并行主题任务随后补齐 smallBackground，主代理未修改该实现。重新运行 check_workflow.py、quality_gate.py --profile static --strict --format json、六文件严格 SwiftLint 与 git diff --check，均 passed；前述失败作为历史保留。最终静态通过不改变原生/构建未验证、无性能样本及指定复核缺失的 partial 结论。
+
+#### 2026-10-04 编译续验与停止交接
+
+**当前结论仍为 partial：最终应用源码已通过 Debug 编译和静态验签；原生最小复现申请锁失败，未调用测试命令，原 8 项失败均未复验，性能无样本。C2B 未完成，暂不允许增加隔离接线。** 本轮只修编译歧义并维护本 §9.52；没有修改测试成功定义、断言、保护服务或生产入口。
+
+**实际修改与编译**：`CommandProtectedTextView.swift:25` 将文本容器高度从 `.greatestFiniteMagnitude` 明确为 `CGFloat.greatestFiniteMagnitude`。本轮第一次 `./scripts/build.sh --no-wait` 退出 65，编译器在这一行同时找到 CGFloat / Double 候选；修正后相同命令退出 0，Debug 构建及 `staticSignatureVerified: true` 通过。日志分别为 `build/CommandC2B-resume-build.log`、`build/CommandC2B-resume-build-typed.log`。沿现有 development 签名配置与 `build/development-DerivedData`，没有改变个人配置、联网申请签名资源、安装或启动产物。环境为 macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113）、Swift 6.3.3。构建的最后相关 Swift 变更就是本行；之后仅编辑本文。正常应用目标成功不表示完整测试目标已重新编译。
+
+本次六个相关文件的 SHA-256 前缀用于辨认源码：TextView `fa268897830f1336`，ContentSession `eb648a2d6c5353b7`，NativeOwner `c68b2c93fcfb5985`，DaybookTextEditor `282252740c466724`，CommandNativeEditingTests `623a65b86fd19157`，CommandNativeFailureTests `6934b549fcab04c7`。后五个文件本轮没有编辑；不将前轮初始化、撤销和检测修正算作本轮新修复。
+
+**锁与桌面**：两次构建各通过原锁执行；随后原生最小复现的非阻塞 `flock(LOCK_EX | LOCK_NB)` 返回不可用，退出 3，日志 `build/CommandC2B-resume-minimal.log` 只有 `C2B: test lock unavailable; native execution stopped`。未启动 xcodebuild test、未生成本轮 xcresult、未重复申请、抢锁、删锁、等待或终止持锁任务；交接不推断锁后来已释放。准备命令保留正常完整 scheme、`build/PrivacyQA`、独立 QA Bundle ID、本地临时签名、生产 entitlement、`LSUIElement=NO`、六项真实钥匙串变量清除和串行选项；选择插入一致性与 undo/redo 失效两个原方法，没有排除编译源码。只读系统状态报告控制台会话，但没有完成本轮 QA key window / first responder 断言，所以桌面可交互条件尚未充分验证。未解锁系统、输入凭据或更改安全设置。
+
+**原失败逐项核对**：本轮重新读取原 `00-01-43` 结果包的 `test-results tests` / `test-details`，与中断汇总一致：11 项中 3 通过、8 失败，参数口径为 4 次通过、8 次失败。下表位置是当前源码定位；原始包部分条目只返回符号或 runner 诊断，不臆造旧包行号。`E` 指 [CommandNativeEditingTests.swift](../AreaChainTests/Features/CommandNativeEditingTests.swift)，`F` 指 [CommandNativeFailureTests.swift](../AreaChainTests/Features/CommandNativeFailureTests.swift)。
+
+| 原失败方法 / 分类 | 原始失败位置与证据 | 最后相关修正及本轮复验 |
+|---|---|---|
+| `insertionReplacementDeletionPasteAndSelectionHaveExactCheckpoints`；初始化 / 实际编辑 | E:13 → `expectCurrent` E:160：显示为空；E:168 选区 0 与检查点 10 不同，后续编辑还出现载荷/拼写不一致 | 前轮已显式连接 storage/layout/container，并在安装后核对正文和选区；本轮补 CGFloat 编译歧义。**应用编译通过，原生未运行**。 |
+| `ownedUndoRedoReprotectAndLockCannotRestoreText`；编辑 / undo / 恢复 | E:43、46、56 → E:160：显示为空；redo/恢复仍读到 A 而预期 AB，不能无证据归为纯环境或只归为分组问题 | 文本系统和安装核对、独立 manager 退栈清理已写入；仍需分别验证编辑、undo、redo、锁定后恢复。**未复验**。 |
+| `staleSyncLeaseHostAndUninstallationCannotEditLaterRevision`；身份 / 生命周期 | E:66、68 → E:160/168：新修订应显示 new，但显示空、选区 0/3 不一致 | 文本初始化/安装核对，以及前轮窗口撤权与旧 owner 不撤销新 owner 的逻辑。**未复验**，不能将后半段卸载断言存在当作通过。 |
+| `protectedMarkedUpdatesConfirmCancelStayRejectedAndOrdinaryAppKitComposes`；组词拒绝 / runner | 方法 E:83；原包只报 runner 在完成测试前以 0 退出，未给出失败语句；涉及 E:93 的 cancel 和 E:96 后普通 AppKit 对照，具体退出点未定位 | 受保护初始化修正已编译；组词测试/普通对照未改。**未复验，提前退出原因未证实已修复**。 |
+| `directMutableStorageIsAnExplicitAfterMutationCounterexample`；旁路 / 清理 | E:117 issue 为 nil；E:118 正文空但 access 仍存在；旧 nil storage 的可选调用没有证明实际写入或检测 | 前轮已建立文本系统，当前 didProcessEditing 先标 unsupportedMutation，再 end。**未复验**，未证明真实回调内清理可稳定完成。 |
+| `sealAndEncodingFailureKeepVisibleAcceptedRevision`；失败完整性 | F:27、34 → E:160：旧已接受正文应仍可见但为空 | 初始化与安装核对已编译；原失败注入/负选区拒绝断言保留。**未复验**；不得写成真实加密故障全路径已通过。 |
+| `nativeReentryRevokesOuterCandidateAndOldEchoCannotPublish`；重入 / 旧事件 / 重复恢复 | F:68 → E:160：重新恢复后显示空 | 前轮显式恢复 epoch、owner 核验和文本初始化修正已编译。**未复验**。 |
+| `undoAndRedoInvalidationNeverRevealHistory(redo:)`；undo 分组 / 清理 / 中断 | F:72；原包只有 `redo=false` 的 canceled 记录，F:80 对应撤销调用；`redo=true` 没有运行结果。前轮另记录 `_endUndoGroupRemovingIfEmpty` 异常/停滞 | `CommandNativeUndoManager.revoke` 先禁用，等 `super.undo/redo` 返回再 removeAllActions（TextView:264、269、275）。**仅编译通过，两个参数均未复验**；没有绕过撤销或锁定检查。 |
+
+原包其余三项是 `focusedNativeLifecycleRevokesOnBlur`、`initialRestoreFailureNeverInstallsNativeText`、`lockBeforeCheckpointOrAfterCheckpointBeforeNativeAcceptance`（false/true 均有旧通过）。它们也没有最终源码复验。更早五套运行的 InputSyntaxInteractionTests 焦点失败仅能证明当时窗口未就绪、前台为 Codex，不能推断唯一原因；本轮保留 `NativeSyntaxUI.prepareFocus` 和原断言，未重跑旧编辑器测试。原包没有 `markedUpdateLockAndUnmountNeverPretendIMEWasPreserved`、`planLocationIsExplicitlyClosedWithoutCopyingToActive`、性能方法或 undo 的 true 参数结果；这些是**未完成执行**，不是 skipped，更不是拒绝验证通过。本轮不进入 planItem 开发。
+
+**最终边界矩阵**：A 为应用修订，N 为原生显示，C 为密文恢复点。下列“恢复点覆盖”是源码路径与待验证判据；全部原生行都缺最终运行证据。“编译是”仅指完整应用目标，测试目标本轮未重新编译。
+
+| 原生路径 | 最终应用代码编译 | 实际测试结果 | 恢复点覆盖 | 剩余限制 | 允许继续隔离接线 |
+|---|---|---|---|---|---|
+| 普通插入、前后删除、单选区替换、多行纯文本粘贴 | 是 | 原失败；本轮未运行 | 代码先 seal C、acceptProtection 更新 A，再 presentNative 更新 N | A/C/N 及 Unicode/选区一致性尚未复验 | 否，先修验现探针 |
+| 编码/封存失败 | 是 | 原失败；本轮未运行 | 候选失败应保留旧 C/A/N；失败候选无恢复点 | 当前注入为 seal 前抛错和无效载荷，不能冒充底层加密全部故障 | 否 |
+| 建点前锁定、建点后原生接受前锁定 | 是 | 原版两参数通过；本轮未运行 | 前者只留旧 C；后者新 C/A 可保留、N 应清空 | 后者不算原生接受；还需明确核对失败 issue/回执，不能凭 checkpointCount 判成功 | 否 |
+| 锁定清 textStorage / selection / undo / access | 是 | 原版部分通过且 undo 中断；本轮未运行 | 没有末刻补加密，恢复只取最后 C | 清理退栈与旧 access 拒绝未复验；不承诺所有内存副本零化 | 否 |
+| 独立 undo/redo | 是 | 原失败；本轮未运行 | 旧密文用当前资格重封为新修订 | 分组稳定性未证；现有“其他历史”对照是独立 UndoManager，还不能覆盖另一真实控件的系统菜单链 | 否 |
+| 初始化、失焦、卸载、关闭、重复恢复 | 是 | 初始化/重复恢复旧失败，失焦旧通过；本轮未运行 | 恢复安装既有 C；end 撤权清 N | 真实 key window、反复挂卸与外部 Coordinator 无回调清理缺口保留 | 否 |
+| 旧版本、旧宿主、重入、迟到回声 | 是 | 原失败；本轮未运行 | epoch/lease/owner 校验应拒绝，不能借旧事件恢复 | 代码校验存在不等于完整事件时序已通过 | 否 |
+| setMarkedText / unmarkText | 是 | 原 runner 退出；锁定/卸载组词项未完成 | 不建立候选输入恢复点，代码在 super 前明确拒绝 | **拒绝策略已实现，拒绝后完整性未复验；IME/产品中文输入支持未完成** | 否 |
+| 外部 mutable textStorage.replaceCharacters | 是 | 原 nil storage 版本失败；本轮未运行 | **没有外部最新输入的 C**；仅旧 C 可恢复 | **事后检测，不能保证新增内容不进入原生缓冲或不丢失，明确不支持**；清理是否成功也未实测 | 否 |
+| 其他系统服务、拖放、替换、辅助功能底层写入 | 是 | 本轮未运行，各系统链未覆盖 | 仅 shouldChangeText 路径显式拒绝；绕过它没有保护保证 | 不将覆盖少量 override 当作覆盖全部 AppKit 输入 | 否 |
+
+旁路的当前检测顺序经源码核对为：外部字符变更 → `didProcessEditing` → 判断非内部安装且 editedCharacters → issue → end → 撤服务资格/清正文与选区/撤销历史。没有写入前拦截，也没有给这次外部输入加密。恢复旧 C 只能找回之前内容，不能宣称最新输入没有丢失。此轮未尝试为任意底层写入重写 AppKit 文本系统。
+
+**性能与回归**：原生链路尚未重新正确运行，因此没有采集性能，也没有用 C2A 微基准代替。现有性能方法指定 UTF-8 1,024 / 65,536 / 1,048,576 字节初值，每档六次各插入 1 个汉字，每次 1 个检查点；计时只覆盖同步完整编辑链路，不含绘制/系统 IME。当前测试尚未提供相同载荷的纯加密独立计时，后续先通过正确性再补分项数据；保留原加密强度与每次修订。CommandProtectedDraftTests、SealedCommandDraftTests 和受影响的 InputSyntaxInteractionTests 本轮均未重跑。没有连接真实库、真实钥匙串或生产应用。
+
+**本轮静态证据**：`python3 -B scripts/quality_gate.py --profile static --strict --format json`、`python3 -B scripts/check_workflow.py`、六文件严格 SwiftLint 和差异空白检查通过；静态门禁内实际运行 207 项 scripts/tests，通过。显式 static 避免 auto/swift profile 启动普通测试宿主。日志为 `build/CommandC2B-resume-static.json`、`build/CommandC2B-resume-workflow.log`、`build/CommandC2B-resume-lint.log`。原包只读提取在 `build/CommandC2B-resume-original-tests.json` / `build/CommandC2B-resume-original-details.json`，不是本轮测试结果。构建产物和日志不提交。
+
+**后续最小方案与停止点**：推荐继续修验现有 C2B 探针。之后独立续验先确认可交互桌面并正常取锁，先运行插入一致性与 undo/redo 失效最小复现，逐个定位组词 runner 提前退出及旁路清理；保留全部焦点、撤销和锁定断言。关键路径稳定后再跑本阶段正常隔离回归及旧编辑器相关方法，最后测完整链路/纯加密两类性能。现有证据只够证明编译修正，尚不足以认定初始化/undo 已稳定解决，也不足以选择扩大设计或有限接线。
+
+最终分类：**已验证可用的有限原生路径：无；明确拒绝的实现路径：组合文本、无版本赋值、非许可 delegate 编辑，但最终拒绝完整性未复验；尚未验证：最终原生链路、测试目标编译、回归和性能；当前设计无法保证：IME 自有暂存、任意 mutable storage 最新写入保全和完整系统旁路。** 指定 Cursor verifier 本轮未执行，未重查登录，也没有其他代理替代；4A-3B2 最终原生、真人中文候选窗、真实键盘/系统撤销菜单、VoiceOver、最低系统/减弱动态及历史外观/多窗口缺口继续保留。PrivacyVault 认证、密钥与 lock 顺序无差异。保留并行主题和计划列表修改；未提交、推送、安装、发布或启动生产应用，未进入长文 UI、planItem、敏感转交或下一阶段。
+
+### 9.53 阶段 3A-0：普通本地设置执行接线的只读核验与最小方案
+
+2026-10-04（Asia/Shanghai）。**本阶段仅核验源码并增补本文；真实设置执行仍未实现。推荐先单项，阻断尚无共同保存能力的多项提交。** 下文“事实”来自本次工作树静态阅读；“建议”均未实施、未获运行验证，拟议符号不是现有 API。不重复修改第 2～4 节已确认的键盘、预览和队列基本规则。
+
+范围仅语言、外观、四象限标题省略和捕获来源标记。开机启动、系统通知、日历同步、隐私、快捷键注册、文件、删除恢复、正文与敏感草稿均不接线；沿通知追踪排除能力，只为核实副作用边界。未调用任何设置方法，包括初始化 AppPreferences；未修改 Swift、handler、路由、组件目录或并行文件。C2B 以 §9.52 末次交接为准：最终应用编译通过，8 项原生失败未复验；IME 拒绝、mutable textStorage 只能事后检测，敏感输入不开放。指定 Cursor verifier、4A-3B2 最终原生和其他历史缺口继续保留，本次只读探索不替代指定复核。
+
+#### 当前写入事实与最小复用表
+
+以下行号为本轮读取时定位，后续以同表稳定符号复核。
+
+| 命令 ID / 路径 | 参数 → 现有类型 | 原设置页写入与权威副作用入口 | 实际消费者与保持项 |
+|---|---|---|---|
+| `setting.language` / `/setting/language` | 必填 `value`，choice `system/chinese/english` → `AppLanguage` | [SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift):16 的 `$prefs.language` → [AppPreferences.swift](../AreaChain/Services/AppPreferences.swift):75 `language.didSet` → `defaults.set(rawValue, languageKey)` → `notifyChange` | `AppChrome.body`:177 注入 locale；`AppLanguage.resolvedCode`:13。保留存储值 `system`，不冻结为当前 `en/zh-Hans`；system 按首选语言首项判断中文，否则英文。 |
+| `setting.appearance` / `/setting/appearance` | 必填 `value`，choice `system/light/dark` → `AppAppearance` | SettingsSections:23 的 `$prefs.appearance` → AppPreferences:83 `appearance.didSet`，依次写 defaults、`applyAppAppearance`、通知 | AppPreferences:143 分别设置 `NSApp.appearance = nil / aqua / darkAqua`；AppChrome 同时使用 `resolvedColorScheme`。存储 `system` 不等于当前视觉为浅色。 |
+| `setting.truncation` / `/setting/title-truncation` | 必填 `value`，choice `tail/middle` → `QuadrantTitleTruncation` | SettingsSections:30 的 `$prefs.quadrantTitleTruncation` → AppPreferences:92 的 didSet，写 defaults、通知 | [QuadrantPage.swift](../AreaChain/Features/Quadrant/QuadrantPage.swift):312、377 的 `QuadrantSingleLineTitle` 消费 `textTruncation`；:337 的标题气泡仍从开头预览，不修改标题正文。 |
+| `setting.captureSource` / `/setting/capture-source` | 必填 `enabled`，boolean → `Bool` | SettingsSections:66 的 `$prefs.stampCaptureApp` → AppPreferences:100 的 didSet，写 defaults、通知 | [ClipboardCapture.swift](../AreaChain/Services/ClipboardCapture.swift):55 `ingest`、[DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift):109 `addTodo`、[DayBoardMutations+Capture.swift](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift):21 `addCapturedTodo` 在创建待办时决定 `sourceBundleID`；不追溯改现有记录，也不是显示开关。 |
+
+目录原文在 [CommandCatalog+Settings.swift](../AreaChain/Domain/CommandCatalog+Settings.swift):6～17；参数默认规则在 [CommandParameter.swift](../AreaChain/Domain/CommandParameter.swift) 的初始化声明。四项均仅 `.assign`，无参数默认值、无对象目标；缺值、`.unspecified`、`.clear`、多余/重复参数、错类型必须拒绝。布尔路径尾参是 `true/false`（[CommandPathArguments.swift](../AreaChain/Domain/CommandPathArguments.swift):21），界面“开/关”不另造存储词。choice 别名由原解析器规范化，未知 rawValue 不得在执行时回退 `.system` 冒充有效输入。
+
+四个持久键为 `areachain.prefs.language`、`areachain.prefs.appearance`、`areachain.prefs.quadrantTitleTruncation`、`areachain.prefs.stampCaptureApp`（AppPreferences:64～67）。除初始化装载外，本次检索到的生产交互写入者只有上述四个 Binding；未发现其他生产直接写这四键。AppPreferences 是现有 `@MainActor @Observable` 权威对象，不需第二份设置状态或完整设置服务框架。默认值为 system/system/tail/false；非法枚举存储读取时回退默认，但不修复原始存储。初始化 `init(defaults:)`:128、140 本身会应用进程外观；[AreaChainApp.swift](../AreaChain/App/AreaChainApp.swift):29 还在正常启动时重应用。
+
+#### 通知并非只有界面重绘：真实接线前置
+
+**事实**：AppPreferences:164 `notifyChange()` 无条件通过 `NotificationCenter.default` 发布 `.appPreferencesDidChange`，`object: nil`，不携带字段、来源实例或版本。同值赋值也写存储和发通知，外观还重应用 NSApp；[SettingsPickerConsumerTests.swift](../AreaChainTests/Features/SettingsPickerConsumerTests.swift):52～54 明确期待选择原值增加一次通知。因此现有 setter 只有最终值上的重复赋值等价，没有副作用幂等保证。
+
+| 原通知的生产观察者 | 实际响应及对本阶段的含义 |
+|---|---|
+| [AppWindows.swift](../AreaChain/Services/AppWindows.swift):105 偏好通知观察、:148 `refreshChrome` | 主执行器刷新窗口 chrome，目前清空/隐藏标题。 |
+| [StatusItemController.swift](../AreaChain/Services/StatusItemController.swift):60、183 `refreshCount` | 读取任务/习惯/打卡并更新菜单栏计数、语言及辅助文字，不是持久化回执。 |
+| [DiaryWindows.swift](../AreaChain/Features/Diary/DiaryWindows.swift):171 `observeChanges` | 原通知同时调用 `session.refresh()` 和 `refreshChrome()`；[DiaryEditorSession.swift](../AreaChain/Features/Diary/DiaryEditorSession.swift):110 `refresh` 可读取正文、恢复已封存编辑内容。普通设置不应借此进入正文路径。 |
+| [CalendarSync.swift](../AreaChain/Services/CalendarSync.swift):22 `start`、39 `applyPreference` | 已启动且同步偏好为 true 时请求 coordinator 同步；否则停止。请求不等于必然发生日历写入，但可能继续进入同步引擎，不能声称四项 setter 无外部能力。 |
+
+**建议 N（待决定）**：在原 [BoardEvents.swift](../AreaChain/Services/BoardEvents.swift) / AppPreferences 拆出仅四项使用的普通偏好变化事件，包含字段集合、偏好实例/存储身份及修订号。旧四个 Binding 和指令共用该事件；只由需要的展示消费者接收。语言变化让菜单栏刷新本地化、手记窗口仅 `refreshChrome`，不调用 `DiaryEditorSession.refresh`；AppChrome/Observation 继续传播 locale、主题和截断；来源标记仍在后续创建时读取。原日历偏好及其他偏好保留原事件，CalendarSync、正文服务、认证和日历引擎不改。
+
+这会有意改变“四项普通设置广播引起无关刷新”的既有行为，不能包装成等价提取。若不批准该窄通知变更，严格排除日历/正文副作用的真实普通设置接线继续阻断；不能仅在命令通道静默禁通知，让设置页和命令有两套最终业务。这里的进程内事件不等于系统用户通知，不接 NotificationScheduler 或任何通知权限。
+
+#### 目录声明、真实适配与最后执行检查
+
+**事实**：[CommandDescriptor.swift](../AreaChain/Domain/CommandDescriptor.swift):68、94 的 binding 只有 `.unwired`，:119 的 `isExecutable` 恒 false；`ordinary()` 只声明未来队列资格。[CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift):74 允许满足声明的草稿入内存计划；[CommandPlanValidation.swift](../AreaChain/Domain/CommandPlanValidation.swift):25 `canSealProtocol` 只证明静态形状。它与 [CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift):26 的 `isExecutable` 均不证明真实业务可执行；`beginNext`:43 也没有偏好核验。
+
+**事实**：[UnifiedSearchOperationEditing.swift](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift):90 仅取 `syntheticBaselines` 或空基线；:194 `requestOperationSubmit` 只显示阻断提示。[UnifiedSearchController.swift](../AreaChain/Features/Search/UnifiedSearchController.swift):104 将提交意图转到该入口；当前构造调用只在测试夹具，生产搜索未装配该 Controller。[UnifiedSearchPlanEditing.swift](../AreaChain/Features/Search/UnifiedSearchPlanEditing.swift) 只经 Coordinator 编辑/入列；没有真实提交服务。§9.47/§9.49 的 UI 禁用不能充当执行门禁。
+
+**建议**：Domain 目录继续表达“无自带执行能力”，不批量把 `isExecutable` 改 true 或给全部目录加 handler。新增一个具体的 `LocalSettingCommandAdapter`（拟名，Services）只映射四个实际 ID，显式注入同一个 AppPreferences；其只读 readiness 给 UI 显示“未装配/缺基线/冲突/可单项提交”等原因，默认没有适配器时保持关闭。所谓真实适配资格，必须同时证明四 ID 的类型映射、共享写入口、存储和副作用依赖就绪、当前宿主/版本有效、单项范围有效；合成目录、布尔开关或 UI 可点击都不能提供这份资格。
+
+运行时绑定视图由目录元数据与该具体适配器组合，明确标记“目录未自带接线 / 本宿主已装配普通设置适配”；其身份绑定当前注入存储，不持久化到目录，也不将协议层的 false 改成授权。没有该绑定时始终 unwired；不能只凭命令 ID 在任意宿主调用 setter。
+
+最终执行函数独立重查上述条件，不接受 UI 传入的 `canExecute=true`。它从 Coordinator 的当前运行快照取输入，拒绝调用者另传一份参数、伪造 attempt、脱离所有权的快照、保护/未知内容、长文/对象/原生选择及本范围之外的任何命令。只读 readiness 与实际 execute 复用同一窄校验函数；即便直接调用 execute，也必须在最后写入前通过。不新增通用注册器、插件执行器、完整 handler 框架或第二套队列。
+
+#### 共享入口、真实基线与单项流程（建议，未实施）
+
+1. 在 AppPreferences 内最小提取四项的 `applyLocalSetting` / `readLocalSetting`（拟名），由原四个属性 setter 和适配器共同使用。属性可保留可写兼容外壳及原 Binding，内部权威值只保留一份；不能“setter 的 didSet 再调用 setter”产生递归或重复通知。原设置页仍即时生效、不进 CommandPlan；命令先预览，只有显式提交才调用同一写入口。保留旧页面同值选择的即时行为，命令的重复提交在适配器入口提前识别，不全局静默改变旧契约。
+2. 为该入口注入具体存储读写、普通事件发布与外观应用/核验闭包；生产仍使用原四键与现有枚举，不引入通用存储框架。初始化的外观应用也必须经过注入，不能只替换 setter。AppPreferences 增加运行内存储身份和逐字段修订，用来记录所有经过此入口的写入；不把四个属性复制为另一份可写配置。旧 Binding 的有效写入也推进受影响字段修订，无关字段不制造冲突。
+3. 新草稿由适配器读取实际偏好生成 `.ambient + .value/.enabled` 的 `CommandDraftBaseline`，并附来源身份、受影响字段修订及原始键状态的证据。沿原 draft → retained/plan → snapshot 保留证据，不能只在 Controller 另存一个可丢失字典。目录缺省值和 `syntheticBaselines` 不能成为生产事实；没有可靠基线则不可执行。未知/非法存储、无法确认来源和内存值/存储分歧显示诊断，禁止静默修复。缺失键的有效默认与“基线未读取”必须区分；system 保留策略值，不把随系统变化的解析结果当用户编辑。
+4. `requestOperationSubmit` 先核对产生事件时的完整 buffer/lease、draft stamp、plan/item stamp、编辑位置和当前展示许可。按原提交范围一次检查全部待提交意图；首阶段只接受恰好一个普通设置，且没有未结束编辑、pending 切换、依赖、结果引用、原子组或未释放 execution。多项/混合/缺参整体拒绝，不选择其中一个执行，也不自动合并成单项。显式 active 单项且计划为空时，通过原 enqueue 转移同一草稿，再沿原 `.sealPlan` / `.beginStep`；不另建临时队列或复制参数。
+5. 预检通过后封存仅移动所有权，不产生设置副作用。执行前从同一 `CommandExecutionStamp` / `CommandAttemptStamp` 重新取 resolvedInput，严格映射类型；同时重读该偏好当前值、原始键状态与逐字段修订，比较基线、当前和拟提交值。整个核验→本地写入保持 MainActor 同步临界段、无 await，并设窄重入保护；注入回调不得重入第二次提交。普通页面经过同一入口写入，运行中的另一设置提交不能穿插；这不承诺跨进程 UserDefaults 比较交换。
+6. 在存储调用前完成全部可失败的参数/基线检查；写后读回匹配才更新权威可观察值、登记结果及推进字段修订，再应用外观/发布普通事件。副作用前先登记本次运行的本地提交事实，避免同步观察者或迟到回调再次写入。结果通过原 `.result(receipt)` 回到唯一 execution；不由 View 生成成功。保存完成与显示完成分开，不能因原计划在 seal 时清空就显示“已保存”。
+
+现有 [CommandDraftTargets.swift](../AreaChain/Domain/CommandDraftTargets.swift):56 的 Baseline 只有值与可读性，没有存储身份或字段修订。建议只增加普通设置的纯值证据；Domain 不引用 AppLanguage/AppAppearance 等带平台依赖的类型。Draft/Plan 的版本保护参数编辑，不替代偏好修订。基线证据变化必须推进原草稿/项版本，并进入合并等价检查：相同显示值、不同存储身份/修订的两项不得合并。普通转交可以携带证据，接收者重新核验同一存储身份；不能转交成另一个 suite 的执行权限。
+
+#### 单项结果、冲突、重复与回退（建议）
+
+| 情况 | 要求与结果边界 |
+|---|---|
+| 新提交的当前值与基线一致 | 有效映射且字段修订/原始键证据一致才允许写入。只核对受影响字段；别的偏好变化不造成冲突。 |
+| 当前值或来源修订变了 | 同字段冲突；即使 A→B→A 回到原值也不能只凭值相同覆盖。显示原基线/当前/拟提交三者，提供采用当前、明确确认自己的修改、继续编辑；确认必须绑定此次当前值和版本，再校验，不能永久“强制覆盖”。首次发现尽量留在未封存计划中。 |
+| 当前值已等于拟提交值 | 来源可靠且无未处理冲突时返回“无需更改”，不写键、不重发事件、不重应用外观；不得把未知写入结果仅凭当前值相等就归给本操作。来源修订变化时先呈现冲突/已由别处满足，再显式接受。 |
+| 相同运行/项/尝试重复调用 | 在窄适配器记录本地写入事实与 receipt，重入返回已有结果，不再调用共享入口。原 ExecutionRun.receive:61 只去重回执，不能防止回执之前重复调用 setter；两层都需要。冲突回执、旧版本、旧尝试拒绝，不给旧用户事件换领新 lease。 |
+| 存储调用前失败 | 原状态未变才可报告 `failedWithoutCommit`；唯一草稿/运行保留。只有验证没有写入、且下一次仍通过基线/资格检查，才提供 safeLocalReplay。 |
+| 调用了 UserDefaults.set 后不能确认读回 | 报 `commitUnknown`，保留运行和原值证据，阻止自动重试/撤销。set 的 Void 返回、同一实例缓存回读都不是磁盘持久确认；不能用“没有抛错”证明永久保存。 |
+| 本地读回一致，但外观应用/普通事件派发失败 | 保留“本地已提交、应用反馈失败/待核验”，不再写一次偏好，不倒退为未提交失败。恢复只处理尚未完成的应用步骤，且当前字段仍对应本次提交；后来被改则终止旧应用步骤并报告已被后续修改替代。发布事件只证明派发调用完成，不证明所有异步窗口刷新成功。 |
+| 关闭、失焦、转交及迟到完成 | 提交前许可失效拒绝；提交后收起不撤销。原 HostSession 有 execution 时禁止转交。结果归属 run/attempt 和原 ownership generation；展示过期不能销毁运行或把旧 receipt 写给新草稿。协调层处理可信完成时重新证明运行归属，不把它变成旧 UI 事件续租。 |
+
+**成功口径需决定**：保留 UserDefaults 的单项阶段最多证明“该设置已应用，偏好存储当前读回一致”，不声称 fsync、进程崩溃/断电耐久或跨进程原子性。UI 使用该实际口径；外观的 `system` 核验 NSApp 的 nil 策略与 AppChrome 派生值，不以它证明窗口最终像素已经恢复。dark→system 历史视觉缺口仍在。
+
+当前执行协议仅有 notification/calendar 两种副作用，`.committed(outputs: [:], external: [])` 会立即成功（ExecutionRun:86）。若真实适配需要表达上表应用失败，建议只加一个具体 `preferencePresentation` 应用阶段，复用既有 pending/failed/unknown 与重试身份；不要借用“系统通知成功”，也不要把应用失败伪造成存储未提交。单项 local receipt 先登记 committed，再报告应用阶段结果；没有实际步骤的命令可直接完成。另以窄 `noChange` 结果表示目标已满足：成功结束该项、local 保留 notSubmitted，无输出/应用步骤，不允许重试或撤销，不能报“再次写入成功”。这些最小扩展及原结果消费者需定向回归。
+
+封存后的冲突仍属于原 execution；`resolveValidation(.readyForProtocol)`（ExecutionRun:245）不会改基线，不能当作覆盖授权。拟在窄适配器保留绑定 run/attempt、当前字段证据和用户解决意图的一次性确认；继续编辑/采用当前须通过原协调者增加受限的“未提交冲突项返回计划”转移，保持 operation 身份、推进版本、关闭旧尝试。仅限 local.notSubmitted 且无副作用的单项；committed/unknown 永不退回可重放草稿。不要直接拼一个新 draft 绕开原运行。
+
+**执行后撤销暂不开放**。未来最少需要：写前有效值及原始键是否存在/类型、写后值与字段修订、存储身份、run/operation、已完成的应用步骤；撤销前检查当前仍是本次写后版本，检测同字段后续写入及 ABA，不能覆盖旧设置页或其他命令后来修改。没有任何可证明后续写入检测时不给“安全撤销”。缺失旧键不能简单写默认值代替删除键语义。外部直接改 defaults/其他进程目前不受逐字段修订控制，需比对实际存储并保守失效；仅相同值不能证明未被动过。撤销也须经同一业务入口形成新结果，不撤回已发通知、已读正文或日历效果。no-change 无撤销项；命令编辑器的文本撤销不属于此功能。
+
+#### 多项共同保存：当前不满足，不能改成部分成功
+
+**事实**：AppPreferences 没有批量 save、错误返回、共同快照或回滚方法。四个 setter 是四次独立写入/通知，`isLoading` 只用于装载，不能充当事务开关；ModelChanges 管 SwiftData，不包办 UserDefaults/NSApp。原 Plan 支持四项组成原子组（[CommandPlanSemantics.swift](../AreaChain/Domain/CommandPlanSemantics.swift):9），但只约束纯协议结果。ExecutionRun 的原子组拒绝 external effects；目前组中重复同一设置也未在结构层禁止。这些都不是现成多项业务能力。
+
+**推荐分期**：下一阶段只开放单项。最终 execute 必须阻断任何多项设置提交，无论 UI 是否标 atomicGroup；保留全部草稿并明确“共同保存尚不可用”。不得循环单项适配器、静默拆组、部分返回成功，或以失败后逐键设回旧值称原子事务。这是实现依赖尚未满足，不撤销第 4 节的组内一致性目标。
+
+**具体后续方案（独立存储改造，未批准）**：让四项成为同一份版本化普通偏好记录，由 AppPreferences 作为唯一访问入口，在具备可报告提交失败及回滚能力的本地存储中一次提交。例如沿现有 SwiftData 持久层增加一个普通偏好聚合记录，以一次 context 事务写整份值与 revision；提交前完成所有组员映射和冲突检查，失败不发布任何新值，成功后一次发布整份可观察快照。不得继续把四个旧 defaults 键作为并行权威源，也不以成功后逐键镜像写入冒充兼容。schema、初始化次序、旧四键一次导入、版本标记、旧应用回退和迁移失败保留原值都必须单独设计并取得迁移授权；不用现有 ModelChanges 通知广播无关业务。这不是下一单项阶段的隐含工作。
+
+只把四值编码为一个 UserDefaults 字典/数据键可减少逐键中间态，但仍没有真实提交错误/耐久确认，也引入旧键兼容变化，不能据此宣布满足完整共同保存。若要求抗崩溃/重开一致性，后续必须用事务后端及中断/重开证据核验，不能用延迟通知或 `synchronize()` 补造保证。本阶段未选定/实测新后端。
+
+在聚合方案中，组内同一字段重复项须先显式合并或拒绝整组，不能默默取最后一项；整组冲突整组暂停。保存前失败整组无变更；提交不明整组待核验；保存成功则所有设置值同属一个 revision。外观/窗口传播在提交后进行，不能与磁盘承诺为跨系统事务；若应用失败，反馈“整组已保存，展示应用未完成”，只恢复应用步骤，不报某设置未保存。届时需将原子组结果协议窄化扩展为允许整组的 preferencePresentation 阶段，仍禁止逐成员半成功和日历/系统通知效果。提交后回退若要撤回整组，必须验证整组后续修订并以新的整份事务提交；不能撤销已经发生的观察者效果。若用户要求磁盘与所有窗口视觉也同时全成全败，当前平台链路不能给出此保证，保持阻断并重新明确该更强要求。
+
+#### 下一实施阶段的拟改文件与验证范围
+
+下表是实施提示词的最小候选清单，不是本次修改清单；同文件并行变更须重新读取。只有确实需要结果分支或纯值证据时才扩展 Domain，不为一个适配器建立通用框架。
+
+| 拟改文件 / 符号 | 最小责任 |
+|---|---|
+| AppPreferences.swift：四属性、init、notifyChange、applyAppAppearance | 共享 read/apply 入口、原四键兼容、单份权威值、逐字段版本、存储/事件/外观注入、真实结果；旧页面即时写入。 |
+| 拟新增 `AreaChain/Services/LocalSettingCommandAdapter.swift` | 仅四 ID 类型映射、真实基线读取、readiness/最终门禁、单项提交事实与重复调用保护；不持有第二份可编辑参数。 |
+| CommandDraftTargets.swift：CommandDraftBaseline；CommandDraft/Session、CommandPlan/Semantics、CommandHostSession/HandoffContract/Coordinator | 最小普通偏好基线证据随原所有权移动；证据参与合并；未提交冲突项的受限返回/重新确认，保护拒绝不变。 |
+| CommandExecutionContract.swift / CommandExecutionRun.swift | 单项 no-change 呈现与具体 preferencePresentation 结果映射、真实提交确定性；保持旧 attempt/receipt、未知不重放规则，多项仍在适配入口阻断。 |
+| UnifiedSearchController.swift / UnifiedSearchOperationEditing.swift / UnifiedSearchPlanEditing.swift / UnifiedSearchOperationPreview.swift / UnifiedSearchOperationCopy.swift / UnifiedSearchPlanCopy.swift / Localizable.xcstrings | 显式注入适配器与真实基线来源、复用原提交意图、待校验/冲突/应用结果和失败保留；默认未装配继续禁用；中英同步。ParameterField 沿现有 choice/boolean，无须新增编辑控件。 |
+| BoardEvents.swift / AppWindows.swift / StatusItemController.swift / DiaryWindows.swift；SettingsSections.swift 仅必要兼容与失败反馈 | 经决定 N 后拆普通偏好事件及最小展示消费者，原四个 Binding 保持即时语义；新事件不进入 session.refresh/CalendarSync。不改正文或日历实现，不替换生产搜索入口。 |
+| 现有 AppPreferencesTests、SettingsPickerConsumerTests、SettingsToggleConsumerTests、SettingsButtonTestSupport、SystemPageHost；新增窄适配测试 | 复用随机 suite、原页面、原 QA 宿主，补副作用注入、失败/冲突/重入/重复回执等证据。实际新增公共入口时同步组件目录、路由及相关原文档，不在 3A-0 先登记成已实现。 |
+
+**后续隔离验证（本阶段全未执行）**：
+
+- 存储测试只用随机 suite，清理只限测试 suite；从构造起注入假的外观执行器、私有 NotificationCenter/记录闭包，不接 `.standard`、`.shared`、真实 NSApp、NSWorkspace、日历/正文观察者。存储掉写、读回不匹配、写前失败、写后未知与应用失败分别注入。注入失败只证明处理分支，不冒充 UserDefaults 提供了原生错误回调或磁盘故障实测。
+- 覆盖四 ID 全部合法/非法/缺失参数、稳定 rawValue、缺失键与非法存储、真实而非合成基线、同字段/无关字段修改、ABA、其他实例/直接 defaults 改动、旧 lease/draft/plan/item/attempt、重入及重复调用、应用失败不重复本地写入、未知结果阻断、冲突重确认与未提交返回计划。所有多项/重复字段/atomic/mixed 提交都应零写入地拒绝；不能只测按钮不可点。
+- 回归原 CommandParameter/CommandDraft/CommandPlan/CommandExecution/CommandHandoff 相关套件，尤其 `CommandAtomicPlanTests.atomicResultRejectsObjectsAndExternalEffectsAndConfirmsWholeGroup`，不要为单项适配放宽原子组。普通设置证据在转交/合并后仍匹配；保护/未知/长文依然不可导出执行。
+- 旧页面仍直接挂 GeneralSettingsSection，回归即时保存、菜单取消、同值选择、禁用、重建、四键外键不变、逐项事件次数与失败反馈；不挂启动真实服务的完整 SettingsView。新普通事件用 spy 证明不触发日历请求、不调用手记 refresh，只刷新所需 chrome；其余旧事件消费者行为保留。
+- UI 允许执行的后续任务才运行隔离正常 PrivacyQA，标准/紧凑命令宿主及原设置分节，中英、浅深色、正常/最小窗口；AppChrome、实际四象限标题与气泡、失败不丢稿分别取证。测试用窗口级外观或注入探针，真实 NSApp 适配器仅在独立 QA 进程另列证据，不改变日用应用。捕获来源只用纯 `CaptureStamp.bundleID` 合成输入验证，不实际捕获/创建记录。
+- 既有 AppPreferencesTests:61 同时写 `syncCalendarEvents`，原 Toggle 套件也含日历/登录方法；后续仅取相关方法或拆分本地四项测试，不因测试名有 AppPreferences 就整套执行被排除设置。现有套件读取不等于此次运行；dark→system 的 `withKnownIssue`（SettingsPickerConsumerTests:124）、真实四象限视觉及捕获消费者注入缺口分别保留。新注入路径可测映射，不能声称三个捕获业务已端到端验证。
+
+#### 两项待决定与准确交接
+
+1. **普通偏好通知是否按建议 N 拆分？推荐批准窄拆分**：仅四项共用入口及必要 chrome 观察者，避免触发日历/正文；保留其他原事件和旧设置页即时行为。这是后续跨消费者行为变更，需要明确纳入实施范围。若维持当前广播，严格排除边界下不能接真实执行。
+2. **下一阶段是否接受先单项及 UserDefaults 的有限成功口径？推荐先单项**：以“已应用、当前存储读回一致”为准，不声称崩溃耐久；多项/安全撤销继续关闭，聚合事务与旧键迁移另行定界。若要求本轮后续立即满足多项耐久共同保存，应先开展并批准上述独立存储/迁移阶段，不能将循环 setter 当替代。
+
+下一实施提示词应命名为“3A-1 四类普通本地设置的共享入口、单项真实适配与隔离验证”，明确记录上面两项决定，覆盖映射表、注入副作用、普通事件拆分、真实基线/字段版本、最后门禁、原 Plan/Run 唯一所有权、真实结果/冲突/重复调用/失败保留及旧设置页回归。先在现有隔离 Controller 宿主装配，生产搜索入口未装配是单独前置，不能顺手替换工作台/菜单栏。不得写入用户偏好、迁移存储、执行多项、开放撤销或敏感输入；C2B 与指定 Cursor 复核缺口不豁免。后续测试/构建/取锁权限必须在新任务中明确，本次不启动。
+
+#### 本阶段检查与停止记录
+
+仅修改本 §9.53。执行前核对了 [quality_gate.py](../scripts/quality_gate.py) 的 `PROFILES` / `run_profile`：默认 auto 会受并行 Swift 变更影响；显式 docs 只做工作流、差异、性能清单和注释静态检查，不走 Swift、脚本回归、构建或锁。实际运行 `python3 -B scripts/quality_gate.py --profile docs --strict --format json`、`python3 -B scripts/check_workflow.py`、`git diff --check -- docs/unified-search-commands.md`，均通过；最终文档编辑后复跑同一组检查。docs 门禁识别到 67 个工作树变更路径，属于包含并行改动的静态扫描，不是本阶段改了 67 个文件。没有改检查器或并行文件来消除失败。
+
+追加前后本文旧内容 SHA-256 均为 `4a4565e14b28dc8a58bb6ac78e89e4b9b5eb354e161efb5153b10d3d9abf0a80`，用于确认 §9.52 及更早记录原样保留。本次两项只读探索提供设置消费者和执行协议出处，主代理沿关键写入/通知/基线/提交路径核对；这不是指定 Cursor verifier 的复核或运行验收。
+
+未执行设置方法、AppPreferences 初始化、Swift 测试、原生测试、构建、测试锁申请、登录检查、应用启动、提交、推送、安装或发布；没有 handler 补丁或下一阶段实施。文档/静态通过只证明本次设计记录的引用与规则检查，不证明方案可运行。完成 3A-0 文档交接后停止。

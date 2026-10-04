@@ -1,5 +1,23 @@
 # 架构与目录
 
+### 第八阶段 D 实时预览主外壳
+
+任务 mainRow 直接复用 suggestions；手记 body 的 smallBackground 与 suggestions 共用背景阴影装配，但保留 small/continuous。手记仍先绘 row 悬停表面，再按 !showsSuggestions 开关浮层装饰；开关只作用于背景/边框/阴影，内容身份与复制反馈不归公共层。readOnly 的整体阴影及旧表面接口不改。
+
+两处仅删除重复绘制，不搬移 Theme 历史业务组合、不增加生产消费者；内容、解析、敏感投影、悬停、回调和定位仍在原组件。SyntaxAutocompletePopup 的任务双层与手记伴随候选无自身浮层装饰保持。剩余气泡及验证边界见[组件目录](component-catalog.md#第八阶段-d两类实时预览主外壳)和[工程记录](engineering.md#第八阶段-d两类实时预览主外壳)。
+
+### 第八阶段 C 候选与只读属性表面
+
+DaybookSurface 的 floating 重载只组合页面底色、居中描边、圆角和既有 elevation。suggestions 的阴影只作用于背景，readOnly 作用于整个面板；没有表面状态、布局、命中扩区或事件策略。旧 panel 保持独立的内描边及原 modifier 行为。候选独立预览关闭装饰而不分支重建内容，实时预览仍拥有原外壳。
+
+SyntaxOverlay / UnifiedSearchOverlay 保留唯一定位与来源选择；内容、滚动、属性解析/关闭、原生候选替换和搜索许可不下沉公共层。接口、两个已迁移消费者及未迁移边界见[组件目录](component-catalog.md#第八阶段-c候选与只读属性浮层外壳)，验证缺口见[工程记录](engineering.md#第八阶段-c候选与只读属性浮层外壳)。
+
+### 统一搜索计划编辑（4A-3B2）
+
+UnifiedSearchController 只从 CommandHandoffCoordinator 读取唯一 CommandHostSession.plan；UnifiedSearchBuffer 的 plan/item stamp 与原 draft/lease/display 版本绑定编辑位置。OperationEditing 和 ObjectSelection 共用 editingDraft，经 PlanEditing 转为原计划事件，不复制计划草稿到 active。参数拼写仅供原生输入恢复，没有独立提交能力。计划列表与草稿同在原 OperationBoundary，失焦/锁定卸载明细而保留运行内内容；隐藏不是敏感封存。
+
+合并只经 CommandPlanSemantics，输出候选只经目录声明与 CommandPlanValidation；移除仍退回 retained。领域 link 支持逐项修复既有过期引用，整图门禁未放宽。无 handler、封存或协议执行接线；接口、证据、人工与指定复核缺口见[权威交接 §9.49](unified-search-commands.md#949-阶段-4a-3b2待执行计划与就地编辑)。
+
 ### 隐私设置安全输入呈现（第七阶段 D）
 
 PrivacySetupSheet 的四个密码仍唯一归原 @State，DaybookSecureField 只接 Binding。methods 的创建/配置条件、useMaster、原 candidates 计数和两组独立 Character 长度/匹配规则均未移动；四个稳定字段身份区分两个同名确认输入。没有新增 onSubmit、清空策略、密码镜像或焦点路由。
@@ -131,7 +149,7 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增消费者，本路线不迁移它们。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
+- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增生产消费者、不搬文件；第八阶段 D 只接主外壳，不扩大业务职责。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
 
 ### 工作台公共顶栏
 
@@ -387,3 +405,16 @@ UnifiedSearchController 的操作扩展直接读写原协调者 operations，不
 ### 统一搜索对象选择边界（4A-3B1）
 
 对象选择只在原 Controller 暂存 Browse 交互；目标身份继续是 CommandObjectReference。操作目标唯一写入 draft.targets，普通 object / objects 参数写入 draft.arguments。候选与目标预览均由 ReadSession 当前发布核验，固定集合不随分页或查询扩张。选择接受带原 lease、草稿 stamp、位置和候选版本，原子草稿事件成功后重新读取展示；没有沿旧许可补发新事件。目标变更缺少新证据时清旧 baseline，arguments 保留。转交后 ownershipRevision 接入既有只读失效观察，撤去旧宿主候选与预览。普通合成草稿仍保留；这不是敏感草稿封存、加密或零化。接口与证据见[权威设计 §9.48](unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。
+
+### 第八阶段 B 公共滚动装配
+
+Theme 的 `daybookScrollAssembly` 只组合指示器策略、Configurator 与原羽化 modifier，不建立滚动容器或状态所有者。两个兼容重载的默认值与实际选择不变，泛型策略变换维持原具体链和 modifier 顺序；保留系统策略时直接返回传入视图。浮层、AppKit knob、观察器、定位与拆卸机制原样保留。AppKit 文本与统一搜索直连仍是不同承载入口；接口矩阵、消费者与历史定位缺口见[组件目录](component-catalog.md#第八阶段-bdaybookscroll-公共装配)。
+
+
+### 命令草稿隔离保护边界（4A-3C2A）
+
+命令正文采用独立 CommandDraftPayload / SealedCommandDraft v1，复用既有 VaultKeyAccess。CommandDraftContentSession 只拥有内存密文资源和可撤销的同步明文借用；宿主所有权仍唯一归 CommandHandoffCoordinator，成功封存后的一次性 CommandDraftCheckpoint 才可提交引用。Domain 不执行加密/认证，普通快照没有自动解封能力；原 DiaryDraftText 与磁盘格式不变。服务只由合成测试装配，敏感原生编辑、IME/撤销、执行及完整敏感转交未接线。契约、实际消费者、回退和验证缺口见[权威 §9.51](unified-search-commands.md#951-阶段-4a-3c2a命令保护载荷与显式恢复)，不将单测/构建解释为生产安全入口验收。
+
+### 命令原生暂持边界（4A-3C2B）
+
+ContentSession 的同步借用仍禁止调用者任意缓存。唯一原生暂持由 CommandDraftNativeOwner 登记，专用 CommandProtectedTextView 只收当前字段/选区，基线及其他参数留原服务。原生成功接受前必须先有同版本密文；连续编辑只在同次已核验提交后签发新 access，旧 access 过期。独立 UndoManager 只留密文，撤销旧正文也重新保护；撤权同步清本控件。系统 IME 与外部 mutable textStorage 不能由该探针提供完整保全，生产入口关闭；具体状态关系、反例、active/planItem 与验证限制见[权威 §9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)。

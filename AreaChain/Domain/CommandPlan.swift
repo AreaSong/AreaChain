@@ -51,7 +51,7 @@ enum CommandPlanEvent {
 }
 
 enum CommandPlanError: Error, Equatable {
-    case stale, duplicate, busy, excluded, invalidInput
+    case stale, duplicate, busy, excluded, invalidInput, protectedContent
     case dependents([UUID]), grouped, graph([CommandDependencyIssue])
     case mergeConflict(CommandMergeConflict), incomplete
 }
@@ -73,6 +73,9 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
 
     mutating func add(_ draft: CommandDraft, id: UUID, expecting stamp: CommandPlanStamp) throws {
         guard self.stamp == stamp, draft.hostID == hostID else { throw CommandPlanError.stale }
+        guard draft.protectionRequirement == .ordinary || draft.protectedReference != nil else {
+            throw CommandPlanError.protectedContent
+        }
         guard !usedIDs.contains(id), !items.contains(where: { $0.draft.id == draft.id }),
               !items.contains(where: { $0.atomicGroup == id }) else { throw CommandPlanError.duplicate }
         guard let command = CommandCatalog.standard.command(id: draft.commandID),
@@ -111,6 +114,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
             editing = stamp.id
         case .edit(let stamp, let argument):
             let index = try editingIndex(stamp)
+            guard items[index].draft.protectedReference == nil else { throw CommandPlanError.protectedContent }
             guard argument.parameter != .target, items[index].links.results[argument.parameter] == nil else {
                 throw CommandPlanError.invalidInput
             }
@@ -118,6 +122,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
             items[index].version += 1
         case .selectTargets(let stamp, let targets):
             let index = try editingIndex(stamp)
+            guard items[index].draft.protectedReference == nil else { throw CommandPlanError.protectedContent }
             guard items[index].links.results[.target] == nil else { throw CommandPlanError.invalidInput }
             items[index].draft.select(targets, expecting: items[index].draft.stamp)
             items[index].version += 1
@@ -149,6 +154,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
 
     private mutating func link(_ stamp: CommandPlanItemStamp, _ links: CommandPlanLinks) throws {
         let index = try index(of: stamp)
+        guard !items[index].draft.blocksUnprotectedExport else { throw CommandPlanError.protectedContent }
         // 生产者编辑可同时使多个消费者过期；逐项显式修复不能被其他旧引用锁死。
         // 只暂留其他项原已存在的过期诊断，当前项及新增结构错误仍拒绝；封存/转交仍检查整图。
         let remaining = CommandPlanValidation.structure(items).filter { issue in
@@ -203,6 +209,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
     mutating func seal(expecting stamp: CommandPlanStamp) throws -> CommandPlanSnapshot {
         guard self.stamp == stamp else { throw CommandPlanError.stale }
         guard editing == nil else { throw CommandPlanError.busy }
+        guard !items.contains(where: { $0.draft.blocksUnprotectedExport }) else { throw CommandPlanError.protectedContent }
         guard check().canSealProtocol else { throw CommandPlanError.incomplete }
         let snapshot = CommandPlanSnapshot(stamp: stamp, items: items)
         items = []
@@ -210,10 +217,19 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         return snapshot
     }
 
+    mutating func acceptProtection(_ reference: CommandProtectedReference, expecting stamp: CommandDraftStamp) throws {
+        guard let index = items.firstIndex(where: { $0.draft.stamp == stamp }),
+              items[index].links.results.isEmpty else { throw CommandPlanError.stale }
+        items[index].draft.acceptProtection(reference)
+        items[index].version += 1
+        revision += 1
+    }
+
     func check() -> CommandPlanCheck { CommandPlanValidation.check(items) }
 
     /// 先拒绝原本失效的引用，再一次更新所有项与输出引用；不借迁移修复旧计划。
     func handedOff(to target: Self) throws -> Self {
+        guard !items.contains(where: { $0.draft.blocksUnprotectedTransfer }) else { throw CommandPlanError.protectedContent }
         try requireValidStructure()
         var next = Self(id: id, hostID: target.hostID)
         next.revision = max(revision, target.revision) + 1

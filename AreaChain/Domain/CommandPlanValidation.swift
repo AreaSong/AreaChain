@@ -38,6 +38,9 @@ enum CommandPlanValidation {
     }
 
     private static func checkItem(_ item: CommandPlanItem) -> CommandPlanItemCheck {
+        if item.draft.blocksUnprotectedExport {
+            return .init(item: item.stamp, arguments: [.protectedContent], targets: [])
+        }
         let draftCheck = item.draft.check()
         let arguments = draftCheck.argumentIssues.filter { issue in
             if case .missing(let parameter) = issue, item.links.results[parameter] != nil { return false }
@@ -97,9 +100,10 @@ enum CommandPlanValidation {
         return issues
     }
 
-    private static func acceptsReference(
+    static func acceptsReference(
         _ reference: CommandCreationReference, parameter: CommandParameterID, item: CommandPlanItem
     ) -> Bool {
+        guard !item.draft.blocksUnprotectedExport else { return false }
         guard let definition = CommandCatalog.standard.command(id: item.draft.commandID)?.parameters.first(where: { $0.id == parameter }),
               definition.operations.contains(.assign) else { return false }
         if parameter == .target && item.draft.targets != .none { return false }

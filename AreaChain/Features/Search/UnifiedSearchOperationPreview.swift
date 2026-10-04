@@ -10,7 +10,7 @@ struct UnifiedSearchOperationPreview: View {
     var body: some View {
         let keySelection = controller.objectSelection
         Group {
-            if controller.objectSelectionLocation != nil, let draft = controller.operations?.active,
+            if controller.objectSelectionLocation != nil, let draft = controller.editingDraft,
                let command = CommandCatalog.standard.command(id: draft.commandID) {
                 UnifiedSearchObjectPicker(controller: controller, command: command)
                     .padding(DaybookSpacing.md)
@@ -33,6 +33,18 @@ struct UnifiedSearchOperationPreview: View {
     }
 
     private var operationContent: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            if controller.planMessage != "unified.plan.notExecutable" {
+                Text(LocalizedStringKey(controller.planMessage)).font(DaybookType.caption)
+                    .padding(.horizontal, DaybookSpacing.md)
+                    .accessibilityIdentifier("unified.plan.message")
+            }
+            operationScroll
+        }
+        .background(DaybookPalette.cardSurface)
+    }
+
+    private var operationScroll: some View {
         let source = controller.buffer
         return ScrollView {
             VStack(alignment: .leading, spacing: DaybookSpacing.md) {
@@ -40,7 +52,7 @@ struct UnifiedSearchOperationPreview: View {
                    let command = CommandCatalog.standard.command(id: draft.commandID) {
                     header(command, draft: draft, source: source)
                     if let decision = state.pending { decisionControls(decision, source: source) }
-                    if controller.operationExpanded {
+                    if controller.operationExpanded && controller.editingPlanItem == nil {
                         ForEach(command.parameters, id: \.id) { parameter in
                             UnifiedSearchParameterField(controller: controller, draft: draft,
                                 command: command, parameter: parameter, source: source)
@@ -48,8 +60,7 @@ struct UnifiedSearchOperationPreview: View {
                         }
                         validation(draft)
                     }
-                    retained(state, source: source)
-                } else if let command = controller.browsedCommand {
+                } else if let command = controller.browsedCommand, controller.editingPlanItem == nil {
                     Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
                     Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)
                     ForEach(command.parameters, id: \.id) { parameter in
@@ -60,6 +71,8 @@ struct UnifiedSearchOperationPreview: View {
                         .buttonStyle(DaybookButtonStyle(.prominent, size: .regular))
                         .accessibilityIdentifier("unified.operation.begin")
                 }
+                if let state = controller.operations { retained(state, source: source) }
+                UnifiedSearchPlanList(controller: controller)
             }
             .padding(DaybookSpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -71,6 +84,7 @@ struct UnifiedSearchOperationPreview: View {
 
     private func header(_ command: CommandDescriptor, draft: CommandDraft, source: UnifiedSearchBuffer) -> some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            Text("unified.plan.active").font(DaybookType.micro)
             Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
             Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)
             Text(draft.check().staticallyValid ? "unified.operation.complete" : "unified.operation.incomplete")
@@ -100,6 +114,9 @@ struct UnifiedSearchOperationPreview: View {
                 .accessibilityIdentifier("unified.operation.disclosure")
                 Text("unified.operation.draftOnly").font(DaybookType.micro)
             }
+            Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                .accessibilityIdentifier("unified.plan.enqueue")
             if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
             Text(LocalizedStringKey(controller.operationMessage)).font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
@@ -107,13 +124,7 @@ struct UnifiedSearchOperationPreview: View {
     }
 
     private func summary(_ command: CommandDescriptor, draft: CommandDraft) -> String {
-        command.parameters.compactMap { parameter in
-            guard let argument = draft.arguments.first(where: { $0.parameter == parameter.id }) else { return nil }
-            let value = argument.operation.requiresValue
-                ? UnifiedSearchOperationCopy.value(argument.value, locale: locale, calendar: calendar)
-                : L10n.format("unified.operation.mode." + argument.operation.rawValue, locale: locale)
-            return L10n.format(parameter.id.nameKey, locale: locale) + ": " + value
-        }.joined(separator: " · ")
+        UnifiedSearchOperationCopy.summary(command, draft: draft, locale: locale, calendar: calendar)
     }
 
     private func validation(_ draft: CommandDraft) -> some View {
@@ -144,11 +155,19 @@ struct UnifiedSearchOperationPreview: View {
             if !state.retained.isEmpty { Text("unified.operation.retained").font(DaybookType.caption) }
             ForEach(state.retained, id: \.id) { draft in
                 if let command = CommandCatalog.standard.command(id: draft.commandID) {
-                    Button { controller.beginOperation(command.id, source: source) } label: {
-                        Text(verbatim: command.name(locale: locale))
+                    Button { controller.restoreOperation(draft.stamp, source: source) } label: {
+                        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+                            Text(verbatim: command.name(locale: locale))
+                            let preview = summary(command, draft: draft)
+                            if !preview.isEmpty { Text(verbatim: preview).font(DaybookType.caption).lineLimit(2) }
+                        }
                     }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    .disabled(controller.plan?.editing != nil)
                     .accessibilityIdentifier("unified.operation.restore." + command.id.rawValue)
+                    Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                        .accessibilityIdentifier("unified.plan.enqueue.retained." + draft.id.uuidString)
                 }
             }
         }

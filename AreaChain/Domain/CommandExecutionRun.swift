@@ -186,7 +186,8 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     private func input(_ item: CommandPlanItem, bindings: [CommandParameterID: CommandObjectReference]) -> CommandResolvedInput? {
-        guard let command = CommandCatalog.standard.command(id: item.draft.commandID) else { return nil }
+        guard !item.draft.blocksUnprotectedExport,
+              let command = CommandCatalog.standard.command(id: item.draft.commandID) else { return nil }
         var targets = item.draft.targets
         var arguments = item.draft.arguments.filter { bindings[$0.parameter] == nil }
         for (parameter, object) in bindings {

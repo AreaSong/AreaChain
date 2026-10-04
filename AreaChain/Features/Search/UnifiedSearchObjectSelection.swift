@@ -66,7 +66,7 @@ extension UnifiedSearchController {
 
     func beginObjectSelection(_ location: UnifiedSearchObjectLocation, source: UnifiedSearchBuffer) {
         guard validates(source), operationVisible, objectSelection == nil, !objectSelectionLoading,
-              let draft = operations?.active, draft.stamp == source.operation,
+              let draft = editingDraft, draft.stamp == source.operation,
               let command = CommandCatalog.standard.command(id: draft.commandID),
               !objectTypes(location, command: command).isDisjoint(with: Self.adaptedObjectTypes),
               command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication]) else { return }
@@ -100,14 +100,14 @@ extension UnifiedSearchController {
 
     func validatesObjectSelection(_ stamp: UnifiedSearchObjectSelectionStamp) -> Bool {
         guard objectSelection?.stamp == stamp, validates(stamp.source), operationVisible,
-              operations?.active?.stamp == stamp.source.operation,
+              editingDraft?.stamp == stamp.source.operation,
               let snapshot = try? session.presentation().pagination.snapshot else { return false }
         return snapshot.version == stamp.candidateVersion
             && snapshot.sourceID == objectSelection?.browse.snapshot.sourceID
     }
 
     func objectSelectionIssue(_ picker: UnifiedSearchObjectSelection) -> String? {
-        guard validatesObjectSelection(picker.stamp), let draft = operations?.active,
+        guard validatesObjectSelection(picker.stamp), let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID) else { return "unified.objects.stale" }
         let objects = picker.objects
         if objects.isEmpty { return "unified.objects.empty" }
@@ -160,7 +160,7 @@ extension UnifiedSearchController {
             _ = picker.browse.apply(.init(version: stamp.candidateVersion, action: .select(active, true)))
         }
         if let issue = objectSelectionIssue(picker) { objectSelectionMessage = issue; return false }
-        guard let draft = operations?.active, let command = CommandCatalog.standard.command(id: draft.commandID) else { return false }
+        guard let draft = editingDraft, let command = CommandCatalog.standard.command(id: draft.commandID) else { return false }
         let event: CommandDraftEvent
         if picker.location == .targets {
             let selection: CommandDraftTargets.Selection = picker.selection == .allResults ? .allResults
@@ -232,7 +232,7 @@ extension UnifiedSearchController {
     }
 
     func removeObject(_ object: CommandObjectReference, location: UnifiedSearchObjectLocation, source: UnifiedSearchBuffer) {
-        guard validates(source), operationVisible, let draft = operations?.active,
+        guard validates(source), operationVisible, let draft = editingDraft,
               draft.stamp == source.operation, let command = CommandCatalog.standard.command(id: draft.commandID) else { return }
         let objects = selectedObjects(location, draft: draft).filter { $0 != object }
         let event: CommandDraftEvent

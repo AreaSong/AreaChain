@@ -25,7 +25,7 @@ extension UnifiedSearchController {
     }
 
     var inputParameterContext: UnifiedSearchParameterContext? {
-        guard let id = editingParameter, let draft = operations?.active,
+        guard let id = editingParameter, let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID),
               let parameter = command.parameters.first(where: { $0.id == id }) else { return nil }
         return .init(command: command, parameter: parameter, operation: fieldOperation(parameter, draft: draft))
@@ -48,7 +48,7 @@ extension UnifiedSearchController {
         }
         return .init(lease: buffer.lease, version: buffer.version,
             text: retained ?? UnifiedSearchOperationCopy.raw(argument?.value),
-            privacyRevision: buffer.privacyRevision, operation: draft.stamp)
+            privacyRevision: buffer.privacyRevision, operation: draft.stamp, plan: buffer.plan, planItem: buffer.planItem)
     }
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
@@ -63,7 +63,7 @@ extension UnifiedSearchController {
                   UnifiedSearchParameterContext.supports(parameter, command: command),
                   let value = argument.value, CommandArgumentValidation.accepts(value, type: parameter.type),
                   parameter.operations.contains(argument.operation) else { return nil }
-            if operations?.active?.commandID != id {
+            if editingDraft?.commandID != id {
                 return beginOperation(id, source: request.source, text: request.text, argument: argument)
             }
             guard let stamp = request.source.operation else { return nil }
@@ -76,7 +76,7 @@ extension UnifiedSearchController {
                         argument: CommandArgument? = nil) -> UnifiedSearchBuffer? {
         guard validates(source), operationVisible, let state = operations,
               let command = CommandCatalog.standard.command(id: id),
-              command.category != .group, command.category != .scope, state.pending == nil else { return nil }
+              command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil else { return nil }
         if let active = state.active, active.commandID == id {
             operationExpanded = true
             return publishOperation(text: text ?? buffer.text)
@@ -95,6 +95,7 @@ extension UnifiedSearchController {
     @discardableResult
     func sendOperation(_ event: CommandDraftEvent, source: UnifiedSearchBuffer, text: String? = nil) -> UnifiedSearchBuffer? {
         guard validates(source), operationVisible else { return nil }
+        if source.planItem != nil { return sendPlanDraft(event, source: source) }
         do {
             let effect = try coordinator.send(.operation(event), expecting: source.lease)
             let result = publishOperation(text: text ?? buffer.text)
@@ -110,14 +111,14 @@ extension UnifiedSearchController {
 
     func editParameter(_ argument: CommandArgument, source: UnifiedSearchBuffer) -> UnifiedSearchBuffer? {
         guard validatesParameterSource(source, parameter: argument.parameter), let stamp = source.operation,
-              let command = operations?.active.flatMap({ CommandCatalog.standard.command(id: $0.commandID) }),
+              let command = editingDraft.flatMap({ CommandCatalog.standard.command(id: $0.commandID) }),
               let parameter = command.parameters.first(where: { $0.id == argument.parameter }),
               UnifiedSearchParameterContext.supports(parameter, command: command),
               argument.operation == .unspecified || parameter.operations.contains(argument.operation) else { return nil }
         if let value = argument.value, !CommandArgumentValidation.accepts(value, type: parameter.type) { return nil }
         let mainSource = buffer // 同步核验后的同一个 lease/stamp；不跨 await，不接收旧事件续租。
         let updated = sendOperation(.edit(stamp, argument), source: mainSource)
-        if updated != nil, let draft = operations?.active,
+        if updated != nil, let draft = editingDraft,
            !draft.targets.objects.isEmpty || draft.arguments.contains(where: {
                switch $0.value {
                case .object, .objects: return true
@@ -129,8 +130,9 @@ extension UnifiedSearchController {
 
     func validatesParameterSource(_ source: UnifiedSearchBuffer, parameter: CommandParameterID) -> Bool {
         guard operationVisible, source.lease == buffer.lease, source.version == buffer.version,
-              source.privacyRevision == buffer.privacyRevision, let draft = operations?.active,
-              source.operation == draft.stamp, (try? coordinator.validate(source.lease)) != nil else { return false }
+              source.privacyRevision == buffer.privacyRevision, let draft = editingDraft,
+              source.operation == draft.stamp, source.plan == buffer.plan, source.planItem == buffer.planItem,
+              (try? coordinator.validate(source.lease)) != nil else { return false }
         return source == buffer || CommandCatalog.standard.command(id: draft.commandID)?.parameters
             .first(where: { $0.id == parameter }).map { parameterBuffer($0, draft: draft) == source } == true
     }
@@ -138,11 +140,11 @@ extension UnifiedSearchController {
     func editParameterText(_ request: UnifiedSearchEdit, context: UnifiedSearchParameterContext,
                            mainInput: Bool = false) -> UnifiedSearchBuffer? {
         guard validatesParameterSource(request.source, parameter: context.parameter.id),
-              let draft = operations?.active, draft.commandID == context.command.id,
+              let draft = editingDraft, draft.commandID == context.command.id,
               context.operation == fieldOperation(context.parameter, draft: draft), context.operation.requiresValue else { return nil }
         let argument = CommandArgument(parameter: context.parameter.id, operation: context.operation,
                                        value: context.value(request.text))
-        guard editParameter(argument, source: request.source) != nil, let updated = operations?.active else { return nil }
+        guard editParameter(argument, source: request.source) != nil, let updated = editingDraft else { return nil }
         parameterText[updated.id, default: [:]][context.parameter.id] = .init(text: request.text, stamp: updated.stamp)
         if mainInput {
             replaceOperationInputText(request.text)
@@ -152,7 +154,7 @@ extension UnifiedSearchController {
     }
 
     func chooseParameter(_ id: CommandParameterID, source: UnifiedSearchBuffer) {
-        guard validates(source), operationVisible, let draft = operations?.active,
+        guard validates(source), operationVisible, let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID),
               let parameter = command.parameters.first(where: { $0.id == id }),
               UnifiedSearchParameterContext.supports(parameter, command: command),
@@ -164,7 +166,7 @@ extension UnifiedSearchController {
     }
 
     func finishParameter(_ source: UnifiedSearchBuffer) {
-        guard validates(source), let draft = operations?.active,
+        guard validates(source), let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID) else { return }
         editingParameter = nil
         _ = publishOperation(text: command.path)
@@ -173,17 +175,27 @@ extension UnifiedSearchController {
     func resolveOperation(_ decision: CommandDraftDecision, choice: CommandDraftSwitchChoice, source: UnifiedSearchBuffer) {
         guard sendOperation(.resolve(decision, choice), source: source) != nil else { return }
         editingParameter = nil
-        let live = Set((operations?.retained.map(\.id) ?? []) + (operations?.active.map { [$0.id] } ?? []))
+        let live = Set((operations?.retained.map(\.id) ?? []) + (operations?.active.map { [$0.id] } ?? [])
+            + (plan?.items.map { $0.draft.id } ?? []))
         parameterText = parameterText.filter { live.contains($0.key) }
-        if let draft = operations?.active, let command = CommandCatalog.standard.command(id: draft.commandID) {
+        if let draft = editingDraft, let command = CommandCatalog.standard.command(id: draft.commandID) {
             _ = publishOperation(text: command.path)
         }
+    }
+
+    func restoreOperation(_ stamp: CommandDraftStamp, source: UnifiedSearchBuffer) {
+        guard validates(source), let state = operations, plan?.editing == nil,
+              let draft = state.retained.first(where: { $0.stamp == stamp }),
+              let command = CommandCatalog.standard.command(id: draft.commandID) else { return }
+        editingParameter = nil
+        _ = sendOperation(.restore(expectedRevision: state.revision, stamp), source: source, text: command.path)
     }
 
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
         guard validates(source), operationVisible else { return }
         operationMessage = "unified.operation.submitBlocked"
         refreshOperationPresentation()
-        // 目录所有项未接线。本组件没有执行闭包、偏好 setter、仓储或入计划入口。
+        planMessage = "unified.plan.notExecutable"
+        // 计划静态合法也不授权执行；这里不封存、不启动协议、不生成回执。
     }
 }

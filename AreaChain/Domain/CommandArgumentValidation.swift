@@ -3,7 +3,7 @@ import Foundation
 enum CommandArgumentIssue: Equatable {
     case missing(CommandParameterID), duplicate(CommandParameterID), unknown(CommandParameterID)
     case invalidOperation(CommandParameterID), invalidValue(CommandParameterID), unexpectedValue(CommandParameterID)
-    case incompatibleTargets, unavailable
+    case incompatibleTargets, unavailable, protectedContent
 }
 
 /// 只校验参数的静态形状与已知边界；成功不是权限、存活、业务校验或可执行证明。

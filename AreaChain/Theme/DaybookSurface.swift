@@ -128,3 +128,59 @@ extension View {
         ))
     }
 }
+
+/// 浮层仅有呈现差异；不复用 panel 的内描边、悬停状态或布局 modifier。
+enum DaybookFloatingSurface: Equatable {
+    case suggestions
+    case readOnly
+    /// 小圆角且阴影只绘制在背景上，不把正文或越界气泡投影到整卡阴影中。
+    case smallBackground
+
+    var radius: CGFloat { self == .suggestions ? DaybookRadius.regular : DaybookRadius.small }
+    var shape: RoundedRectangle {
+        switch self {
+        case .suggestions, .smallBackground: RoundedRectangle(cornerRadius: radius, style: .continuous)
+        // 保留原默认构造；默认值由 SDK 决定，不能假设是 circular。
+        case .readOnly: RoundedRectangle(cornerRadius: radius)
+        }
+    }
+}
+
+private struct DaybookFloatingSurfaceModifier: ViewModifier {
+    let presentation: DaybookFloatingSurface
+    let isPresented: Bool
+
+    func body(content: Content) -> some View {
+        switch presentation {
+        case .suggestions, .smallBackground:
+            content.background {
+                if isPresented { background.daybookElevation(.floating) }
+            }.overlay { border }
+        case .readOnly:
+            content.background {
+                if isPresented { background }
+            }.overlay { border }
+                .daybookElevation(isPresented ? .floating : .flat)
+        }
+    }
+
+    private var shape: RoundedRectangle {
+        presentation.shape
+    }
+
+    private var background: some View { shape.fill(DaybookPalette.fill.page) }
+
+    @ViewBuilder private var border: some View {
+        if isPresented {
+            // 原描边跨形状边缘各 0.35pt；strokeBorder 会内缩，不能互换。
+            shape.stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7)
+        }
+    }
+}
+
+extension View {
+    /// 不增加布局、裁切或命中形状。可关闭候选装饰而保持内容身份，让独立预览继续拥有自己的外壳。
+    func daybookSurface(floating presentation: DaybookFloatingSurface, isPresented: Bool = true) -> some View {
+        modifier(DaybookFloatingSurfaceModifier(presentation: presentation, isPresented: isPresented))
+    }
+}

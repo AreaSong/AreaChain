@@ -62,9 +62,16 @@ struct CommandDraftBaseline: Equatable, CustomStringConvertible, CustomDebugStri
 
     /// 字典缺项表示未提供，不等同于已知 absent；原值从不由领域层读取。
     let values: [Field: CommandOriginalValue]
-    init(_ values: [Field: CommandOriginalValue] = [:]) { self.values = values }
+    let isReadable: Bool
+    static let protectedContent = Self(values: [:], isReadable: false)
+    private init(values: [Field: CommandOriginalValue], isReadable: Bool) {
+        self.values = values
+        self.isReadable = isReadable
+    }
+    init(_ values: [Field: CommandOriginalValue] = [:]) { self.values = values; self.isReadable = true }
 
     func original(_ parameter: CommandParameterID, targets: CommandDraftTargets) -> CommandOriginalValue? {
+        guard isReadable else { return nil }
         let subjects: [Subject] = targets.objects.isEmpty ? [.ambient] : targets.objects.map(Subject.object)
         let originals = subjects.compactMap { values[.init(subject: $0, parameter: parameter)] }
         guard originals.count == subjects.count, let first = originals.first else { return nil }

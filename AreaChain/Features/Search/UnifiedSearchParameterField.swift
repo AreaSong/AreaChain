@@ -27,7 +27,9 @@ struct UnifiedSearchParameterField: View {
                     .font(DaybookType.micro).foregroundStyle(DaybookPalette.text.secondary)
                 Spacer(minLength: 0)
             }
-            if parameter.id == .target || isObject {
+            if controller.editingPlanItem?.links.results[parameter.id] != nil {
+                Text("unified.plan.reference.bound").font(DaybookType.caption)
+            } else if parameter.id == .target || isObject {
                 UnifiedSearchObjectField(controller: controller, draft: draft, command: command,
                     location: parameter.id == .target ? .targets : .parameter(parameter.id), source: source)
             } else if supported {

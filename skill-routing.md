@@ -1,5 +1,11 @@
 # AreaChain 技能路由与交付闭环
 
+第八阶段 D 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 modifier 身份与顺序）→ areachain-verify；areasong-development 仅补架构等价判据。任务 mainRow 复用 suggestions，手记主卡接 smallBackground / !showsSuggestions；纯装饰差异及剩余气泡见[组件目录](docs/component-catalog.md#第八阶段-d两类实时预览主外壳)。先沿原隔离宿主直接挂生产预览和 SyntaxAutocompletePopup 取基线；完整正常 PrivacyQA、独立目录/标识、构建锁、六项钥匙串变量清除与串行执行，静态 profile 配合独立 Swift 测试。完整外缘像素、动态时间、原生合成事件和真人证据分开，指定 Cursor verifier 不可用仍保留缺口，不认证或替换。实际证据见[工程记录](docs/engineering.md#第八阶段-d两类实时预览主外壳)。完成后停止，不搬 Theme 历史组合、不增加消费者，不迁移标签详情、标题/备注气泡或帮助卡。
+
+第八阶段 C 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 modifier 身份）→ areachain-verify。仅扩展 DaybookSurface 并接 SyntaxAutocompletePopup / CaptureAttributesPopup；表现、实时预览边界和实际共享搜索入口见[组件目录](docs/component-catalog.md#第八阶段-c候选与只读属性浮层外壳)。测试先冻结原绘制，沿完整正常 PrivacyQA、独立标识/目录、构建锁、六项钥匙串变量清除和串行 XCTest；静态 profile 与原检查器/反例配合。并发编译失败不得排除文件；实际证据见[工程记录](docs/engineering.md#第八阶段-c候选与只读属性浮层外壳)。指定 Cursor verifier 不可用保留缺口，不认证或替换。完成后停止，不迁移实时预览/帮助卡，不修滚动目标归属、事件或其他历史问题。
+
+统一搜索 4A-3B2 沿 areachain-workflow → areasong-development → areachain-ui → areachain-verify；UI/UX 聚焦 SwiftUI 原生列表、键盘和焦点。复用 Controller / OperationEditing / ObjectSelection，将编辑位置扩展到原 CommandPlan 项；唯一参数所有权、入列、移出、重排、合并与输出引用全部经协调者和领域事件。标准/紧凑隔离宿主共用原 OperationPanel 的有界滚动区域，不增加补全浮层或执行接线。组件与版本见[组件目录](docs/component-catalog.md#统一搜索计划列表4a-3b2)，证据与指定复核/人工/历史缺口见[权威交接](docs/unified-search-commands.md#949-阶段-4a-3b2待执行计划与就地编辑)。不进入 handler 阶段。
+
 第七阶段 D 沿 areachain-workflow → areasong-development UI/架构判据 → areachain-ui → areachain-verify；UI/UX 聚焦原生安全输入的身份、条件挂载与焦点。生产只接 PrivacySetupSheet 四字段，复用 DaybookSecureField / 28pt 输入壳及四个稳定身份；条件、校验、生命周期与 B/C 差异见[组件目录](docs/component-catalog.md#第七阶段-d隐私设置安全输入接入)。先用原 SetupFixture / PrivacyQA 直接挂载生产 sheet 建基线，再用同一宿主回归隐藏恢复、双语主题、键盘、滚动、取消和清空。合法键盘/Apply 先建立原 storageFailure 提前失败保护；不进入配置、认证、文件面板或迁移。静态 profile 配合完整正常隔离 XCTest、独立标识/目录、清除六项钥匙串变量及串行执行。稳定身份沿原检查器和反例维护；指定 Cursor verifier 缺口不替代，B 残留和历史未验项继续保留。到 D 停止，搜索、任务/手记编辑器不迁移。
 
 第七阶段 C 沿 areachain-workflow → areasong-development UI/架构判据 → areachain-ui → areachain-verify；UI/UX 聚焦原生焦点与视图身份。PrivacyUnlockView 仅接已有 DaybookSecureField，接口及与密码 sheet 的空值提交、busy 取消、关闭责任差异见[组件目录](docs/component-catalog.md#第七阶段-c解锁面板安全输入接入)。先直接挂载原 View 并经原 Presenter 注入合成 vault 建基线，再用相同宿主/配置/操作对照。复用原 ControlsPreview、SecureInputTestSupport 和 Presenter 归属/清理方式；静态 profile 配合完整正常 PrivacyQA、独立目录/标识、六项真实钥匙串变量清除和串行测试。稳定接入沿原检查器/反例维护；指定 Cursor verifier 不可用保留缺口，不重复认证或替换。B 的确认字段残留、真人/VoiceOver 和历史缺口保留，完成后停止，不迁移 Setup、搜索或任务/手记编辑器。
@@ -246,3 +252,11 @@
 ## 统一搜索 4A-3B1 对象接线
 
 本阶段沿 areachain-workflow → areasong-development → areachain-ui → areachain-verify；ui-ux-pro-max 仅聚焦 SwiftUI 焦点建议，保留 AppKit 原生输入。复用 Controller / OperationEditing、参数字段、结果行、Browse、ReadSession 与原草稿 reducer。只在合成隔离宿主中确认运行内固定目标及普通对象参数；候选限制不改变全局搜索。接口见[组件目录](docs/component-catalog.md#统一搜索-4a-3b1对象参数与固定操作目标)，唯一验收和交接见[权威设计 §9.48](docs/unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。指定 Cursor verifier 不可调用继续 partial，保留人工验收及 4A-3A 外观预期失败；不认证、不替代、不执行真实指令，不进入 4A-3B2。
+
+
+第八阶段 B 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份）→ areachain-verify。先用真实工程编译符号与 PrivacyQA 调用五种重载取基线，再将公共装配集中在 DaybookScroller 的 daybookScrollAssembly；默认和策略差异见[组件目录](docs/component-catalog.md#第八阶段-bdaybookscroll-公共装配)。静态 profile 配合完整正常隔离 XCTest、原构建锁、六项钥匙串变量清除与串行执行；公共结构、原生更新与真实消费者前后比较。指定 Cursor verifier 不可用保留缺口，不重查认证或替换；只登记原目标搜索、羽化和事件未验项。停止在 B，不改浮层外壳、绘制、事件或统一搜索直连。
+
+
+统一搜索 4A-3C2A 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify；不做原生编辑实现。复用 VaultKeyAccess 与唯一 HandoffCoordinator，命令独立载荷、同修订检查点和显式恢复见[组件目录](docs/component-catalog.md#统一搜索-4a-3c2a-命令保护载荷)，唯一契约与验收见[权威 §9.51](docs/unified-search-commands.md#951-阶段-4a-3c2a命令保护载荷与显式恢复)。测试沿现有 build/.build.lock 和正常完整 PrivacyQA 目标，锁不可得则报告未验证；不删锁、不认证、不以其他代理替代指定 Cursor verifier。原生 IME/撤销、4A-3B2 最终原生重验与历史缺口保留，完成后停止。
+
+统一搜索 4A-3C2B 沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份/焦点，保留 AppKit）→ areachain-verify。C2A 原服务只增加受控原生暂持与同次修订接续，隔离探针复用 DaybookAppKitTextView；[组件目录](docs/component-catalog.md#统一搜索-4a-3c2b-隔离原生接受探针) 与[权威矩阵](docs/unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性) 为接口/证据来源。正常完整 PrivacyQA 目标、原测试锁、六项授权变量清除和串行执行；指定 Cursor verifier、4A-3B2 最终原生和人工缺口保留。marked text、绕过 delegate 的 storage 写入与生产敏感入口不开放，停在 C2B。

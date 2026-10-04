@@ -1,7 +1,7 @@
 import Foundation
 
 enum CommandMergeConflict: Equatable {
-    case order, differentBusinessField, targets, baseline, sequentialOperation, dependency, atomicGroup, invalidArguments
+    case protectedContent, order, differentBusinessField, targets, baseline, sequentialOperation, dependency, atomicGroup, invalidArguments
 }
 
 /// 窄白名单只声明普通赋值字段，不把所有同名参数都推断成同一业务字段。
@@ -24,6 +24,7 @@ enum CommandPlanSemantics {
     static func mergeConflict(_ items: [CommandPlanItem], earlier: Int, later: Int) -> CommandMergeConflict? {
         guard later == earlier + 1 else { return .order }
         let first = items[earlier], last = items[later]
+        guard !first.draft.blocksUnprotectedTransfer, !last.draft.blocksUnprotectedTransfer else { return .protectedContent }
         guard first.draft.commandID == last.draft.commandID else { return .differentBusinessField }
         guard let field = assignmentField(first.draft.commandID),
               first.draft.arguments.count == 1, last.draft.arguments.count == 1,

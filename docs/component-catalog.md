@@ -1,5 +1,51 @@
 # 共享组件与复用目录
 
+## 第八阶段 D：两类实时预览主外壳
+
+沿 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `daybookSurface(floating:isPresented:)`，仅扩展纯呈现预设并接入两个原有主外壳；不新增生产预览消费者。下节 C 的未迁移清单是当时记录，本节更新两处主卡接入状态。
+
+| 入口 | 接入与保留差异 |
+|---|---|
+| [LiveComposerPreviewHeader.mainRow](../AreaChain/Theme/LiveComposerPreviewHeader.swift) | 直接复用 `suggestions`：regular/continuous，背景阴影；水平 10pt、固定 36pt，独立及伴随候选时均绘制，保留原叠层。 |
+| [LiveDiaryComposerPreview.body](../AreaChain/Theme/LiveDiaryComposerPreview.swift) | 使用 `smallBackground`：small/continuous、背景阴影；原 row 表面之后、contentShape/onHover/geometryObserver 之前装饰。`isPresented: !showsSuggestions` 同时关闭背景、边框与阴影，不分支重建内容。 |
+
+三个 floating 预设共用页面底色、70% 边框及 0.7pt 居中 stroke；`smallBackground` 与 suggestions 共用装配，readOnly 保留原默认圆角构造及整体阴影。原 isPresented、row/card/panel/banner 兼容，不开放任意颜色或阴影参数，不加布局、裁切、命中或事件。
+
+两预览仍是 Theme 历史业务组合；解析、敏感投影、标签/时刻、复制、关闭、悬停、气泡及定位仍归原组件。SyntaxAutocompletePopup / SyntaxOverlay / UnifiedSearchOverlay 不改组合、宿主或接线。手记仍使用 Date()，不宣称与正式列表或完整动态截图像素统一。
+
+后续线索仅登记：任务 tagDetailBubble 为 140pt、regular/continuous、背景阴影，但边框是 **60% / 0.8pt**，不能直接套 suggestions；标题/备注沿 [DaybookRowBubbles](../AreaChain/Theme/DaybookRowBubbles.swift) 的 RowTitleBubble / RowNoteBubble：small/continuous、背景阴影，但为 0.8pt 动态边框，另有复制反馈、箭头与偏移；[SyntaxExpandableCard](../AreaChain/Theme/SyntaxHelpCard.swift) 为 medium/continuous、60% / 0.8pt、背景阴影及原 clipShape。均不能直接换成当前预设，不在本轮迁移。标签胶囊、滚动装配与 B 的历史问题保留。
+
+验证复用 DaybookFloatingSurfaceTests、OverlaySurfaceConsumerTests / OverlaySurfaceTestSupport，新增 [生产预览基线与状态测试](../AreaChainTests/Theme/LivePreviewSurfaceTests.swift)。展示扩展原 [DaybookFloatingSurfaceSamples](../AreaChainTests/Theme/DaybookFloatingSurfaceSamples.swift) / ControlsPreview。完整证据和未验项见[工程记录](engineering.md#第八阶段-d两类实时预览主外壳)。
+
+## 第八阶段 C：候选与只读属性浮层外壳
+
+公共入口为 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `daybookSurface(floating:isPresented:)` / `DaybookFloatingSurface`，仅负责装配绘制，不建立平行 Popover 框架。
+
+| 表现 | 几何与阴影 | 已迁移消费者 |
+|---|---|---|
+| `suggestions` | regular / continuous；floating 仅施加背景形状 | [SyntaxAutocompletePopup](../AreaChain/Theme/SyntaxAutocompleteView.swift) |
+| `readOnly` | small / 原 RoundedRectangle 默认角样式（当前 SDK 为 continuous）；floating 施加整个面板 | [CaptureAttributesPopup](../AreaChain/Theme/CaptureAttributesView.swift) |
+
+两者共用页面底色、border.default 的 70% 和 0.7pt `stroke`，沿边缘内外各 0.35pt；不改成 `strokeBorder`。原 row/card/panel/banner 的接口、默认、内描边和 modifier 均保留。新外壳不加 padding、frame、clip、mask、contentShape、悬停/焦点/事件监听、状态或回调。消费者原 frame/foreground → 外壳 → transition/辅助语义顺序保持。
+
+候选仍承载仅候选与预览＋候选；仅预览传 `isPresented: false`，保留内容身份；两者皆无仍不显示。[LiveComposerPreviewHeader](../AreaChain/Theme/LiveComposerPreviewHeader.swift) 和 [LiveDiaryComposerPreview](../AreaChain/Theme/LiveDiaryComposerPreview.swift) 自有外壳不迁移，原任务预览的叠层、手记预览的条件描边及分隔线不变。后续任务实时预览的 regular/continuous/背景阴影可复用 suggestions；手记 small/continuous/背景阴影仍需届时明确预设差异，本阶段不预增配置。
+
+SyntaxOverlay 保留锚点、尺寸、来源优先级、最近宿主、事件和关闭责任；候选/属性内容和 daybookScroll 保持。属性关闭仍是 state.dismiss()，不创建标签或保存。共享的 [UnifiedSearchOverlay](../AreaChain/Theme/UnifiedSearchOverlay.swift) 仍只在已有统一搜索宿主回归：customRow、68pt 行高、列表高度上限、原锚点宽度和向上优先、接受许可不变，不接生产搜索。
+
+复用 DaybookSurfaceTests、SyntaxOverlayPlacementTests、CaptureOverlayLayoutTests、SyntaxAutocompleteTests、InputSyntaxInteractionTests、DiaryComposerInteractionTests、MenuBarPopoverRenderingTests、UnifiedSearchLayoutTests / InputTests。新增 [完整外缘与生产宿主矩阵](../AreaChainTests/Theme/OverlaySurfaceConsumerTests.swift) 和 [冻结绘制支持](../AreaChainTests/Theme/OverlaySurfaceTestSupport.swift)，原 ControlsPreview 增加 [合成浮层样例](../AreaChainTests/Theme/DaybookFloatingSurfaceSamples.swift)。实际运行、失败及指定复核缺口见[工程记录](engineering.md#第八阶段-c候选与只读属性浮层外壳)。
+
+## 统一搜索计划列表（4A-3B2）
+
+| 入口 | 责任与消费者 |
+|---|---|
+| [UnifiedSearchPlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift) | 原 OperationPreview 下方列表，复用参数字段、对象选择和摘要；标准/紧凑隔离宿主共用。默认紧凑、单项就地展开，有界滚动，不注册补全层。 |
+| [UnifiedSearchPlanButton](../AreaChain/Features/Search/UnifiedSearchPlanButton.swift) | 列表的编辑/顺序按钮复用既有按下/释放事件约定；捕获原回调，收起后返回原编辑按钮焦点。 |
+| [UnifiedSearchPlanEditing / UnifiedSearchPlanMerge](../AreaChain/Features/Search/UnifiedSearchPlanEditing.swift) | Controller 从协调者派生 plan / editingDraft；原 lease＋plan/item/draft stamp 派发 enqueue、edit、remove、reorder、merge。合并提议只持身份。 |
+| [UnifiedSearchPlanDependencies](../AreaChain/Features/Search/UnifiedSearchPlanDependencies.swift)、[PlanLinks](../AreaChain/Features/Search/UnifiedSearchPlanLinks.swift) | 展示前置/声明输出，选择兼容 todo 创建输出，明确解除或逐项刷新引用；复用 CommandPlanValidation.acceptsReference，不生成占位对象。 |
+| [UnifiedSearchPlanCopy](../AreaChain/Features/Search/UnifiedSearchPlanCopy.swift)、[OperationCopy](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift) | 类型化错误映射及活动/计划共用参数格式；无原始错误、正文或敏感元数据调试输出。 |
+
+唯一计划是 CommandHostSession.plan；不把计划项复制到 operations.active。移出退回 retained，收起保留修改。静态校验不是执行许可，没有封存、执行、回执或真实设置写入。版本接续、原生证据与剩余输入能力统一见[权威交接 §9.49](unified-search-commands.md#949-阶段-4a-3b2待执行计划与就地编辑)。入口守卫由原 check_workflow 及其反例维护。
+
 ## 第七阶段 D：隐私设置安全输入接入
 
 - [PrivacySetupSheet](../AreaChain/Features/Settings/PrivacySetupSheet.swift) 四处输入直接使用既有 [DaybookSecureField](../AreaChain/Theme/DaybookSecureField.swift)，移除表单 roundedBorder，复用 28pt DaybookInputShell；480pt 宽度、maxHeight 430 滚动区与底部按钮结构不变。公共 API、输入壳和安全输入内部均未改。
@@ -518,3 +564,33 @@ F 定向静态清单：
 - [ContentQueryReadSession.objectCandidate](../AreaChain/Services/ContentQueryObjectCandidates.swift) 只解析当前安全发布的完整类型化身份，区分活对象与墓碑；没有实体或正文回查。目标预览同样重新经过此入口。
 - CommandDraft.select 的可选 baseline 只接显式证据；改变具体对象集合时缺省清旧基线，保留 arguments。CommandHandoffCoordinator.ownershipRevision 在原子转交后通知原 ReadSession 观察链撤显示。
 - 新消费者仅四套 UnifiedSearchObject 测试及原 OperationTestContent 隔离宿主；生产入口不变。候选范围、验收状态和下一阶段接口统一见[权威设计 §9.48](unified-search-commands.md#948-阶段-4a-3b1对象参数选择与操作固定目标的原生接线)。
+
+## 第八阶段 B：daybookScroll 公共装配
+
+[DaybookScroller.swift](../AreaChain/Theme/DaybookScroller.swift) 的私有 `daybookScrollAssembly` 是唯一装配链：`DaybookScrollIndicators` 策略变换 → `DaybookScrollerConfigurator` → `DaybookScrollEdgeFeatherModifier`。泛型恒等/隐藏变换保持原具体 SwiftUI 视图结构，不增加条件包装、AnyView 或状态。DaybookColor 只移出滚动入口，颜色与 daybookHideInputChrome 不变。
+
+| 兼容调用 | 实际重载与默认 | 系统指示器 |
+|---|---|---|
+| `daybookScroll()` | 单参数，false / 7pt | 明确隐藏 |
+| `daybookScroll(featherEdges: false/true)` | 单参数，指定开关 / 7pt | 明确隐藏 |
+| `daybookScroll(featherHeight: h)` | 双参数，true / h | 保留调用方/系统策略 |
+| `daybookScroll(featherEdges: value, featherHeight: h)` | 双参数，指定开关 / h | 保留调用方/系统策略 |
+
+原默认参数不变；没有参数修正。保留策略是恒等变换，不设置 automatic 或 visible。WorkspaceItemsList、TasksPage、WorkspaceSidebarView、CalendarWeekBoard、GanttPage 和 SyntaxAutocompletePopup 均实际选择单参数入口，原生与编译证据见[工程记录](engineering.md#第八阶段-b公共滚动装配去重)。AppKit 文本仍直接使用 DaybookScroller；统一搜索 ObjectPicker / ResultsContent / OperationPreview 仍直接安装 Configurator。二者不迁移，不改浮层外壳、事件、目标搜索、拆卸、羽化算法或页面业务。
+
+复用 DaybookScrollerTests、TaskListScrollTests、SettingsButtonTestSupport、CalendarWeekTestSupport、GanttInteractionTests 与 CaptureOverlayLayoutTests；新增 [公共结构契约](../AreaChainTests/Theme/DaybookScrollContractTests.swift)、[原生更新](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)、[真实消费者刻画](../AreaChainTests/Features/ScrollAssemblyConsumerTests.swift)。历史错误目标用已知失败和原归属数量同时记录，不作为功能通过；指定 Cursor verifier 缺口保留。原 check_workflow.py 只守卫稳定入口存在，不证明行为通过。
+
+
+### 统一搜索 4A-3C2A 命令保护载荷
+
+- [CommandProtectedReference](../AreaChain/Domain/CommandDraftProtection.swift) 是无内容身份，不能授予访问；普通/required/unknown 的分类不是关键词检测结果。草稿/计划消费者沿原 Coordinator，受保护内容的完整性未知、保守 dirty，基线不可读不同于 absent。
+- [CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 的 protect / acceptRevision / explicitlyRestore / withRestoredContents 只供隔离装配；当前宿主唯一归属仍由 CommandHandoffCoordinator 核验。锁前已接受修订已有恢复点，通知只撤权；无原生/生产入口。
+- [CommandDraftPayload](../AreaChain/Services/Privacy/CommandDraftPayload.swift) 与 [SealedCommandDraft](../AreaChain/Services/Privacy/SealedCommandDraft.swift) 复用 VaultKeyAccess，独立 v1 命令格式，原 DiaryDraftText 不变。正文、基线、必要应用编辑状态受同一修订保护，不含原生能力或窗口。
+- 实际消费者为 CommandDraft / Session / Baseline、CommandPlan / Validation / Semantics、CommandHostSession / HandoffCoordinator / ExecutionRun；两个原错误文案适配新增无内容拒绝原因。新服务仅由 CommandProtectedDraftTests / SealedCommandDraftTests 装配。
+- 授权、恢复失败、原生缺口、回退与实际证据统一见[权威交接](unified-search-commands.md#951-阶段-4a-3c2a命令保护载荷与显式恢复)。普通转交兼容，保护/未知转交和长文协议执行仍拒绝；不进入下一阶段。
+
+### 统一搜索 4A-3C2B 隔离原生接受探针
+
+[CommandDraftNativeOwner](../AreaChain/Services/Privacy/CommandDraftNativeOwner.swift) 限定受控临时字段持有与同步清理；[CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 的 attachNative / acceptNative / undoNative / presentNative 复用 C2A 校验、密文和 Coordinator，只有同次成功修订可接续新 access。原 withRestoredContents 不允许任意缓存。
+
+[CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 仅由 [原生测试](../AreaChainTests/Features/CommandNativeEditingTests.swift) / [故障与性能测试](../AreaChainTests/Features/CommandNativeFailureTests.swift) 装配；继承原 DaybookAppKitTextView，旧 DaybookTextEditor / SyntaxTextEditor 默认行为不变。active notes 单字段纯文本检查点与独立密文 undo；marked text 拒绝，mutable textStorage 为已知事后检测反例。无生产/planItem/handler 接线，支持矩阵和实际证据只见[权威 §9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)。

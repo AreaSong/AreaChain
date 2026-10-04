@@ -59,13 +59,6 @@ extension NSColor {
 }
 
 extension View {
-    func daybookScroll(featherEdges: Bool = false) -> some View {
-        self
-            .scrollIndicators(.hidden)
-            .background(DaybookScrollerConfigurator())
-            .modifier(DaybookScrollEdgeFeatherModifier(enabled: featherEdges))
-    }
-
     @ViewBuilder
     func daybookHideInputChrome() -> some View {
         if #available(macOS 15.4, *) {

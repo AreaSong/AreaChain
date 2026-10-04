@@ -13,7 +13,11 @@ struct CommandDraftCheck: Equatable {
     let argumentIssues: [CommandArgumentIssue]
     let targetIssues: [CommandDraftTargetIssue]
     let execution: CommandExecutionBinding
-    var parametersComplete: Bool { !argumentIssues.contains { if case .missing = $0 { return true }; return false } }
+    var parameterCompleteness: CommandParameterCompleteness {
+        if argumentIssues.contains(.protectedContent) { return .protectedUnknown }
+        return argumentIssues.contains { if case .missing = $0 { return true }; return false } ? .incomplete : .complete
+    }
+    var parametersComplete: Bool { parameterCompleteness == .complete }
     var staticallyValid: Bool { argumentIssues.isEmpty && targetIssues.isEmpty }
     var isExecutable: Bool { false }
 }
@@ -27,10 +31,14 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     private(set) var targets: CommandDraftTargets
     private(set) var arguments: [CommandArgument]
     private(set) var baseline: CommandDraftBaseline
+    private(set) var protectedReference: CommandProtectedReference?
+    let protectionRequirement: CommandProtectionRequirement
     private var initialTargets: CommandDraftTargets
 
     init(id: UUID, hostID: String, commandID: CommandID, targets: CommandDraftTargets = .none,
-         baseline: CommandDraftBaseline = .init(), arguments: [CommandArgument] = []) {
+         baseline: CommandDraftBaseline = .init(), arguments: [CommandArgument] = [],
+         protectionRequirement: CommandProtectionRequirement = .ordinary) {
+        self.protectionRequirement = protectionRequirement
         self.id = id
         self.hostID = hostID
         self.commandID = commandID
@@ -42,12 +50,15 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
 
     var stamp: CommandDraftStamp { .init(hostID: hostID, draftID: id, version: version) }
     var modification: CommandDraftModification {
-        targets != initialTargets || arguments.contains(where: changesOriginal) ? .modified : .unchanged
+        protectedReference != nil || targets != initialTargets || arguments.contains(where: changesOriginal) ? .modified : .unchanged
     }
     var description: String { "CommandDraft(id: \(id), version: \(version))" }
     var debugDescription: String { description }
 
     func check() -> CommandDraftCheck {
+        if protectedReference != nil {
+            return .init(argumentIssues: [.protectedContent], targetIssues: [], execution: .unwired)
+        }
         guard let command = CommandCatalog.standard.command(id: commandID) else {
             return .init(argumentIssues: [.unavailable], targetIssues: [], execution: .unwired)
         }
@@ -70,7 +81,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
 
     // 写入入口由 reducer 校验身份；每次接受编辑都推进版本，即使内容相同也使旧确认失效。
     mutating func edit(_ argument: CommandArgument, expecting stamp: CommandDraftStamp) {
-        guard self.stamp == stamp, argument.parameter != .target else { return }
+        guard protectedReference == nil, self.stamp == stamp, argument.parameter != .target else { return }
         arguments.removeAll { $0.parameter == argument.parameter }
         arguments.append(argument)
         version += 1
@@ -78,7 +89,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
 
     mutating func select(_ targets: CommandDraftTargets, expecting stamp: CommandDraftStamp,
                          baseline: CommandDraftBaseline? = nil) {
-        guard self.stamp == stamp else { return }
+        guard protectedReference == nil, self.stamp == stamp else { return }
         // 新对象集合需要新证据；不能沿用上一轮对象的基线，也不丢掉用户参数。
         if self.targets.objects != targets.objects { self.baseline = baseline ?? .init() }
         self.targets = targets
@@ -86,10 +97,18 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     }
 
     mutating func reload(_ baseline: CommandDraftBaseline, arguments: [CommandArgument], expecting stamp: CommandDraftStamp) {
-        guard self.stamp == stamp else { return }
+        guard protectedReference == nil, self.stamp == stamp else { return }
         self.baseline = baseline
         self.arguments = arguments
         initialTargets = targets
+        version += 1
+    }
+
+    /// 仅协调者的检查点提交调用；普通编辑、重载不能降级此状态。
+    mutating func acceptProtection(_ reference: CommandProtectedReference) {
+        protectedReference = reference
+        arguments = []
+        baseline = .protectedContent
         version += 1
     }
 

@@ -102,6 +102,7 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
 
     /// 只生成候选状态，协调者在全部校验后同时发布双方；此入口本身不授予所有权。
     func handoffStates(to target: Self) throws -> (source: Self, target: Self) {
+        guard !allDrafts.contains(where: \.blocksUnprotectedTransfer) else { throw CommandHandoffError.protectedContent }
         guard execution == nil, target.execution == nil, operations.pending == nil,
               target.operations.pending == nil else { throw CommandHandoffError.ineligible }
         guard target.operations.active == nil, target.operations.retained.isEmpty,
@@ -117,6 +118,17 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         source.operations = operations.emptiedAfterHandoff()
         source.plan = plan.emptiedAfterHandoff()
         return (source, receiver)
+    }
+
+    var allDrafts: [CommandDraft] { operations.allDrafts + plan.items.map(\.draft) }
+
+    mutating func acceptProtection(_ reference: CommandProtectedReference, expecting stamp: CommandDraftStamp) throws {
+        guard execution == nil, operations.pending == nil else { throw CommandPlanError.busy }
+        if plan.items.contains(where: { $0.draft.stamp == stamp }) {
+            try plan.acceptProtection(reference, expecting: stamp)
+        } else {
+            try operations.acceptProtection(reference, expecting: stamp)
+        }
     }
 
     var handoffNativeSelections: Set<UUID> {

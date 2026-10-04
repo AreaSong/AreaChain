@@ -1,6 +1,703 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "unified.plan.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前活动草稿"
+          }
+        }
+      }
+    },
+    "unified.plan.enqueue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to pending list"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加入待执行列表"
+          }
+        }
+      }
+    },
+    "unified.plan.count": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld pending items"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 项待处理"
+          }
+        }
+      }
+    },
+    "unified.plan.notExecutable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Execution is not connected. Parameters and dependencies still need current permission, object and business checks."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行尚未接线；参数与依赖仍须完成最新权限、对象及业务检查。"
+          }
+        }
+      }
+    },
+    "unified.plan.added": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Added to the pending list; the plan now owns this draft."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已加入待执行列表，草稿现由计划唯一持有。"
+          }
+        }
+      }
+    },
+    "unified.plan.removed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Removed from the list and kept as a retained draft."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已移出列表并保留草稿。"
+          }
+        }
+      }
+    },
+    "unified.plan.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This event is outdated or already handled. Use the current controls."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作已过期或已处理，请使用当前控件。"
+          }
+        }
+      }
+    },
+    "unified.plan.busy": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish editing this item or resolve the pending draft switch first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先收起此项编辑或处理待决的草稿切换。"
+          }
+        }
+      }
+    },
+    "unified.plan.excluded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This command must be handled separately and cannot enter the pending list."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此指令必须独立处理，不能加入待执行列表。"
+          }
+        }
+      }
+    },
+    "unified.plan.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parameters or targets need attention. The plan was kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "参数或目标需要补齐或修正，计划已保留。"
+          }
+        }
+      }
+    },
+    "unified.plan.dependents": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other items depend on this item. Remove their links explicitly first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他项依赖此项；请先明确解除对应关系。"
+          }
+        }
+      }
+    },
+    "unified.plan.grouped": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This item belongs to an atomic group. The requested change is not allowed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此项属于原子组，不允许此变更。"
+          }
+        }
+      }
+    },
+    "unified.plan.graph": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dependencies, ordering or group constraints prevent this change. Original plan kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依赖、顺序或组约束阻止此变更；原计划已保留。"
+          }
+        }
+      }
+    },
+    "unified.plan.edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑"
+          }
+        }
+      }
+    },
+    "unified.plan.editing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing this plan item in place. Changes are kept when collapsed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在就地编辑此计划项；收起会保留修改。"
+          }
+        }
+      }
+    },
+    "unified.plan.close": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collapse · keep changes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起 · 保留修改"
+          }
+        }
+      }
+    },
+    "unified.plan.up": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move up"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上移"
+          }
+        }
+      }
+    },
+    "unified.plan.down": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Move down"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下移"
+          }
+        }
+      }
+    },
+    "unified.plan.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove · keep draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移出列表并保留草稿"
+          }
+        }
+      }
+    },
+    "unified.plan.shapeValid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shape checked · not execution approval"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "形状校验成立 · 尚未获得执行许可"
+          }
+        }
+      }
+    },
+    "unified.plan.needsInput": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Incomplete · parameters or targets needed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未完成 · 待补参数或目标"
+          }
+        }
+      }
+    },
+    "unified.plan.atomic": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synthetic atomic group · no transaction guarantee is connected"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合成原子组 · 尚未接入真实事务保证"
+          }
+        }
+      }
+    },
+    "unified.plan.merge": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review merge with previous"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看与前项合并方案"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.question": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge the adjacent assignments? Keep the earlier baseline and use these final values:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并相邻赋值项？保留前项基线，最终采用以下字段和值："
+          }
+        }
+      }
+    },
+    "unified.plan.merge.accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept merge"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接受合并"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.order": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Only adjacent items can merge. Both items were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅相邻项可合并，已保留两项。"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.field": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These operations change different fields. Both items were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "操作修改的业务字段不同，已保留两项。"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.targets": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Targets do not match exactly. Partial overlap cannot be overwritten."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标不完全相同，不能覆盖部分重叠目标。"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.baseline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No matching, reliable original values are available. Both items were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "缺少一致可靠的原值依据，已保留两项。"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.sequential": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This operation is not a supported assignment merge. Sequential changes were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此操作不支持赋值合并，已保留顺序修改。"
+          }
+        }
+      }
+    },
+    "unified.plan.merge.dependency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dependency semantics prevent merging. Both items were kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "依赖语义不允许合并，已保留两项。"
+          }
+        }
+      }
+    },
+    "unified.plan.predecessor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "After"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前置操作"
+          }
+        }
+      }
+    },
+    "unified.plan.unlink": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove explicit dependency"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除显式依赖"
+          }
+        }
+      }
+    },
+    "unified.plan.output.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New task output"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新建任务输出"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.choose": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use a declared creation output"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择已声明的创建输出"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.remove": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove output reference"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "解除输出引用"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.bound": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uses a future output. Remove its reference before entering a direct value."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用未来输出；填写直接值前须先解除引用。"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.missing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predecessor missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前置项缺失"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.order": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Predecessor must come first"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "前置项必须排在前面"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.stale": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output reference is outdated. Reselect the producer to refresh it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出引用已过期，请重新选择前置项以刷新。"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.invalid": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Output type or direct value conflicts with this reference."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "输出类型或直接值与引用冲突。"
+          }
+        }
+      }
+    },
     "picker.empty": {
       "extractionState": "manual",
       "localizations": {
@@ -24215,6 +24912,13 @@
             "value": "尚需选择并核对目标对象"
           }
         }
+      }
+    },
+    "unified.operation.protected": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Protected or unknown content; this action is unavailable." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "内容受保护或保护状态未知，当前不支持此操作。" } }
       }
     },
     "unified.operation.unavailable": {

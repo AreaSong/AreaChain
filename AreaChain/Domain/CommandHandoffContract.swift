@@ -44,7 +44,7 @@ struct CommandHandoffReadiness: Equatable {
 enum CommandHandoffFailure: Equatable { case receiverUnavailable, windowPreparationFailed, resourceUnavailable, commitFailed }
 enum CommandHandoffStatus: Equatable { case preparing, confirmed, completed, cancelled, failed(CommandHandoffFailure) }
 enum CommandHandoffError: Error, Equatable {
-    case stale, sameHost, duplicate, transferInProgress, ineligible, targetOccupied
+    case protectedContent, stale, sameHost, duplicate, transferInProgress, ineligible, targetOccupied
     case queryReplacementRequired, resourcesUnconfirmed, receiverUnconfirmed, invalidPlan
 }
 

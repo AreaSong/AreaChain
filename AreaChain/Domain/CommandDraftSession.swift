@@ -50,8 +50,24 @@ struct CommandDraftSession: Equatable, CustomStringConvertible, CustomDebugStrin
 
     /// 关闭和退出共用纯判断，包含参数有误的草稿；不发起窗口或应用动作。
     var unsavedDrafts: [CommandDraftStamp] {
-        ((active.map { [$0] } ?? []) + retained).filter { $0.modification == .modified }.map(\.stamp)
+        allDrafts.filter { $0.modification == .modified }.map(\.stamp)
     }
+    var allDrafts: [CommandDraft] {
+        var drafts = (active.map { [$0] } ?? []) + retained
+        if case .start(let incoming) = pending?.destination { drafts.append(incoming) }
+        return drafts
+    }
+
+    mutating func acceptProtection(_ reference: CommandProtectedReference, expecting stamp: CommandDraftStamp) throws {
+        guard pending == nil else { throw CommandPlanError.busy }
+        if active?.stamp == stamp {
+            active?.acceptProtection(reference)
+        } else if let index = retained.firstIndex(where: { $0.stamp == stamp }) {
+            retained[index].acceptProtection(reference)
+        } else { throw CommandPlanError.stale }
+        revision += 1
+    }
+
     var requiresUnsavedContentHandling: Bool { !unsavedDrafts.isEmpty }
     var description: String { "CommandDraftSession(revision: \(revision), retained: \(retained.count))" }
     var debugDescription: String { description }
@@ -134,7 +150,7 @@ enum CommandDraftReducer {
     }
 
     private static func validSeed(_ draft: CommandDraft, state: CommandDraftSession) -> Bool {
-        draft.hostID == state.hostID && draft.version == 0 && !state.usedIDs.contains(draft.id)
+        draft.protectionRequirement == .ordinary && draft.hostID == state.hostID && draft.version == 0 && !state.usedIDs.contains(draft.id)
             && CommandCatalog.standard.command(id: draft.commandID) != nil
             && validArguments(draft.arguments)
     }
@@ -184,7 +200,7 @@ enum CommandDraftReducer {
     }
 
     private static func edit(_ event: CommandDraftEvent, state: inout CommandDraftSession) -> [CommandDraftIntent] {
-        guard var draft = state.active else { return [.rejectedEvent] }
+        guard var draft = state.active, draft.protectedReference == nil else { return [.rejectedEvent] }
         switch event {
         case .edit(let stamp, let argument):
             guard draft.stamp == stamp, argument.parameter != .target else { return [.rejectedEvent] }

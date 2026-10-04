@@ -9,6 +9,8 @@ struct UnifiedSearchBuffer: Equatable {
     var privacyRevision: UInt64 = 0
     var operation: CommandDraftStamp?
     var selectingObjects = false
+    var plan: CommandPlanStamp?
+    var planItem: CommandPlanItemStamp?
 }
 
 struct UnifiedSearchEdit {

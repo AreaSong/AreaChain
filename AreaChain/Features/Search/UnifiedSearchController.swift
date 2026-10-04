@@ -7,6 +7,9 @@ final class UnifiedSearchController {
     private(set) var buffer: UnifiedSearchBuffer
     var inputFocused = true
     var operationExpanded = true
+    var planMessage = "unified.plan.notExecutable"
+    var planReturnItem: UUID?
+    var planReturnRevision: UInt64 = 0
     var editingParameter: CommandParameterID?
     var operationMessage = "unified.operation.notExecuted"
     var objectSelection: UnifiedSearchObjectSelection?
@@ -17,7 +20,7 @@ final class UnifiedSearchController {
     var objectReturnLocation: UnifiedSearchObjectLocation?
     var objectReturnRevision: UInt64 = 0
     @ObservationIgnored var objectSelectionTask: Task<Void, Never>?
-    // 只保存原生未完成文字，不是可提交的参数字典；合法值唯一存在 operations。
+    // 只保存原生未完成文字，不是可提交的参数字典；合法值唯一存在 operations 或 plan。
     var parameterText: [UUID: [CommandParameterID: UnifiedSearchParameterBuffer]] = [:]
     @ObservationIgnored var syntheticBaselines: [CommandID: CommandDraftBaseline] = [:]
     private(set) var messageKey = "unified.results.awaiting"
@@ -38,7 +41,9 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void) {
         self.session = session
         self.coordinator = coordinator
-        self.buffer = buffer
+        var initial = buffer
+        initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
+        self.buffer = initial
         self.read = read
         self.recordOpen = recordOpen
         observer = session.displayUpdates.observe { [weak self] change in self?.changed(change) }
@@ -73,7 +78,7 @@ final class UnifiedSearchController {
         }
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID) else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: request.text,
-                       privacyRevision: buffer.privacyRevision, operation: operations?.active?.stamp)
+                       privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: plan?.stamp, planItem: editingPlanItem?.stamp)
         if content { refresh() }
         return buffer
     }
@@ -167,14 +172,14 @@ final class UnifiedSearchController {
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID),
               owned.lease.ownership == buffer.lease.ownership else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: text,
-            privacyRevision: buffer.privacyRevision, operation: owned.session.operations.active?.stamp)
+            privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: owned.session.plan.stamp, planItem: editingPlanItem?.stamp)
         revision &+= 1
         return buffer
     }
 
     func replaceOperationInputText(_ text: String) {
         buffer = .init(lease: buffer.lease, version: buffer.version, text: text,
-            privacyRevision: buffer.privacyRevision, operation: buffer.operation)
+            privacyRevision: buffer.privacyRevision, operation: buffer.operation, plan: buffer.plan, planItem: buffer.planItem)
     }
 
     func refreshOperationPresentation() { revision &+= 1 }
@@ -184,7 +189,7 @@ final class UnifiedSearchController {
     func setObjectInputMode(_ selecting: Bool) {
         guard buffer.selectingObjects != selecting else { return }
         buffer = .init(lease: buffer.lease, version: buffer.version + 1, text: buffer.text,
-            privacyRevision: buffer.privacyRevision, operation: buffer.operation, selectingObjects: selecting)
+            privacyRevision: buffer.privacyRevision, operation: buffer.operation, selectingObjects: selecting, plan: buffer.plan, planItem: buffer.planItem)
         revision &+= 1
     }
 
@@ -213,7 +218,7 @@ final class UnifiedSearchController {
             let current = try? coordinator.host(buffer.lease.ownership.hostID).lease
             let lease = current?.ownership == buffer.lease.ownership ? current! : buffer.lease
             buffer = .init(lease: lease, version: buffer.version + 1, text: "",
-                           privacyRevision: buffer.privacyRevision + 1, operation: operations?.active?.stamp)
+                           privacyRevision: buffer.privacyRevision + 1, operation: editingDraft?.stamp, plan: plan?.stamp, planItem: editingPlanItem?.stamp)
             editingParameter = nil
             inputReset.invalidate(buffer)
             messageKey = "unified.results.invalidated"

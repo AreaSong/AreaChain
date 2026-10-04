@@ -2,6 +2,16 @@ import Foundation
 
 /// 只投影已有草稿与目录，不把参数默认值冒充应用当前值。
 enum UnifiedSearchOperationCopy {
+    static func summary(_ command: CommandDescriptor, draft: CommandDraft, locale: Locale, calendar: Calendar) -> String {
+        command.parameters.compactMap { parameter in
+            guard let argument = draft.arguments.first(where: { $0.parameter == parameter.id }) else { return nil }
+            let value = argument.operation.requiresValue
+                ? self.value(argument.value, locale: locale, calendar: calendar)
+                : L10n.format("unified.operation.mode." + argument.operation.rawValue, locale: locale)
+            return L10n.format(parameter.id.nameKey, locale: locale) + ": " + value
+        }.joined(separator: " · ")
+    }
+
     static func raw(_ value: CommandValue?) -> String {
         switch value {
         case .shortText(let text): text
@@ -62,6 +72,7 @@ enum UnifiedSearchOperationCopy {
         case .invalidValue(let id): parameter = id; key = "unified.operation.invalid"
         case .invalidOperation(let id), .unexpectedValue(let id): parameter = id; key = "unified.operation.invalidOperation"
         case .unknown(let id), .duplicate(let id): parameter = id; key = "unified.operation.invalid"
+        case .protectedContent: return L10n.format("unified.operation.protected", locale: locale)
         case .unavailable: return L10n.format("unified.operation.unavailable", locale: locale)
         case .incompatibleTargets: return L10n.format("unified.operation.targetIssue", locale: locale)
         }

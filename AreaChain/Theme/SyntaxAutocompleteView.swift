@@ -177,23 +177,6 @@ struct SyntaxAutocompletePopup: View {
         }
     }
 
-    @ViewBuilder
-    private func popoverBackground(isStandalonePreview: Bool) -> some View {
-        if !isStandalonePreview {
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        }
-    }
-
-    @ViewBuilder
-    private func popoverBorder(isStandalonePreview: Bool) -> some View {
-        if !isStandalonePreview {
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7) // token-exempt: 70% 分隔线没有对应令牌
-        }
-    }
-
     var body: some View {
         let showsPreview = state.showsPreview
         let showsSuggestions = state.isActive && !state.candidates.isEmpty
@@ -216,8 +199,7 @@ struct SyntaxAutocompletePopup: View {
                 }
             }
             .frame(width: width)
-            .background(popoverBackground(isStandalonePreview: isStandalonePreview))
-            .overlay(popoverBorder(isStandalonePreview: isStandalonePreview))
+            .daybookSurface(floating: .suggestions, isPresented: !isStandalonePreview)
             .transition((reduceMotion || motionDisabled) ? .identity : .opacity.combined(with: .scale(
                 scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading
             )))
