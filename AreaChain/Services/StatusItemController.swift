@@ -59,7 +59,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         center.addObserver(forName: .boardDidChange, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.refreshCount() }
         }
-        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+        preferenceObservation = PreferenceObservation(preferences: AppPreferences.shared,
             consumer: .statusItem, presentation: { [weak self] in self?.refreshPresentation() },
             legacy: { [weak self] in self?.refreshCount() })
         center.addObserver(forName: .pasteClipboardCapture, object: nil, queue: .main) { [weak self] _ in

@@ -92,6 +92,36 @@ struct QuadrantLayoutTests {
         #expect(abs(bubble.minX - (host.minX + anchor.minX)) < 30)
     }
 
+    @Test func pagePreviewHoverKeepsTaskAndInspectionUnchanged() async throws {
+        let host = try QuadrantLayoutHost(scheme: .light, counts: [1, 0, 0, 1])
+        defer { host.close() }
+        let todo = try #require(host.items[.importantUrgent]?.first)
+        todo.title = String(repeating: "Synthetic 合成长标题", count: 200)
+        try host.container.mainContext.save()
+        try await NativeSyntaxUI.prepareFocus(in: host.window)
+        try await host.settle()
+        let pointer = NSEvent.mouseLocation
+        defer { RowBubbleTestSupport.warp(pointer) }
+        let selected = WorkspaceNavigation.shared.selectedTaskID
+        let day = BoardSelection.shared.inspectingDayKey
+        let before = todo.title
+        let title = try NativeSyntaxUI.frame("quadrant.task.\(todo.id)", in: host.window)
+        try await RowBubbleTestSupport.move(NSPoint(x: 2, y: 2), in: host.window)
+        try await RowBubbleTestSupport.move(NSPoint(x: title.midX, y: title.midY), in: host.window)
+        try await Task.sleep(for: .milliseconds(600))
+        let id = "quadrant.titleBubble.\(todo.id.uuidString)"
+        let bubble = try NativeSyntaxUI.frame(id, in: host.window)
+        // 标识落在提示文字；260pt 外壳由直接 overlay 像素对照测试核验。
+        #expect(abs(bubble.minX - title.minX - 8) < 2 && bubble.width > 0)
+        #expect(bubble.maxY < title.minY && title.height < 36)
+        try await RowBubbleTestSupport.move(NSPoint(x: 2, y: 2), in: host.window)
+        try await Task.sleep(for: .milliseconds(600))
+        #expect(!SystemPageHost.identifiers(in: host.window).contains(id))
+        #expect(todo.title == before && !todo.isDone && !host.container.mainContext.hasChanges)
+        #expect(WorkspaceNavigation.shared.selectedTaskID == selected && BoardSelection.shared.inspectingDayKey == day)
+        // 页面默认复制会写 NSPasteboard，这里只进入/离开标题，全文转交由 Overlay 注入测试负责。
+    }
+
     @Test func longTitlesStayOnOneLineAndOnlyThoseOverflow() async throws {
         let host = try QuadrantLayoutHost(scheme: .light, counts: [1, 0, 0, 1])
         defer { host.close() }

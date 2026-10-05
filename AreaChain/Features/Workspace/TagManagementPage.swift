@@ -265,9 +265,7 @@ struct TagManagementPage: View {
     private func tagRow(_ tag: TagItem) -> some View {
         let count = usage[tag.id]?.activeCount ?? 0
         return HStack(spacing: 10) {
-            Circle() // token-exempt: 标签色点，不是按钮
-                .fill(DaybookPalette.tagMark(name: tag.name, token: tag.colorToken))
-                .frame(width: 10, height: 10)
+            DaybookStatusDot(color: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken), size: 10)
                 .accessibilityLabel(Text(colorTitle(tag.resolvedColorToken)))
             if renamingID == tag.id {
                 DaybookTextField(

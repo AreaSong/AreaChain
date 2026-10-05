@@ -61,7 +61,7 @@ struct DaybookFloatingSurfaceTests {
     func matchesFrozenDrawingIncludingOutsideEdges(scheme: ColorScheme) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
-        for presentation in [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp] {
+        for presentation in [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp, .filterFlyout] {
             let sample = Text(verbatim: "Synthetic").frame(width: 180, height: 72)
                 // 越界图形能区分整体阴影/背景阴影，并发现额外裁切。
                 .overlay(alignment: .topTrailing) { Circle().fill(.red).frame(width: 16, height: 16).offset(x: 8, y: -8) }
@@ -82,7 +82,7 @@ struct DaybookFloatingSurfaceTests {
         }
     }
 
-    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp])
+    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp, .filterFlyout])
     func disabledDecorationKeepsPreviewIdentityAndGeometry(presentation: DaybookFloatingSurface) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
@@ -106,7 +106,7 @@ struct DaybookFloatingSurfaceTests {
         #expect(try pixels(OverlaySurfaceTestSupport.bitmap(window)) == pixels(OverlaySurfaceTestSupport.bitmap(plain)))
     }
 
-    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp], ["send", "queue"])
+    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp, .filterFlyout], ["send", "queue"])
     func decorationDoesNotExpandPointerInterception(presentation: DaybookFloatingSurface, delivery: String) async throws {
         for shell in [SurfacePointerDecoration.plain, .frozen, .current, .hidden] {
             try await pointerOwnership(presentation: presentation, shell: shell, delivery: delivery)
@@ -283,7 +283,9 @@ private struct FrozenFloatingSurface: ViewModifier {
     let presentation: DaybookFloatingSurface
 
     func body(content: Content) -> some View {
-        if presentation == .tagDetail || presentation == .syntaxHelp {
+        if presentation == .filterFlyout {
+            content.modifier(OriginalFilterSurface())
+        } else if presentation == .tagDetail || presentation == .syntaxHelp {
             content.modifier(OriginalDetailSurface(help: presentation == .syntaxHelp))
         } else if presentation == .smallBackground {
             content.modifier(OriginalDiaryPreviewSurface())

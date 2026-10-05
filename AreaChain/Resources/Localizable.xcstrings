@@ -1,6 +1,397 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "unified.group.member": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Included in the same save"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "属于同一次共同保存"
+          }
+        }
+      }
+    },
+    "unified.group.planHint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare the pending settings together before saving."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备后，一次共同保存计划内的设置。"
+          }
+        }
+      }
+    },
+    "unified.group.memberNoChange": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No change needed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无需更改"
+          }
+        }
+      }
+    },
+    "unified.group.scope": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use one group of 2–4 different ordinary settings, without dependencies or protected content."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅支持 2～4 个不同普通设置组成一个组，不含依赖或受保护内容。"
+          }
+        }
+      }
+    },
+    "unified.group.backendNotReady": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The file backend is not writable. Verification is required; settings will not be migrated or recovered automatically."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件后端尚不可写，需要核验；不会自动迁移设置或恢复文件。"
+          }
+        }
+      }
+    },
+    "unified.group.needsPreparation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Baseline missing or no longer valid. Explicitly prepare the settings again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "基线缺失或已失效，请明确重新准备设置。"
+          }
+        }
+      }
+    },
+    "unified.group.duplicates": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The plan contains duplicate settings. Keep all items and edit the plan before preparing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计划含重复设置；已保留全部项目，请先编辑计划。"
+          }
+        }
+      }
+    },
+    "unified.group.conflict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings conflict. The group has not been submitted; review the changed values."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置存在冲突，整组未提交；请核对变化的值。"
+          }
+        }
+      }
+    },
+    "unified.group.noChange": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All settings already match. Nothing new was saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全部设置已满足目标，无新保存。"
+          }
+        }
+      }
+    },
+    "unified.group.superseded": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The group was saved. Later changes have replaced its pending presentation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整组已保存；待应用的旧展示已被后续修改替代。"
+          }
+        }
+      }
+    },
+    "unified.group.presentationFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The group was saved. Applying its presentation is incomplete."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整组已保存，展示应用未完成。"
+          }
+        }
+      }
+    },
+    "unified.group.saved": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All settings saved together."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整组已保存。"
+          }
+        }
+      }
+    },
+    "unified.group.unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save result unknown. Verify the original submission before continuing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "结果待核实，请核验原提交后再继续。"
+          }
+        }
+      }
+    },
+    "unified.group.recoveryRequired": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The backend is not writable and requires verification. The group has not been saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后端不可写，需要核验；整组尚未保存。"
+          }
+        }
+      }
+    },
+    "unified.group.notCommitted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The group was not saved. Its plan is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整组未保存，原计划仍保留。"
+          }
+        }
+      }
+    },
+    "unified.group.ready": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Group baseline is valid. All members will share one save."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "组基线有效，所有成员属于同一次共同保存。"
+          }
+        }
+      }
+    },
+    "unified.group.prepare": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare to save together"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备共同保存"
+          }
+        }
+      }
+    },
+    "unified.group.submit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save %d settings together"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共同保存%d项"
+          }
+        }
+      }
+    },
+    "unified.group.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save %d settings together"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共同保存%d项设置"
+          }
+        }
+      }
+    },
+    "unified.group.cleanupPending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving succeeded. Recovery cleanup is still pending."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存成立，恢复整理待完成。"
+          }
+        }
+      }
+    },
+    "unified.group.verifyDetail": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verification checks this exact submission. It does not save again; an uncertain result keeps the original run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核验只检查本次精确提交，不会再次保存；仍不确定时保留原运行。"
+          }
+        }
+      }
+    },
+    "unified.group.verify": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify result"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核验结果"
+          }
+        }
+      }
+    },
+    "unified.group.return": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return the whole group to the plan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "整组返回计划"
+          }
+        }
+      }
+    },
     "unified.plan.active": {
       "extractionState": "manual",
       "localizations": {

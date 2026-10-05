@@ -34,20 +34,36 @@ final class UnifiedSearchController {
     let session: ContentQueryReadSession
     let inputReset = UnifiedSearchInputReset()
     @ObservationIgnored let coordinator: CommandHandoffCoordinator
-    @ObservationIgnored let localSettings: LocalSettingCommandAdapter?
+    @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
+    var fileSettingFailure: UnifiedSearchFileSettingFailure?
+    var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
+
+    var localSettings: LocalSettingCommandAdapter? {
+        if case .legacy(let adapter) = settingBackend { return adapter }; return nil
+    }
+    var fileSettings: FileLocalSettingCommandAdapter? {
+        if case .file(let adapter) = settingBackend { return adapter }; return nil
+    }
     @ObservationIgnored private let read: () async throws -> ContentQueryReadEffect
     @ObservationIgnored private let recordOpen: (ContentQueryBrowseOpen) -> Void
     @ObservationIgnored private var observer: UUID?
     @ObservationIgnored private var task: Task<Void, Never>?
     @ObservationIgnored var focusResults: ((ContentQueryBrowseFocus) -> Void)?
 
-    init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
+    convenience init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
          localSettings: LocalSettingCommandAdapter? = nil) {
+        self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
+                  settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled)
+    }
+
+    init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
+         buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
+         recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend) {
         self.session = session
         self.coordinator = coordinator
-        self.localSettings = localSettings
+        self.settingBackend = settingBackend
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
         self.buffer = initial
@@ -183,6 +199,8 @@ final class UnifiedSearchController {
         revision &+= 1
         settingFailure = nil
         settingConfirmation = nil
+        fileSettingFailure = nil
+        fileSettingConfirmation = nil
         settingMessage = "unified.setting.pending"
         return buffer
     }
@@ -233,6 +251,11 @@ final class UnifiedSearchController {
             inputReset.invalidate(buffer)
             messageKey = "unified.results.invalidated"
         } else if change == .invalidated {
+            // 普通模型重读也发 invalidated；只有遮罩撤显示才使原生操作事件失效。
+            if session.isMasked {
+                buffer = .init(lease: buffer.lease, version: buffer.version + 1, text: buffer.text,
+                    privacyRevision: buffer.privacyRevision, operation: buffer.operation, plan: buffer.plan, planItem: buffer.planItem)
+            }
             messageKey = session.isMasked ? "unified.results.masked" : "unified.results.awaiting"
         }
     }

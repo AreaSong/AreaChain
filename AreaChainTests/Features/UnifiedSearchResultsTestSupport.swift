@@ -33,7 +33,7 @@ final class UnifiedSearchResultsFixture {
     static let focusLost = Notification.Name("synthetic.results.focusLost")
 
     init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3,
-         localPreferences: AppPreferences? = nil, hostID: String = HandoffFixture.source) throws {
+         localPreferences: AppPreferences? = nil, filePreferences: AppPreferences? = nil, hostID: String = HandoffFixture.source) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -47,13 +47,21 @@ final class UnifiedSearchResultsFixture {
             notifications: .init(privacy: .default, model: model, focus: focus,
                 focusLost: Self.focusLost, focusObject: focusObject))
         session.install()
+        let backend: UnifiedSearchSettingBackend
+        if let filePreferences {
+            precondition(localPreferences == nil)
+            backend = .file(try FileLocalSettingCommandAdapter(coordinator: handoff.coordinator, filePreferences: filePreferences))
+        } else {
+            backend = localPreferences.map { .legacy(LocalSettingCommandAdapter(coordinator: handoff.coordinator, preferences: $0)) }
+                ?? .unassembled
+        }
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in
                 guard let self else { throw ContentQueryReadSessionError.detached }
                 return try await self.publish()
             }, recordOpen: { [weak self] in self?.opens.append($0) },
-            localSettings: localPreferences.map { LocalSettingCommandAdapter(coordinator: handoff.coordinator, preferences: $0) })
+            settingBackend: backend)
     }
 
     func publish() async throws -> ContentQueryReadEffect {

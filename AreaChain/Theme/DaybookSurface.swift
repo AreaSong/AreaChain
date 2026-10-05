@@ -137,7 +137,7 @@ extension View {
     }
 }
 
-/// 浮层仅有呈现差异；不复用 panel 的内描边、悬停状态或布局 modifier。
+/// 浮层仅有呈现差异；不复用 panel 的悬停状态或布局 modifier。
 enum DaybookFloatingSurface: Equatable {
     case suggestions
     case readOnly
@@ -145,12 +145,14 @@ enum DaybookFloatingSurface: Equatable {
     case smallBackground
     case tagDetail
     case syntaxHelp
+    /// 筛选卡片沿用原内描边，不能改变其他浮层的居中描边。
+    case filterFlyout
     /// 状态只来自气泡；复制反馈不是系统剪贴板成功的证明。
     case rowBubble(isHovered: Bool, isCopied: Bool)
 
     var radius: CGFloat {
         switch self {
-        case .suggestions, .tagDetail: DaybookRadius.regular
+        case .suggestions, .tagDetail, .filterFlyout: DaybookRadius.regular
         case .readOnly, .smallBackground, .rowBubble: DaybookRadius.small
         case .syntaxHelp: DaybookRadius.medium
         }
@@ -159,11 +161,13 @@ enum DaybookFloatingSurface: Equatable {
     // 标签详情和帮助卡沿用原 60% / 0.8pt，不能借接入改变旧三预设的描边。
     private var usesDetailBorder: Bool { self == .tagDetail || self == .syntaxHelp }
     var borderOpacity: Double {
+        if self == .filterFlyout { return 0.65 }
         if case .rowBubble(_, let copied) = self { return copied ? 0.7 : 0.9 }
         return usesDetailBorder ? 0.6 : 0.7
     }
 
     var borderWidth: CGFloat {
+        if self == .filterFlyout { return 0.8 }
         if case .rowBubble = self { return 0.8 }
         return usesDetailBorder ? 0.8 : 0.7
     }
@@ -178,7 +182,7 @@ enum DaybookFloatingSurface: Equatable {
 
     var shape: RoundedRectangle {
         switch self {
-        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .rowBubble:
+        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .filterFlyout, .rowBubble:
             RoundedRectangle(cornerRadius: radius, style: .continuous)
         // 保留原默认构造；默认值由 SDK 决定，不能假设是 circular。
         case .readOnly: RoundedRectangle(cornerRadius: radius)
@@ -192,7 +196,7 @@ private struct DaybookFloatingSurfaceModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         switch presentation {
-        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .rowBubble:
+        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .filterFlyout, .rowBubble:
             content.background {
                 if isPresented { background.daybookElevation(.floating) }
             }.overlay { border }
@@ -212,9 +216,14 @@ private struct DaybookFloatingSurfaceModifier: ViewModifier {
 
     @ViewBuilder private var border: some View {
         if isPresented {
-            // 描边在形状边缘居中；strokeBorder 会内缩，不能互换。
-            shape.stroke(presentation.borderColor, lineWidth: presentation.borderWidth)
-                .allowsHitTesting(false)
+            Group {
+                if presentation == .filterFlyout {
+                    shape.strokeBorder(presentation.borderColor, lineWidth: presentation.borderWidth)
+                } else {
+                    // 旧浮层的描边在形状边缘居中；不能随筛选卡片一起内缩。
+                    shape.stroke(presentation.borderColor, lineWidth: presentation.borderWidth)
+                }
+            }.allowsHitTesting(false)
         }
     }
 }

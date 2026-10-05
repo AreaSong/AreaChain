@@ -64,16 +64,20 @@ struct CommandDraftBaseline: Equatable, CustomStringConvertible, CustomDebugStri
     let values: [Field: CommandOriginalValue]
     let isReadable: Bool
     let preference: CommandPreferenceBaseline?
+    let preferenceGroup: CommandPreferenceGroupBaseline?
     static let protectedContent = Self(values: [:], isReadable: false)
     private init(values: [Field: CommandOriginalValue], isReadable: Bool) {
         self.values = values
         self.isReadable = isReadable
         self.preference = nil
+        self.preferenceGroup = nil
     }
-    init(_ values: [Field: CommandOriginalValue] = [:], preference: CommandPreferenceBaseline? = nil) {
+    init(_ values: [Field: CommandOriginalValue] = [:], preference: CommandPreferenceBaseline? = nil,
+         preferenceGroup: CommandPreferenceGroupBaseline? = nil) {
         self.values = values
         self.isReadable = true
         self.preference = preference
+        self.preferenceGroup = preferenceGroup
     }
 
     func original(_ parameter: CommandParameterID, targets: CommandDraftTargets) -> CommandOriginalValue? {

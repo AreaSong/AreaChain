@@ -237,21 +237,36 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         revision += 1
     }
 
-    /// 唯一例外：从原运行退回已证明未提交的单项，保留项身份和旧尝试出处。
+    mutating func replacePreferenceGroupBaselines(_ updates: [CommandPreferenceBaselineUpdate],
+                                                 expecting stamp: CommandPlanStamp) throws {
+        guard self.stamp == stamp, editing == nil, updates.map(\.draft) == items.map({ $0.draft.stamp }),
+              CommandPlanValidation.isPreferenceUnit(items) else { throw CommandPlanError.stale }
+        var next = items
+        for index in next.indices {
+            let update = updates[index]
+            next[index].draft.reload(update.baseline, arguments: update.arguments, expecting: update.draft)
+            next[index].version += 1
+        }
+        items = next
+        revision += 1
+    }
+
+    /// 唯一例外：从原运行退回已证明未提交的完整偏好 unit，保留全部身份及旧尝试出处。
     mutating func restoreUnsubmittedPreference(_ run: CommandExecutionRun, attempt: CommandAttemptStamp) throws {
         guard items.isEmpty, editing == nil, run.stamp.plan.planID == id,
-              run.snapshot.stamp.hostID == hostID, run.snapshot.items.count == 1,
+              run.snapshot.stamp.hostID == hostID, run.units.count == 1,
+              CommandPlanValidation.isPreferenceUnit(run.snapshot.items),
               let unit = run.units.first, run.attempt(unit.id) == attempt,
               unit.local == .notSubmitted, unit.effects.isEmpty,
-              [.conflict, .failed, .notExecuted].contains(unit.state), !unit.atomic,
+              [.conflict, .failed, .notExecuted].contains(unit.state),
               run.outputs.isEmpty else { throw CommandExecutionError.notRetryable }
-        var item = run.snapshot.items[0]
-        guard CommandPlanSemantics.isAtomicSetting(item.draft.commandID), item.links.dependencies.isEmpty,
-              !item.draft.blocksUnprotectedExport else { throw CommandExecutionError.notRetryable }
-        item.returnedAttempts.append(attempt)
-        item.version += 1
-        item.draft.activate()
-        items = [item]
+        items = run.snapshot.items.map { original in
+            var item = original
+            item.returnedAttempts.append(attempt)
+            item.version += 1
+            item.draft.activate()
+            return item
+        }
         revision += 1
     }
 

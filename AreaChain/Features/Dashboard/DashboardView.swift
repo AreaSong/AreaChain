@@ -48,6 +48,7 @@ struct DashboardView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .daybookScroll(featherEdges: false)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .accessibilityIdentifier("dashboard.root")

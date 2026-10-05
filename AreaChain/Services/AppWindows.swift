@@ -103,7 +103,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         self.minSize = minSize
         self.root = root
         super.init()
-        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+        preferenceObservation = PreferenceObservation(preferences: AppPreferences.shared,
             consumer: .windowChrome, presentation: { [weak self] in self?.refreshChrome() },
             legacy: { [weak self] in self?.refreshChrome() })
     }

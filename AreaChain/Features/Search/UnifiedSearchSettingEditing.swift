@@ -35,10 +35,18 @@ extension UnifiedSearchController {
         catch { return error as? LocalSettingCommandIssue ?? .stale }
     }
 
-    var hasSettingAdapter: Bool { localSettings?.isAssembled(for: coordinator) == true }
+    var hasSettingAdapter: Bool {
+        localSettings?.isAssembled(for: coordinator) == true || fileSettings?.isAssembled(for: coordinator) == true
+    }
+
+    func supportsSetting(_ command: CommandID) -> Bool {
+        hasSettingAdapter && LocalSettingCommandMapping.field(for: command) != nil
+    }
 
     /// 只在接受/恢复/编辑事件后采集一次；重绘及参数预览不会替换已有原值。
     func prepareSettingDraft() {
+        // 文件基线只能由明确的准备操作取得，计划编辑和重绘不隐式刷新。
+        guard fileSettings == nil else { return }
         guard operationVisible, hasSettingAdapter, operations?.pending == nil,
               let draft = editingDraft, localSettings?.supports(draft.commandID) == true,
               draft.baseline.preference == nil else { return }
@@ -71,6 +79,7 @@ extension UnifiedSearchController {
 
     /// 点击和原生 ⌘Return 共用；最后写入门禁继续由适配器复核。
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
+        if fileSettings != nil { requestFileSettingSubmit(source); return }
         guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil else { return }
         guard hasSettingAdapter, let localSettings else {
             operationMessage = "unified.operation.submitBlocked"

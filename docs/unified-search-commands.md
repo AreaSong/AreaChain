@@ -4204,6 +4204,8 @@ SettingsSections 的四 Binding 不变；旧同值赋值仍调用一次共享写
 
 ### 9.56 阶段 3A-2：四类普通设置的原生提交、冲突和反馈
 
+**当前结论：3A-2R 本阶段本地验收已完成；指定 Cursor 复核缺失，整体治理验收仍为 partial。** 最后两项的实际证据见本节末“最后两项收口”。下文历次失败、锁忙和未运行记录保留历史身份，不改写为当时已通过。
+
 2026-10-04（Asia/Shanghai）。本轮只在原标准/紧凑 QA 宿主显式装配普通设置适配器，允许 UI 调用隔离 UserDefaults 与注入展示副作用。生产搜索入口保持原实现，用户偏好及其他命令不接线；多项共同事务和执行后安全撤销关闭。§9.53～§9.55 保留历史身份，本节记录 UI 增量。
 
 #### 显式装配与实际接口
@@ -4375,3 +4377,624 @@ SettingsSections 的四 Binding 不变；旧同值赋值仍调用一次共享写
 **停止事实与剩余门禁。** 定向复验被脚本锁拒绝后，不再申请测试或正常构建。20:17:59 仅做一次有界归属查询，lsof 退出 1、无打开者，无法确认申请瞬间的持有任务，也不推断现在锁已可用；未再次 flock、轮询、等待或干预。**本阶段仅剩上述一项定位修正的编译/运行复验，以及不带 QA 覆盖的正常配置 Debug 构建/验签。** 已通过矩阵及旧入口不因该测试文件的局部定位修改失效，后续无需重跑整组。修改后 `swiftlint lint --strict --quiet AreaChainTests/Features/UnifiedSearchObjectInteractionTests.swift`、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 与 `git diff --check` 均退出 0；最终文档补记后复跑受影响门禁，不能替代待运行方法。源码指纹对照本次合并运行清单，除该用例文件外，仅并行 MenuBarHelpKeyboardTests、RowBubbleInteractionTests 变化，设置矩阵及应用路径未变。
 
 **分开保留的缺口。** 指定 Cursor verifier：未执行，不查登录、不替换；人工：VoiceOver、系统输入法候选窗、减弱动态/最低系统及真实多窗口未验；历史：首轮语言焦点失败根因仍未明，C2B 八项原失败、IME/mutable textStorage 限制及 dark→system 未关闭。此次通过的 4A 所选回归是新证据，但不据此清空其他阶段整体验收记录。本阶段尚未收口通过，已有结果可支持继续本地验收；不进入下一阶段，不提交、推送、安装或发布。
+
+**最后两项收口（2026-10-04，Asia/Shanghai）。** 核对暂存区与工作区后，确认对象移除测试与 `ObjectRemoval-3A2R-source.json` 指纹一致：仅把同标识按钮的查找限定至 OperationBoundary，并滚动/检查面板边界；原焦点、空格操作、目标为空及标题不变断言未改。既有暂存和并行修改全部保留，本次没有再改 Swift、QA 布局或新增测试。桌面预检仍为已登录、未锁定、有显示器。
+
+| 最后验收项 | 实际结果 |
+|---|---|
+| 单用例编译/复验 | 21:27:50 通过原 `build.sh test --no-wait --only-testing AreaChainTests/UnifiedSearchObjectInteractionTests/cancelReturnsFocusAndNativeRemovalPreservesOtherParameters()` 启动；仍仅对子进程应用原 `remaining-qa.xcconfig`。完整测试 target 编译，**1 个定义、1 次执行 Passed，0 失败/跳过/预期失败**，21:28:20 完成、退出 0。结果为 `build/local-DerivedData/Logs/Test/Test-AreaChain-2026.10.04_21-27-52-+0800.xcresult`；命令、日志、指纹与返回值保存为 `build/SettingUIQA-3A2/ObjectRemoval-Closure-3A2R-*` 及同名前缀 `.log`。原误定位失败记录不删除。 |
+| 正常 Debug 构建/静态验签 | 确认该 xcresult 仅含上述 Passed 方法后，21:51:18 清除 `XCODE_XCCONFIG_FILE`，运行原 `./scripts/build.sh --no-wait`，**退出 0**。实际为既有 development 配置，产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`，`staticSignatureVerified: true`、`hardenedRuntime: true`。证据为 `build/SettingUIQA-3A2/Debug-Closure-3A2R.log`、command/result/sources 清单。没有改个人签名、安装或启动产物；不把验签中的配置状态当作真实系统解锁验证。 |
+| 锁与范围 | 两次操作均由原脚本管理原锁并在退出时释放，没有手工持锁、抢锁或绕过；本轮未遇锁忙，不追加全局空闲探测。未机械复跑未受影响的两项修复、八条原生链路、96 场景矩阵、截图及其他回归。 |
+| 本阶段本地验收 | **已完成。** 两项原失败修复、四类设置八条原生提交链路、六状态矩阵、已登记阻断/生命周期、旧设置页及所选 4A 回归、截图检查和最终正常构建/验签均已有对应证据。不同轮次结果按源码及影响核对复用，不把 96 个内部场景混算为 XCTest 定义数，不冒充一次全量套件通过。 |
+
+单用例源码严格 SwiftLint 退出 0；`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 及 `git diff --check` 均通过，最终补记后复跑受影响门禁；机器结果保存在 `build/SettingUIQA-3A2/Closure-3A2R-doc-gates.json`。两次运行的源码指纹与收口时一致。构建仍提示 macOS 的 arm64/x86_64 候选目的地多选；测试目标已有辅助 API/Swift 并发等警告保留，不作为本次新增缺陷或无警告声明。
+
+**本地完成之外的状态分别保留：** 指定 Cursor verifier 未执行，缺失使**整体治理验收仍为 partial**；没有重复登录或用自查/测试替代。真人 VoiceOver、系统输入法候选窗、减弱动态/最低系统及真实用户多窗口仍未验。首轮语言链路焦点失败及根因未明、C2B 八项历史失败、IME/mutable textStorage 限制、dark→system 等历史记录不因本阶段完成而关闭。这里只完成已授权的 3A-2R 本地验收，不表示全体系、生产入口或发布验收通过。完成后停止；不进入下一阶段，不提交、推送、安装、启用生产搜索或修改用户偏好。
+
+### 9.57 阶段 3A-3A：四类普通设置共同保存、兼容与恢复方案定稿
+
+2026-10-04（Asia/Shanghai）。**3A-3A 设计已获用户确认；3A-3B1 仅实现显式临时目录的聚合文件后端与提交恢复，实际证据见 §9.58。隔离迁移与重开判定现见 §9.59；AppPreferences 整份发布和生产接线尚未实现。四项共用独立版本化聚合文件，以单次整份替换作为偏好提交点。** 使用项目已有 Foundation 文件存储方式，不增加数据库或第三方依赖。下文保留设计阶段【事实】【候选】【推荐】【待授权】的历史身份；已确认决定见 G，实际 API 以 §9.58 为准。本节取代 §9.53 中尚未选定的多项存储建议，不改写 §9.54～§9.56 的实施历史。
+
+已确认目标保持：仅语言、外观、标题省略、捕获来源标记；提交前统一校验，组内全成或保持原状态，未知整组待核实，提交后才发布和处理展示；展示失败不否认保存，旧设置页仍即时提交且共用后端。不要求磁盘提交与全部窗口像素形成一个事务，不循环单项接口、不逐键回滚。不扩展日历、权限、隐私、正文、其他设置或通用 Saga。3A-2R 本地验收已完成，指定 Cursor、人工及其他历史缺口保留；C2B 未完成，敏感编辑规则和生产搜索接线均不放宽。
+
+#### A. 3A-1A/1B 实施后的事实与复用影响
+
+行号为本次工作树定位，以符号为稳定出处；没有初始化 AppPreferences 或 Persistence 来取证。
+
+| 【事实】来源 | 当前行为 | 【推荐】复用或最小扩展 |
+|---|---|---|
+| [AppPreferences.swift](../AreaChain/Services/AppPreferences.swift):64、85、125、159，四属性 / init / applyLocalSetting | 四个私有可观察标量，四属性 setter 共用逐字段入口；初始化逐项读取，四次读取不构成组快照。apply 先读、比 expected、查执行资格、写一键、增该字段修订、读回，匹配才更新内存及调用展示。 | 保留四属性与旧 Binding，底层改为一个不可变聚合状态的唯一替换入口；单项是该入口的单字段请求，不能由批量入口循环单项。 |
+| [LocalPreference.swift](../AreaChain/Services/LocalPreference.swift):6、42、89 与 [LocalPreferenceDependencies.swift](../AreaChain/Services/LocalPreferenceDependencies.swift):6 | Field.key 映射旧四键；Storage.read 用 object(forKey:)，write 用 set。source 是实例 UUID＋句柄 ObjectIdentifier；revision 只存在运行内。raw 区分缺失/类型/不可读。 | 保留类型化四值和严格解析；增加整记录快照、持久 storeID/epoch、记录修订与字段修订，运行内实例身份继续独立存在。 |
+| [LocalSettingCommandAdapter.swift](../AreaChain/Services/LocalSettingCommandAdapter.swift):50、76、92、128、249 | readiness、submit、execute 各自只准单项；prepare 签发真实基线，原 draft/plan 保有唯一参数。reports/writes 是运行内事实，重建实例不会恢复登记。 | 沿原适配器增加窄组请求、真实整组采集与回执；不增加另一份计划或参数字典。 |
+| [LocalSettingCommandMapping.swift](../AreaChain/Services/LocalSettingCommandMapping.swift):5、26、70 | 四个稳定 ID，assign、精确参数个数与 choice/Bool 转换；matches 同时比来源、字段修订、raw、memory、stored。 | 原映射逐成员用于预检；所有成员通过后才能交给一次组提交。命令非法参数不使用初始化默认回退。 |
+| [CommandPreferenceEvidence.swift](../AreaChain/Domain/CommandPreferenceEvidence.swift):4、22；[CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift):87 | noChange / preferenceWrite / preferencePresentation 仅接受 isSinglePreference；returned＋matches 才记 committed，threw＋matches 仍 unknown。 | 保留原调用/读回事实；另加整组提交确定性与独立展示证据，不把新后端“提交已确认”硬塞成旧 UserDefaults 回执。 |
+| [CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift) group / restoreUnsubmittedPreference；[CommandPlanSemantics.swift](../AreaChain/Domain/CommandPlanSemantics.swift):9 | 四项白名单可组成连续原子组，无组内依赖；未禁止同业务字段重复。恢复未提交运行到计划只支持非原子单项。 | 组内重复字段显式拒绝；扩展整组未提交返回、统一基线更新，保留全部 item/draft 身份及 returnedAttempts。 |
+| [CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift):73 | claimPreferenceInvocation 限 snapshot.items.count == 1，并用单个 operation 标识占用。组 unitID 并不是一个 itemID，不能直接用 run.operation(attempt.unitID) 取得组身份。 | 增加明确 groupID＋有序 member stamps 的窄占用身份；仍在 IO 前去重、完成归原 ownership/run/attempt，不借第一成员代替整组。 |
+| [PreferenceObservation.swift](../AreaChain/Services/PreferenceObservation.swift):6、24 | windowChrome/statusItem 接语言和外观，diaryWindow 仅语言，calendar 不订阅普通事件；异步 Task 仅查 active，不核对修订，回调重新读取当前 prefs。 | 普通事件改为一组字段及已提交修订；消费者取交集，只刷新当前展示，不保存旧值、重查正文或请求日历同步。 |
+
+**旧键读取/写入核实。** 对 AreaChain、AreaChainTests、scripts 搜索四个常量、完整键名及 UserDefaults/AppStorage 用法：产品中仍直接读取旧键的是 LocalPreferenceStorage.read，经 Field.key 间接访问；直接写入的是同处 write。AppPreferences 的初始化、readLocalSetting、applyLocalSetting 均经此依赖，没有另一个产品四键直读者或四键 @AppStorage。SettingsSections:16/23/30/66 的 Binding 访问属性。测试中的直接 set/read/persistentDomain 是旧格式夹具、外部变更注入或旧键断言，后续必须分别保留为迁移夹具或改为新权威断言，不能全部机械删掉。
+
+**公共消费者。** AppChrome.body 读取 locale/scheme，QuadrantPage:312 读取标题省略；ClipboardCapture:55、DayBoardMutations:109、DayBoardMutations+Capture:21 只在后续创建时读取来源开关。PanelWindowController、StatusItemController、DiaryWindowController 消费普通事件。另有 FirstLaunchSeeder:20、MutationFeedback:29、AppDelegate.quitAlert、ClipboardHistoryPanel、AttachmentPicker、PrivacyUnlockPresenter、NotificationScheduler 的文案、TaskRow 菜单和 CompletionUndo 文案读取 resolvedLocale；这些依赖仍通过 AppPreferences，不能为迁移逐个补旧键镜像。读取语言的系统消费者不因此获得重排通知、请求权限、认证或刷新正文的许可。
+
+**启动与无数据库场景。** [AreaChainApp.swift](../AreaChain/App/AreaChainApp.swift):96 先取得 Persistence 容器，AppDelegate:29 才显式应用偏好外观；AppPreferences.shared 惰性独立初始化，不依赖数据库。FirstLaunchSeeder 也会读取偏好语言。[Persistence.swift](../AreaChain/Services/Persistence.swift):14 的测试环境直接使用内存库；磁盘打开失败回退内存，打开前还做既有维护，不能为偏好探测调用它。[Models.swift](../AreaChain/Domain/Models.swift) 的 AreaChainSchema 只有七类业务实体。将偏好放入该库会新增真实依赖：容器失败时偏好也不可写，不能把 fallback 内存 save 成功写成持久成功。独立聚合文件则只依赖本地目录与 Foundation，业务库缺失/回退时仍可独立读取和保存四项。
+
+**现有测试能证明的范围。** LocalPreferenceTests / FailureTests 刻画缺键、坏类型不修复、同值写、逐字段修订、重入、丢写、写后读失败、先写后抛错；LocalSettingCommand 的 Tests / Boundary / Conflict / Failure / Identity 刻画真实来源、伪造证据、ABA、旧身份、unknown 不重放和展示重试；PreferenceObservationTests 计数验证窄路由。CommandAtomicPlanTests 只有纯协议原子组，不证明存储。SettingsPickerConsumerTests、SettingsLocalPreferenceConsumerTests 与 UnifiedSearchSetting 四套是旧 UI 消费者。SubtaskTagMigrationTests 用旧 schema 打开的是升级前备份，不能证明升级后的库可以降级；ModelChangesTests 主要是内存事务；LifecycleBaselineTests 的合成磁盘重开也不是四项迁移/崩溃测试。本阶段只阅读这些测试，不新增运行通过结论。
+
+#### B. 三个适用候选及推荐依据
+
+以下均为【候选】，当前产品仍使用旧四键。表中的后端保证是设计要求或 API 层边界，只有后续故障/重开证据才能升级为“本项目已验证”。
+
+| 比较项 | A：一个 UserDefaults 版本化 Data 值 | B：现有 SwiftData 磁盘库中的聚合实体 | C：独立版本化聚合文件【推荐】 |
+|---|---|---|---|
+| 原子性覆盖 | 一个值的编码/替换和应用内整份发布，减少逐键中间态；set 没有磁盘事务回执。 | 同一持久 store、干净专用 ModelContext 内提交一个实体的四值/修订/提交标识；目标是数据库事务，不包括 UserDefaults、文件与窗口。须核实实际 save/transaction 行为。 | 一个文件路径指向的整记录替换，以及应用内整份发布；同目录临时文件避免跨卷替换。只有权威文件替换是偏好提交点，辅助恢复证据不成为第二权威。 |
+| 失败/未知 | 编码前可明确失败；set 返回 Void，读回只说明当前缓存可见一致，底层丢写通常没有错误。threw 只能来自包装/注入。 | 提交前校验、编码和上下文操作失败可识别；save 抛错和重新打开失败分别记录。不能仅凭 catch/rollback 推断提交一定未发生，无法归因则 unknown。 | 编码/临时准备在替换前失败可证明未提交；进入替换调用后抛错、读回不可用或标识不符一律先 unknown。API 返回＋重新读取完整记录身份吻合，才确认当前文件提交；仍不承诺断电耐久。 |
+| 内存与通知 | 先 set/核验，再一次发布；不得把暂未落盘的缓存读回夸大为耐久。 | 四值只能在专用上下文内暂存，save 后投影不可变状态；不把 @Model 直接暴露给 UI，不用主上下文夹带保存其他编辑。 | 先准备全部字节，单次替换并核验，再一次发布不可变状态；最后调用外观与窄事件。准备、替换或核验失败时不部分发布。 |
+| 崩溃/重启 | 可能回到旧聚合值；本次未有守护进程缓存/掉电边界证据。synchronize 和同句柄读回不能补成事务。 | SQLite/SwiftData 的事务恢复应给完整旧/新记录，但项目未有偏好实体、迁移计划、进程中断或耐久配置证据；损坏/打不开不能读 defaults 顶替权威。 | 目标是进程中断后只读完整旧/新记录；缺失、解码失败和不支持版本进入恢复状态。Foundation 替换行为需在支持环境实测；不保证掉电后保留最后一次已应答写入。 |
+| 成本/启动 | 最轻，无数据库依赖；错误可观测性最弱。 | 增 schema、数据库打开/查询和事务成本；AppPreferences、种子语言、错误提示初始化须重新装配，fallback 不能持久写偏好。 | 每次小记录全量编码/替换/重读，另有窄恢复证据 IO；比 defaults 重，比把偏好绑定业务数据库更独立。只测四项实际载荷，不虚构延迟预算。 |
+| 旧键/旧版 | 仍需迁移；旧版完全不认识新聚合键，保留旧四键只供旧版读取，不能双写。 | 仍需迁移并处理旧 schema 打开新库；普通 ExportSnapshot 没有偏好，resetStoreOnDisk 会连偏好一起删除。需额外数据库回退验证。 | 仍需迁移；旧版忽略新文件、读迁移前旧四键；不改业务 schema、导入导出或 resetStoreOnDisk 的数据集边界。最新偏好不自动传回旧版。 |
+| 验证 | 隔离 suite＋注入掉写/读失败只能证明分支；还需独立进程重开，不能由缓存一致证明耐久。 | 临时磁盘库/关闭后重开、旧 schema 夹具、提交故障与中断、fallback 拒写、无 BoardEvents 副作用。内存库不代替磁盘。 | 临时目录/独立进程，分别中断准备、替换、读回、发布；首次创建与已存在替换均测；原文件不丢、整组无混合、恢复标识、只读旧版夹具、并发写入序列化。 |
+| 不能保证 | 磁盘提交错误、fsync、完整外部 ABA、所有窗口完成。 | 跨存储/外部效果事务、未验证的旧版降级、所有窗口完成；“SwiftData”名称本身不证明项目契约满足。 | 跨文件事务、任意外部编辑的比较交换、完整外部 ABA、掉电耐久、所有窗口完成；辅助文件与权威文件之间的中断必须由状态表处理。 |
+
+【事实】[CalendarSyncStorage.swift](../AreaChain/Services/CalendarSyncStorage.swift):7 的 ledger 将整份 JSON 以 Data.write(.atomic) 保存；[ClipboardHistoryStore.swift](../AreaChain/Services/ClipboardHistoryStore.swift):35 使用临时文件及 replace/move，错误向上传递。它们证明项目已有这种技术路径，未提供可直接套用的普通偏好事务组件；不调用日历或剪贴板服务复用其业务。隐私写入器的同步/校验也不能直接移作普通偏好协议或证明目录耐久。
+
+【事实】[ModelChanges.swift](../AreaChain/Services/ModelChanges.swift):78 的 transaction 是应用层延迟 commit：可能先 save 上下文已有改动，末尾固定 BoardEvents.changed()，失败会 rollback 并重新 fetch。不能原样用它保存普通偏好，否则会触及无关模型与广域通知。若选择 B，需要干净专用上下文及窄提交/事件路径，验证底层真实事务；没有“零改造可用的 ModelChanges 设置事务”。本轮未发现 VersionedSchema / SchemaMigrationPlan。
+
+【推荐理由】C 在四项小数据范围内提供明确的整份存储边界和可传播 IO 错误，同时保留偏好与业务库独立、免业务 schema 迁移。A 的失败可观测性不足；B 虽有真实事务后端可用，但启动、fallback、旧库兼容和恢复面显著扩大。本次不默认选 §9.53 的 SwiftData 示例。C 的选择包含明确验收门槛：后续如果不能证明正常进程中断下不出现混合记录、未知不重放及旧键恢复，就保持多项关闭，回到本节调整决定，不能悄悄降成逐键保存或只用 UserDefaults 缓存读回。
+
+#### C. 推荐存储形状、写入者与成功口径
+
+【设计已确认；后端实施见 §9.58】Services 内的 LocalPreferenceRecord / LocalPreferenceFileStore 复用旧四项类型；AppPreferences 本阶段不改。3A-3B1 的 root 必须显式注入且处于临时目录内，不提供生产默认目录；未来生产目录另行接入。目录解析不初始化 Persistence/PrivacyVault。暂存文件用同目录唯一名称，不共用固定 tmp，不枚举或清理别的业务文件。
+
+1. `current.json` 是唯一可编辑权威记录：schemaVersion、storeID、epoch、recordRevision、四个完整规范值、四个 fieldRevision、commitID、parentCommitID、migrationID。记录内四值必须齐全并一次解码通过；未知 schema、缺字段、坏类型和非法修订不按字段填默认。commitID 每次新提交生成，和目标完整记录摘要一起绑定运行回执；不持久化完整 CommandPlan、正文或敏感草稿。
+2. `migration.plist` 是一次迁移准备的只读证据：migrationID、来源域身份、四键是否物理存在/原始 property-list 值、查找得到的有效值及来源说明、目标初始记录身份/摘要、格式版本。它不参与日常读取和编辑，不随偏好更新。只保存这四键，绝不保存整份 defaults 域；不能复制任意坏负载到普通日志或测试产物。
+3. `pending-write.json` 是至多一个尚未核实提交的只读意图证据：storeID/epoch、commitID、基记录身份/摘要、目标记录摘要、成员字段和运行/尝试标识；不保存可执行命令、不成为读取值的来源。替换权威文件前先落此证据并核对；无法准备证据就不开始替换。提交核实后才能清除；清除失败是恢复整理未完成，不否定已保存，后续提交先核对此记录，不覆盖它。重启只做核验，绝不根据此文件自动重写目标。它与 current 不是跨文件事务，下面状态表处理不一致。
+
+这是一份权威记录、一次偏好提交，外加最小迁移/中断证据；不是多份可编辑偏好或通用日志引擎。每个普通写入可能有准备证据、暂存和清理 IO，不能把“一次共同提交”描述成只发生一次文件系统调用。迁移证据永久只读保留；pending 不形成无限历史，清理不得早于明确核实。应用数据 JSON/私密备份不自动包含这些文件，也不因此修改现有备份范围。
+
+具体文件步骤沿现有 Foundation 方式：完整编码 → 写同目录唯一临时文件并解码核验 → 准备/核对 pending → 最后身份检查 → 已存在目标用 replaceItemAt、首次建立用 moveItem → 重新打开 current 核验。临时文件上的 Data.write(.atomic) 只是准备，不是偏好提交；最终替换调用才越过提交边界。首次存在性判断必须在协作锁内，读错误不能按不存在处理。没有先删 current 再移动、没有成功后逐键镜像，也不把 replace/move 抛错自动等同“原文件还在”；后续须分别验证两条实际磁盘路径及故障。若平台行为不符合整记录替换要求，门禁失败，不以 API 名称推定满足。
+
+**写入者约束。** AppPreferences 是应用内唯一公开入口；相同规范路径的后端共享串行所有者及重入守卫。拟为文件后端加同目录稳定锁文件上的非阻塞 advisory lock（协作式文件锁），所有新版读核验/写入者遵守，锁覆盖最终重读→替换→核验→内存发布，释放后再处理展示；不锁将被替换的 inode。锁忙返回未提交，不忙等。它是未来偏好 IO 的并发约束，不是 `build/.build.lock` 原生测试锁，本阶段不创建或申请任何锁。锁的可用性/释放/多进程互斥属于后续验证，不能仅靠 MainActor 声称跨进程一致。
+
+外部旧版只写旧键，不会成为新版权威；不受本协议控制的编辑器、备份恢复、删除/替换文件、网络卷或伪造记录不在协作锁保证内。最终重读可发现可见身份/摘要/修订变化，发现就暂停/刷新证据；无法检测别人把完整旧字节含修订一并放回的外部 ABA。不得因此开放安全撤销。旧版本和新版不得并行做迁移或回退。
+
+**两层修订。** recordRevision 对每次确认的整记录提交推进；fieldRevision 只对请求覆盖字段推进，包括旧页同值赋值。命令全组 noChange 不推进；命令部分无变化时仍只提交一次，保守推进该组所有请求字段，未请求字段不推进。另保留运行内 evidenceGeneration，在已经尝试写入却 unknown 时使旧基线失效；不能把未知尝试伪装为已持久提交的 fieldRevision。预览冲突比较实际受影响字段，不因无关字段的 recordRevision 变化制造冲突；最终写入从锁内最新全记录派生，保留无关字段的新值。记录身份改变/回退、来源不可读或损坏则全组失效。
+
+**内存发布。** 拟将四个私有标量替换为一个聚合 committedState，四属性/locale/scheme 仅从它派生；候选只在局部不可变值中构造。核实提交后先登记不可重放的提交事实，再一次替换 committedState；通知/Observation 回调只能观察完整旧状态或完整新状态，不能看到两旧两新。Observation 的 willSet 通知可能读到完整旧值，不等于半提交。禁止 setter 递归、逐字段发布或延迟通知掩盖四次保存。读失败时保留最后完整内存状态并标记不可写；冷启动无可信状态才用完整安全默认作只读展示，不将它签发为执行基线。
+
+**原单项保证保留。** 旧 readLocalSetting 从整记录快照投影字段，保留 source/raw/value/revision 可核验性；旧 applyLocalSetting 变成同后端单成员提交。UserDefaults 旧夹具的 threw＋matches 仍是 unknown，不能修改断言称成功；文件后端初始回执同样先保留替换调用与读回事实。只有成功返回且重读的 schema/storeID/epoch/commitID/全记录摘要均匹配，才记“整组已保存，当前文件核验一致”；仅值相等不能归因。进入替换后抛错即使读到目标也先 unknown，只能通过下述显式核验改变确定性。没有 synchronize/fsync/缓存读回推导的掉电耐久承诺。
+
+#### D. 迁移、初始化、中断与旧版本回退
+
+【政策已确认，实施留给 3A-3B2】旧四键保留、不双写，坏旧值阻断自动迁移，新记录成功后唯一权威；旧版仍见迁移前值，携最新值降级另行处理。3A-3B1 不实现迁移，不读取真实旧偏好；真实用户数据转换仍须单独授权。
+
+**读取规则与兼容值。** 四键完整名仍为 `areachain.prefs.language`、`areachain.prefs.appearance`、`areachain.prefs.quadrantTitleTruncation`、`areachain.prefs.stampCaptureApp`。
+
+| 旧值情况 | 读取/展示 | 初次迁移决定 |
+|---|---|---|
+| 缺失键，实际查找也无值 | language/appearance/truncation/capture 分别为 system/system/tail/false；保留物理缺失标记 | 可导入完整默认，旧键仍缺失，不为兼容补写四键。 |
+| 合法枚举字符串或真实 CFBoolean | 原样导入 system/chinese/english、system/light/dark、tail/middle、Bool | 保留策略值；system 仍在使用时按系统解析，不冻结成 en/zh-Hans 或当前浅深色。 |
+| 不支持枚举、错类型/复合值 | 只读展示沿 initialValue：枚举回退 system/system/tail；不视为合法基线 | 阻断整次自动迁移，保留全部原键；提示需单独确认规范化/恢复，不将坏字段默认化后悄悄保存另外三项。 |
+| capture 是字符串/数字 | 旧初始化按 NSString.boolValue / 数字非零解释，显示值保留；canonicalValue 仍判不合法 | 同样阻断自动迁移；例如 YES 的历史显示为 true 不意味着允许无确认改成 Bool。 |
+| 读取失败/无法区分不存在与不可读 | unavailable，不能当 missing | 不创建 current，不写旧键，保持恢复待处理。 |
+| 注册域、全局/启动参数等覆盖 | object(forKey:) 是搜索域可见值，不能当物理旧键快照；分别记录四键的应用持久域原值与有效查找结果 | 只有能证明有效值来自目标域或本应用已声明的默认时自动导入；来源不明、受管理/临时覆盖或冲突则阻断，不冻结外部覆盖为用户选择。当前四键未发现 register 默认写入，测试仍须覆盖这类情况。 |
+
+**具体迁移次序。** 后续获得授权后，在任何新版四项写入口可用前完成：读取新记录/迁移/pending 状态 → 检查旧版已退出及本后端独占 → 仅采集四键的原始值和来源并严格验证 → 写入且核对只读 migration 证据 → 再核对旧四键未变化 → 准备 pending → 单次建立完整 current（初始修订、commitID 和 migrationID 同记录）→ 完整重读核实 → 一次装载内存 → 标记偏好就绪并仅应用启动展示。迁移本身不伪装成用户命令、不发布 board 或日历事件。读取旧 defaults 与文件提交不存在跨进程事务；旧版/外部持续写旧键的环境不满足自动迁移前提，应停止而不是宣称已锁住 UserDefaults。
+
+**权威来源与恢复状态表。** 不使用一个单独 UserDefaults `migrated=true` 决定权威，也不按文件时间挑“更新的一份”。
+
+| 启动/中断后观察 | 权威与状态 | 允许的恢复 |
+|---|---|---|
+| current、migration、pending 全不存在且读取确证不存在 | 尚未迁移；旧四键只读兼容装载，新写入口暂不开放 | 按获准迁移流程初次建立记录；初始全缺是新装分支。 |
+| 只有有效 migration，或有 pending 但 current 缺失 | 已准备/中断/文件丢失无法区分，recoveryRequired；不能自动称尚未迁移 | 保留原键与证据，核对记录是否曾成功、来源是否仍一致；仅经明确恢复确认再初始化，不能每次启动重做导入。 |
+| 有完整 current，migrationID 与迁移证据匹配，无 pending | 迁移成功；current 独占权威 | 按整记录初始化。旧键后来变化也不合并、不双写。 |
+| pending 目标身份/摘要与 current 完全相同 | 该提交当前可核实已成为完整权威记录；可能中断在回执/清理前 | 零偏好写入地完成核验及清理；只按当前已提交修订补展示，原运行若仍在则记录核验回执。 |
+| pending 基记录与 current 完全相同，目标标识不同 | 当前仍为完整旧记录；若曾越过替换边界，不能只据此断言目标从未出现 | 标记“当前未见该提交、历史结果未确认”；不自动重试。用户核对当前状态后可关闭待核实记录并另建新意图，不能把原尝试改成 failedWithoutCommit。 |
+| pending 与 current 均合法但既非目标也非基记录 | 另一次写入/恢复已替代，旧尝试归因不足 | 保留当前权威及诊断；旧展示失效，明确核实/接受当前后才释放；不强盖回目标。 |
+| current 损坏、未知 schema、读取失败；或 current 存在但迁移证据缺失/身份不符 | 新来源已出现但不可可靠使用，全部四项不可写 | 运行内保留最后完整显示；冷启只读默认并提示恢复。保存原文件/四键，不回退成可编辑旧键，不自动重新迁移或删坏文件。 |
+| current 已核实、pending 清理失败 | 偏好已保存，恢复整理待处理 | 下次先只读核实并重试清理；不再次提交，也不把保存回执改成失败。 |
+
+迁移准备前失败，原始值仍在旧四键；准备完成后也在只读 migration 快照。坏类型失败不必先复制坏复合负载才能保留它，原键保持原状。后续授权的恢复可以从原键/迁移快照选择一份完整状态重新建立权威，但须保留故障文件及新身份/epoch，不能逐键补齐当前损坏记录。备份、删除或覆盖真实文件仍需对应恢复授权。
+
+**重启边界。** 四项持久状态和最小 pending 证据可以核验；完整 CommandPlan / ExecutionRun 仍是内存所有权，不新增跨重启命令队列恢复。启动核验不能复活旧 lease、签发旧 draft 基线或自动重放命令。原运行不在时，仅显示普通偏好恢复状态及当前记录；缺少证据就保留未知，不因当前四值恰好相等宣布某历史命令成功。进程中断与掉电不同：后者可能丢失已应答的最后完整记录或证据，本方案不作零丢失保证；文件不一致时按恢复表关闭写入口。
+
+**旧版本与回退。** 迁移成功后新版停止写旧四键；旧键保留迁移前原状，migration 为只读恢复证据。旧版不认识新文件，读取旧四键（缺键用旧默认、坏类型沿其旧回退）；因此代码回退可以得到迁移前偏好，不需要改业务数据库，但不会保留新版之后的偏好修改。旧版期间改动只影响旧四键；重新运行新版仍以 current 为准，不能自动吸收旧版改动。这是明确的兼容限制，不能同时承诺无双权威和双向即时兼容。
+
+如用户要求降级后也使用最新四值，须另外批准一次离线数据回退：停两个版本 → 核实/保留 current、migration、pending 与四旧键的完整备份 → 解决 unknown → 将经确认的完整四值转换为旧键并逐键写入、完整读回核对 → 全部核对后才允许启动旧版。此导出不是原子共同保存；中断后继续停止应用并恢复/完成四键后再核对，不声称逐键回填构成事务。保留新版文件用于返回新版；重新升级时默认仍使用该文件，要吸收旧版后续改动须再次独立确认。下一实施阶段不自动建设此降级工具或执行真实回退。
+
+#### E. 一次组提交与执行协议
+
+【推荐，未实施】共同提交接受单个设置，或当前完整计划内 2～4 个不同字段的普通设置；多项在原 Plan 上显式归为一个连续 atomicGroup，整组预览说明共同保存，不能隐藏地拆成多个 unit。活动草稿＋非空计划、混合命令、多组、依赖/输出引用、对象目标、保护内容、未完成参数/编辑、pending 选择和未释放执行仍拒绝。未标组的多项也只能进入显式组准备或整体拒绝，execute 不选择一项落地。
+
+1. **一次读取组基线。** 新组准备调用拟议 readLocalSettings，一次读取/解码完整权威记录，产生 groupCaptureID、storeID/epoch、recordRevision、各字段修订与有效值；沿原草稿/计划安装签发证据。已有单项证据不在重绘时静默刷新：比对其受影响字段与该整组快照，任一过期就保留冲突。无冲突才通过原 Coordinator 原子更新整组证据与 plan/item/draft stamps；不循环公开 prepare 导致半组换基线。最终执行前仍另取一次锁内最新整记录；“一次基线”不取消写前复核。
+2. **统一验证。** 严格映射全部成员，检查白名单、参数完整性、字段唯一性、来源/签发、原 plan/group/成员身份、lease/display、run/attempt；读回 raw、内存状态、持久字段修订必须可解释。封存只移动唯一所有权；实际 IO 前 Coordinator 以整组身份占用，多个适配实例不能各得一次写许可。最终存储入口重新核对来源/字段及执行身份，核验与提交间不 await，不给 UI 传入的布尔资格授权。
+3. **重复字段策略：明确拒绝整组。** 即使两个值相同也不默默取最后一项；返回重复字段及 item IDs，全部保留且零提交。用户可回到原未执行计划删除重复项，或按 §9.11 既有严格条件显式合并后重新准备组。不同签发来源/基线不能自动合并；本阶段不扩建通用合并算法。
+4. **单次共同提交。** 在最新完整记录上只替换请求字段；全组目标已满足且无冲突时直接 group noChange，零权威/辅助写入、零展示。若部分已满足，已满足项只在组回执中标 unchanged，仍与其他成员同属一次完整记录提交，不能提前逐项成功。准备字节、pending 与全部预检后，再查执行资格并一次替换 current；替换前失败不发布任何候选值。替换后未知锁住该后端后续写入（包括旧页与其他命令），保留原运行/目标/证据，先核验，不能用后来写入覆盖未知线索。
+5. **发布一致状态。** 确认后先记录整组 commitID/修订和本地 committed，不可因关闭/失焦撤销；再一次发布 committedState。存储/发布异常与显示许可分开：提交后 UI 失效仍把可信结果归原运行，不能返回可编辑草稿。unknown 时不发布目标，也不清除唯一执行快照。
+6. **按已提交修订应用展示。** 外观成员适用时调用原 effects.applyAppearance；随后一次普通组事件，包含 source、recordRevision、commitID、成员字段及字段修订，不带正文/完整设置字典。外观失败仍可独立尝试事件。回调执行时重新核对当前相关字段版本，只从最新 committedState 重绘；不让排队的旧闭包携旧 appearance 覆盖新值。windowChrome/statusItem 取语言/外观交集，diaryWindow 取语言，calendar 仍空集；截断走 Observation，来源标记只影响未来创建。
+7. **写入/展示分别回执。** 整组只有一个 local 状态；成员 changed/unchanged 是说明，不是独立提交结果。展示另记录外观与事件 notCalled/returned/threw/pending/superseded，返回仅证明调用层，异步消费者与像素完成不计作文件事务。若本地已保存但展示失败，明确“整组已保存，展示应用未完成”；不得显示某成员未保存或回滚。
+
+**组冲突。** 无关字段更新可保持，只重查请求字段；组内任一字段冲突整组暂停，列出各字段原值/当前/拟改。采用当前、确认自己的修改、继续编辑沿原三种意图；一次确认绑定完整冲突采样、组/成员 stamps 和 lease，同字段再次变化即失效。确认不自动提交。未封存时留原计划；封存后只有可证明 local.notSubmitted 且无效果/输出的整个组能原子返回原计划，推进全部成员版本、保留旧尝试出处。不能把一部分取回、一部分继续执行，也不能用 readyForProtocol 越过真实基线校验。
+
+**未知核验。** 不走 safeLocalReplay 或普通重试。拟增加窄 verifyPreferenceCommit：持后端协作锁重新打开权威文件，比对该组 commitID、来源、基/目标摘要及 pending。目标完整匹配可记录“该提交当前已核实”，一次更新完整内存状态，允许进入展示阶段；这是新核验回执，不篡改原 threw/readback 事实。当前仍为基记录不能证明历史从未提交，保持 unknown，用户可明确接受当前状态并关闭待核实记录后另建新意图；当前为其他记录则报告已替代/无法归因，不能报旧提交成功。核验/接受只解除阻塞，不带隐式偏好重写；缺证据、坏文件或读取失败继续待核实。
+
+**展示重试与后来修改。** 原 run/attempt 下仅重试未完成且可幂等的展示步骤，零偏好写入；已经返回的步骤不重复。执行每一步前比较它依赖的字段修订：同字段后续写入（含同值和受控 ABA）使旧步骤 superseded；无关字段变化不阻断另一独立展示步骤。普通事件的迟到刷新只读当前状态，可合并/丢弃已替代字段，不夹带旧值。superseded 保留 local.committed，可明确确认关闭展示记录，不转换为本地成功重试/未提交；若尚有独立未完成步骤，继续保留其事实。事件抛错可能已派发，重试仍限刷新当前状态，不扩大成业务副作用。
+
+协议分两次事实入账：新增窄 preferenceCommit 先令整个 unit.local = committed、展示为 pending；再经原 beginStep 取得 external attempt，发送真实 preferencePresentation 回执。当前 CommandPreferenceWriteFacts.isValid 在 matches 时要求 event 已调用，不能表达这个“已提交、尚未展示”时点，因此不能复用旧 facts 并伪填 event.returned。新单项文件后端也走相同两阶段；旧 UserDefaults 夹具保留旧调用/读回矩阵。展示对同字段版本的最后检查与实际同步调用不得跨 await；异步观察者只能重绘当前状态。unknown 核验另用绑定原 attempt/commitID 的窄转换，不用 resolveValidation 或改写原 receipt 伪装普通重试。
+
+**旧设置页。** 四 Binding 保持即时赋值、不入 CommandPlan。就绪后每次赋值经同一个组后端，旧同值操作仍推进该字段修订、调用原适用展示；命令 noChange 的零写入政策只在命令适配器。迁移/读取/unknown 阻塞时四控件不能乐观改值，需要最小状态与失败提示；成功但展示失败与未保存分别提示。初始化先完成独立只读装载并暴露 health，再由根宿主显示错误，不在 init 中调用会读取 AppPreferences.shared 的 MutationFeedback，避免初始化递归。启动外观沿注入依赖，不借迁移启动完整 SettingsView 或系统服务。
+
+**执行后撤销继续关闭。** 文件历史、迁移快照、parentCommitID 和 pending 都不等于安全撤销能力；不增加撤销按钮或“设回旧值”接口，文本撤销也不受本阶段改变。
+
+#### F. 原子组协议的最小缺口与拟改文件
+
+以下是【拟改清单】，本轮没有修改这些代码或公共消费者；实际实现时才同步组件目录、技能路由及对应检查器反例。
+
+| 文件/模块 | 下一阶段最小责任及消费者 |
+|---|---|
+| AppPreferences.swift、LocalPreference.swift、LocalPreferenceDependencies.swift；拟新增 Services/LocalPreferenceRecord.swift、LocalPreferenceFileStore.swift、LocalPreferenceMigration.swift | 整记录读/提交/核验、独立目录、协作锁、单份可观察状态、初始化 health、迁移与只读恢复证据；保持四属性/单项外壳。新增文件按职责拆，不造通用仓储框架。 |
+| LocalSettingCommandAdapter.swift、LocalSettingCommandMapping.swift | 1 或 2～4 个不同字段的完整范围、组基线、占用、一次提交、组冲突与恢复报告；拆分超过文件阈值的组辅助实现，不在 UI 复制规则。 |
+| CommandPreferenceEvidence.swift、CommandDraftTargets.swift | 普通标量组证据、持久来源与运行来源分开；新增整组存储事实/核验事实，原单项调用和读回字段仍保留。Domain 不导入平台 IO。 |
+| CommandPlan.swift / Semantics / Validation、CommandHostSession.swift、CommandHandoffCoordinator.swift 及原运行身份契约 | 组证据原子安装、重复字段检查、group＋member 身份占用、整组未提交返回与安全完成；未知/已提交永不返回草稿。 |
+| CommandExecutionContract.swift、CommandExecutionRun.swift | group noChange；整组 preferenceCommit 与提交后 preferencePresentation；本地提交、核验、展示的独立转换。只能允许四项纯设置 unit 的窄展示，原 committed(outputs:external:) 对原子组的其他 external 拒绝保留；通知、日历、对象输出和逐成员半成功仍拒绝。 |
+| PreferenceObservation.swift、BoardEvents.swift；AppWindows.swift、StatusItemController.swift、DiaryWindows.swift | 单份组事件、字段交集/修订检查及取消；保留重新读当前状态的回调。CalendarSync 只作排除回归，不新增普通订阅。 |
+| SettingsSections.swift、AppPreferences 的 AppChrome；必要的 AreaChainApp.swift 装配 | 原四 Binding 兼容和不可写/恢复/展示失败提示；初始化不依赖 Persistence。生产默认后端切换属于另行启用门禁。 |
+| UnifiedSearchSettingEditing / Submission / Copy、UnifiedSearchPlanEditing / List、UnifiedSearchOperationPreview、原 Controller 与 Localizable.xcstrings | 同一预览/计划/结果区域的组准备、冲突、未知核验与展示反馈，中英同步；复用原控件和 ReadSession。不新开生产搜索入口或敏感编辑能力。 |
+| AreaChainTests/Services、Domain、Features 的上述偏好/命令/计划/设置测试及共用夹具 | 迁移/文件/恢复新用例配合旧单项、旧页与原子组回归；旧四键直接断言保留为旧格式兼容证据，新提交断言改读完整 current。 |
+
+B 方案若改为最终选择，则还必须涉及 Persistence/AreaChainSchema、专用上下文、业务库兼容及备份/重置决定；不能只替换 FileStore 名称就执行。C 不要求修改业务数据库模型、快照格式、隐私实现或安装脚本。
+
+#### G. 后续隔离验证与授权决定
+
+【后续验证，全部未运行】存储使用临时目录/随机 suite/合成四值，从构造起注入外观与私有事件中心；不读真实偏好、数据库、正文、附件或钥匙串。运行类验证另按 areachain-verify 和原正常完整 QA 门禁授权、串行执行，不能把本节文档检查作为其通过依据。
+
+| 场景 | 必须有的证据 |
+|---|---|
+| 新装、旧键迁移、部分缺键、全缺、坏类型 | 完整四值及 system 语义；旧键原状、物理缺失、Bool/string/number 区别；坏一项整次阻断，无部分 current；注册/临时覆盖来源不明拒绝。 |
+| 初始化与读取失败 | 不把 EACCES/损坏/未知版本当 ENOENT；无事件/修复写入；原完整状态保留、四项不可写。无数据库/内存 fallback 仍能读文件，初始化失败不递归访问 shared。 |
+| 提交前失败、替换未知 | 参数、身份、基线、编码、pending、暂存失败各点零权威提交；替换抛错但目标可读、返回但读失败/不匹配各点整组 unknown、后续写阻断，无自动逐项重试/回滚。 |
+| 中断与重启 | 独立子进程在迁移快照前后、pending 前后、首次创建/替换、读回、内存发布、回执/清理各点中断；重开只有完整旧/新状态或明确 recoveryRequired；不从坏 current 偷回旧键，不复活旧 run。模拟文件操作不能替代实际临时磁盘子进程。掉电耐久仍不宣称。 |
+| 字段修订/外部写入 | 同字段变更/受控 ABA 冲突，无关字段保留；另一个合法后端进程遵守协作锁；绕过锁、整份旧文件恢复、来源/epoch 变化分别拒绝或明确未能检测。锁失败不能死等或偷写。 |
+| 原子组与重复字段 | 1/2/3/4 成员、组 stamp/成员错位、重复字段同值/异值、过期确认、混合/未标组/多组/依赖/输出/保护内容均有服务门禁反例；非法组零写。整组冲突及返回不丢任何成员/身份。 |
+| 多项成功/部分无变化/全无变化 | 精确提交次数分别 1/1/0；全无变化辅助文件与展示也零写/零调用；任意观察回调只见完整旧/新四值；未请求字段及修订保留。 |
+| 外观/普通事件失败与重试 | 保存 committed 不倒退，外观失败不阻断独立事件；仅失败展示重试、无偏好重写、已成功步骤不重放；同字段新修订/ABA 使旧展示 superseded，迟到回调不能覆盖后来设置。 |
+| 旧单项/设置页兼容 | 严格参数、签发防伪、写前二次核验、unknown/readback 原矩阵；四 Binding 即时、同值、取消、禁用与重建；恢复/失败提示及组反馈 en/zh-Hans、浅深色、两宿主正常/最小宽度。后续原生才核实点击/⌘Return 与焦点，Return 不改变原契约。 |
+| 旧版本回退/再次升级 | 旧读取器只见迁移前四键，新版修改不镜像；旧版修改后新版不静默合并；旧坏值/缺失保持。若另授权数据回退，测试中断后应用不启动及四键完整恢复；不借旧业务库备份测试代替。 |
+| 排除副作用 | 私有中心＋真实 PreferenceObservation 路由 spy：CalendarSync 普通订阅为零、Diary 正文刷新为零、StatusItem 不重查库；三个捕获消费者只测试纯来源判定，不实际捕获/建记录；NotificationScheduler 不重新排程。 |
+
+【2026-10-04 已由用户确认；仅授权本轮 3A-3B1，详见 §9.58】
+
+1. **存储与保证：已确认 C。** 按独立版本化聚合文件、同路径协作锁、单次权威替换与最小恢复证据设计实施；接受“整记录提交/当前核验＋整份内存发布”的范围，掉电零丢失、任意外部 ABA 和全部窗口像素完成不在保证内。影响是四项存储及事件/执行证据变化，增加小文件 IO；验证按上表，能力不达标保持多项关闭，不换成逐键方案。
+2. **迁移与旧版政策：已确认保留旧四键只读、不双写，坏值阻断自动迁移。** 迁移状态机实施留给 3A-3B2；代码回退默认使用迁移前四键，新值带回旧版须另行批准离线数据回退。影响是旧版看不到新版后续偏好；恢复材料为只读迁移证据、旧键和保留的新记录。此确认不授权接触真实用户四键或执行实际迁移/回退。
+3. **范围已拆分：本轮只实施“3A-3B1 四类普通偏好版本化聚合文件后端与提交恢复”。** 仅显式临时目录、服务和隔离验证；不接 Plan/Run、指令、UI 或 AppPreferences。原建议中的迁移、聚合内存发布、旧设置页和组执行分别留待后续明确范围；本轮测试/构建只使用正常隔离门禁，不抢占原锁。生产默认后端、日用设置、生产搜索、真实迁移/回退仍不切换；同一运行环境只选一种权威后端，旧格式实现只作迁移/兼容夹具，不允许两个编辑入口分别写新旧权威。通过后仍需指定 Cursor 只读复核，缺失保留；完成后停止，生产启用另定范围。
+
+#### H. 本阶段检查与停止记录
+
+本次只在同一权威文档追加 §9.57；既有暂存/未暂存与并行文档原样保留。使用 areachain-workflow、架构治理/工程交付/可靠性规范；areachain-verify 仅选择文档检查。一个只读探索子代理核实数据库/启动/已有文件写法与测试出处，主代理核对关键原文；不是指定 Cursor verifier，不重新查询登录或宣称复核通过。
+
+文档检查命令为 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json`、`git diff --check -- docs/unified-search-commands.md`，均实际运行通过；最后文档补充后重跑同三项。已读 quality_gate.run_profile：显式 docs 只运行工作流、差异、性能清单与注释静态检查，不运行脚本测试、Swift、构建或申请原生锁；避免 auto 将并行 Swift 变更纳入运行范围。首轮 docs 门禁识别 95 个变更路径，包含并行工作，不表示本任务改了 95 个文件；没有为无关任务修改门禁或其他成果。
+
+追加前原文为 899,910 字节、4,392 行；追加后核对相同前缀的 SHA-256 仍为 `38e719190e06c3e802e4710085c7815755b90ce91a581e6cd7875fdb1c7ec0d4`，§9.56 及更早内容保持原样。文档引用/差异检查不证明推荐后端、迁移、锁或重启协议已经可运行；本节全部隔离实验仍待后续授权与实际证据。
+
+本阶段没有修改产品 Swift、设置值、数据库、迁移/存储代码或检查器；没有写入实验、Swift/原生测试、构建、申请任何锁、应用启动、登录检查、提交、推送、安装或发布。方案定稿只表示内容可供确认，不表示已实现或运行验收通过。历史指定复核、人工及 C2B 缺口保留；交付此方案后停止，不进入 3A-3B。
+
+### 9.58 阶段 3A-3B1：版本化聚合文件后端与提交恢复
+
+以下保留 B1 完成时的契约和验收历史；其中迁移占位拒绝现由 §9.59 的真实隔离迁移及关系核验扩展，其余后端保证不扩大。
+
+**当前结论：3A-3B1 后端本地验收已完成；指定 Cursor verifier 仍未执行，整体治理验收保持 partial。最终源码的测试、正常 Debug 构建及静态验签见本节“最终收口”。跨进程竞争、真实进程中断和掉电实验未执行，不属于已通过证据。**
+
+2026-10-04（Asia/Shanghai）。本轮获准实现的范围仅是四类普通偏好的独立文件后端，所有运行数据均为显式临时目录中的合成数据。§9.57 的存储、共同提交、未知暂停、旧键保留/不双写和坏旧值阻断政策已确认；迁移留给 3A-3B2。本节不表示 AppPreferences 生产后端、指令或 UI 已启用。指定 Cursor verifier 不可调用的缺口保留，不重查登录、不改认证、不由其他复核替代；历史 C2B、人工、原生与视觉缺口不变。
+
+#### 接口与完整格式
+
+| 文件 / 入口 | 实际责任 |
+|---|---|
+| [LocalPreferenceRecord.swift](../AreaChain/Services/LocalPreferenceRecord.swift) | LocalPreferenceStoreIdentity、LocalPreferenceValues、LocalPreferenceFieldRevisions、LocalPreferenceRecord、LocalPreferencePendingWrite；复用 LocalPreferenceField / Value 与 RawValue.canonicalValue 的严格语义。 |
+| [LocalPreferenceFileStore.swift](../AreaChain/Services/LocalPreferenceFileStore.swift) | `init(temporaryRoot:identity:fault:)`、`initializeNew(values:)`、`read()`、`commit(basedOn:changes:)`、`verifyPendingCommit()`；没有默认 root、生产目录解析、偏好/事件发布、CommandPlan 或展示闭包。 |
+| [LocalPreferenceFileContract.swift](../AreaChain/Services/LocalPreferenceFileContract.swift) | FileRead / FileCommit / FileRecovery 三类结果及封闭错误；窄故障枚举只选择固定边界，不执行任意用户回调。 |
+| [LocalPreferenceFileIO.swift](../AreaChain/Services/LocalPreferenceFileIO.swift) | 显式既存临时目录句柄；同目录候选、排他创建、一次 renameat、完整重读、协作锁与身份确认清理。 |
+
+当前 schemaVersion = 1。`current.json` 含 identity.storeID / epoch（UUID）、recordRevision（UInt64）、四个 fieldRevisions、commitID、parentCommitID、migrationID（可空）和四个必填类型化 values。语言保留 system/chinese/english，外观 system/light/dark，截断 tail/middle，来源标记是真 Bool；system 不冻结成当前系统解析值。初始化修订均为 1，后续记录修订每次加 1，请求字段修订各加 1（包括组内无变化成员），未请求字段修订保留；溢出拒绝，不环绕。父提交只说明直接前驱，不构成撤销历史。
+
+migrationID 是未来迁移所需的最小引用；本阶段合成新记录为空，发现非空 migrationID 或 `migration.plist` 就关闭写入口，不采集或解码旧偏好，也不实现迁移格式。旧 LocalPreferenceSource 的 ObjectIdentifier 从不序列化。记录读入先查 schema，再完整解码/验证四值与修订；缺字段、坏枚举、数字/字符串冒充 Bool 都失败，不调用 initialValue 补默认。
+
+`pending-write.json` 只有 schemaVersion、可空基记录 evidence、目标 evidence 和 1～4 个不同字段稳定名。evidence 绑定 storeID/epoch、修订、commitID 和完整记录 sortedKeys JSON 的 SHA-256 摘要；摘要用于一致性核验，不是签名或防恶意伪造。pending 不含四值、旧命令、run、lease、正文或用户内容，不能作为可编辑权威。候选文件名由目标 UUID 生成，`candidate-<commitID>.json` 与 current 在同一目录。读取不按文件时间选最新。单文件读取上限 64 KiB，超限/非普通文件/符号链接/多硬链接视为不可读，诊断不带原始数据和底层路径。
+
+root 必须在当前临时目录或规范化 `/tmp` 的子目录内且已存在；目录句柄和最终目录身份受检查。只有显式 `initializeNew` 能创建第一份记录，且目录必须只含本协议的空 writer.lock（或全空）。不因 current 缺失自动新建，未完成 pending、孤立候选、迁移证据及无关文件均阻止初始化。普通读取只读，首次确证全空不会创建锁。关闭未来新写入口不影响现有 schema 读取代码；本阶段不提供旧键回填、迁移或降级工具。
+
+#### 一次提交与锁范围
+
+输入是完整基记录和 `[LocalPreferenceValue]` 数组。先校验 1～4 项、字段唯一、完整基记录及来源；非法请求在任何文件 IO 前拒绝。锁内重读 current，旧记录版本不能超前；同修订须整份相等，较旧基线只在请求字段值/修订均未变、所有字段修订未倒退时可接受。这样保留无关字段的最新合法值，同字段 ABA 留下修订而冲突。此入口不是命令基线签发器，未来适配仍须校验原草稿/运行身份。
+
+全部请求目标已满足时返回 noChange：不生成候选、pending 或新 commitID，不改 current、字段修订、锁内容或其他辅助文件。部分目标已满足仍生成一个完整目标，所有请求字段同属一次提交，不逐字段循环存储、不回填模拟回滚。
+
+有变化时：获得窄锁 → 读取并核验完整 current → 校验基线/全部请求 → 完整编码目标和 pending → 排他创建同目录候选并读回 → 排他创建 pending 并核对 → 再检查目录/锁身份、current、pending 和候选 → **一次 renameat 替换 current** → 重新打开并完整核实目标及 pending → 返回提交事实并尝试清理。任何准备失败都没有到达权威替换；已产生但不能完整识别的辅助文件保留，并阻断后续写入。只读核验和清理不会再次调用替换。
+
+与 §9.57 的 Foundation replace/move 候选相比，实际提交选用 Darwin 同目录 renameat，首次创建和已有替换共用同一命名空间提交点，避免两种替换路径或先删 current 的窗口。编码/读取仍用 Foundation，摘要用项目已有 CryptoKit；没有第三方依赖或业务 SwiftData。此选择不扩展成通用文件事务框架。
+
+`writer.lock` 是不随 current 替换的稳定空文件，用非阻塞 flock。进程内按目录 device/inode 登记占用线程：同线程重入明确 reentrant，其他线程/进程占用返回 lockBusy，不忙等；打开锁还核验普通文件与链接数。锁保护遵守本协议的读核验/写入者，持有到完整重读及本次辅助清理结束；比较与替换之间没有 await 或任意应用回调。它不锁 UserDefaults、旧应用、任意编辑器或绕过协议的恢复器，不能检测完整旧字节连同修订被外部放回的 ABA。本阶段没有内存发布；后续发布必须额外维护提交版本/唯一所有者，不能把当前函数返回自动理解为窗口已经更新。
+
+后端锁与 `build/.build.lock` 是两套机制；测试只在本例随机临时 root 创建 writer.lock。工程测试沿原验收锁正常非等待申请，不删除、抢占或终止其他持锁任务。
+
+#### 结果、未知与重开
+
+| 实际事实 | 返回与后续写入 |
+|---|---|
+| 全部目标满足且无基线冲突 | noChange，零权威/辅助写入。 |
+| 纯输入、编码、暂存、pending 或最终资格检查失败，未进入替换边界 | notCommitted(issue)，能证明本调用没有提交；若已留下证据，后续写入口仍须关闭。它不保证准备 IO 完全没有发生。 |
+| 当前基线/请求字段已变化 | conflict(current)，整组零提交；不自动改基线。 |
+| 替换返回且完整 current 身份/内容和 pending 核实一致 | committed(record)，当前完整文件可核验；后端没有发布内存或展示。 |
+| 上述提交已确认，辅助清理失败 | committedCleanupPending(record)，不能改称保存失败；后续仅核验/清理。 |
+| 已进入替换边界而抛错，或替换后读回失败/不一致 | unknown(pending, issue)，即使稍后能看见目标也先保留调用未知；不自动重试写入。 |
+| current 不可靠、pending 未解决、来源/证据不符、孤立准备或未实现迁移来源 | recoveryRequired / unavailable，关闭整组写入口，保留文件。 |
+
+read 用 absent、record、pending、unavailable(issue) 分开表达；issue 区分 readFailed、corrupt、unsupportedSchema、sourceMismatch、inconsistentEvidence 等，不把损坏/权限错误当 ENOENT。pending 存在时即使 current 已是目标也不直接给可写基线；须显式核验。进程内未知登记额外防止辅助证据被移除后同实例继续覆盖；它不是跨重启日志。
+
+`verifyPendingCommit()` 在相同锁内只检查当前完整记录：
+
+- 当前身份和摘要完整等于目标，且 parent 与 pending 基身份相符：confirmed，最多清理本 pending 的辅助文件；清理失败 confirmedCleanupPending，不重写 current。
+- 当前完整等于基记录，或 current 缺失：historicalUnknown。它不能证明目标历史上从未短暂生效，不自动接受基值或补写目标。
+- 当前为同来源的另一合法提交：superseded，保留当前权威和 pending，不回滚、不宣称旧提交成功；接受当前/关闭证据的用户恢复操作尚未实现。
+- 同 commitID 对应不同内容、来源不符、损坏、未知 schema、读失败：blocked，全部写入口保持关闭。候选、pending 或迁移证据都不被当成权威值。
+- 没有待核实证据：nothingToVerify，不生成提交或修订。重复核验/清理不会再次提交。
+
+清理只针对 pending 的确定候选名及 pending 自身，删除前重读核对身份/内容；不枚举删除无关文件、不删除锁、不尝试“修好”坏辅助文件。未决状态不会被后续提交覆盖。没有显式接受当前或重建工具，没有恢复 CommandPlan、重放命令或复活旧 lease/run。
+
+#### 保证层级与验证记录
+
+API 层提供完整编码、协作写入下的一次命名空间替换及完整读回归因；current 的原子替换不等于 pending/current 跨文件事务。不实施 fsync/F_FULLFSYNC 或目录耐久屏障，不承诺掉电零丢失、网络卷语义、任意外部编辑比较交换或全部窗口同时更新。进程中断与掉电必须各自取证，下面故障注入不替代真实进程终止实验。
+
+实际测试新增 [FileStoreTests](../AreaChainTests/Services/LocalPreferenceFileStoreTests.swift)、[RecoveryTests](../AreaChainTests/Services/LocalPreferenceFileRecoveryTests.swift)、[ConcurrencyTests](../AreaChainTests/Services/LocalPreferenceFileConcurrencyTests.swift)，共用 [FileTestSupport](../AreaChainTests/Services/LocalPreferenceFileTestSupport.swift)。每例由 FileManager.temporaryDirectory 创建随机独立 root，只清理自身目录。索引维护仅追加到[组件目录](component-catalog.md)、[路由](../skill-routing.md)、[架构](architecture.md)和[工程手册](engineering.md)；稳定符号与反例沿 [check_workflow.py](../scripts/check_workflow.py)、[test_check_workflow.py](../scripts/tests/test_check_workflow.py) 原入口增量维护，保留并行修改。
+
+本轮环境为 macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113）、Swift 6.3.3（工程语言模式 5）、Python 3.9.6；不表示最低支持系统已实测。日志与命令材料根目录为 `/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B1-k2sgwq_l`，以下简称本轮临时根。
+
+| 检查 / 最终证据身份 | 实际结果及限制 |
+|---|---|
+| 首次完整 QA 编译 | 退出 65：stat 的 Swift 名称冲突及多条件 guard 缺显式 try；改用 lstat 并补 try。无测试运行，日志 tests.log。 |
+| 第二次完整 QA 编译 | 应用代码编译通过，测试闭包缺错误传播导致退出 65；将测试第二实例构造移到闭包外，日志 tests-repaired.log。不改成功判据。 |
+| 第三次正常完整 QA 目标、十套定向 | 通过；68 个测试定义、80 次执行，0 失败、0 跳过、0 预期失败。结果 `DerivedData/Logs/Test/Test-AreaChain-2026.10.04_23-40-55-+0800.xcresult`、tests-complete.log、summary.json / tests.json。覆盖三套新文件测试及 LocalPreferenceTests / FailureTests、原 LocalSettingCommand Tests / Boundary / Conflict / Failure / Identity。完整目标仍有原有未用变量/辅助 API 警告，不删除或排除并行源码。 |
+| 通过后的最后边界补充 | 增加四成员真实提交、编码故障下 noChange、非法 root/修订、溢出、pending 重复字段/未知版本与不明候选保留；将后端无锁读取/清理辅助方法及 IO 属性收为 private。两次非等待重验均退出 3，尚未启动，因此上行通过只保留该次版本身份，不覆盖最后修改。 |
+| 正常配置 Debug / 验签 | `./scripts/build.sh --no-wait` 退出 3（build.log），其他任务持有原验收锁，本轮未启动最终正常构建或验签。第三次 QA 的编译不能代替此项。 |
+| 严格局部 SwiftLint | 本轮八个 Swift 文件在最后 private 边界修改后检查通过。只证明风格，不冒充编译/运行。 |
+| 工作流与脚本反例 | check_workflow.py 通过；定向 test_check_workflow.py 95 项通过；quality_gate.py --profile static --strict --format json 通过，内含 scripts/tests 215 项回归。最终文档编辑后同入口复跑通过。 |
+| 指定只读复核 | Cursor verifier 无可调用工具，未执行；不认证、不替代，整体治理验收保持 partial。 |
+| 真实进程中断 / 掉电 | 未执行进程 SIGKILL、跨进程提交竞争、掉电或 fsync 耐久实验。只做真实临时磁盘加确定故障注入、同进程对象重开；独立文件描述符 flock 拒绝验证不冒充跨进程实测。未终止用户任务、验收持锁进程或任何测试宿主。 |
+
+通过版本实际覆盖：初建/重开、system 与四值往返、单字段/多字段及部分 noChange、全 noChange 前后内容/inode/mtime 相同、重复字段/坏值/缺字段/旧字段修订/ABA/来源不符、编码/候选部分写/pending 部分写/最终资格/替换调用前后/读回/清理故障；明确区分替换前未提交和已进入替换边界的未知。故障后的 current 保持完整基记录或完整目标，未知挡住后续写入；重开目标只核实/清理、基记录保留历史未知、其他合法记录保持权威并报告替代、损坏/未知版本/读取失败关闭写入口。核验前后 current 内容/inode/mtime 不变，重复核验不提交；两个任务竞争只得一次成功，另一方冲突或 lockBusy，同线程重入为 reentrant。它们不证明真正进程中断或掉电的所有落点。
+
+QA 运行沿正常完整 AreaChain scheme/app/test target（不排除编译源码），原 build/.build.lock 非阻塞 flock 覆盖完整 xcodebuild 生命周期，独立 `PRODUCT_BUNDLE_IDENTIFIER=com.areachain.preference-file-qa`、临时根下 DerivedData、`AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements INFOPLIST_KEY_LSUIElement=NO`、arm64、`-parallel-testing-enabled NO test` 及十个 `-only-testing`。六项真实钥匙串变量（含 TEST_RUNNER 形式）全部移除，只由 XCTest 启动隔离宿主。没有运行完整 SettingsView、真实系统认证、用户偏好或业务库；旧测试仅用随机 suite 与注入副作用。静态 profile 配明确 QA 取代 auto/swift 全量，以免无关并行 Swift 改动启动排除能力。
+
+本轮来源摘要核对确认 AppPreferences.swift、LocalPreference.swift、LocalPreferenceDependencies.swift、LocalSettingCommandAdapter.swift、LocalSettingCommandMapping.swift 未被本任务改变。真实旧偏好未读取/迁移、旧键未双写，未安装、发布、提交或推送。上轮停止时状态为 **partial**：新后端已实现，已有一轮隔离通过；当时最后边界补充与 private 收口缺最终 Swift 编译/运行，正常 Debug/验签未运行，指定复核亦缺失。只读观察并行 xcodebuild 50 秒后仍在运行，未再申请或干预其锁；不拿旧通过替代最后版本证据。真实中断/跨进程及历史缺口不豁免。
+
+#### 最终收口：后端本地验收完成
+
+2026-10-05（Asia/Shanghai，结果包时间）。本轮只核对与复验已有最后修改，没有新增 Swift 场景、改变断言或修复产品代码；本轮仓库编辑仅在本 §9.58，之前暂存/未暂存及并行工作均保留。不进入 3B2。
+
+**影响核对。** 最后未验增量为 FileStoreTests 的四成员真实提交、编码故障下 noChange、非法临时 root/修订及溢出，以及 RecoveryTests 的重复 pending 字段、未知版本与身份不明候选保留。FileStore 的 io/fault 属性和 readLocked/readCurrent/readPending/cleanup 收为 private；四个对外方法和构造签名未改。唯一直接受访问级别影响的消费者是 ConcurrencyTests 的重入用例，现已显式建立自己的 LocalPreferenceFileIO，再通过公开 commit 验证拒绝与释放后可写，不再访问 store.io。其余原文件后端用例继续经同一公开 API 回归，没有放宽锁或跳过失败断言。
+
+全仓符号检索确认生产 AppPreferences、单项适配器、Domain 与 UI 不调用上述内部接口。旧五文件摘要仍与 B1 开始时相同；兼容验证仅补 LocalPreferenceTests / LocalPreferenceFailureTests，以核实复用四值、严格解析和旧初始化/失败语义。未受本次访问级别收口影响的 CommandPlan、单项指令适配器五套及 UI 不重复运行，其前轮测试继续保持历史身份，不算本轮新证据。
+
+| 最终源码证据 | 实际结果 |
+|---|---|
+| 正常完整 QA 编译与五套定向测试 | 首次正常取得原 build/.build.lock，执行 LocalPreferenceFileStoreTests、LocalPreferenceFileRecoveryTests、LocalPreferenceFileConcurrencyTests、LocalPreferenceTests、LocalPreferenceFailureTests；34 个测试定义、44 次执行全部通过，0 失败、0 跳过、0 预期失败。没有排除编译源码或新增场景。 |
+| 最后补充及 private 兼容 | singleAndWholeRecordCommitsPreserveTypedSystemSemantics、allNoChangeWritesNothingAndPartialNoChangeIsOneRevision、rootMustBeExplicitTemporaryChildAndMalformedRevisionsAreNotWritable、inconsistentPendingAndForeignCandidateRemainUntouched、sameThreadReentryIsRejectedAcrossInstancesAndLockReleaseAllowsCommit 均有 Passed 结果，覆盖上轮未验增量。 |
+| 两实例竞争 | twoConcurrentInstancesNeverSilentlyOverwriteSameOldRevision 通过：同一测试进程中两个 Task、两个后端实例，以同一旧修订竞争；恰好一次 committed，另一方 conflict 或 lockBusy，最终修订为 2。独立文件描述符 flock 及同线程重入/释放用例也通过。**这些均不是跨进程实测。** |
+| 正常配置 Debug 与静态验签 | 测试通过后执行 `./scripts/build.sh --no-wait`，正常取得原锁，退出 0；沿当前 development 配置，Debug 构建成功且 staticSignatureVerified = true、hardenedRuntime = true。产物 `/Users/as/Ai-Project/project/AreaChain/build/development-DerivedData/Build/Products/Debug/AreaChain.app`；未安装、启动或发布。静态验签不表示真实系统解锁已验收。 |
+| 最终 lint / 工作流 / 静态门禁 | 对本阶段八个 Swift 文件运行 `swiftlint lint --strict --quiet`；运行 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --strict --format json` 和 `git diff --check -- docs/unified-search-commands.md`。均通过；静态门禁内 scripts/tests 215 项通过。证据为本轮 closure-lint.log / closure-workflow.log / closure-static.json；文档补记后再次通过局部 lint、工作流、docs strict 与差异检查。静态 profile 不执行全量应用验收。 |
+| 指定复核及未执行实验 | Cursor verifier 未执行，缺口保留且不重查认证。跨进程竞争、真实进程 SIGKILL/中断、掉电与 fsync 耐久实验均未执行；没有新增保证或终止其他进程。 |
+
+本轮沿前述完整 QA 配置、独立 Bundle ID、原临时根下 DerivedData、六项真实钥匙串变量清除与串行测试，只将 only-testing 缩至上述五套。实际命令为临时根的 closure-test-command.json；测试结果为 `DerivedData/Logs/Test/Test-AreaChain-2026.10.05_00-00-32-+0800.xcresult`，汇总/测试树为 closure-summary.json / closure-tests.json，编译日志 closure-tests.log；正常构建与验签记录 closure-build.log。本轮测试及构建均正常取锁，没有锁忙重试、轮询、抢锁或干预其他任务。QA 完整测试目标仍有既有 AppKit 辅助 API 废弃警告，未因此修改不相关测试。
+
+最终相关源码 SHA-256 前缀用于绑定这次证据：FileContract `e0e4a131e2ffd8e0`、FileIO `e643c015de5267c9`、FileStore `bf8c91c470ab2855`、Record `7aabd4461c21a872`；ConcurrencyTests `06d638e74ef5ac18`、RecoveryTests `014ed04cdb81b30b`、FileStoreTests `8b5ba8afdaa30f4c`、FileTestSupport `83d3ff960329d6c1`。测试前与构建后逐文件核对一致；之后只修改本文。旧 AppPreferences、LocalPreference、LocalPreferenceDependencies、LocalSettingCommandAdapter、LocalSettingCommandMapping 也均未改变，不读取其真实存储取证。
+
+**本地验收结论：已完成本轮要求的最终源码定向测试、受影响兼容回归、正常 Debug 构建与静态验签；整体治理仍为 partial，唯一指定复核缺口未消除。** 文件保证继续限定为 API 层一次完整替换/读回及已测故障处理；同进程重开不冒充真正进程中断恢复，flock 实现不冒充跨进程实验，不承诺 fsync 或掉电零丢失。用户设置、迁移、AppPreferences 生产后端、指令/UI、提交、推送和安装均未触及；交接后停止。
+
+#### 3A-3B2 与后续接入要求
+
+3A-3B2 先在合成旧四键/隔离 suite 中实现迁移证据、来源判别和初始化状态机：只采四键，坏旧值阻断，旧键原样保留、不双写，新记录成功后唯一权威；注册/临时覆盖、部分缺键、中断和旧版读取分别验证。当前 migrationID 非空/迁移文件一律关闭的门禁只能随已验证迁移适配明确演进，不能用本轮 initializeNew 绕过未完成迁移。真实用户迁移、恢复、携最新值降级都未执行。
+
+AppPreferences 接入须先把四项可观察状态改为一次完整发布，成功事实先于展示副作用；冷启动读取失败保持不可写，不能用默认值签发基线。旧 Binding 同值赋值的推进/展示语义与命令 noChange 不同，本轮文件接口只提供 noChange 政策，后续须在共同后端显式支持已确认的旧页语义，不能悄悄改变它。组事件、迟到展示版本检查、原 Plan/Run 两阶段事实和未知核验归属分别接入；当前单项 UserDefaults 结果矩阵不改写。生产默认后端、生产搜索、UI、迁移、撤销和下一阶段实现全部保持未接线。到本阶段停止。
+
+### 9.59 阶段 3A-3B2A：旧四键隔离迁移、重开与恢复判定
+
+2026-10-05（Asia/Shanghai）。本轮只实施独立测试 UserDefaults suite、显式临时目录内的迁移及启动判定；以本节扩展 §9.58 的迁移占位拒绝，§9.57 政策保持。AppPreferences 生产后端、用户偏好、业务 SwiftData schema、指令/UI 与 3B2B 整份内存发布均未接入。真实用户迁移、数据恢复与携最新值降级未执行。指定 Cursor verifier 缺口保留，不重新检查登录、不改认证、不冒充复核。
+
+#### 旧源及严格解析
+
+[LocalPreferenceLegacySource](../AreaChain/Services/LocalPreferenceLegacySource.swift) 要求显式 `LocalPreferenceLegacyIdentity.isolatedSuiteName` 与逐字段读取闭包；没有默认 UserDefaults、生产来源工厂或 AppPreferences 初始化。`capture()` 只请求 LocalPreferenceField.allCases 四键，观察值分别包含 exists、persistent、effective、origin；来源枚举区分 persistentDomain / declaredDefault / registration / volatile / managed / unknown / conflict。有效值与物理值即使相同，外部覆盖仍不合法。空来源身份、读取失败、存在性矛盾、非法枚举、非 Bool 与未知负载全部阻断。
+
+此处的来源标签是显式注入的受控读取器契约，**不是由值相等推断来源，也不是生产 UserDefaults 搜索域识别器**。实际测试读取器只拥有自己新建的随机 suite，四次 `CFPreferencesCopyValue` 指定该 suite、currentUser、anyHost，获取物理原值；四次该句柄 `object(forKey:)` 获取可见值。注册/临时/受管理/来源不明/冲突均为逐键注入反例；不调用 register 或 setVolatileDomain 修改进程共享搜索域。不调用 persistentDomain/dictionaryRepresentation 采集整个域，也不读取标准设置。一般 UserDefaults 的受管理、启动参数、全局、其他 suite/currentHost 来源不能仅凭上述值证明；后续生产适配必须另行提供可靠来源证据，不能复用夹具推断或用一个声明布尔值开放迁移。
+
+复用 `LocalPreferenceRawValue.canonicalValue` 严格解析：缺键才得到 system/system/tail/false；合法 system 原样保存。`initialValue` 的旧版宽松回退与布尔转换保持原实现，迁移不调用它掩盖坏值。坏复合负载只留在原测试域；返回封闭字段/原因，不输出负载、全部域或底层错误。所有旧键操作在测试夹具中，迁移服务没有旧源写接口。
+
+#### 迁移格式与一次权威切换
+
+[LocalPreferenceMigrationEvidence](../AreaChain/Services/LocalPreferenceMigrationEvidence.swift) 使用二进制 `migration.plist`，schemaVersion = 1。payload 包含 migrationID、source.isolatedSuiteName、初始 target（storeID/epoch、revision、commitID、完整记录摘要）、四项固定键的 presence Bool 和完整合法 values。presence=false 表示原始键不存在、有效值为原默认；presence=true 表示原始值就是相同字段的合法 values 原值。只允许持久域和已声明默认两种成功来源，故由 presence 唯一表达成功来源，不保存未知/错误类型或额外字段负载。
+
+证据外层 digest 为 payload 规范 sortedKeys JSON 的 SHA-256；target 摘要复用 RecordCodec，绑定完整初始记录及 migrationID。读取检查 schema、来源形状、恰好四项 presence、缺键默认一致、payload 摘要及可重构的初始目标摘要。摘要用于损坏/关系核验，不是签名或恶意篡改认证。后续记录保留 migrationID；初始记录必须完全匹配证据，第二次修订的 parent 必须指向初始提交。后续不保存全历史，不承诺验证任意外部伪造的历史链。
+
+`LocalPreferenceFileStore.migrate(from:)` 持原非阻塞目录锁，按以下顺序工作：
+
+1. 读取 current、migration、pending 和 candidate，只有确证不存在且目录仅空 writer.lock 时才允许开始。
+2. 采集并严格验证四键及来源，生成新的 migrationID 和完整初始 target；修订和字段修订均为 1。
+3. 排他创建 migration.plist 并完整读回核验；已有证据不覆盖、不更新、不复用身份迁移不同来源。
+4. 再采集同一旧源四键，比较原值、有效值、存在性和来源；变化拒绝提交并保留第一次证据。第二次来源不明或失败也阻断。
+5. 调用原 `perform(base:nil,target:fields:lock:)`：完整准备 candidate/pending、核验目标迁移关系及目录/锁/记录资格、一次 renameat 建立 current、完整重读 current/pending/迁移关系，再清理本 pending。
+6. 返回完整权威记录或明确失败/恢复结果；没有先 initializeNew 再补 migrationID 的第二次权威提交。
+
+锁覆盖本后端协作读写者，**不锁旧 UserDefaults、旧版或其他来源写入者**；第二次采集不是跨存储事务，也不能排除两次采集之间的外部 ABA。受控夹具用于本阶段；生产迁移前须确保旧版及其他旧源写入者已停止。migration 永久只读保留，后续偏好提交不更新它。未新增锁、提交算法、恢复引擎或独立 migrated=true 开关。
+
+#### 重开、恢复与 3B2B 接续
+
+`reopen(from:)` 先读新来源；current 或任何迁移/准备状态存在时不采集旧源。pending 沿原 `verifyPendingCommit` / `verifyLocked` 核验，不从辅助值重建 current、不按 mtime 选值、不恢复旧命令队列。
+
+| 观察 | 本阶段结果及写入边界 |
+|---|---|
+| 全部文件确证不存在或仅空 writer.lock | `notMigrated(readOnly: Values)`；只读四值供后续兼容显示，须显式 migrate。坏旧源返回 conflict/failed，不能默认为空。 |
+| 只有完整 migration、孤立准备、pending 且 current 缺失 | `recoveryRequired`；incompleteMigration / orphanedPreparation / historicalUnknown，保留原件，不重新导入。 |
+| current 与 migration 完整一致且无 pending | `ready(record, cleanupPending:false)`；唯一权威来自 current。旧四键变化甚至坏值不被读取/吸收。无 migrationID 的原 B1 合成记录继续兼容。 |
+| pending 目标完整等于 current | 原恢复路径 confirmed，至多清理已核对的 candidate/pending；返回 ready，不改 current 内容、inode 或时间。 |
+| current 仍是 pending 基记录 | historicalUnknown；保留安全当前记录和未决证据，不断言历史未提交、不重试。 |
+| current 是同来源另一合法记录 | superseded；保留当前记录、旧 pending 及诊断，后续显式恢复前关闭写入。 |
+| current 损坏、未知 schema、不可读；迁移证据缺失/不符/损坏 | recoveryRequired，带封闭原因，全部文件写入关闭；不退回可编辑旧键。 |
+| current 已确认但清理失败 | `ready(record, cleanupPending:true)`，提交事实保留；如 pending 仍在，普通 commit 会阻断直到再次核验/清理。 |
+| 本次尚未进入替换就失败 | failed 或 conflict，证明本次未提交；已有证据不删除，下次按恢复表判断。 |
+| 已进入替换调用边界但失败/读回未知 | recoveryRequired.unverifiedCommit(pending, issue)，不发布候选或伪造提交事实。 |
+
+`LocalPreferenceMigrationResult` 是 3B2B 的最小输入。只有 ready 的完整 LocalPreferenceRecord 可作为已核实的整份发布候选；cleanupPending 必须另表征写入健康状态。notMigrated 的只读兼容值、conflict、failed、recoveryRequired 不能签发可写基线。historicalUnknown/superseded 的 current 只用于恢复说明，不等于已经解锁写入。后续内存唯一所有者还须核对版本、实现一次发布和展示；本阶段不构造 shared、不应用 NSApp 外观、不发偏好/业务事件，迁移不冒充用户命令。
+
+`initializeNew(values:)` 保留无迁移合成新建行为，但任何迁移、pending、孤立候选或异常目录状态都阻断。原 B1 非空 migrationID/存在迁移文件的一律拒绝，替换为真正的格式、摘要、目标身份及迁移关系核验；没有仅删守卫放行任意记录。
+
+#### 旧版兼容与限制
+
+成功前后四旧键及物理缺失原样保留；新后端后续共同提交/noChange 不写旧域、不双向合并。旧版仍只看迁移前值；旧版后来改键，新版继续读取 current。携最新值降级须另行获准的数据回退，本阶段没有回填工具，不承诺旧版看到新版最新设置。业务 schema、旧 AppPreferences 四属性/存储依赖和单项指令适配器不改变。
+
+#### 本轮验证与停止记录
+
+实现及本地验收已完成，整体治理验收保持 **partial**：指定 Cursor verifier 无可调用工具，未执行；历史缺口不豁免。故障注入和同进程后端对象重开与真实进程中断分开；本阶段不新增跨进程、SIGKILL 或掉电保证。
+
+本轮证据根目录为 `/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B2A-xd80mbtf`。环境为 macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113）、Swift 6.3.3、Python 3.9.6；不代表最低系统已实测。
+
+| 实际执行 | 结果与证据 |
+|---|---|
+| 前两次完整 QA 编译 | 退出 65，Swift Testing 宏内的错误传播/闭包推断不通过；修正测试构造位置及分开断言，未改变产品规则，日志 tests.log / tests-repaired.log。此时测试未运行。 |
+| 第一次运行八套 QA | 9 个测试定义失败，记录 initial-summary.json / tests-complete.log。新夹具对 NSArgumentDomain 的临时设置影响测试进程其他 suite，导致原旧偏好回归也读取到覆盖值；已移除 register / setVolatileDomain，改为逐键注入有效覆盖及来源，不保存或读取真实用户设置。原失败判据保留。 |
+| 最终完整正常 QA 编译＋八套定向 | **51 个测试定义、83 次执行通过，0 失败、0 跳过、0 预期失败**。包括 MigrationTests / MigrationRecoveryTests / MigrationEvidenceTests、原 FileStoreTests / FileRecoveryTests / FileConcurrencyTests 及 LocalPreferenceTests / LocalPreferenceFailureTests。实际参数 test-command.json，日志 tests-isolated.log，结果 `DerivedData/Logs/Test/Test-AreaChain-2026.10.05_00-36-27-+0800.xcresult`，summary.json / tests.json。 |
+| 正常 Debug 构建与静态验签 | `./scripts/build.sh --no-wait` 退出 0，build.log；沿现有 development 配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false。产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`，未安装、启动日用应用或发布。 |
+| 局部严格 lint | 本次 10 个 Swift 文件的 `swiftlint lint --strict --quiet` 通过；未把已有完整目标的 AppKit 辅助 API 弃用警告写成已修复。 |
+| 工作流及质量门禁 | `python3 -B scripts/check_workflow.py` 通过；定向 `python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` 的 96 项通过。`python3 -B scripts/quality_gate.py --profile static --strict --format json` 通过，包含 scripts/tests 216 项。最终文档后重跑工作流、同静态门禁、局部 lint 和 git diff --check。 |
+| 指定复核与未执行实验 | Cursor verifier 未执行，缺口保留；真实进程终止、中断/掉电、跨进程竞争、生产来源识别与真实迁移未执行。锁测试只含同进程竞争、独立描述符互斥和迁移重入拒绝；不声称跨进程实测。 |
+
+QA 保留完整正常 AreaChain scheme/app/test target，不排除编译源码；采用独立 `com.areachain.preference-migration-qa`、本轮根目录下 DerivedData、本机临时签名覆盖、原 entitlements、arm64、串行执行及八套 only-testing。六项真实钥匙串变量（含 TEST_RUNNER 形式）全部清除；原 build/.build.lock 正常非等待申请覆盖整个 xcodebuild 生命周期，各次正常获锁，无锁忙重试/抢占/终止其他任务。静态 profile 配合明确隔离 QA，避免 auto/swift 把并行改动带入无关全量运行。
+
+最终测试逐项覆盖全缺/部分缺/完整/system、非法类型与枚举、相等覆盖也拒绝、读取失败、来源变化和存在性变化、16 个迁移/候选/pending/替换/读回/清理故障落点、current/证据缺失损坏未知版本及身份不符、初始 pending 不符、后续基/目标/其他合法记录核验；保留 current 与 migration 的内容/inode/mtime，重复重开不重新迁移。旧键前后相同，新提交不双写，旧版改键及坏旧值不被新版吸收。来源覆盖是注入证据，真实磁盘文件和四键读取是真实隔离 IO；这些层次不互相替代。
+
+构建后逐文件校验 tested-hashes.json，与通过测试的偏好源文件/测试完全一致。AppPreferences、LocalPreference、LocalPreferenceDependencies、LocalPreferenceFileIO、LocalSettingCommandAdapter、LocalSettingCommandMapping 与本轮开始前摘要一致；原有暂存/未暂存和并行修改保留。迁移接口没有产品调用方，不读用户库/设置，不接生产后端、指令、UI 或业务事件。不提交、不推送、不安装、不发布；到 3A-3B2A 停止，不进入 3B2B。
+
+
+### 9.60 阶段 3A-3B2B：AppPreferences 聚合后端、整份发布与展示事件
+
+2026-10-05（Asia/Shanghai）。本阶段只接显式临时文件后端、隔离旧键域与注入展示副作用；沿 §9.58 的 FileStore 和 §9.59 的 migrate / reopen / MigrationResult，不复制提交、迁移或恢复算法。**生产 `AppPreferences.shared = AppPreferences()` 继续旧后端；没有自动迁移用户设置、生产默认目录、业务 Persistence 依赖、多项指令执行或新生产 UI。** 下文是本阶段新接口；§9.54～§9.59 保留各阶段历史。完成后停在 3B2B，3B3 未实施。
+
+#### 显式装配与唯一状态
+
+| 入口 | 责任与限制 |
+|---|---|
+| [AppPreferences.init(defaults:fileStore:startup:effects:)](../AreaChain/Services/AppPreferences.swift) | 四个参数均显式提供。fileStore 仍受原 temporaryRoot 约束；startup 是 LocalPreferenceMigrationResult。defaults 只用于尚未迁移的偏好；新模式的 localStorage 为 nil，四项不会读取或写入旧键。 |
+| 原 init(defaults:localStorage:effects:) / shared | 保留原签名和旧后端默认，四属性即时写入、旧严格/宽松读取及旧单项回执矩阵不变。初始化四值在局部装配后一次赋值。 |
+| [LocalPreferencePublishedState](../AreaChain/Services/LocalPreferencePublication.swift) | legacy / readOnly / committed 三种不可变发布值；文件模式只保存完整 LocalPreferenceRecord，不另存四个可编辑标量。所有 getter、resolvedLocale / resolvedColorScheme、AppChrome 和旧 Binding 均读取同一状态。 |
+| committedLocalPreferenceRecord | 只读投影最后完整发布记录，包含 storeID/epoch、recordRevision、fieldRevisions 和 commitID。是运行内已确认快照，不声称磁盘监听或命令签发。 |
+| localPreferenceBackend / canWriteLocalPreferences | 单独表达旧后端、ready、只读启动、verificationRequired、cleanupPending、unknown。完整载荷存在不等于可以写入。 |
+| lastLocalPreferenceCommit / lastLocalPreferenceRecovery | 保留最近一次实际后端调用的原始结果；门禁拒绝或展示重试不覆盖原 unknown/committed 事实。核验结果不改写历史调用结果；能否发布/再写还需查询 backend。 |
+
+本次明确采用两种同值政策：**旧后端同值 Binding 继续写键、推进旧字段修订并按原次数应用展示；新文件后端同值 Binding 与共享组入口返回 noChange，零权威/辅助写入、零发布、零多余展示。** 此条依本轮请求更新 §9.57 E / §9.58 后续建议中的“新后端旧页也强制同值推进”，不是统一修改两种后端的期望。
+
+#### 启动、重新核验与写入门禁
+
+| 输入/当前后端状态 | 显示与写入 |
+|---|---|
+| ready，schema/修订合法、身份等于注入 store、实际 read 为完全相等的 record | 一次完整装载，ready 可写。调用方拼出的枚举、仅值相等、旧修订或其他 store 身份不能直接取得资格。 |
+| ready(cleanupPending:true)，实际 pending/current 与载荷相符 | 还须由原 verifyPendingCommit 确认目标；历史未知/替代不发布。confirmedCleanupPending 之后重新 read：pending 仍在则只读；cleanupAfter 已删除 pending、实际 read 为 record 时可写。 |
+| notMigrated | 仅显示显式输入的只读兼容四值；不采集旧域、不 migrate、不创建 current。 |
+| conflict / recoveryRequired / failed，或伪造/过期 ready | 冷启动只读默认，不签发可写基线；不会因为磁盘有一份记录就忽略调用方的未就绪状态。 |
+| 运行内读取/恢复失败 | 保留最后完整发布状态，关闭写入口；不回退旧键写入，不覆盖故障文件。 |
+| unknown | 原 pending/issue 单独保留，全部文件模式写入口（含 Binding）关闭；不发布候选四值。 |
+
+startupAppearance 与 startupEvent 单独记录；初始化只调用一次注入外观，event 为 notCalled，没有用户提交事实或普通变更事件。外观初始化失败不把已经核验的文件状态改成未保存，不调用 MutationFeedback 或递归初始化 shared。
+
+`verifyAndReloadLocalPreferences()` 是明确的后端核验请求，调用原 verifyPendingCommit，再核对实际 read 与待装载记录；没有 migrate、initializeNew 或 commit。confirmed / confirmedCleanupPending / nothingToVerify(record) 的后端事实与 AppPreferences 的发布门禁分别返回/查询。身份/epoch 变化、同源已见修订倒退、同修订异内容或无推进字段值改变都不能作为连续修订发布；失败保留原显示。pending 基记录的 historicalUnknown、其他提交的 superseded 及坏文件继续关闭，不自动接受当前、重放原命令或恢复执行队列。
+
+#### 一次提交、一次发布
+
+`applyLocalPreferences(basedOn:changes:) -> LocalPreferenceFileCommit` 接完整基记录与 1～4 个类型化不同字段。字段唯一性、严格类型、两层修订、无关字段保留、文件锁内最后基线核验及一次替换全部由原 `LocalPreferenceFileStore.commit` 承担；AppPreferences 不循环四个 setter，也不自己写文件。旧四个 Binding 在文件模式中将一次赋值转为一个字段的聚合调用。
+
+按结果处理：
+
+- noChange：保留原结果，不发布和不调用展示；如后端报告的当前记录比内存更新，标记需显式核验装载，不偷偷刷新基线。
+- notCommitted：不发布候选，统一进入 verificationRequired；即使 current 仍完整可读，也须显式核验之后才重新开放。准备残留、读失败或待核验状态保持关闭，不自动重试。
+- committed / committedCleanupPending：先登记完整原结果及健康状态，再单次 `localState = .committed(record)` 发布所有值及修订，然后处理展示。清理失败不否认提交。
+- unknown：保留最后完整显示和原未知证据，关闭全部新后端写入。
+- conflict / recoveryRequired：完整保留原结果，不发布候选、不回退旧键；显式核验之后才能重新装载/开放。
+
+AppPreferences 的同步重入守卫覆盖后端调用、事实记录、Observation 发布、外观和事件，也覆盖显式恢复与展示重试。新后端的四项读取共同登记 committedLocalPreferenceRecord 观察，withMutation 内只赋值一次；旧后端仍按单字段 key path 登记/失效，保留无关赋值不触发该字段观察者的旧行为。Observation 的 willSet 可读到完整旧记录，后续回调读取完整新记录，不出现语言已更新而外观仍旧的组合。文件锁范围仍是 §9.58 的后端调用；返回后到内存发布无 await，但不把 MainActor 扩称为跨进程锁，不声称其他进程无法在这段时间提交。
+
+#### 提交与展示分开
+
+[LocalPreferencePresentationLedger](../AreaChain/Services/LocalPreferencePresentation.swift) 只保留本 AppPreferences 生命周期内的 commit 身份、事件字段/修订及调用事实，没有可编辑设置值、计划或持久执行队列。提交/核验事实先登记；整份发布后，必要时应用当前 appearance，再发送一次 `.localPreferenceDidChange` 普通组事件。字段集合来自上次完整发布与新记录的值/字段修订差异，包含本次吸收的无关字段新值；部分 noChange 组成员按后端字段修订推进规则保留。
+
+[LocalPreferenceGroupChange](../AreaChain/Services/LocalPreferencePublication.swift) 只含运行来源、storeID/epoch、recordRevision、commitID、变化字段集合及这些字段的修订。没有完整设置字典、正文或无关内容；旧后端继续发送原 LocalPreferenceChange。
+
+外观和事件分别记 pending / returned / threw / notCalled / superseded，外观失败仍尝试独立事件；失败不回滚完整状态，不把已保存说成未保存。`localPreferencePresentation(for:)` 查询真实登记；`retryLocalPreferencePresentation(for:)` 只处理仍未完成的展示，未知 ID 不调用任何效果，已返回步骤不重复，不读取或写入偏好文件。每一步读取当前完整发布值并核对相关字段修订，后来的同字段提交使旧步骤/字段 superseded；无关字段推进不使外观重试失效。注入外观函数是同步调用契约，延迟工作须保留 commit ID 再走该重试入口，不能在外部保留旧 appearance 后自行应用。
+
+[PreferenceObservation](../AreaChain/Services/PreferenceObservation.swift) 增加显式 preferences 初始化，延迟到 MainActor 执行时再与当前完整记录取字段交集；失效组登记 superseded，取消后的回调不刷新。部分字段被替代时只刷新仍有效的交集，消费者继续读取当前值，不应用事件捕获值。原 source 初始化及单字段事件兼容。
+
+- PanelWindowController / StatusItemController：语言与外观 chrome；菜单栏沿已有计数绘制，不重查业务库。
+- DiaryWindowController：仅语言 chrome，正文 session.refresh 仍只属于旧/业务事件。
+- CalendarSync：普通订阅字段为空，仍只消费原旧事件；普通组事件不请求日历或通知排程。
+- AppChrome、标题截断继续观察同一偏好；捕获来源标记仍仅在后续创建时读取，本轮不执行真实捕获。
+
+这些事实只保证同步效果调用与安全刷新路由，不保证全部窗口像素同时更新或异步消费者已经完成。
+
+#### 旧接口与 3B3 接续
+
+文件模式的 readLocalSetting 不读取旧键，raw 明确 unavailable；旧 applyLocalSetting 返回 unsupportedBackend，不拼造 LocalPreferenceWriteResult 的 write/readback。Binding 走独立的聚合调用，而非该旧证据接口。[LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) 在装配资格、能力查询和 assembledPreferences 门禁拒绝文件后端；prepare/readiness/submit/execute 不签发基线、不封存或占用文件运行。原 UserDefaults 的单项基线、防伪、冲突、unknown 和展示重试矩阵保持。
+
+3B3 可复用完整记录读取、一次组提交、backend 健康查询、原始 FileCommit / FileRecovery 和展示查询/重试。**仍需实现**原 Coordinator 的整组基线签发与原子安装、group/member/lease 身份占用、提交与展示两阶段 Run 回执、绑定原尝试的 unknown 核验、整组冲突/未提交返回，以及双语组 UI 和恢复提示。本阶段不将新文件结果硬塞进旧 preferenceWrite，也不接多项 handler 或 UI。
+
+外部修改目前仅在后端提交核验和显式 verifyAndReload 中发现；getter、AppChrome、普通事件和展示重试读取最后完整发布状态，没有跨进程磁盘监听。协作锁、受控修订、任意外部 ABA、真实进程中断和掉电保证继续按 §9.58/§9.59；本轮没有新增耐久承诺或恢复 UI。
+
+#### 实际验证与停止记录
+
+证据目录：`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B2B-q7634_ly`。macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113）、Swift 6.3.3、Python 3.9.6；不代表最低系统实测。测试与构建沿原 `build/.build.lock` 非等待取锁，不删除或抢占；完整正常 scheme/app/test target，不排除并行源码。
+
+- 初轮 services：退出 65，PreferenceObservation 的嵌套闭包需显式 self；修复后再编译，未运行测试。
+- services-repaired：本阶段产品源码编译通过，完整测试目标被并行 `QuadrantPreviewProbe` 重名阻断（QuadrantPreviewTestSupport / QuadrantLayoutTests），测试仍未运行；不修改或排除这些并行文件来绕过检查。
+- services-final：21 套服务回归通过，126 个测试定义、171 次执行，0 失败/跳过/预期失败。随后按本轮“失败须待核验”要求，将尚可读的提交前失败也关闭写入口，并补充显式核验不提交/不展示的断言；该次通过不是最后源码证据。
+- **services-verified：最终源码的同 21 套全部通过，126 个定义、171 次执行，0 失败/跳过/预期失败**。其中新增 6 套、30 个测试定义；覆盖本阶段共享入口、组事件及兼容性。结果 services-verified.xcresult，汇总/测试树 services-verified-summary.json / services-verified-tests.json；参数 services-verified-command.json。最后源码摘要保存于 verified-source-hashes.json。
+- 消费者初轮 consumers 的方法选择器未完整匹配，实际只运行捕获开关 1 个定义/4 次，不将命令退出 0 当成其他方法通过；已校正完整 Swift Testing 方法标识。**consumers-corrected：5 个定义、14 次全部通过，0 失败/跳过/预期失败**。包括 SettingsLocalPreferenceConsumerTests，以及 SettingsPickerConsumerTests 的分组选择/取消、AppChrome 语言传播、重开/标题截断、禁用/外部更新/长说明四方法；均从构造起注入 effects；live process appearance 方法未运行。英文/简中、浅深色及对应 420pt 表单的实际原生菜单/控件与几何断言有证据；没有另行检查像素，不宣称原生视觉全面通过。后续仅收紧文件模式失败门禁，旧后端消费者路径未变。
+- 正常 Debug / 静态验签：第一次非等待申请锁退出 3；build-final.log 对应随后成功的正常 development Debug 构建（staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false）。最后文件模式失败门禁编辑后，build-verified.log 的非等待申请又退出 3，彼时并行 xcodebuild 正在运行；不以先前构建替代最终正常配置证据。随后确认并行构建结束，正常取得原锁，**closure-build.log 对应最终源码的正常 Debug 构建和静态验签通过**；模式与上述相同，产物仍为 build/development-DerivedData/Build/Products/Debug/AreaChain.app，未安装或启动。
+- 局部严格 SwiftLint：本轮 16 个 Swift 文件通过，lint.log；未修改、排除完整目标中的既有 AppKit 辅助 API 弃用等警告。工作流早期因并行四象限索引锚点/装饰尚未接齐而失败，未修改其他任务来绕过。随后 **quality_gate.py --profile static --strict --format json 通过，含 219 项脚本回归与工作流**（static-verified.json）；检查器定向 99 项通过（workflow-tests.log）。本轮只在原 COMPONENT_ENTRIES / 目录夹具增加稳定接口及缺失反例，没有新执行器。
+- 指定 Cursor verifier 当前无可调用入口，未执行；不重查登录、不改认证、不由其他代理冒充复核。历史原生/人工、跨进程竞争、真实中断、掉电、生产来源识别及用户迁移缺口保留；整体治理状态 partial。
+
+新增测试只使用原 LocalPreferenceFileFixture / LocalPreferenceMigrationFixture、随机 suite、真实临时文件和注入外观/私有事件中心。覆盖 ready 真伪、只读启动、Binding、整份 Observation、同值两种政策、各提交结果、失败与重入、迟到展示、字段冲突/epoch/已知倒退、旧适配器拒绝、普通消费者隔离以及真实临时 migrate→reopen→AppPreferences→共同提交→重开。以上运行数量以实际结果包为准；不使用用例代码存在或命令退出 0 替代匹配与未跳过的执行证据。
+
+最终文档后再次运行工作流、静态质量门禁及差异检查；closure-workflow.log / closure-static.json 通过，后者包含 219 项脚本回归。最终构建后逐文件核对 verified-source-hashes.json 一致；原 FileStore、FileIO、Record、Dependencies 与本轮开始时摘要相同。§9.59 及以前的原文前缀也与本轮开始时一致；并行四象限修复和工程记录由其原修改保留。
+
+本轮文件范围：
+
+| 类型 | 文件 |
+|---|---|
+| 核心装配/状态/展示 | [AppPreferences](../AreaChain/Services/AppPreferences.swift)、[LocalPreference](../AreaChain/Services/LocalPreference.swift)、新增 [LocalPreferencePublication](../AreaChain/Services/LocalPreferencePublication.swift) 与 [LocalPreferencePresentation](../AreaChain/Services/LocalPreferencePresentation.swift) |
+| 适配器与消费者 | [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift)、[PreferenceObservation](../AreaChain/Services/PreferenceObservation.swift)、[AppWindows](../AreaChain/Services/AppWindows.swift)、[StatusItemController](../AreaChain/Services/StatusItemController.swift)、[DiaryWindows](../AreaChain/Features/Diary/DiaryWindows.swift) |
+| 新增测试/夹具 | [StartupTests](../AreaChainTests/Services/AppPreferencesFileStartupTests.swift)、[CommitTests](../AreaChainTests/Services/AppPreferencesFileCommitTests.swift)、[RecoveryTests](../AreaChainTests/Services/AppPreferencesFileRecoveryTests.swift)、[PresentationTests](../AreaChainTests/Services/AppPreferencesFilePresentationTests.swift)、[CompatibilityTests](../AreaChainTests/Services/AppPreferencesFileCompatibilityTests.swift)、[GroupObservationTests](../AreaChainTests/Services/AppPreferencesGroupObservationTests.swift)、[TestSupport](../AreaChainTests/Services/AppPreferencesFileTestSupport.swift) |
+| 入口与交接 | 本文、[组件目录](component-catalog.md)、[架构](architecture.md)、[工程](engineering.md)、[技能路由](../skill-routing.md)、[工作流检查](../scripts/check_workflow.py)及[反例测试](../scripts/tests/test_check_workflow.py) |
+
+**本阶段实现与本地验收完成；整体治理保持 partial，指定 Cursor verifier 与上述历史缺口没有关闭。** 本轮没有提交、推送、安装、发布、读取用户偏好或启用生产后端；保留已有暂存/未暂存及并行修改。完成交接后停止，不进入 3B3。
+
+### 9.61 阶段 3A-3B3A：普通设置组准备、共同执行与回执
+
+2026-10-05（Asia/Shanghai）。本轮实施 §9.57 E 的命令接线，复用 §9.60 实际 AppPreferences / FileStore / PublishedState / PresentationLedger。**仅显式临时文件、隔离旧键域及注入展示；生产 shared 保持原后端，多项 UI 未接线。** 不做真实迁移、认证、系统权限、其他命令、敏感载荷、执行后撤销或通用事务。本节是新增接口的权威说明；先前章节保留历史，最终验证状态在本节末尾记录。
+
+#### 显式后端与组证据
+
+[FileLocalSettingCommandAdapter](../AreaChain/Services/FileLocalSettingCommandAdapter.swift) 的 `init(coordinator:filePreferences:)` 拒绝旧后端；原 [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) 仍拒绝文件后端。不存在自动 fallback、两个适配器同时执行同一设置或循环旧 UserDefaults 单项写入。两者共用 LocalSettingCommandMapping 严格白名单、参数和对象/保护拒绝边界。
+
+- `prepare(_:expecting:)` 为活动或计划内单项显式采集完整记录，不 enqueue；既有证据先核对受影响字段，不自动刷新。
+- 多项先通过原 Plan 的 `.atomicGroup(groupID,members:)` 明确建立连续组，再调用 `prepareGroup(plan:expecting:)`。仅接受 2～4 个不同字段的一组，或单项。未分组返回 needsExplicitGroup；重复字段（同值也拒绝）、混合/多组、依赖/输出引用、对象目标、保护/未知载荷、未完成参数/编辑、pending 草稿确认、活动草稿混合和未释放执行均拒绝。未扩展合并算法。
+- `AppPreferences.readLocalPreferenceRecord()` 每次调用只读一次完整权威记录，不发布、恢复或准备。prepareGroup 由这一份记录生成 CommandPreferenceGroupBaseline：runtime instance/storage、storeID/epoch、migrationID、recordRevision/commitID/摘要、四字段修订及四值、groupID、有序成员和草稿 stamps、命令身份、issuerID/captureID。
+- 实际适配器私有登记 `(evidence, record)`；仅手工构造结构、复制其他适配器证据或更换后端实例均不能取得资格。准备时发现任何旧成员受影响字段过期，整组和原 lease/plan/item/draft 均不变。无冲突才通过 Coordinator 的 replacePreferenceGroupBaselines 一次发布候选 session，plan/lease 各推进一次，各 member/draft 一致推进。
+- 普通读取、report、View 重绘不会准备基线。组内编辑、重排/拆组、返回计划后必须显式重新准备或解决冲突；不存在旧签发身份自动续期。
+
+#### 最后执行门禁、共同提交与两阶段事实
+
+`readiness(plan:expecting:)` 只检查；`submit` 从原计划封存并取得原 beginStep attempt，`execute(FileLocalSettingCommandRequest,displaySession:)` 再验证当前 ready、完整记录连续性及请求字段、原 lease/plan/group/ordered member stamps、run/attempt、严格参数、无输出/外部依赖及唯一范围。多项 unitID 是 groupID，不能调用 `run.operation(firstMember)` 冒充组身份。新组适配仅供隔离装配，不改变目录整体 isExecutable 或原生 Controller。
+
+Coordinator `claimPreferenceGroup` 在 AppPreferences 调用前登记整组占用，并与旧单项 invocations 共用排他/attempt 去重；同一协调者上的重入和多适配实例不能各取得一次提交许可。最后 validatePreferenceGroup / 可选 ReadSession 校验与 applyLocalPreferences 同步相邻，无 await；FileStore 原协作锁、最后完整记录/字段核验与单次替换保持。校验期间旧 UI 事件不会换取新 lease。
+
+通过所有成员预检后只调用一次 `applyLocalPreferences`。全部目标已满足时是 group noChange，零权威/辅助写入、零发布/展示；部分目标已满足仍只整份提交一次，并保守推进所有请求字段修订。`changedFields` 只是成员差异说明，没有独立成员保存状态。未请求字段从最新记录保留，旧四键不双写。
+
+新 [CommandPreferenceGroupCommit](../AreaChain/Domain/CommandPreferenceGroup.swift) 明确区分 noChange、notCommitted、committed（含 cleanupPending）、unknown、conflict（仅受影响成员诊断）和 recoveryRequired；[FileLocalSettingCommandReport](../AreaChain/Services/FileLocalSettingCommandContract.swift) 保留唯一 localReceipt、独立 verificationReceipt、presentationReceipt 及原 group 身份。新文件结果不写入旧 preferenceWrite / UserDefaults 调用事实。
+
+AppPreferences 在原后端返回并登记 `lastLocalPreferenceCommit` 后，通过 `recordCommit` 将真实本地事实记入原 Run，再单次发布完整 PublishedState 和调用原展示 ledger。此期间 Coordinator 占用仍保留。提交成功先令整组 local.committed，展示为 pending；展示调用完成后由可信完成入口内部取得 external attempt，记录真实外观/事件步骤，最后释放占用。观察者只能读到完整旧值或完整新值；提交后失焦/锁定只撤显示，可信事实仍归同一 ownership 的原运行，绝不恢复旧 UI 权限。通用 `.committed(outputs:external:)` 对 atomicGroup 的限制未放宽；新增阶段只认可四类纯偏好 unit，不新增 notification/calendar 效果。
+
+#### 冲突、未知与展示恢复
+
+`rereadConflict(plan:expecting:)` 重新读取当前完整记录，返回仅包含 affectedFields、组成员及 plan/lease 身份的确认。完整当前记录保留在适配器私有登记，确认不外露无关值。`resolveConflict(_:choice:)` 支持 adoptCurrent / continueEditing / confirmOverwrite；确认绑定采样及全部版本，再读完整记录完全一致才一次更新证据/参数。确认不提交；正式提交仍再次核验。continueEditing 保留原内容与冲突，adoptCurrent 接受整组当前值，overwrite 保留原目标。
+
+已封存冲突/确定未提交/recoveryRequired 且整组 local.notSubmitted、无效果/输出时，`returnUnsubmittedToPlan` 经原 Coordinator→HostSession→Plan 原子返回全部成员；保留 item/draft/group IDs、追加 returnedAttempts 并推进版本。旧 run/attempt 无效。noChange、committed、unknown 不返回新草稿；未释放运行仍不允许转交。
+
+unknown 关闭后端全部写入，不能自动重试或走 safeLocalReplay。`verifyCommit(_:expecting:)` 保留原 attempt 和实际 FileCommit.pending，在原 Coordinator 取得核验占用后仅调用 `verifyAndReloadLocalPreferences(recordRecovery:)`；该入口继续复用原 pending/current 核验和辅助清理，不 commit。只有目标 store/epoch/revision/commitID/完整摘要及 parent 与原 pending 精确匹配，并通过 AppPreferences 连续发布门禁，才在发布前写入独立 verificationReceipt，更新同一 Run 结论，再记录展示；原 unknown localReceipt 不被改写。值碰巧相同、当前仍是基记录、记录已被替代、身份/格式错误或证据不足，原运行继续 unknown，不回滚、重新提交或生成可重放草稿。后端曾要求恢复时，UI 可明确调用现有 verifyAndReloadLocalPreferences 再查询健康；缺少成功核验不得绕过 readReady。
+
+`retryPresentation` 只在原运行的新 external attempt 下调用现有 `retryLocalPreferencePresentation`，不会保存或重读偏好文件。已返回步骤不重做，同字段后续修订使旧步骤/字段 superseded，无关字段不阻止外观重试；失败或被替代都保留 local.committed。展示回执包含独立 appearance/event 步骤和被替代的命令集合，不把调用返回等同所有窗口像素已完成。本阶段不增加关闭 superseded 展示的完整恢复 UI。
+
+运行、签发与确认登记只存在于内存；重启不恢复队列或旧 lease。文件锁、绕过协议的外部 ABA、跨进程/真实进程中断和掉电边界仍按 §9.58/§9.59，本轮不增加耐久承诺。
+
+#### 3B3B 接续接口与边界
+
+后续原生接线应消费原计划、组/成员 stamps 和 FileLocalSettingCommandReport，而不在 View 复制参数/基线或保存状态。显式组操作→prepareGroup→readiness/submit；冲突→受控返回→rereadConflict/resolveConflict；unknown→verifyCommit；展示未完成→retryPresentation；普通后端恢复→verifyAndReloadLocalPreferences。交互必须继续用原 ReadSession、旧事件 lease 和双语文案。待做：多项组预览/明确确认、中英冲突与共同保存提示、unknown/清理/展示恢复界面、被替代展示的显式结束交互，以及标准/紧凑宿主的原生键盘/焦点/尺寸验收。生产后端选择、用户迁移和安全撤销仍是独立范围。
+
+#### 本轮验证记录
+
+证据目录：`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B3A-0apmm__q`。使用正常完整 AreaChain scheme/app/test target、独立 QA Bundle ID `com.areachain.preference-group-qa` 与临时 DerivedData、local/ad-hoc、原生产 entitlement、LSUIElement=NO、macOS arm64 串行测试；六项真实钥匙串变量均移除，原 build/.build.lock 非等待取得并覆盖整个 xcodebuild 生命周期。未排除并行源码或修改个人签名。
+
+初轮 initial：产品代码编译通过，测试回调内三个取值断言未处理 throws，退出 65，测试未执行。修正回调和可选目标比较后再次运行。最终结果在后续完成时追加，不把源码存在或编译成功当共同提交实测。
+
+指定 Cursor verifier 无可调用入口，本轮不重查登录、不修改认证、不由其他代理替代；该必需复核及历史原生/人工/跨进程/掉电缺口继续保留，整体治理为 partial。没有提交、推送、安装、发布、真实设置读取/迁移、生产后端切换或多项 UI 接线；完成后停止，不进入 3B3B。
+
+本轮实际修改文件（其他暂存/未暂存与并行改动保留）：
+
+| 责任 | 文件 |
+|---|---|
+| 显式适配与类型 | [FileLocalSettingCommandAdapter.swift](../AreaChain/Services/FileLocalSettingCommandAdapter.swift)、[FileLocalSettingCommandContract.swift](../AreaChain/Services/FileLocalSettingCommandContract.swift)、[CommandPreferenceGroup.swift](../AreaChain/Domain/CommandPreferenceGroup.swift) |
+| 原证据/计划/运行 | [CommandDraftTargets.swift](../AreaChain/Domain/CommandDraftTargets.swift)、[CommandExecutionContract.swift](../AreaChain/Domain/CommandExecutionContract.swift)、[CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift)、[CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift)、[CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift)、[CommandPlan.swift](../AreaChain/Domain/CommandPlan.swift)、[CommandPlanValidation.swift](../AreaChain/Domain/CommandPlanValidation.swift) |
+| 共享偏好与计数 | [AppPreferences.swift](../AreaChain/Services/AppPreferences.swift)、[LocalPreferenceFileContract.swift](../AreaChain/Services/LocalPreferenceFileContract.swift)、[LocalPreferenceFileStore.swift](../AreaChain/Services/LocalPreferenceFileStore.swift)、[LocalPreferencePresentation.swift](../AreaChain/Services/LocalPreferencePresentation.swift)、[LocalSettingCommandAdapter.swift](../AreaChain/Services/LocalSettingCommandAdapter.swift)（仅后端互斥注释） |
+| 新增隔离测试 | [FileSettingCommandTests.swift](../AreaChainTests/Services/FileSettingCommandTests.swift)、[BoundaryTests](../AreaChainTests/Services/FileSettingCommandBoundaryTests.swift)、[ConflictTests](../AreaChainTests/Services/FileSettingCommandConflictTests.swift)、[RecoveryTests](../AreaChainTests/Services/FileSettingCommandRecoveryTests.swift)、[LifecycleTests](../AreaChainTests/Services/FileSettingCommandLifecycleTests.swift)、[TestSupport](../AreaChainTests/Services/FileSettingCommandTestSupport.swift) |
+| 同源交接与入口守卫 | 本文、[组件目录](component-catalog.md)、[技能路由](../skill-routing.md)、[架构](architecture.md)、[工程](engineering.md)、[check_workflow.py](../scripts/check_workflow.py)、[反例测试](../scripts/tests/test_check_workflow.py) |
+
+**最终本地证据。**
+
+| 检查 | 实际结果 |
+|---|---|
+| repaired（首次运行新测试） | 22 个定义、34 次执行；21 个定义/33 次通过，1 次失败、0 跳过。唯一失败为已确认 unknown 再核验的拒绝类别（expected notRetryable、actual stale），已在适配器入口补齐最后 attempt/核验状态限制。 |
+| regression | 39 套，225 个定义、317 次执行，0 失败/跳过/预期失败。随后补锁定通知参数化及旧回执撤除门禁，故不作为最终源码证据。 |
+| **verified（最终源码）** | **同 39 套，226 个定义、319 次执行，全部通过，0 失败/跳过/预期失败。** 新增五套共 27 个定义、40 次执行。verified.xcresult、verified-summary.json、verified-tests.json 与 verified-command.json 保存实际结果/选择器；verified-source-hashes.json 保存相关 Command/Preference/适配器与新测试摘要。 |
+| 正常 Debug 构建 / 静态验签 | build.log 首次 `./scripts/build.sh --no-wait` 退出 3，未构建。只读查询原锁打开者 PID 42689（Python），其后退出；生命周期单套申请又遇新持锁任务 PID 44897（Python），退出 3、未运行。未删除/抢锁/中断任务；观察该进程结束后，verified 正常取得原锁。随后 **build-final.log 的同一正常命令退出 0，Debug 构建及静态验签通过**，development、staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false。未安装或启动该产物，未改个人签名。 |
+| 工作流 / 脚本 / SwiftLint | check_workflow 定向 **100 项通过**；静态质量门禁 **通过，含 220 项 scripts/tests 回归**。本轮 21 个 Swift 文件局部严格 SwiftLint 通过。完整正常目标仍有既有 AppKit 弃用/未使用返回值等警告，未排除源码或修改警告门禁来消除。最终文档后复跑工作流、静态质量与差异检查，日志 closure-workflow.log / closure-static.json / closure-diff.log。 |
+| 指定复核 / 原生 UI | Cursor verifier 未执行，缺口保留；没有认证检查或替代代理复核。没有本轮多项 UI 或像素/人工验收，属于下一阶段。合成锁定通知与失焦由真实 ContentQueryReadSession 接收，不冒充真实认证或生产窗口实测。 |
+
+关键断言与验收对应：
+
+| 要求 | 最终测试中的实际证据 |
+|---|---|
+| 单项四命令、2/3/4 字段组、Parser→Draft→Plan→真实临时文件→Run | FileSettingCommandTests 的两个参数化链路；每次一次 FileStore.commit 入口和一次真实 replace 调用，组 ID 与第一成员 ID 不同，原 item/draft 身份保留。 |
+| 严格参数/重复/未分组/混合/多组/依赖/输出/目标/保护/未知/编辑/pending/活动混合 | BoundaryTests 与 LifecycleTests；preparation/submit 拒绝时原所有权/计划保留，commit 计数为零；全部仍经过现有严格 mapping。 |
+| 一次组读取、无半组安装、旧单项过期不吞掉 | explicitGroupUsesOneReadOneCommitAndOriginalIdentities、oldIndividualBaselineCannotBeSwallowedByGroupPreparation、preparationRejectsUnknownPayloadAndAtomicInstallCannotPartiallySucceed；读取计数增一，plan/lease 仅增一次，坏最后成员不发布前半组。 |
+| 同字段/ABA 冲突，无关字段保留，显式确认与旧尝试失效 | ConflictTests；完整原组返回，returnedAttempts 可追溯；确认后同字段再次变化被拒绝，新确认不自动写，最终提交再次核验。 |
+| 防重复、重入、多适配器竞争 | BoundaryTests 的 reentryMultipleAdaptersAndLateCompletionCannotDuplicateCommit / sharedCoordinatorOccupationPrecedesEveryAdapterCall；占用拒绝发生在 AppPreferences 调用前，实际 commit/replace 不重复。 |
+| 全 noChange / 部分不变 / 一次完整发布 | noChangeWritesNothingAndPartialChangeIsOneWholeRecord、publishOnlyCompleteStatesAndLocalFactPrecedesObservationAndEffects；文件内容/inode/修改时间清单不变或只一次替换，Observation/effects 仅看完整旧/新状态，观察时原 Run 已 committed。 |
+| 提交前失败、unknown、清理待处理 | RecoveryTests 的七种真实故障参数，加原 FileStore/AppPreferences 回归；unknown 不发布/重试/退回，cleanupPending 保留整组 committed。 |
+| 展示失败/重试/被替代 | failedPresentationRetriesOnlyLedgerAndLaterSameFieldSupersedes、unrelatedFieldChangeDoesNotCancelPendingAppearance；重试零 commit，已返回事件不重复，同字段旧外观不覆盖新值。oldPresentationReportDisappearsOnceProtocolRetryClearsReceipt 验证协议清回执后不再显示旧报告。 |
+| unknown 精确身份、非重放和无重启队列 | unknownExactIdentityVerificationUpdatesOriginalRunBeforePublication、equalValuesWithDifferentIdentityRemainUnknownAndSupersededNeverRollsBack、baseStillPresentIsHistoricalUnknownAndRestartDoesNotRestoreQueue；保留原未知回执，只精确目标更新原 Run，其他同值/基记录/替代记录保持 unknown。 |
+| 生命周期与旧后端 | LifecycleTests 的失焦/锁定通知参数化：提交前拒绝零 commit，提交后撤显示但事实归原 Run；BoundaryTests 验证未释放不可转交；fileBackendAndLegacyAdapterAreMutuallyExclusive 和旧五套 LocalSettingCommand 回归证明不双执行/不双写。 |
+
+最终验证所选 39 套还包括 LocalPreference / Failure、FileStore / Recovery / Concurrency、Migration / Recovery / Evidence、AppPreferencesFile 五套及 GroupObservation、PreferenceObservation、原 CommandAtomicPlan / Execution / ExecutionIntegration / PlanOwnership / PlanDependency / PlanMerge / Handoff / HandoffBoundary / HandoffIdentity / HandoffIntegration / HostSession / Draft / DraftProtection / Parameter。所有数据与事件均来自显式临时目录、随机 suite 和注入效果，未读真实用户资料。
+
+**3A-3B3A 实现与本地验证已完成；整体治理仍为 partial，指定 Cursor verifier 与历史缺口未关闭。** 停在本阶段，多项原生 UI 留给 3B3B；不提交、推送、安装、发布、迁移用户设置或切换生产后端。
+
+
+### 9.62 阶段 3A-3B3B：普通设置共同提交的原生接线
+
+2026-10-05（Asia/Shanghai）。本阶段只接显式文件后端的隔离宿主，沿原计划列表和 Daybook 参数控件，不另建批量设置页面。生产 shared、旧默认装配、用户四键与生产文件均不迁移或初始化，不执行其他命令、不开放执行后撤销。已有暂存/未暂存并行修改全部保留。以下实现的最终验证状态另列，代码存在不代表原生验收完成。
+
+#### 后端、准备和提交
+
+- [UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift) 通过 `UnifiedSearchSettingBackend` 枚举互斥选择 unassembled / legacy / file；原 `localSettings:` 初始化兼容旧单项，不存在双适配调用或失败后回退。文件适配仅由显式临时 root、随机 suite、注入展示效果的测试宿主装配。
+- [FileSettingEditing](../AreaChain/Features/Search/UnifiedSearchFileSettingEditing.swift) 只衔接版本事件和原适配器；原计划仍是唯一可编辑来源。文件模式不在接受草稿、View 重绘或计划编辑时自动准备基线。单项明确“读取当前值”；2～4 项明确“准备共同保存”。
+- [PlanLinks](../AreaChain/Features/Search/UnifiedSearchPlanLinks.swift) 先核对原 source/lease/plan，复用适配器 groupingEvent 对原 Plan.apply 和严格 mapping 的候选检查，再发送原 atomicGroup 事件；随后使用更新后的合法版本 prepareGroup。无部分筛选、删除或循环提交。准备失败展示实际保留的计划；已合法准备的重复点击不建组、不刷新基线。
+- 原适配器补 `preparedPlans` 签发登记：多项 readiness/execute 还核对准备后的完整 plan stamp。重排即使顺序相同也使旧证据失效；编辑、拆组/移除/合并仍遵守原 Plan 规则，重新准备必须明确操作。旧单项过期证据先报冲突，不被组准备吞掉。
+- [PlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift) 在原列表显示共同保存数量、实际基线当前值、拟修改值和“无需更改”；组是否可提交来自原 readiness，部分无需更改没有成员级成功状态。计划项展开继续复用 ParameterField、PlanDependencies 和原参数事件。
+- 点击及 ⌘Return 都进入原 requestOperationSubmit，文件单项与多项均调用一次 FileLocalSettingCommandAdapter.submit，并传实际 ReadSession。旧后端单项仍原行为、多项继续阻断。UI 不接文件 store / AppPreferences 写方法，不 seal/beginStep 拼回执，不先清计划。
+
+#### 整组结果、冲突与恢复
+
+[FileSettingSubmission](../AreaChain/Features/Search/UnifiedSearchFileSettingSubmission.swift) 与 [FileSettingCopy](../AreaChain/Features/Search/UnifiedSearchFileSettingCopy.swift) 只投影 FileLocalSettingCommandReport 的本地、独立核验与展示回执：noChange 无新保存；committed 整组保存；清理待处理作为独立说明；展示失败仍为整组已保存；conflict 整组未提交；unknown 保留运行、只提供“核验结果”；recoveryRequired 后端不可写；superseded 为旧展示已被后续修改替代。没有某成员成功、另一成员失败的保存文案。
+
+冲突重读仍由原适配器私有完整记录签发确认，本轮仅补受影响字段的类型化 baseline/current 标量差异。部分成员尚未准备时，重读只显示已有签发成员的冲突，明确 adopt/overwrite 才通过原 install 一次准备整组；无旧证据且无冲突不借此隐式准备。确认绑定全部成员与完整当前记录，新变化使旧确认失效。continueEditing 通过原计划编辑入口，未提交返回使用 returnUnsubmittedToPlan；committed/unknown 不可返回成可重放计划。
+
+unknown 明确调用 verifyCommit，精确原提交身份仍由适配器/文件后端核验；没有普通保存重试或自动循环。不确定继续保留原 localReceipt/run。展示重试只调用 retryPresentation，不读写文件；后续同字段修订阻止旧外观覆盖新值。成功/noChange 才经原 releaseExecution 释放，失败/未知/未处理运行不自动清除。notReady/recoveryRequired 只提示后端需核验，不提供迁移、恢复文件选择或降级工具。
+
+失焦后的显示 invalidated 也推进原输入 buffer 版本，但不换取新 lease；重新显示后旧 UI 回调仍无效。提交后失焦/锁定只撤去显示，可信结果继续归原 run/attempt。恢复显示不会重提、重验或重新准备。敏感草稿和 C2B 边界未修改。
+
+#### 有限验收与证据
+
+事前固定服务/控制器→合并原生的验收清单：2/3/4 项与文件/旧单项；全 noChange/部分不变；准备、编辑、重复/混合/旧后端多项；点击/⌘Return/重复触发；冲突/过期确认、unknown、展示重试、清理；失焦/锁定/迟到事件；完整发布与无旧键双写。代表性 en/zh-Hans、浅深色、标准/紧凑与 304pt 最小宽度，结合旧设置页、3A 单项、4A 参数/计划/输入回归；不扩展笛卡尔积。
+
+证据目录：`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B3B-mjhmp89t`。完整正常 scheme/app/test target，独立 `com.areachain.setting-group-ui-qa`、独立 DerivedData、local/ad-hoc、原 entitlement、LSUIElement=NO、arm64 串行，移除六项真实钥匙串授权。原 build/.build.lock 非等待申请并覆盖完整进程；锁忙即停止后续申请，不抢锁、不干预持有任务。
+
+| 轮次 | 实际结果 |
+|---|---|
+| contracts | 产品编译通过，新夹具 notMigrated 缺只读初值导致测试编译失败（65），用例未执行。已修正。 |
+| contracts-repaired | **46 个定义、72 次执行通过，0 失败/跳过/预期失败。** 原服务五套、新控制器契约、旧单项契约/生命周期；包含重复准备、计划修订证据、混合/重复/未就绪、旧单项过期与精确冲突差异。 |
+| 原生、最终回归、Debug/验签、静态、截图 | 进行中；结果在本节后续追加，不能按前轮构建推定通过。 |
+
+指定 Cursor verifier 无可调用入口，未执行、不重复登录或用其他代理冒充；整体治理保持 partial。人工 VoiceOver、系统输入法候选窗、减弱动态/最低系统、真实用户多窗口，C2B 和历史外观缺口继续保留。生产启用仍需独立后端装配/迁移/恢复策略授权与验收；其他 handler、敏感编辑和执行后撤销不在本阶段。完成后停止，不提交、推送、安装或进入下一阶段。

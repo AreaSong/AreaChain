@@ -242,44 +242,24 @@ struct TaskDetailStreakCard: View {
 
     private var streakMetricsRow: some View {
         HStack(spacing: 12) {
-            currentStreakColumn
+            streakMetricColumn(title: "drawer.streak.current", systemImage: "flame.fill", value: streakResult.currentStreak)
             Divider()
                 .frame(height: 28)
                 .opacity(0.3)
-            bestStreakColumn
+            streakMetricColumn(title: "drawer.streak.best", systemImage: "trophy.fill", value: streakResult.bestStreak)
         }
     }
 
-    private var currentStreakColumn: some View {
+    private func streakMetricColumn(title: LocalizedStringKey, systemImage: String, value: Int) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("drawer.streak.current")
+            Text(title)
                 .font(DaybookType.micro)
                 .foregroundStyle(DaybookPalette.text.secondary)
             HStack(spacing: 4) {
-                Image(systemName: "flame.fill")
+                Image(systemName: systemImage)
                     .font(DaybookType.body.weight(.bold))
                     .foregroundStyle(DaybookPalette.status.pending)
-                Text("\(streakResult.currentStreak)")
-                    .font(.system(size: 16, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
-                    .foregroundStyle(DaybookPalette.text.primary)
-                Text("drawer.streak.days")
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookPalette.text.secondary)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private var bestStreakColumn: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("drawer.streak.best")
-                .font(DaybookType.micro)
-                .foregroundStyle(DaybookPalette.text.secondary)
-            HStack(spacing: 4) {
-                Image(systemName: "trophy.fill")
-                    .font(DaybookType.body.weight(.bold))
-                    .foregroundStyle(DaybookPalette.status.pending)
-                Text("\(streakResult.bestStreak)")
+                Text("\(value)")
                     .font(.system(size: 16, weight: .bold, design: .rounded)) // token-exempt: 连击数字用圆体
                     .foregroundStyle(DaybookPalette.text.primary)
                 Text("drawer.streak.days")

@@ -86,6 +86,8 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     private func applyLocal(_ result: CommandExecutionResult, to unit: inout CommandExecutionUnit) throws {
         guard unit.local == .notSubmitted else { throw CommandExecutionError.invalidResult }
         switch result {
+        case .preferenceGroupCommit(let commit):
+            try applyPreferenceGroupCommit(commit, to: &unit)
         case .noChange:
             guard isSinglePreference(unit) else { throw CommandExecutionError.invalidResult }
             unit.state = .succeeded
@@ -123,7 +125,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
             }
             unit.conflicts = diagnostics
             unit.state = .conflict
-        case .external, .preferencePresentation: throw CommandExecutionError.invalidResult
+        case .external, .preferencePresentation, .preferenceGroupPresentation: throw CommandExecutionError.invalidResult
         }
     }
 
@@ -147,6 +149,16 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     private func applyExternal(_ result: CommandExecutionResult, to unit: inout CommandExecutionUnit) throws {
+        if case .preferenceGroupPresentation(let presentation) = result {
+            guard CommandPlanValidation.isPreferenceUnit(snapshot.items), unit.local == .committed,
+                  unit.preferenceGroupCommit != nil, unit.effects == [.preferencePresentation: .running] else {
+                throw CommandExecutionError.invalidResult
+            }
+            unit.preferenceGroupPresentation = presentation
+            unit.effects[.preferencePresentation] = presentation.incomplete ? .failed : .succeeded
+            unit.state = presentation.incomplete ? .failed : presentation.superseded ? .notExecuted : .succeeded
+            return
+        }
         if case .preferencePresentation(let presentation) = result {
             guard isSinglePreference(unit), unit.local == .committed, unit.preferenceWrite != nil,
                   unit.effects[.preferencePresentation] == .running else { throw CommandExecutionError.invalidResult }
@@ -243,6 +255,9 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         guard let index = try? currentIndex(attempt) else { return .notRetryable }
         let unit = units[index]
         if unit.preferencePresentation == .superseded { return .notRetryable }
+        if unit.preferenceGroupPresentation?.superseded == true && unit.preferenceGroupPresentation?.incomplete == false {
+            return .notRetryable
+        }
         if unit.local == .unknown || unit.state == .verificationRequired { return .requiresVerification }
         guard [.failed, .notExecuted].contains(unit.state) else { return .notRetryable }
         if unit.local == .notSubmitted {
@@ -296,5 +311,44 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
               let index = units.firstIndex(where: { $0.id == unitID }) else { throw CommandExecutionError.requiresAdapterConfirmation }
         units[index].state = .notExecuted
         refreshReadiness()
+    }
+}
+
+extension CommandExecutionRun {
+    private func applyPreferenceGroupCommit(_ commit: CommandPreferenceGroupCommit,
+                                           to unit: inout CommandExecutionUnit) throws {
+        guard CommandPlanValidation.isPreferenceUnit(snapshot.items) else { throw CommandExecutionError.invalidResult }
+        unit.preferenceGroupCommit = commit
+        switch commit {
+        case .noChange: unit.state = .succeeded
+        case .notCommitted: unit.state = .failed
+        case .committed:
+            unit.local = .committed
+            unit.effects = [.preferencePresentation: .pending]
+            unit.state = .ready
+        case .unknown:
+            unit.local = .unknown
+            unit.state = .verificationRequired
+        case .recoveryRequired: unit.state = .failed
+        case .conflict(let conflicts):
+            guard !conflicts.isEmpty, conflicts.allSatisfy({ validConflict($0, unit: unit) }) else {
+                throw CommandExecutionError.invalidResult
+            }
+            unit.conflicts = conflicts
+            unit.state = .conflict
+        }
+    }
+
+    /// 原未知回执不变；独立核验仅能确认同一目标的精确身份，不能转换成可重放失败。
+    mutating func verifyPreferenceGroup(_ receipt: CommandExecutionReceipt) throws {
+        let index = try currentIndex(receipt.attempt)
+        guard units[index].local == .unknown,
+              case .unknown(let expected) = units[index].preferenceGroupCommit,
+              case .preferenceGroupCommit(.committed(let actual, let cleanup)) = receipt.result,
+              actual == expected else { throw CommandExecutionError.requiresVerification }
+        var unit = units[index]
+        try applyPreferenceGroupCommit(.committed(actual, cleanupPending: cleanup), to: &unit)
+        unit.preferenceVerification = receipt
+        units[index] = unit
     }
 }

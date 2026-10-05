@@ -1,5 +1,125 @@
 # 工程与维护
 
+## 第十阶段 C：Dashboard 外层垂直滚动接入（partial）
+
+**2026-10-05 续验（以下结果更新上一轮状态）**：完整正常 `PrivacyQA-Dashboard10C` 的 `Dashboard10C-resume-compile.xcresult` 已完成 `build-for-testing`，应用与完整测试目标编译通过，未排除源码。开始检查时 `FileSettingCommandTests` 两处调用已由并发工作改为可编译表达式，本轮未修改该文件；原 `publishOnlyCompleteStatesAndLocalFactPrecedesObservationAndEffects()` 在 `Dashboard10C-resume-ownership.xcresult` 实际执行通过，原观察顺序和断言得到运行证据。该包另含事件前的生产 Dashboard 归属门禁，共 2 项通过、0 失败/跳过。
+
+本轮继续沿原锁非等待申请、独立目录/标识、local 签名、生产 entitlement、六项真实钥匙串变量清除及串行 XCTest。只修改 Dashboard 两个测试文件和本节/组件目录/路由；生产仍为下方原有一行。测试先识别分区日期按钮和原生父链，再保留三个 NSScrollView 身份，更新/滚动后的检查不重新要求辅助节点可见。所有已执行场景焦点有效；未绕过锁或修改系统配置。
+
+**实际自动回归**：`Dashboard10C-resume-regression.xcresult` 经 summary/tests 树核对为 32 个方法、53 次运行全部通过，0 失败/跳过/expectedFailures，包含 DashboardScrollTests、DashboardRenderingTests、DashboardInteractionTests、DashboardProjectionTests、DashboardProjectionEquivalenceTests、DaybookScrollContractTests、DaybookScrollNativeTests 和 DaybookScrollerTests。随后仅固定合成事项 UUID，消除同日活动排序造成的前后图差异；受影响 Dashboard 在 `Dashboard10C-resume-final.xcresult` 重新执行 3 方法／14 次全部通过。最后收敛大视口后，`Dashboard10C-resume-sized-final.xcresult` 再次完整编译并执行 Dashboard 3方法／14次通过。最终有效口径为 sized-final 包 3／14 加 regression 包未受影响的 29／39，仍为 **32／53**，不把重跑累加成额外覆盖。生命周期方法内部两次重开、每次三次布局/三档 resize 不计为独立测试；公共五种装配的上游策略内部循环亦单列为场景。
+
+- **实际归属**：12 个参数场景及生命周期场景均为外层 1、趋势 0、热力图 0；仅外层隐藏原系统垂直条，两横层保留 false/false；羽化观察器为 0。无错绑，无需调整接入位置或公共搜索/拆卸机制。更新合成内容、反复布局、resize 后三个对象保持身份，原浮层实例不重复；重新创建窗口仍只有一个外层浮层。
+- **滚动与内容**：程序化顶部/中间/底部严格核对合法偏移，最后合成活动或空态处于外层视口；大视口短内容不强求滚动。外层定向 scrollWheel 从零起点移动且两横层不变。300pt 宿主实际横层宽 268pt，趋势 document 328pt、热力图 739pt，分别移动 x=60／80pt，另一横层及外层偏移不变；正常/大视口横层无溢出另作记录。合成今日完成数 12/0、模型快照和无未保存修改断言通过。
+- **窗口鼠标与安全导航**：原 NSApp/sendEvent 的滑块点击保持起点，窗口 mouseDown/Dragged/Up 使外层 y=0→约60.57pt，两横层不变。趋势及热力图生产按钮实际窗口点击分别传递测试今日 `2026-10-05` 与 `2026-10-03`，正确进入 calendar，控件中心命中不被浮层拦截；不点击默认活动/手记动作，导航状态用原 preserveState 恢复。这些是合成窗口事件；定向 scrollWheel、程序化 scroll 和真人触控板/鼠标不能混算。正文所有边缘的逐点命中与真人操作未全量覆盖。
+
+**基线、视觉与过程记录**：`resume-baseline` 的 12 次参数运行均在最后活动定位处失败：SwiftUI 将活动分区标识传播至行，不能依赖原行标识；修正为最后一项合成标题及实际视口位置，未改生产辅助树。`resume-baseline-verified` 与固定身份后的 `resume-stable-baseline` 均为 1 方法／12 次通过，补齐原焦点和300pt条件下的定向滚轮证据；历史无焦点准备的单次未移动不抹除。每次临时撤回只移除自有一行，finally 按锚点恢复；DashboardView SHA-256 均恢复为 `66412d1ceac3460b75db1343d7f78b796efe5830c3bdf4cd276b42a86f3263f6`。没有恢复 HEAD 或改动暂存区。
+
+`build/Dashboard10C-resume-images` 保存固定身份后完整的 72 对 PNG（12 个双语/浅深色/尺寸场景 × 顶中底 × 内容区/完整窗口），未裁剪错误区域；对应截图索引、原生身份、视口和 document 几何保存在结果包 diagnostics。已查看全矩阵联系图及正常/窄窗口原图，正常/窄视口分区布局一致；原窄布局截断保持，预期外层指示器可见性不同。完整像素不是逐字相同：除指示器外有悬停高亮差异；请求1200pt高度被系统分别约束为950／953pt外层视口，大视口不能按同尺寸整图比较。`resume-image-comparison.json` 和 `resume-geometry-comparison.json` 如实保留差异，不把不等尺寸或悬停状态写成通过。最后将大窗口夹具收敛到1200×900以补同条件证据；数次原锁忙均未启动构建，锁释放后 `Dashboard10C-resume-sized-baseline.xcresult` 的1方法／12次与 `Dashboard10C-resume-sized-final.xcresult` 的3方法／14次全部通过，0失败/跳过。最终 `build/Dashboard10C-resume-sized-images` 的72对完整PNG尺寸全部一致，12对完全相同，52对仅右侧指示器区域不同，8对另有可见悬停高亮差异。`resume-sized-geometry-comparison.json` 的180条对应记录完全一致，正常/窄矮/大视口的布局、分区间距、偏移与document尺寸保持。已查看顶中底联系图和原图；不把整图像素相等或缓存图当作窗口合成器屏幕证据。旧不等尺寸和随机身份图仍保留为过程证据，不计最终比较。
+
+**静态与收口**：最终编辑后严格局部 SwiftLint、static quality gate、workflow 和工作区/暂存区差异检查通过；未跟踪测试文件亦纳入局部 lint 和空白检查。`Dashboard10C-resume-signature.json` 为 staticSignatureVerified=true、local、com.areachain.privacy-qa、hardenedRuntime=false、distributionReady=false，沿原 verify_app 执行 codesign --verify --deep --strict。人工鼠标/触控板、窗口合成器截图、指定 Cursor verifier 及历史独立问题仍不当作通过；第十阶段 A 第二处漏接现按实际归属与相关自动回归证据标为已处理；这不代表人工、指定复核和全应用验收完成。标题保留partial以反映这些独立缺口。未提交、推送、安装、发布、操作真实数据或系统配置，不进入历史滚动修复。
+
+**上一轮历史记录（其中编译阻断与归属未验已由上述证据更新）**：
+
+2026-10-05，生产仅 DashboardView 外层 ScrollView、原 frame 之前新增 `.daybookScroll(featherEdges: false)`。两横向图表、DaybookPage、分区布局、日期/导航/统计/读取和公共滚动代码保持。接口与保留的两类入口见[组件目录](component-catalog.md#第十阶段-cdashboard-外层垂直滚动接入partial)。
+
+沿原 `build/.build.lock` 非等待申请、完整正常应用/测试目标、独立 `build/PrivacyQA-Dashboard10C`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、六项真实钥匙串授权环境变量清除与串行 XCTest。只用 SettingsButtonTestSupport 的内存库、独立偏好和相对 DayClock 测试今日的 24 个合成事项（12 个完成）；不触发默认活动动作，导航状态沿原 preserveState 恢复。不直接打开 QA 或日用应用，不读取真实数据或修改偏好/权限/签名配置。
+
+**修改前真实基线**：`build/Dashboard10C-baseline-resolved.xcresult` 的 8 个参数场景中 7 通过、1 失败，0 跳过。前两包 baseline / identify 的定位断言均失败：SwiftUI document 下没有分区 AX 标识；改从生产页面辅助树的日期按钮框与嵌套视口交叉识别，公共父链确认外层。未改生产视图层级或加定位容器。基线日志保存在 `build/Dashboard10C-baseline-resolved-diagnostics`。
+
+| 原版场景 | 外层实际视口 | document / 内容高 | 定向 wheel 结果 |
+|---|---|---|---|
+| 960×640 嵌入，有数据 | 928×581 | 971 | 场景 2 为 y=80；场景 0 未移动并严格失败 |
+| 960×640 嵌入，空数据 | 928×581 | 679 | y=80，空态仍需滚动 |
+| 960×640 独立，空数据 | 928×532 | 679 | y=80，原页头保留 |
+| 360×360 嵌入，有/无数据 | 328×301 | 999 / 693 | 外层 y=80，热力图 x=80，各自不串动 |
+| 请求 1200×1200 的大窗口，空数据 | 1168×948（系统约束后的实际值） | 679 | 无溢出，y=0 |
+
+三个原生对象初始偏移均为零；趋势和热力图的 enclosingScrollView 是同一外层，外层无上级滚动。原外层系统策略 vertical=true / horizontal=false，两横层 false/false，三者公共浮层均 0。两横层内容分别 328×95 与 739×95；360pt 宿主趋势恰好无横向溢出，不能据此宣称趋势横向移动已验。全部场景严格检查合成今日完成数 12/0 与 context 无未保存修改。上述为程序化原生定向 scrollWheel，非窗口命中或真人触控板。
+
+**阻断**：最后基线探针补原 NativeSyntaxUI.prepareFocus、300pt 窄宿主和顶部/中间/底部 cacheDisplay 采集后，`Dashboard10C-baseline-complete.xcresult` 被并发 `AreaChainTests/Services/FileSettingCommandTests.swift:85,89` 的未处理抛错表达式阻断，测试未执行；没有修改/排除该源码。已有原版几何记录后才写入一行接入。`Dashboard10C-ownership.xcresult` 同样编译失败，接入测试 0 执行，不能当作功能失败或通过。
+
+**最终静态/编译证据**：`build/Dashboard10C-qa-build.xcresult` 的完整正常 QA 应用 build 成功；这是应用编译，不是测试目标或运行验收通过。`build/Dashboard10C-signature.json` 经原 signing.validate_settings / verify_app 核对 staticSignatureVerified=true、local、com.areachain.privacy-qa、hardenedRuntime=false、distributionReady=false，包含 codesign --verify --deep --strict。三个本轮 Swift 文件严格局部 SwiftLint、`quality_gate.py --profile static`、`check_workflow.py`、工作区与暂存区 `git diff --check` 通过。检查器未改，脚本回归不适用；未运行发行构建、安装或真实系统认证。
+
+**未完成门槛**：最终归属、去重、更新/resize/重开、顶部/中间/底部和最后活动可达、两横层独立溢出响应、滑块点击/拖动、内容点击/阴影命中、安全日期导航的生产回归均未完成。原 DashboardRenderingTests、DashboardProjection/Interaction、DaybookScrollContract/Native 定向回归尚未在最终代码执行。新增探针最终版本也未获得运行通过；原版单次滚轮失败仍保留，焦点准备后的结果不能猜测。缓存位图、前后视觉比较、实际屏幕和真人事件均未取得，不以编译或几何替代完整验收。
+
+公共两个重载及默认值经源码核对未改，尚无 Dashboard 错绑证据，不能推断必须修改公共搜索；未加防回退规则，不改变既有检查器。指定 Cursor verifier 缺口保留，本轮公共契约未改，只做局部差异自查。第十阶段 A 第二处漏接**尚未关闭**；当前直接阻断是完整测试目标无法编译，其后仍必须验证实际外层归属。周列/甘特、窄周、时间清除、搜索换行、安全输入、手记气泡和原羽化等历史问题继续独立登记。本轮停止，不提交、推送、安装、发布。
+
+
+## 第十阶段 B：四象限标题预览纯装饰接入
+
+2026-10-05，仅 QuadrantTitleLayout.swift 的 QuadrantTitlePreview 背景/描边接入既有静态 rowBubble；契约及下一处 Dashboard 外层滚动线索见[组件目录](component-catalog.md#第十阶段-b四象限标题预览纯装饰接入)。不改公共组件、其他消费者、摘要算法、复制/反馈、定位或历史问题。
+
+验证沿完整正常应用/测试目标、`build/PrivacyQA-Quadrant10B`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、原 `build/.build.lock` 和六项钥匙串授权变量清除。合成摘要刻意不同于全文；直接生产预览/overlay 回调只记录次数与字符串，页面只安全悬停，不点击默认 NSPasteboard 路径。新测试不复制完整预览业务，旧装饰复用 OriginalRowBubbleSurface 的冻结默认绘制。
+
+修改前过程：`Quadrant10B-baseline.xcresult` 被并发 PreferenceObservation.swift:51–57 的显式 self 编译错误阻断，0 用例执行；并发自行修正后重试。本轮测试探针与旧私有类型重名导致 `baseline-ready` 编译失败，已仅重命名本轮探针。`baseline-consumers` 13 项中 11 通过、2 失败、0 跳过；两处失败是新断言误将生产标识传播后的 AX 文字/提示框当成 260pt 装饰框。修正为直接生产预览布局框和完整像素定位对照，标识及点击严格断言保留。一次构建锁忙未启动测试，未抢占并发验收。
+
+补跑 `baseline-geometry` 的 overlay 参数组 3/4 通过、1/4 悬停回调未达；该次按方法名过滤的页面用例零命中，不计通过。测试改为原 SystemPageHost.settle 完成布局后向实际外壳中心发事件，并按整个 QuadrantLayoutTests 类运行，未修改生产时序或削弱断言。`Quadrant10B-baseline-verified.xcresult` 8 项全部通过、0 失败/跳过，覆盖完整四象限类与 overlay；此前直接预览成功项仍保留原版证据。
+
+**最终通过**：`build/Quadrant10B-final.xcresult` 的 28 项全部通过，0 失败、0 跳过、0 expectedFailures。实际命中 QuadrantPreviewSurfaceTests / InteractionTests / OverlayTests、QuadrantLayoutTests、DaybookFloatingSurfaceTests 与 RowBubbleSurfaceTests，含原 ControlsPreview。完整正常应用与测试目标编译通过；本轮未为并发问题排除或修改无关源码。
+
+- `build/Quadrant10B-before` / `after` 共 72 对完整 PNG、72 对 JSON 全部逐字节一致；画布包含圆角、居中描边和完整外缘，冻结装饰另以越界内容验证阴影只施加在背景形状。覆盖 en/zh-Hans、浅深色、长短/六行摘要、提示开关、普通/悬停/复制/复位、更新/重挂，以及 320×240、640×420 容器的上下/左右位置。短摘要提示关/开高 26/41pt，六行高 96/111pt，复制反馈高 26pt；宽度 260pt，原 padding8/6 保持。两语言/主题的普通、悬停、复位整图完全相同，复制边框仍为静态 90%／0.8pt。
+- 原生 mouseMoved、sendEvent/postEvent down/up 路径严格验证内容/内边缘单击只调用一次，圆角外侧及阴影不扩大命中；复制反馈出现、正常复位、外部摘要更新和反馈中卸载/重挂不额外回调，onAppear 只在真实重挂增加。生产 overlay 显示摘要、转交不同的合成全文；原标识、零尺寸锚点和 offset 定位通过直接生产预览参照的整图校验。AX 标识传播到文字/提示，其框不当作装饰尺寸。
+- 页面只进入/离开合成长标题，验证原单行、对应锚点、显隐以及任务、检查日、选择和上下文无未保存修改；没有点击页面默认复制，没有新增生产保存。缓存图已查看，包含英文浅色六行及中文深色复制反馈。上述合成原生事件和 Void 复制回调不证明系统剪贴板写入成功，也不替代真人或窗口合成器屏幕证据。
+- 六个本轮 Swift 文件严格局部 SwiftLint、`quality_gate.py --profile static`、`check_workflow.py`、工作区/暂存区差异检查通过。窄规则/反例沿原检查器，最终检查器定向 99 项、脚本回归 219 项通过。静态验签复用 signing.validate_settings / verify_app，对本轮 QA 命令行配置核验：`Quadrant10B-signature.json` 为 staticSignatureVerified=true、mode=local、bundleIdentifier=com.areachain.privacy-qa、hardenedRuntime=false、distributionReady=false；另有 codesign --verify --deep --strict 通过。未另跑 development Debug、全量应用测试或发行构建，本轮完整正常 QA 编译已覆盖必要编译。
+
+**范围与保留缺口**：生产差异逐字核对只有一处装饰替换和两个旧绘制属性删除；DaybookSurface、DaybookRowBubbles、QuadrantPage 与 DashboardView 哈希未变。既有 Cursor verifier、真人鼠标/VoiceOver、低版本系统和历史滚动/羽化/手记辅助树/气泡/复制缺口保留，不把本轮通过解释为全应用验收。Dashboard 外层 ScrollView 仍是下一处确定漏接，本轮停止。暂存区在并发任务中继续变化，本线程未执行暂存或提交，也未重置并发内容。没有系统剪贴板读写、真实数据、系统偏好、个人签名配置或权限修改，没有提交、推送、安装或发布。
+
+
+## 第九阶段 E：两处标签色点接入
+
+2026-10-05，仅 WorkspaceSidebarView.tagRow / TagManagementPage.tagRow 的 Circle、fill、frame 改为既有 DaybookStatusDot，分别显式传 8 / 10pt。颜色继续使用原 tagMark；侧栏隐藏色点辅助元素，管理行保留原颜色名称和 combine。公共组件、标签业务及其他生产组件未改。接口与第九阶段四类发现的当前状态见[组件目录](component-catalog.md#第九阶段-e两处标签色点接入)。
+
+**原实现与最终验证**：原 PrivacyQA XCTest、完整正常应用/测试目标，独立 `build/PrivacyQA-TagDots9E` / `com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、原 `build/.build.lock`、六项真实钥匙串变量清除和串行事件。只用合成内存标签/任务及隔离偏好，不直接启动日用应用。`build/TagDots9E/baseline-final.xcresult` 的 6 项通过与 `baseline-actions.xcresult` 的最后一项通过合并，原实现为 **7 项／17 次通过，0 最终失败、0 跳过**。两处替换后 `current.xcresult` 同样 **7 项／17 次全部通过**；标识和命令保存在该目录的 current-tests.json / current-command.json。实际命中 TagDotConsumerTests 两方法、WorkspaceRenderingTests 独立侧栏/检查器、WorkspaceMenuConsumerTests 原颜色菜单/合并取消，以及 TagCatalogTests 使用计数和 TagRepositoryTests 创建/颜色/快照两方法；零命中的旧选择器不计入通过。
+
+- 中英文、浅深色；侧栏 220/260pt、管理页 480/720pt，均高 760pt。短/长名称、未选/选中、六种颜色令牌、空值和未知值回退、管理页三个预设分类。侧栏原 liveTaskTags 排除预设，不为验收改变生产可见范围。实际色点横纵实色区域核对 8/10pt；管理行原合并节点为 AXUnknown，颜色名一次、标题与使用计数完整，未拆出色点辅助节点。
+- 侧栏色点中心、标题区域和行右端的原生合成点击都选择正确 UUID，悬停/呈现/选择/取消改名无保存及模型变化。管理页色点区域通过原 NSTableView 选择；工具栏出现后重新取得行位置，双击原标题进入原字段，Escape 取消。一次合成 batchSetTagColor 沿原仓储保存一次，原两个宿主自然回显、未选标签及预设颜色不变。原颜色菜单用例另外验证生产菜单动作与多选范围；未操作真实标签、偏好或剪贴板。
+- **152 对完整窗口 PNG 解码后逐像素一致，304 对几何/辅助记录一致**，无缺失或多余文件，见 comparison.json。产物沿原沙盒临时 AreaChainSurfaceQA 的 `9e-baseline-*` / `9e-current-*`。已查看深色中文管理页与浅色英文侧栏代表图；这是原生 cacheDisplay 证据，不是窗口合成器屏幕截图或真人 VoiceOver 验收。不同令牌场景间侧栏滚动条会按原时序淡出，不能用跨时刻整窗差异推断回退色不同；同场景新旧整窗比较包含滚动条，未裁图来取得通过。
+
+颜色专项在上述原图中按实际行几何检查：32 组均区分六种普通色，128 对空/未知值回退行与 moss 默认行完整像素一致，336 对预设行在普通标签切换颜色期间保持一致，见 color-contract.json。这里的行区域仅用于不同颜色场景间比较，前后等价仍以上述 152 对未裁整窗为准。
+
+**过程失败与校正**：首轮辅助定位误把短名称当作长名称的子串，误要求管理合并行为 AXStaticText；动态本地化键的插值及跨色彩空间原始分量比较也使测试误判。最终采用唯一原行语义、动态完整键、实际像素直径与同宿主前后完整图对照。原列表同步 mouseDown 等待 mouseUp 的一次测试被中断，保留 sample.txt；改用原生队列成对投递，按实际选择验证，不要求 NSTableView 追踪循环消费的 mouseUp 再经过外层监视器。选中后的工具栏推移行位置，改名坐标改为重新读取。SwiftData 查询刷新会额外使 Observation 失效，失效次数不冒充写入次数；保存次数、模型值、未保存状态和呈现前后的零变化分别断言。过程失败包不算通过。
+
+另有一次构建锁忙未启动测试，及完整目标因并发 LocalPreferenceFileConcurrencyTests 抛出调用而编译失败；未修改或排除该文件，待工作区修正后重跑。静态预检曾发现并发 §9.58 引用尚未落齐，后续预检通过；这些过程状态不替代最终门禁。QA 完整目标最终编译及 `codesign --verify --deep --strict` 通过，既有 SDK/并发弃用警告保留。
+
+**最终门禁与局部自查**：四个本轮 Swift 文件严格局部 SwiftLint 零违规；`python3 -B scripts/quality_gate.py --profile static`（含 215 项脚本回归）、`python3 -B scripts/check_workflow.py`、工作区/暂存区 `git diff --check` 通过，未跟踪测试另查末尾换行及尾随空白。两处生产文件除指定色点替换外逐字相同；DaybookChip、DaybookPalette、CatalogModels 和 Catalog 未变。暂存补丁 SHA-256 与任务起点一致，前期与并发改动保留。完整 QA 构建已覆盖必要编译，不机械运行全量筛选、系统集成或额外构建；路由、架构、检查器与签名配置未由本轮修改。
+
+本轮局部等价接入由主代理自查，不新增复核流程；既有 Cursor verifier、真人鼠标/VoiceOver、窗口合成器及其他历史验收缺口继续保留，全应用验收不因四类接入完成而通过。原生加载器、不同数字口径、标签胶囊和空态的合理差异保持。可以进入第十阶段全应用复用清单与最终验收规划，但本轮在 E 停止。未提交、推送、安装或发布，未改真实数据、系统偏好、个人签名配置及权限。
+
+## 第九阶段 D：连击指标列复用
+
+2026-10-04，仅 `TaskDetailScheduleSection.swift` 的当前/最佳两列共用私有 `streakMetricColumn(title:systemImage:value:)`；本地化键、整数 Text 插值、两列及分隔线布局保持。原 `.card` 自动悬停、状态优先级、检查日说明、配置和连击计算不变。接口与剩余标签色点线索见[组件目录](component-catalog.md#第九阶段-d连击指标列复用)。没有 Theme、公共 API、路由或检查器规则变化。
+
+**基线与验证**：直接挂生产 TaskDetailStreakCard，复用 SettingsButtonTestSupport、HabitMonthTestSupport 与既有图像/鼠标支持，不复制业务卡片。原五状态测试只构造 View/求值 body；新增 StreakCardRenderingTests 实际查询辅助文字、图标位置和卡片几何。`build/StreakColumn9D/baseline-verified.xcresult` 与 `current.xcresult` 各 **5 项／9 次通过，0 失败、0 跳过**，包括原 StreakInspectionStatusTests、原 `taskDetailStreakCardAllFiveStatusStates()`。核对真实测试标识；首次未带括号的旧方法选择器未命中，不计为旧用例通过。
+
+- 280/320pt 原检查器宽度，28pt 原外侧/分区边距，中英文与浅深色；0/1、1/99、99/100、100/7、123456789/9876543210 五组分别呈现标题、图标、完整数字和两个单位。
+- 暂停、跳过、完成、非计划日、待打卡五状态保留，包括冲突标志的优先级；非今日附日期、今日不附日期。外部配置先单独更新当前、再单独更新最佳，原宿主自然更新；`.card` 合成原生移入后像素变化、几何不变，移出恢复原像素。测试宿主禁用动画，未验证真人悬停时序。
+- 原 RoutineHabitSectionView 中英合成场景显示传入的 17/203，仍显示跳过及非今日说明；模型快照、记录数、context.hasChanges、保存/观察计数和检查器导航均无变化。未执行打卡、完成、复制或系统动作。
+- 沙盒临时 `AreaChainSurfaceQA/9d-{baseline,current}-*` 的 **92 对完整窗口 PNG 解码后逐像素一致**，覆盖完整卡片、分隔线、空闲/悬停及两个宿主；**184 对 JSON 几何/辅助文字记录一致**。图像为原生宿主 cacheDisplay，非窗口合成器屏幕截图。正常数字和长数字图像经查看。
+
+**历史表现与测试校正**：修改生产代码前，测试发现原 Text 整数插值含本地化千位分组，首次无分组字符串断言不成立；超长数字原本完整换行，列高不同使标题高低不同，不能要求始终同高。系统火焰辅助名称也随语言变化，改为指标行几何定位并由完整像素核对图形。修正测试后取得全部基线才做生产抽取；没有增加缩写、截断、格式化或布局修复。初次失败结果包保留，不算最终通过。
+
+**静态门禁**：三个本轮 Swift 文件的严格局部 SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static`（含 214 项脚本测试）与工作树/暂存区差异检查通过；未跟踪测试文件另查尾随空白与末尾换行。Swift 编译和原生测试由上述完整正常 PrivacyQA 提供，不另跑会扩大测试范围的默认 Swift profile。
+
+**编译与边界**：完整正常应用/测试目标沿 `build/PrivacyQA-StreakColumn9D`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、原 build/.build.lock、六项钥匙串授权变量清除及串行 XCTest；只用合成数据及隔离偏好。最终正常目标编译通过，QA 产物 `codesign --verify --deep --strict` 通过；既有测试中的弃用/并发警告保留。本轮私有等价抽取由主代理自查，不增加复核流程；既有 Cursor verifier、真人鼠标/VoiceOver、窗口合成器及其他历史验收缺口不因此消失。ControlsPreview 继续专注共享控件，本轮直接生产卡片矩阵已覆盖，不另建展示应用。保留前期及并发修改，暂存区内容哈希前后一致；未提交、推送、安装、发布，未改真实数据、系统偏好、个人签名或权限。完成后停止，标签色点留下一阶段。
+
+## 第九阶段 C：菜单栏筛选浮层外壳
+
+**范围与实现**：仅 MenuBarFilterFlyout.level1CategoryCard / level2OptionCard 的 background/overlay 接入 `daybookSurface(floating: .filterFlyout)`。公共 DaybookSurface 保留前期暂存静态卡片、动态气泡与全部默认入口；新预设使用 regular/continuous、页面底色、65%／0.8pt strokeBorder 内描边、仅背景 floating 阴影及装饰描边非命中政策，其他浮层仍用原居中 stroke。布局、220ms Task、类别 Binding、规则/计数、滚动和写回/关闭均留在原组件。宿主、键盘、状态栏和 NSPopover 生命周期未改。接口见[组件目录](component-catalog.md#第九阶段-c菜单栏筛选浮层外壳)。
+
+**修改前基线**：完整正常 PrivacyQA 直接挂生产组件并经原筛选按钮打开宿主。`build/FilterSurface9C/baseline-complete.xcresult` 中卡片/宿主 2 项／8 次通过，覆盖双语浅深色、任务两级/手记单级、空/长/24 标签、三类别；循环内记录 72 张直接组件图、8 张宿主图。旧实现原生悬停、级联跨隙、重入取消、离开延迟与卸载取消见 `baseline-actions.xcresult` 的 3 项／7 次通过。任务卡片 110/175pt、手记175pt、整体295/181×171、二级175×165、原指示器均核对；padding/spacing及宿主左12/底44/zIndex30由源基线和原生几何共同核对。
+
+**基线诊断边界**：早期 helper 的坐标及随后语义定位鼠标未切换宿主页签，补选中断言后确实失败，旧“手记”截图作废；场景准备改用原生产页签辅助动作并读回选中，筛选入口/选项/遮罩仍为原生合成鼠标。未改变页签生产实现。宿主跨页/搜索出现2次草稿观察通知，而正文和模型保持，`baseline-isolation.xcresult` 的零总通知断言2次失败；最终按各筛选操作前后检查不写草稿，跨页初始化与搜索挂卸载单独记录，未改生产初始化。首次同名 Priority 辅助节点定位失败改为一级卡片范围定位，未宽松选择第一个节点。
+
+**公共与消费者证据**：`current.xcresult` 55 项／105 次通过、0失败、0跳过。公共冻结完整外缘像素一致，居中描边和正文整体阴影负对照确实不同；send/post按钮单次命中、阴影不扩区、isPresented 身份/onAppear、无自动悬停及旧预设/静态卡片回归通过。生产日期/优先级/标签精确 applied/cleared、分 tab 清除、内外类别所有权、草稿与合成模型隔离通过。原生 mouseMoved 加实际游标定位证明类别变化、4pt跨隙不误关、220ms离开关闭、及时返回取消及卸载无迟到回调；类别程序赋值只计 Binding 证据。
+
+**像素分类**：`production-pixels.json` 比较80对，72对直接生产卡片完整缓存图相同；8对完整宿主图不同，不算整图通过（含手记夹具生成时间、过渡及按钮状态）。公共层旧装饰仅在测试保留；生产无第二套装配。缓存图不是窗口合成器屏幕截图，真人操作与屏幕像素未验。ControlsPreview 原入口增加新预设及生产两级/单级展示。
+
+**最终复验**：`final.xcresult` 16项／33次通过、2项／4次失败、0跳过：新增宿主几何断言读到过渡旧节点，新增快捷键夹具的实际字符误设为大写F。沿既有450ms过渡观察窗、原characters=f / charactersIgnoringModifiers=F修正测试后，`recheck.xcresult` 4项／12次全部通过；生产实现没有为测试改时序或事件。最后一项标签滚动后原生点击精确写回、帮助原鼠标/键盘回归通过。`candidates.xcresult` 8项／12次全部通过，含原 OverlaySurfaceConsumerTests 和 UnifiedSearchLayoutTests 的候选原生命中、双布局最小尺寸/语言主题与滚动，不迁移搜索代码。按最近同名结果去重：**75项／137次通过，0失败、0跳过**（`latest-summary.json`、`latest-tests.json`）；过程失败不计通过。原规则测试仍有State宿主类运行警告，帮助旧HelpKeyResponder测试有NSHostingController子视图警告，未以断言通过消除警告。
+
+**最终门禁**：9个本轮Swift文件严格局部SwiftLint、工作流、暂存/工作区差异检查、严格static profile通过；检查器94项定向及214项脚本回归通过。`debug-build.log` 记录 `./scripts/build.sh --no-wait` Debug构建及既有development静态验签通过：staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false，保留原SDK/actor编译警告。生产消费者除两段外壳替换外逐字相同，三个宿主文件、公共旧静态/交互表面代码及完整暂存补丁哈希与起点相同；`docs/unified-search-commands.md`的并发工作区编辑保留，未修改/排除并发文件换取通过。原生几何最终确认任务二级x129/手记x15、y47，即原左12/底44加3pt外padding；第一级与级间尺寸沿直接组件及源基线验证。已查看ControlsPreview深色、任务/手记代表缓存图，未声称真实屏幕验收。
+
+**门禁与边界**：隔离沿 `build/PrivacyQA-FilterSurface9C`、`com.areachain.privacy-qa`、local临时签名、原sandbox entitlement、六项钥匙串变量清除、原构建锁与串行事件，不直接打开QA App。指定 Cursor verifier 当前不可调用，整体保留 **partial** 复核缺口，不认证或替代；真实NSPopover、VoiceOver、真人鼠标/输入法未验。历史滚动归属、羽化、手记AX、下方气泡保留及复制不扩修；连击指标、标签色点继续留待后续。未提交、推送、安装、发布，未改真实数据、系统偏好、个人签名或权限。
+
 ## 第九阶段 B：昨日事项静态卡片外壳
 
 2026-10-04，仅 DaybookSurface 增加 `daybookStaticCardSurface()`，TasksPage 两种昨日布局替换完整 background/overlay；接口与保留责任见[组件目录](component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。公共层没有状态、自动悬停、选中、阴影、动画、布局或颜色配置；背景/0.8pt 内描边非命中。原 `.card` 自动悬停/选择与 floating 不变。普通 padding 8、外水平 1/底部 8/transition，居中 padding 10、外水平 4 和标题边距保持；布局条件、投影、行与逐项移动未改。原 ControlsPreview 增加静态/交互卡片对照。
@@ -1106,3 +1226,27 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 **门禁**：最终局部严格 SwiftLint（8 个本轮 Swift 文件）、Swift 语法、静态 profile、check_workflow、git diff --check 通过；检查器首次定向 85 项、脚本回归 205 项通过；最终静态 profile 随当前并发工作区重跑脚本 206 项通过，最终定向检查器 86 项通过（SurfaceStageC-workflow-tests-final.log）。`./scripts/build.sh` Debug 与静态验签通过，沿既有 development 配置，hardenedRuntime=true、distributionReady=false；未改个人签名。保留 SDK 原辅助 API 弃用/actor 警告。
 
 **未覆盖**：完整验收状态为 **partial**。未取得窗口合成器实际屏幕截图；真人输入法、VoiceOver、触控板/窗口级滚轮与动画进行时仍未验。位图、几何、应用事件、程序化状态、实际窗口挂载分别取证，不相互替代。外壳无新滚动接线；现有滚动归属/羽化/窗口边缘缺口没有修复，不能由这次通过推定消失。指定 Cursor verifier 当前不可调用，保留复核缺口，不重复认证或用其他机制替代。第八阶段 B 周列七浮层归首列、甘特外层双浮层/内层缺失、羽化定位及真人滚轮/触控板等历史未验项继续登记，不扩修。未提交、推送、安装、发布、直接打开 QA/日用 App，未修改真实数据、系统偏好、个人签名或权限。
+
+
+## 普通偏好聚合后端（3A-3B1）
+
+本阶段仅显式临时目录的文件后端与提交核验；没有迁移、生产后端切换或指令/UI 接线。实际命令、最终证据、故障注入与真实进程中断的区别，以及指定 Cursor verifier 的 partial 缺口只维护在[权威 §9.58](unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)。后端 writer.lock 和 build/.build.lock 各自独立，正常非等待取锁不抢占其他验收。
+
+
+## 普通偏好隔离迁移（3A-3B2A）
+
+独立 suite、逐键来源注入及显式临时目录用于迁移、故障和同进程重开；原 FileStore 锁/提交/noChange 测试继续回归。唯一命令、结果和未覆盖项见[权威 §9.59](unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。指定 Cursor verifier、真实进程中断、跨进程竞争和掉电实验分别报告；不由故障注入替代，不接生产迁移或整份内存发布。
+
+
+## 普通偏好聚合发布（3A-3B2B）
+
+临时文件后端、隔离 suite 与注入外观/事件用于 AppPreferences 的启动、整份发布、Binding、失败与显式核验回归。复用完整正常 QA 目标和原构建锁，静态 profile 配定向隔离测试，不启用真实系统授权。唯一实际命令、结果、并行编译阻塞、指定 Cursor verifier 与历史验收缺口见[权威 §9.60](unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。生产后端、用户迁移、指令组执行、安装和发布均未接线。
+
+### 普通偏好组执行验收（3A-3B3A）
+
+本轮仅显式临时文件后端和注入展示效果。FileSettingCommand 五套测试串行验证真实 Parser→Draft→Plan→文件提交→Run，使用后端实际入口/替换计数、原四键快照、文件清单及 Observation 观察完整组；同时回归后端、AppPreferences、原子组和旧单项。完整正常 QA 目标、独立标识/DerivedData、六项真实钥匙串变量清除、原 build/.build.lock 非等待申请；静态门禁与运行证据分开。实际结果及剩余缺口统一记于[权威 §9.61](unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)，指定 Cursor verifier 缺口保留，无生产窗口/迁移/安装/发布。
+
+
+### 普通设置组原生验收（3A-3B3B）
+
+采用正常完整目标、显式临时文件与随机 suite、注入展示、独立 QA 标识和 DerivedData，原测试锁非等待申请并保持串行；六项真实钥匙串授权清除。服务/控制器、原生行为、截图、最终 Debug/验签与静态证据分别登记，计数和缺口以[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)为准。不迁移用户设置、不切换生产默认后端；指定 Cursor、人工、C2B 和历史外观缺口不因本轮通过而关闭。

@@ -10,7 +10,14 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            Text(controller.hasSettingAdapter ? "unified.setting.singleOnly" : "unified.plan.notExecutable").font(DaybookType.caption)
+            if controller.fileSettings != nil {
+                Text("unified.group.planHint").font(DaybookType.caption)
+            } else { Text(controller.hasSettingAdapter ? "unified.setting.singleOnly" : "unified.plan.notExecutable").font(DaybookType.caption) }
+            if controller.fileSettings != nil, plan.items.count > 1, plan.items.first?.atomicGroup != nil {
+                Text(verbatim: L10n.format("unified.group.title", locale: locale, plan.items.count))
+                    .font(DaybookType.body.weight(.semibold))
+                    .accessibilityIdentifier("unified.group.title")
+            }
             let check = plan.check()
             ForEach(Array(plan.items.enumerated()), id: \.element.id) { index, item in
                 UnifiedSearchPlanRow(controller: controller, item: item, source: controller.buffer, index: index, check: check)
@@ -43,9 +50,13 @@ private struct UnifiedSearchPlanRow: View {
                 }
                 let summary = UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: calendar)
                 if !summary.isEmpty { Text(verbatim: summary).font(DaybookType.caption).lineLimit(2) }
-                if !isEditing, controller.localSettings?.supports(command.id) == true {
-                    UnifiedSearchSettingValues(before: item.draft.baseline.preference?.memory,
+                if !isEditing, controller.supportsSetting(command.id) {
+                    UnifiedSearchSettingValues(before: item.draft.baseline.preferenceGroup?.values[command.id] ?? item.draft.baseline.preference?.memory,
                                                after: item.draft.arguments.first?.value)
+                }
+                if let original = item.draft.baseline.preferenceGroup?.values[command.id],
+                   original == item.draft.arguments.first?.value {
+                    Text("unified.group.memberNoChange").font(DaybookType.caption)
                 }
                 diagnostics
                 controls
@@ -87,7 +98,9 @@ private struct UnifiedSearchPlanRow: View {
                     Text(LocalizedStringKey(key)).font(DaybookType.caption)
                 }
             }
-            if item.atomicGroup != nil { Text("unified.plan.atomic").font(DaybookType.caption) }
+            if item.atomicGroup != nil {
+                Text(controller.fileSettings != nil ? "unified.group.member" : "unified.plan.atomic").font(DaybookType.caption)
+            }
         }.foregroundStyle(DaybookPalette.text.secondary)
     }
 

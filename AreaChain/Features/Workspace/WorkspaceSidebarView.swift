@@ -101,9 +101,7 @@ struct WorkspaceSidebarView: View {
             navigation.selectedTagID = tag.id
         } label: {
             HStack(spacing: 8) {
-                Circle() // token-exempt: 标签色点，不是按钮
-                    .fill(DaybookPalette.tagMark(name: tag.name, token: tag.colorToken))
-                    .frame(width: 8, height: 8)
+                DaybookStatusDot(color: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken), size: 8)
                     .accessibilityHidden(true)
                 Text(tag.name)
                     .font(DaybookType.body)

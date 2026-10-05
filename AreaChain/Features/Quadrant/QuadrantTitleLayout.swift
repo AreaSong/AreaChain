@@ -149,8 +149,7 @@ struct QuadrantTitlePreview: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 6)
             .frame(maxWidth: 260, alignment: .leading)
-            .background(previewBackground)
-            .overlay(previewBorder)
+            .daybookSurface(floating: .rowBubble(isHovered: false, isCopied: false))
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
             .onHover(perform: onHover)
             .onTapGesture(perform: copyExcerpt)
@@ -170,17 +169,6 @@ struct QuadrantTitlePreview: View {
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
         }
-    }
-
-    private var previewBackground: some View {
-        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-            .fill(DaybookPalette.fill.page)
-            .daybookElevation(.floating)
-    }
-
-    private var previewBorder: some View {
-        RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-            .stroke(DaybookPalette.border.default.opacity(0.9), lineWidth: 0.8) // token-exempt: 90% 分隔线没有对应令牌
     }
 
     private func copyExcerpt() {

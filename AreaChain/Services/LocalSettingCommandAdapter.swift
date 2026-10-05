@@ -17,10 +17,12 @@ final class LocalSettingCommandAdapter {
     }
 
     func isAssembled(for coordinator: CommandHandoffCoordinator) -> Bool {
-        self.coordinator === coordinator && preferences != nil
+        self.coordinator === coordinator && preferences?.usesLegacyLocalPreferences == true
     }
 
-    func supports(_ command: CommandID) -> Bool { LocalSettingCommandMapping.field(for: command) != nil }
+    func supports(_ command: CommandID) -> Bool {
+        preferences?.usesLegacyLocalPreferences != false && LocalSettingCommandMapping.field(for: command) != nil
+    }
 
     /// 活动草稿预检不移交所有权；只有显式提交才由宿主 enqueue。
     func readiness(draft stamp: CommandDraftStamp, expecting lease: CommandHostLease) throws {
@@ -42,6 +44,8 @@ final class LocalSettingCommandAdapter {
 
     private func assembledPreferences() throws -> AppPreferences {
         guard let preferences else { throw LocalSettingCommandIssue.unwired }
+        // 文件模式由显式 FileLocalSettingCommandAdapter 接线；不可伪造旧键读回证据。
+        guard preferences.usesLegacyLocalPreferences else { throw LocalSettingCommandIssue.unsupported }
         return preferences
     }
 

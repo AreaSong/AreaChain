@@ -160,15 +160,7 @@ struct MenuBarFilterFlyout: View {
             }
         }
         .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .strokeBorder(DaybookPalette.border.default.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .filterFlyout)
     }
 
     // MARK: - 二级选项卡片
@@ -208,15 +200,7 @@ struct MenuBarFilterFlyout: View {
             .padding(4)
         }
         .frame(maxHeight: 165)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .strokeBorder(DaybookPalette.border.default.opacity(0.65), lineWidth: 0.8) // token-exempt: 65% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .filterFlyout)
     }
 
     // MARK: - 1. 时间选项

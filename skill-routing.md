@@ -1,5 +1,11 @@
 # AreaChain 技能路由与交付闭环
 
+第十阶段 C 沿 areachain-workflow → areachain-ui（areasong-development 局部等价、ui-ux-pro-max 聚焦 SwiftUI 身份）→ areachain-verify。仅 Dashboard 外层 ScrollView 显式接 `daybookScroll(featherEdges: false)`，两个横向图表保持原入口；[组件目录](docs/component-catalog.md#第十阶段-cdashboard-外层垂直滚动接入partial)与[工程记录](docs/engineering.md#第十阶段-cdashboard-外层垂直滚动接入partial)保存 partial 证据。完整正常 PrivacyQA、独立目录/标识、原锁、六项授权清除、串行及合成今日资料；续验已解除测试编译阻断并证实外层1／两横层0归属，32方法／53次有效自动回归通过。大视口同尺寸补验亦通过，第二处漏接按归属和自动回归证据标为已处理；人工、窗口合成器与指定复核缺口单列，不修公共目标搜索或历史问题，不提交、安装或发布。
+
+第十阶段 B 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 修饰顺序/身份，areasong-development 补局部等价判据）→ areachain-verify。只接 QuadrantTitlePreview 的静态 rowBubble 装饰；摘要、全文复制、静态边框、命中及定位差异见[组件目录](docs/component-catalog.md#第十阶段-b四象限标题预览纯装饰接入)。直接生产预览/overlay 与页面安全悬停沿完整正常 PrivacyQA、独立标识/目录、原构建锁、六项授权清除和串行事件；static profile、窄守卫/反例与真实证据见[工程记录](docs/engineering.md#第十阶段-b四象限标题预览纯装饰接入)。公共组件不改，局部等价由主代理自查，既有指定复核缺口保留。完成停止，Dashboard 外层滚动留下一轮，不修历史问题，不提交、安装或发布。
+
+第九阶段 C 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦修饰器身份；架构治理补等价判据）→ areachain-verify。只把 MenuBarFilterFlyout 两处外壳接入 DaybookFloatingSurface.filterFlyout；内描边与旧居中描边差异、状态和宿主责任见[组件目录](docs/component-catalog.md#第九阶段-c菜单栏筛选浮层外壳)。先直接挂生产组件并经生产筛选入口取基线；静态 profile 配完整正常 PrivacyQA、独立标识/目录、原构建锁、六项钥匙串授权清除与串行原生事件。像素/几何、合成鼠标、程序化状态、缓存图与屏幕证据分开；指定 Cursor verifier 不可用保留缺口，不认证或替代。结果见[工程记录](docs/engineering.md#第九阶段-c菜单栏筛选浮层外壳)。完成停止，连击指标、标签色点及历史缺口留待后续，不提交、安装或发布。
+
 第九阶段 B 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦修饰器身份；架构治理补等价判据）→ areachain-verify。仅 DaybookSurface 静态卡片与 TasksPage 两种昨日外壳，接口及布局/业务责任见[组件目录](docs/component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。先直接挂载生产页面经原昨日入口取基线；静态 profile 配完整正常 PrivacyQA、独立标识/目录、原构建锁、六项钥匙串变量清除与串行事件。实际鼠标、程序化动作、像素与规则分开记录；指定 Cursor verifier 不可用保留缺口，不认证或替代。结果见[工程记录](docs/engineering.md#第九阶段-b昨日事项静态卡片外壳)。完成停止，筛选浮层、连击指标、标签色点及历史缺口只登记，不提交、安装或发布。
 
 第八阶段 F 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份，areasong-development 补架构等价判据）→ areachain-verify。只把 RowTitleBubble / RowNoteBubble.noteCardContent 接入原 floating 动态预设；公共层集中颜色和背景阴影，反馈、事件、箭头与命中形状留在气泡。接口及确定剩余范围见[组件目录](docs/component-catalog.md#第八阶段-f标题与备注气泡动态外壳)。修改前直接挂载原生产气泡，冻结装饰仅作像素对照；静态 profile 配完整正常 PrivacyQA、原构建锁、独立标识/目录、六项授权清除和串行事件。消费者默认复制路径不点击；指定 Cursor verifier 不可用继续保留缺口，不认证或替代。结果见[工程记录](docs/engineering.md#第八阶段-f标题与备注气泡动态外壳)。完成停止，不修复制、滚动、定位及其他历史问题，不提交、安装或发布。
@@ -280,3 +286,16 @@
 ## 普通偏好共享读写（3A-1A）
 
 沿 areachain-workflow → 架构治理/可靠性 → areachain-ui（UI/UX 聚焦 Observation 与 Binding）→ areachain-verify。复用 AppPreferences、旧 GeneralSettingsSection 四 Binding 和原 QA 宿主；公共入口与真实订阅见[组件目录](docs/component-catalog.md#普通偏好共享入口3a-1a)。仅注入存储与副作用、拆四项普通事件，真实保证和下一阶段前置见[权威 §9.54](docs/unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)。静态门禁配独立 QA 标识/目录、串行定向测试及原构建锁；锁忙保留缺口，不运行全量包含排除能力的测试。指定 Cursor verifier 缺口保留，不重查认证或替代。完成后停止，不接生产搜索、handler、多项事务或用户设置。
+
+
+普通偏好 3A-3B1 沿 areachain-workflow → areasong-development 架构治理/工程交付/可靠性 → areachain-verify。只实现显式临时目录的 LocalPreferenceFileStore，复用原四值严格解析，不接 AppPreferences、迁移、指令或 UI；[组件索引](docs/component-catalog.md#普通偏好聚合文件后端3a-3b1)与[权威 §9.58](docs/unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)为接口和证据来源。真实临时文件与窄故障注入，正常完整 QA 目标、独立目录/标识、六项授权清除、原测试锁非等待申请。指定 Cursor verifier 和历史缺口保留，不重查登录或替代复核；停在 B1，迁移与生产启用另定范围。
+
+
+普通偏好 3A-3B2A 沿 areachain-workflow → areasong-development 架构治理/工程交付/可靠性 → areachain-verify。只在独立测试 suite 和显式临时目录采集旧四键、严格判源、建立只读迁移证据及重开核验；复用原 FileStore/IO 的锁、提交和恢复入口，不新建恢复引擎。接口见[组件目录](docs/component-catalog.md#普通偏好隔离迁移3a-3b2a)，唯一格式、状态表和证据见[权威 §9.59](docs/unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。完整正常 QA 目标、独立标识/目录、六项授权清除、原验收锁非等待申请；指定 Cursor verifier 与历史缺口保留，不认证或替代。完成停止，不读取真实设置、不切换 AppPreferences、不接指令/UI、不进入 3B2B。
+
+
+普通偏好 3A-3B2B 沿 areachain-workflow → areasong-development 架构治理/工程交付/可靠性引用 → areachain-verify。AppPreferences 显式临时后端装配复用原 FileStore / MigrationResult，单份发布和普通组事件接口见[组件目录](docs/component-catalog.md#普通偏好整份发布3a-3b2b)，唯一状态、证据与下一阶段边界见[权威 §9.60](docs/unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。完整正常 QA 目标、隔离旧域/目录/副作用、原验收锁非等待申请；并行编译失败不排除源码或抢锁。指定 Cursor verifier 与历史原生缺口保留，不认证或替代；完成后停止，不切换 shared、不迁移用户偏好、不开放多项指令或生产 UI，不进入 3B3。
+
+普通偏好 3A-3B3A 沿 areachain-workflow → areasong-development 架构治理/可靠性/工程交付 → areachain-verify。显式 FileLocalSettingCommandAdapter 复用 AppPreferences 完整记录、共同提交和展示 ledger，Coordinator 独占组身份与原子安装，Run 区分本地与展示结果。[组件目录](docs/component-catalog.md#普通偏好命令共同提交3a-3b3a)记录入口，[权威 §9.61](docs/unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)记录契约与实际验证。仅真实临时文件、随机旧键域和注入效果，完整正常 QA 目标及原锁非等待申请；指定 Cursor verifier 与历史缺口保留，不登录或替代复核。完成停止，不接生产后端、多项 UI、真实迁移或下一阶段。
+
+统一搜索 3A-3B3B 沿 areachain-workflow → areasong-development 架构治理 → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份）→ areachain-verify；显式互斥文件装配、原计划共同准备/提交与类型化恢复见[权威 §9.62](docs/unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。仅隔离宿主；生产与历史复核缺口不改变。

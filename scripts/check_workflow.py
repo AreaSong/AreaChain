@@ -57,8 +57,32 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "FileLocalSettingCommandAdapter"),
+    ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "prepareGroup"),
+    ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "verifyCommit"),
+    ("AreaChain/Services/AppPreferences.swift", "readLocalPreferenceRecord"),
+    ("AreaChain/Domain/CommandPreferenceGroup.swift", "CommandPreferenceGroupBaseline"),
+    ("AreaChain/Domain/CommandHandoffCoordinator.swift", "claimPreferenceGroup"),
+    ("AreaChain/Services/AppPreferences.swift", "committedLocalPreferenceRecord"),
+    ("AreaChain/Services/AppPreferences.swift", "applyLocalPreferences"),
+    ("AreaChain/Services/AppPreferences.swift", "verifyAndReloadLocalPreferences"),
+    ("AreaChain/Services/LocalPreferencePublication.swift", "LocalPreferencePublishedState"),
+    ("AreaChain/Services/LocalPreferencePublication.swift", "LocalPreferenceBackendState"),
+    ("AreaChain/Services/LocalPreferencePublication.swift", "LocalPreferenceGroupChange"),
+    ("AreaChain/Services/LocalPreferencePresentation.swift", "LocalPreferencePresentationLedger"),
+    ("AreaChain/Services/LocalPreferenceLegacySource.swift", "LocalPreferenceLegacySource"),
+    ("AreaChain/Services/LocalPreferenceLegacySource.swift", "LocalPreferenceMigrationResult"),
+    ("AreaChain/Services/LocalPreferenceMigrationEvidence.swift", "LocalPreferenceMigrationEvidence"),
+    ("AreaChain/Services/LocalPreferenceFileStore.swift", "migrate(from"),
+    ("AreaChain/Services/LocalPreferenceFileStore.swift", "reopen(from"),
+    ("AreaChain/Services/LocalPreferenceFileStore.swift", "LocalPreferenceFileStore"),
+    ("AreaChain/Services/LocalPreferenceRecord.swift", "LocalPreferenceRecord"),
+    ("AreaChain/Services/LocalPreferenceRecord.swift", "LocalPreferencePendingWrite"),
     ("AreaChain/Features/Search/UnifiedSearchSettingEditing.swift", "requestOperationSubmit"),
     ("AreaChain/Features/Search/UnifiedSearchSettingSubmission.swift", "UnifiedSearchSettingSubmission"),
+    ("AreaChain/Features/Search/UnifiedSearchFileSettingEditing.swift", "UnifiedSearchSettingBackend"),
+    ("AreaChain/Features/Search/UnifiedSearchFileSettingEditing.swift", "requestFileSettingPreparation"),
+    ("AreaChain/Features/Search/UnifiedSearchFileSettingSubmission.swift", "UnifiedSearchFileSettingSubmission"),
     ("AreaChain/Services/LocalSettingCommandAdapter.swift", "LocalSettingCommandAdapter"),
     ("AreaChain/Services/LocalSettingCommandMapping.swift", "LocalSettingCommandMapping"),
     ("AreaChain/Domain/CommandPreferenceEvidence.swift", "CommandPreferenceBaseline"),
@@ -178,6 +202,10 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Theme/DaybookSurface.swift", "tagDetail"),
     ("AreaChain/Theme/DaybookSurface.swift", "syntaxHelp"),
     ("AreaChain/Theme/DaybookSurface.swift", "rowBubble"),
+    ("AreaChain/Theme/DaybookSurface.swift", "filterFlyout"),
+    ("AreaChain/Features/MenuBar/MenuBarFilterFlyout.swift", "level1CategoryCard"),
+    ("AreaChain/Features/MenuBar/MenuBarFilterFlyout.swift", "level2OptionCard"),
+    ("AreaChain/Features/Quadrant/QuadrantTitleLayout.swift", "QuadrantTitlePreview"),
     ("AreaChain/Theme/DaybookRowBubbles.swift", "RowTitleBubble"),
     ("AreaChain/Theme/DaybookRowBubbles.swift", "RowNoteBubble"),
     ("AreaChain/Theme/SyntaxHelpCard.swift", "SyntaxExpandableCard"),
@@ -504,6 +532,14 @@ def check_component_catalog(root):
         end_boundary = r"(?![\w.])" if "." in symbol else r"\b"
         if not re.search(r"\b" + re.escape(symbol) + end_boundary, source_text):
             issues.append(issue(source, f"组件目录登记的符号不存在：{symbol}"))
+        if symbol == "QuadrantTitlePreview":
+            # 只守住本消费者的静态接入；声明或注释不能替代实际装饰调用，不解析通用 Swift。
+            preview = source_text.partition("struct QuadrantTitlePreview: View")[2]
+            body = re.sub(r"//[^\n]*|/\*.*?\*/", "", preview.partition("private var previewBody")[0], flags=re.S)
+            static_surface = (r"\.daybookSurface\s*\(\s*floating:\s*\.rowBubble\s*\("
+                              r"\s*isHovered:\s*false\s*,\s*isCopied:\s*false\s*\)\s*\)")
+            if not re.search(static_surface, body):
+                issues.append(issue(source, "QuadrantTitlePreview 缺少静态 rowBubble 装饰接入。"))
     return result("component-catalog", checked, issues)
 
 

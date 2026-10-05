@@ -170,7 +170,7 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
     }
 
     private func observeChanges() {
-        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+        preferenceObservation = PreferenceObservation(preferences: AppPreferences.shared,
             consumer: .diaryWindow, presentation: { [weak self] in self?.refreshChrome() },
             legacy: { [weak self] in self?.session.refresh(); self?.refreshChrome() })
         for name in [Notification.Name.boardDidChange, NSApplication.didResignActiveNotification] {

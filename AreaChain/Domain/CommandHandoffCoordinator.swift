@@ -14,6 +14,22 @@ struct CommandRuntimeInvocation: Equatable {
     }
 }
 
+struct CommandPreferenceGroupInvocation: Equatable {
+    let id: UUID
+    let lease: CommandHostLease
+    let identity: CommandPreferenceGroupIdentity
+    let attempt: CommandAttemptStamp
+    let verification: Bool
+    fileprivate init(lease: CommandHostLease, identity: CommandPreferenceGroupIdentity,
+                     attempt: CommandAttemptStamp, verification: Bool) {
+        id = UUID()
+        self.lease = lease
+        self.identity = identity
+        self.attempt = attempt
+        self.verification = verification
+    }
+}
+
 /// 注入的单一运行内权威；引用不能按值复制。MainActor 串行、同步且无回调的提交不存在半次发布。
 /// 只登记指令宿主，不持有窗口、文件能力、业务对象或全局单例；不提供从旧快照重新登记的入口。
 @Observable @MainActor final class CommandHandoffCoordinator: CustomStringConvertible, CustomDebugStringConvertible {
@@ -28,6 +44,7 @@ struct CommandRuntimeInvocation: Equatable {
     @ObservationIgnored private var statuses: [UUID: CommandHandoffStatus] = [:]
     @ObservationIgnored private var invocations: [UUID: CommandRuntimeInvocation] = [:]
     @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
+    @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
     private(set) var ownershipRevision: UInt64 = 0
 
     init(pages: [ContentQueryPageContext]) throws {
@@ -55,7 +72,7 @@ struct CommandRuntimeInvocation: Equatable {
 
     @discardableResult func send(_ event: CommandHostEvent, expecting lease: CommandHostLease) throws -> CommandHostEffect {
         try validate(lease)
-        if invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) {
+        if hasInvocation(lease.ownership) {
             switch event {
             case .query: break
             default: throw CommandExecutionError.busy
@@ -80,7 +97,7 @@ struct CommandRuntimeInvocation: Equatable {
               run.units[0].state == .running, run.units[0].receipt?.attempt != attempt,
               session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil,
               !invokedAttempts.contains(attempt),
-              !invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) else {
+              !hasInvocation(lease.ownership) else {
             throw CommandExecutionError.stale
         }
         let invocation = CommandRuntimeInvocation(id: UUID(), lease: lease, operation: operation, attempt: attempt)
@@ -115,6 +132,7 @@ struct CommandRuntimeInvocation: Equatable {
     func replacePreferenceBaseline(_ baseline: CommandDraftBaseline, arguments: [CommandArgument],
                                    draft: CommandDraftStamp, expecting lease: CommandHostLease) throws {
         try validate(lease)
+        guard !hasInvocation(lease.ownership) else { throw CommandExecutionError.busy }
         var next = try host(lease.ownership.hostID).session
         try next.replacePreferenceBaseline(baseline, arguments: arguments, expecting: draft)
         hosts[next.hostID] = .init(lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
@@ -123,12 +141,96 @@ struct CommandRuntimeInvocation: Equatable {
     func returnUnsubmittedPreference(_ attempt: CommandAttemptStamp, plan: CommandPlanStamp,
                                     expecting lease: CommandHostLease) throws {
         try validate(lease)
-        guard !invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) else {
+        guard !hasInvocation(lease.ownership) else {
             throw CommandExecutionError.busy
         }
         var next = try host(lease.ownership.hostID).session
         try next.returnUnsubmittedPreference(attempt, expecting: plan)
         hosts[next.hostID] = .init(lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
+    }
+
+    private func hasInvocation(_ ownership: CommandHostOwnership) -> Bool {
+        invocations.values.contains { $0.lease.ownership == ownership }
+            || groupInvocations.values.contains { $0.lease.ownership == ownership }
+    }
+
+    func replacePreferenceGroupBaselines(_ updates: [CommandPreferenceBaselineUpdate], plan: CommandPlanStamp,
+                                         expecting lease: CommandHostLease) throws {
+        try validate(lease)
+        guard !hasInvocation(lease.ownership) else { throw CommandExecutionError.busy }
+        var next = try host(lease.ownership.hostID).session
+        try next.replacePreferenceGroupBaselines(updates, expecting: plan)
+        publishPreferenceSession(next, from: lease)
+    }
+
+    /// 多适配实例共享的调用占用，在 AppPreferences 与任何文件 IO 之前取得。
+    func claimPreferenceGroup(_ identity: CommandPreferenceGroupIdentity, attempt: CommandAttemptStamp,
+                              expecting lease: CommandHostLease, verification: Bool = false) throws -> CommandPreferenceGroupInvocation {
+        try validate(lease)
+        let session = try host(lease.ownership.hostID).session
+        guard !hasInvocation(lease.ownership), let run = session.execution,
+              run.preferenceGroupIdentity() == identity, identity.unitID == attempt.unitID,
+              run.attempt(attempt.unitID) == attempt, let unit = run.units.first,
+              session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil else {
+            throw CommandExecutionError.stale
+        }
+        if verification {
+            guard unit.local == .unknown, unit.state == .verificationRequired else { throw CommandExecutionError.stale }
+        } else {
+            guard unit.state == .running, !invokedAttempts.contains(attempt) else { throw CommandExecutionError.stale }
+            invokedAttempts.insert(attempt)
+        }
+        let invocation = CommandPreferenceGroupInvocation(lease: lease, identity: identity,
+                                                         attempt: attempt, verification: verification)
+        groupInvocations[invocation.id] = invocation
+        return invocation
+    }
+
+    func validatePreferenceGroup(_ invocation: CommandPreferenceGroupInvocation) throws {
+        try validate(invocation.lease)
+        _ = try groupHost(invocation)
+        guard try host(invocation.lease.ownership.hostID).session.execution?.attempt(invocation.attempt.unitID)
+                == invocation.attempt else { throw CommandExecutionError.stale }
+    }
+
+    /// 可信本地事实跨展示修订归原运行；占用保持到展示事实入账，不能中途转交或释放。
+    func recordPreferenceGroup(_ invocation: CommandPreferenceGroupInvocation, result: CommandPreferenceGroupCommit) throws {
+        let current = try groupHost(invocation)
+        var next = current.session
+        let receipt = CommandExecutionReceipt(attempt: invocation.attempt, result: .preferenceGroupCommit(result))
+        if invocation.verification { try next.verifyPreferenceGroup(receipt) }
+        else { try next.receiveProtocolResult(receipt) }
+        publishPreferenceSession(next, from: current.lease)
+    }
+
+    @discardableResult
+    func finishPreferenceGroup(_ invocation: CommandPreferenceGroupInvocation,
+                               presentation: CommandPreferenceGroupPresentation? = nil) throws -> CommandExecutionReceipt? {
+        let current = try groupHost(invocation)
+        var next = current.session
+        var receipt: CommandExecutionReceipt?
+        if let presentation {
+            let attempt: CommandAttemptStamp
+            if invocation.attempt.phase == .external { attempt = invocation.attempt }
+            else { attempt = try next.beginNextProtocolStep(expecting: invocation.identity.execution) }
+            receipt = .init(attempt: attempt, result: .preferenceGroupPresentation(presentation))
+            try next.receiveProtocolResult(receipt!)
+        }
+        publishPreferenceSession(next, from: current.lease)
+        groupInvocations[invocation.id] = nil
+        return receipt
+    }
+
+    private func groupHost(_ invocation: CommandPreferenceGroupInvocation) throws -> CommandOwnedHost {
+        guard groupInvocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
+        let current = try host(invocation.lease.ownership.hostID)
+        guard current.lease.ownership == invocation.lease.ownership,
+              current.session.execution?.preferenceGroupIdentity() == invocation.identity else { throw CommandExecutionError.stale }
+        return current
+    }
+
+    private func publishPreferenceSession(_ session: CommandHostSession, from lease: CommandHostLease) {
+        hosts[session.hostID] = .init(lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: session)
     }
 
     /// 凭据只能由成功封存的内容服务生成，仍由此处核验唯一当前宿主。

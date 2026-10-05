@@ -1,5 +1,59 @@
 # 共享组件与复用目录
 
+## 第十阶段 C：Dashboard 外层垂直滚动接入（partial）
+
+[DashboardView](../AreaChain/Features/Dashboard/DashboardView.swift) 的实际外层 ScrollView 在原 frame 之前调用 `daybookScroll(featherEdges: false)`：选择原单参数隐藏系统指示器策略，明确不新增羽化。DaybookPage、VStack、四分区间距、投影、数据读取和导航保持；公共装配、Configurator、目标搜索、拆卸及绘制未改。
+
+DashboardTrendSection 与 DashboardHeatmapSection 的横向 ScrollView 继续各自 `showsIndicators: false`，不接公共浮层；这是明确保留的不同入口。预期视觉变化仅为外层指示器统一，不能将指示器差异解释为布局可改变。
+
+[DashboardScrollTests](../AreaChainTests/Features/DashboardScrollTests.swift) 与[合成宿主](../AreaChainTests/Features/DashboardScrollTestSupport.swift) 直接挂生产页面，复用 SettingsButtonTestSupport、CalendarSpanTestSupport 状态恢复和原 CGEvent 滚动事件方式。按生产日期按钮的真实纵向区域及 NSScrollView 父链定位两个横层和共同外层，不取第一个滚动对象。合成数据相对测试今日，无数据与有数据分开。
+
+**续验状态**：完整正常测试目标编译阻断已解除，原设置合成方法实际通过且未被本轮修改。生产归属严格证实为外层 1／趋势 0／热力图 0，系统指示器策略和零羽化观察器通过；更新、resize、重开、两横层真实溢出独立滚动、外层顶中底/最后活动可达、滑块合成窗口事件和安全日期导航已验。有效 Dashboard/公共回归为32方法／53次通过，重跑不累加。最终1200×900大视口与正常/窄矮矩阵同条件补验通过，72对完整缓存图等尺寸、180条几何完全一致；预期指示器与少数悬停高亮差异保留。第二处漏接按归属及相关自动回归证据标为已处理，人工、窗口合成器和指定复核缺口保留；完整证据见[工程记录](engineering.md#第十阶段-cdashboard-外层垂直滚动接入partial)。生产仍只有原一行，不修改公共滚动或历史问题。
+
+
+## 第十阶段 B：四象限标题预览纯装饰接入
+
+[QuadrantTitlePreview](../AreaChain/Features/Quadrant/QuadrantTitleLayout.swift) 仅将背景与描边替换为既有 `daybookSurface(floating: .rowBubble(isHovered: false, isCopied: false))`，没有公共预设或参数扩展。small/continuous、页面底色、仅背景形状 floating 阴影、border.default 的 90%／0.8pt 居中描边保持；悬停与复制反馈不传给 rowBubble。公共装饰描边继续不参与命中，原 contentShape 接收事件，不扩大到圆角外侧或阴影。
+
+水平 8／垂直 6pt padding、最大宽度 260 和左对齐、原圆角 contentShape、onHover / onTapGesture / task 顺序均保持。摘要、showsHint、原文字颜色与 1200ms 反馈 Task 仍归本组件；没有图标、箭头、光标、动画或关闭能力。它不替换为 RowTitleBubble，两者的正文、提示及定位契约不同。
+
+QuadrantTitleOverflow 保留六行、360 字符预览探测、80 字符溢出探测及 isPartial 算法。QuadrantPreviewOverlay 保留零尺寸锚点、offset、260pt 宽度、上下 6pt 与水平限制、`quadrant.titleBubble.<UUID>` 及悬停回调；显示 excerpt，点击仍调用无参 onCopy，再由 overlay 转交 preview.title 全文。Void 回调与“已复制”只证明反馈和转交，不证明系统剪贴板成功。
+
+[直接呈现](../AreaChainTests/Features/QuadrantPreviewSurfaceTests.swift)、[原生事件](../AreaChainTests/Features/QuadrantPreviewInteractionTests.swift)、[生产 overlay](../AreaChainTests/Features/QuadrantPreviewOverlayTests.swift) 和 [合成宿主](../AreaChainTests/Features/QuadrantPreviewTestSupport.swift) 沿 SettingsButtonTestSupport、SurfaceEventTestSupport 与 PrivacyQA。旧代码仅复用 OriginalRowBubbleSurface 的冻结默认装饰，不复制完整预览业务。原 [QuadrantLayoutTests](../AreaChainTests/Features/QuadrantLayoutTests.swift) 补页面安全显隐/定位及模型、选择和检查器不变断言；默认 NSPasteboard 路径不点击。原检查器补静态调用窄守卫，只有声明、注释调用或动态 isCopied 均不能作为接入通过。
+
+本轮实际证据及未验项见[工程记录](engineering.md#第十阶段-b四象限标题预览纯装饰接入)。下一处确定漏接仍是 [DashboardView 外层 ScrollView](../AreaChain/Features/Dashboard/DashboardView.swift)；本轮不接入，不修复历史滚动归属、羽化、手记辅助树、气泡及复制运行问题。
+
+## 第九阶段 E：两处标签色点接入
+
+[WorkspaceSidebarView.tagRow](../AreaChain/Features/Workspace/WorkspaceSidebarView.swift) 与 [TagManagementPage.tagRow](../AreaChain/Features/Workspace/TagManagementPage.swift) 直接复用既有 [DaybookStatusDot(color:size:)](../AreaChain/Theme/DaybookChip.swift)。公共组件未改，没有新增包装、状态、配置或颜色算法。
+
+| 消费者 | 保留的呈现与责任 |
+|---|---|
+| 侧栏标签行 | 显式 8pt；原 `DaybookPalette.tagMark(name:token:)`；`accessibilityHidden(true)`。标题、整行按钮/矩形命中、选中背景与导航不变。原 `Catalog.liveTaskTags` 继续排除手记预设分类。 |
+| 标签管理行 | 显式 10pt；同一原颜色来源；保留 `colorTitle(tag.resolvedColorToken)` 及 `.accessibilityElement(children: .combine)`。预设色仍按名称优先解析；颜色辅助名仍表达原 resolvedColorToken，两者不强行合并。选择、双击改名、计数、菜单和保存留在原页面。 |
+
+测试直接挂载生产消费者，复用 SettingsButtonTestSupport / SystemPageHost、原生事件及原图像支持；[TagDotConsumerTests](../AreaChainTests/Features/TagDotConsumerTests.swift) 与 [合成支持](../AreaChainTests/Features/TagDotTestSupport.swift) 补双语/浅深色、两档宽度、六令牌/回退、实际直径、完整行与原生交互。管理行按原合并节点检查颜色名一次、标题和计数，不要求暴露独立色点。原 WorkspaceRenderingTests、WorkspaceMenuConsumerTests 和标签目录/仓储测试补直接消费者回归；前后证据、过程失败和缺口见[工程记录](engineering.md#第九阶段-e两处标签色点接入)。不新增全局检查器规则、公共框架、展示应用或重复复核。
+
+第九阶段原登记四类发现的当前接入状态：昨日静态卡片已在 B 接入，筛选浮层已在 C 接入，连击指标列已在 D 局部复用，两处标签色点已在 E 接入。下文 B/C/D 的待办描述是当时记录。接入清单收口不等于全应用最终验收：原生加载器、不同数字口径、标签胶囊与空态的合理差异保留；滚动归属、羽化、手记辅助树、下方气泡与复制等历史运行问题，以及既有指定复核/人工缺口继续保留。可进入第十阶段的复用清单和最终验收规划，本轮到 E 停止，不执行第十阶段。
+
+## 第九阶段 D：连击指标列复用
+
+[TaskDetailScheduleSection.swift](../AreaChain/Features/Workspace/TaskDetailScheduleSection.swift) 的 `TaskDetailStreakCard` 仅在 Feature 内共用私有 `streakMetricColumn(title:systemImage:value:)`。当前列传 `drawer.streak.current` / `flame.fill` / `currentStreak`，最佳列传 `drawer.streak.best` / `trophy.fill` / `bestStreak`；标题为 `LocalizedStringKey`，数值沿原 `Text` 整数插值，单位仍是 `drawer.streak.days`。不使用 DaybookCount，不增加动画、镜像状态、计算或公共 API。
+
+列仍为左对齐 VStack、spacing2、无限宽左对齐；标题 micro/次要色，数值行 spacing4，图标 body bold/pending，数字 16pt bold rounded/主要色，单位 badge/次要色。两列之间 spacing12、28pt 分隔线，卡片标题、状态/日期行、padding10 与原 `.card` 自动悬停表面均保持。新入口不读取时钟、模型、仓储或导航，也不保存或回调。
+
+直接消费者仍为 [RoutineHabitSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift)，继续接收原检查器传入的 `StreakResult`；配置、检查日和暂停→跳过→完成→非计划日→待打卡的优先级未改。验证沿 [StreakCardRenderingTests](../AreaChainTests/Features/StreakCardRenderingTests.swift)、[合成装配支持](../AreaChainTests/Features/StreakCardTestSupport.swift)、原 StreakInspectionStatusTests 与五状态构造测试，直接挂载生产卡片建立前后基线，不复制业务卡片。
+
+长数字原本按环境分组并完整换行，两列行数不同可使标题高低不同；本轮只保持原表现。结果与既有验收缺口见[工程记录](engineering.md#第九阶段-d连击指标列复用)。D 当时登记的两处标签色点漏接已由上节 E 收口；D 本身没有新增全局指标组件或展示应用。
+
+## 第九阶段 C：菜单栏筛选浮层外壳
+
+[DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `DaybookFloatingSurface.filterFlyout` 沿既有 `daybookSurface(floating:isPresented:)` 装配 regular/continuous、fill.page、border.default 的 65%／0.8pt `strokeBorder` 内描边与仅背景形状的 floating 阴影。装饰描边不参与命中；不增加布局、裁切、contentShape、状态、悬停、事件或任意颜色参数。其他浮层仍用各自原居中 `stroke`、透明度、宽度和阴影；静态卡片及 row/card/panel/banner 默认不变，isPresented 只开关装饰并保留内容身份。
+
+仅 [MenuBarFilterFlyout.swift](../AreaChain/Features/MenuBar/MenuBarFilterFlyout.swift) 的 `level1CategoryCard`、`level2OptionCard` 接入。任务 110/175pt 两级，手记 175pt 标签单级；4pt 级间距、3pt 外 padding、内容 padding4、二级 maxHeight165 和隐藏滚动指示器不变。原组件持有 externalCategory/internalCategory 选择、220ms dismissTask、选项生成与计数，BoardFilters 保留分 tab 写回，选项 applied/cleared 后仍走一次原 onDismiss。状态、悬停、滚动、清除和关闭均不下沉公共层。
+
+[生产宿主](../AreaChain/Features/MenuBar/MenuBarPopoverView+Drawer.swift) 仅核对：左12pt、底44pt、zIndex30，原 FilterDrawerScrim 外部关闭和底栏穿透、按钮再次切换、筛选优先于帮助及 Escape 均不改。验证沿 [生产卡片](../AreaChainTests/Features/MenuBarFilterConsumerTests.swift)、[精确选择与原生悬停](../AreaChainTests/Features/MenuBarFilterInteractionTests.swift)、[宿主](../AreaChainTests/Features/MenuBarFilterHostTests.swift) 和原 DaybookFloatingSurfaceTests、MenuBarHelpKeyboardTests、BoardFilterBarTests；合成准备见 [测试支持](../AreaChainTests/Features/MenuBarFilterTestSupport.swift)。原 ControlsPreview 展示公共预设及生产两级/单级。实际结果和历史缺口见[工程记录](engineering.md#第九阶段-c菜单栏筛选浮层外壳)。连击指标、标签色点留待后续；不借此迁移统一搜索或修复原滚动/羽化/手记 AX/下方气泡/复制问题。
+
 ## 第九阶段 B：昨日事项静态卡片外壳
 
 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `daybookStaticCardSurface()` 只绘制 medium/continuous 圆角、cardSurface 底色和 border.subtle 的 0.8pt strokeBorder 内描边。背景与描边不参与命中；不增加布局、裁切、状态、悬停、选中、阴影、动画或任意颜色参数。原 `daybookSurface(.card)` 仍自动跟踪悬停及外部选择；row/card/panel/banner 和 floating 全部默认接口保持。
@@ -664,3 +718,43 @@ F 定向静态清单：
 - [LocalPreference](../AreaChain/Services/LocalPreference.swift) 定义字段和值、来源/逐字段修订、可见原键快照及 `LocalPreferenceWriteResult`；[LocalPreferenceStorage / Effects](../AreaChain/Services/LocalPreferenceDependencies.swift) 只注入四键同步读写、外观和通知。默认仍为旧 UserDefaults 键及生产副作用。
 - [PreferenceObservation](../AreaChain/Services/PreferenceObservation.swift) 由 PanelWindowController、StatusItemController、DiaryWindowController 和 CalendarSync 的既有偏好订阅实际消费。普通事件按来源和字段筛选，手记仅语言 chrome，日历没有普通订阅；菜单栏用已有计数呈现。AppChrome 和四象限继续 Observation，捕获仅创建时读标记。
 - 隔离测试沿原 SettingsButtonTestSupport / GeneralSettingsSection，新增 LocalPreferenceTests、LocalPreferenceFailureTests、PreferenceObservationTests 和 SettingsLocalPreferenceConsumerTests。原 dark→system 进程外观测试及已知失败保留，不由注入测试替代。保证、验证与 3A-1B 接口以[权威交接](unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)为准。
+
+
+## 普通偏好聚合文件后端（3A-3B1）
+
+- [LocalPreferenceRecord / LocalPreferencePendingWrite](../AreaChain/Services/LocalPreferenceRecord.swift) 复用原 LocalPreferenceField / Value / RawValue；完整四值、稳定来源、记录/字段修订与提交身份。pending 只有身份/摘要及字段，不作第二权威。
+- [LocalPreferenceFileStore](../AreaChain/Services/LocalPreferenceFileStore.swift) 的 `initializeNew(values:)`、`read()`、`commit(basedOn:changes:)`、`verifyPendingCommit()` 仅供显式临时目录消费者；[结果契约](../AreaChain/Services/LocalPreferenceFileContract.swift) 区分未提交、未知、已提交和清理未完成。[文件 IO 与锁](../AreaChain/Services/LocalPreferenceFileIO.swift) 只保护协议写入者，不是工程验收锁。
+- 当前消费者仅 LocalPreferenceFileStoreTests / RecoveryTests / ConcurrencyTests，夹具生成独立临时目录。AppPreferences、旧四键、单项适配器、指令和 UI 未切换；B1 的迁移引用拒绝现由下节 3A-3B2A 的关系核验扩展。实际格式、保证与验证见[权威 §9.58](unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)。
+
+
+## 普通偏好隔离迁移（3A-3B2A）
+
+- [LocalPreferenceLegacySource / LocalPreferenceMigrationResult](../AreaChain/Services/LocalPreferenceLegacySource.swift) 显式注入受控测试 suite 身份及逐键存在性、原值、有效值和来源；复用四键/严格解析，来源不明或覆盖拒绝。未提供生产 UserDefaults 来源识别器。
+- [LocalPreferenceMigrationEvidence](../AreaChain/Services/LocalPreferenceMigrationEvidence.swift) 保存 v1 只读证据，绑定来源、迁移身份、四键存在性、合法值及初始目标摘要；缺键的原值明确为不存在。
+- [LocalPreferenceFileStore](../AreaChain/Services/LocalPreferenceFileStore.swift) 新增 `migrate(from:)` / `reopen(from:)`，复用原 IO、锁、perform 和 verifyLocked。initializeNew 仍拒绝任何迁移残留。
+- 当前消费者仅 LocalPreferenceMigrationTests / RecoveryTests / EvidenceTests 及独立 suite 的 MigrationTestSupport；旧后端三套测试回归。没有 AppPreferences、指令或 UI 接线。旧版只见迁移前四键；权威状态、限制和实际证据统一见[§9.59](unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。
+
+
+## 普通偏好整份发布（3A-3B2B）
+
+- [AppPreferences](../AreaChain/Services/AppPreferences.swift) 增加显式 `init(defaults:fileStore:startup:effects:)`；原 init 和 shared 继续旧后端。`committedLocalPreferenceRecord` 返回最后完整发布记录，`applyLocalPreferences(basedOn:changes:)` 只调用一次原文件 commit，`verifyAndReloadLocalPreferences()` 只调用原核验/清理。四 Binding 按装配选择旧单键或新单字段聚合提交，没有旧键镜像。
+- [LocalPreferencePublishedState / LocalPreferenceBackendState / LocalPreferenceGroupChange](../AreaChain/Services/LocalPreferencePublication.swift) 分别表达唯一四值发布、可写健康状态及无设置值的普通组事件。ready 载荷须与实际 store 完整重读一致；notMigrated 只读兼容，unknown/未决恢复关闭全部文件模式写入口。
+- [LocalPreferencePresentationLedger](../AreaChain/Services/LocalPreferencePresentation.swift) 仅保存本实例的展示身份和调用事实；`localPreferencePresentation(for:)` / `retryLocalPreferencePresentation(for:)` 分别查询及重试，没有文件写入。外观与事件独立，迟到步骤按当前字段修订过期。
+- [PreferenceObservation](../AreaChain/Services/PreferenceObservation.swift) 的 `init(preferences:consumer:center:presentation:legacy:)` 由 PanelWindowController、StatusItemController、DiaryWindowController 消费；组事件按来源和当前字段修订交集刷新。CalendarSync 保留空普通订阅，手记正文、捕获与截断责任不变。
+- 文件后端只由 AppPreferencesFile 五套测试及 GroupObservation 测试的临时装配消费；旧单项 LocalSettingCommandAdapter 明确拒绝文件证据。启动、提交、展示、恢复的准确保证、同值两种政策及 3B3 接口只维护在[权威 §9.60](unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。没有生产后端切换、用户迁移、多项指令或新 UI。
+
+### 普通偏好命令共同提交（3A-3B3A）
+
+| 入口 | 职责与消费者 |
+|---|---|
+| [FileLocalSettingCommandAdapter](../AreaChain/Services/FileLocalSettingCommandAdapter.swift) | 显式 filePreferences 装配；prepare 单项、prepareGroup 显式整组、readiness / submit / execute、rereadConflict / resolveConflict、returnUnsubmittedToPlan、verifyCommit、retryPresentation 和 report。当前仅隔离测试消费，多项 UI 未接线。 |
+| [CommandPreferenceGroupBaseline / GroupIdentity](../AreaChain/Domain/CommandPreferenceGroup.swift) | 完整标量证据及签发身份；原计划/组/有序成员身份，提交和展示的独立类型化结果。 |
+| [claimPreferenceGroup](../AreaChain/Domain/CommandHandoffCoordinator.swift) | 多适配器共用 IO 前占用；原子安装成员基线、本地事实先入原运行、展示完成和精确 unknown 核验。 |
+| [readLocalPreferenceRecord](../AreaChain/Services/AppPreferences.swift) | 显式完整权威读取，不发布或隐式准备。applyLocalPreferences 的 recordCommit、verifyAndReloadLocalPreferences 的 recordRecovery 在整份发布前登记可信事实；复用原后端和展示 ledger。 |
+
+旧 LocalSettingCommandAdapter 仅接受旧后端；文件模式只通过新显式适配器。成员 changedFields 仅说明差异，整组 localReceipt 唯一。真实计数与隔离矩阵、拒绝范围、恢复和下一阶段接口统一见[权威 §9.61](unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)。不接生产后端、多项 UI、真实迁移或执行后撤销。
+
+
+### 普通设置组原生接线（3A-3B3B）
+
+UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、旧单项、文件适配。requestFileSettingPreparation 与 UnifiedSearchFileSettingSubmission / UnifiedSearchFileSettingCopy 复用原 PlanLinks、PlanList、SettingSubmission、参数控件和 ReadSession；FileLocalSettingCommandAdapter 仍唯一负责组资格、基线、提交、冲突与核验。显式临时文件消费者为 UnifiedSearchFileSettingContract/Interaction/RecoveryTests，旧单项初始化兼容；完整接口、状态和证据见[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。

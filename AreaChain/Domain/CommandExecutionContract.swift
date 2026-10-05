@@ -36,6 +36,8 @@ enum CommandExecutionResult: Equatable {
     case noChange
     case preferenceWrite(CommandPreferenceWriteFacts)
     case preferencePresentation(CommandPreferencePresentation)
+    case preferenceGroupCommit(CommandPreferenceGroupCommit)
+    case preferenceGroupPresentation(CommandPreferenceGroupPresentation)
     case committed(outputs: [UUID: CommandObjectReference], external: Set<CommandExternalEffect>)
     case failedWithoutCommit, commitUnknown, notExecuted, waitingAuthorization
     case conflict([CommandFieldConflict])
@@ -66,6 +68,9 @@ struct CommandExecutionUnit: Equatable {
     var conflicts: [CommandFieldConflict] = []
     var preferenceWrite: CommandPreferenceWriteFacts?
     var preferencePresentation: CommandPreferencePresentation?
+    var preferenceGroupCommit: CommandPreferenceGroupCommit?
+    var preferenceGroupPresentation: CommandPreferenceGroupPresentation?
+    var preferenceVerification: CommandExecutionReceipt?
 }
 
 enum CommandExecutionError: Error, Equatable {

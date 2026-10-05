@@ -102,7 +102,7 @@ struct LocalPreferenceChange: Equatable, Sendable {
 
 struct LocalPreferenceWriteResult: Equatable, Sendable {
     typealias Readback = PreferenceReadback
-    enum Rejection: Equatable, Sendable { case reentrant, unreadableStorage, snapshotChanged, executionInvalidated }
+    enum Rejection: Equatable, Sendable { case reentrant, unreadableStorage, snapshotChanged, executionInvalidated, unsupportedBackend }
 
     let requested: LocalPreferenceValue
     let before: LocalPreferenceSnapshot?

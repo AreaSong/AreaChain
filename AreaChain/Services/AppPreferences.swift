@@ -72,34 +72,51 @@ final class AppPreferences {
     private let defaults: UserDefaults
     private var isLoading = true
 
-    private var languageValue: AppLanguage
-    private var appearanceValue: AppAppearance
-    private var truncationValue: QuadrantTitleTruncation
-    private var captureValue: Bool
-    @ObservationIgnored private let localStorage: LocalPreferenceStorage
+    @ObservationIgnored private var localState: LocalPreferencePublishedState
+    @ObservationIgnored private let localStorage: LocalPreferenceStorage?
+    @ObservationIgnored private let fileStore: LocalPreferenceFileStore?
     @ObservationIgnored private let effects: LocalPreferenceEffects
+    private let presentations: LocalPreferencePresentationLedger
     @ObservationIgnored private var revisions: [LocalPreferenceField: UInt64] = [:]
     @ObservationIgnored private var isApplyingLocalSetting = false
     let localPreferenceSource: LocalPreferenceSource
+    private(set) var localPreferenceBackend: LocalPreferenceBackendState
+    private(set) var lastLocalPreferenceCommit: LocalPreferenceFileCommit?
+    private(set) var lastLocalPreferenceRecovery: LocalPreferenceFileRecovery?
+    private(set) var startupAppearance: PreferenceCallOutcome = .notCalled
+    let startupEvent: PreferenceCallOutcome = .notCalled
+
+    var usesLegacyLocalPreferences: Bool { fileStore == nil }
+    var canWriteLocalPreferences: Bool { localPreferenceBackend.canWrite }
+    var committedLocalPreferenceRecord: LocalPreferenceRecord? {
+        access(keyPath: \.committedLocalPreferenceRecord)
+        return localState.record
+    }
+
+    /// 显式权威读取不发布、不刷新草稿，也不尝试恢复；组准备只调用一次。
+    func readLocalPreferenceRecord() -> LocalPreferenceFileRead {
+        guard let fileStore else { return .unavailable(.invalidRequest) }
+        return fileStore.read()
+    }
 
     var language: AppLanguage {
-        get { languageValue }
-        set { applyLocalSetting(.language(newValue)) }
+        get { observeLocalPreference(\.language); return localState.values.language }
+        set { setLocalPreference(.language(newValue)) }
     }
 
     var appearance: AppAppearance {
-        get { appearanceValue }
-        set { applyLocalSetting(.appearance(newValue)) }
+        get { observeLocalPreference(\.appearance); return localState.values.appearance }
+        set { setLocalPreference(.appearance(newValue)) }
     }
 
     var quadrantTitleTruncation: QuadrantTitleTruncation {
-        get { truncationValue }
-        set { applyLocalSetting(.quadrantTitleTruncation(newValue)) }
+        get { observeLocalPreference(\.quadrantTitleTruncation); return localState.values.quadrantTitleTruncation }
+        set { setLocalPreference(.quadrantTitleTruncation(newValue)) }
     }
 
     var stampCaptureApp: Bool {
-        get { captureValue }
-        set { applyLocalSetting(.stampCaptureApp(newValue)) }
+        get { observeLocalPreference(\.stampCaptureApp); return localState.values.stampCaptureApp }
+        set { setLocalPreference(.stampCaptureApp(newValue)) }
     }
 
     var syncCalendarEvents: Bool {
@@ -127,20 +144,38 @@ final class AppPreferences {
         self.defaults = defaults
         let storage = localStorage ?? LocalPreferenceStorage(defaults: defaults)
         self.localStorage = storage
+        fileStore = nil
         self.effects = effects ?? .live
+        presentations = LocalPreferencePresentationLedger(effects: effects ?? .live)
+        localPreferenceBackend = .legacy
         localPreferenceSource = LocalPreferenceSource(instanceID: UUID(), storageID: storage.identity)
-        let language = ((try? storage.read(.language)) ?? .unavailable).initialValue(for: .language)
-        let appearance = ((try? storage.read(.appearance)) ?? .unavailable).initialValue(for: .appearance)
-        let truncation = ((try? storage.read(.quadrantTitleTruncation)) ?? .unavailable).initialValue(for: .quadrantTitleTruncation)
-        let capture = ((try? storage.read(.stampCaptureApp)) ?? .unavailable).initialValue(for: .stampCaptureApp)
-        if case .language(let value) = language { languageValue = value } else { languageValue = .system }
-        if case .appearance(let value) = appearance { appearanceValue = value } else { appearanceValue = .system }
-        if case .quadrantTitleTruncation(let value) = truncation { truncationValue = value } else { truncationValue = .tail }
-        if case .stampCaptureApp(let value) = capture { captureValue = value } else { captureValue = false }
+        var values = LocalPreferenceValues.legacyDefaults
+        for field in LocalPreferenceField.allCases {
+            values.set(((try? storage.read(field)) ?? .unavailable).initialValue(for: field))
+        }
+        localState = .legacy(values)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
         isLoading = false
-        applyAppAppearance()
+        startupAppearance = applyAppAppearance()
+    }
+
+    /// 显式隔离装配；defaults 只服务尚未迁移的偏好，四项没有旧键存储依赖。
+    init(defaults: UserDefaults, fileStore: LocalPreferenceFileStore, startup: LocalPreferenceMigrationResult,
+         effects: LocalPreferenceEffects) {
+        self.defaults = defaults
+        localStorage = nil
+        self.fileStore = fileStore
+        self.effects = effects
+        presentations = LocalPreferencePresentationLedger(effects: effects)
+        localPreferenceSource = LocalPreferenceSource(instanceID: UUID(), storageID: ObjectIdentifier(fileStore))
+        let loaded = LocalPreferenceLoad.initial(startup, store: fileStore)
+        localState = loaded.published
+        localPreferenceBackend = loaded.backend
+        syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
+        isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
+        isLoading = false
+        startupAppearance = applyAppAppearance()
     }
 
     @discardableResult
@@ -150,7 +185,7 @@ final class AppPreferences {
 
     /// 每次都重新读注入存储。运行内修订不能替代原始键核验，也不能检测外部 ABA。
     func readLocalSetting(_ field: LocalPreferenceField) -> LocalPreferenceSnapshot {
-        let raw = (try? localStorage.read(field)) ?? .unavailable
+        let raw = (try? localStorage?.read(field)) ?? .unavailable
         return LocalPreferenceSnapshot(source: localPreferenceSource, field: field,
             revision: revisions[field, default: 0], value: localValue(field), raw: raw)
     }
@@ -160,6 +195,9 @@ final class AppPreferences {
     @discardableResult
     func applyLocalSetting(_ value: LocalPreferenceValue, expecting expected: LocalPreferenceSnapshot? = nil,
                            validateBeforeWrite: (() throws -> Void)? = nil) -> LocalPreferenceWriteResult {
+        guard let localStorage else {
+            return LocalPreferenceWriteResult(requested: value, before: nil, after: nil, rejection: .unsupportedBackend)
+        }
         guard !isApplyingLocalSetting else {
             return LocalPreferenceWriteResult(requested: value, before: nil, after: nil, rejection: .reentrant)
         }
@@ -220,12 +258,117 @@ final class AppPreferences {
     }
 
     private func updateLocalValue(_ value: LocalPreferenceValue) {
-        switch value {
-        case .language(let next): languageValue = next
-        case .appearance(let next): appearanceValue = next
-        case .quadrantTitleTruncation(let next): truncationValue = next
-        case .stampCaptureApp(let next): captureValue = next
+        var values = localState.values
+        values.set(value)
+        // 旧后端仍只使该字段的观察失效，避免无关赋值重绘语言/外观消费者。
+        switch value.field {
+        case .language: withMutation(keyPath: \.language) { localState = .legacy(values) }
+        case .appearance: withMutation(keyPath: \.appearance) { localState = .legacy(values) }
+        case .quadrantTitleTruncation: withMutation(keyPath: \.quadrantTitleTruncation) { localState = .legacy(values) }
+        case .stampCaptureApp: withMutation(keyPath: \.stampCaptureApp) { localState = .legacy(values) }
         }
+    }
+
+    private func observeLocalPreference<Value>(_ legacyPath: KeyPath<AppPreferences, Value>) {
+        if usesLegacyLocalPreferences { access(keyPath: legacyPath) }
+        else { access(keyPath: \.committedLocalPreferenceRecord) }
+    }
+
+    private func setLocalPreference(_ value: LocalPreferenceValue) {
+        if usesLegacyLocalPreferences { applyLocalSetting(value); return }
+        guard !isApplyingLocalSetting else { return }
+        guard let baseline = committedLocalPreferenceRecord else { return }
+        applyLocalPreferences(basedOn: baseline, changes: [value])
+    }
+
+    /// 后续组适配的窄入口；一次后端 commit，文件结果不转换成 UserDefaults 读回事实。
+    @discardableResult
+    func applyLocalPreferences(basedOn baseline: LocalPreferenceRecord,
+                               changes: [LocalPreferenceValue],
+                               validateBeforeCommit: (() throws -> Void)? = nil,
+                               recordCommit: ((LocalPreferenceFileCommit) -> Void)? = nil) -> LocalPreferenceFileCommit {
+        guard !isApplyingLocalSetting else { return .notCommitted(.reentrant) }
+        guard let fileStore else { return .notCommitted(.invalidRequest) }
+        isApplyingLocalSetting = true
+        defer { isApplyingLocalSetting = false }
+        guard localPreferenceBackend == .ready else {
+            return .recoveryRequired(localPreferenceBackend.blockedRead)
+        }
+        do { try validateBeforeCommit?() } catch { return .notCommitted(.qualificationChanged) }
+        let result = fileStore.commit(basedOn: baseline, changes: changes)
+        // 提交事实先于 Observation 与任何展示回调；重入不能交错覆盖本次发布。
+        lastLocalPreferenceCommit = result
+        // 命令本地事实先归原运行；回调不能介入后端最后核验与替换之间。
+        recordCommit?(result)
+        switch result {
+        case .committed(let record):
+            localPreferenceBackend = .ready
+            publishLocalPreferences(record)
+        case .committedCleanupPending(let record):
+            localPreferenceBackend = LocalPreferenceLoad.verified(record, store: fileStore).backend
+            publishLocalPreferences(record)
+        case .unknown(let pending, let issue):
+            localPreferenceBackend = .unknown(pending, issue)
+        case .notCommitted:
+            // 即使 current 尚健康，失败后也须显式核验再开放；不把可读等同于新写许可。
+            localPreferenceBackend = .verificationRequired(fileStore.read())
+        case .recoveryRequired(let state):
+            localPreferenceBackend = .verificationRequired(state)
+        case .conflict(let current), .noChange(let current):
+            if current != committedLocalPreferenceRecord { localPreferenceBackend = .verificationRequired(.record(current)) }
+        }
+        return result
+    }
+
+    /// 显式核验/重装只复用后端恢复；不自动迁移、重放原提交或接纳其他 epoch。
+    @discardableResult
+    func verifyAndReloadLocalPreferences(recordRecovery: ((LocalPreferenceRecord, Bool) -> Void)? = nil) -> LocalPreferenceFileRecovery {
+        guard !isApplyingLocalSetting else { return .blocked(.unavailable(.reentrant)) }
+        guard let fileStore else { return .blocked(.unavailable(.invalidRequest)) }
+        isApplyingLocalSetting = true
+        defer { isApplyingLocalSetting = false }
+        let recovery = fileStore.verifyPendingCommit()
+        lastLocalPreferenceRecovery = recovery
+        switch recovery {
+        case .confirmed(let record), .confirmedCleanupPending(let record), .nothingToVerify(.record(let record)):
+            let loaded = LocalPreferenceLoad.verified(record, store: fileStore)
+            guard localState.acceptsReload(record) else {
+                localPreferenceBackend = .verificationRequired(.unavailable(.inconsistentEvidence))
+                return recovery
+            }
+            localPreferenceBackend = loaded.backend
+            if let verified = loaded.published.record {
+                let cleanup: Bool
+                if case .confirmedCleanupPending = recovery { cleanup = true } else { cleanup = false }
+                recordRecovery?(verified, cleanup)
+                publishLocalPreferences(verified)
+            }
+        default:
+            localPreferenceBackend = .verificationRequired(fileStore.read())
+        }
+        return recovery
+    }
+
+    func localPreferencePresentation(for commitID: UUID) -> LocalPreferencePresentation? {
+        presentations.report(for: commitID)
+    }
+
+    @discardableResult
+    func retryLocalPreferencePresentation(for commitID: UUID) -> LocalPreferencePresentation? {
+        guard !isApplyingLocalSetting else { return nil }
+        isApplyingLocalSetting = true
+        defer { isApplyingLocalSetting = false }
+        return presentations.apply(commitID) { self.committedLocalPreferenceRecord }
+    }
+
+    private func publishLocalPreferences(_ record: LocalPreferenceRecord) {
+        guard record != committedLocalPreferenceRecord else { return }
+        let fields = LocalPreferenceGroupChange.changedFields(from: committedLocalPreferenceRecord, to: record)
+        let change = LocalPreferenceGroupChange(source: localPreferenceSource, record: record, fields: fields)
+        presentations.begin(change)
+        // 单次赋值包含四值、记录身份及全部字段修订；willSet 只能读到完整旧状态。
+        withMutation(keyPath: \.committedLocalPreferenceRecord) { localState = .committed(record) }
+        presentations.apply(record.commitID) { self.committedLocalPreferenceRecord }
     }
 
     private func call(_ action: () throws -> Void) -> PreferenceCallOutcome {

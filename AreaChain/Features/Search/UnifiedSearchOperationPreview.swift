@@ -39,7 +39,12 @@ struct UnifiedSearchOperationPreview: View {
 
     private var operationContent: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            if controller.planMessage != "unified.plan.notExecutable" {
+            if controller.fileSettings != nil, controller.settingExecution == nil,
+               controller.plan?.items.isEmpty == false {
+                Text(LocalizedStringKey(controller.fileSettingIssue ?? "unified.group.ready"))
+                    .font(DaybookType.caption).padding(.horizontal, DaybookSpacing.md)
+                    .accessibilityIdentifier("unified.group.fixedStatus")
+            } else if controller.planMessage != "unified.plan.notExecutable" {
                 Text(LocalizedStringKey(controller.planMessage)).font(DaybookType.caption)
                     .padding(.horizontal, DaybookSpacing.md)
                     .accessibilityIdentifier("unified.plan.message")
@@ -123,9 +128,9 @@ struct UnifiedSearchOperationPreview: View {
             Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 .accessibilityIdentifier("unified.plan.enqueue")
-            if draft.baseline.preference != nil { Text("unified.setting.baseline").font(DaybookType.caption) }
+            if draft.baseline.preference != nil || draft.baseline.preferenceGroup != nil { Text("unified.setting.baseline").font(DaybookType.caption) }
             else if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
-            Text(LocalizedStringKey(controller.hasSettingAdapter && controller.localSettings?.supports(command.id) == true
+            Text(LocalizedStringKey(controller.hasSettingAdapter && controller.supportsSetting(command.id)
                                     ? "unified.setting.pending" : controller.operationMessage)).font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
         }

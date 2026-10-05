@@ -8,6 +8,7 @@ struct DaybookFloatingSurfaceSamples: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 32) {
+            MenuBarFilterSurfaceSamples()
             Toggle(isOn: $suggestions) { Text(verbatim: "Preview · Suggestions") }
             HStack(spacing: 24) {
                 Text(verbatim: "tagDetail · 60% / 0.8pt").padding(12).daybookSurface(floating: .tagDetail)
@@ -44,5 +45,22 @@ struct DaybookFloatingSurfaceSamples: View {
             }
         }
         .padding(24)
+    }
+}
+
+/// ControlsPreview 直接挂生产两级/单级筛选；示例 Binding 只属于预览。
+struct MenuBarFilterSurfaceSamples: View {
+    @State private var filters = BoardFilters()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(verbatim: "filterFlyout · 65% / 0.8pt inset · background shadow")
+                .padding(12).daybookSurface(floating: .filterFlyout)
+            HStack(alignment: .bottom, spacing: 24) {
+                MenuBarFilterFlyout(tab: .tasks, filters: $filters, onDismiss: {})
+                MenuBarFilterFlyout(tab: .diary, filters: $filters,
+                    tags: [TagItem(name: "Synthetic 合成标签", sortOrder: 0)], onDismiss: {})
+            }
+        }
     }
 }

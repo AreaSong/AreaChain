@@ -1,5 +1,11 @@
 # 架构与目录
 
+### 第九阶段 C 筛选浮层呈现边界
+
+DaybookFloatingSurface.filterFlyout 只扩展纯呈现：regular/continuous、页面底色、65%／0.8pt 内描边与背景阴影。它复用 floating 装配及装饰描边非命中政策，其他预设继续原居中描边与阴影；isPresented 不分支重建正文，静态卡片和交互表面接口不变。
+
+MenuBarFilterFlyout 两处 background/overlay 收口，布局、原生 ScrollView、类别 Binding、延迟关闭 Task、精确 BoardFilters 写回和 onDismiss 仍属于原 Feature。宿主独占遮罩/位置/zIndex、底栏穿透、帮助与 Escape 优先级；无模型、存储或真实 NSPopover 生命周期变更。范围及验证入口见[组件目录](component-catalog.md#第九阶段-c菜单栏筛选浮层外壳)。
+
 ### 第九阶段 B 静态卡片呈现边界
 
 DaybookSurface 的 `daybookStaticCardSurface()` 只提供固定静态绘制，不复用带内部 hovering 的交互 modifier，不引入状态或布局。原 `.card` 自动悬停与选择、floating 描边非命中政策保持。TasksPage 的两种昨日组合只替换背景/内描边，显隐、布局选择、投影、行检查日与逐项移动仍属于原 Feature；公共层不接模型、查询、导航或保存回调。接口和验证边界见[组件目录](component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。
@@ -448,3 +454,29 @@ ContentSession 的同步借用仍禁止调用者任意缓存。唯一原生暂�
 ### 普通偏好权威入口（3A-1A）
 
 AppPreferences 保留唯一四值及原 UserDefaults 键；兼容可写属性和后续适配共用 readLocalSetting / applyLocalSetting。逐字段修订只计本入口调用，raw 是注入存储当前搜索域可见原值，不能检测外部全部 ABA 或承诺物理落盘。普通事件带实例/存储句柄身份，不含正文或其他设置；PreferenceObservation 按身份/字段路由展示，CalendarSync 仅旧事件，手记普通事件不刷新正文。完整结果、旧页同值兼容、失败边界和验证状态只维护在[权威 §9.54](unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)。
+
+
+### 普通偏好文件权威（3A-3B1）
+
+Services 的 LocalPreferenceFileStore 只在显式临时 root 内保存独立完整记录，不依赖 SwiftData。current 为唯一权威，pending 只绑定基/目标身份与摘要；协作锁覆盖锁内读取、比较、整体替换和完整核实。后端不发布内存、事件或展示副作用，AppPreferences 与旧单项链不变。读取/未知关闭写入口，显式核验不重放、不恢复 CommandPlan。接口、原子性及耐久限制、恢复与未接线边界统一见[权威 §9.58](unified-search-commands.md#958-阶段-3a-3b1版本化聚合文件后端与提交恢复)。
+
+
+### 普通偏好隔离迁移（3A-3B2A）
+
+Services 的 LocalPreferenceLegacySource 只接受受控测试域的显式逐键读取证据；来源判定与旧应用宽松装载分离。LocalPreferenceMigrationEvidence 不是第二份可编辑状态；FileStore 沿原锁/一次提交/恢复路径建立带 migrationID 的完整 current，重开先核验新来源，不重新读取旧键或重放命令。唯一格式、恢复判定、保证限制及 3B2B 输入见[§9.59](unified-search-commands.md#959-阶段-3a-3b2a旧四键隔离迁移重开与恢复判定)。AppPreferences 生产后端及 SwiftData schema 保持不变。
+
+
+### 普通偏好整份发布（3A-3B2B）
+
+AppPreferences 显式文件模式将四项及持久修订保存在唯一 LocalPreferencePublishedState.committed(record) 中；候选只在文件后端局部构造。提交事实先登记，再一次赋值发布，之后独立调用外观与普通组事件。后端健康状态与展示事实不是另一份可编辑偏好。共享实例与原 defaults 初始化仍使用旧后端，文件模式不建立旧四键存储依赖；其他偏好仍走注入 defaults。
+
+启动 ready 必须与注入 store 的身份、格式和当前权威状态重新核对；不可靠状态保留最后完整显示或只读默认，写入关闭。显式 verifyAndReload 复用原核验/清理，不提交或迁移；同源已知修订倒退也拒绝连续发布。普通消费者只刷新当前 chrome，旧单项指令接口拒绝新后端证据；外部修改发现范围、提交/展示/恢复的区别及 3B3 前置见[权威 §9.60](unified-search-commands.md#960-阶段-3a-3b2bapppreferences-聚合后端整份发布与展示事件)。
+
+### 普通偏好组执行边界（3A-3B3A）
+
+FileLocalSettingCommandAdapter 显式选择文件后端，与旧单项适配互斥。原 Plan 保有唯一参数；签发登记只保存不可编辑的完整证据。Coordinator 一次安装所有成员基线，按 groupID、有序 member stamps、run/attempt 占用；AppPreferences 在完整发布前经 recordCommit / recordRecovery 将可信提交事实记入原运行，再复用原展示 ledger。Run 只为已核实的四类普通偏好支持独立展示阶段，通用 atomicGroup 外部效果限制不变。冲突/确定未提交才能整组返回；unknown 只接受原目标精确身份核验，永不重放。接口与实际范围见[权威 §9.61](unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)，多项 UI 与生产装配仍关闭。
+
+
+### 普通设置组原生装配（3A-3B3B）
+
+UnifiedSearchController 的单一 UnifiedSearchSettingBackend 枚举负责显式选择旧单项或文件适配。原 Plan 保有唯一参数，PlanLinks 发送原 atomicGroup 事件，FileLocalSettingCommandAdapter 准备整组证据并绑定准备后的 plan stamp；UI 只消费 readiness 和类型化本地/核验/展示回执。失焦 invalidated 推进显示缓冲版本，不更换 lease。隔离原生接线扩展了上节的测试消费者，生产默认仍旧后端；实现、验收与历史缺口只维护在[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。
