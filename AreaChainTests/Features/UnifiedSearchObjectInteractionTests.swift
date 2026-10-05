@@ -137,7 +137,15 @@ struct UnifiedSearchObjectInteractionTests {
         #expect(fixture.controller.objectSelection != nil, "焦点返回发起按钮后，空格可重新打开选择器")
         try await host.settle()
         try await host.clickResult("unified.objects.cancel")
-        let remove = try host.resultNode("unified.select." + CommandObjectReference.object(0).searchIdentifier)
+        // 固定目标与下方搜索结果复用行标识；必须操作原参数面板里的移除按钮。
+        let panel = try #require(SettingsButtonTestSupport.elements(host.window.contentView)
+            .compactMap { $0 as? UnifiedSearchOperationBoundary }.first)
+        let remove = try #require(SettingsButtonTestSupport.elements(panel).first {
+            SettingsButtonTestSupport.value($0, "accessibilityIdentifier") as? String
+                == "unified.select." + CommandObjectReference.object(0).searchIdentifier
+        })
+        try await SettingsButtonTestSupport.reveal(remove, in: host.window)
+        #expect(try panel.convert(panel.bounds, to: nil).contains(SettingsButtonTestSupport.frame(remove, in: host.window)))
         try #require(remove.responds(to: focusGetter))
         let removeFocused = unsafeBitCast(remove.method(for: focusGetter),
             to: (@convention(c) (AnyObject, Selector) -> Bool).self)

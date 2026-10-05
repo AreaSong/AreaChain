@@ -60,15 +60,7 @@ public struct RowTitleBubble: View {
             .padding(.horizontal, 8)
             .padding(.vertical, 5.5)
             .frame(maxWidth: 260, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .fill(DaybookPalette.fill.page)
-                    .daybookElevation(.floating)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                    .stroke(borderStrokeColor, lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
-            )
+            .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: isCopied))
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
             .onHover(perform: handleHover)
             .onDisappear(perform: handleDisappear)
@@ -106,13 +98,6 @@ public struct RowTitleBubble: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-    }
-
-    private var borderStrokeColor: Color {
-        if isCopied {
-            return DaybookPalette.accent.base.opacity(0.7)
-        }
-        return isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)
     }
 
     private func handleHover(_ hovering: Bool) {
@@ -225,15 +210,7 @@ public struct RowNoteBubble: View {
         .padding(.horizontal, 9)
         .padding(.vertical, 7)
         .frame(width: 210, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
-                .stroke(borderStrokeColor, lineWidth: 0.8) // token-exempt: 70% 印章色和 90% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: isCopied))
     }
 
     private var noteCardHeader: some View {
@@ -246,13 +223,6 @@ public struct RowNoteBubble: View {
                 .foregroundStyle(isCopied ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
             Spacer(minLength: 0)
         }
-    }
-
-    private var borderStrokeColor: Color {
-        if isCopied {
-            return DaybookPalette.accent.base.opacity(0.7)
-        }
-        return isHovered ? DaybookPalette.cardBorderHover : DaybookPalette.border.default.opacity(0.9)
     }
 
     private func handleHover(_ hovering: Bool) {

@@ -63,6 +63,7 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
     let window: NSWindow
     var onClose: (() -> Void)?
     private var observers: [NSObjectProtocol] = []
+    private var preferenceObservation: PreferenceObservation?
 
     init(session: DiaryEditorSession) {
         self.session = session
@@ -126,6 +127,7 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         session.mask()
+        preferenceObservation?.cancel()
         observers.forEach { NotificationCenter.default.removeObserver($0) }
         observers.removeAll()
         window.contentView = nil
@@ -168,7 +170,10 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
     }
 
     private func observeChanges() {
-        for name in [Notification.Name.boardDidChange, .appPreferencesDidChange, NSApplication.didResignActiveNotification] {
+        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+            consumer: .diaryWindow, presentation: { [weak self] in self?.refreshChrome() },
+            legacy: { [weak self] in self?.session.refresh(); self?.refreshChrome() })
+        for name in [Notification.Name.boardDidChange, NSApplication.didResignActiveNotification] {
             observers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
                 Task { @MainActor in
                     guard let self else { return }

@@ -33,10 +33,35 @@ struct DaybookSurfaceTests {
 @Suite(.serialized) @MainActor
 struct DaybookFloatingSurfaceTests {
     @Test(arguments: [ColorScheme.light, .dark])
+    func helpClipRemainsAfterTheEntireDecoration(scheme: ColorScheme) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let clip = RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+        let sample = Color.red.frame(width: 180, height: 72)
+        let old = support.window(sample.modifier(OriginalDetailSurface(help: true)).clipShape(clip).padding(32),
+            scheme: scheme, size: NSSize(width: 244, height: 136))
+        defer { SystemPageHost.release(old) }
+        try await SystemPageHost.settle(old)
+        let before = try OverlaySurfaceTestSupport.bitmap(old)
+        let current = support.window(sample.daybookSurface(floating: .syntaxHelp).clipShape(clip).padding(32),
+            scheme: scheme, size: NSSize(width: 244, height: 136))
+        defer { SystemPageHost.release(current) }
+        try await SystemPageHost.settle(current)
+        #expect(try pixels(before) == pixels(OverlaySurfaceTestSupport.bitmap(current)))
+        let full = support.window(sample.daybookSurface(floating: .syntaxHelp).padding(32),
+            scheme: scheme, size: NSSize(width: 244, height: 136))
+        defer { SystemPageHost.release(full) }
+        try await SystemPageHost.settle(full)
+        #expect(try pixels(before) != pixels(OverlaySurfaceTestSupport.bitmap(full)), "帮助原裁切不能删掉以显露阴影")
+        try OverlaySurfaceTestSupport.record(current, name: "e-help-clipped-\(scheme)")
+        try OverlaySurfaceTestSupport.record(full, name: "e-help-full-\(scheme)")
+    }
+
+    @Test(arguments: [ColorScheme.light, .dark])
     func matchesFrozenDrawingIncludingOutsideEdges(scheme: ColorScheme) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
-        for presentation in [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground] {
+        for presentation in [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp] {
             let sample = Text(verbatim: "Synthetic").frame(width: 180, height: 72)
                 // 越界图形能区分整体阴影/背景阴影，并发现额外裁切。
                 .overlay(alignment: .topTrailing) { Circle().fill(.red).frame(width: 16, height: 16).offset(x: 8, y: -8) }
@@ -57,7 +82,7 @@ struct DaybookFloatingSurfaceTests {
         }
     }
 
-    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground])
+    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp])
     func disabledDecorationKeepsPreviewIdentityAndGeometry(presentation: DaybookFloatingSurface) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
@@ -81,36 +106,78 @@ struct DaybookFloatingSurfaceTests {
         #expect(try pixels(OverlaySurfaceTestSupport.bitmap(window)) == pixels(OverlaySurfaceTestSupport.bitmap(plain)))
     }
 
-    @Test func decorationDoesNotExpandPointerInterception() async throws {
+    @Test(arguments: [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground, .tagDetail, .syntaxHelp], ["send", "queue"])
+    func decorationDoesNotExpandPointerInterception(presentation: DaybookFloatingSurface, delivery: String) async throws {
+        for shell in [SurfacePointerDecoration.plain, .frozen, .current, .hidden] {
+            try await pointerOwnership(presentation: presentation, shell: shell, delivery: delivery)
+        }
+    }
+
+    @Test(arguments: [SurfacePointerDecoration.plain, .frozen, .current], ["send", "queue"])
+    func mediumCenterEventOwnership(shell: SurfacePointerDecoration, delivery: String) async throws {
+        try await pointerOwnership(presentation: .syntaxHelp, shell: shell, delivery: delivery)
+    }
+
+    private func pointerOwnership(presentation: DaybookFloatingSurface, shell: SurfacePointerDecoration, delivery: String) async throws {
         let support = try SettingsButtonTestSupport()
         defer { support.cleanup() }
-        for presentation in [DaybookFloatingSurface.suggestions, .readOnly, .smallBackground] {
-            var traces: [[Int]] = []
-            for original in [true, false] {
-                let model = SurfacePointerProbe()
-                let window = support.window(SurfacePointerSample(model: model, original: original, presentation: presentation),
-                                            size: NSSize(width: 280, height: 160))
-                defer { SystemPageHost.release(window) }
-                try await NativeSyntaxUI.prepareFocus(in: window)
-                try await SystemPageHost.settle(window)
-                // 内容中心、透明圆角、边缘和外侧阴影分别走 NSApplication 事件。
-                for point in [NSPoint(x: 140, y: 80), NSPoint(x: 51, y: 45),
-                              NSPoint(x: 49, y: 80), NSPoint(x: 42, y: 80), NSPoint(x: 140, y: 36)] {
-                    for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-                        let event = try #require(NSEvent.mouseEvent(with: type, location: point, modifierFlags: [],
-                            timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,
-                            context: nil, eventNumber: 0, clickCount: 1, pressure: 1))
-                        NSApp.sendEvent(event)
-                    }
-                    try await SystemPageHost.settle(window)
-                    model.trace.append(model.inside * 100 + model.outside)
-                }
-                #expect(model.inside == 1)
-                #expect(model.outside >= 3)
-                traces.append(model.trace)
-            }
-            #expect(traces[0] == traces[1])
+        let model = SurfacePointerProbe()
+        let window = support.window(SurfacePointerSample(model: model, decoration: shell, presentation: presentation),
+            size: NSSize(width: 280, height: 160))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        let buttons = SettingsButtonTestSupport.buttons(in: window)
+        try #require(buttons.count == 1)
+        let rect = try SettingsButtonTestSupport.frame(#require(buttons.first), in: window)
+        try await SystemPageHost.settle(window)
+        let stable = try SettingsButtonTestSupport.frame(#require(buttons.first), in: window)
+        #expect(rect == stable && rect.width < 180 && rect.height < 72)
+        #expect(rect.contains(NSPoint(x: 140, y: 80)))
+        SurfaceEventTestSupport.note("\(presentation) \(shell) \(delivery) button AX=\(rect) outer=180x72")
+        // 冻结 medium 精确刻画旧故障；它通过不代表旧功能通过，也不能决定公共壳的成功预期。
+        let expectedClick = shell == .frozen && presentation == .syntaxHelp ? 0 : 1
+        for (name, point) in [("center", NSPoint(x: 140, y: 80)),
+                              ("AX-center", NSPoint(x: rect.midX, y: rect.midY)),
+                              ("label-inset", NSPoint(x: rect.minX + 2, y: rect.midY))] {
+            let before = model.inside
+            try await SurfaceEventTestSupport.click(point, in: window, delivery: delivery)
+            #expect(model.inside == before + expectedClick, "\(presentation) \(shell) \(delivery) \(name)")
+            #expect(model.outside == 0, "内容点击不能重复回调或穿透到宿主")
         }
+        #expect(model.inside == 3 * expectedClick)
+        try await boundaryOwnership(model: model, window: window, shell: shell, delivery: delivery)
+    }
+
+    private func boundaryOwnership(model: SurfacePointerProbe, window: NSWindow,
+                                   shell: SurfacePointerDecoration, delivery: String) async throws {
+        let beforeBoundary = model.inside
+        let points = [NSPoint(x: 60, y: 80), NSPoint(x: 51, y: 45), NSPoint(x: 49, y: 80),
+                      NSPoint(x: 42, y: 80), NSPoint(x: 140, y: 36)]
+        for (index, point) in points.enumerated() {
+            let outside = model.outside
+            try await SurfaceEventTestSupport.click(point, in: window, delivery: delivery)
+            #expect(model.inside == beforeBoundary, "空白、圆角外侧、边缘和阴影不能冒充 Button 点击区")
+            let expectedHostClick = index == 0 && shell != .plain && shell != .hidden ? 0 : 1
+            #expect(model.outside == outside + expectedHostClick, "\(shell) \(delivery) boundary[\(index)] 宿主恰好接收一次外部点击")
+        }
+        SurfaceEventTestSupport.note("boundary \(shell) inside=\(model.inside) outside=\(model.outside)")
+    }
+
+    @Test(arguments: [SurfacePointerDecoration.background, .border, .nonHittableBorder])
+    func mediumDecorationLayerOwnership(shell: SurfacePointerDecoration) async throws {
+        let support = try SettingsButtonTestSupport()
+        defer { support.cleanup() }
+        let model = SurfacePointerProbe()
+        let window = support.window(SurfacePointerSample(model: model, decoration: shell, presentation: .syntaxHelp),
+            size: NSSize(width: 280, height: 160))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        try await SurfaceEventTestSupport.click(NSPoint(x: 140, y: 80), in: window)
+        SurfaceEventTestSupport.note("layer \(shell) inside=\(model.inside) outside=\(model.outside)")
+        // border 是故障层的刻画对照；公共完整外壳的成功要求独立断言，冻结壳保留已知故障。
+        #expect(model.inside == (shell == .border ? 0 : 1))
     }
 
     private func pixels(_ bitmap: NSBitmapImageRep) -> Data {
@@ -172,12 +239,11 @@ private struct SurfaceIdentitySample: View {
 @Observable @MainActor private final class SurfacePointerProbe {
     var inside = 0
     var outside = 0
-    var trace: [Int] = []
 }
 
 private struct SurfacePointerSample: View {
     let model: SurfacePointerProbe
-    let original: Bool
+    let decoration: SurfacePointerDecoration
     let presentation: DaybookFloatingSurface
 
     private var content: some View {
@@ -185,12 +251,28 @@ private struct SurfacePointerSample: View {
             .buttonStyle(.plain).frame(width: 180, height: 72)
     }
 
+    private var background: some View {
+        RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+            .fill(DaybookPalette.fill.page).daybookElevation(.floating)
+    }
+
+    private var border: some View {
+        RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+            .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8)
+    }
+
     var body: some View {
         Color.gray.onTapGesture { model.outside += 1 }.overlay {
-            if original {
-                content.modifier(FrozenFloatingSurface(presentation: presentation))
-            } else {
-                content.daybookSurface(floating: presentation)
+            switch decoration {
+            case .plain: content
+            case .frozen: content.modifier(FrozenFloatingSurface(presentation: presentation))
+            case .current: content.daybookSurface(floating: presentation)
+            case .hidden: content.daybookSurface(floating: presentation, isPresented: false)
+            case .background: content.background(background)
+            case .border: content.overlay(border)
+            case .nonHittableBorder:
+                // 仅作测试消融，证明是否由描边接收；不改生产命中政策。
+                content.background(background).overlay(border.allowsHitTesting(false))
             }
         }
     }
@@ -201,10 +283,17 @@ private struct FrozenFloatingSurface: ViewModifier {
     let presentation: DaybookFloatingSurface
 
     func body(content: Content) -> some View {
-        if presentation == .smallBackground {
+        if presentation == .tagDetail || presentation == .syntaxHelp {
+            content.modifier(OriginalDetailSurface(help: presentation == .syntaxHelp))
+        } else if presentation == .smallBackground {
             content.modifier(OriginalDiaryPreviewSurface())
         } else {
             content.modifier(OriginalOverlaySurface(attributes: presentation == .readOnly))
         }
     }
+}
+
+// 只在 E 补验中分离原装饰层，生产 API 不增加诊断开关。
+enum SurfacePointerDecoration: String {
+    case plain, frozen, current, hidden, background, border, nonHittableBorder
 }

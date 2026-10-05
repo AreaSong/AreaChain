@@ -76,7 +76,9 @@ struct UnifiedSearchParameterField: View {
             DaybookPicker("unified.operation.value", selection: Binding(get: {
                 if case .choice(let value) = argument?.value { return value }; return ""
             }, set: { send($0.isEmpty ? nil : .choice($0)) }), options: [.init("", "unified.operation.unfilled")]
-                + choices.map { .init($0.value, verbatim: L10n.format($0.nameKey, locale: locale)) }, layout: .formRow, eventVersion: source.version)
+                + choices.map { .init($0.value, verbatim: controller.localSettings?.supports(command.id) == true
+                    ? UnifiedSearchSettingCopy.value(.choice($0.value), locale: locale, calendar: calendar)
+                    : L10n.format($0.nameKey, locale: locale)) }, layout: .formRow, eventVersion: source.version)
             .accessibilityIdentifier("unified.parameter.choice." + parameter.id.rawValue)
         case .boolean:
             DaybookPicker("unified.operation.value", selection: Binding<Bool?>(get: {
@@ -145,8 +147,12 @@ struct UnifiedSearchParameterField: View {
             return UnifiedSearchOperationCopy.value(argument.value, locale: locale, calendar: calendar)
         }()
         return VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            Text(verbatim: before + " → " + after).font(DaybookType.caption)
-                .fixedSize(horizontal: false, vertical: true)
+            if controller.localSettings?.supports(command.id) == true {
+                UnifiedSearchSettingValues(before: draft.baseline.preference?.memory, after: argument?.value)
+            } else {
+                Text(verbatim: before + " → " + after).font(DaybookType.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let raw = controller.parameterText[draft.id]?[parameter.id]?.text,
                !raw.isEmpty, context.value(raw) == nil {
                 Text("unified.operation.invalid").font(DaybookType.caption)

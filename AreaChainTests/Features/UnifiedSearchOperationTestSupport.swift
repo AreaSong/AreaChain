@@ -12,7 +12,8 @@ struct UnifiedSearchOperationTestContent: View {
             UnifiedSearchInput(buffer: controller.buffer, focused: $controller.inputFocused,
                 actions: controller.actions, layout: layout, reset: controller.inputReset,
                 parameter: controller.inputParameterContext, previewBelow: true)
-            UnifiedSearchOperationPanel(controller: controller).frame(height: 450)
+            // 960pt QA 窗口须同时容纳上方候选和结果固定页头；参数仍在面板内滚动。
+            UnifiedSearchOperationPanel(controller: controller).frame(height: 320)
             UnifiedSearchResults(controller: controller, layout: layout)
         }
         .padding(12).background(DaybookPalette.fill.page).unifiedSearchOverlayHost()

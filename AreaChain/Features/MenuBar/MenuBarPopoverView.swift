@@ -160,41 +160,55 @@ struct MenuBarPopoverView: View {
         .daybookHideInputChrome()
     }
 
-    @ViewBuilder
     private var syntaxHelpOverlay: some View {
-        // 透明点击感知层：点击气泡外部任意处轻巧收起，保持底层清晰通透
-        DaybookPalette.fill.scrim
-            .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    showingSyntaxHelp = false
+        ZStack(alignment: .top) {
+            // 遮罩和卡片在同一层内排序；不能把遮罩单独提升到根 ZStack 的卡片之前。
+            DaybookPalette.fill.scrim
+                .frame(width: DaybookMetrics.Window.popoverWidth, height: DaybookMetrics.Window.popoverHeight)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        showingSyntaxHelp = false
+                    }
                 }
-            }
-            .zIndex(20)
 
-        SyntaxExpandableCard(
-            isExpanded: $showingSyntaxHelp,
-            context: helpContext,
-            onSelectToken: { token in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    showingSyntaxHelp = false
+            SyntaxExpandableCard(
+                isExpanded: $showingSyntaxHelp,
+                context: helpContext,
+                onSelectToken: { token in
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        showingSyntaxHelp = false
+                    }
+                    handleSyntaxTokenSelection(token)
+                },
+                onSelectExample: helpContext == .search ? nil : { snippet in
+                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                        showingSyntaxHelp = false
+                    }
+                    setTaskText(snippet)
+                    captureFocused = true
                 }
-                handleSyntaxTokenSelection(token)
-            },
-            onSelectExample: helpContext == .search ? nil : { snippet in
-                withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                    showingSyntaxHelp = false
-                }
-                setTaskText(snippet)
-                captureFocused = true
-            }
-        )
-        .padding(.top, 92)
-        .transition(.asymmetric(
-            insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -6)),
-            removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
-        ))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
+            .onTapGesture { } // 卡片内部空白也属于帮助，不交给外部关闭遮罩。
+            .padding(.top, 92)
+            .zIndex(1)
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.96, anchor: .top).combined(with: .opacity).combined(with: .offset(y: -6)),
+                removal: .scale(scale: 0.98, anchor: .top).combined(with: .opacity)
+            ))
+        }
+        .zIndex(20)
+    }
+
+    func dismissSyntaxHelpForEscape(_ event: NSEvent) -> Bool {
+        let modifiers = event.modifierFlags.intersection([.command, .shift, .option, .control])
+        guard showingSyntaxHelp, event.keyCode == 53, modifiers.isEmpty,
+              (hostWindow?.firstResponder as? NSTextInputClient)?.hasMarkedText() != true else { return false }
+        withAnimation(DaybookMotion.interactive(reduceMotion)) {
+            showingSyntaxHelp = false
+        }
+        return true
     }
 
     private var tasksView: some View {

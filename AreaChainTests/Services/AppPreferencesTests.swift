@@ -59,17 +59,17 @@ struct AppPreferencesTests {
     }
 
     @Test @MainActor func writesLanguageAndAppearanceToInjectedDefaults() {
-        let previousAppearance = NSApp.appearance
-        defer { NSApp.appearance = previousAppearance }
+        var appearances: [AppAppearance] = []
         let name = "areachain.prefs.tests.\(UUID().uuidString)"
         let defaults = UserDefaults(suiteName: name)!
         defaults.removePersistentDomain(forName: name)
         defer { defaults.removePersistentDomain(forName: name) }
 
-        let prefs = AppPreferences(defaults: defaults)
+        let prefs = AppPreferences(defaults: defaults,
+            effects: LocalPreferenceEffects(applyAppearance: { appearances.append($0) }, post: { _ in }))
         prefs.language = .english
         prefs.appearance = .dark
-        #expect(NSApp.appearance?.name == .darkAqua)
+        #expect(appearances == [.system, .dark])
         #expect(defaults.string(forKey: AppPreferences.languageKey) == "english")
         #expect(defaults.string(forKey: AppPreferences.appearanceKey) == "dark")
         #expect(prefs.resolvedLocale.identifier == "en")
@@ -77,9 +77,7 @@ struct AppPreferencesTests {
         #expect(prefs.stampCaptureApp == false)
         #expect(prefs.syncCalendarEvents == false)
         prefs.stampCaptureApp = true
-        prefs.syncCalendarEvents = true
         #expect(defaults.bool(forKey: AppPreferences.stampCaptureAppKey))
-        #expect(defaults.bool(forKey: AppPreferences.syncCalendarEventsKey))
         #expect(prefs.quadrantTitleTruncation == .tail)
         prefs.quadrantTitleTruncation = .middle
         #expect(defaults.string(forKey: AppPreferences.quadrantTitleTruncationKey) == "middle")

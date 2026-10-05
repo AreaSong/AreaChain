@@ -9,6 +9,8 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     /// 注入的菜单栏浮层视图构造器，由 App 层或 Features 协调层注册
     var popoverViewProvider: (@MainActor () -> AnyView)?
 
+    private var preferenceObservation: PreferenceObservation?
+    private var displayedStatus: MenuBarStatus?
     private var statusItem: NSStatusItem?
     private var popover: NSPopover?
     private var container: ModelContainer?
@@ -57,9 +59,9 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         center.addObserver(forName: .boardDidChange, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in self?.refreshCount() }
         }
-        center.addObserver(forName: .appPreferencesDidChange, object: nil, queue: .main) { [weak self] _ in
-            Task { @MainActor in self?.refreshCount() }
-        }
+        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+            consumer: .statusItem, presentation: { [weak self] in self?.refreshPresentation() },
+            legacy: { [weak self] in self?.refreshCount() })
         center.addObserver(forName: .pasteClipboardCapture, object: nil, queue: .main) { [weak self] _ in
             Task { @MainActor in
                 guard let container = self?.container else { return }
@@ -195,7 +197,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             todos: todos.map(\.snapshot),
             dayKey: DayClock.shared.todayKey
         )
-        let locale = AppPreferences.shared.resolvedLocale
-        MenuBarStatusImage.apply(to: button, status: status, locale: locale)
+        displayedStatus = status
+        MenuBarStatusImage.apply(to: button, status: status, locale: AppPreferences.shared.resolvedLocale)
+    }
+
+    /// 普通偏好只重新呈现已有计数，不为语言/外观变化重新查询业务记录。
+    private func refreshPresentation() {
+        guard let button = statusItem?.button else { return }
+        MenuBarStatusImage.apply(to: button, status: displayedStatus, locale: AppPreferences.shared.resolvedLocale)
     }
 }

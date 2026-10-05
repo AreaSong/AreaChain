@@ -87,9 +87,14 @@ struct SettingsToggleConsumerTests {
         // AppDelegate 在 XCTest 下不装配服务，独立 suite 不能替代这层保护。
         #expect(AppWindows.workspaceViewProvider == nil)
         #expect(!fixture.prefs.stampCaptureApp && !fixture.prefs.syncCalendarEvents)
-        let observer = NotificationCenter.default.addObserver(forName: .appPreferencesDidChange,
-            object: nil, queue: .main) { _ in MainActor.assumeIsolated { state.preferenceNotifications += 1 } }
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let source = fixture.prefs.localPreferenceSource
+        let observers = [Notification.Name.appPreferencesDidChange, .localPreferenceDidChange].map { name in
+            NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { note in
+                if name == .localPreferenceDidChange, (note.object as? LocalPreferenceChange)?.source != source { return }
+                MainActor.assumeIsolated { state.preferenceNotifications += 1 }
+            }
+        }
+        defer { observers.forEach { NotificationCenter.default.removeObserver($0) } }
         let window = fixture.window(SettingsToggleProbeView(prefs: fixture.prefs, state: state), locale: locale)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)

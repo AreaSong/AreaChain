@@ -268,15 +268,7 @@ struct LiveComposerPreviewHeader: View {
         }
         .padding(7)
         .frame(width: 140)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .tagDetail)
         .transition(.asymmetric(
             insertion: .opacity.combined(with: .scale(scale: 0.94, anchor: .topTrailing)),
             removal: .opacity

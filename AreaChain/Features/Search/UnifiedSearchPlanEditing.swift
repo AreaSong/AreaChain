@@ -20,7 +20,8 @@ extension UnifiedSearchController {
 
     @discardableResult
     func enqueue(_ draft: CommandDraftStamp, source: UnifiedSearchBuffer) -> Bool {
-        guard validates(source), operationVisible, let stamp = source.plan else { return rejectPlan() }
+        guard validates(source), operationVisible, !settingSubmitting, settingExecution == nil,
+              let stamp = source.plan else { return rejectPlan() }
         do {
             try coordinator.send(.enqueue(draft, itemID: UUID(), plan: stamp), expecting: source.lease)
             editingParameter = nil
@@ -34,10 +35,12 @@ extension UnifiedSearchController {
 
     @discardableResult
     func sendPlan(_ event: CommandPlanEvent, source: UnifiedSearchBuffer) -> Bool {
-        guard validates(source), operationVisible, let stamp = source.plan else { return rejectPlan() }
+        guard validates(source), operationVisible, !settingSubmitting, settingExecution == nil,
+              let stamp = source.plan else { return rejectPlan() }
         do {
             try coordinator.send(.plan(event, stamp), expecting: source.lease)
             _ = publishOperation(text: buffer.text)
+            prepareSettingDraft()
             planMessage = "unified.plan.notExecutable"
             return true
         } catch { return rejectPlan(error) }
@@ -85,7 +88,8 @@ extension UnifiedSearchController {
 
     @discardableResult
     func removePlanItem(_ item: CommandPlanItemStamp, source: UnifiedSearchBuffer) -> Bool {
-        guard validates(source), operationVisible, let stamp = source.plan else { return rejectPlan() }
+        guard validates(source), operationVisible, !settingSubmitting, settingExecution == nil,
+              let stamp = source.plan else { return rejectPlan() }
         do {
             try coordinator.send(.removeFromPlan(item, stamp), expecting: source.lease)
             _ = publishOperation(text: buffer.text)

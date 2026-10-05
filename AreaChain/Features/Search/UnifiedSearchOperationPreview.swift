@@ -9,6 +9,7 @@ struct UnifiedSearchOperationPreview: View {
 
     var body: some View {
         let keySelection = controller.objectSelection
+        let source = controller.buffer
         Group {
             if controller.objectSelectionLocation != nil, let draft = controller.editingDraft,
                let command = CommandCatalog.standard.command(id: draft.commandID) {
@@ -18,6 +19,10 @@ struct UnifiedSearchOperationPreview: View {
             } else { operationContent }
         }
         .onKeyPress(keys: [.upArrow, .downArrow, .space, .return, .tab, .escape]) { key in
+            if key.key == .return, key.modifiers == .command {
+                controller.requestOperationSubmit(source)
+                return .handled
+            }
             guard let picker = keySelection, key.modifiers.isEmpty else { return .ignored }
             let intent: UnifiedSearchIntent
             switch key.key {
@@ -73,6 +78,7 @@ struct UnifiedSearchOperationPreview: View {
                 }
                 if let state = controller.operations { retained(state, source: source) }
                 UnifiedSearchPlanList(controller: controller)
+                UnifiedSearchSettingSubmission(controller: controller)
             }
             .padding(DaybookSpacing.md)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -117,8 +123,10 @@ struct UnifiedSearchOperationPreview: View {
             Button("unified.plan.enqueue") { _ = controller.enqueue(draft.stamp, source: source) }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 .accessibilityIdentifier("unified.plan.enqueue")
-            if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
-            Text(LocalizedStringKey(controller.operationMessage)).font(DaybookType.caption)
+            if draft.baseline.preference != nil { Text("unified.setting.baseline").font(DaybookType.caption) }
+            else if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
+            Text(LocalizedStringKey(controller.hasSettingAdapter && controller.localSettings?.supports(command.id) == true
+                                    ? "unified.setting.pending" : controller.operationMessage)).font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
         }
     }

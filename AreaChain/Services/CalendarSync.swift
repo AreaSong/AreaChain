@@ -6,7 +6,7 @@ enum CalendarSync {
     static let calendarTitle = "AreaChain"
 
     private static let client = EventKitCalendarClient()
-    private static var prefsObserver: NSObjectProtocol?
+    private static var prefsObserver: PreferenceObservation?
     private static var eventObserver: NSObjectProtocol?
     private static let coordinator = CalendarSyncCoordinator(
         engine: CalendarSyncEngine(
@@ -21,9 +21,8 @@ enum CalendarSync {
 
     static func start() {
         guard !isTestProcess, prefsObserver == nil else { return }
-        prefsObserver = NotificationCenter.default.addObserver(
-            forName: .appPreferencesDidChange, object: nil, queue: .main
-        ) { _ in Task { @MainActor in applyPreference() } }
+        prefsObserver = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+            consumer: .calendar, presentation: {}, legacy: { applyPreference() })
         applyPreference()
     }
 

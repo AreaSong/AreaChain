@@ -5,6 +5,7 @@ extension Notification.Name {
     static let focusCapture = Notification.Name("areachain.focusCapture")
     static let boardDidChange = Notification.Name("areachain.boardDidChange")
     static let hotKeyDidChange = Notification.Name("areachain.hotKeyDidChange")
+    static let localPreferenceDidChange = Notification.Name("areachain.localPreferenceDidChange")
     static let appPreferencesDidChange = Notification.Name("areachain.appPreferencesDidChange")
     static let pasteClipboardCapture = Notification.Name("areachain.pasteClipboardCapture")
     static let revealWorkspace = Notification.Name("areachain.revealWorkspace")

@@ -1,5 +1,20 @@
 # AreaChain 技能路由与交付闭环
 
+第九阶段 B 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦修饰器身份；架构治理补等价判据）→ areachain-verify。仅 DaybookSurface 静态卡片与 TasksPage 两种昨日外壳，接口及布局/业务责任见[组件目录](docs/component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。先直接挂载生产页面经原昨日入口取基线；静态 profile 配完整正常 PrivacyQA、独立标识/目录、原构建锁、六项钥匙串变量清除与串行事件。实际鼠标、程序化动作、像素与规则分开记录；指定 Cursor verifier 不可用保留缺口，不认证或替代。结果见[工程记录](docs/engineering.md#第九阶段-b昨日事项静态卡片外壳)。完成停止，筛选浮层、连击指标、标签色点及历史缺口只登记，不提交、安装或发布。
+
+第八阶段 F 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份，areasong-development 补架构等价判据）→ areachain-verify。只把 RowTitleBubble / RowNoteBubble.noteCardContent 接入原 floating 动态预设；公共层集中颜色和背景阴影，反馈、事件、箭头与命中形状留在气泡。接口及确定剩余范围见[组件目录](docs/component-catalog.md#第八阶段-f标题与备注气泡动态外壳)。修改前直接挂载原生产气泡，冻结装饰仅作像素对照；静态 profile 配完整正常 PrivacyQA、原构建锁、独立标识/目录、六项授权清除和串行事件。消费者默认复制路径不点击；指定 Cursor verifier 不可用继续保留缺口，不认证或替代。结果见[工程记录](docs/engineering.md#第八阶段-f标题与备注气泡动态外壳)。完成停止，不修复制、滚动、定位及其他历史问题，不提交、安装或发布。
+
+
+第八阶段 E 修复二沿原 E 路由；仅帮助宿主同层遮罩/card 排序及既有本地键盘监视器的 Escape 优先级。复用 FooterBar 菜单动作、MenuBarHelpSurfaceTests 和原事件 helper，正常完整 PrivacyQA 串行验证，输入法/筛选/窗口边界与原草稿动作见[组件目录](docs/component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)，实际证据见[工程补记](docs/engineering.md#e-修复二语法帮助遮罩与-escape-路由)。指定 Cursor verifier 缺口保留，不认证或替换；完成停止，不迁移气泡、不修复制/滚动。
+
+统一搜索 3A-2 沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（UI/UX 聚焦原生身份和焦点）→ areachain-verify。仅原隔离 Controller 显式装配四项 LocalSettingCommandAdapter，真实基线、单项提交、冲突及结果继续复用原 Coordinator / Plan / Run；[组件入口](docs/component-catalog.md#普通设置原生提交3a-2)与[权威 §9.56](docs/unified-search-commands.md#956-阶段-3a-2四类普通设置的原生提交冲突和反馈)为唯一交接。完整正常 QA 目标、独立 UserDefaults/副作用/隐私依赖、六项钥匙串变量清除、原构建锁与串行测试；锁忙停止原生执行。指定 Cursor verifier、C2B、外观、构建与人工缺口只按本轮证据更新，不认证或冒充复核。完成后停止，不修改用户偏好、不替换生产入口、不执行其他命令、多项事务或撤销。
+
+统一搜索 3A-1B 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify。复用 AppPreferences 四项共享入口、原草稿/计划/运行与 Coordinator；只显式装配隔离单项，默认未装配和生产搜索继续关闭。基线/资格/调用前占用、冲突返回及展示重试见[组件目录](docs/component-catalog.md#普通设置单项指令适配3a-1b)，完整契约与证据见[权威 §9.55](docs/unified-search-commands.md#955-阶段-3a-1b普通设置单项真实适配与隔离验证)。静态门禁配完整正常 QA 目标、独立标识/目录、六项钥匙串变量清除与原构建锁；测试串行，锁忙保留缺口。指定 Cursor verifier、C2B、外观和原生历史缺口不豁免，不认证或替代复核。完成后停止，不接生产 UI、多项事务、迁移、撤销或用户设置。
+
+第八阶段 E 修复一沿原 E 路由；仅公共浮层描边禁用命中，五预设共用，内容与宿主负责交互。冻结 medium 作为旧故障刻画，公共壳以双路径精确成功、边界与直接消费者回归验收；完整外缘像素/几何与动态时间分开。契约见[组件目录](docs/component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)，实际证据见[工程补记](docs/engineering.md#e-修复一公共浮层描边不拦截内容点击)。指定 Cursor verifier 缺口保留；完成即停止，帮助遮罩/键盘路由留下一轮，不迁移标题/备注或触碰系统剪贴板。
+
+第八阶段 E 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 modifier 顺序/身份）→ areachain-verify；areasong-development 仅补架构等价判据。只接 tagDetailBubble 与 SyntaxExpandableCard 最外壳，新 tagDetail / syntaxHelp 共用 60% / 0.8pt 背景阴影政策，原三个预设兼容。帮助原 clipShape 留在消费者外壳之后；接口及下一阶段动态气泡线索见[组件目录](docs/component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)。生产 MenuBarPopoverView 只经原合成宿主核对真实动作，不改状态或接线。静态 profile 配合完整正常 PrivacyQA、独立目录/标识、构建锁、六变量清除和串行测试；像素、缓存图、几何、合成事件与真人证据分开。指定 Cursor verifier 缺失保留缺口、不认证或替代；实际证据见[工程记录](docs/engineering.md#第八阶段-e标签详情与语法帮助卡外壳)。完成后停止，不迁移标题/备注，不修滚动、复制或其他历史问题。
+
 第八阶段 D 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 modifier 身份与顺序）→ areachain-verify；areasong-development 仅补架构等价判据。任务 mainRow 复用 suggestions，手记主卡接 smallBackground / !showsSuggestions；纯装饰差异及剩余气泡见[组件目录](docs/component-catalog.md#第八阶段-d两类实时预览主外壳)。先沿原隔离宿主直接挂生产预览和 SyntaxAutocompletePopup 取基线；完整正常 PrivacyQA、独立目录/标识、构建锁、六项钥匙串变量清除与串行执行，静态 profile 配合独立 Swift 测试。完整外缘像素、动态时间、原生合成事件和真人证据分开，指定 Cursor verifier 不可用仍保留缺口，不认证或替换。实际证据见[工程记录](docs/engineering.md#第八阶段-d两类实时预览主外壳)。完成后停止，不搬 Theme 历史组合、不增加消费者，不迁移标签详情、标题/备注气泡或帮助卡。
 
 第八阶段 C 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 modifier 身份）→ areachain-verify。仅扩展 DaybookSurface 并接 SyntaxAutocompletePopup / CaptureAttributesPopup；表现、实时预览边界和实际共享搜索入口见[组件目录](docs/component-catalog.md#第八阶段-c候选与只读属性浮层外壳)。测试先冻结原绘制，沿完整正常 PrivacyQA、独立标识/目录、构建锁、六项钥匙串变量清除和串行 XCTest；静态 profile 与原检查器/反例配合。并发编译失败不得排除文件；实际证据见[工程记录](docs/engineering.md#第八阶段-c候选与只读属性浮层外壳)。指定 Cursor verifier 不可用保留缺口，不认证或替换。完成后停止，不迁移实时预览/帮助卡，不修滚动目标归属、事件或其他历史问题。
@@ -260,3 +275,8 @@
 统一搜索 4A-3C2A 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify；不做原生编辑实现。复用 VaultKeyAccess 与唯一 HandoffCoordinator，命令独立载荷、同修订检查点和显式恢复见[组件目录](docs/component-catalog.md#统一搜索-4a-3c2a-命令保护载荷)，唯一契约与验收见[权威 §9.51](docs/unified-search-commands.md#951-阶段-4a-3c2a命令保护载荷与显式恢复)。测试沿现有 build/.build.lock 和正常完整 PrivacyQA 目标，锁不可得则报告未验证；不删锁、不认证、不以其他代理替代指定 Cursor verifier。原生 IME/撤销、4A-3B2 最终原生重验与历史缺口保留，完成后停止。
 
 统一搜索 4A-3C2B 沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份/焦点，保留 AppKit）→ areachain-verify。C2A 原服务只增加受控原生暂持与同次修订接续，隔离探针复用 DaybookAppKitTextView；[组件目录](docs/component-catalog.md#统一搜索-4a-3c2b-隔离原生接受探针) 与[权威矩阵](docs/unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性) 为接口/证据来源。正常完整 PrivacyQA 目标、原测试锁、六项授权变量清除和串行执行；指定 Cursor verifier、4A-3B2 最终原生和人工缺口保留。marked text、绕过 delegate 的 storage 写入与生产敏感入口不开放，停在 C2B。
+
+
+## 普通偏好共享读写（3A-1A）
+
+沿 areachain-workflow → 架构治理/可靠性 → areachain-ui（UI/UX 聚焦 Observation 与 Binding）→ areachain-verify。复用 AppPreferences、旧 GeneralSettingsSection 四 Binding 和原 QA 宿主；公共入口与真实订阅见[组件目录](docs/component-catalog.md#普通偏好共享入口3a-1a)。仅注入存储与副作用、拆四项普通事件，真实保证和下一阶段前置见[权威 §9.54](docs/unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)。静态门禁配独立 QA 标识/目录、串行定向测试及原构建锁；锁忙保留缺口，不运行全量包含排除能力的测试。指定 Cursor verifier 缺口保留，不重查认证或替代。完成后停止，不接生产搜索、handler、多项事务或用户设置。

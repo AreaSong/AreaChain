@@ -50,6 +50,22 @@ struct OriginalDiaryPreviewSurface: ViewModifier {
     }
 }
 
+/// E 阶段冻结原标签详情/帮助外壳，不借用新公共边框值，避免对照随实现一起变化。
+struct OriginalDetailSurface: ViewModifier {
+    var help = false
+
+    func body(content: Content) -> some View {
+        let radius = help ? DaybookRadius.medium : DaybookRadius.regular
+        content.background(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .fill(DaybookPalette.fill.page).daybookElevation(.floating)
+        ).overlay(
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
+                .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8)
+        )
+    }
+}
+
 @MainActor
 enum OverlaySurfaceTestSupport {
     static let cases = ["candidates", "task-combined", "task-preview", "diary-combined", "diary-preview", "empty", "attributes"]

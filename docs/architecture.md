@@ -1,5 +1,30 @@
 # 架构与目录
 
+### 第九阶段 B 静态卡片呈现边界
+
+DaybookSurface 的 `daybookStaticCardSurface()` 只提供固定静态绘制，不复用带内部 hovering 的交互 modifier，不引入状态或布局。原 `.card` 自动悬停与选择、floating 描边非命中政策保持。TasksPage 的两种昨日组合只替换背景/内描边，显隐、布局选择、投影、行检查日与逐项移动仍属于原 Feature；公共层不接模型、查询、导航或保存回调。接口和验证边界见[组件目录](component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。
+
+### 第八阶段 F 动态气泡呈现边界
+
+DaybookFloatingSurface.rowBubble 只消费外部悬停与复制反馈值，在原 floating 装配中集中 small/continuous、页面底色、0.8pt 居中动态描边及背景阴影。状态切换不分支重建内容；isPresented 只开关装饰，五个静态预设与旧接口保留。装饰描边继续不参与命中，帮助层级/Escape 修复不变。
+
+RowTitleBubble 与 RowNoteBubble 独占原事件、反馈和 Task 生命周期；公共层没有回调、计时器、悬停处理或状态镜像。备注仅 noteCardContent 被装饰，箭头仍在卡片外，圆角标题与矩形备注点击区各自保持。三消费者的显隐、敏感判断和偏移不下沉，Void 复制回调不能证明系统写入成功。接口、合理差异及验证入口见[组件目录](component-catalog.md#第八阶段-f标题与备注气泡动态外壳)，实际证据见[工程记录](engineering.md#第八阶段-f标题与备注气泡动态外壳)。
+
+
+普通设置 3A-2 在原 UnifiedSearchController 显式注入 LocalSettingCommandAdapter；仅四项能力开放到隔离 UI。Features 只衔接原事件及投影实际 report，prepare 将真实标量基线写入原 draft，enqueue / seal / attempt 继续唯一移交。ReadSession 负责显示资格；最后写入也核对同一显示会话，写入后撤显示不撤销原 Run 事实。成功/noChange 仅通过原 releaseExecution 显式释放，未知/已提交失败不退回草稿；结果和证据只维护在[权威 §9.56](unified-search-commands.md#956-阶段-3a-2四类普通设置的原生提交冲突和反馈)。生产搜索、其他命令、多项与安全撤销仍关闭。
+
+### 普通设置单项运行（3A-1B）
+
+Services 的 LocalSettingCommandAdapter 仅显式组合现有 AppPreferences 和 CommandHandoffCoordinator。CommandPreferenceBaseline 是无平台标量证据，挂在原 CommandDraftBaseline；适配器的私有签发登记防止合成值成为执行依据，不建立偏好镜像。当前 operation/attempt 在协调者先占用，再由共享偏好入口重新读回原值、核验最后 lease 并同步写入；可信完成可跨同一 ownership 的展示修订，不能跨运行或转交代次。
+
+Run 保留 noChange、写调用/读回以及独立 preferencePresentation 结果。未知不重试；只允许确实未提交的单项经受限转移返回原计划并推进版本。多项不封存、不逐键部分执行；生产搜索、敏感输入、多项事务及撤销继续关闭。完整接口、冲突确认和证据以[权威 §9.55](unified-search-commands.md#955-阶段-3a-1b普通设置单项真实适配与隔离验证)为准。
+
+### 第八阶段 E 标签详情与语法帮助外壳
+
+DaybookFloatingSurface 的 tagDetail / syntaxHelp 只表达 regular/medium continuous 圆角及共同的 60% / 0.8pt 居中描边，沿既有背景阴影装配；颜色、描边与阴影由公共层维护。原 suggestions/readOnly/smallBackground 的 70% / 0.7pt、阴影和 isPresented 身份保持。公共层不接布局、裁切、事件或状态，帮助原 clipShape 继续在消费者装饰之后裁切；公共完整阴影与实际帮助裁切是两类证据。
+
+仅替换 LiveComposerPreviewHeader.tagDetailBubble 与 SyntaxExpandableCard 的重复背景/边框，不搬历史 Theme 业务。标签出现条件、解析、滚动与草稿不动；MenuBarPopoverView 保留唯一帮助状态、上下文、示例替换/搜索追加及关闭焦点责任，只作为隔离测试入口。接口、标题/备注动态边框的后续线索及证据见[组件目录](component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)和[工程记录](engineering.md#第八阶段-e标签详情与语法帮助卡外壳)。
+
 ### 第八阶段 D 实时预览主外壳
 
 任务 mainRow 直接复用 suggestions；手记 body 的 smallBackground 与 suggestions 共用背景阴影装配，但保留 small/continuous。手记仍先绘 row 悬停表面，再按 !showsSuggestions 开关浮层装饰；开关只作用于背景/边框/阴影，内容身份与复制反馈不归公共层。readOnly 的整体阴影及旧表面接口不改。
@@ -418,3 +443,8 @@ Theme 的 `daybookScrollAssembly` 只组合指示器策略、Configurator 与原
 ### 命令原生暂持边界（4A-3C2B）
 
 ContentSession 的同步借用仍禁止调用者任意缓存。唯一原生暂持由 CommandDraftNativeOwner 登记，专用 CommandProtectedTextView 只收当前字段/选区，基线及其他参数留原服务。原生成功接受前必须先有同版本密文；连续编辑只在同次已核验提交后签发新 access，旧 access 过期。独立 UndoManager 只留密文，撤销旧正文也重新保护；撤权同步清本控件。系统 IME 与外部 mutable textStorage 不能由该探针提供完整保全，生产入口关闭；具体状态关系、反例、active/planItem 与验证限制见[权威 §9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)。
+
+
+### 普通偏好权威入口（3A-1A）
+
+AppPreferences 保留唯一四值及原 UserDefaults 键；兼容可写属性和后续适配共用 readLocalSetting / applyLocalSetting。逐字段修订只计本入口调用，raw 是注入存储当前搜索域可见原值，不能检测外部全部 ABA 或承诺物理落盘。普通事件带实例/存储句柄身份，不含正文或其他设置；PreferenceObservation 按身份/字段路由展示，CalendarSync 仅旧事件，手记普通事件不刷新正文。完整结果、旧页同值兼容、失败边界和验证状态只维护在[权威 §9.54](unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)。

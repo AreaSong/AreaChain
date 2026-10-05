@@ -76,10 +76,13 @@ extension UnifiedSearchController {
                         argument: CommandArgument? = nil) -> UnifiedSearchBuffer? {
         guard validates(source), operationVisible, let state = operations,
               let command = CommandCatalog.standard.command(id: id),
-              command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil else { return nil }
+              command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil,
+              !settingSubmitting, settingExecution == nil else { return nil }
         if let active = state.active, active.commandID == id {
             operationExpanded = true
-            return publishOperation(text: text ?? buffer.text)
+            _ = publishOperation(text: text ?? buffer.text)
+            prepareSettingDraft()
+            return buffer
         }
         editingParameter = nil
         if let retained = state.retained.first(where: { $0.commandID == id }) {
@@ -88,24 +91,26 @@ extension UnifiedSearchController {
                                  text: text ?? command.path)
         }
         let draft = CommandDraft(id: UUID(), hostID: source.lease.ownership.hostID, commandID: id,
-            baseline: syntheticBaselines[id] ?? .init(), arguments: argument.map { [$0] } ?? [])
+            baseline: localSettings?.supports(id) == true ? .init() : syntheticBaselines[id] ?? .init(),
+            arguments: argument.map { [$0] } ?? [])
         return sendOperation(.start(expectedRevision: state.revision, draft), source: source, text: text ?? command.path)
     }
 
     @discardableResult
     func sendOperation(_ event: CommandDraftEvent, source: UnifiedSearchBuffer, text: String? = nil) -> UnifiedSearchBuffer? {
-        guard validates(source), operationVisible else { return nil }
+        guard validates(source), operationVisible, !settingSubmitting, settingExecution == nil else { return nil }
         if source.planItem != nil { return sendPlanDraft(event, source: source) }
         do {
             let effect = try coordinator.send(.operation(event), expecting: source.lease)
-            let result = publishOperation(text: text ?? buffer.text)
+            _ = publishOperation(text: text ?? buffer.text)
             if case .operation(let intents) = effect, intents.contains(.rejectedEvent) {
                 operationMessage = "unified.operation.stale"
                 return nil
             }
             operationMessage = "unified.operation.notExecuted"
             operationExpanded = true
-            return result
+            prepareSettingDraft()
+            return buffer
         } catch { return nil }
     }
 
@@ -191,11 +196,4 @@ extension UnifiedSearchController {
         _ = sendOperation(.restore(expectedRevision: state.revision, stamp), source: source, text: command.path)
     }
 
-    func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
-        guard validates(source), operationVisible else { return }
-        operationMessage = "unified.operation.submitBlocked"
-        refreshOperationPresentation()
-        planMessage = "unified.plan.notExecutable"
-        // 计划静态合法也不授权执行；这里不封存、不启动协议、不生成回执。
-    }
 }

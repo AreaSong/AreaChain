@@ -88,6 +88,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     private let minSize: NSSize?
     private let root: @MainActor () -> AnyView
     private var window: NSWindow?
+    private var preferenceObservation: PreferenceObservation?
 
     var hostedWindow: NSWindow? { window }
 
@@ -102,15 +103,9 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
         self.minSize = minSize
         self.root = root
         super.init()
-        NotificationCenter.default.addObserver(
-            forName: .appPreferencesDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            Task { @MainActor in
-                self?.refreshChrome()
-            }
-        }
+        preferenceObservation = PreferenceObservation(source: AppPreferences.shared.localPreferenceSource,
+            consumer: .windowChrome, presentation: { [weak self] in self?.refreshChrome() },
+            legacy: { [weak self] in self?.refreshChrome() })
     }
 
     func show() {

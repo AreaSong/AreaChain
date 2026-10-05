@@ -86,6 +86,20 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     private func applyLocal(_ result: CommandExecutionResult, to unit: inout CommandExecutionUnit) throws {
         guard unit.local == .notSubmitted else { throw CommandExecutionError.invalidResult }
         switch result {
+        case .noChange:
+            guard isSinglePreference(unit) else { throw CommandExecutionError.invalidResult }
+            unit.state = .succeeded
+        case .preferenceWrite(let facts):
+            guard isSinglePreference(unit), facts.isValid else { throw CommandExecutionError.invalidResult }
+            unit.preferenceWrite = facts
+            if facts.readback == .matches {
+                unit.effects[.preferencePresentation] = facts.presentationFailed ? .failed : .succeeded
+            }
+            if facts.write == .notCalled { unit.state = .failed }
+            else if facts.write == .returned && facts.readback == .matches {
+                unit.local = .committed
+                unit.state = facts.presentationFailed ? .failed : .succeeded
+            } else { unit.local = .unknown; unit.state = .verificationRequired }
         case .committed(let created, let external):
             guard !unit.atomic || external.isEmpty else { throw CommandExecutionError.invalidResult }
             for (id, output) in created {
@@ -109,8 +123,13 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
             }
             unit.conflicts = diagnostics
             unit.state = .conflict
-        case .external: throw CommandExecutionError.invalidResult
+        case .external, .preferencePresentation: throw CommandExecutionError.invalidResult
         }
+    }
+
+    private func isSinglePreference(_ unit: CommandExecutionUnit) -> Bool {
+        !unit.atomic && snapshot.items.count == 1 && unit.members.count == 1
+            && CommandPlanSemantics.isAtomicSetting(snapshot.items[0].draft.commandID)
     }
 
     private func validConflict(_ diagnostic: CommandFieldConflict, with item: CommandPlanItem) -> Bool {
@@ -128,6 +147,21 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     private func applyExternal(_ result: CommandExecutionResult, to unit: inout CommandExecutionUnit) throws {
+        if case .preferencePresentation(let presentation) = result {
+            guard isSinglePreference(unit), unit.local == .committed, unit.preferenceWrite != nil,
+                  unit.effects[.preferencePresentation] == .running else { throw CommandExecutionError.invalidResult }
+            unit.preferencePresentation = presentation
+            switch presentation {
+            case .superseded:
+                unit.effects[.preferencePresentation] = .failed
+                unit.state = .notExecuted
+            case .applied(let appearance, let event):
+                let failed = appearance == .threw || event == .threw
+                unit.effects[.preferencePresentation] = failed ? .failed : .succeeded
+                unit.state = failed ? .failed : .succeeded
+            }
+            return
+        }
         guard unit.local == .committed, case .external(let results) = result else { throw CommandExecutionError.invalidResult }
         let running = Set(unit.effects.filter { $0.value == .running }.map(\.key))
         guard Set(results.keys) == running, !running.isEmpty,
@@ -208,6 +242,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     func retryAssessment(_ attempt: CommandAttemptStamp, assurance: CommandRetryAssurance) -> CommandRetryAssessment {
         guard let index = try? currentIndex(attempt) else { return .notRetryable }
         let unit = units[index]
+        if unit.preferencePresentation == .superseded { return .notRetryable }
         if unit.local == .unknown || unit.state == .verificationRequired { return .requiresVerification }
         guard [.failed, .notExecuted].contains(unit.state) else { return .notRetryable }
         if unit.local == .notSubmitted {

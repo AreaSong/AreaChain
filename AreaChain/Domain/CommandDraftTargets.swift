@@ -63,12 +63,18 @@ struct CommandDraftBaseline: Equatable, CustomStringConvertible, CustomDebugStri
     /// 字典缺项表示未提供，不等同于已知 absent；原值从不由领域层读取。
     let values: [Field: CommandOriginalValue]
     let isReadable: Bool
+    let preference: CommandPreferenceBaseline?
     static let protectedContent = Self(values: [:], isReadable: false)
     private init(values: [Field: CommandOriginalValue], isReadable: Bool) {
         self.values = values
         self.isReadable = isReadable
+        self.preference = nil
     }
-    init(_ values: [Field: CommandOriginalValue] = [:]) { self.values = values; self.isReadable = true }
+    init(_ values: [Field: CommandOriginalValue] = [:], preference: CommandPreferenceBaseline? = nil) {
+        self.values = values
+        self.isReadable = true
+        self.preference = preference
+    }
 
     func original(_ parameter: CommandParameterID, targets: CommandDraftTargets) -> CommandOriginalValue? {
         guard isReadable else { return nil }

@@ -48,6 +48,7 @@ struct DaybookControlsPreview: View {
             controls
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
+                    staticCardSamples
                     DaybookFloatingSurfaceSamples()
                     DaybookSecureInputSamples()
                     DaybookFormInputSamples()
@@ -80,6 +81,16 @@ struct DaybookControlsPreview: View {
         .environment(\.locale, Locale(identifier: localeID))
         .environment(\.daybookButtonReduceMotionPreview, reduceMotion)
         .preferredColorScheme(dark ? .dark : .light)
+    }
+
+    private var staticCardSamples: some View {
+        HStack(spacing: DaybookSpacing.md) {
+            Text(verbatim: "Static card · 静态卡片")
+                .padding(10).daybookStaticCardSurface()
+            Text(verbatim: "Interactive card · 悬停卡片")
+                .padding(10).daybookSurface(.card)
+        }
+        .accessibilityIdentifier("controls.static.cards")
     }
 
     private var dateSamples: some View {

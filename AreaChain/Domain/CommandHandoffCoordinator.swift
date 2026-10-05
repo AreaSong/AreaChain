@@ -1,6 +1,19 @@
 import Foundation
 import Observation
 
+struct CommandRuntimeInvocation: Equatable {
+    let id: UUID
+    let lease: CommandHostLease
+    let operation: CommandOperationIdentity
+    let attempt: CommandAttemptStamp
+    fileprivate init(id: UUID, lease: CommandHostLease, operation: CommandOperationIdentity, attempt: CommandAttemptStamp) {
+        self.id = id
+        self.lease = lease
+        self.operation = operation
+        self.attempt = attempt
+    }
+}
+
 /// 注入的单一运行内权威；引用不能按值复制。MainActor 串行、同步且无回调的提交不存在半次发布。
 /// 只登记指令宿主，不持有窗口、文件能力、业务对象或全局单例；不提供从旧快照重新登记的入口。
 @Observable @MainActor final class CommandHandoffCoordinator: CustomStringConvertible, CustomDebugStringConvertible {
@@ -13,6 +26,8 @@ import Observation
     @ObservationIgnored private var hosts: [String: CommandOwnedHost] = [:]
     @ObservationIgnored private var pending: [UUID: Pending] = [:]
     @ObservationIgnored private var statuses: [UUID: CommandHandoffStatus] = [:]
+    @ObservationIgnored private var invocations: [UUID: CommandRuntimeInvocation] = [:]
+    @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
     private(set) var ownershipRevision: UInt64 = 0
 
     init(pages: [ContentQueryPageContext]) throws {
@@ -40,12 +55,80 @@ import Observation
 
     @discardableResult func send(_ event: CommandHostEvent, expecting lease: CommandHostLease) throws -> CommandHostEffect {
         try validate(lease)
+        if invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) {
+            switch event {
+            case .query: break
+            default: throw CommandExecutionError.busy
+            }
+        }
         var next = try host(lease.ownership.hostID).session
         let effect = try next.applyOwnedEvent(event)
         // 连相同文字的再次输入和无状态输出的操作意图也使准备票据失效。
         hosts[lease.ownership.hostID] = .init(
             lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
         return effect
+    }
+
+    /// 在任何可重入 IO 前登记；所有适配实例共用此登记，纯回执去重不能替代它。
+    func claimPreferenceInvocation(_ operation: CommandOperationIdentity, attempt: CommandAttemptStamp,
+                                   expecting lease: CommandHostLease) throws -> CommandRuntimeInvocation {
+        try validate(lease)
+        let session = try host(lease.ownership.hostID).session
+        guard let run = session.execution, run.stamp == operation.execution,
+              run.operation(operation.operationID) == operation, run.attempt(attempt.unitID) == attempt,
+              run.snapshot.items.count == 1, run.units.count == 1,
+              run.units[0].state == .running, run.units[0].receipt?.attempt != attempt,
+              session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil,
+              !invokedAttempts.contains(attempt),
+              !invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) else {
+            throw CommandExecutionError.stale
+        }
+        let invocation = CommandRuntimeInvocation(id: UUID(), lease: lease, operation: operation, attempt: attempt)
+        invokedAttempts.insert(attempt)
+        invocations[invocation.id] = invocation
+        return invocation
+    }
+
+    func validatePreferenceInvocation(_ invocation: CommandRuntimeInvocation) throws {
+        guard invocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
+        try validate(invocation.lease)
+        let run = try host(invocation.lease.ownership.hostID).session.execution
+        guard run?.operation(invocation.operation.operationID) == invocation.operation,
+              run?.attempt(invocation.attempt.unitID) == invocation.attempt else { throw CommandExecutionError.stale }
+    }
+
+    /// 可信完成只跨同一 ownership 的展示修订；不会给产生请求的旧 lease 续租。
+    func completePreferenceInvocation(_ invocation: CommandRuntimeInvocation, result: CommandExecutionResult) throws {
+        guard invocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
+        let current = try host(invocation.lease.ownership.hostID)
+        guard current.lease.ownership == invocation.lease.ownership,
+              current.session.execution?.operation(invocation.operation.operationID) == invocation.operation else {
+            throw CommandExecutionError.stale
+        }
+        var next = current.session
+        try next.receiveProtocolResult(.init(attempt: invocation.attempt, result: result))
+        hosts[next.hostID] = .init(lease: .init(ownership: current.lease.ownership,
+                                             revision: current.lease.revision + 1), session: next)
+        invocations[invocation.id] = nil
+    }
+
+    func replacePreferenceBaseline(_ baseline: CommandDraftBaseline, arguments: [CommandArgument],
+                                   draft: CommandDraftStamp, expecting lease: CommandHostLease) throws {
+        try validate(lease)
+        var next = try host(lease.ownership.hostID).session
+        try next.replacePreferenceBaseline(baseline, arguments: arguments, expecting: draft)
+        hosts[next.hostID] = .init(lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
+    }
+
+    func returnUnsubmittedPreference(_ attempt: CommandAttemptStamp, plan: CommandPlanStamp,
+                                    expecting lease: CommandHostLease) throws {
+        try validate(lease)
+        guard !invocations.values.contains(where: { $0.lease.ownership == lease.ownership }) else {
+            throw CommandExecutionError.busy
+        }
+        var next = try host(lease.ownership.hostID).session
+        try next.returnUnsubmittedPreference(attempt, expecting: plan)
+        hosts[next.hostID] = .init(lease: .init(ownership: lease.ownership, revision: lease.revision + 1), session: next)
     }
 
     /// 凭据只能由成功封存的内容服务生成，仍由此处核验唯一当前宿主。

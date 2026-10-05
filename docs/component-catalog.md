@@ -1,5 +1,67 @@
 # 共享组件与复用目录
 
+## 第九阶段 B：昨日事项静态卡片外壳
+
+[DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `daybookStaticCardSurface()` 只绘制 medium/continuous 圆角、cardSurface 底色和 border.subtle 的 0.8pt strokeBorder 内描边。背景与描边不参与命中；不增加布局、裁切、状态、悬停、选中、阴影、动画或任意颜色参数。原 `daybookSurface(.card)` 仍自动跟踪悬停及外部选择；row/card/panel/banner 和 floating 全部默认接口保持。
+
+仅 [TasksPage+Sections.swift](../AreaChain/Features/Tasks/TasksPage+Sections.swift) 的 `yesterdaySection` / `centeredYesterdaySection` 接入，分别保留 padding 8/10、标题原边距、外水平 1/4；普通分支底部 8 和 transition 不变。原 TasksPage 决定展开、空态及今日为空时的分支选择，原行决定悬停、检查目标/检查日、完成与跳过；标题、计数与 moveAllYesterdayTodosToToday 留在 Feature。全部移动仍只遍历昨日待办、逐项调用原移动入口，不变为批量原子事务。
+
+验证复用 DaybookSurfaceTests、DaybookFloatingSurfaceTests、TasksPageEmptyStateTests、DayBoardPageProjectionTests、TaskListScrollTests 和 MonthGridMoveRepository / ModelChanges 失败设施；新增 [公共静态表面测试](../AreaChainTests/Theme/DaybookStaticCardTests.swift)、[生产布局测试](../AreaChainTests/Features/YesterdayCardConsumerTests.swift)、[生产操作测试](../AreaChainTests/Features/YesterdayCardActionTests.swift)，合成输入沿 [原生宿主支持](../AreaChainTests/Features/YesterdayCardTestSupport.swift)。修改前直接挂生产 TasksPage 经原昨日入口取基线，冻结仅限装饰。实际证据与未验项见[工程记录](engineering.md#第九阶段-b昨日事项静态卡片外壳)。
+
+第九阶段其他三类发现继续登记：筛选浮层、连击指标、标签色点；本轮均不接入。第八阶段手记 AX、下方气泡保留、瞬态悬停、滚动归属与羽化等历史缺口仍保留，不由本轮外壳结论覆盖。
+
+## 第八阶段 F：标题与备注气泡动态外壳
+
+[DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `DaybookFloatingSurface.rowBubble(isHovered:isCopied:)` 沿原 `daybookSurface(floating:isPresented:)` 接收纯呈现值：复制反馈 `accent.base.opacity(0.7)` 优先于悬停 `cardBorderHover`，普通 `border.default.opacity(0.9)`。small/continuous、页面底色、0.8pt 居中 stroke 与仅背景形状的 floating 阴影集中维护；描边沿 E 修复一 `allowsHitTesting(false)`，不增加布局、裁切、contentShape、事件或本地状态。原五预设及旧 surface API 保持兼容。
+
+| 接入入口 | 留在消费者的责任 |
+|---|---|
+| [RowTitleBubble](../AreaChain/Theme/DaybookRowBubbles.swift) | 水平 8/垂直 5.5 padding、最大宽度 260、多行排版、圆角 contentShape、growsUpward 兼容参数 |
+| 同文件 RowNoteBubble.noteCardContent | 水平 9/垂直 7 padding、宽度 210、八行正文/行距/headerTitleKey；箭头在装饰外，方向、5pt 高度、偏移与 arrowPadding 不动 |
+| 两气泡共同保留 | 原 onCopy/onHover、光标 push/pop/卸载、isHovered/isCopied、Task、1200ms 复位及动画、compositingGroup/zIndex；备注外层 Rectangle 命中及 fixedSize 不动 |
+
+三处直接消费者仍是 DiarySummaryRow+Bubbles、LiveComposerPreviewHeader、LiveDiaryComposerPreview。截断、显隐、候选互斥、敏感投影、上下位置及偏移留在原宿主；不新增生产消费者或复制替身。Void onCopy 只证明调用发生，反馈不能证明系统复制成功。
+
+验证沿原 PrivacyQA、TaskRowBubbleTests、DaybookFloatingSurfaceTests、LivePreviewSurfaceTests / LivePreviewCompositionTests、OverlaySurfaceConsumerTests 及手记行宿主；新增 [动态外壳](../AreaChainTests/Theme/RowBubbleSurfaceTests.swift)、[直接原生气泡](../AreaChainTests/Theme/RowBubbleInteractionTests.swift)、[消费者](../AreaChainTests/Theme/RowBubbleConsumerTests.swift) 和[冻结装饰/合成支持](../AreaChainTests/Theme/RowBubbleTestSupport.swift)。原 ControlsPreview / DaybookFloatingSurfaceSamples 展示四种状态及外部箭头。原生点击只在直接气泡的无副作用回调上计数；无安全注入点的消费者不点击复制。实际结果与缺口见[工程记录](engineering.md#第八阶段-f标题与备注气泡动态外壳)。
+
+第八阶段原登记的标题/备注外壳与两处边框映射已接入；C/D/E 的未迁移描述是历史状态。两种点击形状、箭头、内容高度及反馈归属是合理差异；B 的滚动归属、D 的复制按钮辅助树、已有悬停/窗口边缘与定位属于运行问题，不能当作本轮遗漏继续修复。这里不宣称全仓库不存在其他未审计重复。
+
+
+## 普通设置原生提交（3A-2）
+
+- [UnifiedSearchSettingEditing](../AreaChain/Features/Search/UnifiedSearchSettingEditing.swift) 的 `requestOperationSubmit` 扩展原 Controller；可选显式注入 LocalSettingCommandAdapter，点击与原生 ⌘Return 共用入口。prepare 只在开始/恢复/编辑或明确重新读取时采集缺失基线，发布新 buffer；参数、计划及运行仍唯一属于 Coordinator。
+- [UnifiedSearchSettingSubmission](../AreaChain/Features/Search/UnifiedSearchSettingSubmission.swift) 在原 OperationPreview 中呈现实际回执、原值/当前/拟修改值及受控冲突操作；ParameterField、PlanList 共用值展示，按钮复用 UnifiedSearchPlanButton。原 ReadSession 继续负责撤显示，服务最后写入门禁也核对显式传入的同一 ReadSession。
+- [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) 增加活动单草稿 readiness、实际 report 投影和 canReturnToPlan / canRetryPresentation；复用原严格映射、受限返回和 Run 资格，不复制执行状态机。prepare 支持尚未填写值的普通设置，真实提交仍严格要求完整参数。
+- 消费者为原标准/紧凑隔离宿主及 UnifiedSearchSetting 四套测试；旧参数、计划、服务与设置页继续回归。只装配 language / appearance / truncation / captureSource，多项和执行后撤销关闭；生产搜索未启用。完整接口、运行事实保留和实际证据见[权威 §9.56](unified-search-commands.md#956-阶段-3a-2四类普通设置的原生提交冲突和反馈)。
+
+## 普通设置单项指令适配（3A-1B）
+
+- [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) 显式注入原 AppPreferences 与 CommandHandoffCoordinator；prepare / readiness / submit / execute 只开放四项普通设置。默认 preferences 为 nil，目录及生产搜索仍关闭；没有可编辑偏好副本或第二套计划。
+- [LocalSettingCommandMapping](../AreaChain/Services/LocalSettingCommandMapping.swift) 复用目录、参数/目标校验，严格映射 choice 与 Bool；[CommandPreferenceBaseline](../AreaChain/Domain/CommandPreferenceEvidence.swift) 保存真实标量来源、原始键、内存/存储值和逐字段修订，随原草稿/计划迁移，实际签发登记仍由适配器核验。
+- Coordinator 的 claimPreferenceInvocation / completePreferenceInvocation 在调用前占用原 operation/attempt，完成只归原 run；Run 增加 noChange、preferenceWrite、preferencePresentation 事实。未提交单项通过 returnUnsubmittedToPlan 返回原计划身份，rereadConflict / resolveConflict 绑定一次证据；未知/已提交不能返回重放，retryPresentation 不写偏好。
+- 原设置页继续四 Binding 即时保存。消费者是五套 LocalSettingCommand 服务测试与共享隔离夹具，旧协议、偏好、事件与设置分节回归；没有生产 UI 装配。结果映射、验证及多项事务前置只维护在[权威 §9.55](unified-search-commands.md#955-阶段-3a-1b普通设置单项真实适配与隔离验证)。
+
+## 第八阶段 E：标签详情与语法帮助卡外壳
+
+**E 修复二**：MenuBarPopoverView 将原遮罩和卡片组织为根 ZStack 的同一 `zIndex(20)` 层，层内卡片为 1、遮罩为默认 0；原筛选仍为 30。卡片空白由宿主局部点击区域接住，外部关闭不穿透；尺寸、92pt 偏移、原裁切与 transition 保留。原 setupTabKeyMonitor 限定有效可见宿主，先走筛选，再由内部 dismissSyntaxHelpForEscape 处理无核心修饰键且无 marked text 的 Escape；只改变唯一 showingSyntaxHelp，卸载移除监视器并清宿主引用。输入、草稿与原回调不变，帮助关闭后恢复原输入路由。回归沿原 [帮助测试](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift) 及宿主内的 [键盘回归](../AreaChainTests/Features/MenuBarHelpKeyboardTests.swift)、[鼠标回归](../AreaChainTests/Features/MenuBarHelpPointerTests.swift)；实际结果见[工程补记](engineering.md#e-修复二语法帮助遮罩与-escape-路由)。
+
+**E 修复一（2026-10-04）**：公共浮层装饰性描边不参与命中，内容与宿主继续负责交互。唯一生产修复是在 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图上设置 `allowsHitTesting(false)`，同时覆盖五预设；背景命中、内容真实点击范围、isPresented 身份、绘制顺序及原 row/card/panel/banner 不变。冻结外壳继续记录旧 medium 故障，公共外壳改为严格成功与边界次数断言，不再要求故障路径点击轨迹相同。直接帮助卡的鼠标证据不代表生产帮助遮罩或 Escape 已修复；下一轮只处理宿主层级和键盘路由。实际回归、静态对照及缺口见[工程补记](engineering.md#e-修复一公共浮层描边不拦截内容点击)。
+
+复用 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `DaybookFloatingSurface` / `daybookSurface(floating:isPresented:)`，两个明确预设共享页面底色、border.default 的 **60% / 0.8pt 居中 stroke**（边缘内外各 0.4pt）及背景形状阴影。
+
+| 预设与消费者 | 保留的呈现和责任 |
+|---|---|
+| `tagDetail`：[LiveComposerPreviewHeader.tagDetailBubble](../AreaChain/Theme/LiveComposerPreviewHeader.swift) | regular/continuous；padding 7、宽 140、列表上限 120、行样式/指示器、位置与两层 transition 原样。原 canFit、多标签、候选及标题悬停条件仍由消费者决定。 |
+| `syntaxHelp`：[SyntaxExpandableCard](../AreaChain/Theme/SyntaxHelpCard.swift) | medium/continuous；宽 popoverWidth - 24；原 clipShape 仍在整个浮层装饰之后，实际帮助卡会裁掉外部阴影，不能与公共预设完整外缘要求混为一谈。 |
+
+公共层不增加 padding/frame/clip/mask/contentShape、状态、事件或任意颜色配置。suggestions / readOnly / smallBackground 保留 70% / 0.7pt 和各自圆角、阴影位置；isPresented 及 row/card/panel/banner 默认兼容。标签解析、顺序、草稿、滚动、复制及主卡不归本轮外壳；帮助 isExpanded/context/onSelectToken/onSelectExample 不改。
+
+[MenuBarPopoverView](../AreaChain/Features/MenuBar/MenuBarPopoverView.swift) 是帮助真实入口，沿原 FooterBar 打开：⌘/，暂停 syntaxOverlayHost，capture 示例替换整个草稿，search token 按原空格规则追加；单项优先示例回调，底部 nil 可选回调保持无动作。原页签、关闭、焦点、延迟和快捷键分支均保留。
+
+原 ControlsPreview / [DaybookFloatingSurfaceSamples](../AreaChainTests/Theme/DaybookFloatingSurfaceSamples.swift) 展示新预设完整阴影与实际帮助裁切。验证扩展原 DaybookFloatingSurfaceTests / OverlaySurfaceTestSupport，并增加 [标签与直接回调刻画](../AreaChainTests/Theme/TagHelpSurfaceConsumerTests.swift) 和 [生产菜单栏入口](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift)；实际证据见[工程记录](engineering.md#第八阶段-e标签详情与语法帮助卡外壳)。下节 D 的未迁移项是历史记录，以本节更新接入状态。
+
+下一阶段线索仅登记：[RowTitleBubble / RowNoteBubble](../AreaChain/Theme/DaybookRowBubbles.swift) 使用 small/continuous、背景阴影和 **0.8pt 动态边框**，还有复制反馈、箭头、方向与偏移。不能直接套本轮静态预设；本轮不预增动态边框配置、不迁移气泡、不修复制或滚动。
+
 ## 第八阶段 D：两类实时预览主外壳
 
 沿 [DaybookSurface.swift](../AreaChain/Theme/DaybookSurface.swift) 的 `daybookSurface(floating:isPresented:)`，仅扩展纯呈现预设并接入两个原有主外壳；不新增生产预览消费者。下节 C 的未迁移清单是当时记录，本节更新两处主卡接入状态。
@@ -594,3 +656,11 @@ F 定向静态清单：
 [CommandDraftNativeOwner](../AreaChain/Services/Privacy/CommandDraftNativeOwner.swift) 限定受控临时字段持有与同步清理；[CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 的 attachNative / acceptNative / undoNative / presentNative 复用 C2A 校验、密文和 Coordinator，只有同次成功修订可接续新 access。原 withRestoredContents 不允许任意缓存。
 
 [CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 仅由 [原生测试](../AreaChainTests/Features/CommandNativeEditingTests.swift) / [故障与性能测试](../AreaChainTests/Features/CommandNativeFailureTests.swift) 装配；继承原 DaybookAppKitTextView，旧 DaybookTextEditor / SyntaxTextEditor 默认行为不变。active notes 单字段纯文本检查点与独立密文 undo；marked text 拒绝，mutable textStorage 为已知事后检测反例。无生产/planItem/handler 接线，支持矩阵和实际证据只见[权威 §9.52](unified-search-commands.md#952-阶段-4a-3c2b原生接受与锁定交错的隔离可行性)。
+
+
+## 普通偏好共享入口（3A-1A）
+
+- [AppPreferences](../AreaChain/Services/AppPreferences.swift) 的 `readLocalSetting` / `applyLocalSetting` 是语言、外观、标题省略和捕获来源标记的唯一权威读写路径；旧 [SettingsSections](../AreaChain/Features/Settings/SettingsSections.swift) 四个 Binding 即时委托，同值写入与展示事件保留。没有命令 handler 或第二份可编辑状态。
+- [LocalPreference](../AreaChain/Services/LocalPreference.swift) 定义字段和值、来源/逐字段修订、可见原键快照及 `LocalPreferenceWriteResult`；[LocalPreferenceStorage / Effects](../AreaChain/Services/LocalPreferenceDependencies.swift) 只注入四键同步读写、外观和通知。默认仍为旧 UserDefaults 键及生产副作用。
+- [PreferenceObservation](../AreaChain/Services/PreferenceObservation.swift) 由 PanelWindowController、StatusItemController、DiaryWindowController 和 CalendarSync 的既有偏好订阅实际消费。普通事件按来源和字段筛选，手记仅语言 chrome，日历没有普通订阅；菜单栏用已有计数呈现。AppChrome 和四象限继续 Observation，捕获仅创建时读标记。
+- 隔离测试沿原 SettingsButtonTestSupport / GeneralSettingsSection，新增 LocalPreferenceTests、LocalPreferenceFailureTests、PreferenceObservationTests 和 SettingsLocalPreferenceConsumerTests。原 dark→system 进程外观测试及已知失败保留，不由注入测试替代。保证、验证与 3A-1B 接口以[权威交接](unified-search-commands.md#954-阶段-3a-1a普通偏好共享读写与事件拆分)为准。

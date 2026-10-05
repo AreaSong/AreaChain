@@ -114,6 +114,14 @@ private struct DaybookSurfaceModifier: ViewModifier {
 }
 
 extension View {
+    /// 静态卡片只绘制装饰；不进入交互表面的悬停状态、选中、布局或动画链。
+    /// 装饰不参与命中，内容按钮和行继续拥有各自的真实点击边界。
+    func daybookStaticCardSurface() -> some View {
+        let shape = RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+        return background(shape.fill(DaybookPalette.cardSurface).allowsHitTesting(false))
+            .overlay(shape.strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8).allowsHitTesting(false))
+    }
+
     func daybookSurface(
         _ variant: DaybookSurfaceVariant,
         isHovered: Bool = false,
@@ -135,11 +143,43 @@ enum DaybookFloatingSurface: Equatable {
     case readOnly
     /// 小圆角且阴影只绘制在背景上，不把正文或越界气泡投影到整卡阴影中。
     case smallBackground
+    case tagDetail
+    case syntaxHelp
+    /// 状态只来自气泡；复制反馈不是系统剪贴板成功的证明。
+    case rowBubble(isHovered: Bool, isCopied: Bool)
 
-    var radius: CGFloat { self == .suggestions ? DaybookRadius.regular : DaybookRadius.small }
+    var radius: CGFloat {
+        switch self {
+        case .suggestions, .tagDetail: DaybookRadius.regular
+        case .readOnly, .smallBackground, .rowBubble: DaybookRadius.small
+        case .syntaxHelp: DaybookRadius.medium
+        }
+    }
+
+    // 标签详情和帮助卡沿用原 60% / 0.8pt，不能借接入改变旧三预设的描边。
+    private var usesDetailBorder: Bool { self == .tagDetail || self == .syntaxHelp }
+    var borderOpacity: Double {
+        if case .rowBubble(_, let copied) = self { return copied ? 0.7 : 0.9 }
+        return usesDetailBorder ? 0.6 : 0.7
+    }
+
+    var borderWidth: CGFloat {
+        if case .rowBubble = self { return 0.8 }
+        return usesDetailBorder ? 0.8 : 0.7
+    }
+
+    var borderColor: Color {
+        if case .rowBubble(let hovered, let copied) = self {
+            if copied { return DaybookPalette.accent.base.opacity(0.7) }
+            if hovered { return DaybookPalette.cardBorderHover }
+        }
+        return DaybookPalette.border.default.opacity(borderOpacity)
+    }
+
     var shape: RoundedRectangle {
         switch self {
-        case .suggestions, .smallBackground: RoundedRectangle(cornerRadius: radius, style: .continuous)
+        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .rowBubble:
+            RoundedRectangle(cornerRadius: radius, style: .continuous)
         // 保留原默认构造；默认值由 SDK 决定，不能假设是 circular。
         case .readOnly: RoundedRectangle(cornerRadius: radius)
         }
@@ -152,7 +192,7 @@ private struct DaybookFloatingSurfaceModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         switch presentation {
-        case .suggestions, .smallBackground:
+        case .suggestions, .smallBackground, .tagDetail, .syntaxHelp, .rowBubble:
             content.background {
                 if isPresented { background.daybookElevation(.floating) }
             }.overlay { border }
@@ -172,14 +212,16 @@ private struct DaybookFloatingSurfaceModifier: ViewModifier {
 
     @ViewBuilder private var border: some View {
         if isPresented {
-            // 原描边跨形状边缘各 0.35pt；strokeBorder 会内缩，不能互换。
-            shape.stroke(DaybookPalette.border.default.opacity(0.7), lineWidth: 0.7)
+            // 描边在形状边缘居中；strokeBorder 会内缩，不能互换。
+            shape.stroke(presentation.borderColor, lineWidth: presentation.borderWidth)
+                .allowsHitTesting(false)
         }
     }
 }
 
 extension View {
-    /// 不增加布局、裁切或命中形状。可关闭候选装饰而保持内容身份，让独立预览继续拥有自己的外壳。
+    /// 浮层装饰性描边不参与命中，内容与宿主继续负责交互；不增加布局、裁切或命中形状。
+    /// 可关闭候选装饰而保持内容身份，让独立预览继续拥有自己的外壳。
     func daybookSurface(floating presentation: DaybookFloatingSurface, isPresented: Bool = true) -> some View {
         modifier(DaybookFloatingSurfaceModifier(presentation: presentation, isPresented: isPresented))
     }

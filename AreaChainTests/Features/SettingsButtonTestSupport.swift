@@ -13,20 +13,28 @@ final class SettingsButtonTestSupport {
     let prefs: AppPreferences
     let container: ModelContainer
     private let previousAppearance: NSAppearance?
+    private let isolatedPreferences: Bool
+    let preferenceCenter: NotificationCenter
+    let preferenceEffects: LocalPreferenceEffects
 
-    init() throws {
+    init(isolatedPreferences: Bool = false) throws {
         try #require(ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil)
+        self.isolatedPreferences = isolatedPreferences
+        preferenceCenter = isolatedPreferences ? NotificationCenter() : .default
+        preferenceEffects = isolatedPreferences
+            ? LocalPreferenceEffects(applyAppearance: { _ in }, post: { [preferenceCenter] in preferenceCenter.post($0) })
+            : .live
         previousAppearance = NSApp.appearance
         defaults = try #require(UserDefaults(suiteName: suite))
         container = try ModelContainer(for: Schema(AreaChainSchema.models),
             configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-        prefs = AppPreferences(defaults: defaults)
+        prefs = AppPreferences(defaults: defaults, effects: preferenceEffects)
         Self.retained.append(container)
     }
 
     func cleanup() {
         defaults.removePersistentDomain(forName: suite)
-        NSApp.appearance = previousAppearance
+        if !isolatedPreferences { NSApp.appearance = previousAppearance }
     }
 
     func window<V: View>(_ content: V, locale: String = "en", scheme: ColorScheme = .light,

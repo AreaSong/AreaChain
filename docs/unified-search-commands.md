@@ -4048,3 +4048,330 @@ active 是本阶段唯一原生接线位置；planItem 的 attach 明确 unsuppo
 追加前后本文旧内容 SHA-256 均为 `4a4565e14b28dc8a58bb6ac78e89e4b9b5eb354e161efb5153b10d3d9abf0a80`，用于确认 §9.52 及更早记录原样保留。本次两项只读探索提供设置消费者和执行协议出处，主代理沿关键写入/通知/基线/提交路径核对；这不是指定 Cursor verifier 的复核或运行验收。
 
 未执行设置方法、AppPreferences 初始化、Swift 测试、原生测试、构建、测试锁申请、登录检查、应用启动、提交、推送、安装或发布；没有 handler 补丁或下一阶段实施。文档/静态通过只证明本次设计记录的引用与规则检查，不证明方案可运行。完成 3A-0 文档交接后停止。
+
+### 9.54 阶段 3A-1A：普通偏好共享读写与事件拆分
+
+2026-10-04（Asia/Shanghai）。本次用户明确批准 §9.53 建议 N：语言、外观、标题省略和捕获来源标记共用窄事件，不再借普通偏好广播请求日历同步或刷新手记正文。已实施生产共享入口和展示消费者接线；本阶段不实现 handler、不接生产搜索、不改用户设置、不进入 3A-1B。§9.53 保留为当时只读事实/建议，下列实际接口取代其中同名拟议接口的未实施描述。
+
+#### 实际接口与唯一权威
+
+| 文件 / 接口 | 责任与证据边界 |
+|---|---|
+| [AppPreferences.swift](../AreaChain/Services/AppPreferences.swift) `readLocalSetting(_:)` | 同步返回 `LocalPreferenceSnapshot`：source、field、字段 revision、内存权威 value、当前注入存储 raw；每次重读存储，不修复非法值。`storedValue` 是严格规范类型解析，缺失键返回有效默认，非法/不支持/读失败返回 nil。 |
+| 同文件 `applyLocalSetting(_:)` | 唯一四项写入路径，接 `LocalPreferenceValue`，返回 `LocalPreferenceWriteResult`。旧可写属性及四 Binding 即时调用；没有入列、封存、重试、撤销、多项事务或通用 handler。 |
+| [LocalPreference.swift](../AreaChain/Services/LocalPreference.swift) `LocalPreferenceField / Value` | field 为 language / appearance / quadrantTitleTruncation / stampCaptureApp；Value 分别携带原 AppLanguage、AppAppearance、QuadrantTitleTruncation、Bool，不能表达错配类型或非法枚举。命令 ID/字符串参数校验仍待 3A-1B，禁止用 initialValue 的默认回退校验执行参数。 |
+| 同文件 `LocalPreferenceSource / Snapshot / Change` | source 同时有每个 AppPreferences 独立 UUID 和底层 UserDefaults 句柄 ObjectIdentifier；同对象能共享存储句柄但实例不同，事件仍不能跨实例消费。新建同 suite 的另一个句柄不承诺相同身份，身份只在当前运行有效。Change 仅 source、field、revision，无正文、值字典或其他设置。 |
+| [LocalPreferenceDependencies.swift](../AreaChain/Services/LocalPreferenceDependencies.swift) `LocalPreferenceStorage / Effects` | 窄同步 read/write、applyAppearance/post 可注入。默认四键读写、NSApp 外观及 NotificationCenter 行为；隔离测试从构造起显式传随机 suite、私有中心/记录闭包和假外观，不靠事后恢复用户设置。其他偏好仍由原 defaults 路径维护。 |
+| [PreferenceObservation.swift](../AreaChain/Services/PreferenceObservation.swift) | 四个真实消费者共用订阅、身份/字段筛选和取消。沿原主执行器异步刷新；事件发送返回不代表这些回调已完成。取消或释放后，已排队回调不再执行。 |
+
+`raw` 区分 missing、string、bool、number、unsupported、unavailable。它是 UserDefaults.object 当前搜索域可见值，包含注册默认值等查找语义；missing 仅表示此次查找无值，不是物理持久域/磁盘文件的证明。不复制未知复合负载，不支持用 unsupported/unavailable 作为可重放或安全撤销的可靠原值。初始化仍按旧枚举默认 system/system/tail 和 UserDefaults 布尔转换装载，不自动写回非法存储；初始化没有事件，外观应用经过注入。readLocalSetting 不刷新权威内存：外部直接改 defaults 后，value 与 raw/storedValue 可以不同，供后续适配保守拒绝。
+
+#### 旧设置页与消费者
+
+四个稳定键仍是 `areachain.prefs.language`、`areachain.prefs.appearance`、`areachain.prefs.quadrantTitleTruncation`、`areachain.prefs.stampCaptureApp`；存储值仍为 system/chinese/english、system/light/dark、tail/middle 和 Bool。system 保留策略值；语言按当前首选语言解析，外观仍以 nil 应用跟随系统。没有存储迁移、新偏好数据库或新磁盘格式。
+
+[SettingsSections.swift](../AreaChain/Features/Settings/SettingsSections.swift) 的 `$prefs.language`、`$prefs.appearance`、`$prefs.quadrantTitleTruncation`、`$prefs.stampCaptureApp` 原样保留。共享路径读回一致时立即更新原权威可观察值并调用展示副作用。**旧同值选择仍调用一次写入、一次普通事件；外观仍重应用一次，并推进该字段修订**。旧 Picker 测试只将事件名称/来源观察调整为窄事件，原同值通知次数断言不改。原 AppPreferences 混合测试改为只验证四项和注入外观；其他事件由私有中心中的独立 `isTagsExpanded` 回归核对，不调用日历设置或其他真实能力。
+
+| 实际观察者 | 普通事件 | 其他偏好/数据原路径 |
+|---|---|---|
+| AppChrome、QuadrantSingleLineTitle | 继续从同一 AppPreferences 的 Observation 读取 locale、scheme、textTruncation，无新通知状态副本 | 原视图/气泡/输入保持，未改标题正文 |
+| [AppWindows.swift](../AreaChain/Services/AppWindows.swift) `PanelWindowController` | `.windowChrome` 只接同源语言/外观，调用原 refreshChrome | 原广域偏好仍刷新 chrome |
+| [StatusItemController.swift](../AreaChain/Services/StatusItemController.swift) | `.statusItem` 接同源语言/外观，refreshPresentation 用最后已呈现计数重绘本地化/辅助文字，不重查任务库 | board、日期、计时器及旧偏好仍 refreshCount |
+| [DiaryWindows.swift](../AreaChain/Features/Diary/DiaryWindows.swift) `observeChanges` | `.diaryWindow` 仅同源语言 → refreshChrome；主题由 AppChrome/外观应用传播；绝不调用 session.refresh | 旧偏好和 board 仍 refresh + chrome，失活仍 mask，关闭取消订阅。DiaryEditorSession.refresh 正文实现未改 |
+| [CalendarSync.swift](../AreaChain/Services/CalendarSync.swift) `start` | `.calendar` 不注册普通事件，四项不能到 applyPreference | 原 appPreferencesDidChange → applyPreference；引擎、认证、事件存储及同步偏好实现未改 |
+
+[BoardEvents.swift](../AreaChain/Services/BoardEvents.swift) 新增 `.localPreferenceDidChange`，Notification.object 为 LocalPreferenceChange；四个旧 Binding 和未来适配同用这个发送端。其他偏好继续 `.appPreferencesDidChange`、nil object 及原业务路径，没有为所有旧事件追补字段/身份。测试其他偏好时必须用私有事件中心；普通事件即使误发到共享中心，观察者仍须匹配完整 source，不能触发生产单例或另一个实例。
+
+捕获来源的三个读取点 ClipboardCapture.ingest、DayBoardMutations.addTodo、addCapturedTodo 保持只在后续创建时读取标记。没有追溯修改记录、真实捕获、创建或文件操作；本轮未作这三个业务入口的端到端验收。
+
+#### 调用、读回、修订与失败保证
+
+- 写前读失败返回 rejection.unreadableStorage；同步重入返回 rejection.reentrant；两者 write.notCalled、readback.notRead，不调用写入。类型化入口本身不接命令字符串，未实现命令预检/冲突裁决。
+- write.returned 仅表示写闭包返回；write.threw 仅表示注入调用抛错，不能说未写入。调用后同实例读回严格匹配规范 raw 才标 readback.matches；不匹配是 differs，读失败是 unavailable。后两种均属写入归属/效果不确定，不能映射为 failedWithoutCommit。没有 fsync、崩溃/断电耐久、跨进程原子性或 compare-and-swap 承诺。
+- matches 时更新权威值、调用需要的外观、再派发普通事件；appearance/event 各自返回 notCalled/returned/threw。外观抛错不阻止独立事件尝试，不回滚本地值、不重写。returned 不证明 NSApp 之外的窗口最终像素、异步回调或全部消费者成功。注入写入抛错但读回一致也分别保留 threw/matches，不能仅凭最终相等就归因到本操作。
+- 写后不匹配/不可读时保留原可观察值，不发布目标展示事件或外观；after 明确保存此时内存值与读回 raw 的分歧。这是新增故障注入路径的保守行为，不是自动恢复。原 Binding 无结果展示能力，若未来要呈现存储异常须另行接反馈；本轮不虚报已保存或吞掉结果后伪装事务。
+- 修订按字段计每次已调用写入（包括旧同值写入和注入抛错），不按全部字段共用一个版本；写前拒绝不推进。修订先于 Observation 新值及展示调用登记，重入写入被拒绝。初始化和 read 不增修订，不用 isLoading 延迟通知构造事务。
+- A→B→A 经本入口会留下字段修订；外部直接 defaults、另一对象/进程变化不会自动增此实例修订。后续必须比较 source、revision、value、raw/storedValue；仍不能检测所有外部 ABA，同值不能证明无外部写入。没有完整安全撤销证据。
+
+#### 3A-1B 已确认要求与未实施项
+
+已确认且留待 3A-1B：四命令仅开放单项；来源可靠且无冲突、目标已满足时不重写、不重发事件、不重应用外观；同字段变化报冲突；写入未知禁止自动重试；多项共同提交整体阻断并保留计划；安全撤销不开放。多项事务仍是最终交付项，独立设计聚合存储与迁移，不以本阶段共享入口、逐键回滚或延迟通知冒充共同提交。
+
+可复用准确调用是 `readLocalSetting(LocalPreferenceField)` 与 `applyLocalSetting(LocalPreferenceValue)`，并消费 LocalPreferenceSnapshot / LocalPreferenceWriteResult；原四属性继续作为旧页兼容入口。3A-1B 尚须落实四 ID 严格参数映射、真实来源/字段证据随原草稿与计划所有权保存、readiness 和写前最终校验、no-change/冲突/未知与展示调用结果到原 ExecutionRun 的映射、重复 attempt 去重和单项门禁。不能只检查 revision，不能把 Value.initialValue 的初始化回退用于非法命令，也不能把 write.returned 自动映射为持久化成功。生产搜索接入、完整 ABA/撤销、磁盘耐久与多项后端均未获得本阶段实现。
+
+#### 验证、并行范围与停止
+
+初始工作树干净，实施期间出现第八阶段 E 的 Theme、UI 测试、架构/路由/组件目录及检查器改动，均保留。本轮只在共享文档及 COMPONENT_ENTRIES/对应反例追加本阶段条目，没有改动那些并行 UI 实现或补写其历史证据。
+
+实际结果：**实现和隔离回归已验证，整体部分完成**，指定复核和下述原生/历史缺口仍在。
+
+- 初期两次隔离测试非等待取锁退出 3，未启动测试；锁后来可用后正常取得同一 `build/.build.lock` 执行，没有删锁、抢锁或绕过。最终生产配置 Debug 复跑再次因锁忙退出 3，保留该次未运行记录。
+- `./scripts/build.sh --no-wait` 的首次 Debug 构建/验签通过，未安装或启动产物。该轮发现的本次 `LocalPreferenceEffects.live` 主执行器默认参数警告已修正；最终代码在下面完整 QA Debug 构建与测试中通过，无本次接口编译警告。正常生产配置的修正后复跑锁忙，因此不把首次产物当作最终代码产物。完整测试 target 编译仍有原有辅助 API 废弃及其他套件 Swift 6 隔离警告，未修改无关文件。
+- 最终隔离命令以架构中的完整正常 PrivacyQA 为基础：六项真实钥匙串环境变量均清除，`-derivedDataPath build/PreferenceQA-3A1A`，`PRODUCT_BUNDLE_IDENTIFIER=com.areachain.preference-qa`，`AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements INFOPLIST_KEY_LSUIElement=NO`，`-destination platform=macOS,arch=arm64 -parallel-testing-enabled NO test`；Python 非等待 flock 在整个 xcodebuild 生命周期持锁。没有排除测试源码或改 QA 工程。
+- `-only-testing:AreaChainTests/` 后分别选 AppPreferencesTests、LocalPreferenceTests、LocalPreferenceFailureTests、PreferenceObservationTests、SettingsPickerConsumerTests、SettingsLocalPreferenceConsumerTests、MenuBarStatusTests、MenuBarStatusImageTests；显式 `-skip-testing:AreaChainTests/SettingsPickerConsumerTests/appearanceUsesProcessAndHostEnvironment()`，只排除本轮禁止真实进程外观副作用的历史测试，没有跳过焦点断言。xcresult 测试树确认该方法未执行，37 个测试定义、参数化合计 47 次执行全部通过，0 失败/0 预期失败（该排除方法未列入所选计数）。结果：`build/PreferenceQA-3A1A/Logs/Test/Test-AreaChain-2026.10.04_14-39-08-+0800.xcresult`。
+- 旧设置页四 Binding：原三个 Picker 和新增捕获 Toggle 直接挂 GeneralSettingsSection，随机 suite 和私有中心；中英文、浅深色，420×560 Picker 和 420×720 捕获宿主，菜单取消/同值、禁用、语言动态传播、重建及四键独立性通过。原 mixed Toggle 套件只调整窄通知观察以保持未来计数，不执行其日历/登录测试。程序化菜单 action、合成键盘/鼠标和绑定断言不是人工操作；尚未覆盖正常/最小生产窗口的全部展示组合。
+- 已查看本次 QA 导出的英文浅色、中文深色及动态语言切换三张原设置页截图；设置行及中文长说明保持原布局。没有查看/操作日用应用。四象限真实标题/气泡、实际手记窗口 chrome、真实工作台 chrome 的完整原生矩阵未运行；路由副作用使用与生产相同的 PreferenceObservation 和注入计数断言，不冒充实际 DiaryEditorSession 正文读取或日历引擎运行。
+- 严格局部 SwiftLint 覆盖本次 18 个 Swift 文件通过；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` 89 项通过；`python3 -B scripts/quality_gate.py --profile static --strict --format json` 通过（含脚本完整回归 209 项）；`python3 -B scripts/check_workflow.py` 与 `git diff --check` 通过。采用 static + 明确定向 QA 替代 swift profile 的无过滤全量测试，因为后者包含本轮排除的真实进程外观及其他设置测试。静态、编译和运行证据分开报告。
+- 首轮静态失败来自并行第八阶段 E 尚未完成的三个工程锚点，随后由该任务补齐；新增接口初次使检查器测试夹具缺五个符号，补齐夹具后 89 项及完整 209 项通过。失败没有被隐藏或通过改业务断言消除。
+
+指定 Cursor verifier 沿既有不可用缺口保留，本轮不重查登录、不改认证、不以主代理自查或其他代理冒充指定复核。C2B 的 8 项原生失败未复验、IME 拒绝和 mutable textStorage 事后检测限制、4A-3B2 最终原生、dark→system 历史预期视觉失败及真人/VoiceOver 等缺口均保留。注入外观只证明调用映射，不能宣布 dark→system 修复。
+
+没有修改用户设置、运行完整 SettingsView、启动日用应用、执行用户捕获/正文/同步、接生产搜索或实现 handler；不提交、不推送、不安装、不发布，止于 3A-1A。
+
+### 9.55 阶段 3A-1B：普通设置单项真实适配与隔离验证
+
+2026-10-04（Asia/Shanghai）。本阶段按用户明确决定实现四项普通设置的**单项**适配，只在注入的隔离存储与可控展示副作用下运行。成功限于已执行应用步骤及当前可见存储读回一致；不承诺磁盘耐久、所有窗口像素或异步消费者最终刷新。§9.53 是历史方案，§9.54 的共享偏好与窄事件继续作为唯一业务入口。生产搜索仍未接线；多项事务、迁移、执行后撤销与排除的系统/敏感能力不开放。
+
+#### 实际装配与接口
+
+| 入口 | 责任 |
+|---|---|
+| [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) `init(coordinator:preferences:)` | 明确注入同一个 Coordinator 和 AppPreferences；preferences 默认 nil，未装配调用拒绝。没有 `.shared`、生产依赖初始化、通用 handler 注册表或可编辑偏好副本。 |
+| 同文件 `prepare(_:expecting:)` | 只读原 active/plan 草稿和真实偏好，成功后将基线装入原草稿并推进草稿、项及宿主版本；已有关联证据时只校验，不静默刷新冲突。 |
+| 同文件 `readiness(plan:expecting:)` / `submit(plan:expecting:)` | 资格覆盖完整计划和活动草稿；仅恰好一项、无未决编辑/运行才封存。提交使用原 sealPlan / beginStep / run / operation / attempt，不复制参数。 |
+| 同文件 `execute(_:)` | 从 Coordinator 当前运行重新取得参数，独立检查装配、四项白名单、参数/目标、基线、完整提交范围、来源和身份；实际写入仅调用 AppPreferences.applyLocalSetting。 |
+| 同文件 `rereadConflict` / `resolveConflict` / `returnUnsubmittedToPlan` | 受控重读、采用当前、继续编辑、一次覆盖确认，以及确实未提交单项返回原计划；没有完整冲突 UI。 |
+| 同文件 `retryPresentation` | 显式重试原运行中失败的展示步骤；不再写偏好，只重做尚未成功的外观/普通事件调用。 |
+| [LocalSettingCommandMapping](../AreaChain/Services/LocalSettingCommandMapping.swift) | 先复用 CommandCatalog / CommandArgumentValidation / Targets，再做实际枚举转换。没有初始化回退或类型强转。 |
+| [CommandPreferenceEvidence](../AreaChain/Domain/CommandPreferenceEvidence.swift) | CommandPreferenceBaseline、写入调用/读回事实和具体展示结果；只含普通标量，无 AppKit/SwiftUI 导入或偏好对象。 |
+| [CommandHandoffCoordinator](../AreaChain/Domain/CommandHandoffCoordinator.swift) | claimPreferenceInvocation 在 IO 前登记同一操作/尝试；validatePreferenceInvocation 做最后身份核验；completePreferenceInvocation 只把可信事实归入原运行。 |
+| [AppPreferences](../AreaChain/Services/AppPreferences.swift) | applyLocalSetting 新增默认兼容的 expected 快照与写前校验；共享入口自身重读原始键后再核验。retryLocalSettingPresentation 复用同一外观/事件依赖且不调用存储写入。 |
+| [CommandDraftTargets](../AreaChain/Domain/CommandDraftTargets.swift)、[CommandPlan](../AreaChain/Domain/CommandPlan.swift)、[CommandHostSession](../AreaChain/Domain/CommandHostSession.swift) | 原基线增加 preference；原计划增加 returnedAttempts 与受限的单项返回；原宿主原子移交基线/计划/执行所有权。 |
+| [CommandExecutionContract](../AreaChain/Domain/CommandExecutionContract.swift)、[CommandExecutionRun](../AreaChain/Domain/CommandExecutionRun.swift)、[LocalPreference](../AreaChain/Services/LocalPreference.swift) | 原协议增加 noChange、preferenceWrite / preferencePresentation 及对应状态转换；原共享结果保留 Readback 类型别名，增加 snapshotChanged / executionInvalidated 写前拒绝。 |
+
+四 ID 的严格映射为 language → `.value/.choice(system|chinese|english)`；appearance → `.value/.choice(system|light|dark)`；truncation → `.value/.choice(tail|middle)`；captureSource → `.enabled/.boolean(Bool)`。全部只接受 assign。缺值、重复、多余参数、非法 choice、boolean 的字符串/数值替身、unknown/clear/unspecified、对象目标及非四项命令均拒绝。system 是实际策略值，不能用作未知输入的回退。
+
+当前服务提交入口接完整 CommandPlan。active 草稿需先经 prepare，再通过原 Coordinator.enqueue 显式入列；没有新建活动草稿自动提交或 UI 按钮接线。CommandCatalog / DraftCheck / PlanCheck / ExecutionRun 的原 isExecutable 仍为 false；纯协议测试和手工回执不提供运行时装配资格。
+
+#### 真实基线、冲突与所有权
+
+- 基线挂在原 CommandDraftBaseline.preference，携带 captureID、draftID/采集版本、commandID（唯一映射字段）、AppPreferences 实例/存储句柄身份、字段修订、原始键状态及内存/存储值。值投影仍为 ambient/value 或 ambient/enabled。签发登记是适配器私有只读事实，不是另一份可编辑设置；合成 baseline 及复制到其他草稿的证据不能执行。
+- missing 与未提供基线不同：缺失键按原 system/system/tail/false 解释为可靠有效值，且保留 missing 原状；非法类型、不支持值、unavailable 和内存/存储分歧不得自动覆盖。读取不会修复原键，也不从存储更新可观察内存。现有 lookup 的注册默认域语义继续遵守 §9.54。
+- prepare 推进原草稿/项版本；执行身份绑定当前 plan/item/draft/run/attempt。后续参数编辑保留原始字段证据，执行仍核对当前操作版本。原普通转交可携带证据并继续使用同一适配器；新适配实例没有旧签发登记，须显式重新核验/解决。来源改变报告冲突。不同采集身份的真实基线保守拒绝合并，不能通过合并隐藏多项范围。
+- 执行前重新读取，比较完整来源、同字段 revision、raw、内存值与 storedValue。字段 A→B→A 经共享入口可被修订检测；其他字段变化不制造冲突。不承诺检测另一个句柄/进程的全部 ABA，也不提供跨进程比较交换。
+- `rereadConflict` 生成一次性确认，绑定当时 lease、草稿版本、旧证据及新快照；`resolveConflict(.confirmOverwrite/.adoptCurrent)` 再读并比对后才更新基线。继续编辑不刷新证据、不授予覆盖；采用当前只改原草稿参数，后续可得到 noChange。确认后任何同字段变化仍被执行前检查阻断；readyForProtocol 不能代替确认。
+- 已封存冲突先保留在原运行。returnUnsubmittedToPlan 只接受适配实际记录为拒绝/冲突或 write.notCalled 的单项，并由 Host/Plan 再检查 local.notSubmitted、无展示效果、无输出/依赖、无组及目标计划为空。保持原 item/draft ID、推进版本、记录 returnedAttempts，usedRunIDs 保留；旧 run/attempt 不能复活。committed/unknown/noChange 不能返回可重放草稿。
+
+#### 一次调用、完整提交与完成事实
+
+Coordinator 在任何可重入 IO 前占用 operation/attempt；登记跨适配实例共享，重复请求和同次重入无法取得第二次调用。适配器自身还对 prepare/readiness/execute/resolve/retry 的同步路径设重入守卫。原回执完全相同仍按协议幂等接受，但这不替代调用前占用。
+
+执行路径是资格核对 → 原运行占用 → 真实快照重读 → AppPreferences 再读且比对 expected → 最后 lease/运行核验 → 一次共享写入 → 原运行回执；整段 MainActor 同步、无 await。存储读回调使 lease 失效时 write.notCalled；写入已经开始后的展示失效不撤销事实。占用期间仅查询事件可推进宿主展示修订，其他执行/操作事件拒绝；完成凭内部 invocation 重新核对同一 ownership、run、operation 和 attempt 后入账，不给旧 UI 事件续租。
+
+多项、同字段重复项、混合项、有活动草稿的计划、atomicGroup、依赖和创建输出均在适配边界阻断。submit 拒绝前不封存、不写设置、保留全部计划；绕过提交直接把纯协议多项运行交给 execute，也保留原运行快照并零写入。不会循环单项、拆组或逐键回填伪装事务。
+
+#### 结果映射
+
+| 真实事实 | 原运行结果与承诺 |
+|---|---|
+| 来源/修订/raw/内存/存储均可靠一致，目标已满足 | `.noChange`；state.succeeded、local.notSubmitted、无输出/展示效果；不调用 applyLocalSetting、不写存储、不重应用外观、不发事件，不生成撤销。 |
+| 尚未调用写入；资格/原值不可读或 lease 失效 | rejected / failedWithoutCommit，或 `.preferenceWrite(write.notCalled, readback.notRead)`；保留未提交事实，可经受限返回后重新核验。 |
+| 同字段原值/修订或来源改变；共享入口第二次读取不一致 | `.conflict`，local.notSubmitted；保留旧基线和当前证据，阻止静默覆盖。 |
+| write.returned + readback.matches，所需应用调用均返回 | `.preferenceWrite`，local.committed、state.succeeded；仅当前可见存储和已执行应用步骤。 |
+| write.returned + matches，外观或普通事件 threw | local.committed、state.failed，effects.preferencePresentation.failed；分别保留 appearance/event 事实，绝不回滚或重复写偏好。外观失败不阻止独立事件尝试。 |
+| write.threw + matches | local.unknown、state.verificationRequired；保留已经读回的值及实际外观/事件调用事实，即使都返回也不把写入确定归因于本操作。禁止写入/展示自动重试、返回计划和撤销。 |
+| write.returned 或 threw + differs / unavailable | local.unknown、state.verificationRequired；不展示成功、不发布目标展示步骤，禁止自动重试或逐键回滚。 |
+| 显式展示重试 | 原 external attempt、`.preferencePresentation(.applied(...))`；只重试先前 threw 的步骤，成功步骤不再调用。local 始终 committed。 |
+| 展示重试前同字段已变化，包括经共享入口 ABA | `.preferencePresentation(.superseded)`；零偏好写入、零旧展示调用，保留 local.committed；展示为 notExecuted，不给本次展示重试成功或安全撤销结论。 |
+
+write 抛错不等于写前失败；event 抛错也不证明没有派发。窄事件是读取当前展示状态的进程内刷新，显式重试可能再次派发曾抛错的调用；其返回不证明异步消费者已完成。未知写入没有自动核实/重放功能；未来需要单独定义人工核实与运行释放。superseded 保留未解决运行事实，不自动改成新草稿或宣布全部成功。
+
+#### 旧页面、验证与停止
+
+SettingsSections 的四 Binding 不变；旧同值赋值仍调用一次共享写入、外观（适用时）和窄事件，并推进字段修订。PreferenceObservation、CalendarSync 与 DiaryWindows 的 3A-1A 拆分不改：命令只发 localPreferenceDidChange，不触发日历或手记正文刷新。测试直接计数实际注入存储、外观和私有 NotificationCenter / 原订阅路由；不启动日历引擎、正文会话或真实捕获业务。
+
+新增验证文件为 [基本链路](../AreaChainTests/Services/LocalSettingCommandTests.swift)、[边界](../AreaChainTests/Services/LocalSettingCommandBoundaryTests.swift)、[冲突](../AreaChainTests/Services/LocalSettingCommandConflictTests.swift)、[故障](../AreaChainTests/Services/LocalSettingCommandFailureTests.swift)、[身份](../AreaChainTests/Services/LocalSettingCommandIdentityTests.swift) 及 [共用夹具](../AreaChainTests/Services/LocalSettingCommandTestSupport.swift)。文档同步本节、架构、组件目录与技能路由；原 check_workflow 的 COMPONENT_ENTRIES 及反例增加三个稳定入口，不新增验证执行器。
+
+**已实现并通过所列隔离验证；整体部分完成**，指定复核、生产配置构建及历史缺口仍保留。
+
+| 最终检查 | 实际结果 |
+|---|---|
+| 完整正常 QA 目标构建及定向测试 | `build/PreferenceQA-3A1B/Logs/Test/Test-AreaChain-2026.10.04_16-05-17-+0800.xcresult`：181 个测试定义、229 次执行全部通过，0 失败/0 跳过/0 预期失败；其中新增五套 36 个定义、38 次执行。最终源码包含伪造来源证据的拒绝反例。 |
+| 隔离条件与所选范围 | 按架构正常 PrivacyQA 命令，六项真实钥匙串环境变量清除；`-derivedDataPath build/PreferenceQA-3A1B`、`PRODUCT_BUNDLE_IDENTIFIER=com.areachain.preference-command-qa`、`AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements INFOPLIST_KEY_LSUIElement=NO`，macOS arm64、Debug、`-parallel-testing-enabled NO test`。Python 非等待 flock 全程持有原 `build/.build.lock`，没有排除测试源码、替换工程或改签名配置。 |
+| 原协议/偏好回归 | 原 Catalog / Parameter / Path / Draft / Protection / Host / PlanOwnership / PlanDependency / PlanMerge / AtomicPlan / Execution / Handoff 及语言与执行集成；AppPreferences、LocalPreference、Failure、PreferenceObservation；均纳入最终结果，纯协议测试仍不代表真实装配。 |
+| 旧设置页及消费者 | SettingsPickerConsumerTests、SettingsLocalPreferenceConsumerTests、MenuBarStatusTests / ImageTests 纳入最终结果；四 Binding、同值、取消/禁用、重建、语言传播及窄事件兼容通过。旧页中英文/浅深色隔离分节、原生菜单/鼠标/键盘沿原宿主执行；没有完整 SettingsView 或生产搜索接线，没有新增像素验收结论。 |
+| 明确排除 | `-skip-testing:AreaChainTests/SettingsPickerConsumerTests/appearanceUsesProcessAndHostEnvironment()` 未执行，xcresult 树确认不含该方法；它使用真实进程外观，本阶段只允许替身。所选 181/229 不包含此排除项，不把 0 跳过解释为它通过。日历/登录 mixed Toggle 与无关原生/敏感套件不执行，不删除或放宽原 dark→system 断言。 |
+| 严格静态与脚本 | 本次 17 个 Swift 文件严格局部 SwiftLint、`python3 -B scripts/check_workflow.py`、`git diff --check` 通过；检查器定向回归 90 项、`quality_gate.py --profile static --strict --format json` 的完整脚本回归 210 项通过。static 配合上述明确选择的 QA 替代会启动排除能力的无过滤 auto/swift profile；不称为全库运行通过。 |
+| 生产配置 Debug 构建 | `./scripts/build.sh --no-wait` 退出 3：其他任务持锁，未执行构建；记录在 `build/PreferenceQA-3A1B/debug-build.log`。最终 QA Debug 构建/测试通过不替代正常生产配置构建或验签，该缺口保留，不抢锁。 |
+
+首轮 Optional.none 与 CommandDraftTargets.none 的歧义造成 19 个定义失败、其余 136 个定义通过；显式修正类型后五套新增测试 32/34 通过，再增补边界后旧消费者共同回归 180/228 通过。主代理自查收紧伪造来源证据的校验顺序，最终复跑得到上表 181/229；中间结果不冒充最终结果。期间一次测试非等待取锁退出 3，未启动测试，后续正常取得原锁，没有删锁、抢锁或跳过焦点断言。最后 QA 日志只有既有原生测试辅助 API 的废弃警告，无本次接口/测试新增警告。
+
+指定 Cursor verifier 的既有不可用缺口保留，不重查登录、改认证或用其他代理替代；主代理核对不冒充该复核。C2B 的 8 项原生失败未复验、IME 拒绝/mutable textStorage 事后检测、4A-3B2 最终原生、dark→system 视觉预期失败及真人/VoiceOver 等历史缺口仍保留。
+
+生产 UI 提交接线前仍需：由真实宿主显式装配适配器和真实基线；绑定当前 buffer/lease/draft/plan/item；展示本节有限成功、冲突和未知语义；明确未知/被后来修改替代运行的人工核实与释放；完成指定复核及相关原生验收。多项共同提交仍需独立事务存储、旧键迁移、整组冲突/失败/恢复与展示协议；本阶段不批准或实现这些工作。安全撤销继续关闭，不能将“设回旧值”包装成安全撤销。
+
+保留起始 3A-1A 和并行第八阶段 E 修改；本阶段只增量修改共享文档/检查器，不改并行界面实现。不修改用户设置、不启用生产搜索、不提交、不推送、不安装、不发布；完成 3A-1B 后停止。
+
+### 9.56 阶段 3A-2：四类普通设置的原生提交、冲突和反馈
+
+2026-10-04（Asia/Shanghai）。本轮只在原标准/紧凑 QA 宿主显式装配普通设置适配器，允许 UI 调用隔离 UserDefaults 与注入展示副作用。生产搜索入口保持原实现，用户偏好及其他命令不接线；多项共同事务和执行后安全撤销关闭。§9.53～§9.55 保留历史身份，本节记录 UI 增量。
+
+#### 显式装配与实际接口
+
+| 入口 | 责任和边界 |
+|---|---|
+| [UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift) `localSettings:` | 可选显式注入同一 Coordinator 的 LocalSettingCommandAdapter；缺省 nil，未装配继续暂不可执行。仅 language / appearance / truncation / captureSource 四 ID，目录 isExecutable 不变。 |
+| [UnifiedSearchSettingEditing](../AreaChain/Features/Search/UnifiedSearchSettingEditing.swift) `prepareSettingDraft` / `requestOperationSubmit` | 从原 editingDraft 采集一次缺失真实基线并发布新 buffer；原生点击与 ⌘Return 共用提交入口。参数、plan、run、attempt 的真值仍从 Coordinator 读取。 |
+| [LocalSettingCommandAdapter](../AreaChain/Services/LocalSettingCommandAdapter.swift) `prepare` / `readiness(draft:)` | prepare 按严格白名单确定字段，允许尚未填写参数时读取真实原值；value(for:) 仍负责最终参数校验。已有证据不随刷新而更新；活动单草稿预检不移交所有权。 |
+| 同适配器 `report(for:expecting:)` / `canReturnToPlan` / `canRetryPresentation` | 只给出实际登记且仍匹配原运行/尝试的回执和受控资格；返回计划复用原值转移的校验，重试复用原 Run.retryAssessment。没有通用执行闭包。 |
+| [UnifiedSearchSettingSubmission](../AreaChain/Features/Search/UnifiedSearchSettingSubmission.swift) / [SettingCopy](../AreaChain/Features/Search/UnifiedSearchSettingCopy.swift) | 在原 OperationPreview 中显示实际结果及受控按钮。ParameterField 与 PlanList 共用真实当前/拟设置值；system 明确为跟随系统。文案在原 xcstrings 同时覆盖 en / zh-Hans。 |
+
+本轮其他修改文件：[OperationEditing](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift)、[OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[ParameterField](../AreaChain/Features/Search/UnifiedSearchParameterField.swift)、[PlanEditing](../AreaChain/Features/Search/UnifiedSearchPlanEditing.swift)、[PlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift)、[PlanButton](../AreaChain/Features/Search/UnifiedSearchPlanButton.swift)、[LocalSettingCommandMapping](../AreaChain/Services/LocalSettingCommandMapping.swift)、[双语资源](../AreaChain/Resources/Localizable.xcstrings)。测试为 [SettingTestSupport](../AreaChainTests/Features/UnifiedSearchSettingTestSupport.swift)、[Contract](../AreaChainTests/Features/UnifiedSearchSettingContractTests.swift)、[Lifecycle](../AreaChainTests/Features/UnifiedSearchSettingLifecycleTests.swift)、[Interaction](../AreaChainTests/Features/UnifiedSearchSettingInteractionTests.swift)、[Presentation](../AreaChainTests/Features/UnifiedSearchSettingPresentationTests.swift)及原 [ResultsTestSupport](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift)。文档/守卫增量在本文、[架构](architecture.md)、[组件目录](component-catalog.md)、[路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py)和[反例测试](../scripts/tests/test_check_workflow.py)；没有改旧设置页 setter、生产搜索入口或并行菜单栏/主题实现。
+
+装配能力、参数/计划形状、当前适配器 readiness 和写前最后核验各自独立。UI 禁用不是授权；submit 及 execute 继续重查原运行输入、偏好来源/修订/原始键证据，并在最后写入前核对显式传入的同一 ReadSession。外观和事件来自注入依赖，不调用 UI setter。
+
+#### 基线、提交范围与结果
+
+开始/恢复普通设置时经 prepare 读取真实偏好，即使参数尚未填写。基线附着原 draft，参数编辑、入列和封存沿原版本协议迁移；prepare 引起修订后 publishOperation 返回新 buffer。重绘和预览不重新 prepare，不给旧原生回调换 lease；实际适配草稿忽略 syntheticBaselines。读取不可靠时显示无法确认当前值，可明确重新读取缺失基线，不用默认值伪装成功。
+
+只接受两种范围：一个活动草稿且计划为空，或没有活动草稿且计划恰好一项。前者明确提交后经原 `.enqueue` 原子移交同一草稿，再提交整份单项计划；后者直接提交该计划。活动加计划、多项、原子组、依赖/创建输出引用、未完成参数/计划编辑、pending 选择、未释放运行及非四项命令均拒绝，零部分写入。Return 仍补全/处理当前控件；⌘Return 与具体动作按钮共用 requestOperationSubmit，同步占用防重复和回调重入。
+
+- noChange：当前已是此设置，零存储写入、零外观/事件调用。
+- 真实本地提交且展示调用完成：已应用，说明提交时读回一致，不承诺断电/崩溃耐久或所有窗口像素完成。
+- 写前拒绝：保留内容与原因；封存后的确实未提交项只经 returnUnsubmittedToPlan 返回原计划，保留 item/draft ID 和旧 attempt 出处。
+- conflict：原值、当前值、拟设置值并列；核对当前值取得适配器一次确认，采用当前 / 确认用我的值覆盖 / 继续编辑只调用受控接口。确认覆盖不会自动提交；同字段再改仍使原确认失效。
+- unknown：结果待核实，保留原运行，没有普通重试、释放或撤销入口。
+- 本地 committed、展示失败：明确已写入与展示未完成；仅在适配器允许时提供“仅重试展示应用”，不重写偏好。
+- 展示 superseded：说明旧展示步骤被后续修改替代，不再重放；运行事实仍保留，不能宣称新设置由旧操作完成。
+
+成功/noChange 后用户明确点击“完成”，只走原 releaseExecution；失败/未知不能借该入口清除。关闭/失焦/锁定仍沿 ReadSession 撤显示，不改变已写入事实、原 run/attempt 或未释放运行的转交阻断。显式重新显示不自动重试。敏感正文、C2B、系统认证和真实系统能力不在本节。
+
+#### 隔离验证与停止交接
+
+验证实现复用 PreferenceCommandIO、LocalPreferenceTestSupport、原 UnifiedSearchTestHost / ResultsFixture、GeneralSettingsSection 四 Binding 和 fake 隐私依赖；标准/紧凑矩阵分别使用 workspace / menubar 原宿主身份。正常完整 QA 目标编译，原 build/.build.lock 非等待持锁，六项钥匙串授权变量清除，测试串行。所有测试状态仍以本节随后记录的实际命令结果为准，源码存在不是运行通过。
+
+**整体部分完成：UI 实现与测试代码已写入；原生 UI 到隔离写入尚未完成验收。** 本轮实际证据如下，不能把中间测试结果当作最终源码的完整通过。
+
+| 检查 | 实际结果与限制 |
+|---|---|
+| 完整 QA 编译首轮 | `build/SettingUIQA-3A2/Initial.xcresult` / `initial.log`：新增测试夹具的 `#require` 展开缺少可抛错调用处理，退出 65，未运行测试。将调用先单独求值后继续；没有排除编译源码。 |
+| QA 契约与服务运行 | `build/SettingUIQA-3A2/Contracts.xcresult` / `contracts.log`：49 个测试定义，**47 passed / 2 failed / 0 skipped / 0 expected failure**；参数化共 61 次执行，59 passed / 2 failed。完整正常 QA 目标已编译，四套新增测试均纳入编译，但此轮只运行新增 Contract / Lifecycle 两套和原 LocalSettingCommand 五套服务测试。 |
+| 新控制器契约证据 | 上轮 13 个新定义全部通过：四字段在空参数时读取真实基线、版本发布、唯一所有权、单项/混合拒绝、三类冲突选择/过期确认、unknown 保留、展示重试/后来覆盖、写前与写后撤显示、旧 buffer/lease 拒绝。它们是直接 Controller/Adapter 调用及注入事件，不是鼠标/键盘驱动的原生 UI 通过。 |
+| 两处回归与最终修正 | 旧 `unsupportedProtectedUnknownAndExtraArgumentsAreRejectedAtPreparation` 发现 prepare 错误放宽了非空非法参数；现仅允许空参数预读取，非空仍走原严格 value 校验。旧 `laterPreferenceWriteSupersedesOldPresentationEvenAfterABA` 发现新增只读资格把不可重试错误类型改成了 LocalSettingCommandIssue；已恢复原 CommandExecutionError.notRetryable。两处断言未改，但**修正后 Swift 运行未复验**。 |
+| 原生取锁与停止 | 准备 `Native.xcresult` 时，原 `build/.build.lock` 非等待独占申请失败，退出 3；`native.log` 仅记录停止。没有启动该轮 xcodebuild/XCTest，没有生成 Native.xcresult，未删锁、抢锁、等待或终止持锁任务；此后停止所有原生执行。`native-command.json` 未生成，不伪造执行命令/结果。 |
+| 本轮原生截图与交互 | **0 张新增、0 张实际检查**。四项补全→参数→点击/⌘Return→隔离读回、Return 不提交、按钮焦点/空格、旧 GeneralSettingsSection Binding、双语/浅深色/两宿主/最小宽度、长反馈及窗口失焦/锁定/关闭的原生用例已编译，尚未运行。没有用历史截图、离屏占位或服务测试替代。 |
+| 旧设置与 4A 回归 | 已运行服务套件中的旧 Binding 同值写入与普通事件路由断言；没有运行本轮原生 SettingsPickerConsumerTests / SettingsLocalPreferenceConsumerTests，也没有最终 4A 参数/计划/对象/输入回归。明确不运行真实外观 `appearanceUsesProcessAndHostEnvironment()`、日历/登录 mixed Toggle 及两项读取 UserDefaults.standard 的旧 Operation/Plan 生命周期方法；后两项身份/无写入断言由新的独立 suite 场景承接，仍需原生补验。 |
+| 最终生产配置 Debug 构建 | `./scripts/build.sh --no-wait` **退出 0**，`build/SettingUIQA-3A2/debug-build.log` 的 `staticSignatureVerified: true`。沿现有 development 配置生成 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`；没有修改个人配置、申请签名资源、安装或启动。此构建发生在两处最终修正后，补齐当前应用源码的正常配置编译/验签；不替代最终 QA 测试目标或原生运行。 |
+| 静态与脚本 | 严格局部 SwiftLint、工作流检查、检查器 91 项回归、`quality_gate.py --profile static --strict --format json`（含 211 项脚本回归）及差异检查通过；最终相关编辑后重跑受影响静态项。static 配合明确隔离定向，不运行会启动未隔离/排除套件的 auto/swift profile。 |
+
+实际命令保存在 `initial-command.json` / `contracts-command.json`，正常完整 AreaChain scheme、Debug、macOS arm64；QA 标识 `com.areachain.setting-ui-qa`、独立 DerivedData `build/SettingUIQA-3A2`、local/ad-hoc、原生产 entitlement、LSUIElement=NO、串行，六项真实钥匙串授权环境变量均清除，flock 覆盖整个子进程生命周期。环境为 Xcode 26.6（17F113）、Swift 6.3.3、macOS 26.6.2（25G83）arm64。日志只含合成普通标量及测试诊断，不含用户设置/正文/凭据。
+
+指定 Cursor verifier 既有不可用缺口保留，不重复登录检查，不以测试设施探索或主代理自查冒充复核。C2B 的 8 项原生失败、IME 拒绝 / mutable textStorage 事后检测限制、4A-3B2 最终原生、dark→system 历史视觉问题继续保留；本轮只有当前正常配置 Debug 构建取得新证据。人工 VoiceOver、系统输入法候选窗、最低系统/减弱动态和真实用户多窗口分别未验。没有通过本轮注入外观宣布历史视觉问题修复。工作树仍有并行菜单栏/主题测试及工程记录变化，全部保留；本轮构建证据不覆盖之后出现的并行修改。
+
+续验优先顺序：正常取得原锁后，先重跑 Contract / Lifecycle 和 LocalSettingCommand 五套（确认上述两处回归），再运行 Interaction / Presentation 的原生测试，实际检查截图，最后补相关 3A 协议、4A 参数/计划和隔离旧设置分节回归。仍需指定复核和人工证据；本轮不继续申请原生执行。
+
+下一步仅建议：多项共同提交须先确定事务存储、旧键兼容/迁移、整组冲突及失败恢复协议，不能循环本单项入口；其他命令须各自核实领域入口、输入/结果与副作用，再显式装配，不能因普通设置可执行而批量开放目录。本轮不实施这些建议。不提交、不推送、不安装、不发布、不修改用户设置、不替换生产入口；完成 3A-2 后停止。
+
+#### 3A-2R 验收收口：运行记录与未完成项
+
+2026-10-04（Asia/Shanghai）。**本次收口仍为 partial / 运行验收 blocked**。先核对当前 AGENTS、技能路由、areachain-verify 及其 checks、原生隔离规范、当前修正与原 `Contracts.xcresult`；以下为本次新增证据，上面的 3A-2 记录保持历史身份。只更新本节，保留工作区并行修改，没有新增设置、其他 handler 或多项事务。
+
+**两项原失败与修正核对。** 只读执行 `xcrun xcresulttool get test-results tests --path build/SettingUIQA-3A2/Contracts.xcresult --compact` 并提取失败节点；原结果仍为 47 passed / 2 failed（49 个定义），不是本轮复跑。
+
+| 原失败用例 | 原始断言与原因 | 已有修正文件与当前代码 | 本次结果及仍缺证据 |
+|---|---|---|---|
+| `LocalSettingCommandBoundaryTests.unsupportedProtectedUnknownAndExtraArgumentsAreRejectedAtPreparation()` | 原测试第 20 行有 4 条“应抛错但未抛错”：language 多余参数、appearance 的 unknown、truncation 的 system、captureSource 的字符串 choice 均错误返回基线快照。prepare 为支持空参数预读而放宽了非空非法参数。 | [LocalSettingCommandAdapter.swift](../AreaChain/Services/LocalSettingCommandAdapter.swift) 的 `prepare` 第 240 行保留 `if !draft.arguments.isEmpty { _ = try LocalSettingCommandMapping.value(for: draft) }`；[原边界测试](../AreaChainTests/Services/LocalSettingCommandBoundaryTests.swift) 的拒绝及零写入/零事件断言仍在。 | **修正已核对，运行未复验**。缺本方法在最终源码下通过，以及空参数真实基线、严格映射和直接契约回归通过的运行证据。 |
+| `LocalSettingCommandFailureTests.laterPreferenceWriteSupersedesOldPresentationEvenAfterABA()` | 原测试第 132 行期望 `CommandExecutionError.notRetryable`，实际抛出 `LocalSettingCommandIssue.notRetryable`；新增展示资格检查改变了后续修改使旧展示失效后的错误类型。 | 同一 [适配器](../AreaChain/Services/LocalSettingCommandAdapter.swift) 的 `presentationWrite` 第 362 行恢复 `CommandExecutionError.notRetryable`；[原失败测试](../AreaChainTests/Services/LocalSettingCommandFailureTests.swift) 仍核对 superseded、已提交事实、零写入/零展示副作用和精确错误类型。 | **修正已核对，运行未复验**。缺本方法及展示失败/重试/后续覆盖直接回归在最终源码下通过的运行证据。 |
+
+**一次有界只读锁诊断。** 17:35:18 +08:00，约 0.16 秒完成；以 `O_RDONLY | O_NOFOLLOW` 打开既有 `build/.build.lock`（inode `234750977`），仅一次 `LOCK_EX | LOCK_NB` 探测返回 EAGAIN / Errno 35。该结果为**实际占用**，不是读取失败或把任意 IOError 当作锁忙。锁文件内容为空，不能从中取得持有 PID。
+
+同次 `lsof -nP -Fpcfal` 查询成功：唯一观测到的打开者为 Python **63610**，fd 3、写方式打开；`ps` 确认存活，状态 `Ss`、已运行 `00:46`。其子进程 **63611** 为存活 `xcodebuild`，状态 `S`、已运行 `00:46`，另有存活 DTServiceHub / SWBBuildService。只读取必要进程字段和筛选后的构建参数，没有输出环境变量、凭据或完整命令行。
+
+关联任务为第八阶段 E 修复二的 `AreaChain` / Debug 串行测试：DerivedData `build/PrivacyQA-Surface8E-Fix2`，QA 标识 `com.areachain.privacy-qa`，目标为 `MenuBarHelpSurfaceTests/helpMonitorStopsAfterUnmountAndDoesNotConsumeModifiedEscape()` 与 `MenuBarHelpSurfaceTests/helpEscapePreservesEditorAndPresentation(search:locale:)`，结果目标 `build/SurfaceStageE-fix2-keyboard-final.xcresult`。`lsof` 的锁类型字段为空，故 PID 归属依据为唯一打开者与父子测试链，不能冒充内核直接返回的持锁 PID；进程存活也不等于测试已通过。锁忙和存活测试链足以执行用户要求的停止分支。
+
+本轮诊断后**停止所有测试/构建申请**，没有等待、重复探测、删锁、抢锁、终止持有任务或绕过脚本锁；没有启动 xcodebuild/XCTest，也没有新建 QA 运行产物或截图。桌面可交互检查尚未执行，不能凭其他测试存活推断本轮可交互。此处只记录上述时刻的状态，不推断交接时锁已释放。
+
+**四项原生提交链路。** 已读取原 `UnifiedSearchSettingInteractionTests.completionBaselineParameterAndExplicitSubmission(index:)` 及原夹具入口；源码包含原生输入/参数、基线、明确提交、适配器及隔离读回断言，但本次全部未运行，不作为原生验收通过。
+
+| 字段 | 本轮原生 UI → 实际隔离写入 → 反馈 |
+|---|---|
+| 语言 `setting.language` | 未运行；待原生输入/参数到隔离存储读回及准确反馈的证据。 |
+| 外观 `setting.appearance` | 未运行；待注入外观/事件下的同一完整链路证据。 |
+| 标题省略 `setting.truncation` | 未运行；待原生参数选择、明确提交、隔离读回及反馈证据。 |
+| 捕获来源 `setting.captureSource` | 未运行；待 Bool 参数、明确提交、隔离读回及反馈证据。 |
+
+点击与 ⌘Return 同入口、Return 不写入、noChange 零写入/零副作用、单草稿入计划唯一所有权、多项零部分写入、同字段冲突三选/过期确认、unknown 无普通重试、展示重试不重写偏好/后续修改使旧展示失效、失焦/锁定仅撤显示及其他命令/未装配拒绝，**均无本轮新增运行证据**。旧 Controller/Adapter 调用结果不替代这些原生链路。
+
+**截图与旧入口。** 本轮新增截图 0、实际检查 0。中英文、浅深色、标准/紧凑、正常/最小宽度及成功/noChange/冲突/unknown/展示失败/多项阻断矩阵未运行；旧设置页四 Binding 与受影响的 4A 参数/计划/输入回归未运行。没有获得最终代码对应的截图证据。dark→system 原历史视觉失败没有本轮定位或运行证据，继续保留，不能用注入外观验证关闭。
+
+**本轮改动与门禁。** 没有修改 Swift 或测试断言；两处代码修正属于原轮。本次仅在同一 §9.56 追加事实与恢复条件。`swiftlint lint --strict --quiet` 指定 `LocalSettingCommandAdapter.swift`、`LocalSettingCommandBoundaryTests.swift`、`LocalSettingCommandFailureTests.swift` 三文件，退出 0、无诊断；`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 及 `git diff --check -- docs/unified-search-commands.md` 均通过，最终文档编辑后重跑后面三项。docs 门禁识别的 73 个工作树变更路径包含并行工作，不代表本轮修改 73 文件。显式 docs profile 避免工作区并行 Swift 改动触发未隔离测试，不重跑无关领域或整套脚本测试。正常配置构建与验签本次未申请；上轮通过仅保留历史身份，不视为本次最终源码验证。
+
+**未完成项与恢复条件。** 指定 Cursor verifier 继续缺失；未重复登录检查、未使用自查/测试/其他代理替代。VoiceOver 真人、系统输入法候选窗、最低系统/减弱动态及真实用户多窗口未验；C2B 的 8 项原生失败、IME 拒绝/mutable textStorage 事后检测限制、4A-3B2 最终原生及上述 dark→system 历史缺口保留。
+
+需等待关联测试正常结束并自然释放原锁。后续续验先重新核对工作区与最终修正，在正常取得原锁、确认桌面可交互后，按完整隔离 QA、独立偏好/外观/事件及 fake 隐私依赖，先复验上述两项和直接相关回归；通过后才串行运行四项原生链路、矩阵及真实受影响旧入口，实际检查截图，最后完成最终定向、正常配置构建验签和适用静态门禁。已有来源与修正代码足以界定后续本地续验，但**尚不具备 3A-2 验收通过或进入下一阶段的依据**。本轮到此停止；未提交、推送、安装、发布、启用生产搜索或修改用户设置。
+
+**17:49 续验记录（2026-10-04，Asia/Shanghai）。** 用户再次要求继续后，重新检查工作区、当前两处修正和原锁；不沿用 17:35 的 PID。工作区并行改动保留，无暂存变更，本次只补充本节。结果仍为 **partial / 运行验收 blocked**。
+
+| 本次检查 | 实际证据与结果 |
+|---|---|
+| 当前锁 | 17:49:21 +08:00，以只读 fd 对既有原锁做一次非等待独占探测，EAGAIN / Errno 35 确认实际占用；诊断约 0.17 秒。锁文件无 PID；不是检测失败。 |
+| 当前关联任务 | 本次 `lsof` 唯一打开者 Python **85312**（fd 3，存活 `Ss`，`01:30`），其子进程 xcodebuild **85313**（存活 `S`，`01:30`）。AreaChain / Debug、`build/PrivacyQA-Surface8E-Fix2`、`com.areachain.privacy-qa`、串行 `MenuBarHelpSurfaceTests`；结果目标 `build/SurfaceStageE-fix2-final-help.xcresult`。锁类型字段仍空，归属依据是本次唯一打开者与存活父子测试链，未获得内核直接持锁 PID。未读取环境变量或输出完整命令行。 |
+| 两项原失败 | 当前 `prepare` 非空参数严格校验和 `CommandExecutionError.notRetryable` 修正仍在；**两项均未运行复验**，原 47 passed / 2 failed 不变。 |
+| 原生、旧入口及构建 | 桌面交互确认、语言/外观/标题省略/捕获来源四条原生提交链路、布局矩阵、旧设置页、4A 回归和正常配置构建/验签均未启动；新增及检查截图均为 0。没有新增运行失败，也没有新增运行通过。 |
+| 停止与缺口 | 确认占用后停止测试/构建申请；不等待、不轮询、不删锁、不终止任务、不绕过锁。指定 Cursor、人工及历史缺口沿上文保留。本次未改代码/断言、未修改用户设置、未启用生产搜索、未提交/推送/安装；等待关联任务自然结束及锁释放后，仍从两项失败的定向复验开始。 |
+
+本次文档修改后，`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 和 `git diff --check -- docs/unified-search-commands.md` 均退出 0；最终补记后重跑同一组检查。门禁识别的 73 个变更路径包含既有及并行改动；本次只改本文。不因文档补记申请测试锁或重复无关回归。
+
+**17:53～18:25 续验（2026-10-04，Asia/Shanghai）。** 本次取得运行证据，**整体仍 partial：完整矩阵、旧入口回归和最终构建未完成**。17:53:36 的一次只读非等待锁探测成功；桌面预检得到 consoleSession=1、loginComplete=1、screenLocked=false、screenCount=1。随后各次正常 QA 执行在整个 xcodebuild 生命周期持有原锁、结束后释放，没有使用旧 PID 或绕过锁。窗口测试仍保留真实 key-window 断言。
+
+| 本次运行（均在 `build/SettingUIQA-3A2`） | 实际结果与对应源码阶段 |
+|---|---|
+| `Recheck-3A2R.xcresult` / `recheck-3a2r.log` | **49 个定义、61 次执行全部通过**，0 失败/跳过/预期失败。Contract / Lifecycle 及原五套 LocalSettingCommand 服务测试；两项原失败 `unsupportedProtectedUnknownAndExtraArgumentsAreRejectedAtPreparation()`、`laterPreferenceWriteSupersedesOldPresentationEvenAfterABA()` 均明确 Passed。原 `Contracts.xcresult` 的 47/2 不改写，新的运行补齐其两处修正证据。 |
+| `Native-3A2R.xcresult` | 9 个定义中 8 通过、1 失败；19 次执行中 18 通过、1 失败。语言链路 index=0 在 `UnifiedSearchTestHost.key` 的 `window.isKeyWindow` 断言失败；没有足够证据定位外部失焦原因，不归为已修复环境问题。其他三字段链路及 noChange、冲突按钮、旧语言 Binding、展示重试/替代、失焦/锁定撤显示等所选场景通过。此轮参数选择仍含真实菜单 action 派发。 |
+| `Native-Diagnostics-3A2R.xcresult` | 增加按键阶段诊断后，四字段原链路与初步面板边界检查共 2 个定义、6 次执行全部通过。没有自动抢回焦点、重试失败按键或放宽焦点断言；该次通过不能解释首轮失焦原因。 |
+| `Layout-Diagnostics-3A2R.xcresult` | 新增跨区域断言后，1 个定义的两宿主执行均失败。compact 的结果标题 `(12,158.91015625,185,16)` 与提交按钮 `(24,158,119.5,20)` 相交，结果边界仅 `(12,12,280,138)`；standard 结果标题也超出结果边界。确认是 QA 布局给结果区空间不足，不能把“按钮在窗口内”视为布局通过。 |
+| `Native-Controls-3A2R.xcresult` | 修正 QA 布局并把参数选择改为系统菜单键盘事件后，2 个定义、**10 次执行全部通过**：四字段分别点击/⌘Return 的 8 条完整链路，以及 standard/compact 两项区域不重叠断言。此轮完成时间 18:20:33；具体 command/source SHA-256 清单同名保存。 |
+| `Native-Matrix-3A2R` 申请 | 新增六结果状态矩阵及原生阻断用例后，正常非等待取锁返回 `LOCK_BUSY`、退出 3，**未启动 xcodebuild/XCTest，未生成同名 xcresult/command/source 清单**。停止后续申请。 |
+
+所有实际测试沿原完整 AreaChain scheme、Debug、macOS arm64、独立 QA 标识 `com.areachain.setting-ui-qa`、原隔离 DerivedData、local/ad-hoc、生产 entitlement、LSUIElement=NO、串行执行，清除六项真实钥匙串授权变量。`PreferenceCommandIO` / `LocalPreferenceTestSupport` 的随机 UserDefaults suite 承担实际写入与读回，外观/事件可注入，隐私仍为内存配置及 FakeSystemVaultKeys。没有改工程或排除源码，没有修改用户偏好；完整测试 target 编译仍有既有辅助 API 废弃及并行菜单栏测试 Sendable 警告。
+
+**两项原失败的最终已运行结果：均通过。** 本次未修改适配器或这两项原测试；它们分别验证非空非法参数仍拒绝且零写入，以及旧展示 superseded 后返回精确 `CommandExecutionError.notRetryable`。这与后续尚未编译的新 UI 测试范围分开。
+
+| 四项原生链路（`Native-Controls-3A2R`） | 点击 / ⌘Return | 实际隔离结果 |
+|---|---|---|
+| language | 两者通过 | 真实基线为 system，原生参数设为 chinese；单次 `.language(.chinese)` 写入，存储读回一致，显示 Applied。 |
+| appearance | 两者通过 | 真实基线为 system，原生参数设为 dark；单次 `.appearance(.dark)` 写入，存储读回一致，显示 Applied；不证明系统 dark→system 像素问题已修复。 |
+| truncation | 两者通过 | 真实基线为 tail，原生参数设为 middle；单次 `.quadrantTitleTruncation(.middle)` 写入，存储读回一致，显示 Applied。 |
+| captureSource | 两者通过 | 真实基线为 false，原生参数设为 true；单次 `.stampCaptureApp(true)` 写入，存储读回一致，显示 Applied。 |
+
+8 个场景均从原生输入 `/set`、Tab 接受候选、空参数真实基线开始；原生菜单经合成鼠标打开，方向键/Return 由系统追踪循环选择参数，随后原生点击或 ⌘Return 经原 Controller → Adapter 完成提交。均核对普通 Return 零写入、旧候选拒绝、同一 draft ID 移入运行、active/plan 无重复所有者、重复旧回调不再写入及明确“完成”释放。它们不是手工调用适配器的替代证明，也不等于真人键盘/输入法/VoiceOver 验收。当前未编译的新方法不改变这 8 个已运行场景的正文，但完整最终测试 target 仍需重编和续验。
+
+**实际修改与范围。** 只修改四份测试/QA 支持源码：
+
+- [UnifiedSearchOperationTestSupport](../AreaChainTests/Features/UnifiedSearchOperationTestSupport.swift)：960pt QA 窗口中操作滚动面板由 450pt 改为 320pt，为下方结果固定页头留空间。原 4A-3B2 的 450pt 是历史 QA 配置，不是生产布局契约；应用组件和提交语义未改。此共享 QA 宿主变化仍需旧 4A 消费者回归。
+- [SettingInteractionTests](../AreaChainTests/Features/UnifiedSearchSettingInteractionTests.swift) / [SettingTestSupport](../AreaChainTests/Features/UnifiedSearchSettingTestSupport.swift)：保留并细化焦点诊断，四字段各覆盖点击与 ⌘Return；参数选择复用 PickerNativeTestSupport，去掉这条链路中的菜单项 action 直派。补充真实入列、混合/多项及未装配/其他命令原生阻断场景。
+- [SettingPresentationTests](../AreaChainTests/Features/UnifiedSearchSettingPresentationTests.swift)：增加提交/结果区域不重叠及所属边界断言；补充成功、noChange、冲突、unknown、展示失败、多项阻断 × 中英文 × 浅深色 × 两宿主 × 正常/最小宽度的 96 个场景。
+
+**新增而未运行的范围。** 最后新增的 `resultStatesAcrossHostMatrix(layout:locale:)`、`nativeEnqueueOwnsDraftAndMultipleSubmissionWritesNothing()`、`unsupportedAndUnassembledNativeSubmissionRemainBlocked(assembled:)` 及对应 helper **未编译、未运行**；不能因严格 lint 通过就宣布其可运行。完整旧 SettingsPickerConsumerTests / SettingsLocalPreferenceConsumerTests、4A 参数/计划/输入及该共享 QA 宿主的相关对象界面回归未运行。首轮已通过的旧语言 Binding 是一个实际场景，不能代表整个旧设置页回归。三种冲突选择/过期确认、unknown、展示重试/后来覆盖、noChange、撤显示等首轮证据基于旧 QA 布局，仍需在最终 320pt 宿主复跑；未知和多项的服务/Controller 证据不冒充新增原生阻断测试通过。
+
+**截图实际检查。** 首轮保留 32 张于 `Native-3A2R-images`，其中实际检查 compact 深色最小宽度与展示失败两张，前者暴露重叠。修正后保留并实际检查 `Native-Controls-3A2R-images` 的 10 张：8 张 `setting-applied-{0…3}-{false,true}.png` 和两张 `setting-submit-boundary-{standard,compact}.png`；`native-controls-contact.png` 是这 10 张的索引。修正后提交动作与结果页头已分开，反馈可读。以上是已挂载原生窗口 `cacheDisplay` 内容图，截图查看在交互结束后；不是系统合成桌面截图。没有本轮最终六状态完整视觉矩阵，不能将早期 16 张 pending 矩阵图或新增测试源码冒充最终验收。后续新增测试尚未运行，10 张图对应 `Native-Controls-3A2R-sources.json` 记录的已运行代码。
+
+**本次停止时的锁事实。** `Native-Matrix-3A2R` 正常申请时原锁不可得，包装器没有截断、写入或删除未取得的锁。18:25:26 对该次失败仅做一次有界归属查询（约 0.14 秒，未再次 flock）：`lsof` 退出 1、没有打开者，因而**无法确认申请瞬间的持有 PID/任务**，也不能断言现在可取锁。未沿用之前 PID、未输出环境变量或完整命令行；随后不轮询、不重试、不等待、不干预。正常配置构建/验签本次未申请，原历史成功不替代本次最终构建。
+
+**最终静态与后续。** 四份修改测试源码的严格局部 SwiftLint 已退出 0、无诊断；`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 和 `git diff --check` 均通过，最终文档编辑后复跑。门禁识别 76 个工作树变更路径，包含并行工作，不代表本轮修改量。源码指纹核对确认两次已运行清单内的应用源码和两项原失败测试均未改变；相较 `Native-Controls-3A2R-sources.json`，已列源码中仅后三份 Setting 测试/支持文件有未运行增量。并行菜单栏变化及新增 RowBubble 测试全部保留，不认领其验收，清单外新增测试也不能假定已编译。
+
+指定 Cursor verifier 不可用继续保留，不查登录或换代理；VoiceOver 真人、系统候选窗、减弱动态/最低系统/真实多窗口，以及 C2B 8 项失败、4A-3B2 最终原生、dark→system 历史缺口仍未关闭。已有两项失败修正与四条原生提交链路的新证据，可作为继续本地验收的依据；**不构成整个 3A-2R 收口通过或进入下一阶段的依据**。续验先取得原锁、确认交互桌面，编译运行上述新增矩阵/阻断及最终布局回归，再补旧设置页/4A 与正常构建验签。本轮不新增功能，不提交、推送、安装、发布或启用生产搜索。
+
+**19:44 起的剩余验收（2026-10-04，Asia/Shanghai）。** 本轮结论：**六状态矩阵、阻断、旧设置页与大部分 4A 回归已通过；本阶段仍待一项测试定位修正复验及正常 Debug 构建/验签**。指定复核、人工和其他历史缺口在下方单列，不把它们与这些实际结果合并成一个状态。
+
+开始时仅一次只读锁探测：19:44:24 可正常取得并立即释放；桌面 console=1、loggedIn=1、locked=false、screens=1。对照 `recheck-3a2r-sources.json` 与 `Native-Controls-3A2R-sources.json`：适配器、两项原失败测试和八条设置提交路径未改变；后续应用变化是并行 RowBubble 外壳及 DaybookSurface 的 rowBubble 分支，原设置/候选分支保持语义，故不机械复跑两项修复及八条链路。其原截图和首轮语言焦点失败、根因未明记录均保留。
+
+**单次仓库入口。** `Remaining-3A2R-command.json` 记录一次 `./scripts/build.sh test --no-wait` 合并 31 个类/方法选择器，覆盖已登记的剩余 Setting 场景、隔离 SettingsPicker/SettingsLocalPreference 消费者、4A 参数/计划/对象界面及 UnifiedSearchInput。没有手工持锁；脚本管理原锁、串行执行和六项钥匙串授权清除。原脚本没有 QA 参数透传，故仅该子进程使用 Xcode 支持的 `XCODE_XCCONFIG_FILE`，指向未入库的 `build/SettingUIQA-3A2/remaining-qa.xcconfig`。执行前 `-showBuildSettings` 确认 QA 标识 `com.areachain.setting-ui-qa`、local/ad-hoc、无 Team、生产 entitlement、sandbox=YES、LSUIElement=NO；SYMROOT/OBJROOT 指向原隔离 QA 产物目录。未改 build.sh、个人签名或工程。测试日志/xcresult 使用脚本的 `build/local-DerivedData/Logs/Test`；正常构建不得继承这份进程级覆盖。
+
+| 本轮证据 | 结果 |
+|---|---|
+| 完整测试目标编译与合并运行 | 19:52:16 启动，20:00:45 完成，退出 65。`build/local-DerivedData/Logs/Test/Test-AreaChain-2026.10.04_19-52-17-+0800.xcresult`：**57 个定义中 56 通过、1 失败；77 次执行中 76 通过、1 失败**。未跳过或预期失败；四类旧边界外能力没有纳入选择器，不能把未选择称为通过。 |
+| 六状态矩阵 | `resultStatesAcrossHostMatrix(layout:locale:)` 四组参数运行全部通过；每组内部覆盖 24 个场景，实际完成 **96 个状态/语言/主题/宿主/宽度组合**。96 是内部场景数，不冒充 96 个 XCTest 测试。另有 16 个 pending 布局组合在最终 320pt QA 宿主通过。最小宽度仍是 compact 304 / standard 444（包含原 24pt 外边距），正常宽度 380 / 620；未放宽窗口/面板边界或遮挡断言。 |
+| 原生阻断及生命周期 | 新增原生入列唯一所有权、活动+计划/多项零部分写入、未装配/其他命令拒绝通过；noChange、三类冲突按钮及过期确认、unknown 无普通重试、仅展示重试/后续替代、失焦/锁定保留提交事实、焦点按钮空格/⌘Return 均在最终 QA 宿主通过。 |
+| 旧设置页 | 已选的 groupedFormSelectionAndCancellation、languageChangesThroughAppChromeWithoutFallback、persistenceReopenRebuildAndTruncationKeepTitle、disabledExternalUpdatesAndLongDescription，以及 captureToggleUsesSameAuthorityWithoutOtherSettings 均通过；覆盖四项普通偏好、双语/浅深色、共享读写/事件、重开和同字段冲突。真实进程外观方法未选，dark→system 缺口不变；未触发日历、登录或其他真实系统写入。 |
+| 4A 回归 | 所选 Operation Contract/Interaction/Presentation/Lifecycle、Plan Contract/Interaction/Presentation/Lifecycle、Object Presentation 和 Input 均通过。Object Interaction 仅 `cancelReturnsFocusAndNativeRemovalPreservesOtherParameters()` 失败，其余通过。两项读取 UserDefaults.standard 的旧生命周期方法仍未选，以已有隔离阻断用例承接本阶段要求。 |
+| 一项失败及最小修正 | 原第 152 行 `draft.targets == .none` 失败。源码和 `objects-removed-keeps-title.png` 显示，整窗按 `unified.select.<objectID>` 找到的是下方搜索结果按钮，空格改变搜索选择而非移除固定目标；两个区域复用同一行标识。只修改 [UnifiedSearchObjectInteractionTests.swift](../AreaChainTests/Features/UnifiedSearchObjectInteractionTests.swift)：查找限定原 OperationBoundary，先滚动到该按钮并检查其框在面板内，再保留原焦点、空格、目标为空及标题不变断言。应用代码和 QA 尺寸未改，也未新增无关场景。 |
+| 修正后定向复验 | `ObjectRemoval-3A2R-command.json` 仅选择上述一个方法；原 `build.sh test --no-wait` **锁忙退出 3，未编译、未运行、无新 xcresult**。`ObjectRemoval-3A2R.log` 与 result.json 保留该事实，不将原失败改写为通过。 |
+
+完整正常测试 target 保留原未使用变量、辅助 API 废弃及其他现存警告，没有排除源码来编译。全部新设置实际读写仍是随机隔离偏好及注入副作用；未启用生产搜索或接触用户设置。
+
+**最终截图检查。** 本次运行生成的 257 张窗口内容图按时间筛选后保存在 `build/SettingUIQA-3A2/Remaining-3A2R-images`，不是全部都已逐张验收。已通过 `Remaining-3A2R-contact` 的 12 张对照图逐一检查 96 个六状态反馈区域：成功/noChange、原值/当前/拟改值、unknown 限制、仅重试展示、多项阻断均可读；对照图裁切只用于查看，原完整 PNG 保留。另直接查看 compact 英文深色最小宽度冲突、standard 英文深色最小宽度多项、compact 中文深色最小宽度 pending 的完整窗口图，以及旧设置页 en/zh-Hans × light/dark 四张完整图。未见提交区域与结果页头重叠；必要反馈未被省略。复用未受影响的上一轮八条提交结果与两宿主区域图，不把未查看的其余图片计为通过。证据仍是已挂载原生窗口 cacheDisplay，不冒充系统桌面合成截图或真人操作。
+
+**停止事实与剩余门禁。** 定向复验被脚本锁拒绝后，不再申请测试或正常构建。20:17:59 仅做一次有界归属查询，lsof 退出 1、无打开者，无法确认申请瞬间的持有任务，也不推断现在锁已可用；未再次 flock、轮询、等待或干预。**本阶段仅剩上述一项定位修正的编译/运行复验，以及不带 QA 覆盖的正常配置 Debug 构建/验签。** 已通过矩阵及旧入口不因该测试文件的局部定位修改失效，后续无需重跑整组。修改后 `swiftlint lint --strict --quiet AreaChainTests/Features/UnifiedSearchObjectInteractionTests.swift`、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile docs --strict --format json` 与 `git diff --check` 均退出 0；最终文档补记后复跑受影响门禁，不能替代待运行方法。源码指纹对照本次合并运行清单，除该用例文件外，仅并行 MenuBarHelpKeyboardTests、RowBubbleInteractionTests 变化，设置矩阵及应用路径未变。
+
+**分开保留的缺口。** 指定 Cursor verifier：未执行，不查登录、不替换；人工：VoiceOver、系统输入法候选窗、减弱动态/最低系统及真实多窗口未验；历史：首轮语言焦点失败根因仍未明，C2B 八项原失败、IME/mutable textStorage 限制及 dark→system 未关闭。此次通过的 4A 所选回归是新证据，但不据此清空其他阶段整体验收记录。本阶段尚未收口通过，已有结果可支持继续本地验收；不进入下一阶段，不提交、推送、安装或发布。

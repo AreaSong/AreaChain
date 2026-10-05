@@ -32,14 +32,7 @@ extension TasksPage {
                     }
                 }
                 .padding(8)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .fill(DaybookPalette.cardSurface)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                        .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8)
-                )
+                .daybookStaticCardSurface()
                 .padding(.horizontal, 1)
                 .padding(.bottom, 8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -59,14 +52,7 @@ extension TasksPage {
             }
         }
         .padding(10)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookPalette.cardSurface)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8)
-        )
+        .daybookStaticCardSurface()
         .padding(.horizontal, 4)
     }
 

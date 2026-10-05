@@ -5,13 +5,14 @@ struct UnifiedSearchPlanButton: View {
     let title: LocalizedStringKey
     let identifier: String
     var focusRevision: UInt64 = 0
+    var variant: DaybookButtonVariant = .quiet
     let action: () -> Void
     @FocusState private var focused: Bool
     @State private var pending: (() -> Void)?
 
     var body: some View {
         Button(title, action: action)
-            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+            .buttonStyle(DaybookButtonStyle(variant, size: .compact))
             .focusable().focused($focused)
             .onKeyPress(.space, phases: [.down, .repeat, .up]) { press in
                 guard focused, press.modifiers.isEmpty else { pending = nil; return .ignored }

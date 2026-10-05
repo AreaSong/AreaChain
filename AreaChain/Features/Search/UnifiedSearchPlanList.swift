@@ -10,7 +10,7 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            Text("unified.plan.notExecutable").font(DaybookType.caption)
+            Text(controller.hasSettingAdapter ? "unified.setting.singleOnly" : "unified.plan.notExecutable").font(DaybookType.caption)
             let check = plan.check()
             ForEach(Array(plan.items.enumerated()), id: \.element.id) { index, item in
                 UnifiedSearchPlanRow(controller: controller, item: item, source: controller.buffer, index: index, check: check)
@@ -43,6 +43,10 @@ private struct UnifiedSearchPlanRow: View {
                 }
                 let summary = UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: calendar)
                 if !summary.isEmpty { Text(verbatim: summary).font(DaybookType.caption).lineLimit(2) }
+                if !isEditing, controller.localSettings?.supports(command.id) == true {
+                    UnifiedSearchSettingValues(before: item.draft.baseline.preference?.memory,
+                                               after: item.draft.arguments.first?.value)
+                }
                 diagnostics
                 controls
                 if let proposal, proposal.source == controller.buffer {

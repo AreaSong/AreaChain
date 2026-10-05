@@ -1,5 +1,147 @@
 # 工程与维护
 
+## 第九阶段 B：昨日事项静态卡片外壳
+
+2026-10-04，仅 DaybookSurface 增加 `daybookStaticCardSurface()`，TasksPage 两种昨日布局替换完整 background/overlay；接口与保留责任见[组件目录](component-catalog.md#第九阶段-b昨日事项静态卡片外壳)。公共层没有状态、自动悬停、选中、阴影、动画、布局或颜色配置；背景/0.8pt 内描边非命中。原 `.card` 自动悬停/选择与 floating 不变。普通 padding 8、外水平 1/底部 8/transition，居中 padding 10、外水平 4 和标题边距保持；布局条件、投影、行与逐项移动未改。原 ControlsPreview 增加静态/交互卡片对照。
+
+**基线与像素**：修改生产前，原 SystemPageHost/SettingsButtonTestSupport 直接挂 TasksPage，以合成内存模型、原昨日按钮展开/收起；`build/StaticCard9B/baseline.xcresult` 为 1 项/2 次通过，内部覆盖两分支×中英文×浅深色×356/480pt 共 16 场景。`baseline-actions.xcresult` 为 2 项/6 次通过，含正文鼠标检查、真实移动按钮鼠标/辅助动作、按钮左侧空白不移动。完整缓存图与滚动几何在 before/after，16 对生产整图逐像素相同，统计 `production-pixels.json`；公共冻结只保留旧装饰，不复制业务。图含透明宿主区域，不能当窗口合成器截图；已查看普通/居中代表图。
+
+**过程证据**：`acceptance.xcresult` 首轮 36 项/72 次：33 项/67 次通过，3 项/5 次失败，0 跳过。公共完整外缘、圆角/内描边/无阴影、静态悬停与原 `.card` 动态反馈、两布局移动成功/失败链、原投影/空态/滚动及 ModelChanges 通过。身份读取早于 onAppear、完成按钮误用正文坐标两处测试问题已修正：等待原 settle、通过实际 AX 完成按钮且按行定位；未改生产。floating 两次 key window 丢失保留失败，不删焦点断言。
+
+`recheck.xcresult` 为 8 项/20 次通过、0 失败、2 项跳过。公共身份/按钮边界、原 ControlsPreview、习惯正文检查与完成/跳过昨日、待办逐项移动、真实 ModelChanges 保存失败/回滚/反馈与重试均通过。MonthGridMoveRepository 原接口直接复用、未扩展；月格两测试因原环境条件跳过，不算通过。该轮 floating 方法筛选没有命中，不能覆盖首轮失败。内容矩阵已扩展到中英文/浅深色/宽窄，新增空昨日及壳/行悬停区分；最终合并回归第一次因原构建锁忙未执行，不绕过锁。
+
+**最终验证**：锁释放后 `final.xcresult` 实际命中 11 套、**60 项/133 次，全部通过，0 失败、0 跳过**；清单在 `final-tests.json`，命令在 `final-command.json`。完整 DaybookFloatingSurfaceTests 已重跑，覆盖首轮焦点失败及此前零命中的筛选，不改变旧测试。除公共静态/交互表面外，真实 TasksPage 在两种分支、两语言、两主题、356/480pt 下覆盖单条、长标题、仅习惯及混合 3/24 条，保留 48 份扩展矩阵图；空态、展开/收起、今日输入变化后的原分支往返、5pt 正文水平差、滚动与零模型变化通过。壳内边距悬停整图不变、进入原行有反馈；原菜单栏和工作台合成宿主全套通过，但不将通用宿主回归写成完整宿主中的昨日专项动作。重新比较最终 16 对生产完整图仍逐像素相同，未裁外缘；已查看长标题、仅习惯及 ControlsPreview 代表图。
+
+**最终门禁**：7 个本轮 Swift 文件严格局部 SwiftLint、工作流、差异与 static profile 通过；检查器定向 93 项、完整脚本回归 213 项通过。`./scripts/build.sh --no-wait` Debug 构建及静态验签通过，沿既有 development 配置：staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false；编译仍有既有 SDK/actor 等警告。源差异核对确认两处消费者除完整绘制替换外逐字保持，旧表面代码逐字保持，TasksPage/Actions 哈希不变，暂存区完整补丁哈希与起点相同。未修改/排除并发代码换取通过。
+
+**边界与未验**：整体交接 **partial**，范围内实现及上述自动验证完成；指定 Cursor verifier 当前不可调用，保留复核缺口，不认证或替代。原生测试沿完整正常 PrivacyQA、独立 `build/PrivacyQA-StaticCard9B`、`com.areachain.privacy-qa`、local 临时签名、原生产 sandbox entitlement、六项钥匙串变量清除及串行事件。鼠标证据是原生 sendEvent/postEvent 合成事件，辅助按下及菜单 action 单独计；真人鼠标、VoiceOver、窗口合成器屏幕像素未运行。过程中的失败、跳过与未执行不计入最终通过数。第九阶段筛选浮层、连击指标、标签色点，以及第八阶段手记 AX、下方气泡保留、瞬态悬停、滚动归属、羽化等历史缺口均未修。保留前期暂存及并发修改；不提交、推送、安装、发布或操作真实记录、系统偏好、签名配置和权限。
+
+## 第八阶段 F：标题与备注气泡动态外壳
+
+以下保留接入轮的原始结果；2026-10-04 最终版本事件补验及最新去重状态见本节末的“F 补验”。
+
+2026-10-04，本轮实施范围仅 DaybookRowBubbles 的两处装饰及重复边框映射、DaybookSurface 的纯呈现预设。直接生产气泡修改前基线见 `build/SurfaceStageF-baseline.xcresult`（6 项 / 15 次通过、0 失败/跳过）；保留动画与反馈中卸载补验见 `SurfaceStageF-motion-baseline.xcresult`。原生事件只调用直接气泡注入的计数回调，无系统剪贴板操作。完整 PNG/几何/文字/回调记录在 `build/SurfaceStageF-before`；冻结旧代码仅为装饰，不复制生产气泡。
+
+**已实现、部分验收（partial）**：公共动态入口及责任边界见[组件目录](component-catalog.md#第八阶段-f标题与备注气泡动态外壳)。两处外壳和两处颜色映射收口；复制反馈优先、small/continuous、0.8pt 居中描边、背景形状阴影及非命中描边集中维护，箭头不被包入装饰。三消费者文件与任务起点哈希相同；去掉本轮扩展后的公共表面哈希与起点一致，保留 E 帮助/事件修复和全部前期/并发改动。旧壳补验仅在原构建锁内临时恢复本轮拥有的 RowBubbles 段，finally 核对并还原，无并发覆盖。
+
+**实际证据**：
+
+- `SurfaceStageF-motion-baseline.xcresult`：3 项 / 12 次通过，直接气泡保留原动画，真实 mouseMoved/down/up、nil/有回调、单次调用、反馈中进出、正常复位、卸载/重挂和反馈中卸载；不是私有状态赋值。初始直接气泡事件覆盖 en/light，后续全语言/主题事件扩展的状态见下条。
+- 新壳 `SurfaceStageF-focused.xcresult`：12 项 / 32 次，11 项 / 29 次通过，1 项 / 3 次失败，0 跳过。通过含公共四状态政策、完整外缘冻结对照、UUID/onAppear/几何、动态描边内容点击、直接气泡事件与箭头边界、TaskRow 回调装配。失败与修正夹具后的 `SurfaceStageF-consumer-original.xcresult` 相同：LiveDiaryComposerPreview 的 combine 辅助树仅暴露 diary.preview.card，两个位置找不到正文节点；DiarySummaryRow 下方场景进入气泡后正文未保留。不能据辅助树缺少正文断言实际没有绘制，不改消费者。
+- `SurfaceStageF-note-original.xcresult`：原任务预览备注上下两位置进入、保留、候选排除和往返共 1 项 / 2 次通过。新壳该新增事件用例尚未运行。手记敏感投影/原条件检查通过；输入草稿、焦点、选区、候选接受、帮助鼠标/一次 Escape 的本轮事件组合回归未运行，旧阶段结果不替代。
+- 扩展双语浅深色反馈后，`SurfaceStageF-feedback-matrix-original.xcresult` 为 3 项 / 12 次：静态矩阵 4 次通过，事件 8 次因 foreground=com.apple.loginwindow、key=false、active=false 失败。只读会话检查确认锁屏，未跳过焦点断言、改变系统设置或直接打开应用。完整反馈矩阵当前仍未验收；用户尚未提供桌面恢复信息，不重复无效运行。
+- 最终非事件回归 `SurfaceStageF-visual-regression.xcresult`：14 项 / 34 次全部通过，0 跳过；完整正常应用/测试目标编译，覆盖公共三政策与四状态、isPresented 身份、五静态预设完整外缘、原帮助裁切、row 叠层、两实时预览、候选/只读属性、双语浅深色长短正文与上下箭头以及原 ControlsPreview。状态汇总在 `build/SurfaceStageF-status.json`，不把不同包重复项相加。
+
+**视觉与时间分开**：`build/SurfaceStageF-before` / `after` 保存完整缓存图、几何、文字与回调次数。初始新旧 58 对图的几何/文字/次数一致，57 对整图逐像素相同；一对备注复制提示文字 359 像素最多差 1 灰阶，边框/几何无差异，属于动态取样差异，不计静态失败或静态通过。统计 `SurfaceStageF-comparison.json`。公共合成内容四状态的严格整图冻结比较单独通过，包含 32pt 外缘、背景阴影和越界图形。已查看直接标题复制反馈、深色长备注及浅色 ControlsPreview 的四状态/外部箭头；缓存图不是窗口合成器截图或真人操作。1200ms Task 与原动画代码未变，事件断言验证反馈出现及等待后复位，不声称精确量测了每一过渡帧或系统复制成功。
+
+**门禁**：7 个本轮 Swift 文件严格 SwiftLint、工作流、差异检查通过；检查器只扩展原稳定入口与反例，92 项定向、212 项脚本回归及静态 profile 通过。`./scripts/build.sh --no-wait` Debug 构建与静态验签通过，日志 `SurfaceStageF-debug.log`；沿既有 development 配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false，不是安装/发行。正常编译仍有原 SDK 辅助 API 警告。
+
+指定 Cursor verifier 无可调用入口，保留复核缺口，不认证或替换。第八阶段原明确登记的标题/备注装饰重复已接入，未发现本次登记范围的确定遗漏；不同点击形状、箭头及内容高度是合理差异。B 的滚动归属、D 的复制按钮辅助树、悬停/定位/窗口边缘及其他历史问题继续保留。未验证系统剪贴板、真人输入法、VoiceOver、低版本系统或真实数据；不提交、推送、安装、发布，不修改系统偏好、签名配置与权限。
+
+
+### F 补验：最终版本事件回归与收尾
+
+2026-10-04，本轮四类定向事件证据已补齐。生产源码未改；仅修正两个测试文件并更新原工程记录与 `build/SurfaceStageF-status.json`。工作区原有、未跟踪及并发改动均保留，暂存区未改。独立 `build/PrivacyQA-Surface8F-Final`、原 QA 标识、临时签名、生产 sandbox entitlement、LSUIElement=NO、完整正常应用/测试目标、六项钥匙串授权变量清除及 `build/.build.lock` 串行保持。一次锁忙未启动测试。只读会话检查不再显示 loginwindow；`final-probe.xcresult` 的生产帮助搜索小场景 1 项通过，诊断明确 window=7235、visible/key/active=true、前台为 QA，之后才运行正式组。下列结果包均使用 `build/SurfaceStageF-` 前缀。
+
+| 补验目标 | 最终有效证据 |
+|---|---|
+| 直接气泡完整反馈矩阵 | `final-feedback.xcresult`：`RowBubbleInteractionTests.nativeFeedbackAndNilCallback(note:callback:)` 1 项 / 4 参数运行通过；每次内部循环 en、zh-Hans × light、dark，共 16 场景。真实合成进入/离开、单次计数回调、nil、反馈期间进出、复位后悬停、卸载/重挂及反馈中卸载均通过，保留原动画和等待。`final-bubbles.xcresult` 的 `nativeContentCornersArrowAndShadow(note:upward:)` 4 参数运行也通过。 |
+| 新壳备注消费者 | `final-bubbles.xcresult`：`RowBubbleConsumerTests.taskNoteHoverCandidateExclusionAndRetention(lower:)` 的 false/true 两位置通过。沿生产备注指示器进入、气泡保留、候选排除及恢复；继续使用 `Synthetic // Synthetic note`，无强设悬停、宿主重建或生产条件改动。此宿主没有编辑器，输入焦点证据由下一组提供。 |
+| 输入组合 | `final-composition.xcresult`：8 项 / 12 次通过。`LivePreviewCompositionTests.nativeDraftAndSelectionSurviveCandidateTransitions(diary:acceptance:)` 的 false/true × return/mouse 验证两类预览候选往返、同一编辑器/焦点/选区、精确替换范围和一次接受；原 `InputSyntaxInteractionTests` 补多行鼠标、标签中部 false/true、独立撤销替换、列表及多行组合文本；`DaybookTextFieldSearchTests.returnDuringChineseCompositionDoesNotCommitAutocomplete()` 与 `DiaryComposerInteractionTests.chineseCompositionAndTagCompletionTakePriorityOverSubmission()` 补单行 Return 和手记 ⌘Return。无额外提交；合成标签夹具的初始保存另计。 |
+| 帮助鼠标与一次 Escape | `final-help.xcresult`、`filter-keyevent.xcresult` 加探测方法按最新同名结果去重，13 项 / 24 次通过。capture 单项/综合精确替换，search 空串、`query`、`query ` 精确追加，nil 综合无动作，卡片空白/内部操作及外部关闭不穿透；双语浅深色 356/380pt 的一次 Escape 保留草稿、查询、预览、原编辑器和选区，下一次才交还输入。程序化 marked text、候选、筛选优先级、双窗口、重开、修饰键及卸载通过。帮助均经生产 FooterBar 菜单打开；sendEvent/应用队列与额外 capture AXPress 参数分别取证。 |
+
+**失败与测试修正**：`final-bubbles` 首轮 3 项 / 10 次中 9 次通过、1 次失败：备注/nil/中文/深色在复位离开后再次收到 true，复制已复位，窗口 key/active 正常。该次未记录实际光标位置，原因未定，不归为锁屏或已证实产品回归。发现原复位产物缺少类型/主题导致覆盖，遂仅在 RowBubbleInteractionTests 补全场景文件名及光标诊断，原断言、计数、时序不变；完整方法重跑 16 内部场景通过。原失败仍保存，不能声称修复了悬停产品问题。
+
+帮助筛选方法在 `final-help` 与未改测试的 `final-filter` 两次止于“筛选未打开”的前置断言，未执行到优先级断言。仅构造、未派发的原生 CGEvent/NSEvent 显示 ⌘⇧F 的 characters=f、charactersIgnoringModifiers=F；旧 helper 调用两者都填 f。MenuBarHelpKeyboardTests 只在该用例按原生字段构造事件，再沿原应用队列和等待发送；`filter-keyevent` 同一完整方法通过。共享 helper、生产路由、断言均未改，最新结果替代两次前置失败，不重复计数。
+
+**去重与证据边界**：本轮 **24 个 Swift Testing 方法 / 46 次全部通过，0 跳过**；XCTest 负责启动宿主，未选择传统 XCTestCase。方法的完整签名、参数、来源和内部循环另记在原状态汇总 `finalVerification`。与仍有效的新壳 focused / visual-regression 合并后为 **41 项 / 91 次，40 项 / 88 次通过，1 项 / 3 次既有失败**。三次仍为手记预览两位置 AX 正文定位及手记行下方保留，未重跑扩修；旧/新同失败不是通过，AX 节点缺失不证明未绘制。历史 loginwindow 的 8 次环境失败单列，不与恢复后数据混算。无新增已确认生产回归。
+
+`build/SurfaceStageF-final-events` 保留本轮合成缓存图与几何/文字/回调记录。最终反馈 16 场景 × 6 状态共 96 图/记录，缩略拼图已查看；按每图气泡左侧中段两列、七行原始 RGBA，56 组复制优先/复位对应关系无差异。此为局部描边取样，非完整整图对照、逐帧时长或窗口合成器截图；旧完整静态矩阵未失效，不重复运行。程序化 setMarkedText 与真人输入法分开；系统剪贴板、真人键鼠/输入法、VoiceOver、真实 NSPopover、低版本和全部系统矩阵未验。
+
+最终两测试文件严格 SwiftLint、工作流、static profile（内含 212 项脚本测试）、JSON 解析及差异检查通过；修改后的测试已随完整正常目标编译，并重跑各自受影响方法。并发修改的 UnifiedSearchObjectInteractionTests 保留，最后正常目标编译已包含该版本。未额外重复 Debug 构建或静态图矩阵。第八阶段登记的接入范围无新增确定遗漏，可由主对话另行进入第九阶段剩余组件核验；本轮到此停止。指定 Cursor verifier 仍不可用，未认证或替换，整体验收保留复核与人工缺口；既有滚动、复制辅助树、悬停/定位等问题不因补验消失。未提交、推送、安装、发布或改变真实数据、系统偏好、签名配置及权限。
+
+## 第八阶段 E：标签详情与语法帮助卡外壳
+
+2026-10-04，macOS 26.6.2 arm64、Xcode 26.6 / Swift 6.3.3、Python 3.9.6。范围见[组件目录](component-catalog.md#第八阶段-e标签详情与语法帮助卡外壳)。仅接 tagDetailBubble / SyntaxExpandableCard 最外壳：tagDetail / syntaxHelp 共用页面底色、60% / 0.8pt 居中 stroke 与背景形状阴影，保留 regular/medium continuous。帮助原 clipShape 在装饰之后，公共层没有布局、裁切、命中、状态或事件。原三预设的 70% / 0.7pt、阴影及 isPresented，旧 row/card/panel/banner 均保留。
+
+**隔离与差异**：完整正常 AreaChain XCTest、`build/PrivacyQA-Surface8E`、`com.areachain.privacy-qa`、原 `build/.build.lock`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO；清除六项真实钥匙串变量，串行执行。仅合成内存库、随机偏好 suite 和原宿主，不直接打开 QA App 或日用应用。初始工作区、暂存区和未跟踪为空，随后 Services 偏好/窗口及搜索文档出现并发修改，均保留并参与正常构建。关键路径 SHA-256 基线保存在 `build/SurfaceStageE-source-baseline.json`；MenuBarPopoverView、DaybookRowBubbles、手记预览、SyntaxOverlay、SyntaxAutocompleteView、UnifiedSearchOverlay、DaybookScroller 均相对本轮基线未变，两个消费者剩余代码由差异核对。
+
+**修改前及对照**：`SurfaceStageE-baseline.xcresult` 命中 8 项 / 19 次，6 项 / 14 次通过、2 项 / 5 次失败、0 跳过。通过原预设、标签临界/溢出与候选往返、直接帮助回调；生产帮助入口未打开。普通/控制器宿主的 ⌘/、鼠标菜单追踪、AX 菜单按下和空菜单读取均有失败记录，不当作生产动作通过。最终复用原 NSHostingController 隔离宿主，通过真实 NSPopUpButtonCell 点击装配 NSMenu，取消追踪后派发原帮助项 action；不设置私有帮助状态。440pt 高度基线会挤出原 490pt 固定内容，后续保留原高度并用 356/380pt 宽度矩阵。`original-comparison` 在构建锁内只临时恢复两段迁移前外壳，结束自动恢复本轮接入；同宿主原生鼠标动作、Escape 与标题悬停断言在原外壳下也失败，未修业务。
+
+**最终 Swift 证据**：主包 `build/SurfaceStageE-acceptance.xcresult` 命中 16 套、91 项 / 140 次：86 项 / 131 次通过，5 项 / 9 次失败，0 跳过。随后 `gallery`、`settled-consumers`、`hover-final`、`escape-final` 只补/重跑对应展示、悬停与关闭检查。按测试树逐项以最新结果覆盖旧结果，合计 **92 项 / 142 次：86 项 / 132 次通过，6 项 / 10 次失败，0 跳过**，清单 `build/SurfaceStageE-latest-test-status.json`。没有零命中或排除正常源码；构建保留原 SDK/actor 等警告。
+
+通过公共五预设的完整 32pt 外缘静态逐像素对照（含越界图形，以区分正文整体阴影与背景阴影）、旧表面默认、isPresented 不增 onAppear/不重建身份/不改几何及关闭后无装饰对照。帮助外壳后裁切与原顺序逐像素相同，并验证它不同于公共完整阴影。标签短/长、刚好放下/溢出、多于五项、标题/计数/原顺序/无重复行及候选往返通过；原输入编辑 API、选区、焦点、零提交/零写入和定向原生滚轮移动通过。C/D 的候选、只读属性、两类实时预览、菜单栏捕获/搜索、共享统一搜索隔离宿主及 ControlsPreview 均实际回归（D 复制失败另列）。
+
+生产帮助 **辅助动作** 的 en/zh-Hans × 浅深色 × 356/380pt 矩阵通过：capture 单项/综合示例替换整份草稿并恢复焦点；search 三种空格前缀追加 token 并聚焦搜索，nil 综合回调保持无动作；原筛选、捕获草稿、候选暂停、零模型/标签写入成立。直接卡片两条回调路径次数通过。这是原菜单 action 和 AXPress 的证据，不能代替下述鼠标结果。原菜单栏其他搜索/页签路径由 MenuBarPopoverRenderingTests 回归，帮助打开时从手记切任务的完整专项链未新增验证。
+
+**保留失败**：① 公共 medium 命中样例的旧/新中心按钮均未响应，轨迹相同但点击断言保留；② 真实帮助鼠标点击单项/综合示例未替换草稿，后续 token 点击未完整走通；③ 关闭按钮/外部遮罩检查经过，但 Escape（已使用真实 escape 字符和延长等待）仍未关闭，生产帮助正向悬停呈现也缺少可靠观察；④ 标签标题悬停未稳定观察到标签详情移除；⑤ 直接帮助卡的正向悬停示例 AX 断言未通过；⑥ D 的 diary.copy 仍未进入辅助树。悬停实际尝试 CG 指针定位及原生 mouseMoved，在恢复指针前等待过渡并检查；早期“默认文案不在树中”的弱断言不作为通过证据，最终改查示例正向存在，未设置 hoveredToken、删除断言或强制生产状态。上述定位/时序/命中失败不单独证明产品回调错误；没有改业务、复制、滚动或显示条件。
+
+**像素、几何和展示**：`build/SurfaceStageE-before-original` / `SurfaceStageE-after` 保留完整缓存图和滚动几何 JSON。68 对静态同输入图（64 个标签场景、4 个真实帮助 capture 场景）整图像素与记录几何全部相同；4 个搜索同名图的捕获草稿不同、3 个悬停图含动态/定位差异，排除于静态等价结论。统计见 `build/SurfaceStageE-static-comparison.json`。未把动态手记时间计入整图一致。已查看标签溢出、原生帮助及悬停对照；原 ControlsPreview 的公共完整阴影/真实帮助裁切展示经浅深色定位检查通过，图 `build/SurfaceStageE-after/e-gallery-light.png`、`e-gallery-dark.png`。均为缓存位图/几何/合成事件，非窗口合成器屏幕截图或真人输入。
+
+**门禁与状态**：9 个相关 Swift 文件严格局部 SwiftLint、工作流、差异检查和 Debug 静态验签通过；Debug 沿原 development 配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false。检查器只增加本轮稳定预设/帮助入口与反例；定向 89 项及最终静态 profile（含 209 项完整脚本回归）通过，结果见 `build/SurfaceStageE-workflow-tests-final.log` / `SurfaceStageE-static-complete.log`，过程中的并发状态下失败日志保留，不覆盖成通过。**整体部分完成（partial）**：指定 Cursor verifier 不可调用，不认证或替换；原生鼠标/悬停/Escape 仍有上述缺口。实际屏幕、真人输入/IME、VoiceOver、窗口边缘完整矩阵未验，B 的周列/甘特错绑及羽化定位、D 的复制反馈/更多菜单缺口保留。标题/备注仍是 small/continuous、0.8pt 动态边框、背景阴影、箭头与偏移，不能直接套本轮静态预设；只登记后续线索。到 E 停止，未提交、取消暂存、推送、安装、发布，未修改真实数据、系统偏好、个人签名或权限。
+
+### E 补验：中心命中与事件归属
+
+2026-10-04，定向诊断，整体 **partial**。只修改 [DaybookSurfaceTests](../AreaChainTests/Theme/DaybookSurfaceTests.swift)、[MenuBarHelpSurfaceTests](../AreaChainTests/Features/MenuBarHelpSurfaceTests.swift)、[TagHelpSurfaceConsumerTests](../AreaChainTests/Theme/TagHelpSurfaceConsumerTests.swift)，增加本轮专用 [SurfaceEventTestSupport](../AreaChainTests/Theme/SurfaceEventTestSupport.swift)。生产及两个原共享 helper 相对本轮起点哈希不变；上文 92 项 / 142 次是迁移轮历史汇总，不与拆分后的本轮测试相加。
+
+**起始失败映射**：读取 latest 状态及 acceptance / original-comparison / escape-final 的 summary/tests，没有重读全部长日志。
+
+| 完整测试名 | 场景与旧/新结果 | 原执行边界及缺口 |
+|---|---|---|
+| `DaybookFloatingSurfaceTests/decorationDoesNotExpandPointerInterception()` | 五预设内部循环；medium 旧/新均 `inside == 1` 失败 | 五点已投递；缺真实按钮区域、无装饰及事件接收证据。 |
+| `MenuBarHelpSurfaceTests/productionHelpActionsAndClipping(locale:scheme:)` | en/zh-Hans × light/dark；旧/新 capture 单项、综合替换失败 | 首个 356pt 已到单项/综合；前置失败阻断部分 search token 和后续宽度。 |
+| `MenuBarHelpSurfaceTests/productionHelpDismissalAndNativeHover()` | en；旧/新 Escape 后标题仍存在 | 关闭、外部、Escape、悬停串联；现拆成独立 pointerDismissal / EscapeEventOwnership / NativeHover。 |
+
+**中心命中**：英文浅色 280×160，同一真实 plain Button / 灰底宿主。AX 文本按钮为 `(111.25,72,57.5,16)`，外框 180×72；原中心 `(140,80)` 确实在按钮内。中心、AX 中心、标签内缩 2pt 三点均测；无装饰在 sendEvent / postEvent 两路各回调 3 次，冻结原/当前 medium 均 0；边界五点不触发按钮，灰底分别回调 5 / 4 / 4 次。窗口 visible/key/active、前台与 bundle 均为 QA，记录三种坐标、down/up 窗口号与时间戳、实际接收顺序、firstResponder。公开 hitTest 只能到 NSHostingView。消融为“仅背景 1、仅描边 0、仅在测试中禁用描边命中 1”，定位到原 medium stroke 命中层；未证明坐标错误，不加生产 contentShape，不删中心成功断言。消融通过只证明归因，不代表完整外壳交互通过。
+
+**生产鼠标**：沿 FooterBar cell 装配菜单、取消追踪并发送原菜单项 action；didBegin/didEnd 均观察到，返回原 QA keyWindow，固定等待 transition 后定位。当前 capture 只有一个匹配按钮，矩形 `(22,330,336,29)`，点 `(190,344.5)` 在其中，内容坐标为 `(190,145.5)`。旧/新壳的同步与队列点击均“帮助消失、草稿未替换”；AXPress 则整份替换并保持输入焦点。结合 [syntaxHelpOverlay](../AreaChain/Features/MenuBar/MenuBarPopoverView.swift) 的 scrim `zIndex(20)`、帮助卡未设对应层级、仅遮罩关闭路径不改草稿，归因到既有遮罩层级。没有重复节点证据，不改共享定位器。关闭按钮坐标与外部坐标分别关闭成功，但前者不能区分按钮 action 与覆盖它的遮罩 action。无生产插桩，不伪称观察到了 SwiftUI 内部接收器。
+
+**Escape**：旧/新打开后 firstResponder 为 NSTextView、无 marked text、菜单已结束；capture 的 preview/presentation=true，但浮层事件监视器已移除。keyCode=53、characters=[27]、modifiers=0 经队列进入正确窗口；第一次只清 preview/presentation，第二次才撤销输入焦点，两次帮助仍在。对应 [DaybookTextField.Coordinator](../AreaChain/Theme/DaybookTextField.swift) 的 `control` → `handleAutocompleteCommand` / `handleEscapeAndDismiss`；[MenuBarPopoverView+Keyboard](../AreaChain/Features/MenuBar/MenuBarPopoverView+Keyboard.swift) 只处理筛选抽屉 Escape。直接卡片普通宿主与额外 makeFirstResponder(host) 对照中，旧/新 `onExitCommand` 均未改变绑定；AppKit 宿主焦点也未证明 SwiftUI Exit 可达。原生产焦点路径单独保留，不强制焦点、监听或调用关闭回调。生产私有帮助状态未直接读取，可见标题及关闭后浮层监视器重现仅作旁证；直接卡片另观察绑定。
+
+**测试修正**：拆分事件路径，增加当前上下文、可见边界及唯一目标断言。未发现原“第一个按钮”实际选错，因此不修改共享 SurfaceConsumerUI。原鼠标长例中 nil 综合按钮被错误关闭后，先保留无动作/显隐断言，再恢复 search 上下文、沿原菜单重开，让 token 精确空格追加断言独立执行。无生产修复。最小建议为另开产品修复：装饰描边不参与命中；明确卡片/遮罩层级；在拥有帮助状态的既有键盘路径核对帮助优先级、IME 与 Exit 焦点作用域。建议均未实施。
+
+**隔离与证据**：完整正常 AreaChain XCTest、`build/PrivacyQA-Surface8E-Recheck`、`com.areachain.privacy-qa`、原构建锁、local 签名、生产 sandbox entitlement、LSUIElement=NO、六项授权变量清除、串行合成数据。`build/SurfaceStageE-recheck-current.xcresult` 为 10 项 / 28 次：4 项 / 14 次通过，6 项 / 14 次失败，0 跳过；`original` 为只临时还原生产帮助装饰的 5 项 / 10 次：2 项 / 5 次通过，3 项 / 5 次失败，0 跳过，锁内 finally 恢复且哈希相同。`search-continuation` 为最后搜索恢复步骤修正的重跑，去重状态与各轮统计见 `build/SurfaceStageE-recheck-status.json`。当前/原事件摘录在对应 `*-events.log`，原始输出保留于 xcresult diagnostics。两次并行源码/测试编译错误均零命中；一次锁忙未执行，条件改变后才重跑，未排除正常源码。
+
+**保留与交接**：鼠标、Escape 行为仍失败，不称交互验收通过。指定 Cursor verifier 缺口保留，不认证或替代。悬停仅整理历史证据，拆出的生产悬停未运行；标题/直接帮助悬停、D 复制/更多菜单、B 错绑/羽化、真实屏幕/真人/IME/VoiceOver 缺口保留。建议先单独修复既有命中与键盘归属问题，再决定 F。本轮停止，不迁移标题/备注，不提交、推送、安装、发布或修改真实数据、系统偏好、签名配置与权限。
+
+**最终补记**：search-continuation 1 项 / 4 次均失败，确认双语×浅深色×两宽度下，24 次 token 点击均到达精确追加断言，无 require 提前中断；三种前缀仍原样未追加，nil 示例显隐失败同样保留。它替换 current 中同名用例后，最新公共壳去重仍为 10 项 / 28 次（14 通过、14 失败、0 跳过）；六轮累计执行 58 次（27 通过、31 失败、0 跳过），不将重复尝试算成新增覆盖。最终四个测试文件严格 SwiftLint、工作流、差异及 static profile 通过，后者包含 210 项脚本回归。完整正常 PrivacyQA 已编译并运行，测试断言失败不能写成测试通过；本轮未另行运行普通宿主构建/启动，也不将临时签名说成发行验签。
+
+### E 修复一：公共浮层描边不拦截内容点击
+
+2026-10-04。本轮明确修复旧问题，以上迁移及补验失败历史保留。唯一生产行为改动为 `DaybookFloatingSurfaceModifier.border` 的 stroke 视图增加 `allowsHitTesting(false)`；公共契约是“浮层装饰性描边不参与命中，内容与宿主继续负责交互”。五预设共用，不针对 syntaxHelp 特判，不改整个面板、背景命中、内容形状、row/card/panel/banner 或任何消费者生产接线。
+
+**复现与严格对照**：`build/SurfaceStageE-fix1-baseline.xcresult` 命中 2 项 / 9 次：5 次通过、4 次失败，0 跳过；无装饰两路均在中心、AX 中心、文字内侧各回调 1 次，冻结原壳和当时公共壳均 0 次，三项消融再次定位描边。修复后 `focused.xcresult`（同一前缀）2 项 / 9 次全部通过；冻结 medium 精确断言 0，仅作为旧故障刻画，不计作旧功能通过。公共壳严格要求三点各 1 次、内容不穿透，五个边界点不触发内容。五预设 × sendEvent/应用队列各运行 plain/frozen/current/hidden 四场景，外框空白由保留的背景决定拦截，圆角外侧、边缘与阴影继续由原灰底宿主各接收 1 次；无装饰及 isPresented=false 的五点均交宿主。down/up 接收顺序仍由原 SurfaceEventTestSupport 核对，未改共享点击 helper 或冻结装饰。
+
+**受影响回归**：`build/SurfaceStageE-fix1-regression.xcresult` 为 33 项 / 76 次，初次 74 次通过、2 次新测试计数失败。原鼠标宿主走 state.commit，字段 onCommitAutocomplete 仅属 Return/Tab；新组合测试曾错误要求鼠标也走该字段回调。按原契约修正为鼠标 0、Return 1，同时两路严格断言恰好一次 NSText.didChangeNotification、精确替换字符串/光标、原输入焦点、零提交和零存储修改。`acceptance-count.xcresult` 重跑整个 LivePreviewCompositionTests 3 项 / 6 次全部通过；按最新同名结果覆盖后，受影响集合 **33 项 / 76 次全部通过，0 跳过**，不把重跑相加。
+
+候选单次鼠标接受、两种编辑器原替换范围/撤销、只读属性关闭与草稿/几何、任务主卡关闭/候选并存、标签原临界显隐/顺序/滚轮、手记原 row 叠层/装饰开关/稳定身份均通过。直接 SyntaxExpandableCard 的单项、综合示例、nil 回调和关闭在 send/queue 两路精确通过（4 次）；生产帮助宿主另列，不混入。统一搜索沿原隔离宿主回归标准/紧凑、双语主题/最小宽度、上下呈现、68pt 列表与单次接受/焦点，业务和生产接线未改。
+
+**视觉与身份**：修改前 `visual-before.xcresult` 3 项 / 12 次通过，修改后沿相同场景重跑。`build/SurfaceStageE-fix1-before` / `after` 与 `comparison.json` 保存完整缓存图和几何：136 对非动态整图逐像素相同，184 对几何相同，48 对含手记 Date() 的图单独记录动态差异。没有裁掉 32pt 外缘/阴影；公共五预设浅深色冻结对照、帮助外壳之后的原 clipShape（并区别于完整阴影）、row 悬停叠层对照均通过。页面底色，regular/small/medium，70%/0.7pt 和 60%/0.8pt 居中 stroke、背景/整体阴影位置、尺寸/padding/裁切均保留；isPresented 往返的 UUID、状态读取、onAppear=1、几何与关闭装饰像素通过。原焦点及 transition 接线未改，图像为缓存位图而非窗口合成器屏幕；已查看公共完整外缘和原 ControlsPreview 的裁切展示。
+
+**独立历史检查与未验项**：`hover.xcresult` 两项 / 两次仍失败：标题悬停后 All tags 未移除，直接帮助悬停后未观察到 #life 示例；不计入上述通过数，不扩展修复。生产 MenuBarPopoverView 帮助鼠标及 Escape 本轮未复跑、未修改，保留补验原失败；直接卡片 Exit 也未复跑。D 复制、更多菜单与默认系统剪贴板路径未运行，未宣称复制或全部悬停验收完成。指定 Cursor verifier 无可调用工具，未重试认证或用其他机制替代，整体仍为 **partial（修复及受影响回归通过，指定复核/历史缺口保留）**。真人/IME/VoiceOver、真实屏幕和低版本系统未验。
+
+**隔离与门禁**：完整正常 AreaChain XCTest 目标，`build/PrivacyQA-Surface8E-Fix1`、独立 QA 标识、原 build/.build.lock、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、清除六项真实钥匙串变量；事件/焦点测试串行，仅合成库和随机偏好。四个本轮 Swift 文件严格局部 SwiftLint、最终静态质量门禁（含 210 项脚本回归）、工作流和差异检查通过；未修改检查器。`./scripts/build.sh --no-wait` 的 Debug 构建及静态验签通过（`build/SurfaceStageE-fix1-debug.log`），沿既有 development 配置：staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false，不代表系统解锁或发行验收。当前工作区前期/并发改动、未跟踪文件及空暂存区保留；源基线与最新状态分别见 `build/SurfaceStageE-fix1-source-baseline.json`、`build/SurfaceStageE-fix1-latest-test-status.json`。本轮生产文件去除新增命中行与注释后，哈希与起点相同；冻结绘制、两个共享事件/点击 helper、帮助宿主/键盘、标题备注气泡及其他消费者生产文件均未改。
+
+下一轮仅处理帮助宿主遮罩/card 层级及输入预览、焦点与 onExitCommand 的 Escape 路由；产品动作和草稿规则需继续保持。本轮到此停止，不迁移 RowTitleBubble/RowNoteBubble，不修滚动错绑/羽化或复制，不提交、推送、安装、发布，不改变真实数据、系统偏好、个人签名配置或权限。
+
+### E 修复二：语法帮助遮罩与 Escape 路由
+
+2026-10-04。仅修改 MenuBarPopoverView 与其 Keyboard 扩展：帮助作为根 ZStack 的单一 20 层，内部遮罩 0、卡片 1，筛选 30 保持；卡片空白命中留在宿主。原宽度、92pt 偏移、clipShape、阴影与 transition 不变，卡片不再被错误遮罩叠暗。沿原唯一键盘监视器，在有效可见宿主内先处理筛选，再处理无 Command/Shift/Option/Control 且当前 NSTextInputClient 无组合文本的帮助 Escape。只收起唯一 showingSyntaxHelp 并消费事件，不清空草稿、预览或焦点；卸载移除监视器并清窗口引用。原 FooterBar 上下文、任务示例替换、搜索追加和 nil 综合回调逐字保持。
+
+**原失败与最小回归**：上文失败基线保留。`build/SurfaceStageE-fix2-baseline-current.xcresult` 实际命中 3 项 / 5 次：capture send/queue、search token 与一次 Escape 共 4 次失败，AXPress 1 次通过，0 跳过。前两次正常编译被并发 UnifiedSearchSettingTestSupport 抛错宏阻断，另一次本轮嵌套 require 编译错误已修正；这些零命中不算通过。外部修复后才取得有效基线，未排除正常源码。`build/SurfaceStageE-fix2-focused.xcresult` 同三条原失败加编辑器/空白防穿透共 5 项 / 9 次全部通过，0 跳过。
+
+**隔离**：完整正常 AreaChain XCTest，`build/PrivacyQA-Surface8E-Fix2`、`com.areachain.privacy-qa`、原 `build/.build.lock`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO，清除六项真实钥匙串变量，串行焦点测试。仅原 NSWindow/NSHostingController 生产视图挂载、合成内存库与随机偏好；通过原 FooterBar 菜单动作打开帮助，不直接设置私有状态。未启动 StatusItemController 或日用 NSPopover。
+
+**原生事件与计数**：`regression.xcresult`（同前缀）实际命中 39 项 / 69 次，初次 68 次通过，1 次新候选前置断言失败。原生菜单会自然收起候选，因此改为帮助已打开后，由仍聚焦的原生编辑器 insertText 输入 `#`，不直接修改补全状态；`final-help.xcresult` 重跑完整帮助 16 项 / 30 次全部通过，按最新同名结果覆盖后为 **39 项 / 69 次通过，0 跳过**。先前修饰键测试只计 keyDown，遗漏 AppKit performKeyEquivalent，已补齐原生响应者两条接收路径并重验；过程编译/前置失败不计作功能通过。
+
+鼠标覆盖 capture 单项/综合、search 空串/无尾空格/有尾空格的精确追加、nil 综合无动作、关闭按钮、卡片空白、外部遮罩及背景筛选/页签/手记创建不穿透；sendEvent/应用队列与 AXPress 分开。MutationProbe 观察真实草稿每次恰好一次写入、nil 为零，并观察 ModelContext.willSave 为零；候选用例的初始合成标签保存另计，帮助操作后模型身份/数量不变。任务/手记草稿、筛选及原菜单/搜索/页签快捷键回归通过。
+
+一次 Escape 前后保持同一原生编辑器、firstResponder、选区、文本和预览/候选状态，帮助关闭后 syntaxOverlayHost 恢复；下一次 Escape 才进入原输入处理。程序化 marked text 期间保留帮助、组合文本和编辑器，unmarkText 后下一次关闭；不是真人输入法验收。更高层筛选只关闭自己；原生窗口响应者、四类修饰键、双实例、帮助重开、隐藏窗口迟到事件、窗口重新显示和卸载后事件通过。无窗口处理函数补测只是旁证，主证据来自生产 FooterBar 菜单和窗口事件。生产帮助悬停自然通过，不扩大到标题/备注或直接卡片历史悬停。
+
+**外观核验**：首次检查缓存图发现原测试只给子视图 preferredColorScheme，外层 AppChrome 的 system 偏好导致标为 dark 的图实际仍浅色；该批不计深色视觉通过。本轮测试改为显式设置随机 suite 的 appearance，并断言实际 window.effectiveAppearance，不改系统/个人偏好或共享 helper；`build/SurfaceStageE-fix2-appearance.xcresult` 完整重跑帮助 16 项 / 30 次全部通过，实际浅深色断言成立；替换前包同名结果后仍为 39 项 / 69 次通过、0 失败、0 跳过。一次构建锁忙未执行，锁释放后才运行。已查看中英文 capture/search 的浅深色缓存图，保存于 `build/SurfaceStageE-fix2-visuals`；卡片不再叠加遮罩颜色，356pt 宿主仍沿原固定 380pt 内容居中裁切，不改菜单栏尺寸。缓存图与几何不等于窗口合成器屏幕或真人证据。
+
+**门禁与边界**：六个本轮 Swift 文件严格局部 SwiftLint、静态质量门禁（含 211 项脚本回归）、工作流与差异检查通过；本轮未修改检查器。`./scripts/build.sh --no-wait` 的 Debug 构建与静态验签通过，日志 `build/SurfaceStageE-fix2-debug.log`；沿原 development 配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false。前期/并发差异和未跟踪文件保留，暂存区未动。指定 Cursor verifier 不可调用，不认证或替换，整体保留 **partial** 复核缺口。真人输入法、实际状态栏生命周期、VoiceOver、低版本系统未验；标签标题/直接卡片悬停、复制、滚动等其他历史缺口未修。本轮只解除帮助点击/Escape 阻断，F 需另行任务推进；此处停止，不提交、推送、安装、发布或修改真实数据、系统偏好、签名配置与权限。
+
 ## 第八阶段 D：两类实时预览主外壳
 
 2026-10-04，macOS 26.6.2 arm64。范围与参数见[组件目录](component-catalog.md#第八阶段-d两类实时预览主外壳)。任务 mainRow 仅替换背景/边框为 suggestions，保留水平 10pt、36pt 及独立/伴随候选的自身外壳；手记仅删除 floatingBackground/floatingBorder，在原 row 后使用 smallBackground / !showsSuggestions。新预设与 suggestions 共用背景阴影装配；small/continuous、页面底色和 70% / 0.7pt 居中描边不变，readOnly 继续整体阴影。没有新增布局、裁切、命中、状态、回调或生产消费者，历史 Theme 组合未搬文件。

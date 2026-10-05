@@ -100,6 +100,28 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         self.execution = nil
     }
 
+    mutating func replacePreferenceBaseline(_ baseline: CommandDraftBaseline, arguments: [CommandArgument],
+                                           expecting stamp: CommandDraftStamp) throws {
+        guard execution == nil, operations.pending == nil,
+              let draft = allDrafts.first(where: { $0.stamp == stamp }),
+              CommandPlanSemantics.isAtomicSetting(draft.commandID), !draft.blocksUnprotectedExport else {
+            throw CommandPlanError.stale
+        }
+        if operations.active?.stamp == stamp {
+            let intents = operationEvent(.reloadDiscardingChanges(stamp, baseline, arguments))
+            guard !intents.contains(.rejectedEvent) else { throw CommandPlanError.stale }
+        } else {
+            try plan.replacePreferenceBaseline(baseline, arguments: arguments, expecting: stamp)
+        }
+    }
+
+    mutating func returnUnsubmittedPreference(_ attempt: CommandAttemptStamp, expecting stamp: CommandPlanStamp) throws {
+        guard let execution, execution.stamp == attempt.execution, plan.stamp == stamp,
+              operations.active == nil, operations.pending == nil else { throw CommandExecutionError.stale }
+        try plan.restoreUnsubmittedPreference(execution, attempt: attempt)
+        self.execution = nil
+    }
+
     /// 只生成候选状态，协调者在全部校验后同时发布双方；此入口本身不授予所有权。
     func handoffStates(to target: Self) throws -> (source: Self, target: Self) {
         guard !allDrafts.contains(where: \.blocksUnprotectedTransfer) else { throw CommandHandoffError.protectedContent }

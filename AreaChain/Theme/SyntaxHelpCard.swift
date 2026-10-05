@@ -37,15 +37,7 @@ struct SyntaxExpandableCard: View {
                 .padding(.vertical, 6.5)
         }
         .frame(width: DaybookMetrics.Window.popoverWidth - 24)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-                .daybookElevation(.floating)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .stroke(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.8) // token-exempt: 60% 分隔线没有对应令牌
-        )
+        .daybookSurface(floating: .syntaxHelp)
         .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous))
         .onExitCommand {
             withAnimation(DaybookMotion.interactive(reduceMotion)) {

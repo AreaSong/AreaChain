@@ -32,26 +32,28 @@ final class UnifiedSearchResultsFixture {
     var controller: UnifiedSearchController!
     static let focusLost = Notification.Name("synthetic.results.focusLost")
 
-    init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3) throws {
+    init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3,
+         localPreferences: AppPreferences? = nil, hostID: String = HandoffFixture.source) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
-        try handoff.send(.query(.setInput(text)))
+        try handoff.send(.query(.setInput(text)), host: hostID)
         for condition in batch.session.conditions where condition.value == .scope(.routineOccurrences) {
-            try handoff.send(.query(.addCondition(condition.value)))
+            try handoff.send(.query(.addCondition(condition.value)), host: hostID)
         }
         session = try .init(vault: vault, owner: ContentQueryReadOwner(
             paginationPolicy: .init(units: pageSize, members: pageSize, contexts: pageSize)),
-            coordinator: handoff.coordinator, ownership: handoff.owned().lease.ownership,
+            coordinator: handoff.coordinator, ownership: handoff.owned(hostID).lease.ownership,
             notifications: .init(privacy: .default, model: model, focus: focus,
                 focusLost: Self.focusLost, focusObject: focusObject))
         session.install()
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
-            buffer: .init(lease: try handoff.owned().lease, version: 0, text: text),
+            buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in
                 guard let self else { throw ContentQueryReadSessionError.detached }
                 return try await self.publish()
-            }, recordOpen: { [weak self] in self?.opens.append($0) })
+            }, recordOpen: { [weak self] in self?.opens.append($0) },
+            localSettings: localPreferences.map { LocalSettingCommandAdapter(coordinator: handoff.coordinator, preferences: $0) })
     }
 
     func publish() async throws -> ContentQueryReadEffect {

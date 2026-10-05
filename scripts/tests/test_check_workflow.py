@@ -47,13 +47,20 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
         contract_docs["docs/component-catalog.md"] += " weekHeader WeekHeader\n"
         contract_docs["docs/component-catalog.md"] += " daybookScroll daybookScrollAssembly DaybookScrollIndicators\n"
-        contract_docs["docs/component-catalog.md"] += " DaybookFloatingSurface SyntaxAutocompletePopup CaptureAttributesPopup\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookFloatingSurface SyntaxAutocompletePopup CaptureAttributesPopup rowBubble RowTitleBubble RowNoteBubble\n"
+        contract_docs["docs/component-catalog.md"] += " daybookStaticCardSurface yesterdaySection centeredYesterdaySection\n"
         contract_docs["docs/component-catalog.md"] += " smallBackground LiveComposerPreviewHeader LiveDiaryComposerPreview\n"
+        contract_docs["docs/component-catalog.md"] += " tagDetail syntaxHelp SyntaxExpandableCard\n"
         contract_docs["docs/component-catalog.md"] += " DaybookFormTextField DaybookSecureField privacy.master.input\n"
         contract_docs["docs/component-catalog.md"] += (
             " privacy.setup.master privacy.setup.master.confirmation"
             " privacy.setup.backup privacy.setup.backup.confirmation\n"
         )
+        contract_docs["docs/component-catalog.md"] += (
+            " readLocalSetting applyLocalSetting LocalPreferenceWriteResult LocalPreferenceStorage PreferenceObservation\n"
+        )
+        contract_docs["docs/component-catalog.md"] += " LocalSettingCommandAdapter LocalSettingCommandMapping CommandPreferenceBaseline\n"
+        contract_docs["docs/component-catalog.md"] += " requestOperationSubmit UnifiedSearchSettingSubmission\n"
         contract_docs["AGENTS.md"] += " quality-gates.md\n"
         contract_docs["docs/component-catalog.md"] += " DaybookTimePicker DaybookTimePresentation DaybookNativeTimePicker TimePicker\n"
         contract_docs["docs/component-catalog.md"] += " DiaryContentQueryReader DiaryContentQueryTagPrivacy TagContentQueryReader TaskFamilyContentQueryReader RoutineContentQueryReader ContentQueryTagNames\n"
@@ -255,6 +262,42 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_workflow_contract(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_component_catalog_requires_local_preference_boundaries(self):
+        self.make_project()
+        entries = (("AppPreferences", "readLocalSetting"), ("AppPreferences", "applyLocalSetting"),
+                   ("LocalPreference", "LocalPreferenceWriteResult"),
+                   ("LocalPreferenceDependencies", "LocalPreferenceStorage"),
+                   ("PreferenceObservation", "PreferenceObservation"))
+        for path, _ in entries:
+            self.write(f"AreaChain/Services/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_single_setting_adapter_and_evidence(self):
+        self.make_project()
+        entries = (("Services", "LocalSettingCommandAdapter", "LocalSettingCommandAdapter"),
+                   ("Services", "LocalSettingCommandMapping", "LocalSettingCommandMapping"),
+                   ("Domain", "CommandPreferenceEvidence", "CommandPreferenceBaseline"))
+        for folder, name, _ in entries:
+            self.write(f"AreaChain/{folder}/{name}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_setting_submission_ui(self):
+        self.make_project()
+        entries = (("UnifiedSearchSettingEditing", "requestOperationSubmit"),
+                   ("UnifiedSearchSettingSubmission", "UnifiedSearchSettingSubmission"))
+        for name, _ in entries:
+            self.write(f"AreaChain/Features/Search/{name}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_controls_preview(self):
         self.make_project()
@@ -569,6 +612,37 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_tag_detail_and_help_surfaces(self):
+        self.make_project()
+        entries = (("DaybookSurface", "tagDetail"), ("DaybookSurface", "syntaxHelp"),
+                   ("SyntaxHelpCard", "SyntaxExpandableCard"))
+        for path, _ in entries:
+            self.write(f"AreaChain/Theme/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_dynamic_row_bubble_surfaces(self):
+        self.make_project()
+        entries = (("DaybookSurface", "rowBubble"), ("DaybookRowBubbles", "RowTitleBubble"),
+                   ("DaybookRowBubbles", "RowNoteBubble"))
+        for path, _ in entries:
+            self.write(f"AreaChain/Theme/{path}.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for _, symbol in entries:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_static_card_and_yesterday_consumers(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookSurface.swift", "struct Other {}\n")
+        self.write("AreaChain/Features/Tasks/TasksPage+Sections.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("daybookStaticCardSurface", "yesterdaySection", "centeredYesterdaySection"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_plan_editing_boundaries(self):

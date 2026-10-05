@@ -12,6 +12,10 @@ final class UnifiedSearchController {
     var planReturnRevision: UInt64 = 0
     var editingParameter: CommandParameterID?
     var operationMessage = "unified.operation.notExecuted"
+    var settingSubmitting = false
+    var settingFailure: UnifiedSearchSettingFailure?
+    var settingConfirmation: UnifiedSearchSettingConfirmation?
+    var settingMessage = "unified.setting.pending"
     var objectSelection: UnifiedSearchObjectSelection?
     var objectSelectionLocation: UnifiedSearchObjectLocation?
     var objectSelectionLoading = false
@@ -30,6 +34,7 @@ final class UnifiedSearchController {
     let session: ContentQueryReadSession
     let inputReset = UnifiedSearchInputReset()
     @ObservationIgnored let coordinator: CommandHandoffCoordinator
+    @ObservationIgnored let localSettings: LocalSettingCommandAdapter?
     @ObservationIgnored private let read: () async throws -> ContentQueryReadEffect
     @ObservationIgnored private let recordOpen: (ContentQueryBrowseOpen) -> Void
     @ObservationIgnored private var observer: UUID?
@@ -38,9 +43,11 @@ final class UnifiedSearchController {
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
-         recordOpen: @escaping (ContentQueryBrowseOpen) -> Void) {
+         recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
+         localSettings: LocalSettingCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
+        self.localSettings = localSettings
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
         self.buffer = initial
@@ -174,6 +181,9 @@ final class UnifiedSearchController {
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: text,
             privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: owned.session.plan.stamp, planItem: editingPlanItem?.stamp)
         revision &+= 1
+        settingFailure = nil
+        settingConfirmation = nil
+        settingMessage = "unified.setting.pending"
         return buffer
     }
 

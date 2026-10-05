@@ -14,10 +14,12 @@ extension MenuBarPopoverView {
             NSEvent.removeMonitor(monitor)
             tabKeyMonitor = nil
         }
+        hostWindow = nil
     }
 
     func handleTabKeyDown(_ event: NSEvent) -> NSEvent? {
-        guard event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
+        guard tabKeyMonitor != nil, let hostWindow, hostWindow.isVisible,
+              event.window === hostWindow || (event.window == nil && NSApp.keyWindow === hostWindow) else { return event }
         return handleTabKeyDown(event, search: ShortcutStore.shared.binding(for: .search))
     }
 
@@ -27,6 +29,9 @@ extension MenuBarPopoverView {
             dismissFilterDrawer()
             return nil
         }
+
+        // 帮助位于输入预览之上；只消费关闭帮助的这次事件，保留原生编辑器和输入状态。
+        if dismissSyntaxHelpForEscape(event) { return nil }
 
         // 搜索组合来自快捷键页。停用或改成别的键之后，原来的 ⌘F 不再聚焦。
         if search.matches(event) {

@@ -16,15 +16,15 @@ struct SettingsPickerConsumerTests {
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func groupedFormSelectionAndCancellation(locale: String, scheme: ColorScheme) async throws {
-        let fixture = try Native()
+        let fixture = try Native(isolatedPreferences: true)
         defer { fixture.cleanup() }
         let state = SettingsPickerProbe()
         let window = fixture.window(SettingsPickerForm(prefs: fixture.prefs, state: state), locale: locale, scheme: scheme)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
-        let observer = observe(state)
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = observe(state, fixture: fixture)
+        defer { fixture.preferenceCenter.removeObserver(observer) }
         try Native.snapshot(window, name: "picker-general-layout-\(locale)-\(scheme)")
         #expect(Menus.menus(in: window).count == 3)
         let identifiers = Set(Native.elements(window.contentView).compactMap {
@@ -63,7 +63,7 @@ struct SettingsPickerConsumerTests {
     }
 
     @Test func languageChangesThroughAppChromeWithoutFallback() async throws {
-        let fixture = try Native()
+        let fixture = try Native(isolatedPreferences: true)
         defer { fixture.cleanup() }
         fixture.prefs.language = .english
         fixture.prefs.appearance = .light
@@ -71,8 +71,8 @@ struct SettingsPickerConsumerTests {
         let window = dynamicWindow(fixture, state: state)
         defer { SystemPageHost.release(window) }
         try await prepare(window)
-        let observer = observe(state)
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = observe(state, fixture: fixture)
+        defer { fixture.preferenceCenter.removeObserver(observer) }
         try await assertLocalized("en", prefs: fixture.prefs, in: window)
         #expect(hasText("environment:en:light", in: window))
         try await choose("settings.language", option: "chinese", locale: "en", fixture: fixture, state: state, in: window)
@@ -106,8 +106,8 @@ struct SettingsPickerConsumerTests {
         let window = dynamicWindow(fixture, state: state)
         defer { SystemPageHost.release(window) }
         try await prepare(window)
-        let observer = observe(state)
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = observe(state, fixture: fixture)
+        defer { fixture.preferenceCenter.removeObserver(observer) }
         try Native.snapshot(window, name: "picker-dynamic-initial-system")
         let systemDark = hasText("environment:en:dark", in: window)
         #expect(systemDark || hasText("environment:en:light", in: window))
@@ -137,7 +137,7 @@ struct SettingsPickerConsumerTests {
     }
 
     @Test func persistenceReopenRebuildAndTruncationKeepTitle() async throws {
-        let fixture = try Native()
+        let fixture = try Native(isolatedPreferences: true)
         defer { fixture.cleanup() }
         fixture.prefs.language = .english
         let state = SettingsPickerProbe()
@@ -147,8 +147,8 @@ struct SettingsPickerConsumerTests {
         try fixture.container.mainContext.save()
         let window = dynamicWindow(fixture, state: state)
         try await prepare(window)
-        let observer = observe(state)
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = observe(state, fixture: fixture)
+        defer { fixture.preferenceCenter.removeObserver(observer) }
         defer { SystemPageHost.release(window) }
         for mode in [QuadrantTitleTruncation.middle, .tail, .middle] {
             try await choose("settings.quadrant.truncation", option: mode.rawValue, locale: "en",
@@ -162,7 +162,7 @@ struct SettingsPickerConsumerTests {
         SystemPageHost.release(window)
         let saved = stored(fixture)
         let count = state.notifications
-        for prefs in [fixture.prefs, AppPreferences(defaults: fixture.defaults)] {
+        for prefs in [fixture.prefs, AppPreferences(defaults: fixture.defaults, effects: fixture.preferenceEffects)] {
             #expect(prefs.language == .chinese && prefs.appearance == .dark && prefs.quadrantTitleTruncation == .middle)
             let reopened = dynamicWindow(fixture, state: state, prefs: prefs)
             defer { SystemPageHost.release(reopened) }
@@ -175,7 +175,7 @@ struct SettingsPickerConsumerTests {
 
     @Test(arguments: ["en", "zh-Hans"], [ColorScheme.light, .dark])
     func disabledExternalUpdatesAndLongDescription(locale: String, scheme: ColorScheme) async throws {
-        let fixture = try Native()
+        let fixture = try Native(isolatedPreferences: true)
         defer { fixture.cleanup() }
         let state = SettingsPickerProbe()
         state.disabled = true
@@ -195,8 +195,8 @@ struct SettingsPickerConsumerTests {
         fixture.prefs.quadrantTitleTruncation = .middle
         try await SystemPageHost.settle(window)
         let saved = stored(fixture)
-        let observer = observe(state)
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = observe(state, fixture: fixture)
+        defer { fixture.preferenceCenter.removeObserver(observer) }
         try await assertLocalized(locale, prefs: fixture.prefs, in: window)
         #expect(stored(fixture) == saved && state.notifications == 0)
         let menus = Menus.menus(in: window)
@@ -217,8 +217,10 @@ struct SettingsPickerConsumerTests {
         try Native.snapshot(window, name: "picker-general-long-scrolled-\(locale)-\(scheme)")
     }
 
-    func observe(_ state: SettingsPickerProbe) -> NSObjectProtocol {
-        NotificationCenter.default.addObserver(forName: .appPreferencesDidChange, object: nil, queue: nil) { _ in
+    func observe(_ state: SettingsPickerProbe, fixture: Native) -> NSObjectProtocol {
+        let source = fixture.prefs.localPreferenceSource
+        return fixture.preferenceCenter.addObserver(forName: .localPreferenceDidChange, object: nil, queue: nil) { note in
+            guard (note.object as? LocalPreferenceChange)?.source == source else { return }
             MainActor.assumeIsolated { state.notifications += 1 }
         }
     }
