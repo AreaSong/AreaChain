@@ -79,6 +79,7 @@ struct MenuBarSearchField: View {
             onSubmit: {},
             onCommandReturn: {},
             allowsShiftNewline: false,
+            newlinePolicy: .searchWhitespace,
             onEscape: escapeSearch,
             onMoveDown: moveToResults
         )

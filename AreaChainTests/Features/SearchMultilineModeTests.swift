@@ -86,7 +86,7 @@ struct SearchMultilineModeTests {
         try await SystemPageHost.settle(fixture.window)
         try await Input.key(command: true, in: fixture.window)
         trace.record("\(kind).external.commandReturn")
-        let expected = kind == .menu ? "甲 // 乙" : "甲\n乙"
+        let expected = kind == .capture || kind == .clipboard ? "甲\n乙" : "甲 乙"
         #expect(editor.string == expected && trace.coordinator.parent.text == expected)
         #expect(fixture.draft.diaryCommits == (kind == .capture ? 1 : 0))
         #expect(fixture.draft.commits == 0)
@@ -145,5 +145,30 @@ struct SearchMultilineModeTests {
         #expect(capture.cleanTitle == "甲" && capture.notes == "乙")
         #expect(BoardSearch.parseQuery("甲\n乙").textKeywords == ["甲", "乙"])
         #expect(BoardSearch.parseQuery("甲 // 乙").textKeywords == ["甲", "//", "乙"])
+    }
+
+    @Test(arguments: SearchMultilineConsumer.searches + [.capture])
+    func syntheticMarkedNotificationsDoNotRewriteText(kind: SearchMultilineConsumer) async throws {
+        let fixture = try SearchMultilineFixture(kind)
+        defer { fixture.cleanup() }
+        let field = try await fixture.prepare()
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        let coordinator = try #require(field.delegate as? DaybookTextField.Coordinator)
+        editor.setMarkedText("🧪甲\n乙", selectedRange: NSRange(location: 3, length: 0),
+                             replacementRange: NSRange(location: 0, length: 0))
+        let selection = editor.selectedRange()
+        let markedRange = editor.markedRange()
+        // 合成通知补足系统 IME 未主动发出多行变更通知的边界，不冒充真人 IME。
+        coordinator.controlTextDidChange(Notification(name: NSControl.textDidChangeNotification, object: field))
+        NotificationCenter.default.post(name: NSText.didChangeNotification, object: editor)
+        #expect(editor.hasMarkedText() && editor.string == "🧪甲\n乙")
+        #expect(editor.selectedRange() == selection && editor.markedRange() == markedRange)
+        #expect(coordinator.parent.text == editor.string)
+        #expect(!coordinator.prepareSubmission(editor: editor))
+        #expect(editor.string == "🧪甲\n乙" && editor.hasMarkedText())
+        editor.insertText("甲乙", replacementRange: editor.markedRange())
+        try await SystemPageHost.settle(fixture.window)
+        SearchMultilineUndoTests.assertValue("甲乙", field: field, fixture: fixture)
+        #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0)
     }
 }

@@ -1,5 +1,25 @@
 # 工程与维护
 
+## 第十阶段 I 修复一：普通搜索换行与撤销边界
+
+2026-10-05，实施范围限于原 DaybookTextField、SyntaxTextField、小型 DaybookTextEditing 支持及四个普通搜索显式选策。通知只同步原生值，禁止在 marked/undo/redo 中间态改写文本；提交转换走原生编辑事务，外部同步不登记撤销。政策与消费者契约见[组件目录](component-catalog.md#第十阶段-i-修复一普通搜索换行与撤销边界)。下节 I 诊断是修复前历史，不能作为修复后验收结论；冻结的残留特征保留，生产测试只要求严格恢复。
+
+本轮验证记录位于 `build/SearchMultilineIRepair`，沿原完整正常 PrivacyQA、独立目录/QA 标识、本地临时签名、生产 entitlement、六项真实钥匙串变量清除及 `build/.build.lock` 非等待串行互斥。只经 XCTest 启动合成窗口、内存模型、隔离历史与偏好；命名 pasteboard 使用随机名称，不访问 general。最小修复前重跑先遇到并发统一搜索缺失类型，再遇到该并发实现的编译错误；源码补齐后的申请遇锁忙，未排除或修改并发源码。因此本轮未取得修改前的新成功运行，根因沿原 I 诊断包和当前源码核对：直接导入为空格，撤销中间态才注入分隔符。
+
+| 证据 | 实际结果与限制 |
+|---|---|
+| `repair-minimal.xcresult` | 首版仅移除通知转换并接提交政策，5方法/44参数，33通过、11失败、0跳过。五搜索及捕获/表单的空字段导入撤销、材料往返与撤销后输入已无残留；失败为六个普通字段中段重做光标落到全文末尾，以及五个队列重做未触发。没有焦点失败。此包不是最终实现的通过声明。 |
+| 最小事务修正 | 普通字段增加固定 cell/editor，单行已提交 payload 与纯文本命名导入提前转换后只调用一次原生 insertText；保留原 UndoManager。选区/重做不靠异步补写、清空历史或丢焦。队列 helper 按 Shift 生成大写 characters，保留 charactersIgnoringModifiers。 |
+| `native-transaction.xcresult` | 完整正常目标编译通过，6方法/52参数均在场景准备失败：foreground=com.apple.loginwindow、active=false、key=false，未进入产品断言。未放宽焦点要求；已请求解锁，后续只读系统状态仍为 screenIsLocked=true，没有循环重跑原生用例。光标修正和队列重做尚未有效运行验证。 |
+| `nonfocus-contracts.xcresult` | 最终源码完整正常 QA 编译，14方法/14次通过、0失败/跳过：明确政策与 FocusState 兼容、默认捕获、原生 payload 的 Unicode/字符属性、多行开关、冻结旧残留特征及原 SyntaxAutocompleteTests。无焦点单元测试不替代生产窗口验收。 |
+| 最终本地门禁 | 15个本轮相关 Swift 文件严格局部 SwiftLint、工作流与差异检查通过；static profile 含226项脚本回归通过，安全静态扫描无高风险或敏感日志候选。Debug 构建及原 development 静态验签通过，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false；QA 包另经 codesign --verify --deep --strict 通过。保留既有 SDK/actor 警告。 |
+
+**交接状态为 partial**：最终四个生产搜索的列表、外部同步与 Return/⌘Return、UTF-16 选区、反复撤销/重做、合成组合通知、候选接受和剪贴板撤销的定向用例已补齐，但被锁屏阻断的最终原生回归尚未通过。原 DaybookTextFieldTests / DaybookTextFieldSearchTests 全套、InputSyntaxInteractionTests、表单及 UnifiedSearchInputTests 的完整最终回归仍待桌面恢复；不能沿用旧版测试或14项无焦点测试填补。解锁后先运行最小撤销/外部选区，再扩展六个 SearchMultiline 文件及这些原回归；保持同一正常目标、锁和严格焦点断言。
+
+本轮仅在通知安全边界、显式政策、原生 payload 事务和必要测试/文档/组件守卫内修改，未改匹配器、标签创建/改名控件、普通表单、安全输入或新统一搜索业务。暂存区二进制差异与起点一致；并发统一搜索业务源码继续保留，详情见 source-before/source-tested/source-final 摘要。本轮没有执行任何 Git 暂存、提交、推送、安装、发布或真实数据操作。
+
+指定 Cursor verifier 当前不可调用，保留必需复核缺口，不认证或替换。真人 IME、系统粘贴、真实数据/权限、安装和发布未运行；剪贴板真实换行保真政策不在本轮接入。
+
 ## 第十阶段 I：生产搜索多行输入复现与修复定界
 
 2026-10-05，定向诊断，仅补 [生产装配夹具](../AreaChainTests/Features/SearchMultilineTestSupport.swift)、[回调探针](../AreaChainTests/Features/SearchMultilineTrace.swift)、[入口诊断](../AreaChainTests/Features/SearchMultilineDiagnosticTests.swift)、[输入边界](../AreaChainTests/Features/SearchMultilineBoundaryTests.swift)、[模式对照](../AreaChainTests/Features/SearchMultilineModeTests.swift)、[撤销诊断](../AreaChainTests/Features/SearchMultilineUndoTests.swift) 及本记录。**五个生产搜索在“命名 pasteboard 原生导入 → 撤销”中均复现了任务分隔符注入；直接导入完成时没有注入。** 这不是直接调用转换函数或手改 field 后通知 delegate 的复现，也不是系统剪贴板粘贴或真人操作。生产输入、解析、搜索、新统一搜索控制器与接线均未由本轮修改，问题未修复。

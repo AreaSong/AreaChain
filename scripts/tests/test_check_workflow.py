@@ -46,8 +46,9 @@ class WorkflowCheckTests(unittest.TestCase):
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
-        contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate\n"
+        contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate requestTaskCreate UnifiedSearchTaskCreateSubmission\n"
         contract_docs["docs/component-catalog.md"] += " TaskMutationService createCaptured CommitFacts afterPublication\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookNewlinePolicy DaybookTextEditing DaybookFieldEditor\n"
         contract_docs["docs/component-catalog.md"] += " DaybookDatePicker DaybookDateCell DaybookDateCellPresentation DaybookMonthGridDay DaybookWeekdayHeader DatePicker MonthGrid DaybookHabitDateState HabitMonthGrid\n"
         contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
         contract_docs["docs/component-catalog.md"] += " weekHeader WeekHeader\n"
@@ -430,6 +431,25 @@ class WorkflowCheckTests(unittest.TestCase):
                 self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
                 path.write_text(original)
 
+    def test_component_catalog_requires_newline_policy_and_native_edit_boundary(self):
+        self.make_project()
+        path = self.root / "AreaChain/Theme/DaybookTextEditing.swift"
+        original = path.read_text()
+        for symbol in ("DaybookNewlinePolicy", "DaybookTextEditing"):
+            with self.subTest(symbol=symbol):
+                path.write_text(original.replace(symbol, "Other"))
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+        path.write_text(original)
+
+    def test_component_catalog_requires_plain_native_editor(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookNativeTextInput.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("DaybookFieldEditor" in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_diary_metadata_adapters(self):
         self.make_project()
         for symbol in ("DiaryContentQueryReader", "DiaryContentQueryTagPrivacy"):
@@ -544,6 +564,8 @@ class WorkflowCheckTests(unittest.TestCase):
         self.make_project()
         for relative, symbol in [
             ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift", "requestTaskCreate"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift", "UnifiedSearchTaskCreateSubmission"),
             ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),
         ]:
             with self.subTest(symbol=symbol):

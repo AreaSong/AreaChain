@@ -7,6 +7,7 @@ import Testing
 enum SearchMultilineConsumer: String, CaseIterable {
     case workspace, menu, clipboard, tags, diary, capture, form
     static let searches: [Self] = [.workspace, .menu, .clipboard, .tags, .diary]
+    static let ordinarySearches: [Self] = [.workspace, .menu, .tags, .diary]
 }
 
 @MainActor @Observable

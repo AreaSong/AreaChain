@@ -58,6 +58,8 @@ WORKFLOW_CONTRACT = {
 
 COMPONENT_ENTRIES = (
     ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+    ("AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift", "requestTaskCreate"),
+    ("AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift", "UnifiedSearchTaskCreateSubmission"),
     ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),
     ("AreaChain/Services/TaskMutationService.swift", "TaskMutationService"),
     ("AreaChain/Services/TaskMutationService.swift", "createCaptured"),
@@ -160,6 +162,9 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Features/Workspace/TaskDetailClassificationSection.swift", "DaybookFormTextField"),
     ("AreaChain/Features/Clipboard/ClipboardHistoryOptions.swift", "DaybookFormTextField"),
     ("AreaChain/Theme/DaybookTextField.swift", "DaybookTextField"),
+    ("AreaChain/Theme/DaybookTextEditing.swift", "DaybookNewlinePolicy"),
+    ("AreaChain/Theme/DaybookTextEditing.swift", "DaybookTextEditing"),
+    ("AreaChain/Theme/DaybookNativeTextInput.swift", "DaybookFieldEditor"),
     ("AreaChain/Theme/SyntaxTextField.swift", "SyntaxTextField"),
     ("AreaChain/Theme/DaybookButtonStyle.swift", "DaybookButtonStyle"),
     ("AreaChain/Theme/DaybookToggleStyle.swift", "DaybookToggleStyle"),

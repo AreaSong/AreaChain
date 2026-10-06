@@ -1,6 +1,550 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "unified.task.pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not created yet"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未创建"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.ready": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One plain title and an explicitly selected date. Prepare or create to continue."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单个普通纯标题与明确选择的日期。可准备或创建。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.prepare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备任务"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.create": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建任务"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.sourceEnabled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture source marking is enabled; this source is frozen for creation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已启用捕获来源标记；此来源已冻结供创建使用。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.sourceDisabled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Capture source marking is disabled; no source will be written."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "捕获来源标记已关闭；不会写入来源。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.sourceUnprepared": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Source marking has not been sampled. Prepare to review it; Create samples and validates it before saving."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未采样来源标记。准备后可查看；创建会在保存前采样并核对。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task created"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务已创建"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.unknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creation result unknown. Do not create again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建结果待核实，禁止再次创建。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.pendingResult": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Creation is still unconfirmed. Original content is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "创建仍未确认，原内容已保留。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.notSubmitted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: local creation did not complete. Original content is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：本地创建未完成，原内容已保留。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.published": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The local change event was published."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地变更事件已发布。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.publicationIssue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The task was saved; change publication is incomplete or unconfirmed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务已保存；变更发布未完成或尚未确认。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.registrationIssue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The task was saved; a subsequent registration callback failed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务已保存；后续登记回调失败。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.refreshRequested": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A refresh request was issued."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已发出刷新请求。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.refreshUnconfirmed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh request completion is unconfirmed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新请求尚未确认完成。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.externalLimit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A refresh request does not confirm reminder delivery or calendar synchronization."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "刷新请求不代表提醒已送达或日历已同步。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.externalFailed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A subsequent system-consumer step failed. The saved task remains."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后续系统消费者步骤失败；已保存任务仍保留。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.held": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original run retains this content. Safe return, retry and external-step recovery are not available in this stage."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内容保留在原运行中。本阶段不提供安全返回、重试或外部步骤恢复。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.verify": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verify current record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "核验当前记录"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.unassembled": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Task creation is not explicitly connected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "尚未显式装配任务创建适配器。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.invalid": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requires only a plain title and an explicit valid date. Notes, line breaks, separators, tags, reminders, priority and protected content are unsupported."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅支持普通纯标题与明确合法日期。不支持备注、换行、备注分隔、标签、提醒、优先级或保护内容。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.ownership": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requires a single active draft with an empty plan, or one plan item. Finish parameter and plan editing first."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "需要单活动草稿且计划为空，或唯一计划项。请先结束参数与计划编辑。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.dirty": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uncommitted changes exist in the context. Nothing was saved or rolled back; inputs are retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "上下文存在未提交修改。未自动保存或回滚，输入仍保留。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.sourceIssue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The source cannot be confirmed or has changed. Nothing was created."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来源无法确认或已变化，未创建任务。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.stale": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This preparation or event is no longer valid. Content and reserved identity are retained; no automatic retry is available."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "准备或事件已失效。内容及预留身份仍保留，不提供自动重试。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.storageIssue": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The isolated store or reserved identity cannot be validated. Creation is blocked."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法核对隔离存储或预留身份，已阻止创建。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.absent": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No record currently exists for this ID. This does not permit another creation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 ID 当前无记录；不代表允许重新创建。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.singleLive": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One live record currently exists for this ID. This does not prove the historical submission."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 ID 当前有一条有效记录；不证明历史提交成功。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.tombstone": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This ID is a tombstone. Do not recreate it."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 ID 为墓碑记录，禁止重新创建。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.ambiguous": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multiple records exist for this ID. The result remains unknown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此 ID 存在多条记录，结果仍待核实。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.task.unreadable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The record cannot be read. The result remains unknown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取当前记录，结果仍待核实。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
     "unified.group.member": {
       "extractionState": "manual",
       "localizations": {

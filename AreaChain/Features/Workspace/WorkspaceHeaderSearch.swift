@@ -24,6 +24,7 @@ struct WorkspaceHeaderSearchCapsule: View {
                 availableTags: tagNames,
                 onSubmit: {},
                 allowsShiftNewline: false,
+                newlinePolicy: .searchWhitespace,
                 onEscape: { escapeSearch() },
                 onMoveDown: moveToResults
             )

@@ -223,6 +223,7 @@ struct DiaryPage: View {
             SyntaxTextField(
                 text: $searchQuery, placeholder: L10n.string("diary.search.placeholder", locale: locale),
                 focused: $searchFocused, context: .tagSearch, fontSize: DaybookType.subtitleSize,
+                newlinePolicy: .searchWhitespace,
                 onEscape: {
                     if !searchQuery.isEmpty { searchQuery = "" }
                     else { NSApp.keyWindow?.makeFirstResponder(nil) }

@@ -8,7 +8,9 @@ struct UnifiedSearchSettingSubmission: View {
     var body: some View {
         let source = controller.buffer
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            if controller.fileSettings != nil {
+            if controller.showsTaskCreate {
+                UnifiedSearchTaskCreateSubmission(controller: controller)
+            } else if controller.fileSettings != nil {
                 UnifiedSearchFileSettingSubmission(controller: controller)
             } else if let run = controller.settingExecution {
                 if let report = controller.settingReport, let unit = run.units.first,

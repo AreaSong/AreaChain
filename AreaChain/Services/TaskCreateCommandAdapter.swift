@@ -41,8 +41,11 @@ import SwiftData
         }
     }
 
-    func submit(plan: CommandPlanStamp, expecting lease: CommandHostLease) throws -> CommandTaskCreateFacts {
+    func submit(plan: CommandPlanStamp, expecting lease: CommandHostLease,
+                displaySession: ContentQueryReadSession? = nil) throws -> CommandTaskCreateFacts {
+        try displaySession?.validateDisplayHost(expecting: lease)
         let prepared = try prepare(plan: plan, expecting: lease)
+        try displaySession?.validateDisplayHost(expecting: lease)
         try coordinator.send(.sealPlan(plan, runID: UUID()), expecting: lease)
         var host = try coordinator.host(lease.ownership.hostID)
         guard let run = host.session.execution else { throw TaskCreateCommandIssue.stale }
@@ -51,17 +54,20 @@ import SwiftData
             throw TaskCreateCommandIssue.stale
         }
         host = try coordinator.host(lease.ownership.hostID)
-        return try execute(.init(lease: host.lease, operation: operation, attempt: attempt))
+        return try execute(.init(lease: host.lease, operation: operation, attempt: attempt), displaySession: displaySession)
     }
 
-    func execute(_ request: TaskCreateCommandRequest) throws -> CommandTaskCreateFacts {
+    func execute(_ request: TaskCreateCommandRequest,
+                 displaySession: ContentQueryReadSession? = nil) throws -> CommandTaskCreateFacts {
         let environment = try assembled()
         let prepared = try coordinator.taskCreatePreparation(request)
         let invocation = try coordinator.claimTaskCreate(request)
         let dependencies: TaskMutationService.Dependencies
         do {
             try revalidate(prepared, environment: environment)
-            dependencies = try invocationDependencies(invocation, prepared: prepared, environment: environment)
+            try displaySession?.validateDisplayHost(expecting: request.lease)
+            dependencies = try invocationDependencies(invocation, prepared: prepared, environment: environment,
+                                                       displaySession: displaySession)
         } catch {
             let facts = CommandTaskCreateFacts(creationID: prepared.creationID, state: .notSubmitted)
             try coordinator.recordTaskCreation(invocation, facts: facts)
@@ -89,7 +95,8 @@ import SwiftData
     }
 
     private func invocationDependencies(_ invocation: CommandRuntimeInvocation, prepared: CommandTaskCreatePreparation,
-                                        environment: TaskCreateCommandEnvironment) throws -> TaskMutationService.Dependencies {
+                                        environment: TaskCreateCommandEnvironment,
+                                        displaySession: ContentQueryReadSession?) throws -> TaskMutationService.Dependencies {
         var dependencies = environment.dependencies
         let repository = dependencies.repository(environment.context)
         let originalValidation = dependencies.validateBeforeTransaction
@@ -108,6 +115,7 @@ import SwiftData
             try originalValidation()
             try revalidate(prepared, environment: environment)
             try coordinator.validateRuntimeInvocation(invocation)
+            try displaySession?.validateDisplayHost(expecting: invocation.lease)
             try environment.validateClean()
         }
         return dependencies

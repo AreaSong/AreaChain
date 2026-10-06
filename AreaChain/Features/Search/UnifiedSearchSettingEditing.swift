@@ -79,6 +79,7 @@ extension UnifiedSearchController {
 
     /// 点击和原生 ⌘Return 共用；最后写入门禁继续由适配器复核。
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
+        if showsTaskCreate { requestTaskCreate(source); return }
         if fileSettings != nil { requestFileSettingSubmit(source); return }
         guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil else { return }
         guard hasSettingAdapter, let localSettings else {

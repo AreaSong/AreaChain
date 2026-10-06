@@ -1,5 +1,7 @@
 # AreaChain 技能路由与交付闭环
 
+第十阶段 I 修复一沿 areachain-workflow → areachain-ui（areasong-development 补输入契约，ui-ux-pro-max 聚焦原生身份）→ areachain-verify。只修 DaybookTextField 原生编辑边界和四个普通搜索的显式换行用途；[组件目录](docs/component-catalog.md#第十阶段-i-修复一普通搜索换行与撤销边界)与[工程记录](docs/engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)保存政策及验证。沿完整正常 PrivacyQA、独立标识/目录、六项授权清除、原构建锁和串行输入测试；指定 Cursor verifier 不可用保留缺口，不认证或替换。剪贴板本轮只回归撤销，换行保真政策和新统一搜索业务不接入；完成停止，不提交、推送、安装、发布或操作真实数据与系统剪贴板。
+
 第十阶段 G 沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生可见性）→ areachain-verify。只修周布局的视口传播、等宽/横向浏览与选中日可达性；[组件目录](docs/component-catalog.md#第十阶段-g日历窄周布局)记录原装配与尺寸，[工程记录](docs/engineering.md#第十阶段-g日历窄周布局修复)记录测量和实际验收。完整正常 PrivacyQA、独立目录/标识、原锁、六项授权清除和串行事件保持；指定 Cursor verifier 不可用保留缺口，不认证或替代。完成停止，不扩修历史问题，不提交、安装或发布。
 
 第十阶段 F 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份／焦点，架构与可靠性判据补状态归属）→ areachain-verify。只将 CalendarPage 范围变化的业务焦点协调移到稳定页面，分段与顶栏菜单保持各自重选行为；[组件目录](docs/component-catalog.md#第十阶段-f月周切换后的键盘焦点恢复)记录入口，[工程记录](docs/engineering.md#第十阶段-f日历月周切换后的键盘焦点恢复)保留旧失败、运行根因及严格首次按键证据。沿完整正常 PrivacyQA、独立标识／目录、原构建锁、六项授权清除和串行合成窗口；指定 Cursor verifier 不可调用保留缺口，不认证或替代。完成停止，不修窄周、时间清除、搜索换行或安全输入，不提交、安装或发布。
@@ -314,3 +316,6 @@
 普通捕获 3T-1A 沿 areachain-workflow → 架构治理/可靠性引用 → areachain-verify；共享入口与旧消费者见[组件目录](docs/component-catalog.md#普通捕获共享新增3t-1a)，提交事实、D1～D3 确认及验收见[权威 §9.64](docs/unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。完整正常 QA 目标、原锁非等待申请、隔离内存模型与显式 fake 系统依赖；指定 Cursor verifier 不可用保留 partial，不重查登录或替代。只提取新增，不接 handler、标题/备注或统一搜索执行，完成后停止。
 
 普通创建 3T-1B 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify；固定身份、原运行占用和唯一交接见[权威 §9.65](docs/unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)，入口见[组件目录](docs/component-catalog.md#最小普通创建指令3t-1b)。只用内存上下文、私有事件与 fake 消费者；完整正常 QA 目标、原构建锁非等待申请、六项钥匙串授权清除，锁忙即停止。指定 Cursor、C2B、人工和历史缺口保留，不认证、不替代；不接生产/原生 UI、其余字段或其他命令，完成后停止。
+
+
+统一搜索 3T-4A 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-ui（ui-ux-pro-max 聚焦原生提交与焦点）→ areachain-verify。只显式装配最小 todo.create 的隔离原生提交，复用原参数、计划和运行；[组件入口](docs/component-catalog.md#最小任务创建原生提交3t-4a)与[权威 §9.66](docs/unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)保存边界及证据。原锁、独立 QA 标识/目录、内存库、私有事件源、fake 系统消费者、六项真实钥匙串变量清除和串行测试保持。指定 Cursor、C2B、人工及历史缺口保留；不认证、不替代复核、不启用生产搜索或真实系统操作，完成后停止。

@@ -12,6 +12,9 @@ final class UnifiedSearchController {
     var planReturnRevision: UInt64 = 0
     var editingParameter: CommandParameterID?
     var operationMessage = "unified.operation.notExecuted"
+    var taskCreatePreparation: CommandTaskCreatePreparation?
+    var taskCreateFailure: TaskCreateCommandIssue?
+    var taskCreateVerification: CommandTaskCreateVerification?
     var settingSubmitting = false
     var settingFailure: UnifiedSearchSettingFailure?
     var settingConfirmation: UnifiedSearchSettingConfirmation?
@@ -34,6 +37,7 @@ final class UnifiedSearchController {
     let session: ContentQueryReadSession
     let inputReset = UnifiedSearchInputReset()
     @ObservationIgnored let coordinator: CommandHandoffCoordinator
+    @ObservationIgnored let taskCreate: TaskCreateCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -53,17 +57,19 @@ final class UnifiedSearchController {
     convenience init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
-         localSettings: LocalSettingCommandAdapter? = nil) {
+         localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil) {
         self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
-                  settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled)
+                  settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled, taskCreate: taskCreate)
     }
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
-         recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend) {
+         recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
+         taskCreate: TaskCreateCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
         self.settingBackend = settingBackend
+        self.taskCreate = taskCreate
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
         self.buffer = initial
@@ -197,6 +203,7 @@ final class UnifiedSearchController {
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: text,
             privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: owned.session.plan.stamp, planItem: editingPlanItem?.stamp)
         revision &+= 1
+        taskCreateFailure = nil
         settingFailure = nil
         settingConfirmation = nil
         fileSettingFailure = nil

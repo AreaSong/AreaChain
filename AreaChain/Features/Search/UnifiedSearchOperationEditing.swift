@@ -91,7 +91,7 @@ extension UnifiedSearchController {
                                  text: text ?? command.path)
         }
         let draft = CommandDraft(id: UUID(), hostID: source.lease.ownership.hostID, commandID: id,
-            baseline: localSettings?.supports(id) == true ? .init() : syntheticBaselines[id] ?? .init(),
+            baseline: id.rawValue == "todo.create" || localSettings?.supports(id) == true ? .init() : syntheticBaselines[id] ?? .init(),
             arguments: argument.map { [$0] } ?? [])
         return sendOperation(.start(expectedRevision: state.revision, draft), source: source, text: text ?? command.path)
     }

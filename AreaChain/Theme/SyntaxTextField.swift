@@ -11,6 +11,7 @@ struct SyntaxTextField: View {
     var fontSize: CGFloat = DaybookType.bodySize
     var fontWeight: NSFont.Weight = .regular
     var allowsShiftNewline: Bool = false
+    var newlinePolicy: DaybookNewlinePolicy = .capture
     var onSubmit: () -> Void = {}
     var onEscape: (() -> Void)? = nil
 
@@ -21,7 +22,8 @@ struct SyntaxTextField: View {
         text: Binding<String>, placeholder: String, focused: Binding<Bool>,
         context: SyntaxInputContext = .capture, fontSize: CGFloat = DaybookType.bodySize,
         fontWeight: NSFont.Weight = .regular,
-        allowsShiftNewline: Bool = false, onSubmit: @escaping () -> Void = {}, onEscape: (() -> Void)? = nil
+        allowsShiftNewline: Bool = false, newlinePolicy: DaybookNewlinePolicy = .capture,
+        onSubmit: @escaping () -> Void = {}, onEscape: (() -> Void)? = nil
     ) {
         _text = text
         self.placeholder = placeholder
@@ -30,6 +32,7 @@ struct SyntaxTextField: View {
         self.fontSize = fontSize
         self.fontWeight = fontWeight
         self.allowsShiftNewline = allowsShiftNewline
+        self.newlinePolicy = newlinePolicy
         self.onSubmit = onSubmit
         self.onEscape = onEscape
         _autocomplete = State(initialValue: SyntaxAutocompleteState(context: context))
@@ -39,7 +42,7 @@ struct SyntaxTextField: View {
         DaybookTextField(
             text: $text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight, focus: $focused,
             autocomplete: autocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-            onSubmit: onSubmit, allowsShiftNewline: allowsShiftNewline, onEscape: onEscape
+            onSubmit: onSubmit, allowsShiftNewline: allowsShiftNewline, newlinePolicy: newlinePolicy, onEscape: onEscape
         )
         .frame(minHeight: fontSize + 6)
         .accessibilityLabel(placeholder)

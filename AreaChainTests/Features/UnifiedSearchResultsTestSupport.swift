@@ -33,7 +33,8 @@ final class UnifiedSearchResultsFixture {
     static let focusLost = Notification.Name("synthetic.results.focusLost")
 
     init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3,
-         localPreferences: AppPreferences? = nil, filePreferences: AppPreferences? = nil, hostID: String = HandoffFixture.source) throws {
+         localPreferences: AppPreferences? = nil, filePreferences: AppPreferences? = nil,
+         hostID: String = HandoffFixture.source, taskCreateEnvironment: TaskCreateCommandEnvironment? = nil) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -61,7 +62,9 @@ final class UnifiedSearchResultsFixture {
                 guard let self else { throw ContentQueryReadSessionError.detached }
                 return try await self.publish()
             }, recordOpen: { [weak self] in self?.opens.append($0) },
-            settingBackend: backend)
+            settingBackend: backend, taskCreate: taskCreateEnvironment.map {
+                TaskCreateCommandAdapter(coordinator: handoff.coordinator, environment: $0)
+            })
     }
 
     func publish() async throws -> ContentQueryReadEffect {

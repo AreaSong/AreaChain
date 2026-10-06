@@ -10,7 +10,9 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            if controller.fileSettings != nil {
+            if controller.showsTaskCreate {
+                Text("unified.task.pending").font(DaybookType.caption)
+            } else if controller.fileSettings != nil {
                 Text("unified.group.planHint").font(DaybookType.caption)
             } else { Text(controller.hasSettingAdapter ? "unified.setting.singleOnly" : "unified.plan.notExecutable").font(DaybookType.caption) }
             if controller.fileSettings != nil, plan.items.count > 1, plan.items.first?.atomicGroup != nil {

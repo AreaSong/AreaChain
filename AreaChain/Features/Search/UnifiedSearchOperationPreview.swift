@@ -131,9 +131,13 @@ struct UnifiedSearchOperationPreview: View {
                 .accessibilityIdentifier("unified.plan.enqueue")
             if draft.baseline.preference != nil || draft.baseline.preferenceGroup != nil { Text("unified.setting.baseline").font(DaybookType.caption) }
             else if !draft.baseline.values.isEmpty { Text("unified.operation.syntheticBaseline").font(DaybookType.caption) }
+            if command.id.rawValue == "todo.create", controller.taskCreate?.supports(command.id) == true {
+                Text("unified.task.pending").font(DaybookType.caption)
+            } else {
             Text(LocalizedStringKey(controller.hasSettingAdapter && controller.supportsSetting(command.id)
                                     ? "unified.setting.pending" : controller.operationMessage)).font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
+            }
         }
     }
 

@@ -73,14 +73,17 @@ struct SearchMultilineBoundaryTests {
         trace.reset()
         try await Self.key(in: fixture.window)
         trace.record("\(kind).external.return")
-        #expect(trace.coordinator.parent.text == "甲 // 乙")
-        #expect(field.stringValue == "甲 // 乙" && editor.string == "甲 // 乙")
+        let expected = kind == .capture || kind == .clipboard ? "甲 // 乙" : "甲 乙"
+        #expect(trace.coordinator.parent.text == expected)
+        #expect(field.stringValue == expected && editor.string == expected)
         if kind == .capture {
             let parsed = NaturalLanguageParser.parseTaskCapture(fixture.draft.text)
             #expect(parsed.cleanTitle == "甲" && parsed.notes == "乙")
             #expect(fixture.draft.commits == 1)
-        } else {
+        } else if kind == .clipboard {
             fixture.assertResults(space: false, slash: true)
+        } else {
+            fixture.assertResults(space: true, slash: kind != .tags)
         }
     }
 
@@ -109,6 +112,7 @@ struct SearchMultilineBoundaryTests {
         trace?.record("\(kind).middle.afterUndo")
         print("SEARCH_I_UNDO \(kind) field=\(field.stringValue.debugDescription) selection=\(editor.selectedRange()) redo=\(editor.undoManager?.canRedo == true)")
         #expect(editor.string == "头尾" && field.stringValue == "头尾")
+        #expect(editor.selectedRange() == NSRange(location: 1, length: 0))
         // 专门的失焦观察发生在导入与撤销断言之后，不用于绕过转换或补全。
         #expect(fixture.window.makeFirstResponder(nil))
         try await SystemPageHost.settle(fixture.window)
@@ -128,7 +132,39 @@ struct SearchMultilineBoundaryTests {
         }
     }
 
-    static func key(command: Bool = false, code: UInt16 = 36, text: String = "\r", in window: NSWindow) async throws {
+    @Test(arguments: SearchMultilineConsumer.ordinarySearches, [false, true])
+    func externalSubmissionPreservesUTF16Selection(kind: SearchMultilineConsumer, command: Bool) async throws {
+        let fixture = try SearchMultilineFixture(kind)
+        defer { fixture.cleanup() }
+        let field = try await fixture.prepare()
+        let editor = try #require(field.currentEditor() as? NSTextView)
+        let coordinator = try #require(field.delegate as? DaybookTextField.Coordinator)
+        let raw = " e\u{301}🧪\r\n甲\u{0085}乙\u{2028}丙\u{2029}丁 // ／／ \\n "
+        let expected = " e\u{301}🧪  甲 乙 丙 丁 // ／／ \\n "
+        coordinator.parent.text = raw
+        try await SystemPageHost.settle(fixture.window)
+        #expect(editor.undoManager?.canUndo != true)
+        SearchMultilineUndoTests.assertValue(raw, field: field, fixture: fixture)
+        let selection = NSRange(location: 5, length: 7)
+        editor.setSelectedRange(selection)
+        try await Self.key(command: command, in: fixture.window)
+        SearchMultilineUndoTests.assertValue(expected, field: field, fixture: fixture)
+        #expect(editor.selectedRange() == selection)
+        #expect(fixture.window.firstResponder === editor)
+        try #require(editor.tryToPerform(Selector(("undo:")), with: nil))
+        try await SystemPageHost.settle(fixture.window)
+        SearchMultilineUndoTests.assertValue(raw, field: field, fixture: fixture)
+        try #require(editor.tryToPerform(Selector(("redo:")), with: nil))
+        try await SystemPageHost.settle(fixture.window)
+        SearchMultilineUndoTests.assertValue(expected, field: field, fixture: fixture)
+        #expect(fixture.window.makeFirstResponder(nil))
+        try await SystemPageHost.settle(fixture.window)
+        #expect(field.stringValue == expected && coordinator.parent.text == expected)
+        #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0)
+    }
+
+    static func key(command: Bool = false, shift: Bool = false, code: UInt16 = 36,
+                    text: String = "\r", in window: NSWindow) async throws {
         try #require(window.isKeyWindow && NSApp.isActive)
         var received = 0
         let monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
@@ -137,9 +173,12 @@ struct SearchMultilineBoundaryTests {
         }
         defer { if let monitor { NSEvent.removeMonitor(monitor) } }
         // 原 sendEvent 不更新 currentEvent；队列派发让捕获的快捷键判断得到真实按键上下文。
+        var flags: NSEvent.ModifierFlags = command ? .command : []
+        if shift { flags.insert(.shift) }
         let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
-            modifierFlags: command ? .command : [], timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber, context: nil, characters: text, charactersIgnoringModifiers: text,
+            modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
+            windowNumber: window.windowNumber, context: nil, characters: shift ? text.uppercased() : text,
+            charactersIgnoringModifiers: text,
             isARepeat: false, keyCode: code))
         NSApp.postEvent(event, atStart: false)
         try await FormInputTestSupport.wait { received == 1 }
@@ -151,6 +190,7 @@ struct SearchMultilineBoundaryTests {
         ("ordinary", "ordinary"), ("甲\n乙", "甲 乙"), ("甲\n乙\n丙", "甲 乙 丙"),
         ("甲\r\n乙", "甲  乙"), ("甲\r乙", "甲 乙"),
         ("甲\u{2028}乙", "甲 乙"), ("甲\u{2029}乙", "甲 乙"), ("甲\u{0085}乙", "甲 乙"),
+        ("甲\u{000B}乙", "甲 乙"), ("甲\u{000C}乙", "甲 乙"),
         (" 甲\n\n 乙 ", " 甲   乙 "), ("\n甲\n", " 甲 "),
         ("甲 // 原注\n乙", "甲 // 原注 乙"), ("甲 ／／ 原注\n乙", "甲 ／／ 原注 乙"),
         ("e\u{301}\n中文🧪", "e\u{301} 中文🧪"), ("#工作\n!p1 @12:00", "#工作 !p1 @12:00"),

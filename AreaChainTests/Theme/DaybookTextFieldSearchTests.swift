@@ -5,6 +5,36 @@ import Testing
 
 @MainActor
 struct DaybookTextFieldSearchTests {
+    @Test func plainEditorPayloadPreservesCharactersAndAttributes() {
+        let editor = DaybookFieldEditor()
+        editor.usesSingleLineInput = true
+        let payload = NSMutableAttributedString(string: "头🧪\r\n乙尾")
+        payload.addAttribute(.foregroundColor, value: NSColor.red, range: NSRange(location: 5, length: 1))
+        editor.insertText(payload, replacementRange: NSRange(location: 0, length: 0))
+        #expect(editor.string == "头🧪  乙尾")
+        #expect(editor.selectedRange() == NSRange(location: 7, length: 0))
+        #expect(editor.textStorage?.attribute(.foregroundColor, at: 5, effectiveRange: nil) as? NSColor == .red)
+        editor.usesSingleLineInput = false
+        editor.insertText("甲\n乙", replacementRange: NSRange(location: 0, length: editor.string.utf16.count))
+        #expect(editor.string == "甲\n乙")
+    }
+
+    @Test func newlinePurposeIsExplicitInBothInitializers() {
+        var value = "甲\r\n乙"
+        let text = Binding(get: { value }, set: { value = $0 })
+        let focus = FocusState<Bool>()
+        let compatible = DaybookTextField(text: text, placeholder: "", focus: focus.projectedValue,
+                                          onSubmit: {}, newlinePolicy: .searchWhitespace)
+        let direct = DaybookTextField(text: text, placeholder: "", focus: .constant(false),
+                                     onSubmit: {}, newlinePolicy: .searchWhitespace)
+        #expect(compatible.newlinePolicy == direct.newlinePolicy)
+        #expect(direct.newlinePolicy.submittedText(value, allowsShiftNewline: true) == "甲  乙")
+        let capture = DaybookTextField(text: text, placeholder: "", focus: .constant(false), onSubmit: {})
+        #expect(capture.newlinePolicy == .capture)
+        #expect(capture.newlinePolicy.submittedText("甲\n乙", allowsShiftNewline: false) == "甲 // 乙")
+        #expect(capture.newlinePolicy.submittedText("甲\n乙", allowsShiftNewline: true) == "甲\n乙")
+    }
+
     @Test(arguments: [false, true])
     func commandReturnOnlyReachesTheFocusedInput(capsLock: Bool) throws {
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 300, height: 120), styleMask: [.titled], backing: .buffered, defer: false)

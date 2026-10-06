@@ -1,5 +1,13 @@
 # 共享组件与复用目录
 
+## 第十阶段 I 修复一：普通搜索换行与撤销边界
+
+[DaybookNewlinePolicy / DaybookTextEditing](../AreaChain/Theme/DaybookTextEditing.swift) 是原 DaybookTextField 的小型内部支持，不新建输入包装或查询状态。`newlinePolicy` 与 `allowsShiftNewline` 分离，Binding 和 FocusState 兼容入口传递同一政策，SyntaxTextField 显式透传。默认 `.capture` 保留单行捕获安全提交的首行/备注归并；允许 Shift+Return 的原捕获继续保留多行。
+
+WorkspaceHeaderSearchCapsule、MenuBarSearchField、TagManagementPage.searchField 和 DiaryPage.searchChrome 显式选择 `.searchWhitespace`：每个换行标量换成一个空格，CRLF 为两个空格，不 trim、不折叠其他空白、不新增半角或全角任务分隔符。查询、焦点、候选、token、结果及提交责任留在原消费者；标签目录仍使用原连续子串匹配。
+
+普通字段的 [DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 由原字段 cell 稳定持有，不在撤销时重建，也不替换 UndoManager。非组合态的已提交 payload 与纯文本导入在原生插入前完成原有的逐标量空格转换，避免 AppKit 第二次整段归一化把重做光标移到末尾；原文与富文本中的其他字符保留。两条文本通知只发布原生当前值，撤销/重做中间态不改写 field/editor/storage；组合文本也受保护。外部同步不增加撤销操作，安全提交所需转换走原生 insertText 事务并映射 UTF-16 选区，后续撤销仍同步真实最终值。剪贴板只共享安全修复，当前导入空白和原提交政策保持；真实换行保真尚未接入，三个匹配器和新统一搜索专用输入分支不变。复用六个 SearchMultiline 文件、原输入测试与生产装配夹具；实际结果与缺口见[工程记录](engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)。
+
 ## 第十阶段 G：日历窄周布局
 
 [CalendarPage](../AreaChain/Features/Calendar/CalendarPage.swift) 在稳定页面层保留范围切换焦点协调，周分支直接服从 GeometryReader 的真实视口，不参与月布局 ViewThatFits 的固有宽度测量。[CalendarWeekBoard](../AreaChain/Features/Calendar/CalendarWeekBoard.swift) 沿原七列 HStack、完整日键和列内 DayBoardList，外加系统横向 ScrollView / ScrollViewReader；原列头、表面、内边距、纵向 daybookScroll、检查和列级投放保持。外层不装纵向公共浮层。
@@ -800,3 +808,8 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 ## 最小普通创建指令（3T-1B）
 
 [TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 的 prepare / submit / execute / verifyUnknown 仅用于显式隔离装配；[claimTaskCreate](../AreaChain/Domain/CommandTaskCreateExecution.swift) 复用原 Coordinator 占用。CaptureInput / CreateTodoParams.creationID 与仓储 fetchTodos(withID:) 保持旧默认，Creation / CommitFacts 是唯一提交事实来源。Run.creationOutput(for:) 与原依赖解析共用结果协议。当前消费者只有 TaskCreateCommand 系列隔离测试；参数、来源、调用次数、未知/外部边界及生产未接线见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。
+
+
+## 最小任务创建原生提交（3T-4A）
+
+[UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift) 通过 `taskCreate:` 显式装配任务适配器；[requestTaskCreate](../AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift) 复用原 enqueue、prepare / submit / verifyUnknown 与 Run，只有明确创建才自动移交单活动草稿。单独准备要求先显式入列；重绘不准备。普通参数、计划列表及 [UnifiedSearchTaskCreateSubmission](../AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift) 继续放在原 OperationPreview / SettingSubmission 组合内，复用 Daybook 与 PlanButton。当前只由隔离 TaskCreate UI 测试消费，生产入口未装配；参数、失败保留、显示门禁及证据统一见[权威 §9.66](unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)。

@@ -489,3 +489,8 @@ TaskMutationService 只接原 addCapturedTodo 的单段业务链。ModelChanges 
 ### 最小普通创建隔离适配（3T-1B）
 
 TaskCreateCommandAdapter 仅组合原 Coordinator、隔离环境与共享 createCaptured。准备及固定 UUID 属于协调者运行内登记，参数仍由原 Draft/Plan/Run 拥有；保存后、事件前登记真实输出，未知与外部步骤不转成重放。显式 ID 查询包含墓碑/重复行，旧随机默认和预保存政策保留。完整资格、串行保证范围、输出协议及未接生产边界见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。
+
+
+### 最小任务创建原生桥接（3T-4A）
+
+Controller 的可选 taskCreate 注入不改变目录资格或其他命令装配。UI 只交原计划给 TaskCreateCommandAdapter，提交增加可选 ReadSession 门禁并在最后事务前复核；保存后的事实不因显示撤销而消失。原运行唯一保留失败/未知内容，不创建可重放副本。契约与隔离验收见[权威 §9.66](unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)。

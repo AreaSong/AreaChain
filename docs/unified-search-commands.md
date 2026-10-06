@@ -5487,3 +5487,57 @@ CommandExecutionRun.creationOutput(for:) 与 resolveInputs 共用现有 CommandC
 正常执行 `./scripts/build.sh --no-wait`，本次成功取得原 `build/.build.lock`，构建及脚本自带静态验签退出 **0**。使用项目当前正常 development 配置，未覆盖签名参数、未启用 provisioning、未修改个人配置。产物为 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`；验签结果 `configuration=Debug`、`staticSignatureVerified=true`、`hardenedRuntime=true`，`distributionReady=false` 保持。日志 `build/TaskCreate-3T1B-debug-build.log` 现保存本次成功输出；多匹配 macOS destination 提示不影响通过。静态验签不证明真实系统解锁、公证或发行。
 
 本次只更新同一 §9.65 并进行文档引用/差异校验，保留并行修改及暂存状态。未重新检查 Cursor 登录、未替代指定复核；未提交、推送、安装或启动产物，未访问真实用户库、未启用生产搜索，未扩展参数或原生 UI。工作停止于 3T-1B，不进入下一阶段。
+
+
+### 9.66 阶段 3T-4A：最小 todo.create 原生提交与隔离验收
+
+2026-10-05（Asia/Shanghai）。承接 §9.65 的最小适配，在原 OperationPreview、普通 ParameterField、PlanList 与 SettingSubmission 组合内增加任务提交反馈，不新增命令面板。**当前状态：partial。** 已实现接线并取得部分真实隔离创建证据；最终复验锁忙，完整输入到创建链、旧 UI 回归及最终正常 Debug 构建/验签尚未完成。
+
+#### 显式装配与最小参数
+
+UnifiedSearchController 的 `taskCreate:` 必须由宿主显式注入 TaskCreateCommandAdapter；默认 nil，生产未装配，其他命令不会因它存在而可执行。普通 title/day 沿 OperationEditing、目录补全、原生字段与日期控件写入原草稿；页面展示的日期不是已接受参数，不默认写 today。todo.create 不安装偏好或合成基线，也不显示“原值尚未读取”。参数资格完全复用 CommandTaskCreateInput 和 Coordinator.taskCreatePlan：仅普通纯标题、规范明确日期、空目标/基线及单操作，notes 任意形式、换行、备注分隔、派生标签/提醒/优先级、保护/未知内容、依赖及多项均拒绝，未支持内容原地保留。
+
+#### 准备、提交与所有权
+
+单独“准备任务”只对已显式入列且结束编辑的唯一项调用 prepare；不在重绘时调用、不替换预留 UUID。活动草稿点击“创建任务”或 ⌘Return 先发送原 enqueue 原子移交，再 submit；已有唯一合法计划直接提交。活动加计划、retained、pending、参数/计划未结束编辑或已有运行均阻止。原 buffer/lease/plan 版本和同步 busy 守卫防止旧事件、重复点击、原生回声重放。Return 只补全/确认参数；共同入口额外检查当前原生 marked text。
+
+预览显示拟创建标题、明确日期、尚未创建及资格问题。来源未准备时明确说明提交前采样；准备后显示原准备的来源标记开关与 bundleID 适用信息，不把 creationID 当作已存在记录。参数/计划变化使旧准备展示失效，适配器仍保留原预留 ID 并拒绝隐式刷新；来源变化沿原适配器拒绝。本阶段无刷新旧准备接口。
+
+TaskCreateCommandAdapter.submit / execute 接受可选 displaySession，在准备前后及所有业务注入回调后的事务前复核 ReadSession。失焦、锁定、关闭或所有权变化阻止旧提交；本地保存后的显示撤销不会撤销事实或把回执转给新运行。查询保持在原 HostSession 中。
+
+#### 回执、未知与失败保留
+
+反馈只从原 Run 的 CommandTaskCreateFacts 派生。saved 使用 savedID 显示“任务已创建”；pending 表示仍未确认，notSubmitted 表示未提交，unknown 明确禁止再次创建。发布、登记回调和提醒/日历步骤与本地保存分别显示；刷新请求不代表送达或同步，fake 次数不生成“已同步”文案。只有原 unit.succeeded 且确实 saved 才提供原 releaseExecution 的完成按钮；其余保留原运行。
+
+“核验当前记录”只调用 verifyUnknown，反馈 absent / singleLive / tombstone / ambiguous / unreadable；任何存在性结果不提升历史提交，不允许再次创建，不按相同标题认领。本阶段没有安全返回计划、创建重试或外部重试接口，界面明确说明限制，失败内容保留于原草稿/计划/运行，不复制新草稿。脏 context 原地拒绝，不 save、rollback 或更换 context。无打开结果动作或生产导航。
+
+#### 有限验收与当前证据
+
+本轮只覆盖用户指定的 13 项，分为真实点击/快捷键创建、参数与所有权拒绝、失败/未知/外部结果、生命周期/重复事件、双语尺寸截图与旧设置/计划回归。所有创建来自七模型内存容器、autosave=false、私有 NotificationCenter 及 fake 系统消费者，断言真实模型数量和 save/publication 次数，不用手工成功 Facts。
+
+本轮实际证据均在忽略目录 `build/TaskCreateUIQA/`，完整正常 PrivacyQA、`com.areachain.privacy-qa`、`build/PrivacyQA`、原 `build/.build.lock`、六项真实钥匙串授权清除、串行测试，未排除任何源码。环境 Xcode 26.6 / macOS 26.6.2 arm64。未运行真实用户库或真实通知/日历。
+
+| 验证 | 实际结果与限制 |
+|---|---|
+| 首轮 | `Initial-1791209958258455000.xcresult`：40 方法，37 通过 / 3 失败；参数化 67 通过 / 8 失败。失败为测试命令路径错误、恢复显示缺少 resumeDisplay、反馈容器辅助标识覆盖子按钮，均保留原日志。 |
+| 编译中断 | `Recheck-1791210269778500000.xcresult`：并行 DaybookTextField 已引用新 DaybookTextEditing，但当次编译输入尚未纳入新文件，编译失败、测试未运行。未回退或排除并行修改。 |
+| 已运行的最新完整 QA | `Native-1791210372618107000.xcresult`：**44 方法，42 通过 / 2 失败 / 0 跳过**；参数化 **80 通过 / 3 失败**。原 TaskCreateCommand 四套服务、UI 控制器契约/生命周期、marked text、展示矩阵及原生失败反馈通过。完整补全→标题→日期→计划→创建两条测试在日期网格未滚入可见区时失败；失焦/锁定场景直接 resignKey 后恢复 key window 失败。 |
+| 真实原生创建 | `nativeFailureFeedbackUsesRealAdapter` 五种场景全部通过：真实按钮→原 enqueue→适配器→内存保存；保存后发布失败和 fake 日历失败各实际创建 1 条、save=1，ui 分别为 0/1；保存后抛错的 unknown 实际库为 1、save=1、ui=0，原生核验按钮返回 singleLive 且保留 unknown。脏 context、保存前仓储失败都未保存创建，内容保留。标题/日期由测试经原 Controller 参数入口预填，**不冒充完整原生输入链通过**。 |
+| 防重与恢复 | 已运行测试验证单草稿自动移交、唯一计划、空基线、原 draft/run 身份、重复提交、旧准备/lease、来源变化拒绝、脏 context、保存前失败、unknown absent/singleLive/tombstone/ambiguous、本地成功后的发布/外部失败、写前/写后撤显示。unreadable 只验证文案映射，未制造真实读取失败；pending 只由实际 Facts 状态映射，未制造适配器不支持的嵌套事务。 |
+| 截图 | `screenshots/` 有 **13 张本轮原生宿主缓存图**：8 张 en/zh-Hans × 浅深 × 标准444pt/紧凑304pt，5 张真实失败/未知/部分成功反馈。已检查全部联系表，放大检查最窄英文深色及本地保存后外部失败原图；长内容在固定面板滚动。不是系统窗口合成器截图，不证明系统输入法候选窗或真人朗读。 |
+| 最后修正与锁忙 | 日期测试增加滚动到网格，焦点测试改用第二个隔离窗口；OperationPreview/PlanList 的任务分支修正旧“不可执行”提示，ResultsTestSupport 只调整换行。准备最终复验时原锁非等待申请返回 **3（锁忙）**，未启动 xcodebuild，未生成 Delivery.xcresult。立即停止后续锁申请。**上述最后 Swift 修改未编译/复验，不标通过；13 张图片早于最后提示修正。** |
+| 旧设置/参数/计划回归 | 已列出定向回归范围，但因最后锁忙未运行。本轮不能引用旧阶段结果代替单项/多项设置与普通参数/计划原生回归。 |
+| 正常 Debug / 静态验签 | 本轮未完成；最终锁忙后没有再申请 `build.sh`，不拿 PrivacyQA 临时签名或 3T-1B 历史正常构建代替。 |
+| 静态 | 最终相关 Swift 严格 SwiftLint、工作流/引用检查、静态 strict 质量门禁及暂存/未暂存 diff 检查通过。检查器定向 104 项、质量门禁内脚本回归通过；static 配合上述显式隔离定向，不声称 auto/swift 全量 profile 通过。 |
+
+指定 Cursor verifier 无可调用工具，未检查登录或冒充复核；C2B、系统输入法候选窗、VoiceOver 真人、最低系统及历史缺口独立保留。marked text 证据是实际 NSTextInputClient 协议及原生事件，不能等同系统中文候选窗。主线程自查与自动测试不替代指定复核。
+
+#### 修改文件与下一次有限复验入口
+
+新增 [UnifiedSearchTaskCreateEditing.swift](../AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift)、[UnifiedSearchTaskCreateSubmission.swift](../AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift)；增量修改 [Controller](../AreaChain/Features/Search/UnifiedSearchController.swift)、[OperationEditing](../AreaChain/Features/Search/UnifiedSearchOperationEditing.swift)、[OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[ParameterField](../AreaChain/Features/Search/UnifiedSearchParameterField.swift)、[PlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift)、[SettingEditing](../AreaChain/Features/Search/UnifiedSearchSettingEditing.swift)、[SettingSubmission](../AreaChain/Features/Search/UnifiedSearchSettingSubmission.swift)、[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 与 [双语资源](../AreaChain/Resources/Localizable.xcstrings)。没有直接 UI 仓储调用、context.insert 或生产装配。
+
+测试新增 [TaskCreateTestSupport](../AreaChainTests/Features/UnifiedSearchTaskCreateTestSupport.swift)、[ContractTests](../AreaChainTests/Features/UnifiedSearchTaskCreateContractTests.swift)、[LifecycleTests](../AreaChainTests/Features/UnifiedSearchTaskCreateLifecycleTests.swift)、[InteractionTests](../AreaChainTests/Features/UnifiedSearchTaskCreateInteractionTests.swift)、[RecoveryTests](../AreaChainTests/Features/UnifiedSearchTaskCreateRecoveryTests.swift)，并给原 [ResultsTestSupport](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift) 增加可选隔离环境注入。同步本文、架构、组件目录、技能路由及 check_workflow.py 的两个稳定入口/反例，保留全部并行修改及原暂存状态。
+
+后续本阶段续验应先编译最终完整源码，重跑两项失败测试及受最后 UI 提示影响的截图，再补旧单项/多项设置、普通参数/计划定向回归和正常 Debug 构建/静态验签；只在新的允许续验上下文中重新申请原锁。本轮不继续申请，不进入下一阶段。
+
+其余普通参数接入仍需 D1/D3 的独立解析、冲突/标签普通资格、完整预览和事务事实验证；notes/长正文仍受 C2B 前置。生产需另行核实写入者、真实数据和系统副作用授权。本阶段不启用生产搜索、不访问用户库、不执行真实通知/日历、不提交推送安装，完成后停止。

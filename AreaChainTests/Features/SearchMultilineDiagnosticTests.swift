@@ -3,9 +3,19 @@ import SwiftUI
 import Testing
 @testable import AreaChain
 
-/// 特征诊断只断言已观察的现状，不把任务分隔符注入定义为搜索的正确契约。
+/// 生产断言要求恢复正确查询；旧故障只保存在明确的冻结对照中。
 @Suite(.serialized) @MainActor
 struct SearchMultilineDiagnosticTests {
+    @Test func frozenOriginalUndoTrace() {
+        // I 诊断包 keyboard.xcresult 的历史片段；不是要求新实现再产生残留。
+        let restoredIntermediate = "甲\n乙"
+        let rewrittenIntermediate = "甲 // 乙"
+        let remaining = (rewrittenIntermediate as NSString).substring(from: restoredIntermediate.utf16.count)
+        #expect(DaybookTextField.sanitizeSingleLineText(restoredIntermediate) == rewrittenIntermediate)
+        #expect(remaining == "/ 乙")
+        #expect("x" + remaining == "x/ 乙")
+    }
+
     @Test func workspaceNativeBaseline() async throws {
         let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
         defer { fixture.cleanup() }

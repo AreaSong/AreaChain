@@ -17,8 +17,7 @@ final class DaybookAppKitTextField: NSTextField {
         if ShortcutChordMatching.accepts(event, chord: commandChord) {
             if let editor = currentEditor() as? NSTextView,
                window?.firstResponder === editor {
-                guard !editor.hasMarkedText() else { return true }
-                stringValue = editor.string
+                guard !DaybookTextEditing.isProtected(editor) else { return true }
                 onCommandReturn?()
                 return true
             }
@@ -42,6 +41,7 @@ struct DaybookTextField: NSViewRepresentable {
     var commandChord: ShortcutChord? = nil
     var onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil
     var allowsShiftNewline: Bool = true
+    var newlinePolicy: DaybookNewlinePolicy = .capture
     var onEscape: (() -> Void)? = nil
     var onMoveDown: (() -> Bool)? = nil
     var unifiedSearch: UnifiedSearchInputState? = nil
@@ -68,6 +68,10 @@ struct DaybookTextField: NSViewRepresentable {
                 coordinator?.beginEditing(field, editor: editor)
             }
             field.cell = cell
+            field.isEditable = true
+            field.isSelectable = true
+        } else {
+            field.cell = DaybookTextFieldCell(textCell: "")
             field.isEditable = true
             field.isSelectable = true
         }
@@ -105,21 +109,15 @@ struct DaybookTextField: NSViewRepresentable {
         if let field = field as? DaybookAppKitTextField {
             field.commandChord = commandChord
         }
-        (field as? DaybookAppKitTextField)?.onCommandReturn = onCommandReturn == nil ? nil : { [weak field] in
-            guard let field, let extra = context.coordinator.parent.onCommandReturn else { return }
+        (field as? DaybookAppKitTextField)?.onCommandReturn = { [weak field] in
+            guard let field else { return }
             if let search = context.coordinator.parent.unifiedSearch { search.submit(); return }
-            let editorString = (field.currentEditor() as? NSTextView)?.string ?? field.stringValue
-            var value = editorString
-            if !context.coordinator.parent.allowsShiftNewline, value.contains("\n") {
-                value = DaybookTextField.sanitizeSingleLineText(value)
-            }
-            context.coordinator.parent.text = value
-            context.coordinator.parent.autocomplete?.dismiss()
-            extra()
+            context.coordinator.commandReturn(in: field)
         }
         if let unifiedSearch, let searchBuffer { unifiedSearch.synchronize(searchBuffer, field: field) }
         else { Self.synchronizeText(text, in: field, highlightsSyntax: highlightsSyntax, font: nativeFont) }
-        if let autocomplete = context.coordinator.parent.autocomplete {
+        if let autocomplete = context.coordinator.parent.autocomplete,
+           (field.currentEditor() as? NSTextView).map(DaybookTextEditing.isProtected) != true {
             if autocomplete.inputText != text || autocomplete.availableTags != context.coordinator.parent.availableTags {
                 let cursor = (field.currentEditor() as? NSTextView)?.selectedRange().location ?? (text as NSString).length
                 autocomplete.update(text: text, cursorLocation: cursor, availableTags: context.coordinator.parent.availableTags)
@@ -128,6 +126,7 @@ struct DaybookTextField: NSViewRepresentable {
         if let cell = field.cell as? NSTextFieldCell {
             cell.usesSingleLineMode = !allowsShiftNewline
         }
+        (field.currentEditor() as? DaybookFieldEditor)?.usesSingleLineInput = !allowsShiftNewline
         if field.placeholderString != placeholder {
             field.placeholderString = placeholder
         }
@@ -140,7 +139,7 @@ struct DaybookTextField: NSViewRepresentable {
     static func synchronizeText(_ text: String, in field: NSTextField, highlightsSyntax: Bool = false, font: NSFont? = nil) {
         let editor = field.currentEditor() as? NSTextView
         let current = editor?.string ?? field.stringValue
-        guard current != text, editor?.hasMarkedText() != true else { return }
+        guard current != text, editor.map(DaybookTextEditing.isProtected) != true else { return }
         let length = (text as NSString).length
         let delta = length - (current as NSString).length
         let cursor = min(length, max(0, (editor?.selectedRange().location ?? 0) + delta))
@@ -231,23 +230,8 @@ struct DaybookTextField: NSViewRepresentable {
                 search.changed(editor)
                 return
             }
-            var value = field.stringValue
-            if !parent.allowsShiftNewline, value.contains("\n") {
-                value = DaybookTextField.sanitizeSingleLineText(value)
-                field.stringValue = value
-            }
-            parent.text = value
-
             let editor = field.currentEditor() as? NSTextView
-            if parent.highlightsSyntax, let storage = editor?.textStorage, editor?.hasMarkedText() != true {
-                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
-            }
-
-            if let autocomplete = parent.autocomplete {
-                guard editor?.hasMarkedText() != true else { autocomplete.dismissSuggestionsOnly(); return }
-                let cursor = editor?.selectedRange().location ?? (value as NSString).length
-                autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
-            }
+            observeText(editor?.string ?? field.stringValue, editor: editor)
         }
 
         @objc private func editorDidChangeSelection(_ notification: Notification) {
@@ -255,7 +239,7 @@ struct DaybookTextField: NSViewRepresentable {
             guard let autocomplete = parent.autocomplete,
                   let textView = notification.object as? NSTextView else { return }
             if textView.window?.firstResponder === textView { lastSelection = textView.selectedRange() }
-            guard !textView.hasMarkedText() else { autocomplete.dismissSuggestionsOnly(); return }
+            guard !DaybookTextEditing.isProtected(textView) else { autocomplete.dismissSuggestionsOnly(); return }
             let cursor = textView.selectedRange().location
             autocomplete.update(text: textView.string, cursorLocation: cursor, availableTags: parent.availableTags)
         }
@@ -265,23 +249,22 @@ struct DaybookTextField: NSViewRepresentable {
                 search.changed(editor)
                 return
             }
-            guard let autocomplete = parent.autocomplete,
-                  let textView = notification.object as? NSTextView else { return }
-            var value = textView.string
-            if !parent.allowsShiftNewline, value.contains("\n") {
-                value = DaybookTextField.sanitizeSingleLineText(value)
-                textView.string = value
-            }
+            guard let textView = notification.object as? NSTextView else { return }
+            observeText(textView.string, editor: textView)
+        }
+
+        private func observeText(_ value: String, editor: NSTextView?) {
+            // 原生导入的撤销会通知多行中间态；只观察，绝不改变原撤销记录的替换长度。
             parent.text = value
-            if parent.highlightsSyntax, let storage = textView.textStorage, !textView.hasMarkedText() {
-                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
-            }
-            guard !textView.hasMarkedText() else {
-                autocomplete.dismissSuggestionsOnly()
+            guard editor.map(DaybookTextEditing.isProtected) != true else {
+                parent.autocomplete?.dismissSuggestionsOnly()
                 return
             }
-            let cursor = textView.selectedRange().location
-            autocomplete.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
+            if parent.highlightsSyntax, let storage = editor?.textStorage {
+                SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
+            }
+            let cursor = editor?.selectedRange().location ?? (value as NSString).length
+            parent.autocomplete?.update(text: value, cursorLocation: cursor, availableTags: parent.availableTags)
         }
 
         func controlTextDidBeginEditing(_ obj: Notification) {
@@ -294,7 +277,7 @@ struct DaybookTextField: NSViewRepresentable {
             parent.autocomplete?.editor = editor
             parent.unifiedSearch?.begin(field, editor: editor)
 
-            if parent.highlightsSyntax, let storage = editor.textStorage, !editor.hasMarkedText() {
+            if parent.highlightsSyntax, let storage = editor.textStorage, !DaybookTextEditing.isProtected(editor) {
                 SyntaxHighlighter.applyHighlighting(to: storage, font: parent.nativeFont)
             }
 
@@ -341,7 +324,7 @@ struct DaybookTextField: NSViewRepresentable {
             parent.unifiedSearch?.end()
             parent.autocomplete?.dismiss()
             parent.autocomplete?.editor = nil
-            if parent.highlightsSyntax {
+            if parent.highlightsSyntax, observedEditor.map(DaybookTextEditing.isProtected) != true {
                 (obj.object as? NSTextField)?.attributedStringValue = SyntaxHighlighter.attributedString(for: parent.text, font: parent.nativeFont)
             }
             if let editor = observedEditor {
@@ -352,7 +335,7 @@ struct DaybookTextField: NSViewRepresentable {
         }
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
-            guard !textView.hasMarkedText() else { return false }
+            guard !DaybookTextEditing.isProtected(textView) else { return false }
             if let search = parent.unifiedSearch { return search.command(commandSelector, editor: textView) }
             if let autocomplete = parent.autocomplete, autocomplete.hasPresentation {
                 if handleAutocompleteCommand(commandSelector, textView: textView, autocomplete: autocomplete) {
@@ -419,24 +402,19 @@ struct DaybookTextField: NSViewRepresentable {
         private func handleCommandReturn(_ selector: Selector, textView: NSTextView) -> Bool {
             guard selector == Selector(("noop:")) else { return false }
             let event = NSApp.currentEvent
-            guard let event, parent.acceptsCommand(event), let extra = parent.onCommandReturn else { return false }
-            var value = textView.string
-            if !parent.allowsShiftNewline, value.contains("\n") {
-                value = DaybookTextField.sanitizeSingleLineText(value)
+            guard let event, parent.acceptsCommand(event),
+                  parent.onCommandReturn != nil || parent.newlinePolicy == .searchWhitespace else { return false }
+            guard prepareSubmission(editor: textView) else { return true }
+            if let extra = parent.onCommandReturn {
+                parent.autocomplete?.dismiss()
+                extra()
             }
-            parent.text = value
-            parent.autocomplete?.dismiss()
-            extra()
             return true
         }
 
         private func handleReturnSubmit(_ selector: Selector, textView: NSTextView) -> Bool {
             guard selector == #selector(NSResponder.insertNewline(_:)), !textView.hasMarkedText() else { return false }
-            var value = textView.string
-            if !parent.allowsShiftNewline, value.contains("\n") {
-                value = DaybookTextField.sanitizeSingleLineText(value)
-            }
-            parent.text = value
+            guard prepareSubmission(editor: textView) else { return true }
             submitted()
             return true
         }
@@ -470,15 +448,15 @@ extension DaybookTextField {
         availableTags: [String] = [], highlightsSyntax: Bool = false, onSubmit: @escaping () -> Void,
         onCommandReturn: (() -> Void)? = nil, commandChord: ShortcutChord? = nil,
         onCommitAutocomplete: ((SyntaxCandidate) -> Void)? = nil,
-        allowsShiftNewline: Bool = true, onEscape: (() -> Void)? = nil,
-        onMoveDown: (() -> Bool)? = nil
+        allowsShiftNewline: Bool = true, newlinePolicy: DaybookNewlinePolicy = .capture,
+        onEscape: (() -> Void)? = nil, onMoveDown: (() -> Bool)? = nil
     ) {
         self.init(
             text: text, placeholder: placeholder, fontSize: fontSize, fontWeight: fontWeight,
             focus: Binding(get: { focus.wrappedValue }, set: { focus.wrappedValue = $0 }),
             autocomplete: autocomplete, availableTags: availableTags, highlightsSyntax: highlightsSyntax, onSubmit: onSubmit,
             onCommandReturn: onCommandReturn, commandChord: commandChord, onCommitAutocomplete: onCommitAutocomplete,
-            allowsShiftNewline: allowsShiftNewline, onEscape: onEscape, onMoveDown: onMoveDown
+            allowsShiftNewline: allowsShiftNewline, newlinePolicy: newlinePolicy, onEscape: onEscape, onMoveDown: onMoveDown
         )
     }
 }

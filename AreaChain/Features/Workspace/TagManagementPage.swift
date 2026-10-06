@@ -170,6 +170,7 @@ struct TagManagementPage: View {
                 focus: $searchFocused,
                 onSubmit: {},
                 allowsShiftNewline: false,
+                newlinePolicy: .searchWhitespace,
                 onEscape: { query = ""; searchFocused = false }
             )
         }

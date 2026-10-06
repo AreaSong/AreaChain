@@ -147,7 +147,10 @@ struct UnifiedSearchParameterField: View {
             return UnifiedSearchOperationCopy.value(argument.value, locale: locale, calendar: calendar)
         }()
         return VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            if controller.localSettings?.supports(command.id) == true {
+            if command.id.rawValue == "todo.create" {
+                Text(verbatim: after).font(DaybookType.caption)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if controller.localSettings?.supports(command.id) == true {
                 UnifiedSearchSettingValues(before: draft.baseline.preference?.memory, after: argument?.value)
             } else {
                 Text(verbatim: before + " → " + after).font(DaybookType.caption)
