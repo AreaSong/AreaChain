@@ -11,6 +11,7 @@ struct ParsedNoteUpdate: Sendable {
 }
 
 struct CreateTodoParams: Sendable {
+    var creationID: UUID?
     var title: String
     var dayKey: String
     var notes: String
@@ -30,8 +31,10 @@ struct CreateTodoParams: Sendable {
         isUrgent: Bool = false,
         tagIDs: [UUID] = [],
         sourceBundleID: String = "",
-        calendarEventID: String = ""
+        calendarEventID: String = "",
+        creationID: UUID? = nil
     ) {
+        self.creationID = creationID
         self.title = title
         self.dayKey = dayKey
         self.notes = notes
@@ -53,6 +56,9 @@ protocol TaskRepositoryProtocol: AnyObject {
 
     /// 按唯一标识查询待办
     func fetchTodo(id: UUID) throws -> TodoItem?
+
+    /// 包含墓碑及重复身份；不能用单行查询证明创建 ID 尚不存在。
+    func fetchTodos(withID id: UUID) throws -> [TodoItem]
 
     /// 全量待办查询（支持是否包含软删除）
     func fetchAllTodos(includeDeleted: Bool) throws -> [TodoItem]
@@ -158,6 +164,10 @@ protocol TaskRepositoryProtocol: AnyObject {
 }
 
 extension TaskRepositoryProtocol {
+    func fetchTodos(withID id: UUID) throws -> [TodoItem] {
+        try fetchAllTodos(includeDeleted: true).filter { $0.id == id }
+    }
+
     func addTodo(
         title: String,
         dayKey: String,

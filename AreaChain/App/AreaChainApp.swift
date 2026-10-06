@@ -93,10 +93,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct AreaChainApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
-    private let container = Persistence.session.container
+    private let container: ModelContainer
 
     init() {
-        StoreHealth.shared.apply(Persistence.session)
+        // 测试宿主也不初始化生产 Persistence 单例；业务夹具仍需显式注入自己的上下文。
+        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+            do {
+                container = try ModelContainer(for: Schema(AreaChainSchema.models),
+                    configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+                container.mainContext.autosaveEnabled = false
+            } catch {
+                fatalError("无法打开测试宿主内存库")
+            }
+        } else {
+            container = Persistence.session.container
+            StoreHealth.shared.apply(Persistence.session)
+        }
     }
 
     var body: some Scene {

@@ -1,5 +1,37 @@
 # 共享组件与复用目录
 
+## 第十阶段 G：日历窄周布局
+
+[CalendarPage](../AreaChain/Features/Calendar/CalendarPage.swift) 在稳定页面层保留范围切换焦点协调，周分支直接服从 GeometryReader 的真实视口，不参与月布局 ViewThatFits 的固有宽度测量。[CalendarWeekBoard](../AreaChain/Features/Calendar/CalendarWeekBoard.swift) 沿原七列 HStack、完整日键和列内 DayBoardList，外加系统横向 ScrollView / ScrollViewReader；原列头、表面、内边距、纵向 daybookScroll、检查和列级投放保持。外层不装纵向公共浮层。
+
+最小列宽 280pt 与列间距 8pt 集中在 [DaybookMetrics.WeekBoard](../AreaChain/Theme/DaybookMetrics.swift)；七列临界内容宽度为 2008pt。宽于临界时等分，低于时横向浏览。可见性请求只包含当前日键、七天身份与视口宽度，任务在变更/卸载时取消；不复制业务选择，不写保存、不请求输入焦点。公共导航、任务行、滚动 scope 与羽化没有修改。
+
+[CalendarWeekLayoutTests](../AreaChainTests/Features/CalendarWeekLayoutTests.swift) 复用原 Span/Week 宿主并补真实 MainSplitWorkspaceView。原 ScrollAssemblyConsumerTests 按各列实际绑定和外层轴区分，不把总数硬改为 8；列对象、浮层归属及轴独立断言保留。证据和未验项见[工程记录](engineering.md#第十阶段-g日历窄周布局修复)。
+
+## 第十阶段 F：月周切换后的键盘焦点恢复
+
+CalendarPage 将原 `onChange(of: span)` 移到稳定的根 GeometryReader 后；实际范围变化只令原 `keyboardFocus = .grid`，不复制状态、不清 `listFocusID` 或 `selectedKey`，也不结束原生编辑会话。分段仍直接写 `$span`，同值重选不触发协调；顶栏菜单保留原显式 grid 赋值，含同值重选。CalendarGridKeys 继续负责网格步长和 Return，DayBoardList / CalendarWeekBoard 继续负责清单焦点、检查日期和 Escape，公共分段、输入、保存与滚动组件未改。
+
+原 CalendarSpanConsumerTests / CalendarSpanTestSupport 通过真实分段鼠标与真实顶栏菜单动作验证首次方向键、反向切换、宽窄宿主、跨年、空日、重选、草稿、原生组合文本及窗口隔离；临时状态诊断只用于前后取证，未留在生产代码。菜单辅助函数的 Escape 只结束系统菜单追踪，范围切换之后的第一个日历按键仍是待验方向键。工程证据与指定复核缺口见[第十阶段 F 记录](engineering.md#第十阶段-f日历月周切换后的键盘焦点恢复)。
+
+
+
+## 第十阶段 E：滚动边缘羽化定位与更新
+
+[DaybookScrollTargetModifier](../AreaChain/Theme/DaybookScrollScope.swift) 持有同一 scope，并把开关/高度传给原羽化 modifier；`DaybookScrollEdgeObserver` 不再独立搜索。它只消费所属 Host 已确认的 `currentScrollView`，不将羽化标记当成区间终点。成对边界位于掩膜之外，渐变状态更新不再重排边界区间；实际浮层仍是被掩膜 ScrollView 的子视图。直接 Configurator 和默认 target modifier 不启用羽化，五种公开调用形式与指示器策略保持。
+
+[DaybookScrollEdgeObserverNSView](../AreaChain/Theme/DaybookScroller.swift) 负责目标/clip/document 绑定、初值、对象限定的 bounds/frame/live-scroll 通知、主队列合并发布和代次校验。Host 的现有布局入口复核目标及 document 身份；清理仅移除自己的 token，不关闭共享通知能力或删除别人的浮层。无目标、歧义、短内容清零；拆卸清除回调并拒绝迟到发布。开关通过固定透明背景容器仅装卸观察者，不替换正文，掩膜保持同一渐变类型，禁用或过短时为全不透明；仍使用原 7pt/显式高度、3/4pt 阈值与 DaybookMotion.fade。
+
+自动更新、替换/清理、并列/嵌套/多窗口和静态渐变分别见 [自动测试](../AreaChainTests/Theme/DaybookScrollFeatherTests.swift)、[生命周期](../AreaChainTests/Theme/DaybookScrollFeatherLifecycleTests.swift)、[归属](../AreaChainTests/Theme/DaybookScrollFeatherOwnershipTests.swift)、[渐变与事件](../AreaChainTests/Theme/DaybookScrollFeatherVisualTests.swift)。[真实消费者](../AreaChainTests/Features/ScrollFeatherConsumerTests.swift) 直接挂 TasksPage / DiaryPage；原 Dashboard、侧栏和 D 浮层测试继续回归。结果与未验边界只维护在[工程记录](engineering.md#第十阶段-e滚动边缘羽化定位与更新修复)。静态检查器守住入口存在，不代替自动观察或像素证明。
+
+## 第十阶段 D：公共滚动浮层目标归属
+
+- [DaybookScroller.swift](../AreaChain/Theme/DaybookScroller.swift) 的两个公开重载与 `DaybookScrollIndicators` 策略不变。私有装配改用 [DaybookScrollTargetModifier](../AreaChain/Theme/DaybookScrollScope.swift)：同一 modifier 的稳定 scope 配对 background 起点和 overlay 终点；在最近共同原生父节点中，只接受两端之间唯一的最外层 NSScrollView。零个、多个、边界丢失或跨窗口均不安装，不依据尺寸、坐标或全窗口遍历顺序。
+- 标记不承载正文，不新增 NSHostingView、AnyView、条件内容或业务状态；内容、草稿、焦点和滚动仍归原 SwiftUI/原生宿主。旧具体类型对照因增加边界 modifier 失效；[契约测试](../AreaChainTests/Theme/DaybookScrollContractTests.swift)核对五种参数/新静态组合，[原生测试](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)核对三种上游策略、身份、内容长短/空态与 resize。
+- Host 只持有自己安装浮层的弱引用：相同目标复用；换目标、暂时无目标或离开窗口先移除自己的旧浮层。Representable 拆卸使宿主永久失效，代次拦截排队回调；浮层仍用原 deinit 清理观察者/Timer，不改变绘制、拖动或动画政策。[生命周期测试](../AreaChainTests/Theme/DaybookScrollLifecycleTests.swift)核对对象释放、歧义、目标替换、并列删除、重挂和多窗口。
+- 统一搜索结果与操作预览保持直接 Configurator：document 内归原 enclosingScrollView，防止正文展开后误选内嵌 AppKit 编辑器；外部直连只接受局部唯一候选，歧义不任取。新的嵌套公共装配依赖成对 scope，不能把旧直连入口当通用嵌套解析器。[直接消费者回归](../AreaChainTests/Features/UnifiedSearchScrollOwnershipTests.swift)独立核对结果展开和候选切换，候选 ObjectPicker 原一处私有装配改用同一个边界 modifier，因为说明区/候选区有两个独立 ScrollView；未改控制器、许可或新增生产入口。
+- 周列和甘特旧错绑的现阶段证据、Dashboard 保持情况及事件/未验边界只维护在[工程记录](engineering.md#第十阶段-d公共滚动浮层目标归属修复)。甘特外层装配继续存在，归属正确不代表已有横向公共滑块。DaybookScrollEdgeObserver 独立定位、羽化和所有历史问题仍不扩修。
+
 ## 第十阶段 C：Dashboard 外层垂直滚动接入（partial）
 
 [DashboardView](../AreaChain/Features/Dashboard/DashboardView.swift) 的实际外层 ScrollView 在原 frame 之前调用 `daybookScroll(featherEdges: false)`：选择原单参数隐藏系统指示器策略，明确不新增羽化。DaybookPage、VStack、四分区间距、投影、数据读取和导航保持；公共装配、Configurator、目标搜索、拆卸及绘制未改。
@@ -569,9 +601,10 @@ H 定向完成操作清单：TaskRow、TaskDetailHeaderBar、QuadrantChip、Task
 
 ## 第四阶段 F：日历月/周分段接入
 
-[CalendarPage.spanPicker](../AreaChain/Features/Calendar/CalendarPage.swift) 直接复用 DaybookSegmentedControl / DaybookSegmentOption，保留 `$span`、month/week 顺序、默认 month、220pt 上限及原 onChange 将 keyboardFocus 设为 grid 的意图。只有非 embedded 的宽/窄月布局和周布局显示分段；工作台仍经原 `workspaceHeader` 的 month/week 菜单与动作切换，没有重复入口。分段明确提供 `calendar.span` 本地化辅助组名与稳定标识，选项沿公共核心提供选中状态。
+第四阶段接入时，[CalendarPage.spanPicker](../AreaChain/Features/Calendar/CalendarPage.swift) 直接复用 DaybookSegmentedControl / DaybookSegmentOption，保留 `$span`、month/week 顺序、默认 month、220pt 上限及原 onChange 将 keyboardFocus 设为 grid 的意图。只有非 embedded 的宽/窄月布局和周布局显示分段；工作台仍经原 `workspaceHeader` 的 month/week 菜单与动作切换，没有重复入口。分段明确提供 `calendar.span` 本地化辅助组名与稳定标识，选项沿公共核心提供选中状态。
 
-`CalendarSpan.titleKey` 是唯一字符串资源键来源；公共选项显式转 String.LocalizationValue，顶栏显式转 LocalizedStringKey。无调试描述解析、重复文案表或新的业务适配组件；公共核心、MenuBar 适配器、CalendarGridKeys、DayKey、投影、日期格、拖放及保存均未修改。selectedKey、草稿、listFocusID、检查器有效范围和日期导航沿原页面。原生对照发现分支中的 onChange 在列表切周时未恢复网格，以及 420pt 周内容/右导航越界，均属旧实现，本轮保留并以已知失败取证，不当作迁移成功项。
+`CalendarSpan.titleKey` 是唯一字符串资源键来源；公共选项显式转 String.LocalizationValue，顶栏显式转 LocalizedStringKey。无调试描述解析、重复文案表或新的业务适配组件；公共核心、MenuBar 适配器、CalendarGridKeys、DayKey、投影、日期格、拖放及保存均未修改。selectedKey、草稿、listFocusID、检查器有效范围和日期导航沿原页面。第四阶段原生对照发现分支中的 onChange 在列表切周时未恢复网格，以及 420pt 周内容/右导航越界，原失败记录保留。焦点缺陷由下述第十阶段 F 单独修复；窄周内容/右导航越界和标题挤压仍保留。
+
 
 验证直接挂载生产页面与 WorkspaceHeaderBar，复用 SettingsButtonTestSupport、SystemPageHost、MenuButtonTestSupport 和原公共分段/菜单栏测试；新增 [CalendarSpanConsumerTests](../AreaChainTests/Features/CalendarSpanConsumerTests.swift) / [隔离夹具](../AreaChainTests/Features/CalendarSpanTestSupport.swift)，并补齐原 CalendarMonthNavigationTests 的共享状态恢复。可见入口须通过辅助父链、原生祖先可见性、边界和唯一性检查；隐藏的 ViewThatFits 候选不能靠同名匹配被点击。截图、合成 NSEvent、菜单项派发与真人验收分开记录，证据见[工程手册](engineering.md#第四阶段-f日历月周分段接入2026-10-02)。展示仍沿 E 的 DaybookControlsPreview，无新展示应用或检查执行器。
 
@@ -683,7 +716,7 @@ F 定向静态清单：
 
 ## 第八阶段 B：daybookScroll 公共装配
 
-[DaybookScroller.swift](../AreaChain/Theme/DaybookScroller.swift) 的私有 `daybookScrollAssembly` 是唯一装配链：`DaybookScrollIndicators` 策略变换 → `DaybookScrollerConfigurator` → `DaybookScrollEdgeFeatherModifier`。泛型恒等/隐藏变换保持原具体 SwiftUI 视图结构，不增加条件包装、AnyView 或状态。DaybookColor 只移出滚动入口，颜色与 daybookHideInputChrome 不变。
+[DaybookScroller.swift](../AreaChain/Theme/DaybookScroller.swift) 的私有 `daybookScrollAssembly` 是唯一装配链：`DaybookScrollIndicators` 策略变换 → `DaybookScrollerConfigurator` → `DaybookScrollEdgeFeatherModifier`。第八阶段 B 的泛型恒等/隐藏变换保持当时具体 SwiftUI 结构；第十阶段 D 仅将 Configurator 装配升级为上文成对局部边界，未增加条件正文或 AnyView。DaybookColor 只移出滚动入口，颜色与 daybookHideInputChrome 不变。
 
 | 兼容调用 | 实际重载与默认 | 系统指示器 |
 |---|---|---|
@@ -692,9 +725,9 @@ F 定向静态清单：
 | `daybookScroll(featherHeight: h)` | 双参数，true / h | 保留调用方/系统策略 |
 | `daybookScroll(featherEdges: value, featherHeight: h)` | 双参数，指定开关 / h | 保留调用方/系统策略 |
 
-原默认参数不变；没有参数修正。保留策略是恒等变换，不设置 automatic 或 visible。WorkspaceItemsList、TasksPage、WorkspaceSidebarView、CalendarWeekBoard、GanttPage 和 SyntaxAutocompletePopup 均实际选择单参数入口，原生与编译证据见[工程记录](engineering.md#第八阶段-b公共滚动装配去重)。AppKit 文本仍直接使用 DaybookScroller；统一搜索 ObjectPicker / ResultsContent / OperationPreview 仍直接安装 Configurator。二者不迁移，不改浮层外壳、事件、目标搜索、拆卸、羽化算法或页面业务。
+原默认参数不变；没有参数修正。保留策略是恒等变换，不设置 automatic 或 visible。WorkspaceItemsList、TasksPage、WorkspaceSidebarView、CalendarWeekBoard、GanttPage 和 SyntaxAutocompletePopup 均实际选择单参数入口，原生与编译证据见[工程记录](engineering.md#第八阶段-b公共滚动装配去重)。AppKit 文本仍直接使用 DaybookScroller；第八阶段 B 当时的统一搜索 ObjectPicker / ResultsContent / OperationPreview 直接安装 Configurator；第十阶段 D 对 ObjectPicker 的必要私有边界装配变更见上文，ResultsContent / OperationPreview 仍保留直连。AppKit 文本、浮层绘制/事件、羽化和页面业务均保持。
 
-复用 DaybookScrollerTests、TaskListScrollTests、SettingsButtonTestSupport、CalendarWeekTestSupport、GanttInteractionTests 与 CaptureOverlayLayoutTests；新增 [公共结构契约](../AreaChainTests/Theme/DaybookScrollContractTests.swift)、[原生更新](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)、[真实消费者刻画](../AreaChainTests/Features/ScrollAssemblyConsumerTests.swift)。历史错误目标用已知失败和原归属数量同时记录，不作为功能通过；指定 Cursor verifier 缺口保留。原 check_workflow.py 只守卫稳定入口存在，不证明行为通过。
+复用 DaybookScrollerTests、TaskListScrollTests、SettingsButtonTestSupport、CalendarWeekTestSupport、GanttInteractionTests 与 CaptureOverlayLayoutTests；新增 [公共结构契约](../AreaChainTests/Theme/DaybookScrollContractTests.swift)、[原生更新](../AreaChainTests/Theme/DaybookScrollNativeTests.swift)、[真实消费者刻画](../AreaChainTests/Features/ScrollAssemblyConsumerTests.swift)。历史错误目标的原数量与已知失败保留在第八阶段 B 工程记录；第十阶段 D 将修复要求改为普通成功断言；指定 Cursor verifier 缺口保留。原 check_workflow.py 只守卫稳定入口存在，不证明行为通过。
 
 
 ### 统一搜索 4A-3C2A 命令保护载荷
@@ -758,3 +791,12 @@ F 定向静态清单：
 ### 普通设置组原生接线（3A-3B3B）
 
 UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、旧单项、文件适配。requestFileSettingPreparation 与 UnifiedSearchFileSettingSubmission / UnifiedSearchFileSettingCopy 复用原 PlanLinks、PlanList、SettingSubmission、参数控件和 ReadSession；FileLocalSettingCommandAdapter 仍唯一负责组资格、基线、提交、冲突与核验。显式临时文件消费者为 UnifiedSearchFileSettingContract/Interaction/RecoveryTests，旧单项初始化兼容；完整接口、状态和证据见[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。
+
+
+## 普通捕获共享新增（3T-1A）
+
+[TaskMutationService](../AreaChain/Services/TaskMutationService.swift) 的 createCaptured 只接原单段 CaptureInput，原 addCapturedTodo 委托它。Creation 区分 candidateID 与最外层保存后 savedID，ModelChanges 的 Boundary / CommitFacts 和 afterPublication 提供同 context 的保存、提交登记、发布及请求边界；[BoardEvents](../AreaChain/Services/BoardEvents.swift) 保留 changed/changedLocally 差异并支持私有事件源。消费者是菜单栏、今日、标签页、日历、四象限原新增入口，未接命令。实际契约、预保存限制、测试与后续接线只维护在[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。
+
+## 最小普通创建指令（3T-1B）
+
+[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 的 prepare / submit / execute / verifyUnknown 仅用于显式隔离装配；[claimTaskCreate](../AreaChain/Domain/CommandTaskCreateExecution.swift) 复用原 Coordinator 占用。CaptureInput / CreateTodoParams.creationID 与仓储 fetchTodos(withID:) 保持旧默认，Creation / CommitFacts 是唯一提交事实来源。Run.creationOutput(for:) 与原依赖解析共用结果协议。当前消费者只有 TaskCreateCommand 系列隔离测试；参数、来源、调用次数、未知/外部边界及生产未接线见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。

@@ -79,7 +79,14 @@ struct UnifiedSearchFileSettingInteractionTests {
         try fixture.queue(); fixture.prepare()
         let host = try await fixture.host(count: 3)
         defer { host.close() }
+        try #require(host.window.isKeyWindow && fixture.controller.operationVisible,
+                     "场景开始时必须有焦点且操作面板未被遮罩；不自动恢复显示")
         let item = try #require(fixture.controller.plan?.items.first)
+        try await host.clickResult("unified.plan.remove." + item.id.uuidString)
+        #expect(fixture.controller.plan?.items.count == 2)
+        #expect(fixture.controller.planMessage == "unified.plan.grouped")
+        _ = try host.resultNode("unified.plan.message")
+        try host.snapshot("group-removal-rejected")
         try await host.clickResult("unified.plan.edit." + item.id.uuidString)
         let picker = try MenuButtonTestSupport.menu("unified.operation.value", in: host.window)
         try await SettingsButtonTestSupport.reveal(picker, in: host.window)

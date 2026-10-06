@@ -11,19 +11,22 @@ struct ModelChangesTests {
     }
 
     @Test func compositeRepositoriesCommitOnceAndRollBackTogether() throws {
-        let container = try container()
+        let fixture = try TaskCaptureFixture()
+        let container = fixture.container
         defer { withExtendedLifetime(container) {} }
-        let context = container.mainContext
+        let context = fixture.context
         let todo = TodoItem(title: "原文", dayKey: "2026-09-11")
         context.insert(todo)
         try context.save()
         let tasks = SwiftDataTaskRepository(context: context)
         let routines = SwiftDataRoutineRepository(context: context)
         var notifications = 0
-        let observer = NotificationCenter.default.addObserver(forName: .boardDidChange, object: nil, queue: .main) { _ in notifications += 1 }
-        defer { NotificationCenter.default.removeObserver(observer) }
+        let observer = fixture.center.addObserver(forName: .boardDidChange, object: nil, queue: .main) { _ in notifications += 1 }
+        defer { fixture.center.removeObserver(observer) }
         #expect(throws: CocoaError.self) {
-            try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
+            var boundary = fixture.boundary
+            boundary.save = { _ in throw CocoaError(.fileWriteNoPermission) }
+            try ModelChanges.transaction(in: context, boundary: boundary) {
                 try tasks.updateTodo(id: todo.id, title: "新标题", notes: nil)
                 _ = try routines.addRoutine(title: "新习惯")
             }
@@ -31,7 +34,7 @@ struct ModelChangesTests {
         #expect(todo.title == "原文")
         #expect(try context.fetchCount(FetchDescriptor<DailyRoutine>()) == 0)
         #expect(notifications == 0)
-        try ModelChanges.transaction(in: context) {
+        try ModelChanges.transaction(in: context, boundary: fixture.boundary) {
             try tasks.updateTodo(id: todo.id, title: "已保存", notes: nil)
             _ = try routines.addRoutine(title: "习惯")
         }
@@ -55,10 +58,11 @@ struct ModelChangesTests {
     }
 
     @Test func captureIsSavedBeforeOtherContextsReadItsBadgeCount() throws {
-        let container = try container()
+        let fixture = try TaskCaptureFixture()
+        let container = fixture.container
         defer { withExtendedLifetime(container) {} }
-        let context = container.mainContext
-        #expect(DayBoardMutations.addCapturedTodo(text: "!p1 @18:00 完成核验 #工作", dayKey: "2026-09-11", context: context))
+        let context = fixture.context
+        #expect(DayBoardMutations.addCapturedTodo(text: "!p1 @18:00 完成核验 #工作", dayKey: "2026-09-11", context: context, dependencies: fixture.dependencies))
         let reader = ModelContext(context.container)
         let todo = try #require(reader.fetch(FetchDescriptor<TodoItem>()).first)
         #expect(todo.title == "完成核验")
@@ -120,9 +124,10 @@ struct ModelChangesTests {
     }
 
     @Test func afterTransactionRollbackRunsWhenSaveFails() throws {
-        let container = try container()
+        let fixture = try TaskCaptureFixture()
+        let container = fixture.container
         defer { withExtendedLifetime(container) {} }
-        let context = container.mainContext
+        let context = fixture.context
         let todo = TodoItem(title: "原文", dayKey: "2026-09-11")
         context.insert(todo)
         try context.save()
@@ -130,12 +135,14 @@ struct ModelChangesTests {
         var committed = 0
         var rolled = 0
         var notifications = 0
-        let observer = NotificationCenter.default.addObserver(
+        let observer = fixture.center.addObserver(
             forName: .boardDidChange, object: nil, queue: .main
         ) { _ in notifications += 1 }
-        defer { NotificationCenter.default.removeObserver(observer) }
+        defer { fixture.center.removeObserver(observer) }
         #expect(throws: CocoaError.self) {
-            try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
+            var boundary = fixture.boundary
+            boundary.save = { _ in throw CocoaError(.fileWriteNoPermission) }
+            try ModelChanges.transaction(in: context, boundary: boundary) {
                 ModelChanges.afterTransaction(in: context, commit: { committed += 1 }, rollback: { rolled += 1 })
                 try tasks.updateTodo(id: todo.id, title: "新标题", notes: nil)
             }
@@ -147,20 +154,21 @@ struct ModelChangesTests {
     }
 
     @Test func afterTransactionCommitFailureStillPublishesBoardChange() throws {
-        let container = try container()
+        let fixture = try TaskCaptureFixture()
+        let container = fixture.container
         defer { withExtendedLifetime(container) {} }
-        let context = container.mainContext
+        let context = fixture.context
         let todo = TodoItem(title: "原文", dayKey: "2026-09-11")
         context.insert(todo)
         try context.save()
         let tasks = SwiftDataTaskRepository(context: context)
         var notifications = 0
-        let observer = NotificationCenter.default.addObserver(
+        let observer = fixture.center.addObserver(
             forName: .boardDidChange, object: nil, queue: .main
         ) { _ in notifications += 1 }
-        defer { NotificationCenter.default.removeObserver(observer) }
-        let failures = MutationFeedback.shared.failureCount
-        try ModelChanges.transaction(in: context) {
+        defer { fixture.center.removeObserver(observer) }
+        let failures = fixture.failures
+        try ModelChanges.transaction(in: context, boundary: fixture.boundary) {
             ModelChanges.afterTransaction(
                 in: context,
                 commit: { throw CocoaError(.fileWriteNoPermission) },
@@ -169,7 +177,7 @@ struct ModelChangesTests {
             try tasks.updateTodo(id: todo.id, title: "已保存", notes: nil)
         }
         #expect(notifications == 1)
-        #expect(MutationFeedback.shared.failureCount == failures + 1)
+        #expect(fixture.failures == failures + 1)
         #expect(try ModelContext(context.container).fetch(FetchDescriptor<TodoItem>()).first?.title == "已保存")
     }
 

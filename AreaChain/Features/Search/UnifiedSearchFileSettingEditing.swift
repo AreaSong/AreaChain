@@ -137,6 +137,7 @@ extension UnifiedSearchController {
                 try coordinator.send(.releaseExecution(report.identity.execution), expecting: source.lease)
             }
             _ = publishOperation(text: "")
+            planMessage = "unified.plan.notExecutable"
         } catch { publishFileSettingFailure(error) }
     }
 

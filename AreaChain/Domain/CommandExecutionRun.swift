@@ -207,7 +207,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
             if resolved[id] == nil {
                 var references: [CommandParameterID: CommandObjectReference] = [:]
                 for (parameter, reference) in item.links.results {
-                    guard let output = outputs[reference.producer.id], output.type == reference.outputType else {
+                    guard let output = creationOutput(for: reference) else {
                         throw CommandExecutionError.invalidResult
                     }
                     references[parameter] = output
@@ -229,6 +229,14 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     func resolvedInput(_ itemID: UUID) -> CommandResolvedInput? {
         guard let item = snapshot.items.first(where: { $0.id == itemID }), let references = bindings[itemID] else { return nil }
         return input(item, bindings: references)
+    }
+
+    /// 单项真实创建与后续计划依赖共用相同解析，不执行消费者，也不放宽外部步骤门禁。
+    func creationOutput(for reference: CommandCreationReference) -> CommandObjectReference? {
+        guard snapshot.items.contains(where: { $0.stamp == reference.producer }),
+              units.first(where: { $0.members.contains(reference.producer.id) })?.state == .succeeded,
+              let output = outputs[reference.producer.id], output.type == reference.outputType else { return nil }
+        return output
     }
 
     private func input(_ item: CommandPlanItem, bindings: [CommandParameterID: CommandObjectReference]) -> CommandResolvedInput? {
@@ -350,5 +358,45 @@ extension CommandExecutionRun {
         try applyPreferenceGroupCommit(.committed(actual, cleanupPending: cleanup), to: &unit)
         unit.preferenceVerification = receipt
         units[index] = unit
+    }
+}
+
+extension CommandExecutionRun {
+    /// 候选与 pending 不能发布输出；确定保存后仅允许补充发布事实，永不降级本地结果。
+    mutating func recordTaskCreation(_ facts: CommandTaskCreateFacts, attempt: CommandAttemptStamp) throws {
+        guard attempt.execution == stamp, attempt.phase == .local, snapshot.items.count == 1,
+              let item = snapshot.items.first, item.id == attempt.unitID,
+              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
+              units[index].attempt == attempt.number else { throw CommandExecutionError.stale }
+        try CommandHandoffCoordinator.validateTaskCreateItem(item)
+        if let previous = units[index].taskCreation {
+            guard previous.creationID == facts.creationID,
+                  previous.savedID == nil || previous.savedID == facts.savedID,
+                  previous.state != .saved || facts.state == .saved,
+                  previous.state != .unknown || facts.state == .unknown else { throw CommandExecutionError.invalidResult }
+        }
+        guard facts.candidateID == nil || facts.candidateID == facts.creationID,
+              facts.savedID == nil || facts.savedID == facts.creationID else { throw CommandExecutionError.invalidResult }
+        if units[index].receipt == nil {
+            let result: CommandExecutionResult
+            switch facts.state {
+            case .pending:
+                guard facts.savedID == nil else { throw CommandExecutionError.invalidResult }
+                units[index].taskCreation = facts
+                return
+            case .saved:
+                guard facts.savedID == facts.creationID, facts.save == .returned else { throw CommandExecutionError.invalidResult }
+                result = .committed(outputs: [item.id: .init(type: .todo, id: facts.creationID)],
+                                    external: [.taskPublication, .notification, .calendar])
+            case .unknown: result = .commitUnknown
+            case .notSubmitted:
+                guard facts.save == .notCalled, facts.candidateID == nil || facts.rollback == .returned else {
+                    throw CommandExecutionError.invalidResult
+                }
+                result = .failedWithoutCommit
+            }
+            try receive(.init(attempt: attempt, result: result))
+        }
+        units[index].taskCreation = facts
     }
 }

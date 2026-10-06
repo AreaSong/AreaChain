@@ -163,13 +163,106 @@ struct UnifiedSearchResultsInteractionTests {
         defer { host.close() }
         try await host.start()
         let source = fixture.controller.buffer
+        let version = try fixture.page.snapshot.version
+        let owned = try fixture.handoff.owned()
+        #expect(fixture.controller.validates(source) && !source.selectingObjects)
+        #expect(fixture.controller.objectSelection == nil && owned.session.execution == nil)
+        var changes: [ContentQueryDisplayUpdates.Change] = []
+        let observer = fixture.session.displayUpdates.observe { changes.append($0) }
+        defer { fixture.session.displayUpdates.remove(observer) }
         fixture.focus.post(name: UnifiedSearchResultsFixture.focusLost, object: fixture.focusObject)
         #expect(fixture.session.isMasked && !fixture.session.hasRetainedPresentation)
-        #expect(fixture.controller.buffer == source)
+        // §9.62：撤显示使旧 UI source 失效，但不续租、清查询或触发隐私清空。
+        let expected = UnifiedSearchBuffer(lease: source.lease, version: source.version + 1, text: source.text,
+            privacyRevision: source.privacyRevision, operation: source.operation, selectingObjects: source.selectingObjects,
+            plan: source.plan, planItem: source.planItem)
+        #expect(fixture.controller.buffer == expected && changes == [.invalidated])
+        #expect(throws: ContentQueryReadSessionError.stalePermit) { try fixture.session.presentation() }
+        try await expectRejectedSource(source, version: version, fixture: fixture, host: host)
         try fixture.session.resumeDisplay(expecting: source.lease)
-        #expect(throws: ContentQueryReadSessionError.self) { try fixture.session.presentation() }
+        #expect(!fixture.session.isMasked && !fixture.session.hasRetainedPresentation && !fixture.session.hasPublicationPermit)
+        #expect(throws: ContentQueryReadSessionError.stalePermit) { try fixture.session.presentation() }
+        try await expectRejectedSource(source, version: version, fixture: fixture, host: host)
+        #expect(fixture.controller.buffer == expected && changes == [.invalidated])
+        #expect(fixture.reads == 1 && fixture.opens.isEmpty)
+        #expect(try fixture.handoff.owned() == owned)
         _ = try await fixture.publish()
-        #expect(try !fixture.page.snapshot.visible.isEmpty)
+        #expect(fixture.controller.buffer == expected && changes == [.invalidated, .published])
+        try await expectFreshPublication(source, oldVersion: version, fixture: fixture, host: host)
+        #expect(try fixture.handoff.owned() == owned)
+    }
+
+    @Test func unmaskedModelInvalidationKeepsInputVersion() async throws {
+        let fixture = try UnifiedSearchResultsFixture(UnifiedSearchResultsFixture.longText())
+        defer { fixture.stop() }
+        _ = try await fixture.publish()
+        let host = UnifiedSearchTestHost(results: fixture.controller)
+        defer { host.close() }
+        try await host.start()
+        let source = fixture.controller.buffer
+        let old = try fixture.page
+        let owned = try fixture.handoff.owned()
+        var changes: [ContentQueryDisplayUpdates.Change] = []
+        let observer = fixture.session.displayUpdates.observe { changes.append($0) }
+        defer { fixture.session.displayUpdates.remove(observer) }
+        fixture.model.post(name: .boardDidChange, object: nil)
+        #expect(!fixture.session.isMasked && !fixture.session.hasRetainedPresentation)
+        #expect(fixture.controller.buffer == source && changes == [.invalidated])
+        #expect(throws: ContentQueryReadSessionError.self) { try fixture.session.presentation() }
+        try await host.settle()
+        #expect(fixture.reads == 1 && fixture.opens.isEmpty)
+        fixture.controller.refresh()
+        try await host.settle()
+        let current = try fixture.page
+        #expect(!current.snapshot.visible.isEmpty && current.snapshot.version != old.snapshot.version)
+        #expect(!fixture.session.isMasked && fixture.controller.buffer == source)
+        #expect(changes == [.invalidated, .published] && fixture.reads == 2)
+        fixture.controller.browse(.init(version: old.snapshot.version, action: .selectVisible), source: source)
+        #expect(try fixture.page.browse.selected.isEmpty)
+        fixture.controller.browse(.init(version: current.snapshot.version, action: .selectVisible), source: source)
+        #expect(try fixture.page.browse.selected == Set(current.snapshot.visible))
+        #expect(fixture.controller.buffer == source && fixture.opens.isEmpty && fixture.reads == 2)
+        #expect(try fixture.handoff.owned() == owned)
+    }
+
+    private func expectRejectedSource(_ source: UnifiedSearchBuffer, version: UUID,
+                                      fixture: UnifiedSearchResultsFixture, host: UnifiedSearchTestHost) async throws {
+        let buffer = fixture.controller.buffer
+        let owned = try fixture.handoff.owned()
+        let reads = fixture.reads
+        let opens = fixture.opens.count
+        let selected = fixture.session.hasRetainedPresentation ? try fixture.page.browse.selected : nil
+        #expect(!fixture.controller.validates(source))
+        fixture.controller.browse(.init(version: version, action: .selectVisible), source: source)
+        fixture.controller.actions.intent(.open, source)
+        let edit = UnifiedSearchEdit(source: source, text: "stale needle", selection: NSRange(location: 12, length: 0))
+        #expect(fixture.controller.actions.edit(edit) == nil)
+        try await host.settle()
+        #expect(fixture.controller.buffer == buffer && fixture.reads == reads && fixture.opens.count == opens)
+        #expect(try fixture.handoff.owned() == owned)
+        let retainedSelection = fixture.session.hasRetainedPresentation ? try fixture.page.browse.selected : nil
+        #expect(retainedSelection == selected)
+    }
+
+    private func expectFreshPublication(_ oldSource: UnifiedSearchBuffer, oldVersion: UUID,
+                                        fixture: UnifiedSearchResultsFixture, host: UnifiedSearchTestHost) async throws {
+        let current = try fixture.page
+        let object = try #require(current.snapshot.visible.first)
+        let source = fixture.controller.buffer
+        #expect(current.snapshot.version != oldVersion && fixture.reads == 2)
+        #expect(fixture.controller.validates(source) && fixture.opens.isEmpty)
+        fixture.controller.browse(.init(version: current.snapshot.version, action: .activate(object)), source: source)
+        #expect(try fixture.page.browse.active == object)
+        // 给旧 source 配当前结果版本，排除“仅结果版本过期”碰巧挡住请求的可能。
+        try await expectRejectedSource(oldSource, version: current.snapshot.version, fixture: fixture, host: host)
+        fixture.controller.browse(.init(version: oldVersion, action: .selectVisible), source: source)
+        #expect(try fixture.page.browse.selected.isEmpty)
+        fixture.controller.browse(.init(version: current.snapshot.version, action: .selectVisible), source: source)
+        #expect(try fixture.page.browse.selected == Set(current.snapshot.visible))
+        fixture.controller.actions.intent(.open, source)
+        #expect(fixture.opens.count == 1 && fixture.opens.first?.object == object)
+        #expect(fixture.opens.first?.requiresFreshBusinessValidation == true)
+        #expect(fixture.controller.buffer == source && fixture.reads == 2)
     }
 
     @Test func tabLeavesInputAndReachesVisibleSelectionButtons() async throws {

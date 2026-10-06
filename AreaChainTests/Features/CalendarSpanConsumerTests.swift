@@ -30,12 +30,175 @@ struct CalendarSpanConsumerTests {
         try await SystemPageHost.settle(host.window)
         try await host.switchSpan(.week)
         try host.assertSpan(.week)
+        #expect(host.window.firstResponder is NSWindow, "布局卸载输入后沿原生路径自然回到窗口")
         #expect(host.selectedKey == "2026-09-30")
         host.assertWeekProjection()
         try host.assertUnchanged()
         try await host.switchSpan(.month)
         try host.assertSpan(.month)
         #expect(try host.field().stringValue == "Synthetic unsubmitted draft")
+        try host.assertUnchanged()
+    }
+
+    @Test(arguments: [false, true], [CGFloat(1000), CGFloat(480)])
+    func bothEntrancesRestoreFirstKeyAndListDay(embedded: Bool, width: CGFloat) async throws {
+        let narrow = width == 480
+        let host = try CalendarSpanTestSupport(width: narrow && !embedded ? 420 : width,
+            locale: narrow ? "zh-Hans" : "en", scheme: narrow ? .dark : .light,
+            embedded: embedded, day: "2026-12-31")
+        defer { host.close() }
+        try await host.prepare()
+        try await host.enterAndInspect(host.todos[0])
+        for span in [CalendarSpan.week, .month] {
+            let before = host.selectedKey
+            host.recordRoute("before switch")
+            try await host.switchSpan(span)
+            try host.assertSpan(span)
+            #expect(host.selectedKey == before)
+            #expect(host.window.firstResponder is NSWindow)
+            host.recordRoute("after switch, before first key")
+            // 这必须是切换后的第一个日历按键；不能先用 Escape 或强制结束编辑恢复焦点。
+            try await host.key(span == .week ? 124 : 123)
+            #expect(host.selectedKey == (span == .week ? "2027-01-01" : "2026-12-31"))
+            host.recordRoute("after first key")
+            try await host.enterAndInspect(host.todos[span == .week ? 2 : 0])
+        }
+        // Return 仍从首项开始；下键沿清单顺序进入第二项，不能按网格跨七天。
+        try await host.key(125)
+        try await host.key(36, chars: "\r")
+        #expect(WorkspaceNavigation.shared.selectedTaskID == host.todos[1].id)
+        #expect(host.selectedKey == "2026-12-31")
+        try await host.key(53, chars: "\u{1b}")
+        try await host.key(125)
+        #expect(host.selectedKey == "2027-01-07")
+        try await host.key(126)
+        #expect(host.selectedKey == "2026-12-31")
+        try host.assertUnchanged()
+    }
+
+    @Test(arguments: [false, true])
+    func reselectKeepsEachEntrancesOriginalBehavior(embedded: Bool) async throws {
+        let host = try CalendarSpanTestSupport(embedded: embedded)
+        defer { host.close() }
+        try await host.prepare()
+        for span in [CalendarSpan.month, .week] {
+            try await host.switchSpan(span)
+            try await host.enterAndInspect(host.todos[0])
+            try await host.switchSpan(span)
+            try await host.key(125)
+            if embedded {
+                #expect(host.selectedKey == "2026-10-07", "顶栏当前项仍显式恢复网格")
+                try await host.key(126)
+            } else {
+                #expect(host.selectedKey == "2026-09-30", "分段同值写入不触发范围变化协调")
+                try await host.key(36, chars: "\r")
+                #expect(WorkspaceNavigation.shared.selectedTaskID == host.todos[1].id)
+                try await host.key(53, chars: "\u{1b}")
+            }
+            #expect(host.selectedKey == "2026-09-30")
+            try host.assertSpan(span)
+        }
+        try host.assertUnchanged()
+    }
+
+    @Test(arguments: [false, true])
+    func emptyDateReturnKeepsGridWithoutInspection(embedded: Bool) async throws {
+        let host = try CalendarSpanTestSupport(embedded: embedded)
+        defer { host.close() }
+        try await host.prepare()
+        try await host.switchSpan(.week)
+        try await host.key(124)
+        try await host.key(124)
+        #expect(host.selectedKey == "2026-10-02")
+        for span in [CalendarSpan.month, .week] {
+            try await host.switchSpan(span)
+            if span == .month { #expect(WorkspaceNavigation.shared.inspectorTargetIDs.isEmpty) }
+            let inspected = WorkspaceNavigation.shared.selectedTaskID
+            try await host.key(36, chars: "\r")
+            try await host.key(36, chars: "\r")
+            #expect(WorkspaceNavigation.shared.selectedTaskID == inspected)
+            try await host.key(124)
+            #expect(host.selectedKey == "2026-10-03", "空日 Return 不能制造列表焦点")
+            try await host.key(123)
+        }
+        try host.assertUnchanged()
+    }
+
+    @Test(arguments: [CGFloat(1000), CGFloat(480)])
+    func headerEditorSurvivesSpanChangesAndKeepsComposition(width: CGFloat) async throws {
+        let host = try CalendarSpanTestSupport(width: width, embedded: true)
+        defer { host.close() }
+        try await host.prepare()
+        let capture = try host.field()
+        host.window.makeFirstResponder(capture)
+        let captureEditor = try #require(capture.currentEditor() as? NSTextView)
+        captureEditor.insertText("Synthetic retained draft", replacementRange: captureEditor.selectedRange())
+        let search = try #require(Native.elements(host.window.contentView).compactMap { $0 as? DaybookAppKitTextField }
+            .first { $0.placeholderString == host.text("workspace.search.placeholder") && !$0.isHiddenOrHasHiddenAncestor })
+        host.window.makeFirstResponder(search)
+        let editor = try #require(search.currentEditor() as? NSTextView)
+        editor.insertText("Synthetic native search", replacementRange: editor.selectedRange())
+        try await SystemPageHost.settle(host.window)
+        for span in [CalendarSpan.week, .month] {
+            try await host.switchSpan(span)
+            #expect(host.window.firstResponder === editor, "仍挂载的顶栏输入不能被业务 grid 抢焦点")
+            let caret = editor.selectedRange().location
+            try await host.key(123, chars: "\u{F702}")
+            #expect(editor.selectedRange().location == caret - 1)
+            editor.setMarkedText("拼音", selectedRange: NSRange(location: 2, length: 0),
+                replacementRange: editor.selectedRange())
+            #expect(editor.hasMarkedText())
+            try await host.key(124, chars: "\u{F703}")
+            try await host.key(36, chars: "\r")
+            #expect(host.window.firstResponder === editor && host.selectedKey == "2026-09-30")
+            #expect(WorkspaceNavigation.shared.selectedTaskID == nil)
+            try host.assertUnchanged()
+            host.recordRoute("active header editor")
+        }
+        #expect(try host.field().stringValue == "Synthetic retained draft")
+    }
+
+    @Test func otherWindowHiddenReopenedAndUnmountedDoNotConsumeKeys() async throws {
+        let host = try CalendarSpanTestSupport()
+        defer { host.close() }
+        try await host.prepare()
+        try await host.enterAndInspect(host.todos[0])
+        try await host.switchSpan(.week)
+        let other = host.fixture.window(Text("Synthetic other window"), size: NSSize(width: 280, height: 180))
+        defer { SystemPageHost.release(other) }
+        try await NativeSyntaxUI.prepareFocus(in: other)
+        try await assertOtherWindowKeys(other, leave: host)
+        host.window.orderOut(nil)
+        try await assertOtherWindowKeys(other, leave: host)
+        host.window.makeKeyAndOrderFront(nil)
+        try await SystemPageHost.settle(host.window)
+        try await host.key(124)
+        #expect(host.selectedKey == "2026-10-01")
+        try await host.enterAndInspect(host.todos[2])
+        other.makeKeyAndOrderFront(nil)
+        try await SystemPageHost.settle(other)
+        try await assertOtherWindowKeys(other, leave: host)
+        host.window.makeKeyAndOrderFront(nil)
+        try await SystemPageHost.settle(host.window)
+        try await host.switchSpan(.month)
+        host.window.contentView = nil
+        try await SystemPageHost.settle(host.window)
+        let selected = host.selectedKey
+        let inspected = WorkspaceNavigation.shared.selectedTaskID
+        for code: UInt16 in [124, 125, 36] { try await host.key(code) }
+        #expect(host.selectedKey == selected && WorkspaceNavigation.shared.selectedTaskID == inspected)
+        try host.assertUnchanged()
+    }
+
+    private func assertOtherWindowKeys(_ other: NSWindow, leave host: CalendarSpanTestSupport) async throws {
+        let selected = host.selectedKey
+        let inspected = WorkspaceNavigation.shared.selectedTaskID
+        try #require(other.isKeyWindow)
+        for (code, chars) in [(UInt16(124), "\u{F703}"), (125, "\u{F701}"), (36, "\r")] {
+            NSApp.postEvent(try PickerNativeTestSupport.key(code: code, chars: chars, in: other), atStart: false)
+            try await SystemPageHost.settle(other)
+            #expect(host.selectedKey == selected && WorkspaceNavigation.shared.selectedTaskID == inspected)
+        }
         try host.assertUnchanged()
     }
 
@@ -57,14 +220,9 @@ struct CalendarSpanConsumerTests {
         try await host.switchSpan(.week)
         #expect(host.window.firstResponder is NSWindow)
         try await host.key(124)
-        withKnownIssue("F 原生与迁移同样失败：列表切周未恢复网格，见工程手册第四阶段 F") {
-            #expect(host.selectedKey == "2026-10-01")
-        }
-        try host.assertSpan(.week)
-        // 旧列表仍能按 Escape 返回网格；不通过强设业务状态掩盖上面的已知缺口。
-        try await host.key(53, chars: "\u{1b}")
-        try await host.key(124)
+        // 第十阶段 F 关闭旧缺陷：切换后第一次方向键必须生效，不能补 Escape。
         #expect(host.selectedKey == "2026-10-01")
+        try host.assertSpan(.week)
         try await host.key(36, chars: "\r")
         try await host.key(36, chars: "\r")
         #expect(WorkspaceNavigation.shared.selectedTaskID == host.todos[2].id)
@@ -135,17 +293,7 @@ struct CalendarSpanConsumerTests {
         try host.assertSpan(.week)
         host.assertWeekProjection()
         try Native.snapshot(host.window, name: "calendar-week-\(locale)-\(scheme)-\(Int(width))")
-        if width == 420 {
-            let next = try #require(Native.buttons(in: host.window).first {
-                MenuButtonTestSupport.title($0) == host.text("calendar.week.next")
-            })
-            let frame = try Native.frame(next, in: host.window)
-            withKnownIssue("F 原生与迁移同样失败：420pt 周布局右侧越界，见工程手册第四阶段 F") {
-                #expect(frame.maxX <= width)
-            }
-            try host.assertUnchanged()
-            return
-        }
+        try Native.assertBounds([host.node("calendar.week.prev"), host.node("calendar.week.next")], in: host.window)
         try await Native.click(host.node("calendar.week.next"), in: host.window)
         #expect(host.selectedKey == "2026-10-07")
         try await Native.click(host.node("calendar.week.prev"), in: host.window)

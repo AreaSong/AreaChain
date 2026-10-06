@@ -7,7 +7,7 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct DaybookScrollContractTests {
-    @Test func fiveCallFormsRetainTheirConcreteComposition() throws {
+    @Test func fiveCallFormsRetainParametersAndScopedComposition() throws {
         let view = ScrollView { Text("Synthetic") }
         try check(view.daybookScroll(), enabled: false, height: 7, hidden: true)
         try check(view.daybookScroll(featherEdges: false), enabled: false, height: 7, hidden: true)
@@ -19,25 +19,23 @@ struct DaybookScrollContractTests {
 
     private func check<V: View>(_ view: V, enabled: Bool, height: CGFloat, hidden: Bool) throws {
         let values = descendants(view)
-        let feathers = values.compactMap { $0 as? DaybookScrollEdgeFeatherModifier }
-        #expect(feathers.count == 1)
-        let feather = try #require(feathers.first)
-        #expect(feather.enabled == enabled)
-        #expect(feather.featherHeight == height)
-        #expect(values.filter { $0 is DaybookScrollerConfigurator }.count == 1)
+        let targets = values.compactMap { $0 as? DaybookScrollTargetModifier }
+        #expect(targets.count == 1)
+        let target = try #require(targets.first)
+        #expect(target.featherEdges == enabled)
+        #expect(target.featherHeight == height)
         let concrete = String(reflecting: V.self)
-        print("SCROLL_CONTRACT enabled=\(feather.enabled) height=\(feather.featherHeight) type=\(concrete)")
-        // 冻结修改前的具体链，防止增加条件视图、类型擦除或 modifier 包装后仍只靠参数断言通过。
+        print("SCROLL_CONTRACT enabled=\(target.featherEdges) height=\(target.featherHeight) type=\(concrete)")
+        // 阶段 E 将羽化放入持有 scope 的 modifier，共用 Host 目标；公开参数仍由同一入口传递。
+        // 冻结新的静态组合；真实指示器策略、内容身份/焦点/偏移另由原生测试证明。
         let original = ScrollView { Text("Synthetic") }
         if hidden {
-            let frozen = original.scrollIndicators(.hidden)
-                .background(DaybookScrollerConfigurator())
-                .modifier(DaybookScrollEdgeFeatherModifier(enabled: enabled))
-            #expect(concrete == String(reflecting: type(of: frozen)))
+            let scoped = original.scrollIndicators(.hidden)
+                .modifier(DaybookScrollTargetModifier(featherEdges: enabled, featherHeight: height))
+            #expect(concrete == String(reflecting: type(of: scoped)))
         } else {
-            let frozen = original.background(DaybookScrollerConfigurator())
-                .modifier(DaybookScrollEdgeFeatherModifier(enabled: enabled, featherHeight: height))
-            #expect(concrete == String(reflecting: type(of: frozen)))
+            let scoped = original.modifier(DaybookScrollTargetModifier(featherEdges: enabled, featherHeight: height))
+            #expect(concrete == String(reflecting: type(of: scoped)))
         }
     }
 

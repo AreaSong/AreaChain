@@ -4995,6 +4995,495 @@ unknown 明确调用 verifyCommit，精确原提交身份仍由适配器/文件�
 |---|---|
 | contracts | 产品编译通过，新夹具 notMigrated 缺只读初值导致测试编译失败（65），用例未执行。已修正。 |
 | contracts-repaired | **46 个定义、72 次执行通过，0 失败/跳过/预期失败。** 原服务五套、新控制器契约、旧单项契约/生命周期；包含重复准备、计划修订证据、混合/重复/未就绪、旧单项过期与精确冲突差异。 |
-| 原生、最终回归、Debug/验签、静态、截图 | 进行中；结果在本节后续追加，不能按前轮构建推定通过。 |
+| 原生、最终回归、Debug/验签、静态、截图 | 见下方收尾记录；测试锁忙后已停止申请，阶段 partial，不能按前轮构建推定通过。 |
 
 指定 Cursor verifier 无可调用入口，未执行、不重复登录或用其他代理冒充；整体治理保持 partial。人工 VoiceOver、系统输入法候选窗、减弱动态/最低系统、真实用户多窗口，C2B 和历史外观缺口继续保留。生产启用仍需独立后端装配/迁移/恢复策略授权与验收；其他 handler、敏感编辑和执行后撤销不在本阶段。完成后停止，不提交、推送、安装或进入下一阶段。
+
+
+#### 3B3B 本地复验与停止记录
+
+原生首轮 `native.xcresult` 共 68 个测试定义：62 passed / 5 failed / 1 既有 expected failure / 0 skipped。新 noChange 用例误把提交入口调用次数当实际写入，文件清单与零替换断言原已成立，已改为 replacements/完整清单判定。原生编辑用例误认为旧辅助方法 moveDown=false 会发送上方向键，实际只是 Return；已改为真实系统菜单追踪中的上方向键，并在提交前断言原草稿参数。其余三项 4A 回归来自本轮将普通模型重读 invalidated 也当作撤显示，现已收窄为 isMasked 时才推进 buffer 版本。
+
+首轮 24 张组场景原图与 4 张联系表已实际查看：旧“合成原子组／尚未接事务”提示已改成“属于同一次共同保存”，准备状态放在原固定反馈位置并从 readiness 派生；组标题与底部提交分别留图。`verified.xcresult` 因 Return 处理用了不接 KeyPress 参数的 SwiftUI 重载而编译失败，用例未执行；已改为项目已有 onKeyPress(keys:)。
+
+| 记录 | 实际结果及证据边界 |
+|---|---|
+| `final-tests.xcresult` | **114 个定义：111 passed / 2 failed / 1 既有 expected failure / 0 skipped。** 25 套组合，前轮五项失败均通过复验。源码前后摘要 `final-source-before/after.json` 相同。 |
+| 本轮剩余失败 | `UnifiedSearchOperationInteractionTests.nativeCompletionDraftPickerPreviewAndStaleCandidate` 窗口非 key；`UnifiedSearchFileSettingRecoveryTests.nativePresentationRetryNeverWrites(superseded: true)` 同次记录为控件零尺寸/越界、窗口非 key。没有取消断言或将环境可能性当通过，焦点丢失来源未独立确认。false 重试路径通过；superseded 服务测试通过，但本轮最新原生路径仍未通过。 |
+| 最后反馈修正 | 原 OperationPreview 保留文件组固定状态之外的原 Plan.grouped 等拒绝说明；FileSettingEditing 成功结果动作清除旧反馈；原生编辑测试补组成员移出拒绝及提示存在断言。这些最后修改没有完成原生复验。 |
+| `closure.xcresult` | 最后源码编译后在测试包 CodeSign 失败，测试未执行；同轮 shell 写入出现 ENOSPC，磁盘可用约 112 MiB。未改签名/权限，未独立确认 CodeSign 内部错误的全部原因。源码前后摘要相同。只清理本轮 DerivedData 的约 75 MiB 可重建 Index.noindex，保留源码、产物、截图和所有 xcresult；随后观测可用空间约 3.4 GiB，不把全部回收归因于这次索引清理。 |
+| `closure-repaired` | 对原 build/.build.lock 的下一次非等待申请退出 **3 / 锁忙**，未启动 xcodebuild；记录 `lock-blocked`。按用户要求停止后续测试/构建申请，未抢锁、删锁、干预持有任务或再排队。 |
+| 正常配置 Debug / 验签 | **未运行**，由上述停止边界保留缺口；QA 编译或先前阶段 Debug 不能替代本阶段最终正常构建/验签。 |
+| 截图 | `reviewed-screenshots/` 的 27 张原图及 5 张联系表已实际查看：26 张来自 final-tests；`group-presentation-retried-true.png` 是 native 首轮旧图（时间早于 final-tests），单独保留，不算最新 superseded 通过。覆盖 en/zh-Hans、浅深、standard/compact、620/304pt、组标题/预览/提交/阻断/noChange/unknown/清理/展示失败。最后反馈修正无新截图；首轮与后轮图片不合并冒充最终源码视觉验收。 |
+| 静态与脚本 | 工作流定向 **101 项通过**，static 质量门禁含 **221 项脚本回归通过**。最终静态/严格局部 lint/差异检查在文档收尾后复跑，见 `delivery-*` 记录；不运行会启动非显式隔离宿主的 auto/swift profile，不冒充完整 Swift profile。 |
+
+逐项行为对应如下。这里的“通过”仅指注明轮次中实际执行的测试；由于最后修改未完成复验，**本阶段本地交付整体仍为 partial**。
+
+| 验收 | 已取得的证据 |
+|---|---|
+| **2 项** | final-tests 的 nativeGroupSavesWholeTemporaryFile(count: 2)：真实原生入列/准备/点击提交 → 临时 current.json → 整份内存与反馈；一次 commit 入口、一次实际替换、一次组通知、旧四键仍缺失。 |
+| **3 项** | 同测试 count: 3，compact/304pt：Return 零提交，⌘Return 同一 Controller 路径 → 三字段整份保存；重复旧提交事件不增加 commit。 |
+| **4 项** | 同测试 count: 4，中文/深色：四字段整份保存、原运行成员/组身份、整组成功反馈及显式完成释放通过。 |
+| 文件与旧单项 | native fileSingle 通过；旧 SettingContract/Interaction/Lifecycle/Presentation 及旧 SettingsLocalPreferenceConsumer、SettingsPickerConsumer 所选回归通过，保留后者既有外观 expected failure。未做后端回退或双调用。 |
+| 全 noChange / 部分不变 | final-tests 原生两分支通过。全 noChange 可进入 FileStore.commit 一次，但没有新记录/辅助写入/替换/发布/展示，完整内容/inode/mtime 清单不变；部分不变一次整组替换。 |
+| 准备/编辑/重复/混合 | 显式 prepare、编辑后缺证据、重准备、旧单项冲突不能吞掉、重复字段/混合命令/旧后端多项阻断通过。组成员直接移除沿原 Plan 拒绝，最后新增原生提示断言未执行。 |
+| 冲突 | 原生整组冲突、原基线与当前差异、过期 overwrite 确认拒绝、新确认后共同保存通过；服务整组受控返回/保持 IDs 与 returnedAttempts 通过，UI 不拆成员执行。 |
+| unknown / recovery | replaceAfter 明确核验确认原精确提交、原 unknown localReceipt 保留，commit 不增加；replaceBefore 核验后仍 unknown，运行保留，无普通保存重试。未就绪后端原生阻断；cleanupBefore 显示“整组已保存”并另列恢复整理待处理。 |
+| 展示失败/被替代 | 保存成立和展示失败分开；false 原生重试及服务重试证明不写文件/不重发已返回事件。superseded 服务证据成立，最新原生 true 分支因上述焦点/几何失败保留缺口，首轮旧通过不替代。 |
+| 生命周期 | final-tests nativeRevocationAndLateSubmission 的失焦/合成锁定 × 提交前/后通过：旧事件拒绝、再显示不自动执行、提交事实保留；不是实际系统锁屏或认证验收。 |
+| 无半组/无双写 | native 组事件回调核对完整文件==已发布整份状态且原 unit 已 committed；服务 publishOnlyCompleteStatesAndLocalFactPrecedesObservationAndEffects 的 Observation 断言仅看到完整旧/新状态。各原生组提交后隔离旧四键仍全部 missing；没有以最终值相同代替事件/替换次数。 |
+| 4A 回归 | final-tests 中 PlanContract/Dependency/Interaction/Presentation/Lifecycle、ObjectPresentation、OperationContract/Presentation/Lifecycle、UnifiedSearchInput 通过；OperationInteraction 上述一项焦点失败尚未关闭。 |
+
+本轮实际改动（此前并行修改不计入本轮实现）：
+
+- Controller/原入口：[UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift)、[SettingEditing](../AreaChain/Features/Search/UnifiedSearchSettingEditing.swift)、[SettingSubmission](../AreaChain/Features/Search/UnifiedSearchSettingSubmission.swift)、[OperationPreview](../AreaChain/Features/Search/UnifiedSearchOperationPreview.swift)、[PlanLinks](../AreaChain/Features/Search/UnifiedSearchPlanLinks.swift)、[PlanList](../AreaChain/Features/Search/UnifiedSearchPlanList.swift)。
+- 文件模式组合：[FileSettingEditing](../AreaChain/Features/Search/UnifiedSearchFileSettingEditing.swift)、[FileSettingSubmission](../AreaChain/Features/Search/UnifiedSearchFileSettingSubmission.swift)、[FileSettingCopy](../AreaChain/Features/Search/UnifiedSearchFileSettingCopy.swift)、[Localizable](../AreaChain/Resources/Localizable.xcstrings)。
+- 原适配器扩展：[FileLocalSettingCommandAdapter](../AreaChain/Services/FileLocalSettingCommandAdapter.swift)、[Contract](../AreaChain/Services/FileLocalSettingCommandContract.swift)。
+- 隔离测试：[ResultsTestSupport](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift)、[FileSettingTestSupport](../AreaChainTests/Features/UnifiedSearchFileSettingTestSupport.swift)、[ContractTests](../AreaChainTests/Features/UnifiedSearchFileSettingContractTests.swift)、[InteractionTests](../AreaChainTests/Features/UnifiedSearchFileSettingInteractionTests.swift)、[RecoveryTests](../AreaChainTests/Features/UnifiedSearchFileSettingRecoveryTests.swift)。
+- 同源维护：本文、[路由](../skill-routing.md)、[组件目录](component-catalog.md)、[架构](architecture.md)、[工程](engineering.md)、[检查器](../scripts/check_workflow.py)及[定向反例](../scripts/tests/test_check_workflow.py)。
+
+指定 Cursor verifier 未执行、不重查登录、不由其他代理替代；人工、C2B、历史外观/多窗口缺口全部保留。单项英文计数目前复用 settings 复数文案，尚未专门细化。剩余收口先补最后源码的两个失败场景、反馈修正、正常 Debug/验签；生产启用需另行明确后端选择、用户迁移和恢复授权。其他 handler、敏感编辑、生产统一搜索、执行后撤销均未开放。本次停止于 3A-3B3B partial，不提交、不推送、不安装、不发布、不迁移用户设置或切换生产默认后端。
+
+
+**并行状态补记。** 本会话没有运行暂存、提交、推送或回退命令。收尾只读 reflog 显示仓库在 2026-10-05 14:32:07 +0800 出现 `d24391e`（Enhance Command Preference Group Management and User Interaction），已包含部分本轮接线；不推测操作者，也不撤回或改写该提交。最后两处反馈修正、移除提示测试和本文仍在工作区。另有 DaybookScroller / DaybookScrollScope 及滚动验收的并行改动，全部保留。source 摘要只覆盖其 JSON 列明的 Search、SettingCommand、UnifiedSearch 测试与文案文件，不证明整工作树冻结；后续原生重验须采用当前完整树，不能把前轮证据外推到并行滚动修改。
+
+
+#### 3A-3B3B-R：一次性预检与验收收口阻塞（2026-10-05）
+
+本轮仅验收收口。HEAD 仍为 `d24391e`，保留该并行提交及全部工作区改动；未改 Swift/测试/签名配置。对照 final-source-after.json，列明范围中只有 OperationPreview、FileSettingEditing、FileSettingInteractionTests 的最后反馈修改，以及并行 ObjectPicker 滚动 modifier 与旧证据不同；其余被记录文件摘要一致。Theme 滚动仍有并行修改且不在旧摘要范围内，不能据此宣称整树或最终布局已验证。详见原证据目录下 `3B3B-R/source-comparison.json`。
+
+**一次性只读环境检查。**
+
+| 条件 | 本次实际结果 |
+|---|---|
+| 磁盘 | 可用约 **11 GiB**；正常 development-DerivedData **1.4 GiB**、local-DerivedData **304 MiB**、本阶段旧 QA DerivedData **855 MiB**。本次未清理任何构建物、缓存、截图或历史证据；前轮空间不足当前未重现。 |
+| 历史签名错误 | closure.log 第 22–28 行：测试包 `AreaChainTests.xctest: internal error in Code Signing subsystem`；`Command CodeSign failed with a nonzero exit code`，随后取消测试。没有更具体的证书/权限/文件路径诊断；与同轮 ENOSPC 同时发生不证明因果，本次未将磁盘不足确认为根因。 |
+| 原测试锁 | 对已有 build/.build.lock 只读打开，**一次**非等待独占探测返回 **busy / Errno 35**；没有写锁文件、轮询、删除锁或干预持有者。立即停止本轮所有测试/构建申请。 |
+| 桌面 | 只读 NSWorkspace 返回前台 `com.openai.codex`；CGSession 字典未返回，未取得完整登录/锁屏条件，未启动 QA 来验证 key window。前台为 Codex 不能替代可交互 QA 焦点验收。 |
+
+预检记录为 `3B3B-R/preflight.json`。锁仍阻塞，故本轮 **没有启动编译、原生测试、正常 Debug 构建或静态验签**；不重放已有效的 2/3/4 项共同保存链路，也没有生成新的修正后截图。
+
+**两个失败与既有预期失败分别保留。**
+
+| 用例 | 已知事实与本轮结论 |
+|---|---|
+| UnifiedSearchFileSettingRecoveryTests.nativePresentationRetryNeverWrites(superseded: true) | final-tests 的 activities 记录 assertBounds 零尺寸/越界及 click 的 window.isKeyWindow=false，发生于原生控件操作路径。false 分支与服务 superseded 证据已通过，但不能替代 true 原生分支。尚未确定是焦点撤树、控件定位、布局或外部干扰导致；**未复验、未关闭，不笼统标环境问题**。 |
+| UnifiedSearchOperationInteractionTests.nativeCompletionDraftPickerPreviewAndStaleCandidate | final-tests 记录 window.isKeyWindow=false；未证明丢焦原因或定位错误，也没有本轮运行证据。**未复验、未关闭**；原按键、草稿、旧菜单与不可执行断言保持。 |
+| SettingsPickerConsumerTests.appearanceUsesProcessAndHostEnvironment（既有 expected failure） | 源码与结果均保留既有 withKnownIssue：初始系统浅色时 dark→system 后 SwiftUI 环境仍为深色，原生 Picker 对照同样失败。该项是具体历史外观行为，**不是上述两项的环境归因，也未因标预期而视为修复**。本轮未修改已知问题或“通过”定义。 |
+
+后续在锁正常释放且桌面条件可确认后，优先现有 nativeEditInvalidatesAndRequiresExplicitPreparation（含组移出拒绝提示）、nativePresentationRetryNeverWrites（含最后成功结果动作反馈清理与 superseded）、nativeCompletionDraftPickerPreviewAndStaleCandidate。保留全部原断言，只有定位/布局证据支持时修复；通过后再正常 Debug/验签，按最终实际影响补回归，不机械重跑完整 2/3/4 矩阵。本轮没有启动这些待办。
+
+**截图来源。** `3B3B-R/screenshot-provenance.json` 对原 reviewed-screenshots 中 27 张组图核对摘要/时间：26 张属于 final-tests 后轮，group-presentation-retried-true.png 属 native 首轮。它们已在前轮实际查看；本轮没有新图。未受影响的历史内容可继续作为相应旧行为证据；最后反馈修正、并行滚动布局及 superseded 的最终图仍缺失，不用旧图替代。
+
+本轮只追加本文，适用的局部 lint、工作流、static 门禁与差异检查输出位于 `3B3B-R`；这些静态结果不表示编译或运行完成。**环境阻塞仅磁盘条件已改善，锁仍阻塞，桌面完整条件及历史签名原因未确认；本阶段本地验收仍 partial/blocked。** 指定 Cursor verifier 未执行；人工、C2B、历史外观缺口分别保留。没有提交、推送、安装、迁移用户设置、切换生产后端或进入其他 handler/撤销阶段。
+
+
+#### 3A-3B3B-R 定向续验：运行补证，正常构建仍受锁阻塞（2026-10-05）
+
+本次续验正常取得原 build/.build.lock，只运行指定的三个测试方法：nativePresentationRetryNeverWrites（false/true 两分支）、nativeCompletionDraftPickerPreviewAndStaleCandidate、nativeEditInvalidatesAndRequiresExplicitPreparation。保持原完整 app/test target、原独立 QA 标识与 DerivedData、原生产 entitlement、六项钥匙串授权清除及串行约束。不重复 2/3/4 项共同保存矩阵，不修改产品代码或签名配置。
+
+证据目录：`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B3B-mjhmp89t/3B3B-R-4raxk0r2`。command.json / feedback-command.json 保存实际参数；source-before/after.json、feedback-before/after.json 覆盖全部当时 Swift 源码、测试和文案，**各轮前后均无变化**。
+
+| 要求 | 本次实际结果 |
+|---|---|
+| superseded 的尺寸/边界/key-window | focused 轮 true/false 两分支均通过；保留原 assertBounds 与 key-window 断言，文件内容/inode/mtime 清单及 commit 次数不增加，旧外观没有覆盖后续 light。feedback 轮两分支再次通过。没有修改焦点或布局实现，历史失败的根因仍未定位，不将一次通过解释为根因修复。 |
+| nativeCompletionDraftPickerPreviewAndStaleCandidate | focused 轮通过；原 Tab/Return、草稿、旧菜单回调及提交阻断断言保持。后续只改另两个测试方法，故复用该轮证据，没有重复此用例。 |
+| 最后反馈修正 | focused 轮未找到移出按钮；失败辅助树没有任何计划控件，截图明确为整个操作面板遮罩，故不是已证明的单按钮滚动定位问题。保留 focused-missing-tree.txt / focused-masked.png，遮罩来源未确认。仅在原测试补场景开始时 key-window 且 operationVisible 的硬断言、不自动恢复显示，并补 group-removal-rejected 截图；原重准备/保存断言不变。feedback 轮移出拒绝、原提示存在、编辑使旧证据失效、明确重准备及保存通过。 |
+| 成功动作清除旧反馈 | 原 nativePresentationRetryNeverWrites 增加 planMessage 回到 notExecutable 的断言；feedback 两分支通过。没有新增测试定义、跳过断言或改变产品通过口径。 |
+| 测试计数 | focused.xcresult：3 个定义、4 次执行；2 个定义通过、1 个失败（移出控件缺失），0 skipped/expected failure。feedback.xcresult：**2 个定义、3 次执行全部通过，0 failed/skipped/expected failure**。不合并成一次全部通过；两个原失败与最后修正分别引用有效轮次。 |
+| 签名 | 两轮 QA 测试包签名成功，历史 Code Signing subsystem 错误未重现；没有改变个人签名、权限或配置，也未确认历史错误与磁盘不足的因果关系。QA 签名不能替代正常 Debug 验签。 |
+| 正常 Debug / 静态验签 | 测试通过后调用原 `./scripts/build.sh --no-wait`，**退出 3，锁忙，构建及验签均未执行**。debug-build.log 保存原提示。随即停止所有后续锁申请，不轮询或干预持有任务；本阶段仍不可标本地验收完成。 |
+
+**最终截图范围。** 本目录 screenshots 的六张原图及 contact.png 已实际查看：group-removal-rejected、group-edit-reprepared、group-presentation-failed、group-presentation-retried-false/true 来自 feedback；operation-completion-preview 来自 focused。当前 compact/304pt 下拒绝提示和组状态均可见，展示失败、成功及 superseded 分开表达；原生几何/焦点由原测试断言提供，不靠截图数量替代。screenshot-manifest.json 保存摘要与时间。前述 native 首轮旧图、final-tests 后轮图继续保留；本轮新图补最后反馈和 superseded，未受影响的历史共同保存证据复用，不作为新的全语言/全尺寸验收。
+
+**并行变化及收尾。** feedback 结束后只读摘要比对发现 DaybookScroller、DaybookScrollScope 及三份滚动测试继续变化（delivery-source-differences.json），全部保留。上述运行仅证明各轮冻结源码，不能外推整个当前滚动实现；本阶段 Search/SettingCommand 产品代码在两轮间及收尾没有修改。当前完整树的正常 Debug/验签仍待锁正常释放后执行。HEAD/并行提交 d24391e 保留，本会话未提交、推送、安装、删除缓存或修改生产后端。
+
+本次实际新增编辑仅为已有 [InteractionTests](../AreaChainTests/Features/UnifiedSearchFileSettingInteractionTests.swift) 的开始条件断言/截图、[RecoveryTests](../AreaChainTests/Features/UnifiedSearchFileSettingRecoveryTests.swift) 的反馈清理断言及本文。最终适用 lint、工作流、static 门禁与差异检查记入本目录 delivery-*；它们不能替代未运行的正常构建。
+
+本轮结束状态：指定两个历史失败及最后反馈修正已取得定向通过证据，历史间歇性失焦/遮罩根因仍未证实；**本阶段本地收口仍 partial（正常 Debug/静态验签受锁阻塞）**。SettingsPickerConsumerTests 的既有 dark→system expected failure 单独保留，未重跑/修改该定义；指定 Cursor、人工、C2B及其他历史外观缺口分别保留。不进入其他 handler、迁移、生产后端或执行后撤销阶段。
+
+
+**最后构建申请（2026-10-05）。** 按用户仅构建/验签的收口要求，对照 feedback-after.json：本阶段 Search/SettingCommand 产品代码、文案和相关 UnifiedSearch 验收用例摘要一致；仍有六份并行差异：DaybookScroller、DaybookScrollScope、ScrollAssemblyConsumerTests、DaybookScrollContractTests、DaybookScrollNativeTests、DaybookScrollLifecycleTests，另有新增滚动测试不在旧摘要范围。操作/结果面板继续直接使用无 scope 的 Configurator；新羽化实现属于并行范围，未把旧证据外推为当前整个滚动子系统通过。未改源码、重跑测试或新增截图，保留 d24391e 及暂存/未暂存并行修改。
+
+随后仅调用正常 `./scripts/build.sh --no-wait`，返回 **3 / 测试锁忙**，未进入 Debug 编译或静态验签。原提示见上述定向续验证据目录 `debug-close.log`，源码对照见 `debug-close-source-comparison.json`。立即停止，没有再查锁、轮询或干预任务。已有两个历史失败和最后反馈修正的定向通过证据仍保留；由于正常 Debug/静态验签尚未执行，**本阶段本地验收仍 partial，不能写为完成**。指定 Cursor、人工、C2B和历史外观/失焦根因缺口保持独立；未提交、推送、安装或切换生产后端。
+
+
+#### §9.62 最后收口：本阶段本地验收完成（2026-10-05）
+
+本次仅补正常 Debug 构建和静态验签，无测试重跑、新截图、功能或签名配置修改。比对 feedback-after.json，本阶段 Search/SettingCommand 产品代码、文案及相关用例与已通过证据一致；并行的滚动/羽化修改与测试继续独立保留，不能据此扩展为滚动子系统整体验收完成。设置操作面板和结果面板仍直接使用无 scope 的 Configurator，本次共同保存、反馈和执行门禁没有新改动。
+
+正常 `./scripts/build.sh --no-wait` 已取得原锁并退出 **0**。首次 build.log 通过后发现并行 DaybookScrollScope 的羽化修饰顺序发生后续变化，因此未将旧产物视为该新源码的证据；追加一次相同正常增量构建，`current-build.log` 再次 **退出 0**，在同一进程立即采集的 current-before/after.json 全部产品 Swift/文案摘要一致，无构建期间源码变化。证据位于：
+
+`/var/folders/bv/gtwkyczs3156pj4k13spg_3m0000gn/T/AreaChain-3A3B3B-mjhmp89t/3B3B-R-4raxk0r2/debug-close-l3u29hr_`
+
+实际配置为原 development / Debug，`staticSignatureVerified=true`、`hardenedRuntime=true`、`distributionReady=false`。原脚本同时完成静态验签，无测试包签名错误重现；没有修改个人签名、权限或安装/启动产物。日志保留 arm64/x86_64 同时匹配而选首个目标的既有提示。历史 Code Signing subsystem 错误的根因仍未确认，成功构建不能倒推其一定由磁盘导致。
+
+**本阶段本地验收完成。** 该结论组合此前有效的 2/3/4 项共同保存与恢复证据、focused 轮旧操作补全通过、feedback 轮最后反馈及 superseded 两分支通过、已查看且区分来源的截图、原最终静态门禁，以及本次正常 Debug/静态验签；不冒充同一轮全量测试，不重跑已有效链路。锁阻塞在本次正常构建时解除，不保证其他时刻无人持锁。
+
+**整体治理仍为 partial。** 指定 Cursor verifier、人工 VoiceOver/真实输入法及多窗口、C2B、既有 dark→system expected failure、历史间歇性失焦/遮罩与签名根因等缺口分别保留；并行滚动功能的验收由其原阶段负责。本次仅更新本文并做文档/差异检查，未提交、推送、安装、迁移用户设置、切换生产后端或进入其他 handler/撤销阶段。完成后停止。
+
+### 9.63 阶段 3T-0：普通任务新增、标题与备注的真实执行接线方案
+
+2026-10-05（Asia/Shanghai）。**本节是只读代码核验与后续方案，不是 handler 实现、任务保存验收或真实写入授权。** 本轮只增补本文；不写业务数据、不构建、不申请原生测试锁、不运行下面列出的 Swift/写入测试。§9.62 最后收口确认四项设置本地验收完成，其指定 Cursor、人工、C2B 及历史缺口继续独立保留；设置文件的共同提交、修订号和恢复证据不推广到 SwiftData 任务。
+
+范围仅为 `todo.create`、`todo.title`、`todo.notes`。完成/重开、删除、习惯、子任务、附件、批量修改、敏感正文及真实通知/日历操作本阶段不接；它们仍在 §8 完整交付范围。以下源码行号是本次阅读定位，符号为稳定检索入口，既有测试只代表可复用的测试意图。本轮只读探索不替代指定 Cursor verifier，不重新检查登录，不干预其他验收。
+
+#### A. 目录事实与最小影响/复用表
+
+先核对 [CommandCatalog+Tasks.swift](../AreaChain/Domain/CommandCatalog+Tasks.swift):6、9、14，再沿 [CommandCatalogBuilder.swift](../AreaChain/Domain/CommandCatalogBuilder.swift):31、[CommandParameter.swift](../AreaChain/Domain/CommandParameter.swift):47、[CommandArgumentValidation.swift](../AreaChain/Domain/CommandArgumentValidation.swift):6 追踪真实参数；不是从功能名称猜 ID。
+
+| 稳定 ID / 路径 | 当前目录参数与默认操作 | 范围与输出 |
+|---|---|---|
+| `todo.create` / `/tasks/add` | 必填 `title:shortText`、`day:day`，**两者都没有 defaultValue**；可选 `notes:longText`（replace/append/clear，默认 replace）、`tags:tags`（add/remove/replaceAll/clear，默认 add）、`time:time`（setReminder/cancelReminder，默认 setReminder）、`priority`（p1～p4，assign/clear，默认 assign） | 无 target。提醒的参数 ID 是 `time`，不是 `reminder`。`CommandDescriptor.createdObjectType` 只为此命令声明单个 `.todo` 输出（[源码](../AreaChain/Domain/CommandDescriptor.swift):123）。没有来源、完成态、截止、子项、附件或系统日历绑定参数。 |
+| `todo.title` / `/tasks/title` | `target:object(todo)`；必填 `title:shortText`，仅 assign，无默认值 | 单对象。目录没有声明 notes/tags/time/priority 参数，但真实旧动作可能修改它们；不能据此当作纯标题 setter。 |
+| `todo.notes` / `/tasks/notes` | `target:objects(todo)`；必填 notes，replace/append/clear，默认 replace，allowsEmpty=true | 目录允许 explicitMultiple；首批适配只接受恰好一个目标，多目标明确未装配，不删目录能力或静默取第一条。 |
+
+三项都是 modification、declared、eligibleAfterWiring；实际 execution 仍为 unwired，目录和 Run 的 `isExecutable` 仍为 false。适配资格必须单独提供，不能打开整个目录。静态校验拒绝空白/换行 shortText、非法民事日期、越界时刻及空/重复 UUID 标签数组；longText 的空白 replace/append 仍被拒绝，`allowsEmpty=true` 目前只允许**无 value 的 clear**。未指定可选参数不是清空，空数组也不能代替 tags.clear。
+
+| 权威规则 / 入口 | 真实消费者 | 拟复用与保持的边界 |
+|---|---|---|
+| `parseTaskCapture`、`parseTaskNotes`、`TagSyntax`、`InputTagResolver` | 快速新增、任务标题、备注 | 解析仍在 Domain；标签查找/恢复/创建仍在同一 SwiftData 事务。提取这三条具体业务入口，不在 handler 重写解析、造标签或反复调用 toggle。 |
+| `TaskRepositoryProtocol` / `SwiftDataTaskRepository`、`ParsedNoteUpdate` | `DayBoardMutations` 与日历本地访问 | 继续由 Services 写模型；补窄的唯一活身份读取与创建身份输入，不改 restore/purge 所依赖的原 `fetchTodo` 墓碑语义。 |
+| `ModelChanges` / `BoardEvents` | 仓储、角标、搜索失效、手记窗口、提醒、日历 | 保留保存成功后发布及 changed/changedLocally 区别；补显式注入和提交事实通知，不能屏蔽广播来伪装完整隔离。 |
+| Draft / Plan / Run / HandoffCoordinator | 统一搜索活动草稿、计划项、结果依赖；现有设置适配 | 直接复用 lease（宿主访问版本）、stamp、唯一参数所有权、尝试号、回执去重和键盘规则；设置专用的基线、claim、核验入口不能直接充当任务 API。 |
+
+#### B. 原 UI 到真实保存的三条调用链
+
+1. **新增**：菜单栏 [CaptureField](../AreaChain/Features/MenuBar/CaptureField.swift):44 → [MenuBarPopoverView.addTodo](../AreaChain/Features/MenuBar/MenuBarPopoverView.swift):362；工作台 [WorkspaceTodayView.addTodo](../AreaChain/Features/Workspace/WorkspaceTodayView.swift):160；[CalendarPage.addTodo](../AreaChain/Features/Calendar/CalendarPage.swift)；[QuadrantPage.addTodo](../AreaChain/Features/Quadrant/QuadrantPage.swift):215；[WorkspaceFilteredListView.addTodo](../AreaChain/Features/Workspace/WorkspaceFilteredListView.swift):96 → **`DayBoardMutations.addCapturedTodo`**（[Capture 源码](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift):6）→ trim / `parseTaskCapture` → `ModelChanges.perform/transaction` → `InputTagResolver.merging` → `taskRepo.addTodo(CreateTodoParams)` → 仓储 `saveAndNotify` / `ModelChanges.commit` 延后到最外层一次 save → `BoardEvents.changed`；Bool 成功后才清原 composer 草稿，并在解析到提醒时请求提醒授权。另有 [DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift):104 的旧 `addTodo(title:)`，不解析且先拒绝空标题，不选它冒充捕获入口。
+2. **标题**：[TaskRow.saveEdit](../AreaChain/Features/Tasks/TaskRow+Actions.swift):45 → [TaskRowFactory.todo](../AreaChain/Features/Tasks/TaskRowFactory.swift):6 提供的 Bool `onSaveTitle`；详情 [TodoBasicsSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift):11 → `DayBoardMutations.editTodo`；两路最终进入 **`editTodoWithSyntax`**（Capture:88）→ `parseTaskCapture` → 同一 `ModelChanges.perform` 内 `updateTodo`、条件性 `setPriority` / `setRemind`、`InputTagResolver.merging` / `replaceTagIDs` → 最外层 save/广播 → 条件性提醒授权。不是只调用 `updateTodo(title:)`。
+3. **备注**：[TaskDetailNotesView.flushSave](../AreaChain/Features/Workspace/TaskDetailNotesView.swift):104 → TodoBasicsSectionView 的 `updateNotes` → **`DayBoardMutations.saveNotes`**（Capture:127）→ `parseTaskNotes` → 同事务标签合并 → `ParsedNoteUpdate` → 仓储 **`applyParsedNotes`**（[源码](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift):198）→ save/广播 → 条件性提醒授权。旧 UI 只有“保存最终全文”的入口；没有独立的 append 动作。
+
+原生提交不是统一的隐式 flush：[DaybookTextField](../AreaChain/Theme/DaybookTextField.swift):419、433 在 Return/⌘Return 前从 textView.string 同步 Binding；[DaybookTextEditor](../AreaChain/Theme/DaybookTextEditor.swift):70 在 ⌘Return 前同步，marked text 阻止提交，候选接受优先。按钮、失焦、卸载路径不能仅凭这些键盘证据声称已读到最后原生缓冲。
+
+- 详情标题 Return/失焦保存、Esc 取消；失败留在编辑态，`EditDrafts.shared.titles` 按任务身份保留；卸载不额外提交（[TaskDetailHeaderSection](../AreaChain/Features/Workspace/TaskDetailHeaderSection.swift):55、109、115）。空白退出编辑并保留原模型，不等于支持清空标题。
+- 行标题失败保留本行 `@State`；行卸载没有详情的跨卸载缓存，不能承诺所有标题草稿都可恢复。
+- 备注 ⌘Return、失焦和卸载均可保存；先放入 `EditDrafts.notes`，成功才移除。Esc 先关候选，随后失焦可触发保存，不是取消备注。失败草稿仅为运行内内存，不承诺进程重启恢复。
+- 指令接线前必须由当前编辑 owner 完成同修订的原生同步、拒绝未结束组词并重新取 stamp；不能强制提交其他窗口的未保存编辑，也不能给旧按钮回调换发新 lease。原 UI 的草稿/快捷键差异保留。
+
+#### C. 输入、派生字段与当前产品差异
+
+**新增。** 旧快速捕获的 date 是调用方传入：今日/菜单栏用 todayKey，日历/四象限用 selectedKey，标签页附既定 tagID，四象限附 fallbackQuadrant。`CreateTodoParams`（[协议](../AreaChain/Domain/Protocols/TaskRepositoryProtocol.swift):13）默认 notes/sourceBundleID/calendarEventID 为 `""`、remindMinutes=nil、重要/紧急=false、tagIDs=[]。源标记取 [CaptureStamp.current](../AreaChain/Services/ClipboardCapture.swift):5：偏好启用且前台 Bundle ID 非空、非本应用时记录，否则空；不是命令/用户身份。未来显式注入此采样，准备时冻结并预览，重试不重新采前台应用，不新增目录 source 参数。
+
+[TodoItem](../AreaChain/Domain/Models.swift):184、204 默认随机 UUID、createdAt=.now、isDone=false、deletedAt=nil、dueMinutes=nil、空 subtasks；tagIDs 是编码字符串，附件另以 ownerKind+ownerID 关联。仓储创建还通过 `nextBoardOrder` 读取当日活任务和全部活习惯的 sortOrder，取最大值+1；这不是仅保存 title/day 两字段。创建不创建子任务、附件、检查记录或日历事件绑定，`calendarEventID` 初值为空；后续日历消费者可能回写它。
+
+旧捕获先拒绝全空输入，但仓储允许**解析后空标题且仍有标签/提醒/重要紧急/非空备注**。例如已有测试刻画 `#1` 创建无标题任务；仅 `!p4` 的两个 bool 都为 false，不能仅凭“有语法”推导可创建。目录要求的是非空单行**输入值**：`title="#1"` 能过形状校验，空 title 或只提供独立 tags 则不能；不能把目录必填解释成最终 cleanTitle 必须非空，或将仓储元数据条件删去。目录 day 必填且规范 round-trip；旧仓储 addTodo 直接保存 dayKey，不能替代目录校验。新命令可显式预填当前日，但必须成为用户可见的具体参数，不能在最后提交时偷偷改成“今天”。
+
+**标题解析。** `parseTaskCapture`（[NaturalLanguageParser](../AreaChain/Domain/NaturalLanguageParser.swift):75、119）收集全输入普通标签；标题移除标签/时间/优先级、折叠空白并反转义。标题内优先级和提醒胜过行内备注语法；标题重复时间/优先级取最后识别值。`//` / `／／` 分隔备注时会去其中的标签、优先级、第一个合法显式 @时间并折叠空白；无分隔符时首行作标题，其余行作为保留换行的备注，标签仍从全输入收集。`findNoteRange` 的规则是 `(?<![:\\])(//|／／)`，不能宣称它也具备 TagSyntax 的全部代码/链接保护。
+
+`updateTodo` 拒绝显式空标题；`editTodoWithSyntax` 只有 parsed.notes 非空才覆盖旧 notes，空备注不覆盖。无提醒/优先级 token 保留旧值，有 token 才写；删除文字里的 hashtag 不解绑现有标签。标题中的 `//备注` 是真实备注写入，即使目录 title 的类型是 shortText。原行编辑允许 Shift 换行，目录 title 不允许换行，这个能力差异保留，不能截断输入后称为等价。
+
+**备注解析。** `parseTaskNotes`（Parser:167）保留完整原文、换行及语法字符串，同时提取普通标签、优先级和第一个显式 `@HH:mm`；自然语句“下午3点”不改提醒。`ParsedNoteUpdate`（协议:5）同时携带 notes、完整 tagIDs、可选提醒及可选两个优先级 bool。仓储总是写 notes/tagIDs；提醒非 nil 才写，两个 bool 均非 nil 才改优先级。此处 nil 表示“保留”，不同于 `setRemind(nil)` 的取消。
+
+| 模式 | 当前真实支持 | 后续命令契约 / 差异 |
+|---|---|---|
+| replace | `saveNotes(最终全文)` 替换并解析原文 | 直接共用。空白 replace 被目录拒绝；要清空应显式 clear。 |
+| append | 无旧 UI/仓储追加原语 | 需先确定拼接规则，再生成最终全文走同一 parseTaskNotes / save。不得用两次保存或把 append 变成 replace 用户输入。见决定 D2。 |
+| clear | `saveNotes("")` 可清空正文 | 只清 notes，保留标签、提醒和优先级；不能借 clear 删除所有派生属性。旧空白正文可直接保存与目录空白 replace 拒绝分别记录。 |
+
+**基线必须按真实读写集合建立。** 新增没有旧任务字段基线，但有创建身份的“不存在”证据、规范日期、冻结来源、标签解析/存活/保护事实及排序来源。编辑至少有 store/context 来源、typed todo ID、恰好一行且存活的身份和如下字段；不用搜索结果摘要充当真实基线，不调用含 notes 的全量 snapshot 来方便复制正文。
+
+| 操作 | 最少字段证据与最终复核 |
+|---|---|
+| 标题 | title；实际标签合并所依赖的 tagIDs（编码与规范 UUID 集合/顺序）；解析将写优先级时含 isImportant+isUrgent；将写提醒时含 remindMinutes；parsed.notes 将覆盖时含原 notes，随之进入长正文门禁。dayKey/isDone 等按提醒/日历计划的依赖采样，不作为无关字段的 blanket 冲突。 |
+| 备注 replace/append/clear | notes；标签合并的完整 tagIDs 及目录身份；将写优先级时含两个 bool；将写提醒时含 remindMinutes。append 还必须将其读到的旧 notes 视为输入基线；拼接后整篇原文中旧 token 也可能再次参与解析。 |
+| 两者共通 | prepare 只读；执行前在同一串行写入边界重新读取并比较影响字段、标签目录和对象存活。不能从旧对象 `todo.tagIDs` 拼好整串后只比较 notes，再覆盖他人刚改的标签/提醒。未触及字段取最后当前值保留，若既有实现无条件回写 tagIDs，就必须覆盖该读改写基线或先证明等价地避免该回写。 |
+
+同字段或依赖字段变化返回明确冲突，缺基线返回不可准备，删除/重复身份不能“仍覆盖”。重新读取/采用当前/继续编辑/明确覆盖复用既定交互意图，但确认须绑定本次真实采样与所有版本，确认本身不写入，提交仍复核。没有字段修订号，当前值比较不能检测所有 ABA；不宣称设置版本协议已经存在于 Todo。
+
+#### D. 标签、保护载荷与普通任务资格
+
+[TagSyntax](../AreaChain/Domain/TagSyntax.swift):28、41 和 [DiaryMemoTags](../AreaChain/Domain/DiaryMemoTags.swift):5 对名称规范化，并在任务语法中排除精确中文预设 `密码/小巧思/日记`；转义、引号名、Markdown 链接/代码等按现有 TagSyntax 规则处理，不另写解析器。[InputTagResolver](../AreaChain/Services/Repositories/InputTagResolver.swift):7 先取首个活同名项，否则恢复首个已删同名项，否则插入新标签；合并保留原 UUID 顺序且去重，标签与任务同事务。
+
+必须保留的现状差异：
+
+- [Catalog.taskPickerTags](../AreaChain/Domain/Catalog.swift):80 只隐藏未关联的上述预设，已关联预设允许展示以供移除；手动新建任务标签也拒绝这些预设。
+- **非预设但 `isPrivateDiary=true` 的标签目前仍可由任务 UI 和文本解析关联**。InputTagResolver、任务 add/replace/applyParsedNotes 均没有这一保护校验；显式 tagIDs 也未统一检查存在、存活、预设或重复实体。不能把“普通任务”写成现有全链路私密标签隔离保证。
+- 同名多行时解析器取首个，`fetchTodo` / `fetchTag` 的 fetchLimit=1 也不证明唯一；活/墓碑同 UUID 仍是歧义。[ContentQueryTagNames.project](../AreaChain/Services/ContentQueryTagNames.swift):33 对缺失、多行或私密名字拒绝完整投影，这是查询保证，不能转借给写入。
+- 推荐的命令普通资格见 D3；未确认前，不把旧任务 UI 改成新权限模型，不自动恢复受保护/歧义标签，不借搜索解析创建标签。普通标签的明确新建/恢复须显示在写入预览且属于后续授权范围。
+
+[CommandDraftProtection.blocksUnprotectedExport](../AreaChain/Domain/CommandDraftProtection.swift):18 会阻止 protectedReference、required/unknown 保护要求，以及**任意 longText 参数或 longText 基线，连空字符串也是**。[CommandPlanValidation](../AreaChain/Domain/CommandPlanValidation.swift):54、[CommandPlan.seal](../AreaChain/Domain/CommandPlan.swift):213、[CommandExecutionRun.input](../AreaChain/Domain/CommandExecutionRun.swift):235 都消费这一守卫。
+
+因此当前没有可安全直接借用的通用长正文执行通道：todo.notes、create 的 notes、会改备注的 title，均须等独立的受控借用协议和 C2B 前置，而不是改 cast、把 longText 降为 shortText、隐去真实基线、在 adapter 偷存正文副本或直接读取 protected payload 绕过 Run。clear 也需要原 notes 的冲突基线，不能因参数不带正文就例外放行。§9.52 最后结论仍是最终原生未验收、不得增加隔离接线；本方案不改变该结论。
+
+首条无正文适配还必须检查**解析结果**：拒绝目录 notes 的任何操作、换行、被原规则识别的备注分隔段及非空 parsed.notes；不能让 shortText 的 `//` 携带正文越过守卫。保护要求只能沿已确认的普通来源/owner 传入，不能由 handler 因“类型是 todo”强制标成 ordinary；无法确认公开就拒绝。后续只可向明确限定的任务保存作用域提供同 ownership、item、修订、一次使用的借用，禁止返回任意 String/快照导出能力，且不得通往复制、日志、模板或其他对象类型；这些都是未实施、需另行确认的安全契约。
+
+#### E. 本地提交、广播与外部结果的真实边界
+
+[ModelChanges.transaction](../AreaChain/Services/ModelChanges.swift):78 将同 context 的内层 commit 延到外层，最终 save 成功才执行提交后 effects 和 `BoardEvents.changed`；回滚会重新物化七种 schema 模型。它有以下不能省略的限制：
+
+1. 事务登记**之前**，`context.hasChanges` 为真就直接 `context.save()`（:85）；此预保存不经注入 save，也不广播，`value(in:)` 有相同预保存。外层失败不撤销已经预保存的其他内容。命令必须在进入共享入口前确认上下文干净，拒绝并保留既有 pending 编辑；不能用提前 save、rollback 或另一个 context 看不到脏值来掩盖问题。
+2. 默认回滚是 context 范围，不是字段 CAS（比较并写入），不会阻止其他 context/进程写入，也没有禁用 autosave 的保证。首批只承诺 MainActor、明确写入者、最终校验到提交无 await 的隔离模型边界；生产接线前另核实同库所有实际写入者及未提交编辑。不能由内存测试推广多 context 并发或掉电耐久性。
+3. `afterTransaction` 的 commit effect 失败只反馈错误，保存仍已成功（:96）；不能将失败解释为本地未写。Bool/throws 没有 unknown 分类，“save 已提交再抛错”或提交后丢回调必须另记结果未知，不能无条件映射 failedWithoutCommit。
+4. 仓储 addTodo 在嵌套事务中返回模型时，最外层可能尚未保存；原 `addCapturedTodo` 又丢弃该返回值。新入口只在最外层 save 已返回后输出稳定引用，不能把内层对象创建成功当提交成功。
+
+| 实际消费者 | 保存之后的作用与现有结果边界 | 后续隔离方式 |
+|---|---|---|
+| [BoardEvents](../AreaChain/Services/BoardEvents.swift):17、26、35 | 同步向 NotificationCenter.default 发 boardDidChange，再异步刷新 shared 提醒与日历。changedLocally 只刷新提醒，防日历回写循环。事件无 context/任务/提交 ID。XCTest 仅跳过 shared 提醒/日历，仍发 UI 通知。 | 注入作用于本次 context/事务的发布依赖，默认仍保持生产行为；QA 用私有 center，并显式连接同一事件到 fake 消费者，保持 changed 与 changedLocally 区别。不能以测试进程自动跳过当完整接线证据。 |
+| 角标、搜索与手记窗口 | [StatusItemController](../AreaChain/Services/StatusItemController.swift):185 重读计数；[ContentQueryReadLifecycle](../AreaChain/Services/ContentQueryReadLifecycle.swift):49 / [ReadSession](../AreaChain/Services/ContentQueryReadSession.swift):365、420 同步失效许可、来源、展示；[DiaryWindows](../AreaChain/Features/Diary/DiaryWindows.swift):176 刷新编辑会话。通知缺席不能证明模型未变。 | 合成宿主/订阅接私有事件源，断言本地事实先登记、搜索撤权及 UI 一次发布；不向日用窗口发 QA 事件。 |
+| 提醒授权与排程 | Capture 三入口成功后还直接请求 `NotificationScheduler.shared.ensureAuthorization`；排程器刷新全目录、取消旧请求、添加新请求，并更新 ReminderFollowUpStore。add 失败只日志，completedRefreshCount 仍可能增加；没有与本次任务绑定的逐步回执。 | [NotificationScheduler](../AreaChain/Services/NotificationScheduler.swift):139 已可注入 center/context/clock/calendar/debounce/followUps；必须全注入，followUps 用独立存储，授权也注入。新增可关联保存身份的完成事实后才能报告成功/失败；调用 scheduleRefresh 只表示请求已接收。 |
+| 日历 | [CalendarSync](../AreaChain/Services/CalendarSync.swift):8 硬绑定 EventKit、生产 Persistence、shared prefs/status 和默认 ledger；Engine 执行远端 apply → 本地绑定/内容 save → changedLocally → ledger 文件 save（[Engine](../AreaChain/Services/CalendarSyncEngine.swift):112）。无提醒的活未完成任务也可生成全天事件；notes 不入 CalendarContent，但备注保存仍触发整轮同步，可拉回其他远端修改。 | 注入 CalendarSyncEngine/Coordinator 已有 client、local、ledger、enabled、clock、publish；fake EventKit + 真实内存 SwiftData local + 内存/临时账本。不要初始化生产 facade、请求真实授权或改用户日历偏好来“隔离”。 |
+
+日历还可能创建系统日历；事件 notes 写的是 TodoDragToken 身份，不是任务备注。回写可改变 title/dayKey/remindMinutes/calendarEventID，账本默认写 `areachain-calendar-sync.json`。Engine 明文说明“不承诺跨 EventKit / SwiftData / 文件的原子回滚”；EventKit commit 后的异常、后续本地/ledger 失败都不能靠 reset 证明未写。当前 `.failed/.synced` 和全局 CalendarSyncStatus 没有本次操作的提交身份，不能直接拿全局绿灯为某条命令作证。
+
+只换 taskRepositoryProvider 仍不足隔离：`BoardEvents`、提醒授权、捕获偏好/前台应用、默认 feedback 和 CalendarSync facade 尚有 shared 依赖。拟补的只是本任务实际需要的注入接缝及结果事实，不新建全业务万能 handler、通用 Outbox 或跨系统事务。正式启用前的真实授权必须列明：目标用户库、三项命令及目标/字段、普通标签新建或恢复范围、来源读取；若启用提醒，另含系统授权/增删请求/跟进偏好；若启用日历，另含系统日历和事件写入、全量同步范围、本地回写和账本写入。没有这项授权，真实消费者保持未装配；不靠屏蔽必要业务事件把生产任务保存伪装为无副作用能力。
+
+#### F. 最小共享入口、幂等身份、冲突与核验设计（未实施）
+
+**业务边界。** 推荐按阶段将 Capture 文件中三个 todo 方法的编排提到具体的 Services `TaskMutationService`（拟名），复用原解析与仓储。分别保留 create / editTitle / saveNotes 三个入口及具体输入类型；旧按钮保留自己的草稿/关闭/Bool 外壳，命令适配只做版本、资格、字段模式映射与结果衔接。共享入口独占解析、标签事务、模型写入和发布，不让 handler 拼接若干 repository setter。普通捕获、结构化参数、标题和备注的语法差异显式编码，不修改习惯/剪贴板规则。
+
+**真实准备与提交次序。** prepare 经注入 context 读取完整身份行（包括墓碑，不能 fetchLimit=1），要求 `.todo`、dayKey=nil 的对象引用恰好对应一条活 Todo；读取失败/多行/墓碑均拒绝，不复活、不生成新对象。只读取本操作所需字段与标签事实，签发绑定 storage 实例、issuer/capture、lease、draft/plan/item stamps 的不可伪造准备证据。原 UI 仍可用原上下文；命令在共享入口外先执行干净上下文守卫，保存政策差异必须明确，不偷偷保存别人的编辑。
+
+这不是旧仓储已有保证：Todo.id 没有 unique 属性约束，`fetchTodo(id:)` 明确包含已软删除行且只取首条（仓储:46）；updateTodo / applyParsedNotes 本身既不拒绝墓碑，也不比较字段基线。新增身份检查应是三项普通写入共享入口的窄守卫；保留恢复/彻底删除对墓碑的读取需求，不能全局把原 fetchTodo 改成 live-only。
+
+执行由同一个 HandoffCoordinator 先取得占用；最终校验原 lease、Run/attempt、准备来源、最新身份/影响字段与标签事实，再同步相邻地进入共享事务。资格检查必须位于任何标签恢复/插入之前；校验失败零业务写入。对未知/敏感来源、批量、习惯/子任务/附件及未装配字段明确拒绝。存活和冲突不是授权替代品，用户“仍覆盖”也不能消除删除或重复身份。
+
+**创建身份。** 在第一次业务调用前，为 `(ownership, runID, itemID)` 保留一个创建 UUID，重试沿用；它不同于 draftID，不在准备阶段插入模型。拟为 CreateTodoParams 增加兼容的可指定 ID（默认仍由旧入口生成），并让仓储在插入前完整检查该 UUID 的所有行。createdAt/来源等第一次提交输入一并冻结，重试不换身份。已经有该 ID 时，只有同一可信运行的提交事实才能认作原结果；其他行/碰撞/墓碑不能直接 adopt 或再生一个 UUID。多个 adapter 共用 Coordinator 的占用和已调用 attempt 登记，仅 adapter 自己的 busy Bool 不够。
+
+**保存事实先于展示。** 共享事务在最终 save 返回后，先登记不可变本地提交事实/新对象引用，再发 BoardEvents 和外部请求；既有 ModelChanges 尚无这个带结果的前置回执钩子，需要窄扩展且回归旧调用。回执不含正文、用户标签名或原始错误字符串。提交后失焦/锁定只撤显示；可信完成绑定原 ownership/run，不能恢复旧 UI 权限，也不能丢掉已提交事实。通知、日历作为独立 external 效果记录，未启用且确无请求才可不列入；pending/running/failed/unknown 不写成 succeeded。
+
+| 事实 / 故障 | Run 与用户结果 | 允许的后续 |
+|---|---|---|
+| 校验拒绝、未调用保存且无业务 mutation | notExecuted / 冲突；local.notSubmitted | 保留唯一草稿；修正并重新准备，不能沿旧确认提交。 |
+| 已修改内存、确定未到提交点，回滚并验证原已保存模型/标签完整 | failedWithoutCommit；local.notSubmitted | 仅在隔离故障测试证明后签发 safeLocalReplay；创建沿原 UUID。回滚失败、save 调用是否提交不明不属于此行。 |
+| save 返回且本地事实登记 | committed；create 输出真实 todo ID | 成功的本地步骤永不重放；即使通知拒绝、日历失败也不重复创建/标签恢复/排序分配。 |
+| 本地成功、外部失败 | local.committed，notification/calendar 各自 failed 或 unknown | 有逐效果幂等与当前版本证据才重试失败外部步骤；已成功的不重做，不能用重新调用共享创建/编辑入口重试。现有全目录刷新与全局状态不足以签发该保证。 |
+| save 可能提交、回执丢失或提交后异常 | commitUnknown / verificationRequired | 保留原快照、创建 ID、原未知回执和只读核验入口；禁止自动 replay/返回新建草稿。核验结果追加，不能改写原事实。 |
+| 最终任务无变化 | 需任务专用 noChange 事实，零保存/发布/外部效果 | 当前通用 `.noChange` 只接受单项设置，不能直接拿来完成任务；必须窄扩展和测试。是否无变化要比较解析后的全部写集合，不能只比 title/notes。 |
+
+**未知核验的上限。** 使用同库新建的只读 context 读取已保存状态，避开原 context 的 pending/cached 值。新建须核对保留 UUID、唯一行、冻结输入的全部已提交字段/关联、普通标签新建/恢复事实及本运行的写入来源；仅“有相同标题”不足。查不到 UUID 也不能证明从未提交（可能后来删掉，标签可能已提交），仍保留未知。编辑没有持久化 operation 标记，当前值碰巧等于目标不能证明本次更新提交；只有原保存返回/提交登记等可信证据才能确认，否则保留未知并交人工核验。本轮不引入任务事务日志、schema 迁移或跨进程恢复承诺；若要求崩溃后自动判断编辑提交，须另行讨论持久化身份，不能照搬设置 commitID。
+
+**与原协议衔接的实际缺口。**
+
+- `CommandExecutionRun.validConflict`（Run:136）只接受目录已声明参数；title/notes 的 tags/time/priority 诊断会被拒绝。应加任务专用影响字段证据和严格白名单，或受签发证据约束的等价窄扩展；不要把提醒冲突伪装为 notes 冲突，不给全部指令开放任意字段。
+- Coordinator 的 `claimPreferenceInvocation` / replacePreferenceBaseline / returnUnsubmittedPreference 和 Run 的 verifyPreferenceGroup 都是现有设置路径。复用同一登记和所有权规则，新增窄任务入口；不改设置组资格、不让任务进入原子设置组。任务未知核验与 noChange 要有自己的合法转换；当前 unknown 不能经普通 receive 改成 committed。
+- `CommandExecutionResult.committed(outputs:[itemID: .todo(id)], external: …)` 在本地提交确定时登记输出一次；Run 已校验生产者成员与 createdObjectType。对不需要创建输出的编辑传空 outputs。不能从 Bool 造 UUID，不能以预分配 UUID 提前宣称创建。
+- 依赖当前要求生产者 **state.succeeded**，不是只有 local.committed；外部未完成时先保留输出但阻塞依赖，不为演示链路放宽。消费者第一次进入 local 尝试后绑定固定真实 ID，重试不换对象。
+- 新建→标题编辑的后续集成还需要**绑定后的真实字段证据**：Run 的 snapshot 不可编辑，不能把当前查询行填回成第二份草稿。应由 Coordinator 在同一执行归属下登记不可编辑的 consumer 准备证据，绑定 producer 输出及提交字段事实，再读取当前对象比较；生产者保存后他人修改该字段须报冲突，不能在消费者开始时无条件将当前值当新基线。首轮只验证真实创建输出进入原依赖协议，不宣称另一个尚未装配的 handler 已执行。
+
+#### G. 三项待确认的产品选择
+
+**3T-1A 更新（2026-10-05）：D1～D3 已由用户明确确认，按阶段实施；下表保留 3T-0 的方案来源，当前确认与实施边界见 §9.64。** 本轮不提前开放结构化新增、append 或新命令标签资格门禁。
+
+以下仅请求后续实施前定稿，不在 3T-0 代选或改变现有产品；不影响先做无语义变化的共享创建提取。
+
+| 决定 | 推荐及具体影响 | 未确认时的边界 |
+|---|---|---|
+| **D1 结构化新增参数和语法如何合成** | 推荐保留旧捕获单源规则；结构化入口分别调用既有 title / notes parser，独立 notes 原文保存，缺独立 notes 才用标题派生备注。标题派生备注与显式 notes 同时存在且不同则要求用户消歧。优先级/提醒借鉴现有结构化习惯的 title语法→notes语法→显式值，但显式值/取消与语法相矛盾时阻止提交并展示冲突；tags 先承接解析/初始集合，再执行明确 add/remove/replaceAll/clear，预览最终关联。不靠拼接 `title+"//"+notes` 重解析。新建空基准上的 clear/remove/cancel 是显式无效果或消除解析结果，不假装继承旧任务值。保留旧元数据任务能力；目录空 title 的表达能力需另补明确形状校验，不能取消所有非空校验。 | 先只装配纯 title+具体 day；notes、其他字段模式与元数据专用创建不先开放。D1 决定参数预览、兼容夹具及后续目录校验，不能以实现方便选择覆盖顺序。 |
+| **D2 备注 append 如何拼接及解析** | 推荐精确连接：任一侧为空时取另一侧，否则 `旧全文 + "\n" + 追加原文`，不 trim 任一侧；随后对最终全文调用 parseTaskNotes。这会保留原文，并可能使旧显式 token 继续决定属性（备注提醒是首个、优先级是最后一个），预览须揭示。clear 只清正文。若改成仅解析追加片段，就与“保存同一最终全文”的旧 UI 结果不同，需明确选择该产品变化。 | append 不实现；replace/clear 也仍受长正文执行门禁，不能先只按 notes 比较绕过派生字段。 |
+| **D3 普通指令遇到私密/预设或歧义标签的资格** | 推荐首批拒绝新增关联私密/手记预设标签，以及任何缺失/重复身份/保护事实不全；遇目标已关联受保护标签且不能证实普通资格时整项拒绝。普通同名歧义也要求显式解决，不取任意首条。此为新命令的保守资格门禁，不将已有任务转为加密对象、不自动解绑、不改变旧任务 UI 的 `isPrivateDiary` 行为。以后要统一旧 UI 政策须单独确认。 | 含相关标签的 command 保持未装配/不可准备；不读取私密手记正文或凭据来判断，不在 T0 修改权限或标签行为。 |
+
+#### H. 适合约 18k 上下文的实施拆分
+
+每轮只取本节、列出的真实入口和对应测试，不重载全文历史；实际触及公共接口时同步原组件目录/架构说明并保留指定 Cursor 复核门禁。以下所有阶段均为建议，必须收到下一轮明确实施请求才开始；共享提取、业务适配和原生 UI 分开交付，不能一次建立全业务 handler 框架。
+
+| 阶段与命令 / 共享入口 | 拟改文件（新文件为拟名） | 参数、基线、输出及保存/故障 | 隔离测试与 UI 接线前置 |
+|---|---|---|---|
+| **3T-1A：只提取普通新增共享链，无 handler**；原 `addCapturedTodo` → `TaskMutationService.createCaptured` | 新 `Services/TaskMutationService.swift`；`DayBoardMutations+Capture.swift`；`ModelChanges.swift`、`BoardEvents.swift` 的窄发布依赖；既有 ModelChanges/InputSyntaxPersistence 测试与一个任务专用合成 fixture | 原 raw text/day/tagIDs/fallback 原样，解析/默认/来源规则不改；显式注入来源、授权、发布和 feedback。对外在最终 save 后返回真实创建引用/本地事实，旧 UI 保持 Bool 和失败留稿。记录 pending 预保存限制，不把它顺手改成全库事务政策；注入保存失败验证任务与新建/恢复标签一起回滚。 | 内存完整 schema、autosave=false、私有事件源、fake 授权/刷新，对照原 UI 业务调用与共享入口全字段/关联/发布次数；回归 changedLocally。此轮不改标题/备注、目录、创建幂等协议、C2B 或统一搜索 UI，不接真实服务。 |
+| **3T-1B：首条最小 `todo.create` 真实适配**；复用 1A 保存入口 | `TaskRepositoryProtocol.swift` / `SwiftDataTaskRepository.swift` 的显式创建 ID；新 `Services/TaskCreateCommandAdapter.swift` 与窄 contract；Coordinator / Run / ExecutionContract 的任务占用、事实和核验；对应创建测试 | 仅 title+day、无 target、单个创建；拒绝 longText、notes 任意模式、分隔备注、换行及解析出的标签/提醒/优先级，cleanTitle 非空。干净 context、创建 UUID 不存在证据、来源冻结；重复 attempt/适配器/回执不再次保存。产出真实 `.todo` 引用；未知不 replay，本地成功外部失败不重复创建。 | 原 UI/适配相同输入对照；真假保存失败、提交后异常、碰撞/墓碑、重复提交；fake notification/calendar 的各自失败与无真实调用；真实输出进入 Plan 依赖协议（消费者业务暂不执行）。仅隔离显式装配；默认未装配、生产 UI 不变。若本轮预算不足，先停在稳定 ID/提交事实，adapter 单独续轮，不削掉验证。 |
+| **3T-2A：新增的其余普通参数**；仍只复用 create 入口 | `TaskMutationService` 的具体结构化输入/解析结果；TaskCreateCommandAdapter；必要的 CommandArgumentValidation/目录元数据；创建/标签/语法测试 | D1、D3 确认后处理 tags/time/priority 的全部声明模式、元数据标题与预览冲突；准备标签实际身份及可能恢复/创建效果，保证同事务。含 notes 或派生备注继续未装配，不能称 todo.create 全部完成。 | 日期、空值、仅 token、同名/已删/重复/预设/私密标签、优先级和提醒显式冲突；fake 授权/系统效果。源标记与旧捕获/象限/标签页差异逐项对照；未完成字段明确拒绝。 |
+| **3T-2B：`todo.title` 普通无备注子集**；原 `editTodoWithSyntax` → 同一服务 editTitle | Capture 文件、TaskMutationService；新 `TaskTitleCommandAdapter`；任务影响字段基线/Run 冲突契约；TaskRowFactory / TaskDetailSections 仅必要适配及对应测试 | 单目标，复用标题 NLP/标签合并/条件性提醒优先级；拒绝备注派生和 longText 基线，保留旧 UI 的完整能力。唯一活身份、title+实际派生字段基线；不改日期/完成/截止/来源。noChange、冲突/删除/重复身份和失败草稿各有结果。 | 真内存模型；原行/详情业务调用对照；同字段和派生字段冲突、未提及字段保留；实现并验证 create→title 的固定输出绑定与消费者基线，再开放该两步隔离计划。原生 buffer/按钮/失焦另轮验证。 |
+| **3T-3A：`todo.notes` 的共享全文模式与基线，暂不执行指令** | TaskMutationService、Capture `saveNotes` / `parsedNoteUpdate`；必要的 Domain 备注模式值；TaskDetailNotesView 的调用适配和相关测试 | D2/D3 后建立 replace/append/clear 最终全文和全部派生字段事实；原 UI 替换保存不变。任务写入测试仅合成数据，尚不穿过命令长正文保护出口。失败留稿，空值/clear 不取消属性，append 同基线不自动合并并发修改。 | 同一最终全文的原 UI/共享入口模型对照；旧 token 再解析与提醒/标签冲突；事件/fake 系统效果对照。无 todo.notes handler，不新增敏感原生探针或改 C2B 守卫。 |
+| **3T-3B：三命令的长正文执行补全，当前前置未满足** | 只在独立安全方案批准后确定 CommandDraftContentSession / 原 Coordinator / Plan / Run 的受控借用改动；窄 TaskNotesCommandAdapter；不得复制保护服务 | C2B 最终验收、明确普通/敏感载荷资格及计划内同修订借用先完成；再接 todo.notes、create.notes、title 的派生备注。保留完整 notes 与派生字段基线，clear 不例外。 | 封存/锁定/失焦/旧修订/计划所有权及无明文出口，加真实内存业务对照；缺任一前置保持未装配。不得通过此阶段顺带接敏感生产编辑。 |
+| **3T-4：按命令逐轮接原生 UI** | 原 UnifiedSearchController / OperationEditing / PlanEditing / OperationPreview、双语资源及现有隔离宿主；不建新面板状态所有者 | 只消费已经验证的适配能力、真实 prepare/report/冲突与核验；⌘Return/明确按钮提交，候选 Return 不保存。命令/字段未装配必须可解释，不能降级换路径写入。 | 每轮一个命令：标准/紧凑、中英、浅深色/最小尺寸、焦点/IME/撤销、失败重开草稿与迟到事件。真实库与通知/日历生产装配另行具体授权；不得由 fake 成功自动启用。 |
+
+**下一阶段准确范围是 3T-1A。** 它可以在 D1～D3 未定时保持旧捕获规则推进；仅提取新增和补可注入提交/发布边界及内存对照，不顺手实现任意 handler，也不开始标题、备注或长文接线。第一次完整 command 链以 3T-1B 的窄 `todo.create` 为验收目标，未支持参数仍留在完整交付清单。
+
+#### I. 后续验证矩阵（本阶段均未运行）
+
+| 必需证据 | 复用的已阅读测试 / 新增验证点 |
+|---|---|
+| 内存 SwiftData 真模型与原 UI 业务入口对照 | [ModelChangesTests](../AreaChainTests/Services/ModelChangesTests.swift):13、57 和 [InputSyntaxPersistenceTests](../AreaChainTests/Services/InputSyntaxPersistenceTests.swift):45、68；比较新 context 回读、日期、来源、sortOrder、标签实体/关联和保存/广播次数，不只用 mock repo。 |
+| 空值、语法、日期、标签兼容 | [NaturalLanguageParserTests](../AreaChainTests/Domain/NaturalLanguageParserTests.swift)、[TagSyntaxTests](../AreaChainTests/Domain/TagSyntaxTests.swift)、[BatchMutationsTests](../AreaChainTests/Domain/BatchMutationsTests.swift):296；补 required day、非规范日期、token-only、转义/链接/代码、分隔备注、空白与 clear、预设及私密/歧义标签。 |
+| 失败保留草稿与干净事务 | 原 InputSyntaxPersistence:123 的失败对象是 Diary，不能代替 Todo；新增任务/新标签/恢复标签一起失败、干净/有 pending context 的拒绝、保存前抛错/保存后抛错/rollback 失败；原 UI 与指令唯一草稿都保留。 |
+| 重复、存活、冲突与输出 | [SwiftDataTaskRepositoryTests](../AreaChainTests/Services/SwiftDataTaskRepositoryTests.swift) / [TaskContentQueryReaderTests](../AreaChainTests/Services/TaskContentQueryReaderTests.swift):92 的现存读语义；新增 UUID 碰撞、活+墓碑/双活、执行前删除、同字段/派生字段冲突、旧确认、两 adapter 重入与重复 receipt。真实创建 UUID 接 [CommandPlanDependencyTests](../AreaChainTests/Domain/CommandPlanDependencyTests.swift) / [CommandExecutionTests](../AreaChainTests/Domain/CommandExecutionTests.swift)，不从合成输出冒充真实创建结果。 |
+| 本地成功、外部失败且无真实系统写入 | [CalendarSyncEngineTests](../AreaChainTests/Services/CalendarSyncEngineTests.swift):178、190 及其 fake fixture；[NotificationSchedulerTests](../AreaChainTests/Services/NotificationSchedulerTests.swift):169 是手动 refresh，不能证明完整广播链。新增同私有发布源自动触发 fake 消费者、逐效果回执、已提交事实先于通知、失败只重试外部、日历回写不回环；明确断言生产 facade/系统中心/默认 ledger 未调用。 |
+| 原生最后输入与保护 | [InputSyntaxInteractionTests](../AreaChainTests/Features/InputSyntaxInteractionTests.swift):116、170、277；[WorkspaceHeaderInteractionTests](../AreaChainTests/Features/WorkspaceHeaderInteractionTests.swift):90 只是注入 Bool 失败。后续补真实模型保存失败与最新 buffer、marked text、按钮/失焦/卸载、旧 lease；protected/unknown/longText 及 shortText 派生正文不能越过守卫。C2B 历史失败不因此关闭。 |
+
+后续测试必须使用独立 QA 标识、正常完整目标、原锁和串行原生规则；本轮不申请锁或运行这些命令。提醒 followUps 要显式独立存储（现有某些 helper 会默认回落 shared），日历不得触发 EventKit 授权；未提供这些依赖就拒绝装配。修改共享保存/协议行为后仍需指定 Cursor verifier，工具不可用按原规则保留缺口，不由上述探索代理替代。
+
+#### J. 本轮文档检查与停止交接
+
+修改前已检查暂存与未暂存差异；原本文 §9.62 的收口增量完整保留。阅读期间另有 CalendarPage、日历跨度测试和 usage 文档等并行改动出现，本轮不修改或回退它们；源码事实若在后续变化，应按本节符号重核，不把本次阅读作为运行验收。
+
+本轮实际运行 `python3 -B scripts/quality_gate.py --profile docs --format json`、`python3 -B scripts/check_workflow.py` 及 `git diff --check`，均退出 0 / passed；最后内容修订后重跑同组检查。docs profile 的 change-scope、workflow-contract、diff-whitespace、performance-contract、comment-contract 通过；工作流的 11 类检查通过。显式 docs 避免因并行 Swift 改动被 auto 路由到构建/原生测试，未运行 scripts/tests、Swift 测试或应用。文档/引用/注释/性能清单静态结果不证明任务保存、原生或系统行为。
+
+本次仅在 §9.62 后追加 §9.63。对追加前 1,049,505 字节做 SHA-256 对照，仍为 `a97b86d3b31aadffc6a49cb99c3a4527a6f539a0aad32f6a304198a4b53e3bac`，证明原有文档内容（包括暂存/未暂存收口）逐字保留；没有暂存、提交或修改其他文件。检查全工作区的并行路径不意味着这些修改属于本轮或通过了运行验收。
+
+**停止点：3T-0 文档方案。** 不实现 handler、不写业务数据、不构建、不申请测试锁、不重复认证、不进入 3T-1A；不提交、推送、安装或发布。四项设置本地验收完成的状态保留，任务执行与全部未运行验证不冒充通过，指定 Cursor、人工、C2B 及历史缺口不变。
+
+
+### 9.64 阶段 3T-1A：普通捕获共享新增与事务局部边界
+
+2026-10-05（Asia/Shanghai）。本轮只提取普通 `addCapturedTodo` 链路，未实现 `todo.create` handler、固定创建 UUID 或幂等协议，未接统一搜索执行。标题、备注编辑、结构化习惯及剪贴板捕获实现保持原样。指定 Cursor verifier 无可调用入口，未重查登录；C2B、人工及历史缺口继续保留。代码和测试验证状态分别记录于本节末尾。
+
+#### A. 已确认的产品决定与分阶段边界
+
+- **D1 已确认**：结构化 title、notes 分别解析；独立备注与不同的标题派生备注必须消歧。优先级/提醒候选沿标题、备注、显式值组合，显式设置或取消与语法冲突阻止提交。标签先解析，再应用明确增删/替换/清空；不拼接 title 和 notes 重解析。旧捕获框继续原单段规则。本轮仅登记，结构化普通字段留给 3T-2A；长正文仍受 C2B 与独立协议前置约束。
+- **D2 已确认**：append 任一侧为空取另一侧，否则旧全文＋一个换行＋追加原文，不 trim 两侧；最终全文统一解析。clear 只清正文，不连带清其他属性。本轮没有 append 实现，后续仍按 3T-3A/3B 边界推进。
+- **D3 已确认**：新普通指令拒绝新增关联私密/手记预设标签；缺失、歧义、重复身份或保护资料不足阻止提交，既有关联无法确认普通资格则整项暂停。普通标签创建/恢复需要明确预览。不得改变旧任务 UI 政策、自动解绑或加密。本轮只登记，旧 InputTagResolver 规则未改变。
+
+#### B. 实际入口与兼容
+
+[TaskMutationService.swift](../AreaChain/Services/TaskMutationService.swift) 的 `createCaptured(_:in:dependencies:)` 接 `CaptureInput(text, dayKey, tagIDs, fallbackQuadrant)` 和调用方的同一 ModelContext。它唯一执行原 trim、parseTaskCapture、InputTagResolver.merging、TagIDList 与仓储 addTodo(CreateTodoParams) 链。原 [DayBoardMutations.addCapturedTodo](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift) 只负责生产装配和 Bool 适配；菜单栏、今日、标签页、日历、四象限仍走该旧入口。没有两份生产解析/保存实现。
+
+明确优先级胜过象限 fallback；标签关联保持原顺序与去重，新建/恢复和任务同事务；notes、提醒、来源、仓储 sortOrder 与元数据任务能力保持。CaptureStamp 和 requestReminderAccessIfNeeded 的生产调用不变。旧 UI 实际调用均为顶层同步调用，保存失败 Bool=false 后保留原草稿；保存成功而发布失败仍返回 true，不能因刷新失败重复创建。嵌套使用旧 Bool 只能得到 false（尚不能确认保存），未来消费者应持有 Creation 句柄，不拿 Bool 代表内层提交。
+
+#### C. 提交事实与注入范围
+
+- `Dependencies` 显式注入来源采样、TaskRepositoryProtocol 工厂、事务 Boundary、本地创建登记和提醒授权请求；生产闭包惰性访问原服务，隔离测试全部替换。
+- [ModelChanges.Boundary](../AreaChain/Services/ModelChanges.swift) 提供 preSave、save、publish、reportFailure；不修改全局可替换闭包。既有 context 对应的同步事务登记暂存同一 Boundary，嵌套继承外层，内层不能覆盖保存/发布。最外层结束后 defer 清理边界和 effects，不建立通用容器。
+- `Creation.candidateID` 只说明仓储在上下文中产生过模型；`savedID` 只在最外层 save 返回后经 afterCommit 写入。状态为 emptyInput / pending / notSubmitted / commitUnknown / saved。调用方必须读 savedID，不能从 candidateID 伪造创建输出。
+- `CommitFacts` 分别保留 preSave、save、rollback、publication 的 notCalled / called / returned，以及事务阶段和 publicationFailed。回滚恢复失败单列 recoveryFailed，不能冒充成功回滚。save 调用抛错（包括先 save 再抛错）一律保留不确定，回滚后查不到任务也不证明从未提交。这里不签发 safeLocalReplay，不提供执行 Run 回执或掉电耐久保证。
+- 最外层顺序为 save 返回 → savedID 本地事实 → registerLocalCreation → 提交后发布 → 提醒授权请求。登记失败标记 registrationFailed；发布失败标记 publicationFailed 并走注入反馈，二者都不撤销 savedID，不触发重建。后续请求仍可发生；发布闭包抛错也可能已有部分消费者被调用，不能声称零外部副作用。
+- [BoardEvents](../AreaChain/Services/BoardEvents.swift) 保留无参数入口及函数引用兼容，另提供显式 Dependencies(center, requestRefresh)。changed 请求 UI、提醒刷新与条件性日历刷新；changedLocally 仍不请求日历。生产保留原异步 Task 调度，测试私有事件源连接 fake 消费者，不向默认通知中心发送 QA 事件。请求发生不等于提醒送达、授权获准或日历写入完成。
+
+#### D. 脏上下文与嵌套限制
+
+原 transaction 在登记前预保存已有 context.hasChanges 的政策不变；新 Boundary 可单独观察/替换 preSave，旧 `transaction(save:)` 的 save 参数仍只替换最终保存。预保存不发布事件，后续创建失败不能撤销此前保存的无关内容。预保存自身失败不回滚进入前 pending 编辑，且没有开始本次创建。
+
+后续命令必须在进入该入口前检查 `context.hasChanges == false`，并在同一 MainActor 同步作用域完成最终复核和调用；不提前保存、清稿、rollback 或另开 context 隐藏 pending 修改。仓储返回不表示提交；嵌套 Creation 在外层 save 前保持 pending，外层失败使其变为未提交或不确定，外层成功才填 savedID。没有嵌套 savepoint；内层业务失败后外层必须中止其组合工作，不可吞掉失败继续保存部分标签修改。提交后回调期间不接受新的嵌套事务，避免把新模型误挂在已返回的 save 上。
+
+#### E. 验证入口与本轮证据
+
+[TaskCaptureFixture](../AreaChainTests/Services/TaskCaptureFixture.swift) 使用完整七模型 schema、显式 ModelContext、autosave=false、私有 NotificationCenter、fake 授权及提醒/日历消费者。冻结的提取前算法只存在于测试支持；和旧 UI 委托、新服务比较实际标题、备注、日期、来源、优先级、提醒、排序、标签顺序及系统请求次数，并检查生成身份/默认状态。fixture 和业务依赖链不初始化生产 AppPreferences、NotificationScheduler、CalendarSync、Persistence 单例。正常 XCTest 应用宿主的 App.init 改为直接创建独立内存容器并关闭 autosave，避免初始化生产 Persistence.session；生产启动仍沿原 session/StoreHealth。业务 fixture 不使用宿主容器，系统副作用隔离由显式依赖保证。
+
+[TaskMutationServiceTests](../AreaChainTests/Services/TaskMutationServiceTests.swift)、[TaskCaptureTransactionTests](../AreaChainTests/Services/TaskCaptureTransactionTests.swift) 覆盖空输入、元数据、备注分隔、标签/初始顺序、象限 fallback、来源、恢复/新建标签同提交、失败回滚、dirty preSave、嵌套延后、登记/发布异常、save 后抛错、私有事件与 changedLocally、旧 Bool 留稿及旧标签政策。复用 [ModelChangesTests](../AreaChainTests/Services/ModelChangesTests.swift) 的组合事务和 afterTransaction 回归，以及 [InputSyntaxPersistenceTests](../AreaChainTests/Services/InputSyntaxPersistenceTests.swift) 的新建/恢复标签共同回滚用例；选中用例补显式注入，不因名称含恢复而排除。
+
+**首次交付状态（历史）：partial。** 先后修正本轮 MainActor 闭包隔离、changedLocally 无参数函数引用兼容和测试 throwing 断言的编译问题，未改/排除并行源码。最后一次成功的完整正常 PrivacyQA 测试产物为 `build/TaskCapture-3T1A-190729.xcresult`：57 个方法、74 次运行（含参数化），0 失败、0 跳过；已核对结果树包含四个选中 ModelChanges 用例和 InputSyntaxPersistence 的标签共同回滚用例。
+
+| 验证 | 实际结果与限制 |
+|---|---|
+| 原算法／旧 UI／共享入口等价；保存失败、标签恢复、嵌套、dirty context、发布异常、save 后抛错 | 上述成功产物覆盖，实际字段/顺序/计数断言通过。是最终补充前版本的运行证据，不称最终版本全通过。 |
+| 最终补充 | 成功测试后增加 rollback 调用/返回事实及 recoveryFailed 分支、将发布部分提取辅助函数，补默认通知中心零事件和 rollback 返回断言。重跑非等待申请 `build/.build.lock` 被占用，退出 3；按用户要求停止，不等待、不抢锁、不再申请。以上最终增量尚未编译/运行验证。 |
+| 构建 | 成功测试之前完整应用与测试目标编译、QA 临时签名通过；最终增量编译及独立 `./scripts/build.sh` Debug 构建/验签未运行，锁门禁保持。 |
+| 静态与脚本 | 最终相关编辑后 `python3 -B scripts/quality_gate.py --profile static --format json`、`python3 -B scripts/check_workflow.py`、`git diff --check` 及本轮十个 Swift 文件的 SwiftLint 通过；工作流定向 103 项、全 scripts/tests 223 项通过。新增四个组件守卫符号及缺失反例；曾漏更新测试夹具目录，修正后重跑通过。 |
+| 原生与真实系统 | 没有执行真实窗口编辑/IME、真实提醒送达、真实日历写入或认证验证；本轮只验证业务调用与 fake 请求，不把编译或请求计数称作外部成功。 |
+| 指定复核 | 当前工具清单没有 Cursor verifier，未登录、未替代复核；C2B、人工及历史缺口不变。 |
+
+静态 profile 加独立定向 QA 与 SwiftLint，避免 swift profile 自动运行未显式隔离的全量业务测试。没有访问真实用户库、真实提醒/日历或钥匙串；未提交、推送、安装或发布。本轮未执行 git add；工作中检测到外部暂存更新包含部分本轮文件，保留而不撤销。再次授权续验时先核对并行差异与锁，再运行本节选中用例和必要构建；本轮不重试锁、不进入下一阶段。
+
+#### E1. 最终验收续轮：已验证内容与新发现（2026-10-05）
+
+本续轮读取当前工作区及外部暂存状态，不改暂存、不回退并行改动。正常非等待取得原 `build/.build.lock`，使用完整正常 PrivacyQA 目标、同一隔离 Bundle ID/DerivedData、本地临时签名、六项钥匙串授权清除和串行执行；没有排除源码。结果 `build/TaskCapture-3T1A-acceptance-192724.xcresult` 为 **23 个方法／37 次执行全部通过，0 失败、0 跳过**。它覆盖首次交付末尾的 rollback 事实、发布辅助函数、默认通知中心零事件及 rollback 返回断言；不再把这些内容只引用补充前的 57／74 证据。
+
+仅运行 TaskMutationServiceTests、TaskCaptureTransactionTests，以及 ModelChangesTests 的 compositeRepositoriesCommitOnceAndRollBackTogether、captureIsSavedBeforeOtherContextsReadItsBadgeCount、afterTransactionRollbackRunsWhenSaveFails、afterTransactionCommitFailureStillPublishesBoardChange 和 InputSyntaxPersistenceTests 的 failedCombinedSaveRollsBackNewAndRestoredTagsWithTheirContents；未机械重跑未受影响的 NLP/TagSyntax 组。
+
+- 已通过的事实：最外层保存后登记 savedID；内层 pending 不成功；保存调用抛错保持 unknown；任务和新建/恢复标签回滚；脏上下文预保存不被后续失败撤销；本地事实早于发布；发布失败不撤销已保存身份；私有事件不流入默认通知中心；跨 context 和后续事务不复用旧注入。
+- 测试宿主：上述正常 XCTest 宿主实际启动并完成测试；源码核对测试分支直接创建完整 schema 的内存容器、关闭 autosave，不初始化 Persistence.session。非测试分支仍按原顺序取 Persistence.session.container 并应用 StoreHealth；生产启动只做静态比较，未以真实用户库启动应用。fixture 始终使用自身独立上下文与 fake 系统消费者。
+- 新发现及必要窄修正：原代码按 `ModelRollback.failure` 返回值是否为 ModelRecoveryError 来判断本次恢复失败；原始错误自身属于该类型时，即使此次 restore 成功也误记 recoveryFailed。改为直接依据 ModelRollback.restore 的实际返回/抛错登记，仍复用同一恢复实现和错误包装，不改变事务政策；只新增 originalRecoveryErrorDoesNotMislabelSuccessfulRollback 一个针对性回归。
+- **最终源码仍未全部运行验证**：上述窄修正后的第二次非等待锁申请返回 3（锁忙），尚未启动 xcodebuild。立即停止，不轮询、不抢锁、不干预持有者；没有尝试独立 Debug 构建。23／37 是这处新修正之前的源码证据，不能覆盖该修正或新增回归。
+- 最终十个相关 Swift 文件的 SwiftLint、check_workflow.py、quality_gate.py --profile static 和暂存/未暂存 diff --check 通过；静态门禁包含 223 项脚本回归通过。指定 Cursor、C2B、人工及历史缺口不变。正常配置 Debug 构建与静态验签尚未完成。本轮仍为 **partial**，停止在 3T-1A，不实现 handler、不进入 3T-1B；未提交、推送、安装或操作真实数据。
+
+再次续验记录（2026-10-05）：收到“继续”后核对回滚修正、针对性断言及外部暂存状态，源码未改。原 `build/.build.lock` 的非等待申请立即返回 3（锁忙），未启动 xcodebuild、未生成新测试结果、未申请独立 Debug 构建；不轮询、不抢锁、不干预其他任务。上列窄修正的运行验证及 Debug 构建/静态验签仍待完成，既有 23／37 不能提升为该修正的证据；指定复核和历史缺口保持。
+
+#### E2. 最终源码定向测试通过，Debug 构建仍受锁阻塞（2026-10-05）
+
+再次获得用户续验授权后，正常取得原 build/.build.lock；完整正常 PrivacyQA 目标、原独立 Bundle ID/DerivedData、六项授权变量清除及串行策略不变。产物 `build/TaskCapture-3T1A-closeout-194023.xcresult`：**24 个方法／38 次执行通过，0 失败、0 跳过**。保持 E1 的两个任务测试组和五个受影响回归，仅增加必要的 originalRecoveryErrorDoesNotMislabelSuccessfulRollback；结果树明确确认该新增回归通过。未扩大到未受影响的 NLP、TagSyntax 或真实系统矩阵。
+
+本次覆盖最终 ModelChanges.restore 实际返回/抛错事实修正、发布辅助函数和所有补充断言。结果树确认最外层 savedID、本地事实先于事件、pending/unknown 不成功、发布失败保留提交事实、任务/标签回滚、dirty preSave 及跨 context 注入隔离相关用例均通过。测试前记录的 10 个相关 Swift 源码 SHA-256 在测试后逐一一致（`build/TaskCapture-3T1A-closeout-source.json`），没有用旧 23／37 或 57／74 替代最终源码证据。正常测试宿主再次实际启动，生产启动分支仍仅静态核对，未操作真实用户库。
+
+随后执行 `./scripts/build.sh --no-wait`，构建锁已被其他任务占用，退出 3，日志为 `build/TaskCapture-3T1A-debug-build.log`。立即停止，不轮询、不再次申请；**正常配置 Debug 构建及独立静态验签仍未完成**，不能以 PrivacyQA 编译/临时签名替代。整体继续 partial；此时剩余本地验收缺口仅为正常 Debug 构建/静态验签，指定 Cursor、C2B、人工与历史缺口独立保留。
+
+本轮没有新增源码修改，只记录验收证据并同步工程索引。最终十个相关 Swift 文件的 SwiftLint、工作流、静态门禁（含 223 项脚本回归）及暂存/未暂存差异检查均通过；编译日志中既有 accessibilityAttributeValue 弃用警告保留，不扩大修复。没有暂存、提交、推送、安装或实现 handler，停止在 3T-1A。
+
+#### E3. 本地最终验收收口（2026-10-05）
+
+**当前状态：3T-1A 实现与本次要求的本地最终验收已完成；指定 Cursor、C2B、人工及历史缺口仍独立保留，不能称整体验收全部通过。** E、E1、E2 中的锁忙与 partial 是当时的历史状态；本节更新其本地构建/验签缺口，不抹去历史失败或补充前证据。
+
+本次核对受验十个 Swift 文件的 SHA-256 与 `build/TaskCapture-3T1A-closeout-source.json` 全部一致，构建后再次核对一致，未新增源码编辑。因此沿用 E2 最终源码 **24 方法／38 次执行通过、0 失败、0 跳过** 的测试证据，不机械重跑已通过且未变化的用例；该证据包括回滚事实新回归，而不是补充前的 23／37 或 57／74。
+
+正常执行 `./scripts/build.sh --no-wait`，本次成功取得原构建锁并退出 0；没有覆盖签名参数、没有允许 provisioning、没有改变个人配置。正常 Debug 使用项目当前 development 配置，产物为 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`。脚本自动执行的静态验签返回 `configuration=Debug`、`staticSignatureVerified=true`、`hardenedRuntime=true`；`distributionReady=false` 保持，未公证或发布。日志 `build/TaskCapture-3T1A-debug-build.log` 保存本次成功输出；多匹配 macOS destination 的提示不影响退出结果。未启动或安装该产物，也未执行真实系统认证、日历、提醒或用户库操作。
+
+最终仅更新同一权威文档和工程索引，保留并行修改及外部暂存；本轮十个相关 Swift 文件的 SwiftLint、工作流、静态门禁（含 223 项脚本回归）和暂存/未暂存差异检查全部通过。测试宿主正常运行、生产初始化分支静态等价、提交/发布和失败事实等证据沿 E1/E2；不把静态验签推广为真实系统解锁验收。停止在 3T-1A，不实现 handler、不进入 3T-1B，不提交、不推送、不安装。
+
+#### F. 3T-1B 的准确最小接线要求
+
+只做单个 title＋具体 day、无 target 的 todo.create；拒绝 notes 任意模式、换行、原备注分隔段、非空解析备注及解析出的标签/提醒/优先级，cleanTitle 非空。来源准备时冻结；入口前要求干净 context。下一轮再为 CreateTodoParams/仓储增加明确创建 UUID 和唯一不存在检查，绑定原 ownership/runID/itemID，在 Coordinator/Run 登记同一调用与真实事实；本轮随机 candidateID 不是幂等键，也不能从 Bool 造输出。
+
+消费本轮 savedID 与 save/publication 事实，在发布前登记可信本地结果，再将真实 `.todo` 输出接既有依赖协议；pending 不报成功、unknown 不自动 replay，本地成功外部失败不再创建。碰撞/墓碑/重复身份、两适配器、重复 attempt/回执及外部逐步结果须另补测试。仅隔离显式装配，默认未装配和生产 UI 保持；不接标题/备注 handler，不开放 D1/D3 的其余字段，不绕过 C2B。**本轮停止于 3T-1A，不执行 3T-1B。**
+
+### 9.65 阶段 3T-1B：最小普通 todo.create 的隔离真实适配
+
+2026-10-05（Asia/Shanghai）。本节承接 §9.63 与 §9.64 最终交接，只实施单个普通纯标题＋明确民事日期的创建。生产搜索、其他命令、单命令原生 UI、真实用户库及系统服务均未接线；指定 Cursor verifier、C2B、人工和历史缺口继续保留，不重新认证或替代复核。以下实现与验证分别记录。
+
+#### A. 最小资格与实际复用
+
+[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 仅接受已进入唯一计划项的 `todo.create`，参数恰为 title:shortText 与 day:day，沿 CommandCatalog / CommandArgumentValidation 校验类型、操作和规范日期。无 target、其他 active/retained/pending 草稿、依赖、合并来源或 atomicGroup；不带已有字段基线。CommandTaskCreateInput 先检查原保护/longText 守卫，再复用 parseTaskCapture 与 hasTaskNoteSeparator（调用原 findNoteRange）核对完整解析结果。拒绝 notes 任意形式（包括 unspecified、空 longText、clear）、换行、空备注分隔、派生备注、标签、提醒、优先级及解析后空标题；不改类型、不删除基线、不隐藏派生字段。
+
+实际写入仍为 TaskMutationService.createCaptured → CaptureInput → InputTagResolver → TaskRepositoryProtocol.addTodo(CreateTodoParams) → SwiftDataTaskRepository → ModelChanges，没有第二条解析/事务链。旧 addCapturedTodo 的完整捕获能力、来源、排序及 Bool 保存语义保持；没有接标题或备注编辑。
+
+#### B. 固定 UUID、准备与占用
+
+CaptureInput / CreateTodoParams 增加可选 creationID，未传时仍随机创建。仓储 fetchTodos(withID:) 完整读取精确 ID 的全部行，含墓碑且不设 fetchLimit；显式 ID 在插入前存在任何行即拒绝，不恢复、覆盖或采用旧行。协议新增查询有兼容默认实现，旧仓储消费者无需提供新参数。
+
+prepare 只读，Coordinator 的运行内登记为原 draft/item 保留一个 UUID 和不可编辑准备证据：原参数、完整解析结果、具体日期、来源 protection/stampEnabled/bundleID、environment/context/container 身份、原 lease/draft/plan/item 版本。再次预览须精确一致；变动拒绝且不静默替换 UUID/来源。准备只接受已排队单项，本阶段没有显式刷新旧准备或自动 replay API。
+
+claimTaskCreate 沿原 Coordinator 的调用占用机制先登记原 ownership、operation、run/attempt；所有适配实例共享准备与已调用集合。封存和 beginStep 只允许承接准备后的两个正常版本推进，其他旧 UI 事件不得换 lease 续租。一个准备只进入业务调用一次，即使纯协议单独收到 safeLocalReplay，适配也不会重新创建。保证仅覆盖本阶段 MainActor 同步、串行受控写入者；没有数据库 unique 约束、多 context/跨进程唯一性或跨重启幂等账本。
+
+#### C. 干净上下文与隔离装配
+
+[TaskCreateCommandEnvironment](../AreaChain/Services/TaskCreateCommandEnvironment.swift) 必须显式注入内存 ModelContext（autosave=false）、非 default 的私有 NotificationCenter、实际来源采样、共享服务 Dependencies 与 fake 刷新消费者。缺省 adapter 无环境时不可执行。prepare、execute、所有注入回调之后及进入 ModelChanges 之前检查同一 context 干净；pending 修改原地保留，不 save、rollback 或新建写 context 绕过。命令拒绝已存在的嵌套事务，避免继承未知外层发布依赖；共享服务原嵌套 Creation.pending 契约仍保留。ModelChanges 原预保存政策未改变。
+
+#### D. 提交事实与后续步骤
+
+Creation 是本地事实来源，Run.taskCreation 保存无正文事实：固定 ID、candidateID/savedID、save/rollback/publication 调用/返回及登记/发布失败。candidateID 与 pending 不产生成功输出；未调用 save 且实际回滚返回才能按对应事实记未提交。save 已调用却未返回（包含真正 save 后抛错）保持 unknown/verificationRequired；未知不重建 UUID，不自动重试。
+
+save 返回 → savedID → Coordinator.recordTaskCreation 将 `.todo`＋固定 UUID 登入原 Run → 原本地登记回调 → BoardEvents.changed 私有事件 → fake 提醒/日历刷新。登记或发布异常不能撤销已保存输出；搜索失效只撤销旧显示许可，完成仍归原 ownership/run。changed 没有替换为 changedLocally；没有提醒的任务也请求日历全天同步路径。
+
+UI 事件发布（taskPublication）、提醒刷新、日历刷新各自独立于 local.committed。Refresh 的请求事实与处理结果分开；仅发请求默认 unknown，无法得到具体结果就继续待核实，不冒充送达或同步。发布部分抛错也不证明零外部请求。外部失败不调用新增；本阶段没有外部重试装配，也没有重构通知/日历引擎。
+
+最终创建事实也将 refreshRequested / notificationRequested / calendarRequested 保存在原 Run，避免环境复用覆盖旧运行的请求证据。来源采样和身份读取异常在指令边界归为固定 sourceUnavailable / storageUnavailable，不向外传播可能带源内容的原始错误；准备、解析输入与来源的 description/debugDescription 均脱敏。
+
+verifyUnknown 仅使用原调用证据和固定 ID，在同一隔离容器新建只读 context 检查 absent/singleLive/tombstone/ambiguous/unreadable；任一存在性结果都不提升为历史提交成功，不按相同标题/日期认领任务。原未知回执、UUID 与 Run 保持。
+
+#### E. 输出、兼容和验证交接
+
+CommandExecutionRun.creationOutput(for:) 与 resolveInputs 共用现有 CommandCreationReference，严格核对原 producer item stamp、`.todo` 类型及生产者 succeeded。真实输出已保存但外部仍 unknown 时不解锁依赖；只有 fake 消费者实际处理并明确返回成功的隔离用例验证后续引用解析，不执行消费者命令。
+
+新增 TaskCreateCommandTests / BoundaryTests / IdentityTests / FailureTests，全部复用 TaskCaptureFixture 的七模型内存容器、私有事件及显式 fake，断言实际库数量、保存和副作用次数；旧 UI 对照覆盖相同输入的标题、日期、notes、提醒、优先级、来源、排序、标签及默认状态。TaskCreateFailureRepository 只在真实 addTodo 内存变更后抛错以检验共同回滚，其他业务入口拒绝。
+
+后续其余参数须落实已确认 D1/D3 的独立字段解析、冲突/标签普通资格和预览；notes/长正文继续受 C2B 与受控执行借用前置约束。单命令原生 UI 需独立装配同修订原生输入同步、IME/撤销/焦点、来源预览、旧事件拒绝及完整回执展示；生产接线需另核实真实写入者、数据和系统副作用授权。完成本阶段后停止，不进入上述后续工作。
+
+#### F. 最终修改清单与实际验收（2026-10-05）
+
+本轮 19 个 Swift 文件如下；既有文件只做本节所述窄增量，保留已暂存/未暂存的 3T-1A 和其他并行修改。
+
+| 范围 | 文件与核心接口 |
+|---|---|
+| 新隔离适配 | [TaskCreateCommandAdapter.swift](../AreaChain/Services/TaskCreateCommandAdapter.swift)：prepare / submit / execute / verifyUnknown；[TaskCreateCommandEnvironment.swift](../AreaChain/Services/TaskCreateCommandEnvironment.swift)：显式内存/事件/来源/fake 装配。 |
+| 新领域契约 | [CommandTaskCreateContract.swift](../AreaChain/Domain/CommandTaskCreateContract.swift)：Input / Preparation / Facts / Registry；[CommandTaskCreateExecution.swift](../AreaChain/Domain/CommandTaskCreateExecution.swift)：单项资格与 claimTaskCreate。 |
+| 原执行协议 | [CommandHandoffCoordinator.swift](../AreaChain/Domain/CommandHandoffCoordinator.swift)：复用 claimRuntimeInvocation / validateRuntimeInvocation，任务登记/完成；[CommandExecutionRun.swift](../AreaChain/Domain/CommandExecutionRun.swift)：recordTaskCreation / creationOutput；[CommandExecutionContract.swift](../AreaChain/Domain/CommandExecutionContract.swift)：taskCreation / taskPublication；[CommandHostSession.swift](../AreaChain/Domain/CommandHostSession.swift)：窄事实转交。 |
+| 原业务链 | [NaturalLanguageParser.swift](../AreaChain/Domain/NaturalLanguageParser.swift)：hasTaskNoteSeparator；[TaskRepositoryProtocol.swift](../AreaChain/Domain/Protocols/TaskRepositoryProtocol.swift)：CreateTodoParams.creationID / fetchTodos(withID:)；[SwiftDataTaskRepository.swift](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift)：完整身份检查；[TaskMutationService.swift](../AreaChain/Services/TaskMutationService.swift)：CaptureInput.creationID / validateBeforeTransaction；[ModelChanges.swift](../AreaChain/Services/ModelChanges.swift)：只读 hasActiveTransaction。 |
+| 新隔离测试 | [TaskCreateCommandTests.swift](../AreaChainTests/Services/TaskCreateCommandTests.swift)、[TaskCreateCommandBoundaryTests.swift](../AreaChainTests/Services/TaskCreateCommandBoundaryTests.swift)、[TaskCreateCommandIdentityTests.swift](../AreaChainTests/Services/TaskCreateCommandIdentityTests.swift)、[TaskCreateCommandFailureTests.swift](../AreaChainTests/Services/TaskCreateCommandFailureTests.swift)、[TaskCreateCommandTestSupport.swift](../AreaChainTests/Services/TaskCreateCommandTestSupport.swift)、[TaskCreateFailureRepository.swift](../AreaChainTests/Services/TaskCreateFailureRepository.swift)。 |
+
+另同步本文、架构、组件目录、技能路由和工程索引；check_workflow.py 增加 adapter / claim 两个稳定入口守卫，其测试新增缺失入口反例。没有修改生产搜索、保护载荷/C2B 或旧 UI 捕获实现。
+
+最终完整正常 PrivacyQA 产物为 `build/TaskCreate-3T1B-1791205036922737000.xcresult`：**109 个方法／169 次执行通过，0 失败、0 跳过**。Xcode 26.6（17F113）、macOS 26.6.2 arm64；原 build/.build.lock 非等待取得，独立 com.areachain.privacy-qa 标识与 build/PrivacyQA，六项真实钥匙串授权清除，串行测试，不排除源码。新增四套 TaskCreateCommand 测试、3T-1A 两套、SwiftDataTaskRepository、Execution/Plan/Handoff/旧单项设置身份与边界回归通过；结果树同时含四个 ModelChanges 和 failedCombinedSaveRollsBackNewAndRestoredTagsWithTheirContents 共五个精确方法。
+
+验证过程保留的修正：首次编译修正两处断言遗漏 try；重复参数原本在 reducer.validSeed 已拒绝，测试改为核验此真实早期拒绝；静态反例夹具改为复用同一个临时项目。一次失败运行同时因磁盘空间不足损坏 xcresult 归档，保留测试文本，仅清除本次失败生成的整机 logarchive 副本；后续使用 `-collect-test-diagnostics never` 避免额外整机诊断，未改变测试目标/断言。五个方法最初的无括号选择器未执行，改成完整 `method()` 后独立 5／5 通过，且最终 109／169 已再次包含它们。最终补充请求事实的 Run 归属及异常脱敏后重跑全部本轮定向，不把此前 103／163 作为最终源码证据。
+
+本轮源码指纹记录在 `build/TaskCreate-3T1B-source.json`，测试后 19 文件逐一相同。指定 Cursor verifier 无可调用入口，未重查认证、未用其他代理冒充。C2B、人工及历史缺口不变；不提交、推送、安装、发布、不操作真实用户库/系统服务、不进入下一阶段。
+
+**首次交付状态（历史）：partial。** 实现与最终 109／169 隔离定向测试已通过；当时最后一次 `./scripts/build.sh --no-wait` 申请原锁返回 **3（锁忙）**，未启动最终正常配置构建，日志 `build/TaskCreate-3T1B-debug-build.log`。立即停止构建/测试申请，不排队、不轮询、不抢锁。此前一次正常 Debug 构建和 staticSignatureVerified=true / hardenedRuntime=true 已通过，distributionReady=false；但它早于请求事实入 Run 与异常脱敏的最终补充，不能覆盖最终版本。最终 PrivacyQA 完整编译/临时签名也不能替代正常 Debug 构建/静态验签。当时该项与指定 Cursor 复核仍为缺口；本地最终收口见下文 H，原生执行 UI 和真实系统验收不在本阶段范围。
+
+静态收尾：19 个相关 Swift 文件的严格 SwiftLint、check_workflow.py、quality_gate.py --profile static --format json、暂存及未暂存 diff --check 通过；工作流定向 104 项及完整 scripts/tests 224 项通过。最后文档收口后重跑受影响静态门禁，源码指纹再次一致。静态扫描无高风险秘密或敏感日志候选，不将它解释为指定独立复核或真实系统验收。生产入口仍未装配，工作停止于本阶段。
+
+#### G. 最后收口续轮：源码未变，构建锁仍忙（2026-10-05）
+
+本续轮核对 `build/TaskCreate-3T1B-source.json`：19 个受验 Swift 文件的 SHA-256 全部一致，构建申请返回后再次核对仍一致。按文件修改时间核对已有测试完成后的变化，Swift 新变化仅为四个并行 SearchMultiline 诊断测试文件；本阶段生产执行链、受验源码及构建/签名脚本未发现影响已有证据的新变化。本轮未修改代码，保留所有并行改动。
+
+只读核对最终 xcresult 仍为 **109 方法／169 次执行通过，0 失败、0 跳过**；按本次要求不重跑这些测试。正常运行 `./scripts/build.sh --no-wait`，原 `build/.build.lock` 的非等待申请返回 **3（锁忙）**，未启动 xcodebuild，也未执行候选产物静态验签；日志仍为 `build/TaskCreate-3T1B-debug-build.log`。立即停止，不轮询、不再次申请、不抢锁或干预持有任务。
+
+**本阶段本地验收仍为 partial：最终源码的隔离定向测试已通过，正常配置 Debug 构建及静态验签尚未完成。** 不借此前补充前的构建或最终 PrivacyQA 临时签名填补该缺口。指定 Cursor verifier、人工、C2B 及历史缺口独立保留，未重新检查登录、未替代复核。本轮只更新同一 §9.65，并做文档引用/差异校验；不提交、推送、安装、不访问真实用户库、不启用生产搜索、不扩展参数或原生 UI，不进入下一阶段。
+
+再次续验（2026-10-05）：收到用户再次继续授权后，19 个受验源码指纹仍全部一致；测试完成后的 Swift 新变化仍只在并行 SearchMultiline 测试范围，未重跑 109 方法／169 次执行。正常执行 `./scripts/build.sh --no-wait` 再次返回 **3（锁忙）**，未启动构建或产物静态验签；立即停止，不轮询、不抢锁、不干预其他任务。本地验收保持 partial，指定 Cursor、人工、C2B 与历史缺口不变。仅补充本记录并校验文档，未修改业务代码或进入下一阶段。
+
+#### H. 本地最终验收收口（2026-10-05）
+
+**当前状态：3T-1B 本阶段要求的本地验收已完成；指定 Cursor verifier、人工、C2B 及历史缺口仍独立保留，不能称全部验收项均已通过。** F、G 的锁忙及 partial 保留为当时的历史记录，本节补齐最终正常 Debug 构建与静态验签证据，不抹去此前失败。
+
+本次构建前后核对 `build/TaskCreate-3T1B-source.json`，19 个受验 Swift 文件的 SHA-256 均与最终测试版本一致；没有修改代码，也未发现影响本阶段测试证据的新生产源码变化。并行 SearchMultiline 测试文件继续保留。沿用 `build/TaskCreate-3T1B-1791205036922737000.xcresult` 的 **109 方法／169 次执行通过，0 失败、0 跳过**，按用户要求未重跑已通过测试。
+
+正常执行 `./scripts/build.sh --no-wait`，本次成功取得原 `build/.build.lock`，构建及脚本自带静态验签退出 **0**。使用项目当前正常 development 配置，未覆盖签名参数、未启用 provisioning、未修改个人配置。产物为 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`；验签结果 `configuration=Debug`、`staticSignatureVerified=true`、`hardenedRuntime=true`，`distributionReady=false` 保持。日志 `build/TaskCreate-3T1B-debug-build.log` 现保存本次成功输出；多匹配 macOS destination 提示不影响通过。静态验签不证明真实系统解锁、公证或发行。
+
+本次只更新同一 §9.65 并进行文档引用/差异校验，保留并行修改及暂存状态。未重新检查 Cursor 登录、未替代指定复核；未提交、推送、安装或启动产物，未访问真实用户库、未启用生产搜索，未扩展参数或原生 UI。工作停止于 3T-1B，不进入下一阶段。

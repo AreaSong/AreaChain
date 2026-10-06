@@ -94,7 +94,7 @@ struct UnifiedSearchObjectPicker: View {
                 }
             }
             .frame(minHeight: 50, maxHeight: .infinity)
-            .background(DaybookScrollerConfigurator())
+            .modifier(DaybookScrollTargetModifier())
             .onChange(of: picker.browse.active) { _, id in if let id { proxy.scrollTo(id) } }
         }
     }

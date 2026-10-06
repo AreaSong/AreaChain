@@ -64,6 +64,19 @@ final class CalendarWeekTestSupport {
         return nodes[0]
     }
 
+    /// 只移动包含该列头的横轴，不碰七列自己的纵向偏移。
+    static func revealHeader(_ node: NSObject, in window: NSWindow) async throws {
+        let frame = try Native.frame(node, in: window)
+        let outer = try #require(ScrollNativeEvidence.views(window).compactMap { $0 as? NSScrollView }.first {
+            let viewport = $0.convert($0.bounds, to: nil)
+            return $0.enclosingScrollView == nil && viewport.minY <= frame.midY && frame.midY <= viewport.maxY
+        })
+        let document = try #require(outer.documentView)
+        document.scrollToVisible(document.convert(frame, from: nil))
+        outer.reflectScrolledClipView(outer.contentView)
+        try await SystemPageHost.settle(window)
+    }
+
     static func frames(_ days: [String], in window: NSWindow) throws -> [CGRect] {
         try days.map { try Native.frame(header($0, in: window), in: window) }
     }

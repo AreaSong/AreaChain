@@ -11,10 +11,13 @@ final class CalendarSpanTestSupport {
     let fixture: Native
     let window: NSWindow
     let locale: String
+    let embedded: Bool
     let todos: [TodoItem]
     let originalTodos: [TodoSnapshot]
     let probe = CalendarHeaderProbe()
     let restore: () -> Void
+    private var saveObserver: NSObjectProtocol?
+    private(set) var saves = 0
     var context: ModelContext { fixture.container.mainContext }
     var selectedKey: String { BoardSelection.shared.inspectingDayKey }
 
@@ -22,6 +25,7 @@ final class CalendarSpanTestSupport {
          embedded: Bool = false, day: String = "2026-09-30", height: CGFloat = 760) throws {
         fixture = try Native()
         self.locale = locale
+        self.embedded = embedded
         restore = Self.preserveState()
         WorkspaceNavigation.shared.revealTab(.calendar)
         WorkspaceNavigation.shared.clearSearch()
@@ -47,10 +51,15 @@ final class CalendarSpanTestSupport {
             .environment(\.calendar, calendar)
         window = SystemPageHost.window(root, container: fixture.container, scheme: scheme, locale: locale,
                                        size: NSSize(width: width, height: height), embedded: embedded, prefs: fixture.prefs)
+        saveObserver = NotificationCenter.default.addObserver(forName: ModelContext.willSave,
+            object: context, queue: .main) { [weak self] _ in
+                MainActor.assumeIsolated { self?.saves += 1 }
+            }
     }
 
     func close() {
         SystemPageHost.release(window)
+        if let saveObserver { NotificationCenter.default.removeObserver(saveObserver) }
         restore()
         fixture.cleanup()
     }
@@ -104,6 +113,10 @@ final class CalendarSpanTestSupport {
     }
 
     func switchSpan(_ span: CalendarSpan) async throws {
+        if embedded {
+            try await switchHeaderSpan(span)
+            return
+        }
         let target = try node("calendar.span." + span.rawValue)
         try Native.assertBounds([target], in: window)
         try #require(window.isKeyWindow)
@@ -113,6 +126,16 @@ final class CalendarSpanTestSupport {
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             NSApp.postEvent(try MenuButtonTestSupport.mouse(type, at: point, in: window), atStart: false)
         }
+        try await SystemPageHost.settle(window)
+    }
+
+    private func switchHeaderSpan(_ span: CalendarSpan) async throws {
+        let compact = window.contentView!.bounds.width < 520
+        let trigger = compact ? "workspace.header.more" : "workspace.header.action.calendar.span"
+        // Escape 仅结束系统菜单追踪；实际范围变化来自取回的生产菜单项，未发送给日历。
+        let menu = try await MenuButtonTestSupport.openAndEscape(node(trigger), in: window)
+        let spanMenu = compact ? try #require(menu.items.first { $0.submenu != nil }?.submenu) : menu
+        try MenuButtonTestSupport.dispatch(text("calendar.span." + span.rawValue), in: spanMenu)
         try await SystemPageHost.settle(window)
     }
 
@@ -126,6 +149,7 @@ final class CalendarSpanTestSupport {
         let action = try #require(probe.content.actions.first { $0.id == "calendar.span" })
         #expect(action.children.map(\.id) == ["calendar.month", "calendar.week"])
         #expect(action.children.filter(\.isActive).map(\.id) == ["calendar." + span.rawValue])
+        guard !embedded else { return }
         for item in CalendarSpan.allCases {
             let target = try node("calendar.span." + item.rawValue)
             if Native.value(target, "accessibilityRole") as? String == "AXRadioButton" {
@@ -157,9 +181,27 @@ final class CalendarSpanTestSupport {
     func assertUnchanged() throws {
         #expect(try context.fetchCount(FetchDescriptor<TodoItem>()) == 4)
         #expect(try context.fetchCount(FetchDescriptor<TagItem>()) == 1)
+        #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
+        #expect(saves == 0)
         #expect(todos.allSatisfy { !$0.isDone && !$0.tagIDs.isEmpty })
         #expect(todos.map(\.snapshot) == originalTodos)
         #expect(!context.hasChanges)
+    }
+
+    func enterAndInspect(_ todo: TodoItem) async throws {
+        try await key(36, chars: "\r")
+        try await key(36, chars: "\r")
+        #expect(WorkspaceNavigation.shared.selectedTaskID == todo.id)
+        #expect(selectedKey == todo.dayKey)
+    }
+
+    /// 只记录真实控件投影和原生状态；业务焦点另由首次按键、列表排序及检查结果证明。
+    func recordRoute(_ stage: String) {
+        let active = probe.content.actions.first?.children.filter(\.isActive).map(\.id) ?? []
+        let inspected = WorkspaceNavigation.shared.selectedTaskID.flatMap { id in todos.firstIndex { $0.id == id } }
+        print("Calendar10F \(stage) embedded=\(embedded) span=\(active) day=\(selectedKey) "
+            + "textEditor=\(window.firstResponder is NSTextView) windowResponder=\(window.firstResponder is NSWindow) "
+            + "inspectedIndex=\(String(describing: inspected)) saves=\(saves)")
     }
 
     static func preserveState() -> () -> Void {

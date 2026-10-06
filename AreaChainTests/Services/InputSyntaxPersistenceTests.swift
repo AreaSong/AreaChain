@@ -121,15 +121,20 @@ struct InputSyntaxPersistenceTests {
     }
 
     @Test func failedCombinedSaveRollsBackNewAndRestoredTagsWithTheirContents() throws {
-        let store = try container()
-        let context = store.mainContext
+        let fixture = try TaskCaptureFixture()
+        let context = fixture.context
+        let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        let root = FileManager.default.temporaryDirectory.appending(path: "AreaChain-3T1A-" + UUID().uuidString)
+        let files = AttachmentStore(keys: vault.keys, root: root)
         let deletedAt = Date(timeIntervalSince1970: 123)
         let old = TagItem(name: "旧标签", sortOrder: 0, deletedAt: deletedAt)
         context.insert(old)
         try context.save()
         #expect(throws: CocoaError.self) {
-            try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
-                _ = try SwiftDataDiaryRepository(container: store).addDiary(
+            var boundary = fixture.boundary
+            boundary.save = { _ in throw CocoaError(.fileWriteNoPermission) }
+            try ModelChanges.transaction(in: context, boundary: boundary) {
+                _ = try SwiftDataDiaryRepository(context: context, vault: vault, attachmentStore: files, attachmentRoot: root).addDiary(
                     text: "#旧标签 #新标签 内容", dayKey: "2026-09-13", tagIDs: []
                 )
             }

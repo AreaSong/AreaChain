@@ -58,6 +58,10 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         return try fetchTodos(matching: #Predicate { $0.deletedAt == nil })
     }
 
+    func fetchTodos(withID id: UUID) throws -> [TodoItem] {
+        try context.fetch(FetchDescriptor<TodoItem>(predicate: #Predicate { $0.id == id }))
+    }
+
     func fetchTodos(forTag tagID: UUID) throws -> [TodoItem] {
         let needle = tagID.uuidString
         // 库侧按编码子串缩小集合；是否命中仍以 TagIDList 解析为准，避免编码差异误匹配。
@@ -75,6 +79,9 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     @discardableResult
     func addTodo(_ params: CreateTodoParams) throws -> TodoItem {
+        if let id = params.creationID, try !fetchTodos(withID: id).isEmpty {
+            throw RepositoryError.invalidArgument("创建身份已存在")
+        }
         let trimmed = params.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasMetadata = !params.tagIDs.isEmpty
             || params.remindMinutes != nil
@@ -85,6 +92,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
             throw RepositoryError.invalidArgument("待办标题不能为空")
         }
         let todo = TodoItem(
+            id: params.creationID ?? UUID(),
             title: trimmed,
             dayKey: params.dayKey,
             remindMinutes: params.remindMinutes,

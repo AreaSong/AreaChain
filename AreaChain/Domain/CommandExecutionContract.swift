@@ -21,7 +21,7 @@ struct CommandOperationIdentity: Equatable {
 }
 
 enum CommandLocalCommit: Equatable { case notSubmitted, committed, unknown }
-enum CommandExternalEffect: String, Hashable { case notification, calendar, preferencePresentation }
+enum CommandExternalEffect: String, Hashable { case notification, calendar, preferencePresentation, taskPublication }
 enum CommandExternalResult: Equatable { case pending, running, succeeded, failed, unknown }
 
 /// 诊断指向快照已有基线，不复制真实当前正文或接收任意错误字符串。
@@ -71,6 +71,7 @@ struct CommandExecutionUnit: Equatable {
     var preferenceGroupCommit: CommandPreferenceGroupCommit?
     var preferenceGroupPresentation: CommandPreferenceGroupPresentation?
     var preferenceVerification: CommandExecutionReceipt?
+    var taskCreation: CommandTaskCreateFacts?
 }
 
 enum CommandExecutionError: Error, Equatable {

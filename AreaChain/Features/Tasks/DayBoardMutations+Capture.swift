@@ -5,25 +5,18 @@ extension DayBoardMutations {
     @discardableResult
     static func addCapturedTodo(
         text: String, dayKey: String, context: ModelContext, tagIDs: [UUID] = [],
-        fallbackQuadrant: QuadrantSlot? = nil
+        fallbackQuadrant: QuadrantSlot? = nil,
+        dependencies: TaskMutationService.Dependencies? = nil
     ) -> Bool {
-        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return false }
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let isImportant = parsed.hasPriorityToken ? parsed.isImportant : (fallbackQuadrant?.isImportant ?? parsed.isImportant)
-        let isUrgent = parsed.hasPriorityToken ? parsed.isUrgent : (fallbackQuadrant?.isUrgent ?? parsed.isUrgent)
-        let saved = ModelChanges.perform(in: context) {
-            let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(tagIDs), in: context)
-            let params = CreateTodoParams(
-                title: parsed.cleanTitle, dayKey: dayKey, notes: parsed.notes,
-                remindMinutes: parsed.remindMinutes, isImportant: isImportant,
-                isUrgent: isUrgent, tagIDs: TagIDList.parse(ids),
-                sourceBundleID: CaptureStamp.current(enabled: AppPreferences.shared.stampCaptureApp)
-            )
-            _ = try taskRepo(for: context).addTodo(params)
+        var resolved = dependencies ?? .production
+        if dependencies == nil {
+            resolved.repository = { taskRepo(for: $0) }
+            resolved.requestReminderAccessIfNeeded = { requestReminderAccessIfNeeded($0) }
         }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
+        return TaskMutationService.createCaptured(
+            .init(text: text, dayKey: dayKey, tagIDs: tagIDs, fallbackQuadrant: fallbackQuadrant),
+            in: context, dependencies: resolved
+        ).saved
     }
 
     @discardableResult

@@ -11,6 +11,7 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
     var creations = 0
     var switches = 0
     var reminderWrites: [Int?] = []
+    var reminderSaveBoundaries = 0
     var weekdayWrites: [Int] = []
 
     init(_ context: ModelContext) {
@@ -69,6 +70,7 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
     func setRemind(id: UUID, minutes: Int?) throws {
         reminderWrites.append(minutes)
         try ModelChanges.transaction(in: context, save: { context in
+            self.reminderSaveBoundaries += 1
             if self.fail { throw CocoaError(.fileWriteNoPermission) }
             try context.save()
         }) {

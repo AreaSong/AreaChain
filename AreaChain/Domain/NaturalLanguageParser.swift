@@ -1,17 +1,14 @@
 import Foundation
-
 enum SyntaxTokenKind: Equatable {
     case tag(name: String)
     case time(minutes: Int)
     case priority(isImportant: Bool, isUrgent: Bool, raw: String)
     case note(text: String)
 }
-
 struct SyntaxHighlightToken: Equatable {
     let kind: SyntaxTokenKind
     let range: NSRange
 }
-
 struct ParsedCapture: Equatable {
     var rawInput: String
     var cleanTitle: String
@@ -74,6 +71,11 @@ enum NaturalLanguageParser {
 
     static func parseTaskCapture(_ input: String) -> ParsedCapture {
         parse(input, consumeDiaryPresetTags: false)
+    }
+
+    /// 复用捕获的分隔规则，连空备注段也不能成为无正文命令的旁路。
+    static func hasTaskNoteSeparator(_ input: String) -> Bool {
+        findNoteRange(in: input) != nil
     }
 
     private struct ParsedNoteSection {

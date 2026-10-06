@@ -26,10 +26,12 @@ struct CalendarWeekConsumerTests {
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
         let next = "2026-10-01"
+        try await Support.revealHeader(Support.header(next, in: window), in: window)
         for _ in 0..<2 { try await Native.click(Support.header(next, in: window), in: window) }
         #expect(f.selections == [next, next] && other.selections.isEmpty)
         #expect(f.selected == next && other.selected == "2026-09-30")
         f.acceptsSelection = false
+        try await Support.revealHeader(Support.header("2026-09-30", in: window), in: window)
         try await Native.click(Support.header("2026-09-30", in: window), in: window)
         #expect(f.selected == next)
         #expect(try Support.header(next, in: window).value(forKey: "accessibilitySelected") as? Bool == true)
@@ -37,6 +39,7 @@ struct CalendarWeekConsumerTests {
         let count = f.selections.count
         f.disabled = true
         try await SystemPageHost.settle(window)
+        try await Support.revealHeader(Support.header(next, in: window), in: window)
         try await Native.click(Support.header(next, in: window), in: window)
         #expect(f.selections.count == count)
         f.days = DayKey.weekKeys(containing: "2028-02-29")
@@ -100,6 +103,10 @@ struct CalendarWeekConsumerTests {
         let editor = try #require(field.currentEditor() as? NSTextView)
         editor.insertText("Synthetic week draft", replacementRange: editor.selectedRange())
         try await f.switchSpan(.week)
+        let next = try #require(Native.buttons(in: f.window).first {
+            Native.value($0, "accessibilityIdentifier") as? String == "calendar.week.2027-01-01"
+        })
+        try await Support.revealHeader(next, in: f.window)
         for _ in 0..<2 { try await Native.click(f.node("calendar.week.2027-01-01"), in: f.window) }
         #expect(f.selectedKey == "2027-01-01")
         try await f.key(36, chars: "\r")

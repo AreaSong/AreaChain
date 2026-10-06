@@ -14,24 +14,32 @@ extension Notification.Name {
 }
 
 enum BoardEvents {
-    static func changed() {
-        notifyUI()
-        guard !NotificationScheduler.isRunningTests else { return }
-        Task { @MainActor in
-            NotificationScheduler.shared.scheduleRefresh()
-            CalendarSync.refreshIfEnabled()
+    struct Dependencies {
+        let center: NotificationCenter
+        let requestRefresh: (_ includeCalendar: Bool) -> Void
+
+        static var production: Dependencies {
+            Dependencies(center: .default) { includeCalendar in
+                guard !NotificationScheduler.isRunningTests else { return }
+                Task { @MainActor in
+                    NotificationScheduler.shared.scheduleRefresh()
+                    if includeCalendar { CalendarSync.refreshIfEnabled() }
+                }
+            }
         }
     }
 
-    static func changedLocally() {
-        notifyUI()
-        guard !NotificationScheduler.isRunningTests else { return }
-        Task { @MainActor in
-            NotificationScheduler.shared.scheduleRefresh()
-        }
+    static func changed() { changed(dependencies: .production) }
+
+    static func changedLocally() { changedLocally(dependencies: .production) }
+
+    static func changed(dependencies: Dependencies) {
+        dependencies.center.post(name: .boardDidChange, object: nil)
+        dependencies.requestRefresh(true)
     }
 
-    private static func notifyUI() {
-        NotificationCenter.default.post(name: .boardDidChange, object: nil)
+    static func changedLocally(dependencies: Dependencies) {
+        dependencies.center.post(name: .boardDidChange, object: nil)
+        dependencies.requestRefresh(false)
     }
 }

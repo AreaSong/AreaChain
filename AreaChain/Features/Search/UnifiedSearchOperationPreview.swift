@@ -44,7 +44,8 @@ struct UnifiedSearchOperationPreview: View {
                 Text(LocalizedStringKey(controller.fileSettingIssue ?? "unified.group.ready"))
                     .font(DaybookType.caption).padding(.horizontal, DaybookSpacing.md)
                     .accessibilityIdentifier("unified.group.fixedStatus")
-            } else if controller.planMessage != "unified.plan.notExecutable" {
+            }
+            if controller.planMessage != "unified.plan.notExecutable", controller.planMessage != "unified.group.ready" {
                 Text(LocalizedStringKey(controller.planMessage)).font(DaybookType.caption)
                     .padding(.horizontal, DaybookSpacing.md)
                     .accessibilityIdentifier("unified.plan.message")

@@ -43,48 +43,59 @@ final class DaybookScroller: NSScroller {
 // MARK: - SwiftUI Bridge Configurator
 
 struct DaybookScrollerConfigurator: NSViewRepresentable {
+    var scope: DaybookScrollScope?
+
     func makeNSView(context: Context) -> DaybookScrollerHostNSView {
-        DaybookScrollerHostNSView()
+        let view = DaybookScrollerHostNSView()
+        view.scope = scope
+        return view
     }
 
     func updateNSView(_ nsView: DaybookScrollerHostNSView, context: Context) {
+        nsView.scope = scope
         nsView.applyScroller()
+    }
+
+    static func dismantleNSView(_ nsView: DaybookScrollerHostNSView, coordinator: ()) {
+        nsView.dismantle()
     }
 }
 
 final class DaybookScrollerHostNSView: NSView {
-    private weak var currentOverlay: DaybookFloatingScrollerOverlay?
-    private weak var currentScrollView: NSScrollView?
+    private(set) weak var currentOverlay: DaybookFloatingScrollerOverlay?
+    private(set) weak var currentScrollView: NSScrollView?
+    var scope: DaybookScrollScope? {
+        didSet {
+            if oldValue !== scope, oldValue?.host === self {
+                oldValue?.edgeObserver?.bind(to: nil)
+                oldValue?.host = nil
+            }
+            scope?.host = self
+        }
+    }
+    private var dismantled = false
+    private var generation = 0
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        setup()
+        alphaValue = 0
+        wantsLayer = true
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        setup()
-    }
-
-    private func setup() {
         alphaValue = 0
         wantsLayer = true
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        applyScroller()
-        DispatchQueue.main.async { [weak self] in
-            self?.applyScroller()
-        }
+        scheduleApply()
     }
 
     override func viewDidMoveToSuperview() {
         super.viewDidMoveToSuperview()
-        applyScroller()
-        DispatchQueue.main.async { [weak self] in
-            self?.applyScroller()
-        }
+        scheduleApply()
     }
 
     override func layout() {
@@ -92,10 +103,37 @@ final class DaybookScrollerHostNSView: NSView {
         applyScroller()
     }
 
+    private func scheduleApply() {
+        generation += 1
+        applyScroller()
+        let scheduled = generation
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.generation == scheduled else { return }
+            self.applyScroller()
+        }
+    }
+
+    func dismantle() {
+        dismantled = true
+        generation += 1
+        clearBinding()
+    }
+
+    private func clearBinding() {
+        currentOverlay?.removeFromSuperview()
+        currentOverlay = nil
+        currentScrollView = nil
+        scope?.edgeObserver?.bind(to: nil)
+    }
+
     func applyScroller() {
-        guard let scrollView = locateTargetScrollView() else { return }
-        if currentScrollView !== scrollView || currentOverlay == nil || currentOverlay?.superview !== scrollView {
-            currentOverlay?.removeFromSuperview()
+        guard !dismantled, window != nil, superview != nil,
+              let scrollView = locateTargetScrollView() else {
+            clearBinding()
+            return
+        }
+        if currentScrollView !== scrollView || currentOverlay?.superview !== scrollView {
+            clearBinding()
             let overlay = DaybookFloatingScrollerOverlay(scrollView: scrollView)
             scrollView.addSubview(overlay, positioned: .above, relativeTo: nil)
             currentOverlay = overlay
@@ -103,183 +141,224 @@ final class DaybookScrollerHostNSView: NSView {
         } else {
             currentOverlay?.syncFrame()
         }
+        scope?.edgeObserver?.bind(to: scrollView)
     }
 
     private func locateTargetScrollView() -> NSScrollView? {
-        if let direct = enclosingScrollView {
-            return direct
-        }
-        var current: NSView? = self
-        while let node = current {
-            if let target = node as? NSScrollView {
-                return target
-            }
-            if let found = findScrollViewInSiblings(of: node) {
-                return found
-            }
-            current = node.superview
-        }
-        return nil
-    }
-
-    private func findScrollViewInSiblings(of node: NSView) -> NSScrollView? {
-        guard let parent = node.superview else { return nil }
-        for sibling in parent.subviews where sibling !== node {
-            if let found = findFirstScrollView(in: sibling) {
-                return found
-            }
-        }
-        return nil
-    }
-
-    private func findFirstScrollView(in view: NSView) -> NSScrollView? {
-        if let sv = view as? NSScrollView { return sv }
-        for sub in view.subviews where sub !== self {
-            if let found = findFirstScrollView(in: sub) {
-                return found
-            }
-        }
-        return nil
+        if let scope { return scope.target(endingAt: self) }
+        return DaybookScrollScope.unscopedTarget(for: self)
     }
 }
 
 // MARK: - 智能动态视口边缘羽化 (Fading Edges)
 
 struct DaybookScrollEdgeObserver: NSViewRepresentable {
+    var scope: DaybookScrollScope?
+    var enabled = true
     var onEdgeChange: (Bool, Bool) -> Void
 
-    func makeNSView(context: Context) -> DaybookScrollEdgeObserverNSView {
-        let view = DaybookScrollEdgeObserverNSView()
-        view.onEdgeChange = onEdgeChange
+    func makeNSView(context: Context) -> DaybookScrollEdgeContainer {
+        let view = DaybookScrollEdgeContainer()
+        updateNSView(view, context: context)
         return view
     }
 
-    func updateNSView(_ nsView: DaybookScrollEdgeObserverNSView, context: Context) {
-        nsView.onEdgeChange = onEdgeChange
-        nsView.checkEdges()
+    func updateNSView(_ nsView: DaybookScrollEdgeContainer, context: Context) {
+        nsView.update(scope: scope, enabled: enabled, onEdgeChange: onEdgeChange)
+    }
+
+    static func dismantleNSView(_ nsView: DaybookScrollEdgeContainer, coordinator: ()) {
+        nsView.removeObserver()
+    }
+}
+
+/// 保留原生背景分支身份；开关只装卸观察者，不使成对边界临时离开窗口并重装浮层。
+final class DaybookScrollEdgeContainer: NSView {
+    private var observer: DaybookScrollEdgeObserverNSView?
+
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+    func update(scope: DaybookScrollScope?, enabled: Bool, onEdgeChange: @escaping (Bool, Bool) -> Void) {
+        guard enabled else { removeObserver(); return }
+        if observer == nil {
+            let view = DaybookScrollEdgeObserverNSView(frame: bounds)
+            view.autoresizingMask = [.width, .height]
+            observer = view
+            addSubview(view)
+        }
+        observer?.onEdgeChange = onEdgeChange
+        observer?.scope = scope
+        observer?.refreshBinding()
+    }
+
+    func removeObserver() {
+        observer?.dismantle()
+        observer?.removeFromSuperview()
+        observer = nil
     }
 }
 
 final class DaybookScrollEdgeObserverNSView: NSView {
     var onEdgeChange: ((Bool, Bool) -> Void)?
-    private var observer: NSObjectProtocol?
+    weak var scope: DaybookScrollScope? {
+        didSet {
+            if oldValue !== scope, oldValue?.edgeObserver === self { oldValue?.edgeObserver = nil }
+            scope?.edgeObserver = self
+        }
+    }
+    private(set) weak var currentScrollView: NSScrollView?
+    private weak var currentClip: NSClipView?
+    private weak var currentDocument: NSView?
+    private var observers: [NSObjectProtocol] = []
+    private var generation = 0
+    private var dismantled = false
+    private var publicationPending = false
+    private var published: [Bool]?
     private var lastTop = false
     private var lastBottom = false
 
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        alphaValue = 0
-        wantsLayer = true
-        setupObserver()
-    }
+    override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
-    required init?(coder: NSCoder) {
-        super.init(coder: coder)
-        setupObserver()
-    }
-
-    deinit {
-        if let observer {
-            NotificationCenter.default.removeObserver(observer)
-        }
-    }
-
-    private func setupObserver() {
-        observer = NotificationCenter.default.addObserver(
-            forName: NSScrollView.didLiveScrollNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.checkEdges()
-        }
-    }
+    deinit { observers.forEach(NotificationCenter.default.removeObserver) }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        checkEdges()
-        DispatchQueue.main.async { [weak self] in self?.checkEdges() }
+        refreshBinding()
+    }
+
+    override func viewDidMoveToSuperview() {
+        super.viewDidMoveToSuperview()
+        refreshBinding()
     }
 
     override func layout() {
         super.layout()
+        refreshBinding()
+    }
+
+    func refreshBinding() {
+        guard !dismantled, window != nil, superview != nil, let host = scope?.host,
+              host.window === window else { bind(to: nil); return }
+        // 只消费 Host 的已确认绑定；通知可能发生在 SwiftUI 重排中，不能在这里提前重新定位。
+        bind(to: host.currentScrollView)
+    }
+
+    func bind(to target: NSScrollView?) {
+        let target = !dismantled && window != nil && target?.window === window ? target : nil
+        if currentScrollView !== target || currentClip !== target?.contentView
+            || currentDocument !== target?.documentView || (target == nil && !observers.isEmpty) {
+            generation += 1
+            publicationPending = false
+            observers.forEach(NotificationCenter.default.removeObserver)
+            observers.removeAll()
+            currentScrollView = target
+            currentClip = target?.contentView
+            currentDocument = target?.documentView
+            if let target { observe(target) }
+        }
         checkEdges()
     }
 
-    func checkEdges() {
-        guard let scrollView = enclosingScrollView ?? findTargetScrollView() else { return }
-        let visible = scrollView.documentVisibleRect
-        guard let docView = scrollView.documentView else { return }
-        let docHeight = docView.bounds.height
-
-        let hasScrollableContent = docHeight > visible.height + 4
-        let topFeather = hasScrollableContent && visible.minY > 3.0
-        let bottomFeather = hasScrollableContent && (visible.maxY < docHeight - 3.0)
-
-        if topFeather != lastTop || bottomFeather != lastBottom {
-            lastTop = topFeather
-            lastBottom = bottomFeather
-            onEdgeChange?(topFeather, bottomFeather)
-        }
-    }
-
-    private func findTargetScrollView() -> NSScrollView? {
-        if let siblings = superview?.subviews {
-            for sibling in siblings where sibling !== self {
-                if let sv = sibling as? NSScrollView { return sv }
-                if let found = findFirst(in: sibling) { return found }
+    private func observe(_ scroll: NSScrollView) {
+        let scheduled = generation
+        let views: [NSView] = [scroll, scroll.contentView] + (scroll.documentView.map { [$0] } ?? [])
+        for view in views {
+            // 通知开关是共享能力；解绑只移除本观察者，不关闭浮层或其他使用者需要的开关。
+            view.postsBoundsChangedNotifications = true
+            view.postsFrameChangedNotifications = true
+            for name in [NSView.boundsDidChangeNotification, NSView.frameDidChangeNotification] {
+                observe(name, object: view, generation: scheduled)
             }
         }
-        return nil
+        observe(NSScrollView.didLiveScrollNotification, object: scroll, generation: scheduled)
     }
 
-    private func findFirst(in view: NSView) -> NSScrollView? {
-        if let sv = view as? NSScrollView { return sv }
-        for sub in view.subviews where sub !== self {
-            if let found = findFirst(in: sub) { return found }
+    private func observe(_ name: Notification.Name, object: NSView, generation scheduled: Int) {
+        observers.append(NotificationCenter.default.addObserver(forName: name, object: object, queue: .main) { [weak self] _ in
+            guard let self, !self.dismantled, self.generation == scheduled else { return }
+            self.refreshBinding()
+        })
+    }
+
+    func checkEdges() {
+        var top = false
+        var bottom = false
+        if let scroll = currentScrollView, let document = currentDocument {
+            let visible = scroll.documentVisibleRect
+            let height = document.bounds.height
+            let overflowing = height > visible.height + 4
+            top = overflowing && visible.minY > 3.0
+            bottom = overflowing && visible.maxY < height - 3.0
         }
-        return nil
+        lastTop = top
+        lastBottom = bottom
+        schedulePublication()
+    }
+
+    private func schedulePublication() {
+        guard !dismantled, window != nil, !publicationPending, published != [lastTop, lastBottom] else { return }
+        publicationPending = true
+        let scheduled = generation
+        // AppKit 可在 SwiftUI 更新/layout 内同步通知；合并到下一主队列轮次再写 State。
+        DispatchQueue.main.async { [weak self] in
+            guard let self, !self.dismantled, self.generation == scheduled else { return }
+            self.publicationPending = false
+            guard self.window != nil, self.scope?.edgeObserver === self else { return }
+            let state = [self.lastTop, self.lastBottom]
+            guard self.published != state else { return }
+            self.published = state
+            self.onEdgeChange?(self.lastTop, self.lastBottom)
+        }
+    }
+
+    func dismantle() {
+        dismantled = true
+        generation += 1
+        publicationPending = false
+        onEdgeChange = nil
+        if scope?.edgeObserver === self { scope?.edgeObserver = nil }
+        bind(to: nil)
     }
 }
 
 struct DaybookScrollEdgeFeatherModifier: ViewModifier {
     var enabled: Bool
     var featherHeight: CGFloat = 7.0
+    var scope: DaybookScrollScope?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var topFeather = false
     @State private var bottomFeather = false
 
     func body(content: Content) -> some View {
-        if enabled {
-            content
-                .background(DaybookScrollEdgeObserver { top, bottom in
+        content
+                .background(DaybookScrollEdgeObserver(scope: scope, enabled: enabled) { top, bottom in
                     topFeather = top
                     bottomFeather = bottom
                 })
                 .mask {
                     GeometryReader { geo in
                         let total = geo.size.height
-                        if total > featherHeight * 2 {
-                            LinearGradient(
-                                stops: [
-                                    .init(color: topFeather ? .clear : .black, location: 0),
-                                    .init(color: .black, location: topFeather ? (featherHeight / total) : 0),
-                                    .init(color: .black, location: bottomFeather ? (1.0 - featherHeight / total) : 1.0),
-                                    .init(color: bottomFeather ? .clear : .black, location: 1)
-                                ],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                            .animation(DaybookMotion.fade(reduceMotion), value: topFeather)
-                            .animation(DaybookMotion.fade(reduceMotion), value: bottomFeather)
-                        } else {
-                            Rectangle()
-                        }
+                        let top = enabled && total > featherHeight * 2 && topFeather
+                        let bottom = enabled && total > featherHeight * 2 && bottomFeather
+                        LinearGradient(
+                            stops: [
+                                .init(color: top ? .clear : .black, location: 0),
+                                .init(color: .black, location: top ? (featherHeight / total) : 0),
+                                .init(color: .black, location: bottom ? (1.0 - featherHeight / total) : 1.0),
+                                .init(color: bottom ? .clear : .black, location: 1)
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                        .animation(DaybookMotion.fade(reduceMotion), value: topFeather)
+                        .animation(DaybookMotion.fade(reduceMotion), value: bottomFeather)
                     }
                 }
-        } else {
-            content
-        }
+                .onChange(of: enabled) { _, _ in
+                    topFeather = false
+                    bottomFeather = false
+                }
     }
 }
 
@@ -296,13 +375,12 @@ extension View {
                               indicators: DaybookScrollIndicators.preserved)
     }
 
-    // 泛型变换保留原具体视图链；不以条件包装或 AnyView 引入额外身份/状态边界。
+    // 指示器策略仍先应用；局部标记不重新承载内容或切换内容身份。
     private func daybookScrollAssembly<IndicatorContent: View>(
         featherEdges: Bool, featherHeight: CGFloat, indicators: (Self) -> IndicatorContent
     ) -> some View {
         indicators(self)
-            .background(DaybookScrollerConfigurator())
-            .modifier(DaybookScrollEdgeFeatherModifier(enabled: featherEdges, featherHeight: featherHeight))
+            .modifier(DaybookScrollTargetModifier(featherEdges: featherEdges, featherHeight: featherHeight))
     }
 }
 

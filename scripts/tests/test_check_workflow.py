@@ -46,10 +46,12 @@ class WorkflowCheckTests(unittest.TestCase):
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
+        contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate\n"
+        contract_docs["docs/component-catalog.md"] += " TaskMutationService createCaptured CommitFacts afterPublication\n"
         contract_docs["docs/component-catalog.md"] += " DaybookDatePicker DaybookDateCell DaybookDateCellPresentation DaybookMonthGridDay DaybookWeekdayHeader DatePicker MonthGrid DaybookHabitDateState HabitMonthGrid\n"
         contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
         contract_docs["docs/component-catalog.md"] += " weekHeader WeekHeader\n"
-        contract_docs["docs/component-catalog.md"] += " daybookScroll daybookScrollAssembly DaybookScrollIndicators\n"
+        contract_docs["docs/component-catalog.md"] += " daybookScroll daybookScrollAssembly DaybookScrollIndicators DaybookScrollEdgeObserverNSView DaybookScrollTargetModifier\n"
         contract_docs["docs/component-catalog.md"] += " DaybookFloatingSurface SyntaxAutocompletePopup CaptureAttributesPopup rowBubble RowTitleBubble RowNoteBubble\n"
         contract_docs["docs/component-catalog.md"] += " daybookStaticCardSurface yesterdaySection centeredYesterdaySection\n"
         contract_docs["docs/component-catalog.md"] += " filterFlyout level1CategoryCard level2OptionCard\n"
@@ -278,6 +280,15 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_workflow_contract(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_component_catalog_requires_task_capture_boundaries(self):
+        self.make_project()
+        self.write("AreaChain/Services/TaskMutationService.swift", "enum Other {}\n")
+        self.write("AreaChain/Services/ModelChanges.swift", "enum ModelChanges {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("TaskMutationService", "createCaptured", "CommitFacts", "afterPublication"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_local_preference_boundaries(self):
         self.make_project()
@@ -529,6 +540,20 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("TagContentQueryReader" in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_task_create_adapter_and_claim(self):
+        self.make_project()
+        for relative, symbol in [
+            ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+            ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),
+        ]:
+            with self.subTest(symbol=symbol):
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                self.write(relative, original)
+
     def test_component_catalog_requires_workspace_header_contract(self):
         self.make_project()
         source = self.root / "AreaChain/Features/Workspace/WorkspaceHeaderContent.swift"
@@ -672,8 +697,15 @@ class WorkflowCheckTests(unittest.TestCase):
         self.write("AreaChain/Theme/DaybookScroller.swift", "struct Other {}\n")
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
-        for symbol in ("daybookScroll", "daybookScrollAssembly", "DaybookScrollIndicators"):
+        for symbol in ("daybookScroll", "daybookScrollAssembly", "DaybookScrollIndicators", "DaybookScrollEdgeObserverNSView"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_scoped_scroll_bridge(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookScrollScope.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("DaybookScrollTargetModifier" in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_floating_surfaces_and_consumers(self):
         self.make_project()

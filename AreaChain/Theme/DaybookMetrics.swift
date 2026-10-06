@@ -14,6 +14,12 @@ enum DaybookMetrics {
         static let cellHeight: CGFloat = 24
     }
 
+    enum WeekBoard {
+        // 原任务行含优先级、时间和 48pt 操作区时，240pt 仅剩 5pt 标题；280pt 保留 45pt。
+        static let minimumColumnWidth: CGFloat = 280
+        static let columnSpacing: CGFloat = 8
+    }
+
     enum WeekHeader {
         static let lineSpacing: CGFloat = 2
     }

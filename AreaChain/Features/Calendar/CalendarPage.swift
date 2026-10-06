@@ -64,11 +64,21 @@ struct CalendarPage: View {
 
     var body: some View {
         GeometryReader { geometry in
-            ViewThatFits(in: .horizontal) {
-                wideLayout
-                compactLayout(compactDates: embedded && geometry.size.height < 560)
+            // 周列的固有宽度不参与月布局候选测量；导航和滚动视口服从真实页面宽度。
+            if span == .week {
+                weekLayout
+                    .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
+            } else {
+                ViewThatFits(in: .horizontal) {
+                    monthWideLayout
+                    monthCompact(compactDates: embedded && geometry.size.height < 560)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        }
+        // 范围切换会卸载旧分段；焦点协调必须留在页面，且不结束仍有效的原生编辑会话。
+        .onChange(of: span) { _, _ in
+            keyboardFocus = .grid
         }
         .workspaceHeader(actions: [WorkspaceHeaderAction(
             id: "calendar.span", title: LocalizedStringKey(span.titleKey), systemImage: "calendar",
@@ -141,15 +151,6 @@ struct CalendarPage: View {
         )
     }
 
-    @ViewBuilder
-    private var wideLayout: some View {
-        if span == .week {
-            weekLayout
-        } else {
-            monthWideLayout
-        }
-    }
-
     private var monthWideLayout: some View {
         HStack(alignment: .top, spacing: 16) {
             calendarSidebar
@@ -205,9 +206,6 @@ struct CalendarPage: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("calendar.span"))
         .accessibilityIdentifier("calendar.span")
-        .onChange(of: span) { _, _ in
-            keyboardFocus = .grid
-        }
     }
 
     private var monthBar: some View {
@@ -230,16 +228,6 @@ struct CalendarPage: View {
             prevLabel: "calendar.week.prev",
             nextLabel: "calendar.week.next"
         )
-    }
-
-    private func compactLayout(compactDates: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            if span == .week {
-                weekLayout
-            } else {
-                monthCompact(compactDates: compactDates)
-            }
-        }
     }
 
     private func monthCompact(compactDates: Bool) -> some View {

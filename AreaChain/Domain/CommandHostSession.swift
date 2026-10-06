@@ -133,6 +133,11 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         try execution!.verifyPreferenceGroup(receipt)
     }
 
+    mutating func recordTaskCreation(_ facts: CommandTaskCreateFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordTaskCreation(facts, attempt: attempt)
+    }
+
     /// 只生成候选状态，协调者在全部校验后同时发布双方；此入口本身不授予所有权。
     func handoffStates(to target: Self) throws -> (source: Self, target: Self) {
         guard !allDrafts.contains(where: \.blocksUnprotectedTransfer) else { throw CommandHandoffError.protectedContent }

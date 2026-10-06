@@ -439,7 +439,7 @@ UnifiedSearchController 的操作扩展直接读写原协调者 operations，不
 
 ### 第八阶段 B 公共滚动装配
 
-Theme 的 `daybookScrollAssembly` 只组合指示器策略、Configurator 与原羽化 modifier，不建立滚动容器或状态所有者。两个兼容重载的默认值与实际选择不变，泛型策略变换维持原具体链和 modifier 顺序；保留系统策略时直接返回传入视图。浮层、AppKit knob、观察器、定位与拆卸机制原样保留。AppKit 文本与统一搜索直连仍是不同承载入口；接口矩阵、消费者与历史定位缺口见[组件目录](component-catalog.md#第八阶段-bdaybookscroll-公共装配)。
+Theme 的 `daybookScrollAssembly` 组合指示器策略、Configurator 与原羽化 modifier，不建立新的滚动容器。两个兼容重载的默认值与实际选择不变，保留系统策略时直接返回传入视图。第十阶段 D 在私有 DaybookScrollTargetModifier 中用稳定 scope 关联两个原生边界，仅解析其局部区间，不将外层 enclosingScrollView 当内部目标。Host 独占装饰安装与移除，Representable 拆卸拒绝迟到回调；scope 不持有内容、模型或滚动偏移，不重新承载 SwiftUI 正文。浮层绘制/事件/Timer 与 AppKit knob 保持；第十阶段 E 将羽化纳入同一 scope，并把原成对边界保持在掩膜外侧；羽化只消费 Host 已确认的目标，不在几何通知中重新定位，使用目标/clip/document 的对象限定通知和原布局复核，合并发布并以绑定代次拒绝迟到回调。解绑不关闭共享通知、不更新已拆卸 SwiftUI 状态；无目标/短内容清零。开关保留正文及渐变掩膜类型，公开参数/阈值不变。羽化责任和证据见[组件目录](component-catalog.md#第十阶段-e滚动边缘羽化定位与更新)；直接 Configurator 的兼容范围、身份/焦点及清理证据见[组件目录](component-catalog.md#第十阶段-d公共滚动浮层目标归属)。
 
 
 ### 命令草稿隔离保护边界（4A-3C2A）
@@ -480,3 +480,12 @@ FileLocalSettingCommandAdapter 显式选择文件后端，与旧单项适配互�
 ### 普通设置组原生装配（3A-3B3B）
 
 UnifiedSearchController 的单一 UnifiedSearchSettingBackend 枚举负责显式选择旧单项或文件适配。原 Plan 保有唯一参数，PlanLinks 发送原 atomicGroup 事件，FileLocalSettingCommandAdapter 准备整组证据并绑定准备后的 plan stamp；UI 只消费 readiness 和类型化本地/核验/展示回执。失焦 invalidated 推进显示缓冲版本，不更换 lease。隔离原生接线扩展了上节的测试消费者，生产默认仍旧后端；实现、验收与历史缺口只维护在[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。
+
+
+### 普通捕获新增的局部事务边界（3T-1A）
+
+TaskMutationService 只接原 addCapturedTodo 的单段业务链。ModelChanges 以同 context 最外层同步事务保留显式 Boundary，嵌套继承、结束清理；Creation 只在最终 save 返回后登记 savedID，再发布 BoardEvents。预保存不撤销、未知提交不重试、changedLocally 不发日历请求等限制及实际验证统一见[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。本轮未建立命令身份/回执、通用容器、并发事务或真实系统完成保证。
+
+### 最小普通创建隔离适配（3T-1B）
+
+TaskCreateCommandAdapter 仅组合原 Coordinator、隔离环境与共享 createCaptured。准备及固定 UUID 属于协调者运行内登记，参数仍由原 Draft/Plan/Run 拥有；保存后、事件前登记真实输出，未知与外部步骤不转成重放。显式 ID 查询包含墓碑/重复行，旧随机默认和预保存政策保留。完整资格、串行保证范围、输出协议及未接生产边界见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。

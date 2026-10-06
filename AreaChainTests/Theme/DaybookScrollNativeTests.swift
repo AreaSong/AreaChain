@@ -149,6 +149,11 @@ enum ScrollNativeEvidence {
         return window.contentView.map(descend) ?? []
     }
 
+    static func identity(_ view: NSView?) -> String {
+        guard let view else { return "nil" }
+        return "\(type(of: view))@\(ObjectIdentifier(view))"
+    }
+
     static func record(_ window: NSWindow, label: String) {
         let nodes = views(window)
         let scrolls = nodes.compactMap { $0 as? NSScrollView }
@@ -157,12 +162,23 @@ enum ScrollNativeEvidence {
         let counts = scrolls.map { $0.subviews.filter { $0 is DaybookFloatingScrollerOverlay }.count }
         print("SCROLL_NATIVE \(label) scrolls=\(scrolls.count) configs=\(configs.count) overlays=\(counts) edges=\(edges.count)")
         for (index, scroll) in scrolls.enumerated() {
-            print("SCROLL_NATIVE target=\(index) origin=\(scroll.contentView.bounds.origin) size=\(scroll.contentSize) "
+            print("SCROLL_NATIVE target=\(index) id=\(identity(scroll)) enclosing=\(identity(scroll.enclosingScrollView)) origin=\(scroll.contentView.bounds.origin) size=\(scroll.contentSize) "
                 + "document=\(scroll.documentView?.bounds.size ?? .zero) system=\(scroll.hasVerticalScroller)/\(scroll.hasHorizontalScroller) "
                 + "alpha=\(scroll.verticalScroller?.alphaValue ?? -1)")
         }
+        for config in configs {
+            let selected = config.currentScrollView
+            let owned = config.currentOverlay
+            print("SCROLL_BIND config=\(identity(config)) enclosing=\(identity(config.enclosingScrollView)) "
+                + "selected=\(identity(selected)) overlay=\(identity(owned)) parent=\(identity(owned?.superview))")
+            var node: NSView? = config
+            while let current = node {
+                print("SCROLL_BRANCH node=\(identity(current)) frame=\(current.frame) bounds=\(current.bounds) "
+                    + "children=\(current.subviews.map { identity($0) })")
+                node = current.superview
+            }
+        }
         for edge in edges {
-            edge.checkEdges()
             let state = Mirror(reflecting: edge).children.filter { $0.label == "lastTop" || $0.label == "lastBottom" }
                 .map { "\($0.label ?? "")=\($0.value)" }.joined(separator: ",")
             print("SCROLL_NATIVE feather \(state)")

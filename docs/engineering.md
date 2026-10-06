@@ -1,5 +1,285 @@
 # 工程与维护
 
+## 第十阶段 I：生产搜索多行输入复现与修复定界
+
+2026-10-05，定向诊断，仅补 [生产装配夹具](../AreaChainTests/Features/SearchMultilineTestSupport.swift)、[回调探针](../AreaChainTests/Features/SearchMultilineTrace.swift)、[入口诊断](../AreaChainTests/Features/SearchMultilineDiagnosticTests.swift)、[输入边界](../AreaChainTests/Features/SearchMultilineBoundaryTests.swift)、[模式对照](../AreaChainTests/Features/SearchMultilineModeTests.swift)、[撤销诊断](../AreaChainTests/Features/SearchMultilineUndoTests.swift) 及本记录。**五个生产搜索在“命名 pasteboard 原生导入 → 撤销”中均复现了任务分隔符注入；直接导入完成时没有注入。** 这不是直接调用转换函数或手改 field 后通知 delegate 的复现，也不是系统剪贴板粘贴或真人操作。生产输入、解析、搜索、新统一搜索控制器与接线均未由本轮修改，问题未修复。
+
+**隔离与证据来源**：macOS 26.6.2（25G83）arm64，英文浅色、700×600 单实例，原 SystemPageHost / SettingsButtonTestSupport / ClipboardOptionsFixture，完整正常应用与测试目标、`build/PrivacyQA-SearchMultilineI`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、六项真实钥匙串变量清除及原 `build/.build.lock` 非等待串行互斥。第一次锁忙没有启动编译；只读确认无持有者后正常重试。仅 XCTest 启动，内存模型、独立偏好、临时历史目录与合成正文；剪贴板 session 的 pasteboard=nil，onCommit 只计数/记录合成 ID，未执行复制或粘贴。没有读取或覆盖 NSPasteboard.general，没有改签名配置、启用真实钥匙串、打开日用应用或操作真实数据。
+
+起点状态、暂存差异和全部生产 Swift 摘要在 `build/SearchMultilineI/status-before.txt`、`index-before.txt`、`baseline.json`。命令、日志、结果包、导出诊断均在同一忽略目录。探针只包裹原 Objective-C IMP，记录 controlTextDidChange / editorDidChangeText / 原生命令的进入和返回，原 delegate、通知、Binding 和补全不替换，defer 恢复 IMP；无探针的材料矩阵另证实正常导入值相同。直接读取 coordinator.parent.text 是生产 Binding 的观察值，不建立镜像查询。私有标签/手记查询只在明确标识的外部同步对照中经原 Binding 写入。
+
+| 真实消费者 | 原生 insertText 与命名 pasteboard 导入完成 | 空字段一次命名导入后撤销 | 查询与结果依据 |
+|---|---|---|---|
+| WorkspaceHeaderSearchCapsule | 均为 `甲 乙`，该输入路径未复现分隔符注入 | 已复现：中间 `甲 // 乙`，最终 `/ 乙` | 原 WorkspaceNavigation 与 WorkspaceGlobalSearchView；正文词从甲/乙变成含斜杠的查询，合成无斜杠任务不再命中。 |
+| MenuBarSearchField | 同上 | 已复现，同上 | 原 toolbar、筛选 token、补全与 MenuBarSearchResults；token 未删除，未用替代搜索框。 |
+| ClipboardHistoryBrowser.searchField | 同上 | 已复现，同上 | 原隔离 session.visibleItems、原三模式及生产列表；保留可见结果与无副作用提交回调。 |
+| TagManagementPage.searchField | 同上 | 已复现，同上 | 原私有 query 与 displayed 列表，以合成 TAG_SPACE / TAG_SLASH 的实际 AX 可见结果核对；未创建、改名、选色或保存标签。 |
+| DiaryPage.searchChrome | 同上 | 已复现，同上 | 原 SyntaxTextField(.tagSearch)、普通合成手记与生产卡片列表；原查询/隐私投影保持，未读取真实正文或解锁。 |
+
+**确切注入点**：`NSTextView.readSelection(from:type:.string)` 接收仍含 LF 的命名 pasteboard 字符串。导入正常完成时，`cell.usesSingleLineMode=true` 的 AppKit 路径已把 LF 换成空格，第一次 controlTextDidChange 进入前 field/editor 就是 `甲 乙`。导入通常有两组 controlTextDidChange → editorDidChangeText，查询实际只从空变成空格文本一次。空字段的 insertText 后撤销只有一组文本变更，正确恢复空；同样的命名导入撤销则先恢复原始 `甲\n乙`，进入 **DaybookTextField.Coordinator.controlTextDidChange 的单行分支（sanitizeSingleLineText，再写 field.stringValue）**，当次返回前 field/editor/query 已变为 `甲 // 乙`、光标从 UTF-16 位置3移到6。随后原撤销动作仍删除原3个 UTF-16 单元，第二组回调发布 `/ 乙`、光标0。editorDidChangeText 看到的是已经插入分隔符的文本；它不是这次首个注入点。它自身的同类分支、Return、noop 命令提交及 onCommandReturn 闭包仍是后续必须统一处理的静态路径。观察到的多次回调是原实现行为，次数不冒充 SwiftUI body 渲染次数。
+
+**材料与同步区别**：无探针矩阵覆盖七种真实控件 × insertText/命名导入 ×15串。普通单行、LF、多行、CR、CRLF、U+0085/U+2028/U+2029、空白行/前后空白、已有半角/全角分隔符、中文/组合字素/emoji、标签/优先级/时刻和字面反斜杠n均逐一核对 field/editor/query 与 UTF-16 光标。单行搜索和捕获的每个换行标量变成一个空格，CRLF产生两个空格，不修剪原有空白；不新增 `//`。普通 DaybookFormTextField 原样保留这些字符串，完全不经过任务转换。这些不是所有粘贴类型、系统 Cmd-V、语言主题/尺寸全矩阵的证明。
+
+外部 Binding 单独更新为 `甲\n乙` 时，五搜索均原样同步，既不触发文本变更回调也不增加原生撤销历史；随后 Return 在 handleReturnSubmit 中转换为 `甲 // 乙`，实际列表转向有斜杠的合成记录。⌘Return 只有菜单栏搜索的原 onCommandReturn 转换；其他四搜索保留真实 LF，失焦也保留。此项仅作为同步/提交对照，不与命名导入撤销证据混算。原生插入中段 `头尾` 的光标1处后显示 `头甲 乙尾`、光标4；其撤销也可能经过原多行中间态后留下 `头/ 乙尾`，严格恢复断言保留。首轮连续两次程序化插入会落在同一隐式撤销组，不能据此判断单次操作边界；最终夹具使用无撤销记录的初值，表单初值在聚焦前装配，空字段一次导入另有独立对照。
+
+**模式政策的实测依据**：BoardSearch 将 LF/空格当词边界，`//` 却是额外的普通搜索词；标签目录使用 trim 后的连续子串，不是按词 AND 搜索。剪贴板 mixed 是逐字符有序匹配，exact 是字面 contains，regex 原样编译正则；三个模式的外部真实 LF 都只命中合成 LF 记录。原生导入真实 LF 后，mixed 改命中空格及斜杠记录，exact/regex 改命中空格记录。字面 `甲\n乙`（反斜杠+n）原生导入不改变：mixed/exact 命中字面反斜杠记录，regex 命中真实 LF 记录。外部真实 LF 后 Return 会转换查询，三模式均把无副作用回调目标从 LF 记录切成 SLASH 记录。不能把 mixed 当作会自动忽略所有空白，也不能用“删除 //”代替明确的模式语义。
+
+**输入法与捕获边界**：合成 setMarkedText 可暂存真实 LF，但该阶段没有 controlTextDidChange/editorDidChangeText；外部更新不覆盖组合区，搜索 ⌘Return 不提交。原生 insertText 正常提交组合串后先转为空格，再进入回调；Return/⌘Return 不再添加分隔符，剪贴板 Return 一次回调、⌘Return零次。Return 期间 marked guard 与标签候选优先级分别测试；候选初选是“工”的候选，测试经原生↓选中已有“工作”后再 Return，不改生产候选次序或关闭补全。合成 NSTextInputClient 调用不等同真人中文输入法。
+
+原 CaptureField 证明：原生单行导入同样先变空格，而外部含LF的草稿经 Return 转为 `甲 // 乙`，原 parseTaskCapture 得到标题甲/备注乙；原首行/备注政策仍有适用范围，不能全局删除转换。捕获按钮自带的 ⌘Return 在本夹具中先于文本框路由，外部LF草稿保持原文；外部非空草稿启用按钮后，即便 editor 仍 marked，按钮回调仍可触发一次。这个已核实的相邻同步对照只用窄 withKnownIssue 保留“不应提交”断言，单列未修复，不推广为所有真人IME或搜索都失守。标签创建/改名存在同样 allowsShiftNewline=false 的静态线索，本轮没有操作或扩大诊断。
+
+**唯一最小修复建议（不实施）**：在 DaybookTextField 增加由消费者明确选择的换行用途策略，将它与“Shift+Return 是否允许换行”分开；保留现有捕获默认与原表单。工作台/菜单栏/标签目录显式选择搜索空白策略，DiaryPage 经 SyntaxTextField 显式透传同策略；剪贴板三模式按现有匹配语义推荐选择真实换行保真策略，字面 `\n` 保持原字符、只由 regex 自行解释。搜索空白策略按当前原生行为替换换行标量为等长空格，不顺带 trim/折叠 CRLF/修改标签或匹配器。
+
+统一应用点是原生已提交输入/命名导入的编辑事务、两条文本变更观察与所有提交入口，不能只修 sanitizeSingleLineText 或某个 onSubmit。**不得在 marked、undoManager.isUndoing/isRedoing 的中间态破坏性改写文本**；转换应与原输入操作共用一次原生撤销事务，回调观察中间态时不另造转换操作，最终查询跟随编辑器。选区按 UTF-16 替换映射保持，外部同步不应成为新增撤销操作；既有补全、焦点、Return、⌘Return、失焦及捕获标题/备注规则保持。剪贴板保真还须处理 AppKit 当前先行单行替换，不能只改 Swift 字符串函数；保持键盘提交与单行布局，不靠打开 allowsShiftNewline 绕过。主对话的最小产品决策仅是确认剪贴板允许真实换行作为查询字符（推荐允许，三个既有匹配模式都有有效含义）；确认前不把它写成已确定规范，不启用新的统一搜索状态/控制器。
+
+**验证与停止状态**：所有问题恢复断言保持，诊断发现不等于生产修复。最初 workspaceNativeBaseline 误期望直接导入会插入分隔符，baseline.xcresult 1次失败；实际回调证据推翻该假设后改为严格空格断言。boundaries.xcresult 因测试把 ParsedCapture.notes 写成body而编译失败、零执行，修正测试字段后重跑。boundaries-run 因测试直接 sendEvent 未更新 NSApp.currentEvent，捕获提交读取 KitDefined.keyCode 触发 AppKit 异常而中断（73），日志/调用栈保留；仅本轮 helper 改用带接收次数断言的 postEvent 原事件队列，未改变生产快捷键。CRLF两个空格与表单原文是实测差异，材料断言分别保留；没有通过丢焦、关闭补全或调整 allowsShiftNewline 来获得结果。
+
+`imports.xcresult` 的2方法/6参数全部通过，五入口两种导入与真实列表完整命中。中间 `final.xcresult` 为12方法/58参数：50通过、7失败、1 Expected Failure；其中材料矩阵、三模式、组合输入/提交、候选与同步对照有效，7失败来自中段撤销（含随后已修正的表单初值测试装配），Expected Failure 是上述捕获按钮对照。这个名为final的中间包不是最后版本的通过声明。`undo.xcresult` 独立14参数：8通过、6失败；六个 Daybook 消费者命名导入后撤销失败，空字段 insertText 后撤销及表单双路径通过。`keyboard.xcresult` 的2方法/19参数：8通过、11失败，新增的五入口队列⌘Z均在要求恢复为空的断言失败，但严格的中间注入、最终残留、光标、实际列表及后续键断言全部命中：Return 保留 `/ 乙`，剪贴板回调一次，⌘Return无额外回调，随后输入x成为 `x/ 乙`、光标1、合成结果归零。两包全程原生 focus 断言通过，未人工调用 delegate，命名导入仍不能冒充系统 Cmd-V。
+
+**最后运行是 `acceptance.xcresult`**：完整正常目标编译成功，xcodebuild因断言失败退出65。6套、25方法、89参数执行，43通过、46失败、0跳过；按方法聚合是13通过、12失败。46个参数失败中，17个是保留的真实撤销恢复要求（中段6、命名导入6、键盘撤销5），另29个是场景准备或操作时的焦点断言失败；日志多次显示 foreground=com.google.Chrome、QA inactive/key=false，只说明当时状态，不推定谁触发了失焦。最后批次的全部五入口键盘撤销仍完成了缺陷与后续键的断言，普通表单初值/中段撤销也通过；两套原 DaybookTextFieldTests / DaybookTextFieldSearchTests 共11方法/12参数全部通过。没有放宽焦点断言，也没有在环境未确认变化时循环重跑；最终全套原生重验因此为 **partial**，历史有效参数不累计成最后全绿。
+
+六个新增测试文件严格 SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static`（224项脚本回归，安全扫描无高风险/敏感日志候选）、工作树与暂存区 diff检查、新文件空白/行数检查、QA包 `codesign --verify --deep --strict` 均通过。没有因只改测试额外生成发行包。保留既有 SDK 弃用/actor、测试中直接读取 FocusState 等警告，不把编译或验签当原生通过。
+
+`source-tested.json` 与起点摘要比较：本轮涉及的全部生产输入/搜索文件无变化；仅检测到其他任务对 CommandTaskCreateContract.swift / TaskCreateCommandAdapter.swift 的并发变化，本代理未编辑，保留原有改动。暂存区二进制差异与起点逐字节一致。未改变公共生产契约，因此没有新开独立复核任务；历史指定 Cursor verifier 缺口保持。未运行真人IME/键鼠、真实系统粘贴、VoiceOver、其他系统版本、全语言主题尺寸矩阵、真实数据/钥匙串/日历、安装与发布。诊断与最小建议已定界，生产修复及焦点受阻的最终重验未完成，停止于本阶段，不提交、推送、安装或发布。
+
+## 第十阶段 H：时间清除失败回显的复现与修复定界
+
+2026-10-05，诊断轮仅补测试及本记录；未修改生产代码。下方“收尾”记录分层与有效历史回归，“H 最终版本复验”记录最后断言版本的当前门禁与待验状态，前段结果包保留为历史证据。结论限定为：**外层失败事务内执行 AXPress 会提前渲染 nil，随后模型回滚没有使这个已渲染的父读取重新失效；当前普通提醒失败对照未复现，截止真实保存失败仍有注入能力缺口。** 不据此修改 SwiftUI Binding、ModelChanges 或发布失败通知，也不关闭第五阶段 B 的两个已知问题。
+
+**原失败重跑与身份**：起点 HEAD 为 `d24391ea2695bae2ccb397d3d277918f5f0279f9`，工作树/暂存区/未跟踪检查及逐文件 SHA-256 保存在 `build/TimeClear10H/source-before.json`。原完整方法 `AreaChainTests/DetailTimePickerTests/failedClearKeepsOriginalDisplay(routine:due:)` 在诊断轮未修改，源码 SHA-256 为 `456d357c00d6a5194470e58ce5770c92bc94c62e888159577747c228016e649f`。`original.xcresult` 实际命中 `(false,false)` 待办提醒、`(false,true)` 待办截止、`(true,false)` 重复事项提醒：前两次为 Expected Failure，第三次通过，零跳过。两次实际失败均在原 `DetailTimePickerTestSupport.swift:43:13` 的 `candidates.count == 1`，实际为 0；模型恢复断言先通过。原日志包含提醒/截止分组边界及另一分组尚存的清除按钮，不是取错同名按钮；顶层 Passed 不表示三个参数全部恢复。
+
+**隔离与过程**：完整正常应用/测试目标、独立 `build/PrivacyQA-TimeClear10H`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、六项真实钥匙串变量清除、原 `build/.build.lock` 非等待互斥与串行事件。首次锁忙未启动编译；随后只读确认无锁持有者及编译进程，才正常取锁执行。没有锁屏或并发编译失败。测试仅经 XCTest 启动，使用原内存模型、随机偏好和合成时间数据，原通知/日历 XCTest 守卫保持。实际完整命令、原生日志、summary/tests 树与结果包均在 `build/TimeClear10H`。
+
+期间外部并发修改了 ModelChanges 的回滚错误分类：起点 SHA-256 `70c083959a237120bdfa4e129f93f3ff5fc43be5baa5996997425b1a3c6f00d1`，最终受测为 `e88104dd136689160447a79980cb5f3be1fa2ff47f7bcbf3825c64616cb393c3`（`source-tested.json`）。区别是从 `ModelRollback.failure` 返回错误类型判断，改为直接 `restore` 的 do/catch 判定恢复失败；恢复仍为 processPendingChanges → rollback → 各模型 fetch 重新物化。该文件原有暂存和未暂存内容均保留，本代理未编辑它；最终重跑仍得到原两个已知失败，不能把并发共享变化说成本轮修复或旧问题已解决。
+
+| 实际路径 | 请求、返回与恢复边界 | 自然显示及重试 |
+|---|---|---|
+| 原待办提醒：外层 perform → AXPress → setRemind → 原仓储 | nil 请求；commit 因同 context 延迟，动作返回时 saves=0、phase=working、模型=nil；直接原入口对照内层 Bool=true，随后外层 save 抛错、Bool=false、rollback=returned。 | 原窗口/NSHostingView/模型实例不变；模型恢复720，但标题时间与清除按钮消失。重开仍为 Not set（当前分钟只是编辑起点），清除按钮仍缺失，无法原位再次清除。 |
+| 原截止：外层 perform → AXPress → setDue → persist | setDue 直接赋 dueMinutes 后进入嵌套 perform，不调用 taskRepositoryProvider；内层返回true、外层保存失败后恢复600。 | 与提醒相同，父内容保留nil，重开Not set；提醒720和日期保持。 |
+| 同两条外层路径改用窗口 NSEvent 点击 | 同样请求nil、内层延迟、外层失败；只替换动作派发，未改事务或回滚。 | 两项自然显示720/600，按钮存在，重开仍为旧值，同宿主再次清除成功。说明外层嵌套本身不是充分条件，AX同步渲染时序是关键。 |
+| 待办提醒：原 taskRepositoryProvider 内失败 | 测试 DetailTimeFailureRepository 用与原 routine 设施相同的事务包装，仍执行 SwiftDataTaskRepository.setRemind 的真实修改/commit；保存边界抛错并恢复后才向 setRemind 返回，原入口 Bool=false。 | AX与NSEvent均恢复720和原按钮；重开720，改900失败也恢复；关闭后原位清除重试成功。真实仓储请求恰为 `[nil,900,nil]`，保存边界恰3次，没有重开/关闭的额外写入。 |
+| 重复事项：原 RecurringToggleRepository | 保留原仓储失败设施，失败在原回调返回前完成恢复。 | AX与NSEvent清除失败都显示720；同宿主成功重试，请求恰为 `[nil,nil]`。 |
+
+**显示脱节定位**：正常验收始终直接挂原 TodoScheduleSectionView / RoutineScheduleSectionView。独立只读 `parentReadDiagnostic` 用原 TodoScheduleSectionView.body 展开并反射其已生成的 TaskDetailRemindChips / TaskDetailDueTime 值，不修改模型、回调或镜像状态；探针不是正常宿主通过证据。AX动作返回前，记录顺序是旧720/600 → 对应子值nil；外层恢复后未再次读取旧值。在nil之后建立的一次 Observation 订阅也未收到恢复失效回调。NSEvent返回时父视图尚未读取nil，外层恢复之后才读取旧720/600。父节点读不到恢复值，子组件的标量分钟及其 Binding 捕获因此停在nil；无需打开时间选择器即可发生，不能归因为 NSDatePicker 自己把模型清空。
+
+自然更新记录完成后另取四张原生缓存图（提醒/截止 × AX/NSEvent），确认AX对应分组确实没有绘制旧时间和清除图标，另一分组正常；与分组AX树及重开Not set一致，排除单纯辅助树合并/查询错误。图位于 QA 临时目录 `AreaChainButtonConsumersQA/settings-time-clear-10h-*`；缓存绘制没有使原AX症状恢复，且不被计为自然刷新或窗口合成器证据。全程没有重建检查器/窗口、随机id、重新赋旧分钟、成功通知或强制刷新。
+
+**语义与证据限制**：原 `saveAndFailureAutomaticallyRestore` 三参数、补充两个有效900失败的详情标题断言，以及原 `emptyOpenCloseAndMidnight` 均通过，0保持真实午夜且nil表示未设置。截止只写dueMinutes，dayKey、remindMinutes、calendarEventID、ReminderPlanning及CalendarSyncStorage原等价断言保留；共享成功发布的通知/日历刷新职责不等于截止成为提醒。清除nil不申请提醒权限；有效分钟失败路径仍依赖原XCTest系统守卫，不进行真实授权。
+
+原生产详情回调没有外层事务包住AX或NSEvent派发；本轮故障要求这个测试外层仍处于working时同步渲染nil，不能推广为普通清除都会失败回显。新的提醒对照只证明原仓储修改及“失败在UI回调返回前完成恢复”的边界，不是实际磁盘错误；SwiftDataTaskRepository.commit内部的真实save抛错未直接注入。截止没有可替换的仓储或等价save依赖，外层包装不能冒充其普通失败；截止原Void回调未被替换计数，内层Bool来自单独直接入口对照，不声称从原UI闭包读出了被丢弃的返回值。若要判定普通截止生产故障，唯一剩余取证需求是既有真实setDue自身保存边界失败且在回调返回前完成恢复的证据；本轮不新增生产注入API或制造磁盘/真实库故障。
+
+**诊断轮交接建议（已由下方收尾落实测试分层）**：只在 `DetailTimePickerTests` 的测试故障注入层分开“普通回调内失败”与“外层嵌套＋AX提前渲染”两种契约；本轮已补前者的提醒对照和后者的时序证据，原方法/已知问题保持。当前不建议修改生产组件或共享回滚。回归要求继续保留原三个参数及两个已知失败，普通提醒/重复事项须严格检查旧显示、原位重试与精确写入数，截止须保留未取得普通save失败的限制；不能把known issue删除、nil保留或失败发布成成功作为修复。
+
+**验证记录**：`diagnostic.xcresult` 为7方法/18次，16次通过、2次原已知失败；最终 `final.xcresult` 为10方法/25次，23次通过、2次原已知失败，零非预期失败/跳过。其中包括独立诊断方法，不把诊断通过数当作旧产品缺陷关闭数。辅助定位调用方补验 `helper-regression.xcresult` 为4方法/10次：9次通过，1次在 `DetailTimePickerLifecycleTests.nilLifecycleExactCallbacksDisableClearAndLateAction(due:false)` 的 `TimePickerNativeTestSupport.swift:15` 因弹出窗口 isKeyWindow=false 失败；原生焦点断言未删除，未在条件不变时重跑该批。该项为辅助回归的未完成证据，不能归为清除回滚失败或宣称整体验证全绿。
+
+`editor-regression.xcresult` 的原 RecurringEditorTimeTests 为2方法/6次全部通过，零失败/跳过；helper批次中双语浅深色280/400pt详情布局、原快捷项和中文暂存/重开方法通过。本轮四个测试文件严格局部SwiftLint、工作流、静态质量（含223项脚本回归）、工作树/暂存区差异及新增文件空白检查通过；正常完整PrivacyQA编译与QA包静态验签通过，不另行构建/启动非QA宿主。最终来源摘要与受测版本比较保存在 `source-after.json`，暂存区哈希保持起点值；前期及并发修改未恢复。测试记录包含系统框架既有弃用/actor警告及辅助回归的AttributeGraph提示，不将其归因为本轮时间清除故障。
+
+本轮诊断结论已定界，普通截止真实save失败与辅助生命周期焦点回归仍为 **partial**。没有改变公共契约或生产行为，不新增指定独立复核任务；历史Cursor verifier、真人输入/VoiceOver、低版本macOS及窗口合成器验收缺口保持。停止于本阶段，未提交、推送、安装、发布，未修改真实数据、系统偏好、签名配置或权限。
+
+
+### H 收尾：失败注入分层与回归收尾（2026-10-05）
+
+只调整原时间测试、直接测试支持及本记录。生产 TodoScheduleSectionView / RoutineScheduleSectionView、仓储、ModelChanges 和统一事务规范保持。A/B/C 的正常消费者直接挂载生产分节；反射和人工读取 body 只存在 D 的诊断宿主。未增加生产注入 API、真实磁盘故障或真实数据库操作。
+
+| 分层 | 当前选择器（前缀 `AreaChainTests/`） | 历史映射与不变要求 |
+|---|---|---|
+| A：回调返回前完成失败恢复 | `DetailTimePickerTests/callbackFailureRestoresDisplayAndRetries(routine:native:)`，2 类提醒 × AX/NSEvent | 合并原 `failedClearKeepsOriginalDisplay(true,false)`、诊断套件 `reminderRepositoryFailureAndRetry` / `routineFailureAndRetry`；重复事项补齐重开及有效900失败。两者均要求旧720及标题行文字、分组唯一清除按钮、失败重开旧值、同宿主重试nil。精确仓储请求 `[nil,900,nil]`、注入保存边界3、真正 `ModelContext.willSave` 1；重开/关闭无额外写入，另一类模型、截止600与日期保持。 |
+| B：外层事务＋AX 同步渲染 | `DetailTimePickerTests/outerTransactionAXClearRequiresOriginalDisplay(due:)`，提醒/截止 | 承接原 `failedClearKeepsOriginalDisplay(false,false/true)`，以及 `outerClearTiming(native:false)` 的消费者边界。模型720/600恢复和零真正save在 known issue 外断言；known issue 只包原分组唯一清除按钮断言，按钮若存在则旧文字仍按普通断言检查；不将nil保留当正确行为，不覆盖重开、保存或模型断言。两项旧问题继续开放。 |
+| C：同外层事务＋原生合成点击 | `DetailTimePickerTests/outerTransactionNativeClearRestoresAndRetries(due:)`，提醒/截止 | 承接 `outerClearTiming(native:true)`；与B共用一个夹具/注入方法，只改派发。自然显示720/600、重开旧值及原位重试必须通过；失败后0真正save，成功重试后1，外层边界总2，派发请求总2。未替换原Void回调，派发次数不冒充生产回调调用/返回计数。 |
+| D：诊断探针 | `DetailTimeFailureDiagnosticTests` 的 `parentReadDiagnostic(due:native:)`、`nestedReturnFacts(due:)`、`repositoryFailureReturnsFalse()` | 父body读取2×2、内外返回/阶段2、仓储返回1，共7次诊断。`outerClearTiming` 的事务阶段刻画并入 `nestedReturnFacts`，不重复运行消费者；反射读取成功不表示旧问题关闭。 |
+| 原有效赋值与普通回归 | 原 `saveAndFailureAutomaticallyRestore(routine:due:)` 三参数和其他现存详情测试 | 原三个参数完整保留；`validTimeFailureKeepsDetailLabel(due:)` 的旧标题要求并入原方法，取消重复方法。nil/午夜0、另一时间字段/日期、截止的提醒与日历投影约束继续检查。 |
+
+旧完整清除方法与旧诊断消费者选择器已由表中映射替代，不再同时运行旧/新用例或相加计数。公共 `DetailTimeSupport` 保留所属分组的唯一定位，进一步要求旧文字位于清除按钮的标题行，避免把12:00快捷项误作旧显示。打开时间控件继续要求全进程匹配唯一，并确认弹窗 parent 是本例宿主。保存观察者、替身失败标志与仓储 provider 用 defer 清理；失败夹具建立时也恢复已创建资源。
+
+A 的提醒对照只证明真实模型修改后、失败及恢复在 UI 回调返回前结束时显示正常；仓储包装在真正 context.save 之前抛错，未制造磁盘保存故障，也不能覆盖所有生产保存失败。截止仍走 setDue / persist，普通截止回调内真实save失败缺口保留。B的两项嵌套AX问题未修复，D通过不参与其关闭判断。
+
+**辅助生命周期先行补验**：临时只选择原 `nilLifecycleExactCallbacksDisableClearAndLateAction(due:false)`，`closeout-lifecycle-false.xcresult` 实际1方法/1参数通过、0失败/跳过，随后已恢复 `[false,true]`。日志只读记录QA标识、宿主/弹窗及parent、visible/key/active、步骤与前台应用；原 key 断言保留，没有插入新的抢焦或刷新。此次未复现原失败，不能判定旧偶发失焦唯一根因或宣称所有焦点问题已修复；相邻参数的最终结果另列。
+
+
+
+**最新有效回归与统计**：`build/TimeClear10H/closeout-acceptance.xcresult` 的 summary/tests 树确认5套、20方法、51次执行：49通过、2嵌套AX已知失败、0非预期失败/跳过。按最后有效运行去重如下；初次单参、内部尺寸/快捷项循环及旧诊断轮不再相加。
+
+| 层次 | 有效参数执行 | 结果 |
+|---|---:|---|
+| A：回调内提醒失败恢复 | 4 | 待办/重复事项 × AX/NSEvent 全通过；请求3、注入保存边界3、真正save1，失败重开/原位重试和字段隔离全部命中。 |
+| C：外层事务原生点击 | 2 | 提醒/截止通过；恢复原显示与重开720/600，原位清除重试成功。 |
+| B：外层事务嵌套AX | 2 | 两次 Expected Failure，实际失败仍是所属分组清除按钮数量0；不计功能通过。 |
+| D：诊断刻画 | 7 | 父读取4、嵌套返回/阶段2、仓储返回1通过，不代表修复。 |
+| 辅助生命周期 | 2 | due:false / true 均通过；原key断言、禁用/迟到action、nil与0及精确回调全部保留。 |
+| 其他相邻回归 | 34 | 原详情有效赋值三参数、空值/午夜、快捷项、中文暂存/重开、双语浅深色布局，以及 RecurringEditorTimeTests、TimePickerConsumerTests 全部通过。 |
+
+生命周期日志确认 popup.parent 为同例宿主，visible / popup.isKeyWindow / active 均true；NSApp.keyWindow 同时可能仍指向父窗口，日志分别记录，未混同这两种系统属性。原生事件保持串行，没有操纵其他窗口。此前 helper-regression 的失焦失败仍保留，本次补齐其回归证据，不宣称偶发根因已修复。系统框架弃用/actor警告和既有 AttributeGraph 提示不作为时间清除修复证据。
+
+**最终编辑及阻断**：`closeout-regression.xcresult` 首次编译因本轮新增标题断言的throwing `&&` 缺try而取消；已拆为guard并通过上述完整回归，首包不计覆盖。随后主代理将B的 withKnownIssue 更严格限定为原唯一按钮断言，新增文字要求在按钮存在时单独按普通断言检查。最终 `closeout-boundaries.xcresult` 尝试复验A/B/C及返回事实，完整正常目标编译被并发生产 `CommandTaskCreateExecution.swift:80/95` 的 units setter不可访问、`:66` 的MainActor隔离调用错误阻断，测试未运行。未排除、修改或回退生产文件，未拿test-without-building替代最终源码编译；最后B断言范围编辑的运行验证仍待补。当前工作树的完整目标编译门禁因此 **partial**，此前完整目标编译成功只属于acceptance受测版本。
+
+**源码与暂存身份**：起点/受测/最终摘要见 `closeout-source-before.json`、`closeout-acceptance-source.json`、`closeout-boundaries-source.json` 与 `closeout-source-after.json`。本轮起点和acceptance受测的 ModelChanges SHA-256 为 `e88104dd136689160447a79980cb5f3be1fa2ff47f7bcbf3825c64616cb393c3`；后续并发版本为 `63bcfb0ab798a4662ed01e6ab2b93d3920074f2099e813f60e95bda8857b2d19`（新增 hasActiveTransaction 只读查询），尚不能把旧运行算作该版本整体通过。并发还在修改任务创建协议/仓储/解析器与执行模块，逐文件差异按摘要保留；均非本轮修复。本代理生产源码零编辑、暂存区零操作，暂存差异SHA-256保持 `26c7506b62ce2330bd8e39f9a579303dc9f5980edcbca7dc24696b8b62937383`。
+
+**交接边界**：测试分层、历史映射和辅助生命周期补验已落实；两项嵌套AX旧问题及普通截止真实save失败缺口继续开放。最终局部SwiftLint、差异/新增文件空白检查与静态门禁结果按收尾日志记录；并发解析器503行导致工作流/静态门禁失败，不能说全部通过。完成本轮允许的测试/记录工作后停止，可把其他独立问题另行定界；需要重新编译/验收时先解决并发构建门禁，不在本轮扩修生产事务、显示组件或任务创建。未提交、推送、安装、发布或修改真实数据、系统偏好、签名配置与权限。
+
+
+### H 最终版本复验（2026-10-05，最终测试分层版本已验证）
+
+本轮仅运行最终验证并更新本记录，未修改生产或测试源码、断言和失败注入。**完整正常 PrivacyQA 编译已恢复，最后收窄 withKnownIssue 的测试版本已取得运行证据，H 本轮最终版本验证完成。** 这不代表两项嵌套AX旧问题已修复，也不补齐普通截止真实save失败、指定复核或其他历史验收缺口。原 `closeout-acceptance.xcresult` 的49通过/2已知失败保留为历史版本，不累加到本轮。
+
+**编译恢复与历史阻断**：上一轮 `final-version-compile.xcresult` 的 build-for-testing 退出65、零测试执行，准确阻断为 `TaskCreateCommandTests.swift:49:9` 的 `readTodos()` 和 `:79:9` 的 `state()` 缺少try；当轮停止后并发工作已修正。此前 NaturalLanguageParser 的503行门禁、检查脚本夹具 FileExistsError 均已有并发修正与最终静态通过记录，见原 `final-version-*` 证据。本轮开始亲自核对49、79行均已补try，未替并发任务改源码；沿原完整目标执行一次重新编译的 `xcodebuild ... test`，退出0，`final-resume-build-results.json` 为 succeeded、0错误、64项编译警告（含既有弃用API/actor诊断）。未排除任何源码、未使用 test-without-building，无需编译重试。
+
+| 分层与实际完整方法（前缀 `AreaChainTests/`） | 实际参数及次数 | 最终结果 |
+|---|---|---|
+| A：`DetailTimePickerTests/callbackFailureRestoresDisplayAndRetries(routine:native:)` | `(false,false)`、`(false,true)`、`(true,false)`、`(true,true)`，4次 | 全部严格通过。旧720、标题行文字、原分组清除按钮、失败重开及900失败恢复、同宿主nil重试、请求`[nil,900,nil]`、3次注入边界/1次真正save及其他模型字段保持均获证据。 |
+| B：`DetailTimePickerTests/outerTransactionAXClearRequiresOriginalDisplay(due:)` | `false`、`true`，2次 | 两次均为 Expected Failure；具体失败只落在 `DetailTimePickerTestSupport.swift:29:13` 的 `(candidates.count → 0) == 1`，对应提醒/截止的原分组清除按钮缺失。 |
+| C：`DetailTimePickerTests/outerTransactionNativeClearRestoresAndRetries(due:)` | `false`、`true`，2次 | 全部严格通过。原生合成点击后恢复720/600、原窗口重开旧值及成功清除重试、请求/保存次数和其他字段保持通过。 |
+| D：`DetailTimeFailureDiagnosticTests/repositoryFailureReturnsFalse()`、`DetailTimeFailureDiagnosticTests/nestedReturnFacts(due:)` | 无参1次；`false`、`true`各1次，共3次 | 全部严格通过。仓储返回false；两个嵌套入口均为内层true/saves=0/working，外层false/saves=1/rolledBack/rollback=returned，并恢复原模型。 |
+
+`build/TimeClear10H/final-resume.xcresult` 的测试树实际为 **5方法、11次运行：9通过、2已知失败、0非预期失败、0跳过**。summary顶层的4通过/1已知失败是方法数，设备层9/2才是参数运行数；4个参数化方法共10次，再加无参1次。原生日志及 `final-resume-ax-activities.json` 确认两项已知失败真实出现，未伪造或扩大范围。`withKnownIssue` 仍仅包原分组唯一按钮定位；模型、日期、另一字段、请求/保存次数在普通断言中通过。按钮若恢复时的旧文字要求仍为普通断言，本轮两项按钮均缺失，故该条件分支未执行，不能冒充两项显示已恢复。
+
+**隔离与执行状态**：沿原 `build/PrivacyQA-TimeClear10H`、`com.areachain.privacy-qa`、local临时签名、生产sandbox entitlement、LSUIElement=NO，清除六项真实钥匙串授权变量，原 `build/.build.lock` 非等待互斥和串行测试。原锁一次成功取得，无锁忙；本轮无编译失败、零执行或焦点阻断。未单独采集系统锁屏状态，原窗口激活/key-window及后续焦点断言完整保留且通过，不以跳过断言消除环境失败。仅经XCTest启动隔离宿主，使用原内存模型、随机偏好和合成数据；未直接启动QA或日用应用，不写真实钥匙串/日历。未重跑已有有效完整界面矩阵，未追加独立Debug/发行构建。
+
+**源码身份**：HEAD为 `d24391ea2695bae2ccb397d3d277918f5f0279f9`。起点、取锁后受测、测试结束和最终摘要分别为原证据目录中的 `final-resume-source-before.json`、`final-resume-source-tested.json`、`final-resume-source-after-test.json`、`final-resume-source-final.json`。编译至测试结束所有纳入摘要的源码/配置/记录均无变化；最后仅本工程记录变化，生产与测试源码和受测版本一致。暂存区摘要始终为 `26c7506b62ce2330bd8e39f9a579303dc9f5980edcbca7dc24696b8b62937383`，未恢复或覆盖并发修改。
+
+本轮受测SHA-256：
+
+- `TaskCreateCommandTests.swift`：`bbb81094f0aea6d937a20aea8ccc8df3dfdfe8e4939c25d03e58b029052d06dd`。
+- `DetailTimePickerTests.swift`：`c0fe70bd5e2e700da39f466820d51ed2521dcdb5d267cb0d0e2ad5e396e85147`，与上一轮最后断言版本相同。
+- `DetailTimePickerTestSupport.swift`：`3b213337c691c4492313daee673c2f6d47a32b798d2e2bc535a43d65a09231e4`。
+- `DetailTimeFailureDiagnosticTests.swift`：`2bcae5f9de1c89c7799da71c3d676ab61536ff8107947257a837ee1d49bd36cb`。
+- `ModelChanges.swift`：`63bcfb0ab798a4662ed01e6ab2b93d3920074f2099e813f60e95bda8857b2d19`。
+
+完整命令、退出状态、编译日志、summary/tests树、构建结果及原生诊断导出均保存于原 `build/TimeClear10H/final-resume*`。七个H测试/支持文件严格SwiftLint通过；最终 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`（224项脚本测试）、工作树/暂存区差异及未跟踪文本空白检查通过。未将静态检查、顶层Passed或编译成功当作旧问题修复证据。
+
+两项嵌套AX问题继续开放；普通截止回调内真实save失败仍缺等价注入；原历史生命周期有效结果、偶发焦点根因未定、指定Cursor verifier、真人输入/VoiceOver、低版本macOS及窗口合成器缺口保持。H最终测试分层版本的待补运行已完成，无本轮直接阻断；整体验收仍受上述历史缺口限制。完成后停止，不进入独立问题，不提交、推送、安装、发布，不修改真实数据、系统偏好、个人签名配置或权限。
+
+## 第十阶段 G：日历窄周布局修复
+
+2026-10-05，仅 CalendarPage、CalendarWeekBoard 和 DaybookMetrics.WeekBoard 的布局/可见性变更。原七列、日期键、选择/检查/投放回调、列内纵向装配、页面层焦点协调均保留；公共导航、任务行、保存、scope 与羽化未改。使用说明与组件目录同步说明横向浏览。
+
+**修复前测量**：`build/Calendar10G/baseline-measured.xcresult`、`baseline-diagnostics` 和 `baseline-images` 保留错误基线。420pt 生产页的下一周按钮 x=739.5、宽28、maxX=767.5；日期列头从 x22 到末列 maxX761.5，任务列146pt、空列65.5pt。直接周宿主420pt也从 x=-79 延伸到约500，证明是七列固有宽度传播而非导航自身样式。单列长标题+优先级+9:30时间测得内容至少240pt；240pt标题只剩5pt，280pt标题45pt、时间70pt，原48pt操作区保留。因此集中最小列宽280pt，七列加6×8pt间隙为2008pt；高于该宽度等分，低于时只有列区原生横滚。正常1000pt原图与420pt错误图保留，新增横向内容不作为页面越界。
+
+**隔离及过程**：完整正常应用/测试目标、`build/PrivacyQA-Calendar10G`、`com.areachain.privacy-qa`、local临时签名、生产sandbox entitlement、LSUIElement=NO、六项真实钥匙串变量清除、原build/.build.lock互斥和串行测试。起点文件/暂存哈希见 `build/Calendar10G/source-before.json`。首次选择器零命中只计编译；随后基线4方法中，中文两次被焦点前提阻断，英文两次复现已知越界。最小修复 `minimum.xcresult` 双语×浅深色4次严格成功。`layout.xcresult` 的日期焦点整套与滚动装配通过，消费者旧屏外点击及新测试错误的“今天”前置条件失败，测试随后显式展示目标并修正序列，未放宽边界。`corrected.xcresult` 因并发 ModelChanges.swift 的主actor默认闭包错误在编译阶段停止，零测试执行；本轮未回退或排除并发源码。
+
+**最终布局复测**：`final-layout.xcresult` 的 CalendarWeekLayoutTests / CalendarWeekConsumerTests 为8方法/14次，全部通过，无失败/跳过/已知失败。直接420pt、嵌入480pt内容宿主覆盖双语×浅深色，原生目标横向滚轮可从第一列到末列，选择与导航不随横滚改变；键盘屏外换日、Return检查归属、前后周/今天、跨年/闰日、快速连续外部选日、月周重挂均成功。280pt列中英文标题宽45/56pt，时间70/59pt，更多按钮x242、宽22，严格边界和互不重叠通过。等宽列在2100→2009→2007→420→2100的真实resize后，原七列NSScrollView及七个浮层对象保持身份。
+
+真实 MainSplitWorkspaceView 两语言宿主（en/light、zh-Hans/dark）从780→1200→2400→780pt resize，周导航/周列实际内容视口分别520/940/2140/520pt、x244；导航宽度始终匹配视口，选中日完整可见。实际工作台修复前尚未取得运行测量，旧失败定位依据独立页面与直接周宿主，不把修复后的工作台数据冒充前置基线。
+
+**过程失败保留**：`layout.xcresult` 为23方法/44次，20方法/38次通过、3方法/6次失败；失败来自旧屏外点击、测试错误的今天前置条件及直接clipView偏移后的可见性检查。最终用例显式展示原点击目标、修正今天序列，并用原生横向滚轮到端点，保留日期/边界/零写入断言。`corrected` / `updated-target` / `resumed` / `interface-resumed` 四包先后被并发主actor、事件闭包签名和新增事务测试的try错误阻断，均未计运行通过；并发任务自行修复后才恢复完整目标，不排除文件或改保存实现。Debug首轮同因失败，恢复轮遇原锁忙取消，最终构建结果另记。
+
+八个本轮Swift文件严格局部SwiftLint通过；最终静态与扩大回归结果见下方补记。使用static配完整隔离QA，不运行会扩大到非QA宿主的auto/swift测试。`current-images`保留完整独立页面、各语言主题首末端和真实工作台缓存图；工作台侧栏的AppKit合成层缓存为空白，不将其视为完整窗口合成器证据。原始xcresult保留，导出诊断仅保留本轮文本，重复系统logarchive导出副本已清理。前期检查时暂存区哈希一致；收尾时检测到外部并发暂存（包含本轮文件），本轮未执行stage/unstage或撤回该状态。公共DaybookScroller/DaybookScrollScope内容哈希保持，ModelChanges/BoardEvents等并发差异保留。
+
+**最终扩大回归**：`final-regression.xcresult` 25方法/45次全部通过：CalendarSpanConsumerTests、ScrollAssemblyConsumerTests、CalendarMonthNavigationTests、DateScheduleCalendarIsolationTests、DaybookScrollLifecycleTests、DaybookScrollFeatherLifecycleTests、DaybookScrollFeatherOwnershipTests。加上 `final-layout.xcresult` 的8方法/14次及 `drop-selection-rule.xcresult` 的1方法/1次，最终合计34方法/60次，无失败、跳过或已知失败。前次首次按键、原生组合文本、有效编辑器、草稿、跨窗口、零额外保存均回归；保存失败选择规则是纯规则证据，不能当作真实拖放失败路径。七列以具体任务行/日键追到各自NSScrollView及浮层，纵向事件保持其他列和横轴偏移，横向事件保持七列纵向偏移，重挂/resize/跨周后没有新增外层纵向浮层。QA `codesign --verify --deep --strict` 通过。既有辅助功能弃用、actor及系统桥接警告保留，不改变断言或测试目标。
+
+**最终构建与静态门禁**：`./scripts/build.sh --no-wait` 的 `debug-final.log` 构建成功并通过静态验签，沿已有development配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false；不代表系统认证或发行。严格局部SwiftLint、static质量门禁（223项脚本回归）、工作流与工作树/暂存区差异检查通过，检查器本轮未改。收尾检测到并发App测试启动隔离编辑后，追加 `bootstrap-smoke.xcresult`：首次方向键与窄周可达性2方法/8次重复验证全部通过，最新QA包再次静态验签通过；不将重复样本累加为新覆盖，也不把本轮结果推广为整个并发事务改动的完整验收。
+
+指定 Cursor verifier 当前不可调用，保留复核缺口，不认证或替换。缓存图、程序化横滚、合成原生键盘/滚轮/滑块事件分别计证据；真人触控板、真实拖放会话与窗口合成器像素尚未取得，不据回调或静态接线宣称完整拖放验收。未安装、发布或操作真实数据、系统偏好、签名配置及权限；完成后停止。
+
+## 第十阶段 F：日历月周切换后的键盘焦点恢复
+
+2026-10-05，生产只修改 CalendarPage：将 `spanPicker` 分支内的 `onChange(of: span)` 移到页面稳定的根 GeometryReader 后，实际范围变化仍只赋值 `keyboardFocus = .grid`。selectedKey、listFocusID、草稿、日期规则、检查器投影、保存和滚动路径不变；不增加键盘监视器，不调用 endEditing 或 makeFirstResponder。顶栏原显式 grid 赋值保留，因此菜单重选当前项仍恢复网格，分段同值重选仍保留列表路径。
+
+**复现与根因**：完整当前目标的 `build/Calendar10F-reproduce.xcresult` 实际命中原 `windowGridAndListKeyboardPaths()`，1 次已知失败。仅 XCTest 运行的临时只读诊断记录：月列表 Return 后 keyboardFocus=list、listFocusID=选中日首项；切周时原 picker.disappear、新 picker.appear 均发生，picker.change 未发生，span=week 但 keyboardFocus 仍为 list。selectedKey 保持 2026-09-30、检查目标及 listFocusID 保持首项，firstResponder=NSWindow（非原生文本编辑器），第一次右键仍停在 9 月 30 日。原 Escape 将业务焦点恢复 grid 后，同一路径右键才进入 10 月 1 日。源码和实测共同确认观察者随条件分支卸载遗漏协调；不是 firstResponder 未返回窗口。最初 `baseline.xcresult` 因方法过滤少了括号零命中，不计作基线通过。
+
+**最小对照**：`build/Calendar10F-minimal.xcresult` 的同一窗口方法严格通过。临时诊断记录 page.change 执行、keyboardFocus=list→grid，listFocusID 和 selectedKey 在切换当下不变，第一次右键直接进入 2026-10-01，Return 进入／检查该日相邻事项，Escape 沿原路径返回。原已知失败改为严格成功断言，移除补偿 Escape，但保留“切换后第一次方向键”要求。旧第四阶段失败说明和本次复现包保留；临时诊断及生命周期回调随后全部移除，最终生产差异仅移动原协调并说明原因。
+
+**最终焦点回归**：`build/Calendar10F-focus-regression.xcresult` 为 **11 方法／21 次全部通过，零失败、零跳过、零预期失败**。直接挂载原 CalendarPage 和 WorkspaceHeaderBar，复用 CalendarSpanTestSupport。非嵌入 1000/420pt 分段用窗口鼠标事件；嵌入 1000/480pt 用真实顶栏直接／收纳菜单及其原 NSMenuItem 动作。菜单 helper 的 Escape 仅退出系统追踪，动作派发之后第一个日历按键仍为方向键；不以菜单程序化动作冒充真人选菜单。
+
+| 边界 | 本轮实际证据 |
+|---|---|
+| 两种入口与双向切换 | en 浅色宽／zh-Hans 深色窄配对：月列表→周后第一次右键 2026-12-31→2027-01-01；周列表→月后第一次左键原路返回，切换本身保持选中日。分支重挂后仍立即生效。 |
+| 网格／清单有效范围 | 原 CalendarGridKeys 仅 grid 启用，文本编辑及其他窗口事件继续放行；月清单仅 list 接焦点 Binding，周清单仅 list 且选中列接入。真实 Return、下键和再次 Return 确认首项及第二项次序／检查日期；Escape 后上下键仍 ±7 日。其他窗口及卸载事件没有改变日历日期或检查目标。 |
+| 空日与重选 | 空日重复 Return 不产生检查目标或假列表焦点，随后第一次方向键仍换日；月范围空日检查投影为空。分段重选当前项后下键走清单第二项，菜单重选后下键走网格 +7 日，各自原行为保持。 |
+| 输入与草稿 | 捕获输入随周布局卸载后 firstResponder 自然回到窗口，往返草稿原样保留。仍挂载的顶栏原生编辑器在月／周切换后保持同一 firstResponder；方向键移动光标，setMarkedText 合成组合文本期间方向键／Return 不换日或进入列表。原显式捕获 Return 仍只创建一次。 |
+| 生命周期与数据 | 第二窗口分别覆盖 grid／list，原窗隐藏重开、页面卸载后事件均不误消费；共享导航在夹具清理时恢复。所有只切换／导航场景保存通知为 0，4 条事项与 1 个标签快照不变、手记数为 0、context 无待保存变化。 |
+
+**隔离与证据位置**：macOS 26.6.2（25G83）arm64，完整正常应用／测试目标，独立 `build/PrivacyQA-Calendar10F`、`com.areachain.privacy-qa`，local 临时签名、生产 sandbox entitlement、LSUIElement=NO；原 `build/.build.lock` 非等待互斥、清除六项真实钥匙串变量、串行焦点测试。仅内存合成资料和随机偏好，未排除并发源码，未直接打开 QA 或日用应用。复现／最小对照／最终焦点 diagnostics 保存在同名 build 目录；原始工作区及暂存差异摘要见 `build/Calendar10F-source-baseline.json`。
+
+**相邻回归与最终门禁**：`build/Calendar10F-adjacent.xcresult` 为 **20 方法／30 次全部通过**，包含 CalendarMonthNavigationTests、CalendarWeekConsumerTests、原周列头命中／焦点、DateScheduleCalendarIsolationTests、DateScheduleLifecycleTests、日期选择器导航／窗口按键、五项相关输入／组合／撤销方法，以及周列独立滚动目标和日期更新／resize 冒烟。与最终焦点包去重合计 **31 方法／51 次通过，失败 0、跳过 0、预期失败 0**；复现包与最小对照不重复计入。全图像矩阵明确未运行，原窄周已知断言仍存在，不计为已通过。
+
+三个本轮 Swift 文件严格局部 SwiftLint、`python3 -B scripts/quality_gate.py --profile static --format json`（含 222 项脚本测试）、`python3 -B scripts/check_workflow.py`、工作树与暂存区 `git diff --check` 均通过；检查器未修改。按隔离范围使用静态 profile 加上述完整正常 PrivacyQA 定向测试，不调用 auto/swift 全量非 QA 测试。QA 包 `codesign --verify --deep --strict` 通过；`./scripts/build.sh --no-wait` Debug 构建及静态验签通过，沿现有 development 配置，staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false，日志在 `build/Calendar10F-debug.log`。保留既有 AppKit 辅助功能／actor 编译警告和 Debug 多架构 destination 提示，不把 QA ad-hoc 或 Debug 静态验签写成系统认证／发行。本轮自身只编辑 1 个生产文件、2 个测试文件和 4 个原文档；暂存差异哈希不变，前期滚动／搜索源码与测试保持起点哈希，期间并发统一搜索文档变化保留，未撤回他人差异。
+
+**保留与停止边界**：只关闭“范围切换后列表业务焦点未恢复 grid”缺陷。420pt 窄周越界和周事项标题挤压的原断言／记录继续保留，未重跑全部图像矩阵；时间清除、搜索换行、安全输入及其他历史问题未修改。指定 Cursor verifier 当前无可调用工具，独立复核继续 partial，未重新认证或以其他代理替代；真人输入法／键鼠、VoiceOver 和低版本 macOS 未运行，合成 marked text 不等同真实输入法会话。完成此范围后停止，不提交、推送、安装、发布，不修改真实数据、系统偏好、签名配置或权限。
+
+## 第十阶段 E：滚动边缘羽化定位与更新修复
+
+2026-10-05，完整正常 PrivacyQA 应用/测试目标，`build/PrivacyQA-ScrollFeather10E`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO；沿原 `build/.build.lock` 非等待互斥、清除六项真实钥匙串变量与串行测试。仅合成内存资料/独立偏好，没有直接打开 QA 或日用应用。命令、日志和结果包在 `build/ScrollFeather10E`，工作区起点摘要为 `source-before.json`。
+
+**修复前证据**：`baseline.xcresult` 的完整生产装配实际 ScrollView / DocumentView / NSClipView 均已记录身份，视口 300×240、文档 300×1200（flipped=true）。偏移 0 / 480 / 960 时羽化 selected=nil，状态始终 false/false；clip bounds 已发两次通知，didLiveScroll 为零，内容变化又发 document frame 通知。原因是观察器未找到目标，并且仅监听全局 live-scroll 无法覆盖程序化视口及内容尺寸变化。不是本例几何计算错误；保留原 3/4pt 阈值，不重写坐标语义。原失败包和 diagnostics 原文保留，不作为修复通过。
+
+**实现**：公共装配把羽化放入已有持有 scope 的 modifier，唯一目标来源为 Host.currentScrollView。目标/clip/document 身份变化先移除旧 token，再读取初值；仅观察所属对象的 bounds/frame/live-scroll。Host/边界原布局复核保留，状态主队列合并发布并校验代次；解绑/无目标清零，拆卸先撤回调。共享通知开关只开启不关闭。显式开关通过固定透明原生背景容器装卸观察者，掩膜保持同一渐变类型，禁用时不透明，不再切换正文；公开参数、系统指示器、浮层绘制/拖动/Timer、AppKit 文本和业务均未改。旧静态结构断言因羽化转入 scope modifier 调整，五种参数、上游策略、运行身份继续有独立断言。
+
+**阶段性证据**：`initial-fix` 5 方法通过。`feather-matrix` 因测试误写只读 accessibilityReduceMotion 环境而未编译；后沿原 DaybookSegmentedMotionTests 在测试进程替换公开 getter 并恢复，不修改系统偏好。`feather-matrix-compiled` 4 方法通过、3 失败：原生 document 替换夹具未标记 Host 布局，开关掩膜类型改变导致旧浮层释放，以及事件场景焦点未就绪（foreground=com.openai.codex，未发送事件）。前两项分别明确布局入口并继续诊断开关重排；`lifecycle-correction` 又因合成草稿非 Equatable 编译失败，改为比较所有相关字段。失败包均保留，最终证据另列。
+
+`lifecycle-correction-compiled` 和 `stable-background` 的开关诊断显示 Host/起点/ScrollView 身份保留、区间曾短暂返回 nil；`stable-background` 中真实 Tasks/Diary 双语底部点击、直接 scrollWheel、窗口滑块和双语/减弱动态效果渐变通过。首次扩大 `final-regression` 共 51 方法，50 通过、1 失败、零跳过：失败为原 DaybookScrollNativeTests 的开启羽化两种调用形式在内容更新后重装浮层，是本轮回归，未放宽原断言。`notification-binding-only` 证实仅取消通知中的重复定位仍不足。最终将成对边界移到掩膜外侧，让渐变状态更新不再改变局部区间，同时通知只消费 Host 已确认绑定；实际浮层仍是 ScrollView 子视图，绘制/拖动代码不变。`boundary-outside-mask` 全部通过，开关诊断的 Host、起点与浮层身份前后相同；新增开关测试已恢复严格同一浮层断言，原 D 内容/resize/释放断言保持。
+
+**最终验证**：`final-confirmed.xcresult` / `final-confirmed-summary.json` / `final-confirmed-tests.json` 为 **51 方法／81 次全部通过，零失败、零跳过、零预期失败**。完整原 D 选择器加本轮五个测试类；修复前及中间失败包保留，不计入最终通过。源码对应 `source-final-tested.json`，测试结束后生产与测试文件无变化；之后只有本轮文档和并发统一搜索文档变化。
+
+| 验收点 | 最终证据 |
+|---|---|
+| 自动边缘 | 标准 1200pt 内容／240pt 视口，在 0／480／960 为 false/true、true/true、true/false；程序化滚动只等待主队列，不调用 checkEdges 或主动 layout。长→短→长、视口 500→180pt 溢出切换通过。 |
+| 绑定与清理 | 并列双开、一开一关、嵌套内外、多窗口均按实际 document 内标记核对目标身份；替换、歧义、无目标、禁用、拆卸/重挂、旧目标通知及排队发布均通过。原生 document 替换测试显式触发原 Host 布局，不能声称无布局时任意 document 替换也有独立通知。 |
+| 原 D | 周列每列1、甘特内外各1、Dashboard外层1／趋势0／热力图0；五种调用／三种上游策略、对象身份、内容变化、resize、拆卸与迟到安装保护通过。侧栏/Dashboard关闭羽化。搜索直连、ObjectPicker及精确+1／lease／旧source拒绝断言全部回归。 |
+| 真实消费者 | TasksPage/DiaryPage双语明暗配对，上中下正确、底部条目可见并收到窗口单击；合成模型与未提交草稿字段无额外变化。Dashboard原日期导航和周/甘特选择继续有原测试证据。 |
+| 视觉/事件 | en浅色、zh-Hans深色 × reduceMotion false/true，共12张静态缓存图保存于 `build/ScrollFeather10E/images`。中间红通道约0.946不变，上缘羽化样本约0.215、下缘约0.291；上下实际渐变已查看，尺寸和指示器保持。直接 scrollWheel 偏移80pt并自动更新；窗口命中滑块拖动及消费者单击通过。缓存位图不等于窗口合成器截图；窗口级滚轮、真人触控板/鼠标、VoiceOver及动画实时曲线未运行。 |
+| 构建和门禁 | 完整正常 PrivacyQA 编译、QA `codesign --verify --deep --strict` 通过；`./scripts/build.sh --no-wait` Debug构建与静态验签通过，未安装/启动。11个受影响Swift文件严格局部SwiftLint、102项工作流定向、222项脚本回归、静态质量、工作流、工作树/暂存差异检查通过。保留既有辅助功能弃用警告与一条SystemPageHost QoS运行警告。 |
+
+**关闭与缺口**：本轮 false/false、自动更新和浮层身份回归均已关闭。指定 Cursor verifier 仍无可调用入口，未认证或替换，整体独立复核/人工验收为 partial；下一项明确阻断为该指定复核及上述真实输入/合成器证据，不再以已修复的羽化状态为阻断。开始暂存区为空；期间外部操作暂存了阶段性内容，本代理未执行暂存/撤暂存，最终工作树包含后续修复，验收不能套用于旧暂存快照。未提交、推送、安装、发布，未改真实数据、偏好、签名配置或权限。
+
+周布局、时间清除、搜索换行和其他历史问题不在本轮范围。
+
+
+
+## 第十阶段 D：公共滚动浮层目标归属修复
+
+2026-10-05，隔离环境为 macOS 26.6.2 arm64 / Xcode 26.6，完整正常 AreaChain 应用/测试目标；`build/PrivacyQA-ScrollOwnership10D`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO、六项钥匙串变量清除，原 `build/.build.lock` 非等待申请与串行 XCTest。仅合成内存数据、独立偏好和原生产宿主；没有直接打开 QA/日用应用或变更系统偏好/签名/权限。首次锁忙未执行，随后磁盘满导致 baseline 编译退出 73、测试零执行；用户释放空间后继续。原失败日志与各批准确命令保存在 `build/ScrollOwnership10D`。
+
+**已复现原因**：`baseline-resume.xcresult` 命中 ScrollAssemblyConsumerTests 两方法/双语四次预期失败。周列的 Configurator 背景宿主分别位于独立绘制分支；上升到共同页面 NSHostingView 后，旧算法每次从兄弟列表起点递归，七次都选到首列，归属 `[7,0,0,0,0,0,0]`。甘特内层 Configurator 位于外层 document 分支，`enclosingScrollView` 第一条捷径已选中外层，内层候选尚未检查，归属 `[2,0]`。`baseline-native.txt` 保留每级父链、候选尺寸/内容框、选中对象和浮层父对象身份；旧失败没有删除。
+
+**实现边界**：主要修改 Theme 的 Configurator/Host 与新增私有 scope；另将 ObjectPicker 原候选列表的一处私有装配改用该 scope，原因见下文。成对标记提供局部归属，相同目标复用浮层；目标丢失/更换、离开窗口和拆卸清理自己的装饰，代次/失效位阻止排队回调复装。不新建内容宿主，不移动业务状态。两重载的默认与指示器策略、浮层绘制/拖动/动画、AppKit 文本、羽化观察器均保持；消费者生产页面未为定位改结构。接口与测试入口见[组件目录](component-catalog.md#第十阶段-d公共滚动浮层目标归属)。
+
+**阶段性验证**：`scoped-minimal.xcresult` 两方法/四次通过，周列 `[1,1,1,1,1,1,1]`、甘特 `[1,1]`。最初选择器省略方法括号未命中 Dashboard，未计其通过。`lifecycle-events.xcresult` 为 13 方法/33 次（30 通过、3 失败、0 跳过）：Dashboard 三方法/14 次及公共参数/更新通过；双语七列窗口命中自有浮层后的拖动通过。失败为测试误断言 NSScrollView 只有 clip 子视图，以及混用 resize 前后偏移：甘特 126.844pt 经 resize 原生取整为127pt；后改用浮层父链/弱释放，并把 resize 取整与横滚后精确偏移分开，未改生产几何。`focused-recheck.xcresult` 的生命周期与周/甘特共七方法/11 次通过，新增搜索两项失败另追踪。
+
+**搜索回归定位**：首次兼容路径把结果展开后的 AppKit 只读正文 scroll 误当结果列表目标，这是本轮新回归，未归为历史。已恢复 document 内直连的原 enclosing 归属；公共嵌套仍只走成对 scope。测试也曾误把补全浮层的 Configurator 算入操作预览，现按原 UnifiedSearchOperationBoundary 父链识别。`search-scope-check.xcresult` 证实旧 ObjectPicker 说明区与候选列表并列，单背景直连无法可靠选目标，新解析按歧义拒绝安装；仅将候选列表原一处私有装配换成相同 scope，不新增接入、改业务或页面结构。`search-final.xcresult` 两项新归属/清理、原候选五项和原结果六项通过；共14方法中唯一失败是原 `blurMasksAndRefocusRequiresRead()` 的 buffer version 0→1 整值比较。`search-blur-original.xcresult` 在原锁内恢复 HEAD 的旧 make/update/layout/定位/装配及原 ObjectPicker 后，同一方法以相同版本差异失败（1项、零跳过），证明并非本轮桥接造成。为编译完整新测试目标只保留未执行的 scope/dismantle 类型入口及只读属性可见性，未排除源码；finally 按字节校验恢复当前两文件。该业务/测试不扩修。最终批次结果见本节续记。
+
+
+**最终编辑后的验证**：`final-regression.xcresult` / `final-summary.json` / `final-tests.json` 实际命中 **42方法／66次运行：41方法／65次通过、1方法／1次失败、0跳过、0预期失败**。失败仅为上文已与旧桥接同场对照的搜索失焦版本断言。通过范围：DaybookScrollContractTests、DaybookScrollNativeTests、DaybookScrollerTests、DaybookScrollLifecycleTests、ScrollAssemblyConsumerTests、DashboardScrollTests、TaskListScrollTests、CaptureOverlayLayoutTests、UnifiedSearchScrollOwnershipTests、UnifiedSearchObjectInteractionTests；另含 CalendarWeekConsumerTests 的外部选择/禁用/多实例及 GanttInteractionTests 两项原生选择，原结果交互其余6项通过。没有排除正常源码，没有跳过焦点或归属断言。
+
+| 本轮声明 | 最终证据 |
+|---|---|
+| 周列错绑关闭 | 双语均 `[1,1,1,1,1,1,1]`；按各日期真实任务行的 enclosingScrollView 对应目标。12/16/20/24/28/32/36项生成七种 knob 高度约227.83→75.59pt；14次窗口命中自有浮层后拖动，各列偏移约50.57→147.40pt，邻列不动。选日/resize 后身份及单浮层保持。 |
+| 甘特错绑关闭 | 双语均 `[1,1]`，inner.enclosingScrollView 为 outer；2次窗口滑块事件令内层移动126.844pt，外层不动。缩窄后外横滚与内纵偏移精确独立；未新增横向公共滑块能力，外层装配仍保留。 |
+| Dashboard 接入保持 | 三方法／14次通过，外层1、趋势/热力图0；正常/小/大视口、双语浅深色、空/有内容、更新/resize/重开/导航及三轴独立保持。 |
+| 生命周期与兼容 | 自有 overlay 父链与弱释放、相同目标复用、目标替换、起点临时移除/恢复、歧义、并列移除、重挂、拆卸后迟到回调及跨窗口拒绝通过。五种调用×三种上游策略、长→短→空→长、草稿焦点/内容身份、无羽化默认及原系统指示器策略通过。 |
+| 三类滚动证据 | 程序化 scroll/定位、直接 NSScrollView.scrollWheel、窗口 sendEvent 合成鼠标命中/拖动分别通过并记录；后两者不等同真人触控板或窗口级滚轮命中。 |
+
+`final-native.txt` 保存目标/浮层身份、父链、视口/内容尺寸、16次核心滑块事件及 Dashboard 记录。九个相关 Swift 文件严格局部 `swiftlint lint --strict --quiet --no-cache`、`check_workflow.py`、静态 `quality_gate.py --profile static`、差异与未跟踪文件空白检查通过；检查器定向102项、完整脚本222项通过。完整正常 QA Debug 编译及 `codesign --verify --deep --strict` 通过（独立 QA 标识、ad-hoc）；`./scripts/build.sh --no-wait` Debug 构建与原 development 配置静态验签通过，hardenedRuntime=true、distributionReady=false，产物仅保存在 build。原弃用/并发警告及弱引用测试的 var 提示保留，不影响上述门禁。
+
+**交接仍为 partial**：实现和本轮目标归属/事件/生命周期自动验收完成；指定 Cursor verifier 当前无可调用工具，按原规则保留独立复核缺口，不认证或替代。真人鼠标/触控板、窗口级滚轮、输入法/VoiceOver及窗口合成器像素未验。羽化观察器仍使用自己的旧定位，本轮显式羽化测试记录仍为 lastTop=false/lastBottom=false；羽化、周窄布局、时间清除等不修。下一项验收阻断是指定复核，以及另行处理原搜索失焦 buffer version 断言（旧桥接同样失败）；本轮没有把它改为已知失败或放宽业务。用户如另启滚动后续阶段，羽化定位仍是独立未关闭项。保留前期与并发修改，本轮不提交、推送、安装、发布或改真实数据、系统偏好、个人签名和权限；到此停止。
+
+### D 收尾：搜索失焦版本契约校验与最终回归
+
+2026-10-05。本次只修订 [UnifiedSearchResultsInteractionTests](../AreaChainTests/Features/UnifiedSearchResultsInteractionTests.swift) 及本工程记录；上文的失败、旧桥接对照和当时停止结论保留为历史。本次未修改生产搜索、滚动、输入、许可、隐私或统一搜索规范，也未修改共享测试 helper。
+
+**契约核对与复现**：当前 [UnifiedSearchController.changed](../AreaChain/Features/Search/UnifiedSearchController.swift) 与[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线) 一致：仅 `invalidated && session.isMasked` 推进输入 buffer 版本，不换 lease、不清文本、不增加 privacyRevision；未遮罩模型重读不推进输入版本，privacyInvalidated 另走清空及隐私修订路径。[ReadSession](../AreaChain/Services/ContentQueryReadSession.swift) 的 receive / loseFocus 在 revokeReferences 已发送撤显示通知时不补发；resumeDisplay 只解除遮罩，必须重新 prepare / evaluate / publish。`closure-blur-baseline.xcresult` 在当前完整正常目标中单独复现原失败：只有 version 0→1 与旧整值相等断言不符，其余字段相同，确认是过时测试契约，未回退滚动修复。
+
+**新增保护**：保留原隔离宿主、focus 通知和 session；以完整期望 buffer 断言 version 精确 +1，lease、text、privacyRevision、operation、selectingObjects、plan、planItem 均不变，并观察到恰好一次 `.invalidated`。遮罩后和 resumeDisplay 后均无保留结果，presentation 精确拒绝 `stalePermit`；恢复没有旧许可、自动读取、提交或查询修改。失焦前捕获 source 和有效结果版本，通过原 browse / actions.intent / actions.edit 入口验证旧请求被拒绝，原 reads / opens 计数和完整 CommandOwnedHost（含 query / operations / plan / execution）保持。重新发布后额外用“旧 source＋当前结果版本”排除仅结果版本过期的偶然拒绝；当前 source＋旧结果版本仍拒绝，当前双版本可选择并只记录一次合成 open intent，不打开真实记录。新增 `unmaskedModelInvalidationKeepsInputVersion()` 沿 `.boardDidChange` → refresh 验证普通模型失效及重读保持完整 buffer，只更新结果版本；原隐私锁定清空输入、撤结果、privacyRevision 增加的用例继续回归。
+
+所有本次结果包、对应 `*-command.json`、`*-summary.json`、`*-tests.json` 均留在 `build/ScrollOwnership10D`，未覆盖旧包。仍用原 `run.py` 的 `build/.build.lock` 非等待互斥、完整正常目标、原 PrivacyQA 目录/标识、local/ad-hoc、生产 entitlement、六项真实钥匙串变量清除和串行事件。
+
+| 本次批次 | 实际结果 |
+|---|---|
+| `closure-blur-baseline` | 1 方法／1 次失败，0 跳过；保留原 version 断言复现。 |
+| `closure-focused` | 2 方法／2 次：1 通过、1 失败，0 跳过；本次新增断言误以为 presentation 抛 masked，实际 validatePermit 因许可已撤先抛 stalePermit。其余断言无失败；按源码修正精确错误类型，未改生产。 |
+| `closure-focused-corrected` | 2 方法／2 次全部通过，0 失败／跳过／预期失败。 |
+| `closure-lifecycle` | UnifiedSearchResultsInteractionTests 全部 8 方法／8 次通过，0 失败／跳过／预期失败，含原锁定、展开、分页、输入导航和 Tab。 |
+| `closure-final-regression` | **43 方法／67 次全部通过，0 失败／跳过／预期失败**。原 42 方法／66 次完整命中并通过，加新增模型失效对照 1 方法／1 次；不累加前面的批次。 |
+
+最终扩大批次只更换 `final-regression-command.json` 的结果包路径，逐参数核对原选择器与隔离参数相同；新增对照由原类选择器自然纳入。summary、设备层和 tests 树均无失败／跳过／预期失败；按 Test Case 去重，参数执行仅计 Arguments，不把 Runtime Warning 节点当作运行。**第十阶段 D 扩大自动回归通过**。完整正常 PrivacyQA 应用及测试目标编译通过，无源码排除，不额外重复发行、安装或日用构建。结果树保留 `DaybookScrollLifecycleTests.swiftUIRemovalRemountAndFocusedContentKeepIdentity()` 中 `SystemPageHost.swift:69` 的一条 QoS 优先级倒置运行警告；前面定向编译的既有辅助功能弃用警告也保留，未据此改变生产或测试时序。
+
+源码证据为同目录 `closure-source-before.json`、`closure-source-tested.json`、`closure-source-after.json`：开始时记录已跟踪及未跟踪文件和暂存区摘要，最终批次前冻结测试源码，批次结束时核对除本工程记录外无变化。本轮目标测试 SHA-256 为 `6c8bdfea51e49c8dac50e893a8ada5e7d49bfcf0b5e58cabf8773e3b99d88e67`；527 个 `AreaChain/` 生产文件的路径→摘要映射（键排序、紧凑 JSON）的 SHA-256 为 `f2086187e41524f13451b04fcb2ee46ac01b662c1b80cc702cf594713047c22b`，前后相同。清单逐项包含 Controller、InputState、ReadSession、DisplayUpdates、DaybookScroller、DaybookScrollScope 与搜索消费者，确认本轮没有改变搜索或滚动行为，暂存区保持。
+
+交付前再次检查发现 `UnifiedSearchFileSettingInteractionTests.swift`、`UnifiedSearchFileSettingRecoveryTests.swift` 在上述批次后有并发修改，只涉及未被本批选择的设置测试方法中的动作/断言；本轮没有编辑或回退它们。`closure-source-after.json` 单列这两个文件及前后摘要；本批选中用例、共享 helper 和全部生产源码仍与测试快照一致。扩大回归的通过结论对应 `closure-source-tested.json`，不声称随后这两个设置测试的修改已获完整重编译或运行验证，也不盲目重跑整批追赶并发工作。
+
+最终检查：目标测试文件 `swiftlint lint --strict --quiet --no-cache`、`git diff --check`、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static` 均通过；静态门禁包含当前工作区适用的 222 项脚本回归。证据为 `closure-workflow.log`、`closure-static.log`，测试文件最终编辑后已重新编译并完成上述隔离回归；文档更新不复用旧静态检查结果。
+
+滚动归属已关闭的周列 `[1,1,1,1,1,1,1]`、甘特 `[1,1]`、Dashboard `[1,0,0]` 及安装/更新/resize/重挂/拆卸/迟到回调，均由原 D 选择器回归通过。指定 Cursor verifier 仍无可调用入口，未认证、未以其他机制替代；真人鼠标/触控板、窗口级滚轮、输入法/VoiceOver和窗口合成器像素缺口不因测试修正而消失。可以另轮定界下一项独立运行问题修复，搜索旧断言不再阻断；整体治理及人工验收仍为 partial，不等于全应用验收完成。羽化仍为独立未关闭项，本轮到此停止，不修羽化或其他历史问题，不提交、推送、安装、发布或变更真实数据、系统偏好、签名配置和权限。
+
 ## 第十阶段 C：Dashboard 外层垂直滚动接入（partial）
 
 **2026-10-05 续验（以下结果更新上一轮状态）**：完整正常 `PrivacyQA-Dashboard10C` 的 `Dashboard10C-resume-compile.xcresult` 已完成 `build-for-testing`，应用与完整测试目标编译通过，未排除源码。开始检查时 `FileSettingCommandTests` 两处调用已由并发工作改为可编译表达式，本轮未修改该文件；原 `publishOnlyCompleteStatesAndLocalFactPrecedesObservationAndEffects()` 在 `Dashboard10C-resume-ownership.xcresult` 实际执行通过，原观察顺序和断言得到运行证据。该包另含事件前的生产 Dashboard 归属门禁，共 2 项通过、0 失败/跳过。
@@ -1059,7 +1339,7 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 
 **原生对照**：修改前先运行原生产 Picker；后用锁内临时恢复原 CalendarPage、finally 校验并还原本轮文件的方式补齐相同测试。`build/CalendarF-native-verified.xcresult` 为最终原生对照，实际命中 8 项、16 次运行：11 次通过、5 次已知问题，0 非预期失败/跳过。原生选项为 AXRadioButton、选中值来自 accessibilityValue，calendar.span 节点本身无辅助名称，组名由相邻可见标签呈现；公共版本为带选中状态的 Button 和显式命名的辅助组。两版点击分段后的实际 firstResponder 均为 NSWindow，左右键由原窗口日历处理，未凭控件类型推断按键归属。原生 mouseDown 同步追踪要求先投递释放事件；初版测试顺序卡住后用进程采样确认，只结束本轮测试进程。初期定位、标签字段类型、菜单隐藏占位与组名读取错误均为夹具问题，诊断结果不计通过。
 
-**两项旧日历问题保留**：从列表进入周视图后，原 spanPicker 分支中的 onChange 未能恢复 grid，firstResponder 已为 NSWindow 但方向键未换日；Escape 返回网格后原路径继续可用。420pt 周布局的七列及右导航超出窗口，长标签会进一步放大；月布局和分段本身仍可操作。两项在原生和公共版本同场景复现，分别归属原 CalendarPage 状态回调生命周期及 CalendarWeekBoard/周布局最小宽度，不在 F 重写。测试以 withKnownIssue 保留失败断言，每次仍执行；不能把结果包 Passed 或已知问题数算作这些要求验收通过。
+**两项旧日历问题保留**：从列表进入周视图后，原 spanPicker 分支中的 onChange 未能恢复 grid，firstResponder 已为 NSWindow 但方向键未换日；Escape 返回网格后原路径继续可用。420pt 周布局的七列及右导航超出窗口，长标签会进一步放大；月布局和分段本身仍可操作。两项在原生和公共版本同场景复现，分别归属原 CalendarPage 状态回调生命周期及 CalendarWeekBoard/周布局最小宽度，不在 F 重写。测试以 withKnownIssue 保留失败断言，每次仍执行；不能把结果包 Passed 或已知问题数算作这些要求验收通过。 后续焦点修复及严格首次按键证据见[第十阶段 F](#第十阶段-f日历月周切换后的键盘焦点恢复)；本段保留第四阶段失败事实，窄周问题未关闭。
 
 日历测试覆盖月→周→月、当前日期、原月/周导航、未提交草稿零创建、合成事项完整快照不变、窗口网格与列表/返回路径、输入光标方向键与显式 Return 只提交一次、非嵌入宽/窄分段、嵌入直接/收纳菜单、顶栏值/文案/实际检查器投影，以及中英文×浅深色、September 长月份标题与三组跨月周。可见入口结合原生祖先隐藏状态、辅助父链、窗口边界和唯一匹配定位，不改 ViewThatFits 来回避测试。
 
@@ -1101,7 +1381,7 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 
 本次为已有公共适配的局部接入，不新增公共接口、持久化语义或跨模块业务规则；主代理核对范围与调用链。阶段 A 公共关闭行为指定的 Cursor verifier 当前工具仍不可用，原必需复核缺口保留，不用其他代理冒充通过。程序化 dateValue/action、合成 NSEvent/文本输入、原生缓存截图与真人操作分别记录。没有真人键鼠、输入法、VoiceOver、物理长按或低版本 macOS 证据；历史日历焦点/周布局、主题回退、H 两项与 Stepper 长按保持未验，不扩修。
 
-**清除失败的已知缺口**：`TimePickerB-final-detail.xcresult` 与补充尺寸矩阵的 `TimePickerB-final-matrix.xcresult` 均为 9 项/24 次，22 次通过、2 次失败。进一步 `TimePickerB-clear-diagnostic.xcresult` 确认失败发生在操作后：待办提醒/截止模型已恢复原值，但对应清除按钮消失，原宿主仍显示空值；并非同名按钮取错。`TimePickerB-original-clear.xcresult` 用迁移前两份生产源码、同一完整测试目标/夹具/失败注入，3 次中同样两处失败，重复事项通过；对照结束已恢复本轮代码。该现象与 H 阶段记录的外层事务回滚后详情未自然刷新一致。仅在这个已证实的原版/迁移版场景使用 withKnownIssue 保留断言，不手动重建、不修改生产保存/刷新机制；不能将已知问题计为自动回显通过。时间弹出层有效赋值失败的回显测试仍为普通断言且通过，两者证据不可混用。
+**清除失败的已知缺口**：`TimePickerB-final-detail.xcresult` 与补充尺寸矩阵的 `TimePickerB-final-matrix.xcresult` 均为 9 项/24 次，22 次通过、2 次失败。进一步 `TimePickerB-clear-diagnostic.xcresult` 确认失败发生在操作后：待办提醒/截止模型已恢复原值，但对应清除按钮消失，原宿主仍显示空值；并非同名按钮取错。`TimePickerB-original-clear.xcresult` 用迁移前两份生产源码、同一完整测试目标/夹具/失败注入，3 次中同样两处失败，重复事项通过；对照结束已恢复本轮代码。第十阶段 H 已把这两项收窄为“外层失败事务＋AX 同步提前渲染 nil 后，模型恢复但显示未自然恢复”；普通回调内提醒与重复事项对照通过，不能概括为普通生产清除失败不回显。普通截止真实 save 失败仍缺等价注入。仅在这个已证实的原版/迁移版场景使用 withKnownIssue 保留断言，不手动重建、不修改生产保存/刷新机制；不能将已知问题计为自动回显通过。时间弹出层有效赋值失败的回显测试仍为普通断言且通过，两者证据不可混用。
 
 **静态收口**：Features 仅四处 DaybookTimePicker，hourMinute/textFieldAndStepper 仅在公共原生承载。仅日期的 DaySchedulePicker 及 TaskRow、TaskDetailDateChips、DiaryNoteCard、DiarySummaryRow 调用保留；星期和日历布局未改。布局矩阵覆盖真实详情分组的 280/400pt、中英文/浅深色及新建表单；320pt 首轮截图也保留。原快捷项在窄详情中省略、设时刻换行，原代码未变，不据此扩修布局。公共长辅助名和 12/24 小时显示沿原展示/原生基线回归。原生位图缓存中的透明系统材质不代表屏幕最终合成效果。
 
@@ -1109,7 +1389,7 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 
 截图位于 QA 容器临时目录 `AreaChainButtonConsumersQA/settings-detail-time-*`、`settings-recurring-time-form-*` 及原 `settings-time-gallery-*`，交互结束后核对缓存图；en 的 AM/PM、中文 24 小时、浅深色与长辅助名沿原展示验证。程序化 dateValue/action 与 AXPress 证明适配/业务链；完整分钟输入和 Return/Escape/失焦为合成原生键鼠，仍不等于真人证据。
 
-最终严格局部 SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static`（含 186 项脚本测试）及 `git diff --check` 通过。`./scripts/build.sh` Debug 构建/静态验签通过，沿既有 development 配置，不安装或启动产物；已有弃用 API/Swift 6 隔离编译警告不扩修。因仅授权隔离 XCTest 宿主，未运行另起普通宿主的 auto/swift 全量 profile，Swift 证据由上述完整目标的隔离定向回归提供。整体验收仍为 partial：两处旧清除失败回显、指定复核、真人与历史未验项保留。已在 B 停止，无提交、推送、安装、发布、真实数据、系统偏好、签名配置或权限变更。
+最终严格局部 SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static`（含 186 项脚本测试）及 `git diff --check` 通过。`./scripts/build.sh` Debug 构建/静态验签通过，沿既有 development 配置，不安装或启动产物；已有弃用 API/Swift 6 隔离编译警告不扩修。因仅授权隔离 XCTest 宿主，未运行另起普通宿主的 auto/swift 全量 profile，Swift 证据由上述完整目标的隔离定向回归提供。整体验收仍为 partial：两处外层事务＋AX 时序旧问题、普通截止真实 save 失败证据、指定复核、真人与历史未验项保留；最新测试分层与生命周期补验见本页第十阶段 H。已在 B 停止，无提交、推送、安装、发布、真实数据、系统偏好、签名配置或权限变更。
 
 ## 第六阶段 A：公共日期选择器与排期弹窗
 
@@ -1250,3 +1530,22 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 ### 普通设置组原生验收（3A-3B3B）
 
 采用正常完整目标、显式临时文件与随机 suite、注入展示、独立 QA 标识和 DerivedData，原测试锁非等待申请并保持串行；六项真实钥匙串授权清除。服务/控制器、原生行为、截图、最终 Debug/验签与静态证据分别登记，计数和缺口以[权威 §9.62](unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)为准。不迁移用户设置、不切换生产默认后端；指定 Cursor、人工、C2B 和历史外观缺口不因本轮通过而关闭。
+
+
+### 普通捕获 3T-1A 的验证交接
+
+[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界) 保存本轮完整证据：正常 PrivacyQA 中 57 方法／74 次运行通过；随后最终回滚事实与发布辅助函数补充的重验因原测试锁占用停止。最终静态/脚本通过，最终 Swift 重验、独立 Debug 构建及指定 Cursor verifier 保留缺口，状态 partial；不重试锁、不接 handler、不进入 3T-1B。
+
+
+3T-1A 最终验收续轮：原遗留增量已在正常 PrivacyQA 中通过 23 方法／37 次运行；随后发现并窄修正“原始 ModelRecoveryError 被误认为本次恢复失败”的事实分类，新增一项必要回归。修正后原锁忙，立即停止；最终新增修正、正常 Debug 构建/验签仍未完成，保持 partial。分版本证据只见[权威 §9.64 E1](unified-search-commands.md#e1-最终验收续轮已验证内容与新发现2026-10-05)。
+
+
+3T-1A 再次续验已通过最终源码 24 方法／38 次运行（含回滚事实新回归），受验源码哈希一致；随后正常 Debug 构建因原锁忙退出 3，未执行独立静态验签，不重试。当前测试缺口已补齐，构建/验签与指定复核等缺口保留；唯一当前证据见[权威 §9.64 E2](unified-search-commands.md#e2-最终源码定向测试通过debug-构建仍受锁阻塞2026-10-05)。
+
+
+3T-1A 本地验收收口：最终受验源码哈希保持一致，沿用最终 24 方法／38 次执行通过证据；`./scripts/build.sh --no-wait` 正常 Debug 构建退出 0，静态验签 staticSignatureVerified=true。前述本地构建/验签缺口已补齐，指定 Cursor、C2B、人工与历史缺口不变；当前结论只维护于[权威 §9.64 E3](unified-search-commands.md#e3-本地最终验收收口2026-10-05)。未安装、发布或进入 3T-1B。
+
+
+### 最小普通创建指令隔离执行（3T-1B）
+
+单个 title＋day 的 TaskCreateCommandAdapter 复用原捕获与 SwiftData 事务，固定 UUID、原运行占用、私有事件/fake 消费者及最终证据统一见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。完整正常 PrivacyQA、原锁非等待申请、独立标识/目录及六项授权清除保持；指定 Cursor、C2B、人工和历史缺口独立保留。不接生产、其他参数或原生执行 UI，完成后停止。

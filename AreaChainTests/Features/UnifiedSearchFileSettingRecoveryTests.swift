@@ -51,6 +51,7 @@ struct UnifiedSearchFileSettingRecoveryTests {
         let before = try fixture.files.inventory()
         let calls = fixture.store.metrics.snapshot().commits
         try await host.clickResult("unified.setting.retryPresentation")
+        #expect(fixture.controller.planMessage == "unified.plan.notExecutable")
         #expect(try fixture.files.inventory() == before)
         #expect(fixture.store.metrics.snapshot().commits == calls)
         if superseded {

@@ -45,6 +45,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored private var invocations: [UUID: CommandRuntimeInvocation] = [:]
     @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
     @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
+    @ObservationIgnored let taskCreations = CommandTaskCreateRegistry()
     private(set) var ownershipRevision: UInt64 = 0
 
     init(pages: [ContentQueryPageContext]) throws {
@@ -89,6 +90,11 @@ struct CommandPreferenceGroupInvocation: Equatable {
     /// 在任何可重入 IO 前登记；所有适配实例共用此登记，纯回执去重不能替代它。
     func claimPreferenceInvocation(_ operation: CommandOperationIdentity, attempt: CommandAttemptStamp,
                                    expecting lease: CommandHostLease) throws -> CommandRuntimeInvocation {
+        try claimRuntimeInvocation(operation, attempt: attempt, expecting: lease)
+    }
+
+    func claimRuntimeInvocation(_ operation: CommandOperationIdentity, attempt: CommandAttemptStamp,
+                                expecting lease: CommandHostLease) throws -> CommandRuntimeInvocation {
         try validate(lease)
         let session = try host(lease.ownership.hostID).session
         guard let run = session.execution, run.stamp == operation.execution,
@@ -107,6 +113,10 @@ struct CommandPreferenceGroupInvocation: Equatable {
     }
 
     func validatePreferenceInvocation(_ invocation: CommandRuntimeInvocation) throws {
+        try validateRuntimeInvocation(invocation)
+    }
+
+    func validateRuntimeInvocation(_ invocation: CommandRuntimeInvocation) throws {
         guard invocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
         try validate(invocation.lease)
         let run = try host(invocation.lease.ownership.hostID).session.execution
@@ -152,6 +162,37 @@ struct CommandPreferenceGroupInvocation: Equatable {
     private func hasInvocation(_ ownership: CommandHostOwnership) -> Bool {
         invocations.values.contains { $0.lease.ownership == ownership }
             || groupInvocations.values.contains { $0.lease.ownership == ownership }
+            || taskCreations.preparing[ownership.hostID] == ownership
+    }
+
+    /// 任务事实先进入原 Run，随后事件撤销显示许可也不会丢掉已提交输出。
+    func recordTaskCreation(_ invocation: CommandRuntimeInvocation, facts: CommandTaskCreateFacts) throws {
+        let current = try taskCreationHost(invocation)
+        var next = current.session
+        try next.recordTaskCreation(facts, attempt: invocation.attempt)
+        publishPreferenceSession(next, from: current.lease)
+    }
+
+    func finishTaskCreation(_ invocation: CommandRuntimeInvocation,
+                            external: [CommandExternalEffect: CommandExternalResult]) throws {
+        let current = try taskCreationHost(invocation)
+        var next = current.session
+        if next.execution?.units.first?.local == .committed {
+            let attempt = try next.beginNextProtocolStep(expecting: invocation.operation.execution)
+            try next.receiveProtocolResult(.init(attempt: attempt, result: .external(external)))
+        }
+        publishPreferenceSession(next, from: current.lease)
+        invocations[invocation.id] = nil
+    }
+
+    private func taskCreationHost(_ invocation: CommandRuntimeInvocation) throws -> CommandOwnedHost {
+        guard invocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
+        let current = try host(invocation.lease.ownership.hostID)
+        guard current.lease.ownership == invocation.lease.ownership,
+              current.session.execution?.operation(invocation.operation.operationID) == invocation.operation else {
+            throw CommandExecutionError.stale
+        }
+        return current
     }
 
     func replacePreferenceGroupBaselines(_ updates: [CommandPreferenceBaselineUpdate], plan: CommandPlanStamp,

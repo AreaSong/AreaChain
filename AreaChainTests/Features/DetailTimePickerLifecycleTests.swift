@@ -17,10 +17,15 @@ struct DetailTimePickerLifecycleTests {
         let window = fixture.native.window(DetailTimeProbe(probe: probe, due: due),
             locale: "zh-Hans", size: NSSize(width: 320, height: 180))
         defer { SystemPageHost.release(window) }
+        var stage = "initial open"
+        defer { Detail.lifecycleState(stage, host: window) }
         let picker = try await Detail.open(due: due, locale: "zh-Hans", in: window)
         #expect(probe.writes.isEmpty)
+        Detail.lifecycleState("initial popup", host: window, picker: picker)
+        stage = "initial close"
         try await fixture.close(picker)
         #expect(probe.writes.isEmpty && probe.minutes == nil)
+        stage = "reopen"
         let reopened = try await Detail.open(due: due, locale: "zh-Hans", in: window)
         try fixture.assign(0, to: reopened)
         try await SystemPageHost.settle(window)
@@ -28,22 +33,28 @@ struct DetailTimePickerLifecycleTests {
         probe.minutes = 720
         try await SystemPageHost.settle(window)
         #expect(Detail.displayed(reopened) == 720)
+        stage = "partial before disable"
         try await Detail.partial(reopened)
+        stage = "disable and rejected action"
         probe.disabled = true
         try await SystemPageHost.settle(window)
         #expect(!reopened.isEnabled && probe.writes == [0])
         try fixture.assign(900, to: reopened)
         #expect(probe.writes == [0] && probe.minutes == 720)
+        stage = "reenable and partial"
         probe.disabled = false
         try await SystemPageHost.settle(window)
         try await Detail.partial(reopened)
+        stage = "close pending input"
         try await fixture.close(reopened)
         #expect(probe.writes == [0])
+        stage = "clear and late action"
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await Native.click(Detail.button("row.time.clear", due: due, locale: "zh-Hans", in: window), in: window)
         #expect(probe.minutes == nil && probe.writes == [0, nil])
         try fixture.assign(900, to: reopened)
         #expect(probe.minutes == nil && probe.writes == [0, nil])
+        stage = "last open/close"
         let last = try await Detail.open(due: due, locale: "zh-Hans", in: window)
         #expect(last.accessibilityHelp() == "未设置" && probe.writes == [0, nil])
         try await fixture.close(last)

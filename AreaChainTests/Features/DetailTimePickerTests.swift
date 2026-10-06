@@ -81,6 +81,7 @@ struct DetailTimePickerTests {
         }
         try await SystemPageHost.settle(window)
         #expect(Detail.displayed(picker) == old, "原宿主自然更新后必须回显旧值")
+        try Detail.expectDisplay(old, due: due, in: window)
         #expect(fixture.todo.remindMinutes == 720 && fixture.todo.dueMinutes == 600)
         #expect(fixture.routine.remindMinutes == 720)
         try fixture.assign(1439, to: picker)
@@ -132,41 +133,129 @@ struct DetailTimePickerTests {
         try await fixture.close(reopened)
     }
 
-    @Test(arguments: [(false, false), (false, true), (true, false)])
-    func failedClearKeepsOriginalDisplay(routine: Bool, due: Bool) async throws {
-        let fixture = try TimePickerConsumerFixture(minutes: 720)
+    // A：仓储真实修改之后，失败恢复在 UI 回调返回前完成；不代表磁盘 save 故障。
+    @Test(arguments: [false, true], [false, true])
+    func callbackFailureRestoresDisplayAndRetries(routine: Bool, native: Bool) async throws {
+        let fixture = try Detail.failureFixture()
         defer { fixture.cleanup() }
-        fixture.todo.dueMinutes = 600
-        try fixture.native.container.mainContext.save()
+        let previous = DayBoardMutations.taskRepositoryProvider
+        defer { DayBoardMutations.taskRepositoryProvider = previous }
+        let repository = DetailTimeFailureRepository(fixture.native.container.mainContext)
+        if !routine { DayBoardMutations.taskRepositoryProvider = { _ in repository } }
         let window = Detail.window(fixture, routine: routine)
+        defer { SystemPageHost.release(window) }
+        let saves = DetailTimeSaveCounter(fixture.native.container.mainContext)
+        defer { saves.stop() }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+        try Detail.expectDisplay(720, due: false, in: window)
+        fixture.repository.fail = true
+        repository.fails = true
+        defer { fixture.repository.fail = false; repository.fails = false }
+        let feedback = MutationFeedback.shared.failureCount
+        try Detail.press(Detail.button("row.time.clear", due: false, locale: "en", in: window), native: native, in: window)
+        try await SystemPageHost.settle(window)
+        #expect(fixture.todo.remindMinutes == 720 && fixture.routine.remindMinutes == 720)
+        #expect(MutationFeedback.shared.failureCount == feedback + 1)
+        try Detail.expectDisplay(720, due: false, in: window)
+        #expect((routine ? fixture.repository.reminderWrites : repository.calls) == [nil])
+        #expect((routine ? fixture.repository.reminderSaveBoundaries : repository.saveBoundaries) == 1 && saves.count == 0)
+        let picker = try await Detail.open(in: window)
+        #expect(Detail.displayed(picker) == 720 && picker.accessibilityHelp() != "Not set")
+        try fixture.assign(900, to: picker)
+        try await SystemPageHost.settle(window)
+        #expect(Detail.displayed(picker) == 720)
+        #expect(fixture.todo.remindMinutes == 720 && fixture.routine.remindMinutes == 720)
+        try Detail.expectDisplay(720, due: false, in: window)
+        try await fixture.close(picker)
+        #expect((routine ? fixture.repository.reminderWrites : repository.calls) == [nil, 900])
+        #expect((routine ? fixture.repository.reminderSaveBoundaries : repository.saveBoundaries) == 2 && saves.count == 0)
+        fixture.repository.fail = false
+        repository.fails = false
+        try Detail.press(Detail.button("row.time.clear", due: false, locale: "en", in: window), native: native, in: window)
+        try await SystemPageHost.settle(window)
+        #expect((routine ? fixture.routine.remindMinutes : fixture.todo.remindMinutes) == nil)
+        #expect(try Detail.buttons("row.time.clear", due: false, in: window).isEmpty)
+        let cleared = try await Detail.open(in: window)
+        #expect(cleared.accessibilityHelp() == "Not set")
+        try await fixture.close(cleared)
+        #expect((routine ? fixture.repository.reminderWrites : repository.calls) == [nil, 900, nil])
+        #expect((routine ? fixture.repository.reminderSaveBoundaries : repository.saveBoundaries) == 3 && saves.count == 1)
+        #expect((routine ? repository.calls : fixture.repository.reminderWrites).isEmpty)
+        #expect(fixture.todo.dueMinutes == 600 && fixture.todo.dayKey == "2026-10-02")
+        #expect((routine ? fixture.todo.remindMinutes : fixture.routine.remindMinutes) == 720)
+    }
+
+    // B：原 failedClearKeepsOriginalDisplay 的两个待办参数；known issue 只包原显示要求。
+    @Test(arguments: [false, true])
+    func outerTransactionAXClearRequiresOriginalDisplay(due: Bool) async throws {
+        try await outerTransactionClear(due: due, native: false)
+    }
+
+    // C：与 B 同数据、同外层失败边界，只改事件派发。
+    @Test(arguments: [false, true])
+    func outerTransactionNativeClearRestoresAndRetries(due: Bool) async throws {
+        try await outerTransactionClear(due: due, native: true)
+    }
+
+    private func outerTransactionClear(due: Bool, native: Bool) async throws {
+        let fixture = try Detail.failureFixture()
+        defer { fixture.cleanup() }
+        let window = Detail.window(fixture, routine: false)
         defer { SystemPageHost.release(window) }
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
+        let old = due ? 600 : 720
+        try Detail.expectDisplay(old, due: due, in: window)
+        let counter = DetailTimeSaveCounter(fixture.native.container.mainContext)
+        defer { counter.stop() }
         let clear = try Detail.button("row.time.clear", due: due, locale: "en", in: window)
-        let press = NSSelectorFromString("accessibilityPerformPress")
-        try #require(clear.responds(to: press))
-        if routine {
-            fixture.repository.fail = true
-            _ = clear.perform(press)
-            fixture.repository.fail = false
-            #expect(fixture.repository.reminderWrites == [nil])
-        } else {
-            #expect(!ModelChanges.perform(in: fixture.native.container.mainContext,
-                save: { _ in throw CocoaError(.fileWriteNoPermission) }) { _ = clear.perform(press) })
-        }
+        var boundaries = 0
+        // 请求数只计派发；生产 Void 回调未替换，不能宣称直接捕获其返回或调用次数。
+        var requests = 0
+        #expect(!ModelChanges.perform(in: fixture.native.container.mainContext, save: { _ in
+            boundaries += 1
+            throw CocoaError(.fileWriteNoPermission)
+        }) {
+            requests += 1
+            try Detail.press(clear, native: native, in: window)
+        })
         try await SystemPageHost.settle(window)
+        #expect(requests == 1 && boundaries == 1 && counter.count == 0)
         #expect(fixture.todo.remindMinutes == 720 && fixture.todo.dueMinutes == 600)
-        #expect(fixture.routine.remindMinutes == 720)
-        if routine {
-            _ = try Detail.button("row.time.clear", due: due, locale: "en", in: window)
-            let picker = try await Detail.open(due: due, in: window)
-            #expect(Detail.displayed(picker) == 720)
-            try await fixture.close(picker)
-        } else {
-            withKnownIssue("第五阶段 B 原版/迁移版均复现：外层事务清除失败后详情未自然刷新，见工程记录") {
+        #expect(fixture.routine.remindMinutes == 720 && fixture.todo.dayKey == "2026-10-02")
+        if !native {
+            withKnownIssue("第五阶段 B 两项旧问题：仅外层失败事务＋AX 同步提前渲染 nil 后未自然回显；未修复，见第十阶段 H") {
                 _ = try Detail.button("row.time.clear", due: due, locale: "en", in: window)
             }
+            // 若按钮已恢复，文字要求仍是普通断言，不扩充旧 known issue 去吸收新失败。
+            if try Detail.buttons("row.time.clear", due: due, in: window).count == 1 {
+                try Detail.expectDisplay(old, due: due, in: window)
+            }
+            return
         }
+        try Detail.expectDisplay(old, due: due, in: window)
+        let picker = try await Detail.open(due: due, in: window)
+        #expect(Detail.displayed(picker) == old && picker.accessibilityHelp() != "Not set")
+        try await fixture.close(picker)
+        #expect(requests == 1 && boundaries == 1 && counter.count == 0)
+        let retry = try Detail.button("row.time.clear", due: due, locale: "en", in: window)
+        #expect(ModelChanges.perform(in: fixture.native.container.mainContext, save: { context in
+            boundaries += 1
+            try context.save()
+        }) {
+            requests += 1
+            try Detail.press(retry, native: native, in: window)
+        })
+        try await SystemPageHost.settle(window)
+        #expect((due ? fixture.todo.dueMinutes : fixture.todo.remindMinutes) == nil)
+        #expect(try Detail.buttons("row.time.clear", due: due, in: window).isEmpty)
+        let cleared = try await Detail.open(due: due, in: window)
+        #expect(cleared.accessibilityHelp() == "Not set")
+        try await fixture.close(cleared)
+        #expect(requests == 2 && boundaries == 2 && counter.count == 1)
+        #expect((due ? fixture.todo.remindMinutes : fixture.todo.dueMinutes) == (due ? 720 : 600))
+        #expect(fixture.routine.remindMinutes == 720 && fixture.todo.dayKey == "2026-10-02")
     }
 
     @Test(arguments: ["en", "zh-Hans"], [false, true])

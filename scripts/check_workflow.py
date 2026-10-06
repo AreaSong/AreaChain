@@ -57,6 +57,12 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+    ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),
+    ("AreaChain/Services/TaskMutationService.swift", "TaskMutationService"),
+    ("AreaChain/Services/TaskMutationService.swift", "createCaptured"),
+    ("AreaChain/Services/ModelChanges.swift", "CommitFacts"),
+    ("AreaChain/Services/ModelChanges.swift", "afterPublication"),
     ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "FileLocalSettingCommandAdapter"),
     ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "prepareGroup"),
     ("AreaChain/Services/FileLocalSettingCommandAdapter.swift", "verifyCommit"),
@@ -138,6 +144,8 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Theme/DaybookScroller.swift", "daybookScroll"),
     ("AreaChain/Theme/DaybookScroller.swift", "daybookScrollAssembly"),
     ("AreaChain/Theme/DaybookScroller.swift", "DaybookScrollIndicators"),
+    ("AreaChain/Theme/DaybookScroller.swift", "DaybookScrollEdgeObserverNSView"),
+    ("AreaChain/Theme/DaybookScrollScope.swift", "DaybookScrollTargetModifier"),
     ("AreaChain/Theme/DaybookInputShell.swift", "DaybookInputShell"),
     ("AreaChain/Theme/DaybookSecureField.swift", "DaybookSecureField"),
     ("AreaChain/Features/Settings/PrivacyPasswordSheet.swift", "DaybookSecureField"),

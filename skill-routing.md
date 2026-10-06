@@ -1,5 +1,15 @@
 # AreaChain 技能路由与交付闭环
 
+第十阶段 G 沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生可见性）→ areachain-verify。只修周布局的视口传播、等宽/横向浏览与选中日可达性；[组件目录](docs/component-catalog.md#第十阶段-g日历窄周布局)记录原装配与尺寸，[工程记录](docs/engineering.md#第十阶段-g日历窄周布局修复)记录测量和实际验收。完整正常 PrivacyQA、独立目录/标识、原锁、六项授权清除和串行事件保持；指定 Cursor verifier 不可用保留缺口，不认证或替代。完成停止，不扩修历史问题，不提交、安装或发布。
+
+第十阶段 F 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份／焦点，架构与可靠性判据补状态归属）→ areachain-verify。只将 CalendarPage 范围变化的业务焦点协调移到稳定页面，分段与顶栏菜单保持各自重选行为；[组件目录](docs/component-catalog.md#第十阶段-f月周切换后的键盘焦点恢复)记录入口，[工程记录](docs/engineering.md#第十阶段-f日历月周切换后的键盘焦点恢复)保留旧失败、运行根因及严格首次按键证据。沿完整正常 PrivacyQA、独立标识／目录、原构建锁、六项授权清除和串行合成窗口；指定 Cursor verifier 不可调用保留缺口，不认证或替代。完成停止，不修窄周、时间清除、搜索换行或安全输入，不提交、安装或发布。
+
+第十阶段 E 沿 areachain-workflow → areachain-ui（areasong-development 补架构/可靠性，ui-ux-pro-max 聚焦身份）→ areachain-verify。羽化复用同一 scope 的 Host 绑定，观察与清理责任见[组件目录](docs/component-catalog.md#第十阶段-e滚动边缘羽化定位与更新)；修复前 nil/通知证据、自动状态与渐变、D 回归和缺口见[工程记录](docs/engineering.md#第十阶段-e滚动边缘羽化定位与更新修复)。沿完整正常 PrivacyQA、原构建锁、独立目录/标识、六项授权清除、合成数据与串行测试；指定 Cursor verifier 不可调用保留缺口，不认证或替换。完成停止，不修周布局、时间清除、搜索换行或其他历史问题，不提交、安装或发布。
+
+
+
+第十阶段 D 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦身份，架构/可靠性判据补归属和释放）→ areachain-verify。公共 daybookScroll 用成对局部边界定位，Host 管理自有浮层与拆卸；[组件目录](docs/component-catalog.md#第十阶段-d公共滚动浮层目标归属)列出复用入口，[工程记录](docs/engineering.md#第十阶段-d公共滚动浮层目标归属修复)记录旧失败、新归属及事件证据。完整正常 PrivacyQA、独立目录/标识、原构建锁、六项授权清除与串行合成宿主保持；指定 Cursor verifier 不可调用保留缺口，不认证或替代。完成停止，不修羽化、横向滑块、周布局、时间清除或其他历史问题，不提交、安装或发布。
+
 第十阶段 C 沿 areachain-workflow → areachain-ui（areasong-development 局部等价、ui-ux-pro-max 聚焦 SwiftUI 身份）→ areachain-verify。仅 Dashboard 外层 ScrollView 显式接 `daybookScroll(featherEdges: false)`，两个横向图表保持原入口；[组件目录](docs/component-catalog.md#第十阶段-cdashboard-外层垂直滚动接入partial)与[工程记录](docs/engineering.md#第十阶段-cdashboard-外层垂直滚动接入partial)保存 partial 证据。完整正常 PrivacyQA、独立目录/标识、原锁、六项授权清除、串行及合成今日资料；续验已解除测试编译阻断并证实外层1／两横层0归属，32方法／53次有效自动回归通过。大视口同尺寸补验亦通过，第二处漏接按归属和自动回归证据标为已处理；人工、窗口合成器与指定复核缺口单列，不修公共目标搜索或历史问题，不提交、安装或发布。
 
 第十阶段 B 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 修饰顺序/身份，areasong-development 补局部等价判据）→ areachain-verify。只接 QuadrantTitlePreview 的静态 rowBubble 装饰；摘要、全文复制、静态边框、命中及定位差异见[组件目录](docs/component-catalog.md#第十阶段-b四象限标题预览纯装饰接入)。直接生产预览/overlay 与页面安全悬停沿完整正常 PrivacyQA、独立标识/目录、原构建锁、六项授权清除和串行事件；static profile、窄守卫/反例与真实证据见[工程记录](docs/engineering.md#第十阶段-b四象限标题预览纯装饰接入)。公共组件不改，局部等价由主代理自查，既有指定复核缺口保留。完成停止，Dashboard 外层滚动留下一轮，不修历史问题，不提交、安装或发布。
@@ -299,3 +309,8 @@
 普通偏好 3A-3B3A 沿 areachain-workflow → areasong-development 架构治理/可靠性/工程交付 → areachain-verify。显式 FileLocalSettingCommandAdapter 复用 AppPreferences 完整记录、共同提交和展示 ledger，Coordinator 独占组身份与原子安装，Run 区分本地与展示结果。[组件目录](docs/component-catalog.md#普通偏好命令共同提交3a-3b3a)记录入口，[权威 §9.61](docs/unified-search-commands.md#961-阶段-3a-3b3a普通设置组准备共同执行与回执)记录契约与实际验证。仅真实临时文件、随机旧键域和注入效果，完整正常 QA 目标及原锁非等待申请；指定 Cursor verifier 与历史缺口保留，不登录或替代复核。完成停止，不接生产后端、多项 UI、真实迁移或下一阶段。
 
 统一搜索 3A-3B3B 沿 areachain-workflow → areasong-development 架构治理 → areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 身份）→ areachain-verify；显式互斥文件装配、原计划共同准备/提交与类型化恢复见[权威 §9.62](docs/unified-search-commands.md#962-阶段-3a-3b3b普通设置共同提交的原生接线)。仅隔离宿主；生产与历史复核缺口不改变。
+
+
+普通捕获 3T-1A 沿 areachain-workflow → 架构治理/可靠性引用 → areachain-verify；共享入口与旧消费者见[组件目录](docs/component-catalog.md#普通捕获共享新增3t-1a)，提交事实、D1～D3 确认及验收见[权威 §9.64](docs/unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。完整正常 QA 目标、原锁非等待申请、隔离内存模型与显式 fake 系统依赖；指定 Cursor verifier 不可用保留 partial，不重查登录或替代。只提取新增，不接 handler、标题/备注或统一搜索执行，完成后停止。
+
+普通创建 3T-1B 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify；固定身份、原运行占用和唯一交接见[权威 §9.65](docs/unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)，入口见[组件目录](docs/component-catalog.md#最小普通创建指令3t-1b)。只用内存上下文、私有事件与 fake 消费者；完整正常 QA 目标、原构建锁非等待申请、六项钥匙串授权清除，锁忙即停止。指定 Cursor、C2B、人工和历史缺口保留，不认证、不替代；不接生产/原生 UI、其余字段或其他命令，完成后停止。

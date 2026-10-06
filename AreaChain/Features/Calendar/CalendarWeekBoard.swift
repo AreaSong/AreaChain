@@ -19,12 +19,36 @@ struct CalendarWeekBoard: View {
     var onDropTodo: (UUID, String) -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
-            ForEach(days, id: \.self) { day in
-                column(day)
+        GeometryReader { geometry in
+            let spacing = DaybookMetrics.WeekBoard.columnSpacing
+            let count = CGFloat(max(days.count, 1))
+            let width = max(DaybookMetrics.WeekBoard.minimumColumnWidth,
+                            (geometry.size.width - spacing * (count - 1)) / count)
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: spacing) {
+                        ForEach(days, id: \.self) { day in
+                            column(day)
+                                .frame(width: width, height: geometry.size.height)
+                                .id(day)
+                        }
+                    }
+                }
+                // 横轴使用系统承载，公共 daybookScroll 仍只属于列内纵轴。
+                .task(id: VisibilityRequest(days: days, selectedKey: selectedKey, width: geometry.size.width)) {
+                    // 等待本轮列身份装配；选择/周/视口变化和卸载会取消旧请求。
+                    await Task.yield()
+                    guard !Task.isCancelled, days.contains(selectedKey) else { return }
+                    proxy.scrollTo(selectedKey)
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+
+    private struct VisibilityRequest: Equatable {
+        var days: [String]
+        var selectedKey: String
+        var width: CGFloat
     }
 
     private func column(_ day: String) -> some View {
