@@ -9,11 +9,15 @@ import SwiftData
     let dependencies: TaskMutationService.Dependencies
     let center: NotificationCenter
     let refresh: (_ includeCalendar: Bool) throws -> Refresh
+    let requestAuthorization: ((Int) -> CommandTaskCreateFacts.Authorization)?
+    lazy var tagCatalog = TaskCreateTagCatalogReader(context: context)
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
     private(set) var notification: CommandExternalResult = .unknown
     private(set) var calendar: CommandExternalResult = .unknown
     private(set) var refreshRequested = false
+    private(set) var authorizationRequest = CommandTaskCreateFacts.Call.notCalled
+    private(set) var authorizationResult = CommandTaskCreateFacts.Authorization.unknown
 
     struct Refresh {
         /// nil 表示无法确认是否请求；请求本身不能推导处理成功。
@@ -27,12 +31,14 @@ import SwiftData
     init(context: ModelContext, center: NotificationCenter,
          source: @escaping () throws -> CommandTaskCreateSource,
          dependencies: TaskMutationService.Dependencies,
-         refresh: @escaping (Bool) throws -> Refresh) throws {
+         refresh: @escaping (Bool) throws -> Refresh,
+         requestAuthorization: ((Int) -> CommandTaskCreateFacts.Authorization)? = nil) throws {
         self.context = context
         self.center = center
         self.source = source
         self.dependencies = dependencies
         self.refresh = refresh
+        self.requestAuthorization = requestAuthorization
         try validate()
     }
 
@@ -49,6 +55,19 @@ import SwiftData
         guard !context.hasChanges else { throw TaskCreateCommandIssue.dirtyContext }
         // 不继承未知外层的保存/发布依赖；共享服务自己的嵌套 pending 契约保持原样。
         guard !ModelChanges.hasActiveTransaction(in: context) else { throw TaskCreateCommandIssue.nestedTransaction }
+    }
+
+    func beginInvocation() {
+        authorizationRequest = .notCalled
+        authorizationResult = .unknown
+    }
+
+    func requestReminderAccessIfNeeded(_ minutes: Int?) {
+        guard let minutes else { return }
+        authorizationRequest = .called
+        if let requestAuthorization { authorizationResult = requestAuthorization(minutes) }
+        else { dependencies.requestReminderAccessIfNeeded(minutes) }
+        authorizationRequest = .returned
     }
 
     func publish() throws {

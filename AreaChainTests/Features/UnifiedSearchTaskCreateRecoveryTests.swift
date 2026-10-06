@@ -22,6 +22,7 @@ struct UnifiedSearchTaskCreateRecoveryTests {
             #expect(fixture.controller.plan?.items.count == 1)
         } else {
             #expect(try fixture.facts.state == (kind == 1 ? .notSubmitted : kind == 2 ? .unknown : .saved))
+            #expect(fixture.controller.planMessage == "unified.plan.notExecutable")
         }
         if kind == 2 {
             try await host.clickResult("unified.task.verify")

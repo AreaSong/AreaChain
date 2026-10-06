@@ -175,11 +175,21 @@ struct SearchMultilineBoundaryTests {
         // 原 sendEvent 不更新 currentEvent；队列派发让捕获的快捷键判断得到真实按键上下文。
         var flags: NSEvent.ModifierFlags = command ? .command : []
         if shift { flags.insert(.shift) }
-        let event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
-            modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
-            windowNumber: window.windowNumber, context: nil, characters: shift ? text.uppercased() : text,
-            charactersIgnoringModifiers: text,
-            isARepeat: false, keyCode: code))
+        let event: NSEvent
+        if command && code == 6 {
+            // 原 keyEvent 工厂的合成 ⌘⇧Z 不派发菜单 action；原生键盘构造经桌面对照验证。
+            // 只在进程内 postEvent，不向系统或其他进程投递 CGEvent。
+            let native = try #require(CGEvent(keyboardEventSource: nil, virtualKey: code, keyDown: true))
+            native.flags = CGEventFlags(rawValue: UInt64(flags.rawValue))
+            event = try #require(NSEvent(cgEvent: native))
+            try #require(event.characters == text && event.charactersIgnoringModifiers == (shift ? text.uppercased() : text))
+        } else {
+            event = try #require(NSEvent.keyEvent(with: .keyDown, location: .zero,
+                modifierFlags: flags, timestamp: ProcessInfo.processInfo.systemUptime,
+                windowNumber: window.windowNumber, context: nil, characters: shift && !command ? text.uppercased() : text,
+                charactersIgnoringModifiers: shift ? text.uppercased() : text, isARepeat: false, keyCode: code))
+        }
+        try #require(event.keyCode == code && event.modifierFlags == flags)
         NSApp.postEvent(event, atStart: false)
         try await FormInputTestSupport.wait { received == 1 }
         try await SystemPageHost.settle(window)

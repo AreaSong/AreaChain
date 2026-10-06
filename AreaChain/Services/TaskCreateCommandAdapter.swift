@@ -3,19 +3,23 @@ import SwiftData
 
 /// 唯一可编辑参数仍在 Draft/Plan/Run；适配只借用冻结普通输入并调用共享捕获服务。
 @MainActor final class TaskCreateCommandAdapter {
-    private let coordinator: CommandHandoffCoordinator
+    let coordinator: CommandHandoffCoordinator
     private let environment: TaskCreateCommandEnvironment?
+    enum Capability { case minimal, ordinaryComposition }
+    let capability: Capability
 
-    init(coordinator: CommandHandoffCoordinator, environment: TaskCreateCommandEnvironment? = nil) {
+    init(coordinator: CommandHandoffCoordinator, environment: TaskCreateCommandEnvironment? = nil,
+         capability: Capability = .minimal) {
         self.coordinator = coordinator
         self.environment = environment
+        self.capability = capability
     }
 
     func supports(_ command: CommandID) -> Bool {
         environment != nil && command.rawValue == "todo.create"
     }
 
-    private func assembled() throws -> TaskCreateCommandEnvironment {
+    func assembled() throws -> TaskCreateCommandEnvironment {
         guard let environment else { throw TaskCreateCommandIssue.unassembled }
         try environment.validateClean()
         return environment
@@ -46,7 +50,12 @@ import SwiftData
         try displaySession?.validateDisplayHost(expecting: lease)
         let prepared = try prepare(plan: plan, expecting: lease)
         try displaySession?.validateDisplayHost(expecting: lease)
-        try coordinator.send(.sealPlan(plan, runID: UUID()), expecting: lease)
+        return try submitPrepared(prepared, expecting: lease, displaySession: displaySession)
+    }
+
+    func submitPrepared(_ prepared: CommandTaskCreatePreparation, expecting lease: CommandHostLease,
+                        displaySession: ContentQueryReadSession? = nil) throws -> CommandTaskCreateFacts {
+        try coordinator.send(.sealPlan(prepared.plan, runID: UUID()), expecting: lease)
         var host = try coordinator.host(lease.ownership.hostID)
         guard let run = host.session.execution else { throw TaskCreateCommandIssue.stale }
         let effect = try coordinator.send(.beginStep(run.stamp), expecting: host.lease)
@@ -61,7 +70,9 @@ import SwiftData
                  displaySession: ContentQueryReadSession? = nil) throws -> CommandTaskCreateFacts {
         let environment = try assembled()
         let prepared = try coordinator.taskCreatePreparation(request)
+        guard prepared.preview == nil || capability == .ordinaryComposition else { throw TaskCreateCommandIssue.unassembled }
         let invocation = try coordinator.claimTaskCreate(request)
+        environment.beginInvocation()
         let dependencies: TaskMutationService.Dependencies
         do {
             try revalidate(prepared, environment: environment)
@@ -74,14 +85,14 @@ import SwiftData
             try coordinator.finishTaskCreation(invocation, external: [:])
             throw error
         }
-        let input = TaskMutationService.CaptureInput(text: prepared.input.parsed.rawInput,
-            dayKey: prepared.input.day, creationID: prepared.creationID)
-        let creation = TaskMutationService.createCaptured(input, in: environment.context, dependencies: dependencies)
+        let creation = create(prepared, environment: environment, dependencies: dependencies)
         var facts = Self.facts(creation, reserved: prepared.creationID)
         if facts.state == .saved {
             facts.refreshRequested = environment.refreshRequested
             facts.notificationRequested = environment.observedRefresh?.notificationRequested
             facts.calendarRequested = environment.observedRefresh?.calendarRequested
+            facts.authorizationRequest = environment.authorizationRequest
+            facts.authorizationResult = environment.authorizationResult
         }
         // 从业务调用开始不再把错误降级成未创建；Creation 是本地事实的唯一来源。
         try coordinator.recordTaskCreation(invocation, facts: facts)
@@ -103,6 +114,7 @@ import SwiftData
         let originalRegistration = dependencies.registerLocalCreation
         dependencies.repository = { _ in repository }
         dependencies.sourceBundleID = { prepared.source.bundleID }
+        dependencies.requestReminderAccessIfNeeded = { environment.requestReminderAccessIfNeeded($0) }
         dependencies.transaction.publish = { try environment.publish() }
         dependencies.registerLocalCreation = { [coordinator] id in
             guard id == prepared.creationID else { throw TaskCreateCommandIssue.identityCollision }
@@ -121,7 +133,7 @@ import SwiftData
         return dependencies
     }
 
-    private func revalidate(_ prepared: CommandTaskCreatePreparation,
+    func revalidate(_ prepared: CommandTaskCreatePreparation,
                             environment: TaskCreateCommandEnvironment) throws {
         guard prepared.environmentID == environment.id,
               prepared.contextID == ObjectIdentifier(environment.context),
@@ -129,18 +141,26 @@ import SwiftData
         let source = try readSource(environment)
         try validateSource(source)
         guard source == prepared.source else { throw TaskCreateCommandIssue.sourceChanged }
+        if let preview = prepared.preview {
+            let catalog = try environment.tagCatalog.validate(preview.binding.catalog)
+            let host = try coordinator.host(prepared.lease.ownership.hostID)
+            let item = host.session.execution?.snapshot.items.first ?? host.session.plan.items.first
+            guard let item, item.stamp == prepared.item else { throw TaskCreateCommandIssue.stale }
+            try preview.validateCurrent(draft: item.draft, source: source, catalog: catalog)
+            try requireTagIDsAbsent(prepared, catalog: catalog)
+        }
         try requireAbsent(prepared.creationID, environment: environment)
         try environment.validateClean()
     }
 
-    private func requireAbsent(_ id: UUID, environment: TaskCreateCommandEnvironment) throws {
+    func requireAbsent(_ id: UUID, environment: TaskCreateCommandEnvironment) throws {
         let rows: [TodoItem]
         do { rows = try SwiftDataTaskRepository(context: environment.context).fetchTodos(withID: id) }
         catch { throw TaskCreateCommandIssue.storageUnavailable }
         guard rows.isEmpty else { throw TaskCreateCommandIssue.identityCollision }
     }
 
-    private func readSource(_ environment: TaskCreateCommandEnvironment) throws -> CommandTaskCreateSource {
+    func readSource(_ environment: TaskCreateCommandEnvironment) throws -> CommandTaskCreateSource {
         do { return try environment.source() }
         catch {
             // 注入者的原始异常可能包含来源/正文，指令边界只输出固定错误类别。
@@ -148,10 +168,22 @@ import SwiftData
         }
     }
 
-    private func validateSource(_ source: CommandTaskCreateSource) throws {
+    func validateSource(_ source: CommandTaskCreateSource) throws {
         guard source.protection == .ordinary, source.stampEnabled || source.bundleID.isEmpty else {
             throw TaskCreateCommandIssue.protectedContent
         }
+    }
+
+    private func create(_ prepared: CommandTaskCreatePreparation, environment: TaskCreateCommandEnvironment,
+                        dependencies: TaskMutationService.Dependencies) -> TaskMutationService.Creation {
+        if let composition = prepared.preview?.transactionPlan {
+            return TaskMutationService.createComposed(.init(composition: composition, creationID: prepared.creationID,
+                tagCreationIDs: prepared.tagCreationIDs, source: prepared.source),
+                in: environment.context, dependencies: dependencies)
+        }
+        let input = prepared.input!
+        return TaskMutationService.createCaptured(.init(text: input.parsed.rawInput, dayKey: input.day,
+            creationID: prepared.creationID), in: environment.context, dependencies: dependencies)
     }
 
     /// 只查原 unknown 调用的精确 ID；不按标题匹配、不升格为已提交、不恢复可重放资格。

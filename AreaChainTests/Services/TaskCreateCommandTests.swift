@@ -40,7 +40,7 @@ struct TaskCreateCommandTests {
         let draft = CommandDraft(id: UUID(), hostID: HandoffFixture.source, commandID: command.id, arguments: raw)
         let item = try fixture.handoff.queue(draft)
         let prepared = try fixture.prepare()
-        #expect(prepared.input.arguments == raw && prepared.input.parsed.cleanTitle == "ordinary title")
+        #expect(prepared.input?.arguments == raw && prepared.input?.parsed.cleanTitle == "ordinary title")
         fixture.io.notificationResult = .succeeded
         fixture.io.calendarResult = .succeeded
         let facts = try fixture.submit()

@@ -168,6 +168,11 @@ struct CommandPreferenceGroupInvocation: Equatable {
     /// 任务事实先进入原 Run，随后事件撤销显示许可也不会丢掉已提交输出。
     func recordTaskCreation(_ invocation: CommandRuntimeInvocation, facts: CommandTaskCreateFacts) throws {
         let current = try taskCreationHost(invocation)
+        guard let item = current.session.execution?.snapshot.items.first,
+              let prepared = taskCreations.preparations[item.draft.id], prepared.item == item.stamp,
+              prepared.creationID == facts.creationID, taskCreations.wasInvoked(prepared.id) else {
+            throw CommandExecutionError.invalidResult
+        }
         var next = current.session
         try next.recordTaskCreation(facts, attempt: invocation.attempt)
         publishPreferenceSession(next, from: current.lease)

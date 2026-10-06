@@ -494,3 +494,8 @@ TaskCreateCommandAdapter 仅组合原 Coordinator、隔离环境与共享 create
 ### 最小任务创建原生桥接（3T-4A）
 
 Controller 的可选 taskCreate 注入不改变目录资格或其他命令装配。UI 只交原计划给 TaskCreateCommandAdapter，提交增加可选 ReadSession 门禁并在最后事务前复核；保存后的事实不因显示撤销而消失。原运行唯一保留失败/未知内容，不创建可重放副本。契约与隔离验收见[权威 §9.66](unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)。
+
+
+### 普通新增扩展事务（3T-2A2）
+
+普通新增的显式能力复用原 Coordinator 创建登记和调用占用；只读目录 owner 管理读取身份/修订，accept 核验原预览后绑定任务及内部新标签 UUID。TaskMutationService 的结构化和旧捕获入口共用最外层保存、登记、发布及反馈，InputTagResolver 的计划入口不再按原文重解析。旧 UI 仍走最小适配，原生扩展预览/notes 未接线；接口、共同回滚、unknown、隔离保证与复核缺口只维护在[权威 §9.68](unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)。

@@ -14,6 +14,7 @@ import Testing
     var protection = CommandProtectionRequirement.ordinary
     var stampEnabled = true
     var notificationResult = CommandExternalResult.unknown
+    var authorizationResult = CommandTaskCreateFacts.Authorization.unknown
     var calendarResult = CommandExternalResult.unknown
     var onRefresh: (() throws -> Void)?
     var notificationProcessed = 0
@@ -46,6 +47,9 @@ import Testing
             if includeCalendar && capture.calendarEnabled && calendarResult != .unknown { calendarProcessed += 1 }
             return .init(notificationRequested: true, calendarRequested: includeCalendar && capture.calendarEnabled,
                          notificationResult: notificationResult, calendarResult: calendarResult)
+        }, requestAuthorization: { [self] minutes in
+            capture.dependencies.requestReminderAccessIfNeeded(minutes)
+            return authorizationResult
         })
     }
 }

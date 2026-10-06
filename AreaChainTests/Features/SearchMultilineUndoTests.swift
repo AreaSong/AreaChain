@@ -4,6 +4,19 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct SearchMultilineUndoTests {
+    // 单入口门槛复用完整回归体，允许先确认核心路径再扩大消费者。
+    @Test func workspaceMiddleUndoRedoGate() async throws {
+        try await repeatedUndoRedoRestoresTextAndSelection(kind: .workspace, middle: true)
+    }
+
+    @Test func workspaceQueuedUndoRedoGate() async throws {
+        try await queuedUndoRedo(kind: .workspace)
+    }
+
+    @Test func formQueuedUndoRedoControl() async throws {
+        try await queuedUndoRedo(kind: .form)
+    }
+
     @Test(arguments: SearchMultilineConsumer.searches + [.capture, .form], [false, true])
     func oneNativeImportThenUndo(kind: SearchMultilineConsumer, namedBoard: Bool) async throws {
         let fixture = try SearchMultilineFixture(kind)
@@ -134,15 +147,18 @@ struct SearchMultilineUndoTests {
         defer { fixture.cleanup() }
         let field = try await fixture.prepare()
         let editor = try #require(field.currentEditor() as? NSTextView)
-        try SearchMultilineBoundaryTests.importText("甲\n乙", editor: editor, namedBoard: true)
+        try SearchMultilineBoundaryTests.importText(kind == .form ? "甲 乙" : "甲\n乙", editor: editor, namedBoard: true)
         try await SystemPageHost.settle(fixture.window)
         for _ in 0..<3 {
             try await SearchMultilineBoundaryTests.key(command: true, code: 6, text: "z", in: fixture.window)
             Self.assertValue("", field: field, fixture: fixture)
             #expect(editor.selectedRange() == NSRange(location: 0, length: 0))
+            try #require(editor.undoManager?.canRedo == true)
             try await SearchMultilineBoundaryTests.key(command: true, shift: true, code: 6, text: "z", in: fixture.window)
             Self.assertValue("甲 乙", field: field, fixture: fixture)
             #expect(editor.selectedRange() == NSRange(location: 3, length: 0))
+            #expect(field.currentEditor() === editor && fixture.window.firstResponder === editor)
+            #expect(fixture.window.isKeyWindow && NSApp.isActive)
             fixture.assertResults(space: true, slash: kind != .tags)
         }
         #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0)

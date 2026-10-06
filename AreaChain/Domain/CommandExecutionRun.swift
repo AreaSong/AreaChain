@@ -368,7 +368,7 @@ extension CommandExecutionRun {
               let item = snapshot.items.first, item.id == attempt.unitID,
               let index = units.firstIndex(where: { $0.id == attempt.unitID }),
               units[index].attempt == attempt.number else { throw CommandExecutionError.stale }
-        try CommandHandoffCoordinator.validateTaskCreateItem(item)
+        try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true)
         if let previous = units[index].taskCreation {
             guard previous.creationID == facts.creationID,
                   previous.savedID == nil || previous.savedID == facts.savedID,

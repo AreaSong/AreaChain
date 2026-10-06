@@ -47,7 +47,9 @@ class WorkflowCheckTests(unittest.TestCase):
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
         contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate requestTaskCreate UnifiedSearchTaskCreateSubmission\n"
+        contract_docs["docs/component-catalog.md"] += " CommandTaskCreatePreview CommandTaskTagCatalog\n"
         contract_docs["docs/component-catalog.md"] += " TaskMutationService createCaptured CommitFacts afterPublication\n"
+        contract_docs["docs/component-catalog.md"] += " TaskCreateTagCatalogReader createComposed tagCreationIDs\n"
         contract_docs["docs/component-catalog.md"] += " DaybookNewlinePolicy DaybookTextEditing DaybookFieldEditor\n"
         contract_docs["docs/component-catalog.md"] += " DaybookDatePicker DaybookDateCell DaybookDateCellPresentation DaybookMonthGridDay DaybookWeekdayHeader DatePicker MonthGrid DaybookHabitDateState HabitMonthGrid\n"
         contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
@@ -563,7 +565,12 @@ class WorkflowCheckTests(unittest.TestCase):
     def test_component_catalog_requires_task_create_adapter_and_claim(self):
         self.make_project()
         for relative, symbol in [
+            ("AreaChain/Services/TaskCreateTagCatalogReader.swift", "TaskCreateTagCatalogReader"),
+            ("AreaChain/Services/TaskMutationService.swift", "createComposed"),
+            ("AreaChain/Domain/CommandTaskCreateContract.swift", "tagCreationIDs"),
             ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+            ("AreaChain/Domain/CommandTaskCreatePreview.swift", "CommandTaskCreatePreview"),
+            ("AreaChain/Domain/CommandTaskTagCatalog.swift", "CommandTaskTagCatalog"),
             ("AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift", "requestTaskCreate"),
             ("AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift", "UnifiedSearchTaskCreateSubmission"),
             ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),

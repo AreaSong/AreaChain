@@ -38,6 +38,34 @@ struct UnifiedSearchTaskCreateContractTests {
         #expect(try fixture.io.capture.readTodos().isEmpty && fixture.count("save") == 0)
     }
 
+    @Test(arguments: [CommandParameterID.tags, .priority, .time])
+    func unassembledCompositionCannotSubmitExplicitFields(parameter: CommandParameterID) throws {
+        let fixture = try UnifiedSearchTaskCreateFixture()
+        defer { fixture.stop() }
+        try fixture.start()
+        let argument: CommandArgument
+        switch parameter {
+        case .tags: argument = .init(parameter: .tags, operation: .clear)
+        case .priority: argument = .init(parameter: .priority, operation: .assign, value: .choice("p2"))
+        default: argument = .init(parameter: .time, operation: .setReminder, value: .time(510))
+        }
+        if parameter == .tags {
+            // 旧标签编辑尚未装配；原草稿可含该参数，但不能因此获得 UI 提交资格。
+            #expect(fixture.controller.editParameter(argument, source: fixture.controller.buffer) == nil)
+            let draft = try #require(fixture.controller.operations?.active)
+            try fixture.results.handoff.send(.operation(.edit(draft.stamp, argument)))
+            _ = fixture.controller.publishOperation(text: fixture.controller.buffer.text)
+        } else {
+            try #require(fixture.controller.editParameter(argument, source: fixture.controller.buffer) != nil)
+        }
+        #expect(fixture.controller.operations?.active?.arguments.contains(argument) == true)
+        fixture.submit()
+        #expect(fixture.controller.settingExecution == nil && fixture.controller.operations?.active != nil)
+        #expect(try fixture.io.capture.readTodos().isEmpty && fixture.count("save") == 0)
+        #expect(try fixture.io.capture.context.fetchCount(FetchDescriptor<TagItem>()) == 0)
+        #expect(fixture.io.capture.authorizations.isEmpty && fixture.count("ui") == 0)
+    }
+
     @Test func missingInvalidDateAndNotesCannotBeBypassed() throws {
         let fixture = try UnifiedSearchTaskCreateFixture()
         defer { fixture.stop() }

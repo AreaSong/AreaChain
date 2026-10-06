@@ -35,3 +35,18 @@ import Testing
         return host
     }
 }
+
+extension UnifiedSearchTestHost {
+    /// LazyVGrid 在第一次滚入视口后才补齐日格；按新矩形继续滚动，最终保留完整边界断言。
+    func revealTaskDatePicker() async throws {
+        let boundary = try #require(SettingsButtonTestSupport.elements(window.contentView)
+            .compactMap { $0 as? UnifiedSearchOperationBoundary }.first)
+        for _ in 0..<3 {
+            let picker = try resultNode("daybook.datePicker")
+            try await SettingsButtonTestSupport.reveal(picker, in: window)
+            let frame = try SettingsButtonTestSupport.frame(picker, in: window)
+            if boundary.convert(boundary.bounds, to: nil).contains(frame) { break }
+        }
+        try await revealSettingControlInsidePanel("daybook.datePicker")
+    }
+}

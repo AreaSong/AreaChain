@@ -57,7 +57,12 @@ extension UnifiedSearchController {
         guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil,
               taskNativeInputReady else { return }
         settingSubmitting = true
-        defer { settingSubmitting = false; refreshOperationPresentation() }
+        defer {
+            settingSubmitting = false
+            // seal 后内容归原运行；旧入列提示不能继续宣称计划持有草稿。
+            if settingExecution != nil { planMessage = "unified.plan.notExecutable" }
+            refreshOperationPresentation()
+        }
         do {
             try checkTaskCreate(source)
             guard let taskCreate else { throw TaskCreateCommandIssue.unassembled }

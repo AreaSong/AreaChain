@@ -63,7 +63,12 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
     let contextID: ObjectIdentifier
     let storageID: ObjectIdentifier
     let source: CommandTaskCreateSource
-    let input: CommandTaskCreateInput
+    let input: CommandTaskCreateInput?
+    let preview: CommandTaskCreatePreview?
+    /// 只在明确接受时分配；键为最终新标签的规范化名，不是新的计划输出。
+    let tagCreationIDs: [String: UUID]
+
+    var arguments: [CommandArgument] { input?.arguments ?? preview!.arguments }
 
     fileprivate init(item: CommandPlanItem, plan: CommandPlanStamp, lease: CommandHostLease,
                      evidence: CommandTaskCreateEvidence) {
@@ -78,6 +83,11 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
         storageID = evidence.storageID
         source = evidence.source
         input = evidence.input
+        preview = evidence.preview
+        tagCreationIDs = Dictionary(uniqueKeysWithValues: (preview?.composition.tags.final ?? []).compactMap {
+            guard case .newName(_, let key) = $0.target else { return nil }
+            return (key, UUID())
+        })
     }
 
     var description: String { "CommandTaskCreatePreparation(redacted)" }
@@ -89,7 +99,8 @@ struct CommandTaskCreateEvidence {
     let contextID: ObjectIdentifier
     let storageID: ObjectIdentifier
     let source: CommandTaskCreateSource
-    let input: CommandTaskCreateInput
+    var input: CommandTaskCreateInput?
+    var preview: CommandTaskCreatePreview?
 }
 
 /// 仅记录运行内调用事实，不是 SwiftData 耐久账本，也不携带任务正文。
@@ -108,6 +119,10 @@ struct CommandTaskCreateFacts: Equatable {
     var refreshRequested = false
     var notificationRequested: Bool?
     var calendarRequested: Bool?
+    var authorizationRequest: Call = .notCalled
+    var authorizationResult: Authorization = .unknown
+
+    enum Authorization: Equatable { case unknown, granted, denied }
 }
 
 struct TaskCreateCommandRequest {
@@ -131,11 +146,12 @@ enum CommandTaskCreateVerification: Equatable {
 
     func reserve(item: CommandPlanItem, plan: CommandPlanStamp, lease: CommandHostLease,
                  evidence: CommandTaskCreateEvidence) throws -> CommandTaskCreatePreparation {
+        guard (evidence.input != nil) != (evidence.preview != nil) else { throw TaskCreateCommandIssue.invalidInput }
         if let old = preparations[item.draft.id] {
             guard old.lease == lease, old.plan == plan, old.item == item.stamp, old.draft == item.draft.stamp,
                   old.environmentID == evidence.environmentID, old.contextID == evidence.contextID,
                   old.storageID == evidence.storageID, old.source == evidence.source,
-                  old.input == evidence.input else { throw TaskCreateCommandIssue.stale }
+                  old.input == evidence.input, old.preview == evidence.preview else { throw TaskCreateCommandIssue.stale }
             return old
         }
         let prepared = CommandTaskCreatePreparation(item: item, plan: plan, lease: lease, evidence: evidence)

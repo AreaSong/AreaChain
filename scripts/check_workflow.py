@@ -57,7 +57,12 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/TaskCreateTagCatalogReader.swift", "TaskCreateTagCatalogReader"),
+    ("AreaChain/Services/TaskMutationService.swift", "createComposed"),
+    ("AreaChain/Domain/CommandTaskCreateContract.swift", "tagCreationIDs"),
     ("AreaChain/Services/TaskCreateCommandAdapter.swift", "TaskCreateCommandAdapter"),
+    ("AreaChain/Domain/CommandTaskCreatePreview.swift", "CommandTaskCreatePreview"),
+    ("AreaChain/Domain/CommandTaskTagCatalog.swift", "CommandTaskTagCatalog"),
     ("AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift", "requestTaskCreate"),
     ("AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift", "UnifiedSearchTaskCreateSubmission"),
     ("AreaChain/Domain/CommandTaskCreateExecution.swift", "claimTaskCreate"),

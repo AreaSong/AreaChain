@@ -5491,7 +5491,7 @@ CommandExecutionRun.creationOutput(for:) 与 resolveInputs 共用现有 CommandC
 
 ### 9.66 阶段 3T-4A：最小 todo.create 原生提交与隔离验收
 
-2026-10-05（Asia/Shanghai）。承接 §9.65 的最小适配，在原 OperationPreview、普通 ParameterField、PlanList 与 SettingSubmission 组合内增加任务提交反馈，不新增命令面板。**当前状态：partial。** 已实现接线并取得部分真实隔离创建证据；最终复验锁忙，完整输入到创建链、旧 UI 回归及最终正常 Debug 构建/验签尚未完成。
+2026-10-05（Asia/Shanghai）。承接 §9.65 的最小适配，在原 OperationPreview、普通 ParameterField、PlanList 与 SettingSubmission 组合内增加任务提交反馈，不新增命令面板。**当前状态：3T-4A-R 的本地续验已收口，指定 Cursor、C2B 与人工等缺口仍独立保留。** 下文首次交付的 partial、失败与锁忙记录保留历史身份；最终原生链、回归及 Debug/验签结果见本节末 3T-4A-R。
 
 #### 显式装配与最小参数
 
@@ -5538,6 +5538,179 @@ TaskCreateCommandAdapter.submit / execute 接受可选 displaySession，在准�
 
 测试新增 [TaskCreateTestSupport](../AreaChainTests/Features/UnifiedSearchTaskCreateTestSupport.swift)、[ContractTests](../AreaChainTests/Features/UnifiedSearchTaskCreateContractTests.swift)、[LifecycleTests](../AreaChainTests/Features/UnifiedSearchTaskCreateLifecycleTests.swift)、[InteractionTests](../AreaChainTests/Features/UnifiedSearchTaskCreateInteractionTests.swift)、[RecoveryTests](../AreaChainTests/Features/UnifiedSearchTaskCreateRecoveryTests.swift)，并给原 [ResultsTestSupport](../AreaChainTests/Features/UnifiedSearchResultsTestSupport.swift) 增加可选隔离环境注入。同步本文、架构、组件目录、技能路由及 check_workflow.py 的两个稳定入口/反例，保留全部并行修改及原暂存状态。
 
-后续本阶段续验应先编译最终完整源码，重跑两项失败测试及受最后 UI 提示影响的截图，再补旧单项/多项设置、普通参数/计划定向回归和正常 Debug 构建/静态验签；只在新的允许续验上下文中重新申请原锁。本轮不继续申请，不进入下一阶段。
+首次交付时的续验建议：先编译最终完整源码，重跑两项失败测试及受最后 UI 提示影响的截图，再补旧单项/多项设置、普通参数/计划定向回归和正常 Debug 构建/静态验签；只在新的允许续验上下文中重新申请原锁。当轮停止申请，后续执行记录见下文。
 
 其余普通参数接入仍需 D1/D3 的独立解析、冲突/标签普通资格、完整预览和事务事实验证；notes/长正文仍受 C2B 前置。生产需另行核实写入者、真实数据和系统副作用授权。本阶段不启用生产搜索、不访问用户库、不执行真实通知/日历、不提交推送安装，完成后停止。
+
+
+#### 3T-4A-R：剩余本地验收收口（2026-10-06）
+
+本次仅续验 §9.66，不扩展参数或生产装配。使用同一原锁非等待申请、完整正常 PrivacyQA、`build/PrivacyQA` 与 `com.areachain.privacy-qa`，清除六项真实钥匙串授权，串行原生事件。桌面预检确认 console=true、locked=false、screens=1；每个原生宿主仍严格要求激活、可见和 key window。首个探针误用了字符串 key 而返回默认 false，改用系统公开 `kCGSessionOnConsoleKey` 后确认桌面就绪；不是实际桌面锁定，不作环境失败解释。各次实际命令、日志及源文件指纹保存在 `build/TaskCreateUIQA/resume-*`，没有抢锁、锁轮询或干预其他任务。
+
+| 原失败 | 本次定位、修正与最终证据 |
+|---|---|
+| `UnifiedSearchTaskCreateInteractionTests.nativeCompletionTitleDayPlanAndRealSave(commandReturn:)`（false / true） | 原 42/44 结果为找不到 `daybook.date.2026-10-05`，上轮补了首次滚动。本轮 `ResumePriority-1791248977420728000.xcresult` 仍发现精确几何失败：面板 `(12, 288, 596, 320)`，日期网格 `(24, 275.5, 252, 143)`，底部越界 12.5pt。LazyVGrid 首次滚入后才补齐布局，单次旧矩形不足；仅测试 helper 按每次布局后的矩形有限重定位（最多三次），最后仍调用原完整包含断言，不跳过焦点/几何或改参数。`ResumeChain-1791249146153094000.xcresult` 两分支通过；最终合并与反馈复验再次通过。 |
+| `UnifiedSearchTaskCreateRecoveryTests.nativeMaskLockAndFocusRejectOldSubmission()` | 原 42/44 为直接 `resignKey()` 后无法恢复 key window。保留上轮第二隔离窗口的修正，本轮 `ResumePriority-1791248977420728000.xcresult` 通过：真实窗口换焦点撤显示、显式恢复、原 privacyWillLock 门禁、旧提交拒绝、save=0、原草稿保留。没有把失败统一归因于桌面环境。 |
+
+两条完整链分别从空原生输入开始：输入 `/tasks/a` → Tab 接受目录候选 → 原生 title 输入 → Return 不创建 → 展开并明确点击日期 → 原 enqueue → prepare → 点击创建 / ⌘Return。最终每条真实隔离库恰好 1 条，save=1、publication=1、fake reminderRefresh/calendarRefresh 各 1；savedID 等于原准备 creationID，原 Run 的 draft/item 身份一致且 local=committed，计划/活动草稿不再拥有副本，UI 显示 `Task created`。旧候选、旧 buffer 和再次 ⌘Return 不产生第二条记录。日期面板仅展开时没有已接受 day；本轮明确点击的是 2026-10-06。没有用 candidateID、手工成功 Facts 或预填点击用例代替这两条链。marked text 优先级独立通过，Return 只确认参数的断言保留。
+
+| 验证层 | 实际结果 |
+|---|---|
+| 优先复验 | `ResumePriority-1791248977420728000.xcresult`：2 方法通过、完整链 1 方法（两分支）因上述几何断言失败；其中 marked text 与原窗口焦点失败均通过。源文件在该次运行前后无变化。 |
+| 完整链收口 | `ResumeChain-1791249146153094000.xcresult`：1 方法 / 2 次执行通过，0 失败、0 跳过。 |
+| 合并旧入口回归 | `ResumeRegression-1791249231652697000.xcresult`：**41 方法 / 69 次执行通过，0 失败、0 跳过、0 expected failure**。覆盖 SettingContract/Interaction、FileSetting 的单项/2～4项共同保存/显式准备/冲突/拒绝及 Recovery、OperationContract/Interaction、PlanContract/Interaction，连同本次完整链、marked text、既有八张语言/尺寸准备矩阵。实际选择器见 `resume-regression-command.json`，没有运行旧设置完整外观矩阵或未受影响的 TaskCreate 服务矩阵。 |
+| 截图发现的窄修正 | 最终截图发现已进入 Run 后仍残留“计划现在拥有此草稿”。只在 `requestTaskCreate` 已建立原 execution 时撤下旧入列提示，不改变参数、所有权、保存、回执或重试。新增成功及失败反馈断言。最后 `ResumeFeedback-1791249519255658000.xcresult` **2 方法 / 7 次执行通过**：两条完整链及脏 context、保存前失败、unknown 核验、保存后发布失败、fake 日历失败。该任务专用提示修改不影响已通过的旧设置/普通参数/计划入口，未机械重跑它们。 |
+| 最终原生图片 | `screenshots/` 当前 18 张任务图片：既有八格 en/zh-Hans × 浅深 × 标准444pt/紧凑304pt 已在合并回归刷新；两条完整链的准备/成功共4张；5张失败/部分成功在最终反馈复验刷新；另1张锁定。检查联系表及放大成功、最窄英文深色原图，确认旧入列提示已撤下、savedID/发布/刷新请求及运行保留限制准确。只复用未受后续修改影响的图，不新扩矩阵。原生宿主缓存截图仍不等于系统窗口合成器或真人使用证据。 |
+| 最终正常 Debug / 静态验签 | 最后相关 Swift 修改之后执行 `./scripts/build.sh --no-wait`，退出0，`resume-debug-final.log`：Debug、`staticSignatureVerified=true`、`hardenedRuntime=true`、`distributionReady=false`。产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`。保留当前正常 development 配置，不覆盖签名、不 provisioning、不安装或启动生产应用。先前同轮的 `resume-debug-build.log` 是提示修正前构建，不代替最终结果。 |
+
+本 R 轮修改范围： [UnifiedSearchTaskCreateEditing.swift](../AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift) 的旧入列提示清理；[InteractionTests](../AreaChainTests/Features/UnifiedSearchTaskCreateInteractionTests.swift) 的日期定位及 Run/反馈断言；[TestSupport](../AreaChainTests/Features/UnifiedSearchTaskCreateTestSupport.swift) 的有限原生滚动 helper；[RecoveryTests](../AreaChainTests/Features/UnifiedSearchTaskCreateRecoveryTests.swift) 的运行反馈断言；本文。没有修改其他生产行为或并行输入组件。严格局部 SwiftLint 通过；最后文档编辑后的工作流、差异和 strict static 质量门禁分别记录于 `resume-workflow.log` / `resume-quality.json`。`resume-source-final.json` 覆盖最终 Swift/文案指纹，最终反馈测试和正常构建后核对一致。
+
+最终工作流、差异与 strict static 质量门禁通过，含226项脚本回归。收尾再核对指纹时，仅发现并行 `SearchMultilineUndoTests.swift` 在最终构建结束后新增两个委托已有测试体的入口（workspaceMiddleUndoRedoGate / workspaceQueuedUndoRedoGate）。它们不在本轮选择器或共享夹具中，本阶段受验生产源码未变，不重跑无关矩阵。保留该并行差异；本轮完整测试目标编译不包含这两个后来增加的入口，不将它们标为本轮已验。
+
+指定 Cursor verifier 未执行，继续保留已有不可调用缺口，不重复认证检查、不借其他代理冒充。C2B 的保护编辑器及历史失败不在本轮范围；普通标题不使用该编辑器。系统中文输入法候选窗、VoiceOver 真人、最低系统及真实用户多窗口等人工缺口保留；marked text 仅证明本次 NSTextInputClient 协议与原生事件优先级。此前 unreadable 只有映射、pending 未制造嵌套事务等已列限制也不提升。**本次本地续验完成不表示这些指定复核/人工/历史验收已全部通过。** 未提交、推送、安装、发布、启用生产搜索、访问用户库或执行真实通知/日历；停止于 3T-4A-R。
+
+
+### 9.67 阶段 3T-2A1：普通新增参数合成与只读标签变更计划
+
+2026-10-06（Asia/Shanghai）。承接 D1/D3、§9.63、3T-1B 与 3T-4A-R 最终交接。仅新增纯 Domain 准备/校验，无生产装配、UI 接线、模型创建、标签恢复、保存或通知；最小 CommandTaskCreateInput / TaskCreateCommandAdapter / 原创建 UI 仍只接受纯标题＋明确日期。指定 Cursor verifier 无可调用入口，未重查登录、未替代复核；C2B、人工与历史缺口保留，整体 partial。
+
+#### 输入、合成与实际开放范围
+
+[CommandTaskCreatePreview.prepare](../AreaChain/Domain/CommandTaskCreatePreview.swift) 消费原 CommandOwnedHost 中已结束编辑的唯一 todo.create 计划项、明确 CommandTaskCreateSource 和只读目录值。活动/retained/pending 草稿、执行中运行、多项、目标、依赖、原子组、合并来源、返回尝试及非空基线均不支持。预览不会入列、换草稿、登记 creationID 或 claim；这里只检查传入值，实际当前 lease 仍必须由原 Coordinator 验证。
+
+| 输入 | 本阶段只读行为 |
+|---|---|
+| title / day | 复用目录必填单行 shortText 与规范民事日期校验；不自动补今天。标题用 parseTaskCapture；notes 任意操作（含 unspecified/clear）、换行、半/全角备注分隔及派生正文拒绝。required/unknown/protectedReference 或长文本保护出口继续阻止。 |
+| 标题语法 | 标签、优先级、提醒均复用现有 parser；代码/链接/转义、引号标签、标题内重复 token 的现有解析政策保留。提醒参数实际 ID 为 time。 |
+| priority | assign(p1～p4) / clear / unspecified；PriorityToken 复用同一优先级表。区分语法、显式设置、显式取消、未指定；相同值保留双来源，不同值或取消遇到语法值阻止，value=nil 且保留 syntax / explicit / origins。 |
+| time | setReminder(0～1439) / cancelReminder / unspecified；一致、冲突与来源表达同上，不静默覆盖。 |
+| tags | add / remove / replaceAll / clear / unspecified；显式参数只接受目录既定的非空、去重 UUID 列表。名字来自原始标题的 TagSyntax，不把缺失 UUID 解释成待创建名字。 |
+
+[CommandTaskCreateComposition](../AreaChain/Domain/CommandTaskCreateComposition.swift) 给出最终标题、日期、字段来源和最终标签计划。priorityFlags 在非冲突时将未指定/清除映射为新任务默认 false/false；提醒 nil 保持未指定/取消的来源区别。hasEffectiveContent 对照旧仓储 addTodo：非空最终标题，或最终标签、提醒、重要/紧急属性之一存在。非空输入 `#普通`、`@00:00`、`!p1/2/3` 可表达最终空标题元数据任务；仅 `!p4`、清空唯一标签则阻止。目录空 title、仅独立字段而无非空 title 仍未支持，不修改原静态校验，也不扩大最小执行器的非空纯标题要求。
+
+#### 目录资格与标签变更
+
+[CommandTaskTagCatalog](../AreaChain/Domain/CommandTaskTagCatalog.swift) 必须由明确快照提供目录身份、读取身份、修订、complete/partial/unavailable 覆盖及纯值记录；无默认生产读取器。记录保存稳定 UUID、原名、TagSyntax 规范化名、live/deleted(原删除时刻)/unknown 和可空私密标记；预设由 DiaryMemoTags 的规范化名字判断。名字/身份缺资料的行可能隐藏冲突，因此阻断目录；相关记录状态或私密资料未知、同 ID 多行、规范化同名多行、私密或手记预设均阻止。显式 ID 也检查同名歧义，不 first-wins；目录不完整连 clear 也不能取得准备资格。
+
+资格先检查原始标题中包括预设在内的全部有效标签语法及显式 ID，再进行候选集合操作。清空/替换不撤销私密、预设、歧义或缺资料问题；ordinary 来源仍来自原 Draft 与显式 source，不从解析结果推断。新指令比旧 UI 的 InputTagResolver 更保守，原 resolver / 任务 UI 的同名首项、私密关联行为完全未修改。
+
+[CommandTaskTagPlan](../AreaChain/Domain/CommandTaskTagPlan.swift) 的 final 分别记录 associateLive、restoreAndAssociate、createAndAssociate；removed 列出本次候选移除，noEffects 区分已在候选、不在候选与空操作，problems 保留问题类型和选择来源。先解析、后 add/remove/replaceAll/clear，没有旧任务标签可继承。仅 final 带创建/恢复效果；被 clear/replaceAll 消除的普通名字或墓碑不产生附带写入计划。恢复计划保留原 ID/墓碑事实，newName 仅有名字及规范化键，**没有预留 UUID，更不是已持久化对象**。预览不调用 InputTagResolver.resolve/merging。
+
+#### 绑定、失效与 3T-2A2 前置
+
+预览保存不可编辑的原参数证据，绑定 lease（含协调者/宿主/代次/修订）、plan/item/draft stamp、来源标记事实、parsingVersion=1、compositionVersion=1。目录 evidence 保存 directoryID/readID/revision/coverage 与排序无关的 SHA-256 全记录事实摘要；预览不保留全目录、实体、ModelContext、写闭包或任意读取能力。完整目录变化（包括无关记录）保守失效，输入数组与所有版本精确比较；相关标签的身份、名字、状态、保护事实另保留在候选中。所有 description/debugDescription 与错误不展开正文或全目录。
+
+validateCurrent 必须传入重新获取的宿主、来源、目录，重新合成后比较；重复传旧快照只能证明旧值自洽，不能证明实际目录未变。readID 必须由后续读取 owner 管理，只有同一冻结读取的枚举顺序变化可保持有效；新读取、代次、事实、参数、计划或 lease 变化均要求重新预览。值比较不能检测未推进读取版本的 ABA，不宣称跨 context/进程原子性。
+
+canPrepareExecution 只说明本阶段只读条件已满足，isExecutable 恒 false；有任何冲突/缺资料时 transactionPlan 为 nil。无问题时该计划为 3T-2A2 提供一次事务中的最终字段、普通活标签关联、明确墓碑恢复、按规范化名创建及候选移除清单。后续至少需要：
+
+1. 原 Coordinator 实时 ownership/lease/plan/item/draft/参数复核，重取目录与普通来源；旧预览不得直接换成写许可。重新读取改变 readID 后须重新准备并绑定新证据。
+2. 复用 TaskMutationService 的受限结构化事务入口，在同一串行写边界重新检查目录唯一性/保护/不存在事实；只创建或恢复 final 需要的标签，再解析真实 UUID 关联。不能将原 rawInput 交旧捕获重解析而重新创建已移除候选。
+3. 任务创建 UUID 的原协调者预留、同 context/store 身份、干净上下文、排序来源及最终不存在性校验；事务失败不得泄漏标签，保存/登记/发布/系统结果沿原事实协议。预览未建立这些写入保证。
+4. 不借本预览开放 notes、长正文、批量、其他命令、生产入口或现有 UI 扩展提交；C2B 与真实系统边界仍需各自前置。
+
+#### 验证与交付状态
+
+本阶段新增 TaskCreatePreviewCompositionTests / TagTests / BindingTests 和 TaskCreatePreviewIsolationTests，复用原 parser、标签、旧捕获、创建适配与原 UI 合约回归。隔离模型测试从合成七模型内存库投影纯值目录，核对模型数量、hasChanges、墓碑、创建登记及私有事件/fake 系统计数；不访问生产目录或用户库。最终命令和实际结果在本节验收收口补齐；代码存在不作为通过证据。
+
+仅追加本节并维护组件目录、技能路由与原工作流检查器的稳定入口/反例。保留原有并行 3T-4A-R / SearchMultiline 修改，不提交、不推送、不安装、不进入 3T-2A2。
+
+
+#### 3T-2A1 本地验收收口
+
+最终新增/修改 Swift 之后，本轮实际运行：
+
+| 层级 | 本轮证据与结果 |
+|---|---|
+| 首轮编译 | `build/TaskCreatePreviewQA/Initial-1791250688034305000.xcresult` 因新测试 raw string 的 `\#` 分隔符用法失败；没有测试运行。只修测试字面量为双 `##` 分隔，未改解析器或削弱断言，原失败保留。 |
+| 完整目标的定向 QA | `Recheck-1791250752983833000.xcresult`：**166 方法 / 237 次执行通过，0 失败、0 跳过、0 expected failure**。19 套件包括新增4套，以及 NaturalLanguageParser / Adversarial、TagSyntax、DiaryMemoTags、TagCatalog、InputSyntaxPersistence、TaskMutationService、TaskCaptureTransaction、TaskCreateCommand四套、CommandParameter、CommandCatalog、UnifiedSearchTaskCreateContract。命令见 `build/TaskCreatePreviewQA/recheck-command.json`，结果树/汇总为 `recheck-tests.json` / `recheck-summary.json`。完整正常目标编译，无排除源码。 |
+| 零写入与原资格 | 新测试以合成七模型内存库、autosave=false 和明确值目录验证全过程。预览前后七类模型计数相同、inserted/changed/deletedModelsArray 为空、hasChanges=false、墓碑删除时刻不变；原宿主值和创建预留表未改变，保存/发布链路 trace、注册/授权、fake 提醒/日历计数均为空或0。外部 pending 编辑保持脏状态和原值，旧预览失效。最小适配器对扩展语法及全部 tags 操作仍拒绝；原纯标题创建回归通过。纯 Domain API 无 context、实体、写闭包、仓储/ModelChanges/BoardEvents 调用，模型测试与该依赖边界共同支持零写入结论。 |
+| 正常 Debug / 静态验签 | `./scripts/build.sh --no-wait` 退出0，`build/TaskCreatePreviewQA/debug-build.log`：当前正常 development 配置，Debug、staticSignatureVerified=true、hardenedRuntime=true、distributionReady=false。未覆盖个人签名、未 provisioning、未安装或启动生产产物。 |
+| 静态及脚本 | `swiftlint lint --strict --quiet` 本轮9个 Swift 文件通过；`python3 -B -m unittest discover -s scripts/tests -p test_check_workflow.py -v` **106项通过**；`python3 -B scripts/quality_gate.py --profile static --strict --format json` 通过，含 **226项脚本回归**。最终文档编辑后再跑 workflow、strict static 和差异检查，结果保存在 `build/TaskCreatePreviewQA/final-*`。static 配合上述显式隔离定向，不宣称 auto/swift 全量 profile 或全应用运行通过。 |
+| 遗留告警与缺口 | 完整 QA 编译仍有既有原生测试的 Swift 6 actor 隔离/Sendable 和弃用 API 告警；本轮9文件无新编译告警，未扩修历史代码。指定 Cursor verifier 未执行，无可调用入口，不重查登录、不以主线程检查冒充复核；C2B、人工、真实系统及历史缺口保留。没有新增 UI，原 UI 合约回归不等同重做原生输入/外观矩阵。 |
+
+`recheck-source.json` 对通过测试时全部 Swift 记录 SHA-256；测试后与正常构建后复核一致。本轮正常使用原 `build/.build.lock` 非等待申请、六项真实钥匙串授权清除、独立 PrivacyQA 目录/标识和串行测试，没有抢锁或绕过。工程手册等并行文档更新继续保留。
+
+本地实现、定向测试、构建和静态门禁已收口；因指定复核及既有前置缺口，整体维持 **partial**。只完成 3T-2A1，不提交、推送、安装、发布，不进入 3T-2A2 或生产/原 UI 扩展执行。
+
+
+### 9.68 阶段 3T-2A2：普通新增的显式扩展事务与隔离适配
+
+2026-10-06（Asia/Shanghai）。承接 D1/D3、§9.67 的只读合成及原创建执行契约。本阶段仅显式装配隔离普通新增的 tags / priority / time，复用原 Coordinator、Plan、Run、Creation 与保存边界。原生扩展预览、notes、敏感载荷及生产资格均未接线；指定 Cursor verifier 当前无可调用入口，不重复登录检查、不替代复核。C2B、人工及历史缺口保留，整体 partial。
+
+#### 显式装配、真实目录与接受
+
+[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 增加 `Capability.ordinaryComposition`，默认 `.minimal`。扩展只通过 [preview / accept / submit(accepted:expecting:)](../AreaChain/Services/TaskCreateCommandComposition.swift) 接入；旧 `prepare(plan:expecting:)` / `submit(plan:expecting:)` 即使在扩展实例上仍执行最小纯标题＋明确日期校验。原 UnifiedSearchController 没有调用扩展入口，目录仍是 unwired，不以 capabilities 或目录条目隐式开启 UI 写入。
+
+`preview` 在原 Coordinator 的准备占用内读取当前 lease / plan / item / draft 和参数，复用 CommandTaskCreatePreview.prepare；不接受外部 Composition 替代原计划，不创建、恢复或保存模型，也不预分配标签身份。[TaskCreateTagCatalogReader](../AreaChain/Services/TaskCreateTagCatalogReader.swift) 只枚举注入内存 context 的原 SwiftDataCatalogRepository.fetchTags(includeDeleted: true)，保留全部活/墓碑行来核实身份及规范化同名唯一性，不使用 fetchLimit=1。记录字段为 ID、名字、删除时刻及私密标记，预设资格沿 DiaryMemoTags；只有完整枚举成功才标记 complete，失败不当空目录。
+
+reader 独占 directoryID/readID/revision。新 preview 显式换 readID；接受/执行复核重新枚举当前事实并核对原读取身份、版本和全目录摘要，不能直接重传旧快照。它只观察该注入 context 的 SwiftData `willSave` 通知来推进版本；任何保存尝试都保守使旧预览失效，含同 context 保存后改回原值的 ABA。此观察不发 BoardEvents，不读取默认库；业务事件仍只走私有 NotificationCenter。未保存的修改由干净 context 门禁阻止；不承诺检测跨 context/进程的全部 ABA 或已经改回且未被观察的瞬时编辑。
+
+`accept` 是本阶段测试显式模拟的效果接受入口。它重新核实原实时宿主、参数、来源、解析/合成版本和真实目录，要求 transactionPlan 非 nil，才通过原 CommandTaskCreateRegistry.reserve 返回不可外部初始化的 CommandTaskCreatePreparation。票据绑定完整 preview 和固定任务 UUID，tagCreationIDs 仅为 final 中 createAndAssociate 分配内部 UUID；墓碑仍用原 ID。重复接受同一份有效预览返回原票据；没有长期有效 confirmed 标记。原参数/lease/来源/读取/目录改变即拒绝，不自动重准备、改目标或继续执行。沿原一次准备协议，不提供替换已登记准备的刷新 API；旧票据失效后须由后续显式草稿处置流程决定新操作，不能自动复制原运行重放。
+
+最小和扩展适配共用原准备及 invoked 集合；同一 draft 已按一种输入保留后，另一种不能另建准备。缺少扩展能力的 execute 在 claim 前拒绝扩展票据，不占用允许的扩展执行。单项、无目标、无依赖、无原子组、无合并/返回历史、无 active/retained/pending 草稿及空基线继续要求；notes 任意模式、换行、半/全角分隔或派生正文、protected/required/unknown 继续拒绝。
+
+#### 最终字段、标签计划与共同事务
+
+支持范围严格承接 §9.67：title 语法与显式 priority(assign p1～p4 / clear / unspecified)、time(setReminder 0～1439 / cancelReminder / unspecified) 一致时采用，冲突阻止；tags 支持 add / remove / replaceAll / clear / unspecified，显式值仍是既有 UUID 列表。只解析原语法一次形成预览，不把 rawInput 送回旧 createCaptured 来覆盖显式结果。
+
+[TaskMutationService.createComposed](../AreaChain/Services/TaskMutationService.swift) 接收最终 Composition、原任务 UUID、内部新标签身份及冻结来源。与 createCaptured 共用提取后的单一 create 事务函数、仓储 addTodo、registerCompletion、ModelChanges.Boundary / CommitFacts 和反馈；旧捕获的 parser、fallback、预保存与旧 UI 标签政策保持。结构化路径直接写 cleanTitle、明确 day、优先级 flags、最终提醒或 nil、最终标签顺序和来源；notes 恒空，不写 due 或 calendarEventID。
+
+[InputTagResolver.apply](../AreaChain/Services/Repositories/InputTagResolver+Plan.swift) 先对整份 final 重读并逐一验证目标身份、名字、墓碑、保护、唯一性和新 ID 碰撞（含墓碑），再执行：associateLive 仅关联；restoreAndAssociate 恢复指定普通墓碑；createAndAssociate 插入绑定 UUID 的新普通标签。removed / noEffects 不产生额外标签写入。新名字已存在、原墓碑被恢复/改名/改保护时拒绝，不落到旧 resolver 的 first-wins。旧 resolve / merging 未改变。
+
+标签写入和任务 addTodo 处于同一次最外层 ModelChanges.transaction，内部仓储 commit 延后，不先保存标签。进入事务前再次核实原调用占用、来源/目录/参数与 context.hasChanges；不预保存其他编辑、不回滚外部脏数据、不另建写 context 隐藏它们。失败沿原 ModelRollback.restore 共同回滚。仓储原有效内容校验保留：非空原 title 可表达 `#普通` / `@00:00` / `!p1～3` 的最终空标题元数据任务；目录空 title、仅 `!p4` 或清除唯一有效内容仍拒绝。
+
+#### 稳定身份、未知提交与外部反馈
+
+原 Coordinator 占用继续绑定 ownership / operation / run / attempt，所有适配实例和重入共用它。任务和新标签 UUID 在接受后固定，失败或 unknown 不重新分配；碰撞直接拒绝。标签身份只作内部关联，计划输出仍仅是实际 `.savedID` 对应 `.todo`。保证限定于同一隔离 context、MainActor 同步受控执行，不宣称数据库唯一约束、跨进程或跨重启幂等。
+
+Creation.pending 不成功；最外层 save 返回后才设置 savedID，并通过 Coordinator 登记原 Run 的本地事实/输出，再发布私有事件。Coordinator 登记还核对原准备、invoked 和固定 UUID。save 已调用却未返回时，无论 rollback 是否返回都为 unknown；实际 save 后再抛错也不重建。verifyUnknown 仍只核实原任务精确 ID 的当前存在性，不将它或标签当前状态推导为历史提交成功。已保存后的登记/发布失败保留本地成功，不能重新创建。
+
+CommandTaskCreateFacts 增加 authorizationRequest(notCalled/called/returned) 与 authorizationResult(unknown/granted/denied)，并保留原 refreshRequested、notificationRequested、calendarRequested 和 Run 的外部处理结果。授权回调在原 afterPublication 边界，只对最终有提醒的任务请求；即使发布失败，授权步骤仍按旧业务边界独立执行。默认只有请求回调返回证据，授权结果 unknown；明确 fake 返回也仅证明隔离模拟，不能称系统获准或提醒送达。通知和日历分别保留其 fake 结果，未核实不造成功；本地成功后外部失败不再创建。本阶段没有通用外部重试引擎。
+
+#### 验证与交接
+
+新增 TaskCreateCompositionTests / BoundaryTests / FailureTests 和复用 TaskCreateCommandFixture 的测试支持，以七模型独立内存库、私有 BoardEvents 与 fake 消费者验证字段、关联、保存及请求次数；旧 Preview、Command、Capture、ModelChanges、参数/目录和原 UI 合约作为回归范围。最终实际命令、测试数、构建与静态门禁结果在本节收口补记；不把测试存在或编译当作通过。
+
+原生扩展 UI 后续必须显示原语法与显式字段来源、一致/冲突、最终标题和日期、最终优先级及提醒/取消、标签最终顺序、活标签关联、具体墓碑恢复、明确新建名字、移除/无效果、来源标记与读取版本。创建/恢复须显式接受上述具体效果；任一参数或目录变化撤销接受，要求重新核对，不能自动继续。提交后还须区分本地保存、unknown、授权请求/结果、通知刷新/处理及日历刷新/处理。原生扩展预览与接受尚未接线，notes/敏感内容继续受 C2B 和独立协议前置约束。
+
+本轮保留所有并行搜索编辑及原文档修改，不提交、不推送、不安装、不访问真实用户库或系统通知/日历；完成后停止于 3T-2A2。
+
+
+#### 3T-2A2 本轮验收收口（partial）
+
+| 层级 | 实际执行与限制 |
+|---|---|
+| 首轮编译与修正 | `build/TaskCreateCompositionQA/Initial-1791254034057228000.xcresult` 因本轮误用 draft.id（应为 draft.draftID）失败；第二轮 `Recheck` 因嵌套测试闭包中的 throwing #expect 宏推断失败。修正字段名及先取值后断言，保留失败日志，未削弱断言或排除并行源码。 |
+| 新增行为矩阵 | `Behavior-1791254286943715000.xcresult` 的实际路径以 `behavior-command.json` 为准；结果 `behavior-summary.json` / `behavior-tests.json` 确认 **19 方法 / 58 次执行通过，0 失败、0 跳过、0 expected failure**。包含三套新增服务测试：真实字段/有序关联、接受绑定、各标签效果、拒绝与过期、共同回滚、嵌套 pending、save 后抛错、身份碰撞和重入、授权与刷新分离。 |
+| 完整正常目标定向回归 | `Regression-1791254483161768000.xcresult`：**194 方法 / 304 次执行通过，0 失败、0 跳过、0 expected failure**。23 个实际套件涵盖新三套、原 Preview 四套、TaskCreateCommand 四套、TaskMutation / CaptureTransaction / ModelChanges、NLP 两套、TagSyntax / DiaryMemoTags / TagCatalog / InputSyntaxPersistence、CommandParameter / Catalog 和原 UnifiedSearchTaskCreateContract。实际结果树在 `regression-tests.json`，命令在 `regression-command.json`。命令另外误列两个不存在的选择器 CommandExecutionRunTests / CommandHandoffExecutionTests；没有运行它们，未把它们计入覆盖。拟补正确的 CommandExecutionTests / Integration、CommandHandoffIntegration / Boundary 时受到下列锁门禁，仍未覆盖。 |
+| 模型与时序证据 | 真实内存库断言标题、day、flags、reminder、notes 空、来源、最终标签顺序及 due/calendarEventID 默认值。beforePublication 读取原 Run 已有真实 todo 输出，并从另一只读 context 看到任务与新建/恢复标签共同保存；仓储插入后抛错得到 save=notCalled / rollback=returned，任务和标签恢复到原状。save 后抛错得到 unknown / savedID=nil，持久行与固定标签 ID 保留且禁止再次执行。脏 context 在原 preSave 前被拒绝，原修改保留。新读取、保存后改回、改名/恢复/保护/新增同名项均使原接受失效且本次命令零写入。 |
+| 最终补充与锁忙 | 成功回归后仅新增 `TaskCreateCompositionTests.minimalAndComposedPreparationsAreMutuallyExclusive`（两分支）及 `UnifiedSearchTaskCreateContractTests.unassembledCompositionCannotSubmitExplicitFields`（tags/priority/time 三分支）。申请原 `build/.build.lock` 非等待锁返回 **3（锁忙）**，未启动 xcodebuild、未生成新 xcresult；立即停止所有构建/测试申请，不等待、不轮询、不抢锁。这两个最终测试尚未编译/运行，不能用上述 194/304 代替。记录 `contracts-lock.log`。 |
+| 正常 Debug / 静态验签 | **未运行**。锁忙后没有再执行 `./scripts/build.sh --no-wait`；PrivacyQA 完整目标编译和临时签名不替代正常 development Debug 构建/验签，更不表示安装、生产运行或发行。 |
+| 静态与脚本 | 工作流检查通过；工作流定向 **106 项通过**；严格 static 质量门禁通过，包含 **226 项 scripts/tests 回归**。最终18个本轮 Swift 文件的严格局部 SwiftLint、最终文档/脚本后的 workflow、strict static 与差异检查结果保存在 `build/TaskCreateCompositionQA/final-*`。这些证据不替代最后两个测试及正常 Debug。 |
+| 指定复核与历史缺口 | Cursor verifier 未执行，无可调用入口；不重复登录/认证、不使用其他代理或主线程检查冒充。C2B、人工原生输入/VoiceOver、真实通知/日历、最低系统及历史缺口保留。编译日志中既有 Swift 6 actor/Sendable 与弃用告警未扩修，本轮通过版本没有新增相关警告。 |
+
+`regression-source.json` 保存通过回归时全部 Swift 指纹；后续检查确认本轮生产源码未变。最后两项测试的新增使这两个文件不再等于通过时版本；另检测到并行 SearchMultilineUndoTests 更新，保留且不声称为本轮验证。`final-source.json` 记录本轮18个最终 Swift 文件，最后两项测试明确待编译/运行。
+
+本轮修改入口清单（仓库根为 `/Users/as/Ai-Project/project/AreaChain`）：
+
+- Domain：[CommandTaskCreatePreview](../AreaChain/Domain/CommandTaskCreatePreview.swift)、[CommandTaskCreateContract](../AreaChain/Domain/CommandTaskCreateContract.swift)、[CommandTaskCreateExecution](../AreaChain/Domain/CommandTaskCreateExecution.swift)、[CommandHandoffCoordinator](../AreaChain/Domain/CommandHandoffCoordinator.swift)、[CommandExecutionRun](../AreaChain/Domain/CommandExecutionRun.swift)。
+- Services：[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift)、[TaskCreateCommandComposition](../AreaChain/Services/TaskCreateCommandComposition.swift)、[TaskCreateCommandEnvironment](../AreaChain/Services/TaskCreateCommandEnvironment.swift)、[TaskCreateTagCatalogReader](../AreaChain/Services/TaskCreateTagCatalogReader.swift)、[TaskMutationService](../AreaChain/Services/TaskMutationService.swift)、[InputTagResolver+Plan](../AreaChain/Services/Repositories/InputTagResolver+Plan.swift)。
+- 测试：[CompositionTestSupport](../AreaChainTests/Services/TaskCreateCompositionTestSupport.swift)、[CompositionTests](../AreaChainTests/Services/TaskCreateCompositionTests.swift)、[CompositionBoundaryTests](../AreaChainTests/Services/TaskCreateCompositionBoundaryTests.swift)、[CompositionFailureTests](../AreaChainTests/Services/TaskCreateCompositionFailureTests.swift)、[原 CommandTestSupport](../AreaChainTests/Services/TaskCreateCommandTestSupport.swift)、[原 CommandTests](../AreaChainTests/Services/TaskCreateCommandTests.swift)、[原 UI ContractTests](../AreaChainTests/Features/UnifiedSearchTaskCreateContractTests.swift)。
+- 原有文档/守卫：本文、[架构](architecture.md)、[组件目录](component-catalog.md)、[技能路由](../skill-routing.md)、[check_workflow.py](../scripts/check_workflow.py) 与[反例测试](../scripts/tests/test_check_workflow.py)。其余现存 3T-2A1、3T-4A-R 和 SearchMultiline 修改属于既有/并行工作，没有回退或计作本轮实现。
+
+**首次交付状态：已实现、部分已验证，整体 partial。** 当时待补最后两个测试、正确的执行/转交协议套件及正常 Debug 构建/验签；本地缺口的后续补证见下文，指定复核和历史前置单独保留。停止于本阶段，不进入下一阶段、不扩原生 UI 或生产资格，不提交、推送、安装或真实系统操作。
+
+
+#### 3T-2A2 本地续验收口（2026-10-06）
+
+用户明确要求再次尝试后，重新检查工作区、并行修改及原锁。上轮18个本轮 Swift 文件指纹均一致；并行 SearchMultiline 测试变化保留，不归入本轮。成功取得原 `build/.build.lock` 后，以相同完整正常 PrivacyQA 目标、独立目录/标识、六项钥匙串授权清除、内存库/私有事件/fake 消费者和串行策略补验，未排除源码或改变签名配置。
+
+- 首次补验 `ResumeContracts-1791255254736392000.xcresult`：30 方法通过、1 方法失败（73 次执行通过、1 次失败）。失败仅为新测试错误要求旧 UI 普通参数编辑支持 `.tags`；现有 UnifiedSearchParameterContext.supports 明确不接受该类型，priority/time 两分支通过。只修测试：先断言标签编辑返回 nil，再通过原 Coordinator 原子草稿事件安装参数并刷新当前 buffer，验证原 UI 提交仍拒绝；保留参数实际存在、原草稿保留、模型/save/事件/授权零写入断言，不放宽产品能力。
+- 修正后的 `ResumeVerified-1791255424905948000.xcresult`：**31 方法 / 74 次执行全部通过，0 失败、0 跳过、0 expected failure**。实际六套为 TaskCreateCompositionTests、UnifiedSearchTaskCreateContractTests、CommandExecutionTests、CommandExecutionIntegrationTests、CommandHandoffIntegrationTests、CommandHandoffBoundaryTests；确认最终新增的最小/扩展准备互斥两分支和旧 UI 显式 tags/priority/time 拒绝三分支全部运行。命令、结果树和汇总分别为 `resume-verified-command.json`、`resume-verified-tests.json`、`resume-verified-summary.json`。
+- 随后 `./scripts/build.sh --no-wait` 首次又返回3（短暂锁占用，`resume-debug.log`）。只读 lsof / PID 检查时已无持有者，不能追溯断言是哪一任务占用；按本轮用户重试授权，再做一次非等待申请成功，`resume-debug-retry.log` 退出0。未删锁、抢锁、等待轮询、终止其他进程或绕过互斥。
+- 正常 development **Debug 构建和静态验签通过**：`staticSignatureVerified=true`、`hardenedRuntime=true`、`distributionReady=false`；产物 `build/development-DerivedData/Build/Products/Debug/AreaChain.app`。未 provisioning、未改个人签名配置、未安装或启动该产物。
+- `resume-verified-source.json` 保存完整测试目标 Swift 指纹；本轮18个相关 Swift 文件在测试后及 Debug 构建后复核一致。构建后另发现并行 SearchMultilineUndoTests 更新，保留且不计作本轮覆盖；完整目标编译不能覆盖它之后新增的内容。本轮仅修改上述测试假设，生产实现未变；原 194 方法 / 304 次回归继续作为未受影响路径的证据，不与本次有重叠的31/74相加。
+- 最终18文件严格 SwiftLint 通过；本节更新后再次运行 workflow、strict static 质量门禁和暂存/未暂存差异检查，结果保存 `resume-workflow.log`、`resume-quality.json`。静态门禁仍不替代真实原生或外部系统验收。
+
+**当前状态：3T-2A2 实现、最终定向测试、正常 Debug 构建/静态验签及本地门禁已收口。** 指定 Cursor verifier 未执行，C2B、人工与历史前置缺口保留，整体仍不称完整验收全部通过。本轮不重复登录、不替代复核、不扩 UI/notes/生产资格、不访问真实用户库或通知/日历，不提交、推送或安装；停止于 3T-2A2。

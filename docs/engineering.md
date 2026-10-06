@@ -20,6 +20,56 @@
 
 指定 Cursor verifier 当前不可调用，保留必需复核缺口，不认证或替换。真人 IME、系统粘贴、真实数据/权限、安装和发布未运行；剪贴板真实换行保真政策不在本轮接入。
 
+### I 修复一菜单路由续诊（2026-10-06）
+
+本续轮保持原 PrivacyQA 与有界原锁，起点桌面未锁定；`route-trace`、`route-menu-target`、`route-character-control`、`route-unshifted-control`、`route-window-action`、`route-keyup` 的 queue 包均取得锁、完整编译并进入 workspace 队列门槛，6 方法运行均在严格重做结果断言失败，0 准备失败/跳过。每次三个往返，共 18 内部循环；字符对照另有四组独立合成菜单动作，不能计为产品通过。失败后均释放锁，没有扩大消费者回归。
+
+新证据把字符匹配与动作派发分开：charactersIgnoringModifiers=Z 时原菜单拒绝；保留 Shift 大写 characters=Z、未修饰字符 z 时，原 SwiftUIMenu 和顶层 NSMenu 对 ⌘⇧Z 返回 true，但仍无文本恢复。窗口 IMP 探针确认 ⌘Z 实际进入 NSWindow.undo: 并留下 canRedo=true，而 ⌘⇧Z 没有进入 NSWindow.redo:；成对 keyDown/keyUp 对照仍失败。原 trace 读取的 enabled/target 在菜单 IMP 返回之后，不能反推匹配时的启用状态或实际派发目标。对 `NSTextView` 的方法查询可能返回祖先实现，日志标签不能当成经过该类 override 的证明。
+
+下一项已收窄为同一次事件中 `NSApplication.sendAction(_:to:from:)` 的 selector/target/sender/返回，以及原菜单调用前后候选项状态；不应再推断插入事务损坏、菜单未到达或改用直接 UndoManager。独立只读探索核对了原始日志并指出上述证据限制；它不是指定 Cursor verifier，也不填补该复核缺口。
+
+准备运行 `route-send-action` 时桌面重新锁定：执行前检测为 LOCKED，立即释放锁，未启动 xcodebuild，单列 1 次执行前桌面阻断（无结果包）。已请求用户解锁；等待期间未重复启动测试、修改系统设置或持锁等待。全部临时探针、字符和 keyUp 实验已恢复到本续轮起点，诊断差异与原日志留在 `build/SearchMultilineIRepair/route-*`；没有留下新的生产/测试实现。仅本记录新增，静态质量、工作流与差异检查通过。上一节最终受测源码身份和 partial 状态仍有效，历史 52 次、首版待关闭项及此前零运行不混算；当前需解锁后继续菜单 action 派发诊断，完成之前不扩大业务或消费者验收。
+
+### I 修复一有界等待续验（2026-10-06）
+
+**已取得锁并进入产品断言；最终工作台中段重做通过，队列重做未通过，自动验收仍为 partial。** 沿 scripts/build.sh 的同文件 flock 非阻塞尝试与 0.5 秒间隔、最多 900 秒等待；始终单一等待者，持锁后才写 PID 和启动原 PrivacyQA，结束/失败清理自己内容并释放。各批次实际均立即取得锁（0.0 秒），无等待超时；未删换锁、嵌套取锁或干预其他进程。完整正常目标、原 QA Bundle ID / DerivedData、临时签名、生产 sandbox entitlement、六项钥匙串变量清除及串行条件不变。
+
+本轮生产零修改。SearchMultilineUndoTests 新增两个单入口门槛，直接调用原最终回归体，并增加普通表单队列对照；不改原断言，撤销后额外严格要求 canRedo。SearchMultilineBoundaryTests 只修正已核实的字符字段：未投递的原生 CGEvent → NSEvent 中，⌘⇧Z 的 characters 为 z、charactersIgnoringModifiers 为 Z，后者仍保留 Shift。最终继续 NSApp.postEvent、一次实际接收要求和严格文本/查询/光标断言，不直接调用 undoManager 替代队列。临时回调/菜单探针、无效菜单更新与替代投递实验均已撤回。
+
+| 最终包 | 方法/运行与结果 |
+|---|---|
+| `bounded-final-smoke.xcresult` | 1 方法/1 次通过；原 workspaceNativeBaseline 通过 visible/key/active 与实际输入断言。 |
+| `bounded-final-middle.xcresult` | 1 方法/1 次通过；workspace 门槛直接复用 repeatedUndoRedoRestoresTextAndSelection(.workspace, middle: true)。原初值 `头🧪尾`，UTF-16 位置 3 导入，三轮撤销选区 3、重做选区 6；field/editor/query、编辑器身份及撤销后继续输入严格通过。 |
+| `bounded-final-queue.xcresult` | 2 方法/2 次失败；workspace 与普通表单（无换行 `甲 乙`）均收到队列事件，canRedo=true，但 ⌘⇧Z 后仍为空、光标 0。保留正确结果断言，没有允许不动作。 |
+
+最终合计 **4 方法/4 次非参数化入口运行，2 通过、2 产品断言失败、0 场景准备失败、0 跳过**；门槛内部显式选择 workspace/form，不冒充完整参数矩阵。内部往返共 9 轮（中段 3、两队列各 3），材料矩阵循环 0。四搜索完整查询/结果、六文件适用方法、外部同步/Return/组合文本/候选，以及捕获、剪贴板、原 DaybookTextFieldTests / DaybookTextFieldSearchTests / InputSyntaxInteractionTests、普通表单与 UnifiedSearchInputTests 扩大回归均未运行，因为两条核心门槛未全部通过。
+
+**失败定界与过程证据**：此前 `bounded-*` / `bounded-corrected-*` 的 smoke 和 middle 共 4 次通过；七次队列诊断（queue、corrected、trace、nativechars、menu、menuupdate、formcontrol）均在产品断言失败，合计 11 次运行，内部中段 6 轮/队列 21 轮，不和最终 4 次合并声称通过。原探针证实撤销后 editor.canRedo=true，⌘⇧Z 被派为 noop:；原 Edit 菜单存在，更新菜单也未解决。未采用本轮自定义编辑器的普通 SwiftUI 表单亦复现，因此根因不能归为换行转换，也不能据此扩大生产快捷键实现。
+
+投递层对照 `bounded-processqueue-queue` 首先被并发新增 TaskCreatePreviewCompositionTests.swift:69 非法转义阻断，零运行、独立编译失败 1 次；没有修改或排除并发文件。并发方修正后，同轮继续 `bounded-processqueue-ready-queue`，完整编译通过，但尝试只向 QA 自身进程投递的两例均在事件接收等待失败，单列 **2 次事件投递准备失败**，不是重做产品证据；未请求或改变权限。实验撤回后才运行上述最终三包，故最终证据不依赖替代队列。
+
+最终受测版本由同目录 `bounded-final-smoke-source.json`、`bounded-final-middle-source.json`、`bounded-final-queue-source.json` 与 `bounded-final-source.json` 标识，全部生产/测试 Swift 摘要一致。生产 DaybookTextField / DaybookTextEditing / DaybookNativeTextInput 保持下节摘要；最终 BoundaryTests SHA-256 为 `145788995109072d1b71253f76187fa94c94e69f25aec505415be60b7294f0c7`，UndoTests 为 `6319c0435bbd21c01ea31f56a2994ad272d36d3fc958ea230b4e7298ded9beae`。各次等待前/取得锁后摘要一致；暂存区与本轮起点一致，并发新增/修改原样保留。
+
+最终两测试严格 SwiftLint、static profile、工作流及工作区/暂存区差异检查通过；最终完整正常测试目标编译通过，QA 包 `codesign --verify --deep --strict` 通过。保留既有 SDK/actor 警告；无生产修改，不另跑生产构建或安装。历史锁屏 52 次与此前零运行仍单列。首版 11 次失败中，仅 workspace 中段对应场景可凭最终门槛关闭；其余 5 个中段消费者未补验，5 个搜索队列仍未关闭，不能整批清零。
+
+指定 Cursor verifier 不可调用，保留缺口，不认证或替换。真人 IME、系统粘贴未验；剪贴板新策略、匹配器和新统一搜索业务不修改。本轮没有提交、推送、安装、发布或操作真实数据、系统剪贴板及权限；最终锁已释放，到此停止。后续需继续定界真实队列/菜单快捷键路由，不能以契约或编译通过替代。
+
+### I 修复一续验：原生插入事务与消费者（2026-10-06，上一续轮）
+
+**状态仍为 partial，当前阻断是并发构建锁。** 只读 CGSession 检查显示已登录、位于控制台、未出现锁屏标志，前台为 Chrome；这不替代 QA 窗口的 visible/key/active 断言。计划先运行原 `SearchMultilineDiagnosticTests.workspaceNativeBaseline`，但两次非等待申请均在 `build/.build.lock` 处退出，未启动 xcodebuild 或 QA 宿主。第二次申请前已确认前一持锁进程退出；随后新进程取得锁，后续只读观察又见新的持有者，未循环投递测试、移除锁或干扰并发窗口。
+
+本续轮仅更新本记录，未改生产或测试。`build/SearchMultilineIRepair/continuation-source-before.json` / `continuation-source-final.json` 保存全部生产及测试 Swift SHA-256；8 个相关生产文件与六个 SearchMultiline 文件均与上一轮 `source-final.json` 一致。关键身份：DaybookTextField `8787c3ae18c6decdece5529c6ab4d47cadd10a4d63cbf25cd4b7fe9705cd95b1`、DaybookNativeTextInput `06ee2e626d06574a3e889001752ac6b8ca06deed6c08fa4c08c73a9ec84a151d`、DaybookTextEditing `46d7b3924bbbbe912a43c2efa4d897bcd4aa390e29bd8ec97b1ace54c6a1e9fc`。这是待测源码身份，没有本轮有效原生受测版本。并发期间暂存区及两个 UnifiedSearchTaskCreate 测试文件发生变化，原样保留；起点暂存快照和差异摘要位于同目录 `continuation-*` 证据，不宣称暂存区未变化。
+
+| 本续轮证据 | 统计与未完成要求 |
+|---|---|
+| 原生运行 | 方法 0、参数运行 0、内部材料循环 0；产品失败 0、场景准备失败 0、测试内跳过 0。两次构建锁拒绝单列为执行前环境阻断，不能算测试通过或产品失败。 |
+| 核心与消费者 | `repeatedUndoRedoRestoresTextAndSelection`、`queuedUndoRedo` 均未运行，中段重做与队列重做未关闭；六个 SearchMultiline 文件的适用方法、四个普通搜索、捕获/剪贴板/表单对照，以及原 DaybookTextFieldTests、DaybookTextFieldSearchTests、InputSyntaxInteractionTests、普通表单、UnifiedSearchInputTests 受影响分支均未完成续验。 |
+| 历史证据 | 上轮锁屏 52 次仍独立列为环境准备失败；首版 11 次失败仍全部待对应最终用例关闭，不与本轮零运行或静态结果混算。 |
+| 静态门禁 | 15 个相关 Swift 文件严格 SwiftLint 通过；static profile（含 226 项脚本回归）、工作流及工作区/暂存区差异空白检查通过。日志为 `continuation-swiftlint.log`、`continuation-static.log`、`continuation-workflow.log`。 |
+| 完整目标编译 | 因共享锁占用未执行本轮完整正常测试目标编译；不沿用旧编译结果。本轮无生产修改，未另跑生产构建/验签。 |
+
+恢复入口仍是原 PrivacyQA 完整正常目标、原独立目录/标识、生产 entitlement、六项真实钥匙串变量清除与串行测试：先通过原 QA 小场景，再验证中段和真实队列两条核心回归，之后扩大消费者。当前工具目录无指定 Cursor verifier，保留缺口，不重复认证或换机制；真人 IME、系统粘贴仍未验，剪贴板新策略不接入。未提交、推送、安装、发布，未操作真实数据、系统偏好或权限；本续轮到此停止。
+
 ## 第十阶段 I：生产搜索多行输入复现与修复定界
 
 2026-10-05，定向诊断，仅补 [生产装配夹具](../AreaChainTests/Features/SearchMultilineTestSupport.swift)、[回调探针](../AreaChainTests/Features/SearchMultilineTrace.swift)、[入口诊断](../AreaChainTests/Features/SearchMultilineDiagnosticTests.swift)、[输入边界](../AreaChainTests/Features/SearchMultilineBoundaryTests.swift)、[模式对照](../AreaChainTests/Features/SearchMultilineModeTests.swift)、[撤销诊断](../AreaChainTests/Features/SearchMultilineUndoTests.swift) 及本记录。**五个生产搜索在“命名 pasteboard 原生导入 → 撤销”中均复现了任务分隔符注入；直接导入完成时没有注入。** 这不是直接调用转换函数或手改 field 后通知 delegate 的复现，也不是系统剪贴板粘贴或真人操作。生产输入、解析、搜索、新统一搜索控制器与接线均未由本轮修改，问题未修复。

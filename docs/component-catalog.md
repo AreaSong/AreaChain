@@ -805,6 +805,10 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 
 [TaskMutationService](../AreaChain/Services/TaskMutationService.swift) 的 createCaptured 只接原单段 CaptureInput，原 addCapturedTodo 委托它。Creation 区分 candidateID 与最外层保存后 savedID，ModelChanges 的 Boundary / CommitFacts 和 afterPublication 提供同 context 的保存、提交登记、发布及请求边界；[BoardEvents](../AreaChain/Services/BoardEvents.swift) 保留 changed/changedLocally 差异并支持私有事件源。消费者是菜单栏、今日、标签页、日历、四象限原新增入口，未接命令。实际契约、预保存限制、测试与后续接线只维护在[权威 §9.64](unified-search-commands.md#964-阶段-3t-1a普通捕获共享新增与事务局部边界)。
 
+## 普通新增只读合成（3T-2A1）
+
+[CommandTaskCreatePreview](../AreaChain/Domain/CommandTaskCreatePreview.swift) 的 prepare / validateCurrent 消费原 CommandOwnedHost 的单项计划、明确来源和 [CommandTaskTagCatalog](../AreaChain/Domain/CommandTaskTagCatalog.swift) 值快照。[字段合成](../AreaChain/Domain/CommandTaskCreateComposition.swift) 复用 parseTaskCapture / PriorityToken，[标签计划](../AreaChain/Domain/CommandTaskTagPlan.swift) 复用 TagSyntax / TagIDList / DiaryMemoTags；InputTagResolver 的写方法不参与预览。当前消费者仅 TaskCreatePreview 领域及隔离服务测试，原 UI 和最小创建适配不消费此接口。资格、来源冲突、零写入与 3T-2A2 前置统一见[权威 §9.67](unified-search-commands.md#967-阶段-3t-2a1普通新增参数合成与只读标签变更计划)。
+
 ## 最小普通创建指令（3T-1B）
 
 [TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 的 prepare / submit / execute / verifyUnknown 仅用于显式隔离装配；[claimTaskCreate](../AreaChain/Domain/CommandTaskCreateExecution.swift) 复用原 Coordinator 占用。CaptureInput / CreateTodoParams.creationID 与仓储 fetchTodos(withID:) 保持旧默认，Creation / CommitFacts 是唯一提交事实来源。Run.creationOutput(for:) 与原依赖解析共用结果协议。当前消费者只有 TaskCreateCommand 系列隔离测试；参数、来源、调用次数、未知/外部边界及生产未接线见[权威 §9.65](unified-search-commands.md#965-阶段-3t-1b最小普通-todocreate-的隔离真实适配)。
@@ -813,3 +817,8 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 ## 最小任务创建原生提交（3T-4A）
 
 [UnifiedSearchController](../AreaChain/Features/Search/UnifiedSearchController.swift) 通过 `taskCreate:` 显式装配任务适配器；[requestTaskCreate](../AreaChain/Features/Search/UnifiedSearchTaskCreateEditing.swift) 复用原 enqueue、prepare / submit / verifyUnknown 与 Run，只有明确创建才自动移交单活动草稿。单独准备要求先显式入列；重绘不准备。普通参数、计划列表及 [UnifiedSearchTaskCreateSubmission](../AreaChain/Features/Search/UnifiedSearchTaskCreateSubmission.swift) 继续放在原 OperationPreview / SettingSubmission 组合内，复用 Daybook 与 PlanButton。当前只由隔离 TaskCreate UI 测试消费，生产入口未装配；参数、失败保留、显示门禁及证据统一见[权威 §9.66](unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)。
+
+
+## 普通新增扩展事务（3T-2A2）
+
+[TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 显式 ordinaryComposition 能力通过 [preview / accept / submit(accepted:expecting:)](../AreaChain/Services/TaskCreateCommandComposition.swift) 消费原 Coordinator 计划和 §9.67 合成；旧 prepare/submit 继续最小资格。[TaskCreateTagCatalogReader](../AreaChain/Services/TaskCreateTagCatalogReader.swift) 只读隔离目录，原准备中的 tagCreationIDs 绑定内部新标签身份；[TaskMutationService.createComposed](../AreaChain/Services/TaskMutationService.swift) 与旧捕获共用事务，[InputTagResolver.apply](../AreaChain/Services/Repositories/InputTagResolver+Plan.swift) 严格执行最终标签效果。当前仅 TaskCreateComposition 隔离测试消费扩展，原 UI 不接线；真实契约、失效/回滚、unknown 与验证缺口统一见[权威 §9.68](unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)。

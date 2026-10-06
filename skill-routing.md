@@ -319,3 +319,9 @@
 
 
 统一搜索 3T-4A 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-ui（ui-ux-pro-max 聚焦原生提交与焦点）→ areachain-verify。只显式装配最小 todo.create 的隔离原生提交，复用原参数、计划和运行；[组件入口](docs/component-catalog.md#最小任务创建原生提交3t-4a)与[权威 §9.66](docs/unified-search-commands.md#966-阶段-3t-4a最小-todocreate-原生提交与隔离验收)保存边界及证据。原锁、独立 QA 标识/目录、内存库、私有事件源、fake 系统消费者、六项真实钥匙串变量清除和串行测试保持。指定 Cursor、C2B、人工及历史缺口保留；不认证、不替代复核、不启用生产搜索或真实系统操作，完成后停止。
+
+
+普通新增 3T-2A1 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify。只读 CommandTaskCreatePreview 复用目录、parser、标签规范化及原宿主版本，最终字段/标签效果不接写入；[组件索引](docs/component-catalog.md#普通新增只读合成3t-2a1)与[权威 §9.67](docs/unified-search-commands.md#967-阶段-3t-2a1普通新增参数合成与只读标签变更计划)为唯一契约/证据入口。完整正常 PrivacyQA、原锁非等待申请、六项授权清除、显式值目录与合成内存库；指定 Cursor、C2B、人工及历史缺口保留，不认证或替代复核。原 UI / 最小执行资格保持，完成停止，不进入事务接线或下一阶段。
+
+
+普通新增 3T-2A2 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify。显式扩展装配、真实目录预览及版本接受复用原创建占用，共同事务沿 TaskMutationService / InputTagResolver / ModelChanges；[组件入口](docs/component-catalog.md#普通新增扩展事务3t-2a2)与[权威 §9.68](docs/unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)保存唯一契约/证据。完整正常 PrivacyQA、原锁非等待申请、六项授权清除、内存库/私有事件/fake 消费者；指定 Cursor、C2B、人工及历史缺口保留，不认证或替代。最小适配、旧 UI、notes 和生产资格不扩展，完成停止。

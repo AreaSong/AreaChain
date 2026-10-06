@@ -1,7 +1,8 @@
 import Foundation
 
 extension CommandHandoffCoordinator {
-    func taskCreatePlan(_ stamp: CommandPlanStamp, expecting lease: CommandHostLease) throws -> CommandPlanItem {
+    func taskCreatePlan(_ stamp: CommandPlanStamp, expecting lease: CommandHostLease,
+                        composed: Bool = false) throws -> CommandPlanItem {
         try validate(lease)
         let session = try host(lease.ownership.hostID).session
         guard session.plan.stamp == stamp, session.execution == nil, session.plan.editing == nil,
@@ -9,16 +10,21 @@ extension CommandHandoffCoordinator {
               session.plan.items.count == 1, let item = session.plan.items.first else {
             throw TaskCreateCommandIssue.unsupportedPlan
         }
-        try Self.validateTaskCreateItem(item)
+        try Self.validateTaskCreateItem(item, composed: composed)
         return item
     }
 
-    nonisolated static func validateTaskCreateItem(_ item: CommandPlanItem) throws {
+    nonisolated static func validateTaskCreateItem(_ item: CommandPlanItem, composed: Bool = false) throws {
         guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
             throw TaskCreateCommandIssue.unsupportedPlan
         }
-        _ = try CommandTaskCreateInput(item.draft)
+        if composed {
+            guard item.draft.commandID.rawValue == "todo.create", item.draft.targets == .none,
+                  item.draft.baseline == CommandDraftBaseline(), !item.draft.blocksUnprotectedExport,
+                  item.draft.protectionRequirement == .ordinary else { throw TaskCreateCommandIssue.protectedContent }
+            _ = try CommandTaskCreatePreview.inputFields(item.draft)
+        } else { _ = try CommandTaskCreateInput(item.draft) }
     }
 
     func withTaskCreatePreparation<T>(expecting lease: CommandHostLease, _ work: () throws -> T) throws -> T {
@@ -42,9 +48,9 @@ extension CommandHandoffCoordinator {
               prepared.plan == run.snapshot.stamp, prepared.item == item.stamp, prepared.draft == item.draft.stamp,
               prepared.lease.ownership == request.lease.ownership,
               request.lease.revision == prepared.lease.revision + 2,
-              run.resolvedInput(item.id)?.arguments == prepared.input.arguments,
+              run.resolvedInput(item.id)?.arguments == prepared.arguments,
               run.resolvedInput(item.id)?.targets == CommandDraftTargets.none else { throw TaskCreateCommandIssue.stale }
-        try Self.validateTaskCreateItem(item)
+        try Self.validateTaskCreateItem(item, composed: prepared.preview != nil)
         return prepared
     }
 
