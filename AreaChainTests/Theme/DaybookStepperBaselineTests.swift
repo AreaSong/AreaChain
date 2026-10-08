@@ -262,15 +262,16 @@ final class StepperEventTrace {
         let kind: String
         let value: Double?
         let increase: Bool?
+        let eventTimestamp: TimeInterval?
     }
     private let start = ProcessInfo.processInfo.systemUptime
     var items: [Item] = []
     var eventTimes: [TimeInterval] = []
     var writes: [Item] { items.filter { $0.kind == "write" } }
 
-    func mark(_ kind: String, value: Double? = nil, increase: Bool? = nil) {
+    func mark(_ kind: String, value: Double? = nil, increase: Bool? = nil, eventTimestamp: TimeInterval? = nil) {
         let time = ProcessInfo.processInfo.systemUptime - start
-        items.append(Item(time: time, kind: kind, value: value, increase: increase))
+        items.append(Item(time: time, kind: kind, value: value, increase: increase, eventTimestamp: eventTimestamp))
         print("F_TRACE t=\(time) phase=\(kind) direction=\(String(describing: increase)) value=\(String(describing: value)) mode=\(String(describing: RunLoop.current.currentMode)) event=\(NSApp.currentEvent?.type.rawValue ?? 0) timestamp=\(NSApp.currentEvent?.timestamp ?? 0)")
     }
 

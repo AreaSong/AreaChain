@@ -94,6 +94,7 @@ enum SecureInputTestSupport {
 @MainActor @Observable
 final class PasswordSheetProbe {
     let configuration: Int
+    private let expectedInput: String
     var presented = true
     var calls = 0
     var completed = 0
@@ -111,12 +112,15 @@ final class PasswordSheetProbe {
     var titleKey: String { configuration < 2 ? "privacy.master.label" : "privacy.backup.password.title" }
     var explanation: LocalizedStringKey { configuration < 2 ? "privacy.master.help" : "privacy.backup.password.help" }
 
-    init(_ configuration: Int) { self.configuration = configuration }
+    init(_ configuration: Int, expectedInput: String? = nil) {
+        self.configuration = configuration
+        self.expectedInput = expectedInput ?? SecureInputTestSupport.sample
+    }
 
     func action(_ input: String) async throws {
         calls += 1
-        defer { correctAfterWait = input.utf8.elementsEqual(SecureInputTestSupport.sample.utf8) }
-        correctInput = input.utf8.elementsEqual(SecureInputTestSupport.sample.utf8)
+        defer { correctAfterWait = input.utf8.elementsEqual(expectedInput.utf8) }
+        correctInput = input.utf8.elementsEqual(expectedInput.utf8)
         alternateInput = input.utf8.elementsEqual(SecureInputTestSupport.alternateSample.utf8)
         emptyAtAction = window.map { SecureInputTestSupport.fields($0).allSatisfy { $0.stringValue.isEmpty } } ?? false
         observeAction?()

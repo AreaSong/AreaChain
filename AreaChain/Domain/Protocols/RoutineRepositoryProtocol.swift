@@ -45,6 +45,12 @@ struct CreateRoutineParams: Sendable {
 /// 习惯与例行任务数据访问与打卡契约
 @MainActor
 protocol RoutineRepositoryProtocol: AnyObject {
+    /// 命令仅接受与注入上下文一致的仓储；旧实现默认不授予命令写资格。
+    var routineMutationContext: ModelContext? { get }
+
+    /// 完整身份查询必须包括停用、墓碑与重复记录。
+    func fetchRoutines(withID id: UUID) throws -> [DailyRoutine]
+
     // MARK: - 查询 (Query)
     /// 获取例行习惯列表（支持筛选停用与删除项）
     func fetchRoutines(includeDisabled: Bool, includeDeleted: Bool) throws -> [DailyRoutine]
@@ -152,6 +158,12 @@ protocol RoutineRepositoryProtocol: AnyObject {
 }
 
 extension RoutineRepositoryProtocol {
+    var routineMutationContext: ModelContext? { nil }
+
+    func fetchRoutines(withID id: UUID) throws -> [DailyRoutine] {
+        try fetchRoutines(includeDisabled: true, includeDeleted: true).filter { $0.id == id }
+    }
+
     func batchTrashRoutines(ids: Set<UUID>) throws {
         for id in ids {
             try? deleteRoutine(id: id, soft: true)

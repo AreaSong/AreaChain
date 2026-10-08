@@ -16,6 +16,12 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         self.init(context: container.mainContext, container: container)
     }
 
+    var routineMutationContext: ModelContext? { context }
+
+    func fetchRoutines(withID id: UUID) throws -> [DailyRoutine] {
+        try context.fetch(FetchDescriptor<DailyRoutine>(predicate: #Predicate { $0.id == id }))
+    }
+
     private func saveAndNotify() throws {
         try ModelChanges.commit(context)
     }

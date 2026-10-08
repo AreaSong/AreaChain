@@ -1,5 +1,7 @@
 # AreaChain 技能路由与交付闭环
 
+H 真实截止保存依赖验收沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦原生身份/状态）→ areachain-verify。只显式透传截止最终 save，复用原 ModelChanges.perform；[组件契约](docs/component-catalog.md#第十阶段-h真实截止详情的局部保存依赖)与[原 H 证据](docs/engineering.md#h-真实截止详情链的最小保存依赖与失败恢复验收2026-10-08)为唯一维护来源。完整正常 PrivacyQA/XCTest、原锁单次900秒、六项钥匙串变量清除、合成数据和串行事件保持；不启动 Gallery/桌面入口，不改事务或失败发布。两项嵌套 AX 继续精确复验并独立开放；指定 Cursor verifier 不可用保留材料与缺口，不认证或替代，整体 partial，不提交、安装或发布。
+
 第十阶段P沿 areachain-workflow → areachain-ui（ui-ux-pro-max仅补原生验收核对）→ areachain-verify；就地完善测试生命周期、逐事件/真实合成回调证据及原runner，不改生产。复用原interactiveGallery／SearchMultilineFixture、完整正常PrivacyQA、原锁900秒单一等待及六项授权清除；600秒内的30秒收尾期由测试支持集中维护。桌面入口（含旧app对象的AX/截图）继续暂停，无仅附着且绝不启动保证不得恢复；原生只由XCTest启动。自动/人工、平台能力、指定Cursor材料与H/K/L判定只维护在[原O内的P收尾](docs/engineering.md#第十阶段-p人工平台验收与最终交付判定)。人工准备不等于通过，重新确认当时方便才启动有界人工窗口；能力不可用不重复认证或替代指定复核。
 
 P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的消费者/模式选择及有限语义观测，优先完成相关短回归，再由用户确认当时方便后开始600秒内的人工批次。真实粘贴只由用户自愿提供合成材料；命名pasteboard自动导入与用户系统粘贴分开，生产匹配/保存/安全和桌面入口暂停边界不变。
@@ -360,6 +362,18 @@ P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的
 沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（ui-ux-pro-max 聚焦 Binding 与原生身份）→ areachain-verify。原 FieldAdapter 的显式 milestone2 能力、完成子项证据、标签共同事务与 dueMinutes 共享赋值见[组件入口](docs/component-catalog.md#t-m2-完成标签与截止时间)，A～E 状态和实际证据集中在[权威 T-M2](docs/unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。单目标、单操作和原 create→title 边界保持；完整正常 PrivacyQA、合成内存库、私有事件/fake 消费者、六项真实授权清除、原锁单次900秒及串行原生保持。锁屏暂停焦点测试，继续独立事项；正常签名到期与指定 Cursor verifier 缺口单独保留，不续签、不改个人配置、不以 QA 代替正常签名。没有生产搜索、真实库/系统、notes/敏感执行、批量/任意多步、执行后撤销、跨重启恢复或发行授权。
 
 
+## 第十阶段剩余运行问题
+
+Stepper 警告与 H 截止补证沿 areachain-workflow → areachain-ui（UI/UX 仅核对 SwiftUI 焦点/身份）→ areachain-verify。Stepper 只改局部焦点呈现通知，复用原事件/attachment 防线和两处剪贴板消费者；H 只检查当前真实 setDue 的注入能力，缺少接点不新增生产保存 API。完整正常 PrivacyQA/XCTest、原锁900秒、六项授权清除和只读进程收尾保持；不启动 Gallery 或桌面入口。根因与通过/警告/未验项只记在[原 O/P 续记](docs/engineering.md#第十阶段剩余运行问题stepper-警告与-h-截止注入核对2026-10-08)，指定 Cursor verifier 不可用不以其他代理替代，整体 partial 与原人工分类不变。
+
 ## 统一搜索 T-M3 普通子任务
 
 沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（UI/UX 聚焦身份、Binding 与原生焦点，frontend-design 沿 Daybook）→ areachain-verify。结构化仓储/共享赋值、父子实体核验、独立来源证明与类型化事实见[组件入口](docs/component-catalog.md#t-m3-普通子任务隔离闭环)，A～E 与真实证据只维护在[权威 T-M3](docs/unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。仅显式完整 PrivacyQA、合成内存库、私有事件/fake 消费者；原锁单次900秒、六项授权清除及原生串行保持。正常签名已过期时不重复失败构建，不续签、不改配置或申请资源；指定 Cursor verifier 不可调用继续保留缺口。未装配能力、生产、排序/删除/批量、notes/敏感输入和子任务输出依赖继续关闭，不提交、推送、安装或发布。
+
+## 统一搜索 R-M1 习惯定义五字段
+
+沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（UI/UX 聚焦原生校验与身份，frontend-design 沿 Daybook）→ areachain-verify。普通无备注单定义的标题/星期/提醒/优先级/标签及原仓储复用见[组件目录](docs/component-catalog.md#r-m1-习惯定义五字段)，唯一 A～E 状态和证据见[权威 R-M1](docs/unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)。完整正常 PrivacyQA、合成内存库、私有事件/fake 消费者、六项授权清除及原锁单次900秒保持；锁屏暂停焦点测试。正常签名到期、指定Cursor、C2B与人工/历史缺口独立保留；不认证、不替代指定复核、不启用生产/新增/启停/打卡/排序/删除/批量/notes或新的多步执行。
+
+R-M1 旧习惯标题 Bool 嵌套兼容修复沿 areachain-workflow → areachain-verify；仅同步返回事实与旧映射，复用原事务、冻结算法及实际 Bool 消费者。修复、复现、定向服务/原生与完整QA证据只记在[权威修复记录](docs/unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)，O/H引用；不改命令 saved、H或Stepper。指定Cursor不可调用保留缺口，整体partial、用户未接受，不提交、推送、安装或发布。
+
+K真实输入、L持续按压与关键可访问性沿 areachain-workflow → areachain-ui（ui-ux-pro-max仅核对焦点与辅助语义）→ areachain-verify。复用ControlsPlatformAcceptance、原P runner及安全输入/Stepper测试支持，先短回归及清理再确认当时人工窗口；每批最多600秒含30秒收尾。桌面入口继续暂停，只有完整PrivacyQA/XCTest启动；不改生产安全、重复、保存或事务。测试入口见[组件目录](docs/component-catalog.md)，当轮人工/自动/未执行与K/L判定仅维护[原O/P续记](docs/engineering.md#剩余平台验收kl与关键可访问性2026-10-08)；指定Cursor不可用不替代，整体partial、用户未接受。

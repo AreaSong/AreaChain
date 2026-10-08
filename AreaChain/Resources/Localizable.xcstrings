@@ -31298,6 +31298,737 @@
           }
         }
       }
+    },
+    "unified.subtask.targetTitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtask: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "子任务：%@"
+          }
+        }
+      }
+    },
+    "unified.subtask.savedTagCount": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved linked tags: %d"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的关联标签：%d 个"
+          }
+        }
+      }
+    },
+    "unified.routine.pending" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit definition changes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义修改"
+          }
+        }
+      }
+    },
+    "unified.routine.held" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original input and execution facts are retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原输入和执行事实已保留。"
+          }
+        }
+      }
+    },
+    "unified.routine.single" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose one ordinary habit definition and one operation."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请选择一个普通习惯定义和一项操作。"
+          }
+        }
+      }
+    },
+    "unified.routine.noChange" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The routine definition already has these values. Nothing will be saved."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义已是目标状态，无需保存。"
+          }
+        }
+      }
+    },
+    "unified.routine.accepted" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effect accepted. Save when ready."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已接受此影响，可保存。"
+          }
+        }
+      }
+    },
+    "unified.routine.accept" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept habit changes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "接受习惯修改"
+          }
+        }
+      }
+    },
+    "unified.routine.prepare" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Preview habit changes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览习惯修改"
+          }
+        }
+      }
+    },
+    "unified.routine.save" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Save habit changes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保存习惯修改"
+          }
+        }
+      }
+    },
+    "unified.routine.baseline" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prepare the actual field and tag effects before accepting."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请先准备实际字段与标签效果，再明确接受。"
+          }
+        }
+      }
+    },
+    "unified.routine.stale" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This preview or acceptance has expired. Review the current change again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此预览或接受已过期，请重新核对当前变更。"
+          }
+        }
+      }
+    },
+    "unified.routine.saved" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit definition saved locally"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义已保存到本地"
+          }
+        }
+      }
+    },
+    "unified.routine.pendingResult" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving routine definition…"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在保存习惯定义…"
+          }
+        }
+      }
+    },
+    "unified.routine.unknown" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routine save result is unknown. Verify the original object; do not replay."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义保存结果未知。请核验原对象，不要重复执行。"
+          }
+        }
+      }
+    },
+    "unified.routine.notSubmitted" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routine not saved. The original input is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义未保存，原输入已保留。"
+          }
+        }
+      }
+    },
+    "unified.routine.savedTagCount" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved linked tags: %d"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已保存的关联标签：%d 个"
+          }
+        }
+      }
+    },
+    "unified.routine.publicationIssue" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved locally; change notification did not complete."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在本地保存，变更通知未完成。"
+          }
+        }
+      }
+    },
+    "unified.routine.registrationIssue" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved locally; result registration reported an issue."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已在本地保存，结果登记发生异常。"
+          }
+        }
+      }
+    },
+    "unified.routine.fields" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The habit or related values changed. Your input is retained; review again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯或相关字段已变化。输入已保留，请重新核对。"
+          }
+        }
+      }
+    },
+    "unified.routine.unassembled" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Routine changes are not enabled here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此入口尚未启用习惯定义修改。"
+          }
+        }
+      }
+    },
+    "unified.routine.input" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check the single-line title, days, time, priority or tag selection."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请检查单行标题、星期、提醒时间、优先级或标签选择。"
+          }
+        }
+      }
+    },
+    "unified.routine.repository" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The habit does not belong to this storage context."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯不属于当前存储上下文。"
+          }
+        }
+      }
+    },
+    "unified.routine.source" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The habit or input source could not be verified. Your input is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法核实习惯或输入来源，输入已保留。"
+          }
+        }
+      }
+    },
+    "unified.routine.enabled" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit definition · enabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义 · 已启用"
+          }
+        }
+      }
+    },
+    "unified.routine.disabled" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit definition · disabled"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义 · 已停用"
+          }
+        }
+      }
+    },
+    "unified.routine.preserve" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Other fields, pause state and check records stay unchanged."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "其他字段、暂停状态和打卡记录保持不变。"
+          }
+        }
+      }
+    },
+    "unified.routine.scheduleHint" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes the current definition only; past check records are unchanged."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅修改当前定义；过去的打卡记录保持不变。"
+          }
+        }
+      }
+    },
+    "unified.routine.compatibility" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The effective days match; saving will normalize the stored schedule fields."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "有效星期相同；保存将规范化原有排程兼容字段。"
+          }
+        }
+      }
+    },
+    "unified.routine.chooseDay" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select at least one day."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请至少选择一天。"
+          }
+        }
+      }
+    },
+    "unified.routine.notes" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This entry requires a verified habit without notes and a single-line title without note syntax."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此入口仅支持已核实无备注的习惯，以及不含备注语法的单行标题。"
+          }
+        }
+      }
+    },
+    "unified.routine.dirty" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: other edits are unsaved. They have been kept; finish them before reviewing again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：上下文还有未保存编辑，原修改已保留；处理后请重新查看影响。"
+          }
+        }
+      }
+    },
+    "unified.routine.target" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: the target is missing, deleted, duplicated or invalid. Select it again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：目标缺失、已删除、身份重复或无效，请重新选择。"
+          }
+        }
+      }
+    },
+    "unified.routine.catalog" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: the tag catalog changed. Prepare and accept the changes again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：标签目录已变化，请重新准备并确认影响。"
+          }
+        }
+      }
+    },
+    "unified.routine.environment" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: this isolated environment is unavailable."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：当前隔离环境不可用。"
+          }
+        }
+      }
+    },
+    "unified.routine.storage" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: current routine definition values could not be read."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：无法读取当前习惯定义值。"
+          }
+        }
+      }
+    },
+    "unified.routine.tags" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not submitted: a tag is protected, ambiguous or incomplete. Review the routine definition and tags again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未提交：标签受保护、存在歧义或资料不完整，请重新查看习惯定义与标签。"
+          }
+        }
+      }
+    },
+    "unified.routine.presence.absent" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The reserved routine definition was not found. This does not prove the earlier save failed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未找到原固定习惯定义身份，这不能证明先前保存失败。"
+          }
+        }
+      }
+    },
+    "unified.routine.presence.singleLive" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "One live routine definition has this identity. Its presence does not prove the earlier save succeeded."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找到该身份的唯一活习惯定义，但当前存在不证明先前提交成功。"
+          }
+        }
+      }
+    },
+    "unified.routine.presence.tombstone" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This routine definition is now deleted. The original save result remains unknown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此习惯定义当前已删除，原保存结果仍未知。"
+          }
+        }
+      }
+    },
+    "unified.routine.presence.ambiguous" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More than one routine definition has this identity. Saving remains blocked."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此习惯定义身份存在重复，继续禁止重放。"
+          }
+        }
+      }
+    },
+    "unified.routine.presence.unreadable" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The original routine definition could not be safely verified. The result remains unknown."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法安全核验原习惯定义，保存结果仍未知。"
+          }
+        }
+      }
+    },
+    "unified.routine.finalCheck" : {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review and accept the actual habit changes below before saving."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请在下方核对并接受实际习惯修改，再保存。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

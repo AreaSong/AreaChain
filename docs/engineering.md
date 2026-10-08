@@ -4,6 +4,8 @@
 
 2026-10-06 至 2026-10-07。本节是控件收口的总交接入口，详细过程继续保留在原阶段记录。**2026-10-07 O 补验已将最后两个方法定位为测试装配／契约问题；本轮有效复验103方法／264次通过，按源码影响与实际方法重新去重为315方法／770次所选自动回归通过。人工、平台及指定复核仍有缺口，整体 partial；证据与边界见本节末的 O 补验记录。** 以下先封存原 O 结果：**接入闭环；所选自动回归未全部通过；整体 partial。** 第九阶段四类重复/漏接及第十阶段两处后补入口均有当前生产调用；总扫描未发现新增确定漏接。最终 A 留有第八阶段的两个历史失败方法／三次失败，B/C/D 通过；没有新确认的生产阻断。人工、平台和指定复核未完成，不能宣称全部运行验收完成。
 
+**2026-10-08 当前兼容阻断收尾**：旧习惯标题嵌套事务Bool回归已最小修复，原失败断言及针对性回归严格通过；当前完整QA编译/验签通过，CommandExecutionRun为494行。唯一契约、源码身份、静态结果与指定Cursor材料见[习惯命令权威修复记录](unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)。[前批H收尾](#h-当前工作树收尾验证2026-10-08)的b5d4b2bc、旧504行和失败包保留历史效力；本轮不重验或关闭H两项嵌套AX，也不累加O315／770或P174。指定Cursor未执行，整体partial、用户未接受交付。
+
 ### 权威入口与当前消费者
 
 P 收尾状态见[人工平台与交付判定](#第十阶段-p人工平台验收与最终交付判定)：首轮用户报告触控板及现有VoiceOver操作无异常，P最终5方法／9次定向检查通过；[P续轮](#p-续轮逐项人工操作与平台取证2026-10-07)新增实际QA截图、子窗口日志及普通搜索撤销／重做的人工反馈。精确长按时序、指定Cursor及H/K边界仍保留，续轮结束还发现并停止了非XCTest的QA进程。用户已明确决定：**保留 partial，暂不接受整体交付**。
@@ -386,6 +388,48 @@ Clipboard A真实Paste86/89取得LF原文相等布尔；第一次Redo90没有证
 
 **收尾门禁**：最终4份相关Swift严格SwiftLint、原runner的14项隔离脚本测试、工作流检查、static质量门禁（230项脚本回归）、工作区/暂存区diff检查通过，输出为`input-swiftlint.log`、`input-workflow.log`、`input-static.json`及本轮工具记录。完整正常QA目标编译和严格验签以短回归、2秒Gallery及第三人工批为证；主动终止的第二批不算构建/测试成功。保留SDK AX弃用、既有actor隔离和ad-hoc Hardened Runtime提示，不将零Runtime Warning解释成历史警告已清除。未运行整套174/770回归、独立日用Debug或其他系统版本，没有安装/提交/推送/发布、真实数据/凭据/偏好访问或权限/签名配置调整。指定Cursor复核仍未执行；人工观察被接受为观察来源，不代表用户已接受整体交付。文档最终编辑后重跑受影响工作流/静态/差异检查，并复核源码身份与同路径进程。
 
+#### 剩余平台验收：K、L与关键可访问性（2026-10-08）
+
+本轮仍为 **partial，用户未接受整体交付**。继承习惯旧Bool兼容修复47方法／131次、H普通保存失败恢复和Stepper焦点修复的原证据；不重复Capture、搜索矩阵。范围只包括必要测试宿主、标量观测、相关短回归和原记录。桌面应用入口（包括旧app对象AX/截图/打开/激活/关闭）继续暂停，只由完整正常PrivacyQA/XCTest启动隔离窗口。
+
+**准备与能力**：原Gallery缺少真实密码sheet人工场景，现以ControlsPlatformPassword组合原PasswordSheetProbe、PrivacyButtonSheetHost和生产PrivacyPasswordSheet。仅假action按首次30秒、重试12秒自动失败；busy期间输入仍由原生产实现允许。两条场景分别标注逐字和用户自愿粘贴的同值覆盖；人工材料为8位ASCII合成数字，区别于历史15字素／17 UTF-16的复杂Unicode样本，日志不写材料正文、字符键位或口令哈希。只在sheet打开、action入口、1秒稳定点、失败边界和关闭记录字段/editor必要UTF-16长度、字段局部身份、按钮enabled、相等布尔与次数；无逐字符取样，不直接读取生产私有State。取消重开单列，不能替代自然清空。
+
+L继续初值500、范围20…999、步长10；原ControlsNativeStepper/ControlsTrackingStepper移至局部测试文件，不改系统autorepeat/continuous或delay/interval。逐次action/Binding原trace保留，导出补方向和收到的事件时间；只有控件内按下之后实际收到本地mouseUp才启动2秒释放后观察。trackingReturned不是释放，未收到mouseUp仍保留精确基线缺口；无全局事件钩子、权限变化或合成repeat补证。500/990/30按钮只准备合成值，排除在action次数外。
+
+**原runner维护**：原O快照路径已缺失，首次准备在读取阶段失败，尚未申请锁或启动；两处历史输入改用现存原P的final-before.json/final-command.json，隔离命令参数一致。原14项mock脚本回归已运行；编译测试的命令夹具相应改为临时合成参数。没有重写runner、改锁或伪造旧产物。首个kl-preparation在编译时报新增默认参数跨MainActor读取错误，未启动XCTest；已改为init内部取默认值，原失败包保留，不计通过。
+
+**准备验证**：kl-preparation-recheck另暴露测试闭包缺显式self，已修正；两个编译失败批均未启动XCTest，不计通过。kl-preparation-checked为12方法／23次；最后增加取消后不再采旧sheet、无释放不生成观察的守卫与测试，kl-preparation-final为 **14方法／26次全通过**，0失败／跳过／Expected Failure／Runtime Warning。完整正常PrivacyQA编译、codesign --verify --deep --strict均成功，14会话原JSONL／stdout／关闭回执一致；PID25297及启动身份1791428991:469676已退出，同路径无残留。最终源码集合摘要6bc00a8b6019780d94d259b469d333f5687db9142702b1a67627a9e3923f6e70申请/锁后/运行后相同，原暂存摘要保持；7个测试Swift变化、无生产变化。严格局部SwiftLint、原runner14项mock、工作流、static和两层diff检查通过，合成材料未出现在最终XCTest标准输出。日志、命令、身份、结果与审计均为build/Controls10P/kl-*；这26次是测试支持／自动回归，不能计为真人输入或长按通过。
+
+**人工窗口**：准备与清理通过、原锁释放后才邀请。用户明确答“现在方便，开始K真实输入”，并确认可自行使用VoiceOver。随后原runner启动kl-manual-k，600秒含30秒收尾，只选择interactiveGallery；当前人工K/L及VoiceOver结果待本批结束后在此补齐。指定Cursor verifier当前无可调用工具，未认证或替代。H两项嵌套AX、旧Capture差额、历史额外QA进程副作用未知和其他系统版本继续开放。
+
+### 第十阶段剩余运行问题：Stepper 警告与 H 截止注入核对（2026-10-08）
+
+**整体继续 partial，用户未接受整体交付。** 本轮不启动人工 Gallery，不使用桌面工具或旧 app 对象的 AX/截图/激活/关闭；只运行完整正常 PrivacyQA/XCTest。原输入人工反馈及未对齐证据、H 两项嵌套 AX、K 同值替换、L 真实长按、旧 Capture 差额与历史 QA 未知副作用分类保留，不由本次结果关闭。H 当前源码差异与缺失接点见[H 当前截止注入能力核对](#h-当前截止注入能力核对2026-10-08)。
+
+**根因与单条件证据**：原样 `keyboardSingleRepeatReleaseAndDisabled()` 在 `stepper-original.xcresult` 为1方法/1次通过，但保留 `SystemPageHost.swift:67` 的“Modifying state during view update” Runtime Warning。`stepper-trace.xcresult` 用临时日志保存原方法事件、更新和状态写入顺序；该诊断改动单独保存在 `build/Controls10P/stepper-diagnostic.patch`，最终生产/原测试均无这些输出。初挂、取得焦点、方向/空格按下与重复/释放、鼠标及对应布局均没有该警告；禁用后的布局中出现 `focused true → false`，紧随警告，再返回焦点闭包。清理未再出现该警告。
+
+同进程 `Thread.callStackSymbols` 明确为 `SwiftUI PlatformViewChild / AppKitPlatformViewHost.coreUpdateEnvironment → NSView.adoptEnvironment → NSControl/NSStepperCell/NSCell.setEnabled → NSWindow._realMakeFirstResponder → DaybookStepperKeyView.resignFirstResponder → focusChanged → DaybookStepper.@State focused`。这发生于 SwiftUI 自己传播环境，不能只在 `updateNSView` 周围加标志解决；不是 `resetDirection` 或测试 Probe 的数值/禁用赋值直接在更新中发布。SystemPageHost 的 settle 行只是当时发起布局的位置，未改 helper。
+
+`stepper-focus-control.xcresult` 的 `disablingWithOrWithoutFocus(releaseFirst:)` 两参数均通过：false（仍持焦再禁用）带同一警告，true（先失焦再禁用）无警告；与前两批原方法复现相互对照。原数值、写入次数和禁用断言全部保留。现有证据确认公共桥接的呈现反馈时序缺陷；没有发现该警告同时造成值错写、禁用失效或生命周期断言失败，不将警告中的 undefined behavior 字样当作已经观察到其他损坏。
+
+**最小修正**：生产只改 `DaybookStepperKeyboard.swift`。AppKit 接受/失去焦点仍同步返回，isEnabled 和 attachment 的同步防线及 DaybookStepper.adjust 不变；只将用于按钮描边的 focusChanged 放到主队列。通知执行时读当前 enabled/attachment/window.firstResponder，不捕获旧 true；每次焦点/接入变更推进代次，丢弃被取代的通知，dismantle 先失效再清空回调。附件按钮禁用的既有异步刷新保持。外部 Binding、数值/方向/次数、空格最近方向、原步长/端点、点击区域、辅助语义、相邻编辑提交和系统重复机制均未修改。原键盘测试最终与起点逐字一致。
+
+新增 `DaybookStepperFocusTests` 保留上述两条件回归，并检查同一轮取得/失去焦点只发布最终 false、拆离不恢复旧 true、原 hosting view 重挂、拆卸丢弃待发通知及清空动作、多实例焦点转移不串 Binding/最近方向。原 Stepper/消费者回归继续覆盖实际窗口按键、按住禁用、取消/拆离及重建、边界与保存/草稿。新增桥接直接调用的拆卸断言属于局部生命周期证据，不冒充真人输入；原事件级拆离测试单独保留。
+
+**执行证据**：全部证据沿原 `build/Controls10P/stepper-*` 保存，使用原 `build/PrivacyQA-Controls10P` 与 QA bundle ID、临时签名、生产 sandbox entitlement、LSUIElement=NO、六项真实钥匙串环境清除、串行测试和原锁单次900秒。对照批等待146.08秒后取得原锁，其他已完成定位批立即取得；每批启动前未锁屏且同路径无进程。原 P runner 固定要求 Gallery 的 CONTROLS_P_BEGIN/END，本轮刻意不挂 Gallery，故其 execution.json 保留 `sessions: missing batch session evidence` 和 complete/runtimeVerified=false；不修改结果树或伪造会话来消除此标记。非 Gallery 测试按真实 summary/tests、标准输出、codesign 及单独 `*-process-checks.json` 的 PID/内核启动身份退出证据判断。
+
+首轮修正验证 `stepper-repaired-focus.xcresult` 为3方法/4次通过、零失败/跳过/已知失败/Runtime Warning。定位 trace 批期间并发更改了两份 UnifiedSearchSubtask 呈现源码及 Localizable.xcstrings，运行后摘要正确标记 source changed；已核对它们不在 Stepper/H 调用链，不把该批当整份最终源码通过。其他并发搜索测试和文档改动保留，不提交或改写暂存区。
+
+**最终回归与计数**：`stepper-regression.xcresult` 实际21方法/46次全部通过，0失败/跳过/已知失败/Runtime Warning。范围为完整 DaybookStepperTests、DaybookStepperFocusTests、ClipboardStepperConsumerTests、ClipboardOptionsConsumerTests，以及原交互套件除 syntheticHoldComparison 外的6方法；未机械重跑174/770，也未将按住取消/重复事件断言当 L 物理长按基线。中英文、浅深色、320pt长标签和440pt生产选项均沿原矩阵执行。最终只删除新增测试文件的一处多余空行后，`stepper-final-focus.xcresult` 又完成焦点套件及原警告方法4方法/5次通过、零 Runtime Warning；其余17方法/41次代码未变。按方法/参数取最后有效证据仍为**21方法/46次**，不把定位/重复执行相加到 O/P 历史总数。原键盘方法的断言从未删减，最终与起点相同。
+
+**源码与门禁**：最终 HEAD `61f4ba2cca305b7879186a6f1cd919cd92caf887`；扩大回归前后源码摘要均 `59711dc8675ed1f13791091811130a2271ed101d36fea6a6e71cebfbf879f56e`，最后焦点复验前后均 `20888895120db67602c37d399503307cb6db2a4296ead480221b232488f2a461`，跨批差异仅新增测试的空行。两批分别等待原锁29.21秒与31.24秒，未抢锁/换锁。暂存区一直为空（摘要 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`）；并发搜索代码、资源、测试与统一搜索文档全部保留，未计为本轮实现。正常完整 QA 重新编译、每批 codesign --verify --deep --strict 成功，没有排除源码或运行日用构建。
+
+最终2个改动Swift文件严格SwiftLint通过；中途新增测试的一处重复空行曾令lint失败，已删除并补受影响运行。工作流、静态质量门禁（231项脚本回归）、工作区/暂存差异与新文件空白检查通过，日志沿 `stepper-swiftlint.log`、`stepper-workflow.log`、`stepper-static.json` 保存。静态profile避免启动普通测试宿主，Swift运行证据由上述完整隔离目标提供。编译仍有已有SDK AX弃用、actor隔离及ad-hoc Hardened Runtime提示；最终零Runtime Warning只限定所选方法。只读查看本批XCTest生成的焦点/禁用及中文深色长标签缓存图，确认描边/禁用和换行显示；不是桌面截图或窗口合成器/真人验收。
+
+**收尾与缺口**：每批通过libproc只读记录同路径测试进程PID及内核启动身份，再核对原身份退出；共6个本轮观察进程均退出，同路径无残留，不附着/关闭/启动应用。指定 Cursor verifier 在当前工具清单仍无可调用入口，未认证、未用其他代理替代，公共控件独立复核继续未完成；以上测试不能代替该项。H普通截止保存失败、两项嵌套AX、L真实持续按压和原人工/历史缺口保持。下一项最有价值的代码工作是单独定界并授权 H 真实详情链的最小显式保存依赖接点，再补回调返回前恢复及同宿主重试；不需用户重复已反馈正常的输入。本轮无提交、推送、安装、发布、真实数据/系统剪贴板/个人偏好或签名权限变更。
+
+**当前工作树收尾补记（2026-10-08）**：本轮 Stepper 焦点3方法／4次、原警告方法1／1、两个剪贴板消费者2／5，共6方法／10次通过，零Runtime Warning；覆盖通知取代、拆离／重挂、dismantle取消、双实例、默认零写入及双语浅深色保存／取消／重开。生产和相关测试／支持文件与此前通过版本相同，其他15个历史方法没有机械重跑，原21／46仅保持其原版本与影响核对效力。完整编译、并发新测试阻断、进程身份与最终门禁统一见[本轮 H 收尾补记](#h-当前工作树收尾验证2026-10-08)。不改变指定Cursor、L或人工缺口。
+
 ## 第十阶段 N：手记向上标题气泡悬停保留修复
 
 2026-10-06。本轮仅处理 DiarySummaryRow 标题气泡的真实悬停与退出链；显示资格、截断、方向/偏移、样式、复制、隐私投影、选择/双击、菜单和原300/100/80ms延迟保持。组件与责任见[组件目录](component-catalog.md#第十阶段-n手记标题气泡窗口观测)。K、L、公开 Copy/More、真人辅助功能与其他历史问题保持独立。
@@ -461,6 +505,8 @@ BoardRowChrome 仅增加不触发重绘的手记标题指针记录和 resetTitle
 
 ## 第十阶段 L：Stepper 长按重复有效性核验
 
+2026-10-08续验准备见[原O/P的K/L平台记录](#剩余平台验收kl与关键可访问性2026-10-08)：本轮使用500、20…999、10，不沿用下文旧建议的0…1000；合成记录器回归已通过，真实按压基线待本轮人工证据，历史缺口暂不关闭。
+
 2026-10-06。结果 **3：原生持续按压基线无法建立，长按等价验收 blocked**。本轮完成工具能力与源码诊断，只追加本记录，不修改生产 Stepper 或测试；第三阶段 F 的长按缺口不能关闭，也没有足够证据判定新增产品缺陷。
 
 **范围与身份**：读取 DaybookStepper、DaybookStepperKeyboard、DaybookStepperInteractionTests、DaybookStepperBaselineTests（含 StepperNativeTestSupport / StepperEventTrace）及[第三阶段 F 补验](#第三阶段-f-补验stepper-重复触发与取消契约2026-10-01)。源码基于 HEAD `dba0982362f389c28b468e2d03420bfbe126d7d1` 加现有工作区/暂存修改；本轮开始已有多个其他任务的修改，不能把 HEAD 当全部被检源码。记录前保留暂存条目、暂存二进制差异及生产/测试目录内容 SHA-256 摘要。生产 Stepper 两文件摘要分别为 `117466996c546bcde54b381f7c964108fa7f581118b0969cfcc3f9b54bd77093` 与 `d10664a6d6df786c7990dd0cfcc56bcaa7c8086626f09ad2a59f42e6df36348c`。不展开剪贴板业务，也不挂真实消费者。
@@ -486,6 +532,8 @@ BoardRowChrome 仅增加不触发重绘的手记标题指针记录和 resetTitle
 **隔离与验证**：本轮在能力门槛处停止，没有启动 QA/日用应用或申请构建锁，因此 900 秒等待、正常目标编译与串行窗口运行均未执行；不是改用另一把锁。未增加 Swift 测试，不重跑明知无法建立基线的 syntheticHoldComparison，SwiftLint、定向 Swift 测试和应用构建不适用于本次仅记录修改。`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`（227 项脚本测试）及 `git diff --check` / `git diff --cached --check` 均通过。最终生产/测试目录内容、暂存条目及暂存差异摘要与本轮开始一致；移除本节后的工程记录摘要也与编辑前相同，保留了既有及并发修改。静态检查不证明长按通过。指定 Cursor verifier、真人辅助功能及其他历史缺口分别保留，不替代、不宣称通过。未操作真实数据、系统剪贴板、偏好、权限或签名；不提交、推送、安装、发布，记录完成后停止。
 
 ## 第十阶段 K：密码确认字段同值重试残留诊断
+
+2026-10-08真人续验见[原O/P的K/L平台记录](#剩余平台验收kl与关键可访问性2026-10-08)：只补双字段代表宿主，8位ASCII合成材料与下文Unicode历史样本分开；自动准备不代表真人路径通过，历史API残留保留。
 
 2026-10-06，本轮仅补测试与本记录，未修改生产安全流程。直接使用 `PrivacyPasswordSheet`、原 `PasswordSheetProbe` / `PrivacyButtonSheetHost` 和可控制的合成异步 action；`DaybookSecureField` 与裸 `SecureField` 的局部绑定对照另列，不能替代生产 sheet。第七阶段 B 的失败、已知问题标记及不同值通过记录全部保留。
 
@@ -840,6 +888,93 @@ A 的提醒对照只证明真实模型修改后、失败及恢复在 UI 回调�
 完整命令、退出状态、编译日志、summary/tests树、构建结果及原生诊断导出均保存于原 `build/TimeClear10H/final-resume*`。七个H测试/支持文件严格SwiftLint通过；最终 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`（224项脚本测试）、工作树/暂存区差异及未跟踪文本空白检查通过。未将静态检查、顶层Passed或编译成功当作旧问题修复证据。
 
 两项嵌套AX问题继续开放；普通截止回调内真实save失败仍缺等价注入；原历史生命周期有效结果、偶发焦点根因未定、指定Cursor verifier、真人输入/VoiceOver、低版本macOS及窗口合成器缺口保持。H最终测试分层版本的待补运行已完成，无本轮直接阻断；整体验收仍受上述历史缺口限制。完成后停止，不进入独立问题，不提交、推送、安装、发布，不修改真实数据、系统偏好、个人签名配置或权限。
+
+### H 当前截止注入能力核对（2026-10-08）
+
+本小节保留前次只读核对的历史事实；当前接点与验收状态以下方本日授权实施记录为准，不再把“没有注入入口”作为后续阻断。
+
+本轮只读核对当前真实链路与原 H 分层，未重跑条件未变的旧诊断、未修改 H 生产或测试。`TodoScheduleSectionView` 的 `TaskDetailDueTime` 回调仍调用 `DayBoardMutations.setDue`；当前 setDue 在 `persist` 的 work 内委托 `TaskMutationService.assignDue`，后者仅执行 `todo.dueMinutes = RemindMinutes.clamped(minutes)`。这是共享赋值提取，不是新增保存依赖；不能沿用“源码逐字未变”的描述，但原截止赋值、保存与返回边界保持。
+
+`DayBoardMutations.persist(context:_:)` 仍无 save/Boundary 参数，直接调用默认 `ModelChanges.perform`。ModelChanges 虽已有显式 `Boundary.preSave/save` 及事务事实，只有调用者显式传入或同 context 外层事务继承时才能使用；详情 setDue 不接 `taskRepositoryProvider`，也没有可替换的保存提供者。命令侧 `TaskMutationService.editField` 的依赖不能注入该真实详情链。将 AX 包进外层 transaction 仍会重新引入原 working/提前渲染时序，不构成等价入口。
+
+**结论：仍缺普通 setDue 自身保存失败的等价注入能力。** 最小后续方案是另行定界一个仅供真实 setDue 内部保存调用使用、默认保持原行为的显式保存依赖，并让详情隔离宿主可装配；不能只给未被 UI 调用的重载加参数，也不应引入全局失败开关。影响至少为详情装配、setDue/persist 调用边界和其针对性测试，需验证失败及恢复在回调返回前完成、同宿主显示及重试、精确调用数和字段/投影隔离。本轮未实施该方案，也未新增生产保存 API。
+
+未来若依赖在 `context.save()` 前抛错，必须归类为“保存调用前的替身抛错”；只有实际保存接口返回错误的证据才能描述为该层失败，仍不能自动称为真实磁盘错误。当前没有补齐上述运行证明，两项嵌套 AX 旧问题各自保持开放；原提醒对照、输入人工反馈、未对齐证据及整体 partial 分类不变。
+
+### H 真实截止详情链的最小保存依赖与失败恢复验收（2026-10-08）
+
+**整体继续 partial，用户未接受整体交付。** 本轮明确授权仅增加截止最终保存显式依赖、贯通真实详情回调及隔离恢复验收；不修两项外层嵌套 AX、不改 ModelChanges / ModelRollback、不新增失败发布或强制刷新。接手时工作区已有 saveDue / setDue(save:) / persist(save:) 三处最小实现，先核对再沿其补测，没有覆盖并发搜索/Stepper 修改或操作暂存区。
+
+| 影响入口 | 最终选择与保持的边界 |
+|---|---|
+| TodoScheduleSectionView → TaskDetailDueTime | 局部 MainActor saveDue 默认 `try context.save()`，生产实际 Void 回调传递该依赖；不新增镜像状态、随机 id 或窗口重建。 |
+| setDue → persist → ModelChanges.perform | 旧签名和函数引用保留；显式重载只透传最终 save。继续 todo.modelContext 及原回退、TaskMutationService.assignDue、原 Bool 及 UI 丢弃返回值。 |
+| 原事务、其他消费者 | 不暴露 preSave/publish/reportFailure；已有 pending 预保存、修改/保存/回滚/反馈/成功发布顺序及外层提交者继承不变。提醒、日期、重复事项、通知/日历投影不接新依赖。 |
+
+**证据方法**：内存合成夹具先完成准备保存，记录器之后才计被测 `ModelContext.willSave`。普通 AXPress / 原生 NSEvent 均无外层事务包装，最终依赖先确认本例 context、事务存在及原赋值，再记录并抛 `syntheticFinalSave`。每次动作在任何 await、settle 或后续 AX 查询前检查模型已恢复、事务已退出及反馈；完整顺序断言为 request → assigned/save → synthetic-throw → synchronous-return(600)，成功重试为 request → assigned/save → context.save-call → context.save-return → publish → synchronous-return(nil)。原分组文字/清除按钮、原时间弹窗、身份与再次提交另行验收。只读展开同一生产父 body 的 Void 回调检查与直接 setDue Bool 检查分开，不能把事件返回写成从 UI 得到了 Bool。
+
+**首批记录**：`build/Controls10P/h-due-seam.xcresult` 编译/验签成功；6方法/8次执行中7次通过、1方法失败。失败来自新增测试误把原越界分钟政策写成压到0/1439；实测及原 RemindMinutes.clamped / TaskTM2 测试均为越界→nil，已只修测试预期。两条普通 UI 恢复/重试、Void 回调、预保存、嵌套提交者和两实例依赖隔离在首批通过；首批不作为最终源码验收，不覆盖或修改旧结果。
+
+**H 定向结果**：以下为最后H测试源码、并发习惯命令变更前完整源码版本的去重证据，不叠加首批或原174/770次历史统计；当前全工作区门禁的后续阻断见本节收尾。
+
+| 结果包（均在 build/Controls10P） | 实际命中 | 判定 |
+|---|---|---|
+| h-due-acceptance.xcresult | 24方法/45次 | 全部通过；新增 DetailDueSaveTests 7方法/9次，原详情7方法/19次，H诊断3方法/7次，详情生命周期1方法/2次，日期双语1方法/2次，以及原事务/赋值5方法/6次。 |
+| h-due-boundaries.xcresult | 3方法/4次 | 两个准确命名的预保存方法通过；外层AX方法的 due=false/true 各一次 Expected Failure，仍仅为 DetailTimePickerTestSupport.swift:29:13 的 `(candidates.count → 0) == 1`。模型恢复和零实际save保持普通断言通过。 |
+| 合计 | **27方法/49次** | **47通过、2已知失败、0非预期失败/跳过**；两项已知失败不计功能恢复通过。 |
+
+每条普通截止 UI 路径的精确计数：请求 `[nil,900,nil]`、最终保存依赖尝试3、实际内存save1、错误反馈2、成功发布1。两次失败分别在同步事件返回处恢复600，原窗口/hosting view/模型身份保持；原分组与弹窗自然回显600，关闭零额外保存，取消失败开关后同宿主清除成功，新 ModelContext 读到nil。默认未注入详情的900/清除/午夜0与逐次重开为3次真实save、3次发布、0错误；旧函数引用及 persist 默认失败反馈单独通过。原提醒/重复事项、日期双语、en/zh-Hans×浅深色×280/400宽度的原详情矩阵及原赋值投影约束均有本批结果；这些 AX/原生程序事件与缓存布局检查不冒充真人或窗口合成器视觉验收。空 modelContext 的生产全局回退只核对表达式保持，未打开真实全局持久容器补测。
+
+**选择与 runner 限制如实保留**：acceptance 请求中一个旧预保存方法名写错，XCTest忽略了该不存在选择；结果树守卫报 `missing selected test: TaskCaptureTransactionTests/failedPresaveKeepsExistingPendingChanges()`。随后 boundaries 用真实 `failedPresaveDoesNotEnterCreationOrDiscardPendingEdit()` 和 `legacySaveInjectionStillPresavesOutsideItsClosure()` 补齐，没有把缺席项计为通过。原 P runner 三批均保留 `sessions: missing batch session evidence`；boundaries 另保留拒绝 Expected Failure 的 `results: test result not fully passed`。不修改 runner 或旧执行JSON，不伪造 Gallery 回执；本轮非 Gallery 的判定依据是各包 summary/tests、XCTest标准输出、编译/验签及下面独立进程退出记录。
+
+**隔离与源码身份**：完整正常 AreaChain scheme / PrivacyQA Debug、arm64、串行，独立 `build/PrivacyQA-Controls10P`，QA标识 `com.areachain.privacy-qa`，沿既有local/ad-hoc签名和原entitlements。六项真实钥匙串授权变量由原runner清除；仅XCTest启动，未启动Gallery/桌面入口或附着旧app。原 `build/.build.lock` 三次均在单次900秒预算内立即取得。HEAD `61f4ba2cca305b7879186a6f1cd919cd92caf887`，最终1257项源码集合摘要 `7a6bef04bcccf9243613f1559aaf1ae8f27695fc5b59a4c771668c26489fe5f9`，acceptance与boundaries申请/锁后/运行后集合一致，索引保持空差异摘要 `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`。每批 `*-command.json` / `*-before.json` / `*-after.json` / `*-execution.json` 保存命令、源身份与构建退出；最后两批xcodebuild=0、codesign=0，完整QA编译及 `codesign --verify --deep --strict` 通过，未运行普通日用构建或安装。既有AX弃用/无用变量及ad-hoc Hardened Runtime提示保留；最终结果树无Runtime Warning节点。
+
+**本批进程退出**：从运行中libproc只读观察到 `74295:1791421747:891845`（首批）、`76985:1791421881:621431`（acceptance）、`78018:1791421998:143374`（boundaries），对应 `h-due-*-process-observed.json` 与 `h-due-*-process-checks.json`。三个原内核启动身份均已不存在，各批前/后及收尾同路径进程为空；不是只凭同路径消失判定，也不据此消除历史未知副作用。
+
+**指定 Cursor verifier 材料已准备，复核未执行**：当前工具元数据无该入口，未认证、未用其他代理替代。材料为本轮用户原始授权（仅最终save、不动事务/安全/产品行为）、上表最小影响、三个生产文件实际差异、两个新测试、原 ModelChanges/assignDue 与H四层测试、上述源码摘要、结果树/逐阶段输出/进程记录。需独立核对：默认/函数引用及context回退兼容；真实生产Void回调确实贯通；保存依赖失败、回调返回和自然回显的证据边界；预保存/嵌套提交者及两项AX已知失败没有被扩大豁免。该复核缺口仍开放。
+
+**并发收尾阻断**：上述运行结束后，其他任务新增习惯命令/修改服务并扩展 RoutineRepositoryProtocol（提供兼容默认实现）与 SwiftDataRoutineRepository；主代理检查差异，未覆盖或修复这些非H修改。H五个变更文件及原事务/截止路径未变，但全源码集合已变化。补跑完整QA目标及H/提醒/日期短回归，`h-due-concurrent-check.xcresult` 在编译阶段失败：新 `RoutineMutationService.swift:27–28` 从非隔离上下文读取 `ModelChanges.CommitFacts.save/phase`。该批申请/锁后/运行后源码摘要均为 `da97ec8965c4316acc084b75ca1f15a07818d06a71a5c4a3177a37f6c021ed2e`，xcodebuild=65，没有XCTest运行或新测试进程，不计入49次。runner的codesign=0仅核对先前QA包，不证明失败版本构建成功；`sessions: missing XCTest stdout` 亦如实保留。原锁仍在单次900秒预算内立即取得，前/后/收尾同路径无残留。
+
+**静态收尾**：本批5个相关Swift文件严格局部SwiftLint、工作区/暂存区差异及新增文件空白检查通过。并发变更前工作流和静态门禁通过（含231项隔离脚本测试），保存于 `h-due-workflow.log` / `h-due-static-final.json`；最终全工作区重跑则因并发 `CommandExecutionRun.swift` 508行超过500行而失败，见 `h-due-workflow-final.log`、`h-due-static-closeout.json`，其余静态项通过。文档收尾后 `h-due-workflow-concurrent.log` / `h-due-static-concurrent.json` 再次确认同一阻断，不能将旧绿结果改写为当前全部通过。Swift运行证据仅来自上述正常PrivacyQA；未以会启动另一普通宿主的auto/swift profile代替隔离配置，原runner未修改。下一次最终全工作区验收须待并发工作修复其编译/行数门禁后，以当时源码身份补跑受影响短回归；这不要求重做H已证明的接点设计，也不关闭指定复核和整体partial。
+
+**失败层级限定**：A 注入接点已贯通；B **真实详情链已到达最终保存依赖；该依赖的合成失败触发原回滚，并验证了自然回显和同宿主重试。** 错误在依赖闭包内、实际context.save之前抛出；C SwiftData自身save抛错与真实磁盘故障未直接验证。不得据此称所有截止失败路径通过或关闭两项嵌套 AX。原 H/K/L、真人/VoiceOver、低版本及其他历史缺口独立保留；不操作用户数据库、系统剪贴板/偏好、签名权限，不提交、推送、安装或发布。
+
+
+### H 当前工作树收尾验证（2026-10-08）
+
+**partial，用户未接受整体交付。** 本轮仅核对和验收，未改生产、测试、runner或索引；未启动Gallery、桌面应用入口、真实磁盘故障／密码修复或新人工矩阵。原H27方法／49次（47通过、2精确已知失败）与Stepper21／46分别保留原版本效力，不能当作本轮全量结果。
+
+**影响与选择**：与H通过包 `h-due-acceptance-after.json` 对比，起点全源码新增／变化30路径，但 TodoScheduleSectionView、setDue/persist、ModelChanges/ModelRollback、assignDue、H测试与支持代码均逐文件摘要相同；与Stepper最终焦点包相比，公共Stepper、两处剪贴板数值消费者及其测试／支持也未变。直接路径不重新设计，重跑用户指定的恢复、默认、旧签名、预保存、嵌套提交及焦点生命周期。共享影响为 RoutineRepositoryProtocol 新增默认nil上下文及按ID查询、SwiftDataRoutineRepository 的对应实现；旧setRemind写入口未变，补选原普通／重复事项提醒与仓储回归。DayBoardMutations+Capture 的旧习惯标题入口被并发任务改接 RoutineMutationService，另选 `TaskTitleMutationTests/routineAndNotesConsumersRetainTheirOriginalSemantics()`，只核对、不修其业务。其余命令状态／搜索接线及新增51个文案键不在H／Stepper调用链，原文案键未变；它们仍参加完整编译，不排除源码。
+
+所有本轮产物均在 `build/Controls10P/h-stepper-closeout-*`：
+
+| 批次 | 完整目标与真实运行 | 源码／结果边界 |
+|---|---|---|
+| build | build-for-testing退出0，严格验签0；完整应用及测试目标成功，没有启动测试进程 | 申请／锁后／结束均 `fb65feb0131cefa17734a7ea298867c3283f1c7d87082c76222e27ba880ed1e6`，1269文件；原Modification已带@MainActor且原save/phase隔离错误解除。 |
+| core | xcodebuild=0、codesign=0，18方法／28次全部通过，0失败／跳过／已知失败／Runtime Warning，所有请求选择均命中 | 开始同上；运行中并发新增RoutineCommandTestSupport、RoutineCommandTests，结束摘要 `133d9825bcc63d2c44601947a308c315d2787ff32af528e076fd08df8e25260d`。新增文件不被本批调用、没有顶层运行或改动共享支持；保留局部证据，不宣称整个结束版本重新编译通过。 |
+| shared | xcodebuild=65，summary为unknown／0测试，无新测试进程 | 新RoutineCommandTests.swift:55的expect宏展开报 `operator can throw but expression is not marked with 'try'`，对应 `facts.savedTagIDs == expected && TagIDList.parse(try fixture.stored().tagIDs) == expected`。不是原Modification错误；未修改该并发文件。 |
+| resumed | xcodebuild=65、summary unknown／0测试，无测试进程；完整目标未通过 | 前一缺try已由并发任务改为先读取storedIDs，核对后才补跑；新 UnifiedSearchRoutineTestSupport.swift:19:53 报 `value of type 'ContentQueryDateContext' has no member 'now'`。本批申请／锁后／运行后均 `b3b69631ec8b436953e24478d895ec6e1c531016276383544e9430818271f4bd`，不在同条件下重试。 |
+| remaining | 完整编译／验签成功；7方法／10次：7通过、2精确已知失败、1非预期失败 | now修正后才重跑，前后稳定b5d4b2bc…b2d0f6；xcodebuild=65为下述旧习惯Bool断言失败，codesign=0。 |
+
+core中H及原依赖为12方法／18次：DetailDueSaveTests全部7／9（AXPress和原生鼠标普通失败恢复／自然回显／同宿主重试、Void同步返回、默认未注入、旧函数引用、预保存、外层提交者、实例隔离）；两个精确预保存选择2／2；assignDue兼容1／1；原普通／重复事项提醒失败恢复及重试1／4；日期双语原保存1／2。Stepper为6／10，详见原Stepper补记。参数次数只按结果树，不增加内部动作次数。既有合成最终依赖失败证据不证明SwiftData自身save抛错或真实磁盘故障。
+
+**剩余项实际补验**：resumed的now错误由并发任务改为显式DayKey日期后，才运行remaining。完整正常目标编译及严格验签成功，7个选择全部命中，7方法／10次中5方法／7次通过、1方法／2次Expected Failure、1方法／1次非预期失败，0跳过／Runtime Warning。通过项为原提醒emptyOpen／shortcuts两方法四次及仓储missing／check／fetch三方法三次。两项 `outerTransactionAXClearRequiresOriginalDisplay(due:)` 的false／true均仍准确落在DetailTimePickerTestSupport.swift:29:13的候选0≠1；模型恢复、零实际save继续普通断言，没有扩大豁免或意外通过。shared/resumed的零命中尝试保持原记录，不计本批次数。
+
+**并发消费者新增回归**：`TaskTitleMutationTests/routineAndNotesConsumersRetainTheirOriginalSemantics()` 在TaskTitleMutationTests.swift:101:13的旧editRoutineWithSyntax Bool要求失败，其他断言无新增issue。源码原因可核验：DayBoardMutations+Capture.swift:99改为返回Modification.saved；RoutineMutationService.swift:25–31在外层尚未提交时为pending，afterCommit才置savedLocally，而测试在外层ModelChanges.transaction内部调用旧入口。旧工作已执行的Bool与新saved含义不同；不据此推断最终数据未保存。该项属于并发习惯入口兼容回归，不归入H普通恢复／Stepper或两项AX豁免，不修改命令业务或测试。remaining的xcodebuild=65来自这一断言，不能称编译或签名失败。
+
+**后续兼容修复引用（2026-10-08）**：上述Bool阻断及旧504行门禁状态已由[习惯命令权威修复记录](unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)更新：原断言严格通过，当前494行及完整QA编译/验签通过。具体新证据只维护在该记录；本节旧包、两项AX与指定复核缺口不改，不扩大H／Stepper通过范围。
+
+**源码有效性**：shared结束882d9b8f…737d4b，随后修正缺try并新增UnifiedSearchRoutineBoundaryTests／TestSupport，resumed稳定于b3b696…版本但编译失败。修正now后，remaining申请／锁后／运行后均为 `b5d4b2bc39d482b5818bc6980a7bfd427d9fcf599e3707a81e305ad6b9b2d0f6`，完整目标已编译并运行。这些新增／修正仅在独立习惯命令测试和支持，H／Stepper及本轮旧消费者、事务、仓储源码相对core前未变。因此core18／28对应当前局部路径；remaining对应当前完整编译及所选运行，旧编译错误不再是当前阻断。原H／Stepper未选中矩阵只保留各自历史效力，不称本轮全部重验、不累加成全应用总数。
+
+**最终并发差异与停止边界**：remaining结束后源码变为 `aa758b1123857a884257ebe5ea2a5c896c84826cdf47dee3002bd19bc47496c8`（见final.json／final-checks.json）。六个变化路径为CommandExecutionRun、DayBoardMutations+Capture、RoutineCommandAdapter、RoutineCommandQueries、UnifiedSearchRoutineInteractionTests、RoutineCommandTestSupport。命令运行提取共同记录逻辑后为504行，仍越500；Capture仅新增空白输入拒绝，不改变本次非空输入的.saved失败路径，其严格局部SwiftLint已补跑通过。其余为独立习惯命令适配／查询及新测试支持，不在H／Stepper回归调用链。
+
+本轮不追逐这些并发功能继续编译：完整目标成功严格限定b5d4b2bc已测版本，aa758b整树编译未验证；当前H／Stepper未变路径和两项AX的局部证据保持，新习惯Bool失败也只作为已测版本失败证据，不宣称空白检查已经运行验收。最终严格验签0核对remaining产物，两批内核启动身份均退出、同路径无残留；工作区／暂存区及未跟踪空白检查通过，索引未变。最终工作流及static确认同文件504行仍失败，其余静态项和231项脚本测试通过。
+
+**隔离、产物与进程**：原完整正常PrivacyQA、`build/PrivacyQA-Controls10P`、com.areachain.privacy-qa、local/ad-hoc、生产entitlements、LSUIElement=NO、串行与六项真实钥匙串变量清除保持。原build/.build.lock单次900秒预算，build等9.07秒，core/shared/resumed/remaining立即取得；锁后身份复核不变，结束再记摘要。build/core及remaining的新编译产物严格验签成功；shared/resumed的codesign=0只核对前批遗留包，不能证明这两批失败版本成功。core由libproc观察到PID/内核启动身份 `83947:1791422652:855302`，以及remaining的 `86644:1791423021:875190` 均已明确退出，各批前后及收尾同路径无残留；build/shared/resumed没有测试启动。额外只读验签等待原锁34.74秒。只读进程检查没有附着、激活或启动应用。
+
+**runner原始状态**：core的execution.json仍为complete/runtimeVerified=false，保留 `sessions: missing batch session evidence` 和 `source changed during test; evidence not final`；shared保留results非通过、missing XCTest stdout、编译失败及源码变化；resumed保留前述编译／无stdout错误，源码前后一致。remaining也保留complete/runtimeVerified=false、results非通过、missing batch session evidence和泛化test/build/signature failed；其codesign=0、真实XCTest已运行，不能将泛化错误文案当编译失败。独立remaining-selection-check.json确认7选择全部命中、7通过／2已知／1失败。未改旧execution.json、未伪造BEGIN/END。非Gallery的18／28由本批summary/tests、所选方法命中、XCTest标准输出、构建退出和独立process-observed/process-checks交叉核对。
+
+**门禁与指定复核材料**：七个H／Stepper及四个受影响共享Swift文件严格局部SwiftLint通过；工作区／暂存区差异检查通过，索引持续为空（e3b0…摘要）。工作流及static初检准确失败于CommandExecutionRun.swift的508行超过500行，其他静态项及231项脚本回归通过；未压缩并发业务、删注释、提高门禁或降低并发检查。最终文档后门禁以 `h-stepper-closeout-workflow-final.log`／`h-stepper-closeout-static-final.json` 为准。指定Cursor verifier工具仍不可用、未执行，不以其他代理代替；材料沿本节用户范围、origin/各批before-after摘要、`h-stepper-closeout-review.patch`、实际结果树、原始日志和进程记录更新，需核对默认兼容、依赖失败层级、源码有效版本、两项AX及新增习惯Bool回归。原人工、H/K/L、SwiftData自身失败和其他历史缺口全部保留。无提交、推送、安装、发布或真实数据／系统剪贴板／个人偏好／签名配置／权限操作。
 
 ## 第十阶段 G：日历窄周布局修复
 

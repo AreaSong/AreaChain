@@ -19,6 +19,7 @@ extension UnifiedSearchController {
         parameter.id == .tags && parameter.type == .tags
             && (hasTaskComposition && command.id.rawValue == "todo.create"
                 || command.id.rawValue == "todo.tags" && taskField?.supports(command.id) == true
+                || command.id.rawValue == "routine.tags" && routesRoutine(command.id)
                 || ["subtask.create", "subtask.tags"].contains(command.id.rawValue) && subtask?.supports(command.id) == true)
     }
 
@@ -49,6 +50,10 @@ extension UnifiedSearchController {
 
     private func tagCandidates(draft: CommandDraft, source: UnifiedSearchBuffer,
                                evidence: CommandTaskTagCatalog.Evidence? = nil) throws -> CommandTaskTagCandidates {
+        if routesRoutine(draft.commandID), let routine {
+            return try routine.tagCandidates(draft: draft.stamp, expecting: source.lease,
+                                             displaySession: session, evidence: evidence)
+        }
         if routesSubtask(draft.commandID), let subtask {
             return try subtask.tagCandidates(draft: draft.stamp, expecting: source.lease,
                                             displaySession: session, evidence: evidence)

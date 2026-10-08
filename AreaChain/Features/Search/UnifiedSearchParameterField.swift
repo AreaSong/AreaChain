@@ -128,6 +128,7 @@ struct UnifiedSearchParameterField: View {
             DaybookWeekdayPicker(selection: weekdayValue, onUpdateSelection: { value in
                 send(value == 0 ? nil : .weekdays(value))
             }, allowsEmpty: true, accessibilityTitle: Text("command.parameter.weekdays"))
+            if weekdayValue == 0 { Text("unified.routine.chooseDay").font(DaybookType.caption) }
         default: EmptyView()
         }
     }

@@ -42,6 +42,13 @@ enum DayBoardMutations {
     }
 
     @discardableResult
+    static func persist(
+        context: ModelContext? = nil, save: @MainActor (ModelContext) throws -> Void, _ work: () throws -> Void
+    ) -> Bool {
+        ModelChanges.perform(in: context ?? Persistence.session.container.mainContext, save: save, work)
+    }
+
+    @discardableResult
     static func trashAttachment(_ item: AttachmentItem) -> Bool {
         persist(context: item.modelContext) { item.deletedAt = SoftDelete.stamp() }
     }

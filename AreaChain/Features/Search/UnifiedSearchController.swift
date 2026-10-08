@@ -23,6 +23,10 @@ final class UnifiedSearchController {
     var taskFieldAcceptance: CommandTaskFieldAcceptance?
     var taskFieldFailure: String?
     var taskFieldVerification: CommandTaskCreateVerification?
+    var routinePreview: CommandRoutinePreview?
+    var routineAcceptance: CommandRoutineAcceptance?
+    var routineFailure: String?
+    var routineVerification: CommandTaskCreateVerification?
     var subtaskPreview: CommandSubtaskPreview?
     var subtaskAcceptance: CommandSubtaskAcceptance?
     var subtaskFailure: String?
@@ -60,6 +64,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let taskCreate: TaskCreateCommandAdapter?
     @ObservationIgnored let taskTitle: TaskTitleCommandAdapter?
     @ObservationIgnored let taskField: TaskFieldCommandAdapter?
+    @ObservationIgnored let routine: RoutineCommandAdapter?
     @ObservationIgnored let subtask: SubtaskCommandAdapter?
     @ObservationIgnored let taskChain: TaskChainCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
@@ -83,17 +88,17 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
          localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil,
          taskTitle: TaskTitleCommandAdapter? = nil, taskField: TaskFieldCommandAdapter? = nil,
-         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil) {
+         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil) {
         self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
                   settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled,
-                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask)
+                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask, routine: routine)
     }
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
-         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil) {
+         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
         self.settingBackend = settingBackend
@@ -101,6 +106,7 @@ final class UnifiedSearchController {
         self.taskTitle = taskTitle
         self.taskField = taskField
         self.subtask = subtask
+        self.routine = routine
         self.taskChain = taskChain
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
@@ -231,6 +237,7 @@ final class UnifiedSearchController {
 
     func detach() {
         chainCreationPreparation = nil
+        revokeRoutine()
         revokeSubtask()
         revokeTaskField()
         revokeTaskTitle()
@@ -253,8 +260,10 @@ final class UnifiedSearchController {
         taskCreateFailure = nil
         chainCreationPreparation = nil
         chainFailure = nil
+        revokeRoutine()
         revokeSubtask()
         subtaskFailure = nil
+        routineFailure = nil
         revokeTaskField()
         taskFieldFailure = nil
         revokeTaskTitle()
@@ -304,7 +313,7 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeTaskComposition() }
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
         if change == .privacyInvalidated || !operationVisible { revokeTaskField() }
-        if change == .privacyInvalidated || !operationVisible { revokeSubtask() }
+        if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)

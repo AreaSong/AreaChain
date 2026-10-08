@@ -143,6 +143,11 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         try execution!.recordSubtask(facts, attempt: attempt)
     }
 
+    mutating func recordRoutine(_ facts: CommandRoutineFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordRoutine(facts, attempt: attempt)
+    }
+
     mutating func recordTaskTitle(_ facts: CommandTaskTitleFacts, attempt: CommandAttemptStamp) throws {
         guard execution != nil else { throw CommandExecutionError.stale }
         try execution!.recordTaskTitle(facts, attempt: attempt)

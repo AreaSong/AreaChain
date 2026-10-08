@@ -81,6 +81,7 @@ extension UnifiedSearchController {
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
         if showsTaskChain { submitTaskChain(source); return }
         if showsSubtask { submitSubtask(source); return }
+        if showsRoutine { submitRoutine(source); return }
         if showsTaskField { submitTaskField(source); return }
         if showsTaskTitle { submitTaskTitle(source); return }
         if showsTaskCreate { requestTaskCreate(source); return }

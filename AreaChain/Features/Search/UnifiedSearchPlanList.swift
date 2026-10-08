@@ -11,7 +11,9 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            if controller.showsSubtask {
+            if controller.showsRoutine {
+                Text("unified.routine.pending").font(DaybookType.caption)
+            } else if controller.showsSubtask {
                 Text("unified.subtask.pending").font(DaybookType.caption)
             } else if controller.showsTaskTitle {
                 Text("unified.title.pending").font(DaybookType.caption)
@@ -53,7 +55,8 @@ private struct UnifiedSearchPlanRow: View {
                 if !command.targetTypes.isEmpty {
                     Text(verbatim: L10n.format("unified.objects.count", locale: locale, item.draft.targets.objects.count))
                         .font(DaybookType.caption)
-                    Text("unified.objects.finalCheck").font(DaybookType.micro)
+                    Text(controller.routesRoutine(command.id) ? "unified.routine.finalCheck" : "unified.objects.finalCheck")
+                        .font(DaybookType.micro)
                 }
                 let summary = UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: calendar)
                 if !summary.isEmpty { Text(verbatim: summary).font(DaybookType.caption).lineLimit(2) }

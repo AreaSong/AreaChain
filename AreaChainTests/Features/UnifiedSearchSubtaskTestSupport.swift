@@ -130,4 +130,17 @@ import Testing
         try host.snapshot("tm3-" + name + "-saved")
         return facts
     }
+
+    func assertChildPreserved(_ before: SubtaskSnapshot, except field: String) throws {
+        let actual = try #require(service.storedChild().snapshot)
+        var expected = before
+        switch field {
+        case "title": expected.title = actual.title; expected.tagIDs = actual.tagIDs
+        case "completion": expected.isDone = actual.isDone
+        case "tags": expected.tagIDs = actual.tagIDs
+        default: Issue.record("未声明子任务变更字段")
+        }
+        #expect(actual == expected)
+        #expect(try service.children().count == 4 && service.base.io.readTodos().count == 2)
+    }
 }

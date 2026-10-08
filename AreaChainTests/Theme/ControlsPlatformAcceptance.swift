@@ -8,6 +8,8 @@ import Testing
 @MainActor @Observable
 final class ControlsPlatformAcceptance {
     enum Scene: String, CaseIterable {
+        case passwordTyping = "密码逐字 / Password typing"
+        case passwordReplacement = "密码同值覆盖 / Password replacement"
         case capture = "输入与提交 / Capture"
         case search = "普通搜索 / Search"
         case clipboard = "剪贴板搜索 / Clipboard"
@@ -46,6 +48,9 @@ final class ControlsPlatformAcceptance {
     private var galleryStamp: ControlsPlatformEvents.WindowStamp?
     private var cleanup: (() -> Void)?
     private(set) var stepper: StepperProbe?
+    private(set) var password: ControlsPlatformPassword?
+    private var stepperPressed = false
+    private var releaseObservationAt: TimeInterval?
     private var monitor: Any?
     private var galleryObserver: NSObjectProtocol?
     private var auxiliaryObserver: NSObjectProtocol?
@@ -93,6 +98,11 @@ final class ControlsPlatformAcceptance {
         if evidence.failure != nil { close(reason: .evidenceFailure); return }
         if now() >= deadline { close(reason: .deadline); return }
         recordInputSample()
+        password?.tick()
+        if let releaseObservationAt, now() >= releaseObservationAt {
+            self.releaseObservationAt = nil
+            stepper?.trace?.mark("release-observation", value: stepper.map { Double($0.integer) })
+        }
         if now() >= deadline - Self.windDownSeconds && state == .running {
             state = .windingDown
             status = "收尾期：停止新操作，核对计数；到期自动关闭 / Winding down: check counts, automatic close at deadline"
@@ -124,6 +134,7 @@ final class ControlsPlatformAcceptance {
         do {
             try beforeOpen?()
             switch selection {
+            case .passwordTyping, .passwordReplacement: try openPassword()
             case .capture: try openInput(.capture)
             case .search: try openInput(searchConsumer)
             case .clipboard: try openInput(.clipboard)
@@ -176,6 +187,7 @@ final class ControlsPlatformAcceptance {
         if let input {
             values.merge(input.inputEvidence()) { _, new in new }
         }
+        password?.sample("manual-observation")
         if let stepper { values["integer"] = stepper.integer; values["writes"] = stepper.writes }
         record("observation", values)
     }
@@ -234,7 +246,9 @@ final class ControlsPlatformAcceptance {
         recordObservation()
         if let trace = stepper?.trace {
             for item in trace.items {
-                record("stepper-trace", ["time": item.time, "phase": item.kind, "value": item.value as Any? ?? NSNull()])
+                record("stepper-trace", ["time": item.time, "phase": item.kind, "value": item.value as Any? ?? NSNull(),
+                                         "increase": item.increase as Any? ?? NSNull(),
+                                         "eventTimestamp": item.eventTimestamp as Any? ?? NSNull()])
             }
         }
         if let auxiliaryObserver { NotificationCenter.default.removeObserver(auxiliaryObserver) }
@@ -250,6 +264,9 @@ final class ControlsPlatformAcceptance {
         input = nil
         lastInputSample = nil
         stepper = nil
+        stepperPressed = false
+        releaseObservationAt = nil
+        password = nil
         activeStamp = nil
         opened = nil
     }
@@ -304,6 +321,18 @@ final class ControlsPlatformAcceptance {
         cleanup = { SystemPageHost.release(window); fixture.cleanup() }
     }
 
+    private func openPassword() throws {
+        let support = ControlsPlatformPassword(replacement: selection == .passwordReplacement, locale: locale)
+        let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
+        let window = fixture.window(support.content, locale: locale, scheme: scheme,
+                                    size: NSSize(width: 620, height: 300))
+        auxiliary = window
+        password = support
+        support.host = window
+        support.record = { [weak self] kind, values in self?.record(kind, values) }
+        cleanup = { support.close(); SystemPageHost.release(window); fixture.cleanup() }
+    }
+
     private func openStepper() throws {
         let fixture = try SettingsButtonTestSupport(isolatedPreferences: true)
         let state = StepperProbe()
@@ -311,20 +340,22 @@ final class ControlsPlatformAcceptance {
         state.trace = StepperEventTrace()
         stepper = state
         let content = VStack {
-            Text("初值500，范围20…999，步长10；按住整数 + 约2秒，释放后等待1秒，再验证 −。")
+            Text("初值500，范围20…999，步长10。先按住增加后释放、静置2秒；重置后验证减少。只操作整数。")
             if selection == .nativeStepper {
                 Text("NSStepper · \(state.integer)")
                 ControlsNativeStepper(state: state).frame(width: 24, height: 28)
             }
             else { DaybookStepperProbeView(state: state) }
-            Button("重置到500 / Reset") {
-                guard self.stepper === state, self.state == .running || self.state == .windingDown else { return }
-                state.integer = 500
-                self.record("stepper-reset", ["value": 500])
+            ForEach([500, 990, 30], id: \.self) { initial in
+                Button("设为 / Set \(initial)") {
+                    guard self.stepper === state, self.state == .running || self.state == .windingDown else { return }
+                    state.integer = initial
+                    self.record("stepper-reset", ["value": initial])
+                }
             }
         }.padding()
         let window = fixture.window(content, locale: locale, scheme: scheme,
-                                    size: NSSize(width: 600, height: 300))
+                                    size: NSSize(width: 600, height: 360))
         auxiliary = window
         cleanup = { SystemPageHost.release(window); fixture.cleanup() }
     }
@@ -351,8 +382,21 @@ final class ControlsPlatformAcceptance {
         guard let stamp = stamp(for: event.window) else { return }
         if events.relevant(event, stamp: stamp) { recordInputSample() }
         events.observe(event, stamp: stamp, editor: editor(in: event.window))
-        if event.window === auxiliary, event.type == .leftMouseDown || event.type == .leftMouseUp {
-            stepper?.trace?.mark(event.type == .leftMouseDown ? "observed-down" : "observed-up")
+        observeStepper(event)
+    }
+
+    private func observeStepper(_ event: NSEvent) {
+        guard let window = auxiliary, event.window === window, let stepper,
+              let activeStamp, event.timestamp >= activeStamp.openedUptime else { return }
+        if event.type == .leftMouseDown,
+           ControlsStepperHit.contains(event.locationInWindow, in: window, native: opened == .nativeStepper) {
+            stepperPressed = true
+            releaseObservationAt = nil
+            stepper.trace?.mark("observed-down", eventTimestamp: event.timestamp)
+        } else if event.type == .leftMouseUp, stepperPressed {
+            stepperPressed = false
+            stepper.trace?.mark("observed-up", eventTimestamp: event.timestamp)
+            releaseObservationAt = now() + 2
         }
     }
 
@@ -367,51 +411,6 @@ final class ControlsPlatformAcceptance {
         var row = (activeStamp ?? galleryStamp)?.fields ?? [:]
         row.merge(values) { _, new in new }
         evidence.record(kind, row)
-    }
-}
-
-/// 裸 NSStepper 的 target/action 原样驱动合成 Binding；不合成持续按压或设置重复节奏。
-private struct ControlsNativeStepper: NSViewRepresentable {
-    let state: StepperProbe
-
-    func makeCoordinator() -> Coordinator { Coordinator(state: state) }
-
-    func makeNSView(context: Context) -> NSStepper {
-        let view = ControlsTrackingStepper()
-        view.trace = state.trace
-        view.minValue = 20
-        view.maxValue = 999
-        view.increment = 10
-        view.doubleValue = Double(state.integer)
-        view.target = context.coordinator
-        view.action = #selector(Coordinator.changed(_:))
-        view.setAccessibilityLabel("QA Native Stepper")
-        var delay: Float = 0
-        var interval: Float = 0
-        view.cell?.getPeriodicDelay(&delay, interval: &interval)
-        print("P_NATIVE_CONFIG continuous=\(view.isContinuous) autorepeat=\(view.autorepeat) delay=\(delay) interval=\(interval) range=20...999 step=10")
-        return view
-    }
-
-    func updateNSView(_ view: NSStepper, context: Context) { view.integerValue = state.integer }
-
-    @MainActor final class Coordinator: NSObject {
-        let state: StepperProbe
-        init(state: StepperProbe) { self.state = state }
-        @objc func changed(_ sender: NSStepper) {
-            state.trace?.mark("native-action", value: sender.doubleValue)
-            state.integerBinding.wrappedValue = sender.integerValue
-        }
-    }
-}
-
-private final class ControlsTrackingStepper: NSStepper {
-    var trace: StepperEventTrace?
-    override func mouseDown(with event: NSEvent) {
-        trace?.mark("native-mouseDown")
-        super.mouseDown(with: event)
-        // tracking 返回只是一层证据；若没有真实 mouseUp 回执，不能声称精确释放时序已取得。
-        trace?.mark("native-trackingReturned")
     }
 }
 

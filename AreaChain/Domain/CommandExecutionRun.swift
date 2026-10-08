@@ -29,16 +29,6 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     var description: String { "CommandExecutionRun(id: \(stamp.runID), units: \(units.count))" }
     var debugDescription: String { description }
 
-    func operation(_ itemID: UUID) -> CommandOperationIdentity? {
-        snapshot.items.first { $0.id == itemID }.map { .init(execution: stamp, item: $0.stamp, operationID: $0.id) }
-    }
-
-    func attempt(_ unitID: UUID) -> CommandAttemptStamp? {
-        units.first { $0.id == unitID }.map {
-            .init(execution: stamp, unitID: $0.id, number: $0.attempt, phase: $0.currentPhase)
-        }
-    }
-
     /// 返回协议尝试身份，不返回可调用的执行闭包，也不产生真实副作用。
     mutating func beginNext(expecting stamp: CommandExecutionStamp) throws -> CommandAttemptStamp {
         guard self.stamp == stamp else { throw CommandExecutionError.stale }
@@ -325,14 +315,22 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
 extension CommandExecutionRun {
     mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
         let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        if units[index].receipt == nil, let result {
-            if result == .noChange {
-                units[index].state = .succeeded
-                units[index].receipt = .init(attempt: attempt, result: result)
-            } else { try receive(.init(attempt: attempt, result: result)) }
-            if facts.conflict { units[index].state = .conflict }
-        }
+        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
         units[index].subtask = facts
+    }
+    mutating func recordRoutine(_ facts: CommandRoutineFacts, attempt: CommandAttemptStamp) throws {
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
+        units[index].routine = facts
+    }
+    private mutating func recordMutationResult(_ index: Int, result: CommandExecutionResult?,
+                                               conflict: Bool, attempt: CommandAttemptStamp) throws {
+        guard units[index].receipt == nil, let result else { return }
+        if result == .noChange {
+            units[index].state = .succeeded
+            units[index].receipt = .init(attempt: attempt, result: result)
+        } else { try receive(.init(attempt: attempt, result: result)) }
+        if conflict { units[index].state = .conflict }
     }
 
     mutating func recordTaskField(_ facts: CommandTaskFieldFacts, attempt: CommandAttemptStamp) throws {

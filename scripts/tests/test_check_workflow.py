@@ -80,6 +80,7 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " requestOperationSubmit UnifiedSearchSettingSubmission\n"
         contract_docs["docs/component-catalog.md"] += " CommandTaskCompletionImpact CommandTaskTagMutation tagCandidates assignDue UnifiedSearchTaskFieldImpact\n"
         contract_docs["docs/component-catalog.md"] += (
+            " RoutineMutationService RoutineCommandReader RoutineCommandEnvironment RoutineCommandAdapter claimRoutine CommandRoutineFacts prepareRoutine UnifiedSearchRoutineSubmission"
             " SubtaskTitleEdit CreateSubtaskParams TaskFamilyCommandIdentity SubtaskCommandEnvironment"
             " SubtaskCommandAdapter claimSubtask CommandSubtaskFacts prepareSubtask UnifiedSearchSubtaskSubmission\n"
         )
@@ -749,6 +750,28 @@ class WorkflowCheckTests(unittest.TestCase):
             ("Services/TaskFieldCommandTagCandidates", "tagCandidates"),
             ("Services/TaskMutationService+Fields", "assignDue"),
             ("Features/Search/UnifiedSearchTaskFieldImpact", "UnifiedSearchTaskFieldImpact"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_rm1_shared_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Services/RoutineMutationService", "RoutineMutationService"),
+            ("Services/RoutineCommandReader", "RoutineCommandReader"),
+            ("Services/RoutineCommandEnvironment", "RoutineCommandEnvironment"),
+            ("Services/RoutineCommandAdapter", "RoutineCommandAdapter"),
+            ("Domain/CommandRoutineExecution", "claimRoutine"),
+            ("Domain/CommandRoutineFacts", "CommandRoutineFacts"),
+            ("Features/Search/UnifiedSearchRoutineEditing", "prepareRoutine"),
+            ("Features/Search/UnifiedSearchRoutineSubmission", "UnifiedSearchRoutineSubmission"),
         )
         for path, symbol in entries:
             with self.subTest(symbol=symbol):

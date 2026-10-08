@@ -36,6 +36,7 @@ struct DaybookStepperKeyboard: NSViewRepresentable {
     }
 
     static func dismantleNSView(_ view: DaybookStepperKeyView, coordinator: ()) {
+        view.invalidateFocusPublication()
         view.attachment?.setAttached(false)
         view.attachment = nil
         view.adjust = { _ in }
@@ -67,18 +68,23 @@ final class DaybookStepperKeyView: NSStepper {
     var adjust: (Bool) -> Void = { _ in }
     var lastDirection: () -> Bool = { true }
     var focusChanged: (Bool) -> Void = { _ in }
+    private var focusRevision = 0
 
     override func draw(_ dirtyRect: NSRect) {}
     override func hitTest(_ point: NSPoint) -> NSView? { nil }
 
     override func viewWillMove(toWindow newWindow: NSWindow?) {
-        if newWindow == nil { attachment?.setAttached(false) }
+        if newWindow == nil {
+            attachment?.setAttached(false)
+            publishFocus()
+        }
         super.viewWillMove(toWindow: newWindow)
     }
 
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         attachment?.setAttached(window != nil)
+        publishFocus()
     }
 
     override func keyDown(with event: NSEvent) {
@@ -92,14 +98,30 @@ final class DaybookStepperKeyView: NSStepper {
 
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
-        if accepted { focusChanged(true) }
+        if accepted { publishFocus() }
         return accepted
     }
 
     override func resignFirstResponder() -> Bool {
         let accepted = super.resignFirstResponder()
-        if accepted { focusChanged(false) }
+        if accepted { publishFocus() }
         return accepted
+    }
+
+    func invalidateFocusPublication() {
+        focusRevision &+= 1
+    }
+
+    private func publishFocus() {
+        // SwiftUI 传播 disabled 环境时 AppKit 会同步失焦；描边反馈不能在视图更新中写 State。
+        // 事件与拆卸防线仍同步执行，只延后呈现，并丢弃旧焦点/旧生命周期的排队通知。
+        focusRevision &+= 1
+        let revision = focusRevision
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.focusRevision == revision else { return }
+            self.focusChanged(self.isEnabled && self.attachment?.isAttached == true
+                && self.window?.firstResponder === self)
+        }
     }
 
     @objc func step() {

@@ -28,6 +28,8 @@ struct TodoBasicsSectionView: View {
 
 struct TodoScheduleSectionView: View {
     var todo: TodoItem
+    // 只替换截止的最终保存；事务、反馈与其他排期入口仍沿原路径。
+    var saveDue: @MainActor (ModelContext) throws -> Void = { try $0.save() }
 
     var body: some View {
         DrawerSectionGroup(title: "drawer.section.schedule") {
@@ -44,7 +46,7 @@ struct TodoScheduleSectionView: View {
             }
 
             TaskDetailDueTime(dueMinutes: todo.dueMinutes) { minutes in
-                DayBoardMutations.setDue(todo, minutes: minutes)
+                DayBoardMutations.setDue(todo, minutes: minutes, save: saveDue)
             }
 
             TaskDetailDateChips(dayKey: todo.dayKey) { newDay in

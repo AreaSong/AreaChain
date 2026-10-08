@@ -91,23 +91,13 @@ extension DayBoardMutations {
     }
 
     @discardableResult
-    static func editRoutineWithSyntax(_ routine: DailyRoutine, rawInput: String) -> Bool {
-        let text = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return false }
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let repo = routineRepo(for: routine.modelContext)
-        let saved = ModelChanges.perform(in: routine.modelContext ?? Persistence.session.container.mainContext) {
-            try repo.updateRoutine(id: routine.id, title: parsed.cleanTitle, notes: parsed.notes.isEmpty ? nil : parsed.notes)
-            if parsed.hasPriorityToken {
-                try repo.setPriority(id: routine.id, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent)
-            }
-            if let minutes = parsed.remindMinutes { try repo.setRemind(id: routine.id, minutes: minutes) }
-            let context = routine.modelContext ?? Persistence.session.container.mainContext
-            let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
-            try repo.replaceTagIDs(id: routine.id, tagIDs: merged)
-        }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
+    static func editRoutineWithSyntax(_ routine: DailyRoutine, rawInput: String,
+                                      dependencies: RoutineMutationService.Dependencies? = nil) -> Bool {
+        guard !rawInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        let context = routine.modelContext ?? Persistence.session.container.mainContext
+        let resolved = dependencies ?? .init(repository: { routineRepo(for: $0) }, transaction: .init(),
+            registerLocalModification: { _ in }, requestReminderAccessIfNeeded: { requestReminderAccessIfNeeded($0) })
+        return RoutineMutationService.editTitle(routine, rawInput: rawInput, in: context, dependencies: resolved).callSucceeded
     }
 
     static func saveNotes(_ notes: String, for todo: TodoItem) -> Bool {

@@ -12,6 +12,8 @@ struct UnifiedSearchSettingSubmission: View {
                 EmptyView()
             } else if controller.showsSubtask {
                 UnifiedSearchSubtaskSubmission(controller: controller)
+            } else if controller.showsRoutine {
+                UnifiedSearchRoutineSubmission(controller: controller)
             } else if controller.showsTaskField {
                 UnifiedSearchTaskFieldSubmission(controller: controller)
             } else if controller.showsTaskTitle {

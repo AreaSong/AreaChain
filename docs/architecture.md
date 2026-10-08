@@ -534,3 +534,7 @@ FieldAdapter 的 milestone2 能力在原单项执行协议内增加完成、标�
 SubtaskTitleEdit / SubtaskFields 只承载旧子任务标签解析与字段赋值；结构化仓储新增接受固定 ID，排序仍取实际活兄弟项末尾，创建时间/初始完成态沿原模型。普通新增和标题不解释父任务的优先级或时间语法，纯标签标题沿 TagSyntax 保留原文。TaskFamilyCommandIdentity 为完成影响与子任务命令共用完整身份、真实父关系及平铺一致性核验，不替代安全查询发布。
 
 SubtaskCommandEnvironment 分开父普通无备注、子项和本次输入的证明，不读父 notes 推导资格。接受绑定原 lease/plan/item/draft、父子实际记录、相关字段、目录/来源修订及创建排序事实；占用仍归原 Coordinator。子项与所需标签共用原 ModelChanges，保存后先登记子任务事实再发布；unknown 保留原身份、不重放。CommandSubtaskFacts.createdObject 是 .subtask 保存事实，不扩展 Run.outputs 或原 todo create→title 资格。Controller 只在显式装配时开放四条原生链；参数、标签暂存和计划仍写同一草稿。接口、隔离结果和治理缺口统一见[权威 T-M3](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。
+
+### 习惯定义修改隔离边界（R-M1）
+
+RoutineCommandEnvironment/Reader/Adapter 使用独立类型化目标、来源、影响和事实，仅显式装配单普通无备注活定义。完整 UUID 查询含停用与墓碑；`.routineOccurrence` 不代替定义。RoutineMutationService 复用原习惯仓储及原标题解析，旧 UI 同值保存保持；旧标题 Bool 读取同步调用正常返回的 callSucceeded，命令 saved 仍只由 afterCommit 完成；星期同时比较原始 weekdayMask/weekdaysOnly，空草稿不转为每天。标题/标签实体共同事务，所有五字段均不调用启停桥接、不改 RoutineCheck、暂停状态或创建信息。准备/接受零写入，原 Coordinator 占用与 Run.routine 登记分开保存、发布及 fake 系统结果，unknown 不自动重放。原生对象来源继续沿 RoutineContentQueryReader 与安全发布链，生产未装配。支持范围与实际证据见[权威 R-M1](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)。

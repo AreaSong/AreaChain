@@ -57,6 +57,15 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/RoutineMutationService.swift", "RoutineMutationService"),
+    ("AreaChain/Services/RoutineCommandReader.swift", "RoutineCommandReader"),
+    ("AreaChain/Services/RoutineCommandEnvironment.swift", "RoutineCommandEnvironment"),
+    ("AreaChain/Services/RoutineCommandAdapter.swift", "RoutineCommandAdapter"),
+    ("AreaChain/Domain/CommandRoutineExecution.swift", "claimRoutine"),
+    ("AreaChain/Domain/CommandRoutineFacts.swift", "CommandRoutineFacts"),
+    ("AreaChain/Features/Search/UnifiedSearchRoutineEditing.swift", "prepareRoutine"),
+    ("AreaChain/Features/Search/UnifiedSearchRoutineSubmission.swift", "UnifiedSearchRoutineSubmission"),
+
     ("AreaChain/Domain/SubtaskTitleEdit.swift", "SubtaskTitleEdit"),
     ("AreaChain/Domain/SubtaskTitleEdit.swift", "CreateSubtaskParams"),
     ("AreaChain/Services/TaskFamilyCommandIdentity.swift", "TaskFamilyCommandIdentity"),

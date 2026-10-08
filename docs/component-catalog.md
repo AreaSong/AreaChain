@@ -10,6 +10,9 @@ P生命周期完善继续由同一会话独占Gallery/子窗口、观察者和�
 
 P输入补证只扩展原工具条：普通搜索选择workspace/menu/tags/diary，剪贴板子窗切换mixed/exact/regex，中段初值沿原测试的“头🧪尾”。`SearchMultilineFixture.observedField/inputEvidence`按本场景语言定位原字段，只读Coordinator的原Binding、原生编辑值及合成结果；100ms原生命周期tick和白名单事件边界记录去重标量状态，不记录任意正文/哈希。`ControlsPlatformInputTests`核对短操作、观测不改输入/选区/撤销/焦点、模式与重开清理；Record按钮会改变焦点，连续输入不点击。实际人工结论继续只在原O/P记录，入口存在不表示步骤通过。
 
+K/L 剩余平台验收继续复用同一入口。测试专用 [ControlsPlatformPassword](../AreaChainTests/Theme/ControlsPlatformPassword.swift) 组合原 PasswordSheetProbe / PrivacyButtonSheetHost / PrivacyPasswordSheet，仅控制合成 action 的30秒失败、12秒重试观察及必要长度/布尔取样；两条人工路径分别为逐字输入和用户自愿同值粘贴，不观察生产私有State。裸 [ControlsNativeStepper](../AreaChainTests/Theme/ControlsPlatformStepper.swift) 从原支持文件移出以保持500行边界，系统重复配置不变；原trace保留事件时间和方向，只有实际收到匹配释放才安排2秒观察。端点准备500/990/30只写合成初值，不计action。对应短回归在 [ControlsPlatformPasswordTests](../AreaChainTests/Theme/ControlsPlatformPasswordTests.swift)、原生命周期与Stepper观测测试；实际人工结果仅见[原O/P续记](engineering.md#剩余平台验收kl与关键可访问性2026-10-08)。
+
+
 第九阶段四类发现及第十阶段四象限、Dashboard 后补入口均已有真实生产接入；总扫描未发现新增确定漏接。权威入口、消费者与合理差异沿本目录各原条目维护。当前源码身份、最终回归清单/计数和保留边界统一见[第十阶段 O 总交接](engineering.md#第十阶段-o控件收口最终整合验收与总交接)：原 O 的2方法/3次历史失败封存保留；O 补验将其定位为测试宿主重排与卡内命令焦点契约问题，仅校正测试，103方法/264次复验通过，按源码影响和实际方法去重后315方法/770次所选自动回归通过。人工、平台、指定复核及H/K/L仍单列，整体 partial，不能将自动回归通过写成全部运行验收完成。原分阶段“下一处/留待后续”是历史范围说明，以本入口及 O 的当前证据为准。
 
 ## 第十阶段 I 修复二：剪贴板搜索保真输入
@@ -466,6 +469,8 @@ F 补修在 `TagManagementPage.body` 的合并 sheet 边界显式传递宿主 `l
 
 展示直接扩展 `DaybookControlsPreview`；验证入口为 [DaybookStepperTests.swift](../AreaChainTests/Theme/DaybookStepperTests.swift)、[原生基线](../AreaChainTests/Theme/DaybookStepperBaselineTests.swift)、[交互测试](../AreaChainTests/Theme/DaybookStepperInteractionTests.swift) 与 [ClipboardStepperConsumerTests.swift](../AreaChainTests/Features/ClipboardStepperConsumerTests.swift)。消费者复用 ClipboardOptionsFixture 的随机目录、suite、nil pasteboard 和无副作用 gate，预写合成历史；不调用 shared/start/stage。实际证据和未验项见[工程手册](engineering.md#第三阶段-f公共数值加减与剪贴板2026-10-01)。现存日期 `.stepperField` 及任务完成等控件不迁移。
 
+Stepper 焦点反馈补证（2026-10-08）：桥接只延后按钮描边的 focusChanged，事件/禁用/拆离防线仍同步；通知按当前原生焦点及接入状态发布，代次丢弃旧通知，dismantle 取消并清空回调。[DaybookStepperFocusTests](../AreaChainTests/Theme/DaybookStepperFocusTests.swift) 补持焦禁用、重挂/迟到反馈与多实例，原交互及剪贴板消费者继续回归。根因、Runtime Warning 和最终证据仅维护在[原 O/P 续记](engineering.md#第十阶段剩余运行问题stepper-警告与-h-截止注入核对2026-10-08)，不新增数值或保存 API。
+
 ### 第四阶段 A：公共下拉选择器与剪贴板
 
 [DaybookPicker.swift](../AreaChain/Theme/DaybookPicker.swift) 提供 `DaybookPicker<Value: Hashable>`：本地化 title、唯一 `Binding<Value>` 和 `[DaybookPickerOption<Value>]`。选项 value 同时为稳定 id，必须唯一；label 为独立 `String.LocalizationValue`，按环境 locale 解析。顺序由调用方提供，不从翻译或位置推导业务值，不提供搜索、多选、分组或注册表。
@@ -680,6 +685,13 @@ F 定向静态清单：
 隔离测试复用 TimePickerConsumerTestSupport、原仓储与 ModelChanges 失败注入；新增 [详情测试](../AreaChainTests/Features/DetailTimePickerTests.swift)、[定位支持](../AreaChainTests/Features/DetailTimePickerTestSupport.swift)、[详情生命周期](../AreaChainTests/Features/DetailTimePickerLifecycleTests.swift)、[新建时间测试](../AreaChainTests/Features/RecurringEditorTimeTests.swift)。同名按钮按所属标题区域唯一定位，不手动重建宿主证明回滚。实际证据见[工程记录](engineering.md#第五阶段-b详情提醒与截止时间2026-10-02)。验证入口/公共 API 不变，不增加检查器或展示应用。
 
 四处纯时间输入已静态收齐：任务行、重复事项管理、详情提醒（含新建表单）、详情截止；NSDatePicker 仅保留在公共原生承载。日期阶段仍有 DaySchedulePicker 及任务行、详情日期、DiaryNoteCard、DiarySummaryRow 的调用，星期和日历布局不在本阶段。
+
+### 第十阶段 H：真实截止详情的局部保存依赖
+
+- [TodoScheduleSectionView](../AreaChain/Features/Workspace/TaskDetailSections.swift) 的 `saveDue: @MainActor (ModelContext) throws -> Void` 只替换截止最终保存，默认惰性调用传入 context 的 `save()`；真实 TaskDetailDueTime 的原 Void 回调显式传给 setDue。没有新状态、控件、环境开关或失败刷新。
+- [DayBoardMutations.setDue](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift) 保留原双参签名及函数引用，新增必须显式提供 save 的重载；[persist](../AreaChain/Features/Tasks/DayBoardMutations.swift) 同样保留旧入口，仅兼容透传到原 ModelChanges.perform(in:save:_:)。todo.modelContext / 原空 context 回退、assignDue 的 nil/0/越界规则、Bool、预保存及同 context 外层事务继承不变；不暴露 preSave/publish/reportFailure。
+- [DetailDueSaveTests](../AreaChainTests/Features/DetailDueSaveTests.swift) 与非 Observable 的 [局部记录器](../AreaChainTests/Features/DetailDueSaveProbe.swift) 直接挂生产详情，用原进程内 AXPress 和窗口 NSEvent 分别验收；没有以外层事务包事件。保存依赖在已赋值后合成抛错，恢复和精确计数先在同步事件返回处检查，自然回显与同宿主重试另行检查。生产 Void 回调的只读展开诊断及 setDue Bool 检查独立记录。
+- 旧 H 的普通提醒、外层 AX、外层原生点击及返回/阶段诊断保持分层；结果、失败层级和指定 Cursor verifier 缺口只维护在[原 H 记录](engineering.md#h-真实截止详情链的最小保存依赖与失败恢复验收2026-10-08)。本接点不改变提醒、日期、通知、日历或命令适配器；不新增脚本门禁，沿原 XCTest 选择入口。
 
 ## 第六阶段 A：公共日期选择器与排期弹窗
 
@@ -912,3 +924,11 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [TaskMutationService.mutateSubtask](../AreaChain/Services/TaskMutationService+Subtasks.swift) 将子项及标签创建/恢复/关联交给同一 ModelChanges 事务。未知提交保留原身份，noChange 零保存/发布。集合复用 CommandTaskTagMutation，标题/新增复用 D3 Lookup/Plan，不拼接参数重跑解析。
 - [prepareSubtask](../AreaChain/Features/Search/UnifiedSearchSubtaskEditing.swift) 与 [UnifiedSearchSubtaskSubmission](../AreaChain/Features/Search/UnifiedSearchSubtaskSubmission.swift) 接原 Controller、对象/参数/标签选择、Plan 与 Run；效果复用 TagSummary/TagEffects/ExternalFeedback。默认 nil 装配关闭，原预览宿主的多选行为保持。
 - 实际消费者是旧仓储/DayBoardMutations 与显式隔离 SubtaskCommand / UnifiedSearchSubtask 测试；唯一范围、证据及缺口见[权威 T-M3](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。
+
+## R-M1 习惯定义五字段
+
+- [RoutineMutationService](../AreaChain/Services/RoutineMutationService.swift) 将原标题与命令交给原习惯仓储及 ModelChanges；复用原 TaskTitleEdit 解析投影、TagIDList 和 InputTagResolver，旧 UI 保持同值保存/备注/提醒语义。 旧标题 Bool 读取同步调用事实 `callSucceeded`，命令仍只按提交事实读取 saved；兼容契约、真实消费者和失败证据见[本次修复](unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)。
+- [RoutineCommandReader](../AreaChain/Services/RoutineCommandReader.swift) 完整核对活/停用/墓碑/重复身份、同 context 及独立普通来源；[CommandRoutinePreview](../AreaChain/Domain/CommandRoutine.swift) 保留实际字段、原始星期兼容值和 D3 目录，不读取打卡来写回历史。
+- [RoutineCommandAdapter](../AreaChain/Services/RoutineCommandAdapter.swift)、[RoutineCommandEnvironment](../AreaChain/Services/RoutineCommandEnvironment.swift)、[claimRoutine](../AreaChain/Domain/CommandRoutineExecution.swift) 与 [CommandRoutineFacts](../AreaChain/Domain/CommandRoutineFacts.swift) 只显式接隔离单项，复用原 Coordinator/Plan/Run 占用及事实协议。
+- [prepareRoutine](../AreaChain/Features/Search/UnifiedSearchRoutineEditing.swift) 和 [UnifiedSearchRoutineSubmission](../AreaChain/Features/Search/UnifiedSearchRoutineSubmission.swift) 接原对象/参数/星期/时间/标签、计划及反馈；[UnifiedSearchRoutineImpact](../AreaChain/Features/Search/UnifiedSearchRoutineImpact.swift) 消费真实影响，复用标签与外部反馈展示。默认未装配保留旧选择能力。
+- 实际消费者为旧习惯标题 UI 与显式隔离 RoutineCommand/UnifiedSearchRoutine 测试；范围和验收证据只维护在[权威 R-M1](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)。

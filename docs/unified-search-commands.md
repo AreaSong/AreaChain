@@ -6296,24 +6296,142 @@ create→title 仍须另行授权与接线：原 Coordinator 单项运行/调用
 - FinalCompile：语言资源保持初始已有字节、只追加40个双语键后，完整正常 PrivacyQA 最终编译及控制器/旧持久化7方法/15次执行全部通过，零失败/跳过/预期失败，requested/source/after 一致。
 
 
-#### A～E 实际状态与剩余验收
+#### A～E 最终状态（T-M3-R）
 
 | 项目 | 本地实际状态 |
 |---|---|
 | A 契约与共享入口 | 已实现，服务及旧业务入口等价/回滚验证通过；指定 Cursor verifier 未执行。 |
 | B 四命令真实隔离执行 | 已实现并验证；父子身份、共同事务、固定创建、防重、noChange、unknown、来源/D3/过期拒绝均有证据。 |
-| C 原生接线 | 已实现，控制器链路与完整编译通过；实际原生键鼠、焦点和布局验收受桌面阻塞，未通过。 |
-| D 回归 | 服务、控制器、设置组、T-M1/T-M2/两步及旧子任务持久化已验证；本批新增原生及相关旧 UI 回归待恢复桌面。 |
-| E 源码/文档/门禁 | 49个本批文件、权威文档/组件/路由/架构和检查器反例已收口；最终完整隔离编译、42个Swift文件严格lint、workflow、111项检查器/231项脚本回归及严格static质量门禁通过。正常签名与指定复核缺口仍独立保留。 |
+| C 原生接线 | 已实现并验证。两套完整新原生测试10方法/21次通过；四条链、父子目标、标签效果、明确接受、点击/⌘Return、失效/留稿和代表布局闭环完成。 |
+| D 回归 | 服务/控制器证据保持有效；六条旧搜索链6方法/13次通过。三个旧子任务UI套件18方法：16通过、2项历史预期问题，零新增失败/跳过；历史问题不冒充已修复。 |
+| E 源码/文档/门禁 | 初次49个实现文件保留；T-M3-R修改6个文件（两视图、资源、两测试和本节）。最终完整PrivacyQA编译、必要严格lint、workflow、差异与严格static门禁通过；源码及证据见下方R记录。正常签名/指定复核仍缺失。 |
 
 每次真实改变只保存和私有发布一次；准备/接受零写，noChange 零保存/发布。服务直接断言父子关系、排序、创建时间、标题、完成态、标签有序身份/实体数量、共同回滚及原运行事实。新建/恢复与子任务共同提交，save 返回前后抛错均保留 unknown 和原固定身份；登记或发布/fake失败不否认本地保存。普通候选不自动获得写资格，父证明不能代替子项与输入证明。旧 UI 同值保存、标签合并及完成撤销责任保持，命令未调用 CompletionUndo.shared。
 
-**原生证据缺口。** 本轮仅 NativeCore 尝试，全部停在 loginwindow 焦点前置，没有有效业务交互截图可供查看。控制器程序化调用不是合成原生键鼠，更不是真人输入法/VoiceOver。结果返回后已停止焦点测试并请求恢复桌面，未反复重跑或放宽断言；因此本批尚不能宣称四条完整原生链或代表布局通过。
+**原生证据状态。** 首次 NativeCore 的10次 loginwindow 前置失败保留为环境记录，不计产品回归或通过。T-M3-R恢复桌面后两套完整测试均通过，必要呈现修正后又完整复验；本批必需原生项已补齐。缓存图、几何、合成原生键鼠和程序化marked text分别取证，不等同真人输入法/VoiceOver。
 
-恢复桌面后仅补本批有限清单：UnifiedSearchSubtaskInteractionTests 四方法（10次参数化场景）及 UnifiedSearchSubtaskBoundaryTests 六方法；涵盖四命令、父/子选择、点击/⌘Return、候选与接受过期、冲突留稿、marked text、失焦/锁定、unknown/发布失败及444/304pt中英文浅深色代表。旧 UI 取对象父参数、原新增/扩展新增/标题的代表链路、T-M2标签/完成，以及 InlineSubtaskCompletionTests、DetailSubtaskCompletionTests、SubtaskTitleEditingTests 中实际受影响入口；不能重新依据 T-M1/T-M2 历史待验清单全量重跑。运行后核对模型与计数，按本次时间戳筛选并实际查看缓存截图，区分原生缓存绘制与系统/人工证据。
+T-M3-R已完成本批有限清单：两套新原生、旧对象父参数、原新增/扩展新增/标题、T-M2标签/完成，以及 InlineSubtaskCompletionTests、DetailSubtaskCompletionTests、SubtaskTitleEditingTests。新面板覆盖444/304pt中英文浅深色代表，旧宿主保留自身原尺寸。没有重新执行T-M1/T-M2历史全部矩阵；真实结果、截图和旧详情两项已知问题见下方。
 
-**最终源码与边界。** build/TM3/changed-files.json 列出49个文件；初始暂存、未暂存及无关平台测试改动均保留。final-source-audit.json 包含1254个源码/测试/资源/工程/scripts/Config与lint配置摘要，整体 SHA256 为 `090f71df24d25744c6713320ce7ae387076c57b585626131c4e860aff0a479d5`，与 FinalCompile 执行后完全一致。个人签名配置只取摘要、未修改；语言资源与任务初始字节基线精确核对后仅追加本批键，避免无关格式重写。最终文档后再次检查workflow、严格static与暂存/未暂存差异。
+**初次交接源码与边界。** build/TM3/changed-files.json 列出原49个文件；初次final-source-audit.json的1254文件摘要为 `090f71df24d25744c6713320ce7ae387076c57b585626131c4e860aff0a479d5`，对应原FinalCompile。本段保留为T-M3-R基线，不替代下方续验后的最终源码；个人签名配置和原暂存/并行修改均未改动。
 
-**本批状态为 partial。** 可独立推进的实现、服务/控制器/旧业务、最终编译与静态收口已完成；实际原生验收仍需恢复可交互桌面。正常开发描述文件已过期，本轮资源未变化，沿原已确认阻塞，不重复失败构建、不续签、不申请Apple资源；QA成功不代表正常签名或生产验收。指定 Cursor verifier 无可调用入口，两个只读定位助手仅提供查询/测试复用线索，不替代复核。C2B、真人输入法/VoiceOver、最低系统、真实多窗口等历史缺口保持。
+**T-M3本地实现与隔离原生闭环完成；完整签名／治理交付仍为partial。** 正常开发描述文件已过期，本轮配置未变化，未重复必然失败的正常构建、续签或申请Apple资源；QA不能替代正常签名。指定Cursor verifier无可调用入口，未重复登录或以普通代理替代。C2B、真人输入法/VoiceOver、最低系统、真实多窗口及旧详情两项历史问题独立保留。
 
-排序、删除、批量、父任务迁移、独立撤销、习惯、notes/敏感输入、子任务输出依赖及任意多步均未开放。下一阶段先补齐本批原生与必要旧UI证据，正常签名和指定复核按各自真实前置恢复；生产接线需另行明确范围。本轮未访问真实用户库/系统服务，未提交、推送、安装或发布。
+排序、删除、批量、父任务迁移、独立撤销、习惯、notes/敏感输入、子任务输出依赖及任意多步均未开放。本批原生不再是下一阶段的待补前置；正常签名和指定复核须按各自真实条件恢复，生产或新能力接线仍需另行明确范围。本轮未访问真实用户库/系统服务，未提交、推送、安装或发布。
+
+
+#### T-M3-R 原生续验与呈现修正（2026-10-08）
+
+用户授权连续完成剩余原生、旧UI回归与必要修复。开始时工作区干净，1254个源码/资源/配置文件与上轮 final-source-audit.json 完全一致；规则和验收入口未变。R-desktop.json 为 console/loginDone=true、locked=false、screens=1。沿原完整 PrivacyQA、原锁单次900秒、六项授权清除、合成内存数据及串行原生执行，未重复正常签名或指定复核认证检查。
+
+| 批次 | 实际结果与源码关系 |
+|---|---|
+| RNative | 两套新原生测试完整运行，10方法/21次执行全部通过，零失败/跳过/预期失败；源码前后一致。筛出37张本轮新缓存图并已逐一查看。 |
+| RNativeFinal | 两处呈现修正后，两套完整复验仍为10方法/21次全部通过，零失败/跳过/预期失败。39张新图已逐一查看。运行中仅新增独立 DaybookStepperFocusTests.swift，未被本批调用；本批产品/夹具无变化，最后完整编译另由后续批次覆盖。 |
+| RLegacySearch | 精确筛选的六条旧搜索原生链全部匹配：6方法/13次通过，零失败/跳过/预期失败。25张本轮新图已查看。运行期间仅独立步进器测试变化，本批调用链未变。 |
+| RLegacySubtasks | 三套旧UI完整运行：18方法中16通过、2项原有预期问题；27次执行中25通过、2项预期问题，零新增失败/跳过。13张新图已查看。运行期间仅独立步进器测试变化。 |
+| RFinalCompile | 对最后源码执行完整正常PrivacyQA build-for-testing；build-results明确succeeded、0错误、5项既有警告。1255文件的requested/source/after完全一致，包含并行新增测试，不排除源码。此项只计编译，不计新增测试执行。 |
+
+**截图发现与必要修正。** 完成预览此前只显示父名称和状态，缺少子任务目标标题；现在直接显示已核实 original.title，父项继续仅表达所属关系。状态复用 checkbox.open/done，中文明确为未完成/已完成。标签保存此前只列创建/恢复/关联动作数，clear/remove 的结果不够明确；现在直接显示真实 savedTagIDs.count。仅修改 SubtaskImpact/Submission、两个双语键及两份本批原生测试；不改服务、事务、身份、草稿/Run或共享状态，不机械重跑原188次服务矩阵。测试补核对子项所有未变字段、兄弟快照、父/子实体数、新增时间，以及新文案的原生语义和几何。
+
+**截图与证据边界。** RNative-screenshots 和 RNativeFinal-screenshots 分别保存原图、时间戳、SHA256、尺寸与联系图；后一批为最终呈现证据。已实际查看全部37张及39张，后者覆盖标准444pt/紧凑304pt、中英文浅深色代表，子任务目标/父关系、标签新建恢复、实际关联数、接受/保存可达、冲突、unknown及本地保存/发布失败分离。部分内容需要原滚动区域滚动，不以当前视口只显示部分内容判断整份内容丢失。图像是 NSView.cacheDisplay，键鼠为合成原生事件，marked text 为程序化组合输入；均不等同真人输入法、VoiceOver或系统合成器截图。
+
+**旧入口与最终覆盖。** 六条旧搜索链分别为对象父参数Return/Escape、普通todo新增、扩展todo新增、todo标题、T-M2完成/重开和四种标签集合操作，均在结果树按完整方法标识核对。三个旧子任务套件完整覆盖行内/详情完成、正确目标及父/兄弟不变、相邻编辑焦点、保存失败/留稿、Return重试、Escape取消和外部标题更新。DetailSubtaskCompletionTests保留原 failedTransactionNaturalRefreshCharacterization 与 completionKeepsTagsDragRegionAndAdjacentActions 两项 Expected Failure：模型回滚后显示不自动刷新、标题覆盖层下合成标签鼠标点击未移除；辅助激活及后续实际动作恢复另有通过证据。沿工程手册第三阶段H的既有范围保留，不计为本批新增回归，也不写成已修复。
+
+最终有效原生覆盖去重为34方法（32通过、2项历史预期问题）/61次执行（59通过、2项历史预期问题），零新增失败、零跳过；不累加首次RNative的重复21次。最终呈现39张、旧搜索25张、旧子任务13张，共77张本轮有效时段新图均已实际查看。旧标题编辑套件主要提供原生事件/模型证据，未产生成功态截图，不拿旧图补作本轮截图。回滚图仍显示历史1/2残留，明确属于已知问题证据。
+
+**四类命令的最终事实。** 新增由parent参数选todo，实际新增子项及必要标签一次保存，输出真正.subtask身份，父字段不变；新增身份/数量、父关系、末尾顺序及创建时间均直接断言。标题只做标签语法，!/@仍在标题，原关联与新建/恢复效果正确；完成/重开只改子项；标签四模式从真实原关联出发且确认后才更新唯一草稿。各改变链save=1/私有发布=1，fake通知/日历各处理1次，没有提醒授权请求；prepare/accept零写，noChange零保存/发布，重复事件/快捷键不增加次数。父/子切换、关系/脏编辑/旧候选、取消、marked text、失焦/锁定均保留原输入并按原门禁拒绝旧接受；unknown保持原身份/Run，本地保存后发布失败不重新创建。
+
+**最终修改与源码。** R-modified-files.json仅列本轮6个文件；R-final-source-audit.json的1255文件摘要为 `20888895120db67602c37d399503307cb6db2a4296ead480221b232488f2a461`，与RFinalCompile执行后完全一致。Domain、Services、配置和原执行契约与续验初始摘要无变化，因此没有重跑未受影响的188次服务矩阵。并行DaybookStepperKeyboard/DaybookStepperFocusTests及组件目录、路由、工程文档改动保留；这两份Swift不在本批调用链，最终完整编译已包含，不宣称验证了该并行任务。原索引状态保留，未提交或推送。
+
+最终文档后运行原workflow、4个本批Swift文件严格SwiftLint、暂存/未暂存差异和严格static质量门禁（含231项脚本回归）；本轮未修改检查脚本。源文件集合、资源与配置再与最终编译摘要核对，包括新增和删除。正常签名到期、Cursor verifier、C2B、真人输入法/VoiceOver、最低系统、真实多窗口及上述历史已知问题独立保留；没有安装、发布、续签、权限改变或生产启用。
+
+### 9.76 里程碑 R-M1：习惯定义五字段的隔离闭环
+
+2026-10-08（Asia/Shanghai）。承接 T-M1～T-M3 的本地隔离闭环；本节是 R-M1 唯一交接来源。用户授权 A～E 连续实施，生产和敏感执行不接入。当前实现与验收进行中，以下契约不表示运行验收已经完成。
+
+#### 支持范围与复用
+
+| 命令 | 真实业务效果 | 保持边界 |
+|---|---|---|
+| routine.title /routines/title | 共用 TaskTitleEdit 对原 NaturalLanguageParser.parseTaskCapture 的投影，原习惯仓储写标题、出现语法时的优先级/提醒、有序合并标签；创建/恢复与字段共同提交。 | 仅普通无备注定义及单行无备注输入；保留原文拒绝换行、备注分隔/派生备注。无语法保留旧属性，移除标签拼写不解绑，不写任务日期/截止或星期。 |
+| routine.weekdays /routines/weekdays | 严格非零合法位，原 setWeekdayMask 同时维护 weekdayMask/weekdaysOnly；预览比较原始存储字段与有效安排。 | 草稿空选择不 sanitized 成每天；nil 兼容值即使有效安排相同仍需规范化保存。不修复历史排程，不改 RoutineCheck。 |
+| routine.reminder /routines/reminder | 明确 setReminder 有效分钟或 cancelReminder；原仓储 setRemind。 | 未指定/非法不等同取消，不写截止或执行日期。 |
+| routine.priority /routines/priority | 原 PriorityToken 映射及 setPriority。 | 只改 isImportant/isUrgent。 |
+| routine.tags /routines/tags | add/remove/replaceAll/clear 从真实关联计算，复用 CommandTaskTagMutation、D3 Lookup/Plan 与 InputTagResolver.apply。 | clear 不删除实体，未知/保护/歧义/重复身份/缺覆盖拒绝；未触及墓碑不恢复，不解析旧正文。 |
+
+旧 DayBoardMutations.editRoutineWithSyntax 委托 RoutineMutationService.editTitle，保留 Bool、同值保存、非空派生备注、标签合并和提醒请求语义；其他旧字段入口仍直连同一习惯仓储。新 fetchRoutines(withID:) 完整枚举同 UUID 的活/停用/墓碑/重复行；routineMutationContext 证明命令仓储属于注入上下文。目标严格为 `.routine`，同 UUID 的 todo/subtask/日期实例不能替代。
+
+#### 资格、接受与事实
+
+RoutineCommandEnvironment 仅显式装配内存 context、私有事件和 fake 通知/日历/授权消费者，目标普通无备注与本次输入各自有来源修订；不读取 notes 猜资格。准备/接受不保存，context 脏或嵌套立即拒绝。CommandRoutinePreview 绑定原 lease/plan/item/draft、原参数、目标类型/UUID/记录身份、实际原值/最终值、完整目录和来源修订及语义版本。
+
+原 Coordinator 的 routines registry 与 hasInvocation 纳入准备/执行占用；最后事务前再核验，没有重建 Host/Run 或自动重新接受。CommandRoutineFacts/Run.routine 区分保存、登记、发布、授权请求、通知/日历请求与 fake 处理结果；无创建输出。noChange 零保存/发布；unknown 保留原目标/新标签身份，只读当前存在性不证明历史成功，也不授予重放。已保存后发布失败仍记录 saved。
+
+#### 固定有限验收与当前记录
+
+本批固定服务清单：五字段启用/停用定义、标题附带效果、星期空/非法/旧兼容、提醒取消/优先级/标签四模式；所有操作的其他字段与全部 RoutineCheck 身份/状态/关系/数量；身份、来源/目录/脏编辑、共同回滚、noChange/unknown/发布失败、重入/重复/多实例，以及旧习惯 UI 与现有单项任务/子任务/设置/两步入口。
+
+原生清单：五命令完整补全→稳定对象选择→参数→影响→接受→提交→真实隔离字段/反馈；标题新建/恢复、星期空选阻止、提醒设/取消、标签四模式、点击/⌘Return、目标切换/留稿/noChange/防重、程序化 marked text、失焦/锁定、中英浅深444/304pt代表。模型断言与截图分别取证；缓存绘制/合成原生键鼠不冒充真人输入法或系统截图。
+
+证据保存在忽略目录 `build/RM1`，复用 `build/TM1/run.py` 原锁与完整正常 PrivacyQA 参数，仅替换证据目录。每批保留 requested/source/after 全集合摘要（含新增/删除），六项真实钥匙串授权清除，串行执行。运行期间源码变化必须重新核对影响，退出0不能代替最终源码一致性检查。
+
+初次编译发现并修正主线程隔离声明；ServiceCompile2 完整编译及星期规则测试通过。ServiceCore/ServiceCore2 为测试表达式/夹具时钟编译问题，未计执行通过。ServiceCore3 的63/66次通过，剩余为清空标签夹具误用空replaceAll、unknown读取使用旧目录摘要；已作针对性修正，后续复验记录待补。
+
+#### 旧习惯标题 Bool 嵌套兼容修复（2026-10-08）
+
+本轮仅修复 `editRoutineWithSyntax` 在外层事务中的兼容返回，不扩展习惯命令、H、Stepper、权限或持久化策略。基线 HEAD 为 `61f4ba2cca305b7879186a6f1cd919cd92caf887`，叠加原工作区；执行期间外部操作将已有文件暂存，本轮不改索引，不提交。权威结果集中在本节，O/H 只引用；整体继续 **partial，用户未接受交付**。
+
+**已核实的旧契约与根因。** 对照 HEAD 中旧算法、`RoutineMutationCompatibilityTests.legacy`、当前 `ModelChanges.perform/transaction` 和实际消费者：独立调用的 Bool 表示同步事务正常返回，通常已完成本地保存，但不证明所有发布/副作用成功；嵌套调用在外层 working 时返回 true，只表示本次工作正常完成。外层随后可以成功、抛错回滚或出现保存/恢复失败；已经返回的 Bool 不成为持久化回执。`ResidentsPage.saveTitle` 据此将草稿更新为模型标题；`TaskRowFactory.routine` 的 onSaveTitle 交给 `TaskRow.saveEdit`，false 保留编辑，true 结束编辑；同文件菜单 dispatch 丢弃返回值。
+
+当前委托曾直接返回 `Modification.saved`，而它在 afterCommit 前严格为 pending，导致原 `TaskTitleMutationTests.routineAndNotesConsumersRetainTheirOriginalSemantics()` 的外层内部断言失败。最小修改仅在 `RoutineMutationService.mutate` 的 `try ModelChanges.transaction` 正常返回后置 `callSucceeded = true`，旧入口读取此事实；空白、预校验、预保存、内层抛错和提交失败都不能走到该赋值。未执行的 pending 仍为 false。`state`、`saved`、afterCommit/afterPublication、命令适配器及 Run 的严格 save-returned 守卫均未放宽。
+
+**嵌套事实。** 成功接受时模型可已有未提交变化，最终 save/发布/登记/授权次数均为0。外层成功仅 save=1、发布=1，保存事实随后完成；外层工作失败为 notSubmitted，save=0、rollback=returned；外层保存抛错为 unknown，save=called、rollback=returned。内层自身抛错为 false/notSubmitted，继承外层反馈者；是否终止整个组合工作仍由原外层控制流决定，没有新增隐式回滚或事务。内层边界不能替换外层预保存、提交、发布或反馈。
+
+**历史差异单列。** 冻结旧算法在 perform 返回 true 后立即调用提醒请求，嵌套时可能早于外层提交；当前服务已将该请求放在 afterPublication。本轮保持当前服务时序，使用假依赖验证失败不请求授权，不把恢复旧 Bool 扩大为恢复提前权限申请。正常独立调用和无提醒的冻结嵌套对照分别验证；真实通知、日历、钥匙串及偏好没有操作。
+
+**本轮证据。** `build/RM1/Bool*` 保存原始日志、xcresult、完整文件集合的 requested/source/after 摘要与命令。BoolRepro 被并发 RoutineCommandScopeTests 的 `.requiresProtection` 拼写挡在编译；仅改为已有 `.required` 后，BoolReproCompiled 完整编译并严格命中原方法，在第101行旧 Bool 断言复现1失败。原方法及其任务标题、备注、习惯新增断言全部保留。BoolBoundary 的其余11方法/21次通过；恢复夹具缺模型没有真实抛错，不能计通过。后续直接包装 DefaultStore 触发其 schema 装配前置条件，属于测试夹具失败，原包保留，未放宽断言。恢复失败改由只持合成初始快照的测试 DataStore 在 fetch 处抛错，严格结果见下方最终执行表。
+
+验证复用原 runner 的900秒单次锁和完整正常 PrivacyQA 参数；后段为避开不属于本批的既存同路径QA进程，改用独立 `build/PrivacyQA-RoutineBool` / `com.areachain.privacy-qa.routine-bool`，仍持原锁，不关闭、附着或启动旧 app 对象。六项真实钥匙串变量清除，合成内存数据、假系统依赖、原生串行。非Gallery只读进程观察和退出检查沿原 libproc 方法，绝不生成Gallery会话回执或修改旧runner结果。
+
+**最终执行与版本。** 最后源码的实际结果如下，方法/参数次数只从 XCTest 结果树计算；没有跳过、预期失败或被放宽的断言。
+
+| 批次 | 实际结果 | 证明范围 |
+|---|---|---|
+| BoolRecoveryIsolated | 1方法/1次通过 | 合成 DataStore 读取及原 ModelRollback 重新物化各抛错一次，phase=recoveryFailed、save=notCalled、rollback=called、state=unknown；旧Bool false，未发布。只证明隔离故障注入，不证明真实磁盘恢复。 |
+| BoolBoundaryFinal | 13方法/24次全通过 | 原失败方法、独立冻结对照、嵌套冻结成功/失败、真实TaskRowFactory回调、未调用pending、内层错误、外层工作/保存失败、预保存失败、保存后登记/发布失败和严格命令回执。 |
+| BoolRegression | 31方法/100次全通过 | RoutineCommandTests/Boundary/Scope全套、原标题TaskTitleMutationTests全套、旧任务/习惯新增与备注入口、仓储重复非法标题；包括命令正常saved、noChange、pending回执、notSubmitted、unknown、失败/登记/发布分类。 |
+| BoolNative | 4方法/8次全通过 | ResidentsPage 原未改标题取消/失焦与编辑后Return/失焦；习惯命令标题效果/停用定义，以及unknown/提交后发布失败保留真实Run。只计合成原生键鼠与模型证据，不冒充真人或截图验收。 |
+| BoolQACompile | 完整正常目标 build-for-testing succeeded，0错误、0新增构建警告；当前产物严格验签0 | 没有运行测试、没有排除源码。增量最终构建未再次发出旧警告，不表示首次完整编译的既有SDK/actor提示已修复。 |
+
+最终三批有效测试去重 **47方法/131次执行通过**；原失败方法在边界及扩大回归均严格通过，不重复累计。所有请求选择器逐项命中，suite与源码的@Test方法清单一致，见各批 `*-selection.json`。早期缺模型、DefaultStore装配trap及一次遗漏测试模块导入的失败包保留；本轮纠正夹具后完整重跑边界，未删严格断言。BoolRecoveryStore 曾在启动前因另一同路径进程被挡住，0测试；不算失败行为或通过。外部清理随后移除了原 `build/TM1/run.py`，后段 `Bool-run.py` 保留先前已读取的原锁/命令/源码核对流程，并沿原 Controls10P 只读进程方法补记结果，不改旧脚本/结果。
+
+最终1279文件（源码/测试/资源/工程/scripts/Config及SwiftLint配置，个人配置仅摘要）聚合SHA-256为 `b839870ba54e7a4ccc0a5b849a7dce68360e4ae3349b1261f63978ba999f9f3f`；算法为路径→SHA字典按键排序JSON再SHA-256。BoolBoundaryFinal、BoolRegression、BoolNative及BoolQACompile的requested/source/after均为此版本，见 `Bool-final-source-audit.json`。当前QA可执行文件SHA-256为 `2031188f515b3edd88150ad6628ca61d3111440f586bd9a36be2b84ec4eed4b4`。原方法、ModelChanges、RoutineCommandAdapter、CommandExecutionRun及Stepper源码与复现批逐文件不变；CommandExecutionRun当前494行，没有为旧504行报告拆分。并发UnifiedSearchRoutineTestSupport在原复现与首次边界批之间变化，已核对当前隔离装配及真实保存断言；之后源码稳定，最终完整编译和原生批包含它，未将其修改归为本轮实现。
+
+独立目录各测试批均记录PID+内核启动身份、确认本批进程已退出且同路径为空，最终仅编译批没有测试进程；旧共享目录中不属于本批的QA进程未关闭/附着。首两次复现未采内核身份，不补造历史进程证据；收尾证据明确限定后段有效验收批。最初暂存区为空，外部操作后来暂存了本轮和并发文件；本轮没有执行git add/commit/reset，最终按当时索引摘要记录，不声称索引未变化。
+
+**最终静态门禁。** 本轮6个Swift修改文件及当前494行的CommandExecutionRun严格局部SwiftLint通过；工作流、工作区/暂存区差异及严格static质量门禁通过，包含232项隔离脚本回归。新测试文件的空白/格式也已检查；没有运行普通测试宿主、H/Stepper全套或770次历史矩阵。实际日志为 `Bool-swiftlint-final.log`、`Bool-workflow-final.log`、`Bool-static-final.json`；最终文档编辑后重新执行这些检查。
+
+**指定 Cursor verifier 材料与边界。** 需核对本节原需求/旧契约、`Bool-fix-origin.json` 与本轮局部差异、原失败和最终选择器结果、逐文件摘要、完整QA编译/验签、进程退出记录；重点检查 callSucceeded 是否仅来自同步返回、pending/saved/unknown 是否独立、失败和提交后副作用是否被 Bool 绕过，以及旧消费者留稿行为。当前工具无指定入口，未执行、未认证，不以其他代理替代。H两项嵌套AX、真实SwiftData磁盘失败、正常签名到期及其他历史未验项不因本轮通过而关闭。
+
+#### R-M1 本批最终验收记录
+
+| 批次 | 实际结果与证据适用范围 |
+|---|---|
+| ServiceFinal | 26方法/105次全部通过，包含五字段与任务字段/子任务服务回归；其后受影响代码以 LocalRegression/FinalLocal 为准。 |
+| LocalRegression | 67方法/201次全部通过。五字段、D3/身份/来源/脏编辑/失败、防重/重入、优先级与时间校验，以及 CommandExecution/Handoff、旧字段/子任务、文件设置组、create→title 与对象选择契约。前后源码集合一致。误写的 UnifiedSearchOperationTests 未匹配，不计覆盖；正确套件由 FinalLocal 补验。 |
+| FinalLocal | 17方法/28次全部通过。旧习惯标题 Bool/同值/备注兼容、真实事务与恢复失败、原 TaskTitleMutationTests 的习惯/备注消费者方法，以及 UnifiedSearchOperationContractTests。前后源码集合一致；包含并行补充的专项测试。 |
+| NativeCore | 新原生两套10方法/20次全部通过，首次41张缓存图已查看。截图发现部分中文仍为子任务、结果缺少实际字段，作局部呈现修正后以下批次为最终证据。 |
+| NativeFinal + NativeBoundaryRetry | NativeFinal 19/20次通过，unknown=true分支在准备前显示遮罩、按钮未呈现；保留失败及截图，不据此推断写入或产品成功。未改断言、未改变产品后，精确重跑该方法两分支2/2通过。按完整方法替换计最终10方法/20次通过；前后源码一致。 |
+| LegacyNative + LegacyResident | 7方法/15次通过：WeekdayEditorConsumerTests三方法、TimePickerConsumerTests习惯标题失焦/提醒弹窗时机，以及原todo新增、todo标题、subtask标题原生链。最初提醒用例筛选误用文件名未匹配，LegacyResident已按真实suite补跑1/1。 |
+
+**实际模型证据。** 启用与停用定义均只修改本次影响字段。标题＋新建/恢复标签在一次事务中完成，固定新UUID、真实有序关联与实体数直接断言；保存前抛错同时回滚，保存后异常保持unknown且不重复创建。星期的nil旧值即使有效安排相同仍写入明确mask和weekdaysOnly；0/非法位拒绝，保存不调用启停桥接。所有五字段前后核对完整定义快照及独立全表RoutineCheck的UUID、dayKey、done/skipped、父关联与数量；暂停/创建信息保持。每次改变save=1/私有发布=1，noChange/准备/接受为0；fake通知/日历请求与处理各自断言，只有实际设置提醒或标题提醒效果请求fake授权。
+
+**原生与截图。** 最终两批的41张有效新图与旧入口12张图均已逐一查看，原图/时间戳/SHA256/联系图见 `Final-screenshots` 和 `Legacy-screenshots`。覆盖中英、浅深、444/304pt代表；可见普通/停用定义、标题标签新建恢复、原→新星期、提醒设/取消、优先级、标签四模式与实际关联数，保存后的星期/时间/优先级来自savedValues。保留原滚动容器，不把视口外内容当作丢失。图像来自NSView.cacheDisplay，操作为合成原生键鼠，marked text为程序化；不替代真人输入法、VoiceOver或系统合成器截图。星期旧入口与标题失焦用例主要提供原生事件/模型断言，本批未产出其成功截图，不拿旧图补数。
+
+**并行与环境。** 全程保留初始暂存/未暂存和并行修改；本代理未执行git add、commit或push。会话期间另有操作暂存工作区、补充Bool修复并清理旧build/TM1 runner；原锁和本批证据保留。最后复用现存Bool-run的原锁/完整PrivacyQA参数，使用独立RoutineBool QA标识/目录及只读进程核验，未操作仍存活的旧PrivacyQA进程。没有换锁、删锁、终止其他任务、认证或真实系统调用。旧Bool的嵌套提醒时序差异按上节独立登记，不用本批通过将其抹去。
+
+#### 独立缺口与下一批前置
+
+正常开发签名到期（配置未改，不重复必然失败构建）、指定 Cursor verifier 无可调用入口、C2B、真人输入法/VoiceOver、最低系统、真实多窗口与两项旧子任务详情问题独立保留。只读定位子代理未承担指定复核。没有真实库/系统调用、提交、推送、安装、发布、续签或权限变化。
+
+后续习惯新增需另核初始定义、创建身份/排序与共同事务；启停需核对暂停期跳过桥接并显示实际记录影响；执行记录需绑定定义＋日期的实例身份及历史证据。当前五字段验收不能授权这些能力，notes/敏感、排序/删除/批量及新多步也未开放。

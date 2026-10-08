@@ -74,6 +74,7 @@ struct CommandExecutionUnit: Equatable {
     var taskTitle: CommandTaskTitleFacts?
     var taskField: CommandTaskFieldFacts?
     var subtask: CommandSubtaskFacts?
+    var routine: CommandRoutineFacts?
     var taskCreation: CommandTaskCreateFacts?
 }
 
@@ -108,4 +109,18 @@ struct CommandResolvedInput: Equatable, CustomStringConvertible, CustomDebugStri
 extension CommandExecutionResult: CustomStringConvertible, CustomDebugStringConvertible {
     var description: String { "CommandExecutionResult(redacted)" }
     var debugDescription: String { description }
+}
+
+// 只读运行身份查询与协议值集中维护；不修改运行状态。
+extension CommandExecutionRun {
+    func operation(_ itemID: UUID) -> CommandOperationIdentity? {
+        snapshot.items.first { $0.id == itemID }.map { .init(execution: stamp, item: $0.stamp, operationID: $0.id) }
+    }
+
+    func attempt(_ unitID: UUID) -> CommandAttemptStamp? {
+        units.first { $0.id == unitID }.map {
+            .init(execution: stamp, unitID: $0.id, number: $0.attempt, phase: $0.currentPhase)
+        }
+    }
+
 }

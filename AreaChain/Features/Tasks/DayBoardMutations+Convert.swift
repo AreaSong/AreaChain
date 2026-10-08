@@ -4,7 +4,14 @@ import SwiftData
 extension DayBoardMutations {
     @discardableResult
     static func setDue(_ todo: TodoItem, minutes: Int?) -> Bool {
-        persist(context: todo.modelContext) {
+        setDue(todo, minutes: minutes, save: { try $0.save() })
+    }
+
+    @discardableResult
+    static func setDue(
+        _ todo: TodoItem, minutes: Int?, save: @MainActor (ModelContext) throws -> Void
+    ) -> Bool {
+        persist(context: todo.modelContext, save: save) {
             TaskMutationService.assignDue(todo, minutes: minutes)
         }
     }

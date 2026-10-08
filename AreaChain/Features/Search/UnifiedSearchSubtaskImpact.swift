@@ -9,6 +9,10 @@ struct UnifiedSearchSubtaskImpact: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(verbatim: L10n.format("unified.subtask.parent", locale: locale, preview.parent.title))
                 .font(DaybookType.caption).accessibilityIdentifier("unified.subtask.parent")
+            if case .completion = preview.input.edit, let original = preview.original {
+                Text(verbatim: L10n.format("unified.subtask.targetTitle", locale: locale, original.title))
+                    .font(DaybookType.body).accessibilityIdentifier("unified.subtask.targetTitle")
+            }
             Text(verbatim: values).font(DaybookType.body).accessibilityIdentifier("unified.subtask.values")
             if preview.input.edit.isCreation { Text("unified.subtask.append").font(DaybookType.caption) }
             if let tags = preview.tags {
@@ -27,8 +31,8 @@ struct UnifiedSearchSubtaskImpact: View {
         case .create(let edit): return edit.title
         case .title(let edit): return (preview.original?.title ?? "") + " → " + edit.title
         case .completion(let done):
-            return L10n.format(preview.original?.isDone == true ? "unified.field.completed" : "unified.field.open", locale: locale)
-                + " → " + L10n.format(done ? "unified.field.completed" : "unified.field.open", locale: locale)
+            return L10n.format(preview.original?.isDone == true ? "checkbox.done" : "checkbox.open", locale: locale)
+                + " → " + L10n.format(done ? "checkbox.done" : "checkbox.open", locale: locale)
         case .tags: return preview.original?.title ?? ""
         }
     }
