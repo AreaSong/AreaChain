@@ -46755,6 +46755,198 @@
           }
         }
       }
+    },
+    "unified.batch.writeCounts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Selected %lld · Changing %lld · Entity writes %lld / %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已选 %lld 项 · 变化 %lld 项 · 写入实体 %lld / %lld"
+          }
+        }
+      }
+    },
+    "unified.batch.writeLimit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Too many entity changes. Remove targets, then preview and accept again. Nothing will be split or submitted."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "变化实体超过上限。请移除部分目标，重新预览并接受；不会拆批或提交子集。"
+          }
+        }
+      }
+    },
+    "unified.batch.writeConflict": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The planned changes conflict for the same entity. Review the targets and prepare again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "同一实体的拟定变化不一致。请检查目标并重新准备。"
+          }
+        }
+      }
+    },
+    "unified.batch.cascade": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completes %lld active subtasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "级联完成 %lld 个活跃子项"
+          }
+        }
+      }
+    },
+    "unified.batch.cascadeDetails": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "View affected subtasks"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "查看级联子项"
+          }
+        }
+      }
+    },
+    "unified.batch.problem.family": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtask identities or parent relationships are inconsistent."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "子项身份或父子关系不一致。"
+          }
+        }
+      }
+    },
+    "unified.batch.entity.todo": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tasks: %lld new / %lld modified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务：新增 %lld / 修改 %lld"
+          }
+        }
+      }
+    },
+    "unified.batch.entity.subtask": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Subtasks: %lld new / %lld modified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "子项：新增 %lld / 修改 %lld"
+          }
+        }
+      }
+    },
+    "unified.batch.entity.routine": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Habit definitions: %lld new / %lld modified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯定义：新增 %lld / 修改 %lld"
+          }
+        }
+      }
+    },
+    "unified.batch.entity.check": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check-in records: %lld new / %lld modified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打卡记录：新增 %lld / 修改 %lld"
+          }
+        }
+      }
+    },
+    "unified.batch.appendTargets": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add to fixed targets"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "追加到固定目标"
+          }
+        }
+      }
+    },
+    "unified.batch.chooseExecutionDay": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose an execution date for this habit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "为此习惯选择执行日期"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

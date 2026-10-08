@@ -401,3 +401,8 @@ K真实输入、L持续按压与关键可访问性沿 areachain-workflow → are
 ## 统一搜索 B-M1 固定多目标
 
 沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份／焦点，frontend-design 沿 Daybook）→ areachain-verify。复用入口见[组件目录](docs/component-catalog.md#b-m1-固定多目标共同提交)，一个操作／固定集合／共同保存与 unknown 的唯一契约和证据见[权威 B-M1](docs/unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)。完整正常 PrivacyQA、独立 BM1 标识／目录、合成内存库、私有事件／fake 消费者、六项钥匙串变量清除、原锁单次900秒及原生串行保持。正常签名到期、指定 Cursor verifier、C2B 和人工／最低系统／多窗口缺口独立保留；不认证、续签或替代指定复核。不接生产、真实数据／系统、批量完成／启停、自动拆批、新多项计划、notes、敏感执行或执行后撤销，不提交／推送／安装／发布。
+
+
+## 统一搜索 B-M2 批量状态
+
+沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份／Binding／焦点）→ areachain-verify。原 Batch／T-M2／R-M3 共同规则与精确应用复用见[组件目录](docs/component-catalog.md#b-m2-批量状态与精确实体写集)，已批准总量、日期／级联／补录、A～E实际证据与缺口只维护在[权威 B-M2](docs/unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。本批4000实体限制只适用于两类批量状态，不能自动改单项绕过。完整正常PrivacyQA、独立BM2身份／目录、原锁单次900秒、六项授权清除、合成数据与原生串行保持；正常签名已由本批当前Debug验证更新，指定Cursor缺口仍独立，不认证或替代复核。不接生产、真实系统、自动拆批、新多项计划、notes／敏感执行或执行后撤销，不提交／推送／安装／发布。

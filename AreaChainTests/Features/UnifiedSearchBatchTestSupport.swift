@@ -8,6 +8,7 @@ import Testing
     let results: UnifiedSearchResultsFixture
     let privacy = NotificationCenter()
     var controller: UnifiedSearchController { results.controller }
+    var screenshotPrefix = "bm1-"
 
     init(move: Bool = true, count: Int = 3, incomplete: Bool = false) throws {
         service = try BatchCommandFixture(count: count)
@@ -19,6 +20,19 @@ import Testing
             into: &batch, observation: RoutineContentQueryFixture.observation(batch.dates.todayKey))
         batch.facts.metadata = .init(tagNames: Dictionary(uniqueKeysWithValues: service.tags.map { ($0.id, $0.name) }), privateTagIDs: [])
         if incomplete { batch.snapshots.subtasks = .failed }
+        results = try .init(batch, pageSize: 20, privacyCenter: privacy, batchEnvironment: service.environment)
+    }
+
+    init(state: BatchStateFixture, definitionsOnly: Bool = false) throws {
+        service = state.base
+        screenshotPrefix = "bm2-"
+        var batch = QueryBatchFixture.empty(definitionsOnly ? "/routines" : "/tasks")
+        var issues: [TaskContentQueryReadIssue] = []
+        TaskContentQueryReader(context: service.context).readSources(into: &batch, issues: &issues)
+        #expect(issues.isEmpty)
+        _ = RoutineContentQueryReader(reads: .init(context: service.context)).readSources(
+            into: &batch, observation: RoutineContentQueryFixture.observation(service.today))
+        batch.facts.metadata = .init(tagNames: Dictionary(uniqueKeysWithValues: service.tags.map { ($0.id, $0.name) }), privateTagIDs: [])
         results = try .init(batch, pageSize: 20, privacyCenter: privacy, batchEnvironment: service.environment)
     }
 
@@ -69,8 +83,8 @@ import Testing
         try await host.clickCompositionControl("unified.batch.prepare")
         let preview = try #require(controller.currentBatchPreview, "批量准备失败：\(controller.batchFailure ?? "none")")
         #expect(service.count("save") == 0 && service.count("ui") == 0)
-        try await host.revealSettingControlInsidePanel("unified.batch.values")
-        try host.snapshot("bm1-" + name + "-preview")
+        try await host.revealSettingControlInsidePanel(screenshotPrefix == "bm2-" ? "unified.batch.writeCounts" : "unified.batch.values")
+        try host.snapshot(screenshotPrefix + name + "-preview")
         try await host.clickCompositionControl("unified.batch.accept")
         let accepted = try #require(controller.currentBatchAcceptance)
         #expect(accepted.preview == preview && service.count("save") == 0)
@@ -90,7 +104,7 @@ import Testing
         try await host.settle()
         try await host.key(36, "\r", flags: .command)
         try await host.revealSettingControlInsidePanel("unified.batch.status")
-        try host.snapshot("bm1-" + name + "-result")
+        try host.snapshot(screenshotPrefix + name + "-result")
         return facts
     }
 

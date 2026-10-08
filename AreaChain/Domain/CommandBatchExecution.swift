@@ -35,7 +35,8 @@ extension CommandHandoffCoordinator {
         guard let item = current.session.execution?.snapshot.items.first,
               let accepted = batches.acceptances[item.draft.id], accepted.id == facts.acceptanceID,
               accepted.preview.item == item.stamp, accepted.preview.targets == facts.targets,
-              accepted.preview.impacts == facts.impacts, batches.wasInvoked(accepted.id) else {
+              accepted.preview.impacts == facts.impacts, accepted.preview.writeSet == facts.writeSet,
+              accepted.checkCreationIDs == facts.checkCreationIDs, batches.wasInvoked(accepted.id) else {
             throw CommandExecutionError.invalidResult
         }
         var next = current.session

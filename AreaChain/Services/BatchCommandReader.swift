@@ -15,7 +15,7 @@ import SwiftData
     }
 
     func validate(_ preview: CommandBatchPreview, item: CommandPlanItem) throws {
-        guard preview.semanticsVersion == 1, preview.environmentID == environment.id,
+        guard preview.semanticsVersion == 2, preview.environmentID == environment.id,
               preview.contextID == ObjectIdentifier(environment.context),
               preview.storageID == ObjectIdentifier(environment.context.container),
               item.stamp == preview.item, item.draft.stamp == preview.draft,
@@ -28,17 +28,21 @@ import SwiftData
         for (old, new) in zip(preview.impacts, current.impacts) {
             guard old.target == new.target, old.record == new.record, old.source == new.source,
                   old.rawTagIDs == new.rawTagIDs, old.original == new.original, old.final == new.final,
-                  old.tags == new.tags else {
+                  old.tags == new.tags, old.identity == new.identity, old.completion == new.completion,
+                  old.children == new.children, old.state == new.state, old.taskDay == new.taskDay,
+                  !preview.edit.isState || old.title == new.title else {
                 problems.append(.init(target: old.target, reason: .changed)); continue
             }
         }
         guard problems.isEmpty else { throw CommandBatchIssue.invalidTargets(problems) }
+        guard current.writeSet == preview.writeSet else { throw CommandBatchIssue.writeConflict }
     }
 
     private func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
                       catalog: CommandTaskTagCatalog) throws -> CommandBatchPreview {
         try CommandBatchPreview.validate(item)
         let edit = try CommandBatchEdit(command: item.draft.commandID, arguments: item.draft.arguments)
+        guard !edit.isState || environment.stateOperations != nil else { throw CommandBatchIssue.unassembled }
         let targets = item.draft.targets
         let lookup = CommandTaskTagLookup(catalog)
         try validateSelectedTags(edit, lookup: lookup)
@@ -46,13 +50,15 @@ import SwiftData
         try environment.validateClean()
         // 来源回调可能重入；整次采样结束后统一再核对来源与目录，不按对象反复全表读取。
         guard try qualifications(targets.objects) == sources else { throw CommandBatchIssue.stale }
-        let impacts = try readImpacts(targets.objects, edit: edit, sources: sources, lookup: lookup)
+        let impacts = try edit.isState ? readStateImpacts(targets.objects, edit: edit, sources: sources, lookup: lookup)
+            : readImpacts(targets.objects, edit: edit, sources: sources, lookup: lookup)
         guard try catalogReader.current().evidence() == catalog.evidence() else { throw CommandBatchIssue.catalogChanged }
         try environment.validateClean()
         return .init(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
                      arguments: item.draft.arguments, targets: targets, edit: edit,
                      environmentID: environment.id, contextID: ObjectIdentifier(environment.context),
-                     storageID: ObjectIdentifier(environment.context.container), catalog: try catalog.evidence(), impacts: impacts)
+                     storageID: ObjectIdentifier(environment.context.container), catalog: try catalog.evidence(), impacts: impacts,
+                     writeSet: edit.isState ? try CommandBatchWriteSet(impacts: impacts) : nil)
     }
 
     private func qualifications(_ targets: [CommandObjectReference]) throws -> [CommandTaskTitleEligibility] {
@@ -110,7 +116,7 @@ import SwiftData
         return result
     }
 
-    private func unique<T: PersistentModel>(_ rows: [T], target: CommandObjectReference) throws -> T {
+    func unique<T: PersistentModel>(_ rows: [T], target: CommandObjectReference) throws -> T {
         guard rows.count == 1 else {
             throw CommandBatchIssue.invalidTargets([.init(target: target, reason: rows.isEmpty ? .missing : .duplicate)])
         }
@@ -137,6 +143,7 @@ import SwiftData
             let mutation = try CommandTaskTagMutation.prepare(rawIDs: raw, argument: argument, lookup: lookup)
             guard let encoded = mutation.finalEncodedIDs else { throw CommandBatchIssue.invalidArguments }
             original = .tags(TagIDList.parse(raw)); final = .tags(TagIDList.parse(encoded)); tags = mutation
+        case .completion, .enabled: throw CommandBatchIssue.invalidArguments
         }
         return .init(target: target, record: ObjectIdentifier(record), title: title, source: source,
                      rawTagIDs: raw, original: original, final: final, tags: tags)

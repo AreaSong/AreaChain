@@ -57,6 +57,11 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Domain/CommandBatchWriteSet.swift", "CommandBatchWriteSet"),
+    ("AreaChain/Services/BatchCommandStateReader.swift", "readStateImpacts"),
+    ("AreaChain/Services/RoutineStateApplication.swift", "RoutineStateApplication"),
+    ("AreaChain/Features/Search/UnifiedSearchBatchStateImpact.swift", "UnifiedSearchBatchStateImpact"),
+    ("AreaChain/Features/Search/UnifiedSearchBatchOccurrenceSelection.swift", "UnifiedSearchBatchOccurrenceSelection"),
     ("AreaChain/Domain/CommandBatch.swift", "CommandBatchPreview"),
     ("AreaChain/Services/BatchCommandReader.swift", "BatchCommandReader"),
     ("AreaChain/Services/BatchCommandTransaction.swift", "BatchCommandTransaction"),

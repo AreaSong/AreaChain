@@ -80,6 +80,7 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " requestOperationSubmit UnifiedSearchSettingSubmission\n"
         contract_docs["docs/component-catalog.md"] += " CommandTaskCompletionImpact CommandTaskTagMutation tagCandidates assignDue UnifiedSearchTaskFieldImpact\n"
         contract_docs["docs/component-catalog.md"] += (
+            " CommandBatchWriteSet readStateImpacts RoutineStateApplication UnifiedSearchBatchStateImpact UnifiedSearchBatchOccurrenceSelection"
             " CommandBatchPreview BatchCommandReader BatchCommandTransaction allObjectResultsComplete prepareBatch UnifiedSearchBatchImpact UnifiedSearchBatchSubmission"
             " CommandRoutineStatePlanning stateImpact applyRoutineState UnifiedSearchRoutineStateImpact UnifiedSearchRoutineOccurrenceDate"
             " CommandRoutineCreatePreview CommandRoutineCreateFacts RoutineCreateCommandReader prepareCreation UnifiedSearchRoutineCreateSubmission"
@@ -764,6 +765,25 @@ class WorkflowCheckTests(unittest.TestCase):
             ("Services/TaskFieldCommandTagCandidates", "tagCandidates"),
             ("Services/TaskMutationService+Fields", "assignDue"),
             ("Features/Search/UnifiedSearchTaskFieldImpact", "UnifiedSearchTaskFieldImpact"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_bm2_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/CommandBatchWriteSet", "CommandBatchWriteSet"),
+            ("Services/BatchCommandStateReader", "readStateImpacts"),
+            ("Services/RoutineStateApplication", "RoutineStateApplication"),
+            ("Features/Search/UnifiedSearchBatchStateImpact", "UnifiedSearchBatchStateImpact"),
+            ("Features/Search/UnifiedSearchBatchOccurrenceSelection", "UnifiedSearchBatchOccurrenceSelection"),
         )
         for path, symbol in entries:
             with self.subTest(symbol=symbol):

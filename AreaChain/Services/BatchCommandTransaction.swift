@@ -15,10 +15,13 @@ import SwiftData
         var boundary = environment.dependencies.transaction
         boundary.publish = { try environment.publish(result) }
         do {
+            try accepted.preview.writeSet?.validateLimit()
+            let stateApplications = try prepareStates(accepted, context: environment.context)
             try ModelChanges.transaction(in: environment.context, boundary: boundary,
                                          observe: { result.transaction = $0 }) {
                 for impact in accepted.preview.impacts where !impact.noChange {
-                    try apply(impact, edit: accepted.preview.edit, dependencies: environment.dependencies)
+                    if let application = stateApplications[impact.target] { try application.apply(in: environment.context) }
+                    else { try apply(impact, edit: accepted.preview.edit, dependencies: environment.dependencies) }
                     try environment.dependencies.afterApply(impact.target)
                 }
                 ModelChanges.afterCommit(in: environment.context) {
@@ -45,6 +48,23 @@ import SwiftData
         return result.facts
     }
 
+    private static func prepareStates(_ accepted: CommandBatchAcceptance,
+                                      context: ModelContext) throws -> [CommandObjectReference: RoutineStateApplication] {
+        let impacts = accepted.preview.impacts.filter { $0.state != nil && !$0.noChange }
+        guard !impacts.isEmpty else { return [:] }
+        let inputs = try impacts.map { impact -> RoutineStateApplication.Input in
+            guard let state = impact.state else { throw CommandBatchIssue.stale }
+            let ids = try Dictionary(uniqueKeysWithValues: state.effects.filter { $0.action == .insert }.map { effect in
+                let key = CommandObjectReference(type: .routineOccurrence, id: impact.target.id, dayKey: effect.day)
+                guard let id = accepted.checkCreationIDs[key] else { throw CommandBatchIssue.stale }
+                return (effect.day, id)
+            })
+            return .init(target: impact.target, record: impact.record, impact: state, creationIDs: ids)
+        }
+        let applications = try RoutineStateApplication.prepare(inputs, in: context)
+        return Dictionary(uniqueKeysWithValues: zip(impacts.map(\.target), applications))
+    }
+
     private static func apply(_ impact: CommandBatchTargetImpact, edit: CommandBatchEdit,
                               dependencies: BatchCommandEnvironment.Dependencies) throws {
         switch edit {
@@ -53,6 +73,12 @@ import SwiftData
             guard let encoded = impact.tags?.finalEncodedIDs else { throw CommandBatchIssue.stale }
             if impact.target.type == .todo { try dependencies.tasks.replaceTagIDs(id: impact.target.id, tagIDs: encoded) }
             else { try dependencies.routines.replaceTagIDs(id: impact.target.id, tagIDs: encoded) }
+        case .completion(let done):
+            guard impact.target.type == .todo, let completion = impact.completion,
+                  completion.original != completion.final else { throw CommandBatchIssue.stale }
+            if done { try dependencies.tasks.completeTodo(id: impact.target.id) }
+            else { try dependencies.tasks.toggleTodo(id: impact.target.id) }
+        case .enabled: throw CommandBatchIssue.stale
         }
     }
 

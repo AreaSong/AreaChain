@@ -11,10 +11,17 @@ enum UnifiedSearchBatchCopy {
         case .catalogChanged, .inactiveTag: return "unified.batch.catalog"
         case .invalidRepository: return "unified.field.unassembled"
         case .stale, .alreadyInvoked: return "unified.field.stale"
+        case .writeLimit: return "unified.batch.writeLimit"
+        case .writeConflict: return "unified.batch.writeConflict"
         }
     }
     static func target(_ target: CommandObjectReference, locale: Locale) -> String {
         L10n.format(UnifiedSearchResultCopy.typeKey(target.type), locale: locale) + " · " + target.id.uuidString
+            + (target.dayKey.map { " · " + $0 } ?? "")
+    }
+    static func reason(_ reason: CommandBatchTargetProblem.Reason) -> String {
+        if case .state(let issue) = reason { return "unified.routineState.error." + issue.rawValue }
+        return "unified.batch.problem." + String(describing: reason)
     }
 }
 
@@ -51,7 +58,7 @@ struct UnifiedSearchBatchSubmission: View {
                 else {
                     UnifiedSearchPlanButton(title: "unified.batch.accept", identifier: "unified.batch.accept", variant: .prominent) {
                         controller.acceptBatch(preview, source: source)
-                    }.disabled(controller.settingSubmitting)
+                    }.disabled(controller.settingSubmitting || preview.writeSet?.counts.exceedsLimit == true)
                 }
             } else { Text(controller.batchPreview == nil ? "unified.batch.baseline" : "unified.field.stale").font(DaybookType.caption) }
             UnifiedSearchPlanButton(title: "unified.batch.prepare", identifier: "unified.batch.prepare") {
@@ -69,7 +76,7 @@ struct UnifiedSearchBatchSubmission: View {
                 ForEach(controller.batchProblems, id: \.target) { problem in
                     VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
                         Text(verbatim: UnifiedSearchBatchCopy.target(problem.target, locale: locale))
-                        Text(LocalizedStringKey("unified.batch.problem." + String(describing: problem.reason)))
+                        Text(LocalizedStringKey(UnifiedSearchBatchCopy.reason(problem.reason)))
                     }.font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("unified.batch.problem." + problem.target.searchIdentifier)
@@ -86,6 +93,7 @@ struct UnifiedSearchBatchSubmission: View {
                 facts.state == .saved ? facts.changedCount : 0, facts.impacts.filter(\.noChange).count))
                 .font(DaybookType.caption)
             if facts.state == .saved {
+                if let counts = facts.writeSet?.counts { UnifiedSearchBatchWriteCounts(counts: counts) }
                 Text(facts.publication == .returned && !facts.publicationFailed ? "unified.task.published" : "unified.field.publicationIssue")
                     .font(DaybookType.caption)
                 if facts.registrationFailed { Text("unified.field.registrationIssue").font(DaybookType.caption) }
@@ -94,6 +102,8 @@ struct UnifiedSearchBatchSubmission: View {
                         ForEach(facts.impacts, id: \.target) { impact in
                             Text(verbatim: impact.title).font(DaybookType.body)
                             Text(LocalizedStringKey(UnifiedSearchResultCopy.typeKey(impact.target.type))).font(DaybookType.caption)
+                            if let day = impact.target.dayKey ?? impact.taskDay { Text(verbatim: day).font(DaybookType.caption) }
+                            UnifiedSearchBatchStateImpact(impact: impact)
                             if impact.noChange { Text("unified.batch.memberNoChange").font(DaybookType.caption) }
                             else if let external = facts.external.first(where: { $0.target == impact.target }) {
                                 UnifiedSearchTaskExternalFeedback(authorizationCall: "notCalled", authorizationResult: "unknown",

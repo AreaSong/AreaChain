@@ -21,10 +21,13 @@ import Testing
     var refreshTargets: [CommandObjectReference] = []
     var saveMode = TaskCreateCommandIO.SaveMode.normal
     var externalResult = CommandExternalResult.succeeded
+    var today = "2026-10-08"
+    var history: [UUID: [RoutineScheduleEvidence]] = [:]
+    var historyRead: ((UUID) throws -> Void)?
     private(set) var environment: BatchCommandEnvironment!
     private(set) var adapter: BatchCommandAdapter!
 
-    init(count: Int = 3, tagCount: Int = 3) throws {
+    init(count: Int = 3, tagCount: Int = 3, stateOperations: Bool = false) throws {
         io = try TaskCaptureFixture()
         handoff = try HandoffFixture()
         tags = (0..<tagCount).map { TagItem(name: "Batch tag \($0)", sortOrder: $0) }
@@ -66,7 +69,12 @@ import Testing
                 refreshTargets.append(target)
                 return .init(notificationRequested: true, calendarRequested: includeCalendar,
                              notificationResult: externalResult, calendarResult: externalResult)
-            })
+            }, stateOperations: stateOperations ? .init(now: { [unowned self] in
+                DayKey.date(from: today, calendar: RoutineQueryFixture.dates.calendar)!
+            }, calendar: RoutineQueryFixture.dates.calendar, history: { [unowned self] id in
+                try historyRead?(id)
+                return history[id] ?? []
+            }) : nil)
         adapter = .init(coordinator: handoff.coordinator, environment: environment)
     }
     var taskTargets: [CommandObjectReference] { todos.map { .init(type: .todo, id: $0.id) } }

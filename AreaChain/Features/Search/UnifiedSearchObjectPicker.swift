@@ -11,37 +11,46 @@ struct UnifiedSearchObjectPicker: View {
         let keySelection = controller.objectSelection
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
-            ScrollView {
-                VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                    Text("unified.objects.queryPreserved")
-                    Text("unified.objects.sourceLimit")
-                }.font(DaybookType.caption)
-            }.frame(maxHeight: 68)
-            if let picker = controller.objectSelection, controller.validatesObjectSelection(picker.stamp) {
-                Text(verbatim: L10n.format("unified.objects.allowed", locale: locale) + " "
-                    + controller.objectTypes(picker.location, command: command).map {
-                        L10n.format(UnifiedSearchResultCopy.typeKey($0), locale: locale)
-                    }.sorted().joined(separator: "、"))
-                    .font(DaybookType.caption)
-                Text(controller.allowsMultipleObjects(picker.location, command: command)
-                     ? "unified.objects.multiple" : "unified.objects.singleOnly").font(DaybookType.caption)
-                selectionControls(picker)
-                candidates(picker)
-                if picker.browse.snapshot.knownUndisplayedCount > 0 {
-                    Button("unified.results.loadMore") { controller.loadObjectCandidates(picker.stamp) }
-                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                        .accessibilityIdentifier("unified.objects.more")
+            if let picker = controller.objectSelection, let object = picker.occurrenceDateTarget,
+               controller.validatesObjectSelection(picker.stamp) {
+                UnifiedSearchBatchOccurrenceCalendar(controller: controller, object: object, picker: picker)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+                        Text("unified.objects.queryPreserved")
+                        Text(controller.allowsBatchOccurrenceSelection(command) ? "unified.batch.chooseExecutionDay" : "unified.objects.sourceLimit")
+                    }.font(DaybookType.caption)
+                }.frame(maxHeight: 68)
+                if let picker = controller.objectSelection, controller.validatesObjectSelection(picker.stamp) {
+                    Text(verbatim: L10n.format("unified.objects.allowed", locale: locale) + " "
+                        + controller.objectTypes(picker.location, command: command).map {
+                            L10n.format(UnifiedSearchResultCopy.typeKey($0), locale: locale)
+                        }.sorted().joined(separator: "、"))
+                        .font(DaybookType.caption)
+                    Text(controller.allowsMultipleObjects(picker.location, command: command)
+                         ? "unified.objects.multiple" : "unified.objects.singleOnly").font(DaybookType.caption)
+                    selectionControls(picker)
+                    candidates(picker)
+                    if picker.browse.snapshot.knownUndisplayedCount > 0 {
+                        Button("unified.results.loadMore") { controller.loadObjectCandidates(picker.stamp) }
+                            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                            .accessibilityIdentifier("unified.objects.more")
+                    }
+                    confirmation(picker)
                 }
-                confirmation(picker)
+                Text(LocalizedStringKey(controller.objectSelectionMessage)).font(DaybookType.caption)
+                Button("unified.operation.cancel") { controller.cancelObjectSelection(expecting: cancellation) }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    .accessibilityIdentifier("unified.objects.cancel")
             }
-            Text(LocalizedStringKey(controller.objectSelectionMessage)).font(DaybookType.caption)
-            Button("unified.operation.cancel") { controller.cancelObjectSelection(expecting: cancellation) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                .accessibilityIdentifier("unified.objects.cancel")
         }
-        .onExitCommand { controller.cancelObjectSelection(expecting: cancellation) }
+        .onExitCommand {
+            if let picker = controller.objectSelection, picker.occurrenceDateTarget != nil {
+                controller.editBatchOccurrenceSelection(nil, stamp: picker.stamp)
+            } else { controller.cancelObjectSelection(expecting: cancellation) }
+        }
         .onKeyPress(keys: [.return, .tab]) { key in
-            guard key.modifiers.isEmpty, let picker = keySelection else { return .ignored }
+            guard key.modifiers.isEmpty, let picker = keySelection, picker.occurrenceDateTarget == nil else { return .ignored }
             _ = controller.acceptObjects(picker.stamp)
             return .handled
         }
@@ -91,7 +100,11 @@ struct UnifiedSearchObjectPicker: View {
                                     active: picker.browse.active == object, selected: picker.browse.selected.contains(object),
                                     activate: { controller.browseObjects(.activate(object), stamp: picker.stamp) },
                                     select: { controller.toggleObject(object, stamp: picker.stamp) }, showsIdentityDate: true)
-                                if !controller.objectTypes(picker.location, command: command).contains(object.type) {
+                                if controller.allowsBatchOccurrenceSelection(command), object.type == .routine {
+                                    if picker.browse.selected.contains(object) {
+                                        UnifiedSearchBatchOccurrenceSelection(controller: controller, object: object, picker: picker)
+                                    } else { Text("unified.batch.chooseExecutionDay").font(DaybookType.caption) }
+                                } else if !controller.objectTypes(picker.location, command: command).contains(object.type) {
                                     Text("unified.objects.wrongType").font(DaybookType.caption)
                                 } else if (try? controller.session.objectCandidate(object,
                                             sourceID: picker.browse.snapshot.sourceID)) == nil {

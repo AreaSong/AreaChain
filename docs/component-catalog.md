@@ -974,3 +974,12 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [allObjectResultsComplete](../AreaChain/Services/ContentQueryObjectCandidates.swift) 同时核对匹配覆盖及展示身份；原选择器保留已知子集并增加明确全选，分页更新推进原生 buffer 版本。没有把 selectAllKnown 自动提升为 allResults，也不截断或过滤不适用对象。
 - [prepareBatch](../AreaChain/Features/Search/UnifiedSearchBatchEditing.swift)、[UnifiedSearchBatchImpact](../AreaChain/Features/Search/UnifiedSearchBatchImpact.swift) 与 [UnifiedSearchBatchSubmission](../AreaChain/Features/Search/UnifiedSearchBatchSubmission.swift) 位于原参数／PlanList／反馈边界，复用有界滚动、按钮、标签效果与逐对象 fake 外部结果。目标移除走原计划编辑事件，必须重新准备并接受。
 - 实际消费者仅显式隔离宿主及 BatchCommand／UnifiedSearchBatch 测试；旧 UI 批量、单项命令、设置组和 create→title 继续独立回归。范围、性能样本、源码与运行证据只维护在[权威 B-M1](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)，不授予生产、自动拆批或新多项计划能力。
+
+
+## B-M2 批量状态与精确实体写集
+
+- [CommandBatchWriteSet](../AreaChain/Domain/CommandBatchWriteSet.swift) 在原 BatchPreview／Acceptance／Facts 上保留类型化实体效果、去重冲突、总量与限制版本；只有 completion／enabled 使用4000实体上限。原 Registry 以完整 routineOccurrence 键保留稳定新记录 UUID。
+- [BatchCommandStateReader](../AreaChain/Services/BatchCommandStateReader.swift) 的 readStateImpacts 复用 TaskFamilyCommandIdentity 的完成投影及 [RoutineCommandStateSnapshot](../AreaChain/Services/RoutineCommandStateReader.swift)，一次观察日、完整记录与历史核验后生成逐目标影响；默认 BatchEnvironment 无状态能力。
+- [RoutineStateApplication](../AreaChain/Services/RoutineStateApplication.swift) 为原 applyRoutineState 与 BatchCommandTransaction 共用的精确应用步骤。全部成员先解析再写入；原单项接受与批量接受／占用分别合法，ModelChanges 仍是唯一共同保存入口。
+- [UnifiedSearchBatchStateImpact](../AreaChain/Features/Search/UnifiedSearchBatchStateImpact.swift) 复用原 RoutineStateImpact／Daybook，展示实体计数、级联和补录；[UnifiedSearchBatchOccurrenceSelection](../AreaChain/Features/Search/UnifiedSearchBatchOccurrenceSelection.swift) 仅为显式完成命令把已核验定义与用户明确日期组成实例，临时票据绑定原候选版本，独立日期步骤保留完整网格并返回原候选确认，原固定集合仍为唯一提交输入。
+- 验证入口为 BatchStateCommand／Limit／Transaction／Boundary 与 UnifiedSearchBatchState 系列，加 B-M1／T-M2／R-M3／旧批量回归、quality_gate／check_workflow 和完整PrivacyQA。唯一授权规则、证据与缺口见[权威 B-M2](unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。

@@ -110,7 +110,7 @@ struct CommandCatalogTests {
             == .unavailable(reasonKey: "command.reason.recoveryDesign"))
         #expect(catalog.command(path: "/routines/checks/complete")?.availability == .declared)
         #expect(catalog.command(path: "/tasks/batch/completion")?.availability
-            == .unresolved(reasonKey: "command.reason.routineCompletion"))
+            == .declared)
     }
 
     @Test func targetTypesDoNotConflateParentsRecordsAndWindows() throws {

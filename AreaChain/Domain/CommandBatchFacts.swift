@@ -14,6 +14,8 @@ struct CommandBatchFacts: Equatable, CustomStringConvertible, CustomDebugStringC
     let acceptanceID: UUID
     let targets: CommandDraftTargets
     let impacts: [CommandBatchTargetImpact]
+    let writeSet: CommandBatchWriteSet?
+    let checkCreationIDs: [CommandObjectReference: UUID]
     var state: State = .pending
     var save = CommandTaskTitleFacts.Call.notCalled
     var rollback = CommandTaskTitleFacts.Call.notCalled
@@ -30,6 +32,8 @@ struct CommandBatchFacts: Equatable, CustomStringConvertible, CustomDebugStringC
         acceptanceID = accepted.id
         targets = accepted.preview.targets
         impacts = accepted.preview.impacts
+        writeSet = accepted.preview.writeSet
+        checkCreationIDs = accepted.checkCreationIDs
     }
 
     func receipt(in run: CommandExecutionRun, attempt: CommandAttemptStamp) throws -> (Int, CommandExecutionResult?) {
@@ -44,6 +48,7 @@ struct CommandBatchFacts: Equatable, CustomStringConvertible, CustomDebugStringC
               state == .saved || external.isEmpty else { throw CommandExecutionError.invalidResult }
         if let previous = run.units[index].batch {
             guard previous.acceptanceID == acceptanceID, previous.targets == targets, previous.impacts == impacts,
+                  previous.writeSet == writeSet, previous.checkCreationIDs == checkCreationIDs,
                   previous.state == .pending || previous.state == state else { throw CommandExecutionError.invalidResult }
         }
         switch state {

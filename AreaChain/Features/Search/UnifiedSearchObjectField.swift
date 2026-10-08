@@ -43,6 +43,11 @@ struct UnifiedSearchObjectField: View {
                 Text("unified.objects.sourceLimit").font(DaybookType.caption)
             }
             if !objects.isEmpty {
+                if location == .targets, controller.allowsBatchOccurrenceSelection(command) {
+                    Button("unified.batch.appendTargets") { controller.beginObjectSelection(location, source: source, appending: true) }
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                        .accessibilityIdentifier("unified.batch.appendTargets")
+                }
                 Button(expanded ? "unified.objects.hide" : "unified.objects.show") { expanded.toggle() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
                 if expanded {
@@ -54,6 +59,10 @@ struct UnifiedSearchObjectField: View {
                                 selectionLabel: "unified.objects.remove", showsIdentityDate: true)
                         } else {
                             unavailable(object)
+                        }
+                        if location == .targets, object.type == .routineOccurrence,
+                           command.id.rawValue == "batch.completion", controller.batch?.supports(command.id) == true {
+                            UnifiedSearchRoutineOccurrenceDate(controller: controller, object: object, source: source)
                         }
                     }
                 }

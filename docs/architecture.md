@@ -180,7 +180,7 @@ AreaChain/
 - **Domain**：禁止 `import SwiftUI` / `import AppKit`（模型可用 SwiftData `@Model`）。纯函数：NLP、连击、四象限排序、日期键。
 - **Services**：封装 `UNUserNotificationCenter`、`EventKit`、Carbon HotKey、`SMAppService`、磁盘与持久化。决策走 Domain。
 - **Features**：组合 Domain 与 Services，不重复领域过滤规则。
-- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增生产消费者、不搬文件；第八阶段 D 只接主外壳，不扩大业务职责。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
+- **Theme**：令牌层是 `DaybookPalette`、`DaybookMetrics`、`DaybookTokens`、`DaybookElevation`、`DaybookColor`；基座层是 `DaybookInputShell`、`DaybookButtonStyle`、`daybookSurface`、`DaybookChip`、`DaybookSectionHeader`、`DaybookDivider`、`DaybookSegmentedBar`。基准是菜单栏浮层任务页：输入高 34、聚焦为墨色 35% 描边、列表是纸底加分隔线、浮层阴影是黑 14% / 模糊 8 / 偏移 2。搜索框高 28、圆角 6。按钮悬停是淡灰圆角底，点击区 regular 28 / compact 22 / inline 18。工作台只在 `WorkspaceLayout` 保留页头、侧栏和内容宽度。新增 UI 先查 [共享组件与复用目录](component-catalog.md)，Feature 复合视图不反向塞入 Theme。`LiveComposerPreviewHeader` 与 `LiveDiaryComposerPreview` 保持为 Theme 中的历史例外，不新增生产业务消费者、不搬文件；设置控件预览仅复用固定合成展示并接管复制反馈，不产生业务或系统写入；第八阶段 D 只接主外壳，不扩大业务职责。生产搜索只走工作台顶栏和菜单栏底栏，不再保留无入口的独立搜索页。
 
 ### 工作台公共顶栏
 
@@ -557,3 +557,8 @@ StateOperations 显式扩展原 RoutineCommandEnvironment，RoutineCommandStateR
 BatchCommandReader 独占同隔离 context 的有界目标读取与一份目录索引，真实来源、记录身份、raw tagIDs 和影响字段逐项绑定接受。混合类型拆成明确的仓储调用，禁止共享 Set<UUID> 同时选择两类实体。BatchCommandTransaction 复用原仓储字段规则和一次 ModelChanges；任何应用失败共同回滚，全部 noChange 不进入事务。保存返回先登记整份 CommandBatchFacts，再一次私有广播；fake 外部结果逐目标保留，不将一次刷新当成全部同步成功。
 
 Run 在 unknown 时保留原目标、参数、影响写集和接受／调用身份，不重试或拆成单项；当前值符合预期也不产生历史提交证明。新装配只允许干净内存库、相同仓储 context 和私有事件。旧批量 UI／单项命令和全局单项计划守卫保持；完整契约和验证见[权威 B-M1](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)。
+
+
+### B-M2 批量状态实体计划
+
+CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类型化物理身份／创建身份合并真实变化实体；只有显式状态装配使用4000实体上限。RoutineCommandStateSnapshot 与 T-M2 完成投影共用原读取规则，观察日及每定义历史固定，目标日期各自保留。RoutineStateApplication 在原单项仓储与批量事务之间复用物理应用；批量先统一核验所有成员再开始一次 ModelChanges，所有 noChange 零保存，unknown 保留整份身份，不按单项恢复。定义候选＋明确日期仅是本批原生选择的显式转换，临时候选票据不替代最终服务资格。范围、旧单项差异及证据见[权威 B-M2](unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。

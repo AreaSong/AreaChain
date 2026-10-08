@@ -51,6 +51,7 @@ final class ControlsPreviewTestSupport {
         try await SystemPageHost.settle(workspace)
         let button = try Native.button("settings.controlsPreview", in: workspace)
         try await Native.reveal(button, in: workspace)
+        try Self.requireKeyWindow(workspace, action: "settings.controlsPreview")
         try await Native.click(button, in: workspace)
         let window = try #require(ControlsPreviewWindowController.shared.hostedWindow)
         try await NativeSyntaxUI.prepareFocus(in: window)
@@ -79,7 +80,13 @@ final class ControlsPreviewTestSupport {
     static func press(_ identifier: String, in window: NSWindow) async throws {
         let item = try node(identifier, in: window)
         try await Native.reveal(item, in: window)
+        try requireKeyWindow(window, action: identifier)
         try await Native.click(item, in: window)
+    }
+
+    private static func requireKeyWindow(_ window: NSWindow, action: String) throws {
+        let foreground = NSWorkspace.shared.frontmostApplication?.bundleIdentifier ?? "none"
+        try #require(window.isKeyWindow, "预览动作 \(action) 失焦；active=\(NSApp.isActive)，foreground=\(foreground)")
     }
 
     static func actions(in window: NSWindow) throws -> String {

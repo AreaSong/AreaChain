@@ -17,18 +17,21 @@ import SwiftData
     let dependencies: Dependencies
     let source: (CommandObjectReference) throws -> CommandTaskTitleEligibility
     let refresh: (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh
+    let stateOperations: RoutineCommandEnvironment.StateOperations?
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
     lazy var reader = BatchCommandReader(environment: self)
 
     init(context: ModelContext, center: NotificationCenter, dependencies: Dependencies,
          source: @escaping (CommandObjectReference) throws -> CommandTaskTitleEligibility,
-         refresh: @escaping (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh) throws {
+         refresh: @escaping (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh,
+         stateOperations: RoutineCommandEnvironment.StateOperations? = nil) throws {
         self.context = context
         self.center = center
         self.dependencies = dependencies
         self.source = source
         self.refresh = refresh
+        self.stateOperations = stateOperations
         try validateClean()
     }
 

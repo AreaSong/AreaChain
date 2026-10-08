@@ -110,7 +110,7 @@ extension CommandCatalogBuilder {
                 .targets([.todo], batch: .explicitMultiple).ordinary(),
             entry("batch.completion", "/tasks/batch/completion", .modification, "T7:complete T7:reopen",
                   [p(.enabled, .boolean)])
-                .targets([.todo, .routineOccurrence], batch: .explicitMultiple).unresolved("routineCompletion"),
+                .targets([.todo, .routineOccurrence], batch: .explicitMultiple).ordinary(),
             entry("batch.tags", "/tasks/batch/tags", .modification, "T7:addTags T7:removeTags",
                   [p(.tags, .tags).editing([.add, .remove], default: .add)])
                 .targets([.todo, .routine], batch: .explicitMultiple).ordinary(),

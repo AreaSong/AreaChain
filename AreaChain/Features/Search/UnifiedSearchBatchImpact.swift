@@ -10,10 +10,11 @@ struct UnifiedSearchBatchImpact: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(verbatim: L10n.format("unified.batch.commonSave", locale: locale, preview.impacts.count))
                 .font(DaybookType.body.weight(.semibold)).accessibilityIdentifier("unified.batch.count")
-            Text(verbatim: L10n.format("unified.batch.distribution", locale: locale,
+            if let counts = preview.writeSet?.counts { UnifiedSearchBatchWriteCounts(counts: counts) }
+            else { Text(verbatim: L10n.format("unified.batch.distribution", locale: locale,
                 preview.impacts.filter { $0.target.type == .todo }.count,
                 preview.impacts.filter { $0.target.type == .routine }.count,
-                preview.changedCount, preview.impacts.count - preview.changedCount)).font(DaybookType.caption)
+                preview.changedCount, preview.impacts.count - preview.changedCount)).font(DaybookType.caption) }
             if preview.baseline.original(preview.edit.parameter, targets: preview.targets) == .mixed {
                 Text("unified.batch.mixed").font(DaybookType.caption).accessibilityIdentifier("unified.batch.mixed")
             }
@@ -34,6 +35,10 @@ struct UnifiedSearchBatchImpact: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
             Text(verbatim: impact.title).font(DaybookType.body).fixedSize(horizontal: false, vertical: true)
             Text(LocalizedStringKey(UnifiedSearchResultCopy.typeKey(impact.target.type))).font(DaybookType.caption)
+            if let day = impact.target.dayKey ?? impact.taskDay { Text(verbatim: day).font(DaybookType.caption) }
+            Button("unified.batch.removeTarget") { remove(impact.target) }
+                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                .accessibilityIdentifier("unified.batch.remove." + impact.target.searchIdentifier)
             if let tags = impact.tags {
                 Text(verbatim: names(tags.original) + " → " + names(tags.final)).font(DaybookType.caption)
                 UnifiedSearchTaskTagEffects(associations: tags.actions.final)
@@ -41,13 +46,11 @@ struct UnifiedSearchBatchImpact: View {
                     Text(verbatim: L10n.format("unified.batch.removed", locale: locale, names(tags.actions.removed)))
                         .font(DaybookType.caption)
                 }
-            } else {
+            } else if impact.state == nil && impact.completion == nil {
                 Text(verbatim: value(impact.original) + " → " + value(impact.final)).font(DaybookType.caption)
             }
+            UnifiedSearchBatchStateImpact(impact: impact)
             if impact.noChange { Text("unified.batch.memberNoChange").font(DaybookType.caption) }
-            Button("unified.batch.removeTarget") { remove(impact.target) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                .accessibilityIdentifier("unified.batch.remove." + impact.target.searchIdentifier)
         }.accessibilityElement(children: .contain)
             .accessibilityIdentifier("unified.batch.target." + impact.target.searchIdentifier)
     }

@@ -10,6 +10,9 @@ struct UnifiedSearchObjectSelectionStamp: Equatable {
     let source: UnifiedSearchBuffer
     let location: UnifiedSearchObjectLocation
     let candidateVersion: UUID
+    var occurrenceDays: [CommandObjectReference: String] = [:]
+    var appending = false
+    var occurrenceDateTarget: CommandObjectReference?
 }
 
 struct UnifiedSearchObjectSelection {
@@ -18,11 +21,21 @@ struct UnifiedSearchObjectSelection {
     let location: UnifiedSearchObjectLocation
     var browse: ContentQueryBrowseState
     var selection = CommandDraftTargets.Selection.selected
+    var occurrenceDays: [CommandObjectReference: String] = [:]
+    var appending = false
+    var occurrenceDateTarget: CommandObjectReference?
     var stamp: UnifiedSearchObjectSelectionStamp {
-        .init(id: id, source: source, location: location, candidateVersion: browse.snapshot.version)
+        .init(id: id, source: source, location: location, candidateVersion: browse.snapshot.version,
+              occurrenceDays: occurrenceDays, appending: appending, occurrenceDateTarget: occurrenceDateTarget)
+    }
+    var candidateObjects: [CommandObjectReference] {
+        browse.snapshot.units.flatMap(\.hits).filter { browse.selected.contains($0) }
     }
     var objects: [CommandObjectReference] {
-        browse.snapshot.units.flatMap(\.hits).filter { browse.selected.contains($0) }
+        candidateObjects.map { object in
+            guard object.type == .routine, let day = occurrenceDays[object] else { return object }
+            return .init(type: .routineOccurrence, id: object.id, dayKey: day)
+        }
     }
 }
 
@@ -65,12 +78,14 @@ extension UnifiedSearchController {
         }
     }
 
-    func beginObjectSelection(_ location: UnifiedSearchObjectLocation, source: UnifiedSearchBuffer) {
+    func beginObjectSelection(_ location: UnifiedSearchObjectLocation, source: UnifiedSearchBuffer, appending: Bool = false) {
         guard validates(source), operationVisible, objectSelection == nil, !objectSelectionLoading,
               let draft = editingDraft, draft.stamp == source.operation,
               let command = CommandCatalog.standard.command(id: draft.commandID),
               !objectTypes(location, command: command).isDisjoint(with: Self.adaptedObjectTypes),
               command.interactions.isDisjoint(with: [.secureInput, .authentication, .freshAuthentication]) else { return }
+        guard !appending || location == .targets && command.id.rawValue == "batch.completion"
+            && batch?.supports(command.id) == true else { return }
         objectSelectionLoading = true
         let requestID = UUID()
         objectRequestID = requestID
@@ -92,7 +107,7 @@ extension UnifiedSearchController {
                 }
                 self.renewObjectCandidateSource()
                 self.objectSelection = .init(source: self.buffer, location: location,
-                                              browse: .init(snapshot: page.snapshot))
+                                              browse: .init(snapshot: page.snapshot), appending: appending)
                 self.objectSelectionMessage = "unified.objects.hint"
             } catch {
                 if self.objectRequestID == requestID { self.objectSelectionMessage = "unified.objects.unavailable" }
@@ -111,13 +126,17 @@ extension UnifiedSearchController {
     func objectSelectionIssue(_ picker: UnifiedSearchObjectSelection) -> String? {
         guard validatesObjectSelection(picker.stamp), let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID) else { return "unified.objects.stale" }
+        if picker.occurrenceDateTarget != nil { return "unified.batch.chooseExecutionDay" }
         let objects = picker.objects
         if picker.selection == .allResults,
            !session.allObjectResultsComplete(sourceID: picker.browse.snapshot.sourceID)
             || picker.browse.selected != picker.browse.snapshot.known { return "unified.objects.incompleteAll" }
         if objects.isEmpty { return "unified.objects.empty" }
-        if objects.contains(where: { (try? session.objectCandidate($0, sourceID: picker.browse.snapshot.sourceID)) == nil }) {
+        if picker.candidateObjects.contains(where: { (try? session.objectCandidate($0, sourceID: picker.browse.snapshot.sourceID)) == nil }) {
             return "unified.objects.unsupported"
+        }
+        if allowsBatchOccurrenceSelection(command), objects.contains(where: { $0.type == .routine }) {
+            return "unified.batch.chooseExecutionDay"
         }
         if objects.contains(where: { !objectTypes(picker.location, command: command).contains($0.type) }) {
             return "unified.objects.wrongType"
@@ -179,7 +198,8 @@ extension UnifiedSearchController {
         if picker.location == .targets {
             let selection: CommandDraftTargets.Selection = picker.selection == .allResults ? .allResults
                 : (picker.objects.count == 1 ? .single : .selected)
-            event = .selectTargets(draft.stamp, .init(selection, objects: picker.objects),
+            let objects = picker.appending ? draft.targets.objects + picker.objects : picker.objects
+            event = .selectTargets(draft.stamp, .init(picker.appending ? .selected : selection, objects: objects),
                                    baseline: command.id.rawValue == "todo.title" || routesBatch(command.id)
                                     || (routesSubtask(command.id) || routesRoutine(command.id)) ? nil : syntheticBaselines[command.id])
         } else {

@@ -1,6 +1,6 @@
 import Foundation
 
-/// 仅 B-M1 显式宿主装配；一个批量操作始终占用一个原计划项与一次调用身份。
+/// 一个批量操作始终占用一个原计划项与一次调用身份；状态能力另行显式装配。
 @MainActor final class BatchCommandAdapter {
     let coordinator: CommandHandoffCoordinator
     let environment: BatchCommandEnvironment?
@@ -8,7 +8,10 @@ import Foundation
         self.coordinator = coordinator
         self.environment = environment
     }
-    func supports(_ command: CommandID) -> Bool { environment != nil && CommandBatchEdit.commands.contains(command.rawValue) }
+    func supports(_ command: CommandID) -> Bool {
+        environment != nil && (CommandBatchEdit.basicCommands.contains(command.rawValue)
+            || environment?.stateOperations != nil && CommandBatchEdit.stateCommands.contains(command.rawValue))
+    }
     func assembled() throws -> BatchCommandEnvironment {
         guard let environment else { throw CommandBatchIssue.unassembled }
         try environment.validateClean()
@@ -53,6 +56,7 @@ import Foundation
     func submit(accepted: CommandBatchAcceptance, expecting lease: CommandHostLease,
                 displaySession: ContentQueryReadSession? = nil) throws -> CommandBatchFacts {
         try validatePreview(accepted.preview, expecting: lease, displaySession: displaySession)
+        try accepted.preview.writeSet?.validateLimit()
         guard coordinator.batches.acceptances[accepted.preview.draft.draftID] == accepted,
               !coordinator.batches.wasInvoked(accepted.id) else { throw CommandBatchIssue.stale }
         try coordinator.send(.sealPlan(accepted.preview.plan, runID: UUID()), expecting: lease)

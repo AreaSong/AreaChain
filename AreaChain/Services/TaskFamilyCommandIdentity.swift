@@ -5,6 +5,10 @@ import SwiftData
 enum TaskFamilyCommandIdentity {
     static func children(of todo: TodoItem, in context: ModelContext) throws -> [SubtaskItem] {
         let rows = try context.fetch(FetchDescriptor<SubtaskItem>())
+        return try children(of: todo, in: context, rows: rows)
+    }
+
+    static func children(of todo: TodoItem, in context: ModelContext, rows: [SubtaskItem]) throws -> [SubtaskItem] {
         let related = rows.filter { $0.todo === todo }
         let children = todo.subtasks
         let identities = children.map(\.persistentModelID)
@@ -15,6 +19,17 @@ enum TaskFamilyCommandIdentity {
             throw SubtaskCommandIssue.invalidFamily
         }
         return children
+    }
+
+    static func completion(of todo: TodoItem, done: Bool, children: [SubtaskItem],
+                           lookup: CommandTaskTagLookup) throws -> CommandTaskCompletionImpact {
+        let snapshots = try children.map { child in
+            let affected = !todo.isDone && done && child.deletedAt == nil && !child.isDone
+            if affected { _ = try CommandTaskTitleTags.associations(rawIDs: child.tagIDs, lookup: lookup) }
+            return CommandTaskCompletionImpact.Child(id: child.id, parentID: todo.id, isDone: child.isDone,
+                deletedAt: child.deletedAt, tagIDs: child.tagIDs, title: affected ? child.title : "")
+        }.sorted { $0.id.uuidString < $1.id.uuidString }
+        return .init(original: todo.isDone, final: done, children: snapshots)
     }
 
     static func subtask(_ id: UUID, in context: ModelContext) throws -> SubtaskItem {

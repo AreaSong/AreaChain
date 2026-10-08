@@ -103,13 +103,8 @@ import SwiftData
         let children: [SubtaskItem]
         do { children = try TaskFamilyCommandIdentity.children(of: todo, in: environment.context) }
         catch { throw TaskFieldCommandIssue.fieldsChanged }
-        let snapshots = try children.map { child in
-            let affected = !todo.isDone && done && child.deletedAt == nil && !child.isDone
-            if affected { _ = try CommandTaskTitleTags.merge(rawIDs: child.tagIDs, title: "", catalog: catalog) }
-            return CommandTaskCompletionImpact.Child(id: child.id, parentID: todo.id, isDone: child.isDone,
-                deletedAt: child.deletedAt, tagIDs: child.tagIDs, title: affected ? child.title : "")
-        }.sorted { $0.id.uuidString < $1.id.uuidString }
-        return .init(original: todo.isDone, final: done, children: snapshots)
+        return try TaskFamilyCommandIdentity.completion(of: todo, done: done, children: children,
+                                                       lookup: CommandTaskTagLookup(catalog))
     }
 
     private func source(target: UUID) throws -> CommandTaskTitleEligibility {
