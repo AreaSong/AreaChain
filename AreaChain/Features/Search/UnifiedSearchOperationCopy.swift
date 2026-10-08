@@ -34,7 +34,8 @@ enum UnifiedSearchOperationCopy {
         case .number(let number): number.formatted(.number.locale(locale))
         case .object: L10n.format("unified.objects.count", locale: locale, 1)
         case .objects(let objects): L10n.format("unified.objects.count", locale: locale, objects.count)
-        case .longText, .tags, .nativeSelection, .shortcut:
+        case .tags(let ids): L10n.format("unified.field.tagCount", locale: locale, ids.count)
+        case .longText, .nativeSelection, .shortcut:
             L10n.format("unified.operation.later", locale: locale)
         case nil: L10n.format("unified.operation.unfilled", locale: locale)
         default: raw(value)

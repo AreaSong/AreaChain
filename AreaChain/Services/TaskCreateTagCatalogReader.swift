@@ -1,16 +1,22 @@
 import Foundation
 import SwiftData
+import Observation
 
-/// 仅绑定注入的隔离 context。新预览换读取身份，复核重枚举同一读取；任何保存尝试保守推进版本。
-@MainActor final class TaskCreateTagCatalogReader {
+/// 仅绑定注入的隔离 context。新增默认在任何保存时失效；标题按目录事实失效，避免无关字段保存造成整对象冲突。
+@Observable @MainActor final class TaskCreateTagCatalogReader {
+    enum Invalidation { case anySave, catalogFacts }
     private let context: ModelContext
+    private let invalidation: Invalidation
     private let directoryID = UUID()
     private var readID = UUID()
     private var revision: UInt64 = 0
-    private var observer: NSObjectProtocol?
+    private var lastDigest: [UInt8]?
+    @ObservationIgnored private var observer: NSObjectProtocol?
 
-    init(context: ModelContext) {
+    init(context: ModelContext, invalidation: Invalidation = .anySave) {
         self.context = context
+        self.invalidation = invalidation
+        guard invalidation == .anySave else { return }
         observer = NotificationCenter.default.addObserver(forName: ModelContext.willSave,
                                                           object: context, queue: nil) { [weak self] _ in
             MainActor.assumeIsolated { self?.revision += 1 }
@@ -28,8 +34,14 @@ import SwiftData
     func current() throws -> CommandTaskTagCatalog {
         do {
             let rows = try SwiftDataCatalogRepository(context: context).fetchTags(includeDeleted: true)
-            return .init(directoryID: directoryID, readID: readID, revision: revision,
-                         coverage: .complete, records: rows.map(Self.record))
+            let records = rows.map(Self.record)
+            if invalidation == .catalogFacts {
+                let snapshot = CommandTaskTagCatalog(directoryID: directoryID, readID: readID, revision: revision,
+                                                     coverage: .complete, records: records)
+                let digest = try snapshot.evidence().digest
+                if lastDigest != digest { revision += 1; lastDigest = digest }
+            }
+            return .init(directoryID: directoryID, readID: readID, revision: revision, coverage: .complete, records: records)
         } catch { throw TaskCreateCommandIssue.storageUnavailable }
     }
 

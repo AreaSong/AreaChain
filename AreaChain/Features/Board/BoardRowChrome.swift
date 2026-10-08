@@ -12,6 +12,7 @@ final class BoardRowChrome {
     var isNoteHovered = false
     var isNoteBubbleHovered = false
 
+    @ObservationIgnored var isTitlePointerInside = false
     @ObservationIgnored private var rowHoverTask: Task<Void, Never>?
     @ObservationIgnored private var titleHoverTask: Task<Void, Never>?
     @ObservationIgnored private var noteHoverTask: Task<Void, Never>?
@@ -103,6 +104,14 @@ final class BoardRowChrome {
         titleHoverTask = nil
         noteHoverTask?.cancel()
         noteHoverTask = nil
+    }
+
+    /// 手记可见标题失效时撤销迟到任务；不改变其他行和备注的退出政策。
+    func resetTitleHover() {
+        titleHoverTask?.cancel()
+        titleHoverTask = nil
+        isTitleTextHovered = false
+        isTitleBubbleHovered = false
     }
 
     func resignCommand() {

@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -49,7 +50,7 @@ struct CaptureField: View {
                 availableTags: availableTags,
                 highlightsSyntax: true,
                 onSubmit: onTodo,
-                onCommandReturn: { if allowsDiaryShortcut { onDiary() } },
+                onCommandReturn: { if allowsDiaryShortcut { submitDiary() } },
                 commandChord: shortcuts.armedChord(for: .commitDiary),
                 allowsShiftNewline: false
             )
@@ -70,8 +71,19 @@ struct CaptureField: View {
             enabled: canSubmit,
             label: "capture.diary",
             symbolText: diarySymbol,
-            action: onDiary
+            action: submitDiary
         )
             .appShortcut(.commitDiary, enabled: allowsDiaryShortcut)
+    }
+
+    private func submitDiary() {
+        guard canSubmit else { return }
+        // 按钮快捷键可能先于字段收到事件；只检查本输入仍在使用的原生编辑器。
+        if let editor = autocomplete.editor,
+           let field = editor.delegate as? NSTextField,
+           field.currentEditor() === editor,
+           field.window?.firstResponder === editor,
+           DaybookTextEditing.isProtected(editor) { return }
+        onDiary()
     }
 }

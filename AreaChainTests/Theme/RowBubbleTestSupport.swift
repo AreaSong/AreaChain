@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import Testing
+import Vision
 @testable import AreaChain
 
 /// F 只冻结原装饰；正文、事件、反馈与箭头均直接挂生产气泡。
@@ -98,5 +99,100 @@ enum RowBubbleTestSupport {
     static func bytes(_ bitmap: NSBitmapImageRep) -> Data {
         guard let data = bitmap.bitmapData else { return Data() }
         return Data(bytes: data, count: bitmap.bytesPerRow * bitmap.pixelsHigh)
+    }
+}
+
+/// M 只读取公开辅助语义、原生几何和注入 chrome；不设置生产悬停状态。
+@MainActor
+enum DiaryDiagnostic {
+    static func performCopy(in window: NSWindow, locale: String = "en") throws -> Bool {
+        let name = L10n.string("diary.copy", locale: Locale(identifier: locale))
+        let card = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
+            SettingsButtonTestSupport.value($0, "accessibilityLabel") as? String == "diary.preview.card"
+        })
+        let actions = SettingsButtonTestSupport.value(card, "accessibilityCustomActions") as? [NSAccessibilityCustomAction]
+        let action = try #require(actions?.first { $0.name == name }, "合并节点必须公开命名 Copy 动作")
+        // NSAccessibilityCustomAction.handler 是公开辅助动作入口；不读取或直接调用 onCopy。
+        let handler = try #require(action.handler, "当前工具只执行已公开的 block 动作，不猜 selector")
+        return handler()
+    }
+
+    static func recognizedStrings(_ bitmap: NSBitmapImageRep, locale: String = "en") throws -> [String] {
+        let request = VNRecognizeTextRequest()
+        // Vision 按语言顺序识别；英文优先会漏掉小字号中文反馈，不能据此判定没有绘制。
+        request.recognitionLanguages = locale == "zh-Hans" ? ["zh-Hans", "en-US"] : ["en-US", "zh-Hans"]
+        try VNImageRequestHandler(cgImage: #require(bitmap.cgImage)).perform([request])
+        return (request.results ?? []).compactMap { $0.topCandidates(1).first?.string }
+    }
+
+    static func renderedTitles(_ window: NSWindow) throws -> [CGRect] {
+        let bitmap = try OverlaySurfaceTestSupport.bitmap(window)
+        let request = VNRecognizeTextRequest()
+        request.recognitionLanguages = ["en-US", "zh-Hans"]
+        try VNImageRequestHandler(cgImage: #require(bitmap.cgImage)).perform([request])
+        let view = try #require(window.contentView)
+        return (request.results ?? []).filter {
+            $0.topCandidates(1).first?.string.contains("Synthetic") == true
+        }.map { observation in
+            let box = observation.boundingBox
+            let rect = CGRect(x: box.minX * view.bounds.width,
+                y: (view.isFlipped ? 1 - box.maxY : box.minY) * view.bounds.height,
+                width: box.width * view.bounds.width, height: box.height * view.bounds.height)
+            return view.convert(rect, to: nil)
+        }
+    }
+
+    static func state(_ chrome: BoardRowChrome, phase: String) {
+        print("DIARY_M \(phase) uptime=\(ProcessInfo.processInfo.systemUptime) "
+            + "row=\(chrome.isRowHovered) title=\(chrome.isTitleTextHovered) "
+            + "bubble=\(chrome.isTitleBubbleHovered) command=\(chrome.isCommandPressed)")
+    }
+
+    static func sample(_ chrome: BoardRowChrome, window: NSWindow, phase: String) async throws {
+        var previous = ""
+        for index in 0..<100 {
+            let current = "\(chrome.isRowHovered),\(chrome.isTitleTextHovered),\(chrome.isTitleBubbleHovered)"
+            if current != previous { state(chrome, phase: "\(phase)-\(index)"); previous = current }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(window.isKeyWindow)
+    }
+
+    static func record(_ window: NSWindow, phase: String) throws {
+        try OverlaySurfaceTestSupport.record(window, name: "m-\(phase)")
+        let nodes = SettingsButtonTestSupport.elements(window.contentView).map { node -> [String: Any] in
+            var result: [String: Any] = ["type": String(describing: type(of: node))]
+            for key in ["accessibilityRole", "accessibilityLabel", "accessibilityValue", "accessibilityTitle",
+                        "accessibilityIdentifier", "accessibilityActionNames"] {
+                if let value = SettingsButtonTestSupport.value(node, key) { result[key] = String(describing: value) }
+            }
+            if node.responds(to: NSSelectorFromString("accessibilityFrame")),
+               let frame = node.value(forKey: "accessibilityFrame") as? NSValue {
+                result["screenFrame"] = NSStringFromRect(frame.rectValue)
+                result["windowFrame"] = NSStringFromRect(window.convertFromScreen(frame.rectValue))
+            }
+            if let actions = SettingsButtonTestSupport.value(node, "accessibilityCustomActions") as? [NSAccessibilityCustomAction] {
+                result["customActions"] = actions.map(\.name)
+            }
+            if let accessible = node as? NSAccessibilityProtocol {
+                result["screenFrame"] = NSStringFromRect(accessible.accessibilityFrame())
+                result["windowFrame"] = NSStringFromRect(window.convertFromScreen(accessible.accessibilityFrame()))
+                result["customActions"] = accessible.accessibilityCustomActions()?.map(\.name) ?? []
+            }
+            if let view = node as? NSView {
+                result["viewFrame"] = NSStringFromRect(view.convert(view.bounds, to: nil))
+                result["tracking"] = view.trackingAreas.map { area in
+                    ["rect": NSStringFromRect(view.convert(area.rect, to: nil)),
+                     "options": String(area.options.rawValue), "owner": String(describing: type(of: area.owner))]
+                }
+            }
+            return result
+        }
+        let output: [String: Any] = ["window": window.windowNumber, "frame": NSStringFromRect(window.frame),
+                                     "key": window.isKeyWindow, "nodes": nodes]
+        let directory = FileManager.default.temporaryDirectory.appending(path: "AreaChainSurfaceQA")
+        try JSONSerialization.data(withJSONObject: output, options: [.prettyPrinted, .sortedKeys])
+            .write(to: directory.appending(path: "m-\(phase)-ax.json"))
+        print("DIARY_M \(phase) window=\(window.windowNumber) output=\(directory.path)")
     }
 }

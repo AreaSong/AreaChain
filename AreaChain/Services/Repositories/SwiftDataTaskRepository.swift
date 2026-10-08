@@ -277,20 +277,34 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
 
     @discardableResult
     func addSubtask(to todoID: UUID, title: String) throws -> SubtaskItem {
-        guard let todo = try fetchTodo(id: todoID) else {
+        guard try fetchTodo(id: todoID) != nil else {
             throw RepositoryError.notFound("TodoItem(id: \(todoID))")
         }
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
+        guard let edit = SubtaskTitleEdit(title) else {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
         return try ModelChanges.transaction(in: context) {
-            let names = TagSyntax.names(in: trimmed, includesDiaryTags: false)
-            let tagIDs = try InputTagResolver.merging(names, into: "", in: context)
+            let tagIDs = try InputTagResolver.merging(edit.tagNames, into: "", in: context)
+            return try addSubtask(.init(parentID: todoID, title: edit.title, tagIDs: tagIDs))
+        }
+    }
+
+    func addSubtask(_ params: CreateSubtaskParams) throws -> SubtaskItem {
+        guard let todo = try fetchTodo(id: params.parentID) else {
+            throw RepositoryError.notFound("TodoItem(id: \(params.parentID))")
+        }
+        guard !params.title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw RepositoryError.invalidArgument("子任务标题不能为空")
+        }
+        if let id = params.creationID,
+           try !context.fetch(FetchDescriptor<SubtaskItem>(predicate: #Predicate { $0.id == id })).isEmpty {
+            throw RepositoryError.invalidArgument("创建身份已存在")
+        }
+        return try ModelChanges.transaction(in: context) {
             let nextOrder = Catalog.nextSortOrder(todo.subtasks.filter { $0.deletedAt == nil }.map(\.sortOrder))
             let subtask = SubtaskItem(
-                title: TagSyntax.title(from: trimmed, includesDiaryTags: false),
-                sortOrder: nextOrder, tagIDs: tagIDs, todo: todo
+                id: params.creationID ?? UUID(), title: params.title,
+                sortOrder: nextOrder, tagIDs: params.tagIDs, todo: todo
             )
             context.insert(subtask)
             return subtask
@@ -301,7 +315,25 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let subtask = try fetchSubtask(id: id) else {
             throw RepositoryError.notFound("SubtaskItem(id: \(id))")
         }
-        subtask.isDone.toggle()
+        SubtaskFields.completion(subtask, enabled: !subtask.isDone)
+        try saveAndNotify()
+    }
+
+    var subtaskMutationContext: ModelContext? { context }
+
+    func updateSubtask(id: UUID, update: SubtaskFieldUpdate) throws {
+        guard let subtask = try fetchSubtask(id: id) else {
+            throw RepositoryError.notFound("SubtaskItem(id: \(id))")
+        }
+        switch update {
+        case .title(let title, let tags):
+            guard !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw RepositoryError.invalidArgument("子任务标题不能为空")
+            }
+            SubtaskFields.title(subtask, title: title, tagIDs: tags)
+        case .completion(let enabled): SubtaskFields.completion(subtask, enabled: enabled)
+        case .tags(let tags): SubtaskFields.tags(subtask, tagIDs: tags)
+        }
         try saveAndNotify()
     }
 
@@ -309,14 +341,12 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let subtask = try fetchSubtask(id: id) else {
             throw RepositoryError.notFound("SubtaskItem(id: \(id))")
         }
-        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
+        guard let edit = SubtaskTitleEdit(title) else {
             throw RepositoryError.invalidArgument("子任务标题不能为空")
         }
         try ModelChanges.transaction(in: context) {
-            let names = TagSyntax.names(in: trimmed, includesDiaryTags: false)
-            subtask.tagIDs = try InputTagResolver.merging(names, into: subtask.tagIDs, in: context)
-            subtask.title = TagSyntax.title(from: trimmed, includesDiaryTags: false)
+            let tags = try InputTagResolver.merging(edit.tagNames, into: subtask.tagIDs, in: context)
+            SubtaskFields.title(subtask, title: edit.title, tagIDs: tags)
         }
     }
 
@@ -324,7 +354,7 @@ final class SwiftDataTaskRepository: TaskRepositoryProtocol {
         guard let subtask = try fetchSubtask(id: id) else {
             throw RepositoryError.notFound("SubtaskItem(id: \(id))")
         }
-        subtask.tagIDs = TagIDList.toggling(subtask.tagIDs, tagID)
+        SubtaskFields.tags(subtask, tagIDs: TagIDList.toggling(subtask.tagIDs, tagID))
         try saveAndNotify()
     }
 

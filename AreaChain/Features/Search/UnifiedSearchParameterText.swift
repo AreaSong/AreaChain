@@ -31,7 +31,8 @@ struct UnifiedSearchParameterText: View {
             DaybookTextField(text: .constant(buffer.text), placeholder: L10n.format(context.parameter.id.nameKey, locale: locale),
                 focus: $focused, onSubmit: {}, onCommandReturn: {},
                 commandChord: .init(keyCode: ShortcutKey.returnKey, modifiers: ShortcutModifier.command),
-                allowsShiftNewline: false, unifiedSearch: state, searchBuffer: buffer,
+                allowsShiftNewline: false, newlinePolicy: ["todo.title", "todo.createTag"].contains(context.command.id.rawValue) ? .verbatim : .capture,
+                unifiedSearch: state, searchBuffer: buffer,
                 searchConfiguration: .init(actions: Self.actions(controller, context), parser: .init(),
                     discovery: .standard, locale: locale, parameter: context))
                 .accessibilityLabel(Text(verbatim: L10n.format(context.parameter.id.nameKey, locale: locale)))

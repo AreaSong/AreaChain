@@ -193,8 +193,10 @@ import SwiftData
         try coordinator.validate(lease)
         let run = try coordinator.host(lease.ownership.hostID).session.execution
         guard run?.operation(operation.operationID) == operation,
-              let facts = run?.units.first?.taskCreation, facts.state == .unknown,
-              let prepared = coordinator.taskCreations.preparations[run!.snapshot.items[0].draft.id],
+              let unit = run?.units.first(where: { $0.members.contains(operation.operationID) }),
+              let facts = unit.taskCreation, facts.state == .unknown,
+              let item = run?.snapshot.items.first(where: { $0.id == operation.operationID }),
+              let prepared = coordinator.taskCreations.preparations[item.draft.id], prepared.item == operation.item,
               prepared.environmentID == environment.id, prepared.creationID == facts.creationID,
               coordinator.taskCreations.wasInvoked(prepared.id) else { throw TaskCreateCommandIssue.stale }
         let reader = ModelContext(environment.context.container)
@@ -220,6 +222,7 @@ import SwiftData
         facts.publication = call(creation.transaction?.publication)
         facts.publicationFailed = creation.transaction?.publicationFailed == true
         facts.registrationFailed = creation.registrationFailed
+        if creation.state == .saved { facts.savedTagEffects = creation.savedTagEffects }
         return facts
     }
 

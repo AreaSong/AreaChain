@@ -23,13 +23,13 @@ struct SearchMultilineUndoTests {
         defer { fixture.cleanup() }
         let field = try await fixture.prepare()
         let editor = try #require(field.currentEditor() as? NSTextView)
-        let trace = kind == .form ? nil : try SearchMultilineTrace(field)
+        let trace = (kind == .form || kind == .clipboard) ? nil : try SearchMultilineTrace(field)
         defer { trace?.restore() }
         try #require(editor.string.isEmpty && editor.undoManager?.canUndo != true)
         print("SEARCH_I_UNDO_BEGIN \(kind) board=\(namedBoard) groups=\(editor.undoManager?.groupingLevel ?? -1)")
         try SearchMultilineBoundaryTests.importText("甲\n乙", editor: editor, namedBoard: namedBoard)
         try await SystemPageHost.settle(fixture.window)
-        #expect(editor.string == (kind == .form ? "甲\n乙" : "甲 乙"))
+        #expect(editor.string == ((kind == .form || kind == .clipboard) ? "甲\n乙" : "甲 乙"))
         trace?.record("\(kind).beforeUndo")
         try #require(editor.tryToPerform(Selector(("undo:")), with: nil))
         trace?.record("\(kind).afterUndo")
@@ -90,7 +90,7 @@ struct SearchMultilineUndoTests {
         try SearchMultilineBoundaryTests.importText("甲\n乙", editor: editor, namedBoard: true)
         try await SystemPageHost.settle(fixture.window)
         let imported = (initial as NSString).replacingCharacters(in: NSRange(location: position, length: 0),
-                                                               with: kind == .form ? "甲\n乙" : "甲 乙")
+                                                               with: (kind == .form || kind == .clipboard) ? "甲\n乙" : "甲 乙")
         for _ in 0..<3 {
             try #require(editor.tryToPerform(Selector(("undo:")), with: nil))
             Self.assertValue(initial, field: field, fixture: fixture)
@@ -125,7 +125,8 @@ struct SearchMultilineUndoTests {
         defer { fixture.cleanup() }
         let field = try await fixture.prepare()
         let editor = try #require(field.currentEditor() as? NSTextView)
-        for (raw, expected) in SearchMultilineBoundaryTests.samples {
+        for (raw, converted) in SearchMultilineBoundaryTests.samples {
+            let expected = kind == .clipboard ? raw : converted
             editor.breakUndoCoalescing()
             try SearchMultilineBoundaryTests.importText(raw, editor: editor, namedBoard: true)
             try await SystemPageHost.settle(fixture.window)
@@ -155,11 +156,11 @@ struct SearchMultilineUndoTests {
             #expect(editor.selectedRange() == NSRange(location: 0, length: 0))
             try #require(editor.undoManager?.canRedo == true)
             try await SearchMultilineBoundaryTests.key(command: true, shift: true, code: 6, text: "z", in: fixture.window)
-            Self.assertValue("甲 乙", field: field, fixture: fixture)
+            Self.assertValue(kind == .clipboard ? "甲\n乙" : "甲 乙", field: field, fixture: fixture)
             #expect(editor.selectedRange() == NSRange(location: 3, length: 0))
             #expect(field.currentEditor() === editor && fixture.window.firstResponder === editor)
             #expect(fixture.window.isKeyWindow && NSApp.isActive)
-            fixture.assertResults(space: true, slash: kind != .tags)
+            fixture.assertResults(space: kind != .clipboard, slash: kind != .tags && kind != .clipboard)
         }
         #expect(fixture.draft.commits == 0 && fixture.draft.diaryCommits == 0)
     }

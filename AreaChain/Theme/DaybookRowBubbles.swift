@@ -39,6 +39,9 @@ public struct RowTitleBubble: View {
     public var onCopy: (() -> Void)? = nil
     public var onHover: ((Bool) -> Void)? = nil
 
+    private var windowHoverInvalidation: (() -> Void)?
+    @State private var windowHoverLifetime = RowBubbleHoverLifetime()
+
     @State private var isCopied: Bool = false
     @State private var isHovered: Bool = false
     @Environment(\.locale) private var locale
@@ -55,6 +58,13 @@ public struct RowTitleBubble: View {
         self.onHover = onHover
     }
 
+    /// 仅手记行启用；其他标题和备注保留原悬停路径。
+    func observingWindowHover(onInvalidate: @escaping () -> Void) -> Self {
+        var bubble = self
+        bubble.windowHoverInvalidation = onInvalidate
+        return bubble
+    }
+
     public var body: some View {
         bubbleContent
             .padding(.horizontal, 8)
@@ -62,7 +72,15 @@ public struct RowTitleBubble: View {
             .frame(maxWidth: 260, alignment: .leading)
             .daybookSurface(floating: .rowBubble(isHovered: isHovered, isCopied: isCopied))
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-            .onHover(perform: handleHover)
+            .onHover { if windowHoverInvalidation == nil { handleHover($0) } }
+            .background {
+                if let windowHoverInvalidation {
+                    RowBubbleHoverRegion(lifetime: windowHoverLifetime, onHover: handleHover,
+                                         onInvalidate: windowHoverInvalidation)
+                        .accessibilityHidden(true)
+                }
+            }
+            .onAppear { if windowHoverInvalidation != nil { windowHoverLifetime.view?.start() } }
             .onDisappear(perform: handleDisappear)
             .onTapGesture(perform: handleTap)
             .task(id: isCopied) {
@@ -101,6 +119,7 @@ public struct RowTitleBubble: View {
     }
 
     private func handleHover(_ hovering: Bool) {
+        if windowHoverInvalidation != nil && hovering == isHovered { return }
         isHovered = hovering
         onHover?(hovering)
         if hovering {
@@ -111,6 +130,7 @@ public struct RowTitleBubble: View {
     }
 
     private func handleDisappear() {
+        if windowHoverInvalidation != nil { windowHoverLifetime.view?.stop() }
         if isHovered {
             NSCursor.pop()
         }

@@ -67,6 +67,7 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
     let preview: CommandTaskCreatePreview?
     /// 只在明确接受时分配；键为最终新标签的规范化名，不是新的计划输出。
     let tagCreationIDs: [String: UUID]
+    let chain: CommandTaskChainIdentity?
 
     var arguments: [CommandArgument] { input?.arguments ?? preview!.arguments }
 
@@ -84,6 +85,7 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
         source = evidence.source
         input = evidence.input
         preview = evidence.preview
+        chain = evidence.chain
         tagCreationIDs = Dictionary(uniqueKeysWithValues: (preview?.composition.tags.final ?? []).compactMap {
             guard case .newName(_, let key) = $0.target else { return nil }
             return (key, UUID())
@@ -101,6 +103,7 @@ struct CommandTaskCreateEvidence {
     let source: CommandTaskCreateSource
     var input: CommandTaskCreateInput?
     var preview: CommandTaskCreatePreview?
+    var chain: CommandTaskChainIdentity?
 }
 
 /// 仅记录运行内调用事实，不是 SwiftData 耐久账本，也不携带任务正文。
@@ -121,6 +124,8 @@ struct CommandTaskCreateFacts: Equatable {
     var calendarRequested: Bool?
     var authorizationRequest: Call = .notCalled
     var authorizationResult: Authorization = .unknown
+    /// 仅由真实共同事务的 afterCommit 提供；nil 不推断标签已保存。
+    var savedTagEffects: [CommandTaskTagAssociation.Effect]?
 
     enum Authorization: Equatable { case unknown, granted, denied }
 }
@@ -151,7 +156,7 @@ enum CommandTaskCreateVerification: Equatable {
             guard old.lease == lease, old.plan == plan, old.item == item.stamp, old.draft == item.draft.stamp,
                   old.environmentID == evidence.environmentID, old.contextID == evidence.contextID,
                   old.storageID == evidence.storageID, old.source == evidence.source,
-                  old.input == evidence.input, old.preview == evidence.preview else { throw TaskCreateCommandIssue.stale }
+                  old.input == evidence.input, old.preview == evidence.preview, old.chain == evidence.chain else { throw TaskCreateCommandIssue.stale }
             return old
         }
         let prepared = CommandTaskCreatePreparation(item: item, plan: plan, lease: lease, evidence: evidence)

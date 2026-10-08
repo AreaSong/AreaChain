@@ -24,22 +24,23 @@ struct SearchMultilineModeTests {
                 try await SystemPageHost.settle(fixture.window)
                 let expected: Set<String>
                 if raw == "甲\n乙" {
-                    expected = mode == .mixed ? ["甲 乙 CLIP_SPACE", "甲 // 乙 CLIP_SLASH"] : ["甲 乙 CLIP_SPACE"]
+                    expected = ["甲\n乙 CLIP_LF"]
                 } else {
                     expected = mode == .regex ? ["甲\n乙 CLIP_LF"] : [#"甲\n乙 CLIP_ESCAPE"#]
                 }
                 let actual = Set(fixture.session.visibleItems.map(\.plainText))
                 print("SEARCH_I_MODE \(mode) board=\(namedBoard) raw=\(raw.debugDescription) query=\(fixture.session.query.debugDescription) hits=\(actual.sorted())")
                 #expect(actual == expected)
+                #expect(fixture.session.query == raw && editor.string == raw)
             }
         }
         #expect(fixture.draft.commits == 0)
         fixture.session.query = "甲\n乙"
         try await SystemPageHost.settle(fixture.window)
         try await Input.key(in: fixture.window)
-        #expect(fixture.session.query == "甲 // 乙")
-        let slashID = try #require(fixture.session.items.first { $0.plainText == "甲 // 乙 CLIP_SLASH" }?.id)
-        #expect(fixture.draft.committedIDs == [slashID])
+        #expect(fixture.session.query == "甲\n乙")
+        let newlineID = try #require(fixture.session.items.first { $0.plainText == "甲\n乙 CLIP_LF" }?.id)
+        #expect(fixture.draft.committedIDs == [newlineID])
     }
 
     @Test(arguments: SearchMultilineConsumer.searches + [.capture])
@@ -60,18 +61,24 @@ struct SearchMultilineModeTests {
         trace.record("\(kind).external.during.marked")
         #expect(editor.hasMarkedText() && !editor.string.contains("EXTERNAL"))
         let before = fixture.draft.commits + fixture.draft.diaryCommits
+        var nativeCommands = 0
+        let originalCommand = trace.coordinator.parent.onCommandReturn
+        trace.coordinator.parent.onCommandReturn = { nativeCommands += 1; originalCommand?() }
+        let marked = editor.markedRange()
+        let selection = editor.selectedRange()
+        let content = editor.string
         try await Input.key(command: true, in: fixture.window)
         trace.record("\(kind).commandReturn.during.marked")
-        if kind == .capture {
-            withKnownIssue("I 同步对照：外部非空草稿启用捕获按钮后，按钮快捷键绕过组合文本保护；只登记，不修生产") {
-                #expect(fixture.draft.commits + fixture.draft.diaryCommits == before)
-            }
-        } else { #expect(fixture.draft.commits + fixture.draft.diaryCommits == before) }
+        print("CAPTURE_J_ROUTE kind=\(kind) native=\(nativeCommands) diary=\(fixture.draft.diaryCommits) todo=\(fixture.draft.commits)")
+        #expect(editor.markedRange() == marked && editor.selectedRange() == selection)
+        #expect(editor.string == content && trace.coordinator.parent.text == "EXTERNAL")
+        #expect(field.currentEditor() === editor && fixture.window.firstResponder === editor)
+        #expect(fixture.draft.commits + fixture.draft.diaryCommits == before)
         try #require(editor.hasMarkedText())
         editor.insertText("甲\n乙", replacementRange: editor.markedRange())
         try await SystemPageHost.settle(fixture.window)
-        #expect(!editor.hasMarkedText() && editor.string == "甲 乙")
-        #expect(trace.coordinator.parent.text == "甲 乙")
+        #expect(!editor.hasMarkedText() && editor.string == (kind == .clipboard ? "甲\n乙" : "甲 乙"))
+        #expect(trace.coordinator.parent.text == (kind == .clipboard ? "甲\n乙" : "甲 乙"))
     }
 
     @Test(arguments: SearchMultilineConsumer.searches + [.capture])

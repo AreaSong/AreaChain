@@ -34,7 +34,12 @@ final class UnifiedSearchResultsFixture {
 
     init(_ batch: ContentQueryBatch = UnifiedSearchResultsFixture.mixed(), pageSize: Int = 3,
          localPreferences: AppPreferences? = nil, filePreferences: AppPreferences? = nil,
-         hostID: String = HandoffFixture.source, taskCreateEnvironment: TaskCreateCommandEnvironment? = nil) throws {
+         hostID: String = HandoffFixture.source, taskCreateEnvironment: TaskCreateCommandEnvironment? = nil,
+         taskCreateCapability: TaskCreateCommandAdapter.Capability = .minimal,
+         privacyCenter: NotificationCenter? = nil, taskTitleEnvironment: TaskTitleCommandEnvironment? = nil,
+         taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
+         taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
+         subtaskEnvironment: SubtaskCommandEnvironment? = nil) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -45,7 +50,7 @@ final class UnifiedSearchResultsFixture {
         session = try .init(vault: vault, owner: ContentQueryReadOwner(
             paginationPolicy: .init(units: pageSize, members: pageSize, contexts: pageSize)),
             coordinator: handoff.coordinator, ownership: handoff.owned(hostID).lease.ownership,
-            notifications: .init(privacy: .default, model: model, focus: focus,
+            notifications: .init(privacy: privacyCenter ?? .default, model: model, focus: focus,
                 focusLost: Self.focusLost, focusObject: focusObject))
         session.install()
         let backend: UnifiedSearchSettingBackend
@@ -56,15 +61,25 @@ final class UnifiedSearchResultsFixture {
             backend = localPreferences.map { .legacy(LocalSettingCommandAdapter(coordinator: handoff.coordinator, preferences: $0)) }
                 ?? .unassembled
         }
+        let creation = taskChainIO?.createEnvironment ?? taskCreateEnvironment
+        let modification = taskChainIO?.titleEnvironment ?? taskTitleEnvironment
+        let createAdapter = creation.map {
+            TaskCreateCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: taskCreateCapability)
+        }
+        let titleAdapter = modification.map { TaskTitleCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
+        let chainAdapter = taskChainIO.flatMap { _ in
+            createAdapter.flatMap { create in titleAdapter.map { TaskChainCommandAdapter(create: create, title: $0) } }
+        }
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in
                 guard let self else { throw ContentQueryReadSessionError.detached }
                 return try await self.publish()
             }, recordOpen: { [weak self] in self?.opens.append($0) },
-            settingBackend: backend, taskCreate: taskCreateEnvironment.map {
-                TaskCreateCommandAdapter(coordinator: handoff.coordinator, environment: $0)
-            })
+            settingBackend: backend, taskCreate: createAdapter, taskTitle: titleAdapter,
+            taskField: taskFieldEnvironment.map { TaskFieldCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: taskFieldCapability) },
+            taskChain: chainAdapter,
+            subtask: subtaskEnvironment.map { SubtaskCommandAdapter(coordinator: handoff.coordinator, environment: $0) })
     }
 
     func publish() async throws -> ContentQueryReadEffect {

@@ -14,7 +14,7 @@ struct CommandTaskCreatePreview: Equatable, CustomStringConvertible, CustomDebug
     let composition: CommandTaskCreateComposition
     let issues: [CommandTaskCreatePreviewIssue]
     private let originalArguments: [CommandArgument]
-    private let source: CommandTaskCreateSource
+    let source: CommandTaskCreateSource
 
     var arguments: [CommandArgument] { originalArguments }
 

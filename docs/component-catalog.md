@@ -1,12 +1,41 @@
 # 共享组件与复用目录
 
+工程验证复用 [build.sh](../scripts/build.sh) 及 [原锁竞争测试](../scripts/tests/test_build.py)；后续任务的等待策略与源码身份核对统一见[并发构建与测试](quality-gates.md#并发构建与测试)，不另建锁或验证执行器。
+
+## 当前收口状态：第十阶段 O
+
+P人工验收仍从 [DaybookButtonInteractionTests.interactiveGallery](../AreaChainTests/Theme/DaybookButtonInteractionTests.swift) 进入；仅测试环境 `AREACHAIN_PLATFORM_QA=1` 启用 [ControlsPlatformAcceptance](../AreaChainTests/Theme/ControlsPlatformAcceptance.swift) 的既有生产夹具入口，保留最多600秒与结束清理。它不属于产品导航；裸NSStepper长按、搜索／捕获、窄周／总览／气泡的实际证据和H/K/L判定统一见[原O内的P收尾](engineering.md#第十阶段-p人工平台验收与最终交付判定)，不以挂载或人工同意当作通过。
+
+P生命周期完善继续由同一会话独占Gallery/子窗口、观察者和清理，600秒内设30秒收尾期。窗口号另配唯一ID、代次及打开单调时刻；局部 [ControlsPlatformEvidence](../AreaChainTests/Theme/ControlsPlatformEvidence.swift) 负责独占JSONL与失败/关闭回执，[ControlsPlatformEvents](../AreaChainTests/Theme/ControlsPlatformEvents.swift) 负责控制键元数据和同步窗口派发范围，不是通用框架或安全认证。SearchMultilineFixture显式platform才用测试窗口子类及双语反馈；SystemPageHost/SettingsButtonTestSupport的suppliedWindow默认nil，其他消费者保留原NSWindow。原SearchMultilineDraft在实际累加处记录回调，保留草稿且不创建生产记录，CaptureField不改。验证由ControlsPlatformLifecycleTests、ControlsPlatformEventTests和原Button/搜索/捕获/Stepper测试承担；本地runner仍为build/Controls10P/run.py，隔离脚本测试为同目录test_run.py。完整证据与暂停桌面入口条件仍只维护在原O/P。
+
+P输入补证只扩展原工具条：普通搜索选择workspace/menu/tags/diary，剪贴板子窗切换mixed/exact/regex，中段初值沿原测试的“头🧪尾”。`SearchMultilineFixture.observedField/inputEvidence`按本场景语言定位原字段，只读Coordinator的原Binding、原生编辑值及合成结果；100ms原生命周期tick和白名单事件边界记录去重标量状态，不记录任意正文/哈希。`ControlsPlatformInputTests`核对短操作、观测不改输入/选区/撤销/焦点、模式与重开清理；Record按钮会改变焦点，连续输入不点击。实际人工结论继续只在原O/P记录，入口存在不表示步骤通过。
+
+第九阶段四类发现及第十阶段四象限、Dashboard 后补入口均已有真实生产接入；总扫描未发现新增确定漏接。权威入口、消费者与合理差异沿本目录各原条目维护。当前源码身份、最终回归清单/计数和保留边界统一见[第十阶段 O 总交接](engineering.md#第十阶段-o控件收口最终整合验收与总交接)：原 O 的2方法/3次历史失败封存保留；O 补验将其定位为测试宿主重排与卡内命令焦点契约问题，仅校正测试，103方法/264次复验通过，按源码影响和实际方法去重后315方法/770次所选自动回归通过。人工、平台、指定复核及H/K/L仍单列，整体 partial，不能将自动回归通过写成全部运行验收完成。原分阶段“下一处/留待后续”是历史范围说明，以本入口及 O 的当前证据为准。
+
+## 第十阶段 I 修复二：剪贴板搜索保真输入
+
+[DaybookNewlinePolicy](../AreaChain/Theme/DaybookTextEditing.swift) 新增显式 `.verbatim`，只由 [ClipboardHistoryBrowser.searchField](../AreaChain/Features/Clipboard/ClipboardHistoryBrowser.swift) 选择。默认 capture、四处普通搜索 searchWhitespace、统一搜索专用 cell/editor 和 FocusState 兼容入口保持；Shift+Return 开关仍单独负责键盘行为。
+
+[DaybookTextFieldCell / DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 同时绕过已提交 payload 转换与 AppKit usesSingleLineMode 转换。String、NSAttributedString、命名 pasteboard 和外部 Binding 均保留原文。公开 [DaybookSingleLineLayout](../AreaChain/Theme/DaybookSingleLineLayout.swift) 只调整换行控制字形的排版动作和空白宽度；编辑 storage 不变，UTF-16 索引与原 UndoManager 保留。非编辑态以同一规则绘制原始 attributedStringValue，并裁剪到原 cell；不存在转义查询、可编辑镜像或失焦还原。原 DaybookInputShell、字体、横向编辑与快捷键继续沿原入口。
+
+Browser 仍绑定 session.query，Return 使用 selectedOrFirst 并调用原 onCommit；⌘Return 不增加提交，Escape 清查询，焦点传播不变。工作台父宿主 showsFooter=true/commitsOnClick=false，历史小窗 true/true；父层默认系统复制/粘贴未运行。ClipboardTextMatching 的 trim、mixed/exact/regex、无效及零长度正则规则不变；搜索内容不自动保存。命名 pasteboard 导入证据不等于真实系统粘贴或真人 IME 证据，实际验收见[工程记录](engineering.md#第十阶段-i-修复二剪贴板搜索保真输入)。
+
+
+## 第十阶段 J：捕获按钮组合文本提交保护
+
+[CaptureField](../AreaChain/Features/MenuBar/CaptureField.swift) 的按钮 action 与原生 `onCommandReturn` 共用局部 `submitDiary()`。动作时先保留原空白判断，再从本控件 `SyntaxAutocompleteState.editor` 的弱引用核对字段当前编辑器及所属窗口 firstResponder，复用 `DaybookTextEditing.isProtected`。原开始/结束编辑负责建立和清理引用；不缓存 marked 布尔、不读全局 keyWindow、不新增窗口桥接，也不结束或改写组合文本。
+
+`allowsDiaryShortcut` 仍只控制键盘入口；鼠标、停用/改绑及显示符号沿原机制，`onTodo`、首行/备注、补全、保存责任不变。鼠标若先由系统正常完成组词，动作按当时状态正常提交。原共享文本插入事务、普通搜索与统一搜索分支未改动。
+
+复用 SearchMultilineFixture/原队列 helper；CaptureSubmissionTests、CaptureShortcutBoundaryTests 与 MenuBarCaptureSubmissionTests 分别覆盖动作/归属、原生分支/隔离快捷键契约和生产菜单栏合成数据。原失败与最终证据、真人 IME 和指定复核缺口只见[工程记录](engineering.md#第十阶段-j捕获按钮组合文本提交保护)。
+
 ## 第十阶段 I 修复一：普通搜索换行与撤销边界
 
 [DaybookNewlinePolicy / DaybookTextEditing](../AreaChain/Theme/DaybookTextEditing.swift) 是原 DaybookTextField 的小型内部支持，不新建输入包装或查询状态。`newlinePolicy` 与 `allowsShiftNewline` 分离，Binding 和 FocusState 兼容入口传递同一政策，SyntaxTextField 显式透传。默认 `.capture` 保留单行捕获安全提交的首行/备注归并；允许 Shift+Return 的原捕获继续保留多行。
 
 WorkspaceHeaderSearchCapsule、MenuBarSearchField、TagManagementPage.searchField 和 DiaryPage.searchChrome 显式选择 `.searchWhitespace`：每个换行标量换成一个空格，CRLF 为两个空格，不 trim、不折叠其他空白、不新增半角或全角任务分隔符。查询、焦点、候选、token、结果及提交责任留在原消费者；标签目录仍使用原连续子串匹配。
 
-普通字段的 [DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 由原字段 cell 稳定持有，不在撤销时重建，也不替换 UndoManager。非组合态的已提交 payload 与纯文本导入在原生插入前完成原有的逐标量空格转换，避免 AppKit 第二次整段归一化把重做光标移到末尾；原文与富文本中的其他字符保留。两条文本通知只发布原生当前值，撤销/重做中间态不改写 field/editor/storage；组合文本也受保护。外部同步不增加撤销操作，安全提交所需转换走原生 insertText 事务并映射 UTF-16 选区，后续撤销仍同步真实最终值。剪贴板只共享安全修复，当前导入空白和原提交政策保持；真实换行保真尚未接入，三个匹配器和新统一搜索专用输入分支不变。复用六个 SearchMultiline 文件、原输入测试与生产装配夹具；实际结果与缺口见[工程记录](engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)。
+普通字段的 [DaybookFieldEditor](../AreaChain/Theme/DaybookNativeTextInput.swift) 由原字段 cell 稳定持有，不在撤销时重建，也不替换 UndoManager。非组合态的已提交 payload 与纯文本导入在原生插入前完成原有的逐标量空格转换，避免 AppKit 第二次整段归一化把重做光标移到末尾；原文与富文本中的其他字符保留。两条文本通知只发布原生当前值，撤销/重做中间态不改写 field/editor/storage；组合文本也受保护。外部同步不增加撤销操作，安全提交所需转换走原生 insertText 事务并映射 UTF-16 选区，后续撤销仍同步真实最终值。修复一时剪贴板仅共享安全修复；其后保真接入见上方修复二，三个匹配器和新统一搜索专用输入分支不变。复用六个 SearchMultiline 文件、原输入测试与生产装配夹具；实际结果与缺口见[工程记录](engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)。
 
 ## 第十阶段 G：日历窄周布局
 
@@ -822,3 +851,64 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 ## 普通新增扩展事务（3T-2A2）
 
 [TaskCreateCommandAdapter](../AreaChain/Services/TaskCreateCommandAdapter.swift) 显式 ordinaryComposition 能力通过 [preview / accept / submit(accepted:expecting:)](../AreaChain/Services/TaskCreateCommandComposition.swift) 消费原 Coordinator 计划和 §9.67 合成；旧 prepare/submit 继续最小资格。[TaskCreateTagCatalogReader](../AreaChain/Services/TaskCreateTagCatalogReader.swift) 只读隔离目录，原准备中的 tagCreationIDs 绑定内部新标签身份；[TaskMutationService.createComposed](../AreaChain/Services/TaskMutationService.swift) 与旧捕获共用事务，[InputTagResolver.apply](../AreaChain/Services/Repositories/InputTagResolver+Plan.swift) 严格执行最终标签效果。当前仅 TaskCreateComposition 隔离测试消费扩展，原 UI 不接线；真实契约、失效/回滚、unknown 与验证缺口统一见[权威 §9.68](unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)。
+
+
+## 普通新增扩展原生交互（3T-4B）
+
+[UnifiedSearchTagSetField](../AreaChain/Features/Search/UnifiedSearchTagSetField.swift) 与 [UnifiedSearchTagSelection](../AreaChain/Features/Search/UnifiedSearchTagSelection.swift) 为原 ParameterField/OperationPreview 的普通标签集合入口，唯一可编辑参数仍在 Coordinator。候选沿 TaskCreateTagCatalogReader、CommandTaskTagCandidates 与原匹配，临时选择确认后写稳定 ID，不写 targets。[UnifiedSearchTaskCompositionPreview](../AreaChain/Features/Search/UnifiedSearchTaskCompositionPreview.swift) / [TaskCompositionEditing](../AreaChain/Features/Search/UnifiedSearchTaskCompositionEditing.swift) 复用原 preview/accept/submit 和 Facts/Run；标准/紧凑隔离宿主为消费者。minimal 旧入口与未装配命令不扩权，契约/验收见[权威 §9.69](unified-search-commands.md#969-阶段-3t-4b普通新增扩展参数最终效果与明确提交)。
+
+
+## 任务标题共享入口与只读影响（3T-2B1）
+
+[TaskMutationService.editTitle](../AreaChain/Services/TaskMutationService+Title.swift) 是旧 DayBoardMutations.editTodoWithSyntax 的共享业务入口；TaskTitleEdit 复用原 parser，TitleModification 独立表达修改事实，保存和发布复用 ModelChanges。[TaskTitleCommandPreviewReader](../AreaChain/Services/TaskTitleCommandPreviewReader.swift) 只读复用仓储全 ID 查询与 TaskCreateTagCatalogReader；[CommandTaskTitlePreview](../AreaChain/Domain/CommandTaskTitlePreview.swift) / [CommandTaskTitleImpact](../AreaChain/Domain/CommandTaskTitleImpact.swift) 绑定原 Draft 版本、精确字段和目录，输出有序标签附带效果。消费者仅旧标题 UI 委托及隔离测试，没有 todo.title handler 或新 UI 能力。旧行为、D3 命令区别、基线和唯一验收见[权威 §9.70](unified-search-commands.md#970-阶段-3t-2b1标题共享修改与普通命令只读影响预览)。
+
+
+## 第十阶段 N：手记标题气泡窗口观测
+
+- [DiarySummaryRow+Bubbles](../AreaChain/Features/Diary/DiarySummaryRow+Bubbles.swift) 是唯一启用窗口悬停观测的生产消费者；原 shouldShowTitleBubble、复制回调和偏移不变。真实指针退出重新走原100ms标题入口；身份/内容/显示资格失效与卸载清理原标题任务。
+- [RowTitleBubble](../AreaChain/Theme/DaybookRowBubbles.swift) 的内部 observingWindowHover 选择唯一悬停来源，继续驱动原边框/光标；其他任务/手记预览和备注默认路径不变。原圆角 contentShape 和点击接线不动。
+- [RowBubbleHoverRegion](../AreaChain/Theme/RowBubbleHoverRegion.swift) 只关联当前可见气泡及其窗口，以实际圆角几何、窗口和滚动裁切观测事件；hitTest 返回 nil，事件原样返回。SwiftUI 移除即停观察，最终拆除兜底，代次拒绝旧回调；无轮询、全局登记或跨窗口路由。
+- [BoardRowChrome](../AreaChain/Features/Board/BoardRowChrome.swift) 的 resetTitleHover 只撤销标题任务/状态，原共享行/备注政策不变。窗口恢复、敏感恢复和旧内容移除不以旧回调重开气泡。
+- 原 RowBubbleConsumerTests / RowBubbleInteractionTests / LivePreviewSurfaceTests 与 [DiaryTitleHoverTests](../AreaChainTests/Theme/DiaryTitleHoverTests.swift) 使用合成资料和原生事件；观察状态不是进入证据，淡出视图树、缓存、实际屏幕及辅助树分开。实际结果和未覆盖项见[工程记录](engineering.md#第十阶段-n手记向上标题气泡悬停保留修复)。
+
+## 普通无备注单目标标题适配（3T-2B2A）
+
+- [TaskTitleCommandAdapter](../AreaChain/Services/TaskTitleCommandAdapter.swift) 的 prepare / accept / submit / execute 仅显式装配 todo.title；复用 TaskTitleCommandPreviewReader、Impact、Tags 与共享 editTitle，无 UI 消费者。
+- [TaskTitleCommandEnvironment](../AreaChain/Services/TaskTitleCommandEnvironment.swift) 限定干净内存 context、私有事件和 fake 系统消费者，普通无备注来源证明缺失即拒绝；默认无生产装配。
+- [CommandTaskTitleAcceptance](../AreaChain/Domain/CommandTaskTitleContract.swift) 将原版本、参数、目标、影响、目录、来源证明及受控预留标签身份绑定；[claimTaskTitle](../AreaChain/Domain/CommandTaskTitleExecution.swift) 共用原 Coordinator 调用占用。
+- CommandTaskTitlePreview.frozenInput / Reader.validateFrozen 对比真实 Run，无假 Host 重准备；TaskMutationService.editTitle(verified:tagCreationIDs:) 复用严格标签计划和同一事务，TitleModification 与 Run.taskTitle 不生成创建输出。
+- 原 UI 继续 rawInput 入口；接口、195 方法 / 379 次隔离执行、正常 Debug 验签及指定复核仍缺失的 partial、多步/UI 前置见[权威 §9.71](unified-search-commands.md#971-阶段-3t-2b2a普通无备注单目标-todotitle-隔离执行适配)。
+
+
+## 单目标标题原生接线（3T-4C）
+
+- [UnifiedSearchTaskTitleEditing](../AreaChain/Features/Search/UnifiedSearchTaskTitleEditing.swift) 的 prepareTaskTitle / acceptTaskTitle / submitTaskTitle 只衔接原 Controller、ObjectSelection、ParameterField、PlanList 和 TaskTitleCommandAdapter；唯一参数留在原 Draft/Plan/Run。默认不装配生产搜索，旧行/检查器保存入口不替换。
+- [UnifiedSearchTaskTitlePreview](../AreaChain/Features/Search/UnifiedSearchTaskTitlePreview.swift) 只呈现 CommandTaskTitleImpact 精确原值、最终值、original / associations；[UnifiedSearchTaskTitleSubmission](../AreaChain/Features/Search/UnifiedSearchTaskTitleSubmission.swift) 只呈现 Facts/Run 和已有未知核验。
+- [UnifiedSearchTaskEffectViews](../AreaChain/Features/Search/UnifiedSearchTaskEffectViews.swift) 的 UnifiedSearchTaskTagSummary / TagEffects / UnifiedSearchTaskExternalFeedback 是新增与标题共用的效果展示；不解析字段、不调用保存。真实消费者回归包括最小/扩展新增、原设置、对象选择与计划。
+- 单目标显式装配、ReadSession 最后门禁、有限验收及指定复核 partial 统一见[权威 §9.72](unified-search-commands.md#972-阶段-3t-4c单目标-todotitle-原生-ui-与隔离验收)。
+
+## T-M1 普通字段与受限两步执行
+
+- [TaskFieldCommandAdapter](../AreaChain/Services/TaskFieldCommandAdapter.swift) 的 prepare / accept / submit / verifyUnknown 只显式装配单目标 todo.move、todo.priority、todo.reminder；[TaskMutationService.editField](../AreaChain/Services/TaskMutationService+Fields.swift) 调用旧 UI 共用的仓储字段入口。原标题环境的内存库、普通无备注来源证明、私有事件与 fake 消费者供两种修改适配共用；旧 UI 同值行为不变。
+- [CommandTaskChainIdentity](../AreaChain/Domain/CommandTaskChain.swift) 覆盖完整 create→title 两项计划；[TaskChainCommandAdapter](../AreaChain/Services/TaskChainCommandAdapter.swift) 调用原创建/标题适配，真实 savedID 输出后重新读取并确认消费者影响。原单项 claim 及其他计划形状仍保持原守卫，无跨两步共同事务或自动重放。
+- [prepareTaskField](../AreaChain/Features/Search/UnifiedSearchTaskFieldEditing.swift) 与 [UnifiedSearchTaskChainSubmission](../AreaChain/Features/Search/UnifiedSearchTaskChainSubmission.swift) 复用原参数、对象、PlanList、标题影响与本地/外部反馈。唯一输入仍属 Draft / Plan / Run；点击与 ⌘Return 共用提交入口，默认未装配关闭。
+- 消费者仅显式隔离 Controller 与 TaskFieldCommand / TaskChainCommand / UnifiedSearchTM1ContractTests 及原生夹具。生产搜索、真实用户库、系统服务不接入。执行边界、真实证据和剩余验收统一维护在[权威 T-M1](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)。
+
+## T-M2 完成、标签与截止时间
+
+- [CommandTaskCompletionImpact](../AreaChain/Domain/CommandTaskCompletionImpact.swift) 保存父状态及完整子项集合；[TaskFieldCommandReader](../AreaChain/Services/TaskFieldCommandReader.swift) 同时核对平面子项、父关系、墓碑及全表 UUID 唯一性，只投影普通且实际级联子项的标题。旧完成仓储和 CompletionUndo 路径不变。
+- [CommandTaskTagMutation](../AreaChain/Domain/CommandTaskTagMutation.swift) 从当前真实关联计算 add/remove/replaceAll/clear 或名称解析；复用 TitleTags、TagLookup、TagIDList 与 TagPlan。最终集合与需写标签效果分开，未触及的墓碑不会因其他关联操作恢复。[TaskMutationService.editField](../AreaChain/Services/TaskMutationService+Fields.swift) 复用 InputTagResolver.apply 和仓储 replaceTagIDs，在一次事务内完成标签实体及关联。
+- 同文件的 `assignDue` 是旧 DayBoardMutations.setDue 与新命令的共同赋值入口；旧 UI 继续原保存/范围归一化，新命令严格检查 assign/clear，只改 dueMinutes。
+- TaskFieldCommandAdapter 的默认 basic 能力保持 T-M1；只有显式 `milestone2` 开放本批四命令，仍要求普通无备注来源证明、单个活 todo、单项计划。新标签身份由原 FieldRegistry 接受记录持有，Run.taskField 保存实际标签/子项事实；不扩展创建输出或两步链。
+- [TaskFieldCommandTagCandidates](../AreaChain/Services/TaskFieldCommandTagCandidates.swift) 的 `tagCandidates` 扩展原普通标签集合；[UnifiedSearchTaskFieldImpact](../AreaChain/Features/Search/UnifiedSearchTaskFieldImpact.swift) 只消费影响值，复用 TagSummary/TagEffects。新名字仍是 name 文本参数，临时选择只在确认后写入唯一 Draft。实际消费者为显式隔离 Controller 和 TaskTM2 / UnifiedSearchTM2 测试，生产不装配。
+- 唯一支持范围、失败边界、验证与未完成项见[权威 T-M2](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。
+
+## T-M3 普通子任务隔离闭环
+
+- [SubtaskTitleEdit / SubtaskFields](../AreaChain/Domain/SubtaskTitleEdit.swift) 共用旧子任务标签解析与字段赋值；CreateSubtaskParams 只承载解析后的标题、标签和可选固定身份。SwiftDataTaskRepository.addSubtask 的旧文本与结构化重载共用末尾排序/插入，updateSubtask 与旧标题、toggle/标签入口共用赋值。旧 UI 保留保存、返回值与 CompletionUndo。
+- [TaskFamilyCommandIdentity](../AreaChain/Services/TaskFamilyCommandIdentity.swift) 是 T-M2 完成影响与本批的共同实体核验：同 context、父数组/平铺一致、全记录含墓碑的子 UUID 唯一性；父 UUID 仍走完整 fetchTodos(withID:)。
+- [SubtaskCommandEnvironment](../AreaChain/Services/SubtaskCommandEnvironment.swift) 只接内存库、私有事件与显式 fake 消费者，分别要求父项普通无备注、子项和输入证明；[SubtaskCommandAdapter](../AreaChain/Services/SubtaskCommandAdapter.swift) 的 prepare/accept/submit 仅开放四命令、单操作/单项计划。
+- [CommandSubtaskPreview](../AreaChain/Domain/CommandSubtask.swift) 区分 parent 参数与子目标，绑定关系、来源和排序依赖；[claimSubtask](../AreaChain/Domain/CommandSubtaskExecution.swift) 复用原运行占用。[CommandSubtaskFacts](../AreaChain/Domain/CommandSubtaskFacts.swift) 的 createdObject 只在确知保存后返回 .subtask，不进入 todo 回执或 Run.outputs，不开放输出依赖链。
+- [TaskMutationService.mutateSubtask](../AreaChain/Services/TaskMutationService+Subtasks.swift) 将子项及标签创建/恢复/关联交给同一 ModelChanges 事务。未知提交保留原身份，noChange 零保存/发布。集合复用 CommandTaskTagMutation，标题/新增复用 D3 Lookup/Plan，不拼接参数重跑解析。
+- [prepareSubtask](../AreaChain/Features/Search/UnifiedSearchSubtaskEditing.swift) 与 [UnifiedSearchSubtaskSubmission](../AreaChain/Features/Search/UnifiedSearchSubtaskSubmission.swift) 接原 Controller、对象/参数/标签选择、Plan 与 Run；效果复用 TagSummary/TagEffects/ExternalFeedback。默认 nil 装配关闭，原预览宿主的多选行为保持。
+- 实际消费者是旧仓储/DayBoardMutations 与显式隔离 SubtaskCommand / UnifiedSearchSubtask 测试；唯一范围、证据及缺口见[权威 T-M3](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。

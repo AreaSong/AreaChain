@@ -46,6 +46,7 @@ extension UnifiedSearchController {
     }
 
     func allowsMultipleObjects(_ location: UnifiedSearchObjectLocation, command: CommandDescriptor) -> Bool {
+        if location == .targets, routesTaskField(command.id) { return false }
         if location == .targets { return command.batch == .explicitMultiple }
         guard case .parameter(let id) = location,
               let parameter = command.parameters.first(where: { $0.id == id }) else { return false }
@@ -166,7 +167,7 @@ extension UnifiedSearchController {
             let selection: CommandDraftTargets.Selection = picker.selection == .allResults ? .allResults
                 : (picker.objects.count == 1 ? .single : .selected)
             event = .selectTargets(draft.stamp, .init(selection, objects: picker.objects),
-                                   baseline: syntheticBaselines[command.id])
+                                   baseline: command.id.rawValue == "todo.title" || routesSubtask(command.id) ? nil : syntheticBaselines[command.id])
         } else {
             guard let argument = objectArgument(picker.location, objects: picker.objects, command: command) else { return false }
             event = .edit(draft.stamp, argument)

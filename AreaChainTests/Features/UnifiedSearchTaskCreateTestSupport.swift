@@ -6,12 +6,14 @@ import Testing
     let io: TaskCreateCommandIO
     let results: UnifiedSearchResultsFixture
     let environment: TaskCreateCommandEnvironment
+    let privacy = NotificationCenter()
     var controller: UnifiedSearchController { results.controller }
 
-    init(assembled: Bool = true) throws {
+    init(assembled: Bool = true, capability: TaskCreateCommandAdapter.Capability = .minimal) throws {
         io = try TaskCreateCommandIO()
         environment = try io.environment()
-        results = try UnifiedSearchResultsFixture(taskCreateEnvironment: assembled ? environment : nil)
+        results = try UnifiedSearchResultsFixture(taskCreateEnvironment: assembled ? environment : nil,
+            taskCreateCapability: capability, privacyCenter: capability == .ordinaryComposition ? privacy : nil)
     }
 
     func stop() { results.stop() }

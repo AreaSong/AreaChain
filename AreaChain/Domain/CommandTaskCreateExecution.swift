@@ -29,7 +29,7 @@ extension CommandHandoffCoordinator {
 
     func withTaskCreatePreparation<T>(expecting lease: CommandHostLease, _ work: () throws -> T) throws -> T {
         try validate(lease)
-        guard taskCreations.preparing[lease.ownership.hostID] == nil else { throw CommandExecutionError.busy }
+        guard !hasInvocation(lease.ownership) else { throw CommandExecutionError.busy }
         taskCreations.preparing[lease.ownership.hostID] = lease.ownership
         defer { taskCreations.preparing[lease.ownership.hostID] = nil }
         return try work()
@@ -40,7 +40,7 @@ extension CommandHandoffCoordinator {
         let session = try host(request.lease.ownership.hostID).session
         guard let run = session.execution, run.operation(request.operation.operationID) == request.operation,
               run.attempt(request.attempt.unitID) == request.attempt,
-              request.attempt.phase == .local, run.units.count == 1, run.snapshot.items.count == 1,
+              request.attempt.phase == .local,
               let item = run.snapshot.items.first, run.units[0].state == .running,
               run.units[0].local == .notSubmitted, run.outputs.isEmpty, session.plan.items.isEmpty,
               session.operations.allDrafts.isEmpty, session.operations.pending == nil,
@@ -50,6 +50,14 @@ extension CommandHandoffCoordinator {
               request.lease.revision == prepared.lease.revision + 2,
               run.resolvedInput(item.id)?.arguments == prepared.arguments,
               run.resolvedInput(item.id)?.targets == CommandDraftTargets.none else { throw TaskCreateCommandIssue.stale }
+        if let chain = prepared.chain {
+            try chain.validate(run)
+            guard chain.producer == item.stamp, request.attempt.unitID == item.id, request.attempt.number == 1 else {
+                throw TaskCreateCommandIssue.stale
+            }
+        } else {
+            guard run.units.count == 1, run.snapshot.items.count == 1 else { throw TaskCreateCommandIssue.unsupportedPlan }
+        }
         try Self.validateTaskCreateItem(item, composed: prepared.preview != nil)
         return prepared
     }
@@ -57,7 +65,10 @@ extension CommandHandoffCoordinator {
     func claimTaskCreate(_ request: TaskCreateCommandRequest) throws -> CommandRuntimeInvocation {
         let prepared = try taskCreatePreparation(request)
         guard !taskCreations.wasInvoked(prepared.id) else { throw TaskCreateCommandIssue.alreadyInvoked }
-        let invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease)
+        let invocation: CommandRuntimeInvocation
+        if let chain = prepared.chain {
+            invocation = try claimTaskChainInvocation(request.operation, attempt: request.attempt, expecting: request.lease, identity: chain)
+        } else { invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease) }
         taskCreations.markInvoked(prepared.id)
         return invocation
     }

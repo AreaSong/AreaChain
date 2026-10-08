@@ -1,5 +1,16 @@
 # AreaChain 技能路由与交付闭环
 
+第十阶段P沿 areachain-workflow → areachain-ui（ui-ux-pro-max仅补原生验收核对）→ areachain-verify；就地完善测试生命周期、逐事件/真实合成回调证据及原runner，不改生产。复用原interactiveGallery／SearchMultilineFixture、完整正常PrivacyQA、原锁900秒单一等待及六项授权清除；600秒内的30秒收尾期由测试支持集中维护。桌面入口（含旧app对象的AX/截图）继续暂停，无仅附着且绝不启动保证不得恢复；原生只由XCTest启动。自动/人工、平台能力、指定Cursor材料与H/K/L判定只维护在[原O内的P收尾](docs/engineering.md#第十阶段-p人工平台验收与最终交付判定)。人工准备不等于通过，重新确认当时方便才启动有界人工窗口；能力不可用不重复认证或替代指定复核。
+
+P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的消费者/模式选择及有限语义观测，优先完成相关短回归，再由用户确认当时方便后开始600秒内的人工批次。真实粘贴只由用户自愿提供合成材料；命名pasteboard自动导入与用户系统粘贴分开，生产匹配/保存/安全和桌面入口暂停边界不变。
+
+后续构建与测试统一遵循[并发构建与测试](docs/quality-gates.md#并发构建与测试)：默认原锁等待最多 900 秒，取得锁后核对源码变化，超时再报告未完成；当前任务明确的非等待要求优先。下列历史阶段的“锁忙停止／非等待申请”仅保留当时范围和执行事实，不作为后续任务的默认要求。
+
+第十阶段 I 修复二沿 areachain-workflow → areachain-ui（areasong-development 补输入契约、ui-ux-pro-max 聚焦身份）→ areachain-verify。仅剪贴板 Browser 搜索显式选择 verbatim，公开原生排版支持与默认输入兼容见[组件目录](docs/component-catalog.md#第十阶段-i-修复二剪贴板搜索保真输入)，实际证据见[工程记录](docs/engineering.md#第十阶段-i-修复二剪贴板搜索保真输入)。先过最小保真/单行/撤销门槛，再扩大生产 Browser 三模式及修复一/J回归；完整正常 PrivacyQA、原锁900秒单一等待、六项授权清除、合成数据、随机命名 pasteboard 与串行事件保持。Cursor verifier 不可用保留缺口，不认证或替代。完成停止，不修历史问题，不提交、推送、安装、发布或操作真实数据与系统剪贴板。
+
+
+第十阶段 J 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦原生身份）→ areachain-verify。仅 CaptureField 两条手记提交入口共用局部组合文本保护，复用自有弱编辑器关联与 DaybookTextEditing；[组件契约](docs/component-catalog.md#第十阶段-j捕获按钮组合文本提交保护)及[工程证据](docs/engineering.md#第十阶段-j捕获按钮组合文本提交保护)保存边界。沿完整正常 PrivacyQA、原构建锁900秒单一有界等待、独立标识/目录、六项授权清除、合成数据与串行焦点测试。Cursor verifier 不可用保留缺口，不认证或替代；完成停止，不实施剪贴板策略或修复历史问题，不提交、推送、安装或发布。
+
 第十阶段 I 修复一沿 areachain-workflow → areachain-ui（areasong-development 补输入契约，ui-ux-pro-max 聚焦原生身份）→ areachain-verify。只修 DaybookTextField 原生编辑边界和四个普通搜索的显式换行用途；[组件目录](docs/component-catalog.md#第十阶段-i-修复一普通搜索换行与撤销边界)与[工程记录](docs/engineering.md#第十阶段-i-修复一普通搜索换行与撤销边界)保存政策及验证。沿完整正常 PrivacyQA、独立标识/目录、六项授权清除、原构建锁和串行输入测试；指定 Cursor verifier 不可用保留缺口，不认证或替换。剪贴板本轮只回归撤销，换行保真政策和新统一搜索业务不接入；完成停止，不提交、推送、安装、发布或操作真实数据与系统剪贴板。
 
 第十阶段 G 沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生可见性）→ areachain-verify。只修周布局的视口传播、等宽/横向浏览与选中日可达性；[组件目录](docs/component-catalog.md#第十阶段-g日历窄周布局)记录原装配与尺寸，[工程记录](docs/engineering.md#第十阶段-g日历窄周布局修复)记录测量和实际验收。完整正常 PrivacyQA、独立目录/标识、原锁、六项授权清除和串行事件保持；指定 Cursor verifier 不可用保留缺口，不认证或替代。完成停止，不扩修历史问题，不提交、安装或发布。
@@ -325,3 +336,30 @@
 
 
 普通新增 3T-2A2 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify。显式扩展装配、真实目录预览及版本接受复用原创建占用，共同事务沿 TaskMutationService / InputTagResolver / ModelChanges；[组件入口](docs/component-catalog.md#普通新增扩展事务3t-2a2)与[权威 §9.68](docs/unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)保存唯一契约/证据。完整正常 PrivacyQA、原锁非等待申请、六项授权清除、内存库/私有事件/fake 消费者；指定 Cursor、C2B、人工及历史缺口保留，不认证或替代。最小适配、旧 UI、notes 和生产资格不扩展，完成停止。
+
+
+普通新增扩展原生 3T-4B 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-ui（ui-ux-pro-max 聚焦字段/焦点）→ areachain-verify。复用原 TaskCreate 预览/接受/共同提交、参数/计划与 ReadSession；[组件入口](docs/component-catalog.md#普通新增扩展原生交互3t-4b)与[权威 §9.69](docs/unified-search-commands.md#969-阶段-3t-4b普通新增扩展参数最终效果与明确提交)为唯一契约/证据。原锁非等待、完整正常 QA、六项授权清除、内存库/私有事件/fake 消费者、固定有限原生验收；Cursor/C2B/人工/历史缺口保留，不认证或替代。仅 ordinaryComposition 扩展，minimal/notes/生产边界保持，完成停止。
+
+
+任务标题 3T-2B1 沿 areachain-workflow → 架构治理/可靠性引用 → areachain-verify；不做 UI 实现。共享 editTitle、只读目录/影响和原 Draft 基线见[组件索引](docs/component-catalog.md#任务标题共享入口与只读影响3t-2b1)，唯一契约、提交事实及 B2 前置见[权威 §9.70](docs/unified-search-commands.md#970-阶段-3t-2b1标题共享修改与普通命令只读影响预览)。完整正常 PrivacyQA、原锁非等待申请、六项授权清除、隔离模型与私有事件/fake 系统依赖；Cursor/C2B/人工/历史缺口保留，不认证或替代复核。旧 UI 备注能力保持，普通预览拒绝长正文；不实现 handler、不扩 UI、不进下一阶段，完成停止。
+
+
+第十阶段 N 沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦身份/生命周期）→ areachain-verify。仅修手记标题气泡窗口悬停与清理，复用原显示资格、时序和点击语义；[组件责任](docs/component-catalog.md#第十阶段-n手记标题气泡窗口观测)与[原生证据](docs/engineering.md#第十阶段-n手记向上标题气泡悬停保留修复)为交接入口。完整正常 PrivacyQA、原锁900秒有界等待、独立目录/标识、六项授权清除、合成资料和串行指针测试保持；指定 Cursor verifier 不可用保留缺口，不认证或替代。K、L及其他历史问题独立，完成停止，不提交、推送、安装、发布或操作真实数据/系统剪贴板/权限。
+
+任务标题 3T-2B2A 沿 areachain-workflow → areasong-development 架构治理/可靠性 → areachain-verify。只显式装配普通无备注单目标 todo.title；[组件索引](docs/component-catalog.md#普通无备注单目标标题适配3t-2b2a) 与[权威 §9.71](docs/unified-search-commands.md#971-阶段-3t-2b2a普通无备注单目标-todotitle-隔离执行适配) 保存接受/冻结核验、严格共同事务、noChange/unknown 和实际缺口。内存库、私有事件/fake 消费者、完整正常 PrivacyQA、六项授权清除及原锁非等待申请保持；首次锁忙即停止；用户明确要求续验后正常取得原锁，195 方法 / 379 次隔离执行及正常 Debug 验签通过，没有换锁或绕过。Cursor、C2B、人工及历史缺口保留，不认证或替代；不接 UI、不开放多步、不进入下一阶段，不提交、推送、安装或发布。
+
+
+统一搜索 3T-4C 沿 areachain-workflow → areasong-development（架构治理/可靠性）→ areachain-ui（ui-ux-pro-max 聚焦 SwiftUI、frontend-design 沿 Daybook）→ areachain-verify。标题 UI 仅显式注入 TaskTitleCommandAdapter；沿原对象候选/参数/计划、ReadSession 与 Facts/Run，不接生产/notes/多步。新增共用效果组件、原入口回归及固定原生清单见[组件目录](docs/component-catalog.md#单目标标题原生接线3t-4c)与[权威 §9.72](docs/unified-search-commands.md#972-阶段-3t-4c单目标-todotitle-原生-ui-与隔离验收)。指定 Cursor、C2B、人工/历史缺口保留；锁忙停止，不重查登录或替代复核，完成本阶段停止。
+
+## 统一搜索 T-M1 普通任务本地闭环
+
+本批沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（UI/UX 仅补原生身份与焦点）→ areachain-verify。复用普通修改、原 Plan/Run/Coordinator 与创建/标题适配；[组件入口](docs/component-catalog.md#t-m1-普通字段与受限两步执行)与[权威 T-M1](docs/unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)集中维护范围与证据。用户已授权 A～E 连续实施，旧阶段停止语句只保留历史范围。原锁单次等待最多900秒，锁忙时继续批内独立工作，最后集中补验；完整正常 PrivacyQA、私有事件与 fake 系统消费者保持。指定 Cursor、C2B、人工及历史缺口独立保留，不重复认证、不冒充复核。默认未装配和生产入口继续关闭，不提交、推送、安装、访问真实数据或开放 notes、敏感执行及任意多步计划。
+
+## 统一搜索 T-M2 完成、标签与截止时间
+
+沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（ui-ux-pro-max 聚焦 Binding 与原生身份）→ areachain-verify。原 FieldAdapter 的显式 milestone2 能力、完成子项证据、标签共同事务与 dueMinutes 共享赋值见[组件入口](docs/component-catalog.md#t-m2-完成标签与截止时间)，A～E 状态和实际证据集中在[权威 T-M2](docs/unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。单目标、单操作和原 create→title 边界保持；完整正常 PrivacyQA、合成内存库、私有事件/fake 消费者、六项真实授权清除、原锁单次900秒及串行原生保持。锁屏暂停焦点测试，继续独立事项；正常签名到期与指定 Cursor verifier 缺口单独保留，不续签、不改个人配置、不以 QA 代替正常签名。没有生产搜索、真实库/系统、notes/敏感执行、批量/任意多步、执行后撤销、跨重启恢复或发行授权。
+
+
+## 统一搜索 T-M3 普通子任务
+
+沿 areachain-workflow → areasong-development 架构/可靠性 → areachain-ui（UI/UX 聚焦身份、Binding 与原生焦点，frontend-design 沿 Daybook）→ areachain-verify。结构化仓储/共享赋值、父子实体核验、独立来源证明与类型化事实见[组件入口](docs/component-catalog.md#t-m3-普通子任务隔离闭环)，A～E 与真实证据只维护在[权威 T-M3](docs/unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。仅显式完整 PrivacyQA、合成内存库、私有事件/fake 消费者；原锁单次900秒、六项授权清除及原生串行保持。正常签名已过期时不重复失败构建，不续签、不改配置或申请资源；指定 Cursor verifier 不可调用继续保留缺口。未装配能力、生产、排序/删除/批量、notes/敏感输入和子任务输出依赖继续关闭，不提交、推送、安装或发布。

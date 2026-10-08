@@ -3,6 +3,7 @@ import SwiftUI
 /// 保存、发布与系统请求分别显示；candidateID 永远不是已创建记录。
 struct UnifiedSearchTaskCreateSubmission: View {
     @Bindable var controller: UnifiedSearchController
+    @Environment(\.locale) private var locale
 
     var body: some View {
         let source = controller.buffer
@@ -11,6 +12,8 @@ struct UnifiedSearchTaskCreateSubmission: View {
                 result(facts, unit: unit, source: source)
             } else if controller.settingExecution != nil {
                 Text("unified.task.held").font(DaybookType.caption)
+            } else if controller.hasTaskComposition {
+                UnifiedSearchTaskCompositionPreview(controller: controller)
             } else {
                 pending(source)
             }
@@ -25,6 +28,7 @@ struct UnifiedSearchTaskCreateSubmission: View {
         let issue = controller.taskCreateIssue
         return VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text("unified.task.pending").font(DaybookType.body)
+            Text("unified.composition.minimal").font(DaybookType.caption)
             if let draft = controller.taskCreateDraft, let input = try? CommandTaskCreateInput(draft) {
                 Text(verbatim: input.parsed.cleanTitle).font(DaybookType.body)
                 Text(verbatim: input.day).font(DaybookType.caption)
@@ -46,8 +50,8 @@ struct UnifiedSearchTaskCreateSubmission: View {
         }
     }
 
-    private func result(_ facts: CommandTaskCreateFacts, unit: CommandExecutionUnit,
-                        source: UnifiedSearchBuffer) -> some View {
+    func result(_ facts: CommandTaskCreateFacts, unit: CommandExecutionUnit,
+                source: UnifiedSearchBuffer, allowsRelease: Bool = true) -> some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(LocalizedStringKey(UnifiedSearchTaskCreateCopy.result(facts)))
                 .font(DaybookType.body).accessibilityIdentifier("unified.task.status")
@@ -61,9 +65,21 @@ struct UnifiedSearchTaskCreateSubmission: View {
                     .font(DaybookType.caption)
                 Text("unified.task.externalLimit").font(DaybookType.caption)
                 if unit.effects.values.contains(.failed) { Text("unified.task.externalFailed").font(DaybookType.caption) }
+                if let effects = facts.savedTagEffects {
+                    Text(verbatim: L10n.format("unified.composition.savedTags", locale: locale,
+                        effects.filter { $0 == .createAndAssociate }.count,
+                        effects.filter { $0 == .restoreAndAssociate }.count,
+                        effects.filter { $0 == .associateLive }.count)).font(DaybookType.caption)
+                }
+                UnifiedSearchTaskExternalFeedback(authorizationCall: String(describing: facts.authorizationRequest),
+                    authorizationResult: String(describing: facts.authorizationResult),
+                    notificationRequested: facts.notificationRequested, calendarRequested: facts.calendarRequested, unit: unit)
             }
             if let failure = controller.taskCreateFailure {
                 Text(LocalizedStringKey(UnifiedSearchTaskCreateCopy.issue(failure))).font(DaybookType.caption)
+            }
+            if let failure = controller.compositionFailure {
+                Text(LocalizedStringKey(failure)).font(DaybookType.caption)
             }
             if facts.state == .unknown {
                 UnifiedSearchPlanButton(title: "unified.task.verify", identifier: "unified.task.verify") {
@@ -73,13 +89,14 @@ struct UnifiedSearchTaskCreateSubmission: View {
                     Text(LocalizedStringKey(UnifiedSearchTaskCreateCopy.verification(verification))).font(DaybookType.caption)
                 }
             }
-            if unit.state == .succeeded, facts.state == .saved {
+            if unit.state == .succeeded, facts.state == .saved, allowsRelease {
                 UnifiedSearchPlanButton(title: "unified.setting.done", identifier: "unified.task.done") {
                     controller.acknowledgeTaskCreate(source)
                 }
             } else { Text("unified.task.held").font(DaybookType.caption) }
         }
     }
+
 }
 
 enum UnifiedSearchTaskCreateCopy {

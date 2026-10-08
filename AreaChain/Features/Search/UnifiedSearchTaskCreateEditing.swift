@@ -20,7 +20,8 @@ extension UnifiedSearchController {
     }
 
     var taskCreateUnit: CommandExecutionUnit? {
-        guard operationVisible, let run = settingExecution, run.snapshot.items.count == 1,
+        guard operationVisible, let run = settingExecution,
+              run.snapshot.items.count == 1 || (try? CommandTaskChainIdentity(plan: run.snapshot.stamp, items: run.snapshot.items)) != nil,
               run.snapshot.items.first?.draft.commandID.rawValue == "todo.create" else { return nil }
         return run.units.first
     }
@@ -49,11 +50,15 @@ extension UnifiedSearchController {
     }
 
     /// 同步原生入口共同防重入；未完成组合文本不能从按钮或面板快捷键绕过。
-    private var taskNativeInputReady: Bool {
+    var taskNativeInputReady: Bool {
         (NSApp.keyWindow?.firstResponder as? NSTextView)?.hasMarkedText() != true
     }
 
     func requestTaskCreate(_ source: UnifiedSearchBuffer, prepareOnly: Bool = false) {
+        if hasTaskComposition {
+            if prepareOnly { prepareTaskComposition(source) } else { submitTaskComposition(source) }
+            return
+        }
         guard !settingSubmitting, validates(source), operationVisible, settingExecution == nil,
               taskNativeInputReady else { return }
         settingSubmitting = true
@@ -101,6 +106,7 @@ extension UnifiedSearchController {
 
     func acknowledgeTaskCreate(_ source: UnifiedSearchBuffer) {
         guard !settingSubmitting, validates(source), operationVisible, let run = settingExecution,
+              run.snapshot.items.count == 1,
               taskCreateUnit?.state == .succeeded, taskCreateUnit?.taskCreation?.state == .saved else { return }
         do {
             try coordinator.send(.releaseExecution(run.stamp), expecting: source.lease)

@@ -21,13 +21,12 @@ extension DiarySummaryRow {
                 onCopy: { copyTitle(titleText) },
                 onHover: { hovering in
                     isTitleBubbleHovered = hovering
-                    if !hovering && !isTitleTextHovered {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = false
-                        }
+                    if !hovering && !chrome.isTitlePointerInside {
+                        chrome.handleTitleHover(false, reduceMotion: reduceMotion)
                     }
                 }
             )
+            .observingWindowHover(onInvalidate: resetTitleTracking)
             .offset(y: growsUpward ? -6 : 22)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
@@ -103,6 +102,11 @@ extension DiarySummaryRow {
         bubbleShiftX = placement.bubbleShiftX
     }
 
+    func resetTitleTracking() {
+        chrome.isTitlePointerInside = false
+        chrome.resetTitleHover()
+    }
+
     func pointerRegion(isTitle: Bool) -> some View {
         BoardRowPointerRegion(
             id: entry.id,
@@ -113,6 +117,7 @@ extension DiarySummaryRow {
             onDoubleClick: openWindow,
             onHover: { hovering in
                 guard isTitle else { return }
+                chrome.isTitlePointerInside = hovering
                 chrome.handleTitleHover(hovering, reduceMotion: reduceMotion)
             }
         )

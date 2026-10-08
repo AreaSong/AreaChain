@@ -78,23 +78,16 @@ extension DayBoardMutations {
     }
 
     @discardableResult
-    static func editTodoWithSyntax(_ todo: TodoItem, rawInput: String) -> Bool {
-        let text = rawInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return false }
-        let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        let repo = taskRepo(for: todo.modelContext)
-        let saved = ModelChanges.perform(in: todo.modelContext ?? Persistence.session.container.mainContext) {
-            try repo.updateTodo(id: todo.id, title: parsed.cleanTitle, notes: parsed.notes.isEmpty ? nil : parsed.notes)
-            if parsed.hasPriorityToken {
-                try repo.setPriority(id: todo.id, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent)
-            }
-            if let minutes = parsed.remindMinutes { try repo.setRemind(id: todo.id, minutes: minutes) }
-            let context = todo.modelContext ?? Persistence.session.container.mainContext
-            let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
-            try repo.replaceTagIDs(id: todo.id, tagIDs: merged)
+    static func editTodoWithSyntax(_ todo: TodoItem, rawInput: String,
+                                   dependencies: TaskMutationService.TitleDependencies? = nil) -> Bool {
+        guard !rawInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+        let context = todo.modelContext ?? Persistence.session.container.mainContext
+        var resolved = dependencies ?? .production
+        if dependencies == nil {
+            resolved.repository = { taskRepo(for: $0) }
+            resolved.requestReminderAccessIfNeeded = { requestReminderAccessIfNeeded($0) }
         }
-        if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
-        return saved
+        return TaskMutationService.editTitle(todo, rawInput: rawInput, in: context, dependencies: resolved).saved
     }
 
     @discardableResult

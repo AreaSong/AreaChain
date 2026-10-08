@@ -50,7 +50,10 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " CommandTaskCreatePreview CommandTaskTagCatalog\n"
         contract_docs["docs/component-catalog.md"] += " TaskMutationService createCaptured CommitFacts afterPublication\n"
         contract_docs["docs/component-catalog.md"] += " TaskCreateTagCatalogReader createComposed tagCreationIDs\n"
-        contract_docs["docs/component-catalog.md"] += " DaybookNewlinePolicy DaybookTextEditing DaybookFieldEditor\n"
+        contract_docs["docs/component-catalog.md"] += " editTitle TaskTitleCommandPreviewReader CommandTaskTitlePreview CommandTaskTitleImpact TaskTitleCommandAdapter TaskTitleCommandEnvironment CommandTaskTitleAcceptance claimTaskTitle\n"
+        contract_docs["docs/component-catalog.md"] += " UnifiedSearchTagSetField UnifiedSearchTaskCompositionPreview\n"
+        contract_docs["docs/component-catalog.md"] += " prepareTaskTitle UnifiedSearchTaskTitlePreview UnifiedSearchTaskTitleSubmission UnifiedSearchTaskExternalFeedback\n"
+        contract_docs["docs/component-catalog.md"] += " DaybookNewlinePolicy DaybookTextEditing DaybookFieldEditor DaybookSingleLineLayout\n"
         contract_docs["docs/component-catalog.md"] += " DaybookDatePicker DaybookDateCell DaybookDateCellPresentation DaybookMonthGridDay DaybookWeekdayHeader DatePicker MonthGrid DaybookHabitDateState HabitMonthGrid\n"
         contract_docs["docs/component-catalog.md"] += " DaybookWeekdayPicker WeekdayPicker TaskDetailWeekdayPicker\n"
         contract_docs["docs/component-catalog.md"] += " weekHeader WeekHeader\n"
@@ -75,6 +78,15 @@ class WorkflowCheckTests(unittest.TestCase):
             " CommandPreferenceGroupBaseline claimPreferenceGroup\n"
         )
         contract_docs["docs/component-catalog.md"] += " requestOperationSubmit UnifiedSearchSettingSubmission\n"
+        contract_docs["docs/component-catalog.md"] += " CommandTaskCompletionImpact CommandTaskTagMutation tagCandidates assignDue UnifiedSearchTaskFieldImpact\n"
+        contract_docs["docs/component-catalog.md"] += (
+            " SubtaskTitleEdit CreateSubtaskParams TaskFamilyCommandIdentity SubtaskCommandEnvironment"
+            " SubtaskCommandAdapter claimSubtask CommandSubtaskFacts prepareSubtask UnifiedSearchSubtaskSubmission\n"
+        )
+        contract_docs["docs/component-catalog.md"] += (
+            " TaskFieldCommandAdapter editField TaskChainCommandAdapter CommandTaskChainIdentity"
+            " prepareTaskField UnifiedSearchTaskChainSubmission\n"
+        )
         contract_docs["docs/component-catalog.md"] += " UnifiedSearchSettingBackend requestFileSettingPreparation UnifiedSearchFileSettingSubmission\n"
         contract_docs["docs/component-catalog.md"] += " LocalPreferenceFileStore LocalPreferenceRecord LocalPreferencePendingWrite\n"
         contract_docs["docs/component-catalog.md"] += " LocalPreferenceLegacySource LocalPreferenceMigrationResult LocalPreferenceMigrationEvidence migrate(from reopen(from\n"
@@ -452,6 +464,13 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookFieldEditor" in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_verbatim_layout(self):
+        self.make_project()
+        self.write("AreaChain/Theme/DaybookSingleLineLayout.swift", "struct Other {}\n")
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        self.assertTrue(any("DaybookSingleLineLayout" in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_diary_metadata_adapters(self):
         self.make_project()
         for symbol in ("DiaryContentQueryReader", "DiaryContentQueryTagPrivacy"):
@@ -562,9 +581,36 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("TagContentQueryReader" in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_task_title_shared_entry_and_preview(self):
+        self.make_project()
+        entries = [
+            ("AreaChain/Features/Search/UnifiedSearchTaskTitleEditing.swift", "prepareTaskTitle"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskTitlePreview.swift", "UnifiedSearchTaskTitlePreview"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskTitleSubmission.swift", "UnifiedSearchTaskTitleSubmission"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskEffectViews.swift", "UnifiedSearchTaskExternalFeedback"),
+            ("AreaChain/Services/TaskTitleCommandAdapter.swift", "TaskTitleCommandAdapter"),
+            ("AreaChain/Services/TaskTitleCommandEnvironment.swift", "TaskTitleCommandEnvironment"),
+            ("AreaChain/Domain/CommandTaskTitleContract.swift", "CommandTaskTitleAcceptance"),
+            ("AreaChain/Domain/CommandTaskTitleExecution.swift", "claimTaskTitle"),
+            ("AreaChain/Services/TaskMutationService+Title.swift", "editTitle"),
+            ("AreaChain/Services/TaskTitleCommandPreviewReader.swift", "TaskTitleCommandPreviewReader"),
+            ("AreaChain/Domain/CommandTaskTitlePreview.swift", "CommandTaskTitlePreview"),
+            ("AreaChain/Domain/CommandTaskTitleImpact.swift", "CommandTaskTitleImpact"),
+        ]
+        for relative, symbol in entries:
+            with self.subTest(symbol=symbol):
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+                self.write(relative, original)
+
     def test_component_catalog_requires_task_create_adapter_and_claim(self):
         self.make_project()
         for relative, symbol in [
+            ("AreaChain/Features/Search/UnifiedSearchTagSetField.swift", "UnifiedSearchTagSetField"),
+            ("AreaChain/Features/Search/UnifiedSearchTaskCompositionPreview.swift", "UnifiedSearchTaskCompositionPreview"),
             ("AreaChain/Services/TaskCreateTagCatalogReader.swift", "TaskCreateTagCatalogReader"),
             ("AreaChain/Services/TaskMutationService.swift", "createComposed"),
             ("AreaChain/Domain/CommandTaskCreateContract.swift", "tagCreationIDs"),
@@ -694,6 +740,68 @@ class WorkflowCheckTests(unittest.TestCase):
         self.assertEqual(result["status"], "failed")
         for symbol in ("DaybookPicker", "DaybookPickerOption", "Picker"):
             self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_tm2_shared_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/CommandTaskCompletionImpact", "CommandTaskCompletionImpact"),
+            ("Domain/CommandTaskTagMutation", "CommandTaskTagMutation"),
+            ("Services/TaskFieldCommandTagCandidates", "tagCandidates"),
+            ("Services/TaskMutationService+Fields", "assignDue"),
+            ("Features/Search/UnifiedSearchTaskFieldImpact", "UnifiedSearchTaskFieldImpact"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_tm3_shared_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/SubtaskTitleEdit", "SubtaskTitleEdit"),
+            ("Domain/SubtaskTitleEdit", "CreateSubtaskParams"),
+            ("Services/TaskFamilyCommandIdentity", "TaskFamilyCommandIdentity"),
+            ("Services/SubtaskCommandEnvironment", "SubtaskCommandEnvironment"),
+            ("Services/SubtaskCommandAdapter", "SubtaskCommandAdapter"),
+            ("Domain/CommandSubtaskExecution", "claimSubtask"),
+            ("Domain/CommandSubtaskFacts", "CommandSubtaskFacts"),
+            ("Features/Search/UnifiedSearchSubtaskEditing", "prepareSubtask"),
+            ("Features/Search/UnifiedSearchSubtaskSubmission", "UnifiedSearchSubtaskSubmission"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_tm1_execution_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Services/TaskFieldCommandAdapter", "TaskFieldCommandAdapter"),
+            ("Services/TaskMutationService+Fields", "editField"),
+            ("Services/TaskChainCommandAdapter", "TaskChainCommandAdapter"),
+            ("Domain/CommandTaskChain", "CommandTaskChainIdentity"),
+            ("Features/Search/UnifiedSearchTaskFieldEditing", "prepareTaskField"),
+            ("Features/Search/UnifiedSearchTaskChainSubmission", "UnifiedSearchTaskChainSubmission"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_unified_operation_parameters(self):
         self.make_project()

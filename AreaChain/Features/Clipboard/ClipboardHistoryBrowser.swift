@@ -51,6 +51,7 @@ struct ClipboardHistoryBrowser: View {
                     }
                 },
                 allowsShiftNewline: false,
+                newlinePolicy: .verbatim,
                 onEscape: {
                     if session.query.isEmpty == false {
                         session.query = ""

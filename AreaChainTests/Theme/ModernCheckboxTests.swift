@@ -147,12 +147,16 @@ struct ModernCheckboxTests {
         let task = try Native.button("preview.completion.task", in: window)
         let subtask = try Native.button("preview.completion.subtask", in: window)
         let detail = try Native.button("preview.completion.detailSubtask", in: window)
+        // 展示页持续增加样例，先沿真实滚动容器显露本组再检查几何与投递点击。
+        try await Native.reveal(task, in: window)
         try Native.assertBounds([task, subtask, detail], in: window)
         #expect(try Native.frame(detail, in: window).size == NSSize(width: 12, height: 12))
         let key = Locale(identifier: locale)
         #expect(Native.value(task, "accessibilityLabel") as? String == L10n.string("checkbox.open", locale: key))
         #expect(Native.value(subtask, "accessibilityLabel") as? String == L10n.string("checkbox.done", locale: key))
-        try await Native.click(Native.button("preview.completion.external", in: window), in: window)
+        let external = try Native.button("preview.completion.external", in: window)
+        try await Native.reveal(external, in: window)
+        try await Native.click(external, in: window)
         #expect(Native.value(try Native.button("preview.completion.task", in: window), "accessibilityLabel") as? String ==
                 L10n.string("checkbox.done", locale: key))
         #expect(Native.value(try Native.button("preview.completion.subtask", in: window), "accessibilityLabel") as? String ==

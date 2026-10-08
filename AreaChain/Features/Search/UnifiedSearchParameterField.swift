@@ -11,6 +11,7 @@ struct UnifiedSearchParameterField: View {
     @Environment(\.calendar) private var calendar
     @State private var dateExpanded = false
     @FocusState private var dateButtonFocused: Bool
+    @FocusState private var tagsButtonFocused: Bool
 
     private var argument: CommandArgument? { draft.arguments.first { $0.parameter == parameter.id } }
     private var operation: CommandFieldOperation { argument?.operation ?? .unspecified }
@@ -32,6 +33,14 @@ struct UnifiedSearchParameterField: View {
             } else if parameter.id == .target || isObject {
                 UnifiedSearchObjectField(controller: controller, draft: draft, command: command,
                     location: parameter.id == .target ? .targets : .parameter(parameter.id), source: source)
+            } else if controller.supportsTagField(parameter, command: command) {
+                operationPicker
+                if context.operation.requiresValue {
+                    Button("unified.tags.choose") { controller.beginTagSelection(source: source) }
+                        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact)).focusable().focused($tagsButtonFocused)
+                        .accessibilityIdentifier("unified.tags.choose")
+                }
+                Text(command.id.rawValue == "todo.tags" ? "unified.field.tagsHint" : "unified.tags.syntaxHint").font(DaybookType.caption)
             } else if supported {
                 operationPicker
                 if context.operation.requiresValue { editor }
@@ -44,10 +53,25 @@ struct UnifiedSearchParameterField: View {
                     .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }
             if parameter.id != .target && !isObject { preview }
+            if command.id.rawValue == "todo.create", ![.title, .day].contains(parameter.id),
+               !controller.hasTaskComposition || parameter.id == .notes {
+                Text("unified.composition.unsupportedField").font(DaybookType.caption)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("unified.parameter." + parameter.id.rawValue)
+        .onChange(of: controller.tagReturnRevision) { _, _ in
+            restoreTagFocus()
+        }
+        .onAppear { restoreTagFocus() }
+    }
+
+    private func restoreTagFocus() {
+        if parameter.id == .tags, controller.tagReturnDraftID == draft.id {
+            tagsButtonFocused = true
+            controller.tagReturnDraftID = nil
+        }
     }
 
     private var isChoice: Bool { if case .choice = parameter.type { return true }; return false }
@@ -84,8 +108,10 @@ struct UnifiedSearchParameterField: View {
             DaybookPicker("unified.operation.value", selection: Binding<Bool?>(get: {
                 if case .boolean(let value) = argument?.value { return value }; return nil
             }, set: { send($0.map(CommandValue.boolean)) }), options: [
-                .init(nil, "unified.operation.unfilled"), .init(true, "unified.operation.on"),
-                .init(false, "unified.operation.off")], layout: .formRow, eventVersion: source.version)
+                .init(nil, "unified.operation.unfilled"),
+                .init(true, command.id.rawValue == "todo.completion" ? "unified.field.completed" : "unified.operation.on"),
+                .init(false, command.id.rawValue == "todo.completion" ? "unified.field.open" : "unified.operation.off")
+            ], layout: .formRow, eventVersion: source.version)
             .accessibilityIdentifier("unified.parameter.boolean." + parameter.id.rawValue)
         case .number(let range, let integer):
             textEditor
@@ -147,7 +173,10 @@ struct UnifiedSearchParameterField: View {
             return UnifiedSearchOperationCopy.value(argument.value, locale: locale, calendar: calendar)
         }()
         return VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            if command.id.rawValue == "todo.create" {
+            if command.id.rawValue == "todo.title" {
+                Text("unified.title.inputHint").font(DaybookType.caption)
+                Text(verbatim: after).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
+            } else if command.id.rawValue == "todo.create" {
                 Text(verbatim: after).font(DaybookType.caption)
                     .fixedSize(horizontal: false, vertical: true)
             } else if controller.localSettings?.supports(command.id) == true {

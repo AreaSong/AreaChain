@@ -76,15 +76,118 @@ struct DaybookButtonInteractionTests {
 
     /// 通过测试环境变量保留窗口供人工交互；默认只做挂载，不影响日常测试耗时。
     @Test func interactiveGallery() async throws {
-        let window = window(DaybookControlsPreview(), size: NSSize(width: 760, height: 640))
+        let platform = ProcessInfo.processInfo.environment["AREACHAIN_PLATFORM_QA"] == "1"
+            ? ControlsPlatformAcceptance() : nil
+        let content = Group {
+            if let platform {
+                VStack(spacing: 0) {
+                    ControlsPlatformToolbar(session: platform)
+                    DaybookControlsPreview()
+                }
+            } else { DaybookControlsPreview() }
+        }
+        let window = window(content, size: NSSize(width: 760, height: 640))
         defer { SystemPageHost.release(window) }
+        defer { platform?.close() }
         window.title = "Daybook Controls (QA)"
-        try await NativeSyntaxUI.prepareFocus(in: window)
         let seconds = min(600, max(0, Int(ProcessInfo.processInfo.environment["AREACHAIN_CONTROLS_PREVIEW_SECONDS"] ?? "0") ?? 0))
+        platform?.start(gallery: window, seconds: TimeInterval(seconds))
+        do {
+            try await NativeSyntaxUI.prepareFocus(in: window)
+            if let platform {
+                try await platform.waitUntilFinished()
+                #expect(platform.fixtureFailures == 0 && platform.evidence.failure == nil)
+                return
+            }
+        } catch {
+            platform?.close(reason: error is CancellationError ? .cancelled : .error)
+            throw error
+        }
         let deadline = ContinuousClock.now + .seconds(seconds)
         while window.isVisible && ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(100))
         }
+    }
+
+    @Test func platformFixturesMountAndRelease() async throws {
+        let platform = ControlsPlatformAcceptance()
+        defer { platform.close() }
+        let host = window(Text("P QA"))
+        platform.start(gallery: host)
+        for scene in ControlsPlatformAcceptance.Scene.allCases {
+            platform.selection = scene
+            platform.openSelected()
+            #expect(platform.fixtureFailures == 0)
+            #expect(platform.activeWindowNumber != nil)
+            try await Task.sleep(for: .milliseconds(250))
+        }
+        platform.close()
+        #expect(platform.activeWindowNumber == nil)
+    }
+
+    @Test func platformToolbarOpensAndRecordsScene() async throws {
+        let platform = ControlsPlatformAcceptance()
+        let host = window(VStack(spacing: 0) {
+            ControlsPlatformToolbar(session: platform)
+            DaybookControlsPreview()
+        }, size: NSSize(width: 760, height: 640))
+        defer { SystemPageHost.release(host) }
+        defer { platform.close() }
+        try await NativeSyntaxUI.prepareFocus(in: host)
+        platform.start(gallery: host)
+        try await SystemPageHost.settle(host)
+        let button = try SettingsButtonTestSupport.button("打开 / Open", in: host)
+        try SettingsButtonTestSupport.assertBounds([button], in: host)
+        let frame = try SettingsButtonTestSupport.frame(button, in: host)
+        let point = NSPoint(x: frame.midX, y: frame.midY)
+        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
+            NSApp.postEvent(try MenuButtonTestSupport.mouse(type, at: point, in: host), atStart: false)
+        }
+        try await SystemPageHost.settle(host)
+        #expect(platform.fixtureFailures == 0 && platform.recordedOpens == 1)
+        #expect(platform.activeWindowNumber != nil)
+        let evidence = try String(contentsOf: #require(platform.evidenceURL), encoding: .utf8)
+        #expect(evidence.contains("\"kind\":\"open\""))
+    }
+
+    @Test(arguments: ["zh-Hans", "en"], [false, true])
+    func platformFeedbackIsVisible(locale: String, dark: Bool) async throws {
+        let platform = ControlsPlatformAcceptance()
+        platform.chinese = locale == "zh-Hans"
+        platform.dark = dark
+        let host = window(ControlsPlatformToolbar(session: platform), size: NSSize(width: 700, height: 320))
+        defer { platform.close() }
+        platform.start(gallery: host)
+        platform.openSelected()
+        let input = try #require(platform.input)
+        input.draft.text = "abc"
+        input.draft.submit("todo")
+        try await SystemPageHost.settle(input.window)
+        let labels = FormInputTestSupport.labels(in: input.window).joined(separator: " ")
+        #expect(labels.contains("Synthetic counters") && labels.contains("不创建生产列表记录"))
+        #expect(labels.contains(platform.evidence.runID) && labels.contains(platform.lastCallback))
+        #expect(labels.contains("待办 / Todo: 1") && labels.contains("手记 / Diary: 0"))
+        try SystemPageHost.assertContained(["qa.capture.counts", "qa.capture.callback", "qa.lifecycle.status"], in: input.window)
+        try SettingsButtonTestSupport.snapshot(input.window, name: "P-feedback-\(locale)-\(dark)")
+    }
+
+    @Test(arguments: [ControlsPlatformAcceptance.Scene.nativeStepper, .daybookStepper])
+    func platformStepperObservationPreservesTrace(scene: ControlsPlatformAcceptance.Scene) throws {
+        let platform = ControlsPlatformAcceptance()
+        defer { platform.close() }
+        platform.start(gallery: window(Text("P QA")))
+        platform.selection = scene
+        platform.openSelected()
+        let state = try #require(platform.stepper)
+        let trace = try #require(state.trace)
+        state.integerBinding.wrappedValue = 510
+        let phases = trace.items.map(\.kind)
+        let writes = state.writes
+        platform.recordObservation()
+        platform.close()
+        #expect(trace.items.map(\.kind) == phases && state.integer == 510 && state.writes == writes)
+        let rows = try ControlsPlatformTestSupport.rows(platform)
+        #expect(rows.filter { $0["kind"] as? String == "stepper-trace" }.count == phases.count)
     }
 
     private func window<Content: View>(_ content: Content, size: NSSize = NSSize(width: 400, height: 160)) -> NSWindow {

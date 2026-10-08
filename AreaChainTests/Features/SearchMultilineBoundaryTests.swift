@@ -12,7 +12,7 @@ struct SearchMultilineBoundaryTests {
         let editor = try #require(field.currentEditor() as? NSTextView)
         for namedBoard in [false, true] {
             for (raw, singleLine) in Self.samples {
-                let expected = kind == .form ? raw : singleLine
+                let expected = (kind == .form || kind == .clipboard) ? raw : singleLine
                 editor.setSelectedRange(NSRange(location: 0, length: (editor.string as NSString).length))
                 try Self.importText(raw, editor: editor, namedBoard: namedBoard)
                 try await SystemPageHost.settle(fixture.window)
@@ -43,14 +43,14 @@ struct SearchMultilineBoundaryTests {
         editor.insertText("甲\n乙", replacementRange: editor.markedRange())
         try await SystemPageHost.settle(fixture.window)
         trace.record("\(kind).composition.committed")
-        #expect(!editor.hasMarkedText() && editor.string == "甲 乙")
-        #expect(trace.coordinator.parent.text == "甲 乙")
+        #expect(!editor.hasMarkedText() && editor.string == (kind == .clipboard ? "甲\n乙" : "甲 乙"))
+        #expect(trace.coordinator.parent.text == (kind == .clipboard ? "甲\n乙" : "甲 乙"))
         for command in [false, true] {
             let before = fixture.draft.commits + fixture.draft.diaryCommits
             trace.reset()
             try await Self.key(command: command, in: fixture.window)
             trace.record("\(kind).return.command=\(command)")
-            #expect(editor.string == "甲 乙" && trace.coordinator.parent.text == "甲 乙")
+            #expect(editor.string == (kind == .clipboard ? "甲\n乙" : "甲 乙") && trace.coordinator.parent.text == (kind == .clipboard ? "甲\n乙" : "甲 乙"))
             let expected = kind == .capture || (kind == .clipboard && !command) ? 1 : 0
             #expect(fixture.draft.commits + fixture.draft.diaryCommits == before + expected)
         }
@@ -73,7 +73,7 @@ struct SearchMultilineBoundaryTests {
         trace.reset()
         try await Self.key(in: fixture.window)
         trace.record("\(kind).external.return")
-        let expected = kind == .capture || kind == .clipboard ? "甲 // 乙" : "甲 乙"
+        let expected = kind == .capture ? "甲 // 乙" : (kind == .clipboard ? "甲\n乙" : "甲 乙")
         #expect(trace.coordinator.parent.text == expected)
         #expect(field.stringValue == expected && editor.string == expected)
         if kind == .capture {
@@ -81,7 +81,8 @@ struct SearchMultilineBoundaryTests {
             #expect(parsed.cleanTitle == "甲" && parsed.notes == "乙")
             #expect(fixture.draft.commits == 1)
         } else if kind == .clipboard {
-            fixture.assertResults(space: false, slash: true)
+            fixture.assertResults(space: false, slash: false)
+            #expect(fixture.session.visibleItems.map(\.plainText) == ["甲\n乙 CLIP_LF"])
         } else {
             fixture.assertResults(space: true, slash: kind != .tags)
         }
@@ -102,9 +103,9 @@ struct SearchMultilineBoundaryTests {
         editor.setSelectedRange(NSRange(location: 1, length: 0))
         editor.insertText("甲\n乙", replacementRange: editor.selectedRange())
         try await SystemPageHost.settle(fixture.window)
-        #expect(editor.string == (kind == .form ? "头甲\n乙尾" : "头甲 乙尾"))
+        #expect(editor.string == ((kind == .form || kind == .clipboard) ? "头甲\n乙尾" : "头甲 乙尾"))
         #expect(editor.selectedRange() == NSRange(location: 4, length: 0))
-        let trace = kind == .form ? nil : try SearchMultilineTrace(field)
+        let trace = (kind == .form || kind == .clipboard) ? nil : try SearchMultilineTrace(field)
         defer { trace?.restore() }
         trace?.record("\(kind).middle.beforeUndo")
         try #require(editor.tryToPerform(Selector(("undo:")), with: nil))

@@ -87,7 +87,8 @@ struct DaybookTextField: NSViewRepresentable {
         if let cell = field.cell as? NSTextFieldCell {
             cell.wraps = false
             cell.isScrollable = true
-            cell.usesSingleLineMode = !allowsShiftNewline
+            cell.usesSingleLineMode = !allowsShiftNewline && newlinePolicy != .verbatim
+            (cell as? DaybookTextFieldCell)?.preservesNewlines = newlinePolicy == .verbatim
         }
         field.setContentHuggingPriority(.defaultHigh, for: .vertical)
         field.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
@@ -124,9 +125,10 @@ struct DaybookTextField: NSViewRepresentable {
             }
         }
         if let cell = field.cell as? NSTextFieldCell {
-            cell.usesSingleLineMode = !allowsShiftNewline
+            cell.usesSingleLineMode = !allowsShiftNewline && newlinePolicy != .verbatim
+            (cell as? DaybookTextFieldCell)?.preservesNewlines = newlinePolicy == .verbatim
         }
-        (field.currentEditor() as? DaybookFieldEditor)?.usesSingleLineInput = !allowsShiftNewline
+        (field.currentEditor() as? DaybookFieldEditor)?.usesSingleLineInput = !allowsShiftNewline && newlinePolicy != .verbatim
         if field.placeholderString != placeholder {
             field.placeholderString = placeholder
         }

@@ -499,3 +499,38 @@ Controller 的可选 taskCreate 注入不改变目录资格或其他命令装配
 ### 普通新增扩展事务（3T-2A2）
 
 普通新增的显式能力复用原 Coordinator 创建登记和调用占用；只读目录 owner 管理读取身份/修订，accept 核验原预览后绑定任务及内部新标签 UUID。TaskMutationService 的结构化和旧捕获入口共用最外层保存、登记、发布及反馈，InputTagResolver 的计划入口不再按原文重解析。旧 UI 仍走最小适配，原生扩展预览/notes 未接线；接口、共同回滚、unknown、隔离保证与复核缺口只维护在[权威 §9.68](unified-search-commands.md#968-阶段-3t-2a2普通新增的显式扩展事务与隔离适配)。
+
+
+### 普通新增扩展原生接受（3T-4B）
+
+标签集合临时选择仅持有原 buffer/lease/草稿/计划位置和经资格过滤的候选 evidence，确认后经 Coordinator.edit 写 arguments；不写 targets 或平行参数真值。扩展预览/接受/提交复用原 Composition/TagPlan/adapter，ReadSession 贯穿显示和最后写前门禁，参数或显示撤销时撤旧接受。共同事务 afterCommit 的标签效果进入原 Facts，UI 不以预览推断保存。隔离、兼容与验收见[权威 §9.69](unified-search-commands.md#969-阶段-3t-4b普通新增扩展参数最终效果与明确提交)。
+
+
+### 标题修改与只读影响（3T-2B1）
+
+TaskMutationService.editTitle 以独立 TitleModification 复用 ModelChanges 提交事实，原标题 UI 只委托。TaskTitleCommandPreviewReader 只接受显式来源和 context，按类型/UUID 全查询唯一活目标；CommandTaskTitleImpact 保留精确原字段和标签顺序，CommandDraftBaseline 为同一证据的展示投影。后续提醒/日历上下文不作全对象冲突，预览不签发执行授权。没有标题 handler 或 UI 能力变化，完整边界与验收见[权威 §9.70](unified-search-commands.md#970-阶段-3t-2b1标题共享修改与普通命令只读影响预览)。
+
+### 普通标题单目标执行（3T-2B2A）
+
+显式 TaskTitleCommandEnvironment 复用只读 Reader 和严格标签计划，以来源所有者的版本化普通无备注证明限定输入。接受与调用登记由 Coordinator 独占；冻结核验比对真实 Run，事务沿 TaskMutationService.editTitle / ModelChanges，提交先记 Run.taskTitle 再发布，修改不生成创建输出。完整 noChange 不进入事务；unknown 只核验当前事实，不自动重放。无原生/生产装配、无多步执行；首次锁忙后经用户明确要求续验，195 方法 / 379 次隔离执行与正常 Debug 构建/验签通过；指定复核仍缺失，唯一交接见[权威 §9.71](unified-search-commands.md#971-阶段-3t-2b2a普通无备注单目标-todotitle-隔离执行适配)。
+
+
+### 单目标标题原生适配（3T-4C）
+
+Controller 的可选 taskTitle 仅用于显式隔离宿主，ObjectSelection 和 ParameterField 不持有第二份目标/参数。prepare/accept/submit 复用原标题适配；新增只读 validatePreview 使用既有 Reader.validateAccepted。可选 ReadSession 显示门禁贯穿回调与最终写入前，保存后只保留原 Facts/Run。CommandTaskTitleTags.original/associations 负责原关联与真实附带效果投影；View 不重算合成或 noChange。共享效果呈现只由新增与标题消费，原标题行/检查器的 rawInput 入口不变。完整契约、隔离证据与未开放范围见[权威 §9.72](unified-search-commands.md#972-阶段-3t-4c单目标-todotitle-原生-ui-与隔离验收)。
+
+### T-M1 隔离任务修改与两步依赖
+
+普通字段适配调用 TaskMutationService.editField，再进入旧 UI 共用的仓储字段入口；预览读取真实影响字段，接受绑定来源、目录、目标和版本，Coordinator 在任何可重入写调用前独占占用。CommandTaskChainIdentity 只允许最小普通 todo.create→todo.title；生产者真实保存输出一次固定，消费者在原 Run 上读取实际对象并重新接受，不创建临时单项 Host 或跨步骤共同事务。各成员事实和外部步骤分开，unknown 不重放，未释放 Run 仍阻止转交。生产装配不变；能力、限制和验收见[权威 T-M1](unified-search-commands.md#973-里程碑-t-m1普通任务修改与受限依赖执行)。
+
+### T-M2 子项影响与标签共同事务
+
+FieldAdapter 的 milestone2 能力在原单项执行协议内增加完成、标签集合、新建并关联标签及截止时间。完成预览包括父状态、完整子项身份/关系/完成/删除状态，最后写前重新读取；仅实际级联项通过普通标签资格后展示标题。已完成父项再完成是 noChange，重开不重开子项；命令不进入 CompletionUndo.shared。
+
+标签从原关联出发，领域计划先核对原关联 D3，再计算最终集合和显式创建/恢复效果。原协调者接受记录保留新标签 UUID；InputTagResolver.apply 与任务关联共用 ModelChanges 的一次事务，保存后才登记实际标签与子项事实。目录/原关联变化撤销旧接受；unknown 保留原运行和身份，不据当前值推定历史成功。截止时间共享原赋值表示，严格命令参数与旧 UI 归一化政策分开，日期、提醒及其他字段不变。全部仅显式隔离装配，边界与验收见[权威 T-M2](unified-search-commands.md#974-里程碑-t-m2完成标签与截止时间的隔离闭环)。
+
+### T-M3 普通子任务的执行与身份
+
+SubtaskTitleEdit / SubtaskFields 只承载旧子任务标签解析与字段赋值；结构化仓储新增接受固定 ID，排序仍取实际活兄弟项末尾，创建时间/初始完成态沿原模型。普通新增和标题不解释父任务的优先级或时间语法，纯标签标题沿 TagSyntax 保留原文。TaskFamilyCommandIdentity 为完成影响与子任务命令共用完整身份、真实父关系及平铺一致性核验，不替代安全查询发布。
+
+SubtaskCommandEnvironment 分开父普通无备注、子项和本次输入的证明，不读父 notes 推导资格。接受绑定原 lease/plan/item/draft、父子实际记录、相关字段、目录/来源修订及创建排序事实；占用仍归原 Coordinator。子项与所需标签共用原 ModelChanges，保存后先登记子任务事实再发布；unknown 保留原身份、不重放。CommandSubtaskFacts.createdObject 是 .subtask 保存事实，不扩展 Run.outputs 或原 todo create→title 资格。Controller 只在显式装配时开放四条原生链；参数、标签暂存和计划仍写同一草稿。接口、隔离结果和治理缺口统一见[权威 T-M3](unified-search-commands.md#975-里程碑-t-m3普通子任务的隔离闭环)。

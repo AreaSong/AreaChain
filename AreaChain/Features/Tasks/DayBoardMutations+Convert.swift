@@ -5,7 +5,7 @@ extension DayBoardMutations {
     @discardableResult
     static func setDue(_ todo: TodoItem, minutes: Int?) -> Bool {
         persist(context: todo.modelContext) {
-            todo.dueMinutes = RemindMinutes.clamped(minutes)
+            TaskMutationService.assignDue(todo, minutes: minutes)
         }
     }
 

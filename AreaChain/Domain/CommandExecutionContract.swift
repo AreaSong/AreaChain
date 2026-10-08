@@ -71,6 +71,9 @@ struct CommandExecutionUnit: Equatable {
     var preferenceGroupCommit: CommandPreferenceGroupCommit?
     var preferenceGroupPresentation: CommandPreferenceGroupPresentation?
     var preferenceVerification: CommandExecutionReceipt?
+    var taskTitle: CommandTaskTitleFacts?
+    var taskField: CommandTaskFieldFacts?
+    var subtask: CommandSubtaskFacts?
     var taskCreation: CommandTaskCreateFacts?
 }
 

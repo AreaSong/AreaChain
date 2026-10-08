@@ -119,6 +119,12 @@ struct DiarySummaryRow: View {
                 onSelect?()
             })
             .onHover { chrome.handleRowHover($0, reduceMotion: reduceMotion) }
+            .onChange(of: shouldShowTitleBubble) { _, visible in
+                if !visible { chrome.resetTitleHover() }
+            }
+            .onChange(of: entry.id) { _, _ in resetTitleTracking() }
+            .onChange(of: contentPresentation.mainText) { _, _ in resetTitleTracking() }
+            .onDisappear { resetTitleTracking() }
             .popover(isPresented: $pickingDay) { daySchedulePopover }
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier("diary.summary." + entry.id.uuidString)

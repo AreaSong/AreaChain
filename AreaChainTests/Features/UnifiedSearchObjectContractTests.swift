@@ -88,7 +88,7 @@ struct UnifiedSearchObjectContractTests {
         #expect(fixture.controller.objectPreview(child)?.relations.first?.object == parent)
     }
 
-    @Test func baselineIsFreshExplicitEvidenceAndParametersSurvive() async throws {
+    @Test func titleRejectsSyntheticBaselineAndParametersSurvive() async throws {
         let fixture = try UnifiedSearchResultsFixture(.objectBatch())
         defer { fixture.stop() }
         let command = CommandID(rawValue: "todo.title")
@@ -97,7 +97,8 @@ struct UnifiedSearchObjectContractTests {
         try fixture.startOperation(command.rawValue)
         try await fixture.acceptObjects([.object(0)])
         try fixture.typeParameter(.title, text: "我的修改")
-        #expect(try fixture.draft.baseline.original(.title, targets: fixture.draft.targets) == .uniform(.shortText("原值")))
+        // 3T-4C 起标题基线只由真实 prepare 读取，候选摘要/合成基线不得变成当前值证据。
+        #expect(try fixture.draft.baseline == CommandDraftBaseline())
         fixture.controller.syntheticBaselines[command] = nil
         try await fixture.acceptObjects([.object(1)])
         #expect(try fixture.draft.baseline.values.isEmpty)

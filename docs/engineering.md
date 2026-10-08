@@ -1,6 +1,629 @@
 # 工程与维护
 
+## 第十阶段 O：控件收口最终整合验收与总交接
+
+2026-10-06 至 2026-10-07。本节是控件收口的总交接入口，详细过程继续保留在原阶段记录。**2026-10-07 O 补验已将最后两个方法定位为测试装配／契约问题；本轮有效复验103方法／264次通过，按源码影响与实际方法重新去重为315方法／770次所选自动回归通过。人工、平台及指定复核仍有缺口，整体 partial；证据与边界见本节末的 O 补验记录。** 以下先封存原 O 结果：**接入闭环；所选自动回归未全部通过；整体 partial。** 第九阶段四类重复/漏接及第十阶段两处后补入口均有当前生产调用；总扫描未发现新增确定漏接。最终 A 留有第八阶段的两个历史失败方法／三次失败，B/C/D 通过；没有新确认的生产阻断。人工、平台和指定复核未完成，不能宣称全部运行验收完成。
+
+### 权威入口与当前消费者
+
+P 收尾状态见[人工平台与交付判定](#第十阶段-p人工平台验收与最终交付判定)：首轮用户报告触控板及现有VoiceOver操作无异常，P最终5方法／9次定向检查通过；[P续轮](#p-续轮逐项人工操作与平台取证2026-10-07)新增实际QA截图、子窗口日志及普通搜索撤销／重做的人工反馈。精确长按时序、指定Cursor及H/K边界仍保留，续轮结束还发现并停止了非XCTest的QA进程。用户已明确决定：**保留 partial，暂不接受整体交付**。
+
+下表为真实调用复查摘要；完整复用责任仍以[组件目录](component-catalog.md)为准。公共实现内部原生控件不算漏接；按钮间接手势链为重点抽查，不把符号扫描当完整运行证明。
+
+| 家族 | 权威入口 → 真实消费者；保留边界 |
+|---|---|
+| 按钮、布尔、完成、Stepper、Picker、分段 | `DaybookButtonStyle`、`DaybookToggleStyle`、`ModernCheckbox`、`DaybookStepper`、`DaybookPicker`、`DaybookSegmentedControl` → ClipboardHistoryOptions、SettingsSections、PrivacySetupSheet、任务/子任务行、TagManagementPage、MenuBarPopoverView/Header、CalendarPage。系统菜单、完成控件三种呈现和宿主业务回调保持。 |
+| 日期、时间、星期、月历、习惯月历、周头 | `DaybookDatePicker`、`DaybookTimePicker`、`DaybookWeekdayPicker`、`DaybookDateCell`、`DaybookWeekdayHeader` → DaySchedulePicker、详情排期/截止、ResidentsPage、CalendarMonthGrid、HabitCheckMonthView、CalendarWeekBoard。民事日、分钟、掩码与统计口径不互换，standingMenus 保留系统星期菜单。 |
+| 普通/安全输入、搜索、捕获、编辑 | `DaybookInputShell`、FormTextField/SecureField、TextField/TextEditor、SyntaxTextField/Editor → 三类表单、安全弹窗、四普通搜索、ClipboardHistoryBrowser、CaptureField、手记/详情编辑。四搜索显式 searchWhitespace，剪贴板唯一 verbatim；捕获键盘与按钮共用 submitDiary，检查自有编辑器组合文本。UnifiedSearchFieldCell 专用分支保持。 |
+| 静态/动态表面、候选、属性、预览、帮助、气泡 | `DaybookSurface` / `DaybookFloatingSurface` → 昨日两布局、两级 MenuBarFilterFlyout、SyntaxAutocompletePopup、CaptureAttributesView、两类实时预览、SyntaxExpandableCard、RowTitleBubble/RowNoteBubble。QuadrantTitlePreview 固定 `.rowBubble(isHovered: false, isCopied: false)`，原摘要与全文转交保持；手记标题独用 observingWindowHover，其余消费者不强迁移。 |
+| 滚动、scope、羽化 | 两个 `daybookScroll` 重载 → 周列、甘特、任务/手记列表、Dashboard 外层；局部成对边界定位，Host 拥有装饰与羽化绑定。DashboardView 外层显式不羽化，两横图保持原生横向容器；实际 1/0/0 已在 C 核验。 |
+| 计数、色点、连击、分组、空态 | `DaybookCount`、`DaybookStatusDot`、`DaybookSectionHeader`、公共空态 → TasksPage、BoardFilterBar、FooterBar、侧栏/标签管理、任务/工作台列表。连击两列复用局部 streakMetricColumn，整数全文不套 99+；分节全文数、完成比与月历数字各保留口径。 |
+
+第九阶段[昨日卡](#第九阶段-b昨日事项静态卡片外壳)、[筛选浮层](#第九阶段-c菜单栏筛选浮层外壳)、[连击列](#第九阶段-d连击指标列复用)、[两处色点](#第九阶段-e两处标签色点接入)均已接入；第十阶段[四象限纯装饰](#第十阶段-b四象限标题预览纯装饰接入)及[Dashboard 外层](#第十阶段-cdashboard-外层垂直滚动接入partial)也已处理。旧段落“留待后续”属于当时范围，不再作为当前漏接清单。
+
+### 源码身份与隔离
+
+HEAD 为 `dba0982362f389c28b468e2d03420bfbe126d7d1`，叠加起点原暂存/工作区；起点 88 个暂存文件、3 个另有未暂存修改的文件，无未跟踪文件。未冻结提交、取消暂存、回退或复制工程。原暂存二进制差异 SHA-256 始终为 `3ffa32a99337dfd8d8faa82dfab5543af56e7ba5a674c5251492d75befa8c44b`。并发 `docs/architecture.md`、`docs/component-catalog.md`、`docs/unified-search-commands.md`、`skill-routing.md` 修改单列保留，不计 O 成果。
+
+证据目录为 `build/Controls10O`：`initial.json`、每批 `*-before.json` / `*-after.json` 保存逐文件 SHA-256、HEAD、暂存摘要；`*-command.json`、`*-execution.json`、日志、xcresult 及 summary/tests 树可对应复查。聚合算法为路径→SHA-256 字典按键排序后 JSON 编码再 SHA-256，不以 HEAD 单独代表脏工作区。
+
+| 最终身份 | 文件数 | 聚合 SHA-256 |
+|---|---:|---|
+| 生产目录，整个 O 保持相同 | 562 | `97884979339b482c4698fbc4c4694031691b4eeddb6ac353be7a999450a245c4` |
+| 测试目录，含本轮两处测试修正 | 598 | `59258cbbadcdc5be74fee84d3cc8363a3247909c3faba9178cf0886c2f0599ea` |
+| 受版本管理构建/脚本/SwiftLint 配置 | 21 | `972b74bf3138eaf496c6962c9da47ea090a22a01ced45205257fc29e7b0fd730` |
+
+最终 1181 文件综合摘要为 `de9a227b0b0091bde0c85b69ec4b1e7d31ad1d3e48b7bfdc502083887f38d12f`。A 起点摘要 `9c1250ad9d924cdff9cd4a7d824fb42659d0781b3dc5501d50e53bd874b84507`；A-repair/B/C/D 为 `2d4e68e6474315e333b4fa0db1aa71e38604e29874a882127c5fec849583ec00`；D-repair/screen 为最终摘要。每批内部均无相关文件变化。两次跨批差异仅为下述局部测试方法，均重跑对应方法及必要同族回归；其余所选方法与生产/配置不变，可建立最终相关源码对应关系，不是混接不同生产快照。
+
+完整正常 PrivacyQA 目标，macOS 26.6.2（25G83）arm64 / Xcode 26.6（17F113），独立 `build/PrivacyQA-Controls10O`、`com.areachain.privacy-qa`、local 临时签名、生产 sandbox entitlement、LSUIElement=NO。所有原生执行和最后验签均申请同一 `build/.build.lock`，单一等待者、上限900秒；本轮均立即取得，没有绕锁或干预其他会话。清除六项真实钥匙串变量，合成数据、隔离偏好和串行事件；保留桌面锁定/焦点门禁，无普通宿主替代、源码排除或 test-without-building。个人 Signing.local 仅三个签名键，无 include，生效字段均被 QA 命令显式覆盖；其额外摘要采于 B 开始后并保持，不冒充 A 批前采样，内容未修改。
+
+### 原 O 封存回归与计数
+
+实际选择器以 `selectors.json`、`*-resolved-selectors.json` 和每批命令为准；A–D 的 `*-selector-coverage.json` 对照源码测试声明与结果树，最终分别实际命中100/90/43/82方法，无漏选。参数次数指结果树 Arguments 叶节点加非参数方法的一次执行，不把内部循环另算参数。
+
+| 批次 | 实际入口与覆盖摘要 | 方法：通过/失败/跳过 | 参数执行：通过/失败/跳过 |
+|---|---|---:|---:|
+| A 公共控件与呈现 | DaybookButton/Toggle/Stepper/Picker/Segmented/Time/Date/Weekday、ModernCheckbox、Surface/FloatingSurface/StaticCard、RowBubbleSurface、LivePreview、OverlaySurface、TagHelpSurface；Stepper 只选四个基本焦点/键盘/快速点击方法，不选无效合成长按。原 ControlsPreview、非命中、身份、显隐、布局均包含。 | 98 / 2 / 0（共100） | 240 / 3 / 0（共243） |
+| B 输入与提交 | DaybookTextField/Search/Verbatim、SearchMultiline 三套、ClipboardVerbatim、CaptureSubmission/MenuBarCapture/Shortcut、InputSyntax、Form/安全输入及原 UnifiedSearchInput；PrivacySecureInput 仅布局、不同值忙碌重试、Return/取消三个方法，排除 K 诊断。 | 90 / 0 / 0 | 239 / 0 / 0 |
+| C 滚动与日历 | ScrollContract/Lifecycle/Native、四套 Feather、ScrollAssemblyConsumer、DashboardScroll、ScrollFeatherConsumer、CalendarWeekLayout/Span/MonthNavigation/MonthGrid、HabitMonthInteraction；周列各1、甘特内外各1、Dashboard 1/0/0、迟到回调、上中下/resize、窄周、固定导航、逐列纵滚、首次按键与草稿隔离。 | 43 / 0 / 0 | 95 / 0 / 0 |
+| D 消费者与最终修复 | Yesterday、MenuBarFilter、实际 MenuBarPopoverRendering/Help（包含扩展文件的方法）、Streak/TagDot、QuadrantPreview 三套、RowBubbleConsumer/Interaction、DiaryTitleHover、TaskRowBubble、TasksPageEmptyState；DetailTimePicker 七个正常方法含回调内失败恢复，不选嵌套AX旧失败。公开 Copy/More 沿现有安全注入，手记默认复制不点击。 | 82 / 0 / 0 | 193 / 0 / 0 |
+| **最终去重** | **315 个不同方法；不累加历次阶段结果** | **313 / 2 / 0** | **767 / 3 / 0（共770）** |
+
+无 Expected Failure 计入上表；H/K 已知问题没有借排除变为通过。A 的两个历史失败仍作为本轮所选回归失败保留，不能称“自动回归全通过”。
+
+| 本轮实际包 | 方法数 / 参数次数 | 结果与统计用途 |
+|---|---:|---|
+| A | 86 / 201 | 83方法/194次通过，3方法/7次失败。初版把扩展文件名当 suite，以及四个方法未带完整签名，漏选部分公共浮层/Stepper；最终经源码/结果树核对并补齐，不将零命中算通过。 |
+| A-repair | 15 / 46 | 全通过；其中14方法/42次为漏选补齐，1方法/4次替换展示定位旧失败。 |
+| B、C | 90 / 239；43 / 95 | 均全通过，无重跑。 |
+| D | 82 / 193 | 81方法/192次通过，1方法/1次在首轮挂载前查询失败。 |
+| D-repair | 10 / 19 | 全通过；重跑整个 DiaryTitleHoverTests 和 RowBubbleConsumerTests。 |
+| screen | 1 / 1 | 原 interactiveGallery 完整挂载、焦点与90秒窗口期通过；这是重复运行，不增加最终方法/参数次数，不代表取得屏幕。 |
+
+原始包共327个方法运行、794次参数执行；其中12个方法运行/24次执行为上述重复，最终仍只报315/770。最初 ioreg 返回字典的预检适配错误发生在 xcodebuild 前，0测试，不计通过。只修改两个测试：`ModernCheckboxTests.existingGalleryShowsBothPresentationsAndExternalUpdate` 用既有 reveal 显露滚动视口外的完成控件及外部更新按钮；四参数严格通过。`DiaryTitleHoverTests.observedBubbleKeepsClickBoundaryAndUnmountCleanup` 在 prepareFocus 后补同类 settle：D 原失败在43ms、任何点击前未找到观察视图；补验保留非命中、精确一次复制、移除及重挂断言并通过。未改生产延迟、断言、共享助手或 withKnownIssue。
+
+**内部重复单列，不加到770次**：时间分钟往返为3时区×1440＝4320次；B nativeMaterialMatrix 为7入口×2材料路径×17材料＝238次导入；剪贴板三模式精确结果主循环为3×9×2＝54次、模式切换另9次。核心 undo/redo 为 repeated 的42次、queued 的15次及三个门槛内9次，共66个往返。C Dashboard 重开循环2次，12参数里的双横图滚动24次。D 手记快速往返4参数×3＝12次、跨行相邻点4次，原 lower-row 诊断另2点；D-repair 再重复同量，归入重跑而非新增覆盖。其余既有布局/材料/等待循环不折算为统一测试总数；没有 -test-iterations 重复整个套件。
+
+### 原 O 保留失败、限制与证据层级
+
+- **第八阶段历史失败**：`TagHelpSurfaceConsumerTests/titleNativeHoverKeepsOriginalTagExclusion()` 一次仍见 All tags；源码两端为 LiveComposerPreviewHeader 的 `!isTitleHovered` 排除条件与 titleView.onHover，消费者来自 SyntaxAutocompleteView。当前证据是直接生产组件辅助树断言失败，未证明实际绘制/命中根因。`directHelpExitCommandOwnership(focusHost:)` 两次 expanded 仍 true，裸 SyntaxExpandableCard.onExitCommand 未收到有效关闭；不同于生产 MenuBar 的本地监视器。两者均在原[第八阶段 E](#e-修复一公共浮层描边不拦截内容点击)前后保留，未新确认生产回归，也未关闭。D 的真实帮助点击、防穿透、一次 Escape、优先级和生命周期严格通过，不重新笼统列为“帮助仍坏”。
+- **H**：[原时间诊断与收尾](#第十阶段-h时间清除失败回显的复现与修复定界)两项“外层事务＋AX 提前渲染”显示恢复问题仍开放，不在本轮重跑或计正常通过。D 的普通提醒/重复事项回调内恢复及外层原生点击对照通过，与它们分开；普通截止真实 save 失败仍无等价注入，未制造真实库/磁盘故障。
+- **K**：[安全输入同值残留](#第十阶段-k密码确认字段同值重试残留诊断)仍保留，无错误提交证据，不足以建议生产修复；未重复全部矩阵、未修改密码流程。
+- **L**：[Stepper 持续按压基线](#第十阶段-lstepper-长按重复有效性核验)仍未建立；本轮没有重跑 syntheticHoldComparison 或把点击/键盘重复称为真实持续长按。
+- **已关闭问题的本轮证据**：C 支持滚动错绑、羽化、窄周及首次按键修复；B 支持[搜索撤销](#第十阶段-i-修复一普通搜索换行与撤销边界)、[剪贴板政策](#第十阶段-i-修复二剪贴板搜索保真输入)和[捕获保护](#第十阶段-j捕获按钮组合文本提交保护)；D 支持[生产帮助](#e-修复二语法帮助遮罩与-escape-路由)和[手记向上气泡](#第十阶段-n手记向上标题气泡悬停保留修复)。这些不再作为笼统未解决项。
+- **人工/平台/复核**：真人 IME、系统粘贴、触控板、VoiceOver、真实 NSPopover、其他系统版本仍未覆盖。指定 Cursor verifier 当前不可调用；本轮两项只读接入检索不替代它，没有认证或换机制冒充。屏幕阶段先确认本轮 QA 可执行路径的进程运行，再以该确切路径调用 cua.getApp，返回 `-10005 timeoutReached`，未取得当前辅助树/真实屏幕；不重复同条件尝试，不把 cacheDisplay 或自动几何结果当屏幕验收。桌面工具未投递输入。
+
+### 原 O 门禁与交付状态
+
+完整正常 QA Debug 编译已随测试完成，同一最终包 `codesign --verify --deep --strict` 通过，Bundle ID 为 com.areachain.privacy-qa，sandbox=true；没有理由再构建日用 Debug。ad-hoc 的 Hardened Runtime 提示及原 SDK/actor 警告保留；静态验签不是系统认证或发行。最终283个实际相关Swift文件严格SwiftLint通过；工作流、static质量门禁（228项脚本回归）与工作区/暂存差异检查的最终结果见本轮产物。源码存在或旧包通过均未充作本轮运行证据。
+
+本轮成果仅两处测试定位/挂载修正、此总交接及组件目录当前状态引用；生产代码零修改。原暂存及并发修改保持。**已登记接入缺口闭环；所选自动回归仍有上述历史失败；无新增确定生产阻断；不能宣称全部运行验收完成。** 未提交、未推送、未安装、未发布，未操作真实数据、系统剪贴板、认证或系统配置；交接后停止，不创建后续任务。
+
+### O 补验：最后两个失败方法的契约与宿主归因
+
+2026-10-07。本轮只校正 [TagHelpSurfaceConsumerTests](../AreaChainTests/Theme/TagHelpSurfaceConsumerTests.swift) 中的两个方法及其局部诊断支持，不改生产和共享 helper。**两个方法均归为测试装配／契约问题；未确认新的生产缺陷。** 裸窗口任意焦点全局 Escape 不是当前帮助卡的产品承载契约。原 O 的 315 方法／770 次、其中 2 方法／3 次失败保持封存；下面是补验与重新去重结果，不倒改原失败。
+
+**标题悬停归因**：`original` 原样命中 2 方法／3 次失败。直接宿主的组件逻辑几何在 `layout-trace` 中反复由 `(32,92.5,316,199)` 变为 `(32,174,316,36)`，高度减少 163pt、顶部移动 81.5pt；窗口仍为 380×320。这是标签退出后居中宿主重排引起的标题移位和悬停往返，并非仅凭 All tags 辅助节点推断生产失败。该记录也区分了布局几何和仍处于动画中的 AX 标题框。早期几次逐帧 AX 诊断遭遇指针移出，新增守卫按失败保留，不能当作完整悬停保持证据；记录屏幕坐标及不变窗口 frame 后确认这些取样后段确有指针移动。切换为原生布局通知取证后，已在指针仍位于标题时捕捉到反复重排，不继续重复原故障。
+
+生产路径由原 `MenuBarPopoverView → CaptureField → SyntaxOverlay → SyntaxAutocompletePopup → LiveComposerPreviewHeader` 承载：原生编辑器输入合成长标题及六个标签，尾随空格自然结束候选；未设置私有 `isTitleHovered`。生产 Overlay 的首个记录锚点约 `(11.65,222.60,356.70,171.75)`，标题为 `(42,368,253.5,16)`，标签列表的可用高为 92pt，保留真实来源锚点、空间计算和顶部对齐。进入、保持、离开分别得到气泡出现／标签退出／标签恢复。直接测试现只给自身外层固定 256pt 高并顶部对齐，匹配生产面板的固定顶部责任；两个宿主各固定两轮，逐次要求指针仍命中、标题纵向位移小于 1pt、气泡全文精确匹配、退出后六标签恢复。关闭回调、挂载次数、草稿和模型不变；未点击默认复制。观察窗固定，不延长到通过。
+
+**独立 Escape 归因**：原 `focusHost=false` 的 firstResponder 是 `NSWindow`；`true` 的 `makeFirstResponder(contentView)` 确实成功，链为 `NSHostingView → NSHostingController → NSWindow`，但没有卡内命令焦点。局部不吞事件的监视记录确认 keyCode 53 已到达；两者仍 expanded=true。`selectNextKeyView` 没有改变该事实；外包 `.focusable()` 虽得到 `KeyViewProxy`，也没有让位于其内部的退出命令可达。可达对照使用卡内现有“关闭”按钮公开的 `setAccessibilityFocused:`，只建立焦点、不激活按钮：链变为 `KeyViewProxy → NSHostingView → NSHostingController → NSWindow`，随后一次队列 Escape 触发原卡片 `onExitCommand`。最终测试要求焦点前后 expanded 仍 true、写回为 0；按键观测恰为 `[53]`，之后 expanded=false 且 Binding 恰写回一次，token/example 均无调用。AX 布尔焦点用 KVC 读取，避免把对象返回型 `perform` helper 用在原生 Bool getter 上；共享 helper 未修改。
+
+生产帮助继续由 MenuBar 的本地键盘路由拥有 Escape：实际编辑器焦点下的一次关闭、组合文本优先、筛选先关闭、预览／候选后续 Escape、选区和草稿保留、窗口隔离、重开、卸载及修饰键不消费，均由原七个键盘／退出方法严格复验。独立卡内命令焦点的通过不等于承诺裸 NSWindow 的全局 Escape，也不替代生产路由的证据。未直接调用关闭回调、未写 expanded=false、未增加生产监视器或 Expected Failure。
+
+**身份与隔离**：补验目录 `build/Controls10O-followup` 保存完整命令、每批前后 SHA-256、原结果树、诊断日志和去重来源。起点与 O 的文件清单完全一致，暂存二进制摘要始终为 `3ffa32a99337dfd8d8faa82dfab5543af56e7ba5a674c5251492d75befa8c44b`。过程中并发搜索／标题命令、测试和检查器改动独立保留，不能把整个生产目录说成未变；`source-comparison.json` 列出 29 项变化／新增。文案对照仅新增 45 个 `unified.title.*` 键，原键内容无变化。四个目标生产组件、MenuBar 帮助路由、其余控件生产实现和构建／签名配置身份保持；并发影响侧重新运行原 B 全批，检查器运行新静态回归。A/C/D 未受影响的方法沿原逐方法证据复用，regression 只替换实际复验的 13 方法，不拼接不同版本的受影响方法。
+
+沿完整正常 PrivacyQA、原 `build/PrivacyQA-Controls10O` 独立目录和 `com.areachain.privacy-qa` 标识、local 临时签名及生产 sandbox entitlement；LSUIElement=NO、六项钥匙串授权清除、合成内存数据、隔离偏好和串行原生事件保持。每次只申请同一 `build/.build.lock`，900 秒有界等待，实际最长约149秒；不换锁、不排除源码、不用 test-without-building。一次并发新增类型尚未进入编译清单、一次诊断源字符串转义错误均为编译阶段 0 测试，修正或确认对应文件出现后才续验；各原包保留，均不算通过。
+
+| 本轮有效最终证据 | 方法／参数执行 | 结果 |
+|---|---:|---|
+| corrected：两个校正方法首次完整验证 | 2／3 | 通过；后续 regression 重跑覆盖，不重复累计 |
+| regression：全部 TagHelpSurfaceConsumerTests＋七个生产帮助退出／键盘方法 | 13／25 | 全通过，0失败／跳过／Expected Failure；中英文、浅深色、生产356/380宽度由原帮助回归覆盖，标题诊断保持英文浅色 |
+| B-refresh：并发搜索变化后的原 B 选择器 | 90／239 | 全通过，0失败／跳过／Expected Failure |
+
+最终有效复验为 **103 方法／264 次**；其余 **212 方法／506 次**沿未受影响的 O 证据复用。`current-results.json` 保存每个方法取自哪个结果包；`summarize.py` 由原六批结果树顺序覆盖，再仅用 regression/B-refresh 的实际方法替换，确认无新增、漏选或跳过。当前 A=100／243、B=90／239、C=43／95、D=82／193，合计 **315 方法／770 次，全部通过**。这是“所选自动回归通过”的准确结论，不是完整运行验收通过。原 O 的 313／315 方法、767／770 次通过及3次失败仍保持封存值。补验所有原始包合计117个方法运行／285次执行，其中14个方法运行／21次为诊断或已被最终严格复验覆盖的重复，不另加覆盖；两次编译0测试单列。两个标题宿主各两轮属于方法内部循环。
+
+regression 与 B-refresh 的生产／测试／配置综合 SHA-256 前后均为 `a9ae5bee9789237982bfa858950632bb8f3af99447604266733a2bbac0d9b79b`，共1191文件；生产567文件摘要 `e9818b3d2be4a95f72a24a120c599ce366e104904f71848717dc6ec212a1a861`、测试603文件 `48fdbd4a2896ed4be7271cae6e13c4854a7456d7561fbb735f9cc6c475e507f7`、原配置范围21文件 `5af1ef8d240a452ede3be63b24ca676d80d5335327d29aaddec42b0eb648d0c0`。两批之间这些源码均未变化；B期间仅工程记录和并发统一搜索文档变更，单独记录，不冒充全部文件冻结。
+
+**证据层级与限制**：事件层记录合成鼠标投递、真实桌面指针坐标、队列 Escape 及所属窗口；逻辑层直接验证公开预览状态、精确 Binding 写回、草稿与模型，私有悬停状态由原布局／显示变化推知，未宣称读取了私有布尔值。辅助树层验证精确全文、标签、焦点及恢复；早期过渡中仍有 NSScrollView，不用单个残留节点定责。缓存图层查看两个宿主的进入／保持／离开图，标题气泡与标签实际缓存绘制和辅助树一致；原居中失败图也确有标签绘制。实际屏幕层沿确切 QA 路径调用原生工具仍返回 `-10005 timeoutReached`，未取得屏幕合成器证据，不重复同条件尝试、不以 cacheDisplay 冒充。真人 IME、VoiceOver、真实 NSPopover、其他平台版本及指定 Cursor verifier 继续未验证；H/K/L 完全单列，不重新调查或关闭。
+
+最终13个相关Swift文件严格SwiftLint通过；完整正常QA编译随测试完成，同一锁内 `codesign --verify --deep --strict` 通过（com.areachain.privacy-qa、sandbox=true）。最终工作流、static质量门禁（含228项脚本回归）与工作区／暂存区差异检查均通过，日志保存在补验目录；SDK弃用／actor及ad-hoc Hardened Runtime提示保留，不当作系统认证或发行通过。本轮未提交、推送、安装、发布或操作真实数据、系统剪贴板、系统权限／配置；完成即停止。
+
+### 第十阶段 P：人工平台验收与最终交付判定
+
+2026-10-07。本轮是原 O 总交接的人工／平台与指定复核收尾，不另建收口路线。接入缺口仍闭环；O 补验的 **315 方法／770 次所选自动回归通过**及原 O 的3次失败均保留，人工参与同意、窗口挂载和构建成功都不等于场景通过。P 的最终结果在下方按实际证据填写，不擅自修改生产。
+
+**源码与并发基线**：P 起点 HEAD 仍为 `dba0982362f389c28b468e2d03420bfbe126d7d1`；105个已暂存文件、无未暂存／未跟踪文件。逐文件对照 `build/Controls10O-followup/B-refresh-after.json`，1191个生产／测试／原配置文件无变化，综合 SHA-256 同为 `a9ae5bee9789237982bfa858950632bb8f3af99447604266733a2bbac0d9b79b`。因此原逐方法结果可复用；当前暂存摘要不同于 O，仅凭暂存变化不能推断源码变化。本轮证据置于 `build/Controls10P`，`initial.json`、`source-comparison.json` 和逐批前后清单保存对应关系。期间并发更新 AGENTS、质量门禁、路由及组件目录的构建锁约定，并再次暂存了包含本轮测试支持在内的文件；这是外部 Git 状态变化，P 未执行暂存、撤暂存或提交，也不覆盖它们。
+
+**最小测试支持**：原 [interactiveGallery](../AreaChainTests/Theme/DaybookButtonInteractionTests.swift) 仍是唯一人工启动入口；显式设置 `AREACHAIN_PLATFORM_QA=1` 才增加 [ControlsPlatformAcceptance](../AreaChainTests/Theme/ControlsPlatformAcceptance.swift) 工具条，`AREACHAIN_CONTROLS_PREVIEW_SECONDS=600` 仍受原600秒上限。直接复用原 Gallery、SearchMultilineFixture、CalendarWeekBoard、DashboardScrollTestSupport 和 DiarySummaryRow；没有新应用或正式导航。搜索／捕获用既有合成资料和计数回调，剪贴板 session 的 pasteboard=nil；本轮不读取、备份或写入系统剪贴板。手记行只做悬停观察，不点击其真实复制／菜单动作。辅助窗口一次一个，换场景清理，Gallery 结束移除监听并释放全部子窗口。
+
+裸 NSStepper 与 DaybookStepper 使用同一500初值、20…999范围、10步长和600×300宿主。裸控件保留默认重复配置，逐次真实 target/action 与 Binding 写入分别记录；窗口局部监听只旁观真实 down/up 和按键元数据，不吞事件、不注入合成长按。`native-trackingReturned` 仅证明原生 tracking 返回；若缺少实际 mouseUp，不冒充精确释放时序。安全输入不记录正文／明文AX值；普通输入也只记录预定合成查询的相等布尔、组合状态和计数。
+
+**隔离与能力**：每批均使用完整正常 PrivacyQA、独立 `build/PrivacyQA-Controls10P`、`com.areachain.privacy-qa`、local临时签名、生产sandbox entitlement和LSUIElement=NO；清除六项钥匙串授权变量，只经 XCTest 启动。原 `build/.build.lock` 单一申请最多900秒，取得锁前后及运行后核对源码，不用源码排除、日用宿主或 test-without-building。当前工具元数据无可调用的指定 Cursor verifier，没有认证、安装、换机制或代理替代。原生 cua 能力仍被暴露，但 O/O补验的确切QA路径连接超时没有已确认恢复条件，本轮未重复调用。当前QA进程4078、Gallery窗口35305的 `CGPreflightScreenCaptureAccess()` 返回false；未请求权限或尝试全屏／其他窗口截图。因此本轮没有窗口合成器截图，原cacheDisplay与几何证据继续按原层级保留。真实NSPopover安全隔离宿主不存在于本入口，不启动StatusItemController；其他macOS版本也未运行。
+
+**人工观察（用户自述，不等于自动证据）**：用户先确认现在可以参与并愿意亲自粘贴合成文本，另确认愿意使用现有VoiceOver；操作后答复“触控板，都没问题”。针对当前日志没有子窗口打开记录这一差异再次核对，用户明确答复“已逐一打开子窗口并操作，VoiceOver也检查了”。据此按下表保留人工反馈，不将同意参与或笼统观察扩写成逐键断言。输入法名称、每个控件的逐项朗读、精确选择区间与每次长按时长未单独提供。
+
+| 场景／QA来源 | 谁及输入方式 | 实际反馈与证据边界 |
+|---|---|---|
+| A 键盘、中文组词／取消、Return／⌘Return、正常提交、撤销／重做；Gallery及Capture | 用户；触控板，确认执行键盘／输入法清单 | 用户报告无问题；没有逐键操作记录与提交计数可逐项对应，不能据此声明完整IME时序断言通过。 |
+| B 普通搜索与剪贴板；SearchMultilineFixture | 用户；亲自粘贴预先给定的真实换行`甲↵乙`及字面`甲\n乙`，触控板编辑 | 用户确认子窗口均操作且无问题；没有对应子窗口日志、文本或结果快照。按人工反馈记录多行／字面转义、选择编辑及撤销／重做，不将旧命名pasteboard证据当系统Cmd-V。 |
+| C 窄周七列、Dashboard三轴及手记气泡；原生产隔离宿主 | 用户；触控板 | 用户报告无问题；没有逐列偏移或跨行轨迹记录，本轮未单独采集羽化绘制。保留实际触控板人工观察，原合成滚动／几何证据另列。 |
+| D 控件名称／状态／值／焦点、安全输入、日期、开关；Gallery及子窗口 | 用户；现有VoiceOver，触控板 | 用户明确确认VoiceOver已检查、无问题；没有逐项朗读转录。合并元素Copy/More未取得单项结果，手记复制／菜单动作没有在本轮授权执行清单中，不计动作验收。 |
+| L 裸NSStepper后Daybook的长按、释放与边界 | 用户；触控板 | 用户确认逐一进入并操作且无问题；没有原生action、down/up或节奏序列可对应，因此最多保留定性无异常反馈，精确系统长按基线与等价仍未建立。 |
+| 中英文、浅深色、窄布局 | 用户；按清单观察 | 用户总体反馈无异常，没有逐状态截图／逐项结论，不能宣称完整视觉矩阵通过。 |
+
+**人工日志差异**：已确认当前QA可执行路径与进程4078；只读取其沙盒内本次命名JSONL，原样保存为 `build/Controls10P/manual-events.jsonl`。163条记录包括ready、161条Gallery窗口35305事件及closed；只有4条按键元数据，均为组合状态false的Return，其余为鼠标事件，没有P子窗口`open`、`observation`或长按trace。用户反馈与机器日志无法逐项相互印证，原因本轮未证明；保留两种原始来源，不推断用户没有操作，也不补造窗口／时序证据。人工窗口实际保留600.08秒并正常退出，监听与辅助窗口均释放；这不是测试超时，也不能给本表各场景自动打勾。
+
+**最后的测试支持复核**：追加 `platformToolbarOpensAndRecordsScene()`，在同样760×640的Toolbar＋原Gallery宿主中，先要求真实按钮在窗口界内，再向按钮实际位置发送一组队列鼠标事件；要求一次打开、无装配失败、辅助窗口存在，并直接读取自己的JSONL确认`open`已落盘。最终该方法通过，自动诊断窗口35357→35358及计数0→关闭均有记录（`toolbar-events.jsonl`）；不是把它移植为人工窗口35305曾打开过子场景的证据。另修正局部监听闭包的Sendable返回编译警告、增加只读可测记录字段；未改生产或操作行为。`platformFixturesMountAndRelease()` 对八个入口逐个挂载／切换／清理通过；裸NSStepper只读取配置，实测continuous=true、autorepeat=true、delay=0.5s、interval=0.1s，**没有真实按压action，配置值不等于实测重复节奏**。
+
+| P实际结果包 | 方法／参数执行 | 结果与统计用途 |
+|---|---:|---|
+| `fixtures.xcresult` | 1／1 | 早期八夹具挂载／释放通过；后续裸NSStepper改为直接对照，以final的重跑作为最终支持证据。 |
+| `manual.xcresult` | 1／1 | 原人工入口及600秒期限／清理通过；用户观察、机器时序与截图分别判断。 |
+| `final.xcresult` | 5／9 | 原按钮禁用／快捷键2参数、Gallery中英文浅深色4参数、默认人工入口1次，以及夹具清理和实际工具条点击各1次，全通过。 |
+
+P原始运行合计7个方法运行／11次执行，0失败、0跳过、0Expected Failure、0测试超时；这些是宿主／支持检查，不是11项人工场景通过。最终复用了O未受影响的312方法／763次，只以final中原有的3方法／7次替换对应来源，原O选择范围仍为 **315方法／770次所选自动回归通过**，新增2个支持方法单列。逐方法来源见 `build/Controls10P/current-results.json`，没有重跑整套770次或把H/K已知失败删成通过。
+
+final运行前后1192文件综合摘要同为 `9716bbf18d27eb2a2327e8e8b624817a4aa34368d6ff35f10c3ff519e028d3fc`；生产567文件仍为O补验的 `e9818b3d2be4a95f72a24a120c599ce366e104904f71848717dc6ec212a1a861`，测试604文件为 `1c39d7e36b3725929da6e1f54b0fd6a0f4cd047a527dd910da08a6380596fb96`，原配置21文件为 `5af1ef8d240a452ede3be63b24ca676d80d5335327d29aaddec42b0eb648d0c0`。只增加本测试支持文件并修改原Button测试，生产与原配置无差异。manual源摘要 `6cf6d770b5da595b8fc2a9363aa21ce98646d086ae0334a92094331536fcf2bd` 单独保留，不冒充final源上采集的人工轨迹。三批均立即正常取得原锁，完整正常QA编译与同锁内严格验签通过；最终包标识为com.areachain.privacy-qa、sandbox=true、LSUIElement=false。SDK既有弃用／并发警告及ad-hoc Hardened Runtime提示继续保留；它们不是运行认证或发行通过。期间并发统一搜索文档更新单列，不计P成果。
+
+| 项目 | 实际现象与触发条件 | 已有证据 | 未证明的风险与当前保护 | 建议及接受决定 |
+|---|---|---|---|---|
+| H | 测试外层事务仍working时，经嵌套AX提前渲染nil，模型回滚720/600后时间／清除按钮未自然恢复；普通截止自身save失败没有等价注入。 | [H最终版本](#h-最终版本复验2026-10-05最终测试分层版本已验证)的5方法／11次为9通过、2已知失败；O正常提醒／原生点击路径另有有效回归。 | 不泛化为普通清除故障。模型恢复与普通提醒回调内恢复有证据；普通截止真实保存失败的自然显示仍未知。 | 保留嵌套AX限制和截止注入缺口，不建议本轮改生产。若要按限制交付，须用户接受；不等于两项测试通过。 |
+| K | 同值替换相关的原生安全输入同步边界：局部Binding已空，字段/editor仍有遮蔽内容；裸与公共承载一致。 | [K控制变量补验](#k-补验安全输入替换事务控制变量对照)：18轮观测，A/B共12次清空失败，C6次通过；生产锚点无错误重试参数或额外action。 | 可能误导清空状态；未证明错误提交、完整认证链、敏感内存擦除或平台内部唯一机制。原忙碌／取消／提交保护保持。 | 保留输入路径相关边界，现证据不足以选择生产修复；不重跑旧矩阵。按限制交付须用户接受。 |
+| L | 旧合成事件不能建立系统持续按压基线；P只接受本次真实按压、action和释放证据。 | [L历史能力边界](#第十阶段-lstepper-长按重复有效性核验)及本节人工／原生记录分别保留。 | 重复数字本身不能证明精确节奏／释放等价；原attachment、拆离阻断及dismantle清理保持。 | 本轮有有效数据才缩小缺口；无可靠mouseUp则只记人工重复观察。按保留限制交付须用户接受。 |
+
+**指定 Cursor verifier 复核包——已准备，未执行**：复核任务是核对原控件收口目标（复用生产公共组件、保留输入／保存／焦点／隐私差异）、[项目约定](../AGENTS.md)、[路由](../skill-routing.md)、[原O消费者表](#权威入口与当前消费者)和[组件目录](component-catalog.md)，查找可核验问题、出处与未覆盖项，不预设证明正确。源码以P最终逐文件清单和O补验快照为准；本轮实际差异仅测试支持和这些原文档。原O/B-refresh/regression的逐方法来源见 `build/Controls10O-followup/current-results.json`；P命令、前后身份、结果树、静态检查和人工日志见 `build/Controls10P`。H/K/L、系统截图、真实NSPopover、其他系统版本与人工记录未覆盖部分必须继续审查。拟交付声明限定为接入闭环、所选自动回归有效、已实际取得的人工观察；不声称全平台验收完成。
+
+当前 `git diff` 不能代表全部历史控件修改：前期部分修改已经进入HEAD，也没有提供统一的“控件收口前”不可变提交。本包提供当前组件／消费者身份、阶段证据与P差异，不捏造完整历史补丁范围。指定工具恢复后需交付上述原始来源，并要求返回 `file:line`、符号、复现条件及未覆盖项；本轮没有复核返回结果。
+
+**最终交付判定**：接入闭环和所选自动回归有效；人工已参与并提供无异常反馈，P未发现新的生产阻断。工具不可用（指定Cursor、实际屏幕）、未取得的人工时序／逐项证据、历史H/K限制与产品失败分开，不能统称失败或全部通过。2026-10-07，用户明确选择：**保留 partial，暂不接受整体交付**。H/K/L和未验标记保持，不视为风险已接受，也不自动启动补验、修复或发布。
+
+最终两个Swift文件严格SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`及工作区／暂存区差异检查均通过；static各检查均为passed。未修改检查器或构建脚本，不另加其私有验证流程。最后再次核对final受测范围无源码变化，P专用QA进程已退出；文档最终收尾后重跑受影响静态／差异检查。能力未运行、人工缺少逐项证据及历史问题不因静态通过而关闭。
+
+剩余动作及条件：
+
+- 人工反馈需绑定明确当前QA子窗口：在可参与的下一次有界窗口期确认一次`open`记录与实际标题一致，再集中取得输入／系统粘贴的计数或结果、需要复核的VoiceOver逐项观察；优先解决本次记录未对应的缺口，不重跑已关闭问题的完整诊断。
+- L先在裸NSStepper取得真实持续按压、逐次action和可靠mouseUp／释放后观察，再用同组参数比较Daybook的增减、释放和边界。只有定性重复反馈时继续保留精确时序限制，不用点击或旧合成长按替代。
+- 实际屏幕需已可用且明确归属QA窗口的采集通道；现有连接超时无恢复证据、QA只读预检false时不重试或修改权限。真实NSPopover须另有安全隔离宿主，其他系统版本须有对应验收环境；需要新增系统集成／权限／安装时另行授权。
+- 指定Cursor verifier实际可调用后提交本节已准备材料；如要求完整历史补丁复核，另需可核验的收口前基线。H/K只按上表保留限制或另行定界补验，不以接受风险代替修复或测试通过。
+
+本轮未提交、推送、安装、发布或改变系统／个人配置，代理未读取或覆盖系统剪贴板、真实数据和凭据；完成本次收尾后停止，不新建后续阶段或调度器。
+
+#### P 续轮：逐项人工操作与平台取证（2026-10-07）
+
+用户明确授权本次约10–15分钟人工配合，继续保留partial且不接受整体交付。以下是续轮新增证据；上方首轮反馈、日志不一致、历史失败及限制保持原样，不将本轮结果倒写为首轮通过。
+
+**源码身份与复用范围**：HEAD仍为`dba0982362f389c28b468e2d03420bfbe126d7d1`，叠加原暂存、未暂存及未跟踪修改。与P首轮`final-after.json`比较，原受测集合29文件改变、另新增19文件，集中在并发统一搜索命令、服务／测试、语言资源及工作流检查器；本轮未修改任何Swift、资源、配置或启动脚本。原Gallery／ControlsPlatformAcceptance、SearchMultilineFixture、CaptureField、Daybook输入／滚动控件及周／Dashboard／气泡宿主无变化。O的315方法／770次保持其逐方法历史证据，不因本轮挂载就声称并发命令改动已获完整回归。
+
+两批完整正常PrivacyQA运行前后1211文件源码集合完全一致，综合SHA-256为`98845e9bae5f17abdcf8232e1124cb6bba67350670eab6af575eda47602fadf4`；生产578文件为`773aaeafdf0ef61731e8792c3a77b349b43d649392994608e8373246e2f72093`，测试612文件为`36d6ef78f5064c952949f4e076fa99a4b8bf75cbd50b29e63f7654b47c4368f2`，其余21个原配置文件包含在综合身份内。每批`*-before.json`、`*-after.json`、`*-command.json`、`*-execution.json`、日志及结果树继续保存在`build/Controls10P`。
+
+**实际启动与清理**：复用`build/Controls10P/run.py`，分别运行`continuation-manual`（`AREACHAIN_CONTROLS_PREVIEW_SECONDS=600`）及`continuation-search`（180秒），均设置`AREACHAIN_PLATFORM_QA=1`，唯一选择器为`DaybookButtonInteractionTests/interactiveGallery()`。仍使用`build/PrivacyQA-Controls10P`、`com.areachain.privacy-qa`、local临时签名、生产sandbox entitlement、LSUIElement=NO、六项真实钥匙串变量清除和串行XCTest；原锁两次均立即取得，无等待／抢占其他任务。完整目标编译及同锁内`codesign --verify --deep --strict`均成功。两包各1方法／1次通过、0失败／跳过／Expected Failure；去重为同一支持方法运行两次，不增加315／770覆盖数，不折算人工次数。日志窗口期分别600.113秒与180.092秒，两次均记录`auxiliaryReleased=true`、`monitorReleased=true`，测试PID 934／10032已退出，最终原锁空闲。
+
+| 人工项目 | 本轮操作与可核对来源 | 结论及限制 |
+|---|---|---|
+| 子窗口归属 | 首轮主窗35475；用户先答“已出现该子窗口”，当时仍无`open`且辅助树／截图只见Gallery。代理通过现有Open按钮打开Capture后，窗口35511与`open`记录一致。 | 本轮已能绑定确切子窗口；此前反馈差异保留，代理打开不能算用户成功打开。原坐标点击未改变辅助树，随后使用已识别的按钮动作，均单列为工具操作。 |
+| 中文组合与提交 | 窗口35511收到中文组词的`marked=true`事件及一次组合期间Return；另收到7次非组合Return、12次非组合⌘Return，最终待办／手记计数7／14。用户反馈“我没明白，我在里面输入回车没反应”。 | 夹具回调只累加计数，不清草稿或新增可见列表；“无可见反应”不能直接归为产品缺陷。组合期间⌘Return没有对应记录，输入法名称／候选与焦点未获具体确认，计数无逐次快照，不能证明组合提交保护通过。 |
+| 普通捕获对照 | 代理重新打开空Capture窗口35559；用户确认输入`abc`并按一次Return。辅助树确见`abc`保留，但本窗日志实际为16次非组合Return、4次非组合⌘Return，最终计数16／4。 | 用户“一次”的反馈与事件次数不一致；没有事件的`isARepeat`字段，不能判定持续按键、重复按键或根因。仅确认回调可达，不宣称恰好一次提交或重复提交缺陷；不连续盲试。 |
+| 普通搜索撤销／重做 | 首批窗口35581在操作前达到600秒上限，用户确认未完成。第二批代理打开窗口35614；日志依次出现普通输入、一次⌘Z和一次⇧⌘Z，用户明确答“正常，没有出现 / 乙”。 | 该窄场景按人工观察通过，按键元数据与窗口身份对应；未复现原多行“甲↵乙”触发条件，不能扩大为全部换行回归。用户随后继续编辑，结束时三种固定合成查询相等布尔均false，不等于最终文本错误；最终AX／屏幕读取超时，未核验最后正文或光标区间。 |
+| 窄周 | 第二批在代理选择Search前，日志已有Capture35593和Week35595打开；Week有观察记录。 | 无逐列滚动／顶部中部底部／触控板方式的逐项反馈或偏移证据，只记录实际打开，不算滚动验收通过。 |
+
+**工具观察、原生合成与屏幕分层**：本轮未生成旧合成长按、未重跑770次、未注入测试文本或读取／改写系统剪贴板。代理通过cua执行场景菜单、Open、Record与关闭子窗口等准备动作；输入与撤销键盘事件来自用户配合。`continuation-manual-events.jsonl`保存136条记录（ready 1、event 126、open 3、observation 5、closed 1），`continuation-search-events.jsonl`保存64条（1／53／3／6／1）。元数据不保存按键字符或密码内容，不能将所有鼠标记录统称人工证据。
+
+cua应用清单本轮可读；其浏览器枚举另报`unsupported Codex auth method: apikey`，未认证或切换机制。确认PID 934运行后，以确切QA路径连接成功并读取Gallery／Capture／Search原生辅助树。`qaApp.getScreenshot()`实际返回1520×1344的“Daybook Controls (QA)”窗口图，显示当前工具条和合成预览；截图已显示在本对话工具结果中，未另存本地文件。这是本轮实际窗口截图，不是cacheDisplay旧图，亦不覆盖全部语言／主题／尺寸。QA内部`CGPreflightScreenCaptureAccess=false`与外部cua成功是不同进程能力，不能合并为QA自身获得截图权限；没有请求或调整权限。原缓存图只保留历史分类，本轮未新增缓存图。
+
+**结束时的隔离边界异常**：最后一次`qaApp.getAXState()`发生在180秒窗口尾部并返回`-10005 timeoutReached`。随后只读进程／打开文件元数据发现，测试PID 10032已退出，而20:05:21（Asia/Shanghai）启动的PID 13023来自同一`PrivacyQA-Controls10P`路径，命令行无XCTest启动参数、未见测试插件，并持有QA容器`areachain.store`及WAL／SHM。它属于非XCTest的QA运行，不能当作内存隔离宿主；时间相关性不足以证明由cua自动重启还是其他动作引起。代理仅在核对PID与完整路径后向该进程发送SIGTERM，随后确认退出，没有停止其他QA／构建任务，未打开数据库内容或删除容器。**本轮不能宣称全程只有XCTest启动，也不能证明该额外进程没有执行启动期系统服务或写入QA持久库。** 这不是普通生产应用的有效验收，不计通过；后续读屏必须在测试进程仍存活且有足够剩余窗口期时执行，退出后不再调用可能重新解析／启动应用的桌面入口。来源和自动启动副作用仍待有界只读诊断，不能由静态验签消除此缺口。
+
+**H／K／L与指定复核**：H外层事务＋嵌套AX显示恢复／普通截止失败注入缺口不变；K安全字段同值替换同步限制不变，本轮没有改事务、密码政策或安全生命周期。L没有本次真实down／可靠up／逐次action时序，未运行两种Stepper长按，保持基线未建立；没有重跑旧无效合成对照。当前实际工具元数据无指定Cursor verifier入口，既有复核材料加本节源码身份、结果包、用户原话、屏幕与隔离异常已准备，**复核未执行**，未由其他代理替代。
+
+**未运行与下一项可执行动作**：系统粘贴／剪贴板三模式、组合期间⌘Return与恰好一次正常提交、Tab／Shift-Tab及星期激活、生产帮助外部关闭／防穿透／Escape优先级、跨行气泡进入保留离开、长列表羽化／各周列／甘特／Dashboard轴与resize、可靠Stepper持续按压、逐项VoiceOver、密码失败回显／取消重开及真实NSPopover均未取得本轮完整证据。现有Gallery安全字段只有遮蔽／外部清空，没有密码失败和取消重开场景；独立帮助卡未接生产全局Escape路由；Week的选择／检查回调为空，不能证明屏外日期键盘导航；气泡子窗默认复制未注入，因此未点击复制／菜单；本入口没有甘特与真实NSPopover人工场景。优先下一项是排查上述非XCTest重启来源并确保读屏不会越过测试生命周期，再在当前Capture合成宿主中用“一个按键→一次计数快照”取得可判断的提交证据；无需重跑全部自动回归或改变生产边界。
+
+本轮仅就地更新此总交接，保留全部前期／并发／暂存修改。用户尚未接受整体交付；**状态继续partial**，所选历史自动回归、窄人工通过、测试宿主问题与平台限制分别报告，不将时间到达或材料准备写成验收完成。未提交、推送、安装或发布；代理未读取真实内容、凭据或系统剪贴板，额外QA启动期副作用按上段保留未知，不写成全程零副作用。`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`及工作区／暂存区差异检查通过；static包含229项脚本回归，所有检查均为passed。最后文案收尾仅重验受影响的工作流／差异检查，不重复未改变的Swift或脚本测试。静态通过不关闭上述人工和隔离异常。
+
+#### P 诊断：QA 非 XCTest 进程来源与隔离边界（2026-10-07）
+
+**状态仍为 partial，用户未接受整体交付。** 本轮只读诊断及续验方案准备，仅补此原 O/P 记录；没有启动 QA、调用桌面应用入口、人工输入、构建或重跑770次，也没有修改生产、安全流程、启动配置、签名、权限或认证。没有打开 store、执行数据库查询、读取真实偏好／正文／凭据／系统剪贴板，没有清理容器。原文“最后一次 AX 调用发生在180秒窗口尾部”由下述原始时间戳校正为：**调用时测试进程已退出约39秒**；保留旧段作为当时判断，不再沿用其时间结论。
+
+**范围与身份**：沿现有 `build/Controls10P/run.py`、Gallery、ControlsPlatformAcceptance、原事件／结果树及应用入口核对。1211文件受测集合与 `continuation-search-after.json` 逐文件相同，综合 SHA-256 仍为 `98845e9bae5f17abdcf8232e1124cb6bba67350670eab6af575eda47602fadf4`，HEAD仍为 `dba0982362f389c28b468e2d03420bfbe126d7d1`；暂存二进制差异摘要为 `ca63f231f414f0b13219bc26b6ceab165c53f13056e1821e180ba3df7d2df973`。这证明所读源码与P续轮快照对应，不等同给已退出进程补采二进制身份。保留全部既有暂存、未暂存及未跟踪修改。只读源码调查由辅助代理提供出处，主代理抽查关键启动／存储／剪贴板路径；这不是指定 Cursor verifier 复核。
+
+**原始来源与启动时间线**：除原 `build/Controls10P` 外，恢复了原会话 `01a1162f-796f-7682-8cb2-447102a2a2c6` 的工具原文及时间戳。原始来源为本机 `.codex/sessions/2026/10/07/rollout-2026-10-07T19-46-12-01a1162f-796f-7682-8cb2-447102a2a2c6.jsonl`，以下 S 行号只指该文件；没有复制整份会话或建立平行报告。系统日志仅查相关 PID／QA标识及窄时间窗，保留非敏感摘录于此。下表日期均为2026-10-07、时区 Asia/Shanghai；JSONL的uptime仍单列，不伪造其墙钟精度。
+
+| 时间／顺序 | 已确认事实与出处 |
+|---|---|
+| 20:01:33.343 | S303，原 runner 以180秒窗口和单一 `interactiveGallery()` 选择器启动 `continuation-search`；命令见同名 `-command.json`。 |
+| 20:01:35.163；20:01:39.184／.199 | `continuation-search-summary.json` 的结果包开始时刻；后者为 launchd 的10032 xpcproxy／AreaChain成功启动时刻，二者不是同一事件。S310后原 ps 显示完整路径及 `-NSTreatUnknownArgumentsAsOpen NO -ApplePersistenceIgnoreState YES`。 |
+| uptime 279891.22314075 → 280071.314983375 | `continuation-search-events.jsonl:1,64`：PID10032、Gallery35592，实际窗口期180.091843秒，最后 `auxiliaryReleased=true`、`monitorReleased=true`。Search35614由第28行 `open` 绑定；这是宿主正常清理证据。 |
+| 20:04:42.179；20:04:42.457 | runningboardd记录10032 `termination reported by launchd (0, 0, 0)`；后者为结果包finishTime，`continuation-search.log:4–6`也记录xcodebuild9926完成。不能说测试仍在20:05:21运行。 |
+| 20:05:21.280 → 20:05:26.599 | S364／367，`call_KIFytvpSCXOWGPvJPqgRwxVJ`：仅 `await qaApp.getAXState()`，返回 `Computer Use server error -10005: timeoutReached`。没有新的显式getApp调用；App对象来自20:02:18.621的S315。调用开始距10032退出39.101秒。 |
+| 20:05:21.366 → .391 → .394 → .406 | 系统日志：`SkyComputerUseService[49672] (LaunchServices) LaunchServices.launchViaCSUA`及 `LAUNCH: Asking CSUI to launch 0 items`；随后CoreServicesUIAgent25161发起 `LS launch com.areachain.privacy-qa`，launchd创建13023并记录 `Successfully spawned AreaChain[13023] because launch job demand`。ndjson元数据进一步确认Sky的两条请求与CSUI在.412738的 `com.areachain.privacy-qa starting stopped process` **共享activityIdentifier=47296500**。 |
+| 20:05:21.560 | launchd日志明确 `requestor = SkyComputerUseS[49672]` 查询13023的 `com.apple.axserver`；不是只在时间上出现另一个无关进程。 |
+| 20:05:57；20:06:35 | S375及382后的ps/lsof原输出：13023完整路径为 `/Users/as/Ai-Project/project/AreaChain/build/PrivacyQA-Controls10P/Build/Products/Debug/AreaChain.app/Contents/MacOS/AreaChain`；命令行只有此路径，PPID=1、启动20:05:21；过滤的打开文件列表未见AreaChainTests／XCTest，已见QA store/WAL/SHM。未记录其完整环境，不能断言六项授权变量继承状态。 |
+| 20:07:09.429 → 20:07:33.486 | S391／395记录再次精确匹配命令行后发送SIGTERM；S399／402仅输出ps表头，确认13023已退出。当时未终止其他任务；本诊断另以完整可执行路径只读枚举，未发现该路径现存进程，不以历史PID复用判断身份。 |
+
+**启动来源判断（A／B／C／D）**：A已定位到桌面工具服务：原工具文档S100明确写明 macOS `cua.getApp(...)` “launches the app in the background if needed”，Linux／Windows的“不启动”保证不能迁用。SkyComputerUseService请求与CSUI启动QA的日志共享activityIdentifier=47296500，再由OS启动链映射到13023，并有Sky查询新PID的AX记录，**足以确定此次额外进程的启动请求来自桌面工具服务，经CoreServicesUIAgent／LaunchServices与launchd执行，不只是时间相关性或PPID=1推测**。原会话该时段唯一桌面调用是已退出宿主的 `qaApp.getAXState()`，与上述链一致；JS调用ID没有出现在OS日志中，`getAXState`内部具体如何重新解析／调用启动逻辑仍未取得实现证据，不能推导每次AX调用必然重启或泛化所有工具版本。
+
+B：`run.py:38–53` 只同步运行一次xcodebuild，之后验签／摘要／xcresulttool，finally释放原锁；没有open、重启、恢复或再次测试分支。`DaybookButtonInteractionTests.swift:78–101` 到期defer关闭；`ControlsPlatformAcceptance.swift:104–132` 清理辅助窗口／监听，不产生新进程。脚本没有显式重启路径，实际启动责任方亦已由OS日志定位，不将其归因于测试清理。C：原会话在故障点只有AX读取，没有用户或并发任务直接启动同路径应用的正面证据；没有扩大审计其他用户活动，也不把所有可能并发请求都宣称排除。D：历史资料并未全部丢失，本轮已恢复父进程、工具时间和同一activity的OS启动链；仍缺JS到服务内部的实现关联、13023环境、逐项服务调用／文件写入审计，保留限定而非重复启动补证。
+
+窄日志可复查入口是 `/usr/bin/log show --style compact --info --debug`：启动责任方仅20:05:21–20:05:22、进程SkyComputerUseService或CoreServicesUIAgent且消息含launch；OS启动链仅20:05:20–20:05:23、消息含QA标识或13023且含launch／spawn／request；测试启停仅20:01:30–20:04:50、launchd／runningboardd／testmanagerd且含10032及启动／退出词。以上查询均显式使用 `+0800`。没有导出全系统日志或环境变量；日志将来过期时以此处摘录和本轮工具结果为已取得证据，不把无结果解释为未发生。
+
+**测试识别与实际存储边界**：`AreaChainApp.swift:28,100`、`Persistence.swift:17` 及各shared服务主要只检测 `XCTestConfigurationFilePath` 是否存在，并不验证插件或QA bundle ID。存在时App创建内存容器且禁用autosave，AppDelegate跳过系统启动；夹具仍须自己注入内存数据、临时偏好、nil pasteboard和fake服务。`AREACHAIN_PLATFORM_QA`只选择Gallery工具条，窗口秒数只限制该测试方法；独立bundle ID负责命名空间，local签名负责签名能力，均不是内存开关。无该XCTest变量则选磁盘／真实服务，即使包仍叫privacy-qa。没有测试参数／未见插件只是辅助证据，本次打开磁盘库和实际通知查询进一步证明额外进程不能当作内存宿主。六项授权清除只约束runner传给xcodebuild的环境，不是所有后续系统启动的凭据访问拦截器。
+
+`Persistence.makeSession` 使用 `ModelConfiguration("areachain", schema:)` 的默认URL，没有显式group或临时根；本次lsof实际定位至 `/Users/as/Library/Containers/com.areachain.privacy-qa/Data/Library/Application Support/areachain.store` 及 `-wal`／`-shm`。该路径与日用bundle容器不同，但同一privacy-qa标识的不同构建目录会共用它，不能把独立DerivedData当作独立数据容器。附件、剪贴板历史、隐私配置和日历ledger同样使用Application Support相对默认根（`AttachmentStore:18`、`ClipboardHistoryStore:9`、`VaultConfigurationStore:13`、`CalendarSyncStorage:7`），没有在这些入口发现显式日用容器／App Group共享根；系统剪贴板、日历及通知服务本身仍属外部依赖。
+
+本轮对已有包只读 `codesign -d --entitlements :-`：sandbox=true，含calendar、user-selected.read-write、get-task-allow，以及测试注入的 `temporary-exception.files.absolute-path.read-only=["/"]` 与testmanager等mach例外；无application-groups／keychain-access-groups。这是**当前包**元数据，非13023启动时单独封存的签名；历史secinitd在20:05:21.433／.527确证13023请求并成功初始化AppSandbox。因此可以确认观察到的store落在QA容器，不能宣称“沙盒阻断了一切容器外读取”；临时只读例外也不等于已访问真实内容或绕过TCC。没有改动这些权限。
+
+**副作用分类**（“未取得证据”不代表未发生；没有用文件修改时间代替事前基线）：
+
+| 项目 | 源码可达条件 | 本次执行证据 | 写入／外部副作用证据 | 未知及边界 |
+|---|---|---|---|---|
+| 偏好／种子 | AppPreferences:142默认standard、legacy读取与live外观；AppDelegate:51调用FirstLaunchSeeder，已有重复事项或首次成功种子会写seeded标记，并尝试save。 | 未留逐键轨迹；后续通知启动支持AppDelegate已进入正常分支，但不证明每个异步步骤完成。 | 未证明某个偏好键或业务行写入。 | AppPreferences初始化读默认值不等于必然把所有默认值落盘；未读取实际值，原偏好存在与否未知。 |
+| 数据库／维护 | Persistence:20–25先尝试隐私维护、SQLite补空notes，再开磁盘容器；:54–60仅文件存在且打开成功才执行两条UPDATE。PrivacyStoreMaintenance:37以后仅有cleanup标记时做WAL checkpoint／VACUUM／删除标记。 | 历史lsof确证store/WAL/SHM被打开；不是只凭源码猜测磁盘访问。 | **已证明文件打开／持有，未证明业务数据修改、迁移、UPDATE影响行数或清理发生。** | 无事前库／标记基线，不读内容或重新查询；ModelContainer失败回退内存也不能撤销此前维护。WAL存在不能证明由13023新建或写入。 |
+| 通知 | NotificationScheduler:158启动，:301查询待发及权限；授权后才加载提醒并按差异增删，未授权且已有本应用通知也可能取消。 | 13023系统日志20:05:21.790查询pending，.791返回0项，随后查询并收到notification settings。 | **已证明系统通知服务查询**；未见通知新增／删除的正面证据。 | 权限值、后续排程完成与持久化结果未知；没有请求授权成功／展示通知的证明。 |
+| 日历 | CalendarSync:23–55启动观察；syncCalendarEvents=true且存储健康才经Engine:68请求权限、读写EventKit／ledger。 | 没有本次同步执行轨迹。 | 未证明请求授权、读取事件、创建AreaChain日历或写事件。 | 新域默认false不能代替实际偏好；独立ID不产生隔离的系统日历数据库。 |
+| 剪贴板／历史 | ClipboardHistorySession:17–24非测试选择general／standard／磁盘；:65–66加载历史，:78启动轮询。Monitor:17,22读取changeCount，:47–51变化才调用内容读取；Session:245–254先读取draft、后判断recording。 | 源码及正常启动链可达；无本次逐次changeCount／draft／保存回执。 | 未证明系统剪贴板正文已读取或历史写入；也不能证明没有。 | recording=false仍不能阻止变化后的内容读取；初次start不等于立即采集既有正文。未打开历史文件或剪贴板追认。 |
+| 私密锁／钥匙串／认证 | PrivacyVault:16–19非测试选择FileVaultConfigurationStore，:59／67读取配置与pending IDs；:131装配生命周期。SystemVaultKeyStore服务名由bundle ID派生；真正SecItem读写／LAContext在显式动作中。 | 未取得配置内容读取或SecItem调用证据；构造真实对象不等于认证。 | 未证明密钥读取／新增／删除、解密、系统认证或真实数据转换。 | 授权变量仅守真实测试入口；QA私密服务名不同不代表取消所有真实系统调用。入口未发现自动unlock，不继续敏感调查。 |
+| 菜单／窗口／后台 | AppDelegate:31–59设置accessory、状态栏、快捷键、panel、通知、undo、日历并隐藏杂窗；最后窗口关闭仍不退出(:65)。 | 20:05:21.667 ControlCenter记录Item-0；.704记录Item-1且clientRequestsVisibility=true；.665系统角色转为uielement。 | **已证明状态栏注册／可见性请求和系统进程角色变化**；这不是Gallery人工窗口通过。 | 全局热键实际注册结果、窗口恢复内容、计时器每次触发未留回执；不把无窗口当作进程未运行。 |
+
+没有取得明确真实正文／凭据访问迹象；此结论只限已查元数据，不能写成额外进程零敏感访问。通知查询与状态栏注册已是确定的系统交互，所以本次全程隔离不成立；没有证据可授权或支持自行清理、回滚QA库。
+
+**已有证据归属**：O及补验315方法／770次仍按原逐方法源码对应关系有效，不因后来的额外进程整体作废；不扩展到并发新功能的回归。P两次Gallery支持方法通过及正常清理仍有效，但只覆盖各自XCTest窗口期。末次AX超时没有返回最终正文／光标／截图，不能补计观察通过；首批取得的实际Gallery截图仍是当时窗口证据。
+
+普通搜索abc保留窗口35614下的窄人工通过：`continuation-search-events.jsonl:38–42` 为预定输入键位及一次⌘Z／⇧⌘Z，原会话S369用户明确答“正常，没有出现 / 乙”；键位不能独立证明字符或选择区间，结果主要来自人工确认。它没有覆盖原“甲↵乙”的多行撤销故障，不扩写为完整人工验收。
+
+捕获记录仍不足以判“恰好一次”或产品重复提交：`continuation-manual-events.jsonl:20,97–99,132–133` 分别绑定35511（7／14）与重开的35559（16／4）；前者Return元数据为组合1、非组合7、非组合⌘Return12，后者为16及4。两组Return的eventTimestamp各自不同，没有同一时间戳整行重复的正面证据；可按窗口分开，不能把两窗累计为一窗。`ControlsPlatformAcceptance.observe:196–214` 仅观察down/up/keyDown，不含keyUp、isARepeat、监听实例／事件序号；`SearchMultilineTestSupport:145` 回调仅累加计数，observation又没有逐次事件／动作关联。因而不能区分按键重按、长按repeat、重复监听、按钮动作与多次调用；35511的14对12差额也不能擅自归因。35559数字吻合只是总量相符，不证明一键一回调。它们发生于PID934窗口期，早于13023启动，不能自动把差异归咎于该额外进程。原用户“一次”与元数据差异两者均保留，捕获不判通过。
+
+**最小下一步（仅方案，未实施）**：先做一份仅限 `build/Controls10P/run.py` 与原 `ControlsPlatformAcceptance`／Gallery测试支持的生命周期及事件取证改动，不改App入口、Persistence或安全策略。沿既有JSONL补run ID、PID＋启动身份、确切窗口号／标题、ready／closing／closed、单调截止时间，以及无正文的事件序号、isARepeat、keyUp、监听实例和回调前后计数／动作来源。原日志可读取这一能力已经由本轮静态读取及历史ready/closed事实核实；由测试进程自行记录窗口元数据，外部只读该批已知文件和进程表，**不会调用getApp或AX并自动启动应用**，但它不能提供屏幕合成器图片、AX朗读或光标完整证据，这些项目继续未验。
+
+续验启动条件及停止规则：
+
+- 后续获得测试支持修改／有限续验授权后，先审阅差异及合成生命周期测试：退出发生在读取前、预检后、读取中，旧PID／窗口／run ID及迟到结果都必须拒绝；模拟启动函数调用数始终为0，不能用真实可疑QA重演。需要构建时沿原锁单次最多900秒，申请前、取得锁后及结束后核对完整受影响源码集合；完整正常PrivacyQA、六项授权清除和合成依赖保持。
+- 外部观察绑定本批XCTest的PID＋启动时间／可执行路径和ready run ID，再核对window ID及场景。遇到closed、身份变化、进程退出、读取超时或进入预定截止前停止余量（建议至少30秒，并覆盖已知读超时上限）即停止接收新观察；不延长到通过、不重新解析旧App对象、不再次getApp。单纯PID存活预检查存在检查后退出竞争，**不是充分隔离保证**。
+- 目前cua文档未暴露macOS仅附着现存PID且绝不启动的保证，因此即使剩余窗口充足也不把该工具作为安全续验前提。若以后要恢复桌面读取，必须先有可审阅的仅附着契约／实现、绑定PID与启动身份、目标消失即失败且无LaunchServices回退，并验证退出竞争；能力缺失时沿日志观测，桌面读取保持停止。历史原因完全确定与否不能替代这个技术前提。
+- 测试结束后以完整路径＋本批身份只读查残留；发现非XCTest实例立即中止人工与桌面调用，保留启动时间、命令行、父／责任方及必要打开文件元数据，不读取内容、不自动终止其他QA、不清理容器。终止额外进程须有该轮明确授权并再次核对身份，不能仅按旧PID杀进程。
+
+H（嵌套AX／截止失败注入）、K（安全输入同值替换）、L（可靠持续按压基线）、其他人工未验及指定Cursor verifier缺口继续独立登记。复核材料可加入本节，但**材料已准备不等于复核已执行**。本轮 `python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json` 通过，static包含229项隔离脚本回归，各检查均passed；最后文案补齐后重跑工作流及工作区／暂存区差异检查，并复核源码与暂存摘要。1211文件仍无变化，但收尾检测到外部暂存操作，暂存摘要变为 `808888b46f309094be7219414b91192a786176d6418346f8c8066fc519c9521e`，已包含本诊断主体；本代理未暂存／撤暂存，保留此并发状态，不宣称索引全程未变。检查输出保留本轮工具记录，没有覆盖历史P日志。不以静态通过关闭隔离异常或接受整体交付。
+
+#### P 完善：测试生命周期与逐事件证据（2026-10-07）
+
+**整体继续 partial，用户未接受整体交付。** 本轮连续实施测试设施、定向自动验证与人工续验准备，仅修改测试支持、相关测试、原本地runner和原文档；保留前期/并发/暂存内容。生产源码、CaptureField、业务提交、保存、认证/安全生命周期、个人签名及权限均未改。上节已确定的SkyComputerUseService启动来源、QA store/WAL/SHM打开、通知查询、状态栏项注册和进程角色变化保持；历史业务写入及其他敏感副作用仍未知，没有读内容追认或重启异常路径。
+
+**生命周期与原夹具**：ControlsPlatformAcceptance以idle/running/windingDown/closing/ended管理原Gallery。runner每批UUID、独立会话UUID、PID与内核启动秒/微秒、场景代次、窗口UUID/系统号及递增序号共同关联证据；窗口号不作路由键，绑定前生成的排队事件、旧对象/代次和迟到回调不归入新场景。ready/open/observation/scene-closed/winding-down/closing/closed分别记事实；墙钟关联日志、单调时钟管期限。重复start不重装监听/覆盖文件，close可重入；主/子窗关闭、切换、截止、取消及可捕获错误沿同一清理路径。Gallery由会话持有到终止，原defer继续兜底，结束后不能重开场景。30秒收尾期集中在windDownSeconds，供停止输入并核对计数，包含在原600秒总上限内；工具条/输入子窗显示收尾，其他子窗标题亦显示。无常驻、自动重启或轮询启动。
+
+仅显式P的SearchMultilineFixture使用ControlsEvidenceWindow；SystemPageHost/SettingsButtonTestSupport增加默认nil的suppliedWindow，默认消费者不变。原SearchMultilineDraft的真实合成累加处发出Submission前后计数、回调类型及发生时刻；不提前累加、不吞键、不去重用户输入、不清草稿或增加真实保存。QA双语反馈显示场景/身份、待办/手记计数及最近回调，并明确“这是合成计数宿主；提交后保留草稿，不创建生产列表记录。”专用双语文案留在测试文件，不改生产文案资源。Stepper原probe/trace、NSStepper target/action和参数保持；记录/清理不改变数值或trace，旧Reset闭包核对所属probe，不能落入新场景记录。
+
+**逐事件能力与限制**：只记Return/Enter、Tab、Escape的keyDown/keyUp及鼠标down/up，含事件时间、观察时间、修饰键、isARepeat、pressSequence/previousDownSequence和自有编辑器/marked状态。普通字符键位、正文、密码和剪贴板内容不进入新日志；marked不可读为unknown。同一NSEvent经监听与窗口时共用观察序号，真实重复keyDown保留。只有明确位于自有窗口同步派发范围的回调才带eventSequence；CFRunLoop进入tracking/modal等嵌套循环时撤销外层范围的关联资格，防止异步回调借尚未返回的栈误认旧按键。观察者与会话一起清理。dispatch-end只报告确切关联的回调数，0不证明所有未来异步操作均无回调；异步/无法确认的回调为unassociated。不以最近事件、NSApp.currentEvent或一次主队列延迟推断完成，也不证明所有异步因果。每次原回调独立记录，可区分已观察的无/多回调和多窗口；合成repeat仅检验记录器，不关闭L的真实持续按压缺口。
+
+证据文件按批次/会话唯一名称O_EXCL创建。创建、序列化、写入或关闭失败均显示不完整状态并报告XCTest issue；仅打印固定错误阶段，不打印原始错误内容。文件关闭后才向XCTest标准输出发出CONTROLS_P_END回执，JSONL的closed不冒充句柄关闭成功。runner从本批xcresult导出的StandardOutputAndStandardError核对回执和原JSONL；不读取诊断导出附带的系统日志归档。缺失ready/closed、序号缺口、身份混合、未关场景、关联/次数不符或缺少成功关闭回执均判不完整；异常退出不能补造清理成功。
+
+**runner与隔离**：仍为一次完整正常PrivacyQA xcodebuild test，独立build/PrivacyQA-Controls10P、原bundle/临时签名/生产sandbox entitlement/LSUIElement=NO、六项真实钥匙串变量清除及串行测试保持。原build/.build.lock单次最多900秒，取得后核对源码，变化即停止并先核对影响；正常/错误/取消均释放本任务持有的锁，未持有不改锁文本。结束复核源码、所选方法/参数结果树、会话终态和文件回执。proc_pidpath/proc_bsdinfo只读核对同一可执行路径，PID+内核启动身份另与本批证据绑定；发现已有/额外/归属不明进程立即停止验收，保留非敏感身份，不附着、点击、读数据、重启、清容器或终止其他任务。残留检查只说明检查时所见，不能证明此前零副作用。
+
+**过程证据**：所有批次保留在build/Controls10P/lifecycle-*。compile批因MainActor默认参数编译失败；native批暴露事件名、未知编辑器前提及SwiftUI文本读取断言问题，均做定点修正。evidence/focused/focus-control保留原焦点未就绪失败，未删断言；window-diagnostic的原捕获与逐事件捕获对照均通过。随后测试Gallery按原宿主补显式激活并由会话持有，final批19方法/29次、18会话完整结束通过，等待原锁52.74秒后源码一致。后续closure批因SDK的CFRunLoopMode强类型参数编译失败，修正后进入verified批。没有覆盖这些过程失败或把它们标为Expected Failure。
+
+| 最后证据包 | 实际结果及有效范围 |
+|---|---|
+| lifecycle-regression | 59方法/173次全部通过，20会话均核对JSONL/结束回执，验签通过。原runner按叶节点少计了带Runtime Warning子节点的一个通过方法，execution.json旧值172保留；当前按Test Case/Arguments重算为173并加脚本反例。运行中并发修改两份统一搜索标题测试，runner正确记录complete=false/source changed；不直接当整份最终源码通过。 |
+| lifecycle-verified | 当前会话/记录器实现下21方法/32次：20方法/31次通过，新增嵌套循环反例1次失败。其associationScopeIntact=false已证明资格撤销；Timer未在该内层循环触发，计数0而预期1，不能当未关联回调已经通过。已将反例改为确定的嵌套entry回调，保留计数与未关联断言。 |
+| lifecycle-complete | 修正版准备启动时桌面已锁定，runner在xcodebuild前停止，无QA启动、无测试执行。 |
+| lifecycle-compile-final / lifecycle-compile-current | 原runner新增窄的--build-only选择build-for-testing，完整测试目标编译与严格验签通过；前者等待原锁185.00秒，后者立即取得。两批明确mode=build-for-testing、runtimeVerified=false，不补计运行次数。 |
+
+**源码与有效结果**：HEAD仍为dba0982362f389c28b468e2d03420bfbe126d7d1；最近完整编译集合1216文件SHA-256为`1df858c55342cb2d08c8a7bd4146328c784edf45802bd60a8bb84acd4e844060`，两个编译批前后相同。生产578文件摘要仍为`773aaeafdf0ef61731e8792c3a77b349b43d649392994608e8373246e2f72093`，逐文件对照本轮origin无变化；该编译版测试616文件摘要为`c4cdeaaa201157b7ede3730e197968a4606faf73c11c3443be33bc17ad373a29`。暂存摘要与本轮origin相同；本代理未暂存/撤暂存。收尾仍有并发命令测试更新，复核时工作区摘要为`a577615dfcaf8a20daceba4f85f746c36d361a9c670d996a426e6f3cb509b65e`；最近编译后改变的是UnifiedSearchTaskChainTests、UnifiedSearchTaskFieldTests及UnifiedSearchTM1ContractTests。本轮9个测试支持/测试文件与已编译版一致，但**未将1df858…的编译通过扩写为a577…整个工作区通过**。已读取这些差异以及前述两份标题测试差异，合计五份并发命令测试不被所选P路径调用；保留它们，不归为本轮成果。
+
+逐方法对应见build/Controls10P/lifecycle-current-results.json：verified的20方法/31次，加regression中代码路径未受后续记录器/并发测试变更影响的39方法/142次，共**59方法/173次有效通过；新增嵌套entry反例修正版1方法/1次待运行**。这不是“全部自动验证通过”，也不替代原O的315/770历史来源。剩余是桌面解锁后先补该反例及相关短时原生回归，再决定人工窗口。14项runner隔离测试、Python语法、9个本轮Swift文件严格SwiftLint、工作流和静态门禁通过；静态包含229项原脚本回归。最终文档收尾重跑受影响检查。结束核对同时检查本批PID的内核启动身份和同路径额外进程：PID已不存在/已复用才算原实例退出，身份不可读或仍匹配即拒绝通过，不仅凭路径缺失判断退出。只读检查确认8个已记录测试进程均退出、同路径额外进程为空；不据此断言历史无副作用。Stepper的keyboardSingleRepeatReleaseAndDisabled虽断言通过，结果树保留SystemPageHost.swift:67“Modifying state during view update”运行警告，未当作警告已消除；未证明它是本轮新增回归。SDK既有AX弃用及ad-hoc Hardened Runtime提示亦保留。
+
+**人工首组准备，尚未复验**：须先补齐上段自动运行缺口，再重新确认用户当时仍方便，才以原interactiveGallery启动最多600秒窗口；以前“方便”不跨构建有效。本轮未启动长时人工窗口。首组由用户亲自选Capture并点击Open，核对子窗批次、scene代次和窗口ID；输入合成abc，只按一下Return，核对待办计数/最近回调，再用本批JSONL核对keyDown/repeat/keyUp和callback前后计数。随后按该场景原支持的⌘Return，核对手记计数。组合文本期间的Return/⌘Return与上屏后操作分别记录，保留输入法名称及用户观察；草稿保留是约定，不期望新增生产列表项。次数不一致立即停止该项，保存序号与未关联回调，不补成恰好一次。收尾期停止新场景，到期由XCTest自行清理，退出后只读本批日志/进程身份。捕获人工次数不一致问题本轮未真正复验，不能关闭。
+
+**平台与指定复核**：本轮未调用任何桌面应用入口，包括旧app对象的AX、截图、打开/激活/关闭。恢复必须先有可审阅的仅附着且绝不启动契约/实现，绑定PID和启动身份，目标消失即失败、无LaunchServices回退，并验证退出竞争；PID预检查不能消除检查后退出窗口。测试状态机与run ID只用于关联证据，不提供安全认证，也不能阻止外部工具启动普通QA进程。原生cacheDisplay缓存图仅检验文字布局，不作为窗口合成器屏幕证据。H、K、L、未知历史副作用、真人IME/VoiceOver、真实NSPopover及其他系统版本独立保留。复杂测试状态/共享夹具接线触发指定Cursor verifier；当前工具元数据无该入口，未认证、安装或以其他代理替代。材料是本请求边界、项目规则/路由/组件目录、lifecycle-origin.json、实际差异、最终前后源码清单/结果树/会话日志及本节失败/未覆盖项；复核应返回可核验file:line、问题与未覆盖项，材料准备不等于执行。
+
+本轮不提交、推送、安装或发布；不操作真实库/正文/附件、系统剪贴板、真实偏好、签名配置或权限。自动证据与人工/平台/指定复核的未完成状态分别交接。
+
+#### P 最终反例与 Capture 续验（2026-10-07）
+
+**整体仍为 partial，未获用户整体交付接受。** 继承上轮59方法／173次有效证据，本轮只在 `ControlsPlatformEventTests.nestedRunLoopCallbackRemainsUnassociated()` 补显式 `nestedEntries == 1` 和回调记录恰好一条的断言，保留原合成提交计数及未关联断言；不改生产、共享夹具或runner。原Timer反例失败、锁屏未运行和只编译批次全部保留。
+
+**最终运行反例已通过**：`build/Controls10P/capture-auto-entry.xcresult` 真实运行10方法／10次，零失败、跳过或Expected Failure；包括六个事件方法、重复开始/关闭、切换/旧回调拒绝、截止/取消，以及原Gallery的2秒短会话。嵌套entry确实进入一次、原合成todo回调确实执行一次，事件3对应的回调4为 `unassociated/eventSequence=null/countBefore=0/countAfter=1`，dispatch-end 5为 `associationScopeIntact=false/synchronousCallbacks=0`；没有用资格撤销替代回调事实。同步窗口派发可关联，异步/嵌套回调不借外层事件归因；旧窗口/场景及会话结束后的迟到回调拒绝记录。11个会话的JSONL、CONTROLS_P_END文件关闭回执均完整，PID `3741:1791379810:166448` 已退出，同路径额外进程为空，严格验签通过。
+
+**源码与计数**：上述自动批及第一批人工窗口均为完整正常PrivacyQA `test`，原锁立即取得，前后1216文件综合摘要一致：`41de6ef2199851c2e5bbd73b5f7b61d0d2f634860653c39e45a6981f3ae8a94e`。生产578文件仍为 `773aaeafdf0ef61731e8792c3a77b349b43d649392994608e8373246e2f72093`；测试616文件为 `5ccdc781cacbb61c97caa986e75146dca1603e2f9ef92d2c0cb593b74bc45cfb`。起点与最终编译旧版之间三份并发命令测试（TM1Contract、TaskChain、TaskField）已读差异，不被所选P路径调用，不归本轮成果。相较继承工作区，本轮只改变上述单个测试方法；原59方法路径不变，新增反例后去重为**60方法／174次有效自动通过**，重跑的9方法／9次及人工Gallery重复不重复累加。暂存摘要仍为 `808888b46f309094be7219414b91192a786176d6418346f8c8066fc519c9521e`；未操作暂存。原O的315／770继续作为其独立历史来源，不扩为全工作区或全应用通过。
+
+**第一批人工**：用户当时明确“现在方便，开始”后运行 `AREACHAIN_PLATFORM_QA=1 AREACHAIN_CONTROLS_PREVIEW_SECONDS=600 python3 -B build/Controls10P/run.py capture-manual-1 'DaybookButtonInteractionTests/interactiveGallery()'`。批次 `DF963B81-B756-48BE-9C74-D2D84DFEEEDA`、会话 `8FEA074C-76FE-4D93-991A-67BC323F7F52`、进程身份 `5606:1791379919:397710`。用户亲自打开Capture；初窗g1／37202／`CD84A7E3-D691-4646-8A21-277A0DB6A516`在尚无回调时被用户重开，记录32确认0／0、33关闭；新窗g2／37217／`728007A4-6DA9-42CF-A981-B94A65355CE3`由记录34打开。用户明确确认自己使用scene 2，后续按该身份核对，不混合两窗计数。逐条原始证据见同目录 `capture-manual-1-8FEA074C-76FE-4D93-991A-67BC323F7F52-events.jsonl`。
+
+| 人工步骤 | 本批事实与判断 |
+|---|---|
+| A 普通Return | 用户输入合成abc，报告待办1／手记0，并确认最近回调 `todo 0 → 1 · 同步派发 / synchronous`。keyDown 45的repeat=false、marked=false；callback 46确切关联45，todo 0→1；dispatch-end 47恰为1；keyUp 48的pressSequence=45，释放派发49为0。按下/释放时间差约86ms，一次观察事件对应一次真实合成回调。 |
+| B ⌘Return | 保持g2。用户报告1／1并确认 `diary 0 → 1 · 同步派发 / synchronous`。keyDown 50的repeat=false、marked=false、Command修饰有效；callback 51确切关联50，diary 0→1；dispatch-end 52为1；keyUp 53的pressSequence=50，约79ms后释放。没有第二次回调。 |
+| C1 中文组合尝试 | 用户指定微信输入法，但报告未看到候选/组合态；不记录其输入正文。Return事件54实际marked=false、repeat=false，callback 55为todo 1→2，dispatch-end 56为1，keyUp 57与54成对（约114ms），释放派发58为0；用户报告2／1。此操作是非组合提交，结果一致，**不能算组合保护通过**。组合期间Return／⌘Return及上屏后两条路径仍待真正覆盖。 |
+| D 重开／搜索 | 本批g1→g2显示身份更新及旧窗0／0关闭，未在有提交后重开，不能替代完整D。普通搜索abc撤销／重做未进入，原多行触发条件人工缺口保留。 |
+
+**第一批收尾及用户决定**：记录59在约570秒进入原30秒收尾期；代理要求停止新操作，之后没有新输入事件。60 closing、61最终2／1、62 scene-closed、63 closed，监听/Gallery/子窗释放为true；文件关闭后CONTROLS_P_END为 `fileClosed=true complete=true`。runner完整性通过、Gallery 1方法／1次通过、严格验签通过，原PID退出且同路径无残留；构建锁已释放。等待用户开始或续验答复期间不占锁。清理后重新询问是否仍方便继续中文核对，用户明确答复“先结束，中文步骤保留待验”；当轮没有启动第二批，也没有延长第一批窗口。后续用户重新要求启动的中文批次见下段；以后续验仍须重新确认当时方便。
+
+**中文续批：当时未共同确认组合态，已正常结束**。随后用户明确要求“现在继续启动中文验证”，代理先核对桌面解锁、原QA路径无进程、源码与自动通过版本完全一致，再执行 `AREACHAIN_PLATFORM_QA=1 AREACHAIN_CONTROLS_PREVIEW_SECONDS=600 python3 -B build/Controls10P/run.py capture-manual-ime-1 'DaybookButtonInteractionTests/interactiveGallery()'`。批次 `844F7EC4-68A1-4CB4-9502-238E75CC7964`、会话 `A9AAF310-0181-4CF4-9C96-FCE486092193`、进程身份 `23057:1791381142:55946`；用户亲自打开Capture，记录7对应g1／37803／`8A0D075B-74C4-4C6D-AB17-F01C3854694E`。用户报告微信输入法为中文模式；经说明按键输入合成拼音、暂不按空格或Return后，当时答复“没有，只有字母”。这一答复及代理当时的判断保留；用户后来澄清未听明白“候选/组合态”的含义，并确认实际候选期操作，见下方补充。输入正文不写入本记录或JSONL。
+
+本批日志未记录到Return／⌘Return控制键事件，没有业务callback；已观察到的Capture鼠标事件取样为editorExists=true、marked=false，但普通字符不在原记录范围内，**不能据此声称键入全过程marked=false，也不能确认输入法内部状态或根因**。代理因当时未能共同确认候选/组合态而停止中文人工项目，没有连续提交试探、切换其他输入法、改变系统偏好/权限或修改生产。当时提出普通原生文本框合成对照的建议，尚未执行；用户后续澄清提供了新的人工观察，不再单凭前述口头歧义认定输入法无法组词。尚无生产最小修复依据，A/B和旧次数差异结论不变。
+
+用户按提示关闭子窗及主QA窗口，并确认仍为0／0、尚无回调。记录29最终0／0、30 scene-closed（window-closed）、31关闭鼠标派发返回且回调0、35 closing和36 closed（galleryClosed）；关闭在ready后约265秒，未到570秒收尾点，因此没有伪造winding-down记录或等待空窗口到期。XCTest沿原正常清理结束，三个释放字段为true，CONTROLS_P_END为 `fileClosed=true complete=true`。`capture-manual-ime-1-execution.json` complete/runtimeVerified=true、Gallery 1方法／1次通过、验签通过、无Runtime Warning；这只证明宿主及证据链完整，不代表中文组合保护通过。运行前后仍为 `41de6ef2199851c2e5bbd73b5f7b61d0d2f634860653c39e45a6981f3ae8a94e`，没有源码修改或并发变化；本批为重复Gallery覆盖，自动去重计数仍60／174。PID原启动身份已退出，同路径进程为空，锁已释放，全程没有桌面入口调用。文档更新后工作流、static及工作区/暂存差异检查输出为 `capture-ime-workflow.log`、`capture-ime-static.json`；未修改Swift或runner，未重复运行已有效的短回归。
+
+**中文人工反馈补充（同日，窗口结束后澄清）**：用户理解测试目的后明确表示在 **Capture QA 子窗口实际试过**：中文候选期间按Enter由输入法处理候选，没有直接用拼音创建新数据条；此前是没有理解代理所说的“候选/组合态”。因此补记为“**候选期间普通Enter未误提交：用户人工观察通过**”。用户口语“按住enter”不作为持续长按或repeat证据；日常“按Enter”可指按下后释放，尚未记录精确按压时长。该反馈未定位到确切批次、窗口身份及事件序号；最近中文批JSONL未记录Return，与这条人工观察的关联仍缺证据，不能补造marked=true、keyDown/keyUp或判定记录器漏记，也不能否定用户观察。组合期间⌘Return、上屏后分别提交及事件关联的完整C验收仍待补；不扩大为全部中文保护或真实长按通过。此次只更新原记录与本地证据索引，没有再次启动窗口、改测试或生产，也没有新增自动执行次数；工作流、static及差异检查重跑。
+
+**中文候选保护实际取证批（同日）**：用户再次明确“那现在进行测试”后，预检桌面解锁、QA路径无进程，源码仍为上述41de6e…a94e，沿原完整正常PrivacyQA运行 `AREACHAIN_PLATFORM_QA=1 AREACHAIN_CONTROLS_PREVIEW_SECONDS=600 python3 -B build/Controls10P/run.py capture-manual-ime-2 'DaybookButtonInteractionTests/interactiveGallery()'`。原锁立即取得，六项真实授权清除、隔离目录/签名及串行保持。批次 `C63FD362-7DB3-4209-B64C-B1F3CA1AA0A9`、会话 `089E9D06-6D32-476B-AC46-57D2F1CEF12E`、进程身份 `43256:1791382363:524031`；Capture只有g1／37859／`F116ACFB-9911-4E72-85C3-795083A7B66B`一个子窗。沿微信输入法合成材料操作，要求每组完成后再回对话报告，避免把中途切窗后的状态当作按键当时状态；未将此前口头歧义追认为已证实的焦点根因。
+
+| C本批路径 | 实际事件、回调与人工观察 |
+|---|---|
+| 候选期间⌘Return | keyDown序号11、18、21、24、27、30、33、36、39、42、45、48、51、70、73、76、79共17次，全部marked=true、Command修饰有效、isARepeat=false，有逐次匹配的keyUp，各dispatch-end回调数0，全会话也无对应业务回调。用户报告快捷键前后候选词仍显示、候选期间计数未增加。**本路径取得真实组合态/事件/无回调及人工一致证据**；保留全部17次操作，不将其虚写为只按过一次，不作为L持续长按通过。 |
+| 候选期间普通Return | keyDown 54、62、66共3次均marked=true、repeat=false；对应keyUp 56、64、68均marked=false，pressSequence成对，按下和释放派发均无回调。用户确认普通Return完成候选、待办/手记不增加。**本路径取得组合态到非组合态及无误提交证据**。 |
+| 确认后的⌘Return与误触归因 | 紧随普通Return 54/56之后，keyDown 58为marked=false、repeat=false，callback 59确切关联58，diary 0→1，dispatch-end 60恰为1，keyUp 61匹配58。用户最初报告候选期间0／0且提到一次误触；代理提出上述具体事件和计数后，用户明确“对，这个是我误触的”。**本批额外一次手记已解释为候选结束后的独立快捷键触发**，没有单个事件多次回调证据；不归为组合保护失败。 |
+| 确认后的普通Return | 用户明确反馈已经实际测试过：文字确认后一次普通Return新增一次待办，界面与回调同步；未要求重复。**人工观察通过**。本批没有marked=false的普通Return事件，最终待办仍0，故没有将该反馈虚配到本批；前批A证明的是合成abc的非组合单次提交。中文上屏后该路径的本批逐事件对应仍未补齐。 |
+
+本批共21个Return keyDown和21个匹配keyUp，repeat均false；唯一callback为59。完整日志为 `capture-manual-ime-2-089E9D06-6D32-476B-AC46-57D2F1CEF12E-events.jsonl`。数次按键不等于持续repeat，不丢弃额外操作来满足单次描述。本批对已记录回调无未关联、重复记录、跨窗或单事件多回调证据；不能用它解释旧35511等窗口的历史差额。没有确认生产或测试设施缺陷，未修改生产、Swift测试或runner。
+
+**本批收尾与有效性**：用户确认已关闭。记录88最终todo=0/diary=1、89 scene-closed、90关闭鼠标派发返回；91在约570秒进入原收尾期，随后只有主窗关闭鼠标事件92，93 closing/94 closed为galleryClosed，三个释放字段均true。CONTROLS_P_END核对fileClosed=true/complete=true，runner complete/runtimeVerified=true；Gallery 1方法／1次通过、严格验签通过、无Runtime Warning。前后源码一致，PID原启动身份退出且同路径额外进程为空，锁已释放；不附着、不调用桌面入口或清理容器。此为重复Gallery执行，原有效自动证据仍60方法／174次。D的有提交后重开和普通搜索撤销/重做没有进入；H/K/L、原Stepper警告和指定Cursor等缺口保持。仅更新原记录和本地证据索引，工作流、static（含229项脚本回归）及差异检查输出为 `capture-ime-2-workflow.log`、`capture-ime-2-static.json`，源码未变不机械重跑自动整批。
+
+**当前归因与限制**：首批每个已观察Return均为非repeat、有成对keyUp、单一同步回调；无未关联业务回调、重复记录或跨窗串入的证据。旧次数差异仍为“未复现，旧原因未解决”；只有最新中文批的那次额外手记得到了具体事件及用户误触确认，不能倒推旧因。中文候选期间两条按键路径、确认后⌘Return已取得本批运行证据，确认后普通Return有人工作用确认但缺本批逐事件对应，因此不标记完整C证据全部闭环，也不要求用户机械重复已确认操作。桌面入口（旧app对象AX/截图/打开/激活/关闭）全程暂停，只读本批日志与进程身份。H/K/L、未知历史副作用、Stepper运行警告、其他人工/平台能力及指定Cursor verifier缺口仍保留；整体partial及未接受整体交付不变。
+
+**已运行检查**：修改后该Swift文件严格SwiftLint、14项原runner隔离测试、工作流和工作区/暂存差异检查通过；static质量门禁通过，含229项原脚本回归。自动与人工结果树本批无Runtime Warning，不意味着旧Stepper警告消除；反例沿旧写法有未使用withDispatch返回值编译警告，SDK AX弃用及ad-hoc Hardened Runtime提示继续保留。最终记录编辑后重跑工作流/静态/差异检查，输出为 `capture-workflow.log`、`capture-static-final.json`；最终源码与暂存身份复核仍与本批通过版本一致。未变的整批Swift不机械重跑。
+
+#### P 提交后重开、多行搜索与剪贴板输入补证（2026-10-08）
+
+**整体继续 partial，最终接受仍由用户决定。** 继承 P 的60方法／174次与 O 的315方法／770次独立历史来源；没有将二者相加，也未重跑整套候选保护。本次只修改原测试支持、相关测试和原文档；保留暂存/并发修改，生产输入政策、匹配器、保存及安全流程不改。桌面入口（包括旧app对象AX、截图、激活/关闭）暂停，只有原PrivacyQA/XCTest启动窗口；系统剪贴板不由代理读取、备份、覆盖或恢复。
+
+**入口、观测及预期**：Gallery 原普通搜索仅workspace，本次工具条暴露原workspace/menu/tags/diary夹具；剪贴板子窗直接绑定原session.searchMode，支持mixed/exact/regex，不走默认复制/粘贴回调。可选中段初值只在新建夹具时通过原Binding设置“头🧪尾”；用户将光标放在🧪之后，沿原repeatedUndoRedo测试核对UTF-16位置3→6→3→6。该设置是测试准备，不是观测，不为用户代做真实粘贴。Capture重开仍是新合成夹具，初始草稿空、计数0／0；旧窗提交后保留草稿，不能解释成生产持久化行为。
+
+`ControlsPlatformEvents`仅增加Undo/Redo/Paste语义，修饰键限定⌘Z、⇧⌘Z、⌘V；普通字符及其他组合不记录，Command先释放时keyUp只配对已有操作。批次/会话/窗口/序号/时间和原同步回调边界保持。`SearchMultilineFixture.observedField`按实际locale和原placeholder唯一定位，`inputEvidence`从原Coordinator Binding读取查询（包括tags/diary私有状态所绑定的值），仅输出预定合成值相等布尔、查询/field/editor一致性、长度/选区、合成结果与计数。没有任意正文或正文哈希；合成结果预期沿原测试固定集合，regex字面反斜杠n按换行匹配，标签连续子串与其他搜索分开。原100ms生命周期tick与白名单事件前后取样，去重状态只保存这些标量；不改输入、选区、undo分组或焦点，不把时间相邻取样当事件因果，也不保证两次tick之间每个瞬态均可见。Record点击会切换焦点，连续输入不插入该操作。
+
+**短自动回归**：`input-short-preparation`经原锁等待52.38秒后执行完整正常PrivacyQA，取得锁与运行后源码相同（`ff13cfc31d0642a1ce64b923ae9b61d064772c51227d2a1f04ba668ed45f0e69`）。17方法／21次全部通过，零失败/跳过/Expected Failure/Runtime Warning；其中新增5方法／9次，覆盖语义白名单/释放配对、四个普通搜索命名pasteboard→撤销→重做→再撤销输入x、中段初值/UTF-16、剪贴板两材料×三模式及提交后重开/迟到回调拒绝。原6个事件方法、4个生命周期方法及工作台两个原undo门槛一起通过；**命名pasteboard不是系统真实粘贴**。20会话JSONL、closed、文件关闭回执全部核对，PID55187的启动身份已退出，同路径无残留，QA严格验签通过。新增取样的重复调用保持原editor/UndoManager对象、输入/光标、groupingLevel及canUndo/canRedo；四普通入口还核对合成待办快照和临时历史文件不变、清理后目录不存在。没有运行真实系统复制/粘贴、偏好或安全授权。
+
+| 项目 | 本轮人工步骤与证据状态 |
+|---|---|
+| 中文上屏后普通Return | 本批g1事件36/40（marked=false、repeat=false）成对，回调37为todo 0→1、派发38为1；用户确认可见1／0。人工观察与逐事件证据齐全。 |
+| 提交后重开 | g1已提交后关闭44，g2打开48、状态49为空草稿0／0；新窗58/62成对Return、59为todo 0→1；用户确认新身份、空值及两次1／0。验证的是新建合成夹具契约，非生产持久化。 |
+| workspace普通搜索 | 用户真实两行系统粘贴、撤销、重做、再撤销、x完整序列，事件/状态相符且人工明确正常无残留；该批主动终止缺正常收尾回执，局部输入事实保留。中段原自动通过，用户另明确人工正常，但本批没有对应中段窗口与UTF-16逐步样本，不能写成人工选区证据齐全。 |
+| menu普通搜索 | 用户明确全序列正常。剩余批g1有真实Paste20、Undo25、Redo30及相符状态；34为全选、36为x，未有第二次Undo。保留人工观察通过、实际已取样步骤通过与“再撤销后输入”关联缺口的区别。 |
+| tags普通搜索 | 命名pasteboard自动全序列通过，结果沿原连续子串；用户反复明确已亲自全部测试且符合预期，作为人工观察保留。本批无tags打开/状态记录，不虚构窗口或把其他消费者事件配给它。 |
+| diary普通搜索 | 用户明确全序列正常。剩余批g2有真实Paste52、Undo56、Redo60和相符状态；64全选、65为x，未有第二次Undo。“再撤销后输入”的实际事件对应仍缺。 |
+| clipboard mixed | A真实换行Paste86后88为queryIsLF、长度/光标3、原生/查询一致、结果符合预期；Undo94后96空/光标0、Redo98后100恢复。B用户人工明确通过，但本批没有queryIsLiteralEscape=true样本；自动两材料原文/撤销通过。 |
+| clipboard exact | A模式状态103/112保持queryIsLF、长度/光标3及结果正确。第二次Paste119后121仍为LF，不是字面反斜杠n的正面证据。用户明确A/B及撤销/重做均正常，A在exact下撤销/重做与B的事件对应仍缺。 |
+| clipboard regex | A状态106保持queryIsLF、长度/光标3与结果正确。用户明确B应匹配LF及两材料撤销/重做均正常，但没有B布尔或regex下Undo/Redo状态对应；不要求B三模式结果一致。 |
+
+**第一组人工批**：用户确认当时方便后运行原runner `input-manual-capture`、interactiveGallery、600秒。批次`11A2CC96-0B4D-44DE-8EF4-2DE77C0F63E7`、会话`F8216C8F-11E7-45BE-83AA-5B6EF9A60E7B`、PID启动身份`60808:1791390466:827083`。g1窗口39387／`6C5080C5-FC81-4B93-AE85-C594B01BA0FA`，g2窗口39404／`E4A2D7CE-9956-4A20-8706-9F946276E802`。g1在35取到marked=false和非空长度2，Return36→回调37→派发38→释放40（约89ms）；g2 Return58→回调59→派发60→释放62（约132ms），两次均普通Return、非repeat且单一同步todo回调，释放派发均0。用户明确“均符合预期，已关闭两窗”，确认中文上屏后提交、重开空值和两次1／0；可见现象取自用户，不能由长度猜正文。g1还记录一对候选期Return23/26无回调，作为实际额外动作保留，不重做候选矩阵。
+
+g3/g4空Capture、g5空Clipboard、g6/g7 NSStepper及g8窄周随后被打开/关闭，记录按各自身份保留；没有把打开场景、Stepper轨迹或用户额外探索算作普通搜索、剪贴板或L通过。全会话仅有上述2个业务回调，未见跨窗回调。用户反馈关闭后仍无主窗closing，代理按日志说明并停止新操作；最终232 winding-down、233 closing/234 closed为deadline，三个释放值true，文件关闭回执fileClosed/complete均true。Gallery 1方法／1次、QA验签通过、无Runtime Warning；原PID退出、同路径为空，锁已释放。原runner整体complete/runtimeVerified=false保持，唯一原因是运行中并发改变`UnifiedSearchOperationCopy`、`UnifiedSearchTaskFieldSubmission`及xcstrings中新增两个unified.field标签文案。已读差异，均属未装配的统一搜索命令展示，不改变本批Capture/搜索输入路径；本批人工事实有效，不能冒充最终整工作区通过。源码前`ff13cfc…f0e69`、后`0f6752…651c0`，完整清单与JSONL在build/Controls10P/input-manual-capture-*，没有覆盖历史结果或自行清理/重启。
+
+**第二窗口局部事实与主动终止**：用户确认方便并愿意自行复制合成两行后运行`input-manual-search`（原锁立即取得、600秒），批次`98AF43FE-B797-4D40-8D0D-B2FAF508183D`、会话`FF40397F-0B5D-41E9-A199-30AA861CF969`、进程身份`73220:1791391343:986487`。只有workspace g1／39703／`ACD71E4A-A56C-4550-A39B-6A04B3A4EB67`打开：9空值/光标0；Paste20/23后22的queryIsSpace=true、长度/光标3、field/editor一致，24取得SPACE和SLASH结果；Undo25/28后27空值/光标0；Redo29/32后31恢复规范化值/光标3/结果相符；Undo33/36后35空；38为queryIsTypedX=true/光标1/结果空。用户随后明确“工作台全过程正常；我主动结束了测试”，确认系统真实两行粘贴、完整序列和无残留。37为marked=true期间query空、field/editor暂不一致，38在marked=false后同步；22结果尚未刷新，24已刷新，保留这些时序状态，不把瞬态直接判成生产失败。之后额外Undo39/42回到空，未冒充原序列唯一操作；全日志无业务回调、计数0／0。
+
+该批在用户主动结束后原runner工具会话不可恢复，没有execution.json；JSONL止于42，缺scene-closed/closing/closed和文件关闭回执。原validate_session拒绝missing ready/closed；xcresulttool明确缺Info.plist，不能生成有效结果树或补算Gallery通过。原PID启动身份已退出、同路径为空、锁可非阻塞取得（只核对并释放，未改锁文本）；正常资源清理与文件关闭仍未证实。只保存本批已知JSONL的incomplete-events及interruption元数据，没有补造runner成功或删除残留文件。随后停止原生操作、不附着、不自动重启；用户另行明确确认“现在方便，启动剩余验收”后才开始新批。menu/tags/diary、中段和Clipboard未在此批打开，不用workspace推断它们通过。该批源码从启动到中断复核仍为`0f6752bf0b9e126f17f0d41eba462d00fb2da141f639f5de9cbb108e827651c0`。
+
+**第三窗口实际取证与收尾**：用户再次明确确认方便后运行`input-manual-remaining`，批次`F9339105-BEA5-4B0B-879A-3330E6DB5468`、会话`D4937A49-53FF-41E5-B6CB-F33299971382`、进程身份`82203:1791391808:454528`。实际打开menu g1／39769／`F35E04FD-F65A-48C7-8E7D-013E59EEE112`、diary g2／39778／`66068E8B-8647-4965-A048-AC2E6CB8D873`、Clipboard g3／39787／`A6E6F151-1240-47DF-AA01-18D699480F18`。menu状态24/27/32/36及diary状态54/58/62/65分别取得规范化、空、重做、x，最终query/field/editor一致，结果符合本场景预期。两个x之前取到全选（34/64），没有第二次Undo，不能等同原“再次撤销后继续输入”条件。用户对“全部正常”的反馈再次明确为“我都按住你的都全部测试通过，与预想一致”；这份人工观察保留，不因当前日志缺窗口就否定，也不擅自判断夹具漏记、用户未做或生产失败。tags和中段没有本批open；缺少可确切归属的样本，本轮不再机械重复整组。
+
+Clipboard A真实Paste86/89取得LF原文相等布尔；第一次Redo90没有证明状态变化，实际Undo94/97后96空、Redo98/101后100恢复LF。切换exact103、regex106、mixed109、exact112均保留LF，三模式结果相符；模式选择时有意点击控件，不声称这段焦点始终未变。第二次Paste119/122后121仍为LF、长度3，所有记录均没有queryIsLiteralEscape=true；不能用它证明字面反斜杠n已经进入查询，也不能推断生产把字面转义成了换行。用户明确两材料、三模式、撤销/重做均正常并已关闭窗口；B及exact/regex各自撤销的人工观察与现有状态取样覆盖分别保留。全批无业务callback、所有输入取样计数0／0；合成模型/临时历史隔离来自原夹具和短自动检查，未另做人工后的逐实体持久化取样。
+
+最终126在原570秒进入winding-down，127 closing、128最终观察0／0、129 scene-closed、130 closed均沿deadline，三个释放字段true。用户反馈关闭后没有对应主窗关闭回执，记录以实际600秒到期自动清理为准，不虚写为主动关主窗终止。原runner核对JSONL与标准输出及文件关闭回执，complete/runtimeVerified=true；Gallery 1方法／1次通过、QA严格验签通过、零Runtime Warning。原启动身份退出、同路径无残留，锁已释放。第三窗口是第二批主动中断后再次获得明确授权才启动，未延长任一批上限。Gallery通过仅覆盖宿主/清理，不能替代上表的人工步骤与证据缺口。
+
+**最终源码身份与并发影响**：HEAD仍`dba0982362f389c28b468e2d03420bfbe126d7d1`，当前及第三批前后1229文件源码集合SHA-256均为`0f6752bf0b9e126f17f0d41eba462d00fb2da141f639f5de9cbb108e827651c0`。生产582文件摘要`936969b39b852479a44962b22eb086fe1f5bea2c2d8006c86041c6edf61dcf8e`，测试625文件摘要`cf2ec508b3cf566f57740df4b0761264103d48f10601d825be79056239283629`；均按原runner路径→摘要映射、排序JSON计算。暂存摘要`7b7e60ec82f7e6b8e0361cc5659d2f84294d7bfb9a3ea79375a03a99c761509c`与本轮origin相同；冷启动期间已有外部暂存状态变化，本代理未操作索引。相较origin，外部改动为统一搜索ObjectSelection/OperationEditing/TaskFieldEditing三处路由，以及OperationCopy/TaskFieldSubmission和两个xcstrings标签文案，均已读差异，不在原Capture/四普通搜索/Clipboard装配链。本轮四个测试文件与短回归版一致；第三批完整正常QA重新编译当前目标并验签，但不声称并发功能运行已获覆盖。原P60／174继承来源保留，本轮17／21及新增5／9单列，重复Gallery不累加，O315／770不相加。
+
+**剩余条件分类（分类不关闭，也不代表用户接受限制）**：
+
+1. 现有隔离环境可补的仅是具体关联缺口：menu/diary的第二次Undo后输入x，tags完整序列的独立窗口，工作台中段UTF-16 3→6→3→6→4，Clipboard B字面反斜杠n在三模式的查询布尔/结果与选区，以及A在exact/regex下的Undo/Redo。原人工通过反馈有效保留，若继续只补这些对应，不重跑Capture候选矩阵或已闭环的提交后重开。workspace完整序列来自主动终止批，仍缺该批正常清理回执，不能通过新批关闭旧缺口。后续窗口须重新确认方便、用户自愿提供合成材料；不以打开或快捷键被看到判通过。
+2. 需单独定界：H嵌套AX/截止失败注入、K安全输入同值替换、其他超出本轮输入范围的问题。本轮不修改这些生产路径。
+3. 外部能力依赖：L真实持续按压可靠基线、指定Cursor verifier、真人VoiceOver/真实NSPopover及其他系统版本。工具元数据无指定Cursor入口，未认证/安装/替代；复杂观测材料包含原需求、规则、实际差异、原/本批清单、JSONL和通过/未覆盖项，材料不等于复核执行。
+4. 历史未充分解释：旧35511等计数差额、历史额外QA系统交互与未知业务副作用、旧Stepper运行警告。新批正常不关闭旧因，无新来源不重复历史调查。
+
+**收尾门禁**：最终4份相关Swift严格SwiftLint、原runner的14项隔离脚本测试、工作流检查、static质量门禁（230项脚本回归）、工作区/暂存区diff检查通过，输出为`input-swiftlint.log`、`input-workflow.log`、`input-static.json`及本轮工具记录。完整正常QA目标编译和严格验签以短回归、2秒Gallery及第三人工批为证；主动终止的第二批不算构建/测试成功。保留SDK AX弃用、既有actor隔离和ad-hoc Hardened Runtime提示，不将零Runtime Warning解释成历史警告已清除。未运行整套174/770回归、独立日用Debug或其他系统版本，没有安装/提交/推送/发布、真实数据/凭据/偏好访问或权限/签名配置调整。指定Cursor复核仍未执行；人工观察被接受为观察来源，不代表用户已接受整体交付。文档最终编辑后重跑受影响工作流/静态/差异检查，并复核源码身份与同路径进程。
+
+## 第十阶段 N：手记向上标题气泡悬停保留修复
+
+2026-10-06。本轮仅处理 DiarySummaryRow 标题气泡的真实悬停与退出链；显示资格、截断、方向/偏移、样式、复制、隐私投影、选择/双击、菜单和原300/100/80ms延迟保持。组件与责任见[组件目录](component-catalog.md#第十阶段-n手记标题气泡窗口观测)。K、L、公开 Copy/More、真人辅助功能与其他历史问题保持独立。
+
+**基线与原因**：完整正常目标首次编译被并发 `TaskMutationService+Title.swift:50/93` 的 String/[UUID] 不匹配阻断（baseline，退出65、0测试）；本轮未修改或排除该文件。身份检查发现并发修正后重新运行 baseline-resumed，4方法/10次中9通过、1失败，复现 M 的下部向上气泡。行窗口 `(32,151,316,57)`、标题 `(40,185,216,16)`；相邻点 `(153.29,207)` / `(153.29,209)` 均在气泡正文内。后一点 bubble 先 false，约84ms后 row/title 清零。已证实的是可见气泡与祖先行边界下的悬停回调不一致；未通过移除某个祖先修饰器的对照证明 SwiftUI 内部裁切实现，不把猜测写成内部根因。
+
+**最小修复与清理**：DiarySummaryRow 显式启用 RowTitleBubble 的内部 `observingWindowHover`；其他标题消费者和备注继续原路径。RowBubbleHoverRegion 挂在当前气泡背景，只用所属窗口事件和当前圆角路径判定，重新换算真实几何并尊重窗口/滚动裁切，不使用祖先行的 visibleRect、不吞事件、不扩点击形状。SwiftUI 原 onHover 在该模式不写同一悬停状态；内部悬停仍驱动原动态边框和光标。布局/跟踪区更新只合并一次主队列复测，无轮询或全局注册表。窗口失活/关闭、SwiftUI onDisappear 和最终拆除均清理；代次拒绝迟到几何回调，淡出期间不继续持有观察。
+
+BoardRowChrome 仅增加不触发重绘的手记标题指针记录和 resetTitleHover 清理入口。原行退出任务会在气泡持有时保留标题但取消标题退出任务；新的气泡退出回调在指针不在标题时重新走原100ms入口，从而释放该保留状态。手记身份/标题替换、显隐资格失效与卸载撤销标题任务；shouldShowTitleBubble 原条件未变。没有增加复制替身或访问真实内容。
+
+**过程证据**：candidate 的首次打开有3次失败；加入5ms只读取样的 opening 六消费者均通过，但不能把取样后的时间延长当作原门槛通过。随后将即时指针记录改为不触发视图观察，原消费者严格通过。closure/trace-exit 暴露了测试将淡出期间残留的原生视图误算为未退出，并采用了标题下沿而非 M 的标题中心。记录显示离开后 row/title/bubble 已按原延迟清零；最终测试分开断言逻辑状态与原弹簧淡出后的拆除，返回路径复用原标题中心，同时把真实观察清理提前到 onDisappear。lifecycle 的7方法/16次全部通过，0失败/跳过；原 lower=true 失败及两侧相邻点严格通过，没有延长生产延时、强设悬停或标 Expected Failure。
+
+**隔离与产物**：所有运行沿同一 `build/.build.lock` 单次最多900秒申请、完整正常 PrivacyQA、独立 `build/PrivacyQA-Diary10N` / `com.areachain.privacy-qa`、local临时签名、生产sandbox entitlement、LSUIElement=NO、六项钥匙串授权清除和串行原生事件。只由 XCTest 启动合成资料窗口；命令、结果包、日志、起点摘要与诊断导出存于 `build/Diary10N`。没有修改个人签名、权限、系统剪贴板或真实数据。指定 Cursor verifier 当前不可调用，独立复核缺口保留，不认证或替代。
+
+**最终结果**：生产修复与原失败关闭已验证，完整验收仍 **partial**（实际屏幕与指定独立复核缺口）。regression 的25方法/56次全部通过，覆盖 RowBubbleConsumerTests、DiaryTitleHoverTests、RowBubbleInteractionTests、RowBubbleSurfaceTests、LivePreviewSurfaceTests、TaskRowBubbleTests；真实普通手记不点击默认复制，通用气泡只用合成 onCopy 验证单次回调、圆角外侧/阴影排除及移除后不再回调。新增滚动、行身份替换和直接观察生命周期也通过。screen 补验首次因合成标题尾部空格与生产 trimming 的精确定位不符失败；修正后 screen-final 的10方法/19次中18通过、1个同窗多行失败，原因是测试选择 first 原生视图，命中了上一行正在淡出的旧气泡。保留该失败，按原生对象身份排除旧视图后，screen-capture 的 rowsDoNotHoldEachOther 1方法/1次严格通过，两个行各自仅持有自己的气泡，离开后均清零。最终相关版本按方法/场景去重为 **26方法/57次通过，0失败、0跳过/Expected Failure**，不是跨版本累计计数。screen-final 同时重验了最终以原生气泡几何定位的原消费者；screen-capture 只修测试归属，生产源码与 regression 摘要一致。
+
+状态清除先按原80/100ms政策及调度裕量检查，原 snappy 弹簧淡出的物理拆除另检查；没有延长任何生产关闭时间。原生鼠标事件覆盖上下展开、标题中心往返、行边界相邻点、20ms快速往返、两种标题长度/宽度/窗口高度、中英文浅深色、布局和NSClipView滚动后新几何、敏感隐藏/恢复、Command、内容/行身份替换、重挂、窗口失活/关闭与同窗多行及多窗口隔离。滚动位移通过隔离NSClipView设置，进入/离开仍通过原生指针事件，不冒充用户滚轮手势。其他行选择/双击接线和原点击shape静态未变；未真实打开手记窗口或用消费者默认复制验收系统剪贴板。
+
+**证据层级与门禁**：缓存图 m-boundary-0.png / m-boundary-1.png 与 m-N-screen-boundary.png 已保存并检查，后者显示第一行气泡向上覆盖行外、第二行独立；透明宿主缓存不是桌面合成器画面。m-N-screen-boundary-ax.json 独立保存窗口身份、辅助树、原生几何；无新增公开辅助节点或Copy/More语义改动。桌面工具按确切QA路径取得辅助状态，但 getScreenshot / getAXStateAndScreenshot 两次都报 timeoutReached，未取得有效实际屏幕画面；不把缓存替代该缺口，不改权限或重试认证。固定40秒只用于隔离截图窗口期，期间不投递指针，默认自动回归不等待。
+
+最终8个Swift文件严格局部SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`、工作区和暂存差异检查通过。完整正常QA Debug编译通过，`codesign --verify --deep --strict` 验证QA包通过；原AX弃用/并发Sendable等编译警告保留。未运行全量应用测试、独立日用Debug构建、其他macOS版本、真实系统复制、真人辅助功能或K/L人工验收。起点/最终摘要保存在 `build/Diary10N`；暂存差异摘要保持，原BoardRowPointer、LiveDiaryComposerPreview、LivePreviewSurfaceTests、RowBubbleTestSupport与起点一致，其他并发修改未回退。未修改检查器，无对应检查器新增测试。未发现本范围仍可复现的原生运行缺陷；屏幕工具和Cursor复核缺口不宣称关闭。完成后停止，不提交、推送、安装或发布。
+
+## 第十阶段 M：手记气泡与复制入口定向诊断
+
+2026-10-06。诊断交付完成，产品验收仍 **partial**：预览正文定位与复制入口两项属于测试假设错误；`DiarySummaryRow` 下部宿主的向上气泡存在真实悬停保留缺陷。仅修改 [RowBubbleConsumerTests](../AreaChainTests/Theme/RowBubbleConsumerTests.swift)、[LivePreviewSurfaceTests](../AreaChainTests/Theme/LivePreviewSurfaceTests.swift)、原 [RowBubbleTestSupport](../AreaChainTests/Theme/RowBubbleTestSupport.swift) 及本记录，未修改生产代码。第八阶段 D/F 的历史失败不删除，以下证据补充其归属。
+
+**隔离与身份**：macOS 26.6.2（25G83）arm64、Xcode 26.6；HEAD `dba0982362f389c28b468e2d03420bfbe126d7d1` 加原暂存/工作区。沿原 PrivacyQA 完整正常应用和测试目标、`build/PrivacyQA-Diary10M`、`com.areachain.privacy-qa`、本地临时签名、生产 sandbox entitlement、LSUIElement=NO；六项真实钥匙串变量全部清除，串行事件与焦点断言保持。六次命令都沿 `build/.build.lock` 单次最多900秒申请，均取得原锁，没有重建宿主、赋悬停状态、修改生产延时或排除源码。仅由 XCTest 启动 QA；内存模型、随机偏好、合成普通/敏感资料，复制始终显式注入。原 SystemPageHost 的动画事务设置保持，证据不覆盖生产动画每一帧。
+
+**三项归属与辅助语义**：
+
+| 遗留 | 本轮结论 | 仍须区分的边界 |
+| --- | --- | --- |
+| LiveDiaryComposerPreview 上下均找不到独立正文 | **测试定位错误，修正后生产呈现及进入保留通过**。原 `combine` 没有独立正文节点，改用测试已有 SyntaxViewAnchor 宿主约束与 Vision 从真实缓存文字取得几何；没有猜按钮位置或新增生产钩子。上下两处均实际显示、进入后仍有气泡正文。 | 不把文字识别当 AX 正文。合并元素仍不提供正文值；完整正文的朗读与真人 VoiceOver 未验，不提出辅助语义或隐私改动。 |
+| DiarySummaryRow 的 lower=true 进入后不保持 | **真实事件/显隐生命周期缺陷**。生产行直接挂载，可见气泡越过行上边界后收到退出，随后原行退出清除标题。下部参数实际对应向上气泡，未混称“向下”。 | 精确到消费者行边界与气泡 hover 的不一致；没有通过源码 A/B 判定 SwiftUI 内部究竟在哪个修饰器裁切跟踪，不归因于复制、投影或共用计时器。 |
+| diary.copy 无独立按钮，注入/反馈未验 | **测试定位错误，修正后公开命名辅助动作及注入链通过**。合并节点公开 `Copy` / `More` 自定义动作，Copy 的公开 handler 到达生产按钮接线。普通成功/失败、敏感参数、反馈/复位及候选装饰身份已验证。 | 没有默认系统剪贴板证据；辅助动作执行成功不等于复制 Bool 成功。更多关闭另为原生开菜单/Escape与原菜单动作派发，不冒充真人选项点击。 |
+
+合并节点在未悬停时为 `AXStaticText`，value=`diary.preview.card`、无 label/独立正文/普通或自定义动作；悬停后为 `AXButton`，label=`diary.preview.card`、identifier=`ellipsis`、没有正文 value。旧式 `accessibilityActionNames` 仍为空，但公开 `accessibilityCustomActions` 提供本地化 Copy/More。首次取样只对声明遵循 NSAccessibilityProtocol 的对象读取 customActions，漏掉 SwiftUI AccessibilityNode；修正为按公开 selector 读取后确认动作存在。不能据旧动作列表为空判定不可访问。原生子视图遍历还能读到更多菜单 cell（AXMenuButton、AXPress）及宿主 AXShowMenu，但这些内部子视图不是合并元素的独立正文。
+
+**几何与单变量路径**：窗口坐标为 AppKit 左下原点；屏幕坐标用 `window.convertToScreen` / `convertPoint(toScreen:)`，CG 指针按主屏高度翻转。SwiftUI `.global` 是宿主布局坐标，不能直接当 AppKit 屏幕纵坐标；`RowBubblePlacement` 的 `y > 260` 选择方向，实际方向再由缓存/AX几何验证。取样的57pt手记卡上部为 `(32,451,316,57)`、下部为 `(32,151,316,57)`；操作区既有48×22，复制原生焦点矩形22×22，更多AX cell为22×16。预览完整卡片缓存与这些宿主几何一致，实际桌面画面也显示标题、复制与更多。
+
+固定下部普通手记（380×540内容、316行宽、32 padding、300 Spacer）：窗口原点屏幕 `(0,89)`，标题窗口 `(40,185,216,16)`、屏幕 `(40,274,216,16)`，行窗口 `(32,151,316,57)`。气泡实绘背景为 `(40,191,216,53)`，相对标题下边缘上移6pt、与原标题重叠10pt；正文AX约 `(64.51,196.50,177.56,42.01)`，位于标题上方，证明向上展开。背景界线由原缓存像素与生产 padding 交叉核对，不把正文AX矩形冒充全部气泡。
+
+原路径从标题中心 `(148,193)` 到气泡正文中心约 `(153.29,217.51)`：标题停留时 `row/title/bubble=true/true/true`，说明已收到真实气泡进入状态；移动后立即 `true/true/false`，约84–85ms后 `false/false/false`，正文节点由2降到1，缓存气泡也消失。不是初始未绘制、未进入过、坐标翻转或在状态赋值后制造成功。
+
+单变量对照保持同一窗口/行/气泡/横坐标，只将指针从 `(153.29,207)` 移到 `(153.29,209)`，屏幕分别约 `(153.29,296)` 和 `(153.29,298)`；两点均在取样的气泡正文内，分别距行上边界内/外1pt。内侧保留2个正文节点及三项true；外侧 bubble立即false，约85ms后row/title清除、剩1节点。5ms请求间隔只用于状态取样，不代表系统精度。`DiarySummaryRow+Bubbles` 的气泡 onHover 是该标志的写入点，`BoardRowChrome.handleRowHover(false)` 原80ms任务在气泡未持有时清标题，与记录吻合；100ms标题退出任务还会被该行任务取消。原始 SwiftUI 标题退出、行退出两个回调的同步先后没有公开注入入口，不能由异步状态反推其严格顺序；已证实的序列是气泡退出先于行/标题状态清除，不是“先移除再漏收进入”。
+
+上部手记行有限对照：标题 `(40,485,216,16)`，气泡实绘 `(40,426,216,53)`，向下，原中心路径保留。任务预览上下场景都实测向下，正文AX分别约 `(86.5,428.5,213,42)` / `(86.5,128.5,213,42)`，原路径均保留；不将这些对照或直接气泡组件通过替代下部手记行。
+
+**复制、投影与反馈**：桌面工具在 XCTest 已启动的确切 QA 路径上取得真实窗口截图，再按可见复制图标点击两次，普通成功/失败各收到一次正确合成标题＋false标志；没有按合并元素中心猜按钮。第三个敏感桌面步骤未在60秒限时完成，原测试明确超时，未重试这条桌面路径。后续自动检查只选择实际枚举出的命名 Copy，调用 `NSAccessibilityCustomAction.handler`，不直接调用 onCopy 或任意 selector。三场景回调计数严格1/2/3；普通参数为原解析标题、不含备注，敏感参数仅为 `Private note · hidden` 且标志true；中英文原敏感测试各自仅1次、对应本地化隐藏标题。显示和AX未暴露原合成标题/备注。此轮没有改变、扩展或宣称完整验收敏感判定矩阵。
+
+公开动作返回true在三场景一致；注入复制Bool分别true/false/true。成功出现勾选与 Copied，失败不出现成功反馈；false→true→false候选装饰切换中缓存反馈、回调次数和同一锚点/onAppear=1保持，等待原1200ms周期后无Copied。双语敏感缓存分别可见 Copied / 已复制。旧“必须AX出现Copied”假设也不成立，改为分别记录合并语义和缓存反馈。中文OCR曾因英文语言优先漏字；对同一已存PNG的离线语言顺序对照证实实际已绘制，再按场景语言修正测试并重验。普通转敏感是新的合成场景，末次重验先自然移出/进入卡片，才读取悬停动作；此前静止指针切场景的动作缺失保留失败，不声称内容切换可自动保持悬停。候选装饰切换内部没有补悬停。
+
+更多菜单用既有 MenuButtonTestSupport 从实际原生菜单cell几何打开，原生Escape结束追踪，onClose仍0；对取得的原菜单按已验证标题/启用状态派发Close后onClose=1、copies仍3。该项分别证明原生开关菜单和程序化原菜单接线，不是默认复制路径或真实系统剪贴板验收。
+
+**实际运行与版本**（所有结果、日志、基线摘要和缓存归入原build产物目录 `build/Diary10M`，不新增报告体系）：
+
+| 结果包 | 真实结果 |
+| --- | --- |
+| diagnostic.xcresult | 完整编译成功，但初次方法过滤漏参数，0测试，不能算验证。 |
+| probe.xcresult | 2方法/8次：5通过、3失败，复现原两个预览AX定位失败及下部手记行保留失败。 |
+| focused.xcresult | 3方法/9次：7通过、2失败。绘制几何定位后的两预览通过；剩下部行失败与桌面敏感阶段超时。桌面普通2次点击单独保留有效证据。 |
+| verification.xcresult | 8方法/17次：15通过、2失败。命名动作普通/敏感三场景、菜单、身份、原备注与条件对照通过；失败为下部行及中文反馈OCR漏字。 |
+| final.xcresult | 2方法/3次：2通过、1失败。语言修正后的中英文敏感原用例均通过；普通转敏感未重新进入时动作读取失败。 |
+| copy-reentry.xcresult | 最终仅重验受影响的普通/敏感三场景1方法/1次，全部通过；没有扩大矩阵或重跑下部已知失败直到消失。 |
+
+各包均0跳过/Expected Failure。最终相关证据按场景去重为8方法/17次中的16通过、1个下部手记行已知失败；不是将跨版本累计次数相加。最后修改仅影响命名动作测试的场景准备与反馈识别，行保留用例原失败断言未删除、未标预期失败；最终行版本的验证来自verification。严格SwiftLint（三文件）、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`、工作区及暂存差异检查通过；静态门禁含228项脚本回归。编译仍有原AX弃用等警告，未另做Debug发行验签、全量应用测试或低版本系统检查。
+
+**保护范围与证据层级**：起点记录全部生产/测试内容及暂存条目/二进制差异摘要；本轮七个直接生产文件（两预览、DiarySummaryRow及Bubbles、BoardRowChrome、BoardRowPointer、DaybookRowBubbles）终值均与起点相同。预览SHA-256为 `023bbb9ed1a5dba4184362cd5b0e22168b00174fb3c7f4f4ee8659a519e58c64`，手记行为 `6af32f7eb200fc53e776749e64a1412830aa42ac33a68edee9f71f88ae2a74c7`。期间 TaskTitleCommandPreviewReader、TaskCreateTagCatalogReader 与两个 TaskTitle 测试出现并发变化，本轮未编辑或回退，不宣称整个生产目录未变。暂存摘要保持；去掉本节后的工程记录与起点摘要一致。
+
+程序化只读chrome、应用内合成NSEvent hover/menu、公开AX自定义动作、原菜单动作派发、缓存图/文字识别和桌面系统截图/点击各自记录。真实画面只取得当次预览及任务对照，手记行边界结论来自合成事件、状态与缓存；真人hover/VoiceOver、系统剪贴板、精确SwiftUI内部回调顺序仍未证明。K的平台边界、L的原生长按能力缺口、指定Cursor verifier及其余历史未验项分别保留；当前无指定工具，不替代、不认证。
+
+**唯一最小建议**：下一小阶段仅修复 `DiarySummaryRow` 向上标题气泡越过行上边界后的hover保留。最小候选范围限定 [DiarySummaryRow](../AreaChain/Features/Diary/DiarySummaryRow.swift) 的祖先contentShape/onHover与标题overlay承载，以及必要时其 [Bubbles扩展](../AreaChain/Features/Diary/DiarySummaryRow+Bubbles.swift) 的装配；只让已绘制气泡接收正确的进入/退出。先验证具体修饰器责任，再选择不扩大点击形状的最小调整；不改BoardRowChrome延时、RowTitleBubble点击/光标、定位方向、敏感投影或复制接线。必须让本轮下部消费者原失败与1pt边界回归通过，并保持上部行/两预览有限对照、敏感/⌘禁显、退出清理、焦点与复制不多触发。当前没有证据需要辅助树或复制边界修复；若方案涉及这些边界，留主对话单独确认。本轮到此停止，不实施生产修复，不提交、推送、安装、发布或操作真实资料。
+
+## 第十阶段 L：Stepper 长按重复有效性核验
+
+2026-10-06。结果 **3：原生持续按压基线无法建立，长按等价验收 blocked**。本轮完成工具能力与源码诊断，只追加本记录，不修改生产 Stepper 或测试；第三阶段 F 的长按缺口不能关闭，也没有足够证据判定新增产品缺陷。
+
+**范围与身份**：读取 DaybookStepper、DaybookStepperKeyboard、DaybookStepperInteractionTests、DaybookStepperBaselineTests（含 StepperNativeTestSupport / StepperEventTrace）及[第三阶段 F 补验](#第三阶段-f-补验stepper-重复触发与取消契约2026-10-01)。源码基于 HEAD `dba0982362f389c28b468e2d03420bfbe126d7d1` 加现有工作区/暂存修改；本轮开始已有多个其他任务的修改，不能把 HEAD 当全部被检源码。记录前保留暂存条目、暂存二进制差异及生产/测试目录内容 SHA-256 摘要。生产 Stepper 两文件摘要分别为 `117466996c546bcde54b381f7c964108fa7f581118b0969cfcc3f9b54bd77093` 与 `d10664a6d6df786c7990dd0cfcc56bcaa7c8086626f09ad2a59f42e6df36348c`。不展开剪贴板业务，也不挂真实消费者。
+
+**能力门槛与停止原因**：本会话实际调用 `cua.getState()` 获取桌面工具文档与应用清单，没有选择或启动应用、投递输入。公开的原生 Target API 为 `click(target, {mouseButton, clickCount})`、`drag(from, to)` 等；没有持续按下/独立释放接口，没有 hold 时长参数、异常兜底释放契约或实际 down/up 时间回执。等待 API 本身不能把 click 变成持续按住；drag 也不能提供本任务所需的静止按压时长与可靠释放证明。因此“向明确 QA 窗口持续按住、保持真实间隔、可靠释放”的组合门槛未满足。清单中的 PrivacyQA 标识 `com.areachain.privacy-qa` 为未运行，没有确认可操作目标窗口；不据此猜测桌面锁定状态。浏览器清单另报 `unsupported Codex auth method: apikey`，它不是原生长按失败的证据，不尝试认证或改配置。没有改用系统事件注入、辅助功能权限或全局重复设置绕过能力缺口。
+
+**与旧方法的区别**：这次先检查输入能力，未运行旧合成对照。原 `perform` 用 Timer 在 common / eventTracking 队列现场创建 NSEvent，再经 `NSApp.postEvent` 投递；真实经过时间不等于系统鼠标持续按下。`StepperEventTrace` 的 `down/up` 是投递前标记，`received-*` 是本地事件监视器采样，`write` 是 Binding setter 记录，均不能直接冒充系统实际按下/释放及裸 NSStepper 的逐次 action。`syntheticHoldComparison` 已明确打印 `F_REPEAT_UNRESOLVED`，只检查首写、方向/步长和合成释放边界。旧基线还是 SwiftUI Stepper 的原生桥接，不是本轮要求的先单挂裸 NSStepper；内部方向范围不能误作业务范围。
+
+**原生配置与时间证据分层**：现有 `StepperNativeTestSupport.point` 只读取 `isContinuous`、`autorepeat` 和 `getPeriodicDelay`，没有为匹配公共组件而修改节奏。第三阶段 F 记录 continuous/autorepeat=true、delay=0.5s、interval=0.1s；这些是历史配置读数，不能当成本轮运行读数或实际重复频率。本轮未挂原生控件，未产生有效按压试次；action 次数、实际 down/up、首次 action、自动重复起点、逐次间隔和释放后观察序列全部为**未采集**，不能写作“原生 0 次”或“无迟到写入通过”。
+
+| 证据类别 | 本轮实际执行及可用结论 |
+| --- | --- |
+| 原生系统/桌面工具持续按压 | 仅核对公开能力；0 个有效试次，时间序列未取得，基线未成立。 |
+| 应用内合成事件 | 本轮未重跑。历史 1.2s 中原生 1 次／公共 11 次；原生首写约 1ms、公共首写数 ms、首次重复约 0.48s、后续约 0.076s，均仅转述原记录，不补造逐点数据。旧 pressedMouseButtons=0，不能证明系统长按等价或产品不等价。 |
+| 程序化辅助调整 | 本轮未调用 AX 增减、setter 或 action 来造重复；这种证据即便存在也只证明相应调用路径。 |
+| 键盘重复 | 现有 `key(...repeatKey: true)` 构造 `isARepeat` 事件；本轮未重跑，不是系统键盘节奏，也不能替代鼠标长按。 |
+| 真人操作 | 未执行、无证据；不能把桌面清单或历史缓存绘制当真人验证。 |
+
+**生产与边界判断**：公共鼠标路径仍为 DragGesture 首写、消费首次 Button 触发、平台 `buttonRepeatBehavior(.enabled)`；键盘仍由 NSStepper 桥接，未改首次触发、重复或取消语义。`adjust` 的 attachment 防线、窗口拆离同步失效及 dismantle 清理原样保留。本轮没有证明公共重复缺陷，不提出生产修复。由于持续按压门槛失败，增/减对照、第二时长、接近上下限、按住中禁用、释放、移出/重入和卸载后迟到写入均未进入本轮系统验证；历史合成回归仍保留其原有证据层级。没有设置或放宽任何时间容差。
+
+**唯一后续建议**：在具备可靠释放与时间记录的人工/平台条件下，沿原完整正常 PrivacyQA、独立标识/目录、合成 Binding、串行焦点测试及同一 `build/.build.lock` 的 900 秒有界等待，先只挂裸 NSStepper；预先固定中间值 500、范围 0...1000、步长 10、增加方向、按住 1.2 秒、2 个试次，读取默认配置并记录窗口身份/实际按钮位置、实际 down/up 与每次 action 的单调时间和值，确认确实自动重复且释放后停止后，才另行推进同输入路径/宿主/焦点条件的公共对照。这里的次数和时长仅为后续固定预算，不是本轮执行结果；若仍无自动重复就停止，不追加试次直到结果相同。
+
+**隔离与验证**：本轮在能力门槛处停止，没有启动 QA/日用应用或申请构建锁，因此 900 秒等待、正常目标编译与串行窗口运行均未执行；不是改用另一把锁。未增加 Swift 测试，不重跑明知无法建立基线的 syntheticHoldComparison，SwiftLint、定向 Swift 测试和应用构建不适用于本次仅记录修改。`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`（227 项脚本测试）及 `git diff --check` / `git diff --cached --check` 均通过。最终生产/测试目录内容、暂存条目及暂存差异摘要与本轮开始一致；移除本节后的工程记录摘要也与编辑前相同，保留了既有及并发修改。静态检查不证明长按通过。指定 Cursor verifier、真人辅助功能及其他历史缺口分别保留，不替代、不宣称通过。未操作真实数据、系统剪贴板、偏好、权限或签名；不提交、推送、安装、发布，记录完成后停止。
+
+## 第十阶段 K：密码确认字段同值重试残留诊断
+
+2026-10-06，本轮仅补测试与本记录，未修改生产安全流程。直接使用 `PrivacyPasswordSheet`、原 `PasswordSheetProbe` / `PrivacyButtonSheetHost` 和可控制的合成异步 action；`DaybookSecureField` 与裸 `SecureField` 的局部绑定对照另列，不能替代生产 sheet。第七阶段 B 的失败、已知问题标记及不同值通过记录全部保留。
+
+**范围与身份**：启动时工作区已有大量前期及并发差异，逐文件记录全部生产 Swift 摘要和暂存差异摘要；本轮未暂存。两处生产输入链 SHA-256 分别为 `PrivacyPasswordSheet=c940dd00ed715152e85b0826c48404442acd64e0c45ce61a3036ebc47d3dca4b`、`DaybookSecureField=cc9cd61edf726fdd49f303b455c2d80333fdc19d0078e60e79de8d0bd0327185`。只增加 [诊断矩阵](../AreaChainTests/Features/PasswordRetryDiagnosticTests.swift)、[分层取样与局部绑定探针](../AreaChainTests/Features/PasswordRetryDiagnostics.swift)，在原 [测试支持](../AreaChainTests/Features/SecureInputTestSupport.swift) 增加 action 入口观察和另一合成输入的布尔核对。原 `Secure.enter/fill`、原同值用例及所有生产源码不改。
+
+**隔离与次数**：macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113），完整正常 PrivacyQA 目标，`build/PrivacyQA-SecureInput10K`、`com.areachain.privacy-qa`、临时签名、生产 sandbox entitlement、LSUIElement=NO；只由 XCTest 启动。沿 `build/.build.lock` 单次900秒有界等待，四个运行均正常取得原锁，清除全部六项真实钥匙串授权变量，测试串行、焦点门禁不跳过。固定预算先为原同值用例两配置各3轮，再为生产矩阵24场景及局部对照4场景；观察器问题修正后追加一次完整复核及原定向回归。最后发现Return已经清除残留，只增加预先限定的两个无Return取消场景，不因结果失败再反复重跑。
+
+| 运行包（均在 build） | 实际结果与归属 |
+| --- | --- |
+| SecureInput10K-baseline.xcresult | 原用例两双字段配置各3/3复现，共6次 Expected Failure；字段长度均为 `[0,15]`、编辑器为 `[-1,15]`，0正常通过、0环境失败、0跳过。退出0不能代表清空通过。 |
+| SecureInput10K-diagnostic.xcresult | 2方法/28场景：20正常通过、4 Expected Failure、4失败、0跳过。双字段API同值6/6残留；其中2场景另有选区测试假设失败。单字段API同值2/2残留并有同一选区假设失败。键盘同值8/8未复现；双字段不同值/无busy输入的API和键盘共8场景未复现；局部4场景只作诊断记录通过。 |
+| SecureInput10K-verification.xcresult | 修正观察器后6方法/40场景：30正常通过、8 Expected Failure、2失败、0环境失败/跳过。矩阵仍为双字段API同值6/6、单字段2/2残留；键盘同值8/8、双字段不同值/无busy输入8/8未复现。两失败只剩单字段残留原断言，选区/按钮假设错误已消除。原 busyFailureRetryAndParentClose 四配置、returnPathsAndIdleCancel 四配置及 externalUpdateEchoComparedWithNative 两配置通过；原同值两配置仍是已知失败。 |
+| SecureInput10K-cancel.xcresult | 最终只调整r3取消分支顺序并定向复核2场景：均先确认稳定残留，再直接取消、重开为空、action仍为2；2 Expected Failure来自保留的清空断言，0新增失败/环境失败/跳过。不是把重开为空算作原字段自然恢复。 |
+
+三轮诊断与一次取消补证合计76次测试执行，属于不同源版本及重复场景，不能写成76个独立需求通过。最终有效复核40+2次为30正常通过、10已知问题、2单字段残留失败。原标记保留间歇属性，但本次限定同值API重复中每次均复现，未发生环境失败。
+
+**阶段证据**：`SecureK` 日志只输出阶段、局部身份编号、布尔、次数及必要长度；不输出输入正文，不读取安全字段的明文 AX value。初次输入完成、第一次 submit 的同步返回/下一主队列/180ms/再等待600ms、busy输入、失败返回、同值重填、第二次 submit 的上述阶段及成功后分别记录。两字段身份持续为1和3，共用的活跃 fieldEditor 为2；切换编辑字段会改变 currentEditor 归属，没有重建控件。所有矩阵阶段 key=true、marked=false。首提交通常同步返回仍可读旧原生值，到下一轮/action入口已空，说明同步 getter 不能作为私有 State 的同步探针。
+
+第二次提交后，同值API的活跃末字段在下一轮、180ms及稳定阶段仍长15、等于合成样本，editor亦长15；双字段为确认字段，单字段为自身。成功返回后仍可观察到残留。图像 `build/SecureInput10K-visuals/diagnostic` 中双字段及单字段API残留为遮蔽圆点，键盘对照为占位符。它们是 `cacheDisplay` 原生缓存绘制，不证明系统合成器或真人看到的实际窗口；不能称纯像素残影，也不称数据泄露。
+
+**宿主与绑定边界**：生产私有 `password/repeated/busy` 未被安全直接读取。源码先捕获 input，再清两字段，最后启动 Task；原生 getter、按钮及 action 只提供间接证据，不能把按钮禁用写成 repeated 已空。独立局部探针能直接记录自己的绑定：API整串同值插入明确触发 same=true 的 setter（不是完全没有 Binding 更新）；随后绑定两值已空，原生末字段/editor仍长15，裸与公共 SecureField 都复现。键盘逐字对照没有这一残留。局部宿主不是生产 State，不能把这层直接证据移植为生产私有状态已经证明。
+
+**测试自身与实际影响**：API分支保留原点击/全量 `insertText`/180ms等待；逐字符键盘分支走原生选择及合成 NSEvent，每字符使用原180ms等待，不触碰剪贴板或强制失焦。提交鼠标序列与原 `Native.click` 相同，观察器增加下一主队列取样及稳定等待，没有增加提交、赋空、强刷或重建。残留是在任何后续Return、点击、删除及重开之前判定。action前两次均准确接收原样本；每轮矩阵22个后续输入场景准确接收另一合成样本；无额外action，全部重开为空。首轮新增观察器的 `accessibilityEnabled` 误用对象返回的 selector helper，导致记录全false，按钮结论全部作废；已改回原支持使用的KVC并校验读取有效及初次/重填为enabled。首轮“选择长度必大于0”也不成立，已保留失败并改为分开记录Return后、点击、选择、删除，选区只与当前editor的UTF-16长度比较。
+
+修正后证据：busy时Save/Cancel禁用、失败后恢复，重试清错误，成功后Save禁用而Cancel可用。成功后Return不增加action，却使仍有残留的字段及同一editor归零；随后选择长度本来就是0，不能归功于Delete。Return后的仅主字段输入仍禁用Save，这只证明该时点的guard，不能反推之前repeated为空。原r3在Return后才取消，因此最后把这个分支移到Return之前；仅定向重跑 `cancelResidualWithoutReturn(configuration:)` 两配置，日志从仍长15的 `7-success` 直接进入为空的 `9-reopened`，没有 `7-after-return`，关闭一次且不新增action。原四配置父回调关闭、取消/Return语义的定向回归同样保留。没有证据表明旧值错误提交。
+
+**判断与唯一建议**：已定位到“同值整串替换相关的原生同步边界”，不能认定公共外壳装配问题或纯测试误报。合成键盘与API对照同时改变入口、中间值和等待次数；不能把未复现扩写为真人输入已修复。唯一剩余取证建议：在现有局部绑定探针中固定 `insertText` 入口、实例、宿主清空和总等待策略，只比较整串同值覆盖与逐字符替换，以分离输入粒度与事件入口；此后再由主对话决定是否需生产修复。本轮不提出重建控件、禁用busy输入、改清空顺序或改安全状态所有权。
+
+独立只读复核检查了实际测试、直接生产链及逐轮日志，确认没有在残留取样前清空，也指出上述输入粒度与取样扰动限制；它不是历史指定 Cursor verifier 的替代。本轮未改公共生产契约，不宣称历史复核缺口已补齐。真实认证、密码修改、备份/恢复、文件面板、系统剪贴板、系统权限、真人输入法/键盘、系统合成器、安装、发布及全量应用测试均未执行。
+
+**验证与交付状态**：实际命令沿架构PrivacyQA参数，仅变更derivedData/resultBundle路径和上述 `-only-testing`，baseline另用 `-test-iterations 3`；没有排除正常目标源码。最终三文件严格SwiftLint、`python3 -B scripts/check_workflow.py`、`python3 -B scripts/quality_gate.py --profile static --format json`（含227项脚本回归）、差异检查均通过。完整编译保留原AX弃用等警告；新增场景列表的actor隔离警告已消除。最终复核全部生产Swift内容与启动摘要一致，暂存差异摘要一致；只编辑上述三个测试文件和本工程记录。四个运行的合成输入日志检查未发现样本正文。取证交付结束，缺陷未修复、归因仍保留上述唯一控制变量缺口；不把诊断失败改成通过，不继续生产实现、提交、推送、安装或发布。
+
+### K 补验：安全输入替换事务控制变量对照
+
+2026-10-06。承接上节唯一控制变量缺口；上节的历史复现、混合入口限制和失败不删除。本轮只增补原三个测试文件及本记录，没有修改生产安全输入、密码清空或认证。沿 `PasswordBindingProbe` / `PasswordBindingContent` 增加单字段模式和局部合成 action 阶段；它不调用认证，也不读取或证明生产私有 State。原两字段/键盘矩阵不重跑，原 `Secure.enter/fill` 和生产同值用例原样保留。
+
+**固定控制变量**：裸 `SecureField` 与 `DaybookSecureField` 分别建立干净单字段夹具，各条件预定3轮；一轮从准备到残留判定始终同一窗口、字段、editor，无重新点击、Return、Delete、pasteboard、直接设置原生 stringValue 或失焦。统一使用原合成样本（15个扩展字素、17个UTF-16单元），初次整串输入 → 宿主第一次清空/局部 action 等待 → busy整串输入 → 失败完成 → 对照重填 → 宿主第二次清空/局部 action 等待。成功完成只在结果之后，释放夹具不计为恢复。
+
+| 条件 | 同一公开 insertText 入口中的操作 | 重试调用/不同中间全文数 | 公共组件：观测/清空通过 | 裸字段：观测/清空通过 |
+| --- | --- | --- | --- | --- |
+| A | 整串同值覆盖原整段 | 1 / 0 | 3 / 0 | 3 / 0 |
+| B | 顺序按完整字素原位替换相同字符 | 15 / 0 | 3 / 0 | 3 / 0 |
+| C | 首字替换整段，随后尾部追加其余字素 | 15 / 14 | 3 / 3 | 3 / 3 |
+
+A/B结果相同后才通过独立 `-only-testing` 执行预定C，没有按失败追加次数。C的条件运行由本次命令选择保证，不是测试方法自身的自动分支门禁。`characterRanges` 使用 String 字素边界转换为 NSRange，原样本范围回转/连续/完整覆盖测试通过；不扩展字符材料。各轮重试前选区统一为整段，重试后均为 `{17,0}`。各组替换在同一个主线程操作段内完成，没有逐字180ms；每业务段只取同步、下一主队列、再等待180ms、再等待600ms四点，不强制布局或轮询到空。到结果均27次观测，缓存绘制后另读一次，不参与清空判定。
+
+**实际计数与时序**：A重试的两类原生通知（字段/editor）各增加1，B/C各增加15；A/B的 Binding setter 增量都是0，C公共组件为15次异值写入，裸字段为15次异值及15次同值写入。两种承载的最终行为一致，setter节奏并非完全相同。本轮没有再次点击或切换字段，所以这项0写入事实不能替换上节旧K中“同值setter已触发”的历史证据。A/B有原生通知并不代表一定写入 Binding。
+
+本机 macOS 26.6.2（25G83）arm64、Xcode 26.6（17F113），同一原样本、Debug QA、已经准备好编辑器后测得：重试操作段A为0.814–2.058ms，B为6.707–8.375ms，C为7.483–8.014ms；第二次清空到稳定取样A为794.218–803.369ms，B为794.472–806.349ms，C为806.001–815.409ms。数字包含诊断开销，只描述这6次/组的有限试验，不是性能预算或精确相同时序；没有额外延长等待来获得空值。
+
+**分层结果**：18轮均保持字段1/editor2、currentEditor存在、key/appActive/active为true、marked=false。A/B第二次宿主清空后，局部 Binding 已空，但同一原生字段/editor在下一队列、180ms及稳定点均长15且等于样本，选区仍为`{17,0}`。C已在下一队列清空，同一字段/editor到稳定点保持长0、选区`{0,0}`；清空后的两类原生通知各再增加1。所有局部合成 action 均严格为2次、两次输入正确、一次失败、两次宿主清空；不将这些计数移植为生产认证证据。
+
+18张稳定缓存图保存在 `build/SecureInput10K-control-visuals`，逐张汇总检查显示A/B仍为遮蔽圆点，C为占位符；缓存之后的原生空值布尔不改变。它们来自 `cacheDisplay`，透明背景和系统合成器不同，不证明真人看到的窗口、内存安全擦除或明文泄露。失败不是单纯绘制残影：字段和editor的原生内容本身未空。所有日志/断言仅输出布尔、必要长度、范围、次数与局部身份，未读取安全字段明文AX value；两包runner日志及本轮输出日志检查未发现合成样本正文，图像注释只有组别/承载/轮数。
+
+**运行与计数**：继续完整正常 PrivacyQA、`build/PrivacyQA-SecureInput10K`、`com.areachain.privacy-qa`、local临时签名、生产 sandbox entitlement、LSUIElement=NO、六项真实钥匙串授权变量清除和串行焦点测试。两次都用同一个 `build/.build.lock` 单次900秒有界等待，分别等待0秒、124.883秒后取得；没有删锁、排除源码或干预其他宿主。精确命令和日志保存在各包同名 `-command.json` / `.log`，runner输出在对应 `-diagnostics` 下。
+
+- `build/SecureInput10K-control-AB.xcresult`：2方法/3参数执行，字素范围1项通过，A/B方法的两承载参数失败；内部12轮全部观测完成，12个失败均为保留的原生清空要求，0前置/身份/焦点失败、0已知问题、0跳过。xcodebuild退出65，不能称AB验收通过。
+- `build/SecureInput10K-control-C-anchor.xcresult`：2方法/4参数执行；C两承载参数包含6轮全部清空通过。原生产同值用例两配置各1轮仍为 Expected Failure，原生长度`[0,15]`、editor长度`[-1,15]`；重试传参正确、各2次action，结果后的Return不新增action。包退出0不表示这两项清空通过。
+
+合计局部**18次观测完成、6次清空通过、12次清空失败**；另有2次生产锚点已知失败及1次字素范围检查通过，不能把方法数、参数执行数与内部试验轮数相加称全部通过。
+
+**解释与唯一建议：保留明确平台边界。** 单独改变替换粒度不足以消除残留。B/C等待与取样相同、重试输入段的调用及通知增量相同且操作耗时重叠，观察到的区别伴随不同中间值和异值 Binding 写入，不能仅归因于更多等待、更多调用或更多通知。重试输入段观察到 Binding 写入差异，随后宿主清空向原生缓存的同步结果不同，最终绘制与原生内容一致；这不确定平台内部差异的最早发生位置；裸与公共组件同样复现，不支持外壳特有缺陷。C同时改变首段替换/尾插范围与光标轨迹，通知的内部时序也未被精确控制；因此尚未缩小到SwiftUI/AppKit内部的唯一机制，也不能断言所有可恢复路径都必须经过异值中间态。
+
+当前风险证据是持续的遮蔽内容/原生缓存残留，可能误导用户对字段清空的判断；本轮生产锚点没有错误重试参数或额外action证据，不是完整认证链、敏感内存或真人输入验收。现有证据不足以选择生产同步/生命周期修复，不建议以强制重建、临时改值、重新赋空或测试屏蔽代替安全设计；本轮不提出或实施生产修改，也不再扩展材料/等待大矩阵。保留原失败门禁和上述平台边界，后续生产决策须单独定界与确认。
+
+**验证与保护**：最终三文件严格SwiftLint、工作流、静态质量门禁（含脚本回归）、工作树与暂存差异检查通过；完整正常QA编译及 `codesign --verify --deep --strict` 通过，原AX弃用警告保留。独立只读核验确认AB只有清空要求失败、C六轮通过及生产锚点已知失败计数，并指出新旧setter事实、C范围轨迹、通知统计阶段及观测计数须结合失败清单解释；它不替代历史指定Cursor verifier。全部551个生产文件最终内容与启动摘要一致。本轮未执行暂存/提交；期间外部并发提交与暂存改变了HEAD/index，当前暂存中的本轮四文件仍精确等于启动时的原文，本轮增补保持未暂存，未回退或覆盖并发状态。真实密码、认证、系统剪贴板、系统权限、真人IME、安装和发布均未操作。补验观测完成，A/B清空要求仍失败；完成后停止。
+
+## 第十阶段 I 修复二：剪贴板搜索保真输入
+
+2026-10-06。用户确认 mixed/exact/regex 均保留真实换行，字面反斜杠+n保持原字符，匹配器原 trim 与正则语义不变。实现只在 Browser 搜索选择 `.verbatim`，公开 NSLayoutManager 控制字符排版令编辑与非编辑均单行显示；原始字符、选区索引和撤销事务不作投影转换。默认捕获、四处普通搜索、新统一搜索、CaptureField 的 J 保护不扩修。
+
+证据保存在 `build/ClipboardVerbatimI2`。先用最小排版样例验证 CRLF/LF/Unicode 分隔符同一行且 storage 保真，再用原 DaybookTextField 验证 String/随机命名 pasteboard、UTF-16 光标及原生撤销重做，2 方法通过。初次样例编译因公开 API 的 Swift 类型名称修正后重跑；首次失败包保留。仅这些最小门槛通过后才接入生产 Browser。
+
+完整正常 PrivacyQA 应用/测试目标，沿 `build/PrivacyQA-SearchMultilineI` 独立目录、com.areachain.privacy-qa、local 临时签名、生产 entitlement、LSUIElement=NO、六项真实钥匙串变量清除、原 build/.build.lock 900秒单一有界等待与串行测试。所有内容为合成记录，原 ClipboardOptionsFixture 使用 pasteboard=nil 和安全 gate；onCommit 只记录合成ID。工作台与历史小窗父层参数已静态核对，未触发父层系统复制/粘贴。
+
+首轮 consumers 为23方法，21通过、2失败（4次参数失败）：三模式重新聚焦后尚未触发 AppKit begin-editing，以及一次未等待 SwiftUI 挂载便取字段。原 SearchMultilineMode/Boundary/Undo 三套全部通过，不能把新套件失败写成全绿。准备步骤改为沿原 settle 等待挂载；重新聚焦与恢复输入分开核对，实际插入后焦点传播、撤销原文、Escape 与提交次数仍严格断言。
+
+缓存图另发现 cell 非编辑文本与原生 editor 叠印。修复只让活跃字段由原 editor 绘制，增加活跃 cell 像素为空反例；没有替换 glyph 映射或改写正文。透明缓存图的深色空白区 alpha=8/255，不能把预览底色当作真实窗口不透明底色。非编辑文字绘制保持原外壳背景所有权。
+
+corrected 与 glyph-minimum 批次被并发 UnifiedSearchCompositionTestSupport 的 package 级 CGRect.center 编译错误阻断，均零执行；没有修改或排除该文件。所属并发修改修正后正常重试。最终 presentation-background 包为6方法／11次参数运行通过，零失败/跳过，包含原生最小门槛和生产 Browser。覆盖 String/命名 pasteboard、富文本选区替换、CR/LF/CRLF/其他换行、Unicode/emoji/组合字素/字面反斜杠、三模式精确结果、无效/零长度正则、trim边界、Return一次ID和参数、⌘Return/Shift+Return不新增提交、焦点/失焦/重开/Escape及合成组合取消。三轮撤销重做和UTF-16光标、换行后选择/编辑、长查询末端可达均通过。双语×浅深色×380/440pt产出16张编辑/非编辑缓存图，保持高度和边界；缓存图不是窗口合成器或真人输入法证据。
+
+最终 regression-final 包为75方法／186次运行全部通过，零失败/跳过；包含 SearchMultilineModeTests、SearchMultilineBoundaryTests、SearchMultilineUndoTests、CaptureSubmissionTests、CaptureShortcutBoundaryTests、MenuBarCaptureSubmissionTests、DaybookTextFieldTests/SearchTests、DaybookFormTextFieldTests、DaybookSecureFieldTests、UnifiedSearchInputTests，以及原 ClipboardQueryMode/Boundary/HistoryRules 测试。与最终呈现包合计81方法／197次运行；重复批次和内部循环不累加。默认捕获首行/备注、四处普通搜索逐换行标量空格、统一搜索专用分支、J的组合态两条提交保护均有本轮回归证据。
+
+本轮11个相关Swift文件严格局部SwiftLint通过；工作流、静态质量（含227项脚本回归）、工作树/暂存差异检查通过，新文件空白单独检查。正常完整QA编译及 `codesign --verify --deep --strict` 通过；Debug构建及静态验签通过，最终追加构建结果见 `debug-final.log`。所有精确命令、失败包、最终summary/tests树、缓存图和源码摘要均在上述build目录。原锁等待后正常取得，未移除锁或干预持有者；并发工作区与暂存改动保留。**交付状态：实现及本轮自动验收通过，指定复核与人工/系统证据仍为partial。** 指定 Cursor verifier 当前不可调用，保留复核缺口，不重复认证或替换；真实系统粘贴与真人 IME 不由命名 pasteboard 和程序化组合文本代替。未提交、推送、安装、发布或修改真实数据、系统剪贴板、个人签名及权限。
+
+
+## 第十阶段 J：捕获按钮组合文本提交保护
+
+2026-10-06。最小生产改动仅 CaptureField：按钮 action 与原生回调共用 `submitDiary()`，动作时从既有 autocomplete 弱编辑器关联读取原生保护状态；关联与原始提交语义见[组件目录](component-catalog.md#第十阶段-j捕获按钮组合文本提交保护)。共享 DaybookTextField、插入/换行事务、CommandReturnButton、ShortcutStore 和 AppShortcutModifier 均未修改。
+
+**修复前证据**：`build/CaptureStageJ-baseline.xcresult` 的精确筛选未命中（0测试），不能作通过证据。随后 `build/CaptureStageJ-reproduction.xcresult` 完整运行 SearchMultilineModeTests，7方法/32次参数运行，其中31通过、capture原有已知失败1次。原生产 CaptureField 建立 marked、外部 Binding 更新 EXTERNAL、原队列 ⌘Return 后，记录 `native=0, diary=1, todo=0`；编辑器仍为 `甲\n乙`、marked=true、UTF-16选区{3,0}，草稿EXTERNAL、编辑器身份均保留，确认按钮绕过字段保护。原失败包和 diagnostics 保留，不再扩大 withKnownIssue。
+
+**首次修复验证**：`build/CaptureStageJ-core.xcresult` 15方法/45次运行，43通过、2失败、0已知问题/跳过。原capture已变严格通过，菜单栏四种语言/主题组合及搜索/筛选6次通过。新增测试两处前提不成立：双窗口回切时额外原生鼠标点击正常完成组词，随后一次提交合法；撤销探针只设置外部初值，未建立原生编辑会话。测试改为明确断言正常完成后的提交，以及先真实插入、确认自有编辑器关联再测试undo/redo中间态，并补原插入历史往返；未改生产修复或放宽焦点/组合保护断言。
+
+`build/CaptureStageJ-final-core.xcresult` 随后17方法/47次运行，46通过、1失败；上述双窗口与撤销前提已严格通过，唯一失败是新增快捷键测试误期望图形回车符。产品原显示为 `⌘⇧Return`／`⌘⇧回车`；按原本地化修正测试后，`build/CaptureStageJ-regression.xcresult` 70方法/147次运行全部通过，0失败/已知问题/跳过。覆盖 CaptureShortcutBoundaryTests、CaptureOverlayLayoutTests、SearchMultilineUndoTests/BoundaryTests、DaybookTextFieldSearchTests/Tests、InputSyntaxInteractionTests、DaybookFormTextFieldTests、UnifiedSearchInputTests、MenuBarSearchShortcutTests、ShortcutCatalogTests/StoreTests、ShortcutsPageTests；仅从此次计划中排除两组大材料循环，没有降低断言或扩大已知问题。
+
+**最终自动验收通过，原 capture 已知缺陷在当前程序化组合＋原生队列证据范围内关闭。** `build/CaptureStageJ-acceptance.xcresult` 使用最终源码运行 SearchMultilineModeTests、CaptureSubmissionTests、MenuBarCaptureSubmissionTests：15方法/45次全部通过。与最终 regression 包合计 **85方法/192次运行，0失败、0已知问题、0跳过**；不累加此前重复/失败包。
+
+原队列外部草稿＋marked 场景严格零提交，既有已提交前缀再组词、取消/完成后一次提交、按钮AX动作、原生字段先收到等效事件、真实合成鼠标与候选Return、搜索/筛选禁用入口均通过。双窗口中第二窗口正常提交不受第一窗口组合影响，第一窗口按钮仍受自身保护；鼠标正常结束组合后恢复一次提交。输入切换清掉原关联，卸载后队列不提交，重新挂载使用新字段。真实原生插入后undo/redo中间态按钮不提交，原始插入文本/选区和撤销历史往返保持。
+
+生产 MenuBarPopoverView 沿原保存入口、内存库及非私密合成内容，en/zh-Hans × light/dark、356/380pt：组合期间任务与手记数量不变，草稿、编辑器、组合区和选区保持；完成后仅新增一条手记、捕获草稿按原逻辑清空。搜索/筛选两种门控均未触发捕获。此处是合成原生交互证据，不声明人工视觉或真人输入法全矩阵通过。
+
+修复一关键回归包括四普通搜索中段UTF-16选区、反复undo/redo、队列⌘Z/⌘⇧Z及普通表单对照、捕获默认/首行备注政策、补全与统一搜索专用输入。共享三文件SHA-256与I最终记录一致；本轮源码摘要和最终实际命令在 `build/CaptureStageJ-source.json`、`CaptureStageJ-regression-command.txt` 与 `CaptureStageJ-acceptance-command.txt`，最终验收后摘要无变化。正常完整QA编译完成，原锁内 `codesign --verify --deep --strict` 通过、Bundle ID为com.areachain.privacy-qa、sandbox=true；静态签名不等于安装或发布。构建仍有既有SDK/actor警告，ad-hoc模式关闭Hardened Runtime的原提示保持。
+
+最终六个本轮Swift文件严格局部SwiftLint、static质量门禁（含226项脚本测试）、工作流及工作区/暂存区差异检查通过。指定 Cursor verifier 当前工具不可调用，保留复核缺口，不重复认证或替换机制。程序化 marked、进程内原生队列、原生字段等效、AX按钮动作与合成鼠标分别记录，不冒充桌面工具按键或真人IME；本轮未执行后两类验收。改绑/停用沿随机 UserDefaults＋fake注册的独立Store、原生字段和原快捷键测试；未通过私有shared改变生产按钮绑定，完整按钮改绑端到端保留缺口。
+
+只经 XCTest 启动正常完整 QA 目标，使用 build/PrivacyQA、com.areachain.privacy-qa、临时签名、生产sandbox entitlement、LSUIElement=NO，六项真实钥匙串授权清除和 build/.build.lock 的900秒单一有界等待。使用内存模型、随机偏好和非私密合成文本；无真实认证、系统集成写入、剪贴板新策略、安装或发布。原暂存及并发统一搜索改动保持。
+
 ## 第十阶段 I 修复一：普通搜索换行与撤销边界
+
+### 最终原生续验：自动回归收口（2026-10-06）
+
+**本轮修复一的授权自动验收已完成；首版中段重做和队列重做 11 次失败均有对应最终通过证据。** 指定 Cursor verifier、真人 IME、系统粘贴仍未完成，不能据此声明全部人工/复核验收通过。捕获按钮绕过 marked 保护的原有已知问题继续单列，不在本轮修复范围；剪贴板保真新政策和新统一搜索业务未接入。
+
+最终生产代码未追加修改，四个普通搜索与原生插入事务保持初始修复版本。队列问题最终定位为测试事件构造：仅填 characters/charactersIgnoringModifiers 的 NSEvent.keyEvent 合成方式可不派发 redo action；字符变化、菜单更新、补 keyUp、等待结果都未解决。独立原菜单 action 对照通过；随后仅通过 XCTest 启动 QA，桌面工具向该既有 QA 窗口投递 ⌘Z/⌘⇧Z，`dispatch-desktop-live` 严格文本/光标/焦点通过，收到的字段为 z/z 与 z/Z。由此避免误改生产事务或菜单。
+
+最终 `SearchMultilineBoundaryTests.key` **只对本轮撤销/重做键**采用 CGEvent 键盘构造再转 NSEvent，仍经原 NSApp.postEvent 入队；不调用 CGEvent.postToPid 或系统投递，不要求权限。实际事件窗口和 keyCode、一次接收、修饰键及 Shift 字符字段均严格校验。其余按键构造保持，文本、查询、回调、选区和焦点断言未放宽，未清撤销历史、替换编辑器或异步补写。三轮队列回归进一步核对同一 editor/firstResponder 和 active/key。临时桌面等待用例、探针、菜单控制及替代队列实验已全部撤回；只保留原单入口门槛、普通表单对照和窄的事件构造修正。
+
+所有最终结果、源码摘要和命令在 `build/SearchMultilineIRepair/native-final-*`；沿原 PrivacyQA 正常完整目标、独立 Bundle ID/DerivedData、临时签名、生产 sandbox entitlement、六项钥匙串变量清除和原 build/.build.lock 的单一有界等待。等待期间不编译，取得锁后才执行，失败或结束释放；未删换锁或干预持有者。原测试只使用合成数据，命名 pasteboard 随机隔离，没有使用系统剪贴板。
+
+| 最终证据 | 实际结果 |
+|---|---|
+| `native-final-core.xcresult` | 4 方法/4 次通过：visible/key/active 小场景、workspace 中段、workspace 队列、普通表单队列。清理后的最终测试版本，不沿用诊断结果。 |
+| `native-final-consumers.xcresult` | 六个 SearchMultiline 文件的全部测试（其中两文件是支持代码）：23 方法/120 次参数运行，118 通过、1 个原有 capture 已知问题、1 次 capture 场景取编辑器时 key-window 准备失败。所有中段/队列撤销重做、四搜索实际结果及输入材料通过。 |
+| `native-final-focus-recheck.xcresult` | 原 returnWhileMarkedDoesNotSubmit 方法的 6 个消费者全部通过，严格重验前包的准备失焦；没有跳过或删除断言。前包的 1 次环境准备失败单独保留，不算产品失败。 |
+| `native-final-original-regression.xcresult` | 37 方法/52 次全部通过，0 失败/跳过：DaybookTextFieldTests、DaybookTextFieldSearchTests、InputSyntaxInteractionTests、DaybookFormTextFieldTests、FormInputConsumerBaselineTests、TagFormInputConsumerTests、ClipboardFormInputTests、UnifiedSearchInputTests。 |
+
+按最终同源码的场景去重合计 **60 方法/172 次参数运行：171 通过、1 个既有已知问题，新增产品失败 0、未关闭环境失败 0、跳过 0**。核心 4 次和组合文本重验的重复 5 次不累加。材料循环另计：7 消费者×2 导入路径×17 材料=238，6 消费者×17 撤销材料=102，生产导入对照 10，剪贴板模式对照 12，共 362 次；另有非材料往返 66 轮（原参数与单入口门槛），静态捕获材料对照 7 次，不混算测试参数运行数。捕获默认首行/备注规则、剪贴板当前模式与普通表单保持原语义。
+
+最终四包的全部生产/测试 Swift 摘要与 `native-final-source.json` 一致；DaybookTextField=`8787c3ae18c6decdece5529c6ab4d47cadd10a4d63cbf25cd4b7fe9705cd95b1`、DaybookTextEditing=`46d7b3924bbbbe912a43c2efa4d897bcd4aa390e29bd8ec97b1ace54c6a1e9fc`、DaybookNativeTextInput=`06ee2e626d06574a3e889001752ac6b8ca06deed6c08fa4c08c73a9ec84a151d`。完整正常测试目标已编译，QA `codesign --verify --deep --strict` 通过；15 个相关 Swift 文件严格 SwiftLint、静态质量、工作流与差异检查通过。无新增生产修改，不重复生产构建/安装。并发暂存变化原样保留，本任务没有执行暂存、提交、推送、安装或发布。
+
+过程失败不抹除：历史锁屏 52 次、此前零运行、先前菜单路由诊断失败分别见下文。此次 dispatch-trace/submenu-update 仍复现队列问题；菜单控制与 delegate 诊断曾遇两次并发新统一搜索编译阻断，外部修正后同轮继续。dispatch-delegate-ready 的原菜单直接动作通过、队列失败；dispatch-wait-result 仍失败；dispatch-process-fields 证实 QA 沙盒内系统投递未收到事件。两次桌面对照未在时间窗内获得外部按键，均保留为外部驱动未就绪，最终 desktop-live 才实际通过。上述诊断或准备失败都不混入最终有效回归；底层合成事件工厂的具体私有实现差异未推测为产品事实。
+
+交接时并发方又新增/修改新统一搜索业务文件，差异另存 `native-handoff-source-changes.json`；本轮 Daybook 输入实现与直接测试未再变化，以上验收绑定 `native-final-source.json`，不冒充后续并发业务快照的全仓验收，也不追改其实现。
+
+本轮到此停止。指定 Cursor verifier 当前不可调用，未认证或替换机制；独立只读探索只提供定位线索。真人 IME、系统粘贴和生产真实数据仍未验，剪贴板新策略不实施，原 capture 已知按钮问题不扩修。
+
+以下为初始修复及前期续验历史；其中 partial 和待验结论已由上节最终证据更新，历史失败仍保留。
 
 2026-10-05，实施范围限于原 DaybookTextField、SyntaxTextField、小型 DaybookTextEditing 支持及四个普通搜索显式选策。通知只同步原生值，禁止在 marked/undo/redo 中间态改写文本；提交转换走原生编辑事务，外部同步不登记撤销。政策与消费者契约见[组件目录](component-catalog.md#第十阶段-i-修复一普通搜索换行与撤销边界)。下节 I 诊断是修复前历史，不能作为修复后验收结论；冻结的残留特征保留，生产测试只要求严格恢复。
 

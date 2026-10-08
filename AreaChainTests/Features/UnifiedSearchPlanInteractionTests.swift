@@ -9,7 +9,13 @@ struct UnifiedSearchPlanInteractionTests {
         defer { fixture.stop() }
         let host = UnifiedSearchTestHost(results: fixture.controller, operations: true)
         defer { host.close() }
+        var focusLosses = 0
+        let focusObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification,
+            object: host.window, queue: .main) { _ in MainActor.assumeIsolated { focusLosses += 1 } }
+        defer { NotificationCenter.default.removeObserver(focusObserver) }
         try await host.start()
+        try #require(fixture.controller.operationVisible,
+                     "计划场景启动时显示门禁必须有效；focusLosses=\(focusLosses)，key=\(host.window.isKeyWindow)，active=\(NSApp.isActive)")
         let editor = try host.editor
         editor.insertText("/tasks/title", replacementRange: .init(location: 0, length: editor.string.utf16.count))
         try await host.settle()
@@ -17,6 +23,8 @@ struct UnifiedSearchPlanInteractionTests {
         try await host.settle()
         if fixture.controller.operations?.active == nil { try await host.key(36, "\r") }
         #expect(try fixture.draft.commandID.rawValue == "todo.title")
+        try #require(fixture.controller.operationVisible,
+                     "目录接受后显示门禁必须有效；focusLosses=\(focusLosses)，key=\(host.window.isKeyWindow)，active=\(NSApp.isActive)")
         try await host.clickResult("unified.plan.enqueue")
         let item = try #require(fixture.controller.plan?.items.first)
         #expect(fixture.controller.operations?.active == nil)

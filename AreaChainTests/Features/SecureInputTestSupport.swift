@@ -8,6 +8,45 @@ import Testing
 enum SecureInputTestSupport {
     typealias Native = SettingsButtonTestSupport
     static var sample: String { "  e\u{301} 中🧪 #!@\\()  " }
+    static var alternateSample: String { sample + "x" }
+
+    enum Replacement: String, Sendable {
+        case whole = "A", inPlace = "B", growing = "C"
+    }
+
+    struct ReplacementResult {
+        var calls = 0
+        var differentIntermediates = 0
+    }
+
+    /// 只枚举完整扩展字素；NSRange 用原字符串转换，避免拆开组合标记或代理对。
+    static func characterRanges(_ text: String) -> [NSRange] {
+        text.indices.map { NSRange($0..<text.index(after: $0), in: text) }
+    }
+
+    /// 三组共用公开输入入口；整段操作中没有 await、清空或原生 stringValue 赋值。
+    @discardableResult
+    static func replaceSample(_ mode: Replacement, in editor: NSTextView) -> ReplacementResult {
+        let text = sample
+        if mode == .whole {
+            editor.insertText(text, replacementRange: NSRange(location: 0, length: editor.string.utf16.count))
+            return ReplacementResult(calls: 1,
+                differentIntermediates: editor.string.utf8.elementsEqual(text.utf8) ? 0 : 1)
+        }
+        let ranges = characterRanges(text)
+        var result = ReplacementResult()
+        for (index, range) in ranges.enumerated() {
+            let character = (text as NSString).substring(with: range)
+            let target: NSRange
+            if mode == .inPlace { target = range }
+            else { target = NSRange(location: index == 0 ? 0 : editor.string.utf16.count,
+                                    length: index == 0 ? editor.string.utf16.count : 0) }
+            editor.insertText(character, replacementRange: target)
+            result.calls += 1
+            if !editor.string.utf8.elementsEqual(text.utf8) { result.differentIntermediates += 1 }
+        }
+        return result
+    }
 
     static func fields(_ window: NSWindow) -> [NSSecureTextField] {
         Native.elements(window.contentView).compactMap { $0 as? NSSecureTextField }.sorted {
@@ -60,10 +99,12 @@ final class PasswordSheetProbe {
     var completed = 0
     var dismissals = 0
     var correctInput = false
+    var alternateInput = false
     var correctAfterWait = false
     var emptyAtAction = false
     var closeOnComplete = false
     var pending: CheckedContinuation<Void, Error>?
+    var observeAction: (() -> Void)?
     weak var window: NSWindow?
     var confirmation: Bool { configuration % 2 == 0 }
     var title: LocalizedStringKey { configuration < 2 ? "privacy.master.label" : "privacy.backup.password.title" }
@@ -76,7 +117,9 @@ final class PasswordSheetProbe {
         calls += 1
         defer { correctAfterWait = input.utf8.elementsEqual(SecureInputTestSupport.sample.utf8) }
         correctInput = input.utf8.elementsEqual(SecureInputTestSupport.sample.utf8)
+        alternateInput = input.utf8.elementsEqual(SecureInputTestSupport.alternateSample.utf8)
         emptyAtAction = window.map { SecureInputTestSupport.fields($0).allSatisfy { $0.stringValue.isEmpty } } ?? false
+        observeAction?()
         try await withCheckedThrowingContinuation { pending = $0 }
     }
 

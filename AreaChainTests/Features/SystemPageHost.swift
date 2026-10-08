@@ -13,7 +13,8 @@ enum SystemPageHost {
         locale: String,
         size: NSSize,
         embedded: Bool = true,
-        prefs: AppPreferences? = nil
+        prefs: AppPreferences? = nil,
+        suppliedWindow: NSWindow? = nil
     ) -> NSWindow {
         let root = content
             .modelContainer(container)
@@ -23,7 +24,8 @@ enum SystemPageHost {
             .preferredColorScheme(scheme)
             .frame(width: size.width, height: size.height)
             .transaction { $0.disablesAnimations = true }
-        return makeWindow(root, size: size, appearance: NSAppearance(named: scheme == .dark ? .darkAqua : .aqua))
+        return makeWindow(root, size: size, appearance: NSAppearance(named: scheme == .dark ? .darkAqua : .aqua),
+                          suppliedWindow: suppliedWindow)
     }
 
     /// 动态偏好只沿生产 AppChrome 传播，不能被静态矩阵的 locale/主题/窗口外观覆盖。
@@ -40,14 +42,16 @@ enum SystemPageHost {
     }
 
     private static func makeWindow<Content: View>(
-        _ root: Content, size: NSSize, appearance: NSAppearance?, usesHostingController: Bool = false
+        _ root: Content, size: NSSize, appearance: NSAppearance?, usesHostingController: Bool = false,
+        suppliedWindow: NSWindow? = nil
     ) -> NSWindow {
         NSApp.accessibilitySetValue(true, forAttribute: NSAccessibility.Attribute(rawValue: "AXEnhancedUserInterface"))
         // 与生产 PanelWindowController 一致，preferredColorScheme 的撤销由 hosting controller 处理。
         let controller = usesHostingController ? NSHostingController(rootView: root) : nil
         let hosting = (controller?.view as? NSHostingView<Content>) ?? NSHostingView(rootView: root)
         hosting.safeAreaRegions = []
-        let window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered, defer: false)
+        let window = suppliedWindow ?? NSWindow(contentRect: NSRect(origin: .zero, size: size),
+                                                styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.appearance = appearance
         if let controller { window.contentViewController = controller }

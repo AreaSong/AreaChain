@@ -131,6 +131,12 @@ protocol TaskRepositoryProtocol: AnyObject {
     @discardableResult
     func addSubtask(to todoID: UUID, title: String) throws -> SubtaskItem
 
+    /// 结构化新增保留固定 ID，不重跑标题语法；旧调用继续使用 raw title 重载。
+    func addSubtask(_ params: CreateSubtaskParams) throws -> SubtaskItem
+
+    var subtaskMutationContext: ModelContext? { get }
+    func updateSubtask(id: UUID, update: SubtaskFieldUpdate) throws
+
     /// 切换子任务完成状态
     func toggleSubtask(id: UUID) throws
 
@@ -164,6 +170,16 @@ protocol TaskRepositoryProtocol: AnyObject {
 }
 
 extension TaskRepositoryProtocol {
+    var subtaskMutationContext: ModelContext? { nil }
+    func updateSubtask(id: UUID, update: SubtaskFieldUpdate) throws {
+        throw RepositoryError.invalidArgument("仓储未接入结构化子任务修改")
+    }
+
+    func addSubtask(_ params: CreateSubtaskParams) throws -> SubtaskItem {
+        // 未接入结构化创建的替身不能降级成随机身份或二次解析。
+        throw RepositoryError.invalidArgument("仓储未接入结构化子任务新增")
+    }
+
     func fetchTodos(withID id: UUID) throws -> [TodoItem] {
         try fetchAllTodos(includeDeleted: true).filter { $0.id == id }
     }

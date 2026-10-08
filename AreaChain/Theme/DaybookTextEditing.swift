@@ -5,9 +5,11 @@ import AppKit
 enum DaybookNewlinePolicy {
     case capture
     case searchWhitespace
+    case verbatim
 
     func submittedText(_ input: String, allowsShiftNewline: Bool) -> String {
         switch self {
+        case .verbatim: return input
         case .capture:
             return allowsShiftNewline ? input : DaybookTextField.sanitizeSingleLineText(input)
         case .searchWhitespace:

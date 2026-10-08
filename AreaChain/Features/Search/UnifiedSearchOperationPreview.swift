@@ -11,7 +11,10 @@ struct UnifiedSearchOperationPreview: View {
         let keySelection = controller.objectSelection
         let source = controller.buffer
         Group {
-            if controller.objectSelectionLocation != nil, let draft = controller.editingDraft,
+            if let picker = controller.tagSelection {
+                UnifiedSearchTagSetField(controller: controller, picker: picker)
+                    .background(DaybookPalette.cardSurface)
+            } else if controller.objectSelectionLocation != nil, let draft = controller.editingDraft,
                let command = CommandCatalog.standard.command(id: draft.commandID) {
                 UnifiedSearchObjectPicker(controller: controller, command: command)
                     .padding(DaybookSpacing.md)
@@ -71,7 +74,9 @@ struct UnifiedSearchOperationPreview: View {
                         }
                         validation(draft)
                     }
-                } else if let command = controller.browsedCommand, controller.editingPlanItem == nil {
+                } else if let command = controller.browsedCommand, controller.editingPlanItem == nil,
+                          !((controller.showsTaskTitle || controller.showsTaskField || controller.showsSubtask)
+                            && controller.settingExecution != nil) {
                     Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
                     Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)
                     ForEach(command.parameters, id: \.id) { parameter in
@@ -107,6 +112,7 @@ struct UnifiedSearchOperationPreview: View {
             if command.parameters.contains(where: {
                 !UnifiedSearchParameterContext.supports($0, command: command)
                     && !controller.supportsObjectField($0, command: command)
+                    && !controller.supportsTagField($0, command: command)
             }) {
                 Text("unified.operation.later").font(DaybookType.caption)
             }

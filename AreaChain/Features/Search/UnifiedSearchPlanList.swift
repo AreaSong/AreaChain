@@ -6,11 +6,16 @@ struct UnifiedSearchPlanList: View {
     @Environment(\.locale) private var locale
 
     var body: some View {
+        if controller.showsTaskChain { UnifiedSearchTaskChainSubmission(controller: controller) }
         if let plan = controller.plan, !plan.items.isEmpty {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            if controller.showsTaskCreate {
+            if controller.showsSubtask {
+                Text("unified.subtask.pending").font(DaybookType.caption)
+            } else if controller.showsTaskTitle {
+                Text("unified.title.pending").font(DaybookType.caption)
+            } else if controller.showsTaskCreate {
                 Text("unified.task.pending").font(DaybookType.caption)
             } else if controller.fileSettings != nil {
                 Text("unified.group.planHint").font(DaybookType.caption)

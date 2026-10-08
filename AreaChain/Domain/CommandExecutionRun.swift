@@ -323,6 +323,55 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
 }
 
 extension CommandExecutionRun {
+    mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        if units[index].receipt == nil, let result {
+            if result == .noChange {
+                units[index].state = .succeeded
+                units[index].receipt = .init(attempt: attempt, result: result)
+            } else { try receive(.init(attempt: attempt, result: result)) }
+            if facts.conflict { units[index].state = .conflict }
+        }
+        units[index].subtask = facts
+    }
+
+    mutating func recordTaskField(_ facts: CommandTaskFieldFacts, attempt: CommandAttemptStamp) throws {
+        guard attempt.execution == stamp, attempt.phase == .local, snapshot.items.count == 1,
+              let item = snapshot.items.first, item.id == attempt.unitID,
+              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
+              units[index].attempt == attempt.number, units[index].currentPhase == .local else { throw CommandExecutionError.stale }
+        try CommandTaskFieldPreview.validate(item)
+        guard item.draft.targets.objects.first?.id == facts.targetID, outputs.isEmpty else { throw CommandExecutionError.invalidResult }
+        if let previous = units[index].taskField {
+            guard previous.targetID == facts.targetID, previous.state == .pending || previous.state == facts.state else {
+                throw CommandExecutionError.invalidResult
+            }
+        }
+        if units[index].receipt == nil {
+            let result: CommandExecutionResult
+            switch facts.state {
+            case .pending: units[index].taskField = facts; return
+            case .noChange:
+                guard facts.save == .notCalled, facts.publication == .notCalled,
+                      !facts.refreshRequested, facts.authorizationRequest == .notCalled else { throw CommandExecutionError.invalidResult }
+                units[index].state = .succeeded
+                units[index].receipt = .init(attempt: attempt, result: .noChange)
+                units[index].taskField = facts
+                return
+            case .saved:
+                guard facts.save == .returned else { throw CommandExecutionError.invalidResult }
+                result = .committed(outputs: [:], external: [.taskPublication, .notification, .calendar])
+            case .unknown: result = .commitUnknown
+            case .notSubmitted:
+                guard facts.save == .notCalled else { throw CommandExecutionError.invalidResult }
+                result = .failedWithoutCommit
+            }
+            try receive(.init(attempt: attempt, result: result))
+            if facts.conflict { units[index].state = .conflict }
+        }
+        units[index].taskField = facts
+    }
+
     private func applyPreferenceGroupCommit(_ commit: CommandPreferenceGroupCommit,
                                            to unit: inout CommandExecutionUnit) throws {
         guard CommandPlanValidation.isPreferenceUnit(snapshot.items) else { throw CommandExecutionError.invalidResult }
@@ -364,8 +413,8 @@ extension CommandExecutionRun {
 extension CommandExecutionRun {
     /// 候选与 pending 不能发布输出；确定保存后仅允许补充发布事实，永不降级本地结果。
     mutating func recordTaskCreation(_ facts: CommandTaskCreateFacts, attempt: CommandAttemptStamp) throws {
-        guard attempt.execution == stamp, attempt.phase == .local, snapshot.items.count == 1,
-              let item = snapshot.items.first, item.id == attempt.unitID,
+        guard attempt.execution == stamp, attempt.phase == .local,
+              let item = try taskMutationMember(attempt.unitID), item.id == attempt.unitID,
               let index = units.firstIndex(where: { $0.id == attempt.unitID }),
               units[index].attempt == attempt.number else { throw CommandExecutionError.stale }
         try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true)
@@ -398,5 +447,50 @@ extension CommandExecutionRun {
             try receive(.init(attempt: attempt, result: result))
         }
         units[index].taskCreation = facts
+    }
+}
+
+extension CommandExecutionRun {
+    mutating func recordTaskTitle(_ facts: CommandTaskTitleFacts, attempt: CommandAttemptStamp) throws {
+        guard attempt.execution == stamp, attempt.phase == .local,
+              let item = try taskMutationMember(attempt.unitID), item.id == attempt.unitID,
+              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
+              units[index].attempt == attempt.number, units[index].currentPhase == .local else {
+            throw CommandExecutionError.stale
+        }
+        let target = snapshot.items.count == 1 ? try CommandTaskTitlePreview.input(item: item, hostID: snapshot.stamp.hostID).target
+            : resolvedInput(item.id)?.targets.objects.first
+        guard target?.id == facts.targetID, snapshot.items.count == 2 || outputs.isEmpty else { throw CommandExecutionError.invalidResult }
+        if let previous = units[index].taskTitle {
+            guard previous.targetID == facts.targetID,
+                  previous.state == .pending || previous.state == facts.state else { throw CommandExecutionError.invalidResult }
+        }
+        if units[index].receipt == nil {
+            let result: CommandExecutionResult
+            switch facts.state {
+            case .pending:
+                units[index].taskTitle = facts
+                return
+            case .noChange:
+                guard facts.save == .notCalled, facts.publication == .notCalled, facts.savedTagEffects == nil,
+                      !facts.refreshRequested, facts.authorizationRequest == .notCalled else {
+                    throw CommandExecutionError.invalidResult
+                }
+                units[index].state = .succeeded
+                units[index].receipt = .init(attempt: attempt, result: .noChange)
+                units[index].taskTitle = facts
+                return
+            case .saved:
+                guard facts.save == .returned else { throw CommandExecutionError.invalidResult }
+                result = .committed(outputs: [:], external: [.taskPublication, .notification, .calendar])
+            case .unknown: result = .commitUnknown
+            case .notSubmitted:
+                guard facts.save == .notCalled else { throw CommandExecutionError.invalidResult }
+                result = .failedWithoutCommit
+            }
+            try receive(.init(attempt: attempt, result: result))
+            if facts.conflict != nil { units[index].state = .conflict }
+        }
+        units[index].taskTitle = facts
     }
 }

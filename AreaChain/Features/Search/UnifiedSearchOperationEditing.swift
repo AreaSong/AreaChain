@@ -91,7 +91,8 @@ extension UnifiedSearchController {
                                  text: text ?? command.path)
         }
         let draft = CommandDraft(id: UUID(), hostID: source.lease.ownership.hostID, commandID: id,
-            baseline: id.rawValue == "todo.create" || localSettings?.supports(id) == true ? .init() : syntheticBaselines[id] ?? .init(),
+            baseline: ["todo.create", "todo.title"].contains(id.rawValue) || routesTaskField(id) || routesSubtask(id) || localSettings?.supports(id) == true
+                ? .init() : syntheticBaselines[id] ?? .init(),
             arguments: argument.map { [$0] } ?? [])
         return sendOperation(.start(expectedRevision: state.revision, draft), source: source, text: text ?? command.path)
     }
@@ -118,8 +119,12 @@ extension UnifiedSearchController {
         guard validatesParameterSource(source, parameter: argument.parameter), let stamp = source.operation,
               let command = editingDraft.flatMap({ CommandCatalog.standard.command(id: $0.commandID) }),
               let parameter = command.parameters.first(where: { $0.id == argument.parameter }),
-              UnifiedSearchParameterContext.supports(parameter, command: command),
+              UnifiedSearchParameterContext.supports(parameter, command: command)
+                || supportsTagField(parameter, command: command),
               argument.operation == .unspecified || parameter.operations.contains(argument.operation) else { return nil }
+        // ID 集合只能由真实候选确认写入；普通字段入口仅允许切换标签操作。
+        if parameter.type == .tags, let value = argument.value,
+           value != editingDraft?.arguments.first(where: { $0.parameter == .tags })?.value { return nil }
         if let value = argument.value, !CommandArgumentValidation.accepts(value, type: parameter.type) { return nil }
         let mainSource = buffer // 同步核验后的同一个 lease/stamp；不跨 await，不接收旧事件续租。
         let updated = sendOperation(.edit(stamp, argument), source: mainSource)

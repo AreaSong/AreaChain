@@ -15,6 +15,26 @@ final class UnifiedSearchController {
     var taskCreatePreparation: CommandTaskCreatePreparation?
     var taskCreateFailure: TaskCreateCommandIssue?
     var taskCreateVerification: CommandTaskCreateVerification?
+    var taskTitlePreview: CommandTaskTitlePreview?
+    var taskTitleAcceptance: CommandTaskTitleAcceptance?
+    var taskTitleFailure: String?
+    var taskTitleVerification: CommandTaskTitleVerification?
+    var taskFieldPreview: CommandTaskFieldPreview?
+    var taskFieldAcceptance: CommandTaskFieldAcceptance?
+    var taskFieldFailure: String?
+    var taskFieldVerification: CommandTaskCreateVerification?
+    var subtaskPreview: CommandSubtaskPreview?
+    var subtaskAcceptance: CommandSubtaskAcceptance?
+    var subtaskFailure: String?
+    var subtaskVerification: CommandTaskCreateVerification?
+    var chainCreationPreparation: CommandTaskCreatePreparation?
+    var chainFailure: String?
+    var taskCompositionPreview: CommandTaskCreatePreview?
+    var taskCompositionAccepted: CommandTaskCreatePreparation?
+    var compositionFailure: String?
+    var tagSelection: UnifiedSearchTagSelection?
+    var tagReturnRevision: UInt64 = 0
+    var tagReturnDraftID: UUID?
     var settingSubmitting = false
     var settingFailure: UnifiedSearchSettingFailure?
     var settingConfirmation: UnifiedSearchSettingConfirmation?
@@ -38,6 +58,10 @@ final class UnifiedSearchController {
     let inputReset = UnifiedSearchInputReset()
     @ObservationIgnored let coordinator: CommandHandoffCoordinator
     @ObservationIgnored let taskCreate: TaskCreateCommandAdapter?
+    @ObservationIgnored let taskTitle: TaskTitleCommandAdapter?
+    @ObservationIgnored let taskField: TaskFieldCommandAdapter?
+    @ObservationIgnored let subtask: SubtaskCommandAdapter?
+    @ObservationIgnored let taskChain: TaskChainCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -57,19 +81,27 @@ final class UnifiedSearchController {
     convenience init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
-         localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil) {
+         localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil,
+         taskTitle: TaskTitleCommandAdapter? = nil, taskField: TaskFieldCommandAdapter? = nil,
+         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil) {
         self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
-                  settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled, taskCreate: taskCreate)
+                  settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled,
+                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask)
     }
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
-         taskCreate: TaskCreateCommandAdapter? = nil) {
+         taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
+         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
         self.settingBackend = settingBackend
         self.taskCreate = taskCreate
+        self.taskTitle = taskTitle
+        self.taskField = taskField
+        self.subtask = subtask
+        self.taskChain = taskChain
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
         self.buffer = initial
@@ -95,7 +127,7 @@ final class UnifiedSearchController {
 
     func edit(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source) else { return nil }
-        guard objectSelection == nil, !objectSelectionLoading else { return nil }
+        guard objectSelection == nil, !objectSelectionLoading, tagSelection == nil else { return nil }
         if let context = inputParameterContext { return editParameterText(request, context: context, mainInput: true) }
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
@@ -133,6 +165,16 @@ final class UnifiedSearchController {
     func intent(_ intent: UnifiedSearchIntent, source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
         if intent == .submit { requestOperationSubmit(source); return }
+        if let picker = tagSelection {
+            switch intent {
+            case .escape: cancelTags(picker.id)
+            case .open: acceptTags(picker)
+            case .results(let direction): moveTag(direction > 0 ? 1 : -1, picker: picker)
+            case .selectActive: if let id = picker.active { toggleTag(id, picker: picker) }
+            case .submit: break
+            }
+            return
+        }
         if let picker = objectSelection {
             switch intent {
             case .escape: cancelObjectSelection()
@@ -188,6 +230,11 @@ final class UnifiedSearchController {
     }
 
     func detach() {
+        chainCreationPreparation = nil
+        revokeSubtask()
+        revokeTaskField()
+        revokeTaskTitle()
+        revokeTaskComposition()
         cancelObjectSelection(returnFocus: false)
         task?.cancel()
         if let observer { session.displayUpdates.remove(observer) }
@@ -204,6 +251,16 @@ final class UnifiedSearchController {
             privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: owned.session.plan.stamp, planItem: editingPlanItem?.stamp)
         revision &+= 1
         taskCreateFailure = nil
+        chainCreationPreparation = nil
+        chainFailure = nil
+        revokeSubtask()
+        subtaskFailure = nil
+        revokeTaskField()
+        taskFieldFailure = nil
+        revokeTaskTitle()
+        taskTitleFailure = nil
+        revokeTaskComposition()
+        compositionFailure = nil
         settingFailure = nil
         settingConfirmation = nil
         fileSettingFailure = nil
@@ -243,6 +300,12 @@ final class UnifiedSearchController {
 
     private func changed(_ change: ContentQueryDisplayUpdates.Change) {
         revision &+= 1
+        // 普通查询的迟到失效通知可能来自刚完成的 enqueue；不可撤掉基于新 lease 准备的效果。
+        if change == .privacyInvalidated || !operationVisible { revokeTaskComposition() }
+        if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
+        if change == .privacyInvalidated || !operationVisible { revokeTaskField() }
+        if change == .privacyInvalidated || !operationVisible { revokeSubtask() }
+        if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)
             objectSelectionMessage = "unified.objects.stale"

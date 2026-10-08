@@ -133,6 +133,21 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         try execution!.verifyPreferenceGroup(receipt)
     }
 
+    mutating func recordTaskField(_ facts: CommandTaskFieldFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordTaskField(facts, attempt: attempt)
+    }
+
+    mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordSubtask(facts, attempt: attempt)
+    }
+
+    mutating func recordTaskTitle(_ facts: CommandTaskTitleFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordTaskTitle(facts, attempt: attempt)
+    }
+
     mutating func recordTaskCreation(_ facts: CommandTaskCreateFacts, attempt: CommandAttemptStamp) throws {
         guard execution != nil else { throw CommandExecutionError.stale }
         try execution!.recordTaskCreation(facts, attempt: attempt)
