@@ -57,7 +57,12 @@ struct UnifiedSearchObjectField: View {
                         }
                     }
                 }
-                Text("unified.objects.finalCheck").font(DaybookType.caption)
+                if location == .targets, objects.count == 1, let object = objects.first,
+                   object.type == .routineOccurrence, controller.routine?.supports(command.id) == true {
+                    UnifiedSearchRoutineOccurrenceDate(controller: controller, object: object, source: source)
+                }
+                Text(controller.routesBatch(command.id) ? "unified.batch.finalCheck" : "unified.objects.finalCheck")
+                    .font(DaybookType.caption)
             }
         }
         .onChange(of: controller.objectReturnRevision) { _, _ in

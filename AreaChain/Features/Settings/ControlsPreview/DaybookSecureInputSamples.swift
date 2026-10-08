@@ -1,6 +1,4 @@
-#if DEBUG
 import SwiftUI
-@testable import AreaChain
 
 /// 合成安全输入仅在原 ControlsPreview 展示；原生遮蔽，无认证或提交动作。
 struct DaybookSecureInputSamples: View {
@@ -23,4 +21,3 @@ struct DaybookSecureInputSamples: View {
         }
     }
 }
-#endif

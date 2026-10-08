@@ -112,13 +112,21 @@ final class ControlsPlatformPassword {
         record = nil
     }
 
-    var content: some View {
+    var content: some View { ControlsPlatformPasswordView(support: self) }
+}
+
+/// 让反馈在 SwiftUI body 内读取 Observation；一次性构造的 Text 不会随 Probe 更新。
+private struct ControlsPlatformPasswordView: View {
+    @Bindable var support: ControlsPlatformPassword
+    private var probe: PasswordSheetProbe { support.probe }
+
+    var body: some View {
         ZStack {
             VStack(spacing: 12) {
                 Text("K 合成密码验收 / Synthetic password QA")
                 Text("取消后可重开；这不能代替原字段自然清空。 / Reopening is a separate check.")
                 Button("重开密码窗 / Reopen password sheet") { self.probe.presented = true }
-                    .disabled(probe.presented || closed)
+                    .disabled(probe.presented || support.closed)
             }
             PrivacyButtonSheetHost(content: AnyView(sheetContent), onDismiss: { self.probe.dismissals += 1 },
                 presentation: Binding(get: { self.probe.presented }, set: { self.probe.presented = $0 }))
@@ -129,12 +137,12 @@ final class ControlsPlatformPassword {
         VStack(spacing: 0) {
             probe.content
             VStack(alignment: .leading, spacing: 6) {
-                Text("仅合成材料 / Synthetic only: \(Self.sample)").accessibilityHidden(true)
-                Text(replacement
-                     ? "同值覆盖：全选后由用户粘贴合成材料；不操作系统剪贴板。 / Select all and paste voluntarily."
+                Text("仅合成材料 / Synthetic only: \(ControlsPlatformPassword.sample)").accessibilityHidden(true)
+                Text(support.replacement
+                     ? "同值覆盖：全选后由用户粘贴合成材料；代理不读取或改写剪贴板。 / Select all and paste voluntarily."
                      : "逐字路径：全选后逐字键入合成材料。 / Select all and type each digit.")
-                Text(stage)
-                Text("action: \(probe.calls) · 等待 / remaining: \(remaining)s")
+                Text(support.stage)
+                Text("action: \(probe.calls) · 等待 / remaining: \(support.remaining)s")
             }.font(DaybookType.caption).padding(16).frame(width: 440, alignment: .leading)
         }
     }

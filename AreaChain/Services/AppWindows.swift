@@ -25,6 +25,11 @@ enum AppWindows {
         openWorkspace(tab: .settings)
     }
 
+    static func openControlsPreview(localeID: String, dark: Bool) {
+        activateForOpening()
+        ControlsPreviewWindowController.shared.show(localeID: localeID, dark: dark)
+    }
+
     static func revealWorkspace() {
         StatusItemController.shared.close()
         activateForOpening()
@@ -54,7 +59,7 @@ enum AppWindows {
         }
     }
 
-    /// 工作台和手记以外的可见窗口不要当成「下一扇」留在前台。
+    /// 登记窗口以外的可见窗口不要当成「下一扇」留在前台。
     static func hideStrayWindows(closing: NSWindow? = nil) {
         let panels = Set(panelWindows.map { ObjectIdentifier($0) })
         for window in NSApp.windows {
@@ -66,7 +71,8 @@ enum AppWindows {
     }
 
     private static var panelWindows: [NSWindow] {
-        [PanelWindowController.workspace.hostedWindow].compactMap { $0 }
+        [PanelWindowController.workspace.hostedWindow,
+         ControlsPreviewWindowController.shared.hostedWindow].compactMap { $0 }
             + (diaryWindowsProvider?() ?? [])
             + (clipboardWindowProvider?() ?? [])
     }

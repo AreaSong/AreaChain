@@ -7,7 +7,10 @@ import SwiftData
 final class RecurringToggleRepository: RoutineRepositoryProtocol {
     let context: ModelContext
     let base: SwiftDataRoutineRepository
+    var afterStateWork: (() throws -> Void)?
     var fail = false
+    var failRead = false
+    var routineMutationContext: ModelContext? { context }
     var creations = 0
     var switches = 0
     var reminderWrites: [Int?] = []
@@ -27,6 +30,11 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
         return value
     }
 
+    func applyRoutineState(_ accepted: CommandRoutineAcceptance) throws {
+        try base.applyRoutineState(accepted)
+        try afterStateWork?()
+    }
+
     func setRoutineEnabled(id: UUID, enabled: Bool, todayKey: String) throws {
         switches += 1
         try ModelChanges.transaction(in: context, save: { context in
@@ -38,7 +46,8 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
     }
 
     func fetchRoutines(includeDisabled: Bool, includeDeleted: Bool) throws -> [DailyRoutine] {
-        try base.fetchRoutines(includeDisabled: includeDisabled, includeDeleted: includeDeleted)
+        if failRead { throw CocoaError(.fileReadUnknown) }
+        return try base.fetchRoutines(includeDisabled: includeDisabled, includeDeleted: includeDeleted)
     }
 
     func fetchRoutine(id: UUID) throws -> DailyRoutine? {

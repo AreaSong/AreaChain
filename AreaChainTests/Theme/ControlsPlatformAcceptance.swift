@@ -339,21 +339,11 @@ final class ControlsPlatformAcceptance {
         state.integer = 500
         state.trace = StepperEventTrace()
         stepper = state
-        let content = VStack {
-            Text("初值500，范围20…999，步长10。先按住增加后释放、静置2秒；重置后验证减少。只操作整数。")
-            if selection == .nativeStepper {
-                Text("NSStepper · \(state.integer)")
-                ControlsNativeStepper(state: state).frame(width: 24, height: 28)
-            }
-            else { DaybookStepperProbeView(state: state) }
-            ForEach([500, 990, 30], id: \.self) { initial in
-                Button("设为 / Set \(initial)") {
-                    guard self.stepper === state, self.state == .running || self.state == .windingDown else { return }
-                    state.integer = initial
-                    self.record("stepper-reset", ["value": initial])
-                }
-            }
-        }.padding()
+        let content = ControlsPlatformStepperView(state: state, native: selection == .nativeStepper) { initial in
+            guard self.stepper === state, self.state == .running || self.state == .windingDown else { return }
+            state.integer = initial
+            self.record("stepper-reset", ["value": initial])
+        }
         let window = fixture.window(content, locale: locale, scheme: scheme,
                                     size: NSSize(width: 600, height: 360))
         auxiliary = window
@@ -388,11 +378,17 @@ final class ControlsPlatformAcceptance {
     private func observeStepper(_ event: NSEvent) {
         guard let window = auxiliary, event.window === window, let stepper,
               let activeStamp, event.timestamp >= activeStamp.openedUptime else { return }
-        if event.type == .leftMouseDown,
-           ControlsStepperHit.contains(event.locationInWindow, in: window, native: opened == .nativeStepper) {
-            stepperPressed = true
+        // NSStepper 可能在内部 tracking 消费 mouseUp；返回后收到的其他 up 不能补造该次释放。
+        if opened == .nativeStepper, stepperPressed,
+           stepper.trace?.items.last?.kind == "native-trackingReturned" {
+            stepperPressed = false
+            stepper.trace?.mark("release-unobserved")
+        }
+        if event.type == .leftMouseDown {
+            stepperPressed = ControlsStepperHit.contains(event.locationInWindow, in: window,
+                                                         native: opened == .nativeStepper)
             releaseObservationAt = nil
-            stepper.trace?.mark("observed-down", eventTimestamp: event.timestamp)
+            if stepperPressed { stepper.trace?.mark("observed-down", eventTimestamp: event.timestamp) }
         } else if event.type == .leftMouseUp, stepperPressed {
             stepperPressed = false
             stepper.trace?.mark("observed-up", eventTimestamp: event.timestamp)

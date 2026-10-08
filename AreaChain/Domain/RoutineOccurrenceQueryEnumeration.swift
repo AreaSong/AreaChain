@@ -172,8 +172,8 @@ struct RoutineOccurrenceQueryEnumeration {
 
     private mutating func appendDiagnostics(_ read: RoutineCheckRead) {
         response.diagnostics += read.diagnostics.map {
-            .init(issue: .check($0), severity: $0 == .identicalDuplicates ? .warning : .error,
-                  affectsDetermination: $0 != .identicalDuplicates, object: read.object, inputIndices: read.inputIndices)
+            .init(issue: .check($0), severity: $0.affectsDetermination ? .error : .warning,
+                  affectsDetermination: $0.affectsDetermination, object: read.object, inputIndices: read.inputIndices)
         }
     }
 

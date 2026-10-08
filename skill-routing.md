@@ -1,5 +1,16 @@
 # AreaChain 技能路由与交付闭环
 
+安装脚本的原身份恢复改动沿 areachain-workflow → areachain-verify；复用原候选验签、安装锁、暂存替换和回退，仅以显式 `--previous-app` 提供可信原包身份。入口见[组件目录](docs/component-catalog.md#安装身份恢复入口)，参数与数据边界以[签名文档](docs/signing.md#原应用缺失时重装)为准。先做隔离脚本回归与只读预检；真实安装沿当前明确授权，数据重置、签名迁移和系统解锁不随之授权。指定 Cursor verifier 不可用时保留复核缺口，不用其他代理替代。
+
+## 设置控件预览功能
+
+本功能沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦 SwiftUI 状态身份与焦点）→ areachain-verify。正式设置入口复用同一 DaybookControlsPreview；迁移边界和窗口契约见[组件目录](docs/component-catalog.md#设置控件预览)，使用方法见[使用说明](docs/usage.md#8-偏好与系统设置)，实际证据见[工程记录](docs/engineering.md#设置控件预览2026-10-08)。
+
+本轮明确允许 XCTest 点击生产设置区并打开新生产预览窗；完整正常 PrivacyQA、原锁最多900秒、合成数据及六项钥匙串授权清除仍适用。旧 Gallery 平台工具、runner 与 Feature 验收留测试侧；历史桌面应用入口暂停不变。新窗口和共享展示仍指定 Cursor verifier 只读复核，不可调用时保留缺口，不用其他代理代替、不重复请求人工矩阵。无提交、推送、安装或发布。
+
+
+公共控件最终工程收口沿 areachain-workflow → areachain-ui（ui-ux-pro-max聚焦身份/焦点）→ areachain-verify，当前结论只见[原O总交接](docs/engineering.md#最终工程收口2026-10-08)。用户已确认上一轮人工操作正常，记录为人工确认通过；不重启Gallery，不重复旁白、取消、焦点、K输入或L操作，不补造日志。原P续验建议属于历史条件，不自动派生下一阶段；桌面入口暂停、完整正常PrivacyQA/XCTest、原锁900秒、合成数据与六项授权清除保持。指定Cursor不可用则材料就绪/复核未执行，不认证、安装或以其他代理替代。
+
 H 真实截止保存依赖验收沿 areachain-workflow → areachain-ui（ui-ux-pro-max 聚焦原生身份/状态）→ areachain-verify。只显式透传截止最终 save，复用原 ModelChanges.perform；[组件契约](docs/component-catalog.md#第十阶段-h真实截止详情的局部保存依赖)与[原 H 证据](docs/engineering.md#h-真实截止详情链的最小保存依赖与失败恢复验收2026-10-08)为唯一维护来源。完整正常 PrivacyQA/XCTest、原锁单次900秒、六项钥匙串变量清除、合成数据和串行事件保持；不启动 Gallery/桌面入口，不改事务或失败发布。两项嵌套 AX 继续精确复验并独立开放；指定 Cursor verifier 不可用保留材料与缺口，不认证或替代，整体 partial，不提交、安装或发布。
 
 第十阶段P沿 areachain-workflow → areachain-ui（ui-ux-pro-max仅补原生验收核对）→ areachain-verify；就地完善测试生命周期、逐事件/真实合成回调证据及原runner，不改生产。复用原interactiveGallery／SearchMultilineFixture、完整正常PrivacyQA、原锁900秒单一等待及六项授权清除；600秒内的30秒收尾期由测试支持集中维护。桌面入口（含旧app对象的AX/截图）继续暂停，无仅附着且绝不启动保证不得恢复；原生只由XCTest启动。自动/人工、平台能力、指定Cursor材料与H/K/L判定只维护在[原O内的P收尾](docs/engineering.md#第十阶段-p人工平台验收与最终交付判定)。人工准备不等于通过，重新确认当时方便才启动有界人工窗口；能力不可用不重复认证或替代指定复核。
@@ -377,3 +388,16 @@ Stepper 警告与 H 截止补证沿 areachain-workflow → areachain-ui（UI/UX 
 R-M1 旧习惯标题 Bool 嵌套兼容修复沿 areachain-workflow → areachain-verify；仅同步返回事实与旧映射，复用原事务、冻结算法及实际 Bool 消费者。修复、复现、定向服务/原生与完整QA证据只记在[权威修复记录](docs/unified-search-commands.md#旧习惯标题-bool-嵌套兼容修复2026-10-08)，O/H引用；不改命令 saved、H或Stepper。指定Cursor不可调用保留缺口，整体partial、用户未接受，不提交、推送、安装或发布。
 
 K真实输入、L持续按压与关键可访问性沿 areachain-workflow → areachain-ui（ui-ux-pro-max仅核对焦点与辅助语义）→ areachain-verify。复用ControlsPlatformAcceptance、原P runner及安全输入/Stepper测试支持，先短回归及清理再确认当时人工窗口；每批最多600秒含30秒收尾。桌面入口继续暂停，只有完整PrivacyQA/XCTest启动；不改生产安全、重复、保存或事务。测试入口见[组件目录](docs/component-catalog.md)，当轮人工/自动/未执行与K/L判定仅维护[原O/P续记](docs/engineering.md#剩余平台验收kl与关键可访问性2026-10-08)；指定Cursor不可用不替代，整体partial、用户未接受。
+
+## 统一搜索 R-M2 普通习惯结构化新增
+
+沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（UI/UX 聚焦原生校验，frontend-design 沿 Daybook）→ areachain-verify。原创建占用、目录合成、共同事务与参数组件复用见[组件目录](docs/component-catalog.md#r-m2-普通习惯结构化新增)，A～E 及启停／打卡兼容建议只维护在[权威 R-M2](docs/unified-search-commands.md#977-里程碑-r-m2普通习惯结构化新增与状态兼容核验)。启停／打卡仅只读与合成特征验证，不实现 handler 或迁移。完整 PrivacyQA、独立标识／目录、合成内存库、私有事件／fake 消费者、六项授权清除及原锁单次900秒保持；正常签名和指定 Cursor verifier 缺口独立，不认证或替代复核，不接生产或扩大多步／敏感／notes 边界。
+
+
+## 统一搜索 R-M3 习惯状态
+
+沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（UI/UX 聚焦稳定日期身份与滚动，frontend-design 沿 Daybook）→ areachain-verify。复用入口见[组件目录](docs/component-catalog.md#r-m3-习惯启停与指定执行日)，D1～D3批准、精确写集／共同提交／unknown和最终证据只维护在[权威 R-M3](docs/unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)。完整正常PrivacyQA、独立RM3目录／标识、合成内存库、私有事件／fake消费者、六项钥匙串变量清除、原锁单次900秒和串行原生保持；锁屏暂停焦点测试并继续独立事项。正常签名和指定Cursor复核不可用时分别保留缺口，不认证或替代，不接生产、真实数据、批量、多步、notes、敏感执行或执行后撤销，不提交／推送／安装／发布。
+
+## 统一搜索 B-M1 固定多目标
+
+沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份／焦点，frontend-design 沿 Daybook）→ areachain-verify。复用入口见[组件目录](docs/component-catalog.md#b-m1-固定多目标共同提交)，一个操作／固定集合／共同保存与 unknown 的唯一契约和证据见[权威 B-M1](docs/unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)。完整正常 PrivacyQA、独立 BM1 标识／目录、合成内存库、私有事件／fake 消费者、六项钥匙串变量清除、原锁单次900秒及原生串行保持。正常签名到期、指定 Cursor verifier、C2B 和人工／最低系统／多窗口缺口独立保留；不认证、续签或替代指定复核。不接生产、真实数据／系统、批量完成／启停、自动拆批、新多项计划、notes、敏感执行或执行后撤销，不提交／推送／安装／发布。

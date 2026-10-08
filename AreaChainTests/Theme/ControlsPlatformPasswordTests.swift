@@ -20,7 +20,10 @@ struct ControlsPlatformPasswordTests {
         try await SystemPageHost.settle(host)
         support.tick()
         #expect(host.attachedSheet == nil && support.probe.window == nil && support.probe.calls == 0)
-        support.probe.presented = true
+        try await SecureInputTestSupport.ready(host)
+        let reopen = try SettingsButtonTestSupport.button("重开密码窗 / Reopen password sheet", in: host)
+        #expect(reopen.value(forKey: "accessibilityEnabled") as? Bool == true)
+        try await SettingsButtonTestSupport.click(reopen, in: host)
         let reopened = try await FormInputTestSupport.sheet(in: host)
         support.tick()
         #expect(SecureInputTestSupport.fields(reopened).allSatisfy { $0.stringValue.isEmpty })
@@ -44,6 +47,8 @@ struct ControlsPlatformPasswordTests {
         }
         try await SecureInputTestSupport.click("common.save", locale: "zh-Hans", in: sheet)
         #expect(support.probe.calls == 1 && support.probe.correctInput && support.probe.pending != nil)
+        #expect(FormInputTestSupport.labels(in: sheet).contains { $0.contains("action: 1") })
+        #expect(FormInputTestSupport.labels(in: sheet).contains { $0.contains("等待30秒") })
         try SecureInputTestSupport.enabled("alert.cancel", false, locale: "zh-Hans", in: sheet)
         for index in 0..<2 {
             try await SecureInputTestSupport.enter(ControlsPlatformPassword.sample, index: index, in: sheet)
@@ -52,8 +57,10 @@ struct ControlsPlatformPasswordTests {
         try await SystemPageHost.settle(sheet)
         #expect(support.probe.pending == nil && support.probe.correctAfterWait)
         #expect(SecureInputTestSupport.hasError(sheet, locale: "zh-Hans"))
+        #expect(FormInputTestSupport.labels(in: sheet).contains { $0.contains("已返回合成失败") })
         try await SecureInputTestSupport.click("common.save", locale: "zh-Hans", in: sheet)
         #expect(support.probe.calls == 2 && support.probe.correctInput && support.probe.pending != nil)
+        #expect(FormInputTestSupport.labels(in: sheet).contains { $0.contains("action: 2") })
         session.close()
         try await SystemPageHost.settle(host)
         #expect(support.closed && support.probe.pending == nil && support.probe.completed == 0)

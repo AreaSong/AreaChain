@@ -1,6 +1,8 @@
 # 统一搜索与指令体系
 
-2026-10-08 最新增量：T-M2 完成状态、标签关联、新建并关联标签、截止时间的本地实现与隔离验收完成，完整签名/治理交付仍 partial，见 §9.74；T-M1-R 本地最终收口仍见 §9.73。正常开发描述文件到期与指定治理缺口独立保留。旧阶段状态保留其历史含义。
+2026-10-08 最新增量：R-M3 新读取兼容、习惯启停与指定执行日状态正在隔离交付，当前批准决定、范围及实际证据见 §9.78。§9.77 的三项待确认建议已由 D1～D3 取代；旧实现和失败记录保留。正常签名／指定治理交付仍 partial，R-M1／R-M2 历史边界不变。
+
+2026-10-08 历史增量：T-M2 完成状态、标签关联、新建并关联标签、截止时间的本地实现与隔离验收完成，完整签名/治理交付仍 partial，见 §9.74；T-M1-R 本地最终收口仍见 §9.73。正常开发描述文件到期与指定治理缺口独立保留。旧阶段状态保留其历史含义。
 
 2026-10-02 历史增量：2K-5 剪贴板历史文件只读适配与受门禁发布见 §9.41；仅显式临时目录与合成文件验证，指定 Cursor 复核和历史验收缺口保持 partial，无生产来源选择或监听。
 
@@ -31,7 +33,7 @@
 | 已有改动 | 对后续阶段的影响 |
 |---|---|
 | `AreaChain/Theme/DaybookButtonStyle.swift`、`AreaChain/Resources/Localizable.xcstrings` | 按钮/menu label 共用视觉基座、焦点/减弱动态效果及展示文案；后续指令提交按钮沿修改后的基座核对，不覆盖这些改动。 |
-| `AreaChainTests/Theme/DaybookButtonInteractionTests.swift`、`AreaChainTests/Theme/DaybookControlsPreview.swift`（未跟踪） | 按钮原生交互和展示夹具；存在不等于本阶段已验证，也不能因未跟踪而删除。 |
+| `AreaChainTests/Theme/DaybookButtonInteractionTests.swift`、`AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift`（未跟踪） | 按钮原生交互和展示夹具；存在不等于本阶段已验证，也不能因未跟踪而删除。 |
 | `docs/component-catalog.md`、`docs/engineering.md`、`skill-routing.md` | 已有按钮契约、展示验收与路由补充；本文引用现有文件，不改写其工作成果。 |
 | `scripts/check_workflow.py`、`scripts/tests/test_check_workflow.py` | 检查器已要求上述展示文件和目录条目；必须以当前整套工作区验证，不能只拿 HEAD 检查器代表现状。 |
 
@@ -6347,7 +6349,7 @@ T-M3-R已完成本批有限清单：两套新原生、旧对象父参数、原�
 
 ### 9.76 里程碑 R-M1：习惯定义五字段的隔离闭环
 
-2026-10-08（Asia/Shanghai）。承接 T-M1～T-M3 的本地隔离闭环；本节是 R-M1 唯一交接来源。用户授权 A～E 连续实施，生产和敏感执行不接入。当前实现与验收进行中，以下契约不表示运行验收已经完成。
+2026-10-08（Asia/Shanghai）。承接 T-M1～T-M3 的本地隔离闭环；本节是 R-M1 唯一交接来源。用户授权 A～E 连续实施，生产和敏感执行不接入。R-M1 本地 A～E 实现与隔离验收已完成；正常签名与指定复核仍独立缺失，完整交付保持 partial。
 
 #### 支持范围与复用
 
@@ -6430,8 +6432,244 @@ RoutineCommandEnvironment 仅显式装配内存 context、私有事件和 fake �
 
 **并行与环境。** 全程保留初始暂存/未暂存和并行修改；本代理未执行git add、commit或push。会话期间另有操作暂存工作区、补充Bool修复并清理旧build/TM1 runner；原锁和本批证据保留。最后复用现存Bool-run的原锁/完整PrivacyQA参数，使用独立RoutineBool QA标识/目录及只读进程核验，未操作仍存活的旧PrivacyQA进程。没有换锁、删锁、终止其他任务、认证或真实系统调用。旧Bool的嵌套提醒时序差异按上节独立登记，不用本批通过将其抹去。
 
+#### A～E 最终状态与源码门禁
+
+| 项目 | 本批状态 |
+|---|---|
+| A 契约/共享入口 | 已实现并验证。原习惯仓储/解析/标签事务复用；旧同值保存、Bool及普通UI副作用有回归。嵌套提醒历史差异见上方专节。 |
+| B 五类执行 | 已实现并验证。类型化定义身份、普通来源、D3、接受与运行占用、共同提交及事实分离全部保持。 |
+| C 原生链路 | 已实现并验证。最终新链10方法/20次通过，中英浅深444/304代表与41张有效图已查看。 |
+| D 回归 | 已验证。服务/控制器、旧习惯UI、todo/subtask、文件设置组及受限两步均有本轮匹配执行证据；旧原生7方法/15次通过。 |
+| E 文档/最终编译/门禁 | 本地项通过，最新并行测试变更已纳入 DeliveryCompile 完整编译。权威文档、组件目录、路由/架构、稳定检查入口同步；完整PrivacyQA编译、QA静态验签、严格lint、workflow及严格static通过。正常签名和指定复核不计通过。 |
+
+FinalCompile 首次被并行新增 ControlsPlatformPassword 测试的显式self捕获错误挡住；未排除文件，原错误被并行修正后，FinalCompile2 的完整 build-for-testing 成功（0错误，警告按 `FinalCompile2-build.json` 保留），QA codesign --verify --deep --strict 返回0，未安装或启动普通应用。该批 1283 个源码/测试/资源/工程/scripts/Config 文件（个人配置只记录摘要）与请求前/锁后/运行后完全一致，编译快照摘要 `6bc00a8b6019780d94d259b469d333f5687db9142702b1a67627a9e3923f6e70`。收尾又检测到五个并行原生测试文件更新，因此前批不归给后改文件；下方 DeliveryCompile 已补齐最新全集。R-M1产品文件与 LocalRegression 一致；后续并行独立测试也全部纳入最终编译，但不宣称已经运行其不相关用例。
+
+`changed-files.json` 列出46个本批实现/验证文件，含并行补入的两个习惯标题专项测试文件；初始与其他并行修改保留。严格SwiftLint覆盖这些文件中的所有Swift；检查器112项与严格static包含的232项脚本回归通过。此次未修改Shell脚本，质量入口的Shell语法检查通过。最终文档更新后再运行workflow、严格static与暂存/未暂存差异检查；保留运行前后源码核对，不使用旧HEAD单独代替脏工作区身份。
+
+最终补证 DeliveryCompile 完整编译 succeeded、0错误、7项警告，QA验签返回0；原锁前/后与运行后、交接时重新枚举的1283文件全集一致（包括新增/删除），最终摘要 `91e559aaded93e7a66accec23c806365b322ffcaa5e7501a199f1139aec35f03`，见 `final-source-audit.json`。进程核验显示该隔离标识执行前/后为空，六项真实授权变量均已清除。
+
+R-M1 本地 A～E 与隔离原生闭环完成；完整签名/治理交付为 partial。所有运行仅限合成库和fake消费者。没有提交、推送、安装、发布、续签、真实认证、真实用户数据访问或新权限。
+
 #### 独立缺口与下一批前置
 
 正常开发签名到期（配置未改，不重复必然失败构建）、指定 Cursor verifier 无可调用入口、C2B、真人输入法/VoiceOver、最低系统、真实多窗口与两项旧子任务详情问题独立保留。只读定位子代理未承担指定复核。没有真实库/系统调用、提交、推送、安装、发布、续签或权限变化。
 
 后续习惯新增需另核初始定义、创建身份/排序与共同事务；启停需核对暂停期跳过桥接并显示实际记录影响；执行记录需绑定定义＋日期的实例身份及历史证据。当前五字段验收不能授权这些能力，notes/敏感、排序/删除/批量及新多步也未开放。
+
+### 9.77 里程碑 R-M2：普通习惯结构化新增与状态兼容核验
+
+2026-10-08（Asia/Shanghai）。本批 A～D 获准实现普通 `routine.create /routines/add` 的服务和隔离原生完整链；E 的启停／打卡仅只读取证、合成特征验证与方案，不改变生产写入或读取语义。正常签名到期、指定 Cursor verifier、C2B、人工／最低系统／多窗口及旧详情缺口继续独立保留。R-M1 旧标题 Bool 与嵌套提醒时序差异仍以 §9.76 专节为准。
+
+#### A～D 创建契约与复用
+
+- 仅显式 `RoutineCommandEnvironment.Creation` 装配、单操作／单项计划、普通无备注输入。旧默认装配仍只有 R-M1 五字段；`routine.capture`、notes、敏感、批量、新多步、启停／打卡、排序／删除及生产接线不开放。
+- 目录要求明确 title、非空合法 weekdays；可选 priority、time 与 tags 的既有操作。原文与显式参数分别保留，复用 `CommandTaskCreateComposition`／`CommandTaskFieldResolution`、原 parser、D3 标签 Lookup／Plan。其 `day` 仅作为内部创建日值，目录没有新增日期参数。语法与显式设置／取消冲突阻止接受；标签先解析再应用集合操作，不拼接重解析或最后值覆盖。notes、换行及派生备注拒绝并保留原输入。
+- 最终内容遵循原 `addRoutine` 的有效性：清理后标题可为空，但须有实际标签、提醒或非 P4 优先级；星期本身不算有效正文。纯 `!p4`、移除全部候选后的空标题等不能借新入口放宽；原非空 title 形状校验仍保留。
+- 新建没有既存 target／baseline。`CommandRoutineCreateSource` 分别记录输入和创建环境的普通资格修订，另外绑定真实 context／container、目录证据、默认值版本及全量排序依据。不调用 R-M1 目标来源证明，也不创建虚构 routine 作为目标。
+- 初值沿 `CreateRoutineParams` 与 `DailyRoutine.init`：enabled=true、pausedOnDayKey=nil、deletedAt=nil、notes/sourceBundleID 为空、checks=[]；weekdayMask 使用明确非零 mask，weekdaysOnly 由 mask 派生。优先级默认 false/false，提醒 nil，标签为空或已接受最终关联。创建日由显式 now/calendar 注入；跨日须重新预览和接受；createdAt 在实际创建时采样，不能使用准备时刻冒充提交时刻。
+- `ResidentsPage` 与 `RecurringItemEditor` 的未过滤 Query 都以 `Catalog.nextSortOrder` 取末尾。新建预览同样读取所有活、停用与墓碑，绑定每条 UUID／实体身份／sortOrder；空库为0，非空 max+1。溢出、读取失败、重复身份或异 context 拒绝，集合增删／排序变化使接受失效。
+- `CreateRoutineParams.creationID/createdAt` 是兼容可选入口，旧调用默认仍生成 UUID 与当前时间。显式 UUID 在仓储创建前完整查询所有状态。原创建登记 `CommandTaskCreateRegistry` 增加 routine 准备，仍共用 preparing／invoked 与 Coordinator runtime 占用；重新接受未调用预览保留已预留对象和同名新标签身份，已调用不得重新分配或重放。
+- `RoutineMutationService.create` 只使用接受后的最终字段，标签创建／恢复／关联与定义在原 `ModelChanges` 同事务。事务前重核 lease／plan／item／draft、来源、目录、日期、排序、身份及干净 context；不预保存其他编辑，不另开 context 隐藏脏状态，不调用启停桥接或写任何 checks。
+- `CommandRoutineCreateFacts.createdObject` 仅由实际 save-returned、匹配 savedID 返回 `.routine`；candidateID 与预留 UUID 不是输出。新事实留在 `Run.routineCreation`，`Run.outputs` 仍为空，不扩大目录输出依赖能力。保存／登记／发布／fake授权／通知／日历分别记录，unknown 仅核验原精确 ID 的当前存在性，不升级历史成功或重放；保存后外部失败不另建。同标题不同调用允许再次新增。
+- 原 `addCapturedRoutine` 与 `addRecurringItem` 不改解析或 Bool：快速捕获单源解析；结构化编辑器仍标题语法→备注语法→显式字段，保留备注原文与标签合并。R-M2 冲突规则只属于新命令，未顺带替换旧 UI。
+
+#### 原生有限矩阵与证据口径
+
+原参数、星期选择、标签集合、计划、Daybook 按钮及标签／外部效果组件继续复用。新增无需既存目标，空搜索仍可补全→标题／星期／属性→预览→明确接受→点击或⌘Return→真实隔离写入→事实反馈。Return／Tab、marked text、失焦／锁定与所有权失效沿原输入和 ReadSession 边界；失败保留原参数，旧回调不能换身份再提交。
+
+固定有限矩阵为：服务默认／元数据／显式合成、四种标签集合、无效星期／notes／冲突、独立来源、全量排序／跨日／目录／脏状态、固定身份／多实例／重入、共同回滚／unknown／外部失败、原仓储及 R-M1／任务创建事实回归；原生中英浅深444／304pt代表，最小与多属性创建、空星期／冲突、过期留稿、marked text、失焦／锁定、防重与unknown反馈，并补旧新增和 R-M1 标题／星期回归。操作是合成原生键鼠、marked text 为程序化，缓存图逐张查看后才计视觉证据；不称真人输入法、系统截图或人工验收。
+
+当前运行与最终门禁结果在本节收尾表登记；实现存在及静态检查不代替实际运行。首轮 ServiceCore 完整编译后23方法／59次执行，58次通过；同标题第二次独立新增暴露排序行使用内存地址的误报，已改为 persistentModelID，并保留该用例。ServiceFinal 被新增原生用例的 Swift Testing 可选链宏展开错误阻断编译；改为先取得标签数组再断言，未删断言。后续以 ServiceRegression 和原生结果为准。共同标签计划还对必要新标签排序区间做溢出检查，无新实体时不计算无用的下一序号；避免合法关联在 Int.max 下陷阱，原排序语义保持。
+
+#### E：四种打卡编码及重复的现行含义（只读方案）
+
+| 原始 done/skipped | 旧仓储生产与旧消费 | 新 `RoutineCheckReading` |
+|---|---|---|
+| false/false | toggle／批量取消留下的未处理行；月历今日 open、过去 missed | unprocessed |
+| true/false | 普通完成；月历 checked，连击计完成 | completed |
+| true/true | **skipRoutine 和恢复桥接的合法常规写入**；月历 skipped，连击跳过桥接，看板闭合 | conflict，诊断 doneAndSkipped |
+| false/true | 模型／导入允许，本次未发现仓储主动新写；看板闭合、连击跳过，**月历今日仍 open、过去 missed** | skipped |
+
+证据入口：`SwiftDataRoutineRepository.skipRoutine/bridgeSkippedDays`；`HabitMonth.mark` 先匹配 done&&skipped 再 done；`HabitStreakLogic` 同日逐位 OR 并优先 skipped；`DayBoardCheckIndex` 与 `Catalog.firstClosedRoutineIDs` 先取首行再按 done||skipped；`AgendaOpenDays` 任一闭合；`DashboardMark.merge` 跳过优先。旧消费者对同日重复并非统一规则，不因新命令验收而宣称完全等价。仓储 `markRoutineDone` 保留 skipped，`batchSetRoutineChecks(markDone:true)` 清 skipped，两者不等同。
+
+`RoutineCheckReading.read` 当前按原始布尔对判断 identicalDuplicates，任一双 true 直接 doneAndSkipped，原始对不同加 conflictingRecords。不同物理 UUID 的同习惯＋日期行不被仓储唯一约束禁止；`SnapshotImporter.importCheck` 按物理 UUID upsert，可保留同业务日期多行。重复物理 UUID、孤立 parent、无效日期及关系不可信仍属于独立完整性问题；不能用按日期合并掩盖。
+
+**历史建议（已由 §9.78 的 D1 批准决定取代）：** 保留旧存储和生产写入，在未来新读取中将两个含 skipped 的编码归一为逻辑 skipped；保留原始行／物理身份和诊断。相同原始对为同编码重复，true/true＋false/true 为“同语义异编码重复”，completed／skipped／unprocessed 之间继续 conflict，不用首条或末条消歧。这会明确修订此前“done＋skipped 一律 conflict”的新读取决定；本批没有删除检查或实现兼容读取。
+
+该方案能让正常旧跳过在新搜索中表达为 skipped，不能修复历史排程证据、月历 false/true 差异、旧页面重复 first-wins 或孤立／坏日期／重复 UUID。受影响新消费者包括 `RoutineQueryMatching`、`ImageQueryTemporal`、`TrashQueryTemporal` 和 `RoutineOccurrenceQueryInput`；读取层 `RoutineContentQueryReader` 的 allStoredRows、完整性与跨午夜观察时刻规则仍需保持。
+
+若改新规范写入（例如 skip 改 false/true），必须先确认旧月历与所有消费兼容、markDone/toggle/batch 的状态转换，并防止旧版本回退时显示变化。若迁移历史数据，还需独立迁移授权、真实备份恢复与版本回退方案、重复消歧规则和可追溯记录；本批不执行这些动作。
+
+#### E：启停与独立执行记录下一批前置（R-M2 历史状态，现由 §9.78 承接）
+
+- 停用仅在 pausedOnDayKey=nil 时记 today，重复停用不移动起点。恢复仅在当前 disabled 时桥接，完成后清 pause 并 enabled=true；已经启用时不补历史。
+- `HabitStreakLogic.skipFillStart` 优先非空 pause，否则所有关联记录日期的 max（不限完成状态），再否则 createdDayKey。区间是 `[start,today)`，含暂停日、不含恢复日；按**恢复时当前星期**，不是当时历史安排。当前数据没有历次启停／星期日志，`RoutineScheduleEvidence` 明确当前定义只能证明明确观察日。
+- 桥接先按日分组：任一既存行 done||skipped 就整日保留；全 false 的既存行全部改双 true；没有行才新增一行。单项 toggle／markDone／skip 只改首条，批量按查询首条；这些差异必须进入后续精确影响预览。孤立、重复定义／物理记录身份、不规范日期、未来起点或起止不可靠不能当空历史。
+- `DayKey.keys` 逐日生成数组且最多4000日；现有仓储没有尾段未覆盖反馈，仍清 pause 并启用。该现状由本批合成特征测试核验；没有修复或把4000当产品支持承诺。准备阶段须计算实际区间和上界并显式拒绝截断；若要分批，分批将破坏单次共同事务和失败回退，需要先决定产品语义与恢复协议，不能在本批增加通用恢复引擎。
+- 未来 prepare 必须零写入：投影新增日期及固定新记录 UUID、将修改的每条旧记录 UUID／原始标志／归属，以及不变行、跳过原因、历史未知与成本。接受绑定定义身份、当日、当前安排／pause、完整记录集合、来源和计划；跨日、参数、目录／记录集合或所有权变化均撤销接受。不能调用旧恢复方法来生成预览。
+- 启停定义变化与实际记录变更须共同事务；继续原 Coordinator 的调用占用和 unknown 单次身份，新增记录身份必须在可重入执行前固定。未知仅凭当前记录存在不能证明整批已提交；执行前须明确可核验的共同提交事实与恢复前置，不能按日期或标题盲目重放。
+- 独立执行记录必须绑定 `.routine` 定义＋明确民事日期，业务日期身份与每条物理 `RoutineCheck.id` 分开。定义停用／恢复、某日完成／跳过／重开是不同命令和状态转换，不能复用含义不同的 Bool 方法而不确认。实际完整覆盖、排程未知、重复／等义异编码／真冲突须分别显示。
+- 当前读取成本包含完整全表读取及每习惯切片求值；未来大暂停区间须测量行数、区间、环境和冷热状态后定上限。本批合成4001日证明截断行为；ServiceRegression 的 longPauseHasExistingFourThousandDayLimit 整个方法耗时3.003349秒（macOS26.6.2、arm64 MacBook Pro、Debug、进程内已运行其他用例、合成内存库，包含夹具、4000条插入、保存及断言，单样本）。不是冷启动测量、纯桥接耗时、性能预算或真实库基准。
+
+**R-M2 历史待确认选择（已由 §9.78 的 D1～D3 批准决定取代）：** ①下一批是否批准新读取把合法双 true 解为 skipped，并保留混合编码重复诊断；②明确“设完成”是否清 skipped（与旧 markDone 保留语义不同）；③超4000日、起点或历史安排不可靠时先拒绝并显示缺口，还是另开有恢复协议的分批方案。当时推荐先兼容读取、保持原始证据、拒绝不可靠桥接；此处保留当时建议，不再要求重复确认。
+
+#### R-M2 最终 A～E 状态与有效验证
+
+| 项目 | 实际状态 |
+|---|---|
+| A 新增契约／复用 | 完成。明确无目标输入、环境／目录／默认值来源、全量排序、时钟和旧入口解析差异。 |
+| B 服务／真实隔离创建 | 已实现并验证。准备与接受零写入；固定身份、同一事务、真实 `.routine`、回滚／unknown／发布失败与防重均有模型与次数证据。 |
+| C 原生完整链路 | 已实现并验证。补全→标题／星期／属性→预览→接受→点击或⌘Return→真实创建／事实反馈；新链8方法／14次全部通过。 |
+| D 受影响回归 | 完成有限矩阵。服务、原创建协议／Coordinator／Run、标签共享入口、R-M1及两种旧新增UI均有本批有效执行。未机械运行全库测试。 |
+| E 状态只读核验／文档门禁 | 只读方案与隔离特征验证完成；启停／打卡写入及读取器未改。完整正常PrivacyQA编译、QA验签与本地静态门禁通过；正常开发签名和指定Cursor复核继续缺失，完整交付partial。 |
+
+| 有效批次 | 结果 | 证据范围 |
+|---|---|---|
+| ServiceRegression | 75方法／177次通过，零跳过／预期失败 | 新建默认／元数据／显式字段、D3标签集合、身份／多实例／重入、来源／目录／跨日／全量排序／脏context、共同回滚与unknown、R-M1五字段／仓储、原任务创建身份与共同事务；含4方法／7次状态兼容特征。 |
+| NativeDelivery | 15方法／28次通过，全部选择器命中 | 新建8方法／14次；另7方法／14次覆盖 ResidentsPage 旧快速捕获失败留稿、重试与全量排序，RecurringItemEditor 空星期／取消／失败重试／真实sheet，R-M1标题／星期和原任务扩展新增。原生操作为合成键鼠；marked text为程序化。 |
+| LocalRegression | 32方法／77次通过 | CommandExecution／Handoff、TaskTitleMutation、原TaskCreateComposition与SubtaskCommand。原先遗漏的旧标题方法随真实suite命中补齐；没有将早期未命中选择器计作覆盖。 |
+| LegacyInput | 1方法／1次通过，精确选择器命中 | 原任务／习惯解析新增入口的标签复用与作用域。LocalRegression 中无括号的该方法选择器未命中，已单独用带括号真实标识补验。 |
+| FinalCompile | 完整目标 build-for-testing succeeded；0错误、0本轮增量编译警告，QA严格验签返回0 | 没有排除源码，没有运行／安装日用应用。首次完整编译的既有SDK／actor／未用值警告保留在原日志；最终增量未发警告不表示这些历史警告已修复。 |
+
+上述有效批次去重为 **123方法／283次执行全部通过**。ServiceCore 的内存地址排序误报、ServiceFinal 的断言宏编译失败及 NativeCore 的标签菜单操作错误都保留原始日志／xcresult，不计入最终通过。菜单测试改为实际选到 add 后再操作；没有弱化断言。首轮截图发现的“保持原值”“任务与标签保存”已分别改为新建“未提供”及习惯专属反馈；参数区不再绘制虚构旧基线，最终NativeDelivery覆盖这些修改。后续7个UI／文案／测试文件变化与 ServiceRegression 的服务源码逐一比较，Domain／Services及对应服务测试不变；最终完整编译纳入全部新源码，见 `build/RM2/evidence-scope.json`。
+
+**实际事实。** 主路径单次 save=1、私有发布=1、fake通知／日历处理各1；无提醒不请求授权，有提醒记录实际分钟请求。准备／接受和拒绝为零保存／发布，最后校验的脏编辑不预保存、不回滚唯一草稿。所有旧定义快照和全表checks身份／日期／标志／关系／数量保持；保存前工作失败共同回滚新定义、新标签与恢复标签。保存调用抛错保留unknown和原身份；保存后登记／发布／fake消费者失败不重建。相同标题的另一次调用可新增，重新物化不再误判排序行改变。
+
+**最终截图。** `build/RM2/Delivery-screenshots` 内45张本批新图全部查看，其中32张为R-M2新链，13张为旧入口／R-M1／任务新增；index记录原QA临时路径、mtime、尺寸及SHA-256，contact为查看索引。明确覆盖en／zh-Hans、浅深、444／304pt代表，以及标题／星期、来源和默认值、标签创建／恢复、参数变化撤销接受、失效留稿及unknown。滚动视口外内容不是被丢弃；只按实际可见截图与模型断言判断。原图由NSView.cacheDisplay产生，不是系统合成器截图、真人输入法或VoiceOver验收；旧结构化新增主要由原生事件／模型断言证明，不以旧图补数。
+
+**源码、环境与进程。** 复用现存 `build/RM1/Bool-run.py` 的完整正常PrivacyQA、原 `build/.build.lock` 单次最多900秒、六项真实钥匙串授权清除和只读libproc进程身份方法，建立本批 `build/RM2/run.py`；没有依赖已被清理的build/TM1 runner。只使用 `build/PrivacyQA-RM2`／`com.areachain.privacy-qa.rm2`，各实际测试批记录PID＋内核启动身份、确认退出与同路径空集，最终编译批无应用进程。未附着、复用或关闭其他QA；首个等待请求因新增本批源码而在取得锁后退出4，核对差异后重新建立基线，没有拿旧版本继续运行。
+
+NativeDelivery／LocalRegression／LegacyInput／FinalCompile 申请前、锁后和运行后的 **1301文件全集** 相同（包含新增／删除，个人配置只摘要）；最终SHA-256为 `b1eff9068150c8a2e4f9aa1526218a871f4913d039b08a3122cdc86c905f896b`，算法为路径→SHA字典按键排序JSON再SHA。QA可执行文件SHA-256为 `30f45d881e1715dc1c3bc337484bf8cce9655aec423599a19a241abb4ef9c3de`。交接前再次枚举见 `final-source-audit.json`。初始暂存与未暂存改动保留，索引与初始逐项一致；并行工程手册记录独立保留，不归为本批实现，不修改旧运行记录。
+
+**门禁与指定复核。** 严格SwiftLint覆盖本批35个Swift文件；workflow（含500行边界、引用及技能格式）、未暂存／暂存差异、严格static质量门禁通过，包含233项隔离脚本回归；检查器定向113项通过。本批新增检查入口与对应反例已实际运行。最终文档后再次运行上述适用静态检查。指定Cursor verifier无可调用入口，未运行／未认证，探索子代理不替代该复核；其待审材料为本节原需求／实际差异、changed-files／initial-source、有效批次选择器与完整源码摘要、事务／原生模型及进程／验签证据，重点核对无目标来源、创建身份、共同回滚、实际输出与失效／unknown禁重放。
+
+正常开发签名到期未恢复，按授权未重复必然失败的普通构建、未续签／更改个人配置／申请Apple资源；QA签名不替代正常签名。C2B、真人输入法／VoiceOver、最低系统、真实多窗口、旧子任务详情与R-M1旧标题Bool／嵌套提醒时序差异仍独立保留。本批无生产接线、真实用户库／系统服务写入、提交、推送、安装、发布或权限变化。下一批只在确认上方三个产品选择后定界；启停handler、执行记录handler、历史迁移及通用恢复引擎均未实现。
+
+
+### 9.78 里程碑 R-M3：兼容跳过、习惯启停与指定执行日状态
+
+2026-10-08（Asia/Shanghai）。用户明确授权 A～E 连续实施和隔离验收。本批只显式装配单个普通无备注活习惯定义的 `routine.enabled`，以及单个定义＋明确民事日期的 `occurrence.complete / skip / reopen`。不开放生产、批量、组合计划、新输出依赖、执行后撤销、跨重启恢复、notes 或敏感执行；不迁移、清洗或修改真实数据。
+
+#### 已批准 D1～D3 与旧规则边界
+
+- **D1**：新查询把 `false/false` 解为 unprocessed，`true/false` 解为 completed，`true/true` 与 `false/true` 均解为 skipped。原始快照、物理记录身份和输入下标保留。相同编码重复与同语义异编码重复分别诊断（混合集合可同时含两者）；不同逻辑状态仍 conflict。覆盖不足仍 incomplete，孤立关系、坏日期与重复物理 UUID 继续由完整读取证据独立限制，不能靠逻辑归并掩盖。
+- **D2**：新命令明确赋值：完成 `true/false`，跳过 `true/true`，重开 `false/false`。无记录的完成／跳过在资格满足后创建固定 UUID；无记录重开不创建空记录。noChange 同时比较原始编码及全部目标效果；单日多物理行即使逻辑同义也拒绝写入。
+- **D3**：恢复补录使用恢复时当前星期，明确不等于还原历史安排。起点沿 skipFillStart 的暂停日、完整记录最近日期、创建日回退；日期、归属、全表覆盖和源修订须可靠。先计算完整 `[start,today)` 民事跨度，超过4000日、未来／非法起点或完整性不足整项拒绝，保持暂停，不截断或自动分批。缺少历史星期日志本身不阻止恢复；单日历史资格仍由 RoutineScheduleHistory 证明。
+
+以上取代 §9.77 的待确认选择。旧 `DayBoardCheckIndex` 首条策略、HabitMonth 对 `false/true` 的差异、连击逐位合并、旧 markDone 保留 skipped、批量完成清 skipped、旧恢复4000日截断均保持历史实现；本批有意改变新读取与受控命令，不能称作完全等价重构。
+
+#### 影响、事务与恢复事实
+
+`RoutineCommandEnvironment.StateOperations` 是可选显式装配；默认 R-M1 五字段与可选 R-M2 Creation 均不暗中获得状态能力。原 RoutineCommandAdapter／Coordinator／Plan／Run／调用占用继续唯一协调，不增加执行器。目录只将 occurrence.complete 的独立声明改为普通单目标；batch.completion、通知、四象限的未决声明保持。
+
+`RoutineCommandStateReader` 使用原 RoutineContentQueryReads 完整定义与独立全记录表读取，复用 RoutineContentQueryCheckProjection 的完整性限制；再检查目标关系集合与平铺实体一致，保留 UUID＋persistentModelID、原始日期／标志／父身份。`CommandRoutineStatePlanning` 负责纯影响：闭合日整日保持，全未处理重复日逐条列出修改，无记录日列出新增，不合并或删除重复行。既有闭合日冲突原样保留并显示。
+
+`CommandRoutinePreview.stateImpact` 绑定完整定义、原始星期兼容字段、当日／日历、完整目标记录、历史证据、精确逐日效果、起点来源及启停／pause 最终值。原 CommandRoutineRegistry 接受前固定新增日→UUID，同一接受重复使用不分配，重新预览但未调用时保留重叠日期身份。跨日、参数／目标、星期、暂停字段、记录增删／状态／关系、来源、lease 或 plan/item/draft 变化均使旧接受失效，不自动重新准备后保存。
+
+`SwiftDataRoutineRepository.applyRoutineState` 只在原 ModelChanges 事务中应用已接受的物理写集，不调用旧 toggle／markDone／enable 方法。定义启停与桥接共同保存，单日操作不修改定义或其他日。保存返回后先登记原 Run 真实事实，再发布私有事件与 fake 消费者；发布失败不否认保存，不重复桥接。unknown 在 Run.routine 保留原 stateImpact 和 checkCreationIDs；只读当前定义存在性不证明共同事务历史成功，不清 Run、不自动重放。
+
+#### 原生接线
+
+原对象选择、boolean 参数、计划、接受／点击／⌘Return 和反馈沿 UnifiedSearchRoutineEditing／Submission。`UnifiedSearchRoutineOccurrenceDate` 复用 DaybookDatePicker，只更新原 CommandObjectReference.dayKey；不会把用户选日改为页面日或今天。`UnifiedSearchRoutineStateImpact` 有界滚动呈现全部日期、原状态／编码与物理行、插入／修改／保持数量、区间／当前星期／起点来源和冲突。双语拒绝说明保留原输入、禁用保存。状态反馈使用启停／执行日文案，不把补录显示为完成次数。
+
+#### A～E 交接与有效验证
+
+| 项目 | 实际状态 |
+|---|---|
+| A 新查询跳过兼容 | 已实现并验证四编码、同编码／异编码同义重复、真冲突及覆盖不足。真实 SwiftData reader 到 occurrence 的原行／索引／物理身份有交叉回归；孤立关系、坏日期、重复 UUID 不因兼容归并获得完整资格。 |
+| B 启停精确计划与隔离执行 | 已实现并验证零写入准备、起点来源、0／4000／4001日、当前星期政策、逐行写集、固定身份、共同回滚及已提交后发布失败。两种 skipped 编码与未处理行并存时整日保持，既有冲突保留。 |
+| C 指定日期状态 | 已实现并验证完成／跳过／重开显式赋值、无记录创建／重开、完整 noChange、同日多行拒绝、明确日期和定义／物理身份区分。接受后历史证据撤回／修订、其他历史日增改及宿主转交均拒绝旧计划，零保存／发布。 |
+| D 原生及旧入口 | 已接通并取得有限原生证据；NativeDelivery 29方法／59次、NativeFinal 6方法／13次通过。并行控件接口收敛后，HandoffNativeValidated 的9方法／18次补验通过，覆盖全部 R-M3 原生链及 R-M1 标题、R-M2 新增、旧启停失败重试；截图与操作证据边界见下文。 |
+| E 最终源码／门禁／交接 | 本批实现、文档、补充回归、有效快照的完整正常 QA 编译／严格验签及本地静态门禁已收口。交接时仍有并行文件在最后编译后变化，当前全集差异单列，不能称新全集已通过；正常开发签名和指定 Cursor verifier 缺口另列，整体为 partial。 |
+
+| 有效批次（均位于 `build/RM3`） | 结果与范围 |
+|---|---|
+| QueryRegression | 135方法／172次通过，选择器全部命中；新习惯／图片／回收站／执行记录、完整读取与覆盖、排程、目录、原 Coordinator／Handoff／Run。 |
+| ServiceRegression | 100方法／283次通过，选择器全部命中；R-M3 启停与单日、R-M1 五字段、R-M2 新增、旧仓储／标题 Bool、原任务新增／标题及子任务适配。 |
+| NativeDelivery | 29方法／59次通过，选择器全部命中；R-M3 新链、R-M1 参数／边界、R-M2 创建／边界及 RecurringToggleConsumerTests。 |
+| NativeFinal | 6方法／13次通过；最终状态反馈、名称、明确日期、补录滚动、超限／不可靠拒绝、过期／noChange／unknown、程序化组合文本、失焦及锁定。 |
+| HandoffRegression | 32方法／107次通过，选择器全部命中；补齐混合编码实体投影＋完整性组合、三种闭合编码整日保持、历史证据撤回／修订、其他日期记录变化、转交旧 lease，以及新 context 中固定 UUID／日期／标志／关系读回。重新执行4000／4001边界，未截断或跳过。 |
+| HandoffNativeValidated | 9方法／18次通过，选择器全部命中；在并行控件变更后的当前完整目标重编译／验签，复验全部 R-M3 原生状态及 R-M1／R-M2／旧启停的受影响代表链。 |
+
+上述批次按每个方法最后有效版本去重为 **271方法／534次执行全部通过**，零跳过／预期失败，明细见 `handoff-test-rollup.json`。ServiceFinal 的40方法／153次属于中间通过证据，已被后续相关回归覆盖，不重复累计。各批对应各自源码；最终全集与受影响原生补验另由 HandoffNativeValidated 确认，没有机械重复所有历史矩阵。
+
+**事实与失败边界。** 正常主路径 save=1、私有发布=1，定义与记录一次事务；noChange、准备、接受和拒绝为零保存／发布。测试直接比较定义快照、实体数量、物理 UUID／日期／done／skipped／父关系及 fake 消费次数。保存调用前抛错与返回后抛错均保留 unknown；新 context 读回可区分当前实际状态，但 `verifyUnknown` 的 `.singleLive` 仍仅证明定义当前存在，不证明整个事务历史成功。Run 保留原 impact 和 checkCreationIDs，重复提交不再保存。应用写集后抛错明确回滚定义、所有改行和新增行，失败不留下部分补录。
+
+**原生证据。** 最终 HandoffNativeValidated 的41张图（29张 R-M3、6张 R-M1、6张 R-M2）按该批起止时间、原始路径、尺寸和 SHA-256 核验并实际查看，保存在 `HandoffNativeValidated-screenshots/index.json`；`Delivery-screenshots` 和 `NativeFinal-screenshots` 保留较早批次，不拿旧图冒充最终反馈。覆盖 en／zh-Hans、浅深及444／304pt有限代表，明确检查名称、日期、原编码、启停／pause、区间／来源／当前星期说明、记录数量、滚动首尾和拒绝留稿。点击与⌘Return是合成原生事件，Return／Tab用于补全或控件；marked text 是程序化设置。截图来自 NSView.cacheDisplay，不是系统合成器截图，未据此宣称真人输入法或 VoiceOver 通过。旧月历 false/true、first-wins 重复策略和连击 OR 规则保持；仓储特征与旧启停原生回归独立于新命令语义。
+
+**4000日测量范围。** HandoffRegression 在 macOS26.6.2、arm64 MacBook Pro、Debug、进程已运行其他用例、合成内存库、4000个待新增日／全星期条件下，单样本 prepare=0.424047秒、submit=5.319725秒。prepare不含夹具；submit包含再次完整校验、事务、保存和 fake 发布，接受／分配身份在两段计时之间。前后进程 RSS=235962368／236929024字节，footprint=59392984／71582680字节；采样区间含准备、接受、提交及断言，不是峰值内存或纯仓储成本。原始值在 `HandoffRegression-diagnostics` 的标准输出；4000是完整性边界，未建立真实库性能预算，也不把用例总耗时当产品承诺。
+
+**过程中的失败保留。** CompileCore 的类型推断失败、ServiceCore 的 Swift Testing 断言宏类型检查失败、ServiceValidation 的“重新 prepare 后接受 ID 仍相同”误断言，以及 NativeValidation 的执行日候选／metadata 夹具失败，均保留原 log／xcresult；后续正确区分同一预览接受与新预览、保留固定记录 ID，并修正候选与元数据范围后通过，没有删去边界断言。原生最终反馈补出习惯名及状态专属结果；不把补录跳过写成完成次数。
+
+**源码、编译与并行改动。** 本批 runner 为现存 `build/RM3/run.py`，沿原 `build/.build.lock` 单次最多900秒、完整正常 PrivacyQA、`build/PrivacyQA-RM3`／`com.areachain.privacy-qa.rm3`、六项真实钥匙串变量清除和串行测试。原生只用合成内存库、私有事件和 fake 系统消费者。各批保存申请前／锁后／运行后的源码、资源、配置及增删全集，并核对 libproc 的 PID＋内核启动身份和退出；不附着、复用或关闭其他 QA。
+
+NativeFinal／ServiceRegression／FinalCompile 对应1313文件全集 SHA-256 `7d1bc03109b9e3441d73a804ad911e93812dd6de5ed26161b7f7c7db4ec56115`，当时完整 build-for-testing 和严格 QA 验签返回0。HandoffRegression 对应1313文件全集 `127c7b88031bed583bba70cd6a745062d7f6748c23c97e103f6d34f649176c3c`，申请／锁后／运行后均一致，完整测试构建和 QA 验签通过；与前者差异仅三份本批补证测试。随后两处本批范围注释更正之外，出现并行 ControlsPreview 移动／共享输入组件与资源改动；HandoffCompile 与 HandoffNative 均被 `DaybookFloatingSurfaceSamples.swift:33` 的 `extra argument 'onCopy' in call` 阻断，未运行原生用例。这些完整目标失败如实保留，不排除源码、不撤回他人改动来凑通过。交接时全集差异及本批范围见 `final-source-audit.json`。
+
+并行初始化器补齐后，HandoffBuild 完整 build-for-testing／QA验签返回0（1323文件、摘要 `548922b6985f97f0bff6e7cae91a769cc09c70d58389e6006fd199ca8e74a9a4`）。此后两份控件预览文件与脚本夹具再变，HandoffNativeValidated 按新全集重建并通过：1323文件、摘要 `95c4d8510e1319baf81231854ad98bfead46a91c751316cebf6b6dcc9d854dda`，申请／锁后／运行后一致；可执行文件 SHA-256 `4624ba4dd45aa527e2f5489b5af41ca1385c86c11dec3b26c5e77817a36998bb`。没有排除源码，严格 QA 验签返回0；本批 PID 16343／启动身份 `16343:1791442923:581666` 已退出，同路径进程空集。并行新增的预览产品入口不归为 R-M3 实现或验收声明。
+
+交接时并行的 ControlsPreview 窗口／展示及其两份测试再次变化，未改本批45份 Swift；核对影响后只补完整编译，不机械重跑不受影响的 R-M3 原生矩阵。最终 DeliveryBuild 的完整 build-for-testing 和严格 QA 验签均返回0，1323文件全集摘要 `f2d777a1b5632481a32659ebac1b139d499373d6796a8ab5c8c7e8da263e21d9`，申请／锁后／运行后一致；最终可执行文件 SHA-256 `43f324e93b51cd4d14e58bf57e5cfc319957c98b3813da30d0b25c18bbbd7539`。该批未启动应用，之前原生模型／截图证据的适用范围沿 `final-source-audit.json` 保留；不据此宣称并行控件预览功能完成验收。
+
+最后交接复核又发现其他任务继续编辑 `ControlsPreviewWindowController`、`SettingsControlsPreviewTests`、三个 Theme 消费者测试及 `scripts/app_manager.py`；这些变化发生在 DeliveryBuild 之后。本批45份 Swift仍与原生通过版本逐项相同，暂存索引与初始一致、本批进程空集；当前全集摘要及具体差异以 `final-source-audit.json` 为准。DeliveryBuild 是最后已验证的完整编译快照，不能推广成此后持续变化的工作区全集通过。后续应在这些并行改动收敛后补其受影响检查及完整编译，不反复扩大本批实现范围或覆盖他人修改。
+
+正常开发签名到期、指定 Cursor verifier 无可调用入口、C2B 与既有人工作业缺口分别保留；未重复认证、续签、修改个人配置或冒充指定复核。只读探索子代理只提供定位线索。
+
+**门禁与下一批实际前置。** 本批45份 Swift 的严格 SwiftLint 通过；workflow、差异、严格 static 质量门禁及235项脚本回归通过。并行新增检查项而夹具尚未同步时出现4项失败，保留 `Handoff-quality.json`／`handoff-script-tests.log`；夹具同步后重跑通过，不拿初始234项或零命中选择器当最终证据。最终文档后再次检查，结果见 `handoff-quality-verified.json` 和 `final-source-audit.json`。指定复核待审材料为本节原需求／批准决定、`changed-files.json`、各批完整源码／选择器／实体和提交事实、unknown与回滚证据；当前工具目录无 Cursor verifier，未运行亦未认证。下一步补正常签名与指定复核；C2B、真人输入法／系统截图／VoiceOver、最低系统及真实多窗口等历史缺口保持独立。未开放生产、真实用户库／系统写入、批量／自动分批、任意多步、执行后撤销、跨重启恢复、notes或敏感执行；没有提交、推送、安装、发布、续签或权限变化。
+
+### 9.79 里程碑 B-M1：固定多目标改期与混合标签共同提交
+
+2026-10-08（Asia/Shanghai）。用户授权 A～E 连续实施，只有一个批量操作／计划项；生产入口仍关闭。本节承接 T-M1～R-M3 的真实来源、目录、接受、调用占用与 ModelChanges 契约，不开放其他批量命令或多项操作队列。
+
+#### 实现与范围
+
+| 命令 | 固定目标 | 实际写集 |
+|---|---|---|
+| batch.move `/tasks/batch/move` | 一个或多个普通无备注活 todo | 仅 dayKey 赋值；同日对象保留在目标集合，零无意义修改。 |
+| batch.tags `/tasks/batch/tags` | 一个或多个普通无备注活 todo／routine，可混合 | 已有普通活标签的 add／remove；原顺序／规范化沿 TagIDList 和 CommandTaskTagMutation，不解析旧标题，不改标签实体或恢复墓碑关联。 |
+
+复用表见[组件目录](component-catalog.md#b-m1-固定多目标共同提交)。旧 DayBoardMutations+Batch 把同一 Set<UUID> 交两个仓储，且旧 batchMoveTodos／batchApplyTag 会忽略缺失项，不能直接承载本批严格目标集合。新事务只调用原仓储的 throwing moveTodo／replaceTagIDs，在同一最外层 ModelChanges 中延后保存；没有循环调用独立 adapter.submit。TaskRepositoryProtocol 增加默认 nil 的 taskMutationContext，显式装配与原 routineMutationContext 一同核对归属，旧 UI 行为不改。
+
+#### 选择、基线与共同提交
+
+- 目标沿完整 CommandObjectReference（类型、UUID、可选日期），本批只接受无日期的 todo／routine。相同 UUID 的不同类型独立；全查询包含墓碑与重复实体核验，不能用 live-only 读取证明唯一。
+- 原 selectAllKnown 只标为 selected。新增“全部结果”同时要求同一 publication 的 matchingIsComplete、匹配身份与展示 known 集完全一致；分页隐藏的已读命中仍包括在内。覆盖、预算、展示身份缺口都不能全选；手动选择已知对象仍可，未命中上下文和占位不会成为目标。类型不适用时整项拒绝，不静默过滤。
+- 接受集合不引用查询；参数／目标改变推进原 Draft／Plan 版本，旧预览和接受失效。候选翻页同时推进原生 buffer 版本，旧 Return／Tab／选择／方向事件不能被升级到新候选。
+- BatchCommandReader 一次目录快照／索引、每种目标一次有界枚举，逐项验证普通无备注来源、同 context、记录身份、存活与 D3 原关联。每项真实 original／final 与 raw tagIDs 随预览保存；CommandDraftBaseline.mixed 仅展示。原单项标签默认允许的创建／恢复能力没有被本批 liveOnly 选择政策削弱。
+- prepare／accept 零写入；显式提交先由原 Coordinator 占用，再重核整份接受和真实来源／目录／影响字段。一个无变化目标也不移出集合。全部 noChange 零保存／发布；部分变化一次本地保存。首／中／末应用失败均共同回滚，失败事实不标记前半批成功。
+- CommandBatchFacts 随原 Run 保存整份目标与写集。本地返回、登记、私有发布和逐目标 fake 外部结果分开。公共广播只一次；noChange 成员不发外部请求。unknown 保留接受、参数、影响及调用身份；不提供普通重试、拆批重放、跨重启恢复或执行后撤销。
+- 原生沿原对象／标签／日期／PlanList／提交入口，有界180pt明细可滚动检查和移除，点击与⌘Return共用门禁；组合输入、失焦、锁定及旧候选拒绝。失败留原目标、参数和具体问题身份。
+
+#### 验证过程与初始核对
+
+初始核对：R-M3 DeliveryBuild 后9个文件变化，集中在控件预览窗口／支持／Theme测试与 app_manager／脚本夹具；本批不修改或认领这些功能。`build/BM1/preflight.json` 与 `initial-source.json` 保存初始全集，暂存差异 SHA-256 单独保存。runner 复用 `build/RM3/run.py` 的完整 PrivacyQA／进程核验，仅改成本批独立 `build/PrivacyQA-BM1` 和 `com.areachain.privacy-qa.bm1`；所有申请沿原锁等待最多900秒，不排除源码、不操作其他 QA。
+
+ServiceChecked：30方法／52次执行通过，零失败／跳过／预期失败；NativeValidation 的批量完整链3方法／5次通过，边界夹具因未等待原刷新任务得到 staleTask，之后沿原 await 纪律修正，NativeBoundaries 的4方法／6次通过。NativeCore 的混合标签导航只向下导致目标在前方不可达，修正为按当前位置双向导航后通过，未删除其他候选。首次编译闭包显式 self、夹具初始化捕获和枚举拼写错误均保留原日志，不把编译失败计为执行失败。最终回归、源码、门禁和截图见下方收口记录。
+
+正常开发签名到期和指定 Cursor verifier 无可调用入口分别保留；不重复认证、续签或用普通代理替代指定复核。C2B、真人输入法／系统合成器／VoiceOver、最低系统及真实多窗口等历史缺口不被本批自动证据关闭。后续批量完成／启停必须独立核定子项级联、检查日与桥接语义；多项计划仍须独立设计依赖、共同保存范围及恢复，不由固定多目标能力推导开放。
+
+#### A～E 最终交接
+
+| 项 | 实际状态 |
+|---|---|
+| A 当前源码与既有证据 | 已核对。任务起点 R-M3 的45份 Swift与其 DeliveryBuild 相同；9份后续并行改动完整纳入本批 QA 编译，不认领其功能验收。 |
+| B 多目标、固定集合与真实预览 | 已实现并验证。手选／完整全选／已知子集、分页隐藏／预算和覆盖缺口、同UUID不同类型、真实逐项原值／mixed／noChange、移除失效与错误定位均有对应证据。 |
+| C 共同提交 | 已实现并验证。两类命令均一项计划、一次保存／私有发布；首中末应用失败共同回滚；重复／多实例／回调重入、脏库／仓储归属／嵌套、来源／目录／目标变化、unknown与发布失败分别覆盖。 |
+| D 原生与旧入口 | 已取得有限隔离验收。新批量完整链、点击／⌘Return、marked text、失焦／锁定、明确全选、长列表检查和移除后重接受、具体冲突原因可见；旧对象／任务字段／习惯标题和四种单项标签／设置共同保存／create→title及旧批量入口回归通过。 |
+| E 源码／编译／门禁 | 当前1342文件全集的完整正常 QA 编译／严格验签通过；45份本批 Swift严格lint、workflow、116项检查器定向测试与259项完整脚本回归、严格static质量门禁通过。正常开发签名和指定Cursor复核仍缺，整体 **partial**。 |
+
+**测试计数口径。** `build/BM1/verification-rollup.json` 按每个方法最后有效版本去重为 **181方法／386次执行通过**，零跳过／预期失败，全部命令选择器命中；不是同一轮全量应用测试。ServiceRegression为163方法／354次，其中1项新预算夹具失败；补齐原隐私门禁要求的空手记源后，ServiceFinal的40方法／109次通过，覆盖该失败及所有新服务／选择与字段事务复验。其余服务回归依赖未变，沿对应源码快照保留。
+
+NativeRegression为18方法／32次，新批量全部通过；4个旧方法出现面板缺失／失焦，日志有累计窗口警告及前台Chrome证据，不将这些日志单独当作所有失败的环境归因。新的隔离进程 NativeCompatibility 复验4方法／11次，旧任务字段、习惯四种标签和create→title全部通过；原取消链仍失败。缓存图确认新增全选按钮挤占单选面板空间，最小修正为仅在允许多选字段展示新入口，保持原单选布局。NativePickerFinal的4方法／6次通过，原取消／焦点链与全部批量完整链同时复验，没有跳过焦点或删除候选。
+
+最后从截图发现批量计划行沿用旧“执行尚未接线”提示，已只对批量行改为真实共同校验说明；具体冲突原因增加稳定可访问性定位。NativeErrorFinal的1方法／2次先通过，最终 **NativeDelivery的4方法／7次通过**，包含全部新批量链、noChange／冲突与具体原因可见性；原方法的有效证据按上述去重表保留。
+
+**真实模型与失败证据。** 测试直接比较全部目标、非目标、标签实体、日期／标题／提醒／完成／创建时间／归属等字段及实际保存／发布次数；混合目标使用相同UUID的todo和routine。原目录墓碑关联保持，不解析旧正文。save前抛错和save返回后抛错都记录unknown，新context读取分别证明当前未变／已变，但Run始终unknown且整份写集不可重放。两种命令的首／中／末应用抛错都恢复整批，零保存／发布；全部noChange零保存／发布，部分noChange一次保存，未变成员仍在接受集合。
+
+**原生截图。** `build/BM1/screenshots/index.json` 保存25张原图的来源批次、时间、尺寸及SHA-256，已实际查看原图／联系表。最终改期与混合标签链覆盖en／zh-Hans、浅深及444／304pt有限代表；检查了类型名称、标签实际添加／移除、mixed、数量、180pt明细首尾滚动、移除后重接受、提交按钮和具体冲突原因。原图来自NSView.cacheDisplay；点击／⌘Return／滚动为合成原生事件，marked text为程序化设置，不冒充真人输入法、系统合成器或VoiceOver证据。小窗口中的明细与结果继续有界滚动，不随目标数自动撑高宿主。
+
+**性能样本。** ServiceFinal在arm64 MacBook Pro、macOS26.6.2、Debug、暖测试进程／新建合成内存库、30个标签下测量，均单样本：4个目标prepare **2.228417ms**、submit **5.788333ms**；201个目标prepare **10.387792ms**、submit **75.918750ms**。prepare不含夹具；submit包括统一重核、一次事务保存与fake发布，接受在两段计时之间。未建立冷启动／真实库／峰值内存或产品规模承诺；没有截断目标或自动拆批。
+
+**最终源码与编译。** 最后独立build-for-testing批次 FinalBuild 的全集摘要为 `30df7e3f592ca122ba750522b93b8627d8181622528aab219ac6900de9367fc9`，完整编译和QA验签返回0。其后五份批量显示／测试／资源文件的变化已由 NativeDelivery 在完整正常目标中重编译并执行，申请前／锁后／运行后全集一致：1342文件、SHA-256 `357e44819c376212fc7c571ab01d203a36ce26e09552f156ee77deb42c24ee3c`；最终可执行文件SHA-256 `ea4aaa72c534862c6542b259bf45710fde1660133c335cc1221355d169664971`，严格QA验签返回0。最终本批进程PID66392／内核启动身份 `66392:1791453992:306068` 已退出，同路径进程空集；没有附着、复用或关闭其他任务QA。最终再次核对无全集未验差异，具体摘要算法、文件全集及编译快照差异见 `final-source-audit.json`。
+
+本批修改清单为 `changed-files.json`：45份Swift、相关双语资源／原检查器及其反例测试，加上本节与组件目录／路由／架构／使用说明。执行期间暂存索引被外部更新，包含部分本批文件；本任务没有执行暂存、提交或还原索引操作，保留当前状态，起点和交接索引摘要分开记录。原始并行控件预览／app_manager改动未被本批覆盖，当前完整编译不等于其全部运行功能验收。
+
+**保留缺口与下一步边界。** 正常开发签名到期时未重复必然失败构建，不续签或改变个人配置；当前工具目录无指定Cursor verifier，材料就绪但复核未执行，未认证或用普通代理替代。指定材料包括用户B-M1原需求、本节契约、实际差异、全集／选择器／模型／事务／unknown／原生证据。C2B、人工／最低系统／真实多窗口及历史问题独立保留。批量完成／启停仍须先核定子项级联、执行日和桥接规则并沿共同事务补失败证据；多项计划须独立定义依赖及恢复，不能删除现有全局单项守卫。本批没有生产装配、真实数据／系统服务访问、自动分批、删除、notes、敏感执行、执行后撤销或跨重启恢复，也没有提交、推送、安装、发布、续签或权限变化。

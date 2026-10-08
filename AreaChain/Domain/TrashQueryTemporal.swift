@@ -47,7 +47,7 @@ enum TrashQueryTemporal {
         }
         result.diagnostics += records.diagnostics.map {
             .init(issue: .check($0), conditionID: id,
-                  affectsDetermination: atom.dimension == .status && $0 != .identicalDuplicates && result.value.truth == .unknown)
+                  affectsDetermination: atom.dimension == .status && $0.affectsDetermination && result.value.truth == .unknown)
         }
         return result
     }

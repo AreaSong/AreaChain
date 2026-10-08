@@ -73,8 +73,10 @@ struct CommandExecutionUnit: Equatable {
     var preferenceVerification: CommandExecutionReceipt?
     var taskTitle: CommandTaskTitleFacts?
     var taskField: CommandTaskFieldFacts?
+    var batch: CommandBatchFacts?
     var subtask: CommandSubtaskFacts?
     var routine: CommandRoutineFacts?
+    var routineCreation: CommandRoutineCreateFacts?
     var taskCreation: CommandTaskCreateFacts?
 }
 

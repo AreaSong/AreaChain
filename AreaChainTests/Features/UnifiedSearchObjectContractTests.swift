@@ -62,7 +62,7 @@ struct UnifiedSearchObjectContractTests {
             await fixture.controller.objectSelectionTask?.value
             let fixed = try fixture.draft.targets
             #expect(fixed.objects.count == (all ? 6 : 2))
-            #expect(fixed.selection == (all ? .allResults : .selected))
+            #expect(fixed.selection == .selected)
             fixture.batch = .objectBatch(count: 9)
             _ = try await fixture.publish()
             #expect(try fixture.draft.targets == fixed)

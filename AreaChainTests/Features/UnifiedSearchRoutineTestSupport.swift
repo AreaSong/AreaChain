@@ -8,15 +8,25 @@ import Testing
     let results: UnifiedSearchResultsFixture
     let privacy = NotificationCenter()
     var controller: UnifiedSearchController { results.controller }
-    var target: CommandObjectReference { .init(type: .routine, id: service.routine.id) }
+    let occurrenceDay: String?
+    var target: CommandObjectReference { .init(type: occurrenceDay == nil ? .routine : .routineOccurrence,
+                                             id: service.routine.id, dayKey: occurrenceDay) }
     var second: CommandObjectReference { .init(type: .routine, id: service.other.id) }
 
-    init(enabled: Bool = true, assembled: Bool = true) throws {
-        service = try RoutineCommandFixture(enabled: enabled)
-        var batch = QueryBatchFixture.empty("/routines")
+    init(enabled: Bool = true, assembled: Bool = true, stateOperations: Bool = false, occurrenceDay: String? = nil) throws {
+        self.occurrenceDay = occurrenceDay
+        service = try RoutineCommandFixture(enabled: enabled, stateOperations: stateOperations)
+        var batch = occurrenceDay == nil ? QueryBatchFixture.empty("/routines")
+            : QueryBatchFixture.occurrences("date:2026-10-07..2026-10-08")
+        if occurrenceDay != nil { batch.snapshots.diaries = .complete([]) }
+        if let day = occurrenceDay {
+            service.stateHistory = [.init(routineID: service.routine.id, interval: .init(lowerBound: day, upperBound: day),
+                rule: .weekdays(WeekdayMask.all), source: .synthetic(reference: "rm3-native-history"))]
+        }
         let reads = RoutineContentQueryReads(context: service.context)
-        let observation = RoutineContentQueryFixture.observation(batch.dates.todayKey)
+        let observation = RoutineContentQueryFixture.observation(stateOperations ? service.today : batch.dates.todayKey)
         _ = RoutineContentQueryReader(reads: reads).readSources(into: &batch, observation: observation)
+        batch.facts.routine.scheduleEvidence += service.stateHistory
         batch.facts.metadata = .init(tagNames: [service.base.live.id: service.base.live.name,
             service.base.deleted.id: service.base.deleted.name], privateTagIDs: [])
         results = try .init(batch, pageSize: 20, privacyCenter: privacy,
@@ -55,7 +65,8 @@ import Testing
         try await host.settle()
         let picker = try #require(controller.objectSelection)
         let candidates = picker.browse.snapshot.units.flatMap(\.hits)
-        #expect(candidates.contains(target) && candidates.contains(second))
+        #expect(candidates.contains(target))
+        if occurrenceDay == nil { #expect(candidates.contains(second)) }
         host.window.makeFirstResponder(try host.field)
         for _ in 0...candidates.count {
             if controller.objectSelection?.browse.active == object { break }
@@ -93,7 +104,7 @@ import Testing
         #expect(service.count("save") == 0 && service.count("ui") == 0 && !service.context.hasChanges)
         try await host.revealSettingControlInsidePanel("unified.routine.values")
         try SettingsButtonTestSupport.assertBounds([host.resultNode("unified.routine.values")], in: host.window)
-        try host.snapshot("rm1-" + name + "-preview")
+        try host.snapshot((service.stateOperations ? "rm3-" : "rm1-") + name + "-preview")
         let labels = DetailCompletionFixture.strings(in: host.window)
         #expect(!labels.contains("接受子任务影响") && !labels.contains("预览子任务影响"))
         try await host.clickCompositionControl("unified.routine.accept")
@@ -121,8 +132,33 @@ import Testing
             _ = try host.resultNode("unified.routine.savedValues")
         }
         try await host.revealSettingControlInsidePanel("unified.routine.status")
-        try host.snapshot("rm1-" + name + "-saved")
+        try host.snapshot((service.stateOperations ? "rm3-" : "rm1-") + name + "-saved")
         return facts
+    }
+
+    func scrollStateDetails(_ host: UnifiedSearchTestHost, lastDay: String) async throws {
+        let scrolls = ScrollNativeEvidence.views(host.window).compactMap { $0 as? NSScrollView }
+        let candidates = scrolls.filter { abs($0.bounds.height - 180) < 2 }
+        let scroll = try #require(candidates.count == 1 ? candidates.first : nil)
+        let document = try #require(scroll.documentView)
+        try #require(document.bounds.height > scroll.contentView.bounds.height)
+        document.scrollToVisible(.init(x: 0, y: document.isFlipped ? 0 : document.bounds.maxY - 1, width: 1, height: 1))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try await host.settle()
+        try host.snapshot("rm3-resume-details-top")
+        let original = scroll.contentView.bounds.origin
+        for _ in 0..<8 {
+            let cg = try #require(CGEvent(scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1,
+                                         wheel1: -200, wheel2: 0, wheel3: 0))
+            scroll.scrollWheel(with: try #require(NSEvent(cgEvent: cg)))
+            try await host.settle()
+        }
+        #expect(scroll.contentView.bounds.origin != original)
+        let last = try host.resultNode("unified.routineState.day." + lastDay)
+        let frame = try SettingsButtonTestSupport.frame(last, in: host.window)
+        #expect(scroll.convert(scroll.bounds, to: nil).contains(frame))
+        #expect(service.count("save") == 0 && controller.currentRoutineAcceptance != nil)
+        try host.snapshot("rm3-resume-details-bottom")
     }
 
 }

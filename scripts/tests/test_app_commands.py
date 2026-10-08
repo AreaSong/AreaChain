@@ -39,6 +39,12 @@ class WrapperTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(json.loads(result.stdout), ["uninstall", "--dry-run"])
 
+    def test_install_wrapper_preserves_previous_app_path_with_spaces(self):
+        original = "/synthetic user/Application Support/uninstall-fixture/AreaChain.app"
+        result = self.invoke("install.sh", "--previous-app", original, "--dry-run")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), ["install", "--previous-app", original, "--dry-run"])
+
     def test_app_wrapper_preserves_individual_arguments_and_exit_code(self):
         environment = dict(os.environ, AREACHAIN_WRAPPER_EXIT="7")
         result = self.invoke("app.sh", "delete", "argument with spaces", environment=environment)

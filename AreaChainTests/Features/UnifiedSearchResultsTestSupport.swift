@@ -39,7 +39,7 @@ final class UnifiedSearchResultsFixture {
          privacyCenter: NotificationCenter? = nil, taskTitleEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
-         subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil) throws {
+         subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -80,7 +80,8 @@ final class UnifiedSearchResultsFixture {
             taskField: taskFieldEnvironment.map { TaskFieldCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: taskFieldCapability) },
             taskChain: chainAdapter,
             subtask: subtaskEnvironment.map { SubtaskCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
-            routine: routineEnvironment.map { RoutineCommandAdapter(coordinator: handoff.coordinator, environment: $0) })
+            routine: routineEnvironment.map { RoutineCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
+            batch: batchEnvironment.map { BatchCommandAdapter(coordinator: handoff.coordinator, environment: $0) })
     }
 
     func publish() async throws -> ContentQueryReadEffect {

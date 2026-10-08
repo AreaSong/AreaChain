@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 仅显式装配的五类习惯定义修改；占用、接受和事实仍由原 Coordinator/Run 持有。
+/// 五字段及可选状态能力均须显式装配；占用、接受和事实仍由原 Coordinator/Run 持有。
 @MainActor final class RoutineCommandAdapter {
     let coordinator: CommandHandoffCoordinator
     let environment: RoutineCommandEnvironment?
@@ -11,7 +11,8 @@ import SwiftData
         self.environment = environment
     }
     func supports(_ command: CommandID) -> Bool {
-        environment != nil && CommandRoutineEdit.commands.contains(command.rawValue)
+        environment != nil && (CommandRoutineEdit.commands.contains(command.rawValue)
+            || environment?.stateOperations != nil && CommandRoutineEdit.stateCommands.contains(command.rawValue))
     }
     func assembled() throws -> RoutineCommandEnvironment {
         guard let environment else { throw RoutineCommandIssue.unassembled }
@@ -83,16 +84,17 @@ import SwiftData
         do {
             current = try revalidate(accepted.preview, invocation: invocation, environment: environment)
             dependencies = try invocationDependencies(invocation, preview: accepted.preview, environment: environment,
-                                                  effects: effects, displaySession: displaySession)
+                                                  effects: effects, displaySession: displaySession, accepted: accepted)
             try dependencies.validateBeforeTransaction()
         } catch {
-            try coordinator.recordRoutine(invocation, facts: .init(object: accepted.object,
-                                                                     state: .notSubmitted, conflict: Self.isFieldConflict(error)))
+            try coordinator.recordRoutine(invocation, facts: .init(object: accepted.object, state: .notSubmitted, stateImpact: accepted.preview.stateImpact,
+                        checkCreationIDs: accepted.checkCreationIDs, conflict: Self.isFieldConflict(error)))
             try coordinator.finishRoutine(invocation, external: [:])
             throw error
         }
         if accepted.preview.noChange {
-            let facts = CommandRoutineFacts(object: accepted.object, state: .noChange)
+            let facts = CommandRoutineFacts(object: accepted.object, state: .noChange, stateImpact: accepted.preview.stateImpact,
+                                            checkCreationIDs: accepted.checkCreationIDs)
             try coordinator.recordRoutine(invocation, facts: facts)
             try coordinator.finishRoutine(invocation, external: [:])
             return facts
@@ -100,6 +102,8 @@ import SwiftData
         let modification = RoutineMutationService.edit(current, accepted: accepted,
                                                          in: environment.context, dependencies: dependencies)
         var facts = Self.facts(modification)
+        facts.stateImpact = accepted.preview.stateImpact
+        facts.checkCreationIDs = accepted.checkCreationIDs
         facts.conflict = effects.fieldConflict
         if facts.state == .saved {
             facts.authorizationRequest = Self.call(modification.reminderRequest)
@@ -120,7 +124,7 @@ import SwiftData
 
     private func invocationDependencies(_ invocation: CommandRuntimeInvocation, preview: CommandRoutinePreview,
                                         environment: RoutineCommandEnvironment, effects: TaskTitleCommandEnvironment.Effects,
-                                        displaySession: ContentQueryReadSession?) throws -> RoutineMutationService.Dependencies {
+                                        displaySession: ContentQueryReadSession?, accepted: CommandRoutineAcceptance) throws -> RoutineMutationService.Dependencies {
         var dependencies = environment.dependencies
         let repository = dependencies.repository(environment.context)
         guard repository.routineMutationContext === environment.context else { throw RoutineCommandIssue.invalidRepository }
@@ -134,7 +138,8 @@ import SwiftData
         }
         dependencies.registerLocalModification = { [coordinator] id in
             guard id == preview.target.id else { throw RoutineCommandIssue.stale }
-            try coordinator.recordRoutine(invocation, facts: .init(object: preview.target, state: .saved, save: .returned))
+            try coordinator.recordRoutine(invocation, facts: .init(object: preview.target, state: .saved, stateImpact: preview.stateImpact,
+                checkCreationIDs: accepted.checkCreationIDs, save: .returned))
             try registration(id)
         }
         dependencies.validateBeforeTransaction = { [self] in

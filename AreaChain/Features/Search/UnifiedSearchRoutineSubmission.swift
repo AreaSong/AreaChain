@@ -23,18 +23,25 @@ struct UnifiedSearchRoutineSubmission: View {
         let preview = controller.currentRoutinePreview
         let accepted = controller.currentRoutineAcceptance != nil
         return VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            Text("unified.routine.pending").font(DaybookType.body)
+            Text(controller.showsRoutineState ? "unified.routineState.pending" : "unified.routine.pending").font(DaybookType.body)
             if !controller.hasRoutine { Text("unified.routine.single").font(DaybookType.caption) }
             if let preview {
                 UnifiedSearchRoutineImpact(preview: preview)
-                if preview.noChange { Text("unified.routine.noChange").font(DaybookType.caption) }
+                if preview.noChange {
+                    Text(controller.showsRoutineState ? "unified.routineState.noChange" : "unified.routine.noChange")
+                        .font(DaybookType.caption)
+                }
                 if accepted { Text("unified.routine.accepted").font(DaybookType.caption) }
                 else {
                     UnifiedSearchPlanButton(title: "unified.routine.accept", identifier: "unified.routine.accept", variant: .prominent) {
                         controller.acceptRoutine(preview, source: source)
                     }.disabled(controller.settingSubmitting)
                 }
-            } else { Text(controller.routinePreview == nil ? "unified.routine.baseline" : "unified.routine.stale").font(DaybookType.caption) }
+            } else {
+                Text(controller.routinePreview == nil
+                    ? (controller.showsRoutineState ? "unified.routineState.baseline" : "unified.routine.baseline") : "unified.routine.stale")
+                    .font(DaybookType.caption)
+            }
             UnifiedSearchPlanButton(title: "unified.routine.prepare", identifier: "unified.routine.prepare") {
                 controller.prepareRoutine(source)
             }.disabled(controller.settingSubmitting || !controller.hasRoutine)
@@ -48,6 +55,11 @@ struct UnifiedSearchRoutineSubmission: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text(LocalizedStringKey(UnifiedSearchRoutineCopy.result(facts)))
                 .font(DaybookType.body).accessibilityIdentifier("unified.routine.status")
+            if let impact = facts.stateImpact {
+                Text(verbatim: impact.definition.title).font(DaybookType.body)
+                    .accessibilityIdentifier("unified.routine.savedTarget")
+                UnifiedSearchRoutineStateImpact(impact: impact)
+            }
             if facts.state == .saved {
                 if let title = facts.savedTitle { Text(verbatim: title).font(DaybookType.body) }
                 let values = savedValues(facts)
@@ -73,6 +85,7 @@ struct UnifiedSearchRoutineSubmission: View {
             }
             if facts.conflict { Text("unified.routine.fields").font(DaybookType.caption) }
             if facts.state == .unknown {
+                if facts.stateImpact != nil { Text("unified.routineState.unknown") }
                 UnifiedSearchPlanButton(title: "unified.task.verify", identifier: "unified.routine.verify") { controller.verifyRoutine(source) }
                 if let verification = controller.routineVerification {
                     Text(LocalizedStringKey("unified.routine.presence." + String(describing: verification))).font(DaybookType.caption)

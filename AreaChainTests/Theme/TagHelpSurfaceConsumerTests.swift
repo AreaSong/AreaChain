@@ -14,7 +14,8 @@ struct TagHelpSurfaceConsumerTests {
         defer { SystemPageHost.release(window) }
         try await SystemPageHost.settle(window)
         let label = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
-            SettingsButtonTestSupport.value($0, "accessibilityValue") as? String == "Production help · original clipShape"
+            SettingsButtonTestSupport.value($0, "accessibilityValue") as? String
+                == MenuButtonTestSupport.localized("controls.preview.surface.help", "en")
         })
         try await SettingsButtonTestSupport.reveal(label, in: window)
         let frame = try SettingsButtonTestSupport.frame(label, in: window)

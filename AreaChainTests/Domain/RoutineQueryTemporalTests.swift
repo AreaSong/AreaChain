@@ -71,7 +71,7 @@ struct RoutineQueryTemporalTests {
         #expect(duplicate.diagnostics.contains { $0.issue == .check(.identicalDuplicates) && $0.severity == .warning })
         var invalid = done
         invalid.isSkipped = true
-        for checks in [[done, open], [invalid]] {
+        for checks in [[done, open], [done, invalid]] {
             let response = RoutineProviderFixture.read(source, evidence: [RoutineProviderFixture.schedule],
                 checks: checks, coverage: [RoutineProviderFixture.complete])
             #expect(response.undeterminedObjects.count == 1 && response.matches.isEmpty)

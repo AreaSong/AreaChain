@@ -33,12 +33,16 @@ struct UnifiedSearchRoutineImpact: View {
                 UnifiedSearchTaskTagSummary(associations: effects)
                 UnifiedSearchTaskTagEffects(associations: effects)
             }
-            Text("unified.routine.preserve").font(DaybookType.caption)
+            if let impact = preview.stateImpact { UnifiedSearchRoutineStateImpact(impact: impact) }
+            else { Text("unified.routine.preserve").font(DaybookType.caption) }
         }.fixedSize(horizontal: false, vertical: true)
     }
 
     private var values: String {
         switch preview.edit {
+        case .enabled(let value): return L10n.format("unified.routineState." + (value ? "enable" : "disable"), locale: locale)
+        case .occurrence(let action):
+            return (preview.target.dayKey ?? "") + " · " + L10n.format("unified.routineState." + action.rawValue, locale: locale)
         case .title(let edit): return preview.targetTitle + " → " + edit.title
         case .weekdays:
             return WeekdayMask.selectedLabels(originalWeekdays, locale: locale, calendar: calendar)

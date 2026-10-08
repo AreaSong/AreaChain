@@ -66,7 +66,7 @@ struct RoutineContentQueryReaderTests {
         for day in ["2026-10-02", "2026-10-03"] {
             let conflict = RoutineCheckReading.read(routineID: parent.id, on: day, checks: result.batch.facts.routine.checks,
                                                     coverage: coverage, dates: result.batch.dates)
-            #expect(conflict.state == .conflict)
+            #expect(conflict.state == (day == "2026-10-02" ? .skipped : .conflict))
         }
     }
 
@@ -83,6 +83,37 @@ struct RoutineContentQueryReaderTests {
         #expect(!response.canDeclareCompleteNoMatch && !response.completeness.matchingIsComplete)
         #expect(response.completeness.providers.contains { $0.limitations.contains(.checkSource(.incompleteUnattributedInput)) })
         #expect(orphan.routine == nil)
+    }
+
+    @Test(arguments: [0, 1, 2, 3]) func mixedSkipEncodingsKeepPhysicalEvidenceAndIntegrityLimits(issue: Int) throws {
+        let f = try RoutineContentQueryFixture()
+        let parent = f.routine()
+        let legacy = f.check(parent, done: true, skipped: true)
+        let alternate = f.check(parent, done: false, skipped: true)
+        if issue == 1 { alternate.id = legacy.id }
+        if issue == 2 { f.check(nil) }
+        if issue == 3 { f.check(parent, day: "2026-02-30") }
+        try f.context.save()
+        let result = f.records("date:today status:skipped")
+        let rows = result.routine.rows.filter { $0.recordID == legacy.id || $0.recordID == alternate.id }
+        #expect(rows.count == 2)
+        let indices = try rows.map { try #require($0.snapshotIndex) }
+        let snapshots = indices.map { result.batch.facts.routine.checks[$0] }
+        #expect(snapshots.count == 2 && snapshots.allSatisfy { $0.routineId == parent.id && $0.isSkipped })
+        #expect(snapshots.filter(\.isDone).count == 1)
+        #expect(legacy.isDone && legacy.isSkipped && !alternate.isDone && alternate.isSkipped)
+        let response = try RoutineContentQueryFixture.occurrence(result)
+        #expect(RoutineContentQueryFixture.covers(result, parent.id, QuerySessionFixture.today) == (issue == 0))
+        if issue == 0 {
+            let match = try #require(response.matches.first)
+            #expect(match.id.id == parent.id && match.occurrence.records.state == .skipped)
+            #expect(Set(match.occurrence.records.inputIndices) == Set(indices))
+            #expect(response.diagnostics.contains { $0.issue == .check(.equivalentEncodingDuplicates)
+                && !$0.affectsDetermination && Set($0.inputIndices) == Set(indices) })
+        } else {
+            #expect(response.matches.isEmpty && !response.isCompleteForCoveredTypes)
+            #expect(!result.routine.issues.isEmpty)
+        }
     }
 
     @Test func orphanPreventsDerivedOpenForOtherwiseValidDefinition() throws {

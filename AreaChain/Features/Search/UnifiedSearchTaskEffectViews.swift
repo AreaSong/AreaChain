@@ -36,6 +36,7 @@ struct UnifiedSearchTaskExternalFeedback: View {
     let notificationRequested: Bool?
     let calendarRequested: Bool?
     let unit: CommandExecutionUnit
+    var externalResults: [CommandExternalEffect: CommandExternalResult]?
     @Environment(\.locale) private var locale
 
     var body: some View {
@@ -44,8 +45,10 @@ struct UnifiedSearchTaskExternalFeedback: View {
             Text(verbatim: L10n.format("unified.composition.authorization", locale: locale,
                 L10n.format("unified.composition.call." + authorizationCall, locale: locale),
                 L10n.format("unified.composition.authorization." + authorizationResult, locale: locale)))
-            Text(verbatim: external("notification", requested: notificationRequested, result: unit.effects[.notification]))
-            Text(verbatim: external("calendar", requested: calendarRequested, result: unit.effects[.calendar]))
+            Text(verbatim: external("notification", requested: notificationRequested,
+                                   result: (externalResults ?? unit.effects)[.notification]))
+            Text(verbatim: external("calendar", requested: calendarRequested,
+                                   result: (externalResults ?? unit.effects)[.calendar]))
         }.font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
     }
 

@@ -66,7 +66,7 @@ struct RoutineContentQueryReader {
 }
 
 @MainActor
-private struct RoutineContentQueryCheckProjection {
+struct RoutineContentQueryCheckProjection {
     var checks: [CheckSnapshot] = []
     var rows: [RoutineContentQueryCheckRow] = []
     var issues: [RoutineContentQueryReadIssue] = []

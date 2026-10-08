@@ -21,6 +21,7 @@ enum TodoCalendarFieldUpdate {
 /// 待办数据访问与变更 SwiftData 具体仓储实现
 @MainActor
 final class SwiftDataTaskRepository: TaskRepositoryProtocol {
+    var taskMutationContext: ModelContext? { context }
     private let context: ModelContext
     private let retainedContainer: ModelContainer?
 

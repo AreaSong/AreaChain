@@ -53,6 +53,9 @@ struct UnifiedSearchParameterField: View {
                     .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }
             if parameter.id != .target && !isObject { preview }
+            if command.id.rawValue == "routine.create", parameter.id == .notes {
+                Text("unified.composition.unsupportedField").font(DaybookType.caption)
+            }
             if command.id.rawValue == "todo.create", ![.title, .day].contains(parameter.id),
                !controller.hasTaskComposition || parameter.id == .notes {
                 Text("unified.composition.unsupportedField").font(DaybookType.caption)
@@ -90,8 +93,14 @@ struct UnifiedSearchParameterField: View {
                 value: mode.requiresValue ? argument?.value : nil), source: source)
         }), options: ([CommandFieldOperation.unspecified] + CommandFieldOperation.allCases.filter {
             parameter.operations.contains($0) && $0 != .unspecified
-        }).map { .init($0, verbatim: L10n.format("unified.operation.mode." + $0.rawValue, locale: locale)) }, layout: .formRow, eventVersion: source.version)
+        }).map { .init($0, verbatim: operationLabel($0)) }, layout: .formRow, eventVersion: source.version)
         .accessibilityIdentifier("unified.parameter.mode." + parameter.id.rawValue)
+    }
+
+    private func operationLabel(_ mode: CommandFieldOperation) -> String {
+        let key = command.id.rawValue == "routine.create" && mode == .unspecified
+            ? "unified.routineCreate.unspecified" : "unified.operation.mode." + mode.rawValue
+        return L10n.format(key, locale: locale)
     }
 
     @ViewBuilder private var editor: some View {
@@ -169,7 +178,7 @@ struct UnifiedSearchParameterField: View {
         let after: String = {
             guard let argument else { return L10n.format("unified.operation.unfilled", locale: locale) }
             if !argument.operation.requiresValue {
-                return L10n.format("unified.operation.mode." + argument.operation.rawValue, locale: locale)
+                return operationLabel(argument.operation)
             }
             return UnifiedSearchOperationCopy.value(argument.value, locale: locale, calendar: calendar)
         }()
@@ -177,7 +186,7 @@ struct UnifiedSearchParameterField: View {
             if command.id.rawValue == "todo.title" {
                 Text("unified.title.inputHint").font(DaybookType.caption)
                 Text(verbatim: after).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
-            } else if command.id.rawValue == "todo.create" {
+            } else if ["todo.create", "routine.create"].contains(command.id.rawValue) {
                 Text(verbatim: after).font(DaybookType.caption)
                     .fixedSize(horizontal: false, vertical: true)
             } else if controller.localSettings?.supports(command.id) == true {

@@ -14,7 +14,7 @@ struct UnifiedSearchObjectSelectionStamp: Equatable {
 
 struct UnifiedSearchObjectSelection {
     let id = UUID()
-    let source: UnifiedSearchBuffer
+    var source: UnifiedSearchBuffer
     let location: UnifiedSearchObjectLocation
     var browse: ContentQueryBrowseState
     var selection = CommandDraftTargets.Selection.selected
@@ -90,6 +90,7 @@ extension UnifiedSearchController {
                     self.objectSelectionMessage = "unified.objects.stale"
                     return
                 }
+                self.renewObjectCandidateSource()
                 self.objectSelection = .init(source: self.buffer, location: location,
                                               browse: .init(snapshot: page.snapshot))
                 self.objectSelectionMessage = "unified.objects.hint"
@@ -111,6 +112,9 @@ extension UnifiedSearchController {
         guard validatesObjectSelection(picker.stamp), let draft = editingDraft,
               let command = CommandCatalog.standard.command(id: draft.commandID) else { return "unified.objects.stale" }
         let objects = picker.objects
+        if picker.selection == .allResults,
+           !session.allObjectResultsComplete(sourceID: picker.browse.snapshot.sourceID)
+            || picker.browse.selected != picker.browse.snapshot.known { return "unified.objects.incompleteAll" }
         if objects.isEmpty { return "unified.objects.empty" }
         if objects.contains(where: { (try? session.objectCandidate($0, sourceID: picker.browse.snapshot.sourceID)) == nil }) {
             return "unified.objects.unsupported"
@@ -140,7 +144,7 @@ extension UnifiedSearchController {
         let effect = picker.browse.apply(.init(version: stamp.candidateVersion, action: action))
         guard effect.rejection == nil else { return }
         switch action {
-        case .selectAllKnown: picker.selection = .allResults
+        case .selectAllKnown: picker.selection = .selected
         case .select, .selectVisible: picker.selection = .selected
         default: break
         }
@@ -152,12 +156,21 @@ extension UnifiedSearchController {
         browseObjects(.select(object, !picker.browse.selected.contains(object)), stamp: stamp)
     }
 
+    func selectAllObjectResults(_ stamp: UnifiedSearchObjectSelectionStamp) {
+        guard validatesObjectSelection(stamp), let picker = objectSelection else { return }
+        guard session.allObjectResultsComplete(sourceID: picker.browse.snapshot.sourceID) else {
+            objectSelectionMessage = "unified.objects.incompleteAll"; return
+        }
+        browseObjects(.selectAllKnown, stamp: stamp)
+        objectSelection?.selection = .allResults
+    }
+
     @discardableResult
     func acceptObjects(_ stamp: UnifiedSearchObjectSelectionStamp) -> Bool {
         guard validatesObjectSelection(stamp), var picker = objectSelection else {
             objectSelectionMessage = "unified.objects.stale"; return false
         }
-        if picker.objects.isEmpty, let active = picker.browse.active {
+        if picker.selection != .allResults, picker.objects.isEmpty, let active = picker.browse.active {
             _ = picker.browse.apply(.init(version: stamp.candidateVersion, action: .select(active, true)))
         }
         if let issue = objectSelectionIssue(picker) { objectSelectionMessage = issue; return false }
@@ -167,7 +180,8 @@ extension UnifiedSearchController {
             let selection: CommandDraftTargets.Selection = picker.selection == .allResults ? .allResults
                 : (picker.objects.count == 1 ? .single : .selected)
             event = .selectTargets(draft.stamp, .init(selection, objects: picker.objects),
-                                   baseline: command.id.rawValue == "todo.title" || (routesSubtask(command.id) || routesRoutine(command.id)) ? nil : syntheticBaselines[command.id])
+                                   baseline: command.id.rawValue == "todo.title" || routesBatch(command.id)
+                                    || (routesSubtask(command.id) || routesRoutine(command.id)) ? nil : syntheticBaselines[command.id])
         } else {
             guard let argument = objectArgument(picker.location, objects: picker.objects, command: command) else { return false }
             event = .edit(draft.stamp, argument)
@@ -224,6 +238,8 @@ extension UnifiedSearchController {
               let next = try? session.presentation().pagination.snapshot else { return }
         let effect = picker.browse.publish(next, replacing: stamp.candidateVersion)
         guard effect.rejection == nil else { return }
+        renewObjectCandidateSource()
+        picker.source = buffer
         objectSelection = picker
     }
 

@@ -97,6 +97,6 @@ struct RoutineOccurrenceIntegrationTests {
         }
         #expect(DayBoardLogic.isRoutineSkipped(routine, checks: [legacySkip], on: "2026-10-01"))
         #expect(DayBoardLogic.isRoutineDone(routine, checks: [legacySkip], on: "2026-10-01"))
-        #expect(RoutineQueryFixture.read([legacySkip]).state == .conflict)
+        #expect(RoutineQueryFixture.read([legacySkip]).state == .skipped)
     }
 }

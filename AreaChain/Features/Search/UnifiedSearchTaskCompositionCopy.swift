@@ -55,11 +55,12 @@ enum UnifiedSearchTaskCompositionCopy {
     static func time(_ minutes: Int) -> String { String(format: "%02d:%02d", minutes / 60, minutes % 60) }
 
     static func field<Value>(_ resolution: CommandTaskFieldResolution<Value>, locale: Locale,
-                             format: (Value) -> String) -> String {
-        let syntax = resolution.syntax.map(format) ?? L10n.format("unified.operation.mode.unspecified", locale: locale)
+                             format: (Value) -> String,
+                             unspecifiedKey: String = "unified.operation.mode.unspecified") -> String {
+        let syntax = resolution.syntax.map(format) ?? L10n.format(unspecifiedKey, locale: locale)
         let explicit: String
         switch resolution.explicit {
-        case .unspecified: explicit = L10n.format("unified.operation.mode.unspecified", locale: locale)
+        case .unspecified: explicit = L10n.format(unspecifiedKey, locale: locale)
         case .clear: explicit = L10n.format("unified.operation.mode.clear", locale: locale)
         case .set(let value): explicit = format(value)
         }

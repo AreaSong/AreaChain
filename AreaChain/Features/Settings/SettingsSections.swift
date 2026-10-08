@@ -5,6 +5,7 @@ import UserNotifications
 // MARK: - General Settings Section
 
 struct GeneralSettingsSection: View {
+    @Environment(\.colorScheme) private var colorScheme
     @Bindable var prefs = AppPreferences.shared
     @Binding var launchesAtLogin: Bool
     var loginNeedsApproval: Bool
@@ -27,6 +28,13 @@ struct GeneralSettingsSection: View {
             ], layout: .formRow)
             .accessibilityIdentifier("settings.look")
             .systemPageMarker("settings.look")
+            Button("controls.preview.title") {
+                AppWindows.openControlsPreview(localeID: prefs.resolvedLocale.identifier,
+                    dark: (prefs.resolvedColorScheme ?? colorScheme) == .dark)
+            }
+            .buttonStyle(DaybookButtonStyle(.quiet))
+            .accessibilityIdentifier("settings.controlsPreview")
+            .systemPageMarker("settings.controlsPreview")
             DaybookPicker("settings.quadrant.truncation", selection: $prefs.quadrantTitleTruncation, options: [
                 DaybookPickerOption(.tail, "settings.quadrant.truncation.tail"),
                 DaybookPickerOption(.middle, "settings.quadrant.truncation.middle")

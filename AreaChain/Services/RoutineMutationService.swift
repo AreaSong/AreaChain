@@ -23,7 +23,7 @@ import SwiftData
         fileprivate(set) var callSucceeded = false
         fileprivate var savedLocally = false
         fileprivate var rejected = false
-        init(_ routine: DailyRoutine) { object = .init(type: .routine, id: routine.id) }
+        init(_ routine: DailyRoutine, object: CommandObjectReference? = nil) { self.object = object ?? .init(type: .routine, id: routine.id) }
         var state: CommandRoutineFacts.State {
             if savedLocally { return .saved }
             if transaction?.save == .called || transaction?.phase == .recoveryFailed { return .unknown }
@@ -50,7 +50,7 @@ import SwiftData
 
     private static func mutate(_ routine: DailyRoutine, edit: CommandRoutineEdit, accepted: CommandRoutineAcceptance?,
                                in context: ModelContext, dependencies: Dependencies) -> Modification {
-        let result = Modification(routine)
+        let result = Modification(routine, object: accepted?.object)
         do {
             let repository = dependencies.repository(context)
             if let accepted {
@@ -75,6 +75,9 @@ import SwiftData
     private static func apply(_ routine: DailyRoutine, edit: CommandRoutineEdit, accepted: CommandRoutineAcceptance?,
                               repository: any RoutineRepositoryProtocol, context: ModelContext) throws {
         switch edit {
+        case .enabled, .occurrence:
+            guard let accepted else { throw RoutineCommandIssue.stale }
+            try repository.applyRoutineState(accepted)
         case .title(let title):
             try repository.updateRoutine(id: routine.id, title: title.title, notes: title.notes)
             if let priority = title.priority {

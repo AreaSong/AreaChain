@@ -14,7 +14,8 @@ struct DaybookStaticCardTests {
         defer { SystemPageHost.release(window) }
         try await SystemPageHost.settle(window)
         let labels = MenuButtonTestSupport.labels(in: window)
-        #expect(labels.contains("Static card · 静态卡片") && labels.contains("Interactive card · 悬停卡片"))
+        #expect(labels.contains(MenuButtonTestSupport.localized("controls.preview.surface.static", "en")))
+        #expect(labels.contains(MenuButtonTestSupport.localized("controls.preview.surface.interactive", "en")))
         try OverlaySurfaceTestSupport.record(window, name: "static-card-gallery-\(scheme)")
     }
 

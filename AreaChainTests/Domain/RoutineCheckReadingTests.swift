@@ -29,7 +29,7 @@ struct RoutineCheckReadingTests {
         }
     }
 
-    @Test func inconsistentStatesNeverUseFirstOrLastAndSingleDoubleFlagIsConflict() {
+    @Test func inconsistentStatesNeverUseFirstOrLastAndLegacySkipIsCompatible() {
         for left in [RoutineCheckState.completed, .skipped, .unprocessed] {
             for right in [RoutineCheckState.completed, .skipped, .unprocessed] where left != right {
                 let rows = [RoutineQueryFixture.check(left), RoutineQueryFixture.check(right)]
@@ -43,8 +43,8 @@ struct RoutineCheckReadingTests {
         var invalid = RoutineQueryFixture.check(.completed)
         invalid.isSkipped = true
         let result = RoutineQueryFixture.read([invalid])
-        #expect(result.state == .conflict && result.diagnostics == [.doneAndSkipped])
-        #expect(RoutineQueryFixture.read([invalid, invalid]).diagnostics == [.identicalDuplicates, .doneAndSkipped])
+        #expect(result.state == .skipped && result.diagnostics.isEmpty)
+        #expect(RoutineQueryFixture.read([invalid, invalid]).diagnostics == [.identicalDuplicates])
     }
 
     @Test func coverageCannotLeakToOtherDaysOrAcrossIntervalGaps() {

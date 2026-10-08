@@ -13,7 +13,8 @@ extension InputTagResolver {
         let newIDs = Array(creationIDs.values)
         guard Set(newIDs).count == newIDs.count, !rows.contains(where: { newIDs.contains($0.id) }),
               Set(resolved).count == resolved.count else { throw TaskCreateCommandIssue.identityCollision }
-        var order = (rows.map(\.sortOrder).max() ?? -1) + 1
+        var remaining = plan.final.filter { $0.effect == .createAndAssociate }.count
+        var order = try creationOrder(rows.map(\.sortOrder), count: remaining)
         for (association, id) in zip(plan.final, resolved) {
             switch association.effect {
             case .associateLive: break
@@ -23,10 +24,19 @@ extension InputTagResolver {
             case .createAndAssociate:
                 guard case .newName(let name, _) = association.target else { throw TaskCreateCommandIssue.stale }
                 context.insert(TagItem(id: id, name: name, sortOrder: order))
-                order += 1
+                remaining -= 1
+                if remaining > 0 { order += 1 }
             }
         }
         return resolved
+    }
+
+    /// 先检查整个新建区间；末项等于 Int.max 时不再计算一个不会使用的下一序号。
+    static func creationOrder(_ orders: [Int], count: Int) throws -> Int {
+        guard count > 0 else { return 0 }
+        let maximum = orders.max() ?? -1
+        guard !maximum.addingReportingOverflow(count).overflow else { throw TaskCreateCommandIssue.invalidInput }
+        return maximum + 1
     }
 
     private static func resolve(_ association: CommandTaskTagAssociation, lookup: CommandTaskTagLookup,

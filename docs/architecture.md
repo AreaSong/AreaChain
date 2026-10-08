@@ -316,6 +316,8 @@ env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
 2. **激活策略**：平时 `.accessory`（无 Dock）；工作台、手记小窗或剪贴板小窗打开后升为 `.regular`。`AppWindows.diaryWindowsProvider` 把全部手记窗口纳入存活窗口集合，`clipboardWindowProvider` 纳入剪贴板小窗，防止关工作台时被当成杂散窗口隐藏；还有可见或最小化窗口时不撤去 Dock。剪贴板小窗失焦不关闭，置顶只改窗口层级。
 3. **手记小窗**：`DiaryWindows` 按记录标识复用 `DiaryWindowController`，草稿首次保存后也复用原窗。窗口置顶只设置 `.floating` 层级，不改变记录的 `isPinned`，也不重新激活应用；不自动恢复窗口或未保存正文。关闭窗口使用原生保存确认，应用退出还检查独立窗口和 `BoardComposerSession` 中的手记草稿。
 
+4. **控件预览**：设置的外观区通过 AppWindows.openControlsPreview 把当前语言与外观值传给独立 ControlsPreviewWindowController。首次打开创建本地样例树，再次打开只置前，关闭卸载树并释放窗口引用；不注册偏好监听、不注入 ModelContext。它直接纳入 AppWindows 的合法窗口集合，参与 hideStrayWindows 与激活策略判断。760×640 内容区可缩至680×560；重置只重建样例子树，语言／主题切换保持身份。实现及验收入口见[组件目录](component-catalog.md#设置控件预览)。
+
 ### 内容查询领域契约（1B-2A）
 
 `ContentQueryParser` 在 Domain 分离内容查询与现有 `CommandPathResult`；词法、原子条件、矛盾检查、日期、范围与字段适用性分别实现。原始文本和 UTF-16 范围不被规范化覆盖。查询输出不访问 SwiftData、附件拥有者、打卡或剪贴板，也没有执行入口。消费者为原 ContentQuery 领域测试及下述 1B-2B reducer 与测试；旧 BoardSearch 保持原生产语义。`/tasks` 目录 inclusion 的未决状态改为 ordinaryContent，具体组成与停用选择由 `ContentQueryScopeContract` 声明。
@@ -538,3 +540,20 @@ SubtaskCommandEnvironment 分开父普通无备注、子项和本次输入的证
 ### 习惯定义修改隔离边界（R-M1）
 
 RoutineCommandEnvironment/Reader/Adapter 使用独立类型化目标、来源、影响和事实，仅显式装配单普通无备注活定义。完整 UUID 查询含停用与墓碑；`.routineOccurrence` 不代替定义。RoutineMutationService 复用原习惯仓储及原标题解析，旧 UI 同值保存保持；旧标题 Bool 读取同步调用正常返回的 callSucceeded，命令 saved 仍只由 afterCommit 完成；星期同时比较原始 weekdayMask/weekdaysOnly，空草稿不转为每天。标题/标签实体共同事务，所有五字段均不调用启停桥接、不改 RoutineCheck、暂停状态或创建信息。准备/接受零写入，原 Coordinator 占用与 Run.routine 登记分开保存、发布及 fake 系统结果，unknown 不自动重放。原生对象来源继续沿 RoutineContentQueryReader 与安全发布链，生产未装配。支持范围与实际证据见[权威 R-M1](unified-search-commands.md#976-里程碑-r-m1习惯定义五字段的隔离闭环)。
+
+### R-M2 普通习惯创建边界
+
+RoutineCommandEnvironment 的可选 Creation 仅为显式隔离宿主提供 now/calendar 与输入／创建环境资格，默认五字段接口不扩权。RoutineCreateCommandReader 独立绑定无目标的新建参数、D3目录、所有定义的排序依据和创建日；原 CommandTaskCreateRegistry 与 Coordinator 占用保持唯一身份责任。RoutineMutationService.create 将已接受字段和标签交给原仓储／ModelChanges，CreateRoutineParams 的可选身份／时刻保留旧默认。CommandRoutineCreateFacts 在原 Run 中提供实际保存的 `.routine`，不进入可依赖输出。原新增 UI、启停／打卡存储与新读取归并均保持；兼容建议和验收只见[权威 R-M2](unified-search-commands.md#977-里程碑-r-m2普通习惯结构化新增与状态兼容核验)。
+
+
+### R-M3 习惯状态隔离边界
+
+StateOperations 显式扩展原 RoutineCommandEnvironment，RoutineCommandStateReader 复用独立全表读取和关系完整性投影；Domain 的 CommandRoutineStatePlanning 只生成已批准当前星期桥接与明确单日状态效果。原 Registry 固定新增记录 UUID，Preview 和 Run.routine 保留完整物理写集；applyRoutineState 在原 ModelChanges 中共同提交定义与记录，unknown 不凭当前存在性推导历史成功。新读取逻辑 skipped 兼容不抹除物理证据，也不替换旧 UI／月历／连击算法。原生日期仍是原草稿目标的一部分，影响列表不持有业务状态。支持范围与实际证据见[权威 R-M3](unified-search-commands.md#978-里程碑-r-m3兼容跳过习惯启停与指定执行日状态)。
+
+### B-M1 固定多目标与共同事务
+
+一个 batch.move／batch.tags 对应原 Plan 的一个 item；CommandDraftTargets 只保存完整类型化身份，查询刷新不改变接受范围。ReadSession 的 allObjectResultsComplete 核对当前匹配覆盖、预算限制和全部展示身份；仅分页隐藏不影响完整性，已知子集不能标为全部结果。
+
+BatchCommandReader 独占同隔离 context 的有界目标读取与一份目录索引，真实来源、记录身份、raw tagIDs 和影响字段逐项绑定接受。混合类型拆成明确的仓储调用，禁止共享 Set<UUID> 同时选择两类实体。BatchCommandTransaction 复用原仓储字段规则和一次 ModelChanges；任何应用失败共同回滚，全部 noChange 不进入事务。保存返回先登记整份 CommandBatchFacts，再一次私有广播；fake 外部结果逐目标保留，不将一次刷新当成全部同步成功。
+
+Run 在 unknown 时保留原目标、参数、影响写集和接受／调用身份，不重试或拆成单项；当前值符合预期也不产生历史提交证明。新装配只允许干净内存库、相同仓储 context 和私有事件。旧批量 UI／单项命令和全局单项计划守卫保持；完整契约和验证见[权威 B-M1](unified-search-commands.md#979-里程碑-b-m1固定多目标改期与混合标签共同提交)。

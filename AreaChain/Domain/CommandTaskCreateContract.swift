@@ -143,6 +143,7 @@ enum CommandTaskCreateVerification: Equatable {
 
 @MainActor final class CommandTaskCreateRegistry {
     var preparing: [String: CommandHostOwnership] = [:]
+    var routinePreparations: [UUID: CommandRoutineCreateAcceptance] = [:]
     private(set) var preparations: [UUID: CommandTaskCreatePreparation] = [:]
     private var invoked: Set<UUID> = []
 

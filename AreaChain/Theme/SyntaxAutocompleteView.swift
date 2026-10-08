@@ -149,6 +149,7 @@ struct SyntaxAutocompletePopup: View {
     var customRow: ((SyntaxCandidate, Bool) -> AnyView)? = nil
     var rowHeight: CGFloat = 29
     var listMaximumHeight: CGFloat = 180
+    var onCopyPreview: ((String, Bool) -> Bool)? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @ViewBuilder
@@ -158,6 +159,7 @@ struct SyntaxAutocompletePopup: View {
                 text: state.inputText,
                 availableTags: state.availableTags,
                 showsSuggestions: showsSuggestions,
+                onCopy: onCopyPreview,
                 onClose: dismissPreview
             )
         } else {
@@ -166,7 +168,8 @@ struct SyntaxAutocompletePopup: View {
                 knownTags: state.availableTags,
                 activeCandidate: showsSuggestions ? state.selectedCandidate() : nil,
                 showsSuggestions: showsSuggestions,
-                onClose: dismissPreview
+                onClose: dismissPreview,
+                onCopy: onCopyPreview.map { copy in { text in _ = copy(text, false) } }
             )
         }
     }

@@ -123,8 +123,8 @@ struct RoutineQueryMatching {
         }
         // on 单独只要求应执行，读取诊断仍保留，但记录不足不改变纯排程条件。
         result.diagnostics += occurrence.records.diagnostics.map {
-            .init(issue: .check($0), severity: $0 == .identicalDuplicates ? .warning : .error,
-                  affectsDetermination: $0 != .identicalDuplicates, conditionIDs: [id],
+            .init(issue: .check($0), severity: $0.affectsDetermination ? .error : .warning,
+                  affectsDetermination: $0.affectsDetermination, conditionIDs: [id],
                   inputIndices: occurrence.records.inputIndices)
         }
         return result

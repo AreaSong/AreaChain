@@ -94,7 +94,7 @@ extension CommandCatalogBuilder {
             entry("routine.trash", "/routines/trash", .modification, "T5:delete")
                 .targets([.routine], batch: .explicitMultiple).ordinary().requiring([.independentConfirmation]),
             entry("occurrence.complete", "/routines/checks/complete", .modification, "T6:complete")
-                .targets([.routineOccurrence], batch: .explicitMultiple).unresolved("routineCompletion"),
+                .targets([.routineOccurrence]).ordinary(),
             entry("occurrence.reopen", "/routines/checks/reopen", .modification, "T6:reopen")
                 .targets([.routineOccurrence], batch: .explicitMultiple).ordinary(),
             entry("occurrence.skip", "/routines/checks/skip", .modification, "T6:skip")

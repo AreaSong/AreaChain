@@ -14,6 +14,9 @@ import Testing
     var targetProtection = CommandProtectionRequirement.ordinary
     var inputProtection = CommandProtectionRequirement.ordinary
     var notes = CommandTaskTitleEligibility.Notes.absent
+    var stateOperations = false
+    var today = "2026-10-08"
+    var stateHistory: [RoutineScheduleEvidence] = []
     var sourceRead: (() throws -> Void)?
     var beforeTransaction: (() throws -> Void)?
     var afterRegistration: (() throws -> Void)?
@@ -29,7 +32,8 @@ import Testing
     private(set) var environment: RoutineCommandEnvironment!
     private(set) var adapter: RoutineCommandAdapter!
 
-    init(enabled: Bool = true) throws {
+    init(enabled: Bool = true, stateOperations: Bool = false) throws {
+        self.stateOperations = stateOperations
         base = try TaskTitleFixture()
         base.todo.notes = ""
         routine = DailyRoutine(id: base.todo.id, title: "原习惯", sortOrder: 6, isEnabled: enabled,
@@ -83,7 +87,9 @@ import Testing
         }, requestAuthorization: { [unowned self] minutes in
             base.io.authorizations.append(minutes)
             return .granted
-        })
+        }, stateOperations: stateOperations ? .init(now: { [unowned self] in
+            DayKey.date(from: today, calendar: RoutineQueryFixture.dates.calendar)!
+        }, calendar: RoutineQueryFixture.dates.calendar, history: { [unowned self] _ in stateHistory }) : nil)
     }
 
     func queue(_ command: String, _ argument: CommandArgument, target: CommandObjectReference? = nil) throws {

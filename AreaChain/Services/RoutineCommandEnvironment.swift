@@ -10,20 +10,26 @@ import SwiftData
     let source: (CommandRoutineSourceRequest) throws -> CommandRoutineEligibility
     let refresh: (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh
     let requestAuthorization: (Int) -> CommandTaskTitleFacts.Authorization
+    let stateOperations: StateOperations?
+    let creation: Creation?
     var beforePublication: () throws -> Void = {}
     var afterPublication: () throws -> Void = {}
     lazy var reader = RoutineCommandReader(environment: self)
+    lazy var creationReader = RoutineCreateCommandReader(environment: self)
 
     init(context: ModelContext, center: NotificationCenter, dependencies: RoutineMutationService.Dependencies,
          source: @escaping (CommandRoutineSourceRequest) throws -> CommandRoutineEligibility,
          refresh: @escaping (CommandObjectReference, Bool) throws -> TaskTitleCommandEnvironment.Refresh,
-         requestAuthorization: @escaping (Int) -> CommandTaskTitleFacts.Authorization) throws {
+         requestAuthorization: @escaping (Int) -> CommandTaskTitleFacts.Authorization,
+         creation: Creation? = nil, stateOperations: StateOperations? = nil) throws {
         self.context = context
         self.center = center
         self.dependencies = dependencies
         self.source = source
         self.refresh = refresh
         self.requestAuthorization = requestAuthorization
+        self.creation = creation
+        self.stateOperations = stateOperations
         try validateClean()
     }
 

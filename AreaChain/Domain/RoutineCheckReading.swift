@@ -25,7 +25,11 @@ struct RoutineCheckRead: Equatable {
 
 enum RoutineCheckIssue: Equatable {
     case invalidDay, invalidRecordDay, invalidCoverage, coverageRoutineMismatch
-    case incompleteInput, identicalDuplicates, conflictingRecords, doneAndSkipped
+    case incompleteInput, identicalDuplicates, equivalentEncodingDuplicates, conflictingRecords, doneAndSkipped
+
+    var affectsDetermination: Bool {
+        self != .identicalDuplicates && self != .equivalentEncodingDuplicates
+    }
 }
 
 /// 新搜索专用只读归并，不替换 DayBoardCheckIndex 的 first-wins 或 Agenda 的任一闭合。
@@ -52,14 +56,14 @@ enum RoutineCheckReading {
         let rows = indices.map { checks[$0] }
         var diagnostics: [RoutineCheckIssue] = complete ? [] : [.incompleteInput]
         let first = rows.first
-        let same = rows.allSatisfy { $0.isDone == first?.isDone && $0.isSkipped == first?.isSkipped }
-        if rows.count > 1 && same { diagnostics.append(.identicalDuplicates) }
+        let encodings = Dictionary(grouping: rows) { ($0.isDone ? 2 : 0) + ($0.isSkipped ? 1 : 0) }
+        let same = rows.allSatisfy { state($0) == first.map(state) }
+        if encodings.values.contains(where: { $0.count > 1 }) { diagnostics.append(.identicalDuplicates) }
+        if encodings[1] != nil && encodings[3] != nil { diagnostics.append(.equivalentEncodingDuplicates) }
         if !same { diagnostics.append(.conflictingRecords) }
-        let invalidPair = rows.contains { $0.isDone && $0.isSkipped }
-        if invalidPair { diagnostics.append(.doneAndSkipped) }
-        let observed = same && !invalidPair ? first.map(state) : nil
+        let observed = same ? first.map(state) : nil
         let resolved: RoutineCheckReadState
-        if !same || invalidPair { resolved = .conflict }
+        if !same { resolved = .conflict }
         else if !complete { resolved = .incomplete }
         else {
             switch observed {
@@ -74,8 +78,8 @@ enum RoutineCheckReading {
     }
 
     private static func state(_ check: CheckSnapshot) -> RoutineCheckState {
-        if check.isDone { return .completed }
-        return check.isSkipped ? .skipped : .unprocessed
+        if check.isSkipped { return .skipped }
+        return check.isDone ? .completed : .unprocessed
     }
 
     private static func invalid(

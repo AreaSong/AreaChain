@@ -63,6 +63,9 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
 
     @discardableResult
     func addRoutine(_ params: CreateRoutineParams) throws -> DailyRoutine {
+        if let id = params.creationID, try !fetchRoutines(withID: id).isEmpty {
+            throw RepositoryError.invalidArgument("习惯创建身份已存在")
+        }
         let trimmed = params.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let hasMetadata = !params.tagIDs.isEmpty
             || params.remindMinutes != nil
@@ -73,12 +76,14 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             throw RepositoryError.invalidArgument("习惯标题不能为空")
         }
         let routine = DailyRoutine(
+            id: params.creationID ?? UUID(),
             title: trimmed,
             sortOrder: params.sortOrder,
             isEnabled: params.isEnabled,
             createdDayKey: params.createdDayKey,
             weekdaysOnly: params.weekdaysOnly,
             weekdayMask: params.weekdayMask,
+            createdAt: params.createdAt ?? .now,
             remindMinutes: params.remindMinutes,
             tagIDs: TagIDList.encode(TagIDList.normalized(params.tagIDs)),
             isImportant: params.isImportant,

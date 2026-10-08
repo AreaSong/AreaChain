@@ -5,9 +5,12 @@ struct CommandRoutineAcceptance: Equatable, CustomStringConvertible, CustomDebug
     let preview: CommandRoutinePreview
     let object: CommandObjectReference
     let tagCreationIDs: [String: UUID]
-    fileprivate init(_ preview: CommandRoutinePreview) {
+    let checkCreationIDs: [String: UUID]
+    fileprivate init(_ preview: CommandRoutinePreview, previous: CommandRoutineAcceptance? = nil) {
         id = UUID()
         self.preview = preview
+        checkCreationIDs = Dictionary(uniqueKeysWithValues: (preview.stateImpact?.effects ?? []).filter { $0.action == .insert }
+            .map { ($0.day, previous?.checkCreationIDs[$0.day] ?? UUID()) })
         object = preview.target
         let keys = Set(preview.tags?.final.compactMap { target -> String? in
             if case .newName(_, let key) = target { return key }; return nil
@@ -18,11 +21,13 @@ struct CommandRoutineAcceptance: Equatable, CustomStringConvertible, CustomDebug
     var debugDescription: String { description }
 }
 
-/// 习惯定义修改事实没有创建输出；本地提交与系统消费者结果独立登记。
+/// 习惯定义与执行日修改没有可依赖的创建输出；本地提交与系统消费者结果独立登记。
 struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     enum State: Equatable { case pending, notSubmitted, noChange, saved, unknown }
     let object: CommandObjectReference
     var state: State = .pending
+    var stateImpact: CommandRoutineStateImpact?
+    var checkCreationIDs: [String: UUID] = [:]
     var save = CommandTaskTitleFacts.Call.notCalled
     var rollback = CommandTaskTitleFacts.Call.notCalled
     var publication = CommandTaskTitleFacts.Call.notCalled
@@ -49,14 +54,14 @@ struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStrin
             throw CommandExecutionError.stale
         }
         try CommandRoutinePreview.validate(item)
-        guard object.type == .routine, object.dayKey == nil, item.draft.targets.objects == [object], run.outputs.isEmpty else {
+        guard item.draft.targets.objects == [object], run.outputs.isEmpty else {
             throw CommandExecutionError.invalidResult
         }
         guard state == .saved || (savedTagEffects == nil && savedTagIDs == nil && savedTitle == nil && savedValues == nil) else {
             throw CommandExecutionError.invalidResult
         }
         if let previous = run.units[index].routine {
-            guard previous.object == object,
+            guard previous.object == object, previous.stateImpact == stateImpact, previous.checkCreationIDs == checkCreationIDs,
                   previous.state == .pending || previous.state == state else { throw CommandExecutionError.invalidResult }
         }
         let result: CommandExecutionResult?
@@ -91,7 +96,7 @@ struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStrin
             guard !wasInvoked(old.id) else { throw RoutineCommandIssue.alreadyInvoked }
             if old.preview == preview { return old }
         }
-        let accepted = CommandRoutineAcceptance(preview)
+        let accepted = CommandRoutineAcceptance(preview, previous: acceptances[preview.draft.draftID])
         acceptances[preview.draft.draftID] = accepted
         return accepted
     }

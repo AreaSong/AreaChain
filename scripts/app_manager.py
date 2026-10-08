@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from typing import Optional
 
 import signing
 
@@ -41,6 +42,19 @@ class Locations:
 
     def privacy_configuration(self, bundle):
         return self.user / "Library/Containers" / bundle / "Data/Library/Application Support/areachain-privacy.json"
+
+
+@dataclass(frozen=True)
+class RecoveryIdentity:
+    app: Path
+    signature: dict
+    file_id: tuple
+
+
+@dataclass(frozen=True)
+class InstallAccess:
+    installed: Optional[dict]
+    recovery: Optional[RecoveryIdentity] = None
 
 
 def require(condition, message):
@@ -132,10 +146,44 @@ def quit_running(timeout=5):
 def installed_signature(paths):
     if not exists(paths.app):
         return None
-    result = inspect_signature(paths.app)
+    return verified_identity(paths.app)
+
+
+def verified_identity(app):
+    result = inspect_signature(app)
     # 允许更新已过期的描述文件，但不把破损旧包当作已验证的回退材料。
-    signing.run_tool(["codesign", "--verify", "--deep", "--strict", str(paths.app)])
+    signing.run_tool(["codesign", "--verify", "--deep", "--strict", str(app)])
     return result
+
+
+def recovery_identity(paths, app):
+    real_path(app)
+    require(app.name == "AreaChain.app" and app.parent.parent == paths.backups
+            and re.fullmatch(r"(?:install|uninstall)-\d{8}T\d{6}Z-[A-Za-z0-9_-]+", app.parent.name),
+            "原应用必须来自本用户安装／卸载脚本保留的回退目录。")
+    for directory in (paths.backups, app.parent):
+        real_path(directory)
+        attributes = directory.stat()
+        require(stat.S_ISDIR(attributes.st_mode) and attributes.st_uid == os.getuid()
+                and attributes.st_mode & 0o077 == 0,
+                "原应用回退目录必须由当前用户所有且仅当前用户可访问。")
+    attributes = app.stat()
+    require(stat.S_ISDIR(attributes.st_mode) and attributes.st_uid == os.getuid()
+            and attributes.st_mode & 0o022 == 0, "原应用必须由当前用户所有且不可被其他用户写入。")
+    signature = verified_identity(app)
+    current = app.stat()
+    file_id = (attributes.st_dev, attributes.st_ino)
+    require(file_id == (current.st_dev, current.st_ino), "核验期间原应用备份发生变化，停止安装。")
+    return RecoveryIdentity(app, signature, file_id)
+
+
+def installation_access(paths, previous_app):
+    installed = installed_signature(paths)
+    if previous_app is None:
+        return InstallAccess(installed)
+    require(installed is None, "已安装应用仍存在，请移除 --previous-app，直接核对现用应用。")
+    # 备份由使用者明确指定为原应用；不从历史目录自动挑选一个恰好匹配的签名。
+    return InstallAccess(None, recovery_identity(paths, previous_app))
 
 
 def verify_candidate(app, expected, configuration):
@@ -145,13 +193,16 @@ def verify_candidate(app, expected, configuration):
     return signing.verify_app(app, configuration, expected)
 
 
-def check_access(paths, candidate, previous):
+def check_access(paths, candidate, access):
+    previous = access.installed if access.recovery is None else access.recovery.signature
     if previous is not None:
         require(access_identity(previous) == access_identity(candidate),
                 "签名团队、模式、应用标识或钥匙串访问组发生变化。请单独验证备份与签名迁移，不能自动替换。")
     else:
         require(not exists(paths.privacy_configuration(candidate["bundleIdentifier"])),
-                "检测到遗留私密锁但找不到已安装应用，无法核对原签名身份；请先按备份恢复流程处理。")
+                "检测到遗留私密锁但找不到已安装应用，无法核对原签名身份；"
+                f"请先检查 {paths.backups}，确认原包后使用 --previous-app 原应用路径；"
+                "无可信原包时请按备份恢复流程处理，不要删除私密锁配置。")
 
 
 def show(value):
@@ -208,9 +259,12 @@ def operation_lock(paths):
         os.close(descriptor)
 
 
-def unchanged(paths, previous):
+def unchanged(paths, access):
     stopped()
-    require(installed_signature(paths) == previous, "确认后已安装应用发生变化，停止替换。")
+    require(installed_signature(paths) == access.installed, "确认后已安装应用发生变化，停止替换。")
+    if access.recovery is not None:
+        require(recovery_identity(paths, access.recovery.app) == access.recovery,
+                "确认后原应用备份发生变化，停止安装。")
 
 
 def switch_app(paths, staged, recovery, expected, configuration):
@@ -234,7 +288,7 @@ def switch_app(paths, staged, recovery, expected, configuration):
         raise AppError("安装未通过，已恢复安装前状态；用户数据未操作。") from error
 
 
-def replace_app(paths, source, expected, previous, candidate, configuration):
+def replace_app(paths, source, expected, access, candidate, configuration):
     recovery = recovery_directory(paths, "install")
     stage = None
     try:
@@ -244,8 +298,8 @@ def replace_app(paths, source, expected, previous, candidate, configuration):
         verify_candidate(staged, expected, configuration)
         require(inspect_signature(staged) == candidate,
                 "暂存包与已确认的候选包不同，构建产物可能已改变；停止安装。")
-        unchanged(paths, previous)
-        check_access(paths, candidate, previous)
+        unchanged(paths, access)
+        check_access(paths, candidate, access)
         show({"recoveryDirectory": str(recovery), "dataBackupCreated": False})
         switch_app(paths, staged, recovery, expected, configuration)
     finally:
@@ -271,17 +325,19 @@ def install(args, paths):
     source = paths.project / f"build/{expected['mode']}-DerivedData/Build/Products/{configuration}/AreaChain.app"
     verified = verify_candidate(source, expected, configuration)
     candidate = inspect_signature(source)
-    previous = installed_signature(paths)
-    check_access(paths, candidate, previous)
+    access = installation_access(paths, args.previous_app)
+    check_access(paths, candidate, access)
     show({"action": "install", "dryRun": args.dry_run, "configuration": configuration,
           "target": str(paths.app), "candidate": str(source), "running": running(),
-          "dataPreserved": True, "profileExpiresUTC": verified.get("profileExpiresUTC")})
+          "dataPreserved": True, "profileExpiresUTC": verified.get("profileExpiresUTC"),
+          "identitySource": str(access.recovery.app) if access.recovery else
+          (str(paths.app) if access.installed is not None else None)})
     if args.dry_run:
         return
     confirm("install", args.yes)
     with operation_lock(paths):
         quit_running()
-        backup = replace_app(paths, source, expected, previous, candidate, configuration)
+        backup = replace_app(paths, source, expected, access, candidate, configuration)
     show({"installed": True, "previousApp": backup, "dataPreserved": True})
     if not args.no_open:
         launch(paths)
@@ -343,6 +399,8 @@ def parser():
     install_command.add_argument("--release", action="store_true", help="改为构建并安装优化后的 Release")
     install_command.add_argument("--no-build", action="store_true", help="安装已有产物，不重新构建")
     install_command.add_argument("--no-open", action="store_true", help="安装后不启动")
+    install_command.add_argument("--previous-app", type=Path, metavar="PATH",
+                                 help="现用应用缺失时，显式指定安装／卸载回退目录中的可信原应用以核对签名；保留全部数据")
     uninstall_command = commands.add_parser("uninstall", aliases=["delete"], help="只卸载应用，保留数据与密钥")
     for item in (install_command, uninstall_command):
         action = item.add_mutually_exclusive_group()

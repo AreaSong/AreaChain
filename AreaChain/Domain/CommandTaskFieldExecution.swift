@@ -47,3 +47,36 @@ extension CommandHandoffCoordinator {
         try finishTaskMutation(invocation, external: external)
     }
 }
+
+extension CommandTaskFieldFacts {
+    func receipt(in run: CommandExecutionRun, attempt: CommandAttemptStamp) throws -> (Int, CommandExecutionResult?) {
+        guard attempt.execution == run.stamp, attempt.phase == .local, run.snapshot.items.count == 1,
+              let item = run.snapshot.items.first, item.id == attempt.unitID,
+              let index = run.units.firstIndex(where: { $0.id == attempt.unitID }),
+              run.units[index].attempt == attempt.number, run.units[index].currentPhase == .local else {
+            throw CommandExecutionError.stale
+        }
+        try CommandTaskFieldPreview.validate(item)
+        guard item.draft.targets.objects.first?.id == targetID, run.outputs.isEmpty else { throw CommandExecutionError.invalidResult }
+        if let previous = run.units[index].taskField {
+            guard previous.targetID == targetID, previous.state == .pending || previous.state == state else {
+                throw CommandExecutionError.invalidResult
+            }
+        }
+        guard run.units[index].receipt == nil else { return (index, nil) }
+        switch state {
+        case .pending: return (index, nil)
+        case .noChange:
+            guard save == .notCalled, publication == .notCalled,
+                  !refreshRequested, authorizationRequest == .notCalled else { throw CommandExecutionError.invalidResult }
+            return (index, .noChange)
+        case .saved:
+            guard save == .returned else { throw CommandExecutionError.invalidResult }
+            return (index, .committed(outputs: [:], external: [.taskPublication, .notification, .calendar]))
+        case .unknown: return (index, .commitUnknown)
+        case .notSubmitted:
+            guard save == .notCalled else { throw CommandExecutionError.invalidResult }
+            return (index, .failedWithoutCommit)
+        }
+    }
+}

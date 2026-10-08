@@ -56,7 +56,7 @@ struct RowBubbleSurfaceTests {
         try await SystemPageHost.settle(window)
         let label = try #require(SettingsButtonTestSupport.elements(window.contentView).first {
             SettingsButtonTestSupport.value($0, "accessibilityValue") as? String
-                == "Production bubbles · card-only shadow · external arrows"
+                == MenuButtonTestSupport.localized("controls.preview.surface.bubbles", "en")
         })
         try await SettingsButtonTestSupport.reveal(label, in: window)
         try OverlaySurfaceTestSupport.record(window, name: "f-gallery-\(scheme)")

@@ -47,8 +47,8 @@ struct ImageQueryTemporalTests {
         #expect(conflict.diagnostics.contains { $0.issue == .check(.conflictingRecords) })
         var invalid = done
         invalid.isSkipped = true
-        #expect(ImageQueryProvider.read(ImageQueryFixture.scheduled("/images on:today status:done", checks: [invalid]))
-            .diagnostics.contains { $0.issue == .check(.doneAndSkipped) })
+        #expect(ImageQueryProvider.read(ImageQueryFixture.scheduled("/images on:today status:skipped", checks: [invalid, skipped]))
+            .matches.count == 1)
         let duplicate = ImageQueryProvider.read(ImageQueryFixture.scheduled("/images on:today status:done", checks: [done, done]))
         #expect(duplicate.matches.count == 1 && duplicate.isCompleteForCoveredTypes)
         #expect(duplicate.diagnostics.contains { $0.issue == .check(.identicalDuplicates) && !$0.affectsDetermination })

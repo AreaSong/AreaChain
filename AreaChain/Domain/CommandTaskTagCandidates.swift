@@ -5,12 +5,13 @@ struct CommandTaskTagCandidates: Equatable {
     let evidence: CommandTaskTagCatalog.Evidence
     let records: [CommandTaskTagRecord]
 
-    init(catalog: CommandTaskTagCatalog) throws {
+    init(catalog: CommandTaskTagCatalog, liveOnly: Bool = false) throws {
         let lookup = CommandTaskTagLookup(catalog)
         guard lookup.catalogProblems.isEmpty else { throw CommandTaskCreatePreviewIssue.invalidCatalog }
         evidence = try catalog.evidence()
         records = catalog.records.filter { row in
-            guard let id = row.id, case .success(.existing(let eligible)) = lookup.resolve(.id(id)) else { return false }
+            guard !liveOnly || row.state == .live, let id = row.id,
+                  case .success(.existing(let eligible)) = lookup.resolve(.id(id)) else { return false }
             return eligible == row
         }
     }

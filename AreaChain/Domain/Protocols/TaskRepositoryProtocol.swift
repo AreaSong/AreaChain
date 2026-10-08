@@ -50,6 +50,8 @@ struct CreateTodoParams: Sendable {
 /// 待办数据访问与变更核心协议（纯 Swift / SwiftData，无 UI 依赖）
 @MainActor
 protocol TaskRepositoryProtocol: AnyObject {
+    /// 普通任务命令核验仓储归属；旧实现默认不授予批量写入资格。
+    var taskMutationContext: ModelContext? { get }
     // MARK: - 查询 (Query)
     /// 获取指定日期的活跃待办（按创建时间升序排列）
     func fetchTodos(for dayKey: String) throws -> [TodoItem]
@@ -170,6 +172,7 @@ protocol TaskRepositoryProtocol: AnyObject {
 }
 
 extension TaskRepositoryProtocol {
+    var taskMutationContext: ModelContext? { nil }
     var subtaskMutationContext: ModelContext? { nil }
     func updateSubtask(id: UUID, update: SubtaskFieldUpdate) throws {
         throw RepositoryError.invalidArgument("仓储未接入结构化子任务修改")

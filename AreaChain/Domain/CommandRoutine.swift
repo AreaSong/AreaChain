@@ -5,13 +5,26 @@ enum RoutineCommandIssue: Error, Equatable {
     case sourceUnavailable, protectedContent, invalidRepository
 }
 
-/// 只描述习惯定义字段；不含日期实例、启停或历史排程操作。
+/// 定义字段与显式状态操作共用原接受协议；状态能力仍须单独装配。
 enum CommandRoutineEdit: Equatable {
     case title(TaskTitleEdit), weekdays(Int), reminder(Int?), priority(important: Bool, urgent: Bool), tags(CommandArgument)
+    case enabled(Bool), occurrence(RoutineOccurrenceAction)
+    static let stateCommands: Set<String> = ["routine.enabled", "occurrence.complete", "occurrence.skip", "occurrence.reopen"]
+    static var allCommands: Set<String> { commands.union(stateCommands) }
+    var isState: Bool { if case .enabled = self { return true }; if case .occurrence = self { return true }; return false }
+
+    init(command: CommandID, arguments: [CommandArgument]) throws {
+        if let action = RoutineOccurrenceAction(rawValue: command.rawValue.replacingOccurrences(of: "occurrence.", with: "")),
+           command.rawValue.hasPrefix("occurrence."), arguments.isEmpty { self = .occurrence(action); return }
+        guard arguments.count == 1 else { throw RoutineCommandIssue.invalidArguments }
+        try self.init(command: command, argument: arguments[0])
+    }
+
     static let commands: Set<String> = ["routine.title", "routine.weekdays", "routine.reminder", "routine.priority", "routine.tags"]
 
     init(command: CommandID, argument: CommandArgument) throws {
         switch (command.rawValue, argument.parameter, argument.operation, argument.value) {
+        case ("routine.enabled", .enabled, .assign, .boolean(let value)): self = .enabled(value)
         case ("routine.title", .title, .assign, .shortText(let raw)):
             guard !raw.contains(where: \.isNewline), !NaturalLanguageParser.hasTaskNoteSeparator(raw),
                   let edit = TaskTitleEdit(raw), edit.notes == nil else { throw TaskTitleCommandIssue.notesNotSupported }
@@ -77,8 +90,9 @@ struct CommandRoutinePreview: Equatable, CustomStringConvertible, CustomDebugStr
     let catalog: CommandTaskTagCatalog.Evidence
     let tagIDs: String
     let tags: CommandTaskTagMutation?
+    var stateImpact: CommandRoutineStateImpact?
     var semanticsVersion = 1
-    var noChange: Bool { original == final && (tags?.noChange(rawIDs: tagIDs) ?? true) }
+    var noChange: Bool { original == final && (tags?.noChange(rawIDs: tagIDs) ?? true) && (stateImpact?.noChange ?? true) }
     var description: String { "CommandRoutinePreview(redacted)" }
     var debugDescription: String { description }
 
@@ -97,14 +111,19 @@ struct CommandRoutinePreview: Equatable, CustomStringConvertible, CustomDebugStr
         let draft = item.draft
         guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
-              CommandRoutineEdit.commands.contains(draft.commandID.rawValue) else { throw RoutineCommandIssue.unsupportedPlan }
+              CommandRoutineEdit.allCommands.contains(draft.commandID.rawValue) else { throw RoutineCommandIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               draft.baseline == CommandDraftBaseline(), draft.check().staticallyValid,
-              draft.arguments.count == 1, draft.targets.selection == .single, draft.targets.objects.count == 1,
-              let target = draft.targets.objects.first, target.type == .routine, target.dayKey == nil else {
+              draft.targets.selection == .single, draft.targets.objects.count == 1,
+              let target = draft.targets.objects.first else {
             throw RoutineCommandIssue.invalidArguments
         }
-        _ = try CommandRoutineEdit(command: draft.commandID, argument: draft.arguments[0])
+        let edit = try CommandRoutineEdit(command: draft.commandID, arguments: draft.arguments)
+        if case .occurrence = edit {
+            guard target.type == .routineOccurrence, target.dayKey.map(CommandArgumentValidation.isCanonicalDay) == true else {
+                throw RoutineCommandIssue.invalidArguments
+            }
+        } else if target.type != .routine || target.dayKey != nil { throw RoutineCommandIssue.invalidArguments }
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {

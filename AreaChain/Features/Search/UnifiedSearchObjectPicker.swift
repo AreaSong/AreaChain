@@ -68,6 +68,15 @@ struct UnifiedSearchObjectPicker: View {
                 .accessibilityIdentifier("unified.objects.visible")
             Button("unified.objects.known") { controller.browseObjects(.selectAllKnown, stamp: picker.stamp) }
                 .accessibilityIdentifier("unified.objects.known")
+            if controller.allowsMultipleObjects(picker.location, command: command) {
+                if controller.session.allObjectResultsComplete(sourceID: picker.browse.snapshot.sourceID) {
+                    Button("unified.objects.allResults") { controller.selectAllObjectResults(picker.stamp) }
+                        .accessibilityIdentifier("unified.objects.allResults")
+                } else {
+                    Text("unified.objects.incompleteAll").font(DaybookType.caption)
+                        .fixedSize(horizontal: false, vertical: true).accessibilityIdentifier("unified.objects.incompleteAll")
+                }
+            }
         }.buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
     }
 

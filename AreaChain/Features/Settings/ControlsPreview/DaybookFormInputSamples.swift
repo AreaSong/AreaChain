@@ -1,6 +1,4 @@
-#if DEBUG
 import SwiftUI
-@testable import AreaChain
 
 /// 沿原 ControlsPreview 展示；点击或 Tab 到达原生字段时显示公共聚焦外观。
 struct DaybookFormInputSamples: View {
@@ -24,4 +22,3 @@ struct DaybookFormInputSamples: View {
         }
     }
 }
-#endif

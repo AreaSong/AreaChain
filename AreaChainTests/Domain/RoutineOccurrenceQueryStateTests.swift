@@ -56,10 +56,9 @@ struct RoutineOccurrenceQueryStateTests {
         #expect(response.diagnostics.contains { $0.issue == .check(.identicalDuplicates) && !$0.affectsDetermination })
     }
 
-    @Test func conflictingDuplicatesAndDonePlusSkippedNeverMatchAnyState() {
+    @Test func conflictingDuplicatesNeverMatchAnyState() {
         let pairs = [[RoutineQueryFixture.check(.completed), RoutineQueryFixture.check(.skipped)],
-                     [RoutineQueryFixture.check(.unprocessed), RoutineQueryFixture.check(.completed)],
-                     [CheckSnapshot(routineId: RoutineQueryFixture.id, dayKey: "2026-10-01", isDone: true, isSkipped: true)]]
+                     [RoutineQueryFixture.check(.unprocessed), RoutineQueryFixture.check(.completed)]]
         for checks in pairs {
             for status in ["open", "done", "skipped"] {
                 var fixture = RoutineOccurrenceQueryFixture("date:today status:" + status)

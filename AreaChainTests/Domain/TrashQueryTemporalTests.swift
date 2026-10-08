@@ -56,4 +56,16 @@ struct TrashQueryTemporalTests {
         let result = read("/trash created:\(day)", evidence: nil)
         #expect(result.definiteMatchCount == 2)
     }
+    @Test func legacyAndAlternateSkipRemainDistinctRowsWithoutConflict() {
+        var input = evidence()
+        input.checks = [.init(routineId: TrashFixture.parentID, dayKey: day, isDone: true, isSkipped: true),
+                        .init(routineId: TrashFixture.parentID, dayKey: day, isDone: false, isSkipped: true)]
+        let result = read("/trash on:\(day) status:skipped", evidence: input)
+        #expect(Set(result.matches.map(\.id.type)) == [.routine, .image])
+        #expect(result.undeterminedObjects.isEmpty)
+        #expect(result.diagnostics.contains { $0.issue == .check(.equivalentEncodingDuplicates) && !$0.affectsDetermination })
+        input.checkCoverage = []
+        #expect(read("/trash on:\(day) status:skipped", evidence: input).matches.isEmpty)
+    }
+
 }

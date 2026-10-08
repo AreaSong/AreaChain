@@ -67,8 +67,8 @@ struct ImageQueryTemporal {
             result.diagnostics.append(.init(issue: .invalidScheduleEvidence, conditionIDs: [id]))
         }
         result.diagnostics += occurrence.records.diagnostics.map {
-            .init(issue: .check($0), severity: $0 == .identicalDuplicates ? .warning : .error,
-                  affectsDetermination: status != nil && $0 != .identicalDuplicates, conditionIDs: [id])
+            .init(issue: .check($0), severity: $0.affectsDetermination ? .error : .warning,
+                  affectsDetermination: status != nil && $0.affectsDetermination, conditionIDs: [id])
         }
         return result
     }

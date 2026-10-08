@@ -14,6 +14,8 @@ struct CreateRoutineParams: Sendable {
     var notes: String
     var isEnabled: Bool
     var createdDayKey: String
+    var creationID: UUID?
+    var createdAt: Date?
 
     init(
         title: String,
@@ -26,7 +28,9 @@ struct CreateRoutineParams: Sendable {
         isUrgent: Bool = false,
         notes: String = "",
         isEnabled: Bool = true,
-        createdDayKey: String = DayKey.today()
+        createdDayKey: String = DayKey.today(),
+        creationID: UUID? = nil,
+        createdAt: Date? = nil
     ) {
         self.title = title
         self.sortOrder = sortOrder
@@ -39,6 +43,8 @@ struct CreateRoutineParams: Sendable {
         self.notes = notes
         self.isEnabled = isEnabled
         self.createdDayKey = createdDayKey
+        self.creationID = creationID
+        self.createdAt = createdAt
     }
 }
 
@@ -50,6 +56,9 @@ protocol RoutineRepositoryProtocol: AnyObject {
 
     /// 完整身份查询必须包括停用、墓碑与重复记录。
     func fetchRoutines(withID id: UUID) throws -> [DailyRoutine]
+
+    /// 仅应用已核验的精确物理写集；与旧 toggle/启停算法分开。
+    func applyRoutineState(_ accepted: CommandRoutineAcceptance) throws
 
     // MARK: - 查询 (Query)
     /// 获取例行习惯列表（支持筛选停用与删除项）
@@ -159,6 +168,8 @@ protocol RoutineRepositoryProtocol: AnyObject {
 
 extension RoutineRepositoryProtocol {
     var routineMutationContext: ModelContext? { nil }
+
+    func applyRoutineState(_ accepted: CommandRoutineAcceptance) throws { throw RoutineCommandIssue.invalidRepository }
 
     func fetchRoutines(withID id: UUID) throws -> [DailyRoutine] {
         try fetchRoutines(includeDisabled: true, includeDeleted: true).filter { $0.id == id }

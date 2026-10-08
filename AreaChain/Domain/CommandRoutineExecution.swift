@@ -34,7 +34,8 @@ extension CommandHandoffCoordinator {
         let current = try taskMutationHost(invocation)
         guard let item = current.session.execution?.snapshot.items.first,
               let accepted = routines.acceptances[item.draft.id], accepted.preview.item == item.stamp,
-              accepted.object == facts.object, routines.wasInvoked(accepted.id) else {
+              accepted.object == facts.object, accepted.preview.stateImpact == facts.stateImpact,
+              accepted.checkCreationIDs == facts.checkCreationIDs, routines.wasInvoked(accepted.id) else {
             throw CommandExecutionError.invalidResult
         }
         var next = current.session

@@ -50,6 +50,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
     @ObservationIgnored let taskTitles = CommandTaskTitleRegistry()
     @ObservationIgnored let taskFields = CommandTaskFieldRegistry()
+    @ObservationIgnored let batches = CommandBatchRegistry()
     @ObservationIgnored let subtasks = CommandSubtaskRegistry()
     @ObservationIgnored let routines = CommandRoutineRegistry()
     @ObservationIgnored let taskCreations = CommandTaskCreateRegistry()
@@ -192,6 +193,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
             || taskCreations.preparing[ownership.hostID] == ownership
             || taskTitles.preparing[ownership.hostID] == ownership
             || taskFields.preparing[ownership.hostID] == ownership
+            || batches.preparing[ownership.hostID] == ownership
             || subtasks.preparing[ownership.hostID] == ownership
             || routines.preparing[ownership.hostID] == ownership
     }

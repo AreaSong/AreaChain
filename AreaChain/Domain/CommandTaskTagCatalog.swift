@@ -65,14 +65,16 @@ struct CommandTaskTagLookup {
     let catalog: CommandTaskTagCatalog
     private let byID: [UUID: [CommandTaskTagRecord]]
     private let byName: [String: [CommandTaskTagRecord]]
+    let catalogProblems: [CommandTaskTagProblem]
 
     init(_ catalog: CommandTaskTagCatalog) {
         self.catalog = catalog
         byID = Dictionary(grouping: catalog.records.filter { $0.id != nil }, by: { $0.id! })
         byName = Dictionary(grouping: catalog.records.filter { $0.normalizedName != nil }, by: { $0.normalizedName! })
+        catalogProblems = Self.problems(catalog)
     }
 
-    var catalogProblems: [CommandTaskTagProblem] {
+    private static func problems(_ catalog: CommandTaskTagCatalog) -> [CommandTaskTagProblem] {
         var result: [CommandTaskTagProblem] = []
         if catalog.coverage != .complete { result.append(.init(selection: nil, kind: .incompleteCatalog)) }
         // 无身份或名字的行可能隐藏另一个匹配，不能仅跳过这些行。

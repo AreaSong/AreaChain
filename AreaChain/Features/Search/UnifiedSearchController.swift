@@ -19,6 +19,10 @@ final class UnifiedSearchController {
     var taskTitleAcceptance: CommandTaskTitleAcceptance?
     var taskTitleFailure: String?
     var taskTitleVerification: CommandTaskTitleVerification?
+    var batchPreview: CommandBatchPreview?
+    var batchAcceptance: CommandBatchAcceptance?
+    var batchFailure: String?
+    var batchProblems: [CommandBatchTargetProblem] = []
     var taskFieldPreview: CommandTaskFieldPreview?
     var taskFieldAcceptance: CommandTaskFieldAcceptance?
     var taskFieldFailure: String?
@@ -27,6 +31,10 @@ final class UnifiedSearchController {
     var routineAcceptance: CommandRoutineAcceptance?
     var routineFailure: String?
     var routineVerification: CommandTaskCreateVerification?
+    var routineCreatePreview: CommandRoutineCreatePreview?
+    var routineCreateAcceptance: CommandRoutineCreateAcceptance?
+    var routineCreateFailure: String?
+    var routineCreateVerification: CommandTaskCreateVerification?
     var subtaskPreview: CommandSubtaskPreview?
     var subtaskAcceptance: CommandSubtaskAcceptance?
     var subtaskFailure: String?
@@ -63,6 +71,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let coordinator: CommandHandoffCoordinator
     @ObservationIgnored let taskCreate: TaskCreateCommandAdapter?
     @ObservationIgnored let taskTitle: TaskTitleCommandAdapter?
+    @ObservationIgnored let batch: BatchCommandAdapter?
     @ObservationIgnored let taskField: TaskFieldCommandAdapter?
     @ObservationIgnored let routine: RoutineCommandAdapter?
     @ObservationIgnored let subtask: SubtaskCommandAdapter?
@@ -88,22 +97,23 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
          localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil,
          taskTitle: TaskTitleCommandAdapter? = nil, taskField: TaskFieldCommandAdapter? = nil,
-         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil) {
+         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil) {
         self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
                   settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled,
-                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask, routine: routine)
+                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask, routine: routine, batch: batch)
     }
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
-         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil) {
+         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
         self.settingBackend = settingBackend
         self.taskCreate = taskCreate
         self.taskTitle = taskTitle
+        self.batch = batch
         self.taskField = taskField
         self.subtask = subtask
         self.routine = routine
@@ -239,6 +249,7 @@ final class UnifiedSearchController {
         chainCreationPreparation = nil
         revokeRoutine()
         revokeSubtask()
+        revokeBatch()
         revokeTaskField()
         revokeTaskTitle()
         revokeTaskComposition()
@@ -264,6 +275,7 @@ final class UnifiedSearchController {
         revokeSubtask()
         subtaskFailure = nil
         routineFailure = nil
+        revokeBatch()
         revokeTaskField()
         taskFieldFailure = nil
         revokeTaskTitle()
@@ -294,6 +306,13 @@ final class UnifiedSearchController {
         revision &+= 1
     }
 
+    func renewObjectCandidateSource() {
+        buffer = .init(lease: buffer.lease, version: buffer.version + 1, text: buffer.text,
+            privacyRevision: buffer.privacyRevision, operation: buffer.operation, selectingObjects: true,
+            plan: buffer.plan, planItem: buffer.planItem)
+        revision &+= 1
+    }
+
     private func applyFocus(_ focus: ContentQueryBrowseFocus?) {
         guard let focus else { return }
         if focus == .input { session.displayUpdates.focusedControl = nil; inputFocused = true }
@@ -312,7 +331,7 @@ final class UnifiedSearchController {
         // 普通查询的迟到失效通知可能来自刚完成的 enqueue；不可撤掉基于新 lease 准备的效果。
         if change == .privacyInvalidated || !operationVisible { revokeTaskComposition() }
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
-        if change == .privacyInvalidated || !operationVisible { revokeTaskField() }
+        if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {

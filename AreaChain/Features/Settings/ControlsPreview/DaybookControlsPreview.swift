@@ -1,9 +1,9 @@
-#if DEBUG
 import SwiftUI
-@testable import AreaChain
 
-/// 仅供隔离测试窗口装配；不读取偏好、数据库或系统服务。
+/// 设置与隔离测试共用的展示；所有交互只修改本窗口的合成样例。
 struct DaybookControlsPreview: View {
+    var onLocaleChange: (String) -> Void = { _ in }
+    @State private var resetGeneration = 0
     @State private var localeID = "zh-Hans"
     @State private var dark = false
     @State private var disabled = false
@@ -37,7 +37,9 @@ struct DaybookControlsPreview: View {
         ("pill", .pill(tint: DaybookPalette.accent.base))
     ]
 
-    init(localeID: String = "zh-Hans", dark: Bool = false, longLabels: Bool = false) {
+    init(localeID: String = "zh-Hans", dark: Bool = false, longLabels: Bool = false,
+         onLocaleChange: @escaping (String) -> Void = { _ in }) {
+        self.onLocaleChange = onLocaleChange
         _localeID = State(initialValue: localeID)
         _dark = State(initialValue: dark)
         _longLabels = State(initialValue: longLabels)
@@ -63,15 +65,19 @@ struct DaybookControlsPreview: View {
                     checkboxSamples
                     buttonGrid
                 }
+                .id(resetGeneration)
                 .disabled(disabled)
+                .allowsHitTesting(!disabled)
                 .padding(DaybookSpacing.xs)
             }
+            .daybookScroll()
             HStack(spacing: DaybookSpacing.md) {
                 CommandReturnButton(enabled: !disabled, label: "common.save") { actions += 1 }
                     // 注册仅属于本地展示宿主，与生产控件的职责相同。
                     .keyboardShortcut(.return, modifiers: .command)
                 Text("dev.controls.actions")
                 Text(verbatim: String(actions)).monospacedDigit()
+                    .accessibilityIdentifier("preview.actions")
             }
             Text("dev.controls.instructions").font(DaybookType.caption)
         }
@@ -81,13 +87,14 @@ struct DaybookControlsPreview: View {
         .environment(\.locale, Locale(identifier: localeID))
         .environment(\.daybookButtonReduceMotionPreview, reduceMotion)
         .preferredColorScheme(dark ? .dark : .light)
+        .onChange(of: localeID) { _, value in onLocaleChange(value) }
     }
 
     private var staticCardSamples: some View {
         HStack(spacing: DaybookSpacing.md) {
-            Text(verbatim: "Static card · 静态卡片")
+            Text("controls.preview.surface.static")
                 .padding(10).daybookStaticCardSurface()
-            Text(verbatim: "Interactive card · 悬停卡片")
+            Text("controls.preview.surface.interactive")
                 .padding(10).daybookSurface(.card)
         }
         .accessibilityIdentifier("controls.static.cards")
@@ -96,6 +103,7 @@ struct DaybookControlsPreview: View {
     private var dateSamples: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text("day.date").font(DaybookType.title)
+            DaybookDateTimePopoverSamples()
             DaybookDatePicker(selection: $dateSample, todayKey: "2026-09-18")
             DaybookDatePicker(selection: .constant("2028-02-29"), todayKey: "2028-02-28").disabled(true)
             DaybookDateCellSamples { dateSample = $0 }
@@ -257,12 +265,12 @@ struct DaybookControlsPreview: View {
                 Text("dev.controls.variant")
                 ForEach(sizes.indices, id: \.self) { sizeIndex in
                     let size = sizes[sizeIndex]
-                    Text(verbatim: String(describing: size))
+                    Text(LocalizedStringKey("controls.preview.size." + String(describing: size)))
                 }
             }
             ForEach(variants.indices, id: \.self) { index in
                 GridRow {
-                    Text(verbatim: variants[index].0)
+                    Text(LocalizedStringKey("controls.preview.variant." + variants[index].0))
                     ForEach(sizes.indices, id: \.self) { sizeIndex in
                         let size = sizes[sizeIndex]
                         Button(role: variants[index].1 == .destructive ? .destructive : nil) { actions += 1 } label: {
@@ -284,25 +292,59 @@ struct DaybookControlsPreview: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            Text("dev.controls.title").font(DaybookType.title)
             HStack {
-                Picker("dev.controls.language", selection: $localeID) {
-                    Text(verbatim: "简体中文").tag("zh-Hans")
-                    Text(verbatim: "English").tag("en")
-                }.frame(maxWidth: 220)
+                Text("controls.preview.title").font(DaybookType.title)
+                Spacer()
+                Button("controls.preview.reset", action: resetSamples)
+                    .buttonStyle(DaybookButtonStyle(.quiet))
+                    .accessibilityIdentifier("preview.reset")
+            }
+            HStack {
+                DaybookPicker("dev.controls.language", selection: $localeID, options: [
+                    .init("zh-Hans", verbatim: "简体中文"), .init("en", verbatim: "English")
+                ]).frame(maxWidth: 220)
+                    .accessibilityIdentifier("preview.language")
                 Toggle("dev.controls.dark", isOn: $dark)
+                    .accessibilityIdentifier("preview.dark")
             }
             HStack {
                 Toggle("dev.controls.disabled", isOn: $disabled)
+                    .accessibilityIdentifier("preview.disabled")
                 Toggle("dev.controls.reduceMotion", isOn: $reduceMotion)
                 Toggle("dev.controls.longLabels", isOn: $longLabels)
+                    .accessibilityIdentifier("preview.longLabels")
             }
         }
     }
 
+    private func resetSamples() {
+        // 只在明确重置时更换子样例身份，释放原生编辑器、弹窗及其局部监听。
+        resetGeneration += 1
+        actions = 0
+        enabledSample = true
+        disabledSample = false
+        checkedSample = true
+        taskDone = false
+        subtaskDone = true
+        detailSubtaskDone = false
+        pickerSample = .mixed
+        segmentSample = 1
+        otherSegmentSample = 2
+        verbatimSample = 0
+        integerSample = 200
+        decimalSample = 0.35
+        integerLower = 20
+        integerUpper = 999
+        decimalLower = 0.1
+        decimalUpper = 2
+        dateSample = "2026-09-18"
+        timeSample = 720
+        emptyTimeSample = nil
+    }
+
     private func iconRow(_ name: String, active: Bool = false, role: ButtonRole? = nil) -> some View {
         GridRow {
-            Text(verbatim: name)
+            Text(LocalizedStringKey("controls.preview.variant." + name))
             ForEach(sizes.indices, id: \.self) { sizeIndex in
                 let size = sizes[sizeIndex]
                 DaybookIconButton(systemName: role == .destructive ? "trash" : "star",
@@ -313,7 +355,7 @@ struct DaybookControlsPreview: View {
 
     private func menuRow(fitsLabel: Bool, active: Bool = false) -> some View {
         GridRow {
-            Text(verbatim: fitsLabel ? "Menu label" : (active ? "Menu active" : "Menu icon"))
+            Text(fitsLabel ? "controls.preview.menu.label" : (active ? "controls.preview.menu.active" : "controls.preview.menu.icon"))
             ForEach(sizes.indices, id: \.self) { sizeIndex in
                 let size = sizes[sizeIndex]
                 Menu {
@@ -337,5 +379,3 @@ struct DaybookControlsPreview: View {
         }
     }
 }
-
-#endif

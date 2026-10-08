@@ -96,6 +96,17 @@ struct CommandTaskTitleTags: Equatable, CustomStringConvertible, CustomDebugStri
 
     static func merge(rawIDs: String, title: String, catalog: CommandTaskTagCatalog) throws -> Self {
         let lookup = CommandTaskTagLookup(catalog)
+        let original = try associations(rawIDs: rawIDs, lookup: lookup)
+        var final = original
+        // 复用只读计划和 D3 资格，不调用有恢复/创建行为的 InputTagResolver。
+        let syntax = CommandTaskTagPlanning.compose(title: title, argument: nil, catalog: catalog)
+        guard syntax.problems.isEmpty else { throw CommandTaskTitlePreviewIssue.tags(syntax.problems) }
+        for association in syntax.final where !final.contains(association.target) { final.append(association.target) }
+        return Self(syntax: syntax, original: original, final: final)
+    }
+
+    /// 单项与批量共用原关联资格；批量复用同次目录索引，不为每个对象重建全目录。
+    static func associations(rawIDs: String, lookup: CommandTaskTagLookup) throws -> [CommandTaskTagTarget] {
         guard lookup.catalogProblems.isEmpty else { throw CommandTaskTitlePreviewIssue.tags(lookup.catalogProblems) }
         // 非法片段可能隐藏未知关联；重复 UUID、大小写和顺序则保留原值证据后按旧算法规范化。
         let parts = rawIDs.isEmpty ? [] : rawIDs.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
@@ -109,12 +120,7 @@ struct CommandTaskTitleTags: Equatable, CustomStringConvertible, CustomDebugStri
             case .failure(let error): throw CommandTaskTitlePreviewIssue.tags([.init(selection: .id(id), kind: error.kind)])
             }
         }
-        // 复用只读计划和 D3 资格，不调用有恢复/创建行为的 InputTagResolver。
-        let original = final
-        let syntax = CommandTaskTagPlanning.compose(title: title, argument: nil, catalog: catalog)
-        guard syntax.problems.isEmpty else { throw CommandTaskTitlePreviewIssue.tags(syntax.problems) }
-        for association in syntax.final where !final.contains(association.target) { final.append(association.target) }
-        return Self(syntax: syntax, original: original, final: final)
+        return final
     }
 
     var description: String { "CommandTaskTitleTags(redacted)" }

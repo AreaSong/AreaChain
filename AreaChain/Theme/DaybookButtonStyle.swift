@@ -107,16 +107,10 @@ private struct DaybookButtonChrome: ViewModifier {
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.isFocused) private var nativeFocused
     @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
-    #if DEBUG
     @Environment(\.daybookButtonReduceMotionPreview) private var previewReduceMotion
-    #endif
 
     private var reduceMotion: Bool {
-        #if DEBUG
         systemReduceMotion || previewReduceMotion
-        #else
-        systemReduceMotion
-        #endif
     }
 
     private var showsFocus: Bool { isEnabled && (isFocused || nativeFocused) }
@@ -233,8 +227,7 @@ extension View {
     }
 }
 
-#if DEBUG
-// 系统辅助功能环境只读；测试展示只能加强减弱动态效果，不能关闭用户的系统设置。
+// 系统辅助功能环境只读；控件预览只能加强减弱动态效果，不能关闭用户的系统设置。
 private struct DaybookButtonReduceMotionPreviewKey: EnvironmentKey {
     static let defaultValue = false
 }
@@ -245,4 +238,3 @@ extension EnvironmentValues {
         set { self[DaybookButtonReduceMotionPreviewKey.self] = newValue }
     }
 }
-#endif

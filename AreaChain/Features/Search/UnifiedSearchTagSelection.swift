@@ -18,8 +18,9 @@ extension UnifiedSearchController {
     func supportsTagField(_ parameter: CommandParameter, command: CommandDescriptor) -> Bool {
         parameter.id == .tags && parameter.type == .tags
             && (hasTaskComposition && command.id.rawValue == "todo.create"
+                || command.id.rawValue == "batch.tags" && batch?.supports(command.id) == true
                 || command.id.rawValue == "todo.tags" && taskField?.supports(command.id) == true
-                || command.id.rawValue == "routine.tags" && routesRoutine(command.id)
+                || ["routine.tags", "routine.create"].contains(command.id.rawValue) && routesRoutine(command.id)
                 || ["subtask.create", "subtask.tags"].contains(command.id.rawValue) && subtask?.supports(command.id) == true)
     }
 
@@ -50,7 +51,15 @@ extension UnifiedSearchController {
 
     private func tagCandidates(draft: CommandDraft, source: UnifiedSearchBuffer,
                                evidence: CommandTaskTagCatalog.Evidence? = nil) throws -> CommandTaskTagCandidates {
+        if draft.commandID.rawValue == "batch.tags", let batch {
+            return try batch.tagCandidates(draft: draft.stamp, expecting: source.lease,
+                                           displaySession: session, evidence: evidence)
+        }
         if routesRoutine(draft.commandID), let routine {
+            if draft.commandID.rawValue == "routine.create" {
+                return try routine.creationTagCandidates(draft: draft.stamp, expecting: source.lease,
+                                                         displaySession: session, evidence: evidence)
+            }
             return try routine.tagCandidates(draft: draft.stamp, expecting: source.lease,
                                              displaySession: session, evidence: evidence)
         }

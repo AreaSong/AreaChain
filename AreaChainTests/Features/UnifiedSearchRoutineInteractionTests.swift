@@ -74,7 +74,11 @@ import Testing
             try await TimePickerNativeTestSupport.key(124, "\u{F703}", in: host.window)
             try await TimePickerNativeTestSupport.key(20, "3", in: host.window)
             try await TimePickerNativeTestSupport.key(29, "0", in: host.window)
+            // 英文 12 小时制必须显式输入 AM，不能继承空值控件当前时刻的 PM。
+            try await TimePickerNativeTestSupport.key(124, "\u{F703}", in: host.window)
+            try await TimePickerNativeTestSupport.key(0, "a", in: host.window)
             try await host.settle()
+            #expect(RemindMinutes.from(date: time.dateValue, calendar: time.calendar ?? .current) == 570)
         } else {
             for _ in 0..<2 {
                 let mode = try await host.compositionPicker("unified.parameter.mode.time")

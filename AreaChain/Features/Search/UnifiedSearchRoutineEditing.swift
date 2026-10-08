@@ -2,6 +2,12 @@ import Foundation
 
 /// 原 Plan/Run 独占输入；这里只持有不可编辑的准备、接受与核验投影。
 extension UnifiedSearchController {
+    var showsRoutineState: Bool {
+        let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])
+            + (settingExecution?.snapshot.items.map(\.draft) ?? [])
+        return drafts.contains { CommandRoutineEdit.stateCommands.contains($0.commandID.rawValue) }
+    }
+
     var showsRoutine: Bool {
         let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])
             + (settingExecution?.snapshot.items.map(\.draft) ?? [])
@@ -9,7 +15,7 @@ extension UnifiedSearchController {
     }
 
     func routesRoutine(_ command: CommandID) -> Bool {
-        routine?.supports(command) == true
+        routine?.supports(command) == true || command.rawValue == "routine.create" && routine?.supportsCreation == true
     }
 
     var hasRoutine: Bool {
@@ -30,11 +36,14 @@ extension UnifiedSearchController {
 
     var routineUnit: CommandExecutionUnit? {
         guard operationVisible, let run = settingExecution, run.snapshot.items.count == 1,
-              run.snapshot.items.first.map({ CommandRoutineEdit.commands.contains($0.draft.commandID.rawValue) }) == true else { return nil }
+              run.snapshot.items.first.map({ CommandRoutineEdit.allCommands.contains($0.draft.commandID.rawValue) }) == true else { return nil }
         return run.units.first
     }
 
     func revokeRoutine() {
+        routineCreatePreview = nil
+        routineCreateAcceptance = nil
+        routineCreateVerification = nil
         routinePreview = nil
         routineAcceptance = nil
         routineVerification = nil
@@ -49,7 +58,7 @@ extension UnifiedSearchController {
             throw RoutineCommandIssue.unsupportedPlan
         }
         if let draft = operations.active {
-            guard plan.items.isEmpty, draft.stamp == source.operation, CommandRoutineEdit.commands.contains(draft.commandID.rawValue) else {
+            guard plan.items.isEmpty, draft.stamp == source.operation, CommandRoutineEdit.allCommands.contains(draft.commandID.rawValue) else {
                 throw RoutineCommandIssue.unsupportedPlan
             }
             // 无效 shortText 的原文仍在原生拼写缓冲；不能入列后让“未填”掩盖换行等输入。
@@ -94,6 +103,8 @@ extension UnifiedSearchController {
     }
 
     func submitRoutine(_ source: UnifiedSearchBuffer) {
+        // 没有接受时快捷键保持原拒绝原因；不能用通用过期提示覆盖超限或完整性诊断。
+        guard routineAcceptance != nil else { return }
         guard !settingSubmitting, taskNativeInputReady, validates(source), operationVisible, settingExecution == nil else { return }
         settingSubmitting = true
         defer { settingSubmitting = false; refreshOperationPresentation() }

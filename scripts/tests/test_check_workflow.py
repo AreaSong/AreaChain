@@ -44,7 +44,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
-            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
+            "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
         contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate requestTaskCreate UnifiedSearchTaskCreateSubmission\n"
         contract_docs["docs/component-catalog.md"] += " CommandTaskCreatePreview CommandTaskTagCatalog\n"
@@ -80,6 +80,9 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " requestOperationSubmit UnifiedSearchSettingSubmission\n"
         contract_docs["docs/component-catalog.md"] += " CommandTaskCompletionImpact CommandTaskTagMutation tagCandidates assignDue UnifiedSearchTaskFieldImpact\n"
         contract_docs["docs/component-catalog.md"] += (
+            " CommandBatchPreview BatchCommandReader BatchCommandTransaction allObjectResultsComplete prepareBatch UnifiedSearchBatchImpact UnifiedSearchBatchSubmission"
+            " CommandRoutineStatePlanning stateImpact applyRoutineState UnifiedSearchRoutineStateImpact UnifiedSearchRoutineOccurrenceDate"
+            " CommandRoutineCreatePreview CommandRoutineCreateFacts RoutineCreateCommandReader prepareCreation UnifiedSearchRoutineCreateSubmission"
             " RoutineMutationService RoutineCommandReader RoutineCommandEnvironment RoutineCommandAdapter claimRoutine CommandRoutineFacts prepareRoutine UnifiedSearchRoutineSubmission"
             " SubtaskTitleEdit CreateSubtaskParams TaskFamilyCommandIdentity SubtaskCommandEnvironment"
             " SubtaskCommandAdapter claimSubtask CommandSubtaskFacts prepareSubtask UnifiedSearchSubtaskSubmission\n"
@@ -413,11 +416,22 @@ class WorkflowCheckTests(unittest.TestCase):
 
     def test_component_catalog_requires_controls_preview(self):
         self.make_project()
-        source = self.root / "AreaChainTests/Theme/DaybookControlsPreview.swift"
+        source = self.root / "AreaChain/Features/Settings/ControlsPreview/DaybookControlsPreview.swift"
         source.unlink()
         result = workflow.check_component_catalog(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("DaybookControlsPreview" in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_production_preview_wiring(self):
+        self.make_project()
+        for relative, symbol in workflow.COMPONENT_ENTRIES:
+            if symbol in ("ControlsPreviewWindowController", "openControlsPreview", "settings.controlsPreview"):
+                source = self.root / relative
+                source.write_text(source.read_text().replace(symbol, "unrelated"))
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in ("ControlsPreviewWindowController", "openControlsPreview", "settings.controlsPreview"):
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_command_catalog(self):
         self.make_project()
@@ -761,6 +775,27 @@ class WorkflowCheckTests(unittest.TestCase):
                 self.assertEqual(result["status"], "failed")
                 self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
+    def test_component_catalog_requires_bm1_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/CommandBatch", "CommandBatchPreview"),
+            ("Services/BatchCommandReader", "BatchCommandReader"),
+            ("Services/BatchCommandTransaction", "BatchCommandTransaction"),
+            ("Services/ContentQueryObjectCandidates", "allObjectResultsComplete"),
+            ("Features/Search/UnifiedSearchBatchEditing", "prepareBatch"),
+            ("Features/Search/UnifiedSearchBatchImpact", "UnifiedSearchBatchImpact"),
+            ("Features/Search/UnifiedSearchBatchSubmission", "UnifiedSearchBatchSubmission"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
     def test_component_catalog_requires_rm1_shared_boundaries(self):
         self.make_project()
         entries = (
@@ -772,6 +807,44 @@ class WorkflowCheckTests(unittest.TestCase):
             ("Domain/CommandRoutineFacts", "CommandRoutineFacts"),
             ("Features/Search/UnifiedSearchRoutineEditing", "prepareRoutine"),
             ("Features/Search/UnifiedSearchRoutineSubmission", "UnifiedSearchRoutineSubmission"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_rm3_state_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/CommandRoutineState", "CommandRoutineStatePlanning"),
+            ("Services/RoutineCommandStateReader", "stateImpact"),
+            ("Services/Repositories/SwiftDataRoutineRepository+State", "applyRoutineState"),
+            ("Features/Search/UnifiedSearchRoutineStateImpact", "UnifiedSearchRoutineStateImpact"),
+            ("Features/Search/UnifiedSearchRoutineOccurrenceDate", "UnifiedSearchRoutineOccurrenceDate"),
+        )
+        for path, symbol in entries:
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_rm2_creation_boundaries(self):
+        self.make_project()
+        entries = (
+            ("Domain/CommandRoutineCreate", "CommandRoutineCreatePreview"),
+            ("Domain/CommandRoutineCreateFacts", "CommandRoutineCreateFacts"),
+            ("Services/RoutineCreateCommandReader", "RoutineCreateCommandReader"),
+            ("Services/RoutineCreateCommandAdapter", "prepareCreation"),
+            ("Features/Search/UnifiedSearchRoutineCreateSubmission", "UnifiedSearchRoutineCreateSubmission"),
         )
         for path, symbol in entries:
             with self.subTest(symbol=symbol):

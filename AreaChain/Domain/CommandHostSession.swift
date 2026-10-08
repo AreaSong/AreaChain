@@ -137,6 +137,10 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         guard execution != nil else { throw CommandExecutionError.stale }
         try execution!.recordTaskField(facts, attempt: attempt)
     }
+    mutating func recordBatch(_ facts: CommandBatchFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordBatch(facts, attempt: attempt)
+    }
 
     mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
         guard execution != nil else { throw CommandExecutionError.stale }
@@ -146,6 +150,11 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
     mutating func recordRoutine(_ facts: CommandRoutineFacts, attempt: CommandAttemptStamp) throws {
         guard execution != nil else { throw CommandExecutionError.stale }
         try execution!.recordRoutine(facts, attempt: attempt)
+    }
+
+    mutating func recordRoutineCreation(_ facts: CommandRoutineCreateFacts, attempt: CommandAttemptStamp) throws {
+        guard execution != nil else { throw CommandExecutionError.stale }
+        try execution!.recordRoutineCreation(facts, attempt: attempt)
     }
 
     mutating func recordTaskTitle(_ facts: CommandTaskTitleFacts, attempt: CommandAttemptStamp) throws {

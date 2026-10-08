@@ -8,6 +8,8 @@ struct LiveComposerPreviewHeader: View {
     var activeCandidate: SyntaxCandidate? = nil
     var showsSuggestions: Bool = false
     var onClose: () -> Void
+    /// 展示宿主可接管复制反馈；既有消费者继续使用系统剪贴板。
+    var onCopy: ((String) -> Void)? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.locale) private var locale
@@ -23,13 +25,15 @@ struct LiveComposerPreviewHeader: View {
         knownTags: [String] = [],
         activeCandidate: SyntaxCandidate? = nil,
         showsSuggestions: Bool = false,
-        onClose: @escaping () -> Void
+        onClose: @escaping () -> Void,
+        onCopy: ((String) -> Void)? = nil
     ) {
         self.text = text
         self.knownTags = knownTags
         self.activeCandidate = activeCandidate
         self.showsSuggestions = showsSuggestions
         self.onClose = onClose
+        self.onCopy = onCopy
     }
 
     private var parsed: ParsedCapture {
@@ -254,6 +258,10 @@ struct LiveComposerPreviewHeader: View {
     }
 
     private func copyPreview(_ text: String) {
+        if let onCopy {
+            onCopy(text)
+            return
+        }
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(text, forType: .string)

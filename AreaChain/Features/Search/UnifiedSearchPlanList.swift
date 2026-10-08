@@ -11,7 +11,11 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            if controller.showsRoutine {
+            if controller.showsBatch {
+                Text("unified.batch.pending").font(DaybookType.caption)
+            } else if controller.showsRoutineCreation {
+                Text("unified.routineCreate.capability").font(DaybookType.caption)
+            } else if controller.showsRoutine {
                 Text("unified.routine.pending").font(DaybookType.caption)
             } else if controller.showsSubtask {
                 Text("unified.subtask.pending").font(DaybookType.caption)
@@ -55,7 +59,8 @@ private struct UnifiedSearchPlanRow: View {
                 if !command.targetTypes.isEmpty {
                     Text(verbatim: L10n.format("unified.objects.count", locale: locale, item.draft.targets.objects.count))
                         .font(DaybookType.caption)
-                    Text(controller.routesRoutine(command.id) ? "unified.routine.finalCheck" : "unified.objects.finalCheck")
+                    Text(controller.routesBatch(command.id) ? "unified.batch.finalCheck"
+                         : controller.routesRoutine(command.id) ? "unified.routine.finalCheck" : "unified.objects.finalCheck")
                         .font(DaybookType.micro)
                 }
                 let summary = UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: calendar)
@@ -97,8 +102,9 @@ private struct UnifiedSearchPlanRow: View {
     private var diagnostics: some View {
         let result = check.items.first { $0.item == item.stamp }
         return VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            let validKey = controller.routesBatch(item.draft.commandID) ? "unified.batch.shapeValid" : "unified.plan.shapeValid"
             Text(result?.arguments.isEmpty == true && result?.targets.isEmpty == true
-                 ? "unified.plan.shapeValid" : "unified.plan.needsInput").font(DaybookType.caption)
+                 ? LocalizedStringKey(validKey) : "unified.plan.needsInput").font(DaybookType.caption)
             ForEach(Array((result?.arguments ?? []).enumerated()), id: \.offset) { _, issue in
                 Text(verbatim: UnifiedSearchOperationCopy.issue(issue, locale: locale)).font(DaybookType.caption)
             }

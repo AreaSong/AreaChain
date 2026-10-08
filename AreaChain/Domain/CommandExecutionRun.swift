@@ -221,14 +221,6 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         return input(item, bindings: references)
     }
 
-    /// 单项真实创建与后续计划依赖共用相同解析，不执行消费者，也不放宽外部步骤门禁。
-    func creationOutput(for reference: CommandCreationReference) -> CommandObjectReference? {
-        guard snapshot.items.contains(where: { $0.stamp == reference.producer }),
-              units.first(where: { $0.members.contains(reference.producer.id) })?.state == .succeeded,
-              let output = outputs[reference.producer.id], output.type == reference.outputType else { return nil }
-        return output
-    }
-
     private func input(_ item: CommandPlanItem, bindings: [CommandParameterID: CommandObjectReference]) -> CommandResolvedInput? {
         guard !item.draft.blocksUnprotectedExport,
               let command = CommandCatalog.standard.command(id: item.draft.commandID) else { return nil }
@@ -313,6 +305,11 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
 }
 
 extension CommandExecutionRun {
+    mutating func recordRoutineCreation(_ facts: CommandRoutineCreateFacts, attempt: CommandAttemptStamp) throws {
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        try recordMutationResult(index, result: result, conflict: false, attempt: attempt)
+        units[index].routineCreation = facts
+    }
     mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
         let (index, result) = try facts.receipt(in: self, attempt: attempt)
         try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
@@ -322,6 +319,11 @@ extension CommandExecutionRun {
         let (index, result) = try facts.receipt(in: self, attempt: attempt)
         try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
         units[index].routine = facts
+    }
+    mutating func recordBatch(_ facts: CommandBatchFacts, attempt: CommandAttemptStamp) throws {
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
+        units[index].batch = facts
     }
     private mutating func recordMutationResult(_ index: Int, result: CommandExecutionResult?,
                                                conflict: Bool, attempt: CommandAttemptStamp) throws {
@@ -334,39 +336,8 @@ extension CommandExecutionRun {
     }
 
     mutating func recordTaskField(_ facts: CommandTaskFieldFacts, attempt: CommandAttemptStamp) throws {
-        guard attempt.execution == stamp, attempt.phase == .local, snapshot.items.count == 1,
-              let item = snapshot.items.first, item.id == attempt.unitID,
-              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
-              units[index].attempt == attempt.number, units[index].currentPhase == .local else { throw CommandExecutionError.stale }
-        try CommandTaskFieldPreview.validate(item)
-        guard item.draft.targets.objects.first?.id == facts.targetID, outputs.isEmpty else { throw CommandExecutionError.invalidResult }
-        if let previous = units[index].taskField {
-            guard previous.targetID == facts.targetID, previous.state == .pending || previous.state == facts.state else {
-                throw CommandExecutionError.invalidResult
-            }
-        }
-        if units[index].receipt == nil {
-            let result: CommandExecutionResult
-            switch facts.state {
-            case .pending: units[index].taskField = facts; return
-            case .noChange:
-                guard facts.save == .notCalled, facts.publication == .notCalled,
-                      !facts.refreshRequested, facts.authorizationRequest == .notCalled else { throw CommandExecutionError.invalidResult }
-                units[index].state = .succeeded
-                units[index].receipt = .init(attempt: attempt, result: .noChange)
-                units[index].taskField = facts
-                return
-            case .saved:
-                guard facts.save == .returned else { throw CommandExecutionError.invalidResult }
-                result = .committed(outputs: [:], external: [.taskPublication, .notification, .calendar])
-            case .unknown: result = .commitUnknown
-            case .notSubmitted:
-                guard facts.save == .notCalled else { throw CommandExecutionError.invalidResult }
-                result = .failedWithoutCommit
-            }
-            try receive(.init(attempt: attempt, result: result))
-            if facts.conflict { units[index].state = .conflict }
-        }
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        try recordMutationResult(index, result: result, conflict: facts.state == .noChange ? false : facts.conflict, attempt: attempt)
         units[index].taskField = facts
     }
 

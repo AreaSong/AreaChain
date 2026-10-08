@@ -60,3 +60,21 @@ enum ControlsStepperHit {
         return rect.contains(point)
     }
 }
+
+struct ControlsPlatformStepperView: View {
+    @Bindable var state: StepperProbe
+    let native: Bool
+    let reset: (Int) -> Void
+    var body: some View {
+        VStack {
+            Text("初值500，范围20…999，步长10。按住增加后释放、静置2秒；重置后验证减少。只操作整数。")
+            if native {
+                Text("NSStepper · \(state.integer)").accessibilityIdentifier("qa.native.value")
+                ControlsNativeStepper(state: state).frame(width: 24, height: 28)
+            } else { DaybookStepperProbeView(state: state) }
+            ForEach([500, 990, 30], id: \.self) { initial in
+                Button("设为 / Set \(initial)") { reset(initial) }
+            }
+        }.padding()
+    }
+}

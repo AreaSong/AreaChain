@@ -21,7 +21,7 @@ struct CommandTaskTagMutation: Equatable {
     static func prepare(rawIDs: String, edit: TaskFieldEdit, catalog: CommandTaskTagCatalog) throws -> Self? {
         guard case .tags = edit else {
             if case .createTag(let name) = edit {
-                return try compose(rawIDs: rawIDs, selections: [.name(name)], operation: .add, catalog: catalog)
+                return try compose(rawIDs: rawIDs, selections: [.name(name)], operation: .add, lookup: .init(catalog))
             }
             return nil
         }
@@ -30,17 +30,20 @@ struct CommandTaskTagMutation: Equatable {
     }
 
     static func prepare(rawIDs: String, argument: CommandArgument, catalog: CommandTaskTagCatalog) throws -> Self {
+        try prepare(rawIDs: rawIDs, argument: argument, lookup: .init(catalog))
+    }
+
+    static func prepare(rawIDs: String, argument: CommandArgument, lookup: CommandTaskTagLookup) throws -> Self {
         let ids: [UUID]
         if case .tags(let values) = argument.value { ids = TagIDList.normalized(values) } else { ids = [] }
         return try compose(rawIDs: rawIDs, selections: ids.map(CommandTaskTagSelection.id),
-                           operation: argument.operation, catalog: catalog)
+                           operation: argument.operation, lookup: lookup)
     }
 
     private static func compose(rawIDs: String, selections: [CommandTaskTagSelection],
-                                operation: CommandFieldOperation, catalog: CommandTaskTagCatalog) throws -> Self {
+                                operation: CommandFieldOperation, lookup: CommandTaskTagLookup) throws -> Self {
         // 先核对原关联，clear/remove 也不能绕过 D3。
-        let original = try CommandTaskTitleTags.merge(rawIDs: rawIDs, title: "", catalog: catalog).original
-        let lookup = CommandTaskTagLookup(catalog)
+        let original = try CommandTaskTitleTags.associations(rawIDs: rawIDs, lookup: lookup)
         let selected = try selections.map { selection in
             switch lookup.resolve(selection) {
             case .success(let target): return target

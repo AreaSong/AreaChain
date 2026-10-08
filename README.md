@@ -78,6 +78,8 @@ python3 -B scripts/quality_gate.py
 
 构建与安装是独立入口。完成数据备份并正常退出应用后，运行 `./scripts/install.sh` 会增量构建当前 Debug、验签、请求确认，再安装并启动。开发中用 `./scripts/install.sh --yes` 装上工作区里的最新代码。`--no-build` 使用已有 Debug，`--no-open` 安装后不启动，`--release` 才改为整包优化的 Release。
 
+卸载后因遗留私密锁而无法重装时，可用 `--previous-app` 显式指定可信原应用备份核对签名；先做 `--dry-run`，完整约束见[原应用缺失时重装](docs/signing.md#原应用缺失时重装)。
+
 `./scripts/uninstall.sh`（或 `./scripts/app.sh delete`）确认后只将应用移到可恢复目录，保留全部数据、私密锁、钥匙串和证书；可先加 `--dry-run` 预览。脚本不会强制结束应用，不自动切换签名身份，也不提供清空数据命令。完整命令、回退与限制见 [安装与回退门禁](docs/signing.md#安装与回退门禁)。
 
 也可以：`open AreaChain.xcodeproj`。
