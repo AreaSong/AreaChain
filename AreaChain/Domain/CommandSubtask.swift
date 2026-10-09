@@ -160,7 +160,7 @@ struct CommandSubtaskPreview: Equatable, CustomStringConvertible, CustomDebugStr
                          resolved: CommandResolvedInput? = nil) throws {
         let input = try item.checkedInput(resolved)
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, resolved != nil || item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else { throw SubtaskCommandIssue.unsupportedPlan }
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil else { throw SubtaskCommandIssue.unsupportedPlan }
         _ = try CommandSubtaskInput(item.draft, resolved: input)
     }
 

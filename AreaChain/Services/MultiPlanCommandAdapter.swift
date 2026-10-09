@@ -13,6 +13,8 @@ import Foundation
     let fileSettings: FileLocalSettingCommandAdapter?
     let id = UUID()
     let outputCapability: CommandMultiPlanOutputCapability
+    let supportsRevisions: Bool
+    var mergeProposal: MultiPlanMergeProposal?
     private(set) var preview: MultiPlanCommandPreview?
     private(set) var pending: MultiPlanCommandMemberPreview?
     private(set) var pendingItemID: UUID?
@@ -32,7 +34,8 @@ import Foundation
     }
 
     init(coordinator: CommandHandoffCoordinator, adapters: Adapters,
-         outputCapability: CommandMultiPlanOutputCapability = .taskTitle) {
+         outputCapability: CommandMultiPlanOutputCapability = .taskTitle, supportsRevisions: Bool = false) {
+        self.supportsRevisions = supportsRevisions
         self.outputCapability = outputCapability
         self.coordinator = coordinator
         taskCreate = adapters.taskCreate
@@ -82,6 +85,8 @@ import Foundation
             throw CommandMultiPlanIssue.stale
         }
         let items = host.session.plan.items
+        guard supportsRevisions || items.allSatisfy({ $0.executionOrigin == nil }) else { throw CommandMultiPlanIssue.unsupported }
+        try coordinator.validatePlanOrigins(items, plan: plan, assemblyID: id, owner: lease.ownership)
         let families = try Dictionary(uniqueKeysWithValues: items.map { ($0.id, try family(for: $0.draft.commandID)) })
         let identity = try CommandMultiPlanIdentity(plan: plan, items: items, families: families, outputCapability: outputCapability)
         try validateReferenceEnvironments(identity, items: items)
@@ -301,9 +306,32 @@ import Foundation
         }
     }
 
-    private func enter() throws {
+    func enter() throws {
         guard !operating else { throw CommandExecutionError.busy }
         operating = true
+    }
+
+    func finishOperation() { operating = false }
+
+    func returnRemaining(_ ticket: CommandPlanReturnTicket, expecting lease: CommandHostLease,
+                         displaySession: ContentQueryReadSession? = nil) throws {
+        try enter()
+        defer { finishOperation() }
+        guard supportsRevisions else { throw CommandMultiPlanIssue.unsupported }
+        try displaySession?.validateDisplayHost(expecting: lease)
+        try coordinator.returnPlan(ticket, assemblyID: id, expecting: lease)
+        preview = nil
+        pending = nil
+        pendingItemID = nil
+        pendingRetry = nil
+        mergeProposal = nil
+        requiresDisplayReview = true
+    }
+
+    func prepareReturn(expecting lease: CommandHostLease) throws -> CommandPlanReturnTicket {
+        guard supportsRevisions, !operating else { throw CommandMultiPlanIssue.recoveryUnavailable }
+        if fileSettings?.multiBackendNeedsRecovery == true { throw CommandMultiPlanIssue.recoveryUnavailable }
+        return try coordinator.preparePlanReturn(assemblyID: id, expecting: lease)
     }
 }
 

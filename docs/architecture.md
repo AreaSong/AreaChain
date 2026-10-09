@@ -578,3 +578,9 @@ CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类�
 显式 typedCreation 只扩展原多项装配。三类创建在各自原 afterCommit／Facts 留存真实 UUID 与 PersistentIdentifier；协调者结合原接受／调用／Run 身份签发 CommandCreationOutput，原 Run.outputs 与 bindings 继续唯一保存输出和解析位置。CommandCreationConsumption 只描述不可编辑投影；parent 与 targets 严格区分。新建记录重新物化不等同新存储记录，不能用内存地址作为跨预览的唯一身份。
 
 创建前没有目标读取或虚构基线；真实输出满足原依赖后，原 Reader 核验当前来源、目录、关系和影响，并在原面板再次接受。确定失败、外部未完成、unknown 全计划暂停、原 UUID 重试与迟到回执仍走原调度／占用入口。接口与实际消费者见[组件目录](component-catalog.md#p-m2-类型化输出与消费绑定)，范围及证据见[权威 P-M2](unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。
+
+### P-M3 运行内编辑修订
+
+显式支持修订的 MultiPlanCommandAdapter 仍使用原 CommandPlan／CommandExecutionRun。协调者先核验完整剩余单元和真实尝试事实，在无调用／准备占用、无本地 unknown、无本地已保存外部待处理时，原子撤销源运行执行权并交付唯一可编辑计划。原 Run 以不可变记录保留在同宿主修订链；新 Run 不复制成功单元。返回票据绑定原 lease、Run、计划及完整单元成员，旧票据／回执不能进入新接收窗口。
+
+未执行生产者编辑按拓扑传播所有消费者引用版本，迁移前后均验证图。已成功生产者的 CommandCreationOutput 保留原 Run、attempt、savedID、PersistentIdentifier、装配和存储身份，完成顺序边单独保留只读来源。原事务及当前资格仍由各 Reader／Adapter 核验；返回后重新读取和接受全部剩余影响。仅本次运行内有效，不写普通历史或磁盘队列；可合并、可返回范围及验证结果以[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)为准。

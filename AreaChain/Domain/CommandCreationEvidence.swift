@@ -4,6 +4,12 @@ import SwiftData
 extension CommandHandoffCoordinator {
     /// 原协调者的保存事实、接受和真实调用共同签发；当前库存在同 UUID 不构成证明。
     func multiPlanOutput(_ reference: CommandCreationReference, in run: CommandExecutionRun) throws -> CommandCreationOutput {
+        if reference.history != nil {
+            let host = try host(run.snapshot.stamp.hostID)
+            guard host.session.execution == run, !run.hasUnknownCommit,
+                  let assembly = multiPlans.assemblies[run.stamp] else { throw CommandMultiPlanIssue.stale }
+            return try historicalOutput(reference, owner: host.lease.ownership, assemblyID: assembly)
+        }
         guard try host(run.snapshot.stamp.hostID).session.execution == run,
               run.multiPlan != nil, !run.hasUnknownCommit,
               let assembly = multiPlans.assemblies[run.stamp],

@@ -40,7 +40,7 @@ final class UnifiedSearchResultsFixture {
          taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
          subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil,
-         enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle) throws {
+         enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle, enablePlanRevisions: Bool = false) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -81,7 +81,7 @@ final class UnifiedSearchResultsFixture {
         if case .file(let adapter) = backend { multiAdapters.fileSettings = adapter }
         if case .legacy(let adapter) = backend { multiAdapters.localSettings = adapter }
         let multi = enableMultiPlan ? MultiPlanCommandAdapter(coordinator: handoff.coordinator, adapters: multiAdapters,
-                                                              outputCapability: outputCapability) : nil
+                                                              outputCapability: outputCapability, supportsRevisions: enablePlanRevisions) : nil
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in

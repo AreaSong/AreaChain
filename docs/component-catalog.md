@@ -1004,3 +1004,10 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [MultiPlanCommandOutput](../AreaChain/Services/MultiPlanCommandOutput.swift) 的 validateReferenceEnvironments 按真实装配校验边、环境与创建前输入；TaskTitle／TaskField／Subtask／Routine 原 Reader 接收冻结引用投影，真实对象准备后仍由原 MultiPlan 面板再次接受。原 RoutineStateApplication 增加存储记录身份输入，批量内存身份入口不变。
 - [UnifiedSearchPlanLinks](../AreaChain/Features/Search/UnifiedSearchPlanLinks.swift) 的 creationReferenceLabel 由同一计划／Run 标识前序创建类型和 parent／target 位置；原 PlanDependencies、MultiPlanSubmission 消费，无新增窗口。
 - 新验收入口为 MultiPlanOutputTests、MultiPlanOutputRecoveryTests、MultiPlanOutputBoundaryTests 和 UnifiedSearchMultiPlanOutputTests；旧单项、T-M1、P-M1 及批量／设置按实际影响回归。批准范围、事实／身份／失败语义及最终证据统一见[权威 P-M2](unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。
+
+## P-M3 合并与唯一编辑修订
+
+- [CommandPlanRevision](../AreaChain/Domain/CommandPlanRevision.swift) 中的 CommandPlanExecutionOrigin／CommandPlanReturnTicket／CommandAssignmentMergeProof、returnPlan 和 validatePlanOrigins 连接原协调者、只读原 Run 及唯一剩余计划；真实输出凭据保留原创建身份，不加入成功占位步骤。
+- [MultiPlanCommandMerge](../AreaChain/Services/MultiPlanCommandMerge.swift) 的 proposeMerge／acceptMerge 使用原成员 Reader，沿 CommandPlanSemantics 的窄白名单，确认时再次核对同一来源、目录、记录与字段。来源数组不能独立授权。
+- [CommandPlan.applyRevision](../AreaChain/Domain/CommandPlan.swift) 在原图有效时原子传播引用版本闭包；旧纯协议编辑和单项设置返回维持原行为。[UnifiedSearchPlanRevisionHistory](../AreaChain/Features/Search/UnifiedSearchPlanRevisionHistory.swift) 在原 PlanList 内展示只读事实和重新接受范围，没有第二套编辑器。
+- 验证入口为 MultiPlanMergeExecutionTests、MultiPlanRevisionTests、MultiPlanRevisionFamilyTests 及本批原生套件，按实际影响补原 Plan／P-M1／P-M2 与各业务适配。真实状态与缺口只维护在[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)。

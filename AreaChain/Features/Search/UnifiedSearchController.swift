@@ -8,6 +8,7 @@ final class UnifiedSearchController {
     var inputFocused = true
     var operationExpanded = true
     var planMessage = "unified.plan.notExecutable"
+    var planRemovalDependents: [UUID] = []
     var planReturnItem: UUID?
     var planReturnRevision: UInt64 = 0
     var editingParameter: CommandParameterID?

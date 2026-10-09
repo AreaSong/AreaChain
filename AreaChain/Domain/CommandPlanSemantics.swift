@@ -37,6 +37,8 @@ enum CommandPlanSemantics {
         guard first.atomicGroup == nil, last.atomicGroup == nil else { return .atomicGroup }
         let pair: Set<UUID> = [first.id, last.id]
         guard first.links.dependencies.isEmpty, last.links.dependencies.isEmpty,
+              first.links.results.isEmpty, last.links.results.isEmpty,
+              first.links.completedPredecessors.isEmpty, last.links.completedPredecessors.isEmpty,
               !items.contains(where: { !$0.links.dependencies.isDisjoint(with: pair) }) else { return .dependency }
         guard first.draft.baseline == last.draft.baseline,
               let original = first.draft.baseline.original(field, targets: first.draft.targets),

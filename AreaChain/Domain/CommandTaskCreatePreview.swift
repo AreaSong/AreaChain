@@ -92,7 +92,7 @@ struct CommandTaskCreatePreview: Equatable, CustomStringConvertible, CustomDebug
               item.draft.hostID == session.hostID, item.draft.commandID.rawValue == "todo.create",
               item.draft.targets == .none, item.draft.baseline == CommandDraftBaseline(),
               item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
+              item.hasSupportedOrigins, item.executionOrigin == nil else {
             throw CommandTaskCreatePreviewIssue.unsupportedPlan
         }
         return item

@@ -40,7 +40,7 @@ struct CommandTaskTitlePreview: Equatable, CustomStringConvertible, CustomDebugS
               session.plan.editing == nil, session.plan.items.count == 1, let item = session.plan.items.first,
               item.draft.hostID == session.hostID, item.draft.commandID.rawValue == "todo.title",
               item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
+              item.hasSupportedOrigins, item.executionOrigin == nil else {
             throw CommandTaskTitlePreviewIssue.unsupportedPlan
         }
         return try input(item: item, hostID: session.hostID)
@@ -50,7 +50,7 @@ struct CommandTaskTitlePreview: Equatable, CustomStringConvertible, CustomDebugS
     static func input(item: CommandPlanItem, hostID: String) throws -> Input {
         guard item.draft.hostID == hostID, item.draft.commandID.rawValue == "todo.title",
               item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
+              item.hasSupportedOrigins, item.executionOrigin == nil else {
             throw CommandTaskTitlePreviewIssue.unsupportedPlan
         }
         return try resolvedInput(item: item, targets: item.draft.targets)
@@ -133,7 +133,7 @@ struct CommandTaskTitlePreview: Equatable, CustomStringConvertible, CustomDebugS
             guard input.target == impact.target, input.edit == impact.edit else { throw CommandTaskTitlePreviewIssue.stale }
             if let reference = run.multiPlan?.references[item.id] {
                 guard binding.multiOutput?.producer == reference.producer,
-                      binding.multiOutput?.execution == run.stamp,
+                      binding.multiOutput?.execution == (reference.history?.execution ?? run.stamp),
                       binding.multiOutput?.object == input.target,
                       run.creationOutput(for: reference) == input.target else { throw CommandTaskTitlePreviewIssue.stale }
             } else if binding.multiOutput != nil { throw CommandTaskTitlePreviewIssue.stale }

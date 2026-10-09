@@ -41,7 +41,10 @@ struct CommandCreationConsumption: Equatable {
     let output: CommandCreationOutput
 
     func input(_ item: CommandPlanItem) throws -> CommandResolvedInput {
-        let reference = CommandCreationReference(producer: output.producer, outputType: output.object.type)
+        guard let reference = item.links.results[parameter], reference.producer == output.producer,
+              reference.outputType == output.object.type, reference.history == nil || reference.history == output else {
+            throw CommandMultiPlanIssue.stale
+        }
         guard item.links.results == [parameter: reference],
               CommandMultiPlanOutputCapability.typedCreation.accepts(item.draft.commandID, parameter: parameter, type: reference.outputType),
               CommandPlanValidation.acceptsReference(reference, parameter: parameter, item: item),
@@ -50,6 +53,12 @@ struct CommandCreationConsumption: Equatable {
     }
 
     func validate(in run: CommandExecutionRun, item: CommandPlanItem) throws {
+        if let reference = item.links.results[parameter], reference.history == output {
+            guard run.multiPlan?.references[item.id] == reference, item.executionOrigin != nil,
+                  run.creationOutput(for: reference) == output.object,
+                  try run.resolvedInput(item.id) == input(item) else { throw CommandMultiPlanIssue.stale }
+            return
+        }
         guard let identity = run.multiPlan, identity.references[item.id]?.producer == output.producer,
               run.snapshot.items.first(where: { $0.stamp == output.producer })?.draft.stamp == output.draft,
               let reference = item.links.results[parameter],

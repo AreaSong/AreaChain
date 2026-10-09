@@ -420,3 +420,7 @@ K真实输入、L持续按压与关键可访问性沿 areachain-workflow → are
 ## P-M2 类型化创建输出
 
 沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦原生身份与确认）→ areachain-verify。复用原 Plan／Run／Coordinator、成员 Reader 和 PlanLinks；仅显式 typedCreation 装配开放三类输出的受限消费、分支和多级链，默认 P-M1 与旧单项／T-M1 保持原范围。实际接口见[组件目录](docs/component-catalog.md#p-m2-类型化输出与消费绑定)，批准规则和有限验证只维护在[权威 P-M2](docs/unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。完整正常 PrivacyQA、独立 PM2 标识／目录、原锁900秒、合成内存库、六项授权清除和串行原生保持；当前源码补正常 development Debug／严格验签。指定 Cursor verifier 不可调用时保留缺口，不能用普通代理替代；不接生产、真实数据／系统、安装或发布。
+
+## P-M3 合并与返回修订
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦原生状态与焦点）→ areachain-verify。复用原 Plan／Run／Coordinator、CommandPlanSemantics 和各真实 Reader，显式 supportsRevisions 装配才开放真实赋值合并及完整剩余集合返回；默认旧单项／P-M1／P-M2 保持边界。入口见[组件目录](docs/component-catalog.md#p-m3-合并与唯一编辑修订)，唯一实现与验收状态见[权威 P-M3](docs/unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)。完整 PrivacyQA、独立 PM3 目录／标识、原锁900秒、源码全集与进程核对、六项授权清除及串行原生保持；指定 Cursor 不可用保留未执行，不以探索代理替代，不接生产或安装发布。

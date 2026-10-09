@@ -23698,8 +23698,18 @@
     "workspace.inspector.needsSpace": {
       "extractionState": "manual",
       "localizations": {
-        "en": { "stringUnit": { "state": "translated", "value": "Widen the window or narrow the sidebar to show details" } },
-        "zh-Hans": { "stringUnit": { "state": "translated", "value": "加宽窗口或缩窄侧栏后可查看详情" } }
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Widen the window or narrow the sidebar to show details"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "加宽窗口或缩窄侧栏后可查看详情"
+          }
+        }
       }
     },
     "workspace.page.info": {
@@ -47767,6 +47777,227 @@
           "stringUnit": {
             "state": "translated",
             "value": "等待确认真实影响"
+          }
+        }
+      }
+    },
+    "unified.revision.completedDependency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completed dependency: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成的顺序依赖：%@"
+          }
+        }
+      }
+    },
+    "unified.revision.history": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Original run facts · read only"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "原运行事实 · 只读"
+          }
+        }
+      }
+    },
+    "unified.revision.historyOutput": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved output from %@: %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "引用原已保存输出 · %@：%@"
+          }
+        }
+      }
+    },
+    "unified.revision.mergeEffect": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apply only the final assignment once. Intermediate effects will not run. Review and accept the updated plan before execution."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "只提交最后赋值一次，不执行中间效果。执行前须重新预览并接受更新后的计划。"
+          }
+        }
+      }
+    },
+    "unified.revision.mergeSteps": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Merge steps %lld and %lld"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合并第 %lld 与第 %lld 步"
+          }
+        }
+      }
+    },
+    "unified.revision.reaccept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review the current values for every remaining step and accept again. Saved and no-change steps will not replay."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新读取并确认全部剩余步骤的当前值；已保存和无需修改的成功步骤不会重放。"
+          }
+        }
+      }
+    },
+    "unified.revision.remaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changes awaiting resubmission"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "待重新提交的修改"
+          }
+        }
+      }
+    },
+    "unified.revision.return": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Return all unsubmitted steps to editing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将全部未提交步骤返回编辑"
+          }
+        }
+      }
+    },
+    "unified.revision.returnBoundary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requires proven unsubmitted work. Unknown commits and pending external work must be resolved in the original run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅限已证明未提交的剩余内容；提交未知或外部待处理时，继续使用原运行的恢复入口。"
+          }
+        }
+      }
+    },
+    "unified.revision.resolveDependents": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resolve these consumers before removing their producer:"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除生产者前，请明确处理以下消费者的引用或依赖："
+          }
+        }
+      }
+    },
+    "unified.revision.removeGroup": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove the entire settings group"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "移除完整设置组"
+          }
+        }
+      }
+    },
+    "unified.revision.externalPending": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local changes are saved. Finish the pending external work in the original run before returning."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地修改已经保存，请先在原运行中处理待完成的外部工作。"
+          }
+        }
+      }
+    },
+    "unified.revision.unproven": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The remaining work is busy or cannot yet be proven unsubmitted. The original run and its contents are retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "剩余内容正在占用中，或尚不能证明未提交；已保留原运行及全部内容。"
           }
         }
       }

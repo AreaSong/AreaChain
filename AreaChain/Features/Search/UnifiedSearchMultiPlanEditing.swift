@@ -2,7 +2,8 @@ import Foundation
 
 extension UnifiedSearchController {
     var showsMultiPlan: Bool {
-        multiPlan != nil && ((plan?.items.count ?? 0) > 1 || settingExecution?.multiPlan != nil)
+        multiPlan != nil && ((plan?.items.count ?? 0) > 1 || settingExecution?.multiPlan != nil
+            || plan?.items.contains(where: { $0.executionOrigin != nil }) == true)
     }
 
     var currentMultiPlanPreview: MultiPlanCommandPreview? {
@@ -106,11 +107,24 @@ extension UnifiedSearchController {
             try multiPlan?.cancel(unitID, expecting: source.lease)
         }
     }
+
+    func returnMultiPlan(_ source: UnifiedSearchBuffer) {
+        multiPlanAction(source) {
+            guard let multiPlan else { throw CommandMultiPlanIssue.unassembled }
+            let ticket = try multiPlan.prepareReturn(expecting: source.lease)
+            try multiPlan.returnRemaining(ticket, expecting: source.lease, displaySession: session)
+            editingParameter = nil
+            cancelObjectSelection(returnFocus: false)
+            operationExpanded = true
+        }
+    }
 }
 
 enum UnifiedSearchMultiPlanCopy {
     static func error(_ error: Error) -> String {
         if error as? CommandExecutionError == .requiresVerification { return "unified.multi.unknown" }
+        if error as? CommandMultiPlanIssue == .externalPending { return "unified.revision.externalPending" }
+        if error as? CommandMultiPlanIssue == .recoveryUnavailable { return "unified.revision.unproven" }
         if error is CommandMultiPlanIssue { return "unified.multi.unavailable" }
         if let error = error as? TaskCreateCommandIssue { return UnifiedSearchTaskCreateCopy.issue(error) }
         if error is FileLocalSettingCommandIssue { return UnifiedSearchFileSettingCopy.issue(error) }

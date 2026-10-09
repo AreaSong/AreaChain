@@ -24,7 +24,7 @@ import SwiftData
                      arguments: item.draft.arguments, target: observation.target, original: observation.original,
                      edit: observation.edit, source: observation.source, catalog: observation.catalog,
                      tagIDs: observation.todo.tagIDs, completion: observation.completion, tags: observation.tags,
-                     targetTitle: observation.todo.title, consumption: consumption)
+                     targetTitle: observation.todo.title, consumption: consumption, record: observation.todo.persistentModelID)
     }
 
     func owns(_ source: CommandTaskTitleSource) -> Bool {
@@ -65,6 +65,7 @@ import SwiftData
         guard observation.target == preview.target, observation.edit == preview.edit,
               observation.source == preview.source, observation.catalog == preview.catalog,
               observation.todo.tagIDs == preview.tagIDs else { throw TaskFieldCommandIssue.stale }
+        guard preview.record == observation.todo.persistentModelID else { throw TaskFieldCommandIssue.stale }
         guard observation.original == preview.original, observation.completion == preview.completion,
               observation.tags == preview.tags else { throw TaskFieldCommandIssue.fieldsChanged }
         return observation

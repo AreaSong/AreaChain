@@ -124,7 +124,7 @@ struct CommandBatchPreview: Equatable, CustomStringConvertible, CustomDebugStrin
     static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false) throws {
         let draft = item.draft
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil,
               CommandBatchEdit.commands.contains(draft.commandID.rawValue) else { throw CommandBatchIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               draft.baseline == CommandDraftBaseline(), draft.check().staticallyValid,

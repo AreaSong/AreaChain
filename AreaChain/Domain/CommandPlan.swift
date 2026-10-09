@@ -15,12 +15,14 @@ struct CommandPlanItemStamp: Equatable, Hashable {
 struct CommandCreationReference: Equatable {
     let producer: CommandPlanItemStamp
     let outputType: CommandObjectType
+    var history: CommandCreationOutput?
 }
 
 struct CommandPlanLinks: Equatable {
     var predecessors: Set<UUID> = []
     var results: [CommandParameterID: CommandCreationReference] = [:]
-    var dependencies: Set<UUID> { predecessors.union(results.values.map { $0.producer.id }) }
+    var completedPredecessors: [UUID: CommandCompletedPredecessor] = [:]
+    var dependencies: Set<UUID> { predecessors.union(results.values.filter { $0.history == nil }.map { $0.producer.id }) }
 }
 
 struct CommandPlanItem: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
@@ -31,6 +33,7 @@ struct CommandPlanItem: Equatable, CustomStringConvertible, CustomDebugStringCon
     var atomicGroup: UUID?
     var mergedOrigins: [CommandDraftStamp] = []
     var returnedAttempts: [CommandAttemptStamp] = []
+    var executionOrigin: CommandPlanExecutionOrigin?
 
     var stamp: CommandPlanItemStamp { .init(id: id, version: version) }
     var description: String { "CommandPlanItem(id: \(id), version: \(version))" }
@@ -99,12 +102,89 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         return removed.draft
     }
 
+    mutating func removeGroup(_ group: UUID, expecting stamp: CommandPlanStamp) throws -> [CommandDraft] {
+        guard self.stamp == stamp, editing == nil else { throw CommandPlanError.stale }
+        let members = items.filter { $0.atomicGroup == group }
+        guard members.count > 1 else { throw CommandPlanError.grouped }
+        let ids = Set(members.map(\.id))
+        let dependents = items.filter { !ids.contains($0.id) && !$0.links.dependencies.isDisjoint(with: ids) }.map(\.id)
+        guard dependents.isEmpty else { throw CommandPlanError.dependents(dependents) }
+        items.removeAll { ids.contains($0.id) }
+        revision += 1
+        return members.map(\.draft)
+    }
+
     mutating func apply(_ event: CommandPlanEvent, expecting stamp: CommandPlanStamp) throws {
         guard self.stamp == stamp else { throw CommandPlanError.stale }
         var next = self
         try next.change(event)
         next.revision += 1
         self = next
+    }
+
+    /// 受控修订先验证原图，再按拓扑顺序迁移所有分支；原有纯协议编辑仍保留逐项修复行为。
+    mutating func applyRevision(_ event: CommandPlanEvent, expecting stamp: CommandPlanStamp) throws {
+        try requireValidStructure()
+        if case .link(let target, let links) = event,
+           items.first(where: { $0.stamp == target })?.links.completedPredecessors != links.completedPredecessors {
+            throw CommandPlanError.invalidInput
+        }
+        if case .dissolveGroup(let id) = event, items.contains(where: { $0.atomicGroup == id && $0.executionOrigin?.returnID != nil }) {
+            throw CommandPlanError.grouped
+        }
+        let original = items
+        var next = self
+        if case .link(let target, let links) = event {
+            guard self.stamp == stamp else { throw CommandPlanError.stale }
+            let index = try next.index(of: target)
+            next.items[index].links = links
+            next.items[index].version += 1
+            next.revision += 1
+        } else { try next.apply(event, expecting: stamp) }
+        for index in next.items.indices {
+            var changed = false
+            for (parameter, reference) in next.items[index].links.results where reference.history == nil {
+                guard let old = original.first(where: { $0.stamp == reference.producer }),
+                      let producer = next.items.first(where: { $0.id == old.id }) else { throw CommandPlanError.stale }
+                if producer.stamp != reference.producer {
+                    next.items[index].links.results[parameter] = .init(producer: producer.stamp, outputType: reference.outputType)
+                    changed = true
+                }
+            }
+            if changed { next.items[index].version += 1 }
+        }
+        try next.requireValidStructure()
+        self = next
+    }
+
+    mutating func restoreRevision(_ items: [CommandPlanItem], from run: CommandExecutionRun) throws {
+        guard self.items.isEmpty, editing == nil, run.snapshot.stamp.planID == id,
+              run.snapshot.stamp.hostID == hostID, !items.isEmpty else { throw CommandPlanError.stale }
+        let issues = CommandPlanValidation.structure(items)
+        guard issues.isEmpty else { throw CommandPlanError.graph(issues) }
+        self.items = items
+        usedIDs.formUnion(items.map(\.id))
+        revision += 1
+    }
+
+    mutating func mergeVerified(_ earlier: CommandPlanItemStamp, _ later: CommandPlanItemStamp,
+                               baseline: CommandDraftBaseline, origin: CommandPlanExecutionOrigin) throws {
+        guard editing == nil else { throw CommandPlanError.busy }
+        let first = try index(of: earlier), last = try index(of: later)
+        var evidence = items
+        for index in [first, last] {
+            evidence[index].draft.reload(baseline, arguments: evidence[index].draft.arguments, expecting: evidence[index].draft.stamp)
+        }
+        if let conflict = CommandPlanSemantics.mergeConflict(evidence, earlier: first, later: last) {
+            throw CommandPlanError.mergeConflict(conflict)
+        }
+        let incoming = items[last]
+        items[first].draft.edit(incoming.draft.arguments[0], expecting: items[first].draft.stamp)
+        items[first].version += 1
+        items[first].mergedOrigins += [incoming.draft.stamp] + incoming.mergedOrigins
+        items[first].executionOrigin = origin
+        items.remove(at: last)
+        revision += 1
     }
 
     private mutating func change(_ event: CommandPlanEvent) throws {

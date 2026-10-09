@@ -63,6 +63,13 @@ extension MultiPlanCommandAdapter {
     }
 
     func accept(_ preview: MultiPlanCommandMemberPreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> UUID {
+        let host = try coordinator.host(preview.lease.ownership.hostID)
+        let items = host.session.execution?.snapshot.items ?? host.session.plan.items
+        let itemID = preview.memberID
+        let revisionPermit = try items.first(where: { $0.id == itemID }).flatMap {
+            try coordinator.revisionAcceptancePermit(item: $0, assemblyID: id, expecting: host.lease)
+        }
+        let retry = retry ?? revisionPermit
         switch preview {
         case .localSetting(let value): return value.evidence.captureID
         case .fileSettings(let value): return value.id
@@ -126,6 +133,20 @@ extension MultiPlanCommandAdapter {
 }
 
 extension MultiPlanCommandMemberPreview {
+    var memberID: UUID? {
+        switch self {
+        case .taskCreate(let value): value.item.id
+        case .taskTitle(let value): value.binding.item.id
+        case .taskField(let value): value.item.id
+        case .subtask(let value): value.item.id
+        case .routine(let value): value.item.id
+        case .routineCreate(let value): value.item.id
+        case .batch(let value): value.item.id
+        case .localSetting(let value): value.item.id
+        case .fileSettings(let value): value.members.first?.id
+        case .output: nil
+        }
+    }
     /// 只忽略原 Reader 明确不当作修改影响的展示名／后续上下文；来源和目录仍严格匹配。
     func isCovered(by original: Self) -> Bool {
         if self == original { return true }

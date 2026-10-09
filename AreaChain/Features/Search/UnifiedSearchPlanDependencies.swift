@@ -9,6 +9,14 @@ struct UnifiedSearchPlanDependencies: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            ForEach(item.links.completedPredecessors.keys.sorted { $0.uuidString < $1.uuidString }, id: \.self) { id in
+                if let completion = item.links.completedPredecessors[id],
+                   let record = controller.coordinator.revisionChain(source.lease.ownership.hostID).first(where: { $0.run.stamp == completion.execution }),
+                   let original = record.run.snapshot.items.first(where: { $0.stamp == completion.item }),
+                   let command = CommandCatalog.standard.command(id: original.draft.commandID) {
+                    Text(verbatim: L10n.format("unified.revision.completedDependency", locale: locale, command.name(locale: locale)))
+                }
+            }
             ForEach(item.links.predecessors.sorted { $0.uuidString < $1.uuidString }, id: \.self) { id in
                 Text(verbatim: L10n.format("unified.plan.predecessor", locale: locale) + " · " + name(id))
                 if editable {

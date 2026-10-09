@@ -46,6 +46,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
+        contract_docs["docs/component-catalog.md"] += " CommandPlanReturnTicket CommandAssignmentMergeProof proposeMerge UnifiedSearchPlanRevisionHistory\n"
         contract_docs["docs/component-catalog.md"] += " CommandCreationOutput multiPlanOutput validateReferenceEnvironments creationReferenceLabel CommandMultiPlanIdentity CommandAttemptRecord startMultiPlan MultiPlanCommandAdapter prepareMultiPlan UnifiedSearchMultiPlanSubmission UnifiedSearchTaskCreationImpact UnifiedSearchRoutineCreationImpact\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceInspectorFocus daybookScrollTopEdge\n"
         contract_docs["docs/component-catalog.md"] += " TaskCreateCommandAdapter claimTaskCreate requestTaskCreate UnifiedSearchTaskCreateSubmission\n"
@@ -791,6 +792,23 @@ class WorkflowCheckTests(unittest.TestCase):
                 self.write(path, original)
                 self.assertEqual(result["status"], "failed")
                 self.assertTrue(any(symbol in entry["message"] for entry in result["issues"]))
+
+    def test_component_catalog_requires_pm3_revision_boundaries(self):
+        self.make_project()
+        for path, symbol in (
+            ("Domain/CommandPlanRevision", "CommandPlanReturnTicket"),
+            ("Domain/CommandPlanRevision", "CommandAssignmentMergeProof"),
+            ("Services/MultiPlanCommandMerge", "proposeMerge"),
+            ("Features/Search/UnifiedSearchPlanRevisionHistory", "UnifiedSearchPlanRevisionHistory"),
+        ):
+            with self.subTest(symbol=symbol):
+                relative = f"AreaChain/{path}.swift"
+                original = (self.root / relative).read_text()
+                self.write(relative, "struct Other {}\n")
+                result = workflow.check_component_catalog(self.root)
+                self.write(relative, original)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_pm2_output_boundaries(self):
         self.make_project()

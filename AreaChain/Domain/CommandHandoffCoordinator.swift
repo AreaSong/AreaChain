@@ -49,6 +49,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
     @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
     @ObservationIgnored let multiPlans = CommandMultiPlanRegistry()
+    @ObservationIgnored let planRevisions = CommandPlanRevisionRegistry()
     @ObservationIgnored let taskTitles = CommandTaskTitleRegistry()
     @ObservationIgnored let taskFields = CommandTaskFieldRegistry()
     @ObservationIgnored let batches = CommandBatchRegistry()
@@ -110,6 +111,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
               !run.hasUnknownCommit,
               run.operation(operation.operationID) == operation, run.attempt(attempt.unitID) == attempt,
               run.snapshot.items.count == 1, run.units.count == 1,
+              run.snapshot.items[0].executionOrigin == nil,
               run.units[0].state == .running, run.units[0].receipt?.attempt != attempt,
               session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil,
               !invokedAttempts.contains(attempt),
@@ -135,6 +137,8 @@ struct CommandPreferenceGroupInvocation: Equatable {
             return try claimRuntimeInvocation(operation, attempt: attempt, expecting: lease)
         }
         guard !run.hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
+        guard let assembly = multiPlans.assemblies[run.stamp] else { throw CommandMultiPlanIssue.stale }
+        try validatePlanOrigins(run.snapshot.items, plan: run.snapshot.stamp, assemblyID: assembly, owner: lease.ownership)
         guard let authorization = multiPlans.authorizations[attempt], authorization.lease == lease,
               authorization.previewLease == previewLease, authorization.acceptanceID == acceptanceID,
               authorization.itemID == operation.operationID,
@@ -481,6 +485,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
         guard !source.allDrafts.contains(where: \.blocksUnprotectedTransfer) else { throw CommandHandoffError.protectedContent }
         // 包括非忙碌的成功、失败、冲突、部分/未知结果；运行绝不随转交迁移或抹除。
         guard source.execution == nil, target.execution == nil,
+              !source.plan.items.contains(where: { $0.executionOrigin != nil }),
               source.operations.pending == nil, target.operations.pending == nil else { throw CommandHandoffError.ineligible }
         guard target.operations.active == nil, target.operations.retained.isEmpty,
               target.plan.items.isEmpty, target.plan.editing == nil else { throw CommandHandoffError.targetOccupied }

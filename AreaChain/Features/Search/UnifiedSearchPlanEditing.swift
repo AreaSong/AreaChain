@@ -5,6 +5,7 @@ struct UnifiedSearchPlanMerge: Equatable {
     let source: UnifiedSearchBuffer
     let earlier: CommandPlanItemStamp
     let later: CommandPlanItemStamp
+    var evidence: MultiPlanMergeProposal?
 }
 
 extension UnifiedSearchController {
@@ -39,6 +40,7 @@ extension UnifiedSearchController {
               let stamp = source.plan else { return rejectPlan() }
         do {
             try coordinator.send(.plan(event, stamp), expecting: source.lease)
+            planRemovalDependents = []
             _ = publishOperation(text: buffer.text)
             prepareSettingDraft()
             planMessage = "unified.plan.notExecutable"
@@ -107,9 +109,26 @@ extension UnifiedSearchController {
         _ = sendPlan(.reorder(order), source: source)
     }
 
+    func removePlanGroup(_ group: UUID, source: UnifiedSearchBuffer) {
+        guard validates(source), operationVisible, !settingSubmitting, settingExecution == nil, let stamp = source.plan else { return }
+        do {
+            try coordinator.send(.removeGroupFromPlan(group, stamp), expecting: source.lease)
+            _ = publishOperation(text: buffer.text)
+            planRemovalDependents = []
+        } catch { _ = rejectPlan(error) }
+    }
+
     func proposePlanMerge(_ item: CommandPlanItemStamp, source: UnifiedSearchBuffer) -> UnifiedSearchPlanMerge? {
         guard validates(source), operationVisible, let plan,
               let index = plan.items.firstIndex(where: { $0.stamp == item }), index > 0 else { return nil }
+        if let multiPlan, multiPlan.supportsRevisions {
+            guard taskNativeInputReady, !settingSubmitting, multiPlanTask == nil else { return nil }
+            do {
+                try session.validateDisplayHost(expecting: source.lease)
+                let evidence = try multiPlan.proposeMerge(plan.items[index - 1].stamp, item, expecting: source.lease)
+                return .init(source: source, earlier: evidence.earlier, later: item, evidence: evidence)
+            } catch { _ = rejectPlan(error); return nil }
+        }
         if let conflict = CommandPlanSemantics.mergeConflict(plan.items, earlier: index - 1, later: index) {
             _ = rejectPlan(CommandPlanError.mergeConflict(conflict)); return nil
         }
@@ -117,11 +136,21 @@ extension UnifiedSearchController {
     }
 
     func acceptPlanMerge(_ proposal: UnifiedSearchPlanMerge) {
+        if let evidence = proposal.evidence {
+            guard validates(proposal.source), operationVisible, taskNativeInputReady, !settingSubmitting, multiPlanTask == nil else { return }
+            do {
+                try session.validateDisplayHost(expecting: proposal.source.lease)
+                try multiPlan?.acceptMerge(evidence, expecting: proposal.source.lease)
+                _ = publishOperation(text: buffer.text)
+            } catch { _ = rejectPlan(error) }
+            return
+        }
         _ = sendPlan(.merge(earlier: proposal.earlier, later: proposal.later), source: proposal.source)
     }
 
     @discardableResult
     func rejectPlan(_ error: Error = CommandPlanError.stale) -> Bool {
+        if case .dependents(let ids) = error as? CommandPlanError { planRemovalDependents = ids }
         planMessage = UnifiedSearchPlanCopy.errorKey(error)
         refreshOperationPresentation()
         return false

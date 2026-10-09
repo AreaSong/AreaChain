@@ -8,6 +8,7 @@ struct UnifiedSearchMultiPlanSubmission: View {
     var body: some View {
         let source = controller.buffer
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+            UnifiedSearchPlanRevisionHistory(controller: controller)
             Text("unified.multi.title").font(DaybookType.body.weight(.semibold))
             Text("unified.multi.boundaries").font(DaybookType.caption)
             if let run = controller.settingExecution, run.multiPlan != nil {
@@ -90,6 +91,12 @@ struct UnifiedSearchMultiPlanSubmission: View {
                 }
             }
             Text("unified.multi.runOnly").font(DaybookType.micro)
+            if controller.multiPlan?.supportsRevisions == true, run.units.contains(where: { $0.state != .succeeded }) {
+                UnifiedSearchPlanButton(title: "unified.revision.return", identifier: "unified.revision.return") {
+                    controller.returnMultiPlan(source)
+                }.disabled(controller.settingSubmitting || controller.multiPlanTask != nil)
+                Text("unified.revision.returnBoundary").font(DaybookType.caption)
+            }
         }
     }
 

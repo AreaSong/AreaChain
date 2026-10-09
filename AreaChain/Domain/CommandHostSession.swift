@@ -48,7 +48,20 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
     }
 
     mutating func planEvent(_ event: CommandPlanEvent, expecting stamp: CommandPlanStamp) throws {
-        try plan.apply(event, expecting: stamp)
+        if plan.items.contains(where: { $0.executionOrigin?.returnID != nil }) {
+            try plan.applyRevision(event, expecting: stamp)
+        } else { try plan.apply(event, expecting: stamp) }
+    }
+
+    mutating func restorePlanRevision(_ items: [CommandPlanItem], from run: CommandExecutionRun) throws {
+        guard execution == run else { throw CommandMultiPlanIssue.stale }
+        try plan.restoreRevision(items, from: run)
+        execution = nil
+    }
+
+    mutating func mergePlanRevision(_ earlier: CommandPlanItemStamp, _ later: CommandPlanItemStamp,
+                                   baseline: CommandDraftBaseline, origin: CommandPlanExecutionOrigin) throws {
+        try plan.mergeVerified(earlier, later, baseline: baseline, origin: origin)
     }
 
     /// 移除只退回 retained，不默认丢弃内容；丢弃仍用草稿原有显式版本化入口。
@@ -56,6 +69,15 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         var next = self
         let draft = try next.plan.remove(item, expecting: stamp)
         guard next.operations.retainFromPlan(draft) else { throw CommandPlanError.busy }
+        self = next
+    }
+
+    mutating func removeGroupFromPlan(_ group: UUID, expecting stamp: CommandPlanStamp) throws {
+        guard execution == nil else { throw CommandPlanError.busy }
+        var next = self
+        for draft in try next.plan.removeGroup(group, expecting: stamp) {
+            guard next.operations.retainFromPlan(draft) else { throw CommandPlanError.busy }
+        }
         self = next
     }
 

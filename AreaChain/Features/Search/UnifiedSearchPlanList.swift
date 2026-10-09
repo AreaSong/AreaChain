@@ -34,6 +34,15 @@ struct UnifiedSearchPlanList: View {
                     .accessibilityIdentifier("unified.group.title")
             }
             let check = plan.check()
+            if !controller.planRemovalDependents.isEmpty {
+                Text("unified.revision.resolveDependents").font(DaybookType.caption)
+                ForEach(plan.items.filter { controller.planRemovalDependents.contains($0.id) }, id: \.id) { item in
+                    if let command = CommandCatalog.standard.command(id: item.draft.commandID) {
+                        Text(verbatim: command.name(locale: locale) + " · " + UnifiedSearchOperationCopy.summary(command,
+                            draft: item.draft, locale: locale, calendar: .current)).font(DaybookType.caption)
+                    }
+                }
+            }
             ForEach(Array(plan.items.enumerated()), id: \.element.id) { index, item in
                 UnifiedSearchPlanRow(controller: controller, item: item, source: controller.buffer, index: index, check: check)
                 DaybookDivider()
@@ -144,9 +153,13 @@ private struct UnifiedSearchPlanRow: View {
                 Button("unified.multi.group") { controller.groupAdjacentSettings(item.stamp, source: source) }
                     .accessibilityIdentifier("unified.multi.group." + item.id.uuidString)
             }
-            if let group = item.atomicGroup, controller.showsMultiPlan {
+            if let group = item.atomicGroup, controller.showsMultiPlan, item.executionOrigin?.returnID == nil {
                 Button("unified.multi.ungroup") { _ = controller.sendPlan(.dissolveGroup(group), source: source) }
                     .accessibilityIdentifier("unified.multi.ungroup." + item.id.uuidString)
+            }
+            if let group = item.atomicGroup, item.executionOrigin?.returnID != nil {
+                Button("unified.revision.removeGroup") { controller.removePlanGroup(group, source: source) }
+                    .accessibilityIdentifier("unified.revision.removeGroup." + group.uuidString)
             }
             Button("unified.plan.remove") { _ = controller.removePlanItem(item.stamp, source: source) }
                 .accessibilityIdentifier("unified.plan.remove." + item.id.uuidString)
@@ -160,6 +173,11 @@ private struct UnifiedSearchPlanRow: View {
     private func mergeConfirmation(_ proposal: UnifiedSearchPlanMerge, command: CommandDescriptor) -> some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             Text("unified.plan.merge.question").font(DaybookType.caption)
+            if proposal.evidence != nil {
+                Text(verbatim: L10n.format("unified.revision.mergeSteps", locale: locale, index, index + 1))
+                    .font(DaybookType.caption)
+                Text("unified.revision.mergeEffect").font(DaybookType.caption)
+            }
             Text(verbatim: UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: calendar))
                 .font(DaybookType.caption)
             HStack {

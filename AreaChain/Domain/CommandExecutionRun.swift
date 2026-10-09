@@ -193,7 +193,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
             let predecessor = snapshot.items.first { item in
                 dependencies.contains(item.id) && units.first { $0.members.contains(item.id) }?.state != .succeeded
             }
-            let missing = members.flatMap { $0.links.results.values }.first { outputs[$0.producer.id] == nil }
+            let missing = members.flatMap { $0.links.results.values }.first { creationOutput(for: $0) == nil }
             units[index].block = predecessor.map { .predecessor($0.id) } ?? missing.map { .missingOutput($0.producer.id) }
             units[index].state = units[index].block == nil ? .ready : .blocked
         }

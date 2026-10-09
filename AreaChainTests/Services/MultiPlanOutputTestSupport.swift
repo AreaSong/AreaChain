@@ -18,7 +18,7 @@ import Testing
     var childRevision = UUID()
 
     init(capability: CommandMultiPlanOutputCapability = .typedCreation,
-         composition: TaskCreateCommandAdapter.Capability = .minimal) throws {
+         composition: TaskCreateCommandAdapter.Capability = .minimal, revisions: Bool = false) throws {
         io = try TaskChainCommandIO()
         handoff = try HandoffFixture()
         var boundary = io.creation.capture.boundary
@@ -47,7 +47,7 @@ import Testing
             taskCreate: .init(coordinator: coordinator, environment: io.createEnvironment, capability: composition),
             taskTitle: .init(coordinator: coordinator, environment: io.titleEnvironment),
             taskField: .init(coordinator: coordinator, environment: io.titleEnvironment, capability: .milestone2),
-            subtask: .init(coordinator: coordinator, environment: subtaskEnvironment)), outputCapability: capability)
+            subtask: .init(coordinator: coordinator, environment: subtaskEnvironment)), outputCapability: capability, supportsRevisions: revisions)
     }
 
     @discardableResult func queue(_ command: String, _ arguments: [CommandArgument],

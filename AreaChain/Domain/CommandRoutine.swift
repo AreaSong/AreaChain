@@ -114,7 +114,7 @@ struct CommandRoutinePreview: Equatable, CustomStringConvertible, CustomDebugStr
         let input = try item.checkedInput(resolved)
         let draft = item.draft
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, resolved != nil || item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil,
               CommandRoutineEdit.allCommands.contains(draft.commandID.rawValue) else { throw RoutineCommandIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               draft.baseline == CommandDraftBaseline(),

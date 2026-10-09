@@ -7,6 +7,7 @@ extension CommandHandoffCoordinator {
         try validate(lease)
         guard !hasInvocation(lease.ownership) else { throw CommandExecutionError.busy }
         var session = try host(lease.ownership.hostID).session
+        try validatePlanOrigins(session.plan.items, plan: session.plan.stamp, assemblyID: assemblyID, owner: lease.ownership)
         try session.sealMultiPlan(identity, runID: UUID())
         guard let run = session.execution else { throw CommandMultiPlanIssue.stale }
         multiPlans.assemblies[run.stamp] = assemblyID

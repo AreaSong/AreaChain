@@ -132,7 +132,7 @@ extension CommandExecutionRun {
         guard canRecordLocalFacts(attempt, unit: units[index], hasPrevious: units[index].taskTitle != nil) else {
             throw CommandExecutionError.stale
         }
-        let target = snapshot.items.count == 1 ? try CommandTaskTitlePreview.input(item: item, hostID: snapshot.stamp.hostID).target
+        let target = snapshot.items.count == 1 && multiPlan == nil ? try CommandTaskTitlePreview.input(item: item, hostID: snapshot.stamp.hostID).target
             : resolvedInput(item.id)?.targets.objects.first
         guard target?.id == facts.targetID, snapshot.items.count == 2 || multiPlan != nil || outputs.isEmpty else { throw CommandExecutionError.invalidResult }
         if let previous = units[index].taskTitle {

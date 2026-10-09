@@ -16,7 +16,7 @@ extension CommandHandoffCoordinator {
 
     nonisolated static func validateTaskCreateItem(_ item: CommandPlanItem, composed: Bool = false, allowingDependencies: Bool = false) throws {
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil else {
             throw TaskCreateCommandIssue.unsupportedPlan
         }
         if composed {

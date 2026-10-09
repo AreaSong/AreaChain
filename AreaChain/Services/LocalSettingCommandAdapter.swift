@@ -66,6 +66,7 @@ final class LocalSettingCommandAdapter {
             throw LocalSettingCommandIssue.multipleOperations
         }
         let item = session.plan.items[0]
+        guard item.executionOrigin == nil else { throw LocalSettingCommandIssue.multipleOperations }
         let value = try validateItem(item)
         let evidence = try baseline(for: item.draft)
         try checkCurrent(evidence, value: value)

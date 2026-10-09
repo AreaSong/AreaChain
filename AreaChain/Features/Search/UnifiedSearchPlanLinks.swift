@@ -54,6 +54,13 @@ extension UnifiedSearchController {
 
 extension UnifiedSearchController {
     func creationReferenceLabel(_ reference: CommandCreationReference, parameter: CommandParameterID, locale: Locale) -> String {
+        if let output = reference.history,
+           let record = coordinator.revisionChain(buffer.lease.ownership.hostID).first(where: { $0.run.stamp == output.execution }),
+           let item = record.run.snapshot.items.first(where: { $0.stamp == output.producer }),
+           let command = CommandCatalog.standard.command(id: item.draft.commandID) {
+            return L10n.format("unified.revision.historyOutput", locale: locale, command.name(locale: locale),
+                UnifiedSearchOperationCopy.summary(command, draft: item.draft, locale: locale, calendar: .current))
+        }
         let items = settingExecution?.snapshot.items ?? plan?.items ?? []
         guard let index = items.firstIndex(where: { $0.stamp == reference.producer }) else {
             return L10n.format("unified.plan.reference.stale", locale: locale)

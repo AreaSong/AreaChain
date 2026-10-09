@@ -57,6 +57,10 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Domain/CommandPlanRevision.swift", "CommandPlanReturnTicket"),
+    ("AreaChain/Domain/CommandPlanRevision.swift", "CommandAssignmentMergeProof"),
+    ("AreaChain/Services/MultiPlanCommandMerge.swift", "proposeMerge"),
+    ("AreaChain/Features/Search/UnifiedSearchPlanRevisionHistory.swift", "UnifiedSearchPlanRevisionHistory"),
     ("AreaChain/Domain/CommandCreationOutput.swift", "CommandCreationOutput"),
     ("AreaChain/Domain/CommandCreationEvidence.swift", "multiPlanOutput"),
     ("AreaChain/Services/MultiPlanCommandOutput.swift", "validateReferenceEnvironments"),

@@ -369,6 +369,7 @@ final class FileLocalSettingCommandAdapter {
         guard session.plan.stamp == stamp else { throw FileLocalSettingCommandIssue.stale }
         guard session.execution == nil, session.plan.editing == nil, session.operations.pending == nil,
               session.operations.active == nil else { throw FileLocalSettingCommandIssue.busy }
+        guard session.plan.items.allSatisfy({ $0.executionOrigin == nil }) else { throw FileLocalSettingCommandIssue.unsupportedScope }
         return session.plan
     }
 

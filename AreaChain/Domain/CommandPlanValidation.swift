@@ -72,6 +72,11 @@ enum CommandPlanValidation {
         let positions = Dictionary(uniqueKeysWithValues: items.enumerated().map { ($0.element.id, $0.offset) })
         var issues: [CommandDependencyIssue] = []
         for item in items {
+            for (id, completion) in item.links.completedPredecessors {
+                if id != completion.item.id || byID[id] != nil || item.executionOrigin == nil {
+                    issues.append(.unknown(item: item.id, predecessor: id))
+                }
+            }
             for predecessor in item.links.dependencies.sorted(by: { $0.uuidString < $1.uuidString }) {
                 if predecessor == item.id { issues.append(.selfDependency(item.id)) }
                 guard let position = positions[predecessor] else {
@@ -104,7 +109,15 @@ enum CommandPlanValidation {
     ) -> [CommandDependencyIssue] {
         var issues: [CommandDependencyIssue] = []
         for parameter in item.links.results.keys.sorted(by: { $0.rawValue < $1.rawValue }) {
-            guard let reference = item.links.results[parameter], let producer = byID[reference.producer.id] else { continue }
+            guard let reference = item.links.results[parameter] else { continue }
+            if let output = reference.history {
+                if item.executionOrigin == nil || byID[reference.producer.id] != nil || output.producer != reference.producer
+                    || output.object.type != reference.outputType || !acceptsReference(reference, parameter: parameter, item: item) {
+                    issues.append(.invalidReference(item.id, parameter))
+                }
+                continue
+            }
+            guard let producer = byID[reference.producer.id] else { continue }
             if producer.stamp != reference.producer { issues.append(.staleReference(item.id, parameter)) }
             let output = CommandCatalog.standard.command(id: producer.draft.commandID)?.createdObjectType
             if output != reference.outputType || !acceptsReference(reference, parameter: parameter, item: item) {

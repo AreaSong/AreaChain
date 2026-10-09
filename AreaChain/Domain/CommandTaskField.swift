@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 /// 普通单目标属性的窄修改值；可空时间仅表示明确清空，缺少操作不能构造此值。
 enum TaskFieldEdit: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
@@ -87,6 +88,7 @@ struct CommandTaskFieldPreview: Equatable, CustomStringConvertible, CustomDebugS
     var tags: CommandTaskTagMutation?
     var targetTitle = ""
     var consumption: CommandCreationConsumption?
+    var record: PersistentIdentifier?
     var semanticsVersion = 2
     var noChange: Bool { tags.map { $0.noChange(rawIDs: tagIDs) } ?? (original == edit) }
 
@@ -106,7 +108,7 @@ struct CommandTaskFieldPreview: Equatable, CustomStringConvertible, CustomDebugS
         let input = try item.checkedInput(resolved)
         let draft = item.draft
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, resolved != nil || item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil,
               TaskFieldEdit.commands.contains(draft.commandID.rawValue) else { throw TaskFieldCommandIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               draft.baseline == CommandDraftBaseline(),

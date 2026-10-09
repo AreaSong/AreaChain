@@ -8,6 +8,7 @@ enum CommandMultiPlanFamily: Equatable, Hashable {
 
 enum CommandMultiPlanIssue: Error, Equatable {
     case unassembled, unsupported, incomplete, stale, confirmationRequired, recoveryUnavailable
+    case externalPending
 }
 
 struct CommandMultiPlanIdentity: Equatable {
@@ -20,13 +21,12 @@ struct CommandMultiPlanIdentity: Equatable {
 
     init(plan: CommandPlanStamp, items: [CommandPlanItem], families: [UUID: CommandMultiPlanFamily],
          outputCapability: CommandMultiPlanOutputCapability = .taskTitle) throws {
-        guard items.count > 1, CommandPlanValidation.check(items).canSealProtocol else {
+        guard items.count > 1 || items.first?.executionOrigin != nil, CommandPlanValidation.check(items).canSealProtocol else {
             throw CommandMultiPlanIssue.incomplete
         }
         guard Set(families.keys) == Set(items.map(\.id)), items.allSatisfy({
             $0.draft.hostID == plan.hostID && !$0.draft.blocksUnprotectedExport
-                && $0.draft.protectionRequirement == .ordinary && $0.returnedAttempts.isEmpty
-                && $0.mergedOrigins.isEmpty
+                && $0.draft.protectionRequirement == .ordinary && $0.hasSupportedOrigins
         }) else { throw CommandMultiPlanIssue.unsupported }
         var units: [[UUID]] = []
         for item in items where !units.contains(where: { $0.contains(item.id) }) {
@@ -42,7 +42,15 @@ struct CommandMultiPlanIdentity: Equatable {
         var producers: Set<UUID> = []
         for item in items where !item.links.results.isEmpty {
             guard item.links.results.count == 1, let (parameter, reference) = item.links.results.first,
-                  outputCapability.accepts(item.draft.commandID, parameter: parameter, type: reference.outputType),
+                  outputCapability.accepts(item.draft.commandID, parameter: parameter, type: reference.outputType) else {
+                throw CommandMultiPlanIssue.unsupported
+            }
+            if reference.history != nil {
+                guard outputCapability == .typedCreation else { throw CommandMultiPlanIssue.unsupported }
+                references[item.id] = reference
+                continue
+            }
+            guard
                   let producer = items.first(where: { $0.stamp == reference.producer }),
                   CommandCatalog.standard.command(id: producer.draft.commandID)?.createdObjectType == reference.outputType else {
                 throw CommandMultiPlanIssue.unsupported

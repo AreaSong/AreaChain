@@ -50,7 +50,7 @@ struct CommandRoutineCreatePreview: Equatable, CustomStringConvertible, CustomDe
 
     static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false) throws {
         guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
-              item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else { throw RoutineCreateIssue.invalidInput }
+              item.hasSupportedOrigins, allowingDependencies || item.executionOrigin == nil else { throw RoutineCreateIssue.invalidInput }
         _ = try input(item.draft)
     }
 

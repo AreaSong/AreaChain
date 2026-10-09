@@ -15,6 +15,15 @@ extension MultiPlanCommandAdapter {
 
     func validateReferenceEnvironments(_ identity: CommandMultiPlanIdentity, items: [CommandPlanItem]) throws {
         for item in items where identity.references[item.id] != nil {
+            if let reference = identity.references[item.id], reference.history != nil {
+                let owner = try coordinator.host(identity.plan.hostID).lease.ownership
+                let output = try coordinator.historicalOutput(reference, owner: owner, assemblyID: id)
+                let context = try context(for: family(for: item.draft.commandID))
+                guard output.contextID == ObjectIdentifier(context), output.storageID == ObjectIdentifier(context.container) else {
+                    throw CommandMultiPlanIssue.stale
+                }
+                continue
+            }
             guard let (parameter, reference) = item.links.results.first,
                   let producer = items.first(where: { $0.stamp == reference.producer }),
                   permitsReference(producer, consumer: item, parameter: parameter),
@@ -42,7 +51,16 @@ extension MultiPlanCommandAdapter {
               outputCapability.accepts(item.draft.commandID, parameter: parameter, type: reference.outputType) else {
             throw CommandMultiPlanIssue.unsupported
         }
-        guard let run = try coordinator.host(lease.ownership.hostID).session.execution else { return nil }
+        let host = try coordinator.host(lease.ownership.hostID)
+        if reference.history != nil {
+            let output = try coordinator.historicalOutput(reference, owner: host.lease.ownership, assemblyID: id)
+            let context = try context(for: family(for: item.draft.commandID))
+            guard output.contextID == ObjectIdentifier(context), output.storageID == ObjectIdentifier(context.container) else {
+                throw CommandMultiPlanIssue.stale
+            }
+            return .init(parameter: parameter, output: output)
+        }
+        guard let run = host.session.execution else { return nil }
         guard coordinator.multiPlans.assemblies[run.stamp] == id, run.multiPlan?.outputCapability == outputCapability else {
             throw CommandMultiPlanIssue.stale
         }
