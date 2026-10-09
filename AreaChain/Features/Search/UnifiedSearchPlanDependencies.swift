@@ -17,9 +17,18 @@ struct UnifiedSearchPlanDependencies: View {
             }
             ForEach(item.links.results.keys.sorted { $0.rawValue < $1.rawValue }, id: \.self) { parameter in
                 if let reference = item.links.results[parameter] {
-                    Text(verbatim: L10n.format(parameter.nameKey, locale: locale) + " ← " + name(reference.producer.id)
-                        + " · " + L10n.format("unified.plan.output." + reference.outputType.rawValue, locale: locale))
+                    Text(verbatim: controller.creationReferenceLabel(reference, parameter: parameter, locale: locale))
+                        .accessibilityIdentifier("unified.plan.reference.label." + parameter.rawValue)
                 }
+            }
+            if editable, controller.showsMultiPlan, let plan = controller.plan,
+               let index = plan.items.firstIndex(where: { $0.id == item.id }) {
+                Menu("unified.multi.dependency") {
+                    ForEach(plan.items.prefix(index).filter { !item.links.dependencies.contains($0.id) }, id: \.id) { predecessor in
+                        Button { controller.addPredecessor(predecessor.id, item: item.stamp, source: source) }
+                            label: { Text(verbatim: name(predecessor.id)) }
+                    }
+                }.accessibilityIdentifier("unified.multi.dependency." + item.id.uuidString)
             }
             if editable, let command = CommandCatalog.standard.command(id: item.draft.commandID) {
                 ForEach(command.parameters, id: \.id) { parameter in

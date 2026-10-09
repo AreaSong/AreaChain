@@ -70,7 +70,8 @@ struct CommandPlanDependencyTests {
         #expect(throws: CommandPlanError.incomplete) { try PlanFixture.seal(&host) }
         try PlanFixture.reference(child, parent: parent, in: &host)
         #expect(host.plan.check().canSealProtocol)
-        #expect(CommandCatalog.standard.entries.filter { $0.createdObjectType != nil }.map(\.id.rawValue) == ["todo.create"])
+        #expect(CommandCatalog.standard.entries.filter { $0.createdObjectType != nil }.map(\.id.rawValue).sorted()
+            == ["routine.create", "subtask.create", "todo.create"])
     }
 
     @Test func outputResolvesOnlyAfterSuccessAndIsFixedAcrossConsumerRetry() throws {

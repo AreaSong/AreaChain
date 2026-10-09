@@ -48,6 +48,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored private var invocations: [UUID: CommandRuntimeInvocation] = [:]
     @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
     @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
+    @ObservationIgnored let multiPlans = CommandMultiPlanRegistry()
     @ObservationIgnored let taskTitles = CommandTaskTitleRegistry()
     @ObservationIgnored let taskFields = CommandTaskFieldRegistry()
     @ObservationIgnored let batches = CommandBatchRegistry()
@@ -106,6 +107,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
         try validate(lease)
         let session = try host(lease.ownership.hostID).session
         guard let run = session.execution, run.stamp == operation.execution,
+              !run.hasUnknownCommit,
               run.operation(operation.operationID) == operation, run.attempt(attempt.unitID) == attempt,
               run.snapshot.items.count == 1, run.units.count == 1,
               run.units[0].state == .running, run.units[0].receipt?.attempt != attempt,
@@ -114,6 +116,38 @@ struct CommandPreferenceGroupInvocation: Equatable {
               !hasInvocation(lease.ownership) else {
             throw CommandExecutionError.stale
         }
+        let invocation = CommandRuntimeInvocation(id: UUID(), lease: lease, operation: operation, attempt: attempt)
+        invokedAttempts.insert(attempt)
+        invocations[invocation.id] = invocation
+        return invocation
+    }
+
+    /// 多项调用要求原 Run 的显式装配和当前 attempt 的接受登记；旧单项 claim 不放宽。
+    func wasAttemptInvoked(_ attempt: CommandAttemptStamp) -> Bool { invokedAttempts.contains(attempt) }
+
+    func claimMemberInvocation(_ operation: CommandOperationIdentity, attempt: CommandAttemptStamp,
+                               expecting lease: CommandHostLease, acceptanceID: UUID,
+                               previewLease: CommandHostLease) throws -> CommandRuntimeInvocation {
+        try validate(lease)
+        let session = try host(lease.ownership.hostID).session
+        guard let run = session.execution else { throw CommandExecutionError.stale }
+        guard run.multiPlan != nil else {
+            return try claimRuntimeInvocation(operation, attempt: attempt, expecting: lease)
+        }
+        guard !run.hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
+        guard let authorization = multiPlans.authorizations[attempt], authorization.lease == lease,
+              authorization.previewLease == previewLease, authorization.acceptanceID == acceptanceID,
+              authorization.itemID == operation.operationID,
+              multiPlans.assemblies[run.stamp] == authorization.assemblyID,
+              run.operation(operation.operationID) == operation, run.attempt(attempt.unitID) == attempt,
+              attempt.unitID == operation.operationID,
+              let unit = run.units.first(where: { $0.id == attempt.unitID }), unit.state == .running,
+              (attempt.phase == .local && unit.local == .notSubmitted
+                || attempt.phase == .external && unit.local == .committed
+                    && run.snapshot.items.contains { $0.id == operation.operationID && CommandPlanSemantics.isAtomicSetting($0.draft.commandID) }),
+              unit.receipt == nil, run.permitsMember(operation.operationID),
+              session.plan.items.isEmpty, session.operations.allDrafts.isEmpty, session.operations.pending == nil,
+              !invokedAttempts.contains(attempt), !hasInvocation(lease.ownership) else { throw CommandExecutionError.stale }
         let invocation = CommandRuntimeInvocation(id: UUID(), lease: lease, operation: operation, attempt: attempt)
         invokedAttempts.insert(attempt)
         invocations[invocation.id] = invocation
@@ -130,6 +164,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
         try validate(lease)
         let session = try host(lease.ownership.hostID).session
         guard let run = session.execution else { throw CommandExecutionError.stale }
+        guard !run.hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
         try identity.validate(run)
         guard let prepared = taskCreations.preparations[run.snapshot.items[0].draft.id], prepared.chain == identity,
               run.operation(operation.operationID) == operation, run.attempt(attempt.unitID) == attempt,
@@ -149,6 +184,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
         try validate(invocation.lease)
         let run = try host(invocation.lease.ownership.hostID).session.execution
         guard run?.operation(invocation.operation.operationID) == invocation.operation,
+              run?.hasUnknownCommit == false,
               run?.attempt(invocation.attempt.unitID) == invocation.attempt else { throw CommandExecutionError.stale }
     }
 
@@ -190,6 +226,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     func hasInvocation(_ ownership: CommandHostOwnership) -> Bool {
         invocations.values.contains { $0.lease.ownership == ownership }
             || groupInvocations.values.contains { $0.lease.ownership == ownership }
+            || multiPlans.preparing[ownership.hostID] == ownership
             || taskCreations.preparing[ownership.hostID] == ownership
             || taskTitles.preparing[ownership.hostID] == ownership
             || taskFields.preparing[ownership.hostID] == ownership
@@ -272,15 +309,20 @@ struct CommandPreferenceGroupInvocation: Equatable {
         try validate(lease)
         let session = try host(lease.ownership.hostID).session
         guard !hasInvocation(lease.ownership), let run = session.execution,
-              run.preferenceGroupIdentity() == identity, identity.unitID == attempt.unitID,
-              run.attempt(attempt.unitID) == attempt, let unit = run.units.first,
+              run.preferenceGroupIdentity(unitID: identity.unitID) == identity, identity.unitID == attempt.unitID,
+              run.attempt(attempt.unitID) == attempt, let unit = run.units.first(where: { $0.id == identity.unitID }),
               session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil else {
             throw CommandExecutionError.stale
         }
         if verification {
             guard unit.local == .unknown, unit.state == .verificationRequired else { throw CommandExecutionError.stale }
         } else {
+            guard !run.hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
             guard unit.state == .running, !invokedAttempts.contains(attempt) else { throw CommandExecutionError.stale }
+            if run.multiPlan != nil, attempt.phase == .local {
+                guard let authorization = multiPlans.authorizations[attempt], authorization.lease == lease,
+                      multiPlans.assemblies[run.stamp] == authorization.assemblyID else { throw CommandExecutionError.stale }
+            }
             invokedAttempts.insert(attempt)
         }
         let invocation = CommandPreferenceGroupInvocation(lease: lease, identity: identity,
@@ -291,7 +333,10 @@ struct CommandPreferenceGroupInvocation: Equatable {
 
     func validatePreferenceGroup(_ invocation: CommandPreferenceGroupInvocation) throws {
         try validate(invocation.lease)
-        _ = try groupHost(invocation)
+        let current = try groupHost(invocation)
+        guard invocation.verification || current.session.execution?.hasUnknownCommit == false else {
+            throw CommandExecutionError.requiresVerification
+        }
         guard try host(invocation.lease.ownership.hostID).session.execution?.attempt(invocation.attempt.unitID)
                 == invocation.attempt else { throw CommandExecutionError.stale }
     }
@@ -328,7 +373,8 @@ struct CommandPreferenceGroupInvocation: Equatable {
         guard groupInvocations[invocation.id] == invocation else { throw CommandExecutionError.stale }
         let current = try host(invocation.lease.ownership.hostID)
         guard current.lease.ownership == invocation.lease.ownership,
-              current.session.execution?.preferenceGroupIdentity() == invocation.identity else { throw CommandExecutionError.stale }
+              current.session.execution?.preferenceGroupIdentity(unitID: invocation.identity.unitID) == invocation.identity
+        else { throw CommandExecutionError.stale }
         return current
     }
 

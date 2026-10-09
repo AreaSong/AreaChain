@@ -6,6 +6,7 @@ extension RoutineMutationService {
         let creationID: UUID
         fileprivate(set) var candidateID: UUID?
         fileprivate(set) var savedID: UUID?
+        fileprivate(set) var savedRecord: PersistentIdentifier?
         fileprivate(set) var transaction: ModelChanges.CommitFacts?
         fileprivate(set) var registrationFailed = false
         fileprivate(set) var reminderRequest = ModelChanges.CallFact.notCalled
@@ -62,6 +63,7 @@ extension RoutineMutationService {
                                          accepted: CommandRoutineCreateAcceptance, context: ModelContext, dependencies: Dependencies) {
         ModelChanges.afterCommit(in: context) {
             result.savedID = routine.id
+            result.savedRecord = routine.persistentModelID
             result.savedRoutine = routine.snapshot
             result.savedTagEffects = accepted.preview.composition.tags.final.map(\.effect)
             do { try dependencies.registerLocalModification(routine.id) }

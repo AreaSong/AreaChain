@@ -68,11 +68,15 @@ struct DaybookScrollTargetModifier: ViewModifier {
     var featherEdges = false
     var featherHeight: CGFloat = 7.0
     @State private var scope = DaybookScrollScope()
+    @Environment(\.daybookScrollTopEdge) private var topEdge
 
     func body(content: Content) -> some View {
         // 两端位于掩膜之外，渐变状态的原生重排不能改变区间；实际浮层仍是目标 ScrollView 的子视图。
         content
-            .modifier(DaybookScrollEdgeFeatherModifier(enabled: featherEdges, featherHeight: featherHeight, scope: scope))
+            .modifier(DaybookScrollEdgeFeatherModifier(
+                enabled: featherEdges || topEdge, featherHeight: featherHeight,
+                scope: scope, topOnly: !featherEdges, respectsReducedTransparency: topEdge
+            ))
             .background(DaybookScrollBoundary(scope: scope))
             .overlay(DaybookScrollerConfigurator(scope: scope).allowsHitTesting(false))
     }
@@ -119,5 +123,17 @@ final class DaybookScrollBoundaryView: NSView {
     override func layout() {
         super.layout()
         scope?.host?.applyScroller()
+    }
+}
+
+/// 宿主只启用实际滚动区的顶部过渡；原调用方的底部策略与其他宿主默认值不变。
+private struct DaybookScrollTopEdgeKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var daybookScrollTopEdge: Bool {
+        get { self[DaybookScrollTopEdgeKey.self] }
+        set { self[DaybookScrollTopEdgeKey.self] = newValue }
     }
 }

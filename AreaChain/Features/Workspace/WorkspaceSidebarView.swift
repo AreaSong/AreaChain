@@ -28,6 +28,11 @@ struct WorkspaceSidebarView: View {
         }
         .listStyle(.sidebar)
         .daybookScroll(featherEdges: false)
+        .environment(\.daybookScrollTopEdge, true)
+        .padding(.top, WorkspaceLayout.sidebarTopInset)
+        .scrollContentBackground(.hidden)
+        .background(DaybookPalette.fill.page)
+        .background(SyntaxViewAnchor("syntax.workspace.sidebar.bounds"))
     }
 
     private var overviewSection: some View {
@@ -35,7 +40,6 @@ struct WorkspaceSidebarView: View {
             tabRow(.dashboard)
         } header: {
             Text("sidebar.overview")
-                .padding(.top, WorkspaceLayout.sidebarTopInset)
         }
     }
 

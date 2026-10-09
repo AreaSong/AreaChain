@@ -3,12 +3,14 @@ import SwiftUI
 
 struct TaskDetailNotesView: View {
     @Environment(\.locale) private var locale
+    @Environment(\.workspaceInspectorFocus) private var inspectorFocus
     let draftKey: String
     let notes: String
     let onUpdate: (String) -> Bool
 
     @State private var draft: String = ""
     @State private var isFocused = false
+    @State private var lastSaveAttempt: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
@@ -25,7 +27,7 @@ struct TaskDetailNotesView: View {
             }
         }
         .onDisappear {
-            flushSave()
+            flushLifecycleSave()
         }
     }
 
@@ -60,12 +62,13 @@ struct TaskDetailNotesView: View {
             )
             .frame(minHeight: 56, maxHeight: 150)
             .onChange(of: draft) { _, newValue in
+                if lastSaveAttempt != newValue { lastSaveAttempt = nil }
                 if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
             }
             .onChange(of: isFocused) { _, focused in
                 if !focused {
                     _ = BoardSelection.shared.consumeEscapeCancelsEdits()
-                    flushSave()
+                    flushLifecycleSave()
                 }
             }
         }
@@ -102,12 +105,23 @@ struct TaskDetailNotesView: View {
     }
 
     private func flushSave() {
+        lastSaveAttempt = draft
         if draft != notes {
             EditDrafts.shared.notes[draftKey] = draft
             if onUpdate(draft) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }
         } else {
             EditDrafts.shared.notes.removeValue(forKey: draftKey)
         }
+    }
+
+    private func flushLifecycleSave() {
+        if inspectorFocus?.retainsMarkedDraft == true {
+            if draft != notes { EditDrafts.shared.notes[draftKey] = draft }
+            return
+        }
+        // 详情收起会先失焦再卸载；同一草稿只尝试一次，失败留待用户显式重试或继续编辑。
+        guard lastSaveAttempt != draft else { return }
+        flushSave()
     }
 
     private func extractURLs(from text: String) -> [URL] {

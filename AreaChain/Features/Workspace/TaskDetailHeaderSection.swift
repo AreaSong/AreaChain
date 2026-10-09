@@ -58,6 +58,7 @@ struct TaskDetailTitleEditor: View {
     var onUpdate: (String) -> Bool
 
     @Environment(\.locale) private var locale
+    @Environment(\.workspaceInspectorFocus) private var inspectorFocus
     @State private var isEditing = false
     @State private var draft = ""
     @State private var isFocused = false
@@ -113,6 +114,8 @@ struct TaskDetailTitleEditor: View {
     }
 
     private func save() {
+        // 空间收起不代表用户确认了输入法候选；卸载沿原 EditDrafts 保存待恢复输入。
+        guard inspectorFocus?.retainsMarkedDraft != true else { return }
         let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmed.isEmpty {
             guard onUpdate(trimmed) else { return }

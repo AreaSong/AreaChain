@@ -43,10 +43,10 @@ enum FileLocalSettingCommandMapping {
     static let commands: [CommandID] = ["setting.language", "setting.appearance", "setting.truncation", "setting.captureSource"]
         .map { .init(rawValue: $0) }
 
-    static func values(_ items: [CommandPlanItem]) throws -> [LocalPreferenceValue] {
+    static func values(_ items: [CommandPlanItem], allowingDependencies: Bool = false) throws -> [LocalPreferenceValue] {
         guard (1...4).contains(items.count) else { throw FileLocalSettingCommandIssue.unsupportedScope }
         let values = try items.map { item in
-            guard item.links.dependencies.isEmpty else { throw FileLocalSettingCommandIssue.unsupportedScope }
+            guard allowingDependencies || item.links.dependencies.isEmpty else { throw FileLocalSettingCommandIssue.unsupportedScope }
             return try LocalSettingCommandMapping.value(for: item.draft)
         }
         let duplicates = LocalPreferenceField.allCases.filter { field in values.filter { $0.field == field }.count > 1 }
@@ -54,7 +54,9 @@ enum FileLocalSettingCommandMapping {
         if items.count > 1, items.contains(where: { $0.atomicGroup == nil }) {
             throw FileLocalSettingCommandIssue.needsExplicitGroup
         }
-        guard CommandPlanValidation.isPreferenceUnit(items) else { throw FileLocalSettingCommandIssue.unsupportedScope }
+        guard CommandPlanValidation.isPreferenceUnit(items, allowingDependencies: allowingDependencies) else {
+            throw FileLocalSettingCommandIssue.unsupportedScope
+        }
         return values
     }
 
@@ -82,7 +84,7 @@ enum FileLocalSettingCommandMapping {
             guard let field = LocalSettingCommandMapping.field(for: item.draft.commandID), fields.contains(field) else { return nil }
             return .init(item: item.stamp,
                          field: .init(subject: .ambient, parameter: field == .stampCaptureApp ? .enabled : .value),
-                         reason: .valueChanged)
+                         reason: item.draft.baseline.values.isEmpty ? .baselineUnavailable : .valueChanged)
         }
     }
 

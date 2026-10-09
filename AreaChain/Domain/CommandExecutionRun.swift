@@ -5,11 +5,13 @@ import Foundation
 struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     let stamp: CommandExecutionStamp
     let snapshot: CommandPlanSnapshot
-    private(set) var units: [CommandExecutionUnit]
+    let multiPlan: CommandMultiPlanIdentity?
+    var units: [CommandExecutionUnit]
     private(set) var outputs: [UUID: CommandObjectReference] = [:]
     private(set) var bindings: [UUID: [CommandParameterID: CommandObjectReference]] = [:]
 
-    init(id: UUID, snapshot: CommandPlanSnapshot) {
+    init(id: UUID, snapshot: CommandPlanSnapshot, multiPlan: CommandMultiPlanIdentity? = nil) {
+        self.multiPlan = multiPlan
         self.stamp = .init(runID: id, plan: snapshot.stamp)
         self.snapshot = snapshot
         var units: [CommandExecutionUnit] = []
@@ -24,6 +26,8 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     var isExecutable: Bool { false }
+    /// 本地提交不确定是整份运行的停止条件，与已保存后的外部未知分开。
+    var hasUnknownCommit: Bool { units.contains { $0.local == .unknown } }
     var isBusy: Bool { units.contains { $0.state == .running || $0.state == .waitingAuthorization } }
     var requiresUnsavedContentHandling: Bool { units.contains { $0.state != .succeeded } }
     var description: String { "CommandExecutionRun(id: \(stamp.runID), units: \(units.count))" }
@@ -32,11 +36,14 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     /// 返回协议尝试身份，不返回可调用的执行闭包，也不产生真实副作用。
     mutating func beginNext(expecting stamp: CommandExecutionStamp) throws -> CommandAttemptStamp {
         guard self.stamp == stamp else { throw CommandExecutionError.stale }
+        guard !hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
         guard !isBusy else { throw CommandExecutionError.busy }
         refreshReadiness()
         guard let index = units.firstIndex(where: { $0.state == .ready }) else { throw CommandExecutionError.noReadyUnit }
         let phase: CommandExecutionPhase = units[index].local == .committed ? .external : .local
         if phase == .local { try resolveInputs(index) }
+        units[index].archiveAttempt()
+        units[index].receipt = nil
         units[index].attempt += 1
         units[index].currentPhase = phase
         units[index].state = .running
@@ -65,7 +72,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         return true
     }
 
-    private func currentIndex(_ attempt: CommandAttemptStamp) throws -> Int {
+    func currentIndex(_ attempt: CommandAttemptStamp) throws -> Int {
         guard attempt.execution == stamp, let index = units.firstIndex(where: { $0.id == attempt.unitID }),
               units[index].attempt == attempt.number, units[index].currentPhase == attempt.phase else {
             throw CommandExecutionError.stale
@@ -120,8 +127,9 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     private func isSinglePreference(_ unit: CommandExecutionUnit) -> Bool {
-        !unit.atomic && snapshot.items.count == 1 && unit.members.count == 1
-            && CommandPlanSemantics.isAtomicSetting(snapshot.items[0].draft.commandID)
+        !unit.atomic && unit.members.count == 1 && snapshot.items.contains {
+            $0.id == unit.members[0] && CommandPlanSemantics.isAtomicSetting($0.draft.commandID)
+        }
     }
 
     private func validConflict(_ diagnostic: CommandFieldConflict, with item: CommandPlanItem) -> Bool {
@@ -133,14 +141,15 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         return diagnostic.reason != .valueChanged || item.draft.baseline.values[diagnostic.field] != nil
     }
 
-    private func validConflict(_ diagnostic: CommandFieldConflict, unit: CommandExecutionUnit) -> Bool {
+    func validConflict(_ diagnostic: CommandFieldConflict, unit: CommandExecutionUnit) -> Bool {
         guard unit.members.contains(diagnostic.item.id), let item = snapshot.items.first(where: { $0.stamp == diagnostic.item }) else { return false }
         return validConflict(diagnostic, with: item)
     }
 
     private func applyExternal(_ result: CommandExecutionResult, to unit: inout CommandExecutionUnit) throws {
         if case .preferenceGroupPresentation(let presentation) = result {
-            guard CommandPlanValidation.isPreferenceUnit(snapshot.items), unit.local == .committed,
+            guard CommandPlanValidation.isPreferenceUnit(snapshot.items.filter { unit.members.contains($0.id) },
+                                                             allowingDependencies: multiPlan != nil), unit.local == .committed,
                   unit.preferenceGroupCommit != nil, unit.effects == [.preferencePresentation: .running] else {
                 throw CommandExecutionError.invalidResult
             }
@@ -176,7 +185,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         else { unit.state = .succeeded }
     }
 
-    private mutating func refreshReadiness() {
+    mutating func refreshReadiness() {
         for index in units.indices where [.ready, .blocked].contains(units[index].state) && units[index].local == .notSubmitted {
             if case .invalidResolvedInput = units[index].block { continue }
             let members = snapshot.items.filter { units[index].members.contains($0.id) }
@@ -222,26 +231,11 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     private func input(_ item: CommandPlanItem, bindings: [CommandParameterID: CommandObjectReference]) -> CommandResolvedInput? {
-        guard !item.draft.blocksUnprotectedExport,
-              let command = CommandCatalog.standard.command(id: item.draft.commandID) else { return nil }
-        var targets = item.draft.targets
-        var arguments = item.draft.arguments.filter { bindings[$0.parameter] == nil }
-        for (parameter, object) in bindings {
-            if parameter == .target { targets = .init(.single, objects: [object]); continue }
-            guard let definition = command.parameters.first(where: { $0.id == parameter }) else { return nil }
-            let value: CommandValue
-            switch definition.type {
-            case .object: value = .object(object)
-            case .objects: value = .objects([object])
-            default: return nil
-            }
-            arguments.append(.init(parameter: parameter, operation: .assign, value: value))
-        }
-        arguments += targets.argument(for: command).map { [$0] } ?? []
-        return .init(arguments: arguments, targets: targets)
+        item.resolving(bindings)
     }
 
     func retryAssessment(_ attempt: CommandAttemptStamp, assurance: CommandRetryAssurance) -> CommandRetryAssessment {
+        guard !hasUnknownCommit else { return .requiresVerification }
         guard let index = try? currentIndex(attempt) else { return .notRetryable }
         let unit = units[index]
         if unit.preferencePresentation == .superseded { return .notRetryable }
@@ -249,8 +243,9 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
             return .notRetryable
         }
         if unit.local == .unknown || unit.state == .verificationRequired { return .requiresVerification }
-        guard [.failed, .notExecuted].contains(unit.state) else { return .notRetryable }
+        guard [.failed, .notExecuted].contains(unit.state) || multiPlan != nil && unit.state == .conflict else { return .notRetryable }
         if unit.local == .notSubmitted {
+            if multiPlan != nil && !unit.hasSafeLocalFailure { return .requiresAdapterConfirmation }
             return assurance == .safeLocalReplay ? .local : .requiresAdapterConfirmation
         }
         let failed = Set(unit.effects.filter { $0.value == .failed }.map(\.key))
@@ -263,8 +258,11 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     mutating func retry(_ attempt: CommandAttemptStamp, assurance: CommandRetryAssurance) throws {
         let index = try currentIndex(attempt)
         switch retryAssessment(attempt, assurance: assurance) {
-        case .local: break
+        case .local:
+            units[index].archiveAttempt()
+            units[index].clearLocalAttemptFacts()
         case .external(let effects):
+            units[index].archiveAttempt()
             for effect in effects { units[index].effects[effect] = .pending }
         case .requiresVerification: throw CommandExecutionError.requiresVerification
         case .requiresAdapterConfirmation: throw CommandExecutionError.requiresAdapterConfirmation
@@ -283,6 +281,8 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     mutating func resolveValidation(_ attempt: CommandAttemptStamp, resolution: CommandValidationResolution) throws {
+        guard !hasUnknownCommit else { throw CommandExecutionError.requiresVerification }
+        guard multiPlan == nil else { throw CommandExecutionError.requiresAdapterConfirmation }
         let index = try currentIndex(attempt)
         guard [.waitingAuthorization, .conflict].contains(units[index].state), units[index].local == .notSubmitted else {
             throw CommandExecutionError.stale
@@ -290,6 +290,7 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
         if resolution == .readyForProtocol && units[index].conflicts.contains(where: { $0.reason == .objectUnavailable }) {
             throw CommandExecutionError.requiresVerification
         }
+        units[index].archiveAttempt()
         units[index].state = resolution == .readyForProtocol ? .ready : .notExecuted
         units[index].receipt = nil
         refreshReadiness()
@@ -301,165 +302,5 @@ struct CommandExecutionRun: Equatable, CustomStringConvertible, CustomDebugStrin
               let index = units.firstIndex(where: { $0.id == unitID }) else { throw CommandExecutionError.requiresAdapterConfirmation }
         units[index].state = .notExecuted
         refreshReadiness()
-    }
-}
-
-extension CommandExecutionRun {
-    mutating func recordRoutineCreation(_ facts: CommandRoutineCreateFacts, attempt: CommandAttemptStamp) throws {
-        let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        try recordMutationResult(index, result: result, conflict: false, attempt: attempt)
-        units[index].routineCreation = facts
-    }
-    mutating func recordSubtask(_ facts: CommandSubtaskFacts, attempt: CommandAttemptStamp) throws {
-        let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
-        units[index].subtask = facts
-    }
-    mutating func recordRoutine(_ facts: CommandRoutineFacts, attempt: CommandAttemptStamp) throws {
-        let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
-        units[index].routine = facts
-    }
-    mutating func recordBatch(_ facts: CommandBatchFacts, attempt: CommandAttemptStamp) throws {
-        let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
-        units[index].batch = facts
-    }
-    private mutating func recordMutationResult(_ index: Int, result: CommandExecutionResult?,
-                                               conflict: Bool, attempt: CommandAttemptStamp) throws {
-        guard units[index].receipt == nil, let result else { return }
-        if result == .noChange {
-            units[index].state = .succeeded
-            units[index].receipt = .init(attempt: attempt, result: result)
-        } else { try receive(.init(attempt: attempt, result: result)) }
-        if conflict { units[index].state = .conflict }
-    }
-
-    mutating func recordTaskField(_ facts: CommandTaskFieldFacts, attempt: CommandAttemptStamp) throws {
-        let (index, result) = try facts.receipt(in: self, attempt: attempt)
-        try recordMutationResult(index, result: result, conflict: facts.state == .noChange ? false : facts.conflict, attempt: attempt)
-        units[index].taskField = facts
-    }
-
-    private func applyPreferenceGroupCommit(_ commit: CommandPreferenceGroupCommit,
-                                           to unit: inout CommandExecutionUnit) throws {
-        guard CommandPlanValidation.isPreferenceUnit(snapshot.items) else { throw CommandExecutionError.invalidResult }
-        unit.preferenceGroupCommit = commit
-        switch commit {
-        case .noChange: unit.state = .succeeded
-        case .notCommitted: unit.state = .failed
-        case .committed:
-            unit.local = .committed
-            unit.effects = [.preferencePresentation: .pending]
-            unit.state = .ready
-        case .unknown:
-            unit.local = .unknown
-            unit.state = .verificationRequired
-        case .recoveryRequired: unit.state = .failed
-        case .conflict(let conflicts):
-            guard !conflicts.isEmpty, conflicts.allSatisfy({ validConflict($0, unit: unit) }) else {
-                throw CommandExecutionError.invalidResult
-            }
-            unit.conflicts = conflicts
-            unit.state = .conflict
-        }
-    }
-
-    /// 原未知回执不变；独立核验仅能确认同一目标的精确身份，不能转换成可重放失败。
-    mutating func verifyPreferenceGroup(_ receipt: CommandExecutionReceipt) throws {
-        let index = try currentIndex(receipt.attempt)
-        guard units[index].local == .unknown,
-              case .unknown(let expected) = units[index].preferenceGroupCommit,
-              case .preferenceGroupCommit(.committed(let actual, let cleanup)) = receipt.result,
-              actual == expected else { throw CommandExecutionError.requiresVerification }
-        var unit = units[index]
-        try applyPreferenceGroupCommit(.committed(actual, cleanupPending: cleanup), to: &unit)
-        unit.preferenceVerification = receipt
-        units[index] = unit
-    }
-}
-
-extension CommandExecutionRun {
-    /// 候选与 pending 不能发布输出；确定保存后仅允许补充发布事实，永不降级本地结果。
-    mutating func recordTaskCreation(_ facts: CommandTaskCreateFacts, attempt: CommandAttemptStamp) throws {
-        guard attempt.execution == stamp, attempt.phase == .local,
-              let item = try taskMutationMember(attempt.unitID), item.id == attempt.unitID,
-              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
-              units[index].attempt == attempt.number else { throw CommandExecutionError.stale }
-        try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true)
-        if let previous = units[index].taskCreation {
-            guard previous.creationID == facts.creationID,
-                  previous.savedID == nil || previous.savedID == facts.savedID,
-                  previous.state != .saved || facts.state == .saved,
-                  previous.state != .unknown || facts.state == .unknown else { throw CommandExecutionError.invalidResult }
-        }
-        guard facts.candidateID == nil || facts.candidateID == facts.creationID,
-              facts.savedID == nil || facts.savedID == facts.creationID else { throw CommandExecutionError.invalidResult }
-        if units[index].receipt == nil {
-            let result: CommandExecutionResult
-            switch facts.state {
-            case .pending:
-                guard facts.savedID == nil else { throw CommandExecutionError.invalidResult }
-                units[index].taskCreation = facts
-                return
-            case .saved:
-                guard facts.savedID == facts.creationID, facts.save == .returned else { throw CommandExecutionError.invalidResult }
-                result = .committed(outputs: [item.id: .init(type: .todo, id: facts.creationID)],
-                                    external: [.taskPublication, .notification, .calendar])
-            case .unknown: result = .commitUnknown
-            case .notSubmitted:
-                guard facts.save == .notCalled, facts.candidateID == nil || facts.rollback == .returned else {
-                    throw CommandExecutionError.invalidResult
-                }
-                result = .failedWithoutCommit
-            }
-            try receive(.init(attempt: attempt, result: result))
-        }
-        units[index].taskCreation = facts
-    }
-}
-
-extension CommandExecutionRun {
-    mutating func recordTaskTitle(_ facts: CommandTaskTitleFacts, attempt: CommandAttemptStamp) throws {
-        guard attempt.execution == stamp, attempt.phase == .local,
-              let item = try taskMutationMember(attempt.unitID), item.id == attempt.unitID,
-              let index = units.firstIndex(where: { $0.id == attempt.unitID }),
-              units[index].attempt == attempt.number, units[index].currentPhase == .local else {
-            throw CommandExecutionError.stale
-        }
-        let target = snapshot.items.count == 1 ? try CommandTaskTitlePreview.input(item: item, hostID: snapshot.stamp.hostID).target
-            : resolvedInput(item.id)?.targets.objects.first
-        guard target?.id == facts.targetID, snapshot.items.count == 2 || outputs.isEmpty else { throw CommandExecutionError.invalidResult }
-        if let previous = units[index].taskTitle {
-            guard previous.targetID == facts.targetID,
-                  previous.state == .pending || previous.state == facts.state else { throw CommandExecutionError.invalidResult }
-        }
-        if units[index].receipt == nil {
-            let result: CommandExecutionResult
-            switch facts.state {
-            case .pending:
-                units[index].taskTitle = facts
-                return
-            case .noChange:
-                guard facts.save == .notCalled, facts.publication == .notCalled, facts.savedTagEffects == nil,
-                      !facts.refreshRequested, facts.authorizationRequest == .notCalled else {
-                    throw CommandExecutionError.invalidResult
-                }
-                units[index].state = .succeeded
-                units[index].receipt = .init(attempt: attempt, result: .noChange)
-                units[index].taskTitle = facts
-                return
-            case .saved:
-                guard facts.save == .returned else { throw CommandExecutionError.invalidResult }
-                result = .committed(outputs: [:], external: [.taskPublication, .notification, .calendar])
-            case .unknown: result = .commitUnknown
-            case .notSubmitted:
-                guard facts.save == .notCalled else { throw CommandExecutionError.invalidResult }
-                result = .failedWithoutCommit
-            }
-            try receive(.init(attempt: attempt, result: result))
-            if facts.conflict != nil { units[index].state = .conflict }
-        }
-        units[index].taskTitle = facts
     }
 }

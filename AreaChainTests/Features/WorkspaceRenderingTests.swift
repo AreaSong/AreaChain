@@ -97,9 +97,7 @@ struct WorkspaceRenderingTests {
             try await settle(view)
             try assertFits(view, in: window)
             let offset = abs(try taskComposerFrame(in: view).minY - composerY)
-            let headerGrowth = WorkspaceLayout.headerStackedHeight - WorkspaceLayout.headerHeight
-            #expect(offset < 1 || abs(offset - headerGrowth) < 1,
-                    "跨过窄窗断点时只允许公共顶栏增加一行，页面操作不能再次推低输入区")
+            #expect(offset < 1, "详情适配不能推高固定单行顶栏或输入区")
             try snapshot(view, name: imageName("inspector-" + name, scheme: scheme, minimumSize: minimumSize))
         }
         nav.selectedTaskID = nil

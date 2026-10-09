@@ -325,7 +325,10 @@ struct DaybookScrollEdgeFeatherModifier: ViewModifier {
     var enabled: Bool
     var featherHeight: CGFloat = 7.0
     var scope: DaybookScrollScope?
+    var topOnly = false
+    var respectsReducedTransparency = false
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var topFeather = false
     @State private var bottomFeather = false
@@ -339,8 +342,9 @@ struct DaybookScrollEdgeFeatherModifier: ViewModifier {
                 .mask {
                     GeometryReader { geo in
                         let total = geo.size.height
-                        let top = enabled && total > featherHeight * 2 && topFeather
-                        let bottom = enabled && total > featherHeight * 2 && bottomFeather
+                        let opaque = respectsReducedTransparency && reduceTransparency
+                        let top = enabled && !opaque && total > featherHeight * 2 && topFeather
+                        let bottom = enabled && !topOnly && !opaque && total > featherHeight * 2 && bottomFeather
                         LinearGradient(
                             stops: [
                                 .init(color: top ? .clear : .black, location: 0),

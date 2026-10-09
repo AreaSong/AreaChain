@@ -16,6 +16,7 @@ extension TaskMutationService {
         fileprivate(set) var savedTagEffects: [CommandTaskTagAssociation.Effect]?
         fileprivate(set) var savedTagIDs: [UUID]?
         fileprivate(set) var savedTitle: String?
+        fileprivate(set) var savedRecord: PersistentIdentifier?
         fileprivate(set) var savedCompletion: Bool?
         fileprivate var savedLocally = false
         fileprivate var rejected = false
@@ -41,6 +42,7 @@ extension TaskMutationService {
                 let subtask = try applySubtask(accepted, repository: repository, context: context)
                 ModelChanges.afterCommit(in: context) {
                     result.savedLocally = true
+                    result.savedRecord = subtask.persistentModelID
                     result.savedTagEffects = accepted.preview.tags.map { tags in
                         tags.actions.final.filter { $0.effect != .associateLive || !tags.original.contains($0.target) }.map(\.effect)
                     }
@@ -86,7 +88,7 @@ extension TaskMutationService {
             subtask = try TaskFamilyCommandIdentity.subtask(id, in: context)
         }
         guard subtask.id == id, subtask.modelContext === context, subtask.todo?.id == accepted.preview.parent.id,
-              subtask.todo.map(ObjectIdentifier.init) == accepted.preview.parent.record else { throw SubtaskCommandIssue.invalidFamily }
+              subtask.todo?.persistentModelID == accepted.preview.parent.record else { throw SubtaskCommandIssue.invalidFamily }
         return subtask
     }
 

@@ -144,7 +144,8 @@ import SwiftData
         if let preview = prepared.preview {
             let catalog = try environment.tagCatalog.validate(preview.binding.catalog)
             let host = try coordinator.host(prepared.lease.ownership.hostID)
-            let item = host.session.execution?.snapshot.items.first ?? host.session.plan.items.first
+            let item = host.session.execution?.snapshot.items.first(where: { $0.stamp == prepared.item })
+                ?? host.session.plan.items.first(where: { $0.stamp == prepared.item })
             guard let item, item.stamp == prepared.item else { throw TaskCreateCommandIssue.stale }
             try preview.validateCurrent(draft: item.draft, source: source, catalog: catalog)
             try requireTagIDsAbsent(prepared, catalog: catalog)
@@ -222,6 +223,7 @@ import SwiftData
         facts.publication = call(creation.transaction?.publication)
         facts.publicationFailed = creation.transaction?.publicationFailed == true
         facts.registrationFailed = creation.registrationFailed
+        facts.savedRecord = creation.savedRecord
         if creation.state == .saved { facts.savedTagEffects = creation.savedTagEffects }
         return facts
     }

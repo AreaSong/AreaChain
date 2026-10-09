@@ -68,6 +68,26 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         usedRunIDs.insert(runID)
     }
 
+    mutating func sealMultiPlan(_ identity: CommandMultiPlanIdentity, runID: UUID) throws {
+        guard execution == nil, !usedRunIDs.contains(runID), plan.stamp == identity.plan,
+              operations.allDrafts.isEmpty, operations.pending == nil, plan.editing == nil,
+              try CommandMultiPlanIdentity(plan: plan.stamp, items: plan.items, families: identity.families,
+                                           outputCapability: identity.outputCapability) == identity else {
+            throw CommandMultiPlanIssue.stale
+        }
+        let snapshot = try plan.seal(expecting: identity.plan)
+        execution = .init(id: runID, snapshot: snapshot, multiPlan: identity)
+        usedRunIDs.insert(runID)
+    }
+
+    mutating func recordMultiPlanReadFailure(_ attempt: CommandAttemptStamp) throws {
+        guard var run = execution, run.multiPlan != nil,
+              let index = run.units.firstIndex(where: { $0.id == attempt.unitID }) else { throw CommandMultiPlanIssue.stale }
+        try run.receive(.init(attempt: attempt, result: .failedWithoutCommit))
+        run.units[index].validationFailedBeforeInvocation = true
+        execution = run
+    }
+
     mutating func beginNextProtocolStep(expecting stamp: CommandExecutionStamp) throws -> CommandAttemptStamp {
         guard execution != nil else { throw CommandExecutionError.stale }
         return try execution!.beginNext(expecting: stamp)

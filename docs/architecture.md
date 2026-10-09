@@ -184,9 +184,13 @@ AreaChain/
 
 ### 工作台公共顶栏
 
-`MainSplitWorkspaceView` 在主内容区消费 `WorkspaceHeaderContentKey`，由 `WorkspaceHeaderBar` 统一呈现标题、帮助、居中搜索和操作。页面经 `workspaceHeader` 提供动作描述与原回调，不另建导航、筛选或保存状态。宽布局两侧等宽；窄布局搜索独占第二行，右侧按声明顺序收纳到更多菜单。`DaybookPage` 的普通页标题在工作台中由公共顶栏承担，实体/分组标题及非工作台宿主页头保留。重复事项 sheet 显式使用非工作台页头能力。
+`MainSplitWorkspaceView` 在主内容区消费 `WorkspaceHeaderContentKey`，由 `WorkspaceHeaderBar` 统一呈现标题、帮助、居中搜索和操作。页面经 `workspaceHeader` 提供动作描述与原回调，不另建导航、筛选或保存状态。顶栏固定为单行：WorkspaceHeaderRowLayout 只放置一个搜索输入，左右空间相等；操作候选按真实本地化控件、菜单箭头和状态宽度测量，按声明顺序收纳到原生更多菜单。搜索以不含侧栏及检查器的主内容区居中，标题单行截断并保留完整提示。`DaybookPage` 的普通页标题在工作台中由公共顶栏承担，实体/分组标题及非工作台宿主页头保留。重复事项 sheet 显式使用非工作台页头能力。
 
-各任务页经 `workspaceInspectorTargets` 登记当前投影的目标 ID；搜索登记任务、子任务的父任务和可打开附件拥有者。`WorkspaceNavigation` 按当前内容和有效目标决定详情能力，切页或查询改变使旧目标失效。检查器只在当前目标有效时展示；标题草稿复用 `EditDrafts.titles`，备注继续使用 `EditDrafts.notes`，都不写偏好或新建保存事务。
+各任务页经 `workspaceInspectorTargets` 登记当前投影的目标 ID；搜索登记任务、子任务的父任务和可打开附件拥有者。`WorkspaceNavigation` 按当前内容和有效目标决定详情能力，切页或查询改变使旧目标失效。检查器只在当前目标有效且空间允许时展示；MainSplitWorkspaceView 采集主区及检查器实际宽度，WorkspaceNavigation 独占空间可用性与呈现状态。过窄收起只改变呈现，保留有效选择和检查日；变宽不自动重开，用户通过原入口恢复，恢复需额外余量以避免阈值振荡。关闭前只退出详情区域内的编辑器，不改变搜索焦点。标题草稿复用 `EditDrafts.titles`，备注继续使用 `EditDrafts.notes`，都不写偏好或新建保存事务。备注的同一草稿在失焦与随后卸载时合并为一次保存尝试；失败仍保留草稿，显式保存可重试，继续编辑后可产生下一次生命周期保存。
+
+工作台正文与侧栏各自启用 `daybookScrollTopEdge`，由原 DaybookScrollTargetModifier 与同一 ScrollScope 承担顶部羽化；不在根视图叠加遮罩，也不增加外层 ScrollView。默认关闭，其他宿主保持原参数；已有 `featherEdges` 的底部反馈保留。侧栏原生窗口按钮保留，列表从固定顶部区域下方独立滚动。降低透明度时掩膜保持不透明，减弱动态效果沿原 DaybookMotion。
+
+详情标记只在实际挂到窗口后登记，离屏测量视图不能替换它；卸载按实例身份清理。详情空间收起前，`WorkspaceInspectorFocus` 使用字段编辑器所属的真实字段判断区域，在 AppKit 退出 first responder 之前记录是否仍有 marked text，并经原生委托把待输入缓冲同步到原 Binding；保留字符后结束即将隐藏的原生组合会话。瞬时标志经 `workspaceInspectorFocus` 只传入当前详情，标题与备注继续把内容留在原 `EditDrafts`，该次失焦/卸载不调用产品提交；实际重新呈现时重置标志，不依赖 NSView 重建。它不持有正文、不增加保存事务。同步撤销被隐藏控件的焦点绑定后，主工作台把确实来自详情的焦点交给原可见搜索入口；已有搜索焦点、查询文本及其他宿主默认行为保持。
 
 ### 开发时的边界与状态核对
 
@@ -562,3 +566,15 @@ Run 在 unknown 时保留原目标、参数、影响写集和接受／调用身�
 ### B-M2 批量状态实体计划
 
 CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类型化物理身份／创建身份合并真实变化实体；只有显式状态装配使用4000实体上限。RoutineCommandStateSnapshot 与 T-M2 完成投影共用原读取规则，观察日及每定义历史固定，目标日期各自保留。RoutineStateApplication 在原单项仓储与批量事务之间复用物理应用；批量先统一核验所有成员再开始一次 ModelChanges，所有 noChange 零保存，unknown 保留整份身份，不按单项恢复。定义候选＋明确日期仅是本批原生选择的显式转换，临时候选票据不替代最终服务资格。范围、旧单项差异及证据见[权威 B-M2](unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。
+
+### P-M1 普通多项运行边界
+
+原 CommandPlan 只封存一次，CommandExecutionRun 持有唯一冻结参数和各执行单元事实。CommandMultiPlanIdentity 与协调者的装配／attempt接受登记提供显式多项资格；各 Reader 的按成员准备入口不拥有保存能力，真正调用继续进入原 Adapter、Registry 与 ModelChanges。普通单项、批量集合、文件设置组各自提交，计划不包裹跨存储事务。
+
+本地unknown在Run调度／重试、协调者占用和实际适配入口暂停全计划；已保存后的外部unknown分开处理。CommandAttemptRecord保留历史，安全重试在原Run／单元建立新attempt并保留预留身份；文件后端只沿原精确核验恢复。原PlanList消费这些事实，单元间让出主线程并复核ReadSession；没有第二份可提交草稿或跨重启队列。组件与消费者见[目录](component-catalog.md#p-m1-普通多项计划与运行内恢复)，支持范围、批准规则与验收只见[权威P-M1](unified-search-commands.md#981-里程碑-p-m1普通多项计划顺序提交与运行内恢复)。
+
+### P-M2 创建输出身份与消费投影
+
+显式 typedCreation 只扩展原多项装配。三类创建在各自原 afterCommit／Facts 留存真实 UUID 与 PersistentIdentifier；协调者结合原接受／调用／Run 身份签发 CommandCreationOutput，原 Run.outputs 与 bindings 继续唯一保存输出和解析位置。CommandCreationConsumption 只描述不可编辑投影；parent 与 targets 严格区分。新建记录重新物化不等同新存储记录，不能用内存地址作为跨预览的唯一身份。
+
+创建前没有目标读取或虚构基线；真实输出满足原依赖后，原 Reader 核验当前来源、目录、关系和影响，并在原面板再次接受。确定失败、外部未完成、unknown 全计划暂停、原 UUID 重试与迟到回执仍走原调度／占用入口。接口与实际消费者见[组件目录](component-catalog.md#p-m2-类型化输出与消费绑定)，范围及证据见[权威 P-M2](unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。

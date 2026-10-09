@@ -253,7 +253,7 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
 
     /// 唯一例外：从原运行退回已证明未提交的完整偏好 unit，保留全部身份及旧尝试出处。
     mutating func restoreUnsubmittedPreference(_ run: CommandExecutionRun, attempt: CommandAttemptStamp) throws {
-        guard items.isEmpty, editing == nil, run.stamp.plan.planID == id,
+        guard items.isEmpty, editing == nil, run.multiPlan == nil, run.stamp.plan.planID == id,
               run.snapshot.stamp.hostID == hostID, run.units.count == 1,
               CommandPlanValidation.isPreferenceUnit(run.snapshot.items),
               let unit = run.units.first, run.attempt(unit.id) == attempt,

@@ -35,6 +35,15 @@ final class TaskTitleCommandPreviewReader {
         return try read(in: host, catalog: catalogReader.prepare())
     }
 
+    func prepareMember(item: CommandPlanItem, targets: CommandDraftTargets, lease: CommandHostLease,
+                       plan: CommandPlanStamp) throws -> CommandTaskTitlePreview {
+        let input = try CommandTaskTitlePreview.resolvedInput(item: item, targets: targets)
+        let catalog = try catalogReader.current()
+        let observation = try read(input, catalog: catalog)
+        return try .prepare(input: input, lease: lease, plan: plan, source: observation.source,
+                            catalog: catalog, impact: observation.impact, context: observation.followUp)
+    }
+
     func prepareChain(in host: CommandOwnedHost, binding: CommandTaskChainBinding) throws -> CommandTaskTitlePreview {
         guard let run = host.session.execution else { throw TaskTitleCommandIssue.stale }
         let input = try CommandTaskTitlePreview.chainInput(in: run, binding: binding)
@@ -91,6 +100,8 @@ final class TaskTitleCommandPreviewReader {
         let catalog = try catalogReader.current()
         guard try catalog.evidence() == preview.binding.catalog else { throw TaskTitleCommandIssue.catalogChanged }
         let current = try read(input, catalog: catalog)
+        try preview.binding.multiOutput?.validate(context: ObjectIdentifier(context),
+                                                  storage: ObjectIdentifier(context.container), record: current.todo.persistentModelID)
         guard current.source == preview.binding.source else { throw TaskTitleCommandIssue.sourceChanged }
         let changed = Set(preview.impact.writeFields.filter {
             current.impact.originalValues[$0] != preview.impact.originalValues[$0]

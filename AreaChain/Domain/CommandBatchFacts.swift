@@ -37,14 +37,17 @@ struct CommandBatchFacts: Equatable, CustomStringConvertible, CustomDebugStringC
     }
 
     func receipt(in run: CommandExecutionRun, attempt: CommandAttemptStamp) throws -> (Int, CommandExecutionResult?) {
-        guard attempt.execution == run.stamp, attempt.phase == .local, run.snapshot.items.count == 1,
-              let item = run.snapshot.items.first, item.id == attempt.unitID,
+        guard attempt.execution == run.stamp, attempt.phase == .local, run.permitsMember(attempt.unitID),
+              let item = run.snapshot.items.first(where: { $0.id == attempt.unitID }), item.id == attempt.unitID,
               let index = run.units.firstIndex(where: { $0.id == attempt.unitID }),
               run.units[index].attempt == attempt.number, run.units[index].currentPhase == .local else {
             throw CommandExecutionError.stale
         }
-        try CommandBatchPreview.validate(item)
-        guard item.draft.targets == targets, impacts.map(\.target) == targets.objects, run.outputs.isEmpty,
+        guard run.canRecordLocalFacts(attempt, unit: run.units[index], hasPrevious: run.units[index].batch != nil) else {
+            throw CommandExecutionError.stale
+        }
+        try CommandBatchPreview.validate(item, allowingDependencies: run.multiPlan != nil)
+        guard item.draft.targets == targets, impacts.map(\.target) == targets.objects, run.outputs[item.id] == nil,
               state == .saved || external.isEmpty else { throw CommandExecutionError.invalidResult }
         if let previous = run.units[index].batch {
             guard previous.acceptanceID == acceptanceID, previous.targets == targets, previous.impacts == impacts,
@@ -54,7 +57,8 @@ struct CommandBatchFacts: Equatable, CustomStringConvertible, CustomDebugStringC
         switch state {
         case .pending: return (index, nil)
         case .noChange:
-            guard changedCount == 0, save == .notCalled, publication == .notCalled else { throw CommandExecutionError.invalidResult }
+            guard changedCount == 0, save == .notCalled, rollback == .notCalled, publication == .notCalled,
+                  !registrationFailed, !publicationFailed, !conflict else { throw CommandExecutionError.invalidResult }
             return (index, .noChange)
         case .saved:
             guard changedCount > 0, save == .returned else { throw CommandExecutionError.invalidResult }

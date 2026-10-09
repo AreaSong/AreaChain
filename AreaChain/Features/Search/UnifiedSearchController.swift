@@ -41,6 +41,8 @@ final class UnifiedSearchController {
     var subtaskVerification: CommandTaskCreateVerification?
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
+    var multiPlanFailure: String?
+    @ObservationIgnored var multiPlanTask: Task<Void, Never>?
     var taskCompositionPreview: CommandTaskCreatePreview?
     var taskCompositionAccepted: CommandTaskCreatePreparation?
     var compositionFailure: String?
@@ -75,6 +77,7 @@ final class UnifiedSearchController {
     @ObservationIgnored let taskField: TaskFieldCommandAdapter?
     @ObservationIgnored let routine: RoutineCommandAdapter?
     @ObservationIgnored let subtask: SubtaskCommandAdapter?
+    @ObservationIgnored let multiPlan: MultiPlanCommandAdapter?
     @ObservationIgnored let taskChain: TaskChainCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
@@ -97,17 +100,18 @@ final class UnifiedSearchController {
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void,
          localSettings: LocalSettingCommandAdapter? = nil, taskCreate: TaskCreateCommandAdapter? = nil,
          taskTitle: TaskTitleCommandAdapter? = nil, taskField: TaskFieldCommandAdapter? = nil,
-         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil) {
+         taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil) {
         self.init(session: session, coordinator: coordinator, buffer: buffer, read: read, recordOpen: recordOpen,
                   settingBackend: localSettings.map(UnifiedSearchSettingBackend.legacy) ?? .unassembled,
-                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain, subtask: subtask, routine: routine, batch: batch)
+                  taskCreate: taskCreate, taskTitle: taskTitle, taskField: taskField, taskChain: taskChain,
+                  subtask: subtask, routine: routine, batch: batch, multiPlan: multiPlan)
     }
 
     init(session: ContentQueryReadSession, coordinator: CommandHandoffCoordinator,
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
-         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil) {
+         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil) {
         self.session = session
         self.coordinator = coordinator
         self.settingBackend = settingBackend
@@ -118,6 +122,7 @@ final class UnifiedSearchController {
         self.subtask = subtask
         self.routine = routine
         self.taskChain = taskChain
+        self.multiPlan = multiPlan
         var initial = buffer
         initial.plan = try? coordinator.host(buffer.lease.ownership.hostID).session.plan.stamp
         self.buffer = initial
@@ -246,6 +251,9 @@ final class UnifiedSearchController {
     }
 
     func detach() {
+        multiPlan?.invalidatePresentation()
+        multiPlanTask?.cancel()
+        multiPlanTask = nil
         chainCreationPreparation = nil
         revokeRoutine()
         revokeSubtask()
@@ -328,6 +336,7 @@ final class UnifiedSearchController {
 
     private func changed(_ change: ContentQueryDisplayUpdates.Change) {
         revision &+= 1
+        if change == .privacyInvalidated || session.isMasked { multiPlan?.invalidatePresentation() }
         // 普通查询的迟到失效通知可能来自刚完成的 enqueue；不可撤掉基于新 lease 准备的效果。
         if change == .privacyInvalidated || !operationVisible { revokeTaskComposition() }
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }

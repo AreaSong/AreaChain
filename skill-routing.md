@@ -406,3 +406,17 @@ K真实输入、L持续按压与关键可访问性沿 areachain-workflow → are
 ## 统一搜索 B-M2 批量状态
 
 沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（ui-ux-pro-max 聚焦身份／Binding／焦点）→ areachain-verify。原 Batch／T-M2／R-M3 共同规则与精确应用复用见[组件目录](docs/component-catalog.md#b-m2-批量状态与精确实体写集)，已批准总量、日期／级联／补录、A～E实际证据与缺口只维护在[权威 B-M2](docs/unified-search-commands.md#980-里程碑-b-m2批量状态级联与补录总量控制)。本批4000实体限制只适用于两类批量状态，不能自动改单项绕过。完整正常PrivacyQA、独立BM2身份／目录、原锁单次900秒、六项授权清除、合成数据与原生串行保持；正常签名已由本批当前Debug验证更新，指定Cursor缺口仍独立，不认证或替代复核。不接生产、真实系统、自动拆批、新多项计划、notes／敏感执行或执行后撤销，不提交／推送／安装／发布。
+
+## 统一搜索 P-M1 普通多项计划
+
+沿 areachain-workflow → areasong-development 架构／可靠性 → areachain-ui（ui-ux-pro-max 聚焦状态身份和错误恢复）→ areachain-verify。显式装配、原 Plan／Run／Coordinator、逐单元实际调用及运行内恢复入口见[组件目录](docs/component-catalog.md#p-m1-普通多项计划与运行内恢复)，已批准unknown整计划暂停、支持形状、A～E状态和真实证据只维护在[权威 P-M1](docs/unified-search-commands.md#981-里程碑-p-m1普通多项计划顺序提交与运行内恢复)。完整正常PrivacyQA、独立PM1身份／目录、合成数据、私有事件／fake消费者、六项授权清除、原锁900秒及原生串行保持；最终正常development Debug与验签使用当前源码，不沿旧到期记录停验。指定Cursor不可用保留缺口，不认证或替代；C2B和人工／历史问题独立。不接生产、真实系统、其他输出链、notes／敏感执行、删除、自动拆批、执行后撤销或跨重启恢复，不提交、推送、安装或发布。
+
+## 工作台公共框架
+
+沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生身份和宽度，frontend-design 沿 Daybook）→ areachain-verify。单行顶栏、真实宽度操作收纳、详情空间门禁与局部顶部羽化的入口见[组件目录](docs/component-catalog.md#3-feature-级复合组件)，状态所有权见[公共顶栏架构](docs/architecture.md#工作台公共顶栏)。复用原搜索、workspaceHeader、workspaceInspectorTargets、EditDrafts 和 ScrollScope；不接统一搜索命令，不改保存事务。验证使用完整正常隔离 QA 目标、合成数据、原锁单次900秒和六项授权清除；桌面控制暂停，原生由 XCTest 启动。指定 Cursor verifier 不可调用时记录未执行，整体保留 partial，不认证或替代；不安装、提交、推送或发布。
+
+验收收尾先核对完整源码清单及历史 QA 进程；无法恢复的启动来源/副作用不由新测试追认。字体按实际可见原生控件和系统中文回退精确核验，组合输入收起沿原详情焦点标志与 EditDrafts 保留；定向入口见组件目录。原生前先编译、确认当时桌面条件，执行后按本批 pid/start/path 核对退出；合成 marked text、缓存图、系统窗口截图和真人操作分别记录。唯一收尾记录仍为原[工作台公共框架章节](docs/engineering.md#工作台公共框架调整2026-10-09)。
+
+## P-M2 类型化创建输出
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦原生身份与确认）→ areachain-verify。复用原 Plan／Run／Coordinator、成员 Reader 和 PlanLinks；仅显式 typedCreation 装配开放三类输出的受限消费、分支和多级链，默认 P-M1 与旧单项／T-M1 保持原范围。实际接口见[组件目录](docs/component-catalog.md#p-m2-类型化输出与消费绑定)，批准规则和有限验证只维护在[权威 P-M2](docs/unified-search-commands.md#982-里程碑-p-m2类型化创建输出受限分支与多级创建链)。完整正常 PrivacyQA、独立 PM2 标识／目录、原锁900秒、合成内存库、六项授权清除和串行原生保持；当前源码补正常 development Debug／严格验签。指定 Cursor verifier 不可调用时保留缺口，不能用普通代理替代；不接生产、真实数据／系统、安装或发布。

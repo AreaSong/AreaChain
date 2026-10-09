@@ -8,25 +8,17 @@ struct WorkspaceHeaderBar: View {
     @State private var showsHelp = false
 
     var body: some View {
-        GeometryReader { geometry in
-            let layout = WorkspaceHeaderGeometry(width: geometry.size.width)
-            VStack(spacing: DaybookSpacing.xs) {
-                HStack(spacing: DaybookSpacing.sm) {
-                    title
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    if !layout.stacked {
-                        search.frame(width: layout.searchWidth)
-                    }
-                    actions(limit: layout.directActionCount, compact: layout.stacked)
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                if layout.stacked {
-                    search.frame(width: layout.searchWidth)
+        WorkspaceHeaderRowLayout {
+            title
+            search
+            ViewThatFits(in: .horizontal) {
+                ForEach((0...content.actions.filter { !$0.overflowOnly }.count).reversed(), id: \.self) { count in
+                    actions(limit: count)
                 }
             }
-            .padding(.horizontal, DaybookSpacing.page)
-            .frame(width: geometry.size.width, height: layout.height)
         }
+        .padding(.horizontal, DaybookSpacing.page)
+        .frame(height: WorkspaceLayout.headerHeight)
         .background(.ultraThinMaterial)
         .background(SyntaxViewAnchor("syntax.workspace.header.bounds"))
         .overlay(alignment: .bottom) { DaybookDivider(opacity: 0.65) }
@@ -52,6 +44,7 @@ struct WorkspaceHeaderBar: View {
                     .font(DaybookType.body.weight(.semibold))
                     .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
+                    .help(titleLabel)
                     .accessibilityAddTraits(.isHeader)
                 if let helpKey {
                     DaybookIconButton(systemName: "info.circle", label: "workspace.page.info", size: .inline) {
@@ -79,14 +72,13 @@ struct WorkspaceHeaderBar: View {
         .accessibilityIdentifier("workspace.header.title")
     }
 
-    @ViewBuilder private var titleLabel: some View {
+    private var titleLabel: Text {
         if navigation.isSearching {
-            Text("workspace.search.title")
+            return Text("workspace.search.title")
         } else if let tag = tags.first(where: { $0.id == navigation.selectedTagID && $0.deletedAt == nil }) {
-            Text("#\(tag.name)")
-                .help(tag.name)
+            return Text("#\(tag.name)")
         } else {
-            Text(navigation.selectedTab == .today ? "workspace.today.title" : navigation.selectedTab.titleKey)
+            return Text(navigation.selectedTab == .today ? "workspace.today.title" : navigation.selectedTab.titleKey)
         }
     }
 
@@ -94,7 +86,7 @@ struct WorkspaceHeaderBar: View {
         navigation.isSearching || navigation.selectedTagID != nil ? nil : navigation.selectedTab.helpKey
     }
 
-    private func actions(limit: Int, compact: Bool) -> some View {
+    private func actions(limit: Int) -> some View {
         let direct = Array(content.actions.filter { !$0.overflowOnly }.prefix(limit))
         let overflow = content.actions.filter { action in !direct.contains { $0.id == action.id } }
         return HStack(spacing: DaybookSpacing.xs) {
@@ -105,9 +97,8 @@ struct WorkspaceHeaderBar: View {
                 Menu {
                     ForEach(overflow) { action in WorkspaceHeaderMenuItem(action: action) }
                 } label: {
-                    Label("workspace.toolbar.more", systemImage: "ellipsis")
-                        .labelStyle(WorkspaceToolbarLabelStyle(iconOnly: compact))
-                        .daybookMenuLabel(size: .regular, fitsLabel: true)
+                    Image(systemName: "ellipsis")
+                        .daybookMenuLabel(size: .regular)
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
@@ -122,9 +113,10 @@ struct WorkspaceHeaderBar: View {
                 DaybookIconButton(systemName: "sidebar.trailing", label: "drawer.inspector.toggle",
                                   isActive: navigation.isInspectorPresented) {
                     if navigation.isInspectorPresented { navigation.closeInspector() }
-                    else if navigation.canInspectSelectedTask { navigation.isInspectorPresented = true }
+                    else if navigation.canPresentInspector { navigation.isInspectorPresented = true }
                 }
-                .disabled(!navigation.canInspectSelectedTask)
+                .disabled(!navigation.canPresentInspector && !navigation.isInspectorPresented)
+                .help(navigation.isInspectorSpaceAvailable ? "drawer.inspector.toggle" : "workspace.inspector.needsSpace")
                 .accessibilityAddTraits(navigation.isInspectorPresented ? .isSelected : [])
                 .accessibilityIdentifier("workspace.header.inspector.toggle")
             }
@@ -149,19 +141,33 @@ private struct WorkspaceHeaderDate: View {
 
 struct WorkspaceHeaderGeometry {
     let width: CGFloat
-    var stacked: Bool { width < WorkspaceLayout.headerSingleRowWidth }
-    var height: CGFloat { stacked ? WorkspaceLayout.headerStackedHeight : WorkspaceLayout.headerHeight }
-    var searchWidth: CGFloat { min(300, max(160, stacked ? width - 2 * DaybookSpacing.page : width * 0.34)) }
-    var directActionCount: Int { width >= 1080 ? 3 : (width >= 920 ? 2 : (width >= 520 ? 1 : 0)) }
+    var height: CGFloat { WorkspaceLayout.headerHeight }
+
+    func searchWidth(minimumActionsWidth: CGFloat) -> CGFloat {
+        let available = width - 2 * DaybookSpacing.page
+        let centeredMaximum = available - 2 * (minimumActionsWidth + DaybookSpacing.sm)
+        return max(WorkspaceLayout.searchMinWidth,
+                   min(WorkspaceLayout.searchMaxWidth, width * WorkspaceLayout.searchWidthRatio, centeredMaximum))
+    }
 }
 
-private struct WorkspaceToolbarLabelStyle: LabelStyle {
-    var iconOnly: Bool
-    func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: DaybookSpacing.xs) {
-            configuration.icon
-            if !iconOnly { configuration.title.lineLimit(1) }
-        }
+/// 测量包含状态、原生菜单箭头和内边距的最小操作组；搜索只放置一次，缩放不切换输入身份。
+private struct WorkspaceHeaderRowLayout: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        CGSize(width: proposal.width ?? WorkspaceLayout.maxContentWidth, height: WorkspaceLayout.headerHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        guard subviews.count == 3 else { return }
+        let minimumActions = subviews[2].sizeThatFits(ProposedViewSize(width: 0, height: bounds.height)).width
+        let geometry = WorkspaceHeaderGeometry(width: bounds.width + 2 * DaybookSpacing.page)
+        let searchWidth = geometry.searchWidth(minimumActionsWidth: minimumActions)
+        let sideWidth = max(0, (bounds.width - searchWidth) / 2 - DaybookSpacing.sm)
+        let sideProposal = ProposedViewSize(width: sideWidth, height: bounds.height)
+        subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: sideProposal)
+        subviews[1].place(at: CGPoint(x: bounds.midX, y: bounds.midY), anchor: .center,
+                          proposal: ProposedViewSize(width: searchWidth, height: bounds.height))
+        subviews[2].place(at: CGPoint(x: bounds.maxX, y: bounds.midY), anchor: .trailing, proposal: sideProposal)
     }
 }
 
@@ -185,6 +191,8 @@ private struct WorkspaceHeaderActionView: View {
         }
         .disabled(!action.isEnabled)
         .fixedSize()
+        .accessibilityLabel(Text(action.title))
+        .accessibilityAddTraits(action.isActive ? .isSelected : [])
         .accessibilityIdentifier("workspace.header.action." + action.id)
     }
 }
@@ -193,19 +201,25 @@ private struct WorkspaceHeaderMenuItem: View {
     let action: WorkspaceHeaderAction
     var body: some View {
         if action.children.isEmpty {
-            Button(role: action.role, action: action.perform) {
-                Label(action.title, systemImage: action.isActive ? "checkmark" : action.systemImage)
+            Group {
+                if action.isActive && action.role == nil {
+                    Toggle(isOn: Binding(get: { action.isActive }, set: { _ in action.perform() })) {
+                        Label(action.title, systemImage: action.systemImage)
+                    }
+                } else {
+                    Button(role: action.role, action: action.perform) {
+                        Label(action.title, systemImage: action.systemImage)
+                    }
+                }
             }
             .disabled(!action.isEnabled)
+            .accessibilityAddTraits(action.isActive ? .isSelected : [])
         } else {
             Menu {
-                ForEach(action.children) { child in
-                    Button(role: child.role, action: child.perform) {
-                        Label(child.title, systemImage: child.isActive ? "checkmark" : child.systemImage)
-                    }.disabled(!child.isEnabled)
-                }
+                ForEach(action.children) { child in WorkspaceHeaderMenuItem(action: child) }
             } label: { Label(action.title, systemImage: action.systemImage) }
             .disabled(!action.isEnabled)
+            .accessibilityAddTraits(action.isActive ? .isSelected : [])
         }
     }
 }

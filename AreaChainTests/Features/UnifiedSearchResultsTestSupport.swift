@@ -39,7 +39,8 @@ final class UnifiedSearchResultsFixture {
          privacyCenter: NotificationCenter? = nil, taskTitleEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
-         subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil) throws {
+         subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil,
+         enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle) throws {
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)
@@ -70,6 +71,17 @@ final class UnifiedSearchResultsFixture {
         let chainAdapter = taskChainIO.flatMap { _ in
             createAdapter.flatMap { create in titleAdapter.map { TaskChainCommandAdapter(create: create, title: $0) } }
         }
+        let fieldAdapter = taskFieldEnvironment.map { TaskFieldCommandAdapter(coordinator: handoff.coordinator,
+                                                                              environment: $0, capability: taskFieldCapability) }
+        let subtaskAdapter = subtaskEnvironment.map { SubtaskCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
+        let routineAdapter = routineEnvironment.map { RoutineCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
+        let batchAdapter = batchEnvironment.map { BatchCommandAdapter(coordinator: handoff.coordinator, environment: $0) }
+        var multiAdapters = MultiPlanCommandAdapter.Adapters(taskCreate: createAdapter, taskTitle: titleAdapter,
+            taskField: fieldAdapter, subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter)
+        if case .file(let adapter) = backend { multiAdapters.fileSettings = adapter }
+        if case .legacy(let adapter) = backend { multiAdapters.localSettings = adapter }
+        let multi = enableMultiPlan ? MultiPlanCommandAdapter(coordinator: handoff.coordinator, adapters: multiAdapters,
+                                                              outputCapability: outputCapability) : nil
         controller = UnifiedSearchController(session: session, coordinator: handoff.coordinator,
             buffer: .init(lease: try handoff.owned(hostID).lease, version: 0, text: text),
             read: { [weak self] in
@@ -77,11 +89,9 @@ final class UnifiedSearchResultsFixture {
                 return try await self.publish()
             }, recordOpen: { [weak self] in self?.opens.append($0) },
             settingBackend: backend, taskCreate: createAdapter, taskTitle: titleAdapter,
-            taskField: taskFieldEnvironment.map { TaskFieldCommandAdapter(coordinator: handoff.coordinator, environment: $0, capability: taskFieldCapability) },
+            taskField: fieldAdapter,
             taskChain: chainAdapter,
-            subtask: subtaskEnvironment.map { SubtaskCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
-            routine: routineEnvironment.map { RoutineCommandAdapter(coordinator: handoff.coordinator, environment: $0) },
-            batch: batchEnvironment.map { BatchCommandAdapter(coordinator: handoff.coordinator, environment: $0) })
+            subtask: subtaskAdapter, routine: routineAdapter, batch: batchAdapter, multiPlan: multi)
     }
 
     func publish() async throws -> ContentQueryReadEffect {

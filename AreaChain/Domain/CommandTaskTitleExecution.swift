@@ -21,7 +21,11 @@ extension CommandHandoffCoordinator {
         if let chain = accepted.preview.binding.chain {
             guard try taskChainBinding(expecting: request.lease) == chain else { throw TaskTitleCommandIssue.stale }
         } else {
-            guard run.units.count == 1, run.snapshot.items.count == 1 else { throw TaskTitleCommandIssue.stale }
+            guard run.permitsMember(item.id) else { throw TaskTitleCommandIssue.stale }
+        }
+        if run.multiPlan != nil {
+            let consumption = accepted.preview.binding.multiOutput.map { CommandCreationConsumption(parameter: .target, output: $0) }
+            try validateConsumption(consumption, item: item, run: run)
         }
         _ = try accepted.preview.frozenInput(in: run, lease: request.lease)
         return accepted
@@ -33,7 +37,8 @@ extension CommandHandoffCoordinator {
         let invocation: CommandRuntimeInvocation
         if let chain = accepted.preview.binding.chain {
             invocation = try claimTaskChainInvocation(request.operation, attempt: request.attempt, expecting: request.lease, identity: chain.identity)
-        } else { invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease) }
+        } else { invocation = try claimMemberInvocation(request.operation, attempt: request.attempt, expecting: request.lease,
+                                                    acceptanceID: accepted.id, previewLease: accepted.preview.binding.lease) }
         taskTitles.markInvoked(accepted.id)
         return invocation
     }

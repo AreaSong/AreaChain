@@ -27,7 +27,7 @@ extension RoutineCommandEnvironment {
 
     func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
               catalog: CommandTaskTagCatalog) throws -> CommandRoutineCreatePreview {
-        try CommandRoutineCreatePreview.validate(item)
+        try CommandRoutineCreatePreview.validate(item, allowingDependencies: true)
         let input = try CommandRoutineCreatePreview.input(item.draft)
         let source = try environment.creationQualification(item.draft.arguments)
         guard let creation = environment.creation else { throw RoutineCreateIssue.unassembled }

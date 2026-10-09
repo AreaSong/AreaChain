@@ -2,7 +2,7 @@ import SwiftUI
 
 struct UnifiedSearchBatchImpact: View {
     let preview: CommandBatchPreview
-    let remove: (CommandObjectReference) -> Void
+    var remove: ((CommandObjectReference) -> Void)?
     @Environment(\.locale) private var locale
     @Environment(\.calendar) private var calendar
 
@@ -36,9 +36,11 @@ struct UnifiedSearchBatchImpact: View {
             Text(verbatim: impact.title).font(DaybookType.body).fixedSize(horizontal: false, vertical: true)
             Text(LocalizedStringKey(UnifiedSearchResultCopy.typeKey(impact.target.type))).font(DaybookType.caption)
             if let day = impact.target.dayKey ?? impact.taskDay { Text(verbatim: day).font(DaybookType.caption) }
-            Button("unified.batch.removeTarget") { remove(impact.target) }
-                .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                .accessibilityIdentifier("unified.batch.remove." + impact.target.searchIdentifier)
+            if let remove {
+                Button("unified.batch.removeTarget") { remove(impact.target) }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                    .accessibilityIdentifier("unified.batch.remove." + impact.target.searchIdentifier)
+            }
             if let tags = impact.tags {
                 Text(verbatim: names(tags.original) + " → " + names(tags.final)).font(DaybookType.caption)
                 UnifiedSearchTaskTagEffects(associations: tags.actions.final)

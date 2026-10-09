@@ -34,11 +34,12 @@ struct CommandPlanCheck: Equatable {
 /// 静态检查只证明计划形状；真实存活、权限、冲突及接线仍由后续适配负责。
 enum CommandPlanValidation {
     /// 仅四类普通偏好的完整单 unit；不放宽通用原子组的外部效果规则。
-    static func isPreferenceUnit(_ items: [CommandPlanItem]) -> Bool {
+    static func isPreferenceUnit(_ items: [CommandPlanItem], allowingDependencies: Bool = false) -> Bool {
         guard (1...4).contains(items.count), Set(items.map { $0.draft.commandID }).count == items.count,
-              structure(items).isEmpty, items.allSatisfy({
+              allowingDependencies || structure(items).isEmpty, items.allSatisfy({
                   CommandPlanSemantics.isAtomicSetting($0.draft.commandID)
-                      && $0.links.dependencies.isEmpty && $0.draft.targets == .none
+                      && (allowingDependencies || $0.links.dependencies.isEmpty) && $0.links.results.isEmpty
+                      && $0.links.dependencies.isDisjoint(with: Set(items.map(\.id))) && $0.draft.targets == .none
                       && $0.draft.arguments.count == 1 && $0.draft.arguments[0].operation == .assign
                       && !$0.draft.blocksUnprotectedExport && $0.draft.check().staticallyValid
               }) else { return false }

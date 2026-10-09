@@ -42,6 +42,7 @@ enum TaskMutationService {
     final class Creation {
         fileprivate(set) var candidateID: UUID?
         fileprivate(set) var savedID: UUID?
+        fileprivate(set) var savedRecord: PersistentIdentifier?
         fileprivate(set) var transaction: ModelChanges.CommitFacts?
         fileprivate(set) var registrationFailed = false
         fileprivate(set) var rejected = false
@@ -115,7 +116,7 @@ enum TaskMutationService {
                 let params = try parameters()
                 let todo = try dependencies.repository(context).addTodo(params)
                 result.candidateID = todo.id
-                registerCompletion(result, id: todo.id, minutes: params.remindMinutes,
+                registerCompletion(result, todo: todo, minutes: params.remindMinutes,
                                    context: context, dependencies: dependencies)
             }
         } catch {
@@ -126,11 +127,12 @@ enum TaskMutationService {
     }
 
     private static func registerCompletion(
-        _ result: Creation, id: UUID, minutes: Int?, context: ModelContext, dependencies: Dependencies
+        _ result: Creation, todo: TodoItem, minutes: Int?, context: ModelContext, dependencies: Dependencies
     ) {
         ModelChanges.afterCommit(in: context) {
-            result.savedID = id
-            do { try dependencies.registerLocalCreation(id) }
+            result.savedID = todo.id
+            result.savedRecord = todo.persistentModelID
+            do { try dependencies.registerLocalCreation(todo.id) }
             catch {
                 result.registrationFailed = true
                 ModelChanges.reportFailure(error, in: context, boundary: dependencies.transaction)

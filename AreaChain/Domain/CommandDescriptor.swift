@@ -120,5 +120,12 @@ struct CommandDescriptor: Identifiable, Equatable, Sendable {
     var canEnterOrdinaryQueue: Bool { isExecutable && queue == .eligibleAfterWiring }
 
     /// 仅声明已核实的单对象创建输出；addTodo 提交后返回 TodoItem，不代表 handler 已接线。
-    var createdObjectType: CommandObjectType? { id.rawValue == "todo.create" ? .todo : nil }
+    var createdObjectType: CommandObjectType? {
+        switch id.rawValue {
+        case "todo.create": return .todo
+        case "subtask.create": return .subtask
+        case "routine.create": return .routine
+        default: return nil
+        }
+    }
 }

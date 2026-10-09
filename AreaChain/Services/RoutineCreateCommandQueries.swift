@@ -32,8 +32,8 @@ extension RoutineCommandAdapter {
         let environment = try assembledCreation()
         try coordinator.validate(lease)
         let run = try coordinator.host(lease.ownership.hostID).session.execution
-        guard run?.operation(operation.operationID) == operation, let item = run?.snapshot.items.first,
-              let facts = run?.units.first?.routineCreation, facts.state == .unknown,
+        guard run?.operation(operation.operationID) == operation, let item = run?.snapshot.items.first(where: { $0.id == operation.operationID }),
+              let facts = run?.units.first(where: { $0.members.contains(operation.operationID) })?.routineCreation, facts.state == .unknown,
               let accepted = coordinator.taskCreations.routinePreparations[item.draft.id],
               accepted.preview.item == operation.item, accepted.creationID == facts.creationID,
               accepted.preview.source.environmentID == environment.id, coordinator.taskCreations.wasInvoked(accepted.id) else {

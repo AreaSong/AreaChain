@@ -30,21 +30,24 @@ import SwiftData
     func validate(_ preview: CommandRoutinePreview, item: CommandPlanItem) throws -> DailyRoutine {
         guard preview.semanticsVersion == 1, item.stamp == preview.item, item.draft.stamp == preview.draft,
               item.draft.arguments == preview.arguments else { throw RoutineCommandIssue.stale }
-        let current = try read(item, lease: preview.lease, plan: preview.plan, catalog: catalogReader.current())
+        let current = try read(item, lease: preview.lease, plan: preview.plan, catalog: catalogReader.current(), consumption: preview.consumption)
         guard current.source == preview.source, current.catalog == preview.catalog,
               current.target == preview.target, current.record == preview.record else { throw RoutineCommandIssue.stale }
         guard current == preview else { throw RoutineCommandIssue.fieldsChanged }
         return try identity(preview.target)
     }
 
-    private func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
-                      catalog: CommandTaskTagCatalog) throws -> CommandRoutinePreview {
-        try CommandRoutinePreview.validate(item)
+    func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
+                      catalog: CommandTaskTagCatalog, consumption: CommandCreationConsumption? = nil) throws -> CommandRoutinePreview {
+        let resolved = try consumption?.input(item)
+        try CommandRoutinePreview.validate(item, allowingDependencies: true, resolved: resolved)
         let draft = item.draft
-        let target = draft.targets.objects[0]
+        let target = (resolved?.targets ?? draft.targets).objects[0]
         let source = try environment.qualification(.init(command: draft.commandID, target: target, arguments: draft.arguments))
         guard try catalogReader.current().evidence() == catalog.evidence() else { throw TaskTitleCommandIssue.catalogChanged }
         let routine = try identity(target)
+        try consumption?.output.validate(context: ObjectIdentifier(environment.context),
+                                         storage: ObjectIdentifier(environment.context.container), record: routine.persistentModelID)
         _ = try CommandTaskTitleTags.merge(rawIDs: routine.tagIDs, title: "", catalog: catalog)
         let edit = try CommandRoutineEdit(command: draft.commandID, arguments: draft.arguments)
         let tags: CommandTaskTagMutation?
@@ -54,9 +57,9 @@ import SwiftData
         let original = Self.values(routine, edit: edit)
         let final = Self.final(edit, original: original, tags: tags)
         return .init(lease: lease, plan: plan, item: item.stamp, draft: draft.stamp, arguments: draft.arguments,
-                     target: target, record: ObjectIdentifier(routine), targetTitle: routine.title, isEnabled: routine.isEnabled,
+                     target: target, record: routine.persistentModelID, targetTitle: routine.title, isEnabled: routine.isEnabled,
                      original: original, final: final, edit: edit, source: source, catalog: try catalog.evidence(),
-                     tagIDs: routine.tagIDs, tags: tags, stateImpact: impact)
+                     tagIDs: routine.tagIDs, tags: tags, stateImpact: impact, consumption: consumption)
     }
 
     private func tags(_ routine: DailyRoutine, edit: CommandRoutineEdit, argument: CommandArgument,

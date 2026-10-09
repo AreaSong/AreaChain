@@ -14,10 +14,13 @@ extension CommandHandoffCoordinator {
         let session = try host(request.lease.ownership.hostID).session
         guard let run = session.execution, run.operation(request.operation.operationID) == request.operation,
               run.attempt(request.attempt.unitID) == request.attempt, request.attempt.phase == .local,
-              run.units.count == 1, run.units[0].state == .running, run.units[0].local == .notSubmitted,
+              run.permitsMember(request.operation.operationID),
+              let unit = run.units.first(where: { $0.id == request.attempt.unitID }),
+              unit.state == .running, unit.local == .notSubmitted,
               session.plan.items.isEmpty, session.operations.allDrafts.isEmpty, session.operations.pending == nil,
-              let item = run.snapshot.items.first,
+              let item = run.snapshot.items.first(where: { $0.id == request.operation.operationID }),
               let accepted = routines.acceptances[item.draft.id] else { throw RoutineCommandIssue.stale }
+        try validateConsumption(accepted.preview.consumption, item: item, run: run)
         _ = try accepted.preview.frozenItem(in: run, lease: request.lease)
         return accepted
     }
@@ -25,14 +28,15 @@ extension CommandHandoffCoordinator {
     func claimRoutine(_ request: RoutineCommandRequest) throws -> CommandRuntimeInvocation {
         let accepted = try routineAcceptance(request)
         guard !routines.wasInvoked(accepted.id) else { throw RoutineCommandIssue.alreadyInvoked }
-        let invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease)
+        let invocation = try claimMemberInvocation(request.operation, attempt: request.attempt, expecting: request.lease,
+                                                   acceptanceID: accepted.id, previewLease: accepted.preview.lease)
         routines.markInvoked(accepted.id)
         return invocation
     }
 
     func recordRoutine(_ invocation: CommandRuntimeInvocation, facts: CommandRoutineFacts) throws {
         let current = try taskMutationHost(invocation)
-        guard let item = current.session.execution?.snapshot.items.first,
+        guard let item = current.session.execution?.snapshot.items.first(where: { $0.id == invocation.operation.operationID }),
               let accepted = routines.acceptances[item.draft.id], accepted.preview.item == item.stamp,
               accepted.object == facts.object, accepted.preview.stateImpact == facts.stateImpact,
               accepted.checkCreationIDs == facts.checkCreationIDs, routines.wasInvoked(accepted.id) else {

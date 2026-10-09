@@ -14,10 +14,11 @@ struct CommandTaskTitlePreview: Equatable, CustomStringConvertible, CustomDebugS
         let catalog: CommandTaskTagCatalog.Evidence
         let parsingVersion: Int
         let impactVersion: Int
+        var multiOutput: CommandCreationOutput?
         var chain: CommandTaskChainBinding?
     }
 
-    let binding: Binding
+    var binding: Binding
     let impact: CommandTaskTitleImpact
     let followUpContext: CommandTaskTitleContext
     let arguments: [CommandArgument]
@@ -119,6 +120,24 @@ struct CommandTaskTitlePreview: Equatable, CustomStringConvertible, CustomDebugS
     func frozenInput(in run: CommandExecutionRun, lease: CommandHostLease) throws -> Input {
         guard binding.parsingVersion == Self.parsingVersion, binding.impactVersion == Self.impactVersion else {
             throw CommandTaskTitlePreviewIssue.stale
+        }
+        if run.multiPlan != nil {
+            guard run.previewLeaseMatches(binding.lease, current: lease, itemID: binding.item.id),
+                  run.snapshot.stamp == binding.plan,
+                  let item = run.snapshot.items.first(where: { $0.stamp == binding.item }),
+                  item.draft.stamp == binding.draft, item.draft.arguments == arguments,
+                  item.draft.baseline == draftBaseline, let resolved = run.resolvedInput(item.id) else {
+                throw CommandTaskTitlePreviewIssue.stale
+            }
+            let input = try Self.resolvedInput(item: item, targets: resolved.targets)
+            guard input.target == impact.target, input.edit == impact.edit else { throw CommandTaskTitlePreviewIssue.stale }
+            if let reference = run.multiPlan?.references[item.id] {
+                guard binding.multiOutput?.producer == reference.producer,
+                      binding.multiOutput?.execution == run.stamp,
+                      binding.multiOutput?.object == input.target,
+                      run.creationOutput(for: reference) == input.target else { throw CommandTaskTitlePreviewIssue.stale }
+            } else if binding.multiOutput != nil { throw CommandTaskTitlePreviewIssue.stale }
+            return input
         }
         if let chain = binding.chain {
             guard lease == binding.lease, chain.attempt == run.attempt(chain.identity.consumer.id),

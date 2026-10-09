@@ -26,7 +26,7 @@ import SwiftData
     func validate(_ preview: CommandSubtaskPreview, item: CommandPlanItem) throws -> Observation {
         guard preview.semanticsVersion == 1, item.stamp == preview.item, item.draft.stamp == preview.draft,
               item.draft.arguments == preview.arguments else { throw SubtaskCommandIssue.stale }
-        let observation = try read(item, lease: preview.lease, plan: preview.plan, catalog: catalogReader.current())
+        let observation = try read(item, lease: preview.lease, plan: preview.plan, catalog: catalogReader.current(), consumption: preview.consumption)
         guard observation.preview.source == preview.source, observation.preview.catalog == preview.catalog else {
             throw SubtaskCommandIssue.stale
         }
@@ -54,23 +54,30 @@ import SwiftData
         return (parents[0], child)
     }
 
-    private func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
-                      catalog: CommandTaskTagCatalog) throws -> Observation {
-        try CommandSubtaskPreview.validate(item)
+    func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
+                      catalog: CommandTaskTagCatalog, consumption: CommandCreationConsumption? = nil) throws -> Observation {
+        let resolved = try consumption?.input(item)
+        try CommandSubtaskPreview.validate(item, allowingDependencies: true, resolved: resolved)
         try environment.validateClean()
-        let input = try CommandSubtaskInput(item.draft)
+        let input = try CommandSubtaskInput(item.draft, resolved: resolved)
         let (parent, child) = try family(parent: input.parent, target: input.target)
+        if let consumption {
+            let record = consumption.parameter == .parent ? parent.persistentModelID : child?.persistentModelID
+            guard let record else { throw SubtaskCommandIssue.invalidFamily }
+            try consumption.output.validate(context: ObjectIdentifier(environment.context),
+                                            storage: ObjectIdentifier(environment.context.container), record: record)
+        }
         let source = try environment.qualification(.init(command: item.draft.commandID,
-            parent: .init(type: .todo, id: parent.id), target: input.target, arguments: item.draft.arguments))
+            parent: .init(type: .todo, id: parent.id), target: input.target, arguments: resolved?.arguments.filter { $0.parameter != .target } ?? item.draft.arguments))
         let latest = try family(parent: input.parent, target: input.target)
         guard latest.0 === parent, latest.1 === child else { throw SubtaskCommandIssue.invalidFamily }
         _ = try CommandTaskTitleTags.merge(rawIDs: parent.tagIDs, title: "", catalog: catalog)
         if let child { _ = try CommandTaskTitleTags.merge(rawIDs: child.tagIDs, title: "", catalog: catalog) }
         // 先证明资格，再复制最小可显示字段；父 notes 从未被读取来猜测资格。
-        let original = child.map { CommandSubtaskOriginal(id: $0.id, record: ObjectIdentifier($0), parentID: parent.id,
+        let original = child.map { CommandSubtaskOriginal(id: $0.id, record: $0.persistentModelID, parentID: parent.id,
             title: $0.title, isDone: $0.isDone, sortOrder: $0.sortOrder, createdAt: $0.createdAt, tagIDs: $0.tagIDs) }
         let siblings = input.edit.isCreation ? parent.subtasks.map {
-            CommandSubtaskSibling(id: $0.id, record: ObjectIdentifier($0), sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
+            CommandSubtaskSibling(id: $0.id, record: $0.persistentModelID, sortOrder: $0.sortOrder, deletedAt: $0.deletedAt)
         }.sorted { $0.id.uuidString < $1.id.uuidString } : nil
         // 原末尾算法需要可表示的下一位；不能让坏排序值在明确接受后溢出。
         guard siblings?.contains(where: { $0.deletedAt == nil && $0.sortOrder == Int.max }) != true else {
@@ -78,10 +85,11 @@ import SwiftData
         }
         let preview = CommandSubtaskPreview(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
             arguments: item.draft.arguments, input: input,
-            parent: .init(id: parent.id, record: ObjectIdentifier(parent), title: parent.title,
+            parent: .init(id: parent.id, record: parent.persistentModelID, title: parent.title,
                           sourceBundleID: parent.sourceBundleID, tagIDs: parent.tagIDs),
             original: original, siblings: siblings, source: source, catalog: try catalog.evidence(),
-            tags: try tags(input.edit, arguments: item.draft.arguments, rawIDs: child?.tagIDs ?? "", catalog: catalog))
+            tags: try tags(input.edit, arguments: item.draft.arguments, rawIDs: child?.tagIDs ?? "", catalog: catalog),
+            consumption: consumption)
         guard try catalogReader.current().evidence() == preview.catalog else { throw SubtaskCommandIssue.stale }
         try environment.validateClean()
         return .init(parent: parent, subtask: child, preview: preview)

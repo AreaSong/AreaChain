@@ -121,9 +121,9 @@ struct CommandBatchPreview: Equatable, CustomStringConvertible, CustomDebugStrin
         return item
     }
 
-    static func validate(_ item: CommandPlanItem) throws {
+    static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false) throws {
         let draft = item.draft
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
               CommandBatchEdit.commands.contains(draft.commandID.rawValue) else { throw CommandBatchIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
@@ -134,16 +134,16 @@ struct CommandBatchPreview: Equatable, CustomStringConvertible, CustomDebugStrin
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {
-        guard lease.ownership == self.lease.ownership, lease.revision == self.lease.revision + 2,
-              run.snapshot.stamp == plan, run.snapshot.items.count == 1, run.outputs.isEmpty,
-              let item = run.snapshot.items.first, item.stamp == self.item, item.draft.stamp == draft,
+        guard run.previewLeaseMatches(self.lease, current: lease, itemID: self.item.id),
+              run.snapshot.stamp == plan, run.permitsMember(self.item.id),
+              let item = run.snapshot.items.first(where: { $0.id == self.item.id }), item.stamp == self.item, item.draft.stamp == draft,
               item.draft.arguments == arguments, item.draft.targets == targets,
               let command = CommandCatalog.standard.command(id: item.draft.commandID),
               let targetArgument = targets.argument(for: command),
               run.resolvedInput(item.id) == .init(arguments: arguments + [targetArgument], targets: targets) else {
             throw CommandBatchIssue.stale
         }
-        try Self.validate(item)
+        try Self.validate(item, allowingDependencies: run.multiPlan != nil)
         return item
     }
 }
@@ -160,12 +160,12 @@ struct CommandBatchAcceptance: Equatable {
     private var invoked: Set<UUID> = []
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
-    func accept(_ preview: CommandBatchPreview) throws -> CommandBatchAcceptance {
+    func accept(_ preview: CommandBatchPreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandBatchAcceptance {
         try preview.writeSet?.validateLimit()
         var identities: [CommandObjectReference: UUID] = [:]
         if let old = acceptances[preview.draft.draftID] {
-            guard !wasInvoked(old.id) else { throw CommandBatchIssue.alreadyInvoked }
-            if old.preview == preview { return old }
+            guard !wasInvoked(old.id) || retry?.matches(item: preview.item, acceptance: old.id) == true else { throw CommandBatchIssue.alreadyInvoked }
+            if old.preview == preview && !wasInvoked(old.id) { return old }
             identities = old.checkCreationIDs
         }
         let keys = preview.writeSet?.creationTargets ?? []

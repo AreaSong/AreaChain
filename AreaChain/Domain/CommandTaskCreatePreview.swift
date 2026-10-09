@@ -36,6 +36,12 @@ struct CommandTaskCreatePreview: Equatable, CustomStringConvertible, CustomDebug
     static func prepare(in host: CommandOwnedHost, source: CommandTaskCreateSource,
                         catalog: CommandTaskTagCatalog) throws -> Self {
         let item = try eligibleItem(in: host)
+        return try prepare(item: item, lease: host.lease, plan: host.session.plan.stamp, source: source, catalog: catalog)
+    }
+
+    static func prepare(item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
+                        source: CommandTaskCreateSource, catalog: CommandTaskTagCatalog) throws -> Self {
+        try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true, allowingDependencies: true)
         let draft = item.draft
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               source.protection == .ordinary, source.stampEnabled || source.bundleID.isEmpty else {
@@ -51,7 +57,7 @@ struct CommandTaskCreatePreview: Equatable, CustomStringConvertible, CustomDebug
         let evidence: CommandTaskTagCatalog.Evidence
         do { evidence = try catalog.evidence() }
         catch { throw CommandTaskCreatePreviewIssue.invalidCatalog }
-        return Self(binding: .init(lease: host.lease, plan: host.session.plan.stamp, item: item.stamp,
+        return Self(binding: .init(lease: lease, plan: plan, item: item.stamp,
                                    draft: draft.stamp, catalog: evidence, parsingVersion: parsingVersion,
                                    compositionVersion: compositionVersion),
                     composition: composition, issues: issues, originalArguments: draft.arguments, source: source)

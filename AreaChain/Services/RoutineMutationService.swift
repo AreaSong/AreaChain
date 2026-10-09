@@ -54,7 +54,7 @@ import SwiftData
         do {
             let repository = dependencies.repository(context)
             if let accepted {
-                guard accepted.object == result.object, accepted.preview.record == ObjectIdentifier(routine),
+                guard accepted.object == result.object, accepted.preview.record == routine.persistentModelID,
                       routine.modelContext === context, repository.routineMutationContext === context else {
                     throw RoutineCommandIssue.invalidRepository
                 }

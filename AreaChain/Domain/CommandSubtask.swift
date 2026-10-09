@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum SubtaskCommandIssue: Error, Equatable {
     case unassembled, unsupportedPlan, invalidArguments, stale, alreadyInvoked, fieldsChanged
@@ -17,15 +18,21 @@ struct CommandSubtaskInput: Equatable {
     let parent: CommandObjectReference?
     let target: CommandObjectReference?
 
-    init(_ draft: CommandDraft) throws {
+    init(_ draft: CommandDraft, resolved: CommandResolvedInput? = nil) throws {
         guard CommandSubtaskEdit.commands.contains(draft.commandID.rawValue),
               !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
-              draft.baseline == CommandDraftBaseline(), draft.check().staticallyValid else {
+              draft.baseline == CommandDraftBaseline(),
+              let command = CommandCatalog.standard.command(id: draft.commandID) else {
             throw SubtaskCommandIssue.invalidArguments
         }
-        let arguments = draft.arguments
+        let targets = resolved?.targets ?? draft.targets
+        let arguments = resolved?.arguments.filter { $0.parameter != .target } ?? draft.arguments
+        guard CommandArgumentValidation.issues(for: arguments + (targets.argument(for: command).map { [$0] } ?? []),
+                                               command: command).isEmpty, targets.issues(for: command).isEmpty else {
+            throw SubtaskCommandIssue.invalidArguments
+        }
         if draft.commandID.rawValue == "subtask.create" {
-            guard draft.targets == .none, (2...3).contains(arguments.count),
+            guard targets == .none, (2...3).contains(arguments.count),
                   Set(arguments.map(\.parameter)).isSubset(of: [.parent, .title, .tags]),
                   case .object(let parent) = arguments.first(where: { $0.parameter == .parent })?.value,
                   parent.type == .todo, parent.dayKey == nil else { throw SubtaskCommandIssue.invalidArguments }
@@ -33,8 +40,8 @@ struct CommandSubtaskInput: Equatable {
             target = nil
             edit = .create(try Self.title(arguments))
         } else {
-            guard arguments.count == 1, draft.targets.selection == .single, draft.targets.objects.count == 1,
-                  let target = draft.targets.objects.first, target.type == .subtask, target.dayKey == nil else {
+            guard arguments.count == 1, targets.selection == .single, targets.objects.count == 1,
+                  let target = targets.objects.first, target.type == .subtask, target.dayKey == nil else {
                 throw SubtaskCommandIssue.invalidArguments
             }
             self.target = target
@@ -87,7 +94,7 @@ struct CommandSubtaskSource: Equatable {
 
 struct CommandSubtaskParent: Equatable {
     let id: UUID
-    let record: ObjectIdentifier
+    let record: PersistentIdentifier
     let title: String
     let sourceBundleID: String
     let tagIDs: String
@@ -95,7 +102,7 @@ struct CommandSubtaskParent: Equatable {
 
 struct CommandSubtaskOriginal: Equatable {
     let id: UUID
-    let record: ObjectIdentifier
+    let record: PersistentIdentifier
     let parentID: UUID
     let title: String
     let isDone: Bool
@@ -107,7 +114,7 @@ struct CommandSubtaskOriginal: Equatable {
 /// 新增只绑定排序实际依赖的兄弟身份/墓碑/顺序，不导出兄弟正文。
 struct CommandSubtaskSibling: Equatable {
     let id: UUID
-    let record: ObjectIdentifier
+    let record: PersistentIdentifier
     let sortOrder: Int
     let deletedAt: Date?
 }
@@ -125,6 +132,7 @@ struct CommandSubtaskPreview: Equatable, CustomStringConvertible, CustomDebugStr
     let source: CommandSubtaskSource
     let catalog: CommandTaskTagCatalog.Evidence
     let tags: CommandTaskTagMutation?
+    var consumption: CommandCreationConsumption?
     var semanticsVersion = 1
 
     var noChange: Bool {
@@ -148,23 +156,24 @@ struct CommandSubtaskPreview: Equatable, CustomStringConvertible, CustomDebugStr
         return item
     }
 
-    static func validate(_ item: CommandPlanItem) throws {
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+    static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false,
+                         resolved: CommandResolvedInput? = nil) throws {
+        let input = try item.checkedInput(resolved)
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, resolved != nil || item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else { throw SubtaskCommandIssue.unsupportedPlan }
-        _ = try CommandSubtaskInput(item.draft)
+        _ = try CommandSubtaskInput(item.draft, resolved: input)
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {
-        guard lease.ownership == self.lease.ownership, lease.revision == self.lease.revision + 2,
-              run.snapshot.stamp == plan, run.snapshot.items.count == 1, run.outputs.isEmpty,
-              let item = run.snapshot.items.first, item.stamp == self.item, item.draft.stamp == draft,
-              item.draft.arguments == arguments, try CommandSubtaskInput(item.draft) == input,
-              let command = CommandCatalog.standard.command(id: item.draft.commandID) else { throw SubtaskCommandIssue.stale }
-        let projected = item.draft.targets.argument(for: command).map { [$0] } ?? []
-        guard run.resolvedInput(item.id) == .init(arguments: arguments + projected, targets: item.draft.targets) else {
-            throw SubtaskCommandIssue.stale
-        }
-        try Self.validate(item)
+        guard run.previewLeaseMatches(self.lease, current: lease, itemID: self.item.id),
+              run.snapshot.stamp == plan, run.permitsMember(self.item.id),
+              let item = run.snapshot.items.first(where: { $0.stamp == self.item }), item.draft.stamp == draft,
+              item.draft.arguments == arguments else { throw SubtaskCommandIssue.stale }
+        if let consumption { try consumption.validate(in: run, item: item) }
+        let resolved = try consumption?.input(item) ?? item.checkedInput()
+        guard run.resolvedInput(item.id) == resolved else { throw SubtaskCommandIssue.stale }
+        guard try CommandSubtaskInput(item.draft, resolved: resolved) == input else { throw SubtaskCommandIssue.stale }
+        try Self.validate(item, allowingDependencies: run.multiPlan != nil, resolved: resolved)
         return item
     }
     var description: String { "CommandSubtaskPreview(redacted)" }

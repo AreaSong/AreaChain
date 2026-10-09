@@ -14,8 +14,8 @@ extension CommandHandoffCoordinator {
         return item
     }
 
-    nonisolated static func validateTaskCreateItem(_ item: CommandPlanItem, composed: Bool = false) throws {
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+    nonisolated static func validateTaskCreateItem(_ item: CommandPlanItem, composed: Bool = false, allowingDependencies: Bool = false) throws {
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else {
             throw TaskCreateCommandIssue.unsupportedPlan
         }
@@ -41,13 +41,14 @@ extension CommandHandoffCoordinator {
         guard let run = session.execution, run.operation(request.operation.operationID) == request.operation,
               run.attempt(request.attempt.unitID) == request.attempt,
               request.attempt.phase == .local,
-              let item = run.snapshot.items.first, run.units[0].state == .running,
-              run.units[0].local == .notSubmitted, run.outputs.isEmpty, session.plan.items.isEmpty,
+              let item = run.snapshot.items.first(where: { $0.id == request.operation.operationID }),
+              let unit = run.units.first(where: { $0.id == request.attempt.unitID }), unit.state == .running,
+              unit.local == .notSubmitted, run.outputs[item.id] == nil, session.plan.items.isEmpty,
               session.operations.allDrafts.isEmpty, session.operations.pending == nil,
               let prepared = taskCreations.preparations[item.draft.id],
               prepared.plan == run.snapshot.stamp, prepared.item == item.stamp, prepared.draft == item.draft.stamp,
               prepared.lease.ownership == request.lease.ownership,
-              request.lease.revision == prepared.lease.revision + 2,
+              run.previewLeaseMatches(prepared.lease, current: request.lease, itemID: item.id),
               run.resolvedInput(item.id)?.arguments == prepared.arguments,
               run.resolvedInput(item.id)?.targets == CommandDraftTargets.none else { throw TaskCreateCommandIssue.stale }
         if let chain = prepared.chain {
@@ -56,9 +57,9 @@ extension CommandHandoffCoordinator {
                 throw TaskCreateCommandIssue.stale
             }
         } else {
-            guard run.units.count == 1, run.snapshot.items.count == 1 else { throw TaskCreateCommandIssue.unsupportedPlan }
+            guard run.permitsMember(item.id) else { throw TaskCreateCommandIssue.unsupportedPlan }
         }
-        try Self.validateTaskCreateItem(item, composed: prepared.preview != nil)
+        try Self.validateTaskCreateItem(item, composed: prepared.preview != nil, allowingDependencies: run.multiPlan != nil)
         return prepared
     }
 
@@ -68,7 +69,8 @@ extension CommandHandoffCoordinator {
         let invocation: CommandRuntimeInvocation
         if let chain = prepared.chain {
             invocation = try claimTaskChainInvocation(request.operation, attempt: request.attempt, expecting: request.lease, identity: chain)
-        } else { invocation = try claimRuntimeInvocation(request.operation, attempt: request.attempt, expecting: request.lease) }
+        } else { invocation = try claimMemberInvocation(request.operation, attempt: request.attempt, expecting: request.lease,
+                                                    acceptanceID: prepared.id, previewLease: prepared.lease) }
         taskCreations.markInvoked(prepared.id)
         return invocation
     }

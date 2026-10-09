@@ -17,12 +17,12 @@ struct CommandTaskTitleAcceptance: Equatable, CustomStringConvertible, CustomDeb
     let id: UUID
     let preview: CommandTaskTitlePreview
     let tagCreationIDs: [String: UUID]
-    fileprivate init(_ preview: CommandTaskTitlePreview) {
+    fileprivate init(_ preview: CommandTaskTitlePreview, previous: Self?) {
         id = UUID()
         self.preview = preview
         tagCreationIDs = Dictionary(uniqueKeysWithValues: preview.impact.tags.syntax.final.compactMap {
             guard case .newName(_, let key) = $0.target else { return nil }
-            return (key, UUID())
+            return (key, previous?.tagCreationIDs[key] ?? UUID())
         })
     }
     var description: String { "CommandTaskTitleAcceptance(redacted)" }
@@ -76,12 +76,12 @@ struct CommandTaskTitleVerification: Equatable, CustomStringConvertible, CustomD
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
 
-    func accept(_ preview: CommandTaskTitlePreview) throws -> CommandTaskTitleAcceptance {
+    func accept(_ preview: CommandTaskTitlePreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandTaskTitleAcceptance {
         if let old = acceptances[preview.binding.draft.draftID] {
-            guard !wasInvoked(old.id) else { throw TaskTitleCommandIssue.alreadyInvoked }
-            if old.preview == preview { return old }
+            guard !wasInvoked(old.id) || retry?.matches(item: preview.binding.item, acceptance: old.id) == true else { throw TaskTitleCommandIssue.alreadyInvoked }
+            if old.preview == preview && !wasInvoked(old.id) { return old }
         }
-        let accepted = CommandTaskTitleAcceptance(preview)
+        let accepted = CommandTaskTitleAcceptance(preview, previous: acceptances[preview.binding.draft.draftID])
         acceptances[preview.binding.draft.draftID] = accepted
         return accepted
     }

@@ -8,6 +8,7 @@ struct UnifiedSearchTaskFieldImpact: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+            if !preview.targetTitle.isEmpty { Text(verbatim: preview.targetTitle).font(DaybookType.body.weight(.medium)) }
             if let tags = preview.tags {
                 Text(verbatim: names(tags.original) + " → " + names(tags.final))
                     .font(DaybookType.body).accessibilityIdentifier("unified.field.values")

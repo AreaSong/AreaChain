@@ -259,6 +259,7 @@ struct TagManagementPage: View {
                 .onMove(perform: canReorder ? moveTags : nil)
             }
             .listStyle(.inset)
+            .daybookScroll()
             .frame(minHeight: 240)
         }
     }

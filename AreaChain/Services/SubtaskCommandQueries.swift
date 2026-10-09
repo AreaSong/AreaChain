@@ -53,13 +53,14 @@ extension SubtaskCommandAdapter {
         let environment = try assembled()
         try coordinator.validate(lease)
         guard let run = try coordinator.host(lease.ownership.hostID).session.execution,
-              run.operation(operation.operationID) == operation, run.snapshot.items.count == 1,
-              let facts = run.units.first?.subtask, facts.state == .unknown,
-              let accepted = coordinator.subtasks.acceptances[run.snapshot.items[0].draft.id],
+              run.operation(operation.operationID) == operation,
+              let item = run.snapshot.items.first(where: { $0.id == operation.operationID }),
+              let facts = run.units.first(where: { $0.members.contains(operation.operationID) })?.subtask, facts.state == .unknown,
+              let accepted = coordinator.subtasks.acceptances[item.draft.id],
               accepted.object == facts.object, coordinator.subtasks.wasInvoked(accepted.id) else { throw SubtaskCommandIssue.stale }
         let preview = accepted.preview
         do {
-            let source = try environment.qualification(.init(command: run.snapshot.items[0].draft.commandID,
+            let source = try environment.qualification(.init(command: item.draft.commandID,
                 parent: .init(type: .todo, id: facts.parentID), target: preview.input.target, arguments: preview.arguments))
             guard source == preview.source else { return .unreadable }
             let reader = ModelContext(environment.context.container)

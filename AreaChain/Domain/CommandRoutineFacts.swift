@@ -47,14 +47,18 @@ struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStrin
     var debugDescription: String { description }
 
     func receipt(in run: CommandExecutionRun, attempt: CommandAttemptStamp) throws -> (Int, CommandExecutionResult?) {
-        guard attempt.execution == run.stamp, attempt.phase == .local, run.snapshot.items.count == 1,
-              let item = run.snapshot.items.first, item.id == attempt.unitID,
+        guard attempt.execution == run.stamp, attempt.phase == .local, run.permitsMember(attempt.unitID),
+              let item = run.snapshot.items.first(where: { $0.id == attempt.unitID }), item.id == attempt.unitID,
               let index = run.units.firstIndex(where: { $0.id == attempt.unitID }),
               run.units[index].attempt == attempt.number, run.units[index].currentPhase == .local else {
             throw CommandExecutionError.stale
         }
-        try CommandRoutinePreview.validate(item)
-        guard item.draft.targets.objects == [object], run.outputs.isEmpty else {
+        guard run.canRecordLocalFacts(attempt, unit: run.units[index], hasPrevious: run.units[index].routine != nil) else {
+            throw CommandExecutionError.stale
+        }
+        try CommandRoutinePreview.validate(item, allowingDependencies: run.multiPlan != nil,
+                                         resolved: item.links.results.isEmpty ? nil : run.resolvedInput(item.id))
+        guard run.resolvedInput(item.id)?.targets.objects == [object], run.outputs[item.id] == nil else {
             throw CommandExecutionError.invalidResult
         }
         guard state == .saved || (savedTagEffects == nil && savedTagIDs == nil && savedTitle == nil && savedValues == nil) else {
@@ -68,7 +72,8 @@ struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStrin
         switch state {
         case .pending: result = nil
         case .noChange:
-            guard save == .notCalled, publication == .notCalled,
+            guard save == .notCalled, rollback == .notCalled, publication == .notCalled,
+                  !registrationFailed, !publicationFailed, !conflict,
                   !refreshRequested, authorizationRequest == .notCalled, savedTagEffects == nil, savedTagIDs == nil else {
                 throw CommandExecutionError.invalidResult
             }
@@ -91,10 +96,10 @@ struct CommandRoutineFacts: Equatable, CustomStringConvertible, CustomDebugStrin
     private var invoked: Set<UUID> = []
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
-    func accept(_ preview: CommandRoutinePreview) throws -> CommandRoutineAcceptance {
+    func accept(_ preview: CommandRoutinePreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandRoutineAcceptance {
         if let old = acceptances[preview.draft.draftID] {
-            guard !wasInvoked(old.id) else { throw RoutineCommandIssue.alreadyInvoked }
-            if old.preview == preview { return old }
+            guard !wasInvoked(old.id) || retry?.matches(item: preview.item, acceptance: old.id) == true else { throw RoutineCommandIssue.alreadyInvoked }
+            if old.preview == preview && !wasInvoked(old.id) { return old }
         }
         let accepted = CommandRoutineAcceptance(preview, previous: acceptances[preview.draft.draftID])
         acceptances[preview.draft.draftID] = accepted

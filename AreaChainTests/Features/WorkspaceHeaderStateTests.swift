@@ -6,6 +6,29 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct WorkspaceHeaderStateTests {
+    @Test func spaceOnlyClosesPresentationAndNeverRestoresInvalidTargets() {
+        let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
+        let id = UUID()
+        navigation.revealTab(.calendar)
+        navigation.updateInspectorTargets([id])
+        navigation.inspectTask(id, dayKey: "2026-10-03")
+        navigation.updateInspectorSpace(available: false)
+        #expect(!navigation.isInspectorPresented && !navigation.canPresentInspector)
+        #expect(navigation.selectedTaskID == id && navigation.inspectingDayKey == "2026-10-03")
+        #expect(navigation.canInspectSelectedTask)
+        navigation.inspectTask(id, dayKey: "2026-10-03")
+        #expect(!navigation.isInspectorPresented)
+        navigation.updateInspectorSpace(available: true)
+        #expect(!navigation.isInspectorPresented && navigation.canPresentInspector)
+        navigation.isInspectorPresented = true
+        #expect(navigation.isInspectorPresented)
+        navigation.searchQuery = "other"
+        #expect(navigation.selectedTaskID == nil && !navigation.canPresentInspector)
+        navigation.updateInspectorSpace(available: false)
+        navigation.updateInspectorSpace(available: true)
+        #expect(!navigation.isInspectorPresented && !navigation.canPresentInspector)
+    }
+
     @Test func staleSelectionCannotEnableAnotherContentInspector() {
         let navigation = WorkspaceNavigation(boardSelection: BoardSelection())
         let task = UUID()

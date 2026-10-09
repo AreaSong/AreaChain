@@ -14,7 +14,7 @@ struct CommandAttemptStamp: Equatable, Hashable {
     let phase: CommandExecutionPhase
 }
 
-struct CommandOperationIdentity: Equatable {
+struct CommandOperationIdentity: Equatable, Hashable {
     let execution: CommandExecutionStamp
     let item: CommandPlanItemStamp
     let operationID: UUID
@@ -64,6 +64,8 @@ struct CommandExecutionUnit: Equatable {
     var block: CommandExecutionBlock?
     var attempt: UInt64 = 0
     var currentPhase: CommandExecutionPhase = .local
+    var validationFailedBeforeInvocation = false
+    var history: [CommandAttemptRecord] = []
     var receipt: CommandExecutionReceipt?
     var conflicts: [CommandFieldConflict] = []
     var preferenceWrite: CommandPreferenceWriteFacts?
@@ -125,4 +127,13 @@ extension CommandExecutionRun {
         }
     }
 
+}
+
+extension CommandExecutionRun {
+    /// 重试已撤销旧接收窗口：没有新 begin 的 ready 状态不能接收迟到的 noChange 或 pending。
+    func canRecordLocalFacts(_ attempt: CommandAttemptStamp, unit: CommandExecutionUnit, hasPrevious: Bool) -> Bool {
+        attempt.execution == stamp && attempt.phase == .local && unit.currentPhase == .local
+            && unit.attempt == attempt.number
+            && (unit.state == .running || hasPrevious && unit.receipt?.attempt == attempt)
+    }
 }

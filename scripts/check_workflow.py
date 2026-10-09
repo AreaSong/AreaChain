@@ -57,6 +57,18 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Domain/CommandCreationOutput.swift", "CommandCreationOutput"),
+    ("AreaChain/Domain/CommandCreationEvidence.swift", "multiPlanOutput"),
+    ("AreaChain/Services/MultiPlanCommandOutput.swift", "validateReferenceEnvironments"),
+    ("AreaChain/Features/Search/UnifiedSearchPlanLinks.swift", "creationReferenceLabel"),
+    ("AreaChain/Domain/CommandMultiPlan.swift", "CommandMultiPlanIdentity"),
+    ("AreaChain/Domain/CommandExecutionHistory.swift", "CommandAttemptRecord"),
+    ("AreaChain/Domain/CommandMultiPlanExecution.swift", "startMultiPlan"),
+    ("AreaChain/Services/MultiPlanCommandAdapter.swift", "MultiPlanCommandAdapter"),
+    ("AreaChain/Features/Search/UnifiedSearchMultiPlanEditing.swift", "prepareMultiPlan"),
+    ("AreaChain/Features/Search/UnifiedSearchMultiPlanSubmission.swift", "UnifiedSearchMultiPlanSubmission"),
+    ("AreaChain/Features/Search/UnifiedSearchTaskCreationImpact.swift", "UnifiedSearchTaskCreationImpact"),
+    ("AreaChain/Features/Search/UnifiedSearchRoutineCreationImpact.swift", "UnifiedSearchRoutineCreationImpact"),
     ("AreaChain/Domain/CommandBatchWriteSet.swift", "CommandBatchWriteSet"),
     ("AreaChain/Services/BatchCommandStateReader.swift", "readStateImpacts"),
     ("AreaChain/Services/RoutineStateApplication.swift", "RoutineStateApplication"),
@@ -317,6 +329,8 @@ COMPONENT_ENTRIES = (
     ("AreaChain/Features/Board/BoardCommandStrip.swift", "BoardCommandStrip"),
     ("AreaChain/Features/Search/BoardSearchHitRow.swift", "BoardSearchHitGroups"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderBar.swift", "WorkspaceHeaderBar"),
+    ("AreaChain/Features/Workspace/WorkspaceInspectorPresentation.swift", "WorkspaceInspectorFocus"),
+    ("AreaChain/Theme/DaybookScrollScope.swift", "daybookScrollTopEdge"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderContent.swift", "WorkspaceHeaderAction"),
     ("AreaChain/Features/Workspace/WorkspaceHeaderSearch.swift", "WorkspaceHeaderSearchCapsule"),
 )

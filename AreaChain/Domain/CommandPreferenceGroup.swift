@@ -25,7 +25,7 @@ struct CommandPreferenceRecordIdentity: Equatable {
 }
 
 /// unitID 对多项必须是 groupID，绝不以第一成员代替组身份。
-struct CommandPreferenceGroupIdentity: Equatable {
+struct CommandPreferenceGroupIdentity: Equatable, Hashable {
     let execution: CommandExecutionStamp
     let unitID: UUID
     let groupID: UUID?
@@ -61,9 +61,11 @@ struct CommandPreferenceGroupPresentation: Equatable {
 }
 
 extension CommandExecutionRun {
-    func preferenceGroupIdentity() -> CommandPreferenceGroupIdentity? {
-        guard units.count == 1, CommandPlanValidation.isPreferenceUnit(snapshot.items), let unit = units.first else { return nil }
-        return .init(execution: stamp, unitID: unit.id, groupID: unit.atomic ? unit.id : nil,
-                     members: snapshot.items.map(\.stamp))
+    func preferenceGroupIdentity(unitID: UUID? = nil) -> CommandPreferenceGroupIdentity? {
+        guard units.count == 1 || multiPlan != nil && unitID != nil,
+              let unit = units.first(where: { unitID == nil || $0.id == unitID }) else { return nil }
+        let items = snapshot.items.filter { unit.members.contains($0.id) }
+        guard CommandPlanValidation.isPreferenceUnit(items, allowingDependencies: multiPlan != nil) else { return nil }
+        return .init(execution: stamp, unitID: unit.id, groupID: unit.atomic ? unit.id : nil, members: items.map(\.stamp))
     }
 }

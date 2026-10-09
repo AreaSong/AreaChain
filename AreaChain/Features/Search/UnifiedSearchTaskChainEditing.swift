@@ -2,6 +2,7 @@ import Foundation
 
 extension UnifiedSearchController {
     var showsTaskChain: Bool {
+        guard !showsMultiPlan else { return false }
         let drafts = (operations?.allDrafts ?? []) + (plan?.items.map(\.draft) ?? [])
             + (settingExecution?.snapshot.items.map(\.draft) ?? [])
         return drafts.count > 1 && drafts.contains { $0.commandID.rawValue == "todo.create" }

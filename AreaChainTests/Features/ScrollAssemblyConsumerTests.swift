@@ -23,7 +23,8 @@ struct ScrollAssemblyConsumerTests {
         let sidebarScroll = try #require(scrolls(sidebar).first)
         #expect(overlays(sidebarScroll).count == 1)
         #expect(!sidebarScroll.hasVerticalScroller)
-        #expect(ScrollNativeEvidence.views(sidebar).allSatisfy { !($0 is DaybookScrollEdgeObserverNSView) })
+        let edges = ScrollNativeEvidence.views(sidebar).compactMap { $0 as? DaybookScrollEdgeObserverNSView }
+        #expect(edges.count == 1 && edges.first?.currentScrollView === sidebarScroll)
         try await wheel(sidebarScroll, horizontal: false, window: sidebar)
         ScrollNativeEvidence.record(sidebar, label: "sidebar-wheel-\(locale)")
         let gantt = fixture.window(GanttPage(todayKey: "2026-09-14"), locale: locale,
@@ -32,6 +33,7 @@ struct ScrollAssemblyConsumerTests {
         try await SystemPageHost.settle(gantt)
         let targets = scrolls(gantt)
         #expect(targets.count == 2)
+        #expect(ScrollNativeEvidence.views(gantt).allSatisfy { !($0 is DaybookScrollEdgeObserverNSView) })
         ScrollNativeEvidence.record(gantt, label: "gantt-initial-\(locale)")
         let inner = try #require(targets.first { $0.enclosingScrollView != nil })
         let outer = try #require(inner.enclosingScrollView)

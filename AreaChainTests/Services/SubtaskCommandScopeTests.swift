@@ -81,6 +81,6 @@ import Testing
         try fixture.queue("subtask.title", [Fixture.title("two")])
         #expect(throws: SubtaskCommandIssue.unsupportedPlan) { try fixture.preview() }
         #expect(try fixture.handoff.state().plan.items.count == 2 && fixture.count("save") == 0)
-        #expect(CommandCatalog.standard.command(id: .init(rawValue: "subtask.create"))?.createdObjectType == nil)
+        #expect(CommandCatalog.standard.command(id: .init(rawValue: "subtask.create"))?.createdObjectType == .subtask)
     }
 }

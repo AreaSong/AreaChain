@@ -9,8 +9,9 @@ final class FileLocalSettingCommandAdapter {
     private var isOperating = false
     private var preparedPlans: [UUID: CommandPlanStamp] = [:]
     private var issued: [UUID: (CommandPreferenceGroupBaseline, LocalPreferenceRecord)] = [:]
-    private var reports: [CommandExecutionStamp: FileLocalSettingCommandReport] = [:]
-    private var commits: [CommandExecutionStamp: LocalPreferenceFileCommit] = [:]
+    private var reports: [CommandPreferenceGroupIdentity: FileLocalSettingCommandReport] = [:]
+    private var commits: [CommandPreferenceGroupIdentity: LocalPreferenceFileCommit] = [:]
+    private var multiPreviews: [UUID: FileMultiPlanPreview] = [:]
     private var confirmations: [UUID: (FileLocalSettingConflictConfirmation, LocalPreferenceRecord)] = [:]
 
     init(coordinator: CommandHandoffCoordinator, filePreferences: AppPreferences) throws {
@@ -113,17 +114,18 @@ final class FileLocalSettingCommandAdapter {
         return try execute(.init(lease: host.lease, identity: identity, attempt: attempt), displaySession: displaySession)
     }
 
-    func execute(_ request: FileLocalSettingCommandRequest,
+    func execute(_ request: FileLocalSettingCommandRequest, multi: FileMultiPlanPreview? = nil,
                  displaySession: ContentQueryReadSession? = nil) throws -> FileLocalSettingCommandReport {
         try enter()
         defer { isOperating = false }
         let items = try executingItems(request)
-        let values = try FileLocalSettingCommandMapping.values(items)
+        let values = try FileLocalSettingCommandMapping.values(items, allowingDependencies: multi != nil)
         let invocation = try coordinator.claimPreferenceGroup(request.identity, attempt: request.attempt, expecting: request.lease)
         let baseline: LocalPreferenceRecord
         do {
             let snapshot = try coordinator.host(request.lease.ownership.hostID).session.execution!.snapshot
-            baseline = try qualifiedBaseline(items, current: readReady(), plan: snapshot.stamp)
+            baseline = try multi.map { try validateMulti($0, request: request, items: items) }
+                ?? qualifiedBaseline(items, current: readReady(), plan: snapshot.stamp)
             try coordinator.validatePreferenceGroup(invocation)
             try displaySession?.validateDisplayHost(expecting: request.lease)
         } catch {
@@ -152,10 +154,10 @@ final class FileLocalSettingCommandAdapter {
 
     private func record(_ result: LocalPreferenceFileCommit, baseline: LocalPreferenceRecord, items: [CommandPlanItem],
                         request: FileLocalSettingCommandRequest, invocation: CommandPreferenceGroupInvocation) throws {
-        commits[request.identity.execution] = result
+        commits[request.identity] = result
         let facts = try FileLocalSettingCommandMapping.facts(result, baseline: baseline, items: items)
-        let values = try FileLocalSettingCommandMapping.values(items)
-        reports[request.identity.execution] = .init(identity: request.identity,
+        let values = try FileLocalSettingCommandMapping.values(items, allowingDependencies: true)
+        reports[request.identity] = .init(identity: request.identity,
             localReceipt: .init(attempt: request.attempt, result: .preferenceGroupCommit(facts)),
             changedFields: Set(values.filter { baseline.values.value(for: $0.field) != $0 }.map(\.field)))
         try coordinator.recordPreferenceGroup(invocation, result: facts)
@@ -163,7 +165,7 @@ final class FileLocalSettingCommandAdapter {
 
     private func reject(_ facts: CommandPreferenceGroupCommit, request: FileLocalSettingCommandRequest,
                         invocation: CommandPreferenceGroupInvocation) throws -> FileLocalSettingCommandReport {
-        reports[request.identity.execution] = .init(identity: request.identity,
+        reports[request.identity] = .init(identity: request.identity,
             localReceipt: .init(attempt: request.attempt, result: .preferenceGroupCommit(facts)), changedFields: [])
         try coordinator.recordPreferenceGroup(invocation, result: facts)
         return try finish(invocation, execution: request.identity.execution)
@@ -171,29 +173,31 @@ final class FileLocalSettingCommandAdapter {
 
     private func finish(_ invocation: CommandPreferenceGroupInvocation,
                         execution: CommandExecutionStamp) throws -> FileLocalSettingCommandReport {
-        guard var report = reports[execution] else { throw FileLocalSettingCommandIssue.stale }
+        guard var report = reports[invocation.identity] else { throw FileLocalSettingCommandIssue.stale }
         let run = try coordinator.host(invocation.lease.ownership.hostID).session.execution
         var presentation: CommandPreferenceGroupPresentation?
-        if case .committed(let identity, _) = run?.units.first?.preferenceGroupCommit {
+        if case .committed(let identity, _) = run?.units.first(where: { $0.id == invocation.identity.unitID })?.preferenceGroupCommit {
             presentation = FileLocalSettingCommandMapping.presentation(preferences.localPreferencePresentation(for: identity.commitID))
         }
         report.presentationReceipt = try coordinator.finishPreferenceGroup(invocation, presentation: presentation)
-        reports[execution] = report
+        reports[invocation.identity] = report
         return report
     }
 
-    func report(for execution: CommandExecutionStamp, expecting lease: CommandHostLease) throws -> FileLocalSettingCommandReport? {
+    func report(for execution: CommandExecutionStamp, unitID: UUID? = nil,
+                expecting lease: CommandHostLease) throws -> FileLocalSettingCommandReport? {
         try coordinator.validate(lease)
-        guard let report = reports[execution], let run = try coordinator.host(lease.ownership.hostID).session.execution,
-              run.preferenceGroupIdentity() == report.identity, run.attempt(report.identity.unitID) == report.latestAttempt,
-              run.units.first?.receipt == (report.presentationReceipt ?? report.localReceipt) else { return nil }
+        guard let run = try coordinator.host(lease.ownership.hostID).session.execution,
+              run.stamp == execution, let identity = run.preferenceGroupIdentity(unitID: unitID),
+              let report = reports[identity], run.attempt(identity.unitID) == report.latestAttempt,
+              run.units.first(where: { $0.id == identity.unitID })?.receipt == (report.presentationReceipt ?? report.localReceipt) else { return nil }
         return report
     }
 
     func returnUnsubmittedToPlan(_ attempt: CommandAttemptStamp, expecting lease: CommandHostLease) throws {
         try enter()
         defer { isOperating = false }
-        guard let report = try report(for: attempt.execution, expecting: lease), report.localReceipt.attempt == attempt else {
+        guard let report = try report(for: attempt.execution, unitID: attempt.unitID, expecting: lease), report.localReceipt.attempt == attempt else {
             throw FileLocalSettingCommandIssue.notRetryable
         }
         switch report.localReceipt.result {
@@ -250,9 +254,9 @@ final class FileLocalSettingCommandAdapter {
     func verifyCommit(_ attempt: CommandAttemptStamp, expecting lease: CommandHostLease) throws -> FileLocalSettingCommandReport {
         try enter()
         defer { isOperating = false }
-        guard var report = try report(for: attempt.execution, expecting: lease), report.latestAttempt == attempt,
+        guard var report = try report(for: attempt.execution, unitID: attempt.unitID, expecting: lease), report.latestAttempt == attempt,
               report.localReceipt.attempt == attempt, report.verificationReceipt == nil,
-              case .unknown(let pending, _) = commits[attempt.execution] else { throw FileLocalSettingCommandIssue.notRetryable }
+              case .unknown(let pending, _) = commits[report.identity] else { throw FileLocalSettingCommandIssue.notRetryable }
         let invocation = try coordinator.claimPreferenceGroup(report.identity, attempt: attempt, expecting: lease, verification: true)
         try coordinator.validatePreferenceGroup(invocation)
         var recordingError: Error?
@@ -266,7 +270,7 @@ final class FileLocalSettingCommandAdapter {
         }
         if let recordingError { throw recordingError }
         report.recovery = recovery
-        reports[attempt.execution] = report
+        reports[report.identity] = report
         return try finish(invocation, execution: attempt.execution)
     }
 
@@ -275,9 +279,11 @@ final class FileLocalSettingCommandAdapter {
         try enter()
         defer { isOperating = false }
         try displaySession?.validateDisplayHost(expecting: lease)
-        guard let report = try report(for: attempt.execution, expecting: lease), report.latestAttempt == attempt,
+        guard let report = try report(for: attempt.execution, unitID: attempt.unitID, expecting: lease), report.latestAttempt == attempt,
               let run = try coordinator.host(lease.ownership.hostID).session.execution,
-              case .committed(let identity, _) = run.units.first?.preferenceGroupCommit else { throw FileLocalSettingCommandIssue.notRetryable }
+              case .committed(let identity, _) = run.units.first(where: { $0.id == attempt.unitID })?.preferenceGroupCommit else {
+            throw FileLocalSettingCommandIssue.notRetryable
+        }
         try coordinator.send(.retry(attempt, .idempotentExternal([.preferencePresentation])), expecting: lease)
         var host = try coordinator.host(lease.ownership.hostID)
         let effect = try coordinator.send(.beginStep(run.stamp), expecting: host.lease)
@@ -287,6 +293,59 @@ final class FileLocalSettingCommandAdapter {
         try coordinator.validatePreferenceGroup(invocation)
         preferences.retryLocalPreferencePresentation(for: identity.commitID)
         return try finish(invocation, execution: attempt.execution)
+    }
+
+    var multiBackendNeedsRecovery: Bool { preferences.localPreferenceBackend != .ready }
+
+    func recoverMultiBackend(_ attempt: CommandAttemptStamp, expecting lease: CommandHostLease) throws {
+        try enter()
+        defer { isOperating = false }
+        try coordinator.validate(lease)
+        guard let run = try coordinator.host(lease.ownership.hostID).session.execution, run.multiPlan != nil,
+              !run.hasUnknownCommit, run.attempt(attempt.unitID) == attempt,
+              let unit = run.units.first(where: { $0.id == attempt.unitID }), unit.local == .notSubmitted,
+              unit.preferenceGroupCommit != nil else { throw FileLocalSettingCommandIssue.notRetryable }
+        try coordinator.withMultiPlanPreparation(expecting: lease) {
+            _ = preferences.verifyAndReloadLocalPreferences()
+        }
+    }
+
+    func canRetryMultiPresentation(_ attempt: CommandAttemptStamp, expecting lease: CommandHostLease) -> Bool {
+        guard !isOperating, let run = try? coordinator.host(lease.ownership.hostID).session.execution,
+              run.retryAssessment(attempt, assurance: .idempotentExternal([.preferencePresentation])) == .external([.preferencePresentation])
+        else { return false }
+        return (try? report(for: attempt.execution, unitID: attempt.unitID, expecting: lease)) != nil
+    }
+
+    func prepareMulti(_ items: [CommandPlanItem], lease: CommandHostLease,
+                      plan: CommandPlanStamp) throws -> FileMultiPlanPreview {
+        try enter()
+        defer { isOperating = false }
+        let values = try FileLocalSettingCommandMapping.values(items, allowingDependencies: true)
+        let record = try readReady()
+        let unitID = items[0].atomicGroup ?? items[0].id
+        if let old = multiPreviews[unitID], old.lease == lease, old.plan == plan,
+           old.members == items.map(\.stamp), old.values == values, old.record == record { return old }
+        let result = FileMultiPlanPreview(id: UUID(), lease: lease, plan: plan, members: items.map(\.stamp),
+                                         unitID: unitID, values: values, record: record)
+        multiPreviews[unitID] = result
+        return result
+    }
+
+    private func validateMulti(_ preview: FileMultiPlanPreview, request: FileLocalSettingCommandRequest,
+                               items: [CommandPlanItem]) throws -> LocalPreferenceRecord {
+        guard multiPreviews[preview.unitID] == preview, preview.plan == request.identity.execution.plan,
+              preview.unitID == request.identity.unitID, preview.members == request.identity.members,
+              preview.lease.ownership == request.lease.ownership,
+              let authorization = coordinator.multiPlans.authorizations[request.attempt],
+              authorization.acceptanceID == preview.id, authorization.previewLease == preview.lease else {
+            throw FileLocalSettingCommandIssue.stale
+        }
+        let values = try FileLocalSettingCommandMapping.values(items, allowingDependencies: true)
+        guard values == preview.values else { throw FileLocalSettingCommandIssue.stale }
+        let conflicts = FileLocalSettingCommandMapping.conflicts(preview.record, current: try readReady(), fields: values.map(\.field))
+        guard conflicts.isEmpty else { throw FileLocalSettingCommandIssue.conflict(conflicts) }
+        return preview.record
     }
 
     private func enter() throws {
@@ -316,14 +375,18 @@ final class FileLocalSettingCommandAdapter {
     private func executingItems(_ request: FileLocalSettingCommandRequest) throws -> [CommandPlanItem] {
         try coordinator.validate(request.lease)
         let session = try coordinator.host(request.lease.ownership.hostID).session
-        guard let run = session.execution, run.preferenceGroupIdentity() == request.identity,
+        guard let run = session.execution, run.preferenceGroupIdentity(unitID: request.identity.unitID) == request.identity,
               run.attempt(request.attempt.unitID) == request.attempt, request.attempt.phase == .local,
-              run.units.first?.state == .running, run.units.first?.local == .notSubmitted,
-              session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil,
-              run.outputs.isEmpty, run.snapshot.items.allSatisfy({
-                  run.resolvedInput($0.id)?.arguments == $0.draft.arguments && run.resolvedInput($0.id)?.targets == CommandDraftTargets.none
-              }) else { throw FileLocalSettingCommandIssue.stale }
-        return run.snapshot.items
+              let unit = run.units.first(where: { $0.id == request.identity.unitID }), unit.state == .running,
+              unit.local == .notSubmitted, !run.hasUnknownCommit,
+              session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil else {
+            throw FileLocalSettingCommandIssue.stale
+        }
+        let items = run.snapshot.items.filter { unit.members.contains($0.id) }
+        guard items.allSatisfy({ run.outputs[$0.id] == nil
+            && run.resolvedInput($0.id)?.arguments == $0.draft.arguments
+            && run.resolvedInput($0.id)?.targets == CommandDraftTargets.none }) else { throw FileLocalSettingCommandIssue.stale }
+        return items
     }
 
     private func signedRecord(_ draft: CommandDraft) throws -> LocalPreferenceRecord {

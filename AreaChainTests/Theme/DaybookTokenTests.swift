@@ -49,7 +49,7 @@ struct DaybookTokenTests {
         #expect(WorkspaceLayout.headerHeight == 50)
         #expect(WorkspaceLayout.maxContentWidth == 880)
         #expect(WorkspaceLayout.sidebarRowHeight == 28)
-        #expect(WorkspaceLayout.sidebarTopInset == 28)
+        #expect(WorkspaceLayout.sidebarTopInset == 50)
     }
 
     @Test func diaryPresetColorsFollowTagNames() {

@@ -42,7 +42,7 @@ struct UnifiedSearchOperationPreview: View {
 
     private var operationContent: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            if controller.fileSettings != nil, controller.settingExecution == nil,
+            if !controller.showsMultiPlan, controller.fileSettings != nil, controller.settingExecution == nil,
                controller.plan?.items.isEmpty == false {
                 Text(LocalizedStringKey(controller.fileSettingIssue ?? "unified.group.ready"))
                     .font(DaybookType.caption).padding(.horizontal, DaybookSpacing.md)
@@ -75,6 +75,7 @@ struct UnifiedSearchOperationPreview: View {
                         validation(draft)
                     }
                 } else if let command = controller.browsedCommand, controller.editingPlanItem == nil,
+                          !(controller.showsMultiPlan && controller.settingExecution != nil),
                           !((controller.showsBatch || controller.showsTaskTitle || controller.showsTaskField
                             || controller.showsSubtask || controller.showsRoutine)
                             && controller.settingExecution != nil) {

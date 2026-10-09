@@ -14,11 +14,17 @@ import SwiftData
 
     func prepare(in host: CommandOwnedHost) throws -> CommandTaskFieldPreview {
         let item = try CommandTaskFieldPreview.input(in: host)
-        let observation = try read(item, catalog: catalogReader.prepare())
-        return .init(lease: host.lease, plan: host.session.plan.stamp, item: item.stamp, draft: item.draft.stamp,
+        return try prepare(item: item, lease: host.lease, plan: host.session.plan.stamp, catalog: catalogReader.prepare())
+    }
+
+    func prepare(item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
+                 catalog: CommandTaskTagCatalog, consumption: CommandCreationConsumption? = nil) throws -> CommandTaskFieldPreview {
+        let observation = try read(item, catalog: catalog, consumption: consumption)
+        return .init(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
                      arguments: item.draft.arguments, target: observation.target, original: observation.original,
                      edit: observation.edit, source: observation.source, catalog: observation.catalog,
-                     tagIDs: observation.todo.tagIDs, completion: observation.completion, tags: observation.tags)
+                     tagIDs: observation.todo.tagIDs, completion: observation.completion, tags: observation.tags,
+                     targetTitle: observation.todo.title, consumption: consumption)
     }
 
     func owns(_ source: CommandTaskTitleSource) -> Bool {
@@ -55,7 +61,7 @@ import SwiftData
     func validate(_ preview: CommandTaskFieldPreview, item: CommandPlanItem) throws -> Observation {
         guard preview.semanticsVersion == 2, item.stamp == preview.item, item.draft.stamp == preview.draft,
               item.draft.arguments == preview.arguments else { throw TaskFieldCommandIssue.stale }
-        let observation = try read(item, catalog: catalogReader.current())
+        let observation = try read(item, catalog: catalogReader.current(), consumption: preview.consumption)
         guard observation.target == preview.target, observation.edit == preview.edit,
               observation.source == preview.source, observation.catalog == preview.catalog,
               observation.todo.tagIDs == preview.tagIDs else { throw TaskFieldCommandIssue.stale }
@@ -64,9 +70,11 @@ import SwiftData
         return observation
     }
 
-    private func read(_ item: CommandPlanItem, catalog: CommandTaskTagCatalog) throws -> Observation {
-        try CommandTaskFieldPreview.validate(item)
-        let target = item.draft.targets.objects[0]
+    private func read(_ item: CommandPlanItem, catalog: CommandTaskTagCatalog,
+                      consumption: CommandCreationConsumption?) throws -> Observation {
+        let resolved = try consumption?.input(item)
+        try CommandTaskFieldPreview.validate(item, allowingDependencies: true, resolved: resolved)
+        let target = (resolved?.targets ?? item.draft.targets).objects[0]
         let source = try source(target: target.id)
         guard source.protection == .ordinary else { throw CommandTaskTitlePreviewIssue.protectedContent }
         guard source.notes == .absent else { throw TaskTitleCommandIssue.notesNotSupported }
@@ -76,6 +84,8 @@ import SwiftData
         guard !rows.isEmpty else { throw CommandTaskTitlePreviewIssue.missingTarget }
         guard rows.count == 1 else { throw CommandTaskTitlePreviewIssue.duplicateTarget }
         let todo = rows[0]
+        try consumption?.output.validate(context: ObjectIdentifier(environment.context),
+                                         storage: ObjectIdentifier(environment.context.container), record: todo.persistentModelID)
         guard todo.modelContext === environment.context, todo.deletedAt == nil else { throw CommandTaskTitlePreviewIssue.deletedTarget }
         // 空标题只检查既有关联的 D3 资格，不解析任务标题或产生标签效果。
         _ = try CommandTaskTitleTags.merge(rawIDs: todo.tagIDs, title: "", catalog: catalog)

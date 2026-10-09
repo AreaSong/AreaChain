@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum TaskCreateCommandIssue: Error, Equatable {
     case unassembled, invalidInput, unsupportedPlan, protectedContent, sourceChanged, sourceUnavailable, storageUnavailable
@@ -72,9 +73,9 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
     var arguments: [CommandArgument] { input?.arguments ?? preview!.arguments }
 
     fileprivate init(item: CommandPlanItem, plan: CommandPlanStamp, lease: CommandHostLease,
-                     evidence: CommandTaskCreateEvidence) {
+                     evidence: CommandTaskCreateEvidence, preserving old: Self? = nil) {
         id = UUID()
-        creationID = UUID()
+        creationID = old?.creationID ?? UUID()
         self.lease = lease
         self.plan = plan
         self.item = item.stamp
@@ -88,7 +89,7 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
         chain = evidence.chain
         tagCreationIDs = Dictionary(uniqueKeysWithValues: (preview?.composition.tags.final ?? []).compactMap {
             guard case .newName(_, let key) = $0.target else { return nil }
-            return (key, UUID())
+            return (key, old?.tagCreationIDs[key] ?? UUID())
         })
     }
 
@@ -96,7 +97,7 @@ struct CommandTaskCreatePreparation: Equatable, CustomStringConvertible, CustomD
     var debugDescription: String { description }
 }
 
-struct CommandTaskCreateEvidence {
+struct CommandTaskCreateEvidence: Equatable {
     let environmentID: UUID
     let contextID: ObjectIdentifier
     let storageID: ObjectIdentifier
@@ -113,6 +114,7 @@ struct CommandTaskCreateFacts: Equatable {
     let creationID: UUID
     var candidateID: UUID?
     var savedID: UUID?
+    var savedRecord: PersistentIdentifier?
     var state: State = .pending
     var save: Call = .notCalled
     var rollback: Call = .notCalled
@@ -149,6 +151,25 @@ enum CommandTaskCreateVerification: Equatable {
 
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
+
+    /// 多项整计划接受可更新尚未调用的准备，保留同一草稿的预留身份；旧单项 reserve 仍严格相等。
+    func reserveMulti(item: CommandPlanItem, plan: CommandPlanStamp, lease: CommandHostLease,
+                      evidence: CommandTaskCreateEvidence, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandTaskCreatePreparation {
+        guard let old = preparations[item.draft.id] else {
+            return try reserve(item: item, plan: plan, lease: lease, evidence: evidence)
+        }
+        guard !wasInvoked(old.id) || retry?.matches(item: item.stamp, acceptance: old.id) == true,
+              old.environmentID == evidence.environmentID, old.contextID == evidence.contextID,
+              old.storageID == evidence.storageID, (evidence.input != nil) != (evidence.preview != nil) else {
+            throw TaskCreateCommandIssue.stale
+        }
+        if !wasInvoked(old.id), old.lease == lease, old.plan == plan, old.item == item.stamp,
+           old.draft == item.draft.stamp, old.source == evidence.source, old.input == evidence.input,
+           old.preview == evidence.preview { return old }
+        let prepared = CommandTaskCreatePreparation(item: item, plan: plan, lease: lease, evidence: evidence, preserving: old)
+        preparations[item.draft.id] = prepared
+        return prepared
+    }
 
     func reserve(item: CommandPlanItem, plan: CommandPlanStamp, lease: CommandHostLease,
                  evidence: CommandTaskCreateEvidence) throws -> CommandTaskCreatePreparation {

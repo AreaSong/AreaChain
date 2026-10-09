@@ -152,6 +152,7 @@ extension RoutineCommandAdapter {
         facts.publication = creationCall(result.transaction?.publication)
         facts.publicationFailed = result.transaction?.publicationFailed == true
         facts.registrationFailed = result.registrationFailed
+        facts.savedRecord = result.savedRecord
         facts.savedRoutine = result.savedRoutine
         facts.savedTagEffects = result.savedTagEffects
         facts.authorizationRequest = creationCall(result.reminderRequest)

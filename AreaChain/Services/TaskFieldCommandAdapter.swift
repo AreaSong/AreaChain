@@ -179,9 +179,10 @@ import SwiftData
         let environment = try assembled()
         try coordinator.validate(lease)
         guard let run = try coordinator.host(lease.ownership.hostID).session.execution,
-              run.operation(operation.operationID) == operation, run.snapshot.items.count == 1,
-              let facts = run.units.first?.taskField, facts.state == .unknown,
-              let accepted = coordinator.taskFields.acceptances[run.snapshot.items[0].draft.id],
+              run.operation(operation.operationID) == operation,
+              let item = run.snapshot.items.first(where: { $0.id == operation.operationID }),
+              let facts = run.units.first(where: { $0.members.contains(operation.operationID) })?.taskField, facts.state == .unknown,
+              let accepted = coordinator.taskFields.acceptances[item.draft.id],
               environment.fieldReader.owns(accepted.preview.source),
               coordinator.taskFields.wasInvoked(accepted.id) else { throw TaskFieldCommandIssue.stale }
         let reader = ModelContext(environment.context.container)

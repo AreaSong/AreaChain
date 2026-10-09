@@ -5,6 +5,8 @@ import AppKit
 /// 三栏工作台：侧栏、详情页与检查器抽屉。
 struct MainSplitWorkspaceView: View {
     @Bindable private var navigation = WorkspaceNavigation.shared
+    @State private var inspectorWidth = WorkspaceLayout.inspectorIdealWidth
+    @State private var inspectorFocus = WorkspaceInspectorFocus()
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var todos: [TodoItem]
@@ -22,8 +24,23 @@ struct MainSplitWorkspaceView: View {
             set: { navigation.isInspectorPresented = $0 }
         )) {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
-                .inspectorColumnWidth(min: 280, ideal: 320, max: 400)
+                .environment(\.workspaceInspectorFocus, inspectorFocus)
+                .inspectorColumnWidth(min: WorkspaceLayout.inspectorMinWidth,
+                                      ideal: WorkspaceLayout.inspectorIdealWidth,
+                                      max: WorkspaceLayout.inspectorMaxWidth)
+                .background(WorkspaceInspectorFocusMarker(owner: inspectorFocus))
+                .background {
+                    GeometryReader { geometry in
+                        Color.clear.preference(key: WorkspaceColumnWidthsKey.self,
+                                               value: .init(inspector: geometry.size.width))
+                    }
+                }
         }
+        .onPreferenceChange(WorkspaceColumnWidthsKey.self, perform: updateInspectorSpace)
+        .onChange(of: navigation.isInspectorPresented) { _, presented in
+            if presented { inspectorFocus.beginPresentation() }
+        }
+        .onDisappear { navigation.updateInspectorSpace(available: true) }
         .onChange(of: tags.filter { $0.deletedAt == nil }.map(\.id)) { _, ids in
             if let tagID = navigation.selectedTagID, !ids.contains(tagID) { navigation.selectedTagID = nil }
         }
@@ -52,11 +69,18 @@ struct MainSplitWorkspaceView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .environment(\.daybookScrollTopEdge, true)
             .padding(.top, WorkspaceHeaderGeometry(width: geometry.size.width).height)
             .overlayPreferenceValue(WorkspaceHeaderContentKey.self, alignment: .top) { content in
                 WorkspaceHeaderBar(navigation: navigation, tags: tags,
                                    content: navigation.isSearching ? WorkspaceHeaderContent() : content)
                     .frame(height: WorkspaceHeaderGeometry(width: geometry.size.width).height)
+            }
+        }
+        .background {
+            GeometryReader { geometry in
+                Color.clear.preference(key: WorkspaceColumnWidthsKey.self,
+                                       value: .init(main: geometry.size.width))
             }
         }
         .toolbarBackground(.hidden, for: .windowToolbar)
@@ -78,6 +102,23 @@ struct MainSplitWorkspaceView: View {
         .onKeyPress(.escape) {
             handleEscapeKey()
         }
+    }
+
+    private func updateInspectorSpace(_ widths: WorkspaceColumnWidths) {
+        guard let main = widths.main, main > 0 else { return }
+        let visible = navigation.isInspectorPresented && navigation.canInspectSelectedTask
+        if let measured = widths.inspector, visible, measured >= WorkspaceLayout.inspectorMinWidth {
+            inspectorWidth = measured
+        }
+        // 收起后按原详情实际宽度预算，额外恢复余量避免阈值附近反复开关。
+        let required = WorkspaceLayout.inspectorMainMinWidth
+            + (visible ? 0 : inspectorWidth + WorkspaceLayout.inspectorReopenMargin)
+        let available = main >= required
+        if visible && !available && inspectorFocus.releaseFocus() {
+            // nil responder 会被系统布局恢复到隐藏字段；将实际详情焦点交给始终可见的原搜索入口。
+            navigation.focusSearch()
+        }
+        navigation.updateInspectorSpace(available: available)
     }
 
     private func handleEscapeKey() -> KeyPress.Result {

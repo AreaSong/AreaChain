@@ -187,7 +187,20 @@ final class WorkspaceNavigation {
     var inspectedReference: BoardItemReference?
     var selectedTaskIDs: Set<UUID> = []
     private(set) var selectionAnchorID: UUID?
-    var isInspectorPresented: Bool = false
+    private var inspectorPresented = false
+    private(set) var isInspectorSpaceAvailable = true
+    var isInspectorPresented: Bool {
+        get { inspectorPresented }
+        set { inspectorPresented = newValue && isInspectorSpaceAvailable }
+    }
+
+    var canPresentInspector: Bool { canInspectSelectedTask && isInspectorSpaceAvailable }
+
+    /// 空间只约束呈现；选择、检查日和草稿仍归原所有者，恢复空间不会自动重开。
+    func updateInspectorSpace(available: Bool) {
+        isInspectorSpaceAvailable = available
+        if !available { closeInspector() }
+    }
     private(set) var inspectorTargetIDs: Set<UUID> = []
 
     var contentIdentity: String {

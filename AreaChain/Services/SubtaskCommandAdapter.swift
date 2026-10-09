@@ -162,6 +162,7 @@ import SwiftData
         facts.publication = call(modification.transaction?.publication)
         facts.publicationFailed = modification.transaction?.publicationFailed == true
         facts.registrationFailed = modification.registrationFailed
+        facts.savedRecord = modification.savedRecord
         facts.savedTagEffects = modification.savedTagEffects
         facts.savedTagIDs = modification.savedTagIDs
         facts.savedTitle = modification.savedTitle

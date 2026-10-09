@@ -48,8 +48,8 @@ struct CommandRoutineCreatePreview: Equatable, CustomStringConvertible, CustomDe
     var description: String { "CommandRoutineCreatePreview(redacted)" }
     var debugDescription: String { description }
 
-    static func validate(_ item: CommandPlanItem) throws {
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+    static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false) throws {
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty else { throw RoutineCreateIssue.invalidInput }
         _ = try input(item.draft)
     }
@@ -81,12 +81,12 @@ struct CommandRoutineCreatePreview: Equatable, CustomStringConvertible, CustomDe
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {
-        guard lease.ownership == self.lease.ownership, lease.revision == self.lease.revision + 2,
-              run.snapshot.stamp == plan, run.snapshot.items.count == 1, run.outputs.isEmpty,
-              let item = run.snapshot.items.first, item.stamp == self.item, item.draft.stamp == draft,
+        guard run.previewLeaseMatches(self.lease, current: lease, itemID: self.item.id),
+              run.snapshot.stamp == plan, run.permitsMember(self.item.id),
+              let item = run.snapshot.items.first(where: { $0.id == self.item.id }), item.stamp == self.item, item.draft.stamp == draft,
               item.draft.arguments == arguments,
               run.resolvedInput(item.id) == .init(arguments: arguments, targets: .none) else { throw RoutineCreateIssue.stale }
-        try Self.validate(item)
+        try Self.validate(item, allowingDependencies: run.multiPlan != nil)
         return item
     }
 }
@@ -112,12 +112,12 @@ struct CommandRoutineCreateAcceptance: Equatable, CustomStringConvertible, Custo
 
 extension CommandTaskCreateRegistry {
     /// 同一创建登记拥有新定义及标签身份；重新接受过期预览保留身份，已调用永远不重新分配。
-    func acceptRoutineCreation(_ preview: CommandRoutineCreatePreview) throws -> CommandRoutineCreateAcceptance {
+    func acceptRoutineCreation(_ preview: CommandRoutineCreatePreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandRoutineCreateAcceptance {
         guard preview.canAccept else { throw RoutineCreateIssue.invalidInput }
         let old = routinePreparations[preview.draft.draftID]
         if let old {
-            guard !wasInvoked(old.id) else { throw RoutineCreateIssue.stale }
-            if old.preview == preview { return old }
+            guard !wasInvoked(old.id) || retry?.matches(item: preview.item, acceptance: old.id) == true else { throw RoutineCreateIssue.stale }
+            if old.preview == preview && !wasInvoked(old.id) { return old }
         }
         let accepted = CommandRoutineCreateAcceptance(preview, preserving: old)
         routinePreparations[preview.draft.draftID] = accepted

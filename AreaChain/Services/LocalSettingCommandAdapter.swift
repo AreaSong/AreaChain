@@ -8,7 +8,8 @@ final class LocalSettingCommandAdapter {
     private var isOperating = false
     private var issuedBaselines: [UUID: CommandPreferenceBaseline] = [:]
     private var reports: [CommandAttemptStamp: LocalSettingCommandReport] = [:]
-    private var writes: [CommandExecutionStamp: LocalPreferenceWriteResult] = [:]
+    private var writes: [CommandOperationIdentity: LocalPreferenceWriteResult] = [:]
+    private var multiPreviews: [UUID: LocalMultiPlanPreview] = [:]
     private var confirmations: [UUID: LocalSettingConflictConfirmation] = [:]
 
     init(coordinator: CommandHandoffCoordinator, preferences: AppPreferences? = nil) {
@@ -89,17 +90,24 @@ final class LocalSettingCommandAdapter {
         return try execute(.init(lease: host.lease, operation: operation, attempt: attempt), displaySession: displaySession)
     }
 
-    func execute(_ request: LocalSettingCommandRequest,
+    func execute(_ request: LocalSettingCommandRequest, multi: LocalMultiPlanPreview? = nil,
                  displaySession: ContentQueryReadSession? = nil) throws -> LocalSettingCommandReport {
         guard !isOperating else { throw LocalSettingCommandIssue.busy }
         isOperating = true
         defer { isOperating = false }
         let preferences = try assembledPreferences()
         let item = try executingItem(request)
-        let value = try validateItem(item)
-        let invocation = try coordinator.claimPreferenceInvocation(request.operation, attempt: request.attempt, expecting: request.lease)
+        let value = try validateItem(item, allowingDependencies: multi != nil)
+        let invocation: CommandRuntimeInvocation
+        if let multi {
+            try validateMulti(multi, request: request, item: item)
+            invocation = try coordinator.claimMemberInvocation(request.operation, attempt: request.attempt,
+                expecting: request.lease, acceptanceID: multi.evidence.captureID, previewLease: multi.lease)
+        } else {
+            invocation = try coordinator.claimPreferenceInvocation(request.operation, attempt: request.attempt, expecting: request.lease)
+        }
         let evidence: CommandPreferenceBaseline
-        do { evidence = try baseline(for: item.draft) } catch let issue as LocalSettingCommandIssue {
+        do { evidence = try multi?.evidence ?? baseline(for: item.draft) } catch let issue as LocalSettingCommandIssue {
             return try finishRejection(issue, request: request, invocation: invocation, item: item)
         }
         let current = preferences.readLocalSetting(value.field)
@@ -128,25 +136,52 @@ final class LocalSettingCommandAdapter {
         guard let run = session.execution, run.stamp == request.attempt.execution,
               run.operation(request.operation.operationID) == request.operation,
               run.attempt(request.attempt.unitID) == request.attempt else { throw LocalSettingCommandIssue.stale }
-        guard run.snapshot.items.count == 1, run.units.count == 1, session.plan.items.isEmpty,
+        guard run.permitsMember(request.operation.operationID), session.plan.items.isEmpty,
               session.operations.active == nil, session.operations.pending == nil else {
             throw LocalSettingCommandIssue.multipleOperations
         }
-        guard request.attempt.phase == .local, run.units[0].state == .running,
-              run.units[0].local == .notSubmitted, run.outputs.isEmpty,
-              run.resolvedInput(request.operation.operationID)?.arguments == run.snapshot.items[0].draft.arguments,
-              run.resolvedInput(request.operation.operationID)?.targets == CommandDraftTargets.none else {
-            throw LocalSettingCommandIssue.stale
-        }
-        return run.snapshot.items[0]
+        guard request.attempt.phase == .local, !run.hasUnknownCommit,
+              let unit = run.units.first(where: { $0.id == request.attempt.unitID }), unit.state == .running,
+              unit.local == .notSubmitted, let item = run.snapshot.items.first(where: { $0.id == request.operation.operationID }),
+              run.outputs[item.id] == nil, run.resolvedInput(item.id)?.arguments == item.draft.arguments,
+              run.resolvedInput(item.id)?.targets == CommandDraftTargets.none else { throw LocalSettingCommandIssue.stale }
+        return item
     }
 
-    private func validateItem(_ item: CommandPlanItem) throws -> LocalPreferenceValue {
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+    private func validateItem(_ item: CommandPlanItem, allowingDependencies: Bool = false) throws -> LocalPreferenceValue {
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, item.links.results.isEmpty,
               CommandCatalog.standard.command(id: item.draft.commandID)?.createdObjectType == nil else {
             throw LocalSettingCommandIssue.unsupportedLinks
         }
         return try LocalSettingCommandMapping.value(for: item.draft)
+    }
+
+    func prepareMulti(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp) throws -> LocalMultiPlanPreview {
+        guard !isOperating else { throw LocalSettingCommandIssue.busy }
+        isOperating = true
+        defer { isOperating = false }
+        let value = try validateItem(item, allowingDependencies: true)
+        let current = try assembledPreferences().readLocalSetting(value.field)
+        guard current.storedValue == current.value else { throw LocalSettingCommandIssue.unreliableOriginal(current) }
+        if let old = multiPreviews[item.id], old.lease == lease, old.plan == plan,
+           old.item == item.stamp, old.draft == item.draft.stamp, old.value == value, old.current == current { return old }
+        let evidence = CommandPreferenceBaseline(captureID: UUID(), draftID: item.draft.id, capturedVersion: item.draft.version,
+            commandID: item.draft.commandID, instanceID: current.source.instanceID, storageID: current.source.storageID,
+            revision: current.revision, raw: LocalSettingCommandMapping.raw(current.raw),
+            memory: LocalSettingCommandMapping.commandValue(current.value),
+            stored: current.storedValue.map(LocalSettingCommandMapping.commandValue))
+        let result = LocalMultiPlanPreview(lease: lease, plan: plan, item: item.stamp, draft: item.draft.stamp,
+                                          value: value, current: current, evidence: evidence)
+        multiPreviews[item.id] = result
+        return result
+    }
+
+    private func validateMulti(_ preview: LocalMultiPlanPreview, request: LocalSettingCommandRequest,
+                               item: CommandPlanItem) throws {
+        guard multiPreviews[item.id] == preview, preview.plan == request.operation.execution.plan,
+              preview.item == item.stamp, preview.draft == item.draft.stamp,
+              preview.lease.ownership == request.lease.ownership,
+              try LocalSettingCommandMapping.value(for: item.draft) == preview.value else { throw LocalSettingCommandIssue.stale }
     }
 
     private func baseline(for draft: CommandDraft) throws -> CommandPreferenceBaseline {
@@ -195,7 +230,8 @@ final class LocalSettingCommandAdapter {
                          invocation: CommandRuntimeInvocation, item: CommandPlanItem) throws -> LocalSettingCommandReport {
         if case .conflict(let conflict) = issue {
             let diagnostic = CommandFieldConflict(item: item.stamp,
-                field: .init(subject: .ambient, parameter: item.draft.arguments[0].parameter), reason: .valueChanged)
+                field: .init(subject: .ambient, parameter: item.draft.arguments[0].parameter),
+                reason: item.draft.baseline.values.isEmpty ? .baselineUnavailable : .valueChanged)
             return try finish(.conflict([diagnostic]), outcome: .conflict(conflict), request: request, invocation: invocation)
         }
         return try finish(.failedWithoutCommit, outcome: .rejected(issue), request: request, invocation: invocation)
@@ -204,7 +240,7 @@ final class LocalSettingCommandAdapter {
     private func finishWrite(_ result: LocalPreferenceWriteResult, request: LocalSettingCommandRequest,
                      invocation: CommandRuntimeInvocation, item: CommandPlanItem,
                      evidence: CommandPreferenceBaseline) throws -> LocalSettingCommandReport {
-        writes[request.attempt.execution] = result
+        writes[request.operation] = result
         if result.rejection == .snapshotChanged, let current = result.before {
             return try finishRejection(.conflict(.init(baseline: evidence, current: current)),
                 request: request, invocation: invocation, item: item)
@@ -358,7 +394,8 @@ extension LocalSettingCommandAdapter {
         guard session.plan.items.isEmpty, session.operations.active == nil, session.operations.pending == nil else {
             throw LocalSettingCommandIssue.multipleOperations
         }
-        guard let previous = writes[attempt.execution], previous.write == .returned,
+        guard let operation = session.execution?.operation(attempt.unitID),
+              let previous = writes[operation], previous.write == .returned,
               previous.readback == .matches, previous.appearance == .threw || previous.event == .threw,
               let run = session.execution, run.stamp == attempt.execution,
               try report(for: attempt, expecting: lease) != nil else { throw LocalSettingCommandIssue.notRetryable }
@@ -384,7 +421,16 @@ extension LocalSettingCommandAdapter {
         guard case .attempt(let nextAttempt) = effect else { throw LocalSettingCommandIssue.stale }
         host = try coordinator.host(lease.ownership.hostID)
         let request = LocalSettingCommandRequest(lease: host.lease, operation: operation, attempt: nextAttempt)
-        let invocation = try coordinator.claimPreferenceInvocation(operation, attempt: nextAttempt, expecting: host.lease)
+        let invocation: CommandRuntimeInvocation
+        if let assemblyID = coordinator.multiPlans.assemblies[run.stamp] {
+            let acceptanceID = UUID()
+            try coordinator.authorizeMultiPlanMember(.init(assemblyID: assemblyID, attempt: nextAttempt, lease: host.lease,
+                previewLease: host.lease, acceptanceID: acceptanceID, itemID: operation.operationID))
+            invocation = try coordinator.claimMemberInvocation(operation, attempt: nextAttempt, expecting: host.lease,
+                                                               acceptanceID: acceptanceID, previewLease: host.lease)
+        } else {
+            invocation = try coordinator.claimPreferenceInvocation(operation, attempt: nextAttempt, expecting: host.lease)
+        }
         let presentation: CommandPreferencePresentation
         do {
             presentation = try preferences.retryLocalSettingPresentation(previous) {
@@ -399,7 +445,7 @@ extension LocalSettingCommandAdapter {
             var updated = previous
             updated.appearance = appearance
             updated.event = event
-            writes[attempt.execution] = updated
+            writes[operation] = updated
         }
         return try finish(.preferencePresentation(presentation), outcome: .presentation(presentation),
             request: request, invocation: invocation)

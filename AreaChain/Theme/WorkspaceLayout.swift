@@ -4,13 +4,19 @@ import SwiftUI
 /// 只允许 MainSplitWorkspaceView.swift、WorkspaceSidebarView.swift、WorkspaceHeaderBar.swift、DaybookPage.swift 与本文件引用。
 enum WorkspaceLayout {
     static let headerHeight: CGFloat = 50
-    static let headerStackedHeight: CGFloat = 82
-    static let headerSingleRowWidth: CGFloat = 720
+    static let searchMinWidth: CGFloat = 160
+    static let searchMaxWidth: CGFloat = 300
+    static let searchWidthRatio: CGFloat = 0.34
+    static let inspectorMainMinWidth: CGFloat = 480
+    static let inspectorMinWidth: CGFloat = 280
+    static let inspectorIdealWidth: CGFloat = 320
+    static let inspectorMaxWidth: CGFloat = 400
+    static let inspectorReopenMargin: CGFloat = 16
     static let maxContentWidth: CGFloat = 880
     static let sidebarRowHeight: CGFloat = 28
     static let sidebarRowVerticalPadding: CGFloat = 4.5
     static let sidebarRowHorizontalPadding: CGFloat = 8
-    static let sidebarTopInset: CGFloat = 28
+    static let sidebarTopInset = headerHeight
 }
 
 /// 只表示"当前视图嵌在三栏工作台里"。仅用于能力 / 布局分支：是否显示页内筛选条、独立窗口最小尺寸、页头最小高度、行数、气泡宿主宽度。

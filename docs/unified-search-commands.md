@@ -6762,3 +6762,181 @@ NativeFinal和NormalDebugFinal申请前／锁后／运行后的1355文件全集�
 指定Cursor verifier当前无可调用能力，未认证、未执行、未用探索代理替代，整体保持partial。材料是用户B-M2原需求、本节已批准契约、实际差异、完整源码／选择器／事务／模型／未知／截图／签名证据；重点复核复合日期身份、物理写集计数、统一最终核验和不可拆分unknown。C2B、真人IME／VoiceOver、最低macOS及真实多窗口等历史缺口仍独立，未用本批自动证据关闭。
 
 多项计划／新输出依赖／跨重启恢复的实际前置仍是独立定义依赖、事务边界、稳定持久身份与共同提交恢复证明；不能删全局单项守卫或循环重放本批成员来获得这些能力。生产装配、真实数据／系统服务、批量跳过／删除、自动分批、notes／敏感执行及执行后撤销均未开放。
+
+### 9.81 里程碑 P-M1：普通多项计划、顺序提交与运行内恢复
+
+2026-10-09（Asia/Shanghai）。用户批准 A～E 连续实施。本节承接 T-M1、T-M2、T-M3、R-M1～R-M3、普通文件设置共同提交及 B-M1／B-M2；这些章节的“多项未开放”保留为当时范围。P-M1 只为显式隔离装配开放下列普通能力，不启用生产搜索、真实用户库或系统服务。
+
+#### 已批准的执行与 unknown 规则
+
+- 默认按原列表顺序执行，依赖显式。普通命令一个单元，固定集合批量一个单元，明确分组的文件设置一个共同提交单元；create→title 是两个单元。计划本身不是跨 SwiftData／偏好存储的事务，后项失败不回滚此前成功单元。
+- 确定未提交失败或冲突保留原尝试；依赖项阻塞，独立项可继续。成功项不重新进入 ready。设置组和批量操作仍在自己的原事务边界内共同保存或回滚。
+- **任一本地提交 local=unknown 暂停整份计划。** 新的本地／外部尝试、普通重试和再次提交均被阻止，独立项也不能继续；收起、失焦、锁定和重复点击不解除暂停。当前对象存在或字段符合预期只证明当前状态，不能据此改变历史提交结论。
+- local=committed 而外部失败／未知保留本地成功，依赖仍按原必要效果的成功条件判断。只重试已有安全能力的普通偏好展示记录，不重新调用本地保存来触发通知或日历。
+- 文件设置 unknown 只复用原 FileStore／AppPreferences 的精确 pending／commit 身份核验。原未知回执保留，核验结果另行登记；不能可靠证明时继续暂停。没有新磁盘日志、跨重启队列或通用补偿。
+
+#### 真实装配、单元与接受
+
+`MultiPlanCommandAdapter` 显式组合原创建／标题／字段／子任务／习惯／批量适配器和互斥的普通设置后端。`family(for:)` 按实际适配实例、协调者和能力装配逐项建立清单；目录存在、参数完整或纯协议 ready 不授予执行资格。开始前统一检查整图、顺序、参数、组、输出形状及每项真实来源／目标／影响，未装配或未完成成员阻断整份提交。
+
+| 范围 | 本批执行入口 |
+|---|---|
+| 任务 | 已装配 todo.create（最小／普通扩展）、todo.title、move／priority／reminder，以及 milestone2 的 completion／tags／createTag／due |
+| 子任务 | subtask.create／title／completion／tags；父子身份和排序、D3、无备注来源仍由原 Reader 核验 |
+| 习惯 | routine.create、title／weekdays／reminder／priority／tags；显式 StateOperations 的 enabled 和 occurrence.complete／skip／reopen |
+| 批量 | batch.move／tags，以及显式状态装配的 completion／enabled；固定类型化目标集合完整保留 |
+| 普通设置 | language／appearance／truncation／captureSource；旧后端单项分别提交，文件后端可明确形成连续的 2～4 个不同字段组 |
+
+B-M2 的4000实体限制仍只作用于每个批量状态单元，不变成整计划总上限，不自动拆分超量集合。普通无备注、D3、民事日期／排程、固定目标及干净 context 限制保持。合并继续由原 CommandPlanSemantics 的窄字段白名单和真实基线决定，不自动按同名参数合并，也不为没有真实基线的计划制造合并证据。
+
+唯一可执行参数留在原 `CommandPlan → CommandPlanSnapshot → CommandExecutionRun`。`CommandMultiPlanIdentity` 记录完整有序成员及单元边界，协调者为每个 attempt 登记装配、当前 lease、原预览 lease 和接受身份；原单项 claim 与 T-M1 两步入口保持独立守卫。所有真实调用串行，共享原 invocation／invokedAttempts 占用，不删除已调用记录来重放。各 Facts、noChange、创建登记和设置报告均定位实际成员／单元；报告不能用首成员代替设置组。
+
+每个单元调用前重新读取当前实际状态。原接受仍覆盖实际效果时继续；前序操作改变基线、目录、排序、来源或目标时，原计划面板显示新真实预览并要求再次确认。启动后不编辑或复制冻结意图，失败与未执行内容留在原 Run。
+
+输出依赖仅接最小普通 todo.create→todo.title，可处于更大计划中；生产者仍仅普通标题＋明确日期，不含扩展创建语法。创建前不伪造目标／标题基线；确定保存并完成原必要外部步骤后，沿原创建登记取得真实输出，再读取和接受消费者影响。子任务和习惯创建保留真实创建事实，但不进入可依赖输出；其他创建链、分支及任意输出映射拒绝。
+
+#### 尝试历史与恢复边界
+
+`CommandAttemptRecord` 保存原尝试的回执和各家族真实事实；新尝试不覆盖旧失败，迟到回执按 attempt／phase 拒绝。`CommandMultiPlanRetryPermit` 只由原协调者根据真实确定未提交事实签发；仍须重新核验当前目标、来源及影响，必要时再次确认。任意 safeLocalReplay 值不能替代适配记录和本次调用许可。创建和内部新标签／打卡身份继续使用原预留 UUID，重试前查询实际占用，不按标题猜重复或重新分配身份规避不确定性。
+
+取消只沿原 cancelNotStarted 标记尚未启动单元；它不撤销已保存结果。未释放的失败／未知运行继续阻止宿主转交，不以 isBusy=false 变成可重放交互草稿。通知、日历或普通对象存在性没有可靠恢复证明时保留具体限制，不提供重做本地命令的伪恢复。
+
+#### 原生入口与证据分类
+
+原 PlanList 保留添加、参数、移除、重排及依赖编辑，并为显式多项装配提供整计划预览／接受、相邻文件设置分组、运行进度、真实目标再次确认、安全重试和未启动取消。原生点击与⌘Return共用提交入口；Return／Tab、marked text、焦点与隐私显示继续沿原输入和 ReadSession。单元间让出主线程，继续前再次核验显示资格，原 Run 仍是唯一运行真值。
+
+影响展示复用 TaskField／TaskTitle／Subtask／Routine／Batch 组件；任务和习惯新增的效果部分提取为共享只读视图，旧单项继续消费同一实现。英文／简体中文、Daybook 令牌、标准／紧凑、有界滚动和可访问性标识保持；运行事实分开显示本地提交与外部结果。界面明确说明恢复只在本次应用运行内有效。
+
+#### 验证记录与交接状态
+
+本批限定范围的实现、隔离回归、原生验收、正常 Debug／验签和本地门禁已有通过证据；指定 Cursor verifier 未执行，且交接时仍有并行源码变化，整体保持 **partial**。证据目录为忽略的 `build/PM1`；正常完整 PrivacyQA 使用 `build/PrivacyQA-PM1`／`com.areachain.privacy-qa.pm1`、合成内存库／随机设置域／临时文件、私有事件及 fake 消费者，清除六项真实钥匙串授权变量。复用原 `build/.build.lock` 单次最多900秒，申请前／锁后／运行后比较源码、资源、配置增删全集，原生事件串行，不附着或关闭其他 QA。
+
+指定 Cursor verifier 当前无可调用工具，保持未执行；没有认证、安装或以探索代理冒充复核。C2B、真人输入法／VoiceOver／系统合成器、最低系统／真实多窗口和历史问题独立保留。正常签名已由 B-M2 恢复，本批使用当前源码正常构建与验签，不沿用旧到期阻塞。未提交、推送、安装、发布、续签或改变权限。
+
+
+#### P-M1 最终 A～E 与有效证据
+
+| 项目 | 实际状态 |
+|---|---|
+| A 资格、单元与身份 | 已实现并验证。显式逐成员装配、整图／参数／目标预检、单项／批量／设置组边界、原 Run／item／draft／attempt／lease 和创建身份贯通；无未装配子集执行。 |
+| B 原命令与依赖执行 | 已实现并验证。普通任务、子任务、习惯、批量及两类普通设置后端使用原真实 Reader／Adapter／事务；仅最小 todo.create→todo.title 输出段，真实目标另行接受。 |
+| C 暂停与恢复 | 已实现并验证。本地unknown首／中／末全计划暂停，调度、普通重试、占用和适配入口不能绕过；确定未提交与调用前核验失败可在原 Run 重新核验／接受后重试。预留 UUID、历史事实、成功不重放、未启动取消及偏好外部展示重试均有实际断言。 |
+| D 原生计划 | 已实现并完成有限自动验收。六类代表计划、双语、浅深、444／304pt、12项长列表、错误／暂停／取消、真实创建目标、旧事件／marked text和失焦后新接受均覆盖；不是人工或系统合成器验收。 |
+| E 工程与交接 | 完整 PrivacyQA 编译／严格验签、最后验证快照的 development Debug／严格策略验签、本批严格lint、workflow及脚本门禁通过。当前源码和分批证据见下文；指定Cursor缺口独立保留。 |
+
+最后有效方法按身份去重为 **542方法／1150次执行通过**，没有最后有效失败、跳过、预期失败或未命中选择器。P-M1 专项为其中 **36方法／60次执行**；其余为真实受影响的原入口。方法与最后批次、参数执行次数逐项保存在 `build/PM1/verification-rollup.json`，不累加重复重跑。
+
+| 批次 | 实际结果与适用范围 |
+|---|---|
+| FinalServices | 70套、415方法／906次通过，全部选择器命中；原 Command 协议／转交／计划及所有受影响普通命令、文件设置和 B-M1／B-M2 回归。 |
+| FinalNative | 29套、122方法／239次；117方法通过、5方法失败，参数执行227通过／12失败。P-M1六类场景和其余原入口通过；四个习惯交互方法明确记录 foreground=loginwindow，另一个习惯创建过期反馈方法出现零尺寸 AX 控件。该批整体失败原样保留。 |
+| NativeRoutineRecheck | 恢复桌面后仅重验上述两套：9方法／19次全部通过，替代失败方法；零尺寸定位本次未复现，没有跳过焦点／几何断言，也未改产品来消除失败。 |
+| FinalRecovery | 41方法／65次通过；补齐子任务／习惯创建原身份重试、设置组后端恢复与原组新attempt、仅一个设置组的多项运行不能走旧返回草稿、纯resolveValidation不能替代真实多项恢复证明。 |
+| CurrentNative | 并行共享滚动装配变化后，7个P-M1方法及2个原滚动归属方法，共9方法／11次通过；默认top-edge未启用的本批宿主、内外滚动、最后一项、当前展示和计数重新验证。 |
+
+原生与数据证据分别检查：三个独立字段save／私有发布／fake通知／日历各3次；首项确定失败后独立项先保存1次、依赖项零尝试，重试后总保存3次且此前成功单元不变。批量3目标作为一个单元，1次save／发布，2个变化目标的fake刷新；文件设置组1次commit／replace。较大创建链最终2个真实todo、创建save=2、标题save=1、发布=3，第二步失败和重试都不重建任一成功创建。字段unknown在首／中／末只进入此前及未知单元的save调用，后项attempt保持0；读取当前对象不改变unknown。任务身份碰撞拒绝重试而不换UUID；子任务与习惯创建重试同样保留预留身份。
+
+设置展示失败只重试原ledger：本地commit／replace及已返回事件不增加；持续文件故障即使后端已重新可读，新的attempt仍明确失败，不把核验当保存。整份Run始终保留失败和未执行内容；即使整计划只有一个两成员设置单元，也不能通过旧returnUnsubmittedToPlan返回草稿。旧单项／原文件组的返回协议保持独立，多项的普通resolveValidation不能代替适配证明。新增接收窗口检查还覆盖“旧尝试已撤销、新尝试尚未begin”的间隙，迟到noChange不能关闭重试或解开依赖。
+
+失焦／锁定只撤去显示接受，不清Run。恢复显示后先读取当前真实剩余影响，再由新的原生事件明确确认；普通展示修订、旧快捷键或旧按钮不能给原lease续授权。自动单元间继续仍复核当前宿主，收起不等于撤销。
+
+#### 当前源码、构建、截图与并行边界
+
+最后验证源码快照为 **1385文件**，按排序后的路径→SHA-256字典计算的摘要为 `5950832c043987c7ae6841544e6bb44b6873d57902601053eb6c907131cf1655`。增删差异、构建命令、运行前后摘要及产物记录在 `build/PM1/final-source-audit.json`；包含 AreaChain、AreaChainTests、工程、scripts、Config及SwiftLint配置，个人配置只记录摘要。`CurrentNative`提供最后有效原生证据；随后`HandoffQA`完成完整正常测试目标编译及QA严格验签，`HandoffDebug`完成正常development Debug、codesign密封与`signing.py verify`策略核验；两者各自申请前／锁后／运行后均核对全集。正常Debug具有Hardened Runtime，distributionReady=false；没有安装、启动正常候选包、公证或发布。
+
+`build/PM1/screenshots/index.json` 记录 **20张** 最后有效图片的来源、批次、时间、尺寸及SHA-256，联系表和关键原图已实际查看。P-M1图片来自CurrentNative，另保留恢复后习惯过期反馈原图。图片是NSView.cacheDisplay；点击和键盘是合成原生事件，marked text是程序化设置，桌面恢复答复只算环境确认，不是人工功能验收。
+
+并行工作修改了工作台与共享滚动，并增加测试／检查入口；这些文件始终纳入完整编译，没有排除或还原他人源码。本批按实际依赖补当前默认滚动路径和完整编译，不把并行工作台功能算作P-M1实现。过程中一次外部还原使本批末期的接收窗口和显示重接受代码回到较早暂存版本，导致NativeLifecycle编译找不到requiresDisplayReview；对照先前源码摘要恢复本批差异后，RestoredNativeLifecycle及后续回归通过。原失败日志、并行替换记录均保留，没有降低门禁或篡改结果。
+
+最终严格lint覆盖当前97份变更Swift（其中本批79份）并通过；workflow、暂存／未暂存差异检查及严格static质量门禁通过，完整脚本回归为262项。正常Debug可执行SHA-256为 `e41c4b92421724a2384654bd05b0640207d72bce941d18816ebf742da59749ae`；QA／正常构建各自的六项真实钥匙串变量均清除，本批同路径进程均已退出或从未启动。
+
+本任务没有执行暂存、提交、推送或Git还原。过程中出现的现有暂存区保持原样，最后修订位于当前工作区；**暂存版本不能单独代表已验证的P-M1最终源码**。本批文件／共享维护文件／并行文件分类见 `build/PM1/changed-files.json`，差异材料见同目录 `pm1.patch`。
+
+#### 尚未支持与保留缺口
+
+- 指定Cursor verifier当前没有可调用能力，材料就绪但复核未执行；未认证、安装或用探索代理冒充复核。材料为原用户任务、本节批准规则、当前差异／源码／方法明细及模型、次数、unknown、身份、截图和签名证据。
+- C2B、真人IME／VoiceOver／系统合成器、最低macOS、真实多窗口及历史问题独立保留。本批不接真实用户库、业务系统服务、生产搜索或真实钥匙串验收。
+- 仅todo最小创建→标题可用输出依赖；子任务／习惯输出、其他创建链、分支和任意映射不开放。备注／敏感执行、删除、执行后撤销、自动拆批及跨重启恢复不开放。
+- 运行后参数／顺序不编辑。带已有mergedOrigins或旧returnedAttempts的计划项仍在预检明确拒绝，不能把原纯协议合并或旧返回记录提升为新多项执行资格；没有真实基线不制造合并证据。未新增失败／取消运行的丢弃、归档或跨运行历史迁移。
+- 通知、日历和普通模型unknown没有额外可靠恢复适配时保留具体状态；不以当前值、重新创建或调用完整本地命令来假装恢复。
+
+
+**交接时的并行源码差异。** HandoffQA／HandoffDebug申请前、锁后、运行后各自一致，QA与正常构建采用同一快照。最后核对时，`AreaChain/Features/Workspace/WorkspaceInspectorPresentation.swift`发生变化；本批文件相对该验证快照无变化。这些并行内容不归P-M1认领，当前工作区全集不能直接声称已通过最后编译；待其收敛后需补相关检查和完整构建。最后验证快照与当前差异分别保存在final-source-audit.json，不再无限重复不受影响的P-M1功能矩阵。
+
+### 9.82 里程碑 P-M2：类型化创建输出、受限分支与多级创建链
+
+2026-10-09（Asia/Shanghai）。承接 §9.81，按用户明确批准的 A～E 连续实施；本节为 P-M2 唯一交接来源。P-M1 的历史范围保持，新增能力通过 `MultiPlanCommandAdapter(outputCapability: .typedCreation)` 显式装配，默认仍为 `.taskTitle`。生产搜索、真实数据和系统服务不启用。
+
+#### 输出与消费契约
+
+| 真实生产者 | 输出 | 本批允许的消费位置 |
+|---|---|---|
+| todo.create | todo | todo.title／move／priority／reminder／completion／tags／createTag／due 的 target（各字段仍须原能力装配）；subtask.create 的 parent |
+| subtask.create | subtask | subtask.title／completion／tags 的 target |
+| routine.create | routine | R-M1 title／weekdays／reminder／priority／tags，以及显式 R-M3 routine.enabled 的 target |
+
+todo 创建继续按实际 minimal／ordinaryComposition 能力准备和明确接受，普通扩展的标签、来源与附带效果不省略。标签实体不成为输出；没有集合映射、动态计划、自动批量 targets 或隐含日期实例。routineOccurrence 仍需原明确日期入口。
+
+`CommandCreationOutput` 绑定原 Run、生产者 item／draft 版本及所属准备、接受身份、真实 local attempt、MultiPlan 装配、创建环境、context／storage、save-returned 的类型／UUID 和实际 PersistentIdentifier。凭据只从协调者原创建准备／调用登记和各自 Facts 导出，不设第二份输出缓存。保存记录身份取自原事务 afterCommit，不能用预留 UUID、预览或当前库同 UUID 存在性代替。SwiftData 重新物化实例时仍匹配存储记录，而替换为另一记录不能继承输出资格。
+
+Run.outputs 保留真实本地创建事实；creationOutput 仍要求原生产单元 succeeded。外部失败／未知不重建生产者，也不放行其依赖。子任务和习惯单项／默认 P-M1 继续不发布依赖输出，原业务写入与副作用保持。
+
+#### 受限图、真实输入与再次接受
+
+原 PlanValidation 保留未知生产者、自依赖、循环、顺序、过期 stamp、类型及显式输入互斥检查。P-M2 再按实际装配逐边校验白名单和同一 context／storage；允许分支、多级链和独立项混排，不能仅靠类型相容开放消费者。
+
+`CommandCreationConsumption` 从原冻结引用派生只读输入投影：修改对象进入 targets；新建子任务的父项只进入 parent。创建前仅校验已知输入及显式标签资格，目标 Reader 不运行、不制造旧值；受保护标签、已知无效 ID 不等到生产者保存后才拒绝。生产者保存并满足原依赖后，原 Reader 重新核验唯一活对象、无备注来源修订、D3 目录、父子关系、日期／排程、干净 context 和原 lease；原面板展示真实目标与影响后再接受。前一消费者修改字段或目录时，后一消费者读取最新影响，不能继承创建时的旧值。
+
+点击与⌘Return共用原入口；输出选项沿原 PlanLinks、PlanList 和有界滚动。parent 与修改目标有不同双语说明。失焦／锁定撤显示接受，恢复后仍须新的原生事件；没有新窗口或第二套运行面板。
+
+#### 失败与恢复边界
+
+沿 P-M1：确定未提交失败阻断依赖，独立项继续；任一本地 unknown 暂停整份计划。重试沿原 Run、成员和预留 UUID，以新 attempt 接受当前影响；迟到事实不能进入撤销旧尝试与新 begin 间的窗口。成功生产者不重放；取消未启动消费者不撤销已有创建事实，其他合法分支可继续。不存在跨重启日志、补偿事务、自动清理、执行后撤销或运行后参数编辑。
+
+#### 本批验证与交接
+
+本批 A～E 的本地实施、有限验收和工程交接已收口；指定 Cursor verifier 未执行，完整交付状态仍为 **partial**。证据保存在忽略目录 `build/PM2`，采用完整正常 PrivacyQA、独立 `build/PrivacyQA-PM2`／`com.areachain.privacy-qa.pm2`、合成内存库、隔离设置、私有事件和 fake 消费者，清除六项真实钥匙串授权。沿原 `build/.build.lock` 单次最多900秒；申请前／锁后／运行后／交接前核对文件增删全集，并核验本批进程身份和退出。
+
+指定 Cursor verifier 当前无可调用入口，未执行；不重复认证、不用其他代理冒充。C2B、人工 IME／VoiceOver／系统合成器、最低系统、真实多窗口和历史问题独立保留。正常 development Debug 与严格策略验签必须以当前源码重新取得证据，不沿用旧签名到期阻塞。没有暂存、提交、推送、安装、发布、续签或权限变化。
+
+#### P-M2 最终 A～E 与权威交接
+
+| 项目 | 实际状态 |
+|---|---|
+| A 输出声明、事实与消费资格 | 已实现并验证。三类类型声明；真实 save-returned／UUID／PersistentIdentifier、原接受／调用、Run／item／draft／装配／存储身份共同校验；本地已保存与可消费分开。 |
+| B 受限依赖图与多级执行 | 已实现并验证。白名单逐边检查，同生产者多消费者、todo→subtask→title、多级与独立项混排；parent 不进入 targets，不造目标或基线，不复制可编辑计划。 |
+| C 原生引用与真实影响接受 | 已实现并验证。原 PlanLinks／PlanList 显示任务／子任务／习惯和 parent／target 角色；创建后及前序影响改变后重新读取、明确接受，失焦恢复和更新预览须新事件。 |
+| D 集成、原生与旧入口回归 | 有限清单已通过。新服务20方法／48次、新原生7方法／11次；旧单项、T-M1、P-M1、习惯状态、原创建/子项仓储、设置／批量边界和共享滚动按影响验证。 |
+| E 当前源码、构建与交接 | 1394文件全集一致；完整PrivacyQA编译／严格验签、正常development Debug／严格策略验签通过；严格lint、workflow、脚本及严格static门禁通过。指定Cursor未执行，人工与历史缺口独立保留。 |
+
+**最后有效结果。** 按方法身份去重共 **399方法／924次执行通过**，没有最后有效失败、跳过或预期失败；P-M2 专项为其中 **27方法／59次执行**。`build/PM2/verification-rollup.json` 逐方法记录最后批次及参数执行数，选择器核对全部命中，不累加重跑。没有重跑P-M1的1150次历史矩阵。
+
+| 证据批次 | 实际结果与范围 |
+|---|---|
+| AffectedServices | 49套、281方法／688次；280方法／687次通过，1方法失败。失败仅为 SubtaskCommandScopeTests 仍断言目录 createdObjectType=nil；旧多项拒绝和未装配拒绝本身通过。更新为P-M2声明的subtask后由FinalServices替代该方法，原失败结果保留。 |
+| FinalServices | 12套、82方法／177次全部通过；新输出／恢复／边界、修订的旧目录断言、原习惯启停／日期实例／标题事务、创建与子任务旧仓储回归。包含三类输出每条实际消费适配。 |
+| FinalNativeOutputs | 2套、7方法／11次全部通过；六类代表场景、中英文、浅深、444／304pt、12项分支列表、过期引用、更新影响的新接受、marked text及逐层unknown。 |
+| AffectedNative | 15套、53方法／107次全部通过；原单项、两步和多项的真实原生输入／确认／恢复，习惯字段／启停／创建、原新增和共享滚动消费者。 |
+| FinalQACompile | 当前完整正常目标 build-for-testing 和 codesign --verify --deep --strict 通过；只计编译与验签，不计额外测试执行。 |
+| NormalDebug | 当前完整development Debug build、codesign密封和scripts/signing.py verify策略检查通过；Hardened Runtime=true，distributionReady=false。未启动、安装或发布。 |
+
+**模型、次数与恢复。** 三层任务链仅创建1个任务和1个子任务，子项真实UUID不同于父项、关系与原父一致，最后标题和标签直接核验；create save=1、subtask save=2、私有发布=3。习惯链仅新增1个定义，最终星期和09:30提醒匹配，checks仍为空，save／登记／私有发布各3。分支后项读到前项“第一次”及其新标签，消费失败／重试不改变成功生产者单元，任务仍1个，create save=1、title save=2、发布=3。
+
+生产者确定失败时依赖零attempt，独立项可先成功；原Run重试沿相同创建UUID和新接受／attempt继续，子任务生产步骤重试也保持其自身UUID。服务在首／中／末层失败和unknown均核验单元、模型与次数；unknown后包括独立项在内无新写入，当前存在性读取不改历史结论。外部失败／未知保留真实本地输出却不解锁依赖。跨Run、context／storage、错误类型、同UUID替换记录、来源／目录／父关系变化、旧请求及重试接收窗口均有拒绝证据。取消一个未启动消费者保留生产者及另一合法分支。
+
+**原生与图片。** 24张最后有效图片均来自FinalNativeOutputs，位于 `build/PM2/screenshots`；index.json记录源路径、时间、尺寸、批次与SHA-256。四张联系表和关键原图已实际查看，双语类型名无原始资源键，待确认单元与未执行／阻塞／失败／unknown区分。图片为NSView.cacheDisplay，点击和⌘Return为合成原生事件，marked text为程序化设置；这些不等于真人IME、VoiceOver或系统合成器验收。
+
+**失败修正保留。** 首轮服务暴露新保存对象重新物化后ObjectIdentifier不稳定，改用实际保存后的PersistentIdentifier；父子及习惯原预览也据真实存储身份核验，旧批量的内存身份入口保留。一次编译遗漏RoutineStateApplication输入适配已补齐并回归。首轮原生unknown夹具关闭计划编辑后没有重新聚焦输入框，补显式聚焦并保留原焦点断言；早期NativeUnknownRecheck使用未命中的方法选择器，0方法，明确不计通过，随后完整套件与最终批覆盖。逐张图片检查发现子任务／习惯类型资源缺失，补双语类型名、待确认文案及断言后重新执行全新原生专项；旧图不作为最终证据。
+
+**工程与环境。** 全程原build/.build.lock单次最多900秒，完整目标不排除源码，六项真实钥匙串变量清除。本批runner最初复用的历史Controls10P文件在运行期间已不存在，后续只在本批忽略目录内置等价libproc PID／内核启动身份与退出核验；不创建Gallery回执或操作其他QA。短暂磁盘不足使最后一轮请求未启动，证据归档尝试也因空间不足失败，原xcresult均保留，仅删除本批失败的临时归档和可再生成的Index.noindex；随后只读确认空间恢复并完成余项。未删锁、换锁、抢锁、修改签名或干预其他QA。
+
+最终源码摘要为 **428259c3df5f7bd5fc3cef0db9d586111ee8aad0310a4edee5470e47f814748c**：对1394个路径→SHA-256条目按排序键、紧凑JSON计算SHA-256。`final-source-audit.json` 包含全部文件及与FinalServices／FinalNativeOutputs／AffectedNative／FinalQACompile／NormalDebug的比较，均无差异；各实际批次申请前／锁后／运行后也一致。正常Debug可执行SHA-256为 `3ba645a5219cb79d883d44d3b30fbb7a69272fbc05c9f015fe5a8ebf7cd116cc`。QA与正常构建的本批同路径进程已退出或从未启动，命令、日志、结果树和验签JSON留在证据目录。
+
+本批修改 **57个文件，其中49个Swift**；清单与基于开始时真实工作区的差异见changed-files.json和pm2.patch。文档／路由／组件及检查器入口已同步，检查器定向120项、完整263项脚本回归通过。当前全部121份变更Swift的严格lint、workflow、暂存／未暂存差异与严格static门禁通过。暂存区与开始时逐字节一致，本批没有git add／还原／提交；P-M1既有暂存和未暂存修改保留。WorkspaceInspectorPresentation当前源码已纳入完整编译；本轮期间仅docs/engineering.md另有并行改动，保留且不认领其工作台功能。交接时没有未纳入上述最后构建的并行源码差异。
+
+#### 指定复核、历史缺口与下一批前置
+
+- 指定Cursor verifier无可调用能力，材料齐备但未执行；本批只读定位代理不是该复核。复核材料为原用户需求、本节契约、当前patch／完整源码／方法明细，以及真实模型、次数、失败／unknown、跨环境、事件、截图与签名证据。
+- C2B、真人IME／VoiceOver／系统合成器、最低macOS、真实多窗口及历史问题独立保留。本批只处理普通合成内存数据和fake消费者，没有启用生产搜索、真实系统服务或真实钥匙串授权。
+- 运行后参数编辑、mergedOrigins／returnedAttempts执行仍未开放。下一批若接合并／返回编辑，须先定义真实基线与引用stamp迁移、原Run已保存事实的保留、失败／未执行部分重新接受及不可重放成功项的契约，再取得对应实际适配和隔离证据；纯协议合并或返回值不构成执行许可。
+- 任意输出集合、自动批量targets、日期实例派生、notes／敏感执行、删除、执行后撤销、自动拆批和跨重启恢复仍不支持。没有提交、推送、安装、发布、续签或权限变化。

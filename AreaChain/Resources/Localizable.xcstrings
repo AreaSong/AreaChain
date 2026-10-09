@@ -23695,6 +23695,13 @@
         }
       }
     },
+    "workspace.inspector.needsSpace": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Widen the window or narrow the sidebar to show details" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "加宽窗口或缩窄侧栏后可查看详情" } }
+      }
+    },
     "workspace.page.info": {
       "localizations": {
         "en": {
@@ -46944,6 +46951,822 @@
           "stringUnit": {
             "state": "translated",
             "value": "为此习惯选择执行日期"
+          }
+        }
+      }
+    },
+    "unified.multi.attempts": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d attempt(s) recorded"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已记录 %d 次尝试"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.blocked": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for dependency"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待依赖恢复"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.boundaries": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Runs in list order. Each command, batch, or settings group commits separately. Saved units are never replayed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "按列表顺序执行。单项、批量与设置组分别提交，已保存单元不会重放。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.cancel": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel this unstarted unit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消此未启动单元"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.changed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review updated effects or the newly created target"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请核对变化后的影响或新建的真实目标"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept these effects and continue"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认本次影响并继续"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.dependency": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add explicit dependency"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "添加显式依赖"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.effect.calendar": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Calendar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "日历"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.effect.notification": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.effect.preferencePresentation": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings presentation"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置展示"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.effect.taskPublication": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local publication"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地发布"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.external.failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失败"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.external.pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "待处理"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.external.running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "处理中"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.external.succeeded": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Succeeded"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "成功"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.external.unknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未知"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.externalUnknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local save kept · external result unknown"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保留本地保存 · 外部结果未知"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.failed": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Failed · saved results retained"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "失败 · 已保存结果保留"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.group": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Commit adjacent settings together"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "相邻设置共同提交"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.noChange": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No changes needed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无需修改"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.notExecuted": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not executed"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未执行"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.output": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The object will come from a saved creation. Review and accept its real effects before continuing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "对象来自确定保存的创建。请在继续前预览并确认其真实影响。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.prepare": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review entire plan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "预览整份计划"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.progress": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d of %d units finished"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已完成 %d / %d 个单元"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.resume": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue unexecuted units"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续未执行单元"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.retry": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retry this uncommitted unit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重试此未提交单元"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.runOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This history and recovery are available only during this running app session. Hiding the panel does not cancel saved results."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "历史与恢复仅在本次应用运行内保留。收起面板不会撤销已保存结果。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Executing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在执行"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.saved": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saved locally"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地已保存"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.submit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept and execute plan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认并执行计划"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.title": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Multi-item plan"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多项计划"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This plan is not ready. Check parameters, explicit dependencies, and assembled capabilities."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "计划尚不可执行，请检查参数、显式依赖及已装配能力。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.ungroup": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Separate settings group"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "拆开设置组"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.unit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unit %d · %d command(s)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "单元 %d · %d 项命令"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.unknown": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Local commit unknown — entire plan paused"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "本地提交未知，整份计划已暂停"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.unknownDetail": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No further writes or ordinary retries are allowed. Current object values cannot prove whether the earlier transaction committed."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "后续写入和普通重试均已阻止。当前对象值不能证明原事务是否提交。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.unprepared": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review all targets, dependencies, and changes before execution."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "执行前请预览全部目标、依赖与实际影响。"
+          }
+        }
+      },
+      "extractionState": "manual"
+    },
+    "unified.multi.finalCheck": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every unit rechecks its fixed targets and accepted effects before writing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每个单元写入前重新核验固定目标与已接受的影响。"
+          }
+        }
+      }
+    },
+    "unified.multi.backend": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recheck settings storage"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新核验设置存储"
+          }
+        }
+      }
+    },
+    "unified.multi.validationFailed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revalidation failed before invocation. No local write was attempted; the frozen intent is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "调用前重新核验未通过，尚未尝试本地写入，原冻结意图已保留。"
+          }
+        }
+      }
+    },
+    "unified.multi.reviewRemaining": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review remaining effects again"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新预览剩余影响"
+          }
+        }
+      }
+    },
+    "unified.multi.cancelled": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelled before starting"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已取消未启动单元"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.futureParent": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the %2$@ created in step %1$lld as the parent"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将使用第%lld步创建的%@作为父项"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.futureTarget": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Use the %2$@ created in step %1$lld as the target"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "将使用第%lld步创建的%@作为修改目标"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.type.todo": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "task"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.type.subtask": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "subtask"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "子任务"
+          }
+        }
+      }
+    },
+    "unified.plan.reference.type.routine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "habit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "习惯"
+          }
+        }
+      }
+    },
+    "unified.multi.awaitingConfirmation": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Awaiting confirmation of actual effects"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "等待确认真实影响"
           }
         }
       }

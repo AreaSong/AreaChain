@@ -54,7 +54,7 @@ struct CommandTaskChainBinding: Equatable {
 
 extension CommandExecutionRun {
     func taskMutationMember(_ id: UUID) throws -> CommandPlanItem? {
-        if snapshot.items.count != 1 {
+        if snapshot.items.count != 1 && multiPlan == nil {
             try CommandTaskChainIdentity(plan: snapshot.stamp, items: snapshot.items).validate(self)
         }
         return snapshot.items.first { $0.id == id }

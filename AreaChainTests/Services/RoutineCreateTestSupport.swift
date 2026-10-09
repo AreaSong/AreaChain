@@ -22,8 +22,8 @@ import Testing
     var context: ModelContext { base.context }
     var handoff: HandoffFixture { base.handoff }
 
-    init() throws {
-        base = try RoutineCommandFixture(enabled: false)
+    init(stateOperations: Bool = false) throws {
+        base = try RoutineCommandFixture(enabled: false, stateOperations: stateOperations)
         // 墓碑也参与两个旧新增 UI 的全量末尾排序。
         base.other.deletedAt = Date(timeIntervalSince1970: 12)
         base.other.sortOrder = 30
@@ -36,7 +36,7 @@ import Testing
                 try onSource?()
                 return .init(input: .init(revision: inputRevision, protection: inputProtection),
                              environment: .init(revision: environmentRevision, protection: environmentProtection))
-            }))
+            }), stateOperations: original.stateOperations)
         adapter = .init(coordinator: handoff.coordinator, environment: environment)
     }
 

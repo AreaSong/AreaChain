@@ -38,9 +38,9 @@ import SwiftData
         guard current.writeSet == preview.writeSet else { throw CommandBatchIssue.writeConflict }
     }
 
-    private func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
+    func read(_ item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
                       catalog: CommandTaskTagCatalog) throws -> CommandBatchPreview {
-        try CommandBatchPreview.validate(item)
+        try CommandBatchPreview.validate(item, allowingDependencies: true)
         let edit = try CommandBatchEdit(command: item.draft.commandID, arguments: item.draft.arguments)
         guard !edit.isState || environment.stateOperations != nil else { throw CommandBatchIssue.unassembled }
         let targets = item.draft.targets

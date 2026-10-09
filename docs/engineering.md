@@ -2509,3 +2509,173 @@ E 的展示补验：随后只调整测试取证，给紧凑长标题宿主补 Da
 **失败定位与并发**：初期纠正展示复制闭包的显式初始化参数、可访问性根标识覆盖与计数角色、截图附件的既有 `settings-` 文件名前缀；完整窗口关闭后测试重新打开时补齐生产激活／show，再保持原焦点断言。旧静态表面悬停失败已原断言复验通过。并发新增代码曾阻断编译／500行门禁，经用户明确授权，仅补 BatchCommandEnvironment 三处 self 限定，并将 CommandExecutionRun.creationOutput 原样移入同职责扩展，保留私有 setter；相关执行结果和批量命令隔离回归通过。部分运行期间其他命令源码／测试变化单独记录，不将该批结果当作最新整个工作区的同一快照证明；控件相关文件未被这些并发编辑改写。最终 presentation-recheck 与 Release 全源摘要均一致。随后 window-final 的8次场景通过、1次矩阵失焦保留原记录；只增加失焦动作／前台标识诊断，原断言不变，focus-recheck 的4组矩阵全部通过，零失败／跳过，完整 QA 重新编译及验签通过，起止全源摘要一致。Release 之后新增的搜索源码与文案属于并发任务；本功能生产源码未变，已逐键对比 Release 内 en／zh-Hans 各61个预览文案值与当前资源，完全一致，不将该 Release 外推为后续并发搜索代码的最新发行物。现有暂存改动保留。
 
 **保留缺口**：指定 Cursor verifier 当前没有可调用工具，未执行独立只读复核；材料为用户原始需求、当前差异、组件契约及上述证据，不以其他代理替代。实现与已列自动验证完成，整体保留 partial 复核缺口。没有执行提交、推送、安装、发布、真实认证或真实业务数据操作。
+
+
+## 工作台公共框架调整（2026-10-09）
+
+**状态：实现与所选验证已交付，整体 partial。** 固定单行顶栏、主内容区居中且身份唯一的搜索、真实内容宽度操作收纳、详情空间门禁、侧栏固定顶部与局部滚动羽化已实施。入口及状态责任以[组件目录](component-catalog.md#3-feature-级复合组件)和[公共顶栏架构](architecture.md#工作台公共顶栏)为准；标签管理原 List 补接同一滚动装配，备注合并同一草稿的失焦/卸载保存尝试。原生产搜索与事务未替换；已有统一搜索暂存和并发修改保留。
+
+验证使用完整 AreaChain scheme / Debug 测试目标，独立 `com.areachain.workspace-shell-qa` / `build/WorkspaceShellQA`，原锁单次最多900秒、六项真实钥匙串变量清除、合成内存数据和串行事件。环境为 macOS26.6.2 arm64。所有命令、日志、源码清单与 xcresult 位于本地忽略目录 `build/workspace-shell-evidence`，不作为可发布产物。
+
+- `shell-regression-compiled`：32方法／53次通过，3项失败。搜索输入缩放的唯一身份、选区、组合文本、撤销/重做；原生菜单状态/嵌套/单次动作；标签创建与失败；标题草稿和备注失焦/卸载去重通过。两个新整窗夹具崩溃在对齐原 WorkspaceRenderingTests 的外观承载和 fullSizeContentView 拆卸后由 `inspector-diagnostic` 2方法复验通过；不将修正夹具写成修复生产崩溃。
+- `shell-final`：35方法／56次通过，7项失败。6项在焦点准备阶段报告前台 `com.apple.loginwindow`，未跳过/降低断言；主工作台搜索在侧栏缩放和详情收起时的完整焦点联动仍未通过最终验收。另有未改动的 WorkspaceLayoutTests 原生字体断言失败：编辑器回退 PingFangUITextSC-Semibold，字段为 AppleSystemUIFontDemi，同为16pt；保留问题，不借本轮布局扩改输入实现。
+- `noninteractive-verified`：13方法／27次通过，0失败/跳过，覆盖原页面矩阵、羽化契约/归属/生命周期、顶部位置/短内容/卸载，以及仅顶部策略和降低透明度。方法级筛选曾未命中，零命中批次不计通过；修正为实际 Swift Testing 方法标识后，`selectors-verified` 4方法／11次通过，含长标题无空菜单、实际详情收起/恢复、侧栏与9类页面独立滚动、标签页双宿主及中英文/浅深色/默认与最小尺寸页面矩阵。重复项目不累加。
+- `host-compatibility`：3方法／5次通过，覆盖菜单栏搜索绑定、侧栏唯一羽化、非工作台甘特保持默认无羽化及周列独立轴。只证明合成事件/控件API，不冒充真实触控板或系统键盘验收。
+- `./scripts/build.sh` 正常 development Debug 构建和静态验签通过；申请、持锁和结束源码一致，生产及构建源摘要为 `9920f6cb9f92616be40988a0445cf225aecc426c6e0726aed0450c5fb305b420`。其后仅调整 ScrollAssemblyConsumerTests 的侧栏新预期，生产未再修改。最后 QA 全源摘要为 `bc2f48bde79484bd121ad7895e2910427e8a1780fa55208ca0b7ad30b2915235`。构建不代表系统解锁或发行通过。
+
+本轮静态门禁使用 `quality_gate.py --profile static` 加独立隔离 QA，避免 auto profile 启动普通测试宿主；`check_workflow.py`、其119项定向脚本测试、包含262项脚本回归的静态门禁、相关严格 SwiftLint 和工作区/暂存差异检查通过。最终文档编辑后重跑受影响静态检查。
+
+原生缓存图在 `before-images` / `after-images`，均来自合成 QA。整窗缓存未绘出系统侧栏材料和窗口按钮，不能据此断言窗口合成效果；`workspace-sidebar-content-*.png` 单独证明侧栏内容。没有真实全屏/退出全屏、窗口拖动、详情自动收起时组合输入、完整失败磁盘保存或真实辅助技术的新证据。
+
+最终发现本任务 QA 可执行路径下残留 PID8295（启动时间2026-10-09 12:23:55，父进程为1），lsof 未显示 XCTest 加载证据。核对可执行路径和启动身份后向该进程发送 SIGTERM，随后确认退出，记录为 `qa-process-cleanup.json`；未读取其数据或据测试通过推断没有副作用。该进程启动来源及运行期间是否触发非测试系统服务未确认，属于本轮新增隔离验收缺口；不通过删除数据、重启 QA 或读取真实内容追认。
+
+指定 Cursor verifier 当前不可调用，**指定复核未执行**；未认证、安装或换代理替代。桌面控制入口保持暂停；锁屏导致的焦点缺口、字号断言、残留 QA 进程异常和指定复核独立保留。未主动读取或修改正常用户数据/偏好、签名配置或全局设置，未安装/启动正常应用、提交、推送或发布。
+
+### 工作台验收收尾（2026-10-09，本轮）
+
+**仍为 partial，未满足完整门禁。** 字体断言已修正；详情标记、组合草稿和焦点生命周期已修复，真实工作台的标题/备注收起、恢复、继续编辑及显式保存通过合成原生检查。最后相关回归在启动前被新的并发源码变化拦住，最终稳定源码的回归与正常 Debug 门禁仍待完成。以下补充不覆盖上一轮失败，也不把不同源码的局部通过拼成当前工作区全部通过。
+
+本轮证据统一在 `build/workspace-shell-evidence`。接手时 1,381 个源码/测试/构建文件与上轮最终清单完全一致，完整摘要为 `bc2f48bde79484bd121ad7895e2910427e8a1780fa55208ca0b7ad30b2915235`，见 `closeout-initial-source.json`。摘要算法为 Git 已跟踪及非忽略未跟踪的 AreaChain、AreaChainTests、AreaChain.xcodeproj、Config、scripts 文件逐项 SHA-256，再对按键排序 JSON 求 SHA-256；不是 HEAD 或缩写。
+
+本任务最后通过组合闭环的完整源码为 `33064380f88e7602ef563d750fffb1af50801c68c90ff1903d1ac77604156f1d`，见 `closeout-composition-end-source.json` / `closeout-composition-end-after-source.json`。其后另一项统一搜索工作持续修改创建输出、Command Plan/Run、适配器及创建服务；首批 13 个路径，随后仍有新增变化。已读相关差异，未覆盖本任务 8 个 Swift 文件，未替其他工作修改、回退或移动文件。并发及收尾瞬时完整清单见 `closeout-concurrent-source.json`、`closeout-handoff-source.json`；变化中的快照不等于稳定发行身份。
+
+收尾快照采于 2026-10-09 14:52:58（Asia/Shanghai），1,388 个文件，完整摘要 `6d6731f734e392fa848f14111a6873efa96f1fd0b5d0624ea2cb45248443c0dc`。连续两次快照相同，但相比受测源码已有 44 个并发变化路径；本任务 8 个 Swift 文件全部仍与受测版本一致。摘要、时间、当前进程盘点和暂存区摘要见 `closeout-handoff.json`，不将这瞬时一致性外推为构建期间稳定。
+
+上轮实际 xcresult、命令和前后源码清单已核对，详见 `closeout-historical-audit.json`：noninteractive-verified 全源为 `b2d9d16e8c0c012bf44916cd9cafbd382d46f648445a8b3be353080d5ae6ceb4`，selectors-verified 为 `e069a2d750f32a33164e4075a1b8eeb1adb42e7dc3b8c55aaa37dc088f7c4f21`，host-compatibility 才与接手全源一致。未再修改的滚动、操作收纳等范围保留对应证据，没有重跑全部历史矩阵。
+
+#### 历史进程与本轮隔离
+
+`qa-process-cleanup.json` 直接记录 PID 8295 的路径为 `build/WorkspaceShellQA/Build/Products/Debug/AreaChain.app/Contents/MacOS/AreaChain`，启动于 12:23:55，匹配路径/启动时间后 SIGTERM，随后 `after:null`。父 PID 1、未发现 XCTest 映像只剩上轮文字记录，没有完整原始父链/映像清单，不能重新认证历史状态。
+
+实际 shell-final 于 12:21:33.719 结束，PID 8295 晚约 141 秒启动；noninteractive-final 到 12:24:36.749 才开始，且编译失败、0 测试。不能把它归为上述任一批的正常测试宿主。没有找到期间确切启动命令，也未留存本任务旧 runner；单独启动与框架恢复无法区分，不能归因某个工具或断言旧 runner 没有 finally。
+
+历史路径属于本任务 QA 产物，命令声明 bundle ID 为 `com.areachain.workspace-shell-qa`；这不能证明该实例进入 XCTest 模式。`AreaChainApp.init` / `AppDelegate.applicationDidFinishLaunching` 依赖 `XCTestConfigurationFilePath` 决定内存库与服务启动；缺失标志时可进入持久化、剪贴板、通知、日历及快捷键初始化。关闭最后窗口返回 false，本来就不会自动退出应用。QA 标识/沙盒通常提供独立容器，但旧实例的实际签名、环境、数据 URL 与系统服务情况未留存；历史副作用仍未知，不读取真实数据追认。
+
+本轮仅由完整 AreaChain scheme / Debug XCTest 启动，保留原 QA 标识/目录、原锁单次 900 秒、六项钥匙串授权清除及串行事件。当前 Info.plist、源入口及测试内 `xctest=true` 元数据对应；夹具用内存库、独立 UserDefaults suite 和注入事务/发布回调，共享偏好处于 QA 应用域。AppDelegate 的 XCTest guard 阻断真实系统服务启动；合成保存内容不含请求提醒权限的语法。
+
+补留的 `run.py` 最初复用原 Controls10P runner 的锁与只读 proc 身份读取。收尾发现该临时依赖文件已不可读，故将相同职责就地保留为自包含实现，不依赖其他任务的 build 目录，也不调用 LaunchServices；检查编译清单、启动前盘点、pid/start/path、退出、超时/中断和运行后源码。已有实例或源码不匹配即拒绝启动，只按本批再次核对的身份清理。`test_run.py` 的 11 项隔离检查覆盖成功、失败、超时、中断、预存实例、身份不明、PID 复用、退出竞争、锁释放及锁超时保留其他持有者；每批 `*-lifecycle.json` 留实际结果和 runner 依赖摘要。
+
+本轮实际 PID 为 34075、37908、40174、42193、43987、44537、47345、48620、49191、51990、54795，均在测试退出后确认不再存在，无需补发结束信号。收尾无可确认属于本任务的残留实例；这不替代历史 PID 8295 的未知项。
+
+#### 修复与契约
+
+- 字体原失败是 `WorkspaceLayoutTests.nativeFieldKeepsTheDeclaredSizeAndWeightWhenEditing()` 旧文件第 23 行，不是任务/手记正文字体测试。实际 `.PingFangUITextSC-Semibold 16pt` 与字段 `.AppleSystemUIFontDemi 16pt` 对象不等。本轮在解锁前台、可见且编辑中的唯一目标再次复现；宿主 360×70，中文合成内容，旧夹具未显式指定主题/locale。CoreText 对同一声明字体的中文回退与实际字体完全一致，详见 closeout-baseline-diagnostics 的 StandardOutputAndStandardError.txt。仅改测试，英文/中文各检查 regular 正文和 semibold 标题的显示态、实际编辑态、精确字号/traits、delegate、first responder 与唯一可见目标；不放宽容差或改生产字体。修正及工作台任务/手记正文检查在 closeout-repair、closeout-verified 通过。
+- 原备注去重只在单次挂载记文本；生产 TaskDetailSections 已用记录 `.id` 隔离，因此不跨记录共享。显式保存绕过去重，继续编辑清掉上一尝试，失败保留 EditDrafts。新增测试经实际 `DayBoardMutations.updateNotes` 嵌套注入 `ModelChanges.Boundary`，核对保存一次、失焦/卸载去重、失败零发布与重试、新内容再保存、不同记录同文本、外部更新保护及恢复；未替换事务或改变保存成功含义。
+- 组合输入基线失败实际是原生缓冲未进入保留草稿，保存调用为 0，不能称为已发生提前保存。原焦点对象无条件接收 make/update 的弱标记，真实窗口测量候选释放后标记为 nil；closeout-trace / closeout-owner 保留诊断。现在只登记已挂载窗口的标记、按实例清理，用字段编辑器所属字段定位区域。收起前经原委托同步缓冲，保留字符后结束即将隐藏的组合会话；瞬时标志让标题/备注保留原草稿、不提交，并在实际重新呈现时重置，不依赖 NSView 重建。
+- 标题曾在 makeFirstResponder(nil) 返回 true 后又回到隐藏字段，closeout-title-trace 保留即时释放与后续失败。最终同步撤销焦点绑定、结束原生组合会话，并把确实来自详情的焦点交给原可见搜索入口；查询、选择、检查日保持，已在搜索的焦点不动。这是“收起后合理位置”的局部落实，不接入新搜索。最终两种真实详情均验证手动重开、恢复、继续编辑、NSEvent Return/⌘Return 显式保存及清除草稿；真实中文输入法仍未验证。
+
+实现涉及 MainSplitWorkspaceView、WorkspaceInspectorPresentation、TaskDetailNotesView、TaskDetailHeaderSection；测试涉及 WorkspaceLayoutTests、WorkspaceInspectorSizingTests、WorkspaceNotesLifecycleTests、WorkspaceWindowLifecycleTests。组件目录、架构和技能路由同步边界。标题 Escape 仍回滚；备注沿原失焦保存，不新增取消政策、平行草稿或业务状态机。
+
+#### 原 6 项焦点检查与运行账本
+
+上一轮六项都是已启动后焦点前置条件失败，前台 loginwindow，不是产品断言失败。本轮准确结果如下，没有跳过首次按键或 first responder 检查。
+
+| 方法 | 本轮结果 |
+|---|---|
+| WorkspaceHeaderInteractionTests.failedTagCreationRetainsDraftAndMarkedTextDoesNotSubmitOrCancel() | closeout-baseline 通过；该路径未再修改 |
+| WorkspaceHeaderInteractionTests.globalShortcutWinsOverDiaryLocalSearchAndClearingRestoresSource() | closeout-baseline 通过；该路径未再修改 |
+| WorkspaceHeaderInteractionTests.titleDraftSurvivesFailedSaveAndUnmountWithoutExtraSubmission() | baseline、verified 及后续局部回归通过；最终稳定工作区回归待补 |
+| WorkspaceHeaderSizingTests.overflowKeepsNativeMenuStateHierarchyAndOneCallback() | closeout-baseline 通过；操作收纳未再修改 |
+| WorkspaceHeaderSizingTests.resizingKeepsEditorSelectionMarkedTextAndUndo() | closeout-baseline 通过；唯一输入、选区、marked text、撤销/重做检查保留 |
+| WorkspaceInspectorSizingTests.searchKeepsFocusAcrossSidebarResizeInspectorCollapseAndBodyReplacement() | baseline 与多次修复回归通过；最后实现后的回归在启动前被并发源码门禁拦住 |
+
+完整摘要、测试树、命令、源码及进程在 `closeout-run-audit.json` 和各同名前缀文件。统计方法与执行次数分开，所有批次零跳过：
+
+| xcresult 前缀 | 方法数 | 执行次数 | 通过 / 失败 |
+|---|---:|---:|---:|
+| closeout-baseline | 12 | 12 | 10 / 2 |
+| closeout-repair | 13 | 15 | 12 / 3 |
+| closeout-native-buffer | 9 | 10 | 8 / 2 |
+| closeout-dismissal | 2 | 3 | 1 / 2 |
+| closeout-trace | 1 | 2 | 0 / 2 |
+| closeout-owner | 1 | 2 | 0 / 2 |
+| closeout-verified | 13 | 14 | 13 / 1 |
+| closeout-focus-binding | 9 | 10 | 9 / 1 |
+| closeout-title-trace | 1 | 2 | 1 / 1 |
+| closeout-acceptance | 9 | 10 | 9 / 1 |
+| closeout-composition-end | 1 | 2 | 2 / 0 |
+
+共涉及 18 个唯一方法，参数变体包括标题/备注及浅/深色；含诊断和重跑共 82 次实际执行，不计作新增覆盖。原正文及交接写作“92 次”，最终门禁续验核对原 11 批明细、测试树和 `closeout-run-audit.json` 后更正；没有删除或新增历史执行。历史失败未删除；名字含 verified/acceptance 的中间包仍是失败。最终组合闭环只在完整摘要 `330643…` 对应的 1 方法/2 次通过，不能称 18 个方法都在该版本通过。
+
+计划中的 closeout-regression 在编译源码身份检查阶段退出 1，没有 xcresult、没有启动 QA，不是测试断言失败或通过。源码稳定后仍需完整 QA 重新编译并运行 WorkspaceNotesLifecycleTests、标记反例、搜索焦点、标题失败/取消、全屏这 9 个方法/9 次回归；已通过的最终组合用例不因纯文档编辑重跑，相关源码再变则重新评估。
+
+相关严格 SwiftLint、静态 quality_gate（含 262 项脚本回归）、check_workflow 和差异检查已执行，收尾证据为 closeout-lint.log、closeout-static.json、closeout-workflow.log。使用 static profile 配独立完整 QA，避免 auto profile 启动普通宿主。closeout-composition-end-prepare 是最终固定源码的完整 QA build-for-testing 通过。
+
+最近正常 `./scripts/build.sh` Debug/静态验签通过，但其请求/持锁/结束清单都是 `6d974e6192a5d67b6a1b1c723b975c0c9443567b7046462f172630d725bf0f3b`，早于最终组合会话/重新呈现修复，**不作为最终实现的正常 Debug 通过证据**。本地只读代理在原 build.sh 获锁后记录源码再调用原 xcodebuild，没有换锁或改签名。最终稳定源码的正常 Debug 门禁仍缺失。
+
+#### 外观、真实交互与指定复核
+
+fullScreenRoundTripPreservesHeaderAndSearchIdentity() 收到真实 NSWindow 全屏进入/退出通知，核对 styleMask、单行高度、主区搜索居中、操作不重叠、同一输入对象与查询保留。它是 API 驱动的系统全屏往返，不是人工操作；完整材料/安全区域视觉仍无实际合成截图证明。
+
+composedWindowAndScrollStates(scheme:) 在浅/深色、默认/原最小尺寸检查可见原生关闭/最小化/缩放按钮、滚动位置及固定顶栏几何。12 次截图前置检查均报告已有屏幕捕获权限缺失，未申请权限、未启动 screencapture，composed-images 无图；不能把几何通过写成截图通过。原 before-images/after-images 均为缓存图，侧栏子图只是子视图渲染，不能证明完整系统窗口合成。程序化顶部/下移/返回与旧羽化证据保留，没有真实触控板连续观察，也没有拼接按钮或制造截图。
+
+真实窗口拖动、控件区域不误拖动、真实中文输入法和人工窗口材料观察仍未执行。桌面控制入口继续暂停，未改锁屏、安全或显示设置，未提高最小窗口尺寸。需具备获准的单窗截图入口，以及完整隔离 QA 的人工操作条件。
+
+工具清单仍无 Cursor verifier，**指定复核未执行**。没有安装、认证、改配置或用其他代理替代；只读历史进程调查不算指定复核。材料集中在本节、原架构/组件目录和实际差异：单行/主区中心、动作顺序与身份、空间收起与手动恢复、备注去重/失败重试/记录 `.id`、组合草稿/焦点、ScrollScope 归属清理、所有失败及进程未知项。复核应返回文件/符号/行号、触发条件、实际影响、已有证据关系和未覆盖项，不预设正确或要求改代码。
+
+剩余门禁：稳定当前源码的相关回归与正常 Debug/验签、指定 Cursor 复核、真实输入法/拖动、完整系统窗口合成及必要人工观察。历史 PID 来源和副作用不可恢复部分永久保留未知，不用未来通过追认。本轮停止在验收收尾，不创建下一阶段；没有安装、启动正常应用、提交、推送或发布。
+
+### 工作台最终门禁续验（2026-10-09）
+
+**当前源码尚未完成原 9 项相关回归及正常 Debug/验签，整体 partial。** 本续轮未改生产实现、Swift 测试、runner 或其他任务的暂存区；只整理原证据并更新本记录。原锁屏失败、修复前失败、历史 PID 8295 来源/副作用未知和指定复核缺口继续保留。
+
+#### 源码对应与影响范围
+
+沿原 `run.py.snapshot()` 口径：Git 已跟踪与非忽略未跟踪的 `AreaChain/`、`AreaChainTests/`、`AreaChain.xcodeproj/`、`Config/`、`scripts/` 文件逐项 SHA-256，再对 `json.dumps(mapping, sort_keys=True)` 求 SHA-256。文档与忽略目录下的证据/runner 不纳入该摘要；runner 另记文件摘要。个人签名配置没有修改。
+
+- 最后组合闭环受测身份经原前后清单交叉验证为 `33064380f88e7602ef563d750fffb1af50801c68c90ff1903d1ac77604156f1d`，未使用提示词里的重复转录值。
+- 本续轮初始身份为 `e95e43f5f1b8ae7413b0bbfa1b36d07f3cf79b88b693dc689771aad9e43a1e7b`（1,390 文件），相对受测版 47 路径变化，相对原交接快照 4 路径变化。
+- 完整 QA 编译的请求、获锁、结束清单一致，身份为 `1578098f2947a23fa325da1d4dcac6d591b3186f68ad668be807277e2bd3e09c`。新增的两个搜索测试已在这次编译输入内；早期尚未看到日志时的“仍待锁/可能拒绝”观察不替代最终 runner 结果。
+- 15:17:22（Asia/Shanghai）再次采集身份为 `f1605c1b74b7fda5158d571c6e60f2169e804a46d6d63efc53aa41bb9b2cc04f`（1,392 文件）。相比最后受测版 51 路径变化，相比原交接快照 11 路径变化；源码仍可能被其他任务继续修改，这不是发行身份。
+- 静态检查后又观察到两个搜索测试继续编辑；续轮最终清单为 `2d0c61dad39c78aaefab7336bff06639ace2a10cae4cf3285d91488991b94260`（1,392 文件），采集时间见 `final-gates-handoff.json`。原15:17清单保留于 `final-gates-post-prepare-source.json`；最终清单仍有51个相对受测版变化路径，原工作台八文件不变，没有将此次瞬时摘要当作已受测源码。
+- QA 编译结束后 6 个输入变化：`CommandRoutineCreateFacts.swift`、`CommandSubtaskFacts.swift`、`CommandPlanDependencyTests.swift`、`UnifiedSearchMultiPlanOutputRecoveryTests.swift`、`scripts/check_workflow.py`、`scripts/tests/test_check_workflow.py`。前四个属于实际应用/测试输入，不能只按文档变化处理。尚未启动 9 项回归，不能把该编译产物当作当前源码。
+
+| 分类 | 核对结果与复用边界 |
+|---|---|
+| 工作台公共框架、共享输入/主题、详情生命周期 | 原收尾 8 个 Swift 文件及既有 Workspace、Theme、App 文件与最后受测清单一致，继续复用原搜索身份、EditDrafts、详情焦点标记与 ScrollScope；未新增业务入口 |
+| 并发业务与共享服务 | 创建输出、Plan/Run、搜索多项计划、适配器、任务/子任务/习惯服务及文案变化；其中部分服务是完整目标的共享编译输入，未将这些改动归为本任务修复 |
+| 测试与检查器 | 新增/修改统一搜索、领域和服务测试，以及工作流检查器/反例；原工作台测试未变 |
+| runner | 当前为原记录所述自包含实现，历史组合批次仍引用旧 runner 摘要；不把旧生命周期摘要当作当前 runner 身份。本续轮只读核对后重新运行原 11 项隔离检查，通过 |
+| 文档 | 不计入原源码摘要。现有工作区/暂存区差异包含并发文档，本轮只改本节及历史累计数笔误 |
+
+完整路径、摘要和限制在 `final-gates-source-comparison.json`、`final-gates-handoff-source.json`、`final-gates-handoff.json`。历史清单只有逐文件哈希，没有全部旧源码正文；已读取当前相关实现和 Git 差异，但 Git 差异的基线是 HEAD/暂存区，不能冒充最后受测版的逐行差异。无法还原的旧正文差异明确保留限制。
+
+#### 原 9 项的准确范围
+
+原文明确指定 WorkspaceNotesLifecycleTests 全部五方法，再加标记反例、搜索焦点、标题失败/取消与全屏各一方法；已与 `closeout-acceptance-command.json`、acceptance/verified 测试树和当前方法声明核对。原 `closeout-regression` 在写命令文件前已退出，未留下独立命令文件；本次恢复依据与精确筛选在 `final-gates-plan.json`，没有用其他测试替换，也没有把组合闭环的双参数方法塞入这九项。
+
+表内所有项目本续轮均为**阻断、未运行**；需要重跑的共同原因是最终收起/重新呈现修复后的同一当前源码尚无该组完整证据。上一轮最后通过只证明表中历史批次，不能证明当前源码。
+
+| 完整测试标识 | 验证行为 | 上一轮最后状态 | 本次需要运行的原因 | 解锁桌面/前台焦点 |
+|---|---|---|---|---|
+| `AreaChainTests/WorkspaceNotesLifecycleTests/successfulBlurAndUnmountPublishOnce()` | 同草稿失焦与卸载只保存/发布一次 | acceptance 通过 | 最终生命周期修复后补回归 | 是 |
+| `AreaChainTests/WorkspaceNotesLifecycleTests/failedBlurCanRetryAndNewEditingCanSave()` | 失败零发布、显式重试、新编辑可再保存 | acceptance 通过 | 同上，保留失败重试要求 | 是 |
+| `AreaChainTests/WorkspaceNotesLifecycleTests/failedDraftSurvivesUnmountAndDifferentRecordWithSameText()` | 失败草稿跨卸载保留，同文本不跨记录去重 | acceptance 通过 | 同上，核对记录隔离 | 是 |
+| `AreaChainTests/WorkspaceNotesLifecycleTests/collapseDuringMarkedNotesRetainsDraftWithoutSaving()` | 合成 marked text 收起保留草稿且不保存 | acceptance 通过 | 最终组合会话处理后补回归 | 是 |
+| `AreaChainTests/WorkspaceNotesLifecycleTests/externalUpdateDoesNotOverwriteUnsavedDraft()` | 外部值不覆盖本地未保存草稿 | acceptance 通过 | 最终草稿生命周期后补回归 | 是 |
+| `AreaChainTests/WorkspaceInspectorSizingTests/unattachedMeasurementCannotReplaceWindowMarker()` | 离屏测量不替换真实窗口标记 | acceptance 通过 | 核对实际标记归属 | 否，仍随本组串行 |
+| `AreaChainTests/WorkspaceInspectorSizingTests/searchKeepsFocusAcrossSidebarResizeInspectorCollapseAndBodyReplacement()` | 搜索唯一身份、焦点与文本跨缩放/详情收起/内容替换保留 | acceptance 通过 | 最终隐藏焦点转移后补回归 | 是 |
+| `AreaChainTests/WorkspaceHeaderInteractionTests/titleDraftSurvivesFailedSaveAndUnmountWithoutExtraSubmission()` | 标题失败保留、重挂无额外提交、Esc 回滚 | acceptance 通过 | 最终标题焦点与呈现修复后补回归 | 是 |
+| `AreaChainTests/WorkspaceWindowLifecycleTests/fullScreenRoundTripPreservesHeaderAndSearchIdentity()` | 系统全屏通知、顶栏几何、搜索身份/文本往返保持 | verified 通过 | 最终工作台实现补系统窗口回归 | 是 |
+
+计划范围 9 个唯一方法/9 次执行，0 个参数化方法；本续轮实际原生执行 0 方法/0 次，重跑 0 次，无新 xcresult。不是 9 次通过，也不是 9 项断言失败。原历史累计经测试树与审计核对为 18 唯一方法、82 次含诊断/重跑执行，详见 `final-gates-historical-count-check.json`；不计为本续轮覆盖。
+
+#### 实际命令与门禁
+
+- `python3 -B build/workspace-shell-evidence/test_run.py -v`：退出 0，11 项通过；日志 `final-gates-runner-tests.log`。覆盖原成功/失败/超时/中断和精确进程身份清理；没有新增或弱化断言。
+- `python3 -B build/workspace-shell-evidence/run.py final-gates-prepare build`：退出 0，沿原 `build/.build.lock`、最多900秒等待、完整 AreaChain Debug build-for-testing、独立 `com.areachain.workspace-shell-qa` / `build/WorkspaceShellQA`、六项真实钥匙串变量清除。展开命令、日志、前后源码和生命周期见 `final-gates-prepare-*` / `final-gates-prepare.log`；产物为 `build/WorkspaceShellQA/Build/Products/Debug/AreaChain.app`。这只是上述 `1578098f…` 的 QA 编译，没有执行原生测试或单独 QA 验签。
+- `./scripts/build.sh check-signing`：退出 0，当前配置为 development，输出 `final-gates-signing-settings.json`；仅核对配置，未改个人身份，不等于产物静态验签。
+- `python3 -B scripts/check_workflow.py`、`git diff --check`、`git diff --cached --check`：退出0；`python3 -B scripts/quality_gate.py --profile static` 退出0，含当前263项脚本回归。日志为 `final-gates-workflow.log`、`final-gates-static.log`。期间变化的两个并发 Swift 测试没有被原生执行，静态门禁不为其运行行为背书；本轮未修改检查器。最终仅补写本文后重跑文档/工作流与差异检查。
+- 当前源码的正常 `./scripts/build.sh` **未运行**，正常 Debug 产物/日志/验签通过证据均未新增。编译后的相关输入又变化，已请求用户协调上述五个源码根目录约5–8分钟稳定窗口；尚未收到确认，因此未重新排程，不通过重复编译碰运气。文档可继续编辑。原有一次有依据的重排额度尚未使用，不能从构建锁推导源码锁定。
+
+本续轮没有启动任何 QA 实例，运行前后本任务可执行路径进程盘点为空；没有新残留或补发结束信号。历史 PID 8295 的来源和副作用仍未知，不从本续轮零实例推导历史安全，也未继续无边界追查。
+
+#### 人工、外观与指定复核
+
+只读 `CGPreflightScreenCaptureAccess()` 在本轮命令进程返回 true，桌面 sessionOnConsole=1、screenLocked=false；与先前权限观察不同，但命令进程权限不能替代 QA 宿主自身的预检。本轮尚未在对应当前源码启动 QA，未运行截图、未取得系统合成图、未改权限或尝试其他截图入口。原缓存图仍只证明视图缓存，不证明完整系统窗口材质/按钮合成。
+
+真实中文输入法（搜索、标题、备注）、未确认组合文本跨实际收起的精确时序、窗口拖动/控件不误拖动、人工材料观察均**未运行**。当前没有“已准备完毕且对应当前源码”的有界人工窗口，未要求用户在窗口前等待，也未启动 Gallery。待源码窗口具备并完成隔离产物核验后，才可准备有界人工入口，再一次确认用户当时是否方便；未收到人工结果不写作用户已通过或明确无法配合。合成文字可统一为“合成搜索/合成标题/合成备注”，必须记录鼠标/拖动是否先正常确认了候选；已确认文本恢复不能顶替未确认组合文本恢复。
+
+当前可调用工具目录无指定 Cursor verifier，**未执行指定只读复核**，未安装、认证、更换模型/权限或用其他代理替代。待审材料仍为本节、原实际差异/源码清单、原失败和本轮命令证据；检查范围保持字体回退比较的敏感性、测量标记隔离、隐藏焦点、草稿唯一所有者、失败重试与记录去重、选择/检查日与手动重开规则、ScrollScope 所有权/清理。材料可供复核不等于复核通过。
+
+**交接条件**：先协调源码稳定窗口，再进行准确九项与同源码正常 Debug/验签；人工入口、单窗合成图和指定复核分别补证。当前未修复生产代码，未提交、推送、安装、发布或启动正常应用，未给其他线程发送指令或终止其工作；整体继续 partial，不新增产品阶段。

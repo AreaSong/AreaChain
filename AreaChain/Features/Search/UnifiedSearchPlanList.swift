@@ -11,7 +11,9 @@ struct UnifiedSearchPlanList: View {
             DaybookDivider()
             Text(verbatim: L10n.format("unified.plan.count", locale: locale, plan.items.count))
                 .font(DaybookType.body.weight(.semibold))
-            if controller.showsBatch {
+            if controller.showsMultiPlan {
+                Text("unified.multi.boundaries").font(DaybookType.caption)
+            } else if controller.showsBatch {
                 Text("unified.batch.pending").font(DaybookType.caption)
             } else if controller.showsRoutineCreation {
                 Text("unified.routineCreate.capability").font(DaybookType.caption)
@@ -37,6 +39,7 @@ struct UnifiedSearchPlanList: View {
                 DaybookDivider()
             }
         }
+        if controller.showsMultiPlan { UnifiedSearchMultiPlanSubmission(controller: controller) }
     }
 }
 
@@ -59,7 +62,7 @@ private struct UnifiedSearchPlanRow: View {
                 if !command.targetTypes.isEmpty {
                     Text(verbatim: L10n.format("unified.objects.count", locale: locale, item.draft.targets.objects.count))
                         .font(DaybookType.caption)
-                    Text(controller.routesBatch(command.id) ? "unified.batch.finalCheck"
+                    Text(controller.showsMultiPlan ? "unified.multi.finalCheck" : controller.routesBatch(command.id) ? "unified.batch.finalCheck"
                          : controller.routesRoutine(command.id) ? "unified.routine.finalCheck" : "unified.objects.finalCheck")
                         .font(DaybookType.micro)
                 }
@@ -136,6 +139,14 @@ private struct UnifiedSearchPlanRow: View {
                     controller.movePlanItem(item.stamp, offset: 1, source: source)
                 }
                     .disabled(index + 1 == controller.plan?.items.count)
+            }
+            if !controller.adjacentSettingGroup(starting: item.stamp).isEmpty {
+                Button("unified.multi.group") { controller.groupAdjacentSettings(item.stamp, source: source) }
+                    .accessibilityIdentifier("unified.multi.group." + item.id.uuidString)
+            }
+            if let group = item.atomicGroup, controller.showsMultiPlan {
+                Button("unified.multi.ungroup") { _ = controller.sendPlan(.dissolveGroup(group), source: source) }
+                    .accessibilityIdentifier("unified.multi.ungroup." + item.id.uuidString)
             }
             Button("unified.plan.remove") { _ = controller.removePlanItem(item.stamp, source: source) }
                 .accessibilityIdentifier("unified.plan.remove." + item.id.uuidString)

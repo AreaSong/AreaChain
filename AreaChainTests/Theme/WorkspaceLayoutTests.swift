@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 import SwiftUI
 import Testing
 @testable import AreaChain
@@ -7,21 +8,34 @@ import Testing
 @MainActor
 struct WorkspaceLayoutTests {
     @Test func nativeFieldKeepsTheDeclaredSizeAndWeightWhenEditing() async throws {
-        let host = NSHostingView(rootView: field())
-        let window = makeWindow(host, size: NSSize(width: 360, height: 70))
-        defer { window.makeFirstResponder(nil); window.contentView = nil; window.orderOut(nil) }
-        try await settle(host)
-        let normal = try #require(nativeField(in: host))
-        #expect(normal.font == NSFont.systemFont(ofSize: 13, weight: .regular))
-
-        host.rootView = field(size: DaybookType.titleSize, weight: .semibold)
-        try await settle(host)
-        let title = try #require(nativeField(in: host))
-        #expect(title.font == NSFont.systemFont(ofSize: 16, weight: .semibold))
-        window.makeFirstResponder(title)
-        let editor = try #require(title.currentEditor() as? NSTextView)
-        #expect(editor.font == title.font)
-        #expect(editor.delegate === title)
+        for text in ["Native font check", "原生输入字号核验"] {
+            let host = NSHostingView(rootView: field(text: text))
+            let window = makeWindow(host, size: NSSize(width: 360, height: 70))
+            defer { window.makeFirstResponder(nil); window.contentView = nil; window.orderOut(nil) }
+            try await NativeSyntaxUI.prepareFocus(in: window)
+            for (size, weight) in [(DaybookType.bodySize, NSFont.Weight.regular), (DaybookType.titleSize, .semibold)] {
+                window.makeFirstResponder(nil)
+                host.rootView = field(text: text, size: size, weight: weight)
+                try await settle(host)
+                let candidates = ScrollNativeEvidence.views(window).compactMap { $0 as? DaybookAppKitTextField }
+                    .filter { !$0.isHiddenOrHasHiddenAncestor && !$0.visibleRect.isEmpty }
+                try #require(candidates.count == 1)
+                let title = try #require(candidates.first)
+                let declared = NSFont.systemFont(ofSize: size, weight: weight)
+                #expect(title.font == declared)
+                try #require(window.makeFirstResponder(title))
+                let editor = try #require(title.currentEditor() as? NSTextView)
+                #expect(window.firstResponder === editor && editor.delegate === title)
+                // 中文字形由系统级联字体绘制；精确比较同一声明字体的实际回退，仍检查字号和字重。
+                let fallback = CTFontCreateForString(declared as CTFont, text as CFString,
+                                                     CFRange(location: 0, length: text.utf16.count))
+                let actual = try #require(editor.font)
+                #expect(actual.pointSize == size)
+                #expect(actual == (fallback as NSFont))
+                #expect(CTFontCopyTraits(actual as CTFont) as NSDictionary == CTFontCopyTraits(fallback) as NSDictionary)
+                #expect(editor.string == text)
+            }
+        }
     }
 
     @Test func pageHeaderKeepsTitleAndContentOriginsWithOptionalSubtitle() async throws {
@@ -89,8 +103,8 @@ struct WorkspaceLayoutTests {
         #expect(original.bounds.width == DaybookMetrics.Hit.regular)
     }
 
-    private func field(size: CGFloat = DaybookType.bodySize, weight: NSFont.Weight = .regular) -> DaybookTextField {
-        DaybookTextField(text: .constant("原生输入字号核验"), placeholder: "输入", fontSize: size,
+    private func field(text: String = "原生输入字号核验", size: CGFloat = DaybookType.bodySize, weight: NSFont.Weight = .regular) -> DaybookTextField {
+        DaybookTextField(text: .constant(text), placeholder: "输入", fontSize: size,
                          fontWeight: weight, focus: .constant(false), onSubmit: {})
     }
 

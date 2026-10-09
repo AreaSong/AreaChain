@@ -8,7 +8,7 @@ struct UnifiedSearchSettingSubmission: View {
     var body: some View {
         let source = controller.buffer
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            if controller.showsTaskChain {
+            if controller.showsMultiPlan || controller.showsTaskChain {
                 EmptyView()
             } else if controller.showsSubtask {
                 UnifiedSearchSubtaskSubmission(controller: controller)

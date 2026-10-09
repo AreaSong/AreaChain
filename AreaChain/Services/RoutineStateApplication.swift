@@ -5,9 +5,32 @@ import SwiftData
 @MainActor struct RoutineStateApplication {
     struct Input {
         let target: CommandObjectReference
-        let record: ObjectIdentifier
+        private let record: ObjectIdentifier?
+        private let savedRecord: PersistentIdentifier?
         let impact: CommandRoutineStateImpact
         let creationIDs: [String: UUID]
+
+        init(target: CommandObjectReference, record: ObjectIdentifier, impact: CommandRoutineStateImpact, creationIDs: [String: UUID]) {
+            self.target = target
+            self.record = record
+            savedRecord = nil
+            self.impact = impact
+            self.creationIDs = creationIDs
+        }
+
+        /// 新创建定义可能重新物化；仍比较真实存储身份，不退化为业务 UUID。
+        init(target: CommandObjectReference, record: PersistentIdentifier, impact: CommandRoutineStateImpact, creationIDs: [String: UUID]) {
+            self.target = target
+            self.record = nil
+            savedRecord = record
+            self.impact = impact
+            self.creationIDs = creationIDs
+        }
+
+        func matches(_ routine: DailyRoutine) -> Bool {
+            if let savedRecord { return savedRecord == routine.persistentModelID }
+            return record == ObjectIdentifier(routine)
+        }
     }
     struct Update {
         let row: RoutineCheck
@@ -34,7 +57,7 @@ import SwiftData
         return try inputs.map { input in
             let matches = definitionIndex[input.target.id] ?? []
             guard matches.count == 1, let routine = matches.first, routine.modelContext === context,
-                  ObjectIdentifier(routine) == input.record, routine.snapshot == input.impact.definition,
+                  input.matches(routine), routine.snapshot == input.impact.definition,
                   routine.weekdayMask == input.impact.storedWeekdayMask, routine.weekdaysOnly == input.impact.weekdaysOnly else {
                 throw RoutineCommandIssue.fieldsChanged
             }

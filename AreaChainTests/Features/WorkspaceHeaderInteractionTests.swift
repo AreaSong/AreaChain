@@ -7,6 +7,33 @@ import Testing
 @Suite(.serialized)
 @MainActor
 struct WorkspaceHeaderInteractionTests {
+    @Test func failedNotesBlurThenUnmountMakesOnlyOneSaveAttempt() async throws {
+        let host = try HeaderTestHost()
+        let key = "todo-" + UUID().uuidString
+        defer { host.close(); EditDrafts.shared.notes.removeValue(forKey: key) }
+        var attempts = 0
+        host.show(TaskDetailNotesView(draftKey: key, notes: "Original") { _ in attempts += 1; return false })
+        try await host.prepare()
+        let editor = try #require(ScrollNativeEvidence.views(host.window)
+            .compactMap { $0 as? NSTextView }.first { $0.isEditable && !$0.isFieldEditor })
+        try #require(host.window.makeFirstResponder(editor))
+        editor.setSelectedRange(NSRange(location: 0, length: editor.string.utf16.count))
+        editor.insertText("Synthetic unsaved notes", replacementRange: editor.selectedRange())
+        try await host.settle()
+        host.window.makeFirstResponder(nil)
+        try await host.settle()
+        #expect(attempts == 1)
+        host.show(Text("Collapsed"))
+        try await host.settle()
+        #expect(attempts == 1)
+        #expect(EditDrafts.shared.notes[key] == "Synthetic unsaved notes")
+        host.show(TaskDetailNotesView(draftKey: key, notes: "Original") { _ in attempts += 1; return true })
+        try await host.settle()
+        let restored = try #require(ScrollNativeEvidence.views(host.window)
+            .compactMap { $0 as? NSTextView }.first { $0.isEditable && !$0.isFieldEditor })
+        #expect(restored.string == "Synthetic unsaved notes" && attempts == 1)
+    }
+
     @Test func tagCreationExpandsSubmitsRejectsDuplicatesAndCancels() async throws {
         let host = try HeaderTestHost()
         defer { host.close() }
@@ -147,6 +174,8 @@ private final class HeaderTestHost {
             .syntaxOverlayHost()
         window.contentView = NSHostingView(rootView: root)
         window.setContentSize(NSSize(width: 980, height: 600))
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         window.makeKeyAndOrderFront(nil)
     }
 

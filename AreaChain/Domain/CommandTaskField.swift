@@ -85,6 +85,8 @@ struct CommandTaskFieldPreview: Equatable, CustomStringConvertible, CustomDebugS
     let tagIDs: String
     var completion: CommandTaskCompletionImpact?
     var tags: CommandTaskTagMutation?
+    var targetTitle = ""
+    var consumption: CommandCreationConsumption?
     var semanticsVersion = 2
     var noChange: Bool { tags.map { $0.noChange(rawIDs: tagIDs) } ?? (original == edit) }
 
@@ -99,31 +101,32 @@ struct CommandTaskFieldPreview: Equatable, CustomStringConvertible, CustomDebugS
         return item
     }
 
-    static func validate(_ item: CommandPlanItem) throws {
+    static func validate(_ item: CommandPlanItem, allowingDependencies: Bool = false,
+                         resolved: CommandResolvedInput? = nil) throws {
+        let input = try item.checkedInput(resolved)
         let draft = item.draft
-        guard item.atomicGroup == nil, item.links.predecessors.isEmpty, item.links.results.isEmpty,
+        guard item.atomicGroup == nil, allowingDependencies || item.links.predecessors.isEmpty, resolved != nil || item.links.results.isEmpty,
               item.mergedOrigins.isEmpty, item.returnedAttempts.isEmpty,
               TaskFieldEdit.commands.contains(draft.commandID.rawValue) else { throw TaskFieldCommandIssue.unsupportedPlan }
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
-              draft.baseline == CommandDraftBaseline(), draft.check().staticallyValid,
-              draft.arguments.count == 1, draft.targets.selection == .single, draft.targets.objects.count == 1,
-              let target = draft.targets.objects.first, target.type == .todo, target.dayKey == nil else {
+              draft.baseline == CommandDraftBaseline(),
+              draft.arguments.count == 1, input.targets.selection == .single, input.targets.objects.count == 1,
+              let target = input.targets.objects.first, target.type == .todo, target.dayKey == nil else {
             throw TaskFieldCommandIssue.invalidArguments
         }
         _ = try TaskFieldEdit(command: draft.commandID, argument: draft.arguments[0])
     }
 
     func frozenItem(in run: CommandExecutionRun, lease: CommandHostLease) throws -> CommandPlanItem {
-        guard lease.ownership == self.lease.ownership, lease.revision == self.lease.revision + 2,
-              run.snapshot.stamp == plan, run.snapshot.items.count == 1, run.outputs.isEmpty,
-              let item = run.snapshot.items.first, item.stamp == self.item, item.draft.stamp == draft,
-              item.draft.arguments == arguments, item.draft.targets == .init(.single, objects: [target]),
-              let command = CommandCatalog.standard.command(id: item.draft.commandID),
-              let targetArgument = item.draft.targets.argument(for: command),
-              run.resolvedInput(item.id) == .init(arguments: arguments + [targetArgument], targets: item.draft.targets) else {
-            throw TaskFieldCommandIssue.stale
-        }
-        try Self.validate(item)
+        guard run.previewLeaseMatches(self.lease, current: lease, itemID: self.item.id),
+              run.snapshot.stamp == plan, run.permitsMember(self.item.id),
+              let item = run.snapshot.items.first(where: { $0.stamp == self.item }), item.draft.stamp == draft,
+              item.draft.arguments == arguments else { throw TaskFieldCommandIssue.stale }
+        if let consumption { try consumption.validate(in: run, item: item) }
+        let resolved = try consumption?.input(item) ?? item.checkedInput()
+        guard run.resolvedInput(item.id) == resolved else { throw TaskFieldCommandIssue.stale }
+        guard resolved.targets == .init(.single, objects: [target]) else { throw TaskFieldCommandIssue.stale }
+        try Self.validate(item, allowingDependencies: run.multiPlan != nil, resolved: resolved)
         return item
     }
 
@@ -164,16 +167,17 @@ struct CommandTaskFieldFacts: Equatable {
     func wasInvoked(_ id: UUID) -> Bool { invoked.contains(id) }
     func markInvoked(_ id: UUID) { invoked.insert(id) }
 
-    func accept(_ preview: CommandTaskFieldPreview) throws -> CommandTaskFieldAcceptance {
+    func accept(_ preview: CommandTaskFieldPreview, retry: CommandMultiPlanRetryPermit? = nil) throws -> CommandTaskFieldAcceptance {
         if let old = acceptances[preview.draft.draftID] {
-            guard !wasInvoked(old.id) else { throw TaskFieldCommandIssue.alreadyInvoked }
-            if old.preview == preview { return old }
+            guard !wasInvoked(old.id) || retry?.matches(item: preview.item, acceptance: old.id) == true else { throw TaskFieldCommandIssue.alreadyInvoked }
+            if old.preview == preview && !wasInvoked(old.id) { return old }
         }
         let keys = preview.tags?.final.compactMap { target -> String? in
             if case .newName(_, let key) = target { return key }; return nil
         } ?? []
-        let result = CommandTaskFieldAcceptance(id: UUID(), preview: preview,
-                                                tagCreationIDs: Dictionary(uniqueKeysWithValues: keys.map { ($0, UUID()) }))
+        let previous = acceptances[preview.draft.draftID]?.tagCreationIDs ?? [:]
+        let ids = Dictionary(uniqueKeysWithValues: keys.map { ($0, previous[$0] ?? UUID()) })
+        let result = CommandTaskFieldAcceptance(id: UUID(), preview: preview, tagCreationIDs: ids)
         acceptances[preview.draft.draftID] = result
         return result
     }
