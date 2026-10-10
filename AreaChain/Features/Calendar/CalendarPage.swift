@@ -102,9 +102,11 @@ struct CalendarPage: View {
             onSelect: { selectedKey = $0 },
             onEnterList: enterDayList
         )
-        .padding(DaybookSpacing.page)
+        .padding(.horizontal, DaybookSpacing.page)
+        .padding(.top, embedded ? 0 : DaybookSpacing.page)
+        .padding(.bottom, embedded ? 9 : DaybookSpacing.page)
         .frame(minWidth: embedded ? 0 : 420, maxWidth: .infinity, minHeight: embedded ? 0 : 560, maxHeight: .infinity, alignment: .topLeading)
-        .background(DaybookPalette.fill.page)
+        .background(embedded ? Color(nsColor: .windowBackgroundColor) : DaybookPalette.fill.page) // token-exempt: 工作台嵌入时与公用底板统一
     }
 
     private var inspectorIDs: [UUID] {

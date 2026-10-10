@@ -51,7 +51,7 @@ struct WorkspaceHeaderBar: View {
                 .help(titleLabel)
                 .accessibilityAddTraits(.isHeader)
             if !navigation.isSearching && navigation.selectedTagID == nil
-                && (navigation.selectedTab == .today || navigation.isShowingShellPreview) {
+                && (navigation.selectedTab == .today || navigation.selectedTab == .dashboard || navigation.isShowingShellPreview) {
                 TimelineView(.periodic(from: .now, by: 60)) { _ in
                     WorkspaceHeaderDate()
                 }

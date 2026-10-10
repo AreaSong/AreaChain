@@ -40,9 +40,6 @@ struct WorkspaceFilteredListView: View {
         ) {
             headerTrailing(model)
         } content: {
-            Text("filter.open.count \(model.openCount)")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
             DaybookComposer(
                 text: $draftTitle,
                 placeholder: "filtered.add.tag",
@@ -50,13 +47,20 @@ struct WorkspaceFilteredListView: View {
             )
             taskList(model)
         }
-        .workspaceHeader(actions: [WorkspaceHeaderAction(
-            id: "tags.selectAll", title: navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit",
-            systemImage: "checklist", isEnabled: model.canBatchSelect
-        ) {
-            if navigation.selectedTaskIDs.isEmpty { navigation.selectAllTasks(in: model.orderedVisibleIDs) }
-            else { navigation.clearSelection() }
-        }])
+        .workspaceHeader(
+            actions: [WorkspaceHeaderAction(
+                id: "tags.selectAll", title: navigation.selectedTaskIDs.isEmpty ? "batch.select.all" : "batch.exit",
+                systemImage: "checklist", isEnabled: model.canBatchSelect
+            ) {
+                if navigation.selectedTaskIDs.isEmpty { navigation.selectAllTasks(in: model.orderedVisibleIDs) }
+                else { navigation.clearSelection() }
+            }],
+            status: AnyView(
+                Text("filter.open.count \(model.openCount)")
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+            )
+        )
         .workspaceInspectorTargets(model.orderedVisibleIDs + model.matchingSubtasks.compactMap { $0.todo?.id })
         .confirmMoveToTrash($pendingTrash)
         .refreshBoardOnDayChange()

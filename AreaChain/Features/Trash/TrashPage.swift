@@ -54,9 +54,6 @@ struct TrashPage: View {
             minWidth: 360,
             minHeight: 420
         ) {
-            Text("trash.hint")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
             if items.isEmpty {
                 DaybookEmptyState(title: "trash.empty", systemImage: "trash")
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
