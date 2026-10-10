@@ -8,6 +8,7 @@ struct WorkspaceFilteredListView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var tag: TagItem
+    var readOnly = false
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
@@ -22,6 +23,14 @@ struct WorkspaceFilteredListView: View {
 
     var body: some View {
         let model = makeListModel()
+        if readOnly {
+            WorkspaceTagReadOnlyList(tag: tag, model: model)
+        } else {
+            editableContent(model)
+        }
+    }
+
+    private func editableContent(_ model: WorkspaceFilteredListModel) -> some View {
         DaybookPage(
             titleText: tag.name,
             titleStyle: .page,

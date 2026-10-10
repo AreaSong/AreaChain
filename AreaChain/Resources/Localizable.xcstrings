@@ -796,7 +796,8 @@
             "value": "请选择有效日期、优先级、提醒时刻，或明确取消提醒。"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.field.inputHint": {
       "extractionState": "manual",
@@ -1100,7 +1101,8 @@
             "value": "仅支持单个普通活任务的一项属性修改。"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.field.source": {
       "extractionState": "manual",
@@ -39935,7 +39937,8 @@
             "value": "分类"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.interaction": {
       "localizations": {
@@ -39951,7 +39954,8 @@
             "value": "交互"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.modification": {
       "localizations": {
@@ -39967,7 +39971,8 @@
             "value": "修改"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.navigation": {
       "localizations": {
@@ -39983,7 +39988,8 @@
             "value": "导航"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.query": {
       "localizations": {
@@ -39999,7 +40005,8 @@
             "value": "查询"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.scope": {
       "localizations": {
@@ -40015,7 +40022,8 @@
             "value": "范围"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.category.systemAction": {
       "localizations": {
@@ -40031,7 +40039,8 @@
             "value": "系统操作"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.browse": {
       "localizations": {
@@ -40047,7 +40056,8 @@
             "value": "浏览指令"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.hint": {
       "localizations": {
@@ -40063,7 +40073,8 @@
             "value": "↑↓ 浏览 · Tab 补全/切换 · Return 补全/请求打开"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.incomplete": {
       "localizations": {
@@ -40079,7 +40090,8 @@
             "value": "继续输入或选择指令"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.invalid": {
       "localizations": {
@@ -40095,7 +40107,8 @@
             "value": "未知或无效的指令路径"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.label": {
       "localizations": {
@@ -40127,7 +40140,8 @@
             "value": "继续选择或填写参数 · 暂不可用"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.placeholder": {
       "localizations": {
@@ -40143,7 +40157,8 @@
             "value": "搜索，或输入 / 查找指令"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.scope": {
       "localizations": {
@@ -40159,7 +40174,8 @@
             "value": "内容范围 · 仅填写"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.input.unavailable": {
       "localizations": {
@@ -40175,7 +40191,8 @@
             "value": "暂不可用 · 仍可填写参数"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.objects.accept": {
       "extractionState": "manual",
@@ -46787,7 +46804,8 @@
             "value": "已选 %lld 项 · 变化 %lld 项 · 写入实体 %lld / %lld"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.writeLimit": {
       "localizations": {
@@ -46819,7 +46837,8 @@
             "value": "同一实体的拟定变化不一致。请检查目标并重新准备。"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.cascade": {
       "localizations": {
@@ -46835,7 +46854,8 @@
             "value": "级联完成 %lld 个活跃子项"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.cascadeDetails": {
       "localizations": {
@@ -46867,7 +46887,8 @@
             "value": "子项身份或父子关系不一致。"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.entity.todo": {
       "localizations": {
@@ -46883,7 +46904,8 @@
             "value": "任务：新增 %lld / 修改 %lld"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.entity.subtask": {
       "localizations": {
@@ -46899,7 +46921,8 @@
             "value": "子项：新增 %lld / 修改 %lld"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.entity.routine": {
       "localizations": {
@@ -46915,7 +46938,8 @@
             "value": "习惯定义：新增 %lld / 修改 %lld"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.entity.check": {
       "localizations": {
@@ -46931,7 +46955,8 @@
             "value": "打卡记录：新增 %lld / 修改 %lld"
           }
         }
-      }
+      },
+      "extractionState": "stale"
     },
     "unified.batch.appendTargets": {
       "localizations": {
@@ -48287,6 +48312,223 @@
           "stringUnit": {
             "state": "translated",
             "value": "该目标的打开操作尚未接线。"
+          }
+        }
+      }
+    },
+    " · ": {
+      "comment": "A separator between the slot's badge text and the slot's title and subtitle.",
+      "isCommentAutoGenerated": true
+    },
+    "!p1": {},
+    "!p2": {
+      "comment": "A priority tag.",
+      "isCommentAutoGenerated": true
+    },
+    "@10:00": {
+      "comment": "A time-based reminder.",
+      "isCommentAutoGenerated": true
+    },
+    "@15:30": {
+      "comment": "A time stamp.",
+      "isCommentAutoGenerated": true
+    },
+    "%@ · ": {
+      "comment": "A label that describes a slot in a quadrant. The label contains the slot's badge text, followed by the slot's title, followed by the slot's subtitle.",
+      "isCommentAutoGenerated": true
+    },
+    "%@ %lld": {
+      "comment": "A chip that displays a title and a count. The title is a localized string for a pending lane, and the count is the number of pending items in that lane.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ %2$lld"
+          }
+        }
+      }
+    },
+    "+%lld": {
+      "comment": "A badge showing the number of tags that overflow the first two visible ones. The first argument is the number of overflow tags. The second argument is a list of the overflow tags.",
+      "isCommentAutoGenerated": true
+    },
+    "⌘↵": {
+      "comment": "A key combination for directly creating a note.",
+      "isCommentAutoGenerated": true
+    },
+    "99+": {
+      "comment": "A label for a count of 99 or more.",
+      "isCommentAutoGenerated": true
+    },
+    "diary.preview.card": {
+      "comment": "A label describing a diary preview card.",
+      "isCommentAutoGenerated": true
+    },
+    "P1 · %@": {
+      "comment": "A checkmark next to a priority level.",
+      "isCommentAutoGenerated": true
+    },
+    "P2 · %@": {
+      "comment": "A checkmark next to a priority level 2 label.",
+      "isCommentAutoGenerated": true
+    },
+    "P3 · %@": {
+      "comment": "A checkmark icon.",
+      "isCommentAutoGenerated": true
+    },
+    "P4 · %@": {
+      "comment": "A priority level that is neither urgent nor important.",
+      "isCommentAutoGenerated": true
+    },
+    "unified.content.invalidImage": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "File is not a valid ordinary image or is damaged"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "文件不是有效的普通图片或已经损坏"
+          }
+        }
+      }
+    },
+    "unified.content.invalidTarget": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Target unavailable or access cannot be verified"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "目标不可用或访问资格不完整"
+          }
+        }
+      }
+    },
+    "unified.content.missingFile": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image file is missing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "图片文件缺失"
+          }
+        }
+      }
+    },
+    "unified.content.openOwner": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open owner record"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开所属记录"
+          }
+        }
+      }
+    },
+    "unified.content.ownerHint": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Owner navigation is checked separately from image preview"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "所属记录与图片预览分别核验"
+          }
+        }
+      }
+    },
+    "unified.content.ownerNeedsDay": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This image belongs to a routine definition. Select an explicit occurrence date in search."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此图片属于习惯定义；请在搜索中明确选择执行日期"
+          }
+        }
+      }
+    },
+    "unified.content.protectedContent": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected content is unavailable in this viewer"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此内容受保护，本次查阅不可显示"
+          }
+        }
+      }
+    },
+    "unified.content.stale": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Content access expired. Return to search and open again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "内容资格已失效，请返回搜索后重新打开"
+          }
+        }
+      }
+    },
+    "unified.content.unreadableFile": {
+      "extractionState": "stale",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Image file cannot be read"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法读取图片文件"
           }
         }
       }

@@ -40,13 +40,20 @@ extension UnifiedSearchController {
                 navigationMessage = "unified.navigation.chooseDay"; return
             }
             navigate(.day(day), source: source)
-        } else if command.id.rawValue == "inspector.open" {
+        } else if command.id.rawValue == "inspector.open" || command.id.rawValue == "go.tagList" {
             guard parsed.state != .invalid, parsed.arguments.isEmpty,
                   parsed.diagnostics.allSatisfy({ $0.issue == .chooseParameter && $0.range.length == 0 }) else {
                 navigationMessage = "unified.navigation.invalidTarget"; return
             }
             guard let page = try? session.presentation().pagination, page.browse.active != nil else {
                 navigationMessage = "unified.navigation.chooseObject"; return
+            }
+            if command.id.rawValue == "go.tagList", page.browse.active?.type != .tag {
+                navigationMessage = "unified.navigation.chooseObject"; return
+            }
+            if command.id.rawValue == "inspector.open",
+               ![CommandObjectType.todo, .subtask, .routineOccurrence].contains(page.browse.active!.type) {
+                navigationMessage = "unified.navigation.unsupported"; return
             }
             browse(.init(version: page.snapshot.version, action: .open(inputEditing: false)), source: source)
         } else { navigationMessage = "unified.navigation.unsupported" }
@@ -64,6 +71,12 @@ extension UnifiedSearchController {
                   page.browse.active == open.object || page.browse.selected.contains(open.object) else {
                 throw WorkspaceOpenFailure.stale
             }
+            if [.tag, .diary, .image].contains(open.object.type) {
+                guard router.contents != nil else { throw WorkspaceOpenFailure.unassembled }
+                contentOwnerMessage = "unified.content.ownerHint"
+                navigate(.content(open.object), source: source, content: open)
+                return
+            }
             let location = try router.objects.resolve(open)
             guard validates(source), (try? session.presentation().pagination.snapshot.version) == page.snapshot.version else {
                 throw WorkspaceOpenFailure.stale
@@ -72,7 +85,8 @@ extension UnifiedSearchController {
         } catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
     }
 
-    private func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer) {
+    private func navigate(_ destination: WorkspaceNavigationDestination, source: UnifiedSearchBuffer,
+                          content: ContentQueryBrowseOpen? = nil, origin: CommandObjectReference? = nil) {
         guard validates(source), let router = navigationRouter else { return }
         do { try router.validateHost(); try session.validateDisplayHost(expecting: source.lease) }
         catch { navigationMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .stale); return }
@@ -95,6 +109,11 @@ extension UnifiedSearchController {
         navigationRequestID = requestID
         navigationTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            if let content, let version = ticket.version, let contents = router.contents {
+                await contents.open(content, session: self.session, lease: source.lease, version: version, origin: origin)
+                guard self.navigationRequestID == requestID, self.validReturn(ticket), self.validates(source),
+                      !Task.isCancelled else { return }
+            }
             let result = await router.reveal(destination) { [weak self] in
                 guard let self, self.validReturn(ticket), self.validates(source), !Task.isCancelled,
                       (try? self.session.validateDisplayHost(expecting: self.buffer.lease)) != nil else { return false }
@@ -108,12 +127,33 @@ extension UnifiedSearchController {
             self.navigationRequestID = nil
             guard self.validates(source) else { return }
             switch result {
-            case .displayed: self.navigationMessage = "unified.navigation.displayed"
+            case .displayed:
+                self.navigationMessage = router.contents?.failure.map { "unified.content." + $0.rawValue }
+                    ?? "unified.navigation.displayed"
             case .locatedWithoutInspector: self.navigationMessage = "unified.navigation.needsSpace"
             case .rejected(let reason):
                 self.navigationMessage = self.navigationFailure(reason)
                 if self.validReturn(ticket) { await self.returnToSearch(ticket.id) }
             }
+        }
+    }
+
+    func openContentOwner(_ owner: CommandObjectReference) {
+        guard let router = navigationRouter, let contents = router.contents, contents.allowsOwner(owner),
+              let origin = contents.target else { contentOwnerMessage = "unified.content.stale"; return }
+        if owner.type == .routine {
+            contentOwnerMessage = "unified.content.ownerNeedsDay"
+            return
+        }
+        let open = ContentQueryBrowseOpen(object: owner, parent: nil, viewingTrash: false)
+        if owner.type == .diary {
+            navigate(.content(owner), source: buffer, content: open, origin: origin)
+        } else {
+            do {
+                let location = try router.objects.resolve(open)
+                guard contents.validate() else { throw WorkspaceOpenFailure.stale }
+                navigate(.object(location), source: buffer)
+            } catch { contentOwnerMessage = "unified.content.invalidTarget" }
         }
     }
 
@@ -126,6 +166,9 @@ extension UnifiedSearchController {
     func returnToSearch(_ id: UUID) async {
         guard let ticket = returnSearch, ticket.id == id, validReturn(ticket), let router = navigationRouter else { return }
         do { try router.validateHost() } catch { navigationMessage = "unified.navigation.composing"; return }
+        navigationTask?.cancel()
+        navigationTask = nil
+        navigationRequestID = nil
         router.inspectorFocus.retainForNavigation()
         router.clearDestination()
         router.navigation.restoreSearchPage(ticket.tab, tag: ticket.tag)
@@ -207,6 +250,7 @@ extension UnifiedSearchController {
         navigationRequestID = nil
         navigationRouter?.clearDestination()
         if privacy {
+            navigationRouter?.contents?.invalidate()
             returnSearch = nil
             restoreSearchScroll = nil
             preservedSearchScrollVersion = nil

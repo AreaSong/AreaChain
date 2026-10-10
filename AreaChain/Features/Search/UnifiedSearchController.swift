@@ -12,6 +12,7 @@ final class UnifiedSearchController {
     var restoreSearchScroll: (version: UUID, point: CGPoint)?
     var preservedSearchScrollVersion: UUID?
     var navigationMessage = "unified.navigation.hint"
+    var contentOwnerMessage = "unified.content.ownerHint"
     @ObservationIgnored var navigationTask: Task<Void, Never>?
     var navigationRequestID: UUID?
     var inputFocused = true
@@ -192,7 +193,7 @@ final class UnifiedSearchController {
         task = Task { @MainActor [weak self] in
             guard let self, self.validates(source), !self.isCommandInput else { return }
             do {
-                let effect = try await self.read()
+                let effect = try await self.readObjectSource()
                 guard self.validates(source), !Task.isCancelled else { return }
                 self.applyFocus(effect.pagination?.browse.focus)
             } catch {
@@ -336,7 +337,13 @@ final class UnifiedSearchController {
 
     func refreshOperationPresentation() { revision &+= 1 }
 
-    func readObjectSource() async throws -> ContentQueryReadEffect { try await read() }
+    func readObjectSource() async throws -> ContentQueryReadEffect {
+        let contents = navigationRouter?.contents
+        let source = try contents?.captureSource()
+        let effect = try await read()
+        if let source { try contents?.bindSource(source, publication: session.presentation()) }
+        return effect
+    }
 
     func setObjectInputMode(_ selecting: Bool) {
         guard buffer.selectingObjects != selecting else { return }
@@ -368,6 +375,10 @@ final class UnifiedSearchController {
     private func changed(_ change: ContentQueryDisplayUpdates.Change) {
         revision &+= 1
         if change == .privacyInvalidated || session.isMasked { multiPlan?.invalidatePresentation() }
+        if change != .published, navigationRouter?.contents?.content != nil || navigationRouter?.contents?.loading == true {
+            navigationRouter?.contents?.invalidate()
+            navigationMessage = "unified.content.stale"
+        }
         if change != .published, navigationRouter?.navigation.navigationObject != nil {
             invalidateNavigation(privacy: change == .privacyInvalidated)
         }

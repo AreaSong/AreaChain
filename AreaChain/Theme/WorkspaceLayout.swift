@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// 工作台布局尺寸。用户决定：控件尺寸两宿主统一，只有"有侧栏、有页头、内容更宽"这类布局差异保留在这里。
@@ -164,12 +165,12 @@ struct WorkspaceSidebarRow: View {
     }
 }
 
-/// 侧边栏滚动内容顶部羽化渐变遮罩（保证侧栏背景通顶一体化、红绿灯沉浸在侧边栏内部，上滑时内容在红绿灯下方平滑羽化消隐）
+/// 侧边栏滚动内容顶部羽化渐变遮罩（保证侧栏背景通顶一体化、红绿灯沉浸在侧边栏内部，上滑穿透毛玻璃并在红绿灯下方平滑消隐）
 struct WorkspaceSidebarFadeMask: View {
     var body: some View {
         VStack(spacing: 0) {
             Color.clear
-                .frame(height: 36)
+                .frame(height: 24)
             LinearGradient(
                 stops: [
                     .init(color: .clear, location: 0),
@@ -178,8 +179,55 @@ struct WorkspaceSidebarFadeMask: View {
                 startPoint: .top,
                 endPoint: .bottom
             )
-            .frame(height: 14)
+            .frame(height: 20)
             Color.black
         }
+    }
+}
+
+/// 侧边栏顶部穿透毛玻璃背景（NSVisualEffectView，在窗口内部对其后方滚入的内容产生柔和的高斯模糊）
+struct WorkspaceSidebarVisualEffect: NSViewRepresentable {
+    var material: NSVisualEffectView.Material = .headerView
+    var blendingMode: NSVisualEffectView.BlendingMode = .withinWindow
+
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let view = NSVisualEffectView()
+        view.material = material
+        view.blendingMode = blendingMode
+        view.state = .followsWindowActiveState
+        return view
+    }
+
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
+        nsView.material = material
+        nsView.blendingMode = blendingMode
+    }
+}
+
+/// 侧边栏顶部固定内嵌层（macOS 系统设置同款：红绿灯避让 + 常驻半透明圆角底壳 + 窗口内高斯毛玻璃穿透渐变）
+struct WorkspaceSidebarHeaderLayer: View {
+    var body: some View {
+        Color.clear
+            .frame(height: 40)
+            .background {
+                WorkspaceSidebarVisualEffect(material: .headerView, blendingMode: .withinWindow)
+                    .mask {
+                        VStack(spacing: 0) {
+                            Color.black.frame(height: 28)
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .black, location: 0),
+                                    .init(color: .clear, location: 1.0)
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                            .frame(height: 12)
+                        }
+                    }
+            }
+            .frame(height: 40)
+            .allowsHitTesting(false)
+            .ignoresSafeArea(.all, edges: .top)
     }
 }

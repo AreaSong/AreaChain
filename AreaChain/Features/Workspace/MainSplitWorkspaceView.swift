@@ -211,7 +211,10 @@ struct MainSplitWorkspaceView: View {
 
     @ViewBuilder
     private var detailView: some View {
-        if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
+        if let search, let router = searchRouter, let contents = router.contents,
+           case .content(let object) = router.destination {
+            WorkspaceReadOnlyContentView(session: contents, object: object, controller: search)
+        } else if let tid = navigation.selectedTagID, let tag = tags.first(where: { $0.id == tid && $0.deletedAt == nil }) {
             WorkspaceFilteredListView(tag: tag)
         } else {
             switch navigation.selectedTab {

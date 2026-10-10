@@ -57,6 +57,11 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Services/WorkspaceContentReader.swift", "WorkspaceContentReader"),
+    ("AreaChain/Services/WorkspaceContentSession.swift", "WorkspaceContentSession"),
+    ("AreaChain/Services/WorkspaceContentSource.swift", "WorkspaceContentSource"),
+    ("AreaChain/Features/Workspace/WorkspaceReadOnlyContentView.swift", "WorkspaceReadOnlyContentView"),
+    ("AreaChain/Features/Attachments/LoadedAttachmentImage.swift", "LoadedAttachmentImage"),
     ("AreaChain/Features/Workspace/WorkspaceSearchRouter.swift", "WorkspaceSearchRouter"),
     ("AreaChain/Features/Search/UnifiedSearchNavigation.swift", "UnifiedSearchReturnContext"),
     ("AreaChain/Services/WorkspaceObjectNavigation.swift", "WorkspaceObjectNavigation"),

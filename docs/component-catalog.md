@@ -1026,3 +1026,13 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 验证入口为 UnifiedSearchNavigationTests、UnifiedSearchNavigationBoundaryTests、UnifiedSearchNavigationOwnershipTests，以及原WorkspaceHeader／InspectorSizing／Rendering、CalendarMonthNavigation、Results／Input／Plan生命周期。稳定入口由原check_workflow.py及反例测试核对。准确状态、证据分类、指定复核与剩余限制只见[权威N-M1](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。
 
 N-M1的旧入口隔离补充：AppWindows.WorkspaceOpening显式提供导航、收起旧浮层、激活和显示依赖；SearchResultsView透传可选依赖，默认生产调用保持原行为。WorkspaceLegacySearchRoutingTests以实际原生行点击核对三类旧命中进入真实日历和详情，AppWindowsRoutingTests核对设置、明确检查日与仅前置行为。该依赖不授予导航任何业务执行能力。
+
+## N-M2 普通内容只读查阅
+
+[WorkspaceContentSession](../AreaChain/Services/WorkspaceContentSession.swift) 独占查阅展示，[WorkspaceContentReader](../AreaChain/Services/WorkspaceContentReader.swift) 复用原正文许可／隐私规则、AttachmentAccess 与显式 AttachmentStore；[WorkspaceContentSource](../AreaChain/Services/WorkspaceContentSource.swift) 只记录原查询来源的身份／元数据。消费者为显式 WorkspaceSearchRouter／UnifiedSearchController 和 [WorkspaceReadOnlyContentView](../AreaChain/Features/Workspace/WorkspaceReadOnlyContentView.swift)，生产默认未装配。
+
+标签只读配置继续使用 WorkspaceFilteredListModel 的原真实关联；[WorkspaceTagReadOnlyList](../AreaChain/Features/Workspace/WorkspaceTagReadOnlyList.swift) 无新增／勾选／删除／拖放动作。手记直接复用 [DaybookSearchReadOnlyText](../AreaChain/Theme/DaybookSearchReadOnlyText.swift) 的原生选择、滚动与卸载清理，不新建正文编辑器；原手记卡片及小窗保持原行为。图片复用 [LoadedAttachmentImage](../AreaChain/Features/Attachments/LoadedAttachmentImage.swift)，原 AttachmentBrowserPage 仍拥有旧操作和加载语义。隔离工作台通过 WorkspaceHostContext.attachments 显式提供临时 Store，附件浏览和 AttachmentThumbnails 无依赖时不读共享目录。
+
+验证入口为 UnifiedSearchContentAccessTests、UnifiedSearchContentBoundaryTests、UnifiedSearchContentNativeTests，以及受影响 N-M1／手记／附件和 ReadSession 回归。普通结果查阅不消费认证命令，不复用编辑会话，不保存业务数据；访问、返回、证据分类及未覆盖项只维护在[权威 N-M2](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。
+
+窗口失焦与 Esc 由本窗 WorkspaceContentReturnKey 衔接原 ReadSession；WorkspaceContentFile 只监视明确临时文件并撤销展示。UnifiedSearchContentLifecycleTests／UnifiedSearchContentLegacyTests 覆盖运行事实、旧手记草稿、真实失焦和附件消费者。DiaryWindowView 仅增加可选快捷键依赖，隔离回归显式注入，生产缺省及编辑保存语义保持。

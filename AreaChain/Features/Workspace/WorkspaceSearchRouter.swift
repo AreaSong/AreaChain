@@ -2,10 +2,17 @@ import AppKit
 import SwiftUI
 
 enum WorkspaceNavigationDestination: Equatable {
-    case page(WorkspaceTab), day(String), object(WorkspaceObjectLocation)
+    case page(WorkspaceTab), day(String), object(WorkspaceObjectLocation), content(CommandObjectReference)
 
     var tab: WorkspaceTab {
         if case .page(let tab) = self { return tab }
+        if case .content(let object) = self {
+            switch object.type {
+            case .tag: return .tags
+            case .diary: return .diary
+            default: return .attachments
+            }
+        }
         return .calendar
     }
 
@@ -40,15 +47,17 @@ enum WorkspaceNavigationOutcome: Equatable {
 @Observable @MainActor final class WorkspaceSearchRouter {
     let navigation: WorkspaceNavigation
     let objects: WorkspaceObjectNavigation
+    var contents: WorkspaceContentSession?
     private(set) var destination: WorkspaceNavigationDestination?
     private(set) var outcome: WorkspaceNavigationOutcome?
     let inspectorFocus = WorkspaceInspectorFocus()
     @ObservationIgnored weak var host: NSView?
     @ObservationIgnored private var mounts: [String: WeakMount] = [:]
 
-    init(navigation: WorkspaceNavigation, objects: WorkspaceObjectNavigation) {
+    init(navigation: WorkspaceNavigation, objects: WorkspaceObjectNavigation, contents: WorkspaceContentSession? = nil) {
         self.navigation = navigation
         self.objects = objects
+        self.contents = contents
     }
 
     func validateHost() throws {
@@ -62,12 +71,17 @@ enum WorkspaceNavigationOutcome: Equatable {
     func reveal(_ target: WorkspaceNavigationDestination, valid: () -> Bool) async -> WorkspaceNavigationOutcome {
         do { try validateHost() } catch { return .rejected(error as? WorkspaceOpenFailure ?? .unavailable) }
         guard valid() else { return .rejected(.stale) }
+        switch target {
+        case .content: break
+        default: contents?.clear()
+        }
         // 导航卸载与普通失焦不同：原 EditDrafts 保留文字，不能依赖失焦提交。
         inspectorFocus.retainForNavigation()
         navigation.revealSearchDestination(target.tab)
         navigation.navigationObject = nil
         switch target {
         case .page: break
+        case .content: break
         case .day(let key): navigation.inspectBoard(key)
         case .object(let location):
             navigation.inspectBoard(location.dayKey)
@@ -88,6 +102,11 @@ enum WorkspaceNavigationOutcome: Equatable {
                     }
                     let identity = "object." + location.object.id.uuidString
                     if mounted(identity), navigation.isInspectorPresented {
+                        outcome = .displayed
+                        return .displayed
+                    }
+                } else if case .content(let object) = target {
+                    if mounted("content." + object.id.uuidString) {
                         outcome = .displayed
                         return .displayed
                     }
@@ -113,6 +132,7 @@ enum WorkspaceNavigationOutcome: Equatable {
     }
 
     func clearDestination() {
+        contents?.clear()
         destination = nil
         navigation.navigationObject = nil
         navigation.closeInspector()

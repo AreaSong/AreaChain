@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AttachmentThumbnails: View {
     var items: [AttachmentRef]
+    @Environment(\.workspaceHostContext) private var hostContext
     @State private var preview: AttachmentRef?
 
     var body: some View {
@@ -18,7 +19,7 @@ struct AttachmentThumbnails: View {
             }
         }
         .popover(item: $preview) { item in
-            if let image = AttachmentStore.image(reference: item) {
+            if let image = loadedImage(item) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
@@ -37,7 +38,7 @@ struct AttachmentThumbnails: View {
 
     @ViewBuilder
     private func thumbnail(_ item: AttachmentRef) -> some View {
-        if let image = AttachmentStore.image(reference: item) {
+        if let image = loadedImage(item) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFill()
@@ -51,5 +52,14 @@ struct AttachmentThumbnails: View {
                 .frame(width: 22, height: 22)
                 .contentShape(Rectangle())
         }
+    }
+
+    private func loadedImage(_ item: AttachmentRef) -> NSImage? {
+        if let hostContext {
+            guard let store = hostContext.attachments,
+                  let data = try? store.readOrdinary(reference: item, root: store.directory()) else { return nil }
+            return NSImage(data: data)
+        }
+        return AttachmentStore.image(reference: item)
     }
 }

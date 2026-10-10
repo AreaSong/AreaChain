@@ -4,6 +4,7 @@ import SwiftUI
 struct AttachmentBrowserPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
+    @Environment(\.workspaceHostContext) private var hostContext
     @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
     @Query private var tags: [TagItem]
     @State private var preview: AttachmentRef?
@@ -84,6 +85,7 @@ struct AttachmentBrowserPage: View {
             }
             .buttonStyle(DaybookButtonStyle(.quiet))
             .accessibilityLabel(item.filename)
+            .accessibilityIdentifier("attachments.preview." + item.id.uuidString)
             .help(item.filename)
             .contextMenu {
                 Button("attachments.delete", role: .destructive) {
@@ -97,7 +99,7 @@ struct AttachmentBrowserPage: View {
 
     @ViewBuilder
     private func thumbImage(_ item: AttachmentRef) -> some View {
-        if let image = AttachmentStore.image(reference: item) {
+        if let image = loadedImage(item) {
             Image(nsImage: image)
                 .resizable()
                 .scaledToFill()
@@ -115,10 +117,8 @@ struct AttachmentBrowserPage: View {
     private func previewBody(_ item: AttachmentRef) -> some View {
         if !visibleAttachments.contains(where: { $0.id == item.id }) {
             Text("diary.private.title")
-        } else if let image = AttachmentStore.image(reference: item) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFit()
+        } else if let image = loadedImage(item) {
+            LoadedAttachmentImage(image: image)
                 .frame(maxWidth: 420, maxHeight: 420)
                 .padding(8)
         } else {
@@ -127,6 +127,15 @@ struct AttachmentBrowserPage: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .padding(12)
         }
+    }
+
+    private func loadedImage(_ item: AttachmentRef) -> NSImage? {
+        if let hostContext {
+            guard let store = hostContext.attachments,
+                  let data = try? store.readOrdinary(reference: item, root: store.directory()) else { return nil }
+            return NSImage(data: data)
+        }
+        return AttachmentStore.image(reference: item)
     }
 
     private func ownerTitle(_ cluster: AttachmentCluster) -> String {

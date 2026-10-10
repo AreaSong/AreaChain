@@ -7062,3 +7062,51 @@ MainSplitWorkspaceView默认生产调用兼容，仅显式注入时使用新展�
 本批涉及 **62文件（54份Swift）**，清单和混合文件说明在 `changed-files.json`；`workspace.patch` 是完整工作区差异，含明确标记的并行部分，不代表全部由本任务编写。侧栏、WorkspaceLayout、CommandProtectedTextView、WorkspaceWindowLifecycleTests及AppWindows窗口材质改动的并行内容均保留；会话中索引由外部发生变化，本对话未执行git add或改写索引。初始主题守卫失败随并行侧栏修正消失，不认领该修复。编译既有SDK弃用／actor提示及原生QoS警告保留，未声称无警告。
 
 指定Cursor verifier仍为**材料就绪、复核未执行**：本节、实际差异、完整源码、选择器／方法明细、零保存证据及截图已就绪，未认证或由普通代理代替。C2B、真人IME／VoiceOver、系统合成器、最低macOS与真实多窗口等历史缺口保持；本批平台为macOS26.6.2 arm64。未启用日用生产搜索，未访问真实业务数据／系统剪贴板／真实认证，未提交、推送、安装、发布、续签或更改权限。
+
+### 9.85 里程碑 N-M2：标签导航、普通手记全文与普通图片查阅
+
+2026-10-10（Asia/Shanghai）。本批沿 N-M1 的原查询、ReadSession、导航宿主与返回票据扩展；本节为本批唯一交接。A～E 本地实现、有限自动验证和工程收口已具备证据；完整交付仍为 partial：指定 Cursor verifier 无可调用入口、复核未执行，C2B、正文编辑、受保护内容查阅、人工／最低系统／真实多窗口等缺口独立保留。
+
+#### 范围与复用
+
+- `go.tagList` 与标签结果打开当前唯一活标签；完整目录版本与实体身份重新核对。沿原 WorkspaceFilteredListModel 的任务、子任务、重复事项关联／排序口径显示只读列表，不增加手记目录或自动补建预设标签，不改变原目录对私密／预设标签名字的披露政策。
+- 普通手记结果通过原 ContentQueryBodyReadPermit、ContentQueryBodyReads.readContent 与 DiaryContent.read 读取实际全文。先拒绝 isPrivate、encryptedText、privacyVaultID 任一保护字段；完整目录、标签串、唯一身份、原 DiaryPrivacy 两种旧标记判定及 DiaryQueryPrivacy 均通过才发布。没有 DiaryEditorSession／DiaryWindows.open／可提交正文草稿。
+- 普通图片重新核验唯一附件、含墓碑身份、ownerKind＋ownerID、唯一活拥有者、原 AttachmentAccess 和手记拥有者的完整普通正文保护检查。显式 AttachmentStore、独立临时 root 与空假密钥；readOrdinary 不调用 PrivateAttachments.decode，拒绝保护格式，不按文件名构造路径。实际 ImageIO 解码后才交 LoadedAttachmentImage。
+- 全文直接复用原 DaybookSearchReadOnlyText 的原生选择、滚动和卸载清理；附件浏览器复用纯已加载图像展示。旧手记卡片、编辑器、保存、撤销与窗口生命周期保留；隔离工作台的附件浏览／缩略图通过 WorkspaceHostContext 的显式存储读取，无依赖时不回退共享目录。
+- `diaryWindow.open`、`image.preview` 的 authentication 声明保持，继续未装配；普通结果查阅没有把这些命令变成免认证路径。图片所属记录与预览分开核验；无日期习惯仍拒绝自动成为今天的执行实例。
+
+#### 状态与失效
+
+WorkspaceContentSource 只记录当前搜索读取的 PersistentIdentifier 和元数据，绑定原 ReadSession 来源；不是第二份查询或历史。WorkspaceContentSession 独占当前只读全文／图像。打开前、读取前后及异步发布前复核原 lease、显示版本、宿主、目录、实体、拥有者和引用。元数据／正文 Observation、原模型／隐私通知、实际窗口失焦、锁定与新查询撤去展示并拒绝迟到任务；文件监视及读前后属性核验覆盖临时文件替换、删除和属性变化。未保存集合变化继续要求宿主发原 modelDidChange／私有模型通知，不将通知缺席当作来源未变。释放 Swift 引用不等于内存零化或加密。
+
+返回继续使用 UnifiedSearchReturnContext；票据不存正文或图片。有效快照恢复，失效重读并按稳定身份恢复原选择；目标消失明确提示。查阅不重新接受命令，不转移执行权，不改原 Draft、Plan、成功 Run、unknown 或 P-M3 修订。
+
+#### 本批有限验证清单
+
+服务／状态：类型化身份和重复／墓碑；普通全文及许可前后核验；三保护字段、旧标记、缺目录与未知拒绝；已解锁假 vault 仍不读保护正文；三类图片拥有者及错误关联；文件缺失／不可读／损坏／引用变化；迟到读取、替换、隐私及锁定撤回；有效／过期返回；原草稿／计划／运行／修订事实及零业务保存、发布、认证、解密和文件修改。
+
+原生：标签结果和 go.tagList → 原关联列表 → 返回；普通手记全文及长文滚动；实际图像；缺失／损坏图片与删除目标；显示期间失效／锁定；草稿／计划／unknown 保留；Return／Tab、首次点击、Esc／返回和 marked text；en／zh-Hans、浅深色、正常／最小工作台及内容区。受影响 N-M1、原手记展示、附件浏览与查询／隐私生命周期另做定向回归。
+
+证据位于忽略目录 build/NM2；使用完整正常 build/PrivacyQA-NM2、com.areachain.privacy-qa.nm2、合成七模型内存库、明确临时附件目录、私有通知与假系统依赖。清除六项真实钥匙串授权变量，原 build/.build.lock 单次等待最多900秒，事件串行；申请前／锁后／执行后／交接前核对源码、测试、资源、工程、scripts 与 Config 全集，包括新增删除。没有删锁、换锁、抢锁或干预其他 QA。
+
+#### A～E 实际状态与证据
+
+| 批次 | 实际结果 |
+|---|---|
+| A 内容目标／访问／隔离 | 已实现和验证。原 ReadSession 许可绑定源任务、lease 和显示版本；完整目录与持久实体身份重核，三保护字段及旧标记失败关闭；三类图片拥有者按类型查找，显式普通文件入口没有共享目录回退或私密解码。 |
+| B 真实内容 | 标签结果及 go.tagList 显示原任务／子任务／重复事项关联；普通手记显示实际全文、日期和允许标签；普通图片经 ImageIO 解码并显示图像。需要认证的命令仍未装配。 |
+| C 返回与保护 | 有效快照保持，过期重读，删除目标明确提示；实际窗口失焦撤显示，前置不恢复，内存 vault.lock 清输入和票据。迟到旧读取不清掉新内容。原操作草稿／计划／成功运行／unknown／修订链全值及旧保存次数保持；旧手记窗未提交正文保持。 |
+| D 原生与回归 | 最后有效99方法／138次执行通过，零最后有效失败、跳过或expected failure；逐身份明细见 verification-rollup.json。实际行点击＋Return、go.tagList、返回首次点击／Esc、Return／Tab 与 marked text，全文选择、合成滚轮和首尾滚动、实际图片像素、中英文／浅深色、1200×800 与原最小780×500工作台已验证；正文组件另挂680×640／480×380原生宿主。 |
+| E 工程 | HandoffQA 完整正常 QA 编译／严格验签、HandoffDebug 正常 development Debug／策略验签均返回0；严格 lint、workflow、123项检查器定向测试及266项脚本回归、严格 static 门禁通过。未安装或发布。 |
+
+**零写入与不解密证据。** 普通链路的 ModelContext.willSave／私有业务发布均0，纯查阅后的 context 无待保存变化、RoutineCheck 未新增。既有 Run 夹具为形成成功／unknown／修订而已有的合成保存事实，查阅前后计数不增加、运行及历史字段逐值相同。旧手记窗口草稿与持久正文分离，查阅展示持久普通正文，不读取或提交该草稿。临时附件前后文件集、字节与修改时间不变；没有生成缩略图或导出副本。受保护对象的正文读取探针为0；已解锁场景直接建立合成内存状态，不调用密码／系统认证。保护字段先于 DiaryContent.read，保护格式先于任何私密附件解码；不能把 UI 遮罩或字符串撤引用称为已加密。
+
+最后有效统计使用 FinalRegression 的未受后续改动影响方法、FinalNativeFocus 的11方法／19次执行替换内容窗口相关结果、HandoffNavigationRegression 的24方法／35次执行替换当前侧栏／令牌版本上的导航并补工作台布局。两次旧焦点失败均保留原日志，最终复验没有跳过焦点；不把各批次数直接相加。既有手记编辑冲突、附件拥有者／旧浏览政策、ContentQueryBrowse、普通正文目录／失败、ReadSession旧票据、结果／计划／P-M3生命周期按选择器回归，没有机械重跑完整命令执行矩阵，也没有运行旧受保护正文解密或真实钥匙串套件。
+
+**原生证据分类。** screenshots/index.json 登记34张原生缓存图的尺寸、时间及 SHA-256，4张联系表已查看。工作台中实际标签记录、全文与图片区域可见；侧栏的系统材质缓存占位不作为侧栏内容证据。同一 WorkspaceReadOnlyContentView、模型与 WorkspaceContentSession（包含同一正文／附件依赖）另挂宿主的内容缓存单独记录。全文0～89段实际读取，选择与滚动末尾断言通过；图片除了320×200解码尺寸，还检查内容画面的有效颜色像素。鼠标、Return／Tab／Esc及滚轮为合成原生事件；marked text和部分滚动定位为程序化设置；锁定为真实内存vault方法，失焦由另一扇隔离窗口实际取得key触发。没有系统剪贴板、真人IME、VoiceOver或系统窗口合成器证据。
+
+**过程问题与修复。** 保留首次 Observation 编译错误、测试宏／不可比较历史记录错误及各批次日志；按现有接口修正。旧敏感标签夹具曾用带空格名称而未形成完整标签语法，改为明确合成标记。初始 PNG 夹具透明，不能计图像验收；改用确定 RGBA 后增加像素断言，实际显示仍复用原 SwiftUI 图像绘制。临时 SwiftData 对象地址会随物化变化，来源身份改为 PersistentIdentifier；新草稿推进 lease 后按原规则重读。目录候选的首次点击原本关闭候选，原生测试先沿 Esc 契约收起候选，再检验结果首次点击；没有改变候选接受语义。纯内容页没有输入焦点，增加仅本窗的 Esc 和真实失焦监听。焦点失败原样保留，不跳过断言；最终有效复验替换旧失败。
+
+**最终源码与并行修改。** 源码全集1431文件，摘要 `fa1147c4607dab3b2b776a8fa7c1f6dcb1f214fb4a00a99844dcf90b58dc94c2`；HandoffQA／HandoffDebug 的申请前、锁后、执行后相同并匹配交接清单。正常 Debug 为 development、Hardened Runtime=true、distributionReady=false。最后原生批次之后只将文案库恢复为仓库原排版／键序，解析后的对象完全相等；并行的提取状态、注释及新增键均保留，完整 QA 与正常构建已重新编译当前资源。工作区42文件（33份Swift），清单见 changed-files.json；workspace.patch 含并行内容，不全归本任务。侧栏、WorkspaceLayout、DaybookTokens、工程排序、并行重建的 DiaryReadOnlyText 和文案提取元数据保留；新查阅仍消费既有 DaybookSearchReadOnlyText。初始暂存由外部提交进入 HEAD，本对话没有改写索引或执行提交。每批按独立产物路径、PID及启动时间核对进程，结束后本批进程空集。SDK弃用／既有actor提示没有被当作已清零。
+
+**未完成前置。** 指定 Cursor verifier 为材料就绪／复核未执行，没有认证或普通代理替代。C2B、真人IME／VoiceOver、最低macOS、真实多窗口与历史缺口继续独立保留。本批只读查阅不替代手记编辑：后续仍需 C2B 完整正文输入事务与组合输入验收、唯一编辑会话／保存冲突／撤销和窗口接线；受保护内容查阅需要另行授权认证／解密能力及相应门禁。没有启用生产搜索、访问真实业务数据、提交、推送、安装、发布、续签或改变权限。

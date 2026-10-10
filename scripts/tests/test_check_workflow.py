@@ -47,6 +47,7 @@ class WorkflowCheckTests(unittest.TestCase):
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
         contract_docs["docs/component-catalog.md"] += " WorkspaceSearchRouter UnifiedSearchReturnContext WorkspaceObjectNavigation WorkspaceHostContext\n"
+        contract_docs["docs/component-catalog.md"] += " WorkspaceContentReader WorkspaceContentSession WorkspaceContentSource WorkspaceReadOnlyContentView LoadedAttachmentImage\n"
         contract_docs["docs/component-catalog.md"] += " CommandPlanReturnTicket CommandAssignmentMergeProof proposeMerge UnifiedSearchPlanRevisionHistory\n"
         contract_docs["docs/component-catalog.md"] += " CommandCreationOutput multiPlanOutput validateReferenceEnvironments creationReferenceLabel CommandMultiPlanIdentity CommandAttemptRecord startMultiPlan MultiPlanCommandAdapter prepareMultiPlan UnifiedSearchMultiPlanSubmission UnifiedSearchTaskCreationImpact UnifiedSearchRoutineCreationImpact\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceInspectorFocus daybookScrollTopEdge\n"
@@ -422,6 +423,19 @@ class WorkflowCheckTests(unittest.TestCase):
     def test_component_catalog_requires_navigation_return_and_real_object_reader(self):
         self.make_project()
         symbols = ("WorkspaceSearchRouter", "UnifiedSearchReturnContext", "WorkspaceObjectNavigation", "WorkspaceHostContext")
+        for relative, symbol in workflow.COMPONENT_ENTRIES:
+            if symbol in symbols:
+                source = self.root / relative
+                source.write_text(source.read_text().replace(symbol, "unrelated"))
+        result = workflow.check_component_catalog(self.root)
+        self.assertEqual(result["status"], "failed")
+        for symbol in symbols:
+            self.assertTrue(any(symbol in item["message"] for item in result["issues"]))
+
+    def test_component_catalog_requires_ordinary_content_reading_and_real_display(self):
+        self.make_project()
+        symbols = ("WorkspaceContentReader", "WorkspaceContentSession", "WorkspaceContentSource",
+                   "WorkspaceReadOnlyContentView", "LoadedAttachmentImage")
         for relative, symbol in workflow.COMPONENT_ENTRIES:
             if symbol in symbols:
                 source = self.root / relative

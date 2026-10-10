@@ -10,6 +10,7 @@ enum DaybookRadius {
     static let medium: CGFloat = 10
     static let card: CGFloat = 12
     static let large: CGFloat = 16
+    static let panel: CGFloat = 20
     static let full: CGFloat = 999
 }
 

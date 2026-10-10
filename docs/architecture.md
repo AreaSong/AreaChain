@@ -586,6 +586,12 @@ CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类�
 未执行生产者编辑按拓扑传播所有消费者引用版本，迁移前后均验证图。已成功生产者的 CommandCreationOutput 保留原 Run、attempt、savedID、PersistentIdentifier、装配和存储身份，完成顺序边单独保留只读来源。原事务及当前资格仍由各 Reader／Adapter 核验；返回后重新读取和接受全部剩余影响。仅本次运行内有效，不写普通历史或磁盘队列；可合并、可返回范围及验证结果以[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)为准。
 
 
+### N-M2 普通内容查阅与文件依赖
+
+显式 WorkspaceSearchRouter.contents 与原 ReadSession 来源／lease／显示版本共同约束查阅。WorkspaceContentSession 只持有可撤销的展示值，WorkspaceContentSource 无正文／图像；新查询、失效、锁定和返回释放展示，不进入 CommandDraft／Plan／Run 或返回票据。普通正文沿 DiaryContent 的内部许可入口与完整目录／旧标记政策；保护字段先行拒绝，隔离查询可显式 ordinaryOnly，默认旧读取政策保持。
+
+AttachmentStore.readOrdinary 仅接受与显式实例一致的 root 和无保护引用，拒绝保护格式，不经过私密解码。拥有者按类型和唯一身份核验；手记拥有者需完成同一普通读取判定。纯展示与旧编辑／附件操作分离，隔离旧附件消费者从 WorkspaceHostContext 取得存储，无依赖不回退。实施、实际验证及剩余边界见[权威 N-M2](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。
+
 ### N-M1 工作台暂挂展示与只读打开
 
 显式统一搜索宿主通过WorkspaceHostContext向实际页面、目标登记、日期和草稿消费者传递同一依赖。WorkspaceNavigation.searchPresentation只覆盖搜索／目的地呈现，nil保留生产旧规则；明确导航跳过原页签离开的记忆释放，普通页签仍沿原页面默认条件和原查询reducer建立访问。返回不复制Query／ReadSession／Plan／Run，失效和锁定也不从票据恢复文字。

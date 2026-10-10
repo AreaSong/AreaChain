@@ -1,5 +1,7 @@
 # AreaChain 技能路由与交付闭环
 
+统一搜索 N-M2 沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生身份／焦点）→ areachain-verify；只扩展原 N-M1 搜索来源、导航宿主及返回票据。访问／正文／类型化图片拥有者和临时 Store 边界见[组件目录](docs/component-catalog.md#n-m2-普通内容只读查阅)，实际交接仅见[权威 N-M2](docs/unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。完整正常 PrivacyQA、独立本批标识／目录、合成数据、六项钥匙串变量清除、原锁900秒和串行原生事件保持。指定 Cursor verifier 不可调用时保留未执行；C2B、正文编辑、受保护内容、人工／最低系统／真实多窗口缺口不豁免。不认证／解密、不业务保存，不启用生产、提交、安装或发布。
+
 安装脚本的原身份恢复改动沿 areachain-workflow → areachain-verify；复用原候选验签、安装锁、暂存替换和回退，仅以显式 `--previous-app` 提供可信原包身份。入口见[组件目录](docs/component-catalog.md#安装身份恢复入口)，参数与数据边界以[签名文档](docs/signing.md#原应用缺失时重装)为准。先做隔离脚本回归与只读预检；真实安装沿当前明确授权，数据重置、签名迁移和系统解锁不随之授权。指定 Cursor verifier 不可用时保留复核缺口，不用其他代理替代。
 
 ## 设置控件预览功能

@@ -11,11 +11,13 @@ struct ContentQueryBodyReads {
     let context: ModelContext
     var diaries: DiaryContentQueryReads
     var tags: TagContentQueryReads
+    let ordinaryOnly: Bool
     // 故障/重入观察只接收阶段，不接收或返回正文，不能替换实际读取结果。
     var observeContent: (ContentQueryBodyReadEvent) throws -> Void = { _ in }
 
-    init(context: ModelContext) {
+    init(context: ModelContext, ordinaryOnly: Bool = false) {
         self.context = context
+        self.ordinaryOnly = ordinaryOnly
         diaries = .init(context: context)
         tags = .init(context: context)
     }

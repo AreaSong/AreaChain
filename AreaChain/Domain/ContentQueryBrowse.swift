@@ -117,7 +117,7 @@ struct ContentQueryBrowseState {
         guard let active, snapshot.visible.contains(active), let row = snapshot.row(active) else {
             return .init(rejection: .invalidTarget)
         }
-        let parents = row.relations.filter { $0.role == .parentTask || $0.role == .routine }
+        let parents = row.relations.filter { $0.role == .parentTask || $0.role == .routine || $0.role == .imageOwner }
         guard parents.count <= 1 else { return .init(rejection: .invalidTarget) }
         let trash = snapshot.source.source.source.matches.contains {
             if case .trash = $0 { return $0.id == active }; return false

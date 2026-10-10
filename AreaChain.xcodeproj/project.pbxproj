@@ -53,6 +53,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A1PROD0000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1APPF0000000000000001 /* AreaChain.app */,
+				A1TESTF000000000000001 /* AreaChainTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
 		A1ROOT0000000000000001 = {
 			isa = PBXGroup;
 			children = (
@@ -61,15 +70,6 @@
 				F41D12BC30A0123400000002 /* Config */,
 				A1PROD0000000000000001 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		A1PROD0000000000000001 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				A1APPF0000000000000001 /* AreaChain.app */,
-				A1TESTF000000000000001 /* AreaChainTests.xctest */,
-			);
-			name = Products;
 			sourceTree = "<group>";
 		};
 		F41D12BC30A0123400000002 /* Config */ = {
@@ -211,47 +211,6 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
-		A1DBG0000000000000001 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = macosx;
-				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			};
-			name = Debug;
-		};
-		A1REL0000000000000001 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				SDKROOT = macosx;
-				SWIFT_COMPILATION_MODE = wholemodule;
-			};
-			name = Release;
-		};
 		A1APPDBG0000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -318,6 +277,47 @@
 			};
 			name = Release;
 		};
+		A1DBG0000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A1REL0000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = F41D12BC30A0123400000001 /* Signing.xcconfig */;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
 		A1TESTDBG000000000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -353,20 +353,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1PRJCFG0000000000001 /* Build configuration list for PBXProject "AreaChain" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				A1DBG0000000000000001 /* Debug */,
-				A1REL0000000000000001 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		A1APPCFG0000000000001 /* Build configuration list for PBXNativeTarget "AreaChain" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1APPDBG0000000000001 /* Debug */,
 				A1APPREL0000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1PRJCFG0000000000001 /* Build configuration list for PBXProject "AreaChain" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1DBG0000000000000001 /* Debug */,
+				A1REL0000000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

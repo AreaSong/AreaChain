@@ -2,11 +2,6 @@ import Foundation
 import Observation
 import SwiftData
 
-/// 外部任务/候选只含不可拼装的运行内身份；候选响应始终留在适配器内。
-struct ContentQueryReadHandle: Equatable {
-    fileprivate let id: UUID
-}
-
 /// 正文模式内部创建 owner，外部无法取得别名；旧注入 owner 的入口只允许 metadataOnly。
 /// 返回的安全展示值仍可被外部复制，撤引用不保证 String 零化。
 @MainActor
@@ -154,7 +149,6 @@ final class ContentQueryReadSession {
         try self.init(vault: vault, coordinator: coordinator, ownership: ownership, notifications: notifications)
         self.tagUsageReads = tagUsageReads
     }
-
     /// 统计只在内部冻结；即使没有正文，也沿敏感来源的撤回和旧票据拒绝门禁。
     func prepareTagUsage(requestID: UUID = UUID(), observation: RoutineContentQueryObservation,
                          options: ContentQueryBatchOptions = .init(),
@@ -173,7 +167,6 @@ final class ContentQueryReadSession {
         }
         return (handle, details)
     }
-
     /// 幂等安装；不签发读取许可。重新安装也不能恢复旧任务或旧展示。
     func install() {
         guard subscriptions == nil else { return }
@@ -187,7 +180,6 @@ final class ContentQueryReadSession {
         revokeReferences()
         track(installation: identifier)
     }
-
     func detach() {
         subscriptions?.detach()
         subscriptions = nil
@@ -199,13 +191,11 @@ final class ContentQueryReadSession {
         completionBuffer = ""
         diagnostic = .detached
     }
-
     deinit {
         subscriptions?.detach()
         rearm?.cancel()
         if let source = owner.source { try? owner.invalidateSource(source) }
     }
-
     /// 只读闭包可重入/失败，所以前后都核验；不能把外部准备好的旧查询盖成新许可。
     func prepare(presentation: ContentQueryReadPresentation = .init(),
                  read: (ContentQuerySession) throws -> ContentQueryBatch) throws -> ContentQueryReadHandle {
@@ -257,14 +247,12 @@ final class ContentQueryReadSession {
         diagnostic = nil
         return handle
     }
-
     func evaluate(_ handle: ContentQueryReadHandle) throws {
         let task = try validateTask(handle)
         let ticket = try owner.evaluate(task)
         _ = try validateTask(handle)
         pending?.ticket = ticket
     }
-
     /// 同步计算结束后先让出调度，再核验并同步发布；不声称计算期间可即时中断。
     @discardableResult
     func publish(_ handle: ContentQueryReadHandle) async throws -> ContentQueryReadEffect {
@@ -280,7 +268,6 @@ final class ContentQueryReadSession {
         displayUpdates.send(.published)
         return effect
     }
-
     func continueReading(budget: RoutineOccurrenceQueryBudget) throws -> ContentQueryReadHandle {
         let current = try validatePermit()
         let task = try owner.continueReading(source: current.source, budget: budget)
@@ -288,14 +275,12 @@ final class ContentQueryReadSession {
         pending = .init(handle: handle, task: task)
         return handle
     }
-
     /// metadataOnly 保留旧取消语义；正文模式取消即释放来源和展示，隐私事件另走撤权。
     func cancel(_ handle: ContentQueryReadHandle) throws {
         let task = try validateTask(handle)
         if bodyReads != nil || imageReads != nil || trashReads != nil || tagUsageReads != nil { revokeReferences() }
         else { try owner.cancel(task); pending = nil }
     }
-
     func presentation() throws -> ContentQueryReadPublication {
         _ = try validatePermit()
         guard let displayed, owner.published?.task == displayed.task else {
@@ -312,7 +297,6 @@ final class ContentQueryReadSession {
         if effect.didPublish { displayUpdates.send(.published) }
         return effect
     }
-
     /// open 留在适配器，返回 effect 去掉该字段；消费时再查资格和可见性版本。
     func browse(_ event: ContentQueryBrowseEvent) throws -> ContentQueryBrowseEffect {
         _ = try presentation()
@@ -323,7 +307,6 @@ final class ContentQueryReadSession {
         if effect.rejection == nil { displayUpdates.send(.published) }
         return effect
     }
-
     func consumeOpenIntent() throws -> ContentQueryBrowseOpen {
         let publication = try presentation()
         guard let (version, intent) = pendingOpen, version == publication.pagination.snapshot.version else {
@@ -332,17 +315,28 @@ final class ContentQueryReadSession {
         pendingOpen = nil
         return intent
     }
-
     /// 普通操作面板复用宿主展示门禁；不读取业务基线，不取得正文许可。
     func validateDisplayHost(expecting lease: CommandHostLease) throws {
         guard try eligibleHost() == lease else { throw ContentQueryReadSessionError.staleHost }
     }
-
+    /// 查阅绑定原搜索来源和显示版本；不另建查询，也不授予受保护正文资格。
+    func contentPermit(expecting lease: CommandHostLease, version: UUID) throws -> ContentQueryBodyReadPermit {
+        let source = try presentation().task
+        let permit = ContentQueryBodyReadPermit { [weak self] in
+            guard let self else { throw ContentQueryReadSessionError.detached }
+            try self.validateDisplayHost(expecting: lease)
+            let current = try self.presentation()
+            guard current.task == source, current.pagination.snapshot.version == version else {
+                throw ContentQueryReadSessionError.stalePermit
+            }
+        }
+        try permit.validate()
+        return permit
+    }
     func setCompletionBuffer(_ value: String, expecting lease: CommandHostLease) throws {
         guard try eligibleHost() == lease else { throw ContentQueryReadSessionError.staleHost }
         completionBuffer = value
     }
-
     /// 仅当前宿主的输入信号；失焦不自动锁定、认证或提交。refocus 本身不解除遮罩。
     func loseFocus(expecting ownership: CommandHostOwnership) throws {
         guard ownership == self.ownership else { throw ContentQueryReadSessionError.staleHost }
@@ -482,7 +476,11 @@ final class ContentQueryReadSession {
     }
 }
 
-/// 仅 prepareControlled 当前校验路径生成，不可由调用方拼装或取出。
+struct ContentQueryReadHandle: Equatable {
+    fileprivate let id: UUID
+}
+
+/// 仅本文件的当前读取/查阅校验路径生成，不可由调用方拼装。
 @MainActor
 final class ContentQueryBodyReadPermit {
     private let check: () throws -> Void

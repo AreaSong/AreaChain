@@ -87,6 +87,25 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
         return NSImage(data: data)
     }
 
+    /// 隔离普通预览只接受明确根目录；不进入私密解码，也不按文件名构造路径。
+    func readOrdinary(reference: AttachmentRef, root: URL) throws -> Data {
+        let url = try ordinaryFileURL(reference: reference, root: root)
+        let data = try Data(contentsOf: url)
+        guard !data.starts(with: VaultCrypto.attachmentMagic) else { throw PrivacyError.corruptData }
+        return data
+    }
+
+    func ordinaryFileURL(reference: AttachmentRef, root: URL) throws -> URL {
+        guard reference.privacyVaultID == nil else { throw PrivacyError.locked }
+        guard self.root?.standardizedFileURL == root.standardizedFileURL else { throw PrivacyError.corruptData }
+        let url = fileURL(id: reference.storageID ?? reference.id, root: root)
+        let resolvedRoot = root.resolvingSymlinksInPath().standardizedFileURL
+        guard url.resolvingSymlinksInPath().deletingLastPathComponent().standardizedFileURL == resolvedRoot else {
+            throw PrivacyError.corruptData
+        }
+        return url
+    }
+
     func image(id: UUID, root: URL? = nil) -> NSImage? {
         guard let data = loadData(id: id, root: root) else { return nil }
         return NSImage(data: data)

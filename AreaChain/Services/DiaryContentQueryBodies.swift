@@ -86,7 +86,7 @@ extension DiaryContentQueryReader {
                   DiaryQueryMetadata.hasValidTagIDs(row.tagIDs),
                   Set(TagIDList.parse(row.tagIDs)).isSubset(of: tagIDs) else { continue }
             // 锁定不能阻断可靠普通正文；保护行则必须使用当前（而非捕获的）解锁事实。
-            if row.hasProtectedContent && (!needsBodies || !vault.isUnlocked) { continue }
+            if row.hasProtectedContent && (dependencies.ordinaryOnly || !needsBodies || !vault.isUnlocked) { continue }
             let text = try? dependencies.readContent(row, vault: vault, tags: tags, permit: permit)
             try permit.validate()
             guard let text else { continue }

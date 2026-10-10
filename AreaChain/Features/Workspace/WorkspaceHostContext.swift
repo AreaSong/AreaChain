@@ -8,6 +8,7 @@ struct WorkspaceHostContext {
     let vault: PrivacyVault
     let clipboard: ClipboardHistorySession
     let shortcuts: ShortcutStore
+    var attachments: AttachmentStore?
 }
 
 private struct WorkspaceHostContextKey: EnvironmentKey {

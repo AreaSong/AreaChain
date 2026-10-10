@@ -8,9 +8,17 @@ struct DiaryWindowView: View {
     var onStateChange: () -> Void = {}
     @Environment(\.locale) private var locale
     @Query private var attachments: [AttachmentItem]
-    @Bindable private var shortcuts = ShortcutStore.shared
+    @Bindable private var shortcuts: ShortcutStore
     @State private var editorFocused = false
     @State private var confirmsReload = false
+
+    init(session: DiaryEditorSession, onPin: @escaping () -> Void, onStateChange: @escaping () -> Void = {},
+         shortcuts: ShortcutStore? = nil) {
+        self.session = session
+        self.onPin = onPin
+        self.onStateChange = onStateChange
+        self.shortcuts = shortcuts ?? .shared
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {

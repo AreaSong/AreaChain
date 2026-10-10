@@ -28,7 +28,7 @@ import Testing
     var context: ModelContext { data.context }
     let day = "2026-10-07"
 
-    init() throws {
+    init(handoff provided: HandoffFixture? = nil) throws {
         data = try TaskContentQueryFixture()
         todo = data.todo("needle parent")
         todo.dayKey = day
@@ -36,7 +36,7 @@ import Testing
         routine = DailyRoutine(title: "needle routine", sortOrder: 0, createdDayKey: "2026-09-01")
         data.context.insert(routine)
         try data.context.save()
-        handoff = try HandoffFixture(sourcePage: .overview)
+        handoff = try provided ?? HandoffFixture(sourcePage: .overview)
         try handoff.send(.query(.setInput("needle")))
         session = try ContentQueryReadSession(vault: vault, coordinator: handoff.coordinator,
             ownership: handoff.owned().lease.ownership,
@@ -86,14 +86,17 @@ import Testing
         return try await session.publish(handle)
     }
 
-    func start(style: Int = 0, controller external: UnifiedSearchController? = nil, unified: Bool = true) async throws {
+    func start(style: Int = 0, controller external: UnifiedSearchController? = nil, unified: Bool = true,
+               attachments: AttachmentStore? = nil) async throws {
         if let external {
             controller = external
             external.navigationRouter = router
             try external.session.resumeDisplay(expecting: external.buffer.lease)
             _ = try await external.readObjectSource()
         } else { _ = try await read() }
-        let root = MainSplitWorkspaceView(navigation: navigation, search: unified ? controller : nil, hostContext: hostContext)
+        var host = hostContext
+        host.attachments = attachments
+        let root = MainSplitWorkspaceView(navigation: navigation, search: unified ? controller : nil, hostContext: host)
             .modelContainer(data.container).environment(\.modelContext, context).environment(prefs)
             .environment(\.locale, Locale(identifier: style < 2 ? "en" : "zh-Hans"))
             .preferredColorScheme(style % 2 == 1 ? .dark : .light)
