@@ -7,6 +7,8 @@ struct AppTerminationTests {
     @Test(arguments: [NSApplication.ModalResponse.alertSecondButtonReturn, .abort, .stop])
     func cancellingQuitDoesNotStartDiarySaveOrDiscard(_ response: NSApplication.ModalResponse) {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         var events: [String] = []
         delegate.presentQuitConfirmation = { _ in events.append("quit"); return response }
         delegate.confirmDiaryTermination = { events.append("diary"); return true }
@@ -18,6 +20,8 @@ struct AppTerminationTests {
     @Test(arguments: [true, false])
     func confirmedQuitStillRequiresDiaryApproval(_ diaryAllowsTermination: Bool) {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         var events: [String] = []
         delegate.presentQuitConfirmation = { _ in events.append("quit"); return .alertFirstButtonReturn }
         delegate.confirmDiaryTermination = { events.append("diary"); return diaryAllowsTermination }
@@ -29,6 +33,8 @@ struct AppTerminationTests {
 
     @Test func cancellationDoesNotSuppressTheNextConfirmation() {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         var prompts = 0
         delegate.presentQuitConfirmation = { _ in
             prompts += 1
@@ -43,6 +49,8 @@ struct AppTerminationTests {
 
     @Test func cancelledDiaryCheckRequiresANewQuitConfirmation() {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         var prompts = 0
         delegate.presentQuitConfirmation = { _ in prompts += 1; return .alertFirstButtonReturn }
         delegate.confirmDiaryTermination = { false }
@@ -56,6 +64,8 @@ struct AppTerminationTests {
     @Test(arguments: [true, false])
     func repeatedQuitIsBlockedDuringEitherConfirmation(_ repeatDuringQuit: Bool) {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         var prompts = 0
         var diaryChecks = 0
         delegate.presentQuitConfirmation = { [unowned delegate] _ in
@@ -98,6 +108,8 @@ struct AppTerminationTests {
     @Test(arguments: QuitInteraction.allCases)
     func nativeModalInteractionReturnsTheExpectedTerminationReply(_ interaction: QuitInteraction) {
         let delegate = AppDelegate()
+        delegate.terminationPolicy = .application
+        delegate.terminationLocale = { Locale(identifier: "en") }
         let present = delegate.presentQuitConfirmation
         var presentedAlert: NSAlert?
         var diaryChecks = 0

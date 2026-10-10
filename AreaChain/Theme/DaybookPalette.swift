@@ -141,6 +141,16 @@ enum DaybookPalette {
         light: NSColor.black.withAlphaComponent(0.12),
         dark: NSColor.white.withAlphaComponent(0.16)
     )
+    static let sidebarFill = Color.daybook(
+        name: "daybook.sidebarFill",
+        light: NSColor(srgbRed: 0.96, green: 0.96, blue: 0.97, alpha: 1.0),
+        dark: NSColor(srgbRed: 0.11, green: 0.114, blue: 0.114, alpha: 1.0)
+    )
+    static let sidebarBorder = Color.daybook(
+        name: "daybook.sidebarBorder",
+        light: NSColor.black.withAlphaComponent(0.10),
+        dark: NSColor(srgbRed: 0.25, green: 0.25, blue: 0.265, alpha: 1.0)
+    )
 
     /// 默认通用分类标签色（替换直接硬编码的 .systemIndigo）
     static let tagDefault = Color(nsColor: .systemIndigo)

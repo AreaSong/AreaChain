@@ -28,6 +28,7 @@ class BuildCommandTests(unittest.TestCase):
         )
         checker = self.root / "scripts/signing.py"
         checker.write_text(common + "print(json.dumps({'mode': os.environ.get('AREACHAIN_TEST_MODE', 'local')}))\n")
+        (self.root / "scripts/qa_identity.py").write_text(common + "print('{}')\n")
         for name in ("xcodebuild", "pkill", "ditto", "open"):
             stub = self.root / "bin" / name
             stub.write_text("#!/usr/bin/env python3\n" + common + ("sys.exit(99)\n" if name != "xcodebuild" else ""))
@@ -60,6 +61,23 @@ class BuildCommandTests(unittest.TestCase):
         verifier = self.records()[-1]["args"]
         self.assertIn("verify", verifier)
         self.assertTrue(verifier[-1].endswith("/Release/AreaChain.app"))
+
+    def test_explicit_qa_uses_shared_identity_and_separate_product_without_personal_settings(self):
+        for command, action in [("qa", "test"), ("qa-compile", "build-for-testing")]:
+            with self.subTest(command=command):
+                if self.trace.exists():
+                    self.trace.unlink()
+                for key in GATE_KEYS + ["TEST_RUNNER_" + key for key in GATE_KEYS]:
+                    self.environment[key] = "not-authorized"
+                result = self.invoke(command)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                args = self.xcode_call()["args"]
+                self.assertEqual(args[-1], action)
+                self.assertIn("Config/QA.xcconfig", args)
+                self.assertIn("AREACHAIN_QA_IDENTIFIER=com.areachain.privacy-qa", args)
+                self.assertTrue(args[args.index("-derivedDataPath") + 1].endswith("/build/PrivacyQA"))
+                self.assertEqual(self.xcode_call()["qa"], {})
+                self.assertEqual([row["tool"] for row in self.records()], ["xcodebuild", "qa_identity.py"])
 
     def test_read_only_check_does_not_start_a_build(self):
         self.assertEqual(self.invoke("check-signing").returncode, 0)

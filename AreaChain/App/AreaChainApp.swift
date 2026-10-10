@@ -2,6 +2,14 @@ import AppKit
 import SwiftData
 import SwiftUI
 
+@main
+enum AreaChainEntry {
+    @MainActor static func main() {
+        AppStartup.requireAllowed()
+        AreaChainApp.main()
+    }
+}
+
 extension FirstLaunchSeeder {
     @MainActor
     static func seedIfNeeded(container: ModelContainer, defaults: UserDefaults = .standard) {
@@ -15,6 +23,8 @@ extension FirstLaunchSeeder {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    var terminationPolicy = AppStartup.requireAllowed()
+    var terminationLocale: () -> Locale = { AppPreferences.shared.resolvedLocale }
     private var isConfirmingTermination = false
     var presentQuitConfirmation: (NSAlert) -> NSApplication.ModalResponse = { alert in
         NSApp.activate(ignoringOtherApps: true)
@@ -25,10 +35,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
-        UserDefaults.standard.register(defaults: [
-            "NSSplitViewItemSidebarDefaultsToFloatingAppearance": false
-        ])
+        guard AppStartup.requireAllowed() == .application else { return }
         AppPreferences.shared.applyAppAppearance()
         PrivacyVault.shared.startLifecycle()
         NSApp.setActivationPolicy(.accessory)
@@ -63,6 +70,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if Persistence.session.isFallback {
             MutationFeedback.shared.reportMemoryFallback()
         }
+        if CommandLine.arguments.contains("--open-workspace-shell-preview") {
+            DispatchQueue.main.async {
+                WorkspaceShellPreviewSettings.shared.isEnabled = true
+                AppWindows.revealWorkspace()
+                WorkspaceNavigation.shared.revealShellPreview()
+            }
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -70,12 +84,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard terminationPolicy == .application else { return .terminateNow }
         // 模态框会运行嵌套事件循环，重复退出请求不能绕过确认或叠出新弹窗。
         guard !isConfirmingTermination else { return .terminateCancel }
         isConfirmingTermination = true
         defer { isConfirmingTermination = false }
 
-        let alert = Self.quitAlert(locale: AppPreferences.shared.resolvedLocale)
+        let alert = Self.quitAlert(locale: terminationLocale())
         guard presentQuitConfirmation(alert) == .alertFirstButtonReturn else { return .terminateCancel }
         return confirmDiaryTermination() ? .terminateNow : .terminateCancel
     }
@@ -93,24 +108,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-@main
 struct AreaChainApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     private let container: ModelContainer
 
     init() {
-        // 测试宿主也不初始化生产 Persistence 单例；业务夹具仍需显式注入自己的上下文。
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
-            do {
-                container = try ModelContainer(for: Schema(AreaChainSchema.models),
-                    configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-                container.mainContext.autosaveEnabled = false
-            } catch {
-                fatalError("无法打开测试宿主内存库")
-            }
-        } else {
-            container = Persistence.session.container
-            StoreHealth.shared.apply(Persistence.session)
+        do {
+            container = try AppStartup.requireAllowed().construct(application: {
+                let session = Persistence.session
+                StoreHealth.shared.apply(session)
+                return session.container
+            }, testing: { try AppStartup.memoryContainer() })
+        } catch {
+            fatalError("无法打开启动容器")
         }
     }
 
@@ -122,7 +132,9 @@ struct AreaChainApp: App {
         }
         .modelContainer(container)
         .commands {
-            AreaChainCommands()
+            if AppStartup.requireAllowed() == .application {
+                AreaChainCommands()
+            }
         }
     }
 }

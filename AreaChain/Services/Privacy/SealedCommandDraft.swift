@@ -32,11 +32,11 @@ struct SealedCommandDraft: CustomStringConvertible, CustomDebugStringConvertible
     }
 
     func open(keys: VaultKeyAccess) throws -> CommandDraftContents {
-        let raw = try keys.open(data, vaultID: vaultID, context: context)
-        let payload = try JSONDecoder().decode(CommandDraftPayload.self, from: raw)
+        let raw = try CommandTextTiming.measure("decrypt") { try keys.open(data, vaultID: vaultID, context: context) }
+        let payload = try CommandTextTiming.measure("decode") { try JSONDecoder().decode(CommandDraftPayload.self, from: raw) }
         guard [1, 2].contains(payload.format), payload.payloadID == reference.payloadID, payload.revision == reference.revision,
               payload.draftID == draftID, payload.commandID == commandID else { throw CommandDraftProtectionError.invalidPayload }
-        let contents = try payload.decoded()
+        let contents = try CommandTextTiming.measure("payloadDecode") { try payload.decoded() }
         #if DEBUG
         Self.testingAfterOpen?()
         #endif

@@ -4,6 +4,7 @@ import SwiftUI
 /// 现代工作台侧边导航栏组件
 struct WorkspaceSidebarView: View {
     @Bindable var navigation: WorkspaceNavigation
+    @Bindable private var shellPreviewSettings = WorkspaceShellPreviewSettings.shared
 
     var tags: [TagItem]
     var todos: [TodoItem]
@@ -19,13 +20,13 @@ struct WorkspaceSidebarView: View {
             todayKey: DayClock.shared.todayKey
         )
         ZStack {
-            // 第一层：最外层窗口底板（全高通顶，呈现原生侧栏毛玻璃底色）
-            WorkspaceSidebarVisualEffect(material: .sidebar, blendingMode: .behindWindow)
+            // 第一层：最外层窗口底板（与右侧主画布共用同一原生灰底，消除分栏边界接缝）
+            Color(nsColor: .windowBackgroundColor) // token-exempt: 侧栏外框与右侧主画布共用系统灰底以消除分界
                 .ignoresSafeArea(.all, edges: .top)
 
-            // 第二层：内嵌圆角内胆面板（macOS 系统设置同款：Squircle 连续圆角 + 微光内嵌描边 + 红绿灯自然包裹）
+            // 第二层：内嵌圆角内胆面板（macOS 系统设置同款：深邃内胆底色 + 四周闭合 1pt 玻璃高光圆角边线 + 均匀内缩边距）
             ZStack(alignment: .top) {
-                DaybookPalette.fill.page
+                DaybookPalette.sidebarFill
 
                 List {
                     sidebarTopSpacer
@@ -37,25 +38,20 @@ struct WorkspaceSidebarView: View {
                     systemSection
                 }
                 .listStyle(.sidebar)
-                .daybookScroll(featherEdges: false)
+                .scrollIndicators(.hidden)
                 .environment(\.daybookScrollTopEdge, true)
                 .scrollContentBackground(.hidden)
-                .mask {
-                    WorkspaceSidebarFadeMask()
-                }
-
-                WorkspaceSidebarHeaderLayer()
             }
             .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous)
-                    .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
+                    .strokeBorder(DaybookPalette.sidebarBorder, lineWidth: 1)
             }
-            .shadow(color: Color.black.opacity(0.04), radius: 3, x: 0, y: 1) // token-exempt: 侧栏内嵌面板微阴影
-            .padding(.leading, 8)
-            .padding(.top, 7)
-            .padding(.bottom, 8)
-            .padding(.trailing, 2)
+            .daybookElevation(.panel)
+            .padding(.leading, 9)
+            .padding(.top, 9)
+            .padding(.bottom, 9)
+            .padding(.trailing, 8)
         }
         .background(SyntaxViewAnchor("syntax.workspace.sidebar.bounds"))
     }
@@ -81,6 +77,16 @@ struct WorkspaceSidebarView: View {
     private func itemsSection(todayUnfinished: Int?, pending: Int?) -> some View {
         Section("sidebar.items") {
             tabRow(.today, badgeCount: todayUnfinished)
+            if navigation === WorkspaceNavigation.shared && AppStartup.policy == .application && shellPreviewSettings.isEnabled {
+                WorkspaceSidebarRow(
+                    titleKey: "重构预览（今日）",
+                    systemImage: "swatchpalette",
+                    badgeCount: nil,
+                    isSelected: navigation.isShowingShellPreview
+                ) {
+                    navigation.revealShellPreview()
+                }
+            }
             tabRow(.pending, badgeCount: pending)
             tabRow(.allItems)
         }
@@ -122,7 +128,8 @@ struct WorkspaceSidebarView: View {
     }
 
     private func tabRow(_ tab: WorkspaceTab, badgeCount: Int? = nil) -> some View {
-        let isSelected = navigation.selectedTagID == nil
+        let isSelected = !navigation.isShowingShellPreview
+            && navigation.selectedTagID == nil
             && navigation.selectedTab == tab
         return WorkspaceSidebarRow(
             titleKey: tab.titleKey,
@@ -135,7 +142,7 @@ struct WorkspaceSidebarView: View {
     }
 
     private func tagRow(_ tag: TagItem) -> some View {
-        let isSelected = navigation.selectedTagID == tag.id
+        let isSelected = !navigation.isShowingShellPreview && navigation.selectedTagID == tag.id
         return Button {
             navigation.selectedTagID = tag.id
         } label: {

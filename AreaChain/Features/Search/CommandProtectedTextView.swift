@@ -6,6 +6,7 @@ import AppKit
     enum Issue: Equatable { case unavailable, rejected, acceptedNotDisplayed, unsupportedMutation, reentrant }
     let parameter: CommandParameterID
     private let contentSession: CommandDraftContentSession
+    private let textSystem: CommandTextSystem
     private var localUndo = CommandNativeUndoManager()
     private(set) var access: CommandDraftContentAccess?
     private(set) var issue: Issue?
@@ -22,15 +23,13 @@ import AppKit
     var testingBeforeMarkedText: (() -> Void)?
     #endif
 
-    init(session: CommandDraftContentSession, parameter: CommandParameterID = .notes) {
+    init(session: CommandDraftContentSession, parameter: CommandParameterID = .notes,
+         textSystem: CommandTextSystem? = nil) {
+        let textSystem = textSystem ?? .legacy()
         self.parameter = parameter
         contentSession = session
-        let storage = NSTextStorage()
-        let layout = NSLayoutManager()
-        let container = NSTextContainer(containerSize: NSSize(width: 400, height: CGFloat.greatestFiniteMagnitude))
-        storage.addLayoutManager(layout)
-        layout.addTextContainer(container)
-        super.init(frame: NSRect(x: 0, y: 0, width: 400, height: 200), textContainer: container)
+        self.textSystem = textSystem
+        super.init(frame: NSRect(x: 0, y: 0, width: 400, height: 200), textContainer: textSystem.container)
         // 指定 frame 初始化会把 maxSize 固定为 400×200；宿主启用纵向伸缩后必须允许全文高度，
         // 否则末尾虽有字符和检查点，滚动与 NSTextInputClient 候选锚点仍被裁在旧高度内。
         maxSize.height = CGFloat.greatestFiniteMagnitude
@@ -130,9 +129,12 @@ import AppKit
             throw CommandDraftProtectionError.stale
         }
         CommandTextTiming.measure("storage") {
-            storage.beginEditing()
-            storage.replaceCharacters(in: delta.range, with: delta.text)
-            storage.endEditing()
+            let replace = {
+                storage.beginEditing()
+                storage.replaceCharacters(in: delta.range, with: delta.text)
+                storage.endEditing()
+            }
+            textSystem.edit(replace)
         }
     }
 
@@ -142,6 +144,11 @@ import AppKit
             if installing { super.string = newValue }
             else { issue = .unsupportedMutation }
         }
+    }
+
+    override func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
+        textSystem.prepareCandidate(range)
+        return super.firstRect(forCharacterRange: range, actualRange: actualRange)
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {

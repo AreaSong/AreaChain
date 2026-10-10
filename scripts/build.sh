@@ -11,6 +11,7 @@ usage() {
   （无参数） / build  只构建 Debug，不安装、不启动
   release            只构建并核验 Release；开发签名不等于公证发行
   test               串行单测；清除调用环境中的真实钥匙串授权
+  qa / qa-compile    完整隔离 PrivacyQA 测试 / 仅编译验签；使用 Config/QA.xcconfig
   check-signing      只读检查有效签名配置
   verify             核验已构建产物的签名、权限及描述文件
   help               显示本说明
@@ -18,7 +19,7 @@ usage() {
 选项:
   --configuration Debug|Release  check-signing / verify 的构建配置
   --allow-provisioning           仅 build / release：显式允许 Xcode 联网管理签名资源和设备注册
-  --only-testing 标识            仅 test：限制测试范围，可重复指定；缺省命令时自动推导为 test
+  --only-testing 标识            test / qa：限制测试范围，可重复指定；缺省命令时自动推导为 test
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
 安装请使用 ./scripts/install.sh（开发中默认增量安装 Debug；--release 才安装优化包）。状态、启动与卸载见 ./scripts/app.sh --help。
@@ -74,7 +75,7 @@ case "$command_name" in
     help|-h|--help) usage; exit 0 ;;
     install) fail "安装入口已独立：请使用 ./scripts/install.sh，先查看 --help 或 --dry-run。" ;;
     release) configuration="Release" ;;
-    build|test) [[ "$configuration" == "Debug" ]] || fail "请使用 release 命令生成 Release 包。" ;;
+    build|test|qa|qa-compile) [[ "$configuration" == "Debug" ]] || fail "请使用 release 命令生成 Release 包。" ;;
     check-signing|verify) ;;
     *) fail "未知命令：$command_name" ;;
 esac
@@ -82,15 +83,22 @@ esac
 if [[ "$allow_provisioning" == "YES" && "$command_name" != "build" && "$command_name" != "release" ]]; then
     fail "只有 build / release 可以显式允许签名资源写入。"
 fi
-[[ "$command_name" == "test" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing 仅用于 test。"
+[[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing 仅用于 test / qa。"
 
-settings="$(python3 scripts/signing.py check --configuration "$configuration")"
+if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
+    settings='{"mode":"local"}'
+else
+    settings="$(python3 scripts/signing.py check --configuration "$configuration")"
+fi
 if [[ "$command_name" == "check-signing" ]]; then
     printf '%s\n' "$settings"
     exit 0
 fi
 signing_mode="$(printf '%s' "$settings" | python3 -c 'import json, sys; print(json.load(sys.stdin)["mode"])')"
 derived_data="$project_root/build/$signing_mode-DerivedData"
+if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
+    derived_data="$project_root/build/PrivacyQA"
+fi
 candidate_app="$derived_data/Build/Products/$configuration/AreaChain.app"
 
 verify_candidate() {
@@ -171,7 +179,17 @@ if [[ "$allow_provisioning" == "YES" ]]; then
     build_arguments+=(-allowProvisioningUpdates -allowProvisioningDeviceRegistration)
 fi
 
-if [[ "$command_name" == "test" ]]; then
+if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
+    build_arguments+=(-xcconfig Config/QA.xcconfig AREACHAIN_QA_IDENTIFIER=com.areachain.privacy-qa)
+    if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
+    qa_action="test"
+    [[ "$command_name" != "qa-compile" ]] || qa_action="build-for-testing"
+    run_with_lock "$wait_for_lock" env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
+        -u AREACHAIN_SYSTEM_KEYCHAIN_PHASE -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_QA \
+        -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_PHASE \
+        xcodebuild "${build_arguments[@]}" -parallel-testing-enabled NO "$qa_action"
+    python3 -B scripts/qa_identity.py "$candidate_app"
+elif [[ "$command_name" == "test" ]]; then
     if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
     mkdir -p "$derived_data/phase1-logs"
     # 仅测试宿主关闭沙盒，以便把 Phase1 样本写到 derivedData；日用应用仍用 AreaChain.entitlements。

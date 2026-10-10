@@ -42,34 +42,34 @@ struct WorkspaceHeaderBar: View {
     }
 
     private var title: some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.xxs) {
-            HStack(spacing: DaybookSpacing.xs) {
-                titleLabel
-                    .font(DaybookType.body.weight(.semibold))
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
-                    .help(titleLabel)
-                    .accessibilityAddTraits(.isHeader)
-                if let helpKey {
-                    DaybookIconButton(systemName: "info.circle", label: "workspace.page.info", size: .inline) {
-                        showsHelp.toggle()
-                    }
-                    .help(Text(helpKey))
-                    .popover(isPresented: $showsHelp, arrowEdge: .bottom) {
-                        Text(helpKey)
-                            .font(DaybookType.body)
-                            .padding(DaybookSpacing.md)
-                            .frame(idealWidth: 280, maxWidth: 320, alignment: .leading)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .onExitCommand { showsHelp = false }
-                    }
-                    .accessibilityIdentifier("workspace.header.help")
-                }
-            }
-            if !navigation.isSearching && navigation.selectedTagID == nil && navigation.selectedTab == .today {
+        HStack(alignment: .center, spacing: DaybookSpacing.sm) {
+            titleLabel
+                .font(DaybookType.body.weight(.semibold))
+                .foregroundStyle(DaybookPalette.text.primary)
+                .lineLimit(1)
+                .layoutPriority(1)
+                .help(titleLabel)
+                .accessibilityAddTraits(.isHeader)
+            if !navigation.isSearching && navigation.selectedTagID == nil
+                && (navigation.selectedTab == .today || navigation.isShowingShellPreview) {
                 TimelineView(.periodic(from: .now, by: 60)) { _ in
                     WorkspaceHeaderDate()
                 }
+            }
+            if let helpKey {
+                DaybookIconButton(systemName: "info.circle", label: "workspace.page.info", size: .inline) {
+                    showsHelp.toggle()
+                }
+                .help(Text(helpKey))
+                .popover(isPresented: $showsHelp, arrowEdge: .bottom) {
+                    Text(helpKey)
+                        .font(DaybookType.body)
+                        .padding(DaybookSpacing.md)
+                        .frame(idealWidth: 280, maxWidth: 320, alignment: .leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .onExitCommand { showsHelp = false }
+                }
+                .accessibilityIdentifier("workspace.header.help")
             }
         }
         .accessibilityElement(children: .contain)
@@ -79,6 +79,8 @@ struct WorkspaceHeaderBar: View {
     private var titleLabel: Text {
         if navigation.isSearching {
             return Text("workspace.search.title")
+        } else if navigation.isShowingShellPreview {
+            return Text("workspace.today.title")
         } else if let tag = tags.first(where: { $0.id == navigation.selectedTagID && $0.deletedAt == nil }) {
             return Text("#\(tag.name)")
         } else {
@@ -87,7 +89,9 @@ struct WorkspaceHeaderBar: View {
     }
 
     private var helpKey: LocalizedStringKey? {
-        navigation.isSearching || navigation.selectedTagID != nil ? nil : navigation.selectedTab.helpKey
+        if navigation.isSearching || navigation.selectedTagID != nil { return nil }
+        if navigation.isShowingShellPreview { return WorkspaceTab.today.helpKey }
+        return navigation.selectedTab.helpKey
     }
 
     private func actions(limit: Int) -> some View {

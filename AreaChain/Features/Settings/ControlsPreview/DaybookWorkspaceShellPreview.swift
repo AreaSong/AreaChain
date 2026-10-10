@@ -1,224 +1,130 @@
+import AppKit
 import SwiftUI
 
-/// 工作台公用骨架预览（以「今日」为例，内部不填具体业务内容，仅使用颜色占位符展示布局与层级）。
-struct DaybookWorkspaceShellPreview: View {
-    @State private var showHeaderRealText = true
+/// 控制工作台左侧边栏是否显示「重构预览（今日）」页面的开关状态（在「设置 → 界面与外观」中打开或关闭）。
+@Observable
+@MainActor
+final class WorkspaceShellPreviewSettings {
+    static let shared = WorkspaceShellPreviewSettings()
+    private static let storageKey = "areachain.workspace.shellPreview.enabled"
+
+    var isEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(isEnabled, forKey: Self.storageKey)
+            if !isEnabled && WorkspaceNavigation.shared.isShowingShellPreview {
+                WorkspaceNavigation.shared.isShowingShellPreview = false
+            }
+        }
+    }
+
+    private init() {
+        if UserDefaults.standard.object(forKey: Self.storageKey) == nil {
+            self.isEnabled = true
+        } else {
+            self.isEnabled = UserDefaults.standard.bool(forKey: Self.storageKey)
+        }
+    }
+}
+
+/// 工作台左侧栏新增的独立预览页面（展示三大公用空间：1. 左侧边栏、2. 右上固定顶栏、3. 右下主内容代码插入槽）。
+struct WorkspaceShellPreviewPage: View {
+    @Environment(\.locale) private var locale
+    @WorkspaceNavigationContext private var navigation
+    @State private var placeholderID = UUID()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            HStack {
-                Text(verbatim: "工作台公用骨架预览（今日为例 · 颜色占位符）")
+        DaybookPage(
+            title: "workspace.today.title",
+            subtitleText: DayKey.displayName(DayClock.shared.todayKey, locale: locale),
+            minWidth: 480,
+            minHeight: 480,
+            fullWidth: true
+        ) {
+            headerTrailing
+        } content: {
+            // =========================================================================
+            // 👉 【第 3 块公用空间：右下主内容区（各页面代码插入槽）】
+            // 开发具体页面时，在此处插入对应页面的主内容视图代码；
+            // 左、右边界已与上方「第 2 块：右上固定顶栏」严格垂直对齐。
+            // =========================================================================
+            contentSlotPlaceholder
+        }
+        .workspaceHeader(actions: headerActions, status: AnyView(headerTrailing))
+        .onAppear {
+            navigation.updateInspectorTargets([placeholderID])
+            if navigation.selectedTaskID == nil {
+                navigation.selectedTaskID = placeholderID
+            }
+        }
+    }
+
+    private var headerActions: [WorkspaceHeaderAction] {
+        [
+            WorkspaceHeaderAction(
+                id: "recurring",
+                title: "workspace.recurring.menu",
+                systemImage: "repeat",
+                children: [
+                    WorkspaceHeaderAction(id: "recurring.create", title: "recurring.create.open", systemImage: "plus") {},
+                    WorkspaceHeaderAction(id: "recurring.manage", title: "workspace.residents.open", systemImage: "repeat") {}
+                ]
+            )
+        ]
+    }
+
+    private var headerTrailing: some View {
+        HStack(spacing: DaybookSpacing.xs) {
+            DaybookProgressRing(progress: 0, lineWidth: 2, size: DaybookMetrics.Hit.inline, showsPercentage: false)
+            Text(verbatim: "0/3")
+                .font(DaybookType.caption.monospacedDigit())
+                .foregroundStyle(DaybookPalette.text.primary)
+        }
+    }
+
+    // MARK: - 第 3 块公用空间占位示意（后续按页讨论并在此插入各页面具体内容）
+
+    private var contentSlotPlaceholder: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .fill(DaybookPalette.sidebarFill)
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .strokeBorder(
+                    DaybookPalette.sidebarBorder,
+                    style: StrokeStyle(lineWidth: 1, dash: [6, 4])
+                )
+
+            VStack(spacing: DaybookSpacing.xs) {
+                Image(systemName: "rectangle.dashed")
                     .font(DaybookType.title)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                Text(verbatim: "第 3 块：右下主内容区（各页面代码插入槽）")
+                    .font(DaybookType.body.weight(.medium))
                     .foregroundStyle(DaybookPalette.text.primary)
-                Spacer()
-                Button(showHeaderRealText ? "切换：顶栏也用纯色块" : "切换：顶栏显示公用文字") {
-                    showHeaderRealText.toggle()
-                }
-                .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
-                .accessibilityIdentifier("preview.workspace.shell.toggle")
+                Text(verbatim: "上方第 2 块（左标题 · 中搜索 · 右功能）已固定，左右边界上下严格对齐")
+                    .font(DaybookType.caption)
+                    .foregroundStyle(DaybookPalette.text.secondary)
             }
-
-            HStack(spacing: 0) {
-                sidebarShellPlaceholder
-                    .frame(width: 200)
-
-                detailShellPlaceholder
-                    .frame(maxWidth: .infinity)
-            }
-            .frame(height: 460)
-            .background(Color(nsColor: .windowBackgroundColor)) // token-exempt: 模拟工作台窗口原生系统灰底
-            .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous)
-                    .strokeBorder(DaybookPalette.border.default, lineWidth: DaybookMetrics.Stroke.regular)
-            )
-            .accessibilityIdentifier("preview.workspace.shell")
+            .padding(DaybookSpacing.lg)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
+}
 
-    // MARK: - 左侧：公用双层内嵌侧边栏（颜色占位）
-
-    private var sidebarShellPlaceholder: some View {
-        ZStack(alignment: .topLeading) {
-            Rectangle()
-                .fill(.ultraThinMaterial) // token-exempt: 侧边栏外层毛玻璃占位
-
-            VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-                HStack(spacing: DaybookSpacing.xs) {
-                    DaybookStatusDot(color: DaybookPalette.status.danger, size: 10)
-                    DaybookStatusDot(color: DaybookPalette.status.warning, size: 10)
-                    DaybookStatusDot(color: DaybookPalette.status.success, size: 10)
-                }
-                .padding(.top, DaybookSpacing.sm)
-                .padding(.leading, DaybookSpacing.sm)
-                .padding(.bottom, DaybookSpacing.xs)
-
-                VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.18), width: 36, height: 10, radius: DaybookRadius.xxs) // token-exempt: 占位色块透明度
-                        .padding(.leading, DaybookSpacing.xs)
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.12), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.18), width: 36, height: 10, radius: DaybookRadius.xxs) // token-exempt: 占位色块透明度
-                        .padding(.leading, DaybookSpacing.xs)
-                        .padding(.top, DaybookSpacing.xs)
-                    placeholderBlock(color: DaybookPalette.accent.base.opacity(0.22), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.12), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.12), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.18), width: 36, height: 10, radius: DaybookRadius.xxs) // token-exempt: 占位色块透明度
-                        .padding(.leading, DaybookSpacing.xs)
-                        .padding(.top, DaybookSpacing.xs)
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.12), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-                    placeholderBlock(color: DaybookPalette.text.secondary.opacity(0.12), height: 28, radius: DaybookRadius.regular) // token-exempt: 占位色块透明度
-                }
-                .padding(.horizontal, DaybookSpacing.xs)
-
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous)
-                    .fill(DaybookPalette.fill.page.opacity(0.75)) // token-exempt: 内胆毛玻璃叠色
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous)
-                    .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
-            )
-            .padding(.leading, DaybookSpacing.xs)
-            .padding(.top, DaybookSpacing.xs)
-            .padding(.bottom, DaybookSpacing.xs)
-            .padding(.trailing, DaybookSpacing.xxs)
-        }
-        .overlay(alignment: .trailing) {
-            DaybookDivider(axis: .vertical, opacity: 0.35)
-        }
-    }
-
-    // MARK: - 右侧：公用顶栏 + 今日内容区颜色占位
-
-    private var detailShellPlaceholder: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            headerShellPlaceholder
-                .padding(.horizontal, DaybookSpacing.page)
-                .frame(height: 50)
-
-            VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-                placeholderBlock(
-                    color: DaybookPalette.accent.base.opacity(0.14), // token-exempt: 占位色块透明度
-                    height: DaybookMetrics.inputHeight,
-                    radius: DaybookMetrics.Radius.inputComposer
+/// 右侧检查器抽屉的颜色占位视图（在「重构预览（今日）」页内打开右侧抽屉时展示）。
+struct WorkspaceShellInspectorPlaceholderView: View {
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .strokeBorder(
+                    DaybookPalette.sidebarBorder,
+                    style: StrokeStyle(lineWidth: 1, dash: [6, 4])
                 )
-
-                HStack(spacing: DaybookSpacing.xs) {
-                    placeholderBlock(color: DaybookPalette.status.warning.opacity(0.22), width: 72, height: 24, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                    Spacer()
-                    placeholderBlock(color: DaybookPalette.status.info.opacity(0.20), width: 68, height: 24, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                    placeholderBlock(color: DaybookPalette.status.info.opacity(0.20), width: 76, height: 24, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                    placeholderBlock(color: DaybookPalette.status.info.opacity(0.20), width: 68, height: 24, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                }
-
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(0..<4, id: \.self) { index in
-                        HStack(spacing: DaybookSpacing.sm) {
-                            DaybookStatusDot(color: DaybookPalette.status.success.opacity(0.35), size: 16) // token-exempt: 占位圆点透明度
-                            placeholderBlock(
-                                color: DaybookPalette.status.success.opacity(0.18), // token-exempt: 占位色块透明度
-                                height: 16,
-                                radius: DaybookRadius.xxs
-                            )
-                            placeholderBlock(
-                                color: DaybookPalette.text.secondary.opacity(0.15), // token-exempt: 占位色块透明度
-                                width: 56,
-                                height: 16,
-                                radius: DaybookRadius.xxs
-                            )
-                        }
-                        .padding(.horizontal, DaybookSpacing.md)
-                        .frame(height: DaybookMetrics.rowHeight)
-
-                        if index < 3 {
-                            DaybookDivider(opacity: 0.35)
-                                .padding(.leading, 38)
-                        }
-                    }
-                }
-                .padding(.vertical, DaybookSpacing.xxs)
-                .background(
-                    RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                        .fill(DaybookPalette.fill.page)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                        .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
-                )
-
-                placeholderBlock(
-                    color: DaybookPalette.text.secondary.opacity(0.14), // token-exempt: 占位色块透明度
-                    width: 120,
-                    height: 20,
-                    radius: DaybookRadius.xxs
-                )
-                .padding(.top, DaybookSpacing.xxs)
-
-                Spacer(minLength: 0)
-            }
-            .padding(DaybookSpacing.page)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            Text(verbatim: "右侧检查器抽屉插槽")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
         }
-    }
-
-    @ViewBuilder
-    private var headerShellPlaceholder: some View {
-        if showHeaderRealText {
-            HStack(spacing: DaybookSpacing.md) {
-                VStack(alignment: .leading, spacing: DaybookSpacing.xxs) {
-                    Text("workspace.today.title")
-                        .font(DaybookType.body.weight(.semibold))
-                        .foregroundStyle(DaybookPalette.text.primary)
-                    Text(verbatim: "10月10日 周六")
-                        .font(DaybookType.micro)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                }
-                Spacer()
-                HStack(spacing: DaybookSpacing.xxs) {
-                    Image(systemName: "magnifyingglass")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                    Text("workspace.search.placeholder")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                    Text(verbatim: "⌘F")
-                        .font(DaybookType.micro)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                }
-                Spacer()
-                HStack(spacing: DaybookSpacing.sm) {
-                    Label("workspace.recurring.menu", systemImage: "repeat")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.primary)
-                    Text(verbatim: "0/3")
-                        .font(DaybookType.caption.monospacedDigit())
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                    Image(systemName: "sidebar.trailing")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                }
-            }
-        } else {
-            HStack(spacing: DaybookSpacing.md) {
-                placeholderBlock(color: DaybookPalette.status.warning.opacity(0.28), width: 96, height: 28, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                Spacer()
-                placeholderBlock(color: DaybookPalette.accent.base.opacity(0.22), width: 220, height: 28, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-                Spacer()
-                placeholderBlock(color: DaybookPalette.status.success.opacity(0.25), width: 140, height: 28, radius: DaybookRadius.small) // token-exempt: 占位色块透明度
-            }
-        }
-    }
-
-    private func placeholderBlock(color: Color, width: CGFloat? = nil, height: CGFloat, radius: CGFloat) -> some View {
-        RoundedRectangle(cornerRadius: radius, style: .continuous) // token-exempt: 颜色占位色块
-            .fill(color) // token-exempt: 颜色占位色块填充
-            .frame(width: width, height: height)
-            .frame(maxWidth: width == nil ? .infinity : nil)
+        .padding(DaybookSpacing.page)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DaybookPalette.sidebarFill)
     }
 }

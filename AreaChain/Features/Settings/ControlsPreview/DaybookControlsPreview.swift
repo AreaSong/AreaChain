@@ -50,7 +50,6 @@ struct DaybookControlsPreview: View {
             controls
             ScrollView {
                 VStack(alignment: .leading, spacing: DaybookSpacing.lg) {
-                    DaybookWorkspaceShellPreview()
                     staticCardSamples
                     DaybookFloatingSurfaceSamples()
                     DaybookSecureInputSamples()

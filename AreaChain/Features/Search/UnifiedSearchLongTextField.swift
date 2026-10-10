@@ -65,16 +65,26 @@ private struct UnifiedSearchLongTextNative: NSViewRepresentable {
     let controller: UnifiedSearchController
     let editing: UnifiedSearchLongTextEditing
     let label: String
+    #if AREACHAIN_QA
+    @Environment(\.commandTextPrototype) private var prototype
+    #endif
 
     func makeNSView(context: Context) -> NSScrollView {
         // 恢复发生在 makeNSView 内；零宽宿主会先按退化宽度排整篇，再在 SwiftUI 定尺寸时重排。
         // 初始宽度与专用 NSTextView 一致，实际宿主仍按原 autoresizing/widthTracksTextView 适配。
-        let scroll = NSScrollView(frame: NSRect(x: 0, y: 0, width: 400, height: DaybookMetrics.inputHeight * 4))
+        let frame = NSRect(x: 0, y: 0, width: 400, height: DaybookMetrics.inputHeight * 4)
+        #if AREACHAIN_QA
+        let scroll = prototype == nil ? NSScrollView(frame: frame) : CommandTextPrototypeScrollView(frame: frame)
+        let system = prototype?.system() ?? .legacy()
+        #else
+        let scroll = NSScrollView(frame: frame)
+        let system = CommandTextSystem.legacy()
+        #endif
         scroll.drawsBackground = false
         scroll.hasVerticalScroller = true
         scroll.verticalScroller = DaybookScroller()
         scroll.autohidesScrollers = true
-        let editor = CommandProtectedTextView(session: editing.content, parameter: editing.parameter)
+        let editor = CommandProtectedTextView(session: editing.content, parameter: editing.parameter, textSystem: system)
         editor.drawsBackground = false
         editor.isVerticallyResizable = true
         editor.isHorizontallyResizable = false
@@ -84,14 +94,31 @@ private struct UnifiedSearchLongTextNative: NSViewRepresentable {
         editor.setAccessibilityIdentifier("unified.longText.editor." + editing.parameter.rawValue)
         configure(editor)
         scroll.documentView = editor
-        do { try editing.attach(editor) }
-        catch { editing.available = false; editing.message = "unified.longText.unavailable" }
+        let attach = {
+            do { try editing.attach(editor) }
+            catch { editing.available = false; editing.message = "unified.longText.unavailable" }
+        }
+        #if AREACHAIN_QA
+        if let bounded = scroll as? CommandTextPrototypeScrollView { bounded.attachOnce = attach }
+        else { attach() }
+        #else
+        attach()
+        #endif
         editor.onRevision = { [weak controller, weak editing] in
             guard let editing else { return }
             controller?.longTextAdvanced(editing)
         }
         editor.onEnd = { [weak editing] in editing?.available = false }
         return scroll
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, nsView: NSScrollView, context: Context) -> CGSize? {
+        #if AREACHAIN_QA
+        if prototype != nil, let width = proposal.width, width.isFinite, width > 0 {
+            return CGSize(width: width, height: DaybookMetrics.inputHeight * 4)
+        }
+        #endif
+        return nil
     }
 
     func updateNSView(_ scroll: NSScrollView, context: Context) {

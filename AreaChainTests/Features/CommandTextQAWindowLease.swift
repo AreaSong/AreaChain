@@ -7,7 +7,7 @@ import Testing
 @MainActor final class CommandTextQAWindowLease {
     enum Failure: Error { case missingXCTest, invalidRunner, wrongBundle, wrongDirectory, missingTestRuntime }
     static let test = "CommandTextInteractiveTests/nativeInputWindow()"
-    static let bundle = "com.areachain.privacy-qa.cm1r"
+    static let bundle = "com.areachain.privacy-qa.cm2"
     let runID: String
     let directory: URL
     let expires: Double

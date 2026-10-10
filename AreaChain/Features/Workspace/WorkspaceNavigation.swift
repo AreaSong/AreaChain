@@ -112,10 +112,12 @@ final class WorkspaceNavigation {
 
     // MARK: - Header Bar Title Visibility
     var isInlineTitleVisible: Bool = false
+    var isShowingShellPreview: Bool = false
 
     // MARK: - Tab & Filter Navigation
     var selectedTab: WorkspaceTab = .dashboard {
         didSet {
+            isShowingShellPreview = false
             if oldValue != selectedTab {
                 invalidateInspectorContext()
                 if !preservingSearchPage { releasePageMemory(leaving: oldValue); searchPresentation = nil; navigationObject = nil }
@@ -134,6 +136,7 @@ final class WorkspaceNavigation {
         didSet {
             if oldValue != selectedTagID { invalidateInspectorContext() }
             if selectedTagID != nil {
+                isShowingShellPreview = false
                 // 点进某个标签会盖住待处理或全部事项，这和顶部搜索不同，要按离开页面处理。
                 if !preservingSearchPage { releasePageMemory(leaving: selectedTab) }
                 isInlineTitleVisible = false
@@ -228,12 +231,13 @@ final class WorkspaceNavigation {
 
     var contentIdentity: String {
         if isSearching { return "search:" + BoardSearch.normalized(searchQuery) }
+        if isShowingShellPreview { return "shellPreview" }
         if let selectedTagID { return "tag:" + selectedTagID.uuidString }
         return selectedTab.rawValue
     }
 
     var supportsTaskInspector: Bool {
-        isSearching || selectedTagID != nil || selectedTab.supportsTaskInspector
+        isSearching || isShowingShellPreview || selectedTagID != nil || selectedTab.supportsTaskInspector
     }
 
     var canInspectSelectedTask: Bool {
@@ -291,7 +295,15 @@ final class WorkspaceNavigation {
         focusedTrashID = id
     }
 
+    func revealShellPreview() {
+        if !preservingSearchPage { searchPresentation = nil; navigationObject = nil }
+        selectedTagID = nil
+        isInlineTitleVisible = false
+        isShowingShellPreview = true
+    }
+
     func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
+        isShowingShellPreview = false
         if !preservingSearchPage { searchPresentation = nil; navigationObject = nil }
         focusedTrashID = nil
         if tab != .diary {

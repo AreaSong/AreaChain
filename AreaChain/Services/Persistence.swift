@@ -12,9 +12,10 @@ enum Persistence {
     static let session: PersistenceSession = makeSession()
 
     static func makeSession() -> PersistenceSession {
+        let startup = AppStartup.requireAllowed()
         let schema = Schema(AreaChainSchema.models)
         // App.init 早于 AppDelegate 的测试保护；测试宿主不得先触碰真实磁盘库。
-        if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil {
+        if startup == .testing {
             return memorySession(schema: schema, openError: nil)
         }
         let disk = ModelConfiguration("areachain", schema: schema)
