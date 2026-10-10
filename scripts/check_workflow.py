@@ -57,6 +57,10 @@ WORKFLOW_CONTRACT = {
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Features/Workspace/WorkspaceSearchRouter.swift", "WorkspaceSearchRouter"),
+    ("AreaChain/Features/Search/UnifiedSearchNavigation.swift", "UnifiedSearchReturnContext"),
+    ("AreaChain/Services/WorkspaceObjectNavigation.swift", "WorkspaceObjectNavigation"),
+    ("AreaChain/Features/Workspace/WorkspaceHostContext.swift", "WorkspaceHostContext"),
     ("AreaChain/Domain/CommandPlanRevision.swift", "CommandPlanReturnTicket"),
     ("AreaChain/Domain/CommandPlanRevision.swift", "CommandAssignmentMergeProof"),
     ("AreaChain/Services/MultiPlanCommandMerge.swift", "proposeMerge"),

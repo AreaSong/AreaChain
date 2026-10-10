@@ -135,6 +135,9 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
                 assertionFailure("AppWindows.workspaceViewProvider must be registered before showing workspace")
                 return
             }
+            UserDefaults.standard.register(defaults: [
+                "NSSplitViewItemSidebarDefaultsToFloatingAppearance": false
+            ])
             let next = NSWindow(contentViewController: NSHostingController(rootView: provider()))
             next.setContentSize(size)
             next.minSize = minSize ?? size
@@ -142,6 +145,9 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
             next.titlebarSeparatorStyle = .none
+            next.toolbarStyle = .unified
+            let toolbar = NSToolbar(identifier: "AreaChainWorkspaceToolbar")
+            next.toolbar = toolbar
             next.isMovableByWindowBackground = true
             next.isReleasedWhenClosed = false
             next.isRestorable = false

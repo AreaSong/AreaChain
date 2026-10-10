@@ -26,6 +26,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil else { return }
+        UserDefaults.standard.register(defaults: [
+            "NSSplitViewItemSidebarDefaultsToFloatingAppearance": false
+        ])
         AppPreferences.shared.applyAppAppearance()
         PrivacyVault.shared.startLifecycle()
         NSApp.setActivationPolicy(.accessory)

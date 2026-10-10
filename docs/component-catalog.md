@@ -1011,3 +1011,18 @@ UnifiedSearchController 的 UnifiedSearchSettingBackend 互斥选择未装配、
 - [MultiPlanCommandMerge](../AreaChain/Services/MultiPlanCommandMerge.swift) 的 proposeMerge／acceptMerge 使用原成员 Reader，沿 CommandPlanSemantics 的窄白名单，确认时再次核对同一来源、目录、记录与字段。来源数组不能独立授权。
 - [CommandPlan.applyRevision](../AreaChain/Domain/CommandPlan.swift) 在原图有效时原子传播引用版本闭包；旧纯协议编辑和单项设置返回维持原行为。[UnifiedSearchPlanRevisionHistory](../AreaChain/Features/Search/UnifiedSearchPlanRevisionHistory.swift) 在原 PlanList 内展示只读事实和重新接受范围，没有第二套编辑器。
 - 验证入口为 MultiPlanMergeExecutionTests、MultiPlanRevisionTests、MultiPlanRevisionFamilyTests 及本批原生套件，按实际影响补原 Plan／P-M1／P-M2 与各业务适配。真实状态与缺口只维护在[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)。
+
+
+## N-M1 页面、日期、普通结果导航与返回搜索
+
+[WorkspaceSearchRouter](../AreaChain/Features/Workspace/WorkspaceSearchRouter.swift) 只服务显式装配的原 MainSplitWorkspaceView；16个无对象 go 命令直接映射 WorkspaceTab，inspector.day 使用明确民事日，页面仍是原真实组件。实际 NSView 挂载、唯一宿主、检查器宽度与子项可见性决定结果，不调用 AppWindows 的全局状态项／窗口副作用，也不进入 Plan 或写适配器。
+
+[UnifiedSearchReturnContext](../AreaChain/Features/Search/UnifiedSearchNavigation.swift) 仅持有原所有权、查询代次、隐私代次、原页签、结果版本及浏览定位。原查询留在 Coordinator.query，原结果留在 ReadSession；有效快照恢复原浏览／滚动，失效后重读并按稳定身份恢复，锁定撤票据。连续导航共用一个当前票据，新查询使旧票据失效。原生输入候选接受不执行导航；背景⌘Return不提交旧计划。
+
+[WorkspaceObjectNavigation](../AreaChain/Services/WorkspaceObjectNavigation.swift) 沿原实体读取与 TaskFamilyCommandIdentity 校验 todo、subtask 的父关系和 routineOccurrence 的定义UUID＋dayKey；不创建RoutineCheck、不取旧摘要日期、不替换同名对象。TaskDetailDrawer使用同一BoardSelection，子项保留UUID并滚到真实行；不足宽度只报告已定位。
+
+[WorkspaceHostContext](../AreaChain/Features/Workspace/WorkspaceHostContext.swift) 将导航、BoardSelection、EditDrafts、筛选、vault、剪贴板会话与快捷键依赖保持在同一显式宿主。生产默认参数兼容；隔离设置不查询系统状态，手记页不在出现时补建标签，系统操作页面仅呈现。标题／备注／子项及页面输入保留原草稿所有者，导航不以失焦保存完成。TaskRow、日期页、检查器目标登记与相关键盘消费者同源注入。
+
+验证入口为 UnifiedSearchNavigationTests、UnifiedSearchNavigationBoundaryTests、UnifiedSearchNavigationOwnershipTests，以及原WorkspaceHeader／InspectorSizing／Rendering、CalendarMonthNavigation、Results／Input／Plan生命周期。稳定入口由原check_workflow.py及反例测试核对。准确状态、证据分类、指定复核与剩余限制只见[权威N-M1](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。
+
+N-M1的旧入口隔离补充：AppWindows.WorkspaceOpening显式提供导航、收起旧浮层、激活和显示依赖；SearchResultsView透传可选依赖，默认生产调用保持原行为。WorkspaceLegacySearchRoutingTests以实际原生行点击核对三类旧命中进入真实日历和详情，AppWindowsRoutingTests核对设置、明确检查日与仅前置行为。该依赖不授予导航任何业务执行能力。

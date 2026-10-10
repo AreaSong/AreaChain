@@ -92,14 +92,19 @@ private final class WorkspaceWindowHost: NSObject, NSWindowDelegate {
         let root = MainSplitWorkspaceView().modelContainer(fixture.container).environment(fixture.prefs)
             .environment(\.locale, Locale(identifier: "zh-Hans")).preferredColorScheme(scheme)
             .transaction { $0.disablesAnimations = true }
+        UserDefaults.standard.register(defaults: [
+            "NSSplitViewItemSidebarDefaultsToFloatingAppearance": false
+        ])
         window = NSWindow(contentViewController: NSHostingController(rootView: root))
         super.init()
         window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
         window.minSize = DaybookMetrics.Window.workspaceMinSize
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
-        window.isOpaque = false
-        window.backgroundColor = .clear
+        window.titlebarSeparatorStyle = .none
+        window.toolbarStyle = .unified
+        let toolbar = NSToolbar(identifier: "AreaChainWorkspaceToolbar")
+        window.toolbar = toolbar
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
         window.isRestorable = false

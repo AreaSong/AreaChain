@@ -82,6 +82,7 @@ struct MainSplitWorkspaceView: View {
             tags: tags,
             todos: todos
         )
+        .ignoresSafeArea(.all, edges: .top)
         .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 260)
     }
 
@@ -260,13 +261,6 @@ struct MainSplitWorkspaceView: View {
 private extension View {
     @ViewBuilder
     func workspaceToolbarTitleHidden() -> some View {
-        if #available(macOS 15.0, *) {
-            self
-                .toolbar(removing: .title)
-                .navigationTitle("")
-        } else {
-            self
-                .navigationTitle("")
-        }
+        self.navigationTitle("")
     }
 }

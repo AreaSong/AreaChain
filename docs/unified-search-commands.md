@@ -7006,3 +7006,59 @@ runner沿原build/.build.lock单次最多900秒、独立 `build/PrivacyQA-PM3`�
 指定 Cursor verifier 当前无可调用能力，**材料就绪、复核未执行**，未认证、安装或用普通代理冒充。材料为本节原授权／契约、实际patch、完整源码和选择器／方法明细、实体／次数、unknown／所有权／身份、截图与验签证据；重点复核来源注册、返回原子性、历史输出和新旧尝试隔离。C2B、真人IME／VoiceOver／系统合成器、最低macOS、真实多窗口及其他历史问题继续独立保留，不由自动化通过推定完成。
 
 仍不开放任意跨Run／窗口／存储结果导入、历史清洗、生产搜索、真实用户库或系统服务、notes／敏感执行、删除、执行后撤销、自动拆批及跨重启恢复。本批没有安装、发布、续签或权限变化。
+
+
+### 9.84 里程碑 N-M1：导航与返回搜索
+
+2026-10-09～10（Asia/Shanghai）。承接P-M1～P-M3，按用户明确确认的A～E连续实施；本节为唯一交接。本批A～E本地实施、有限验证与工程收口已完成；指定Cursor verifier无可调用入口、未执行，人工及历史缺口独立保留，完整交付状态仍为partial。
+
+#### 已批准范围与状态所有权
+
+明确导航收起统一搜索结果并显示原真实页面；“返回搜索”保留原查询、条件、所属页面及浏览定位。查询唯一属于Coordinator.query，结果／浏览唯一属于ReadSession；UnifiedSearchReturnContext只保存身份、代次、原页签及版本化定位，不保存查询、正文、修改参数或磁盘历史。连续导航只保留当前有效票据，主动新查询撤旧票据。有效快照复用；模型／版本变化重读后按稳定身份恢复，缺失选中对象明确提示；锁定同步撤票据并清输入，解锁不恢复旧内容。
+
+16个无对象go入口按CommandCatalog原ID映射全部WorkspaceTab，包括go.diaries→diary、go.images→attachments、go.backup→dataBackup；其余同名。inspector.day按DayKey及Calendar解释明确日期，仅定位日历／检查日。inspector.open及普通结果打开仅支持todo、subtask、routineOccurrence，先核对当前ReadSession／版本与可见候选，再重新读取真实唯一活身份、父关系及业务日。子任务沿父抽屉承载但定位到真实子项UUID；执行实例保留定义UUID＋明确dayKey，不创建打卡。重复、删除、坏关系及资格不足拒绝，不换同名或首项。
+
+WorkspaceSearchRouter只操作显式宿主，实际页面／对象挂载确认后才报告已显示；取消、组合输入、过期、未装配／不可用和空间不足分别处理。检查器沿原宽度门禁，空间恢复不自动重开。导航不进入修改Draft／Plan或写适配器；原操作草稿、计划、成功Run、unknown暂停及P-M3修订链不被改写，显示接受撤销后回到原入口重新读取和接受，旧lease不续授权。
+
+#### 原生依赖、草稿与键盘
+
+MainSplitWorkspaceView默认生产调用兼容，仅显式注入时使用新展示分支。同一WorkspaceHostContext传递导航、BoardSelection、筛选、EditDrafts及隔离vault／clipboard／快捷键；不调用AppWindows的StatusItemController、全局窗口激活或生产搜索。设置页隔离时不查询真实登录项／通知状态；手记页隔离时不在onAppear补建预设标签；隐私、备份、剪贴板和快捷键只呈现，不执行页面业务动作。
+
+候选Return／Tab只接受，完整导航目标无候选占用时Return或“打开”执行；同一按键不会连跳。原生根层将统一输入的Esc交回自身处理，导航输入下⌘Return拒绝后台计划。marked text不强制结束。导航期间标题、备注、行内／子项及页面输入沿原草稿保留，明确保存才走原保存入口；生产默认生命周期保持。有效快照的滚动位置为本次临时像素定位，过期时仅以稳定身份恢复。
+
+#### 验证与工程记录
+
+本批证据集中在忽略目录 `build/NM1`，完整正常目标使用独立 `build/PrivacyQA-NM1`／`com.areachain.privacy-qa.nm1`，合成七模型内存库、随机偏好／临时文件、私有事件与fake消费者，清除六项真实钥匙串变量。沿原build/.build.lock单次最多900秒；申请前、锁后、执行后与交接前枚举源码／测试／资源／工程／scripts／Config全集，记录新增删除及内容摘要。进程按本批完整路径、PID与启动时间核对退出，不干预并行QA。
+
+过程失败原样保留：首轮字段注入编译错误；日期测试误用空格而非既有斜杠参数；默认960pt不能同时显示检查器；辅助标识读取不完整；执行实例查询误加不支持的标题条件；根工作台按旧搜索焦点提前消费Esc。均沿原契约定位后修正，不降低宽度、身份、输入法或保存断言。最后有效结果如下；失败批次保留，不重复累计后续重跑。
+
+整窗cacheDisplay里的侧栏／检查器系统材质可能是缓存占位，不能证明对应区域的实际内容；实际挂载、AX、合成键鼠、程序化marked text／锁定通知和有效截图分开记录。指定Cursor verifier材料为本节需求、实际差异、最终源码、选择器、实体／保存次数与截图；无认证、安装或普通代理替代。
+
+本批不开放go.tagList、手记／附件实际打开、无日期定义转执行实例、窗口关闭／退出、认证、文件面板、系统剪贴板、备份恢复、业务保存或执行后撤销。C2B、真人IME／VoiceOver／系统窗口合成器、最低macOS、真实多窗口和其他历史缺口独立保留。不启用日用生产搜索，不提交、推送、安装、发布、续签或改变权限。
+
+
+#### N-M1 最终 A～E 与有效证据
+
+| 项目 | 本批实际状态 |
+|---|---|
+| A 导航意图／展示／返回 | 已实现并验证。独立展示状态可在非空查询下显示目的地，原查询／条件／页面来源保持；有效快照复用，过期重读，新查询及锁定撤旧票据。 |
+| B 真实路由 | 16个页面逐项真实挂载通过；明确日期、todo结果、inspector.open的真实subtask定位及routineOccurrence检查上下文通过。对象日期取当前实体；不开手记／附件，不创建打卡。 |
+| C 生命周期／所有权 | 标题、备注、子项和页面输入沿既有草稿保留。原Plan／成功Run／unknown／返回修订四类会话在导航与返回前后全值相等，原保存／事件计数不增加；真实内存vault.lock同步撤返回票据。 |
+| D 原生和旧入口回归 | 最后有效127方法／146次执行通过，零最后有效失败、跳过或expected failure；其中本批导航及旧菜单专项16方法／24次。实际点击返回及⌘[、Return／Tab、⌘Return阻断、marked text、最小尺寸、双语／浅深色、选择／展开／实测滚动与详情空间门禁通过。 |
+| E 最终源码／构建／门禁 | 当前源码完整QA编译／严格验签、正常development Debug／策略验签、本批严格lint、workflow、检查器定向122项、完整265项脚本回归及严格static质量门禁通过；指定复核仍未执行。 |
+
+最后有效方法按 `build/NM1/verification-rollup.json` 逐身份登记，选择器已核对命中：FinalNavigationVerified（55方法／61次）的未受后续窄修改影响部分；FinalNative（84方法／101次）中通过且未被覆盖的旧工作台／任务行／草稿／计划回归；FinalInputAndNavigation（30方法／36次）替换其输入与返回失败；ScrollRestoration（21方法／24次）补实际滚动及原结果生命周期；FinalAcceptance（15方法／21次）覆盖最终导航、inspector.open和所有权；LegacyResultRouting（1方法／3次）直接点击原SearchResultsView的todo／subtask／routine行，通过显式WorkspaceOpening进入真实工作台日历与详情。ReturnPositionFinal（1方法／1次）以真实非空展开内容、选中集合及NSScrollView坐标完成最后返回验证。最后一次结果覆盖同一方法较早结果，不把这些批次数相加。
+
+实际旧入口保持：AppWindows.openWorkspace／openSettings／revealWorkspace仅增加可选WorkspaceOpening依赖，生产默认仍走原状态项、激活及窗口复用；旧菜单结果继续按原命中dayKey及子项parentID进入日历。隔离测试显式注入自己的导航与窗口动作，不调用全局StatusItemController。原WorkspaceHeader／InspectorSizing／Rendering／Window／Notes、CalendarMonthNavigation、TaskRow、Results／Input／Operation／Plan／MultiPlan生命周期与P-M3返回草稿用例已回归；没有重跑所有执行计划矩阵。
+
+零写入证据分别记录：16页面循环的ModelContext.willSave与私有业务发布计数均0，模型无未保存变化，预设标签及RoutineCheck新增均0；日期／对象查看不改业务字段；真实详情中输入的标题、备注和待新增子项在页面卸载后仍位于原EditDrafts，save=0。Plan／Run四场景仅比较导航前后，已有业务保存事实与次数保持；unknown未恢复为ready，已成功单元不重放。旧菜单三类点击只调用一次注入的窗口前置动作，业务保存0。设置、隐私、剪贴板、备份与快捷键页面的隔离依赖没有启用真实系统消费者。
+
+最后补验发现并修正两项实际呈现问题：导航前仅改SwiftUI焦点请求不足以收起原生候选，遮罩会吞掉第一次返回点击；现在沿同一原生输入对象收候选、确认无marked text后释放自身焦点，不清文字或撤销。有效快照返回时，原onAppear的选中项滚动曾覆盖暂存坐标；版本化恢复标记避免这次重复滚动，真实NSScrollView的返回前后坐标、选择及展开保持。旧Results失焦测试原来要求buffer整个值不变，与本批开始前已存在的失焦推进事件版本契约冲突；测试现明确断言查询文字／lease保留、版本推进、旧事件拒绝，没有改变生产失焦或锁定规则。
+
+`build/NM1/screenshots/index.json` 登记FinalAcceptance的20张图片（时间、尺寸、SHA-256），5张联系表及有效内容已实际查看。包含设置与日期的en／zh-Hans、浅／深色、1200×800和原780×500最小工作台，以及任务、子项、明确执行日、草稿和Run事实。原工作台默认960×640按现有门禁不足以同时放入详情；详情测试采用支持的更宽工作台，最小尺寸验证“定位成功／详情未显示”。本批没有把完整三栏工作台缩到444／304pt。16张整窗缓存中的系统材质区域明确不计内容证据；4张同一模型、同一依赖的真实TaskDetailDrawer另挂原生宿主取得有效内容缓存，和原工作台中的实际挂载／可见性断言分别记录，不能冒充系统合成器截图。键鼠为合成原生事件，marked text为程序化输入，锁定为真实内存vault方法；均不冒充真人IME／VoiceOver。
+
+最终源码全集 **1416文件**，摘要 **d083c0d1fdc68f102afb576d81f8ccc3634618ba56ff0b2ef5fb38db0c7e2e4b**。`HandoffQACompile` 与 `HandoffDebug` 的申请前／锁后／执行后全集相同，并匹配交接清单；各自产物严格验签返回0，正常Debug为development／Hardened Runtime=true／distributionReady=false。早期批次到最后源码的逐文件差异和补验对应关系见 `final-source-audit.json`；FinalAcceptance之后只有测试夹具增加默认兼容的旧入口装配参数、旧结果测试及返回展开断言补强，产品实现未再变化；最后完整目标重新编译覆盖。所有本批QA进程按路径、PID、启动时间核对，退出后空集。没有正常应用启动、安装、公证或发布。
+
+本批涉及 **62文件（54份Swift）**，清单和混合文件说明在 `changed-files.json`；`workspace.patch` 是完整工作区差异，含明确标记的并行部分，不代表全部由本任务编写。侧栏、WorkspaceLayout、CommandProtectedTextView、WorkspaceWindowLifecycleTests及AppWindows窗口材质改动的并行内容均保留；会话中索引由外部发生变化，本对话未执行git add或改写索引。初始主题守卫失败随并行侧栏修正消失，不认领该修复。编译既有SDK弃用／actor提示及原生QoS警告保留，未声称无警告。
+
+指定Cursor verifier仍为**材料就绪、复核未执行**：本节、实际差异、完整源码、选择器／方法明细、零保存证据及截图已就绪，未认证或由普通代理代替。C2B、真人IME／VoiceOver、系统合成器、最低macOS与真实多窗口等历史缺口保持；本批平台为macOS26.6.2 arm64。未启用日用生产搜索，未访问真实业务数据／系统剪贴板／真实认证，未提交、推送、安装、发布、续签或更改权限。

@@ -18,23 +18,27 @@ struct WorkspaceSidebarView: View {
             todos: todos,
             todayKey: DayClock.shared.todayKey
         )
-        List {
-            overviewSection
-            itemsSection(todayUnfinished: badges.todayUnfinished, pending: badges.pending)
-            planningSection
-            contentSection
-            organizeSection
-            systemSection
+        ZStack(alignment: .top) {
+            DaybookPalette.fill.page
+                .ignoresSafeArea(.all, edges: .top)
+
+            List {
+                overviewSection
+                itemsSection(todayUnfinished: badges.todayUnfinished, pending: badges.pending)
+                planningSection
+                contentSection
+                organizeSection
+                systemSection
+            }
+            .listStyle(.sidebar)
+            .contentMargins(.top, WorkspaceLayout.sidebarTopInset, for: .scrollContent)
+            .daybookScroll(featherEdges: false)
+            .environment(\.daybookScrollTopEdge, true)
+            .scrollContentBackground(.hidden)
+            .mask {
+                WorkspaceSidebarFadeMask()
+            }
         }
-        .listStyle(.sidebar)
-        .contentMargins(.top, WorkspaceLayout.sidebarTopInset, for: .scrollContent)
-        .daybookScroll(featherEdges: false)
-        .environment(\.daybookScrollTopEdge, true)
-        .scrollContentBackground(.hidden)
-        .mask {
-            WorkspaceSidebarFadeMask()
-        }
-        .background(DaybookPalette.fill.page)
         .background(SyntaxViewAnchor("syntax.workspace.sidebar.bounds"))
     }
 

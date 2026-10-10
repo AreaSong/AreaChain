@@ -78,7 +78,10 @@ struct UnifiedSearchResultsLifecycleTests {
         other.makeKeyAndOrderFront(nil)
         try await SystemPageHost.settle(other)
         #expect(fixture.session.isMasked && !fixture.session.hasRetainedPresentation)
-        #expect(fixture.controller.buffer == buffer)
+        #expect(fixture.controller.buffer.text == buffer.text && fixture.controller.buffer.lease == buffer.lease)
+        // 现有撤显示契约推进原生事件代次；保留查询不等于继续接受失焦前的缓冲票据。
+        #expect(fixture.controller.buffer.version > buffer.version)
+        #expect(!fixture.controller.validates(buffer))
         host.window.makeKeyAndOrderFront(nil)
         try await host.settle()
         #expect(throws: ContentQueryReadSessionError.self) { try fixture.session.presentation() }

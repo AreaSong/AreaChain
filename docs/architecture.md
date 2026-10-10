@@ -584,3 +584,10 @@ CommandBatchWriteSet 是原接受和运行事实的不可编辑部分，按类�
 显式支持修订的 MultiPlanCommandAdapter 仍使用原 CommandPlan／CommandExecutionRun。协调者先核验完整剩余单元和真实尝试事实，在无调用／准备占用、无本地 unknown、无本地已保存外部待处理时，原子撤销源运行执行权并交付唯一可编辑计划。原 Run 以不可变记录保留在同宿主修订链；新 Run 不复制成功单元。返回票据绑定原 lease、Run、计划及完整单元成员，旧票据／回执不能进入新接收窗口。
 
 未执行生产者编辑按拓扑传播所有消费者引用版本，迁移前后均验证图。已成功生产者的 CommandCreationOutput 保留原 Run、attempt、savedID、PersistentIdentifier、装配和存储身份，完成顺序边单独保留只读来源。原事务及当前资格仍由各 Reader／Adapter 核验；返回后重新读取和接受全部剩余影响。仅本次运行内有效，不写普通历史或磁盘队列；可合并、可返回范围及验证结果以[权威 P-M3](unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)为准。
+
+
+### N-M1 工作台暂挂展示与只读打开
+
+显式统一搜索宿主通过WorkspaceHostContext向实际页面、目标登记、日期和草稿消费者传递同一依赖。WorkspaceNavigation.searchPresentation只覆盖搜索／目的地呈现，nil保留生产旧规则；明确导航跳过原页签离开的记忆释放，普通页签仍沿原页面默认条件和原查询reducer建立访问。返回不复制Query／ReadSession／Plan／Run，失效和锁定也不从票据恢复文字。
+
+WorkspaceSearchRouter只访问自己的真实窗口与挂载标记；它没有保存和系统动作依赖。普通对象先检查当前ReadSession候选，再由WorkspaceObjectNavigation读取当前唯一活对象、父关系和业务日；子项的UUID与routineOccurrence.dayKey一路保留。原检查器空间门禁独立于定位成功，恢复空间不自动重开。隔离初始化与草稿保留边界见[组件目录](component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，实际证据和限制见[权威N-M1](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。

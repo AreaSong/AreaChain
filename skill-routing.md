@@ -424,3 +424,8 @@ K真实输入、L持续按压与关键可访问性沿 areachain-workflow → are
 ## P-M3 合并与返回修订
 
 沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦原生状态与焦点）→ areachain-verify。复用原 Plan／Run／Coordinator、CommandPlanSemantics 和各真实 Reader，显式 supportsRevisions 装配才开放真实赋值合并及完整剩余集合返回；默认旧单项／P-M1／P-M2 保持边界。入口见[组件目录](docs/component-catalog.md#p-m3-合并与唯一编辑修订)，唯一实现与验收状态见[权威 P-M3](docs/unified-search-commands.md#983-里程碑-p-m3合法赋值合并与运行内编辑修订)。完整 PrivacyQA、独立 PM3 目录／标识、原锁900秒、源码全集与进程核对、六项授权清除及串行原生保持；指定 Cursor 不可用保留未执行，不以探索代理替代，不接生产或安装发布。
+
+
+## N-M1 导航与返回搜索
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦键盘、状态身份与返回）→ areachain-verify。直接复用原解析、ReadSession、WorkspaceNavigation、真实工作台页面、BoardSelection和EditDrafts；仅显式隔离装配，不替换生产搜索。页面、日期、三类普通对象和版本化返回入口见[组件目录](docs/component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，A～E实际状态只维护在[权威N-M1](docs/unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。完整正常PrivacyQA、独立NM1标识／目录、原锁单次900秒、源码全集与本批进程核对、六项钥匙串变量清除及串行原生保持；指定Cursor verifier不可调用保留未执行，不认证或以探索代理替代。无业务保存、真实系统操作、生产启用、提交、推送、安装或发布。
