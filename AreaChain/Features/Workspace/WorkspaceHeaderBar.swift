@@ -4,6 +4,7 @@ import SwiftUI
 struct WorkspaceHeaderBar: View {
     @Bindable var navigation: WorkspaceNavigation
     var tags: [TagItem]
+    var searchController: UnifiedSearchController?
     var content = WorkspaceHeaderContent()
     @State private var showsHelp = false
 
@@ -27,7 +28,8 @@ struct WorkspaceHeaderBar: View {
         .onChange(of: navigation.contentIdentity) { _, _ in showsHelp = false }
     }
 
-    private var search: some View {
+    @ViewBuilder private var search: some View {
+        if let searchController { UnifiedSearchWorkspaceInput(controller: searchController) } else {
         WorkspaceHeaderSearchCapsule(
             navigation: navigation,
             tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
@@ -35,6 +37,8 @@ struct WorkspaceHeaderBar: View {
         .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workspace.header.search.shell")
+    }
+
     }
 
     private var title: some View {

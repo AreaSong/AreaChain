@@ -59,7 +59,7 @@ struct ResidentsPage: View {
 private struct ResidentEditorRow: View {
     @Environment(\.locale) private var locale
     @Environment(\.modelContext) private var modelContext
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
     @Query private var checks: [RoutineCheck]
     var routine: DailyRoutine
 

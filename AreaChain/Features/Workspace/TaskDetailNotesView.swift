@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 
 struct TaskDetailNotesView: View {
+    @WorkspaceDraftContext private var drafts
+    @WorkspaceBoardContext private var boardSelection
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.locale) private var locale
     @Environment(\.workspaceInspectorFocus) private var inspectorFocus
     let draftKey: String
@@ -19,10 +22,10 @@ struct TaskDetailNotesView: View {
             notesLinksView
         }
         .onAppear {
-            draft = EditDrafts.shared.notes[draftKey] ?? notes
+            draft = drafts.notes[draftKey] ?? notes
         }
         .onChange(of: notes) { _, newValue in
-            if !isFocused && EditDrafts.shared.notes[draftKey] == nil && newValue != draft {
+            if !isFocused && drafts.notes[draftKey] == nil && newValue != draft {
                 draft = newValue
             }
         }
@@ -37,7 +40,7 @@ struct TaskDetailNotesView: View {
                 .font(DaybookType.label)
                 .foregroundStyle(DaybookPalette.text.secondary)
             Spacer()
-            if EditDrafts.shared.notes[draftKey] != nil {
+            if drafts.notes[draftKey] != nil {
                 Text("editor.unsaved")
                     .font(DaybookType.badge)
                     .foregroundStyle(DaybookPalette.status.danger)
@@ -63,11 +66,11 @@ struct TaskDetailNotesView: View {
             .frame(minHeight: 56, maxHeight: 150)
             .onChange(of: draft) { _, newValue in
                 if lastSaveAttempt != newValue { lastSaveAttempt = nil }
-                if newValue != notes { EditDrafts.shared.notes[draftKey] = newValue }
+                if newValue != notes { drafts.notes[draftKey] = newValue }
             }
             .onChange(of: isFocused) { _, focused in
                 if !focused {
-                    _ = BoardSelection.shared.consumeEscapeCancelsEdits()
+                    _ = boardSelection.consumeEscapeCancelsEdits()
                     flushLifecycleSave()
                 }
             }
@@ -107,16 +110,16 @@ struct TaskDetailNotesView: View {
     private func flushSave() {
         lastSaveAttempt = draft
         if draft != notes {
-            EditDrafts.shared.notes[draftKey] = draft
-            if onUpdate(draft) { EditDrafts.shared.notes.removeValue(forKey: draftKey) }
+            drafts.notes[draftKey] = draft
+            if onUpdate(draft) { drafts.notes.removeValue(forKey: draftKey) }
         } else {
-            EditDrafts.shared.notes.removeValue(forKey: draftKey)
+            drafts.notes.removeValue(forKey: draftKey)
         }
     }
 
     private func flushLifecycleSave() {
-        if inspectorFocus?.retainsMarkedDraft == true {
-            if draft != notes { EditDrafts.shared.notes[draftKey] = draft }
+        if inspectorFocus?.retainsMarkedDraft == true || inspectorFocus?.retainsNavigationDraft == true || hostContext != nil {
+            if draft != notes { drafts.notes[draftKey] = draft }
             return
         }
         // 详情收起会先失焦再卸载；同一草稿只尝试一次，失败留待用户显式重试或继续编辑。

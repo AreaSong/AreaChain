@@ -15,7 +15,7 @@ struct WorkspaceFilteredListView: View {
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
 
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
     @State private var draftTitle = ""
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
@@ -342,6 +342,7 @@ private final class FilteredKeySink {
 }
 
 private struct FilteredListKeys: ViewModifier {
+    @WorkspaceNavigationContext private var navigation
     var orderedIDs: [UUID]
     var hasRows: Bool
     var perform: (UInt16) -> Void
@@ -360,9 +361,9 @@ private struct FilteredListKeys: ViewModifier {
                     let context = ItemsListKeyContext(
                         responderClaimsKeys: ItemsListKeyRouting.responderClaimsKeys(NSApp.keyWindow?.firstResponder),
                         hasRows: sink.hasRows,
-                        hasSelection: WorkspaceNavigation.shared.selectedTaskID != nil,
-                        hasMultiSelection: !WorkspaceNavigation.shared.selectedTaskIDs.isEmpty,
-                        inspectorPresented: WorkspaceNavigation.shared.isInspectorPresented
+                        hasSelection: navigation.selectedTaskID != nil,
+                        hasMultiSelection: !navigation.selectedTaskIDs.isEmpty,
+                        inspectorPresented: navigation.isInspectorPresented
                     )
                     guard ItemsListKeyRouting.consumes(event.keyCode, context: context) else { return event }
                     sink.perform(event.keyCode)

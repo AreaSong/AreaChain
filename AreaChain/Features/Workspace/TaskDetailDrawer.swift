@@ -8,6 +8,8 @@ struct TaskDetailDrawer: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @Binding var taskID: UUID?
+    @WorkspaceNavigationContext private var navigation
+    @Environment(\.workspaceSearchRouter) private var router
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
@@ -15,13 +17,13 @@ struct TaskDetailDrawer: View {
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
 
-    @Bindable private var boardSelection = BoardSelection.shared
+    @WorkspaceBoardContext private var boardSelection
     @State private var previewAttachment: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
 
     var body: some View {
         Group {
-            if let taskID, let reference = WorkspaceNavigation.shared.inspectedReference, reference.modelID == taskID {
+            if let taskID, let reference = navigation.inspectedReference, reference.modelID == taskID {
                 switch reference {
                 case .todo:
                     if let todo = todos.first(where: { $0.id == taskID && $0.deletedAt == nil }) {
@@ -82,6 +84,7 @@ struct TaskDetailDrawer: View {
     // MARK: - Todo Detail View
 
     private func todoDetailView(_ todo: TodoItem) -> some View {
+        ScrollViewReader { proxy in
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 todoHeader(todo)
@@ -103,6 +106,16 @@ struct TaskDetailDrawer: View {
             .padding(16)
         }
         .daybookScroll()
+        .background(WorkspaceNavigationProbe(router: router, key: "object." + todo.id.uuidString))
+        .onAppear { scrollToSubtask(proxy) }
+        .onChange(of: navigation.navigationObject) { _, _ in scrollToSubtask(proxy) }
+        }
+    }
+
+    private func scrollToSubtask(_ proxy: ScrollViewProxy) {
+        if let object = navigation.navigationObject?.object, object.type == .subtask {
+            proxy.scrollTo(object.id, anchor: .center)
+        }
     }
 
     private func todoHeader(_ todo: TodoItem) -> some View {
@@ -113,11 +126,11 @@ struct TaskDetailDrawer: View {
                 pendingTrash = PendingTrash(title: todo.title) {
                     DayBoardMutations.trashTodo(todo)
                     taskID = nil
-                    WorkspaceNavigation.shared.closeInspector()
+                    navigation.closeInspector()
                 }
             },
             onClose: {
-                WorkspaceNavigation.shared.closeInspector()
+                navigation.closeInspector()
             }
         )
     }
@@ -137,7 +150,7 @@ struct TaskDetailDrawer: View {
             checks: checks.compactMap(\.snapshot),
             on: boardDayKey
         )
-        let allowsCompletion = WorkspaceNavigation.shared.allowsRoutineCompletion(routine.id)
+        let allowsCompletion = navigation.allowsRoutineCompletion(routine.id)
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
@@ -181,6 +194,7 @@ struct TaskDetailDrawer: View {
             .padding(16)
         }
         .daybookScroll()
+        .background(WorkspaceNavigationProbe(router: router, key: "object." + routine.id.uuidString))
     }
 
     private func routineHeader(
@@ -206,11 +220,11 @@ struct TaskDetailDrawer: View {
                 pendingTrash = PendingTrash(title: routine.title) {
                     DayBoardMutations.trashRoutine(routine)
                     taskID = nil
-                    WorkspaceNavigation.shared.closeInspector()
+                    navigation.closeInspector()
                 }
             },
             onClose: {
-                WorkspaceNavigation.shared.closeInspector()
+                navigation.closeInspector()
             }
         )
     }

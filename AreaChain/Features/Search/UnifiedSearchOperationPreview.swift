@@ -11,7 +11,8 @@ struct UnifiedSearchOperationPreview: View {
         let keySelection = controller.objectSelection
         let source = controller.buffer
         Group {
-            if let picker = controller.tagSelection {
+            if controller.isNavigationInput { UnifiedSearchNavigationPanel(controller: controller) }
+            else if let picker = controller.tagSelection {
                 UnifiedSearchTagSetField(controller: controller, picker: picker)
                     .background(DaybookPalette.cardSurface)
             } else if controller.objectSelectionLocation != nil, let draft = controller.editingDraft,

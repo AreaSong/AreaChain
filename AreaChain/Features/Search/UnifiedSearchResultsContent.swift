@@ -33,6 +33,11 @@ struct UnifiedSearchResultsContent: View {
                     .padding(2)
                     .background(DaybookScrollerConfigurator())
                 }
+                .onAppear {
+                    if controller.preservedSearchScrollVersion != page.snapshot.version, let active = page.browse.active {
+                        proxy.scrollTo(active, anchor: .center)
+                    }
+                }
                 .onChange(of: page.browse.active) { _, active in
                     if let active { proxy.scrollTo(active, anchor: .center) }
                 }

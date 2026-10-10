@@ -13,16 +13,30 @@ enum AppWindows {
     static var activateForOpening: @MainActor () -> Void = { becomeActive() }
     static var showWorkspaceWindow: @MainActor () -> Void = { PanelWindowController.workspace.show() }
 
-    static func openWorkspace(tab: WorkspaceTab = .dashboard, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
-        StatusItemController.shared.close()
-        activateForOpening()
-        WorkspaceNavigation.shared.revealTab(tab, inspecting: taskID, dayKey: dayKey)
-        showWorkspaceWindow()
+    @MainActor struct WorkspaceOpening {
+        let navigation: WorkspaceNavigation
+        var dismissOverlay: () -> Void
+        var activate: () -> Void
+        var show: () -> Void
+
+        static var live: Self {
+            .init(navigation: .shared, dismissOverlay: { StatusItemController.shared.close() },
+                  activate: activateForOpening, show: showWorkspaceWindow)
+        }
+    }
+
+    static func openWorkspace(tab: WorkspaceTab = .dashboard, inspecting taskID: UUID? = nil, dayKey: String? = nil,
+                              opening: WorkspaceOpening? = nil) {
+        let opening = opening ?? .live
+        opening.dismissOverlay()
+        opening.activate()
+        opening.navigation.revealTab(tab, inspecting: taskID, dayKey: dayKey)
+        opening.show()
     }
 
     /// 应用菜单、⌘, 和浮层「设置」都进入工作台设置页。
-    static func openSettings() {
-        openWorkspace(tab: .settings)
+    static func openSettings(opening: WorkspaceOpening? = nil) {
+        openWorkspace(tab: .settings, opening: opening)
     }
 
     static func openControlsPreview(localeID: String, dark: Bool) {
@@ -30,10 +44,11 @@ enum AppWindows {
         ControlsPreviewWindowController.shared.show(localeID: localeID, dark: dark)
     }
 
-    static func revealWorkspace() {
-        StatusItemController.shared.close()
-        activateForOpening()
-        showWorkspaceWindow()
+    static func revealWorkspace(opening: WorkspaceOpening? = nil) {
+        let opening = opening ?? .live
+        opening.dismissOverlay()
+        opening.activate()
+        opening.show()
     }
 
     static func openDiary() {
@@ -126,8 +141,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
-            next.isOpaque = false
-            next.backgroundColor = .clear
+            next.titlebarSeparatorStyle = .none
             next.isMovableByWindowBackground = true
             next.isReleasedWhenClosed = false
             next.isRestorable = false

@@ -118,7 +118,7 @@ final class WorkspaceNavigation {
         didSet {
             if oldValue != selectedTab {
                 invalidateInspectorContext()
-                releasePageMemory(leaving: oldValue)
+                if !preservingSearchPage { releasePageMemory(leaving: oldValue); searchPresentation = nil; navigationObject = nil }
             }
             selectedTagID = nil
             isInlineTitleVisible = (selectedTab == .settings || selectedTab == .trash)
@@ -135,7 +135,7 @@ final class WorkspaceNavigation {
             if oldValue != selectedTagID { invalidateInspectorContext() }
             if selectedTagID != nil {
                 // 点进某个标签会盖住待处理或全部事项，这和顶部搜索不同，要按离开页面处理。
-                releasePageMemory(leaving: selectedTab)
+                if !preservingSearchPage { releasePageMemory(leaving: selectedTab) }
                 isInlineTitleVisible = false
                 boardSelection.clearInspectedDiary()
                 pinTodayInspectDay()
@@ -146,6 +146,9 @@ final class WorkspaceNavigation {
 
     /// 今日捕获草稿。顶部搜索会拆掉今日页，草稿不能放在页面 `@State` 里。
     var todayDraft = ""
+    var calendarDraft = ""
+    var quadrantDrafts: [QuadrantSlot: String] = [:]
+    var diaryDraft = BoardComposerDraft()
     /// 待处理的通道和筛选。搜索期间保留；真正离开该页后清空，下次按逾期/即将规则重开。
     var pendingLaneSession: PendingLaneSession?
     var pendingFilter = BoardFilter()
@@ -168,8 +171,28 @@ final class WorkspaceNavigation {
     var searchResultIndex: Int?
     var wantsTodayComposerFocus: Bool = false
 
+    // nil 保持生产旧搜索；仅显式统一搜索宿主控制暂挂展示。
+    var searchPresentation: Bool?
+    var navigationObject: WorkspaceObjectLocation?
+    private var preservingSearchPage = false
+
     var isSearching: Bool {
-        !BoardSearch.normalized(searchQuery).isEmpty
+        searchPresentation ?? !BoardSearch.normalized(searchQuery).isEmpty
+    }
+
+    func revealSearchDestination(_ tab: WorkspaceTab) {
+        preservingSearchPage = true
+        searchPresentation = false
+        revealTab(tab)
+        preservingSearchPage = false
+    }
+
+    func restoreSearchPage(_ tab: WorkspaceTab, tag: UUID?) {
+        preservingSearchPage = true
+        revealTab(tab)
+        selectedTagID = tag
+        searchPresentation = true
+        preservingSearchPage = false
     }
 
     func focusSearch() {
@@ -218,6 +241,7 @@ final class WorkspaceNavigation {
     }
 
     func updateInspectorTargets(_ ids: Set<UUID>) {
+        let ids = ids.union(navigationObject.map { [$0.inspectorID] } ?? [])
         inspectorTargetIDs = ids
         if let selectedTaskID, !ids.contains(selectedTaskID) {
             self.selectedTaskID = nil
@@ -268,6 +292,7 @@ final class WorkspaceNavigation {
     }
 
     func revealTab(_ tab: WorkspaceTab, inspecting taskID: UUID? = nil, dayKey: String? = nil) {
+        if !preservingSearchPage { searchPresentation = nil; navigationObject = nil }
         focusedTrashID = nil
         if tab != .diary {
             boardSelection.clearInspectedDiary()

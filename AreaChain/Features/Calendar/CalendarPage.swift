@@ -38,9 +38,14 @@ struct CalendarPage: View {
     var checks: [RoutineCheck]
     var todos: [TodoItem]
 
-    @Bindable private var selection = BoardSelection.shared
-    @Bindable private var navigation = WorkspaceNavigation.shared
-    @State private var draft = ""
+    @WorkspaceBoardContext private var selection
+    @WorkspaceNavigationContext private var navigation
+    @Environment(\.workspaceHostContext) private var hostContext
+    @State private var localDraft = ""
+    private var draft: String {
+        get { hostContext == nil ? localDraft : navigation.calendarDraft }
+        nonmutating set { if hostContext == nil { localDraft = newValue } else { navigation.calendarDraft = newValue } }
+    }
     @State private var span: CalendarSpan = .month
     @State private var keyboardFocus = CalendarKeyboardFocus.grid
     @State private var listFocusID: UUID?
@@ -143,7 +148,7 @@ struct CalendarPage: View {
                     onInspect: { id in
                         listFocusID = id
                         keyboardFocus = .list
-                        WorkspaceNavigation.shared.inspectTask(id)
+                        navigation.inspectTask(id)
                     },
                     onReturnToInput: { keyboardFocus = .grid }
                 )
@@ -269,7 +274,7 @@ struct CalendarPage: View {
     }
 
     private var composer: some View {
-        DaybookComposer(text: $draft, placeholder: "calendar.add", onSubmit: addTodo)
+        DaybookComposer(text: Binding(get: { draft }, set: { draft = $0 }), placeholder: "calendar.add", onSubmit: addTodo)
     }
 
     private func addTodo() {

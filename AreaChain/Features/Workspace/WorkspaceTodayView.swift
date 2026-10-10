@@ -11,8 +11,8 @@ struct WorkspaceTodayView: View {
     @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
-    @Bindable private var navigation = WorkspaceNavigation.shared
-    @Bindable private var filterSession = BoardFilterSession.shared
+    @WorkspaceNavigationContext private var navigation
+    @WorkspaceFilterContext private var filterSession
     @State private var dayTick = Date()
     @State private var composerFocused = false
     @State private var showingRecurringEditor = false
@@ -51,7 +51,7 @@ struct WorkspaceTodayView: View {
                     interaction: DayBoardInteraction(
                         focusedTaskID: $navigation.selectedTaskID,
                         highlightedTaskID: navigation.selectedTaskID,
-                        onInspect: { WorkspaceNavigation.shared.inspectTask($0) },
+                        onInspect: { navigation.inspectTask($0) },
                         onReturnToInput: {
                             navigation.selectedTaskID = nil
                             composerFocused = true

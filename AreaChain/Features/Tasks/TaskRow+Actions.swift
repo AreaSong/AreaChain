@@ -37,6 +37,7 @@ extension TaskRow {
 
     func cancelEdit() {
         draft = state.title
+        if hostContext != nil { editDrafts.titles.removeValue(forKey: navigationDraftKey) }
         editing = false
         editorFocused = false
         dispatch(.endEditing)
@@ -53,6 +54,7 @@ extension TaskRow {
         } else {
             draft = state.title
         }
+        if hostContext != nil { editDrafts.titles.removeValue(forKey: navigationDraftKey) }
         editing = false
         editorFocused = false
         dispatch(.endEditing)

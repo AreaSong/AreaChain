@@ -88,7 +88,7 @@ struct WorkspaceItemsList: View {
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
     @State private var pendingTrash: PendingTrash?
     @State private var editingID: UUID?
     @State private var hostWindow: NSWindow?

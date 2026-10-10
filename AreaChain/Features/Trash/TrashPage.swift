@@ -10,7 +10,7 @@ struct TrashPage: View {
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query(filter: SoftDelete.deletedAttachments) private var attachments: [AttachmentItem]
 
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
     @State private var pendingPurge: PendingTrash?
     @State private var confirmEmpty = false
 

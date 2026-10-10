@@ -5,6 +5,15 @@ import Observation
 @Observable @MainActor
 final class UnifiedSearchController {
     private(set) var buffer: UnifiedSearchBuffer
+    var navigationRouter: WorkspaceSearchRouter?
+    var returnSearch: UnifiedSearchReturnContext?
+    var navigationQueryRevision: UInt64 = 0
+    @ObservationIgnored var captureSearchScroll: (() -> CGPoint?)?
+    var restoreSearchScroll: (version: UUID, point: CGPoint)?
+    var preservedSearchScrollVersion: UUID?
+    var navigationMessage = "unified.navigation.hint"
+    @ObservationIgnored var navigationTask: Task<Void, Never>?
+    var navigationRequestID: UUID?
     var inputFocused = true
     var operationExpanded = true
     var planMessage = "unified.plan.notExecutable"
@@ -137,6 +146,12 @@ final class UnifiedSearchController {
               intent: { [weak self] in self?.intent($0, source: $1) })
     }
 
+    var queryInputText: String {
+        guard let query = try? coordinator.host(buffer.lease.ownership.hostID).session.query,
+              case .content(let content) = query.input else { return "" }
+        return content.source
+    }
+
     var isCommandInput: Bool {
         if editingParameter != nil { return true }
         let state = CommandPathParser().parse(.init(text: buffer.text, cursorLocation: buffer.text.utf16.count)).state
@@ -154,6 +169,7 @@ final class UnifiedSearchController {
         let state = CommandPathParser().parse(.init(text: request.text, cursorLocation: request.selection.location)).state
         let content = state == .ordinaryText || state == .scope
         if content {
+            newNavigationQuery()
             do {
                 try session.modelDidChange(expecting: buffer.lease.ownership)
                 try coordinator.send(.query(.setInput(request.text)), expecting: request.source.lease)
@@ -162,7 +178,10 @@ final class UnifiedSearchController {
         guard let owned = try? coordinator.host(buffer.lease.ownership.hostID) else { return nil }
         buffer = .init(lease: owned.lease, version: buffer.version + 1, text: request.text,
                        privacyRevision: buffer.privacyRevision, operation: editingDraft?.stamp, plan: plan?.stamp, planItem: editingPlanItem?.stamp)
-        if content { refresh() }
+        if content {
+            navigationRouter?.navigation.searchPresentation = owned.session.query.showsResults
+            refresh()
+        }
         return buffer
     }
 
@@ -186,6 +205,11 @@ final class UnifiedSearchController {
 
     func intent(_ intent: UnifiedSearchIntent, source: UnifiedSearchBuffer) {
         guard validates(source) else { return }
+        if isNavigationInput {
+            if intent == .submit { return }
+            if intent == .open { executeNavigation(source: source); return }
+            if intent == .escape { _ = navigationInput(queryInputText); return }
+        }
         if intent == .submit { requestOperationSubmit(source); return }
         if let picker = tagSelection {
             switch intent {
@@ -236,7 +260,10 @@ final class UnifiedSearchController {
     func browse(_ event: ContentQueryBrowseEvent, source: UnifiedSearchBuffer) {
         guard validates(source), let effect = try? session.browse(event), effect.rejection == nil else { return }
         applyFocus(effect.focus)
-        if case .open = event.action, let open = try? session.consumeOpenIntent() { recordOpen(open) }
+        if case .open = event.action, let open = try? session.consumeOpenIntent() {
+            if navigationRouter != nil { openResult(open, source: source) }
+            else { recordOpen(open); navigationMessage = "unified.navigation.unassembled" }
+        }
     }
 
     func load(_ event: ContentQueryPaginationEvent, source: UnifiedSearchBuffer) {
@@ -252,6 +279,7 @@ final class UnifiedSearchController {
     }
 
     func detach() {
+        invalidateNavigation(privacy: true)
         multiPlan?.invalidatePresentation()
         multiPlanTask?.cancel()
         multiPlanTask = nil
@@ -267,6 +295,8 @@ final class UnifiedSearchController {
         if let observer { session.displayUpdates.remove(observer) }
         observer = nil
         focusResults = nil
+        captureSearchScroll = nil
+        restoreSearchScroll = nil
         session.detach()
     }
 
@@ -338,6 +368,9 @@ final class UnifiedSearchController {
     private func changed(_ change: ContentQueryDisplayUpdates.Change) {
         revision &+= 1
         if change == .privacyInvalidated || session.isMasked { multiPlan?.invalidatePresentation() }
+        if change != .published, navigationRouter?.navigation.navigationObject != nil {
+            invalidateNavigation(privacy: change == .privacyInvalidated)
+        }
         // 普通查询的迟到失效通知可能来自刚完成的 enqueue；不可撤掉基于新 lease 准备的效果。
         if change == .privacyInvalidated || !operationVisible { revokeTaskComposition() }
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
@@ -349,6 +382,7 @@ final class UnifiedSearchController {
             objectSelectionMessage = "unified.objects.stale"
         }
         if change == .privacyInvalidated {
+            invalidateNavigation(privacy: true)
             task?.cancel()
             // 旧宿主只清自身原生缓冲，不能拿新所有权的 lease 续接旧事件。
             let current = try? coordinator.host(buffer.lease.ownership.hostID).lease

@@ -121,6 +121,7 @@ import AppKit
 
     override func insertNewline(_ sender: Any?) { insertText("\n", replacementRange: selectedRange()) }
     override func insertTab(_ sender: Any?) { insertText("\t", replacementRange: selectedRange()) }
+    override func cancelOperation(_ sender: Any?) {}
 
     override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard type == .string, let text = pboard.string(forType: .string), let previous = access else { return false }

@@ -11,10 +11,16 @@ struct QuadrantPage: View {
     @Query private var checks: [RoutineCheck]
 
     var todayKey: String
-    @Bindable private var selection = BoardSelection.shared
+    @WorkspaceBoardContext private var selection
+    @WorkspaceNavigationContext private var navigation
     @Environment(\.modelContext) private var modelContext
     @State private var dropSlot: QuadrantSlot?
-    @State private var drafts: [QuadrantSlot: String] = [:]
+    @Environment(\.workspaceHostContext) private var hostContext
+    @State private var localDrafts: [QuadrantSlot: String] = [:]
+    private var drafts: [QuadrantSlot: String] {
+        get { hostContext == nil ? localDrafts : navigation.quadrantDrafts }
+        nonmutating set { if hostContext == nil { localDrafts = newValue } else { navigation.quadrantDrafts = newValue } }
+    }
     @State private var fieldFocus: [QuadrantSlot: Bool] = [:]
     @State private var focusedID: UUID?
     @State private var floatingPreview: QuadrantFloatingPreview?
@@ -230,8 +236,8 @@ struct QuadrantPage: View {
     }
 
     private func inspect(_ row: BoardRow) {
-        BoardSelection.shared.inspectBoard(selectedKey)
-        WorkspaceNavigation.shared.inspectTask(row.id)
+        selection.inspectBoard(selectedKey)
+        navigation.inspectTask(row.id)
     }
 
     private func toggleFocused() {
@@ -263,6 +269,8 @@ struct QuadrantPage: View {
 }
 
 private struct QuadrantChip: View {
+    @Environment(\.workspaceHostContext) private var hostContext
+    @Environment(AppPreferences.self) private var preferences
     var row: BoardRow
     var isFocused: Bool
     var previewLink: QuadrantPreviewLink
@@ -309,7 +317,7 @@ private struct QuadrantChip: View {
                 }
                 QuadrantSingleLineTitle(
                     text: title,
-                    truncation: AppPreferences.shared.quadrantTitleTruncation.textTruncation,
+                    truncation: (hostContext == nil ? AppPreferences.shared : preferences).quadrantTitleTruncation.textTruncation,
                     overflows: $titleOverflows
                 )
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)

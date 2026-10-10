@@ -27,10 +27,13 @@ struct WorkspaceSidebarView: View {
             systemSection
         }
         .listStyle(.sidebar)
+        .contentMargins(.top, WorkspaceLayout.sidebarTopInset, for: .scrollContent)
         .daybookScroll(featherEdges: false)
         .environment(\.daybookScrollTopEdge, true)
-        .padding(.top, WorkspaceLayout.sidebarTopInset)
         .scrollContentBackground(.hidden)
+        .mask {
+            WorkspaceSidebarFadeMask()
+        }
         .background(DaybookPalette.fill.page)
         .background(SyntaxViewAnchor("syntax.workspace.sidebar.bounds"))
     }
@@ -106,18 +109,23 @@ struct WorkspaceSidebarView: View {
         } label: {
             HStack(spacing: 8) {
                 DaybookStatusDot(color: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken), size: 8)
-                    .accessibilityHidden(true)
+
                 Text(tag.name)
-                    .font(DaybookType.body)
-                    .foregroundStyle(DaybookPalette.text.primary)
+                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
+                    .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.primary)
                     .lineLimit(1)
                 Spacer(minLength: 0)
             }
-            .padding(.vertical, 2)
+            .padding(.vertical, WorkspaceLayout.sidebarRowVerticalPadding)
+            .padding(.horizontal, WorkspaceLayout.sidebarRowHorizontalPadding)
+            .frame(minHeight: WorkspaceLayout.sidebarRowHeight)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
+                    .fill(isSelected ? DaybookPalette.fill.selection : Color.clear)
+            )
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain) // control: 侧栏标签行，整行点击
-        .listRowBackground(isSelected ? DaybookPalette.fill.selection : Color.clear)
         .accessibilityLabel(Text(tag.name))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }

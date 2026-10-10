@@ -64,6 +64,7 @@ final class UnifiedSearchResultsBoundary: NSView {
             let handled = MainActor.assumeIsolated { self?.handle(event) == true }
             return handled ? nil : event
         }
+        controller.captureSearchScroll = { [weak self] in self?.resultScrollView?.contentView.bounds.origin }
         let ownership = controller.buffer.lease.ownership
         focusObserver = NotificationCenter.default.addObserver(forName: NSWindow.didResignKeyNotification,
             object: nil, queue: .main) { [weak self, weak controller] note in
@@ -103,6 +104,24 @@ final class UnifiedSearchResultsBoundary: NSView {
             hosting = view
             addSubview(view)
         }
+        if let restore = controller.restoreSearchScroll, restore.version == renderedVersion {
+            DispatchQueue.main.async { [weak self, weak controller] in
+                guard let self, self.renderedVersion == restore.version, let scroll = self.resultScrollView,
+                      controller?.restoreSearchScroll?.version == restore.version else { return }
+                self.layoutSubtreeIfNeeded()
+                scroll.contentView.scroll(to: restore.point)
+                scroll.reflectScrolledClipView(scroll.contentView)
+                controller?.restoreSearchScroll = nil
+            }
+        }
+    }
+
+    private var resultScrollView: NSScrollView? {
+        func find(_ view: NSView) -> NSScrollView? {
+            if let scroll = view as? NSScrollView { return scroll }
+            return view.subviews.lazy.compactMap { find($0) }.first
+        }
+        return hosting.flatMap { find($0) }
     }
 
     /// 先清只读文本原生 storage，再移除子树；不依赖下一次 run loop 或 onDisappear。
@@ -152,6 +171,7 @@ final class UnifiedSearchResultsBoundary: NSView {
         token = nil
         keys = nil
         controller?.focusResults = nil
+        controller?.captureSearchScroll = nil
         controller = nil
         removePresentation()
     }

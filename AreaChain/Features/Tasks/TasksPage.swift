@@ -28,6 +28,8 @@ struct TasksPageConfig {
 }
 
 struct TasksPage: View {
+    @WorkspaceNavigationContext var workspaceNavigation
+    @WorkspaceBoardContext var boardSelection
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
     @Environment(\.workspaceEmbedded) var embedded
@@ -111,8 +113,8 @@ struct TasksPage: View {
                     .coordinateSpace(name: "tasks_page_scroll")
                     .onPreferenceChange(TasksPageScrollOffsetKey.self) { offset in
                         let shouldCollapse = offset < -32
-                        if WorkspaceNavigation.shared.isInlineTitleVisible != shouldCollapse {
-                            WorkspaceNavigation.shared.isInlineTitleVisible = shouldCollapse
+                        if workspaceNavigation.isInlineTitleVisible != shouldCollapse {
+                            workspaceNavigation.isInlineTitleVisible = shouldCollapse
                         }
                     }
                     .daybookScroll(featherEdges: true)
@@ -144,7 +146,7 @@ struct TasksPage: View {
             taskSelection.focus(id)
         }
         .onDisappear {
-            WorkspaceNavigation.shared.isInlineTitleVisible = false
+            workspaceNavigation.isInlineTitleVisible = false
         }
     }
 

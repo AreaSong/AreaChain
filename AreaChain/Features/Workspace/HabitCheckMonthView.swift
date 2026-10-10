@@ -3,6 +3,7 @@ import SwiftUI
 
 /// 检查器里的单月打卡。点某一天只切换检查日，不改打卡。
 struct HabitCheckMonthView: View {
+    @WorkspaceNavigationContext private var navigation
     var routine: DailyRoutine
     var inspectDayKey: String
     // 生产沿原 Calendar.current；局部注入只用于合成日历，三处日期语义使用同一份值。
@@ -41,7 +42,7 @@ struct HabitCheckMonthView: View {
         if let day, mark != .padding {
             DaybookDateCell(dayKey: day, isToday: day == today, isSelected: day == inspectDayKey,
                             presentation: .habit(presentation(mark)), statusDescription: accessibility(mark)) {
-                WorkspaceNavigation.shared.inspectTask(routine.id, dayKey: day)
+                navigation.inspectTask(routine.id, dayKey: day)
             }
         } else {
             Color.clear.frame(height: DaybookMetrics.HabitMonthGrid.minimumContentHeight)

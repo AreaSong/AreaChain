@@ -4,7 +4,23 @@ import AppKit
 
 /// 三栏工作台：侧栏、详情页与检查器抽屉。
 struct MainSplitWorkspaceView: View {
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @Bindable private var navigation: WorkspaceNavigation
+    var search: UnifiedSearchController?
+    var hostContext: WorkspaceHostContext?
+
+    init(navigation: WorkspaceNavigation = .shared, search: UnifiedSearchController? = nil,
+         hostContext: WorkspaceHostContext? = nil) {
+        self.navigation = navigation
+        self.search = search
+        self.hostContext = hostContext
+    }
+
+    private var searchRouter: WorkspaceSearchRouter? {
+        guard hostContext?.navigation === navigation, search?.navigationRouter?.navigation === navigation else { return nil }
+        return search?.navigationRouter
+    }
+
+    private var activeInspectorFocus: WorkspaceInspectorFocus { searchRouter?.inspectorFocus ?? inspectorFocus }
     @State private var inspectorWidth = WorkspaceLayout.inspectorIdealWidth
     @State private var inspectorFocus = WorkspaceInspectorFocus()
 
@@ -24,11 +40,11 @@ struct MainSplitWorkspaceView: View {
             set: { navigation.isInspectorPresented = $0 }
         )) {
             TaskDetailDrawer(taskID: $navigation.selectedTaskID)
-                .environment(\.workspaceInspectorFocus, inspectorFocus)
+                .environment(\.workspaceInspectorFocus, activeInspectorFocus)
                 .inspectorColumnWidth(min: WorkspaceLayout.inspectorMinWidth,
                                       ideal: WorkspaceLayout.inspectorIdealWidth,
                                       max: WorkspaceLayout.inspectorMaxWidth)
-                .background(WorkspaceInspectorFocusMarker(owner: inspectorFocus))
+                .background(WorkspaceInspectorFocusMarker(owner: activeInspectorFocus))
                 .background {
                     GeometryReader { geometry in
                         Color.clear.preference(key: WorkspaceColumnWidthsKey.self,
@@ -38,7 +54,7 @@ struct MainSplitWorkspaceView: View {
         }
         .onPreferenceChange(WorkspaceColumnWidthsKey.self, perform: updateInspectorSpace)
         .onChange(of: navigation.isInspectorPresented) { _, presented in
-            if presented { inspectorFocus.beginPresentation() }
+            if presented { activeInspectorFocus.beginPresentation() }
         }
         .onDisappear { navigation.updateInspectorSpace(available: true) }
         .onChange(of: tags.filter { $0.deletedAt == nil }.map(\.id)) { _, ids in
@@ -47,6 +63,16 @@ struct MainSplitWorkspaceView: View {
         .workspaceToolbarTitleHidden()
         .syntaxOverlayHost()
         .environment(\.workspaceEmbedded, true)
+        .environment(\.workspaceHostContext, hostContext)
+        .environment(\.workspaceSearchRouter, searchRouter)
+        .background(WorkspaceNavigationProbe(router: searchRouter, key: "host"))
+        .unifiedSearchOverlayHost()
+        .onAppear { if search != nil { navigation.searchPresentation = true } }
+        .onChange(of: navigation.searchPresentation) { _, value in
+            if value == nil, let hostContext { search?.ordinaryWorkspaceVisit(hostContext, pendingLane: WorkspacePendingPageModel.make(
+                routines: routines, todos: todos, checks: checks, todayKey: DayClock.shared.todayKey,
+                navigation: navigation).lane) }
+        }
         .ignoresSafeArea(.container, edges: .top)
     }
 
@@ -63,16 +89,22 @@ struct MainSplitWorkspaceView: View {
         GeometryReader { geometry in
             ZStack {
                 if navigation.isSearching {
-                    WorkspaceGlobalSearchView(navigation: navigation, query: navigation.searchQuery)
+                    if let search { UnifiedSearchWorkspaceContent(controller: search) }
+                    else { WorkspaceGlobalSearchView(navigation: navigation, query: navigation.searchQuery) }
                 } else {
-                    detailView
+                    VStack(spacing: 0) {
+                        if let search { UnifiedSearchReturnBar(controller: search) }
+                        detailView
+                            .background(WorkspaceNavigationProbe(router: searchRouter,
+                                                                 key: "page." + navigation.selectedTab.rawValue))
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .environment(\.daybookScrollTopEdge, true)
             .padding(.top, WorkspaceHeaderGeometry(width: geometry.size.width).height)
             .overlayPreferenceValue(WorkspaceHeaderContentKey.self, alignment: .top) { content in
-                WorkspaceHeaderBar(navigation: navigation, tags: tags,
+                WorkspaceHeaderBar(navigation: navigation, tags: tags, searchController: search,
                                    content: navigation.isSearching ? WorkspaceHeaderContent() : content)
                     .frame(height: WorkspaceHeaderGeometry(width: geometry.size.width).height)
             }
@@ -114,7 +146,7 @@ struct MainSplitWorkspaceView: View {
         let required = WorkspaceLayout.inspectorMainMinWidth
             + (visible ? 0 : inspectorWidth + WorkspaceLayout.inspectorReopenMargin)
         let available = main >= required
-        if visible && !available && inspectorFocus.releaseFocus() {
+        if visible && !available && activeInspectorFocus.releaseFocus() {
             // nil responder 会被系统布局恢复到隐藏字段；将实际详情焦点交给始终可见的原搜索入口。
             navigation.focusSearch()
         }
@@ -122,6 +154,13 @@ struct MainSplitWorkspaceView: View {
     }
 
     private func handleEscapeKey() -> KeyPress.Result {
+        if let search {
+            if search.inputFocused { return .ignored }
+            if navigation.isSearching {
+                search.intent(.escape, source: search.buffer)
+                return .handled
+            }
+        }
         if navigation.isSearchFocused {
             return .ignored
         }
@@ -137,7 +176,7 @@ struct MainSplitWorkspaceView: View {
             }
         }
         if (NSApp.keyWindow?.firstResponder as? NSTextView)?.isEditable == true {
-            BoardSelection.shared.markEscapeCancelsEdits()
+            navigation.boardSelection.markEscapeCancelsEdits()
             NSApp.keyWindow?.makeFirstResponder(nil)
             return .handled
         }
@@ -176,9 +215,11 @@ struct MainSplitWorkspaceView: View {
         } else {
             switch navigation.selectedTab {
             case .privacy:
-                PrivacyUnlockSettingsView()
+                PrivacyUnlockSettingsView(vault: hostContext?.vault)
+                    .disabled(hostContext != nil)
             case .dataBackup:
                 DataBackupView()
+                    .disabled(hostContext != nil)
             case .dashboard:
                 DashboardView()
             case .today:
@@ -194,19 +235,22 @@ struct MainSplitWorkspaceView: View {
             case .gantt:
                 GanttStandaloneView()
             case .diary:
-                DiaryStandaloneView()
+                DiaryStandaloneView(vault: hostContext?.vault)
             case .attachments:
                 AttachmentBrowserPage()
             case .clipboard:
-                ClipboardHistoryPage()
+                ClipboardHistoryPage(session: hostContext?.clipboard ?? .shared)
+                    .disabled(hostContext != nil)
             case .tags:
                 TagManagementPage()
             case .trash:
                 TrashPage()
             case .settings:
-                SettingsView()
+                SettingsView(observesSystemStatus: hostContext == nil)
+                    .disabled(hostContext != nil)
             case .shortcuts:
-                ShortcutsSettingsView()
+                ShortcutsSettingsView(store: hostContext?.shortcuts)
+                    .disabled(hostContext != nil)
             }
         }
     }

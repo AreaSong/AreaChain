@@ -192,7 +192,7 @@ extension TasksPage {
         taskSelection = selection
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
             ? id : visibleIDs.first { selection.ids.contains($0) }
-        BoardSelection.shared.inspectBoard(dayKey)
+        boardSelection.inspectBoard(dayKey)
         if modifiers.isEmpty {
             onInspect?(id)
         }

@@ -6,8 +6,9 @@ struct SettingsView: View {
     @Environment(AppPreferences.self) private var prefs
     @Environment(\.locale) private var locale
 
-    @State private var launchesAtLogin = SMAppService.mainApp.status == .enabled
-    @State private var loginNeedsApproval = SMAppService.mainApp.status == .requiresApproval
+    var observesSystemStatus = true
+    @State private var launchesAtLogin = false
+    @State private var loginNeedsApproval = false
     @State private var statusMessage: String?
     @State private var notifyStatus: UNAuthorizationStatus = .notDetermined
     @State private var markers: Set<String> = []
@@ -21,6 +22,7 @@ struct SettingsView: View {
         .accessibilityIdentifier("settings.preferences")
         .accessibilityValue(markers.sorted().joined(separator: " "))
         .onAppear {
+            guard observesSystemStatus else { return }
             refreshLoginItem()
             Task { notifyStatus = await NotificationScheduler.shared.currentStatus() }
         }

@@ -21,8 +21,11 @@ struct WorkspaceColumnWidthsKey: PreferenceKey {
 final class WorkspaceInspectorFocus {
     weak var marker: NSView?
     private(set) var retainsMarkedDraft = false
+    private(set) var retainsNavigationDraft = false
 
-    func beginPresentation() { retainsMarkedDraft = false }
+    func retainForNavigation() { retainsNavigationDraft = true }
+
+    func beginPresentation() { retainsMarkedDraft = false; retainsNavigationDraft = false }
 
     func attach(_ view: NSView) {
         // inspector 会建立离屏测量视图；它不能替换已挂载窗口里的归属标记。

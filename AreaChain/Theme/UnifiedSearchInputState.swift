@@ -51,6 +51,7 @@ final class UnifiedSearchInputState {
     let suggestions = SyntaxAutocompleteState(context: .search)
     private(set) var buffer: UnifiedSearchBuffer
     private(set) var completion: UnifiedSearchCompletion?
+    private var acceptedNavigation: UnifiedSearchBuffer?
     @ObservationIgnored var parser: CommandPathParser
     @ObservationIgnored var configuration = CommandDiscoveryConfiguration.standard
     @ObservationIgnored var locale = Locale(identifier: "en")
@@ -163,7 +164,8 @@ final class UnifiedSearchInputState {
         let result = parameter?.completion(buffer.text, locale: locale)
             ?? parser.parse(.init(text: buffer.text, cursorLocation: lastSelection.location,
                                  locale: locale, configuration: configuration))
-        _ = publish(.init(source: buffer, selection: lastSelection, result: result))
+        if acceptedNavigation == buffer { suggestions.dismiss(); completion = nil }
+        else { _ = publish(.init(source: buffer, selection: lastSelection, result: result)) }
         applying = true
         if parameter == nil { highlight.apply(to: editor, result: result) }
         applying = false
@@ -198,6 +200,11 @@ final class UnifiedSearchInputState {
         changed(editor)
         pendingAcceptance = nil
         editor.breakUndoCoalescing()
+        if candidate.category == .navigation, buffer.text == edit.text {
+            acceptedNavigation = buffer
+            suggestions.dismiss()
+            completion = nil
+        }
         return buffer.text == edit.text
     }
 
@@ -208,8 +215,11 @@ final class UnifiedSearchInputState {
             return true
         }
         if selector == #selector(NSResponder.cancelOperation(_:)) {
-            if suggestions.isActive { suggestions.dismiss(); completion = nil }
-            else { actions.intent(.escape, buffer) }
+            if suggestions.isActive {
+                if completion?.result.command?.category == .navigation { acceptedNavigation = buffer }
+                suggestions.dismiss()
+                completion = nil
+            } else { actions.intent(.escape, buffer) }
             return true
         }
         if selector == #selector(NSResponder.moveUp(_:)) || selector == #selector(NSResponder.moveDown(_:)) {
@@ -232,6 +242,18 @@ final class UnifiedSearchInputState {
         return false
     }
 
+    /// 明确导航先收候选并释放本字段焦点；组合输入由调用方继续等待，不清文字或撤销。
+    func dismissForNavigation() -> Bool {
+        guard editor?.hasMarkedText() != true else { return false }
+        acceptedNavigation = buffer
+        suggestions.dismiss()
+        completion = nil
+        if let editor, let window = field?.window, window.firstResponder === editor {
+            return window.makeFirstResponder(nil)
+        }
+        return true
+    }
+
     func submit() {
         guard editor?.hasMarkedText() != true, editor?.string == buffer.text else { return }
         actions.intent(.submit, buffer)
@@ -243,6 +265,7 @@ final class UnifiedSearchInputState {
         suggestions.reset()
         completion = nil
         pendingAcceptance = nil
+        acceptedNavigation = nil
         deferredBuffer = nil
         let native = (field?.cell as? UnifiedSearchFieldCell)?.searchEditor ?? editor
         native?.unmarkText()

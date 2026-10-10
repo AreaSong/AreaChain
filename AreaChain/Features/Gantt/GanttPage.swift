@@ -2,6 +2,8 @@ import SwiftData
 import SwiftUI
 
 struct GanttPage: View {
+    @WorkspaceNavigationContext private var navigation
+    @WorkspaceBoardContext private var boardSelection
     @Environment(\.workspaceEmbedded) private var embedded
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -151,8 +153,8 @@ struct GanttPage: View {
                 let inspectKey = dots.contains(todayKey)
                     ? todayKey
                     : (days.first { dots.contains($0) } ?? todayKey)
-                BoardSelection.shared.inspectBoard(inspectKey)
-                WorkspaceNavigation.shared.inspectTask(id)
+                boardSelection.inspectBoard(inspectKey)
+                navigation.inspectTask(id)
             }
             .accessibilityElement(children: .combine)
             .accessibilityLabel(title)
@@ -190,8 +192,8 @@ struct GanttPage: View {
         case .select(let modifiers):
             selection.select(bar.id, in: bars.map(\.id), modifiers: modifiers)
         case .inspect:
-            BoardSelection.shared.inspectBoard(bar.dayKey)
-            WorkspaceNavigation.shared.inspectTask(bar.id)
+            boardSelection.inspectBoard(bar.dayKey)
+            navigation.inspectTask(bar.id)
         case .dragBegan:
             beginDrag(bar)
         case .dragChanged(let translation):
@@ -227,8 +229,8 @@ struct GanttPage: View {
         guard let drag else { return }
         self.drag = nil
         guard GanttRescheduling.commit(drag.moves, todos: todos, context: modelContext) else { return }
-        if let id = WorkspaceNavigation.shared.selectedTaskID, let day = drag.previewDay(for: id) {
-            BoardSelection.shared.inspectBoard(day)
+        if let id = navigation.selectedTaskID, let day = drag.previewDay(for: id) {
+            boardSelection.inspectBoard(day)
         }
     }
 

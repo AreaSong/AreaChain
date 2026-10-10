@@ -8,7 +8,7 @@ struct WorkspacePendingView: View {
     @Query private var checks: [RoutineCheck]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
 
     private var todayKey: String { DayClock.shared.todayKey }
 

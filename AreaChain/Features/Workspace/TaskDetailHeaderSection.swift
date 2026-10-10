@@ -53,6 +53,9 @@ struct TaskDetailHeaderBar: View {
 
 /// 抽屉任务大标题可编辑组件
 struct TaskDetailTitleEditor: View {
+    @WorkspaceDraftContext private var drafts
+    @WorkspaceBoardContext private var boardSelection
+    @Environment(\.workspaceHostContext) private var hostContext
     var draftKey: String? = nil
     var title: String
     var onUpdate: (String) -> Bool
@@ -72,8 +75,8 @@ struct TaskDetailTitleEditor: View {
                     onSubmit: save, onEscape: cancel
                 )
                     .onChange(of: isFocused) { _, focused in
-                        if !focused, isEditing {
-                            if BoardSelection.shared.consumeEscapeCancelsEdits() {
+                        if !focused, isEditing, hostContext == nil {
+                            if boardSelection.consumeEscapeCancelsEdits() {
                                 cancel()
                             } else {
                                 save()
@@ -99,17 +102,17 @@ struct TaskDetailTitleEditor: View {
             }
         }
         .onAppear {
-            if let draftKey, let retained = EditDrafts.shared.titles[draftKey] {
+            if let draftKey, let retained = drafts.titles[draftKey] {
                 draft = retained
                 isEditing = true
             }
         }
         .onChange(of: draft) { _, text in
-            if isEditing, let draftKey { EditDrafts.shared.titles[draftKey] = text }
+            if isEditing, let draftKey { drafts.titles[draftKey] = text }
         }
         .onDisappear {
             // 关闭/切页不额外提交标题；失败或尚未提交的输入仍可在重新打开时找回。
-            if isEditing, let draftKey { EditDrafts.shared.titles[draftKey] = draft }
+            if isEditing, let draftKey { drafts.titles[draftKey] = draft }
         }
     }
 
@@ -120,15 +123,15 @@ struct TaskDetailTitleEditor: View {
         if !trimmed.isEmpty {
             guard onUpdate(trimmed) else { return }
         }
-        if let draftKey { EditDrafts.shared.titles.removeValue(forKey: draftKey) }
+        if let draftKey { drafts.titles.removeValue(forKey: draftKey) }
         isEditing = false
         isFocused = false
     }
 
     private func cancel() {
-        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
+        _ = boardSelection.consumeEscapeCancelsEdits()
         draft = title
-        if let draftKey { EditDrafts.shared.titles.removeValue(forKey: draftKey) }
+        if let draftKey { drafts.titles.removeValue(forKey: draftKey) }
         isEditing = false
         isFocused = false
     }

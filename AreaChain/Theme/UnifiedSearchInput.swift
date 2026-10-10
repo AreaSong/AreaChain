@@ -17,6 +17,7 @@ struct UnifiedSearchInput: View {
     var reset: UnifiedSearchInputReset?
     var parameter: UnifiedSearchParameterContext?
     var previewBelow = false
+    var showsStatus = true
     @Binding var focused: Bool
     @Environment(\.locale) private var locale
     @State private var state: UnifiedSearchInputState
@@ -24,7 +25,7 @@ struct UnifiedSearchInput: View {
     init(buffer: UnifiedSearchBuffer, focused: Binding<Bool>, actions: UnifiedSearchActions,
          layout: UnifiedSearchInputLayout = .standard, parser: CommandPathParser = .init(),
          configuration: CommandDiscoveryConfiguration = .standard, reset: UnifiedSearchInputReset? = nil,
-         parameter: UnifiedSearchParameterContext? = nil, previewBelow: Bool = false) {
+         parameter: UnifiedSearchParameterContext? = nil, previewBelow: Bool = false, showsStatus: Bool = true) {
         self.buffer = buffer
         _focused = focused
         self.actions = actions
@@ -34,6 +35,7 @@ struct UnifiedSearchInput: View {
         self.reset = reset
         self.parameter = parameter
         self.previewBelow = previewBelow
+        self.showsStatus = showsStatus
         _state = State(initialValue: UnifiedSearchInputState(buffer: buffer, parser: parser, actions: actions))
     }
 
@@ -58,12 +60,12 @@ struct UnifiedSearchInput: View {
             .anchorPreference(key: UnifiedSearchAnchorKey.self, value: .bounds) {
                 [UnifiedSearchAnchor(bounds: $0, state: state, layout: layout, locale: locale, previewBelow: previewBelow)]
             }
-            Text(verbatim: status)
+            if showsStatus { Text(verbatim: status)
                 .font(DaybookType.caption)
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .lineLimit(2)
                 .frame(height: 32, alignment: .topLeading)
-                .accessibilityIdentifier("unified.search.status")
+                .accessibilityIdentifier("unified.search.status") }
         }
         .frame(minWidth: layout.minimumWidth)
         .onAppear { reset?.state = state }

@@ -3,6 +3,7 @@ import SwiftUI
 
 /// 四象限卡片键盘：上下移动，空格完成，回车打开检查器。输入框聚焦时不接管。
 struct QuadrantKeys: ViewModifier {
+    @WorkspaceNavigationContext private var navigation
     var ids: [UUID]
     @Binding var focusedID: UUID?
     var onToggle: () -> Void
@@ -16,7 +17,7 @@ struct QuadrantKeys: ViewModifier {
         sink.focusedID = $focusedID
         sink.onToggle = onToggle
         sink.onInspect = onInspect
-        sink.escapeClearsFocus = !WorkspaceNavigation.shared.isInspectorPresented
+        sink.escapeClearsFocus = !navigation.isInspectorPresented
         sink.hostWindow = hostWindow
         return content
             .background(KeyWindowHost { hostWindow = $0 })
@@ -30,7 +31,7 @@ struct QuadrantKeys: ViewModifier {
     private func install() {
         guard token == nil else { return }
         token = BoardKeyMonitor.install(existing: nil) { event in
-            sink.escapeClearsFocus = !WorkspaceNavigation.shared.isInspectorPresented
+            sink.escapeClearsFocus = !navigation.isInspectorPresented
             return sink.handle(event)
         }
     }

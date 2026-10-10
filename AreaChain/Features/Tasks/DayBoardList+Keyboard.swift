@@ -29,14 +29,14 @@ extension DayBoardList {
                field.delegate is DaybookTextField.Coordinator {
                 return event
             }
-            BoardSelection.shared.markEscapeCancelsEdits()
+            boardSelection.markEscapeCancelsEdits()
             NSApp.keyWindow?.makeFirstResponder(nil)
             return nil
         }
         if event.keyCode == 125,
            let tv = firstResponder as? NSTextView,
            tv.string.isEmpty,
-           !WorkspaceNavigation.shared.isInspectorPresented
+           !workspaceNavigation.isInspectorPresented
         {
             NSApp.keyWindow?.makeFirstResponder(nil)
             navigateSelection(delta: 1)
@@ -98,9 +98,9 @@ extension DayBoardList {
             return true
         }
         if keyCode == 53 {
-            if WorkspaceNavigation.shared.isInspectorPresented,
+            if workspaceNavigation.isInspectorPresented,
                hostWindow === PanelWindowController.workspace.hostedWindow {
-                WorkspaceNavigation.shared.isInspectorPresented = false
+                workspaceNavigation.isInspectorPresented = false
                 return true
             }
             if focusedTaskID?.wrappedValue != nil || !taskSelection.ids.isEmpty {
@@ -165,7 +165,7 @@ extension DayBoardList {
             taskSelection = selection
             focusedListID = next.listID
             focusedTaskID?.wrappedValue = next.id
-            BoardSelection.shared.inspectBoard(mappedDayKey(for: next.id))
+            boardSelection.inspectBoard(mappedDayKey(for: next.id))
         } else {
             focusRow(next)
         }
@@ -174,7 +174,7 @@ extension DayBoardList {
     func focusRow(_ row: BoardRow) {
         focusedListID = row.listID
         focusTask(row.id)
-        BoardSelection.shared.inspectBoard(mappedDayKey(for: row.id))
+        boardSelection.inspectBoard(mappedDayKey(for: row.id))
     }
 
     func activeReference(preferring id: UUID, identity: DayBoardListIdentity? = nil) -> BoardItemReference? {
@@ -203,7 +203,7 @@ extension DayBoardList {
 
     func checkDay(for id: UUID) -> String {
         BoardFocusDay.checkDay(
-            inspecting: BoardSelection.shared.inspectingDayKey,
+            inspecting: boardSelection.inspectingDayKey,
             mapped: mappedDayKey(for: id),
             listDayKey: dayKey
         )
@@ -272,7 +272,7 @@ extension DayBoardList {
         let candidates = Array(previousIDs.dropFirst(index + 1)) + Array(previousIDs.prefix(index).reversed())
         focusTask(candidates.first { remaining.contains($0) })
         if let focused = focusedTaskID?.wrappedValue {
-            BoardSelection.shared.inspectBoard(mappedDayKey(for: focused))
+            boardSelection.inspectBoard(mappedDayKey(for: focused))
         } else {
             onReturnToInput?()
         }
@@ -323,14 +323,14 @@ extension DayBoardList {
     func inspectSelected(id: UUID) {
         revealCompletedIfNeeded(id)
         let inspectDay = checkDay(for: id)
-        BoardSelection.shared.inspectBoard(inspectDay)
+        boardSelection.inspectBoard(inspectDay)
         if let reference = activeReference(preferring: id) {
-            WorkspaceNavigation.shared.inspectedReference = reference
+            workspaceNavigation.inspectedReference = reference
         }
         if let onInspect {
             onInspect(id)
             if let reference = activeReference(preferring: id) {
-                WorkspaceNavigation.shared.inspectedReference = reference
+                workspaceNavigation.inspectedReference = reference
             }
             return
         }

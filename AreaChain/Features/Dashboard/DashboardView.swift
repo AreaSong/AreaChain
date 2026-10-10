@@ -10,7 +10,7 @@ struct DashboardView: View {
     @Query private var checks: [RoutineCheck]
     @Query private var diaries: [DiaryEntry]
     @Query private var tags: [TagItem]
-    @Bindable private var navigation = WorkspaceNavigation.shared
+    @WorkspaceNavigationContext private var navigation
     @State private var dayTick = Date()
 
     private var todayKey: String {

@@ -2,6 +2,9 @@ import SwiftUI
 
 /// 任务行：只读状态快照加动作派发。
 struct TaskRow: View {
+    @Environment(\.workspaceHostContext) var hostContext
+    @WorkspaceDraftContext var editDrafts
+    var navigationDraftKey: String { (state.isResident ? "routine-" : "todo-") + state.id.uuidString }
     let state: TaskRowState
     let dispatch: (TaskRowAction) -> Void
     var onSaveTitle: ((String) -> Bool)? = nil
@@ -99,10 +102,17 @@ struct TaskRow: View {
                 }
             }
             .onAppear {
-                draft = state.title
+                if hostContext != nil, let retained = editDrafts.titles[navigationDraftKey] {
+                    draft = retained
+                    editing = true
+                } else { draft = state.title }
                 chrome.startCommandMonitor(reduceMotion: reduceMotion)
             }
+            .onChange(of: draft) { _, text in
+                if hostContext != nil, editing { editDrafts.titles[navigationDraftKey] = text }
+            }
             .onDisappear {
+                if hostContext != nil, editing { editDrafts.titles[navigationDraftKey] = draft }
                 chrome.stop()
             }
             .onChange(of: state.title) { _, value in

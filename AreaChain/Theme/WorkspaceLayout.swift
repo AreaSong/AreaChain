@@ -117,6 +117,7 @@ struct WorkspaceSidebarRow: View {
                 Image(systemName: systemImage)
                     .font(DaybookType.body)
                     .frame(width: 16, alignment: .center)
+
                 if let titleKey {
                     Text(titleKey)
                 } else if let title {
@@ -126,7 +127,13 @@ struct WorkspaceSidebarRow: View {
                 if let badgeCount, badgeCount > 0 {
                     Text("\(badgeCount)")
                         .font(DaybookType.caption.monospacedDigit())
-                        .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
+                        .foregroundStyle(isSelected ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1.5)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(isSelected ? DaybookPalette.fill.surface : DaybookPalette.fill.hover)
+                        )
                 }
             }
             .font(DaybookType.body.weight(isSelected ? .medium : .regular))
@@ -136,7 +143,7 @@ struct WorkspaceSidebarRow: View {
             .padding(.trailing, WorkspaceLayout.sidebarRowHorizontalPadding)
             .frame(minHeight: WorkspaceLayout.sidebarRowHeight)
             .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
                     .fill(backgroundFill)
             )
             .contentShape(Rectangle())
@@ -154,5 +161,25 @@ struct WorkspaceSidebarRow: View {
             return DaybookPalette.fill.hover
         }
         return .clear
+    }
+}
+
+/// 侧边栏滚动内容顶部羽化渐变遮罩（保证侧栏背景通顶一体化、红绿灯沉浸在侧边栏内部，上滑时内容在红绿灯下方平滑羽化消隐）
+struct WorkspaceSidebarFadeMask: View {
+    var body: some View {
+        VStack(spacing: 0) {
+            Color.clear
+                .frame(height: 36)
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black, location: 1.0)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 14)
+            Color.black
+        }
     }
 }

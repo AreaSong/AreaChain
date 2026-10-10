@@ -42,7 +42,7 @@ extension View {
 private struct WorkspaceInspectorTargets: ViewModifier {
     @Environment(\.workspaceEmbedded) private var embedded
     let ids: Set<UUID>
-    private var navigation: WorkspaceNavigation { .shared }
+    @WorkspaceNavigationContext private var navigation
 
     func body(content: Content) -> some View {
         let identity = navigation.contentIdentity

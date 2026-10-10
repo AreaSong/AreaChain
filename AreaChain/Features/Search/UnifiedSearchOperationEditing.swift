@@ -15,7 +15,7 @@ extension UnifiedSearchController {
     }
 
     var operationVisible: Bool {
-        (try? session.validateDisplayHost(expecting: buffer.lease)) != nil
+        !isNavigationPresented && (try? session.validateDisplayHost(expecting: buffer.lease)) != nil
     }
 
     var browsedCommand: CommandDescriptor? {
@@ -53,6 +53,9 @@ extension UnifiedSearchController {
 
     func accept(_ request: UnifiedSearchEdit) -> UnifiedSearchBuffer? {
         guard validates(request.source), let acceptance = request.acceptance else { return nil }
+        if CommandPathParser().parse(.init(text: request.text)).command?.category == .navigation {
+            return navigationInput(request.text)
+        }
         switch acceptance.intent {
         case .expand: return edit(request)
         case .complete(let id), .chooseParameter(let id, _):
@@ -74,6 +77,9 @@ extension UnifiedSearchController {
     @discardableResult
     func beginOperation(_ id: CommandID, source: UnifiedSearchBuffer, text: String? = nil,
                         argument: CommandArgument? = nil) -> UnifiedSearchBuffer? {
+        if validates(source), CommandCatalog.standard.command(id: id)?.category == .navigation {
+            return navigationInput(text ?? CommandCatalog.standard.command(id: id)!.path)
+        }
         guard validates(source), operationVisible, let state = operations,
               let command = CommandCatalog.standard.command(id: id),
               command.category != .group, command.category != .scope, state.pending == nil, plan?.editing == nil,

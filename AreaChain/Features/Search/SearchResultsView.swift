@@ -6,6 +6,7 @@ struct SearchResultsView: View {
     var hits: [BoardSearchHit]
     @Binding var resultIndex: Int?
     var onLeaveToField: () -> Void
+    var workspaceOpening: AppWindows.WorkspaceOpening? = nil
     @Environment(\.modelContext) private var context
 
     var body: some View {
@@ -35,14 +36,14 @@ struct SearchResultsView: View {
     private func open(_ hit: BoardSearchHit) {
         switch hit.kind {
         case .todo, .routine:
-            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.id, dayKey: hit.dayKey)
+            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.id, dayKey: hit.dayKey, opening: workspaceOpening)
         case .diary:
             if let entry = ModelChanges.value({ try SwiftDataDiaryRepository(context: context).fetchDiary(id: hit.id) }) ?? nil,
                entry.deletedAt == nil {
                 DiaryWindows.shared.open(entry: entry, context: context)
             }
         case .subtask:
-            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.parentID, dayKey: hit.dayKey)
+            AppWindows.openWorkspace(tab: .calendar, inspecting: hit.parentID, dayKey: hit.dayKey, opening: workspaceOpening)
         }
     }
 }

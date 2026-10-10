@@ -2,6 +2,9 @@ import SwiftData
 import SwiftUI
 
 struct TaskDetailSubtasksView: View {
+    @WorkspaceDraftContext private var drafts
+    @Environment(\.workspaceSearchRouter) private var router
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     let todo: TodoItem
@@ -38,6 +41,8 @@ struct TaskDetailSubtasksView: View {
 
             addSubtaskInput
         }
+        .onAppear { if hostContext != nil { newSubtaskTitle = drafts.titles["subtask-new-\(todo.id)"] ?? "" } }
+        .onChange(of: newSubtaskTitle) { _, value in if hostContext != nil { drafts.titles["subtask-new-\(todo.id)"] = value } }
     }
 
     // MARK: - Header & Progress
@@ -92,6 +97,8 @@ struct TaskDetailSubtasksView: View {
                         DayBoardMutations.reorderSubtasks(for: todo, orderedIDs: ordered)
                     }
                 )
+                .id(subtask.id)
+                .background(WorkspaceNavigationProbe(router: router, key: "object." + subtask.id.uuidString))
             }
         }
     }
@@ -132,6 +139,9 @@ struct TaskDetailSubtasksView: View {
 }
 
 struct SubtaskRowView: View {
+    @WorkspaceDraftContext private var drafts
+    @WorkspaceBoardContext private var boardSelection
+    @Environment(\.workspaceHostContext) private var hostContext
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
@@ -170,7 +180,14 @@ struct SubtaskRowView: View {
             return onReorder(next)
         }
         .zIndex(isEditing ? 20 : 0)
-        .onAppear { draftTitle = subtask.title }
+        .onAppear {
+            draftTitle = hostContext == nil ? subtask.title : drafts.titles["subtask-\(subtask.id)"] ?? subtask.title
+            isEditing = hostContext != nil && drafts.titles["subtask-\(subtask.id)"] != nil
+        }
+        .onChange(of: draftTitle) { _, value in
+            if isEditing, hostContext != nil { drafts.titles["subtask-\(subtask.id)"] = value }
+        }
+        .onDisappear { if isEditing, hostContext != nil { drafts.titles["subtask-\(subtask.id)"] = draftTitle } }
         .onChange(of: subtask.title) { _, val in
             // 回滚或外部刷新不能覆盖仍在编辑的失败草稿。
             if !isEditing { draftTitle = val }
@@ -190,8 +207,8 @@ struct SubtaskRowView: View {
                 focused: $editFocused, context: .taskTags, fontSize: 11, onSubmit: commitEdit, onEscape: cancelEdit
             )
                 .onChange(of: editFocused) { _, focused in
-                    if !focused, isEditing {
-                        if BoardSelection.shared.consumeEscapeCancelsEdits() {
+                    if !focused, isEditing, hostContext == nil {
+                        if boardSelection.consumeEscapeCancelsEdits() {
                             cancelEdit()
                         } else {
                             commitEdit()
@@ -264,13 +281,15 @@ struct SubtaskRowView: View {
         } else {
             draftTitle = subtask.title
         }
+        drafts.titles.removeValue(forKey: "subtask-\(subtask.id)")
         isEditing = false
         editFocused = false
     }
 
     private func cancelEdit() {
-        _ = BoardSelection.shared.consumeEscapeCancelsEdits()
+        _ = boardSelection.consumeEscapeCancelsEdits()
         draftTitle = subtask.title
+        drafts.titles.removeValue(forKey: "subtask-\(subtask.id)")
         isEditing = false
         editFocused = false
     }

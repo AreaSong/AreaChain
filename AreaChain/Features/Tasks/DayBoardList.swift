@@ -66,6 +66,8 @@ struct DayBoardListConfig {
 }
 
 struct DayBoardList: View {
+    @WorkspaceNavigationContext var workspaceNavigation
+    @WorkspaceBoardContext var boardSelection
     @Environment(\.modelContext) var modelContext
     @Environment(\.locale) var locale
 
@@ -231,11 +233,11 @@ struct DayBoardList: View {
         taskSelection = selection
         focusedTaskID?.wrappedValue = selection.ids.contains(id)
             ? id : visibleIDs.first { selection.ids.contains($0) }
-        BoardSelection.shared.inspectBoard(mappedDayKey(for: id))
+        boardSelection.inspectBoard(mappedDayKey(for: id))
         if modifiers.isEmpty {
             onInspect?(id)
             if let focusedListID, let reference = BoardItemReference(listID: focusedListID), reference.modelID == id {
-                WorkspaceNavigation.shared.inspectedReference = reference
+                workspaceNavigation.inspectedReference = reference
             }
         }
     }

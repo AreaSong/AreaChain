@@ -9,6 +9,7 @@ struct DiaryPageOptions {
     var externalFilter: Binding<BoardFilter>? = nil
     var composerDraft: Binding<BoardComposerDraft>? = nil
     var vault: PrivacyVault? = nil
+    var initializesPresetTags = true
 }
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
@@ -26,6 +27,7 @@ struct DiaryPage: View {
     var externalFilter: Binding<BoardFilter>? = nil
     @Binding private var externalComposerDraft: BoardComposerDraft
     private let usesExternalComposerDraft: Bool
+    private let initializesPresetTags: Bool
     private let vault: PrivacyVault
 
     @Query(sort: \TagItem.sortOrder) var allTags: [TagItem]
@@ -41,7 +43,7 @@ struct DiaryPage: View {
     @State private var confirmsDiscardDraft = false
     @State private var cardDrafts = DiaryCardDrafts()
     @State var hostWindow: NSWindow?
-    @Bindable private var boardSelection = BoardSelection.shared
+    @WorkspaceBoardContext private var boardSelection
     @State var selectedEntryID: UUID? = nil
     @State var keyMonitor: Any? = nil
 
@@ -60,6 +62,7 @@ struct DiaryPage: View {
         self._externalComposerDraft = options.composerDraft ?? .constant(BoardComposerDraft())
         self.usesExternalComposerDraft = options.composerDraft != nil
         self.vault = options.vault ?? .shared
+        self.initializesPresetTags = options.initializesPresetTags
     }
 
     init(
@@ -169,7 +172,7 @@ struct DiaryPage: View {
             Button("alert.cancel", role: .cancel) {}
         }
         .onAppear {
-            DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext)
+            if initializesPresetTags { DayBoardMutations.ensureDiaryPresetTags(among: Array(allTags), context: modelContext) }
             setupKeyMonitor()
         }
         .onReceive(NotificationCenter.default.publisher(for: .diaryAppendToken)) { notif in
