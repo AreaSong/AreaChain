@@ -21,7 +21,7 @@ struct UnifiedSearchResultsTestContent: View {
 @MainActor
 final class UnifiedSearchResultsFixture {
     let handoff: HandoffFixture
-    let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+    let vault: PrivacyVault
     let focus = NotificationCenter()
     let model = NotificationCenter()
     let focusObject = NSObject()
@@ -40,7 +40,8 @@ final class UnifiedSearchResultsFixture {
          taskFieldEnvironment: TaskTitleCommandEnvironment? = nil,
          taskFieldCapability: TaskFieldCommandAdapter.Capability = .basic, taskChainIO: TaskChainCommandIO? = nil,
          subtaskEnvironment: SubtaskCommandEnvironment? = nil, routineEnvironment: RoutineCommandEnvironment? = nil, batchEnvironment: BatchCommandEnvironment? = nil,
-         enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle, enablePlanRevisions: Bool = false) throws {
+         testVault: PrivacyVault? = nil, enableMultiPlan: Bool = false, outputCapability: CommandMultiPlanOutputCapability = .taskTitle, enablePlanRevisions: Bool = false) throws {
+        vault = testVault ?? PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
         self.batch = batch
         handoff = try .init(sourcePage: .overview)
         let text = try QuerySessionFixture.source(batch.session)

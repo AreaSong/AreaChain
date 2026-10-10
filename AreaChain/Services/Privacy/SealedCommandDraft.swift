@@ -18,20 +18,23 @@ struct SealedCommandDraft: CustomStringConvertible, CustomDebugStringConvertible
 
     static func seal(_ contents: CommandDraftContents, reference: CommandProtectedReference,
                      draft: CommandDraft, vaultID: UUID, keys: VaultKeyAccess) throws -> Self {
-        let payload = try CommandDraftPayload(contents: contents, reference: reference, draft: draft)
+        let payload = try CommandTextTiming.measure("payload") {
+            try CommandDraftPayload(contents: contents, reference: reference, draft: draft)
+        }
         let envelope = Self(data: Data(), vaultID: vaultID, reference: reference, draftID: draft.id,
                             commandID: draft.commandID.rawValue)
         #if DEBUG
         try testingBeforeSeal?()
         #endif
-        let data = try keys.seal(JSONEncoder().encode(payload), vaultID: vaultID, context: envelope.context)
+        let encoded = try CommandTextTiming.measure("encode") { try JSONEncoder().encode(payload) }
+        let data = try CommandTextTiming.measure("encrypt") { try keys.seal(encoded, vaultID: vaultID, context: envelope.context) }
         return .init(data: data, vaultID: vaultID, reference: reference, draftID: draft.id, commandID: draft.commandID.rawValue)
     }
 
     func open(keys: VaultKeyAccess) throws -> CommandDraftContents {
         let raw = try keys.open(data, vaultID: vaultID, context: context)
         let payload = try JSONDecoder().decode(CommandDraftPayload.self, from: raw)
-        guard payload.format == 1, payload.payloadID == reference.payloadID, payload.revision == reference.revision,
+        guard [1, 2].contains(payload.format), payload.payloadID == reference.payloadID, payload.revision == reference.revision,
               payload.draftID == draftID, payload.commandID == commandID else { throw CommandDraftProtectionError.invalidPayload }
         let contents = try payload.decoded()
         #if DEBUG

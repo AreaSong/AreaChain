@@ -36,7 +36,7 @@ struct SealedCommandDraftTests {
         let contents = CommandDraftContents(arguments: draft.arguments, baseline: draft.baseline)
         let payload = try CommandDraftPayload(contents: contents, reference: reference, draft: draft)
         var json = try #require(JSONSerialization.jsonObject(with: JSONEncoder().encode(payload)) as? [String: Any])
-        json["format"] = 2
+        json["format"] = 99
         let context = "command-draft:1:\(id):\(draft.id):\(draft.commandID.rawValue):\(reference.payloadID):\(reference.revision)"
         let data = try f.vault.keys.seal(JSONSerialization.data(withJSONObject: json), vaultID: id, context: context)
         let envelope = SealedCommandDraft(data: data, vaultID: id, reference: reference,

@@ -68,6 +68,13 @@ struct CommandDraftSession: Equatable, CustomStringConvertible, CustomDebugStrin
         revision += 1
     }
 
+    mutating func acceptNativeText(_ state: CommandDraftEditingState, operation: CommandFieldOperation,
+                                   expecting stamp: CommandDraftStamp) throws {
+        guard pending == nil, active?.stamp == stamp else { throw CommandPlanError.stale }
+        try active?.acceptNativeText(state, operation: operation)
+        revision += 1
+    }
+
     var requiresUnsavedContentHandling: Bool { !unsavedDrafts.isEmpty }
     var description: String { "CommandDraftSession(revision: \(revision), retained: \(retained.count))" }
     var debugDescription: String { description }

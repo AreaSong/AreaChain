@@ -68,6 +68,7 @@ final class UnifiedSearchOperationBoundary: NSView {
     }
 
     func removePresentation() {
+        controller?.endLongText()
         func clear(_ view: NSView) {
             if let field = view as? NSTextField,
                let state = (field.delegate as? DaybookTextField.Coordinator)?.parent.unifiedSearch {

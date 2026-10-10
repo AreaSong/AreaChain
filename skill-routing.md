@@ -431,3 +431,11 @@ K真实输入、L持续按压与关键可访问性沿 areachain-workflow → are
 ## N-M1 导航与返回搜索
 
 沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦键盘、状态身份与返回）→ areachain-verify。直接复用原解析、ReadSession、WorkspaceNavigation、真实工作台页面、BoardSelection和EditDrafts；仅显式隔离装配，不替换生产搜索。页面、日期、三类普通对象和版本化返回入口见[组件目录](docs/component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，A～E实际状态只维护在[权威N-M1](docs/unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。完整正常PrivacyQA、独立NM1标识／目录、原锁单次900秒、源码全集与本批进程核对、六项钥匙串变量清除及串行原生保持；指定Cursor verifier不可调用保留未执行，不认证或以探索代理替代。无业务保存、真实系统操作、生产启用、提交、推送、安装或发布。
+
+
+## C-M1 命令长文原生编辑
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦原生身份与焦点）→ areachain-verify。复用原 ContentSession／SealedCommandDraft／Coordinator、参数面板和 Daybook 原生基座；普通／受保护、组合／待确认恢复和 active／planItem 入口见[组件目录](docs/component-catalog.md#c-m1-长文参数与组合状态)，唯一 A～E、失败、源码与验证记录见[权威 C-M1](docs/unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)。本批已批准的受控组合输入取代旧全部拒绝 IME 的阶段限制，系统旁路反例保留。完整正常 PrivacyQA、独立 CM1 标识／目录、原锁900秒、六项授权清除、合成内容和串行原生保持。指定 Cursor verifier 不可调用时保留未执行；不认证或用普通代理替代，不接业务保存、敏感执行／转交、生产、安装或发布。
+
+
+C-M1-R 沿原 C-M1 技能链，只做有界只读事件核查、原测试/runner 约束、等价原生安装与布局诊断。明确禁止用可能代启动应用的桌面连接；仅实际 XCTest 就绪窗口可提供人工指引，原生矩阵串行、原锁900秒及六项授权清除保持。启动元数据/差量与计时入口见[组件目录](docs/component-catalog.md#c-m1-长文参数与组合状态)，事件分类、失败和性能限制就地维护在[§9.86 续验](docs/unified-search-commands.md#c-m1-r事件有界核查测试启动约束与长段性能续验)。历史未知不补造，旧人工反馈不外推；产品启动隔离/文本引擎或体验改变须另行定界，本轮不实施。

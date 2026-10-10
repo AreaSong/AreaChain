@@ -306,6 +306,15 @@ struct CommandPlan: Equatable, CustomStringConvertible, CustomDebugStringConvert
         revision += 1
     }
 
+    mutating func acceptNativeText(_ state: CommandDraftEditingState, operation: CommandFieldOperation,
+                                   expecting stamp: CommandDraftStamp) throws {
+        guard let index = items.firstIndex(where: { $0.draft.stamp == stamp }),
+              items[index].id == editing, items[index].links.results.isEmpty else { throw CommandPlanError.stale }
+        try items[index].draft.acceptNativeText(state, operation: operation)
+        items[index].version += 1
+        revision += 1
+    }
+
     func check() -> CommandPlanCheck { CommandPlanValidation.check(items) }
 
     mutating func replacePreferenceBaseline(_ baseline: CommandDraftBaseline, arguments: [CommandArgument],

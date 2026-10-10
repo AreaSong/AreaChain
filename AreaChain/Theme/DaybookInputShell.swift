@@ -44,6 +44,7 @@ struct DaybookInputShellConfiguration {
 /// composer / search 为固定高度单行；editor 多行不锁高。
 /// 正文控件（DaybookTextField / SyntaxTextField / SyntaxTextEditor）放在 field 槽里，本壳不改变它们的任何按键行为。
 struct DaybookInputShell<Leading: View, Field: View, Trailing: View>: View {
+    @Environment(\.daybookChromelessWhenIdle) private var chromelessWhenIdle
     var kind: DaybookInputKind
     var focused: Bool
     var configure: ((inout DaybookInputShellConfiguration) -> Void)? = nil
@@ -55,6 +56,10 @@ struct DaybookInputShell<Leading: View, Field: View, Trailing: View>: View {
         var config = DaybookInputShellConfiguration.standard(for: kind)
         configure?(&config)
         return config
+    }
+
+    private var hidesChrome: Bool {
+        !focused && chromelessWhenIdle
     }
 
     var body: some View {
@@ -70,16 +75,27 @@ struct DaybookInputShell<Leading: View, Field: View, Trailing: View>: View {
         .frame(minHeight: config.minHeight)
         .background(
             RoundedRectangle(cornerRadius: config.radius, style: .continuous)
-                .fill(focused ? DaybookPalette.fill.surface : DaybookPalette.fill.subtle)
+                .fill(hidesChrome ? .clear : (focused ? DaybookPalette.fill.surface : DaybookPalette.fill.subtle))
         )
         .overlay(
             RoundedRectangle(cornerRadius: config.radius, style: .continuous)
                 .stroke(
-                    focused ? DaybookPalette.border.focus : DaybookPalette.border.faint,
-                    lineWidth: focused ? DaybookMetrics.Stroke.focus : DaybookMetrics.Stroke.regular
+                    hidesChrome ? .clear : (focused ? DaybookPalette.border.focus : DaybookPalette.border.faint),
+                    lineWidth: hidesChrome ? 0 : (focused ? DaybookMetrics.Stroke.focus : DaybookMetrics.Stroke.regular)
                 )
         )
         .daybookHideInputChrome()
+    }
+}
+
+private struct DaybookChromelessWhenIdleKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var daybookChromelessWhenIdle: Bool {
+        get { self[DaybookChromelessWhenIdleKey.self] }
+        set { self[DaybookChromelessWhenIdleKey.self] = newValue }
     }
 }
 

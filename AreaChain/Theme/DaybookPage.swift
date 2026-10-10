@@ -77,7 +77,7 @@ struct DaybookPage<Trailing: View, Content: View>: View {
             maxHeight: .infinity,
             alignment: .topLeading
         )
-        .background(DaybookPalette.fill.page)
+        .background(embedded ? Color(nsColor: .windowBackgroundColor) : DaybookPalette.fill.page) // token-exempt: 工作台嵌入时使用系统灰底
     }
 
     @ViewBuilder

@@ -20,25 +20,25 @@ struct WorkspaceHeaderBar: View {
         }
         .padding(.horizontal, DaybookSpacing.page)
         .frame(height: WorkspaceLayout.headerHeight)
-        .background(.ultraThinMaterial)
         .background(SyntaxViewAnchor("syntax.workspace.header.bounds"))
-        .overlay(alignment: .bottom) { DaybookDivider(opacity: 0.65) }
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workspace.header.bar")
         .onChange(of: navigation.contentIdentity) { _, _ in showsHelp = false }
     }
 
     @ViewBuilder private var search: some View {
-        if let searchController { UnifiedSearchWorkspaceInput(controller: searchController) } else {
-        WorkspaceHeaderSearchCapsule(
-            navigation: navigation,
-            tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
-        )
-        .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier("workspace.header.search.shell")
-    }
-
+        if let searchController {
+            UnifiedSearchWorkspaceInput(controller: searchController)
+                .environment(\.daybookChromelessWhenIdle, searchController.buffer.text.isEmpty)
+        } else {
+            WorkspaceHeaderSearchCapsule(
+                navigation: navigation,
+                tagNames: tags.filter { $0.deletedAt == nil }.map(\.name)
+            )
+            .background(SyntaxViewAnchor("syntax.workspace.search.bounds"))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier("workspace.header.search.shell")
+        }
     }
 
     private var title: some View {
@@ -111,9 +111,6 @@ struct WorkspaceHeaderBar: View {
             }
             content.status
             if navigation.supportsTaskInspector {
-                if !content.actions.isEmpty || content.status != nil {
-                    Divider().frame(height: DaybookMetrics.Hit.inline)
-                }
                 DaybookIconButton(systemName: "sidebar.trailing", label: "drawer.inspector.toggle",
                                   isActive: navigation.isInspectorPresented) {
                     if navigation.isInspectorPresented { navigation.closeInspector() }
@@ -183,12 +180,13 @@ private struct WorkspaceHeaderActionView: View {
                 Button(role: action.role, action: action.perform) {
                     Label(action.title, systemImage: action.systemImage)
                 }
-                .buttonStyle(DaybookButtonStyle(action.isActive ? .prominent : .quiet))
+                .buttonStyle(DaybookButtonStyle(action.isActive ? .active : .quiet))
             } else {
                 Menu {
                     ForEach(action.children) { child in WorkspaceHeaderMenuItem(action: child) }
                 } label: {
-                    Label(action.title, systemImage: action.systemImage).daybookMenuLabel(size: .regular, fitsLabel: true)
+                    Label(action.title, systemImage: action.systemImage)
+                        .daybookMenuLabel(size: .regular, isActive: action.isActive, fitsLabel: true)
                 }
                 .menuStyle(.borderlessButton)
             }

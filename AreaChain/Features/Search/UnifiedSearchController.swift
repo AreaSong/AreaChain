@@ -16,6 +16,9 @@ final class UnifiedSearchController {
     @ObservationIgnored var navigationTask: Task<Void, Never>?
     var navigationRequestID: UUID?
     var inputFocused = true
+    @ObservationIgnored var longTextContent: CommandDraftContentSession?
+    var longTextEditing: UnifiedSearchLongTextEditing?
+    var longTextMessage: String?
     var operationExpanded = true
     var planMessage = "unified.plan.notExecutable"
     var planRemovalDependents: [UUID] = []
@@ -280,6 +283,7 @@ final class UnifiedSearchController {
     }
 
     func detach() {
+        endLongText()
         invalidateNavigation(privacy: true)
         multiPlan?.invalidatePresentation()
         multiPlanTask?.cancel()
@@ -373,6 +377,7 @@ final class UnifiedSearchController {
     }
 
     private func changed(_ change: ContentQueryDisplayUpdates.Change) {
+        if change == .privacyInvalidated || session.isMasked { endLongText() }
         revision &+= 1
         if change == .privacyInvalidated || session.isMasked { multiPlan?.invalidatePresentation() }
         if change != .published, navigationRouter?.contents?.content != nil || navigationRouter?.contents?.loading == true {

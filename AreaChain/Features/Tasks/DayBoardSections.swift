@@ -6,11 +6,24 @@ extension DayBoardList {
         if identity.openRows.isEmpty && !identity.doneRows.isEmpty {
             allDoneBanner
         } else if !identity.openRows.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(identity.openRows, id: \.listID) { row in
-                    dayRow(row, isDone: false, identity: identity)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(makeSectionRows(identity.openRows)) { item in
+                    dayRow(item.row, isDone: false, identity: identity)
+                    if !item.isLast {
+                        DaybookDivider(opacity: 0.35)
+                            .padding(.leading, 38)
+                    }
                 }
             }
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                    .fill(DaybookPalette.fill.page)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                    .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
+            )
         }
     }
 
@@ -68,14 +81,40 @@ extension DayBoardList {
             .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
             if showCompleted {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(identity.doneRows, id: \.listID) { row in
-                        dayRow(row, isDone: true, identity: identity)
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(makeSectionRows(identity.doneRows)) { item in
+                        dayRow(item.row, isDone: true, identity: identity)
+                        if !item.isLast {
+                            DaybookDivider(opacity: 0.35)
+                                .padding(.leading, 38)
+                        }
                     }
                 }
+                .padding(.vertical, 4)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                        .fill(DaybookPalette.fill.page)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                        .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
+                )
             }
         }
     }
+
+    private func makeSectionRows(_ rows: [BoardRow]) -> [DayBoardSectionRow] {
+        let count = rows.count
+        return rows.enumerated().map { index, row in
+            DayBoardSectionRow(id: row.listID, row: row, isLast: index == count - 1)
+        }
+    }
+}
+
+private struct DayBoardSectionRow: Identifiable {
+    let id: String
+    let row: BoardRow
+    let isLast: Bool
 }
 
 struct DayBoardKeyNavigationModifier: ViewModifier {

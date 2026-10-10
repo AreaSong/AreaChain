@@ -70,6 +70,16 @@ struct WorkspacePendingView: View {
                 onChange: { navigation.pendingFilter = $0 }
             )
         }
+        .padding(DaybookSpacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .fill(DaybookPalette.fill.page)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
+                .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
+        )
     }
 
     private func emptyCopy(_ lane: PendingLane) -> (title: LocalizedStringKey, hint: LocalizedStringKey) {

@@ -42,12 +42,9 @@ struct WorkspaceHeaderSearchCapsule: View {
                     .foregroundStyle(DaybookPalette.text.secondary.opacity(0.6)) // token-exempt: 60% 次要色没有对应令牌
                     .padding(.horizontal, 4)
                     .padding(.vertical, 1)
-                    .background(
-                        RoundedRectangle(cornerRadius: DaybookRadius.xxs)
-                            .fill(DaybookPalette.border.default.opacity(0.18)) // token-exempt: 18% 分隔线没有对应令牌
-                    )
             }
         }
+        .environment(\.daybookChromelessWhenIdle, navigation.searchQuery.isEmpty)
         .syntaxSuggestions(autocomplete, enabled: navigation.isSearchFocused)
         .background(KeyWindowHost { hostWindow = $0 })
         .onChange(of: navigation.searchQuery) { _, _ in

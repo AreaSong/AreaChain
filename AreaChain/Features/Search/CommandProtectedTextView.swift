@@ -1,15 +1,19 @@
 import AppKit
 
-/// C2B 隔离探针，没有生产装配。只接受能够在原生变更前完整预测的纯文本事务。
-/// 系统 IME 暂存及外部 textStorage 写入不能提供同等保证，入口保持关闭。
+/// 显式隔离装配的命令编辑器。应用接收到的纯文本/组合状态先提交恢复点，再更新原生显示。
+/// 系统候选窗与 mutable storage 旁路不在受控事务承诺内。
 @MainActor final class CommandProtectedTextView: DaybookAppKitTextView, CommandDraftNativeOwner, NSTextStorageDelegate {
-    enum Issue: Equatable { case unavailable, rejected, compositionUnsupported, unsupportedMutation, reentrant }
-    let parameter: CommandParameterID = .notes
+    enum Issue: Equatable { case unavailable, rejected, acceptedNotDisplayed, unsupportedMutation, reentrant }
+    let parameter: CommandParameterID
     private let contentSession: CommandDraftContentSession
     private var localUndo = CommandNativeUndoManager()
     private(set) var access: CommandDraftContentAccess?
     private(set) var issue: Issue?
     private(set) var checkpointCount = 0
+    var onRevision: (() -> Void)?
+    var onEnd: (() -> Void)?
+    private var compositionUndo: Recovery?
+    private(set) var pendingConfirmation = false
     private var installing = false
     private var accepting = false
     private var windowObservers: [NSObjectProtocol] = []
@@ -18,7 +22,8 @@ import AppKit
     var testingBeforeMarkedText: (() -> Void)?
     #endif
 
-    init(session: CommandDraftContentSession) {
+    init(session: CommandDraftContentSession, parameter: CommandParameterID = .notes) {
+        self.parameter = parameter
         contentSession = session
         let storage = NSTextStorage()
         let layout = NSLayoutManager()
@@ -26,6 +31,9 @@ import AppKit
         storage.addLayoutManager(layout)
         layout.addTextContainer(container)
         super.init(frame: NSRect(x: 0, y: 0, width: 400, height: 200), textContainer: container)
+        // 指定 frame 初始化会把 maxSize 固定为 400×200；宿主启用纵向伸缩后必须允许全文高度，
+        // 否则末尾虽有字符和检查点，滚动与 NSTextInputClient 候选锚点仍被裁在旧高度内。
+        maxSize.height = CGFloat.greatestFiniteMagnitude
         isRichText = false
         importsGraphics = false
         allowsUndo = false
@@ -52,7 +60,7 @@ import AppKit
             access = restored
             localUndo = CommandNativeUndoManager()
             localUndo.groupsByEvent = false
-            isEditable = true
+            isEditable = try contentSession.nativeOperation(restored, parameter: parameter).requiresValue
             issue = nil
         } catch { clearProtectedContents(); issue = .unavailable; throw error }
     }
@@ -65,25 +73,66 @@ import AppKit
 
     func clearProtectedContents() {
         access = nil
+        compositionUndo = nil
+        pendingConfirmation = false
         isEditable = false
         installing = true
         defer { installing = false }
+        inputContext?.discardMarkedText()
         super.unmarkText()
         super.string = ""
         super.setSelectedRange(NSRange(location: 0, length: 0))
         localUndo.revoke()
+        onEnd?()
     }
 
     func installProtectedContents(_ state: CommandDraftEditingState) throws {
         guard contentSession.permitsNativeInstallation(self), state.parameter == parameter.rawValue else { throw CommandDraftProtectionError.invalidPayload }
         installing = true
         defer { installing = false }
-        super.string = state.spelling
+        try CommandTextTiming.measure("nativeValidate") { try state.validate() }
+        pendingConfirmation = state.composition?.pendingConfirmation == true
+        if let composition = state.composition, !composition.pendingConfirmation {
+            let local = NSRange(location: state.selectionLocation - composition.location, length: state.selectionLength)
+            guard CommandDraftEditingState.valid(local, in: composition.text) else { throw CommandDraftProtectionError.invalidPayload }
+            if super.hasMarkedText(), super.markedRange().location == composition.location {
+                // 已核验的同一组合只更新局部 marked 范围；重装整篇会让长文布局逐次失效。
+                if !(super.string as NSString).isEqual(to: state.spelling) {
+                    CommandTextTiming.measure("nativeMarked") {
+                        super.setMarkedText(composition.text, selectedRange: local, replacementRange: super.markedRange())
+                    }
+                }
+            } else {
+                super.unmarkText()
+                try replaceDisplay(with: state.confirmedText)
+                CommandTextTiming.measure("nativeMarked") {
+                    super.setMarkedText(composition.text, selectedRange: local,
+                        replacementRange: NSRange(location: composition.location, length: composition.replacedText.utf16.count))
+                }
+            }
+        } else {
+            super.unmarkText()
+            try replaceDisplay(with: state.spelling)
+        }
         guard contentSession.permitsNativeInstallation(self) else { throw CommandDraftProtectionError.stale }
-        let selection = NSRange(location: state.selectionLocation, length: state.selectionLength)
-        super.setSelectedRange(selection)
-        guard textStorage != nil, super.string == state.spelling, selectedRange() == selection else {
+        if super.selectedRange() != state.selection {
+            CommandTextTiming.measure("selection") { super.setSelectedRange(state.selection) }
+        }
+        guard textStorage != nil, (super.string as NSString).isEqual(to: state.spelling), selectedRange() == state.selection else {
             throw CommandDraftProtectionError.unavailable
+        }
+    }
+
+    private func replaceDisplay(with text: String) throws {
+        guard !(super.string as NSString).isEqual(to: text) else { return }
+        let delta = CommandTextTiming.measure("difference") { CommandNativeTextInput.difference(from: super.string, to: text) }
+        guard contentSession.permitsNativeInstallation(self), let storage = textStorage else {
+            throw CommandDraftProtectionError.stale
+        }
+        CommandTextTiming.measure("storage") {
+            storage.beginEditing()
+            storage.replaceCharacters(in: delta.range, with: delta.text)
+            storage.endEditing()
         }
     }
 
@@ -96,11 +145,9 @@ import AppKit
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {
-        guard let text = insertString as? String else { issue = .unsupportedMutation; return }
-        let range = replacementRange.location == NSNotFound ? selectedRange() : replacementRange
-        guard Range(range, in: super.string) != nil else { issue = .rejected; return }
-        let candidate = (super.string as NSString).replacingCharacters(in: range, with: text)
-        accept(candidate, selection: NSRange(location: range.location + text.utf16.count, length: 0))
+        if installing { super.insertText(insertString, replacementRange: replacementRange); return }
+        guard let text = CommandNativeTextInput.text(insertString) else { issue = .unsupportedMutation; return }
+        transform { try CommandNativeTextInput.insert(text, range: replacementRange, in: $0) }
     }
 
     override func deleteBackward(_ sender: Any?) {
@@ -119,9 +166,31 @@ import AppKit
         insertText("", replacementRange: range)
     }
 
-    override func insertNewline(_ sender: Any?) { insertText("\n", replacementRange: selectedRange()) }
+    override func insertNewline(_ sender: Any?) {
+        if hasMarkedText() || pendingConfirmation { confirmPendingInput(); return }
+        insertText("\n", replacementRange: selectedRange())
+    }
     override func insertTab(_ sender: Any?) { insertText("\t", replacementRange: selectedRange()) }
-    override func cancelOperation(_ sender: Any?) {}
+    override func cancelOperation(_ sender: Any?) {
+        if hasMarkedText() || pendingConfirmation { transform { $0.cancellingComposition() } }
+        else { window?.makeFirstResponder(nil); end() }
+    }
+
+    func confirmPendingInput() { transform { $0.confirmingComposition() } }
+
+    override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        let flags = event.modifierFlags.intersection([.command, .shift, .control, .option])
+        guard window?.firstResponder === self else { return super.performKeyEquivalent(with: event) }
+        if flags.contains(.command), event.keyCode == UInt16(ShortcutKey.returnKey) { return true }
+        // 默认 NSTextView 撤销已关闭，键盘必须明确路由到本控件的受控历史。
+        if event.charactersIgnoringModifiers?.lowercased() == "z", flags == .command || flags == [.command, .shift] {
+            if hasMarkedText() || pendingConfirmation { cancelOperation(nil) }
+            else if flags.contains(.shift) { localUndo.redo() }
+            else { localUndo.undo() }
+            return true
+        }
+        return super.performKeyEquivalent(with: event)
+    }
 
     override func readSelection(from pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool {
         guard type == .string, let text = pboard.string(forType: .string), let previous = access else { return false }
@@ -132,27 +201,28 @@ import AppKit
     override func writeSelection(to pboard: NSPasteboard, type: NSPasteboard.PasteboardType) -> Bool { false }
 
     override func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
+        if installing { super.setMarkedText(string, selectedRange: selectedRange, replacementRange: replacementRange); return }
         #if DEBUG
         testingBeforeMarkedText?()
         #endif
-        // 不调用 super：尚不能捕获系统候选窗/IME 自有暂存，拒绝不是一次已接受修订。
-        issue = .compositionUnsupported
+        guard let text = CommandNativeTextInput.text(string) else { issue = .unsupportedMutation; return }
+        transform { try CommandNativeTextInput.mark(text, selection: selectedRange, range: replacementRange, in: $0) }
     }
 
     override func unmarkText() {
         if installing { super.unmarkText() }
-        else { issue = .compositionUnsupported }
+        else { confirmPendingInput() }
     }
 
     override func setSelectedRange(_ charRange: NSRange) {
         if installing { super.setSelectedRange(charRange) }
-        else { accept(super.string, selection: charRange) }
+        else { select(charRange) }
     }
 
     override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting flag: Bool) {
         if installing { super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: flag); return }
         guard ranges.count == 1 else { issue = .unsupportedMutation; return }
-        accept(super.string, selection: ranges[0].rangeValue)
+        select(ranges[0].rangeValue)
     }
 
     override func shouldChangeText(in affectedCharRange: NSRange, replacementString: String?) -> Bool {
@@ -168,7 +238,7 @@ import AppKit
 
     func synchronize(_ text: String, selection: NSRange, expecting expected: CommandDraftContentAccess) {
         guard expected == access else { issue = .rejected; return }
-        accept(text, selection: selection)
+        transform { _ in .init(parameter: self.parameter.rawValue, spelling: text, selectionLocation: selection.location, selectionLength: selection.length) }
     }
 
     override func resignFirstResponder() -> Bool {
@@ -200,82 +270,117 @@ import AppKit
         }
     }
 
-    private func accept(_ text: String, selection: NSRange) {
+    private enum Recovery {
+        case protected(SealedCommandDraft)
+        case ordinary(CommandDraftEditingState)
+    }
+
+    private func point(_ current: CommandDraftContentAccess) throws -> Recovery {
+        if current.isProtected { return .protected(try contentSession.nativeRecoveryPoint(current, owner: self)) }
+        return .ordinary(try contentSession.nativeState(current, owner: self))
+    }
+
+    private func select(_ range: NSRange) {
+        transform(selectionOnly: true) { state in
+            var next = state
+            next.selectionLocation = range.location
+            next.selectionLength = range.length
+            if let composition = next.composition,
+               range.location < composition.location || NSMaxRange(range) > NSMaxRange(composition.range) {
+                next.composition?.pendingConfirmation = true
+            }
+            return next
+        }
+    }
+
+    private func transform(selectionOnly: Bool = false, _ make: (CommandDraftEditingState) throws -> CommandDraftEditingState) {
         guard !accepting else { issue = .reentrant; end(); return }
-        guard let current = access, Range(selection, in: text) != nil else { issue = .rejected; return }
+        guard let current = access else { issue = issue ?? .rejected; return }
         accepting = true
+        var committed = false
         defer { accepting = false }
         do {
-            let oldPoint = try contentSession.nativeRecoveryPoint(current, owner: self)
-            let state = CommandDraftEditingState(parameter: parameter.rawValue, spelling: text,
-                selectionLocation: selection.location, selectionLength: selection.length)
-            access = try contentSession.acceptNative(state, using: current, owner: self)
+            let before = try CommandTextTiming.measure("readState") { try contentSession.nativeState(current, owner: self) }
+            let candidate = try CommandTextTiming.measure("candidate") { try make(before) }
+            try CommandTextTiming.measure("validateCandidate") { try candidate.validate() }
+            if candidate == before { return }
+            let oldPoint = try point(current)
+            access = try CommandTextTiming.measure("accept") { try contentSession.acceptNative(candidate, using: current, owner: self) }
+            committed = true
             checkpointCount += 1
             #if DEBUG
             testingAfterCheckpoint?()
             #endif
             guard let next = access else { throw CommandDraftProtectionError.stale }
-            try contentSession.presentNative(next, owner: self)
-            registerUndo(oldPoint)
+            try CommandTextTiming.measure("nativeInstall") { try contentSession.presentNative(next, owner: self) }
+            if !selectionOnly {
+                if before.composition == nil, candidate.composition != nil { compositionUndo = oldPoint }
+                if candidate.composition == nil {
+                    if before.composition != nil {
+                        if candidate.spelling != before.confirmedText { registerUndo(compositionUndo ?? oldPoint) }
+                        compositionUndo = nil
+                    } else if candidate.spelling != before.spelling { registerUndo(oldPoint) }
+                }
+            }
             issue = nil
+            onRevision?()
         } catch {
-            if access != current { end(); issue = .rejected }
-            else { failed() }
+            if access != current { end(); issue = committed ? .acceptedNotDisplayed : .rejected; onRevision?() }
+            else { failed(); onRevision?() }
         }
     }
 
-    private func registerUndo(_ point: SealedCommandDraft) {
-        localUndo.beginUndoGrouping()
-        localUndo.registerUndo(withTarget: self) { editor in editor.restoreUndo(point) }
-        localUndo.endUndoGrouping()
+    private func registerUndo(_ point: Recovery) {
+        CommandTextTiming.measure("undoRegister") {
+            localUndo.beginUndoGrouping()
+            localUndo.registerUndo(withTarget: self) { editor in editor.restoreUndo(point) }
+            localUndo.endUndoGrouping()
+        }
     }
 
-    private func restoreUndo(_ point: SealedCommandDraft) {
+    private func restoreUndo(_ point: Recovery) {
         guard !accepting, let current = access else { issue = .rejected; return }
         accepting = true
+        var committed = false
         defer { accepting = false }
         do {
-            let inverse = try contentSession.nativeRecoveryPoint(current, owner: self)
-            access = try contentSession.undoNative(point, using: current, owner: self)
+            let inverse = try self.point(current)
+            switch point {
+            case .protected(let envelope): access = try contentSession.undoNative(envelope, using: current, owner: self)
+            case .ordinary(let state): access = try contentSession.acceptNative(state, using: current, owner: self)
+            }
+            committed = true
             checkpointCount += 1
             #if DEBUG
             testingAfterCheckpoint?()
             #endif
             guard let next = access else { throw CommandDraftProtectionError.stale }
-            try contentSession.presentNative(next, owner: self)
+            try CommandTextTiming.measure("nativeInstall") { try contentSession.presentNative(next, owner: self) }
             registerUndo(inverse)
             issue = nil
+            onRevision?()
         } catch {
-            if access != current { end(); issue = .rejected }
-            else { failed() }
+            if access != current { end(); issue = committed ? .acceptedNotDisplayed : .rejected; onRevision?() }
+            else { failed(); onRevision?() }
         }
+    }
+
+    func changeOperation(_ operation: CommandFieldOperation) throws {
+        guard let current = access, !accepting else { throw CommandDraftProtectionError.stale }
+        accepting = true
+        defer { accepting = false }
+        access = try contentSession.changeNativeOperation(operation, using: current, owner: self)
+        guard let next = access else { throw CommandDraftProtectionError.stale }
+        try contentSession.presentNative(next, owner: self)
+        isEditable = operation.requiresValue
+        localUndo.removeAllActions()
+        end()
+        onRevision?()
     }
 
     private func failed() {
         issue = .rejected
         if let access, (try? contentSession.validateNative(access, owner: self)) != nil { return }
         end()
-    }
-}
-
-/// NSUndoManager 在正在撤销的回调内 removeAllActions 会破坏系统分组；先禁用，栈退出后清除。
-@MainActor private final class CommandNativeUndoManager: UndoManager {
-    private var revoked = false
-
-    func revoke() {
-        revoked = true
-        if !isUndoing && !isRedoing { removeAllActions() }
-    }
-
-    override func undo() {
-        guard !revoked else { return }
-        defer { if revoked { removeAllActions() } }
-        super.undo()
-    }
-
-    override func redo() {
-        guard !revoked else { return }
-        defer { if revoked { removeAllActions() } }
-        super.redo()
     }
 }

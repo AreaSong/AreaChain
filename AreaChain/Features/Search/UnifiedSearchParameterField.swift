@@ -41,6 +41,8 @@ struct UnifiedSearchParameterField: View {
                         .accessibilityIdentifier("unified.tags.choose")
                 }
                 Text(command.id.rawValue == "todo.tags" ? "unified.field.tagsHint" : "unified.tags.syntaxHint").font(DaybookType.caption)
+            } else if controller.supportsLongText(parameter) {
+                UnifiedSearchLongTextField(controller: controller, draft: draft, parameter: parameter, source: source)
             } else if supported {
                 operationPicker
                 if context.operation.requiresValue { editor }
@@ -52,7 +54,7 @@ struct UnifiedSearchParameterField: View {
                 Text(LocalizedStringKey(UnifiedSearchOperationCopy.requirement(parameter, command: command)))
                     .font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
             }
-            if parameter.id != .target && !isObject { preview }
+            if parameter.id != .target && !isObject && !controller.supportsLongText(parameter) { preview }
             if command.id.rawValue == "routine.create", parameter.id == .notes {
                 Text("unified.composition.unsupportedField").font(DaybookType.caption)
             }

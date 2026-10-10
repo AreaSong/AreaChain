@@ -33,6 +33,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     private(set) var baseline: CommandDraftBaseline
     private(set) var protectedReference: CommandProtectedReference?
     let protectionRequirement: CommandProtectionRequirement
+    private(set) var textPositions: [CommandParameterID: CommandTextPosition] = [:]
     private var initialTargets: CommandDraftTargets
 
     init(id: UUID, hostID: String, commandID: CommandID, targets: CommandDraftTargets = .none,
@@ -82,6 +83,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     // 写入入口由 reducer 校验身份；每次接受编辑都推进版本，即使内容相同也使旧确认失效。
     mutating func edit(_ argument: CommandArgument, expecting stamp: CommandDraftStamp) {
         guard protectedReference == nil, self.stamp == stamp, argument.parameter != .target else { return }
+        textPositions[argument.parameter] = nil
         arguments.removeAll { $0.parameter == argument.parameter }
         arguments.append(argument)
         version += 1
@@ -100,6 +102,7 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
         guard protectedReference == nil, self.stamp == stamp else { return }
         self.baseline = baseline
         self.arguments = arguments
+        textPositions.removeAll()
         initialTargets = targets
         version += 1
     }
@@ -108,8 +111,21 @@ struct CommandDraft: Equatable, CustomStringConvertible, CustomDebugStringConver
     mutating func acceptProtection(_ reference: CommandProtectedReference) {
         protectedReference = reference
         arguments = []
+        textPositions.removeAll()
         baseline = .protectedContent
         version += 1
+    }
+
+    mutating func acceptNativeText(_ state: CommandDraftEditingState, operation: CommandFieldOperation) throws {
+        try state.validate()
+        guard protectedReference == nil, protectionRequirement == .ordinary,
+              let parameter = CommandParameterID(rawValue: state.parameter),
+              let declaration = CommandCatalog.standard.command(id: commandID)?.parameters.first(where: { $0.id == parameter }),
+              declaration.type == .longText, declaration.operations.contains(operation),
+              operation.requiresValue || (state.spelling.isEmpty && state.composition == nil) else { throw CommandPlanError.invalidInput }
+        edit(.init(parameter: parameter, operation: operation,
+                   value: operation.requiresValue ? .longText(state.confirmedText) : nil), expecting: stamp)
+        textPositions[parameter] = state.position
     }
 
     mutating func activate() { version += 1 }

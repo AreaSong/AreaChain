@@ -1,15 +1,5 @@
 import Foundation
 
-/// 只记录应用已接受的未完成拼写和 UTF-16 选区；不是原生 marked text / undo 快照。
-struct CommandDraftEditingState: Codable, Equatable, CustomStringConvertible, CustomDebugStringConvertible {
-    var description: String { "CommandDraftEditingState(redacted)" }
-    var debugDescription: String { description }
-    var parameter: String
-    var spelling: String
-    var selectionLocation: Int
-    var selectionLength: Int
-}
-
 struct CommandDraftContents: Equatable, CustomStringConvertible, CustomDebugStringConvertible {
     var arguments: [CommandArgument]
     var baseline: CommandDraftBaseline
@@ -18,7 +8,7 @@ struct CommandDraftContents: Equatable, CustomStringConvertible, CustomDebugStri
     var debugDescription: String { description }
 }
 
-/// 命令专用 v1；不改变 DiaryDraftText，也不编码宿主、闭包、认证或原生能力。
+/// 命令专用 v2（解码兼容 v1）；不改变 DiaryDraftText，也不编码宿主、闭包、认证或原生能力。
 struct CommandDraftPayload: Codable, CustomStringConvertible, CustomDebugStringConvertible {
     var description: String { "CommandDraftPayload(redacted)" }
     var debugDescription: String { description }
@@ -90,7 +80,7 @@ struct CommandDraftPayload: Codable, CustomStringConvertible, CustomDebugStringC
     }
 
     init(contents: CommandDraftContents, reference: CommandProtectedReference, draft: CommandDraft) throws {
-        format = 1; payloadID = reference.payloadID; revision = reference.revision
+        format = 2; payloadID = reference.payloadID; revision = reference.revision
         draftID = draft.id; commandID = draft.commandID.rawValue
         guard contents.baseline.isReadable else { throw CommandDraftProtectionError.invalidPayload }
         arguments = try contents.arguments.map {
@@ -111,7 +101,7 @@ struct CommandDraftPayload: Codable, CustomStringConvertible, CustomDebugStringC
     }
 
     func decoded() throws -> CommandDraftContents {
-        guard format == 1 else { throw CommandDraftProtectionError.invalidPayload }
+        guard format == 1 || format == 2 else { throw CommandDraftProtectionError.invalidPayload }
         var values: [CommandDraftBaseline.Field: CommandOriginalValue] = [:]
         for original in baseline {
             guard let parameter = CommandParameterID(rawValue: original.parameter) else { throw CommandDraftProtectionError.invalidPayload }
@@ -133,11 +123,11 @@ struct CommandDraftPayload: Codable, CustomStringConvertible, CustomDebugStringC
         guard Set(arguments.map(\.parameter)).count == arguments.count,
               Set(editing.map(\.parameter)).count == editing.count else { throw CommandDraftProtectionError.invalidPayload }
         for state in editing {
-            guard CommandParameterID(rawValue: state.parameter) != nil,
-                  state.selectionLocation >= 0, state.selectionLength >= 0,
-                  state.selectionLocation <= state.spelling.utf16.count,
-                  state.selectionLength <= state.spelling.utf16.count - state.selectionLocation else {
-                throw CommandDraftProtectionError.invalidPayload
+            do { try state.validate() } catch { throw CommandDraftProtectionError.invalidPayload }
+            if format == 1, state.composition != nil { throw CommandDraftProtectionError.invalidPayload }
+            if state.composition != nil {
+                guard arguments.first(where: { $0.parameter.rawValue == state.parameter })?.value == .longText(state.confirmedText)
+                else { throw CommandDraftProtectionError.invalidPayload }
             }
         }
         return .init(arguments: arguments, baseline: .init(values), editing: editing)

@@ -240,6 +240,13 @@ struct CommandHostSession: Equatable, CustomStringConvertible, CustomDebugString
         }
     }
 
+    mutating func acceptNativeText(_ state: CommandDraftEditingState, operation: CommandFieldOperation,
+                                   expecting stamp: CommandDraftStamp) throws {
+        guard execution == nil, operations.pending == nil else { throw CommandPlanError.busy }
+        if plan.editing != nil { try plan.acceptNativeText(state, operation: operation, expecting: stamp) }
+        else { try operations.acceptNativeText(state, operation: operation, expecting: stamp) }
+    }
+
     var handoffNativeSelections: Set<UUID> {
         let drafts = (operations.active.map { [$0] } ?? []) + operations.retained + plan.items.map(\.draft)
         return Set(drafts.flatMap { draft in

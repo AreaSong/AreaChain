@@ -48532,6 +48532,262 @@
           }
         }
       }
+    },
+    "unified.longText.ordinary": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ordinary in-memory draft. Not encrypted or written to disk."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "运行内普通草稿；未加密，不写入磁盘。"
+          }
+        }
+      }
+    },
+    "unified.longText.protected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protected draft. Accepted input has an encrypted recovery point."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受保护草稿；每次接受输入前建立加密恢复点。"
+          }
+        }
+      }
+    },
+    "unified.longText.draftOnly": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edits parameters only. No content is saved or commands run."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "仅编辑参数；不会保存正文或执行命令。"
+          }
+        }
+      }
+    },
+    "unified.longText.pending": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restored input awaits confirmation. Confirm, continue editing, or cancel this input."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "恢复的输入尚待确认。可确认、继续编辑或取消这段输入。"
+          }
+        }
+      }
+    },
+    "unified.longText.confirm": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm input"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "确认这段输入"
+          }
+        }
+      }
+    },
+    "unified.longText.cancelInput": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel input"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "取消这段输入"
+          }
+        }
+      }
+    },
+    "unified.longText.close": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close and keep draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "收起并保留草稿"
+          }
+        }
+      }
+    },
+    "unified.longText.edit": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit multiline text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "编辑多行正文"
+          }
+        }
+      }
+    },
+    "unified.longText.restore": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Restore for editing"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "显式恢复编辑"
+          }
+        }
+      }
+    },
+    "unified.longText.protect": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protect this draft"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保护当前草稿"
+          }
+        }
+      }
+    },
+    "unified.longText.unavailable": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Editing is unavailable. Restore this window or unlock, then try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "当前无法编辑。请恢复窗口或解锁后重试。"
+          }
+        }
+      }
+    },
+    "unified.longText.acceptedHidden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New input was accepted and retained. Its display has been revoked."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新输入已接收并保留；当前显示已撤销。"
+          }
+        }
+      }
+    },
+    "unified.longText.rejected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New input was not accepted. Previous content is retained."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新输入未被接受；此前内容已保留。"
+          }
+        }
+      }
+    },
+    "unified.longText.notProtected": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protection failed. The original draft remains unprotected."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保护失败；原草稿仍在，尚未受保护。"
+          }
+        }
+      }
+    },
+    "unified.longText.protectedHidden": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Draft protected. Restore explicitly to continue editing."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "保护成功。请明确恢复后继续编辑。"
+          }
+        }
+      }
+    },
+    "unified.longText.composing": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Composing text. Confirm a candidate to update the body."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "正在组词；确认候选后更新正文。"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

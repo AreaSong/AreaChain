@@ -1,6 +1,5 @@
 import Foundation
 import Observation
-
 struct CommandRuntimeInvocation: Equatable {
     let id: UUID
     let lease: CommandHostLease
@@ -16,7 +15,6 @@ struct CommandRuntimeInvocation: Equatable {
         self.chain = chain
     }
 }
-
 struct CommandPreferenceGroupInvocation: Equatable {
     let id: UUID
     let lease: CommandHostLease
@@ -32,7 +30,6 @@ struct CommandPreferenceGroupInvocation: Equatable {
         self.verification = verification
     }
 }
-
 /// 注入的单一运行内权威；引用不能按值复制。MainActor 串行、同步且无回调的提交不存在半次发布。
 /// 只登记指令宿主，不持有窗口、文件能力、业务对象或全局单例；不提供从旧快照重新登记的入口。
 @Observable @MainActor final class CommandHandoffCoordinator: CustomStringConvertible, CustomDebugStringConvertible {
@@ -40,7 +37,6 @@ struct CommandPreferenceGroupInvocation: Equatable {
         let ticket: CommandHandoffTicket
         var readiness: CommandHandoffReadiness?
     }
-
     private let id = UUID()
     @ObservationIgnored private var hosts: [String: CommandOwnedHost] = [:]
     @ObservationIgnored private var pending: [UUID: Pending] = [:]
@@ -48,6 +44,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored private var invocations: [UUID: CommandRuntimeInvocation] = [:]
     @ObservationIgnored private var invokedAttempts: Set<CommandAttemptStamp> = []
     @ObservationIgnored private var groupInvocations: [UUID: CommandPreferenceGroupInvocation] = [:]
+    @ObservationIgnored let nativeTextOwners = CommandNativeTextOwners()
     @ObservationIgnored let multiPlans = CommandMultiPlanRegistry()
     @ObservationIgnored let planRevisions = CommandPlanRevisionRegistry()
     @ObservationIgnored let taskTitles = CommandTaskTitleRegistry()
@@ -57,7 +54,6 @@ struct CommandPreferenceGroupInvocation: Equatable {
     @ObservationIgnored let routines = CommandRoutineRegistry()
     @ObservationIgnored let taskCreations = CommandTaskCreateRegistry()
     private(set) var ownershipRevision: UInt64 = 0
-
     init(pages: [ContentQueryPageContext]) throws {
         guard Set(pages.map { $0.location.hostID }).count == pages.count else { throw CommandHandoffError.duplicate }
         for page in pages {
@@ -65,7 +61,6 @@ struct CommandPreferenceGroupInvocation: Equatable {
             hosts[page.location.hostID] = .init(lease: .init(ownership: ownership, revision: 0), session: .init(page: page))
         }
     }
-
     nonisolated var description: String { "CommandHandoffCoordinator(redacted)" }
     nonisolated var debugDescription: String { description }
 
@@ -89,6 +84,7 @@ struct CommandPreferenceGroupInvocation: Equatable {
             default: throw CommandExecutionError.busy
             }
         }
+        nativeTextOwners.invalidate()
         var next = try host(lease.ownership.hostID).session
         let effect = try next.applyOwnedEvent(event)
         // 连相同文字的再次输入和无状态输出的操作意图也使准备票据失效。
@@ -391,6 +387,9 @@ struct CommandPreferenceGroupInvocation: Equatable {
         try validate(checkpoint.lease)
         var next = try host(checkpoint.lease.ownership.hostID).session
         guard next.allDrafts.contains(where: { $0.stamp == checkpoint.draft }) else { throw CommandHandoffError.stale }
+        if let owner = checkpoint.continuingOwner {
+            guard nativeTextOwners.contains(owner) else { throw CommandDraftProtectionError.stale }
+        } else { nativeTextOwners.invalidate() }
         try checkpoint.consume()
         try next.acceptProtection(checkpoint.reference, expecting: checkpoint.draft)
         hosts[next.hostID] = .init(lease: .init(ownership: checkpoint.lease.ownership,

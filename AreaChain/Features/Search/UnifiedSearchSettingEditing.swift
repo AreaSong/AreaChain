@@ -79,7 +79,7 @@ extension UnifiedSearchController {
 
     /// 点击和原生 ⌘Return 共用；最后写入门禁继续由适配器复核。
     func requestOperationSubmit(_ source: UnifiedSearchBuffer) {
-        guard !isNavigationInput, !isNavigationPresented else { return }
+        guard !isNavigationInput, !isNavigationPresented, longTextEditing?.available != true else { return }
         if showsMultiPlan { submitMultiPlan(source); return }
         if showsRoutineCreation { submitRoutineCreation(source); return }
         if showsTaskChain { submitTaskChain(source); return }

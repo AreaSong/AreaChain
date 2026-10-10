@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import Testing
 @testable import AreaChain
 
@@ -80,33 +81,26 @@ struct CommandNativeEditingTests {
         other.end()
     }
 
-    @Test func protectedMarkedUpdatesConfirmCancelStayRejectedAndOrdinaryAppKitComposes() throws {
+    @Test func protectedMarkedUpdatesConfirmCancelPreserveConfirmedBody() throws {
         let f = try CommandNativeFixture()
         defer { f.close() }
-        let old = try f.protected.host.owned()
         for text in ["z", "zhong", "中🙂"] {
             f.editor.setMarkedText(text, selectedRange: NSRange(location: text.utf16.count, length: 0),
-                                   replacementRange: NSRange(location: 0, length: 0))
-            #expect(!f.editor.hasMarkedText() && f.editor.issue == .compositionUnsupported)
+                                  replacementRange: NSRange(location: NSNotFound, length: 0))
+            #expect(f.editor.hasMarkedText() && f.editor.issue == nil)
+            let state = try f.protected.service.nativeState(#require(f.editor.access), owner: f.editor)
+            #expect(state.confirmedText == "synthetic-body")
+            #expect(state.composition?.text == text)
         }
-        f.editor.unmarkText()
-        f.editor.cancelOperation(nil)
-        #expect(try f.protected.host.owned() == old)
+        f.editor.insertText("中🙂", replacementRange: f.editor.markedRange())
+        #expect(!f.editor.hasMarkedText())
+        try f.expectCurrent("synthetic-body中🙂")
+        f.editor.undoManager?.undo()
         try f.expectCurrent("synthetic-body")
-        let ordinary = DaybookAppKitTextView()
-        ordinary.isRichText = false
-        ordinary.string = "prefix"
-        for text in ["z", "zhong", "中🙂"] {
-            ordinary.setMarkedText(text, selectedRange: NSRange(location: text.utf16.count, length: 0),
-                                   replacementRange: NSRange(location: 0, length: ordinary.string.utf16.count))
-            #expect(ordinary.hasMarkedText())
-        }
-        ordinary.insertText("中🙂", replacementRange: ordinary.markedRange())
-        #expect(!ordinary.hasMarkedText() && ordinary.string == "中🙂")
-        ordinary.setMarkedText("临时", selectedRange: NSRange(location: 2, length: 0),
-                               replacementRange: NSRange(location: 0, length: 0))
-        ordinary.insertText("", replacementRange: ordinary.markedRange())
-        #expect(!ordinary.hasMarkedText() && ordinary.string == "中🙂")
+        f.editor.setMarkedText("取消", selectedRange: NSRange(location: 2, length: 0),
+                               replacementRange: NSRange(location: 0, length: 9))
+        f.editor.cancelOperation(nil)
+        try f.expectCurrent("synthetic-body")
     }
 
     @Test func directMutableStorageIsAnExplicitAfterMutationCounterexample() throws {
@@ -123,6 +117,15 @@ struct CommandNativeEditingTests {
     @Test func focusedNativeLifecycleRevokesOnBlur() async throws {
         let f = try CommandNativeFixture()
         defer { f.close() }
+        // 与参数面板相同的 hosting 宿主先完成事件循环准备，仍执行原 key/active 断言。
+        f.editor.removeFromSuperview()
+        f.window.contentView = NSHostingView(rootView: Color.clear)
+        f.window.contentView?.addSubview(f.editor)
+        try f.editor.begin(using: f.protected.restore())
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        f.window.makeKeyAndOrderFront(nil)
+        try await SystemPageHost.settle(f.window)
         try await NativeSyntaxUI.prepareFocus(in: f.window)
         try #require(f.window.makeFirstResponder(f.editor))
         f.editor.insertText("焦点", replacementRange: NSRange(location: 0, length: f.editor.string.utf16.count))

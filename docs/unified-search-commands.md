@@ -3773,6 +3773,8 @@ C2A 仅实现应用接受修订的密文恢复点与显式恢复，不实现 NST
 
 ### 9.52 阶段 4A-3C2B：原生接受与锁定交错的隔离可行性
 
+本节保留旧阶段的限制、失败与复验前状态。2026-10-10 用户批准的 C-M1 组合输入、普通模式及 active／planItem 参数编辑范围见 [§9.86](#986-里程碑-c-m1命令长文原生编辑与受控组合输入)；旧“全部拒绝组合输入”不再作为本批产品通过标准。
+
 2026-10-03 开始，跨日续验。仅合成 PrivacyQA；不接生产、handler、完整敏感转交、真实认证或磁盘草稿。§9.50 为设计来源，§9.51 的 C2A 载荷/保护拒绝继续有效。本节区分应用接受、原生暂存和密文；最终状态与实际结果在本节末尾登记。
 
 #### 三种状态与受控持有
@@ -7110,3 +7112,186 @@ WorkspaceContentSource 只记录当前搜索读取的 PersistentIdentifier 和�
 **最终源码与并行修改。** 源码全集1431文件，摘要 `fa1147c4607dab3b2b776a8fa7c1f6dcb1f214fb4a00a99844dcf90b58dc94c2`；HandoffQA／HandoffDebug 的申请前、锁后、执行后相同并匹配交接清单。正常 Debug 为 development、Hardened Runtime=true、distributionReady=false。最后原生批次之后只将文案库恢复为仓库原排版／键序，解析后的对象完全相等；并行的提取状态、注释及新增键均保留，完整 QA 与正常构建已重新编译当前资源。工作区42文件（33份Swift），清单见 changed-files.json；workspace.patch 含并行内容，不全归本任务。侧栏、WorkspaceLayout、DaybookTokens、工程排序、并行重建的 DiaryReadOnlyText 和文案提取元数据保留；新查阅仍消费既有 DaybookSearchReadOnlyText。初始暂存由外部提交进入 HEAD，本对话没有改写索引或执行提交。每批按独立产物路径、PID及启动时间核对进程，结束后本批进程空集。SDK弃用／既有actor提示没有被当作已清零。
 
 **未完成前置。** 指定 Cursor verifier 为材料就绪／复核未执行，没有认证或普通代理替代。C2B、真人IME／VoiceOver、最低macOS、真实多窗口与历史缺口继续独立保留。本批只读查阅不替代手记编辑：后续仍需 C2B 完整正文输入事务与组合输入验收、唯一编辑会话／保存冲突／撤销和窗口接线；受保护内容查阅需要另行授权认证／解密能力及相应门禁。没有启用生产搜索、访问真实业务数据、提交、推送、安装、发布、续签或改变权限。
+
+
+### 9.86 里程碑 C-M1：命令长文原生编辑与受控组合输入
+
+2026-10-10（Asia/Shanghai）。本节是 C-M1 的唯一交接。用户已批准 A～E 连续实施及应用控制范围内的组合输入保护；仅完整 PrivacyQA、合成内容、内存 vault 和假系统依赖，不接生产、业务保存、真实认证、敏感执行／转交、磁盘草稿、安装或发布。旧 §9.50～§9.52 的阶段停止和全部拒绝 marked text 限制由本批授权替代；历史失败和 mutable textStorage 反例保留。
+
+#### 正文、组合与恢复契约
+
+普通稿的已确认正文唯一位于原 CommandDraft.arguments；textPositions 仅保留 UTF-16 选区、未确认组合片段及原被替换片段。CommandDraftEditingState 是受校验的事务投影，不是第二份可执行参数。组合更新不写入已确认正文；确认将片段变成正文，取消恢复原片段和选区。内容里的 `/ # ! @` 不进入命令解析。
+
+命令载荷升级为 v2，仍由 SealedCommandDraft／VaultKeyAccess／原 Coordinator 提交；加密认证上下文保持 command-draft:1，以兼容旧封套。v1 无组合状态可恢复；旧未完成拼写与参数不同则按整段待确认输入恢复，不能静默作为已确认参数。v1 携带组合、未知版本、非法 UTF-16／字素边界或组合与已确认参数矛盾均拒绝。原基线不可编辑，DiaryDraftText、备份和业务持久化格式未修改。
+
+每次受控更新先校验原 owner／lease／草稿／明确编辑位置／访问资格，再建立完整恢复点、提交修订和更新原生状态。保护失败保留前一已接受状态；建点后、显示前锁定保留新点并报告 acceptedNotDisplayed。锁定通知同步撤访问、原生正文、组合、选区与本控件撤销；不在锁定时首次加密。解锁不自动显示，显式恢复把未完成组合显示为待确认内容，不恢复系统候选窗。正常组词的多个检查点只形成一次文字撤销，选区变化不形成文字撤销；保护撤销保留密文点，以当前资格重新封存后呈现。恢复后的待确认内容可以确认、继续编辑或取消；确认后的撤销可回到待确认点，不能复用旧 access。
+
+普通模式无配置也可在本次运行内编辑；遮罩／卸载清显示但不清唯一草稿，不宣称加密或跨进程恢复。普通转保护只有恢复点和协调者提交成功才切换；失败仍是未保护稿。required／unknown 和已保护稿不能降级为普通稿。协调者范围只有一个有效原生 owner；旧控件拆卸不能撤销后来 owner。目标、参数操作、计划项、宿主或外部修订变化撤销旧资格，只有受控输入事务可以接续原生 owner。
+
+#### 接线、快捷键与旁路
+
+UnifiedSearchController.assembleLongText 是显式装配入口；生产调用方未装配。UnifiedSearchLongTextField 在原参数组件和 DaybookInputShell 内展开多行编辑，支持目录中的 notes／body，分别绑定 active 或 plan.editing 指定项。planItem 不复制到 active；replace／append／clear 等仍取原参数声明，操作变化结束旧 owner。长文不进入主输入 buffer、parameterText、普通摘要或返回搜索票据。新字段不调用业务 handler／SwiftData 保存，原 blocksUnprotectedExport、Run、P-M3 合并／返回和敏感转交守卫保留。
+
+Return 优先确认当前组合／待确认内容；无组合时换行。⌘Return 在长文编辑器及所属面板阻止业务提交。Esc 先取消组合，否则结束局部编辑并保留稿。收起、明确切换、页面导航和卸载沿原生命周期同步撤原生访问，保留参数和恢复点。普通摘要仍沿原可见性／遮罩边界。
+
+支持的事务入口是纯文本／NSAttributedString 的纯文本部分、insertText、setMarkedText 的完整／片段更新、unmark、取消、单选区、字素前后删、换行／Tab、命名 pasteboard 的纯文本读取和本控件撤销。组合期间跨 marked 范围的 insert／第二处组合请求拒绝，以免隐式确认旧片段。未经过这些入口的 shouldChangeText 替换拒绝；外部 mutable textStorage 写入仍只能事后检测撤权，不计已接受或已保全。系统服务、拖放、听写、辅助功能写入和系统替换各自的完整调用路径未验证，不承诺通用输入。系统输入法缓存、候选窗私有状态、进程内全部 String 副本和物理内存零化不在保证内。
+
+#### 固定验收与过程记录
+
+有限矩阵固定为：原 C2B／C2A 与旧输入回归；普通／保护状态、版本、范围、失败、载荷；active／planItem 参数及收起、切换、导航、失焦、卸载；两种代表语言／主题／宽度；1 KiB／64 KiB／1 MiB 的六次分项性能；完整 QA 编译／严格验签、当前正常 development Debug、严格 lint／workflow／质量与脚本门禁。程序化 AppKit、真实输入法、缓存截图、系统截图和人工证据分别登记。
+
+- A-baseline 首次方法选择器未带 Swift Testing 签名，实际 0 项，不计通过。修正选择器后 2 方法／3 次通过，确认当前文本系统和 undo／redo 锁定退栈修正可运行；未还原旧版本。
+- BC-first：32 方法，30 通过／2 失败；mutable storage 撤权后迟到选区回调覆盖错误标记，已保留原 unsupportedMutation。另一项为独立裸 NSTextView 窗口未取得激活，原前台记录 Chrome。
+- BCD-first：38 方法，37 通过／1 焦点失败；新增普通、组合、取消、锁恢复、非法范围、保护转换与 planItem 状态测试通过。
+- D-native：5 方法，4 通过／1 同一焦点失败；真实参数 UI、操作、body 计划保稿及两种代表布局通过。
+- C-focus-payload：独立焦点用例改用与参数宿主相同的 NSHostingView 和事件循环准备，原 key／active／失焦断言保留，复验与 v1／v2 载荷检查通过。这是测试宿主准备修正，不是降低产品焦点要求。
+
+所有过程日志／结果包／源码集合在 `build/CM1/`，完整目标派生目录 `build/PrivacyQA-CM1`，标识 `com.areachain.privacy-qa.cm1`；原 build/.build.lock 单次最多900秒、六项真实钥匙串授权清除、串行原生、合成数据保持。源码身份包括实际并行修改，不能只用 HEAD 代表候选来源；其他任务的提交和工作区变化不归本批。
+
+#### A～E 最终状态与有效证据
+
+| 范围 | 实际状态 |
+|---|---|
+| A 旧 C2B | 最小复验及最后六个原生方法通过。复用此前已写入的文本系统初始化与 undo 退栈清理；新增正常组合支持，修正迟到选区覆盖错误标记和实际 ⌘Z 路由。旧失败没有被删除或改写成通过。 |
+| B 普通长文 | 普通无锁、多行／Unicode／字素范围、粘贴、选区、删除、组词与撤销通过；唯一正文／组合位置在原草稿，转换失败不丢稿，不承诺加密或落盘。 |
+| C 受保护输入 | 组合更新／确认／取消、编码与加密拒绝、建点前后锁定、明确恢复、pending、旧访问拒绝、撤销及保留基线通过。建点未成功不标 acceptedNotDisplayed。v1 兼容与 v2 非法组合／格式拒绝通过。 |
+| D 参数与生命周期 | notes／body 的 active 与当前 planItem、append／clear、唯一 owner、收起／恢复、真实窗口失焦、卸载及实际工作台导航通过。原生确认按钮、两语言／两主题／标准与紧凑代表布局和长文内滚动通过。不是全部宿主排列或全部系统输入路径验收。 |
+| E 工程 | 当前完整正常 PrivacyQA 编译与严格 codesign 验签、正常 development Debug 与 signing.py 严格策略验签通过；文档后重跑严格 lint、workflow、static 质量门禁及脚本回归。指定 Cursor verifier 未执行，整批交付仍为 partial；启动偏离事件另列，不由成功构建追认。 |
+
+按受影响文件复验后的非重复自动集合为 **138 方法／190 次执行，0 失败、0 跳过**；不是一个结果包或全库测试。`build/CM1/validation-summary.json` 记录每批选择器、真实方法／动态次数、结果路径及源码摘要。完整应用／测试目标不裁剪源码；原生套件逐批串行，参数布局另外显式 serialized。
+
+| 有效批次 | 方法／执行 | 主要证据 |
+|---|---:|---|
+| E-content-contracts | 96／136 | C2A、NativeFailure、新组合／载荷、Draft／Plan／Handoff、P-M3 边界 |
+| E-native-core | 6／6 | 最后 C2B 原生正文、撤销、回声、组合、storage 反例与焦点 |
+| E-native-parameters | 4／5 | 真实参数、操作、owner、body 计划与两布局；含实际窗口派发 ⌘Z／⌘⇧Z |
+| E-native-lifecycle | 4／4 | 保护组词锁、操作撤权、实际窗口失焦与工作台导航零业务写入 |
+| E-old-input-current | 12／15 | 原 Daybook／Syntax 输入、候选、旧手记／备注及 Esc 回归 |
+| E-old-operation-current、E-old-plan | 8／8 | 旧短字段、计划编辑、遮罩与版本生命周期 |
+| E-navigation-final、E-content-navigation-final | 6／13 | 最后并行列表源码上的 N-M1／N-M2 所有权和只读生命周期 |
+| E-protected-visible | 1／1 | 真实保护参数面板失败保稿、锁恢复待确认、实际确认按钮及可见截图 |
+| E-performance-current | 1／2 | 普通／保护各三种大小、六轮分项测量 |
+
+最终正常构建为 `E-development-final-1791612792396897000`，Debug、development、`staticSignatureVerified=true`、`hardenedRuntime=true`；仅构建验签，不启动或安装该正常包。QA 应用的本地临时签名不是正常签名替代，所有成功 QA 批次均另做 `codesign --verify --deep --strict`。完整源码／新增删除集合、当前 HEAD、索引只读核对及运行输入一致性见 `build/CM1/final-source-audit.json`。最终文档不影响已验证的应用构建输入，但仍重新执行文档／静态检查。
+
+#### 后续失败、并行变化与修正归属
+
+- CD-lifecycle 中导航测试误用不存在的 `/overview`，没有执行真正导航；改为目录中的 `/go/settings` 后，CD-optimized 的9方法／11次通过，原失败保留。
+- 实际桌面 ⌘Z 发现默认 NSTextView 撤销关闭后没有路由到本控件历史；明确接入本控件 UndoManager，并补原生窗口键事件回归。没有改变其他控件或窗口的 UndoManager。
+- D-protected-keyboard 编译遇到并行 DayBoardSections 的多余括号；本任务未编辑该文件。之后该文件变化，重新完整编译。保护面板首次锁后恢复报 pageContextRequired；测试辅助改为原 enterPage 契约重新进入合成页面，而不是放宽锁后查询门禁，D-protected-page／E-protected-visible 随后通过。
+- E-old-input 的 notesEscapePassesThroughTheListMonitorBeforeSaving 发生 SIGSEGV，E-old-escape-isolated 仍复现。此后并行 DayBoardSections／WorkspaceItemsList 从 enumerated tuple 的 ForEach 改为具名行结构，本任务没有改这些文件；E-old-input-current 全12方法／15次通过。崩溃因果没有由本任务栈证据独立证明，不能把并行修复归为 C-M1 修复。
+- E-old-operation 四项失败时日志记录前台为 UserNotificationCenter；桌面工具禁止操作该系统进程，用户明确关闭提示后，E-old-operation-current 全5方法通过。没有关闭焦点断言或读取其他应用内容来凑证据。
+- 所有过程批次保留独立的 `*-source.json`、日志和 xcresult；源码变化不回写旧记录。人工批次运行中仅上述两个并行列表文件变化，C-M1 编辑器与窗口源码未变；最后正常构建和相关旧输入／导航已按新源码重验。
+
+#### 真实输入、人工与截图
+
+工具在运行中的 XCTest 窗口用独立字母键输入 `zhong`，观察组合文字，再以空格得到“中”；普通和受保护模式均实际执行，另有换行、保护转换与显式恢复。没有用 typeText／粘贴注入中文冒充输入法，也未读写系统剪贴板。第一次实际 ⌘Z 无效的问题随后修复；修正后实际键盘撤销普通输入成功。另一次因输入源处于英文状态、工具不能可靠切回而超时，`D-interactive-corrected` 保留 failed，不计通过。输入源未安装、权限未修改；不声称观察或恢复了候选窗私有状态。
+
+用户随后在明确的限时合成窗口操作，并反馈“很正常”，再明确确认“这条锁恢复链也已完成”。这属于**用户人工报告**，与自动事件记录分开：`D-human-1791612026416476000` XCTest 正常完成且进程退出，元数据为 `finished=true markedObserved=true maxAccepted=24 memoryLocks=0`。本轮日志没有捕获锁按钮事件，不补写为自动锁恢复通过；锁恢复自动证据来自 CommandTextComposition／Lifecycle／ProtectedUI 的实际断言，人工报告保留其来源边界。
+
+缓存截图保存在 `build/CM1/screenshots/`：`CM1-en-light-standard.png`、`CM1-zh-dark-compact.png`、`CM1-protected-pending.png`。已查看最后可见的待确认正文、说明和两个按钮；首次 pending 截图正文在滚动区外，不作可见证据，补显式滚动到确认控件后重拍并点击验证。它们是原生缓存图，不是系统合成器截图；桌面工具截图仅保存在会话输出，不替代缓存／几何或真人证据。VoiceOver、最低 macOS、全部输入法与真实多窗口完整矩阵未运行。
+
+#### 启动偏离事件与隔离缺口
+
+`D-interactive` 首次交互开关未通过 TEST_RUNNER 前缀传入，实际1项 skipped。随后桌面工具按 bundle ID 连接时另行启动了 QA 包，PID 76910、启动时间13:21:34，父PID 1；它不是获准的 XCTest 入口。本任务核对完整可执行路径后仅对该 PID 发 SIGTERM，并确认退出；过程保留 `build/CM1/interactive-launch-incident.json`。其独立启动期间的磁盘／系统副作用未完整核实，**不由后续成功 QA 追认隔离合规，也不能声称整批零业务／系统副作用已经完全证明**。没有因此读真实正文、凭据或附件，未删除 QA 数据来掩盖事件。后续只在已核对 XCTest 进程／窗口存在后连接，不让工具代为启动。
+
+#### 性能与保留限制
+
+macOS26.6.2（25G83）、arm64 MacBook Pro、Xcode26.6、Debug、MainActor；400pt 宽原生探针，合成单段正文按重复“中a🙂”构造1KiB／64KiB／1MiB，基线为固定短合成文字。每档6轮，首个样本不是冷进程；下表为后5轮平均毫秒，首轮／最大值／原始样本见 `build/CM1/metrics-final/` 和 `performance-summary.json`。计时包含候选、范围／owner／版本校验、普通提交或编码／加密／密文提交、原生更新、同步文本布局和撤销登记；不含后续屏幕绘制或真实 IME 进程成本。选区检查点测量仍经过完整接受事务。没有独立编辑器峰值内存或产品性能预算。
+
+| 模式／UTF-8大小 | 插入 | 初次组词 | 组词更新 | 确认 | 选区检查点 | 撤销 |
+|---|---:|---:|---:|---:|---:|---:|
+| 普通1KiB | 0.35 | 1.19 | 0.82 | 1.02 | 0.14 | 0.34 |
+| 普通64KiB | 14.00 | 75.53 | 25.53 | 22.72 | 2.19 | 13.76 |
+| 普通1MiB | 34.40 | 3863.44 | 382.32 | 156.64 | 29.14 | 30.33 |
+| 保护1KiB | 0.39 | 1.21 | 0.76 | 0.80 | 0.19 | 0.41 |
+| 保护64KiB | 14.05 | 71.68 | 18.79 | 17.27 | 2.34 | 13.78 |
+| 保护1MiB | 37.90 | 3716.86 | 282.65 | 78.39 | 32.51 | 36.79 |
+
+首次实现1MiB组词更新约3.7秒；保持同一 marked 区间局部更新后降至上述水平。只读线程采样定位到 AppKit 同步段落排版，见 `performance-main-thread.sample.txt`。**1MiB 超长单段首次组词仍约3.7～3.9秒，交互延迟明显**；没有为减耗降低加密强度或取消检查，也不以小样本推定大正文体验通过。
+
+#### 文件、指定复核与后续前置
+
+本次复用原 Draft／Plan／Coordinator、ContentSession／SealedCommandDraft、DaybookAppKitTextView／InputShell／Scroller 和原参数外壳。实现文件集中于 `CommandTextEditing`／`CommandNativeTextCommit`、原 CommandDraft 系列、CommandDraftContentSession／Payload／NativeOwner／SealedCommandDraft、CommandProtectedTextView／CommandNativeTextInput、UnifiedSearchLongTextEditing／Field 及 Controller／ParameterField／OperationPanel／Preview／Navigation／SettingEditing 的窄接点；en／zh-Hans 资源同步。测试、引用／入口守卫和原文档已同步。完整本批文件清单与实际差异见 `build/CM1/cm1-files.json`／`cm1.patch`，并行列表／工作台布局改动不归本批。
+
+指定 Cursor verifier 当前无可调用入口，材料就绪、复核未执行；没有认证或让普通代理冒充。只读探索提供定位；后续旧崩溃定位代理遇限流，未产出复核结论。系统服务／拖放／听写／辅助功能写入、候选窗内部状态、全部内存擦除及未验证平台不在已通过能力中。故 C-M1 **实现和所选自动验证已具备证据，整体仍 partial**：指定复核、启动偏离副作用核验、上述平台／旁路和大单段性能限制独立保留。
+
+后续正文 handler 必须另行核验真实对象／字段保护事实、当前原值、保存冲突、唯一事务与失败保稿；敏感执行需独立受控读取／使用和执行资格，敏感转交需目的宿主保护、引用移交、撤权与失败回退证据。P-M3／N-M1／N-M2 不因可编辑长文自动获得这些能力。回退可关闭新装配，但必须保留唯一草稿、已建立恢复点与兼容解码器；不可用清空内容回退。原认证／密钥生命周期／PrivacyVault.lock 顺序与旧持久化格式未改；没有暂存、提交、推送、续签、安装或发布。
+
+
+#### C-M1-R：事件有界核查、测试启动约束与长段性能续验
+
+2026-10-10。本轮限定于一次只读事件核查、测试侧启动约束、原生性能修复和对应验证；下面在本 §9.86 就地追加最终证据，原 C-M1 失败、人工报告与范围不覆盖。
+
+
+**本轮结论：有界事件核查和测试侧防误启动约束已完成；原生差量安装及纵向伸缩已修正，所选正确性回归已取得证据。1MiB 超长单段的首次冷排版、前/中部编辑与完整参数宿主恢复仍有明显限制，性能目标未关闭。指定 Cursor verifier 未执行，整体保留 partial。** 原138方法／190次和用户人工报告仍只代表前批范围，不并入本轮新证据。
+
+##### R1：历史事件的四类证据
+
+只读核查确认所列原文件、结果包和性能数据仍存在。原 `D-interactive-1791609672798136000-source.json` 记录13:21:13开始、测试进程76867于13:21:17启动、13:21:19.349时已退出；xcresult实际1项 skipped。随后工具按bundle ID操作，已有事件记录确认76910于13:21:34启动，父PID1，完整路径为原 `build/PrivacyQA-CM1/Build/Products/Debug/AreaChain.app/Contents/MacOS/AreaChain`；13:22:24.171核对该路径后发送SIGTERM，原工具退出核对及下一批启动前空进程集合保留。C-M1-R没有重走此路径，亦未用旧PID操作当前进程。
+
+| 分类 | 本轮可支持的结论 | 不能据此推断 |
+|---|---|---|
+| 直接记录 | skipped、两个不同PID、独立启动路径、SIGTERM及原退出核对；原QA命令是Debug/local/ad-hoc/空Team/独立ID，验签exit0，记录主可执行SHA为492818f5… | 主可执行摘要不是整份包或实际进程映射；没有保存事件时整个不可变二进制、签名快照或环境 |
+| 条件源码可达 | 与事件清单哈希一致的 App.init 在标志不存在时进入 Persistence；AppDelegate 可达播种、剪贴板、通知、日历、快捷键初始化 | 不能证明这些分支全部执行、播种成功、读取过剪贴板或写过系统服务 |
+| QA专属元数据 | 只stat精确路径：areachain.store（114688字节）、WAL/SHM的birthtime为13:21:34.489～.494，偏好plist（106字节）birthtime为13:21:34.667；支持事件时段发生文件创建 | 不证明数据库表内容、偏好值或具体业务写入；数据库mtime另在13:49发生变化，不能全部归因于误启动 |
+| 历史未知 | 没有当时环境及前后快照；当前未找到隐私配置、剪贴板历史、日历ledger文件 | 当前缺失不证明历史没有创建/读取/写入，退出和后续测试通过也不证明零副作用 |
+
+可达路径在 [AreaChainApp](../AreaChain/App/AreaChainApp.swift)、[Persistence](../AreaChain/Services/Persistence.swift)、[FirstLaunchSeeder](../AreaChain/Services/FirstLaunchSeeder.swift)、ClipboardHistorySession、NotificationScheduler、CalendarSync、ShortcutStore 中核对。Persistence 可以执行既有清理标记检查及SQLite修整后打开库，播种可创建记录并保存；通知/日历实际结果另受授权、偏好和异步执行影响。只读核查没有调用这些入口、实例化ModelContext或读取数据库/WAL内容、正文、附件、剪贴板、凭据和完整偏好。元数据与分类存于 `build/CM1-R/incident-metadata.json`、`incident-review.json`；完成分类后停止追查，没有清容器、删数据或恢复真实库。
+
+##### R2：原测试/runner 的失败即停止约束
+
+继续修改原 `build/CM1/run.py`，产物改用独立 `build/CM1-R` / `build/PrivacyQA-CM1R` / `com.areachain.privacy-qa.cm1r`。runner只有xcodebuild入口，不含open、桌面连接或代启动调用；`desktopConnectionAllowed`始终false。先通过同源码/整份QA包身份的自动测试和严格验签，交互才使用test-without-building；六项真实钥匙串变量清除，交互开关/nonce/元数据目录只通过TEST_RUNNER传入。
+
+[CommandTextQAWindowLease](../AreaChainTests/Features/CommandTextQAWindowLease.swift) 在创建窗口前核验实际测试Bundle、XCTest运行标志、专属BundleID和本批nonce；原生窗口实际可见、key、窗口号和心跳写入专属元数据文件，不写正文。runner从libproc取得PID、启动秒/微秒及完整路径，匹配本次唯一进程，并复核仍运行的xcodebuild、源码、整包摘要、未过期窗口；旧nonce、错误位置/进程、结束、超时、零命中和skipped均不能得到接续资格。内核身份由runner负责，不增加测试沙盒权限。
+
+实际结果：本地6项runner契约测试通过；R-zero（0项）和R-skipped（1项skipped）均按预期退出1且没有就绪资格。R-ready-lifecycle-proof取得真实XCTest窗口67210、PID22859、启动1791620074.008308及完整CM1R路径，自动8秒探针正常结束、QA进程退出；退出后再次current_readiness被拒绝，证据为 `startup-contract-proof.json`。该探针只证明启动/就绪/退出，未装载1MiB或模拟真人输入，明确标记automatedWindowProbe，不能计入性能/IME通过。
+
+保留的约束修正过程：初版误要求XCTestConfigurationFilePath非空，实际诊断为markerPresent=true、markerEmpty=true、testFrameworkPresent=true、expectedBundle=true；按App原“存在”条件修正并加真实测试Bundle核验，不伪造环境。另一次进程核验因/usr/bin/xcodebuild转入Developer目录而拒绝；改为xcrun --find解析后直接调用真实xcodebuild，保留严格PID/启动/路径比较。曾有旧本地断言期待test，接入test-without-building后更新相应契约断言；其他拒绝断言没有放宽。历史误启动结论不因这些新检查而改变。
+
+##### R3：定位、修改与不变契约
+
+在原400pt探针、重复“中a🙂”、三种大小和每档六轮下重新复现。Debug分段计时覆盖候选/范围、载荷校验、JSON编码、AES-GCM、Coordinator、原生更新、系统同步布局、选区/候选锚点及撤销登记；系统NSATSTypesetter使用公开方法的测试侧转发钩子，仍调用原实现。各phase是嵌套时间，不能相加冒充总时间；数据无正文。
+
+修复前1MiB组词开始约3.7秒，其中系统布局约3.18～3.20秒，nativeMarked含布局约3.42秒；编码约3.3ms、加密约0.3ms。并非只根据普通/保护相近排除其他成本。当前线程采样仍定位到AppKit _scrollRangeToVisible、NSLayoutManager和系统段落排版；完整参数宿主另外出现NSHostingView尺寸更新及CoreText CJKAddSpace热点，采样保存在 `control.sample.txt`、`window.sample.txt`。
+
+本轮修改：CommandNativeTextInput按literal UTF-16共同前后缀计算实际替换区间；边界不能同时对齐时扩大替换剩余区间，避免区域指示符配对的逐字回退扫描。CommandProtectedTextView只在既有恢复点/owner资格下做NSTextStorage局部替换，严格核对最终文本，跳过相同选区。修正原指定frame初始化遗留的200pt纵向maxSize，保留原横向上限及折行；否则挂到窗口的长文末尾会得到零高度候选锚点。原生候选可返回零宽插入点，因此检查正高度、合法范围及实际可见位置，原来的零高度仍拒绝，没有用CGRect.isEmpty误判合法插入点。参数滚动区使用非零初始尺寸，字体/颜色先配置并避免相同值重复设置；这项窄改动没有解决完整宿主的分钟级恢复。
+
+未截断、插换行、降低加密强度或推迟检查点；组合/正文/待确认状态、原基线、旧access拒绝、锁撤权、undo退栈和mutable storage事后反例保持。没有修改Domain保护/执行策略、认证、密钥、锁定顺序或持久化初始化。
+
+##### R4：原条件的前后数据与定位对照
+
+环境为macOS26.6.2（25G83）、arm64、Xcode26.6、Debug/MainActor；原始探针400×200、默认12pt文本，进程已暖，本档首轮未做显式预布局。基准逐档/逐轮保留原调用顺序，基础正文1KiB/64KiB/1MiB，每轮新增少量字符；首轮不等于冷进程，也不是完整参数宿主。时间含同步布局，不含之后的屏幕合成器绘制或真实IME进程；测试后比较和截图另列。
+
+下表为组词开始，单位ms，三数依次为“首轮 / 后5轮均值 / 六轮最大”；当前数据及所有六种操作的首轮、每次样本、最大和phase见 `comparison.json` 与 `current-benchmark/`。
+
+| 模式 / 基础UTF-8字节 | 修复前 | 当前 |
+|---|---:|---:|
+| 普通 / 1024 | 3.04 / 1.20 / 3.04 | 18.33 / 1.64 / 18.33 |
+| 普通 / 65536 | 76.08 / 72.57 / 76.08 | 81.05 / 19.13 / 81.05 |
+| 普通 / 1048576 | 3740.51 / 3734.55 / 3744.81 | 3906.90 / 278.49 / 3906.90 |
+| 保护 / 1024 | 1.37 / 1.22 / 1.37 | 1.65 / 1.35 / 1.65 |
+| 保护 / 65536 | 72.48 / 71.59 / 74.36 | 70.11 / 17.69 / 70.11 |
+| 保护 / 1048576 | 3709.75 / 3693.39 / 3712.84 | 4096.28 / 265.13 / 4096.28 |
+
+同量多段对照仅在合成夹具中将每128单元的一个a换成换行，字节量保持1MiB，1025段；不修改原单段基准或用户文字。固定对照还包括起始/中间/末尾、显式预布局、可见头/尾及一次非连续布局实验。完整数据见 `controls-final/`；准备耗时与candidateRect后测时间分别记录，不挪出总体验来宣称提速。非连续布局没有消除首轮延迟，未启用到产品路径。开头反复编辑仍约5秒，中部约2秒；显式预布局先花费约5秒，不能算成本消失。
+
+完整参数宿主是独立发现：R-window-ready的准备约362875ms，标志/进程成立但已过窗口有效期，runner拒绝接续；R-window-width-check与R-window-sized均在120秒探针限额后被中断并核对退出。原宽度保留、非零初始滚动尺寸及先配置字体的最后窄尝试仍未在限额内完成，本轮到此停止更换方案。该1MiB宿主未获得新真人证据；不能用400pt探针或小正文通过替代它。
+
+##### R5：实际回归、原生证据与工程状态
+
+R-content-regression的36方法通过；最终R-handoff-native的21方法、R-handoff-parameters的4方法/5次、R-handoff-protected的1方法通过。其间覆盖普通/保护组词更新、确认取消、Unicode/emoji/组合字符、非法范围、加密失败、建点前后锁定、旧回声、undo/redo退栈、active/planItem、收起、真实失焦、卸载及待确认按钮。原InputSyntaxInteractionTests全12方法/15次和相关N-M1/N-M2回归通过。套件间有重复，不把数字直接相加；完整批次列表见 `all-validation-results.json`。
+
+R-handoff-lifecycle中一次工作台beginOperation返回nil（准备未就绪），保留原断言和失败；同一源码单独R-navigation-isolated通过，没有证明首次原因或把它改成跳过。固定对照的第一轮24处候选矩形失败与maxSize诊断保留；修正后R-visible-controls整组通过，最后R-final-visible-tail再次在1MiB普通/保护真实窗口核对选区、marked、恢复点及可见候选锚点并取得截图。已实际查看 `final-native-images/` 两张末尾图，确有正文、组合片段与光标；是AppKit缓存图/程序化组词，不是系统候选窗或真人IME证明。
+
+新真人短检查未取得。本轮没有使用桌面连接工具，原C-M1用户报告、工具键入、自动锁恢复与截图继续分开保存，不补造锁事件。指定Cursor verifier无可调用入口；只读子代理均遇限流，没有产出独立复核，不由主代理或普通代理冒充。
+
+当前正常development Debug与严格策略验签已通过（R-development-current）；完整正常QA多批编译与严格codesign通过。原锁单次900秒、独立CM1R目录/标识、六项真实授权清除、串行原生、源码全集前/锁后/运行后检查保持。最终文档后重跑workflow、严格lint、质量门禁及脚本测试，最后源码/签名对应关系、索引与进程核对见 `final-source-audit.json`。没有提交、推送、安装、发布、续签或更改权限。
+
+##### R6：需要另行决定的边界与正文保存前置
+
+事件核查已完成其有界分类，但无法恢复的历史环境/表内容/系统行为仍未知；现有材料不足以要求回滚真实库，也不支持清理QA容器来证明无影响。若要防止任何缺失测试标志的QA包进入持久化，最小方案是在明确QA构建身份下，于App.init接触Persistence之前拒绝非测试启动，并保留正常发行默认行为；需要另批批准产品启动边界改造。应验证缺标志退出、合法空标志测试、错误构建身份、无存储初始化与原正常启动。回退只退代码/QA装配，保留数据和事件证据，不删库或改钥匙串。
+
+性能上建议保留本轮差量/高度修复和显式大单段限制；若必须保证1MiB完整宿主可交互，下一步仅批准一个有界的viewport/TextKit2原型对照，仍用同文本/位置/保护/恢复矩阵，不能预先保证CoreText热点会消失。临时“准备中/暂不可编辑”只能准确反馈初始化成本，不能被称为性能修复。换引擎、改变折行、限长或新的用户可见编辑方式，本轮均未实施。
+
+正文保存handler仍需另批核验真实对象保护事实、字段操作、版本/冲突、唯一保存事务与失败保稿；敏感Run和跨宿主转交各自需要受控读取、执行资格、撤权/回退证据。当前C-M1-R的局部提速或启动探针不授予这些能力。整体仍为partial：性能目标和完整宿主真人检查未闭合、指定复核未执行；历史未知按证据保留，不写成已证明零副作用。

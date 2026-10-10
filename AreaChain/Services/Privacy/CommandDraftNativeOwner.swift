@@ -6,3 +6,30 @@ import Foundation
     func installProtectedContents(_ state: CommandDraftEditingState) throws
     func clearProtectedContents()
 }
+
+/// 协调者范围的唯一原生拥有者；不持有正文，外部宿主事件同步撤权。
+@MainActor final class CommandNativeTextOwners {
+    private var identity: UUID?
+    private var revoke: (() -> Void)?
+
+    func attach(_ id: UUID, revoke: @escaping () -> Void) throws {
+        guard identity == nil else { throw CommandDraftProtectionError.stale }
+        identity = id
+        self.revoke = revoke
+    }
+
+    func contains(_ id: UUID) -> Bool { identity == id }
+
+    func detach(_ id: UUID) {
+        guard identity == id else { return }
+        identity = nil
+        revoke = nil
+    }
+
+    func invalidate() {
+        let action = revoke
+        identity = nil
+        revoke = nil
+        action?()
+    }
+}

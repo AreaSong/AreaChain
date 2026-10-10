@@ -45,6 +45,7 @@ struct CommandNativeFailureTests {
         #expect(f.editor.string.isEmpty && f.editor.access == nil)
         #expect(!f.editor.hasMarkedText() && f.editor.undoManager?.canUndo == false)
         #expect((try f.protected.host.owned() == before) == !after)
+        #expect(f.editor.issue == (after ? .acceptedNotDisplayed : .rejected))
         try f.protected.unlock()
         #expect(f.editor.string.isEmpty)
         try f.expectRecovery(after ? "next" : "synthetic-body")

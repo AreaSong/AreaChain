@@ -116,6 +116,7 @@ struct UnifiedSearchOperationPreview: View {
                 !UnifiedSearchParameterContext.supports($0, command: command)
                     && !controller.supportsObjectField($0, command: command)
                     && !controller.supportsTagField($0, command: command)
+                    && !controller.supportsLongText($0)
             }) {
                 Text("unified.operation.later").font(DaybookType.caption)
             }
@@ -129,6 +130,7 @@ struct UnifiedSearchOperationPreview: View {
                 Button(controller.operationExpanded ? "unified.operation.collapse" : "unified.operation.expand") {
                     guard controller.validates(source) else { return }
                     controller.operationExpanded.toggle()
+                    if !controller.operationExpanded { controller.endLongText() }
                     if !controller.operationExpanded { disclosureFocused = true }
                 }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact)).focused($disclosureFocused)

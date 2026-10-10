@@ -135,6 +135,8 @@ struct MainSplitWorkspaceView: View {
         .onKeyPress(.escape) {
             handleEscapeKey()
         }
+        .background(Color(nsColor: .windowBackgroundColor)) // token-exempt: detail 列全局原生系统灰底
+        .ignoresSafeArea(.all, edges: .top)
     }
 
     private func updateInspectorSpace(_ widths: WorkspaceColumnWidths) {

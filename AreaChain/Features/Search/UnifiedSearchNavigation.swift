@@ -99,6 +99,7 @@ extension UnifiedSearchController {
                 selected: browse?.selected ?? [], expanded: browse?.expanded ?? [])
         }
         guard let ticket = returnSearch else { return }
+        endLongText()
         inputFocused = false
         guard inputReset.state?.dismissForNavigation() != false else {
             navigationMessage = "unified.navigation.composing"

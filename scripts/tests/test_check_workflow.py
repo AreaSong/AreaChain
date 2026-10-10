@@ -116,7 +116,7 @@ class WorkflowCheckTests(unittest.TestCase):
         contract_docs["docs/component-catalog.md"] += " UnifiedSearchOperationPanel UnifiedSearchOperationPreview UnifiedSearchParameterField UnifiedSearchParameterContext\n"
         contract_docs["docs/component-catalog.md"] += " UnifiedSearchObjectSelectionStamp UnifiedSearchObjectField UnifiedSearchObjectPicker objectCandidate\n"
         contract_docs["docs/component-catalog.md"] += " UnifiedSearchPlanList UnifiedSearchPlanMerge UnifiedSearchPlanDependencies\n"
-        contract_docs["docs/component-catalog.md"] += " CommandProtectedReference CommandDraftContentSession SealedCommandDraft CommandDraftPayload CommandDraftNativeOwner CommandProtectedTextView\n"
+        contract_docs["docs/component-catalog.md"] += " CommandProtectedReference CommandDraftContentSession SealedCommandDraft CommandDraftPayload CommandDraftNativeOwner CommandProtectedTextView CommandTextComposition UnifiedSearchLongTextField CommandTextQAWindowLease\n"
         for name in workflow.REQUIRED_DOCS:
             self.write(name, contract_docs.get(name, "# 文档\n"))
         self.write("docs/performance-baselines.json", json.dumps({
@@ -606,6 +606,9 @@ class WorkflowCheckTests(unittest.TestCase):
         for relative, symbol in (
             ("AreaChain/Services/Privacy/CommandDraftNativeOwner.swift", "CommandDraftNativeOwner"),
             ("AreaChain/Features/Search/CommandProtectedTextView.swift", "CommandProtectedTextView"),
+            ("AreaChain/Domain/CommandTextEditing.swift", "CommandTextComposition"),
+            ("AreaChain/Features/Search/UnifiedSearchLongTextField.swift", "UnifiedSearchLongTextField"),
+            ("AreaChainTests/Features/CommandTextQAWindowLease.swift", "CommandTextQAWindowLease"),
             ("AreaChain/Domain/CommandDraftProtection.swift", "CommandProtectedReference"),
             ("AreaChain/Services/Privacy/CommandDraftContentSession.swift", "CommandDraftContentSession"),
             ("AreaChain/Services/Privacy/SealedCommandDraft.swift", "SealedCommandDraft"),

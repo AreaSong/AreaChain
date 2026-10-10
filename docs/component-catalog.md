@@ -1036,3 +1036,13 @@ N-M1的旧入口隔离补充：AppWindows.WorkspaceOpening显式提供导航、�
 验证入口为 UnifiedSearchContentAccessTests、UnifiedSearchContentBoundaryTests、UnifiedSearchContentNativeTests，以及受影响 N-M1／手记／附件和 ReadSession 回归。普通结果查阅不消费认证命令，不复用编辑会话，不保存业务数据；访问、返回、证据分类及未覆盖项只维护在[权威 N-M2](unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。
 
 窗口失焦与 Esc 由本窗 WorkspaceContentReturnKey 衔接原 ReadSession；WorkspaceContentFile 只监视明确临时文件并撤销展示。UnifiedSearchContentLifecycleTests／UnifiedSearchContentLegacyTests 覆盖运行事实、旧手记草稿、真实失焦和附件消费者。DiaryWindowView 仅增加可选快捷键依赖，隔离回归显式注入，生产缺省及编辑保存语义保持。
+
+
+## C-M1 长文参数与组合状态
+
+[CommandTextComposition / CommandDraftEditingState](../AreaChain/Domain/CommandTextEditing.swift) 表达已确认正文之外的组合片段与选区；普通位置存原 CommandDraft，受保护恢复点复用原 CommandDraftPayload v2／SealedCommandDraft。 [CommandNativeTextOwners](../AreaChain/Services/Privacy/CommandDraftNativeOwner.swift) 只管理同协调者原生身份，不保存正文。原 [CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 和 [CommandNativeTextInput](../AreaChain/Features/Search/CommandNativeTextInput.swift) 共用普通／受保护候选事务与独立撤销，旧手记输入器保持原消费者。
+
+[UnifiedSearchLongTextField](../AreaChain/Features/Search/UnifiedSearchLongTextField.swift) 由原 ParameterField 消费，复用 DaybookInputShell、DaybookAppKitTextView、DaybookScroller 与原参数操作。 [assembleLongText](../AreaChain/Features/Search/UnifiedSearchLongTextEditing.swift) 只显式装配 active／当前 planItem，不开放主输入补全、业务保存、Run 或转交。有限检查入口为 CommandTextCompositionTests／CommandTextPayloadTests／CommandTextLifecycleTests／UnifiedSearchLongTextTests／CommandTextPerformanceTests 和原 C2A、C2B、旧输入；边界及实际证据只维护在[权威 C-M1](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)。
+
+
+C-M1-R 复用以上入口：CommandNativeTextInput 的 literal UTF-16 差量只用于已接受内容的安装；CommandProtectedTextView 允许纵向扩展并跳过相同选区，恢复点/owner 不变。[CommandTextTiming](../AreaChain/Services/Privacy/CommandTextTiming.swift) 仅提供 Debug 无正文分段计时；测试侧用系统 typesetter 的公开转发钩子测布局。 [CommandTextQAWindowLease](../AreaChainTests/Features/CommandTextQAWindowLease.swift) 与原本批 `build/CM1/run.py` 共同核验实际 XCTest、随机本批身份、进程启动及窗口就绪；始终禁止桌面代启动/连接。新验证包含差量 Unicode、原生几何、固定布局对照和窗口租约检查，范围及未解决的超长单段成本只见[原 §9.86 的 C-M1-R](unified-search-commands.md#c-m1-r事件有界核查测试启动约束与长段性能续验)。

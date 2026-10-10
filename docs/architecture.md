@@ -597,3 +597,13 @@ AttachmentStore.readOrdinary 仅接受与显式实例一致的 root 和无保护
 显式统一搜索宿主通过WorkspaceHostContext向实际页面、目标登记、日期和草稿消费者传递同一依赖。WorkspaceNavigation.searchPresentation只覆盖搜索／目的地呈现，nil保留生产旧规则；明确导航跳过原页签离开的记忆释放，普通页签仍沿原页面默认条件和原查询reducer建立访问。返回不复制Query／ReadSession／Plan／Run，失效和锁定也不从票据恢复文字。
 
 WorkspaceSearchRouter只访问自己的真实窗口与挂载标记；它没有保存和系统动作依赖。普通对象先检查当前ReadSession候选，再由WorkspaceObjectNavigation读取当前唯一活对象、父关系和业务日；子项的UUID与routineOccurrence.dayKey一路保留。原检查器空间门禁独立于定位成功，恢复空间不自动重开。隔离初始化与草稿保留边界见[组件目录](component-catalog.md#n-m1-页面日期普通结果导航与返回搜索)，实际证据和限制见[权威N-M1](unified-search-commands.md#984-里程碑-n-m1导航与返回搜索)。
+
+
+### C-M1 命令长文所有权
+
+普通已确认正文唯一属于原 draft.arguments，textPositions 只保存组合缓冲与选区；受保护态只发布原密文引用，完整 v2 恢复点继续由 ContentSession／VaultKeyAccess 管理。CommandNativeTextOwners 在原 Coordinator 范围限制唯一原生 owner，外部宿主事件同步撤权；受控编辑才能把新 lease／draft／plan 版本交还当前控件。原生快照必须验证组合与已确认正文一致，不能作为第二份业务提交来源。
+
+原 ParameterField 的显式 assembleLongText 支持 notes／body 与当前 active／明确 planItem；正文不放入 UnifiedSearchBuffer、parameterText、摘要或返回票据。失焦／导航／卸载保留原稿或密文，恢复组合为待确认状态。载荷、取消／撤销、系统旁路和授权边界见[权威 C-M1](unified-search-commands.md#986-里程碑-c-m1命令长文原生编辑与受控组合输入)；旧认证／锁定顺序、业务保存和持久化格式不变。
+
+
+C-M1-R 的原生安装只替换文字差量，原参数/组合/密文所有权与先保护后显示顺序不变。UTF-16 差量边界不能共同对齐时扩大替换区间，保持准确正文并避免区域指示符配对的反复扫描；纵向 maxSize 修复保证长文末尾能滚动和提供候选锚点。测试侧窗口身份由实际 XCTest Bundle、nonce、外部 runner 的内核 PID/启动身份和本窗心跳组成，不授予桌面启动能力，也不等同产品启动隔离。历史磁盘元数据支持与不可追溯项、冷排版/完整宿主限制及后续方案见[§9.86 续验](unified-search-commands.md#c-m1-r事件有界核查测试启动约束与长段性能续验)。
