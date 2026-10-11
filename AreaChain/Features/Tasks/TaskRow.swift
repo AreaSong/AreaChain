@@ -417,6 +417,10 @@ struct TaskRow: View {
         }
     }
 
+    private var textTruncation: Text.TruncationMode {
+        AppPreferences.shared.contentTruncation.textTruncation
+    }
+
     @ViewBuilder
     private var embeddedNoteSnippets: some View {
         if embedded {
@@ -425,7 +429,7 @@ struct TaskRow: View {
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
                     .lineLimit(1)
-                    .truncationMode(.tail)
+                    .truncationMode(textTruncation)
             }
 
             if let note = state.note {
@@ -450,7 +454,7 @@ struct TaskRow: View {
                 }
                 ModernTaskTitle(text: state.title, isDone: state.isDone)
                     .lineLimit(embedded ? 2 : 1)
-                    .truncationMode(.tail)
+                    .truncationMode(textTruncation)
             }
                 .layoutPriority(1)
                 .contentShape(Rectangle())

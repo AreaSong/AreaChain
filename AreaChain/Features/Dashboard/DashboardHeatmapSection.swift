@@ -33,6 +33,14 @@ struct DashboardHeatmapSection: View {
         cells.filter { !$0.isPaddingCell }.reduce(0) { $0 + $1.completedCount }
     }
 
+    private var totalDaysCount: Int {
+        max(cells.filter { !$0.isPaddingCell }.count, 1)
+    }
+
+    private var activeRate: Double {
+        Double(activeDaysCount) / Double(totalDaysCount)
+    }
+
     private var headerBadgeText: String {
         isEnglish
             ? "\(activeDaysCount)d active · \(totalCompletedCount) done"
@@ -43,56 +51,66 @@ struct DashboardHeatmapSection: View {
         let columns = DashboardHeatmapLayout.columns(from: cells)
         let monthLabels = makeMonthLabels(columns: columns)
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 8) {
-                Text("dashboard.heatmap.title")
-                    .font(DaybookType.caption.weight(.semibold))
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                    .lineLimit(1)
-                Spacer(minLength: 4)
-                legend
-                Text(verbatim: headerBadgeText)
-                    .font(DaybookType.badge.monospacedDigit())
-                    .foregroundStyle(DaybookPalette.text.secondary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(
-                        RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 热力图头部统计胶囊
-                            .fill(DaybookPalette.fill.hover)
-                    )
-            }
-            .frame(height: 20)
-            .padding(.horizontal, 4)
+            headerRow
+            heatmapGridContainer(columns: columns, monthLabels: monthLabels)
+        }
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .accessibilityIdentifier("dashboard.heatmap")
+    }
 
-            HStack(alignment: .center, spacing: 6) {
-                weekdayAxis
-                ScrollView(.horizontal, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        monthAxisRow(columnsCount: columns.count, labels: monthLabels)
-                        HStack(alignment: .top, spacing: DaybookMetrics.Heatmap.gap) {
-                            ForEach(columns.indices, id: \.self) { index in
-                                VStack(spacing: DaybookMetrics.Heatmap.gap) {
-                                    ForEach(columns[index]) { cell in
-                                        heatmapCell(cell)
-                                    }
+    private var headerRow: some View {
+        HStack(spacing: 8) {
+            Text("dashboard.heatmap.title")
+                .font(DaybookType.caption.weight(.semibold))
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+            legend
+            Text(verbatim: headerBadgeText)
+                .font(DaybookType.badge.monospacedDigit())
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .lineLimit(1)
+                .fixedSize(horizontal: true, vertical: false)
+                .padding(.horizontal, 7)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 热力图头部统计胶囊
+                        .fill(DaybookPalette.fill.hover)
+                )
+        }
+        .frame(height: 20)
+        .padding(.horizontal, 4)
+    }
+
+    private func heatmapGridContainer(
+        columns: [[DashboardHeatmapDay]],
+        monthLabels: [Int: String]
+    ) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            weekdayAxis
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 4) {
+                    monthAxisRow(columnsCount: columns.count, labels: monthLabels)
+                    HStack(alignment: .top, spacing: DaybookMetrics.Heatmap.gap) {
+                        ForEach(columns.indices, id: \.self) { index in
+                            VStack(spacing: DaybookMetrics.Heatmap.gap) {
+                                ForEach(columns[index]) { cell in
+                                    heatmapCell(cell)
                                 }
                             }
                         }
                     }
-                    .padding(.vertical, 2)
                 }
+                .padding(.vertical, 2)
             }
-            .padding(.horizontal, 12)
-            .frame(maxWidth: .infinity)
-            .frame(height: 136)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: 热力图纯白微浮内衬底板（与右侧近7日严格等高 136pt）
-                    .fill(DaybookPalette.fill.surface)
-            )
         }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .accessibilityIdentifier("dashboard.heatmap")
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: 118)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: 热力图纯白微浮内衬底板
+                .fill(DaybookPalette.fill.surface)
+        )
     }
 
     private var weekdayAxis: some View {

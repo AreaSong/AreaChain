@@ -221,6 +221,8 @@ struct SubtaskRowView: View {
                     .font(DaybookType.caption)
                     .foregroundStyle(subtask.isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
                     .strikethrough(subtask.isDone, color: DaybookPalette.text.done)
+                    .lineLimit(1)
+                    .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 assignedTagChips
             }
             .frame(maxWidth: .infinity, alignment: .leading)

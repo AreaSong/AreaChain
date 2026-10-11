@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -34,70 +35,52 @@ struct DashboardView: View {
         ) {
             headerStatusBadge
         } content: {
-            ScrollView {
-                VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-                    // 第 1 层（通栏浅灰托盘）：4 张纯白微浮大数字 KPI 卡 + 今日习惯与手记速览胶囊条
-                    DashboardSummarySection(
-                        summary: snapshot.summary,
-                        navigation: navigation,
+            VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+                // 第 1 层（通栏浅灰托盘）：核心指标矩阵 + 近 7 日动态趋势柱
+                DashboardSummarySection(
+                    summary: snapshot.summary,
+                    trendDays: snapshot.trend,
+                    navigation: navigation,
+                    todayKey: today,
+                    todos: todos,
+                    routines: routines,
+                    checks: checks,
+                    diaries: diaries
+                )
+
+                // 第 2 层（通栏浅灰托盘）：GitHub 风格通栏年度热力图
+                DashboardSidebarPanel {
+                    DashboardHeatmapSection(
+                        cells: snapshot.heatmap,
+                        hasCompletions: DashboardHeatmapLayout.hasCompletions(snapshot.heatmap),
+                        locale: locale,
+                        navigation: navigation
+                    )
+                }
+
+                // 第 3 层（纯指标双翼态势驾驶舱）：动态撑满视口剩余高度，彻底用完空间
+                HStack(alignment: .top, spacing: DaybookSpacing.sm) {
+                    DashboardDistributionSection(
                         todayKey: today,
                         todos: todos,
                         routines: routines,
                         checks: checks,
-                        diaries: diaries
+                        tags: tags,
+                        navigation: navigation
                     )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    // 第 2 层（通栏浅灰托盘）：全景年度热力图（带月份与星期坐标轴）+ 近 7 日双层动态趋势柱
-                    DashboardSidebarPanel {
-                        HStack(alignment: .top, spacing: DaybookSpacing.lg) {
-                            DashboardHeatmapSection(
-                                cells: snapshot.heatmap,
-                                hasCompletions: DashboardHeatmapLayout.hasCompletions(snapshot.heatmap),
-                                locale: locale,
-                                navigation: navigation
-                            )
-                            DashboardTrendSection(
-                                days: snapshot.trend,
-                                locale: locale,
-                                navigation: navigation
-                            )
-                        }
-                    }
-
-                    // 第 3 层（底部三舱等高自适应托盘）：左「四象限与今日焦点」 · 中「规划安排与手记/附件沉淀」 · 右「最近活动」
-                    HStack(alignment: .top, spacing: DaybookSpacing.md) {
-                        DashboardDistributionSection(
-                            todayKey: today,
-                            todos: todos,
-                            routines: routines,
-                            checks: checks,
-                            tags: tags,
-                            navigation: navigation,
-                            bonusRows: 0
-                        )
-
-                        DashboardWorkspaceHubSection(
-                            todayKey: today,
-                            todos: todos,
-                            routines: routines,
-                            diaries: diaries,
-                            attachments: attachments,
-                            navigation: navigation,
-                            bonusRows: 0,
-                            openDiary: openDiary
-                        )
-
-                        DashboardActivitySection(
-                            activities: snapshot.activities,
-                            locale: locale,
-                            navigation: navigation,
-                            openDiary: openDiary
-                        )
-                    }
+                    DashboardActivitySection(
+                        activities: snapshot.activities,
+                        diaries: diaries,
+                        attachments: attachments,
+                        navigation: navigation,
+                        openDiary: openDiary
+                    )
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .daybookScroll(featherEdges: false)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
         .workspaceHeader(status: AnyView(headerStatusBadge))

@@ -1,11 +1,12 @@
 import Foundation
 import SwiftUI
 
-// MARK: - 第 1 层（通栏浅灰托盘）：4 张纯白微浮大数字 KPI 卡 + 今日习惯/手记速览条
+// MARK: - 第 1 层（通栏浅灰托盘）：核心大 KPI 卡 + 右侧近 7 日趋势柱（等高 94pt）
 
 struct DashboardSummarySection: View {
     @Environment(\.locale) private var locale
     var summary: DashboardSummary
+    var trendDays: [DashboardDayStat] = []
     var navigation: WorkspaceNavigation
     var todayKey: String = DayClock.shared.todayKey
     var todos: [TodoItem] = []
@@ -19,54 +20,83 @@ struct DashboardSummarySection: View {
 
     var body: some View {
         DashboardSidebarPanel {
-            HStack(spacing: DaybookSpacing.sm) {
-                todayKPICard
-                pendingKPICard
-                streakKPICard
-                recentAndHabitsKPICard
+            HStack(alignment: .top, spacing: DaybookSpacing.md) {
+                // 左侧：上 1 全宽卡 + 下 2 半宽卡（总高 94pt，彻底告别文字挤压）
+                VStack(alignment: .leading, spacing: 6) {
+                    DashboardSidebarSectionHeader(
+                        "dashboard.summary.title",
+                        badgeText: isEnglish ? "Key Metrics" : "核心态势"
+                    )
+                    VStack(spacing: 6) {
+                        todayKPICard
+                        HStack(spacing: 6) {
+                            pendingKPICard
+                            streakKPICard
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity)
+
+                // 右侧：近 7 日动态双层趋势柱（等高 94pt）
+                DashboardTrendSection(
+                    days: trendDays,
+                    locale: locale,
+                    navigation: navigation
+                )
             }
-            habitsAndDiaryQuickStrip
         }
     }
 
-    // MARK: - KPI 1：今日完成（固定 68pt 高度，单行防折行）
+    // MARK: - KPI 1：今日完成（全宽卡片，高度 44pt，宽敞零截断）
 
     private var todayKPICard: some View {
         let openText = isEnglish
             ? "\(summary.todayStat.openCount) left"
             : "余 \(summary.todayStat.openCount)"
-        return DashboardSurfaceTile(isSelected: true, fixedHeight: 68) {
+        let ratePercent = Int(((summary.todayStat.completionRate ?? 0) * 100).rounded())
+
+        return DashboardSurfaceTile(isSelected: true, fixedHeight: 44) {
             DashboardNavigation.openToday(navigation)
         } content: {
             HStack(spacing: 10) {
                 DaybookProgressRing(
                     progress: summary.todayStat.completionRate ?? 0,
-                    lineWidth: 4,
-                    size: 36
+                    lineWidth: 3,
+                    size: 26
                 )
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 4) {
+                        Image(systemName: "sun.max")
+                            .font(DaybookType.micro)
+                            .foregroundStyle(DaybookPalette.text.secondary)
                         Text("dashboard.today.title")
                             .font(DaybookType.caption.weight(.medium))
                             .foregroundStyle(DaybookPalette.text.secondary)
                             .lineLimit(1)
-                        Spacer(minLength: 2)
-                        Text(verbatim: openText)
-                            .font(DaybookType.badge.monospacedDigit())
-                            .foregroundStyle(DaybookPalette.accent.base)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1.5)
-                            .background(
-                                RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 今日剩余待办胶囊
-                                    .fill(DaybookPalette.fill.surface)
-                            )
-                            .accessibilityIdentifier("dashboard.open")
                     }
                     Text(todayValue)
-                        .font(DaybookType.display.monospacedDigit())
+                        .font(DaybookType.entity.monospacedDigit())
                         .foregroundStyle(DaybookPalette.text.primary)
+                        .lineLimit(1)
+                }
+
+                Spacer(minLength: 4)
+
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(verbatim: openText)
+                        .font(DaybookType.badge.monospacedDigit())
+                        .foregroundStyle(DaybookPalette.accent.base)
+                        .lineLimit(1)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 今日剩余待办胶囊
+                                .fill(DaybookPalette.fill.surface)
+                        )
+                        .accessibilityIdentifier("dashboard.open")
+                    Text(verbatim: isEnglish ? "\(ratePercent)% done" : "达成 \(ratePercent)%")
+                        .font(DaybookType.micro.monospacedDigit())
+                        .foregroundStyle(DaybookPalette.text.tertiary)
                         .lineLimit(1)
                 }
             }
@@ -93,23 +123,25 @@ struct DashboardSummarySection: View {
         }
     }
 
-    // MARK: - KPI 2：逾期积压 & 即将到来（固定 68pt 高度）
+    // MARK: - KPI 2：逾期积压（半宽卡片，高度 44pt，宽敞零截断）
 
     private var pendingKPICard: some View {
         let upcomingText = isEnglish
             ? "Next \(summary.upcomingCount)"
             : "即将 \(summary.upcomingCount)"
-        return DashboardSurfaceTile(fixedHeight: 68) {
+        let hasOverdue = summary.overdueCount > 0
+
+        return DashboardSurfaceTile(fixedHeight: 44) {
             DashboardNavigation.openPending(navigation, lane: .overdue)
         } content: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 3) {
                     Image(systemName: "tray.full")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
+                        .font(DaybookType.micro)
+                        .foregroundStyle(hasOverdue ? DaybookPalette.status.danger : DaybookPalette.text.secondary)
                     Text("dashboard.pending.overdue")
                         .font(DaybookType.caption.weight(.medium))
-                        .foregroundStyle(DaybookPalette.text.secondary)
+                        .foregroundStyle(hasOverdue ? DaybookPalette.status.danger : DaybookPalette.text.secondary)
                         .lineLimit(1)
                     Spacer(minLength: 2)
                     Button {
@@ -119,9 +151,8 @@ struct DashboardSummarySection: View {
                             .font(DaybookType.badge.monospacedDigit())
                             .foregroundStyle(DaybookPalette.text.secondary)
                             .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 1.5)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 1)
                             .background(
                                 RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 即将到来胶囊徽章
                                     .fill(DaybookPalette.fill.hover)
@@ -130,10 +161,19 @@ struct DashboardSummarySection: View {
                     .buttonStyle(.plain) // control: 即将到来子胶囊按钮
                     .accessibilityIdentifier("dashboard.upcoming")
                 }
-                Text("\(summary.overdueCount)")
-                    .font(DaybookType.display.monospacedDigit())
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
+
+                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                    Text("\(summary.overdueCount)")
+                        .font(DaybookType.entity.monospacedDigit())
+                        .foregroundStyle(hasOverdue ? DaybookPalette.status.danger : DaybookPalette.text.primary)
+                        .lineLimit(1)
+                    if hasOverdue {
+                        Text(verbatim: isEnglish ? "Overdue" : "需处理")
+                            .font(DaybookType.micro)
+                            .foregroundStyle(DaybookPalette.status.danger)
+                            .lineLimit(1)
+                    }
+                }
             }
         }
         .accessibilityIdentifier("dashboard.overdue")
@@ -156,19 +196,21 @@ struct DashboardSummarySection: View {
         }
     }
 
-    // MARK: - KPI 3：当前连击 & 历史最高（固定 68pt 高度）
+    // MARK: - KPI 3：自律连击（半宽卡片，高度 44pt，宽敞零截断）
 
     private var streakKPICard: some View {
         let bestText = isEnglish
             ? "Best \(summary.strongestBestStreak)d"
             : "最高 \(summary.strongestBestStreak)天"
-        return DashboardSurfaceTile(fixedHeight: 68) {
+        let activeRoutines = routines.filter { $0.deletedAt == nil && $0.isEnabled }
+
+        return DashboardSurfaceTile(fixedHeight: 44) {
             navigation.revealRecurringList()
         } content: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame")
-                        .font(DaybookType.caption)
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 3) {
+                    Image(systemName: "flame.fill")
+                        .font(DaybookType.micro)
                         .foregroundStyle(DaybookPalette.text.secondary)
                     Text("dashboard.streak.current")
                         .font(DaybookType.caption.weight(.medium))
@@ -179,169 +221,31 @@ struct DashboardSummarySection: View {
                         .font(DaybookType.badge.monospacedDigit())
                         .foregroundStyle(DaybookPalette.text.secondary)
                         .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1.5)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 1)
                         .background(
                             RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 历史最高连击胶囊徽章
                                 .fill(DaybookPalette.fill.hover)
                         )
                         .accessibilityIdentifier("dashboard.streak.best")
                 }
-                Text(verbatim: isEnglish ? "\(summary.strongestCurrentStreak)d" : "\(summary.strongestCurrentStreak) 天")
-                    .font(DaybookType.display.monospacedDigit())
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
+
+                HStack(alignment: .lastTextBaseline, spacing: 4) {
+                    Text(verbatim: isEnglish ? "\(summary.strongestCurrentStreak)d" : "\(summary.strongestCurrentStreak) 天")
+                        .font(DaybookType.entity.monospacedDigit())
+                        .foregroundStyle(DaybookPalette.text.primary)
+                        .lineLimit(1)
+                    Text(verbatim: isEnglish ? "\(activeRoutines.count) habits" : "\(activeRoutines.count)个习惯")
+                        .font(DaybookType.micro)
+                        .foregroundStyle(DaybookPalette.text.tertiary)
+                        .lineLimit(1)
+                }
             }
         }
         .accessibilityIdentifier("dashboard.streak.current")
         .dashboardCommandPopover(arrowEdge: .bottom) {
             routinesHUD
         }
-    }
-
-    // MARK: - KPI 4：近 7 日完成 & 习惯/手记计数（固定 68pt 高度）
-
-    private var recentAndHabitsKPICard: some View {
-        DashboardSurfaceTile(fixedHeight: 68) {
-            navigation.revealTab(.calendar)
-        } content: {
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Image(systemName: "chart.bar")
-                        .font(DaybookType.caption)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                    Text("dashboard.trend.title")
-                        .font(DaybookType.caption.weight(.medium))
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 2)
-                    HStack(spacing: 3) {
-                        Button {
-                            navigation.revealRecurringList()
-                        } label: {
-                            Text(verbatim: isEnglish ? "\(summary.activeRoutineCount)H" : "\(summary.activeRoutineCount)习惯")
-                                .font(DaybookType.badge.monospacedDigit())
-                                .foregroundStyle(DaybookPalette.text.secondary)
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(.plain) // control: 习惯计数微标
-                        .accessibilityIdentifier("dashboard.routines.active")
-
-                        Text(verbatim: "·")
-                            .font(DaybookType.badge)
-                            .foregroundStyle(DaybookPalette.text.tertiary)
-
-                        Button {
-                            navigation.revealTab(.diary)
-                        } label: {
-                            Text(verbatim: isEnglish ? "\(summary.todayDiaryCount)N" : "\(summary.todayDiaryCount)手记")
-                                .font(DaybookType.badge.monospacedDigit())
-                                .foregroundStyle(DaybookPalette.text.secondary)
-                                .lineLimit(1)
-                        }
-                        .buttonStyle(.plain) // control: 今日手记计数微标
-                        .accessibilityIdentifier("dashboard.diary.today")
-                    }
-                    .fixedSize(horizontal: true, vertical: false)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1.5)
-                    .background(
-                        RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 习惯与手记胶囊徽章
-                            .fill(DaybookPalette.fill.hover)
-                    )
-                }
-                Text(rangeValue)
-                    .font(DaybookType.display.monospacedDigit())
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
-                    .accessibilityIdentifier("dashboard.range.recent")
-            }
-        }
-        .dashboardCommandPopover(arrowEdge: .bottom) {
-            routinesHUD
-        }
-    }
-
-    // MARK: - 底部习惯与今日手记直显速览条（告别只有冷冰冰的数字）
-
-    @ViewBuilder
-    private var habitsAndDiaryQuickStrip: some View {
-        let activeRoutines = routines.filter { $0.deletedAt == nil && $0.isEnabled }
-        let todayDiaries = diaries.filter { $0.deletedAt == nil && !$0.hasProtectedContent && $0.dayKey == todayKey }
-        if !activeRoutines.isEmpty || !todayDiaries.isEmpty {
-            HStack(spacing: 6) {
-                Text(verbatim: isEnglish ? "Active Today" : "今日习惯与手记")
-                    .font(DaybookType.badge.weight(.semibold))
-                    .foregroundStyle(DaybookPalette.text.tertiary)
-                    .padding(.leading, 4)
-
-                ForEach(activeRoutines.prefix(4)) { routine in
-                    routineQuickPill(routine)
-                }
-
-                if let latestDiary = todayDiaries.first {
-                    diaryQuickPill(latestDiary)
-                }
-
-                Spacer(minLength: 0)
-            }
-        }
-    }
-
-    private func routineQuickPill(_ routine: DailyRoutine) -> some View {
-        let routineID = routine.id
-        let isCheckedToday = checks.contains { check in
-            check.routine?.id == routineID && check.dayKey == todayKey && check.isDone
-        }
-        return Button {
-            navigation.revealRecurringList()
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: isCheckedToday ? "checkmark.circle.fill" : "repeat")
-                    .font(DaybookType.badge)
-                    .foregroundStyle(isCheckedToday ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-                Text(verbatim: routine.title)
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3.5)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 今日习惯状态微浮胶囊
-                    .fill(isCheckedToday ? DaybookPalette.fill.selection : DaybookPalette.fill.surface)
-            )
-        }
-        .buttonStyle(.plain) // control: 习惯胶囊点击跳转
-    }
-
-    private func diaryQuickPill(_ entry: DiaryEntry) -> some View {
-        let firstLine = entry.text
-            .components(separatedBy: .newlines)
-            .first?
-            .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let fallback = isEnglish ? "Today's Note" : "今日手记"
-        return Button {
-            navigation.revealTab(.diary)
-        } label: {
-            HStack(spacing: 5) {
-                Image(systemName: "book.closed")
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookPalette.accent.base)
-                Text(verbatim: firstLine.isEmpty ? fallback : firstLine)
-                    .font(DaybookType.badge)
-                    .foregroundStyle(DaybookPalette.text.primary)
-                    .lineLimit(1)
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3.5)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 今日手记标题微浮胶囊
-                    .fill(DaybookPalette.fill.surface)
-            )
-        }
-        .buttonStyle(.plain) // control: 今日手记胶囊点击跳转
     }
 
     private var routinesHUD: some View {
@@ -362,10 +266,6 @@ struct DashboardSummarySection: View {
             },
             emptyText: isEnglish ? "No active routines" : "暂无启用中的重复事项"
         )
-    }
-
-    private var rangeValue: String {
-        "\(summary.recentRangeStat.completedCount)/\(summary.recentRangeStat.scheduledCount)"
     }
 
     private var todayValue: String {

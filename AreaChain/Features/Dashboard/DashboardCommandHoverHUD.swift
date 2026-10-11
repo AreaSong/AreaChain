@@ -161,11 +161,11 @@ struct DashboardSidebarPanel<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             content
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 14)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
         .frame(
             maxWidth: .infinity,
             maxHeight: fillsHeight ? .infinity : nil,
@@ -308,9 +308,11 @@ struct DashboardSidebarRow: View {
                 if let titleKey {
                     Text(titleKey)
                         .lineLimit(1)
+                        .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 } else if let titleText {
                     Text(verbatim: titleText)
                         .lineLimit(1)
+                        .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 }
 
                 Spacer(minLength: 8)

@@ -177,7 +177,7 @@ struct DiarySummaryRow: View {
                 .font(DaybookType.body)
                 .foregroundStyle(isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
                 .lineLimit(1)
-                .truncationMode(.tail)
+                .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 .multilineTextAlignment(.leading)
                 .layoutPriority(1)
                 .overlay(pointerRegion(isTitle: true).accessibilityHidden(true))

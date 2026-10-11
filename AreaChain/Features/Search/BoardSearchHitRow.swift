@@ -112,5 +112,6 @@ struct BoardSearchHitRow: View {
             .foregroundStyle(DaybookPalette.text.primary)
             .multilineTextAlignment(.leading)
             .lineLimit(lineLimit)
+            .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
     }
 }

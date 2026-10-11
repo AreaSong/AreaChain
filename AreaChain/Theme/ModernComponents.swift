@@ -127,6 +127,7 @@ struct ModernTaskTitle: View {
     var text: String
     var isDone: Bool
     var font: Font = DaybookType.body
+    var truncationMode: Text.TruncationMode? = nil
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -134,6 +135,7 @@ struct ModernTaskTitle: View {
         Text(text)
             .font(font)
             .foregroundStyle(isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
+            .truncationMode(truncationMode ?? AppPreferences.shared.contentTruncation.textTruncation)
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Rectangle()

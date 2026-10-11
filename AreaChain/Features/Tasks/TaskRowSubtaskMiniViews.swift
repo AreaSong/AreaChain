@@ -43,6 +43,7 @@ struct TaskRowSubtaskInlineList: View {
                         font: .system(size: 11)
                     )
                     .lineLimit(1)
+                    .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 }
                 .padding(.vertical, 0.5)
             }

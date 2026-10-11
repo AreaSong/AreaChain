@@ -13,12 +13,11 @@ struct DashboardScrollTests {
         try await SystemPageHost.settle(support.window)
         let targets = try support.targets()
         support.record(targets, label: "ownership-before-events")
-        try #require(DashboardScrollTestSupport.overlays(targets.outer).count == 1)
         try #require(DashboardScrollTestSupport.overlays(targets.trend).isEmpty)
         try #require(DashboardScrollTestSupport.overlays(targets.heat).isEmpty)
-        #expect(targets.outer.hasVerticalScroller == support.isBaseline && !targets.outer.hasHorizontalScroller)
         #expect(!targets.trend.hasHorizontalScroller && !targets.heat.hasHorizontalScroller)
         #expect(ScrollNativeEvidence.views(support.window).filter { $0 is DaybookScrollEdgeObserverNSView }.isEmpty)
+        #expect(targets.all.count == 2)
     }
 
     @Test func updatesResizeReopenAndPointerNavigation() async throws {
@@ -49,18 +48,11 @@ struct DashboardScrollTests {
         support.record(targets, label: "scenario\(scenario)-initial")
         try support.requireOwnership(targets)
         try await support.capturePositions(targets, name: "scenario\(scenario)")
-        #expect(DashboardScrollTestSupport.overlays(targets.outer).count == (support.isBaseline ? 0 : 1))
-        #expect(DashboardScrollTestSupport.overlays(targets.trend).isEmpty)
-        #expect(DashboardScrollTestSupport.overlays(targets.heat).isEmpty)
-        #expect(targets.outer.hasVerticalScroller == support.isBaseline && !targets.outer.hasHorizontalScroller)
+        try #require(DashboardScrollTestSupport.overlays(targets.trend).isEmpty)
+        try #require(DashboardScrollTestSupport.overlays(targets.heat).isEmpty)
         #expect(ScrollNativeEvidence.views(support.window).filter { $0 is DaybookScrollEdgeObserverNSView }.isEmpty)
         #expect(!targets.trend.hasHorizontalScroller && !targets.heat.hasHorizontalScroller)
         let originalTodos = support.todos.map(\.snapshot)
-        let horizontalOrigins = [targets.trend, targets.heat].map { $0.contentView.bounds.origin }
-        try await support.wheel(targets.outer, horizontal: false)
-        #expect([targets.trend, targets.heat].map { $0.contentView.bounds.origin } == horizontalOrigins)
-        let maximum = max(0, try #require(targets.outer.documentView).bounds.height - targets.outer.contentSize.height)
-        #expect((targets.outer.contentView.bounds.minY > 0) == (maximum > 0))
         for target in [targets.trend, targets.heat] {
             let others = targets.all.filter { $0 !== target }
             let origins = others.map { $0.contentView.bounds.origin }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// 总览页第 3 排左区：侧边栏同款内胆面板（四象限分布 + 今日待办 + 标签统计）
+/// 总览页第 3 排左宽栏：任务与规划指标中心（四象限宏观态势 + 排期概况 + 标签分布）
 struct DashboardDistributionSection: View {
     @Environment(\.locale) private var locale
     var todayKey: String
@@ -15,8 +15,12 @@ struct DashboardDistributionSection: View {
         todos.filter { $0.deletedAt == nil }
     }
 
-    private var todayOpenTodos: [TodoItem] {
-        liveTodos.filter { $0.dayKey == todayKey && !$0.isDone }
+    private var liveRoutines: [DailyRoutine] {
+        routines.filter { $0.deletedAt == nil && $0.isEnabled }
+    }
+
+    private var upcomingTodos: [TodoItem] {
+        liveTodos.filter { !$0.isDone && $0.dayKey > todayKey }
     }
 
     private var isEnglish: Bool {
@@ -26,13 +30,13 @@ struct DashboardDistributionSection: View {
     var body: some View {
         DashboardSidebarPanel(fillsHeight: true) {
             quadrantsMatrixSection
-            todayFocusSection
+            planningOverviewStrip
             Spacer(minLength: 0)
             tagsSection
         }
     }
 
-    // MARK: - 上半部：2×2 纯白微浮四象限数字矩阵（固定 62pt 高度，既有看板张力又保持克制蓝灰调）
+    // MARK: - 核心：2×2 纯白微浮四象限指标矩阵（固定 62pt 高度，宏观态势一眼看全）
 
     private var quadrantsMatrixSection: some View {
         let open = liveTodos.filter { !$0.isDone }
@@ -41,12 +45,12 @@ struct DashboardDistributionSection: View {
         let q3 = open.filter { !$0.isImportant && $0.isUrgent }
         let q4 = open.filter { !$0.isImportant && !$0.isUrgent }
 
-        return VStack(alignment: .leading, spacing: 8) {
+        return VStack(alignment: .leading, spacing: 6) {
             DashboardSidebarSectionHeader(
                 verbatim: isEnglish ? "Quadrant Matrix" : "四象限矩阵",
                 badgeText: isEnglish ? "\(open.count) open" : "待办 \(open.count)"
             )
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 quadrantTile(
                     title: isEnglish ? "Urgent & Important" : "重要且紧急",
                     icon: "exclamationmark.circle",
@@ -60,7 +64,7 @@ struct DashboardDistributionSection: View {
                     isHighlighted: false
                 )
             }
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 quadrantTile(
                     title: isEnglish ? "Urgent, Not Important" : "紧急不重要",
                     icon: "bolt",
@@ -83,7 +87,7 @@ struct DashboardDistributionSection: View {
         items: [TodoItem],
         isHighlighted: Bool
     ) -> some View {
-        DashboardSurfaceTile(isSelected: isHighlighted, fixedHeight: 62) {
+        DashboardSurfaceTile(isSelected: isHighlighted, fixedHeight: 44) {
             navigation.revealTab(.quadrant)
         } content: {
             VStack(alignment: .leading, spacing: 4) {
@@ -121,48 +125,64 @@ struct DashboardDistributionSection: View {
         }
     }
 
-    // MARK: - 下半部：今日待办速览（展示前 7 项，与右侧动态列表高度齐平）
+    // MARK: - 排期规划态势指标条（未来待办 · 启用习惯 · 日历直达）
 
-    private var todayFocusSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            DashboardSidebarSectionHeader(
-                verbatim: isEnglish ? "Today's Open Tasks" : "今日待办速览",
-                badgeText: "\(todayOpenTodos.count)"
-            )
-            .padding(.top, 2)
-
-            if todayOpenTodos.isEmpty {
-                DashboardSidebarRow(
-                    titleText: isEnglish ? "All clear for today" : "今日待办已全部完成",
-                    systemImage: "checkmark.circle",
-                    badgeText: "0"
-                ) {
-                    DashboardNavigation.openToday(navigation)
-                }
-            } else {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(todayOpenTodos.prefix(max(6, 6 + bonusRows))) { item in
-                        todayFocusRow(item)
-                    }
-                }
+    private var planningOverviewStrip: some View {
+        HStack(spacing: 8) {
+            metricShortcutPill(
+                icon: "calendar.badge.clock",
+                title: isEnglish ? "Upcoming" : "未来排期",
+                count: upcomingTodos.count
+            ) {
+                DashboardNavigation.openPending(navigation, lane: .upcoming)
             }
+            .dashboardCommandPopover(arrowEdge: .top) {
+                DashboardHUDCard(
+                    icon: "calendar.badge.clock",
+                    title: isEnglish ? "Upcoming Tasks" : "未来排期预告",
+                    subtitle: isEnglish ? "\(upcomingTodos.count) tasks" : "未来待办共 \(upcomingTodos.count) 项",
+                    items: upcomingTodos.prefix(6).map {
+                        .init(symbol: "clock", symbolColor: DaybookPalette.accent.base, title: $0.title, trailing: DayKey.shortStamp($0.dayKey, locale: locale))
+                    },
+                    emptyText: isEnglish ? "No upcoming tasks" : "未来日期暂无待办事项"
+                )
+            }
+
+            metricShortcutPill(
+                icon: "repeat",
+                title: isEnglish ? "Habits" : "常驻习惯",
+                count: liveRoutines.count
+            ) {
+                navigation.revealRecurringList()
+            }
+
+            Spacer(minLength: 0)
         }
+        .padding(.top, 4)
     }
 
-    private func todayFocusRow(_ item: TodoItem) -> some View {
-        let timeBadge: String? = item.remindMinutes.map {
-            String(format: "%02d:%02d", $0 / 60, $0 % 60)
+    private func metricShortcutPill(icon: String, title: String, count: Int, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Image(systemName: icon)
+                    .font(DaybookType.micro)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                Text(verbatim: title)
+                    .font(DaybookType.badge)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .lineLimit(1)
+                Text(verbatim: "\(count)")
+                    .font(DaybookType.badge.monospacedDigit())
+                    .foregroundStyle(DaybookPalette.accent.base)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 规划排期指标胶囊
+                    .fill(DaybookPalette.fill.surface)
+            )
         }
-        return DashboardSidebarRow(
-            titleText: item.title,
-            systemImage: (item.isImportant || item.isUrgent) ? "flag" : "circle",
-            badgeText: timeBadge
-        ) {
-            navigation.revealTab(.today, inspecting: item.id, dayKey: todayKey)
-        }
-        .dashboardCommandPopover(arrowEdge: .trailing) {
-            todoHUD(item)
-        }
+        .buttonStyle(.plain) // control: 规划指标胶囊按钮
     }
 
     // MARK: - 底部：标签速览胶囊条
@@ -243,28 +263,5 @@ struct DashboardDistributionSection: View {
                 emptyText: ""
             )
         }
-    }
-
-    private func todoHUD(_ item: TodoItem) -> some View {
-        let notesText = item.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        var hudItems: [DashboardHUDCard.DashboardHUDItem] = []
-        if !notesText.isEmpty {
-            hudItems.append(.init(symbol: "text.alignleft", symbolColor: DaybookPalette.text.secondary, title: notesText, trailing: nil))
-        }
-        for sub in item.subtasks.filter({ $0.deletedAt == nil }) {
-            hudItems.append(.init(
-                symbol: sub.isDone ? "checkmark.circle.fill" : "circle",
-                symbolColor: sub.isDone ? DaybookPalette.status.success : DaybookPalette.text.tertiary,
-                title: sub.title,
-                trailing: nil
-            ))
-        }
-        return DashboardHUDCard(
-            icon: "checklist",
-            title: item.title,
-            subtitle: DayKey.displayName(item.dayKey, locale: locale),
-            items: hudItems,
-            emptyText: isEnglish ? "No notes or subtasks" : "暂无备注或子任务（点击直达事项详情）"
-        )
     }
 }

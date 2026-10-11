@@ -124,6 +124,7 @@ struct TrashPage: View {
                     .font(DaybookType.body)
                     .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(2)
+                    .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
             }
 
             Spacer(minLength: 16)

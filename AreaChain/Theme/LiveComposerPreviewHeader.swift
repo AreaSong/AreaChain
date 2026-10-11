@@ -332,7 +332,7 @@ struct LiveComposerPreviewHeader: View {
             .font(DaybookType.body.weight(.medium))
             .foregroundStyle(DaybookPalette.text.primary)
             .lineLimit(1)
-            .truncationMode(.middle)
+            .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .help(displayTitle)

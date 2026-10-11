@@ -47,13 +47,13 @@ struct DashboardTrendSection: View {
                 .padding(.horizontal, 10)
             }
             .frame(maxWidth: .infinity)
-            .frame(height: 136)
+            .frame(height: 94)
             .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: 近 7 日趋势纯白微浮内衬底板（与左侧热力图严格等高 136pt）
+                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: 近 7 日趋势纯白微浮内衬底板（与左侧卡片等高 94pt）
                     .fill(DaybookPalette.fill.surface)
             )
         }
-        .frame(maxWidth: 336, alignment: .topLeading)
+        .frame(minWidth: 260, maxWidth: 360, alignment: .topLeading)
         .accessibilityIdentifier("dashboard.trend")
     }
 
@@ -85,7 +85,7 @@ struct DashboardTrendSection: View {
     ) -> some View {
         let hasDone = day.completedCount > 0
         let hasScheduled = day.scheduledCount > 0
-        return VStack(spacing: 5) {
+        return VStack(spacing: 4) {
             Text(verbatim: "\(day.completedCount)/\(day.scheduledCount)")
                 .font(DaybookType.badge.monospacedDigit())
                 .foregroundStyle(isHovered ? DaybookPalette.accent.base : DaybookPalette.text.tertiary)
@@ -104,7 +104,7 @@ struct DashboardTrendSection: View {
                         .frame(height: completedBarHeight(day))
                 }
             }
-            .frame(width: 20, height: DaybookMetrics.Heatmap.trendHeight)
+            .frame(width: 20, height: 44)
             Text(verbatim: compactDayLabel(day.dayKey))
                 .font(DaybookType.badge.monospacedDigit())
                 .foregroundStyle(isHovered ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
@@ -123,13 +123,13 @@ struct DashboardTrendSection: View {
     private func scheduledBarHeight(_ day: DashboardDayStat) -> CGFloat {
         guard day.scheduledCount > 0 else { return 0 }
         let ratio = CGFloat(day.scheduledCount) / CGFloat(maxScheduledCount)
-        return max(14, DaybookMetrics.Heatmap.trendHeight * ratio)
+        return max(8, 44 * ratio)
     }
 
     private func completedBarHeight(_ day: DashboardDayStat) -> CGFloat {
         guard day.completedCount > 0 else { return 0 }
         let ratio = CGFloat(day.completedCount) / CGFloat(maxScheduledCount)
-        return max(8, DaybookMetrics.Heatmap.trendHeight * ratio)
+        return max(5, 44 * ratio)
     }
 
     private func compactDayLabel(_ dayKey: String) -> String {

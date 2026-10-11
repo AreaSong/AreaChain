@@ -44,8 +44,8 @@ enum AppAppearance: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
-/// 四象限卡片放不下一行时的省略位置。气泡预览始终从标题开头开始。
-enum QuadrantTitleTruncation: String, CaseIterable, Identifiable, Sendable {
+/// 列表与卡片过长内容放不下一行时的省略位置。气泡预览始终从内容开头完整显示。
+enum ContentTruncation: String, CaseIterable, Identifiable, Sendable {
     case tail
     case middle
 
@@ -56,6 +56,8 @@ enum QuadrantTitleTruncation: String, CaseIterable, Identifiable, Sendable {
     }
 }
 
+typealias QuadrantTitleTruncation = ContentTruncation
+
 @Observable
 @MainActor
 final class AppPreferences {
@@ -64,6 +66,7 @@ final class AppPreferences {
     nonisolated static let languageKey = "areachain.prefs.language"
     nonisolated static let appearanceKey = "areachain.prefs.appearance"
     nonisolated static let quadrantTitleTruncationKey = "areachain.prefs.quadrantTitleTruncation"
+    nonisolated static let contentTruncationKey = quadrantTitleTruncationKey
     nonisolated static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
@@ -112,6 +115,11 @@ final class AppPreferences {
     var quadrantTitleTruncation: QuadrantTitleTruncation {
         get { observeLocalPreference(\.quadrantTitleTruncation); return localState.values.quadrantTitleTruncation }
         set { setLocalPreference(.quadrantTitleTruncation(newValue)) }
+    }
+
+    var contentTruncation: ContentTruncation {
+        get { quadrantTitleTruncation }
+        set { quadrantTitleTruncation = newValue }
     }
 
     var stampCaptureApp: Bool {

@@ -317,7 +317,7 @@ private struct QuadrantChip: View {
                 }
                 QuadrantSingleLineTitle(
                     text: title,
-                    truncation: (hostContext == nil ? AppPreferences.shared : preferences).quadrantTitleTruncation.textTruncation,
+                    truncation: (hostContext == nil ? AppPreferences.shared : preferences).contentTruncation.textTruncation,
                     overflows: $titleOverflows
                 )
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
