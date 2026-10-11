@@ -135,10 +135,16 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
                 assertionFailure("AppWindows.workspaceViewProvider must be registered before showing workspace")
                 return
             }
-            let next = NSWindow(contentViewController: NSHostingController(rootView: provider()))
+            let hosting = NSHostingController(rootView: provider())
+            let next = WorkspacePanelWindow(
+                contentRect: NSRect(origin: .zero, size: size),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            next.contentViewController = hosting
             next.setContentSize(size)
             next.minSize = minSize ?? size
-            next.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
             next.titlebarSeparatorStyle = .none
@@ -167,5 +173,74 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     private func refreshChrome() {
         window?.title = ""
         window?.titleVisibility = .hidden
+    }
+}
+
+/// 支持通顶全尺寸内容视图（fullSizeContentView）下双击顶部 50pt 栏缩放/填满窗口
+private final class WorkspacePanelWindow: NSWindow {
+    private static let interactiveAnchorIDs: Set<String> = [
+        "syntax.workspace.search.bounds",
+        "syntax.workspace.actions.bounds",
+        "syntax.workspace.help.bounds"
+    ]
+
+    override func sendEvent(_ event: NSEvent) {
+        if event.type == .leftMouseDown, event.clickCount == 2,
+           shouldZoomOnTitlebarDoubleClick(at: event.locationInWindow) {
+            performTitlebarDoubleClickAction()
+            return
+        }
+        super.sendEvent(event)
+    }
+
+    private func shouldZoomOnTitlebarDoubleClick(at point: NSPoint) -> Bool {
+        guard let contentView else { return false }
+        let distanceFromTop = contentView.bounds.height - point.y
+        guard distanceFromTop >= 0, distanceFromTop <= 50 else { return false }
+        // 避开左上角系统红绿灯按钮区域
+        if point.x < 96 && distanceFromTop < 42 { return false }
+        // 避开原生输入框与按钮控件
+        if let hitView = contentView.hitTest(point), Self.isInteractiveAppKitControl(hitView) {
+            return false
+        }
+        // 避开顶栏中的搜索区、右侧功能按钮区与帮助按钮
+        if Self.hitsInteractiveAnchor(in: contentView, windowPoint: point) {
+            return false
+        }
+        return true
+    }
+
+    private static func isInteractiveAppKitControl(_ view: NSView) -> Bool {
+        var current: NSView? = view
+        while let node = current {
+            if node is NSTextField || node is NSTextView || node is NSButton
+                || node is NSPopUpButton || node is NSSegmentedControl {
+                return true
+            }
+            current = node.superview
+        }
+        return false
+    }
+
+    private static func hitsInteractiveAnchor(in root: NSView, windowPoint: NSPoint) -> Bool {
+        guard let id = root.identifier?.rawValue else {
+            return root.subviews.contains { hitsInteractiveAnchor(in: $0, windowPoint: windowPoint) }
+        }
+        if interactiveAnchorIDs.contains(id) {
+            let rectInWindow = root.convert(root.bounds, to: nil)
+            if rectInWindow.contains(windowPoint) {
+                return true
+            }
+        }
+        return root.subviews.contains { hitsInteractiveAnchor(in: $0, windowPoint: windowPoint) }
+    }
+
+    private func performTitlebarDoubleClickAction() {
+        let action = UserDefaults.standard.string(forKey: "AppleActionOnDoubleClick") ?? "Maximize"
+        if action == "Minimize" {
+            performMiniaturize(nil)
+        } else if action != "None" {
+            zoom(nil)
+        }
     }
 }

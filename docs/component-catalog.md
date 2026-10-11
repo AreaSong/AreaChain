@@ -1,5 +1,10 @@
 # 共享组件与复用目录
 
+## AI 计划模板包与多格式导入
+
+- 领域解析与快照编译入口为 [MarkdownPlanParser.swift](../AreaChain/Domain/MarkdownPlanParser.swift) 与 [PlanImportModels.swift](../AreaChain/Domain/PlanImportModels.swift)：Markdown（`.md` / `.markdown` / `.txt`）与免 UUID 轻量 JSON（`.json`）均转为 `PlanImportDraft`，再由 `PlanSnapshotCompiler.compile` 统一调用既有 [NaturalLanguageParser.swift](../AreaChain/Domain/NaturalLanguageParser.swift)、[TagSyntax.swift](../AreaChain/Domain/TagSyntax.swift)、[DiaryMemoTags.swift](../AreaChain/Domain/DiaryMemoTags.swift) 和 [WeekdayMask.swift](../AreaChain/Domain/WeekdayMask.swift) 提取内嵌属性，复用已有同名活标签并为缺失标签自动生成新 `ExportedTag`。
+- 服务与界面入口为 [AIPlanTemplateService.swift](../AreaChain/Services/AIPlanTemplateService.swift) 与 [DataBackupView.swift](../AreaChain/Features/Settings/DataBackupView.swift) 的 `dataBackup.plan.template` / `dataBackup.plan.import`：导出 `.zip` 仅注入 `Catalog.liveTaskTags` 中非私密的公开标签；导入继续复用 [SnapshotImportValidation.swift](../AreaChain/Services/SnapshotImportValidation.swift)、[ImportPreview.swift](../AreaChain/Domain/ImportPreview.swift) 与 [SnapshotImporter.swift](../AreaChain/Services/SnapshotImporter.swift) 的校验、预览确认和事务写入。验证见 [MarkdownPlanParserTests.swift](../AreaChainTests/Domain/MarkdownPlanParserTests.swift)、[AIPlanTemplateServiceTests.swift](../AreaChainTests/Services/AIPlanTemplateServiceTests.swift) 与 [DataBackupRenderingTests.swift](../AreaChainTests/Features/DataBackupRenderingTests.swift)。
+
 ## 安装身份恢复入口
 
 [app_manager.py](../scripts/app_manager.py) 的 `InstallAccess` 分开保存现用应用状态和显式原包证据；`verified_identity` 复用完整性检查，`recovery_identity` 检查回退路径、权限、签名与文件身份。`install.sh`／`app.sh install` 的 `--previous-app` 只补现用应用缺失时的身份来源，替换、并发锁、候选验签、回退和数据保留仍走原入口。参数和历史归属限制以[签名文档](signing.md#原应用缺失时重装)为准；隔离反例见 [test_app_recovery.py](../scripts/tests/test_app_recovery.py)，参数透传见 [test_app_commands.py](../scripts/tests/test_app_commands.py)。

@@ -46,11 +46,13 @@ struct DataBackupRenderingTests {
         )
         #expect(privacy.isDisjoint(with: [
             "dataBackup.export.json", "dataBackup.import.json",
+            "dataBackup.plan.template", "dataBackup.plan.import",
             "dataBackup.export.encrypted", "dataBackup.restore.encrypted", "dataBackup.reset"
         ]))
         let backup = try await page(DataBackupView(), container: container, appearance: appearance, size: size)
         #expect(backup.contains("data.backup.page"))
         #expect(backup.contains("dataBackup.export.json") && backup.contains("dataBackup.import.json"))
+        #expect(backup.contains("dataBackup.plan.template") && backup.contains("dataBackup.plan.import"))
         #expect(backup.contains("dataBackup.export.encrypted") && backup.contains("dataBackup.restore.encrypted"))
         #expect(backup.contains("dataBackup.health.ok") && !backup.contains("dataBackup.reset"))
         #expect(backup.isDisjoint(with: ["privacy.setup", "privacy.tags.manage", "privacy.autolock"]))
@@ -74,7 +76,8 @@ struct DataBackupRenderingTests {
     }
 
     private var forbiddenOnSettings: Set<String> {
-        ["dataBackup.export.json", "dataBackup.import.json", "dataBackup.export.encrypted",
+        ["dataBackup.export.json", "dataBackup.import.json", "dataBackup.plan.template",
+         "dataBackup.plan.import", "dataBackup.export.encrypted",
          "dataBackup.restore.encrypted", "dataBackup.reset", "privacy.setup", "privacy.tags.manage",
          "privacy.autolock", "privacy.lock.toggle"]
     }

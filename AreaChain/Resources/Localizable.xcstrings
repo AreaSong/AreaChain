@@ -25923,13 +25923,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open in window"
+            "value": "Open"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "独立小窗打开"
+            "value": "小窗打开"
           }
         }
       }
@@ -25940,13 +25940,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Copy note"
+            "value": "Copy"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "复制手记正文"
+            "value": "复制手记"
           }
         }
       }
@@ -25957,7 +25957,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pin note"
+            "value": "Pin"
           }
         },
         "zh-Hans": {
@@ -25974,7 +25974,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unpin note"
+            "value": "Unpin"
           }
         },
         "zh-Hans": {
@@ -25991,13 +25991,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add attachment"
+            "value": "Attach"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加附件图片"
+            "value": "添加图片"
           }
         }
       }
@@ -26008,13 +26008,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Open in workspace"
+            "value": "Workspace"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "在工作台中查看"
+            "value": "工作台"
           }
         }
       }
@@ -26025,7 +26025,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Move note to trash"
+            "value": "Delete"
           }
         },
         "zh-Hans": {
@@ -32709,13 +32709,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Paste image"
+            "value": "Paste"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "从剪贴板贴图"
+            "value": "粘贴图片"
           }
         }
       }
@@ -33049,13 +33049,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Attachments"
+            "value": "Attach"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "附件与采集"
+            "value": "添加附件"
           }
         }
       }
@@ -33083,7 +33083,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Edit title"
+            "value": "Edit"
           }
         },
         "zh-Hans": {
@@ -33106,7 +33106,7 @@
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "四象限优先级"
+            "value": "优先级"
           }
         }
       }
@@ -34059,6 +34059,125 @@
           "stringUnit": {
             "state": "translated",
             "value": "导出或导入普通记录和附件元数据。不包含受保护手记、旧密码遮罩手记、私密附件和图片二进制。导入会先校验并显示预览，确认后才写入，不会整库覆盖。"
+          }
+        }
+      }
+    },
+    "dataBackup.plan": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI Plan & Multi-Format Import"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI 计划与多格式导入"
+          }
+        }
+      }
+    },
+    "dataBackup.plan.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download the AI template kit (.zip, including SKILL.md and .md / .json templates with your current public tags), or import plans (.md / .json) with inline syntax (#tags, !p1–!p4, @time, // notes). Existing tags are reused and missing tags are created automatically after you confirm the preview."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载 AI 计划模板包（.zip，内含 SKILL.md、.md / .json 示例及当前公开标签参考），或直接导入带内嵌语法（#标签、!p1~p4、@时间、// 备注）的 .md / .json 计划文件。已有标签自动复用，缺失的新标签在确认预览后默认创建。"
+          }
+        }
+      }
+    },
+    "dataBackup.plan.import": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import Plan (.md / .json)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "导入计划 (.md / .json)"
+          }
+        }
+      }
+    },
+    "dataBackup.plan.template": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Download AI Template Kit (.zip)"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下载 AI 模板包 (.zip)"
+          }
+        }
+      }
+    },
+    "dataBackup.plan.template.exported": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "AI template kit exported"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已导出 AI 模板包"
+          }
+        }
+      }
+    },
+    "planImport.error.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No importable tasks, routines, notes, or tags were found in the plan file."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "未在计划文件中识别到可导入的待办、重复事项、手记或标签。"
+          }
+        }
+      }
+    },
+    "planImport.error.format": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to parse the selected plan file. Please check the Markdown or JSON syntax."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法解析所选计划文件，请检查 Markdown 或 JSON 格式。"
           }
         }
       }
@@ -38166,7 +38285,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Convert to Task"
+            "value": "To Task"
           }
         },
         "zh-Hans": {
@@ -38183,13 +38302,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Task Created"
+            "value": "Converted"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "已生成待办"
+            "value": "已转待办"
           }
         }
       }
@@ -38200,7 +38319,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Select Tags"
+            "value": "Tags"
           }
         },
         "zh-Hans": {
@@ -38217,7 +38336,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Move Date"
+            "value": "Date"
           }
         },
         "zh-Hans": {
@@ -38234,7 +38353,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lock as Private"
+            "value": "Lock"
           }
         },
         "zh-Hans": {
@@ -38251,7 +38370,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Unlock Privacy"
+            "value": "Unlock"
           }
         },
         "zh-Hans": {

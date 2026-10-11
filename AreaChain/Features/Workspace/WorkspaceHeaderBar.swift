@@ -69,6 +69,7 @@ struct WorkspaceHeaderBar: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .onExitCommand { showsHelp = false }
                 }
+                .background(SyntaxViewAnchor("syntax.workspace.help.bounds"))
                 .accessibilityIdentifier("workspace.header.help")
             }
         }

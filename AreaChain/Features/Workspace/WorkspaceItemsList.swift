@@ -117,24 +117,11 @@ struct WorkspaceItemsList: View {
                                     .foregroundStyle(DaybookPalette.text.secondary)
                                     .accessibilityAddTraits(.isHeader)
                             }
-                            VStack(alignment: .leading, spacing: 0) {
-                                ForEach(makeGroupRows(group.entries)) { item in
-                                    row(item.entry, identity: identity)
-                                    if !item.isLast {
-                                        DaybookDivider(opacity: 0.35)
-                                            .padding(.leading, 38)
-                                    }
+                            VStack(alignment: .leading, spacing: 2) {
+                                ForEach(group.entries) { entry in
+                                    row(entry, identity: identity)
                                 }
                             }
-                            .padding(.vertical, 4)
-                            .background(
-                                RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                                    .fill(DaybookPalette.fill.page)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                                    .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
-                            )
                         }
                     }
                 }
@@ -143,6 +130,7 @@ struct WorkspaceItemsList: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
         .daybookScroll()
+        .daybookTopScrollBlur(height: 18)
         .environment(\.boardReorderEntries, reorderEntries(identity))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .focusable()
@@ -465,17 +453,4 @@ extension WorkspaceItemsList {
             _ = DayBoardMutations.trashRoutine(routine)
         }
     }
-
-    private func makeGroupRows(_ entries: [WorkspaceItemEntry]) -> [WorkspaceGroupRow] {
-        let count = entries.count
-        return entries.enumerated().map { index, entry in
-            WorkspaceGroupRow(id: entry.id, entry: entry, isLast: index == count - 1)
-        }
-    }
-}
-
-private struct WorkspaceGroupRow: Identifiable {
-    let id: String
-    let entry: WorkspaceItemEntry
-    let isLast: Bool
 }

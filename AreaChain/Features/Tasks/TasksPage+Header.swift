@@ -68,7 +68,6 @@ extension TasksPage {
             }
             .padding(.horizontal, 1)
             .padding(.top, 1)
-            .padding(.bottom, 4)
         }
     }
 

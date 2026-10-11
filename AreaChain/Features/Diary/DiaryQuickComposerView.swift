@@ -17,9 +17,14 @@ struct DiaryQuickComposerView: View {
     @Bindable private var shortcuts = ShortcutStore.shared
     @State private var hostWindow: NSWindow?
     @State private var autocomplete = SyntaxAutocompleteState(context: .diaryCapture, allowsLivePreview: true)
+    @State private var isManuallyExpanded = false
 
     private var canSubmit: Bool {
         !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var isExpandedForLongText: Bool {
+        isManuallyExpanded || text.contains("\n") || text.count > 42
     }
 
     var body: some View {
@@ -34,20 +39,88 @@ struct DiaryQuickComposerView: View {
 
     @ViewBuilder
     private var workspaceComposer: some View {
-        composerContent
-            .padding(10)
-            .background(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .fill(DaybookPalette.fill.hover.opacity(0.5))) // token-exempt: 悬停底 50% 没有对应令牌
-            .overlay(RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
-                .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.8))
-            .fixedSize(horizontal: false, vertical: true)
+        let expanded = isExpandedForLongText
+        VStack(alignment: .leading, spacing: expanded ? 8 : 0) {
+            HStack(alignment: expanded ? .top : .center, spacing: 8) {
+                if !expanded {
+                    statusIcon
+                        .padding(.leading, 4)
+                }
+                SyntaxTextEditor(
+                    text: $text,
+                    focused: focused,
+                    placeholder: L10n.string(
+                        expanded ? "diary.composer.placeholder" : "diary.quick.placeholder",
+                        locale: locale
+                    ),
+                    onSubmit: submitWorkspace,
+                    commandChord: shortcuts.armedChord(for: .commitDiary)
+                )
+                .frame(minHeight: expanded ? 104 : 28, maxHeight: expanded ? 196 : 28)
+                .zIndex(20)
+
+                if !expanded {
+                    workspaceCompactTrailingActions
+                }
+            }
+
+            if expanded {
+                tagAndActionRow
+            }
+        }
+        .padding(.horizontal, expanded ? 10 : 8)
+        .padding(.vertical, expanded ? 10 : 4)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .fill(expanded ? DaybookPalette.sidebarFill : DaybookPalette.fill.surface)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.medium, style: .continuous)
+                .strokeBorder(
+                    focused.wrappedValue ? DaybookPalette.border.focus : DaybookPalette.border.subtle,
+                    lineWidth: focused.wrappedValue ? 1.2 : 0.8
+                )
+        )
+        .daybookElevation(expanded ? .panel : .flat)
+        .fixedSize(horizontal: false, vertical: true)
+        .animation(DaybookMotion.interactive(reduceMotion), value: expanded)
+        .onChange(of: text) { _, newValue in
+            if newValue.isEmpty {
+                isManuallyExpanded = false
+            }
+        }
     }
 
-    private var composerContent: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            editorInputView.zIndex(20)
-            tagAndActionRow
+    private var workspaceCompactTrailingActions: some View {
+        HStack(spacing: 6) {
+            Button {
+                isManuallyExpanded = true
+                focused.wrappedValue = true
+            } label: {
+                Image(systemName: "arrow.up.left.and.arrow.down.right")
+            }
+            .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+            .help("diary.composer.placeholder")
+
+            if let onOpenWindow {
+                Button {
+                    guard !hasMarkedText else { return }
+                    onOpenWindow()
+                } label: {
+                    Image(systemName: "arrow.up.forward.square")
+                }
+                .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+                .help(canSubmit ? "diary.window.continue" : "diary.window.new")
+                .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
+            }
+
+            submitButton
         }
+    }
+
+    private func submitWorkspace() {
+        isManuallyExpanded = false
+        onSubmit()
     }
 
     private var compactInputRow: some View {
@@ -150,18 +223,6 @@ struct DiaryQuickComposerView: View {
         onSubmit()
     }
 
-    private var editorInputView: some View {
-        DaybookInputShell(kind: .editor, focused: focused.wrappedValue) {
-            SyntaxTextEditor(
-                text: $text, focused: focused,
-                placeholder: L10n.string("diary.composer.placeholder", locale: locale),
-                onSubmit: onSubmit,
-                commandChord: shortcuts.armedChord(for: .commitDiary)
-            )
-            .frame(minHeight: 64, maxHeight: 100)
-        }
-    }
-
     private var tagAndActionRow: some View {
         HStack(alignment: .center, spacing: 6) {
             Image(systemName: "tag")
@@ -171,6 +232,27 @@ struct DiaryQuickComposerView: View {
             tagScrollView
 
             Spacer()
+
+            if isManuallyExpanded && !text.contains("\n") && text.count <= 42 {
+                Button {
+                    isManuallyExpanded = false
+                } label: {
+                    Image(systemName: "arrow.down.right.and.arrow.up.left")
+                }
+                .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+            }
+
+            if let onOpenWindow {
+                Button {
+                    guard !hasMarkedText else { return }
+                    onOpenWindow()
+                } label: {
+                    Image(systemName: "arrow.up.forward.square")
+                }
+                .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+                .help(canSubmit ? "diary.window.continue" : "diary.window.new")
+                .accessibilityLabel(canSubmit ? "diary.window.continue" : "diary.window.new")
+            }
 
             submitButton
         }
@@ -211,7 +293,7 @@ struct DiaryQuickComposerView: View {
     }
 
     private var standardSubmitButton: some View {
-        Button(action: onSubmit) {
+        Button(action: submitWorkspace) {
             HStack(spacing: 4) {
                 Image(systemName: "square.and.pencil")
                 Text("diary.composer.save")

@@ -41,6 +41,7 @@ struct WorkspaceSidebarView: View {
                 .scrollIndicators(.hidden)
                 .environment(\.daybookScrollTopEdge, true)
                 .scrollContentBackground(.hidden)
+                .daybookTopScrollBlur(height: 44, material: .sidebar)
             }
             .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.panel, style: .continuous))
             .overlay {

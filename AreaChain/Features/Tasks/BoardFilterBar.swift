@@ -204,50 +204,49 @@ struct BoardFilterDropdownButton: View {
     // MARK: - 菜单栏小窗胶囊样式
 
     private var standardCapsule: some View {
-        HStack(spacing: 3) {
-            Button {
-                isExpanded.wrappedValue.toggle()
-            } label: {
-                HStack(spacing: 4) {
-                    Image(systemName: icon)
-                        .font(DaybookType.micro.weight(.medium))
-                        .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
-                    Text(title)
-                        .font(DaybookType.caption.weight(active ? .semibold : .regular))
-                        .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.primary)
-                        .lineLimit(1)
-                }
-            }
-            .buttonStyle(DaybookButtonStyle(.quiet, size: .inline))
-
+        Group {
             if active, let reset {
-                Button(action: reset) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 8, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
+                DaybookChip(tint: DaybookPalette.accent.base, isSelected: true) {
+                    HStack(spacing: 4) {
+                        Button {
+                            isExpanded.wrappedValue.toggle()
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: icon)
+                                Text(title)
+                                    .lineLimit(1)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain) // control: 筛选芯片展开点击区
+
+                        Button(action: reset) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 7.5, weight: .bold)) // token-exempt: 芯片内移除角标小于 9pt
+                                .frame(width: 12, height: 12)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain) // control: 芯片内的移除角标
+                        .help("footer.filter.clear")
+                        .accessibilityLabel("footer.filter.clear")
+                    }
                 }
-                .buttonStyle(DaybookButtonStyle(.iconActive, size: .inline))
-                .help("footer.filter.clear")
-                .accessibilityLabel("footer.filter.clear")
             } else {
-                Button {
-                    isExpanded.wrappedValue.toggle()
-                } label: {
-                    Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 7.5, weight: .bold)) // token-exempt: 小于 9pt 的筛选图标
+                DaybookChip(
+                    tint: DaybookPalette.accent.base,
+                    isSelected: active || isExpanded.wrappedValue,
+                    action: { isExpanded.wrappedValue.toggle() }
+                ) {
+                    HStack(spacing: 4) {
+                        Image(systemName: icon)
+                        Text(title)
+                            .lineLimit(1)
+                        Image(systemName: isExpanded.wrappedValue ? "chevron.up" : "chevron.down")
+                            .accessibilityHidden(true)
+                    }
                 }
-                .buttonStyle(DaybookButtonStyle(.icon, size: .inline))
             }
         }
-        .padding(.horizontal, 7)
-        .padding(.vertical, 4)
-        .background(Capsule().fill(active ? DaybookPalette.accent.fill : DaybookPalette.text.primary.opacity(0.05))) // token-exempt: 5% 墨色底没有对应令牌
-        .overlay(
-            Capsule().stroke( // token-exempt: 筛选胶囊描边
-                active ? DaybookPalette.accent.border : DaybookPalette.border.default.opacity(0.5), // token-exempt: 50% 分隔线没有对应令牌
-                lineWidth: 0.8
-            )
-        )
-        .contentShape(Capsule()) // token-exempt: 筛选胶囊点击区
     }
 
     // MARK: - 手账风下拉气泡内容

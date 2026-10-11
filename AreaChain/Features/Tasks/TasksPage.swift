@@ -79,7 +79,7 @@ struct TasksPage: View {
 
     var body: some View {
         let page = makePageModel()
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 4) {
             headerBar(page)
             ScrollViewReader { scrollProxy in
                 // 视口高度只作为内容的下限。固定成视口高度时，多出来的任务会被裁掉，滚动视图也认为没有可滚距离。
@@ -88,8 +88,6 @@ struct TasksPage: View {
                     let centersYesterday = page.isTodayEmpty && showYesterday && !page.yesterdayItems.isEmpty
                     ScrollView {
                         VStack(alignment: .leading, spacing: 6) {
-                            scrollOffsetTracker
-
                             if centersYesterday {
                                 centeredYesterdaySection(page)
                             } else {
@@ -101,6 +99,9 @@ struct TasksPage: View {
                             blankClickArea
                         }
                         .padding(.vertical, 2)
+                        .background(alignment: .top) {
+                            scrollOffsetTracker
+                        }
                         .frame(
                             maxWidth: .infinity,
                             minHeight: minimumHeight,
@@ -118,6 +119,7 @@ struct TasksPage: View {
                         }
                     }
                     .daybookScroll(featherEdges: true)
+                    .daybookTopScrollBlur(height: 18)
                     .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
                         if let newValue {
                             withAnimation(DaybookMotion.interactive) {

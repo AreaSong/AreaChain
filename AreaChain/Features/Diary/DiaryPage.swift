@@ -133,21 +133,45 @@ struct DiaryPage: View {
 
     var body: some View {
         let list = makeListModel()
-        VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
-            // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
-            if showsPageHeader {
-                topHeader(list).zIndex(50)
-                if !embedded { tagFilterBar(list) }
+        Group {
+            if embedded && showsPageHeader {
+                DaybookScrollablePageShell {
+                    if showsComposer {
+                        quickComposer
+                    }
+                } filterBar: {
+                    HStack(spacing: DaybookSpacing.sm) {
+                        tagFilterBar(list)
+                        Spacer(minLength: DaybookSpacing.sm)
+                        searchChrome
+                            .frame(width: 210)
+                    }
+                } content: {
+                    entryListSection(list)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: showsPageHeader ? 12 : 8) {
+                    // 菜单栏由共享底栏负责搜索与筛选，避免页内再出现一套入口。
+                    if showsPageHeader {
+                        topHeader(list).zIndex(50)
+                        if !embedded { tagFilterBar(list) }
+                    }
+
+                    if showsComposer {
+                        quickComposer.zIndex(20)
+                    }
+
+                    entryListSection(list)
+                }
             }
-
-            if showsComposer {
-                quickComposer.zIndex(20)
-            }
-
-            if showsPageHeader && embedded { tagFilterBar(list) }
-
-            entryListSection(list)
         }
+        .workspaceHeader(
+            status: embedded && showsPageHeader ? AnyView(
+                Text("diary.page.count \(list.rows.count)")
+                    .font(DaybookType.caption.monospacedDigit())
+                    .foregroundStyle(DaybookPalette.text.secondary)
+            ) : nil
+        )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(KeyWindowHost { hostWindow = $0 })
         .confirmMoveToTrash($pendingTrash)
@@ -188,14 +212,6 @@ struct DiaryPage: View {
 
     @ViewBuilder
     private func topHeader(_ list: DiaryPageListModel) -> some View {
-        if embedded {
-            VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                searchChrome.frame(maxWidth: 360)
-                Text("diary.page.count \(list.rows.count)")
-                    .font(DaybookType.caption.monospacedDigit())
-                    .foregroundStyle(DaybookPalette.text.secondary)
-            }
-        } else {
         DaybookPageHeader {
             HStack(spacing: 8) {
                 Text("diary.page.title")
@@ -212,7 +228,6 @@ struct DiaryPage: View {
         } trailing: {
             searchChrome
                 .frame(width: 200)
-        }
         }
     }
 

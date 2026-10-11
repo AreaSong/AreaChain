@@ -17,10 +17,12 @@ struct BoardCommandStrip<Actions: View, Destructive: View>: View {
 
             if let hoveredTip {
                 BoardCommandStripTip(tip: hoveredTip, destructiveTitle: destructiveTitle)
+                    .layoutPriority(-1)
             }
 
             Spacer(minLength: 2)
             destructive()
+                .fixedSize(horizontal: true, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: 24)
@@ -49,7 +51,6 @@ struct BoardCommandStripTip: View {
                             : DaybookPalette.text.primary.opacity(0.06) // token-exempt: 6% 墨色没有对应令牌
                     )
             )
-            .fixedSize(horizontal: true, vertical: true)
             .transition(.opacity)
     }
 }

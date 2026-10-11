@@ -57,6 +57,7 @@ struct DataBackupView: View {
     private var backupForm: some View {
         Form {
             jsonSection
+            planSection
             encryptedSection
             healthSection
             if let statusMessage { statusRow(statusMessage) }
@@ -81,6 +82,23 @@ struct DataBackupView: View {
                 .buttonStyle(DaybookButtonStyle(.quiet))
                 .accessibilityIdentifier("dataBackup.import.json")
                 .systemPageMarker("dataBackup.import.json")
+        }
+    }
+
+    private var planSection: some View {
+        Section("dataBackup.plan") {
+            Text("dataBackup.plan.help")
+                .font(DaybookType.caption)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            Button("dataBackup.plan.template", action: exportPlanTemplate)
+                .buttonStyle(DaybookButtonStyle(.quiet))
+                .accessibilityIdentifier("dataBackup.plan.template")
+                .systemPageMarker("dataBackup.plan.template")
+            Button("dataBackup.plan.import", action: importPlan)
+                .buttonStyle(DaybookButtonStyle(.quiet))
+                .accessibilityIdentifier("dataBackup.plan.import")
+                .systemPageMarker("dataBackup.plan.import")
         }
     }
 
@@ -157,9 +175,42 @@ struct DataBackupView: View {
         }
     }
 
+    private func exportPlanTemplate() {
+        let publicNames = AIPlanTemplateService.publicTagNames(from: tags)
+        let data = AIPlanTemplateService.makeTemplateZipData(publicTagNames: publicNames)
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.zip]
+        panel.nameFieldStringValue = "areachain-ai-kit-\(DayKey.today()).zip"
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            writeExport(data, to: url, messageKey: "dataBackup.plan.template.exported")
+        }
+    }
+
+    private func importPlan() {
+        let panel = NSOpenPanel()
+        var types: [UTType] = [.json, .plainText]
+        if let mdType = UTType(filenameExtension: "md") {
+            types.insert(mdType, at: 0)
+        }
+        if let markdownType = UTType(filenameExtension: "markdown") {
+            types.append(markdownType)
+        }
+        panel.allowedContentTypes = types
+        panel.begin { response in
+            guard response == .OK, let url = panel.url else { return }
+            loadImport(from: url)
+        }
+    }
+
     private func loadImport(from url: URL) {
         do {
-            let snapshot = try SyncPort.decode(try Data(contentsOf: url))
+            let rawData = try Data(contentsOf: url)
+            let snapshot = try AIPlanTemplateService.decodeSnapshot(
+                from: rawData,
+                fileExtension: url.pathExtension,
+                context: modelContext
+            )
             try SnapshotImporter.validate(snapshot, context: modelContext)
             pendingPreview = ImportPreviewing.preview(snapshot, existing: currentIDs())
             pendingImport = snapshot
@@ -186,14 +237,14 @@ struct DataBackupView: View {
         panel.nameFieldStringValue = "areachain-\(DayKey.today()).json"
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            writeExport(data, to: url)
+            writeExport(data, to: url, messageKey: "settings.exported")
         }
     }
 
-    private func writeExport(_ data: Data, to url: URL) {
+    private func writeExport(_ data: Data, to url: URL, messageKey: String.LocalizationValue) {
         do {
             try data.write(to: url)
-            statusMessage = L10n.string("settings.exported", locale: locale)
+            statusMessage = L10n.string(messageKey, locale: locale)
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -211,7 +262,13 @@ struct DataBackupView: View {
     }
 
     private func importErrorMessage(_ error: Error) -> String {
-        (error as? SnapshotImportError)?.message(locale: locale) ?? error.localizedDescription
+        if let snapshotError = error as? SnapshotImportError {
+            return snapshotError.message(locale: locale)
+        }
+        if let planError = error as? PlanImportError {
+            return planError.message(locale: locale)
+        }
+        return error.localizedDescription
     }
 
     private func clearImport() {
