@@ -27,6 +27,9 @@ enum DiaryContent {
             return entry.text
         }
         guard vault.isUnlocked else { throw PrivacyError.locked }
+        if entry.isPrivate, entry.privacyVaultID == nil, entry.encryptedText == nil {
+            return entry.text
+        }
         guard let id = entry.privacyVaultID, let encrypted = entry.encryptedText else {
             throw PrivacyError.corruptData
         }
@@ -49,20 +52,52 @@ enum DiaryContent {
         return value
     }
 
-    static func write(_ text: String, to entry: DiaryEntry, protect: Bool, vault: PrivacyVault? = nil) throws {
+    static func write(
+        _ text: String,
+        to entry: DiaryEntry,
+        protect: Bool,
+        allowLockedInsert: Bool = false,
+        vault: PrivacyVault? = nil
+    ) throws {
         let vault = vault ?? .shared
         guard protect || entry.hasProtectedContent else {
             entry.text = text
             return
         }
-        guard vault.isUnlocked, let config = vault.configuration else { throw PrivacyError.locked }
-        let data = try vault.keys.seal(Data(text.utf8), vaultID: config.vaultID, context: "diary:\(entry.id.uuidString)")
-        // 从来不把解密正文回填进可自动保存的 SwiftData 属性。
-        entry.encryptedText = data
-        entry.privacyVaultID = config.vaultID
+        if vault.isUnlocked, let config = vault.configuration {
+            let data = try vault.keys.seal(Data(text.utf8), vaultID: config.vaultID, context: "diary:\(entry.id.uuidString)")
+            // 从来不把解密正文回填进可自动保存的 SwiftData 属性。
+            entry.encryptedText = data
+            entry.privacyVaultID = config.vaultID
+            DiaryPrivacy.assign(entry, isPrivate: true)
+            entry.text = ""
+            vault.touch()
+            return
+        }
+        guard allowLockedInsert, !entry.hasProtectedContent else { throw PrivacyError.locked }
+        entry.encryptedText = nil
+        entry.privacyVaultID = nil
         DiaryPrivacy.assign(entry, isPrivate: true)
-        entry.text = ""
-        vault.touch()
+        entry.text = text
+    }
+
+    static func sealPendingIfNeeded(_ entry: DiaryEntry, vault: PrivacyVault? = nil) {
+        let vault = vault ?? .shared
+        guard vault.isUnlocked,
+              let config = vault.configuration,
+              entry.isPrivate,
+              entry.privacyVaultID == nil,
+              entry.encryptedText == nil,
+              !entry.text.isEmpty,
+              let context = entry.modelContext,
+              let data = try? vault.keys.seal(Data(entry.text.utf8), vaultID: config.vaultID, context: "diary:\(entry.id.uuidString)")
+        else { return }
+        _ = try? ModelChanges.transaction(in: context) {
+            entry.encryptedText = data
+            entry.privacyVaultID = config.vaultID
+            entry.text = ""
+            vault.touch()
+        }
     }
 
     static func requiresProtection(tagIDs: String, tags: [TagItem]) -> Bool {

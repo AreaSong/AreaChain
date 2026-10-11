@@ -31,8 +31,14 @@ enum SnapshotImporter {
         do {
             upsert(routines: snapshot.routines, existing: existing.routines, context: context)
             upsert(todos: snapshot.todos, existing: existing.todos, context: context)
-            upsert(diaries: snapshot.diaries, existing: existing.diaries, context: context)
             upsert(tags: snapshot.tags, existing: existing.tags, context: context)
+            try upsert(
+                diaries: snapshot.diaries,
+                existing: existing.diaries,
+                tags: existing.tags,
+                privateRestore: privateRestore,
+                context: context
+            )
             upsert(attachments: snapshot.attachments, existing: existing.attachments, context: context)
             upsert(
                 checks: snapshot.checks,
@@ -172,7 +178,13 @@ enum SnapshotImporter {
         }
     }
 
-    private static func upsert(diaries: [ExportedDiary], existing: [DiaryEntry], context: ModelContext) {
+    private static func upsert(
+        diaries: [ExportedDiary],
+        existing: [DiaryEntry],
+        tags: [TagItem],
+        privateRestore: Bool,
+        context: ModelContext
+    ) throws {
         let map = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
         for item in diaries {
             if let found = map[item.id] {
@@ -183,17 +195,22 @@ enum SnapshotImporter {
                 found.tagIDs = item.tagIDs
                 found.isPinned = item.isPinned
             } else {
-                context.insert(
-                    DiaryEntry(
-                        id: item.id,
-                        text: item.text,
-                        dayKey: item.dayKey,
-                        createdAt: item.createdAt,
-                        deletedAt: item.deletedAt,
-                        tagIDs: item.tagIDs,
-                        isPinned: item.isPinned
-                    )
+                let entry = DiaryEntry(
+                    id: item.id,
+                    text: item.text,
+                    dayKey: item.dayKey,
+                    createdAt: item.createdAt,
+                    deletedAt: item.deletedAt,
+                    tagIDs: item.tagIDs,
+                    isPinned: item.isPinned
                 )
+                if !privateRestore {
+                    let itemTagIDs = Set(TagIDList.parse(item.tagIDs))
+                    if DiaryPrivacy.requiresProtection(text: item.text, tagIDs: itemTagIDs, tags: tags) {
+                        DiaryPrivacy.assign(entry, isPrivate: true)
+                    }
+                }
+                context.insert(entry)
             }
         }
     }

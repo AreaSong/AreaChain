@@ -69,6 +69,7 @@ struct PlanCompileContext: Equatable, Sendable {
     var existingTodoMaxOrders: [String: Int] = [:]
     var existingRoutineMaxOrder: Int = -1
     var dismissedDiaryPresets: Set<String> = []
+    var privateDiaryTagNames: Set<String> = []
     var defaultDayKey: String
     var now: Date = .now
 
@@ -77,6 +78,7 @@ struct PlanCompileContext: Equatable, Sendable {
         existingTodoMaxOrders: [String: Int] = [:],
         existingRoutineMaxOrder: Int = -1,
         dismissedDiaryPresets: Set<String> = [],
+        privateDiaryTagNames: Set<String> = [],
         defaultDayKey: String = DayKey.today(),
         now: Date = .now
     ) {
@@ -84,6 +86,7 @@ struct PlanCompileContext: Equatable, Sendable {
         self.existingTodoMaxOrders = existingTodoMaxOrders
         self.existingRoutineMaxOrder = existingRoutineMaxOrder
         self.dismissedDiaryPresets = dismissedDiaryPresets
+        self.privateDiaryTagNames = privateDiaryTagNames
         self.defaultDayKey = defaultDayKey
         self.now = now
     }
@@ -280,7 +283,7 @@ private extension NaturalLanguageParser {
     }
 }
 
-/// 跟踪导入过程中的标签映射：复用已有同名活标签，缺失时自动创建新标签。
+/// 跟踪导入过程中的标签映射：复用已有同名活标签，缺失时自动创建新标签（待办侧仍隔离手记预置三分类）。
 private struct TagAccumulator {
     private var liveByKey: [String: ExportedTag] = [:]
     private var deletedByKey: [String: ExportedTag] = [:]

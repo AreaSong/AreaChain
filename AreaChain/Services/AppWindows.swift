@@ -136,15 +136,20 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
                 return
             }
             let hosting = NSHostingController(rootView: provider())
+            // 禁止 NSHostingController 根据 GeometryReader 的 (0,0) 理想尺寸冲掉窗口 minSize
+            hosting.sizingOptions = []
+            let targetMinSize = minSize ?? size
             let next = WorkspacePanelWindow(
                 contentRect: NSRect(origin: .zero, size: size),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
+            next.lockedMinSize = targetMinSize
             next.contentViewController = hosting
             next.setContentSize(size)
-            next.minSize = minSize ?? size
+            next.minSize = targetMinSize
+            next.contentMinSize = targetMinSize
             next.titlebarAppearsTransparent = true
             next.titleVisibility = .hidden
             next.titlebarSeparatorStyle = .none
@@ -171,13 +176,49 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     }
 
     private func refreshChrome() {
+        let targetMinSize = minSize ?? size
+        window?.minSize = targetMinSize
+        window?.contentMinSize = targetMinSize
         window?.title = ""
         window?.titleVisibility = .hidden
     }
 }
 
-/// 支持通顶全尺寸内容视图（fullSizeContentView）下双击顶部 50pt 栏缩放/填满窗口
+/// 支持通顶全尺寸内容视图（fullSizeContentView）下双击顶部 50pt 栏缩放/填满窗口，并强制锁定最小窗口尺寸
 private final class WorkspacePanelWindow: NSWindow {
+    var lockedMinSize: NSSize = DaybookMetrics.Window.workspaceMinSize
+
+    override var minSize: NSSize {
+        get {
+            let superMin = super.minSize
+            return NSSize(
+                width: max(superMin.width, lockedMinSize.width),
+                height: max(superMin.height, lockedMinSize.height)
+            )
+        }
+        set {
+            super.minSize = NSSize(
+                width: max(newValue.width, lockedMinSize.width),
+                height: max(newValue.height, lockedMinSize.height)
+            )
+        }
+    }
+
+    override var contentMinSize: NSSize {
+        get {
+            let superMin = super.contentMinSize
+            return NSSize(
+                width: max(superMin.width, lockedMinSize.width),
+                height: max(superMin.height, lockedMinSize.height)
+            )
+        }
+        set {
+            super.contentMinSize = NSSize(
+                width: max(newValue.width, lockedMinSize.width),
+                height: max(newValue.height, lockedMinSize.height)
+            )
+        }
+    }
     private static let interactiveAnchorIDs: Set<String> = [
         "syntax.workspace.search.bounds",
         "syntax.workspace.actions.bounds",

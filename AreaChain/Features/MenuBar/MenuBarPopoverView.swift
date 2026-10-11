@@ -369,21 +369,8 @@ struct MenuBarPopoverView: View {
         if showingSyntaxHelp { showingSyntaxHelp = false }
         let text = composer.tasks.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
-        let context = modelContext
-        let dayKey = todayKey
-        do {
-            let requiresUnlock = try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context)
-            PrivacyAccess.perform(requiresUnlock: requiresUnlock) {
-                guard composer.tasks.text.trimmingCharacters(in: .whitespacesAndNewlines) == text,
-                      try DiaryContent.requiresProtection(text: text, tagIDs: [], context: context) == requiresUnlock else {
-                    throw PrivacyError.staleOperation
-                }
-                guard DayBoardMutations.addDiary(text: text, dayKey: dayKey, context: context) else { return }
-                setTaskText("")
-                withAnimation(DaybookMotion.animation(reduceMotion)) { tab = .diary }
-            }
-        } catch {
-            MutationFeedback.shared.reportFailure(error)
-        }
+        guard DayBoardMutations.addDiary(text: text, dayKey: todayKey, context: modelContext) else { return }
+        setTaskText("")
+        withAnimation(DaybookMotion.animation(reduceMotion)) { tab = .diary }
     }
 }

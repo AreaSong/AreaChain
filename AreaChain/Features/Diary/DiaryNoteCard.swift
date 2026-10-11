@@ -247,6 +247,7 @@ struct DiaryNoteCard: View {
 
     func copyContent(to pasteboard: NSPasteboard) {
         PrivacyAccess.withDiary(entry, vault: privacyVault) { current in
+            DiaryContent.sealPendingIfNeeded(current, vault: privacyVault)
             let text = try DiaryContent.read(current, vault: privacyVault)
             guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isPasswordType, to: pasteboard) else {
                 throw PrivacyError.storageFailure
@@ -260,6 +261,7 @@ struct DiaryNoteCard: View {
 
     func revealContent() {
         PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
+            DiaryContent.sealPendingIfNeeded(current, vault: privacyVault)
             _ = try DiaryContent.read(current, vault: privacyVault)
             editingSession?.reveal()
             isMasked = false

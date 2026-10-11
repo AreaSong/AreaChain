@@ -102,4 +102,52 @@ struct DataBackupRenderingTests {
         Self.retained.append(container)
         return container
     }
+
+    @Test(arguments: [ColorScheme.light, .dark], ["zh-Hans", "en"])
+    func planImportPreviewSheetRendersRecognizedItems(scheme: ColorScheme, language: String) async throws {
+        let container = try makeContainer()
+        let draft = try MarkdownPlanParser.parseMarkdown(
+            """
+            # 2026-10-11 #工作
+            - [ ] 核心方案评审 !p1 @15:00 #新专题 // 准备架构对比图
+              - [ ] 核对测试指标
+            ## 重复事项
+            - [ ] 晨间规划 @09:00 [repeat: workdays]
+            ## 灵感手记
+            - 导入识别预览窗口灵感 #小巧思 [pinned]
+            """,
+            defaultDayKey: "2026-10-11"
+        )
+        let workTag = ExportedTag(id: UUID(), name: "工作", sortOrder: 0)
+        let snapshot = try PlanSnapshotCompiler.compile(
+            draft,
+            context: PlanCompileContext(existingTags: [workTag], defaultDayKey: "2026-10-11")
+        )
+        let preview = ImportPreviewing.preview(
+            snapshot,
+            existing: ExistingIDs(routines: [], todos: [], diaries: [], checks: [], tags: [workTag.id])
+        )
+        var tagNames: [UUID: String] = [workTag.id: workTag.name]
+        for tag in snapshot.tags { tagNames[tag.id] = tag.name }
+        let session = PlanImportSession(
+            filename: "plan-template.md",
+            snapshot: snapshot,
+            preview: preview,
+            tagNamesByID: tagNames,
+            newTagNames: snapshot.tags.map(\.name),
+            reusedTagNames: ["工作"]
+        )
+        let sheet = PlanImportPreviewSheet(session: session, onCancel: {}, onConfirm: {})
+        let window = SystemPageHost.window(
+            sheet, container: container, scheme: scheme, locale: language,
+            size: NSSize(width: 640, height: 560)
+        )
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+        let ids = SystemPageHost.identifiers(in: window)
+        #expect(ids.contains("planImport.preview.sheet"))
+        #expect(ids.contains("planImport.preview.confirm"))
+        #expect(ids.contains("planImport.preview.cancel"))
+    }
 }
+

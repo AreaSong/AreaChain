@@ -68,19 +68,26 @@ struct SnapshotImportState {
 
     private func validatePrivacy(_ snapshot: ExportSnapshot) throws {
         let privateTagIDs = Set(tags.filter(\.isPrivateDiary).map(\.id))
+        let existingByID = Dictionary(uniqueKeysWithValues: diaries.map { ($0.id, $0) })
         let privateIDs = Set(diaries.filter {
             $0.hasProtectedContent || !privateTagIDs.isDisjoint(with: TagIDList.parse($0.tagIDs))
         }.map(\.id))
         for item in snapshot.diaries {
-            guard !privateIDs.contains(item.id),
-                  privateTagIDs.isDisjoint(with: TagIDList.parse(item.tagIDs)) else {
+            if privateIDs.contains(item.id) {
+                throw PrivacyError.privateImport
+            }
+            if existingByID[item.id] != nil && !privateTagIDs.isDisjoint(with: TagIDList.parse(item.tagIDs)) {
                 throw PrivacyError.privateImport
             }
         }
+        let incomingPrivateIDs = Set(snapshot.diaries.filter {
+            !privateTagIDs.isDisjoint(with: TagIDList.parse($0.tagIDs))
+        }.map(\.id))
+        let allPrivateIDs = privateIDs.union(incomingPrivateIDs)
         let protectedAttachments = Set(attachments.filter { $0.privacyVaultID != nil }.map(\.id))
         for item in snapshot.attachments {
             if protectedAttachments.contains(item.id)
-                || (item.ownerKind == AttachmentOwner.diary.rawValue && privateIDs.contains(item.ownerID)) {
+                || (item.ownerKind == AttachmentOwner.diary.rawValue && allPrivateIDs.contains(item.ownerID)) {
                 throw PrivacyError.privateImport
             }
         }

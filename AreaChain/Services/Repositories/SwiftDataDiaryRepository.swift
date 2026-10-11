@@ -64,6 +64,11 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
 
     @discardableResult
     func addDiary(text: String, dayKey: String, tagIDs: Set<UUID>) throws -> DiaryEntry {
+        try addDiary(text: text, dayKey: dayKey, tagIDs: tagIDs, allowLockedInsert: false)
+    }
+
+    @discardableResult
+    func addDiary(text: String, dayKey: String, tagIDs: Set<UUID>, allowLockedInsert: Bool) throws -> DiaryEntry {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("手记内容不能为空")
@@ -76,6 +81,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             try DiaryContent.write(
                 trimmed, to: entry,
                 protect: DiaryContent.requiresProtection(tagIDs: ids, tags: try protectionTags()),
+                allowLockedInsert: allowLockedInsert,
                 vault: vault
             )
             context.insert(entry)

@@ -92,6 +92,58 @@ struct AIPlanTemplateServiceTests {
         #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 2)
     }
 
+    @Test func privateDiaryInsertAndPlanImportKeepPrivateTagAndLockContentWithoutPromptingPassword() async throws {
+        let container = try makeContainer()
+        let context = container.mainContext
+        let privateIdeaTag = TagItem(name: DiaryMemoTags.idea, sortOrder: 0)
+        privateIdeaTag.isPrivateDiary = true
+        let privatePasswordTag = TagItem(name: DiaryMemoTags.password, sortOrder: 1)
+        privatePasswordTag.isPrivateDiary = true
+        context.insert(privateIdeaTag)
+        context.insert(privatePasswordTag)
+        try context.save()
+
+        let entries = AIPlanTemplateService.templateEntries(publicTagNames: [], todayKey: "2026-10-11")
+        let mdEntry = try #require(entries.first(where: { $0.path.hasSuffix("plan-template.md") }))
+        let snapshot = try AIPlanTemplateService.decodeSnapshot(
+            from: Data(mdEntry.content.utf8),
+            fileExtension: "md",
+            context: context,
+            defaultDayKey: "2026-10-11"
+        )
+        // 验证「小巧思」被设为私密手记标签时：免密直接导入成功、保留 #小巧思 标签，并自动标记为受保护私密手记
+        try SnapshotImporter.validate(snapshot, context: context)
+        try SnapshotImporter.apply(snapshot, context: context)
+        let importedDiaries = try context.fetch(FetchDescriptor<DiaryEntry>())
+        #expect(importedDiaries.count == 1)
+        let imported = try #require(importedDiaries.first)
+        #expect(TagIDList.contains(imported.tagIDs, privateIdeaTag.id))
+        #expect(imported.hasProtectedContent)
+        #expect(imported.isPrivate)
+
+        // 验证手动输入带私密标签的手记：锁死状态下免密直接写入成功，查看时必须先解锁
+        let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        try await vault.create(password: "test-drop-box-pass", systemUnlock: false)
+        vault.lock()
+        let repo = SwiftDataDiaryRepository(context: context, vault: vault)
+        let manual = try repo.addDiary(
+            text: "免密投递的私密手记 #小巧思",
+            dayKey: "2026-10-11",
+            tagIDs: [],
+            allowLockedInsert: true
+        )
+        #expect(manual.hasProtectedContent)
+        #expect(TagIDList.contains(manual.tagIDs, privateIdeaTag.id))
+        #expect(throws: PrivacyError.locked) {
+            try DiaryContent.read(manual, vault: vault)
+        }
+        try await vault.unlockWithPassword("test-drop-box-pass")
+        #expect(try DiaryContent.read(manual, vault: vault) == "免密投递的私密手记 #小巧思")
+        DiaryContent.sealPendingIfNeeded(manual, vault: vault)
+        #expect(manual.encryptedText != nil && manual.text.isEmpty)
+        #expect(try DiaryContent.read(manual, vault: vault) == "免密投递的私密手记 #小巧思")
+    }
+
     private func makeContainer() throws -> ModelContainer {
         let container = try ModelContainer(
             for: Schema(AreaChainSchema.models),
@@ -101,3 +153,4 @@ struct AIPlanTemplateServiceTests {
         return container
     }
 }
+

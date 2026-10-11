@@ -356,8 +356,15 @@ struct WorkspaceRenderingTests {
     }
 
     private func taskComposerFrame(in view: NSView) throws -> CGRect {
-        let placeholder = L10n.string("workspace.composer.placeholder", locale: Locale(identifier: "zh-Hans"))
-        let field = try #require(nativeFields(in: view).first { $0.placeholderString == placeholder })
+        let locale = Locale(identifier: "zh-Hans")
+        let placeholders: Set<String> = [
+            L10n.string("capture.placeholder.today", locale: locale),
+            L10n.string("workspace.composer.placeholder", locale: locale)
+        ]
+        let field = try #require(nativeFields(in: view).first {
+            guard let text = $0.placeholderString else { return false }
+            return placeholders.contains(text)
+        })
         return field.convert(field.bounds, to: view)
     }
 

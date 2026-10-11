@@ -9,7 +9,6 @@ struct WorkspaceTodayView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query(sort: \TodoItem.createdAt) private var todos: [TodoItem]
     @Query private var checks: [RoutineCheck]
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
 
     @WorkspaceNavigationContext private var navigation
     @WorkspaceFilterContext private var filterSession
@@ -32,13 +31,12 @@ struct WorkspaceTodayView: View {
         ) {
             headerTrailing
         } content: {
-            DaybookComposer(
+            CaptureField(
                 text: $navigation.todayDraft,
-                placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
                 focus: $composerFocused,
-                availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-                onSubmit: addTodo,
-                onCommandReturn: {}
+                onTodo: addTodo,
+                onDiary: addDiary,
+                allowsDiaryShortcut: !navigation.isSearchFocused && !navigation.isSearching
             )
 
             TasksPage(
@@ -162,6 +160,13 @@ struct WorkspaceTodayView: View {
             text: navigation.todayDraft, dayKey: todayKey, context: modelContext
         )
         guard saved else { return }
+        navigation.todayDraft = ""
+    }
+
+    private func addDiary() {
+        let text = navigation.todayDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+        guard DayBoardMutations.addDiary(text: text, dayKey: todayKey, context: modelContext) else { return }
         navigation.todayDraft = ""
     }
 }

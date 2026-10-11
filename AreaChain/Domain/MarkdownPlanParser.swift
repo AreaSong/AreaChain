@@ -3,23 +3,25 @@ import Foundation
 /// 解析结构化 Markdown 与免 UUID 轻量 JSON 计划，生成统一的 PlanImportDraft。
 enum MarkdownPlanParser {
     private enum SectionKind: Equatable {
-        case todos(dayKey: String?, tags: [String])
+        case todos(dayKey: String?, tags: [String], groupTitle: String?)
         case routines(tags: [String])
         case diaries(dayKey: String?, tags: [String])
     }
 
-    private static let dateRegex = CompiledRegularExpression.make(#"\b(\d{4}-\d{2}-\d{2})\b"#)
     private static let repeatBracketRegex = CompiledRegularExpression.make(
-        #"\[(?:repeat|周期|重复)\s*[:：]\s*([^\]]+)\]"#
+        #"(?:\[|【)(?:repeat|周期|重复)\s*[:：]\s*([^\]】]+)(?:\]|】)"#
     )
     private static let dayBracketRegex = CompiledRegularExpression.make(
-        #"\[(?:day|date|日期)\s*[:：]\s*(\d{4}-\d{2}-\d{2})\]"#
+        #"(?:\[|【)(?:day|date|日期)\s*[:：]\s*([^\]】]+)(?:\]|】)"#
+    )
+    private static let dueBracketRegex = CompiledRegularExpression.make(
+        #"(?:\[|【)(?:due|截止|ddl)\s*[:：]\s*(\d{1,2}[:：]\d{2})(?:\]|】)"#
     )
     private static let pinnedBracketRegex = CompiledRegularExpression.make(
-        #"\[(?:pinned|pin|置顶)\]"#
+        #"(?:\[|【)(?:pinned|pin|置顶)(?:\]|】)"#
     )
     private static let pausedBracketRegex = CompiledRegularExpression.make(
-        #"\[(?:paused|disabled|停用|暂停)\]"#
+        #"(?:\[|【)(?:paused|disabled|停用|暂停)(?:\]|】)"#
     )
 
     static func parseMarkdown(_ text: String, defaultDayKey: String = DayKey.today()) throws -> PlanImportDraft {
@@ -34,24 +36,7 @@ enum MarkdownPlanParser {
     }
 
     static func parseJSON(_ data: Data, defaultDayKey: String = DayKey.today()) throws -> PlanImportDraft {
-        let payload: LightweightPlanJSON
-        do {
-            payload = try JSONDecoder().decode(LightweightPlanJSON.self, from: data)
-        } catch {
-            throw PlanImportError.invalidFormat
-        }
-        let fallbackDay = payload.resolvedDefaultDay ?? defaultDayKey
-        let todos = (payload.todos ?? []).map { $0.toDraft(fallbackDay: fallbackDay) }
-        let routines = (payload.routines ?? []).map { $0.toDraft() }
-        let diaries = (payload.diaries ?? []).map { $0.toDraft(fallbackDay: fallbackDay) }
-        let draft = PlanImportDraft(
-            todos: todos,
-            routines: routines,
-            diaries: diaries,
-            tags: payload.tags ?? []
-        )
-        guard !draft.isEmpty else { throw PlanImportError.emptyPlan }
-        return draft
+        try MarkdownPlanTableParser.decodeLightweightJSON(data, defaultDayKey: defaultDayKey)
     }
 
     // MARK: - 星期与辅助标记解析
@@ -96,12 +81,45 @@ enum MarkdownPlanParser {
         return 1 << (calendarWeekday - 1)
     }
 
-    fileprivate static func extractFirstDate(in text: String) -> String? {
+    fileprivate static func hasRepeatModifier(in text: String) -> Bool {
         let ns = text as NSString
-        guard let match = dateRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
-              match.numberOfRanges > 1 else { return nil }
-        let candidate = ns.substring(with: match.range(at: 1))
-        return DayKey.date(from: candidate) != nil ? candidate : nil
+        return repeatBracketRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) != nil
+    }
+
+    fileprivate static func shouldPromoteBulletToDiary(_ text: String) -> Bool {
+        let ns = text as NSString
+        if pinnedBracketRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)) != nil {
+            return true
+        }
+        let inlineTags = TagSyntax.names(in: text, includesDiaryTags: true)
+        return inlineTags.contains(where: { DiaryMemoTags.isPresetName($0) })
+    }
+
+    fileprivate static func consumeTodoModifiers(
+        from text: inout String,
+        defaultDayKey: String
+    ) -> (dayKey: String?, dueMinutes: Int?) {
+        var dayKey: String? = nil
+        var dueMinutes: Int? = nil
+        let ns = text as NSString
+        if let match = dayBracketRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
+           match.numberOfRanges > 1 {
+            let candidate = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            if DayKey.date(from: candidate) != nil {
+                dayKey = candidate
+            } else {
+                dayKey = MarkdownPlanTableParser.extractFirstDate(in: candidate, defaultDayKey: defaultDayKey)
+            }
+            text = ns.replacingCharacters(in: match.range, with: "")
+        }
+        let afterDay = text as NSString
+        if let match = dueBracketRegex.firstMatch(in: text, range: NSRange(location: 0, length: afterDay.length)),
+           match.numberOfRanges > 1 {
+            let timeToken = "@" + afterDay.substring(with: match.range(at: 1))
+            dueMinutes = NaturalLanguageParser.timeMinutes(timeToken)
+            text = afterDay.replacingCharacters(in: match.range, with: "")
+        }
+        return (dayKey, dueMinutes)
     }
 
     fileprivate static func consumeRoutineModifiers(from text: inout String) -> (mask: Int?, isEnabled: Bool) {
@@ -122,14 +140,21 @@ enum MarkdownPlanParser {
         return (mask, isEnabled)
     }
 
-    fileprivate static func consumeDiaryModifiers(from text: inout String) -> (dayKey: String?, isPinned: Bool) {
+    fileprivate static func consumeDiaryModifiers(
+        from text: inout String,
+        defaultDayKey: String
+    ) -> (dayKey: String?, isPinned: Bool) {
         var dayKey: String? = nil
         var isPinned = false
         let ns = text as NSString
         if let match = dayBracketRegex.firstMatch(in: text, range: NSRange(location: 0, length: ns.length)),
            match.numberOfRanges > 1 {
-            let candidate = ns.substring(with: match.range(at: 1))
-            if DayKey.date(from: candidate) != nil { dayKey = candidate }
+            let candidate = ns.substring(with: match.range(at: 1)).trimmingCharacters(in: .whitespaces)
+            if DayKey.date(from: candidate) != nil {
+                dayKey = candidate
+            } else {
+                dayKey = MarkdownPlanTableParser.extractFirstDate(in: candidate, defaultDayKey: defaultDayKey)
+            }
             text = ns.replacingCharacters(in: match.range, with: "")
         }
         let afterDay = text as NSString
@@ -141,7 +166,8 @@ enum MarkdownPlanParser {
     }
 
     private static func stripFrontmatter(from text: String) -> String {
-        let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+        let unwrapped = MarkdownPlanTableParser.unwrapOuterCodeFence(text)
+        let normalized = unwrapped.replacingOccurrences(of: "\r\n", with: "\n")
         guard normalized.hasPrefix("---\n") else { return normalized }
         let rest = normalized.dropFirst(4)
         guard let endRange = rest.range(of: "\n---\n") else { return normalized }
@@ -152,11 +178,12 @@ enum MarkdownPlanParser {
 
     private struct MarkdownParseState {
         let defaultDayKey: String
-        var section: SectionKind = .todos(dayKey: nil, tags: [])
+        var section: SectionKind = .todos(dayKey: nil, tags: [], groupTitle: nil)
         var draft = PlanImportDraft()
         var currentTodo: PlanTodoDraft?
         var currentRoutine: PlanRoutineDraft?
         var currentDiary: PlanDiaryDraft?
+        var tableHeaders: [String]?
         var inCodeFence = false
 
         mutating func consume(rawLine: String) {
@@ -171,17 +198,25 @@ enum MarkdownPlanParser {
                 return
             }
             if trimmed.isEmpty || (trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->")) {
+                tableHeaders = nil
                 return
             }
             if trimmed == "---" || trimmed == "***" {
                 flushPending()
+                tableHeaders = nil
                 return
             }
             if let heading = parseHeading(trimmed) {
                 flushPending()
+                tableHeaders = nil
                 section = heading
                 return
             }
+            if let cells = MarkdownPlanTableParser.parseTableCells(trimmed) {
+                consumeTableRow(cells: cells)
+                return
+            }
+            tableHeaders = nil
             consumeContentLine(rawLine: rawLine, trimmed: trimmed)
         }
 
@@ -210,10 +245,67 @@ enum MarkdownPlanParser {
             }
         }
 
+        private mutating func consumeTableRow(cells: [String]) {
+            if MarkdownPlanTableParser.isTableSeparator(cells) { return }
+            guard let headers = tableHeaders else {
+                tableHeaders = cells
+                return
+            }
+            let sectionTags = currentSectionTags
+            if let routine = MarkdownPlanTableParser.buildRoutineFromWeeklyRow(
+                headers: headers, cells: cells, sectionTags: sectionTags
+            ) {
+                flushPending()
+                draft.routines.append(routine)
+                return
+            }
+            guard let parsed = MarkdownPlanTableParser.parseTableActionRow(headers: headers, cells: cells) else {
+                return
+            }
+            switch section {
+            case let .routines(tags):
+                flushPending()
+                draft.routines.append(PlanRoutineDraft(title: parsed.title, notes: parsed.note, tagNames: tags))
+            case let .diaries(dayKey, tags):
+                flushPending()
+                let text = parsed.note.isEmpty ? parsed.title : "\(parsed.title) // \(parsed.note)"
+                draft.diaries.append(PlanDiaryDraft(text: text, dayKey: dayKey ?? defaultDayKey, tagNames: tags))
+            case let .todos(dayKey, tags, groupTitle):
+                if let groupTitle, !MarkdownPlanTableParser.isGenericTaskHeading(groupTitle) {
+                    if currentTodo == nil {
+                        currentTodo = PlanTodoDraft(
+                            title: groupTitle,
+                            dayKey: dayKey ?? defaultDayKey,
+                            tagNames: tags
+                        )
+                    }
+                    currentTodo?.subtasks.append(PlanSubtaskDraft(title: parsed.title))
+                    if !parsed.note.isEmpty {
+                        appendLine("\(parsed.title)：\(parsed.note)", to: &currentTodo!.notes)
+                    }
+                } else {
+                    flushPending()
+                    draft.todos.append(PlanTodoDraft(
+                        title: parsed.title,
+                        dayKey: dayKey ?? defaultDayKey,
+                        notes: parsed.note,
+                        tagNames: tags
+                    ))
+                }
+            }
+        }
+
+        private var currentSectionTags: [String] {
+            switch section {
+            case let .todos(_, tags, _), let .routines(tags), let .diaries(_, tags):
+                return tags
+            }
+        }
+
         private mutating func consumeContentLine(rawLine: String, trimmed: String) {
             let indent = indentationWidth(of: rawLine)
             switch section {
-            case let .todos(dayKey, sectionTags):
+            case let .todos(dayKey, sectionTags, _):
                 consumeTodoLine(trimmed: trimmed, indent: indent, dayKey: dayKey, sectionTags: sectionTags)
             case let .routines(sectionTags):
                 consumeRoutineLine(trimmed: trimmed, indent: indent, sectionTags: sectionTags)
@@ -223,26 +315,59 @@ enum MarkdownPlanParser {
         }
 
         private mutating func consumeTodoLine(trimmed: String, indent: Int, dayKey: String?, sectionTags: [String]) {
-            if indent == 0, let item = parseListItem(trimmed) {
+            let isTopLevel = indent == 0 || (currentTodo == nil && currentRoutine == nil && currentDiary == nil)
+            if isTopLevel, let item = MarkdownPlanTableParser.parseListItem(trimmed) {
                 flushPending()
+                var cleaned = MarkdownPlanTableParser.cleanMarkdownInline(item.content)
+                if MarkdownPlanParser.hasRepeatModifier(in: cleaned) {
+                    let mods = MarkdownPlanParser.consumeRoutineModifiers(from: &cleaned)
+                    currentRoutine = PlanRoutineDraft(
+                        title: cleaned,
+                        isEnabled: mods.isEnabled,
+                        weekdayMask: mods.mask,
+                        tagNames: sectionTags
+                    )
+                    return
+                }
+                let isCheckbox = MarkdownPlanTableParser.parseCheckboxItem(trimmed) != nil
+                if !isCheckbox && MarkdownPlanParser.shouldPromoteBulletToDiary(cleaned) {
+                    let mods = MarkdownPlanParser.consumeDiaryModifiers(from: &cleaned, defaultDayKey: defaultDayKey)
+                    currentDiary = PlanDiaryDraft(
+                        text: cleaned,
+                        dayKey: mods.dayKey ?? dayKey ?? defaultDayKey,
+                        isPinned: mods.isPinned,
+                        tagNames: sectionTags
+                    )
+                    return
+                }
+                let mods = MarkdownPlanParser.consumeTodoModifiers(from: &cleaned, defaultDayKey: defaultDayKey)
                 currentTodo = PlanTodoDraft(
-                    title: item.content,
+                    title: cleaned,
                     isDone: item.isDone,
-                    dayKey: dayKey ?? defaultDayKey,
+                    dayKey: mods.dayKey ?? dayKey ?? defaultDayKey,
+                    dueMinutes: mods.dueMinutes,
                     tagNames: sectionTags
                 )
-            } else if indent > 0, indent <= 4, currentTodo != nil, let sub = parseCheckboxItem(trimmed) {
-                currentTodo?.subtasks.append(PlanSubtaskDraft(title: sub.content, isDone: sub.isDone))
+            } else if indent > 0, indent <= 4, currentTodo != nil,
+                      let sub = MarkdownPlanTableParser.parseListItem(trimmed) {
+                let cleaned = MarkdownPlanTableParser.cleanMarkdownInline(sub.content)
+                currentTodo?.subtasks.append(PlanSubtaskDraft(title: cleaned, isDone: sub.isDone))
             } else if currentTodo != nil {
                 let noteLine = stripQuoteOrDeepBullet(trimmed, allowBulletStrip: indent <= 4)
-                appendLine(noteLine, to: &currentTodo!.notes)
+                appendLine(MarkdownPlanTableParser.cleanMarkdownInline(noteLine), to: &currentTodo!.notes)
+            } else if currentRoutine != nil {
+                let noteLine = stripQuoteOrDeepBullet(trimmed, allowBulletStrip: true)
+                appendLine(MarkdownPlanTableParser.cleanMarkdownInline(noteLine), to: &currentRoutine!.notes)
+            } else if currentDiary != nil {
+                let line = trimmed.hasPrefix(">") ? String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces) : trimmed
+                appendLine(line, to: &currentDiary!.text)
             }
         }
 
         private mutating func consumeRoutineLine(trimmed: String, indent: Int, sectionTags: [String]) {
-            if indent == 0, let item = parseListItem(trimmed) {
+            if (indent == 0 || currentRoutine == nil), let item = MarkdownPlanTableParser.parseListItem(trimmed) {
                 flushPending()
-                var content = item.content
+                var content = MarkdownPlanTableParser.cleanMarkdownInline(item.content)
                 let mods = MarkdownPlanParser.consumeRoutineModifiers(from: &content)
                 currentRoutine = PlanRoutineDraft(
                     title: content,
@@ -252,15 +377,15 @@ enum MarkdownPlanParser {
                 )
             } else if currentRoutine != nil {
                 let noteLine = stripQuoteOrDeepBullet(trimmed, allowBulletStrip: true)
-                appendLine(noteLine, to: &currentRoutine!.notes)
+                appendLine(MarkdownPlanTableParser.cleanMarkdownInline(noteLine), to: &currentRoutine!.notes)
             }
         }
 
         private mutating func consumeDiaryLine(trimmed: String, indent: Int, dayKey: String?, sectionTags: [String]) {
-            if indent == 0, let item = parseListItem(trimmed) {
+            if indent == 0, let item = MarkdownPlanTableParser.parseListItem(trimmed) {
                 flushPending()
-                var content = item.content
-                let mods = MarkdownPlanParser.consumeDiaryModifiers(from: &content)
+                var content = MarkdownPlanTableParser.cleanMarkdownInline(item.content)
+                let mods = MarkdownPlanParser.consumeDiaryModifiers(from: &content, defaultDayKey: defaultDayKey)
                 currentDiary = PlanDiaryDraft(
                     text: content,
                     dayKey: mods.dayKey ?? dayKey ?? defaultDayKey,
@@ -272,7 +397,7 @@ enum MarkdownPlanParser {
                 appendLine(line, to: &currentDiary!.text)
             } else {
                 var content = trimmed.hasPrefix(">") ? String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces) : trimmed
-                let mods = MarkdownPlanParser.consumeDiaryModifiers(from: &content)
+                let mods = MarkdownPlanParser.consumeDiaryModifiers(from: &content, defaultDayKey: defaultDayKey)
                 currentDiary = PlanDiaryDraft(
                     text: content,
                     dayKey: mods.dayKey ?? dayKey ?? defaultDayKey,
@@ -288,25 +413,29 @@ enum MarkdownPlanParser {
             guard !hashes.isEmpty, hashes.count <= 6 else { return nil }
             let rest = trimmed.dropFirst(hashes.count)
             guard rest.first == " " || rest.first == "\t" else { return nil }
-            let headingText = rest.trimmingCharacters(in: .whitespaces)
+            let headingText = MarkdownPlanTableParser.normalizeFullWidthSyntax(
+                rest.trimmingCharacters(in: .whitespaces)
+            )
             let lower = headingText.lowercased()
-            let date = MarkdownPlanParser.extractFirstDate(in: headingText)
+            let date = MarkdownPlanTableParser.extractFirstDate(in: headingText, defaultDayKey: defaultDayKey)
             if lower.contains("重复事项") || lower.contains("习惯") || lower.contains("routine") || lower.contains("habit") {
                 let tags = TagSyntax.names(in: headingText, includesDiaryTags: false)
                 return .routines(tags: tags)
             }
-            if lower.contains("手记") || lower.contains("灵感") || lower.contains("diary") || lower.contains("diaries") || lower.contains("memo") {
+            if lower.contains("手记") || lower.contains("灵感") || lower.contains("备忘")
+                || lower.contains("diary") || lower.contains("diaries") || lower.contains("memo") {
                 let tags = TagSyntax.names(in: headingText, includesDiaryTags: true)
                 return .diaries(dayKey: date, tags: tags)
             }
             let tags = TagSyntax.names(in: headingText, includesDiaryTags: false)
+            let cleanedGroup = MarkdownPlanTableParser.cleanMarkdownInline(headingText)
             if let date {
-                return .todos(dayKey: date, tags: tags)
+                return .todos(dayKey: date, tags: tags, groupTitle: cleanedGroup)
             }
-            if case let .todos(existingDate, _) = section {
-                return .todos(dayKey: existingDate, tags: tags)
+            if case let .todos(existingDate, _, _) = section {
+                return .todos(dayKey: existingDate, tags: tags, groupTitle: cleanedGroup)
             }
-            return .todos(dayKey: nil, tags: tags)
+            return .todos(dayKey: nil, tags: tags, groupTitle: cleanedGroup)
         }
 
         private func indentationWidth(of rawLine: String) -> Int {
@@ -319,29 +448,11 @@ enum MarkdownPlanParser {
             return width
         }
 
-        private func parseCheckboxItem(_ trimmed: String) -> (content: String, isDone: Bool)? {
-            for marker in ["- [ ] ", "* [ ] ", "+ [ ] "] where trimmed.hasPrefix(marker) {
-                return (String(trimmed.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces), false)
-            }
-            for marker in ["- [x] ", "- [X] ", "* [x] ", "* [X] ", "+ [x] ", "+ [X] "] where trimmed.hasPrefix(marker) {
-                return (String(trimmed.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces), true)
-            }
-            return nil
-        }
-
-        private func parseListItem(_ trimmed: String) -> (content: String, isDone: Bool)? {
-            if let checkbox = parseCheckboxItem(trimmed) { return checkbox }
-            for marker in ["- ", "* ", "+ "] where trimmed.hasPrefix(marker) {
-                return (String(trimmed.dropFirst(marker.count)).trimmingCharacters(in: .whitespaces), false)
-            }
-            return nil
-        }
-
         private func stripQuoteOrDeepBullet(_ trimmed: String, allowBulletStrip: Bool) -> String {
             if trimmed.hasPrefix(">") {
                 return String(trimmed.dropFirst()).trimmingCharacters(in: .whitespaces)
             }
-            if allowBulletStrip, let bullet = parseListItem(trimmed) {
+            if allowBulletStrip, let bullet = MarkdownPlanTableParser.parseListItem(trimmed) {
                 return bullet.content
             }
             return trimmed
@@ -352,141 +463,5 @@ enum MarkdownPlanParser {
             if target.isEmpty { target = line }
             else { target += "\n" + line }
         }
-    }
-}
-
-// MARK: - 轻量计划 JSON 解码模型
-
-private struct LightweightPlanJSON: Decodable {
-    var day, dayKey, defaultDay: String?
-    var tags: [String]?
-    var todos: [JSONTodoEntry]?
-    var routines: [JSONRoutineEntry]?
-    var diaries: [JSONDiaryEntry]?
-
-    var resolvedDefaultDay: String? {
-        [dayKey, day, defaultDay].compactMap { $0 }.first { DayKey.date(from: $0) != nil }
-    }
-}
-
-private struct JSONTodoEntry: Decodable {
-    var title: String
-    var isDone, done, isImportant, isUrgent: Bool?
-    var day, dayKey, remind, priority, notes: String?
-    var remindMinutes, dueMinutes: Int?
-    var tags: [String]?
-    var subtasks: [JSONSubtaskEntry]?
-
-    func toDraft(fallbackDay: String) -> PlanTodoDraft {
-        let flags = priority.flatMap { PriorityToken.flags(in: $0.hasPrefix("!") ? $0 : "!\($0)") }
-        let remindVal = remindMinutes ?? remind.flatMap {
-            NaturalLanguageParser.timeMinutes($0.hasPrefix("@") ? $0 : "@\($0)")
-        }
-        return PlanTodoDraft(
-            title: title,
-            isDone: isDone ?? done ?? false,
-            dayKey: dayKey ?? day ?? fallbackDay,
-            remindMinutes: remindVal,
-            dueMinutes: dueMinutes,
-            isImportant: isImportant ?? flags?.isImportant,
-            isUrgent: isUrgent ?? flags?.isUrgent,
-            notes: notes ?? "",
-            tagNames: tags ?? [],
-            subtasks: (subtasks ?? []).map { $0.toDraft() }
-        )
-    }
-}
-
-private struct JSONSubtaskEntry: Decodable {
-    var title: String
-    var isDone: Bool
-    var tags: [String]
-
-    init(from decoder: Decoder) throws {
-        if let single = try? decoder.singleValueContainer(), let raw = try? single.decode(String.self) {
-            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmed.hasPrefix("[x] ") || trimmed.hasPrefix("[X] ") {
-                self.title = String(trimmed.dropFirst(4))
-                self.isDone = true
-            } else if trimmed.hasPrefix("[ ] ") {
-                self.title = String(trimmed.dropFirst(4))
-                self.isDone = false
-            } else {
-                self.title = trimmed
-                self.isDone = false
-            }
-            self.tags = []
-            return
-        }
-        let box = try decoder.container(keyedBy: CodingKeys.self)
-        self.title = try box.decode(String.self, forKey: .title)
-        self.isDone = try box.decodeIfPresent(Bool.self, forKey: .isDone)
-            ?? box.decodeIfPresent(Bool.self, forKey: .done)
-            ?? false
-        self.tags = try box.decodeIfPresent([String].self, forKey: .tags) ?? []
-    }
-
-    private enum CodingKeys: String, CodingKey { case title, isDone, done, tags }
-
-    func toDraft() -> PlanSubtaskDraft {
-        PlanSubtaskDraft(title: title, isDone: isDone, tagNames: tags)
-    }
-}
-
-private struct JSONRoutineEntry: Decodable {
-    var title: String
-    var isEnabled, enabled, isImportant, isUrgent: Bool?
-    var schedule, repeatRule, remind, priority, notes: String?
-    var weekdays: [Int]?
-    var remindMinutes: Int?
-    var tags: [String]?
-
-    private enum CodingKeys: String, CodingKey {
-        case title, isEnabled, enabled, schedule, weekdays, remind, remindMinutes
-        case priority, isImportant, isUrgent, notes, tags
-        case repeatRule = "repeat"
-    }
-
-    func toDraft() -> PlanRoutineDraft {
-        let flags = priority.flatMap { PriorityToken.flags(in: $0.hasPrefix("!") ? $0 : "!\($0)") }
-        let remindVal = remindMinutes ?? remind.flatMap {
-            NaturalLanguageParser.timeMinutes($0.hasPrefix("@") ? $0 : "@\($0)")
-        }
-        let mask: Int?
-        if let weekdays, !weekdays.isEmpty {
-            mask = MarkdownPlanParser.parseRepeatMask(weekdays.map(String.init).joined(separator: ","))
-        } else if let rule = repeatRule ?? schedule {
-            mask = MarkdownPlanParser.parseRepeatMask(rule)
-        } else {
-            mask = nil
-        }
-        return PlanRoutineDraft(
-            title: title,
-            isEnabled: isEnabled ?? enabled ?? true,
-            weekdayMask: mask,
-            remindMinutes: remindVal,
-            isImportant: isImportant ?? flags?.isImportant,
-            isUrgent: isUrgent ?? flags?.isUrgent,
-            notes: notes ?? "",
-            tagNames: tags ?? []
-        )
-    }
-}
-
-private struct JSONDiaryEntry: Decodable {
-    var text, body, content, title, day, dayKey: String?
-    var isPinned, pinned: Bool?
-    var tags: [String]?
-
-    func toDraft(fallbackDay: String) -> PlanDiaryDraft {
-        let mainBody = text ?? body ?? content ?? ""
-        let trimmedTitle = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let fullText = trimmedTitle.isEmpty ? mainBody : (mainBody.isEmpty ? trimmedTitle : "\(trimmedTitle) // \(mainBody)")
-        return PlanDiaryDraft(
-            text: fullText,
-            dayKey: dayKey ?? day ?? fallbackDay,
-            isPinned: isPinned ?? pinned ?? false,
-            tagNames: tags ?? []
-        )
     }
 }

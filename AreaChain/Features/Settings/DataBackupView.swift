@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 工作台「数据与备份」：普通 JSON、独立口令加密备份、内存回退时的磁盘库重置。
+/// 工作台「数据与备份」：普通 JSON、AI 计划模板包与多格式导入、独立口令加密备份、内存回退时的磁盘库重置。
 struct DataBackupView: View {
     private enum Dialog: String, Identifiable {
         case export, restore
@@ -20,8 +20,9 @@ struct DataBackupView: View {
     @Environment(\.locale) private var locale
     @State private var dialog: Dialog?
     @State private var statusMessage: String?
-    @State private var pendingImport: ExportSnapshot?
-    @State private var pendingPreview: ImportPreview?
+    @State private var lastImportedDayKey: String?
+    @State private var importErrorAlertMessage: String?
+    @State private var importSession: PlanImportSession?
     @State private var confirmReset = false
     @State private var markers: Set<String> = []
 
@@ -33,11 +34,10 @@ struct DataBackupView: View {
         }
         .accessibilityIdentifier("data.backup.page")
         .accessibilityValue(markers.sorted().joined(separator: " "))
-        .alert("alert.import", isPresented: importPresented) {
-            Button("alert.cancel", role: .cancel) { clearImport() }
-            Button("alert.write") { confirmImport() }
+        .alert("planImport.error.title", isPresented: errorAlertPresented) {
+            Button("common.ok", role: .cancel) { importErrorAlertMessage = nil }
         } message: {
-            Text(pendingPreview?.summary(locale: locale) ?? "")
+            Text(importErrorAlertMessage ?? "")
         }
         .confirmationDialog("alert.reset", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
@@ -45,22 +45,33 @@ struct DataBackupView: View {
         } message: {
             Text("alert.reset.keeps")
         }
+        .sheet(item: $importSession) { session in
+            PlanImportPreviewSheet(
+                session: session,
+                onCancel: { importSession = nil },
+                onConfirm: { confirmImport(session) }
+            )
+            .environment(\.locale, locale)
+        }
         .sheet(item: $dialog) { item in
             passwordSheet(item).environment(\.locale, locale)
         }
     }
 
-    private var importPresented: Binding<Bool> {
-        Binding(get: { pendingPreview != nil }, set: { if !$0 { clearImport() } })
+    private var errorAlertPresented: Binding<Bool> {
+        Binding(
+            get: { importErrorAlertMessage != nil },
+            set: { if !$0 { importErrorAlertMessage = nil } }
+        )
     }
 
     private var backupForm: some View {
         Form {
-            jsonSection
+            if let statusMessage { statusRow(statusMessage) }
             planSection
+            jsonSection
             encryptedSection
             healthSection
-            if let statusMessage { statusRow(statusMessage) }
         }
         .formStyle(.grouped)
         .daybookScroll()
@@ -146,11 +157,24 @@ struct DataBackupView: View {
 
     private func statusRow(_ message: String) -> some View {
         Section {
-            Text(message)
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.primary)
-                .textSelection(.enabled)
-                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: DaybookSpacing.sm) {
+                Image(systemName: "info.circle.fill")
+                    .font(DaybookType.body)
+                    .foregroundStyle(DaybookPalette.accent.base)
+                Text(message)
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                if let targetDay = lastImportedDayKey {
+                    Button("planImport.jumpToTasks") {
+                        WorkspaceNavigation.shared.revealTab(.today, dayKey: targetDay)
+                    }
+                    .buttonStyle(DaybookButtonStyle(.prominent))
+                    .accessibilityIdentifier("dataBackup.plan.jumpToTasks")
+                }
+            }
         }
     }
 
@@ -171,7 +195,7 @@ struct DataBackupView: View {
         panel.allowedContentTypes = [.json]
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            loadImport(from: url)
+            Task { @MainActor in loadImport(from: url) }
         }
     }
 
@@ -199,7 +223,7 @@ struct DataBackupView: View {
         panel.allowedContentTypes = types
         panel.begin { response in
             guard response == .OK, let url = panel.url else { return }
-            loadImport(from: url)
+            Task { @MainActor in loadImport(from: url) }
         }
     }
 
@@ -212,23 +236,70 @@ struct DataBackupView: View {
                 context: modelContext
             )
             try SnapshotImporter.validate(snapshot, context: modelContext)
-            pendingPreview = ImportPreviewing.preview(snapshot, existing: currentIDs())
-            pendingImport = snapshot
+            let existing = currentIDs()
+            let preview = ImportPreviewing.preview(snapshot, existing: existing)
+            importSession = makeImportSession(
+                filename: url.lastPathComponent,
+                snapshot: snapshot,
+                preview: preview
+            )
         } catch {
-            statusMessage = importErrorMessage(error)
+            let msg = importErrorMessage(error)
+            lastImportedDayKey = nil
+            statusMessage = msg
+            importErrorAlertMessage = msg
         }
     }
 
-    private func confirmImport() {
-        guard let snapshot = pendingImport else { return }
+    private func makeImportSession(
+        filename: String,
+        snapshot: ExportSnapshot,
+        preview: ImportPreview
+    ) -> PlanImportSession {
+        var nameByID: [UUID: String] = Dictionary(uniqueKeysWithValues: tags.map { ($0.id, $0.name) })
+        for tag in snapshot.tags {
+            nameByID[tag.id] = tag.name
+        }
+        let existingTagIDSet = Set(tags.map(\.id))
+        let newNames = snapshot.tags.filter { !existingTagIDSet.contains($0.id) }.map(\.name)
+        var referencedIDs = Set<UUID>()
+        for todo in snapshot.todos {
+            referencedIDs.formUnion(TagIDList.parse(todo.tagIDs))
+            for sub in todo.subtasks { referencedIDs.formUnion(TagIDList.parse(sub.tagIDs)) }
+        }
+        for routine in snapshot.routines { referencedIDs.formUnion(TagIDList.parse(routine.tagIDs)) }
+        for diary in snapshot.diaries { referencedIDs.formUnion(TagIDList.parse(diary.tagIDs)) }
+        let reusedNames = referencedIDs.intersection(existingTagIDSet).compactMap { nameByID[$0] }.sorted()
+        let privateIDs = Set(
+            snapshot.diaries.filter { item in
+                let itemTagIDs = Set(TagIDList.parse(item.tagIDs))
+                return DiaryContent.requiresProtection(text: item.text, tagIDs: itemTagIDs, tags: tags)
+            }.map(\.id)
+        )
+        return PlanImportSession(
+            filename: filename,
+            snapshot: snapshot,
+            preview: preview,
+            tagNamesByID: nameByID,
+            newTagNames: newNames,
+            reusedTagNames: reusedNames,
+            privateDiaryIDs: privateIDs
+        )
+    }
+
+    private func confirmImport(_ session: PlanImportSession) {
         do {
-            try SnapshotImporter.apply(snapshot, context: modelContext)
+            try SnapshotImporter.apply(session.snapshot, context: modelContext)
+            lastImportedDayKey = session.firstTargetDayKey ?? DayKey.today()
             statusMessage = L10n.string("settings.imported", locale: locale)
             BoardEvents.changed()
         } catch {
-            statusMessage = importErrorMessage(error)
+            let msg = importErrorMessage(error)
+            lastImportedDayKey = nil
+            statusMessage = msg
+            importErrorAlertMessage = msg
         }
-        clearImport()
+        importSession = nil
     }
 
     private func presentSavePanel(data: Data) {
@@ -244,6 +315,7 @@ struct DataBackupView: View {
     private func writeExport(_ data: Data, to url: URL, messageKey: String.LocalizationValue) {
         do {
             try data.write(to: url)
+            lastImportedDayKey = nil
             statusMessage = L10n.string(messageKey, locale: locale)
         } catch {
             statusMessage = error.localizedDescription
@@ -268,12 +340,10 @@ struct DataBackupView: View {
         if let planError = error as? PlanImportError {
             return planError.message(locale: locale)
         }
+        if let privacyError = error as? PrivacyError {
+            return L10n.string(String.LocalizationValue(stringLiteral: privacyError.messageKey), locale: locale)
+        }
         return error.localizedDescription
-    }
-
-    private func clearImport() {
-        pendingImport = nil
-        pendingPreview = nil
     }
 
     private func resetStoreAndQuit() {

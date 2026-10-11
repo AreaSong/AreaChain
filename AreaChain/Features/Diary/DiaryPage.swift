@@ -302,7 +302,7 @@ struct DiaryPage: View {
     }
 
     @ViewBuilder private var quickComposer: some View {
-        if draftBinding.wrappedValue.sealed != nil || (composerNeedsProtection && !vault.isUnlocked) {
+        if draftBinding.wrappedValue.sealed != nil {
             HStack {
                 Label("privacy.draft.locked", systemImage: "lock")
                 Spacer()
@@ -414,7 +414,7 @@ struct DiaryPage: View {
     private func submitNote() {
         guard draftBinding.wrappedValue.hasContent else { return }
         let draftID = draftBinding.wrappedValue.id
-        PrivacyAccess.perform(requiresUnlock: composerNeedsProtection, vault: vault) {
+        PrivacyAccess.perform(requiresUnlock: draftBinding.wrappedValue.sealed != nil, vault: vault) {
             guard draftBinding.wrappedValue.id == draftID else { throw PrivacyError.staleOperation }
             try draftBinding.wrappedValue.restore(vault: vault)
             let rawText = draftText.trimmingCharacters(in: .whitespacesAndNewlines)

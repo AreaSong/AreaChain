@@ -101,11 +101,11 @@ struct WorkspaceShellPreviewPage: View {
 
     private var scrollablePublicShellPreview: some View {
         DaybookScrollablePageShell {
-            DaybookComposer(
+            CaptureField(
                 text: $previewDraft,
-                placeholder: L10n.string("workspace.composer.placeholder", locale: locale),
                 focus: $previewFocused,
-                onSubmit: { previewDraft = "" }
+                onTodo: { previewDraft = "" },
+                onDiary: { previewDraft = "" }
             )
         } filterBar: {
             HStack(spacing: DaybookSpacing.xs) {

@@ -386,7 +386,13 @@ enum DayBoardMutations {
         tags: [TagItem] = [], context: ModelContext
     ) -> Bool {
         ModelChanges.value(in: context) {
-            try diaryRepo(for: context).addDiary(text: text, dayKey: dayKey, tagIDs: selectedTagIDs)
+            let repo = diaryRepo(for: context)
+            if let sdRepo = repo as? SwiftDataDiaryRepository {
+                return try sdRepo.addDiary(
+                    text: text, dayKey: dayKey, tagIDs: selectedTagIDs, allowLockedInsert: true
+                )
+            }
+            return try repo.addDiary(text: text, dayKey: dayKey, tagIDs: selectedTagIDs)
         } != nil
     }
 

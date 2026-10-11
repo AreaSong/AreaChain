@@ -101,11 +101,17 @@ enum AIPlanTemplateService {
                 .filter { DiaryPresetRetention.isDismissed($0) }
                 .map { TagSyntax.normalizedName($0) }
         )
+        let privateTagKeys = Set(
+            tags.filter { $0.isPrivateDiary || DiaryMemoTags.isPasswordName($0.name) }
+                .map { TagSyntax.normalizedName($0.name) }
+                .filter { !$0.isEmpty }
+        )
         return PlanCompileContext(
             existingTags: exportedTags,
             existingTodoMaxOrders: maxOrdersByDay,
             existingRoutineMaxOrder: maxRoutineOrder,
             dismissedDiaryPresets: dismissed,
+            privateDiaryTagNames: privateTagKeys,
             defaultDayKey: defaultDayKey,
             now: now
         )
@@ -134,7 +140,7 @@ enum AIPlanTemplateService {
 
         1. **交给 AI**：将 `SKILL.md`（或任一模板文件）拖入 AI 对话框，告诉 AI 你的目标（例如：「参考这份规范，帮我拆解下周的产品发布待办、每日运动习惯和复盘手记，输出一个 `.md` 文件」）。
         2. **内嵌语法自动识别**：无论使用 `.md` 还是 `.json`，只要在标题或正文里写上 `#标签`、`!p1`~`!p4`（四象限优先级）、`@15:30`（提醒时刻）、`// 备注`，AreaChain 都会在导入时自动识别。
-        3. **一键导入**：打开 AreaChain 工作台「系统 -> 数据与备份」，点击「导入计划 (.md / .json)」，预览新增数量后确认写入。已有标签会自动复用，当前不存在的新标签会自动创建。
+        3. **预览确认与一键导入**：打开 AreaChain 工作台「系统 -> 数据与备份」，点击「导入计划 (.md / .json)」，在弹出的**结构化识别预览窗口**中核对识别出的待办、子任务、重复事项、手记与标签（含新增/复用标签与私密手记加锁标识），点击「确认导入」即可落库并一键跳转到对应日期。
         """
     }
 
@@ -165,12 +171,13 @@ enum AIPlanTemplateService {
 
         ## 2. 领域结构与单层子任务约束
 
-        - **一次性待办 (`Todo`)**：归属于具体民事日期 `YYYY-MM-DD`（未指定时默认归入导入当天，参考基准日：`\(todayKey)`）。
+        - **一次性待办 (`Todo`)**：归属于具体民事日期 `YYYY-MM-DD`（未指定时默认归入导入当天，参考基准日：`\(todayKey)`；也兼容 `2026年10月11日` 或 `2026/10/11` 标题日期）。支持标准复选框 `- [ ]`、普通列表 `- `、有序列表 `1. ` 及 Markdown 动作表格。
         - **子任务 (`Subtask`) 严格仅支持一层**：
-          - 每个待办下可包含若干第一层子任务（`- [ ] 子任务 #子标签`）。
+          - 每个待办下可包含若干第一层子任务（缩进 `- [ ] 子任务 #子标签`）。
           - **严禁生成二级或更深层级的嵌套子任务**；更细的执行步骤请写成所属待办下的 `> 备注说明`。
-        - **重复事项 (`Routine`)**：放在 `## 重复事项`（或 `## Routines`）章节下，用 `[repeat: daily]`（每天）、`[repeat: workdays]`（工作日）或 `[repeat: mon,wed,fri]`（指定星期）声明周期。
-        - **灵感手记 (`Diary`)**：放在 `## 灵感手记`（或 `## Diaries`）章节下，支持 `#小巧思`、`#日记` 及自定义标签，可用 `[pinned]` 标记置顶。请勿将真实明文密码直接发送给不受信任的外部云端模型。
+        - **重复事项 (`Routine`)**：放在 `## 重复事项`（或 `## Routines`）章节下，用 `[repeat: daily]`（每天）、`[repeat: workdays]`（工作日）或 `[repeat: mon,wed,fri]`（指定星期）声明周期；也支持周计划 Markdown 表格（第一列为星期一～星期日）。
+        - **灵感手记 (`Diary`)**：放在 `## 灵感手记`（或 `## Diaries`）章节下，支持 `#小巧思`、`#日记`、`#密码` 及自定义标签，可用 `[pinned]` 标记置顶、用 `[day: YYYY-MM-DD]` 指定归属日。
+          - **私密手记免密投递加锁**：若手记带有 `#密码` 或用户在 AreaChain 中设为「私密手记」的标签，导入时无需输入密码即可直接入库并**自动加锁隐藏**（查看或编辑时才需验证密码/Touch ID）。注意：请勿将真实明文敏感密码直接发给不受信任的外部云端模型。
 
         ## 3. 标准 Markdown 输出格式示例 (`.md`)
 
@@ -220,6 +227,19 @@ enum AIPlanTemplateService {
           ]
         }
         ```
+
+        ## 5. 高阶与特殊写法全兼容说明
+
+        AreaChain 解析器内置了对各类特殊写法与复杂排版的自动容错：
+        - **相对日期与行内跨日**：标题或行内支持 `# 今天`、`# 明天`、`# 后天` 及 `[day: 明天]` / `【日期：\(todayKey)】`，可在同一列表内跨日排程；支持 `[due: 18:00]` / `【截止：18:00】` 设置截止时刻。
+        - **无章节混排自动分流**：即便不写 `## 重复事项` 或 `## 灵感手记` 章节，只要列表项带有 `[repeat: ...]` / `【周期：...】` 会自动识别为**重复事项**；无复选框列表项带有 `#小巧思`、`#日记`、`#密码` 或 `[pinned]` / `【置顶】` 会自动识别为**灵感手记**。
+        - **Markdown 表格智能拆解**：
+          - 第一列为「周一～周日」的表格 $\rightarrow$ 自动转为按对应星期启用的**重复事项**（含「休息」字样的行自动设为停用）。
+          - 含「环节/动作/组数/时长/要点」等列的表格 $\rightarrow$ 自动合并为**待办与子任务**，技术要点自动转入备注。
+        - **全角符号与复杂文本防误伤**：
+          - 自动兼容全角 `＃标签`、`！p1`、`＠09：30`、`／／ 备注` 与中文方括号 `【...】`。
+          - 带空格标签使用双引号 `#"项目 A"`；URL（如 `https://example.com/doc#v1`）与行内代码（`` `#literal` ``）中的 `//`、`#` 不会被误判为备注或标签；如需输出字面符号可用反斜杠转义（`\\#`、`\\@`、`\\!`、`\\//`）。
+          - JSON 同样兼容顶层任务数组 `[...]` 以及常见字段别名（`tasks`/`items`、`habits`、`notes`/`memos`）。
         """
     }
 
@@ -406,12 +426,10 @@ enum ZipStoredWriter {
 
 private extension Data {
     mutating func appendUInt16LE(_ value: UInt16) {
-        var le = value.littleEndian
-        append(UnsafeBufferPointer(start: &le, count: 1))
+        Swift.withUnsafeBytes(of: value.littleEndian) { append(contentsOf: $0) }
     }
 
     mutating func appendUInt32LE(_ value: UInt32) {
-        var le = value.littleEndian
-        append(UnsafeBufferPointer(start: &le, count: 1))
+        Swift.withUnsafeBytes(of: value.littleEndian) { append(contentsOf: $0) }
     }
 }
