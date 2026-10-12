@@ -1,8 +1,11 @@
+import AppKit
 import Foundation
+import SwiftUI
 import Testing
 @testable import AreaChain
 
-@Suite
+@Suite(.serialized)
+@MainActor
 struct TaskRowBubbleTests {
     @Test func titleTruncationDetectsLengthCorrectly() {
         // 短标题不应触发截断判定
@@ -68,5 +71,58 @@ struct TaskRowBubbleTests {
             hostMaxX: 1350
         )
         #expect(extremePlacement.bubbleShiftX >= -178, "平移幅度不可超过箭头可补偿上限 178pt")
+    }
+
+    @Test(arguments: [false, true])
+    func taskRowMultilineTitleBubbleAvoidsRowOverlapAndExpandsSurface(lower: Bool) async throws {
+        let support = try SettingsButtonTestSupport(isolatedPreferences: true)
+        defer { support.cleanup() }
+
+        let taskID = UUID()
+        let longTitle = String(repeating: "1", count: 160)
+        let state = TaskRowState(
+            identity: TaskRowIdentityState(id: taskID, title: longTitle, isResident: true),
+            schedule: TaskRowScheduleState(remindMinutes: 540)
+        )
+        let window = support.window(
+            VStack {
+                if lower { Spacer().frame(height: 300) }
+                TaskRow(state: state, dispatch: { _ in })
+                    .frame(width: 316)
+                Spacer()
+            }
+            .padding(32),
+            size: NSSize(width: 380, height: 540)
+        )
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+
+        let titleRegion = try #require(Self.findTitleRegion(taskID, in: window.contentView))
+        let titleRect = titleRegion.convert(titleRegion.bounds, to: nil)
+        titleRegion.onHover?(true)
+        try await Task.sleep(for: .milliseconds(380))
+        try await SystemPageHost.settle(window)
+
+        let bubbleView = try #require(DiaryTitleHoverFixture.regions(window.contentView).first)
+        let bubbleRect = bubbleView.convert(bubbleView.bounds, to: nil)
+        #expect(abs(bubbleRect.width - 260) < 1, "超长多行任务标题气泡宽度应固定为 260pt")
+        #expect(bubbleRect.height > 60, "多行任务标题气泡背景必须随折行高度撑开，不能坍缩成单行高度")
+        // titleRegion 含上下各 -6pt 扩展边距，实际单行文字位于 titleRect.insetBy(dx: 0, dy: 6)
+        let textRect = titleRect.insetBy(dx: 0, dy: 6)
+        if lower {
+            #expect(bubbleRect.minY >= textRect.maxY, "向上展开的气泡底边必须位于标题文字上方，不能遮挡当前行标题")
+        } else {
+            #expect(bubbleRect.maxY <= textRect.minY, "向下展开的气泡顶边必须位于标题文字下方，不能遮挡当前行标题")
+        }
+    }
+
+    private static func findTitleRegion(_ id: UUID, in view: NSView?) -> BoardRowPointerView? {
+        guard let view else { return nil }
+        if let region = view as? BoardRowPointerView,
+           region.identifier?.rawValue == id.uuidString,
+           region.onHover != nil {
+            return region
+        }
+        return view.subviews.lazy.compactMap { findTitleRegion(id, in: $0) }.first
     }
 }

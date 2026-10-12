@@ -160,10 +160,8 @@ struct WorkspaceFilteredListView: View {
     @ViewBuilder
     private func taggedOpenRows(_ rows: [BoardRow], model: WorkspaceFilteredListModel) -> some View {
         if !rows.isEmpty {
-            VStack(alignment: .leading, spacing: 4) {
-                ForEach(rows, id: \.listID) { row in
-                    taggedRow(row, model: model)
-                }
+            ForEach(rows, id: \.listID) { row in
+                taggedRow(row, model: model)
             }
         }
     }
@@ -223,10 +221,8 @@ struct WorkspaceFilteredListView: View {
             .padding(.top, 8)
 
             if showCompleted {
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(doneRows, id: \.listID) { row in
-                        taggedRow(row, model: model)
-                    }
+                ForEach(doneRows, id: \.listID) { row in
+                    taggedRow(row, model: model)
                 }
             }
         }

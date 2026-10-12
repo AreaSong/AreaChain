@@ -74,27 +74,15 @@ struct CalendarPage: View {
                 weekLayout
                     .frame(width: geometry.size.width, height: geometry.size.height, alignment: .topLeading)
             } else {
-                ViewThatFits(in: .horizontal) {
-                    monthWideLayout
-                    monthCompact(compactDates: embedded && geometry.size.height < 560)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                monthContent(availableWidth: geometry.size.width, availableHeight: geometry.size.height)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             }
         }
         // 范围切换会卸载旧分段；焦点协调必须留在页面，且不结束仍有效的原生编辑会话。
         .onChange(of: span) { _, _ in
             keyboardFocus = .grid
         }
-        .workspaceHeader(actions: [WorkspaceHeaderAction(
-            id: "calendar.span", title: LocalizedStringKey(span.titleKey), systemImage: "calendar",
-            children: CalendarSpan.allCases.map { item in
-                WorkspaceHeaderAction(id: "calendar." + item.rawValue, title: LocalizedStringKey(item.titleKey),
-                                      systemImage: "calendar", isActive: span == item) {
-                    span = item
-                    keyboardFocus = .grid
-                }
-            }
-        )])
+        .workspaceHeader(actions: headerActions)
         .workspaceInspectorTargets(inspectorIDs)
         .calendarGridKeys(
             enabled: keyboardFocus == .grid,
@@ -158,6 +146,36 @@ struct CalendarPage: View {
         )
     }
 
+    private var headerActions: [WorkspaceHeaderAction] {
+        [
+            WorkspaceHeaderAction(
+                id: "calendar.span",
+                title: LocalizedStringKey(span.titleKey),
+                systemImage: "calendar",
+                children: CalendarSpan.allCases.map { item in
+                    WorkspaceHeaderAction(
+                        id: "calendar." + item.rawValue,
+                        title: LocalizedStringKey(item.titleKey),
+                        systemImage: "calendar",
+                        isActive: span == item
+                    ) {
+                        span = item
+                        keyboardFocus = .grid
+                    }
+                }
+            )
+        ]
+    }
+
+    @ViewBuilder
+    private func monthContent(availableWidth: CGFloat, availableHeight: CGFloat) -> some View {
+        if availableWidth >= 540 {
+            monthWideLayout
+        } else {
+            monthCompact(compactDates: embedded && availableHeight < 560)
+        }
+    }
+
     private var monthWideLayout: some View {
         HStack(alignment: .top, spacing: 16) {
             calendarSidebar
@@ -174,34 +192,31 @@ struct CalendarPage: View {
                 }
                 .daybookScroll()
             }
-            .frame(minWidth: 320, maxWidth: .infinity)
+            .frame(minWidth: 200, maxWidth: .infinity, alignment: .leading)
         }
-        .frame(minWidth: 660)
     }
 
     private var weekLayout: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let days = DayKey.weekKeys(containing: selectedKey, calendar: calendar)
+        return VStack(alignment: .leading, spacing: 10) {
             if !embedded { spanPicker }
             weekBar
-            CalendarWeekBoard(
-                days: DayKey.weekKeys(containing: selectedKey, calendar: calendar),
-                selectedKey: selectedKey,
+            CalendarWeekStrip(
+                days: days,
                 todayKey: todayKey,
-                routines: routines,
-                checks: checks,
-                todos: todos,
-                listFocused: keyboardFocus == .list,
-                listFocusID: $listFocusID,
+                selectedKey: selectedKey,
+                counts: weekCounts(for: days),
                 onSelect: selectDayFromGrid,
-                onInspect: { id, day in
-                    selectedKey = day
-                    listFocusID = id
-                    keyboardFocus = .list
-                    navigation.inspectTask(id, dayKey: day)
-                },
-                onReturnToGrid: { keyboardFocus = .grid },
                 onDropTodo: dropTodo
             )
+            selectedHeading
+            composer
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    calendarDayBoard
+                }
+            }
+            .daybookScroll()
         }
     }
 
@@ -267,6 +282,42 @@ struct CalendarPage: View {
             containing: selectedKey,
             calendar: calendar
         )
+    }
+
+    private func weekCounts(for days: [String]) -> [String: Int] {
+        let routineSnaps = routines.map(\.snapshot)
+        let checkSnaps = checks.compactMap(\.snapshot)
+        let todoSnaps = todos.map(\.snapshot)
+        var result = DayBoardLogic.monthUnfinished(
+            routines: routineSnaps,
+            checks: checkSnaps,
+            todos: todoSnaps,
+            containing: selectedKey,
+            calendar: calendar
+        )
+        if let first = days.first, first.prefix(7) != selectedKey.prefix(7) {
+            result.merge(
+                DayBoardLogic.monthUnfinished(
+                    routines: routineSnaps,
+                    checks: checkSnaps,
+                    todos: todoSnaps,
+                    containing: first,
+                    calendar: calendar
+                )
+            ) { current, _ in current }
+        }
+        if let last = days.last, last.prefix(7) != selectedKey.prefix(7) {
+            result.merge(
+                DayBoardLogic.monthUnfinished(
+                    routines: routineSnaps,
+                    checks: checkSnaps,
+                    todos: todoSnaps,
+                    containing: last,
+                    calendar: calendar
+                )
+            ) { current, _ in current }
+        }
+        return result
     }
 
     private var selectedHeading: some View {

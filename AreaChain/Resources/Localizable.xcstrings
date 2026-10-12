@@ -1091,6 +1091,40 @@
         }
       }
     },
+    "calendar.layout.full" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Full View"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完整视图"
+          }
+        }
+      }
+    },
+    "calendar.layout.split" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Split View"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分栏视图"
+          }
+        }
+      }
+    },
     "calendar.today" : {
       "extractionState" : "manual",
       "localizations" : {

@@ -106,21 +106,24 @@ struct WorkspaceItemsList: View {
                         centerVertically: true
                     )
                 } else {
-                    VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+                    let firstGroupID = groups.first?.id
+                    VStack(alignment: .leading, spacing: 2) {
                         ForEach(groups) { group in
                             if let title = group.title {
                                 DaybookSectionHeader(title: title, count: group.sectionCount ?? group.entries.count)
+                                    .padding(.top, group.id == firstGroupID ? 0 : DaybookSpacing.md - 2)
+                                    .padding(.bottom, DaybookSpacing.md - 2)
                             }
                             if let titleText = group.titleText {
                                 Text(titleText)
                                     .font(DaybookType.caption.weight(.semibold))
                                     .foregroundStyle(DaybookPalette.text.secondary)
                                     .accessibilityAddTraits(.isHeader)
+                                    .padding(.top, (group.id == firstGroupID || group.title != nil) ? 0 : DaybookSpacing.md - 2)
+                                    .padding(.bottom, DaybookSpacing.md - 2)
                             }
-                            VStack(alignment: .leading, spacing: 2) {
-                                ForEach(group.entries) { entry in
-                                    row(entry, identity: identity)
-                                }
+                            ForEach(group.entries) { entry in
+                                row(entry, identity: identity)
                             }
                         }
                     }

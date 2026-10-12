@@ -58,6 +58,28 @@ enum ContentTruncation: String, CaseIterable, Identifiable, Sendable {
 
 typealias QuadrantTitleTruncation = ContentTruncation
 
+/// 月历布局模式：左右分栏（专注当日）或完整平铺（全月鸟瞰）
+enum CalendarMonthLayoutMode: String, CaseIterable, Identifiable, Sendable {
+    case split
+    case full
+
+    var id: String { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .split: "calendar.layout.split"
+        case .full: "calendar.layout.full"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .split: "rectangle.split.2x1"
+        case .full: "rectangle.split.1x2"
+        }
+    }
+}
+
 @Observable
 @MainActor
 final class AppPreferences {
@@ -71,6 +93,7 @@ final class AppPreferences {
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
     static let boardFiltersKey = "areachain.prefs.boardFilters"
+    static let calendarMonthLayoutModeKey = "areachain.prefs.calendarMonthLayoutMode"
 
     private let defaults: UserDefaults
     private var isLoading = true
@@ -143,6 +166,14 @@ final class AppPreferences {
         }
     }
 
+    var calendarMonthLayoutMode: CalendarMonthLayoutMode {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(calendarMonthLayoutMode.rawValue, forKey: Self.calendarMonthLayoutModeKey)
+            notifyChange()
+        }
+    }
+
     var resolvedLocale: Locale { language.resolvedLocale }
 
     var resolvedColorScheme: ColorScheme? { appearance.resolvedColorScheme }
@@ -164,6 +195,12 @@ final class AppPreferences {
         localState = .legacy(values)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
+        if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
+           let mode = CalendarMonthLayoutMode(rawValue: raw) {
+            calendarMonthLayoutMode = mode
+        } else {
+            calendarMonthLayoutMode = .split
+        }
         isLoading = false
         startupAppearance = applyAppAppearance()
     }
@@ -182,6 +219,12 @@ final class AppPreferences {
         localPreferenceBackend = loaded.backend
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
+        if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
+           let mode = CalendarMonthLayoutMode(rawValue: raw) {
+            calendarMonthLayoutMode = mode
+        } else {
+            calendarMonthLayoutMode = .split
+        }
         isLoading = false
         startupAppearance = applyAppAppearance()
     }

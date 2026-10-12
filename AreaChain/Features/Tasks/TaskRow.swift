@@ -25,6 +25,7 @@ struct TaskRow: View {
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
     @State private var rowMaxX: CGFloat = 0
+    @State private var renderedTitleWidth: CGFloat? = nil
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
     @State var hoveredQuickActionTip: String? = nil
@@ -112,12 +113,17 @@ struct TaskRow: View {
             .onChange(of: draft) { _, text in
                 if hostContext != nil, editing { editDrafts.titles[navigationDraftKey] = text }
             }
+            .onChange(of: shouldShowTitleBubble) { _, visible in
+                if !visible { chrome.resetTitleHover() }
+            }
             .onDisappear {
                 if hostContext != nil, editing { editDrafts.titles[navigationDraftKey] = draft }
+                resetTitleTracking()
                 chrome.stop()
             }
             .onChange(of: state.title) { _, value in
                 if !editing { draft = value }
+                resetTitleTracking()
             }
             .onChange(of: state.isExternalEditing) { _, value in
                 if value && !editing { beginEdit() }
@@ -156,13 +162,16 @@ struct TaskRow: View {
             } else {
                 VStack(alignment: .leading, spacing: 3) {
                     selectableContent
+                        .zIndex(10)
                     if hasSubs {
                         TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
                             dispatch(.toggleSubtask(subtaskID))
                         }
                         .padding(.top, 2)
+                        .zIndex(1)
                     }
                 }
+                .zIndex(10)
 
                 if hasVisibleMetadata {
                     metadataCluster
@@ -211,7 +220,13 @@ struct TaskRow: View {
     }
 
     private var isTitleTruncated: Bool {
-        TaskTitleTruncation.isTruncated(state.title)
+        if let renderedTitleWidth, renderedTitleWidth > 0 {
+            let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
+            let fullWidth = ceil((state.title as NSString).size(withAttributes: [.font: font]).width)
+            return fullWidth > renderedTitleWidth + 4
+        }
+        let threshold: Double = (!embedded && hasVisibleMetadata) ? 4.0 : 10.0
+        return TaskTitleTruncation.isTruncated(state.title, threshold: threshold)
     }
 
     private var shouldShowTitleBubble: Bool {
@@ -247,12 +262,18 @@ struct TaskRow: View {
                         dragPayload: state.dragPayload,
                         onSelect: { selectImmediately(selection(shift: $0, command: $1)) },
                         onDoubleClick: beginEdit,
-                        onHover: { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
+                        onHover: { hovering in
+                            chrome.isTitlePointerInside = hovering
+                            chrome.handleTitleHover(hovering, reduceMotion: reduceMotion)
+                        }
                     )
                     .padding(.top, -6)
                     .padding(.bottom, isSubtasksExpanded && !state.subtasks.isEmpty ? 0 : -6)
                     .accessibilityHidden(true)
                 )
+                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+                    titleBubbleOverlay
+                }
 
             Color.clear
                 .frame(maxWidth: .infinity)
@@ -385,6 +406,17 @@ struct TaskRow: View {
         )
     }
 
+    private func resetTitleTracking() {
+        chrome.isTitlePointerInside = false
+        chrome.resetTitleHover()
+    }
+
+    private var titleBubbleWidth: CGFloat {
+        let font = NSFont.systemFont(ofSize: DaybookType.subtitleSize, weight: .medium)
+        let textWidth = ceil((state.title as NSString).size(withAttributes: [.font: font]).width)
+        return min(260, max(140, textWidth + 38))
+    }
+
     @ViewBuilder
     private var titleBubbleOverlay: some View {
         if shouldShowTitleBubble {
@@ -394,14 +426,15 @@ struct TaskRow: View {
                 onCopy: { copyToClipboard(state.title) },
                 onHover: { hovering in
                     isTitleBubbleHovered = hovering
-                    if !hovering && !isTitleTextHovered {
-                        withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                            isTitleTextHovered = false
-                        }
+                    if !hovering && !chrome.isTitlePointerInside {
+                        chrome.handleTitleHover(false, reduceMotion: reduceMotion)
                     }
                 }
             )
-            .offset(y: growsUpward ? -6 : 22)
+            .observingWindowHover(onInvalidate: resetTitleTracking)
+            .frame(width: titleBubbleWidth, alignment: .leading)
+            .fixedSize()
+            .offset(y: growsUpward ? -22 : 22)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: growsUpward ? .bottomLeading : .topLeading)),
                 removal: .opacity
@@ -419,14 +452,18 @@ struct TaskRow: View {
                 residentMark
             }
             ModernTaskTitle(text: state.title, isDone: state.isDone)
-                .lineLimit(embedded ? 2 : 1)
+                .lineLimit(1)
                 .truncationMode(textTruncation)
+                .frame(minWidth: 28)
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear
+                            .onAppear { renderedTitleWidth = proxy.size.width }
+                            .onChange(of: proxy.size.width) { _, width in renderedTitleWidth = width }
+                    }
+                )
         }
         .layoutPriority(1)
         .contentShape(Rectangle())
-        .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
-        .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-            titleBubbleOverlay
-        }
     }
 }

@@ -6,10 +6,8 @@ extension DayBoardList {
         if identity.openRows.isEmpty && !identity.doneRows.isEmpty {
             allDoneBanner
         } else if !identity.openRows.isEmpty {
-            VStack(alignment: .leading, spacing: 2) {
-                ForEach(identity.openRows, id: \.listID) { row in
-                    dayRow(row, isDone: false, identity: identity)
-                }
+            ForEach(identity.openRows, id: \.listID) { row in
+                dayRow(row, isDone: false, identity: identity)
             }
         }
     }
@@ -37,42 +35,39 @@ extension DayBoardList {
         .padding(.top, 2)
     }
 
+    @ViewBuilder
     func completedSection(_ identity: DayBoardListIdentity) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Divider()
-                .opacity(0.15)
-                .padding(.top, 4)
-                .padding(.bottom, 4)
+        Divider()
+            .opacity(0.15)
+            .padding(.top, 4)
+            .padding(.bottom, 4)
 
-            Button {
-                withAnimation(DaybookMotion.animation(reduceMotion)) {
-                    showCompleted.toggle()
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
-                        .font(DaybookType.micro.weight(.bold))
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                    DaybookSectionHeader(
-                        title: showCompleted
-                            ? "stamp.completed.collapse \(identity.doneRows.count)"
-                            : "stamp.completed \(identity.doneRows.count)",
-                        icon: "checkmark.circle"
-                    )
-                    Spacer()
-                }
-                .contentShape(Rectangle())
+        Button {
+            withAnimation(DaybookMotion.animation(reduceMotion)) {
+                showCompleted.toggle()
             }
-            .buttonStyle(.plain) // control: 分节折叠头，整行点击
-            .opacity(showCompleted ? 1.0 : 0.6)
-            .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
+        } label: {
+            HStack(spacing: 5) {
+                Image(systemName: showCompleted ? "chevron.down" : "chevron.right")
+                    .font(DaybookType.micro.weight(.bold))
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                DaybookSectionHeader(
+                    title: showCompleted
+                        ? "stamp.completed.collapse \(identity.doneRows.count)"
+                        : "stamp.completed \(identity.doneRows.count)",
+                    icon: "checkmark.circle"
+                )
+                Spacer()
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain) // control: 分节折叠头，整行点击
+        .opacity(showCompleted ? 1.0 : 0.6)
+        .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
-            if showCompleted {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(identity.doneRows, id: \.listID) { row in
-                        dayRow(row, isDone: true, identity: identity)
-                    }
-                }
+        if showCompleted {
+            ForEach(identity.doneRows, id: \.listID) { row in
+                dayRow(row, isDone: true, identity: identity)
             }
         }
     }

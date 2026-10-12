@@ -1,7 +1,59 @@
 import SwiftData
 import SwiftUI
 
-/// 日历的一周：七列当天事项。待办可以拖到另一列改期。
+/// 周聚焦模式的顶部 7 天横排周历条：一屏展示整周日期与未完成数，支持点击切换与拖入待办改期。
+struct CalendarWeekStrip: View {
+    var days: [String]
+    var todayKey: String
+    var selectedKey: String
+    var counts: [String: Int]
+    var onSelect: (String) -> Void
+    var onDropTodo: ((UUID, String) -> Void)? = nil
+
+    @State private var dropKey: String?
+
+    var body: some View {
+        VStack(spacing: DaybookSpacing.xs) {
+            DaybookWeekdayHeader()
+            HStack(spacing: DaybookSpacing.xs) {
+                ForEach(days, id: \.self) { key in
+                    cell(key)
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("calendar.week.strip")
+    }
+
+    private func cell(_ key: String) -> some View {
+        let count = counts[key] ?? 0
+        return DaybookDateCell(
+            dayKey: key,
+            isToday: key == todayKey,
+            isSelected: key == selectedKey,
+            presentation: .monthGrid(.regular),
+            annotation: count > 0 ? Text("\(count)") : nil,
+            isDropTarget: dropKey == key
+        ) {
+            onSelect(key)
+        }
+        .accessibilityIdentifier("calendar.week.\(key)")
+        .dropDestination(for: String.self) { items, _ in
+            guard let onDropTodo, let id = items.compactMap(TodoDragToken.decode).first else {
+                return false
+            }
+            onDropTodo(id, key)
+            return true
+        } isTargeted: { hovering in
+            withAnimation(DaybookMotion.snappy) {
+                dropKey = hovering ? key : (dropKey == key ? nil : dropKey)
+            }
+        }
+        .accessibilityHint(count > 0 ? Text("a11y.calendar.remaining \(count)") : Text(""))
+    }
+}
+
+/// 日历的一周：七天按同一列宽排开。页面足够宽时一屏铺满，窄窗口横向滚动；待办可以拖到另一天改期。
 struct CalendarWeekBoard: View {
     @Environment(\.locale) private var locale
 
@@ -28,18 +80,21 @@ struct CalendarWeekBoard: View {
                 ScrollView(.horizontal) {
                     HStack(alignment: .top, spacing: spacing) {
                         ForEach(days, id: \.self) { day in
-                            column(day)
-                                .frame(width: width, height: geometry.size.height)
+                            column(day, width: width, height: geometry.size.height)
                                 .id(day)
                         }
                     }
                 }
                 // 横轴使用系统承载，公共 daybookScroll 仍只属于列内纵轴。
-                .task(id: VisibilityRequest(days: days, selectedKey: selectedKey, width: geometry.size.width)) {
-                    // 等待本轮列身份装配；选择/周/视口变化和卸载会取消旧请求。
+                .task(id: VisibilityRequest(days: days, selectedKey: selectedKey)) {
+                    // 等待本轮列身份装配；选择/周变化和卸载会取消旧请求。
                     await Task.yield()
                     guard !Task.isCancelled, days.contains(selectedKey) else { return }
-                    proxy.scrollTo(selectedKey)
+                    if let first = days.first, days.prefix(3).contains(selectedKey) {
+                        proxy.scrollTo(first, anchor: .leading)
+                    } else {
+                        proxy.scrollTo(selectedKey, anchor: .center)
+                    }
                 }
             }
         }
@@ -48,10 +103,9 @@ struct CalendarWeekBoard: View {
     private struct VisibilityRequest: Equatable {
         var days: [String]
         var selectedKey: String
-        var width: CGFloat
     }
 
-    private func column(_ day: String) -> some View {
+    private func column(_ day: String, width: CGFloat, height: CGFloat) -> some View {
         let selected = day == selectedKey
         return VStack(alignment: .leading, spacing: 6) {
             DaybookDateCell(dayKey: day, isToday: day == todayKey, isSelected: selected,
@@ -80,7 +134,8 @@ struct CalendarWeekBoard: View {
             .daybookScroll()
         }
         .padding(6)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .frame(width: width, height: height, alignment: .topLeading)
+        .clipped()
         .daybookSurface(.card, isSelected: selected)
         .dropDestination(for: String.self) { items, _ in
             guard let id = items.compactMap(TodoDragToken.decode).first else { return false }
