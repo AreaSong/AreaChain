@@ -221,6 +221,7 @@ private final class GanttTestHost {
         window = NSWindow(contentRect: NSRect(origin: .zero, size: size), styleMask: [.titled], backing: .buffered, defer: false)
         window.title = "AreaChain 安排交互测试"
         window.isReleasedWhenClosed = false
+        window.isMovableByWindowBackground = true
         window.appearance = NSAppearance(named: scheme == .light ? .aqua : .darkAqua)
         window.contentView = hosting
         NSApp.setActivationPolicy(.regular)
@@ -270,10 +271,18 @@ private final class GanttTestHost {
         try await settle()
     }
 
+    private func rowPointerView(_ todo: TodoItem) -> GanttRowPointerView? {
+        elements.compactMap { $0 as? GanttRowPointerView }
+            .first { $0.identifier?.rawValue == "gantt.todo.\(todo.id)" }
+    }
+
     func barCenter(_ todo: TodoItem) throws -> NSPoint {
         let frame = try NativeSyntaxUI.frame("gantt.todo.\(todo.id)", in: window)
         let day = try #require(Int(todo.dayKey.suffix(2)))
-        return NSPoint(x: frame.minX + GanttRowMetrics.titleWidth + (CGFloat(day) - 0.5) * GanttRowMetrics.dayWidth, y: frame.midY)
+        let rowView = rowPointerView(todo)
+        let titleWidth = rowView?.titleWidth ?? GanttRowMetrics.titleWidth
+        let dayWidth = rowView?.dayWidth ?? GanttRowMetrics.dayWidth
+        return NSPoint(x: frame.minX + titleWidth + (CGFloat(day) - 0.5) * dayWidth, y: frame.midY)
     }
 
     func key(_ keyCode: UInt16, characters: String) throws {
@@ -289,11 +298,14 @@ private final class GanttTestHost {
     func filledDays(_ todo: TodoItem) throws -> [Int] {
         let view = try #require(window.contentView)
         let frame = try NativeSyntaxUI.frame("gantt.todo.\(todo.id)", in: window)
+        let rowView = rowPointerView(todo)
+        let titleWidth = rowView?.titleWidth ?? GanttRowMetrics.titleWidth
+        let dayWidth = rowView?.dayWidth ?? GanttRowMetrics.dayWidth
         let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
         view.cacheDisplay(in: view.bounds, to: bitmap)
         return (1...30).filter { day in
             let point = view.convert(NSPoint(
-                x: frame.minX + GanttRowMetrics.titleWidth + (CGFloat(day) - 0.5) * GanttRowMetrics.dayWidth,
+                x: frame.minX + titleWidth + (CGFloat(day) - 0.5) * dayWidth,
                 y: frame.midY
             ), from: nil)
             let y = view.isFlipped ? point.y : view.bounds.height - point.y

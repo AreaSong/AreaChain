@@ -28,12 +28,28 @@ struct DiaryQuickComposerView: View {
     }
 
     var body: some View {
-        if isCompact {
-            compactInputRow
-                .syntaxSuggestions(autocomplete)
-                .animation(DaybookMotion.interactive(reduceMotion), value: focused.wrappedValue)
-        } else {
-            workspaceComposer
+        Group {
+            if isCompact {
+                compactInputRow
+                    .syntaxSuggestions(autocomplete)
+                    .animation(DaybookMotion.interactive(reduceMotion), value: focused.wrappedValue)
+            } else {
+                workspaceComposer
+                    .syntaxSuggestions(autocomplete)
+            }
+        }
+        .background(KeyWindowHost { hostWindow = $0 })
+        .onChange(of: text) { _, newText in
+            if newText.isEmpty {
+                isManuallyExpanded = false
+                autocomplete.reset()
+            }
+        }
+        .onChange(of: orderedTags) { _, tags in
+            autocomplete.availableTags = tags.map(\.name)
+        }
+        .onAppear {
+            autocomplete.availableTags = orderedTags.map(\.name)
         }
     }
 
@@ -53,6 +69,8 @@ struct DiaryQuickComposerView: View {
                         expanded ? "diary.composer.placeholder" : "diary.quick.placeholder",
                         locale: locale
                     ),
+                    context: .diaryCapture,
+                    externalAutocomplete: autocomplete,
                     onSubmit: submitWorkspace,
                     commandChord: shortcuts.armedChord(for: .commitDiary)
                 )
@@ -84,11 +102,6 @@ struct DiaryQuickComposerView: View {
         .daybookElevation(expanded ? .panel : .flat)
         .fixedSize(horizontal: false, vertical: true)
         .animation(DaybookMotion.interactive(reduceMotion), value: expanded)
-        .onChange(of: text) { _, newValue in
-            if newValue.isEmpty {
-                isManuallyExpanded = false
-            }
-        }
     }
 
     private var workspaceCompactTrailingActions: some View {
@@ -119,7 +132,9 @@ struct DiaryQuickComposerView: View {
     }
 
     private func submitWorkspace() {
+        guard canSubmit, !hasMarkedText else { return }
         isManuallyExpanded = false
+        autocomplete.reset()
         onSubmit()
     }
 
@@ -166,19 +181,7 @@ struct DiaryQuickComposerView: View {
                 )
             }
         }
-        .background(KeyWindowHost { hostWindow = $0 })
         .background(SyntaxViewAnchor("syntax.diary.composer"))
-        .onChange(of: text) { _, newText in
-            if newText.isEmpty {
-                autocomplete.dismiss()
-            }
-        }
-        .onChange(of: orderedTags) { _, tags in
-            autocomplete.availableTags = tags.map(\.name)
-        }
-        .onAppear {
-            autocomplete.availableTags = orderedTags.map(\.name)
-        }
     }
 
     private var statusIcon: some View {

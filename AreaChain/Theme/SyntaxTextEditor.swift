@@ -7,15 +7,21 @@ struct SyntaxTextEditor: View {
     var placeholder: String
     var fontSize: CGFloat = DaybookType.bodySize
     var context: SyntaxInputContext
+    var externalAutocomplete: SyntaxAutocompleteState?
     var onSubmit: (() -> Void)?
     var commandChord: ShortcutChord?
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var autocomplete: SyntaxAutocompleteState
 
+    private var activeAutocomplete: SyntaxAutocompleteState {
+        externalAutocomplete ?? autocomplete
+    }
+
     init(
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
-        fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags, onSubmit: (() -> Void)? = nil,
+        fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags,
+        externalAutocomplete: SyntaxAutocompleteState? = nil, onSubmit: (() -> Void)? = nil,
         commandChord: ShortcutChord? = nil
     ) {
         _text = text
@@ -23,15 +29,19 @@ struct SyntaxTextEditor: View {
         self.placeholder = placeholder
         self.fontSize = fontSize
         self.context = context
+        self.externalAutocomplete = externalAutocomplete
         self.onSubmit = onSubmit
         self.commandChord = commandChord
-        _autocomplete = State(initialValue: SyntaxAutocompleteState(context: context))
+        _autocomplete = State(initialValue: SyntaxAutocompleteState(
+            context: context,
+            allowsLivePreview: context == .capture || context == .diaryCapture
+        ))
     }
 
     var body: some View {
         DaybookTextEditor(
             text: $text, focused: $focused, placeholder: placeholder, fontSize: fontSize,
-            autocomplete: autocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
+            autocomplete: activeAutocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
             onSubmit: onSubmit, commandChord: commandChord
         )
         .overlay(alignment: .topLeading) {
@@ -44,7 +54,7 @@ struct SyntaxTextEditor: View {
                     .allowsHitTesting(false)
             }
         }
-        .syntaxSuggestions(autocomplete)
+        .syntaxSuggestions(activeAutocomplete, enabled: externalAutocomplete == nil)
     }
 
     private var placeholderFont: Font {

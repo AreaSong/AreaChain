@@ -15,13 +15,6 @@ struct QuadrantPage: View {
     @WorkspaceNavigationContext private var navigation
     @Environment(\.modelContext) private var modelContext
     @State private var dropSlot: QuadrantSlot?
-    @Environment(\.workspaceHostContext) private var hostContext
-    @State private var localDrafts: [QuadrantSlot: String] = [:]
-    private var drafts: [QuadrantSlot: String] {
-        get { hostContext == nil ? localDrafts : navigation.quadrantDrafts }
-        nonmutating set { if hostContext == nil { localDrafts = newValue } else { navigation.quadrantDrafts = newValue } }
-    }
-    @State private var fieldFocus: [QuadrantSlot: Bool] = [:]
     @State private var focusedID: UUID?
     @State private var floatingPreview: QuadrantFloatingPreview?
     @State private var previewHoverID: UUID?
@@ -132,6 +125,7 @@ struct QuadrantPage: View {
             .accessibilityIdentifier("quadrant.header.\(slot.rawValue)")
             if rows.isEmpty {
                 DaybookEmptyState(title: "quadrant.empty", compact: true)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView(.vertical) {
                     LazyVStack(alignment: .leading, spacing: 4) {
@@ -153,13 +147,6 @@ struct QuadrantPage: View {
                 }
                 .daybookScroll()
             }
-            DaybookTextField(
-                text: draftBinding(slot),
-                placeholder: L10n.string("quadrant.add", locale: locale),
-                focus: focusBinding(slot),
-                onSubmit: { addTodo(in: slot) },
-                allowsShiftNewline: false
-            )
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -202,28 +189,6 @@ struct QuadrantPage: View {
 
     private var focusOrder: [UUID] {
         QuadrantSlot.allCases.flatMap { rows(in: $0).map(\.id) }
-    }
-
-    private func draftBinding(_ slot: QuadrantSlot) -> Binding<String> {
-        Binding(
-            get: { drafts[slot] ?? "" },
-            set: { drafts[slot] = $0 }
-        )
-    }
-
-    private func focusBinding(_ slot: QuadrantSlot) -> Binding<Bool> {
-        Binding(
-            get: { fieldFocus[slot] ?? false },
-            set: { fieldFocus[slot] = $0 }
-        )
-    }
-
-    private func addTodo(in slot: QuadrantSlot) {
-        let text = drafts[slot] ?? ""
-        guard DayBoardMutations.addCapturedTodo(
-            text: text, dayKey: selectedKey, context: modelContext, fallbackQuadrant: slot
-        ) else { return }
-        drafts[slot] = ""
     }
 
     private func toggle(_ row: BoardRow) {
