@@ -5,6 +5,8 @@ class DaybookAppKitTextView: NSTextView {
     var onCommandReturn: (() -> Void)?
     var commandChord: ShortcutChord?
     var onFocusChange: ((Bool) -> Void)?
+    var onMarkedTextChange: ((Bool) -> Void)?
+    private var lastMarkedState = false
 
     override func becomeFirstResponder() -> Bool {
         let accepted = super.becomeFirstResponder()
@@ -17,9 +19,35 @@ class DaybookAppKitTextView: NSTextView {
     override func resignFirstResponder() -> Bool {
         let resigned = super.resignFirstResponder()
         if resigned {
+            if lastMarkedState {
+                lastMarkedState = false
+                onMarkedTextChange?(false)
+            }
             onFocusChange?(false)
         }
         return resigned
+    }
+
+    override func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
+        super.setMarkedText(string, selectedRange: selectedRange, replacementRange: replacementRange)
+        syncMarkedState()
+    }
+
+    override func unmarkText() {
+        super.unmarkText()
+        syncMarkedState()
+    }
+
+    override func insertText(_ string: Any, replacementRange: NSRange) {
+        super.insertText(string, replacementRange: replacementRange)
+        syncMarkedState()
+    }
+
+    private func syncMarkedState() {
+        let marked = hasMarkedText()
+        guard marked != lastMarkedState else { return }
+        lastMarkedState = marked
+        onMarkedTextChange?(marked)
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -31,6 +59,24 @@ class DaybookAppKitTextView: NSTextView {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    override func hitTest(_ point: NSPoint) -> NSView? {
+        if let superview, let root = window?.contentView,
+           Self.isPointInSyntaxOverlay(superview.convert(point, to: nil), in: root) {
+            return nil
+        }
+        return super.hitTest(point)
+    }
+
+    private static func isPointInSyntaxOverlay(_ windowPoint: NSPoint, in view: NSView) -> Bool {
+        if let id = view.identifier?.rawValue,
+           id == "syntax.overlay.candidates" || id == "syntax.overlay.preview" || id == "syntax.overlay.attributes",
+           !view.isHidden, view.alphaValue > 0.01,
+           view.convert(view.bounds, to: nil).contains(windowPoint) {
+            return true
+        }
+        return view.subviews.contains { isPointInSyntaxOverlay(windowPoint, in: $0) }
     }
 }
 
@@ -45,6 +91,7 @@ struct DaybookTextEditor: NSViewRepresentable {
     var highlightsSyntax: Bool = true
     var onSubmit: (() -> Void)? = nil
     var commandChord: ShortcutChord? = nil
+    var onMarkedTextChange: ((Bool) -> Void)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -59,7 +106,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         scroll.verticalScroller = DaybookScroller()
         scroll.autohidesScrollers = true
         let editor = DaybookAppKitTextView(frame: NSRect(x: 0, y: 0, width: 240, height: 28))
-        editor.minSize = NSSize(width: 0, height: 0)
+        editor.minSize = NSSize(width: 0, height: 28)
         editor.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
         editor.isRichText = false
         editor.importsGraphics = false
@@ -70,7 +117,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.autoresizingMask = [.width]
         editor.textContainer?.widthTracksTextView = true
         editor.textContainer?.containerSize.height = .greatestFiniteMagnitude
-        editor.textContainerInset = NSSize(width: 4, height: 5)
+        editor.textContainerInset = NSSize(width: 4, height: 4)
         editor.font = .systemFont(ofSize: fontSize)
         editor.textColor = NSColor(DaybookPalette.text.primary)
         editor.isAutomaticQuoteSubstitutionEnabled = false
@@ -79,6 +126,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.isAutomaticSpellingCorrectionEnabled = false
         if #available(macOS 15.1, *) { editor.writingToolsBehavior = .none }
         editor.delegate = context.coordinator
+        editor.onMarkedTextChange = onMarkedTextChange
         editor.onFocusChange = { [weak coordinator = context.coordinator, weak editor] isFocused in
             guard let coordinator, let editor else { return }
             coordinator.handleFocusChange(isFocused, editor: editor)
@@ -103,6 +151,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.insertionPointColor = NSColor(DaybookPalette.text.primary)
         editor.setAccessibilityLabel(placeholder)
         editor.commandChord = commandChord
+        editor.onMarkedTextChange = onMarkedTextChange
         editor.onCommandReturn = { [weak editor] in
             guard let editor, !editor.hasMarkedText() else { return }
             context.coordinator.parent.text = editor.string
@@ -110,26 +159,6 @@ struct DaybookTextEditor: NSViewRepresentable {
             context.coordinator.parent.onSubmit?()
         }
         Self.synchronizeText(text, in: editor, highlightsSyntax: highlightsSyntax, font: nativeFont)
-        if !DaybookTextEditing.isProtected(editor) {
-            if highlightsSyntax, let storage = editor.textStorage {
-                SyntaxHighlighter.applyHighlighting(to: storage, font: nativeFont)
-                editor.typingAttributes = [
-                    .font: nativeFont,
-                    .foregroundColor: NSColor(DaybookPalette.text.primary)
-                ]
-            }
-            if autocomplete.inputText != text || autocomplete.availableTags != availableTags {
-                if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    autocomplete.reset()
-                } else if editor.window?.firstResponder === editor {
-                    let cursor = min(editor.selectedRange().location, (text as NSString).length)
-                    autocomplete.update(text: text, cursorLocation: cursor, availableTags: availableTags)
-                } else {
-                    autocomplete.inputText = text
-                    autocomplete.availableTags = availableTags
-                }
-            }
-        }
         if focused, let window = editor.window, window.firstResponder !== editor {
             DispatchQueue.main.async {
                 guard focused else { return }
@@ -146,10 +175,6 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.string = text
         if highlightsSyntax, let font, let storage = editor.textStorage {
             SyntaxHighlighter.applyHighlighting(to: storage, font: font)
-            editor.typingAttributes = [
-                .font: font,
-                .foregroundColor: NSColor(DaybookPalette.text.primary)
-            ]
         }
         editor.setSelectedRange(NSRange(location: cursor, length: 0))
     }
@@ -157,6 +182,7 @@ struct DaybookTextEditor: NSViewRepresentable {
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
         var parent: DaybookTextEditor
+        private var lastSelection = NSRange(location: 0, length: 0)
         init(_ parent: DaybookTextEditor) { self.parent = parent }
 
         func handleFocusChange(_ isFocused: Bool, editor: NSTextView) {
@@ -183,40 +209,30 @@ struct DaybookTextEditor: NSViewRepresentable {
         func textDidChange(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
             parent.text = editor.string
+            lastSelection = editor.selectedRange()
             applyHighlightIfReady(editor)
             updateCompletion(editor)
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let editor = notification.object as? NSTextView else { return }
-            applyHighlightIfReady(editor)
+            let selection = editor.selectedRange()
+            guard selection != lastSelection else { return }
+            lastSelection = selection
             updateCompletion(editor)
         }
 
         private func applyHighlightIfReady(_ editor: NSTextView) {
             guard !DaybookTextEditing.isProtected(editor), parent.highlightsSyntax, let storage = editor.textStorage else { return }
-            let font = NSFont.systemFont(ofSize: parent.fontSize)
-            SyntaxHighlighter.applyHighlighting(to: storage, font: font)
-            editor.typingAttributes = [
-                .font: font,
-                .foregroundColor: NSColor(DaybookPalette.text.primary)
-            ]
+            SyntaxHighlighter.applyHighlighting(to: storage, font: NSFont.systemFont(ofSize: parent.fontSize))
         }
 
         private func updateCompletion(_ editor: NSTextView) {
-            guard editor.window?.firstResponder === editor else {
+            guard !DaybookTextEditing.isProtected(editor), editor.window?.firstResponder === editor else {
                 parent.autocomplete.dismissSuggestionsOnly()
                 return
             }
-            if editor.hasMarkedText() {
-                parent.autocomplete.inputText = editor.string
-                parent.autocomplete.availableTags = parent.availableTags
-                if parent.autocomplete.showsPreview && parent.autocomplete.presentedAt == 0 {
-                    parent.autocomplete.presentedAt = ProcessInfo.processInfo.systemUptime
-                }
-                parent.autocomplete.dismissSuggestionsOnly()
-                return
-            }
+            parent.autocomplete.editor = editor
             parent.autocomplete.update(
                 text: editor.string, cursorLocation: editor.selectedRange().location, availableTags: parent.availableTags
             )
@@ -249,6 +265,7 @@ struct DaybookTextEditor: NSViewRepresentable {
                     if NSApp.currentEvent?.modifierFlags.contains(.shift) != true,
                        let candidate = completion.selectedCandidate(), completion.commit(candidate, in: textView) {
                         parent.text = textView.string
+                        lastSelection = textView.selectedRange()
                         applyHighlightIfReady(textView)
                         completion.update(
                             text: textView.string,

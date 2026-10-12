@@ -32,7 +32,7 @@ final class PrivacyVault {
     let systemKeys: any SystemVaultKeyStorage
     var generation: UInt64 = 0
     var authenticatedAt: Date?
-    var lastActivity: Date?
+    @ObservationIgnored var lastActivity: Date?
     var passwordFailures = 0
     var retryAfter: Date?
     let now: () -> Date

@@ -145,8 +145,12 @@ private struct SyntaxOverlayLayer: View {
     var body: some View {
         let sourceAnchor = proxy[source.bounds]
         let isAttributes = source.attributes != nil
-        let anchor = isAttributes ? sourceAnchor.insetBy(dx: 0, dy: -8) : sourceAnchor
         let matchAnchorWidth = !isAttributes && (source.state.context == .capture || source.state.context == .diaryCapture)
+        let anchor = resolvedAnchor(
+            sourceAnchor: sourceAnchor,
+            isAttributes: isAttributes,
+            matchAnchorWidth: matchAnchorWidth
+        )
         let placement = SyntaxOverlayPlacement.resolve(
             anchor: anchor,
             container: proxy.size,
@@ -177,6 +181,21 @@ private struct SyntaxOverlayLayer: View {
             for item in anchors where item.state.id != source.state.id { item.state.dismiss() }
         }
         .onDisappear { source.state.dismiss() }
+    }
+
+    private func resolvedAnchor(sourceAnchor: CGRect, isAttributes: Bool, matchAnchorWidth: Bool) -> CGRect {
+        if isAttributes {
+            return sourceAnchor.insetBy(dx: 0, dy: -8)
+        }
+        guard !matchAnchorWidth, sourceAnchor.height > 44,
+              let triggerRect = source.state.triggerRectInSource else {
+            return sourceAnchor
+        }
+        let minX = min(max(sourceAnchor.minX, sourceAnchor.minX + triggerRect.minX), max(sourceAnchor.minX, sourceAnchor.maxX - 1))
+        let minY = min(max(sourceAnchor.minY, sourceAnchor.minY + triggerRect.minY), max(sourceAnchor.minY, sourceAnchor.maxY - 1))
+        let width = min(max(1, triggerRect.width), max(1, sourceAnchor.maxX - minX))
+        let height = min(max(1, triggerRect.height), max(1, sourceAnchor.maxY - minY))
+        return CGRect(x: minX, y: minY, width: width, height: height)
     }
 
     @ViewBuilder

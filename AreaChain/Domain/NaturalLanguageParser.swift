@@ -195,11 +195,9 @@ enum NaturalLanguageParser {
             return !tokens.contains(where: { NSIntersectionRange($0.range, range).length > 0 })
         }
 
-        // 1. 标签（#标签）
-        for tag in TagSyntax.tokens(in: text, includesDiaryTags: false) {
-            if isFree(tag.range) {
-                tokens.append(SyntaxHighlightToken(kind: .tag(name: tag.name), range: tag.range))
-            }
+        // 1. 标签（#标签，含手记预置标签 #密码 / #小巧思 / #日记）
+        for tag in TagSyntax.tokens(in: text, includesDiaryTags: true) where isFree(tag.range) {
+            tokens.append(SyntaxHighlightToken(kind: .tag(name: tag.name), range: tag.range))
         }
 
         // 2. 优先级（!p1 ~ !p4 / !重要紧急 等）

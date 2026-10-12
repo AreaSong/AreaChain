@@ -9,6 +9,7 @@ final class SyntaxAutocompleteState {
     var allowsLivePreview: Bool = false
     var isActive: Bool = false
     var trigger: SyntaxTrigger? = nil
+    var triggerRectInSource: CGRect? = nil
     var candidates: [SyntaxCandidate] = []
     var selectedIndex: Int = 0
     var showsAttributes = false
@@ -35,9 +36,9 @@ final class SyntaxAutocompleteState {
 
     func update(text: String, cursorLocation: Int, availableTags: [String] = []) {
         let textChanged = text != inputText
-        inputText = text
-        self.availableTags = availableTags
-        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || textChanged {
+        if textChanged { inputText = text }
+        if self.availableTags != availableTags { self.availableTags = availableTags }
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || textChanged, isDismissedByUser {
             isDismissedByUser = false
         }
         if showsPreview && presentedAt == 0 {
@@ -54,13 +55,45 @@ final class SyntaxAutocompleteState {
             return
         }
 
-        isDismissedByUser = false
-        trigger = detected
-        candidates = items
-        selectedIndex = max(0, min(selectedIndex, items.count - 1))
+        if isDismissedByUser { isDismissedByUser = false }
+        if trigger != detected { trigger = detected }
+        let resolvedRect = Self.resolveTriggerRect(in: editor, trigger: detected)
+        if triggerRectInSource != resolvedRect { triggerRectInSource = resolvedRect }
+        if candidates != items { candidates = items }
+        let clampedIndex = max(0, min(selectedIndex, items.count - 1))
+        if selectedIndex != clampedIndex { selectedIndex = clampedIndex }
         if !isActive { presentedAt = ProcessInfo.processInfo.systemUptime }
-        showsAttributes = false
-        isActive = true
+        if showsAttributes { showsAttributes = false }
+        if !isActive { isActive = true }
+    }
+
+    static func resolveTriggerRect(in editor: NSTextView?, trigger: SyntaxTrigger) -> CGRect? {
+        guard let editor, !editor.isFieldEditor, editor.window != nil,
+              let scroll = editor.enclosingScrollView,
+              let layoutManager = editor.layoutManager,
+              let textContainer = editor.textContainer else { return nil }
+        layoutManager.ensureLayout(for: textContainer)
+        let length = (editor.string as NSString).length
+        guard trigger.range.location != NSNotFound, trigger.range.location <= length else { return nil }
+        let clampedLength = min(max(1, trigger.range.length), max(0, length - trigger.range.location))
+        let charRange = NSRange(location: trigger.range.location, length: clampedLength)
+        let glyphRange = layoutManager.glyphRange(forCharacterRange: charRange, actualCharacterRange: nil)
+        var glyphRect = layoutManager.boundingRect(forGlyphRange: glyphRange, in: textContainer)
+        let lineHeight = max(18, editor.font.map { layoutManager.defaultLineHeight(for: $0) } ?? 18)
+        if glyphRect.height < lineHeight {
+            glyphRect.size.height = lineHeight
+        }
+        let origin = editor.textContainerOrigin
+        let rectInEditor = glyphRect.offsetBy(dx: origin.x, dy: origin.y)
+        let rectInScroll = scroll.convert(rectInEditor, from: editor)
+        let scrollBounds = scroll.bounds
+        guard scrollBounds.width > 0, scrollBounds.height > 0 else { return nil }
+        let rawY = scroll.isFlipped ? rectInScroll.minY : (scrollBounds.height - rectInScroll.maxY)
+        let height = min(rectInScroll.height, scrollBounds.height)
+        let x = min(max(0, rectInScroll.minX), max(0, scrollBounds.width - 1))
+        let y = min(max(0, rawY), max(0, scrollBounds.height - height))
+        let width = min(max(1, rectInScroll.width), max(1, scrollBounds.width - x))
+        return CGRect(x: x, y: y, width: width, height: height)
     }
 
     func selectPrevious() {
@@ -100,26 +133,27 @@ final class SyntaxAutocompleteState {
     }
 
     func dismissSuggestionsOnly() {
-        isActive = false
-        trigger = nil
-        candidates = []
-        selectedIndex = 0
+        if isActive { isActive = false }
+        if trigger != nil { trigger = nil }
+        if triggerRectInSource != nil { triggerRectInSource = nil }
+        if !candidates.isEmpty { candidates = [] }
+        if selectedIndex != 0 { selectedIndex = 0 }
     }
 
     func dismissPreview() {
-        isDismissedByUser = true
+        if !isDismissedByUser { isDismissedByUser = true }
     }
 
     func dismiss() {
         dismissSuggestionsOnly()
-        showsAttributes = false
+        if showsAttributes { showsAttributes = false }
     }
 
     func reset() {
         dismiss()
-        isDismissedByUser = false
-        inputText = ""
-        presentedAt = 0
+        if isDismissedByUser { isDismissedByUser = false }
+        if !inputText.isEmpty { inputText = "" }
+        if presentedAt != 0 { presentedAt = 0 }
     }
 
     func showAttributes() {

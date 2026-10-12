@@ -26,6 +26,14 @@ struct LiveDiaryComposerPreview: View {
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
 
+    @MainActor
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        formatter.dateStyle = .none
+        return formatter
+    }()
+
     private var parsed: ParsedDiaryCapture {
         NaturalLanguageParser.parseDiaryCapture(text)
     }
@@ -37,33 +45,38 @@ struct LiveDiaryComposerPreview: View {
         return parsed.tagNames.contains { DiaryMemoTags.isPasswordName($0) }
     }
 
+    /// 实时输入预览态（未显式要求遮罩）直接展示正在输入的解析正文，仅在底栏展示隐私盾牌标识。
+    private var masksContent: Bool {
+        isSensitiveExternal || (!allTags.isEmpty && DiaryPrivacy.requiresProtection(text: text, tagIDs: [], tags: allTags))
+    }
+
     private var todayTimeString: String {
-        let formatter = DateFormatter()
-        formatter.locale = locale
-        formatter.timeStyle = .short
-        formatter.dateStyle = .none
+        let formatter = Self.timeFormatter
+        if formatter.locale != locale { formatter.locale = locale }
         let time = formatter.string(from: Date())
         return L10n.format("diary.date.today", locale: locale, time)
     }
 
     private var displayTitle: String {
-        if isSensitive {
+        if masksContent {
             return L10n.string("diary.private.title", locale: locale)
         }
-        let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let current = parsed
+        let title = current.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         if !title.isEmpty { return title }
-        let body = parsed.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = current.body.trimmingCharacters(in: .whitespacesAndNewlines)
         return body.isEmpty ? "" : body
     }
 
     private var noteText: String {
-        if isSensitive { return "" }
-        let title = parsed.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        return title.isEmpty ? "" : parsed.body.trimmingCharacters(in: .whitespacesAndNewlines)
+        if masksContent { return "" }
+        let current = parsed
+        let title = current.cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        return title.isEmpty ? "" : current.body.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var shouldShowTitleBubble: Bool {
-        !isSensitive && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(displayTitle)
+        !masksContent && (isTitleTextHovered || isTitleBubbleHovered) && RowTitleTruncation.isTruncated(displayTitle)
     }
 
     private var geometryObserver: some View {
@@ -129,7 +142,7 @@ struct LiveDiaryComposerPreview: View {
         HStack(alignment: .center, spacing: 4) {
             Text(displayTitle.isEmpty ? " " : displayTitle)
                 .font(DaybookType.body)
-                .foregroundStyle(isSensitive ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
+                .foregroundStyle(masksContent ? DaybookPalette.text.secondary : DaybookPalette.text.primary)
                 .lineLimit(1)
                 .truncationMode(AppPreferences.shared.contentTruncation.textTruncation)
                 .multilineTextAlignment(.leading)

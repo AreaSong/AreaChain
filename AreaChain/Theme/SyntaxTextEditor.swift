@@ -8,11 +8,13 @@ struct SyntaxTextEditor: View {
     var fontSize: CGFloat = DaybookType.bodySize
     var context: SyntaxInputContext
     var externalAutocomplete: SyntaxAutocompleteState?
+    var availableTags: [String]?
     var onSubmit: (() -> Void)?
     var commandChord: ShortcutChord?
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var autocomplete: SyntaxAutocompleteState
+    @State private var hasMarkedText = false
 
     private var activeAutocomplete: SyntaxAutocompleteState {
         externalAutocomplete ?? autocomplete
@@ -21,8 +23,8 @@ struct SyntaxTextEditor: View {
     init(
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
         fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags,
-        externalAutocomplete: SyntaxAutocompleteState? = nil, onSubmit: (() -> Void)? = nil,
-        commandChord: ShortcutChord? = nil
+        externalAutocomplete: SyntaxAutocompleteState? = nil, availableTags: [String]? = nil,
+        onSubmit: (() -> Void)? = nil, commandChord: ShortcutChord? = nil
     ) {
         _text = text
         _focused = focused
@@ -30,6 +32,7 @@ struct SyntaxTextEditor: View {
         self.fontSize = fontSize
         self.context = context
         self.externalAutocomplete = externalAutocomplete
+        self.availableTags = availableTags
         self.onSubmit = onSubmit
         self.commandChord = commandChord
         _autocomplete = State(initialValue: SyntaxAutocompleteState(
@@ -41,16 +44,18 @@ struct SyntaxTextEditor: View {
     var body: some View {
         DaybookTextEditor(
             text: $text, focused: $focused, placeholder: placeholder, fontSize: fontSize,
-            autocomplete: activeAutocomplete, availableTags: tags.filter { $0.deletedAt == nil }.map(\.name),
-            onSubmit: onSubmit, commandChord: commandChord
+            autocomplete: activeAutocomplete,
+            availableTags: availableTags ?? tags.filter { $0.deletedAt == nil }.map(\.name),
+            onSubmit: onSubmit, commandChord: commandChord,
+            onMarkedTextChange: { hasMarkedText = $0 }
         )
         .overlay(alignment: .topLeading) {
-            if text.isEmpty {
+            if text.isEmpty && !hasMarkedText {
                 Text(placeholder)
                     .font(placeholderFont)
                     .foregroundStyle(DaybookPalette.text.secondary)
                     .padding(.horizontal, 9) // token-exempt: 对齐 AppKit NSTextView 文本容器内边距 (4 inset + 5 fragment padding)
-                    .padding(.vertical, 5) // token-exempt: 对齐 AppKit NSTextView 垂直容器内边距 (5)
+                    .padding(.vertical, 4) // token-exempt: 对齐 AppKit NSTextView 垂直容器内边距 (4)
                     .allowsHitTesting(false)
             }
         }
