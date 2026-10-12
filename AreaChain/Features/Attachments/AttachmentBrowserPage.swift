@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -5,10 +6,20 @@ struct AttachmentBrowserPage: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.workspaceHostContext) private var hostContext
+    @WorkspaceNavigationContext private var navigation
     @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
     @Query private var tags: [TagItem]
+
+    @State private var filter: AttachmentFilterKind = .all
+    @State private var sort: AttachmentSortOrder = .newest
+    @State private var query = ""
+    @State private var searchFocused = false
+    @State private var selection: Set<UUID> = []
+    @State private var renamingStorageID: UUID?
+    @State private var renameDraft = ""
     @State private var preview: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
+    @State private var poolRevision = 0
 
     var body: some View {
         DaybookPage(
@@ -17,31 +28,130 @@ struct AttachmentBrowserPage: View {
             minWidth: 440,
             minHeight: 480
         ) {
-            if clusters.isEmpty {
-                DaybookEmptyState(title: "attachments.empty", systemImage: "photo")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 16) {
-                        ForEach(clusters) { cluster in
-                            clusterBlock(cluster)
-                        }
-                    }
+            VStack(alignment: .leading, spacing: DaybookSpacing.md) {
+                if !allLibraryItems.isEmpty || !query.isEmpty || filter != .all {
+                    toolbarSection
                 }
-                .daybookScroll()
+                if !selectedItems.isEmpty {
+                    AttachmentSelectionToolbar(
+                        selectedCount: selectedItems.count,
+                        onSelectAll: selectAllDisplayed,
+                        onClearSelection: { selection.removeAll() },
+                        onDeleteSelected: confirmBatchTrash
+                    )
+                }
+                contentList
             }
         }
+        .workspaceHeader(actions: headerActions)
         .confirmMoveToTrash($pendingTrash)
         .popover(item: $preview) { item in
             previewBody(item)
         }
-        .onChange(of: visibleAttachments.map(\.id)) { _, ids in
-            if let preview, !ids.contains(preview.id) { self.preview = nil }
+        .onChange(of: allLibraryItems.map(\.storageID)) { _, storageIDs in
+            let valid = Set(storageIDs)
+            selection.formIntersection(valid)
+            if let renamingStorageID, !valid.contains(renamingStorageID) {
+                cancelRename()
+            }
+            if let preview, !allLibraryItems.contains(where: { $0.primaryReference.id == preview.id }) {
+                self.preview = nil
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .boardDidChange)) { _ in
+            poolRevision += 1
         }
     }
 
-    private var clusters: [AttachmentCluster] {
-        AttachmentClusters.grouped(visibleAttachments)
+    private var headerActions: [WorkspaceHeaderAction] {
+        [
+            WorkspaceHeaderAction(id: "attachments.upload", title: "attachments.upload", systemImage: "photo.badge.plus") {
+                AttachmentActions.pickUnlinkedImage(context: modelContext, store: activeStore, root: activeRoot)
+            },
+            WorkspaceHeaderAction(id: "attachments.paste", title: "attachments.paste", systemImage: "doc.on.clipboard") {
+                _ = AttachmentActions.pasteUnlinkedImage(context: modelContext, store: activeStore, root: activeRoot)
+            }
+        ]
+    }
+
+    private var toolbarSection: some View {
+        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            searchField
+                .frame(maxWidth: 360)
+            AttachmentBrowserFilterBar(
+                filter: $filter,
+                sort: $sort,
+                counts: filterCounts,
+                totalDisplayed: displayedItems.count,
+                selectedCount: selectedDisplayedCount,
+                onToggleSelectAll: toggleSelectAllDisplayed
+            )
+        }
+    }
+
+    private var searchField: some View {
+        DaybookInputShell(kind: .search, focused: searchFocused) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(DaybookPalette.text.secondary)
+        } field: {
+            DaybookTextField(
+                text: $query,
+                placeholder: L10n.string("attachments.search.placeholder", locale: locale),
+                fontSize: DaybookType.bodySize,
+                focus: $searchFocused,
+                onSubmit: {},
+                allowsShiftNewline: false,
+                newlinePolicy: .searchWhitespace,
+                onEscape: {
+                    query = ""
+                    searchFocused = false
+                }
+            )
+            .accessibilityIdentifier("attachments.search.input")
+        }
+        .accessibilityLabel(Text("attachments.search.placeholder"))
+    }
+
+    @ViewBuilder
+    private var contentList: some View {
+        if displayedItems.isEmpty {
+            DaybookEmptyState(
+                title: allLibraryItems.isEmpty ? "attachments.empty" : "attachments.filter.empty",
+                systemImage: "photo"
+            )
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        } else {
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+                    ForEach(displayedItems) { item in
+                        AttachmentLibraryCardView(
+                            item: item,
+                            image: loadedImage(item.primaryReference),
+                            isSelected: selection.contains(item.storageID),
+                            isRenaming: renamingStorageID == item.storageID,
+                            renameDraft: $renameDraft,
+                            onToggleSelect: { toggleSelect(item.storageID) },
+                            onPreview: { preview = item.primaryReference },
+                            onBeginRename: { beginRename(item) },
+                            onCommitRename: { commitRename(item) },
+                            onCancelRename: cancelRename,
+                            onCopyToken: { copyToken(for: item) },
+                            onNavigateReference: navigate(to:),
+                            onDelete: { confirmSingleTrash(item) }
+                        )
+                    }
+                }
+            }
+            .daybookScroll()
+        }
+    }
+
+    private var activeStore: AttachmentStore {
+        hostContext?.attachments ?? .shared
+    }
+
+    private var activeRoot: URL? {
+        hostContext?.attachments?.directory()
     }
 
     private var owners: AttachmentOwnerIndex {
@@ -49,73 +159,53 @@ struct AttachmentBrowserPage: View {
             ?? .empty
     }
 
-    private var visibleAttachments: [AttachmentItem] {
-        attachments.filter { AttachmentAccess.canBrowse($0, owners: owners, tags: tags) }
+    private var unlinkedPool: [UnlinkedAttachmentEntry] {
+        _ = poolRevision
+        return AttachmentPoolStore.unlinkedItems(store: activeStore, root: activeRoot)
     }
 
-    private func clusterBlock(_ cluster: AttachmentCluster) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(ownerTitle(cluster))
-                .font(DaybookType.subtitle.weight(.semibold))
-                .foregroundStyle(DaybookPalette.text.primary)
-            Text(kindLabel(cluster.kind))
-                .font(DaybookType.badge)
-                .foregroundStyle(DaybookPalette.text.secondary)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 72), spacing: 8)], spacing: 8) {
-                ForEach(cluster.items) { item in
-                    thumb(item)
-                }
-            }
-        }
+    private var allLibraryItems: [AttachmentLibraryItem] {
+        let pool = unlinkedPool
+        let storageIDs = attachments.map { $0.storageID ?? $0.id } + pool.map(\.id)
+        let hashes = AttachmentPoolStore.contentHashes(for: storageIDs, store: activeStore, root: activeRoot)
+        return AttachmentLibraryProjection.build(
+            attachments: attachments,
+            unlinked: pool,
+            owners: owners,
+            tags: tags,
+            contentHashes: hashes,
+            locale: locale
+        )
     }
 
-    @ViewBuilder
-    private func thumb(_ item: AttachmentRef) -> some View {
-        if visibleAttachments.contains(where: { $0.id == item.id }) {
-            Button {
-                preview = item
-            } label: {
-                VStack(spacing: 4) {
-                    thumbImage(item)
-                    Text(item.filename)
-                        .font(DaybookType.badge)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                        .lineLimit(1)
-                }
-            }
-            .buttonStyle(DaybookButtonStyle(.quiet))
-            .accessibilityLabel(item.filename)
-            .accessibilityIdentifier("attachments.preview." + item.id.uuidString)
-            .help(item.filename)
-            .contextMenu {
-                Button("attachments.delete", role: .destructive) {
-                    pendingTrash = PendingTrash(title: item.filename) {
-                        trash(item.id)
-                    }
-                }
-            }
-        }
+    private var displayedItems: [AttachmentLibraryItem] {
+        AttachmentLibraryProjection.filterAndSort(
+            allLibraryItems,
+            filter: filter,
+            query: query,
+            sort: sort
+        )
     }
 
-    @ViewBuilder
-    private func thumbImage(_ item: AttachmentRef) -> some View {
-        if let image = loadedImage(item) {
-            Image(nsImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 72, height: 72)
-                .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        } else {
-            Image(systemName: "photo")
-                .font(.system(size: 18)) // token-exempt: entity 是 17pt，这处是 18pt
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .frame(width: 72, height: 72)
+    private var filterCounts: [AttachmentFilterKind: Int] {
+        var result: [AttachmentFilterKind: Int] = [:]
+        for kind in AttachmentFilterKind.allCases {
+            result[kind] = AttachmentLibraryProjection.filterAndSort(allLibraryItems, filter: kind).count
         }
+        return result
+    }
+
+    private var selectedItems: [AttachmentLibraryItem] {
+        allLibraryItems.filter { selection.contains($0.storageID) }
+    }
+
+    private var selectedDisplayedCount: Int {
+        displayedItems.filter { selection.contains($0.storageID) }.count
     }
 
     @ViewBuilder
     private func previewBody(_ item: AttachmentRef) -> some View {
-        if !visibleAttachments.contains(where: { $0.id == item.id }) {
+        if !allLibraryItems.contains(where: { $0.primaryReference.id == item.id }) {
             Text("diary.private.title")
         } else if let image = loadedImage(item) {
             LoadedAttachmentImage(image: image)
@@ -138,30 +228,96 @@ struct AttachmentBrowserPage: View {
         return AttachmentStore.image(reference: item)
     }
 
-    private func ownerTitle(_ cluster: AttachmentCluster) -> String {
-        switch cluster.kind {
-        case .todo:
-            return owners.liveTodos[cluster.ownerID]?.title ?? cluster.items.first?.filename ?? ""
-        case .diary:
-            guard let entry = owners.liveDiaries[cluster.ownerID] else {
-                return L10n.string("diary.private.title", locale: locale)
+    private func toggleSelect(_ storageID: UUID) {
+        if selection.contains(storageID) {
+            selection.remove(storageID)
+        } else {
+            selection.insert(storageID)
+        }
+    }
+
+    private func selectAllDisplayed() {
+        for item in displayedItems {
+            selection.insert(item.storageID)
+        }
+    }
+
+    private func toggleSelectAllDisplayed() {
+        if selectedDisplayedCount == displayedItems.count && !displayedItems.isEmpty {
+            for item in displayedItems {
+                selection.remove(item.storageID)
             }
-            return DiaryPrivacy.displayText(entry.snapshot, tags: tags, locale: locale)
-        case .routine:
-            return owners.liveRoutines[cluster.ownerID]?.title ?? cluster.items.first?.filename ?? ""
+        } else {
+            selectAllDisplayed()
         }
     }
 
-    private func kindLabel(_ kind: AttachmentOwner) -> LocalizedStringKey {
-        switch kind {
-        case .todo: "attachments.owner.todo"
-        case .diary: "attachments.owner.diary"
-        case .routine: "attachments.owner.routine"
+    private func beginRename(_ item: AttachmentLibraryItem) {
+        renamingStorageID = item.storageID
+        renameDraft = item.filename
+    }
+
+    private func commitRename(_ item: AttachmentLibraryItem) {
+        _ = AttachmentPoolStore.rename(
+            item: item,
+            newFilename: renameDraft,
+            context: modelContext,
+            store: activeStore,
+            root: activeRoot
+        )
+        poolRevision += 1
+        cancelRename()
+    }
+
+    private func cancelRename() {
+        renamingStorageID = nil
+        renameDraft = ""
+    }
+
+    private func copyToken(for item: AttachmentLibraryItem) {
+        let token = AttachmentSyntax.spelling(for: item.filename)
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(token, forType: .string)
+    }
+
+    private func navigate(to ref: AttachmentReferenceItem) {
+        switch ref.kind {
+        case .todo, .routine:
+            navigation.revealTab(.allItems, inspecting: ref.ownerID, dayKey: ref.dayKey)
+        case .diary:
+            navigation.revealTab(.diary)
+            if let dayKey = ref.dayKey {
+                navigation.inspectDiary(id: ref.ownerID, dayKey: dayKey)
+            }
         }
     }
 
-    private func trash(_ id: UUID) {
-        guard let item = attachments.first(where: { $0.id == id }) else { return }
-        AttachmentActions.trash(item)
+    private func confirmSingleTrash(_ item: AttachmentLibraryItem) {
+        pendingTrash = PendingTrash(title: item.filename) {
+            _ = AttachmentPoolStore.trashItems(
+                [item],
+                context: modelContext,
+                store: activeStore,
+                root: activeRoot
+            )
+            selection.remove(item.storageID)
+            poolRevision += 1
+        }
+    }
+
+    private func confirmBatchTrash() {
+        let targets = selectedItems
+        guard !targets.isEmpty else { return }
+        let summaryTitle = targets.count == 1 ? targets[0].filename : "\(targets.count)"
+        pendingTrash = PendingTrash(title: summaryTitle) {
+            _ = AttachmentPoolStore.trashItems(
+                targets,
+                context: modelContext,
+                store: activeStore,
+                root: activeRoot
+            )
+            selection.removeAll()
+            poolRevision += 1
+        }
     }
 }

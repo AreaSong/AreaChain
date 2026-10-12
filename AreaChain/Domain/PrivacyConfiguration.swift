@@ -18,6 +18,11 @@ struct PasswordKeySlot: Codable, Equatable, Sendable {
     var wrappedKey: Data
 }
 
+enum PreferredUnlockMethod: String, Codable, CaseIterable, Sendable {
+    case system
+    case password
+}
+
 /// 只保存密钥的加密封装；系统密码、主密码和解密后的数据密钥均不落盘。
 struct PrivacyConfiguration: Codable, Equatable, Sendable {
     var version = 1
@@ -26,6 +31,7 @@ struct PrivacyConfiguration: Codable, Equatable, Sendable {
     var systemKeyID: UUID?
     var verification: Data
     var idleSeconds: Int = 300
+    var preferredMethod: PreferredUnlockMethod? = nil
 
     func validate() throws {
         guard version == 1 else { throw PrivacyError.unsupportedVersion }

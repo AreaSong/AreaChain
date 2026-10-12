@@ -44,6 +44,12 @@ final class PrivacyVault {
     var hasSystemUnlock: Bool { configuration?.systemKeyID != nil }
     var hasMasterPassword: Bool { configuration?.passwordSlot != nil }
     var idleSeconds: Int { configuration?.idleSeconds ?? 300 }
+    var preferredMethod: PreferredUnlockMethod {
+        if hasSystemUnlock && hasMasterPassword {
+            return configuration?.preferredMethod ?? .system
+        }
+        return hasSystemUnlock ? .system : .password
+    }
     var hasPendingSystemKeyCleanup: Bool {
         systemKeyJournalUnavailable || pendingSystemKeyIDs.contains { $0 != configuration?.systemKeyID }
     }

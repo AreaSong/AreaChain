@@ -165,7 +165,7 @@ final class DiaryWindowController: NSObject, NSWindowDelegate {
     }
 
     private func refreshChrome() {
-        window.title = L10n.string("tab.diary", locale: AppPreferences.shared.resolvedLocale)
+        window.title = session.plainWindowTitle(locale: AppPreferences.shared.resolvedLocale)
         window.isDocumentEdited = session.hasUnsavedChanges
     }
 

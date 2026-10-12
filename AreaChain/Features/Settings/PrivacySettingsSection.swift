@@ -18,6 +18,7 @@ struct PrivacySettingsSection: View {
     @State private var dialog: Dialog?
     @State private var busy = false
     @State private var statusKey: String?
+    @State private var pendingPreferredMethod: PreferredUnlockMethod?
 
     init(vault: PrivacyVault? = nil) { self.vault = vault ?? .shared }
 
@@ -40,7 +41,7 @@ struct PrivacySettingsSection: View {
             if busy { ProgressView().controlSize(.small) }
         }
         .disabled(busy || StoreHealth.shared.isUsingMemoryFallback)
-        .sheet(item: $dialog) { item in
+        .sheet(item: $dialog, onDismiss: { pendingPreferredMethod = nil }) { item in
             Group {
                 switch item {
                 case .setup, .tags:
@@ -176,6 +177,35 @@ struct PrivacySettingsSection: View {
             ], layout: .formRow)
             .accessibilityIdentifier("privacy.autolock")
             .systemPageMarker("privacy.autolock")
+            DaybookPicker("privacy.methods.preferred", selection: Binding(
+                get: { vault.preferredMethod },
+                set: { method in
+                    if method == .password && !vault.hasMasterPassword {
+                        pendingPreferredMethod = .password
+                        dialog = .master
+                        return
+                    }
+                    if method == .system && !vault.hasSystemUnlock {
+                        run {
+                            try await authenticate()
+                            try await vault.enableSystemUnlock()
+                            try vault.setPreferredMethod(.system)
+                        }
+                        return
+                    }
+                    do {
+                        try vault.setPreferredMethod(method)
+                        statusKey = "privacy.settings.saved"
+                    } catch {
+                        statusKey = (error as? PrivacyError ?? .storageFailure).messageKey
+                    }
+                }
+            ), options: [
+                DaybookPickerOption(PreferredUnlockMethod.system, "privacy.methods.preferred.system"),
+                DaybookPickerOption(PreferredUnlockMethod.password, "privacy.methods.preferred.password")
+            ], layout: .formRow)
+            .accessibilityIdentifier("privacy.methods.preferred")
+            .systemPageMarker("privacy.methods.preferred")
             Text("privacy.methods.help").font(DaybookType.caption).foregroundStyle(DaybookPalette.text.secondary)
         }
     }
@@ -185,6 +215,7 @@ struct PrivacySettingsSection: View {
             title: "privacy.master.label",
             confirmation: item == .master,
             explanation: "privacy.master.help",
+            minimumLength: item == .master ? 12 : 1,
             action: { password in try await perform(item, password: password) },
             onComplete: { dialog = nil; statusKey = "privacy.settings.saved" })
     }
@@ -192,8 +223,13 @@ struct PrivacySettingsSection: View {
     private func perform(_ item: Dialog, password: String) async throws {
         switch item {
         case .master:
+            guard password.count >= 12, password.utf8.count <= 4_096 else { throw PrivacyError.weakPassword }
             try await authenticate()
             try await vault.changePassword(to: password)
+            if let pending = pendingPreferredMethod {
+                pendingPreferredMethod = nil
+                try? vault.setPreferredMethod(pending)
+            }
         case .disableSystem:
             try await vault.disableSystemUnlock(masterPassword: password)
         default:

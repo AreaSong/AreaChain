@@ -48,7 +48,8 @@ extension TaskMutationService {
         let result = TitleModification(targetID: todo.id)
         guard let edit = TaskTitleEdit(rawInput) else { result.emptyInput = true; return result }
         return editTitle(todo, edit: edit, in: context, dependencies: dependencies) {
-            try InputTagResolver.merging(edit.tagNames, into: todo.tagIDs, in: context)
+            InputAttachmentResolver.linkIfPresent(in: rawInput, ownerKind: .todo, ownerID: todo.id, context: context)
+            return try InputTagResolver.merging(edit.tagNames, into: todo.tagIDs, in: context)
         }
     }
 

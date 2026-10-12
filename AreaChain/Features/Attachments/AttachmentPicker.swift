@@ -92,11 +92,67 @@ enum AttachmentPicker {
             guard NSImage(data: data) != nil, try ownerIsLive(owner, context: context) else {
                 throw RepositoryError.invalidArgument("附件拥有者不可用，或图像无法解码")
             }
-            _ = try store.save(data: data, filename: filename, ownerKind: owner.kind,
-                               ownerID: owner.id, context: context, id: id)
+            if let concreteStore = store as? AttachmentStore {
+                _ = try AttachmentPoolStore.saveOrLink(
+                    data: data, filename: filename, ownerKind: owner.kind,
+                    ownerID: owner.id, context: context, store: concreteStore, id: id
+                )
+            } else {
+                let existing = (try? context.fetch(FetchDescriptor<AttachmentItem>(predicate: SoftDelete.liveAttachments)))?.map(\.filename) ?? []
+                let resolvedFilename = AttachmentSyntax.uniqueFilename(base: filename, existing: existing)
+                _ = try store.save(data: data, filename: resolvedFilename, ownerKind: owner.kind,
+                                   ownerID: owner.id, context: context, id: id)
+            }
         }
         if !saved { store.removeFile(id: id) }
         return saved
+    }
+
+    static func pickUnlinkedImage(
+        context: ModelContext,
+        store: AttachmentStore = .shared,
+        root: URL? = nil
+    ) {
+        presentImagePanel { url in
+            do {
+                let data = try Data(contentsOf: url)
+                _ = try AttachmentPoolStore.saveUnlinked(
+                    data: data,
+                    filename: url.lastPathComponent,
+                    context: context,
+                    store: store,
+                    root: root
+                )
+            } catch {
+                MutationFeedback.shared.reportFailure(error)
+            }
+        }
+    }
+
+    @discardableResult
+    static func pasteUnlinkedImage(
+        context: ModelContext,
+        store: AttachmentStore = .shared,
+        root: URL? = nil,
+        pasteboard: NSPasteboard = .general
+    ) -> Bool {
+        guard let image = ImageBytes.pasteboardImage(pasteboard), let data = ImageBytes.png(from: image) else {
+            NSSound.beep()
+            return false
+        }
+        do {
+            _ = try AttachmentPoolStore.saveUnlinked(
+                data: data,
+                filename: "paste.png",
+                context: context,
+                store: store,
+                root: root
+            )
+            return true
+        } catch {
+            MutationFeedback.shared.reportFailure(error)
+            return false
+        }
     }
 
     static func captureScreen(

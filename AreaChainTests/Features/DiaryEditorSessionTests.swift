@@ -5,6 +5,7 @@ import Testing
 
 @Suite(.serialized) @MainActor
 struct DiaryEditorSessionTests {
+    private static var retainedContainers: [ModelContainer] = []
     @Test func draftStaysInMemoryUntilSavedAndSubsequentSavesKeepIdentity() throws {
         let container = try fixture()
         let context = container.mainContext
@@ -136,8 +137,156 @@ struct DiaryEditorSessionTests {
         #expect(long.count == 401 && long.hasSuffix("…"))
     }
 
+    @Test func pendingAttachmentsStayInMemoryUntilSavedAndRollbackOnFailure() throws {
+        let container = try fixture()
+        let context = container.mainContext
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "areachain-diary-staged-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = AttachmentStore(root: root)
+        var rejectsSave = true
+        let session = DiaryEditorSession(
+            source: .draft(BoardComposerDraft(text: "#123 你好"), dayKey: "2026-09-13"),
+            context: context, attachmentStore: store,
+            commit: { ctx in
+                if rejectsSave { throw CocoaError(.fileWriteNoPermission) }
+                try ctx.save()
+            }
+        )
+        let board = NSPasteboard(name: .init("areachain.diary.paste.\(UUID().uuidString)"))
+        defer { board.clearContents() }
+        let png = try #require(ImageBytes.png(from: syntheticImage()))
+        board.clearContents()
+        board.setData(png, forType: .png)
+
+        #expect(session.pasteAttachment(from: board))
+        #expect(session.pendingAttachments.count == 1)
+        let cancelledID = try #require(session.pendingAttachments.first?.id)
+        session.removeAttachment(id: cancelledID)
+        #expect(session.pendingAttachments.isEmpty)
+
+        #expect(session.pasteAttachment(from: board))
+        #expect(session.pendingAttachments.count == 1)
+        #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 0)
+
+        let stagedID = try #require(session.pendingAttachments.first?.id)
+        #expect(!session.save())
+        #expect(session.pendingAttachments.count == 1)
+        #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 0)
+        #expect(try context.fetchCount(FetchDescriptor<AttachmentItem>()) == 0)
+        #expect(!FileManager.default.fileExists(atPath: store.fileURL(id: stagedID).path))
+
+        rejectsSave = false
+        #expect(session.save())
+        #expect(session.pendingAttachments.isEmpty && !session.hasUnsavedChanges)
+        #expect(try context.fetchCount(FetchDescriptor<DiaryEntry>()) == 1)
+        let savedAttachment = try #require(context.fetch(FetchDescriptor<AttachmentItem>()).first)
+        #expect(savedAttachment.id == stagedID && savedAttachment.ownerID == session.entryID)
+        #expect(FileManager.default.fileExists(atPath: store.fileURL(id: stagedID).path))
+
+        session.removeAttachment(id: stagedID)
+        #expect(session.hasUnsavedChanges && savedAttachment.deletedAt == nil)
+        #expect(session.save())
+        #expect(savedAttachment.deletedAt != nil && !session.hasUnsavedChanges)
+    }
+
+    @Test func commandVInEditorStagesImageWhenPasteboardHasImageOnly() throws {
+        let container = try fixture()
+        let session = DiaryEditorSession(
+            source: .draft(BoardComposerDraft(text: "快捷键粘贴图片"), dayKey: "2026-09-13"),
+            context: container.mainContext
+        )
+        let controller = DiaryWindows().openDraft(
+            BoardComposerDraft(text: "快捷键粘贴图片"), dayKey: "2026-09-13",
+            context: container.mainContext, activate: false
+        )
+        defer { controller.window.close() }
+        controller.window.contentView?.layoutSubtreeIfNeeded()
+        let editor = try #require(findEditor(in: controller.window.contentView))
+        _ = controller.window.makeFirstResponder(editor)
+        let board = NSPasteboard(name: .init("areachain.diary.cmdv.\(UUID().uuidString)"))
+        defer { board.clearContents() }
+        editor.pasteboard = board
+        let png = try #require(ImageBytes.png(from: syntheticImage()))
+        board.clearContents()
+        board.setData(png, forType: .png)
+
+        let event = try #require(NSEvent.keyEvent(
+            with: .keyDown, location: .zero, modifierFlags: [.command], timestamp: 0,
+            windowNumber: controller.window.windowNumber, context: nil,
+            characters: "v", charactersIgnoringModifiers: "v", isARepeat: false, keyCode: 9
+        ))
+        #expect(editor.performKeyEquivalent(with: event))
+        #expect(controller.session.pendingAttachments.count == 1)
+        #expect(try container.mainContext.fetchCount(FetchDescriptor<AttachmentItem>()) == 0)
+        _ = session
+    }
+
+    @Test func titleAndBodyRoundTripAndWindowHeadingDistinguishesBodyOnly() throws {
+        let container = try fixture()
+        let context = container.mainContext
+        let locale = Locale(identifier: "zh-Hans")
+
+        let untitled = DiaryEditorSession(source: .draft(BoardComposerDraft(), dayKey: "2026-09-13"), context: context)
+        #expect(untitled.windowHeading(locale: locale) == "新手记")
+        #expect(untitled.showsWindowUnsavedBadge)
+        untitled.text = "第一行纯正文\n第二行纯正文"
+        #expect(untitled.windowHeading(locale: locale) == "第一行纯正文")
+        #expect(untitled.showsWindowUnsavedBadge)
+        #expect(untitled.save())
+        #expect(!untitled.showsWindowUnsavedBadge)
+        #expect(untitled.windowHeading(locale: locale) == "第一行纯正文")
+        let savedUntitled = try #require(untitled.record)
+        #expect(!savedUntitled.hasExplicitTitle)
+
+        let reopenedUntitled = DiaryEditorSession(source: .entry(savedUntitled), context: context)
+        #expect(reopenedUntitled.title.isEmpty)
+        #expect(reopenedUntitled.text == "第一行纯正文\n第二行纯正文")
+
+        let titled = DiaryEditorSession(source: .draft(BoardComposerDraft(), dayKey: "2026-09-13"), context: context)
+        titled.title = "周会纪要"
+        titled.text = "1. 确认排期\n2. 接口联调"
+        #expect(titled.windowHeading(locale: locale) == "周会纪要")
+        #expect(titled.showsWindowUnsavedBadge)
+        #expect(titled.save())
+        #expect(!titled.showsWindowUnsavedBadge)
+        #expect(titled.windowHeading(locale: locale) == "周会纪要")
+        let savedTitled = try #require(titled.record)
+        #expect(savedTitled.hasExplicitTitle)
+        #expect(savedTitled.text == "周会纪要\n1. 确认排期\n2. 接口联调")
+
+        let reopenedTitled = DiaryEditorSession(source: .entry(savedTitled), context: context)
+        #expect(reopenedTitled.title == "周会纪要")
+        #expect(reopenedTitled.text == "1. 确认排期\n2. 接口联调")
+        #expect(!reopenedTitled.hasUnsavedChanges)
+    }
+
+    private func findEditor(in view: NSView?) -> DaybookAppKitTextView? {
+        guard let view else { return nil }
+        if let editor = view as? DaybookAppKitTextView { return editor }
+        for subview in view.subviews {
+            if let found = findEditor(in: subview) { return found }
+        }
+        return nil
+    }
+
+    private func syntheticImage() -> NSImage {
+        let image = NSImage(size: NSSize(width: 8, height: 8))
+        image.lockFocus()
+        NSColor.systemBlue.setFill()
+        NSBezierPath(rect: NSRect(x: 0, y: 0, width: 8, height: 8)).fill()
+        image.unlockFocus()
+        return image
+    }
+
     private func fixture() throws -> ModelContainer {
-        try ModelContainer(for: Schema(AreaChainSchema.models), configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        let container = try ModelContainer(
+            for: Schema(AreaChainSchema.models),
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        Self.retainedContainers.append(container)
+        return container
     }
 
     private func note(in container: ModelContainer, text: String = "原始记录") throws -> DiaryEntry {

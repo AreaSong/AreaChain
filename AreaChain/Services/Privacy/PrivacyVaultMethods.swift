@@ -110,6 +110,13 @@ extension PrivacyVault {
         try persist(updated)
     }
 
+    func setPreferredMethod(_ method: PreferredUnlockMethod) throws {
+        guard var updated = configuration else { throw PrivacyError.notConfigured }
+        updated.preferredMethod = method
+        try updated.validate()
+        try persist(updated)
+    }
+
     private func makePasswordSlot(_ password: String?, key: Data, vaultID: UUID) async throws -> PasswordKeySlot? {
         guard let password else { return nil }
         return try await Task.detached(priority: .userInitiated) {

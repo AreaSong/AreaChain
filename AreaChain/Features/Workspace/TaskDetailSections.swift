@@ -261,14 +261,14 @@ struct TaskDetailAssetsSectionView: View {
 
     private func attachmentThumbnail(_ att: AttachmentItem) -> some View {
         ZStack(alignment: .topTrailing) {
-            if let image = AttachmentStore.image(id: att.id) {
+            if let image = AttachmentStore.image(reference: att.reference) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
                     .frame(width: 56, height: 56)
                     .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
                     .onTapGesture {
-                        onPreview(AttachmentRef(id: att.id, filename: att.filename))
+                        onPreview(att.reference)
                     }
             } else {
                 RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)

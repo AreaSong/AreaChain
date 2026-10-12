@@ -174,8 +174,13 @@ struct DiaryPage: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
         } trailing: {
-            searchChrome
-                .frame(width: 200)
+            HStack(spacing: DaybookSpacing.sm) {
+                if vault.isUnlocked {
+                    WorkspacePrivacyUnlockedButton(vault: vault)
+                }
+                searchChrome
+                    .frame(width: 200)
+            }
         }
     }
 

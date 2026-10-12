@@ -1,4 +1,5 @@
 import AppKit
+import SwiftData
 import SwiftUI
 
 struct SyntaxOverlayPlacement: Equatable {
@@ -100,13 +101,17 @@ private struct SyntaxOverlaySource: ViewModifier {
     var attributes: CaptureAttributes?
     var prefersAbove: Bool
     var enabled: Bool
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Query(filter: SoftDelete.liveAttachments) private var liveAttachments: [AttachmentItem]
 
     func body(content: Content) -> some View {
         let presented = enabled && (attributes == nil ? state.hasPresentation : state.showsAttributes)
         content
+            .onAppear { syncAvailableAttachments() }
+            .onChange(of: liveAttachments.map(\.filename)) { _, _ in syncAvailableAttachments() }
             .transformAnchorPreference(key: SyntaxOverlayAnchorKey.self, value: .bounds) { anchors, bounds in
                 if presented {
                     anchors.append(SyntaxOverlayAnchor(
@@ -116,6 +121,15 @@ private struct SyntaxOverlaySource: ViewModifier {
                 }
             }
             .onDisappear { state.dismiss() }
+    }
+
+    private func syncAvailableAttachments() {
+        guard enabled, attributes == nil, state.context.supportsAttachmentReferences else { return }
+        _ = liveAttachments.count
+        let names = AttachmentPoolStore.availableFilenames(in: modelContext)
+        if state.availableAttachments != names {
+            state.availableAttachments = names
+        }
     }
 }
 

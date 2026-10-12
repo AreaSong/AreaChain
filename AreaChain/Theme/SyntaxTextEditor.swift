@@ -1,3 +1,4 @@
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -11,6 +12,7 @@ struct SyntaxTextEditor: View {
     var availableTags: [String]?
     var onSubmit: (() -> Void)?
     var commandChord: ShortcutChord?
+    var onPasteImage: ((NSPasteboard) -> Bool)?
 
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @State private var autocomplete: SyntaxAutocompleteState
@@ -24,7 +26,8 @@ struct SyntaxTextEditor: View {
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
         fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags,
         externalAutocomplete: SyntaxAutocompleteState? = nil, availableTags: [String]? = nil,
-        onSubmit: (() -> Void)? = nil, commandChord: ShortcutChord? = nil
+        onSubmit: (() -> Void)? = nil, commandChord: ShortcutChord? = nil,
+        onPasteImage: ((NSPasteboard) -> Bool)? = nil
     ) {
         _text = text
         _focused = focused
@@ -35,6 +38,7 @@ struct SyntaxTextEditor: View {
         self.availableTags = availableTags
         self.onSubmit = onSubmit
         self.commandChord = commandChord
+        self.onPasteImage = onPasteImage
         _autocomplete = State(initialValue: SyntaxAutocompleteState(
             context: context,
             allowsLivePreview: context == .capture || context == .diaryCapture
@@ -47,7 +51,8 @@ struct SyntaxTextEditor: View {
             autocomplete: activeAutocomplete,
             availableTags: availableTags ?? tags.filter { $0.deletedAt == nil }.map(\.name),
             onSubmit: onSubmit, commandChord: commandChord,
-            onMarkedTextChange: { hasMarkedText = $0 }
+            onMarkedTextChange: { hasMarkedText = $0 },
+            onPasteImage: onPasteImage
         )
         .overlay(alignment: .topLeading) {
             if text.isEmpty && !hasMarkedText {

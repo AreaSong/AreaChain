@@ -6,6 +6,7 @@ struct WorkspaceHeaderBar: View {
     var tags: [TagItem]
     var searchController: UnifiedSearchController?
     var content = WorkspaceHeaderContent()
+    var vault: PrivacyVault = .shared
     @State private var showsHelp = false
 
     var body: some View {
@@ -17,6 +18,7 @@ struct WorkspaceHeaderBar: View {
                     actions(limit: count)
                 }
             }
+            privacyStatus
         }
         .padding(.horizontal, DaybookSpacing.page)
         .frame(height: WorkspaceLayout.headerHeight)
@@ -24,6 +26,14 @@ struct WorkspaceHeaderBar: View {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier("workspace.header.bar")
         .onChange(of: navigation.contentIdentity) { _, _ in showsHelp = false }
+    }
+
+    @ViewBuilder private var privacyStatus: some View {
+        if vault.isUnlocked {
+            WorkspacePrivacyUnlockedButton(vault: vault)
+        } else {
+            Color.clear.frame(width: 0, height: 0)
+        }
     }
 
     @ViewBuilder private var search: some View {
@@ -135,6 +145,51 @@ struct WorkspaceHeaderBar: View {
     }
 }
 
+struct WorkspacePrivacyUnlockedButton: View {
+    var vault: PrivacyVault = .shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isHovered = false
+
+    var body: some View {
+        Button {
+            vault.lock()
+        } label: {
+            ZStack {
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.open.fill")
+                    Text("privacy.header.unlocked")
+                }
+                .hidden()
+                HStack(spacing: 4) {
+                    Image(systemName: "lock.fill")
+                    Text("privacy.lock.now")
+                }
+                .hidden()
+                HStack(spacing: 4) {
+                    Image(systemName: isHovered ? "lock.fill" : "lock.open.fill")
+                    Text(isHovered ? "privacy.lock.now" : "privacy.header.unlocked")
+                }
+            }
+            .font(DaybookType.caption.weight(.medium))
+        }
+        .buttonStyle(
+            DaybookButtonStyle(
+                .pill(tint: isHovered ? DaybookPalette.status.danger : DaybookPalette.accent.base),
+                size: .compact
+            )
+        )
+        .fixedSize()
+        .onHover { hovering in
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                isHovered = hovering
+            }
+        }
+        .help(Text("privacy.lock.now"))
+        .accessibilityLabel(Text("privacy.state.unlocked"))
+        .accessibilityIdentifier("workspace.header.privacy.lock")
+    }
+}
+
 private struct WorkspaceHeaderDate: View {
     @Environment(\.locale) private var locale
     var body: some View {
@@ -164,16 +219,29 @@ private struct WorkspaceHeaderRowLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        guard subviews.count == 3 else { return }
+        guard subviews.count >= 3 else { return }
         let minimumActions = subviews[2].sizeThatFits(ProposedViewSize(width: 0, height: bounds.height)).width
         let geometry = WorkspaceHeaderGeometry(width: bounds.width + 2 * DaybookSpacing.page)
         let searchWidth = geometry.searchWidth(minimumActionsWidth: minimumActions)
         let sideWidth = max(0, (bounds.width - searchWidth) / 2 - DaybookSpacing.sm)
+        let privacyWidth = subviews.count > 3
+            ? subviews[3].sizeThatFits(ProposedViewSize(width: nil, height: bounds.height)).width
+            : 0
+        let reservedPrivacy = privacyWidth > 0 ? privacyWidth + DaybookSpacing.sm : 0
+        let titleProposal = ProposedViewSize(width: max(0, sideWidth - reservedPrivacy), height: bounds.height)
         let sideProposal = ProposedViewSize(width: sideWidth, height: bounds.height)
-        subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: sideProposal)
+        subviews[0].place(at: CGPoint(x: bounds.minX, y: bounds.midY), anchor: .leading, proposal: titleProposal)
         subviews[1].place(at: CGPoint(x: bounds.midX, y: bounds.midY), anchor: .center,
                           proposal: ProposedViewSize(width: searchWidth, height: bounds.height))
         subviews[2].place(at: CGPoint(x: bounds.maxX, y: bounds.midY), anchor: .trailing, proposal: sideProposal)
+        if subviews.count > 3 {
+            let searchMinX = bounds.midX - searchWidth / 2
+            subviews[3].place(
+                at: CGPoint(x: searchMinX - DaybookSpacing.sm, y: bounds.midY),
+                anchor: .trailing,
+                proposal: ProposedViewSize(width: privacyWidth, height: bounds.height)
+            )
+        }
     }
 }
 

@@ -26,10 +26,11 @@ extension DayBoardMutations {
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
         let saved = ModelChanges.perform(in: context) {
             let ids = try InputTagResolver.resolve(parsed.tagNames, in: context)
-            _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(
+            let routine = try routineRepo(for: context).addRoutine(CreateRoutineParams(
                 title: parsed.cleanTitle, sortOrder: sortOrder, remindMinutes: parsed.remindMinutes,
                 tagIDs: ids, isImportant: parsed.isImportant, isUrgent: parsed.isUrgent, notes: parsed.notes
             ))
+            InputAttachmentResolver.linkIfPresent(in: text, ownerKind: .routine, ownerID: routine.id, context: context)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -61,7 +62,7 @@ extension DayBoardMutations {
             for id in parsedIDs where !ids.contains(id) {
                 ids.append(id)
             }
-            _ = try routineRepo(for: context).addRoutine(CreateRoutineParams(
+            let routine = try routineRepo(for: context).addRoutine(CreateRoutineParams(
                 title: title,
                 sortOrder: sortOrder,
                 weekdayMask: draft.weekdayMask,
@@ -72,6 +73,12 @@ extension DayBoardMutations {
                 notes: notes,
                 isEnabled: draft.isEnabled
             ))
+            InputAttachmentResolver.linkIfPresent(
+                in: draft.title + "\n" + draft.notes,
+                ownerKind: .routine,
+                ownerID: routine.id,
+                context: context
+            )
         }
         if saved { requestReminderAccessIfNeeded(remind) }
         return saved
@@ -97,7 +104,13 @@ extension DayBoardMutations {
         let context = routine.modelContext ?? Persistence.session.container.mainContext
         let resolved = dependencies ?? .init(repository: { routineRepo(for: $0) }, transaction: .init(),
             registerLocalModification: { _ in }, requestReminderAccessIfNeeded: { requestReminderAccessIfNeeded($0) })
-        return RoutineMutationService.editTitle(routine, rawInput: rawInput, in: context, dependencies: resolved).callSucceeded
+        let ok = RoutineMutationService.editTitle(routine, rawInput: rawInput, in: context, dependencies: resolved).callSucceeded
+        if ok, !AttachmentSyntax.names(in: rawInput).isEmpty {
+            _ = ModelChanges.perform(in: context) {
+                InputAttachmentResolver.linkIfPresent(in: rawInput, ownerKind: .routine, ownerID: routine.id, context: context)
+            }
+        }
+        return ok
     }
 
     static func saveNotes(_ notes: String, for todo: TodoItem) -> Bool {
@@ -106,6 +119,7 @@ extension DayBoardMutations {
         let saved = ModelChanges.perform(in: context) {
             let merged = try InputTagResolver.merging(parsed.tagNames, into: todo.tagIDs, in: context)
             try taskRepo(for: context).applyParsedNotes(id: todo.id, update: parsedNoteUpdate(notes, parsed, merged))
+            InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .todo, ownerID: todo.id, context: context)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved
@@ -117,6 +131,7 @@ extension DayBoardMutations {
         let saved = ModelChanges.perform(in: context) {
             let merged = try InputTagResolver.merging(parsed.tagNames, into: routine.tagIDs, in: context)
             try routineRepo(for: context).applyParsedNotes(id: routine.id, update: parsedNoteUpdate(notes, parsed, merged))
+            InputAttachmentResolver.linkIfPresent(in: notes, ownerKind: .routine, ownerID: routine.id, context: context)
         }
         if saved { requestReminderAccessIfNeeded(parsed.remindMinutes) }
         return saved

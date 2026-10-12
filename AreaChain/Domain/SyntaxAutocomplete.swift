@@ -5,8 +5,9 @@ enum SyntaxTriggerKind: String, CaseIterable, Equatable, Sendable {
     case tag = "#"
     case priority = "!"
     case time = "@"
+    case attachment = "@attachment"
 
-    var symbol: String { rawValue }
+    var symbol: String { rawValue == "@attachment" ? "@" : rawValue }
 }
 
 enum SyntaxInputContext: Equatable, Sendable {
@@ -20,6 +21,7 @@ enum SyntaxInputContext: Equatable, Sendable {
     var isSearch: Bool { self == .search || self == .tagSearch }
     var includesDiaryTags: Bool { self != .capture && self != .taskTags }
     var supportsTaskAttributes: Bool { self == .capture || self == .search }
+    var supportsAttachmentReferences: Bool { self != .tagSearch }
 }
 
 /// 语法触发信息
@@ -86,28 +88,62 @@ enum SyntaxAutocompleteEngine {
         if kind == .tag, let whole = TagSyntax.tokens(in: text).first(where: {
             $0.range.location == range.location && NSMaxRange($0.range) >= cursor
         }) { range = whole.range }
+        if kind == .time, let whole = AttachmentSyntax.tokens(in: text).first(where: {
+            $0.range.location == range.location && NSMaxRange($0.range) >= cursor
+        }) { range = whole.range }
         return SyntaxTrigger(kind: kind, query: query, range: range)
     }
 
     // MARK: - 候选构建 (Candidates)
 
     static func candidates(
-        for trigger: SyntaxTrigger, availableTags: [String] = [], context: SyntaxInputContext = .capture
+        for trigger: SyntaxTrigger,
+        availableTags: [String] = [],
+        availableAttachments: [String] = [],
+        context: SyntaxInputContext = .capture
     ) -> [SyntaxCandidate] {
         switch trigger.kind {
         case .tag:
             return tagCandidates(query: trigger.query, tags: availableTags, context: context)
         case .priority:
             return context.supportsTaskAttributes ? priorityCandidates(query: trigger.query) : []
-        case .time:
-            guard context.supportsTaskAttributes else { return [] }
-            return timeCandidates(query: trigger.query).map { candidate in
-                guard context.isSearch else { return candidate }
-                return SyntaxCandidate(
-                    id: candidate.id, title: candidate.title, subtitle: "syntax.search.time",
-                    insertText: candidate.insertText, kind: .time
-                )
+        case .time, .attachment:
+            var result: [SyntaxCandidate] = []
+            if context.supportsTaskAttributes {
+                result.append(contentsOf: timeCandidates(query: trigger.query).map { candidate in
+                    guard context.isSearch else { return candidate }
+                    return SyntaxCandidate(
+                        id: candidate.id, title: candidate.title, subtitle: "syntax.search.time",
+                        insertText: candidate.insertText, kind: .time
+                    )
+                })
             }
+            if context.supportsAttachmentReferences {
+                result.append(contentsOf: attachmentCandidates(
+                    query: trigger.query, attachments: availableAttachments, context: context
+                ))
+            }
+            return result
+        }
+    }
+
+    private static func attachmentCandidates(
+        query: String, attachments: [String], context: SyntaxInputContext
+    ) -> [SyntaxCandidate] {
+        let unique = TagSyntax.uniqueNames(attachments)
+        guard !unique.isEmpty else { return [] }
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = trimmed.isEmpty
+            ? unique
+            : unique.filter { $0.localizedCaseInsensitiveContains(trimmed) }
+        return filtered.map { name in
+            SyntaxCandidate(
+                id: "attachment_\(name)",
+                title: "@\(name)",
+                subtitle: context.isSearch ? "syntax.search.attachment" : "syntax.attachment.label",
+                insertText: AttachmentSyntax.spelling(for: name) + " ",
+                kind: .attachment
+            )
         }
     }
 

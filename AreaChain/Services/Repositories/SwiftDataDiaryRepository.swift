@@ -85,6 +85,14 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
                 vault: vault
             )
             context.insert(entry)
+            InputAttachmentResolver.linkIfPresent(
+                in: trimmed,
+                ownerKind: .diary,
+                ownerID: entry.id,
+                context: context,
+                store: attachmentStore,
+                root: attachmentRoot
+            )
             return entry
         }
     }
@@ -110,6 +118,14 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
         try ModelChanges.transaction(in: context) {
             entry.tagIDs = try InputTagResolver.merging(TagSyntax.names(in: text), into: entry.tagIDs, in: context)
             try writeContent(text, to: entry)
+            InputAttachmentResolver.linkIfPresent(
+                in: text,
+                ownerKind: .diary,
+                ownerID: entry.id,
+                context: context,
+                store: attachmentStore,
+                root: attachmentRoot
+            )
         }
     }
 

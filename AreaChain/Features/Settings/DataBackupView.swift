@@ -356,6 +356,7 @@ struct DataBackupView: View {
             title: "privacy.backup.password.title",
             confirmation: item == .export,
             explanation: "privacy.backup.password.help",
+            minimumLength: item == .export ? 12 : 1,
             action: { password in try await perform(item, password: password) },
             onComplete: {
                 let finished = dialog
@@ -376,6 +377,7 @@ struct DataBackupView: View {
         let environment = PrivacyPersistence(context: modelContext, vault: .shared)
         switch item {
         case .export:
+            guard password.count >= 12, password.utf8.count <= 4_096 else { throw PrivacyError.weakPassword }
             guard let url = await PrivacyFilePanels.save() else { throw PrivacyError.cancelled }
             try await authenticate()
             _ = try await PrivateBackupService.export(to: url, password: password, environment: environment)

@@ -203,16 +203,22 @@ struct DiaryButtonConsumerTests {
 
     private func click(_ key: String, locale: String, in window: NSWindow) async throws {
         let title = L10n.string(String.LocalizationValue(key), locale: Locale(identifier: locale))
-        let button = try #require(elements(window.contentView).first {
+        let contentView = try #require(window.contentView)
+        let frameRoot = contentView.superview ?? contentView
+        let button = try #require(elements(frameRoot).first {
             value($0, "accessibilityRole") as? String == "AXButton"
                 && ((value($0, "accessibilityLabel") as? String) == title
                     || (value($0, "accessibilityTitle") as? String) == title)
         }, "未找到生产按钮：\(key)")
         let screenRect = try #require(button.value(forKey: "accessibilityFrame") as? NSValue).rectValue
         let rect = window.convertFromScreen(screenRect)
-        let bounds = try #require(window.contentView).bounds
+        let bounds = frameRoot.bounds
         #expect(rect.width > 0 && rect.height > 0)
         #expect(rect.minX >= 0 && rect.maxX <= bounds.width && rect.minY >= 0 && rect.maxY <= bounds.height)
+        if key == "diary.window.pin" || key == "diary.window.unpin" {
+            #expect(rect.minY >= contentView.bounds.height)
+            #expect(rect.midX > bounds.midX)
+        }
         for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
             let event = try #require(NSEvent.mouseEvent(with: type, location: NSPoint(x: rect.midX, y: rect.midY),
                 modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime, windowNumber: window.windowNumber,

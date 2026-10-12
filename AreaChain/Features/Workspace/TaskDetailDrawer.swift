@@ -242,7 +242,7 @@ struct TaskDetailDrawer: View {
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
 
-            if let image = AttachmentStore.image(id: item.id) {
+            if let image = AttachmentStore.image(reference: item) {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()

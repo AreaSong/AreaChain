@@ -6,6 +6,8 @@ class DaybookAppKitTextView: NSTextView {
     var commandChord: ShortcutChord?
     var onFocusChange: ((Bool) -> Void)?
     var onMarkedTextChange: ((Bool) -> Void)?
+    var onPasteImage: ((NSPasteboard) -> Bool)?
+    var pasteboard: NSPasteboard = .general
     private var lastMarkedState = false
 
     override func becomeFirstResponder() -> Bool {
@@ -58,7 +60,31 @@ class DaybookAppKitTextView: NSTextView {
             if !hasMarkedText() { onCommandReturn?() }
             return true
         }
+        if onPasteImage != nil, flags == .command,
+           event.keyCode == 9 || event.charactersIgnoringModifiers?.lowercased() == "v",
+           window?.firstResponder === self {
+            if !hasMarkedText() { paste(nil) }
+            return true
+        }
         return super.performKeyEquivalent(with: event)
+    }
+
+    override func paste(_ sender: Any?) {
+        let board = pasteboard
+        if !hasMarkedText(), let onPasteImage,
+           ClipboardPayload.make(
+               text: board.string(forType: .string),
+               hasImage: ImageBytes.pasteboardImage(board) != nil,
+               imageTitle: ""
+           )?.attachImage == true,
+           onPasteImage(board) {
+            return
+        }
+        if board !== NSPasteboard.general {
+            _ = readSelection(from: board, type: .string)
+            return
+        }
+        super.paste(sender)
     }
 
     override func hitTest(_ point: NSPoint) -> NSView? {
@@ -92,6 +118,7 @@ struct DaybookTextEditor: NSViewRepresentable {
     var onSubmit: (() -> Void)? = nil
     var commandChord: ShortcutChord? = nil
     var onMarkedTextChange: ((Bool) -> Void)? = nil
+    var onPasteImage: ((NSPasteboard) -> Bool)? = nil
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -127,6 +154,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         if #available(macOS 15.1, *) { editor.writingToolsBehavior = .none }
         editor.delegate = context.coordinator
         editor.onMarkedTextChange = onMarkedTextChange
+        editor.onPasteImage = onPasteImage
         editor.onFocusChange = { [weak coordinator = context.coordinator, weak editor] isFocused in
             guard let coordinator, let editor else { return }
             coordinator.handleFocusChange(isFocused, editor: editor)
@@ -152,6 +180,7 @@ struct DaybookTextEditor: NSViewRepresentable {
         editor.setAccessibilityLabel(placeholder)
         editor.commandChord = commandChord
         editor.onMarkedTextChange = onMarkedTextChange
+        editor.onPasteImage = onPasteImage
         editor.onCommandReturn = { [weak editor] in
             guard let editor, !editor.hasMarkedText() else { return }
             context.coordinator.parent.text = editor.string

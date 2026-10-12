@@ -7,16 +7,19 @@ struct DaybookSecureField: View {
     @FocusState private var focused: Bool
     @Environment(\.isEnabled) private var isEnabled
     private let title: Text
+    private let autoFocus: Bool
 
-    init(_ title: LocalizedStringKey, text: Binding<String>) {
+    init(_ title: LocalizedStringKey, text: Binding<String>, autoFocus: Bool = false) {
         self.title = Text(title)
         _text = text
+        self.autoFocus = autoFocus
     }
 
     /// 已解析的本地化文字必须原样呈现，不能再次当资源键查找。
-    init(verbatim title: String, text: Binding<String>) {
+    init(verbatim title: String, text: Binding<String>, autoFocus: Bool = false) {
         self.title = Text(verbatim: title)
         _text = text
+        self.autoFocus = autoFocus
     }
 
     var body: some View {
@@ -27,6 +30,11 @@ struct DaybookSecureField: View {
                 .foregroundStyle(isEnabled ? DaybookPalette.text.primary : DaybookPalette.text.tertiary)
                 .focused($focused)
                 .accessibilityLabel(title)
+        }
+        .onAppear {
+            if autoFocus {
+                DispatchQueue.main.async { focused = true }
+            }
         }
     }
 }

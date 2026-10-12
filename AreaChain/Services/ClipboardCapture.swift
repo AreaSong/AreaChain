@@ -61,10 +61,19 @@ enum ClipboardCapture {
             context.insert(todo)
             if payload.attachImage {
                 guard let image, let data = ImageBytes.png(from: image) else { throw ScreenCaptureFailure.encode }
-                _ = try storage.save(
-                    data: data, filename: "paste.png", ownerKind: .todo,
-                    ownerID: todo.id, context: context, id: attachmentID
-                )
+                if let concreteStore = storage as? AttachmentStore {
+                    _ = try AttachmentPoolStore.saveOrLink(
+                        data: data, filename: "paste.png", ownerKind: .todo,
+                        ownerID: todo.id, context: context, store: concreteStore, id: attachmentID
+                    )
+                } else {
+                    let existing = (try? context.fetch(FetchDescriptor<AttachmentItem>(predicate: SoftDelete.liveAttachments)))?.map(\.filename) ?? []
+                    let resolvedName = AttachmentSyntax.uniqueFilename(base: "paste.png", existing: existing)
+                    _ = try storage.save(
+                        data: data, filename: resolvedName, ownerKind: .todo,
+                        ownerID: todo.id, context: context, id: attachmentID
+                    )
+                }
             }
         }
         if !saved, payload.attachImage { storage.removeFile(id: attachmentID) }

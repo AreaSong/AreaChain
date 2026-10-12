@@ -17,6 +17,7 @@ final class SyntaxAutocompleteState {
     var inputText: String = ""
     var isDismissedByUser: Bool = false
     var availableTags: [String] = []
+    @ObservationIgnored var availableAttachments: [String] = []
     @ObservationIgnored weak var editor: NSTextView?
     @ObservationIgnored var restoreEditing: (() -> Void)?
 
@@ -34,10 +35,18 @@ final class SyntaxAutocompleteState {
         self.allowsLivePreview = allowsLivePreview
     }
 
-    func update(text: String, cursorLocation: Int, availableTags: [String] = []) {
+    func update(
+        text: String,
+        cursorLocation: Int,
+        availableTags: [String] = [],
+        availableAttachments: [String]? = nil
+    ) {
         let textChanged = text != inputText
         if textChanged { inputText = text }
         if self.availableTags != availableTags { self.availableTags = availableTags }
+        if let availableAttachments, self.availableAttachments != availableAttachments {
+            self.availableAttachments = availableAttachments
+        }
         if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || textChanged, isDismissedByUser {
             isDismissedByUser = false
         }
@@ -49,7 +58,12 @@ final class SyntaxAutocompleteState {
             return
         }
 
-        let items = SyntaxAutocompleteEngine.candidates(for: detected, availableTags: availableTags, context: context)
+        let items = SyntaxAutocompleteEngine.candidates(
+            for: detected,
+            availableTags: availableTags,
+            availableAttachments: self.availableAttachments,
+            context: context
+        )
         guard !items.isEmpty else {
             dismissSuggestionsOnly()
             return
@@ -320,6 +334,10 @@ struct SyntaxAutocompletePopup: View {
                 .foregroundStyle(DaybookPalette.Syntax.priorityColor(for: item.title))
         case .time:
             Image(systemName: "clock.fill")
+                .font(DaybookType.badge)
+                .foregroundStyle(DaybookPalette.Syntax.time)
+        case .attachment:
+            Image(systemName: "paperclip")
                 .font(DaybookType.badge)
                 .foregroundStyle(DaybookPalette.Syntax.time)
         }

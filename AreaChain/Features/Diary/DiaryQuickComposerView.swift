@@ -379,7 +379,9 @@ struct DiaryComposerHostSection: View {
         .onReceive(NotificationCenter.default.publisher(for: .privacyMask, object: vault)) { _ in sealComposer() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in sealComposer() }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
-            if let window = notification.object as? NSWindow, window === hostWindow { sealComposer() }
+            if let window = notification.object as? NSWindow, window === hostWindow, window.attachedSheet == nil {
+                sealComposer()
+            }
         }
         .onDisappear { sealComposer() }
         .confirmationDialog("privacy.draft.discard.confirm", isPresented: $confirmsDiscardDraft) {

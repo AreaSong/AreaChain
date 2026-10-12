@@ -53,11 +53,21 @@ enum AttachmentCleanup {
         guard let descriptor = OwnedAttachments.descriptor(ids: ids) else { return }
         let items = try context.fetch(descriptor)
         guard Set(items.map(\.id)).count == items.count else { throw RepositoryError.invalidArgument("附件标识重复") }
+        let allRows = (try? OwnedAttachments.all(in: context)) ?? []
+        var retainedStorageIDs = Set(
+            allRows.filter { !ids.contains($0.id) }.map { $0.storageID ?? $0.id }
+        )
+        retainedStorageIDs.formUnion(AttachmentPoolStore.unlinkedItems().map(\.id))
         var remaining: Set<UUID> = []
         for item in items {
             do {
-                try removeFile(item.storageID ?? item.id)
-                if let retired = item.retiredStorageID, retired != item.storageID { try removeFile(retired) }
+                let canonicalID = item.storageID ?? item.id
+                if !retainedStorageIDs.contains(canonicalID) {
+                    try removeFile(canonicalID)
+                }
+                if let retired = item.retiredStorageID, retired != item.storageID, !retainedStorageIDs.contains(retired) {
+                    try removeFile(retired)
+                }
                 context.delete(item)
             } catch {
                 remaining.insert(item.id)

@@ -323,7 +323,9 @@ private struct DiaryPrivacyLifecycleModifier: ViewModifier {
                 maskContent()
             }
             .onReceive(NotificationCenter.default.publisher(for: NSWindow.didResignKeyNotification)) { notification in
-                if let window = notification.object as? NSWindow, window === hostWindow { maskContent() }
+                if let window = notification.object as? NSWindow, window === hostWindow, window.attachedSheet == nil {
+                    maskContent()
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock, object: privacyVault)) { _ in
                 maskContent()

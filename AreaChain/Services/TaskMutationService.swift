@@ -69,7 +69,14 @@ enum TaskMutationService {
         let text = input.text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { result.emptyInput = true; return result }
         let parsed = NaturalLanguageParser.parseTaskCapture(text)
-        return create(in: context, dependencies: dependencies, result: result) {
+        return create(
+            in: context,
+            dependencies: dependencies,
+            result: result,
+            afterCreate: { todo in
+                InputAttachmentResolver.linkIfPresent(in: text, ownerKind: .todo, ownerID: todo.id, context: context)
+            }
+        ) {
             let ids = try InputTagResolver.merging(parsed.tagNames, into: TagIDList.encode(input.tagIDs), in: context)
             return CreateTodoParams(
                 title: parsed.cleanTitle, dayKey: input.dayKey, notes: parsed.notes,
@@ -107,6 +114,7 @@ enum TaskMutationService {
 
     private static func create(in context: ModelContext, dependencies: Dependencies,
                                result: Creation,
+                               afterCreate: ((TodoItem) -> Void)? = nil,
                                parameters: () throws -> CreateTodoParams) -> Creation {
         do {
             // 命令的最终检查必须先于 ModelChanges 的原有预保存；旧 UI 默认无附加守卫。
@@ -115,6 +123,7 @@ enum TaskMutationService {
                                          observe: { result.transaction = $0 }) {
                 let params = try parameters()
                 let todo = try dependencies.repository(context).addTodo(params)
+                afterCreate?(todo)
                 result.candidateID = todo.id
                 registerCompletion(result, todo: todo, minutes: params.remindMinutes,
                                    context: context, dependencies: dependencies)
