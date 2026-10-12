@@ -246,6 +246,26 @@ struct TaskRowInteractionTests {
         #expect(region.toolTip == nil, "避免系统原生黑底 Tooltip 与自定义纸感浮层重叠双发")
     }
 
+    @Test func taskRowWithNotesInWorkspaceEmbeddedEnvironmentRendersCompactNoteIndicator() async throws {
+        let probe = RowActionProbe()
+        let taskID = UUID()
+        let notesContent = "工作台紧凑备注内容\n第二行"
+        let state = TaskRowState(
+            identity: TaskRowIdentityState(id: taskID, title: "工作台带备注任务"),
+            content: TaskRowContentState(notes: notesContent),
+            interaction: TaskRowInteractionState()
+        )
+        let window = host(
+            TaskRow(state: state, dispatch: probe.record)
+                .environment(\.workspaceEmbedded, true)
+        )
+        defer { close(window) }
+        try await settle(window)
+        let region = try #require(findRegion(taskID, in: window.contentView))
+        #expect(!region.trackingAreas.isEmpty)
+        #expect(state.notes == notesContent)
+    }
+
     @Test func commandKeyModifierRendersQuickActionStripWithTrackingAreas() async throws {
         let probe = RowActionProbe()
         let taskRow = TaskRow(state: TaskRowState(

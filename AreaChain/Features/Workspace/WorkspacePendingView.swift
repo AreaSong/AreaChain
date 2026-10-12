@@ -57,29 +57,25 @@ struct WorkspacePendingView: View {
     }
 
     private func controls(_ model: WorkspacePendingPageModel) -> some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            HStack(spacing: DaybookSpacing.sm) {
+        HStack(spacing: 8) {
+            HStack(spacing: 8) {
                 laneChip(.overdue, count: model.projection.overdueCount, model: model)
                 laneChip(.upcoming, count: model.projection.upcomingCount, model: model)
             }
+
+            Spacer(minLength: 8)
+
             BoardFilterBar(
                 filter: navigation.pendingFilter,
                 tags: CatalogChoices.tags(tags),
                 bundleIDs: model.bundleIDs,
                 showsPriority: true,
+                showsReminder: true,
                 onChange: { navigation.pendingFilter = $0 }
             )
         }
-        .padding(DaybookSpacing.md)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                .fill(DaybookPalette.fill.page)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: DaybookRadius.card, style: .continuous)
-                .strokeBorder(DaybookPalette.border.subtle, lineWidth: 0.5)
-        )
+        .padding(.horizontal, 1)
+        .padding(.top, 1)
     }
 
     private func emptyCopy(_ lane: PendingLane) -> (title: LocalizedStringKey, hint: LocalizedStringKey) {
@@ -92,11 +88,14 @@ struct WorkspacePendingView: View {
     }
 
     private func laneChip(_ next: PendingLane, count: Int, model: WorkspacePendingPageModel) -> some View {
-        DaybookChip(isSelected: model.lane == next, action: chooseLane(next, overdueCount: model.projection.overdueCount), label: {
-            Text("\(laneTitle(next)) \(count)")
-                .font(DaybookType.caption)
-        })
-        .accessibilityLabel(laneTitle(next))
+        DaybookChip(tint: DaybookPalette.accent.base, isSelected: model.lane == next, action: chooseLane(next, overdueCount: model.projection.overdueCount)) {
+            HStack(spacing: 4) {
+                Text(laneTitle(next))
+                Text("\(count)")
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 赛道计数用圆体
+            }
+        }
+        .accessibilityLabel(Text("\(laneTitle(next)) \(count)"))
     }
 
     private func chooseLane(_ next: PendingLane, overdueCount: Int) -> () -> Void {

@@ -15,15 +15,20 @@ public enum RowTitleTruncation {
 
 /// 统一气泡几何位置计算器（自适应上下翻转与屏幕边缘防溢出）
 public enum RowBubblePlacement {
-    public static func calculate(globalPoint: CGPoint, wideHost: Bool = false) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
+    public static func calculate(
+        globalPoint: CGPoint,
+        wideHost: Bool = false,
+        hostMaxX: CGFloat? = nil
+    ) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
         let growsUpward = globalPoint.y > 260
-        let safeMaxX: CGFloat = wideHost ? 700 : 356
+        let safeMaxX: CGFloat = hostMaxX ?? (wideHost ? 1440 : 356)
         let safeMinX: CGFloat = 12
         let bubbleRight = globalPoint.x + 202
         let shiftX: CGFloat
         if bubbleRight > safeMaxX {
             let overflow = bubbleRight - safeMaxX
-            let maxShift = max(0, (globalPoint.x - 8) - safeMinX)
+            // 气泡宽 210pt，内部箭头最多平移至 186pt，故气泡最大左移量锁定在 178pt，确保指示箭头始终指向图标
+            let maxShift = min(178, max(0, (globalPoint.x - 8) - safeMinX))
             shiftX = -min(overflow, maxShift)
         } else {
             shiftX = 0

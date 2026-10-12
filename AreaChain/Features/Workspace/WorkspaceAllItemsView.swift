@@ -48,59 +48,186 @@ struct WorkspaceAllItemsView: View {
         )
     }
 
+    @State private var activeDropdown: ActiveScopeDropdown? = nil
+
+    private enum ActiveScopeDropdown: Hashable {
+        case kind, todoStatus, routineStatus
+    }
+
     private func controls(_ model: WorkspaceAllItemsPageModel) -> some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-            HStack(spacing: DaybookSpacing.sm) {
-                scopeMenu(
-                    ItemKindScope.allCases.map(\.titleKey),
-                    selected: navigation.allItemsQuery.kind.titleKey
-                ) { key in
-                    guard let next = ItemKindScope.allCases.first(where: { $0.titleKey == key }) else { return }
-                    navigation.allItemsQuery.kind = next
-                }
-                scopeMenu(
-                    TodoStatusScope.allCases.map(\.titleKey),
-                    selected: navigation.allItemsQuery.todoStatus.titleKey
-                ) { key in
-                    guard let next = TodoStatusScope.allCases.first(where: { $0.titleKey == key }) else { return }
-                    navigation.allItemsQuery.todoStatus = next
-                }
-                scopeMenu(
-                    RoutineStatusScope.allCases.map(\.titleKey),
-                    selected: navigation.allItemsQuery.routineStatus.titleKey
-                ) { key in
-                    guard let next = RoutineStatusScope.allCases.first(where: { $0.titleKey == key }) else { return }
-                    navigation.allItemsQuery.routineStatus = next
-                }
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                scopeControls
+
+                Spacer(minLength: 8)
+
+                BoardFilterBar(
+                    filter: navigation.allItemsQuery.filter,
+                    tags: CatalogChoices.tags(tags),
+                    bundleIDs: model.bundleIDs,
+                    showsPriority: true,
+                    showsReminder: true,
+                    showsDate: true,
+                    onChange: { navigation.allItemsQuery.filter = $0 }
+                )
             }
-            BoardFilterBar(
-                filter: navigation.allItemsQuery.filter,
-                tags: CatalogChoices.tags(tags),
-                bundleIDs: model.bundleIDs,
-                showsPriority: true,
-                showsDate: true,
-                onChange: { navigation.allItemsQuery.filter = $0 }
-            )
+            .padding(.horizontal, 1)
+            .padding(.top, 1)
+
             if navigation.allItemsQuery.filter.dateScope != .all && navigation.allItemsQuery.kind != .oneOff {
                 Text("items.routine.dateHint")
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.text.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 1)
             }
         }
     }
 
-    private func scopeMenu(_ keys: [String], selected: String, choose: @escaping (String) -> Void) -> some View {
-        Menu {
-            ForEach(keys, id: \.self) { key in
-                Button(LocalizedStringKey(key)) { choose(key) }
+    private var scopeControls: some View {
+        HStack(spacing: 6) {
+            kindDropdown
+            if navigation.allItemsQuery.kind != .recurring {
+                todoStatusDropdown
             }
-        } label: {
-            Text(LocalizedStringKey(selected))
-                .font(DaybookType.caption)
-                .daybookMenuLabel(size: .compact, fitsLabel: true)
+            if navigation.allItemsQuery.kind != .oneOff {
+                routineStatusDropdown
+            }
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+    }
+
+    private var kindDropdown: some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == .kind },
+            set: { activeDropdown = $0 ? .kind : nil }
+        )
+        let active = navigation.allItemsQuery.kind != .all
+        let title: String = {
+            if active {
+                return L10n.string(String.LocalizationValue(navigation.allItemsQuery.kind.titleKey), locale: locale)
+            }
+            return L10n.string("items.scope.kind", locale: locale)
+        }()
+        let allOption = FilterDropdownOption(
+            id: "all",
+            title: L10n.string("items.kind.all", locale: locale),
+            isSelected: navigation.allItemsQuery.kind == .all,
+            action: { navigation.allItemsQuery.kind = .all }
+        )
+        let items: [FilterDropdownOption] = [
+            FilterDropdownOption(
+                id: "oneOff",
+                title: L10n.string("items.kind.oneOff", locale: locale),
+                icon: "checkmark.circle",
+                isSelected: navigation.allItemsQuery.kind == .oneOff,
+                action: { navigation.allItemsQuery.kind = .oneOff }
+            ),
+            FilterDropdownOption(
+                id: "recurring",
+                title: L10n.string("items.kind.recurring", locale: locale),
+                icon: "repeat",
+                isSelected: navigation.allItemsQuery.kind == .recurring,
+                action: { navigation.allItemsQuery.kind = .recurring }
+            )
+        ]
+        return BoardFilterDropdownButton(
+            icon: "square.grid.2x2",
+            title: title,
+            active: active,
+            isExpanded: isExpanded,
+            reset: { navigation.allItemsQuery.kind = .all },
+            allOption: allOption,
+            items: items
+        )
+    }
+
+    private var todoStatusDropdown: some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == .todoStatus },
+            set: { activeDropdown = $0 ? .todoStatus : nil }
+        )
+        let active = navigation.allItemsQuery.todoStatus != .all
+        let title: String = {
+            if active {
+                return L10n.string(String.LocalizationValue(navigation.allItemsQuery.todoStatus.titleKey), locale: locale)
+            }
+            return L10n.string("items.scope.todoStatus", locale: locale)
+        }()
+        let allOption = FilterDropdownOption(
+            id: "all",
+            title: L10n.string("items.scope.todoStatus.all", locale: locale),
+            isSelected: navigation.allItemsQuery.todoStatus == .all,
+            action: { navigation.allItemsQuery.todoStatus = .all }
+        )
+        let items: [FilterDropdownOption] = [
+            FilterDropdownOption(
+                id: "open",
+                title: L10n.string("items.status.open", locale: locale),
+                icon: "circle",
+                isSelected: navigation.allItemsQuery.todoStatus == .open,
+                action: { navigation.allItemsQuery.todoStatus = .open }
+            ),
+            FilterDropdownOption(
+                id: "done",
+                title: L10n.string("items.status.done", locale: locale),
+                icon: "checkmark.circle.fill",
+                isSelected: navigation.allItemsQuery.todoStatus == .done,
+                action: { navigation.allItemsQuery.todoStatus = .done }
+            )
+        ]
+        return BoardFilterDropdownButton(
+            icon: "checkmark.circle",
+            title: title,
+            active: active,
+            isExpanded: isExpanded,
+            reset: { navigation.allItemsQuery.todoStatus = .all },
+            allOption: allOption,
+            items: items
+        )
+    }
+
+    private var routineStatusDropdown: some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == .routineStatus },
+            set: { activeDropdown = $0 ? .routineStatus : nil }
+        )
+        let active = navigation.allItemsQuery.routineStatus != .all
+        let title: String = {
+            if active {
+                return L10n.string(String.LocalizationValue(navigation.allItemsQuery.routineStatus.titleKey), locale: locale)
+            }
+            return L10n.string("items.scope.routineStatus", locale: locale)
+        }()
+        let allOption = FilterDropdownOption(
+            id: "all",
+            title: L10n.string("items.scope.routineStatus.all", locale: locale),
+            isSelected: navigation.allItemsQuery.routineStatus == .all,
+            action: { navigation.allItemsQuery.routineStatus = .all }
+        )
+        let items: [FilterDropdownOption] = [
+            FilterDropdownOption(
+                id: "enabled",
+                title: L10n.string("items.status.enabled", locale: locale),
+                icon: "play.circle",
+                isSelected: navigation.allItemsQuery.routineStatus == .enabled,
+                action: { navigation.allItemsQuery.routineStatus = .enabled }
+            ),
+            FilterDropdownOption(
+                id: "disabled",
+                title: L10n.string("items.status.disabled", locale: locale),
+                icon: "pause.circle",
+                isSelected: navigation.allItemsQuery.routineStatus == .disabled,
+                action: { navigation.allItemsQuery.routineStatus = .disabled }
+            )
+        ]
+        return BoardFilterDropdownButton(
+            icon: "repeat",
+            title: title,
+            active: active,
+            isExpanded: isExpanded,
+            reset: { navigation.allItemsQuery.routineStatus = .all },
+            allOption: allOption,
+            items: items
+        )
     }
 }

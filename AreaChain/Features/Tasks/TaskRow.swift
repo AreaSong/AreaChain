@@ -24,6 +24,7 @@ struct TaskRow: View {
     @State var isSubtasksExpanded = false
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
+    @State private var rowMaxX: CGFloat = 0
     // 输入由 NSTextField 承载，焦点请求使用原生绑定，避免 SwiftUI 焦点树将其复位。
     @State var editorFocused = false
     @State var hoveredQuickActionTip: String? = nil
@@ -127,7 +128,7 @@ struct TaskRow: View {
     @ViewBuilder
     private var rowContent: some View {
         let hasSubs = isSubtasksExpanded && !state.subtasks.isEmpty
-        HStack(alignment: (hasVisibleNote || hasSubs || editing) ? .top : .center, spacing: 8) {
+        HStack(alignment: (hasSubs || editing) ? .top : .center, spacing: 8) {
             if state.allowsCompletion {
                 ModernCheckbox(isDone: state.isDone) {
                     PendingCompletionManager.shared.toggle(
@@ -180,6 +181,7 @@ struct TaskRow: View {
                 Color.clear
                     .onAppear { updateVerticalPlacement(proxy) }
                     .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
             }
         )
     }
@@ -194,19 +196,6 @@ struct TaskRow: View {
             .environment(\.locale, locale)
             .environment(\.calendar, calendar)
         }
-    }
-
-    private var hasVisibleNote: Bool {
-        if embedded {
-            if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return true
-            }
-            if let source = state.classify?.sourceLabel, !source.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                return true
-            }
-            return formattedNoteSnippet != nil
-        }
-        return false
     }
 
     // MARK: - Subviews
@@ -226,12 +215,12 @@ struct TaskRow: View {
     }
 
     private var shouldShowTitleBubble: Bool {
-        !embedded && !editing && !pickingDay && !pickingTime && !isCommandPressed
+        !editing && !pickingDay && !pickingTime && !isCommandPressed
             && (isTitleTextHovered || isTitleBubbleHovered) && !isNoteHovered && !isNoteBubbleHovered && isTitleTruncated
     }
 
     private var shouldShowNoteBubble: Bool {
-        !embedded && !editing && !pickingDay && !pickingTime && !isCommandPressed
+        !editing && !pickingDay && !pickingTime && !isCommandPressed
             && (isNoteHovered || isNoteBubbleHovered) && fullNoteText != nil
     }
 
@@ -282,7 +271,7 @@ struct TaskRow: View {
                     .accessibilityHidden(true)
                 )
 
-            if !embedded, fullNoteText != nil {
+            if fullNoteText != nil {
                 noteIndicator
                     .fixedSize()
             }
@@ -376,7 +365,9 @@ struct TaskRow: View {
     }
 
     private func updateVerticalPlacement(_ proxy: GeometryProxy) {
-        growsUpward = bubblePlacement(proxy).growsUpward
+        let frame = proxy.frame(in: .global)
+        growsUpward = frame.minY > 260
+        rowMaxX = frame.maxX
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
@@ -389,7 +380,8 @@ struct TaskRow: View {
         let frame = proxy.frame(in: .global)
         return RowBubblePlacement.calculate(
             globalPoint: CGPoint(x: frame.minX, y: frame.minY),
-            wideHost: embedded
+            wideHost: embedded,
+            hostMaxX: rowMaxX > 0 ? (rowMaxX - 8) : nil
         )
     }
 
@@ -421,49 +413,20 @@ struct TaskRow: View {
         AppPreferences.shared.contentTruncation.textTruncation
     }
 
-    @ViewBuilder
-    private var embeddedNoteSnippets: some View {
-        if embedded {
-            if let noteSnippet = formattedNoteSnippet {
-                Text(noteSnippet)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.text.secondary.opacity(0.85)) // token-exempt: 85% 次要色没有对应令牌
-                    .lineLimit(1)
-                    .truncationMode(textTruncation)
-            }
-
-            if let note = state.note {
-                Text(note)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.accent.base.opacity(0.85)) // token-exempt: 85% 印章色没有对应令牌
-            }
-
-            if let source = state.classify?.sourceLabel, !source.isEmpty {
-                Text(source)
-                    .font(DaybookType.caption)
-                    .foregroundStyle(DaybookPalette.text.tertiary)
-            }
-        }
-    }
-
     private var titleContent: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 5) {
-                if state.isResident {
-                    residentMark
-                }
-                ModernTaskTitle(text: state.title, isDone: state.isDone)
-                    .lineLimit(embedded ? 2 : 1)
-                    .truncationMode(textTruncation)
+        HStack(spacing: 5) {
+            if state.isResident {
+                residentMark
             }
-                .layoutPriority(1)
-                .contentShape(Rectangle())
-                .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
-                .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
-                    titleBubbleOverlay
-                }
-
-            embeddedNoteSnippets
+            ModernTaskTitle(text: state.title, isDone: state.isDone)
+                .lineLimit(embedded ? 2 : 1)
+                .truncationMode(textTruncation)
+        }
+        .layoutPriority(1)
+        .contentShape(Rectangle())
+        .onHover { chrome.handleTitleHover($0, reduceMotion: reduceMotion) }
+        .overlay(alignment: growsUpward ? .bottomLeading : .topLeading) {
+            titleBubbleOverlay
         }
     }
 }
