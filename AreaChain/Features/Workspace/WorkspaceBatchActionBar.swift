@@ -24,6 +24,7 @@ struct WorkspaceBatchData {
 /// 工作台底部悬浮批量操作栏容器
 struct WorkspaceBatchActionBar: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.locale) private var locale
     @Bindable var navigation: WorkspaceNavigation
     var data: WorkspaceBatchData
     @State private var pendingTrash: PendingTrash?
@@ -135,7 +136,8 @@ struct WorkspaceBatchActionBar: View {
 
     private func handleTrash() {
         let count = navigation.selectedTaskIDs.count
-        pendingTrash = PendingTrash(title: "\(count)") {
+        let title = L10n.format("batch.selected %lld", locale: locale, count)
+        pendingTrash = PendingTrash(title: title) {
             guard DayBoardMutations.batchTrash(
                 navigation.selectedTaskIDs,
                 todos: todos,

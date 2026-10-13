@@ -24,19 +24,18 @@ extension View {
                 get: { pending.wrappedValue != nil },
                 set: { if !$0 { pending.wrappedValue = nil } }
             ),
-            titleVisibility: .visible
-        ) {
+            titleVisibility: .visible,
+            presenting: pending.wrappedValue
+        ) { target in
             Button("alert.trash.move", role: .destructive) {
-                pending.wrappedValue?.confirm()
+                target.confirm()
                 pending.wrappedValue = nil
             }
             Button("alert.cancel", role: .cancel) {
                 pending.wrappedValue = nil
             }
-        } message: {
-            if let title = pending.wrappedValue?.displayTitle {
-                Text("alert.trash.message \(title)")
-            }
+        } message: { target in
+            Text("alert.trash.message \(target.displayTitle)")
         }
     }
 
@@ -47,19 +46,18 @@ extension View {
                 get: { pending.wrappedValue != nil },
                 set: { if !$0 { pending.wrappedValue = nil } }
             ),
-            titleVisibility: .visible
-        ) {
+            titleVisibility: .visible,
+            presenting: pending.wrappedValue
+        ) { target in
             Button("alert.purge.one", role: .destructive) {
-                pending.wrappedValue?.confirm()
+                target.confirm()
                 pending.wrappedValue = nil
             }
             Button("alert.cancel", role: .cancel) {
                 pending.wrappedValue = nil
             }
-        } message: {
-            if let title = pending.wrappedValue?.displayTitle {
-                Text("alert.purge.message \(title)")
-            }
+        } message: { target in
+            Text("alert.purge.message \(target.displayTitle)")
         }
     }
 }

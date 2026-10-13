@@ -110,21 +110,46 @@ struct WorkspaceAllItemsPageModel {
         hasher.combine(checks.count)
         for todo in todos {
             hasher.combine(todo.id)
+            hasher.combine(todo.deletedAt)
             hasher.combine(todo.isDone)
             hasher.combine(todo.dayKey)
             hasher.combine(todo.title)
             hasher.combine(todo.sortOrder)
+            hasher.combine(todo.tagIDs)
+            hasher.combine(todo.isImportant)
+            hasher.combine(todo.isUrgent)
+            hasher.combine(todo.remindMinutes)
+            hasher.combine(todo.sourceBundleID)
+            hasher.combine(todo.subtasks.count)
+            for sub in todo.subtasks {
+                hasher.combine(sub.id)
+                hasher.combine(sub.deletedAt)
+                hasher.combine(sub.isDone)
+                hasher.combine(sub.sortOrder)
+                hasher.combine(sub.tagIDs)
+                hasher.combine(sub.title)
+            }
         }
         for routine in routines {
             hasher.combine(routine.id)
+            hasher.combine(routine.deletedAt)
             hasher.combine(routine.isEnabled)
             hasher.combine(routine.sortOrder)
+            hasher.combine(routine.title)
+            hasher.combine(routine.tagIDs)
+            hasher.combine(routine.isImportant)
+            hasher.combine(routine.isUrgent)
+            hasher.combine(routine.remindMinutes)
+            hasher.combine(routine.sourceBundleID)
+            hasher.combine(routine.weekdayMask)
+            hasher.combine(routine.subtasksJSON)
         }
         for check in checks {
             hasher.combine(check.id)
             hasher.combine(check.dayKey)
             hasher.combine(check.isDone)
             hasher.combine(check.isSkipped)
+            hasher.combine(check.completedSubtaskIDs)
         }
         return hasher.finalize()
     }

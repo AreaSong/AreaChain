@@ -264,4 +264,83 @@ struct WorkspaceItemsPageTests {
         #expect(badges.pending == (pending.overdueCount + pending.upcomingCount > 0
             ? pending.overdueCount + pending.upcomingCount : nil))
     }
+
+    @Test func allItemsModelInvalidatesCacheWhenItemIsSoftDeleted() {
+        let today = "2026-10-13"
+        let nav = WorkspaceNavigation(boardSelection: BoardSelection())
+        nav.allItemsQuery = ItemsListingQuery(todayKey: today)
+        let todo = TodoItem(title: "测试事项", dayKey: today)
+        let routine = DailyRoutine(title: "测试习惯", sortOrder: 0, createdDayKey: today)
+        let locale = Locale(identifier: "zh-Hans")
+
+        let model1 = WorkspaceAllItemsPageModel.make(
+            routines: [routine],
+            todos: [todo],
+            checks: [],
+            todayKey: today,
+            navigation: nav,
+            locale: locale
+        )
+        #expect(model1.visibleIDs.contains(todo.id))
+        #expect(model1.visibleIDs.contains(routine.id))
+
+        todo.deletedAt = Date()
+        let model2 = WorkspaceAllItemsPageModel.make(
+            routines: [routine],
+            todos: [todo],
+            checks: [],
+            todayKey: today,
+            navigation: nav,
+            locale: locale
+        )
+        #expect(!model2.visibleIDs.contains(todo.id))
+        #expect(model2.visibleIDs.contains(routine.id))
+
+        routine.deletedAt = Date()
+        let model3 = WorkspaceAllItemsPageModel.make(
+            routines: [routine],
+            todos: [todo],
+            checks: [],
+            todayKey: today,
+            navigation: nav,
+            locale: locale
+        )
+        #expect(!model3.visibleIDs.contains(todo.id))
+        #expect(!model3.visibleIDs.contains(routine.id))
+    }
+
+    @Test func batchTrashRemovesAllSelectedTasks() throws {
+        let container = try ModelContainer(
+            for: TodoItem.self, DailyRoutine.self, RoutineCheck.self, TagItem.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = container.mainContext
+        let today = "2026-10-13"
+        let todo1 = TodoItem(title: "事项1", dayKey: today)
+        let todo2 = TodoItem(title: "事项2", dayKey: today)
+        let routine1 = DailyRoutine(title: "习惯1", sortOrder: 0, createdDayKey: today)
+        context.insert(todo1)
+        context.insert(todo2)
+        context.insert(routine1)
+        try context.save()
+
+        let selectedIDs: Set<UUID> = [todo1.id, todo2.id, routine1.id]
+        let result = DayBoardMutations.batchTrash(selectedIDs, todos: [todo1, todo2], routines: [routine1])
+        #expect(result)
+        #expect(todo1.deletedAt != nil)
+        #expect(todo2.deletedAt != nil)
+        #expect(routine1.deletedAt != nil)
+
+        let nav = WorkspaceNavigation(boardSelection: BoardSelection())
+        nav.allItemsQuery = ItemsListingQuery(todayKey: today)
+        let model = WorkspaceAllItemsPageModel.make(
+            routines: [routine1],
+            todos: [todo1, todo2],
+            checks: [],
+            todayKey: today,
+            navigation: nav,
+            locale: Locale(identifier: "zh-Hans")
+        )
+        #expect(model.visibleIDs.isEmpty)
+    }
 }

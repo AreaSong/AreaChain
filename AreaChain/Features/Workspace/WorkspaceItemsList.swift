@@ -2,78 +2,6 @@ import AppKit
 import SwiftData
 import SwiftUI
 
-enum WorkspaceItemEntry: Identifiable {
-    case todo(TodoItem, checkDayKey: String, subtaskIDs: Set<UUID>?)
-    case routine(
-        DailyRoutine,
-        checkDayKey: String,
-        allowsCompletion: Bool,
-        overdueCount: Int,
-        noteDayKey: String?
-    )
-
-    var id: String {
-        switch self {
-        case .todo(let todo, _, _):
-            return BoardItemReference.todo(todo.id).id
-        case .routine(let routine, _, _, _, _):
-            return BoardItemReference.recurring(routine.id).id
-        }
-    }
-
-    var modelID: UUID {
-        switch self {
-        case .todo(let todo, _, _):
-            return todo.id
-        case .routine(let routine, _, _, _, _):
-            return routine.id
-        }
-    }
-
-    var checkDayKey: String {
-        switch self {
-        case .todo(_, let day, _):
-            return day
-        case .routine(_, let day, _, _, _):
-            return day
-        }
-    }
-
-    var allowsCompletion: Bool {
-        switch self {
-        case .todo:
-            return true
-        case .routine(_, _, let allowed, _, _):
-            return allowed
-        }
-    }
-
-    var reference: BoardItemReference {
-        switch self {
-        case .todo(let todo, _, _):
-            return .todo(todo.id)
-        case .routine(let routine, _, _, _, _):
-            return .recurring(routine.id)
-        }
-    }
-}
-
-struct WorkspaceItemGroup: Identifiable {
-    var id: String
-    var title: LocalizedStringKey?
-    var entries: [WorkspaceItemEntry]
-    /// 日期分组的显示名。和 `title` 可以同时出现：标题是段名，这行是那一天。
-    var titleText: String? = nil
-    /// 段头计数。日期分组的第一天用全部一次性事项的数量，而不是当天的行数。
-    var sectionCount: Int? = nil
-}
-
-private struct RoutineCompletionPrompt {
-    var allowed: Bool
-    var overdue: Int
-    var noteDay: String?
-}
-
 struct WorkspaceItemsList: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
@@ -235,7 +163,13 @@ struct WorkspaceItemsList: View {
             ),
             actions: TodoRowActions(
                 onSelect: { select(todo.id, modifiers: $0) },
-                onDelete: { askTrash(title: todo.title) { DayBoardMutations.trashTodo(todo) } },
+                onDelete: {
+                    if navigation.selectedTaskIDs.contains(todo.id) && navigation.selectedTaskIDs.count > 1 {
+                        confirmTrashSelected(identity)
+                    } else {
+                        askTrash(title: todo.title) { DayBoardMutations.trashTodo(todo); navigation.clearSelection() }
+                    }
+                },
                 onToggle: { persistToggle(todo.id) },
                 onEndEditing: { editingID = nil }
             )
@@ -291,7 +225,13 @@ struct WorkspaceItemsList: View {
             ),
             actions: RoutineRowActions(
                 onSelect: { select(routine.id, modifiers: $0) },
-                onDelete: { askTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine) } },
+                onDelete: {
+                    if navigation.selectedTaskIDs.contains(routine.id) && navigation.selectedTaskIDs.count > 1 {
+                        confirmTrashSelected(identity)
+                    } else {
+                        askTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine); navigation.clearSelection() }
+                    }
+                },
                 onToggle: completion.allowed ? { persistToggle(routine.id) } : nil,
                 onSkip: completion.allowed ? { skip(routine, on: day) } : nil,
                 onEndEditing: { editingID = nil }
@@ -429,8 +369,27 @@ extension WorkspaceItemsList {
     }
 
     private func confirmTrashSelected(_ identity: WorkspaceItemsListIdentity) {
-        guard let entry = navigation.selectedTaskID.flatMap(identity.entry) else { return }
-        askTrash(title: entryTitle(entry)) { trash(entry) }
+        let selectedIDs = navigation.selectedTaskIDs
+        if selectedIDs.count > 1 {
+            let title = L10n.format("batch.selected %lld", locale: locale, selectedIDs.count)
+            askTrash(title: title) { batchTrash(selectedIDs, identity: identity) }
+        } else if let id = navigation.selectedTaskID ?? selectedIDs.first, let entry = identity.entry(id) {
+            askTrash(title: entryTitle(entry)) { trash(entry); navigation.clearSelection() }
+        }
+    }
+
+    private func batchTrash(_ ids: Set<UUID>, identity: WorkspaceItemsListIdentity) {
+        var todos: [TodoItem] = []
+        var routines: [DailyRoutine] = []
+        for id in ids {
+            switch identity.entry(id) {
+            case .todo(let t, _, _): todos.append(t)
+            case .routine(let r, _, _, _, _): routines.append(r)
+            case nil: break
+            }
+        }
+        _ = DayBoardMutations.batchTrash(ids, todos: todos, routines: routines)
+        navigation.clearSelection()
     }
 
     private func dismissKeyboardFocus() {

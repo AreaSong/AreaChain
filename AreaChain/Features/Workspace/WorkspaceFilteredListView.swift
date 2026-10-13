@@ -268,8 +268,13 @@ struct WorkspaceFilteredListView: View {
         let actions = TodoRowActions(
             onSelect: { selectRow(todo.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
             onDelete: {
-                pendingTrash = PendingTrash(title: todo.title) {
-                    DayBoardMutations.trashTodo(todo)
+                if navigation.selectedTaskIDs.contains(todo.id) && navigation.selectedTaskIDs.count > 1 {
+                    confirmTrashBatch(model)
+                } else {
+                    pendingTrash = PendingTrash(title: todo.title) {
+                        DayBoardMutations.trashTodo(todo)
+                        navigation.clearSelection()
+                    }
                 }
             }
         )
@@ -302,8 +307,13 @@ struct WorkspaceFilteredListView: View {
         let actions = RoutineRowActions(
             onSelect: { selectRow(routine.id, modifiers: $0, visibleIDs: model.orderedVisibleIDs) },
             onDelete: {
-                pendingTrash = PendingTrash(title: routine.title) {
-                    DayBoardMutations.trashRoutine(routine)
+                if navigation.selectedTaskIDs.contains(routine.id) && navigation.selectedTaskIDs.count > 1 {
+                    confirmTrashBatch(model)
+                } else {
+                    pendingTrash = PendingTrash(title: routine.title) {
+                        DayBoardMutations.trashRoutine(routine)
+                        navigation.clearSelection()
+                    }
                 }
             },
             onSkip: dueToday && !isDone ? {
@@ -352,12 +362,7 @@ struct WorkspaceFilteredListView: View {
         case ItemsListKey.returnKey:
             if let id = navigation.selectedTaskID { navigation.inspectTask(id) }
         case ItemsListKey.delete:
-            guard let id = navigation.selectedTaskID else { return }
-            if let todo = todos.first(where: { $0.id == id }) {
-                pendingTrash = PendingTrash(title: todo.title) { DayBoardMutations.trashTodo(todo) }
-            } else if let routine = routines.first(where: { $0.id == id }) {
-                pendingTrash = PendingTrash(title: routine.title) { DayBoardMutations.trashRoutine(routine) }
-            }
+            confirmTrashBatch(model)
         case ItemsListKey.escape:
             if navigation.isInspectorPresented {
                 navigation.closeInspector()
@@ -367,6 +372,29 @@ struct WorkspaceFilteredListView: View {
             }
         default:
             break
+        }
+    }
+
+    private func confirmTrashBatch(_ model: WorkspaceFilteredListModel) {
+        let selectedIDs = navigation.selectedTaskIDs
+        if selectedIDs.count > 1 {
+            let title = L10n.format("batch.selected %lld", locale: locale, selectedIDs.count)
+            pendingTrash = PendingTrash(title: title) {
+                guard DayBoardMutations.batchTrash(selectedIDs, todos: todos, routines: routines) else { return }
+                navigation.clearSelection()
+            }
+        } else if let id = navigation.selectedTaskID ?? selectedIDs.first {
+            if let todo = todos.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: todo.title) {
+                    DayBoardMutations.trashTodo(todo)
+                    navigation.clearSelection()
+                }
+            } else if let routine = routines.first(where: { $0.id == id }) {
+                pendingTrash = PendingTrash(title: routine.title) {
+                    DayBoardMutations.trashRoutine(routine)
+                    navigation.clearSelection()
+                }
+            }
         }
     }
 }
