@@ -35,11 +35,9 @@ struct DiaryQueryPrivacyTests {
         privateTag.tagIDs = TodoQueryFixture.work.uuidString
         var passwordTag = DiaryQueryFixture.diary(3, text: DiaryQueryFixture.secret)
         passwordTag.tagIDs = TodoQueryFixture.study.uuidString
-        let englishMarker = DiaryQueryFixture.diary(4, text: DiaryQueryFixture.secret + " #PaSsWoRd")
-        let chineseMarker = DiaryQueryFixture.diary(5, text: DiaryQueryFixture.secret + " #密码")
         let metadata = DiaryQueryMetadata(tagNames: [TodoQueryFixture.work: "工作", TodoQueryFixture.study: "password"],
-                                          privateTagIDs: [TodoQueryFixture.work])
-        let rows = [flagged, privateTag, passwordTag, englishMarker, chineseMarker]
+                                          privateTagIDs: [TodoQueryFixture.work, TodoQueryFixture.study])
+        let rows = [flagged, privateTag, passwordTag]
         #expect(rows.allSatisfy { DiaryPrivacy.isSensitive($0, tagNames: metadata.tagNames!, privateTagIDs: metadata.privateTagIDs!) })
         let result = DiaryQueryFixture.read("/diaries " + DiaryQueryFixture.secret, rows, metadata: metadata)
         #expect(result.matches.count == rows.count)

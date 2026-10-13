@@ -8,6 +8,7 @@ struct PrivacySetupSheet: View {
     var creating: Bool
     var onComplete: () -> Void
     var probeSystem = true
+    var initialSelectedTagIDs: Set<UUID> = []
     @Environment(\.modelContext) private var context
     @Environment(\.locale) private var locale
     @Environment(\.dismiss) private var dismiss
@@ -65,7 +66,7 @@ struct PrivacySetupSheet: View {
         .accessibilityValue(markers.sorted().joined(separator: " "))
         .interactiveDismissDisabled(busy)
         .task {
-            selected = Set(tags.filter { $0.isPrivateDiary || (creating && DiaryMemoTags.isPasswordName($0.name)) }.map(\.id))
+            selected = Set(tags.filter { $0.isPrivateDiary }.map(\.id)).union(initialSelectedTagIDs)
             includeLegacy = creating
             if creating && probeSystem {
                 let status = await Task.detached { SystemVaultKeyStore().availabilityStatus() }.value

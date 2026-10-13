@@ -65,7 +65,7 @@ struct ExportedTag: Codable, Equatable, Sendable {
         self.name = name
         self.sortOrder = sortOrder
         self.deletedAt = deletedAt
-        self.colorToken = TagColorToken.resolved(colorToken).rawValue
+        self.colorToken = TagColorToken.resolvedToken(colorToken)
     }
 
     init(from decoder: Decoder) throws {
@@ -75,7 +75,7 @@ struct ExportedTag: Codable, Equatable, Sendable {
         sortOrder = try box.decode(Int.self, forKey: .sortOrder)
         deletedAt = try box.decodeIfPresent(Date.self, forKey: .deletedAt)
         let raw = try box.decodeIfPresent(String.self, forKey: .colorToken) ?? TagColorToken.default.rawValue
-        colorToken = TagColorToken.resolved(raw).rawValue
+        colorToken = TagColorToken.resolvedToken(raw)
     }
 }
 

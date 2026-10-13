@@ -39,10 +39,7 @@ struct LiveDiaryComposerPreview: View {
     }
 
     private var isSensitive: Bool {
-        if isSensitiveExternal { return true }
-        if DiaryPrivacy.requiresProtection(text: text, tagIDs: [], tags: allTags) { return true }
-        guard allTags.isEmpty else { return false }
-        return parsed.tagNames.contains { DiaryMemoTags.isPasswordName($0) }
+        isSensitiveExternal || DiaryPrivacy.requiresProtection(text: text, tagIDs: [], tags: allTags)
     }
 
     /// 实时输入预览态（未显式要求遮罩）直接展示正在输入的解析正文，仅在底栏展示隐私盾牌标识。
@@ -291,7 +288,9 @@ struct LiveDiaryComposerPreview: View {
     }
 
     private func tagPill(_ name: String) -> some View {
-        let color = DaybookPalette.diaryPreset(forTagName: name)
+        let key = TagSyntax.normalizedName(name)
+        let matched = allTags.first { TagSyntax.normalizedName($0.name) == key }
+        let color = DaybookPalette.tagMark(name: name, token: matched?.colorToken ?? TagColorToken.default.rawValue)
         return Text("#" + name)
             .font(DaybookType.micro.weight(.medium))
             .lineLimit(1)

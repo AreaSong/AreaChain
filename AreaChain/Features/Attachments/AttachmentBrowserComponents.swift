@@ -2,83 +2,148 @@ import AppKit
 import SwiftUI
 
 struct AttachmentBrowserFilterBar: View {
+    @Environment(\.locale) private var locale
+
     @Binding var filter: AttachmentFilterKind
     @Binding var sort: AttachmentSortOrder
+    @Binding var boardFilter: BoardFilter
+    var tags: [CatalogChoice]
+    var tagCounts: [UUID: Int] = [:]
+    var untaggedCount: Int?
     var counts: [AttachmentFilterKind: Int]
     var totalDisplayed: Int
     var selectedCount: Int
     var onToggleSelectAll: () -> Void
 
+    @State private var activeDropdown: ActiveDropdown?
+
+    private enum ActiveDropdown: Hashable {
+        case type, sort
+    }
+
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: DaybookSpacing.xs) {
-                filterButtons
+                leadingCapsules
                 Spacer(minLength: DaybookSpacing.xs)
-                trailingControls
+                trailingFilterBar
             }
             VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                HStack(spacing: DaybookSpacing.xs) { filterButtons }
-                HStack(spacing: DaybookSpacing.xs) { trailingControls }
+                leadingCapsules
+                trailingFilterBar
             }
         }
     }
 
-    @ViewBuilder
-    private var filterButtons: some View {
-        ForEach(AttachmentFilterKind.allCases) { item in
-            let count = counts[item] ?? 0
-            Button {
-                filter = item
-            } label: {
-                HStack(spacing: 4) {
-                    Text(filterTitle(item))
-                    Text("\(count)")
-                        .font(DaybookType.micro)
-                        .foregroundStyle(filter == item ? DaybookPalette.text.onAccent : DaybookPalette.text.tertiary)
-                }
-            }
-            .buttonStyle(DaybookButtonStyle(filter == item ? .prominent : .quiet, size: .compact))
-            .accessibilityIdentifier("attachments.filter." + item.rawValue)
+    private var leadingCapsules: some View {
+        HStack(spacing: 6) {
+            typeDropdown
+            sortDropdown
+            selectAllChip
         }
+        .font(DaybookType.caption)
     }
 
-    @ViewBuilder
-    private var trailingControls: some View {
-        if totalDisplayed > 0 {
-            let allSelected = selectedCount == totalDisplayed && totalDisplayed > 0
-            Button(allSelected ? "attachments.deselectAll" : "attachments.selectAll") {
-                onToggleSelectAll()
-            }
-            .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
-            .accessibilityIdentifier("attachments.selectAll")
-        }
+    private var trailingFilterBar: some View {
+        BoardFilterBar(
+            filter: boardFilter,
+            tags: tags,
+            bundleIDs: [],
+            tagCounts: tagCounts,
+            untaggedCount: untaggedCount,
+            showsPriority: true,
+            showsReminder: true,
+            showsDate: true,
+            onChange: { boardFilter = $0 }
+        )
+    }
 
-        Menu {
-            ForEach(AttachmentSortOrder.allCases) { order in
-                Button {
-                    sort = order
-                } label: {
-                    HStack {
-                        Text(sortTitle(order))
-                        if sort == order {
-                            Image(systemName: "checkmark")
-                        }
-                    }
-                }
-            }
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "arrow.up.arrow.down")
-                Text(sortTitle(sort))
-            }
-            .daybookMenuLabel(size: .compact, fitsLabel: true)
+    private var typeDropdown: some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == .type },
+            set: { activeDropdown = $0 ? .type : nil }
+        )
+        let active = filter != .all
+        let title = active
+            ? L10n.string(filterKey(filter), locale: locale)
+            : L10n.string("attachments.scope.type", locale: locale)
+        let allOption = FilterDropdownOption(
+            id: "all",
+            title: L10n.string("attachments.filter.all", locale: locale),
+            icon: "paperclip",
+            count: counts[.all],
+            isSelected: filter == .all,
+            action: { filter = .all }
+        )
+        let items: [FilterDropdownOption] = [.todo, .routine, .diary, .unlinked].map { kind in
+            FilterDropdownOption(
+                id: kind.rawValue,
+                title: L10n.string(filterKey(kind), locale: locale),
+                icon: filterIcon(kind),
+                count: counts[kind],
+                isSelected: filter == kind,
+                action: { filter = kind }
+            )
         }
-        .menuStyle(.borderlessButton)
-        .fixedSize()
+        return BoardFilterDropdownButton(
+            icon: "paperclip",
+            title: title,
+            active: active,
+            isExpanded: isExpanded,
+            reset: { filter = .all },
+            allOption: allOption,
+            items: items
+        )
+        .accessibilityIdentifier("attachments.filter.type")
+    }
+
+    private var sortDropdown: some View {
+        let isExpanded = Binding(
+            get: { activeDropdown == .sort },
+            set: { activeDropdown = $0 ? .sort : nil }
+        )
+        let active = sort != .newest
+        let items = AttachmentSortOrder.allCases.map { order in
+            FilterDropdownOption(
+                id: order.rawValue,
+                title: L10n.string(sortKey(order), locale: locale),
+                icon: sortIcon(order),
+                isSelected: sort == order,
+                action: { sort = order }
+            )
+        }
+        return BoardFilterDropdownButton(
+            icon: "arrow.up.arrow.down",
+            title: L10n.string(sortKey(sort), locale: locale),
+            active: active,
+            isExpanded: isExpanded,
+            reset: { sort = .newest },
+            allOption: nil,
+            items: items
+        )
         .accessibilityIdentifier("attachments.sort.menu")
     }
 
-    private func filterTitle(_ kind: AttachmentFilterKind) -> LocalizedStringKey {
+    @ViewBuilder
+    private var selectAllChip: some View {
+        if totalDisplayed > 0 {
+            let allSelected = selectedCount == totalDisplayed && totalDisplayed > 0
+            DaybookChip(
+                tint: DaybookPalette.accent.base,
+                isSelected: allSelected,
+                action: onToggleSelectAll
+            ) {
+                HStack(spacing: 4) {
+                    Image(systemName: allSelected ? "checkmark.circle.fill" : "checkmark.circle")
+                    Text(allSelected ? "attachments.deselectAll" : "attachments.selectAll")
+                        .lineLimit(1)
+                }
+            }
+            .accessibilityIdentifier("attachments.selectAll")
+        }
+    }
+
+    private func filterKey(_ kind: AttachmentFilterKind) -> String.LocalizationValue {
         switch kind {
         case .all: "attachments.filter.all"
         case .todo: "attachments.owner.todo"
@@ -88,12 +153,31 @@ struct AttachmentBrowserFilterBar: View {
         }
     }
 
-    private func sortTitle(_ order: AttachmentSortOrder) -> LocalizedStringKey {
+    private func filterIcon(_ kind: AttachmentFilterKind) -> String {
+        switch kind {
+        case .all: "paperclip"
+        case .todo: "checkmark.circle"
+        case .routine: "repeat"
+        case .diary: "note.text"
+        case .unlinked: "tray"
+        }
+    }
+
+    private func sortKey(_ order: AttachmentSortOrder) -> String.LocalizationValue {
         switch order {
         case .newest: "attachments.sort.newest"
         case .oldest: "attachments.sort.oldest"
         case .name: "attachments.sort.name"
         case .referenceCount: "attachments.sort.references"
+        }
+    }
+
+    private func sortIcon(_ order: AttachmentSortOrder) -> String {
+        switch order {
+        case .newest: "clock.badge.checkmark"
+        case .oldest: "clock"
+        case .name: "textformat.abc"
+        case .referenceCount: "link"
         }
     }
 }
@@ -125,6 +209,8 @@ struct AttachmentSelectionToolbar: View {
 }
 
 struct AttachmentLibraryCardView: View {
+    @Environment(\.locale) private var locale
+
     let item: AttachmentLibraryItem
     let image: NSImage?
     let isSelected: Bool
@@ -148,6 +234,7 @@ struct AttachmentLibraryCardView: View {
         .padding(DaybookSpacing.sm)
         .daybookSurface(.card, isSelected: isSelected)
         .contextMenu {
+            Button("attachments.view", action: onPreview)
             Button("attachments.rename", action: onBeginRename)
             Button("attachments.copyToken", action: onCopyToken)
             Divider()
@@ -181,6 +268,8 @@ struct AttachmentLibraryCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 4) {
+                DaybookIconButton(systemName: "eye", label: "attachments.view", size: .compact, action: onPreview)
+                    .accessibilityIdentifier("attachments.view." + item.primaryReference.id.uuidString)
                 DaybookIconButton(systemName: "at", label: "attachments.copyToken", size: .compact, action: onCopyToken)
                 DaybookIconButton(systemName: "pencil", label: "attachments.rename", size: .compact, action: onBeginRename)
                 DaybookIconButton(systemName: "trash", label: "attachments.delete", size: .compact, action: onDelete)
@@ -318,18 +407,7 @@ struct AttachmentLibraryCardView: View {
                     .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
 
-                if !ref.tags.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(ref.tags) { tag in
-                            DaybookChip(
-                                tint: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken.rawValue),
-                                isSelected: true
-                            ) {
-                                Text("#\(tag.name)")
-                            }
-                        }
-                    }
-                }
+                referenceBadges(ref)
 
                 Spacer(minLength: 4)
 
@@ -349,6 +427,36 @@ struct AttachmentLibraryCardView: View {
         }
         .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         .accessibilityIdentifier("attachments.ref." + ref.id)
+    }
+
+    @ViewBuilder
+    private func referenceBadges(_ ref: AttachmentReferenceItem) -> some View {
+        if ref.kind == .todo || ref.kind == .routine {
+            let slot = QuadrantSlot.of(important: ref.isImportant, urgent: ref.isUrgent)
+            QuadrantBadge(slot: slot, isHighlighted: true)
+        }
+
+        if !ref.tags.isEmpty {
+            HStack(spacing: 4) {
+                ForEach(ref.tags) { tag in
+                    DaybookChip(
+                        tint: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken.rawValue),
+                        isSelected: true
+                    ) {
+                        Text("#\(tag.name)")
+                    }
+                }
+            }
+        }
+
+        if let remindMinutes = ref.remindMinutes {
+            DaybookChip(tint: DaybookPalette.accent.base, isSelected: false) {
+                HStack(spacing: 2.5) {
+                    Image(systemName: "clock")
+                    Text(RemindMinutes.label(remindMinutes, locale: locale))
+                }
+            }
+        }
     }
 
     private func kindIcon(_ kind: AttachmentOwner) -> String {

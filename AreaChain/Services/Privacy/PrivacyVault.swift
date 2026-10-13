@@ -44,6 +44,16 @@ final class PrivacyVault {
     var hasSystemUnlock: Bool { configuration?.systemKeyID != nil }
     var hasMasterPassword: Bool { configuration?.passwordSlot != nil }
     var idleSeconds: Int { configuration?.idleSeconds ?? 300 }
+    var remainingIdleSeconds: Int {
+        guard isUnlocked else { return 0 }
+        guard let lastActivity else { return idleSeconds }
+        let elapsed = Int(now().timeIntervalSince(lastActivity).rounded(.down))
+        return max(0, idleSeconds - elapsed)
+    }
+    func formattedRemainingIdleTime() -> String {
+        let remaining = remainingIdleSeconds
+        return String(format: "%02d:%02d", remaining / 60, remaining % 60)
+    }
     var preferredMethod: PreferredUnlockMethod {
         if hasSystemUnlock && hasMasterPassword {
             return configuration?.preferredMethod ?? .system

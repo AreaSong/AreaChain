@@ -275,7 +275,7 @@ struct DiaryQuickComposerView: View {
 
     private func tagChip(_ tag: TagItem) -> some View {
         let isSelected = selectedTagIDs.contains(tag.id)
-        let color = DiaryTagChrome.color(for: tag.name)
+        let color = DaybookPalette.tagMark(name: tag.name, token: tag.colorToken)
         return DaybookChip(tint: color, isSelected: isSelected, action: {
             if isSelected {
                 selectedTagIDs.remove(tag.id)

@@ -262,6 +262,36 @@ struct DiaryEditorSessionTests {
         #expect(!reopenedTitled.hasUnsavedChanges)
     }
 
+    @Test func attachmentCarouselStepsAndAdvancesOnRemoval() {
+        let first = AttachmentRef(id: UUID(), filename: "1.png")
+        let second = AttachmentRef(id: UUID(), filename: "2.png")
+        let third = AttachmentRef(id: UUID(), filename: "3.png")
+        let items = [first, second, third]
+
+        #expect(AttachmentCarouselSelection.index(of: second.id, in: items) == 1)
+        #expect(AttachmentCarouselSelection.adjacentID(from: first.id, delta: -1, in: items) == nil)
+        #expect(AttachmentCarouselSelection.adjacentID(from: first.id, delta: 1, in: items) == second.id)
+        #expect(AttachmentCarouselSelection.adjacentID(from: second.id, delta: 1, in: items) == third.id)
+        #expect(AttachmentCarouselSelection.adjacentID(from: third.id, delta: 1, in: items) == nil)
+
+        #expect(AttachmentCarouselSelection.nextIDAfterRemoving(first.id, in: items) == second.id)
+        #expect(AttachmentCarouselSelection.nextIDAfterRemoving(third.id, in: items) == second.id)
+        #expect(AttachmentCarouselSelection.nextIDAfterRemoving(first.id, in: [first]) == nil)
+
+        let rect1 = AttachmentCarouselSelection.anchorRect(
+            for: first.id, in: items, thumbnailSize: 22, spacing: 4, cellPadding: 0
+        )
+        let rect2 = AttachmentCarouselSelection.anchorRect(
+            for: second.id, in: items, thumbnailSize: 22, spacing: 4, cellPadding: 0
+        )
+        let rect3 = AttachmentCarouselSelection.anchorRect(
+            for: third.id, in: items, thumbnailSize: 22, spacing: 4, cellPadding: 0
+        )
+        #expect(rect1 == CGRect(x: 0, y: 0, width: 22, height: 22))
+        #expect(rect2 == CGRect(x: 26, y: 0, width: 22, height: 22))
+        #expect(rect3 == CGRect(x: 52, y: 0, width: 22, height: 22))
+    }
+
     private func findEditor(in view: NSView?) -> DaybookAppKitTextView? {
         guard let view else { return nil }
         if let editor = view as? DaybookAppKitTextView { return editor }

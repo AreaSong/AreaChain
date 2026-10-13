@@ -27,7 +27,8 @@ extension PrivacyInteractionTests {
         for pass in 0..<2 {
             var dismissed = false
             let content = PrivacySetupSheet(vault: vault, tags: tags, creating: creating,
-                                           onComplete: { completed += 1 }, probeSystem: false)
+                                           onComplete: { completed += 1 }, probeSystem: false,
+                                           initialSelectedTagIDs: creating ? [tags[1].id] : [])
             let host = support.window(PrivacyButtonSheetHost(content: AnyView(content), onDismiss: { dismissed = true }),
                                       locale: environment.0, scheme: environment.1, size: NSSize(width: 520, height: 650))
             defer { SystemPageHost.release(host) }

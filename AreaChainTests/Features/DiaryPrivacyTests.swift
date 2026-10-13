@@ -6,27 +6,31 @@ import Testing
 
 @MainActor
 struct DiaryPrivacyTests {
-    @Test func recognizesPrivateAliasesAndDeletedTagsWithoutReclassifyingOrdinaryText() {
-        let tag = TagItem(name: "My PASSWORD", sortOrder: 0, deletedAt: .now)
+    @Test func recognizesAuthorizedPrivateTagsAndLegacyMigrationMarkers() {
+        let tag = TagItem(name: "My PASSWORD", sortOrder: 0, deletedAt: .now, isPrivateDiary: true)
         let entry = DiaryEntry(text: "测试私密正文", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
         #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
+        tag.isPrivateDiary = false
+        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
         entry.tagIDs = ""
         #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: [tag]))
         entry.text = "#密码 测试"
-        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
-        entry.text = "#PASSWORD 测试"
-        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
-        entry.text = "关于 password 的一般说明"
         #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: []))
+        #expect(DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
+        entry.text = "#PASSWORD 测试"
+        #expect(DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
+        entry.text = "关于 password 的一般说明"
+        #expect(!DiaryPrivacy.hasLegacyPrivateMarker(entry.text))
     }
 
     @Test func protectionAndPrivateFlagShareOneRule() {
-        let secret = TagItem(name: "密码", sortOrder: 0)
-        secret.isPrivateDiary = true
+        let secret = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: true)
+        let unauthedPassword = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: false)
         let journal = TagItem(name: "日记", sortOrder: 1)
         #expect(DiaryContent.requiresProtection(text: "今天", tagIDs: [secret.id], tags: [journal, secret]))
         #expect(DiaryContent.requiresProtection(text: "#密码 备忘", tagIDs: [], tags: [secret]))
-        #expect(DiaryContent.requiresProtection(text: "含有密码二字", tagIDs: [], tags: [secret]))
+        #expect(!DiaryContent.requiresProtection(text: "#密码 备忘", tagIDs: [], tags: [unauthedPassword]))
+        #expect(!DiaryContent.requiresProtection(text: "含有密码二字", tagIDs: [], tags: [secret]))
         #expect(!DiaryContent.requiresProtection(text: "普通", tagIDs: [], tags: [journal]))
         #expect(DiaryContent.requiresProtection(tagIDs: secret.id.uuidString, tags: [secret]))
 
@@ -50,7 +54,7 @@ struct DiaryPrivacyTests {
         let pending = PendingTrash.diary(entry, tags: { [tag] }, locale: Locale(identifier: "en"), confirm: {})
         #expect(pending.title.isEmpty)
         #expect(pending.displayTitle == entry.text)
-        tag.name = "密码"
+        tag.isPrivateDiary = true
         #expect(!pending.displayTitle.contains(entry.text))
         entry.deletedAt = .now
         let trash = try #require(TrashRow.diary(entry, attachments: [], tags: { [tag] }, locale: Locale(identifier: "en")))
@@ -75,7 +79,7 @@ struct DiaryPrivacyTests {
     }
 
     @Test func searchCanLocatePrivateNoteWithoutReturningItsBodyAsTitleOrHelp() throws {
-        let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now)
+        let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now, isPrivateDiary: true)
         let entry = DiaryEntry(text: "account private-test-value", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
         let hits = BoardSearch.hits(
             query: "account", todos: [], diaries: [entry.snapshot], routines: [],
@@ -90,7 +94,7 @@ struct DiaryPrivacyTests {
 
     @Test func typedOwnerPreventsPublicTaskFromExposingPrivateDiaryAttachment() {
         let id = UUID()
-        let tag = TagItem(name: "密码", sortOrder: 0)
+        let tag = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: true)
         let diary = DiaryEntry(id: id, text: "私密", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
         let todo = TodoItem(id: id, title: "公开任务", dayKey: "2026-09-11")
         let image = AttachmentItem(ownerKind: "diary", ownerID: id, filename: "private.png")
@@ -106,10 +110,11 @@ struct DiaryPrivacyTests {
     }
 
     @Test func explicitCopyStillWorksWithoutRevealingPrivateNote() {
-        let entry = DiaryEntry(text: "#密码 synthetic-copy-value", dayKey: "2026-09-11")
+        let tag = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: true)
+        let entry = DiaryEntry(text: "#密码 synthetic-copy-value", dayKey: "2026-09-11", tagIDs: tag.id.uuidString)
         let pasteboard = NSPasteboard(name: .init("areachain.privacy.tests.\(UUID())"))
         defer { pasteboard.clearContents() }
-        let card = DiaryNoteCard(entry: entry, activeTags: [], attachments: [], onDelete: {})
+        let card = DiaryNoteCard(entry: entry, activeTags: [tag], attachments: [], onDelete: {})
         #expect(!card.canRevealContent)
         card.copyContent(to: pasteboard)
         #expect(pasteboard.string(forType: .string) == entry.text)

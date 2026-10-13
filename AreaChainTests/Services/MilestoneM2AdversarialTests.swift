@@ -122,11 +122,11 @@ struct MilestoneM2AdversarialTests {
         let tags = try context.fetch(FetchDescriptor<TagItem>())
         #expect(tags.isEmpty, "FirstLaunchSeeder does not directly seed tags")
 
-        // Verify preset tags are seeded via CatalogRepository
+        // Verify preset tags are no longer automatically seeded via CatalogRepository
         let catalogRepo = SwiftDataCatalogRepository(context: context)
         try catalogRepo.ensurePresetTags()
         let seededTags = try catalogRepo.fetchTags(includeDeleted: false)
-        #expect(Set(seededTags.map(\.name)) == Set(DiaryMemoTags.presets))
+        #expect(seededTags.isEmpty)
     }
 
     // MARK: - 2. AppWindows.workspaceViewProvider Tests

@@ -30,7 +30,7 @@ struct WorkspaceHeaderBar: View {
 
     @ViewBuilder private var privacyStatus: some View {
         if vault.isUnlocked {
-            WorkspacePrivacyUnlockedButton(vault: vault)
+            WorkspacePrivacyUnlockedButton(vault: vault, navigation: navigation)
         } else {
             Color.clear.frame(width: 0, height: 0)
         }
@@ -147,46 +147,77 @@ struct WorkspaceHeaderBar: View {
 
 struct WorkspacePrivacyUnlockedButton: View {
     var vault: PrivacyVault = .shared
+    var navigation: WorkspaceNavigation? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isHovered = false
+    @State private var refreshTick = 0
 
     var body: some View {
-        Button {
-            vault.lock()
-        } label: {
-            ZStack {
+        TimelineView(.periodic(from: .now, by: 1)) { _ in
+            let _ = refreshTick
+            let remaining = vault.remainingIdleSeconds
+            let countdown = vault.formattedRemainingIdleTime()
+            let pillTint = isHovered
+                ? DaybookPalette.status.danger
+                : (remaining <= 30 ? DaybookPalette.status.pending : DaybookPalette.accent.base)
+            Button {
+                vault.lock()
+            } label: {
                 HStack(spacing: 4) {
-                    Image(systemName: "lock.open.fill")
-                    Text("privacy.header.unlocked")
+                    ZStack {
+                        Image(systemName: "lock.open.fill").hidden()
+                        Image(systemName: "lock.fill").hidden()
+                        Image(systemName: isHovered ? "lock.fill" : "lock.open.fill")
+                    }
+                    ZStack {
+                        Text("privacy.header.unlocked").hidden()
+                        Text("privacy.header.lock").hidden()
+                        Text(isHovered ? "privacy.header.lock" : "privacy.header.unlocked")
+                    }
+                    ZStack {
+                        Text("88:88").monospacedDigit().hidden()
+                        Text(countdown).monospacedDigit()
+                    }
                 }
-                .hidden()
-                HStack(spacing: 4) {
-                    Image(systemName: "lock.fill")
-                    Text("privacy.lock.now")
-                }
-                .hidden()
-                HStack(spacing: 4) {
-                    Image(systemName: isHovered ? "lock.fill" : "lock.open.fill")
-                    Text(isHovered ? "privacy.lock.now" : "privacy.header.unlocked")
-                }
+                .font(DaybookType.caption.weight(.medium))
             }
-            .font(DaybookType.caption.weight(.medium))
-        }
-        .buttonStyle(
-            DaybookButtonStyle(
-                .pill(tint: isHovered ? DaybookPalette.status.danger : DaybookPalette.accent.base),
-                size: .compact
+            .buttonStyle(
+                DaybookButtonStyle(
+                    .pill(tint: pillTint),
+                    size: .compact
+                )
             )
-        )
-        .fixedSize()
-        .onHover { hovering in
-            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                isHovered = hovering
+            .fixedSize()
+            .onHover { hovering in
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isHovered = hovering
+                }
             }
+            .contextMenu {
+                Button {
+                    vault.touch()
+                    refreshTick &+= 1
+                } label: {
+                    Label("privacy.header.renew", systemImage: "arrow.clockwise")
+                }
+                Button {
+                    vault.lock()
+                } label: {
+                    Label("privacy.lock.now", systemImage: "lock.fill")
+                }
+                if let navigation {
+                    Divider()
+                    Button {
+                        navigation.revealTab(.privacy)
+                    } label: {
+                        Label("privacy.settings.title", systemImage: "lock.shield")
+                    }
+                }
+            }
+            .help(Text("privacy.lock.now"))
+            .accessibilityLabel(Text("privacy.state.unlocked"))
+            .accessibilityIdentifier("workspace.header.privacy.lock")
         }
-        .help(Text("privacy.lock.now"))
-        .accessibilityLabel(Text("privacy.state.unlocked"))
-        .accessibilityIdentifier("workspace.header.privacy.lock")
     }
 }
 

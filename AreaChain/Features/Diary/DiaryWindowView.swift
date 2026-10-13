@@ -129,35 +129,18 @@ struct DiaryWindowView: View {
             }
             .foregroundStyle(DaybookPalette.text.secondary)
         } else {
-            let items = visibleAttachments
             DaybookInputShell(kind: .editor, focused: editorFocused) {
                 SyntaxTextEditor(text: $session.text, focused: $editorFocused,
                                  placeholder: bodyPlaceholder, onSubmit: save,
                                  commandChord: shortcuts.armedChord(for: .commitDiary),
                                  onPasteImage: { pasteImage(from: $0) })
-                    .overlay(alignment: .bottomLeading) {
-                        if !items.isEmpty {
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                AttachmentThumbnails(
-                                    items: items,
-                                    inMemoryData: inMemoryAttachmentData,
-                                    thumbnailSize: 40,
-                                    onRemove: { item in
-                                        session.removeAttachment(id: item.id)
-                                        onStateChange()
-                                    }
-                                )
-                            }
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 6)
-                        }
-                    }
             }
         }
     }
 
     private var footer: some View {
-        HStack(spacing: 10) {
+        let items = visibleAttachments
+        return HStack(spacing: 10) {
             if session.isSensitive && session.canRevealContent {
                 Button("diary.mask") { session.mask() }
                 .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
@@ -168,6 +151,17 @@ struct DiaryWindowView: View {
                     _ = pasteImage()
                 }
                 .accessibilityIdentifier("diary.paste")
+                if !items.isEmpty {
+                    DiaryAttachmentPill(
+                        items: items,
+                        inMemoryData: inMemoryAttachmentData,
+                        hasPendingAdditions: !session.pendingAttachments.isEmpty,
+                        onRemove: { item in
+                            session.removeAttachment(id: item.id)
+                            onStateChange()
+                        }
+                    )
+                }
             }
             if session.issue == .conflict {
                 Button("diary.window.reload") { confirmsReload = true }

@@ -12,6 +12,7 @@ struct WorkspaceFilteredListView: View {
 
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
+    @Query private var diaries: [DiaryEntry]
     @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
     @Query private var checks: [RoutineCheck]
@@ -20,6 +21,7 @@ struct WorkspaceFilteredListView: View {
     @State private var draftTitle = ""
     @State private var showCompleted = false
     @State private var pendingTrash: PendingTrash?
+    @State private var diaryDrafts = DiaryCardDrafts()
 
     var body: some View {
         let model = makeListModel()
@@ -34,7 +36,7 @@ struct WorkspaceFilteredListView: View {
         DaybookPage(
             titleText: tag.name,
             titleStyle: .page,
-            systemImage: "number",
+            systemImage: tag.isPrivateDiary ? "lock.fill" : "number",
             minWidth: 480,
             minHeight: 480
         ) {
@@ -74,6 +76,7 @@ struct WorkspaceFilteredListView: View {
             tag: tag,
             todos: todos,
             routines: routines,
+            diaries: diaries,
             checks: checks,
             catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: modelContext),
             locale: locale,
@@ -132,6 +135,7 @@ struct WorkspaceFilteredListView: View {
                     taggedOpenRows(model.openRows, model: model)
                     completedSection(model.doneRows, model: model)
                     subtaskSection(model)
+                    diarySection(model)
                 }
             }
             .padding(.vertical, 2)
@@ -194,6 +198,28 @@ struct WorkspaceFilteredListView: View {
                     )
                 }
                 .padding(6)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func diarySection(_ model: WorkspaceFilteredListModel) -> some View {
+        if !model.matchingDiaries.isEmpty {
+            DaybookSectionHeader(title: "tab.diary", icon: "note.text", count: model.matchingDiaries.count)
+                .padding(.top, 8)
+            ForEach(model.matchingDiaries) { entry in
+                DiaryNoteCard(
+                    entry: entry,
+                    activeTags: Catalog.liveTags(tags),
+                    attachments: attachments,
+                    onDelete: {
+                        pendingTrash = .diary(entry, tags: { Array(tags) }, locale: locale) {
+                            DayBoardMutations.deleteDiary(entry)
+                        }
+                    },
+                    privacyTags: Array(tags),
+                    draftStore: diaryDrafts
+                )
             }
         }
     }

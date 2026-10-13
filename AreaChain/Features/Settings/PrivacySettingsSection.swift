@@ -60,11 +60,22 @@ struct PrivacySettingsSection: View {
     private var vaultStateRow: some View {
         let status = VaultStatusPresentation.current(vault)
         return VStack(alignment: .leading, spacing: 6) {
-            Label(status.title, systemImage: status.symbol)
-                .foregroundStyle(DaybookPalette.text.primary)
-                .accessibilityIdentifier("privacy.vault.state")
-                .systemPageMarker("privacy.vault.state")
-                .accessibilityLabel(Text(status.title))
+            HStack {
+                Label(status.title, systemImage: status.symbol)
+                    .foregroundStyle(DaybookPalette.text.primary)
+                    .accessibilityIdentifier("privacy.vault.state")
+                    .systemPageMarker("privacy.vault.state")
+                    .accessibilityLabel(Text(status.title))
+                Spacer()
+                if vault.isUnlocked {
+                    TimelineView(.periodic(from: .now, by: 1)) { _ in
+                        Text(vault.formattedRemainingIdleTime())
+                            .font(DaybookType.caption.monospacedDigit().weight(.medium))
+                            .foregroundStyle(DaybookPalette.accent.base)
+                            .accessibilityHidden(true)
+                    }
+                }
+            }
             if vault.hasPendingSystemKeyCleanup {
                 Label("privacy.state.cleanupPending", systemImage: "key.slash")
                     .font(DaybookType.caption)

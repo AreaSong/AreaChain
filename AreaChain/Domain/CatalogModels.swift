@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// 标签色只存稳定标识，颜色映射在 Theme，不持久化平台颜色对象。
+/// 标签色支持预设语义令牌与规范化 #RRGGBB 十六进制色值，颜色映射在 Theme，不持久化平台颜色对象。
 enum TagColorToken: String, CaseIterable, Codable, Sendable, Equatable {
     case moss
     case stamp
@@ -14,6 +14,58 @@ enum TagColorToken: String, CaseIterable, Codable, Sendable, Equatable {
 
     static func resolved(_ raw: String) -> TagColorToken {
         TagColorToken(rawValue: raw) ?? .default
+    }
+
+    static func normalizedHex(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        let body = trimmed.hasPrefix("#") ? String(trimmed.dropFirst()) : trimmed
+        guard body.allSatisfy(\.isHexDigit) else { return nil }
+        if body.count == 3 {
+            let expanded = body.map { "\($0)\($0)" }.joined()
+            return "#" + expanded.uppercased()
+        }
+        guard body.count == 6 else { return nil }
+        return "#" + body.uppercased()
+    }
+
+    static func resolvedToken(_ raw: String) -> String {
+        if let preset = TagColorToken(rawValue: raw) { return preset.rawValue }
+        if let hex = normalizedHex(raw) { return hex }
+        return Self.default.rawValue
+    }
+
+    static func rgbComponents(of raw: String) -> (red: Double, green: Double, blue: Double)? {
+        guard let hex = normalizedHex(raw),
+              let value = UInt32(hex.dropFirst(), radix: 16) else { return nil }
+        let r = Double((value >> 16) & 0xFF) / 255.0
+        let g = Double((value >> 8) & 0xFF) / 255.0
+        let b = Double(value & 0xFF) / 255.0
+        return (r, g, b)
+    }
+
+    static func hexString(red: Double, green: Double, blue: Double) -> String {
+        let r = Int((min(max(red, 0), 1) * 255).rounded())
+        let g = Int((min(max(green, 0), 1) * 255).rounded())
+        let b = Int((min(max(blue, 0), 1) * 255).rounded())
+        return String(format: "#%02X%02X%02X", r, g, b)
+    }
+}
+
+struct CustomTagColor: Codable, Equatable, Identifiable, Sendable {
+    var hex: String
+    var name: String
+
+    var id: String { hex }
+
+    var displayTitle: String {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? hex : trimmed
+    }
+
+    init?(hex: String, name: String = "") {
+        guard let normalized = TagColorToken.normalizedHex(hex) else { return nil }
+        self.hex = normalized
+        self.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
@@ -31,7 +83,7 @@ final class TagItem {
     }
 
     var isDiaryPreset: Bool {
-        DiaryMemoTags.isPresetName(name)
+        false
     }
 
     init(
@@ -39,13 +91,15 @@ final class TagItem {
         name: String,
         sortOrder: Int,
         deletedAt: Date? = nil,
-        colorToken: String = TagColorToken.default.rawValue
+        colorToken: String = TagColorToken.default.rawValue,
+        isPrivateDiary: Bool = false
     ) {
         self.id = id
         self.name = name
         self.sortOrder = sortOrder
         self.deletedAt = deletedAt
-        self.colorToken = TagColorToken.resolved(colorToken).rawValue
+        self.colorToken = TagColorToken.resolvedToken(colorToken)
+        self.isPrivateDiary = isPrivateDiary
     }
 }
 

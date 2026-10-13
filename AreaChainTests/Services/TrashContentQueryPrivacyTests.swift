@@ -49,7 +49,10 @@ struct TrashContentQueryPrivacyTests {
     @Test(arguments: ["#password OLD_SECRET", "#密码 OLD_SECRET", "#private OLD_SECRET"])
     func legacySensitivePlaintextRemainsUnknownWithoutConversion(text: String) async throws {
         let f = try SearchReadFixture.trash()
-        let tag = f.data.tags.tag("private", deleted: TodoQueryFixture.created); tag.isPrivateDiary = true
+        for name in ["password", "密码", "private"] {
+            let tag = f.data.tags.tag(name, deleted: TodoQueryFixture.created)
+            tag.isPrivateDiary = true
+        }
         let entry = f.data.diary(text, deleted: TodoQueryFixture.created)
         f.image(.init(kind: .diary, id: entry.id), name: "LEGACY.png", deleted: TodoQueryFixture.created)
         let result = try SearchReadFixture.trashResponse(await f.publishTrash("/trash OLD_SECRET"))

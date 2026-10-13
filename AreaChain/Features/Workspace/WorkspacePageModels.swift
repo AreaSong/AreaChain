@@ -158,6 +158,7 @@ struct WorkspaceFilteredListModel {
     let openRows: [BoardRow]
     let doneRows: [BoardRow]
     let matchingSubtasks: [SubtaskItem]
+    let matchingDiaries: [DiaryEntry]
     let orderedVisibleIDs: [UUID]
     let openCount: Int
     let catalogs: TaskCatalogContext
@@ -170,7 +171,7 @@ struct WorkspaceFilteredListModel {
     var canBatchSelect: Bool { !orderedVisibleIDs.isEmpty }
 
     var isEmpty: Bool {
-        openRows.isEmpty && doneRows.isEmpty && matchingSubtasks.isEmpty
+        openRows.isEmpty && doneRows.isEmpty && matchingSubtasks.isEmpty && matchingDiaries.isEmpty
     }
 
     func routineLookups(for id: UUID) -> RoutineDisplayLookups {
@@ -185,6 +186,7 @@ struct WorkspaceFilteredListModel {
         tag: TagItem,
         todos: [TodoItem],
         routines: [DailyRoutine],
+        diaries: [DiaryEntry] = [],
         checks: [RoutineCheck],
         catalogs: TaskCatalogContext,
         locale: Locale,
@@ -193,6 +195,7 @@ struct WorkspaceFilteredListModel {
         let todayKey = DayClock.shared.todayKey
         let taggedTodos = Catalog.matchingTodos(todos, tag: tag)
         let matchingSubtasks = Catalog.matchingSubtasks(todos, tag: tag)
+        let matchingDiaries = Catalog.matchingDiaries(diaries, tag: tag)
         let openTodos = taggedTodos.filter { !$0.isDone }
         let doneTodos = taggedTodos.filter { $0.isDone }
         let openRoutines = Catalog.matchingListedRoutines(
@@ -212,6 +215,7 @@ struct WorkspaceFilteredListModel {
             openRows: openRows,
             doneRows: doneRows,
             matchingSubtasks: matchingSubtasks,
+            matchingDiaries: matchingDiaries,
             orderedVisibleIDs: openRows.map(\.id) + (showCompleted ? doneRows.map(\.id) : []),
             openCount: openTodos.count
                 + openRoutines.count

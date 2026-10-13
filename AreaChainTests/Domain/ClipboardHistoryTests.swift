@@ -340,4 +340,110 @@ struct ClipboardHistoryStoreTests {
         parent.close()
         #expect(panel.isVisible)
     }
+
+    @Test func contentFilterAndCountsMatchRecordKinds() {
+        let textRecord = ClipboardHistoryRecord(
+            id: UUID(),
+            copiedAt: Date(timeIntervalSince1970: 10),
+            pinnedAt: Date(timeIntervalSince1970: 11),
+            sourceBundleID: "com.apple.dt.Xcode",
+            plainText: "line1\nline2",
+            html: nil,
+            rtf: nil,
+            imageFile: nil,
+            contentHash: "t1"
+        )
+        let imageRecord = ClipboardHistoryRecord(
+            id: UUID(),
+            copiedAt: Date(timeIntervalSince1970: 20),
+            pinnedAt: nil,
+            sourceBundleID: "com.apple.Preview",
+            plainText: "",
+            html: nil,
+            rtf: nil,
+            imageFile: "sample.png",
+            contentHash: "i1"
+        )
+        let fileRecord = ClipboardHistoryRecord(
+            id: UUID(),
+            copiedAt: Date(timeIntervalSince1970: 30),
+            pinnedAt: nil,
+            sourceBundleID: "com.apple.finder",
+            plainText: "/tmp/doc.pdf",
+            html: nil,
+            rtf: nil,
+            imageFile: nil,
+            filePaths: ["/tmp/doc.pdf"],
+            contentHash: "f1"
+        )
+        let items = [textRecord, imageRecord, fileRecord]
+
+        #expect(textRecord.kind == .text)
+        #expect(textRecord.characterCount == 11)
+        #expect(textRecord.lineCount == 2)
+        #expect(imageRecord.kind == .image)
+        #expect(fileRecord.kind == .file)
+
+        let counts = ClipboardHistoryRules.filterCounts(items)
+        #expect(counts[.all] == 3)
+        #expect(counts[.text] == 1)
+        #expect(counts[.image] == 1)
+        #expect(counts[.file] == 1)
+        #expect(counts[.pinned] == 1)
+
+        #expect(ClipboardHistoryRules.filtered(items, query: "", mode: .mixed, filter: .image) == [imageRecord])
+        #expect(ClipboardHistoryRules.filtered(items, query: "", mode: .mixed, filter: .file) == [fileRecord])
+        #expect(ClipboardHistoryRules.filtered(items, query: "", mode: .mixed, filter: .pinned) == [textRecord])
+        #expect(ClipboardHistoryRules.filtered(items, query: "doc.pdf", mode: .mixed, filter: .file) == [fileRecord])
+        #expect(ClipboardHistoryRules.filtered(items, query: "doc.pdf", mode: .mixed, filter: .text).isEmpty)
+    }
+
+    @Test func imageMetadataThumbnailCacheAndViewModePersistence() async throws {
+        let root = FileManager.default.temporaryDirectory
+            .appending(path: "areachain-clipboard-thumb-\(UUID().uuidString)", directoryHint: .isDirectory)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let name = "areachain.clipboard.thumb.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: name))
+        defer { defaults.removePersistentDomain(forName: name) }
+
+        let store = ClipboardHistoryStore(root: root)
+        let rep = try #require(NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: 120,
+            pixelsHigh: 80,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ))
+        let pngData = try #require(rep.representation(using: .png, properties: [:]))
+        let imageName = try store.writeImage(pngData, id: UUID())
+
+        let meta = try #require(store.imageMetadata(named: imageName))
+        #expect(meta.pixelWidth == 120)
+        #expect(meta.pixelHeight == 80)
+        #expect(meta.dimensionsLabel == "120 × 80")
+        #expect(meta.byteCount == pngData.count)
+        #expect(!meta.byteCountLabel.isEmpty)
+
+        let thumb = try #require(store.thumbnailImage(named: imageName, maxPixelSize: 40))
+        #expect(thumb.size.width <= 40)
+        #expect(store.cachedFullImage(named: imageName) == nil)
+        let asyncDecoded = try #require(await store.loadFullImageAsync(named: imageName))
+        #expect(asyncDecoded.size.width == 120)
+        #expect(store.cachedFullImage(named: imageName) != nil)
+
+        let session = ClipboardHistorySession(store: store, defaults: defaults, pasteboard: nil)
+        #expect(session.viewMode == .split)
+        session.setViewMode(.grid)
+        session.setContentFilter(.image)
+        #expect(session.viewMode == .grid)
+        #expect(session.contentFilter == .image)
+
+        let reloaded = ClipboardHistorySession(store: store, defaults: defaults, pasteboard: nil)
+        #expect(reloaded.viewMode == .grid)
+    }
 }

@@ -14,7 +14,7 @@ struct TagDotConsumerTests {
         let support = try Dot()
         defer { support.cleanup() }
         for wide in [false, true] {
-            for sidebar in [true, false] {
+            for sidebar in [false] {
                 let window = support.window(sidebar: sidebar, locale: locale, scheme: scheme, wide: wide)
                 defer { SystemPageHost.release(window) }
                 try await NativeSyntaxUI.prepareFocus(in: window)
@@ -35,23 +35,16 @@ struct TagDotConsumerTests {
                     try assertRows(support, sidebar: sidebar, locale: locale, window: window)
                     #expect(probe.writes == 0 && probe.saves == 0 && !support.context.hasChanges)
                 }
-                if sidebar { WorkspaceNavigation.shared.selectedTagID = support.tags[1].id }
-                else { try Dot.table(window).selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false) }
+                try Dot.table(window).selectRowIndexes(IndexSet(integer: 1), byExtendingSelection: false)
                 try await SystemPageHost.settle(window)
                 try assertRows(support, sidebar: sidebar, locale: locale, window: window)
                 try Dot.record(window, name: "selected-\(sidebar)-\(wide)-\(locale)-\(scheme)")
-                WorkspaceNavigation.shared.selectedTagID = nil
             }
         }
     }
 
     private func assertRows(_ support: Dot, sidebar: Bool, locale: String, window: NSWindow) throws {
-        let visible = sidebar ? Array(support.tags.prefix(2)) : support.tags
-        for tag in visible { try Dot.assertRow(tag, sidebar: sidebar, locale: locale, in: window) }
-        if sidebar {
-            let labels = Native.buttons(in: window).map(Dot.text)
-            #expect(support.tags.dropFirst(2).allSatisfy { !labels.contains($0.name) }, "侧栏原样排除手记预设分类")
-        }
+        for tag in support.tags { try Dot.assertRow(tag, sidebar: sidebar, locale: locale, in: window) }
         #expect(try support.context.fetchCount(FetchDescriptor<TagItem>()) == support.tags.count)
     }
 
@@ -59,23 +52,10 @@ struct TagDotConsumerTests {
     func nativeSelectionRenameAndColorEcho(locale: String, scheme: ColorScheme) async throws {
         let support = try Dot()
         defer { support.cleanup() }
-        let sidebar = support.window(sidebar: true, locale: locale, scheme: scheme, wide: false)
         let management = support.window(sidebar: false, locale: locale, scheme: scheme, wide: false)
-        defer { SystemPageHost.release(sidebar); SystemPageHost.release(management) }
+        defer { SystemPageHost.release(management) }
         let probe = MenuBarHelpMutationProbe(context: support.context) {
             for tag in support.tags { _ = tag.name; _ = tag.colorToken; _ = tag.deletedAt }
-        }
-        try await NativeSyntaxUI.prepareFocus(in: sidebar)
-        try await SystemPageHost.settle(sidebar)
-        for tag in support.tags.prefix(2) {
-            let frame = try Native.frame(Dot.row(tag, sidebar: true, in: sidebar), in: sidebar)
-            for x in [frame.minX + 4, frame.minX + 25, frame.maxX - 2] {
-                WorkspaceNavigation.shared.selectedTagID = nil
-                try await SurfaceEventTestSupport.click(NSPoint(x: x, y: frame.midY), in: sidebar)
-                #expect(WorkspaceNavigation.shared.selectedTagID == tag.id)
-                #expect(probe.saves == 0 && probe.writes == 0 && !support.context.hasChanges)
-            }
-            try await RowBubbleTestSupport.move(NSPoint(x: frame.minX + 4, y: frame.midY), in: sidebar)
         }
         try await NativeSyntaxUI.prepareFocus(in: management)
         try await SystemPageHost.settle(management)
@@ -93,23 +73,18 @@ struct TagDotConsumerTests {
         try await Native.key(53, in: management)
         #expect(probe.saves == 0 && probe.writes == 0 && !support.context.hasChanges)
         let oldColors = support.tags.map(\.colorToken)
-        let beforeSidebar = try support.tags.prefix(2).map { try Dot.color($0, sidebar: true, in: sidebar) }
         let beforeManagement = try support.tags.map { try Dot.color($0, sidebar: false, in: management) }
         #expect(DayBoardMutations.batchSetTagColor(ids: [support.tags[0].id], colorToken: "clay", context: support.context))
         try await SystemPageHost.settle(management)
-        try await SystemPageHost.settle(sidebar)
         #expect(probe.saves == 1 && !support.context.hasChanges)
         // SwiftData 查询刷新也会使 Observation 失效；失效次数不能当作存储写入次数。
         #expect(probe.writes >= 1)
         print("TAG_DOT_COLOR saves=\(probe.saves) observations=\(probe.writes)")
         #expect(support.tags.dropFirst().map(\.colorToken) == Array(oldColors.dropFirst()))
-        let afterSidebar = try support.tags.prefix(2).map { try Dot.color($0, sidebar: true, in: sidebar) }
         let afterManagement = try support.tags.map { try Dot.color($0, sidebar: false, in: management) }
-        #expect(beforeSidebar[0] != afterSidebar[0] && beforeManagement[0] != afterManagement[0])
-        #expect(beforeSidebar[1] == afterSidebar[1] && Array(beforeManagement.dropFirst()) == Array(afterManagement.dropFirst()))
-        try Dot.assertRow(support.tags[0], sidebar: true, locale: locale, in: sidebar)
+        #expect(beforeManagement[0] != afterManagement[0])
+        #expect(Array(beforeManagement.dropFirst()) == Array(afterManagement.dropFirst()))
         try Dot.assertRow(support.tags[0], sidebar: false, locale: locale, in: management)
-        try Dot.record(sidebar, name: "echo-sidebar-\(locale)-\(scheme)")
         try Dot.record(management, name: "echo-management-\(locale)-\(scheme)")
     }
 }

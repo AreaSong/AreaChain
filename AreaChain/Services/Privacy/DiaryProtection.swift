@@ -28,8 +28,94 @@ enum DiaryProtection {
         let tags = try context.fetch(FetchDescriptor<TagItem>())
         return try context.fetch(FetchDescriptor<DiaryEntry>()).filter {
             !$0.hasProtectedContent && (!tagIDs.isDisjoint(with: TagIDList.parse($0.tagIDs))
-                || (includeLegacy && DiaryPrivacy.isSensitive($0.snapshot, tags: tags)))
+                || (includeLegacy && (DiaryPrivacy.isSensitive($0.snapshot, tags: tags)
+                    || DiaryPrivacy.hasLegacyPrivateMarker($0.text))))
         }
+    }
+
+    static func setTagsPrivacy(
+        _ tagIDs: Set<UUID>,
+        isPrivate: Bool,
+        in environment: PrivacyPersistence,
+        save: (ModelContext) throws -> Void = { try $0.save() }
+    ) throws {
+        _ = try environment.vault.requireFreshAuthentication()
+        let tags = try environment.context.fetch(FetchDescriptor<TagItem>())
+        guard !tagIDs.isEmpty, tagIDs.isSubset(of: Set(tags.map(\.id))) else {
+            throw PrivacyError.staleOperation
+        }
+        if isPrivate {
+            try authorizeTags(tagIDs, tags: tags, in: environment, save: save)
+        } else {
+            try revokeTags(tagIDs, tags: tags, in: environment, save: save)
+        }
+    }
+
+    private static func authorizeTags(
+        _ tagIDs: Set<UUID>,
+        tags: [TagItem],
+        in environment: PrivacyPersistence,
+        save: (ModelContext) throws -> Void
+    ) throws {
+        let context = environment.context
+        let entries = try context.fetch(FetchDescriptor<DiaryEntry>()).filter {
+            !$0.hasProtectedContent && !tagIDs.isDisjoint(with: TagIDList.parse($0.tagIDs))
+        }
+        let owners = Set(entries.map(\.id))
+        let attachments = try context.fetch(FetchDescriptor<AttachmentItem>()).filter {
+            $0.ownerKind == AttachmentOwner.diary.rawValue && owners.contains($0.ownerID)
+        }
+        if !entries.isEmpty { try PrivacyStoreMaintenance.mark(context) }
+        let batch = PrivacyAttachmentBatch(store: environment.attachments, root: environment.root)
+        try batch.prepare(attachments, vault: environment.vault)
+        do {
+            try ModelChanges.transaction(in: context, save: save) {
+                attachEffects(batch, items: attachments, environment: environment)
+                for entry in entries {
+                    try DiaryContent.write(entry.text, to: entry, protect: true, vault: environment.vault)
+                }
+                for tag in tags where tagIDs.contains(tag.id) { tag.isPrivateDiary = true }
+                batch.apply()
+            }
+        } catch { batch.rollback(); throw error }
+        environment.vault.changed()
+    }
+
+    private static func revokeTags(
+        _ tagIDs: Set<UUID>,
+        tags: [TagItem],
+        in environment: PrivacyPersistence,
+        save: (ModelContext) throws -> Void
+    ) throws {
+        let context = environment.context
+        let remainingPrivateIDs = Set(tags.filter { $0.isPrivateDiary && !tagIDs.contains($0.id) }.map(\.id))
+        let entries = try context.fetch(FetchDescriptor<DiaryEntry>()).filter { entry in
+            let entryTagIDs = TagIDList.parse(entry.tagIDs)
+            return entry.hasProtectedContent
+                && !tagIDs.isDisjoint(with: entryTagIDs)
+                && remainingPrivateIDs.isDisjoint(with: entryTagIDs)
+        }
+        let decrypted = try entries.map { (entry: $0, text: try DiaryContent.read($0, vault: environment.vault)) }
+        let owners = Set(entries.map(\.id))
+        let attachments = try context.fetch(FetchDescriptor<AttachmentItem>()).filter {
+            $0.ownerKind == AttachmentOwner.diary.rawValue && owners.contains($0.ownerID)
+        }
+        let batch = PrivacyAttachmentBatch(store: environment.attachments, root: environment.root)
+        try batch.prepare(attachments, vault: environment.vault, protecting: false)
+        do {
+            try ModelChanges.transaction(in: context, save: save) {
+                attachEffects(batch, items: attachments, environment: environment)
+                for item in decrypted {
+                    item.entry.text = item.text
+                    item.entry.encryptedText = nil
+                    item.entry.privacyVaultID = nil
+                    DiaryPrivacy.assign(item.entry, isPrivate: false)
+                }
+                for tag in tags where tagIDs.contains(tag.id) { tag.isPrivateDiary = false }
+                batch.apply()
+            }
+        } catch { batch.rollback(); throw error }
+        environment.vault.changed()
     }
 
     static func applyTags(_ tagIDs: Set<UUID>, in environment: PrivacyPersistence,

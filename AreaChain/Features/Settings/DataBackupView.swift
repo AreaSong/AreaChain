@@ -3,7 +3,7 @@ import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 工作台「数据与备份」：普通 JSON、AI 计划模板包与多格式导入、独立口令加密备份、内存回退时的磁盘库重置。
+/// 工作台「数据与备份」：本地存储空间检索、普通 JSON、AI 计划模板包与多格式导入、独立口令加密备份、内存回退时的磁盘库重置。
 struct DataBackupView: View {
     private enum Dialog: String, Identifiable {
         case export, restore
@@ -23,6 +23,8 @@ struct DataBackupView: View {
     @State private var lastImportedDayKey: String?
     @State private var importErrorAlertMessage: String?
     @State private var importSession: PlanImportSession?
+    @State private var storageSnapshot = LocalStorageSnapshot()
+    @State private var confirmCleanCache = false
     @State private var confirmReset = false
     @State private var markers: Set<String> = []
 
@@ -34,10 +36,20 @@ struct DataBackupView: View {
         }
         .accessibilityIdentifier("data.backup.page")
         .accessibilityValue(markers.sorted().joined(separator: " "))
+        .onAppear(perform: refreshStorageSnapshot)
+        .onChange(of: attachments.count) { _, _ in refreshStorageSnapshot() }
+        .onChange(of: todos.count) { _, _ in refreshStorageSnapshot() }
+        .onChange(of: diaries.count) { _, _ in refreshStorageSnapshot() }
         .alert("planImport.error.title", isPresented: errorAlertPresented) {
             Button("common.ok", role: .cancel) { importErrorAlertMessage = nil }
         } message: {
             Text(importErrorAlertMessage ?? "")
+        }
+        .confirmationDialog("dataBackup.storage.clean.confirm.title", isPresented: $confirmCleanCache, titleVisibility: .visible) {
+            Button("dataBackup.storage.clean.confirm.action", role: .destructive, action: performStorageCleanup)
+            Button("alert.cancel", role: .cancel) {}
+        } message: {
+            Text("dataBackup.storage.clean.confirm.message")
         }
         .confirmationDialog("alert.reset", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("alert.reset.quit", role: .destructive) { resetStoreAndQuit() }
@@ -68,6 +80,12 @@ struct DataBackupView: View {
     private var backupForm: some View {
         Form {
             if let statusMessage { statusRow(statusMessage) }
+            DataBackupStorageSection(
+                snapshot: storageSnapshot,
+                onManageAttachments: { WorkspaceNavigation.shared.revealTab(.attachments) },
+                onRequestCleanCache: { confirmCleanCache = true },
+                onRevealInFinder: { LocalStorageInspector.revealSupportDirectory() }
+            )
             planSection
             jsonSection
             encryptedSection
@@ -292,6 +310,7 @@ struct DataBackupView: View {
             try SnapshotImporter.apply(session.snapshot, context: modelContext)
             lastImportedDayKey = session.firstTargetDayKey ?? DayKey.today()
             statusMessage = L10n.string("settings.imported", locale: locale)
+            refreshStorageSnapshot()
             BoardEvents.changed()
         } catch {
             let msg = importErrorMessage(error)
@@ -300,6 +319,22 @@ struct DataBackupView: View {
             importErrorAlertMessage = msg
         }
         importSession = nil
+    }
+
+    private func refreshStorageSnapshot() {
+        storageSnapshot = LocalStorageInspector.inspect(context: modelContext)
+    }
+
+    private func performStorageCleanup() {
+        do {
+            let result = try LocalStorageInspector.cleanReclaimableData(context: modelContext)
+            refreshStorageSnapshot()
+            let freedText = StorageByteFormat.split(result.freedBytes).combined
+            lastImportedDayKey = nil
+            statusMessage = L10n.format("dataBackup.storage.cleaned", locale: locale, freedText)
+        } catch {
+            statusMessage = error.localizedDescription
+        }
     }
 
     private func presentSavePanel(data: Data) {
@@ -361,6 +396,7 @@ struct DataBackupView: View {
             onComplete: {
                 let finished = dialog
                 dialog = nil
+                refreshStorageSnapshot()
                 switch finished {
                 case .export:
                     statusMessage = L10n.string("dataBackup.encrypted.exported", locale: locale)

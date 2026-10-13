@@ -40,17 +40,15 @@ struct WorkspaceHeaderInteractionTests {
         WorkspaceNavigation.shared.revealTab(.tags)
         host.show(TagManagementPage())
         try await host.prepare()
-        #expect(host.createField == nil)
-        try await host.click("workspace.header.action.tags.create")
+        #expect(host.createField != nil)
         let editor = try host.focusCreate()
         editor.insertText("顶栏标签", replacementRange: editor.selectedRange())
         try await host.settle()
         try host.key("\r", code: 36)
         try await host.settle()
-        #expect(host.createField == nil)
+        #expect(host.createField?.stringValue == "")
         #expect(host.tags.filter { $0.name == "顶栏标签" }.count == 1)
 
-        try await host.click("workspace.header.action.tags.create")
         let duplicate = try host.focusCreate()
         duplicate.insertText("顶栏标签", replacementRange: duplicate.selectedRange())
         try await host.settle()
@@ -60,8 +58,6 @@ struct WorkspaceHeaderInteractionTests {
         #expect(host.tags.filter { $0.name == "顶栏标签" }.count == 1)
         try host.key("\u{1b}", code: 53)
         try await host.settle()
-        #expect(host.createField == nil)
-        try await host.click("workspace.header.action.tags.create")
         #expect(host.createField?.stringValue == "")
     }
 
@@ -72,7 +68,6 @@ struct WorkspaceHeaderInteractionTests {
         WorkspaceNavigation.shared.revealTab(.tags)
         host.show(TagManagementPage(saveTag: { _, _ in saves += 1; return nil }))
         try await host.prepare()
-        try await host.click("workspace.header.action.tags.create")
         let editor = try host.focusCreate()
         editor.insertText("保存失败草稿", replacementRange: editor.selectedRange())
         try await host.settle()
@@ -89,7 +84,7 @@ struct WorkspaceHeaderInteractionTests {
         editor.unmarkText()
         try host.key("\u{1b}", code: 53)
         try await host.settle()
-        #expect(host.createField == nil)
+        #expect(host.createField?.stringValue == "")
     }
 
     @Test func globalShortcutWinsOverDiaryLocalSearchAndClearingRestoresSource() async throws {
@@ -192,7 +187,10 @@ private final class HeaderTestHost {
 
     func focusCreate() throws -> NSTextView {
         let field = try #require(createField)
-        #expect(window.firstResponder === field.currentEditor(), "新建标签展开后应主动聚焦")
+        if window.firstResponder !== field.currentEditor() {
+            #expect(window.makeFirstResponder(field))
+        }
+        #expect(window.firstResponder === field.currentEditor(), "新建标签输入框聚焦失败")
         return try #require(field.currentEditor() as? NSTextView)
     }
 

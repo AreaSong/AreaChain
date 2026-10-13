@@ -74,13 +74,13 @@ struct TagCatalogTests {
     @Test func mergeMovesLinksDedupesAndSoftDeletesSources() throws {
         let target = TagItem(name: "目标", sortOrder: 0)
         let source = TagItem(name: "来源", sortOrder: 1)
-        let preset = TagItem(name: DiaryMemoTags.journal, sortOrder: 2)
+        let extra = TagItem(name: DiaryMemoTags.journal, sortOrder: 2)
         let todo = TodoItem(title: "事项", dayKey: "2026-09-24", tagIDs: TagIDList.encode([source.id, target.id]))
         let routine = DailyRoutine(title: "重复", sortOrder: 0, tagIDs: TagIDList.encode([source.id]))
         let subtask = SubtaskItem(title: "子", tagIDs: TagIDList.encode([source.id]))
-        let diary = DiaryEntry(text: "手记", dayKey: "2026-09-24", tagIDs: TagIDList.encode([source.id]))
+        let diary = DiaryEntry(text: "手记", dayKey: "2026-09-24", tagIDs: TagIDList.encode([source.id, extra.id]))
         try Catalog.mergeTags(
-            sources: [source.id], into: target.id, tags: [target, source, preset],
+            sources: [source.id, extra.id], into: target.id, tags: [target, source, extra],
             todos: [todo], routines: [routine], diaries: [diary], subtasks: [subtask]
         )
         #expect(todo.tagIDs == TagIDList.encode([target.id]))
@@ -88,13 +88,36 @@ struct TagCatalogTests {
         #expect(subtask.tagIDs == TagIDList.encode([target.id]))
         #expect(diary.tagIDs == TagIDList.encode([target.id]))
         #expect(source.deletedAt != nil)
+        #expect(extra.deletedAt != nil)
         #expect(target.deletedAt == nil)
-        #expect(throws: TagMergeError.presetProtected) {
-            try Catalog.mergeTags(
-                sources: [preset.id], into: target.id, tags: [target, preset],
-                todos: [], routines: [], diaries: [], subtasks: []
-            )
-        }
+    }
+
+    @Test func matchingDiariesFiltersLiveEntriesAndSortsNewestFirst() {
+        let tag = TagItem(name: "灵感", sortOrder: 0)
+        let other = TagItem(name: "其他", sortOrder: 1)
+        let older = DiaryEntry(
+            text: "旧手记", dayKey: "2026-09-24",
+            createdAt: Date(timeIntervalSince1970: 100),
+            tagIDs: TagIDList.encode([tag.id])
+        )
+        let newer = DiaryEntry(
+            text: "新手记", dayKey: "2026-09-24",
+            createdAt: Date(timeIntervalSince1970: 200),
+            tagIDs: TagIDList.encode([tag.id, other.id])
+        )
+        let deleted = DiaryEntry(
+            text: "已删", dayKey: "2026-09-24",
+            createdAt: Date(timeIntervalSince1970: 300),
+            deletedAt: .now,
+            tagIDs: TagIDList.encode([tag.id])
+        )
+        let unrelated = DiaryEntry(
+            text: "无关", dayKey: "2026-09-24",
+            createdAt: Date(timeIntervalSince1970: 400),
+            tagIDs: TagIDList.encode([other.id])
+        )
+        let matched = Catalog.matchingDiaries([older, newer, deleted, unrelated], tag: tag)
+        #expect(matched.map(\.id) == [newer.id, older.id])
     }
 
     @Test func oldSnapshotIgnoresProjectsAndOmitsThemOnExport() throws {
@@ -147,12 +170,15 @@ struct TagRepositoryTests {
         return (store, context, SwiftDataCatalogRepository(context: context, container: store))
     }
 
-    @Test func createRejectsDuplicateAndPresetAndPersistsColorAndOrder() throws {
+    @Test func createRejectsDuplicateAllowsAnyNameAndPersistsColorAndOrder() throws {
         let (_, _, repo) = try makeRepo()
         let first = try repo.createTag(name: " 计划 ", sortOrder: nil)
         #expect(first.colorToken == TagColorToken.default.rawValue)
+        #expect(!first.isDiaryPreset)
         #expect(throws: RepositoryError.self) { try repo.createTag(name: "计划", sortOrder: nil) }
-        #expect(throws: RepositoryError.self) { try repo.createTag(name: DiaryMemoTags.password, sortOrder: nil) }
+        let passwordNamed = try repo.createTag(name: DiaryMemoTags.password, sortOrder: nil)
+        #expect(!passwordNamed.isDiaryPreset)
+        #expect(!passwordNamed.isPrivateDiary)
         try repo.updateTag(id: first.id, name: "计划甲", sortOrder: 3, colorToken: TagColorToken.stamp.rawValue)
         let renamed = try #require(try repo.fetchTag(id: first.id))
         #expect(renamed.name == "计划甲")
@@ -176,42 +202,19 @@ struct TagRepositoryTests {
         #expect(try repo.fetchTag(id: tag.id) == nil)
     }
 
-    @Test func deletedPresetStaysGoneAndMergeStillRejectsIt() throws {
-        let suiteName = "areachain.tests.presets.\(UUID().uuidString)"
-        let suite = UserDefaults(suiteName: suiteName)!
-        suite.removePersistentDomain(forName: suiteName)
-        let previous = DiaryPresetRetention.defaultsOverride
-        DiaryPresetRetention.defaultsOverride = suite
-        defer {
-            DiaryPresetRetention.defaultsOverride = previous
-            suite.removePersistentDomain(forName: suiteName)
-        }
-
+    @Test func ensurePresetTagsDoesNotSeedBuiltInTagsAndMergeWorksOnAllUserTags() throws {
         let (_, context, repo) = try makeRepo()
         try repo.ensurePresetTags()
-        let preset = try #require(try repo.fetchTags().first { $0.name == DiaryMemoTags.journal })
-        let presetName = preset.name
-        try repo.deleteTag(id: preset.id, soft: true)
-        #expect(preset.deletedAt != nil)
-        try repo.ensurePresetTags()
-        #expect(preset.deletedAt != nil)
-        try repo.purgeTag(id: preset.id)
-        try repo.ensurePresetTags()
-        #expect(try repo.fetchTags(includeDeleted: true).contains { $0.name == presetName } == false)
+        #expect(try repo.fetchTags(includeDeleted: true).isEmpty)
 
-        let target = try repo.createTag(name: "目标", sortOrder: 8)
-        let source = try repo.createTag(name: "来源", sortOrder: 9)
+        let target = try repo.createTag(name: "目标", sortOrder: 0)
+        let source = try repo.createTag(name: DiaryMemoTags.journal, sortOrder: 1)
         let todo = TodoItem(title: "事项", dayKey: "2026-09-24", tagIDs: TagIDList.encode([source.id]))
         context.insert(todo)
         try context.save()
         try repo.mergeTags(sourceIDs: [source.id], into: target.id)
         #expect(todo.tagIDs == TagIDList.encode([target.id]))
         #expect(try repo.fetchTag(id: source.id)?.deletedAt != nil)
-        let remaining = try #require(try repo.fetchTags().first { $0.isDiaryPreset })
-        #expect(throws: TagMergeError.self) {
-            try repo.mergeTags(sourceIDs: [remaining.id], into: target.id)
-        }
-        #expect(remaining.deletedAt == nil)
     }
 
     @Test func colorRoundTripsThroughSnapshot() throws {
@@ -227,5 +230,40 @@ struct TagRepositoryTests {
         let imported = try other.mainContext.fetch(FetchDescriptor<TagItem>())
         #expect(imported.first?.colorToken == TagColorToken.clay.rawValue)
         #expect(imported.first?.name == "颜色")
+    }
+
+    @Test func customHexColorAndStoreRoundTrip() throws {
+        #expect(TagColorToken.normalizedHex("3b82f6") == "#3B82F6")
+        #expect(TagColorToken.normalizedHex("#abc") == "#AABBCC")
+        #expect(TagColorToken.normalizedHex("not-a-hex") == nil)
+        #expect(TagColorToken.resolvedToken("#3b82f6") == "#3B82F6")
+        #expect(TagColorToken.resolvedToken("unknown") == TagColorToken.default.rawValue)
+
+        let (_, _, repo) = try makeRepo()
+        let tag = try repo.createTag(name: "调色盘", sortOrder: 1)
+        try repo.batchSetColor(ids: [tag.id], colorToken: "#8B5CF6")
+        #expect(try repo.fetchTag(id: tag.id)?.colorToken == "#8B5CF6")
+
+        let snapshot = SyncPort.makeSnapshot(routines: [], checks: [], todos: [], diaries: [], tags: [tag])
+        let decoded = try SyncPort.decode(try SyncPort.encode(snapshot))
+        #expect(decoded.tags.first?.colorToken == "#8B5CF6")
+
+        let suiteName = "AreaChainTests.CustomTagColorStore.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let store = CustomTagColorStore(defaults: defaults)
+        let saved = try #require(store.upsert(hex: "#8b5cf6", name: "紫罗兰"))
+        #expect(saved.hex == "#8B5CF6")
+        #expect(saved.displayTitle == "紫罗兰")
+        #expect(store.colors.count == 1)
+
+        let reloaded = CustomTagColorStore(defaults: defaults)
+        #expect(reloaded.colors == [CustomTagColor(hex: "#8B5CF6", name: "紫罗兰")])
+        reloaded.remove(hex: "#8B5CF6")
+        #expect(reloaded.colors.isEmpty)
+
+        let swatch = DaybookPalette.tagSwatchImage(token: "#8B5CF6", size: 10)
+        #expect(!swatch.isTemplate)
+        #expect(swatch.size.width == 10)
     }
 }

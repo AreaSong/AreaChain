@@ -14,7 +14,7 @@ struct DiaryMutationsTests {
         return ModelContext(container)
     }
 
-    @Test func addDiaryAppliesSelectedHashAndAutoTags() throws {
+    @Test func addDiaryAppliesSelectedAndHashTagsWithoutKeywordAutoTags() throws {
         let context = try makeContainer()
         let idea = TagItem(name: "小巧思", sortOrder: 0)
         context.insert(idea)
@@ -31,17 +31,16 @@ struct DiaryMutationsTests {
         let tags = try context.fetch(FetchDescriptor<TagItem>())
         let entry = try #require(diaries.first)
         let work = try #require(tags.first { $0.name == "工作" })
-        let password = try #require(tags.first { $0.name == "密码" })
         #expect(TagIDList.contains(entry.tagIDs, idea.id))
         #expect(TagIDList.contains(entry.tagIDs, work.id))
-        #expect(TagIDList.contains(entry.tagIDs, password.id))
+        #expect(!tags.contains { $0.name == "密码" })
     }
 
-    @Test func ensurePresetTagsCreatesPasswordIdeaAndJournal() throws {
+    @Test func ensurePresetTagsDoesNotCreateBuiltInTags() throws {
         let context = try makeContainer()
         DayBoardMutations.ensureDiaryPresetTags(among: [], context: context)
         let tags = try context.fetch(FetchDescriptor<TagItem>())
-        #expect(Set(tags.map(\.name)) == Set(DiaryMemoTags.presets))
+        #expect(tags.isEmpty)
     }
 
     @Test func toggleDiaryTagAddsAndRemoves() throws {

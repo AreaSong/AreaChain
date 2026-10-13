@@ -10,51 +10,63 @@ struct AttachmentBrowserPage: View {
     @Query(filter: SoftDelete.liveAttachments) private var attachments: [AttachmentItem]
     @Query private var tags: [TagItem]
 
+    @State private var viewMode: AttachmentViewMode = .list
     @State private var filter: AttachmentFilterKind = .all
     @State private var sort: AttachmentSortOrder = .newest
+    @State private var boardFilter = BoardFilter()
     @State private var query = ""
     @State private var searchFocused = false
     @State private var selection: Set<UUID> = []
+    @State private var focusedStorageID: UUID?
     @State private var renamingStorageID: UUID?
     @State private var renameDraft = ""
     @State private var preview: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
     @State private var poolRevision = 0
+    @State private var projectionMemo = AttachmentProjectionMemo()
+
+    private var todayKey: String { DayClock.shared.todayKey }
 
     var body: some View {
-        DaybookPage(
+        let allItems = resolvedLibraryItems()
+        let displayed = makeDisplayedItems(from: allItems)
+        let selected = allItems.filter { selection.contains($0.storageID) }
+        return DaybookPage(
             title: "window.attachments",
             subtitle: "attachments.hint",
             minWidth: 440,
             minHeight: 480
         ) {
             VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-                if !allLibraryItems.isEmpty || !query.isEmpty || filter != .all {
-                    toolbarSection
+                if !allItems.isEmpty || !query.isEmpty || filter != .all || boardFilter.isActive {
+                    toolbarSection(allItems: allItems, displayed: displayed)
                 }
-                if !selectedItems.isEmpty {
+                if !selected.isEmpty {
                     AttachmentSelectionToolbar(
-                        selectedCount: selectedItems.count,
-                        onSelectAll: selectAllDisplayed,
+                        selectedCount: selected.count,
+                        onSelectAll: { selectAll(displayed) },
                         onClearSelection: { selection.removeAll() },
-                        onDeleteSelected: confirmBatchTrash
+                        onDeleteSelected: { confirmBatchTrash(selected) }
                     )
                 }
-                contentList
+                contentList(allItems: allItems, displayed: displayed)
             }
         }
         .workspaceHeader(actions: headerActions)
         .confirmMoveToTrash($pendingTrash)
         .popover(item: $preview) { item in
-            previewBody(item)
+            previewBody(item, allItems: allItems)
         }
-        .onChange(of: allLibraryItems.map(\.storageID)) { _, storageIDs in
+        .onChange(of: allItems.map(\.storageID)) { _, storageIDs in
             let valid = Set(storageIDs)
             selection.formIntersection(valid)
+            if let focusedStorageID, !valid.contains(focusedStorageID) {
+                self.focusedStorageID = storageIDs.first
+            }
             if let renamingStorageID, !valid.contains(renamingStorageID) {
                 cancelRename()
             }
-            if let preview, !allLibraryItems.contains(where: { $0.primaryReference.id == preview.id }) {
+            if let preview, !allItems.contains(where: { $0.primaryReference.id == preview.id }) {
                 self.preview = nil
             }
         }
@@ -74,17 +86,28 @@ struct AttachmentBrowserPage: View {
         ]
     }
 
-    private var toolbarSection: some View {
-        VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-            searchField
-                .frame(maxWidth: 360)
+    private func toolbarSection(allItems: [AttachmentLibraryItem], displayed: [AttachmentLibraryItem]) -> some View {
+        let selectedDisplayedCount = displayed.reduce(into: 0) { acc, item in
+            if selection.contains(item.storageID) { acc += 1 }
+        }
+        return VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+            HStack(spacing: DaybookSpacing.sm) {
+                searchField
+                    .frame(maxWidth: 360)
+                Spacer(minLength: DaybookSpacing.xs)
+                AttachmentViewModePicker(mode: $viewMode)
+            }
             AttachmentBrowserFilterBar(
                 filter: $filter,
                 sort: $sort,
-                counts: filterCounts,
-                totalDisplayed: displayedItems.count,
+                boardFilter: $boardFilter,
+                tags: CatalogChoices.tags(tags),
+                tagCounts: projectionMemo.tagStats.counts,
+                untaggedCount: projectionMemo.tagStats.untaggedCount,
+                counts: projectionMemo.filterCounts,
+                totalDisplayed: displayed.count,
                 selectedCount: selectedDisplayedCount,
-                onToggleSelectAll: toggleSelectAllDisplayed
+                onToggleSelectAll: { toggleSelectAll(displayed, selectedDisplayedCount: selectedDisplayedCount) }
             )
         }
     }
@@ -112,63 +135,88 @@ struct AttachmentBrowserPage: View {
         .accessibilityLabel(Text("attachments.search.placeholder"))
     }
 
+    private func makeViewContext(displayed: [AttachmentLibraryItem]) -> AttachmentViewContext {
+        AttachmentViewContext(
+            items: displayed,
+            selection: selection,
+            renamingStorageID: renamingStorageID,
+            renameDraft: $renameDraft,
+            loadImage: loadedThumbnail(_:),
+            onToggleSelect: toggleSelect(_:),
+            onPreview: { preview = $0 },
+            onBeginRename: beginRename(_:),
+            onCommitRename: commitRename(_:),
+            onCancelRename: cancelRename,
+            onCopyToken: copyToken(for:),
+            onCopyImage: copyImage(_:),
+            onNavigateReference: navigate(to:),
+            onDelete: confirmSingleTrash(_:)
+        )
+    }
+
     @ViewBuilder
-    private var contentList: some View {
-        if displayedItems.isEmpty {
+    private func contentList(allItems: [AttachmentLibraryItem], displayed: [AttachmentLibraryItem]) -> some View {
+        if displayed.isEmpty {
             DaybookEmptyState(
-                title: allLibraryItems.isEmpty ? "attachments.empty" : "attachments.filter.empty",
+                title: allItems.isEmpty ? "attachments.empty" : "attachments.filter.empty",
                 systemImage: "photo"
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         } else {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: DaybookSpacing.sm) {
-                    ForEach(displayedItems) { item in
-                        AttachmentLibraryCardView(
-                            item: item,
-                            image: loadedImage(item.primaryReference),
-                            isSelected: selection.contains(item.storageID),
-                            isRenaming: renamingStorageID == item.storageID,
-                            renameDraft: $renameDraft,
-                            onToggleSelect: { toggleSelect(item.storageID) },
-                            onPreview: { preview = item.primaryReference },
-                            onBeginRename: { beginRename(item) },
-                            onCommitRename: { commitRename(item) },
-                            onCancelRename: cancelRename,
-                            onCopyToken: { copyToken(for: item) },
-                            onNavigateReference: navigate(to:),
-                            onDelete: { confirmSingleTrash(item) }
-                        )
-                    }
-                }
+            let ctx = makeViewContext(displayed: displayed)
+            switch viewMode {
+            case .grid:
+                AttachmentGridView(ctx: ctx)
+            case .list:
+                listViewContent(displayed: displayed)
+            case .columns:
+                AttachmentColumnsView(ctx: ctx, focusedStorageID: $focusedStorageID)
+            case .gallery:
+                AttachmentGalleryView(ctx: ctx, focusedStorageID: $focusedStorageID)
             }
-            .daybookScroll()
         }
     }
 
-    private var activeStore: AttachmentStore {
-        hostContext?.attachments ?? .shared
+    private func listViewContent(displayed: [AttachmentLibraryItem]) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+                ForEach(displayed) { item in
+                    AttachmentLibraryCardView(
+                        item: item,
+                        image: loadedThumbnail(item.primaryReference),
+                        isSelected: selection.contains(item.storageID),
+                        isRenaming: renamingStorageID == item.storageID,
+                        renameDraft: $renameDraft,
+                        onToggleSelect: { toggleSelect(item.storageID) },
+                        onPreview: { preview = item.primaryReference },
+                        onBeginRename: { beginRename(item) },
+                        onCommitRename: { commitRename(item) },
+                        onCancelRename: cancelRename,
+                        onCopyToken: { copyToken(for: item) },
+                        onNavigateReference: navigate(to:),
+                        onDelete: { confirmSingleTrash(item) }
+                    )
+                }
+            }
+        }
+        .daybookScroll()
     }
 
-    private var activeRoot: URL? {
-        hostContext?.attachments?.directory()
-    }
+    private var activeStore: AttachmentStore { hostContext?.attachments ?? .shared }
+    private var activeRoot: URL? { hostContext?.attachments?.directory() }
 
-    private var owners: AttachmentOwnerIndex {
-        (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey)))
-            ?? .empty
-    }
-
-    private var unlinkedPool: [UnlinkedAttachmentEntry] {
-        _ = poolRevision
-        return AttachmentPoolStore.unlinkedItems(store: activeStore, root: activeRoot)
-    }
-
-    private var allLibraryItems: [AttachmentLibraryItem] {
-        let pool = unlinkedPool
+    private func resolvedLibraryItems() -> [AttachmentLibraryItem] {
+        let pool = AttachmentPoolStore.unlinkedItems(store: activeStore, root: activeRoot)
+        let signature = "\(poolRevision)|\(locale.identifier)|\(attachments.count)|\(tags.count)|"
+            + attachments.map { "\($0.id.uuidString):\($0.filename):\($0.storageID?.uuidString ?? "")" }.joined(separator: ",")
+            + "|" + pool.map { "\($0.id.uuidString):\($0.filename)" }.joined(separator: ",")
+        if projectionMemo.signature == signature {
+            return projectionMemo.items
+        }
+        let owners = (try? AttachmentAccess.ownerIndex(context: modelContext, keys: attachments.compactMap(\.ownerKey))) ?? .empty
         let storageIDs = attachments.map { $0.storageID ?? $0.id } + pool.map(\.id)
         let hashes = AttachmentPoolStore.contentHashes(for: storageIDs, store: activeStore, root: activeRoot)
-        return AttachmentLibraryProjection.build(
+        let built = AttachmentLibraryProjection.build(
             attachments: attachments,
             unlinked: pool,
             owners: owners,
@@ -176,56 +224,85 @@ struct AttachmentBrowserPage: View {
             contentHashes: hashes,
             locale: locale
         )
+        projectionMemo.signature = signature
+        projectionMemo.items = built
+        projectionMemo.tagStats = AttachmentLibraryProjection.tagCounts(for: built)
+        projectionMemo.filterCounts = AttachmentLibraryProjection.filterCounts(for: built)
+        return built
     }
 
-    private var displayedItems: [AttachmentLibraryItem] {
+    private func makeDisplayedItems(from allItems: [AttachmentLibraryItem]) -> [AttachmentLibraryItem] {
         AttachmentLibraryProjection.filterAndSort(
-            allLibraryItems,
+            allItems,
             filter: filter,
+            boardFilter: boardFilter,
+            todayKey: todayKey,
             query: query,
             sort: sort
         )
     }
 
-    private var filterCounts: [AttachmentFilterKind: Int] {
-        var result: [AttachmentFilterKind: Int] = [:]
-        for kind in AttachmentFilterKind.allCases {
-            result[kind] = AttachmentLibraryProjection.filterAndSort(allLibraryItems, filter: kind).count
-        }
-        return result
-    }
-
-    private var selectedItems: [AttachmentLibraryItem] {
-        allLibraryItems.filter { selection.contains($0.storageID) }
-    }
-
-    private var selectedDisplayedCount: Int {
-        displayedItems.filter { selection.contains($0.storageID) }.count
-    }
-
     @ViewBuilder
-    private func previewBody(_ item: AttachmentRef) -> some View {
-        if !allLibraryItems.contains(where: { $0.primaryReference.id == item.id }) {
-            Text("diary.private.title")
-        } else if let image = loadedImage(item) {
-            LoadedAttachmentImage(image: image)
-                .frame(maxWidth: 420, maxHeight: 420)
-                .padding(8)
+    private func previewBody(_ item: AttachmentRef, allItems: [AttachmentLibraryItem]) -> some View {
+        if let libItem = allItems.first(where: { $0.primaryReference.id == item.id }) {
+            let fullImage = loadedFullImage(item)
+            VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+                HStack(spacing: DaybookSpacing.sm) {
+                    Text(libItem.filename)
+                        .font(DaybookType.subtitle.weight(.semibold))
+                        .foregroundStyle(DaybookPalette.text.primary)
+                        .lineLimit(1)
+                    Spacer()
+                    if let fullImage {
+                        Button("attachments.copyImage") {
+                            copyImage(fullImage)
+                        }
+                        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
+                    }
+                    Button("attachments.copyToken") {
+                        copyToken(for: libItem)
+                    }
+                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+                }
+                if let fullImage {
+                    LoadedAttachmentImage(image: fullImage)
+                        .frame(maxWidth: 420, maxHeight: 420)
+                } else {
+                    Text(libItem.filename)
+                        .font(DaybookType.subtitle)
+                        .foregroundStyle(DaybookPalette.text.secondary)
+                        .padding(12)
+                }
+            }
+            .padding(DaybookSpacing.sm)
         } else {
-            Text(item.filename)
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .padding(12)
+            Text("diary.private.title")
         }
     }
 
-    private func loadedImage(_ item: AttachmentRef) -> NSImage? {
-        if let hostContext {
-            guard let store = hostContext.attachments,
-                  let data = try? store.readOrdinary(reference: item, root: store.directory()) else { return nil }
-            return NSImage(data: data)
-        }
-        return AttachmentStore.image(reference: item)
+    private func loadedThumbnail(_ item: AttachmentRef) -> NSImage? {
+        AttachmentPoolStore.cachedImage(
+            for: item,
+            maxPixelSize: 360,
+            store: activeStore,
+            root: activeRoot,
+            useOrdinaryRead: hostContext != nil
+        )
+    }
+
+    private func loadedFullImage(_ item: AttachmentRef) -> NSImage? {
+        AttachmentPoolStore.cachedImage(
+            for: item,
+            maxPixelSize: nil,
+            store: activeStore,
+            root: activeRoot,
+            useOrdinaryRead: hostContext != nil
+        )
+    }
+
+    private func copyImage(_ image: NSImage) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.writeObjects([image])
     }
 
     private func toggleSelect(_ storageID: UUID) {
@@ -236,19 +313,19 @@ struct AttachmentBrowserPage: View {
         }
     }
 
-    private func selectAllDisplayed() {
-        for item in displayedItems {
+    private func selectAll(_ displayed: [AttachmentLibraryItem]) {
+        for item in displayed {
             selection.insert(item.storageID)
         }
     }
 
-    private func toggleSelectAllDisplayed() {
-        if selectedDisplayedCount == displayedItems.count && !displayedItems.isEmpty {
-            for item in displayedItems {
+    private func toggleSelectAll(_ displayed: [AttachmentLibraryItem], selectedDisplayedCount: Int) {
+        if selectedDisplayedCount == displayed.count && !displayed.isEmpty {
+            for item in displayed {
                 selection.remove(item.storageID)
             }
         } else {
-            selectAllDisplayed()
+            selectAll(displayed)
         }
     }
 
@@ -305,8 +382,7 @@ struct AttachmentBrowserPage: View {
         }
     }
 
-    private func confirmBatchTrash() {
-        let targets = selectedItems
+    private func confirmBatchTrash(_ targets: [AttachmentLibraryItem]) {
         guard !targets.isEmpty else { return }
         let summaryTitle = targets.count == 1 ? targets[0].filename : "\(targets.count)"
         pendingTrash = PendingTrash(title: summaryTitle) {
@@ -320,4 +396,81 @@ struct AttachmentBrowserPage: View {
             poolRevision += 1
         }
     }
+}
+
+/// 仿 macOS Finder 的四态视图切换胶囊（图标网格 ⊞ / 详细列表 ☰ / 三栏分栏 ◫ / 画廊预览 ▭）。
+struct AttachmentViewModePicker: View {
+    @Binding var mode: AttachmentViewMode
+
+    var body: some View {
+        HStack(spacing: 2) {
+            modeButton(.grid)
+            modeButton(.list)
+            modeButton(.columns)
+            RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
+                .fill(DaybookPalette.border.default)
+                .frame(width: 1, height: 14)
+                .padding(.horizontal, 2)
+            modeButton(.gallery)
+        }
+        .padding(.horizontal, 4)
+        .padding(.vertical, 3)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous)
+                .fill(DaybookPalette.fill.subtle)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous)
+                .strokeBorder(DaybookPalette.border.default, lineWidth: 0.8)
+        )
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("attachments.viewMode.picker")
+    }
+
+    private func modeButton(_ target: AttachmentViewMode) -> some View {
+        let isSelected = mode == target
+        let key = LocalizedStringKey(target.titleKey)
+        return Button {
+            mode = target
+        } label: {
+            Image(systemName: target.iconName)
+                .font(DaybookType.caption.weight(isSelected ? .semibold : .regular))
+                .foregroundStyle(isSelected ? DaybookPalette.text.primary : DaybookPalette.text.secondary)
+                .frame(width: 28, height: 22)
+                .background(
+                    RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous)
+                        .fill(isSelected ? DaybookPalette.fill.hover : Color.clear)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous))
+        }
+        .buttonStyle(.plain) // control: Finder 风格视图切换胶囊按钮
+        .help(key)
+        .accessibilityLabel(key)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+        .accessibilityIdentifier("attachments.viewMode." + target.rawValue)
+    }
+}
+
+struct AttachmentViewContext {
+    let items: [AttachmentLibraryItem]
+    let selection: Set<UUID>
+    let renamingStorageID: UUID?
+    @Binding var renameDraft: String
+    var loadImage: (AttachmentRef) -> NSImage?
+    var onToggleSelect: (UUID) -> Void
+    var onPreview: (AttachmentRef) -> Void
+    var onBeginRename: (AttachmentLibraryItem) -> Void
+    var onCommitRename: (AttachmentLibraryItem) -> Void
+    var onCancelRename: () -> Void
+    var onCopyToken: (AttachmentLibraryItem) -> Void
+    var onCopyImage: (NSImage) -> Void
+    var onNavigateReference: (AttachmentReferenceItem) -> Void
+    var onDelete: (AttachmentLibraryItem) -> Void
+}
+
+private final class AttachmentProjectionMemo {
+    var signature: String = ""
+    var items: [AttachmentLibraryItem] = []
+    var tagStats: (counts: [UUID: Int], untaggedCount: Int) = ([:], 0)
+    var filterCounts: [AttachmentFilterKind: Int] = [:]
 }

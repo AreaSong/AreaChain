@@ -91,6 +91,31 @@ enum AppWindows {
             + (diaryWindowsProvider?() ?? [])
             + (clipboardWindowProvider?() ?? [])
     }
+
+    static func centeredFrame(size: NSSize, in visibleFrame: NSRect) -> NSRect {
+        let origin = NSPoint(
+            x: round(visibleFrame.midX - size.width / 2),
+            y: round(visibleFrame.midY - size.height / 2)
+        )
+        return NSRect(origin: origin, size: size)
+    }
+
+    static func activeScreenVisibleFrame(mouseLocation: NSPoint = NSEvent.mouseLocation) -> NSRect? {
+        let screen = NSScreen.screens.first { $0.frame.contains(mouseLocation) }
+            ?? NSScreen.main
+            ?? NSScreen.screens.first
+        return screen?.visibleFrame
+    }
+
+    static func centerWindow(_ window: NSWindow, size: NSSize? = nil) {
+        let targetSize = size ?? window.frame.size
+        if let visibleFrame = activeScreenVisibleFrame() {
+            window.setFrame(centeredFrame(size: targetSize, in: visibleFrame), display: true)
+        } else {
+            window.setContentSize(targetSize)
+            window.center()
+        }
+    }
 }
 
 @MainActor
@@ -130,6 +155,7 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
     }
 
     func show() {
+        let shouldCenter = !(window?.isVisible ?? false) && !(window?.isMiniaturized ?? false)
         if window == nil {
             guard let provider = AppWindows.workspaceViewProvider else {
                 assertionFailure("AppWindows.workspaceViewProvider must be registered before showing workspace")
@@ -138,16 +164,19 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             let hosting = NSHostingController(rootView: provider())
             // 禁止 NSHostingController 根据 GeometryReader 的 (0,0) 理想尺寸冲掉窗口 minSize
             hosting.sizingOptions = []
+            hosting.view.frame = NSRect(origin: .zero, size: size)
             let targetMinSize = minSize ?? size
+            let initialFrame = AppWindows.activeScreenVisibleFrame()
+                .map { AppWindows.centeredFrame(size: size, in: $0) }
+                ?? NSRect(origin: .zero, size: size)
             let next = WorkspacePanelWindow(
-                contentRect: NSRect(origin: .zero, size: size),
+                contentRect: initialFrame,
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
             next.lockedMinSize = targetMinSize
             next.contentViewController = hosting
-            next.setContentSize(size)
             next.minSize = targetMinSize
             next.contentMinSize = targetMinSize
             next.titlebarAppearsTransparent = true
@@ -161,10 +190,22 @@ final class PanelWindowController: NSObject, NSWindowDelegate {
             next.isReleasedWhenClosed = false
             next.isRestorable = false
             next.delegate = self
+            AppWindows.centerWindow(next, size: size)
             window = next
         }
         refreshChrome()
-        window?.makeKeyAndOrderFront(nil)
+        guard let window else { return }
+        let targetSize = NSSize(
+            width: max(window.frame.width, size.width),
+            height: max(window.frame.height, size.height)
+        )
+        if shouldCenter {
+            AppWindows.centerWindow(window, size: targetSize)
+        }
+        window.makeKeyAndOrderFront(nil)
+        if shouldCenter {
+            AppWindows.centerWindow(window, size: targetSize)
+        }
     }
 
     func windowWillClose(_ notification: Notification) {

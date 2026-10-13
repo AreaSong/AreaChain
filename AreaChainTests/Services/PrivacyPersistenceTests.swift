@@ -144,6 +144,7 @@ struct PrivacyPersistenceTests {
         let publicBytes = Data("PUBLIC_IMAGE_BYTES_SENTINEL".utf8)
         let publicImage = try f.image(owner: publicNote, data: publicBytes)
         let masked = DiaryEntry(text: "旧遮罩 #密码", dayKey: "2026-09-15")
+        DiaryPrivacy.assign(masked, isPrivate: true)
         f.context.insert(masked)
         try f.context.save()
         let snapshot = SyncPort.makeSnapshot(routines: [], checks: [], todos: [], diaries: [note, publicNote, masked],
@@ -183,6 +184,43 @@ struct PrivacyPersistenceTests {
         try DiaryProtection.unprotect(note, in: f.environment)
         #expect(!note.hasProtectedContent && image.privacyVaultID == nil)
         #expect(!FileManager.default.fileExists(atPath: retiredURL.path))
+    }
+
+    @Test func bidirectionalSetTagsPrivacyEncryptsAndDecryptsLinkedDiariesAndAttachments() async throws {
+        let f = try await PrivacyFixture.make()
+        defer { f.cleanup() }
+        let tagA = TagItem(name: "私密A", sortOrder: 0, isPrivateDiary: false)
+        let tagB = TagItem(name: "私密B", sortOrder: 1, isPrivateDiary: true)
+        f.context.insert(tagA)
+        f.context.insert(tagB)
+        try f.context.save()
+
+        let noteA = try f.repository.addDiary(text: secret, dayKey: "2026-09-15", tagIDs: [tagA.id])
+        let imageA = try f.image(owner: noteA)
+        let noteAB = try f.repository.addDiary(text: "双重标签私密手记", dayKey: "2026-09-15", tagIDs: [tagA.id, tagB.id])
+        #expect(!noteA.hasProtectedContent && imageA.privacyVaultID == nil)
+        #expect(noteAB.hasProtectedContent && noteAB.isPrivate)
+
+        f.vault.lock()
+        #expect(throws: PrivacyError.locked) {
+            try DiaryProtection.setTagsPrivacy([tagA.id], isPrivate: true, in: f.environment)
+        }
+        try await f.vault.unlockWithPassword("fixture-master-password")
+
+        try DiaryProtection.setTagsPrivacy([tagA.id], isPrivate: true, in: f.environment)
+        #expect(tagA.isPrivateDiary)
+        #expect(noteA.hasProtectedContent && noteA.isPrivate && noteA.text.isEmpty)
+        #expect(imageA.privacyVaultID != nil)
+
+        try DiaryProtection.setTagsPrivacy([tagA.id], isPrivate: false, in: f.environment)
+        #expect(!tagA.isPrivateDiary)
+        #expect(!noteA.hasProtectedContent && !noteA.isPrivate && noteA.text == secret)
+        #expect(imageA.privacyVaultID == nil)
+        #expect(noteAB.hasProtectedContent && noteAB.isPrivate)
+
+        try DiaryProtection.setTagsPrivacy([tagB.id], isPrivate: false, in: f.environment)
+        #expect(!tagB.isPrivateDiary)
+        #expect(!noteAB.hasProtectedContent && !noteAB.isPrivate && noteAB.text == "双重标签私密手记")
     }
 
     @Test func editorSealsUnsavedDraftAndRequiresUnlockBeforeSaveOrReveal() async throws {

@@ -21,7 +21,10 @@ import Testing
         case 0: f.diary.isPrivate = true
         case 1: f.diary.encryptedText = Data([1, 2, 3])
         case 2: f.diary.privacyVaultID = UUID()
-        case 3: f.diary.text = "合成旧正文 #PASSWORD"
+        case 3:
+            let pwTag = TagItem(name: "PASSWORD", sortOrder: 1, isPrivateDiary: true)
+            f.context.insert(pwTag)
+            f.diary.text = "合成旧正文 #PASSWORD"
         case 4: f.tag.isPrivateDiary = true
         case 5:
             f.tag.name = "隐藏"

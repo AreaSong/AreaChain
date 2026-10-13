@@ -22,4 +22,16 @@ struct AppWindowsRoutingTests {
         #expect(navigation.selectedTab == .calendar && navigation.selectedTaskID == id)
         #expect(presentations == 3)
     }
+
+    @Test func centeredFramePlacesWorkspaceAtExactScreenCenter() {
+        let visibleFrame = NSRect(x: 0, y: 86, width: 1800, height: 1044)
+        let size = DaybookMetrics.Window.workspaceSize
+        let centered = AppWindows.centeredFrame(size: size, in: visibleFrame)
+
+        #expect(centered.size == size)
+        #expect(centered.origin.x == 420)
+        #expect(centered.origin.y == 288)
+        #expect(centered.midX == visibleFrame.midX)
+        #expect(centered.midY == visibleFrame.midY)
+    }
 }

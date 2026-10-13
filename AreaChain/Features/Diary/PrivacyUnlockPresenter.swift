@@ -118,6 +118,7 @@ struct PrivacyUnlockView: View {
     @State private var busy = false
     @State private var error: PrivacyError?
     @State private var hasAutoTriggered = false
+    @State private var passwordFocusTrigger = 0
     @Environment(\.locale) private var locale
 
     private var prefersPasswordFirst: Bool {
@@ -217,9 +218,14 @@ struct PrivacyUnlockView: View {
                     .font(DaybookType.caption.weight(.medium))
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
-            DaybookSecureField("privacy.master.placeholder", text: $password, autoFocus: isPrimary)
-                .accessibilityIdentifier("privacy.master.input")
-                .onSubmit { authenticate(system: false) }
+            DaybookSecureField(
+                "privacy.master.placeholder",
+                text: $password,
+                autoFocus: isPrimary,
+                focusTrigger: passwordFocusTrigger
+            )
+            .accessibilityIdentifier("privacy.master.input")
+            .onSubmit { authenticate(system: false) }
             Button {
                 authenticate(system: false)
             } label: {
@@ -295,6 +301,9 @@ struct PrivacyUnlockView: View {
             } catch let privacyError as PrivacyError where system && privacyError == .cancelled {
                 self.error = nil
                 busy = false
+                if vault.hasMasterPassword {
+                    passwordFocusTrigger &+= 1
+                }
             } catch {
                 self.error = error as? PrivacyError ?? .systemUnavailable
                 busy = false

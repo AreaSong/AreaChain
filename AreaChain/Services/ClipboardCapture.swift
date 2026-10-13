@@ -19,18 +19,54 @@ enum CaptureStamp {
 }
 
 enum BundleDisplay {
+    nonisolated(unsafe) private static let nameCache: NSCache<NSString, NSString> = {
+        let cache = NSCache<NSString, NSString>()
+        cache.countLimit = 256
+        return cache
+    }()
+
+    nonisolated(unsafe) private static let iconCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 128
+        return cache
+    }()
+
     static func name(for bundleID: String) -> String {
         guard !bundleID.isEmpty else { return "" }
+        let key = bundleID as NSString
+        if let cached = nameCache.object(forKey: key) {
+            return cached as String
+        }
+        let resolved: String
         if let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) {
             let bundle = Bundle(url: url)
             if let display = bundle?.localizedInfoDictionary?["CFBundleDisplayName"] as? String, !display.isEmpty {
-                return display
+                resolved = display
+            } else if let name = bundle?.infoDictionary?["CFBundleName"] as? String, !name.isEmpty {
+                resolved = name
+            } else {
+                resolved = bundleID
             }
-            if let name = bundle?.infoDictionary?["CFBundleName"] as? String, !name.isEmpty {
-                return name
-            }
+        } else {
+            resolved = bundleID
         }
-        return bundleID
+        nameCache.setObject(resolved as NSString, forKey: key)
+        return resolved
+    }
+
+    static func icon(for bundleID: String) -> NSImage? {
+        guard !bundleID.isEmpty else { return nil }
+        let key = bundleID as NSString
+        if let cached = iconCache.object(forKey: key) {
+            return cached
+        }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
+            return nil
+        }
+        let icon = NSWorkspace.shared.icon(forFile: url.path)
+        icon.size = NSSize(width: 16, height: 16)
+        iconCache.setObject(icon, forKey: key)
+        return icon
     }
 }
 

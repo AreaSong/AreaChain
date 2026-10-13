@@ -43,9 +43,6 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
         guard !trimmed.isEmpty else {
             throw RepositoryError.invalidArgument("标签名称不能为空")
         }
-        if DiaryMemoTags.isPresetName(trimmed) {
-            throw RepositoryError.invalidArgument("手记预置标签不能当作普通标签创建")
-        }
         let key = TagSyntax.normalizedName(trimmed)
         let live = try fetchTags(includeDeleted: false)
         if live.contains(where: { TagSyntax.normalizedName($0.name) == key }) {
@@ -79,23 +76,14 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
 
     func resolveTaskTag(name: String) throws -> TagItem? {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else {
+        guard !trimmed.isEmpty else {
             return nil
         }
         return try resolveOrCreateTag(name: trimmed)
     }
 
     func ensurePresetTags() throws {
-        let known = Set(try fetchTags(includeDeleted: true).map { TagSyntax.normalizedName($0.name) })
-        let missing = DiaryMemoTags.presets.filter { name in
-            let key = TagSyntax.normalizedName(name)
-            return !known.contains(key) && !DiaryPresetRetention.isDismissed(name)
-        }
-        // 已软删除或用户彻底删除的分类不再补回。页面反复出现且没有缺失时只读。
-        guard !missing.isEmpty else { return }
-        try ModelChanges.transaction(in: context) {
-            _ = try InputTagResolver.resolve(missing, in: context)
-        }
+        // 已取消内置预设标签，不再自动种子生成。
     }
 
     func updateTag(id: UUID, name: String?, sortOrder: Int?, colorToken: String?) throws {
@@ -124,7 +112,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
             if tag.isDiaryPreset {
                 throw RepositoryError.invalidArgument("手记预置标签不能改色")
             }
-            tag.colorToken = TagColorToken.resolved(colorToken).rawValue
+            tag.colorToken = TagColorToken.resolvedToken(colorToken)
         }
         try saveAndNotify()
     }
@@ -191,7 +179,7 @@ final class SwiftDataCatalogRepository: CatalogRepositoryProtocol {
     }
 
     func batchSetColor(ids: Set<UUID>, colorToken: String) throws {
-        let token = TagColorToken.resolved(colorToken).rawValue
+        let token = TagColorToken.resolvedToken(colorToken)
         let wanted = Array(ids)
         let tags = wanted.isEmpty
             ? []

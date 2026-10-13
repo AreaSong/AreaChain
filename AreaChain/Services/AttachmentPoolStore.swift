@@ -1,6 +1,7 @@
 import AppKit
 import CryptoKit
 import Foundation
+import ImageIO
 import SwiftData
 
 /// 管理工作台附件中心的未关联（待索引）附件池、SHA-256 内容去重、跨宿主唯一重命名及批量回收站清理。
@@ -8,6 +9,13 @@ import SwiftData
 enum AttachmentPoolStore {
     private static let poolIndexFilename = "unlinked-pool.json"
     private static var hashCache: [String: String] = [:]
+    private static var sizeCache: [String: Int] = [:]
+    private static var unlinkedCache: [String: (modDate: Date, items: [UnlinkedAttachmentEntry])] = [:]
+    private static let imageCache: NSCache<NSString, NSImage> = {
+        let cache = NSCache<NSString, NSImage>()
+        cache.countLimit = 256
+        return cache
+    }()
 
     static func poolFileURL(store: AttachmentStore = .shared, root: URL? = nil) -> URL {
         (root ?? store.directory()).appending(path: poolIndexFilename)
@@ -20,37 +28,110 @@ enum AttachmentPoolStore {
     static func contentHashes(
         for storageIDs: [UUID],
         store: AttachmentStore = .shared,
-        root: URL? = nil
+        root: URL? = nil,
+        matchingSize: Int? = nil
     ) -> [UUID: String] {
+        let uniqueIDs = Array(Set(storageIDs))
+        if matchingSize == nil && uniqueIDs.count <= 1 { return [:] }
         let folder = (root ?? store.directory()).standardizedFileURL
-        var result: [UUID: String] = [:]
-        for id in Set(storageIDs) {
+        var idsBySize: [Int: [UUID]] = [:]
+
+        for id in uniqueIDs {
             let key = "\(folder.path)|\(id.uuidString)"
-            if let cached = hashCache[key] {
-                result[id] = cached
-                continue
+            let size: Int
+            if let cachedSize = sizeCache[key] {
+                size = cachedSize
+            } else {
+                let url = store.fileURL(id: id, root: folder)
+                guard let fileSize = (try? url.resourceValues(forKeys: [.fileSizeKey]))?.fileSize,
+                      fileSize > 0 else {
+                    continue
+                }
+                sizeCache[key] = fileSize
+                size = fileSize
             }
-            let url = store.fileURL(id: id, root: folder)
-            guard let data = try? Data(contentsOf: url),
-                  !data.starts(with: VaultCrypto.attachmentMagic) else {
-                continue
+            if let matchingSize, size != matchingSize { continue }
+            idsBySize[size, default: []].append(id)
+        }
+
+        var result: [UUID: String] = [:]
+        for (_, group) in idsBySize {
+            if matchingSize == nil && group.count < 2 { continue }
+            for id in group {
+                let key = "\(folder.path)|\(id.uuidString)"
+                if let cached = hashCache[key] {
+                    result[id] = cached
+                    continue
+                }
+                let url = store.fileURL(id: id, root: folder)
+                guard let data = try? Data(contentsOf: url),
+                      !data.starts(with: VaultCrypto.attachmentMagic) else {
+                    continue
+                }
+                let digest = contentHash(for: data)
+                hashCache[key] = digest
+                result[id] = digest
             }
-            let digest = contentHash(for: data)
-            hashCache[key] = digest
-            result[id] = digest
         }
         return result
     }
 
+    static func cachedImage(
+        for reference: AttachmentRef,
+        maxPixelSize: Int? = 360,
+        store: AttachmentStore = .shared,
+        root: URL? = nil,
+        useOrdinaryRead: Bool = false
+    ) -> NSImage? {
+        let folder = (root ?? store.directory()).standardizedFileURL
+        let storageID = reference.storageID ?? reference.id
+        let sizeTag = maxPixelSize.map(String.init) ?? "full"
+        let cacheKey = "\(folder.path)|\(storageID.uuidString)|\(sizeTag)" as NSString
+        if let cached = imageCache.object(forKey: cacheKey) {
+            return cached
+        }
+        let data: Data?
+        if useOrdinaryRead {
+            data = try? store.readOrdinary(reference: reference, root: folder)
+        } else {
+            data = try? store.read(reference: reference, root: folder)
+        }
+        guard let data else { return nil }
+        if let maxPixelSize,
+           let source = CGImageSourceCreateWithData(data as CFData, [kCGImageSourceShouldCache: false] as CFDictionary),
+           let cgThumb = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+               kCGImageSourceCreateThumbnailFromImageAlways: true,
+               kCGImageSourceShouldCacheImmediately: true,
+               kCGImageSourceCreateThumbnailWithTransform: true,
+               kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+           ] as CFDictionary) {
+            let thumb = NSImage(cgImage: cgThumb, size: NSSize(width: cgThumb.width, height: cgThumb.height))
+            imageCache.setObject(thumb, forKey: cacheKey)
+            return thumb
+        }
+        guard let image = NSImage(data: data) else { return nil }
+        imageCache.setObject(image, forKey: cacheKey)
+        return image
+    }
+
     static func unlinkedItems(store: AttachmentStore = .shared, root: URL? = nil) -> [UnlinkedAttachmentEntry] {
-        let url = poolFileURL(store: store, root: root)
+        let url = poolFileURL(store: store, root: root).standardizedFileURL
+        guard let modDate = (try? url.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate else {
+            unlinkedCache.removeValue(forKey: url.path)
+            return []
+        }
+        if let cached = unlinkedCache[url.path], cached.modDate == modDate {
+            return cached.items
+        }
         guard let data = try? Data(contentsOf: url),
               let decoded = try? JSONDecoder().decode([UnlinkedAttachmentEntry].self, from: data) else {
             return []
         }
-        return decoded.filter { entry in
+        let filtered = decoded.filter { entry in
             FileManager.default.fileExists(atPath: store.fileURL(id: entry.id, root: root).path)
         }
+        unlinkedCache[url.path] = (modDate, filtered)
+        return filtered
     }
 
     @discardableResult
@@ -69,7 +150,7 @@ enum AttachmentPoolStore {
         let folder = root ?? store.directory()
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let digest = contentHash(for: data)
-        if let existing = findExistingByHash(digest, in: context, store: store, root: folder) {
+        if let existing = findExistingByHash(digest, byteCount: data.count, in: context, store: store, root: folder) {
             BoardEvents.changedLocally()
             return UnlinkedAttachmentEntry(
                 id: existing.storageID,
@@ -80,7 +161,9 @@ enum AttachmentPoolStore {
         let existingNames = allKnownFilenames(in: context, store: store, root: folder)
         let resolvedName = AttachmentSyntax.uniqueFilename(base: filename, existing: existingNames)
         try data.write(to: store.fileURL(id: id, root: folder), options: .atomic)
-        hashCache["\(folder.standardizedFileURL.path)|\(id.uuidString)"] = digest
+        let cacheKey = "\(folder.standardizedFileURL.path)|\(id.uuidString)"
+        hashCache[cacheKey] = digest
+        sizeCache[cacheKey] = data.count
         var current = unlinkedItems(store: store, root: folder)
         let entry = UnlinkedAttachmentEntry(id: id, filename: resolvedName, createdAt: createdAt)
         current.removeAll { $0.id == id }
@@ -112,7 +195,7 @@ enum AttachmentPoolStore {
             )
         }
         let digest = contentHash(for: data)
-        if let match = findExistingByHash(digest, in: context, store: store, root: folder) {
+        if let match = findExistingByHash(digest, byteCount: data.count, in: context, store: store, root: folder) {
             return linkExistingMatch(
                 match, ownerKind: ownerKind, ownerID: ownerID,
                 context: context, store: store, folder: folder, id: id, createdAt: createdAt
@@ -125,7 +208,9 @@ enum AttachmentPoolStore {
             ownerID: ownerID, context: context, root: folder, id: id, createdAt: createdAt
         )
         item.storageID = item.id
-        hashCache["\(folder.standardizedFileURL.path)|\(id.uuidString)"] = digest
+        let cacheKey = "\(folder.standardizedFileURL.path)|\(id.uuidString)"
+        hashCache[cacheKey] = digest
+        sizeCache[cacheKey] = data.count
         return item
     }
 
@@ -256,6 +341,7 @@ enum AttachmentPoolStore {
 
     private static func findExistingByHash(
         _ digest: String,
+        byteCount: Int,
         in context: ModelContext?,
         store: AttachmentStore,
         root: URL
@@ -265,7 +351,7 @@ enum AttachmentPoolStore {
             .sorted { $0.createdAt < $1.createdAt }
         let pool = unlinkedItems(store: store, root: root).sorted { $0.createdAt < $1.createdAt }
         let allIDs = rows.map { $0.storageID ?? $0.id } + pool.map(\.id)
-        let hashes = contentHashes(for: allIDs, store: store, root: root)
+        let hashes = contentHashes(for: allIDs, store: store, root: root, matchingSize: byteCount)
         if let row = rows.first(where: { hashes[$0.storageID ?? $0.id] == digest }) {
             return ExistingHashMatch(
                 storageID: row.storageID ?? row.id,
@@ -354,7 +440,8 @@ enum AttachmentPoolStore {
         store: AttachmentStore,
         root: URL
     ) throws {
-        let url = poolFileURL(store: store, root: root)
+        let url = poolFileURL(store: store, root: root).standardizedFileURL
+        unlinkedCache.removeValue(forKey: url.path)
         if entries.isEmpty {
             try? FileManager.default.removeItem(at: url)
             return

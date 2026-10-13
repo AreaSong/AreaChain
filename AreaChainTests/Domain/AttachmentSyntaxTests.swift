@@ -234,4 +234,59 @@ struct AttachmentSyntaxTests {
         #expect(AttachmentPoolStore.rename(item: targetLibraryItem, newFilename: "demo", context: context))
         #expect(target.filename == "demo-2.png")
     }
+
+    @Test func boardFilterMatchesPriorityReminderTagAndDateOnLibraryProjection() throws {
+        let container = try ModelContainer(
+            for: TodoItem.self, DailyRoutine.self, DiaryEntry.self, AttachmentItem.self, TagItem.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        let context = ModelContext(container)
+        let workTag = TagItem(name: "工作", sortOrder: 0, colorToken: "blue")
+        let p1Todo = TodoItem(
+            title: "紧急评审 #工作", dayKey: "2026-10-12", remindMinutes: 600,
+            tagIDs: TagIDList.encode([workTag.id]), isImportant: true, isUrgent: true
+        )
+        let p4Todo = TodoItem(title: "普通任务", dayKey: "2026-10-15", isImportant: false, isUrgent: false)
+        for entity: any PersistentModel in [workTag, p1Todo, p4Todo] { context.insert(entity) }
+
+        let p1Att = AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: p1Todo.id, filename: "p1.png")
+        let p4Att = AttachmentItem(ownerKind: AttachmentOwner.todo.rawValue, ownerID: p4Todo.id, filename: "p4.png")
+        context.insert(p1Att)
+        context.insert(p4Att)
+
+        let owners = try AttachmentAccess.ownerIndex(context: context, keys: [p1Att, p4Att].compactMap(\.ownerKey))
+        let library = AttachmentLibraryProjection.build(
+            attachments: [p1Att, p4Att], unlinked: [], owners: owners, tags: [workTag]
+        )
+
+        let p1Filtered = AttachmentLibraryProjection.filterAndSort(
+            library, boardFilter: BoardFilter().withPriorityScope(.p1)
+        )
+        #expect(p1Filtered.map(\.filename) == ["p1.png"])
+
+        let reminderFiltered = AttachmentLibraryProjection.filterAndSort(
+            library, boardFilter: BoardFilter().withReminderScope(.set)
+        )
+        #expect(reminderFiltered.map(\.filename) == ["p1.png"])
+
+        let todayFiltered = AttachmentLibraryProjection.filterAndSort(
+            library, boardFilter: BoardFilter().withDateScope(.today), todayKey: "2026-10-12"
+        )
+        #expect(todayFiltered.map(\.filename) == ["p1.png"])
+
+        let untaggedFiltered = AttachmentLibraryProjection.filterAndSort(
+            library, boardFilter: BoardFilter().withTag(BoardFilter.noneID)
+        )
+        #expect(untaggedFiltered.map(\.filename) == ["p4.png"])
+    }
+
+    @Test func viewModeExposesFourFinderModesWithIconsAndLocalizedKeys() {
+        #expect(AttachmentViewMode.allCases == [.grid, .list, .columns, .gallery])
+        #expect(AttachmentViewMode.grid.iconName == "square.grid.2x2")
+        #expect(AttachmentViewMode.list.iconName == "list.bullet")
+        #expect(AttachmentViewMode.columns.iconName == "rectangle.split.3x1")
+        #expect(AttachmentViewMode.gallery.iconName == "squares.below.rectangle")
+        #expect(AttachmentViewMode.grid.titleKey == "attachments.viewMode.grid")
+        #expect(AttachmentViewMode.gallery.titleKey == "attachments.viewMode.gallery")
+    }
 }

@@ -102,7 +102,7 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(try catalogRepo.fetchTags().map(\.name) == ["Sub", "Root"])
     }
 
-    @Test func tagResolutionAndPresetRules() throws {
+    @Test func tagResolutionAndNoBuiltInPresetSeeding() throws {
         let (container, _, catalogRepo) = try makeRepos()
         _ = container
 
@@ -117,18 +117,12 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(resurrected.id == tag1.id)
         #expect(resurrected.deletedAt == nil)
 
-        #expect(try catalogRepo.resolveTaskTag(name: "密码") == nil)
-        #expect(try catalogRepo.resolveTaskTag(name: "日记") == nil)
-        #expect(try catalogRepo.resolveTaskTag(name: "小巧思") == nil)
+        #expect(try catalogRepo.resolveTaskTag(name: "密码")?.name == "密码")
+        #expect(try catalogRepo.resolveTaskTag(name: "日记")?.name == "日记")
+        #expect(try catalogRepo.resolveTaskTag(name: "小巧思")?.name == "小巧思")
 
         let validTaskTag = try catalogRepo.resolveTaskTag(name: "工作待办")
         #expect(validTaskTag != nil)
-
-        try catalogRepo.ensurePresetTags()
-        let allTags = try catalogRepo.fetchTags(includeDeleted: true)
-        #expect(allTags.contains(where: { $0.name == "密码" }))
-        #expect(allTags.contains(where: { $0.name == "日记" }))
-        #expect(allTags.contains(where: { $0.name == "小巧思" }))
     }
 
     @Test(arguments: [("Work", " \tｗＯＲＫ\n"), ("Café", "CAFE\u{301}")])
@@ -155,53 +149,29 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(!context.hasChanges)
     }
 
-    @Test func presetInitializationCommitsOnceAndRepeatedChecksStayReadOnly() throws {
+    @Test func ensurePresetTagsIsReadOnlyNoOpAndDoesNotSeedBuiltInTags() throws {
         let (container, _, repository) = try makeRepos()
         let context = container.mainContext
         let initial = try mutationCounts(in: context) { try repository.ensurePresetTags() }
-        #expect(initial.saves == 1)
-        #expect(initial.notifications == 1)
+        #expect(initial.saves == 0)
+        #expect(initial.notifications == 0)
+        #expect(!context.hasChanges)
 
         let repeated = mutationCounts(in: context) {
-            for _ in 0..<10 {
+            for _ in 0..<5 {
                 #expect(DayBoardMutations.ensureDiaryPresetTags(context: context))
             }
         }
         #expect(repeated.saves == 0)
         #expect(repeated.notifications == 0)
-        #expect(!context.hasChanges)
         let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
-        #expect(tags.count == 3)
-        #expect(Set(tags.map(\.name)) == Set(DiaryMemoTags.presets))
-    }
-
-    @Test func presetRepairCreatesMissingWithoutRestoringDeleted() throws {
-        let (container, _, repository) = try makeRepos()
-        let context = container.mainContext
-        let stamp = Date(timeIntervalSince1970: 123)
-        let password = TagItem(name: DiaryMemoTags.password, sortOrder: 0)
-        let duplicate = TagItem(name: DiaryMemoTags.password, sortOrder: 1, deletedAt: stamp)
-        let journal = TagItem(name: " 日记 ", sortOrder: 2, deletedAt: stamp)
-        for tag in [password, duplicate, journal] { context.insert(tag) }
-        try context.save()
-
-        let counts = try mutationCounts(in: context) { try repository.ensurePresetTags() }
-        #expect(counts.saves == 1)
-        #expect(counts.notifications == 1)
-        #expect(duplicate.deletedAt == stamp)
-        #expect(journal.deletedAt == stamp)
-        let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
-        #expect(tags.count == 4)
-        let liveNames = tags.filter { $0.deletedAt == nil }.map { TagSyntax.normalizedName($0.name) }
-        #expect(Set(liveNames) == Set([DiaryMemoTags.password, DiaryMemoTags.idea]))
-        let repeated = try mutationCounts(in: context) { try repository.ensurePresetTags() }
-        #expect(repeated.saves == 0 && repeated.notifications == 0)
+        #expect(tags.isEmpty)
     }
 
     @Test func unchangedPresetChecksDoNotCommitUnrelatedPendingEdits() throws {
         let (container, _, repository) = try makeRepos()
         let context = container.mainContext
-        try repository.ensurePresetTags()
+        _ = try repository.createTag(name: DiaryMemoTags.journal, sortOrder: 0)
         let todo = TodoItem(title: "已保存", dayKey: "2026-09-14")
         context.insert(todo)
         try context.save()
@@ -215,28 +185,6 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(context.hasChanges)
         #expect(todo.title == "尚未保存的编辑")
         #expect(try ModelContext(container).fetch(FetchDescriptor<TodoItem>()).first?.title == "已保存")
-    }
-
-    @Test func failedPresetRepairRollsBackCreationAndRestorationTogether() throws {
-        let (container, _, repository) = try makeRepos()
-        let context = container.mainContext
-        let stamp = Date(timeIntervalSince1970: 123)
-        let journal = TagItem(name: DiaryMemoTags.journal, sortOrder: 0, deletedAt: stamp)
-        context.insert(journal)
-        try context.save()
-
-        let counts = mutationCounts(in: context) {
-            #expect(throws: CocoaError.self) {
-                try ModelChanges.transaction(in: context, save: { _ in throw CocoaError(.fileWriteNoPermission) }) {
-                    try repository.ensurePresetTags()
-                }
-            }
-        }
-        #expect(counts.saves == 0 && counts.notifications == 0)
-        #expect(journal.deletedAt == stamp)
-        let tags = try ModelContext(container).fetch(FetchDescriptor<TagItem>())
-        #expect(tags.count == 1)
-        #expect(tags.first?.id == journal.id && tags.first?.deletedAt == stamp)
     }
 
     @Test func creatingAndRestoringTagsStillCommitOnce() throws {
@@ -367,25 +315,13 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(try diaryRepo.fetchDiary(id: newer.id)?.text == "retried text")
     }
 
-    @Test func purgedPresetIsNotRecreatedByEnsureOrKeyword() throws {
-        let suiteName = "areachain.tests.presets.\(UUID().uuidString)"
-        let suite = UserDefaults(suiteName: suiteName)!
-        suite.removePersistentDomain(forName: suiteName)
-        let previous = DiaryPresetRetention.defaultsOverride
-        DiaryPresetRetention.defaultsOverride = suite
-        defer {
-            DiaryPresetRetention.defaultsOverride = previous
-            suite.removePersistentDomain(forName: suiteName)
-        }
-
+    @Test func diaryCreationDoesNotAutoCreateOrAttachTagsByKeyword() throws {
         let (_, diaryRepo, catalogRepo) = try makeRepos()
-        try catalogRepo.ensurePresetTags()
-        let password = try #require(try catalogRepo.fetchTags().first { $0.name == DiaryMemoTags.password })
-        try catalogRepo.purgeTag(id: password.id)
-        _ = try diaryRepo.addDiary(text: "家里 wifi 密码", dayKey: "2026-09-30", tagIDs: [])
+        let entry = try diaryRepo.addDiary(text: "家里 wifi 密码", dayKey: "2026-09-30", tagIDs: [])
+        #expect(entry.tagIDs.isEmpty)
         try catalogRepo.ensurePresetTags()
         let names = try catalogRepo.fetchTags(includeDeleted: true).map(\.name)
-        #expect(!names.contains(DiaryMemoTags.password))
+        #expect(names.isEmpty)
     }
 
     @Test func catalogIdentityDeletedBatchColorAndUnlinkStayEquivalent() throws {
@@ -393,19 +329,18 @@ struct SwiftDataCatalogDiaryRepositoryTests {
         #expect(try catalogRepo.fetchTag(id: UUID()) == nil)
         let kept = try catalogRepo.createTag(name: "KeepColor", sortOrder: 0)
         let removed = try catalogRepo.createTag(name: "DropMe", sortOrder: 1)
-        try catalogRepo.ensurePresetTags()
-        let preset = try #require(try catalogRepo.fetchTags().first { $0.isDiaryPreset })
+        let extra = try catalogRepo.createTag(name: DiaryMemoTags.journal, sortOrder: 2)
 
         try catalogRepo.deleteTag(id: removed.id, soft: true)
         #expect(try catalogRepo.fetchTag(id: removed.id)?.deletedAt != nil)
         #expect(try catalogRepo.fetchTags(includeDeleted: false).map(\.id).contains(removed.id) == false)
         #expect(try catalogRepo.fetchTags(includeDeleted: true).contains { $0.id == removed.id })
 
-        try catalogRepo.batchSetColor(ids: [kept.id, preset.id], colorToken: TagColorToken.clay.rawValue)
+        try catalogRepo.batchSetColor(ids: [kept.id, extra.id], colorToken: TagColorToken.clay.rawValue)
         #expect(try catalogRepo.fetchTag(id: kept.id)?.colorToken == TagColorToken.clay.rawValue)
-        #expect(try catalogRepo.fetchTag(id: preset.id)?.colorToken == TagColorToken.default.rawValue)
+        #expect(try catalogRepo.fetchTag(id: extra.id)?.colorToken == TagColorToken.clay.rawValue)
         #expect(throws: RepositoryError.self) {
-            try catalogRepo.batchSetColor(ids: [preset.id], colorToken: TagColorToken.ink.rawValue)
+            try catalogRepo.batchSetColor(ids: [removed.id], colorToken: TagColorToken.ink.rawValue)
         }
         #expect(throws: RepositoryError.self) {
             try catalogRepo.batchSetColor(ids: [], colorToken: TagColorToken.ink.rawValue)

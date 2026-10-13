@@ -6,10 +6,11 @@ struct TagManagementPage: View {
     var saveTag: (String, ModelContext) -> TagItem? = { name, context in
         DayBoardMutations.createTag(name: name, context: context)
     }
-    @Environment(\.modelContext) private var modelContext
-    @Environment(\.locale) private var locale
+    var vault: PrivacyVault = .shared
+    @Environment(\.modelContext) var modelContext
+    @Environment(\.locale) var locale
 
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query private var todos: [TodoItem]
     @Query private var routines: [DailyRoutine]
     @Query private var diaries: [DiaryEntry]
@@ -19,9 +20,9 @@ struct TagManagementPage: View {
     @State private var searchFocused = false
     @State private var draftName = ""
     @State private var createFocused = false
-    @State private var showsCreate = false
     @State private var createError: String?
-    @State private var selection: Set<UUID> = []
+    @State var createAsPrivate = false
+    @State var selection: Set<UUID> = []
     @State private var renamingID: UUID?
     @State private var renameDraft = ""
     @State private var renameError: String?
@@ -29,9 +30,14 @@ struct TagManagementPage: View {
     @State private var confirmCleanup = false
     @State private var confirmPurge = false
     @State private var showsDeleted = false
-    @State private var mergeTarget: UUID?
-    @State private var showMerge = false
-    @State private var pageError: String?
+    @State var mergeTarget: UUID?
+    @State var showMerge = false
+    @State var showingPrivacySetup = false
+    @State var pendingPrivacyTagIDs: Set<UUID> = []
+    var customColors = CustomTagColorStore.shared
+    @State var showingColorPicker = false
+    @State var pendingColorTagIDs: Set<UUID> = []
+    @State var pageError: String?
 
     var body: some View {
         tagPage
@@ -57,6 +63,14 @@ struct TagManagementPage: View {
             mergeSheet
                 .environment(\.locale, locale)
         }
+        .sheet(isPresented: $showingPrivacySetup) {
+            privacySetupSheet
+                .environment(\.locale, locale)
+        }
+        .sheet(isPresented: $showingColorPicker) {
+            colorPickerSheet
+                .environment(\.locale, locale)
+        }
         .workspaceHeader(actions: headerActions)
     }
 
@@ -68,10 +82,6 @@ struct TagManagementPage: View {
 
     private var headerActions: [WorkspaceHeaderAction] {
         [
-            WorkspaceHeaderAction(id: "tags.create", title: "tags.create", systemImage: "plus", isEnabled: !showsDeleted) {
-                showsCreate = true
-                createFocused = true
-            },
             WorkspaceHeaderAction(id: "tags.cleanup", title: "tags.cleanup.unused", systemImage: "trash",
                                   isEnabled: !showsDeleted && !unusedOrdinary.isEmpty, overflowOnly: true) {
                 confirmCleanup = true
@@ -79,29 +89,70 @@ struct TagManagementPage: View {
         ]
     }
 
+    private var topInputsRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: DaybookSpacing.sm) {
+                searchField
+                    .frame(width: 240)
+                if !showsDeleted {
+                    createField
+                        .frame(minWidth: 280, maxWidth: .infinity)
+                }
+            }
+            VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
+                searchField.frame(maxWidth: 360)
+                if !showsDeleted {
+                    createField
+                }
+            }
+        }
+    }
+
+    private var toolbarRow: some View {
+        let selected = showsDeleted ? deletedSelection : liveSelection
+        return ViewThatFits(in: .horizontal) {
+            HStack(spacing: DaybookSpacing.sm) {
+                HStack(spacing: 6) { filterButtons }
+                    .fixedSize(horizontal: true, vertical: false)
+                Spacer(minLength: DaybookSpacing.xs)
+                if !selected.isEmpty {
+                    HStack(spacing: 6) { selectionActions(count: selected.count) }
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+            }
+            VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
+                filterBar
+                selectionToolbar
+            }
+        }
+    }
+
     @ViewBuilder private var selectionToolbar: some View {
         let selected = showsDeleted ? deletedSelection : liveSelection
         if !selected.isEmpty {
             ViewThatFits(in: .horizontal) {
-                HStack(spacing: DaybookSpacing.sm) { selectionActions(count: selected.count) }
+                HStack(spacing: 6) { selectionActions(count: selected.count) }
                 VStack(alignment: .leading, spacing: DaybookSpacing.xs) { selectionActions(count: selected.count) }
             }
-            .font(DaybookType.caption)
-            .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
         }
     }
 
     @ViewBuilder private func selectionActions(count: Int) -> some View {
-        Text("tags.selection.count \(count)").foregroundStyle(DaybookPalette.text.secondary)
+        Text("tags.selection.count \(count)")
+            .font(DaybookType.badge)
+            .foregroundStyle(DaybookPalette.text.tertiary)
         if showsDeleted {
-            Button("trash.restore", action: commitRestore)
-            Button("trash.purge") { confirmPurge = true }
+            actionChip(title: "trash.restore", systemImage: "arrow.uturn.backward", action: commitRestore)
+            actionChip(title: "trash.purge", systemImage: "trash", tint: DaybookPalette.status.danger) {
+                confirmPurge = true
+            }
         } else {
-            Button("tags.batch.delete") { confirmDelete = true }
+            actionChip(title: "tags.batch.delete", systemImage: "trash") { confirmDelete = true }
             if !ordinarySelection.isEmpty {
                 colorMenu
+                privacySelectionButtons
                 if ordinarySelection.count >= 2 {
-                    Button("tags.merge", action: beginMerge)
+                    actionChip(title: "tags.merge", systemImage: "arrow.triangle.merge", action: beginMerge)
                 }
             }
         }
@@ -109,10 +160,8 @@ struct TagManagementPage: View {
 
     private var pageContent: some View {
         VStack(alignment: .leading, spacing: DaybookSpacing.md) {
-            searchField.frame(maxWidth: 360)
-            filterBar
-            if showsCreate && !showsDeleted { createField }
-            selectionToolbar
+            topInputsRow
+            toolbarRow
             if let pageError {
                 Text(LocalizedStringKey(pageError))
                     .font(DaybookType.caption)
@@ -146,7 +195,7 @@ struct TagManagementPage: View {
         Catalog.liveTags(tags).filter { selection.contains($0.id) }
     }
 
-    private var ordinarySelection: [TagItem] {
+    var ordinarySelection: [TagItem] {
         liveSelection.filter { !$0.isDiaryPreset }
     }
 
@@ -159,7 +208,14 @@ struct TagManagementPage: View {
     }
 
     private var searchField: some View {
-        DaybookInputShell(kind: .search, focused: searchFocused) {
+        DaybookInputShell(
+            kind: .search,
+            focused: searchFocused,
+            configure: {
+                $0.height = DaybookMetrics.inputHeight
+                $0.radius = DaybookMetrics.Radius.inputComposer
+            }
+        ) {
             Image(systemName: "magnifyingglass")
                 .foregroundStyle(DaybookPalette.text.secondary)
         } field: {
@@ -194,11 +250,11 @@ struct TagManagementPage: View {
                 )
                 .accessibilityIdentifier("tags.create.input")
             } trailing: {
+                createPrivacyToggle
                 Button("tags.create", action: commitCreate)
                     .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
                     .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                     .accessibilityIdentifier("tags.create.submit")
-                DaybookIconButton(systemName: "xmark", label: "alert.cancel", size: .compact, action: cancelCreate)
             }
             if let createError {
                 Text(LocalizedStringKey(createError))
@@ -216,25 +272,29 @@ struct TagManagementPage: View {
     }
 
     @ViewBuilder private var filterButtons: some View {
-            ForEach(TagListFilter.allCases, id: \.self) { item in
-                Button(filterTitle(item)) {
-                    showsDeleted = false
-                    filter = item
-                }
-                .buttonStyle(DaybookButtonStyle(!showsDeleted && filter == item ? .prominent : .quiet, size: .compact))
+        ForEach(TagListFilter.allCases, id: \.self) { item in
+            filterChip(
+                title: filterTitle(item),
+                count: TagUsage.filtered(tags, filter: item, usage: usage).count,
+                isSelected: !showsDeleted && filter == item
+            ) {
+                showsDeleted = false
+                filter = item
             }
-            Button("tags.deleted.show") {
-                showsDeleted = true
-                selection.removeAll()
-            }
-            .buttonStyle(DaybookButtonStyle(showsDeleted ? .prominent : .quiet, size: .compact))
+        }
+        filterChip(
+            title: "tags.deleted.show",
+            count: deletedTags.count,
+            isSelected: showsDeleted
+        ) {
+            showsDeleted = true
+            selection.removeAll()
+        }
     }
 
     private var colorMenu: some View {
         Menu {
-            ForEach(TagColorToken.allCases, id: \.self) { token in
-                Button(colorTitle(token)) { applyColor(token) }
-            }
+            colorMenuItems(for: Set(ordinarySelection.map(\.id)))
         } label: {
             Text("tags.color")
                 .daybookMenuLabel(size: .compact, fitsLabel: true)
@@ -268,7 +328,7 @@ struct TagManagementPage: View {
         let count = usage[tag.id]?.activeCount ?? 0
         return HStack(spacing: 10) {
             DaybookStatusDot(color: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken), size: 10)
-                .accessibilityLabel(Text(colorTitle(tag.resolvedColorToken)))
+                .accessibilityLabel(colorAccessibilityLabel(for: tag))
             if renamingID == tag.id {
                 DaybookTextField(
                     text: $renameDraft,
@@ -285,11 +345,20 @@ struct TagManagementPage: View {
                     .font(DaybookType.body)
                     .foregroundStyle(DaybookPalette.text.primary)
                     .onTapGesture(count: 2) {
-                        guard tag.deletedAt == nil, !tag.isDiaryPreset else { return }
+                        guard tag.deletedAt == nil else { return }
                         renamingID = tag.id
                         renameDraft = tag.name
                         renameError = nil
                     }
+            }
+            if tag.isPrivateDiary {
+                HStack(spacing: 3) {
+                    Image(systemName: "lock.fill")
+                        .font(DaybookType.micro)
+                    Text("tags.privacy.badge")
+                        .font(DaybookType.badge)
+                }
+                .foregroundStyle(DaybookPalette.text.secondary)
             }
             Spacer(minLength: 8)
             Text(verbatim: L10n.format("tags.usage.count", locale: locale, count))
@@ -298,29 +367,7 @@ struct TagManagementPage: View {
                 .monospacedDigit()
         }
         .accessibilityElement(children: .combine)
-    }
-
-    private var mergeSheet: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("tags.merge.confirm.title")
-                .font(DaybookType.body.weight(.semibold))
-            Text("tags.merge.confirm.message")
-                .font(DaybookType.caption)
-                .foregroundStyle(DaybookPalette.text.secondary)
-            DaybookPicker("tags.merge.pickTarget", selection: Binding(
-                get: { mergeTarget ?? ordinarySelection.first?.id ?? UUID() },
-                set: { mergeTarget = $0 }
-            ), options: ordinarySelection.map { .init($0.id, verbatim: $0.name) })
-            HStack {
-                Spacer()
-                Button("alert.cancel") { showMerge = false }
-                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                Button("tags.merge") { commitMerge() }
-                    .buttonStyle(DaybookButtonStyle(.prominent, size: .compact))
-            }
-        }
-        .padding(DaybookSpacing.page)
-        .frame(width: 360)
+        .contextMenu { tagRowContextMenu(tag) }
     }
 
     private var emptyTitle: LocalizedStringKey {
@@ -337,7 +384,7 @@ struct TagManagementPage: View {
         }
     }
 
-    private func colorTitle(_ token: TagColorToken) -> LocalizedStringKey {
+    func colorTitle(_ token: TagColorToken) -> LocalizedStringKey {
         switch token {
         case .moss: "tags.color.moss"
         case .stamp: "tags.color.stamp"
@@ -354,28 +401,28 @@ struct TagManagementPage: View {
             createError = "tags.error.empty"
             return
         }
-        if DiaryMemoTags.isPresetName(name) {
-            createError = "tag.preset.reserved"
-            return
-        }
         let key = TagSyntax.normalizedName(name)
         if Catalog.liveTags(tags).contains(where: { TagSyntax.normalizedName($0.name) == key }) {
             createError = "tags.error.duplicate"
             return
         }
-        guard saveTag(name, modelContext) != nil else {
+        guard let created = saveTag(name, modelContext) else {
             createError = "tags.error.save"
             return
         }
+        let shouldAuthorize = createAsPrivate
         cancelCreate()
         pageError = nil
+        if shouldAuthorize {
+            requestSetPrivacy(ids: [created.id], isPrivate: true)
+        }
     }
 
     private func cancelCreate() {
         draftName = ""
         createError = nil
+        createAsPrivate = false
         createFocused = false
-        showsCreate = false
     }
 
     private func commitRename(_ tag: TagItem) {
@@ -383,10 +430,6 @@ struct TagManagementPage: View {
         guard !name.isEmpty else {
             renameError = "tags.error.empty"
             pageError = renameError
-            return
-        }
-        if DiaryMemoTags.isPresetName(name) {
-            pageError = "tag.preset.reserved"
             return
         }
         let key = TagSyntax.normalizedName(name)
@@ -416,16 +459,6 @@ struct TagManagementPage: View {
             return
         }
         pageError = nil
-    }
-
-    private func applyColor(_ token: TagColorToken) {
-        let ids = Set(ordinarySelection.map(\.id))
-        guard !ids.isEmpty else { return }
-        if DayBoardMutations.batchSetTagColor(ids: ids, colorToken: token.rawValue, context: modelContext) {
-            pageError = nil
-        } else {
-            pageError = "tags.error.save"
-        }
     }
 
     private func commitBatchDelete() {
@@ -459,22 +492,5 @@ struct TagManagementPage: View {
         } else {
             pageError = "tags.error.save"
         }
-    }
-
-    private func beginMerge() {
-        mergeTarget = ordinarySelection.first?.id
-        showMerge = true
-    }
-
-    private func commitMerge() {
-        guard let target = mergeTarget else { return }
-        let sources = ordinarySelection.map(\.id).filter { $0 != target }
-        guard DayBoardMutations.mergeTags(sourceIDs: sources, into: target, context: modelContext) else {
-            pageError = "tags.error.save"
-            return
-        }
-        selection = [target]
-        showMerge = false
-        pageError = nil
     }
 }

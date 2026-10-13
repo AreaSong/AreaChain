@@ -32,6 +32,12 @@ final class ClipboardHistorySession {
     private var didStart = false
 
     private(set) var items: [ClipboardHistoryRecord] = []
+    @ObservationIgnored private var itemsRevision = 0
+    @ObservationIgnored private var cachedVisibleKey: VisibleCacheKey?
+    @ObservationIgnored private var cachedVisibleRecords: [ClipboardHistoryRecord] = []
+    @ObservationIgnored private var cachedCountsRevision: Int?
+    @ObservationIgnored private var cachedCounts: [ClipboardContentFilter: Int] = [:]
+
     var query = ""
     var searchMode: ClipboardSearchMode = .mixed
     var recording = true
@@ -47,10 +53,19 @@ final class ClipboardHistorySession {
     var ignoredApps: [String] = []
     var extraTypes: [String] = []
     var patterns: [String] = []
+    var viewMode: ClipboardViewMode = .split
+    var contentFilter: ClipboardContentFilter = .all
     var selectedID: UUID?
     var noticeKey: String?
     var pageOwnsKeys = false
     var clipboardFieldFocused = false
+
+    private struct VisibleCacheKey: Equatable {
+        let revision: Int
+        let query: String
+        let mode: ClipboardSearchMode
+        let filter: ClipboardContentFilter
+    }
 
     init(
         store: ClipboardHistoryStore,
@@ -64,10 +79,30 @@ final class ClipboardHistorySession {
         self.gate = gate
         loadPreferences()
         items = store.load()
+        itemsRevision = 1
     }
 
     var visibleItems: [ClipboardHistoryRecord] {
-        ClipboardHistoryRules.filtered(items, query: query, mode: searchMode)
+        let source = items
+        let key = VisibleCacheKey(revision: itemsRevision, query: query, mode: searchMode, filter: contentFilter)
+        if cachedVisibleKey == key {
+            return cachedVisibleRecords
+        }
+        let computed = ClipboardHistoryRules.filtered(source, query: query, mode: searchMode, filter: contentFilter)
+        cachedVisibleKey = key
+        cachedVisibleRecords = computed
+        return computed
+    }
+
+    var filterCounts: [ClipboardContentFilter: Int] {
+        let source = items
+        if cachedCountsRevision == itemsRevision {
+            return cachedCounts
+        }
+        let computed = ClipboardHistoryRules.filterCounts(source)
+        cachedCountsRevision = itemsRevision
+        cachedCounts = computed
+        return computed
     }
 
     func start() {
@@ -86,6 +121,31 @@ final class ClipboardHistorySession {
     func imageData(for record: ClipboardHistoryRecord) -> Data? {
         guard let name = record.imageFile else { return nil }
         return store.imageData(named: name)
+    }
+
+    func thumbnailImage(for record: ClipboardHistoryRecord, maxPixelSize: Int = 96) -> NSImage? {
+        guard let name = record.imageFile else { return nil }
+        return store.thumbnailImage(named: name, maxPixelSize: maxPixelSize)
+    }
+
+    func cachedFullImage(for record: ClipboardHistoryRecord) -> NSImage? {
+        guard let name = record.imageFile else { return nil }
+        return store.cachedFullImage(named: name)
+    }
+
+    func fullImage(for record: ClipboardHistoryRecord) -> NSImage? {
+        guard let name = record.imageFile else { return nil }
+        return store.fullImage(named: name)
+    }
+
+    func loadFullImageAsync(for record: ClipboardHistoryRecord) async -> NSImage? {
+        guard let name = record.imageFile else { return nil }
+        return await store.loadFullImageAsync(named: name)
+    }
+
+    func imageMetadata(for record: ClipboardHistoryRecord) -> ClipboardImageMetadata? {
+        guard let name = record.imageFile else { return nil }
+        return store.imageMetadata(named: name)
     }
 
     func togglePin(_ id: UUID) {
@@ -197,6 +257,15 @@ final class ClipboardHistorySession {
         savePreferences()
     }
 
+    func setViewMode(_ mode: ClipboardViewMode) {
+        viewMode = mode
+        defaults.set(mode.rawValue, forKey: Keys.viewMode)
+    }
+
+    func setContentFilter(_ filter: ClipboardContentFilter) {
+        contentFilter = filter
+    }
+
     func armIgnoreNext() {
         ignoreNext = true
         noticeKey = "clipboard.ignoreNext.done"
@@ -283,6 +352,7 @@ final class ClipboardHistorySession {
     private func commit(_ next: [ClipboardHistoryRecord]) -> Bool {
         do {
             try store.save(next)
+            itemsRevision &+= 1
             items = next
             store.pruneImages(keeping: Set(next.compactMap(\.imageFile)))
             noticeKey = nil
@@ -305,6 +375,9 @@ final class ClipboardHistorySession {
         }
         if let raw = defaults.string(forKey: Keys.searchMode), let mode = ClipboardSearchMode(rawValue: raw) {
             searchMode = mode
+        }
+        if let raw = defaults.string(forKey: Keys.viewMode), let mode = ClipboardViewMode(rawValue: raw) {
+            viewMode = mode
         }
         ignoreUniversal = defaults.bool(forKey: Keys.ignoreUniversal)
         if let raw = defaults.string(forKey: Keys.panelAnchor), let anchor = ClipboardPanelAnchor(rawValue: raw) {
@@ -344,6 +417,7 @@ final class ClipboardHistorySession {
         static let limit = "areachain.clipboard.limit"
         static let interval = "areachain.clipboard.interval"
         static let searchMode = "areachain.clipboard.searchMode"
+        static let viewMode = "areachain.clipboard.viewMode"
         static let ignoreUniversal = "areachain.clipboard.ignoreUniversal"
         static let panelAnchor = "areachain.clipboard.panelAnchor"
         static let panelStaysOnTop = "areachain.clipboard.panelStaysOnTop"

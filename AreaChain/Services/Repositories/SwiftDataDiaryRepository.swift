@@ -74,8 +74,7 @@ final class SwiftDataDiaryRepository: DiaryRepositoryProtocol {
             throw RepositoryError.invalidArgument("手记内容不能为空")
         }
         return try ModelChanges.transaction(in: context) {
-            let automatic = DiaryMemoTags.autoTagNames(in: trimmed).filter { !DiaryPresetRetention.isDismissed($0) }
-            let names = TagSyntax.names(in: trimmed) + automatic
+            let names = TagSyntax.names(in: trimmed)
             let ids = try InputTagResolver.merging(names, into: TagIDList.encode(Array(tagIDs)), in: context)
             let entry = DiaryEntry(text: "", dayKey: dayKey, tagIDs: ids)
             try DiaryContent.write(

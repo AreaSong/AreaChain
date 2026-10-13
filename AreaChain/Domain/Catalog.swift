@@ -72,23 +72,18 @@ enum Catalog {
         items.filter { $0.deletedAt == nil }.sorted { $0.sortOrder < $1.sortOrder }
     }
 
-    /// 待办侧使用的标签，不含手记三分类。
+    /// 待办与侧栏统一展示全部存活标签。
     static func liveTaskTags(_ items: [TagItem]) -> [TagItem] {
-        liveTags(items).filter { !DiaryMemoTags.isPresetName($0.name) }
+        liveTags(items)
     }
 
-    /// 抽屉选择器：预设分类仅在该项已打上时出现，方便去掉。
+    /// 抽屉选择器展示全部存活标签。
     static func taskPickerTags(_ items: [TagItem], attachedIDs: String) -> [TagItem] {
         taskPickerTags(liveTags: liveTags(items), attachedIDs: attachedIDs)
     }
 
     static func taskPickerTags(liveTags: [TagItem], attachedIDs: String) -> [TagItem] {
-        liveTags.filter { tag in
-            if DiaryMemoTags.isPresetName(tag.name) {
-                return TagIDList.contains(attachedIDs, tag.id)
-            }
-            return true
-        }
+        liveTags
     }
 
     static func liveAttachments(for ownerID: UUID, in items: [AttachmentItem], ownerKind: AttachmentOwner? = nil) -> [AttachmentItem] {
@@ -106,6 +101,14 @@ enum Catalog {
 
     static func matchingTodos(_ items: [TodoItem], tag: TagItem?) -> [TodoItem] {
         items.filter { $0.deletedAt == nil && matches(tagIDs: $0.tagIDs, tag: tag) }
+    }
+
+    static func matchingDiaries(_ items: [DiaryEntry], tag: TagItem?) -> [DiaryEntry] {
+        items.filter { $0.deletedAt == nil && matches(tagIDs: $0.tagIDs, tag: tag) }
+            .sorted { lhs, rhs in
+                if lhs.isPinned != rhs.isPinned { return lhs.isPinned && !rhs.isPinned }
+                return lhs.createdAt > rhs.createdAt
+            }
     }
 
     static func matchingRoutines(_ items: [DailyRoutine], tag: TagItem?) -> [DailyRoutine] {

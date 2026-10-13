@@ -20,11 +20,13 @@ struct InputSyntaxPersistenceTests {
         let text = "#\" 密码 \" 测试正文"
         let entry = try SwiftDataDiaryRepository(container: store).addDiary(text: text, dayKey: "2026-09-13", tagIDs: [])
         let tags = try store.mainContext.fetch(FetchDescriptor<TagItem>())
+        let tag = try #require(tags.first)
         #expect(tags.map(\.name) == ["密码"])
         #expect(entry.text == text)
-        let tagMap = Dictionary(uniqueKeysWithValues: tags.map { ($0.id, $0.name) })
-        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tagNames: tagMap))
-        #expect(TagIDList.contains(entry.tagIDs, try #require(tags.first).id))
+        #expect(!DiaryPrivacy.isSensitive(entry.snapshot, tags: tags))
+        tag.isPrivateDiary = true
+        #expect(DiaryPrivacy.isSensitive(entry.snapshot, tags: tags))
+        #expect(TagIDList.contains(entry.tagIDs, tag.id))
     }
 
     @Test func confirmedExampleCreatesReusesAndSearchesARealTag() throws {

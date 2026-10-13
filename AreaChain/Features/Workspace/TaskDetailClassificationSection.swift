@@ -82,10 +82,6 @@ struct TaskDetailTagSelector: View {
                 Button(L10n.string("drawer.tag.create", locale: locale)) {
                     let name = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !name.isEmpty else { return }
-                    if DiaryMemoTags.isPresetName(name) {
-                        createError = L10n.string("tag.preset.reserved", locale: locale)
-                        return
-                    }
                     guard onCreateTag(name) else {
                         createError = L10n.string("save.failure.title", locale: locale)
                         return

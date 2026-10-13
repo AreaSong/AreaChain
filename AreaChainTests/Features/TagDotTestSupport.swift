@@ -40,7 +40,7 @@ final class TagDotTestSupport {
     }
 
     func window(sidebar: Bool, locale: String, scheme: ColorScheme, wide: Bool) -> NSWindow {
-        let size = NSSize(width: sidebar ? (wide ? 260 : 220) : (wide ? 720 : 480), height: 760)
+        let size = NSSize(width: sidebar ? (wide ? 260 : 220) : (wide ? 720 : 480), height: 860)
         if sidebar {
             return fixture.window(WorkspaceSidebarView(navigation: .shared, tags: tags, todos: [todo]),
                                   locale: locale, scheme: scheme, size: size)
@@ -86,7 +86,8 @@ final class TagDotTestSupport {
                                                     tag.sortOrder == 0 ? 1 : 0)))
         }
         let size: CGFloat = sidebar ? 8 : 10
-        let dot = NSRect(x: frame.minX, y: frame.midY - size / 2, width: size, height: size)
+        let dotOffset: CGFloat = sidebar ? WorkspaceLayout.sidebarRowHorizontalPadding : 0
+        let dot = NSRect(x: frame.minX + dotOffset, y: frame.midY - size / 2, width: size, height: size)
         try assertDot(rect: dot, in: window)
     }
 
@@ -118,7 +119,8 @@ final class TagDotTestSupport {
     static func color(_ tag: TagItem, sidebar: Bool, in window: NSWindow) throws -> [Int] {
         let frame = try Native.frame(row(tag, sidebar: sidebar, in: window), in: window)
         let view = try #require(window.contentView)
-        let point = view.convert(NSPoint(x: frame.minX + (sidebar ? 4 : 5), y: frame.midY), from: nil)
+        let dotCenterOffset: CGFloat = sidebar ? (WorkspaceLayout.sidebarRowHorizontalPadding + 4) : 5
+        let point = view.convert(NSPoint(x: frame.minX + dotCenterOffset, y: frame.midY), from: nil)
         let bitmap = try OverlaySurfaceTestSupport.bitmap(window)
         let y = view.isFlipped ? point.y : view.bounds.height - point.y
         let color = try #require(bitmap.colorAt(x: Int(point.x * CGFloat(bitmap.pixelsWide) / view.bounds.width),

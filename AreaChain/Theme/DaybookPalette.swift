@@ -173,9 +173,30 @@ enum DaybookPalette {
         }
     }
 
-    static func tagMark(name: String, token: String) -> Color {
-        if DiaryMemoTags.isPresetName(name) { return diaryPreset(forTagName: name) }
-        return tagColor(TagColorToken.resolved(token))
+    static func tagMark(name: String = "", token: String) -> Color {
+        if let preset = TagColorToken(rawValue: token) {
+            return tagColor(preset)
+        }
+        if let rgb = TagColorToken.rgbComponents(of: token) {
+            return Color(nsColor: NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0))
+        }
+        return tagColor(.default)
+    }
+
+    static func tagSwatchImage(token: String, size: CGFloat = 10) -> NSImage {
+        let nsColor: NSColor
+        if let rgb = TagColorToken.rgbComponents(of: token) {
+            nsColor = NSColor(srgbRed: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1.0)
+        } else {
+            nsColor = NSColor(tagMark(name: "", token: token))
+        }
+        let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+            nsColor.setFill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: 0.5, dy: 0.5)).fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 
     static func diaryPreset(forTagName name: String) -> Color {

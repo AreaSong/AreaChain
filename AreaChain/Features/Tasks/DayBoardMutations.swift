@@ -354,7 +354,7 @@ enum DayBoardMutations {
         ontoTodo todo: TodoItem? = nil, ontoRoutine routine: DailyRoutine? = nil
     ) -> Bool {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty, !DiaryMemoTags.isPresetName(trimmed) else { return false }
+        guard !trimmed.isEmpty else { return false }
         guard let tag = resolveTaskTag(named: trimmed, context: context) else { return false }
         return ModelChanges.attempt(in: context) {
             if let todo, !TagIDList.contains(todo.tagIDs, tag.id) {

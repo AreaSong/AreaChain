@@ -68,14 +68,18 @@ extension DiaryNoteCard {
         DayBoardMutations.toggleDiaryTag(entry, tagID: tagID)
     }
 
-    private func attachImage() {
+    func attachImage() {
         guard !(isPasswordType && isMasked) else { return }
         AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
     }
 
-    private func pasteImage() {
+    func pasteImage() {
         guard !(isPasswordType && isMasked) else { return }
-        AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
+        if let session = editingSession {
+            _ = session.pasteAttachment()
+        } else {
+            AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
+        }
     }
 
     private func inspectDiaryInWorkspace() {
@@ -96,7 +100,8 @@ extension DiaryNoteCard {
                 SyntaxTextEditor(
                     text: $session.text, focused: $editFocused,
                     placeholder: L10n.string("diary.composer.placeholder", locale: locale), onSubmit: saveTextEdit,
-                    commandChord: shortcuts.armedChord(for: .commitDiary)
+                    commandChord: shortcuts.armedChord(for: .commitDiary),
+                    onPasteImage: { session.pasteAttachment(from: $0) }
                 )
                 .frame(minHeight: 64, maxHeight: 160)
                 .onAppear { editFocused = true }
@@ -229,10 +234,7 @@ extension DiaryNoteCard {
     }
 
     private var attachActionButton: some View {
-        Button {
-            guard !(isPasswordType && isMasked) else { return }
-            AttachmentActions.pickDiaryImage(entry, context: modelContext, vault: privacyVault)
-        } label: {
+        Button(action: attachImage) {
             Image(systemName: "photo")
         }
         .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
@@ -242,10 +244,7 @@ extension DiaryNoteCard {
     }
 
     private var pasteActionButton: some View {
-        Button {
-            guard !(isPasswordType && isMasked) else { return }
-            AttachmentActions.pasteDiaryImage(entry, context: modelContext, vault: privacyVault)
-        } label: {
+        Button(action: pasteImage) {
             Image(systemName: "doc.on.clipboard")
         }
         .buttonStyle(DaybookButtonStyle(.icon, size: .compact))

@@ -108,6 +108,7 @@ extension PrivacyVault {
         updated.idleSeconds = seconds
         try updated.validate()
         try persist(updated)
+        touch()
     }
 
     func setPreferredMethod(_ method: PreferredUnlockMethod) throws {

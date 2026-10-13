@@ -93,11 +93,7 @@ struct DiarySummaryRow: View {
     }
 
     private var assignedTags: [TagItem] {
-        DiaryMemoTags.ordered(
-            allTags.filter { TagIDList.contains(entry.tagIDs, $0.id) },
-            name: { $0.name },
-            isActive: { _ in true }
-        )
+        allTags.filter { TagIDList.contains(entry.tagIDs, $0.id) }
     }
 
     private var assignedTagIDs: Set<UUID> {
@@ -362,7 +358,7 @@ struct DiarySummaryRow: View {
     }
 
     private func tagPill(_ tag: TagItem) -> some View {
-        DiaryTagPill(name: tag.name)
+        DiaryTagPill(name: tag.name, colorToken: tag.colorToken)
     }
 
     private var dateLabel: String {

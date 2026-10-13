@@ -8,18 +8,21 @@ struct DaybookSecureField: View {
     @Environment(\.isEnabled) private var isEnabled
     private let title: Text
     private let autoFocus: Bool
+    private let focusTrigger: Int
 
-    init(_ title: LocalizedStringKey, text: Binding<String>, autoFocus: Bool = false) {
+    init(_ title: LocalizedStringKey, text: Binding<String>, autoFocus: Bool = false, focusTrigger: Int = 0) {
         self.title = Text(title)
         _text = text
         self.autoFocus = autoFocus
+        self.focusTrigger = focusTrigger
     }
 
     /// 已解析的本地化文字必须原样呈现，不能再次当资源键查找。
-    init(verbatim title: String, text: Binding<String>, autoFocus: Bool = false) {
+    init(verbatim title: String, text: Binding<String>, autoFocus: Bool = false, focusTrigger: Int = 0) {
         self.title = Text(verbatim: title)
         _text = text
         self.autoFocus = autoFocus
+        self.focusTrigger = focusTrigger
     }
 
     var body: some View {
@@ -35,6 +38,9 @@ struct DaybookSecureField: View {
             if autoFocus {
                 DispatchQueue.main.async { focused = true }
             }
+        }
+        .onChange(of: focusTrigger) { _, _ in
+            DispatchQueue.main.async { focused = true }
         }
     }
 }

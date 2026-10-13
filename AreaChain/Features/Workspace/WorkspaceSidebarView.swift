@@ -110,11 +110,9 @@ struct WorkspaceSidebarView: View {
     }
 
     private var organizeSection: some View {
-        Section("sidebar.organize") {
-            tabRow(.tags)
-            ForEach(Catalog.liveTaskTags(tags)) { tag in
-                tagRow(tag)
-            }
+        let liveCount = Catalog.liveTaskTags(tags).count
+        return Section("sidebar.organize") {
+            tabRow(.tags, badgeCount: liveCount > 0 ? liveCount : nil)
         }
     }
 
@@ -140,33 +138,5 @@ struct WorkspaceSidebarView: View {
         ) {
             navigation.revealTab(tab)
         }
-    }
-
-    private func tagRow(_ tag: TagItem) -> some View {
-        let isSelected = !navigation.isShowingShellPreview && navigation.selectedTagID == tag.id
-        return Button {
-            navigation.selectedTagID = tag.id
-        } label: {
-            HStack(spacing: 8) {
-                DaybookStatusDot(color: DaybookPalette.tagMark(name: tag.name, token: tag.colorToken), size: 8)
-
-                Text(tag.name)
-                    .font(DaybookType.body.weight(isSelected ? .medium : .regular))
-                    .foregroundStyle(isSelected ? DaybookPalette.accent.base : DaybookPalette.text.primary)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-            }
-            .padding(.vertical, WorkspaceLayout.sidebarRowVerticalPadding)
-            .padding(.horizontal, WorkspaceLayout.sidebarRowHorizontalPadding)
-            .frame(minHeight: WorkspaceLayout.sidebarRowHeight)
-            .background(
-                RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous)
-                    .fill(isSelected ? DaybookPalette.fill.selection : Color.clear)
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain) // control: 侧栏标签行，整行点击
-        .accessibilityLabel(Text(tag.name))
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

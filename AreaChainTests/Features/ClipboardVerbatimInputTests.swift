@@ -168,6 +168,22 @@ struct ClipboardVerbatimInputTests {
         }
     }
 
+    @Test func splitViewRendersDetailPaneInWorkspaceWindow() async throws {
+        let fixture = try SearchMultilineFixture(
+            .clipboard, locale: "zh-Hans", scheme: .light, size: NSSize(width: 900, height: 640)
+        )
+        defer { fixture.cleanup() }
+        fixture.session.setViewMode(.split)
+        try await SystemPageHost.settle(fixture.window)
+        let splitLabels = FormInputTestSupport.labels(in: fixture.window)
+        #expect(splitLabels.contains("UTF-8"))
+
+        fixture.session.setViewMode(.list)
+        try await SystemPageHost.settle(fixture.window)
+        let listLabels = FormInputTestSupport.labels(in: fixture.window)
+        #expect(!listLabels.contains("UTF-8"))
+    }
+
     private func snapshot(_ window: NSWindow, name: String) throws {
         let view = try #require(window.contentView)
         let bitmap = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))

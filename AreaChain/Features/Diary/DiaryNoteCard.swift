@@ -3,16 +3,17 @@ import SwiftData
 import SwiftUI
 
 enum DiaryTagChrome {
-    static func color(for name: String) -> Color {
-        DaybookPalette.diaryPreset(forTagName: name)
+    static func color(for name: String, token: String = TagColorToken.default.rawValue) -> Color {
+        DaybookPalette.tagMark(name: name, token: token)
     }
 }
 
 struct DiaryTagPill: View {
     var name: String
+    var colorToken: String = TagColorToken.default.rawValue
 
     var body: some View {
-        let color = DiaryTagChrome.color(for: name)
+        let color = DiaryTagChrome.color(for: name, token: colorToken)
         Text("#" + name)
             .font(DaybookType.micro.weight(.medium))
             .lineLimit(1)
@@ -79,23 +80,25 @@ struct DiaryNoteCard: View {
     var displayedText: String { (try? DiaryContent.read(entry, vault: privacyVault)) ?? "" }
 
     private var assignedTags: [TagItem] {
-        DiaryMemoTags.ordered(
-            activeTags.filter { TagIDList.contains(entry.tagIDs, $0.id) },
-            name: { $0.name },
-            isActive: { _ in true }
-        )
+        activeTags.filter { TagIDList.contains(entry.tagIDs, $0.id) }
     }
 
     private var addableTags: [TagItem] {
-        DiaryMemoTags.ordered(
-            activeTags.filter { !TagIDList.contains(entry.tagIDs, $0.id) },
-            name: { $0.name },
-            isActive: { _ in true }
-        )
+        activeTags.filter { !TagIDList.contains(entry.tagIDs, $0.id) }
     }
 
     private var noteAttachments: [AttachmentRef] {
-        CatalogChoices.attachments(entry.id, in: attachments, ownerKind: .diary)
+        let base = CatalogChoices.attachments(entry.id, in: attachments, ownerKind: .diary)
+        guard let session = editingSession else { return base }
+        let kept = base.filter { !session.removedAttachmentIDs.contains($0.id) }
+        return kept + session.pendingAttachments.map(\.reference)
+    }
+
+    private var pendingAttachmentData: [UUID: Data] {
+        guard let session = editingSession else { return [:] }
+        return Dictionary(
+            uniqueKeysWithValues: session.pendingAttachments.map { ($0.reference.id, $0.data) }
+        )
     }
 
     var body: some View {
@@ -105,8 +108,12 @@ struct DiaryNoteCard: View {
             contentView
 
             if !noteAttachments.isEmpty, canRevealContent {
-                AttachmentThumbnails(items: noteAttachments)
-                    .padding(.top, 2)
+                AttachmentThumbnails(
+                    items: noteAttachments,
+                    inMemoryData: pendingAttachmentData,
+                    onRemove: isEditing ? { editingSession?.removeAttachment(id: $0.id) } : nil
+                )
+                .padding(.top, 2)
             }
 
             tagRow
@@ -180,7 +187,7 @@ struct DiaryNoteCard: View {
     }
 
     private func assignedTagChip(_ tag: TagItem) -> some View {
-        let color = DiaryTagChrome.color(for: tag.name)
+        let color = DaybookPalette.tagMark(name: tag.name, token: tag.colorToken)
         return DaybookChip(tint: color, isSelected: true, action: {
             PrivacyAccess.withDiary(entry, requiresUnlock: tag.isPrivateDiary, vault: privacyVault) { current in
                 DayBoardMutations.toggleDiaryTag(current, tagID: tag.id)
@@ -247,6 +254,7 @@ struct DiaryNoteCard: View {
 
     func copyContent(to pasteboard: NSPasteboard) {
         PrivacyAccess.withDiary(entry, vault: privacyVault) { current in
+            if current.hasProtectedContent || isPasswordType { privacyVault.touch() }
             DiaryContent.sealPendingIfNeeded(current, vault: privacyVault)
             let text = try DiaryContent.read(current, vault: privacyVault)
             guard PrivateClipboard.copy(text, sensitive: current.hasProtectedContent || isPasswordType, to: pasteboard) else {
@@ -261,6 +269,7 @@ struct DiaryNoteCard: View {
 
     func revealContent() {
         PrivacyAccess.withDiary(entry, requiresUnlock: editingSession?.needsUnlock == true, vault: privacyVault) { current in
+            if current.hasProtectedContent || isPasswordType { privacyVault.touch() }
             DiaryContent.sealPendingIfNeeded(current, vault: privacyVault)
             _ = try DiaryContent.read(current, vault: privacyVault)
             editingSession?.reveal()
@@ -269,6 +278,7 @@ struct DiaryNoteCard: View {
     }
 
     func maskContent() {
+        if entry.hasProtectedContent || isPasswordType { privacyVault.touch() }
         isMasked = true
         editingSession?.mask()
     }

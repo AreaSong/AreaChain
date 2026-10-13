@@ -85,6 +85,56 @@ struct ClipboardHistoryRecord: Codable, Equatable, Identifiable, Sendable {
         guard trimmed.count > 180 else { return trimmed }
         return String(trimmed.prefix(180))
     }
+
+    var kind: ClipboardRecordKind {
+        if !filePaths.isEmpty { return .file }
+        if imageFile != nil { return .image }
+        return .text
+    }
+
+    var characterCount: Int {
+        plainText.count
+    }
+
+    var lineCount: Int {
+        guard !plainText.isEmpty else { return 0 }
+        return plainText.components(separatedBy: .newlines).count
+    }
+
+    func matches(filter: ClipboardContentFilter) -> Bool {
+        switch filter {
+        case .all:
+            true
+        case .text:
+            kind == .text && !plainText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .image:
+            imageFile != nil
+        case .file:
+            !filePaths.isEmpty
+        case .pinned:
+            isPinned
+        }
+    }
+}
+
+enum ClipboardRecordKind: String, Equatable, Sendable {
+    case text
+    case image
+    case file
+}
+
+enum ClipboardViewMode: String, Codable, CaseIterable, Sendable {
+    case split
+    case grid
+    case list
+}
+
+enum ClipboardContentFilter: String, Codable, CaseIterable, Sendable {
+    case all
+    case text
+    case image
+    case file
+    case pinned
 }
 
 enum ClipboardSearchMode: String, Codable, CaseIterable, Sendable {
@@ -242,10 +292,21 @@ enum ClipboardHistoryRules {
     static func filtered(
         _ items: [ClipboardHistoryRecord],
         query: String,
-        mode: ClipboardSearchMode
+        mode: ClipboardSearchMode,
+        filter: ClipboardContentFilter = .all
     ) -> [ClipboardHistoryRecord] {
         let matching = ClipboardTextMatching(needle: query, mode: mode)
-        return ordered(items).filter { matching.matches($0.plainText) }
+        return ordered(items).filter { $0.matches(filter: filter) && matching.matches($0.plainText) }
+    }
+
+    static func filterCounts(_ items: [ClipboardHistoryRecord]) -> [ClipboardContentFilter: Int] {
+        var counts: [ClipboardContentFilter: Int] = [:]
+        for filter in ClipboardContentFilter.allCases {
+            counts[filter] = items.reduce(into: 0) { count, item in
+                if item.matches(filter: filter) { count += 1 }
+            }
+        }
+        return counts
     }
 
     static func merging(

@@ -9,7 +9,7 @@ struct DiaryPageOptions {
     var externalFilter: Binding<BoardFilter>? = nil
     var composerDraft: Binding<BoardComposerDraft>? = nil
     var vault: PrivacyVault? = nil
-    var initializesPresetTags = true
+    var initializesPresetTags = false
 }
 
 /// 灵感手记：按「密码 / 小巧思 / 日记」分类记录，可筛选、置顶与就地编辑。
@@ -93,7 +93,7 @@ struct DiaryPage: View {
     }
 
     private var orderedTags: [TagItem] {
-        DiaryMemoTags.ordered(activeTags, name: { $0.name }, isActive: { _ in true })
+        activeTags
     }
 
     func makeListModel() -> DiaryPageListModel {

@@ -9,17 +9,16 @@ enum DiaryPrivacy {
         return isEditing ? .editing : .text
     }
     static func isSensitive(_ entry: DiarySnapshot, tags: [TagItem]) -> Bool {
-        entry.isPrivate || hasPrivateMarker(entry.text) || tags.contains {
-            ($0.isPrivateDiary || DiaryMemoTags.isPasswordName($0.name)) && TagIDList.contains(entry.tagIDs, $0.id)
+        entry.isPrivate || tags.contains {
+            $0.isPrivateDiary && TagIDList.contains(entry.tagIDs, $0.id)
         }
     }
 
     static func isSensitive(
         _ entry: DiarySnapshot, tagNames: [UUID: String], privateTagIDs: Set<UUID> = []
     ) -> Bool {
-        entry.isPrivate || hasPrivateMarker(entry.text) || tagNames.contains {
-            TagIDList.contains(entry.tagIDs, $0.key)
-                && (privateTagIDs.contains($0.key) || DiaryMemoTags.isPasswordName($0.value))
+        entry.isPrivate || tagNames.contains {
+            TagIDList.contains(entry.tagIDs, $0.key) && privateTagIDs.contains($0.key)
         }
     }
 
@@ -36,7 +35,7 @@ enum DiaryPrivacy {
     }
 
     static func requiresProtection(text: String, tagIDs: Set<UUID>, tags: [TagItem]) -> Bool {
-        let names = Set((TagSyntax.names(in: text) + DiaryMemoTags.autoTagNames(in: text)).map(TagSyntax.normalizedName))
+        let names = Set(TagSyntax.names(in: text).map(TagSyntax.normalizedName))
         return tags.contains { tag in
             tag.isPrivateDiary && (tagIDs.contains(tag.id) || names.contains(TagSyntax.normalizedName(tag.name)))
         }
@@ -51,7 +50,7 @@ enum DiaryPrivacy {
         assign(entry, isPrivate: !entry.isPrivate)
     }
 
-    private static func hasPrivateMarker(_ text: String) -> Bool {
+    static func hasLegacyPrivateMarker(_ text: String) -> Bool {
         text.contains("#密码") || text.localizedCaseInsensitiveContains("#password")
     }
 }
