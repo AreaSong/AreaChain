@@ -37,9 +37,24 @@ struct AttachmentThumbnails: View {
     var onRemove: ((AttachmentRef) -> Void)? = nil
     @Environment(\.workspaceHostContext) private var hostContext
     @State private var currentID: UUID?
+    @State private var pendingTapID: UUID?
+    @State private var pendingTapWork: DispatchWorkItem?
 
     private var spacing: CGFloat { thumbnailSize > 28 ? 8 : 4 }
     private var cellPadding: CGFloat { onRemove != nil ? 4 : 0 }
+
+    private var currentAnchorRect: CGRect {
+        AttachmentCarouselSelection.anchorRect(
+            for: currentID, in: items, thumbnailSize: thumbnailSize, spacing: spacing, cellPadding: cellPadding
+        )
+    }
+
+    private var isPopoverPresented: Binding<Bool> {
+        Binding(
+            get: { AttachmentCarouselSelection.index(of: currentID, in: items) != nil },
+            set: { if !$0 { currentID = nil } }
+        )
+    }
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -48,27 +63,30 @@ struct AttachmentThumbnails: View {
             }
             LazyVGrid(
                 columns: [GridItem(.adaptive(minimum: thumbnailSize + cellPadding, maximum: thumbnailSize + cellPadding), spacing: spacing)],
-                alignment: .leading,
-                spacing: spacing
+                alignment: .leading, spacing: spacing
             ) {
                 ForEach(items) { item in thumbnailCell(item) }
             }
         }
+        .popover(isPresented: isPopoverPresented, attachmentAnchor: .rect(.rect(currentAnchorRect))) {
+            AttachmentPreviewCarouselView(
+                items: items, currentID: $currentID, anchorRect: currentAnchorRect, imageLoader: loadedImage,
+                onExpand: { openImageViewer(for: $0) },
+                onRemove: onRemove.map { action in { handleRemove($0, action: action) } }
+            )
+            .padding(12)
+        }
         .onChange(of: items.map(\.id)) { _, ids in reconcileSelection(with: ids) }
-        .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock)) { _ in currentID = nil }
-        .onReceive(NotificationCenter.default.publisher(for: .privacyMask)) { _ in currentID = nil }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock)) { _ in cancelAndClose() }
+        .onReceive(NotificationCenter.default.publisher(for: .privacyMask)) { _ in cancelAndClose() }
     }
 
     private func thumbnailCell(_ item: AttachmentRef) -> some View {
         ZStack(alignment: .topTrailing) {
-            Button {
-                openImageViewer(for: item)
-            } label: {
-                thumbnail(item)
-            }
-            .buttonStyle(.plain) // control: 附件缩略图点击区
-            .help(item.filename)
-            .accessibilityLabel("a11y.attachment \(item.filename)")
+            Button { handleThumbnailTap(item) } label: { thumbnail(item) }
+                .buttonStyle(.plain) // control: 附件缩略图点击区
+                .help(item.filename)
+                .accessibilityLabel("a11y.attachment \(item.filename)")
 
             if let onRemove {
                 AttachmentImageResolver.removeBadge(id: item.id, font: DaybookType.caption) {
@@ -80,15 +98,29 @@ struct AttachmentThumbnails: View {
         .padding(.trailing, cellPadding)
     }
 
+    private func handleThumbnailTap(_ item: AttachmentRef) {
+        if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
+            cancelAndClose()
+            openImageViewer(for: item)
+            return
+        }
+        pendingTapWork?.cancel()
+        pendingTapID = item.id
+        let work = DispatchWorkItem { pendingTapWork = nil; pendingTapID = nil; currentID = item.id }
+        pendingTapWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.20, execute: work)
+    }
+
     private func openImageViewer(for item: AttachmentRef) {
-        currentID = item.id
-        let loader = loadedImage
+        currentID = nil
         AttachmentImageViewerWindowController.shared.show(
-            items: items,
-            initialID: item.id,
-            imageLoader: loader,
+            items: items, initialID: item.id, imageLoader: loadedImage,
             onRemove: onRemove.map { action in { handleRemove($0, action: action) } }
         )
+    }
+
+    private func cancelAndClose() {
+        pendingTapWork?.cancel(); pendingTapWork = nil; pendingTapID = nil; currentID = nil
     }
 
     private func handleRemove(_ target: AttachmentRef, action: (AttachmentRef) -> Void) {
@@ -104,7 +136,7 @@ struct AttachmentThumbnails: View {
     }
 
     private func thumbnail(_ item: AttachmentRef) -> some View {
-        let isSelected = currentID == item.id && AttachmentImageViewerWindowController.shared.hostedWindow?.isVisible == true
+        let isSelected = currentID == item.id
         let isPending = inMemoryData[item.id] != nil
         let borderColor = isSelected
             ? DaybookPalette.accent.base
@@ -130,6 +162,8 @@ struct DiaryAttachmentPill: View {
     @Environment(\.workspaceHostContext) private var hostContext
     @State private var isPresented = false
     @State private var selectedID: UUID?
+    @State private var pendingTapID: UUID?
+    @State private var pendingTapWork: DispatchWorkItem?
 
     private let columns = Array(repeating: GridItem(.fixed(68), spacing: 10), count: 3)
 
@@ -139,56 +173,52 @@ struct DiaryAttachmentPill: View {
             isPresented.toggle()
         } label: {
             HStack(spacing: 5) {
-                if let latest = items.last {
-                    miniPreview(latest)
-                }
-                Text("drawer.attachments.title \(items.count)")
-                    .font(DaybookType.caption)
-                    .lineLimit(1)
-                Image(systemName: "chevron.up")
-                    .font(DaybookType.micro)
+                if let latest = items.last { miniPreview(latest) }
+                Text("drawer.attachments.title \(items.count)").font(DaybookType.caption).lineLimit(1)
+                Image(systemName: "chevron.up").font(DaybookType.micro)
             }
             .fixedSize()
         }
         .buttonStyle(DaybookButtonStyle(isPresented || hasPendingAdditions ? .active : .subtle, size: .compact))
         .accessibilityIdentifier("diary.window.attachments.pill")
-        .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-            popoverContent
-                .padding(12)
-        }
-        .onChange(of: items.isEmpty) { _, empty in
-            if empty { dismissPopover() }
-        }
+        .popover(isPresented: $isPresented, arrowEdge: .bottom) { popoverContent.padding(12) }
+        .onChange(of: items.isEmpty) { _, empty in if empty { dismissPopover() } }
         .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock)) { _ in dismissPopover() }
         .onReceive(NotificationCenter.default.publisher(for: .privacyMask)) { _ in dismissPopover() }
     }
 
     private func dismissPopover() {
-        selectedID = nil
-        isPresented = false
+        pendingTapWork?.cancel(); pendingTapWork = nil; pendingTapID = nil; selectedID = nil; isPresented = false
     }
 
     @ViewBuilder
     private var popoverContent: some View {
-        gridList
+        if AttachmentCarouselSelection.index(of: selectedID, in: items) != nil {
+            AttachmentPreviewCarouselView(
+                items: items, currentID: $selectedID, imageLoader: loadedImage,
+                onBack: { selectedID = nil },
+                onExpand: { openImageViewer(for: $0) },
+                onRemove: { target in
+                    selectedID = AttachmentCarouselSelection.nextIDAfterRemoving(target.id, in: items)
+                    onRemove(target)
+                }
+            )
+        } else {
+            gridList
+        }
     }
 
     private var gridList: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("drawer.attachments.title \(items.count)")
-                .font(DaybookType.subtitle)
-                .foregroundStyle(DaybookPalette.text.primary)
+                .font(DaybookType.subtitle).foregroundStyle(DaybookPalette.text.primary)
             ScrollView {
                 LazyVGrid(columns: columns, spacing: 10) {
-                    ForEach(items) { item in
-                        gridCell(item)
-                    }
+                    ForEach(items) { item in gridCell(item) }
                 }
-                .padding(.top, 4)
-                .padding(.trailing, 4)
+                .padding(.top, 4).padding(.trailing, 4)
             }
-            .frame(width: 232)
-            .frame(maxHeight: 210)
+            .frame(width: 232).frame(maxHeight: 210)
         }
     }
 
@@ -197,47 +227,44 @@ struct DiaryAttachmentPill: View {
         let borderColor = isPending ? DaybookPalette.accent.border : DaybookPalette.border.default
         return ZStack(alignment: .topTrailing) {
             Button {
-                let loader = loadedImage
-                isPresented = false
-                AttachmentImageViewerWindowController.shared.show(
-                    items: items,
-                    initialID: item.id,
-                    imageLoader: loader,
-                    onRemove: onRemove
-                )
+                if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == item.id && pendingTapWork != nil) {
+                    openImageViewer(for: item)
+                } else {
+                    pendingTapWork?.cancel(); pendingTapID = item.id
+                    let work = DispatchWorkItem { pendingTapWork = nil; pendingTapID = nil; selectedID = item.id }
+                    pendingTapWork = work
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.20, execute: work)
+                }
             } label: {
                 AttachmentImageResolver.box(
-                    image: loadedImage(item),
-                    size: 68,
-                    smallRadius: true,
-                    borderColor: borderColor,
-                    lineWidth: 1.0,
-                    placeholderFont: DaybookType.title
+                    image: loadedImage(item), size: 68, smallRadius: true,
+                    borderColor: borderColor, lineWidth: 1.0, placeholderFont: DaybookType.title
                 )
             }
             .buttonStyle(.plain) // control: 附件网格卡片预览点击区
             .help(item.filename)
 
-            AttachmentImageResolver.removeBadge(id: item.id, font: DaybookType.body) {
-                onRemove(item)
-            }
+            AttachmentImageResolver.removeBadge(id: item.id, font: DaybookType.body) { onRemove(item) }
         }
+    }
+
+    private func openImageViewer(for item: AttachmentRef) {
+        let loader = loadedImage
+        dismissPopover()
+        AttachmentImageViewerWindowController.shared.show(
+            items: items, initialID: item.id, imageLoader: loader, onRemove: onRemove
+        )
     }
 
     @ViewBuilder
     private func miniPreview(_ item: AttachmentRef) -> some View {
         if let image = loadedImage(item) {
             AttachmentImageResolver.box(
-                image: image,
-                size: 14,
-                smallRadius: false,
-                borderColor: DaybookPalette.border.default,
-                lineWidth: 0.8,
-                placeholderFont: DaybookType.micro
+                image: image, size: 14, smallRadius: false,
+                borderColor: DaybookPalette.border.default, lineWidth: 0.8, placeholderFont: DaybookType.micro
             )
         } else {
-            Image(systemName: "photo")
-                .font(DaybookType.micro)
+            Image(systemName: "photo").font(DaybookType.micro)
         }
     }
 
@@ -252,6 +279,7 @@ struct AttachmentPreviewCarouselView: View {
     var anchorRect: CGRect? = nil
     var imageLoader: (AttachmentRef) -> NSImage?
     var onBack: (() -> Void)? = nil
+    var onExpand: ((AttachmentRef) -> Void)? = nil
     var onRemove: ((AttachmentRef) -> Void)? = nil
 
     @State private var hasCopied = false
@@ -276,15 +304,11 @@ struct AttachmentPreviewCarouselView: View {
         .onAppear { installKeyMonitor() }
         .onDisappear {
             removeKeyMonitor()
-            activePopover = nil
-            basePositioningRect = nil
-            baseAnchorX = nil
+            activePopover = nil; basePositioningRect = nil; baseAnchorX = nil
         }
         .onReceive(NotificationCenter.default.publisher(for: NSPopover.willShowNotification)) { note in
             guard anchorRect != nil, activePopover == nil, let popover = note.object as? NSPopover else { return }
-            activePopover = popover
-            basePositioningRect = popover.positioningRect
-            baseAnchorX = anchorRect?.minX
+            activePopover = popover; basePositioningRect = popover.positioningRect; baseAnchorX = anchorRect?.minX
         }
         .onChange(of: anchorRect) { _, newRect in
             guard let newRect, let activePopover, activePopover.isShown,
@@ -333,6 +357,15 @@ struct AttachmentPreviewCarouselView: View {
                     .accessibilityIdentifier("attachment.preview.next")
             }
 
+            if let onExpand {
+                Button { onExpand(item) } label: {
+                    Image(systemName: "arrow.up.left.and.arrow.down.right")
+                }
+                .buttonStyle(DaybookButtonStyle(.icon, size: .compact))
+                .help("attachment.viewer.zoomIn")
+                .accessibilityIdentifier("attachment.preview.expand")
+            }
+
             Button { copyImage(item) } label: {
                 Image(systemName: hasCopied ? "checkmark" : "doc.on.doc")
             }
@@ -355,20 +388,18 @@ struct AttachmentPreviewCarouselView: View {
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
                 .fill(DaybookPalette.fill.surface)
             if let image = imageLoader(item) {
-                Image(nsImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .padding(6)
+                Image(nsImage: image).resizable().scaledToFit().padding(6)
             } else {
                 VStack(spacing: 6) {
                     Image(systemName: "photo").font(DaybookType.title)
                     Text(item.filename).font(DaybookType.caption)
                 }
-                .foregroundStyle(DaybookPalette.text.secondary)
-                .padding(12)
+                .foregroundStyle(DaybookPalette.text.secondary).padding(12)
             }
         }
         .frame(width: 340, height: 260)
+        .contentShape(Rectangle())
+        .onTapGesture(count: 2) { onExpand?(item) }
         .clipShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
@@ -422,11 +453,7 @@ private enum AttachmentImageResolver {
             Image(systemName: "xmark.circle.fill")
                 .font(font)
                 .foregroundStyle(DaybookPalette.text.primary)
-                .background(
-                    Circle() // token-exempt: 移除角标圆底，圆角由圆形自身决定
-                        .fill(DaybookPalette.fill.surface)
-                        .padding(1)
-                )
+                .background(Circle().fill(DaybookPalette.fill.surface).padding(1)) // token-exempt: 移除角标圆底，圆角由圆形自身决定
         }
         .buttonStyle(.plain) // control: 附件缩略图移除按钮
         .help("alert.trash.move")

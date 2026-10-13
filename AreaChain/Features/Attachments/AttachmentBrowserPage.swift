@@ -20,6 +20,10 @@ struct AttachmentBrowserPage: View {
     @State private var focusedStorageID: UUID?
     @State private var renamingStorageID: UUID?
     @State private var renameDraft = ""
+    @State private var previewID: UUID?
+    @State private var isPreviewPresented = false
+    @State private var pendingTapID: UUID?
+    @State private var pendingTapWork: DispatchWorkItem?
     @State private var pendingTrash: PendingTrash?
     @State private var poolRevision = 0
     @State private var projectionMemo = AttachmentProjectionMemo()
@@ -52,6 +56,21 @@ struct AttachmentBrowserPage: View {
             }
         }
         .workspaceHeader(actions: headerActions)
+        .popover(isPresented: $isPreviewPresented, arrowEdge: .bottom) {
+            AttachmentPreviewCarouselView(
+                items: displayed.map(\.primaryReference),
+                currentID: $previewID,
+                imageLoader: loadedFullImage(_:),
+                onExpand: { openImageViewer(for: $0, displayed: displayed) },
+                onRemove: { ref in
+                    isPreviewPresented = false
+                    if let match = displayed.first(where: { $0.primaryReference.id == ref.id }) {
+                        confirmSingleTrash(match)
+                    }
+                }
+            )
+            .padding(DaybookSpacing.sm)
+        }
         .confirmMoveToTrash($pendingTrash)
         .onChange(of: allItems.map(\.storageID)) { _, storageIDs in
             let valid = Set(storageIDs)
@@ -136,7 +155,7 @@ struct AttachmentBrowserPage: View {
             renameDraft: $renameDraft,
             loadImage: loadedThumbnail(_:),
             onToggleSelect: toggleSelect(_:),
-            onPreview: { openImageViewer(for: $0, displayed: displayed) },
+            onPreview: { handlePreviewTap($0, displayed: displayed) },
             onBeginRename: beginRename(_:),
             onCommitRename: commitRename(_:),
             onCancelRename: cancelRename,
@@ -181,7 +200,7 @@ struct AttachmentBrowserPage: View {
                         isRenaming: renamingStorageID == item.storageID,
                         renameDraft: $renameDraft,
                         onToggleSelect: { toggleSelect(item.storageID) },
-                        onPreview: { openImageViewer(for: item.primaryReference, displayed: displayed) },
+                        onPreview: { handlePreviewTap(item.primaryReference, displayed: displayed) },
                         onBeginRename: { beginRename(item) },
                         onCommitRename: { commitRename(item) },
                         onCancelRename: cancelRename,
@@ -195,7 +214,23 @@ struct AttachmentBrowserPage: View {
         .daybookScroll()
     }
 
+    private func handlePreviewTap(_ target: AttachmentRef, displayed: [AttachmentLibraryItem]) {
+        if (NSApp.currentEvent?.clickCount ?? 1) >= 2 || (pendingTapID == target.id && pendingTapWork != nil) {
+            openImageViewer(for: target, displayed: displayed)
+        } else {
+            pendingTapWork?.cancel(); pendingTapID = target.id
+            let work = DispatchWorkItem {
+                pendingTapWork = nil; pendingTapID = nil
+                previewID = target.id; isPreviewPresented = true
+            }
+            pendingTapWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.20, execute: work)
+        }
+    }
+
     private func openImageViewer(for target: AttachmentRef, displayed: [AttachmentLibraryItem]) {
+        pendingTapWork?.cancel(); pendingTapWork = nil; pendingTapID = nil
+        isPreviewPresented = false
         let refs = displayed.map(\.primaryReference)
         let loader = loadedFullImage(_:)
         AttachmentImageViewerWindowController.shared.show(
