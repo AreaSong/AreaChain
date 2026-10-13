@@ -5,14 +5,14 @@ import Testing
 struct ProjectSupportTests {
     @Test func environmentReportMatchesTheIssueFormAndOmitsUserContent() {
         let report = ProjectSupport.environmentReport(ProjectSupport.Environment(
-            appVersion: "0.1.0",
+            appVersion: "1.0.0",
             buildNumber: "1",
             macOSVersion: "26.0.1",
             interfaceLanguage: "zh-Hans"
         ))
         #expect(report == """
         ### 环境 / Environment
-        App 版本 / App version: 0.1.0 (1)
+        App 版本 / App version: 1.0.0 (1)
         macOS: 26.0.1
         界面语言 / Interface language: zh-Hans
         """)
