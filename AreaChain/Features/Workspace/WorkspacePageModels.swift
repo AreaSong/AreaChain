@@ -89,6 +89,46 @@ struct WorkspaceAllItemsPageModel {
     let visibleIDs: [UUID]
     let bundleIDs: [String]
 
+    private struct CacheKey: Equatable {
+        let liveQuery: ItemsListingQuery
+        let todayKey: String
+        let localeID: String
+        let fingerprint: Int
+    }
+
+    private static var cachedKey: CacheKey?
+    private static var cachedModel: WorkspaceAllItemsPageModel?
+
+    private static func computeFingerprint(
+        todos: [TodoItem],
+        routines: [DailyRoutine],
+        checks: [RoutineCheck]
+    ) -> Int {
+        var hasher = Hasher()
+        hasher.combine(todos.count)
+        hasher.combine(routines.count)
+        hasher.combine(checks.count)
+        for todo in todos {
+            hasher.combine(todo.id)
+            hasher.combine(todo.isDone)
+            hasher.combine(todo.dayKey)
+            hasher.combine(todo.title)
+            hasher.combine(todo.sortOrder)
+        }
+        for routine in routines {
+            hasher.combine(routine.id)
+            hasher.combine(routine.isEnabled)
+            hasher.combine(routine.sortOrder)
+        }
+        for check in checks {
+            hasher.combine(check.id)
+            hasher.combine(check.dayKey)
+            hasher.combine(check.isDone)
+            hasher.combine(check.isSkipped)
+        }
+        return hasher.finalize()
+    }
+
     static func make(
         routines: [DailyRoutine],
         todos: [TodoItem],
@@ -99,6 +139,12 @@ struct WorkspaceAllItemsPageModel {
     ) -> WorkspaceAllItemsPageModel {
         var liveQuery = navigation.allItemsQuery
         liveQuery.todayKey = todayKey
+        let fingerprint = computeFingerprint(todos: todos, routines: routines, checks: checks)
+        let key = CacheKey(liveQuery: liveQuery, todayKey: todayKey, localeID: locale.identifier, fingerprint: fingerprint)
+        if cachedKey == key, let cachedModel {
+            return cachedModel
+        }
+
         let todoSnaps = todos.map(\.snapshot)
         let routineSnaps = routines.map(\.snapshot)
         let checkSnaps = checks.compactMap(\.snapshot)
@@ -124,10 +170,10 @@ struct WorkspaceAllItemsPageModel {
         }
         var groups: [WorkspaceItemGroup] = []
         if liveQuery.kind != .recurring, !todoEntries.isEmpty {
-            let days = AllItemsDayOrder.ordered(todoEntries.map(\.checkDayKey), todayKey: todayKey)
+            let entriesByDay = Dictionary(grouping: todoEntries, by: \.checkDayKey)
+            let days = AllItemsDayOrder.ordered(Array(entriesByDay.keys), todayKey: todayKey)
             for (index, day) in days.enumerated() {
-                let entries = todoEntries.filter { $0.checkDayKey == day }
-                guard !entries.isEmpty else { continue }
+                guard let entries = entriesByDay[day], !entries.isEmpty else { continue }
                 groups.append(WorkspaceItemGroup(
                     id: "todos-\(day)",
                     title: index == 0 ? "items.section.todos" : nil,
@@ -141,12 +187,15 @@ struct WorkspaceAllItemsPageModel {
             groups.append(WorkspaceItemGroup(id: "routines", title: "items.section.routines", entries: routineEntries))
         }
         let bundleValues = todos.map(\.sourceBundleID) + routines.map(\.sourceBundleID)
-        return WorkspaceAllItemsPageModel(
+        let result = WorkspaceAllItemsPageModel(
             liveQuery: liveQuery,
             groups: groups,
             visibleIDs: (todoEntries + routineEntries).map(\.modelID),
             bundleIDs: Array(Set(bundleValues.filter { !$0.isEmpty })).sorted()
         )
+        cachedKey = key
+        cachedModel = result
+        return result
     }
 }
 

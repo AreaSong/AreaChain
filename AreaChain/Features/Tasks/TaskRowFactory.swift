@@ -163,9 +163,28 @@ enum TaskRowFactory {
             streak: streak,
             weekdayMask: context.routine.resolvedWeekdayMask
         )
+        let completedIDs: Set<UUID>
+        if let check = context.schedule.checks.first(where: { $0.routine?.id == context.routine.id && $0.dayKey == context.schedule.checkDayKey }) {
+            completedIDs = check.completedSubtaskIDSet
+        } else if let checkSnap = context.schedule.lookups?.routineCheckSnaps.first(where: { $0.routineId == context.routine.id && $0.dayKey == context.schedule.checkDayKey }) {
+            completedIDs = checkSnap.completedSubtaskIDSet
+        } else {
+            completedIDs = []
+        }
+        let routineSubtasks: [SubtaskSnapshot] = context.routine.subtaskTemplates.sorted { $0.sortOrder < $1.sortOrder }.map { template in
+            SubtaskSnapshot(
+                id: template.id,
+                todoId: context.routine.id,
+                title: template.title,
+                isDone: completedIDs.contains(template.id),
+                sortOrder: template.sortOrder,
+                tagIDs: template.tagIDs
+            )
+        }
         let content = TaskRowContentState(
             note: resolveResidentNote(context: context),
             notes: context.routine.notes,
+            subtasks: routineSubtasks,
             attachments: context.catalogs.attachments(ownerKind: .routine, ownerID: context.routine.id),
             classify: context.catalogs.classify(for: context.routine)
         )
@@ -216,7 +235,13 @@ enum TaskRowFactory {
             )
         case .setWeekdayMask(let mask):
             DayBoardMutations.setWeekdayMask(routine, mask: mask)
-        case .toggleSubtask: break
+        case .toggleSubtask(let subID):
+            DayBoardMutations.toggleRoutineSubtask(
+                routine,
+                subtaskID: subID,
+                on: context.schedule.checkDayKey,
+                context: context.catalogs.context
+            )
         }
     }
 }

@@ -4,15 +4,23 @@ extension DayBoardList {
     @ViewBuilder
     func openItemsSection(_ identity: DayBoardListIdentity) -> some View {
         let flatMode = AppPreferences.shared.expandSubtasksByDefault
-        let hasCompleted = !identity.doneRows.isEmpty || (flatMode && !identity.doneFlatSubtasksFromOpenTodos.isEmpty)
+        let doneSubtasks = flatMode ? identity.doneFlatSubtasksFromOpenRows(dayKey: dayKey) : []
+        let hasCompleted = !identity.doneRows.isEmpty || !doneSubtasks.isEmpty
         if identity.openRows.isEmpty && hasCompleted {
             allDoneBanner
         } else if !identity.openRows.isEmpty {
             ForEach(identity.openRows, id: \.listID) { row in
                 dayRow(row, isDone: false, identity: identity)
-                if flatMode, case .todo(let todo) = row {
-                    ForEach(identity.flatSubtasks(for: todo, isDone: false)) { subItem in
-                        flatSubtaskRow(subItem, parent: todo)
+                if flatMode {
+                    switch row {
+                    case .todo(let todo):
+                        ForEach(identity.flatSubtasks(for: todo, isDone: false)) { subItem in
+                            flatSubtaskRow(subItem, parent: todo)
+                        }
+                    case .resident(let routine):
+                        ForEach(identity.flatSubtasks(for: routine, dayKey: dayKey, isDone: false)) { subItem in
+                            flatSubtaskRow(subItem, routine: routine)
+                        }
                     }
                 }
             }
@@ -45,7 +53,7 @@ extension DayBoardList {
     @ViewBuilder
     func completedSection(_ identity: DayBoardListIdentity) -> some View {
         let flatMode = AppPreferences.shared.expandSubtasksByDefault
-        let doneSubtasks = flatMode ? identity.doneFlatSubtasksFromOpenTodos : []
+        let doneSubtasks = flatMode ? identity.doneFlatSubtasksFromOpenRows(dayKey: dayKey) : []
         let completedCount = identity.doneRows.count + doneSubtasks.count
 
         Divider()
@@ -79,24 +87,34 @@ extension DayBoardList {
         if showCompleted {
             ForEach(doneSubtasks) { subItem in
                 if let parent = identity.todo(subItem.parentID) {
-                    flatSubtaskRow(subItem, parent: parent)
+                    flatSubtaskRow(subItem, parent: parent, showsParentBadge: true)
+                } else if let routine = identity.routine(subItem.parentID) {
+                    flatSubtaskRow(subItem, routine: routine, showsParentBadge: true)
                 }
             }
             ForEach(identity.doneRows, id: \.listID) { row in
                 dayRow(row, isDone: true, identity: identity)
-                if flatMode, case .todo(let todo) = row {
-                    ForEach(identity.flatSubtasks(for: todo)) { subItem in
-                        flatSubtaskRow(subItem, parent: todo)
+                if flatMode {
+                    switch row {
+                    case .todo(let todo):
+                        ForEach(identity.flatSubtasks(for: todo)) { subItem in
+                            flatSubtaskRow(subItem, parent: todo, showsParentBadge: false)
+                        }
+                    case .resident(let routine):
+                        ForEach(identity.flatSubtasks(for: routine, dayKey: dayKey)) { subItem in
+                            flatSubtaskRow(subItem, routine: routine, showsParentBadge: false)
+                        }
                     }
                 }
             }
         }
     }
 
-    func flatSubtaskRow(_ subItem: FlatSubtaskItem, parent: TodoItem) -> some View {
+    func flatSubtaskRow(_ subItem: FlatSubtaskItem, parent: TodoItem, showsParentBadge: Bool = false) -> some View {
         FlatSubtaskRow(
             item: subItem,
             isSelected: false,
+            showsParentBadge: showsParentBadge,
             reduceMotion: reduceMotion,
             onToggle: {
                 guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
@@ -110,6 +128,27 @@ extension DayBoardList {
                 guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
                 pendingTrash = PendingTrash(title: sub.title) {
                     _ = DayBoardMutations.deleteSubtask(sub)
+                }
+            }
+        )
+    }
+
+    func flatSubtaskRow(_ subItem: FlatSubtaskItem, routine: DailyRoutine, showsParentBadge: Bool = false) -> some View {
+        FlatSubtaskRow(
+            item: subItem,
+            isSelected: false,
+            showsParentBadge: showsParentBadge,
+            reduceMotion: reduceMotion,
+            onToggle: {
+                _ = DayBoardMutations.toggleRoutineSubtask(routine, subtaskID: subItem.id, on: dayKey)
+            },
+            onSelect: {
+                focusedListID = BoardItemReference.recurring(routine.id).id
+                selectTask(routine.id)
+            },
+            onDelete: {
+                pendingTrash = PendingTrash(title: subItem.subtask.title) {
+                    _ = DayBoardMutations.deleteRoutineSubtask(routine: routine, subtaskID: subItem.id)
                 }
             }
         )

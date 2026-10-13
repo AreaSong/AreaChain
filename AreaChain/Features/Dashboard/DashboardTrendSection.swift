@@ -7,6 +7,7 @@ struct DashboardTrendSection: View {
     var navigation: WorkspaceNavigation
 
     @State private var hoveredDay: DashboardDayStat?
+    @State private var selectedInspectDayKey: String? = nil
 
     private var isEnglish: Bool {
         locale.language.languageCode?.identifier == "en"
@@ -17,7 +18,7 @@ struct DashboardTrendSection: View {
     }
 
     private var headerBadgeText: String? {
-        if let day = hoveredDay {
+        if let day = hoveredDay ?? days.first(where: { $0.dayKey == selectedInspectDayKey }) {
             let shortDate = DayKey.shortStamp(day.dayKey, locale: locale)
             return "\(shortDate) · \(day.completedCount)/\(day.scheduledCount)"
         }
@@ -30,7 +31,7 @@ struct DashboardTrendSection: View {
             DashboardSidebarSectionHeader(
                 "dashboard.trend.title",
                 badgeText: headerBadgeText,
-                isHighlightedBadge: hoveredDay != nil
+                isHighlightedBadge: hoveredDay != nil || selectedInspectDayKey != nil
             )
             if days.allSatisfy({ $0.scheduledCount == 0 }) {
                 Text("dashboard.trend.empty")
@@ -59,21 +60,35 @@ struct DashboardTrendSection: View {
 
     private func trendColumn(_ day: DashboardDayStat, percentFormatter: NumberFormatter) -> some View {
         let isHovered = hoveredDay?.dayKey == day.dayKey
+        let isSelected = selectedInspectDayKey == day.dayKey
         return Button {
-            DashboardNavigation.openCalendar(dayKey: day.dayKey, isPadding: false, navigation: navigation)
+            let isCmd = DashboardCommandKeyMonitor.isCommandDown || DashboardCommandKeyMonitor.shared.isCommandPressed
+            if isCmd {
+                selectedInspectDayKey = nil
+                navigation.inspectBoard(day.dayKey)
+            } else {
+                selectedInspectDayKey = isSelected ? nil : day.dayKey
+            }
         } label: {
-            columnLabel(day, isHovered: isHovered, percentFormatter: percentFormatter)
+            columnLabel(day, isHovered: isHovered || isSelected, percentFormatter: percentFormatter)
         }
         .buttonStyle(.plain) // control: 近 7 日趋势柱状按钮
         .onHover { hovering in
             if hovering {
                 hoveredDay = day
+                DashboardCommandKeyMonitor.shared.sync()
             } else if hoveredDay?.dayKey == day.dayKey {
                 hoveredDay = nil
             }
         }
         .accessibilityIdentifier("dashboard.trend.\(day.dayKey)")
-        .dashboardCommandPopover(arrowEdge: .top) {
+        .dashboardCommandPopover(
+            isPresented: Binding(
+                get: { selectedInspectDayKey == day.dayKey },
+                set: { if !$0 { selectedInspectDayKey = nil } }
+            ),
+            arrowEdge: .top
+        ) {
             trendHUD(day, percentFormatter: percentFormatter)
         }
     }
@@ -167,7 +182,12 @@ struct DashboardTrendSection: View {
                     trailing: "\(day.skippedCount)"
                 )
             ],
-            emptyText: ""
+            emptyText: "",
+            actionTitle: isEnglish ? "Open in Calendar" : "在日历中打开当天",
+            onAction: {
+                selectedInspectDayKey = nil
+                DashboardNavigation.openCalendar(dayKey: day.dayKey, isPadding: false, navigation: navigation)
+            }
         )
     }
 

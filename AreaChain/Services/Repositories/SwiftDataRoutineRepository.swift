@@ -236,9 +236,16 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
             check.isDone.toggle()
             if !check.isDone {
                 check.isSkipped = false
+                check.completedSubtaskIDs = ""
+            } else {
+                let allIDs = routine.subtaskTemplates.map(\.id)
+                check.completedSubtaskIDSet = Set(allIDs)
             }
         } else {
-            context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
+            let newCheck = RoutineCheck(dayKey: dayKey, isDone: true, routine: routine)
+            let allIDs = routine.subtaskTemplates.map(\.id)
+            newCheck.completedSubtaskIDSet = Set(allIDs)
+            context.insert(newCheck)
         }
         try saveAndNotify()
     }
@@ -247,10 +254,14 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         guard let routine = try fetchRoutine(id: id) else {
             throw RepositoryError.notFound("DailyRoutine(id: \(id))")
         }
+        let allIDs = routine.subtaskTemplates.map(\.id)
         if let check = check(on: routine, dayKey: dayKey) {
             check.isDone = true
+            check.completedSubtaskIDSet = Set(allIDs)
         } else {
-            context.insert(RoutineCheck(dayKey: dayKey, isDone: true, routine: routine))
+            let newCheck = RoutineCheck(dayKey: dayKey, isDone: true, routine: routine)
+            newCheck.completedSubtaskIDSet = Set(allIDs)
+            context.insert(newCheck)
         }
         try saveAndNotify()
     }
@@ -265,6 +276,45 @@ final class SwiftDataRoutineRepository: RoutineRepositoryProtocol {
         } else {
             context.insert(RoutineCheck(dayKey: dayKey, isDone: true, isSkipped: true, routine: routine))
         }
+        try saveAndNotify()
+    }
+
+    func toggleRoutineSubtask(id: UUID, subtaskID: UUID, dayKey: String) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        let targetCheck: RoutineCheck
+        if let existing = check(on: routine, dayKey: dayKey) {
+            targetCheck = existing
+        } else {
+            let newCheck = RoutineCheck(dayKey: dayKey, isDone: false, routine: routine)
+            context.insert(newCheck)
+            targetCheck = newCheck
+        }
+        var completed = targetCheck.completedSubtaskIDSet
+        if completed.contains(subtaskID) {
+            completed.remove(subtaskID)
+        } else {
+            completed.insert(subtaskID)
+        }
+        targetCheck.completedSubtaskIDSet = completed
+
+        let templates = routine.subtaskTemplates
+        if !templates.isEmpty {
+            let allDone = templates.allSatisfy { completed.contains($0.id) }
+            targetCheck.isDone = allDone
+            if !allDone {
+                targetCheck.isSkipped = false
+            }
+        }
+        try saveAndNotify()
+    }
+
+    func updateRoutineSubtaskTemplates(id: UUID, templates: [RoutineSubtaskTemplate]) throws {
+        guard let routine = try fetchRoutine(id: id) else {
+            throw RepositoryError.notFound("DailyRoutine(id: \(id))")
+        }
+        routine.subtaskTemplates = templates
         try saveAndNotify()
     }
 

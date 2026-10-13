@@ -282,12 +282,32 @@ struct DiaryPage: View {
                             quietEmptyWatermark
                         }
                     }
+
+                    if !showsPageHeader {
+                        blankClickArea
+                    }
                 }
-                .padding(.vertical, 4)
+                .padding(.top, 4)
+                .padding(.bottom, 24) // control: 预留底部安全距离，确保滚动到底部时卡片及阴影完整展现
+                .padding(.trailing, 2) // control: 预留右侧微间隙，避免右边框与悬浮滚动条重叠
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .background(
+                    BlankClickArea(onClick: clearSelection)
+                )
             }
-            .daybookScroll(featherEdges: true)
+            .daybookScroll(featherEdges: true, featherHeight: 12) // control: 提高羽化高度提升边缘平滑度
             .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
+            .background(
+                BlankClickArea(onClick: clearSelection)
+            )
             .onAppear { scrollToInspected(proxy) }
+            .onChange(of: selectedEntryID) { _, id in
+                if let id {
+                    withAnimation(DaybookMotion.interactive) {
+                        proxy.scrollTo(id, anchor: .center)
+                    }
+                }
+            }
             .onChange(of: boardSelection.inspectingDiaryID) { _, id in
                 if id != nil {
                     selectedTagID = nil
@@ -296,6 +316,17 @@ struct DiaryPage: View {
                 scrollToInspected(proxy)
             }
         }
+    }
+
+    private var blankClickArea: some View {
+        BlankClickArea(onClick: clearSelection)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minHeight: 48) // control
+    }
+
+    func clearSelection() {
+        selectedEntryID = nil
+        NSApp.keyWindow?.makeFirstResponder(nil)
     }
 
     @ViewBuilder private func entryRow(_ row: DiaryPageListModel.Row) -> some View {

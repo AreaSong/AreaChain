@@ -19,6 +19,7 @@ final class DailyRoutine {
     var sourceBundleID: String = ""
     var notes: String = ""
     var pausedOnDayKey: String?
+    var subtasksJSON: String = ""
 
     @Relationship(deleteRule: .cascade, inverse: \RoutineCheck.routine)
     var checks: [RoutineCheck]
@@ -39,7 +40,8 @@ final class DailyRoutine {
         isUrgent: Bool = false,
         sourceBundleID: String = "",
         notes: String = "",
-        pausedOnDayKey: String? = nil
+        pausedOnDayKey: String? = nil,
+        subtasksJSON: String = ""
     ) {
         self.id = id
         self.title = title
@@ -58,11 +60,26 @@ final class DailyRoutine {
         self.sourceBundleID = sourceBundleID
         self.notes = notes
         self.pausedOnDayKey = pausedOnDayKey
+        self.subtasksJSON = subtasksJSON
         self.checks = []
     }
 
     var resolvedWeekdayMask: Int {
         WeekdayMask.resolved(stored: weekdayMask, weekdaysOnly: weekdaysOnly)
+    }
+
+    var subtaskTemplates: [RoutineSubtaskTemplate] {
+        get {
+            guard !subtasksJSON.isEmpty, let data = subtasksJSON.data(using: .utf8) else { return [] }
+            return (try? JSONDecoder().decode([RoutineSubtaskTemplate].self, from: data)) ?? []
+        }
+        set {
+            if let data = try? JSONEncoder().encode(newValue), let str = String(data: data, encoding: .utf8) {
+                subtasksJSON = str
+            } else {
+                subtasksJSON = ""
+            }
+        }
     }
 
     var classifyBits: ClassifyBits {
@@ -96,9 +113,17 @@ final class DailyRoutine {
             isUrgent: isUrgent,
             sourceBundleID: sourceBundleID,
             notes: notes,
-            pausedOnDayKey: pausedOnDayKey
+            pausedOnDayKey: pausedOnDayKey,
+            subtasksJSON: subtasksJSON
         )
     }
+}
+
+struct RoutineSubtaskTemplate: Codable, Equatable, Identifiable {
+    var id: UUID = UUID()
+    var title: String
+    var sortOrder: Int = 0
+    var tagIDs: String = ""
 }
 
 @Model
@@ -107,6 +132,7 @@ final class RoutineCheck {
     var dayKey: String
     var isDone: Bool
     var isSkipped: Bool = false
+    var completedSubtaskIDs: String = ""
     var routine: DailyRoutine?
 
     init(
@@ -114,13 +140,26 @@ final class RoutineCheck {
         dayKey: String,
         isDone: Bool = false,
         isSkipped: Bool = false,
+        completedSubtaskIDs: String = "",
         routine: DailyRoutine? = nil
     ) {
         self.id = id
         self.dayKey = dayKey
         self.isDone = isDone
         self.isSkipped = isSkipped
+        self.completedSubtaskIDs = completedSubtaskIDs
         self.routine = routine
+    }
+
+    var completedSubtaskIDSet: Set<UUID> {
+        get {
+            guard !completedSubtaskIDs.isEmpty else { return [] }
+            let ids = completedSubtaskIDs.split(separator: ",").map(String.init).compactMap(UUID.init)
+            return Set(ids)
+        }
+        set {
+            completedSubtaskIDs = newValue.map(\.uuidString).sorted().joined(separator: ",")
+        }
     }
 
     var snapshot: CheckSnapshot? {
@@ -129,7 +168,8 @@ final class RoutineCheck {
             routineId: routineId,
             dayKey: dayKey,
             isDone: isDone,
-            isSkipped: isSkipped
+            isSkipped: isSkipped,
+            completedSubtaskIDs: completedSubtaskIDs
         )
     }
 }

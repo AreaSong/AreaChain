@@ -93,14 +93,14 @@ struct DashboardView: View {
     }
 
     private var headerStatusBadge: some View {
-        let active = commandMonitor.isCommandPressed
+        let active = commandMonitor.isCommandPressed || DashboardCommandKeyMonitor.isCommandDown
         return HStack(spacing: 5) {
             Image(systemName: "command")
                 .font(DaybookType.caption)
                 .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
             Text(verbatim: active
-                ? (isEnglish ? "HUD Active" : "透视已激活")
-                : (isEnglish ? "Hold ⌘ to inspect" : "按住 ⌘ 悬停透视"))
+                ? (isEnglish ? "⌘ + Click to Jump" : "⌘ + 点击 直达页面")
+                : (isEnglish ? "Hold ⌘ to Fast Jump" : "按住 ⌘ 点击直达"))
                 .font(DaybookType.caption)
                 .foregroundStyle(active ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
         }
@@ -110,6 +110,8 @@ struct DashboardView: View {
             RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 顶栏侧边栏同款胶囊徽章
                 .fill(active ? DaybookPalette.fill.selection : DaybookPalette.fill.hover)
         )
+        .scaleEffect(active ? 1.04 : 1.0)
+        .animation(DaybookMotion.snappy(reduceMotion), value: active)
     }
 
     private func openDiary(_ id: UUID) {

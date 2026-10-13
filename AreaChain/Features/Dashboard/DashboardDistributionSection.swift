@@ -11,6 +11,15 @@ struct DashboardDistributionSection: View {
     var navigation: WorkspaceNavigation
     var bonusRows: Int = 0
 
+    private enum QuadrantKey: String, Hashable {
+        case q1, q2, q3, q4
+    }
+
+    @State private var inspectingQuadrant: QuadrantKey? = nil
+    @State private var isInspectUpcoming = false
+    @State private var isInspectHabits = false
+    @State private var inspectingTagID: UUID? = nil
+
     private var liveTodos: [TodoItem] {
         todos.filter { $0.deletedAt == nil }
     }
@@ -52,12 +61,14 @@ struct DashboardDistributionSection: View {
             )
             HStack(spacing: 6) {
                 quadrantTile(
+                    key: .q1,
                     title: isEnglish ? "Urgent & Important" : "重要且紧急",
                     icon: "exclamationmark.circle",
                     items: q1,
                     isHighlighted: !q1.isEmpty
                 )
                 quadrantTile(
+                    key: .q2,
                     title: isEnglish ? "Important, Not Urgent" : "重要不紧急",
                     icon: "flag",
                     items: q2,
@@ -66,12 +77,14 @@ struct DashboardDistributionSection: View {
             }
             HStack(spacing: 6) {
                 quadrantTile(
+                    key: .q3,
                     title: isEnglish ? "Urgent, Not Important" : "紧急不重要",
                     icon: "bolt",
                     items: q3,
                     isHighlighted: false
                 )
                 quadrantTile(
+                    key: .q4,
                     title: isEnglish ? "Routine & Normal" : "日常事项",
                     icon: "tray",
                     items: q4,
@@ -82,13 +95,20 @@ struct DashboardDistributionSection: View {
     }
 
     private func quadrantTile(
+        key: QuadrantKey,
         title: String,
         icon: String,
         items: [TodoItem],
         isHighlighted: Bool
     ) -> some View {
-        DashboardSurfaceTile(isSelected: isHighlighted, fixedHeight: 44) {
-            navigation.revealTab(.quadrant)
+        let isInspecting = inspectingQuadrant == key
+        return DashboardSurfaceTile(
+            isSelected: isHighlighted,
+            fixedHeight: 44,
+            navigateAction: { navigation.revealTab(.quadrant) },
+            navigateTooltip: isEnglish ? "Open Quadrant View" : "前往四象限看板"
+        ) {
+            inspectingQuadrant = isInspecting ? nil : key
         } content: {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 5) {
@@ -103,11 +123,18 @@ struct DashboardDistributionSection: View {
                 }
                 Text(verbatim: "\(items.count)")
                     .font(DaybookType.title.monospacedDigit())
+                    .contentTransition(.numericText())
                     .foregroundStyle(DaybookPalette.text.primary)
                     .lineLimit(1)
             }
         }
-        .dashboardCommandPopover(arrowEdge: .top) {
+        .dashboardCommandPopover(
+            isPresented: Binding(
+                get: { inspectingQuadrant == key },
+                set: { if !$0 { inspectingQuadrant = nil } }
+            ),
+            arrowEdge: .top
+        ) {
             DashboardHUDCard(
                 icon: icon,
                 title: title,
@@ -120,7 +147,12 @@ struct DashboardDistributionSection: View {
                         trailing: DayKey.shortStamp($0.dayKey, locale: locale)
                     )
                 },
-                emptyText: isEnglish ? "No open items in this quadrant" : "该象限当前没有未完成事项"
+                emptyText: isEnglish ? "No open items in this quadrant" : "该象限当前没有未完成事项",
+                actionTitle: isEnglish ? "Go to Quadrant View" : "前往四象限看板",
+                onAction: {
+                    inspectingQuadrant = nil
+                    navigation.revealTab(.quadrant)
+                }
             )
         }
     }
@@ -132,11 +164,14 @@ struct DashboardDistributionSection: View {
             metricShortcutPill(
                 icon: "calendar.badge.clock",
                 title: isEnglish ? "Upcoming" : "未来排期",
-                count: upcomingTodos.count
+                count: upcomingTodos.count,
+                navigateAction: {
+                    DashboardNavigation.openPending(navigation, lane: .upcoming)
+                }
             ) {
-                DashboardNavigation.openPending(navigation, lane: .upcoming)
+                isInspectUpcoming.toggle()
             }
-            .dashboardCommandPopover(arrowEdge: .top) {
+            .dashboardCommandPopover(isPresented: $isInspectUpcoming, arrowEdge: .top) {
                 DashboardHUDCard(
                     icon: "calendar.badge.clock",
                     title: isEnglish ? "Upcoming Tasks" : "未来排期预告",
@@ -144,16 +179,40 @@ struct DashboardDistributionSection: View {
                     items: upcomingTodos.prefix(6).map {
                         .init(symbol: "clock", symbolColor: DaybookPalette.accent.base, title: $0.title, trailing: DayKey.shortStamp($0.dayKey, locale: locale))
                     },
-                    emptyText: isEnglish ? "No upcoming tasks" : "未来日期暂无待办事项"
+                    emptyText: isEnglish ? "No upcoming tasks" : "未来日期暂无待办事项",
+                    actionTitle: isEnglish ? "Go to Pending Page" : "前往待处理泳道",
+                    onAction: {
+                        isInspectUpcoming = false
+                        DashboardNavigation.openPending(navigation, lane: .upcoming)
+                    }
                 )
             }
 
             metricShortcutPill(
                 icon: "repeat",
                 title: isEnglish ? "Habits" : "常驻习惯",
-                count: liveRoutines.count
+                count: liveRoutines.count,
+                navigateAction: {
+                    navigation.revealRecurringList()
+                }
             ) {
-                navigation.revealRecurringList()
+                isInspectHabits.toggle()
+            }
+            .dashboardCommandPopover(isPresented: $isInspectHabits, arrowEdge: .top) {
+                DashboardHUDCard(
+                    icon: "repeat",
+                    title: isEnglish ? "Active Habits" : "常驻习惯列表",
+                    subtitle: isEnglish ? "\(liveRoutines.count) active habits" : "共 \(liveRoutines.count) 个常驻习惯",
+                    items: liveRoutines.prefix(6).map {
+                        .init(symbol: "repeat", symbolColor: DaybookPalette.text.secondary, title: $0.title, trailing: isEnglish ? "Active" : "启用中")
+                    },
+                    emptyText: isEnglish ? "No active routines" : "暂无启用中的重复习惯",
+                    actionTitle: isEnglish ? "Go to Routines" : "前往安排习惯",
+                    onAction: {
+                        isInspectHabits = false
+                        navigation.revealRecurringList()
+                    }
+                )
             }
 
             Spacer(minLength: 0)
@@ -161,8 +220,21 @@ struct DashboardDistributionSection: View {
         .padding(.top, 4)
     }
 
-    private func metricShortcutPill(icon: String, title: String, count: Int, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func metricShortcutPill(
+        icon: String,
+        title: String,
+        count: Int,
+        navigateAction: (() -> Void)? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            let isCmd = DashboardCommandKeyMonitor.isCommandDown || DashboardCommandKeyMonitor.shared.isCommandPressed
+            if isCmd, let navigateAction {
+                navigateAction()
+            } else {
+                action()
+            }
+        } label: {
             HStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(DaybookType.micro)
@@ -183,6 +255,11 @@ struct DashboardDistributionSection: View {
             )
         }
         .buttonStyle(.plain) // control: 规划指标胶囊按钮
+        .onHover { hovering in
+            if hovering {
+                DashboardCommandKeyMonitor.shared.sync()
+            }
+        }
     }
 
     // MARK: - 底部：标签速览胶囊条
@@ -225,8 +302,15 @@ struct DashboardDistributionSection: View {
     private func tagPill(tag: TagItem, items: [TodoItem]) -> some View {
         let color = DaybookPalette.tagMark(name: tag.name, token: tag.colorToken)
         let doneCount = items.filter(\.isDone).count
+        let isInspecting = inspectingTagID == tag.id
         return Button {
-            navigation.selectedTagID = tag.id
+            let isCmd = DashboardCommandKeyMonitor.isCommandDown || DashboardCommandKeyMonitor.shared.isCommandPressed
+            if isCmd {
+                inspectingTagID = nil
+                navigation.selectedTagID = tag.id
+            } else {
+                inspectingTagID = isInspecting ? nil : tag.id
+            }
         } label: {
             HStack(spacing: 5) {
                 DaybookStatusDot(color: color, size: 6)
@@ -236,17 +320,24 @@ struct DashboardDistributionSection: View {
                     .lineLimit(1)
                 Text(verbatim: "\(items.count)")
                     .font(DaybookType.badge.monospacedDigit())
+                    .contentTransition(.numericText())
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 3.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 标签统计纯白微浮胶囊
-                    .fill(DaybookPalette.fill.surface)
+                    .fill(isInspecting ? DaybookPalette.fill.selection : DaybookPalette.fill.surface)
             )
         }
         .buttonStyle(.plain) // control: 标签统计胶囊按钮
-        .dashboardCommandPopover(arrowEdge: .bottom) {
+        .dashboardCommandPopover(
+            isPresented: Binding(
+                get: { inspectingTagID == tag.id },
+                set: { if !$0 { inspectingTagID = nil } }
+            ),
+            arrowEdge: .bottom
+        ) {
             DashboardHUDCard(
                 icon: "tag",
                 title: tag.name,
@@ -260,7 +351,12 @@ struct DashboardDistributionSection: View {
                         trailing: DayKey.shortStamp($0.dayKey, locale: locale)
                     )
                 },
-                emptyText: ""
+                emptyText: "",
+                actionTitle: isEnglish ? "Filter Tasks by Tag" : "筛选该标签全部事项",
+                onAction: {
+                    inspectingTagID = nil
+                    navigation.selectedTagID = tag.id
+                }
             )
         }
     }

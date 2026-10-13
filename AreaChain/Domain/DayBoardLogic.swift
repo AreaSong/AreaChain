@@ -16,6 +16,8 @@ struct RoutineSnapshot: Equatable, Identifiable {
     var sourceBundleID: String = ""
     var notes: String = ""
     var pausedOnDayKey: String? = nil
+    var subtasksJSON: String = ""
+    var subtasks: [SubtaskSnapshot] = []
 
     var classifyBits: ClassifyBits {
         ClassifyBits(
@@ -32,7 +34,8 @@ struct RoutineSnapshot: Equatable, Identifiable {
             isImportant: isImportant,
             isUrgent: isUrgent,
             remindMinutes: remindMinutes,
-            createdAt: createdAt
+            createdAt: createdAt,
+            hasSubtasks: !subtasks.isEmpty
         )
     }
 }
@@ -42,6 +45,13 @@ struct CheckSnapshot: Equatable {
     var dayKey: String
     var isDone: Bool
     var isSkipped: Bool = false
+    var completedSubtaskIDs: String = ""
+
+    var completedSubtaskIDSet: Set<UUID> {
+        guard !completedSubtaskIDs.isEmpty else { return [] }
+        let ids = completedSubtaskIDs.split(separator: ",").map(String.init).compactMap(UUID.init)
+        return Set(ids)
+    }
 }
 
 struct SubtaskSnapshot: Equatable, Identifiable {

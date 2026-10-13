@@ -106,6 +106,9 @@ struct RoutineHabitSectionView: View {
                 DayBoardMutations.updateNotes(for: routine, notes: newNotes)
             }
             .id("notes-\(routine.id)")
+
+            RoutineDetailSubtasksView(routine: routine, boardDayKey: boardDayKey)
+                .id("subtasks-\(routine.id)")
         }
     }
 }

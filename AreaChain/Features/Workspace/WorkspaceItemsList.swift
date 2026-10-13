@@ -77,7 +77,7 @@ private struct RoutineCompletionPrompt {
 struct WorkspaceItemsList: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.locale) private var locale
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var groups: [WorkspaceItemGroup]
     var todayKey: String
@@ -86,7 +86,7 @@ struct WorkspaceItemsList: View {
     var emptyTitle: LocalizedStringKey
     var emptySubtitle: LocalizedStringKey = "items.empty.hint"
 
-    @Query(sort: \TagItem.sortOrder) private var tags: [TagItem]
+    @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
     @Query private var attachments: [AttachmentItem]
     @WorkspaceNavigationContext private var navigation
     @State private var pendingTrash: PendingTrash?
@@ -96,56 +96,54 @@ struct WorkspaceItemsList: View {
 
     var body: some View {
         let identity = makeIdentity()
-        ScrollView {
-            Group {
-                if identity.entries.isEmpty {
-                    DaybookEmptyState(
-                        title: emptyTitle,
-                        subtitle: emptySubtitle,
-                        systemImage: filterActive ? "line.3.horizontal.decrease" : "tray",
-                        centerVertically: true
-                    )
-                } else {
-                    let firstGroupID = groups.first?.id
-                    VStack(alignment: .leading, spacing: 2) {
-                        ForEach(groups) { group in
-                            if let title = group.title {
-                                DaybookSectionHeader(title: title, count: group.sectionCount ?? group.entries.count)
-                                    .padding(.top, group.id == firstGroupID ? 0 : DaybookSpacing.md - 2)
-                                    .padding(.bottom, DaybookSpacing.md - 2)
-                            }
-                            if let titleText = group.titleText {
-                                Text(titleText)
-                                    .font(DaybookType.caption.weight(.semibold))
-                                    .foregroundStyle(DaybookPalette.text.secondary)
-                                    .accessibilityAddTraits(.isHeader)
-                                    .padding(.top, (group.id == firstGroupID || group.title != nil) ? 0 : DaybookSpacing.md - 2)
-                                    .padding(.bottom, DaybookSpacing.md - 2)
-                            }
-                            ForEach(group.entries) { entry in
-                                row(entry, identity: identity)
-                                if AppPreferences.shared.expandSubtasksByDefault,
-                                   case .todo(let todo, _, let subtaskIDs) = entry {
-                                    let items = FlatSubtaskItem.build(
-                                        for: todo,
-                                        tags: tags,
-                                        allowedIDs: subtaskIDs,
-                                        isDone: todo.isDone ? nil : false
-                                    )
-                                    ForEach(items) { subItem in
-                                        flatSubtaskRow(subItem, parent: todo)
-                                    }
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                Group {
+                    if identity.entries.isEmpty {
+                        DaybookEmptyState(
+                            title: emptyTitle,
+                            subtitle: emptySubtitle,
+                            systemImage: filterActive ? "line.3.horizontal.decrease" : (emptyTitle == "items.empty.overdue" ? "checkmark.circle" : "tray"),
+                            centerVertically: true
+                        )
+                    } else {
+                        let firstGroupID = groups.first?.id
+                        LazyVStack(alignment: .leading, spacing: 2) {
+                            ForEach(groups) { group in
+                                if let title = group.title {
+                                    DaybookSectionHeader(title: title, count: group.sectionCount ?? group.entries.count)
+                                        .padding(.top, group.id == firstGroupID ? 0 : DaybookSpacing.md - 2)
+                                        .padding(.bottom, DaybookSpacing.md - 2)
+                                }
+                                if let titleText = group.titleText {
+                                    Text(titleText)
+                                        .font(DaybookType.caption.weight(.semibold))
+                                        .foregroundStyle(DaybookPalette.text.secondary)
+                                        .accessibilityAddTraits(.isHeader)
+                                        .padding(.top, (group.id == firstGroupID || group.title != nil) ? 0 : DaybookSpacing.md - 2)
+                                        .padding(.bottom, DaybookSpacing.md - 2)
+                                }
+                                ForEach(group.entries) { entry in
+                                    row(entry, identity: identity)
+                                    flatSubtaskRows(for: entry)
                                 }
                             }
                         }
                     }
                 }
+                .padding(.vertical, 2)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
             }
-            .padding(.vertical, 2)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .daybookScroll()
+            .daybookTopScrollBlur(height: 18)
+            .onChange(of: navigation.selectedTaskID) { _, newID in
+                if let newID {
+                    withAnimation(DaybookMotion.smooth(reduceMotion)) {
+                        scrollProxy.scrollTo(newID, anchor: .center)
+                    }
+                }
+            }
         }
-        .daybookScroll()
-        .daybookTopScrollBlur(height: 18)
         .environment(\.boardReorderEntries, reorderEntries(identity))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .focusable()
@@ -162,10 +160,10 @@ struct WorkspaceItemsList: View {
         }
         .onChange(of: identity.entryIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
-            publishCheckDays(makeIdentity())
+            publishCheckDays(identity)
         }
         .onChange(of: identity.checkDaySignature) { _, _ in
-            publishCheckDays(makeIdentity())
+            publishCheckDays(identity)
         }
     }
 
@@ -194,23 +192,6 @@ struct WorkspaceItemsList: View {
         let selected = navigation.selectedTaskIDs.contains(entry.modelID) || navigation.selectedTaskID == entry.modelID
         return rowView(entry, selected: selected, identity: identity)
             .id(entry.modelID)
-    }
-
-    private func flatSubtaskRow(_ subItem: FlatSubtaskItem, parent: TodoItem) -> some View {
-        FlatSubtaskRow(
-            item: subItem,
-            isSelected: false,
-            reduceMotion: reduceMotion,
-            onToggle: {
-                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
-                _ = DayBoardMutations.toggleSubtask(sub)
-            },
-            onSelect: { select(parent.id, modifiers: []) },
-            onDelete: {
-                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
-                askTrash(title: sub.title) { _ = DayBoardMutations.deleteSubtask(sub) }
-            }
-        )
     }
 
     @ViewBuilder
@@ -322,9 +303,11 @@ struct WorkspaceItemsList: View {
         let identity = makeIdentity()
         guard let entry = identity.entry(id) else { return }
         if modifiers.isEmpty {
-            navigation.clearSelection()
-            navigation.inspectTask(id, dayKey: entry.checkDayKey)
-            navigation.inspectedReference = entry.reference
+            withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                navigation.clearSelection()
+                navigation.inspectTask(id, dayKey: entry.checkDayKey)
+                navigation.inspectedReference = entry.reference
+            }
             return
         }
         navigation.selectTask(id, in: identity.entryIDs, modifiers: modifiers)
@@ -362,8 +345,12 @@ struct WorkspaceItemsList: View {
         }
     }
 
-    private func askTrash(title: String, action: @escaping () -> Void) {
+    func askTrash(title: String, action: @escaping () -> Void) {
         pendingTrash = PendingTrash(title: title, confirm: action)
+    }
+
+    func selectTask(_ id: UUID) {
+        select(id, modifiers: TaskSelectionModifiers())
     }
 
     private func skip(_ routine: DailyRoutine, on day: String) {

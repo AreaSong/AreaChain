@@ -31,6 +31,19 @@ struct WorkspaceItemsListIdentity {
         )
     }
 
+    private struct CacheKey: Equatable {
+        let entryIDs: [UUID]
+        let checksCount: Int
+        let checksFingerprint: Int
+        let tagsCount: Int
+        let attachmentsCount: Int
+        let todayKey: String
+        let localeID: String
+    }
+
+    private static var cachedKey: CacheKey?
+    private static var cachedIdentity: WorkspaceItemsListIdentity?
+
     static func make(
         groups: [WorkspaceItemGroup],
         todayKey: String,
@@ -41,6 +54,32 @@ struct WorkspaceItemsListIdentity {
         locale: Locale
     ) -> WorkspaceItemsListIdentity {
         let entries = groups.flatMap(\.entries)
+        let entryIDs = entries.map(\.modelID)
+
+        var hasher = Hasher()
+        for check in checks {
+            hasher.combine(check.id)
+            hasher.combine(check.isDone)
+            hasher.combine(check.isSkipped)
+            hasher.combine(check.completedSubtaskIDs)
+            hasher.combine(check.dayKey)
+        }
+        let checksFingerprint = hasher.finalize()
+
+        let key = CacheKey(
+            entryIDs: entryIDs,
+            checksCount: checks.count,
+            checksFingerprint: checksFingerprint,
+            tagsCount: tags.count,
+            attachmentsCount: attachments.count,
+            todayKey: todayKey,
+            localeID: locale.identifier
+        )
+
+        if cachedKey == key, let cachedIdentity {
+            return cachedIdentity
+        }
+
         let entriesByID = Dictionary(entries.map { ($0.modelID, $0) }, uniquingKeysWith: { first, _ in first })
         let checkSnaps = checks.compactMap(\.snapshot)
         let checkIndex = DayBoardCheckIndex(checkSnaps)
@@ -49,9 +88,9 @@ struct WorkspaceItemsListIdentity {
             guard case .routine(let routine, _, _, _, _) = entry else { return nil }
             return routine.snapshot
         }
-        return WorkspaceItemsListIdentity(
+        let result = WorkspaceItemsListIdentity(
             entries: entries,
-            entryIDs: entries.map(\.modelID),
+            entryIDs: entryIDs,
             checkIndex: checkIndex,
             checksByRoutine: checksByRoutine,
             catalogs: TaskCatalogContext(tags: tags, attachments: attachments, context: context),
@@ -65,5 +104,8 @@ struct WorkspaceItemsListIdentity {
             locale: locale,
             entriesByID: entriesByID
         )
+        cachedKey = key
+        cachedIdentity = result
+        return result
     }
 }

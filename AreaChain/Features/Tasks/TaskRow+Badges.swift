@@ -143,7 +143,11 @@ extension TaskRow {
     var subtasksExpandedBinding: Binding<Bool> {
         Binding(
             get: { isSubtasksExpanded },
-            set: { subtaskExpansionOverride = $0 }
+            set: { newValue in
+                withAnimation(DaybookMotion.collapse(reduceMotion)) {
+                    subtaskExpansionOverride = newValue
+                }
+            }
         )
     }
 

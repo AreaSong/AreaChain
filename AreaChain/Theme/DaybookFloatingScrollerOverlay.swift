@@ -15,6 +15,8 @@ final class DaybookFloatingScrollerOverlay: NSView {
     private var fadeTimer: Timer?
     private var boundsObserver: NSObjectProtocol?
     private var liveScrollObserver: NSObjectProtocol?
+    private var scrollEndObserver: NSObjectProtocol?
+    private var isLiveScrolling = false
     private var trackingArea: NSTrackingArea?
 
     override var isFlipped: Bool { true }
@@ -37,6 +39,9 @@ final class DaybookFloatingScrollerOverlay: NSView {
         }
         if let liveScrollObserver {
             NotificationCenter.default.removeObserver(liveScrollObserver)
+        }
+        if let scrollEndObserver {
+            NotificationCenter.default.removeObserver(scrollEndObserver)
         }
     }
 
@@ -64,16 +69,22 @@ final class DaybookFloatingScrollerOverlay: NSView {
         }
 
         liveScrollObserver = NotificationCenter.default.addObserver(
-            forName: NSScrollView.didLiveScrollNotification,
+            forName: NSScrollView.willStartLiveScrollNotification,
             object: scrollView,
             queue: .main
         ) { [weak self] _ in
-            self?.handleScroll()
+            self?.handleLiveScrollStart()
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) { [weak self] in
-            self?.flash()
+        scrollEndObserver = NotificationCenter.default.addObserver(
+            forName: NSScrollView.didEndLiveScrollNotification,
+            object: scrollView,
+            queue: .main
+        ) { [weak self] _ in
+            self?.handleLiveScrollEnd()
         }
+
+        // 静默初始化：避免每次弹窗展示时自动闪烁滚动条压盖右侧卡片，仅在用户发生滚动或悬停槽道时显现
     }
 
     func flash() {
@@ -107,6 +118,20 @@ final class DaybookFloatingScrollerOverlay: NSView {
     private func handleScroll() {
         updateKnobGeometry()
         reveal()
+    }
+
+    private func handleLiveScrollStart() {
+        isLiveScrolling = true
+        fadeTimer?.invalidate()
+        fadeTimer = nil
+        if alphaValue < 1.0 {
+            animator().alphaValue = 1.0
+        }
+    }
+
+    private func handleLiveScrollEnd() {
+        isLiveScrolling = false
+        scheduleFadeOut()
     }
 
     private func updateKnobGeometry() {
@@ -171,16 +196,17 @@ final class DaybookFloatingScrollerOverlay: NSView {
     }
 
     private func reveal() {
-        fadeTimer?.invalidate()
-        fadeTimer = nil
-
         if alphaValue < 1.0 {
+            fadeTimer?.invalidate()
+            fadeTimer = nil
             NSAnimationContext.runAnimationGroup { context in
                 context.duration = 0.12
                 self.animator().alphaValue = 1.0
             }
         }
-        scheduleFadeOut()
+        if !isLiveScrolling {
+            scheduleFadeOut()
+        }
     }
 
     private func scheduleFadeOut() {

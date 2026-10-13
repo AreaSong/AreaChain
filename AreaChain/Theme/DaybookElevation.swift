@@ -8,6 +8,7 @@ struct DaybookElevation: Equatable {
     let y: CGFloat
 
     static let flat = DaybookElevation(color: .clear, radius: 0, y: 0)
+    static let card = DaybookElevation(color: Color.black.opacity(0.08), radius: 1.5, y: 0.5)
     static let raised = DaybookElevation(color: Color.black.opacity(0.08), radius: 1.5, y: 0.5)
     static let panel = DaybookElevation(color: Color.black.opacity(0.26), radius: 3.5, y: 1)
     static let floating = DaybookElevation(color: Color.black.opacity(0.14), radius: 8, y: 2)

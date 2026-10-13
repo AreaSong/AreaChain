@@ -122,12 +122,11 @@ struct InlineSubtaskCompletionTests {
         try await NativeSyntaxUI.prepareFocus(in: window)
         try await SystemPageHost.settle(window)
 
-        // 开启平铺后，两条未完成子任务作为独立数据条平铺展示，并带有右侧所属主任务标志徽标
+        // 开启平铺后，两条未完成子任务作为独立数据条平铺展示（左侧树状缩进对齐），可直接获取勾选按钮
         let firstButton = try Native.button("task.subtask.complete.\(fixture.subtasks[0].id)", in: window)
-        let firstParentBadge = try Native.button("task.subtask.parentBadge.\(fixture.subtasks[0].id)", in: window)
-        try Native.assertBounds([firstButton, firstParentBadge], in: window)
+        try Native.assertBounds([firstButton], in: window)
 
-        // 勾选完成第一条子任务后，未完成平铺列表仅剩第二条子任务，第一条进入已完成平铺集合
+        // 勾选完成第一条子任务后，未完成平铺列表仅剩第二条子任务，第一条进入已完成平铺集合（携带父任务标题以供徽标渲染）
         fixture.subtasks[0].isDone = true
         let identity = DayBoardListIdentity.make(
             dayKey: "2026-10-01",

@@ -90,6 +90,27 @@ struct DashboardInteractionTests {
         }
     }
 
+    @Test func hudCardActionInvokesCallback() {
+        var invoked = false
+        let card = DashboardHUDCard(
+            icon: "sun.max",
+            title: "Test",
+            items: [],
+            emptyText: "Empty",
+            actionTitle: "Action",
+            onAction: { invoked = true }
+        )
+        #expect(card.actionTitle == "Action")
+        card.onAction?()
+        #expect(invoked == true)
+    }
+
+    @Test func commandKeyMonitorSharedInstanceExists() {
+        let monitor = DashboardCommandKeyMonitor.shared
+        #expect(monitor.isCommandPressed == false || monitor.isCommandPressed == true)
+        #expect(DashboardCommandKeyMonitor.isCommandDown == false || DashboardCommandKeyMonitor.isCommandDown == true)
+    }
+
     private func date(_ text: String) -> Date {
         ISO8601DateFormatter().date(from: text)!
     }

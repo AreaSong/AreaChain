@@ -9,6 +9,10 @@ struct DashboardActivitySection: View {
     var navigation: WorkspaceNavigation
     var openDiary: (UUID) -> Void = { _ in }
 
+    @State private var isInspectNote = false
+    @State private var isInspectClips = false
+    @State private var isInspectFiles = false
+
     private var isEnglish: Bool {
         locale.language.languageCode?.identifier == "en"
     }
@@ -55,8 +59,13 @@ struct DashboardActivitySection: View {
 
     private func noteExcerptCard(_ entry: DiaryEntry) -> some View {
         let parsed = parseDiaryDisplay(entry)
-        return DashboardSurfaceTile(isSelected: entry.isPinned, fixedHeight: 44) {
-            openDiary(entry.id)
+        return DashboardSurfaceTile(
+            isSelected: entry.isPinned,
+            fixedHeight: 44,
+            navigateAction: { openDiary(entry.id) },
+            navigateTooltip: isEnglish ? "Open in Diary Window" : "在独立窗口中打开手记"
+        ) {
+            isInspectNote.toggle()
         } content: {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 6) {
@@ -80,7 +89,7 @@ struct DashboardActivitySection: View {
                 }
             }
         }
-        .dashboardCommandPopover(arrowEdge: .trailing) {
+        .dashboardCommandPopover(isPresented: $isInspectNote, arrowEdge: .trailing) {
             DashboardHUDCard(
                 icon: entry.hasProtectedContent ? "lock.fill" : "note.text",
                 title: parsed.title,
@@ -90,7 +99,12 @@ struct DashboardActivitySection: View {
                 ],
                 emptyText: entry.hasProtectedContent
                     ? (isEnglish ? "Encrypted private note" : "私密手记已加密")
-                    : (isEnglish ? "Click to open note window" : "点击打开独立手记窗口")
+                    : (isEnglish ? "Click to open note window" : "点击打开独立手记窗口"),
+                actionTitle: isEnglish ? "Open Diary Window" : "在独立窗口中打开",
+                onAction: {
+                    isInspectNote = false
+                    openDiary(entry.id)
+                }
             )
         }
     }
@@ -263,17 +277,33 @@ struct DashboardActivitySection: View {
     private var contentAssetsFooter: some View {
         let clipItems = ClipboardHistorySession.shared.items
         return HStack(spacing: 6) {
-            assetPill(icon: "doc.on.clipboard", label: isEnglish ? "Clips" : "剪贴板", count: clipItems.count) {
-                navigation.revealTab(.clipboard)
+            assetPill(
+                icon: "doc.on.clipboard",
+                label: isEnglish ? "Clips" : "剪贴板",
+                count: clipItems.count,
+                isSelected: isInspectClips,
+                navigateAction: {
+                    navigation.revealTab(.allItems)
+                }
+            ) {
+                isInspectClips.toggle()
             }
-            .dashboardCommandPopover(arrowEdge: .bottom) {
+            .dashboardCommandPopover(isPresented: $isInspectClips, arrowEdge: .bottom) {
                 clipboardHUD(items: clipItems)
             }
 
-            assetPill(icon: "paperclip", label: isEnglish ? "Files" : "附件", count: liveAttachments.count) {
-                navigation.revealTab(.attachments)
+            assetPill(
+                icon: "paperclip",
+                label: isEnglish ? "Files" : "附件",
+                count: liveAttachments.count,
+                isSelected: isInspectFiles,
+                navigateAction: {
+                    navigation.revealTab(.allItems)
+                }
+            ) {
+                isInspectFiles.toggle()
             }
-            .dashboardCommandPopover(arrowEdge: .bottom) {
+            .dashboardCommandPopover(isPresented: $isInspectFiles, arrowEdge: .bottom) {
                 attachmentsHUD
             }
 
@@ -290,8 +320,22 @@ struct DashboardActivitySection: View {
         .padding(.top, 2)
     }
 
-    private func assetPill(icon: String, label: String, count: Int, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+    private func assetPill(
+        icon: String,
+        label: String,
+        count: Int,
+        isSelected: Bool = false,
+        navigateAction: (() -> Void)? = nil,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button {
+            let isCmd = DashboardCommandKeyMonitor.isCommandDown || DashboardCommandKeyMonitor.shared.isCommandPressed
+            if isCmd, let navigateAction {
+                navigateAction()
+            } else {
+                action()
+            }
+        } label: {
             HStack(spacing: 5) {
                 Image(systemName: icon)
                     .font(DaybookType.micro)
@@ -302,16 +346,22 @@ struct DashboardActivitySection: View {
                     .lineLimit(1)
                 Text(verbatim: "\(count)")
                     .font(DaybookType.badge.monospacedDigit())
+                    .contentTransition(.numericText())
                     .foregroundStyle(DaybookPalette.text.secondary)
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 3.5)
             .background(
                 RoundedRectangle(cornerRadius: DaybookRadius.full, style: .continuous) // control: 内容资产纯白微浮胶囊
-                    .fill(DaybookPalette.fill.surface)
+                    .fill(isSelected ? DaybookPalette.fill.selection : DaybookPalette.fill.surface)
             )
         }
         .buttonStyle(.plain) // control: 内容资产胶囊按钮
+        .onHover { hovering in
+            if hovering {
+                DashboardCommandKeyMonitor.shared.sync()
+            }
+        }
     }
 
     private func footerShortcutPill(icon: String, title: String, action: @escaping () -> Void) -> some View {
@@ -348,7 +398,12 @@ struct DashboardActivitySection: View {
                     trailing: nil
                 )
             },
-            emptyText: isEnglish ? "Clipboard history is empty" : "剪贴板历史当前为空"
+            emptyText: isEnglish ? "Clipboard history is empty" : "剪贴板历史当前为空",
+            actionTitle: isEnglish ? "Open Clipboard View" : "前往剪贴板工作区",
+            onAction: {
+                isInspectClips = false
+                navigation.revealTab(.clipboard)
+            }
         )
     }
 
@@ -360,7 +415,12 @@ struct DashboardActivitySection: View {
             items: liveAttachments.prefix(6).map {
                 .init(symbol: "doc", symbolColor: DaybookPalette.text.secondary, title: $0.filename, trailing: nil)
             },
-            emptyText: isEnglish ? "No attachments yet" : "当前暂无附件文件"
+            emptyText: isEnglish ? "No attachments yet" : "当前暂无附件文件",
+            actionTitle: isEnglish ? "Open Attachments Library" : "前往附件库工作区",
+            onAction: {
+                isInspectFiles = false
+                navigation.revealTab(.attachments)
+            }
         )
     }
 }

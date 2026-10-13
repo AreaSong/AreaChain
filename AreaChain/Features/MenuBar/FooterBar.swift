@@ -145,7 +145,9 @@ struct FooterBar: View {
         }
         .onChange(of: toolbar.isFiltering) { _, filtering in
             if filtering != isFilterDrawerPresented.wrappedValue {
-                isFilterDrawerPresented.wrappedValue = filtering
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    isFilterDrawerPresented.wrappedValue = filtering
+                }
             }
         }
     }

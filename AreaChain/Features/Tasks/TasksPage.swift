@@ -72,6 +72,7 @@ struct TasksPage: View {
     @State var pendingTrash: PendingTrash?
     @State var boardFilter = BoardFilter()
     @State var taskSelection = TaskSelection()
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var effectiveFilter: BoardFilter {
         config.externalFilter?.wrappedValue ?? boardFilter
@@ -98,7 +99,9 @@ struct TasksPage: View {
 
                             blankClickArea
                         }
-                        .padding(.vertical, 2)
+                        .padding(.top, 2)
+                        .padding(.bottom, 24) // control: 预留底部安全距离，确保滚动到底部时卡片及阴影完整展现
+                        .padding(.trailing, 2) // control: 预留右侧微间隙，避免右边框与悬浮滚动条重叠
                         .background(alignment: .top) {
                             scrollOffsetTracker
                         }
@@ -118,7 +121,7 @@ struct TasksPage: View {
                             workspaceNavigation.isInlineTitleVisible = shouldCollapse
                         }
                     }
-                    .daybookScroll(featherEdges: true)
+                    .daybookScroll(featherEdges: true, featherHeight: 12) // control
                     .daybookTopScrollBlur(height: 18)
                     .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in
                         if let newValue {
@@ -279,7 +282,8 @@ enum BoardRow: Identifiable {
                 isImportant: item.isImportant,
                 isUrgent: item.isUrgent,
                 remindMinutes: item.remindMinutes,
-                createdAt: item.createdAt
+                createdAt: item.createdAt,
+                hasSubtasks: !item.subtaskTemplates.isEmpty
             )
         case .todo(let item):
             BoardSortKey(

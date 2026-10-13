@@ -384,6 +384,9 @@ struct DiaryComposerHostSection: View {
             }
         }
         .onDisappear { sealComposer() }
+        .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
+            if !showsPageHeader { composerFocused = true }
+        }
         .confirmationDialog("privacy.draft.discard.confirm", isPresented: $confirmsDiscardDraft) {
             Button("privacy.draft.discard", role: .destructive) { draftBinding.wrappedValue = BoardComposerDraft() }
             Button("alert.cancel", role: .cancel) {}

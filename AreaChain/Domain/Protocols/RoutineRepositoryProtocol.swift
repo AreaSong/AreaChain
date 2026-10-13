@@ -128,6 +128,12 @@ protocol RoutineRepositoryProtocol: AnyObject {
     /// 将指定日期的习惯标记为已跳过（保留连续打卡桥接）
     func skipRoutine(id: UUID, dayKey: String) throws
 
+    /// 切换指定日期下某个子任务的完成状态，并在子任务全选/取消时联动更新父事项打卡状态。
+    func toggleRoutineSubtask(id: UUID, subtaskID: UUID, dayKey: String) throws
+
+    /// 更新习惯的子任务模板清单
+    func updateRoutineSubtaskTemplates(id: UUID, templates: [RoutineSubtaskTemplate]) throws
+
     // MARK: - 批量操作 (Batch Operations)
     /// 批量设置打卡状态
     func batchSetRoutineChecks(ids: Set<UUID>, markDone: Bool, on dayKey: String) throws

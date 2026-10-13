@@ -37,11 +37,17 @@ extension DayBoardMutations {
     static func convertTodoToRoutine(_ todo: TodoItem) -> UUID? {
         guard let context = todo.modelContext, todo.deletedAt == nil else { return nil }
         let routineID = UUID()
-        let titles = todo.subtasks
+        let subtasks = todo.subtasks
             .filter { $0.deletedAt == nil }
             .sorted { $0.sortOrder < $1.sortOrder }
-            .map(\.title)
-        let notes = ItemConversion.foldedNotes(existing: todo.notes, subtaskTitles: titles)
+        let templates = subtasks.map {
+            RoutineSubtaskTemplate(
+                id: UUID(),
+                title: $0.title,
+                sortOrder: $0.sortOrder,
+                tagIDs: $0.tagIDs
+            )
+        }
         let order = (try? nextSharedOrder(in: context)) ?? 0
         let saved = ModelChanges.perform(in: context) {
             let routine = DailyRoutine(
@@ -54,9 +60,10 @@ extension DayBoardMutations {
                 tagIDs: todo.tagIDs,
                 isImportant: todo.isImportant,
                 isUrgent: todo.isUrgent,
-                notes: notes
+                notes: todo.notes
             )
             routine.sourceBundleID = todo.sourceBundleID
+            routine.subtaskTemplates = templates
             context.insert(routine)
             try moveAttachments(from: todo.id, kind: .todo, to: routineID, newKind: .routine, in: context)
             let now = SoftDelete.stamp()
@@ -73,6 +80,7 @@ extension DayBoardMutations {
         let todoID = UUID()
         let today = DayKey.today()
         let order = (try? nextSharedOrder(in: context, dayKey: today)) ?? 0
+        let templates = routine.subtaskTemplates.sorted { $0.sortOrder < $1.sortOrder }
         let saved = ModelChanges.perform(in: context) {
             let todo = TodoItem(
                 id: todoID,
@@ -87,6 +95,17 @@ extension DayBoardMutations {
                 sortOrder: order
             )
             context.insert(todo)
+            for template in templates {
+                let subtask = SubtaskItem(
+                    id: UUID(),
+                    title: template.title,
+                    isDone: false,
+                    sortOrder: template.sortOrder,
+                    tagIDs: template.tagIDs,
+                    todo: todo
+                )
+                context.insert(subtask)
+            }
             try moveAttachments(from: routine.id, kind: .routine, to: todoID, newKind: .todo, in: context)
             routine.deletedAt = SoftDelete.stamp()
         }

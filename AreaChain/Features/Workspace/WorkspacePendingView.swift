@@ -10,6 +10,9 @@ struct WorkspacePendingView: View {
 
     @WorkspaceNavigationContext private var navigation
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Namespace private var laneIndicatorNamespace
+
     private var todayKey: String { DayClock.shared.todayKey }
 
     var body: some View {
@@ -44,6 +47,14 @@ struct WorkspacePendingView: View {
         .onChange(of: model.visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }
+        .onKeyPress(KeyEquivalent("[")) {
+            cycleLane(model: model)
+            return .handled
+        }
+        .onKeyPress(KeyEquivalent("]")) {
+            cycleLane(model: model)
+            return .handled
+        }
     }
 
     private func makePageModel() -> WorkspacePendingPageModel {
@@ -58,10 +69,7 @@ struct WorkspacePendingView: View {
 
     private func controls(_ model: WorkspacePendingPageModel) -> some View {
         HStack(spacing: 8) {
-            HStack(spacing: 8) {
-                laneChip(.overdue, count: model.projection.overdueCount, model: model)
-                laneChip(.upcoming, count: model.projection.upcomingCount, model: model)
-            }
+            laneSegmentBar(model)
 
             Spacer(minLength: 8)
 
@@ -78,6 +86,57 @@ struct WorkspacePendingView: View {
         .padding(.top, 1)
     }
 
+    private func laneSegmentBar(_ model: WorkspacePendingPageModel) -> some View {
+        HStack(spacing: 2) {
+            laneSegmentItem(.overdue, count: model.projection.overdueCount, model: model)
+            laneSegmentItem(.upcoming, count: model.projection.upcomingCount, model: model)
+        }
+        .padding(2)
+        .background(
+            RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous)
+                .fill(DaybookPalette.fill.subtle)
+        )
+    }
+
+    private func laneSegmentItem(_ next: PendingLane, count: Int, model: WorkspacePendingPageModel) -> some View {
+        let isSelected = model.lane == next
+        let isOverdueAlert = next == .overdue && count > 0
+        return Button(action: { chooseLane(next, overdueCount: model.projection.overdueCount)() }) {
+            HStack(spacing: 5) {
+                Text(laneTitle(next))
+                    .font(DaybookType.caption.weight(isSelected ? .semibold : .medium))
+                    .foregroundStyle(isSelected ? (isOverdueAlert ? DaybookPalette.accent.base : DaybookPalette.text.primary) : DaybookPalette.text.secondary)
+                Text("\(count)")
+                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 赛道计数用圆体
+                    .foregroundStyle(isSelected ? (isOverdueAlert ? DaybookPalette.accent.base : DaybookPalette.text.primary) : DaybookPalette.text.secondary)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(
+                        Capsule() // token-exempt: 赛道数量标签底槽胶囊
+                            .fill(isSelected ? (isOverdueAlert ? DaybookPalette.accent.base.opacity(0.14) : DaybookPalette.fill.subtle) : Color.clear) // token-exempt: 14% 强调色胶囊底
+                    )
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background {
+                if isSelected {
+                    RoundedRectangle(cornerRadius: DaybookRadius.small - 1, style: .continuous)
+                        .fill(DaybookPalette.cardSurface)
+                        .matchedGeometryEffect(id: "pendingLaneActivePill", in: laneIndicatorNamespace)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: DaybookRadius.small - 1, style: .continuous)
+                                .strokeBorder(DaybookPalette.border.default.opacity(0.6), lineWidth: 0.5) // token-exempt: 60% 边框微弱描边
+                        }
+                        .daybookElevation(.raised)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain) // control: 分段选择器按钮
+        .animation(DaybookMotion.snappy(reduceMotion), value: model.lane)
+        .accessibilityLabel(Text("\(laneTitle(next)) \(count)"))
+    }
+
     private func emptyCopy(_ lane: PendingLane) -> (title: LocalizedStringKey, hint: LocalizedStringKey) {
         switch lane {
         case .overdue:
@@ -87,15 +146,9 @@ struct WorkspacePendingView: View {
         }
     }
 
-    private func laneChip(_ next: PendingLane, count: Int, model: WorkspacePendingPageModel) -> some View {
-        DaybookChip(tint: DaybookPalette.accent.base, isSelected: model.lane == next, action: chooseLane(next, overdueCount: model.projection.overdueCount)) {
-            HStack(spacing: 4) {
-                Text(laneTitle(next))
-                Text("\(count)")
-                    .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 赛道计数用圆体
-            }
-        }
-        .accessibilityLabel(Text("\(laneTitle(next)) \(count)"))
+    private func cycleLane(model: WorkspacePendingPageModel) {
+        let next: PendingLane = model.lane == .overdue ? .upcoming : .overdue
+        chooseLane(next, overdueCount: model.projection.overdueCount)()
     }
 
     private func chooseLane(_ next: PendingLane, overdueCount: Int) -> () -> Void {

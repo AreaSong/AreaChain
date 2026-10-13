@@ -25,8 +25,32 @@ struct ModernCheckbox: View {
     }
 
     var isDone: Bool
-    var presentation: Presentation = .task
+    var isPending: Bool
+    var presentation: Presentation
     var action: () -> Void
+
+    init(
+        isDone: Bool,
+        isPending: Bool = false,
+        presentation: Presentation = .task,
+        action: @escaping () -> Void
+    ) {
+        self.isDone = isDone
+        self.isPending = isPending
+        self.presentation = presentation
+        self.action = action
+    }
+
+    init(
+        isDone: Bool,
+        presentation: Presentation = .task,
+        action: @escaping () -> Void
+    ) {
+        self.isDone = isDone
+        self.isPending = false
+        self.presentation = presentation
+        self.action = action
+    }
 
     @State private var hovering = false
     @State private var isAnimating = false
@@ -46,6 +70,7 @@ struct ModernCheckbox: View {
             .onHover { hovering = presentation == .task && $0 }
             .animation(presentation == .task ? DaybookMotion.snappy(reduceMotion) : nil, value: isDone)
             .animation(presentation == .task ? DaybookMotion.interactive(reduceMotion) : nil, value: hovering)
+            .animation(presentation == .task ? DaybookMotion.snappy(reduceMotion) : nil, value: isPending)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(isDone ? Text("checkbox.done") : Text("checkbox.open"))
             .accessibilityAddTraits(isDone ? [.isButton, .isSelected] : .isButton)
@@ -67,6 +92,13 @@ struct ModernCheckbox: View {
     private var vectorCheckboxContent: some View {
         let geometry = vectorGeometry
         return ZStack {
+            if isPending {
+                Circle()
+                    .stroke(DaybookPalette.accent.base.opacity(0.35), lineWidth: 1.5)
+                    .frame(width: geometry.circle + 6, height: geometry.circle + 6)
+                    .transition(.scale.combined(with: .opacity))
+            }
+
             Circle()
                 .strokeBorder(strokeColor, lineWidth: geometry.border)
                 .background(
@@ -136,17 +168,33 @@ struct ModernTaskTitle: View {
             .font(font)
             .foregroundStyle(isDone ? DaybookPalette.text.done : DaybookPalette.text.primary)
             .truncationMode(truncationMode ?? AppPreferences.shared.contentTruncation.textTruncation)
-            .overlay(alignment: .leading) {
-                GeometryReader { proxy in
-                    Rectangle()
-                        .fill(DaybookPalette.text.done.opacity(0.85))
-                        .frame(width: isDone ? proxy.size.width : 0, height: 1.2)
-                        .frame(maxHeight: .infinity, alignment: .center)
-                }
-                .allowsHitTesting(false)
+            .overlay {
+                ModernStrikethroughShape(progress: isDone ? 1 : 0)
+                    .stroke(
+                        DaybookPalette.text.done.opacity(0.85),
+                        style: StrokeStyle(lineWidth: 1.2, lineCap: .round)
+                    )
+                    .allowsHitTesting(false)
             }
             .strikethrough(reduceMotion && isDone, color: DaybookPalette.text.done.opacity(0.85))
             .animation(DaybookMotion.interactive(reduceMotion), value: isDone)
             .animation(DaybookMotion.strikethrough(reduceMotion), value: isDone)
+    }
+}
+
+private struct ModernStrikethroughShape: Shape {
+    var progress: CGFloat
+
+    var animatableData: CGFloat {
+        get { progress }
+        set { progress = newValue }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard progress > 0 else { return path }
+        path.move(to: CGPoint(x: 0, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.width * progress, y: rect.midY))
+        return path
     }
 }

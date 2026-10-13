@@ -115,6 +115,14 @@ final class RecurringToggleRepository: RoutineRepositoryProtocol {
         try base.skipRoutine(id: id, dayKey: dayKey)
     }
 
+    func toggleRoutineSubtask(id: UUID, subtaskID: UUID, dayKey: String) throws {
+        try base.toggleRoutineSubtask(id: id, subtaskID: subtaskID, dayKey: dayKey)
+    }
+
+    func updateRoutineSubtaskTemplates(id: UUID, templates: [RoutineSubtaskTemplate]) throws {
+        try base.updateRoutineSubtaskTemplates(id: id, templates: templates)
+    }
+
     func batchSetRoutineChecks(ids: Set<UUID>, markDone: Bool, on dayKey: String) throws {
         try base.batchSetRoutineChecks(ids: ids, markDone: markDone, on: dayKey)
     }

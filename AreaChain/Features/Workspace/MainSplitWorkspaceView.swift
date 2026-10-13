@@ -9,9 +9,9 @@ struct MainSplitWorkspaceView: View {
     var search: UnifiedSearchController?
     var hostContext: WorkspaceHostContext?
 
-    init(navigation: WorkspaceNavigation = .shared, search: UnifiedSearchController? = nil,
+    init(navigation: WorkspaceNavigation? = nil, search: UnifiedSearchController? = nil,
          hostContext: WorkspaceHostContext? = nil) {
-        self.navigation = navigation
+        self.navigation = navigation ?? .shared
         self.search = search
         self.hostContext = hostContext
     }
@@ -30,6 +30,8 @@ struct MainSplitWorkspaceView: View {
     @Query(sort: \DailyRoutine.sortOrder) private var routines: [DailyRoutine]
     @Query private var checks: [RoutineCheck]
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     private var isInspectorVisible: Bool {
         navigation.isInspectorPresented && navigation.canInspectSelectedTask
     }
@@ -40,6 +42,7 @@ struct MainSplitWorkspaceView: View {
             detailColumn
             if isInspectorVisible {
                 inspectorColumn
+                    .transition(.move(edge: .trailing).combined(with: .opacity))
             }
         }
         .background(Color(nsColor: .windowBackgroundColor)) // token-exempt: 三栏工作台统一窗口底板

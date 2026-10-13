@@ -31,7 +31,11 @@ struct WorkspaceAllItemsView: View {
         }
         .workspaceInspectorTargets(model.visibleIDs)
         .refreshBoardOnDayChange()
-        .onAppear { navigation.allItemsQuery.todayKey = todayKey }
+        .onAppear {
+            if navigation.allItemsQuery.todayKey != todayKey {
+                navigation.allItemsQuery.todayKey = todayKey
+            }
+        }
         .onChange(of: model.visibleIDs) { _, ids in
             navigation.reconcileTaskSelection(with: ids)
         }

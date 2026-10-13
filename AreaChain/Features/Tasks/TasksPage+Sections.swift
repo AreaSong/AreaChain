@@ -233,6 +233,7 @@ enum LeftoverChipKind {
 struct LeftoverChipsBar: View {
     var config: LeftoverChipsBarConfig
     @Environment(\.locale) private var locale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var yesterday: LeftoverChipState { config.yesterday }
     private var upcoming: LeftoverChipState { config.upcoming }
@@ -276,12 +277,15 @@ struct LeftoverChipsBar: View {
                 Text(config.title)
                 Text("\(config.count)")
                     .font(.system(size: 9.5, weight: .bold, design: .rounded)) // token-exempt: 遗留计数用圆体
-                Image(systemName: config.expanded ? "chevron.up" : "chevron.down")
+                Image(systemName: "chevron.right")
+                    .font(DaybookType.micro.weight(.semibold))
+                    .rotationEffect(.degrees(config.expanded ? 90 : 0))
+                    .animation(DaybookMotion.interactive(reduceMotion), value: config.expanded)
                     .accessibilityHidden(true)
             }
         }
         .disabled(config.count == 0)
-        .opacity(config.count == 0 ? 0.45 : 1)
+        .opacity(config.count == 0 ? 0.45 : 1) // token-exempt: 空计数半透
         .accessibilityLabel(config.kind.accessibilityLabel(count: config.count, locale: locale))
     }
 }

@@ -19,7 +19,7 @@ final class WorkspaceShellPreviewSettings {
 
     private init() {
         if UserDefaults.standard.object(forKey: Self.storageKey) == nil {
-            self.isEnabled = true
+            self.isEnabled = false
         } else {
             self.isEnabled = UserDefaults.standard.bool(forKey: Self.storageKey)
         }

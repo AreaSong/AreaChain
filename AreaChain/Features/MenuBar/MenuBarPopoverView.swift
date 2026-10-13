@@ -84,17 +84,19 @@ struct MenuBarPopoverView: View {
         .syntaxOverlayHost(enabled: !showingSyntaxHelp)
         .background(KeyWindowHost { hostWindow = $0 })
         .animation(DaybookMotion.interactive(reduceMotion), value: showingSyntaxHelp)
+        .animation(DaybookMotion.interactive(reduceMotion), value: isFilterDrawerPresented)
         .onAppear {
             prepare()
         }
         .onDisappear {
             tearDownTabKeyMonitor()
         }
-        .onChange(of: tab) { _, newTab in
-            if newTab == .tasks && !toolbar.isSearching { captureFocused = true }
+        .onChange(of: tab) { _, _ in
+            guard !toolbar.isSearching else { return }
+            focusCurrentInput()
         }
         .onReceive(NotificationCenter.default.publisher(for: .focusCapture)) { _ in
-            focusCurrentInput()
+            handleFocusCaptureNotification()
         }
         .onChange(of: toolbar.isSearching) { _, searching in
             if searching {
@@ -258,14 +260,11 @@ struct MenuBarPopoverView: View {
     }
 
     private func showSyntaxHelp() {
-        if tab != .tasks {
-            withAnimation(DaybookMotion.interactive(reduceMotion)) {
-                tab = .tasks
-            }
-        }
         helpContext = toolbar.isSearching || toolbar.searchIsFocused ? .search : .capture
         toolbar.autocomplete.dismiss()
-        captureFocused = true
+        if tab == .tasks {
+            captureFocused = true
+        }
         showingSyntaxHelp = true
     }
 
@@ -351,12 +350,28 @@ struct MenuBarPopoverView: View {
         focusCurrentInput()
     }
 
+    private func handleFocusCaptureNotification() {
+        if toolbar.isSearching || toolbar.searchIsFocused {
+            captureFocused = false
+            toolbar.focusSearch()
+        } else if tab == .tasks {
+            captureFocused = true
+        } else {
+            // tab == .diary: DiaryQuickComposerView 自行接收同一个 .focusCapture 通知并聚焦，此处绝不能再次广播，防止死循环。
+            captureFocused = false
+        }
+    }
+
     private func focusCurrentInput() {
         if toolbar.isSearching || toolbar.searchIsFocused {
             captureFocused = false
             toolbar.focusSearch()
+        } else if tab == .tasks {
+            captureFocused = true
+        } else if tab == .diary {
+            captureFocused = false
+            NotificationCenter.default.post(name: .focusCapture, object: nil)
         }
-        else if tab == .tasks { captureFocused = true }
     }
 
     private func addTodo() {

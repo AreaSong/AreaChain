@@ -16,10 +16,13 @@ enum DashboardHeatmapLayout {
 }
 
 struct DashboardHeatmapSection: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var cells: [DashboardHeatmapDay]
     var hasCompletions: Bool
     var locale: Locale
     var navigation: WorkspaceNavigation
+
+    @State private var selectedCellDayKey: String? = nil
 
     private var isEnglish: Bool {
         locale.language.languageCode?.identifier == "en"
@@ -189,23 +192,46 @@ struct DashboardHeatmapSection: View {
     }
 
     private func heatmapCell(_ cell: DashboardHeatmapDay) -> some View {
-        Button {
-            DashboardNavigation.openCalendar(
-                dayKey: cell.dayKey, isPadding: cell.isPaddingCell, navigation: navigation
-            )
+        let isSelected = selectedCellDayKey == cell.dayKey
+        return Button {
+            guard !cell.isPaddingCell else { return }
+            let isCmd = DashboardCommandKeyMonitor.isCommandDown || DashboardCommandKeyMonitor.shared.isCommandPressed
+            if isCmd {
+                selectedCellDayKey = nil
+                navigation.inspectBoard(cell.dayKey)
+            } else {
+                selectedCellDayKey = isSelected ? nil : cell.dayKey
+            }
         } label: {
             RoundedRectangle(cornerRadius: DaybookRadius.xxs) // control: 热力图日期单元格
                 .fill(cell.isPaddingCell ? Color.clear : DaybookPalette.heatmap.color(for: cell.intensityLevel))
+                .overlay(
+                    RoundedRectangle(cornerRadius: DaybookRadius.xxs)
+                        .strokeBorder(isSelected ? DaybookPalette.accent.base : Color.clear, lineWidth: 1)
+                )
                 .frame(width: DaybookMetrics.Heatmap.cell, height: DaybookMetrics.Heatmap.cell)
+                .scaleEffect(isSelected ? 1.25 : 1.0)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
         }
         .buttonStyle(.plain) // control: 热力图轻量单元格按钮
+        .onHover { hovering in
+            if hovering {
+                DashboardCommandKeyMonitor.shared.sync()
+            }
+        }
         .help(previewHelp(cell))
         .frame(width: DaybookMetrics.Heatmap.cell, height: DaybookMetrics.Heatmap.cell)
         .disabled(cell.isPaddingCell)
         .accessibilityIdentifier(cell.isPaddingCell ? "dashboard.heat.pad" : "dashboard.heat.\(cell.dayKey)")
         .accessibilityLabel(Text(cellLabel(cell)))
         .accessibilityHidden(cell.isPaddingCell)
-        .dashboardCommandPopover(arrowEdge: .top) {
+        .dashboardCommandPopover(
+            isPresented: Binding(
+                get: { selectedCellDayKey == cell.dayKey },
+                set: { if !$0 { selectedCellDayKey = nil } }
+            ),
+            arrowEdge: .top
+        ) {
             heatmapHUD(cell)
         }
     }
@@ -227,7 +253,14 @@ struct DashboardHeatmapSection: View {
                     trailing: nil
                 )
             },
-            emptyText: isEnglish ? "No completed items on this day" : "当日没有已完成记录（点击可跳转该日历）"
+            emptyText: isEnglish ? "No completed items on this day" : "当日没有已完成记录",
+            actionTitle: isEnglish ? "Open in Calendar" : "在日历中打开当天",
+            onAction: {
+                selectedCellDayKey = nil
+                DashboardNavigation.openCalendar(
+                    dayKey: cell.dayKey, isPadding: cell.isPaddingCell, navigation: navigation
+                )
+            }
         )
     }
 

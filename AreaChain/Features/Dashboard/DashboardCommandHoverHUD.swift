@@ -12,8 +12,22 @@ final class DashboardCommandKeyMonitor {
     private var flagsMonitor: Any?
     private var resignObserver: NSObjectProtocol?
 
+    /// 权威且零延迟地查询当前事件或系统是否正处于 Command 键按下态
+    static var isCommandDown: Bool {
+        let flags = NSApp.currentEvent?.modifierFlags ?? NSEvent.modifierFlags
+        return flags.intersection(.deviceIndependentFlagsMask).contains(.command)
+    }
+
+    func sync() {
+        let pressed = Self.isCommandDown
+        if isCommandPressed != pressed {
+            isCommandPressed = pressed
+        }
+    }
+
     private init() {
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged]) { [weak self] event in
+        isCommandPressed = Self.isCommandDown
+        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: [.flagsChanged, .keyDown, .keyUp]) { [weak self] event in
             let pressed = event.modifierFlags.intersection(.deviceIndependentFlagsMask).contains(.command)
             if self?.isCommandPressed != pressed {
                 self?.isCommandPressed = pressed
@@ -32,46 +46,41 @@ final class DashboardCommandKeyMonitor {
     }
 }
 
-/// 仅当按住 ⌘ Command 且鼠标悬停在目标元素上时才挂载并弹出 HUD Popover，平时滚动零开销。
+/// 控制检视浮层挂载并弹出 Popover，按需由用户明确触发，平时滚动零开销。
 private struct DashboardCommandPopoverModifier<PopoverContent: View>: ViewModifier {
+    var isPresented: Binding<Bool>? = nil
     var arrowEdge: Edge
     @ViewBuilder var popoverContent: () -> PopoverContent
 
-    @State private var isHovering = false
-    @State private var monitor = DashboardCommandKeyMonitor.shared
+    @State private var internalClickPresented = false
+
+    private var activePresented: Binding<Bool> {
+        if let isPresented {
+            return isPresented
+        }
+        return $internalClickPresented
+    }
 
     func body(content: Content) -> some View {
         content
-            .onHover { hovering in
-                if isHovering != hovering {
-                    isHovering = hovering
-                }
-            }
-            .background {
-                if isHovering && monitor.isCommandPressed {
-                    Color.clear
-                        .popover(
-                            isPresented: Binding(
-                                get: { isHovering && monitor.isCommandPressed },
-                                set: { if !$0 { isHovering = false } }
-                            ),
-                            arrowEdge: arrowEdge
-                        ) {
-                            popoverContent()
-                                .padding(DaybookSpacing.md)
-                                .frame(minWidth: 240, maxWidth: 320, alignment: .leading)
-                        }
-                }
+            .popover(
+                isPresented: activePresented,
+                arrowEdge: arrowEdge
+            ) {
+                popoverContent()
+                    .padding(DaybookSpacing.md)
+                    .frame(minWidth: 260, maxWidth: 340, alignment: .leading)
             }
     }
 }
 
 extension View {
     func dashboardCommandPopover<Content: View>(
+        isPresented: Binding<Bool>? = nil,
         arrowEdge: Edge = .bottom,
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
-        modifier(DashboardCommandPopoverModifier(arrowEdge: arrowEdge, popoverContent: content))
+        modifier(DashboardCommandPopoverModifier(isPresented: isPresented, arrowEdge: arrowEdge, popoverContent: content))
     }
 }
 
@@ -83,6 +92,8 @@ struct DashboardHUDCard: View {
     var accent: Color = DaybookPalette.accent.base
     var items: [DashboardHUDItem] = []
     var emptyText: String
+    var actionTitle: String? = nil
+    var onAction: (() -> Void)? = nil
 
     struct DashboardHUDItem: Identifiable {
         let id = UUID()
@@ -145,6 +156,24 @@ struct DashboardHUDCard: View {
                     }
                 }
             }
+
+            if let onAction, let actionTitle {
+                Divider()
+                Button(action: onAction) {
+                    HStack(spacing: 5) {
+                        Text(actionTitle)
+                            .font(DaybookType.caption.weight(.medium))
+                        Image(systemName: "arrow.up.forward.app")
+                            .font(DaybookType.micro)
+                    }
+                    .foregroundStyle(accent)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.vertical, 2)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain) // control: HUD 浮窗外跳操作按钮
+                .accessibilityIdentifier("dashboard.hud.action")
+            }
         }
     }
 }
@@ -182,28 +211,66 @@ struct DashboardSidebarPanel<Content: View>: View {
     }
 }
 
+/// 具有原生按压弹性缩放与触感反馈的指标卡按钮样式
+struct DashboardTileButtonStyle: ButtonStyle {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? (reduceMotion ? 1.0 : 0.986) : 1.0)
+            .animation(DaybookMotion.snappy(reduceMotion), value: configuration.isPressed)
+            .onChange(of: configuration.isPressed) { _, pressed in
+                if pressed {
+                    DaybookHaptics.tap()
+                }
+            }
+    }
+}
+
 struct DashboardSurfaceTile<Content: View>: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.locale) private var locale
     var isSelected: Bool = false
     var fixedHeight: CGFloat?
+    var navigateAction: (() -> Void)? = nil
+    var navigateTooltip: String? = nil
     var action: () -> Void
     private let content: Content
 
     @State private var isHovered = false
+    @State private var monitor = DashboardCommandKeyMonitor.shared
 
     init(
         isSelected: Bool = false,
         fixedHeight: CGFloat? = nil,
+        navigateAction: (() -> Void)? = nil,
+        navigateTooltip: String? = nil,
         action: @escaping () -> Void,
         @ViewBuilder content: () -> Content
     ) {
         self.isSelected = isSelected
         self.fixedHeight = fixedHeight
+        self.navigateAction = navigateAction
+        self.navigateTooltip = navigateTooltip
         self.action = action
         self.content = content()
     }
 
+    private var isCommandActiveHover: Bool {
+        isHovered && (monitor.isCommandPressed || DashboardCommandKeyMonitor.isCommandDown) && navigateAction != nil
+    }
+
+    private func handleMainClick() {
+        let isCmd = DashboardCommandKeyMonitor.isCommandDown || monitor.isCommandPressed
+        if isCmd, let navigateAction {
+            navigateAction()
+        } else {
+            action()
+        }
+    }
+
     var body: some View {
-        Button(action: action) {
+        Button(action: handleMainClick) {
             content
                 .padding(.horizontal, 12)
                 .padding(.vertical, 10)
@@ -212,10 +279,21 @@ struct DashboardSurfaceTile<Content: View>: View {
                     RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: 浅灰托盘内的纯白微浮卡片
                         .fill(backgroundFill)
                 )
+                .overlay(
+                    RoundedRectangle(cornerRadius: DaybookRadius.regular, style: .continuous) // control: ⌘ 穿透直达就绪时微弱强调外框
+                        .strokeBorder(isCommandActiveHover ? DaybookPalette.accent.border : Color.clear, lineWidth: 1)
+                )
                 .contentShape(Rectangle())
         }
-        .buttonStyle(.plain) // control: 微浮指标卡整卡点击
-        .onHover { isHovered = $0 }
+        .buttonStyle(DashboardTileButtonStyle()) // control: 微浮指标卡整卡弹性点击
+        .onHover { hovering in
+            isHovered = hovering
+            if hovering {
+                monitor.sync()
+            }
+        }
+        .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+        .animation(DaybookMotion.snappy(reduceMotion), value: isCommandActiveHover)
     }
 
     private var backgroundFill: Color {

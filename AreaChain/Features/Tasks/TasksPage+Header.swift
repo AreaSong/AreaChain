@@ -35,12 +35,20 @@ extension TasksPage {
                             yesterday: LeftoverChipState(
                                 count: page.yesterdayItems.count,
                                 isExpanded: showYesterday,
-                                onToggle: { showYesterday.toggle() }
+                                onToggle: {
+                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                        showYesterday.toggle()
+                                    }
+                                }
                             ),
                             upcoming: LeftoverChipState(
                                 count: page.upcomingModels.count,
                                 isExpanded: showUpcoming,
-                                onToggle: { showUpcoming.toggle() }
+                                onToggle: {
+                                    withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                                        showUpcoming.toggle()
+                                    }
+                                }
                             )
                         )
                     )

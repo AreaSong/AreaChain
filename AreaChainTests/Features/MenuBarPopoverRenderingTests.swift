@@ -368,4 +368,34 @@ struct MenuBarPopoverRenderingTests {
         try await clickAndSettle(at: try filterTriggerPoint(in: window), in: window)
         #expect(!toolbar.isFiltering)
     }
+
+    @Test func focusCaptureNotificationInDiaryTabDoesNotRecurse() async throws {
+        let container = try fixture()
+        let toolbar = MenuBarToolbarState()
+        let window = host(toolbar: toolbar, container: container)
+        defer { window.contentView = nil; window.orderOut(nil) }
+        let view = try #require(window.contentView)
+        try await settle(view)
+
+        // 切换至手记 Tab
+        try await selectTab(.diary, in: window)
+
+        var notificationCount = 0
+        let observer = NotificationCenter.default.addObserver(
+            forName: .focusCapture,
+            object: nil,
+            queue: .main
+        ) { _ in
+            notificationCount += 1
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+
+        // 发送单次 .focusCapture 通知
+        NotificationCenter.default.post(name: .focusCapture, object: nil)
+        try await Task.sleep(for: .milliseconds(100))
+        try await settle(view)
+
+        // 验证通知仅自身这一次触发，没有引发递归广播死循环
+        #expect(notificationCount == 1)
+    }
 }

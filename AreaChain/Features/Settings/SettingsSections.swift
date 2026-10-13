@@ -37,11 +37,16 @@ struct GeneralSettingsSection: View {
             .systemPageMarker("settings.controlsPreview")
             if prefs === AppPreferences.shared && AppStartup.policy == .application {
                 Toggle(isOn: Bindable(WorkspaceShellPreviewSettings.shared).isEnabled) {
-                    Text(verbatim: "显示工作台重构预览页（左侧栏「重构预览（今日）」）")
+                    Text("settings.workspaceShellPreview.toggle")
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .toggleStyle(DaybookToggleStyle(.switchControl))
                 .accessibilityIdentifier("settings.workspaceShellPreview.toggle")
+                .systemPageMarker("settings.workspaceShellPreview.toggle")
+                Text("settings.workspaceShellPreview.help")
+                    .font(DaybookType.subtitle)
+                    .foregroundStyle(DaybookPalette.text.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
             DaybookPicker("settings.quadrant.truncation", selection: $prefs.quadrantTitleTruncation, options: [
                 DaybookPickerOption(.tail, "settings.quadrant.truncation.tail"),

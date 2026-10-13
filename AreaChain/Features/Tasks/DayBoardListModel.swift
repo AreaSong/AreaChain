@@ -30,6 +30,21 @@ struct DayBoardListIdentity {
         FlatSubtaskItem.build(for: todo, tags: catalogs.tags, isDone: isDone)
     }
 
+    func flatSubtasks(for routine: DailyRoutine, dayKey: String, isDone: Bool? = nil) -> [FlatSubtaskItem] {
+        FlatSubtaskItem.build(for: routine, checks: source.checks, dayKey: dayKey, tags: catalogs.tags, isDone: isDone)
+    }
+
+    func doneFlatSubtasksFromOpenRows(dayKey: String) -> [FlatSubtaskItem] {
+        openRows.flatMap { row -> [FlatSubtaskItem] in
+            switch row {
+            case .todo(let todo):
+                return flatSubtasks(for: todo, isDone: true)
+            case .resident(let routine):
+                return flatSubtasks(for: routine, dayKey: dayKey, isDone: true)
+            }
+        }
+    }
+
     var doneFlatSubtasksFromOpenTodos: [FlatSubtaskItem] {
         openRows.flatMap { row -> [FlatSubtaskItem] in
             guard case .todo(let todo) = row else { return [] }

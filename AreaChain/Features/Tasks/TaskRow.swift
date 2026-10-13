@@ -108,7 +108,6 @@ struct TaskRow: View {
                     draft = retained
                     editing = true
                 } else { draft = state.title }
-                chrome.startCommandMonitor(reduceMotion: reduceMotion)
             }
             .onChange(of: draft) { _, text in
                 if hostContext != nil, editing { editDrafts.titles[navigationDraftKey] = text }
@@ -136,7 +135,8 @@ struct TaskRow: View {
         let hasSubs = isSubtasksExpanded && !state.subtasks.isEmpty
         HStack(alignment: (hasSubs || editing) ? .top : .center, spacing: 8) {
             if state.allowsCompletion {
-                ModernCheckbox(isDone: state.isDone) {
+                let isPending = PendingCompletionManager.shared.pendingDoneIDs.contains(state.id)
+                ModernCheckbox(isDone: state.isDone, isPending: isPending) {
                     PendingCompletionManager.shared.toggle(
                         id: state.id,
                         currentlyDone: state.isDone,
@@ -167,6 +167,7 @@ struct TaskRow: View {
                         TaskRowSubtaskInlineList(subtasks: state.subtasks) { subtaskID in
                             dispatch(.toggleSubtask(subtaskID))
                         }
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                         .padding(.top, 2)
                         .zIndex(1)
                     }
@@ -192,14 +193,16 @@ struct TaskRow: View {
             )
         }
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear { updateVerticalPlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
+        .background {
+            if isHovered {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { updateVerticalPlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
+                }
             }
-        )
+        }
     }
 
     @ViewBuilder
@@ -247,6 +250,7 @@ struct TaskRow: View {
     }
 
     private func selectImmediately(_ modifiers: TaskSelectionModifiers = []) {
+        DaybookHaptics.tap()
         chrome.revealRow(reduceMotion: reduceMotion)
         dispatch(.select(modifiers))
     }
@@ -393,15 +397,26 @@ struct TaskRow: View {
     }
 
     private func updateVerticalPlacement(_ proxy: GeometryProxy) {
+        guard isHovered else { return }
         let frame = proxy.frame(in: .global)
-        growsUpward = frame.minY > 260
-        rowMaxX = frame.maxX
+        let newGrowsUpward = frame.minY > 260
+        if growsUpward != newGrowsUpward {
+            growsUpward = newGrowsUpward
+        }
+        if rowMaxX != frame.maxX {
+            rowMaxX = frame.maxX
+        }
     }
 
     private func updateBubblePlacement(_ proxy: GeometryProxy) {
+        guard isNoteHovered || isNoteBubbleHovered else { return }
         let placement = bubblePlacement(proxy)
-        growsUpward = placement.growsUpward
-        bubbleShiftX = placement.bubbleShiftX
+        if growsUpward != placement.growsUpward {
+            growsUpward = placement.growsUpward
+        }
+        if bubbleShiftX != placement.bubbleShiftX {
+            bubbleShiftX = placement.bubbleShiftX
+        }
     }
 
     private func bubblePlacement(_ proxy: GeometryProxy) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {

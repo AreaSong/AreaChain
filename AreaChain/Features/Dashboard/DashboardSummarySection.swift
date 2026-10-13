@@ -14,6 +14,10 @@ struct DashboardSummarySection: View {
     var checks: [RoutineCheck] = []
     var diaries: [DiaryEntry] = []
 
+    @State private var isInspectToday = false
+    @State private var isInspectPending = false
+    @State private var isInspectStreak = false
+
     private var isEnglish: Bool {
         locale.language.languageCode?.identifier == "en"
     }
@@ -55,8 +59,13 @@ struct DashboardSummarySection: View {
             : "余 \(summary.todayStat.openCount)"
         let ratePercent = Int(((summary.todayStat.completionRate ?? 0) * 100).rounded())
 
-        return DashboardSurfaceTile(isSelected: true, fixedHeight: 44) {
-            DashboardNavigation.openToday(navigation)
+        return DashboardSurfaceTile(
+            isSelected: true,
+            fixedHeight: 44,
+            navigateAction: { DashboardNavigation.openToday(navigation) },
+            navigateTooltip: isEnglish ? "Open Today View" : "前往今日视图"
+        ) {
+            isInspectToday.toggle()
         } content: {
             HStack(spacing: 10) {
                 DaybookProgressRing(
@@ -76,6 +85,7 @@ struct DashboardSummarySection: View {
                     }
                     Text(todayValue)
                         .font(DaybookType.entity.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.text.primary)
                         .lineLimit(1)
                 }
@@ -85,6 +95,7 @@ struct DashboardSummarySection: View {
                 VStack(alignment: .trailing, spacing: 2) {
                     Text(verbatim: openText)
                         .font(DaybookType.badge.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.accent.base)
                         .lineLimit(1)
                         .padding(.horizontal, 6)
@@ -96,6 +107,7 @@ struct DashboardSummarySection: View {
                         .accessibilityIdentifier("dashboard.open")
                     Text(verbatim: isEnglish ? "\(ratePercent)% done" : "达成 \(ratePercent)%")
                         .font(DaybookType.micro.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.text.tertiary)
                         .lineLimit(1)
                 }
@@ -104,7 +116,7 @@ struct DashboardSummarySection: View {
         .accessibilityIdentifier("dashboard.today")
         .accessibilityLabel(Text(todayAccessibility))
         .accessibilityHint(Text("dashboard.today.skipNote"))
-        .dashboardCommandPopover(arrowEdge: .bottom) {
+        .dashboardCommandPopover(isPresented: $isInspectToday, arrowEdge: .bottom) {
             let todayItems = todos.filter { $0.deletedAt == nil && $0.dayKey == todayKey }
             DashboardHUDCard(
                 icon: "sun.max",
@@ -118,7 +130,12 @@ struct DashboardSummarySection: View {
                         trailing: $0.isDone ? (isEnglish ? "Done" : "已完成") : (isEnglish ? "Open" : "待办")
                     )
                 },
-                emptyText: isEnglish ? "No tasks scheduled for today" : "今日暂无排期事项"
+                emptyText: isEnglish ? "No tasks scheduled for today" : "今日暂无排期事项",
+                actionTitle: isEnglish ? "Go to Today View" : "前往“今日”事项页面",
+                onAction: {
+                    isInspectToday = false
+                    DashboardNavigation.openToday(navigation)
+                }
             )
         }
     }
@@ -131,8 +148,12 @@ struct DashboardSummarySection: View {
             : "即将 \(summary.upcomingCount)"
         let hasOverdue = summary.overdueCount > 0
 
-        return DashboardSurfaceTile(fixedHeight: 44) {
-            DashboardNavigation.openPending(navigation, lane: .overdue)
+        return DashboardSurfaceTile(
+            fixedHeight: 44,
+            navigateAction: { DashboardNavigation.openPending(navigation, lane: .overdue) },
+            navigateTooltip: isEnglish ? "Open Pending Lane" : "前往待处理泳道"
+        ) {
+            isInspectPending.toggle()
         } content: {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 3) {
@@ -149,6 +170,7 @@ struct DashboardSummarySection: View {
                     } label: {
                         Text(verbatim: upcomingText)
                             .font(DaybookType.badge.monospacedDigit())
+                            .contentTransition(.numericText())
                             .foregroundStyle(DaybookPalette.text.secondary)
                             .lineLimit(1)
                             .padding(.horizontal, 5)
@@ -165,6 +187,7 @@ struct DashboardSummarySection: View {
                 HStack(alignment: .lastTextBaseline, spacing: 4) {
                     Text("\(summary.overdueCount)")
                         .font(DaybookType.entity.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(hasOverdue ? DaybookPalette.status.danger : DaybookPalette.text.primary)
                         .lineLimit(1)
                     if hasOverdue {
@@ -177,7 +200,7 @@ struct DashboardSummarySection: View {
             }
         }
         .accessibilityIdentifier("dashboard.overdue")
-        .dashboardCommandPopover(arrowEdge: .bottom) {
+        .dashboardCommandPopover(isPresented: $isInspectPending, arrowEdge: .bottom) {
             let overdueItems = todos.filter { $0.deletedAt == nil && !$0.isDone && $0.dayKey < todayKey }
             DashboardHUDCard(
                 icon: "tray.full",
@@ -191,7 +214,12 @@ struct DashboardSummarySection: View {
                         trailing: DayKey.shortStamp($0.dayKey, locale: locale)
                     )
                 },
-                emptyText: isEnglish ? "Zero overdue tasks!" : "当前没有任何逾期积压"
+                emptyText: isEnglish ? "Zero overdue tasks!" : "当前没有任何逾期积压",
+                actionTitle: isEnglish ? "Go to Pending Page" : "前往“待处理”页面",
+                onAction: {
+                    isInspectPending = false
+                    DashboardNavigation.openPending(navigation, lane: .overdue)
+                }
             )
         }
     }
@@ -204,8 +232,12 @@ struct DashboardSummarySection: View {
             : "最高 \(summary.strongestBestStreak)天"
         let activeRoutines = routines.filter { $0.deletedAt == nil && $0.isEnabled }
 
-        return DashboardSurfaceTile(fixedHeight: 44) {
-            navigation.revealRecurringList()
+        return DashboardSurfaceTile(
+            fixedHeight: 44,
+            navigateAction: { navigation.revealRecurringList() },
+            navigateTooltip: isEnglish ? "Open Recurring Routines" : "前往安排习惯"
+        ) {
+            isInspectStreak.toggle()
         } content: {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 3) {
@@ -219,6 +251,7 @@ struct DashboardSummarySection: View {
                     Spacer(minLength: 2)
                     Text(verbatim: bestText)
                         .font(DaybookType.badge.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.text.secondary)
                         .lineLimit(1)
                         .padding(.horizontal, 5)
@@ -233,17 +266,19 @@ struct DashboardSummarySection: View {
                 HStack(alignment: .lastTextBaseline, spacing: 4) {
                     Text(verbatim: isEnglish ? "\(summary.strongestCurrentStreak)d" : "\(summary.strongestCurrentStreak) 天")
                         .font(DaybookType.entity.monospacedDigit())
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.text.primary)
                         .lineLimit(1)
                     Text(verbatim: isEnglish ? "\(activeRoutines.count) habits" : "\(activeRoutines.count)个习惯")
                         .font(DaybookType.micro)
+                        .contentTransition(.numericText())
                         .foregroundStyle(DaybookPalette.text.tertiary)
                         .lineLimit(1)
                 }
             }
         }
         .accessibilityIdentifier("dashboard.streak.current")
-        .dashboardCommandPopover(arrowEdge: .bottom) {
+        .dashboardCommandPopover(isPresented: $isInspectStreak, arrowEdge: .bottom) {
             routinesHUD
         }
     }
@@ -264,7 +299,12 @@ struct DashboardSummarySection: View {
                     trailing: isEnglish ? "Active" : "启用中"
                 )
             },
-            emptyText: isEnglish ? "No active routines" : "暂无启用中的重复事项"
+            emptyText: isEnglish ? "No active routines" : "暂无启用中的重复事项",
+            actionTitle: isEnglish ? "Go to Routines" : "前往“安排”习惯清单",
+            onAction: {
+                isInspectStreak = false
+                navigation.revealRecurringList()
+            }
         )
     }
 

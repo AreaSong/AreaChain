@@ -16,7 +16,7 @@ extension TaskRow {
                 copyButton
                 moreMenu
             }
-            .frame(width: 48, height: 24)
+            .frame(width: 48, height: 24) // control
             .fixedSize()
             .opacity((isHovered || state.isSelected) && !isCommandPressed ? 1.0 : 0.0)
             .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)

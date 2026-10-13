@@ -20,18 +20,23 @@ final class BoardRowChrome {
 
     func handleRowHover(_ hovering: Bool, reduceMotion: Bool) {
         rowHoverTask?.cancel()
+        rowHoverTask = nil
+        BoardRowChrome.ensureScrollMonitoring()
         if hovering {
+            guard !BoardRowChrome.isLiveScrolling else { return }
             rowHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(120))
-                guard !Task.isCancelled else { return }
+                try? await Task.sleep(for: .milliseconds(70))
+                guard !Task.isCancelled, !BoardRowChrome.isLiveScrolling else { return }
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     self.isRowHovered = true
                     self.isCommandPressed = NSEvent.modifierFlags.contains(.command)
                 }
+                self.startCommandMonitor(reduceMotion: reduceMotion)
             }
         } else {
+            stopCommandMonitor()
             rowHoverTask = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(80))
+                try? await Task.sleep(for: .milliseconds(60))
                 guard !Task.isCancelled else { return }
                 withAnimation(DaybookMotion.interactive(reduceMotion)) {
                     self.isRowHovered = false
@@ -56,6 +61,7 @@ final class BoardRowChrome {
 
     func revealRow(reduceMotion: Bool) {
         rowHoverTask?.cancel()
+        rowHoverTask = nil
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             isRowHovered = true
         }
@@ -81,23 +87,75 @@ final class BoardRowChrome {
         )
     }
 
+    @ObservationIgnored static var isLiveScrolling = false
+    @ObservationIgnored private static var scrollObserverTokens: [NSObjectProtocol] = []
+    @ObservationIgnored private static var sharedFlagsMonitor: Any?
+    @ObservationIgnored private static var activeSubscribers: NSHashTable<BoardRowChrome> = .weakObjects()
+    @ObservationIgnored private static var activeReduceMotion = false
+
+    static func ensureScrollMonitoring() {
+        guard scrollObserverTokens.isEmpty else { return }
+        let willStart = NotificationCenter.default.addObserver(
+            forName: NSScrollView.willStartLiveScrollNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            isLiveScrolling = true
+            MainActor.assumeIsolated {
+                for chrome in activeSubscribers.allObjects {
+                    chrome.cancelHoverForScroll()
+                }
+            }
+        }
+        let didEnd = NotificationCenter.default.addObserver(
+            forName: NSScrollView.didEndLiveScrollNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            isLiveScrolling = false
+        }
+        scrollObserverTokens = [willStart, didEnd]
+    }
+
+    func cancelHoverForScroll() {
+        rowHoverTask?.cancel()
+        rowHoverTask = nil
+        titleHoverTask?.cancel()
+        titleHoverTask = nil
+        noteHoverTask?.cancel()
+        noteHoverTask = nil
+        stopCommandMonitor()
+        if isRowHovered { isRowHovered = false }
+        if isTitleTextHovered { isTitleTextHovered = false }
+        if isNoteHovered { isNoteHovered = false }
+    }
+
     func startCommandMonitor(reduceMotion: Bool) {
         isCommandPressed = NSEvent.modifierFlags.contains(.command)
-        guard flagsMonitor == nil else { return }
-        flagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+        BoardRowChrome.activeReduceMotion = reduceMotion
+        BoardRowChrome.activeSubscribers.add(self)
+        guard BoardRowChrome.sharedFlagsMonitor == nil else { return }
+        BoardRowChrome.sharedFlagsMonitor = NSEvent.addLocalMonitorForEvents(matching: .flagsChanged) { event in
             let command = event.modifierFlags.contains(.command)
             MainActor.assumeIsolated {
-                self?.applyCommand(command, reduceMotion: reduceMotion)
+                for chrome in BoardRowChrome.activeSubscribers.allObjects {
+                    chrome.applyCommand(command, reduceMotion: BoardRowChrome.activeReduceMotion)
+                }
             }
             return event
         }
     }
 
-    func stop() {
-        if let flagsMonitor {
-            NSEvent.removeMonitor(flagsMonitor)
-            self.flagsMonitor = nil
+    func stopCommandMonitor() {
+        BoardRowChrome.activeSubscribers.remove(self)
+        if BoardRowChrome.activeSubscribers.allObjects.isEmpty, let monitor = BoardRowChrome.sharedFlagsMonitor {
+            NSEvent.removeMonitor(monitor)
+            BoardRowChrome.sharedFlagsMonitor = nil
         }
+    }
+
+    func stop() {
+        stopCommandMonitor()
         rowHoverTask?.cancel()
         rowHoverTask = nil
         titleHoverTask?.cancel()

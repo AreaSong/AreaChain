@@ -373,11 +373,13 @@ final class WorkspaceNavigation {
     }
 
     func replaceListedCheckDays(_ days: [UUID: String]) {
+        guard !usesListedCheckDays || routineCompletionDays != days else { return }
         usesListedCheckDays = true
         routineCompletionDays = days
     }
 
     func clearListedCheckDays() {
+        guard usesListedCheckDays || !routineCompletionDays.isEmpty else { return }
         usesListedCheckDays = false
         routineCompletionDays = [:]
     }

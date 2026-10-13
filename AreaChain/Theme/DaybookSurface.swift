@@ -42,16 +42,25 @@ private struct DaybookSurfaceModifier: ViewModifier {
     func body(content: Content) -> some View {
         let config = configuration
         let shape = RoundedRectangle(cornerRadius: config.radius, style: .continuous)
-        content
+        let base = content
             .padding(config.padding)
             .frame(minHeight: config.minHeight)
             .background(shape.fill(fill))
             .overlay(shape.strokeBorder(border, lineWidth: borderWidth))
             .daybookElevation(elevation)
-            .onHover { hovering = $0 }
-            .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
-            .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
+
+        if variant == .row {
+            // 行样式的悬停由外层宿主（如 BoardRowChrome）统一托管并防抖，底层不重复挂载 onHover 避免滑动风暴
+            base
+                .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
+        } else {
+            base
+                .onHover { hovering = $0 }
+                .animation(DaybookMotion.interactive(reduceMotion), value: hovering)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+                .animation(DaybookMotion.interactive(reduceMotion), value: isSelected)
+        }
     }
 
     private var configuration: DaybookSurfaceConfiguration {
@@ -60,7 +69,7 @@ private struct DaybookSurfaceModifier: ViewModifier {
         return config
     }
 
-    private var highlighted: Bool { isHovered || hovering }
+    private var highlighted: Bool { variant == .row ? isHovered : (isHovered || hovering) }
 
     private var fill: Color {
         switch variant {
