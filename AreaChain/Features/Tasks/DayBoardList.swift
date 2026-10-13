@@ -122,14 +122,17 @@ struct DayBoardList: View {
 
     var body: some View {
         let identity = makeListIdentity()
+        let flatMode = AppPreferences.shared.expandSubtasksByDefault
+        let hasCompleted = !identity.doneRows.isEmpty
+            || (flatMode && !identity.doneFlatSubtasksFromOpenTodos.isEmpty)
         VStack(alignment: .leading, spacing: 4) {
-            if identity.openRows.isEmpty && identity.doneRows.isEmpty {
+            if identity.openRows.isEmpty && !hasCompleted {
                 emptyStateView
             } else {
                 openItemsSection(identity)
             }
 
-            if !identity.doneRows.isEmpty {
+            if hasCompleted {
                 completedSection(identity)
             }
         }

@@ -8,6 +8,8 @@ enum AppWindows {
     static var diaryWindowsProvider: (@MainActor () -> [NSWindow])?
     /// 剪贴板小窗。关工作台时不能把它当成杂散窗口关掉。
     static var clipboardWindowProvider: (@MainActor () -> [NSWindow])?
+    /// 独立图片查看器窗口。关工作台或看图窗时参与受管窗口判断。
+    static var attachmentViewerWindowProvider: (@MainActor () -> [NSWindow])?
 
     /// 测试替换这两处，避免为路由断言激活应用或创建窗口。
     static var activateForOpening: @MainActor () -> Void = { becomeActive() }
@@ -90,6 +92,7 @@ enum AppWindows {
          ControlsPreviewWindowController.shared.hostedWindow].compactMap { $0 }
             + (diaryWindowsProvider?() ?? [])
             + (clipboardWindowProvider?() ?? [])
+            + (attachmentViewerWindowProvider?() ?? [])
     }
 
     static func centeredFrame(size: NSSize, in visibleFrame: NSRect) -> NSRect {

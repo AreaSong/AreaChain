@@ -288,7 +288,8 @@ enum BoardRow: Identifiable {
                 isImportant: item.isImportant,
                 isUrgent: item.isUrgent,
                 remindMinutes: item.remindMinutes,
-                createdAt: item.createdAt
+                createdAt: item.createdAt,
+                hasSubtasks: !item.isDone && item.subtasks.contains(where: { $0.deletedAt == nil })
             )
         }
     }

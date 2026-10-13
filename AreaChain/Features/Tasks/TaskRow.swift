@@ -21,7 +21,7 @@ struct TaskRow: View {
     @State var draft = ""
     @State var pickingDay = false
     @State var pickingTime = false
-    @State var isSubtasksExpanded = false
+    @State var subtaskExpansionOverride: Bool? = nil
     @State private var growsUpward = false
     @State private var bubbleShiftX: CGFloat = 0
     @State private var rowMaxX: CGFloat = 0
@@ -184,6 +184,13 @@ struct TaskRow: View {
         .padding(.vertical, 6)
         .frame(minHeight: DaybookMetrics.rowHeight)
         .daybookSurface(.row, isHovered: isHovered, isSelected: state.isSelected)
+        .overlay {
+            TaskRowSubtaskProgressBar(
+                subtasks: state.subtasks,
+                isParentDone: state.isDone,
+                reduceMotion: reduceMotion
+            )
+        }
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .background(
             GeometryReader { proxy in

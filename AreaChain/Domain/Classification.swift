@@ -127,6 +127,8 @@ struct BoardSortKey: Equatable {
     var isUrgent: Bool = false
     var remindMinutes: Int? = nil
     var createdAt: Date = Date(timeIntervalSince1970: 0)
+    /// 未完成且含存活子任务的大任务默认分组置顶。
+    var hasSubtasks: Bool = false
 }
 
 enum QuadrantSlot: Int, CaseIterable, Identifiable {
@@ -294,10 +296,13 @@ enum Classification {
         return left < right
     }
 
-    /// 同一天里手动顺序优先，创建时间只作平局。四象限和提醒时刻不再决定先后。
+    /// 同一天里带子任务的未完成大任务优先分组置顶，组内按手动顺序优先，创建时间作平局。四象限和提醒时刻不再决定先后。
     static func precedes(_ left: BoardSortKey, _ right: BoardSortKey) -> Bool {
         if left.dayKey != right.dayKey {
             return dayKeyPrecedes(left.dayKey, right.dayKey)
+        }
+        if left.hasSubtasks != right.hasSubtasks {
+            return left.hasSubtasks
         }
         if left.sortOrder != right.sortOrder { return left.sortOrder < right.sortOrder }
         return left.createdAt < right.createdAt

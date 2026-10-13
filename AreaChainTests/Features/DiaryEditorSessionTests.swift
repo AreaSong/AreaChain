@@ -91,10 +91,16 @@ struct DiaryEditorSessionTests {
         #expect(try SwiftDataDiaryRepository(context: container.mainContext).fetchDiaries(for: nil, includeDeleted: false).isEmpty)
     }
 
-    @Test func privacyIsMaskedOnOpenSaveAndExternalChangesWithoutChangingListPin() throws {
+    @Test func privacyIsMaskedOnOpenSaveAndExternalChangesWithoutChangingListPin() async throws {
         let container = try fixture()
-        let entry = try note(in: container, text: "#密码 synthetic-private")
-        let session = DiaryEditorSession(source: .entry(entry), context: container.mainContext)
+        let vault = PrivacyVault(store: MemoryVaultConfigurationStore(), systemKeys: FakeSystemVaultKeys())
+        try await vault.create(password: "fixture-master-password", systemUnlock: false)
+        let privateTag = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: true)
+        container.mainContext.insert(privateTag)
+        try container.mainContext.save()
+        let repo = SwiftDataDiaryRepository(context: container.mainContext, vault: vault)
+        let entry = try repo.addDiary(text: "#密码 synthetic-private", dayKey: "2026-09-13", tagIDs: [privateTag.id])
+        let session = DiaryEditorSession(source: .entry(entry), context: container.mainContext, vault: vault)
         #expect(!session.canRevealContent)
         session.isWindowPinned = true
         #expect(!entry.isPinned && !session.canRevealContent)
@@ -104,14 +110,14 @@ struct DiaryEditorSessionTests {
         #expect(session.save())
         #expect(!session.canRevealContent)
         session.reveal()
-        try SwiftDataDiaryRepository(context: container.mainContext).editDiary(id: entry.id, text: "#密码 external-update")
+        try repo.editDiary(id: entry.id, text: "#密码 external-update")
         session.refresh()
-        #expect(!session.canRevealContent && session.text == entry.text)
+        #expect(!session.canRevealContent && session.text == "#密码 external-update")
     }
 
     @Test func selectedAndDeletedPrivateTagsStillProtectTransferredDrafts() throws {
         let container = try fixture()
-        let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now)
+        let tag = TagItem(name: "密码", sortOrder: 0, deletedAt: .now, isPrivateDiary: true)
         container.mainContext.insert(tag)
         try container.mainContext.save()
         let draft = BoardComposerDraft(text: "synthetic secret", selectedTagIDs: [tag.id])

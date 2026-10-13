@@ -58,6 +58,20 @@ struct ClassificationTests {
         #expect(!Classification.dayKeyPrecedes("", "2026-09-06"))
     }
 
+    @Test func boardOrderPinsTasksWithSubtasksWithinSameDay() {
+        let early = Date(timeIntervalSince1970: 1)
+        let late = Date(timeIntervalSince1970: 9)
+        let regularFirst = BoardSortKey(sortOrder: 0, dayKey: "2026-09-07", createdAt: early, hasSubtasks: false)
+        let parentSecond = BoardSortKey(sortOrder: 5, dayKey: "2026-09-07", createdAt: late, hasSubtasks: true)
+        let parentFirst = BoardSortKey(sortOrder: 2, dayKey: "2026-09-07", createdAt: late, hasSubtasks: true)
+        let earlierDayRegular = BoardSortKey(sortOrder: 9, dayKey: "2026-09-06", createdAt: late, hasSubtasks: false)
+
+        #expect(Classification.precedes(parentSecond, regularFirst))
+        #expect(!Classification.precedes(regularFirst, parentSecond))
+        #expect(Classification.precedes(parentFirst, parentSecond))
+        #expect(Classification.precedes(earlierDayRegular, parentFirst))
+    }
+
     @Test func filterMatchesProjectTagAndBundle() {
         let project = UUID(uuidString: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")!
         let tag = UUID(uuidString: "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb")!

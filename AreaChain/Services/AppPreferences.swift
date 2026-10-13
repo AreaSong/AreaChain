@@ -92,6 +92,7 @@ final class AppPreferences {
     nonisolated static let stampCaptureAppKey = "areachain.prefs.stampCaptureApp"
     static let syncCalendarEventsKey = "areachain.prefs.syncCalendarEvents"
     static let isTagsExpandedKey = "areachain.prefs.isTagsExpanded"
+    static let expandSubtasksByDefaultKey = "areachain.prefs.expandSubtasksByDefault"
     static let boardFiltersKey = "areachain.prefs.boardFilters"
     static let calendarMonthLayoutModeKey = "areachain.prefs.calendarMonthLayoutMode"
 
@@ -166,6 +167,14 @@ final class AppPreferences {
         }
     }
 
+    var expandSubtasksByDefault: Bool {
+        didSet {
+            guard !isLoading else { return }
+            defaults.set(expandSubtasksByDefault, forKey: Self.expandSubtasksByDefaultKey)
+            notifyChange()
+        }
+    }
+
     var calendarMonthLayoutMode: CalendarMonthLayoutMode {
         didSet {
             guard !isLoading else { return }
@@ -195,6 +204,7 @@ final class AppPreferences {
         localState = .legacy(values)
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
+        expandSubtasksByDefault = defaults.object(forKey: Self.expandSubtasksByDefaultKey) as? Bool ?? false
         if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
            let mode = CalendarMonthLayoutMode(rawValue: raw) {
             calendarMonthLayoutMode = mode
@@ -219,6 +229,7 @@ final class AppPreferences {
         localPreferenceBackend = loaded.backend
         syncCalendarEvents = defaults.bool(forKey: Self.syncCalendarEventsKey)
         isTagsExpanded = defaults.object(forKey: Self.isTagsExpandedKey) as? Bool ?? true
+        expandSubtasksByDefault = defaults.object(forKey: Self.expandSubtasksByDefaultKey) as? Bool ?? false
         if let raw = defaults.string(forKey: Self.calendarMonthLayoutModeKey),
            let mode = CalendarMonthLayoutMode(rawValue: raw) {
             calendarMonthLayoutMode = mode

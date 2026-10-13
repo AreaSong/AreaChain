@@ -104,6 +104,57 @@ struct InlineSubtaskCompletionTests {
         try await Native.click(Native.button(done ? "checkbox.done" : "checkbox.open", in: window), in: window)
         #expect(toggles == 1 && other == 0)
     }
+
+    @Test func defaultExpansionPreferenceFlattensSubtasksAsIndependentRowsWithParentBadge() async throws {
+        let fixture = try InlineCompletionFixture()
+        defer { fixture.cleanup() }
+        AppPreferences.shared.expandSubtasksByDefault = true
+
+        let board = DayBoardList(
+            dayKey: "2026-10-01",
+            routines: [],
+            checks: [],
+            todos: [fixture.todo]
+        )
+        let window = fixture.native.window(board, locale: "zh-Hans",
+                                           scheme: .light, size: NSSize(width: 360, height: 260))
+        defer { SystemPageHost.release(window) }
+        try await NativeSyntaxUI.prepareFocus(in: window)
+        try await SystemPageHost.settle(window)
+
+        // 开启平铺后，两条未完成子任务作为独立数据条平铺展示，并带有右侧所属主任务标志徽标
+        let firstButton = try Native.button("task.subtask.complete.\(fixture.subtasks[0].id)", in: window)
+        let firstParentBadge = try Native.button("task.subtask.parentBadge.\(fixture.subtasks[0].id)", in: window)
+        try Native.assertBounds([firstButton, firstParentBadge], in: window)
+
+        // 勾选完成第一条子任务后，未完成平铺列表仅剩第二条子任务，第一条进入已完成平铺集合
+        fixture.subtasks[0].isDone = true
+        let identity = DayBoardListIdentity.make(
+            dayKey: "2026-10-01",
+            todayKey: "2026-10-01",
+            filter: BoardFilter(),
+            routines: [],
+            checks: [],
+            todos: [fixture.todo],
+            catalogs: TaskCatalogContext(tags: [], attachments: [], context: fixture.native.container.mainContext),
+            includeDoneStreaks: false
+        )
+        #expect(identity.flatSubtasks(for: fixture.todo, isDone: false).map(\.id) == [fixture.subtasks[1].id])
+        #expect(identity.doneFlatSubtasksFromOpenTodos.map(\.id) == [fixture.subtasks[0].id])
+        #expect(identity.doneFlatSubtasksFromOpenTodos.first?.parentTitle == "合成父任务")
+    }
+
+    @Test func progressBarCountsCompletedSegmentsCumulatively() {
+        let parentID = UUID()
+        let snaps = [
+            SubtaskSnapshot(id: UUID(), todoId: parentID, title: "一", isDone: false, sortOrder: 0),
+            SubtaskSnapshot(id: UUID(), todoId: parentID, title: "二", isDone: true, sortOrder: 1),
+            SubtaskSnapshot(id: UUID(), todoId: parentID, title: "三", isDone: true, sortOrder: 2)
+        ]
+        let bar = TaskRowSubtaskProgressBar(subtasks: snaps, isParentDone: false)
+        #expect(bar.totalCount == 3)
+        #expect(bar.completedCount == 2)
+    }
 }
 
 @Observable @MainActor
@@ -123,9 +174,11 @@ private final class InlineCompletionFixture {
     let subtasks: [SubtaskItem]
     let probe = InlineCompletionProbe()
     private let previousDelay = PendingCompletionManager.shared.skipDelayOverride
+    private let previousExpandByDefault = AppPreferences.shared.expandSubtasksByDefault
 
     init() throws {
         native = try SettingsButtonTestSupport()
+        AppPreferences.shared.expandSubtasksByDefault = false
         let parent = TodoItem(title: "合成父任务", dayKey: "2026-10-01")
         todo = parent
         subtasks = ["第一个子任务", String(repeating: "第二个长标题 / Long subtask title ", count: 6)]
@@ -139,6 +192,7 @@ private final class InlineCompletionFixture {
     func cleanup() {
         PendingCompletionManager.shared.clearAll()
         PendingCompletionManager.shared.skipDelayOverride = previousDelay
+        AppPreferences.shared.expandSubtasksByDefault = previousExpandByDefault
         native.cleanup()
     }
 

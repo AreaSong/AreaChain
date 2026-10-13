@@ -41,33 +41,18 @@ struct AttachmentThumbnails: View {
     private var spacing: CGFloat { thumbnailSize > 28 ? 8 : 4 }
     private var cellPadding: CGFloat { onRemove != nil ? 4 : 0 }
 
-    private var currentAnchorRect: CGRect {
-        AttachmentCarouselSelection.anchorRect(
-            for: currentID, in: items,
-            thumbnailSize: thumbnailSize, spacing: spacing, cellPadding: cellPadding
-        )
-    }
-
-    private var isPopoverPresented: Binding<Bool> {
-        Binding(
-            get: { AttachmentCarouselSelection.index(of: currentID, in: items) != nil },
-            set: { if !$0 { currentID = nil } }
-        )
-    }
-
     var body: some View {
-        HStack(spacing: spacing) {
-            ForEach(items) { item in thumbnailCell(item) }
-        }
-        .popover(isPresented: isPopoverPresented, attachmentAnchor: .rect(.rect(currentAnchorRect))) {
-            AttachmentPreviewCarouselView(
-                items: items,
-                currentID: $currentID,
-                anchorRect: currentAnchorRect,
-                imageLoader: loadedImage,
-                onRemove: onRemove.map { action in { handleRemove($0, action: action) } }
-            )
-            .padding(12)
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: spacing) {
+                ForEach(items) { item in thumbnailCell(item) }
+            }
+            LazyVGrid(
+                columns: [GridItem(.adaptive(minimum: thumbnailSize + cellPadding, maximum: thumbnailSize + cellPadding), spacing: spacing)],
+                alignment: .leading,
+                spacing: spacing
+            ) {
+                ForEach(items) { item in thumbnailCell(item) }
+            }
         }
         .onChange(of: items.map(\.id)) { _, ids in reconcileSelection(with: ids) }
         .onReceive(NotificationCenter.default.publisher(for: .privacyWillLock)) { _ in currentID = nil }
@@ -76,10 +61,14 @@ struct AttachmentThumbnails: View {
 
     private func thumbnailCell(_ item: AttachmentRef) -> some View {
         ZStack(alignment: .topTrailing) {
-            Button { currentID = item.id } label: { thumbnail(item) }
-                .buttonStyle(.plain) // control: 附件缩略图点击区
-                .help(item.filename)
-                .accessibilityLabel("a11y.attachment \(item.filename)")
+            Button {
+                openImageViewer(for: item)
+            } label: {
+                thumbnail(item)
+            }
+            .buttonStyle(.plain) // control: 附件缩略图点击区
+            .help(item.filename)
+            .accessibilityLabel("a11y.attachment \(item.filename)")
 
             if let onRemove {
                 AttachmentImageResolver.removeBadge(id: item.id, font: DaybookType.caption) {
@@ -89,6 +78,17 @@ struct AttachmentThumbnails: View {
         }
         .padding(.top, cellPadding)
         .padding(.trailing, cellPadding)
+    }
+
+    private func openImageViewer(for item: AttachmentRef) {
+        currentID = item.id
+        let loader = loadedImage
+        AttachmentImageViewerWindowController.shared.show(
+            items: items,
+            initialID: item.id,
+            imageLoader: loader,
+            onRemove: onRemove.map { action in { handleRemove($0, action: action) } }
+        )
     }
 
     private func handleRemove(_ target: AttachmentRef, action: (AttachmentRef) -> Void) {
@@ -104,7 +104,7 @@ struct AttachmentThumbnails: View {
     }
 
     private func thumbnail(_ item: AttachmentRef) -> some View {
-        let isSelected = currentID == item.id
+        let isSelected = currentID == item.id && AttachmentImageViewerWindowController.shared.hostedWindow?.isVisible == true
         let isPending = inMemoryData[item.id] != nil
         let borderColor = isSelected
             ? DaybookPalette.accent.base
@@ -170,20 +170,7 @@ struct DiaryAttachmentPill: View {
 
     @ViewBuilder
     private var popoverContent: some View {
-        if AttachmentCarouselSelection.index(of: selectedID, in: items) != nil {
-            AttachmentPreviewCarouselView(
-                items: items,
-                currentID: $selectedID,
-                imageLoader: loadedImage,
-                onBack: { selectedID = nil },
-                onRemove: { target in
-                    selectedID = AttachmentCarouselSelection.nextIDAfterRemoving(target.id, in: items)
-                    onRemove(target)
-                }
-            )
-        } else {
-            gridList
-        }
+        gridList
     }
 
     private var gridList: some View {
@@ -210,7 +197,14 @@ struct DiaryAttachmentPill: View {
         let borderColor = isPending ? DaybookPalette.accent.border : DaybookPalette.border.default
         return ZStack(alignment: .topTrailing) {
             Button {
-                selectedID = item.id
+                let loader = loadedImage
+                isPresented = false
+                AttachmentImageViewerWindowController.shared.show(
+                    items: items,
+                    initialID: item.id,
+                    imageLoader: loader,
+                    onRemove: onRemove
+                )
             } label: {
                 AttachmentImageResolver.box(
                     image: loadedImage(item),

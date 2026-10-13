@@ -332,6 +332,50 @@ struct DayBoardLogicTests {
         )
     }
 
+    @Test func unfinishedParentTasksWithLiveSubtasksSortBeforeRegularTodosAndRoutines() {
+        let parentID = UUID()
+        let deletedParentID = UUID()
+        let doneParentID = UUID()
+        let liveSubtask = SubtaskSnapshot(id: UUID(), todoId: parentID, title: "子任务", isDone: false)
+        let deletedSubtask = SubtaskSnapshot(
+            id: UUID(), todoId: deletedParentID, title: "已删子任务", isDone: false,
+            deletedAt: Date(timeIntervalSince1970: 5)
+        )
+        let regularTodo = TodoSnapshot(
+            id: UUID(), title: "普通任务", isDone: false, dayKey: today, sortOrder: 0
+        )
+        let parentWithLiveSubtask = TodoSnapshot(
+            id: parentID, title: "带子任务大任务", isDone: false, dayKey: today,
+            sortOrder: 10, subtasks: [liveSubtask]
+        )
+        let parentWithDeletedSubtask = TodoSnapshot(
+            id: deletedParentID, title: "仅含墓碑子任务", isDone: false, dayKey: today,
+            sortOrder: 1, subtasks: [deletedSubtask]
+        )
+        let completedParent = TodoSnapshot(
+            id: doneParentID, title: "已完成大任务", isDone: true, dayKey: today,
+            sortOrder: 0, subtasks: [liveSubtask]
+        )
+        let routine = RoutineSnapshot(
+            id: UUID(), title: "常驻习惯", sortOrder: 0, isEnabled: true, createdDayKey: today
+        )
+
+        #expect(parentWithLiveSubtask.boardSortKey.hasSubtasks == true)
+        #expect(parentWithDeletedSubtask.boardSortKey.hasSubtasks == false)
+        #expect(completedParent.boardSortKey.hasSubtasks == false)
+        #expect(routine.boardSortKey.hasSubtasks == false)
+
+        let sortedOpen = [regularTodo, parentWithDeletedSubtask, parentWithLiveSubtask]
+            .sorted { Classification.precedes($0.boardSortKey, $1.boardSortKey) }
+            .map(\.title)
+        #expect(sortedOpen == ["带子任务大任务", "普通任务", "仅含墓碑子任务"])
+
+        let sortedListing = ItemsListing.sortedTodos([
+            completedParent, regularTodo, parentWithDeletedSubtask, parentWithLiveSubtask
+        ]).map(\.title)
+        #expect(sortedListing == ["带子任务大任务", "普通任务", "仅含墓碑子任务", "已完成大任务"])
+    }
+
     @Test func diarySnapshotPreservesTagsAndPinnedState() {
         let tagId1 = UUID()
         let tagId2 = UUID()

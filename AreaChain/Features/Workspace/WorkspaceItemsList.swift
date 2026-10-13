@@ -124,6 +124,18 @@ struct WorkspaceItemsList: View {
                             }
                             ForEach(group.entries) { entry in
                                 row(entry, identity: identity)
+                                if AppPreferences.shared.expandSubtasksByDefault,
+                                   case .todo(let todo, _, let subtaskIDs) = entry {
+                                    let items = FlatSubtaskItem.build(
+                                        for: todo,
+                                        tags: tags,
+                                        allowedIDs: subtaskIDs,
+                                        isDone: todo.isDone ? nil : false
+                                    )
+                                    ForEach(items) { subItem in
+                                        flatSubtaskRow(subItem, parent: todo)
+                                    }
+                                }
                             }
                         }
                     }
@@ -182,6 +194,23 @@ struct WorkspaceItemsList: View {
         let selected = navigation.selectedTaskIDs.contains(entry.modelID) || navigation.selectedTaskID == entry.modelID
         return rowView(entry, selected: selected, identity: identity)
             .id(entry.modelID)
+    }
+
+    private func flatSubtaskRow(_ subItem: FlatSubtaskItem, parent: TodoItem) -> some View {
+        FlatSubtaskRow(
+            item: subItem,
+            isSelected: false,
+            reduceMotion: reduceMotion,
+            onToggle: {
+                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
+                _ = DayBoardMutations.toggleSubtask(sub)
+            },
+            onSelect: { select(parent.id, modifiers: []) },
+            onDelete: {
+                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
+                askTrash(title: sub.title) { _ = DayBoardMutations.deleteSubtask(sub) }
+            }
+        )
     }
 
     @ViewBuilder

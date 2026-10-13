@@ -26,6 +26,17 @@ struct DayBoardListIdentity {
     func todo(_ id: UUID) -> TodoItem? { todosByID[id] }
     func routine(_ id: UUID) -> DailyRoutine? { routinesByID[id] }
 
+    func flatSubtasks(for todo: TodoItem, isDone: Bool? = nil) -> [FlatSubtaskItem] {
+        FlatSubtaskItem.build(for: todo, tags: catalogs.tags, isDone: isDone)
+    }
+
+    var doneFlatSubtasksFromOpenTodos: [FlatSubtaskItem] {
+        openRows.flatMap { row -> [FlatSubtaskItem] in
+            guard case .todo(let todo) = row else { return [] }
+            return flatSubtasks(for: todo, isDone: true)
+        }
+    }
+
     func routineLookups(for id: UUID) -> RoutineDisplayLookups {
         RoutineDisplayLookups(
             checkIndex: source.checkIndex,

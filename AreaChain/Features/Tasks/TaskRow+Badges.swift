@@ -114,9 +114,13 @@ extension TaskRow {
             if !state.subtasks.isEmpty {
                 TaskRowSubtaskChip(
                     subtasks: state.subtasks,
-                    isExpanded: $isSubtasksExpanded,
+                    isExpanded: subtasksExpandedBinding,
+                    isFlatMode: isFlatSubtasksMode,
                     reduceMotion: reduceMotion
                 )
+                .onChange(of: AppPreferences.shared.expandSubtasksByDefault) { _, _ in
+                    subtaskExpansionOverride = nil
+                }
             }
 
             if let items = state.attachments?.items, !items.isEmpty {
@@ -126,6 +130,21 @@ extension TaskRow {
         .fixedSize(horizontal: true, vertical: false)
         .opacity(isHovered || state.isSelected ? 1.0 : 0.65)
         .animation(DaybookMotion.interactive(reduceMotion), value: isHovered)
+    }
+
+    var isFlatSubtasksMode: Bool {
+        AppPreferences.shared.expandSubtasksByDefault
+    }
+
+    var isSubtasksExpanded: Bool {
+        !isFlatSubtasksMode && (subtaskExpansionOverride ?? false)
+    }
+
+    var subtasksExpandedBinding: Binding<Bool> {
+        Binding(
+            get: { isSubtasksExpanded },
+            set: { subtaskExpansionOverride = $0 }
+        )
     }
 
     var attachedTagNames: [String] {

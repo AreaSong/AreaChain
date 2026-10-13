@@ -87,7 +87,8 @@ struct TodoSnapshot: Equatable, Identifiable {
             isImportant: isImportant,
             isUrgent: isUrgent,
             remindMinutes: remindMinutes,
-            createdAt: createdAt
+            createdAt: createdAt,
+            hasSubtasks: !isDone && subtasks.contains(where: { $0.deletedAt == nil })
         )
     }
 }

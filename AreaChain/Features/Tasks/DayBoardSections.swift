@@ -3,11 +3,18 @@ import SwiftUI
 extension DayBoardList {
     @ViewBuilder
     func openItemsSection(_ identity: DayBoardListIdentity) -> some View {
-        if identity.openRows.isEmpty && !identity.doneRows.isEmpty {
+        let flatMode = AppPreferences.shared.expandSubtasksByDefault
+        let hasCompleted = !identity.doneRows.isEmpty || (flatMode && !identity.doneFlatSubtasksFromOpenTodos.isEmpty)
+        if identity.openRows.isEmpty && hasCompleted {
             allDoneBanner
         } else if !identity.openRows.isEmpty {
             ForEach(identity.openRows, id: \.listID) { row in
                 dayRow(row, isDone: false, identity: identity)
+                if flatMode, case .todo(let todo) = row {
+                    ForEach(identity.flatSubtasks(for: todo, isDone: false)) { subItem in
+                        flatSubtaskRow(subItem, parent: todo)
+                    }
+                }
             }
         }
     }
@@ -37,6 +44,10 @@ extension DayBoardList {
 
     @ViewBuilder
     func completedSection(_ identity: DayBoardListIdentity) -> some View {
+        let flatMode = AppPreferences.shared.expandSubtasksByDefault
+        let doneSubtasks = flatMode ? identity.doneFlatSubtasksFromOpenTodos : []
+        let completedCount = identity.doneRows.count + doneSubtasks.count
+
         Divider()
             .opacity(0.15)
             .padding(.top, 4)
@@ -53,8 +64,8 @@ extension DayBoardList {
                     .foregroundStyle(DaybookPalette.text.secondary)
                 DaybookSectionHeader(
                     title: showCompleted
-                        ? "stamp.completed.collapse \(identity.doneRows.count)"
-                        : "stamp.completed \(identity.doneRows.count)",
+                        ? "stamp.completed.collapse \(completedCount)"
+                        : "stamp.completed \(completedCount)",
                     icon: "checkmark.circle"
                 )
                 Spacer()
@@ -66,10 +77,42 @@ extension DayBoardList {
         .accessibilityAddTraits(showCompleted ? [.isSelected] : [])
 
         if showCompleted {
+            ForEach(doneSubtasks) { subItem in
+                if let parent = identity.todo(subItem.parentID) {
+                    flatSubtaskRow(subItem, parent: parent)
+                }
+            }
             ForEach(identity.doneRows, id: \.listID) { row in
                 dayRow(row, isDone: true, identity: identity)
+                if flatMode, case .todo(let todo) = row {
+                    ForEach(identity.flatSubtasks(for: todo)) { subItem in
+                        flatSubtaskRow(subItem, parent: todo)
+                    }
+                }
             }
         }
+    }
+
+    func flatSubtaskRow(_ subItem: FlatSubtaskItem, parent: TodoItem) -> some View {
+        FlatSubtaskRow(
+            item: subItem,
+            isSelected: false,
+            reduceMotion: reduceMotion,
+            onToggle: {
+                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
+                _ = DayBoardMutations.toggleSubtask(sub)
+            },
+            onSelect: {
+                focusedListID = BoardItemReference.todo(parent.id).id
+                selectTask(parent.id)
+            },
+            onDelete: {
+                guard let sub = parent.subtasks.first(where: { $0.id == subItem.id && $0.deletedAt == nil }) else { return }
+                pendingTrash = PendingTrash(title: sub.title) {
+                    _ = DayBoardMutations.deleteSubtask(sub)
+                }
+            }
+        )
     }
 }
 

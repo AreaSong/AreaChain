@@ -11,9 +11,10 @@ struct TagManagementPage: View {
     @Environment(\.locale) var locale
 
     @Query(sort: \TagItem.sortOrder) var tags: [TagItem]
-    @Query private var todos: [TodoItem]
-    @Query private var routines: [DailyRoutine]
-    @Query private var diaries: [DiaryEntry]
+    @Query var todos: [TodoItem]
+    @Query var routines: [DailyRoutine]
+    @Query var diaries: [DiaryEntry]
+    @Query var attachments: [AttachmentItem]
 
     @State private var filter: TagListFilter = .all
     @State private var query = ""
@@ -29,7 +30,7 @@ struct TagManagementPage: View {
     @State private var confirmDelete = false
     @State private var confirmCleanup = false
     @State private var confirmPurge = false
-    @State private var showsDeleted = false
+    @State var showsDeleted = false
     @State var mergeTarget: UUID?
     @State var showMerge = false
     @State var showingPrivacySetup = false
@@ -93,10 +94,10 @@ struct TagManagementPage: View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: DaybookSpacing.sm) {
                 searchField
-                    .frame(width: 240)
+                    .frame(width: 220)
                 if !showsDeleted {
                     createField
-                        .frame(minWidth: 280, maxWidth: .infinity)
+                        .frame(minWidth: 260, idealWidth: 300, maxWidth: .infinity)
                 }
             }
             VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
@@ -120,6 +121,7 @@ struct TagManagementPage: View {
                         .fixedSize(horizontal: true, vertical: false)
                 }
             }
+            .frame(height: DaybookButtonSize.compact.hit)
             VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
                 filterBar
                 selectionToolbar
@@ -141,6 +143,7 @@ struct TagManagementPage: View {
         Text("tags.selection.count \(count)")
             .font(DaybookType.badge)
             .foregroundStyle(DaybookPalette.text.tertiary)
+            .monospacedDigit()
         if showsDeleted {
             actionChip(title: "trash.restore", systemImage: "arrow.uturn.backward", action: commitRestore)
             actionChip(title: "trash.purge", systemImage: "trash", tint: DaybookPalette.status.danger) {
@@ -167,7 +170,7 @@ struct TagManagementPage: View {
                     .font(DaybookType.caption)
                     .foregroundStyle(DaybookPalette.status.danger)
             }
-            tagList
+            mainSplitContent
         }
     }
 
@@ -175,7 +178,7 @@ struct TagManagementPage: View {
         TagUsage.records(TagUsage.subjects(todos: todos, routines: routines, diaries: diaries))
     }
 
-    private var displayed: [TagItem] {
+    var displayed: [TagItem] {
         let base = showsDeleted ? deletedTags : TagUsage.filtered(tags, filter: filter, usage: usage)
         let needle = query.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !needle.isEmpty else { return base }
@@ -187,11 +190,11 @@ struct TagManagementPage: View {
             .sorted { ($0.deletedAt ?? .distantPast) > ($1.deletedAt ?? .distantPast) }
     }
 
-    private var deletedSelection: [TagItem] {
+    var deletedSelection: [TagItem] {
         deletedTags.filter { selection.contains($0.id) }
     }
 
-    private var liveSelection: [TagItem] {
+    var liveSelection: [TagItem] {
         Catalog.liveTags(tags).filter { selection.contains($0.id) }
     }
 
@@ -199,7 +202,7 @@ struct TagManagementPage: View {
         liveSelection.filter { !$0.isDiaryPreset }
     }
 
-    private var unusedOrdinary: [TagItem] {
+    var unusedOrdinary: [TagItem] {
         TagUsage.filtered(tags, filter: .unused, usage: usage)
     }
 
@@ -304,8 +307,8 @@ struct TagManagementPage: View {
     }
 
     @ViewBuilder
-    private var tagList: some View {
-            if displayed.isEmpty {
+    var tagList: some View {
+        if displayed.isEmpty {
             DaybookEmptyState(
                 title: emptyTitle,
                 systemImage: "tag"
@@ -315,12 +318,13 @@ struct TagManagementPage: View {
                 ForEach(displayed) { tag in
                     tagRow(tag)
                         .tag(tag.id)
+                        .listRowBackground(softRowBackground(for: tag))
                 }
                 .onMove(perform: canReorder ? moveTags : nil)
             }
             .listStyle(.inset)
             .daybookScroll()
-            .frame(minHeight: 240)
+            .frame(minHeight: 120)
         }
     }
 
@@ -355,6 +359,7 @@ struct TagManagementPage: View {
                 HStack(spacing: 3) {
                     Image(systemName: "lock.fill")
                         .font(DaybookType.micro)
+                        .frame(width: 10, height: 10)
                     Text("tags.privacy.badge")
                         .font(DaybookType.badge)
                 }
@@ -366,6 +371,7 @@ struct TagManagementPage: View {
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .monospacedDigit()
         }
+        .frame(minHeight: 20)
         .accessibilityElement(children: .combine)
         .contextMenu { tagRowContextMenu(tag) }
     }
@@ -459,38 +465,5 @@ struct TagManagementPage: View {
             return
         }
         pageError = nil
-    }
-
-    private func commitBatchDelete() {
-        let ids = liveSelection.map(\.id)
-        if DayBoardMutations.batchTrashTags(ids: ids, context: modelContext) {
-            selection.removeAll()
-            pageError = nil
-        } else {
-            pageError = "tags.error.save"
-        }
-    }
-
-    private func commitCleanup() {
-        let ids = unusedOrdinary.map(\.id)
-        pageError = DayBoardMutations.batchTrashTags(ids: ids, context: modelContext) ? nil : "tags.error.save"
-    }
-
-    private func commitRestore() {
-        if DayBoardMutations.batchRestoreTags(deletedSelection) {
-            selection.removeAll()
-            pageError = nil
-        } else {
-            pageError = "tags.error.save"
-        }
-    }
-
-    private func commitPurge() {
-        if DayBoardMutations.batchPurgeTags(deletedSelection) {
-            selection.removeAll()
-            pageError = nil
-        } else {
-            pageError = "tags.error.save"
-        }
     }
 }

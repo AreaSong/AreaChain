@@ -20,7 +20,6 @@ struct AttachmentBrowserPage: View {
     @State private var focusedStorageID: UUID?
     @State private var renamingStorageID: UUID?
     @State private var renameDraft = ""
-    @State private var preview: AttachmentRef?
     @State private var pendingTrash: PendingTrash?
     @State private var poolRevision = 0
     @State private var projectionMemo = AttachmentProjectionMemo()
@@ -54,9 +53,6 @@ struct AttachmentBrowserPage: View {
         }
         .workspaceHeader(actions: headerActions)
         .confirmMoveToTrash($pendingTrash)
-        .popover(item: $preview) { item in
-            previewBody(item, allItems: allItems)
-        }
         .onChange(of: allItems.map(\.storageID)) { _, storageIDs in
             let valid = Set(storageIDs)
             selection.formIntersection(valid)
@@ -65,9 +61,6 @@ struct AttachmentBrowserPage: View {
             }
             if let renamingStorageID, !valid.contains(renamingStorageID) {
                 cancelRename()
-            }
-            if let preview, !allItems.contains(where: { $0.primaryReference.id == preview.id }) {
-                self.preview = nil
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .boardDidChange)) { _ in
@@ -143,7 +136,7 @@ struct AttachmentBrowserPage: View {
             renameDraft: $renameDraft,
             loadImage: loadedThumbnail(_:),
             onToggleSelect: toggleSelect(_:),
-            onPreview: { preview = $0 },
+            onPreview: { openImageViewer(for: $0, displayed: displayed) },
             onBeginRename: beginRename(_:),
             onCommitRename: commitRename(_:),
             onCancelRename: cancelRename,
@@ -188,7 +181,7 @@ struct AttachmentBrowserPage: View {
                         isRenaming: renamingStorageID == item.storageID,
                         renameDraft: $renameDraft,
                         onToggleSelect: { toggleSelect(item.storageID) },
-                        onPreview: { preview = item.primaryReference },
+                        onPreview: { openImageViewer(for: item.primaryReference, displayed: displayed) },
                         onBeginRename: { beginRename(item) },
                         onCommitRename: { commitRename(item) },
                         onCancelRename: cancelRename,
@@ -200,6 +193,26 @@ struct AttachmentBrowserPage: View {
             }
         }
         .daybookScroll()
+    }
+
+    private func openImageViewer(for target: AttachmentRef, displayed: [AttachmentLibraryItem]) {
+        let refs = displayed.map(\.primaryReference)
+        let loader = loadedFullImage(_:)
+        AttachmentImageViewerWindowController.shared.show(
+            items: refs.isEmpty ? [target] : refs,
+            initialID: target.id,
+            imageLoader: loader,
+            onCopyToken: { ref in
+                if let match = displayed.first(where: { $0.primaryReference.id == ref.id }) {
+                    copyToken(for: match)
+                }
+            },
+            onRemove: { ref in
+                if let match = displayed.first(where: { $0.primaryReference.id == ref.id }) {
+                    confirmSingleTrash(match)
+                }
+            }
+        )
     }
 
     private var activeStore: AttachmentStore { hostContext?.attachments ?? .shared }
@@ -240,44 +253,6 @@ struct AttachmentBrowserPage: View {
             query: query,
             sort: sort
         )
-    }
-
-    @ViewBuilder
-    private func previewBody(_ item: AttachmentRef, allItems: [AttachmentLibraryItem]) -> some View {
-        if let libItem = allItems.first(where: { $0.primaryReference.id == item.id }) {
-            let fullImage = loadedFullImage(item)
-            VStack(alignment: .leading, spacing: DaybookSpacing.xs) {
-                HStack(spacing: DaybookSpacing.sm) {
-                    Text(libItem.filename)
-                        .font(DaybookType.subtitle.weight(.semibold))
-                        .foregroundStyle(DaybookPalette.text.primary)
-                        .lineLimit(1)
-                    Spacer()
-                    if let fullImage {
-                        Button("attachments.copyImage") {
-                            copyImage(fullImage)
-                        }
-                        .buttonStyle(DaybookButtonStyle(.subtle, size: .compact))
-                    }
-                    Button("attachments.copyToken") {
-                        copyToken(for: libItem)
-                    }
-                    .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
-                }
-                if let fullImage {
-                    LoadedAttachmentImage(image: fullImage)
-                        .frame(maxWidth: 420, maxHeight: 420)
-                } else {
-                    Text(libItem.filename)
-                        .font(DaybookType.subtitle)
-                        .foregroundStyle(DaybookPalette.text.secondary)
-                        .padding(12)
-                }
-            }
-            .padding(DaybookSpacing.sm)
-        } else {
-            Text("diary.private.title")
-        }
     }
 
     private func loadedThumbnail(_ item: AttachmentRef) -> NSImage? {

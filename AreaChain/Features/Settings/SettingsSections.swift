@@ -53,6 +53,17 @@ struct GeneralSettingsSection: View {
                 .font(DaybookType.subtitle)
                 .foregroundStyle(DaybookPalette.text.secondary)
                 .fixedSize(horizontal: false, vertical: true)
+            Toggle(isOn: $prefs.expandSubtasksByDefault) {
+                Text("settings.subtasks.expandByDefault")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .toggleStyle(DaybookToggleStyle(.switchControl))
+            .accessibilityIdentifier("settings.subtasks.expandByDefault")
+            .systemPageMarker("settings.subtasks.expandByDefault")
+            Text("settings.subtasks.expandByDefault.help")
+                .font(DaybookType.subtitle)
+                .foregroundStyle(DaybookPalette.text.secondary)
+                .fixedSize(horizontal: false, vertical: true)
         }
 
         Section("settings.launch") {
