@@ -121,6 +121,7 @@ struct TasksPage: View {
                             workspaceNavigation.isInlineTitleVisible = shouldCollapse
                         }
                     }
+                    .scrollIndicators(.hidden)
                     .daybookScroll(featherEdges: true, featherHeight: 12) // control
                     .daybookTopScrollBlur(height: 18)
                     .onChange(of: focusedTaskID?.wrappedValue) { _, newValue in

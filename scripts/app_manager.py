@@ -133,8 +133,11 @@ def quit_running(target_app: Optional[Path] = None, timeout=5):
     if not running(target_app):
         return
     app_title = target_app.stem if target_app is not None else "AreaChain"
-    subprocess.run(["osascript", "-e", f'tell application "{app_title}" to quit'],
-                   capture_output=True, timeout=5, check=False)
+    try:
+        subprocess.run(["osascript", "-e", f'tell application "{app_title}" to quit'],
+                       capture_output=True, timeout=2, check=False)
+    except subprocess.TimeoutExpired:
+        pass
     deadline = time.time() + timeout
     while time.time() < deadline:
         if not running(target_app):
@@ -411,7 +414,9 @@ def parser():
     commands = command.add_subparsers(dest="command", required=True)
     install_command = commands.add_parser("install", help="增量构建当前 Debug，验签、确认后安装并请求启动")
     install_command.add_argument("--release", action="store_true", help="改为构建并安装优化后的 Release")
-    install_command.add_argument("--coexist", action="store_true", help="安装为独立的 AreaChain (Debug).app，与正式版共存")
+    install_command.add_argument("--coexist", action="store_true", help="安装为独立的 AreaChain (Debug).app，与正式版共存（默认）")
+    install_command.add_argument("--debug", action="store_true", help="安装为独立的 AreaChain (Debug).app（同 --coexist）")
+    install_command.add_argument("--single", action="store_true", help="单包模式：强制覆盖安装为 AreaChain.app")
     install_command.add_argument("--no-build", action="store_true", help="安装已有产物，不重新构建")
     install_command.add_argument("--no-open", action="store_true", help="安装后不启动")
     install_command.add_argument("--previous-app", type=Path, metavar="PATH",
@@ -431,8 +436,10 @@ def parser():
 
 def main(arguments=None, paths=None):
     args = parser().parse_args(arguments)
+    is_cli = paths is None
     paths = paths or Locations(signing.ROOT, Path("/Applications"), Path.home())
-    if getattr(args, "debug", False) or (getattr(args, "coexist", False) and not getattr(args, "release", False)):
+    is_debug_install = args.command == "install" and not getattr(args, "release", False) and not getattr(args, "single", False)
+    if getattr(args, "debug", False) or getattr(args, "coexist", False) or (is_cli and is_debug_install):
         paths = Locations(paths.project, paths.applications, paths.user, app_name="AreaChain (Debug).app")
     try:
         if args.command == "install":

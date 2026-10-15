@@ -42,15 +42,13 @@ enum Persistence {
     }
 
     static func resetStoreOnDisk(
+        base: URL = AppGroup.containerURL,
         removeItem: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }
     ) {
-        let bases = [AppGroup.containerURL, URL.applicationSupportDirectory]
         // 同步基线属于被重置的数据集，不能随旧任务绑定遗留到新库。
         let filenames = ["areachain.store", "areachain.store-shm", "areachain.store-wal", CalendarSyncStorage.ledgerFilename]
-        for base in bases {
-            for filename in filenames {
-                try? removeItem(base.appending(path: filename))
-            }
+        for filename in filenames {
+            try? removeItem(base.appending(path: filename))
         }
         try? removeItem(AttachmentStore.directory())
     }

@@ -5,16 +5,20 @@ import SwiftData
 enum WidgetPersistence {
     static let appGroupIdentifier = "group.com.areachain.app"
 
-    #if DEBUG
-    static let storeFileName = "areachain-debug.store"
-    #else
     static let storeFileName = "areachain.store"
-    #endif
+
+    static var containerURL: URL {
+        let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
+            ?? URL.applicationSupportDirectory
+        #if DEBUG
+        return base.appending(path: "debug", directoryHint: .isDirectory)
+        #else
+        return base
+        #endif
+    }
 
     static var storeURL: URL {
-        let groupDir = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier)
-            ?? URL.applicationSupportDirectory
-        return groupDir.appending(path: storeFileName)
+        containerURL.appending(path: storeFileName)
     }
 
     static func makeContainer() -> ModelContainer? {

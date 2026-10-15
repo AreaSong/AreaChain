@@ -89,12 +89,13 @@ python3 -B -m unittest discover -s scripts/tests -v
 |---|---|
 | `./scripts/app.sh status` | 只读查看 `/Applications/AreaChain.app` 是否存在、进程与签名状态、开发描述文件有效期 |
 | `./scripts/install.sh --dry-run` | 检查已有 Debug 产物与现用应用身份，不构建、复制、安装或启动 |
-| `./scripts/install.sh` | 增量构建当前 Debug、验签、请求确认，保留旧包后安装并请求启动 |
-| `./scripts/install.sh --yes` | 同上，并跳过终端确认。开发中用它装上工作区里的最新代码 |
-| `./scripts/install.sh --release` | 改为整包优化的 Release 构建后再安装 |
-| `./scripts/install.sh --no-build --no-open` | 复用已有 Debug，确认安装但不启动 |
+| `./scripts/install.sh` | 增量构建当前 Debug、验签、请求确认，默认安装为独立共存的 `AreaChain (Debug).app` |
+| `./scripts/install.sh --yes` | 同上，并跳过终端确认。开发中用它装上最新测试代码，与正式版完美共存 |
+| `./scripts/install.sh --release` | 改为整包优化的 Release 构建后安装为正式版 `/Applications/AreaChain.app` |
+| `./scripts/install.sh --single` | 单包模式：强制将 Debug 覆盖安装到正式版目标 `/Applications/AreaChain.app` |
+| `./scripts/install.sh --no-build --no-open` | 复用已有产物，确认安装但不启动 |
 | `./scripts/install.sh --previous-app /绝对路径/AreaChain.app --dry-run` | 已安装应用缺失时，用显式指定的原应用备份核对身份，不安装或启动 |
-| `./scripts/app.sh start` | 验签后请求启动已安装应用，不构建、不安装 |
+| `./scripts/app.sh start` | 验签后请求启动已安装应用，不构建、不安装；支持 `--debug` 启动测试版 |
 | `./scripts/uninstall.sh --dry-run` | 预览卸载目标，不移动文件 |
 | `./scripts/uninstall.sh` | 确认后将应用移入可恢复目录，保留数据和钥匙串 |
 | `./scripts/app.sh delete` | `uninstall` 的同义命令，不表示清空数据 |

@@ -15,7 +15,7 @@ final class AttachmentStore: AttachmentStorageProtocol, @unchecked Sendable {
     }
 
     func directory(fileManager: FileManager = .default) -> URL {
-        root ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        root ?? AppGroup.containerURL
             .appending(path: "areachain-attachments", directoryHint: .isDirectory)
     }
 

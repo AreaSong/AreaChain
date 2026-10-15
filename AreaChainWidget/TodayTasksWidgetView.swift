@@ -118,13 +118,11 @@ struct SmallWidgetView: View {
             Divider()
 
             if let nextTodo = entry.todos.first(where: { !$0.isDone }) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("下一事项")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(.secondary)
-                    Text(nextTodo.title)
-                        .font(.system(size: 12))
-                        .lineLimit(1)
+                    TodoRowView(todo: nextTodo)
                 }
             } else {
                 Text("今日安排已达成 🎉")
@@ -190,8 +188,10 @@ struct TodoRowView: View {
         HStack(spacing: 8) {
             Button(intent: ToggleTaskIntent(taskId: todo.id.uuidString)) {
                 Image(systemName: todo.isDone ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(todo.isDone ? Color.accentColor : Color.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 
@@ -219,8 +219,10 @@ struct RoutineRowView: View {
         HStack(spacing: 8) {
             Button(intent: ToggleRoutineIntent(routineId: routine.id.uuidString, dayKey: WidgetDateHelper.todayDayKey())) {
                 Image(systemName: routine.isDone ? "flame.fill" : "flame")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(routine.isDone ? Color.orange : Color.secondary)
+                    .frame(width: 24, height: 24)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
 

@@ -4,7 +4,7 @@ import SwiftData
 enum CalendarSyncStorage {
     static let ledgerFilename = "areachain-calendar-sync.json"
 
-    static func ledger(at root: URL = .applicationSupportDirectory) -> CalendarLedgerAccess {
+    static func ledger(at root: URL = AppGroup.containerURL) -> CalendarLedgerAccess {
         let url = root.appending(path: ledgerFilename)
         return CalendarLedgerAccess(load: {
             do {

@@ -178,6 +178,14 @@ class InstallTests(AppTestCase):
         self.assertEqual(self.signature(self.paths.app)["codeHash"], "new")
         self.assertEqual(self.signature(self.saved_apps()[0])["codeHash"], "old")
 
+    def test_coexist_and_debug_install_target_debug_app_and_preserve_release(self):
+        result, output, errors = self.invoke("install", "--debug", "--no-build", "--no-open", "--yes")
+        self.assertEqual(result, 0, errors)
+        debug_app = self.paths.applications / "AreaChain (Debug).app"
+        self.assertTrue(debug_app.exists())
+        self.assertEqual(self.signature(debug_app)["codeHash"], "new")
+        self.assertEqual(self.signature(self.paths.app)["codeHash"], "old")
+
 
 class ManagementTests(AppTestCase):
     def test_uninstall_moves_only_the_app_and_preserves_private_configuration(self):

@@ -295,6 +295,7 @@ struct DiaryPage: View {
                     BlankClickArea(onClick: clearSelection)
                 )
             }
+            .scrollIndicators(.hidden)
             .daybookScroll(featherEdges: true, featherHeight: 12) // control: 提高羽化高度提升边缘平滑度
             .frame(maxWidth: .infinity, maxHeight: maxScrollHeight ?? .infinity)
             .background(

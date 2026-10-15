@@ -30,7 +30,7 @@ struct ClosureRegressionTests {
         var attempted: [URL] = []
         // 只记录路径，不触碰真实数据库、同步记录或附件。
         Persistence.resetStoreOnDisk { attempted.append($0) }
-        let root = URL.applicationSupportDirectory
+        let root = AppGroup.containerURL
         let expected = ["areachain.store", "areachain.store-shm", "areachain.store-wal", CalendarSyncStorage.ledgerFilename]
             .map { root.appending(path: $0) } + [AttachmentStore.directory()]
         #expect(attempted == expected)

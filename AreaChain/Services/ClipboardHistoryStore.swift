@@ -32,7 +32,7 @@ final class ClipboardHistoryStore {
     private let metadataCache = NSCache<NSString, ClipboardImageMetadataBox>()
 
     init(root: URL? = nil, fileManager: FileManager = .default) {
-        self.root = root ?? fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        self.root = root ?? AppGroup.containerURL
             .appending(path: "areachain-clipboard", directoryHint: .isDirectory)
         thumbnailCache.countLimit = 300
         fullImageCache.countLimit = 48

@@ -8,10 +8,9 @@ final class AppGroupTests: XCTestCase {
 
     func test_storeURL_is_valid_and_named_areachain_store() {
         let storeURL = AppGroup.storeURL
-        #if DEBUG
-        XCTAssertEqual(storeURL.lastPathComponent, "areachain-debug.store")
-        #else
         XCTAssertEqual(storeURL.lastPathComponent, "areachain.store")
+        #if DEBUG
+        XCTAssertEqual(storeURL.deletingLastPathComponent().lastPathComponent, "debug")
         #endif
         XCTAssertFalse(storeURL.path.isEmpty)
     }
