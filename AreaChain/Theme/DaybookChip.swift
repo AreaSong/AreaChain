@@ -89,3 +89,16 @@ struct DaybookCount: View {
             .foregroundStyle(emphasis ? DaybookPalette.accent.base : DaybookPalette.text.secondary)
     }
 }
+
+/// 统一调试徽标：仅在调试构建时展示，纯静态展示无状态无闭包
+struct DaybookDebugBadge: View {
+    var body: some View {
+        Text("DEBUG")
+            .font(DaybookType.badge)
+            .foregroundStyle(DaybookPalette.accent.base)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(Capsule().fill(DaybookPalette.accent.base.opacity(0.14)))
+            .overlay(Capsule().strokeBorder(DaybookPalette.accent.base.opacity(0.35), lineWidth: 0.8))
+    }
+}

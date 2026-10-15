@@ -31,10 +31,11 @@ class Locations:
     project: Path
     applications: Path
     user: Path
+    app_name: str = "AreaChain.app"
 
     @property
     def app(self):
-        return self.applications / "AreaChain.app"
+        return self.applications / self.app_name
 
     @property
     def backups(self):
@@ -114,33 +115,41 @@ def product_configuration(entitlements):
     return "Debug" if debugger else "Release"
 
 
-def running():
+def running(target_app: Optional[Path] = None):
+    if target_app is not None and exists(target_app):
+        result = subprocess.run(["pgrep", "-f", str(target_app / "Contents/MacOS/AreaChain")], capture_output=True, timeout=10, check=False)
+        require(result.returncode in (0, 1), "无法确认应用是否仍在运行，停止操作。")
+        return result.returncode == 0
     result = subprocess.run(["pgrep", "-x", "AreaChain"], capture_output=True, timeout=10, check=False)
     require(result.returncode in (0, 1), "无法确认 AreaChain 是否仍在运行，停止操作。")
     return result.returncode == 0
 
 
-def stopped():
-    require(not running(), "请先在 AreaChain 中保存内容并正常退出，再重新执行；脚本不会强制结束进程。")
+def stopped(target_app: Optional[Path] = None):
+    require(not running(target_app), "请先在 AreaChain 中保存内容并正常退出，再重新执行；脚本不会强制结束进程。")
 
 
-def quit_running(timeout=5):
-    if not running():
+def quit_running(target_app: Optional[Path] = None, timeout=5):
+    if not running(target_app):
         return
-    subprocess.run(["osascript", "-e", 'tell application "AreaChain" to quit'],
+    app_title = target_app.stem if target_app is not None else "AreaChain"
+    subprocess.run(["osascript", "-e", f'tell application "{app_title}" to quit'],
                    capture_output=True, timeout=5, check=False)
     deadline = time.time() + timeout
     while time.time() < deadline:
-        if not running():
+        if not running(target_app):
             return
         time.sleep(0.1)
-    subprocess.run(["pkill", "-x", "AreaChain"], capture_output=True, timeout=5, check=False)
+    if target_app is not None and exists(target_app):
+        subprocess.run(["pkill", "-f", str(target_app / "Contents/MacOS/AreaChain")], capture_output=True, timeout=5, check=False)
+    else:
+        subprocess.run(["pkill", "-x", "AreaChain"], capture_output=True, timeout=5, check=False)
     deadline = time.time() + 2
     while time.time() < deadline:
-        if not running():
+        if not running(target_app):
             return
         time.sleep(0.1)
-    require(not running(), "无法退出正在运行的 AreaChain，请手动退出后再试。")
+    require(not running(target_app), f"无法退出正在运行的 {app_title}，请手动退出后再试。")
 
 
 def installed_signature(paths):
@@ -158,7 +167,7 @@ def verified_identity(app):
 
 def recovery_identity(paths, app):
     real_path(app)
-    require(app.name == "AreaChain.app" and app.parent.parent == paths.backups
+    require(app.name in ("AreaChain.app", "AreaChain (Debug).app") and app.parent.parent == paths.backups
             and re.fullmatch(r"(?:install|uninstall)-\d{8}T\d{6}Z-[A-Za-z0-9_-]+", app.parent.name),
             "原应用必须来自本用户安装／卸载脚本保留的回退目录。")
     for directory in (paths.backups, app.parent):
@@ -179,6 +188,8 @@ def recovery_identity(paths, app):
 
 def installation_access(paths, previous_app):
     installed = installed_signature(paths)
+    if installed is None and paths.app != paths.applications / "AreaChain.app" and exists(paths.applications / "AreaChain.app"):
+        installed = verified_identity(paths.applications / "AreaChain.app")
     if previous_app is None:
         return InstallAccess(installed)
     require(installed is None, "已安装应用仍存在，请移除 --previous-app，直接核对现用应用。")
@@ -260,15 +271,18 @@ def operation_lock(paths):
 
 
 def unchanged(paths, access):
-    stopped()
-    require(installed_signature(paths) == access.installed, "确认后已安装应用发生变化，停止替换。")
+    stopped(paths.app)
+    current_installed = installed_signature(paths)
+    if current_installed is None and paths.app != paths.applications / "AreaChain.app" and exists(paths.applications / "AreaChain.app"):
+        current_installed = verified_identity(paths.applications / "AreaChain.app")
+    require(current_installed == access.installed, "确认后已安装应用发生变化，停止替换。")
     if access.recovery is not None:
         require(recovery_identity(paths, access.recovery.app) == access.recovery,
                 "确认后原应用备份发生变化，停止安装。")
 
 
 def switch_app(paths, staged, recovery, expected, configuration):
-    old = recovery / "AreaChain.app"
+    old = recovery / paths.app.name
     had_old = exists(paths.app)
     installed_new = False
     if had_old:
@@ -293,7 +307,7 @@ def replace_app(paths, source, expected, access, candidate, configuration):
     stage = None
     try:
         stage = Path(tempfile.mkdtemp(prefix=".areachain-install-", dir=paths.applications))
-        staged = stage / "AreaChain.app"
+        staged = stage / paths.app.name
         signing.run_tool(["ditto", "--rsrc", "--extattr", str(source), str(staged)])
         verify_candidate(staged, expected, configuration)
         require(inspect_signature(staged) == candidate,
@@ -308,7 +322,7 @@ def replace_app(paths, source, expected, access, candidate, configuration):
             shutil.rmtree(stage)
         if recovery.is_dir() and not any(recovery.iterdir()):
             recovery.rmdir()
-    return str(recovery / "AreaChain.app") if recovery.exists() else None
+    return str(recovery / paths.app.name) if recovery.exists() and (recovery / paths.app.name).exists() else None
 
 
 def install(args, paths):
@@ -328,7 +342,7 @@ def install(args, paths):
     access = installation_access(paths, args.previous_app)
     check_access(paths, candidate, access)
     show({"action": "install", "dryRun": args.dry_run, "configuration": configuration,
-          "target": str(paths.app), "candidate": str(source), "running": running(),
+          "target": str(paths.app), "candidate": str(source), "running": running(paths.app),
           "dataPreserved": True, "profileExpiresUTC": verified.get("profileExpiresUTC"),
           "identitySource": str(access.recovery.app) if access.recovery else
           (str(paths.app) if access.installed is not None else None)})
@@ -336,7 +350,7 @@ def install(args, paths):
         return
     confirm("install", args.yes)
     with operation_lock(paths):
-        quit_running()
+        quit_running(paths.app)
         backup = replace_app(paths, source, expected, access, candidate, configuration)
     show({"installed": True, "previousApp": backup, "dataPreserved": True})
     if not args.no_open:
@@ -348,25 +362,25 @@ def uninstall(args, paths):
     info = bundle_info(paths.app) if exists(paths.app) else None
     original = paths.app.stat() if info is not None else None
     show({"action": "uninstall", "dryRun": args.dry_run, "target": str(paths.app),
-          "installed": info is not None, "running": running(), "dataPreserved": True,
+          "installed": info is not None, "running": running(paths.app), "dataPreserved": True,
           "keychainPreserved": True, "recoveryRoot": str(paths.backups)})
     if args.dry_run or info is None:
         return
-    stopped()
+    stopped(paths.app)
     confirm("uninstall", args.yes)
     with operation_lock(paths):
-        stopped()
+        stopped(paths.app)
         require(bundle_info(paths.app) == info, "确认后应用发生变化，停止卸载。")
         current = paths.app.stat()
         require((current.st_dev, current.st_ino) == (original.st_dev, original.st_ino),
                 "确认后应用被替换，停止卸载。")
         recovery = recovery_directory(paths, "uninstall")
         try:
-            os.rename(paths.app, recovery / "AreaChain.app")
+            os.rename(paths.app, recovery / paths.app.name)
         except OSError:
             recovery.rmdir()
             raise
-    show({"uninstalled": True, "recoverableApp": str(recovery / "AreaChain.app"),
+    show({"uninstalled": True, "recoverableApp": str(recovery / paths.app.name),
           "dataPreserved": True, "keychainPreserved": True})
 
 
@@ -380,7 +394,7 @@ def launch(paths):
 
 def status(paths):
     real_path(paths.applications)
-    result = {"app": str(paths.app), "installed": exists(paths.app), "running": running(),
+    result = {"app": str(paths.app), "installed": exists(paths.app), "running": running(paths.app),
               "recoveryRoot": str(paths.backups)}
     if result["installed"]:
         try:
@@ -397,23 +411,29 @@ def parser():
     commands = command.add_subparsers(dest="command", required=True)
     install_command = commands.add_parser("install", help="增量构建当前 Debug，验签、确认后安装并请求启动")
     install_command.add_argument("--release", action="store_true", help="改为构建并安装优化后的 Release")
+    install_command.add_argument("--coexist", action="store_true", help="安装为独立的 AreaChain (Debug).app，与正式版共存")
     install_command.add_argument("--no-build", action="store_true", help="安装已有产物，不重新构建")
     install_command.add_argument("--no-open", action="store_true", help="安装后不启动")
     install_command.add_argument("--previous-app", type=Path, metavar="PATH",
                                  help="现用应用缺失时，显式指定安装／卸载回退目录中的可信原应用以核对签名；保留全部数据")
     uninstall_command = commands.add_parser("uninstall", aliases=["delete"], help="只卸载应用，保留数据与密钥")
+    uninstall_command.add_argument("--debug", action="store_true", help="卸载 AreaChain (Debug).app")
     for item in (install_command, uninstall_command):
         action = item.add_mutually_exclusive_group()
         action.add_argument("--dry-run", action="store_true", help="只检查，不构建、不复制、不安装或卸载")
         action.add_argument("--yes", action="store_true", help="显式确认操作范围；安装时同时确认已完成必要的数据备份")
-    commands.add_parser("status", help="只读查看安装、进程和签名状态")
-    commands.add_parser("start", help="验签后请求启动已安装应用")
+    status_command = commands.add_parser("status", help="只读查看安装、进程和签名状态")
+    status_command.add_argument("--debug", action="store_true", help="查看 AreaChain (Debug).app 状态")
+    start_command = commands.add_parser("start", help="验签后请求启动已安装应用")
+    start_command.add_argument("--debug", action="store_true", help="启动 AreaChain (Debug).app")
     return command
 
 
 def main(arguments=None, paths=None):
     args = parser().parse_args(arguments)
     paths = paths or Locations(signing.ROOT, Path("/Applications"), Path.home())
+    if getattr(args, "debug", False) or (getattr(args, "coexist", False) and not getattr(args, "release", False)):
+        paths = Locations(paths.project, paths.applications, paths.user, app_name="AreaChain (Debug).app")
     try:
         if args.command == "install":
             install(args, paths)

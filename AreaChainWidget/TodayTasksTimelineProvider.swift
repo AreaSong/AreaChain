@@ -1,0 +1,161 @@
+import Foundation
+import SwiftData
+import WidgetKit
+
+struct WidgetTodoItem: Identifiable, Hashable {
+    var id: UUID
+    var title: String
+    var isDone: Bool
+    var isImportant: Bool
+    var isUrgent: Bool
+    var dueMinutes: Int?
+}
+
+struct WidgetRoutineItem: Identifiable, Hashable {
+    var id: UUID
+    var title: String
+    var isDone: Bool
+}
+
+struct TodayTasksEntry: TimelineEntry {
+    var date: Date
+    var todos: [WidgetTodoItem]
+    var routines: [WidgetRoutineItem]
+    var completedCount: Int
+    var totalCount: Int
+    var streakCount: Int
+    var isPlaceholder: Bool = false
+
+    static var empty: TodayTasksEntry {
+        TodayTasksEntry(
+            date: Date(),
+            todos: [],
+            routines: [],
+            completedCount: 0,
+            totalCount: 0,
+            streakCount: 0,
+            isPlaceholder: false
+        )
+    }
+
+    static var placeholder: TodayTasksEntry {
+        TodayTasksEntry(
+            date: Date(),
+            todos: [
+                WidgetTodoItem(id: UUID(), title: "整理今日工作要点", isDone: true, isImportant: true, isUrgent: false, dueMinutes: 600),
+                WidgetTodoItem(id: UUID(), title: "完成小组件设计评审", isDone: false, isImportant: true, isUrgent: true, dueMinutes: 840),
+                WidgetTodoItem(id: UUID(), title: "阅读技术文档 30 分钟", isDone: false, isImportant: false, isUrgent: false, dueMinutes: nil)
+            ],
+            routines: [
+                WidgetRoutineItem(id: UUID(), title: "晨间阅读与思考", isDone: true),
+                WidgetRoutineItem(id: UUID(), title: "运动 30 分钟", isDone: false)
+            ],
+            completedCount: 2,
+            totalCount: 5,
+            streakCount: 7,
+            isPlaceholder: true
+        )
+    }
+}
+
+struct TodayTasksTimelineProvider: TimelineProvider {
+    typealias Entry = TodayTasksEntry
+
+    func placeholder(in context: Context) -> TodayTasksEntry {
+        .placeholder
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (TodayTasksEntry) -> Void) {
+        if context.isPreview {
+            completion(.placeholder)
+        } else {
+            completion(fetchCurrentEntry())
+        }
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<TodayTasksEntry>) -> Void) {
+        let entry = fetchCurrentEntry()
+        // 建议半小时或午夜刷新时间线
+        let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date())
+            ?? Date().addingTimeInterval(1800)
+        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
+        completion(timeline)
+    }
+
+    private func fetchCurrentEntry() -> TodayTasksEntry {
+        guard let container = WidgetPersistence.makeContainer() else {
+            return .empty
+        }
+
+        let context = ModelContext(container)
+        let todayKey = WidgetDateHelper.todayDayKey()
+        let todayWeekday = WidgetDateHelper.weekdayIndex(from: Date())
+
+        // 1. 查询今日待办（未删除，属于今天或今天之前未完成）
+        let todoDesc = FetchDescriptor<TodoItem>(
+            predicate: #Predicate<TodoItem> { $0.deletedAt == nil }
+        )
+        let allTodos = (try? context.fetch(todoDesc)) ?? []
+        let todayTodos = allTodos.filter { todo in
+            if todo.dayKey == todayKey { return true }
+            if !todo.isDone && todo.dayKey < todayKey { return true } // 逾期未完成
+            return false
+        }.sorted { a, b in
+            if a.isDone != b.isDone { return !a.isDone } // 未完成排前面
+            if a.isImportant != b.isImportant { return a.isImportant }
+            if a.isUrgent != b.isUrgent { return a.isUrgent }
+            let dueA = a.dueMinutes ?? 9999
+            let dueB = b.dueMinutes ?? 9999
+            if dueA != dueB { return dueA < dueB }
+            return a.sortOrder < b.sortOrder
+        }
+
+        let widgetTodos = todayTodos.map {
+            WidgetTodoItem(
+                id: $0.id,
+                title: $0.title,
+                isDone: $0.isDone,
+                isImportant: $0.isImportant,
+                isUrgent: $0.isUrgent,
+                dueMinutes: $0.dueMinutes
+            )
+        }
+
+        // 2. 查询今日排定的打卡习惯
+        let routineDesc = FetchDescriptor<DailyRoutine>(
+            predicate: #Predicate<DailyRoutine> { $0.isEnabled && $0.deletedAt == nil }
+        )
+        let allRoutines = (try? context.fetch(routineDesc)) ?? []
+
+        let checkDesc = FetchDescriptor<RoutineCheck>(
+            predicate: #Predicate<RoutineCheck> { $0.dayKey == todayKey }
+        )
+        let todayChecks = (try? context.fetch(checkDesc)) ?? []
+
+        var widgetRoutines: [WidgetRoutineItem] = []
+        for routine in allRoutines {
+            // 检查星期掩码是否包含今天
+            let mask = routine.weekdayMask ?? 0b1111111
+            let isScheduled = ((mask >> todayWeekday) & 1) == 1
+            guard isScheduled else { continue }
+            if let paused = routine.pausedOnDayKey, paused == todayKey { continue }
+
+            let isDone = todayChecks.first(where: { $0.routine?.id == routine.id })?.isDone ?? false
+            widgetRoutines.append(WidgetRoutineItem(id: routine.id, title: routine.title, isDone: isDone))
+        }
+
+        let doneTodos = widgetTodos.filter(\.isDone).count
+        let doneRoutines = widgetRoutines.filter(\.isDone).count
+        let totalCount = widgetTodos.count + widgetRoutines.count
+        let completedCount = doneTodos + doneRoutines
+
+        return TodayTasksEntry(
+            date: Date(),
+            todos: widgetTodos,
+            routines: widgetRoutines,
+            completedCount: completedCount,
+            totalCount: totalCount,
+            streakCount: doneRoutines // 简化计算今日打卡完成数作为连击代表
+        )
+    }
+}

@@ -18,10 +18,12 @@ enum Persistence {
         if startup == .testing {
             return memorySession(schema: schema, openError: nil)
         }
-        let disk = ModelConfiguration("areachain", schema: schema)
+        AppGroup.migrateStoreIfNeeded()
+        let storeURL = AppGroup.storeURL
+        let disk = ModelConfiguration("areachain", schema: schema, url: storeURL)
         // 标记仅由用户确认过的加密转换创建；失败保留标记，由隐私与解锁页提示重试。
         try? PrivacyStoreMaintenance.finish(at: disk.url)
-        sanitizeSqliteStoreIfNeeded()
+        sanitizeSqliteStoreIfNeeded(at: disk.url)
         do {
             let container = try ModelContainer(for: schema, configurations: [disk])
             return PersistenceSession(container: container, isFallback: false, openError: nil)
@@ -42,18 +44,18 @@ enum Persistence {
     static func resetStoreOnDisk(
         removeItem: (URL) throws -> Void = { try FileManager.default.removeItem(at: $0) }
     ) {
-        let base = URL.applicationSupportDirectory
+        let bases = [AppGroup.containerURL, URL.applicationSupportDirectory]
         // 同步基线属于被重置的数据集，不能随旧任务绑定遗留到新库。
         let filenames = ["areachain.store", "areachain.store-shm", "areachain.store-wal", CalendarSyncStorage.ledgerFilename]
-        for filename in filenames {
-            try? removeItem(base.appending(path: filename))
+        for base in bases {
+            for filename in filenames {
+                try? removeItem(base.appending(path: filename))
+            }
         }
         try? removeItem(AttachmentStore.directory())
     }
 
-    private static func sanitizeSqliteStoreIfNeeded() {
-        let base = URL.applicationSupportDirectory
-        let dbURL = base.appending(path: "areachain.store")
+    private static func sanitizeSqliteStoreIfNeeded(at dbURL: URL = AppGroup.storeURL) {
         guard FileManager.default.fileExists(atPath: dbURL.path) else { return }
         var db: OpaquePointer?
         if sqlite3_open(dbURL.path, &db) == SQLITE_OK {

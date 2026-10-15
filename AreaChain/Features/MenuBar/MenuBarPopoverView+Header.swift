@@ -48,9 +48,14 @@ extension MenuBarPopoverView {
     var integratedHeader: some View {
         HStack(alignment: .center, spacing: 6) {
             VStack(alignment: .leading, spacing: 3) {
-                Text(DayKey.displayName(todayKey, locale: locale))
-                    .font(DaybookType.title)
-                    .foregroundStyle(DaybookPalette.text.primary)
+                HStack(alignment: .center, spacing: 6) {
+                    Text(DayKey.displayName(todayKey, locale: locale))
+                        .font(DaybookType.title)
+                        .foregroundStyle(DaybookPalette.text.primary)
+                    #if DEBUG
+                    DaybookDebugBadge()
+                    #endif
+                }
                 HStack(spacing: 4) {
                     headerIndicator
                         .animation(DaybookMotion.interactive(reduceMotion), value: tab)

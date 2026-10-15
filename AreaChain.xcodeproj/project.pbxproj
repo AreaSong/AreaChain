@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		A1WDGBUILDF000000001 /* AreaChainWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1WIDGETF00000000001 /* AreaChainWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		A1PROXY0000000000000001 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -14,12 +18,34 @@
 			remoteGlobalIDString = A1TARG0000000000000001;
 			remoteInfo = AreaChain;
 		};
+		A1WDGPROXY000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1PROJ0000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1TARG0000000000000003;
+			remoteInfo = AreaChainWidget;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		A1APPCPEXT00000000001 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A1WDGBUILDF000000001 /* AreaChainWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		A1APPF0000000000000001 /* AreaChain.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = AreaChain.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1TESTF000000000000001 /* AreaChainTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = AreaChainTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F41D12BC30A0123400000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		A1WIDGETF00000000001 /* AreaChainWidget.appex */ = {isa = PBXFileReference; explicitFileType = wrapper.app-extension; includeInIndex = 0; path = AreaChainWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -31,6 +57,11 @@
 		A1TESTSYNC000000000001 /* AreaChainTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = AreaChainTests;
+			sourceTree = "<group>";
+		};
+		A1WIDGETSYNC000000001 /* AreaChainWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = AreaChainWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -50,6 +81,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1WDGFW00000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -57,6 +95,7 @@
 			isa = PBXGroup;
 			children = (
 				A1APPF0000000000000001 /* AreaChain.app */,
+				A1WIDGETF00000000001 /* AreaChainWidget.appex */,
 				A1TESTF000000000000001 /* AreaChainTests.xctest */,
 			);
 			name = Products;
@@ -66,6 +105,7 @@
 			isa = PBXGroup;
 			children = (
 				A1APPSYNC0000000000001 /* AreaChain */,
+				A1WIDGETSYNC000000001 /* AreaChainWidget */,
 				A1TESTSYNC000000000001 /* AreaChainTests */,
 				F41D12BC30A0123400000002 /* Config */,
 				A1PROD0000000000000001 /* Products */,
@@ -90,10 +130,12 @@
 				A1APPSRC0000000000001 /* Sources */,
 				A1APPFW000000000000001 /* Frameworks */,
 				A1APPRES0000000000001 /* Resources */,
+				A1APPCPEXT00000000001 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				A1WDGDEP0000000000001 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A1APPSYNC0000000000001 /* AreaChain */,
@@ -128,6 +170,28 @@
 			productReference = A1TESTF000000000000001 /* AreaChainTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
+		A1TARG0000000000000003 /* AreaChainWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1WDGCFG0000000000001 /* Build configuration list for PBXNativeTarget "AreaChainWidget" */;
+			buildPhases = (
+				A1WDGSRC0000000000001 /* Sources */,
+				A1WDGFW00000000000001 /* Frameworks */,
+				A1WDGRES0000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				A1WIDGETSYNC000000001 /* AreaChainWidget */,
+			);
+			name = AreaChainWidget;
+			packageProductDependencies = (
+			);
+			productName = AreaChainWidget;
+			productReference = A1WIDGETF00000000001 /* AreaChainWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -139,6 +203,9 @@
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					A1TARG0000000000000001 = {
+						CreatedOnToolsVersion = 26.4;
+					};
+										A1TARG0000000000000003 = {
 						CreatedOnToolsVersion = 26.4;
 					};
 					A1TARG0000000000000002 = {
@@ -163,6 +230,7 @@
 			projectRoot = "";
 			targets = (
 				A1TARG0000000000000001 /* AreaChain */,
+				A1TARG0000000000000003 /* AreaChainWidget */,
 				A1TARG0000000000000002 /* AreaChainTests */,
 			);
 		};
@@ -177,6 +245,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		A1TESTRES000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A1WDGRES000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -200,6 +275,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A1WDGSRC0000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -207,6 +289,11 @@
 			isa = PBXTargetDependency;
 			target = A1TARG0000000000000001 /* AreaChain */;
 			targetProxy = A1PROXY0000000000000001 /* PBXContainerItemProxy */;
+		};
+		A1WDGDEP0000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A1TARG0000000000000003 /* AreaChainWidget */;
+			targetProxy = A1WDGPROXY000000000001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -226,7 +313,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/AppInfo.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = AreaChain;
+				INFOPLIST_KEY_CFBundleDisplayName = "AreaChain (Debug)";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_LSUIElement = YES;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "Syncs temporary tasks to a dedicated AreaChain calendar. Other calendars are left alone.";
@@ -356,6 +443,64 @@
 			};
 			name = Release;
 		};
+		A1WDGDBG0000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				AREACHAIN_BUILD_ROLE = "app-extension";
+				CODE_SIGN_ENTITLEMENTS = AreaChainWidget/AreaChainWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AreaChainWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AreaChain Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1WDGREL0000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				AREACHAIN_BUILD_ROLE = "app-extension";
+				CODE_SIGN_ENTITLEMENTS = AreaChainWidget/AreaChainWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AreaChainWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "AreaChain Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -382,6 +527,15 @@
 			buildConfigurations = (
 				A1TESTDBG000000000001 /* Debug */,
 				A1TESTREL000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1WDGCFG0000000000001 /* Build configuration list for PBXNativeTarget "AreaChainWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1WDGDBG0000000000001 /* Debug */,
+				A1WDGREL0000000000001 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

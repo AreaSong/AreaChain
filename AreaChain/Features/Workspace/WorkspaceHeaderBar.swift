@@ -60,6 +60,9 @@ struct WorkspaceHeaderBar: View {
                 .layoutPriority(1)
                 .help(titleLabel)
                 .accessibilityAddTraits(.isHeader)
+            #if DEBUG
+            DaybookDebugBadge()
+            #endif
             if !navigation.isSearching && navigation.selectedTagID == nil
                 && (navigation.selectedTab == .today || navigation.selectedTab == .dashboard || navigation.isShowingShellPreview) {
                 TimelineView(.periodic(from: .now, by: 60)) { _ in

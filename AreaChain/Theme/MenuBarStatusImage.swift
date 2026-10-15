@@ -3,7 +3,11 @@ import AppKit
 /// 状态嵌在书本内部；数量只留在提示里，所有状态都占同一个单图标位置。
 @MainActor
 enum MenuBarStatusImage {
+    #if DEBUG
+    static let itemWidth: CGFloat = 50
+    #else
     static let itemWidth: CGFloat = 24
+    #endif
     static let imageSize = NSSize(width: 18, height: 18)
     static let iconBounds = NSRect(x: 1, y: 1, width: 16, height: 16)
     static let markerBounds = NSRect(x: 6.5, y: 7, width: 7.5, height: 7)
@@ -11,8 +15,14 @@ enum MenuBarStatusImage {
     static func apply(to button: NSButton, status: MenuBarStatus?, locale: Locale) {
         let label = status?.accessibilityLabel(locale: locale)
             ?? L10n.string("menubar.status.unavailable", locale: locale)
+        #if DEBUG
+        button.title = "DBG"
+        button.font = NSFont.monospacedSystemFont(ofSize: 9, weight: .bold)
+        button.imagePosition = .imageLeading
+        #else
         button.title = ""
         button.imagePosition = .imageOnly
+        #endif
         button.imageScaling = .scaleNone
         button.image = make(status: status)
         button.toolTip = label
