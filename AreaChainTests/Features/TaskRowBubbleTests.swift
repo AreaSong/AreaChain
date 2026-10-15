@@ -116,6 +116,56 @@ struct TaskRowBubbleTests {
         }
     }
 
+    @Test
+    func adjacentTaskRowHoverExcludesPreviousBubbleWithoutOverlap() async throws {
+        let support = try SettingsButtonTestSupport(isolatedPreferences: true)
+        defer { support.cleanup() }
+
+        let id1 = UUID()
+        let id2 = UUID()
+        let title1 = String(repeating: "首行长任务标题 ", count: 10)
+        let title2 = String(repeating: "次行长任务标题 ", count: 10)
+        let state1 = TaskRowState(
+            identity: TaskRowIdentityState(id: id1, title: title1),
+            schedule: TaskRowScheduleState()
+        )
+        let state2 = TaskRowState(
+            identity: TaskRowIdentityState(id: id2, title: title2),
+            schedule: TaskRowScheduleState()
+        )
+
+        let window = support.window(
+            VStack(spacing: 2) {
+                TaskRow(state: state1, dispatch: { _ in }).frame(width: 316)
+                TaskRow(state: state2, dispatch: { _ in }).frame(width: 316)
+                Spacer()
+            }
+            .padding(32),
+            size: NSSize(width: 380, height: 540)
+        )
+        defer { SystemPageHost.release(window) }
+        try await SystemPageHost.settle(window)
+
+        let region1 = try #require(Self.findTitleRegion(id1, in: window.contentView))
+        let region2 = try #require(Self.findTitleRegion(id2, in: window.contentView))
+
+        // 1. 悬停第二行
+        region2.onHover?(true)
+        try await Task.sleep(for: .milliseconds(380))
+        try await SystemPageHost.settle(window)
+
+        let bubblesAfterSecond = DiaryTitleHoverFixture.regions(window.contentView)
+        #expect(bubblesAfterSecond.count == 1, "第二行应展开气泡")
+
+        // 2. 模拟鼠标快速移到第一行
+        region1.onHover?(true)
+        try await Task.sleep(for: .milliseconds(380))
+        try await SystemPageHost.settle(window)
+
+        let bubblesAfterFirst = DiaryTitleHoverFixture.regions(window.contentView)
+        #expect(bubblesAfterFirst.count == 1, "切换到第一行后，旧行气泡必须排他关闭，屏幕上绝不能出现两个气泡并存重叠")
+    }
+
     private static func findTitleRegion(_ id: UUID, in view: NSView?) -> BoardRowPointerView? {
         guard let view else { return nil }
         if let region = view as? BoardRowPointerView,

@@ -61,7 +61,7 @@ struct TaskRow: View {
     }
 
     var isHovered: Bool {
-        isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered
+        isRowHovered || isNoteBubbleHovered || isTitleBubbleHovered || isTitleTextHovered
     }
 
     // MARK: - 现代标准构造器 (State + Action)
@@ -194,13 +194,11 @@ struct TaskRow: View {
         }
         .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
         .background {
-            if isHovered {
-                GeometryReader { proxy in
-                    Color.clear
-                        .onAppear { updateVerticalPlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
-                        .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
-                }
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { updateVerticalPlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
+                    .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
             }
         }
     }
@@ -397,7 +395,6 @@ struct TaskRow: View {
     }
 
     private func updateVerticalPlacement(_ proxy: GeometryProxy) {
-        guard isHovered else { return }
         let frame = proxy.frame(in: .global)
         let newGrowsUpward = frame.minY > 260
         if growsUpward != newGrowsUpward {

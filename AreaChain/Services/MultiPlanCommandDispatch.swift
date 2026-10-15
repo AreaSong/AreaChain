@@ -58,7 +58,6 @@ extension MultiPlanCommandAdapter {
             let environment = try adapter.assembled()
             return try .batch(environment.reader.read(item, lease: lease, plan: plan,
                                                       catalog: environment.reader.catalogReader.current()))
-        default: throw CommandMultiPlanIssue.unsupported
         }
     }
 

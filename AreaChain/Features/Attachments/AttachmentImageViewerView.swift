@@ -293,24 +293,24 @@ struct AttachmentImageViewerView: View {
 
     private func installEventMonitors() {
         removeEventMonitors()
-        if let scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel) { event in
+        if let scrollMonitor = NSEvent.addLocalMonitorForEvents(matching: .scrollWheel, handler: { event in
             guard let hostWindow, event.window === hostWindow else { return event }
             session.applyScrollDelta(event.scrollingDeltaY)
             return nil
-        } {
+        }) {
             eventMonitors.append(scrollMonitor)
         }
-        if let magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify) { event in
+        if let magnifyMonitor = NSEvent.addLocalMonitorForEvents(matching: .magnify, handler: { event in
             guard let hostWindow, event.window === hostWindow else { return event }
             session.applyMagnification(event.magnification)
             return nil
-        } {
+        }) {
             eventMonitors.append(magnifyMonitor)
         }
-        if let keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
+        if let keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown, handler: { event in
             guard let hostWindow, event.window === hostWindow else { return event }
             return handleKeyDown(event)
-        } {
+        }) {
             eventMonitors.append(keyMonitor)
         }
     }

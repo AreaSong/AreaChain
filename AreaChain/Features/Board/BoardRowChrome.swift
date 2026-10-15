@@ -23,6 +23,7 @@ final class BoardRowChrome {
         rowHoverTask = nil
         BoardRowChrome.ensureScrollMonitoring()
         if hovering {
+            claimActive()
             guard !BoardRowChrome.isLiveScrolling else { return }
             rowHoverTask = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(70))
@@ -55,6 +56,7 @@ final class BoardRowChrome {
                         self.isNoteHovered = false
                     }
                 }
+                self.cleanActiveIfIdle()
             }
         }
     }
@@ -68,6 +70,7 @@ final class BoardRowChrome {
     }
 
     func handleTitleHover(_ hovering: Bool, reduceMotion: Bool) {
+        if hovering { claimActive() }
         scheduleBubble(
             hovering,
             reduceMotion: reduceMotion,
@@ -78,6 +81,7 @@ final class BoardRowChrome {
     }
 
     func handleNoteHover(_ hovering: Bool, reduceMotion: Bool) {
+        if hovering { claimActive() }
         scheduleBubble(
             hovering,
             reduceMotion: reduceMotion,
@@ -92,6 +96,37 @@ final class BoardRowChrome {
     @ObservationIgnored private static var sharedFlagsMonitor: Any?
     @ObservationIgnored private static var activeSubscribers: NSHashTable<BoardRowChrome> = .weakObjects()
     @ObservationIgnored private static var activeReduceMotion = false
+    @ObservationIgnored private static weak var currentActiveChrome: BoardRowChrome?
+
+    private func claimActive() {
+        if let current = Self.currentActiveChrome, current !== self {
+            current.dismissBubblesImmediately()
+        }
+        Self.currentActiveChrome = self
+    }
+
+    func dismissBubblesImmediately() {
+        titleHoverTask?.cancel()
+        titleHoverTask = nil
+        noteHoverTask?.cancel()
+        noteHoverTask = nil
+        rowHoverTask?.cancel()
+        rowHoverTask = nil
+        isTitleTextHovered = false
+        isTitleBubbleHovered = false
+        isNoteHovered = false
+        isNoteBubbleHovered = false
+        isRowHovered = false
+        isTitlePointerInside = false
+    }
+
+    private func cleanActiveIfIdle() {
+        if !isRowHovered && !isTitleTextHovered && !isTitleBubbleHovered && !isNoteHovered && !isNoteBubbleHovered {
+            if Self.currentActiveChrome === self {
+                Self.currentActiveChrome = nil
+            }
+        }
+    }
 
     static func ensureScrollMonitoring() {
         guard scrollObserverTokens.isEmpty else { return }
@@ -155,6 +190,9 @@ final class BoardRowChrome {
     }
 
     func stop() {
+        if Self.currentActiveChrome === self {
+            Self.currentActiveChrome = nil
+        }
         stopCommandMonitor()
         rowHoverTask?.cancel()
         rowHoverTask = nil
@@ -170,6 +208,7 @@ final class BoardRowChrome {
         titleHoverTask = nil
         isTitleTextHovered = false
         isTitleBubbleHovered = false
+        cleanActiveIfIdle()
     }
 
     func resignCommand() {
@@ -213,6 +252,7 @@ final class BoardRowChrome {
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
                         self[keyPath: isActive] = false
                     }
+                    self.cleanActiveIfIdle()
                 }
             }
         }
