@@ -61,12 +61,7 @@ import Testing
         let window = try #require(editor.window)
         let visible = window.convertToScreen(editor.convert(editor.visibleRect, to: nil))
         if rect.height <= 0 || actual.location == NSNotFound {
-            let diagnostic: [String: Any] = ["rect": NSStringFromRect(rect), "actualRange": NSStringFromRange(actual),
-                "requestedRange": NSStringFromRange(range), "frame": NSStringFromRect(editor.frame),
-                "visibleRect": NSStringFromRect(editor.visibleRect), "key": window.isKeyWindow,
-                "textKit2": editor.textLayoutManager != nil]
-            Attachment.record(try JSONSerialization.data(withJSONObject: diagnostic), named: "CM2-anchor-failure.json")
-            try snapshot(window, name: "CM2-anchor-failure")
+            try recordAnchorFailure(editor, range: range, rect: rect, actual: actual)
         }
         try #require(rect.height > 0 && rect.width >= 0 && actual.location != NSNotFound)
         try #require(actual.location <= range.location && NSMaxRange(actual) >= range.location)
@@ -77,6 +72,29 @@ import Testing
         return ["anchorMS": elapsed, "height": rect.height, "x": rect.minX, "y": rect.minY,
                 "requestedLocation": range.location, "actualLocation": actual.location, "hitLocation": hit,
                 "visibleY": editor.visibleRect.minY]
+    }
+
+    private static func recordAnchorFailure(_ editor: CommandProtectedTextView, range: NSRange,
+                                            rect: NSRect, actual: NSRange) throws {
+        var segments: [[String: Any]] = []
+        if let content = editor.textContentStorage, let layout = editor.textLayoutManager,
+           let start = content.location(content.documentRange.location, offsetBy: range.location),
+           let end = content.location(start, offsetBy: range.length),
+           let textRange = NSTextRange(location: start, end: end) {
+            layout.enumerateTextSegments(in: textRange, type: .standard, options: []) { segment, frame, _, _ in
+                let start = segment.map { content.offset(from: content.documentRange.location, to: $0.location) } ?? NSNotFound
+                let end = segment.map { content.offset(from: content.documentRange.location, to: $0.endLocation) } ?? NSNotFound
+                segments.append(["start": start, "end": end, "frame": NSStringFromRect(frame)])
+                return segments.count < 4
+            }
+        }
+        let diagnostic: [String: Any] = ["rect": NSStringFromRect(rect), "actualRange": NSStringFromRange(actual),
+            "requestedRange": NSStringFromRange(range), "frame": NSStringFromRect(editor.frame),
+            "visibleRect": NSStringFromRect(editor.visibleRect), "key": editor.window?.isKeyWindow ?? false,
+            "textKit2": editor.textLayoutManager != nil, "segments": segments,
+            "textContainerOrigin": NSStringFromPoint(editor.textContainerOrigin)]
+        Attachment.record(try JSONSerialization.data(withJSONObject: diagnostic), named: "CM2-anchor-failure.json")
+        if let window = editor.window { try snapshot(window, name: "CM2-anchor-failure") }
     }
 
     static func milliseconds(_ start: ContinuousClock.Instant) -> Double {

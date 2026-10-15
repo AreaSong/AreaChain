@@ -25,6 +25,7 @@ struct SyntaxTextEditor: View {
     init(
         text: Binding<String>, focused: Binding<Bool>, placeholder: String,
         fontSize: CGFloat = DaybookType.bodySize, context: SyntaxInputContext = .tags,
+        allowsLivePreview: Bool? = nil,
         externalAutocomplete: SyntaxAutocompleteState? = nil, availableTags: [String]? = nil,
         onSubmit: (() -> Void)? = nil, commandChord: ShortcutChord? = nil,
         onPasteImage: ((NSPasteboard) -> Bool)? = nil
@@ -41,7 +42,7 @@ struct SyntaxTextEditor: View {
         self.onPasteImage = onPasteImage
         _autocomplete = State(initialValue: SyntaxAutocompleteState(
             context: context,
-            allowsLivePreview: context == .capture || context == .diaryCapture
+            allowsLivePreview: allowsLivePreview ?? (context == .capture || context == .diaryCapture)
         ))
     }
 

@@ -28,7 +28,13 @@ class BuildCommandTests(unittest.TestCase):
         )
         checker = self.root / "scripts/signing.py"
         checker.write_text(common + "print(json.dumps({'mode': os.environ.get('AREACHAIN_TEST_MODE', 'local')}))\n")
-        (self.root / "scripts/qa_identity.py").write_text(common + "print('{}')\n")
+        (self.root / "scripts/qa_identity.py").write_text(common +
+            "import fcntl\n"
+            "with open('build/.build.lock', 'a+') as lock:\n"
+            "    try: fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)\n"
+            "    except BlockingIOError: pass\n"
+            "    else: sys.exit(91)\n"
+            "sys.exit(int(os.environ.get('AREACHAIN_TEST_QA_VERIFY_EXIT', '0')))\n")
         for name in ("xcodebuild", "pkill", "ditto", "open"):
             stub = self.root / "bin" / name
             stub.write_text("#!/usr/bin/env python3\n" + common + ("sys.exit(99)\n" if name != "xcodebuild" else ""))
@@ -63,7 +69,7 @@ class BuildCommandTests(unittest.TestCase):
         self.assertTrue(verifier[-1].endswith("/Release/AreaChain.app"))
 
     def test_explicit_qa_uses_shared_identity_and_separate_product_without_personal_settings(self):
-        for command, action in [("qa", "test"), ("qa-compile", "build-for-testing")]:
+        for command in ("qa", "qa-compile"):
             with self.subTest(command=command):
                 if self.trace.exists():
                     self.trace.unlink()
@@ -72,12 +78,41 @@ class BuildCommandTests(unittest.TestCase):
                 result = self.invoke(command)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 args = self.xcode_call()["args"]
-                self.assertEqual(args[-1], action)
+                self.assertEqual(args[-1], "build-for-testing")
                 self.assertIn("Config/QA.xcconfig", args)
                 self.assertIn("AREACHAIN_QA_IDENTIFIER=com.areachain.privacy-qa", args)
                 self.assertTrue(args[args.index("-derivedDataPath") + 1].endswith("/build/PrivacyQA"))
                 self.assertEqual(self.xcode_call()["qa"], {})
-                self.assertEqual([row["tool"] for row in self.records()], ["xcodebuild", "qa_identity.py"])
+                expected = ["xcodebuild", "qa_identity.py"] * (2 if command == "qa" else 1)
+                self.assertEqual([row["tool"] for row in self.records()], expected)
+                if command == "qa":
+                    self.assertEqual(self.records()[2]["args"][-1], "test-without-building")
+                    self.assertEqual(self.records()[2]["qa"], {})
+
+    def test_qa_batch_keeps_artifact_and_expected_identity_together(self):
+        result = self.invoke("qa", "--qa-batch", "cm2", "--only-testing", "AreaChainTests/AppStartupTests")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for call in self.records():
+            if call["tool"] == "xcodebuild":
+                self.assertIn("AREACHAIN_QA_IDENTIFIER=com.areachain.privacy-qa.cm2", call["args"])
+                self.assertIn("-only-testing:AreaChainTests/AppStartupTests", call["args"])
+                self.assertTrue(call["args"][call["args"].index("-derivedDataPath") + 1].endswith("PrivacyQA-cm2"))
+            else:
+                self.assertEqual(call["args"][-2:], ["--expected-identifier", "com.areachain.privacy-qa.cm2"])
+                self.assertIn("PrivacyQA-cm2/", call["args"][0])
+
+    def test_qa_verification_failure_never_runs_tests(self):
+        self.environment["AREACHAIN_TEST_QA_VERIFY_EXIT"] = "17"
+        result = self.invoke("qa")
+        self.assertEqual(result.returncode, 17)
+        self.assertEqual([row["tool"] for row in self.records()], ["xcodebuild", "qa_identity.py"])
+
+    def test_invalid_qa_batch_stops_before_tools(self):
+        for args in [("build", "--qa-batch", "cm2"), ("qa", "--qa-batch", "../app"),
+                     ("qa", "--qa-batch", ""), ("qa", "--qa-batch", "x.y"), ("qa", "--qa-batch")]:
+            with self.subTest(args=args):
+                self.assertNotEqual(self.invoke(*args).returncode, 0)
+                self.assertEqual(self.records(), [])
 
     def test_read_only_check_does_not_start_a_build(self):
         self.assertEqual(self.invoke("check-signing").returncode, 0)

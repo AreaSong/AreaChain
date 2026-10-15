@@ -19,6 +19,7 @@ struct InputSyntaxInteractionTests {
         editor.insertText("#工", replacementRange: NSRange(location: 0, length: 0))
         try await host.settle()
         let completion = try #require((editor.delegate as? DaybookTextEditor.Coordinator)?.parent.autocomplete)
+        #expect(completion.allowsLivePreview)
         #expect(completion.candidates.first { $0.id == "tag_工作" }?.insertText == "#工作 ")
         try host.snapshot("diary-mouse-completion")
         try host.click(NativeSyntaxUI.center("syntax.candidate.tag_工作", in: host.window))
@@ -185,8 +186,20 @@ struct InputSyntaxInteractionTests {
         #expect(!coordinator.parent.autocomplete.isActive)
         #expect(host.window.firstResponder === editor)
         #expect(host.tags.isEmpty && todo.notes.isEmpty)
+        let previewAfterCandidatesClosed = coordinator.parent.autocomplete.showsPreview
+        #expect(coordinator.parent.autocomplete.context == .capture && !previewAfterCandidatesClosed)
         try host.pressEscape()
+        let immediate = ["editorFocused": host.window.firstResponder === editor,
+                         "bindingFocused": coordinator.parent.focused,
+                         "windowKey": host.window.isKeyWindow]
         try await host.settle()
+        Attachment.record(try JSONSerialization.data(withJSONObject: [
+            "previewAfterCandidatesClosed": previewAfterCandidatesClosed,
+            "afterEscape": immediate,
+            "afterSettle": ["editorFocused": host.window.firstResponder === editor,
+                            "bindingFocused": coordinator.parent.focused,
+                            "windowKey": host.window.isKeyWindow]
+        ], options: .sortedKeys), named: "notes-escape-focus.json")
         #expect(host.window.firstResponder !== editor)
         #expect(todo.notes == "#半" && host.tags.map(\.name) == ["半"])
     }

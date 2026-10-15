@@ -4,6 +4,49 @@ import Testing
 @testable import AreaChain
 
 @Suite(.serialized) @MainActor struct CommandTextPrototypeCorrectnessTests {
+    @Test func nativeTextKitNetworkIdentity() throws {
+        let f = try ProtectedDraftFixture(configured: false)
+        try f.start()
+        let system = CommandTextSystem.textKit2()
+        let layout = try #require(system.container.textLayoutManager)
+        let content = try #require(layout.textContentManager as? NSTextContentStorage)
+        let storage = try #require(content.textStorage)
+        let editor = CommandProtectedTextView(session: f.service, textSystem: system)
+        defer { editor.end() }
+        try editor.begin(using: f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease))
+        editor.insertText("文本🙂", replacementRange: .init(location: 0, length: editor.string.utf16.count))
+        #expect(content === editor.textContentStorage && storage === editor.textStorage)
+        #expect(layout === editor.textLayoutManager && storage.length == 4)
+    }
+
+    @Test(arguments: CommandTextPrototype.allCases, [false, true])
+    func acceptedTextKeepsHostFontAndColor(engine: CommandTextPrototype, protected: Bool) throws {
+        let f = try ProtectedDraftFixture()
+        try f.start()
+        if protected { _ = try f.service.protect(f.draft().stamp, expecting: f.host.owned().lease) }
+        let editor = CommandProtectedTextView(session: f.service, textSystem: engine.system())
+        let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
+        let color = NSColor(DaybookPalette.text.primary)
+        editor.font = font
+        editor.textColor = color
+        defer { editor.end() }
+        try editor.begin(using: protected ? f.restore() : f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease))
+        editor.insertText("原文🙂\n第二段", replacementRange: .init(location: 0, length: editor.string.utf16.count))
+        let storage = try #require(editor.textStorage)
+        for index in [0, storage.length - 1] {
+            // AppKit 可为中文解析出 PingFang 回退字体；宿主字号不能变成缺属性时的 Helvetica 12。
+            let renderedFont = try #require(storage.attribute(.font, at: index, effectiveRange: nil) as? NSFont)
+            #expect(renderedFont.pointSize == font.pointSize)
+            #expect(storage.attribute(.foregroundColor, at: index, effectiveRange: nil) as? NSColor == color)
+        }
+        editor.setSelectedRange(.init(location: 0, length: 2))
+        editor.insertText("替换", replacementRange: editor.selectedRange())
+        editor.undoManager?.undo()
+        #expect(editor.string == "原文🙂\n第二段")
+        #expect(storage.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? NSColor == color)
+        _ = try CommandTextPrototypeChecks.current(editor, service: f.service, vault: f.vault)
+    }
+
     @Test(arguments: CommandTextPrototype.allCases, [false, true])
     func unicodeCompositionFailureUndoAndRevocation(engine: CommandTextPrototype, protected: Bool) throws {
         let f = try ProtectedDraftFixture()

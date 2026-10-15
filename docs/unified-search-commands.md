@@ -7295,3 +7295,79 @@ R-handoff-lifecycle中一次工作台beginOperation返回nil（准备未就绪�
 性能上建议保留本轮差量/高度修复和显式大单段限制；若必须保证1MiB完整宿主可交互，下一步仅批准一个有界的viewport/TextKit2原型对照，仍用同文本/位置/保护/恢复矩阵，不能预先保证CoreText热点会消失。临时“准备中/暂不可编辑”只能准确反馈初始化成本，不能被称为性能修复。换引擎、改变折行、限长或新的用户可见编辑方式，本轮均未实施。
 
 正文保存handler仍需另批核验真实对象保护事实、字段操作、版本/冲突、唯一保存事务与失败保稿；敏感Run和跨宿主转交各自需要受控读取、执行资格、撤权/回退证据。当前C-M1-R的局部提速或启动探针不授予这些能力。整体仍为partial：性能目标和完整宿主真人检查未闭合、指定复核未执行；历史未知按证据保留，不写成已证明零副作用。
+
+
+### 9.87 里程碑 C-M2：QA 启动门禁与两种有界排版原型
+
+2026-10-14（Asia/Shanghai）接续原会话 `01a12506-bd53-7380-99c1-c2457ce96971`。本节是 C-M2 唯一交接；原 §9.86 C-M1-R 的历史事件、基线和未知事项保留。用户批准 A～F 及新专用 QA 包的受控负向探针；不接业务保存、生产编辑器、敏感执行／转交、真实数据、安装、发布、提交或推送。
+
+#### A～F 状态与本批来源
+
+| 项目 | 实际状态及证据边界 |
+|---|---|
+| A 构建身份与早期拒绝 | 已实现。当前 HEAD `db1d254` 已包含先前 `4c233f7` 的 AppLaunchPolicy／AppStartup、App／Delegate／Commands 接线及 QA 配置；本次未重写产品启动逻辑。 |
+| B 正向／负向／正常兼容 | 当前源码正向3方法通过；三类新包负向均退出78，工厂矩阵与内存模式断言通过。旧产物不在证明范围。 |
+| C viewport | 隔离原型存在，当前小正文和完整参数宿主正确性通过；历史1MiB单段操作超时，不满足完整长文目标。 |
+| D TextKit 2 | 隔离原型存在，当前小正文正确性通过；历史紧凑多段组词锚点失败及一次修正后的退出65未闭合，不满足采用门禁。 |
+| E 同条件对照与画面 | 原固定矩阵一轮已执行至有界停止，历史输出恢复情况见下文；当前4方法／12次原生回归通过。缓存图有实际内容，但深色正文对比不足，视觉未通过。没有重开第二轮全矩阵。 |
+| F 工程与交接 | 当前完整QA编译／严格身份与权限核验、正常development Debug／严格策略验签及最终静态门禁通过；旧备注Esc焦点失败已单例复现，指定Cursor复核未执行，整体partial。 |
+
+接续时工作区干净，源码仍在，原 `build/CM1/run.py`、`build/CM2` 结果包和已知 QA `tmp/CM2Runner` 指标目录缺失。Git从未跟踪这些被忽略的产物；不猜测删除原因，不追查旧事件数据。现已从原会话工具输出恢复同位置runner及6项契约测试；输出截断的整包摘要函数按当前文件集合重建并留注释，本次新增先编译／验包再运行和有界停止。恢复的是本地运行能力，旧源码摘要、xcresult、采样和完整指标未恢复。`build/CM2/history-thread-evidence.json` 明确只保存原会话输出，不能当本轮测量或旧原始产物。仓库可维护入口仍为 build.sh／QA.xcconfig／qa_identity.py，不建立第二套正式运行系统。
+
+#### 启动身份、拒绝位置与覆盖
+
+`AreaChainEntry.main` 先运行 `AppStartup.requireAllowed()`，然后才构造 SwiftUI App；因此早于 App 属性包装器、App.init 的 Persistence、Delegate 与 Scene／Commands。App.init 和 Delegate 重用同一冻结结果，Commands 仅 application 分支构造，避免提前获取生产 ShortcutStore。Delegate 的偏好、隐私生命周期、播种、菜单栏、快捷键、剪贴板、通知、日历及窗口服务只在 application 分支执行；测试退出不触发日用退出确认与手记保存。
+
+身份由 `AREACHAIN_QA` 编译符号、`Config/AppInfo.plist` 的schema=1／role／QA bundle字段、实际bundle命名空间交叉判定。正常application与QA分别判断，缺失／矛盾身份不能降级到生产。测试入口要求 `XCTestConfigurationFilePath` **存在**，可为空，同时dyld已经加载Xcode的测试注入库；不以DEBUG、目录名或一个布尔值代替。当前正向附件 `startup-runtime.json` 记录早期加载与marker类别。该机制防止QA误启动，不声称能抵御恶意注入、篡改Xcode或运行环境。
+
+合法测试使用 `AppStartup.memoryContainer()`，所有配置为内存且autosave关闭。异常只输出固定类别并退出78，无业务窗口、认证或生产工厂。正常分支兼容通过注入工厂计数测试，不启动日用应用。正常 Debug 仅构建／验签，不能据此宣称真实系统服务验收通过。
+
+本次维护入口增加 `--qa-batch cm2`，映射 `build/PrivacyQA-cm2` 和 `com.areachain.privacy-qa.cm2`；qa-compile与qa均沿完整工程。qa在原锁内依次编译、精确预期身份／严格codesign／local权限策略核验、串行test-without-building、结束验包；失败不先启动。六项钥匙串授权清除、原锁单次900秒、合成内容不变。脚本反例覆盖非法批次、跨命令误用、验签失败禁止运行及验签时仍持锁；模板／组件守卫同时补充。
+
+当前正向 `A-current-startup-1791989555550864000` 为3方法，无失败／跳过；编译前、锁后、运行后源码全集一致，进程退出。`B-current-negative.json` 的 missing-marker、empty-marker-without-injection、fake-configuration-path 各记录精确路径、PID、内核启动秒／微秒、5秒期限及退出78，结束身份消失。已知本批QA Documents、Library/Application Support、Library/Preferences 文件的inode／大小／mtime未变，未打开数据库内容；这仅证明这些路径的元数据结果，不等于整个进程／系统框架绝对零文件系统操作，也不追认旧事件零副作用。
+
+#### 两种原型与固定矩阵
+
+两者继续消费原 ContentSession／CommandProtectedTextView／owner／lease／版本及受保护恢复点。先接受保护修订再显示，失败保稿、同步撤权、显式待确认恢复、取消／撤销和旧资格拒绝保持；没有截断、插换行、片段正文真值、降密或延迟建点。viewport仅在真实非零宽度跨一个主队列回合保持不变后挂载全文；TextKit 2显式建立NSTextContentStorage／NSTextLayoutManager／NSTextContainer。原型只在QA显式环境装配，默认nil仍走原legacy。
+
+TK2候选修正为将全局NSRange转换为NSTextRange，调用ensureLayout与layoutViewport，计入candidateLayout；没有改为零高容忍或错误字符映射。测试观察回退通知并断言实际textLayoutManager类型，当前小正文未观察到回退；初始化前的通知不在观察期，实际对象类型仍被校验。不能用该结果推断所有大文路径都未回退。
+
+固定外层36格：2引擎 × 3大小（1024／65536／1048576 UTF-8字节）× 单段／同量多段 × probe／standard／compact；每格普通与受保护分别记录，开头／中部／末尾各2次样本。原单段为“中a🙂”，同量多段另列；probe为400×200、12pt，完整宿主为740pt英文浅色／480pt中文深色。不是语言主题的全部交叉组合。外部120秒从无重编测试进程启动前计入，包含XCTest准备及宿主初始化；锁等候与编译另计。ready要求正文挂载、可见、key／firstResponder和首个插入已接受；分段计时有嵌套，不能直接相加。
+
+原会话矩阵汇总：19格passed、1格passed-retest（宿主夹具更新参数后未刷新票据，沿原publish入口修正）、1格failed、2格timeout、13格not-run。矩阵停止与两种原型各自失败分开解释：
+
+- viewport在1MiB单段400pt与标准完整宿主的**完整操作序列**超120秒；不是正文从未初始化。同量多段可完成。紧凑完整宿主同类分钟级失败未重复。
+- TK2在1KiB／compact／多段组词时零高锚点失败；此后同引擎大文停验。完成一次同步候选布局修正，原对应复验命令仍退出65；结果包已失存，不能确认最后失败仍是同一断言，更不能写成修复通过。本次不再修再跑该性能用例，也不补第三方案。
+- 旧结果缺少可重查的完整源码／产物身份，以下仅转录历史工具输出，供解释停止原因，**不算当前源码性能证据**。本次不因产物缺失重新跑一轮以追逐通过。
+
+| viewport历史条件 | 普通／保护打开到首键可用(ms) | 普通／保护头部首次组词(ms) | 完整序列 |
+|---|---:|---:|---|
+| 1MiB单段／400pt | 3878.0／3904.7 | 3305.0／3311.7 | 120秒超时 |
+| 1MiB单段／740pt标准宿主 | 3158.2／3070.4 | 2232.5／2194.1 | 120秒超时 |
+| 1MiB多段／400pt | 375.4／312.4 | 47.8／46.5 | 历史完成 |
+| 1MiB多段／740pt标准宿主 | 1168.6／1014.5 | 40.5／42.0 | 历史完成 |
+| 1MiB多段／480pt紧凑宿主 | 1077.5／983.2 | 40.1／41.2 | 历史完成 |
+
+历史环境macOS26.6.2（25G83）、arm64、Xcode26.6、Debug/MainActor；同格先普通后保护，第二宿主是同一暖进程，不能将journal的coldTestProcess标记外推为两者都冷。打开到首键包含准备／保护／恢复与布局，但不包含此前XCTest启动；runnerToTest单列。组词为程序化合成，排除真人IME／系统候选窗及屏幕合成器延迟。没有新增产品限长、毫秒预算或宣称C-M1性能目标已经解决。
+
+#### 当前正确性、画面及回归
+
+`CD-current-native-1791989712163334000`：4方法／12次参数化执行通过，无失败或跳过；两引擎×普通／保护的Unicode、emoji、组合字符、确认取消、undo／redo、失败保稿、锁定／显式pending恢复、旧access／owner、跨视口替换与头中尾候选、受保护planItem和真实参数宿主已运行。全过程源码一致，进程退出。它不是历史失败的1KiB多段性能序列复验。
+
+已导出并查看 `build/CM2/current-native-images` 中两引擎的400pt正文图及完整参数宿主图：存在全文片段、实际选择与光标；深色底上的未选中文本偏黑，视觉对比不足；两引擎行距表现也不同，未作等价视觉通过判断。材料为AppKit cacheDisplay缓存图／程序化组词，不是桌面截图、真实系统候选窗或真人IME。生产正文默认不切换，本轮不扩修该视觉问题。
+
+`F-input-regression-1791989851927126000`：57方法／72次执行，71次通过、1次失败、无跳过。覆盖AppStartup、AppTermination、CommandTextComposition／Lifecycle／Difference／Payload、ProtectedDraft、UnifiedSearchLongText、ProtectedUI、WindowLease和原InputSyntaxInteraction。失败是 `InputSyntaxInteractionTests.notesEscapePassesThroughTheListMonitorBeforeSaving` 第二次Esc后firstResponder仍是旧编辑器（源文件190行）；保存断言未报错。`F-escape-isolated-1791990016087222000`同源码单例仍失败。本次未改旧备注输入／焦点代码、不删除断言、不用跳过掩盖；该普通输入回归缺口保持开放，不归因为新启动门禁。
+
+当前C-M2相关16个Swift文件严格SwiftLint通过（`F-strict-lint.log`）。完整正常QA采用新配置编译并通过严格签名／身份／local权限策略；源码全集含新建／删除、测试、资源、配置、脚本，运行前／锁后／运行后记录在各 `*-source.json`。最终文档更新后的工程检查和源码汇总见下方收尾项。
+
+#### 正式采用与收尾边界
+
+本轮推荐：交付QA启动门禁与可维护构建入口，**两种原型均不切换正式默认编辑器**。viewport改善宿主准备但未消除1MiB单段卡顿；TK2有未闭合的候选正确性失败；两者均缺完整视觉／人工证据。若未来重新批准正式接线，应只在UnifiedSearchLongTextField的textSystem与挂载点选择方案，继续原ContentSession和唯一owner；需覆盖普通／保护、active／planItem、跨视口与候选、锁定恢复、撤销、真实中文IME、相关语言主题及长文。回退只撤显式原型环境／装配和相应代码，保留正文、草稿、恢复点、数据及事件记录。
+
+指定Cursor verifier当前无可调用入口；已准备实际差异与测试证据，复核未执行，不认证或让普通代理替代。人工IME、最低支持系统、系统候选窗、未覆盖语言主题、mutable textStorage旁路、系统私有缓存和物理内存零化限制继续保留。原C-M1-R历史副作用未知不再追查。本批有界实验结论与门禁分别交接，整体仍partial；不进入正文handler、敏感执行或下一轮原型。
+
+本次最终收尾：`F-development-current-1791990347879798000` 的正常development Debug／严格策略验签通过，运行前／锁后／运行后源码一致；sandbox、Hardened Runtime、Apple签名锚点、精确应用／团队及描述文件策略通过。描述文件有效至2026-10-15 14:33:40（Asia/Shanghai），这是当前构建时有效性证据，不是续签或长期发行保证；未申请资源或修改个人签名。
+
+最终 `python3 -B scripts/quality_gate.py --profile static --strict --format json`、`python3 -B scripts/check_workflow.py`、Shell语法和完整273项脚本回归通过；workflow定向124项、恢复runner的6项反例也通过。最终编辑仅脚本／文档，Swift运行由上述完整QA定向证据承担，不调用会丢失隔离配置的普通全量测试替代。C-M2相关16个Swift文件严格lint已通过；它不覆盖无关工程编译警告。`build/CM2/F-quality.json`、`F-workflow.json` 与 `final-source-audit.json` 保存最终检查和源码／二进制对应；原构建锁、六项清除、合成数据、串行进程退出核对均保留。
+
+本次实际修改11个受版本管理文件：build.sh、qa_identity.py、check_workflow.py及三组脚本测试，架构／组件目录／签名说明／本权威交接和技能路由；Swift与默认产品路径未再修改。恢复的本地runner及证据留在被忽略的build目录，不提交产物。测试通过部分、稳定失败、未覆盖与指定复核分别保留，整体不标为全部验收完成。

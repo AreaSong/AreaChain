@@ -20,6 +20,7 @@ usage() {
   --configuration Debug|Release  check-signing / verify 的构建配置
   --allow-provisioning           仅 build / release：显式允许 Xcode 联网管理签名资源和设备注册
   --only-testing 标识            test / qa：限制测试范围，可重复指定；缺省命令时自动推导为 test
+  --qa-batch 名称                qa / qa-compile：本批小写字母数字/连字符，隔离目录与应用标识
   --no-wait                      多会话竞争构建锁时不自动排队等待，直接退出
 
 安装请使用 ./scripts/install.sh（开发中默认增量安装 Debug；--release 才安装优化包）。状态、启动与卸载见 ./scripts/app.sh --help。
@@ -37,6 +38,7 @@ configuration_set="NO"
 allow_provisioning="NO"
 wait_for_lock="YES"
 test_filters=()
+qa_batch=""
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -48,6 +50,9 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || fail "--only-testing 缺少参数。"
             test_filters+=("-only-testing:$2"); shift 2 ;;
         --no-wait) wait_for_lock="NO"; shift ;;
+        --qa-batch)
+            [[ $# -ge 2 && "$2" =~ ^[a-z0-9][a-z0-9-]{0,39}$ ]] || fail "--qa-batch 必须是 1～40 位小写字母、数字或连字符。"
+            qa_batch="$2"; shift 2 ;;
         -h|--help|help) usage; exit 0 ;;
         -*) fail "未知选项：$1" ;;
         *)
@@ -84,6 +89,7 @@ if [[ "$allow_provisioning" == "YES" && "$command_name" != "build" && "$command_
     fail "只有 build / release 可以显式允许签名资源写入。"
 fi
 [[ "$command_name" == "test" || "$command_name" == "qa" || ${#test_filters[@]} -eq 0 ]] || fail "--only-testing 仅用于 test / qa。"
+[[ -z "$qa_batch" || "$command_name" == "qa" || "$command_name" == "qa-compile" ]] || fail "--qa-batch 仅用于 qa / qa-compile。"
 
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
     settings='{"mode":"local"}'
@@ -98,6 +104,11 @@ signing_mode="$(printf '%s' "$settings" | python3 -c 'import json, sys; print(js
 derived_data="$project_root/build/$signing_mode-DerivedData"
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
     derived_data="$project_root/build/PrivacyQA"
+    qa_identifier="com.areachain.privacy-qa"
+    if [[ -n "$qa_batch" ]]; then
+        derived_data="$derived_data-$qa_batch"
+        qa_identifier="$qa_identifier.$qa_batch"
+    fi
 fi
 candidate_app="$derived_data/Build/Products/$configuration/AreaChain.app"
 
@@ -180,15 +191,22 @@ if [[ "$allow_provisioning" == "YES" ]]; then
 fi
 
 if [[ "$command_name" == "qa" || "$command_name" == "qa-compile" ]]; then
-    build_arguments+=(-xcconfig Config/QA.xcconfig AREACHAIN_QA_IDENTIFIER=com.areachain.privacy-qa)
+    build_arguments+=(-xcconfig Config/QA.xcconfig "AREACHAIN_QA_IDENTIFIER=$qa_identifier")
     if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
-    qa_action="test"
-    [[ "$command_name" != "qa-compile" ]] || qa_action="build-for-testing"
+    # 编译、身份/权限核验、无重编运行共享原锁；未验明的新产物不能先运行。
     run_with_lock "$wait_for_lock" env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
         -u AREACHAIN_SYSTEM_KEYCHAIN_PHASE -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_QA \
         -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_PHASE \
-        xcodebuild "${build_arguments[@]}" -parallel-testing-enabled NO "$qa_action"
-    python3 -B scripts/qa_identity.py "$candidate_app"
+        bash -c '
+            set -euo pipefail
+            action="$1"; app="$2"; identifier="$3"; shift 3
+            xcodebuild "$@" -parallel-testing-enabled NO build-for-testing
+            python3 -B scripts/qa_identity.py "$app" --expected-identifier "$identifier"
+            if [[ "$action" == "qa" ]]; then
+                xcodebuild "$@" -parallel-testing-enabled NO test-without-building
+                python3 -B scripts/qa_identity.py "$app" --expected-identifier "$identifier"
+            fi
+        ' qa "$command_name" "$candidate_app" "$qa_identifier" "${build_arguments[@]}"
 elif [[ "$command_name" == "test" ]]; then
     if [[ ${#test_filters[@]} -gt 0 ]]; then build_arguments+=("${test_filters[@]}"); fi
     mkdir -p "$derived_data/phase1-logs"

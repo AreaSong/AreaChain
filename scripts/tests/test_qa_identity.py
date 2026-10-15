@@ -10,6 +10,11 @@ import qa_identity
 
 
 class QAIdentityTests(unittest.TestCase):
+    def setUp(self):
+        policy = patch.object(qa_identity.signing, "verify_app", return_value={"mode": "local"})
+        self.policy = policy.start()
+        self.addCleanup(policy.stop)
+
     def test_signed_compiled_and_packaged_identity_must_agree(self):
         with tempfile.TemporaryDirectory() as temporary:
             app = Path(temporary) / "QA.app"
@@ -22,6 +27,11 @@ class QAIdentityTests(unittest.TestCase):
             with patch.object(qa_identity.subprocess, "run") as signature, patch.object(
                     qa_identity.subprocess, "check_output", return_value="0001 T _AreaChainQABuildIdentityV1\n") as symbols:
                 self.assertTrue(qa_identity.verify(app)["signatureVerified"])
+                self.assertEqual(self.policy.call_args.args[2]["bundleIdentifier"], info["CFBundleIdentifier"])
+                self.policy.side_effect = qa_identity.signing.SigningError("synthetic policy rejection")
+                with self.assertRaises(qa_identity.signing.SigningError):
+                    qa_identity.verify(app)
+                self.policy.side_effect = None
                 signature.assert_called_with(["codesign", "--verify", "--deep", "--strict", str(app.resolve())],
                                              check=True, capture_output=True)
                 for key, value in [("AreaChainBuildRole", "application"), ("AreaChainBuildIdentitySchema", "9"),

@@ -54,9 +54,13 @@ WORKFLOW_CONTRACT = {
         "quality_gate.py", "performance-baselines.json", "security-static",
         "comment-contract",
     ),
+    "docs/architecture.md": ("qa-compile", "--qa-batch", "Config/QA.xcconfig", "持久化之前"),
 }
 
 COMPONENT_ENTRIES = (
+    ("AreaChain/Domain/AppLaunchPolicy.swift", "AppLaunchPolicy"),
+    ("AreaChain/Services/AppStartup.swift", "AppStartup"),
+    ("AreaChain/Features/Search/CommandTextSystem.swift", "CommandTextSystem"),
     ("AreaChain/Services/WorkspaceContentReader.swift", "WorkspaceContentReader"),
     ("AreaChain/Services/WorkspaceContentSession.swift", "WorkspaceContentSession"),
     ("AreaChain/Services/WorkspaceContentSource.swift", "WorkspaceContentSource"),

@@ -61,7 +61,8 @@ struct TaskDetailNotesView: View {
         DaybookInputShell(kind: .editor, focused: isFocused) {
             SyntaxTextEditor(
                 text: $draft, focused: $isFocused, placeholder: L10n.string("drawer.notes.placeholder", locale: locale),
-                fontSize: 11, context: .capture, onSubmit: flushSave
+                // 备注沿原语法候选解析；捕获预览会多吃一次 Esc，阻止第二次 Esc 失焦保存。
+                fontSize: 11, context: .capture, allowsLivePreview: false, onSubmit: flushSave
             )
             .frame(minHeight: 56, maxHeight: 150)
             .onChange(of: draft) { _, newValue in

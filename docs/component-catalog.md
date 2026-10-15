@@ -1,5 +1,11 @@
 # 共享组件与复用目录
 
+## C-M2 QA 启动与两种排版原型
+
+[AppLaunchPolicy](../AreaChain/Domain/AppLaunchPolicy.swift) 只判定构建／测试身份和选择注入工厂；[AppStartup](../AreaChain/Services/AppStartup.swift) 读取签名包元数据、编译符号及已加载测试注入库，在 [AreaChainEntry](../AreaChain/App/AreaChainApp.swift) 构造 App 前拒绝异常 QA。App.init、Delegate、Commands 共享决策，测试容器仅内存。维护入口为 [QA.xcconfig](../Config/QA.xcconfig)、[build.sh qa / qa-compile](../scripts/build.sh) 与 [qa_identity.py](../scripts/qa_identity.py)，精确本批标识、原锁与模板见[隔离验收](architecture.md#隔离验收与真实启用门禁)。
+
+[CommandTextSystem](../AreaChain/Features/Search/CommandTextSystem.swift) 只持有原生排版网络；[CommandTextPrototype](../AreaChain/Features/Search/CommandTextPrototype.swift) 在 QA 下提供 viewport / textKit2，默认环境 nil。原 LongTextField、ContentSession、原生 owner／lease、先保护后显示和唯一正文来源继续复用，生产默认仍为 legacy。四组 Prototype 测试与原 CommandText、ProtectedDraft、UnifiedSearchLongText 测试构成回归入口；两种原型的性能／锚点失败、当前画面限制和唯一交接见 [C-M2](unified-search-commands.md#987-里程碑-c-m2qa-启动门禁与两种有界排版原型)。原 `build/CM1/run.py` 是被忽略的本地运行支持，不是仓库交付入口；丢失时不能凭目录名称追认旧身份或数据。
+
 ## 父任务子任务独立数据条平铺、底边分段进度条与未完成分组置顶
 
 - 领域排序与看板投影入口为 [Classification.swift](../AreaChain/Domain/Classification.swift)、[DayBoardLogic.swift](../AreaChain/Domain/DayBoardLogic.swift) 与 [TasksPage.swift](../AreaChain/Features/Tasks/TasksPage.swift)：`BoardSortKey` 新增 `hasSubtasks: Bool = false`，`Classification.precedes` 在同一 `dayKey` 的未完成事项中优先置顶含存活子任务（`!isDone && subtasks.contains(where: { $0.deletedAt == nil })`）的父任务，组内保持手动拖拽 `sortOrder` 与 `createdAt` 顺序；父任务一旦勾选完成即正常沉入底部「已完成」折叠分组。

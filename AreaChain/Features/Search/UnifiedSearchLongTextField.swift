@@ -129,9 +129,7 @@ private struct UnifiedSearchLongTextNative: NSViewRepresentable {
     private func configure(_ editor: CommandProtectedTextView) {
         let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
         let color = NSColor(DaybookPalette.text.primary)
-        if editor.font != font { editor.font = font }
-        if editor.textColor != color { editor.textColor = color }
-        if editor.insertionPointColor != color { editor.insertionPointColor = color }
+        editor.configureTypography(font: font, color: color)
         editor.setAccessibilityLabel(label)
     }
 

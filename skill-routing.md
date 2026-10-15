@@ -1,5 +1,9 @@
 # AreaChain 技能路由与交付闭环
 
+## C-M2 QA 启动门禁与有界原型
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦可见焦点与原生身份）→ areachain-verify。启动决策、构建身份和两种原型的复用入口见[组件目录](docs/component-catalog.md#c-m2-qa-启动与两种排版原型)，A～F及失败／历史产物缺失仅维护在[权威 C-M2](docs/unified-search-commands.md#987-里程碑-c-m2qa-启动门禁与两种有界排版原型)。原锁900秒、完整正常PrivacyQA、独立本批标识／目录、合成内存内容、六项授权清除及原生串行保持。先验新包再测试；受控负向仅限已验证门禁的新QA包，不用旧包或桌面代启动。两原型不改生产默认、不因旧指标丢失重开整轮实验；指定Cursor不可用保留未执行，不以普通代理替代。无正文保存、真实数据／系统操作、安装、发布、提交或推送。
+
 统一搜索 N-M2 沿 areachain-workflow → areasong-development / areachain-ui（ui-ux-pro-max 聚焦原生身份／焦点）→ areachain-verify；只扩展原 N-M1 搜索来源、导航宿主及返回票据。访问／正文／类型化图片拥有者和临时 Store 边界见[组件目录](docs/component-catalog.md#n-m2-普通内容只读查阅)，实际交接仅见[权威 N-M2](docs/unified-search-commands.md#985-里程碑-n-m2标签导航普通手记全文与普通图片查阅)。完整正常 PrivacyQA、独立本批标识／目录、合成数据、六项钥匙串变量清除、原锁900秒和串行原生事件保持。指定 Cursor verifier 不可调用时保留未执行；C2B、正文编辑、受保护内容、人工／最低系统／真实多窗口缺口不豁免。不认证／解密、不业务保存，不启用生产、提交、安装或发布。
 
 安装脚本的原身份恢复改动沿 areachain-workflow → areachain-verify；复用原候选验签、安装锁、暂存替换和回退，仅以显式 `--previous-app` 提供可信原包身份。入口见[组件目录](docs/component-catalog.md#安装身份恢复入口)，参数与数据边界以[签名文档](docs/signing.md#原应用缺失时重装)为准。先做隔离脚本回归与只读预检；真实安装沿当前明确授权，数据重置、签名迁移和系统解锁不随之授权。指定 Cursor verifier 不可用时保留复核缺口，不用其他代理替代。

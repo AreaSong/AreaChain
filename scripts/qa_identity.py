@@ -1,10 +1,12 @@
 """只读核验新 QA 包；签名、编译标识和 plist 必须同时匹配，不补写旧包。"""
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import plistlib
 import subprocess
 import sys
+import signing
 
 
 def verify(app, expected_identifier=None):
@@ -29,15 +31,21 @@ def verify(app, expected_identifier=None):
     names = {line.split()[-1] for line in symbols.splitlines() if line.split()}
     if "_AreaChainQABuildIdentityV1" not in names or "_AreaChainApplicationBuildIdentityV1" in names:
         raise ValueError("QA 编译身份缺失或矛盾")
+    policy = signing.verify_app(app, "Debug", {"mode": "local", "bundleIdentifier": identifier,
+        "teamIdentifier": "", "systemUnlockConfigured": False, "distributionReady": False})
     return {"schema": 1, "role": "qa", "bundleIdentifier": identifier,
-            "compiledIdentity": "AreaChainQABuildIdentityV1", "signatureVerified": True,
+            "compiledIdentity": "AreaChainQABuildIdentityV1", "signatureVerified": True, "signingPolicy": policy,
             "codeImages": {image.name: hashlib.sha256(image.read_bytes()).hexdigest() for image in images},
             "executableSHA256": hashlib.sha256(binary.read_bytes()).hexdigest()}
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("app", type=Path)
+    parser.add_argument("--expected-identifier")
+    args = parser.parse_args()
     try:
-        print(json.dumps(verify(sys.argv[1]), sort_keys=True))
+        print(json.dumps(verify(args.app, args.expected_identifier), sort_keys=True))
     except (OSError, ValueError, subprocess.CalledProcessError):
         print("QA 构建身份核验失败", file=sys.stderr)
         sys.exit(1)

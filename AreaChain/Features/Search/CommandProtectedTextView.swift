@@ -17,6 +17,11 @@ import AppKit
     private(set) var pendingConfirmation = false
     private var installing = false
     private var accepting = false
+    private var presentationFont: NSFont?
+    private var presentationColor: NSColor?
+    #if AREACHAIN_QA
+    private var preparingCandidate = false
+    #endif
     private var windowObservers: [NSObjectProtocol] = []
     #if DEBUG
     var testingAfterCheckpoint: (() -> Void)?
@@ -30,10 +35,13 @@ import AppKit
         contentSession = session
         self.textSystem = textSystem
         super.init(frame: NSRect(x: 0, y: 0, width: 400, height: 200), textContainer: textSystem.container)
+        presentationFont = super.font
+        presentationColor = super.textColor
         // 指定 frame 初始化会把 maxSize 固定为 400×200；宿主启用纵向伸缩后必须允许全文高度，
         // 否则末尾虽有字符和检查点，滚动与 NSTextInputClient 候选锚点仍被裁在旧高度内。
         maxSize.height = CGFloat.greatestFiniteMagnitude
         isRichText = false
+        textColor = NSColor(DaybookPalette.text.primary)
         importsGraphics = false
         allowsUndo = false
         isAutomaticQuoteSubstitutionEnabled = false
@@ -50,6 +58,23 @@ import AppKit
 
     required init?(coder: NSCoder) { nil }
     override var undoManager: UndoManager? { localUndo }
+
+    override var font: NSFont? {
+        get { super.font }
+        set { presentationFont = newValue; super.font = newValue }
+    }
+
+    override var textColor: NSColor? {
+        get { super.textColor }
+        set { presentationColor = newValue; super.textColor = newValue }
+    }
+
+    func configureTypography(font: NSFont, color: NSColor) {
+        // NSTextView 的读取值可能是首字符的中文回退字体；不能因此在每次刷新时重设全文字体。
+        if presentationFont != font { self.font = font }
+        if presentationColor != color { textColor = color }
+        if insertionPointColor != color { insertionPointColor = color }
+    }
 
     /// 调用者只能传入一次真实显式恢复所得资格；解锁通知没有调用此方法的路径。
     func begin(using restored: CommandDraftContentAccess) throws {
@@ -128,10 +153,17 @@ import AppKit
         guard contentSession.permitsNativeInstallation(self), let storage = textStorage else {
             throw CommandDraftProtectionError.stale
         }
+        // 空 storage 的字符串替换没有继承属性，会把既有字体／深色文字退回系统默认值。
+        // 只给已接受的差量附上宿主样式，不改正文、选区或恢复点，也不重排整篇属性。
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: presentationFont ?? font ?? NSFont.systemFont(ofSize: DaybookType.bodySize),
+            .foregroundColor: presentationColor ?? textColor ?? NSColor(DaybookPalette.text.primary)
+        ]
+        let replacement = NSAttributedString(string: delta.text, attributes: attributes)
         CommandTextTiming.measure("storage") {
             let replace = {
                 storage.beginEditing()
-                storage.replaceCharacters(in: delta.range, with: delta.text)
+                storage.replaceCharacters(in: delta.range, with: replacement)
                 storage.endEditing()
             }
             textSystem.edit(replace)
@@ -147,8 +179,32 @@ import AppKit
     }
 
     override func firstRect(forCharacterRange range: NSRange, actualRange: NSRangePointer?) -> NSRect {
+        #if AREACHAIN_QA
+        guard !preparingCandidate else { return super.firstRect(forCharacterRange: range, actualRange: actualRange) }
+        preparingCandidate = true
+        defer { preparingCandidate = false }
         textSystem.prepareCandidate(range)
+        let rect = super.firstRect(forCharacterRange: range, actualRange: actualRange)
+        let length = textStorage?.length ?? 0
+        if textLayoutManager != nil, rect.height <= 0, let current = access,
+           let window, window.firstResponder === self,
+           range.location != NSNotFound, range.location >= 0, range.location <= length,
+           range.length >= 0, range.length <= length - range.location {
+            // TK2 组词后的片段原点可能仍对应旧视口；完成真实滚动及宿主布局后只重试一次。
+            // 不合成高度／字符位置，也不在非活动编辑器上触发滚动。
+            super.scrollRangeToVisible(range)
+            window.contentView?.layoutSubtreeIfNeeded()
+            guard access == current else {
+                actualRange?.pointee = NSRange(location: NSNotFound, length: 0)
+                return .zero
+            }
+            textSystem.prepareCandidate(range)
+            return super.firstRect(forCharacterRange: range, actualRange: actualRange)
+        }
+        return rect
+        #else
         return super.firstRect(forCharacterRange: range, actualRange: actualRange)
+        #endif
     }
 
     override func insertText(_ insertString: Any, replacementRange: NSRange) {

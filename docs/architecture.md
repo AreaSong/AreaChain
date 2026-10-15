@@ -288,19 +288,16 @@ AreaChain/
 隐私自动化测试使用独立测试 Bundle ID、内存或临时目录数据库、合成内容与 `FakeSystemVaultKeys`。`PrivacyMigrationTests` 冻结升级前实体并检验升级、冷启动清理和重开读取；`PrivacyRenderingTests` 检查浅深色布局及锁定后的原生编辑器层级。`PrivacyInteractionTests` 覆盖搜索过滤草稿、选图回调与已删除对象。测试图片可由注入根目录的 `AttachmentStore` 隔离，默认生产目录不变。
 
 ```bash
-env -u AREACHAIN_SYSTEM_KEYCHAIN_QA -u AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID \
-  -u AREACHAIN_SYSTEM_KEYCHAIN_PHASE -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_QA \
-  -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_RUN_ID -u TEST_RUNNER_AREACHAIN_SYSTEM_KEYCHAIN_PHASE \
-  xcodebuild -quiet -project AreaChain.xcodeproj -scheme AreaChain \
-  -configuration Debug -destination 'platform=macOS,arch=arm64' \
-  -derivedDataPath build/PrivacyQA \
-  AREACHAIN_SIGNING_MODE=local DEVELOPMENT_TEAM= CODE_SIGN_IDENTITY=- \
-  CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements \
-  PRODUCT_BUNDLE_IDENTIFIER=com.areachain.privacy-qa INFOPLIST_KEY_LSUIElement=NO \
-  -parallel-testing-enabled NO test
+# 名称按本批选择；cm2 对应 PrivacyQA-cm2 与 com.areachain.privacy-qa.cm2。
+./scripts/build.sh qa-compile --qa-batch cm2
+./scripts/build.sh qa --qa-batch cm2 --only-testing AreaChainTests/AppStartupTests
 ```
 
-该命令显式隔离应用标识、使用不绑定账号的临时签名，并移除可能继承的真实钥匙串授权；不会修改个人签名配置。自动化探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。覆盖 `CODE_SIGN_ENTITLEMENTS=AreaChain/App/AreaChain.entitlements` 会丢掉钥匙串访问组并得到 `errSecMissingEntitlement (-34018)`，因此这条命令只适合非钥匙串 PrivacyQA。隔离真实钥匙串须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`，见工程手册 PHASE-6 补证。真实启用前应另行确认隔离系统密钥测试，验证 Touch ID／系统密码、取消、重启与重编译／升级后的签名兼容，再确认真实数据迁移。不得为了通过验收去掉钥匙串访问控制或默默改签名／权限。上述命令不安装应用；`scripts/build.sh` 无参数只构建并验签 Debug，安装已分离至需明确确认的 `scripts/install.sh`。
+该入口统一传递 [Config/QA.xcconfig](../Config/QA.xcconfig) 与 `AREACHAIN_QA_IDENTIFIER`，在原 `build/.build.lock` 单次最多900秒的同一锁内先 `build-for-testing`、核验精确身份／沙盒／无受限钥匙串权限，再串行 `test-without-building`，结束后重新验包。六项真实钥匙串授权（含 `TEST_RUNNER_` 形式）均清除；不修改个人签名。省略批次时仍为原 PrivacyQA 目录与标识。源码全集前／锁后／执行后核对仍由调用方完成；性能期限、进程身份与测试命中需本批外层记录，不因 build.sh 返回零就推断运行验收。
+
+`AreaChainEntry.main` 在 SwiftUI App 及其属性包装器构造、持久化之前调用 `AppStartup.requireAllowed()`；App.init、Delegate 和 Commands 复用同一冻结决策。编译符号与签名 plist 的 schema／role／QA identifier 必须一致；合法 XCTest 要求标志存在（允许空值）且 dyld 已加载测试注入库。拒绝为无内容类别诊断及退出码78，不退生产依赖；合法测试仅建立无自动保存的内存容器。正常 application 身份保持默认生产路径，用注入工厂验证兼容，不能启动日用应用验证该分支。旧包不能追认；该门禁防止 QA 启动偏离，不是抗恶意代码注入的认证机制。证据与限制见 [C-M2](unified-search-commands.md#987-里程碑-c-m2qa-启动门禁与两种有界排版原型)。
+
+自动化系统探测只查询随机不存在的钥匙串条目，禁止提示和写入；它不是实际创建、读取、撤销的证明。QA 使用 `AreaChain.entitlements`，不具备受限钥匙串访问组，因此上述命令只适合非钥匙串 PrivacyQA。隔离真实钥匙串须走开发签名注入的 `AreaChain.SystemUnlock.entitlements`，见工程手册 PHASE-6 补证。真实启用前应另行确认系统密钥、取消、重启／重编译与签名兼容，再确认真实数据迁移；不得为通过验收改变访问控制或默默改签名／权限。上述命令不安装应用，普通 `build.sh` 仍只构建验签；安装入口另见签名说明。
 
 `SystemVaultIntegrationTests` 是默认跳过的真实钥匙串入口，须同时提供 QA Bundle ID、显式授权标志、随机 UUID 和测试阶段。它使用独立服务名，按创建、读取、主动取消、重编译后读取、清理分阶段运行；取消阶段必须收到用户取消，不能把程序超时计为通过。只持久化测试标识、密钥摘要和初始构建版本，不保存明文测试密钥。普通测试不得开启该入口；临时验收配置运行后关闭授权标志。
 

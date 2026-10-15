@@ -1,8 +1,38 @@
 import AppKit
+import CoreText
 import Testing
 @testable import AreaChain
 
 @Suite(.serialized) @MainActor struct CommandTextLayoutControlTests {
+    @Test(.enabled(if: ProcessInfo.processInfo.environment["AREACHAIN_CM2_SPACING_PROBE"] == "1"))
+    func systemTypesettingSpacingProbe() throws {
+        let font = NSFont.systemFont(ofSize: DaybookType.bodySize)
+        let native = NSTextView()
+        native.font = font
+        var rows: [[String: Any]] = []
+        for bytes in [1_024, 65_536] {
+            let text = String(repeating: "中a🙂", count: bytes / 8)
+            for explicitZeroKern in [false, true] {
+                var attributes: [NSAttributedString.Key: Any] = [.font: font]
+                if explicitZeroKern { attributes[.kern] = 0 }
+                let value = NSAttributedString(string: text, attributes: attributes)
+                let start = ContinuousClock.now
+                // 仅合成探针对照 AppKit 的长段排版成本；不改变任何产品防护或原型配置。
+                let typesetter = try #require(CTTypesetterCreateWithAttributedStringAndOptions(value,
+                    [kCTTypesetterOptionAllowUnboundedLayout: true] as CFDictionary))
+                let line = CTTypesetterCreateLine(typesetter, CFRange(location: 0, length: value.length))
+                rows.append(["bytes": bytes, "explicitZeroKern": explicitZeroKern,
+                             "milliseconds": milliseconds(since: start),
+                             "width": CTLineGetTypographicBounds(line, nil, nil, nil)])
+            }
+        }
+        Attachment.record(try JSONSerialization.data(withJSONObject: [
+            "rows": rows, "unboundedTypesetterProbe": true,
+            "nativeTypingKeys": native.typingAttributes.keys.map(\.rawValue).sorted(),
+            "nativeKern": (native.typingAttributes[.kern] as? NSNumber)?.doubleValue ?? -1
+        ]), named: "CM2-spacing-probe.json")
+    }
+
     struct Case {
         let name: String
         var paragraphs = false

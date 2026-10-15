@@ -66,6 +66,8 @@ python3 -B -m unittest discover -s scripts/tests -v
 
 ## 验签门禁
 
+完整非钥匙串 QA 使用 `./scripts/build.sh qa-compile --qa-batch cm2` 或定向 `qa --qa-batch cm2 --only-testing AreaChainTests/AppStartupTests`。批次参数只允许1～40位小写字母、数字及连字符，生成独立目录和精确QA标识；缺省保留原PrivacyQA。它显式使用 `Config/QA.xcconfig`，不读取个人配置来决定QA签名身份。编译、`qa_identity.py --expected-identifier` 和测试在同一原锁内依次执行；验签复用本文件的local沙盒／无受限钥匙串权限策略，并额外交叉核对编译符号与签名plist。QA仍无系统解锁或发行资格，源码全集／有界进程观察须由调用方补齐。边界和模板见[隔离验收](architecture.md#隔离验收与真实启用门禁)。
+
 `scripts/signing.py` 只读核对：
 
 - 实际应用标识、签名团队和沙盒／Hardened Runtime。

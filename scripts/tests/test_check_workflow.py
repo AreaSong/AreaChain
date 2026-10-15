@@ -41,11 +41,13 @@ class WorkflowCheckTests(unittest.TestCase):
                    "struct QuadrantTitlePreview: View { var body: some View { Color.clear"
                    ".daybookSurface(floating: .rowBubble(isHovered: false, isCopied: false)) } }\n")
         contract_docs = {
+            "docs/architecture.md": "qa-compile --qa-batch Config/QA.xcconfig 持久化之前\n",
             "AGENTS.md": "[路由](skill-routing.md) [目录](docs/component-catalog.md) areachain-workflow 白话请求默认行为 不把 `.cursor/plans` 当项目路线\n",
             "skill-routing.md": "areachain-workflow areachain-ui areachain-verify docs/component-catalog.md docs/quality-gates.md 用户输入契约 三个项目技能\n",
             "docs/quality-gates.md": "quality_gate.py performance-baselines.json security-static comment-contract\n",
             "docs/component-catalog.md": "TaskContentQueryReader DaybookInputShell DaybookTextField SyntaxTextField DaybookButtonStyle DaybookToggleStyle checkbox Checkbox DaybookStepper Stepper DaybookSegmentedControl DaybookSegmentOption DaybookSegmentedBar Segmented segmented DaybookPicker DaybookPickerOption formRow verbatim Picker ModernCheckbox inlineSubtask detailSubtask detailSubtaskSymbolSize Completion DaybookControlsPreview ControlsPreviewWindowController openControlsPreview settings.controlsPreview DaybookOverlaySamples daybookSurface TaskRow DayBoardList BoardFilter BoardSearch CommandCatalog DayKey AgendaProjection DayBoardPageProjection DayBoardCheckIndex DayBoardMutations ModelChanges PendingTrash BoardRowChrome BoardCommandStrip BoardSearchHitGroups WorkspaceHeaderBar WorkspaceHeaderAction WorkspaceHeaderSearchCapsule 新公共组件\n",
         }
+        contract_docs["docs/component-catalog.md"] += " AppLaunchPolicy AppStartup CommandTextSystem\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceSearchRouter UnifiedSearchReturnContext WorkspaceObjectNavigation WorkspaceHostContext\n"
         contract_docs["docs/component-catalog.md"] += " WorkspaceContentReader WorkspaceContentSession WorkspaceContentSource WorkspaceReadOnlyContentView LoadedAttachmentImage\n"
         contract_docs["docs/component-catalog.md"] += " CommandPlanReturnTicket CommandAssignmentMergeProof proposeMerge UnifiedSearchPlanRevisionHistory\n"
@@ -305,6 +307,17 @@ class WorkflowCheckTests(unittest.TestCase):
         result = workflow.check_workflow_contract(self.root)
         self.assertEqual(result["status"], "failed")
         self.assertTrue(any("areachain-ui" in problem["message"] for problem in result["issues"]))
+
+    def test_qa_template_cannot_lose_identity_or_pre_persistence_entry(self):
+        self.make_project()
+        path = self.root / "docs/architecture.md"
+        original = path.read_text()
+        for marker in ("qa-compile", "--qa-batch", "Config/QA.xcconfig", "持久化之前"):
+            with self.subTest(marker=marker):
+                path.write_text(original.replace(marker, ""))
+                result = workflow.check_workflow_contract(self.root)
+                self.assertEqual(result["status"], "failed")
+                self.assertTrue(any(marker in item["message"] for item in result["issues"]))
 
     def test_component_catalog_requires_task_capture_boundaries(self):
         self.make_project()
