@@ -21,14 +21,15 @@ public enum RowBubblePlacement {
         hostMaxX: CGFloat? = nil
     ) -> (growsUpward: Bool, bubbleShiftX: CGFloat) {
         let growsUpward = globalPoint.y > 260
-        let safeMaxX: CGFloat = hostMaxX ?? (wideHost ? 1440 : 356)
+        let windowSafeMaxX: CGFloat = wideHost ? 1440 : (DaybookMetrics.Window.popoverWidth - 12)
+        let safeMaxX: CGFloat = min(windowSafeMaxX, hostMaxX ?? windowSafeMaxX)
         let safeMinX: CGFloat = 12
-        let bubbleRight = globalPoint.x + 202
+        let bubbleRight = globalPoint.x + 207.5
         let shiftX: CGFloat
         if bubbleRight > safeMaxX {
             let overflow = bubbleRight - safeMaxX
             // 气泡宽 210pt，内部箭头最多平移至 186pt，故气泡最大左移量锁定在 178pt，确保指示箭头始终指向图标
-            let maxShift = min(178, max(0, (globalPoint.x - 8) - safeMinX))
+            let maxShift = min(178, max(0, (globalPoint.x - 2.5) - safeMinX))
             shiftX = -min(overflow, maxShift)
         } else {
             shiftX = 0
@@ -210,13 +211,13 @@ public struct RowNoteBubble: View {
     }
 
     private func arrowIndicator(pointingUp: Bool, padding: CGFloat) -> some View {
-        HStack {
-            Spacer().frame(width: padding)
+        HStack(spacing: 0) {
+            Color.clear.frame(width: padding, height: 1)
             Image(systemName: pointingUp ? "arrowtriangle.up.fill" : "arrowtriangle.down.fill")
                 .font(.system(size: 7)) // token-exempt: 小于 9pt 的气泡箭头
                 .foregroundStyle(DaybookPalette.fill.page)
                 .offset(y: pointingUp ? 1 : -1)
-            Spacer()
+            Spacer(minLength: 0)
         }
         .frame(height: 5)
     }

@@ -24,6 +24,7 @@ struct DiarySummaryRow: View {
     @State private var pickingDay = false
     @State var growsUpward = false
     @State var bubbleShiftX: CGFloat = 0
+    @State var rowMaxX: CGFloat = 0
 
     var isHovered: Bool {
         get { chrome.isRowHovered }
@@ -109,6 +110,14 @@ struct DiarySummaryRow: View {
             .daybookSurface(.row, isHovered: isHovered, isSelected: isSelected || isHighlighted)
             .overlay(pinnedBorderOverlay)
             .background(pointerRegion(isTitle: false).accessibilityHidden(true))
+            .background {
+                GeometryReader { proxy in
+                    Color.clear
+                        .onAppear { updateVerticalPlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateVerticalPlacement(proxy) }
+                        .onChange(of: proxy.frame(in: .global).maxX) { _, _ in updateVerticalPlacement(proxy) }
+                }
+            }
             .contentShape(RoundedRectangle(cornerRadius: DaybookRadius.small, style: .continuous))
             .simultaneousGesture(TapGesture().onEnded {
                 chrome.revealRow(reduceMotion: reduceMotion)
@@ -193,14 +202,6 @@ struct DiarySummaryRow: View {
                 .overlay(pointerRegion(isTitle: false).accessibilityHidden(true))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear { updateBubblePlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
-                    .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
-            }
-        )
     }
 
     // MARK: - 右侧快捷操作区 (恒定 48x22 占位：📋 复制 + ··· 更多菜单，纯透明度渐变，零抖动)

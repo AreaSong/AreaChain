@@ -231,7 +231,7 @@ struct LiveComposerPreviewHeader: View {
                 onCopy: { copyPreview(parsed.notes) },
                 onHover: { isNoteBubbleHovered = $0 }
             )
-            .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+            .offset(x: -2.5 + bubbleShiftX, y: growsUpward ? -18 : 16)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
                 removal: .opacity

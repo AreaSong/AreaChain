@@ -51,6 +51,7 @@ extension DiarySummaryRow {
                 RoundedRectangle(cornerRadius: DaybookRadius.xxs, style: .continuous)
                     .fill(fillColor) // token-exempt: 16% 与 4% 没有对应令牌
             )
+            .background(notePlacementReader)
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .onTapGesture {
@@ -87,7 +88,7 @@ extension DiarySummaryRow {
                     }
                 }
             )
-            .offset(x: -8 + bubbleShiftX, y: growsUpward ? -18 : 16)
+            .offset(x: -2.5 + bubbleShiftX, y: growsUpward ? -18 : 16)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
                 removal: .opacity
@@ -95,11 +96,39 @@ extension DiarySummaryRow {
         }
     }
 
+    private var notePlacementReader: some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minY) { _, _ in updateBubblePlacement(proxy) }
+                .onChange(of: proxy.frame(in: .global).minX) { _, _ in updateBubblePlacement(proxy) }
+        }
+    }
+
+    func updateVerticalPlacement(_ proxy: GeometryProxy) {
+        let frame = proxy.frame(in: .global)
+        let newGrowsUpward = frame.minY > 260
+        if growsUpward != newGrowsUpward {
+            growsUpward = newGrowsUpward
+        }
+        if rowMaxX != frame.maxX {
+            rowMaxX = frame.maxX
+        }
+    }
+
     func updateBubblePlacement(_ proxy: GeometryProxy) {
         let frame = proxy.frame(in: .global)
-        let placement = RowBubblePlacement.calculate(globalPoint: CGPoint(x: frame.minX, y: frame.minY), wideHost: false)
-        growsUpward = placement.growsUpward
-        bubbleShiftX = placement.bubbleShiftX
+        let placement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: frame.minX, y: frame.minY),
+            wideHost: false,
+            hostMaxX: rowMaxX > 0 ? (rowMaxX - 8) : nil
+        )
+        if growsUpward != placement.growsUpward {
+            growsUpward = placement.growsUpward
+        }
+        if bubbleShiftX != placement.bubbleShiftX {
+            bubbleShiftX = placement.bubbleShiftX
+        }
     }
 
     func resetTitleTracking() {

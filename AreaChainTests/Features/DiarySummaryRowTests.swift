@@ -161,7 +161,7 @@ struct DiarySummaryRowTests {
         )
         Self.retainedContainers.append(container)
         let context = container.mainContext
-        let password = TagItem(name: "密码", sortOrder: 0)
+        let password = TagItem(name: "密码", sortOrder: 0, isPrivateDiary: true)
         context.insert(password)
         let entry = DiaryEntry(
             text: "邮箱口令 123456",

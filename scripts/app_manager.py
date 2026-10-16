@@ -117,7 +117,8 @@ def product_configuration(entitlements):
 
 def running(target_app: Optional[Path] = None):
     if target_app is not None and exists(target_app):
-        result = subprocess.run(["pgrep", "-f", str(target_app / "Contents/MacOS/AreaChain")], capture_output=True, timeout=10, check=False)
+        pattern = re.escape(str(target_app / "Contents/MacOS/AreaChain"))
+        result = subprocess.run(["pgrep", "-f", pattern], capture_output=True, timeout=10, check=False)
         require(result.returncode in (0, 1), "无法确认应用是否仍在运行，停止操作。")
         return result.returncode == 0
     result = subprocess.run(["pgrep", "-x", "AreaChain"], capture_output=True, timeout=10, check=False)
@@ -144,7 +145,8 @@ def quit_running(target_app: Optional[Path] = None, timeout=5):
             return
         time.sleep(0.1)
     if target_app is not None and exists(target_app):
-        subprocess.run(["pkill", "-f", str(target_app / "Contents/MacOS/AreaChain")], capture_output=True, timeout=5, check=False)
+        pattern = re.escape(str(target_app / "Contents/MacOS/AreaChain"))
+        subprocess.run(["pkill", "-f", pattern], capture_output=True, timeout=5, check=False)
     else:
         subprocess.run(["pkill", "-x", "AreaChain"], capture_output=True, timeout=5, check=False)
     deadline = time.time() + 2

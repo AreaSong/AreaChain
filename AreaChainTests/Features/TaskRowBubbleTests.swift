@@ -55,13 +55,13 @@ struct TaskRowBubbleTests {
             hostMaxX: hostMaxX
         )
         #expect(placement.growsUpward == true)
-        // 850 + 202 = 1052, 超出 52pt, 应平移 -52pt
-        #expect(placement.bubbleShiftX == -52)
-        // 箭头在气泡内的 padding: 8 - (-52) = 60
+        // 850 + 207.5 = 1057.5, 超出 57.5pt, 应平移 -57.5pt
+        #expect(placement.bubbleShiftX == -57.5)
+        // 箭头在气泡内的 padding: 8 - (-57.5) = 65.5
         let arrowPadding: CGFloat = max(8, min(186, 8 - placement.bubbleShiftX))
-        // 箭头的世界坐标: iconX - 8 + bubbleShiftX + arrowPadding 必须恒等于 iconX
-        let arrowGlobalX = iconX - 8 + placement.bubbleShiftX + arrowPadding
-        #expect(arrowGlobalX == iconX, "箭头绝对位置必须精准对准图标")
+        // 箭头中心的世界坐标: (iconX - 2.5 + bubbleShiftX) + (arrowPadding + 3.5) 必须恒等于图标几何中心 (iconX + 9.0)
+        let arrowCenterGlobalX = iconX - 2.5 + placement.bubbleShiftX + arrowPadding + 3.5
+        #expect(arrowCenterGlobalX == iconX + 9.0, "箭头中心必须精准对准图标几何中心")
 
         // 场景 2: 极端靠右，平移量受 178pt 上限保护，不可造成箭头脱离
         let extremeIconX: CGFloat = 1300
@@ -71,6 +71,19 @@ struct TaskRowBubbleTests {
             hostMaxX: 1350
         )
         #expect(extremePlacement.bubbleShiftX >= -178, "平移幅度不可超过箭头可补偿上限 178pt")
+
+        // 场景 3: 菜单栏小窗口 (popover) 长标题场景：即使长文本被排版撑大到 460pt，气泡右边缘也必须严格受限在窗口安全边界 (368pt) 之内
+        let popoverLongTitleIconX: CGFloat = 295
+        let popoverPlacement = RowBubblePlacement.calculate(
+            globalPoint: CGPoint(x: popoverLongTitleIconX, y: 150),
+            wideHost: false,
+            hostMaxX: 460 // 模拟未被严格截断的行宽
+        )
+        let bubbleRightInWindow = popoverLongTitleIconX - 2.5 + popoverPlacement.bubbleShiftX + 210
+        #expect(bubbleRightInWindow <= 368, "菜单栏气泡右边缘必须严格限制在窗口边界 368pt 内，绝不可被窗口裁剪")
+        let popoverArrowPadding = max(8, min(186, 8 - popoverPlacement.bubbleShiftX))
+        let popoverArrowCenter = popoverLongTitleIconX - 2.5 + popoverPlacement.bubbleShiftX + popoverArrowPadding + 3.5
+        #expect(popoverArrowCenter == popoverLongTitleIconX + 9.0, "长标题左移后小三角仍必须严格对准图标中心")
     }
 
     @Test(arguments: [false, true])
