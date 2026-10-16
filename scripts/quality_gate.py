@@ -15,7 +15,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SUFFIXES = {".swift", ".py", ".sh", ".yml", ".yaml", ".xcconfig"}
 SOURCE_DIRECTORIES = ("AreaChain", "AreaChainTests", "scripts", ".github", "Config")
-PROFILES = ("auto", "docs", "static", "swift", "performance", "full", "release")
+PROFILES = ("auto", "docs", "static", "swift", "ui", "performance", "full", "release")
 
 
 def gate(name, status, detail="", command=None, issues=None, duration=0.0):
@@ -79,7 +79,11 @@ def infer_profile(paths, root=ROOT):
         )
     if any(path in performance_scopes for path in paths):
         return "performance"
-    if any(path.endswith(".swift") or path.endswith(".xcodeproj/project.pbxproj") for path in paths):
+    swift_changes = [path for path in paths if path.endswith(".swift") or path.endswith(".xcodeproj/project.pbxproj")]
+    if swift_changes:
+        ui_prefixes = ("AreaChain/Features/", "AreaChain/Theme/")
+        if all(any(p.startswith(prefix) for prefix in ui_prefixes) for p in swift_changes):
+            return "ui"
         return "swift"
     if any(path.startswith("scripts/") and path.endswith((".py", ".sh")) for path in paths):
         return "static"
@@ -87,8 +91,8 @@ def infer_profile(paths, root=ROOT):
 
 
 def needs_swift_toolchain(profile):
-    """只有 macOS Swift profile 才要求 SwiftLint/Xcode；静态 CI 保持跨平台。"""
-    return profile in ("swift", "performance", "full", "release")
+    """只有 macOS Swift/UI profile 才要求 SwiftLint/Xcode；静态 CI 保持跨平台。"""
+    return profile in ("swift", "ui", "performance", "full", "release")
 
 
 def summarize_output(stdout, stderr, limit=12):
@@ -451,6 +455,14 @@ def run_swift_tests(filters=None):
     return gate("swift-tests", status, detail, command, duration=duration)
 
 
+def run_swift_build():
+    command = ["./scripts/build.sh", "build"]
+    code, stdout, stderr, duration = run_command(command, timeout=1800)
+    status = "passed" if code == 0 else ("blocked" if code in (126, 127) else "failed")
+    detail = summarize_output(stdout, stderr) or "Xcode 编译并验签 Debug 通过。"
+    return gate("swift-build", status, detail, command, duration=duration)
+
+
 def run_release_build():
     command = ["./scripts/build.sh", "release"]
     code, stdout, stderr, duration = run_command(command, timeout=1800)
@@ -494,7 +506,7 @@ def overall_status(checks, strict=False):
     return "passed"
 
 
-def run_profile(root, profile, strict=False, base_ref=None, only_testing=None):
+def run_profile(root, profile, strict=False, base_ref=None, only_testing=None, build_only=False):
     scope_error = None
     try:
         paths = changed_files(root, base_ref)
@@ -509,16 +521,28 @@ def run_profile(root, profile, strict=False, base_ref=None, only_testing=None):
               run_performance_contract(root, paths, require_measurement=selected == "performance")]
     if selected in ("docs",):
         checks.append(run_comment_check(root, paths))
-    elif selected in ("static", "swift", "performance", "full", "release"):
+    elif selected in ("static", "swift", "ui", "performance", "full", "release"):
         scan_paths = [] if selected == "static" else paths
         checks.extend([run_python_tests(), run_shell_syntax(root, scan_paths),
                        run_security_check(root, scan_paths), run_comment_check(root, scan_paths)])
     if needs_swift_toolchain(selected):
         checks.append(run_swiftlint(root, paths, strict=strict))
-        filters = list(only_testing) if only_testing else None
-        if filters is None and selected not in ("full", "release"):
-            filters = infer_swift_test_filters(root, paths)
-        checks.append(run_swift_tests(filters=filters))
+        if build_only:
+            checks.append(run_swift_build())
+        elif selected == "ui":
+            checks.append(run_swift_build())
+            filters = list(only_testing) if only_testing else None
+            if filters is None:
+                filters = infer_swift_test_filters(root, paths)
+            if filters:
+                checks.append(run_swift_tests(filters=filters))
+            else:
+                checks.append(gate("swift-tests", "passed", "纯 UI 变更已通过编译验证，豁免全局后台测试。"))
+        else:
+            filters = list(only_testing) if only_testing else None
+            if filters is None and selected not in ("full", "release"):
+                filters = infer_swift_test_filters(root, paths)
+            checks.append(run_swift_tests(filters=filters))
     if selected == "release":
         checks.append(run_release_build())
     if selected == "performance":
@@ -561,9 +585,11 @@ def main(argv=None):
     parser.add_argument("--base-ref", help="可选：把此 Git revision 到 HEAD 的差异纳入门禁")
     parser.add_argument("--only-testing", action="append", default=[],
                         help="限定 Swift 测试范围（可多次指定，如 AreaChainTests/DayBoardLogicTests）")
+    parser.add_argument("--build-only", action="store_true",
+                        help="仅编译构建并验签 Debug，跳过运行 Swift 单元测试")
     args = parser.parse_args(argv)
     report = run_profile(ROOT, args.profile, strict=args.strict, base_ref=args.base_ref,
-                         only_testing=args.only_testing)
+                         only_testing=args.only_testing, build_only=args.build_only)
     print_report(report, args.format)
     return 0 if report["status"] in ("passed", "warning") else 1
 

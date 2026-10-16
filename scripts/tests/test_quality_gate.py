@@ -330,6 +330,21 @@ class QualityGateTests(unittest.TestCase):
         self.assertEqual(run.call_args.args[0], ["./scripts/build.sh", "test", "--only-testing", "AreaChainTests/FooTests"])
         self.assertIn("定向 Swift 测试", result["detail"])
 
+    def test_infer_profile_detects_pure_ui_changes(self):
+        ui_paths = ["AreaChain/Features/Task/TaskRow.swift", "AreaChain/Theme/DaybookPalette.swift"]
+        self.assertEqual(quality.infer_profile(ui_paths, self.root), "ui")
+        mixed_paths = ["AreaChain/Features/Task/TaskRow.swift", "AreaChain/Domain/Rule.swift"]
+        self.assertEqual(quality.infer_profile(mixed_paths, self.root), "swift")
+
+    def test_needs_swift_toolchain_includes_ui(self):
+        self.assertTrue(quality.needs_swift_toolchain("ui"))
+
+    def test_run_swift_build_invokes_build_sh(self):
+        with patch.object(quality, "run_command", return_value=(0, "ok", "", 0.1)) as run:
+            result = quality.run_swift_build()
+        self.assertEqual(result["status"], "passed")
+        self.assertEqual(run.call_args.args[0], ["./scripts/build.sh", "build"])
+
 
 if __name__ == "__main__":
     unittest.main()
