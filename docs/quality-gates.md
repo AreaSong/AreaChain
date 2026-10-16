@@ -18,17 +18,20 @@ python3 -B scripts/quality_gate.py
 # 只做文档、规则和本地静态门禁
 python3 -B scripts/quality_gate.py --profile static
 
-# Swift/UI 变更：加 SwiftLint 和串行 Swift 测试
-python3 -B scripts/quality_gate.py --profile swift
+# Swift/UI 变更：加 SwiftLint 和定向 Swift 测试（支持自动推导或显式指定目标）
+python3 -B scripts/quality_gate.py --profile swift --only-testing AreaChainTests/DayBoardLogicTests
 
 # 性能相关变更：核对基线并运行登记的性能测试
 python3 -B scripts/quality_gate.py --profile performance
+
+# 明确需要全量回归时：执行完整 Swift 测试套件
+python3 -B scripts/quality_gate.py --profile full
 
 # 明确需要候选包时：在 Swift 验证后构建并核验 Release
 python3 -B scripts/quality_gate.py --profile release
 ```
 
-`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。脚本中的 `security-static` 和 `comment-contract` 分别守住可机械判断的安全与注释契约。SwiftLint 和 Xcode 测试只属于 `swift`/`performance`/`full`/`release` profile，静态 profile 不依赖 macOS 工具链，便于 Ubuntu CI 执行。非严格模式只扫描 `AreaChain` 与 `AreaChainTests`，不把 `.build` 生成文件混入历史债务；严格模式只阻断本次变更涉及的 SwiftLint 文件。警告默认不会伪装成失败，也不会阻断低风险文档任务；合并或发布前可使用 `--strict` 将警告升级为失败。
+`auto`（默认）根据当前差异选择最小适用范围。需要机器读取时加 `--format json`。对于包含 Swift 变动的轻量微调（≤ 5个文件），门禁会自动推导对应的定向测试（例如改动 `FooTests.swift` 测自身，改动 `Foo.swift` 自动匹配 `FooTests`），避免无谓的全局测试；当改动广泛、无法映射对应测试或显式指定 `--profile full` 时，则回退执行全量测试。也可以通过 `--only-testing` 显式限定要运行的测试目标。脚本中的 `security-static` 和 `comment-contract` 分别守住可机械判断的安全与注释契约。SwiftLint 和 Xcode 测试只属于 `swift`/`performance`/`full`/`release` profile，静态 profile 不依赖 macOS 工具链，便于 Ubuntu CI 执行。非严格模式只扫描 `AreaChain` 与 `AreaChainTests`，不把 `.build` 生成文件混入历史债务；严格模式只阻断本次变更涉及的 SwiftLint 文件。警告默认不会伪装成失败，也不会阻断低风险文档任务；合并或发布前可使用 `--strict` 将警告升级为失败。
 
 ## 并发构建与测试
 

@@ -406,11 +406,49 @@ def run_swiftlint(root, paths, strict=False):
     return gate("swiftlint", status, output or "SwiftLint 没有输出问题。", command, duration=duration)
 
 
-def run_swift_tests():
+def infer_swift_test_filters(root, paths):
+    """根据变动的 Swift 文件智能推导定向测试类；无法全覆盖时返回 None。"""
+    swift_paths = [p for p in paths if p.endswith(".swift")]
+    if not swift_paths or len(swift_paths) > 5:
+        return None
+    test_dir = root / "AreaChainTests"
+    if not test_dir.is_dir():
+        return None
+    filters = set()
+    for path in swift_paths:
+        p = Path(path)
+        if path.startswith("AreaChainTests/"):
+            if p.stem.endswith("Tests"):
+                filters.add(f"AreaChainTests/{p.stem}")
+            else:
+                return None
+        elif path.startswith("AreaChain/"):
+            stem = p.stem
+            matches = sorted(test_dir.rglob(f"{stem}Tests.swift"))
+            if not matches:
+                matches = sorted(test_dir.rglob(f"{stem}*Tests.swift"))
+            if matches:
+                for match in matches:
+                    filters.add(f"AreaChainTests/{match.stem}")
+            else:
+                return None
+        else:
+            return None
+    return sorted(filters) if filters else None
+
+
+def run_swift_tests(filters=None):
     command = ["./scripts/build.sh", "test"]
+    if filters:
+        for item in filters:
+            command.extend(["--only-testing", item])
     code, stdout, stderr, duration = run_command(command, timeout=1800)
     status = "passed" if code == 0 else ("blocked" if code in (126, 127) else "failed")
-    return gate("swift-tests", status, summarize_output(stdout, stderr), command, duration=duration)
+    detail = summarize_output(stdout, stderr)
+    if filters:
+        desc = f"运行定向 Swift 测试 ({len(filters)} 项: {', '.join(filters)})"
+        detail = f"{desc}\n{detail}".strip() if detail else desc
+    return gate("swift-tests", status, detail, command, duration=duration)
 
 
 def run_release_build():
@@ -456,7 +494,7 @@ def overall_status(checks, strict=False):
     return "passed"
 
 
-def run_profile(root, profile, strict=False, base_ref=None):
+def run_profile(root, profile, strict=False, base_ref=None, only_testing=None):
     scope_error = None
     try:
         paths = changed_files(root, base_ref)
@@ -477,7 +515,10 @@ def run_profile(root, profile, strict=False, base_ref=None):
                        run_security_check(root, scan_paths), run_comment_check(root, scan_paths)])
     if needs_swift_toolchain(selected):
         checks.append(run_swiftlint(root, paths, strict=strict))
-        checks.append(run_swift_tests())
+        filters = list(only_testing) if only_testing else None
+        if filters is None and selected not in ("full", "release"):
+            filters = infer_swift_test_filters(root, paths)
+        checks.append(run_swift_tests(filters=filters))
     if selected == "release":
         checks.append(run_release_build())
     if selected == "performance":
@@ -518,8 +559,11 @@ def main(argv=None):
     parser.add_argument("--format", choices=("text", "json"), default="text")
     parser.add_argument("--strict", action="store_true", help="将 warning 也作为失败")
     parser.add_argument("--base-ref", help="可选：把此 Git revision 到 HEAD 的差异纳入门禁")
+    parser.add_argument("--only-testing", action="append", default=[],
+                        help="限定 Swift 测试范围（可多次指定，如 AreaChainTests/DayBoardLogicTests）")
     args = parser.parse_args(argv)
-    report = run_profile(ROOT, args.profile, strict=args.strict, base_ref=args.base_ref)
+    report = run_profile(ROOT, args.profile, strict=args.strict, base_ref=args.base_ref,
+                         only_testing=args.only_testing)
     print_report(report, args.format)
     return 0 if report["status"] in ("passed", "warning") else 1
 
