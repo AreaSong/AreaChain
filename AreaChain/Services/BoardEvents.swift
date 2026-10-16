@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 extension Notification.Name {
     static let toggleBoardPopover = Notification.Name("areachain.toggleBoardPopover")
@@ -24,6 +25,7 @@ enum BoardEvents {
                 Task { @MainActor in
                     NotificationScheduler.shared.scheduleRefresh()
                     if includeCalendar { CalendarSync.refreshIfEnabled() }
+                    WidgetCenter.shared.reloadAllTimelines()
                 }
             }
         }

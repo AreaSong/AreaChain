@@ -212,6 +212,7 @@ final class AppPreferences {
             calendarMonthLayoutMode = .split
         }
         isLoading = false
+        AppGroup.writeLanguagePreference(values.language.rawValue)
         startupAppearance = applyAppAppearance()
     }
 
@@ -237,6 +238,7 @@ final class AppPreferences {
             calendarMonthLayoutMode = .split
         }
         isLoading = false
+        AppGroup.writeLanguagePreference(loaded.published.values.language.rawValue)
         startupAppearance = applyAppAppearance()
     }
 
@@ -324,7 +326,10 @@ final class AppPreferences {
         values.set(value)
         // 旧后端仍只使该字段的观察失效，避免无关赋值重绘语言/外观消费者。
         switch value.field {
-        case .language: withMutation(keyPath: \.language) { localState = .legacy(values) }
+        case .language:
+            AppGroup.writeLanguagePreference(values.language.rawValue)
+            UserDefaults(suiteName: AppGroup.identifier)?.set(values.language.rawValue, forKey: Self.languageKey)
+            withMutation(keyPath: \.language) { localState = .legacy(values) }
         case .appearance: withMutation(keyPath: \.appearance) { localState = .legacy(values) }
         case .quadrantTitleTruncation: withMutation(keyPath: \.quadrantTitleTruncation) { localState = .legacy(values) }
         case .stampCaptureApp: withMutation(keyPath: \.stampCaptureApp) { localState = .legacy(values) }
@@ -429,6 +434,8 @@ final class AppPreferences {
         let change = LocalPreferenceGroupChange(source: localPreferenceSource, record: record, fields: fields)
         presentations.begin(change)
         // 单次赋值包含四值、记录身份及全部字段修订；willSet 只能读到完整旧状态。
+        AppGroup.writeLanguagePreference(record.values.language.rawValue)
+        UserDefaults(suiteName: AppGroup.identifier)?.set(record.values.language.rawValue, forKey: Self.languageKey)
         withMutation(keyPath: \.committedLocalPreferenceRecord) { localState = .committed(record) }
         presentations.apply(record.commitID) { self.committedLocalPreferenceRecord }
     }

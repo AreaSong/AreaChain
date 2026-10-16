@@ -89,7 +89,6 @@ struct TodayTasksTimelineProvider: TimelineProvider {
 
         let context = ModelContext(container)
         let todayKey = WidgetDateHelper.todayDayKey()
-        let todayWeekday = WidgetDateHelper.weekdayIndex(from: Date())
 
         // 1. 查询今日待办（未删除，属于今天或今天之前未完成）
         let todoDesc = FetchDescriptor<TodoItem>(
@@ -135,9 +134,7 @@ struct TodayTasksTimelineProvider: TimelineProvider {
         var widgetRoutines: [WidgetRoutineItem] = []
         for routine in allRoutines {
             // 检查星期掩码是否包含今天
-            let mask = routine.weekdayMask ?? 0b1111111
-            let isScheduled = ((mask >> todayWeekday) & 1) == 1
-            guard isScheduled else { continue }
+            guard WidgetDateHelper.isRoutineScheduled(mask: routine.weekdayMask, on: Date()) else { continue }
             if let paused = routine.pausedOnDayKey, paused == todayKey { continue }
 
             let isDone = todayChecks.first(where: { $0.routine?.id == routine.id })?.isDone ?? false

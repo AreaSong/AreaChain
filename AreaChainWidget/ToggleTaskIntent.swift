@@ -98,20 +98,24 @@ struct ToggleRoutineIntent: AppIntent {
     }
 }
 
-/// 辅助日期工具，独立计算民事日期，避免对主工程额外依赖
+/// 辅助日期工具，独立计算民事日期与习惯排期掩码，与主应用 WeekdayMask 完全对齐
 enum WidgetDateHelper {
-    static func todayDayKey() -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        formatter.dateFormat = "yyyy-MM-dd"
-        return formatter.string(from: Date())
+    static func todayDayKey(from date: Date = Date()) -> String {
+        let calendar = Calendar.current
+        let parts = calendar.dateComponents([.year, .month, .day], from: date)
+        let year = parts.year ?? 0
+        let month = parts.month ?? 0
+        let day = parts.day ?? 0
+        return String(format: "%04d-%02d-%02d", year, month, day)
     }
 
-    static func weekdayIndex(from date: Date) -> Int {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.firstWeekday = 1 // 1 是周日，2 是周一
-        let weekday = calendar.component(.weekday, from: date)
-        // 转换成 0=周一 ... 6=周日
-        return (weekday + 5) % 7
+    /// 按照系统日历与主应用 WeekdayMask 规则匹配掩码
+    /// Weekday 1=周日 (1 << 0), 2=周一 (1 << 1), ... 7=周六 (1 << 6)
+    static func isRoutineScheduled(mask: Int?, on date: Date = Date()) -> Bool {
+        let resolvedMask = mask ?? 0b1111111
+        let weekday = Calendar.current.component(.weekday, from: date)
+        guard (1...7).contains(weekday) else { return false }
+        let bit = 1 << (weekday - 1)
+        return (resolvedMask & 0b1111111 & bit) != 0
     }
 }

@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1WDGBUILDF000000001 /* AreaChainWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1WIDGETF00000000001 /* AreaChainWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A1WDGBUILDF000000001 /* AreaChainWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = A1WIDGETF00000000001 /* AreaChainWidget.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -467,6 +467,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG AREA_CHAIN_WIDGET $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};
@@ -496,6 +497,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = "$(AREACHAIN_BUNDLE_IDENTIFIER).widget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "AREA_CHAIN_WIDGET $(inherited)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 			};

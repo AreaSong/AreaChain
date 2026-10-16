@@ -149,6 +149,16 @@ def quit_running(target_app: Optional[Path] = None, timeout=5):
         subprocess.run(["pkill", "-f", pattern], capture_output=True, timeout=5, check=False)
     else:
         subprocess.run(["pkill", "-x", "AreaChain"], capture_output=True, timeout=5, check=False)
+    subprocess.run(["pkill", "-x", "AreaChainWidget"], capture_output=True, timeout=5, check=False)
+    chrono_dir = Path.home() / "Library/Containers/com.areachain.app.widget/Data/SystemData/com.apple.chrono"
+    if chrono_dir.exists():
+        for sub in ("timelines", "snapshots", "placeholders"):
+            target_sub = chrono_dir / sub
+            if target_sub.is_dir():
+                shutil.rmtree(target_sub, ignore_errors=True)
+    subprocess.run(["pkill", "-9", "-x", "AreaChainWidget"], capture_output=True, timeout=5, check=False)
+    subprocess.run(["killall", "-9", "chronod"], capture_output=True, timeout=5, check=False)
+    subprocess.run(["killall", "NotificationCenter"], capture_output=True, timeout=5, check=False)
     deadline = time.time() + 2
     while time.time() < deadline:
         if not running(target_app):

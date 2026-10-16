@@ -31,6 +31,11 @@ enum AppGroup {
         containerURL.appending(path: storeFileName)
     }
 
+    static func writeLanguagePreference(_ language: String) {
+        let file = baseContainerURL.appending(path: "language.pref")
+        try? language.data(using: .utf8)?.write(to: file, options: .atomic)
+    }
+
     /// 首次启用 App Group 时平滑迁移已有数据（仅正式版迁移真实生产数据；Debug 版保持独立纯净，不复制真实手记）
     static func migrateStoreIfNeeded() {
         #if !DEBUG
