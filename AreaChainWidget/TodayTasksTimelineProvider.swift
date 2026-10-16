@@ -26,6 +26,7 @@ struct TodayTasksEntry: TimelineEntry {
     var completedCount: Int
     var totalCount: Int
     var streakCount: Int
+    var activeTab: String = "todos"
     var isPlaceholder: Bool = false
 
     static var empty: TodayTasksEntry {
@@ -36,6 +37,7 @@ struct TodayTasksEntry: TimelineEntry {
             completedCount: 0,
             totalCount: 0,
             streakCount: 0,
+            activeTab: "todos",
             isPlaceholder: false
         )
     }
@@ -55,6 +57,7 @@ struct TodayTasksEntry: TimelineEntry {
             completedCount: 2,
             totalCount: 5,
             streakCount: 7,
+            activeTab: "todos",
             isPlaceholder: true
         )
     }
@@ -156,13 +159,16 @@ struct TodayTasksTimelineProvider: TimelineProvider {
         let totalCount = widgetTodos.count + widgetRoutines.count
         let completedCount = doneTodos + doneRoutines
 
+        let activeTab = UserDefaults(suiteName: "group.com.areachain.app")?.string(forKey: "widget_tasks_active_tab") ?? "todos"
+
         return TodayTasksEntry(
             date: Date(),
             todos: widgetTodos,
             routines: widgetRoutines,
             completedCount: completedCount,
             totalCount: totalCount,
-            streakCount: doneRoutines // 简化计算今日打卡完成数作为连击代表
+            streakCount: doneRoutines,
+            activeTab: activeTab
         )
     }
 }

@@ -63,6 +63,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         ShortcutStore.shared.start()
         ClipboardHistorySession.shared.start()
         ClipboardHistoryPanel.shared.install()
+        AppWindows.quickEntryWindowProvider = {
+            [QuickEntryPanelController.shared.hostedWindow].compactMap { $0 }
+        }
         NotificationScheduler.shared.start()
         CompletionUndo.shared.install()
         CalendarSync.start()
@@ -82,14 +85,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
             if url.scheme == "areachain" {
-                AppWindows.revealWorkspace()
                 let target = url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-                if target == "quadrant" {
-                    WorkspaceNavigation.shared.revealTab(.quadrant)
-                } else if target == "today" {
-                    WorkspaceNavigation.shared.revealTab(.today)
-                } else if target == "diary" {
-                    WorkspaceNavigation.shared.revealTab(.diary)
+                if target == "quick-task" {
+                    QuickEntryPanelController.shared.show(mode: .task)
+                } else if target == "quick-diary" {
+                    QuickEntryPanelController.shared.show(mode: .diary)
+                } else {
+                    AppWindows.revealWorkspace()
+                    if target == "quadrant" {
+                        WorkspaceNavigation.shared.revealTab(.quadrant)
+                    } else if target == "today" {
+                        WorkspaceNavigation.shared.revealTab(.today)
+                    } else if target == "diary" {
+                        WorkspaceNavigation.shared.revealTab(.diary)
+                    }
                 }
             }
         }

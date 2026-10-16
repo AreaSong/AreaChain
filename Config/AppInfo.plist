@@ -8,5 +8,16 @@
     <string>$(AREACHAIN_BUILD_ROLE)</string>
     <key>AreaChainQABundleIdentifier</key>
     <string>$(AREACHAIN_QA_BUNDLE_IDENTIFIER)</string>
+    <key>CFBundleURLTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleURLName</key>
+            <string>com.areachain.app.scheme</string>
+            <key>CFBundleURLSchemes</key>
+            <array>
+                <string>areachain</string>
+            </array>
+        </dict>
+    </array>
 </dict>
 </plist>

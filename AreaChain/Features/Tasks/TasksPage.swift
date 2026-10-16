@@ -92,11 +92,14 @@ struct TasksPage: View {
                         VStack(alignment: .leading, spacing: 6) {
                             if centersYesterday {
                                 centeredYesterdaySection(page)
+                                    .zIndex(1)
                             } else {
                                 yesterdaySection(page)
+                                    .zIndex(1)
                                 upcomingSection(page)
                             }
                             dayBoardView(page)
+                                .zIndex(0)
 
                             blankClickArea
                         }

@@ -8,6 +8,8 @@ enum AppWindows {
     static var diaryWindowsProvider: (@MainActor () -> [NSWindow])?
     /// 剪贴板小窗。关工作台时不能把它当成杂散窗口关掉。
     static var clipboardWindowProvider: (@MainActor () -> [NSWindow])?
+    /// 极速速记小窗。关工作台时不能把它当成杂散窗口关掉。
+    static var quickEntryWindowProvider: (@MainActor () -> [NSWindow])?
     /// 独立图片查看器窗口。关工作台或看图窗时参与受管窗口判断。
     static var attachmentViewerWindowProvider: (@MainActor () -> [NSWindow])?
 
@@ -92,6 +94,7 @@ enum AppWindows {
          ControlsPreviewWindowController.shared.hostedWindow].compactMap { $0 }
             + (diaryWindowsProvider?() ?? [])
             + (clipboardWindowProvider?() ?? [])
+            + (quickEntryWindowProvider?() ?? [])
             + (attachmentViewerWindowProvider?() ?? [])
     }
 

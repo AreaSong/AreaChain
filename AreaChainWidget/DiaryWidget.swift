@@ -20,10 +20,11 @@ struct DiaryTimelineEntry: TimelineEntry {
     var date: Date
     var notes: [WidgetDiaryItem]
     var totalWordCount: Int
+    var activePageIndex: Int = 0
     var isPlaceholder: Bool = false
 
     static var empty: DiaryTimelineEntry {
-        DiaryTimelineEntry(date: Date(), notes: [], totalWordCount: 0, isPlaceholder: false)
+        DiaryTimelineEntry(date: Date(), notes: [], totalWordCount: 0, activePageIndex: 0, isPlaceholder: false)
     }
 
     static var placeholder: DiaryTimelineEntry {
@@ -48,6 +49,7 @@ struct DiaryTimelineEntry: TimelineEntry {
                 )
             ],
             totalWordCount: 72,
+            activePageIndex: 0,
             isPlaceholder: true
         )
     }
@@ -126,10 +128,15 @@ struct DiaryTimelineProvider: TimelineProvider {
             )
         }
 
+        let defaults = UserDefaults(suiteName: "group.com.areachain.app")
+        let rawIndex = defaults?.integer(forKey: "widget_diary_page_index") ?? 0
+        let validIndex = items.isEmpty ? 0 : max(0, min(rawIndex, items.count - 1))
+
         return DiaryTimelineEntry(
             date: Date(),
             notes: items,
             totalWordCount: totalChars,
+            activePageIndex: validIndex,
             isPlaceholder: false
         )
     }

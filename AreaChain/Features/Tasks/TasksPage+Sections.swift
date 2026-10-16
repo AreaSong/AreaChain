@@ -9,7 +9,6 @@ extension TasksPage {
                     leftoverTodoRow(
                         todo,
                         page: page,
-                        note: DayKey.shortStamp(todo.dayKey, locale: locale),
                         visibleIDs: page.upcomingModels.map(\.id)
                     )
                 }
@@ -120,15 +119,7 @@ extension TasksPage {
     @ViewBuilder
     func leftoverRow(_ item: UnfinishedItem, page: TasksPageViewModel) -> some View {
         if item.kind == .todo, let todo = page.todo(item.id) {
-            let note: String? = {
-                if todo.dayKey == yesterdayKey {
-                    return nil
-                } else if !todo.dayKey.isEmpty {
-                    return DayKey.shortStamp(todo.dayKey, locale: locale)
-                }
-                return nil
-            }()
-            leftoverTodoRow(todo, page: page, note: note, visibleIDs: page.yesterdayItems.map(\.id))
+            leftoverTodoRow(todo, page: page, visibleIDs: page.yesterdayItems.map(\.id))
         } else if item.kind == .routine, let routine = page.routine(item.id) {
             leftoverRoutineRow(routine, item: item, page: page)
         } else {

@@ -149,10 +149,35 @@ struct MediumWidgetView: View {
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
 
+                // 原位 Tab 切换
+                HStack(spacing: 2) {
+                    Button(intent: TasksTabIntent(tab: "todos")) {
+                        Text(WidgetL10n.sectionTodos)
+                            .font(.system(size: 9, weight: entry.activeTab == "todos" ? .bold : .regular))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(entry.activeTab == "todos" ? WidgetDaybookTheme.stampAccent.opacity(0.15) : Color.clear)
+                            .foregroundStyle(entry.activeTab == "todos" ? WidgetDaybookTheme.stampAccent : WidgetDaybookTheme.mutedText)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(intent: TasksTabIntent(tab: "routines")) {
+                        Text(WidgetL10n.sectionRoutines)
+                            .font(.system(size: 9, weight: entry.activeTab == "routines" ? .bold : .regular))
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(entry.activeTab == "routines" ? WidgetDaybookTheme.stampAccent.opacity(0.15) : Color.clear)
+                            .foregroundStyle(entry.activeTab == "routines" ? WidgetDaybookTheme.stampAccent : WidgetDaybookTheme.mutedText)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 Spacer()
 
-                Link(destination: URL(string: "areachain://today")!) {
-                    Image(systemName: "plus.circle")
+                Link(destination: URL(string: "areachain://quick-task")!) {
+                    Image(systemName: "plus.circle.fill")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
                 }
@@ -179,7 +204,7 @@ struct MediumWidgetView: View {
                 .fill(WidgetDaybookTheme.ruleLine)
                 .frame(height: 1)
 
-            // 列表区（最多展示 3~4 条）
+            // 列表区
             if entry.todos.isEmpty && entry.routines.isEmpty {
                 VStack(spacing: 6) {
                     Spacer()
@@ -192,14 +217,38 @@ struct MediumWidgetView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
-            } else {
-                VStack(alignment: .leading, spacing: 5) {
-                    ForEach(entry.todos.prefix(3)) { todo in
-                        TodoRowView(todo: todo)
+            } else if entry.activeTab == "routines" {
+                if entry.routines.isEmpty {
+                    VStack(spacing: 6) {
+                        Spacer()
+                        Text("今日无排定习惯")
+                            .font(.system(size: 11))
+                            .foregroundStyle(WidgetDaybookTheme.mutedText)
+                        Spacer()
                     }
-
-                    ForEach(entry.routines.prefix(max(0, 4 - entry.todos.prefix(3).count))) { routine in
-                        RoutineRowView(routine: routine)
+                    .frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(entry.routines.prefix(4)) { routine in
+                            RoutineRowView(routine: routine)
+                        }
+                    }
+                }
+            } else {
+                if entry.todos.isEmpty {
+                    VStack(spacing: 6) {
+                        Spacer()
+                        Text(WidgetL10n.emptyTodayDone)
+                            .font(.system(size: 11))
+                            .foregroundStyle(WidgetDaybookTheme.mutedText)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity)
+                } else {
+                    VStack(alignment: .leading, spacing: 5) {
+                        ForEach(entry.todos.prefix(4)) { todo in
+                            TodoRowView(todo: todo)
+                        }
                     }
                 }
             }
@@ -283,8 +332,8 @@ struct LargeWidgetView: View {
 
                 Spacer()
 
-                Link(destination: URL(string: "areachain://today")!) {
-                    Image(systemName: "plus.circle")
+                Link(destination: URL(string: "areachain://quick-task")!) {
+                    Image(systemName: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
                 }
