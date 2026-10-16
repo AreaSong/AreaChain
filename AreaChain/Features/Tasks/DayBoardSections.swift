@@ -27,16 +27,39 @@ extension DayBoardList {
         }
     }
 
+    @ViewBuilder
     var allDoneBanner: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "checkmark.circle")
-                .font(DaybookType.body.weight(.semibold))
-                .foregroundStyle(DaybookPalette.accent.base)
-            Text("board.banner.all_done")
-                .font(DaybookType.caption.weight(.medium))
-                .foregroundStyle(DaybookPalette.text.primary.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
-            Spacer()
+        let hasOverdue = config.yesterdayUnfinishedCount > 0
+        Button {
+            if hasOverdue {
+                withAnimation(DaybookMotion.interactive(reduceMotion)) {
+                    config.onToggleYesterday?()
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: "checkmark.circle")
+                    .font(DaybookType.body.weight(.semibold))
+                    .foregroundStyle(DaybookPalette.accent.base)
+                if hasOverdue {
+                    Text("board.banner.all_done_with_overdue \(config.yesterdayUnfinishedCount)")
+                        .font(DaybookType.caption.weight(.medium))
+                        .foregroundStyle(DaybookPalette.text.primary.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
+                    Spacer()
+                    Image(systemName: config.isYesterdayExpanded ? "chevron.up" : "chevron.down")
+                        .font(DaybookType.micro.weight(.semibold))
+                        .foregroundStyle(DaybookPalette.accent.base)
+                } else {
+                    Text("board.banner.all_done")
+                        .font(DaybookType.caption.weight(.medium))
+                        .foregroundStyle(DaybookPalette.text.primary.opacity(0.85)) // token-exempt: 85% 墨色没有对应令牌
+                    Spacer()
+                }
+            }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain) // control: 全清横幅折叠展开交互
+        .disabled(!hasOverdue)
         .padding(.vertical, 7)
         .padding(.horizontal, 10)
         .background(

@@ -57,12 +57,19 @@ extension TasksPage {
     }
 
     private func yesterdaySectionHeader(_ page: TasksPageViewModel) -> some View {
-        HStack(alignment: .center) {
+        let hasEarlier = page.yesterdayItems.contains { item in
+            guard let key = page.overdueDayKeys[item.id] else { return false }
+            return key < yesterdayKey
+        }
+        let headerTitle: LocalizedStringKey = hasEarlier ? "stamp.overdue" : "stamp.yesterday"
+        let moveAllTitle: LocalizedStringKey = hasEarlier ? "stamp.overdue.moveAll" : "stamp.yesterday.moveAll"
+
+        return HStack(alignment: .center) {
             HStack(spacing: 4) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(DaybookType.micro.weight(.semibold))
                     .foregroundStyle(DaybookPalette.accent.base)
-                Text("stamp.yesterday")
+                Text(headerTitle)
                     .font(DaybookType.caption.weight(.semibold))
                     .foregroundStyle(DaybookPalette.text.primary)
                 DaybookCount(count: page.yesterdayItems.count, emphasis: true)
@@ -76,11 +83,11 @@ extension TasksPage {
                 }) {
                     HStack(spacing: 3) {
                         Image(systemName: "arrow.right.to.line")
-                        Text("stamp.yesterday.moveAll")
+                        Text(moveAllTitle)
                     }
                 }
                 .help("stamp.yesterday.moveAll.help")
-                .accessibilityLabel("stamp.yesterday.moveAll")
+                .accessibilityLabel(moveAllTitle)
             }
         }
     }
@@ -113,19 +120,28 @@ extension TasksPage {
     @ViewBuilder
     func leftoverRow(_ item: UnfinishedItem, page: TasksPageViewModel) -> some View {
         if item.kind == .todo, let todo = page.todo(item.id) {
-            leftoverTodoRow(todo, page: page, visibleIDs: page.yesterdayItems.map(\.id))
+            let note: String? = {
+                if todo.dayKey == yesterdayKey {
+                    return nil
+                } else if !todo.dayKey.isEmpty {
+                    return DayKey.shortStamp(todo.dayKey, locale: locale)
+                }
+                return nil
+            }()
+            leftoverTodoRow(todo, page: page, note: note, visibleIDs: page.yesterdayItems.map(\.id))
         } else if item.kind == .routine, let routine = page.routine(item.id) {
             leftoverRoutineRow(routine, item: item, page: page)
         } else {
+            let itemDayKey = page.overdueDayKeys[item.id] ?? yesterdayKey
             let actions = LeftoverRowActions(
                 onToggle: { completeYesterday(item, page: page) },
-                onSelect: { selectLeftover(item.id, dayKey: yesterdayKey, in: page.yesterdayItems.map(\.id), modifiers: $0) },
+                onSelect: { selectLeftover(item.id, dayKey: itemDayKey, in: page.yesterdayItems.map(\.id), modifiers: $0) },
                 onMoveToDay: item.kind == .todo ? { moveYesterdayTodo(item, to: $0, page: page) } : nil
             )
             TaskRowFactory.leftoverFallback(LeftoverRowContext(
                 item: item,
                 todayKey: todayKey,
-                yesterdayKey: yesterdayKey,
+                yesterdayKey: itemDayKey,
                 isSelected: isLeftoverSelected(item.id),
                 actions: actions
             ))
@@ -137,9 +153,10 @@ extension TasksPage {
         item: UnfinishedItem,
         page: TasksPageViewModel
     ) -> some View {
+        let checkDay = page.overdueDayKeys[routine.id] ?? yesterdayKey
         let schedule = RoutineScheduleContext(
             todayKey: todayKey,
-            checkDayKey: yesterdayKey,
+            checkDayKey: checkDay,
             checks: checks,
             locale: locale,
             lookups: page.routineLookups(for: routine.id)
@@ -210,6 +227,7 @@ struct LeftoverChipState {
 struct LeftoverChipsBarConfig {
     var yesterday: LeftoverChipState
     var upcoming: LeftoverChipState
+    var yesterdayTitle: LocalizedStringKey = "chip.yesterday"
 }
 
 enum LeftoverChipKind {
@@ -243,7 +261,7 @@ struct LeftoverChipsBar: View {
             HStack(spacing: 12) {
                 if yesterday.count > 0 {
                     chip(LeftoverChipConfig(
-                        title: "chip.yesterday",
+                        title: config.yesterdayTitle,
                         count: yesterday.count,
                         expanded: yesterday.isExpanded,
                         kind: .yesterday,

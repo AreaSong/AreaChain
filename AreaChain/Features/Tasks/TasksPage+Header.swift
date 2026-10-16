@@ -30,6 +30,10 @@ extension TasksPage {
         if hasChips || hasFilters {
             HStack(spacing: 8) {
                 if hasChips {
+                    let hasEarlier = page.yesterdayItems.contains { item in
+                        guard let key = page.overdueDayKeys[item.id] else { return false }
+                        return key < yesterdayKey
+                    }
                     LeftoverChipsBar(
                         config: LeftoverChipsBarConfig(
                             yesterday: LeftoverChipState(
@@ -49,7 +53,8 @@ extension TasksPage {
                                         showUpcoming.toggle()
                                     }
                                 }
-                            )
+                            ),
+                            yesterdayTitle: hasEarlier ? "chip.overdue" : "chip.yesterday"
                         )
                     )
                 }

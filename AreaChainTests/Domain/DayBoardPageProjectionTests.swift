@@ -273,4 +273,37 @@ struct DayBoardPageProjectionTests {
     private func medianElapsed(_ samples: [TimeInterval]) -> TimeInterval {
         samples.sorted()[samples.count / 2]
     }
+
+    @Test func overdueTodosAndEarlierDaysCapturedInProjection() {
+        let calendar = utcCalendar
+        let today = "2026-10-16"
+        let yesterday = "2026-10-15"
+        let earlier = "2026-10-13"
+
+        let earlierTodo = TodoSnapshot(id: UUID(), title: "Earlier Todo", isDone: false, dayKey: earlier)
+        let yesterdayTodo = TodoSnapshot(id: UUID(), title: "Yesterday Todo", isDone: false, dayKey: yesterday)
+        let todayTodo = TodoSnapshot(id: UUID(), title: "Today Todo", isDone: true, dayKey: today)
+
+        let source = DayBoardSource(routines: [], checks: [], todos: [earlierTodo, yesterdayTodo, todayTodo])
+        let projection = DayBoardPageProjection.project(
+            source: source,
+            todayKey: today,
+            yesterdayKey: yesterday,
+            filter: BoardFilter(),
+            calendar: calendar
+        )
+
+        #expect(projection.overdueTodos.map(\.id) == [earlierTodo.id, yesterdayTodo.id])
+        #expect(projection.overdueDayKeys[earlierTodo.id] == earlier)
+        #expect(projection.overdueDayKeys[yesterdayTodo.id] == yesterday)
+        let focusedDay = BoardFocusDay.key(
+            for: earlierTodo.id,
+            listDayKey: today,
+            yesterdayKey: yesterday,
+            yesterdayIDs: projection.yesterdayIDs,
+            upcomingDayKeys: projection.upcomingDayKeys,
+            overdueDayKeys: projection.overdueDayKeys
+        )
+        #expect(focusedDay == earlier)
+    }
 }

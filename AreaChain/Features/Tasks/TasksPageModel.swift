@@ -12,7 +12,17 @@ struct TasksPageViewModel {
     let catalogs: TaskCatalogContext
     let streaks: [UUID: Int]
 
-    var yesterdayItems: [UnfinishedItem] { page.yesterdayItems }
+    var yesterdayItems: [UnfinishedItem] {
+        var items: [UnfinishedItem] = []
+        for item in page.yesterdayItems where item.kind == .routine {
+            items.append(item)
+        }
+        for todo in page.overdueTodos {
+            items.append(UnfinishedItem(id: todo.id, title: todo.title, kind: .todo))
+        }
+        return items
+    }
+    var overdueDayKeys: [UUID: String] { page.overdueDayKeys }
     var upcomingModels: [TodoItem] {
         page.upcomingTodos.compactMap { todosByID[$0.id] }
     }
@@ -47,7 +57,8 @@ struct TasksPageViewModel {
             listDayKey: listDayKey,
             yesterdayKey: yesterdayKey,
             yesterdayIDs: page.yesterdayIDs,
-            upcomingDayKeys: page.upcomingDayKeys
+            upcomingDayKeys: page.upcomingDayKeys,
+            overdueDayKeys: page.overdueDayKeys
         )
     }
 

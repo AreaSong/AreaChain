@@ -72,6 +72,7 @@ struct TasksPage: View {
     @State var pendingTrash: PendingTrash?
     @State var boardFilter = BoardFilter()
     @State var taskSelection = TaskSelection()
+    @State private var didInitializeExpandedState = false
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var effectiveFilter: BoardFilter {
@@ -150,6 +151,14 @@ struct TasksPage: View {
         .onChange(of: focusedTaskID?.wrappedValue) { _, id in
             if let id, taskSelection.ids.contains(id) { return }
             taskSelection.focus(id)
+        }
+        .onAppear {
+            if !didInitializeExpandedState {
+                didInitializeExpandedState = true
+                if page.totalOpenTodosCount == 0 && !page.yesterdayItems.isEmpty {
+                    showYesterday = true
+                }
+            }
         }
         .onDisappear {
             workspaceNavigation.isInlineTitleVisible = false

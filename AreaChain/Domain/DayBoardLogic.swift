@@ -366,6 +366,30 @@ enum DayBoardLogic {
         return routineItems + todoItems
     }
 
+    /// 涵盖所有历史逾期任务（dayKey < todayKey 的待办与未闭合逾期习惯），与 AgendaProjection 待处理口径一致。
+    static func overdueUnfinished(
+        routines: [RoutineSnapshot],
+        checks: [CheckSnapshot],
+        todos: [TodoSnapshot],
+        todayKey: String,
+        calendar: Calendar = .current
+    ) -> [UnfinishedItem] {
+        let routineRows = AgendaProjection.overdueRoutines(
+            routines: routines,
+            checks: checks,
+            todayKey: todayKey,
+            calendar: calendar
+        )
+        let routineMap = Dictionary(routines.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let routineItems = routineRows.compactMap { row -> UnfinishedItem? in
+            guard let r = routineMap[row.routineID] else { return nil }
+            return UnfinishedItem(id: r.id, title: r.title, kind: .routine)
+        }
+        let todoSnaps = AgendaProjection.overdueTodos(todos: todos, todayKey: todayKey, calendar: calendar)
+        let todoItems = todoSnaps.map { UnfinishedItem(id: $0.id, title: $0.title, kind: .todo) }
+        return routineItems + todoItems
+    }
+
     static func diaries(for dayKey: String, in entries: [DiarySnapshot]) -> [DiarySnapshot] {
         entries
             .filter { $0.deletedAt == nil && $0.dayKey == dayKey }
@@ -379,8 +403,12 @@ enum BoardFocusDay {
         listDayKey: String,
         yesterdayKey: String,
         yesterdayIDs: Set<UUID>,
-        upcomingDayKeys: [UUID: String]
+        upcomingDayKeys: [UUID: String],
+        overdueDayKeys: [UUID: String] = [:]
     ) -> String {
+        if let overdue = overdueDayKeys[id] {
+            return overdue
+        }
         if yesterdayIDs.contains(id) {
             return yesterdayKey
         }

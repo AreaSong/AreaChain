@@ -136,6 +136,8 @@ struct DayBoardPageSnapshot: Equatable {
     var isTodayEmpty: Bool
     var yesterdayIDs: Set<UUID>
     var upcomingDayKeys: [UUID: String]
+    var overdueTodos: [TodoSnapshot] = []
+    var overdueDayKeys: [UUID: String] = [:]
 }
 
 enum DayBoardPageProjection {
@@ -152,6 +154,11 @@ enum DayBoardPageProjection {
             todayKey: todayKey,
             filter: filter,
             calendar: calendar
+        )
+        let overdueTodos = listedOverdueTodos(
+            source: source,
+            todayKey: todayKey,
+            filter: filter
         )
         let upcomingTodos = listedUpcoming(
             source: source,
@@ -173,6 +180,10 @@ enum DayBoardPageProjection {
         let openDayTodos = todayLists.openTodos
         let hasClosedTodos = !todayLists.doneTodos.isEmpty
         let hasClosedRoutines = !todayLists.doneRoutines.isEmpty
+        var overdueDayKeys = Dictionary(uniqueKeysWithValues: overdueTodos.map { ($0.id, $0.dayKey) })
+        for item in yesterdayItems where item.kind == .routine {
+            overdueDayKeys[item.id] = yesterdayKey
+        }
         return DayBoardPageSnapshot(
             yesterdayItems: yesterdayItems,
             upcomingTodos: upcomingTodos,
@@ -184,7 +195,9 @@ enum DayBoardPageProjection {
             yesterdayIDs: Set(yesterdayItems.map(\.id)),
             upcomingDayKeys: Dictionary(
                 uniqueKeysWithValues: upcomingTodos.map { ($0.id, $0.dayKey) }
-            )
+            ),
+            overdueTodos: overdueTodos,
+            overdueDayKeys: overdueDayKeys
         )
     }
 
@@ -220,6 +233,23 @@ enum DayBoardPageProjection {
             ).currentStreak
         }
         return result
+    }
+
+    private static func listedOverdueTodos(
+        source: DayBoardSource,
+        todayKey: String,
+        filter: BoardFilter
+    ) -> [TodoSnapshot] {
+        AgendaProjection.overdueTodos(todos: source.todos, todayKey: todayKey).filter {
+            matchesListed(
+                $0.classifyBits,
+                dayKey: $0.dayKey,
+                isDone: $0.isDone,
+                remindMinutes: $0.remindMinutes,
+                todayKey: todayKey,
+                filter: filter
+            )
+        }
     }
 
     private static func listedYesterday(
