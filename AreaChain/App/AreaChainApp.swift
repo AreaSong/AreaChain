@@ -83,6 +83,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         for url in urls {
             if url.scheme == "areachain" {
                 AppWindows.revealWorkspace()
+                let target = url.host ?? url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                if target == "quadrant" {
+                    WorkspaceNavigation.shared.revealTab(.quadrant)
+                } else if target == "today" {
+                    WorkspaceNavigation.shared.revealTab(.today)
+                } else if target == "diary" {
+                    WorkspaceNavigation.shared.revealTab(.diary)
+                }
             }
         }
     }

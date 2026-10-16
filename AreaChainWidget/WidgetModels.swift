@@ -193,6 +193,8 @@ final class DiaryEntry {
     var encryptedText: Data? = nil
     var privacyVaultID: UUID? = nil
 
+    var hasProtectedContent: Bool { isPrivate || encryptedText != nil || privacyVaultID != nil }
+
     init(
         id: UUID = UUID(),
         text: String = "",

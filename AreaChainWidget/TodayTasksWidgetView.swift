@@ -100,6 +100,15 @@ enum WidgetL10n {
     static var emptyTodayDone: String { isChinese ? "今日暂无未完成待办，尽情享受吧" : "No pending tasks today. Enjoy your day!" }
     static var emptyAllDone: String { isChinese ? "今日安排已达成 🎉" : "All caught up for today 🎉" }
     static var statusCompleted: String { isChinese ? "完成" : "completed" }
+    static var statusOverdue: String { isChinese ? "逾期" : "Overdue" }
+    static var titleDiary: String { isChinese ? "今日手记" : "Today's Notes" }
+    static var diaryWidgetDisplayName: String { isChinese ? "今日手记" : "Today's Notes" }
+    static var diaryWidgetDescription: String { isChinese ? "在桌面随时阅览今日随想与手记灵感，一键快速记录。" : "Read your notes and inspirations on desktop, and capture thoughts instantly." }
+    static var emptyDiary: String { isChinese ? "今日暂无手记，点击记录此刻灵感..." : "No notes for today yet. Click to capture your thoughts..." }
+    static var privateDiaryLocked: String { isChinese ? "🔒 私密手记已锁定" : "🔒 Private note is locked" }
+    static func formatWordsCount(_ count: Int) -> String {
+        isChinese ? "\(count) 字" : "\(count) words"
+    }
 }
 
 // MARK: - Root View
@@ -134,12 +143,20 @@ struct MediumWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             // 页头
-            HStack(alignment: .center) {
+            HStack(alignment: .center, spacing: 6) {
                 Label(WidgetL10n.titleToday, systemImage: "checklist")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(WidgetDaybookTheme.inkText)
+                    .lineLimit(1)
 
                 Spacer()
+
+                Link(destination: URL(string: "areachain://today")!) {
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(WidgetDaybookTheme.stampAccent)
+                }
+                .buttonStyle(.plain)
 
                 if entry.totalCount > 0 {
                     Text("\(entry.completedCount)/\(entry.totalCount)")
@@ -154,6 +171,7 @@ struct MediumWidgetView: View {
                 Text(Date(), style: .date)
                     .font(.system(size: 11))
                     .foregroundStyle(WidgetDaybookTheme.mutedText)
+                    .lineLimit(1)
             }
             .padding(.bottom, 2)
 
@@ -257,12 +275,21 @@ struct LargeWidgetView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
+            HStack(spacing: 8) {
                 Label(WidgetL10n.titleOverview, systemImage: "sparkles")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
+
                 Spacer()
+
+                Link(destination: URL(string: "areachain://today")!) {
+                    Image(systemName: "plus.circle")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(WidgetDaybookTheme.stampAccent)
+                }
+                .buttonStyle(.plain)
+
                 (Text("\(entry.completedCount)/\(entry.totalCount) ")
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -325,6 +352,28 @@ struct TodoRowView: View {
                 .lineLimit(1)
 
             Spacer()
+
+            if let time = todo.dueTimeText {
+                Text(time)
+                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(todo.isOverdue ? WidgetDaybookTheme.destructiveRed.opacity(0.12) : WidgetDaybookTheme.capsuleBackground)
+                    .foregroundStyle(todo.isOverdue ? WidgetDaybookTheme.destructiveRed : WidgetDaybookTheme.stampAccent)
+                    .clipShape(RoundedRectangle(cornerRadius: 3))
+            } else if todo.isOverdue {
+                HStack(spacing: 2) {
+                    Image(systemName: "exclamationmark.circle.fill")
+                        .font(.system(size: 8))
+                    Text(WidgetL10n.statusOverdue)
+                        .font(.system(size: 9, weight: .medium))
+                }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1)
+                .background(WidgetDaybookTheme.destructiveRed.opacity(0.12))
+                .foregroundStyle(WidgetDaybookTheme.destructiveRed)
+                .clipShape(RoundedRectangle(cornerRadius: 3))
+            }
 
             if todo.isImportant {
                 Circle()

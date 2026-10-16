@@ -9,6 +9,8 @@ struct WidgetTodoItem: Identifiable, Hashable {
     var isImportant: Bool
     var isUrgent: Bool
     var dueMinutes: Int?
+    var dueTimeText: String? = nil
+    var isOverdue: Bool = false
 }
 
 struct WidgetRoutineItem: Identifiable, Hashable {
@@ -42,9 +44,9 @@ struct TodayTasksEntry: TimelineEntry {
         TodayTasksEntry(
             date: Date(),
             todos: [
-                WidgetTodoItem(id: UUID(), title: "整理今日工作要点", isDone: true, isImportant: true, isUrgent: false, dueMinutes: 600),
-                WidgetTodoItem(id: UUID(), title: "完成小组件设计评审", isDone: false, isImportant: true, isUrgent: true, dueMinutes: 840),
-                WidgetTodoItem(id: UUID(), title: "阅读技术文档 30 分钟", isDone: false, isImportant: false, isUrgent: false, dueMinutes: nil)
+                WidgetTodoItem(id: UUID(), title: "整理今日工作要点", isDone: true, isImportant: true, isUrgent: false, dueMinutes: 600, dueTimeText: "10:00", isOverdue: false),
+                WidgetTodoItem(id: UUID(), title: "完成小组件设计评审", isDone: false, isImportant: true, isUrgent: true, dueMinutes: 840, dueTimeText: "14:00", isOverdue: false),
+                WidgetTodoItem(id: UUID(), title: "阅读技术文档 30 分钟", isDone: false, isImportant: false, isUrgent: false, dueMinutes: nil, dueTimeText: nil, isOverdue: false)
             ],
             routines: [
                 WidgetRoutineItem(id: UUID(), title: "晨间阅读与思考", isDone: true),
@@ -109,14 +111,22 @@ struct TodayTasksTimelineProvider: TimelineProvider {
             return a.sortOrder < b.sortOrder
         }
 
-        let widgetTodos = todayTodos.map {
-            WidgetTodoItem(
-                id: $0.id,
-                title: $0.title,
-                isDone: $0.isDone,
-                isImportant: $0.isImportant,
-                isUrgent: $0.isUrgent,
-                dueMinutes: $0.dueMinutes
+        let currentMinutes = Calendar.current.component(.hour, from: Date()) * 60 + Calendar.current.component(.minute, from: Date())
+        let widgetTodos = todayTodos.map { todo in
+            let isPastDay = todo.dayKey < todayKey
+            let isTimePassed = (todo.dueMinutes != nil && todo.dueMinutes! < currentMinutes)
+            let isOverdue = !todo.isDone && (isPastDay || isTimePassed)
+            let dueTimeText = todo.dueMinutes.map { String(format: "%02d:%02d", $0 / 60, $0 % 60) }
+
+            return WidgetTodoItem(
+                id: todo.id,
+                title: todo.title,
+                isDone: todo.isDone,
+                isImportant: todo.isImportant,
+                isUrgent: todo.isUrgent,
+                dueMinutes: todo.dueMinutes,
+                dueTimeText: dueTimeText,
+                isOverdue: isOverdue
             )
         }
 

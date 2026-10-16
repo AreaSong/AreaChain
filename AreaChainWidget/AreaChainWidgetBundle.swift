@@ -5,5 +5,6 @@ import WidgetKit
 struct AreaChainWidgetBundle: WidgetBundle {
     var body: some Widget {
         TodayTasksWidget()
+        DiaryWidget()
     }
 }
