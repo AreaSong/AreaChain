@@ -27,6 +27,7 @@ struct TodayTasksEntry: TimelineEntry {
     var totalCount: Int
     var streakCount: Int
     var activeTab: String = "todos"
+    var isDebug: Bool = false
     var isPlaceholder: Bool = false
 
     static var empty: TodayTasksEntry {
@@ -38,6 +39,7 @@ struct TodayTasksEntry: TimelineEntry {
             totalCount: 0,
             streakCount: 0,
             activeTab: "todos",
+            isDebug: false,
             isPlaceholder: false
         )
     }
@@ -58,38 +60,43 @@ struct TodayTasksEntry: TimelineEntry {
             totalCount: 5,
             streakCount: 7,
             activeTab: "todos",
+            isDebug: false,
             isPlaceholder: true
         )
     }
 }
 
-struct TodayTasksTimelineProvider: TimelineProvider {
+struct TodayTasksTimelineProvider: AppIntentTimelineProvider {
     typealias Entry = TodayTasksEntry
+    typealias Intent = TodayTasksConfigurationIntent
 
     func placeholder(in context: Context) -> TodayTasksEntry {
-        .placeholder
+        TodayTasksEntry.placeholder
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (TodayTasksEntry) -> Void) {
+    func snapshot(for configuration: TodayTasksConfigurationIntent, in context: Context) async -> TodayTasksEntry {
+        let isDebug = configuration.environment == .debug
         if context.isPreview {
-            completion(.placeholder)
-        } else {
-            completion(fetchCurrentEntry())
+            var entry = TodayTasksEntry.placeholder
+            entry.isDebug = isDebug
+            return entry
         }
+        return fetchCurrentEntry(isDebug: isDebug)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<TodayTasksEntry>) -> Void) {
-        let entry = fetchCurrentEntry()
-        // 建议半小时或午夜刷新时间线
+    func timeline(for configuration: TodayTasksConfigurationIntent, in context: Context) async -> Timeline<TodayTasksEntry> {
+        let isDebug = configuration.environment == .debug
+        let entry = fetchCurrentEntry(isDebug: isDebug)
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date())
             ?? Date().addingTimeInterval(1800)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-        completion(timeline)
+        return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
 
-    private func fetchCurrentEntry() -> TodayTasksEntry {
-        guard let container = WidgetPersistence.makeContainer() else {
-            return .empty
+    private func fetchCurrentEntry(isDebug: Bool) -> TodayTasksEntry {
+        guard let container = WidgetPersistence.makeContainer(isDebug: isDebug) else {
+            var entry = TodayTasksEntry.empty
+            entry.isDebug = isDebug
+            return entry
         }
 
         let context = ModelContext(container)
@@ -159,7 +166,8 @@ struct TodayTasksTimelineProvider: TimelineProvider {
         let totalCount = widgetTodos.count + widgetRoutines.count
         let completedCount = doneTodos + doneRoutines
 
-        let activeTab = UserDefaults(suiteName: "group.com.areachain.app")?.string(forKey: "widget_tasks_active_tab") ?? "todos"
+        let tabKey = isDebug ? "widget_tasks_active_tab_debug" : "widget_tasks_active_tab"
+        let activeTab = UserDefaults(suiteName: "group.com.areachain.app")?.string(forKey: tabKey) ?? "todos"
 
         return TodayTasksEntry(
             date: Date(),
@@ -168,7 +176,8 @@ struct TodayTasksTimelineProvider: TimelineProvider {
             completedCount: completedCount,
             totalCount: totalCount,
             streakCount: doneRoutines,
-            activeTab: activeTab
+            activeTab: activeTab,
+            isDebug: isDebug
         )
     }
 }

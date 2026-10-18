@@ -21,10 +21,11 @@ struct DiaryTimelineEntry: TimelineEntry {
     var notes: [WidgetDiaryItem]
     var totalWordCount: Int
     var activePageIndex: Int = 0
+    var isDebug: Bool = false
     var isPlaceholder: Bool = false
 
     static var empty: DiaryTimelineEntry {
-        DiaryTimelineEntry(date: Date(), notes: [], totalWordCount: 0, activePageIndex: 0, isPlaceholder: false)
+        DiaryTimelineEntry(date: Date(), notes: [], totalWordCount: 0, activePageIndex: 0, isDebug: false, isPlaceholder: false)
     }
 
     static var placeholder: DiaryTimelineEntry {
@@ -50,6 +51,7 @@ struct DiaryTimelineEntry: TimelineEntry {
             ],
             totalWordCount: 72,
             activePageIndex: 0,
+            isDebug: false,
             isPlaceholder: true
         )
     }
@@ -57,32 +59,37 @@ struct DiaryTimelineEntry: TimelineEntry {
 
 // MARK: - Diary Timeline Provider
 
-struct DiaryTimelineProvider: TimelineProvider {
+struct DiaryTimelineProvider: AppIntentTimelineProvider {
     typealias Entry = DiaryTimelineEntry
+    typealias Intent = DiaryConfigurationIntent
 
     func placeholder(in context: Context) -> DiaryTimelineEntry {
-        .placeholder
+        DiaryTimelineEntry.placeholder
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (DiaryTimelineEntry) -> Void) {
+    func snapshot(for configuration: DiaryConfigurationIntent, in context: Context) async -> DiaryTimelineEntry {
+        let isDebug = configuration.environment == .debug
         if context.isPreview {
-            completion(.placeholder)
-        } else {
-            completion(fetchDiaryEntry())
+            var entry = DiaryTimelineEntry.placeholder
+            entry.isDebug = isDebug
+            return entry
         }
+        return fetchDiaryEntry(isDebug: isDebug)
     }
 
-    func getTimeline(in context: Context, completion: @escaping (Timeline<DiaryTimelineEntry>) -> Void) {
-        let entry = fetchDiaryEntry()
+    func timeline(for configuration: DiaryConfigurationIntent, in context: Context) async -> Timeline<DiaryTimelineEntry> {
+        let isDebug = configuration.environment == .debug
+        let entry = fetchDiaryEntry(isDebug: isDebug)
         let nextUpdate = Calendar.current.date(byAdding: .minute, value: 30, to: Date())
             ?? Date().addingTimeInterval(1800)
-        let timeline = Timeline(entries: [entry], policy: .after(nextUpdate))
-        completion(timeline)
+        return Timeline(entries: [entry], policy: .after(nextUpdate))
     }
 
-    private func fetchDiaryEntry() -> DiaryTimelineEntry {
-        guard let container = WidgetPersistence.makeContainer() else {
-            return .empty
+    private func fetchDiaryEntry(isDebug: Bool) -> DiaryTimelineEntry {
+        guard let container = WidgetPersistence.makeContainer(isDebug: isDebug) else {
+            var entry = DiaryTimelineEntry.empty
+            entry.isDebug = isDebug
+            return entry
         }
 
         let context = ModelContext(container)
@@ -129,7 +136,8 @@ struct DiaryTimelineProvider: TimelineProvider {
         }
 
         let defaults = UserDefaults(suiteName: "group.com.areachain.app")
-        let rawIndex = defaults?.integer(forKey: "widget_diary_page_index") ?? 0
+        let pageKey = isDebug ? "widget_diary_page_index_debug" : "widget_diary_page_index"
+        let rawIndex = defaults?.integer(forKey: pageKey) ?? 0
         let validIndex = items.isEmpty ? 0 : max(0, min(rawIndex, items.count - 1))
 
         return DiaryTimelineEntry(
@@ -137,6 +145,7 @@ struct DiaryTimelineProvider: TimelineProvider {
             notes: items,
             totalWordCount: totalChars,
             activePageIndex: validIndex,
+            isDebug: isDebug,
             isPlaceholder: false
         )
     }
@@ -148,7 +157,11 @@ struct DiaryWidget: Widget {
     let kind: String = "AreaChainDiaryWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: DiaryTimelineProvider()) { entry in
+        AppIntentConfiguration(
+            kind: kind,
+            intent: DiaryConfigurationIntent.self,
+            provider: DiaryTimelineProvider()
+        ) { entry in
             DiaryWidgetView(entry: entry)
         }
         .configurationDisplayName(WidgetL10n.diaryWidgetDisplayName)
@@ -156,3 +169,4 @@ struct DiaryWidget: Widget {
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
+

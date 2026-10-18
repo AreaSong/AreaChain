@@ -111,6 +111,20 @@ enum WidgetL10n {
     }
 }
 
+// MARK: - Debug Badge
+
+struct WidgetDebugBadgeView: View {
+    var body: some View {
+        Text("DEBUG")
+            .font(.system(size: 8, weight: .bold, design: .monospaced))
+            .foregroundStyle(Color.orange)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 1.5)
+            .background(Color.orange.opacity(0.18))
+            .clipShape(RoundedRectangle(cornerRadius: 3))
+    }
+}
+
 // MARK: - Root View
 
 struct TodayTasksWidgetView: View {
@@ -131,7 +145,7 @@ struct TodayTasksWidgetView: View {
         .containerBackground(for: .widget) {
             WidgetDaybookTheme.paperBackground
         }
-        .widgetURL(URL(string: "areachain://today"))
+        .widgetURL(URL(string: entry.isDebug ? "areachain://today?debug=1" : "areachain://today"))
     }
 }
 
@@ -149,9 +163,13 @@ struct MediumWidgetView: View {
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
 
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
+
                 // 原位 Tab 切换
                 HStack(spacing: 2) {
-                    Button(intent: TasksTabIntent(tab: "todos")) {
+                    Button(intent: TasksTabIntent(tab: "todos", isDebug: entry.isDebug)) {
                         Text(WidgetL10n.sectionTodos)
                             .font(.system(size: 9, weight: entry.activeTab == "todos" ? .bold : .regular))
                             .padding(.horizontal, 5)
@@ -162,7 +180,7 @@ struct MediumWidgetView: View {
                     }
                     .buttonStyle(.plain)
 
-                    Button(intent: TasksTabIntent(tab: "routines")) {
+                    Button(intent: TasksTabIntent(tab: "routines", isDebug: entry.isDebug)) {
                         Text(WidgetL10n.sectionRoutines)
                             .font(.system(size: 9, weight: entry.activeTab == "routines" ? .bold : .regular))
                             .padding(.horizontal, 5)
@@ -176,7 +194,7 @@ struct MediumWidgetView: View {
 
                 Spacer()
 
-                Link(destination: URL(string: "areachain://quick-task")!) {
+                Link(destination: URL(string: entry.isDebug ? "areachain://quick-task?debug=1" : "areachain://quick-task")!) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -230,7 +248,7 @@ struct MediumWidgetView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 5) {
                         ForEach(entry.routines.prefix(4)) { routine in
-                            RoutineRowView(routine: routine)
+                            RoutineRowView(routine: routine, isDebug: entry.isDebug)
                         }
                     }
                 }
@@ -247,7 +265,7 @@ struct MediumWidgetView: View {
                 } else {
                     VStack(alignment: .leading, spacing: 5) {
                         ForEach(entry.todos.prefix(4)) { todo in
-                            TodoRowView(todo: todo)
+                            TodoRowView(todo: todo, isDebug: entry.isDebug)
                         }
                     }
                 }
@@ -267,6 +285,9 @@ struct SmallWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 7) {
             HStack {
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
                 Text(Date(), style: .date)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(WidgetDaybookTheme.mutedText)
@@ -304,7 +325,7 @@ struct SmallWidgetView: View {
                     Text(WidgetL10n.sectionNextAction)
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.mutedText)
-                    TodoRowView(todo: nextTodo)
+                    TodoRowView(todo: nextTodo, isDebug: entry.isDebug)
                 }
             } else {
                 Text(WidgetL10n.emptyAllDone)
@@ -330,9 +351,13 @@ struct LargeWidgetView: View {
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
 
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
+
                 Spacer()
 
-                Link(destination: URL(string: "areachain://quick-task")!) {
+                Link(destination: URL(string: entry.isDebug ? "areachain://quick-task?debug=1" : "areachain://quick-task")!) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -358,7 +383,7 @@ struct LargeWidgetView: View {
                     .foregroundStyle(WidgetDaybookTheme.mutedText)
 
                 ForEach(entry.todos.prefix(5)) { todo in
-                    TodoRowView(todo: todo)
+                    TodoRowView(todo: todo, isDebug: entry.isDebug)
                 }
             }
 
@@ -369,7 +394,7 @@ struct LargeWidgetView: View {
                     .padding(.top, 4)
 
                 ForEach(entry.routines.prefix(3)) { routine in
-                    RoutineRowView(routine: routine)
+                    RoutineRowView(routine: routine, isDebug: entry.isDebug)
                 }
             }
 
@@ -382,10 +407,11 @@ struct LargeWidgetView: View {
 
 struct TodoRowView: View {
     var todo: WidgetTodoItem
+    var isDebug: Bool = false
 
     var body: some View {
         HStack(spacing: 8) {
-            Button(intent: ToggleTaskIntent(taskId: todo.id.uuidString)) {
+            Button(intent: ToggleTaskIntent(taskId: todo.id.uuidString, isDebug: isDebug)) {
                 Image(systemName: todo.isDone ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(todo.isDone ? WidgetDaybookTheme.stampAccent : WidgetDaybookTheme.mutedText)
@@ -435,10 +461,11 @@ struct TodoRowView: View {
 
 struct RoutineRowView: View {
     var routine: WidgetRoutineItem
+    var isDebug: Bool = false
 
     var body: some View {
         HStack(spacing: 8) {
-            Button(intent: ToggleRoutineIntent(routineId: routine.id.uuidString, dayKey: WidgetDateHelper.todayDayKey())) {
+            Button(intent: ToggleRoutineIntent(routineId: routine.id.uuidString, dayKey: WidgetDateHelper.todayDayKey(), isDebug: isDebug)) {
                 Image(systemName: routine.isDone ? "flame.fill" : "flame")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(routine.isDone ? WidgetDaybookTheme.streakOrange : WidgetDaybookTheme.mutedText)

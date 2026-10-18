@@ -11,17 +11,22 @@ struct ToggleTaskIntent: AppIntent {
     @Parameter(title: "待办 ID")
     var taskId: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.taskId = ""
+        self.isDebug = false
     }
 
-    init(taskId: String) {
+    init(taskId: String, isDebug: Bool = false) {
         self.taskId = taskId
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
         guard let uuid = UUID(uuidString: taskId),
-              let container = WidgetPersistence.makeContainer() else {
+              let container = WidgetPersistence.makeContainer(isDebug: isDebug) else {
             return .result()
         }
 
@@ -52,19 +57,24 @@ struct ToggleRoutineIntent: AppIntent {
     @Parameter(title: "日期键")
     var dayKey: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.routineId = ""
         self.dayKey = ""
+        self.isDebug = false
     }
 
-    init(routineId: String, dayKey: String) {
+    init(routineId: String, dayKey: String, isDebug: Bool = false) {
         self.routineId = routineId
         self.dayKey = dayKey
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
         guard let uuid = UUID(uuidString: routineId),
-              let container = WidgetPersistence.makeContainer() else {
+              let container = WidgetPersistence.makeContainer(isDebug: isDebug) else {
             return .result()
         }
 

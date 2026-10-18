@@ -22,7 +22,7 @@ struct DiaryWidgetView: View {
         .containerBackground(for: .widget) {
             WidgetDaybookTheme.paperBackground
         }
-        .widgetURL(URL(string: "areachain://diary"))
+        .widgetURL(URL(string: entry.isDebug ? "areachain://diary?debug=1" : "areachain://diary"))
     }
 }
 
@@ -51,8 +51,13 @@ struct SmallDiaryView: View {
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
+
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
+
                 Spacer()
-                Link(destination: URL(string: "areachain://quick-diary")!) {
+                Link(destination: URL(string: entry.isDebug ? "areachain://quick-diary?debug=1" : "areachain://quick-diary")!) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -88,7 +93,7 @@ struct SmallDiaryView: View {
 
                         if entry.notes.count > 1 {
                             HStack(spacing: 3) {
-                                Button(intent: DiaryPageIntent(direction: "prev")) {
+                                Button(intent: DiaryPageIntent(direction: "prev", isDebug: entry.isDebug)) {
                                     Image(systemName: "chevron.left")
                                         .font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -99,7 +104,7 @@ struct SmallDiaryView: View {
                                     .font(.system(size: 8, weight: .medium, design: .rounded))
                                     .foregroundStyle(WidgetDaybookTheme.mutedText)
 
-                                Button(intent: DiaryPageIntent(direction: "next")) {
+                                Button(intent: DiaryPageIntent(direction: "next", isDebug: entry.isDebug)) {
                                     Image(systemName: "chevron.right")
                                         .font(.system(size: 8, weight: .bold))
                                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -149,9 +154,13 @@ struct MediumDiaryView: View {
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
 
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
+
                 Spacer()
 
-                Link(destination: URL(string: "areachain://quick-diary")!) {
+                Link(destination: URL(string: entry.isDebug ? "areachain://quick-diary?debug=1" : "areachain://quick-diary")!) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -207,7 +216,7 @@ struct MediumDiaryView: View {
 
                         if entry.notes.count > 1 {
                             HStack(spacing: 4) {
-                                Button(intent: DiaryPageIntent(direction: "prev")) {
+                                Button(intent: DiaryPageIntent(direction: "prev", isDebug: entry.isDebug)) {
                                     Image(systemName: "chevron.left.circle.fill")
                                         .font(.system(size: 12))
                                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -218,7 +227,7 @@ struct MediumDiaryView: View {
                                     .font(.system(size: 10, weight: .medium, design: .rounded))
                                     .foregroundStyle(WidgetDaybookTheme.mutedText)
 
-                                Button(intent: DiaryPageIntent(direction: "next")) {
+                                Button(intent: DiaryPageIntent(direction: "next", isDebug: entry.isDebug)) {
                                     Image(systemName: "chevron.right.circle.fill")
                                         .font(.system(size: 12))
                                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -259,9 +268,13 @@ struct LargeDiaryView: View {
                     .foregroundStyle(WidgetDaybookTheme.inkText)
                     .lineLimit(1)
 
+                if entry.isDebug {
+                    WidgetDebugBadgeView()
+                }
+
                 Spacer()
 
-                Link(destination: URL(string: "areachain://quick-diary")!) {
+                Link(destination: URL(string: entry.isDebug ? "areachain://quick-diary?debug=1" : "areachain://quick-diary")!) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -342,16 +355,16 @@ struct LargeDiaryView: View {
                     .font(.system(size: 9, weight: .medium))
                     .foregroundStyle(WidgetDaybookTheme.mutedText)
 
-                MoodPillButton(title: "🌿 灵感")
-                MoodPillButton(title: "☕️ 摸鱼")
-                MoodPillButton(title: "💪 专注")
-                MoodPillButton(title: "✨ 感恩")
+                MoodPillButton(title: "🌿 灵感", isDebug: entry.isDebug)
+                MoodPillButton(title: "☕️ 摸鱼", isDebug: entry.isDebug)
+                MoodPillButton(title: "💪 专注", isDebug: entry.isDebug)
+                MoodPillButton(title: "✨ 感恩", isDebug: entry.isDebug)
 
                 Spacer()
 
                 if entry.notes.count > 1 {
                     HStack(spacing: 3) {
-                        Button(intent: DiaryPageIntent(direction: "prev")) {
+                        Button(intent: DiaryPageIntent(direction: "prev", isDebug: entry.isDebug)) {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -362,7 +375,7 @@ struct LargeDiaryView: View {
                             .font(.system(size: 8, weight: .medium, design: .rounded))
                             .foregroundStyle(WidgetDaybookTheme.mutedText)
 
-                        Button(intent: DiaryPageIntent(direction: "next")) {
+                        Button(intent: DiaryPageIntent(direction: "next", isDebug: entry.isDebug)) {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 8, weight: .bold))
                                 .foregroundStyle(WidgetDaybookTheme.stampAccent)
@@ -379,9 +392,10 @@ struct LargeDiaryView: View {
 
 private struct MoodPillButton: View {
     let title: String
+    var isDebug: Bool = false
 
     var body: some View {
-        Button(intent: DiaryQuickMoodIntent(moodText: title)) {
+        Button(intent: DiaryQuickMoodIntent(moodText: title, isDebug: isDebug)) {
             Text(title)
                 .font(.system(size: 9, weight: .medium))
                 .padding(.horizontal, 6)

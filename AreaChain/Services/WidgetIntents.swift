@@ -11,12 +11,17 @@ struct ToggleTaskIntent: AppIntent {
     @Parameter(title: "待办 ID")
     var taskId: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.taskId = ""
+        self.isDebug = false
     }
 
-    init(taskId: String) {
+    init(taskId: String, isDebug: Bool = false) {
         self.taskId = taskId
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
@@ -53,14 +58,19 @@ struct ToggleRoutineIntent: AppIntent {
     @Parameter(title: "日期键")
     var dayKey: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.routineId = ""
         self.dayKey = ""
+        self.isDebug = false
     }
 
-    init(routineId: String, dayKey: String) {
+    init(routineId: String, dayKey: String, isDebug: Bool = false) {
         self.routineId = routineId
         self.dayKey = dayKey
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
@@ -107,17 +117,23 @@ struct DiaryPageIntent: AppIntent {
     @Parameter(title: "翻页方向")
     var direction: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.direction = "next"
+        self.isDebug = false
     }
 
-    init(direction: String) {
+    init(direction: String, isDebug: Bool = false) {
         self.direction = direction
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
         let defaults = UserDefaults(suiteName: "group.com.areachain.app")
-        let currentIndex = defaults?.integer(forKey: "widget_diary_page_index") ?? 0
+        let pageKey = isDebug ? "widget_diary_page_index_debug" : "widget_diary_page_index"
+        let currentIndex = defaults?.integer(forKey: pageKey) ?? 0
 
         let fetchedCount = await MainActor.run { () -> Int in
             let context = Persistence.session.container.mainContext
@@ -136,8 +152,9 @@ struct DiaryPageIntent: AppIntent {
             newIndex = (currentIndex - 1 + totalCount) % totalCount
         }
 
-        defaults?.set(newIndex, forKey: "widget_diary_page_index")
-        WidgetCenter.shared.reloadTimelines(ofKind: "AreaChainDiaryWidget")
+        defaults?.set(newIndex, forKey: pageKey)
+        let kind = isDebug ? "AreaChainDebugDiaryWidget" : "AreaChainDiaryWidget"
+        WidgetCenter.shared.reloadTimelines(ofKind: kind)
         return .result()
     }
 }
@@ -150,12 +167,17 @@ struct DiaryQuickMoodIntent: AppIntent {
     @Parameter(title: "状态文案")
     var moodText: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.moodText = "☕️ 摸鱼"
+        self.isDebug = false
     }
 
-    init(moodText: String) {
+    init(moodText: String, isDebug: Bool = false) {
         self.moodText = moodText
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
@@ -177,7 +199,8 @@ struct DiaryQuickMoodIntent: AppIntent {
         }
 
         let defaults = UserDefaults(suiteName: "group.com.areachain.app")
-        defaults?.set(0, forKey: "widget_diary_page_index")
+        let pageKey = isDebug ? "widget_diary_page_index_debug" : "widget_diary_page_index"
+        defaults?.set(0, forKey: pageKey)
         WidgetCenter.shared.reloadAllTimelines()
         return .result()
     }
@@ -191,18 +214,25 @@ struct TasksTabIntent: AppIntent {
     @Parameter(title: "分类标识")
     var tab: String
 
+    @Parameter(title: "环境标识")
+    var isDebug: Bool
+
     init() {
         self.tab = "todos"
+        self.isDebug = false
     }
 
-    init(tab: String) {
+    init(tab: String, isDebug: Bool = false) {
         self.tab = tab
+        self.isDebug = isDebug
     }
 
     func perform() async throws -> some IntentResult {
         let defaults = UserDefaults(suiteName: "group.com.areachain.app")
-        defaults?.set(tab, forKey: "widget_tasks_active_tab")
-        WidgetCenter.shared.reloadTimelines(ofKind: "AreaChainTodayWidget")
+        let tabKey = isDebug ? "widget_tasks_active_tab_debug" : "widget_tasks_active_tab"
+        defaults?.set(tab, forKey: tabKey)
+        let kind = isDebug ? "AreaChainDebugTodayWidget" : "AreaChainTodayWidget"
+        WidgetCenter.shared.reloadTimelines(ofKind: kind)
         return .result()
     }
 }
