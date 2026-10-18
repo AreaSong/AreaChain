@@ -78,7 +78,7 @@ struct UnifiedSearchOperationPreview: View {
                 } else if let command = controller.browsedCommand, controller.editingPlanItem == nil,
                           !(controller.showsMultiPlan && controller.settingExecution != nil),
                           !((controller.showsBatch || controller.showsTaskTitle || controller.showsTaskField
-                            || controller.showsSubtask || controller.showsRoutine)
+                            || controller.showsSubtask || controller.showsRoutine || controller.showsTrash)
                             && controller.settingExecution != nil) {
                     Text(verbatim: command.name(locale: locale)).font(DaybookType.body.weight(.semibold))
                     Text(verbatim: command.summary(locale: locale)).font(DaybookType.caption)

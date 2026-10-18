@@ -13,6 +13,8 @@ struct UnifiedSearchPlanList: View {
                 .font(DaybookType.body.weight(.semibold))
             if controller.showsMultiPlan {
                 Text("unified.multi.boundaries").font(DaybookType.caption)
+            } else if controller.showsTrash {
+                Text("unified.trash.pending").font(DaybookType.caption)
             } else if controller.showsBatch {
                 Text("unified.batch.pending").font(DaybookType.caption)
             } else if controller.showsRoutineCreation {

@@ -201,7 +201,8 @@ extension UnifiedSearchController {
             let objects = picker.appending ? draft.targets.objects + picker.objects : picker.objects
             event = .selectTargets(draft.stamp, .init(picker.appending ? .selected : selection, objects: objects),
                                    baseline: command.id.rawValue == "todo.title" || routesBatch(command.id)
-                                    || (routesSubtask(command.id) || routesRoutine(command.id)) ? nil : syntheticBaselines[command.id])
+                                    || (routesSubtask(command.id) || routesRoutine(command.id) || routesTrash(command.id)
+                                        || routesTaskCopy(command.id)) ? nil : syntheticBaselines[command.id])
         } else {
             guard let argument = objectArgument(picker.location, objects: picker.objects, command: command) else { return false }
             event = .edit(draft.stamp, argument)

@@ -10,6 +10,10 @@ struct UnifiedSearchSettingSubmission: View {
         VStack(alignment: .leading, spacing: DaybookSpacing.sm) {
             if controller.showsMultiPlan || controller.showsTaskChain {
                 EmptyView()
+            } else if controller.showsTaskCopy {
+                UnifiedSearchTaskCopySubmission(controller: controller)
+            } else if controller.showsTrash {
+                UnifiedSearchTrashSubmission(controller: controller)
             } else if controller.showsSubtask {
                 UnifiedSearchSubtaskSubmission(controller: controller)
             } else if controller.showsRoutineCreation {

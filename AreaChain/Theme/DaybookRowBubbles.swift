@@ -46,6 +46,7 @@ public struct RowTitleBubble: View {
     public var onHover: ((Bool) -> Void)? = nil
 
     private var windowHoverInvalidation: (() -> Void)?
+    private var copyResult: (() -> Bool)?
     @State private var windowHoverLifetime = RowBubbleHoverLifetime()
 
     @State private var isCopied: Bool = false
@@ -62,6 +63,13 @@ public struct RowTitleBubble: View {
         self.growsUpward = growsUpward
         self.onCopy = onCopy
         self.onHover = onHover
+    }
+
+    /// 可选的写入结果；未设置时沿原 onCopy 路径，其他宿主行为不变。
+    func reportingCopyResult(_ result: @escaping () -> Bool) -> Self {
+        var bubble = self
+        bubble.copyResult = result
+        return bubble
     }
 
     /// 仅手记行启用；其他标题和备注保留原悬停路径。
@@ -143,8 +151,13 @@ public struct RowTitleBubble: View {
     }
 
     private func handleTap() {
-        guard onCopy != nil else { return }
-        onCopy?()
+        if let copyResult {
+            // 宿主报告写入失败时不显示已复制。
+            guard copyResult() else { return }
+        } else {
+            guard onCopy != nil else { return }
+            onCopy?()
+        }
         withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
             isCopied = true
         }
@@ -159,6 +172,7 @@ public struct RowNoteBubble: View {
     public var headerTitleKey: String = "drawer.notes.title"
     public var onCopy: (() -> Void)? = nil
     public var onHover: ((Bool) -> Void)? = nil
+    private var copyResult: (() -> Bool)?
 
     @State private var isCopied: Bool = false
     @State private var isHovered: Bool = false
@@ -178,6 +192,13 @@ public struct RowNoteBubble: View {
         self.headerTitleKey = headerTitleKey
         self.onCopy = onCopy
         self.onHover = onHover
+    }
+
+    /// 可选的写入结果；未设置时沿原 onCopy 路径，其他宿主行为不变。
+    func reportingCopyResult(_ result: @escaping () -> Bool) -> Self {
+        var bubble = self
+        bubble.copyResult = result
+        return bubble
     }
 
     public var body: some View {
@@ -268,8 +289,13 @@ public struct RowNoteBubble: View {
     }
 
     private func handleTap() {
-        guard onCopy != nil else { return }
-        onCopy?()
+        if let copyResult {
+            // 宿主报告写入失败时不显示已复制。
+            guard copyResult() else { return }
+        } else {
+            guard onCopy != nil else { return }
+            onCopy?()
+        }
         withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
             isCopied = true
         }

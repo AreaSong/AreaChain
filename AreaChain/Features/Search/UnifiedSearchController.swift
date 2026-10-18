@@ -55,6 +55,15 @@ final class UnifiedSearchController {
     var subtaskAcceptance: CommandSubtaskAcceptance?
     var subtaskFailure: String?
     var subtaskVerification: CommandTaskCreateVerification?
+    var trashPreview: CommandTrashPreview?
+    var trashAcceptance: CommandTrashAcceptance?
+    var trashConfirmation: CommandTrashConfirmation?
+    var trashConfirmationFocus: UInt64 = 0
+    var trashFailure: String?
+    var trashProblems: [CommandTrashTargetProblem] = []
+    var taskCopyPreview: CommandTaskCopyPreview?
+    var taskCopyResult: CommandTaskCopyResult?
+    var taskCopyFailure: String?
     var chainCreationPreparation: CommandTaskCreatePreparation?
     var chainFailure: String?
     var multiPlanFailure: String?
@@ -95,6 +104,8 @@ final class UnifiedSearchController {
     @ObservationIgnored let subtask: SubtaskCommandAdapter?
     @ObservationIgnored let multiPlan: MultiPlanCommandAdapter?
     @ObservationIgnored let taskChain: TaskChainCommandAdapter?
+    @ObservationIgnored let trash: TrashCommandAdapter?
+    @ObservationIgnored let taskCopy: TaskCopyCommandAdapter?
     @ObservationIgnored let settingBackend: UnifiedSearchSettingBackend
     var fileSettingFailure: UnifiedSearchFileSettingFailure?
     var fileSettingConfirmation: UnifiedSearchFileSettingConfirmation?
@@ -127,8 +138,11 @@ final class UnifiedSearchController {
          buffer: UnifiedSearchBuffer, read: @escaping () async throws -> ContentQueryReadEffect,
          recordOpen: @escaping (ContentQueryBrowseOpen) -> Void, settingBackend: UnifiedSearchSettingBackend,
          taskCreate: TaskCreateCommandAdapter? = nil, taskTitle: TaskTitleCommandAdapter? = nil,
-         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil) {
+         taskField: TaskFieldCommandAdapter? = nil, taskChain: TaskChainCommandAdapter? = nil, subtask: SubtaskCommandAdapter? = nil, routine: RoutineCommandAdapter? = nil, batch: BatchCommandAdapter? = nil, multiPlan: MultiPlanCommandAdapter? = nil,
+         trash: TrashCommandAdapter? = nil, taskCopy: TaskCopyCommandAdapter? = nil) {
         self.session = session
+        self.trash = trash
+        self.taskCopy = taskCopy
         self.coordinator = coordinator
         self.settingBackend = settingBackend
         self.taskCreate = taskCreate
@@ -216,6 +230,11 @@ final class UnifiedSearchController {
             if intent == .open { executeNavigation(source: source); return }
             if intent == .escape { _ = navigationInput(queryInputText); return }
         }
+        if trashConfirmation != nil {
+            // 独立确认期间只接受 Esc 取消；提交、打开和结果移动都不能越过确认。
+            if intent == .escape { cancelTrashConfirmation() }
+            return
+        }
         if intent == .submit { requestOperationSubmit(source); return }
         if let picker = tagSelection {
             switch intent {
@@ -294,6 +313,8 @@ final class UnifiedSearchController {
         revokeRoutine()
         revokeSubtask()
         revokeBatch()
+        revokeTrash()
+        revokeTaskCopy()
         revokeTaskField()
         revokeTaskTitle()
         revokeTaskComposition()
@@ -322,6 +343,11 @@ final class UnifiedSearchController {
         subtaskFailure = nil
         routineFailure = nil
         revokeBatch()
+        revokeTrash()
+        trashFailure = nil
+        trashProblems = []
+        revokeTaskCopy()
+        taskCopyFailure = nil
         revokeTaskField()
         taskFieldFailure = nil
         revokeTaskTitle()
@@ -394,6 +420,7 @@ final class UnifiedSearchController {
         if change == .privacyInvalidated || !operationVisible { revokeTaskTitle() }
         if change == .privacyInvalidated || !operationVisible { revokeBatch(); revokeTaskField() }
         if change == .privacyInvalidated || !operationVisible { revokeSubtask(); revokeRoutine() }
+        if change == .privacyInvalidated || !operationVisible { revokeTrash(); revokeTaskCopy() }
         if change == .privacyInvalidated || !operationVisible { chainCreationPreparation = nil }
         if change != .published, objectSelection != nil || session.isMasked {
             cancelObjectSelection(returnFocus: false)

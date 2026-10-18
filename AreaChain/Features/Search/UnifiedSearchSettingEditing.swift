@@ -83,6 +83,8 @@ extension UnifiedSearchController {
         if showsMultiPlan { submitMultiPlan(source); return }
         if showsRoutineCreation { submitRoutineCreation(source); return }
         if showsTaskChain { submitTaskChain(source); return }
+        if showsTaskCopy { submitTaskCopy(source); return }
+        if showsTrash { requestTrashConfirmation(source); return }
         if showsSubtask { submitSubtask(source); return }
         if showsRoutine { submitRoutine(source); return }
         if showsBatch { submitBatch(source); return }

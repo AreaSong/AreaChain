@@ -125,6 +125,7 @@ enum UnifiedSearchMultiPlanCopy {
         if error as? CommandExecutionError == .requiresVerification { return "unified.multi.unknown" }
         if error as? CommandMultiPlanIssue == .externalPending { return "unified.revision.externalPending" }
         if error as? CommandMultiPlanIssue == .recoveryUnavailable { return "unified.revision.unproven" }
+        if error as? CommandMultiPlanIssue == .independentConfirmation { return "unified.multi.independentConfirmation" }
         if error is CommandMultiPlanIssue { return "unified.multi.unavailable" }
         if let error = error as? TaskCreateCommandIssue { return UnifiedSearchTaskCreateCopy.issue(error) }
         if error is FileLocalSettingCommandIssue { return UnifiedSearchFileSettingCopy.issue(error) }

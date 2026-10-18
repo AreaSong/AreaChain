@@ -61,19 +61,34 @@ extension TaskRow {
     }
 
     func copyTask() {
-        var content = state.title
-        if let note = fullNoteText, !note.isEmpty {
-            content += "\n" + note
-        }
-        copyToClipboard(content)
+        guard copy(.record) else { return }
         withAnimation(DaybookMotion.interactive(reduceMotion)) {
             hasCopied = true
         }
     }
 
-    func copyToClipboard(_ text: String) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        pasteboard.setString(text, forType: .string)
+    /// 与 todo.copy 共用内容规则和写入接口；写入失败时不显示已复制。
+    @discardableResult func copy(_ section: TaskCopySection) -> Bool {
+        guard let text = TaskCopyContent.text(section, title: state.title, notes: fullNoteText) else { return false }
+        return copyToClipboard(text)
+    }
+
+    @discardableResult func copyToClipboard(_ text: String) -> Bool {
+        do {
+            try (clipboardWriter ?? SystemClipboardTextWriter.shared).write(text)
+            return true
+        } catch { return false }
+    }
+}
+
+private struct ClipboardTextWriterKey: EnvironmentKey {
+    static let defaultValue: (any ClipboardTextWriting)? = nil
+}
+
+extension EnvironmentValues {
+    /// 只供测试替换为 fake；未注入时生产仍写系统通用剪贴板。
+    var clipboardTextWriter: (any ClipboardTextWriting)? {
+        get { self[ClipboardTextWriterKey.self] }
+        set { self[ClipboardTextWriterKey.self] = newValue }
     }
 }

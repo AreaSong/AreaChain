@@ -21,6 +21,11 @@ extension CommandExecutionRun {
         try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
         units[index].batch = facts
     }
+    mutating func recordTrash(_ facts: CommandTrashFacts, attempt: CommandAttemptStamp) throws {
+        let (index, result) = try facts.receipt(in: self, attempt: attempt)
+        try recordMutationResult(index, result: result, conflict: facts.conflict, attempt: attempt)
+        units[index].trash = facts
+    }
     private mutating func recordMutationResult(_ index: Int, result: CommandExecutionResult?,
                                                conflict: Bool, attempt: CommandAttemptStamp) throws {
         guard units[index].receipt == nil, let result else { return }

@@ -1,5 +1,9 @@
 # AreaChain 技能路由与交付闭环
 
+## T-M4 复制与回收
+
+沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦确认焦点与 Esc）→ areachain-verify；复制规则、写入接口和独立确认入口见[组件目录](docs/component-catalog.md#t-m4-复制与回收)，规则、实测、未覆盖项与生产接线授权只见[权威 T-M4](docs/unified-search-commands.md#990-里程碑-t-m4复制与回收)。
+
 ## C-M3 长文上限与超限引导
 
 沿 areachain-workflow → areasong-development／areachain-ui（聚焦超限提示、组合输入与原入口引导）→ areachain-verify；上限唯一来源与消费者见[组件目录](docs/component-catalog.md#c-m3-长文上限与超限引导)，规则、实测与缺口只见[权威 C-M3](docs/unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。

@@ -30,7 +30,9 @@ struct CommandBatchWriteSet: Equatable {
         let inserted: [Kind: Int]
         let modified: [Kind: Int]
         let total: Int
-        let limit = 4000
+        /// B-M2 已批准的单次实体总量；T-M4 批量回收沿用同一上限。
+        static let entityLimit = 4000
+        let limit = entityLimit
         var exceedsLimit: Bool { total > limit }
     }
     let entries: [Entry]

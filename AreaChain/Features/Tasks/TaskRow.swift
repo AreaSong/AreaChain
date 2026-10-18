@@ -13,6 +13,7 @@ struct TaskRow: View {
     @Environment(\.locale) var locale
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     @Environment(\.workspaceEmbedded) var embedded
+    @Environment(\.clipboardTextWriter) var clipboardWriter
 
     @State var editing = false
     @State private var chrome = BoardRowChrome()
@@ -217,15 +218,7 @@ struct TaskRow: View {
 
     // MARK: - Subviews
 
-    var fullNoteText: String? {
-        if let notes = state.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        if let note = state.note, !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            return note.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        return nil
-    }
+    var fullNoteText: String? { TaskCopyContent.notes(state.notes, fallback: state.note) }
 
     private var isTitleTruncated: Bool {
         if let renderedTitleWidth, renderedTitleWidth > 0 {
@@ -335,7 +328,7 @@ struct TaskRow: View {
                 note: noteText,
                 growsUpward: growsUpward,
                 bubbleShiftX: bubbleShiftX,
-                onCopy: { copyToClipboard(noteText) },
+                onCopy: { copy(.notes) },
                 onHover: { hovering in
                     isNoteBubbleHovered = hovering
                     if !hovering && !isNoteHovered {
@@ -345,6 +338,7 @@ struct TaskRow: View {
                     }
                 }
             )
+            .reportingCopyResult { copy(.notes) }
             .offset(x: -2.5 + bubbleShiftX, y: growsUpward ? -18 : 16)
             .transition(.asymmetric(
                 insertion: .opacity.combined(with: .scale(scale: 0.96, anchor: transformAnchor)),
@@ -382,8 +376,7 @@ struct TaskRow: View {
             .contentShape(Rectangle())
             .onHover { chrome.handleNoteHover($0, reduceMotion: reduceMotion) }
             .onTapGesture {
-                if let note = fullNoteText {
-                    copyToClipboard(note)
+                if copy(.notes) {
                     withAnimation(DaybookMotion.interactive(reduceMotion)) {
                         hasNoteCopied = true
                     }
@@ -441,7 +434,7 @@ struct TaskRow: View {
             TaskTitleBubble(
                 title: state.title,
                 growsUpward: growsUpward,
-                onCopy: { copyToClipboard(state.title) },
+                onCopy: { copy(.title) },
                 onHover: { hovering in
                     isTitleBubbleHovered = hovering
                     if !hovering && !chrome.isTitlePointerInside {
@@ -449,6 +442,7 @@ struct TaskRow: View {
                     }
                 }
             )
+            .reportingCopyResult { copy(.title) }
             .observingWindowHover(onInvalidate: resetTitleTracking)
             .frame(width: titleBubbleWidth, alignment: .leading)
             .fixedSize()

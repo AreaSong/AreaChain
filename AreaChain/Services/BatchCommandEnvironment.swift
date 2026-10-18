@@ -48,19 +48,25 @@ import SwiftData
     }
 
     func publish(_ result: BatchCommandTransaction.Result) throws {
+        try publish(changed: result.facts.impacts.filter { !$0.noChange }.map(\.target)) { result.facts.external = $0 }
+    }
+
+    /// 批量修改与 T-M4 回收共用私有发布；每个已改变对象只经注入刷新登记一次外部结果。
+    func publish(changed targets: [CommandObjectReference],
+                 observe: @escaping ([CommandBatchFacts.External]) -> Void) throws {
         try beforePublication()
         BoardEvents.changed(dependencies: .init(center: center) { [self] includeCalendar in
             MainActor.assumeIsolated {
-                result.facts.external = result.facts.impacts.filter { !$0.noChange }.map { impact in
-                    var result = CommandBatchFacts.External(target: impact.target, refreshRequested: true)
-                    if let observed = try? self.refresh(impact.target, includeCalendar) {
+                observe(targets.map { target in
+                    var result = CommandBatchFacts.External(target: target, refreshRequested: true)
+                    if let observed = try? self.refresh(target, includeCalendar) {
                         result.notificationRequested = observed.notificationRequested
                         result.calendarRequested = observed.calendarRequested
                         result.notification = observed.notificationRequested == true ? terminal(observed.notificationResult) : .unknown
                         result.calendar = observed.calendarRequested == true ? terminal(observed.calendarResult) : .unknown
                     }
                     return result
-                }
+                })
             }
         })
         try afterPublication()

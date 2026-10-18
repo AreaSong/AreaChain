@@ -188,7 +188,7 @@ struct UnifiedSearchParameterField: View {
             if command.id.rawValue == "todo.title" {
                 Text("unified.title.inputHint").font(DaybookType.caption)
                 Text(verbatim: after).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
-            } else if ["todo.create", "routine.create"].contains(command.id.rawValue) {
+            } else if ["todo.create", "routine.create", CommandTaskCopyPreview.command].contains(command.id.rawValue) {
                 Text(verbatim: after).font(DaybookType.caption)
                     .fixedSize(horizontal: false, vertical: true)
             } else if controller.localSettings?.supports(command.id) == true {

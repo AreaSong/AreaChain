@@ -222,11 +222,11 @@
 |---|---|---|
 | <a id="T1"></a>T1 新建任务、编辑/取消标题、备注保存 → 任务写操作 | [DayBoardMutations+Capture.swift](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift)：6 `addCapturedTodo`、88 `editTodoWithSyntax`、127 `saveNotes`；[TaskRow+Menus.swift](../AreaChain/Features/Tasks/TaskRow+Menus.swift)：45 | 复用 NLP、标签事务与保存反馈；旧标题编辑未写提醒/优先级就保留，标签合并，空备注不覆盖。目标需显式字段模式，不能把替换/追加/清空都交给旧标题解析。验证未指定字段、空白校验、失败留草稿。 |
 | <a id="T2"></a>T2 完成/取消完成、完成反悔、改期、设/取消提醒、设/清优先级、标签增删、新建标签、截止时刻设置/清除 → 任务属性 | [DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift)：115 `toggleTodo/completeTodo`；[TaskRow+Menus.swift](../AreaChain/Features/Tasks/TaskRow+Menus.swift)：111、140、152、222、240；[DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：6 `setDue` | 明确赋值不能用 toggle 重试。父任务完成会完成活子任务，重开父任务不重开子任务（[SwiftDataTaskRepository.swift](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift)：114）。截止与提醒独立，截止不进日历同步。验证级联与撤销能力、日期/时刻字段、不重复通知。 |
-| <a id="T3"></a>T3 复制整条/标题/备注、回收 → 任务动作 | [TaskRow+Actions.swift](../AreaChain/Features/Tasks/TaskRow+Actions.swift)：64 复制；[TaskRow+Menus.swift](../AreaChain/Features/Tasks/TaskRow+Menus.swift)：70 回收 | 复制仍是页面内 `NSPasteboard` 写法，需共用动作结果；回收走现有确认/软删，不当永久删除。验证内容边界、写剪贴板失败和子项同戳软删。 |
-| <a id="T4"></a>T4 子任务新增、完成/重开、标题编辑/取消、标签增删、拖动排序、删除 → 子任务 | [TaskDetailSubtasksView.swift](../AreaChain/Features/Workspace/TaskDetailSubtasksView.swift)：82、109、155、250；[DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift)：191 子任务包装；[SwiftDataTaskRepository.swift](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift)：271、315 `toggleSubtaskTag` | 一层、归属待办，新增从空标签开始且只解析标签，编辑合并标签；不具备自己的日期/提醒/优先级。验证独立选择、父对象存活、排序、不能因命中子任务误改父任务。 |
-| <a id="T5"></a>T5 快速/结构化新增重复事项；标题/备注/星期/提醒/优先级/标签；启用/暂停、排序、删除 → 习惯定义 | [ResidentsPage.swift](../AreaChain/Features/Workspace/ResidentsPage.swift)：20、45；[RecurringItemEditor.swift](../AreaChain/Features/Workspace/RecurringItemEditor.swift)：104；[DayBoardMutations+Capture.swift](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift)：30 `addCapturedRoutine`、47 `addRecurringItem` | 结构化至少一个星期；语法值优先于显式草稿字段，需在新预览解释最终值。启用时补暂停期跳过记录，不能视为只改开关。验证星期/停用区间、定义与执行日分离。 |
+| <a id="T3"></a>T3 复制整条/标题/备注、回收 → 任务动作 | [TaskRow+Actions.swift](../AreaChain/Features/Tasks/TaskRow+Actions.swift)：64 复制；[TaskRow+Menus.swift](../AreaChain/Features/Tasks/TaskRow+Menus.swift)：70 回收 | 复制仍是页面内 `NSPasteboard` 写法，需共用动作结果；回收走现有确认/软删，不当永久删除。验证内容边界、写剪贴板失败和子项同戳软删。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
+| <a id="T4"></a>T4 子任务新增、完成/重开、标题编辑/取消、标签增删、拖动排序、删除 → 子任务 | [TaskDetailSubtasksView.swift](../AreaChain/Features/Workspace/TaskDetailSubtasksView.swift)：82、109、155、250；[DayBoardMutations.swift](../AreaChain/Features/Tasks/DayBoardMutations.swift)：191 子任务包装；[SwiftDataTaskRepository.swift](../AreaChain/Services/Repositories/SwiftDataTaskRepository.swift)：271、315 `toggleSubtaskTag` | 一层、归属待办，新增从空标签开始且只解析标签，编辑合并标签；不具备自己的日期/提醒/优先级。验证独立选择、父对象存活、排序、不能因命中子任务误改父任务。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
+| <a id="T5"></a>T5 快速/结构化新增重复事项；标题/备注/星期/提醒/优先级/标签；启用/暂停、排序、删除 → 习惯定义 | [ResidentsPage.swift](../AreaChain/Features/Workspace/ResidentsPage.swift)：20、45；[RecurringItemEditor.swift](../AreaChain/Features/Workspace/RecurringItemEditor.swift)：104；[DayBoardMutations+Capture.swift](../AreaChain/Features/Tasks/DayBoardMutations+Capture.swift)：30 `addCapturedRoutine`、47 `addRecurringItem` | 结构化至少一个星期；语法值优先于显式草稿字段，需在新预览解释最终值。启用时补暂停期跳过记录，不能视为只改开关。验证星期/停用区间、定义与执行日分离。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
 | <a id="T6"></a>T6 指定日完成/撤回/跳过、月历选择检查日、当前/最佳连击 → 习惯记录/查询 | [SwiftDataRoutineRepository.swift](../AreaChain/Services/Repositories/SwiftDataRoutineRepository.swift)：220 `toggleRoutine`、235 `markRoutineDone`、247 `skipRoutine`、270 `applyCheck`；[HabitCheckMonthView.swift](../AreaChain/Features/Workspace/HabitCheckMonthView.swift)：27 | `skip` 为 done+skipped；单条 `markRoutineDone` 保留 skip，批量 `applyCheck` 清 skip。单条仓储不负责全部启用/排定限制，不能绕开调用层。先核定操作名称的精确语义，再验证历史/未来/非排定/停用日期及重复调用。月历点击是选日期，不是打卡。 |
-| <a id="T7"></a>T7 多选今天/明天、完成/未完成、加/移标签、启用/停用、回收、清选择 → 批量任务/习惯 | [WorkspaceBatchActionBar.swift](../AreaChain/Features/Workspace/WorkspaceBatchActionBar.swift)：36、61 `AgendaProjection.capability`、102 分日；[DayBoardMutations+Batch.swift](../AreaChain/Features/Tasks/DayBoardMutations+Batch.swift)：22、60、97、132 | 现有批量接口只处理 Todo/Routine；习惯按每条真实检查日分组，正向完成检查排定/启用。当前今日/顶部搜索无批量栏，不能当新统一结果批量已存在。验证固定目标、混合适用子集、跨日失败与未完成参数，不静默忽略子任务。 |
+| <a id="T7"></a>T7 多选今天/明天、完成/未完成、加/移标签、启用/停用、回收、清选择 → 批量任务/习惯 | [WorkspaceBatchActionBar.swift](../AreaChain/Features/Workspace/WorkspaceBatchActionBar.swift)：36、61 `AgendaProjection.capability`、102 分日；[DayBoardMutations+Batch.swift](../AreaChain/Features/Tasks/DayBoardMutations+Batch.swift)：22、60、97、132 | 现有批量接口只处理 Todo/Routine；习惯按每条真实检查日分组，正向完成检查排定/启用。当前今日/顶部搜索无批量栏，不能当新统一结果批量已存在。验证固定目标、混合适用子集、跨日失败与未完成参数，不静默忽略子任务。 T-M4 已在隔离环境实现，见 [§9.90](#990-里程碑-t-m4复制与回收)。 |
 | <a id="T8"></a>T8 待办↔重复事项转换 → 对象转换 | [DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：30 `convertTodoToRoutine`、64 `convertRoutineToTodo` | 新建新 ID 并软删原对象，非原 ID 改类型；待办转习惯将活子任务标题折入备注、移交活附件、按原日期取星期，不迁移截止/完成态；反向新建今天待办。预览字段损失与关联变化，验证旧对象/附件、重试不重复创建。 |
 | <a id="T9"></a>T9 今日/昨天/即将展开、昨天全部延至今日；筛选/清筛选；全部事项种类和状态；列表选择/排序 → 查询/批量/排序 | [TasksPage.swift](../AreaChain/Features/Tasks/TasksPage.swift)、[DayBoardList.swift](../AreaChain/Features/Tasks/DayBoardList.swift)；[WorkspacePendingView.swift](../AreaChain/Features/Workspace/WorkspacePendingView.swift)：61；[WorkspaceAllItemsView.swift](../AreaChain/Features/Workspace/WorkspaceAllItemsView.swift)：51；[DayBoardMutations+Convert.swift](../AreaChain/Features/Tasks/DayBoardMutations+Convert.swift)：13 `applyManualOrder` | 复用 `BoardFilter`、`ItemsListing`、`AgendaProjection`、`ManualOrder`；标签、优先级、来源、日期、提醒等适用维度同步查询；完成状态与习惯启用状态不能混为一个状态。验证页内状态与查询往返、混排手动排序、昨天习惯真实检查日；“全部延至今日”只改适用待办。 |
 | <a id="T10"></a>T10 剪贴板加今天 → 单次捕获 | [ClipboardCapture.swift](../AreaChain/Services/ClipboardCapture.swift)：39 `ingest`；[Classification.swift](../AreaChain/Domain/Classification.swift) | 有文字只取文字、仅图片才挂图；保留原文，仅解析普通标签，不走任务时间/优先级 NLP；可按偏好附来源 Bundle ID。不同于剪贴板历史和正文粘贴。验证文字+图片优先级、事务/文件失败及重试身份。 |
@@ -7569,3 +7569,91 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 整改第 1 条只是静态推断。P-M1/P-M2 多项计划路径本身是否正确不在本批范围，只确认了它们与 T 系列单项入口相互隔离。
 - 生产搜索、真实用户库和系统服务：本批没有接入，也没有访问。本批没有提交、推送、安装或发布。
 - 第二次复核时，verifier 在仓库外 `/tmp` 写了 2 个日志文件（`g1a_keys_unused`、`g1a-tm2-verifier.log`），没有写入仓库。
+
+### 9.90 里程碑 T-M4：复制与回收
+
+2026-10-18（Asia/Shanghai）。用户确认先补齐功能，补复核 G-1b～G-1e 挪到接入正式版之前，本批不跑。本节是 T-M4 唯一交接：todo.copy、第一版独立确认（independentConfirmation）和四个回收指令 todo.trash／subtask.delete／routine.trash／batch.trash。全部仍在隔离环境：能力默认关闭，生产搜索、真实用户库和系统服务未接入，没有提交或推送。
+
+#### 规则
+
+- **复制内容只有一份**：[TaskCopyContent](../AreaChain/Domain/TaskCopyContent.swift)。整条 = 标题 + 换行 + 备注；备注沿原 TaskRow 口径修剪首尾空白，空白备注视为没有备注，此时整条只有标题。标题模式原样输出标题（不修剪）。备注模式在备注为空时不可执行（`notesEmpty`），不写空剪贴板。TaskRow 的复制按钮、标题／备注气泡、备注点按和 todo.copy 都调用它；回归测试用旧 `copyTask`／`fullNoteText` 的逐字副本做对照，逐字节一致。
+- **写剪贴板只经一个接口**：[ClipboardTextWriting](../AreaChain/Services/ClipboardTextWriter.swift)。生产实现 `SystemClipboardTextWriter` 包 `NSPasteboard.general`（沿原写法 clearContents + setString），`setString` 返回 false 时抛 `rejected`。TaskRow 的复制按钮、备注点按和标题／备注气泡都只在写入成功时显示“已复制”（气泡经共享 RowTitleBubble／RowNoteBubble 新增的可选 `reportingCopyResult`，未设置时其他宿主沿原 onCopy 路径不变）；todo.copy 失败时提示“无法写入剪贴板，未复制任何内容”。复制后的文字和以前一样会被系统剪贴板及本应用已开启的剪贴板历史看到，本批没有新增过滤。
+- **todo.copy**：目录把它标为外部效果（queue 为 excluded），因此只读当前操作草稿，不入列、不建 Run、不修改数据、不进撤销，也不要求独立确认。只对单个普通活待办可执行；来源证明须为 ordinary，且来源声明的备注有无须与真实备注一致（`unknown` 拒绝）。准备与提交之间对象被改、被删或草稿（含 section）变化，都拒绝并要求重新准备。
+- **回收只做可恢复软删**：todo.trash、subtask.delete、routine.trash 只接单个对象（目录虽声明 explicitMultiple，本批收窄为单项）；batch.trash 接待办与习惯的固定集合，目标在接受时冻结。四者只调用原仓储 `deleteTodo(soft: true)`／`deleteSubtask(soft: true)`／`deleteRoutine(soft: true)`／`batchTrashTodos`／`batchTrashRoutines`，在一次 ModelChanges 中执行；批量按类型分传 ID，同 UUID 的待办与习惯不会互相波及。没有永久删除、purge、trash.restore 或 trash.delete，也不经过 `DayBoardMutations.batchTrash`，因此碰不到 `Persistence.session` 回退。
+- **级联沿原仓储**：待办进回收站时活子任务与附件用同一时间戳；此前已独立删除的子项和附件不受影响；习惯按原 deleteRoutine 一并给活附件打戳。保存前再核对实际打戳的实体集合与冻结集合完全相同，扩大或缺少都整体回滚。子任务删除后父任务进度沿 TaskRowFactory 的活子项过滤更新，父任务完成状态不变，没有另写计算。
+- **资格**：沿 B-M1 的“普通无备注”门槛——来源 ordinary、来源声明 notes 为 absent，且真实备注为空；子任务另须所属待办存活、父子关系唯一、父项来源合格。带备注的待办或习惯本批不能用指令回收（界面回收不受影响）。
+- **总量**：batch.trash 沿用 B-M2 已批准的 4000 实体上限（目标 + 连带子任务 + 连带附件），上限只在 `CommandBatchWriteSet.Counts.entityLimit` 一处定义。单项回收与界面一致，不设上限。
+- **保存与发布**：只有保存成功才登记事实并私有发布。保存调用前失败（如成员应用失败）整体回滚，为 notSubmitted；save 已调用后失败沿 B-M1 记为 unknown，不发布、不重放。发布失败不否认本地保存。准备、接受、确认三步零写入。
+- **多项计划**：回收项不进入 P 系列多项计划队列。MultiPlanCommandAdapter 遇到回收命令抛 `independentConfirmation`，界面提示“回收类指令需要独立确认，只能单项执行”；回收适配器本身也只接受单项计划和单项 Run。
+
+#### 实现入口
+
+| 层 | 文件 | 责任 |
+|---|---|---|
+| Domain | TaskCopyContent、CommandTaskCopy | 复制规则；copy 预览、问题类型与只读当前草稿的输入形状 |
+| Domain | CommandTrash、CommandTrashFacts、CommandTrashExecution | 四命令目标形状、冻结影响、独立确认与 Registry；Run 事实与占用（单项 claimRuntimeInvocation） |
+| Domain | CommandHandoffCoordinator、CommandExecutionContract、CommandExecutionRun+Facts、CommandHostSession | 只新增 `trashes` 登记、`hasInvocation` 一项与 `recordTrash` 透传 |
+| Domain | CommandBatchWriteSet、CommandMultiPlan | 上限提为 `entityLimit`（数值不变）；新增 `independentConfirmation` 拒绝原因 |
+| Services | ClipboardTextWriter、TaskCopyCommandAdapter | 写入接口；copy 环境与适配器 |
+| Services | TrashCommandReader／Transaction／Adapter | 只读核验、单次事务、`Capability.softTrash`（默认 `.closed`） |
+| Services | BatchCommandEnvironment、MultiPlanCommandAdapter | 私有发布抽出 `publish(changed:observe:)` 供批量与回收共用（行为不变）；family 拒绝回收项 |
+| Features | UnifiedSearchTrashEditing／Submission／Confirmation | 准备、接受、独立确认面板、结果 |
+| Features | UnifiedSearchTaskCopyEditing／Submission | copy 准备、写入反馈 |
+| Features | UnifiedSearchController 及路由点 | 新增两个可选适配器（默认 nil）与状态；提交、面板、计划说明、基线、导航撤销中加入路由 |
+| Features | TaskRow、TaskRow+Actions、UnifiedSearchParameterField | 复制改走共用规则与写入接口（环境值 `clipboardTextWriter`）；copy 的 section 只显示所选值，不显示“当前值尚未读取 →” |
+| Theme | DaybookRowBubbles | RowTitleBubble／RowNoteBubble 增加可选 `reportingCopyResult`；只有 TaskRow 使用，手记、甘特、四象限与控件预览不变 |
+
+生产代码没有新的构造点：`TrashCommandAdapter`、`TaskCopyCommandAdapter` 只在测试夹具中构造，控制器参数默认 nil，正式版行为不变。旧入口的提交、快捷键、焦点和保存语义未改；TaskRow 唯一的行为差异是写剪贴板失败时（按钮、点按、气泡）不再显示“已复制”。
+
+#### 独立确认的设计
+
+- **位置与触发**：沿用原面板“准备 → 接受”之后，普通提交（“检查后移到回收站…”按钮与 ⌘Return）只打开确认，永远不写入。确认面板复用 TrashConfirm 的“移到回收站？”“移到回收站”“取消”与单项文案“「%@」会进回收站，以后还能恢复”；多项显示数量、前 3 个标题和“另有 N 项”，并列出连带子任务数和附件数。子任务目标额外说明：子任务保留为已删除记录，回收站目前没有单独恢复子任务的入口。
+- **按钮与焦点**：确认按钮（destructive 样式）与普通提交分开。面板出现后默认焦点落在“取消”，Tab 才移到确认。确认期间 ⌘Return、Return 打开、结果移动都被忽略；Esc（输入框或面板内）与“取消”只撤销确认，草稿、计划、预览和接受都不变，焦点回到输入框。
+- **绑定**：确认令牌由 `CommandTrashRegistry.confirm` 生成，绑定接受 ID、计划戳、计划项、目标集合和连带计数。新的接受会撤销旧确认。提交前用同一份冻结预览再读一遍真实对象；任一目标被改、被删、连带集合变化、资格失效或宿主 lease 变化，都拒绝并撤销确认，界面清空预览与接受，要求重新预览，不会静默扩大或缩小目标。
+- **范围**：本批只对四个回收指令开放。目录里其他声明了 independentConfirmation 的指令（如 T8 转换 todo.toRoutine／routine.toTodo）没有适配器，保持未开放，测试逐条断言。
+
+#### 系统副作用与生产接线所需授权
+
+提醒、日历沿 B-M1／T-M2 的隔离方式：环境要求私有 NotificationCenter 和内存库，发布经 `BoardEvents.changed(dependencies:)` 调注入的刷新闭包；QA 中刷新闭包是 fake，不写真实通知或日历。子任务删除时刷新沿所属待办。
+
+接入生产前还需要另行明确授权和定界：在真实宿主装配 TrashCommandAdapter（打开 softTrash）与 TaskCopyCommandAdapter；用生产刷新替换 fake，并确认回收后真实提醒取消、日历同步与小组件刷新；放开带备注对象的回收资格（若需要）；决定复制是否要排除剪贴板历史；以及接入正式版前的补复核 G-1b～G-1e。
+
+#### 测试与实测结果
+
+证据在忽略目录 `build/TM4/`（日志、xcresult 摘要、26 张缓存截图及 SHA256）。全部经 `./scripts/build.sh` 隔离入口、批次标识 `tm4`（QA 身份 `com.areachain.privacy-qa.tm4`），沿原 `build/.build.lock`，六项真实钥匙串变量由脚本清除，只用合成内存库与 fake 剪贴板／刷新；原生测试串行，开跑前只读确认控制台在线、登录完成、未锁屏、单屏。
+
+| 批次 | 结果 |
+|---|---|
+| `qa-compile --qa-batch tm4` | exit 0，QA 包签名核验通过 |
+| 本批 Domain／Services：TaskCopyContentTests、TaskCopyCommandTests、TrashCommandTests、TrashCommandBoundaryTests | 30 方法 / 53 次全部通过，0 失败、0 跳过 |
+| 受影响旧服务／领域回归（批量、批量状态、多项计划 15 类、子任务、习惯、字段、协调者、执行、计划、目录、旧回收与墓碑、本批 4 类，共 49 类） | 292 方法 / 627 次：626 通过、1 失败、0 跳过 |
+| 本批原生：UnifiedSearchTrashInteractionTests | 5 方法 / 10 次全部通过（单独一轮，及最终回归内再一轮） |
+| 受影响旧原生回归（统一搜索批量／多项计划／子任务／操作／对象／设置／导航／新增／字段、TaskRow 交互与气泡、批量菜单、Daybook 按钮与回收确认弹窗，含本批共 17 类） | 86 方法 / 148 次：147 通过、1 失败、0 跳过 |
+| 正常 `./scripts/build.sh` | exit 0，staticSignatureVerified=true；开发描述文件 2026-10-22 到期 |
+| `check_workflow.py`、`unittest discover -s scripts/tests`（283 项）、`quality_gate.py --profile static --strict`、`--profile swift --build-only --strict`、本批 42 个 Swift 文件严格 SwiftLint（0 违规）、`git diff --check` | 全部通过 |
+
+两项失败均为既有问题，未修改、未放宽：
+
+- `SubtaskModelTests.addTagSkipsDiaryPresetNames`：测试期望跳过手记预设标签名，而现行 `SwiftDataCatalogRepository.resolveTaskTag` 已不跳过（注释“已取消内置预设标签”，commit 0e425b8）；本批没有改动这两个文件。
+- `UnifiedSearchOperationInteractionTests.nativeBooleanWeekdaysDayAndTime`：找不到 `daybook.date.2026-10-18` 日期按钮。单独重跑仍失败；用 `git archive HEAD` 解出的未改动基线（持原锁、批次 `tm4base`）跑同一用例，以相同断言失败，确认不是本批引入。
+
+另有一轮本批原生测试 10 次全部在焦点前置失败（`foreground=com.anthropic.claudefordesktop`、active=false），属于测试期间前台被占用的环境问题，不计通过也不计产品失败；随后一轮与最终回归均通过。
+
+原生覆盖：单项与批量确认的默认焦点在取消、Tab 到确认、⌘Return 只打开确认、确认期间 ⌘Return 不执行、Esc 与取消按钮回到草稿（计划、接受不变）；确认后对象改名被拒并要求重新预览；复制三种模式经真实选择器切换、成功显示“已复制”、写入失败如实提示；TaskRow 复制写入失败不显示“已复制”、成功时内容与共用规则一致。代表样式为标准 444pt 与紧凑 304pt（最小支持宽度代表）、中英文、浅深色，截图已逐张查看关键态。
+
+#### 未覆盖项与剩余风险
+
+- 原生只覆盖 todo.trash、batch.trash 与 todo.copy；subtask.delete、routine.trash 只有服务层与旧界面等价证据。Shift-Tab、VoiceOver 朗读、真人输入法、最低系统版本、真实多窗口未验证；截图是 NSView.cacheDisplay，键鼠是合成原生事件。
+- 独立删除的子任务与界面删除一致：回收站页面不显示、也没有单独恢复入口（数据保留为软删记录）。若要可恢复，需要另行定界新增恢复能力。
+- TaskRow 气泡写入失败路径没有经 TaskRow 悬停出气泡再点击的端到端用例，只有共享气泡用例与接线的静态核对。
+- 带备注的待办和习惯不能用指令回收；外部系统（真实提醒取消、日历同步、小组件）只经 fake 验证。
+- 生产接线所需授权见上文；正常签名描述文件约 94 小时后到期。本批没有提交、推送、安装或发布，没有访问真实用户库、系统服务、签名配置或全局配置。
+
+#### 指定只读复核与整改
+
+- 第一次派发因额度上限中断，未产生结论；额度恢复后重新派发 Claude Code `verifier` 子代理。
+- 第一次结论：**不通过**。阻断项（中）：TaskRow 的标题／备注气泡在写入失败时仍显示“已复制”（共享气泡的 `handleTap` 不看结果），违反“写入失败不报成功”。另一项（低）：复制原生用例 style 1 偶发一次控件位置不在面板内，单独重跑通过。其余清单项 verifier 按源码与亲自重跑的 30 方法／53 次服务测试、30 方法／42 次原生回归核对为符合。
+- 整改：只改阻断项。[DaybookRowBubbles](../AreaChain/Theme/DaybookRowBubbles.swift) 增加可选 `reportingCopyResult`，失败时不置已复制；未设置时保持原 onCopy 路径。TaskRow 两个气泡接入 `copy(.title)`／`copy(.notes)` 的结果。新增原生用例 `rowBubblesShowCopiedOnlyWhenWriteSucceeds`（标题／备注 × 成功／失败，加未设置回调的旧路径）。偶发项未改断言，按建议连跑。
+- 整改后重跑：`qa-compile` 通过；本批原生连跑三轮均为 6 方法／15 次全部通过；气泡宿主与 TaskRow 回归（TaskRowBubbleTests、TaskRowInteractionTests、GanttInteractionTests 与本批）全部通过。同轮 DiaryTitleHoverTests、QuadrantLayoutTests、ScrollAssemblyConsumerTests 共 10 次失败（含四象限宿主初始化崩溃）；在未改基线 `tm4base`（持原锁）上同一组方法同样 10 次失败，判定为既有问题，未修改。
+- 第二次结论：**通过**。verifier 亲自重跑本批 4 个服务类、本批原生（含新气泡用例 5 个参数与上轮偶发的复制用例 4 个 style）及 TaskRowBubble／TaskRowInteraction／GanttInteraction，共 8 类 107 次全部通过；DiaryTitleHover／QuadrantLayout／ScrollAssembly 的失败与基线 `tm4base` 列表逐条一致，判为既有。核对两处 handleTap（设置结果回调时只在成功置已复制且只写一次，未设置时与原代码相同）、TaskRow 两处接线、`reportingCopyResult` 只有 TaskRow 使用；第九节其余各项在新差异下仍成立。指定复核缺口关闭。
+- 两条低级意见均不阻断：新气泡用例直接构造共享气泡，TaskRow 两处接线在“写入失败气泡不显示已复制”路径上只有静态证据（列入未覆盖项）；本段的悬空引用已由本条补齐。

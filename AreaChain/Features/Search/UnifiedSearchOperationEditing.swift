@@ -98,7 +98,8 @@ extension UnifiedSearchController {
         }
         let draft = CommandDraft(id: UUID(), hostID: source.lease.ownership.hostID, commandID: id,
             baseline: ["todo.create", "todo.title"].contains(id.rawValue) || routesTaskField(id)
-                || routesBatch(id) || routesSubtask(id) || routesRoutine(id) || localSettings?.supports(id) == true
+                || routesBatch(id) || routesSubtask(id) || routesRoutine(id) || routesTrash(id) || routesTaskCopy(id)
+                || localSettings?.supports(id) == true
                 ? .init() : syntheticBaselines[id] ?? .init(),
             arguments: argument.map { [$0] } ?? [])
         return sendOperation(.start(expectedRevision: state.revision, draft), source: source, text: text ?? command.path)
