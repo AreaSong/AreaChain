@@ -6211,6 +6211,14 @@ create→title 仍须另行授权与接线：原 Coordinator 单项运行/调用
 
 生产搜索及真实库/系统服务、notes/敏感执行、批量目标、删除、任意多步/原子任务组、跨重启队列恢复和执行后撤销继续关闭；首步扩展创建组合尚不进入该链。指定 Cursor verifier 无当前可调用入口，不重复登录检查或冒充完成；C2B、真人输入法/VoiceOver、最低系统、真实多窗口等历史缺口沿原记录保留。本批没有提交、推送、安装、发布或修改用户设置。
 
+#### 补复核（G-1a，2026-10-18）
+
+- 源码状态：HEAD `dd565a1`，工作区干净；1519 文件摘要 `324df4c4…8df5` 在编译、测试和三次复核后均未变化。
+- 本批测试：`qa --qa-batch g1a` 一次跑 T 系列 27 类并集，151 方法 / 377 次执行，149 通过、0 失败、0 跳过、2 项历史 Expected Failure（属 T-M3）。其中 T-M1 的 8 类 38 方法 / 97 次全部通过。
+- verifier 结论：**通过**。C1～C9 逐条符合当前代码；C10（T-M1-R 只改 5 个测试文件）在 git 历史中分不出，记为无法核对。字段与两步链的入口仍唯一，MultiPlanCommandDispatch 只复用、不复制；默认未装配，生产无构造点。
+- 整改清单（均为低，不涉及数据、隐私或保存语义，详见 §9.89）：两步链身份未检查第二项 `executionOrigin`；组件目录的消费者描述过时；旧 UI 同值保存与字段接受后转交两处缺专项断言。
+- 指定复核缺口关闭。正常描述文件到期、C2B、真人输入法/VoiceOver、最低系统、真实多窗口、标题多目标历史根因仍保留，完整交付仍 partial。
+
 ### 9.74 里程碑 T-M2：完成、标签与截止时间的隔离闭环
 
 2026-10-07（Asia/Shanghai）。承接 §9.73 T-M1-R，用户授权连续完成 A～E。沿原目录、FieldAdapter、Coordinator、Plan/Run、ModelChanges 和 Daybook 原生组件，不接生产。默认 basic 能力仍仅 T-M1 三字段；显式 milestone2 才开放以下四命令。普通无备注来源证明、干净内存 context、私有事件/fake 消费者、唯一活 todo（含墓碑/重复核验）、一个操作及单项计划守卫保持。目录批量声明不等于本批执行资格；不取首项、不执行可用子集，不加入 create→title 链。
@@ -6267,6 +6275,15 @@ create→title 仍须另行授权与接线：原 Coordinator 单项运行/调用
 
 指定 Cursor verifier 当前无可调用入口，未复核；只读子代理只定位测试复用，不替代指定复核、不重复认证。正常描述文件到期独立保留，本批不续签、不改个人签名、不申请 Apple 资源；PrivacyQA 成功不替代正常签名。C2B、真人输入法/VoiceOver、最低系统、真实多窗口等历史缺口保持。生产搜索、真实用户库/系统、notes/敏感执行、批量、删除、任意多步、执行后撤销及跨重启恢复未开放。未提交、推送、安装或发布。
 
+
+#### 补复核（G-1a，2026-10-18）
+
+- 源码状态：HEAD `dd565a1`，工作区干净；摘要同 §9.73 的补复核记录。
+- 本批测试：并集中 T-M2 的 5 类 29 方法 / 84 次全部通过；共享的 T-M1 字段类同时通过。verifier 另补跑 DetailDueSaveTests 与 UnifiedSearchObjectContractTests（旧 setDue、未装配宿主多选），12 方法 / 14 次全部通过。
+- verifier 结论：**通过**。C1～C10 均符合：basic 与 milestone2 分离，级联、标签四模式、createTag 固定 UUID、due 范围、routesTaskField 门禁、事务回滚和 unknown 不重放都能对上代码；批量和多项计划入口只复用、不复制。
+- 整改清单（均为低，不涉及数据、隐私或保存语义，详见 §9.89）：标签解析与 UUID 编码在 T-M2/T-M3/R 三处重复；本节“旧 setDue 保留归一化”的措辞与代码不符（归一化在共享 `assignDue`）；“不登记 CompletionUndo”只有代码证据，没有测试断言。
+- 指定复核缺口关闭。正常签名构建失败、C2B、真人输入法/VoiceOver、最低系统、真实多窗口仍保留，完整交付仍 partial。
+- 复核者在仓库外 `/tmp` 留下 2 个日志文件，与仓库无关，未计入证据。
 
 ### 9.75 里程碑 T-M3：普通子任务的隔离闭环
 
@@ -6348,6 +6365,14 @@ T-M3-R已完成本批有限清单：两套新原生、旧对象父参数、原�
 **最终修改与源码。** R-modified-files.json仅列本轮6个文件；R-final-source-audit.json的1255文件摘要为 `20888895120db67602c37d399503307cb6db2a4296ead480221b232488f2a461`，与RFinalCompile执行后完全一致。Domain、Services、配置和原执行契约与续验初始摘要无变化，因此没有重跑未受影响的188次服务矩阵。并行DaybookStepperKeyboard/DaybookStepperFocusTests及组件目录、路由、工程文档改动保留；这两份Swift不在本批调用链，最终完整编译已包含，不宣称验证了该并行任务。原索引状态保留，未提交或推送。
 
 最终文档后运行原workflow、4个本批Swift文件严格SwiftLint、暂存/未暂存差异和严格static质量门禁（含231项脚本回归）；本轮未修改检查脚本。源文件集合、资源与配置再与最终编译摘要核对，包括新增和删除。正常签名到期、Cursor verifier、C2B、真人输入法/VoiceOver、最低系统、真实多窗口及上述历史已知问题独立保留；没有安装、发布、续签、权限改变或生产启用。
+
+#### 补复核（G-1a，2026-10-18）
+
+- 源码状态：HEAD `dd565a1`，工作区干净；摘要同 §9.73 的补复核记录。
+- 本批测试：并集中 T-M3 的 14 类 84 方法 / 196 次，82 通过、2 项历史 Expected Failure（DetailSubtaskCompletionTests 的 failedTransactionNaturalRefreshCharacterization 与 completionKeepsTagsDragRegionAndAdjacentActions），0 失败、0 跳过。verifier 另补跑 6 个服务类，37 方法 / 116 次全部通过。
+- verifier 结论：**通过**。C1～C10 均符合，包括 T-M3-R 的两处呈现修正；旧 UI 与命令共用排序、插入和赋值，默认未装配。P-M2 之后，子任务创建输出只在显式 `.typedCreation` 能力下进入 Run.outputs，单项路径不受影响。
+- 整改清单（均为低，不涉及数据、隐私或保存语义，详见 §9.89）：本节和组件目录“不开放子任务输出依赖”未注明 P-M2 例外；SubtaskCommandScopeTests 中原来的关闭断言已被 P-M2 改为开放断言；“未接结构化协议的仓储默认拒绝”和“不调用 CompletionUndo”缺专项测试。
+- 指定复核缺口关闭。旧详情两项历史问题、正常签名、C2B、真人输入法/VoiceOver、最低系统、真实多窗口仍保留，完整交付仍 partial。
 
 ### 9.76 里程碑 R-M1：习惯定义五字段的隔离闭环
 
@@ -7491,3 +7516,56 @@ C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上�
 - 修复：只改测试辅助。先找到包住日期面板的最内层 `NSScrollView`，用一个与可视区等高、顶边对齐面板顶边的矩形去 `scrollToVisible`，让面板顶边贴住可视区顶部；新增断言"面板下沿未被裁"，再保留原来的面板边界断言。批量日期等不在滚动区里的宿主没有裁剪，直接走原来的面板边界断言。没有跳过用例，没有删除或放宽断言；改为键盘选日等其他做法会改变用例语义，因此未采用。
 - 验证：`./scripts/build.sh qa --qa-batch datepick`（原锁最多等 900 秒，六项钥匙串变量清除，合成数据，原生串行）定向运行全部 8 个调用这个辅助函数的类：UnifiedSearchTaskCreateInteraction、UnifiedSearchCompositionInteraction、UnifiedSearchBatchInteraction、UnifiedSearchTaskChain、UnifiedSearchTaskField、UnifiedSearchRoutineStateBoundary、UnifiedSearchBatchStateBoundary、UnifiedSearchBatchState。共 27 次，全部通过、0 跳过，运行前后源码摘要一致。第一版要求必须找到滚动区，在批量的两个宿主（`nativeMixedTasksAndTwoExplicitDatesKeepFixedTargets`、`unknownAndDateEditKeepStableExplicitIdentities`）上失败，因此补了无滚动区时的分支后重跑。
 - 未覆盖：没有修改系统日期，所以只在 2026-10-18（五行月份的第四行）这一天实际运行过。按失败截图估算，可视区约 318pt，六行月份的日期面板约 230pt，仍能完整露出。以后如果布局变化导致放不下，新增的"下沿未被裁"断言会直接报出来，而不是随日期偶发失败。月初、月末的实际运行没有做。
+
+### 9.89 补复核 G-1a：T 系列
+
+2026-10-18（Asia/Shanghai）。T-M1（含 T-M1-R）、T-M2、T-M3（含 T-M3-R）当年都因指定 Cursor verifier 不可用停在 partial。本批按[指定只读复核入口](../skill-routing.md#指定只读复核入口)派发 Claude Code `verifier` 子代理，分三次串行复核；只复核、记录，不修代码。本节是本批唯一汇总入口。下文的 §9.73～§9.75 行号指本批追加记录之前的 `dd565a1` 版本。
+
+#### 源码状态与测试证据
+
+- 复核对象：HEAD `dd565a17182b536026b2973cf72092504f7a983a`（C-M3 已提交），工作区干净，没有未提交改动。证据在忽略目录 `build/G1A/`。取证包装 `run.py` 原样复制自 `build/CM3/run.py`，复核包和测试摘要也放在这里。
+- 桌面预检：console 和 loginDone 均为 true，未锁屏，单屏。
+- `./scripts/build.sh qa-compile --qa-batch g1a`：exit 0。QA 身份为 `com.areachain.privacy-qa.g1a`、role=qa，签名核验通过，未配置系统解锁。
+- `./scripts/build.sh qa --qa-batch g1a`，用 `--only-testing` 指定 27 类，一次运行：
+  - 共 151 方法 / 377 次执行：149 通过、0 失败、0 跳过、2 项 Expected Failure。
+  - 两项 Expected Failure 都在 DetailSubtaskCompletionTests，是 §9.75 第 6342 行记录的历史问题。
+  - 分里程碑：T-M1 8 类 38/97；T-M2 5 类 29/84；T-M3 14 类 84/196。
+- 构建锁与源码：两次运行都沿原 `build/.build.lock`，均未等锁；六项真实钥匙串变量由 build.sh 清除；只用合成内容，原生测试串行执行。1519 文件摘要 `324df4c4e8aa43dad2880ea4fb099f0a4e6ebd5f4b8374d755b03b1b41258df5` 在运行前、取得锁后、运行后一致，三次复核结束后复算也没有变化。
+- verifier 在同一批次、同一把锁下补跑了两次：
+  - DetailDueSaveTests 与 UnifiedSearchObjectContractTests：12 方法 / 14 次，全部通过。
+  - 6 个子任务服务类与 InputSyntaxPersistenceTests：37 方法 / 116 次，全部通过。
+
+#### 三份结论
+
+| 里程碑 | verifier 结论 | 要点 |
+|---|---|---|
+| T-M1 | 通过 | C1～C9 符合，C10 在 git 历史中无法单独核对；editField 只有一个定义、一个调用方；Controller 参数默认 nil，生产没有构造点。 |
+| T-M2 | 通过 | C1～C10 符合；milestone2 能力门禁、级联、标签、createTag、due、routesTaskField 和事务回滚都能对上代码；B/P 系列只复用、不复制。 |
+| T-M3 | 通过 | C1～C10 符合，包括 T-M3-R 的呈现修正；P-M2 的子任务输出只在显式 `.typedCreation` 下开放，单项路径不受影响。 |
+
+三个里程碑的指定复核缺口在本批关闭，状态为已验证。各里程碑的完整交付仍是 partial，原因是下文“未覆盖项”中列出的历史缺口。
+
+#### 合并整改清单
+
+没有高或中级问题。以下全部为低，都不涉及数据、隐私或保存语义，按严重程度排序：
+
+1. **两步链的来源检查有防御缺口**（T-M1，§9.73:6152）。`AreaChain/Domain/CommandTaskChain.swift:11-12`、`:17-25` 检查了 mergedOrigins 和 returnedAttempts，没有检查第二项的 `executionOrigin == nil` 与 `hasSupportedOrigins`。单项入口 `AreaChain/Domain/CommandTaskTitlePreview.swift:43`、`:53` 是检查的。界面路由先进入多项计划，走不到这里；服务层在同一 coordinator 上没有拦住。这是静态推断，没有复现。
+2. **子任务输出关闭的测试证据被后续里程碑反转**（T-M3，§9.75:6286）。`AreaChainTests/Services/SubtaskCommandScopeTests.swift:84` 原本断言输出未开放，已被 P-M2 改为断言 `createdObjectType == .subtask`。单项路径的关闭现在只靠 `AreaChain/Domain/CommandSubtask.swift:162-163` 和 `AreaChainTests/Services/SubtaskCommandTests.swift:29` 间接保证。
+3. **标签解析与 UUID 编码在三处重复**（T-M2，§9.74:6224、6250）。先调 InputTagResolver.apply，再编码 final UUID，这段逻辑分别写在 `AreaChain/Services/TaskMutationService+Fields.swift:81-90`、`AreaChain/Services/TaskMutationService+Subtasks.swift:97-106` 和 `AreaChain/Services/RoutineMutationService.swift:100-111`。预留新标签 UUID 的写法也重复了三处：`AreaChain/Domain/CommandTaskField.swift:177-181`、`AreaChain/Domain/CommandSubtaskFacts.swift:14-16`、`AreaChain/Domain/CommandRoutineFacts.swift:16`。目前语义一致，但改一处不会同步到另外两处。
+4. **文档未注明子任务输出的 P-M2 例外**（T-M3）。`docs/component-catalog.md:986` 和 §9.75:6286、6323 写“不开放子任务输出依赖”。但 `AreaChain/Domain/CommandSubtaskFacts.swift:83` 在 `.typedCreation` 下会写入 Run.outputs，`AreaChain/Domain/CommandDescriptor.swift:126` 也已把 subtask.create 声明为输出 `.subtask`（来源 §9.82）。
+5. **组件目录的 T-M1 消费者描述过时**（T-M1，§9.73 对应组件目录）。`docs/component-catalog.md:970` 写“消费者仅……”，而 `AreaChain/Services/MultiPlanCommandDispatch.swift:37`、`:121` 也在消费 TaskFieldCommandAdapter 和 fieldReader。
+6. **setDue 归一化位置的描述与代码不符**（T-M2，§9.74:6225；`docs/component-catalog.md:977`）。文档写“旧 setDue 保留自己的保存与归一化”，实际 `RemindMinutes.clamped` 在共享的 `AreaChain/Services/TaskMutationService+Fields.swift:61-64` `assignDue` 中执行，`AreaChain/Features/Tasks/DayBoardMutations+Convert.swift:11-17` 只负责保存。新命令事先只放行 0..<1440，行为上没有差异。
+7. **T-M1 有两处覆盖缺口**（§9.73:6151、6155）。旧 UI 同日 move 零保存、同值 priority/reminder 仍保存（代码在 `AreaChain/Features/Tasks/DayBoardMutations.swift:154-173`），在 T-M1 的 8 类测试中没有断言；字段接受后再转交被拒绝，也没有专门用例。
+8. **“未接结构化协议的仓储默认拒绝”没有测试走到**（T-M3，§9.75:6284）。默认实现在 `AreaChain/Domain/Protocols/TaskRepositoryProtocol.swift:176-185`，但测试替身（例如 `AreaChainTests/Services/SubtaskFailureRepository.swift:12-22`）都覆写了这些方法。
+9. **“命令不登记 CompletionUndo”只有代码证据**（T-M2 §9.74:6222；T-M3 §9.75:6281、6313）。Services、Domain 和 Search 中没有 CompletionUndo 引用，但没有测试断言这一点。
+
+这些问题交给后续单独批准的修复批次；本批没有改动代码、测试或其他文档。
+
+#### 未覆盖项
+
+- 原生截图、真人输入法/VoiceOver、最低系统、真实多窗口、C2B，以及正常开发描述文件到期（2026-10-07 20:28:09）和正常签名构建：均保留原缺口，本批未核对。
+- T-M1 的标题多目标面板消失：历史根因仍未判定。DetailSubtaskCompletionTests 的两项历史 Expected Failure 仍保留。
+- T-M1-R 的修改范围：无法用 git 单独核对。复核没有逐类查看原生测试截图；结论依据 xcresult 通过结果，以及对代码的静态核对。
+- 整改第 1 条只是静态推断。P-M1/P-M2 多项计划路径本身是否正确不在本批范围，只确认了它们与 T 系列单项入口相互隔离。
+- 生产搜索、真实用户库和系统服务：本批没有接入，也没有访问。本批没有提交、推送、安装或发布。
+- 第二次复核时，verifier 在仓库外 `/tmp` 写了 2 个日志文件（`g1a_keys_unused`、`g1a-tm2-verifier.log`），没有写入仓库。
