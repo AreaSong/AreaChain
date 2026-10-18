@@ -176,4 +176,48 @@ struct CommandParameterTests {
         #expect(CommandFileKind.image.imageFormats == ["png", "jpeg", "heic", "gif", "tiff", "webp"])
         #expect(!CommandFileKind.image.allowsMultipleSelection)
     }
+
+    @Test func longTextLimitCountsConfirmedUTF8BytesAtTheBoundary() {
+        let limit = CommandLongTextLimit.maxUTF8Bytes
+        #expect(limit == 65_536)
+        #expect(CommandLongTextLimit.allows(String(repeating: "a", count: limit)))
+        #expect(!CommandLongTextLimit.allows(String(repeating: "a", count: limit + 1)))
+        // 中文 3 字节、emoji 4 字节、组合重音 e+U+0301 共 3 字节：按 UTF-8 字节而非字符或 UTF-16 计。
+        let chinese = String(repeating: "中", count: limit / 3)
+        #expect(chinese.utf8.count == limit - 1 && CommandLongTextLimit.allows(chinese + "a"))
+        #expect(!CommandLongTextLimit.allows(chinese + "中"))
+        let emoji = String(repeating: "🙂", count: limit / 4)
+        #expect(CommandLongTextLimit.allows(emoji) && !CommandLongTextLimit.allows(emoji + "a"))
+        let combining = String(repeating: "e\u{301}", count: limit / 3) + "a"
+        #expect(combining.utf8.count == limit && CommandLongTextLimit.allows(combining))
+        #expect(!CommandLongTextLimit.allows(combining + "\u{301}"))
+        // 组合缓冲不计入：已确认正文满额时，正在组词的拼写仍不超限。
+        let confirmed = String(repeating: "a", count: limit)
+        let composing = CommandDraftEditingState(parameter: "notes", spelling: confirmed + "zhong",
+            selectionLocation: limit + 5, selectionLength: 0,
+            composition: .init(text: "zhong", location: limit, replacedText: ""))
+        #expect(CommandLongTextLimit.allows(composing.confirmedText))
+        #expect(!CommandLongTextLimit.allows(composing.confirmingComposition().confirmedText))
+    }
+
+    @Test func overLimitLongTextIsDistinctFromInvalidValue() throws {
+        let body = try #require(catalog.command(path: "/diaries/body"))
+        let target = CommandArgument(parameter: .target, operation: .assign, value: .objects([.init(type: .diary, id: UUID())]))
+        let limit = CommandLongTextLimit.maxUTF8Bytes
+        func issues(_ text: String) -> [CommandArgumentIssue] {
+            CommandArgumentValidation.issues(for: [target, .init(parameter: .body, operation: .replace, value: .longText(text))], command: body)
+        }
+        #expect(issues(String(repeating: "中", count: limit / 3)).isEmpty)
+        #expect(issues(String(repeating: "中", count: limit / 3 + 1)) == [.tooLong(.body)])
+        #expect(issues(" \n") == [.invalidValue(.body)])
+        #expect(CommandArgumentIssue.tooLong(.body) != .invalidValue(.body))
+        #expect(!CommandArgumentValidation.accepts(.longText(String(repeating: "a", count: limit + 1)), type: .longText))
+        #expect(CommandArgumentValidation.accepts(.longText(String(repeating: "a", count: limit)), type: .longText))
+        let notes = try #require(catalog.command(path: "/tasks/notes"))
+        let todo = CommandArgument(parameter: .target, operation: .assign, value: .objects([.init(type: .todo, id: UUID())]))
+        #expect(CommandArgumentValidation.issues(for: [todo, .init(parameter: .notes, operation: .append,
+            value: .longText(String(repeating: "🙂", count: limit / 4 + 1)))], command: notes) == [.tooLong(.notes)])
+        // 上限只约束 longText 参数，短文本仍按原规则判定。
+        #expect(CommandArgumentValidation.accepts(.shortText(String(repeating: "a", count: limit + 1)), type: .shortText))
+    }
 }

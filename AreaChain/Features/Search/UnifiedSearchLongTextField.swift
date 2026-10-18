@@ -42,7 +42,7 @@ struct UnifiedSearchLongTextField: View {
                 } else if editing.composing {
                     Text("unified.longText.composing").font(DaybookType.caption)
                 }
-                Text(LocalizedStringKey(editing.message)).font(DaybookType.caption)
+                message(editing.message)
                 Button("unified.longText.close") { controller.endLongText() }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             } else {
@@ -56,8 +56,38 @@ struct UnifiedSearchLongTextField: View {
                 Button("unified.longText.protect") { controller.protectLongText(source: source) }
                     .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
             }
-            if let message = controller.longTextMessage { Text(LocalizedStringKey(message)).font(DaybookType.caption) }
+            if let message = controller.longTextMessage { self.message(message) }
+            if editing == nil, controller.longTextOversized == .init(draftID: draft.id, parameter: parameter.id) { oversized }
         }
+    }
+
+    /// 超限旧稿不开编辑器：保留清空、原入口引导；取消仍走操作面板原入口。
+    @ViewBuilder private var oversized: some View {
+        HStack(spacing: DaybookSpacing.sm) {
+            if parameter.operations.contains(.clear) {
+                Button("unified.longText.clearOversized") { controller.clearOversizedLongText(parameter.id, source: source) }
+                    .accessibilityIdentifier("unified.longText.clearOversized." + parameter.id.rawValue)
+            }
+            if let owner = controller.longTextOwner(draft), owner.type != .routine, controller.navigationRouter != nil {
+                Button("unified.longText.openOwner") { controller.openLongTextOwner(owner, source: source) }
+                    .accessibilityIdentifier("unified.longText.openOwner." + parameter.id.rawValue)
+            }
+        }
+        .buttonStyle(DaybookButtonStyle(.quiet, size: .compact))
+        if controller.longTextOwner(draft)?.type == .routine {
+            Text("unified.longText.ownerNeedsDay").font(DaybookType.caption)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityIdentifier("unified.longText.ownerNeedsDay")
+        }
+    }
+
+    private func message(_ key: String) -> some View {
+        // 上限数字只来自 CommandLongTextLimit；文案用格式参数，不在资源里另写一份。
+        let text = UnifiedSearchLongTextOversize.limitedKeys.contains(key)
+            ? L10n.format(key, locale: locale, CommandLongTextLimit.maxUTF8Bytes / 1_024)
+            : L10n.format(key, locale: locale)
+        return Text(verbatim: text).font(DaybookType.caption).fixedSize(horizontal: false, vertical: true)
+            .accessibilityIdentifier("unified.longText.message")
     }
 }
 

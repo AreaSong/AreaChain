@@ -73,6 +73,9 @@ enum UnifiedSearchOperationCopy {
         case .invalidValue(let id): parameter = id; key = "unified.operation.invalid"
         case .invalidOperation(let id), .unexpectedValue(let id): parameter = id; key = "unified.operation.invalidOperation"
         case .unknown(let id), .duplicate(let id): parameter = id; key = "unified.operation.invalid"
+        case .tooLong(let id):
+            return L10n.format(id.nameKey, locale: locale) + " · "
+                + L10n.format("unified.operation.tooLong", locale: locale, CommandLongTextLimit.maxUTF8Bytes / 1_024)
         case .protectedContent: return L10n.format("unified.operation.protected", locale: locale)
         case .unavailable: return L10n.format("unified.operation.unavailable", locale: locale)
         case .incompatibleTargets: return L10n.format("unified.operation.targetIssue", locale: locale)

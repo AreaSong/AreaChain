@@ -39,16 +39,29 @@ import Testing
 }
 
 extension UnifiedSearchTestHost {
-    /// LazyVGrid 在第一次滚入视口后才补齐日格；按新矩形继续滚动，最终保留完整边界断言。
+    /// 面板下沿被裁时，可访问性 frame 只报可见部分，按它滚动不会前进，LazyVGrid 也不创建视口外的行；
+    /// 因此把面板顶边对齐到所在滚动区可视区顶部，并断言下沿未被裁，否则点"今天"会随运行日期失败。
+    /// 批量日期等不在滚动区里的宿主没有裁剪，只保留面板边界断言。
     func revealTaskDatePicker() async throws {
-        let boundary = try #require(SettingsButtonTestSupport.elements(window.contentView)
-            .compactMap { $0 as? UnifiedSearchOperationBoundary }.first)
-        for _ in 0..<3 {
-            let picker = try resultNode("daybook.datePicker")
-            try await SettingsButtonTestSupport.reveal(picker, in: window)
-            let frame = try SettingsButtonTestSupport.frame(picker, in: window)
-            if boundary.convert(boundary.bounds, to: nil).contains(frame) { break }
+        let picker = try resultNode("daybook.datePicker")
+        try await SettingsButtonTestSupport.reveal(picker, in: window)
+        let visible = try SettingsButtonTestSupport.frame(picker, in: window)
+        guard let scroll = SettingsButtonTestSupport.elements(window.contentView)
+            .compactMap({ $0 as? NSScrollView })
+            .filter({ $0.contentView.convert($0.contentView.bounds, to: nil).intersects(visible) })
+            .min(by: { $0.contentView.bounds.height < $1.contentView.bounds.height }) else {
+            try await revealSettingControlInsidePanel("daybook.datePicker")
+            return
         }
+        let document = try #require(scroll.documentView)
+        let clip = scroll.contentView.convert(scroll.contentView.bounds, to: nil)
+        // 窗口坐标原点在左下，maxY 是顶边；与可视区等高的矩形可见即顶边对齐。
+        let target = CGRect(x: visible.minX, y: visible.maxY - clip.height, width: visible.width, height: clip.height)
+        document.scrollToVisible(document.convert(target, from: nil))
+        scroll.reflectScrolledClipView(scroll.contentView)
+        try await SystemPageHost.settle(window)
+        let revealed = try SettingsButtonTestSupport.frame(resultNode("daybook.datePicker"), in: window)
+        #expect(revealed.minY > clip.minY + 0.5, "日期面板下沿仍被滚动区裁掉")
         try await revealSettingControlInsidePanel("daybook.datePicker")
     }
 }

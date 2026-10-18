@@ -1,5 +1,11 @@
 # 共享组件与复用目录
 
+## C-M3 长文上限与超限引导
+
+[CommandLongTextLimit](../AreaChain/Domain/CommandParameter.swift) 是指令 longText 参数（notes／body）的唯一上限来源：65 536 字节，按已确认正文的 UTF-8 字节计，组合缓冲不计入。真实消费者有三处：[CommandArgumentValidation](../AreaChain/Domain/CommandArgumentValidation.swift) 的静态校验（超限返回独立的 `tooLong`，不混入 `invalidValue`）；[CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 的原生接受（`acceptNative` 普通／受保护两条路径，以及受保护建点 `accept` 覆盖的修订与撤销）；同一服务的 `attachNative`／`exceedsLongTextLimit` 拒绝把超限旧稿装入编辑器。`clearOversized` 只为超限旧稿提供显式清空，不截断。两种 QA 原型继承同一接受入口，没有单独限额；任务备注、手记小窗等原有编辑器不受此上限约束。
+
+宿主侧复用原长文区：[CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 收到 `tooLong` 时整次修改不生效，组合确认后超限按取消组合处理；[UnifiedSearchLongTextEditing](../AreaChain/Features/Search/UnifiedSearchLongTextEditing.swift) 的 `beginLongText` 遇超限旧稿不创建编辑器，只记字段身份；[UnifiedSearchLongTextField](../AreaChain/Features/Search/UnifiedSearchLongTextField.swift) 用原 Daybook 按钮样式显示提示、清空和“去原编辑处修改”。引导入口 [openLongTextOwner](../AreaChain/Features/Search/UnifiedSearchNavigation.swift) 沿原 navigate 与 `objects.resolve`／内容路由核验，只在单一任务或手记目标且已装配导航时出现；习惯目标显示长文专用的 `unified.longText.ownerNeedsDay`（需执行日，无跳转），新建类指令只显示提示。验证入口为 CommandParameterTests、CommandProtectedDraftTests、UnifiedSearchLongTextTests 与 CommandTextPerformanceTests；规则、实测与未覆盖项只维护在[权威 C-M3](unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
+
 ## C-M2 QA 启动与两种排版原型
 
 [AppLaunchPolicy](../AreaChain/Domain/AppLaunchPolicy.swift) 只判定构建／测试身份和选择注入工厂；[AppStartup](../AreaChain/Services/AppStartup.swift) 读取签名包元数据、编译符号及已加载测试注入库，在 [AreaChainEntry](../AreaChain/App/AreaChainApp.swift) 构造 App 前拒绝异常 QA。App.init、Delegate、Commands 共享决策，测试容器仅内存。维护入口为 [QA.xcconfig](../Config/QA.xcconfig)、[build.sh qa / qa-compile](../scripts/build.sh) 与 [qa_identity.py](../scripts/qa_identity.py)，精确本批标识、原锁与模板见[隔离验收](architecture.md#隔离验收与真实启用门禁)。

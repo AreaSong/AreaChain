@@ -42,6 +42,13 @@ import Observation
     }
 }
 
+struct UnifiedSearchLongTextOversize: Equatable {
+    /// 这些文案带上限 KB 参数；数字只从 CommandLongTextLimit 传入。
+    static let limitedKeys: Set<String> = ["unified.longText.tooLong", "unified.longText.tooLongDraft"]
+    let draftID: UUID
+    let parameter: CommandParameterID
+}
+
 extension UnifiedSearchController {
     /// 只有显式装配才出现入口；不扩大全局单行参数补全或执行能力。
     func assembleLongText(vault: PrivacyVault) {
@@ -61,13 +68,45 @@ extension UnifiedSearchController {
               let content = longTextContent else { return }
         endLongText()
         do {
-            let access = try draft.protectedReference == nil
-                ? content.explicitlyEditOrdinary(draft.stamp, expecting: source.lease)
-                : content.explicitlyRestore(draft.stamp, expecting: source.lease)
+            let access = try longTextAccess(draft, content: content, source: source)
+            if try content.exceedsLongTextLimit(access, parameter: parameter) {
+                // 旧稿超限时不创建编辑器、不截断；撤回本次资格，只留提示、清空和原入口引导。
+                content.revokeAccess()
+                longTextOversized = .init(draftID: draft.id, parameter: parameter)
+                longTextMessage = "unified.longText.tooLongDraft"
+                return
+            }
             longTextEditing = try .init(draft: draft, parameter: parameter, content: content, access: access)
+            longTextOversized = nil
             longTextMessage = nil
             inputFocused = false
         } catch { longTextMessage = "unified.longText.unavailable" }
+    }
+
+    func clearOversizedLongText(_ parameter: CommandParameterID, source: UnifiedSearchBuffer) {
+        guard validatesParameterSource(source, parameter: parameter), let draft = editingDraft,
+              longTextOversized == .init(draftID: draft.id, parameter: parameter), let content = longTextContent else { return }
+        endLongText()
+        do {
+            try content.clearOversized(parameter, using: longTextAccess(draft, content: content, source: source))
+            longTextOversized = nil
+            longTextMessage = nil
+            _ = publishOperation(text: buffer.text)
+        } catch { longTextMessage = "unified.longText.rejected" }
+    }
+
+    /// 只有明确单一任务或手记目标才可回原编辑入口；习惯缺执行日，新建类指令没有目标。
+    func longTextOwner(_ draft: CommandDraft) -> CommandObjectReference? {
+        guard draft.targets.objects.count == 1, let owner = draft.targets.objects.first,
+              [.todo, .diary, .routine].contains(owner.type) else { return nil }
+        return owner
+    }
+
+    private func longTextAccess(_ draft: CommandDraft, content: CommandDraftContentSession,
+                                source: UnifiedSearchBuffer) throws -> CommandDraftContentAccess {
+        try draft.protectedReference == nil
+            ? content.explicitlyEditOrdinary(draft.stamp, expecting: source.lease)
+            : content.explicitlyRestore(draft.stamp, expecting: source.lease)
     }
 
     func endLongText() {
@@ -82,7 +121,8 @@ extension UnifiedSearchController {
         _ = publishOperation(text: buffer.text)
         editing.pending = editing.editor?.pendingConfirmation == true
         editing.composing = editing.editor?.hasMarkedText() == true
-        if editing.editor?.issue == .acceptedNotDisplayed { editing.message = "unified.longText.acceptedHidden" }
+        if editing.editor?.issue == .tooLong { editing.message = "unified.longText.tooLong" }
+        else if editing.editor?.issue == .acceptedNotDisplayed { editing.message = "unified.longText.acceptedHidden" }
         else if editing.editor?.issue != nil { editing.message = "unified.longText.rejected" }
         else { editing.message = "unified.longText.draftOnly" }
     }

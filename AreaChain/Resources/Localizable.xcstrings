@@ -40876,6 +40876,23 @@
         }
       }
     },
+    "unified.longText.clearOversized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear this text"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "清空这段正文"
+          }
+        }
+      }
+    },
     "unified.longText.close": {
       "localizations": {
         "en": {
@@ -40970,6 +40987,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "保护失败；原草稿仍在，尚未受保护。"
+          }
+        }
+      }
+    },
+    "unified.longText.openOwner": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit in original editor"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "去原编辑处修改"
+          }
+        }
+      }
+    },
+    "unified.longText.ownerNeedsDay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This text belongs to a routine, which needs an explicit occurrence date to locate. Select a date in search, then edit it in the original editor."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这段正文属于习惯，需要明确的执行日才能定位；请先在搜索中选定执行日，再到原编辑处修改。"
           }
         }
       }
@@ -41084,6 +41135,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "显式恢复编辑"
+          }
+        }
+      }
+    },
+    "unified.longText.tooLong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the %d KB limit for command text. This change was not applied; earlier text is kept."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超过指令正文 %d KB 上限；本次修改未生效，此前内容已保留。"
+          }
+        }
+      }
+    },
+    "unified.longText.tooLongDraft": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This draft is over the %d KB limit for command text, so it can't be edited here. It is kept intact."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此草稿正文超过指令 %d KB 上限，无法在这里编辑；草稿已原样保留。"
           }
         }
       }
@@ -43413,6 +43498,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "尚需选择并核对目标对象"
+          }
+        }
+      }
+    },
+    "unified.operation.tooLong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Over the %d KB limit"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超过 %d KB 上限"
           }
         }
       }

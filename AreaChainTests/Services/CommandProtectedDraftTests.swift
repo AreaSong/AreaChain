@@ -240,4 +240,85 @@ struct CommandProtectedDraftTests {
             + String(reflecting: contents) + String(reflecting: contents.editing) + String(reflecting: access)
         #expect(!text.contains("synthetic-body") && !text.contains("synthetic-baseline") && !text.contains("合成未完成"))
     }
+
+    @Test(arguments: [false, true])
+    func nativeOverLimitIsRejectedBeforeWriteOrRecoveryPoint(protected: Bool) throws {
+        let f = try ProtectedDraftFixture(configured: protected)
+        try f.start()
+        if protected { _ = try f.protect() }
+        let owner = LimitTestOwner()
+        let first = try protected ? f.restore() : f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease)
+        try f.service.attachNative(owner, using: first)
+        let limit = CommandLongTextLimit.maxUTF8Bytes
+        let exact = String(repeating: "中", count: limit / 3) + "a"
+        let current = try f.service.acceptNative(owner.state(exact), using: first, owner: owner)
+        let host = try f.host.owned()
+        let point = try protected ? f.service.nativeRecoveryPoint(current, owner: owner) : nil
+        #expect(throws: CommandDraftProtectionError.tooLong) {
+            try f.service.acceptNative(owner.state(exact + "a"), using: current, owner: owner)
+        }
+        // 组词中只计已确认正文；确认后才超限，同样在写入前被拒。
+        let composing = CommandDraftEditingState(parameter: "notes", spelling: exact + "zh",
+            selectionLocation: exact.utf16.count + 2, selectionLength: 0,
+            composition: .init(text: "zh", location: exact.utf16.count, replacedText: ""))
+        #expect(throws: CommandDraftProtectionError.tooLong) {
+            try f.service.acceptNative(composing.confirmingComposition(), using: current, owner: owner)
+        }
+        #expect(try f.host.owned() == host)
+        if protected {
+            let after = try f.service.nativeRecoveryPoint(current, owner: owner)
+            #expect(after.reference == point?.reference && after.data == point?.data)
+            #expect(try f.contents(current).arguments.first?.value == .longText(exact))
+            var oversized = try f.contents(current)
+            oversized.arguments[0].value = .longText(exact + "a")
+            #expect(throws: CommandDraftProtectionError.tooLong) { try f.service.acceptRevision(oversized, using: current) }
+            #expect(try f.host.owned() == host)
+        } else {
+            #expect(try f.draft().arguments.first?.value == .longText(exact))
+        }
+        // 拒绝不签发新资格：当前资格仍可继续，已被替换的旧资格仍不可续用。
+        #expect(throws: (any Error).self) { try f.service.acceptNative(owner.state("旧"), using: first, owner: owner) }
+        let accepted = try f.service.acceptNative(composing, using: current, owner: owner)
+        #expect(accepted != current)
+        f.service.detachNative(owner)
+    }
+
+    @Test(arguments: [false, true])
+    func oversizedLegacyDraftIsNeverInstalledTruncatedOrDropped(protected: Bool) throws {
+        let f = try ProtectedDraftFixture(configured: protected)
+        try f.start()
+        let big = String(repeating: "🙂", count: CommandLongTextLimit.maxUTF8Bytes / 4 + 1)
+        try f.host.send(.operation(.edit(f.draft().stamp, .init(parameter: .notes, operation: .replace, value: .longText(big)))))
+        #expect(try f.draft().check().argumentIssues.contains(.tooLong(.notes)))
+        if protected { _ = try f.service.protect(f.draft().stamp, expecting: f.host.owned().lease) }
+        let open = { try protected ? f.restore() : f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease) }
+        let access = try open()
+        #expect(try f.service.exceedsLongTextLimit(access, parameter: .notes))
+        let owner = LimitTestOwner()
+        let host = try f.host.owned()
+        #expect(throws: CommandDraftProtectionError.tooLong) { try f.service.attachNative(owner, using: access) }
+        #expect(owner.installed == nil && owner.cleared > 0)
+        #expect(try f.host.owned() == host)
+        #expect(throws: (any Error).self) { try f.service.nativeOperation(access, parameter: .notes) }
+        if protected { #expect(try f.contents(f.restore()).arguments.first?.value == .longText(big)) }
+        else { #expect(try f.draft().arguments.first?.value == .longText(big)) }
+        let clearing = try open()
+        try f.service.clearOversized(.notes, using: clearing)
+        #expect(throws: (any Error).self) { try f.service.exceedsLongTextLimit(clearing, parameter: .notes) }
+        let cleared = protected ? try f.contents(f.restore()).arguments : try f.draft().arguments
+        #expect(cleared == [.init(parameter: .notes, operation: .clear, value: nil)])
+        // 上限内正文不能经清空旁路改写，必须走原生编辑器。
+        #expect(throws: CommandDraftProtectionError.unsupported) { try f.service.clearOversized(.notes, using: open()) }
+    }
+}
+
+@MainActor private final class LimitTestOwner: CommandDraftNativeOwner {
+    let parameter = CommandParameterID.notes
+    private(set) var installed: CommandDraftEditingState?
+    private(set) var cleared = 0
+    func installProtectedContents(_ state: CommandDraftEditingState) throws { installed = state }
+    func clearProtectedContents() { installed = nil; cleared += 1 }
+    func state(_ text: String) -> CommandDraftEditingState {
+        .init(parameter: parameter.rawValue, spelling: text, selectionLocation: text.utf16.count, selectionLength: 0)
+    }
 }

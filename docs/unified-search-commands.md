@@ -7308,9 +7308,9 @@ R-handoff-lifecycle中一次工作台beginOperation返回nil（准备未就绪�
 | A 构建身份与早期拒绝 | 已实现。当前 HEAD `db1d254` 已包含先前 `4c233f7` 的 AppLaunchPolicy／AppStartup、App／Delegate／Commands 接线及 QA 配置；本次未重写产品启动逻辑。 |
 | B 正向／负向／正常兼容 | 当前源码正向3方法通过；三类新包负向均退出78，工厂矩阵与内存模式断言通过。旧产物不在证明范围。 |
 | C viewport | 隔离原型存在，当前小正文和完整参数宿主正确性通过；历史1MiB单段操作超时，不满足完整长文目标。 |
-| D TextKit 2 | 隔离原型存在，当前小正文正确性通过；历史紧凑多段组词锚点失败及一次修正后的退出65未闭合，不满足采用门禁。 |
-| E 同条件对照与画面 | 原固定矩阵一轮已执行至有界停止，历史输出恢复情况见下文；当前4方法／12次原生回归通过。缓存图有实际内容，但深色正文对比不足，视觉未通过。没有重开第二轮全矩阵。 |
-| F 工程与交接 | 当前完整QA编译／严格身份与权限核验、正常development Debug／严格策略验签及最终静态门禁通过；旧备注Esc焦点失败已单例复现，指定Cursor复核未执行，整体partial。 |
+| D TextKit 2 | 隔离原型存在，当前小正文正确性通过；历史紧凑多段组词锚点失败及一次修正后的退出65未闭合，不满足采用门禁。后续见下文。 |
+| E 同条件对照与画面 | 原固定矩阵一轮已执行至有界停止，历史输出恢复情况见下文；当前4方法／12次原生回归通过。缓存图有实际内容，但深色正文对比不足，视觉未通过。没有重开第二轮全矩阵。后续见下文。 |
+| F 工程与交接 | 当前完整QA编译／严格身份与权限核验、正常development Debug／严格策略验签及最终静态门禁通过；旧备注Esc焦点失败已单例复现，指定Cursor复核未执行，整体partial。后续见下文。 |
 
 接续时工作区干净，源码仍在，原 `build/CM1/run.py`、`build/CM2` 结果包和已知 QA `tmp/CM2Runner` 指标目录缺失。Git从未跟踪这些被忽略的产物；不猜测删除原因，不追查旧事件数据。现已从原会话工具输出恢复同位置runner及6项契约测试；输出截断的整包摘要函数按当前文件集合重建并留注释，本次新增先编译／验包再运行和有界停止。恢复的是本地运行能力，旧源码摘要、xcresult、采样和完整指标未恢复。`build/CM2/history-thread-evidence.json` 明确只保存原会话输出，不能当本轮测量或旧原始产物。仓库可维护入口仍为 build.sh／QA.xcconfig／qa_identity.py，不建立第二套正式运行系统。
 
@@ -7371,3 +7371,123 @@ TK2候选修正为将全局NSRange转换为NSTextRange，调用ensureLayout与la
 最终 `python3 -B scripts/quality_gate.py --profile static --strict --format json`、`python3 -B scripts/check_workflow.py`、Shell语法和完整273项脚本回归通过；workflow定向124项、恢复runner的6项反例也通过。最终编辑仅脚本／文档，Swift运行由上述完整QA定向证据承担，不调用会丢失隔离配置的普通全量测试替代。C-M2相关16个Swift文件严格lint已通过；它不覆盖无关工程编译警告。`build/CM2/F-quality.json`、`F-workflow.json` 与 `final-source-audit.json` 保存最终检查和源码／二进制对应；原构建锁、六项清除、合成数据、串行进程退出核对均保留。
 
 本次实际修改11个受版本管理文件：build.sh、qa_identity.py、check_workflow.py及三组脚本测试，架构／组件目录／签名说明／本权威交接和技能路由；Swift与默认产品路径未再修改。恢复的本地runner及证据留在被忽略的build目录，不提交产物。测试通过部分、稳定失败、未覆盖与指定复核分别保留，整体不标为全部验收完成。
+
+#### 2026-10-14 之后的修复与 C-M3 复验
+
+2026-10-18 由 C-M3 对账，只追加本小节；上文表格、失败记录与结论保持原样。2026-10-15 原会话口头报告的"68 方法／94 次执行全部通过"未写入文档，其结果包在被忽略的 `build/` 中，不作为证据，也不补造。
+
+提交 `1b7f843`（2026-10-15）包含对应三项修复：
+
+- 备注第二次 Esc：[TaskDetailNotesView](../AreaChain/Features/Workspace/TaskDetailNotesView.swift) 对 SyntaxTextEditor 传 `allowsLivePreview: false`（SyntaxTextEditor 新增可选参数，缺省仍按 capture／diaryCapture 推导），候选关闭后捕获预览不再吞掉第二次 Esc。InputSyntaxInteractionTests 增加预览状态断言与 `notes-escape-focus.json` 附件，原失焦与保存断言保留。
+- 深色正文对比：[CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 的 `configureTypography` 记录宿主字体与颜色，差量替换时附到已接受片段，避免空 storage 替换退回系统默认字体和黑字；UnifiedSearchLongTextField 改走该入口。CommandTextPrototypeCorrectnessTests 新增 `acceptedTextKeepsHostFontAndColor`（两引擎 × 普通／受保护）。
+- TK2 候选零高度：仅在 `#if AREACHAIN_QA` 内，TK2 `firstRect` 返回零高且编辑器仍是 firstResponder、资格未变时，先真实滚动和宿主布局，再重取一次；资格变化则返回 NotFound／零矩形，不合成高度或字符位置。
+
+C-M3 在当前源码（HEAD `1931bbf`，工作区干净）上用新批次 cm3 复验：
+
+- `./scripts/build.sh qa-compile --qa-batch cm3`：通过，严格 QA 身份／签名／local 权限策略核验通过。
+- `./scripts/build.sh qa --qa-batch cm3` 定向 9 个类：50 方法／65 次执行，0 失败、0 跳过。分项（方法／执行）：AppStartup 3/3、CommandProtectedDraft 14/14、CommandTextComposition 6/7、CommandTextDifference 1/1、CommandTextLifecycle 4/4、CommandTextProtectedUI 1/1、CommandTextPrototypeCorrectness 5/15、InputSyntaxInteraction 12/15、UnifiedSearchLongText 4/5。
+- 源码范围（AreaChain、AreaChainTests、AreaChainWidget、Config、scripts、工程文件，含未跟踪未忽略文件）1519 个文件，摘要 `d1e8b6c50618d52b…`，运行前／取得锁后（未等待）／运行后一致；测试阶段 53.7 秒，进程正常退出。
+- 环境：macOS 26.6.2（25G83）、Mac16,8 arm64、Xcode 26.6（17F113）、Debug QA。记录在被忽略的 `build/CM3/A-*`，不提交。
+
+逐项结论：
+
+- 备注 Esc：`notesEscapePassesThroughTheListMonitorBeforeSaving` 在当前源码通过，上文 F 行的单例失败不再复现。
+- 深色正文：`acceptedTextKeepsHostFontAndColor` 4 次执行通过，证明已接受片段带宿主字号与颜色。本次未重新导出并人工查看深色正文图，视觉通过仍未判定。
+- TK2：`visibleCrossViewportReplacementAndAnchors`（两引擎 × 普通／受保护，含头、中、尾候选锚点高度）和 `nativeTextKitNetworkIdentity` 通过。历史失败格是环境门控的 CommandTextPrototypePerformanceTests 1KiB／compact／多段组词，本次没有重跑，不能写成该格已闭合。两种原型仍只在 QA 显式装配，正式采用结论不变。
+
+C-M3 之后的上限、实现与验证见 [§9.88](#988-里程碑-c-m3长文上限与超限引导)。
+
+### 9.88 里程碑 C-M3：长文上限与超限引导
+
+2026-10-18（Asia/Shanghai）执行。本节是 C-M3 唯一交接。用户当天确认：1MiB 长段性能不再继续研究，改为"定上限并引导"；viewport、TextKit 2 两种原型仍只在 QA 显式装配，默认编辑器不切换。本批不接手记／备注的真实保存 handler、生产启用或真实数据操作，不提交、不推送、不安装、不发布。C-M2 修复的对账见 §9.87 末尾追加的小节。
+
+#### 状态
+
+| 项目 | 状态与证据边界 |
+|---|---|
+| A 对账 C-M2 修复 | 已验证。`1b7f843` 三项修复在当前源码上复验，结果追加在 §9.87；TK2 历史性能失败格未重跑，保持开放。 |
+| B 上限规则 | 已实现，已验证（Domain／Services／Features 定向测试）。 |
+| C 提示与引导 | 已实现，已验证（en／zh-Hans、浅／深、标准／紧凑原生缓存图与可访问性节点）。用户于复核后决定：习惯目标改用长文专用文案 `unified.longText.ownerNeedsDay`。 |
+| D 治理残留 | 已实现。skill-routing.md "### 4. 复用门禁"公共顶栏段改为引用 Claude Code `verifier`。 |
+| E 验证与复核 | 已验证（命令见下文）。Claude Code `verifier` 只读复核结论为通过；整改的归属错误、手记引导前提表述与取消组合信号覆盖已处理并重跑，撤销超限分支仍为无用例防线；`ownerNeedsDay` 措辞已按用户决定另设长文键。 |
+
+#### 上限规则
+
+- 唯一来源：[CommandLongTextLimit](../AreaChain/Domain/CommandParameter.swift)，`maxUTF8Bytes = 65_536`，`allows(_:)` 按已确认正文（`confirmedText`）的 UTF-8 字节计算，组合缓冲不计入。其他位置只调用它；界面文案用格式参数传入 `maxUTF8Bytes / 1_024`，资源里没有第二个数字。
+- 静态校验：[CommandArgumentValidation](../AreaChain/Domain/CommandArgumentValidation.swift) 对 longText 超限返回新的 `CommandArgumentIssue.tooLong(id)`，与 `invalidValue` 分开；`accepts(_:type:)` 同时拒绝超限值，路径解析、计划合并、目录校验等原消费者随之一致。仓库里其余对该枚举的 switch 都带 default，编译无需补分支；文案映射在 [UnifiedSearchOperationCopy](../AreaChain/Features/Search/UnifiedSearchOperationCopy.swift) 增加 `tooLong`。
+- 原生接受：[CommandDraftContentSession](../AreaChain/Services/Privacy/CommandDraftContentSession.swift) 的 `acceptNative` 在普通、受保护两条路径分流前检查，超限抛出新增的 `CommandDraftProtectionError.tooLong`；受保护建点 `accept` 在封存前再检查整份内容，覆盖原生推进、撤销（`undoNative`）和 `acceptRevision`，且不被包装成 `revisionNotAccepted`。拒绝时不写入、不建恢复点，原修订、恢复点、owner、lease 与当前资格都不变；不截断、不只留前 64KiB、不插入换行。
+- 打开旧超限草稿：宿主 `beginLongText` 先调 `exceedsLongTextLimit`（只判定，不安装、不签 owner、不返回正文），超限时撤回本次资格、不创建编辑器，只记字段身份；`attachNative` 另行拒绝装入超限状态作为防线。草稿本身原样保留。
+- 显式清空：`clearOversized` 只接受确属超限、声明含 `.clear`、无原生 owner 且仍在编辑中的草稿。普通稿经原 `coordinator.acceptNativeText` 提交（与编辑器同一独占登记，另一服务持有时被拒）；受保护稿经 `accept` 建立新恢复点。无论成败都撤销本次资格。
+- 编辑器：[CommandProtectedTextView](../AreaChain/Features/Search/CommandProtectedTextView.swift) 收到 `tooLong` 时整次修改不生效（输入、粘贴、替换、撤销），显示、选区和撤销栈保持上一次接受的状态，`issue = .tooLong`。组合确认后超限时，丢弃 marked text 并按取消组合回到组合前已接受内容（取消本身若失败，保留其 rejected／acceptedNotDisplayed 信号，不改写为超限）；组词过程中只看已确认正文，不会被打断，之后的组词照常可用。撤销点都是曾经接受过的状态，正常流程下撤销不会超限，该分支是防线。
+- 不受约束：任务备注 TaskDetailNotesView、手记小窗等原有编辑器；对超限旧普通稿执行"保护"仍允许（隐私优先，原样封存，不截断）。两种 QA 原型继承同一接受入口，没有单独限额。
+
+#### 提示与引导
+
+- 新文案（en 与 zh-Hans 均在 Localizable.xcstrings）：`unified.longText.tooLong`（编辑中被拒）、`unified.longText.tooLongDraft`（打开旧超限稿）、`unified.longText.clearOversized`、`unified.longText.openOwner`、`unified.longText.ownerNeedsDay`（习惯需执行日）、`unified.operation.tooLong`（静态问题）。前两项与最后一项带 `%d KB` 参数。
+- [UnifiedSearchLongTextField](../AreaChain/Features/Search/UnifiedSearchLongTextField.swift) 在不开编辑器时显示提示，并按条件给出"清空这段正文"（参数声明含 `.clear`）与"去原编辑处修改"。按钮沿用 DaybookButtonStyle quiet／compact，提示用 DaybookType.caption 并允许换行；没有新控件体系。取消仍走操作面板原入口。
+- 引导只复用已有导航：[openLongTextOwner](../AreaChain/Features/Search/UnifiedSearchNavigation.swift) 对任务走 `objects.resolve` 加原 `navigate(.object)`，对手记走原 `navigate(.content)`（要求内容路由已装配；搜索分页存在时由 `contents.open` 要求对象在当前结果中可见，分页不存在时跳过该检查、等待挂载超时后被拒，不读取正文，但比 `openResult` 先查快照弱）。按钮只在草稿有单一任务或手记目标且导航已装配时出现；习惯目标显示长文专用的 `unified.longText.ownerNeedsDay`，不给按钮（原图片拥有者路径仍用 `unified.content.ownerNeedsDay`，未改）；新建类指令没有目标，只显示提示。没有放宽 lease、访问或隐私校验，受保护内容仍按原规则显式恢复。
+
+#### 受影响的既有测试
+
+上限让"往编辑器塞 1MiB"的前提失效，改动如下（均为测试侧，按新规则调整，不跳过、不放宽原断言）：
+
+- CommandTextPerformanceTests 的输入成本用例、CommandNativeFailureTests 的接受延迟用例：最大档由 64KiB／1MiB 改为上限内留出输入空间的单段，原 1MiB 改为断言 `tooLong` 且正文不变。
+- CommandTextLayoutControlTests 的同量对照：1MiB 改为上限内最大整 KiB 块（63KiB），metadata 段数同步。
+- CommandTextInteractiveTests（环境门控，本批未运行）：合成长段改为上限内，状态文案同步。
+- 未改未跑：环境门控的 CommandTextPrototypePerformanceTests／Journal 仍允许 65 536 与 1 048 576 字节；新规则下 64KiB 档首键会被拒、1MiB 档不会打开编辑器，这两档历史矩阵已不可按原条件运行，如需重开须另定矩阵。SealedCommandDraftTests 的 1MiB 封存成本直接调用封存、不经接受入口，CommandTextDifferenceTests 只测差量算法，二者不受影响。
+
+#### 默认引擎 64KiB 测量
+
+新增 `CommandTextPerformanceTests.defaultEngineLimitOpenAndFirstComposition`：默认 legacy 引擎、单段"中a🙂"65 528 字节（上限前一个块，留出首键与组词确认空间）、400pt 宽、系统 13pt 字体、可见 key 窗口。"打开到首键可用"从显式恢复／编辑资格开始，含 attach、安装、可见区布局与首个"字"被接受；"首次组词"是头部 setMarkedText("z")；确认为 insertText("中")。普通先跑，受保护在同一测试进程内第二个（暖）。外部期限 120 秒从测试阶段开始计，锁等待与编译另计。
+
+| 运行 | 普通：打开到首键／首次组词／确认(ms) | 受保护：打开到首键／首次组词／确认(ms) | 测试阶段 |
+|---|---:|---:|---:|
+| E-default-engine-64k | 519.7／447.4／888.9 | 480.6／447.4／885.4 | 7.2 秒 |
+| F-performance（最终源码） | 499.2／444.1／879.5 | 486.2／443.2／885.5 | 7.7 秒（含原输入成本用例） |
+
+两轮都未超时，打开到首键远低于本批 3 秒决策闸，因此不建议下调上限；3 秒只是本批判断线，不是产品预算。同一 65 512 字节正文在无窗口编辑器里的原输入成本用例中，组词开始中位约 18–20ms、确认 5–10ms；可见窗口中组词与确认要 0.44–0.89 秒，差异来自可见区中日韩混排布局。确认约 0.9 秒的单键延迟仍可感知，本批不追优化、不换引擎。环境：macOS 26.6.2（25G83）、Mac16,8 arm64、Xcode 26.6（17F113）、Debug QA、程序化输入，排除真人 IME、系统候选窗和屏幕合成延迟。
+
+#### 命令与结果
+
+全部 QA 运行走 `./scripts/build.sh qa-compile|qa --qa-batch cm3`（`build/PrivacyQA-cm3`、`com.areachain.privacy-qa.cm3`），原锁单次最多 900 秒、六项钥匙串变量清除、合成内存内容、原生串行；运行期间未操作其他窗口，未用 open／Finder／桌面连接启动应用。每轮源码摘要的运行前／取得锁后（均未等待）／运行后记录在被忽略的 `build/CM3/*-source.json`。
+
+- A：`qa-compile`、9 类定向 50 方法／65 次，全部通过（详见 §9.87 追加小节）。
+- 改动后 `qa-compile` 通过；CommandParameterTests、CommandProtectedDraftTests、UnifiedSearchLongTextTests 定向 37 方法／43 次全部通过；快照调整后原生引导用例 1 方法／2 次通过。
+- 最终合集（A 的 9 类，加 CommandParameter、CommandNativeFailure／Editing、CommandTextGeometry／PrototypeParameter／Payload、CommandLanguageIntegration、UnifiedSearchOperationContract／Presentation、UnifiedSearchNavigation 及 11 个含 longText 的 Domain／Services 类）：182 方法／305 次，180 通过、2 失败、0 跳过，源码前后一致。
+  - `InputSyntaxInteractionTests.diaryInputOnlyCreatesItsTagWhenSubmittedAndRendersBothThemes`：焦点前置条件未满足（前台为外部浏览器，key=false），不是断言失败。单独重跑该类 12 方法／15 次全部通过。
+  - `TaskCreatePreviewCompositionTests.allNotesOperationsStayClosed` 的 `.replace`／`.append`：期望 CommandTaskCreatePreviewIssue，实际先由 `validateTaskCreateItem` 抛出 `TaskCreateCommandIssue.protectedContent`（含 longText 参数即视为阻止导出）。抢先抛错的调用在 `CommandTaskCreatePreview.prepare` 首行（`3b1befb`，2026-10-09），guard 与该测试来自 `dba0982`（2026-10-06），拦截任何 longText 的 `blocksUnprotectedExport` 来自 `8b344c7`（2026-10-04）；本批均未触及，正文仅两个汉字，与上限无关，单独重跑稳定复现。依据是代码路径与 blame，未在旧 HEAD 上重跑。按范围只记录、不修；已在同日后续修复，见下文"预览错误域回归修复"。
+- 性能类 CommandTextPerformanceTests 2 方法／4 次通过（120 秒期限）；CommandTextLayoutControlTests 同量对照 1 方法／2 次通过，环境门控探针按设计跳过。
+- `./scripts/build.sh`：正常 development Debug 构建与严格策略验签通过；描述文件有效至 2026-10-22 11:20（UTC），不是本批续签，未改个人签名或申请 Apple 资源。
+- 本批 16 个 Swift 文件严格 SwiftLint：0 违规。
+- 复核整改后（CommandProtectedTextView 取消组合失败不再被改写为超限）重跑：UnifiedSearchLongText、CommandTextComposition／Lifecycle／ProtectedUI／PrototypeCorrectness、CommandNativeEditing／Failure、CommandProtectedDraft 共 54 方法／73 次全部通过；CommandTextPerformanceTests 2 方法／4 次通过（120 秒期限内，测试阶段 8.9 秒）；该文件严格 SwiftLint 0 违规。源码前后一致。
+- 用户决定习惯改用长文专用文案后重跑：UnifiedSearchLongTextTests 与原图片拥有者路径的 UnifiedSearchContentLifecycleTests 共 13 方法／21 次全部通过（含中英、浅深原生缓存图），相关 3 个 Swift 文件严格 SwiftLint 0 违规，源码前后一致。
+- 最终静态：`python3 -B scripts/check_workflow.py` 11 组全部 passed；`python3 -B -m unittest discover -s scripts/tests -v` 283 项 OK；`python3 -B scripts/quality_gate.py --profile static --strict --format json` 为 passed（8 项检查均 passed）；`git diff --check` 无输出。文档改动在 Swift 运行之后，不在源码摘要范围内。
+
+#### 未覆盖与剩余风险
+
+- 人工中文输入法、系统候选窗位置、VoiceOver 实际朗读、最低支持系统均未测；组合测试是程序化合成。
+- 深色正文视觉与 TK2 历史性能失败格见 §9.87，仍开放。
+- 原有编辑器（任务备注、手记小窗）在大文本下的表现本批未测，上限也不约束它们。
+- 手记"去原编辑处"只经单元路径核对未装配时的拒绝；成功跳转沿 N-M2 原内容路由，本批未原生重跑。任务跳转已在 N-M1 隔离工作台中原生验证（选中任务、无保存）。
+- 习惯引导原沿用的 `unified.content.ownerNeedsDay` 写的是"图片"；复核后用户决定另设 `unified.longText.ownerNeedsDay`，图片路径不变。
+- 历史 1MiB 原型矩阵入口不再可按原条件运行（见上文）。
+
+#### 预览错误域回归修复（2026-10-18 后续）
+
+修复上文记录的 `TaskCreatePreviewCompositionTests.allNotesOperationsStayClosed` 失败。它与 C-M3 无关，单独处理。
+
+- 复现：在 HEAD `1931bbf` 的临时分离工作树里，用 `qa --qa-batch tcpv-head` 单跑该类，9 个用例中 8 个通过；`.replace`／`.append` 失败，信息是"expected error of type CommandTaskCreatePreviewIssue, but .protectedContent of type TaskCreateCommandIssue was thrown"；`.clear`／`.unspecified` 通过。当前工作区的 C-M3 未提交改动没有碰这条调用链（预览、执行校验、草稿保护、契约四个文件及该测试与 HEAD 相同）。
+- 根因：`dba0982` 时，`CommandTaskCreatePreview.prepare` 先经过本域保护闸门，长文 notes 得到 `CommandTaskCreatePreviewIssue.protectedContent`，测试当时能通过。`3b1befb` 为多计划成员新增 `prepare(item:)`，在第一行复用协调者的 `validateTaskCreateItem(composed: true)`；这个校验器的保护检查（`blocksUnprotectedExport`，见 `8b344c7`）更早执行，于是把协调者错误 `TaskCreateCommandIssue` 带出了预览接口。错的是实现，测试没有过时。
+- 契约判断：预览接口只报告 `CommandTaskCreatePreviewIssue`。带长文的 notes 应报 `protectedContent`，而不是 `notesNotSupported`：保护闸门先于正文检查，不靠读长文内容来决定（"不根据关键词缺失放行"）；没有值的 `.clear`／`.unspecified` 才报 `notesNotSupported`。组合文案映射（`UnifiedSearchTaskCompositionCopy`）对两种类型的 `protectedContent`／`unsupportedPlan` 给出相同的键，所以组合界面的文案不变。多计划映射（`UnifiedSearchMultiPlanCopy`）本来就没有 `CommandTaskCreatePreviewIssue` 分支，会落到兜底的 `unified.title.stale`；但 `CommandMultiPlanIdentity` 会先以 `CommandMultiPlanIssue` 拒绝长文和非 ordinary 保护的草稿，因此这两种映射在多计划路径上目前走不到。这个映射缺口是既有问题（`notesNotSupported` 同样如此），本次未改。
+- 修复：[CommandTaskCreatePreview](../AreaChain/Domain/CommandTaskCreatePreview.swift) 的 `prepare(item:)` 仍调用同一个校验器，检查项与执行顺序都不变，只把它的 `unsupportedPlan`／`protectedContent` 转成本域同名问题；`inputFields` 原本就抛本域错误，照常向外传。没有新增校验，也没有删减或放宽校验；协调者路径（`taskCreatePlan`、`taskCreatePreparation`）仍报 `TaskCreateCommandIssue`。测试从只断言类型收紧为断言具体问题：有值时为 `.protectedContent`，无值时为 `.notesNotSupported`。
+- 验证：`./scripts/build.sh qa --qa-batch tcpv`（`build/PrivacyQA-tcpv`、`com.areachain.privacy-qa.tcpv`，原锁最多等 900 秒，六项钥匙串变量清除，合成数据，原生串行）定向跑 22 类：TaskCreatePreview{Composition,Binding,Tag}、TaskCreateCommand{Boundary,,Failure,Identity}、TaskCreateComposition{,Boundary,Failure}、TaskCreatePreviewIsolation、MultiPlanOutput、MultiPlanAdditionalDispatch、UnifiedSearchTaskCreate{Contract,Interaction,Lifecycle,Recovery}、UnifiedSearchComposition{Boundary,Contract,Interaction,Presentation}、UnifiedSearchMultiPlanComposition。共 117 次，115 通过、2 失败、0 跳过，目标用例 4 个参数全部通过；运行前后源码摘要一致。
+  - 两个失败与本修复无关：`UnifiedSearchTaskCreateInteractionTests.nativeCompletionTitleDayPlanAndRealSave` 和 `UnifiedSearchCompositionInteractionTests.nativeExtendedCreation`（各 2 个参数）都报"缺少原生控件 daybook.date.2026-10-18"。转储显示日期面板只暴露了当月 1～17 日的格子，用例点击的是 `DayKey.today()`。在 HEAD 临时工作树上单跑这两个用例，结果同样是 2 个用例、4 次运行全部失败，因此是依赖运行日期的既有问题，已在随后修复，见下文"日期面板揭示随运行日期失败的修复"。
+- 静态检查：`python3 -B scripts/quality_gate.py --profile static --strict --format json` 结果为 passed（8 项检查均 passed）；`python3 -B scripts/check_workflow.py` 11 组全部 passed；两个改动文件严格 SwiftLint 0 违规；`git diff --check` 无输出。临时 HEAD 工作树用完已移除。
+
+#### 日期面板揭示随运行日期失败的修复（2026-10-18 后续）
+
+- 现象：上一节回归中的两个原生用例（各 2 个参数）报"缺少原生控件 daybook.date.2026-10-18"，在 HEAD `1931bbf` 上同样失败。失败截图显示操作面板（高 260pt）内的 SwiftUI `ScrollView` 停在顶部附近，日期面板只露出前三行（1～17 日）；2026 年 10 月 17 日是周六，正好是第三行末尾。
+- 根因在测试辅助 `revealTaskDatePicker`（[UnifiedSearchTaskCreateTestSupport](../AreaChainTests/Features/UnifiedSearchTaskCreateTestSupport.swift)）：它用日期面板的 `accessibilityFrame` 去 `scrollToVisible`，但面板下沿被滚动区裁掉时，这个 frame 只报可见部分。结果滚动没有前进，"在操作面板内"的检查也误判通过。[DaybookDatePicker](../AreaChain/Theme/DaybookDatePicker.swift) 用的 `LazyVGrid` 不创建视口外的行，所以第四行以后的日格不在辅助功能树里。今天落在前三行时用例能过，因此表现为随运行日期失败。生产界面里用户可以滚动面板看到全部日期，这里不改共享组件。
+- 修复：只改测试辅助。先找到包住日期面板的最内层 `NSScrollView`，用一个与可视区等高、顶边对齐面板顶边的矩形去 `scrollToVisible`，让面板顶边贴住可视区顶部；新增断言"面板下沿未被裁"，再保留原来的面板边界断言。批量日期等不在滚动区里的宿主没有裁剪，直接走原来的面板边界断言。没有跳过用例，没有删除或放宽断言；改为键盘选日等其他做法会改变用例语义，因此未采用。
+- 验证：`./scripts/build.sh qa --qa-batch datepick`（原锁最多等 900 秒，六项钥匙串变量清除，合成数据，原生串行）定向运行全部 8 个调用这个辅助函数的类：UnifiedSearchTaskCreateInteraction、UnifiedSearchCompositionInteraction、UnifiedSearchBatchInteraction、UnifiedSearchTaskChain、UnifiedSearchTaskField、UnifiedSearchRoutineStateBoundary、UnifiedSearchBatchStateBoundary、UnifiedSearchBatchState。共 27 次，全部通过、0 跳过，运行前后源码摘要一致。第一版要求必须找到滚动区，在批量的两个宿主（`nativeMixedTasksAndTwoExplicitDatesKeepFixedTargets`、`unknownAndDateEditKeepStableExplicitIdentities`）上失败，因此补了无滚动区时的分支后重跑。
+- 未覆盖：没有修改系统日期，所以只在 2026-10-18（五行月份的第四行）这一天实际运行过。按失败截图估算，可视区约 318pt，六行月份的日期面板约 230pt，仍能完整露出。以后如果布局变化导致放不下，新增的"下沿未被裁"断言会直接报出来，而不是随日期偶发失败。月初、月末的实际运行没有做。

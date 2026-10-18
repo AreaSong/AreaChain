@@ -106,6 +106,8 @@ struct TaskCreatePreviewCompositionTests {
         let fixture = try TaskCreatePreviewFixture(extra: [
             .init(parameter: .notes, operation: operation, value: operation.requiresValue ? .longText("正文") : nil)
         ])
-        #expect(throws: CommandTaskCreatePreviewIssue.self) { try fixture.preview() }
+        // 带长文时保护闸门先拒绝且不检查正文；无值操作才落到 notes 不支持。两者都须是预览域问题。
+        let expected: CommandTaskCreatePreviewIssue = operation.requiresValue ? .protectedContent : .notesNotSupported
+        #expect(throws: expected) { try fixture.preview() }
     }
 }

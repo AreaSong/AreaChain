@@ -3,6 +3,8 @@ import Foundation
 enum CommandArgumentIssue: Equatable {
     case missing(CommandParameterID), duplicate(CommandParameterID), unknown(CommandParameterID)
     case invalidOperation(CommandParameterID), invalidValue(CommandParameterID), unexpectedValue(CommandParameterID)
+    /// 超过 CommandLongTextLimit；与格式无效分开，以便宿主给出上限与原编辑入口引导。
+    case tooLong(CommandParameterID)
     case incompatibleTargets, unavailable, protectedContent
 }
 
@@ -47,6 +49,9 @@ enum CommandArgumentValidation {
             return []
         }
         guard let value = argument.value else { return [.missing(id)] }
+        if parameter.type == .longText, case .longText(let text) = value, !CommandLongTextLimit.allows(text) {
+            return [.tooLong(id)]
+        }
         return accepts(value, type: parameter.type) ? [] : [.invalidValue(id)]
     }
 
@@ -55,7 +60,7 @@ enum CommandArgumentValidation {
         case (.shortText, .shortText(let text)):
             return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !text.contains(where: \.isNewline)
         case (.longText, .longText(let text)):
-            return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            return !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && CommandLongTextLimit.allows(text)
         case (.choice(let choices), .choice(let value)): return choices.contains { $0.value == value }
         case (.boolean, .boolean): return true
         case (.number(let range, let integer), .number(let number)):

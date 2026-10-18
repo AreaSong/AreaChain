@@ -1,5 +1,9 @@
 # AreaChain 技能路由与交付闭环
 
+## C-M3 长文上限与超限引导
+
+沿 areachain-workflow → areasong-development／areachain-ui（聚焦超限提示、组合输入与原入口引导）→ areachain-verify；上限唯一来源与消费者见[组件目录](docs/component-catalog.md#c-m3-长文上限与超限引导)，规则、实测与缺口只见[权威 C-M3](docs/unified-search-commands.md#988-里程碑-c-m3长文上限与超限引导)。
+
 ## C-M2 QA 启动门禁与有界原型
 
 沿 areachain-workflow → areasong-development／areachain-ui（ui-ux-pro-max 聚焦可见焦点与原生身份）→ areachain-verify。启动决策、构建身份和两种原型的复用入口见[组件目录](docs/component-catalog.md#c-m2-qa-启动与两种排版原型)，A～F及失败／历史产物缺失仅维护在[权威 C-M2](docs/unified-search-commands.md#987-里程碑-c-m2qa-启动门禁与两种有界排版原型)。原锁900秒、完整正常PrivacyQA、独立本批标识／目录、合成内存内容、六项授权清除及原生串行保持。先验新包再测试；受控负向仅限已验证门禁的新QA包，不用旧包或桌面代启动。两原型不改生产默认、不因旧指标丢失重开整轮实验；指定Cursor不可用保留未执行，不以普通代理替代。无正文保存、真实数据／系统操作、安装、发布、提交或推送。
@@ -196,7 +200,7 @@ P提交后重开与多行输入续验保持上述路由；仅扩展原Gallery的
 
 复用不等于抹平差异：任务输入、手记输入、剪贴板捕获、搜索、菜单栏和独立窗口可以共享外观，但 Return、Command-Return、Escape、失焦、隐私和保存语义必须分别核对。
 
-公共顶栏的页面接入走 `WorkspaceHeaderContent` / `workspaceHeader`；详情能力走当前页面投影登记，入口与消费者见 [组件目录](docs/component-catalog.md)。验收补 `WorkspaceHeaderStateTests`、`WorkspaceHeaderInteractionTests` 和 `WorkspaceRenderingTests`，由原生 UI 技能实施、验证技能执行，公共状态仍交 Cursor `verifier` 只读复核。
+公共顶栏的页面接入走 `WorkspaceHeaderContent` / `workspaceHeader`；详情能力走当前页面投影登记，入口与消费者见 [组件目录](docs/component-catalog.md)。验收补 `WorkspaceHeaderStateTests`、`WorkspaceHeaderInteractionTests` 和 `WorkspaceRenderingTests`，由原生 UI 技能实施、验证技能执行，公共状态交 Claude Code `verifier` 子代理（见[指定只读复核入口](#指定只读复核入口)）只读复核。
 
 ### 5. 质量门禁
 

@@ -119,7 +119,8 @@ struct CommandNativeFailureTests {
         let f = try CommandNativeFixture()
         defer { f.close() }
         var rows = ["bytes,sample,milliseconds,checkpoints"]
-        for bytes in [1_024, 65_536, 1_048_576] {
+        // C-M3 起正文以 CommandLongTextLimit 为上限；最大档留出 6 次“字”的空间，原 1MiB 档改为断言拒绝。
+        for bytes in [1_024, CommandLongTextLimit.maxUTF8Bytes - 24] {
             let body = String(repeating: "中a🙂", count: bytes / 8)
             f.editor.insertText(body, replacementRange: NSRange(location: 0, length: f.editor.string.utf16.count))
             for index in 0..<6 {
@@ -134,6 +135,11 @@ struct CommandNativeFailureTests {
             try f.expectCurrent(body + String(repeating: "字", count: 6))
             f.editor.undoManager?.removeAllActions()
         }
+        let accepted = f.editor.string
+        let count = f.editor.checkpointCount
+        f.editor.insertText(String(repeating: "中a🙂", count: 131_072), replacementRange: NSRange(location: 0, length: accepted.utf16.count))
+        #expect(f.editor.issue == .tooLong && f.editor.checkpointCount == count)
+        try f.expectCurrent(accepted)
         Attachment.record(Data(rows.joined(separator: "\n").utf8), named: "command-native-latency.csv")
     }
 }

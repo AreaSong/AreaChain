@@ -19,6 +19,8 @@ final class UnifiedSearchController {
     @ObservationIgnored var longTextContent: CommandDraftContentSession?
     var longTextEditing: UnifiedSearchLongTextEditing?
     var longTextMessage: String?
+    /// 超限旧稿只记字段身份，不持正文；有值时长文区改显上限提示、清空与原入口引导。
+    var longTextOversized: UnifiedSearchLongTextOversize?
     var operationExpanded = true
     var planMessage = "unified.plan.notExecutable"
     var planRemovalDependents: [UUID] = []

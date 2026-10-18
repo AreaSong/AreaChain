@@ -3,7 +3,7 @@ import AppKit
 /// 显式隔离装配的命令编辑器。应用接收到的纯文本/组合状态先提交恢复点，再更新原生显示。
 /// 系统候选窗与 mutable storage 旁路不在受控事务承诺内。
 @MainActor final class CommandProtectedTextView: DaybookAppKitTextView, CommandDraftNativeOwner, NSTextStorageDelegate {
-    enum Issue: Equatable { case unavailable, rejected, acceptedNotDisplayed, unsupportedMutation, reentrant }
+    enum Issue: Equatable { case unavailable, rejected, acceptedNotDisplayed, unsupportedMutation, reentrant, tooLong }
     let parameter: CommandParameterID
     private let contentSession: CommandDraftContentSession
     private let textSystem: CommandTextSystem
@@ -361,9 +361,11 @@ import AppKit
         guard let current = access else { issue = issue ?? .rejected; return }
         accepting = true
         var committed = false
+        var composing = false
         defer { accepting = false }
         do {
             let before = try CommandTextTiming.measure("readState") { try contentSession.nativeState(current, owner: self) }
+            composing = before.composition != nil
             let candidate = try CommandTextTiming.measure("candidate") { try make(before) }
             try CommandTextTiming.measure("validateCandidate") { try candidate.validate() }
             if candidate == before { return }
@@ -387,10 +389,24 @@ import AppKit
             }
             issue = nil
             onRevision?()
+            return
+        } catch CommandDraftProtectionError.tooLong where access == current {
+            // 超限整次不生效：显示、选区与恢复点仍是上一次已接受的状态，下文只处理组合。
         } catch {
             if access != current { end(); issue = committed ? .acceptedNotDisplayed : .rejected; onRevision?() }
             else { failed(); onRevision?() }
+            return
         }
+        accepting = false
+        if composing {
+            // 组合确认后超限按取消组合处理，回到组合前已接受的正文；不禁用后续组合输入。
+            inputContext?.discardMarkedText()
+            transform { $0.cancellingComposition() }
+            // 取消本身失败时保留其 rejected／acceptedNotDisplayed 信号，不改写成超限。
+            guard issue == nil else { return }
+        }
+        issue = .tooLong
+        onRevision?()
     }
 
     private func registerUndo(_ point: Recovery) {
@@ -421,6 +437,9 @@ import AppKit
             try CommandTextTiming.measure("nativeInstall") { try contentSession.presentNative(next, owner: self) }
             registerUndo(inverse)
             issue = nil
+            onRevision?()
+        } catch CommandDraftProtectionError.tooLong where access == current {
+            issue = .tooLong
             onRevision?()
         } catch {
             if access != current { end(); issue = committed ? .acceptedNotDisplayed : .rejected; onRevision?() }

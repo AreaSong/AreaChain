@@ -41,7 +41,10 @@ struct CommandTaskCreatePreview: Equatable, CustomStringConvertible, CustomDebug
 
     static func prepare(item: CommandPlanItem, lease: CommandHostLease, plan: CommandPlanStamp,
                         source: CommandTaskCreateSource, catalog: CommandTaskTagCatalog) throws -> Self {
-        try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true, allowingDependencies: true)
+        // 复用协调者的结构与保护校验，但预览只对外报告本域问题；保护闸门先于正文检查，长文 notes 归为 protectedContent。
+        do { try CommandHandoffCoordinator.validateTaskCreateItem(item, composed: true, allowingDependencies: true) }
+        catch TaskCreateCommandIssue.unsupportedPlan { throw CommandTaskCreatePreviewIssue.unsupportedPlan }
+        catch TaskCreateCommandIssue.protectedContent { throw CommandTaskCreatePreviewIssue.protectedContent }
         let draft = item.draft
         guard !draft.blocksUnprotectedExport, draft.protectionRequirement == .ordinary,
               source.protection == .ordinary, source.stampEnabled || source.bundleID.isEmpty else {

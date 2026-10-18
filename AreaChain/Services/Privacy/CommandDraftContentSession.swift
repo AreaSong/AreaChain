@@ -3,6 +3,8 @@ import Foundation
 /// 固定、无内容错误。首次失败表示尚未保护；编辑失败表示新输入未被应用接受。
 enum CommandDraftProtectionError: Error, Equatable {
     case notProtected, revisionNotAccepted, stale, unavailable, invalidPayload, unsupported
+    /// 已确认正文超过 CommandLongTextLimit；拒绝前不写入、不建恢复点，原修订与资格不变。
+    case tooLong
 }
 
 /// 无公开构造器，不是所有权或解锁许可；只有成功建立恢复点才能签发。
@@ -94,6 +96,8 @@ struct CommandDraftContentAccess: Equatable, CustomStringConvertible, CustomDebu
 
     private func accept(_ contents: CommandDraftContents, using access: CommandDraftContentAccess,
                         continuingNative: Bool) throws -> CommandProtectedReference {
+        // 受保护修订、原生推进与撤销都经此建点；超限在封存前拒绝，不能被包装成一般失败。
+        guard Self.allowsLongText(contents) else { throw CommandDraftProtectionError.tooLong }
         do {
             try validate(access)
             guard let previous = restored[access.id], previous.baseline == contents.baseline else {
@@ -148,8 +152,59 @@ struct CommandDraftContentAccess: Equatable, CustomStringConvertible, CustomDebu
         presentingNative = true
         defer { presentingNative = false }
         do {
-            try owner.installProtectedContents(nativeState(access, owner: owner).pendingRestore())
+            let state = try nativeState(access, owner: owner)
+            // 加上限前留下的旧稿不装入原生编辑器，也不截断；宿主应先用 exceedsLongTextLimit 改走提示。
+            guard CommandLongTextLimit.allows(state.confirmedText) else { throw CommandDraftProtectionError.tooLong }
+            try owner.installProtectedContents(state.pendingRestore())
         } catch { revokeAccess(); throw error }
+    }
+
+    /// 打开前判断是否为超限旧稿；不签发 owner、不安装、不返回正文。
+    func exceedsLongTextLimit(_ access: CommandDraftContentAccess, parameter: CommandParameterID) throws -> Bool {
+        try validate(access)
+        let state: CommandDraftEditingState
+        if access.isProtected {
+            guard let contents = restored[access.id] else { throw CommandDraftProtectionError.stale }
+            state = try Self.nativeState(contents, parameter: parameter)
+        } else {
+            state = try Self.ordinaryState(current(access.draft, lease: access.lease), parameter: parameter)
+        }
+        return !CommandLongTextLimit.allows(state.confirmedText)
+    }
+
+    /// 超限旧稿不进原生编辑器，只允许显式清空该字段；不截断。无论成败都撤销本次资格，不续用。
+    func clearOversized(_ parameter: CommandParameterID, using access: CommandDraftContentAccess) throws {
+        defer { revokeAccess() }
+        guard nativeOwner == nil, try exceedsLongTextLimit(access, parameter: parameter) else {
+            throw CommandDraftProtectionError.unsupported
+        }
+        let draft = try current(access.draft, lease: access.lease)
+        guard Self.isEditing(access.draft, in: try coordinator.host(access.draft.hostID).session),
+              let declaration = CommandCatalog.standard.command(id: draft.commandID)?.parameters.first(where: { $0.id == parameter }),
+              declaration.type == .longText, declaration.operations.contains(.clear) else {
+            throw CommandDraftProtectionError.unsupported
+        }
+        try validateDisplay?(access.lease)
+        let empty = CommandDraftEditingState(parameter: parameter.rawValue, spelling: "", selectionLocation: 0, selectionLength: 0)
+        if access.isProtected {
+            guard var contents = restored[access.id] else { throw CommandDraftProtectionError.stale }
+            contents.arguments.removeAll { $0.parameter == parameter }
+            contents.arguments.append(.init(parameter: parameter, operation: .clear, value: nil))
+            contents.editing.removeAll { $0.parameter == parameter.rawValue }
+            contents.editing.append(empty)
+            _ = try accept(contents, using: access, continuingNative: false)
+            return
+        }
+        // 普通稿沿原生文字的同一提交入口；独占登记与原编辑器相同，另一服务持有时被拒绝。
+        try coordinator.nativeTextOwners.attach(ownerID) { [weak self] in self?.revokeAccess() }
+        try coordinator.acceptNativeText(empty, operation: .clear, expecting: access.draft, lease: access.lease, owner: ownerID)
+    }
+
+    private static func allowsLongText(_ contents: CommandDraftContents) -> Bool {
+        contents.arguments.allSatisfy { argument in
+            guard case .longText(let text) = argument.value else { return true }
+            return CommandLongTextLimit.allows(text)
+        }
     }
 
     func detachNative(_ owner: any CommandDraftNativeOwner) {
@@ -177,6 +232,8 @@ struct CommandDraftContentAccess: Equatable, CustomStringConvertible, CustomDebu
         try validateNative(access, owner: owner)
         guard state.parameter == owner.parameter.rawValue else { throw CommandDraftProtectionError.invalidPayload }
         do { try state.validate() } catch { throw CommandDraftProtectionError.invalidPayload }
+        // 普通与受保护两条路径共用：写入或建立恢复点前拒绝；组合中的未确认缓冲不计入。
+        guard CommandLongTextLimit.allows(state.confirmedText) else { throw CommandDraftProtectionError.tooLong }
         let operation = try nativeOperation(access, parameter: owner.parameter)
         guard operation.requiresValue else { throw CommandDraftProtectionError.unsupported }
         if !access.isProtected { return try advanceOrdinary(state, operation: operation, using: access, owner: owner) }

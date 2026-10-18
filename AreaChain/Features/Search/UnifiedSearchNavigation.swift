@@ -158,6 +158,22 @@ extension UnifiedSearchController {
         }
     }
 
+    /// 超限长文回到原编辑入口：沿 openResult／openContentOwner 的同一解析与 navigate 核验，
+    /// 手记仍须在当前结果中可见，任务仍经 objects.resolve 的隐私与存活检查，不另开导航或放宽资格。
+    func openLongTextOwner(_ owner: CommandObjectReference, source: UnifiedSearchBuffer) {
+        guard validates(source), let router = navigationRouter else { longTextMessage = "unified.navigation.unassembled"; return }
+        let open = ContentQueryBrowseOpen(object: owner, parent: nil, viewingTrash: false)
+        switch owner.type {
+        case .diary:
+            guard router.contents != nil else { longTextMessage = navigationFailure(.unassembled); return }
+            navigate(.content(owner), source: source, content: open)
+        case .todo:
+            do { navigate(.object(try router.objects.resolve(open)), source: source) }
+            catch { longTextMessage = navigationFailure(error as? WorkspaceOpenFailure ?? .invalidTarget) }
+        default: longTextMessage = "unified.longText.ownerNeedsDay"
+        }
+    }
+
     func validReturn(_ ticket: UnifiedSearchReturnContext) -> Bool {
         ticket.id == returnSearch?.id && ticket.queryRevision == navigationQueryRevision
             && ticket.privacyRevision == buffer.privacyRevision && ticket.ownership == buffer.lease.ownership

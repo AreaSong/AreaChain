@@ -67,8 +67,9 @@ import Testing
         try editor.begin(using: protected ? f.restore() : f.service.explicitlyEditOrdinary(f.draft().stamp, expecting: f.host.owned().lease))
         let singleBlock = String(repeating: "中a🙂", count: 128)
         let multipleBlock = String(repeating: "中a🙂", count: 127) + "中\n🙂"
-        let body = String(repeating: test.paragraphs ? multipleBlock : singleBlock, count: 1_024)
-        #expect(body.utf8.count == 1_048_576)
+        // 原 1MiB 对照超出 C-M3 的 CommandLongTextLimit；改用上限内最大整 KiB 块，并留出 6 次“字”的空间。
+        let body = String(repeating: test.paragraphs ? multipleBlock : singleBlock, count: CommandLongTextLimit.maxUTF8Bytes / 1_024 - 1)
+        #expect(body.utf8.count == CommandLongTextLimit.maxUTF8Bytes - 1_024)
         let preparation = ContinuousClock.now
         editor.insertText(body, replacementRange: NSRange(location: 0, length: editor.string.utf16.count))
         editor.undoManager?.removeAllActions()
@@ -104,7 +105,7 @@ import Testing
             }
             phases.record(mode: protected ? "protected" : "ordinary", bytes: body.utf8.count, sample: sample,
                 operation: "compositionBegin", total: total,
-                metadata: ["case": test.name, "paragraphs": test.paragraphs ? 1_025 : 1,
+                metadata: ["case": test.name, "paragraphs": test.paragraphs ? CommandLongTextLimit.maxUTF8Bytes / 1_024 : 1,
                            "position": test.position, "utf16Location": location, "visible": test.visible ?? "none",
                            "prelayout": test.prelayout, "nonContiguous": test.nonContiguous, "prepareMS": prepareMS, "candidateRectMeasuredAfterTotal": true,
                            "caretHeight": caret.height, "visibleY": editor.visibleRect.minY,

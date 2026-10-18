@@ -77,7 +77,9 @@ import Testing
         controller.beginLongText(.notes, source: controller.buffer)
         try await SystemPageHost.settle(window)
         let ordinary = try #require(controller.longTextEditing?.editor)
-        ordinary.insertText(String(repeating: "中a🙂", count: 131_072), replacementRange: .init(location: 0, length: ordinary.string.utf16.count))
+        // 原 1MiB 合成长段超出 C-M3 上限；改用上限内最大段，留出末尾输入空间。
+        ordinary.insertText(String(repeating: "中a🙂", count: CommandLongTextLimit.maxUTF8Bytes / 8 - 128),
+                            replacementRange: .init(location: 0, length: ordinary.string.utf16.count))
         controller.protectLongText(source: controller.buffer)
         try #require(controller.editingDraft?.protectedReference != nil)
         try await SystemPageHost.settle(window)
@@ -88,7 +90,7 @@ import Testing
         try #require(window.makeFirstResponder(editor))
         editor.scrollRangeToVisible(.init(location: editor.string.utf16.count, length: 0))
         try await SystemPageHost.settle(window)
-        status = "已载入1MiB受保护合成长段；仅检查末尾中文输入、候选位置与滚动。"
+        status = "已载入接近64KiB上限的受保护合成长段；仅检查末尾中文输入、候选位置与滚动。"
     }
 
     func snapshot(_ window: NSWindow, at url: URL) throws {

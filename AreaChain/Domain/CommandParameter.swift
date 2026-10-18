@@ -45,6 +45,15 @@ enum CommandParameterType: Equatable, Sendable {
     case nativeFile(CommandFileKind), nativeShortcut
 }
 
+/// 指令 longText 参数（notes/body）的唯一长度上限；不约束任务备注、手记小窗等原有编辑器。
+/// 2026-10-18 起以上限与超限引导取代 1MiB 长段性能续研。只计已确认正文的 UTF-8 字节，
+/// 组合缓冲不计入，因此组词过程中不会因候选临时变长而被打断。
+enum CommandLongTextLimit {
+    static let maxUTF8Bytes = 65_536
+
+    static func allows(_ confirmedText: String) -> Bool { confirmedText.utf8.count <= maxUTF8Bytes }
+}
+
 /// 值不含密码、密钥、原生文件路径或认证结果；安全交互只能存在于描述符要求中。
 enum CommandValue: Equatable, Sendable, CustomStringConvertible, CustomDebugStringConvertible {
     case shortText(String), longText(String), choice(String), boolean(Bool), number(Double)
